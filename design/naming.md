@@ -56,11 +56,9 @@ as does a specification's term of art in names this tree authors.
 ### A register constant takes the spelled-out name
 
 Ruled 2026-11-02 (UTC), for new and provisional names. A hardware register, field or bit constant
-copied from a cited source takes the identifier that says what it is. The source's spelling goes in
-`#[doc(alias = "...")]` and in the doc comment's opening, with the source cited. OpenBSD's spelling
-becomes the alias first, then FreeBSD's, and Linux's only when no BSD source names it. A program,
-crate or command takes the tree's own pattern (`system_installer`). A ratified name keeps its
-spelling until its own name review.
+copied from a cited source gets a spelled-out name. The source's spelling goes in
+`doc(alias)` and the doc comment's opening, cited: OpenBSD's first, then FreeBSD's, and Linux's only
+when no BSD source names it. A ratified name waits for its own review.
 
 ### Nouns, not verbs
 
