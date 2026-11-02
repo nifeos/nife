@@ -19,7 +19,7 @@ product line. Three things have moved since:
   crates. That rule cuts both ways here. Where a maintained crate exists, it argues
   for offering our proofs to it rather than publishing a rival.
 
-And one thing has not moved. §235 (the OS is built and updated from packages, and the tree divides
-by what releases together) was amended to size a home by what changes together. Under it, no package
+And one thing has not moved. §235 (the OS is built and updated from packages, and its source divides
+by purpose) was amended to size a home by what changes together. Under it, no package
 moves to a new repository before milestone 610 (the interface's stability is measured weekly)
 carries its per-package co-change column. Fork 1 has to respect that.
