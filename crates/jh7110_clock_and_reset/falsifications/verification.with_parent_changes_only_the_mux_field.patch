@@ -1,0 +1,21 @@
+Falsifies `jh7110_clock_and_reset::verification::with_parent_changes_only_the_mux_field`.
+
+The defect: the parent is shifted into place but no longer cut to the four-bit field, so a parent
+wider than four bits spills into the divider and the enable bit. A clock that was gated comes up
+running mid-switch, which the function exists to prevent.
+
+Expected to fail: the harness's assertion that every bit outside `CLOCK_MUX_MASK` is unchanged.
+
+diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
+index 7cc680a83..333afdc34 100644
+--- a/crates/jh7110_clock_and_reset/src/lib.rs
++++ b/crates/jh7110_clock_and_reset/src/lib.rs
+@@ -91,7 +91,7 @@ pub(crate) const CLOCK_MUX_SHIFT: u32 = 24;
+ /// Name: ratified 2026-10-26 (UTC).
+ #[must_use]
+ pub const fn with_parent(word: u32, parent: u32) -> u32 {
+-    (word & !CLOCK_MUX_MASK) | ((parent << CLOCK_MUX_SHIFT) & CLOCK_MUX_MASK)
++    (word & !CLOCK_MUX_MASK) | (parent << CLOCK_MUX_SHIFT)
+ }
+ 
+ /// **What the JH7110's TRNG needs before its registers answer**, transcribed from

@@ -1612,7 +1612,7 @@ mod verification {
     }
 
     /// **A plan built from a device's specifiers holds only usable steps, in order**: for two
-    /// clock specifiers and one reset specifier of any bytes, answered by any lookup, the
+    /// clock specifiers and one reset specifier of any bytes, answered by a SYS controller, the
     /// plan has at most `MAXIMUM_DEVICE_STEPS` steps, every id in the SYS domain's bounds, every
     /// clock step ahead of every reset release.
     /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.a_device_plan_from_specifiers_ungates_before_it_releases.patch`
@@ -1632,7 +1632,7 @@ mod verification {
 
     /// **The PMIC bus plan is never empty, never longer than its bound, and ungates before it
     /// releases**: from any node properties (two clock and one reset specifier, any
-    /// `reg` bytes) and any lookup, `from_nodes` answers either the tree's own plan or, when the
+    /// `reg` bytes) and a SYS controller, `from_nodes` answers either the tree's own plan or, when the
     /// tree gave no usable step, the constant plan, and both keep every id in the SYS domain's
     /// bounds with every clock step ahead of every reset release.
     /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.the_pmic_bus_plan_is_never_empty_and_ungates_before_it_releases.patch`
