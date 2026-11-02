@@ -33,9 +33,10 @@
 #
 # **One checkout per guest.** `cargo xtask test` writes `target/nifefs.img` under the workspace root,
 # and QEMU refuses one image to two writers, so each guest slot runs in its own git worktree of the
-# clone this script lives in, each with its own `target/`. The worktrees are detached at the clone's
-# HEAD when the slot starts; updating the clone and restarting the unit moves the whole fleet to a
-# new commit. Seed ranges are per slot (a fixed stride apart), so two slots never sweep one seed.
+# clone this script lives in, each with its own `target/`. A slot's worktree is detached at the
+# clone's HEAD when it is first created and stays there: a restart does not move it, so an update
+# moves the clone and each worktree (notes/fuzzing/finishing-the-setup.md, step P1). Seed ranges are
+# per slot (a fixed stride apart), so two slots never sweep one seed.
 #
 # **A finding is held.** A window that prints a `replay:` line, panics, or runs out its bound is
 # untriaged by definition. Its log moves to `$state/held/`, mode 700, and nothing here ever
