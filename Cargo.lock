@@ -63,6 +63,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
+name = "base_digest_contract"
+version = "0.1.0"
+
+[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -765,6 +769,7 @@ dependencies = [
  "abi",
  "address_space_identifier",
  "address_space_map",
+ "base_digest_contract",
  "block_roster",
  "boot_ladder",
  "boot_slot",
@@ -1412,6 +1417,7 @@ version = "0.1.0"
 dependencies = [
  "abi",
  "address_space_map",
+ "base_digest_contract",
  "byte_sink_contract",
  "capability_manifest_note",
  "credential_contract",

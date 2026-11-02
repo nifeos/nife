@@ -79,6 +79,23 @@ writers copy the words from the file `cargo xtask` packs beside the archive and 
 boot: a loader that measured the archive it hands over would vouch for any swap. Milestone 695 (the
 kernel trusts two digests handed to it by the loader) has the writers and what remains.
 
+## The progenitor checks the table itself
+
+The kernel hands the base digest on to the progenitor, so the progenitor does not take the table on
+the kernel's word. The digest travels as a read-only page in slot 34 ([the slot
+layout](../progenitor-boot.md)), in the layout `crates/base_digest_contract` defines: an eight-byte
+magic whose last byte is the layout version, then the 32 bytes of the digest. The progenitor maps
+the page, copies the content out, gives the page up, hashes the archive's `program_measurements`
+entry and compares, all before it reads a line of the table
+(`system_initializer::base_digest`).
+
+A refusal stops the boot. Seven faults each have a line of their own: an empty slot, a slot it may
+not map read-only, a page without the magic, another layout version, an all-zero digest, a missing
+table and a table with another digest. The progenitor prints `MEASURED BOOT REFUSED by the
+progenitor: <reason>` and traps. The `console` server cannot carry that line, because the
+progenitor measures it against the very table in doubt, so the progenitor writes the UART itself
+(`system_initializer::refusal_console`), the way the console does on each architecture.
+
 ## The loader's verdict
 
 One rule produces both fields of `Verdict`: nothing runs that the table will not vouch for. So

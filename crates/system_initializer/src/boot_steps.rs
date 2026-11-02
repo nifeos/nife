@@ -149,13 +149,16 @@ pub(super) struct Kept {
     pub(super) images_ut: u64,
 }
 
-/// Borrow the archive the kernel mapped, give back the loader's scratch pages, and read the
-/// measurement table. Returns the archive and the table, which is empty, and so vouches for
-/// nothing, when its bytes are not UTF-8. See notes/system-initializer/the-boot-order.md.
+/// Borrow the archive the kernel mapped, give back the loader's scratch pages, check the
+/// measurement table against the kernel's base digest and read it. Returns the archive and the
+/// table, which is empty, and so vouches for nothing, when its bytes are not UTF-8. A table the
+/// base digest does not name stops the boot here, with the reason on the UART (`uart_shape` is the
+/// register shape the kernel passed). See notes/system-initializer/the-boot-order.md.
 #[inline(never)]
 pub(super) fn open_archive(
     g: &BootEndowment,
     initial_ramdisk_len: u64,
+    uart_shape: u64,
 ) -> (nifefs::Fs<'static>, &'static str) {
     let len = initial_ramdisk_len as usize;
     // SAFETY: the kernel mapped `initial_ramdisk_len` bytes of reserved RAM, read-only, at
@@ -171,6 +174,11 @@ pub(super) fn open_archive(
     if is_granted(g.own_space) {
         process_builder::give_up_scratch_through(g.own_space);
     }
+
+    // Before the first read of the table, so nothing below acts on bytes the kernel's base digest
+    // does not name (milestone 695 (the kernel trusts two digests handed to
+    // it by the loader), part 1).
+    base_digest::require_base_digest(g, g.untyped, &fs, uart_shape);
 
     // Bytes that are not UTF-8 are the empty table, which vouches for nothing.
     let table = fs

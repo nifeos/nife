@@ -111,6 +111,7 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
         install_service::confirm();
     }
     grant_disk_tree(tid, fs_pool);
+    grant_base_digest(tid);
     crate::sched::configure_thread_control_block(tid, elf.entry(), USER_STACK_TOP, aspace_name)
         .expect("configure");
     // x0 = the console UART's register shape, which the progenitor hands its console and input
@@ -456,6 +457,41 @@ fn grant_disk_tree(tid: crate::thread::ThreadId, fs_pool: Option<u64>) {
     )
     .expect("insert the disk tree's client windows");
     assert_eq!(s33, 33);
+}
+
+/// Slot 34, granted on every boot: the base digest page (milestone 695 (the kernel trusts two
+/// digests from the loader), part 1).
+///
+/// The page carries the loader's `nife.base` digest in `base_digest_contract`'s layout, the digest
+/// [`measured_progenitor`] already held the `program_measurements` table to, so the progenitor can
+/// check the table itself before it reads it. `READ` alone: the progenitor maps it read-only and can
+/// neither change it nor hand it on, since it has no `GRANT`. Past slot 33, the highest any other
+/// grant reaches, so no slot moves and the number never depends on what the machine has. See
+/// notes/progenitor-boot.md.
+fn grant_base_digest(tid: crate::thread::ThreadId) {
+    let digest = crate::trust::base_digest()
+        .expect("the table was held to the loader's nife.base before the progenitor was built");
+    let bytes = base_digest_contract::build_page(&digest);
+    // Zeroed, so a previous occupant's bytes are not visible past `PAGE_CONTENT_BYTES`.
+    let phys = crate::memory::alloc_zeroed()
+        .expect("no frame for the base digest page")
+        .addr();
+    // SAFETY: `phys` names that frame, direct-mapped and owned by nobody else yet, and `bytes` is
+    // `PAGE_CONTENT_BYTES` (40) long, far under `FRAME_SIZE`, so the copy stays inside the frame.
+    unsafe {
+        core::ptr::copy_nonoverlapping(
+            bytes.as_ptr(),
+            crate::arch::mmu::phys_to_virt(phys) as *mut u8,
+            bytes.len(),
+        );
+    }
+    let s34 = crate::sched::thread_control_block_insert_capability(
+        tid,
+        page_frame_capability(phys, Rights::READ),
+        Some(34),
+    )
+    .expect("insert the base digest page");
+    assert_eq!(s34, 34);
 }
 
 /// Slots 24 to 26: the kernel's log ring, its cursor page and its notification (milestone 342 (one

@@ -13,6 +13,7 @@ allocation_cache	userspace	std
 approval_file	userspace	jig
 argument_protocol	shared	retired
 asid	kernel	retired
+base_digest_contract	shared	components,fixtures,kernel
 bitfont	shared	retired
 bitmap_font	shared	components,kernel,uefi_loader
 block_roster	shared	components,kernel

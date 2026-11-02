@@ -106,6 +106,10 @@ const GRANTS: BootEndowment = BootEndowment {
     // machine is a kernel object the progenitor hands out)), granted on every boot past the e1000e
     // stack's pair. Kept by the spawn service for the one program that declares it.
     reboot: 31,
+    // The base digest page (milestone 695 (the kernel trusts two digests from the loader), part 1),
+    // `READ` alone, granted on every boot past the disk tree's pair (32 and 33), so no slot moves.
+    // `system_initializer::boot` checks the measurement table against it before reading the table.
+    base_digest_page: 34,
     // Nothing. Since milestone 166 the boot loader is not shared with milestone 19d's test roles on
     // any architecture, so the kernel grants exactly what the interactive system uses. aarch64 once
     // carried a report endpoint (slot 1) and the 19d.2b test interrupt (slot 3) here.

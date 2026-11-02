@@ -17,6 +17,7 @@ starts itself. How the progenitor loads its children is in
    name, before its address space exists (milestone 22 (trusted init) phase B.1). The progenitor is this board's
    boot program, so it is in the trust root like any boot program. Then it requires the
    program-measurement table the progenitor checks every load against (milestone 104 (the measurement continues past init)).
+   The kernel holds both to the loader's two command-line words as well (milestone 695 (the kernel trusts two digests from the loader)).
 2. It builds the address space: the segments, a stack of `PROGENITOR_STACK_PAGES`, and the
    timebase page where the architecture has one. The whole initial ramdisk is mapped read-only at
    `INITIAL_RAMDISK_VIRTUAL_ADDRESS`, so the progenitor can parse the archive and load the rest by name. The
@@ -62,8 +63,9 @@ table reads it.
 | 29, 30 | a kernel-built network stack: `Stack` endpoint, lease endpoint | all rights; `READ` | with an `e1000e` or radon's port, and no virtio-net |
 | 31 | the reboot object | `WRITE \| GRANT` | always |
 | 32, 33 | the disk tree's endpoint and client-window pool | `WRITE \| GRANT` | with an NVMe disk beside a file service |
+| 34 | the base digest page | `READ` | always |
 
-The table has 64 slots (`crate::cap::CAPABILITY_TABLE_SLOTS`), and the ones above 33 are the
+The table has 64 slots (`crate::cap::CAPABILITY_TABLE_SLOTS`), and the ones above 34 are the
 progenitor's own to fill.
 
 ### Why every slot is explicit
@@ -135,6 +137,13 @@ design/roadmap/0047-navigation-and-naming/environment.md's "inheritance with vis
 - The disk tree is the installed system's second mounted tree, read-only at the prompt (milestone
   834; calef, 2026-10-18 21:36 UTC: "Yes, read-only at prompt"). It is granted only beside a file
   service, whose window 0 is the shell's one page and becomes the disk tree's window 0.
+- The base digest page is `READ` alone (milestone 695, part 1, ruled 2026-11-02 UTC). It carries
+  the loader's `nife.base` digest, the digest of the `program_measurements` table, in
+  `base_digest_contract`'s layout, and the kernel writes it once before the progenitor exists. The
+  progenitor maps it at an address of its own choosing, checks the table against it before reading
+  the table, and deletes it. It has no `GRANT` because nothing else needs it, and no fixed address
+  because a capability names it. A digest is 32 bytes, so it could not travel in a fourth `START`
+  word. It sits past slot 33 so no slot moves.
 
 ## Arming the interrupts
 
