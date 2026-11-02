@@ -26,6 +26,15 @@ pub const OPERATION_SHIFT: u32 = 56;
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
 
+/// This interface's identity in a program's `INTERFACES` note: 6, naming the byte-sink write
+/// framing. The number is this interface's for good: no other interface takes it, and a format
+/// change is a new version, never a new number. Milestone 956 (the linked interfaces carry
+/// checkable versions) holds the table of numbers, and `script/lint` holds the tree to it. A
+/// program declares the pair of this id and [`VERSION`].
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+pub const INTERFACE_ID: u64 = 6;
+
 /// **Bytes.** The low 32 bits are the count (1 to [`INLINE_MAXIMUM`]); the bytes themselves are in
 /// the second and third words, little-endian, low word first.
 ///

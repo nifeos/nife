@@ -19,7 +19,7 @@ benchmark re-baseline. No syscall surface, wire format or dependency.
 
 ## The finding
 
-`counter_frequency_contract::PAGE_VA` is the one page the kernel maps into every `x86_64` and
+`counter_frequency_contract::PAGE_VIRTUAL_ADDRESS` is the one page the kernel maps into every `x86_64` and
 `riscv64` process that is not on the map. It sits at seven-eighths of each architecture's low half
 (`0x7000_0000_0000`, and `0x38_0000_0000` under Sv39), a siting written before the map existed to keep
 it away from the low megabytes where fixtures picked addresses.

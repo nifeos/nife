@@ -178,12 +178,10 @@ crates/abi/src/reply.rs
 crates/abi/src/reply.rs::REPLY
 crates/abi/src/reply.rs::REPLY_CAPABILITY
 crates/abi/src/rights.rs
-crates/abi/src/rights.rs::ALL
 crates/abi/src/rights.rs::BIND
 crates/abi/src/rights.rs::ENUMERATE
 crates/abi/src/rights.rs::GRANT
 crates/abi/src/rights.rs::READ
-crates/abi/src/rights.rs::SPEND_ONLY
 crates/abi/src/rights.rs::WRITE
 crates/abi/src/survey.rs
 crates/abi/src/survey.rs::BLOCKED
@@ -215,7 +213,6 @@ crates/abi/src/usage.rs::SIZE
 crates/abi/src/usage.rs::THREADS
 crates/abi/src/usage.rs::is_known
 crates/abi/src/virtio.rs
-crates/abi/src/virtio.rs::DMA_PHYS_OFFSET
 crates/abi/src/virtio.rs::NOTIFY
 crates/abi/src/virtio.rs::SETUP_QUEUE
 crates/address_space_identifier/src/lib.rs::ASIDS
@@ -693,15 +690,6 @@ crates/confined_syscall_fuzzer_contract/src/lib.rs::WORDS
 crates/coremark/src/lib.rs::PINNED_CRC_64
 crates/coremark/src/lib.rs::PINNED_ITERS
 crates/coremark/src/lib.rs::run
-crates/counter_frequency_contract/src/lib.rs::MAGIC
-crates/counter_frequency_contract/src/lib.rs::PAGE_BYTES
-crates/counter_frequency_contract/src/lib.rs::PAGE_VA
-crates/counter_frequency_contract/src/lib.rs::PAGE_VA
-crates/counter_frequency_contract/src/lib.rs::TimebasePage
-crates/counter_frequency_contract/src/lib.rs::build_page
-crates/counter_frequency_contract/src/lib.rs::hz
-crates/counter_frequency_contract/src/lib.rs::is_plausible
-crates/counter_frequency_contract/src/lib.rs::new
 crates/cpu_set/src/lib.rs::Cpus
 crates/cpu_set/src/lib.rs::cpus_in
 crates/cpu_set/src/lib.rs::nth_in
@@ -1618,8 +1606,6 @@ crates/filesystem_fixture/src/lib.rs::RENAMED
 crates/filesystem_fixture/src/lib.rs::RETURNED
 crates/filesystem_fixture/src/lib.rs::RG_FOUR
 crates/filesystem_fixture/src/lib.rs::RG_MATCHES
-crates/filesystem_fixture/src/lib.rs::RG_NAMED
-crates/filesystem_fixture/src/lib.rs::RG_SEARCH
 crates/filesystem_fixture/src/lib.rs::RMDIR_REFUSED_NON_EMPTY
 crates/filesystem_fixture/src/lib.rs::RMDIR_REMOVED_EMPTY
 crates/filesystem_fixture/src/lib.rs::RMTREE

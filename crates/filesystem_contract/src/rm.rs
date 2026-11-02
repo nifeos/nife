@@ -1,11 +1,11 @@
-//! **What the `rm` program reports** (`components/src/rm.rs`), on its report endpoint under the
+//! **What the `rm` program reports**, on its report endpoint under the
 //! sink contract: lines of text, then the verdict, told apart by the first word.
 //!
 //! - A line is framed as std's stdout is: `w0` = the byte count (at most 16), the bytes
 //!   little-endian in `w1`|`w2`. Diagnostics always go out this way; `-v` adds one per name removed.
 //! - The verdict, once and last: `w0` = `byte_sink_contract::eof()`, `w1` = the exit status, `w2` =
 //!   how many names were removed. A receiver whose first message is the verdict knows the run
-//!   printed nothing, since a `SEND` blocks until it is received. See notes/rm.md.
+//!   printed nothing, since a `SEND` blocks until it is received.
 
 /// The exit status of a run in which everything named was removed. `rm(1)`: "exits 0 if all
 /// of the named files or file hierarchies were removed".

@@ -16,8 +16,10 @@ path, and every builder gets the same bare world:
 | 3 | the delegated test interrupt (19d.2b) | `READ \| GRANT` |
 | 4 | the UART receive interrupt (19d.2c) | `READ \| GRANT` |
 
-`x0` is 0, since no builder dispatches on it. The kernel enters `entry` itself, so `entry` must be
-in the trust root, which is why the six are in `sealed_pair::BOOT_PROGRAMS` beside the progenitor.
+`x0` is 0, since no builder dispatches on it. The kernel enters `entry` itself, and measures it
+first through the archive's table, the chain the progenitor runs on every load
+(`trust::require_program_in`). The kernel image names no builder; a builder the table does not
+vouch for halts the boot.
 
 The building budget is carved before the thread exists, so the caller has a name for it and can
 reclaim it through the returned `Holding`: 12,288 pages lent rather than spent

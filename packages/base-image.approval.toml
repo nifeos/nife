@@ -14,7 +14,7 @@
 # `remove` are false for every base package: the base image is replaced whole through the boot slot,
 # not updated or removed by a scripted install (milestone 525 (A bad upgrade cannot brick the
 # machine: two boot slots, tries and priority) and milestone 607 (nife is built and updated from
-# packages, and the repository divides along what releases together) item 5).
+# packages, and its source divides by purpose) item 5).
 #
 # The check catches a package that asks for more than its entry allows. It cannot catch an entry
 # that allows more than any package asks, so over-allowance is the review's to remove. Add a zone or

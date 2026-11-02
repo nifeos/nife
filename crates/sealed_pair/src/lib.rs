@@ -19,20 +19,13 @@ use std::fmt::Write as _;
 
 use measured_boot::Digest;
 
-/// The archive entries the kernel itself may enter as a boot program, and therefore the ones its
-/// trust root names: `progenitor` first, which [`inspect`] requires of every archive, then
-/// milestone 19 (run a real workload)'s six ELF child builders, which
-/// `kernel::user::spawn_elf_child_builder` enters directly. One list for `xtask::measure`,
-/// `uefi_loader`'s build and [`inspect`]; see notes/sealed-pair.md, "One list of boot programs".
-pub const BOOT_PROGRAMS: [&str; 7] = [
-    "progenitor",
-    "report_child_builder",
-    "device_child_builder",
-    "interrupt_child_builder",
-    "console_server_builder",
-    "least_authority_demo_builder",
-    "coremark_builder",
-];
+/// The archive entries the kernel itself measures as a boot program, and therefore the ones its
+/// trust root names: `progenitor` alone, which [`inspect`] requires of every archive. Every other
+/// program the kernel enters, the six test child builders of milestone 19 (run a real workload)
+/// included, is measured through the archive's table (`kernel::trust::require_program_in`). One
+/// list for `xtask::measure`, `uefi_loader`'s build and [`inspect`]; see notes/sealed-pair.md, "One
+/// list of boot programs".
+pub const BOOT_PROGRAMS: [&str; 1] = ["progenitor"];
 
 /// Every archive entry a kernel image's trust root may name: the boot programs it can enter, plus
 /// the measurement table it vouches for on the progenitor's behalf (milestone 104, init measures
@@ -536,8 +529,8 @@ mod tests {
 
     #[test]
     fn one_stale_half_is_named_on_its_own() {
-        // A hand-copied card where only the progenitor moved: the other entries still match, and
-        // the report must point at the one that does not rather than at the whole pair.
+        // A hand-copied card where only the progenitor moved: the table still matches, and the
+        // report must point at the one entry that does not rather than at the whole pair.
         let (mut kernel, archive) = matched_pair();
         let fs = nifefs::Fs::parse(&archive).expect("packed");
         let digest = measured_boot::sha256(fs.read("progenitor").expect("packed"));
@@ -550,8 +543,10 @@ mod tests {
         let seal = inspect(&kernel, &archive).expect("readable");
         assert!(seal.kernel_refuses());
         assert_eq!(seal.entries[0].vouch, Vouch::No);
-        assert_eq!(seal.entries[1].vouch, Vouch::Yes);
-        assert_eq!(seal.entries[2].vouch, Vouch::Yes);
+        assert!(
+            seal.entries[1..].iter().all(|e| e.vouch == Vouch::Yes),
+            "{seal:?}"
+        );
     }
 
     #[test]

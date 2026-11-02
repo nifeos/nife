@@ -32,7 +32,9 @@ pub const NOTIFY: u64 = 3;
 /// word, so the page carries the base, in its last eight bytes because no driver's rings or buffers
 /// reach them (`entropy` ends at `0x500`, `net_stack` at `0xF00`, `gpu_driver` at `0x798` and
 /// `keyboard_driver` at `0x440`). The kernel writes it; `system_initializer`, `gpu_driver` and
-/// `keyboard_driver` read it, so it is one constant (AGENTS.md rule 7). Name: provisional.
+/// `keyboard_driver` read it, so it is one constant.
+///
+/// Name: provisional.
 pub const DMA_PHYS_OFFSET: u64 = 4096 - 8;
 
 // The word is the page's last eight bytes; a wrong operator in the subtraction would put it past

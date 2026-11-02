@@ -36,8 +36,8 @@ into the other.
 
 One fact of the tree decides what U4 can mean today. The kernel compiles the digest of every base
 program into its trust root (`kernel/build.rs`). So a new `swish` makes a new kernel, and the
-kernel's bytes depend on the whole base. Item 6 of milestone 607 (the repository divides along
-what releases together) removes that coupling: the loader hands over two digests, and the
+kernel's bytes depend on the whole base. Item 6 of milestone 607 (its source divides by
+purpose) removes that coupling: the loader hands over two digests, and the
 progenitor checks the base set. Until it lands, no device can
 assemble a bootable slot from packages, because only a host that builds the kernel can produce a
 kernel that vouches for the new base. And basalt does not yet publish the kernel as a package at

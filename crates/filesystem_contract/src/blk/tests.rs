@@ -12,7 +12,7 @@ fn block_request_roundtrips() {
     }
 }
 
-/// **milestone 138 step 4**: a caller that packs a block count survives the round trip, and a
+/// **The block count rides the request**: a caller that packs a block count survives the round trip, and a
 /// caller that never heard of one (every caller through step 3, via the plain [`req`]) still
 /// decodes as exactly one block, which is the whole of the compatibility claim
 /// `blk::TRANSFER_BLOCKS`'s doc makes.

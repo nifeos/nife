@@ -7,7 +7,7 @@ use std::vec::Vec;
 /// **The crash fixture's two payloads must be the same length**, and the millisecond test that
 /// says so is not pedantry: `WRITE` does not truncate, so the moment B is shorter than A the
 /// recovered file is A's tail with B's head on it, and "exactly A or exactly B" becomes a
-/// question with no answer. That is DECISIONS §27's four-times-corrected failure, and it cost a
+/// question with no answer. That failure was corrected four times before it was understood, and it cost a
 /// day when it was discovered from the far end instead of pinned here.
 #[test]
 fn the_crash_payloads_replace_each_other_completely() {
@@ -48,7 +48,7 @@ fn the_escape_bits_are_distinct() {
     }
 }
 
-// --- The directory capability (milestone 47 (navigation and naming)) ---
+// --- The directory capability ---
 
 /// The escape bits must not overlap, for the reason the per-file ones must not: the test asserts
 /// an expected set, so two outcomes on one bit make a wrong verdict read as a right one.
@@ -98,7 +98,7 @@ fn the_absolute_probe_names_are_the_relative_ones_rooted() {
 fn the_two_grant_bits_are_distinct() {
     use crate::twodir::*;
     // A witness bit of zero turns its probe into one that always passes. Two of these bits are
-    // the structural finding notes/dir-capability.md records (an endpoint is the boundary).
+    // the structural finding that an endpoint is the boundary.
     let bits = [
         OPENED_A,
         OPENED_B,
@@ -119,7 +119,7 @@ fn the_two_grant_bits_are_distinct() {
 }
 
 /// **Every phase tag the bench boot can be handed has its own name**, and a tag it was not
-/// handed has none. Nothing in this crate called `throughput::name`, so milestone 326's run
+/// handed has none. Nothing in this crate called `throughput::name`, so a mutation run
 /// found nine mutants alive in it at once: the whole function as `None`, as `Some("")` and as
 /// `Some("xyzzy")`, and each of its six arms deleted. The bench boot prints these beside the
 /// numbers, so two phases sharing a name is two rows a reader cannot tell apart.
@@ -199,9 +199,9 @@ fn the_navigation_bits_are_distinct() {
     }
 }
 
-// The tests from here down each pin something the run of milestone 85 (mutation testing over the
-// host crates) showed nothing pinned. The equivalences (every `|` over disjoint masked fields,
-// where `^` cannot differ) are recorded in notes/mutation-testing.md rather than tested.
+// The tests from here down each pin something a mutation run showed nothing pinned. The
+// equivalences (every `|` over disjoint masked fields, where `^` cannot differ) are recorded as
+// such rather than tested.
 
 /// Every witness verdict module is distinct single bits. Both ends of each QEMU test build
 /// their words from these same constants, so a shifted-to-zero bit is invisible at runtime:
@@ -403,4 +403,159 @@ fn every_two_trees_flag_is_its_own_single_bit() {
         assert_eq!(seen & f, 0, "{f:#x} is used twice");
         seen |= f;
     }
+}
+
+// --- The directory capability: the fixture against the contract it rides on ---
+
+/// The fixture's names must all fit a grant's two argument words, and must be distinct: a
+/// sibling that happened to be spelled like the granted directory would make the confinement
+/// test pass for the wrong reason.
+#[test]
+fn the_subtree_fixture_is_grantable_and_unambiguous() {
+    use filesystem_contract::grant;
+
+    use crate::tree::*;
+    for name in [
+        SUB, INNER, DEEPER, LEAF, OTHER, SECRET, MADE, MADE_DIR, MOVED, NAV_KEPT, NAV_GONE,
+        NAV_DIR, NAV_EMPTY, NAV_INSIDE,
+        // The `rm -r` subtree. Its names ride in a grant too: the program is *started* with the
+        // one name it is to remove, packed the way every other grant is.
+        RMTREE, RM_KEEP, RM_DOOMED, RM_ONE, RM_TWO, RM_NESTED, RM_LEAF, RM_SOLO, RM_MISSING,
+    ] {
+        assert!(
+            grant::fits(name.as_bytes()),
+            "{name} cannot ride in a grant"
+        );
+    }
+    // The post-run host check identifies the attacker's creations by PREFIX, because a run
+    // index is appended to each. A fixture name that started with one of those prefixes would
+    // be read as an escape, or would hide one.
+    let probes = [
+        MADE, MADE_DIR, MOVED, NAV_KEPT, NAV_GONE, NAV_DIR, NAV_EMPTY,
+    ];
+    for fixture in ROOT_ENTRIES
+        .iter()
+        .chain(&[INNER, DEEPER, LEAF, SECRET, RM_KEEP, RM_DOOMED])
+    {
+        for probe in probes {
+            assert!(
+                !fixture.starts_with(probe),
+                "{fixture} collides with the prefix `{probe}` the confinement check searches for",
+            );
+        }
+    }
+    // And the three probes must not shadow each other, because the check counts them apart: a
+    // rename that looked like a creation would make "REMOVE was enforced" unfalsifiable.
+    for (i, a) in probes.iter().enumerate() {
+        for b in &probes[i + 1..] {
+            assert!(
+                !a.starts_with(b) && !b.starts_with(a),
+                "`{a}` and `{b}` cannot be told apart by prefix",
+            );
+        }
+    }
+    assert_ne!(SUB, OTHER, "the sibling must be a different directory");
+    // The `rm -r` fixture's own shape. `RM_MISSING` is the load-bearing one: the whole of `-f`
+    // is that a name which is not there is not an error, so a fixture that accidentally shipped
+    // it would make the `-f` run and the plain run indistinguishable.
+    for staged in [
+        RM_KEEP, RM_DOOMED, RM_ONE, RM_TWO, RM_NESTED, RM_LEAF, RM_SOLO,
+    ] {
+        assert_ne!(
+            staged, RM_MISSING,
+            "the name `rm -f` is pointed at must not be one the fixture stages",
+        );
+    }
+    assert_ne!(RMTREE, SUB, "the rm grant must not be the shells' subtree");
+}
+
+/// **A verdict word cannot be mistaken for a line of text**, which every witness in this fixture
+/// rests on: a receiver reads "the first message is the verdict" as "this run printed nothing".
+///
+/// **`rm` no longer rides this word** (2026-08-17). It declares the sink contract, so it ends its
+/// stream with the byte-sink contract's `eof()` and its status and count ride in the two words that message
+/// leaves free; the same property is pinned over there by `eof_is_not_a_byte_count`. What is
+/// checked here is the word the attackers and the shell witnesses still use.
+#[test]
+fn a_text_frame_and_a_verdict_are_told_apart_by_the_first_word() {
+    // A frame's first word is a byte count into the two payload words, so 16 is its ceiling.
+    // Checked at COMPILE time rather than here: both sides are constants, so a change that broke
+    // it should fail the build rather than wait for someone to run the suite. Same discipline as
+    // the clock service's step-bound assertion.
+    const _: () = assert!(
+        crate::VERDICT > 16,
+        "a verdict word that could be a byte count would make a diagnostic read as a verdict",
+    );
+    // And the caretakers' two answers to a descent are told apart the same way, which is what
+    // lets init read one word and know whether it holds a capability or a refusal.
+    const _: () = assert!(
+        filesystem_contract::READY != filesystem_contract::DESCENT_REFUSED,
+        "a caretaker's two possible answers must not be the same word",
+    );
+    // And a non-zero status is the errno, so the two ends agree about what failed rather than
+    // only that something did.
+    assert_eq!(
+        filesystem_contract::rm::status(filesystem_contract::dir::EROFS),
+        filesystem_contract::dir::EROFS as u64
+    );
+    assert_ne!(
+        filesystem_contract::rm::status(filesystem_contract::dir::EROFS),
+        filesystem_contract::rm::OK
+    );
+    assert_eq!(
+        filesystem_contract::rm::OK,
+        0,
+        "success is zero, as every shell expects"
+    );
+}
+
+// --- Extended attributes ---
+
+/// The attribute witness's bits must not overlap, for the reason every other witness's must not:
+/// the kernel test asserts an exact set, so two outcomes on one bit make a wrong verdict read as
+/// a right one. `EXPECTED` is pinned against them here so the two ISA legs cannot assert
+/// something the bits no longer spell.
+#[test]
+fn the_attribute_witness_bits_are_distinct_and_its_expectation_matches_them() {
+    use filesystem_contract::{grant, xattr};
+
+    use crate::attrs::*;
+    let bits = [
+        SET_AND_READ_BACK,
+        LISTED,
+        SURVIVED_RENAME,
+        GONE_AFTER_REMOVE,
+        GONE_AFTER_UNLINK,
+        OVERSIZE_REFUSED,
+        STORE_UNNAMEABLE,
+        STORE_UNLISTED,
+        ATTRS_FAILED,
+    ];
+    let mut seen = 0u64;
+    for b in bits {
+        assert_ne!(
+            b, 0,
+            "zero is the empty report; it cannot also be an outcome"
+        );
+        assert_eq!(seen & b, 0, "two attribute outcomes share a bit");
+        seen |= b;
+    }
+    assert_eq!(
+        EXPECTED,
+        seen & !ATTRS_FAILED,
+        "a correct run reports every outcome and no failure",
+    );
+    // The witness's fixture has to be usable: two distinct names it can create and rename
+    // between, and a name and value the store will actually accept.
+    assert_ne!(PROBE, PROBE_MOVED);
+    assert!(grant::fits(PROBE.as_bytes()) && grant::fits(PROBE_MOVED.as_bytes()));
+    assert!(xattr::is_valid_name(NAME));
+    assert!(VALUE.len() <= xattr::MAXIMUM_VALUE);
+    // Checked at COMPILE time: both sides are constants, so a fixture that fell back to the
+    // default kind should fail the build rather than wait for the suite. The same discipline
+    // `a_text_frame_and_a_verdict_are_told_apart_by_the_first_word` uses.
+    const _: () = assert!(
+        crate::attrs::KIND != xattr::RAW,
+        "a default kind would hide a layer that dropped it",
+    );
 }

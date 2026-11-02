@@ -31,9 +31,12 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   the whole Synopsys Mobile Storage Host Controller driver (`snps,dw-mshc`) behind one small
   `host::Registers` trait: card bring-up, SD and eMMC commands, the FIFO, partitions. It drives
   radon's microSD slot and eMMC socket.
-- Four Kani harnesses, each with a falsification patch. The scratch range never touches a partition
-  or sector zero, and a served block never leaves its window. A FIFO step never overruns the FIFO
-  or the buffer, and an admitted range is inside the card and the address.
+- Eight Kani harnesses in the crate, each with a falsification patch. The scratch range never
+  touches a partition or sector zero. A FIFO step never overruns the FIFO or the buffer, an admitted
+  range is inside the card and the address, and an IDMAC chain describes exactly its bytes. The MBR
+  parse is total and reads each entry from its own bytes. A register field never exceeds its width,
+  the CSD decoders size a card without overflow, and the `EXT_CSD` sector count is total. A served
+  block never leaves its window, a harness that moved with `serve` to `driver_process_contract`.
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut** is larger than that
   note's inventory says. `jh7110::discover` reads a `DeviceTreeBlob`; under codebase rule 2 the
   caller passes the register region instead, and the query moves to the kernel side. The `serve`
@@ -68,20 +71,23 @@ only to projects nife depends on.
 Each row is a property this crate must prove before it publishes. The harness cell names the Kani
 harness that proves it, or says `none yet`; every named harness carries a falsification patch that
 makes it fail at its own assertion. Each patch is at
-`crates/designware_mobile_storage/falsifications/`. Measured 2026-10-11 (UTC): 4 of 6 proven.
-Measured 2026-10-25 (UTC), after the cut: 3 of 5 proven.
+`crates/designware_mobile_storage/falsifications/`. Stock Kani proves all 8 properties in the tree, measured 2026-11-02 (UTC).
 
 | property | harness |
 |---|---|
 | The scratch range never touches a partition or sector zero | `proofs::the_scratch_range_never_touches_a_partition_or_sector_zero` |
 | A FIFO step never overruns the FIFO or the buffer | `proofs::a_queue_step_never_overruns_the_queue_or_the_buffer` |
 | An admitted range is inside the card and the address | `proofs::an_admitted_range_is_inside_the_card_and_the_address` |
-| The MBR parse (`partition::MasterBootRecord::parse`) is total, and every entry it accepts lies inside the card | none yet |
-| The capacity decoders (`card::CardSpecificData`, `card::extended_card_specific_data_sectors`) are total for any register or EXT_CSD bytes | none yet |
+| An IDMAC chain describes exactly its bytes, inside the region | `proofs::a_chain_describes_its_bytes_inside_the_region` |
+| The MBR parse (`partition::MasterBootRecord::parse`) is total, accepts exactly the signed sectors, and reads each entry from its own bytes | `proofs::the_master_boot_record_parse_is_total_and_reads_each_entry_from_its_own_bytes` |
+| A register field (`card::bits`) never exceeds its width | `proofs::a_register_field_never_exceeds_its_width` |
+| The CSD decoders (`card::CardSpecificData`) are total for any register and size a card without overflow | `proofs::a_card_specific_data_decode_is_total_and_never_overflows` |
+| The EXT_CSD sector count (`card::extended_card_specific_data_sectors`) is total for any bytes | `proofs::an_extended_card_specific_data_sector_count_is_total` |
 
-The last two rows are this lane's reading of the hostile surface: a stranger's SD card supplies
-its partition table and its registers. The served-block row left with `serve` on 2026-10-25: its
-harness is `designware_mobile_storage::proofs::a_served_block_never_leaves_its_window` in
+The last four rows are this lane's reading of the hostile surface: a stranger's SD card supplies
+its partition table and its registers. The MBR parse does not know the card's size, so that every
+entry lies inside the card is the caller's check, not a property of the parse. The served-block
+row left with `serve` on 2026-10-25: its harness is `designware_mobile_storage::proofs::a_served_block_never_leaves_its_window` in
 `crates/driver_process_contract`. Not proven: the card bring-up state machine
 (`sd`, `command`), timing, and the CID decode, which names the card and sizes nothing.
 
@@ -97,7 +103,7 @@ harness is `designware_mobile_storage::proofs::a_served_block_never_leaves_its_w
 4. The package is 0.1.0 with its own semver, states `rust-version` (#1806's note built it on stable
    1.94.1), and ships its harnesses and falsification patches. `cargo package --list` shows them.
 5. Ready means proofs passing and the API stable. §235 (the OS is built and updated from packages,
-   and the tree divides by what releases together) has milestone 610 (the interface's stability is
+   and its source divides by purpose) has milestone 610 (the interface's stability is
    measured weekly)'s per-package co-change column, and the soak (step 6) is how the second is
    measured. When the soak exits, calef adds it to the lint-checked publish allowlist. The
    `nifeos/designware_mobile_storage` repository is created when the crate moves, on the shared CI
@@ -257,6 +263,6 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Index row
 
-nife's Synopsys DesignWare Mobile Storage host driver for SD cards and eMMC, with four Kani proofs
+nife's Synopsys DesignWare Mobile Storage host driver for SD cards and eMMC, with eight Kani proofs
 and their falsification patches, cut free of nife's device tree, block protocol and address map. It
 is published on crates.io as `designware_mobile_storage` 0.1 from its own `nifeos` repository.

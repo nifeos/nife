@@ -2,8 +2,24 @@
 name = "socket_contract"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "The socket contract: the operations, reply words, port grants and shared-frame layout a network stack and its clients agree on, each socket being its own capability"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "sockets", "capabilities"]
+categories = ["no-std", "embedded", "network-programming"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"

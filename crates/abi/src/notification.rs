@@ -9,8 +9,8 @@ pub const SIGNAL: u64 = 0;
 /// is destroyed, including while this thread waits on it. Needs `READ`.
 ///
 /// The word travels in `x0`, where a negative value is an error, so a word whose top bit is set
-/// and whose value lands on an error code reads as that error. See the BUGS section of
-/// `design/roadmap/0151-notification-objects.md`.
+/// and whose value lands on an error code reads as that error. Callers that need the full range must
+/// not use a word that can land there.
 pub const WAIT: u64 = 1;
 
 /// `invoke(capability, POLL, _, _, _)` -> word. `WAIT` without blocking: the word, cleared, and `0` if
@@ -27,9 +27,9 @@ pub const BIND: u64 = 3;
 /// **The tag on a receive that the bound notification ended** rather than a message. A receive
 /// (`RECEIVE`, `RECEIVE_CAPABILITY`, `Interrupt::WAIT`) woken by the bound notification returns `(BOUND,
 /// word,
-/// 0, 0, BOUND)`: this value in `x0` as §101 (notification objects) specified, the word in `x1`,
+/// 0, 0, BOUND)`: this value in `x0` as specified for notification objects, the word in `x1`,
 /// **and this value again in `x4`, which is the one to test.** Any sender can put `BOUND` in `x0`;
-/// `x4` is written only by the kernel, and is `0` on every other receive. Ruled by calef on
-/// 2026-09-26 (`notes/notification-objects.md`, option B). The fault-reply protocol
-/// that §26 (the fault endpoint) reserves `w4` for must not put this value there.
+/// `x4` is written only by the kernel, and is `0` on every other receive. Ruled on
+/// 2026-09-26. The fault-reply protocol that the fault endpoint reserves `w4` for must not put this
+/// value there.
 pub const BOUND: u64 = 2;

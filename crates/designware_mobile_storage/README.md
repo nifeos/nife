@@ -19,6 +19,12 @@ Each property below has a Kani harness in `src/proofs.rs`:
   address can name.
 - An IDMAC descriptor chain describes exactly the transfer's bytes, keeps each buffer inside the
   region's data pages, and links only to descriptors in its own chain page.
+- The MBR parse accepts exactly the sectors that end in the signature, reads each entry from its
+  own bytes, and never panics on any sector 0.
+- A field read from a 128-bit register never exceeds its width. Decoding any CSD, as SD or as
+  eMMC, sizes the card without overflow and sizes nothing for an unknown structure or a block
+  length under 512 bytes. The `EXT_CSD` sector count is read from bytes 212 to 215 of any buffer,
+  and a buffer too short for it gives zero.
 
 Rerun them with `cargo kani`. Each harness has a patch at
 `falsifications/<module.path>.<harness>.patch` that plants the defect it rules out; apply one with
@@ -59,8 +65,8 @@ you found. The crate reads no device tree itself.
   controller in the tests.
 - The IDMAC moves at most its region's data pages per command and copies through them once each
   way.
-- The card bring-up state machine, timing and the CID decode have no proofs; the MBR parse and
-  the capacity decoders are not yet proven total.
+- The card bring-up state machine, timing and the CID decode have no proofs. The MBR parse does
+  not know the card's size, so whether a partition fits the card is the caller's check.
 
 The minimum supported Rust version is 1.88.
 

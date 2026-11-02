@@ -37,6 +37,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The documentation crate](../documentation.md): streaming markdown renderer, manual viewer and search index.
 - [The component manifest](../component-manifest.md): what a supervisor must route before a component serves.
 - [The manifest note](../capability-manifest-note.md): what a program's manifest note cannot spell, and the verb table.
+- [The INTERFACES note, explained](../interfaces-note.md): what a program declares about the formats it links, and what the progenitor checks.
 - [Live component replacement](../live-replacement.md): swapping a running component under a live client.
 - [The hung component](../hung-component.md): a component that stops answering without dying.
 - [Dependency-aware orchestration](../dependency-orchestration.md): which components to warn before swapping a dependency.

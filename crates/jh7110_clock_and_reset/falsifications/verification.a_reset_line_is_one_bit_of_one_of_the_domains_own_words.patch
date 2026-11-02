@@ -1,0 +1,20 @@
+Falsifies `jh7110_clock_and_reset::verification::a_reset_line_is_one_bit_of_one_of_the_domains_own_words`.
+
+The defect: the bound is off by one (`>` for `>=`), so the id one past the last reset is given a
+word and a bit, a store into a line the domain does not have.
+
+Expected to fail: the harness's `assert!(id < domain.resets)` on a returned reset line.
+
+diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
+index 7cc680a83..647dd18ae 100644
+--- a/crates/jh7110_clock_and_reset/src/lib.rs
++++ b/crates/jh7110_clock_and_reset/src/lib.rs
+@@ -1088,7 +1088,7 @@ impl Domain {
+     /// Name: ratified 2026-10-26 (UTC).
+     #[must_use]
+     pub const fn reset_bit(&self, id: u32) -> Option<ResetBit> {
+-        if id >= self.resets {
++        if id > self.resets {
+             return None;
+         }
+         let word = (id / 32) as u64 * 4;

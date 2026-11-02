@@ -1,6 +1,6 @@
 use crate::*;
 
-// --- The directory capability (milestone 47 (navigation and naming)) ---
+// --- The directory capability ---
 
 /// The set encoding round-trips, carries the type bit, and **refuses rather than truncates**.
 ///
@@ -44,7 +44,7 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
         nameset::BYTES,
         "the widest set this contract carries must fit its own buffer exactly",
     );
-    // And the longest name travels in a set (milestone 946 (a granted file name can be longer than sixteen bytes)), twice over, with room for nothing
+    // And the longest name travels in a set, twice over, with room for nothing
     // that would take the set past its bytes.
     let longest = [b'l'; grant::MAXIMUM_NAME];
     let two: [(&[u8], bool); 2] = [(&longest[..], false), (&longest[..], true)];
@@ -93,9 +93,9 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
     assert_eq!(nameset::encode(&[(b"one.txt", false)], &mut shorter), None);
 }
 
-// The tests from here down each pin something the run of milestone 85 (mutation testing over the
-// host crates) showed nothing pinned. The equivalences (every `|` over disjoint masked fields,
-// where `^` cannot differ) are recorded in notes/mutation-testing.md rather than tested.
+// The tests from here down each pin something a mutation run over this crate showed nothing
+// pinned. The equivalences (every `|` over disjoint masked fields, where `^` cannot differ) are
+// recorded as such rather than tested.
 
 /// A name set, byte for byte, in an exact-fit buffer: the length byte and the flags byte per
 /// record (`IS_DIR` in the flags), the terminator, and one byte less refused. The record cursor is

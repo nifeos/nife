@@ -8,7 +8,7 @@
 //! complete authority in both directions (§142). See notes/supervision.md.
 //!
 //! The loader these words drive is `process_builder`, a separate crate, so this one carries no
-//! `user_mode_runtime` edge (DECISIONS §235 (the OS is built and updated from packages, and the tree divides by what releases together) P3: a contract never links the runtime). Its examples
+//! `user_mode_runtime` edge (DECISIONS §235 (the OS is built and updated from packages, and its source divides by purpose) P3: a contract never links the runtime). Its examples
 //! run in `script/test`'s host pass, which the loader's dependency kept them out of until the
 //! split.
 //!

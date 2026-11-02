@@ -21,5 +21,5 @@ address_space_map = { version = "0.1.0", path = "../address_space_map" }
 # `user_mode_runtime::cntfrq` agree on, so no party keeps its own copy.
 counter_frequency_contract = { version = "0.1.0", path = "../counter_frequency_contract" }
 # The protocol words, the endowment and the retention declaration. The loader consumes them and
-# the contract never depends on this crate (DECISIONS §235 (the OS is built and updated from packages, and the tree divides by what releases together) P3).
+# the contract never depends on this crate (DECISIONS §235 (the OS is built and updated from packages, and its source divides by purpose) P3).
 supervision_contract = { version = "0.1.0", path = "../supervision_contract" }

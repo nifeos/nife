@@ -2,25 +2,32 @@
 name = "counter_frequency_contract"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "The counter frequency page: how many counter ticks make a second, on the architectures with no register that says so, and the band of rates worth believing"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "timer", "shared-page"]
+categories = ["no-std", "embedded", "date-and-time"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-# The x86_64 counter frequency page (milestone 161 (the x86_64 kernel port: bring up the HAL's third architecture)'s cntfrq follow-up, DECISIONS §121 (what a device capability is when the device has no page: x86 port I/O)'s calibration path):
-# one definition of the read-only page that carries the TSC's calibrated rate into every
-# ELF-loaded x86_64 process, so the kernel (which computes the number once, at boot) and
-# `user_mode_runtime::cntfrq` (which reads it, ambiently, once per process) cannot drift on the page's
-# layout or its fixed virtual address. The same split `clock_contract` makes for the wall clock and
-# `environment_contract` makes for TZ/LANG/TERM: a magic-prefixed page, one writer before the page
-# has a second observer, no seqlock needed for the same reason neither of those needs one for
-# their own single-writer-then-read-only halves.
+# The counter frequency page: one definition of the read-only page that carries the calibrated
+# counter rate into every process on the architectures with no register that says it, so the
+# kernel (which computes the number once, at boot) and the reader (which reads it, once per process)
+# cannot drift on the page's layout or its fixed virtual address. A magic-prefixed page with one
+# writer before the page has a second observer, so no seqlock is needed.
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]
-
-# The address-space map (milestone 206 (a program image has under 896 KiB)) is a DEV-dependency on purpose: this file is generated into
-# std's PAL, where there is no crate to name, so the one test that pins this page above the map is
-# compiled here and never travels (the `byte_sink_contract` precedent).
-[dev-dependencies]
-address_space_map = { version = "0.1.0", path = "../address_space_map" }

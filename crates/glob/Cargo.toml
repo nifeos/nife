@@ -16,3 +16,9 @@ license.workspace = true
 
 [lints]
 workspace = true
+
+# The staged glob fixtures are checked against the matcher in `tests/fixture_agreement.rs`. The
+# fixture and the filesystem contract do not depend on the matcher, so the test lives here.
+[dev-dependencies]
+filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
+filesystem_fixture = { version = "0.1.0", path = "../filesystem_fixture" }

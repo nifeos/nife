@@ -13,10 +13,10 @@ pub const MAXIMUM_NAME: usize = 255;
 /// Three kibibytes, set by the transport: [`fs::SETXATTR`] carries a name and a value in one
 /// [`super::PAGE`], so `MAXIMUM_NAME + MAXIMUM_VALUE` must fit 4096 with room to spare. Apple's
 /// `AFP_AfpInfo` is 60 bytes and a `FinderInfo` blob 32, while Samba's `streams_xattr` can ask for
-/// far more; §99 (where Apple's metadata lands) says what fits here.
+/// far more.
 ///
-/// **BUGS.** A larger value is refused with [`E2BIG`], loudly, per DECISIONS §42 (a filesystem
-/// declares what it offers and must be truthful); lifting the limit means chunking the transfer.
+/// **BUGS.** A larger value is refused with [`E2BIG`], loudly, since a filesystem
+/// declares what it offers and must be truthful; lifting the limit means chunking the transfer.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_VALUE: usize = 3072;
@@ -46,7 +46,7 @@ pub const RAW: u32 = 0;
 
 /// `ENODATA`: the named attribute is not set on this node. The only error that means absence,
 /// which is the discipline `ENOENT` earns in [`dir::explain`]: an instrument that reads any
-/// failure as "not there" reports filesystems that never existed (notes/fs-server.md).
+/// failure as "not there" reports filesystems that never existed.
 pub const ENODATA: i32 = 61;
 /// `ERANGE`: the name is empty, longer than [`MAXIMUM_NAME`], or holds a NUL. A fact about the
 /// name, not about the capability.
@@ -57,7 +57,7 @@ pub const E2BIG: i32 = 7;
 pub const ENOSPC: i32 = 28;
 /// `EOPNOTSUPP`: **this capability does not offer extended attributes at all.**
 ///
-/// DECISIONS §42's rule is that a backend which cannot meet a verb's guarantee does not offer
+/// The rule is that a backend which cannot meet a verb's guarantee does not offer
 /// the verb, and that the refusal is loud. The caretakers (`fs_file_caretaker`,
 /// `fs_subtree_caretaker`, `fs_nameset_caretaker`) answer this: they serve this same protocol
 /// over a narrowed namespace and do not forward attribute requests, so a program behind one
@@ -71,7 +71,7 @@ pub const ENOTSUP: i32 = 95;
 /// Every name-taking verb refuses it with `EINVAL`, as for `..`, and [`fs::READDIR`] skips it, in
 /// every directory, so no client reaches attributes as ordinary bytes. Recovery does see it:
 /// `redoxfs_host extract` and upstream's FUSE mount carry it out with the files, a decision and not
-/// a leak (notes/host-recovery.md).
+/// a leak.
 ///
 /// **BUGS.** No file anywhere on a nife filesystem can be called `.nife-attrs`, at any rights.
 pub const STORE_DIR: &str = ".nife-attrs";
@@ -198,8 +198,7 @@ pub mod list {
 /// name length, a `u32` kind, a `u16` value length, little-endian), then the name, then the value.
 /// The FS server keeps one blob per node in a file named for the node's `TreePtr` id
 /// ([`store::file_name`]) inside [`STORE_DIR`], so attributes follow a file across a rename. The
-/// format is public so its rules are host-tested and a recovery tool can read it. See
-/// notes/xattr.md.
+/// format is public so its rules are host-tested and a recovery tool can read it.
 pub mod store {
     use super::{
         E2BIG, ENODATA, ENOSPC, ERANGE, MAXIMUM_COUNT, MAXIMUM_KIND, MAXIMUM_VALUE, is_valid_name,

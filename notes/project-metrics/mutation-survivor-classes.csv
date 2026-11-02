@@ -185,7 +185,7 @@ file_allocation_table,LongName::alias,replace + with *,1,arithmetic,equivalent,u
 file_allocation_table,LongName::entry,replace | with ^,1,or_xor,equivalent,unclassified,noise_unargued,
 file_allocation_table,Slot::parse,replace | with ^,1,or_xor,equivalent,unclassified,noise_unargued,
 filesystem_contract,,replace << with >>,4,shift,equivalent,unclassified,noise,yes
-filesystem_contract,,replace | with ^,12,or_xor,equivalent,unclassified,noise,
+filesystem_contract,,replace | with ^,12,or_xor,equivalent,unclassified,noise,yes
 filesystem_contract,Verb::mutates,replace | with ^,2,or_xor,equivalent,unclassified,noise,
 filesystem_contract,rename_dst,replace | with ^,1,or_xor,equivalent,unclassified,noise,
 filesystem_contract,reply,replace | with ^,1,or_xor,equivalent,unclassified,noise,

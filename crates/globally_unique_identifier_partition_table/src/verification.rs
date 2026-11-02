@@ -2,8 +2,7 @@ use guid::types;
 
 use super::*;
 
-/// The buffer length the CRC harnesses quantify over. **Measured, not guessed**; the timings
-/// are in notes/globally-unique-identifier-partition-table.md. CRC-32 is a shift-and-xor over
+/// The buffer length the CRC harnesses quantify over. **Measured, not guessed**; CRC-32 is a shift-and-xor over
 /// every bit of the input, so the formula grows with the byte count and the solver time grows
 /// with the formula.
 ///
@@ -82,8 +81,7 @@ fn a_guid_survives_the_on_disk_layout() {
 ///
 /// The header's layout: nine fields at nine offsets, not a bit lost. It goes through
 /// `encode_fields`/`decode_fields` because a run through the CRC did not finish in 274 seconds;
-/// the halves compose because the CRC field is not one of the nine. See
-/// notes/globally-unique-identifier-partition-table/the-proofs.md.
+/// the halves compose because the CRC field is not one of the nine.
 /// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.a_headers_fields_survive_the_round_trip.patch`
 #[kani::proof]
 #[kani::unwind(513)]
@@ -157,7 +155,6 @@ fn overlap_is_exactly_sharing_a_block() {
 /// whatever [`GloballyUniqueIdentifierPartitionTable::create`] produces when it succeeds. Stated
 /// over the geometry, since a byte-level harness carries four symbolic CRC chains and does not
 /// finish; `tests/real_disks.rs` proves the bytes for `sgdisk`'s disk size, and this every other.
-/// See notes/globally-unique-identifier-partition-table/the-proofs.md.
 /// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.create_never_lays_out_a_table_parse_would_reject.patch`
 #[kani::proof]
 fn create_never_lays_out_a_table_parse_would_reject() {

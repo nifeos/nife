@@ -154,3 +154,55 @@ fn a_program_without_a_readable_note_asks_for_nothing() {
         assert_eq!(asked_grants_of(&p).count(), 0);
     }
 }
+
+#[test]
+fn a_program_built_for_another_machine_still_has_its_note_read() {
+    const DESC: capability_manifest_note::ServicedNote<
+        { capability_manifest_note::serviced_note_len(&[]) },
+    > = capability_manifest_note::ServicedNote::of::<{ capability_manifest_note::serviced_len(&[]) }>(
+        &MANIFEST_NETWORK,
+        &[],
+        false,
+    );
+    let mut bytes = elf_image(&DESC.0);
+    let foreign = elf::FOREIGN_MACHINES[0];
+    bytes[18..20].copy_from_slice(&foreign.to_le_bytes());
+    assert_eq!(
+        elf::Elf::parse(&bytes).err(),
+        Some(elf::Error::WrongMachine)
+    );
+    let owned: &'static [u8] = std::boxed::Box::leak(bytes.into_boxed_slice());
+    let p = package_archive::Program {
+        name: "abroad",
+        bytes: owned,
+        digest: [0u8; 32],
+        member: 0,
+    };
+    let asks: Vec<Granted<'_>> = checked_asked_grants_of(&p).unwrap().collect();
+    assert_eq!(asks, [Granted::Network]);
+}
+
+#[test]
+fn the_checked_reading_refuses_what_the_lenient_one_reads_as_nothing() {
+    let bare = package_archive::Program {
+        name: "bare",
+        bytes: std::boxed::Box::leak(elf_image(&[]).into_boxed_slice()),
+        digest: [0u8; 32],
+        member: 0,
+    };
+    // No note: asks for nothing, in both readings.
+    assert_eq!(checked_asked_grants_of(&bare).unwrap().count(), 0);
+    // Not an ELF, and a truncated note: refused by the checked reading, nothing by the other.
+    let cut = elf_image(&[1, 0, 0, 0, 200, 0, 0, 0, 1, 0, 0, 0]);
+    let owned: &'static [u8] = std::boxed::Box::leak(cut.into_boxed_slice());
+    for bytes in [&b"not an elf"[..], owned] {
+        let p = package_archive::Program {
+            name: "broken",
+            bytes,
+            digest: [0u8; 32],
+            member: 0,
+        };
+        assert!(checked_asked_grants_of(&p).is_err());
+        assert_eq!(asked_grants_of(&p).count(), 0);
+    }
+}

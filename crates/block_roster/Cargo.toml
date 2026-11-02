@@ -2,20 +2,35 @@
 name = "block_roster"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "The block-device roster page: which drives are attached, written once by the kernel and read by a program that was granted the mapping"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "block-device", "shared-page"]
+categories = ["no-std", "embedded", "data-structures"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-# The block-device roster of milestone 57 (notes/block-devices.md): the read-only page layout that
-# answers "what drives are attached", written once by the kernel and read by whichever program was
-# granted the mapping. Pure logic, host-tested, no_std, dependency-free, so the kernel and the
-# program share ONE definition and cannot drift.
+# The block-device roster: the read-only page layout that answers "what drives are attached",
+# written once by the kernel and read by whichever program was granted the mapping. Pure logic,
+# host-tested, no_std, dependency-free, so the writer and the reader share ONE definition and cannot
+# drift.
 #
-# NOT a `*_proto`, and the name is deliberate. The ten wire contracts in this directory describe
-# messages two programs exchange; this describes bytes at an address, written once by the kernel and
-# thereafter only read. There is no request, no reply, no server, and nothing to authorize at read
-# time. A reader scanning `crates/` meets it beside `filesystem_contract` and should not expect a protocol.
+# NOT a message protocol, and the name is deliberate. A wire contract describes messages two
+# programs exchange; this describes bytes at an address, written once and thereafter only read.
+# There is no request, no reply, no server, and nothing to authorize at read time.
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]

@@ -12,7 +12,7 @@
 # default: a new top-level directory has no home until somebody writes one.
 #
 # How big a home is: amended 2026-09-27T15:06Z (§235 (the OS is built and updated from packages,
-# and the tree divides by what releases together), Fork 3's amendment). A home is sized by what
+# and its source divides by purpose), Fork 3's amendment). A home is sized by what
 # changes together, measured by a per-package co-change column milestone 610 (the interface's
 # stability is measured weekly) owes and does not yet carry. No package moves to a new home, and no
 # `.package.toml` file's `home = { status = "provisional" }` settles, before that measurement
@@ -82,3 +82,8 @@ paths = ["LICENSE-MIT", "LICENSE-APACHE"]
 status = "undecided"
 reason = "the publish allowlist, milestone 887 (crate repositories share one CI template, adapted from nife's gates); it leaves with the last crate that moves, because its purpose is what stops a crate leaving unallowlisted"
 paths = ["crates/publish-allowlist.txt"]
+
+[[home]]
+status = "undecided"
+reason = "the externalization list the lint reads; it leaves with the last crate it names, because each crate leaves the list in the pull request that moves it"
+paths = ["crates/externalization-list.txt"]

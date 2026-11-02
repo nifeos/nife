@@ -4,8 +4,7 @@
 //! [`Entry::encode`] gives the bytes back. Whether an entry makes sense on a disk is judged in
 //! [`crate::GloballyUniqueIdentifierPartitionTable`], where the geometry is known. The name is 36
 //! UTF-16LE code units, null-padded, a label for humans that nothing depends on: macOS leaves it
-//! zero (the Apple fixture pins that), so find a partition by type or unique GUID. See
-//! notes/globally-unique-identifier-partition-table.md, "What the fixtures taught us".
+//! zero (the Apple fixture pins that), so find a partition by type or unique GUID.
 
 use crate::Error;
 use crate::guid::{self, Uuid};
@@ -80,8 +79,7 @@ impl Entry {
     /// A used entry covering `first_lba ..= last_lba`, with no attributes and no name.
     ///
     /// Both GUIDs are the caller's: this crate has no randomness, and a GUID that is not random is
-    /// not unique. Milestone 56 (secrets, credentials, and the entropy to make them safe) is where
-    /// the caller gets one.
+    /// not unique. A caller gets one from an entropy source.
     pub const fn new(type_guid: Uuid, unique_guid: Uuid, first_lba: u64, last_lba: u64) -> Entry {
         Entry {
             type_guid,

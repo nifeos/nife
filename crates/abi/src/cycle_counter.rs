@@ -10,8 +10,8 @@
 #[repr(u64)]
 pub enum CycleMeaning {
     /// **aarch64: core cycles at EL0 and EL1, not EL2.** `PMCCNTR_EL0` under the
-    /// `PMCCFILTR_EL0` value of zero the kernel writes on every core (calef's ruling A1,
-    /// 2026-10-07 UTC). User plus kernel, the quantity the other two architectures count.
+    /// `PMCCFILTR_EL0` value of zero the kernel writes on every core.
+    /// User plus kernel, the quantity the other two architectures count.
     CoreCyclesUserAndKernel = 1,
     /// **riscv64: core cycles in every privilege mode**, M-mode firmware included. The
     /// `cycle` CSR, the user-mode shadow of `mcycle`, opened by `scounteren.CY`.
@@ -21,16 +21,14 @@ pub enum CycleMeaning {
     /// programmable one (`hpmcounter3` on QEMU's `rva23s64` model) rather than `mcycle`.
     /// Both count core cycles, but a program comparing its own reads with the kernel's
     /// `bench-probe` lines cannot tell from this value whether they are one counter. Saying
-    /// so needs the kernel to tell the process, which no channel does today; milestone 856
-    /// (a program asks whether it may read the cycle counter) proposes it.
+    /// so needs the kernel to tell the process, which no channel does today.
     CoreCyclesEveryMode = 2,
     /// **`x86_64`: constant-rate reference cycles, not core cycles.** The TSC, read with
-    /// `rdtsc`, ambient in ring 3 (DECISIONS §139 (who may read the cycle counter, and by what
-    /// authority) part 3). It ticks at a fixed rate whatever the
+    /// `rdtsc`, ambient in ring 3 (who may read the cycle counter is a separate question of
+    /// authority). It ticks at a fixed rate whatever the
     /// core's frequency, so a difference of two reads is time in reference cycles, and a
     /// figure in core cycles from either other architecture is a different unit. Reading core
-    /// cycles from ring 3 would need `rdpmc` and `CR4.PCE`, which calef declined to reopen on
-    /// 2026-10-07.
+    /// cycles from ring 3 would need `rdpmc` and `CR4.PCE`, which was declined on 2026-10-07.
     ConstantRateReferenceCycles = 3,
 }
 

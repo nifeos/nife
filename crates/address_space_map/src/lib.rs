@@ -2,7 +2,7 @@
 //! three architectures (§171 (where a program image starts), option D).
 //!
 //! The bands tile `[0, 2 GiB)` with no gap (a `const` assert holds that, and Kani proves it per address); above 2 GiB only the timebase
-//! page (`counter_frequency_contract::PAGE_VA`) is assigned. A new page goes in the first band that
+//! page (`counter_frequency_contract::PAGE_VIRTUAL_ADDRESS`) is assigned. A new page goes in the first band that
 //! fits, asked in the order the note gives, and a pair page is checked at compile time by
 //! [`pair_page`]. The image band ends at 2 GiB because `x86_64` builds with `code-model: small`
 //! ([`CODE_MODEL_CEILING`]), and [`STACK`]'s lowest page is never mapped ([`MAXIMUM_STACK_PAGES`]).

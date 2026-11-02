@@ -3,9 +3,8 @@
 //!
 //! The surface is five calls <!--count:syscalls-->. `exit`, `exit_thread`, `yield` and
 //! `capability_delete` act on the caller itself, and `invoke(capability, method, a0, a1, a2)` acts on everything
-//! else, §10 (process model: capability-based). `x8` holds the number, `x0` the slot, `x1` the
-//! method and `x2` to `x4` the arguments; `x0` returns a result, or a negative [`Error`]. See
-//! notes/abi.md for the convention and notes/abi/method-contracts.md for each method's reasoning.
+//! else. `x8` holds the number, `x0` the slot, `x1` the
+//! method and `x2` to `x4` the arguments; `x0` returns a result, or a negative [`Error`].
 //!
 //! Name: ratified 2026-08-23 (calef). Declined `application_binary_interface`: "ABI" passes the
 //! test of whether an architect has to ask what it means, and this is the most-imported crate.
@@ -14,19 +13,17 @@
 
 /// The syscall ABI's version: the generation of the syscall numbers, the method numbers and the
 /// error codes a program was built against, all one surface. One constant for the whole surface,
-/// module-scoped constants refused (calef's ruling of 2026-10-29 UTC, PR #2852, question 1: the
-/// scope is the syscall surface a program matches). The check is at spawn, not at run time: the
+/// module-scoped constants refused (the scope is the syscall surface a program matches). The check is at spawn, not at run time: the
 /// progenitor compares the manifest note's declared version against this and refuses a mismatch
-/// naming both (milestone 956 (the linked interfaces carry checkable versions)); the ABI never
+/// naming both; the ABI never
 /// dual-serves.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const ABI_VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 1, naming the syscall surface. The number
-/// is the crate's to keep across a rename and no other interface ever reuses it; `script/lint`
-/// holds the ids of every crate apart. A program declares the pair of this id and [`ABI_VERSION`]
-/// (milestone 956 (the linked interfaces carry checkable versions)).
+/// is the crate's to keep across a rename and no other interface ever reuses it; the ids of every
+/// interface crate must differ. A program declares the pair of this id and [`ABI_VERSION`].
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
 // Index exception (2026-10-31): the identity stays beside `ABI_VERSION`, the pair a program declares
@@ -47,13 +44,13 @@ pub const SYS_YIELD: u64 = 1;
 /// assert_eq!([SYS_EXIT, SYS_YIELD, SYS_INVOKE], [0, 1, 2]);
 ///
 /// // Sending on a rendezvous is a method number, not a syscall number. Adding an operation to the
-/// // system is a new method here; adding a *syscall* is a design fork (§10).
+/// // system is a new method here; adding a *syscall* is a design fork.
 /// assert_eq!(rendezvous::SEND, 0);
 /// ```
 pub const SYS_INVOKE: u64 = 2;
 
 /// `capability_delete(slot)`: drop a capability from the caller's own capability table, freeing the slot
-/// (milestone 19d (run a real workload)). Deleting an empty slot is a harmless no-op. A loader that
+/// Deleting an empty slot is a harmless no-op. A loader that
 /// retypes many frames through a finite table recycles slots with it, and it needs no capability
 /// because the table is the caller's own.
 ///
@@ -67,8 +64,7 @@ pub const SYS_CAPABILITY_DELETE: u64 = 3;
 /// `word`, if not zero, names a 32-bit word in the caller's own space: once the thread has left
 /// user mode for good the kernel stores zero there and wakes every futex waiter on it, so a joiner
 /// may free the thread's stack. An unmapped or misaligned word is skipped, never a reason not to
-/// exit. Semantics: §276 (the thread syscalls as built); prior art is in
-/// notes/abi/method-contracts.md. *(Number provisional.)*
+/// exit. *(Number provisional.)*
 pub const SYS_EXIT_THREAD: u64 = 4;
 
 /// An index into the calling thread's capability table. **Not a pointer, not a handle you can
@@ -85,13 +81,12 @@ pub type CapabilitySlot = u64;
 ///
 /// **Changing it is an ABI change**: [`fault::FAULT_EP_SLOT`] is derived from it, so a supervisor
 /// built against another size writes the fault endpoint to a slot the kernel does not read. Every
-/// program that names it is built from this tree. The size is calef's (2026-10-04 UTC, milestone
-/// 754 (the capability table grows to 64 slots)); `notes/capability-peak-trace.md` has the peak.
+/// program that names it is built against one copy of this crate. The size was set on 2026-10-04 (UTC).
 pub const CAPABILITY_TABLE_SLOTS: u64 = 64;
 
 /// Methods on a `Console` capability. **Historical: no longer wired up.**
 ///
-/// Milestone 8 removed the kernel-served `Console` object (the console became a userspace server
+/// The kernel-served `Console` object was removed (the console became a userspace server
 /// reached by a `Rendezvous`). This constant is kept so the ABI's history is legible, but nothing
 /// in the kernel dispatches it any more.
 pub mod console;
@@ -109,7 +104,7 @@ pub mod rendezvous;
 /// run states a supervised thread can be found in.
 ///
 /// **Only four states can appear, and the two absentees say something.** `Embryo` cannot, because a
-/// thread's supervision endpoint is recorded at `START` (DECISIONS §26) and an embryo has not
+/// thread's supervision endpoint is recorded at `START` and an embryo has not
 /// started: a child that is built but not yet running is not in its domain yet. `Finished` cannot
 /// either, because that is the state of a thread the reaper collects immediately, which is what
 /// *un*supervised death looks like; a supervised thread dies into [`DEAD`](self::survey::DEAD) and
@@ -128,77 +123,67 @@ pub mod reply;
 /// Object types for [`memory_region::RETYPE_OBJ`]: what a page of untyped becomes.
 pub mod objtype;
 
-/// Methods on the **reboot object** (milestone 805 (`reboot` at the prompt), DECISIONS §251
-/// (restarting the machine is a kernel object the progenitor hands out)).
+/// Methods on the **reboot object** (restarting the machine is a kernel object the progenitor
+/// hands out).
 ///
 /// The kernel mints exactly one at boot and grants it to the progenitor, which endows it only to a
 /// program whose manifest declares `reboot`. Nothing retypes one, so it has no [`objtype`] number.
 /// Holding it is the whole authority: no rights bit is asked for.
 ///
-/// *(Provisional, with its method number: the object, the module and `REBOOT` are calef's to
-/// name.)*
+/// *(Provisional, with its method number: the object, the module and `REBOOT` are an
+/// architect's to name.)*
 pub mod reboot;
 
-/// Methods on a `Notification` capability (milestone 151 (notification objects), DECISIONS §101
-/// (notification objects)): **a doorbell, not a meeting.** Created by [`memory_region::RETYPE_OBJ`]
+/// Methods on a `Notification` capability: **a doorbell, not a meeting.** Created by [`memory_region::RETYPE_OBJ`]
 /// with [`objtype::NOTIFICATION`]. A signaller ORs bits into its word and never blocks; a waiter
 /// takes what has accumulated. [`BIND`](notification::BIND) attaches it to one thread, so a signal
 /// can also end that thread's receive on an endpoint, told apart by [`BOUND`](notification::BOUND).
 ///
 /// Rights: `WRITE` to [`SIGNAL`](notification::SIGNAL) and `BIND`, `READ` to
-/// [`WAIT`](notification::WAIT) and [`POLL`](notification::POLL). The method numbers are §101's and
-/// `BOUND`'s place in `w4` is calef's ruling of 2026-09-26; see `notes/notification-objects.md` and
-/// notes/abi/method-contracts.md.
+/// [`WAIT`](notification::WAIT) and [`POLL`](notification::POLL). `BOUND`'s place in `w4` was
+/// ruled on 2026-09-26.
 pub mod notification;
 
-/// Methods on a `Timer` capability (milestone 106, DECISIONS §147 (a timer a userspace service
-/// cannot hold)): **the kernel's comparator, lent one deadline at a time.** Created by
+/// Methods on a `Timer` capability: **the kernel's comparator, lent one deadline at a time.** Created by
 /// [`memory_region::RETYPE_OBJ`] with [`objtype::TIMER`]. It has no wait of its own: when its
 /// deadline passes it signals a [`notification`].
 ///
 /// Deadlines are absolute, in the counter ticks a program reads without a syscall, and fire at the
 /// first scheduler tick (10 ms) at or after them, never before. Rights: `WRITE` on the timer to
 /// [`ARM`](timer::ARM) or [`CANCEL`](timer::CANCEL), and `WRITE` on the notification `ARM` names.
-/// calef confirmed the surface on 2026-09-27 (UTC), with no slack argument. See
-/// notes/abi/method-contracts.md and `design/roadmap/0106-deadline-wait.md`'s BUGS.
+/// The surface was confirmed on 2026-09-27 (UTC), with no slack argument.
 pub mod timer;
 
-/// Methods on a `ThreadControlBlock` capability (milestone 19c.3): **another thread, under
+/// Methods on a `ThreadControlBlock` capability: **another thread, under
 /// construction.** Created by [`memory_region::RETYPE_OBJ`] with [`objtype::THREAD_CONTROL_BLOCK`].
 ///
-/// **There is deliberately no method here that grants a thread the cycle counter** (milestone 229
-/// (build the cycle-counter grant), DECISIONS 139 option 4): the kernel carries the grant, and the
-/// method that would set it waits for a consumer with a requirement in hand. The argument is in
-/// notes/abi/cycle-counter-grant.md and `design/roadmap/0229-the-counter-grant.md`.
+/// **There is deliberately no method here that grants a thread the cycle counter**: the kernel
+/// carries the grant, and the method that would set it waits for a consumer with a requirement in
+/// hand.
 pub mod thread_control_block;
 
-/// Methods on an `AddressSpace` capability (milestone 19b): **another process's memory, under
+/// Methods on an `AddressSpace` capability: **another process's memory, under
 /// construction.** Created by [`memory_region::RETYPE_OBJ`] with [`objtype::ADDRESS_SPACE`];
 /// nothing can run in it until TCBs arrive (19c), so today it is a structure you build, revocation
-/// can reach, and (milestone 126, `pmap`) `ENUMERATE` can look at without touching. Since §249 (a
-/// running address space stays nameable) the capability keeps naming the space after a thread is
+/// can reach, and `ENUMERATE` can look at without touching. The
+/// capability keeps naming the space after a thread is
 /// bound to it, until that thread is reaped or the space's region is destroyed.
 pub mod address_space;
 
-/// **The `flags` word of [`address_space::WAIT`] and [`address_space::WAKE`]** (milestone 812
-/// (`std::thread::spawn` runs real threads in one address space), §269 (how threads share a
-/// process) fork 2). The bit layout is Linux futex2's (`FUTEX2_SIZE_*` in bits 0 and 1,
+/// **The `flags` word of [`address_space::WAIT`] and [`address_space::WAKE`]**. The bit layout is Linux futex2's (`FUTEX2_SIZE_*` in bits 0 and 1,
 /// `FUTEX2_PRIVATE` at bit 7), so a reader who knows that ABI knows this one, and the two forms
-/// §269 reserves are spellable now and refused rather than undefined.
+/// reserved for later are spellable now and refused rather than undefined.
 ///
-/// Name: provisional (milestone 812's lane, 2026-10-10 UTC).
+/// Name: provisional (2026-10-10 UTC).
 pub mod futex;
 
-/// Methods on a **process** capability (milestone 812 (`std::thread::spawn` runs real threads in
-/// one address space), §269 (how threads share a process) forks 1, 3 and 5, as ruled on pull
-/// request #1892). Created by [`memory_region::RETYPE_OBJ`] with [`objtype::PROCESS`], whose second
+/// Methods on a **process** capability. Created by [`memory_region::RETYPE_OBJ`] with [`objtype::PROCESS`], whose second
 /// word is the address space the process will hold.
 ///
 /// A process is the capability table its threads share, their space, its supervision and its end.
 /// A thread joins one through [`thread_control_block::CONFIGURE`] given this capability with
 /// [`rights::BIND`]; a thread configured with an address space gets a process of its own, with no
-/// capability. How the fault slot and the process's end work is §276 (the thread syscalls as
-/// built). *(Module, method and number provisional, milestone 812's lane, 2026-10-10 UTC.)*
+/// capability. *(Module, method and number provisional, 2026-10-10 UTC.)*
 pub mod process;
 
 /// The rights bits, matching `capability::Rights`, so userspace can name the rights to narrow a
@@ -210,16 +195,14 @@ pub mod process;
 /// dropped at every delegation; the comment on that constant carries the warning.
 pub mod rights;
 
-/// **The fault endpoint: thread death becomes a message a supervisor holds** (milestone 22,
-/// DECISIONS §26). When a thread faults or exits, the kernel delivers one message to the
+/// **The fault endpoint: thread death becomes a message a supervisor holds**. When a thread faults or exits, the kernel delivers one message to the
 /// supervision endpoint its spawner designated, and the thread's corpse persists (dead until the
-/// supervisor reaps it with §16 revocation). Restart policy lives in userspace; the kernel never
-/// relaunches anything. This module is the two conventions §26 said it would add: a message-format
-/// convention and a spawn-slot convention. No new syscall and no new method (§26).
+/// supervisor reaps it with revocation). Restart policy lives in userspace; the kernel never
+/// relaunches anything. This module holds two conventions: a message-format convention and a
+/// spawn-slot convention. No new syscall and no new method.
 pub mod fault;
 
-/// **What a granted user-mode cycle-counter read counts**, per architecture (milestone 353 (the
-/// aarch64 half of 74), calef's ruling B4 of 2026-10-07 UTC: a read is paired with its meaning).
+/// **What a granted user-mode cycle-counter read counts**, per architecture.
 ///
 /// The kernel chooses what `PMCCFILTR_EL0` filters and which counter a grant opens, so this is a
 /// promise at the boundary rather than a property of the instruction; no syscall carries it.
@@ -239,22 +222,21 @@ pub mod virtio;
 /// Methods on a `MemoryRegion` capability. **How a process spends its own memory.**
 pub mod memory_region;
 
-/// **Which figure a [`memory_region::USAGE`] asks for**, in pages (milestone 126 (the `procps`
-/// package), §225 (`free` sees the machine and your share); calef ratified the names and numbers
-/// on 2026-09-27 in #1360's table). [`SIZE`](usage::SIZE), [`COMMITTED`](usage::COMMITTED) and
+/// **Which figure a [`memory_region::USAGE`] asks for**, in pages (the names and numbers were
+/// ratified on 2026-09-27). [`SIZE`](usage::SIZE), [`COMMITTED`](usage::COMMITTED) and
 /// [`CHILDREN`](usage::CHILDREN) are this region's; [`FRAMES`](usage::FRAMES) and the object kinds
 /// count **the whole subtree**, bump-only like a watermark: where the budget went, not what lives.
 ///
 /// # BUGS
 ///
 /// - Notification and timer objects have no record, so the object rows under-count a region that
-///   holds either. A record for each is a new wire number, and so a question for calef.
+///   holds either. A record for each is a new wire number, and so a question for an architect.
 pub mod usage;
 
 /// Methods on a `PageFrame` capability. **A physical page a process holds, maps, and shares.**
 pub mod page_frame;
 
-/// Methods on a `PortRange` capability (milestone 299 (the x86 port-range capability)). **A range
+/// Methods on a `PortRange` capability. **A range
 /// of x86 I/O ports a driver holds.**
 ///
 /// A `PortRange` capability is not invoked to *use* the ports: the holder executes `in`/`out`
@@ -263,13 +245,12 @@ pub mod page_frame;
 /// [`page_frame::REVOKE`]'s take-back meaning on a `DeviceFrame`.
 pub mod port_range;
 
-/// **How far apart the console UART's registers are** (milestone 890 (riscv64 and `x86_64` join the
-/// shared boot path)). Not a capability's methods: the start word the kernel passes the progenitor,
+/// **How far apart the console UART's registers are**. Not a capability's methods: the start word the kernel passes the progenitor,
 /// and the progenitor its console and input drivers.
 pub mod uart;
 
 // Index exception (2026-10-12): the error every child module returns stays at the root, because
-// xtask's std generator inlines only `pub mod` children, and a public `error` module would be a
+// the generator of nife's standard library inlines only `pub mod` children, and a public `error` module would be a
 // new path.
 /// What went wrong, returned as a **negative** `x0`; each variant says when it is answered.
 ///
@@ -306,17 +287,15 @@ pub enum Error {
     ///
     /// **Or the object refuses the operation whatever the rights.** Two cases. A
     /// [`rendezvous::SEND`], [`rendezvous::SEND_CAPABILITY`] or [`rendezvous::CALL`] naming an endpoint
-    /// that carries a hardware interrupt, which takes no message from any program (DECISIONS §101
-    /// (notification objects), ruling B, 2026-09-26). Nothing is delivered, queued or delegated,
+    /// that carries a hardware interrupt, which takes no message from any program (ruled on 2026-09-26). Nothing is delivered, queued or delegated,
     /// and the caller does not block. And a mapping ([`address_space::MAP_INTO`],
     /// [`page_frame::MAP`]) that would leave one page writable through one mapping and executable
-    /// through another in the same address space (milestone 969 (no frame is writable and
-    /// executable in one address space)). Nothing is mapped.
+    /// through another in the same address space. Nothing is mapped.
     NotPermitted = -3,
 
     /// The pointer you passed is not memory **you** could have touched yourself.
     ///
-    /// The most interesting error here. See notes/capabilities.md: a kernel that follows a user
+    /// The most interesting error here: a kernel that follows a user
     /// pointer using its own authority is the confused deputy, and this is the refusal.
     BadPointer = -4,
 
@@ -335,7 +314,7 @@ pub enum Error {
     DeviceRefused = -8,
 
     /// **The thread is still running.** [`rendezvous::REAP`] collects a corpse, and this one is not
-    /// one yet. Distinct from `NotPermitted` on purpose (DECISIONS §32): "you may not kill" and "no
+    /// one yet. Distinct from `NotPermitted` on purpose: "you may not kill" and "no
     /// such child" are different facts, and a restart policy branches on them differently (wait, or
     /// escalate to the owner's `MemoryRegion::DESTROY`, versus give up on that tid).
     StillAlive = -9,
@@ -346,22 +325,19 @@ pub enum Error {
     /// space of children it has no relationship with.
     NotSupervised = -10,
 
-    /// **The capability names an object that no longer exists** (milestone 50 (pipes and
-    /// redirection)): the slot is not empty, but the thing it named was destroyed, its region
+    /// **The capability names an object that no longer exists**: the slot is not empty, but the thing it named was destroyed, its region
     /// reclaimed or the endpoint revoked while a thread was blocked inside an IPC on it. Nothing
     /// happened.
     ///
     /// Distinct from [`Error::NoSuchSlot`] because a writer branches on the two in opposite
     /// directions: a program never granted a stdout prints into the void, and one whose reader has
     /// exited must end. It reveals nothing [`Error::NotSupervised`] hides, since the caller already
-    /// holds the capability. See `crates/byte_sink_contract` and notes/sink-protocol.md.
+    /// holds the capability. The byte-sink contract builds on this.
     Gone = -11,
 
-    /// **`Reboot::REBOOT`: no route exists to ask for a reset** (milestone 805 (`reboot` at the
-    /// prompt)), such as an aarch64 device tree with no usable `/psci`. The four `Reset…` values
+    /// **`Reboot::REBOOT`: no route exists to ask for a reset**, such as an aarch64 device tree with no usable `/psci`. The four `Reset…` values
     /// are the reboot object's only answers, because a reset that works never returns. The four
-    /// names: ratified 2026-10-06 (calef, #1783, "Yes" to one name per concept under §113 (kernel
-    /// object plain names)).
+    /// names were ratified on 2026-10-06, one name per concept.
     NoResetMechanism = -12,
     /// **`Reboot::REBOOT`: the firmware does not offer a reset** (PSCI or SBI `NOT_SUPPORTED`).
     ResetNotSupported = -13,

@@ -91,16 +91,16 @@ No per-crate milestone is minted by this block. They come from the reviews below
   of `components`; revisit if that changes. The name holds for now. The crate breaks up as
   components become programs and crates of their own, and each piece takes its name then.
 - Ruled 2026-11-01 (UTC): this repository breaks up into single-purpose repositories and remains,
-  as `nifeos/nife`, only for its history. Likely, as a direction and not a ruling: the design
-  record (roadmap, decisions, journeys, naming, notes) moves to a repository of its own and is
-  published as a website. The kernel, programs, tooling and crates all leave, and a crate consumable
+  as `nifeos/nife`, only for its history. The design record (roadmap, decisions,
+  journeys, naming, notes) moves to one repository, `nifeos.org`, which holds the site published
+  at nifeos.org. The kernel, programs, tooling and crates all leave, and a crate consumable
   outside nife shows good crate boundaries. What leaves references nothing back here, so moves go
   bottom-up: the crates a program links leave before it or with it. The kernel leaves last among
   the code, to `nife-kernel` (provisional): like Linux, a named part of the system, while the
   project name stays with the whole. Publish-ours
   crates publish; contract crates move and carry versions whether or not they publish. Milestone
   818 (proven JH7110 TRNG logic, released on its own) is the leaf pilot; pull request #3026
-  proposes the second pilot and the contract crates' order. A crate nife does not publish, or
+  rules the contract crates' order: bottom-up, one repository each. A crate nife does not publish, or
   has not yet, is a git dependency pinned by `rev` with its version requirement stated. The
   revision is the commit of a tagged release whose manifest carries that version; the tag is a
   label and the semver baseline, never what Cargo follows. At first publication the line becomes a
@@ -160,7 +160,7 @@ reversible order, and each contribution waits on the ruling above.
 6. `non_volatile_memory_express`, `e1000e`, the DesignWare pair and the JH7110 pair, after their cuts.
 7. The internal set, closing as one sitting. Withdrawn 2026-11-01 (UTC).
 
-Ruled 2026-11-01 (UTC): items 4 and 5 move in pull request #3026's bottom-up order, and the wait
+Ruled 2026-11-01 (UTC): items 4 and 5 move in pull request #3026's bottom-up order, each in its own repository, and the wait
 above decides only whether each also publishes or goes upstream.
 
 ## What is already on the record

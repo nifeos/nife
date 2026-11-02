@@ -1,5 +1,5 @@
 ---
-status: DECIDED
+status: AMENDED
 raised: 2026-09-15
 decided: 2026-09-15
 ratified_by: calef
@@ -17,10 +17,11 @@ decision, on the ground that nothing external needed one yet. Its options B, C a
 of reaching, or deferring, a decoupled structure; the open question underneath them was what the
 structure is for. This decides that:
 
-- Independent release. Each shippable piece can be versioned and released on its own cadence,
-  behind an interface that does not change under its consumers. This is the property that decides the
-  grain of the split (see BUGS): a thing earns separation when it can ship on its own schedule, not
-  because it is a separate package.
+- Independent release. Each piece carries its own version and ships on its own cadence, behind an
+  interface that does not change under its consumers' version requirement.
+- One purpose per repository. Every piece leaves this repository for a repository of its own with
+  one purpose: the kernel, the programs, the tooling and the crates. No piece has to pass a test to
+  leave. The order below decides only when it leaves.
 - Third-party programs. The structure is the one an outside author writes a program against
   without this project in the loop, which is milestone 39's option C described as *"what an ecosystem
   with third-party components looks like"* and milestone 198's *"no third party sees nife until there
@@ -29,17 +30,23 @@ structure is for. This decides that:
 So the endpoint is the decoupled ecosystem, not the monorepo held forever. Milestone 39's own
 recommendation is consistent with this: get there through option B (workspaces inside one
 repository) and let the distribution be a manifest repository (`basalt`, reserved by milestone 120
-(the rename)). That recommendation reaches the split when the seams exist rather than by directory
+(the rename)). Each piece leaves that repository whole, in the order below, rather than by directory
 surgery up front.
 
-## What this does not settle, and it is deliberately separate
+## The order: bottom-up
 
-The order. *When* the split happens, against what preconditions, is not decided here and should be
-ruled on its own. The candidate sequencing, from the records rather than invented: the wire protocols
-carry real version numbers and have stopped churning weekly (milestone 39, §14), and a package format
-exists so `basalt` has something to assemble (milestone 198). Until then the single-command,
-all-architecture `script/test` is the credibility mechanism milestone 39 says a premature split would
-quietly break, so the strain has to justify the trade. That trade is a separate ruling.
+Nothing that leaves this repository refers back into it. So the split goes bottom-up in the
+dependency graph: the crates a program links leave before it or with it, and nothing that has left
+depends on a path or a pin into this repository. This repository may depend on what has left. The
+leaf pilot `jh7110_entropy` (milestone 818 (proven JH7110 TRNG logic, released on its own)) leaves
+first, then the contract crates, then the programs and tooling once the crates they link have left.
+The kernel leaves last among the code, to `nife-kernel` (provisional). Once everything has left,
+`nifeos/nife` holds only the history.
+
+Churn does not hold a move. A contract crate leaves and carries a version while its interface still
+changes, and each consumer checks that version (milestone 956 (the linked interfaces carry checkable
+versions)). The single-command, all-architecture `script/test` proves the whole system today, and
+the split has to keep that proof running (see BUGS).
 
 ## The model is a Linux distribution, not a BSD (calef, 2026-09-15)
 
@@ -65,10 +72,10 @@ nife is the second. Three consequences that are the point of naming it rather th
   writes is the same kind of thing as one this project wrote; the distribution packages both. That is
   the Linux-distribution posture and it is what "third-party programs is the goal" means structurally.
 
-**What this does not change** is the near-term path. Develop in one repository now (milestone 39's
-option B) and reach the split when the seams exist; the *target model* being a distribution rather
-than a base system does not force the split earlier. It corrects the mental model of the endpoint,
-and with it the maintainer's earlier BSD-leaning comparison, not the sequencing.
+**The model does not set the order.** The bottom-up rule above does. A piece lives in this
+repository until its move, and the moves start at the leaves. The *target model* being a
+distribution rather than a base system neither hastens nor holds a move. It corrects the mental
+model of the endpoint, and with it the maintainer's earlier BSD-leaning comparison.
 
 ## What is unblocked
 
@@ -83,11 +90,6 @@ and with it the maintainer's earlier BSD-leaning comparison, not the sequencing.
 
 ## BUGS
 
-- **This decides the goal, not the grain.** "One repository per package" was calef's opening framing
-  in the same conversation. The maintainer argued for splitting on release cadence instead, since a
-  piece earns a repository when it can ship independently and almost nothing can yet while the
-  protocols move. This section records that independent release is the *test* for the grain; which
-  pieces pass it is measured when the split is scheduled, not asserted here.
 - The integration gate is the real cost and is not solved by this decision. A multi-repository
   world has to keep proving the whole system on every supported architecture, and milestone 39 records
   that a naive split makes that proof "live somewhere awkward or quietly stop running." Deciding the

@@ -686,12 +686,9 @@ fn with_live_table<R>(
 /// declare nothing and pass. The refusal's two numbers (`Refusal`) stop here: the spawn reply
 /// carries a status and no text, so the person sees the refusal and not the versions.
 fn serves_declared_abi(elf: &elf::Elf<'_>) -> bool {
-    match elf.note(
-        capability_manifest_note::OWNER,
-        capability_manifest_note::INTERFACES,
-    ) {
+    match elf.note(capability_manifest_note::OWNER, interfaces_note::INTERFACES) {
         Ok(None) => true,
-        Ok(Some(d)) => capability_manifest_note::decode_interfaces(d).is_ok_and(|list| {
+        Ok(Some(d)) => interfaces_note::decode_interfaces(d).is_ok_and(|list| {
             list.check_served(abi::INTERFACE_ID, abi::ABI_VERSION)
                 .is_ok()
         }),
@@ -740,7 +737,7 @@ pub(super) fn endowed_image(
 
 #[cfg(test)]
 mod tests {
-    use capability_manifest_note::{Declared, InterfacesNote, interfaces_len, interfaces_note_len};
+    use interfaces_note::{Declared, InterfacesNote, interfaces_len, interfaces_note_len};
 
     use super::serves_declared_abi;
     extern crate std;

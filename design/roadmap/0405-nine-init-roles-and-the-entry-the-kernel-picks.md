@@ -32,11 +32,11 @@ the duplicated role constants in the tests are gone with them. The words a build
 kernel's test agree on (`REPORT_CHILD_WORD`, `INTERRUPT_CHILD_WORD`, `CONSOLE_SERVER_BUILDER_LINE`,
 `LEAST_AUTHORITY_DEMO_INPUT`) are in `crates/capability_witness_contract`.
 
-**The kernel enters each builder itself, so each is in the trust root.**
-`sealed_pair::BOOT_PROGRAMS` names the progenitor and the six builders, and `xtask`'s
-`check_declared_programs` fails a build in which one of them has no `[[bin]]`. A test that names an
-entry the archive lacks panics in `spawn_elf_child_builder`, and one the trust root lacks halts in
-`trust::require`, so neither waits on a report nobody sends.
+**The kernel enters each builder itself, and checks it against the archive's table first.** The
+kernel image's trust root names none of the six: `trust::require_program_in` checks each against
+the `program_measurements` table, as milestone 697 (the trust root leaves the kernel binary) part 1
+ruled on 2026-11-01 (UTC). A test that names an entry the archive lacks panics in
+`spawn_elf_child_builder`, and one the table lacks halts, so neither waits on a report nobody sends.
 
 The tests are `system_tests/src/user/elf_child_builder_tests.rs`, plus the two in
 `cycle_counter_tests` and `counter_frequency_tests` that enter `coremark_builder`. The interrupt and

@@ -76,7 +76,7 @@ pub const DELEGATED_TEST_INTERRUPT: u32 =
 /// builder gets (19d.2c, in milestone 19d (run a real workload)).
 ///
 /// `image` is the initial ramdisk and `report` the endpoint granted at slot 1. `entry` must be in
-/// the archive and in the trust root (`sealed_pair::BOOT_PROGRAMS`): otherwise this panics or halts,
+/// the archive and in its measurement table (`trust::require_program_in`): otherwise this panics or halts,
 /// rather than leaving a test waiting on a report nobody sends. Slots 0 to 4 hold the building
 /// budget, `report`, the console UART's registers, the test interrupt and the UART receive
 /// interrupt. This is not the boot path; [`boot_progenitor`] is. See notes/progenitor-boot.md.
@@ -110,9 +110,11 @@ pub fn spawn_elf_child_builder(
     }
 
     // Measured before the thread exists, so the check decides whether one is created at all
-    // (milestone 22 (trusted init) phase B.1); `trust::require` halts on a mismatch. The
-    // measurement table too (milestone 104 (the measurement continues past init)), because the
-    // whole archive is mapped into the builder.
+    // (milestone 22 (trusted init) phase B.1). The chain is the progenitor's, two links long: the
+    // archive's measurement table against this kernel image (milestone 104 (the measurement
+    // continues past init)), then the builder against the table. Either mismatch halts. The kernel
+    // image names no builder; the table does (milestone 697 (the trust root leaves the kernel
+    // binary), part 1).
     let boot_fs = match nifefs::Fs::parse(image) {
         Ok(fs) => fs,
         Err(e) => {
@@ -120,11 +122,9 @@ pub fn spawn_elf_child_builder(
             crate::sched::exit();
         }
     };
-    let Some(builder_bytes) = boot_fs.read(entry) else {
+    let Some(builder_bytes) = crate::trust::require_program_in(&boot_fs, entry) else {
         panic!("the initial ramdisk has no '{entry}' program to enter");
     };
-    crate::trust::require(entry, builder_bytes);
-    crate::trust::require_program_measurements(&boot_fs);
 
     // Carved here rather than inside the thread, so the caller can name it and reclaim it
     // (notes/frames.md).

@@ -52,8 +52,6 @@
 //! - FAT stores no time zone. In nife the clock supplies UTC (ruled 2026-11-01 UTC); the crate stores
 //!   what its clock reports, cannot check that it is UTC, and refuses a time outside 1980 to 2107.
 //!   A reader that treats FAT times as local time, such as Windows, shows UTC values as local.
-//! - The 65,536-entry ceiling of a directory (`grow_directory`'s limit) is untested: reaching it
-//!   needs a volume and a test of that size.
 //! - A file's bytes are read by cluster chain only; there is no cache above the sector and a
 //!   backwards seek walks the chain again from its start.
 //! - Names compare by simple Unicode upper-casing, not the volume's code page or upcase table, and

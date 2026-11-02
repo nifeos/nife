@@ -1,0 +1,20 @@
+Falsifies `designware_mobile_storage::proofs::a_register_field_never_exceeds_its_width`.
+
+The defect: the field mask is one bit too wide, so a field comes back with the bit above it set.
+Every decoded capacity, manufacturer and serial inherits the stray bit.
+
+Expected to fail: the harness's assertion that a field shorter than 32 bits is below 2^len.
+
+diff --git a/crates/designware_mobile_storage/src/card.rs b/crates/designware_mobile_storage/src/card.rs
+index 552a189bb..bb308e496 100644
+--- a/crates/designware_mobile_storage/src/card.rs
++++ b/crates/designware_mobile_storage/src/card.rs
+@@ -72,7 +72,7 @@ pub const fn bits(register: &[u32; 4], start: u32, len: u32) -> u32 {
+     let mask = if len == 32 {
+         0xffff_ffff
+     } else {
+-        (1u64 << len) - 1
++        (1u64 << (len + 1)) - 1
+     };
+     (v & mask) as u32
+ }

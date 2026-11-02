@@ -9,21 +9,21 @@ pub const READY: u64 = 1;
 pub const RUNNING: u64 = 2;
 /// Blocked in an IPC rendezvous that has not happened.
 pub const BLOCKED: u64 = 3;
-/// A corpse (DECISIONS §26): it faulted or exited, its supervisor was told, and it persists
+/// A corpse: it faulted or exited, its supervisor was told, and it persists
 /// until [`rendezvous::REAP`](super::rendezvous::REAP) collects it. **This is the state `ps` exists to
 /// make visible**, and
 /// it is the one Unix cannot show you without a parent that happens to have called `wait`.
 pub const DEAD: u64 = 4;
 
 /// **Which per-thread record a [`SURVEY`](super::rendezvous::SURVEY) asks for.** The selector
-/// calef ruled on 2026-09-21: a new per-thread fact is a new value here, never a new return
+/// ruled on 2026-09-21: a new per-thread fact is a new value here, never a new return
 /// register.
 ///
 /// The value rides in x1, the argument `SURVEY` never used, and lands in x2 of the answer. x0
 /// (the cursor) and x1 (the tid) are the same for every record, so the walk a caller writes is
 /// the same walk whichever record it wants.
 ///
-/// Names provisional: calef names public items.
+/// Names provisional: an architect names public items.
 pub mod record {
     /// **What run state the thread is in**: one of this module's parent's state codes. The
     /// record `SURVEY` answered before selectors existed, and **0 so that it still does**.
@@ -37,8 +37,7 @@ pub mod record {
     /// nothing, and a thread stolen onto another core or woken onto its waker's still reports where
     /// it was placed. **The id is a name, not an index**: the online set need not be `0..n` (the
     /// VisionFive 2's is `{1, 2, 3}`), so key a per-core tally by the ids this returns and never
-    /// iterate a range. The machine's online set is not available here; see
-    /// notes/abi/method-contracts.md.
+    /// iterate a range. The machine's online set is not available here.
     pub const PLACEMENT: u64 = 1;
 
     /// The [`PLACEMENT`] answer for a thread with no placement to report. `u64::MAX` rather
@@ -46,28 +45,26 @@ pub mod record {
     /// quietly tallying core 255.
     ///
     /// Every thread a survey can report has started, so this should not be reachable: a
-    /// supervision endpoint is recorded at `START` (DECISIONS §26 (the fault endpoint: thread death becomes a
-    /// message a supervisor holds)), so an embryo is not in its
+    /// supervision endpoint is recorded at `START`, so an embryo is not in its
     /// domain yet, and a corpse keeps the placement it was started with. It is defined anyway
     /// rather than left to a guess, which is the same posture `sched::last_cpus` takes with its
     /// own `u8::MAX`.
     pub const NO_CPU: u64 = u64::MAX;
 
     /// **How long the thread has been scheduled on a CPU, in milliseconds**, as Linux's `utime`/
-    /// `stime` and Zircon's `total_runtime` report it (§150 (how does a thread's CPU time reach userspace?)).
+    /// `stime` and Zircon's `total_runtime` report it.
     ///
     /// - Milliseconds are the wire contract, so no reader learns this kernel's `TICK_HZ`; the
     ///   granularity is still the tick, 10 ms on all three architectures.
     /// - **Sampled at the timer tick**, `jiffies`-style: a thread that runs entirely between two
     ///   ticks is charged nothing, so two figures that should match may not.
     /// - A holder of [`rights::ENUMERATE`](crate::rights::ENUMERATE) learns a continuous signal of
-    ///   another thread's workload inside its domain, which §150 accepted (notes/abi/method-contracts.md).
+    ///   another thread's workload inside its domain, which was accepted.
     ///
-    /// Name: provisional. calef names public items.
+    /// Name: provisional. an architect names public items.
     pub const CPU_TIME: u64 = 2;
 
-    /// **Which process of the domain the thread belongs to**, as a label for this walk (§313
-    /// (`ENUMERATE` on a domain covers which of its threads share a process)).
+    /// **Which process of the domain the thread belongs to**, as a label for this walk.
     ///
     /// - Two threads of one domain carry the same label if and only if they share an address
     ///   space and a capability table.
@@ -80,7 +77,7 @@ pub mod record {
     /// - A thread that is a process of its own (no shared table) gets a label to itself.
     /// - 0 is never answered for a thread, so a reader may use it for "no label".
     ///
-    /// Name: provisional. calef names public items.
+    /// Name: provisional. an architect names public items.
     pub const PROCESS: u64 = 3;
 
     /// **Whether this kernel answers a record.** The one enumeration of the selector space, so

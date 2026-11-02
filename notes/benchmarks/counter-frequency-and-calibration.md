@@ -17,7 +17,7 @@ Every process that calls `now` needs the rate, with no capability to ask for, so
 unconditionally. `kernel::user::load` and `kernel::user::map_timebase_page` map it into the spaces
 the kernel builds. `supervision_contract::build_child_space` maps it too, and there the parent
 writes a fresh page from its own `user_mode_runtime::cntfrq_checked` reading. A parent that does
-not know the rate writes zeroes, and `TimebasePage::hz` reads that as `None`, never a fabricated
+not know the rate writes zeroes, and `CounterFrequencyPage::hz` reads that as `None`, never a fabricated
 rate. A process spawned another way has no page, and `cntfrq` faults on the unmapped read. That is
 deliberate: dying says the rate is unknown, and a plausible number would not. A new spawn path
 must map the page or not link anything that calls `cntfrq`.

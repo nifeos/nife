@@ -36,7 +36,7 @@ the components are not services:
 |---|---|
 | read one thing, print it, exit | `date`, `printenv`, `uptime`, `uuid` |
 | look at the running system | `ps`, `pgrep`, `pmap` |
-| operate on what the command line designates | `wc`, `rm`, `mdr`, `rmle` |
+| operate on what the command line designates | `wc`, `rm`, `mdr` |
 | operator tools, run once on purpose | `disk_surveyor`, `disk_partitioner`, `identity_provisioner`, `swapper` |
 
 Nine of the fifteen are typeable at the prompt. `grant_plan::Prog::from_name` resolves `date`,

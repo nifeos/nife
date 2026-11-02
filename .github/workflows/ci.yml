@@ -2070,6 +2070,74 @@ jobs:
         if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
 
+  # **The in-guest fuzz drivers, a short pass on the queue entry** (proposal
+  # design/roadmap/proposals/a-short-sharded-fuzz-pass-in-ci.md; the job id and name are
+  # provisional). Four shards, two per driver, each one window of the harness the continuous fuzz host
+  # runs (`helpers/continuous-fuzz.sh --ci`): a build with a baked seed range, then one KVM guest that
+  # sweeps for 60 seconds of guest time. The seed range derives from the commit and the shard, so the
+  # host replays a shard from those two alone.
+  #
+  # **It runs on `merge_group` and `workflow_dispatch` and never on `pull_request`, on a hosted
+  # runner and never a self-hosted one.** A pull request from a fork writes its log where anyone can
+  # read it, and a finding is private until it is fixed. Decided by the maintainer 2026-11-01 UTC,
+  # provisional; reversing costs one pull request.
+  #
+  # **The guest's output never reaches this log.** `--ci` keeps it in a private directory that an exit
+  # trap removes, and prints a count, the shard, the commit and "the fuzz host replays this shard".
+  # So this job does not use `script/ci-build`: `helpers/hang_evidence.py` keeps a step's whole output
+  # and uploads its tail, and the time record is no use here. Do not add an upload, a `tee` or a
+  # `cat` of anything the guest wrote; `helpers/fuzz-ci-selftest.sh` fails the lint if one appears.
+  #
+  # **Not a required check** (decided 2026-11-01 UTC, provisional): it becomes required in a later
+  # pull request, once the false-red rate at four parallel shards is measured.
+  fuzz-guests:
+    name: fuzz-guests (shard ${{ matrix.shard }}, the in-guest drivers under KVM)
+    runs-on: ubuntu-24.04
+    needs: gate
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch') }}
+    # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
+    # UTC). Any derivation above that argues for a longer bound predates it and describes a job
+    # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - name: Start the job wall-time clock
+        run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      # QEMU, built from source and cached: the `swish-check-x86_64` job above says why.
+      - name: Cache QEMU
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/nife-qemu
+          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+      - name: Build QEMU if the cache missed
+        run: script/ci-qemu
+      - name: Put it on PATH
+        run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
+      - run: script/bootstrap
+        env:
+          NIFE_SKIP_LINT_TOOLS: "1"
+      - name: Open /dev/kvm to the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+      # Two builds of at most 10 minutes each and a guest of at most 5 minutes stay inside the budget.
+      - name: Sweep the shard
+        run: helpers/continuous-fuzz.sh --ci "${{ matrix.shard }}"
+        env:
+          NIFE_FUZZ_BUILD_BOUND: "600"
+          NIFE_FUZZ_BOUND: "300"
+      - name: Check the job's wall time against its budget
+        if: always()
+        run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
+
   coverage:
     name: coverage (host crates)
     runs-on: ubuntu-24.04

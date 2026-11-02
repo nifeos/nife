@@ -630,6 +630,12 @@ designware_mobile_storage = { version = "0.1.0", path = "../crates/designware_mo
 # makes the strings a crate rather than copies. `no_std`, no dependencies of its own.
 boot_ladder = { version = "0.1.0", path = "../crates/boot_ladder" }
 abi = { version = "0.1.0", path = "../crates/abi" }
+# Named here so the first cut's `carry_interfaces!` lists can read these interfaces' ids and
+# versions (milestone 956 (the linked interfaces carry checkable versions)); each program already
+# links them through `user_mode_runtime` or `grant_plan`.
+counter_frequency_contract = { version = "0.1.0", path = "../crates/counter_frequency_contract" }
+current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contract" }
+program_argument_contract = { version = "0.1.0", path = "../crates/program_argument_contract" }
 supervision_contract = { version = "0.1.0", path = "../crates/supervision_contract" }
 process_builder = { version = "0.1.0", path = "../crates/process_builder" }
 # The interactive system, built once (milestone 96). Both inits are a table of the slot numbers
@@ -665,6 +671,8 @@ grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # ELF note), provisional): the shell reads it out of a file it is asked to run, and a program
 # carries one with `capability_manifest_note::carry!`.
 capability_manifest_note = { version = "0.1.0", path = "../crates/capability_manifest_note" }
+# The `INTERFACES` note each program carries with `interfaces_note::carry_interfaces!`.
+interfaces_note = { version = "0.1.0", path = "../crates/interfaces_note" }
 # The system log service's logic and its wire contracts (milestone 613, provisional names).
 system_log = { version = "0.1.0", path = "../crates/system_log" }
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }
@@ -688,7 +696,7 @@ elf = { version = "0.1.0", path = "../crates/elf" }
 entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
 # The JH7110 TRNG's register logic, DTB discovery and byte pool (milestone 159), host-tested in
 # the crate itself; jh7110_entropy.rs is the volatile shell of register writes over it.
-jh7110_entropy = { version = "0.1.0", git = "https://github.com/nifeos/jh7110_entropy", rev = "535f79c91eaa61a3ed8f589b71bce537a42b3b52" }
+jh7110_entropy = { version = "0.1.1", git = "https://github.com/nifeos/jh7110_entropy", rev = "53b022b55b42a6dfc7eb670c438f0d3463da8db5" }
 # login's own measured-boot consultation before it will build a caretaker from an archive entry
 # (milestone 49's BUGS, resolved): the same crate `crates/system_initializer` already depends on.
 measured_boot = { version = "0.1.0", path = "../crates/measured_boot" }

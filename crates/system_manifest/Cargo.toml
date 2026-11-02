@@ -1,0 +1,19 @@
+[package]
+name = "system_manifest"
+version = "0.1.0"
+edition = "2024"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+[lints]
+workspace = true
+
+# Name: provisional, milestone 976 (an OS update is a set of packages that lands through a slot)
+# part 6's lane. "System manifest" is the ruling's own provisional word (2026-11-01 UTC).
+
+[dependencies]
+# The digest's text form and its one parser, so a manifest line, a catalog line and an index line
+# cannot drift apart.
+measured_boot = { version = "0.1.0", path = "../measured_boot" }
+# The longest stem a package can have.
+package_archive = { version = "0.1.0", path = "../package_archive" }

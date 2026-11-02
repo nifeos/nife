@@ -15,6 +15,22 @@
 
 #![no_std]
 
+/// The version of the entry registers and link layout a program starts with: 1. A break bumps it,
+/// with the dated ledger entry the interface-stability discipline owes; an addition an older peer
+/// ignores does not.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+pub const VERSION: u32 = 1;
+
+/// This interface's identity in a program's `INTERFACES` note: 20, naming the entry registers and
+/// link layout a program starts with. The number is this interface's for good: no other interface
+/// takes it, and a format change is a new version, never a new number. Milestone 956 (the linked
+/// interfaces carry checkable versions) holds the table of numbers, and `script/lint` holds the
+/// tree to it. A program declares the pair of this id and [`VERSION`].
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+pub const INTERFACE_ID: u64 = 20;
+
 pub mod child_stub;
 pub mod entropy;
 pub mod initial_ramdisk;

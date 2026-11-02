@@ -153,6 +153,7 @@ version = "0.1.0"
 dependencies = [
  "domain_name_resolution_contract",
  "grant_plan",
+ "interfaces_note",
 ]
 
 [[package]]
@@ -210,8 +211,10 @@ dependencies = [
  "capability_plan",
  "clock_contract",
  "compositor",
+ "counter_frequency_contract",
  "credential_contract",
  "credentialer",
+ "current_cpu_contract",
  "designware_ethernet",
  "designware_mobile_storage",
  "disk_tree",
@@ -234,6 +237,7 @@ dependencies = [
  "hot_swap_contract",
  "http_response",
  "installed_programs",
+ "interfaces_note",
  "jh7110_entropy",
  "line_editor",
  "login_contract",
@@ -246,6 +250,7 @@ dependencies = [
  "pgrep",
  "pmap",
  "process_builder",
+ "program_argument_contract",
  "ps",
  "screen_console",
  "slabtop",
@@ -291,9 +296,6 @@ version = "0.1.0"
 [[package]]
 name = "counter_frequency_contract"
 version = "0.1.0"
-dependencies = [
- "address_space_map",
-]
 
 [[package]]
 name = "cpu_set"
@@ -493,10 +495,6 @@ dependencies = [
 [[package]]
 name = "filesystem_contract"
 version = "0.1.0"
-dependencies = [
- "filesystem_fixture",
- "glob",
-]
 
 [[package]]
 name = "filesystem_fixture"
@@ -599,6 +597,10 @@ dependencies = [
 [[package]]
 name = "glob"
 version = "0.1.0"
+dependencies = [
+ "filesystem_contract",
+ "filesystem_fixture",
+]
 
 [[package]]
 name = "globally_unique_identifier_partition_table"
@@ -728,6 +730,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "interfaces_note"
+version = "0.1.0"
+
+[[package]]
 name = "intrusive_queue"
 version = "0.1.0"
 
@@ -737,8 +743,8 @@ version = "0.1.0"
 
 [[package]]
 name = "jh7110_entropy"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=535f79c91eaa61a3ed8f589b71bce537a42b3b52#535f79c91eaa61a3ed8f589b71bce537a42b3b52"
+version = "0.1.1"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=53b022b55b42a6dfc7eb670c438f0d3463da8db5#53b022b55b42a6dfc7eb670c438f0d3463da8db5"
 
 [[package]]
 name = "jh7110_watchdog"
@@ -1127,9 +1133,9 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.13.5"
+version = "0.13.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "278e9268c93b9e498a2da46c34d90ba93a3255eb99009646398f34bc73ab36eb"
+checksum = "3db2be46835f013dd3f4fa7f5f7402c537787b54ebb6fe2b94bbdd7e2669bb7b"
 dependencies = [
  "bitflags 2.13.2",
  "memchr",
@@ -1416,6 +1422,7 @@ dependencies = [
  "grant_plan",
  "graphics_contract",
  "installed_programs",
+ "interfaces_note",
  "line_editor",
  "login_contract",
  "machine_statistics_contract",
@@ -1443,6 +1450,14 @@ dependencies = [
 [[package]]
 name = "system_log_contract"
 version = "0.1.0"
+
+[[package]]
+name = "system_manifest"
+version = "0.1.0"
+dependencies = [
+ "measured_boot",
+ "package_archive",
+]
 
 [[package]]
 name = "system_tests"
@@ -1860,6 +1875,7 @@ dependencies = [
  "screen_console",
  "sealed_pair",
  "serial_console",
+ "system_manifest",
  "test_times",
  "toml",
  "uuid",

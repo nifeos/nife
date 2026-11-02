@@ -25,3 +25,4 @@ bench script/ci-build bench and icount are their own steps, and the benchmarks r
 supply-chain one cargo-deny command
 coverage one instrumented host pass; the host pass's own time is in test-shard's record
 crate-probes one command; every crate is its own printed row
+fuzz-guests one shard per job; a time record would carry the guest's output path, and the job's log must hold nothing the guest wrote

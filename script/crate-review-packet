@@ -1,0 +1,18 @@
+#!/bin/sh
+# script/crate-review-packet: prepare the architect's by-hand review of a crate before it leaves nife.
+#
+#     script/crate-review-packet <crate>...             # writes target/crate-review-packets/<crate>.md
+#     script/crate-review-packet --out DIR <crate>...   # somewhere else
+#     script/crate-review-packet --no-rustdoc <crate>   # the grep-based API listing only
+#
+# The architect reads every crate by hand before it leaves (condition 4 of section 247, ruled
+# 2026-11-01 UTC). This gathers what that reading needs into one markdown file per crate, under
+# `target/` so it is never committed: size, public API, `unsafe` sites, dependencies and where each
+# points, references back into nife, Kani harnesses and falsification patches, dependents, identity
+# values, and a checklist the reviewer fills in. It never edits the tree and never builds a copy;
+# `script/crate-standalone` does that. Logic lives in helpers/crate_review_packet.py.
+#
+# Name: provisional, minted 2026-11-01 (UTC); a maintainer decision. See notes/scripts.md.
+set -eu
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+exec python3 "$ROOT/helpers/crate_review_packet.py" "$ROOT" "$@"

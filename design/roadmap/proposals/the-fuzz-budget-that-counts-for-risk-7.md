@@ -62,7 +62,9 @@ syzkaller's service standards, not its code.
 - Disclosure. Every finding starts private, in a private security advisory on nifeos/nife, never a
   public issue or branch. Triage sorts it. The held class is an escape, a crash or hang reached
   from user mode, and any finding not yet triaged. A held finding stays private until its fix
-  merges, then turns public. Every other finding, for example a kernel-thread crash that user code
+  merges and a rerun of its input passes against the fixed build, then turns public. A service on
+  the fuzz host files, reruns and publishes with no person in the loop (decided 2026-11-01 UTC,
+  [fuzz-findings-without-a-person](fuzz-findings-without-a-person.md)). Every other finding, for example a kernel-thread crash that user code
   cannot reach, goes to the public tracker at triage. Decided 2026-10-31 (UTC).
 - The outer cap. A held finding that has no fix 90 days after the report turns public anyway, unless
   an architect says otherwise. The cap is a disclosure rule and extends no fix limit: a held

@@ -5,7 +5,7 @@ use crate::*;
 extern crate std;
 use std::vec;
 
-// --- The directory capability (milestone 47 (navigation and naming)) ---
+// --- The directory capability ---
 
 /// A listing round-trips: every name comes back byte for byte, with its kind, in order.
 #[test]
@@ -75,9 +75,9 @@ fn a_dirent_name_fills_the_length_byte_exactly_or_is_refused() {
     );
 }
 
-// The tests from here down each pin something the run of milestone 85 (mutation testing over the
-// host crates) showed nothing pinned. The equivalences (every `|` over disjoint masked fields,
-// where `^` cannot differ) are recorded in notes/mutation-testing.md rather than tested.
+// The tests from here down each pin something a mutation run over this crate showed nothing
+// pinned. The equivalences (every `|` over disjoint masked fields, where `^` cannot differ) are
+// recorded as such rather than tested.
 
 /// A directory entry at both of its limits: the longest encodable name in an exact-fit
 /// buffer, one byte over either limit refused, and the flag byte pinned.

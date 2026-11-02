@@ -226,8 +226,9 @@ holds 59 binaries and 61 path dependencies, and 20 lines in `xtask`, `script/` a
 or its manifest. Those include `xtask`'s initrd builder, `script/names`, `script/audits` and lint's
 program list. What blocks it:
 
-- The homes. 611's question 3 (one repository per package, or one per division) is unanswered, and a
-  split shaped by the answer should not be done twice.
+- The homes. A package's programs leave as one repository, after their crates (§316 (a package's
+  programs leave as one repository, after their crates)), and a package's `home` stays provisional
+  until that repository exists.
 - The gates cannot yet build a package outside this tree; 691 names #1389's base image list as the
   missing piece.
 - Collision cost. Every lane adding a program edits `components/Cargo.toml`, so a split is a quiet-queue job.

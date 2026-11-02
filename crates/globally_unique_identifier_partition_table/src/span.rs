@@ -3,9 +3,8 @@
 //!
 //! Still no I/O. A GPT counts 512-byte logical blocks (primary header at LBA 1, entry array at LBA
 //! 2, backup header at the last LBA), and the block service moves one 4096-byte filesystem block
-//! per request (`filesystem_contract::blk::BLOCK_SIZE`). A wrong offset reads plausible wrong bytes
-//! and the CRC blames a good table, so this is one tested function. See
-//! notes/globally-unique-identifier-partition-table.md, "What this crate does not do".
+//! per request (a block device's block size). A wrong offset reads plausible wrong bytes
+//! and the CRC blames a good table, so this is one tested function.
 //!
 //! ```
 //! # use globally_unique_identifier_partition_table::span::Span;

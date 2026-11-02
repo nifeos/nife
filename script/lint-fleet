@@ -117,6 +117,10 @@ nife_check_branch_name_shape "$branch" lint || exit 1
 "$(dirname "$0")/../helpers/milestone-branch-block-selftest.sh" >/dev/null
 "$(dirname "$0")/../helpers/milestone-branch-block.sh" "$(cd "$(dirname "$0")/.." && pwd)" "$branch" || exit 1
 
+# 10b. **The architect's review packet builds.** helpers/crate-review-packet-selftest.sh builds one
+#     packet without a compiler and checks its sections.
+"$(dirname "$0")/../helpers/crate-review-packet-selftest.sh" >/dev/null
+
 # 11. **The merge queue's admission predicate says what it means** (2026-09-24 security audit). Until
 #     that audit "eligible" admitted a pull request from any fork on GitHub, at a time when the
 #     drain armed every eligible pull request as `nife-smelter[bot]`. The predicate is one file,

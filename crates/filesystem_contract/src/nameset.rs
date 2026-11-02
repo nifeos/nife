@@ -6,7 +6,7 @@ use super::grant;
 /// set travels by value through four frames a debug build does not collapse. Exceeding it is a
 /// refusal at the prompt (`grant_plan::Refusal::TooManyNames`), never a truncation, because `caps rm
 /// *.txt` prints the set before anything runs and a grant that quietly took a prefix would be one
-/// nobody checked. See notes/glob-grant/xargs.md ("Why the bound is eight").
+/// nobody checked. ("Why the bound is eight").
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_NAMES: usize = 8;
@@ -15,8 +15,7 @@ pub const MAXIMUM_NAMES: usize = 8;
 /// [`MAXIMUM_NAMES`], for the same stack: a set travels by value through the shell's frames, so
 /// what it costs is its bytes, and holding eight names of [`grant::MAXIMUM_NAME`] each would cost
 /// eight times what a set of ordinary names needs. Two of the longest names fit, or eight of 64
-/// bytes. Measured with milestone 946 (a granted file name can be longer than sixteen bytes); the
-/// measurement is in notes/glob-grant/xargs.md ("The bytes a set carries"). Over it is the same
+/// bytes. Over it is the same
 /// refusal as a ninth name, never a truncation.
 ///
 /// Name: provisional (milestone 946).

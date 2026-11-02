@@ -9,7 +9,7 @@
 //! loader, and the scratch window a builder fills child pages through. `spawner`,
 //! `system_initializer` and the fixtures' builders call these; the protocol words they exchange
 //! stay in `supervision_contract`, which this crate depends on and never the other way round
-//! (DECISIONS §235 (the OS is built and updated from packages, and the tree divides by what releases together) P3: a contract never links the runtime).
+//! (DECISIONS §235 (the OS is built and updated from packages, and its source divides by purpose) P3: a contract never links the runtime).
 //!
 //! The examples run under `cargo test --doc -p process_builder` on an aarch64 host.
 //!
@@ -325,7 +325,7 @@ fn lay_out_child(
             own_ut,
             build_ut,
             aspace,
-            counter_frequency_contract::PAGE_VA,
+            counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
             page.as_ref().map(|bytes| (0usize, &bytes[..])),
             abi::address_space::MAP_RO,
         )?;

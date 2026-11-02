@@ -1,8 +1,8 @@
 Falsifies `filesystem_contract::dir::Rights::attenuate_never_widens`.
 
 The defect: `attenuate` computes `self.0 | requested` instead of `self.0 & requested`.
-One character, and it is the character the whole of milestone 47's monotonicity property
-rests on: the crate's own comment says "the whole of milestone 47's monotonicity property
+One character, and it is the character the whole of the monotonicity property
+rests on: the crate's own comment says "the whole of the monotonicity property
 is this one `&`".
 
 Expected to fail: `assert!(!child.allows(needed) || parent.allows(needed))`, whenever
@@ -12,12 +12,12 @@ capability must not permit.
 **It also turns `a_grandchild_is_bounded_by_the_root` red**, and that is worth knowing
 rather than hiding: the depth-2 harness has no falsification that the depth-1 harness
 does not also catch, because `attenuate` is a single `&` and the only claim the second
-harness adds is that AND is associative. See notes/falsification.md.
+harness adds is that AND is associative.
 
 diff --git a/crates/filesystem_contract/src/dir.rs b/crates/filesystem_contract/src/dir.rs
 --- a/crates/filesystem_contract/src/dir.rs
 +++ b/crates/filesystem_contract/src/dir.rs
-@@ -143,7 +143,7 @@
+@@ -177,7 +177,7 @@
      /// silently given less than it asked for, but that refusal is about telling the truth and
      /// this line is about the property.
      pub const fn attenuate(self, requested: u64) -> Self {

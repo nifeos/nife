@@ -5,8 +5,7 @@
 //!
 //! Each request is an endpoint `CALL` of two words, answered through the one-shot Reply
 //! capability; bytes travel only in the region the two parties share. A reply's first word is an
-//! [`i64`], a result or the negated errno ([`reply_err`]). See notes/fs-server.md for the three
-//! processes and the error boundary, and notes/fs-server/file-protocol.md for each verb's shape.
+//! [`i64`], a result or the negated errno ([`reply_err`]).
 //!
 //! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review), renamed from
 //! `fs_proto`; `_contract` per calef's 2026-10-18 ruling.
@@ -21,7 +20,7 @@
 pub const PAGE: usize = 4096;
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position
-/// `line_editor::proto` uses, so the two contracts read alike.
+/// the other message contracts of the nife kernel use, so the contracts read alike.
 pub const OPERATION_SHIFT: u32 = 56;
 
 /// Build a request's first word from just an opcode (the block protocol's shape: the operand, a
@@ -75,21 +74,20 @@ pub mod blk;
 /// directory capability, bound in the server to one directory node, and every name is resolved
 /// relative to a handle under it: no global namespace, no absolute path. A handle is a small
 /// integer the server mints and validates against this session's table, so forging one is
-/// meaningless. See notes/fs-server.md, "The contract is capability-shaped from birth".
+/// meaningless.
 pub mod fs;
 
 /// **What a directory capability carries**: the rights ladder ([`dir::Rights`]) and its one
 /// constructor for a non-root set, [`dir::Rights::attenuate`], a bitwise AND with the parent, so no
 /// child carries more than its parent. A missing right answers one of three errnos, chosen for
 /// what the holder learns: a naming right ([`dir::READ`], [`dir::WRITE`], [`dir::DESCEND`])
-/// `ENOENT`, a mutating right [`dir::EROFS`], and [`dir::ENUMERATE`] [`dir::EPERM`]. See
-/// notes/dir-capability.md.
+/// `ENOENT`, a mutating right [`dir::EROFS`], and [`dir::ENUMERATE`] [`dir::EPERM`].
 pub mod dir;
 
 /// **The verb table**: each [`fs`] request word's argument shape and the rights the server will
 /// demand, declared once, so the three caretakers dispatch off it instead of a `match` each. A verb
 /// in [`fs`] without a row is a compile error ([`verb::TABLE`]'s const assertions). It shares the
-/// dispatch and never the attenuation. See notes/fs-server/verb-table.md.
+/// dispatch and never the attenuation.
 ///
 /// # BUGS
 ///
@@ -111,7 +109,7 @@ pub mod dirent;
 /// Three little-endian `u64`s, in order: the allocation unit in bytes, the volume's size in those
 /// units, and how many are free. The unit is a field, not [`PAGE`]. The reply's length is the
 /// version: a client reads the fields it knows when `r0 >= LEN` ([`statfs::decode`]), so there is
-/// no version word. See notes/fs-server/statfs.md.
+/// no version word.
 ///
 /// # BUGS
 ///
@@ -121,23 +119,22 @@ pub mod statfs;
 
 /// **The per-file grant**: holding one file rather than a directory, and how the narrowing travels.
 ///
-/// The caretaker `components/src/fs_file_caretaker.rs` holds the directory capability, opens the
+/// The file caretaker holds the directory capability, opens the
 /// granted name once at startup, and serves the same [`fs`] protocol on its own endpoint:
 /// [`fs::OPEN`] answers only the granted name (any other is `ENOENT`), [`fs::CREATE`] is
 /// `ENOTDIR`, and [`fs::WRITE`] and [`fs::TRUNCATE`] are [`grant::EROFS`] without
 /// [`grant::WRITE`]. The confined program holds nothing that names the FS server, so it cannot
-/// route around the narrowing. See notes/grant-expression/per-file-grants.md.
+/// route around the narrowing.
 pub mod grant;
 
 /// **A directory capability attenuated to a set of names**, what `rm *.txt` designates, served by
-/// `components/src/fs_nameset_caretaker.rs`.
+/// the name-set caretaker.
 ///
 /// A set does not fit in `START`'s argument words, so it rides in a frame the wiring maps read-only
 /// into the caretaker, and [`nameset::MAXIMUM_NAMES`] and [`nameset::NAME_BYTES`] are the
 /// capability's ceilings. A record is a length byte, a flags byte ([`nameset::IS_DIR`]), then the
 /// name; a zero length ends the set, so a name may not be empty. The caretaker answers `READDIR`
-/// from the set, so the type is what the directory said when the grant was planned. See
-/// notes/glob-grant.md.
+/// from the set, so the type is what the directory said when the grant was planned.
 pub mod nameset;
 
 /// **Extended attributes: the limits, the encodings, and the store the FS server keeps them in**,
@@ -145,7 +142,7 @@ pub mod nameset;
 /// [`fs`], so the layer is as authoritative as the filesystem. There is no attribute right:
 /// [`fs::GETXATTR`] and [`fs::LISTXATTR`] need [`dir::READ`], [`fs::SETXATTR`] and
 /// [`fs::REMOVEXATTR`] need [`dir::WRITE`]. Each attribute carries a `u32` kind the layer stores
-/// and never interprets ([`xattr::RAW`] for a POSIX client). See notes/xattr.md.
+/// and never interprets ([`xattr::RAW`] for a POSIX client).
 ///
 /// **BUGS.** The kind is 31 bits, because it rides in the sign-protected half of a reply word
 /// ([`xattr::reply`]); [`fs::SETXATTR`] answers `EINVAL` for a kind with its top bit set.
@@ -154,14 +151,14 @@ pub mod xattr;
 /// The FS server's readiness sentinel: sent once, after it has opened the RedoxFS image over blk
 /// IPC and before it serves clients. A test waiting for it tells a hang in `open` (the blk path)
 /// from a hang in the serve path, and catches a booted-but-empty run. It is a word shipping
-/// programs send each other, so it lives here rather than in `filesystem_fixture`, as every other
-/// protocol keeps its readiness word in its own crate (`entropy_contract`, `login_contract`).
+/// programs send each other, so it lives here rather than in a test fixture, as every other
+/// protocol keeps its readiness word in its own crate.
 pub const READY: u64 = 0xF5_0BEEF5;
 
 /// **A caretaker's descent was refused**, sent on the same endpoint [`READY`] would have gone
 /// out on, with the errno in the second word. The caretaker then exits without serving.
 ///
-/// Under `system_initializer` the waiter is init, the spawn service for the whole prompt, with no
+/// Under the system initializer the waiter is init, the spawn service for the whole prompt, with no
 /// other thread: a caretaker that panicked would park it in `RECEIVE` forever. A grant naming a
 /// directory that is not there is an ordinary thing to type, so it is answered with a message.
 ///

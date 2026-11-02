@@ -13,7 +13,7 @@ root did not")`, whenever `a` or `b` holds a right the root does not.
 diff --git a/crates/filesystem_contract/src/dir.rs b/crates/filesystem_contract/src/dir.rs
 --- a/crates/filesystem_contract/src/dir.rs
 +++ b/crates/filesystem_contract/src/dir.rs
-@@ -143,7 +143,7 @@
+@@ -177,7 +177,7 @@
      /// silently given less than it asked for, but that refusal is about telling the truth and
      /// this line is about the property.
      pub const fn attenuate(self, requested: u64) -> Self {

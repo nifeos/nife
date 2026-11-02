@@ -1,0 +1,51 @@
+name: fuzz heartbeat
+
+# Observed failing: 2026-11-01, by script: helpers/fuzz-heartbeat.py --selftest drives the failing
+#   arms (no release, no ok window, infrastructure share above the bound) over fixture reports and
+#   checks that each opens one issue and that an open issue stops a second. A real run was not
+#   possible: no fuzz-* release exists yet, and a dispatched run that opened a real issue would be an
+#   external action nobody asked for. The first real failure after the first release is the record
+#   to add.
+
+# **Is the continuous fuzz loop still producing?** Asked daily, answered by an issue.
+#
+# The continuous fuzzing host publishes one release per day (tag fuzz-YYYY-MM-DD). This is the dead-man's
+# switch: it looks at the releases of the last two UTC days and opens one issue, labeled
+# fuzz-loop-broken, when none exists, when the report shows no ok window, or when infrastructure
+# windows are too large a share. The checks and their bound are in helpers/fuzz-heartbeat.py. It
+# repairs nothing; a person turns the issue into an action (notes/fuzzing/continuous-host.md).
+#
+# Ruled 2026-11-01 (UTC): a scheduled workflow on a GitHub-hosted runner, never a self-hosted one.
+# While no fuzz-* release has ever existed it passes quietly, so it switches on by itself at the first
+# release. It takes no secret (GITHUB_TOKEN is the runner's own), runs only on schedule and by hand,
+# and fetches the release list and report.md, nothing else.
+
+on:
+  schedule:
+    # 17:00 UTC daily, three hours after the host's 14:00 UTC publish timer.
+    - cron: "0 17 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: fuzz-heartbeat
+  cancel-in-progress: false
+
+jobs:
+  heartbeat:
+    name: check the fuzz loop
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          sparse-checkout: helpers/fuzz-heartbeat.py
+          sparse-checkout-cone-mode: false
+      - name: heartbeat
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 helpers/fuzz-heartbeat.py

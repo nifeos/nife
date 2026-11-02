@@ -49,19 +49,20 @@ pilot of the mechanics. Before each move the architect reads the crate's code by
 it (§247 (the split begins with basalt holding nife, and `procps` moves first)'s condition 4, ruled 2026-11-01 (UTC)), initially for every crate. A crate also needs a
 tagged release whose commit carries its Cargo version, and no time-based measure remains. The first
 crate reviewed is the pilot, `jh7110_entropy`, which moved before the ruling and has no tag, so
-tagging it comes first (step 9). Pull request #3026 proposes the contract-crate steps and their order, and
-they join the table when it lands.
+tagging it comes first (step 9). Pull request #3026 rules the contract-crate order (2026-11-01 (UTC)): one
+repository per crate, each made with the architect's approval, and a package leaves as soon as its
+own crates have left. Its steps join the table when their lanes are cut.
 
 | step | milestone | decision | what this step needs |
 |---|---|---|---|
 | 1 | 887 | | the machinery every crate repository calls from its move onward: the shared template's nine ruled checks, the allowlist lint that keeps `publish = false` the default, the `crate-maintainers` team as the crates.io owner, and trusted publishing, with every release waiting in the `crates-io` environment for calef. The template's two remaining checks (the scoped-token first publish and the semver baseline) wait at step 9 |
-| 2 | 813 | | the first publication in the ruled order: `file_allocation_table` finishes the write half, stages 6 to 9 (allocation and write, directories and rename, the general FAT12/16/32 format, timestamps and the label), then the move, the soak, the 0.1.0 publication, and nife consuming the release by semantic version. Milestone 140 (mount a drive this system did not create) needs it for its FAT32 stratum |
-| 3 | 820 | | the second publication in the ruled order: `extensible_host_controller_interface`, released with `usb`, once the crate gains the two harnesses its table still marks `none yet` (the event ring, the capability walk), then the move, the soak, the publication and nife consuming the release |
+| 2 | 813 | | the first publication in the ruled order: `file_allocation_table` has its write half built, stages 6 to 9 (allocation and write, directories and rename, the general FAT12/16/32 format, timestamps and the label); what remains is the move, the soak, the 0.1.0 publication, and nife consuming the release by semantic version, which wait on the architect's review and milestone 887 (crate repositories share one CI template). Milestone 140 (mount a drive this system did not create) needs it for its FAT32 stratum |
+| 3 | 820 | | the second publication in the ruled order: `extensible_host_controller_interface`, released with `usb`; its three harnesses prove (the producer ring, the event ring, the capability walk), so the step is the move, the soak, the publication and nife consuming the release |
 | 4 | 857 | | the third publication in the ruled order, `generational_table`: no milestone owns it yet, and fork 7 mints one at its review with calef, quoting his ruling and its disposition; before release, the record says whether `slotmap` already covers allocation-free fixed capacity |
 | 5 | 814 | | `non_volatile_memory_express`: class A, so no cut, and its process plan already left for `non_volatile_memory_express_contract` (#2736); its eight harnesses prove, so the step is the move, the soak, the publication and nife consuming the release |
 | 6 | 815 | | `e1000e`: its cut landed 2026-10-25 (#2719) and its four harnesses prove; the step is the move, the soak, the publication and the consumption |
-| 7 | 816 | | `designware_ethernet`: its cut landed 2026-10-25 (#2719), with the walk in `machine_discovery::jh7110`, and its two harnesses prove; the PHY link decode still needs its harness row, then the move, the soak, the publication and the consumption |
-| 8 | 817 | | `designware_mobile_storage`: its cut landed 2026-10-25 (#2719), with `serve` moved to `driver_process_contract`; the MBR parse and the capacity decoders still need their harness rows, then the move, the soak, the publication and the consumption |
+| 7 | 816 | | `designware_ethernet`: its cut landed 2026-10-25 (#2719), with the walk in `machine_discovery::jh7110`, and its three harnesses prove, the PHY link decode's among them; the step is the move, the soak, the publication and the consumption |
+| 8 | 817 | | `designware_mobile_storage`: its cut landed 2026-10-25 (#2719), with `serve` moved to `driver_process_contract`; the MBR parse and the capacity decoders have their harnesses and falsification patches (eight in the crate), then the move, the soak, the publication and the consumption |
 | 9 | 818 | | `jh7110_entropy`, the soak pilot: it moves and soaks before the other soaks start, rehearsing the mechanics every step here runs, and the rehearsal moves no publication; its four harnesses prove, so the step starts at the move, and its exit carries the two template checks step 1 names. nife links it today in this form: its three manifests pin it by revision and already state `version = "0.1.0"`, with `publish = false` in the crate; the crate has no tagged release yet, so the pinned commit becomes a tagged release's commit when it gets one. Tagging it is a prerequisite of the architect's review, and the first crate reviewed is this one |
 | 10 | 819 | | `jh7110_clock_and_reset`: its cut is done and its name ratified, and it holds no harness yet, so the harnesses and their falsification patches come first; then the move, the soak, the publication and the consumption |
 
@@ -81,7 +82,9 @@ FAT crate's.
 The publish-ours steps hold only publish dispositions. The survey's contribute rows (paging, the GPT parser,
 `elf`, `network_time_protocol`, `device_tree_blob`, `glob`, `domain_name_system`, `calendar`) wait,
 by the ruling of 2026-10-27 (UTC), until a published crate has users who ask for them upstream, so
-nife controls no externalization step for them today. No crate stays in this tree by default
+nife controls no upstream step for them today. That wait covers the offer only. Ruled 2026-11-01
+(UTC): the four crates among the 22 move in pull request #3026's order, each to a repository of its
+own, and a later offer comes from that repository. No crate stays in this tree by default
 (ruled 2026-11-01 (UTC); 857's item 7 is withdrawn). calef refused milestone 821 (`portable_executable`: an
 ELF-to-PE converter, proven, then released on its own) on 2026-10-21 (UTC): its input is nife's own
 build product, so a published proof protects no known user. The crate no longer exists, and the

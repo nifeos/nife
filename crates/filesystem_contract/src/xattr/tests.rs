@@ -6,7 +6,7 @@ extern crate std;
 use std::vec::Vec;
 use std::{format, vec};
 
-// --- Extended attributes (milestone 57 (extended attributes)) ---
+// --- Extended attributes ---
 
 /// Scratch big enough for any blob this store can hold, so a test never fails on its own buffer.
 fn scratch() -> Vec<u8> {
@@ -16,7 +16,7 @@ fn scratch() -> Vec<u8> {
 /// **A name and a value survive the store round trip, at every length the limits allow**,
 /// including the two that a `u8` length byte and a `u16` value length are most likely to get
 /// wrong. A value read back short is a file that looks intact and is not, which is the exact
-/// failure DECISIONS §42 says must never be silent.
+/// failure that must never be silent.
 #[test]
 fn an_attribute_round_trips_at_the_edges_of_both_limits() {
     use xattr::store;
@@ -41,7 +41,7 @@ fn an_attribute_round_trips_at_the_edges_of_both_limits() {
 }
 
 /// **The kind is carried and never interpreted**, which is the whole of "do not foreclose
-/// indexing" (`design/haiku-bfs-and-packages.md`). A BFS-style four-character code has to survive
+/// indexing". A BFS-style four-character code has to survive
 /// the store and the reply word, and a code with bit 31 set has to be refused rather than
 /// truncated into a type nobody wrote.
 #[test]
@@ -73,7 +73,7 @@ fn a_type_code_survives_the_store_and_the_reply_word() {
 
 /// **Every limit refuses rather than truncating**, and each with its own errno, so a caller can
 /// tell "your name is wrong" from "your value is too big" from "this file is full". One errno for
-/// all three would make the honest failure §42 demands unactionable.
+/// all three would make the honest failure unactionable.
 #[test]
 fn each_limit_answers_with_its_own_word_and_nothing_is_clipped() {
     use xattr::store;
@@ -357,9 +357,9 @@ fn a_record_that_exactly_fits_is_written_and_a_short_buffer_refuses() {
     );
 }
 
-// The tests from here down each pin something the run of milestone 85 (mutation testing over the
-// host crates) showed nothing pinned. The equivalences (every `|` over disjoint masked fields,
-// where `^` cannot differ) are recorded in notes/mutation-testing.md rather than tested.
+// The tests from here down each pin something a mutation run over this crate showed nothing
+// pinned. The equivalences (every `|` over disjoint masked fields, where `^` cannot differ) are
+// recorded as such rather than tested.
 
 /// **A record wider than the contract is refused when a blob is rewritten, not carried forward.**
 ///

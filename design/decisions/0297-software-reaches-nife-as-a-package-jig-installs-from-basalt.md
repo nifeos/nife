@@ -61,8 +61,8 @@ Asked how the programs that run before `jig` reach a system, he answered the sam
 
 This does not start from nothing. Three records already plan most of it.
 
-- Milestone 607 (nife is built and updated from packages, and the repository divides along what
-  releases together) is the path for the OS itself. Its item 1 assembles the image from base
+- Milestone 607 (nife is built and updated from packages, and its source divides by
+  purpose) is the path for the OS itself. Its item 1 assembles the image from base
   packages by digest. Its U4 ruling makes packages the update unit, with a full copy in each slot.
 - Milestone 611 (every program and crate belongs to a package, and every package has a home)
   draws the package boundaries in this tree. Under this ruling, basalt is where those packages are
@@ -77,7 +77,7 @@ This does not start from nothing. Three records already plan most of it.
   slots and tries on x86_64. Milestone 554 (a good upgrade sticks: what marks a trial boot
   successful) built the confirmation.
 - §159 (lab machines upgrade like user machines, and only a new kernel needs a reboot) and §235 (the
-  OS is built and updated from packages, and the tree divides by what releases together) are the
+  OS is built and updated from packages, and its source divides by purpose) are the
   rulings under all of them.
 
 ## What is missing for the kernel

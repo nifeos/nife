@@ -574,3 +574,28 @@ fn a_serviced_descriptor_walks_its_zones_to_its_last_byte() {
     assert_eq!(got.next(), Some(&b"ab.cd"[..]));
     assert_eq!(got.next(), None);
 }
+
+/// **The `INTERFACES` note has the header every manifest note has.** `interfaces_note` repeats the
+/// owner so that it depends on nothing, so this holds the two crates to one header: the same
+/// owner, name size, and descriptor offset as a manifest note.
+#[test]
+fn the_interfaces_note_shares_the_manifest_notes_header() {
+    let list = [interfaces_note::Declared { id: 1, version: 1 }];
+    let interfaces =
+        interfaces_note::InterfacesNote::<{ interfaces_note::interfaces_note_len(1) }>::of::<
+            { interfaces_note::interfaces_len(1) },
+        >(&list);
+    let manifest = SubtreeGrantsNote::of(Scope::SubtreeScope);
+    let header = HEADER_LEN + NAME_FIELD;
+    assert_eq!(&interfaces.0[..4], &manifest.0[..4], "namesz");
+    assert_eq!(
+        &interfaces.0[HEADER_LEN..header],
+        &manifest.0[HEADER_LEN..header],
+        "owner"
+    );
+    assert_eq!(&interfaces.0[HEADER_LEN..HEADER_LEN + OWNER.len()], OWNER);
+    assert_eq!(
+        interfaces.0.len() - header,
+        interfaces_note::interfaces_len(1)
+    );
+}

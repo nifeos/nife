@@ -108,13 +108,14 @@ Full rows: [analysis-and-supply-chain.md](scripts/analysis-and-supply-chain.md).
 | `script/build-is-reproducible` | The same commit builds the same bytes, from any path. |
 | `script/fastpath-footprint` | An upper bound on the IPC fastpath's instruction footprint. |
 | `script/boot-file-size-check` | The release `BOOTX64.EFI` against a 16 MiB budget, a quarter of the 64 MiB install slot; prints the loader, kernel and archive breakdown. |
-| `script/image-permissions` | The shipped kernel images obey W^X. |
+| `script/image-permissions` | Shipped images obey W^X. |
 | `script/crate-probes` | Build fifty crates.io crates against the patched `std`. |
-| `script/crypto-probes` | Which TLS crypto providers build for nife's targets. |
+| `script/crypto-probes` | Which TLS providers build for nife. |
 | `script/mutation` | Mutation testing over the host crates. A report, not a gate. |
 | `script/mutation-census` | One committed row per crate, per mutation census. |
 | `script/falsifications` | Can each Kani harness be made to fail? |
-| `script/crate-standalone <crate>` | Would this crate stand on its own outside nife? Provisional name. |
+| `script/crate-standalone <crate>` | Would this crate stand alone? Provisional name. |
+| `script/crate-review-packet <crate>` | The architect's review packet. Provisional name. |
 
 `fmt`, `lint`, `coverage`, `supply-chain`, `fuzz`, `miri`, and `mutants` are not part of the canonical
 set; they exist so the CI format, clippy, coverage, supply-chain, fuzz, miri, and weekly mutation

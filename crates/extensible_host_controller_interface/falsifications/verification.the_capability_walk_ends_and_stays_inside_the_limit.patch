@@ -1,0 +1,22 @@
+Falsifies `extensible_host_controller_interface::verification::the_capability_walk_ends_and_stays_inside_the_limit`.
+
+The defect: `find_extended` checks that the entry's first byte is inside `limit` where it should
+check that the whole dword is. A capability whose dword straddles `limit` is then read, past the end
+of the register window that was mapped.
+
+Expected to fail: the assertion in the harness's `read` closure that the read at `at` ends at or
+before `limit`.
+
+diff --git a/crates/extensible_host_controller_interface/src/registers.rs b/crates/extensible_host_controller_interface/src/registers.rs
+index 22ff61a76..b8d3980c3 100644
+--- a/crates/extensible_host_controller_interface/src/registers.rs
++++ b/crates/extensible_host_controller_interface/src/registers.rs
+@@ -285,7 +285,7 @@ pub fn find_extended(
+ ) -> Option<u64> {
+     let mut at = first;
+     for _ in 0..64 {
+-        if at == 0 || at.checked_add(4)? > limit {
++        if at == 0 || at > limit {
+             return None;
+         }
+         let head = read(at);

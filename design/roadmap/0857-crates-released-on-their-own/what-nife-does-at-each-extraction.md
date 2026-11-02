@@ -20,6 +20,12 @@ released on its own), and every later extraction runs the same list.
 
 ## At each extraction
 
+- The architect clears the crate: condition 4 of §247 (the split begins with basalt holding nife), the
+  hand code review, passes. That clearance also approves creating the crate's repository under nifeos
+  (the architect ruled it on 2026-11-01 UTC). No standing approval covers the order table, so a lane
+  creates a crate repository only after the architect clears that crate.
+- A person grants the crate's repository the organization secrets `NIFE_SMELTER_APP_ID` and
+  the smelter App's private key beside it, using an `admin:org` token. A lane never takes this step.
 - The path dependency becomes a crates.io release, pinned with its checksum in `Cargo.lock`
   (Fork 2), and `crates/<name>` is deleted in the same pull request.
 - The proofs, the falsification sweep, the fuzz targets and the coverage floor stop covering that
@@ -30,6 +36,15 @@ released on its own), and every later extraction runs the same list.
 - The dependency rule of the architect-label workflow fires once, on the first crates.io adoption,
   and is left to fire; that pull request is the ruling that nife depends on its own release.
 - `cargo-deny` applies to the crate as to any dependency.
+- A person holding an `admin:org` token adds the new repository to the selected-repositories list
+  of both organization secrets the release workflow's tag job reads, `NIFE_SMELTER_APP_ID` and
+  `NIFE_SMELTER_PRIVATE_KEY`, once per secret:
+  `gh api -X PUT /orgs/nifeos/actions/secrets/<NAME>/repositories/<repository id>`, where the id
+  comes from `gh api repos/nifeos/<crate> --jq .id`. Both secrets use the visibility "selected
+  repositories", never "all repositories" (ruled 2026-11-01 UTC): the key bypasses the crate tag
+  rulesets, so it stays out of nife and basalt, where lanes push branches. No agent handles the key
+  value; the grant moves only the list. Do it before the first release tag job runs, since that
+  job cannot authenticate without it.
 - The name leaves `script/names`, which tracks names in this tree, and no record of it is kept.
 
 ## What the metrics do

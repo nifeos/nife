@@ -84,7 +84,7 @@ out.
 4. The package is 0.1.0 with its own semver, states `rust-version` (#1806's note built it on stable
    1.94.1), and ships its harnesses and falsification patches. `cargo package --list` shows them.
 5. Ready means proofs passing and the API stable. §235 (the OS is built and updated from packages,
-   and the tree divides by what releases together) has milestone 610 (the interface's stability is
+   and its source divides by purpose) has milestone 610 (the interface's stability is
    measured weekly)'s per-package co-change column, and the soak (step 6) is how the second is
    measured. When the soak exits, calef adds it to the lint-checked publish allowlist. The
    `nifeos/jh7110_entropy` repository is created when the crate moves, on the shared CI template
@@ -143,7 +143,7 @@ harness.
   `crates-io` environment with calef as reviewer, the labels and the team. The manifest keeps
   `publish = false`; the caller sets `allow-unpublished` for the soak.
 - `crates/jh7110_entropy` no longer exists here. `kernel`, `components` and `machine_discovery`
-  depend on `nifeos/jh7110_entropy` by `rev` `1827d43` (§305), the first commit on its `main`. The
+  depend on `nifeos/jh7110_entropy` by `rev` `53b022b` (§305), the commit of its tag `v0.1.1`. The
   verify table, the Kani reach list and the trust-boundary table no longer list it; the repository's
   own `proofs / kani` and `proofs / falsify` jobs prove the four harnesses.
 - End condition 1 holds once this pull request merges and the repository's `main` is green. The
@@ -228,6 +228,10 @@ names until the ratification pass, so this section keeps the links it carried.
   `script/apply-settings` could not (the API wants an owner). The release workflow's tag job needs
   it, so a dry run past the gate waits on calef installing the app. The weekly drift job reads the
   organization's `SETTINGS_TOKEN` secret.
+- Before the 0.1.0 release tag job can run, a person with an `admin:org` token adds
+  `nifeos/jh7110_entropy` (id 1441110094) to the selected-repositories lists of
+  `NIFE_SMELTER_APP_ID` and `NIFE_SMELTER_PRIVATE_KEY`. Ruled 2026-11-01 UTC; the extraction
+  checklist of milestone 857 (crates released on their own) has the command.
 - Steps 5 and 6 wait on milestone 887 (crate repositories share one CI template),
   which owns the shared CI template, the publish allowlist lint and the `nifeos` crates.io team,
   and on milestone 610's per-package co-change column.
@@ -245,9 +249,12 @@ names until the ratification pass, so this section keeps the links it carried.
 - **Outstanding.** The soak's end conditions 2 to 5 and release steps 7 to 9. Checked 2026-10-31
   (UTC): `nifeos/jh7110_entropy` has no weekly run, no dry run, no recorded stranger run and no
   semver period yet, and `crates/jh7110_entropy` is gone from this tree.
-- **Recorded.** Ruled 2026-10-31 UTC: until `jh7110_entropy` reaches crates.io, nife depends on
-  `nifeos/jh7110_entropy` at one git commit (`rev = "1827d439237b1708a6236f68fc0b807388755949"`).
+- **Recorded.** Ruled 2026-11-02 UTC: until `jh7110_entropy` reaches crates.io, nife depends on
+  `nifeos/jh7110_entropy` at the commit of its tag `v0.1.1` (`rev = "53b022b55b42a6dfc7eb670c438f0d3463da8db5"`, with `version = "0.1.1"`).
   A crates.io version replaces the pin after the soak release dry run.
+- **Recorded.** Ruled 2026-11-01 (UTC): the `needs-architect` hold on a semver break applies on
+  wire-identity changes only for contract crates. `jh7110_entropy` is not one, so its hold on
+  every break stands.
 - **Recorded.** An organization owner installs the `nife-smelter` app; see *BUGS* above.
 
 ## Index row
