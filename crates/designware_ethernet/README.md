@@ -13,7 +13,7 @@ older 3.x GMAC.
 
 ## What is proven
 
-Two Kani harnesses, in `src/proofs.rs`:
+Three Kani harnesses, in `src/proofs.rs`:
 
 - `a_delivered_frame_always_fits_the_buffer_and_the_room`: for every value a device can write
   into word 3 of a receive descriptor and every caller buffer size, a frame that `receive_verdict`
@@ -21,12 +21,16 @@ Two Kani harnesses, in `src/proofs.rs`:
   receive buffer.
 - `every_ring_offset_is_inside_the_region`: for every index, each descriptor and buffer offset
   lies inside its own part of the DMA region.
+- `a_link_is_decoded_only_from_what_the_registers_say`: for every value of the six clause 22
+  registers the decode reads, it returns a link only when the status bit is up and the PHY is not
+  isolated; with autonegotiation on, only when it is complete, at a speed and duplex both ends
+  advertise; with it off, at the forced duplex.
 
 Rerun them with `cargo kani`. Each harness has a falsification record at
 `falsifications/<module.path>.<harness>.patch`; applying it with `patch -p3` from the crate root
 makes that harness fail at its own assertion, which shows the proof checks something.
 
-The PHY link decode, MDIO sequencing, the PHY configuration writes, the coherence verdict and
+MDIO sequencing, the PHY configuration writes, the coherence verdict and
 controller bring-up have unit tests against the simulator but no proof.
 
 ## Usage
