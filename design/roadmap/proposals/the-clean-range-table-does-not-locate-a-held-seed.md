@@ -43,5 +43,5 @@ any range end, falls on the held seed. It also fails if a slot with no held wind
 
 ## Status
 
-The withholding is built in `helpers/fuzz-daily-publish.sh`, and its `BUGS` note records that the
-ranges do not return. The return is not built; it waits on the signal above.
+`helpers/fuzz-daily-publish.sh` withholds the ranges, and its `BUGS` note records that they do not
+return. Nothing builds the return yet; it waits on the signal above.

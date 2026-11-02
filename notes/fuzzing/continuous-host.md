@@ -54,9 +54,9 @@ private directory and stays there. The next window for that slot starts one seed
 ## What it publishes
 
 `helpers/fuzz-daily-publish.sh` runs from a daily timer and writes counter totals and a table of
-clean seed ranges. It reports held findings by count and age only. It never opens a held log, and it
-leaves every range of a slot out of the table from that slot's first held window onward, because
-after a held replay the slot's next window starts one seed past the held seed. A finding starts as a private security advisory and stays
+clean seed ranges. It reports held findings by count and age only. It never opens a held log. After a
+held replay the slot's next window starts one seed past the held seed, so the table leaves out every
+range of a slot from that slot's first held window onward. A finding starts as a private security advisory and stays
 private until its fix is on main and a rerun of its input passes against that build, or until 90
 days after the report. A finding sorted as public at triage is the exception.
 
