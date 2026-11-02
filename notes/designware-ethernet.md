@@ -16,7 +16,7 @@ The second port is proposed in pull request #2470 (radon's second Ethernet port,
 
 | piece | where | what it does |
 |---|---|---|
-| everything computed | `crates/designware_ethernet` | register map, descriptors, the DMA region's layout, the handoff, ring logic, MDIO, the YT8531's board settings, the controller sequences, the coherence probe and its verdict, the device-tree query. Host-tested against a simulated controller; two Kani harnesses |
+| everything computed | `crates/designware_ethernet` | register map, descriptors, the DMA region's layout, the handoff, ring logic, MDIO, the YT8531's board settings, the controller sequences, the coherence probe and its verdict, the device-tree query. Host-tested against a simulated controller; three Kani harnesses |
 | the clocks | `crates/jh7110_clock_and_reset` | the AON domain, a parent-select step, and `gmac0`'s two plans, walked by the existing `drivers/jh7110_clock_and_reset.rs` |
 | control plane | `kernel/src/designware_ethernet.rs` | clocks and resets, RGMII select, PHY, reset, the coherence probe, rings, link, start |
 | what the process is handed | `kernel/src/user/designware_ethernet_service.rs` | the DMA region and the controller's DMA page; not the MAC page |
