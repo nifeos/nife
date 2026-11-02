@@ -42,7 +42,7 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   That settles the SDK's place in milestone 691 (packages move out of this repository, one per pull
   request)'s order, and recommendation 3 below (programs first, the SDK last of the leaves) no
   longer holds. It also rules out the third condition's exception, a git dependency on `nife` at a
-  commit. The analysis below stands as written. Pull request #3026 proposes the order the contract
+  commit. The analysis below stands as written. Pull request #3026 rules the order the contract
   crates leave in.
 - Sequenced 2026-10-28 (UTC): the update path goes first, milestones 911 (scripted installs grant
   only what the owner's approval file allows), 909 (basalt composes the bootable image from its
