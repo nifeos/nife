@@ -82,8 +82,9 @@ The publish path refuses unless the host's environment holds `NIFE_FUZZ_PUBLISH=
 stays disabled until a person installs the credential and sets that variable. `--dry-run` prints the tag
 and the asset list and runs nothing else.
 
-The credential is a one-hour installation token of the `nife-fuzz` GitHub App, minted on the host
-from the App's private key, which only root can read. The App holds Contents write and Repository
+The credential is a one-hour installation token of the `nife-fuzz` GitHub App, which a mint helper
+on the host makes from the App's private key, readable by root alone. Neither the helper nor the key
+exists yet; [`finishing-the-setup.md`](finishing-the-setup.md) lists what remains and in what order. The App holds Contents write and Repository
 security advisories write on nifeos/nife alone (ruled 2026-11-01 UTC).
 [`the-fuzz-app.md`](the-fuzz-app.md) is the runbook for the person who creates it, and it states
 what the key can do. Main's ruleset requires a pull request and has no bypass actor, so the token
@@ -108,16 +109,14 @@ The lane has no root. A person copies the three files in `helpers/systemd/` to
 `enable --now nife-fuzz-publish.timer`.
 
 That installs phase 1: the publish unit writes the day's report and clean ranges to local files and
-publishes nothing. Phase 2 publishes the release, and takes three more steps as root:
+publishes nothing. Phase 2 publishes the release. It waits on the clean-range fix and the mint
+helper, and step P5 of [`finishing-the-setup.md`](finishing-the-setup.md) gives its drop-in. The unit
+as shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag. Without
+`NIFE_FUZZ_PUBLISH=1` the script refuses to publish, and without a token `gh` fails; either way the
+local files are still written.
 
-1. Write a credential for the publisher (`GH_TOKEN`, the variable `gh` reads) to a file that only root
-   can read, mode 0600 and owned by root.
-2. Run `systemctl edit nife-fuzz-publish.service` and add a drop-in with `EnvironmentFile=` naming that
-   file, `Environment=NIFE_FUZZ_PUBLISH=1`, and an `ExecStart=` that first clears the shipped one
-   (`ExecStart=` on its own line) and then runs `helpers/fuzz-daily-publish.sh --publish`. The unit as
-   shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag.
-3. Tell systemd to reread its unit files, as for the install above. Without `NIFE_FUZZ_PUBLISH=1` the script refuses to publish, and
-   without the credential `gh` fails; either way the local files are still written.
+A restart does not move the slots to a new commit. Each slot keeps its worktree at the commit it
+started on, so an update moves the clone and every slot worktree, as step P1 of that page shows.
 
 To check the wiring before the first release, run `helpers/fuzz-daily-publish.sh --dry-run` as the
 unit's user. It prints the tag and the assets and publishes nothing.
@@ -135,6 +134,12 @@ unit's user. It prints the tag and the assets and publishes nothing.
 - Only x86_64 runs. aarch64 and riscv64 need emulation and a larger machine.
 - Nobody has run the daily publish end to end against a real credential, because a person installs
   the credential.
+- `windows.tsv` sits outside the held directory and any process of the fuzz account can read it. A
+  held window's row carries its first seed and the seeds it ran before the replay, and their sum is
+  the held seed. Only clean rows leave the host, so nothing has leaked; the filer's milestone should
+  move held rows' seeds under the held directory.
+- Nothing moves an existing slot worktree to a newer commit. The milestone
+  [the fuzz host follows main](../../design/roadmap/proposals/the-fuzz-host-follows-main.md) covers it.
 - After a held window with a replay line, the slot's next window starts one seed past the failing
   one, so the first seed of the next published clean range, less one, is the held seed. The daily
   publish must not run until the proposed fix in

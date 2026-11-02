@@ -18,12 +18,17 @@ handles the key, reads it or looks for it.
 
 Read this first. It is the exposure you accept by placing the key.
 
-- The host runs main's code unattended. Its supervisor fast-forwards to each green commit on main
-  and re-executes itself as the fuzz account, so anything merged to main runs on the host within one
-  window.
-- The key stays root-only, and the code that reads it does not update itself. The fuzz account can
-  still read the current installation token, which lives one hour, and the host mints a new one every
-  hour. Code on main can therefore act as the App for as long as it runs.
+- The host runs main's code unattended once the milestone
+  [the fuzz host follows main](../../design/roadmap/proposals/the-fuzz-host-follows-main.md) lands.
+  Its supervisor then fast-forwards to each green commit on main and re-executes itself as the fuzz
+  account, so anything merged to main runs on the host within one window.
+- The key stays root-only, and the mint helper that reads it lives outside the clone, so an update
+  never replaces it. The fuzz account can read the current installation token, which lives one
+  hour, and the helper mints a new one every hour. Code on main can therefore act as the App for as
+  long as it runs.
+- With Contents write a token can also create, rewrite or delete any branch except main. Main's
+  ruleset requires zero approving reviews, so a commit pushed to an open pull request's branch with
+  auto-merge armed reaches main through the merge queue when its checks pass.
 - With Contents write, a token can create, move or delete any `fuzz-*` tag and any release on
   nifeos/nife. The ruleset "tags: only fuzz-* tags may be made" refuses creating, updating or
   deleting any other tag, and it has no bypass actor. An architect accepted the remaining exposure on
@@ -60,8 +65,10 @@ Repository security advisories and Metadata.
 
 ## Generate the key and place it on the host
 
-1. Before any key exists, run the throwaway-repository test that the ruling's proposal lists. It
-   confirms that an App with the advisory permission alone can create an advisory.
+1. Before any key exists, run the throwaway-repository test, step P3 of
+   [`finishing-the-setup.md`](finishing-the-setup.md). It confirms that an App with the advisory
+   permission alone can create an advisory. That page's step P4 gives the commands for the steps
+   below.
 2. On the App's settings page, <https://github.com/organizations/nifeos/settings/apps/nife-fuzz>,
    under Private keys, generate a private key. The browser downloads one
    `.pem` file.
@@ -80,7 +87,9 @@ environment, a repository secret, a log, a shell history and a clipboard manager
 
 A second App, `nife-fuzz-reader`, lets a fix lane read a held finding's advisory. It holds Repository
 security advisories read and nothing else. An architect ruled this on 2026-11-01 (UTC). It is an App
-and not a fine-grained personal token, because a token expires and belongs to a person.
+and not a fine-grained personal token, because a token expires and belongs to a person. It exists,
+installed on nifeos/nife only: App ID 5571868, installation ID 177642435, neither secret. Steps 1
+to 5 below stay as the procedure for replacing it.
 
 Its key lives in a file only root can read on the machine that launches fix lanes. It never sits on
 the fuzz host and never enters a lane's environment. A lane receives a one-hour installation token at
