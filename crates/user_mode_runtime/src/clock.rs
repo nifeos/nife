@@ -59,7 +59,7 @@ pub fn cntfrq_checked() -> Option<u64> {
 }
 
 /// The counter frequency in Hz (RISC-V), read from the **timebase page** the kernel maps read-only
-/// into every process at [`counter_frequency_contract::PAGE_VA`]: a plain load, no syscall.
+/// into every process at [`counter_frequency_contract::PAGE_VIRTUAL_ADDRESS`]: a plain load, no syscall.
 ///
 /// RISC-V has no register that reports the timebase, so the kernel reads the device tree's
 /// `/cpus/timebase-frequency` (`kernel::arch::riscv64::timer::initialize_frequency`) and publishes it
@@ -81,12 +81,14 @@ pub fn cntfrq() -> u64 {
 #[cfg(target_arch = "riscv64")]
 pub fn cntfrq_checked() -> Option<u64> {
     // SAFETY: every path that builds a riscv64 process maps a page (real, or zeroed when the rate
-    // was never learned) read-only at `counter_frequency_contract::PAGE_VA` before it runs:
+    // was never learned) read-only at `counter_frequency_contract::PAGE_VIRTUAL_ADDRESS` before it runs:
     // `kernel::user::load`, `kernel::user::map_timebase_page`, and
     // `process_builder::build_child_space`. See that crate's `BUGS` section for the one shape
     // that does not, which faults here on purpose.
     let page = unsafe {
-        counter_frequency_contract::CounterFrequencyPage::new(counter_frequency_contract::PAGE_VA)
+        counter_frequency_contract::CounterFrequencyPage::new(
+            counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
+        )
     };
     page.hz()
 }
@@ -112,7 +114,7 @@ pub fn now() -> u64 {
 }
 
 /// The counter frequency in Hz (`x86_64`), read from the **timebase page** the kernel maps
-/// read-only into every process at [`counter_frequency_contract::PAGE_VA`]: a plain load, no
+/// read-only into every process at [`counter_frequency_contract::PAGE_VIRTUAL_ADDRESS`]: a plain load, no
 /// syscall. x86 has no architected rate ring 3 can ask for, so the kernel reads `CPUID` leaf
 /// `0x15` or calibrates (`arch::x86_64::timer::initialize_frequency`), and a child's page carries its
 /// parent's rate. See notes/user-mode-runtime/time.md.
@@ -135,9 +137,11 @@ pub fn cntfrq() -> u64 {
 pub fn cntfrq_checked() -> Option<u64> {
     // SAFETY: every kernel-side space-building function this crate's own docs list maps a page
     // (real, or zeroed when the rate was never learned) read-only at
-    // `counter_frequency_contract::PAGE_VA` into every x86_64 process before it ever runs.
+    // `counter_frequency_contract::PAGE_VIRTUAL_ADDRESS` into every x86_64 process before it ever runs.
     let page = unsafe {
-        counter_frequency_contract::CounterFrequencyPage::new(counter_frequency_contract::PAGE_VA)
+        counter_frequency_contract::CounterFrequencyPage::new(
+            counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
+        )
     };
     page.hz()
 }

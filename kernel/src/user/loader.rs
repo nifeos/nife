@@ -10,7 +10,9 @@ use super::*;
 // heap or windows can never be placed over it. Checked here, where both are linked, and not in the
 // page's own crate, which knows nothing of the map; each architecture's build checks its own
 // address.
-const _: () = assert!(counter_frequency_contract::PAGE_VA >= address_space_map::CODE_MODEL_CEILING);
+const _: () = assert!(
+    counter_frequency_contract::PAGE_VIRTUAL_ADDRESS >= address_space_map::CODE_MODEL_CEILING
+);
 
 /// Why a binary was refused.
 ///
@@ -109,7 +111,7 @@ pub fn load(image: &[u8], windowed: u64) -> Result<(AddressSpace, u64), LoadErro
     if let Some(phys) = timebase_page_phys() {
         space
             .map_physical(
-                counter_frequency_contract::PAGE_VA,
+                counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
                 phys,
                 Flags::user_rodata(),
                 crate::revoke::PageMapSource::NoCapability,
@@ -144,14 +146,16 @@ fn timebase_page_phys() -> Option<u64> {
         Some(hz) => {
             let bytes = counter_frequency_contract::build_page(hz);
             // SAFETY: `dst` names a freshly allocated frame, reachable through the direct map and
-            // owned by nobody else yet; `bytes` is `PAGE_BYTES` (24) bytes, far under the frame's
+            // owned by nobody else yet; `bytes` is `PAGE_CONTENT_BYTES` (16) bytes, far under the frame's
             // `FRAME_SIZE`, so the copy does not run past it.
             unsafe { core::ptr::copy_nonoverlapping(bytes.as_ptr(), dst, bytes.len()) };
         }
         // Not yet measured: the frame stays zero, which reads as unknown.
         // SAFETY: as the `Some` arm above: `dst` names a freshly allocated, exclusively owned
-        // frame, and `PAGE_BYTES` is far under `FRAME_SIZE`.
-        None => unsafe { core::ptr::write_bytes(dst, 0, counter_frequency_contract::PAGE_BYTES) },
+        // frame, and `PAGE_CONTENT_BYTES` is far under `FRAME_SIZE`.
+        None => unsafe {
+            core::ptr::write_bytes(dst, 0, counter_frequency_contract::PAGE_CONTENT_BYTES)
+        },
     }
 
     PAGE_PHYS.store(phys, Ordering::Release);
@@ -168,7 +172,7 @@ fn timebase_page_phys() -> Option<u64> {
 pub fn map_timebase_page(space: &mut AddressSpace) -> Result<(), MapError> {
     if let Some(phys) = timebase_page_phys() {
         space.map_physical(
-            counter_frequency_contract::PAGE_VA,
+            counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
             phys,
             Flags::user_rodata(),
             crate::revoke::PageMapSource::NoCapability,
