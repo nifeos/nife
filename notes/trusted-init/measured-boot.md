@@ -68,6 +68,17 @@ exactly as it vouches for the progenitor, so the progenitor's refusals are as tr
 progenitor is. The progenitor looks a name up before hashing, so a name the table does not mention
 is a refusal that costs nothing to reach.
 
+## The loader's two words
+
+The loader names the same two entries a second way, on the kernel's command line:
+`nife.progenitor=sha256:<hex>` and `nife.base=sha256:<hex>`, the table's digest
+(`loader_digests`). One grammar serves every writer and the kernel, so it lives here beside the
+digest text it reuses. The kernel holds the progenitor and the table to both the words and its
+compiled trust root, and halts if either disagrees or a word is missing, repeated or malformed. The
+writers copy the words from the file `cargo xtask` packs beside the archive and never hash at
+boot: a loader that measured the archive it hands over would vouch for any swap. Milestone 695 (the
+kernel trusts two digests handed to it by the loader) has the writers and what remains.
+
 ## The loader's verdict
 
 One rule produces both fields of `Verdict`: nothing runs that the table will not vouch for. So

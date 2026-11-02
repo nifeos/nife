@@ -66,6 +66,7 @@ const AP_TRAMPOLINE_PHYS: u64 = 0x8000;
 /// added the second entry (this loader's own file). Doubling it costs nothing and puts the slack
 /// back.
 const CMDLINE_OFFSET: u64 = 256;
+const _: () = assert!(CMDLINE_OFFSET as usize + CMDLINE_LEN <= PAGE as usize);
 
 /// What this architecture reads from the firmware before anything is placed.
 pub struct Found {
@@ -347,8 +348,13 @@ fn write_cmdline(found: &Found, from_slot: Option<u8>, on_nvme: bool, cmdline_at
     let mut token = [0u8; CMDLINE_LEN];
     // The one writer, so what this places is decoded in a host test by the kernel's own parsers;
     // `handoff::cmdline` says what each token is and what `screen_hold` adds.
-    let written =
-        uefi_loader::handoff::cmdline(found.screen.as_ref(), from_slot, on_nvme, &mut token);
+    let written = uefi_loader::handoff::cmdline(
+        found.screen.as_ref(),
+        from_slot,
+        on_nvme,
+        crate::embedded::LOADER_DIGESTS,
+        &mut token,
+    );
     if written == 0 {
         0
     } else {

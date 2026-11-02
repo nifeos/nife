@@ -43,15 +43,17 @@ pub(crate) fn boot_info(at: usize) -> Option<BootInfo> {
 ///
 /// A NUL-terminated string at a physical address a previous stage chose, so the terminator is a
 /// claim rather than a guarantee, and the loop below has to stop somewhere whether or not it finds
-/// one. `Framebuffer::MAXIMUM_BYTES` is the only thing written there today and is well under this.
-const MAXIMUM_CMDLINE: usize = 256;
+/// one. `uefi_loader::handoff::CMDLINE_LEN` adds up the longest line a loader writes, the two
+/// digest words included, and a host test there holds it under this.
+const MAXIMUM_CMDLINE: usize = 512;
 
 /// The boot command line the loader wrote, or `None` when this boot chain did not write one.
 ///
 /// One reader for every token: the screen ([`attach_screen`], milestone 243 (a machine with no
 /// serial port has no way to say anything)) and, on an installed machine, the boot slot
-/// ([`boot_slot`]), so a machine with no framebuffer still gets its slot. QEMU's PVH loader writes
-/// a zero command line, so `script/test --arch x86_64` gets `None`.
+/// ([`boot_slot`]), so a machine with no framebuffer still gets its slot, and the loader's two
+/// digests (`trust::record_loader_digests`). Under QEMU's PVH loader the line is the runner's
+/// `-append`, which carries only the digests.
 fn cmdline(info: &BootInfo) -> Option<&'static str> {
     if info.cmdline == 0 {
         return None;
@@ -797,6 +799,9 @@ pub(crate) fn bring_up_memory(info: &BootInfo) -> usize {
     // And whether the boot came from the NVMe disk, the one fact that lets the internal disk be
     // mounted at all (`boot_slot::medium`; calef's ruling on PR #1652, 2026-10-04 UTC).
     crate::memory::record_booted_from_nvme(cmdline(info).is_some_and(boot_slot::medium::is_nvme));
+    // And the loader's two digests (`measured_boot::loader_digests`), which the progenitor and its
+    // measurement table are held to before the kernel enters userspace.
+    crate::trust::record_loader_digests(cmdline(info).map(str::as_bytes));
 
     crate::memory::bring_up_page_frames(&ram[..count], &forbidden[..forbidden_count]);
     count

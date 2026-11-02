@@ -370,6 +370,16 @@ fn parse_digest_bytes(text: &[u8]) -> Result<Digest, DigestTextError> {
 /// spelling the parse reads) reserved for the crate's one block.
 pub const PROGRAM_MEASUREMENTS: &str = "program_measurements";
 
+/// The archive entry the kernel enters as the boot program, whose digest a loader hands over as
+/// `nife.progenitor` ([`loader_digests`]). The kernel, the packer that writes the words for QEMU
+/// and `uefi_loader`'s build all name it, so it lives here (rule 7). Like
+/// [`PROGRAM_MEASUREMENTS`], a string two programs agree on, provisional, and this paragraph is its
+/// record.
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by
+/// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
+pub const PROGENITOR: &str = "progenitor";
+
 /// A manifest line [`manifest_entries`] could not read, and why.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BadLine<'a> {
@@ -496,6 +506,296 @@ pub fn verdict<'a>(table: &str, name: &str, bytes: Option<&'a [u8]>) -> Verdict<
     Verdict {
         elf: elf::Elf::parse(bytes).ok(),
         unvouched: false,
+    }
+}
+
+/// **The two digests a loader hands the kernel**, as two words on the kernel's command line (§235
+/// (the OS is built and updated from packages), T4 with T2): `nife.progenitor=sha256:<hex>`, the
+/// boot program the kernel may enter, and `nife.base=sha256:<hex>`, the archive's
+/// [`PROGRAM_MEASUREMENTS`] table (ruled 2026-11-01 UTC). The kernel checks the progenitor
+/// against the first and the table against the second. On a device tree the words sit in
+/// `/chosen/bootargs`; on x86_64 in the PVH command line, beside `boot-slot=`. Every writer
+/// (`uefi_loader`, `xtask`'s archive packer for QEMU's `-append`, the board's boot script) calls
+/// [`encode`], and the kernel calls [`parse`], so the two sides read one grammar (rule 7). See
+/// notes/trusted-init/measured-boot.md.
+///
+/// The words, their keys and the choice of the command line over binary `/chosen` properties were
+/// ruled 2026-11-01 (UTC), question 1 of
+/// `design/roadmap/proposals/how-the-loader-hands-the-kernel-two-digests.md`.
+///
+/// # Examples
+///
+/// ```
+/// use measured_boot::loader_digests::{self, LoaderDigests, Refusal, Word};
+/// use measured_boot::sha256;
+///
+/// let digests = LoaderDigests { progenitor: sha256(b"progenitor"), base: sha256(b"table") };
+/// let mut out = [0u8; loader_digests::MAXIMUM_BYTES];
+/// let n = loader_digests::encode(&digests, &mut out);
+/// let words = core::str::from_utf8(&out[..n]).unwrap();
+/// assert!(words.starts_with("nife.progenitor=sha256:"));
+///
+/// // Beside the chooser's words, in any order, which is what the kernel reads.
+/// let line = std::format!("boot-slot=1 {words} boot-medium=nvme");
+/// assert_eq!(loader_digests::parse(&line), Ok(digests));
+///
+/// // A loader that wrote neither is a boot the kernel refuses to hand the archive to.
+/// assert_eq!(loader_digests::parse("boot-slot=1"), Err(Refusal::Missing(Word::Progenitor)));
+/// ```
+///
+/// Name: provisional, minted 2026-11-01 (UTC) by
+/// milestone/695-the-kernel-trusts-two-digests-from-the-loader. Considered a crate of its own (one
+/// more name for 80 lines that only reuse this crate's digest text) and `boot_slot` (which holds the
+/// chooser's words but not digests).
+///
+/// [`encode`]: loader_digests::encode
+/// [`parse`]: loader_digests::parse
+pub mod loader_digests {
+    use super::{DIGEST_TEXT_LEN, Digest, DigestTextError, digest_text, parse_digest};
+
+    /// The progenitor's word's key, `=` included, as ruled 2026-11-01 (UTC).
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
+    pub const PROGENITOR_KEY: &str = "nife.progenitor=";
+
+    /// The table's word's key, `=` included. The word `nife.base` was ruled 2026-11-01 (UTC).
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
+    pub const BASE_KEY: &str = "nife.base=";
+
+    /// The length of both words and the one space between them: what [`encode`] writes, and what a
+    /// loader adds to the command line it already writes.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
+    pub const MAXIMUM_BYTES: usize =
+        PROGENITOR_KEY.len() + DIGEST_TEXT_LEN + 1 + BASE_KEY.len() + DIGEST_TEXT_LEN;
+
+    /// The two facts, decoded.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub struct LoaderDigests {
+        /// The SHA-256 of the archive's progenitor entry.
+        pub progenitor: Digest,
+        /// The SHA-256 of the archive's [`super::PROGRAM_MEASUREMENTS`] entry.
+        pub base: Digest,
+    }
+
+    /// Which of the two words a [`Refusal`] is about.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum Word {
+        /// `nife.progenitor=`.
+        Progenitor,
+        /// `nife.base=`.
+        Base,
+    }
+
+    impl Word {
+        /// The word's key without its `=`, for a diagnostic.
+        ///
+        /// Name: provisional, minted 2026-11-01 (UTC) by
+        /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
+        #[must_use]
+        pub fn key(self) -> &'static str {
+            let key = match self {
+                Word::Progenitor => PROGENITOR_KEY,
+                Word::Base => BASE_KEY,
+            };
+            &key[..key.len() - 1]
+        }
+    }
+
+    /// Why a command line does not carry the two digests. Every one halts the boot: the kernel has
+    /// no second source for either fact.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum Refusal {
+        /// No word with this key: a loader that does not write it, or a boot with no line at all.
+        Missing(Word),
+        /// The key appears twice. Refused rather than taking either, since two values for one fact
+        /// mean the line was assembled by two writers and only one of them is the loader.
+        Repeated(Word),
+        /// The value after the key is not a digest's text form.
+        Malformed(Word, DigestTextError),
+    }
+
+    /// Write both words into `out`, progenitor first, returning [`MAXIMUM_BYTES`], or **0 when
+    /// `out` is shorter**. Zero rather than a panic for `boot_slot::cmdline::encode`'s reason: the
+    /// caller may be a loader with no console left, and a line without the words is a boot the
+    /// kernel refuses by name.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
+    #[must_use]
+    pub fn encode(digests: &LoaderDigests, out: &mut [u8]) -> usize {
+        if out.len() < MAXIMUM_BYTES {
+            return 0;
+        }
+        let mut n = 0;
+        for piece in [
+            PROGENITOR_KEY.as_bytes(),
+            &digest_text(&digests.progenitor),
+            b" ",
+            BASE_KEY.as_bytes(),
+            &digest_text(&digests.base),
+        ] {
+            out[n..n + piece.len()].copy_from_slice(piece);
+            n += piece.len();
+        }
+        n
+    }
+
+    /// Read both words out of a whole command line. Other words are ignored, in any order; each
+    /// key must appear exactly once and carry a digest in [`parse_digest`]'s grammar.
+    ///
+    /// Name: provisional, minted 2026-11-01 (UTC) by
+    /// milestone/695-the-kernel-trusts-two-digests-from-the-loader.
+    pub fn parse(cmdline: &str) -> Result<LoaderDigests, Refusal> {
+        Ok(LoaderDigests {
+            progenitor: one(cmdline, Word::Progenitor)?,
+            base: one(cmdline, Word::Base)?,
+        })
+    }
+
+    /// The one value of `word` on `cmdline`.
+    fn one(cmdline: &str, word: Word) -> Result<Digest, Refusal> {
+        let key = match word {
+            Word::Progenitor => PROGENITOR_KEY,
+            Word::Base => BASE_KEY,
+        };
+        let mut values = cmdline
+            .split_ascii_whitespace()
+            .filter_map(|w| w.strip_prefix(key));
+        let value = values.next().ok_or(Refusal::Missing(word))?;
+        if values.next().is_some() {
+            return Err(Refusal::Repeated(word));
+        }
+        parse_digest(value).map_err(|why| Refusal::Malformed(word, why))
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use std::format;
+        use std::string::String;
+
+        use super::super::{DigestTextError, sha256};
+        use super::*;
+
+        fn sample() -> LoaderDigests {
+            LoaderDigests {
+                progenitor: sha256(b"progenitor"),
+                base: sha256(b"program_measurements"),
+            }
+        }
+
+        fn words(d: &LoaderDigests) -> String {
+            let mut out = [0u8; MAXIMUM_BYTES];
+            let n = encode(d, &mut out);
+            assert_eq!(n, MAXIMUM_BYTES);
+            String::from(core::str::from_utf8(&out[..n]).unwrap())
+        }
+
+        /// **What a loader writes is what the kernel reads**, alone and among the other words every
+        /// loader writes, in either position.
+        #[test]
+        fn the_kernel_reads_back_what_a_loader_writes() {
+            let d = sample();
+            let w = words(&d);
+            assert_eq!(parse(&w), Ok(d));
+            let screen = "screen=0x80000000,800,600,3200,bgrx";
+            assert_eq!(parse(&format!("{screen} {w} boot-slot=0")), Ok(d));
+            assert_eq!(parse(&format!("{w} boot-medium=nvme")), Ok(d));
+            // Swapped, the two digests are read by key and not by position.
+            let (first, second) = w.split_once(' ').unwrap();
+            assert_eq!(parse(&format!("{second} {first}")), Ok(d));
+        }
+
+        /// The words are exactly the proposal's: the key, then the digest text.
+        #[test]
+        fn the_words_are_keyed_digest_text() {
+            let d = sample();
+            let w = words(&d);
+            let p = digest_text(&d.progenitor);
+            let b = digest_text(&d.base);
+            let want = format!(
+                "nife.progenitor={} nife.base={}",
+                core::str::from_utf8(&p).unwrap(),
+                core::str::from_utf8(&b).unwrap()
+            );
+            assert_eq!(w, want);
+        }
+
+        #[test]
+        fn a_short_buffer_writes_nothing() {
+            let mut out = [0u8; MAXIMUM_BYTES - 1];
+            assert_eq!(encode(&sample(), &mut out), 0);
+            assert!(out.iter().all(|&b| b == 0));
+        }
+
+        /// **Every way a line can lack a fact is a refusal that names it.**
+        #[test]
+        fn each_missing_repeated_or_malformed_word_is_refused_by_name() {
+            let d = sample();
+            let w = words(&d);
+            let (progenitor, base) = w.split_once(' ').unwrap();
+
+            assert_eq!(parse(""), Err(Refusal::Missing(Word::Progenitor)));
+            assert_eq!(parse(base), Err(Refusal::Missing(Word::Progenitor)));
+            assert_eq!(parse(progenitor), Err(Refusal::Missing(Word::Base)));
+            assert_eq!(
+                parse(&format!("{w} {base}")),
+                Err(Refusal::Repeated(Word::Base))
+            );
+            assert_eq!(
+                parse(&format!("{progenitor} {w}")),
+                Err(Refusal::Repeated(Word::Progenitor))
+            );
+            assert_eq!(
+                parse(&format!("{progenitor} nife.base=")),
+                Err(Refusal::Malformed(Word::Base, DigestTextError::Missing))
+            );
+            let bare = &base[BASE_KEY.len() + "sha256:".len()..];
+            assert_eq!(
+                parse(&format!("nife.progenitor={bare} {base}")),
+                Err(Refusal::Malformed(
+                    Word::Progenitor,
+                    DigestTextError::Unlabeled
+                ))
+            );
+            assert_eq!(
+                parse(&format!("{progenitor} nife.base=sha256:abc")),
+                Err(Refusal::Malformed(Word::Base, DigestTextError::NotHex))
+            );
+        }
+
+        /// A key that merely starts the same way is a different word, and a key is case-exact.
+        #[test]
+        fn only_the_exact_keys_count() {
+            let d = sample();
+            let w = words(&d);
+            let (progenitor, base) = w.split_once(' ').unwrap();
+            let lookalike = base.replacen("nife.base=", "nife.base_old=", 1);
+            assert_eq!(
+                parse(&format!("{progenitor} {lookalike}")),
+                Err(Refusal::Missing(Word::Base))
+            );
+            let shouting = base.replacen("nife.base=", "NIFE.BASE=", 1);
+            assert_eq!(
+                parse(&format!("{progenitor} {shouting}")),
+                Err(Refusal::Missing(Word::Base))
+            );
+            assert_eq!(Word::Progenitor.key(), "nife.progenitor");
+            assert_eq!(Word::Base.key(), "nife.base");
+        }
     }
 }
 
