@@ -179,14 +179,14 @@ uses it, so #2202's hold logged `(orphan)` from an unrelated adoption. The fix, 
 it: diff against the pull request's real base fetched at pass time, or re-check a firing against a
 fresh fetch before holding, and assign `$causes` before the hold block prints it.
 
-## Rule 2 of the architect label fires on a patch bump of a dependency already approved
+## Rule 2 of the architect label fires on a patch bump of an old dependency
 
 Rule 2 (`dependency`) of `helpers/architect-label-rules.py` fires when a (name, version
 requirement) pair enters a `Cargo.toml` that the base tree does not hold. A bump of a git
 dependency from `0.1.0` to `0.1.1` counts as a new pair, because the base lockfile's `0.1.0` does
-not admit `0.1.1`. So a patch bump of a dependency an architect already approved puts
+not admit `0.1.1`. So a patch bump of a dependency an architect already cleared puts
 `needs-architect` on the pull request, and only `script/record-ruling` takes it off. Pull request
-3061 (the `jh7110_entropy` pins) is the case. The rules file is unchanged. Narrowing the rule is
+3061 (the `jh7110_entropy` pins) is the case. The rules file stays as it is. Narrowing the rule is
 work for a lane of its own and needs a ruling.
 
 ## The watchers
