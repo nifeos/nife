@@ -137,6 +137,22 @@ the limit pick a name.
   `script/` entry needs a row in [notes/scripts.md](../notes/scripts.md).
 - `target/` is build output, and `targets/` holds the tracked target JSON.
 
+### Page contract crates
+
+A crate that exports a read-only mapped page (`counter_frequency_contract`, `current_cpu_contract`,
+`environment_contract`, `machine_statistics_contract`, `program_argument_contract`, and any later
+one) spells its constants the same way. Ruled 2026-11-02 (UTC).
+
+| Constant | Name |
+|---|---|
+| The length of the page's content, which is less than a page | `PAGE_CONTENT_BYTES` |
+| A real page size | `PAGE_BYTES` (`program_argument_contract`, 4096) |
+| The address the page is mapped at | `PAGE_VIRTUAL_ADDRESS`, and `virtual_address` for a parameter that takes it |
+
+`build_page`, `PageBuilder::build` and `build_header` are not part of the rule. A crate takes these
+names in its own name review before it leaves, and `helpers/name_release.py --draft` marks the rows
+the rule settles.
+
 ## Words calef has ruled on
 
 Each sets a test that reaches past the word. The arguments are in
