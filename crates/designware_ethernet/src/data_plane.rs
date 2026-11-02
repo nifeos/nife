@@ -1,7 +1,7 @@
 //! **The data plane**: the regions and tails a driver supplies, and the receive and transmit loop
 //! over them.
 //!
-//! Name: decided by the maintainer, provisional; reversing costs one pull request.
+//! Name: provisional, decided by the maintainer; reversing costs one pull request.
 
 use super::*;
 

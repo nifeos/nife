@@ -52,7 +52,7 @@ pub fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
 /// build if the two ever share a bit. The clippy lints read any constant assertion as a runtime
 /// suspicion and fold it; that is what a gate is, allowed here for exactly that reason.
 ///
-/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 #[doc(alias = "THE_PROBE_PAYLOAD_SET_BIT_AND_COUNTER_SHARE_NO_BIT")]
 pub const PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP: () = assert!(0x40 & 0x3f == 0);

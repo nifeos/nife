@@ -2,7 +2,7 @@
 //! driver writes and reads, and what a receive descriptor says. The descriptor bits keep
 //! OpenBSD's `dwqereg.h` names, and each one's documentation opens with its full name.
 //!
-//! Name: decided by the maintainer, provisional; reversing costs one pull request.
+//! Name: provisional, decided by the maintainer; reversing costs one pull request.
 
 pub(crate) const PAGE: u64 = 4096;
 
@@ -133,7 +133,7 @@ pub const fn receive_descriptor_words(buffer_physical_address: u64) -> [u64; 2] 
 /// this constant. The compiler is the gate's only reader, and it reads at const evaluation, so
 /// `dead_code` is allowed here for exactly that reason.
 ///
-/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(dead_code)]
 #[doc(alias = "THE_RECEIVE_DESCRIPTOR_SET_BITS_SHARE_NO_BIT")]
 pub const RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP: () = assert!(
@@ -163,7 +163,7 @@ pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16
 /// gate's only reader, and it reads at const evaluation, so `dead_code` is allowed here for
 /// exactly that reason.
 ///
-/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(dead_code)]
 #[doc(alias = "THE_TRANSMIT_DESCRIPTOR_BITS_SHARE_NO_BIT")]
 pub const TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP: () = assert!(
@@ -233,7 +233,7 @@ pub fn receive_verdict(descriptor_word_3: u32, room: usize) -> ReceiveVerdict {
 /// `receive_verdict` names this constant. The compiler is the gate's only reader, and it reads at
 /// const evaluation, so `dead_code` is allowed here for exactly that reason.
 ///
-/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(dead_code)]
 #[doc(alias = "THE_FIRST_AND_LAST_BITS_SHARE_NO_BIT")]
 pub const FIRST_AND_LAST_BITS_DO_NOT_OVERLAP: () =

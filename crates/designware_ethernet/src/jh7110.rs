@@ -62,7 +62,7 @@ pub const BUS: Bus = Bus {
 /// which the compiler checks here; the exclusion of the file's constant-item or-versus-xor
 /// mutants names this constant.
 ///
-/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[doc(alias = "THE_BURST_LENGTH_BITS_SHARE_NO_BIT")]
 pub const BURST_LENGTH_BITS_DO_NOT_OVERLAP: () = assert!(
     registers::SYS_BUS_MODE_BLEN_256
@@ -121,7 +121,7 @@ pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u3
 /// `select_reduced_gigabit_media_independent_interface` is its `^` for every word, and the
 /// exclusion of those mutants names this constant.
 ///
-/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[doc(alias = "THE_INTERFACE_SELECT_AND_CLEARED_WORD_SHARE_NO_BIT")]
 pub const INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP: () =
     assert!(PHY_INTF_RGMII & SYSTEM_CONTROLLER_FIELD == PHY_INTF_RGMII);

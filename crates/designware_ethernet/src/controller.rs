@@ -193,7 +193,7 @@ pub(crate) fn receive_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u
 /// constant. Clippy's `eq_op` lint folds the second conjunct's literals to `0 == 0`; that is
 /// what a gate is, allowed here for exactly that reason.
 ///
-/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(clippy::eq_op)]
 #[doc(alias = "THE_RECEIVE_QUEUE_MODE_FIELDS_SHARE_NO_BIT")]
 pub const RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () = assert!(
@@ -223,7 +223,7 @@ pub(crate) fn transmit_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> 
 /// the compiler checks here; the mutation exclusion for `transmit_queue_mode` names this
 /// constant.
 ///
-/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[doc(alias = "THE_TRANSMIT_QUEUE_MODE_FIELDS_SHARE_NO_BIT")]
 pub const TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () =
     assert!(registers::MTL_CHAN_TX_OP_MODE_TSF & registers::MTL_CHAN_TX_OP_MODE_TTC_MASK == 0);
@@ -378,7 +378,7 @@ pub fn configure(
 /// above cleared takes a value only inside that field; where neither holds, the configure tests
 /// kill the swap.
 ///
-/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[doc(alias = "THE_CONFIGURED_BUS_FIELDS_SHARE_NO_BIT")]
 pub const CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP: () = assert!(
     registers::SYS_BUS_MODE_RD_OSR_LMT_MASK & registers::SYS_BUS_MODE_WR_OSR_LMT_MASK == 0
@@ -441,7 +441,7 @@ pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 
 /// `|`-versus-`^` over disjoint bits; the chain's first swap toggles `conf` itself, and
 /// `the_mac_word_from_zero_and_from_all_ones` kills it.
 ///
-/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[doc(alias = "THE_MAC_CONFIGURATION_BITS_SHARE_NO_BIT")]
 pub const MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP: () = assert!(
     registers::MAC_CONF_PS
