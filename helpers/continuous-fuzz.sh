@@ -34,9 +34,16 @@
 # **One checkout per guest.** `cargo xtask test` writes `target/nifefs.img` under the workspace root,
 # and QEMU refuses one image to two writers, so each guest slot runs in its own git worktree of the
 # clone this script lives in, each with its own `target/`. A slot's worktree is detached at the
-# clone's HEAD when it is first created and stays there: a restart does not move it, so an update
-# moves the clone and each worktree (notes/fuzzing/finishing-the-setup.md, step P1). Seed ranges are
-# per slot (a fixed stride apart), so two slots never sweep one seed.
+# clone's HEAD, and `sync_slots` moves every existing one to the clone's HEAD before any slot starts.
+# Seed ranges are per slot (a fixed stride apart), so two slots never sweep one seed.
+#
+# **The host follows main.** At most every `NIFE_FUZZ_FOLLOW_EVERY` seconds (default 300; 0 turns it
+# off) the supervisor asks `helpers/fuzz-follow-main.py look` whether main has a newer commit that
+# is a fast-forward and whose required checks are green. When it has, the supervisor writes
+# `state/follow-drain`, each slot stops after its current window, `apply` moves the clone, and the
+# supervisor re-executes itself from the moved clone, which reruns the toolchain step and
+# `sync_slots`. A change to a unit file is never applied; `apply` prints one line saying so. The four
+# limits an architect ruled on 2026-11-01 (UTC) are listed and enforced in that helper.
 #
 # **A finding is held.** A window that prints a `replay:` line, panics, or runs out its bound is
 # untriaged by definition. Its log moves to `$state/held/`, mode 700, and nothing here ever
@@ -86,6 +93,9 @@ kvm_device="${NIFE_FUZZ_KVM_DEVICE:-/dev/kvm}"
 # Slot n starts at base + n * stride. The weekly sweeps start near 2.0e11; this stays below them.
 base=10000000000
 stride=1000000000
+# How often, at most, the supervisor looks for a newer green main (seconds; 0 turns it off).
+follow_every="${NIFE_FUZZ_FOLLOW_EVERY:-300}"
+drain="$state/follow-drain"
 
 # Put the pinned QEMU and rustup's cargo on PATH, as script/bootstrap's own callers do.
 PATH="$HOME/.cargo/bin:$PATH"
@@ -145,6 +155,26 @@ ensure_toolchain() {
         echo "continuous-fuzz: refusing to start: could not install the toolchain that rust-toolchain.toml pins; no slot was started and no window was recorded" >&2
         return 1
     }
+}
+
+# Move each existing slot worktree to the clone's HEAD, so that a restart or a re-execution after
+# `apply` runs every slot at one commit. A slot with local changes to tracked files stops the
+# supervisor, since checking it out could carry them into the next window.
+sync_slots() {
+    head="$(git -C "$root" rev-parse HEAD)"
+    slot=0
+    while [ "$slot" -lt "$guests" ]; do
+        dir="$home/work/$slot"
+        if [ -d "$dir" ] && [ "$(git -C "$dir" rev-parse HEAD)" != "$head" ]; then
+            if [ -n "$(git -C "$dir" status --porcelain --untracked-files=no)" ]; then
+                echo "continuous-fuzz: refusing to start: slot $slot's worktree has local changes to tracked files" >&2
+                return 1
+            fi
+            git -C "$dir" checkout --quiet --detach "$head" || return 1
+            echo "continuous-fuzz: slot $slot moved to $(echo "$head" | cut -c1-12)"
+        fi
+        slot=$((slot + 1))
+    done
 }
 
 prepare_slot() {
@@ -245,6 +275,8 @@ worker() {
     driver="$(slot_driver "$slot")"
     failures=0
     while :; do
+        # A move to a newer main is waiting for this slot; the supervisor takes it from here.
+        [ ! -e "$drain" ] || exit 0
         status="$(window "$driver" "$slot")"
         echo "continuous-fuzz: slot $slot $driver: $status"
         if [ "$status" = infrastructure ]; then
@@ -353,8 +385,10 @@ fi
 ensure_toolchain || exit 1
 refuse_without_kvm || exit 1
 mkdir -p "$state"
+sync_slots || exit 1
+rm -f "$drain"
 pids=""
-trap 'kill $pids 2>/dev/null; wait' TERM INT
+trap 'kill $pids 2>/dev/null; wait; exit 143' TERM INT
 slot=0
 while [ "$slot" -lt "$guests" ]; do
     worker "$slot" &
@@ -363,12 +397,36 @@ while [ "$slot" -lt "$guests" ]; do
 done
 # One worker exiting means five failed windows in a row; end the unit so systemd restarts it.
 # (`wait -n` is not POSIX; poll instead.)
+tick=10
+[ "$follow_every" -eq 0 ] || [ "$follow_every" -ge "$tick" ] || tick="$follow_every"
+last_look=0
+last_said=""
 alive=1
 while [ "$alive" -eq 1 ]; do
-    sleep 10
+    sleep "$tick"
     for p in $pids; do
         kill -0 "$p" 2>/dev/null || alive=0
     done
+    [ "$alive" -eq 1 ] && [ "$follow_every" -gt 0 ] || continue
+    [ $(($(date +%s) - last_look)) -ge "$follow_every" ] || continue
+    last_look="$(date +%s)"
+    if said="$(python3 -I "$root/helpers/fuzz-follow-main.py" look 2>&1)"; then
+        echo "continuous-fuzz: main is at $said with its required checks green; each slot stops after its current window"
+        : > "$drain"
+        wait $pids || true
+        python3 -I "$root/helpers/fuzz-follow-main.py" apply "$said" || {
+            rm -f "$drain"
+            echo "continuous-fuzz: the move to $said was refused; exiting so systemd restarts the supervisor at the commit it has" >&2
+            exit 1
+        }
+        rm -f "$drain"
+        # git replaced this file with a new one rather than rewriting it, so the running shell still
+        # reads the old text until this line.
+        exec "$root/helpers/continuous-fuzz.sh"
+    elif [ "$said" != "$last_said" ]; then
+        echo "continuous-fuzz: staying at $(git -C "$root" rev-parse --short=12 HEAD): $said"
+        last_said="$said"
+    fi
 done
 kill $pids 2>/dev/null || true
 exit 1
