@@ -19,7 +19,9 @@ measurements.
 
 Reuse: `crates/measured_boot`'s digest text, `crates/device_tree_blob`'s `/chosen` walk,
 `crates/device_tree_patch`'s rewrite, `uefi_loader`'s command-line writer and build script, and the
-three QEMU runners. No new crate and no new dependency.
+three QEMU runners. One new crate, `crates/base_digest_contract`, written because the page it
+defines is new boot ABI that the kernel and the progenitor must share (§311 (a contract is code,
+not prose)); no new dependency.
 
 ## What changes
 
@@ -33,7 +35,9 @@ kernel use.
 The kernel records the words while its front end still maps the line, and `trust::require` holds
 the progenitor and the table to them before it enters userspace. A boot whose loader handed no
 words, a repeated word or a malformed digest halts with `MEASURED BOOT REFUSED`, naming which.
-`TRUST_ROOT` still holds both entries too, and both sources must agree until 697's part 2 removes
+The kernel then hands the base digest to the progenitor as a read-only page in slot 34
+(`base_digest_contract`), and the progenitor checks the table against it before reading it,
+refusing the boot with the reason on the UART otherwise. `TRUST_ROOT` still holds both entries too, and both sources must agree until 697's part 2 removes
 it. Only Secure Boot (milestone 500 (a stick that boots with Secure Boot on)) or the slot header's
 CRC-32 protects the loader, and §235 accepted that cost. Signatures stay where §220 (signed builds)
 put them, at install and update time.
@@ -71,7 +75,7 @@ milestone names its consumer. It is not BUILT until a record cites its first use
 
 | part | what | needs a ruling? | size |
 |---|---|---|---|
-| 1 | A contract crate for how the kernel hands the base digest to the progenitor, and the progenitor's check of the table against it, host-tested. The two release together. | yes: the channel is new boot ABI | about 200 lines and host tests in `crates/` and `crates/system_initializer` |
+| 1 | A contract crate for how the kernel hands the base digest to the progenitor, and the progenitor's check of the table against it, host-tested. The two release together. | ruled 2026-11-02 (UTC): a read-only memory capability in a new slot | about 200 lines and host tests in `crates/` and `crates/system_initializer` |
 | 2 | The parser and writer for the handoff's two words, `measured_boot::loader_digests`. | question 1, decided | about 150 lines and host tests |
 | 3 | The kernel reads the two words on each path and holds the progenitor and the table to them. | question 1, decided | about 150 lines, one QEMU suite per architecture |
 | 4 | The writers: `xtask` and the QEMU runners, `uefi_loader`, the board's U-Boot scripts, and 976's slot writer. | question 2, decided | about 300 lines; the board half needs a bench boot |
@@ -90,13 +94,13 @@ milestone names its consumer. It is not BUILT until a record cites its first use
 - **Done.** Part 4's first three writers, on this block's branch. `device_tree_patch` gains
   `with_initial_ramdisk_and_boot_arguments`, and host tests read every writer's output back with
   the kernel's parser.
-- **Outstanding.** Part 1, which waits on the architect. The kernel still checks the table
-  itself, against both the words and `TRUST_ROOT`; checked against `kernel/src/trust.rs`, which
-  still calls `require_program_measurements`. For the progenitor to check it, the kernel must hand
-  the progenitor the base digest. The kernel already uses all three `START` words (notes/progenitor-boot.md), so
-  that takes a fourth word, a new capability slot or a mapped page, and each is new boot ABI. That
-  touches the syscall surface (§10 (the capability-based microkernel process model)), so the
-  contract crate waits for a ruling on the channel.
+- **Done.** Part 1, on branch `milestone/695-part-1-base-digest-capability`, ruled 2026-11-02
+  (UTC). The kernel grants the base digest as a `PageFrame` with `READ` alone in slot 34, past every
+  other slot, on all three architectures; `crates/base_digest_contract` defines the page, and
+  `system_initializer::base_digest` maps it, checks the `program_measurements` table against it
+  before reading it, and refuses the boot with a named reason on the UART. Host tests cover every
+  refusal, a wrong digest included. The kernel still checks the table too, against both the words
+  and `TRUST_ROOT`, until 697's part 2 removes `TRUST_ROOT`.
 - **Outstanding.** Part 4's fourth writer, 976's version 2 slot. Milestone 976's part 4c owns it,
   and 976's block holds the header and the work. Ruled 2026-11-01 (UTC): the header grows from 188
   to 252 bytes, with the progenitor digest and the base digest after the three member entries and

@@ -35,7 +35,7 @@ shape on 2026-09-27 (UTC), and this proposal executes it rather than reopening i
 - T4 with T2, the trust handoff. The loader hands over the progenitor digest and the digest of the
   archive's `program_measurements` table, not this system manifest, which stays out of the boot path
   (ruled 2026-11-01 UTC). The kernel checks only the progenitor; the progenitor checks the base set against the
-  manifest digest. The kernel therefore stops depending on the base set and still depends on the
+  table digest. The kernel therefore stops depending on the base set and still depends on the
   progenitor.
 - 525's slots. Two boot slots, priority, tries and confirmation live in `crates/boot_slot` and the
   UEFI chooser. This proposal reuses them: an update writes the inactive slot and marks it to try.
@@ -207,7 +207,7 @@ slot. Every new name here is provisional.
   (the digest of the archive's `program_measurements` table). A CRC-32 of bytes 0 to 248 sits at bytes 248 to 252. The
   updater writes the two digests from the system manifest and the progenitor. The chooser copies them
   into the kernel command line words and never computes them (option A of question 2 in the proposal
-  for milestone 695 (the kernel trusts two digests from the loader)). The base word is `nife.base`; the progenitor word's spelling is open. The tags are KERNEL, ARCHIVE and MANIFEST
+  for milestone 695 (the kernel trusts two digests from the loader)). The words are `nife.progenitor` for the progenitor digest and `nife.base` for the table digest. The tags are KERNEL, ARCHIVE and MANIFEST
   (provisional spellings), exactly three, with no count field. Members start at multiples of 4096 in
   table order, without overlap, inside the partition. The chooser refuses an unknown, duplicate or
   missing tag, a layout break, nonzero reserved or padding bytes (padding is after byte 252), and an unknown header version
