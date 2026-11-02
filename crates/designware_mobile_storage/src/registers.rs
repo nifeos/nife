@@ -9,8 +9,8 @@
 //! Only the first page matters to this driver: every register it touches, and the data FIFO, sit
 //! below `0x1000`. The JH7110's window is `0x1_0000`, the rest of it unused by anything here.
 //!
-//! Name: provisional. Ruled 2026-10-26 (UTC): every `regs` module this tree names becomes
-//! `registers`, and the constants inside keep the databook's names; was `regs`.
+//! Name: ratified 2026-11-02 (UTC), #3092. Every `regs` module this tree names is `registers`, and
+//! the constants inside keep the databook's names.
 
 /// **Control Register** (OpenBSD's `SDMMC_CTRL`): the three self-clearing resets, the interrupt and
 /// DMA enables.
@@ -48,9 +48,10 @@ pub(crate) const CTRL_USE_INTERNAL_DMAC: u32 = 1 << 25;
 /// `internal_direct_memory_access_start` name this constant. The constant-assertion lint is off on
 /// purpose: the assertion is constant by construction, and the compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_DIRECT_MEMORY_ACCESS_ENABLES_SHARE_NO_BIT: () =
+pub const DIRECT_MEMORY_ACCESS_ENABLES_DO_NOT_OVERLAP: () =
     assert!(CTRL_USE_INTERNAL_DMAC + CTRL_DMA_ENABLE + CTRL_INT_ENABLE == 0x0200_0030);
 
 /// **Power Enable Register** (OpenBSD's `SDMMC_PWREN`): one bit per card slot. Slot 0 is the only
@@ -81,9 +82,10 @@ pub(crate) const CLKENA_CCLK_LOW_POWER: u32 = 1 << 16;
 /// lint is off on purpose: the assertion is constant by construction, and the compiler checking it
 /// is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_CLOCK_ENABLES_SHARE_NO_BIT: () =
+pub const CLOCK_ENABLES_DO_NOT_OVERLAP: () =
     assert!(CLKENA_CCLK_ENABLE + CLKENA_CCLK_LOW_POWER == 0x0001_0001);
 /// **Timeout Register** (OpenBSD's `SDMMC_TMOUT`): response timeout in bits 7:0 (card clocks), data
 /// read timeout in bits 31:8.
@@ -112,18 +114,18 @@ pub(crate) const INTMASK: u32 = 0x024;
 /// **Command Argument Register** (OpenBSD's `SDMMC_CMDARG`): the next command's argument.
 #[doc(alias = "command argument register")]
 pub(crate) const CMDARG: u32 = 0x028;
-/// **Command Register** (OpenBSD's `SDMMC_CMD`): writing it with [`CMD_START_CMD`] hands the
+/// **Command Register** (OpenBSD's `SDMMC_CMD`): writing it with [`COMMAND_START`] hands the
 /// command to the card interface.
 #[doc(alias = "command register")]
 pub(crate) const CMD: u32 = 0x02c;
 /// **Start command** (OpenBSD's `SDMMC_CMD_START_CMD`): set by software to issue; the controller
 /// clears it when it has taken the command.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): a register or bit name copied from a cited source
-/// keeps that source's spelling strictly, and a name that only resembles it is corrected to it; was
-/// `CMD_START` (OpenBSD's `dwmmc.c` writes `SDMMC_CMD_START_CMD`).
+/// Name: ratified 2026-11-02 (UTC), #3092. The spelled-out form; OpenBSD's `SDMMC_CMD_START_CMD`
+/// spelling `CMD_START_CMD` is kept as an alias.
 #[doc(alias = "start command")]
-pub const CMD_START_CMD: u32 = 1 << 31;
+#[doc(alias = "CMD_START_CMD")]
+pub const COMMAND_START: u32 = 1 << 31;
 /// **Use hold register** (OpenBSD's `SDMMC_CMD_USE_HOLD_REG`): drive the command and data lines
 /// from the hold register (half a clock later). OpenBSD sets it on every command, on every `SoC` it
 /// supports, the JH7110 among them.
@@ -136,11 +138,11 @@ pub(crate) const CMD_UPDATE_CLOCK_REGISTERS_ONLY: u32 = 1 << 21;
 /// **Send initialization** (OpenBSD's `SDMMC_CMD_SEND_INITIALIZATION`): send 80 clocks of
 /// initialization sequence before this command. CMD0 only.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): a register or bit name copied from a cited source
-/// keeps that source's spelling strictly, and a name that only resembles it is corrected to it; was
-/// `CMD_SEND_INIT` (OpenBSD's `dwmmc.c` writes `SDMMC_CMD_SEND_INITIALIZATION`).
+/// Name: ratified 2026-11-02 (UTC), #3092. The spelled-out form; OpenBSD's
+/// `SDMMC_CMD_SEND_INITIALIZATION` spelling `CMD_SEND_INITIALIZATION` is kept as an alias.
 #[doc(alias = "send initialization")]
-pub const CMD_SEND_INITIALIZATION: u32 = 1 << 15;
+#[doc(alias = "CMD_SEND_INITIALIZATION")]
+pub const COMMAND_SEND_INITIALIZATION: u32 = 1 << 15;
 /// **Stop or abort command** (OpenBSD's `SDMMC_CMD_STOP_ABORT_CMD`): this command stops a data
 /// transfer in progress (CMD12).
 #[doc(alias = "stop or abort command")]
@@ -241,10 +243,10 @@ pub(crate) const RINTSTS_ACD: u32 = 1 << 14;
 /// constant. The constant-assertion lint is off on purpose: the assertion is constant by
 /// construction, and the compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_TRANSFER_OVER_BITS_SHARE_NO_BIT: () =
-    assert!(RINTSTS_DTO + RINTSTS_ACD == 0x0000_4008);
+pub const TRANSFER_OVER_BITS_DO_NOT_OVERLAP: () = assert!(RINTSTS_DTO + RINTSTS_ACD == 0x0000_4008);
 /// **End-bit error** (OpenBSD's `SDMMC_RINTSTS_EBE`): end bit error (read) or no CRC status
 /// (write).
 #[doc(alias = "end bit error")]
@@ -264,9 +266,10 @@ pub(crate) const RINTSTS_DATA_TO: u32 = RINTSTS_HTO | RINTSTS_DRTO;
 /// is off on purpose: the assertion is constant by construction, and the compiler checking it is
 /// its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_DATA_ERROR_AND_TIMEOUT_BITS_SHARE_NO_BIT: () =
+pub const DATA_ERROR_AND_TIMEOUT_BITS_DO_NOT_OVERLAP: () =
     assert!(RINTSTS_DATA_ERR + RINTSTS_DATA_TO == 0x0000_be80);
 /// Every bit below the SDIO interrupts, which is what a clear writes.
 pub(crate) const RINTSTS_ALL: u32 = 0xffff;
@@ -301,9 +304,10 @@ pub(crate) const FIFOTH: u32 = 0x04c;
 /// lint is off on purpose: the assertion is constant by construction, and the compiler checking it
 /// is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_POLLED_FIFO_THRESHOLD_FIELDS_SHARE_NO_BIT: () =
+pub const POLLED_QUEUE_THRESHOLD_FIELDS_DO_NOT_OVERLAP: () =
     assert!((2 << 28) + 0x0fff_0000 + 0x0000_0fff == 0x2fff_0fff);
 
 /// **The `FIFOTH` word for polled transfers** with a FIFO of `depth` words: a receive watermark one
@@ -322,9 +326,10 @@ pub(crate) const fn fifoth_for_pio(depth: u32) -> u32 {
 /// `fifoth_for_direct_memory_access` names this constant. The constant-assertion lint is off on
 /// purpose: the assertion is constant by construction, and the compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_DIRECT_MEMORY_ACCESS_FIFO_THRESHOLD_FIELDS_SHARE_NO_BIT: () =
+pub const DIRECT_MEMORY_ACCESS_QUEUE_THRESHOLD_FIELDS_DO_NOT_OVERLAP: () =
     assert!((7 << 28) + 0x0fff_0000 + 0x0000_0fff == 0x7fff_0fff);
 
 /// **The `FIFOTH` word for IDMAC transfers** with a FIFO of `depth` words. The transmit watermark
@@ -383,11 +388,12 @@ pub(crate) const HCON: u32 = 0x070;
 /// Linux's `SDMMC_UHS_REG`): 1.8 V select and DDR mode per card. Per slot, DDR mode is bit 16 and
 /// 1.8 V signaling is bit 0.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): a register name copied from a cited source keeps the
-/// source's spelling; the register is the databook's `UHS_REG`; was `UHS`.
+/// Name: ratified 2026-11-02 (UTC), #3092. The spelled-out form; the databook's `UHS_REG` is kept
+/// as an alias.
 #[doc(alias = "uhs")]
 #[doc(alias = "ultra_high_speed")]
-pub const UHS_REG: u32 = 0x074;
+#[doc(alias = "UHS_REG")]
+pub const ULTRA_HIGH_SPEED_REGISTER: u32 = 0x074;
 /// **Hardware Reset Register** (Linux's `SDMMC_RST_N`; OpenBSD writes `SDMMC_RST_n`): per-slot
 /// hardware reset line to an eMMC device, active low.
 #[doc(alias = "hardware reset register")]
@@ -408,9 +414,10 @@ pub(crate) const BMOD_FB: u32 = 1 << 1;
 /// constant-assertion lint is off on purpose: the assertion is constant by construction, and the
 /// compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_BUS_MODE_BITS_SHARE_NO_BIT: () = assert!(BMOD_DE + BMOD_FB == 0x82);
+pub const BUS_MODE_BITS_DO_NOT_OVERLAP: () = assert!(BMOD_DE + BMOD_FB == 0x82);
 /// **IDMAC enable** (OpenBSD's `SDMMC_BMOD_DE`): the IDMAC walks descriptors.
 #[doc(alias = "internal direct memory access enable")]
 pub(crate) const BMOD_DE: u32 = 1 << 7;
@@ -426,9 +433,11 @@ pub(crate) const DBADDR: u32 = 0x088;
 /// to clear. Raw: set whatever `IDINTEN` holds. The driver reads only its error bits; the
 /// completion bits are `sim`'s, and the tests'.
 ///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+/// Name: ratified 2026-11-02 (UTC), #3092. The spelled-out form; the databook's `IDSTS` is kept as
+/// an alias.
 #[doc(alias = "internal direct memory access status register")]
-pub const IDSTS: u32 = 0x08c;
+#[doc(alias = "IDSTS")]
+pub const INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER: u32 = 0x08c;
 /// **Transmit interrupt** (OpenBSD's `SDMMC_IDSTS_TI`): A descriptor without `DIC` finished a
 /// transmit (memory to card).
 #[cfg(test)]
@@ -473,15 +482,19 @@ pub(crate) const IDINTEN: u32 = 0x090;
 /// **Current Host Descriptor Address Register** (OpenBSD's `SDMMC_DSCADDR`): the descriptor the
 /// IDMAC is on, for a transcript after a failure.
 ///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+/// Name: ratified 2026-11-02 (UTC), #3092. The spelled-out form; OpenBSD's `DSCADDR` is kept as an
+/// alias.
 #[doc(alias = "current descriptor address")]
-pub const DSCADDR: u32 = 0x094;
+#[doc(alias = "DSCADDR")]
+pub const CURRENT_DESCRIPTOR_ADDRESS_REGISTER: u32 = 0x094;
 /// **Current Buffer Descriptor Address Register** (OpenBSD's `SDMMC_BUFADDR`): the buffer address
 /// the IDMAC is on.
 ///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+/// Name: ratified 2026-11-02 (UTC), #3092. The spelled-out form; OpenBSD's `BUFADDR` is kept as an
+/// alias.
 #[doc(alias = "current buffer address")]
-pub const BUFADDR: u32 = 0x098;
+#[doc(alias = "BUFADDR")]
+pub const CURRENT_BUFFER_ADDRESS_REGISTER: u32 = 0x098;
 /// **Card Threshold Control Register** (OpenBSD's `SDMMC_CARDTHRCTL`): hold a read until a block
 /// fits in the FIFO.
 #[doc(alias = "card threshold control register")]
@@ -502,8 +515,8 @@ pub(crate) const DW_MMC_240A: u32 = 0x240a;
 /// releases. Reading the version rather than assuming it is what lets the bench transcript say
 /// which applied.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
-/// authors, and copied register names keep `FIFO`; was `fifo_offset`.
+/// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors,
+/// and copied register names keep `FIFO`; the databook's `fifo` is kept as `doc(alias = "fifo")`.
 #[doc(alias = "fifo")]
 #[must_use]
 pub const fn queue_offset(verid: u32) -> u32 {
@@ -519,8 +532,8 @@ pub const fn queue_offset(verid: u32) -> u32 {
 /// OpenBSD does the same for 16-bit and handles 64-bit as two words, which is a step this driver
 /// has not needed yet.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
-/// authors; was `fifo_width`.
+/// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors;
+/// the databook's `fifo` is kept as `doc(alias = "fifo")`.
 #[doc(alias = "fifo")]
 #[must_use]
 pub const fn queue_width(hcon: u32) -> Option<u32> {
@@ -535,8 +548,7 @@ pub const fn queue_width(hcon: u32) -> Option<u32> {
 /// **Does the IDMAC use 64-bit addresses?** `HCON` bit 27. Changes the layout of every register
 /// from `0x88` up and doubles the descriptor, so the IDMAC path refuses it; radon's is clear.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `dma` is spelled out wherever this tree authors it;
-/// was `dma_64bit`.
+/// Name: ratified 2026-11-02 (UTC), #3092. `dma` is spelled out wherever this tree authors it.
 #[must_use]
 pub const fn uses_64_bit_direct_memory_access(hcon: u32) -> bool {
     hcon & (1 << 27) != 0
@@ -633,10 +645,10 @@ mod tests {
             (CLKENA_CCLK_LOW_POWER, 0x10000),
             (CTYPE_4BIT, 0x1),
             (CTYPE_8BIT, 0x10000),
-            (CMD_START_CMD, 0x80000000),
+            (COMMAND_START, 0x80000000),
             (CMD_USE_HOLD_REG, 0x20000000),
             (CMD_UPDATE_CLOCK_REGISTERS_ONLY, 0x200000),
-            (CMD_SEND_INITIALIZATION, 0x8000),
+            (COMMAND_SEND_INITIALIZATION, 0x8000),
             (CMD_STOP_ABORT_CMD, 0x4000),
             (CMD_WAIT_PRVDATA_COMPLETE, 0x2000),
             (CMD_SEND_AUTO_STOP, 0x1000),
@@ -674,10 +686,10 @@ mod tests {
             (IDSTS_AIS, 0x200),
             (PLDMND, 0x84),
             (DBADDR, 0x88),
-            (IDSTS, 0x8c),
+            (INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER, 0x8c),
             (IDINTEN, 0x90),
-            (DSCADDR, 0x94),
-            (BUFADDR, 0x98),
+            (CURRENT_DESCRIPTOR_ADDRESS_REGISTER, 0x94),
+            (CURRENT_BUFFER_ADDRESS_REGISTER, 0x98),
         ] {
             assert_eq!(bit, value);
         }

@@ -186,7 +186,7 @@ fn the_read_only_probe_reads_and_never_writes() {
 fn the_read_matrix_reads_every_row_and_never_writes() {
     let sim = master_boot_record_card(8192, 2048);
     let want = sim.storage[2048..2048 + 128].concat();
-    let (mut h, _) = Host::new(bench::Watch::new(sim), 50_000_000, Some(32)).unwrap();
+    let (mut h, _) = Host::new(bench::QueueWatch::new(sim), 50_000_000, Some(32)).unwrap();
     let mut buffer = vec![0u8; 128 * BLOCK];
     let mut rows = 0;
     let mut asked = Vec::new();
@@ -207,7 +207,7 @@ fn the_read_matrix_reads_every_row_and_never_writes() {
     assert_eq!(buffer, want);
 }
 
-/// `Watch` is what says whether radon's FIFO filled: its peak and full count must come from
+/// `QueueWatch` is what says whether radon's queue filled: its peak and full count must come from
 /// `STATUS` alone, count every full read, and start again at `clear`.
 #[test]
 fn the_watch_counts_status_fill_and_nothing_else() {
@@ -230,12 +230,12 @@ fn the_watch_counts_status_fill_and_nothing_else() {
         }
     }
     // FIFO count in bits 29:17, the full flag in bit 3.
-    let mut w = bench::Watch::new(Fixed { status: 5 << 17 });
+    let mut w = bench::QueueWatch::new(Fixed { status: 5 << 17 });
     w.read(crate::registers::RINTSTS);
     assert_eq!((w.maximum_fill, w.full_reads), (0, 0));
     w.read(crate::registers::STATUS);
     assert_eq!((w.maximum_fill, w.full_reads), (5, 0));
-    let mut w = bench::Watch::new(Fixed {
+    let mut w = bench::QueueWatch::new(Fixed {
         status: (128 << 17) | (1 << 3),
     });
     w.read(crate::registers::STATUS);

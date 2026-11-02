@@ -687,9 +687,9 @@ fn through_idmac(
             say!(
                 slot,
                 "IDMAC read failed: {e:?}; IDSTS {:#x} DSCADDR {:#x} BUFADDR {:#x} STATUS {:#x} TCBCNT {}",
-                w.read(registers::IDSTS),
-                w.read(registers::DSCADDR),
-                w.read(registers::BUFADDR),
+                w.read(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER),
+                w.read(registers::CURRENT_DESCRIPTOR_ADDRESS_REGISTER),
+                w.read(registers::CURRENT_BUFFER_ADDRESS_REGISTER),
                 w.read(registers::STATUS),
                 w.read(registers::TCBCNT),
             );
@@ -738,7 +738,7 @@ fn pages(count: usize) -> Option<&'static mut [u8]> {
 /// error. Read-only, after the probe, whose clock bring-up it relies on.
 #[cfg(feature = "storage_read_matrix")]
 fn read_matrix(slot: &Slot) {
-    use designware_mobile_storage::bench::Watch;
+    use designware_mobile_storage::bench::QueueWatch;
     let Some(buf) = pages(READ_PAGES) else {
         println!("storage-matrix: no pages for a buffer");
         return;
@@ -751,7 +751,7 @@ fn read_matrix(slot: &Slot) {
     for depth in [slot.queue_depth, Some(128)] {
         // SAFETY: as `probe`'s window: the same mapped page, and this boot thread alone drives it.
         let window = unsafe { Window::new(slot.base) };
-        let Ok((mut host, _)) = Host::new(Watch::new(window), ciu_hz, depth) else {
+        let Ok((mut host, _)) = Host::new(QueueWatch::new(window), ciu_hz, depth) else {
             println!("storage-matrix: controller refused");
             return;
         };

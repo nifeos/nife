@@ -8,9 +8,8 @@
 //! in `CTRL`, enable it in `BMOD`, send the command. Polled completion: `RINTSTS` for the card, the
 //! last descriptor's `OWN` for memory, since a read's `DTO` can beat its last words to memory.
 //!
-//! Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
-//! `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `idmac`, the databook's own
-//! name for the engine.
+//! Name: ratified 2026-11-02 (UTC), #3092. `idmac` and the names built on it spell out
+//! `internal_direct_memory_access`; the databook's `idmac` is kept as `doc(alias = "idmac")`.
 
 use crate::command::Command;
 use crate::host::{
@@ -22,7 +21,8 @@ use crate::registers;
 /// first byte; an implementation bounds them. The kernel's is pages in the direct map, the tests'
 /// is memory `sim` walks too. `designware_ethernet::Region`'s shape.
 ///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+/// Name: ratified 2026-11-02 (UTC), #3092. The region the descriptors and data pages live in,
+/// spelled out.
 pub trait DirectMemoryAccessRegion {
     /// The region's first byte as the controller addresses it: on radon, its physical address.
     fn bus_address(&self) -> u64;
@@ -45,7 +45,8 @@ pub trait DirectMemoryAccessRegion {
 /// **No region**: a [`Host`] that moves its data through the FIFO. Uninhabited, so a host of this
 /// type provably never takes the IDMAC path.
 ///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+/// Name: ratified 2026-11-02 (UTC), #3092. The type for a host with no direct memory access,
+/// spelled out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NoDirectMemoryAccess {}
 
@@ -80,7 +81,7 @@ pub(crate) const PAGE: u32 = 4096;
 pub(crate) const DESCRIPTOR_BYTES: u32 = 16;
 /// The most descriptors the chain page holds, and so the most data pages a region may have.
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+/// Name: ratified 2026-11-02 (UTC), #3092. The maximum is spelled out.
 pub const MAXIMUM_DESCRIPTORS: u32 = PAGE / DESCRIPTOR_BYTES;
 
 /// **Own, descriptor word 0** (OpenBSD's `DES0_OWN`): the IDMAC owns this descriptor. Cleared by
@@ -110,14 +111,15 @@ pub(crate) const DES1_BS1_MASK: u32 = 0x1fff;
 /// lint is off on purpose: the assertion is constant by construction, and the compiler checking it
 /// is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_DESCRIPTOR_OWN_AND_CHAIN_BITS_SHARE_NO_BIT: () =
+pub const DESCRIPTOR_OWN_AND_CHAIN_BITS_DO_NOT_OVERLAP: () =
     assert!(DES0_OWN + DES0_CH == 0x8000_0010);
 
 /// Why a region was refused before anything was written.
 ///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+/// Name: ratified 2026-11-02 (UTC), #3092. Why a region is refused for the engine.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Refusal {
     /// `HCON` names an external DMA interface, so there is no IDMAC: the field.
@@ -137,8 +139,8 @@ pub enum Refusal {
 /// [`InternalDirectMemoryAccess::new`] makes one, so a [`Host`] holding one has an IDMAC, 32-bit
 /// descriptors and a region they can address.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
-/// `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `Idmac`.
+/// Name: ratified 2026-11-02 (UTC), #3092. `idmac` and the names built on it spell out
+/// `internal_direct_memory_access`; the databook's `idmac` is kept as `doc(alias = "idmac")`.
 #[doc(alias = "idmac")]
 pub struct InternalDirectMemoryAccess<D: DirectMemoryAccessRegion> {
     region: D,
@@ -154,7 +156,8 @@ impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
     /// A [`Refusal`]: no IDMAC, 64-bit addressing, or a region that is unaligned, the wrong size,
     /// or not wholly below 4 GiB.
     ///
-    /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+    /// Name: ratified 2026-11-02 (UTC), #3092. The constructor, which checks the region against the
+    /// identity.
     pub fn new(region: D, id: &Identity) -> Result<InternalDirectMemoryAccess<D>, Refusal> {
         let interface = registers::direct_memory_access_interface(id.hcon);
         if interface != 0 {
@@ -293,7 +296,10 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             registers::fifoth_for_direct_memory_access(self.depth),
         );
         self.registers.write(registers::IDINTEN, 0);
-        self.registers.write(registers::IDSTS, registers::IDSTS_ALL);
+        self.registers.write(
+            registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER,
+            registers::IDSTS_ALL,
+        );
         self.registers.write(registers::DBADDR, bus);
         let ctrl = self.registers.read(registers::CTRL);
         self.registers.write(
@@ -328,7 +334,9 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
                 return Err(Error::Data(command.index, rint));
             }
-            let idsts = self.registers.read(registers::IDSTS);
+            let idsts = self
+                .registers
+                .read(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER);
             if idsts & registers::IDSTS_ERRORS != 0 {
                 return Err(Error::DirectMemoryAccess(command.index, idsts));
             }
@@ -368,7 +376,10 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
                 == 0
                 && window.read(registers::BMOD) & registers::BMOD_SWR == 0
         });
-        self.registers.write(registers::IDSTS, registers::IDSTS_ALL);
+        self.registers.write(
+            registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER,
+            registers::IDSTS_ALL,
+        );
         self.registers
             .write(registers::FIFOTH, registers::fifoth_for_pio(self.depth));
         let ctrl = self.registers.read(registers::CTRL);
@@ -661,7 +672,10 @@ mod tests {
                     registers::fifoth_for_direct_memory_access(32)
                 ),
                 (registers::IDINTEN, 0),
-                (registers::IDSTS, registers::IDSTS_ALL),
+                (
+                    registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER,
+                    registers::IDSTS_ALL
+                ),
                 (registers::DBADDR, BASE as u32),
                 (registers::CTRL, firmware),
                 (registers::BMOD, registers::BMOD_DE | registers::BMOD_FB),
@@ -682,7 +696,10 @@ mod tests {
                     registers::CTRL,
                     1 << 8 | registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET
                 ),
-                (registers::IDSTS, registers::IDSTS_ALL),
+                (
+                    registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER,
+                    registers::IDSTS_ALL
+                ),
                 (registers::FIFOTH, registers::fifoth_for_pio(32)),
             ]
         );
