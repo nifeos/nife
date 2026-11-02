@@ -252,23 +252,25 @@ pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
     verdict.unwrap_or(WriteVerdict::Verified(first, count, blank))
 }
 
-/// **A register window that remembers how full the FIFO got**: every `STATUS` read updates the
-/// highest fill seen and counts the reads that found the FIFO full. It answers the multi-block
+/// **A register window that remembers how full the queue got**: every `STATUS` read updates the
+/// highest fill seen and counts the reads that found the queue full. It answers the multi-block
 /// read diagnosis: whether the polled CPU falls behind the card.
 ///
-/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
-pub struct Watch<R: Registers> {
+/// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors;
+/// the databook's `fifo` is kept as `doc(alias = "fifo")`.
+#[doc(alias = "fifo")]
+pub struct QueueWatch<R: Registers> {
     inner: R,
-    /// The highest `STATUS` FIFO count seen since the last [`Watch::clear`].
+    /// The highest `STATUS` queue count seen since the last [`QueueWatch::clear`].
     pub maximum_fill: u32,
-    /// `STATUS` reads that found the FIFO-full flag set since the last [`Watch::clear`].
+    /// `STATUS` reads that found the FIFO-full flag set since the last [`QueueWatch::clear`].
     pub full_reads: u32,
 }
 
-impl<R: Registers> Watch<R> {
-    /// Watch `inner`.
+impl<R: Registers> QueueWatch<R> {
+    /// Watch the queue of `inner`.
     ///
-    /// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+    /// Name: ratified 2026-11-02 (UTC), #3092. The constructor of the queue watch.
     pub const fn new(inner: R) -> Self {
         Self {
             inner,
@@ -279,14 +281,14 @@ impl<R: Registers> Watch<R> {
 
     /// Start counting again.
     ///
-    /// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+    /// Name: ratified 2026-11-02 (UTC), #3092. The method that resets both counters.
     pub fn clear(&mut self) {
         self.maximum_fill = 0;
         self.full_reads = 0;
     }
 }
 
-impl<R: Registers> Registers for Watch<R> {
+impl<R: Registers> Registers for QueueWatch<R> {
     fn read(&mut self, offset: u32) -> u32 {
         let v = self.inner.read(offset);
         if offset == crate::registers::STATUS {
@@ -305,9 +307,9 @@ impl<R: Registers> Registers for Watch<R> {
     }
 }
 
-/// One multi-block read of the matrix: its card clock, length, outcome and what the FIFO did.
+/// One multi-block read of the matrix: its card clock, length, outcome and what the queue did.
 ///
-/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+/// Name: ratified 2026-11-02 (UTC), #3092. One row of the matrix of multi-block reads.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MatrixRow {
     /// The card clock asked for, in Hz.
@@ -320,9 +322,9 @@ pub struct MatrixRow {
     pub result: Result<(), IoError>,
     /// Microseconds the read took.
     pub microseconds: u64,
-    /// The highest FIFO fill seen during it, in words.
+    /// The highest queue fill seen during it, in words.
     pub maximum_fill: u32,
-    /// `STATUS` reads that found the FIFO full.
+    /// `STATUS` reads that found the queue full.
     pub full_reads: u32,
     /// `STATUS`, `RINTSTS`, `TCBCNT` and `TBBCNT` read straight after it.
     pub after: [u32; 4],
@@ -330,11 +332,11 @@ pub struct MatrixRow {
 
 /// The card clocks the matrix reads at: the transfer rate and two halvings of it.
 ///
-/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+/// Name: ratified 2026-11-02 (UTC), #3092. The card clocks of the matrix; `HZ` is the unit suffix.
 pub const MATRIX_HZ: [u32; 3] = [sd::TRANSFER_HZ, sd::TRANSFER_HZ / 2, sd::TRANSFER_HZ / 4];
 /// The `CMD18` lengths the matrix reads, in blocks.
 ///
-/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+/// Name: ratified 2026-11-02 (UTC), #3092. The `CMD18` lengths of the matrix, in blocks.
 pub const MATRIX_BLOCKS: [u32; 4] = [2, 8, 32, 128];
 
 /// **Read the same blocks at each clock and length, re-identifying the card before every read**,
@@ -346,9 +348,9 @@ pub const MATRIX_BLOCKS: [u32; 4] = [2, 8, 32, 128];
 ///
 /// Identification failing, which ends the matrix; a failed read is a row, not an error.
 ///
-/// Name: provisional, minted 2026-10-21 (UTC) by milestone/53-radon-multi-block-read.
+/// Name: ratified 2026-11-02 (UTC), #3092. The function that reads the whole matrix.
 pub fn read_matrix<R: Registers>(
-    host: &mut Host<Watch<R>>,
+    host: &mut Host<QueueWatch<R>>,
     bus_width: u8,
     logical_block_address: u64,
     buffer: &mut [u8],
