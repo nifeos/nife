@@ -86,7 +86,7 @@ pub fn cntfrq_checked() -> Option<u64> {
     // `process_builder::build_child_space`. See that crate's `BUGS` section for the one shape
     // that does not, which faults here on purpose.
     let page = unsafe {
-        counter_frequency_contract::TimebasePage::new(counter_frequency_contract::PAGE_VA)
+        counter_frequency_contract::CounterFrequencyPage::new(counter_frequency_contract::PAGE_VA)
     };
     page.hz()
 }
@@ -137,7 +137,7 @@ pub fn cntfrq_checked() -> Option<u64> {
     // (real, or zeroed when the rate was never learned) read-only at
     // `counter_frequency_contract::PAGE_VA` into every x86_64 process before it ever runs.
     let page = unsafe {
-        counter_frequency_contract::TimebasePage::new(counter_frequency_contract::PAGE_VA)
+        counter_frequency_contract::CounterFrequencyPage::new(counter_frequency_contract::PAGE_VA)
     };
     page.hz()
 }
