@@ -1,0 +1,19 @@
+Falsifies `jh7110_clock_and_reset::verification::is_clock_enabled_reads_bit_31_and_nothing_else`.
+
+The defect: the test reads bit 30, a divider bit, instead of the enable bit.
+
+Expected to fail: the harness's first assertion, equality with the top bit of the word.
+
+diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
+index 7cc680a83..48ec4f725 100644
+--- a/crates/jh7110_clock_and_reset/src/lib.rs
++++ b/crates/jh7110_clock_and_reset/src/lib.rs
+@@ -1120,7 +1120,7 @@ pub const fn is_deasserted(status_word: u32, mask: u32) -> bool {
+ /// Name: ratified 2026-10-26 (UTC).
+ #[must_use]
+ pub const fn is_clock_enabled(clock_word: u32) -> bool {
+-    clock_word & CLOCK_ENABLE != 0
++    clock_word & (CLOCK_ENABLE >> 1) != 0
+ }
+ 
+ /// How many `EnableClock` steps a report keeps words for. Two is what the TRNG needs; four is

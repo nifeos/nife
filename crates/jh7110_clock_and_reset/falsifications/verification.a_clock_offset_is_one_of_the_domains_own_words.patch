@@ -1,0 +1,20 @@
+Falsifies `jh7110_clock_and_reset::verification::a_clock_offset_is_one_of_the_domains_own_words`.
+
+The defect: the bound is off by one (`>` for `>=`), so the index one past the last clock is given
+an offset, which is the first word of whatever follows the clock words.
+
+Expected to fail: the harness's `assert!(index < domain.clocks)` on a returned offset.
+
+diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
+index 7cc680a83..3c4140715 100644
+--- a/crates/jh7110_clock_and_reset/src/lib.rs
++++ b/crates/jh7110_clock_and_reset/src/lib.rs
+@@ -1072,7 +1072,7 @@ impl Domain {
+     /// Name: ratified 2026-10-26 (UTC).
+     #[must_use]
+     pub const fn clock_offset(&self, index: u32) -> Option<u64> {
+-        if index >= self.clocks {
++        if index > self.clocks {
+             return None;
+         }
+         Some(4 * index as u64)

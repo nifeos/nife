@@ -1,0 +1,20 @@
+Falsifies `jh7110_clock_and_reset::verification::a_device_plan_from_specifiers_ungates_before_it_releases`.
+
+The defect: the walk over a node's specifiers takes the resets list before the clocks list, so a
+device's built plan releases a reset ahead of its clocks.
+
+Expected to fail: the harness's `assert!(ungates_before_releasing(device.plan(), &SYSTEM))`.
+
+diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
+index 7cc680a83..97b7ac8c4 100644
+--- a/crates/jh7110_clock_and_reset/src/lib.rs
++++ b/crates/jh7110_clock_and_reset/src/lib.rs
+@@ -637,7 +637,7 @@ fn collect_system_steps<'t, E>(
+         skipped: 0,
+         truncated: false,
+     };
+-    for (list, is_clock) in [(clocks, true), (resets, false)] {
++    for (list, is_clock) in [(resets, false), (clocks, true)] {
+         let Some(list) = list else { continue };
+         let specs = list.chunks(8);
+         let total = specs.len();

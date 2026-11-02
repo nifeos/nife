@@ -1,0 +1,20 @@
+Falsifies `jh7110_clock_and_reset::verification::clock_divider_is_the_low_24_bits_and_nothing_else`.
+
+The defect: the divider mask is one bit too wide, so bit 24, the lowest bit of the mux field,
+reads as part of the divider.
+
+Expected to fail: the harness's first assertion, equality with the word's low 24 bits.
+
+diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
+index 7cc680a83..0e74ddbcc 100644
+--- a/crates/jh7110_clock_and_reset/src/lib.rs
++++ b/crates/jh7110_clock_and_reset/src/lib.rs
+@@ -426,7 +426,7 @@ pub const SDIO_BRING_UP: [&[Step]; 2] = [
+ /// Name: ratified 2026-10-26 (UTC).
+ #[must_use]
+ pub const fn clock_divider(word: u32) -> u32 {
+-    word & 0x00ff_ffff
++    word & 0x01ff_ffff
+ }
+ 
+ /// The PMIC (power management integrated circuit) as radon's vendor tree spells it: the
