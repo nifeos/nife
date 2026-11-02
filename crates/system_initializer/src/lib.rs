@@ -23,6 +23,8 @@
 //! - Exhausting the capability table inside `build_child` halts in silence.
 //! - A screen-narrowed child is outside `deaths`'s domain, so a concurrent `ps` does not show it.
 //! - Native slot 1 is the source or the `--mem` budget, safe only while no manifest has both.
+//! - No boot shows a base digest refusal's UART line: the kernel halts first; host tests cover it.
+//! - `refusal_console` copies `console`'s polled transmit per architecture rather than sharing it.
 //!
 //! Name: ratified 2026-08-04 (calef). `BootEndowment` ratified the same day.
 
