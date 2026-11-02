@@ -2,8 +2,8 @@
 
 The page that answers "what block devices are attached": a small, fixed-width, pointer-free layout
 that one party writes once, at wiring time, and that other programs then map read-only and read.
-`no_std`, no dependencies. It was written for the nife kernel and `disk_surveyor`, which share this
-one definition so the writer and the reader cannot drift.
+`no_std`, no dependencies. The writer and the readers share this one definition, so they cannot
+drift.
 
 This is a shared page, not a message protocol. There is no request, no reply and no server. Holding
 a roster tells a program that a device exists; it does not let the program touch it. Which program
@@ -58,8 +58,8 @@ cargo test
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
 ```
 
-The minimum supported Rust version is 1.88. There are no Kani harnesses; the properties above are
-covered by unit tests.
+The minimum supported Rust version is 1.88. Two Kani harnesses in `src/lib.rs` prove that `Roster::read` is total on any bytes
+and that `write` then `read` returns the same devices in order; run them with `cargo kani`.
 
 ## License
 
