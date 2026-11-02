@@ -296,11 +296,6 @@ The bench history, boot by boot, is in
 - The `#[test_case]` suite assumes QEMU's synthetic devices. The `skip!()` of milestone 145 (a test that needs hardware the boot doesn't have can say so) covers the
   tests found so far; more may surface.
 - That a keystroke at the board's prompt reaches the UART driver on source 32 is not yet observed.
-- No board has booted a script that sets `bootargs` to the loader's two digests (milestone 695
-  (the kernel trusts two digests handed to it by the loader)), nor the TH1520 FIT that carries them
-  as `usr_bootargs`. The scripts add one `setenv`, a verb the bench transcripts already show
-  working, but until a bench boot reaches the progenitor on each, a U-Boot that drops or truncates
-  `bootargs` would show up only as `MEASURED BOOT REFUSED` at the board.
 - The `text_offset` in the Image header encodes one board's DRAM base; `boot.s` and the
   appendix carry the caveat.
 - Everything cited from "mainline" describes current upstream; the flash runs StarFive's vendor fork

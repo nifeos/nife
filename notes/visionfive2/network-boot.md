@@ -39,6 +39,10 @@ archive falls all the way back, and takes *both* from the card. Half a pair halt
   After a rebuild, rewrite the card with `script/board-image --tftp --card <dir>`, or the boot
   halts at `MEASURED BOOT REFUSED` naming the progenitor. Fetching the words beside the archive
   would remove this, and needs a U-Boot verb (`env import`) the bench has not run.
+- **No board has booted a script that sets `bootargs`.** Neither the card script, the network
+  script nor the TH1520 FIT's `usr_bootargs` has reached the progenitor on a board. They add one
+  `setenv`, a verb the bench transcripts show working. A U-Boot that drops or truncates `bootargs`
+  would show up only as `MEASURED BOOT REFUSED` at the board.
 
 ## No server address is written down in this tree
 
