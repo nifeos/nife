@@ -1099,6 +1099,7 @@ impl<'a> DeviceTreeBlob<'a> {
         let mut at = self.off_struct;
 
         loop {
+            let before = at;
             let token = be32(self.bytes, at)?;
             at += 4;
 
@@ -1142,6 +1143,9 @@ impl<'a> DeviceTreeBlob<'a> {
                 FDT_END => return Ok(None),
                 other => return Err(Error::BadToken(other)),
             }
+            // Every token moves the cursor forward, which is what ends the loop on a tree with no
+            // `FDT_END`; a test build checks it, so a cursor that stalls fails rather than spins.
+            debug_assert!(at > before, "a device tree token did not advance the walk");
         }
     }
 

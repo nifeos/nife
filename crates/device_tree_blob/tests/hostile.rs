@@ -644,6 +644,29 @@ fn boot_arguments_are_the_root_chosen_bootargs_and_nothing_else() {
     assert_eq!(dt.boot_arguments(), Ok(None));
 }
 
+/// The command line is found past the nodes around it: a sibling of `/chosen` that closes before
+/// it does not end the search or shift the depth, and a child of `/chosen` that closes before the
+/// property does not end `/chosen` early. Firmware writes both shapes (`/memory` before
+/// `/chosen`, and U-Boot's `/chosen/framebuffer`).
+#[test]
+fn boot_arguments_are_found_past_a_sibling_and_a_child_node() {
+    let mut b = Blob::new();
+    b.begin_node(b"");
+    b.begin_node(b"memory@40000000");
+    b.prop(b"device_type", b"memory\0");
+    b.end_node();
+    b.begin_node(b"chosen");
+    b.begin_node(b"framebuffer@0");
+    b.prop(b"status", b"okay\0");
+    b.end_node();
+    b.prop(b"bootargs", b"nife.base=sha256:00\0");
+    b.end_node();
+    b.end_node();
+    let blob = b.finish();
+    let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
+    assert_eq!(dt.boot_arguments(), Ok(Some(&b"nife.base=sha256:00"[..])));
+}
+
 // The tests above came from the baseline run's survivor list; the ones below close the gaps that
 // list still had after them. Several survivors dodge the earlier tests by coincidence of shape
 // (a device that is a direct child of the root never reads the inherited cell slots; a matched

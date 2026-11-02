@@ -429,6 +429,7 @@ impl Walk<'_> {
             if self.at >= self.struct_end {
                 return Err(Error::Truncated);
             }
+            let before = self.at;
             let token = be32(self.src, self.at)?;
             match token {
                 BEGIN_NODE => self.begin_node(o)?,
@@ -445,6 +446,9 @@ impl Walk<'_> {
                 }
                 _ => return Err(Error::Malformed),
             }
+            // Every token moves the cursor forward, which is what ends the loop at `struct_end`; a
+            // test build checks it, so a token handler that stalls fails rather than spins.
+            debug_assert!(self.at > before, "a device tree token did not advance the walk");
         }
         Ok(())
     }
