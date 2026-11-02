@@ -296,8 +296,7 @@ names until the ratification pass, so this section keeps the links it carried.
 - Steps 4 and 5 wait on milestone 887 (crate repositories share one CI template),
   which owns the shared CI template, the publish allowlist lint and the `nifeos` crates.io team.
 - The "about 5,000 lines" figure is the probed crates' size, not an estimate of this one.
-- One `slot_location` mutant (`+` to `*`) fails the writer tests but runs past cargo-mutants' 20-second
-  bound, so the census records it as a gap.
+- One `slot_location` mutant outruns cargo-mutants' 20-second bound.
 
 ## Index row
 
