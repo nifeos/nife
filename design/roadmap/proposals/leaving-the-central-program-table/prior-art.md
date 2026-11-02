@@ -40,11 +40,10 @@ and the administrator's act on that binary is what grants it. nife's grant line 
 recorded beside the digest instead of on the file, so a copy of the bytes keeps the same identity
 and a changed byte loses the grant.
 
-The role table in [the command-name appendix](command-names.md) borrows from Debian and Android in
-one way each. From `update-alternatives` it takes a generic word bound to one provider, with the
-built-in as the fallback. From Android roles it takes the owner, not the package, as the one who
-chooses. It refuses Android's coupling of role and permission: holding the word `reboot` grants
-nothing in nife, and the grant line alone endows the object.
+nife takes neither Debian's generic word nor Android's role. A word the image carries runs the
+image's program, and each other provider answers to its own name, as each Fuchsia provider is its
+own route ([the command-name appendix](command-names.md)). It also refuses Android's coupling of
+role and permission: a name grants nothing in nife, and the grant line alone endows the object.
 
 nife differs from Fuchsia in who routes. A Fuchsia parent routes each capability explicitly. In nife
 the command line routes what a person designates (a file, a directory, a stream), and the progenitor

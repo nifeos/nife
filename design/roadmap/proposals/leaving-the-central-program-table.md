@@ -124,9 +124,10 @@ details.
    fields. No `Program`, no pinned table and no role list remain.
 5. The progenitor publishes a base list page from the archive's notes, and the shell plans from it
    and asks for an archive program by name. Every wire id becomes a hole.
-6. A word table the owner writes in the generation maps a typed word to an installed program, apart
-   from any grant. [The command-name appendix](leaving-the-central-program-table/command-names.md)
-   has it.
+6. A typed word finds a program as it does today, and §229 (a bare name reaches an installed
+   program) stands: a bare word the image carries runs the image's program. A replacement runs
+   under its own name or by path, and its grants follow its digest, not its name. [The command-name
+   appendix](leaving-the-central-program-table/command-names.md) has it.
 
 The grants differ in danger. [The security
 appendix](leaving-the-central-program-table/security.md) reads each one's behavior with two holders
@@ -170,8 +171,7 @@ the wire-id rules and what changed from the first plan.
 9. The progenitor publishes the base list (ruled as decision 3).
 10. Archive programs spawn by name, with grants from generation 1's lines (decision 7).
 11. The rows leave, one package per pull request; the last deletes `Program`.
-12. The owner's word table (decision 6 for words the image carries).
-13. The leaf crate, if ruled.
+12. The leaf crate, if ruled.
 
 The pinned table keyed by name, and the wire ids it would have kept, are no longer steps. Steps 1
 to 9 need no further ruling.
@@ -189,7 +189,8 @@ background, alternatives and example. The ruling dissolved the question of the s
 4. Ruled 2026-11-02 (UTC): the base approval file lists every grant the image makes to its own
    programs, and nothing comes from the archive implicitly.
 5. Ruled 2026-11-02 (UTC): a repository key's ceiling never covers an owner-granted kind.
-6. An owner's word line may override a word the image carries. One-way once scripts rely on it.
+6. Ruled 2026-11-02 (UTC): no override. A bare word the image carries runs the image's program,
+   and an installed program runs under its own name or by path.
 7. "A name the image carries" means the measured archive's names, with §229 (a bare name reaches an
    installed program)'s refusals unchanged. One-way.
 8. The new names ship provisional. Two-way in effect.
@@ -227,5 +228,5 @@ step named fixes it.
 How `crates/grant_plan` stops holding the shell's program table, under the ruling that no grant
 binds to a program's name. Each program declares its own grants in its own note; the archive
 vouches for the image's programs, and the owner's `grant` lines give installed bytes any
-capability, `reboot` and the installer included, sorted into three classes by danger. An owner's
-word table maps a typed word to a program. Thirteen steps get there, each keeping main shippable.
+capability, `reboot` and the installer included, sorted into three classes by danger. A
+replacement runs under its own name. Twelve steps get there, each keeping main shippable.

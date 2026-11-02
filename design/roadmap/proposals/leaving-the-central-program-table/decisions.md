@@ -4,7 +4,7 @@
 are the questions only the architect can answer, one at a time, in the order they block
 [the migration](migration.md). Each gives its background, the recommendation, the alternatives,
 an example and what was not verified, and ends in one question. Prior art here is from memory and
-not re-checked. Steps 1 to 9 and 11 wait on none of the open ones, decisions 6 to 8.
+not re-checked. Steps 1 to 9 and 11 wait on none of the open ones, decisions 7 and 8.
 
 ## What the ruling of 2026-11-02 settled
 
@@ -52,30 +52,11 @@ state](end-state.md) says how the composition turns the file into `grant` lines.
 Ruled 2026-11-02 (UTC): option A. [The end state](end-state.md) says what that means for upgrades
 and for the key-line parser of milestone 666 (a signed build installs up to its key's ceiling).
 
-## 6. May the owner point a word the image carries at an installed program?
+## 6. Ruled: no override of a word the image carries
 
-One-way once scripts rely on what `reboot` means.
-
-§229 (a bare name reaches an installed program) gives every bare word one owner and keeps the
-image's program on the word, so a local program runs by path. It refused installs and vouches that
-claim a name. [The command-name appendix](command-names.md) proposes an owner's word table: lines in
-the generation, written only at the owner's console, mapping a word to an installed program.
-
-Recommendation: yes. An explicit line the owner writes is a third case §229 did not consider, and it
-is the only way typing `reboot` reaches a replacement. Rollback or `jig use --default` restores the
-image's program.
-
-Alternative: the word table serves only words the image does not carry; `acme-reboot` answers to
-its own name and to any new word, never to `reboot`.
-
-Example: under yes, `jig use reboot acme-reboot`, then `reboot` runs the replacement. Under no,
-`jig use restart acme-reboot` works and the progenitor refuses `jig use reboot acme-reboot`.
-
-Prior art: Debian's `update-alternatives` lets the administrator repoint `editor` at any provider.
-
-Not verified: no syntax reaches an image program by path while a word overrides it.
-
-Question: may an owner's word line override an image name? Yes or no.
+Ruled 2026-11-02 (UTC): §229 (a bare name reaches an installed program) stands. A bare word the
+image carries runs the image's program, and an installed program runs under its own name or by
+path. [The command-name appendix](command-names.md) says how a word finds a program.
 
 ## 7. Which bare names belong to the image, once the table no longer says?
 
@@ -99,9 +80,8 @@ Question: A (the archive's names) or B (build the narrowing now)?
 ## 8. The new names
 
 Two-way in effect: each ships provisional. The base list page, the by-name request bit,
-`OwnerGrants`, `NotGranted`, the `display` field, each grant line's spelling, the
-`word` line and `jig use` need names. Recommendation: ship each provisional and bring them in one
-naming pass once steps 5 and 12 exist. Question: may they ship provisional? Yes or no.
+`OwnerGrants`, `NotGranted`, the `display` field and each grant line's spelling need names.
+Recommendation: ship each provisional and bring them in one naming pass once step 5 exists. Question: may they ship provisional? Yes or no.
 
 ## The leaf crate, already before calef
 

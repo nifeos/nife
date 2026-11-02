@@ -130,9 +130,8 @@ The built-in stays the default and the fallback in three ways, and none of them 
 replacement's cooperation.
 
 - The image's programs hold their grants through the archive. No install takes them away.
-- The word the owner types finds the built-in unless the owner's word table says otherwise, and
-  the table falls back to the built-in when its target is gone
-  ([the command-name appendix](command-names.md)).
+- The word `reboot` always finds the built-in. A replacement answers only to its own name or path
+  ([the command-name appendix](command-names.md)), so it never shadows the image's program.
 - `jig rollback` and `jig remove` restore an earlier generation or drop the rows, and their grants
   go with them. The image's `jig` runs from the archive, so a bad replacement manager cannot remove
   the tool that removes it.

@@ -79,5 +79,5 @@ determine. They wrote no code and booted nothing.
 ## Prior art
 
 Every claim in the [prior-art appendix](prior-art.md), and every prior-art line in
-[the decisions](decisions.md) and [the command-name appendix](command-names.md), is from memory and
+[the decisions](decisions.md), is from memory and
 was not re-checked.

@@ -60,11 +60,7 @@ proves, what tests it adds and what waits on a ruling.
     `mdr`, then `init` (`reboot`), `display` (`graphical_terminal`) and `jig`. The last one deletes
     `Program`, `programs!`, `Program::verbs`, `Program::resolver_zone` and the progenitor's
     `[Option<Elf>; PROGRAM_COUNT]`, which becomes a lookup by name. Every removed id stays a hole.
-12. The owner's word table ([the command-name appendix](command-names.md)): the `word` line, the
-    activation verb on the console's endpoint, `jig use`, and the lookup in `bare::resolve`. It can
-    land any time after step 5. Waits on [decision 6](decisions.md) for words the image carries;
-    without it, it serves every other word.
-13. The leaf crate, if ruled, anywhere after step 2.
+12. The leaf crate, if ruled, anywhere after step 2.
 
 A transport track for programs installed on a disk follows step 3: images as pipeline stages, the
 declared directory operand on the frames path, and interruptible and held images built from the
@@ -76,9 +72,9 @@ shell's budget. Base programs need none of it once step 10 lands.
   step 11 no row exists, so no id survives except as a hole, and no table pins anything.
 - New: the `OWNER_GRANTS` note (step 4), the grant lines and the vouch (step 5), and the display
   field (step 6). Also new: the `VERBS` reader (step 7, out of the transport track), the notes of
-  `reboot`, `jig` and `graphical_terminal` (step 8) and the word table (step 12).
+  `reboot`, `jig` and `graphical_terminal` (step 8).
 - Kept, in order: the notes (1), the endowment (2), the second stream (3), the base list (9), spawn
-  by name (10), the rows leaving (11) and the leaf crate (13).
+  by name (10), the rows leaving (11) and the leaf crate (12).
 - The encoder's and `image_can_carry`'s refusals no longer stay forever. They go in step 5, in the
   same pull request that makes each field earn its grant, so no commit on `main` endows a field
   nothing granted.
@@ -99,8 +95,7 @@ Each lands with the step that makes it true.
 | a line whose two stages both hold console input, or both the display, is refused at plan time naming the first holder; a second display session while one runs answers `SPAWN_NO_DISPLAY`, and a second stdin reader gets `BAD_REQUEST` | exclusive grants stay exclusive | 6 |
 | an installed manager's `jig list` holds no installer, and its `jig install` does, by its own `VERBS` note | verb narrowing on the installed path | 7 |
 | each moved program's `script/swish-check` transcript, unchanged line for line from step 9 to step 11 | the rows left cleanly | 9 to 11 |
-| `reboot` typed after `jig use reboot acme-reboot` runs the replacement; after `jig use --default reboot`, the image's | the word table and its fallback | 12 |
-| `jig use` on a delegated badge answers `NotServedHere` | only the owner writes words | 12 |
+| with `acme-reboot` installed and granted, `reboot` still runs the image's program and `acme-reboot` runs the replacement holding the reboot object | a grant does not move a word | 5 |
 
 Every test above that refuses something gets a falsification patch under
 `system_tests/falsifications/`, as milestone 892 (a std program at the prompt holds the network and
@@ -116,7 +111,7 @@ a resolver) did for its grants.
 
 ## What moves the contract-crate order
 
-Only step 13 moves a package earlier, because only the leaf crate removes the tools' link to
+Only step 12 moves a package earlier, because only the leaf crate removes the tools' link to
 `grant_plan`. Steps 1 to 11 cut the churn instead. Measured on the base of the first version of
 this proposal over 30 days (`git log --no-merges --since=2026-10-03`): 148 commits touched
 `crates/grant_plan`, 36 of them `program.rs` or `program/`, and about a third of those 36 added or
