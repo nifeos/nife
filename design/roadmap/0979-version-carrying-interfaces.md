@@ -68,14 +68,16 @@ refused. `capability_manifest_note` already carries three version constants, one
 
 The check is per bind, so the scope is per bind. `filesystem_contract` holds the block and
 file protocols; a per-crate constant would re-version file clients for a block-only break. The
-first cut's four interfaces do not share one kind:
+first cut's four interfaces do not share one kind. The rule: an interface with a peer or a layout
+carries one version constant per wire format, and a pure library is named by its crate version.
 
 - `abi` is the syscall surface. One constant at the crate root, provisionally `ABI_VERSION`; its
   scope is the syscall, method and error numbers a program matches.
 - `address_space_map` is layout constants the loader and the kernel compile in. One constant,
   provisionally `VERSION`; the scope is the bands and the pair-page arithmetic.
-- `glob` is a library with no peer and no wire. One constant, so the declaration of question 3
-  can name it; nothing checks it at run time.
+- `glob` is a library with no peer and no wire, so it carries no constant. Its name is its crate
+  version, the semantic version in its `Cargo.toml`, which every crate leaving the repository
+  carries from 0.1; the declaration of question 3 reads it from the link graph.
 - `machine_statistics_contract` is a shared-page format; its first word is the magic `MACHSTA1`.
   The page gains a version word beside it (a new index in the `word` module, provisionally
   `VERSION`); a shared page has no CALL to carry one.
@@ -107,8 +109,9 @@ prose to drift (§311). Placement follows the interface's kind:
 - The syscall ABI: the check happens at spawn, already ruled. §235 puts the ABI revision a program
   built against into its manifest note, "so the progenitor can refuse one it no longer supports";
   the comparison pits the note's declared version against the kernel's `ABI_VERSION` constant.
-- A link-time library (`glob`): no run-time check exists; the declaration of question 3 records
-  the version, and assembly checks the record.
+- A link-time library (`glob`): no run-time check exists. The declaration of question 3 records the
+  crate version, read from the link graph and `Cargo.lock` at assembly, and assembly checks the
+  record.
 
 A refusal names both sides: "the server serves 2 and 1; the client built against 3". The
 progenitor already refuses a program whose note it cannot accept (the malformed-note witness).
@@ -145,7 +148,9 @@ in-place amendment §235's condition protects and fails the equal-cost test the 
 record.
 
 The pairs need an interface identity that survives a crate rename. Provisionally each interface
-crate carries `INTERFACE_ID: u64` beside its version constant, values never reused.
+crate with a peer or a layout carries `INTERFACE_ID: u64` beside its version constant, values never
+reused. A pure library has neither; the stamp names it by crate name and the crate version read
+from the link graph.
 
 Who checks the declaration: the kernel's served versions are the same constants, under rule 7's
 one definition, so the progenitor's comparison runs at spawn. After the split, basalt's manifest
