@@ -411,9 +411,18 @@ mod verification {
     #[kani::unwind(6)]
     fn write_then_read_returns_the_same_devices_in_order() {
         let devices: [Device; 3] = [
-            Device { ordinal: kani::any(), transport: kani::any() },
-            Device { ordinal: kani::any(), transport: kani::any() },
-            Device { ordinal: kani::any(), transport: kani::any() },
+            Device {
+                ordinal: kani::any(),
+                transport: kani::any(),
+            },
+            Device {
+                ordinal: kani::any(),
+                transport: kani::any(),
+            },
+            Device {
+                ordinal: kani::any(),
+                transport: kani::any(),
+            },
         ];
         let count: usize = kani::any();
         kani::assume(count <= devices.len());
