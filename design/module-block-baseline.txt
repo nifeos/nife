@@ -786,7 +786,6 @@ crates/designware_ethernet/src/controller.rs::start
 crates/designware_ethernet/src/controller.rs::station_address
 crates/designware_ethernet/src/controller.rs::stop
 crates/designware_ethernet/src/data_plane.rs::DataPlane
-crates/designware_ethernet/src/data_plane.rs::Region
 crates/designware_ethernet/src/data_plane.rs::Tails
 crates/designware_ethernet/src/data_plane.rs::can_transmit
 crates/designware_ethernet/src/data_plane.rs::new
