@@ -154,7 +154,7 @@ fn timebase_page_phys() -> Option<u64> {
         // SAFETY: as the `Some` arm above: `dst` names a freshly allocated, exclusively owned
         // frame, and `PAGE_CONTENT_BYTES` is far under `FRAME_SIZE`.
         None => unsafe {
-            core::ptr::write_bytes(dst, 0, counter_frequency_contract::PAGE_CONTENT_BYTES)
+            core::ptr::write_bytes(dst, 0, counter_frequency_contract::PAGE_CONTENT_BYTES);
         },
     }
 
