@@ -3906,6 +3906,17 @@ if emdash_hits | grep -q .; then
 fi
 echo "em-dashes: none outside vendored trees and quoted blockquote lines"
 
+echo "==> externalized crates name no nife program"
+# lint-quick
+# A crate on crates/externalization-list.txt is to leave for a repository of its own, and a crate
+# repository stands alone: its README, Cargo.toml and sources do not mention nife, a nife program or
+# a nife package (the standing rule, calef, 2026-11-01). Decided by the maintainer 2026-11-02 (UTC),
+# provisional; reversing costs one pull request. The rules, the derived program names, the
+# per-crate ceilings for crates that still have hits, and the selftest are in
+# helpers/lint_externalized_crates.py.
+python3 helpers/lint_externalized_crates.py --selftest
+python3 helpers/lint_externalized_crates.py
+
 echo "==> shellcheck"
 # The 37 `#!/bin/sh` scripts, gated at warning severity. Two reasons this earns a dependency here
 # rather than being generic hygiene:
