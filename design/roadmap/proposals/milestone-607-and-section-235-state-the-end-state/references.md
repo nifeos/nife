@@ -1,7 +1,7 @@
 # Milestone 607 and section 235 state the end state: the references
 
 [The proposal](../milestone-607-and-section-235-state-the-end-state.md) holds the replacement text
-and the ask. This appendix lists what the text touches outside §235 and milestone 607, and the other
+and the ask. This appendix lists what the text touches outside §235 and milestone 607 (nife updated from packages), and the other
 statements in the tree that equate a package with a repository.
 
 ## Inbound references a title change touches
@@ -75,7 +75,7 @@ This lane edits none of these. Each wants its own change once the text above lan
   package that leaves this repository leaves as one repository under `nifeos`, named after the
   package. The package is the unit that releases together (§235 (the tree divides by what releases
   together)), so the package is the unit that moves. One repository holds that package's crates and
-  its programs". Under §151 the crates a program links leave before it, each to a repository of its
+  its programs". Under §151 (the goal of the repository split) the crates a program links leave before it, each to a repository of its
   own (milestone 857's 2026-11-01 ruling), so the package repository cannot hold them. Line 30 says
   the same: "The package, not the division, is what releases together." The replacement in item 3
   leaves §316's three first-cut repositories possible, where each package's source has one purpose,
