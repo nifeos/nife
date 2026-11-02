@@ -167,7 +167,8 @@ stack-frame-check|ci|script/stack-frame-check
 stack-depth-check|ci|script/stack-depth-check
 supply-chain|ci|script/supply-chain
 coverage|ci|script/coverage
-fuzz|ci|script/fuzz --time 60
+fuzz-1|ci|script/fuzz --time 60 --shard 1/2
+fuzz-2|ci|script/fuzz --time 60 --shard 2/2
 bench|ci|script/bench --check && script/bench --riscv --check && script/bench --x86 --check
 cpu-matrix|ci|script/cpu-matrix
 watchdog-check|ci|script/soak-test --wedge --arch x86_64 && script/soak-test --watchdog --arch x86_64
@@ -238,7 +239,9 @@ TABLE
 #   supply-chain        advisories and licences are a property of the dependency graph on the day
 #                       it is audited, not of the diff; `cargo-deny` also wants the network.
 #   coverage            instruments and re-runs the whole host suite.
-#   fuzz                60 seconds per target by construction, and unbounded by intent.
+#   fuzz-1 and fuzz-2   60 seconds per target by construction, and unbounded by intent. The targets
+#                       are cut into two interleaved slices for CI's 20-minute job budget
+#                       (ci.yml, above the `fuzz-shard` job); together they are `script/fuzz`.
 #   bench               three full icount baselines; `script/icount` above is the seven-second
 #                       instrument that carries the timing claims, and it IS local.
 #   cpu-matrix          five QEMU boots of the riscv64 suite, one per CPU model.

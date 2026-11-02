@@ -1984,14 +1984,36 @@ jobs:
         if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
 
-  fuzz:
-    name: fuzz (parsers, 60s per target)
+  # **Two shards and an aggregate, because one runner ran out of budget** (issue #3081, 2026-11-02
+  # UTC). Eighteen targets at 60 seconds each are 18 minutes of fuzzing, and with the build and the
+  # `cargo-fuzz` install the job measured 19.6 to 20.1 minutes on nine merge-group runs that day
+  # (89 to 92% of its former 22-minute budget), with nothing failing. No step regressed: the
+  # fuzzing is the time. Shortening a target would shrink the sweep, and raising the budget would
+  # only move the date, and a nineteenth target was already owed a split. So the targets are cut into
+  # two interleaved slices (`script/fuzz --shard N/2`, nine targets each), which puts each shard at
+  # about 9 minutes of fuzzing plus the same fixed cost of about a minute: roughly 10 to 11 minutes
+  # against the 20-minute default, with room for about nine more targets per shard. The cost is one
+  # more runner and its build, about a minute of runner time a run. A third shard is one more
+  # `include` entry and a `--shard N/3` row in `script/ci-build`. The `fuzz` line in
+  # `.github/ci-job-budgets` is gone, so the shards run on the default budget.
+  #
+  # The required check keeps its name on the aggregate below, as `cpu-matrix` does: a matrix renames
+  # its jobs, and a required name that matches nothing blocks every pull request.
+  fuzz-shard:
+    name: fuzz shard (${{ matrix.check }})
     runs-on: ubuntu-24.04
     needs: gate
     if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
-    # Build, then one-minute runs: six parsers and, since the fuzz-service-handlers lane, the
-    # services' request handlers (`script/fuzz --list`). Generous against a cold `-Zbuild-std`, which compiles the
-    # standard library with the sanitizer on the first run of the day.
+    strategy:
+      # Both shards finish, so a red one names its own targets and the other still reports.
+      fail-fast: false
+      matrix:
+        include:
+          - check: fuzz-1
+          - check: fuzz-2
+    # Build, then one-minute runs: the parsers and the services' request handlers
+    # (`script/fuzz --list`), half of them per shard. Generous against a cold `-Zbuild-std`, which
+    # compiles the standard library with the sanitizer on the first run of the day.
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
@@ -2050,14 +2072,14 @@ jobs:
       # directories, which is the same starting point a developer gets.
       # Each item's time into the job's record (milestone 808 (every gate accounts for its time)):
       # writers other than the kernel suite append only when NIFE_TIME_RECORD names a file.
-      - run: helpers/hang_evidence.py run -- script/ci-build fuzz
+      - run: helpers/hang_evidence.py run -- script/ci-build ${{ matrix.check }}
         env:
           NIFE_TIME_RECORD: ${{ github.workspace }}/target/time-record.tsv
       - name: Upload the time record
         if: always() && hashFiles('target/time-record.tsv') != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: time-record-fuzz
+          name: time-record-${{ matrix.check }}
           path: target/time-record.tsv
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
@@ -2069,6 +2091,31 @@ jobs:
       - name: Check the job's wall time against its budget
         if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
+
+  # The name the ruleset requires, kept stable over the shards. It reads one result and runs
+  # nothing, so it runs on the x86_64 pool and has no checkout (helpers/job-budget.py exempts a job
+  # without one from the clock steps; the timeout still binds).
+  fuzz:
+    name: fuzz (parsers, 60s per target)
+    runs-on: ubuntu-24.04
+    needs: [gate, fuzz-shard]
+    # The shards' own condition, so a draft or a prose-only change skips this by condition (which
+    # reports Success) rather than leaving the required check unreported. `!cancelled()` reaches the
+    # condition when a shard failed, which is the case this job exists to report.
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    timeout-minutes: 5
+    steps:
+      - name: Report the shards' combined result
+        run: |
+          result="${{ needs['fuzz-shard'].result }}"
+          if [ "$result" = success ]; then
+            echo "==> fuzz shards: no crashes in any target"
+          else
+            # script/ci-log-baseline attributes this job by its last `==>` line; the failing
+            # shard's own job names the target.
+            echo "==> fuzz shards: $result (the failing shard's job names the target)"
+            exit 1
+          fi
 
   # **The in-guest fuzz drivers, a short pass on the queue entry** (proposal
   # design/roadmap/proposals/a-short-sharded-fuzz-pass-in-ci.md; the job id and name are

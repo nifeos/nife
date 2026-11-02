@@ -13,6 +13,7 @@
 #   script/fuzz device_tree_blob_walk            one target, 60 seconds
 #   script/fuzz --time 0 device_tree_blob_walk   one target, until it finds something or you stop it
 #   script/fuzz --list                           the targets and what each one is for
+#   script/fuzz --shard 2/3                      the second of three interleaved slices of the targets
 #
 # **Seeds are passed as read-only corpus directories, never copied.**
 # `crates/device_tree_blob/tests/fixtures` holds three real device trees dumped from the boards we
@@ -43,19 +44,23 @@ targets="device_tree_blob_walk device_tree_patch_initial_ramdisk elf_parse globa
 
 usage() {
     cat <<'EOF'
-usage: script/fuzz [--time SECONDS] [--list] [TARGET...]
+usage: script/fuzz [--time SECONDS] [--shard N/M] [--list] [TARGET...]
 
-  --time N   seconds per target (default 60; 0 means run until stopped)
-  --list     list the targets and what each one covers
+  --time N    seconds per target (default 60; 0 means run until stopped)
+  --shard N/M run only slice N of M (1 to M) of the targets, taking every Mth in table order
+  --list      list the targets and what each one covers
 EOF
 }
 
 seconds=60
 wanted=""
+shard=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --time) seconds="$2"; shift 2 ;;
         --time=*) seconds="${1#--time=}"; shift ;;
+        --shard) shard="$2"; shift 2 ;;
+        --shard=*) shard="${1#--shard=}"; shift ;;
         --list)
             echo "device_tree_blob_walk  device tree, parsed at boot from firmware bytes"
             echo "device_tree_patch_initial_ramdisk  the loader's copy of the firmware's tree: refused, or the kernel reads back the archive it was given"
@@ -84,6 +89,39 @@ while [ $# -gt 0 ]; do
 done
 if [ -n "$wanted" ]; then
     targets="$wanted"
+fi
+
+# CI cuts the table into interleaved slices so that no one job carries every target's minute
+# (ci.yml, above the `fuzz-shard` job). Interleaved rather than contiguous, so the parsers and the
+# service handlers, which cost the same here but sit in two runs in the table, spread over every
+# slice. Every target lands in exactly one slice, and the slices together are the whole table.
+if [ -n "$shard" ]; then
+    case "$shard" in
+        [1-9]*/[1-9]*) ;;
+        *) echo "script/fuzz: --shard wants N/M with 1 <= N <= M, not '$shard'" >&2; exit 2 ;;
+    esac
+    shard_index="${shard%/*}"
+    shard_count="${shard#*/}"
+    case "$shard_index$shard_count" in
+        *[!0-9]*) echo "script/fuzz: --shard wants N/M with 1 <= N <= M, not '$shard'" >&2; exit 2 ;;
+    esac
+    if [ "$shard_index" -gt "$shard_count" ]; then
+        echo "script/fuzz: --shard wants N/M with 1 <= N <= M, not '$shard'" >&2
+        exit 2
+    fi
+    sliced=""
+    position=0
+    for target in $targets; do
+        position=$((position + 1))
+        if [ $(( (position - 1) % shard_count + 1 )) -eq "$shard_index" ]; then
+            sliced="$sliced $target"
+        fi
+    done
+    targets="$sliced"
+    if [ -z "$targets" ]; then
+        echo "script/fuzz: shard $shard holds no target" >&2
+        exit 2
+    fi
 fi
 
 # The version is PINNED in .cargo-fuzz-version, the same discipline as .cargo-deny-version,
