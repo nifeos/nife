@@ -182,11 +182,11 @@ fresh fetch before holding, and assign `$causes` before the hold block prints it
 ## Rule 2 of the architect label fires on a patch bump of a dependency already approved
 
 Rule 2 (`dependency`) of `helpers/architect-label-rules.py` fires when a (name, version
-requirement) pair enters a `Cargo.toml` that the base tree does not hold, and it reads a bump of a
-git dependency from `0.1.0` to `0.1.1` as a new pair, because the base lockfile's `0.1.0` does not
-admit `0.1.1`. So a patch bump of a dependency that an architect already approved puts
-`needs-architect` on the pull request, and `script/record-ruling` is the only way off. Pull request
-3061 (the `jh7110_entropy` pins) is the case. The rules file is unchanged; narrowing the rule is
+requirement) pair enters a `Cargo.toml` that the base tree does not hold. A bump of a git
+dependency from `0.1.0` to `0.1.1` counts as a new pair, because the base lockfile's `0.1.0` does
+not admit `0.1.1`. So a patch bump of a dependency an architect already approved puts
+`needs-architect` on the pull request, and only `script/record-ruling` takes it off. Pull request
+3061 (the `jh7110_entropy` pins) is the case. The rules file is unchanged. Narrowing the rule is
 work for a lane of its own and needs a ruling.
 
 ## The watchers
