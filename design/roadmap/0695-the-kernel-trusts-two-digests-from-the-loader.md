@@ -93,7 +93,7 @@ milestone names its consumer. It is not BUILT until a record cites its first use
 - **Outstanding.** Part 1, which waits on the architect. The kernel still checks the table
   itself, against both the words and `TRUST_ROOT`; checked against `kernel/src/trust.rs`, which
   still calls `require_program_measurements`. For the progenitor to check it, the kernel must hand
-  the progenitor the base digest. The three `START` words are spent (notes/progenitor-boot.md), so
+  the progenitor the base digest. The kernel already uses all three `START` words (notes/progenitor-boot.md), so
   that takes a fourth word, a new capability slot or a mapped page, and each is new boot ABI. That
   touches the syscall surface (§10 (the capability-based microkernel process model)), so the
   contract crate waits for a ruling on the channel.
