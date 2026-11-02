@@ -33,11 +33,11 @@ proves, what tests it adds and what waits on a ruling.
    the confirmation of [the security appendix](security.md). In the same pull request, the
    progenitor serves an installed installer holder only the delegated badge, refuses
    `answered console` from it, and refuses a delegated install that asks for an exclusive or
-      console-class grant. Console input gains its `req.badge == 0` check. The approval file's
-   grammar (`approval_file::File`) and its compiled records gain the same kinds, the delegated
-   `installer within <approval>` and `indexes r` or `rw` included, plus `domain`, `entropy`,
-   `machine` and `share` for the base file; today it knows only `network`, `zones`, `service`, a
-   boolean `installer` and `dirs`. The ruling on the classes
+      console-class grant. Console input gains its `req.badge == 0` check. The approval file's grammar
+   (`approval_file::File`) and its compiled records gain the same kinds, the delegated
+   `installer within <approval>` and `indexes r` or `rw` included. The base file also gains
+   `domain`, `entropy`, `machine` and `share`. Today it knows only `network`, `zones`, `service`,
+   a boolean `installer` and `dirs`. The ruling on the classes
    is in ([decision 2](decisions.md)).
 6. The display session keys on its field. The shell sets `Wiring::graphics` from
    `Manifest::display`, not from `Program::GraphicalTerminal`, and the progenitor gates
@@ -52,7 +52,8 @@ proves, what tests it adds and what waits on a ruling.
 10. Archive programs spawn by name. `cargo xtask base-image` writes a `grant` line in generation 1
     for each owner-granted kind the base approval file allows a carried program, and the
     progenitor reads base grants as it reads an owner's. This needs generation 1 to fit what the
-    progenitor reads (milestone 990's `BUGS`: 5,691 bytes against a 4,096-byte page). The
+    progenitor reads (milestone 990 (the base image's first installed-programs table) measured 5,691 bytes against
+    a 4,096-byte page). The
     §229 (a bare name reaches an installed program) refusals switch from `Program::from_name` to
     "the archive carries this name". Waits on decision 7.
 11. The rows leave, one package per pull request: fixtures, `process-tools`, `core-tools`, `demos`,
