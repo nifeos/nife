@@ -50,5 +50,5 @@ no credential (HTTP 200, verified 2026-11-02 UTC). A look whose fetch finds noth
 request; a look at a new commit makes three. A check on main's last 25 first-parent commits, on
 2026-11-02 (UTC), found every gate of a merge-queue commit as a successful check run on that commit.
 7 of the 25 carried only skipped runs of the required checks, because they were earlier
-commits of a merge-queue batch whose last commit carried the gates; the follower never moves to
+commits of a merge-queue batch whose last commit carried the gates. The follower never moves to
 those, and main's tip is always a batch's last commit.
