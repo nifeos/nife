@@ -51,8 +51,8 @@ The rule: **a package's kind says where it ends up.**
 
 A new kind has to name a new destination. A kind that does not change where a package lands is not
 a new kind: it is a `base` or `optional` package that happens to be used differently. The S2
-archive is the slot layout of §235 (the OS is built and updated from packages, and the tree
-divides by what releases together).
+archive is the slot layout of §235 (the OS is built and updated from packages, and its source
+divides by purpose).
 
 ## Reversibility
 

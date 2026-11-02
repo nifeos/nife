@@ -88,7 +88,7 @@ and controller bring-up.
 4. The package is 0.1.0 with its own semver, states `rust-version` (#1806's note built it on stable
    1.94.1), and ships its harnesses and falsification patches. `cargo package --list` shows them.
 5. Ready means proofs passing and the API stable. §235 (the OS is built and updated from packages,
-   and the tree divides by what releases together) has milestone 610 (the interface's stability is
+   and its source divides by purpose) has milestone 610 (the interface's stability is
    measured weekly)'s per-package co-change column, and the soak (step 6) is how the second is
    measured. When the soak exits, calef adds it to the lint-checked publish allowlist. The
    `nifeos/designware_ethernet` repository is created when the crate moves, on the shared CI

@@ -449,6 +449,7 @@ pci	26	config-space decode on hostile-device input
 non_volatile_memory_express	5	the queue rings never index out, the doorbell/PRP arithmetic is total, and a transfer command names only a block the namespace has
 e1000e	2	no descriptor word a device writes makes the NIC driver read outside a buffer
 designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller writes makes the driver read outside a buffer
+block_roster	4	the roster page reader is total on any bytes, and a written roster reads back as written
 usb	168	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
 extensible_host_controller_interface	24	the ring cycle arithmetic stays in bounds
 direct_memory_access_validator	140	the DMA-confinement validator, no descriptor escapes the grant

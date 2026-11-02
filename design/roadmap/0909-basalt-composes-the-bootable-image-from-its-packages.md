@@ -62,8 +62,8 @@ and basalt's existing repository, source-archive and publish path.
 - Milestone 755 (basalt v0 pins nife and runs its gate) is built. basalt pins a nife commit and runs
   that commit's own image build and tests. nife's tree builds the image it tests, from binaries
   nife compiled.
-- Milestone 607 (nife is built and updated from packages, and the repository divides along what
-  releases together) planned this step as its item 1: basalt assembles the image from base packages
+- Milestone 607 (nife is built and updated from packages, and its source divides by
+  purpose) planned this step as its item 1: basalt assembles the image from base packages
   by digest, on the host. 607 did not say who assembles it. §297 says basalt does.
 - Milestone 611 (every program and crate belongs to a package, and every package has a home) draws
   the package boundaries this build reads.

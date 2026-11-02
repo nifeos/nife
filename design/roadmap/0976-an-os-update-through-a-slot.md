@@ -11,7 +11,7 @@ needs_person: no
 # 976. An OS update is a set of packages that lands through a slot
 
 Raised 2026-10-28 (UTC) by the lane `proposal/607-item-5-an-os-update-through-a-slot`. This is
-item 5 of milestone 607 (the repository divides along what releases together): "An OS update is a set of
+item 5 of milestone 607 (its source divides by purpose): "An OS update is a set of
 packages that lands through a slot (U4 ruled; waits on item 1)." Item 1 is milestone 909 (basalt
 composes the bootable image from its packages), which landed 2026-10-28 (UTC). This proposal names
 what the update writes, what it leaves alone, and the order the pieces land.
@@ -228,8 +228,8 @@ slot. Every new name here is provisional.
 
 ## Index row
 
-Item 5 of milestone 607 (the repository divides along what releases together) waited on item 1,
+Item 5 of milestone 607 (its source divides by purpose) waited on item 1,
 which landed. The update path now has a producer: basalt composes the bootable image from its
 packages. The block names what the update writes, what it leaves alone, and the order the pieces
-land. It builds on §235 (the OS is built and updated from packages, and the tree divides by what
-releases together)'s U4 slot layout and T4 trust handoff.
+land. It builds on §235 (the OS is built and updated from packages, and its source divides by
+purpose)'s U4 slot layout and T4 trust handoff.

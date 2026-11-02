@@ -17,8 +17,8 @@ list, and each member's `home` names the repository it comes from.
 
 The package is the unit of install: what releases together, and it may hold several programs. The
 repository is the unit of source: it has one purpose, it may be finer than a package, and one
-package may draw on several repositories. §235 (the OS is built and updated from packages, and the
-tree divides by what releases together) says the same. A repository and a package
+package may draw on several repositories. §235 (the OS is built and updated from packages, and its
+source divides by purpose) says the same. A repository and a package
 coincide only where the package's programs have one purpose. This section rules the grain at which
 a package's programs leave; it does not rule that a package and its source are one thing.
 

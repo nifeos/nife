@@ -139,8 +139,8 @@ proposal decides no wire format.
 One rule is new, ruled 2026-11-01 (UTC): one revision per contract per image. basalt refuses an
 image whose components pin different revisions of one contract, and the bump pull request that
 moves a contract moves every pin of it together. Overriding the pins and building each as pinned
-are refused. The image is then the coherent set that §235 (the tree divides by what releases
-together) names. A pin is a git dependency on `nifeos/<crate>` by `rev` with its version stated.
+are refused. The image is then the coherent set that §235 (its source divides by
+purpose) names. A pin is a git dependency on `nifeos/<crate>` by `rev` with its version stated.
 
 Two checks move with each crate. nife's diff check, which fails a moved magic without its version
 constant (milestone 956's step 4), joins the crate template. The template's `cargo-semver-checks`

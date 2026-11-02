@@ -7,7 +7,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# 607. nife is built and updated from packages, and the repository divides along what releases together
+# 607. nife is built and updated from packages, and its source divides by purpose
 
 The number is provisional: the integrator mints it at merge. calef asked for it on 2026-09-26
 (UTC). A design lane (`milestone/607-packages-and-divisions`) wrote the forks and built nothing.
@@ -29,7 +29,9 @@ The forks are in [§235 (the OS is built and updated from packages)](../decision
 - The kernel crate is also the integrator and the system test suite: `kernel/src/user/` is 28,441
   of its 89,885 lines, and it links nine service crates and three fixture crates.
 - Contracts still change with their consumers: 76% of contract commits in 60 days touched another
-  division. §151's precondition for ruling the split's order is not met.
+  division. That churn holds no move: §151 (the goal of the repository split is independent
+  release) orders the split bottom-up, and a contract crate leaves carrying a version that each
+  consumer checks.
 
 ## The rulings
 
@@ -45,9 +47,14 @@ calef ruled on every fork on 2026-09-27 (UTC), relayed by the maintainer on pull
   S3 (an upstream Rust target) once `milestone/610-interface-stability` shows the interfaces stable.
   S1 is not planned.
 - The ABI revision is a field in the manifest note of milestone 597 (a program carries its manifest in an ELF note), not a separate note.
-- The repositories: R1 now, with package boundaries drawn in-tree and enforced by lint. The end
-  state is every package leaving this repository. Each package's definition carries a required
-  `home` with no default. `milestone/611-package-boundaries` is building the boundaries.
+- The repositories: R1 for what has not left, with package boundaries drawn in-tree and enforced
+  by lint. The end state is everything leaving this repository, bottom-up, for repositories with
+  one purpose each: the kernel, the programs, the tooling and the crates. `nifeos/nife` keeps only
+  the history (§151 (the goal of the repository split is independent release)). A package is the
+  unit of install and a repository the unit of source, so one package may draw its source from
+  several repositories. Each package's definition carries a required `home` with no default, and
+  milestone 611 (every program and crate belongs to a package, and every package has a home) draws
+  the boundaries.
 - Composition follows the Linux distributions: a package is what releases together and may hold
   several programs, while authority stays per program. Base services with no Linux counterpart
   still need nife's own grouping, which is a follow-on.
@@ -96,4 +103,4 @@ The proposals, none minted, in the recommended order. §235 has the reasoning.
 
 ## Index row
 
-how a package becomes part of the OS, and where the repository divides
+how a package becomes part of the OS, and how its source divides into repositories

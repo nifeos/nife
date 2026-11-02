@@ -5,7 +5,7 @@
 //! everything else, including the capability layout and the wire format, is one function.
 //!
 //! It lives here rather than in the contract so the contract carries no `user_mode_runtime` edge
-//! (DECISIONS §235 (the OS is built and updated from packages, and the tree divides by what releases together) P3: a contract never links the runtime), the same split as
+//! (DECISIONS §235 (the OS is built and updated from packages, and its source divides by purpose) P3: a contract never links the runtime), the same split as
 //! `supervision_contract` and `process_builder`. See notes/live-replacement.md and
 //! notes/state-handoff.md.
 //!

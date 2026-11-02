@@ -5,9 +5,7 @@ decided: 2026-09-27
 ratified_by: calef
 ---
 
-# 235. The OS is built and updated from packages, and the tree divides by what releases together
-
-*Amended 2026-09-27T15:06Z: Fork 3 gains a home-sizing rule, below.*
+# 235. The OS is built and updated from packages, and its source divides by purpose
 
 *Amended 2026-10-07 (UTC): a slot holds only the kernel and what nothing can restart; see §159 (only a new kernel needs a reboot).*
 
@@ -37,8 +35,10 @@ pull request #1389. What is left open is a follow-on, not a fork.
   manifest in an ELF note), not a separate note. calef: *"yes"*. Whoever builds it picks the
   encoding: the descriptor's reserved zero bytes, or a longer layout. Amending version 1 in place
   holds only while nothing outside the tree has acted on the note.
-- Fork 3, the repositories: R1 now, and every package leaves this repository in the end. calef:
-  *"R1 for now is right with package boundaries drawn and enforced inside it by lint check."* And:
+- Fork 3, the repositories: R1 for what has not left, and everything leaves this repository in the
+  end, each piece to a repository with one purpose (§151 (the goal of the repository split is
+  independent release)). calef: *"R1 for now is right with package boundaries drawn and enforced
+  inside it by lint check."* And:
   *"I want to force decisions on homes versus there being a default of sticking around if we don't
   find a home for something."* So a package's in-tree definition carries a required `home` field
   with no default, and lint fails when it is missing or undecided. The lane
@@ -59,7 +59,9 @@ pull request #1389. What is left open is a follow-on, not a fork.
 
 ## What is already decided, and holds under every option here
 
-- §151 (the goal of the repository split is independent release): the split's goal is independent release and third-party programs. The order is open.
+- §151 (the goal of the repository split is independent release): the split's goal is independent
+  release and third-party programs. Everything leaves this repository for a repository with one
+  purpose, bottom-up, and no precondition holds a move.
 - §197 (a package is one archive file), named by name and version.
 - §195 (a reviewed recipe vouches for a package): the recipe carries the digest.
 - §208 (installing a package is granting it): the set of what is installed is versioned.
@@ -85,8 +87,9 @@ Three facts from the tree qualify that. Each is measured in the note.
    kernel's 89,885 lines. The kernel depends on nine service crates and three fixture crates, and
    half of the commits in that directory touch another crate.
 3. Contracts still move with their consumers. Of 215 commits touching a contract crate in 60 days,
-   76% touched another division too. §151 names protocols that stop churning as a precondition of
-   the split. It is not met.
+   76% touched another division too. That churn holds no move under §151 (the goal of the
+   repository split is independent release)'s bottom-up order: a contract crate leaves carrying a
+   version that each consumer checks.
 
 None of these makes the question wrong. They say where the work is, and fact 1 decides which forks
 are live.
@@ -137,28 +140,32 @@ Proofs are not a division: each lives beside its code in 28 places.
 
 | option | shape | what it costs |
 |---|---|---|
-| R1 (ruled, now). One repository, boundaries enforced inside it | Each package's boundary is drawn in-tree and checked by lint, in the spirit of milestone 39 (repository structure for a loosely-coupled OS)'s option B. `script/test` stays one command. | Nothing moves between repositories yet. |
+| R1 (ruled, until each piece leaves). What has not left stays in one repository, boundaries enforced inside it | Each package's boundary is drawn in-tree and checked by lint, in the spirit of milestone 39 (repository structure for a loosely-coupled OS)'s option B. `script/test` stays one command. | A piece leaves only in the bottom-up order, and this repository pins each piece that has left. |
 | R2. Split out the SDK alone (not taken) | Contracts and runtime move out | 76% of contract commits touch another division, so most become two pull requests. |
 | R3. Split along all seven (not taken) | Milestone 39's option C, with `basalt` as the gate | 27% of code commits cross a division. |
-| R4 (ruled, the end state). Every package leaves | Each package has a required `home`, no default | Forces a decision per package rather than a default of staying. |
+| R4 (ruled, the end state). Everything leaves | The kernel, the programs, the tooling and the crates each leave for a repository with one purpose, bottom-up; each package has a required `home`, no default | Forces a decision per piece rather than a default of staying. `nifeos/nife` keeps only the history. |
 
 Two things stay single-tree under every option. One `script/test` proves every architecture (§19 (architectural parity is a tenet)),
 and the integration test suite needs every division at a known version to run. R1 keeps both. The
 end state has to rebuild them wherever the base's gate goes.
 
-### Amendment, 2026-09-27T15:06Z: how big a home is (question 7c)
+### How big a repository is
 
-calef ruled, once R4 has packages leaving: **a home is sized by what changes together**, option C.
-A (one repository per package) is refused: it maximizes two-PR commits wherever packages
-co-change. B (one repository per division) is refused too: a division comes from the dependency
-graph, not co-change ("The premise, checked" above measures 76% of contract commits crossing one).
+**A repository has one purpose**, and its purpose sets its size. A package is the unit of install:
+it is what releases together, and it may hold several programs. A repository is the unit of source:
+it may be finer than a package, and one package may be assembled from several single-purpose
+repositories. One repository per package is refused as the rule: it ties the grain of the source to
+the grain of the install. A repository and a package coincide only where the package's source has
+one purpose. One repository per division is refused too: a division comes from the dependency graph,
+not from a purpose ("The premise, checked" above measures 76% of contract commits crossing one).
 
-Milestone 610 (the interface's stability is measured weekly) gains a per-package co-change column
-beside the division figure it carries; packages that move together share a home. Measure first: no
-package moves before that column exists. R1 is unchanged.
+Milestone 610 (the interface's stability is measured weekly) carries a per-package co-change
+column beside its division figure. The column informs how packages group: what changes together
+is a candidate to release together. It gates no move, since each piece leaves in the bottom-up
+order of §151 (the goal of the repository split is independent release).
 
 Every `.package.toml` file's provisional `home` field stays provisional. `packages/homes.toml`'s
-header cites this. The column is owed work against 610's own block, not built here.
+header cites this.
 
 ## Fork 4: how a third party builds against the ABI
 
@@ -211,7 +218,8 @@ machine or a person outside acts on them. Everything in P1 to P3 is host code an
 ## What this unblocks
 
 Every proposal above. Milestone 198's rung 4 (the web page) can say the SDK is an S2 archive.
-Milestone 39 and §151's order now have an answer: R1 now, every package out in the end.
+Milestone 39 has its answer: R1 for what has not left, and everything out in the end, in the
+bottom-up order of §151 (the goal of the repository split is independent release).
 
 ## Follow-on
 

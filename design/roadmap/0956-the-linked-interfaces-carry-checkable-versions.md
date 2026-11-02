@@ -53,7 +53,7 @@ Each step lands a provable piece. Every new name is provisional.
 
 3. The syscall ABI check runs at spawn. The progenitor reads the ABI entry of a program's
    `INTERFACES` note and compares it with the kernel's `ABI_VERSION` (§235 (the OS is built and
-   updated from packages, and the tree divides by what releases together)). It refuses a mismatch,
+   updated from packages, and its source divides by purpose)). It refuses a mismatch,
    naming both. A program with no `INTERFACES` note declares nothing and runs as it does today;
    refusing it waits on packages carrying the stamp. The ABI never dual-serves, so the refusal is
    the hard edge. Proves: the progenitor refuses a program whose note declares a version the kernel
