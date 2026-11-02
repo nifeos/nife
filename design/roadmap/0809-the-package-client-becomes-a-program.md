@@ -150,8 +150,8 @@ the index format, `spawnproto`'s activation request (§208) and `crates/installe
 manager on those crates can do what `jig` can, once the owner's console grants it the installer
 endpoint.
 
-calef, 2026-10-06 (UTC), accepted how managers coexist: *"Yes."* Only `jig` holds the endpoint by
-default; other tools stay user-local, like `pipx`. Each installed-programs row records which manager
+Ruled 2026-10-06 (UTC): only `jig` holds the endpoint by default, another manager only through an
+owner's `grant` line (§270), and other tools stay user-local, like `pipx`. Each installed-programs row records which manager
 installed it, and the progenitor refuses a manager's remove or rollback of another's row.
 
 ## How this splits against milestones 801 and 802
