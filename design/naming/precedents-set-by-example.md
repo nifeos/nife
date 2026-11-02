@@ -39,7 +39,7 @@ in its own code. Kept: `errno`, `std`, `argv`, PCI's `CONFIG_ADDRESS` and `CONFI
 time expand, because the concept is nife's even when POSIX has a field of the same meaning.
 
 This applies the foreign-spelling rule in [vocabulary-rulings.md](vocabulary-rulings.md) at the
-level of one identifier.
+level of one identifier. New register constants follow [design/naming.md](../naming.md).
 
 ### A kept foreign name carries its expansion
 

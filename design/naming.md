@@ -50,16 +50,15 @@ The test applies to names this tree authors. A name that arrives across somebody
 keeps their spelling, with an expansion written where the reader meets it. The foreign spelling
 stops there: inside, `initrd` is `initial_ramdisk` (#1842). Ruled 2026-10-26 (UTC): a kept
 name's doc comment opens with its full name and the source's heading, and carries a `doc(alias)`,
-as does a specification's term of art in names this tree authors
+as does a specification's term of art in names this tree authors.
 ([precedents](naming/precedents-set-by-example.md)).
 
-### A permissive source's name is copied, BSD first
+### A register constant takes the spelled-out name
 
-Where a permissively licensed source names a hardware register, field or constant, copy its name:
-OpenBSD's first, then FreeBSD's, and Linux's only when no BSD source names it. Ruled 2026-11-01
-(UTC), amending Decision 37c, for new and provisional names only ([the
-ruling](https://github.com/nifeos/nife/pull/3005#issuecomment-6559086117)). A program, crate or
-command takes the tree's own pattern (`system_installer`), not a BSD name.
+Ruled 2026-11-02 (UTC), for new and provisional names. A hardware register, field or bit constant
+copied from a cited source gets a spelled-out name. The source's spelling goes in
+`doc(alias)` and the doc comment's opening, cited: OpenBSD's first, then FreeBSD's, and Linux's only
+when no BSD source names it. A ratified name waits for its own review.
 
 ### Nouns, not verbs
 
