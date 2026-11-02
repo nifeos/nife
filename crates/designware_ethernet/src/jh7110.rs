@@ -23,23 +23,20 @@ use crate::registers;
 
 /// Mainline's compatible for both ports.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
-/// walk and the process layout left the driver crates.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub const COMPATIBLE_MAINLINE: &[u8] = b"starfive,jh7110-dwmac";
 /// The vendor U-Boot's compatible for both ports, the one radon's firmware serves.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
-/// walk and the process layout left the driver crates.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub const COMPATIBLE_VENDOR: &[u8] = b"starfive,jh7110-eqos-5.20";
 /// Both spellings, in the order to try them: mainline's first.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
-/// walk and the process layout left the driver crates.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub const COMPATIBLES: [&[u8]; 2] = [COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR];
 
-/// `gmac0`'s window, in both trees and in OpenBSD's port table.
+/// The Gigabit media access control (Gigabit MAC, GMAC) `gmac0`'s window, in both trees and in OpenBSD's port table.
 pub const GMAC0_BASE: u64 = 0x1603_0000;
-/// `gmac1`'s window.
+/// The Gigabit MAC `gmac1`'s window.
 pub const GMAC1_BASE: u64 = 0x1604_0000;
 
 /// **radon's bus configuration**, identical in both trees: `snps,fixed-burst`,
@@ -65,8 +62,9 @@ pub const BUS: Bus = Bus {
 /// which the compiler checks here; the exclusion of the file's constant-item or-versus-xor
 /// mutants names this constant.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
-pub const THE_BURST_LENGTH_BITS_SHARE_NO_BIT: () = assert!(
+/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+#[doc(alias = "THE_BURST_LENGTH_BITS_SHARE_NO_BIT")]
+pub const BURST_LENGTH_BITS_DO_NOT_OVERLAP: () = assert!(
     registers::SYS_BUS_MODE_BLEN_256
         | registers::SYS_BUS_MODE_BLEN_128
         | registers::SYS_BUS_MODE_BLEN_64
@@ -84,21 +82,18 @@ pub(crate) const ALWAYS_ON_SYSTEM_CONTROLLER_BASE: u64 = 0x1701_0000;
 pub(crate) const ALWAYS_ON_SYSTEM_CONTROLLER_SIZE: u64 = 0x1000;
 /// Mainline's compatible for it. The vendor's node says only `syscon`, which names nothing.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): the crate's rename table, with `AON` spelled out as
-/// `ALWAYS_ON`, replacing `COMPATIBLE_AON_SYSCON`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "aon")]
 pub const COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER: &[u8] = b"starfive,jh7110-aon-syscon";
 /// The vendor's node name for it, a prefix that matches `aon_syscon@17010000`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): the crate's rename table, with `AON` spelled out as
-/// `ALWAYS_ON`, replacing `AON_SYSCON_NODE`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "aon")]
 pub const ALWAYS_ON_SYSTEM_CONTROLLER_NODE: &[u8] = b"aon_syscon@";
 /// The word holding `gmac0`'s interface select: mainline's `<&aon_syscon 0xc 0x12>` second cell,
 /// the vendor's `AON_SYSCFG_12`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
-/// `GMAC0_SYSCON_OFFSET`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub const GMAC0_SYSTEM_CONTROLLER_OFFSET: u64 = 0xc;
 /// The field's shift: mainline's third cell `0x12`, the vendor's `GMAC5_0_SEL_I_SHIFT`.
 pub(crate) const GMAC0_SYSTEM_CONTROLLER_SHIFT: u32 = 18;
@@ -114,8 +109,7 @@ pub(crate) const PHY_INTF_RGMII: u32 = 1;
 /// media-independent interface (the MAC-to-PHY wiring both JH7110 boards use), every other field
 /// kept.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): the reduced gigabit media-independent interface
-/// spelled out, replacing `select_rgmii`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "rgmii")]
 pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u32 {
     (word & !(SYSTEM_CONTROLLER_FIELD << GMAC0_SYSTEM_CONTROLLER_SHIFT))
@@ -127,8 +121,9 @@ pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u3
 /// `select_reduced_gigabit_media_independent_interface` is its `^` for every word, and the
 /// exclusion of those mutants names this constant.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
-pub const THE_INTERFACE_SELECT_AND_CLEARED_WORD_SHARE_NO_BIT: () =
+/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+#[doc(alias = "THE_INTERFACE_SELECT_AND_CLEARED_WORD_SHARE_NO_BIT")]
+pub const INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP: () =
     assert!(PHY_INTF_RGMII & SYSTEM_CONTROLLER_FIELD == PHY_INTF_RGMII);
 
 /// The interface select a syscon word holds for `gmac0`.
@@ -175,16 +170,14 @@ const DEFAULT_DELAY_PS: u32 = 1950;
 /// gives it no `phy-handle`. `gmac0` precedes `gmac1` in that tree, and `gmac1`'s PHY is
 /// `ethernet-phy@1`, so the first `ethernet-phy@0` is `gmac0`'s.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `phy` spelled out as IEEE 802.3's
-/// `physical_layer_device`, replacing `VENDOR_PHY_NODE`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "phy")]
 pub const VENDOR_PHYSICAL_LAYER_DEVICE_NODE: &[u8] = b"ethernet-phy@0";
 
 /// The first cell of a property, big-endian, as every device-tree cell is: `interrupts`'s first
 /// interrupt, `phy-handle`'s phandle, a `reg`'s first word.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
-/// walk and the process layout left the driver crates.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[must_use]
 pub fn first_cell(value: &[u8]) -> Option<u32> {
     Some(u32::from_be_bytes(value.get(..4)?.try_into().ok()?))
@@ -201,8 +194,7 @@ impl Discovered {
     ///
     /// Propagates the first error `property` returns.
     ///
-    /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-
-    /// tree walk and the process layout left the driver crates.
+    /// Name: ratified 2026-11-02 (UTC), #3094.
     pub fn from_node<'t, E>(
         base: u64,
         size: u64,
@@ -240,8 +232,7 @@ impl Discovered {
 ///
 /// Propagates the first error `property` returns.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `phy` spelled out as IEEE 802.3's
-/// `physical_layer_device`, replacing `mainline_phy`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "phy")]
 pub fn mainline_physical_layer_device<'t, E>(
     mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
@@ -284,8 +275,7 @@ pub fn mainline_physical_layer_device<'t, E>(
 ///
 /// Propagates the first error `property` returns.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `phy` spelled out as IEEE 802.3's
-/// `physical_layer_device`, replacing `vendor_phy`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "phy")]
 pub fn vendor_physical_layer_device<'t, E>(
     mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
@@ -319,8 +309,7 @@ pub fn vendor_physical_layer_device<'t, E>(
 /// **Where the AON system controller is** (the device tree's `syscon` node), and whether the tree
 /// said so.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
-/// `Syscon`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[doc(alias = "syscon")]
 pub struct SystemController {
@@ -336,8 +325,7 @@ impl SystemController {
     /// **The constant both trees agree on**, `0x1701_0000`, `0x1000` long, with `from_tree`
     /// false. An answer here is not evidence the machine is a JH7110.
     ///
-    /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-
-    /// tree walk and the process layout left the driver crates.
+    /// Name: ratified 2026-11-02 (UTC), #3094.
     #[must_use]
     pub const fn fallback() -> Self {
         SystemController {

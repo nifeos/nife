@@ -2,18 +2,18 @@
 //! driver writes and reads, and what a receive descriptor says. The descriptor bits keep
 //! OpenBSD's `dwqereg.h` names, and each one's documentation opens with its full name.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: decided by the maintainer, provisional; reversing costs one pull request.
 
 pub(crate) const PAGE: u64 = 4096;
 
 /// Receive descriptors. Sixteen 16-byte descriptors are 256 bytes, one page with room to grow.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `RX_ENTRIES`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub const RECEIVE_ENTRIES: u16 = 16;
 
 /// Transmit descriptors.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `TX_ENTRIES`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub const TRANSMIT_ENTRIES: u16 = 16;
 
 /// Bytes per descriptor: four little-endian words.
@@ -26,8 +26,7 @@ pub const BUFFER_SIZE: u64 = 2048;
 /// The largest frame either direction carries: 1500 bytes of payload and the 14-byte header, CRC
 /// excluded (the device appends it on transmit, and the driver strips it on receive).
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
-/// `MAX_FRAME`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub const MAXIMUM_FRAME: usize = 1514;
 
 /// The frame check sequence the device leaves on every received frame.
@@ -45,10 +44,10 @@ pub const RDES3_OWN: u32 = 1 << 31;
 /// format: interrupt on completion. Interrupts are masked at the channel; set anyway so the channel
 /// status's receive bit reports completions, which the coherence probe reads.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
-/// replacing `RDES3_IOC`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "receive descriptor word 3, interrupt on completion")]
-pub const RDES3_IC: u32 = 1 << 30;
+#[doc(alias = "RDES3_IC")]
+pub const RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION: u32 = 1 << 30;
 
 /// **Receive descriptor word 3, buffer 1 address valid** (`RDES3_BUF1V`, `dwqereg.h`). Receive,
 /// read format: buffer 1's address is valid.
@@ -120,12 +119,12 @@ pub const TDES3_ES: u32 = 1 << 15;
 /// owned, interrupt-on-completion, buffer 1 valid. As two little-endian `u64`s: words 0 and 1,
 /// then words 2 and 3.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing
-/// `rx_descriptor_words`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub const fn receive_descriptor_words(buffer_physical_address: u64) -> [u64; 2] {
     [
         buffer_physical_address,
-        ((RDES3_OWN | RDES3_IC | RDES3_BUF1V) as u64) << 32,
+        ((RDES3_OWN | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION | RDES3_BUF1V) as u64)
+            << 32,
     ]
 }
 
@@ -134,17 +133,19 @@ pub const fn receive_descriptor_words(buffer_physical_address: u64) -> [u64; 2] 
 /// this constant. The compiler is the gate's only reader, and it reads at const evaluation, so
 /// `dead_code` is allowed here for exactly that reason.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+/// Name: decided by the maintainer, provisional; reversing costs one pull request.
 #[allow(dead_code)]
-pub const THE_RECEIVE_DESCRIPTOR_SET_BITS_SHARE_NO_BIT: () =
-    assert!(RDES3_OWN | RDES3_IC | RDES3_BUF1V == RDES3_OWN ^ RDES3_IC ^ RDES3_BUF1V);
+#[doc(alias = "THE_RECEIVE_DESCRIPTOR_SET_BITS_SHARE_NO_BIT")]
+pub const RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP: () = assert!(
+    RDES3_OWN | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION | RDES3_BUF1V
+        == RDES3_OWN ^ RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION ^ RDES3_BUF1V
+);
 
 /// **A transmit descriptor for one whole frame in one buffer**: the address, the length with
 /// interrupt-on-completion, and word 3 owned, first and last, with the frame length. The device
 /// inserts the CRC and pads a short frame (checksum and padding control zero).
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing
-/// `tx_descriptor_words`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16) -> [u64; 2] {
     let length = length as u32 & TDES3_FRAME_LEN;
     let des2 = (length & TDES2_BUF1_LEN) | TDES2_IC;
@@ -162,9 +163,10 @@ pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16
 /// gate's only reader, and it reads at const evaluation, so `dead_code` is allowed here for
 /// exactly that reason.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+/// Name: decided by the maintainer, provisional; reversing costs one pull request.
 #[allow(dead_code)]
-pub const THE_TRANSMIT_DESCRIPTOR_BITS_SHARE_NO_BIT: () = assert!(
+#[doc(alias = "THE_TRANSMIT_DESCRIPTOR_BITS_SHARE_NO_BIT")]
+pub const TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP: () = assert!(
     TDES2_IC & TDES2_BUF1_LEN == 0
         && (TDES3_OWN | TDES3_FS | TDES3_LS == TDES3_OWN ^ TDES3_FS ^ TDES3_LS)
         && TDES3_OWN & TDES3_FRAME_LEN == 0
@@ -175,7 +177,7 @@ pub const THE_TRANSMIT_DESCRIPTOR_BITS_SHARE_NO_BIT: () = assert!(
 
 /// What a receive descriptor's word 3 says, judged.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `RxVerdict`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReceiveVerdict {
     /// The device still owns it.
@@ -205,7 +207,7 @@ pub enum ReceiveVerdict {
 /// assert_eq!(receive_verdict(RDES3_FD | RDES3_LD | 0x7fff, 1514), ReceiveVerdict::Drop);
 /// ```
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `rx_verdict`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub fn receive_verdict(descriptor_word_3: u32, room: usize) -> ReceiveVerdict {
     if descriptor_word_3 & RDES3_OWN != 0 {
         return ReceiveVerdict::NotYet;
@@ -231,7 +233,8 @@ pub fn receive_verdict(descriptor_word_3: u32, room: usize) -> ReceiveVerdict {
 /// `receive_verdict` names this constant. The compiler is the gate's only reader, and it reads at
 /// const evaluation, so `dead_code` is allowed here for exactly that reason.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+/// Name: decided by the maintainer, provisional; reversing costs one pull request.
 #[allow(dead_code)]
-pub const THE_FIRST_AND_LAST_BITS_SHARE_NO_BIT: () =
+#[doc(alias = "THE_FIRST_AND_LAST_BITS_SHARE_NO_BIT")]
+pub const FIRST_AND_LAST_BITS_DO_NOT_OVERLAP: () =
     assert!(RDES3_FD | RDES3_LD == RDES3_FD ^ RDES3_LD);

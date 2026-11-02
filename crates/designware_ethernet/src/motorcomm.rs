@@ -5,9 +5,9 @@
 //! in the crate root). The link, speed and duplex come from the standard clause 22 registers, as
 //! OpenBSD's `ukphy_status` (`sys/dev/mii/ukphy_subr.c`) reads them, with IEEE 802.3's registers
 //! and OpenBSD's `mii.h` names. The part's vendor status register is not read.
-//! [`EXT_SLEEP_CTRL`] and [`EXT_CLK_GATE`] take OpenBSD's names (`ytphy.c`); FreeBSD's `mcommphy.c`
+//! [`MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER`] and [`MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER`] take OpenBSD's names (`ytphy.c`); FreeBSD's `mcommphy.c`
 //! names the same two registers too, and each constant's documentation gives Linux's spelling.
-//! The bits inside them, and [`PHY_ID_YT8531`] (OpenBSD and FreeBSD match the OUI and model, not
+//! The bits inside them, and [`MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID`] (OpenBSD and FreeBSD match the OUI and model, not
 //! the whole identifier), come from Linux's `drivers/net/phy/motorcomm.c`, read as facts about the
 //! part (#2762 Decision 52's source order); why this driver writes them is at each. Each constant keeps its source's
 //! name without the part prefix (`YT8511_`, `YT8521_` or `YT8531_`), and its documentation opens
@@ -21,10 +21,10 @@ use crate::management_data_input_output::{self, ManagementDataInputOutput};
 /// **The YT8531's PHY identifier** (`PHY_ID_YT8531`, `motorcomm.c`), `PHYSID1 << 16 | PHYSID2`,
 /// matched exactly there; OpenBSD matches the OUI and model.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
-/// replacing `YT8531_ID`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "yt8531 identifier")]
-pub const PHY_ID_YT8531: u32 = 0x4f51_e91b;
+#[doc(alias = "PHY_ID_YT8531")]
+pub const MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID: u32 = 0x4f51_e91b;
 
 /// **Extended register address port** (`YT8511_REG_ADDR`, `ytphy.c`): write an extended register's
 /// number here.
@@ -38,12 +38,11 @@ pub(crate) const REG_DATA: u8 = 0x1f;
 /// **Clock gate register** (`YT8511_EXT_CLK_GATE`, `ytphy.c`). Linux calls it
 /// `YT8521_CLOCK_GATING_REG` (`motorcomm.c`) and FreeBSD `PHY_CLOCK_GATING_REG` (`mcommphy.c`).
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by `lane/citation-fixes-from-the-audit`. Ruled
-/// 2026-11-01 (UTC): where a permissively licensed source names a thing, copy its name, OpenBSD's
-/// first, then FreeBSD's, then Linux's. The part prefix is dropped as elsewhere in this module.
-/// Replaces `CLOCK_GATING_REG`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "clock gating register")]
-pub const EXT_CLK_GATE: u16 = 0x000c;
+#[doc(alias = "EXT_CLK_GATE")]
+#[doc(alias = "YT8521_CLOCK_GATING_REG")]
+pub const MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER: u16 = 0x000c;
 /// **Clock gating register, receive clock enable** (`YT8521_CGR_RX_CLK_EN`, `motorcomm.c`). Clear
 /// it to keep the receive clock running with no cable; Linux clears it for
 /// `motorcomm,keep-pll-enabled`. Cleared here unconditionally, because the controller's
@@ -56,12 +55,11 @@ pub(crate) const CGR_RX_CLK_EN: u16 = 1 << 12;
 /// `YT8521_EXTREG_SLEEP_CONTROL1_REG` (`motorcomm.c`) and FreeBSD `PHY_SLEEP_CONTROL1_REG`
 /// (`mcommphy.c`).
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by `lane/citation-fixes-from-the-audit`. Ruled
-/// 2026-11-01 (UTC): where a permissively licensed source names a thing, copy its name, OpenBSD's
-/// first, then FreeBSD's, then Linux's. The part prefix is dropped as elsewhere in this module.
-/// Replaces `EXTREG_SLEEP_CONTROL1_REG`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "extended register, sleep control 1")]
-pub const EXT_SLEEP_CTRL: u16 = 0x0027;
+#[doc(alias = "EXT_SLEEP_CTRL")]
+#[doc(alias = "YT8521_EXTREG_SLEEP_CONTROL1_REG")]
+pub const MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER: u16 = 0x0027;
 /// **Sleep control 1, sleep switch** (`YT8521_ESC1R_SLEEP_SW`, `motorcomm.c`). Clear it to stop the
 /// PHY sleeping when the cable is out, which also stops its clocks. Linux clears it for
 /// `motorcomm,auto-sleep-disabled`; this driver clears it for
@@ -111,9 +109,10 @@ pub(crate) const RGMII_RXD_DS_MASK: u16 = (1 << 12) | (0x3 << 4);
 /// exclusion of the mask's or-versus-xor mutant names this constant. The clippy lints fold the
 /// literals; that is what a gate is, allowed here for exactly that reason.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+/// Name: decided by the maintainer, provisional; reversing costs one pull request.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_RECEIVE_DATA_DRIVE_FIELDS_SHARE_NO_BIT: () = assert!((1 << 12) & (0x3 << 4) == 0);
+#[doc(alias = "THE_RECEIVE_DATA_DRIVE_FIELDS_SHARE_NO_BIT")]
+pub const RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!((1 << 12) & (0x3 << 4) == 0);
 /// **Extended register, synchronous Ethernet configuration** (`YT8521_EXT_SYNCE_CFG`, `ytphy.c`).
 #[doc(alias = "extended register, synchronous ethernet configuration")]
 pub(crate) const EXT_SYNCE_CFG: u16 = 0xa012;
@@ -185,7 +184,7 @@ pub(crate) const fn link_from_registers(
             full_duplex: bmcr & mdio::BMCR_FDX != 0,
         });
     }
-    if bmsr & mdio::BMSR_ANEGCOMPLETE == 0 {
+    if bmsr & mdio::BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE == 0 {
         return None;
     }
     let common = anar & anlpar;
@@ -212,8 +211,9 @@ pub(crate) const fn link_from_registers(
 /// [`link_from_registers`] is its `^`, which the compiler checks here; the mutation exclusion for
 /// `link_from_registers` names this constant.
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane/954-designware-ethernet-noise.
-pub const THE_PARTNER_HUNDRED_MEGABIT_ABILITIES_SHARE_NO_BIT: () =
+/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+#[doc(alias = "THE_PARTNER_HUNDRED_MEGABIT_ABILITIES_SHARE_NO_BIT")]
+pub const PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP: () =
     assert!(management_data_input_output::ANLPAR_T4 & management_data_input_output::ANLPAR_TX == 0);
 
 /// A pad drive strength, as a tree states it.
@@ -262,11 +262,10 @@ const FIXED_DELAY_PS: u32 = 1900;
 const STEP_PS: u32 = 150;
 
 impl Settings {
-    /// **radon's `gmac0`, from the table in this module's header.** Both trees give these values,
+    /// **radon's `gmac0` (Gigabit MAC, GMAC), from the table in this module's header.** Both trees give these values,
     /// so a tree that names neither spelling still gets the board it is on, and says so.
     ///
-    /// Name: provisional, made public 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the
-    /// device-tree walk that compares against it left the crate.
+    /// Name: ratified 2026-11-02 (UTC), #3094.
     pub const FALLBACK_GMAC0: Settings = Settings {
         receive_delay: 0xa,
         receive_fixed_delay: false,
@@ -352,8 +351,7 @@ pub(crate) const fn voltage_mv(chip_configuration: u16) -> u32 {
 
 /// Read extended register `extended`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
-/// `read_ext`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub fn read_extended(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
@@ -365,8 +363,7 @@ pub fn read_extended(
 
 /// Write extended register `extended`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
-/// `write_ext`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub fn write_extended(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
@@ -449,14 +446,14 @@ pub fn configure(
     modify_extended(
         bus,
         physical_layer_device_address,
-        EXT_CLK_GATE,
+        MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER,
         CGR_RX_CLK_EN,
         0,
     )?;
     modify_extended(
         bus,
         physical_layer_device_address,
-        EXT_SLEEP_CTRL,
+        MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER,
         ESC1R_SLEEP_SW,
         0,
     )?;
@@ -472,8 +469,9 @@ pub fn configure(
 /// is zero: every `|` here is its `^`, and a shift by `TX_DELAY_SEL_SHIFT` is the identity; the
 /// compiler checks both here, and the mutation exclusions for `configure` name this constant.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
-pub const THE_RGMII_DELAY_AND_DRIVE_FIELDS_SHARE_NO_BIT: () = assert!(
+/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+#[doc(alias = "THE_RGMII_DELAY_AND_DRIVE_FIELDS_SHARE_NO_BIT")]
+pub const RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!(
     (0xf << RX_DELAY_SEL_SHIFT) & (0xf << TX_DELAY_SEL_SHIFT) == 0
         && (0x7 << RGMII_RXC_DS_SHIFT) & RGMII_RXD_DS_MASK == 0
         && TX_DELAY_SEL_SHIFT == 0
@@ -569,7 +567,7 @@ mod tests {
     #[test]
     fn the_clause_22_registers_decode_every_speed_and_duplex() {
         use management_data_input_output::*;
-        let up = BMSR_LSTATUS | BMSR_ANEGCOMPLETE;
+        let up = BMSR_LSTATUS | BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE;
         let advertise = ANLPAR_TX_FD | ANLPAR_TX | ANLPAR_10_FD | ANLPAR_10;
         let both = GTCR_ADV_1000TFDX | GTCR_ADV_1000THDX;
         let l = |speed, full_duplex| Some(Link { speed, full_duplex });
@@ -631,10 +629,17 @@ mod tests {
         use management_data_input_output::*;
         let all = ANLPAR_TX_FD | ANLPAR_TX | ANLPAR_10_FD | ANLPAR_10;
         let go = |bmsr, bmcr| link_from_registers(bmsr, bmcr, all, all, 0, 0);
-        assert_eq!(go(BMSR_ANEGCOMPLETE, BMCR_ANENABLE), None, "link down");
+        assert_eq!(
+            go(BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE, BMCR_ANENABLE),
+            None,
+            "link down"
+        );
         assert_eq!(go(BMSR_LSTATUS, BMCR_ANENABLE), None, "negotiation running");
         assert_eq!(
-            go(BMSR_LSTATUS | BMSR_ANEGCOMPLETE, BMCR_ANENABLE | BMCR_ISO),
+            go(
+                BMSR_LSTATUS | BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE,
+                BMCR_ANENABLE | BMCR_ISO
+            ),
             None
         );
     }
@@ -674,11 +679,13 @@ mod tests {
         );
         assert_eq!(physical_layer_device.extended(EXT_SYNCE_CFG) & EN_SYNC_E, 0);
         assert_eq!(
-            physical_layer_device.extended(EXT_SLEEP_CTRL) & ESC1R_SLEEP_SW,
+            physical_layer_device.extended(MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER)
+                & ESC1R_SLEEP_SW,
             0
         );
         assert_eq!(
-            physical_layer_device.extended(EXT_CLK_GATE) & CGR_RX_CLK_EN,
+            physical_layer_device.extended(MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER)
+                & CGR_RX_CLK_EN,
             0
         );
         assert_eq!(physical_layer_device.raw(REG_ADDR), 0x1234);

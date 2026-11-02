@@ -171,7 +171,10 @@ fn the_verdict_strips_the_crc_and_refuses_what_the_device_could_not_mean() {
 fn descriptor_words_put_ownership_in_the_high_word_of_the_second_store() {
     let [a, b] = receive_descriptor_words(0x1_2345_6000);
     assert_eq!(a, 0x1_2345_6000);
-    assert_eq!((b >> 32) as u32, RDES3_OWN | RDES3_IC | RDES3_BUF1V);
+    assert_eq!(
+        (b >> 32) as u32,
+        RDES3_OWN | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION | RDES3_BUF1V
+    );
     let [a, b] = transmit_descriptor_words(0x4000_0800, 60);
     assert_eq!(a, 0x4000_0800);
     assert_eq!(b as u32, 60 | TDES2_IC);
@@ -207,7 +210,7 @@ fn the_descriptor_bits_are_where_the_databook_puts_them() {
     assert_eq!(
         [
             RDES3_OWN,
-            RDES3_IC,
+            RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION,
             RDES3_BUF1V,
             RDES3_CTXT,
             RDES3_FD,

@@ -10,8 +10,7 @@
 //! family prefix, `GMAC_MAC_MDIO_ADDR_` or `MII_`, and its documentation opens with its full name
 //! and its source's spelling.
 //!
-//! Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, IEEE 802.3's
-//! phrase, replacing `mdio`.
+//! Name: ratified 2026-11-02 (UTC), #3094.
 
 use crate::{Hardware, registers};
 
@@ -134,10 +133,10 @@ pub(crate) const GTSR_LP_1000TFDX: u16 = 0x0800;
 pub(crate) const GTSR_LP_1000THDX: u16 = 0x0400;
 /// **Autonegotiation complete** (`BMSR_ANEGCOMPLETE`, `mii.h`).
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
-/// replacing `BMSR_ANEG_COMPLETE`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "autonegotiation complete")]
-pub const BMSR_ANEGCOMPLETE: u16 = 1 << 5;
+#[doc(alias = "BMSR_ANEGCOMPLETE")]
+pub const BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE: u16 = 1 << 5;
 /// **Physical layer device identifier 1** (`MII_PHYSID1`, `mii.h`), clause 22: the
 /// identifier's high half.
 #[doc(alias = "physical layer device identifier 1")]
@@ -180,8 +179,9 @@ pub const fn command(physical_layer_device_address: u8, register: u8, write: boo
 /// bit; the compiler checks the pairwise disjointness here, and the mutation exclusion for
 /// `command` names this constant. Each operand enters through its own field mask.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
-pub const THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT: () = assert!(
+/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+#[doc(alias = "THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT")]
+pub const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () = assert!(
     (CR_500_800 << CR_SHIFT) | (0x1f << PA_SHIFT) | (0x1f << RDA_SHIFT) | (0x3 << 2) | GB
         == (CR_500_800 << CR_SHIFT) ^ (0x1f << PA_SHIFT) ^ (0x1f << RDA_SHIFT) ^ (0x3 << 2) ^ GB
 );
@@ -189,8 +189,7 @@ pub const THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT: () = assert!(
 /// **A management data input/output (MDIO) bus**: a clause 22 PHY register file, reached somehow.
 /// The MAC's MDIO pair is one implementation ([`Bus`]); a test's simulated PHY is another.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
-/// `Mdio`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "mdio")]
 pub trait ManagementDataInputOutput {
     /// Read register `register` of the PHY at `physical_layer_device_address`.
@@ -254,11 +253,12 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
     }
 }
 
-/// **The PHY's identifier**, `PHYSID1 << 16 | PHYSID2`, revision included.
+/// **The PHY's identifier**, `PHYSID1 << 16 | PHYSID2`, revision included. It returns the
+/// identifier; `physical_layer_device_address` is the bus address of the device to ask.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `phy` spelled out as IEEE 802.3's
-/// `physical_layer_device_address`, replacing `phy_id`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "phy")]
+#[doc(alias = "phy_id")]
 pub fn physical_layer_device_id(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
@@ -272,8 +272,9 @@ pub fn physical_layer_device_id(
 /// bit for every value the bus can return; the compiler checks it here, and the mutation
 /// exclusion for `physical_layer_device_id` names this constant.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
-pub const THE_PHYSICAL_LAYER_DEVICE_ID_HALVES_SHARE_NO_BIT: () =
+/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+#[doc(alias = "THE_PHYSICAL_LAYER_DEVICE_ID_HALVES_SHARE_NO_BIT")]
+pub const PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP: () =
     assert!(((u16::MAX as u32) << 16) & (u16::MAX as u32) == 0);
 
 /// **Is the link up right now?** Two reads of the latched-low status bit, so a drop since the last
@@ -304,8 +305,9 @@ pub fn restart_autonegotiation(
 /// disjoint bits; the compiler checks it here, and the mutation exclusion for
 /// `restart_autonegotiation` names this constant.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
-pub const THE_AUTONEGOTIATION_ENABLE_AND_RESTART_SHARE_NO_BIT: () =
+/// Name: decided by the maintainer, provisional; reversing costs one pull request.
+#[doc(alias = "THE_AUTONEGOTIATION_ENABLE_AND_RESTART_SHARE_NO_BIT")]
+pub const AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP: () =
     assert!(BMCR_ANENABLE & BMCR_ANRESTART == 0);
 
 #[cfg(test)]
@@ -551,7 +553,7 @@ mod tests {
                 BMCR_ANENABLE,
                 BMCR_RESET,
                 BMSR_LSTATUS,
-                BMSR_ANEGCOMPLETE
+                BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE
             ],
             [0x0200, 0x1000, 0x8000, 0x0004, 0x0020]
         );
