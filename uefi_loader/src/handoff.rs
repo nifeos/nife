@@ -228,29 +228,20 @@ pub fn cmdline(
     }
 
     if on_nvme {
-        if n > 0 {
-            out[n] = b' ';
-            n += 1;
-        }
+        n = separate(out, n);
         n += boot_slot::medium::encode_nvme(&mut out[n..]);
     }
 
     #[cfg(feature = "screen_hold")]
     {
-        if n > 0 {
-            out[n] = b' ';
-            n += 1;
-        }
+        n = separate(out, n);
         let word = machine_discovery::framebuffer::SCREEN_HOLD.as_bytes();
         out[n..n + word.len()].copy_from_slice(word);
         n += word.len();
     }
 
     if !loader_digests.is_empty() {
-        if n > 0 {
-            out[n] = b' ';
-            n += 1;
-        }
+        n = separate(out, n);
         out[n..n + loader_digests.len()].copy_from_slice(loader_digests.as_bytes());
         n += loader_digests.len();
     }
@@ -260,6 +251,17 @@ pub fn cmdline(
     }
     out[n] = 0;
     n
+}
+
+/// The space between two words of the command line: written at `n` when a word precedes it, and
+/// never before the first word, since the kernel's parsers read the line as written. Returns where
+/// the next word starts.
+fn separate(out: &mut [u8], n: usize) -> usize {
+    if n == 0 {
+        return 0;
+    }
+    out[n] = b' ';
+    n + 1
 }
 
 fn put_u32(bytes: &mut [u8], at: usize, value: u32) {
