@@ -325,7 +325,7 @@ fn lay_out_child(
             own_ut,
             build_ut,
             aspace,
-            counter_frequency_contract::PAGE_VA,
+            counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
             page.as_ref().map(|bytes| (0usize, &bytes[..])),
             abi::address_space::MAP_RO,
         )?;

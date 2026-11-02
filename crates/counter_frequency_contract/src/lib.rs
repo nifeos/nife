@@ -79,17 +79,23 @@ pub fn is_plausible(hz: u64) -> bool {
 const OFF_MAGIC: usize = 0;
 const OFF_HZ: usize = OFF_MAGIC + 8;
 
-/// The whole page's size in bytes: the magic, then one little-endian `u64`. Far under one frame
-/// (4096 bytes), which is the unit this is mapped as.
-pub const PAGE_BYTES: usize = OFF_HZ + 8;
+/// **The size of the page's content** in bytes: the magic, then one little-endian `u64`. This is
+/// not a page size. The mapped page is one whole frame (4096 bytes), and this is how much of it
+/// carries data; the rest is zeroes.
+///
+/// Name: ratified 2026-11-01 (decided by the architect), renamed from `PAGE_BYTES`.
+pub const PAGE_CONTENT_BYTES: usize = OFF_HZ + 8;
 
 /// **The fixed virtual address the kernel maps this page at**, in every `x86_64` and every
 /// `riscv64` process, shared by the kernel's writer and the reader through this crate. `riscv64` has its own, because Sv39's low half ends at
 /// `0x40_0000_0000`. This one sits at seven-eighths of `x86_64`'s low half, far above every band
 /// the address-space map hands out, because the page is mapped into every process unconditionally;
 /// the map's own table of fixed pages should list it, and does not yet.
+///
+/// Name: ratified 2026-11-01 (decided by the architect), renamed from `PAGE_VA`. `VA` is the
+/// abbreviation alias, short for virtual address.
 #[cfg(not(target_arch = "riscv64"))]
-pub const PAGE_VA: u64 = 0x0000_7000_0000_0000;
+pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_7000_0000_0000;
 
 /// The same page's fixed address under Sv39, where the low half ends at `0x40_0000_0000` and the
 /// value above is not addressable. `0x38_0000_0000` is seven-eighths of that ceiling, which is the
@@ -100,8 +106,11 @@ pub const PAGE_VA: u64 = 0x0000_7000_0000_0000;
 ///
 /// The host build of this crate takes the `x86_64` arm, which is harmless: nothing in the `cfg(test)`
 /// suite below depends on the value, only on the layout.
+///
+/// Name: ratified 2026-11-01 (decided by the architect), renamed from `PAGE_VA`. `VA` is the
+/// abbreviation alias, short for virtual address.
 #[cfg(target_arch = "riscv64")]
-pub const PAGE_VA: u64 = 0x0000_0038_0000_0000;
+pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_0038_0000_0000;
 
 /// Build a counter frequency page's bytes for `hz`, the calibrated (or `CPUID`-reported) TSC rate in
 /// hertz. The kernel writes the result into a fresh frame before mapping it read-only into any
@@ -113,18 +122,18 @@ pub const PAGE_VA: u64 = 0x0000_0038_0000_0000;
 /// use counter_frequency_contract::{CounterFrequencyPage, build_page};
 ///
 /// let bytes = build_page(1_000_000_000);
-/// // SAFETY: `bytes` is a live, aligned buffer of exactly `PAGE_BYTES` for this block.
+/// // SAFETY: `bytes` is a live, aligned buffer of exactly `PAGE_CONTENT_BYTES` for this block.
 /// let page = unsafe { CounterFrequencyPage::new(bytes.as_ptr() as u64) };
 /// assert_eq!(page.hz(), Some(1_000_000_000));
 /// ```
-pub fn build_page(hz: u64) -> [u8; PAGE_BYTES] {
-    let mut page = [0u8; PAGE_BYTES];
+pub fn build_page(hz: u64) -> [u8; PAGE_CONTENT_BYTES] {
+    let mut page = [0u8; PAGE_CONTENT_BYTES];
     page[OFF_MAGIC..OFF_MAGIC + 8].copy_from_slice(&MAGIC);
     page[OFF_HZ..OFF_HZ + 8].copy_from_slice(&hz.to_le_bytes());
     page
 }
 
-/// **The counter frequency page**, as seen through one process's read-only mapping of it at [`PAGE_VA`].
+/// **The counter frequency page**, as seen through one process's read-only mapping of it at [`PAGE_VIRTUAL_ADDRESS`].
 ///
 /// Name: ratified 2026-11-01 (decided by the architect), renamed from `TimebasePage`.
 #[derive(Debug, Clone, Copy)]
@@ -141,28 +150,28 @@ unsafe impl Send for CounterFrequencyPage {}
 unsafe impl Sync for CounterFrequencyPage {}
 
 impl CounterFrequencyPage {
-    /// Name the counter frequency page mapped at `va`.
+    /// Name the counter frequency page mapped at `virtual_address`.
     ///
     /// # Safety
     ///
-    /// `va` must be a mapped, byte-aligned buffer of at least [`PAGE_BYTES`] bytes (either a page
+    /// `virtual_address` must be a mapped, byte-aligned buffer of at least [`PAGE_CONTENT_BYTES`] bytes (either a page
     /// [`build_page`] wrote, or a zeroed frame, which reads as "unknown"), and it must stay
     /// mapped and unwritten by this process for as long as this value is used. the kernel
-    /// maps exactly such a page, read-only, at [`PAGE_VA`], into every `x86_64` process; see the
+    /// maps exactly such a page, read-only, at [`PAGE_VIRTUAL_ADDRESS`], into every `x86_64` process; see the
     /// crate's own `BUGS` section for the one spawn path that does not.
-    pub const unsafe fn new(va: u64) -> Self {
+    pub const unsafe fn new(virtual_address: u64) -> Self {
         CounterFrequencyPage {
-            base: va as *const u8,
+            base: virtual_address as *const u8,
         }
     }
 
     /// # Safety
     ///
-    /// Upheld by [`new`](Self::new)'s contract: `base` names at least `PAGE_BYTES` mapped,
+    /// Upheld by [`new`](Self::new)'s contract: `base` names at least `PAGE_CONTENT_BYTES` mapped,
     /// stable bytes.
     fn bytes(&self) -> &[u8] {
         // SAFETY: `new`'s contract.
-        unsafe { core::slice::from_raw_parts(self.base, PAGE_BYTES) }
+        unsafe { core::slice::from_raw_parts(self.base, PAGE_CONTENT_BYTES) }
     }
 
     /// The calibrated TSC rate in hertz, or `None` if this page is unrecognized (a zeroed frame,
@@ -176,7 +185,7 @@ impl CounterFrequencyPage {
     /// ```
     /// use counter_frequency_contract::CounterFrequencyPage;
     ///
-    /// let zeroed = [0u8; counter_frequency_contract::PAGE_BYTES];
+    /// let zeroed = [0u8; counter_frequency_contract::PAGE_CONTENT_BYTES];
     /// // SAFETY: as above.
     /// let page = unsafe { CounterFrequencyPage::new(zeroed.as_ptr() as u64) };
     /// assert_eq!(page.hz(), None);
@@ -199,7 +208,10 @@ mod tests {
     /// `buffer` read as a mapped [`CounterFrequencyPage`] for the length of `f`, and the one place these tests
     /// argue `CounterFrequencyPage::new`'s contract. The page is lent to `f` by reference; a test that copied it
     /// out would break the argument, and none does.
-    fn with_page<R>(buffer: &[u8; PAGE_BYTES], f: impl FnOnce(&CounterFrequencyPage) -> R) -> R {
+    fn with_page<R>(
+        buffer: &[u8; PAGE_CONTENT_BYTES],
+        f: impl FnOnce(&CounterFrequencyPage) -> R,
+    ) -> R {
         // SAFETY: `buffer` is live, sized and aligned for the page by its type, and borrowed for
         // the whole call, so it outlives every use of the page inside `f`.
         f(&unsafe { CounterFrequencyPage::new(buffer.as_ptr() as u64) })
@@ -219,7 +231,7 @@ mod tests {
     /// as "unknown", not as a fabricated 0 Hz or a stale value.
     #[test]
     fn a_zeroed_frame_reads_as_unknown() {
-        let zeroed = [0u8; PAGE_BYTES];
+        let zeroed = [0u8; PAGE_CONTENT_BYTES];
         with_page(&zeroed, |page| {
             assert_eq!(page.hz(), None);
         });
@@ -264,7 +276,7 @@ mod tests {
     #[allow(clippy::assertions_on_constants)]
     fn the_layout_offsets_do_not_overlap() {
         assert_eq!(OFF_HZ, 8);
-        assert_eq!(PAGE_BYTES, 16);
-        assert!(PAGE_BYTES < 4096, "the page must fit in one frame");
+        assert_eq!(PAGE_CONTENT_BYTES, 16);
+        assert!(PAGE_CONTENT_BYTES < 4096, "the page must fit in one frame");
     }
 }

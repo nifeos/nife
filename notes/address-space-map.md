@@ -23,7 +23,7 @@ crate is the rule.
 | `PROCESS_PAGES` | `0x7FFF_0000` | `0x8000_0000` | 64 KiB | pages the kernel maps into every process unasked; the current-CPU page is the last |
 
 The bands tile the first 2 GiB with no gap. Above that the only resident is the timebase page on
-`x86_64` and `riscv64` (`counter_frequency_contract::PAGE_VA`), which predates the map.
+`x86_64` and `riscv64` (`counter_frequency_contract::PAGE_VIRTUAL_ADDRESS`), which predates the map.
 
 A program image may be up to 496 MiB. `ripgrep`, measured at 2.61 MiB by milestone 121 (`ripgrep`
 on nife), fits with room for a hundred and ninety of it.
@@ -123,7 +123,7 @@ as `Err(())`, so there the check only makes the failure early and clean.
 
 ## The counter frequency page's address
 
-`counter_frequency_contract::PAGE_VA` is `0x0000_7000_0000_0000` on `x86_64`, seven-eighths of the
+`counter_frequency_contract::PAGE_VIRTUAL_ADDRESS` is `0x0000_7000_0000_0000` on `x86_64`, seven-eighths of the
 low half's ceiling (`SPLIT_SHIFT` is 47, so the low half is every address under
 `0x0000_8000_0000_0000`; see `crates/paging/src/x86_64.rs`). That leaves roughly 26 TiB of headroom
 below the boundary, with none of this tree's other conventions near it. RISC-V under Sv39 splits at

@@ -240,7 +240,7 @@ pub fn now() -> u64 {
 
 /// Ticks per second. aarch64 reports it in `CNTFRQ_EL0`; RISC-V states it in the device tree and
 /// `x86_64`'s TSC rate is measured or read from `CPUID`, so only the kernel knows it, and maps it
-/// read-only at `counter_frequency_contract::PAGE_VA` into every process. This reads that page as
+/// read-only at `counter_frequency_contract::PAGE_VIRTUAL_ADDRESS` into every process. This reads that page as
 /// `user_mode_runtime::cntfrq` does, so `std` and `no_std` programs agree about a second. Never
 /// hardcoded (calef: only accurate numbers): radon (VisionFive 2) runs at 4 MHz, QEMU `virt` at 10.
 ///
@@ -260,9 +260,9 @@ pub fn cntfrq() -> u64 {
     #[cfg(any(target_arch = "riscv64", target_arch = "x86_64"))]
     {
         // SAFETY: every path that builds a process on these architectures maps a page (real, or
-        // zeroed when the rate was never learned) read-only at `PAGE_VA` before it runs.
+        // zeroed when the rate was never learned) read-only at `PAGE_VIRTUAL_ADDRESS` before it runs.
         let page = unsafe {
-            super::counterfreqproto::CounterFrequencyPage::new(super::counterfreqproto::PAGE_VA)
+            super::counterfreqproto::CounterFrequencyPage::new(super::counterfreqproto::PAGE_VIRTUAL_ADDRESS)
         };
         page.hz().expect(
             "the counter frequency is unknown: this process's timebase page is zeroed or \
