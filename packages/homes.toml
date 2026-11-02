@@ -82,3 +82,8 @@ paths = ["LICENSE-MIT", "LICENSE-APACHE"]
 status = "undecided"
 reason = "the publish allowlist, milestone 887 (crate repositories share one CI template, adapted from nife's gates); it leaves with the last crate that moves, because its purpose is what stops a crate leaving unallowlisted"
 paths = ["crates/publish-allowlist.txt"]
+
+[[home]]
+status = "undecided"
+reason = "the externalization list the lint reads; it leaves with the last crate it names, because each crate leaves the list in the pull request that moves it"
+paths = ["crates/externalization-list.txt"]

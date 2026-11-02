@@ -356,8 +356,8 @@ version = "0.1.0"
 
 [[package]]
 name = "jh7110_entropy"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=9b8769fc79a4d3f934598dd48841b886baa7ccd5#9b8769fc79a4d3f934598dd48841b886baa7ccd5"
+version = "0.1.1"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=53b022b55b42a6dfc7eb670c438f0d3463da8db5#53b022b55b42a6dfc7eb670c438f0d3463da8db5"
 
 [[package]]
 name = "jobserver"
