@@ -43,12 +43,12 @@ Each step lands a provable piece. Every new name is provisional.
    fetch, so its digits move with that rebuild. Proves: the constants are public, and the
    `FORMAT_CONST` pattern reads them.
 
-2. A package declares what it links in a new manifest-note type, `INTERFACES = 4`, on the pattern
+2. A package declares what it links in a new manifest-note type, `INTERFACES = 4`, which lives in the leaf crate `interfaces_note`, on the pattern
    of `SUBTREE_GRANTS` and `VERBS` (calef, 2026-10-31 UTC; descriptor versions 1 to 3 stay
    untouched). Its descriptor is a version word, a count, then that many records of
    `INTERFACE_ID: u64` and a version `u32`, in id order with no duplicates. Each interface crate
    carries `INTERFACE_ID: u64` beside its version constant, and no value repeats. A program carries
-   the note through a macro that reads the constants, so a declaration cannot drift from them. Proves: the encode, decode and one-encoding Kani property carry over from 597's gate,
+   the note through a macro (`interfaces_note::carry_interfaces!`) that reads the constants, so a declaration cannot drift from them. Proves: the encode, decode and one-encoding Kani property carry over from 597's gate,
    and no two crates share an id.
 
 3. The syscall ABI check runs at spawn. The progenitor reads the ABI entry of a program's
@@ -78,7 +78,7 @@ All of these hold, each checkable by a command:
 - Every interface in the table below exports a version constant and its `INTERFACE_ID`, and
   `python3 helpers/interface_declarations_check.py` finds each number where the table puts it,
   none twice and none retired.
-- `capability_manifest_note`'s tests and its Kani property for the `INTERFACES` note pass.
+- `interfaces_note`'s tests and its Kani property for the `INTERFACES` note pass.
 - The progenitor's tests refuse a program whose ABI entry differs from `ABI_VERSION` and accept one
   that matches.
 - `script/lint` runs the pinned-values test and the format-values check, and the check's selftest
@@ -120,16 +120,17 @@ table. No registry outside it exists.
 | 18 | `program_argument_contract` |
 | 19 | `socket_contract` |
 | 20 | `user_mode_runtime` |
+| 21 | `interfaces_note` |
 
 An interface is the module that holds the id, so `filesystem_contract` carries one in `blk` and
 one in `fs`. The check also classifies every crate the cut links. Four define no run-time format
 and stay Rust APIs: `calendar`, `domain_name_system`, `glob` and
 `globally_unique_identifier_partition_table`. Its `NOT_A_FORMAT` table gives each reason.
 
-Carrying the note links `capability_manifest_note`, whose `grant_plan::Manifest` type brings
-`grant_plan` and `program_argument_contract` into five programs that do not otherwise link them,
-so those five declare both.
-Moving the note type into a leaf crate belongs to pull request #3026, ruled 2026-11-01 (UTC).
+The `INTERFACES` note type lives in the leaf crate `interfaces_note`, which depends on nothing, so
+carrying the note adds that one crate to a program's linked set and no planner. `disk-tools` does
+not reach `grant_plan`. The `grant_plan::Manifest` type and the slot constants stay in `grant_plan`;
+moving them into a leaf crate belongs to pull request #3026, ruled 2026-11-01 (UTC).
 
 ## What this block does not do
 

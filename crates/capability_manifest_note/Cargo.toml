@@ -14,3 +14,7 @@ workspace = true
 grant_plan = { version = "0.1.0", path = "../grant_plan" }
 # The zone limits and spelling, which are the resolver's: a manifest asks for what a badge can carry.
 domain_name_resolution_contract = { path = "../domain_name_resolution_contract" }
+
+[dev-dependencies]
+# Only to hold its note header to this crate's: the leaf crate repeats `OWNER` so it can depend on nothing.
+interfaces_note = { path = "../interfaces_note" }
