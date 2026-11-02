@@ -80,9 +80,9 @@ private directory and stays there. The next window for that slot starts one seed
 ## What it publishes
 
 `helpers/fuzz-daily-publish.sh` runs from a daily timer and writes counter totals and a table of
-clean seed ranges. It reports held findings by count and age only. It never opens a held log, and it
-leaves the held window's own range out of the table. The next clean range still locates the held
-seed, which the BUGS list below records. A finding starts as a private security advisory and stays
+clean seed ranges. It reports held findings by count and age only. It never opens a held log. After a
+held replay the slot's next window starts one seed past the held seed, so the table leaves out every
+range of a slot from that slot's first held window onward. A finding starts as a private security advisory and stays
 private until its fix is on main and a rerun of its input passes against that build, or until 90
 days after the report. A finding sorted as public at triage is the exception.
 
@@ -135,9 +135,9 @@ The lane has no root. A person copies the three files in `helpers/systemd/` to
 `enable --now nife-fuzz-publish.timer`.
 
 That installs phase 1: the publish unit writes the day's report and clean ranges to local files and
-publishes nothing. Phase 2 publishes the release. It waits on the clean-range fix and the mint
-helper, and step P5 of [`finishing-the-setup.md`](finishing-the-setup.md) gives its drop-in. The unit
-as shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag. Without
+publishes nothing. Phase 2 publishes the release. It waits on the mint helper and on a host clone
+that carries the clean-range fix, and step P5 of [`finishing-the-setup.md`](finishing-the-setup.md)
+gives its drop-in. The unit as shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag. Without
 `NIFE_FUZZ_PUBLISH=1` the script refuses to publish, and without a token `gh` fails; either way the
 local files are still written.
 
@@ -172,8 +172,8 @@ unit's user. It prints the tag and the assets and publishes nothing.
   that a push to main starts after the merge queue's run. The next look, 5 minutes later, moves.
 - A person who sets `url.<base>.insteadOf` for GitHub in the fuzz account's git configuration to a
   non-https address stops the follower: the fetch refuses it, and the journal says so.
-- After a held window with a replay line, the slot's next window starts one seed past the failing
-  one, so the first seed of the next published clean range, less one, is the held seed. The daily
-  publish must not run until the proposed fix in
-  [`the-clean-range-table-does-not-locate-a-held-seed`](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md)
-  lands.
+- A slot that ever held a finding publishes no more clean ranges, even after the finding turns
+  public. The ranges return only once
+  [a held finding turns public after its fix reruns clean](../../design/roadmap/proposals/a-held-finding-turns-public-after-its-fix-reruns-clean.md)
+  defines the signal that a finding has turned public
+  ([the proposal](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md)).
