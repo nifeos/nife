@@ -516,7 +516,7 @@ impl Sim {
         let mut rint = registers::RINTSTS_CD;
         match answer {
             None if word & registers::COMMAND_RESPONSE_EXPECT != 0 => {
-                rint |= registers::RINTSTS_RTO
+                rint |= registers::RINTSTS_RTO;
             }
             None => {}
             Some(_) if fault == Some(Fault::BadCrc) => rint |= registers::RINTSTS_RCRC,
