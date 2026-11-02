@@ -22,10 +22,10 @@ secret or variable.
 | CI shards | built, running on every merge-queue entry | `fuzz-guests` in `.github/workflows/ci.yml`, #3046 |
 | Held-findings store | built, running, mode 700 | `$NIFE_FUZZ_HOME/state/held/` |
 | Daily report, local | built, not installed on the host | `helpers/fuzz-daily-publish.sh`, `nife-fuzz-publish.timer` |
-| Daily release (phase 2) | built, blocked on the clean-range fix and the token | `--publish` in the same script |
+| Daily release (phase 2) | built, blocked on the token and on the host carrying the clean-range fix | `--publish` in the same script |
 | Watchdog workflow and its label | built, scheduled, quiet until the first release; it creates the label `fuzz-loop-broken` at its first failure | `.github/workflows/fuzz-heartbeat.yml`, #3049 |
 | The host follows main | ruled, not built | [proposal](../../design/roadmap/proposals/the-fuzz-host-follows-main.md) |
-| Clean-range fix | not built; it blocks phase 2 | [proposal](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md) |
+| Clean-range fix | built; a slot that held a finding publishes no more ranges, because nothing yet signals that a finding turned public | `helpers/fuzz-daily-publish.sh`, [proposal](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md) |
 | Mint helper | not built | [proposal](../../design/roadmap/proposals/the-fuzz-host-mints-its-tokens-from-the-app-key.md) |
 | Advisory permission test | not run; a person runs it, step P3 below | [proposal](../../design/roadmap/proposals/an-app-with-only-the-advisory-permission-files-an-advisory.md) |
 | Finding filer | not built | [proposal](../../design/roadmap/proposals/the-fuzz-host-files-held-findings-as-advisories.md) |
@@ -137,9 +137,10 @@ so this test does not try the comment step the publish milestone lists. That mil
 
 ### Lane steps that can start now
 
-- L1, the clean-range fix: build
+- L1, the clean-range fix: built in `helpers/fuzz-daily-publish.sh` with its selftest, as
   [the proposal](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md)
-  in `helpers/fuzz-daily-publish.sh` with its selftest. It unblocks phase 2.
+  describes, except that withheld ranges do not return. It unblocks phase 2 once P1 carries it to
+  the host.
 - L2, the host follows main: build
   [the proposal](../../design/roadmap/proposals/the-fuzz-host-follows-main.md), including moving the
   slot worktrees, which a restart does not do today. It needs P1 once to reach the host.
