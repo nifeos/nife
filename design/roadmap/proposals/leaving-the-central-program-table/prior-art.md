@@ -56,6 +56,13 @@ Nix's `trusted-users` is the caution. Trust given to an identity that can then m
 trusted spreads further than the owner sees. An `installer` grant has that shape, which is why
 [the security appendix](security.md) keeps it the strictest of the classes.
 
+The tree's own precedent for where an ask lives is read, not recalled. The interface-versions
+proposal (design/roadmap/proposals/the-manifest-note-declares-interface-versions.md) put the
+interface list in a fourth note type, `INTERFACES`, as `SUBTREE_GRANTS` and `VERBS` had done, and
+kept one encoding per manifest. The owner-granted asks follow it as a fifth, `OWNER_GRANTS`. ELF
+itself works the same way: a note's type, not a version inside another note, says what its
+descriptor holds (from memory: the GNU notes `NT_GNU_BUILD_ID` and `NT_GNU_PROPERTY_TYPE_0`).
+
 ## One concrete example
 
 Android's `REBOOT` permission has protection level `signature|privileged`. A downloaded app that

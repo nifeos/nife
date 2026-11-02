@@ -20,11 +20,12 @@ proves, what tests it adds and what waits on a ruling.
 3. The frames path carries a second stream and redirection. `run_image` delegates the diagnostics,
    sink and source endpoints as `spawn` does, and `image_can_carry` admits `BytesAndDiagnostics`. A
    `script/swish-check` line runs an installed copy of `date`. No ruling.
-4. The note spells the owner-granted fields. Descriptor version 4 adds a flag byte for `reboot`,
-   `sync`, `installer`, `catalog`, `activation_directory`, `console_input` and `display`, and a
-   rights byte for `indexes`; `Manifest` gains `display`. The encoder accepts them. `image_can_carry`
-   still refuses every one, so nothing a person sees changes. Host tests round-trip each field.
-   Waits on [decision 1](decisions.md).
+4. The note spells the owner-granted fields (ruled, [decision 1](decisions.md)). A note type of
+   its own, `OWNER_GRANTS = 5`, carries a flag byte for `reboot`, `sync`, `installer`, `catalog`,
+   `activation_directory`, `console_input` and `display`, and a rights byte for `indexes`.
+   `Manifest` gains `display`, and the shell and the progenitor merge the note into it.
+   `image_can_carry` still refuses every one of these fields, so nothing a person sees changes.
+   Host tests round-trip each field and check that bytes with no such note ask for none.
 5. The grant lines and the vouch. `installed_programs::Granted` gains the kinds in
    [the end state](end-state.md); `Vouch::Vouched` carries `OwnerGrants`; `image_manifest` refuses a
    declared field without its line (`NotGranted`, naming it) and drops the blanket refusals in
@@ -32,7 +33,7 @@ proves, what tests it adds and what waits on a ruling.
    the confirmation of [the security appendix](security.md). In the same pull request, the
    progenitor serves an installed installer holder only the delegated badge, refuses
    `answered console` from it, and refuses a delegated install that asks for an exclusive or
-   console-class grant. Console input gains its `req.badge == 0` check. Waits on decisions 1 and 2.
+   console-class grant. Console input gains its `req.badge == 0` check. Waits on decision 2.
 6. The display session keys on its field. The shell sets `Wiring::graphics` from
    `Manifest::display`, not from `Program::GraphicalTerminal`, and the progenitor gates
    `Request::graphical` on the vouched manifest and a live-session flag. No ruling beyond 1.
@@ -64,7 +65,7 @@ shell's budget. Base programs need none of it once step 10 lands.
 
 - Gone: the pinned table, keyed by name (old step 7), and the wire ids it would have kept. After
   step 11 no row exists, so no id survives except as a hole, and no table pins anything.
-- New: the note's version 4 (step 4), the grant lines and the vouch (step 5), and the display
+- New: the `OWNER_GRANTS` note (step 4), the grant lines and the vouch (step 5), and the display
   field (step 6). Also new: the `VERBS` reader (step 7, out of the transport track), the notes of
   `reboot`, `jig` and `graphical_terminal` (step 8) and the word table (step 12).
 - Kept, in order: the notes (1), the endowment (2), the second stream (3), the base list (9), spawn
@@ -79,7 +80,7 @@ Each lands with the step that makes it true.
 
 | test | proves | step |
 |---|---|---|
-| a version 4 note round-trips each owner-granted field, and `decode` refuses any byte `encode` would not write | the wire format | 4 |
+| an `OWNER_GRANTS` note round-trips each owner-granted field, `decode` refuses any byte `encode` would not write, and bytes with no such note ask for none | the wire format, and absence as none | 4 |
 | installed bytes declaring `reboot` with no grant line answer `SPAWN_REFUSED_BY_MANIFEST`, and the refusal names `reboot` | a declaration alone earns nothing | 5 |
 | the same bytes with `grant <digest> reboot` hold the reboot object at slot 13 and restart the machine after their sync, in `script/swish-check` on all three architectures | the owner's grant endows | 5 |
 | a grant for one digest gives nothing to a second version of the same package until the owner answers again | grants bind to bytes | 5 |
@@ -115,5 +116,5 @@ changed a program. `spawnproto` stays the larger source of commits.
 ## The first steps that need no ruling
 
 Steps 1, 2 and 3, as before, and steps 7 and 8 once step 2 lands. None of them writes a wire format
-or names anything new. `mdr` still waits: it links neither `capability_manifest_note` nor
+or names anything new. Step 4 writes one, and its ruling is in. `mdr` still waits: it links neither `capability_manifest_note` nor
 `grant_plan`, so its note comes with the leaf crate or with a recorded new edge.

@@ -108,7 +108,7 @@ details.
 
 1. Each program's source holds its manifest and carries it as a note, `reboot`, `jig` and
    `graphical_terminal` included. 26 of the 28 rows already encode
-   (`every_compiled_in_manifest_round_trips`); the other two need note version 4.
+   (`every_compiled_in_manifest_round_trips`); the other two need the `OWNER_GRANTS` note type.
 2. The vouch: the measured archive, bounded by the image's approval file, for the image's own
    programs; the live installed-programs table and the owner's `grant` lines for the rest.
    `Vouch::Vouched` grows from `{ network }` to a set of owner-granted kinds, and `image_manifest`
@@ -144,7 +144,7 @@ the ruling binds no grant to a name. And while a row in nife holds `ps`'s manife
 that needs a new grant needs a nife commit, which is the coupling §316 (a package's programs leave
 as one repository, after their crates) means to end.
 
-The trade-offs, plainly. It adds a note version, a page format and a wire bit, all one-way. It
+The trade-offs, plainly. It adds a note type, a page format and a wire bit, all one-way. It
 moves the decision about what a base tool may hold from nife's code review to the image's approval
 file. It lets an owner hand a reviewed-by-nobody program the power to restart the machine, which is
 the ruling's intent and the reason for the confirmation in the security appendix.
@@ -158,10 +158,10 @@ the wire-id rules and what changed from the first plan.
    row; all 28 ids pinned. No ruling.
 2. The `Endowment` carries its manifest. No ruling.
 3. The frames path carries a second stream and redirection. No ruling.
-4. Note version 4 spells the owner-granted fields; `image_can_carry` still refuses them
-   (decision 1).
+4. A note type of its own, `OWNER_GRANTS`, spells the owner-granted fields; `image_can_carry`
+   still refuses them (ruled as decision 1).
 5. The grant lines, the `OwnerGrants` vouch and the confirmation; the blanket refusals go in the
-   same pull request; the console class stays delegated (decisions 1 and 2).
+   same pull request; the console class stays delegated (decision 2).
 6. The display session keys on `Manifest::display` and allows one session.
 7. The installed path reads the `VERBS` note.
 8. `reboot`, `jig` and `graphical_terminal` carry their own notes.
@@ -172,14 +172,14 @@ the wire-id rules and what changed from the first plan.
 13. The leaf crate, if ruled.
 
 The pinned table keyed by name, and the wire ids it would have kept, are no longer steps. Steps 1
-to 3, 7 and 8 need no ruling.
+to 4, 7 and 8 need no further ruling.
 
 ## The decisions, in order
 
 [The decisions appendix](leaving-the-central-program-table/decisions.md) gives each one with its
 background, alternatives and example. The ruling dissolved the question of the screen and keyboard.
 
-1. Note version 4 with one flag byte for the owner-granted fields. One-way.
+1. Ruled 2026-11-02 (UTC): the owner-granted asks travel in their own note type, `OWNER_GRANTS`.
 2. Three classes, with the installer and the index store's write right bounded by an approval for
    installed bytes, and none of the sensitive grants for a recorded service. One-way.
 3. Every program carries its own grant record, and nothing central remains. One-way.

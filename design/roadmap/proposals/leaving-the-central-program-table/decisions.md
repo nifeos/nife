@@ -4,7 +4,7 @@
 are the questions only the architect can answer, one at a time, in the order they block
 [the migration](migration.md). Each gives its background, the recommendation, the alternatives,
 an example and what was not verified, and ends in one question. Prior art here is from memory and
-not re-checked. Steps 1 to 3, 7 and 8 wait on none of them.
+not re-checked. Steps 1 to 4, 7 and 8 wait on none of the open ones.
 
 ## What the ruling of 2026-11-02 settled
 
@@ -13,7 +13,8 @@ two.
 
 - Dissolved: whether the system fixes the screen and keyboard or an owner grants them. The ruling made
   it an owner's grant. What remains is mechanism: a `display` field and a live-session guard
-  (migration steps 4 and 6), which decision 1 and [the security appendix](security.md) cover.
+  (migration steps 4 and 6), which [the end state](end-state.md) and [the security
+  appendix](security.md) cover.
 - Changed: "every program carries its own record, with a central table kept only for what the
   system fixes" loses its second half. No table remains (decision 3).
 - Changed: the base image's approval file must now list the owner-granted kinds too (decision 4).
@@ -25,34 +26,11 @@ a generic sentence for a register answer, `SPAWN_NOT_IN_IMAGE` for a removed id,
 28 ids. The fifth keeps the upgrade rule as it is: every new digest asks again unless an
 approval's `update` covers it. That last one is today's behavior, and it is the restrictive choice.
 
-## 1. May the manifest note carry the owner-granted fields?
+## 1. Ruled: the owner-granted asks travel in a note type of their own
 
-One-way: a wire format programs carry in their bytes.
-
-A program states what it needs in a small record inside its executable, the note. The format has
-three versions, and none has room for the reboot object, the sync-only capability, the installer,
-the catalog, the index store, the activation directory, console input or the display. They live
-today only in the central table, which only nife edits. The ruling lets an owner grant them to an
-installed program, but an installed program cannot yet ask for them.
-
-Recommendation: A, version 4, the 56 bytes of version 1 and the zones of version 2, plus one flag
-byte (a bit each for `reboot`, `sync`, `installer`, `catalog`, `activation_directory`,
-`console_input` and `display`) and one byte for the index store's rights. One manifest keeps one
-encoding: a manifest that asks for none of these stays version 1, 2 or 3.
-
-Alternatives: B, one byte per field, as version 1 does; clearer to read, eight bytes instead of two,
-and the tree's own precedent. C, a separate note type for owner-granted asks; it would split one
-manifest across two notes the progenitor must agree on.
-
-Example: `acme-reboot` declares `reboot` and `sync`; its note is version 4 with two bits set. A
-program that asks for the network only is still version 1.
-
-Prior art: ELF notes in general version their descriptor and leave old readers to refuse new
-versions; this tree does the same.
-
-Not verified: how version 4 composes with version 3's service ask; the layout must carry both.
-
-Question: approve a version 4 note with a flag byte (A), or one byte per field (B)?
+Ruled 2026-11-02 (UTC): a fifth note type, `OWNER_GRANTS = 5`, with its own version, encoder,
+decoder and length; [the end state](end-state.md) has its layout. Descriptor versions 1 to 3 stay
+as they are.
 
 ## 2. Which grants may an installed program hold only within limits?
 
@@ -121,7 +99,8 @@ One-way: it sets what vouches for a base tool.
 
 When the composer builds an image, it checks each package's records against an approval file. The
 file lists the network, resolver zones, the service, named directories and the installer today. A
-record can also ask for the process view, randomness, the machine counters, and after decision 1
+record can also ask for the process view, randomness, the machine counters, and through the
+`OWNER_GRANTS` note
 the reboot object and the rest. Under decision 3 the measured archive would vouch for whatever a
 base package's record asks.
 

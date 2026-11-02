@@ -80,9 +80,32 @@ The display session needs a `Manifest` field because nothing declares it today: 
 progenitor test `Program::GraphicalTerminal` (`components/src/swish/running.rs`, the request
 builder; `crates/system_initializer/src/spawn_loop.rs`, `Request::graphical`). Every new field also
 needs a note encoding. None of the fields above has a byte in versions 1 to 3 of the descriptor
-(`crates/capability_manifest_note/src/lib.rs`, the layout tables). So the end state adds a version
-4 with one flag byte for them and one rights byte for the index store. That is a wire format, and
-[decision 1](decisions.md) asks for it.
+(`crates/capability_manifest_note/src/lib.rs`, the layout tables), and `decode` sets each to false
+("Never from a note"). So they travel in a note type of their own, ruled 2026-11-02 (UTC).
+
+- The type is `OWNER_GRANTS = 5` (provisional name), under the same owner as `MANIFEST` 1,
+  `SUBTREE_GRANTS` 2, `VERBS` 3 and `interfaces_note::INTERFACES` 4. Like `SUBTREE_GRANTS` and
+  `VERBS`, it carries its own version constant (`OWNER_GRANTS_VERSION`), encoder, decoder and
+  length.
+- Version 1 of its descriptor is a version word, one flag byte and one rights byte. The flag byte
+  holds a bit each for `reboot`, `sync`, `installer`, `catalog`, `activation_directory`,
+  `console_input` and `display`. The rights byte says the index store is forbidden (0), read only
+  (1) or read and write (2). The bit order and the rights values are provisional.
+- One manifest keeps one encoding. A program that asks for none of these carries no `OWNER_GRANTS`
+  note, so `decode` refuses a descriptor whose flags and rights are all zero. Descriptor versions 1
+  to 3 of `MANIFEST` stay as they are, and its version 4 stays free.
+- A later flag bumps only `OWNER_GRANTS_VERSION`. The manifest's own layout never changes for it.
+- A program with no `OWNER_GRANTS` note asks for none of these. `elf::Elf::note` answers `Ok(None)`
+  for a missing note and an error for a malformed or doubled one, and the readers of `VERBS` and
+  `INTERFACES` already treat `Ok(None)` as no declaration (`endowed_image`,
+  `serves_declared_abi`). The shell and the progenitor read the note beside `MANIFEST` and merge it
+  into one `Manifest` before `image_manifest` sees it.
+
+The precedent is the interface-versions proposal
+(design/roadmap/proposals/the-manifest-note-declares-interface-versions.md), which put the
+interface list in a fourth note type rather than a descriptor version. A descriptor version is a
+whole layout, and each new version must say how it composes with the zones and the service ask; a
+separate note type composes with all of them by construction.
 
 ## How `Vouch` grows
 

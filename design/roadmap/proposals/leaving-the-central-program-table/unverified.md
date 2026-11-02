@@ -26,8 +26,11 @@ determine. They wrote no code and booted nothing.
 - Whether two writers on `activation/indexes` can tear a file. No lock exists; the file server's
   behavior under two writers was not read.
 - Whether a per-manager index directory breaks `jig list`, which reads one copy today.
-- How version 4 of the note composes with version 3's service ask. The layout must carry both, and
-  nobody drew one.
+- That the progenitor and the shell treat a program with no `OWNER_GRANTS` note as asking for none
+  of the owner-granted fields. Read in the code: `elf::Elf::note` answers `Ok(None)` for a missing
+  note, `capability_manifest_note::decode` sets every one of these fields to false, and the `VERBS`
+  and `INTERFACES` readers treat absence as no declaration. Not verified: no reader of the new note
+  exists yet, so the merge into one `Manifest` is unbuilt and untested.
 - Whether the shell reads any start-up file of commands. A search found none; `main.rs` was not
   read whole.
 
