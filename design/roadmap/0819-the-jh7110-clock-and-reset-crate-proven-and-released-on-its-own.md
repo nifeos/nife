@@ -192,7 +192,7 @@ names until the ratification pass, so this section keeps the links it carried.
   (the board's own peripherals: network and storage on real silicon).
 - `SYSTEM_TOP_GROUP_BASE`: why a fallback address is safe is the note's section "The one genuinely dangerous
   thing here, and what stops it".
-- `SYS`, `PMIC_BUS_BRING_UP`, `PmicBus`, `I2cClockWords`, `COMPATIBLE_SYSTEM_CRG` and the direct reset
+- `SYS`, `PMIC_BUS_BRING_UP`, `PmicBus`, `I2cClockWords`, `COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR` and the direct reset
   write's banner: milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write, and the kernel
   sets that write up). Its option B is the direct write, and its 2026-10-10 bench put radon in its
   outcome table's fourth row.
