@@ -448,7 +448,10 @@ impl Walk<'_> {
             }
             // Every token moves the cursor forward, which is what ends the loop at `struct_end`; a
             // test build checks it, so a token handler that stalls fails rather than spins.
-            debug_assert!(self.at > before, "a device tree token did not advance the walk");
+            debug_assert!(
+                self.at > before,
+                "a device tree token did not advance the walk"
+            );
         }
         Ok(())
     }
