@@ -17,7 +17,7 @@ Five needs cover every consumer. The last column says which replacement serves i
 | A. a name to a manifest, for planning | `grant_plan::plan_stage` (`Program::from_name`, then `.manifest()`); `crates/swish/src/words.rs`'s `expansion`; `crates/swish/src/preview.rs` (`caps`), which narrows `e.program.manifest()` by `e.program.verbs()`; `components/src/swish/running.rs`'s `hold_pages`; `spawnproto::held_shares` | the manifest the program's own note declares, read by the shell from the base list or from the file, and carried on the `Endowment` |
 | B. the names that exist, for resolution and completion | `components/src/swish/prompt.rs` (command completion sweeps `Program::ALL`); `components/src/swish/capabilities.rs`'s `bare`; `crates/system_initializer/src/activation.rs`'s install check (`image`, the §229 (a bare name reaches an installed program) refusal); `crates/timetable/src/plan_text.rs`'s `saw` | the base list's names beside the live installed-programs table |
 | C. a wire id to loaded bytes | `crates/system_initializer/src/boot_steps.rs`'s `Spawnable` (`[Option<Elf>; PROGRAM_COUNT]`, `absent`, `refused`); `spawn_loop.rs`'s request reader (`Program::from_id(prog_id(w0))`) and `archive_name`; `system_tests/src/user/pipeline_service.rs`'s stand-in spawner | a name sent on the wire, looked up in the archive the progenitor already measured |
-| D. a pinned grant tied to one program | `spawn_loop.rs`'s `Wants::of` and the resolver zone (`Program::resolver_zone`); `narrow_by_verb` at the progenitor (`resolve`); the graphics wiring checks on `Program::GraphicalTerminal` in `running.rs` and `spawn_loop.rs` | a small pinned table, keyed by name, for `reboot`, `jig` and, unless ruled otherwise, `graphical_terminal` |
+| D. a grant tied to one program | `spawn_loop.rs`'s `Wants::of` and the resolver zone (`Program::resolver_zone`); `narrow_by_verb` at the progenitor (`resolve`); the graphics wiring checks on `Program::GraphicalTerminal` in `running.rs` and `spawn_loop.rs` the program's own note, earned by a `grant` line the owner or the base approval file wrote, with `Manifest::display` in place of the name check; nothing keyed by name |
 | E. a sweep for build and test checks | `xtask/src/archive.rs` (`check_declared_programs`, the `packaged_only` refusal, `the_declared_programs_agree_with_grant_plan_and_the_boot_list`); `xtask/src/swish_check/script/tests.rs` (every row has a script line); `system_tests/src/user/measured_boot_tests.rs` (every row measures); `crates/swish/src/preview/tests.rs` and `sentences/tests.rs`; `crates/capability_manifest_note/src/tests.rs` (`every_compiled_in_manifest_round_trips`) | a sweep over the `[[bin]]` blocks that carry a note, or over a fixture's own constant |
 
 ## Notes on particular consumers
@@ -66,7 +66,7 @@ the smallest change; the two demonstration sentences move to the fixtures' own t
 
 Three programs build their note from a row today: `components/src/least_authority_demo.rs` carries
 `Program::LeastAuthorityDemo.manifest()`, `jig/src/main.rs` carries `Program::Jig.manifest()` with
-the pinned fields cleared, and `fixtures/src/greeting.rs` borrows `Program::Uptime.manifest()` as a
+the fields its note cannot spell yet cleared, and `fixtures/src/greeting.rs` borrows `Program::Uptime.manifest()` as a
 base. Tests in `crates/program_asks` and `xtask/src/base_image.rs` do the same. Each of those
 becomes a manifest constant in the program's own source.
 

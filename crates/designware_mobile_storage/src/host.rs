@@ -133,8 +133,8 @@ pub const fn card_clock(base: u32, divider: u8) -> u32 {
 /// (writing), in bytes, never more than `remaining`. A count the controller reports above `depth`
 /// is clamped to `depth`, so a confused `STATUS` cannot make a write overrun the FIFO.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
-/// authors; was `fifo_step`.
+/// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors;
+/// the databook's `fifo` is kept as `doc(alias = "fifo")`.
 #[doc(alias = "fifo")]
 #[must_use]
 pub const fn queue_step(status: u32, depth: u32, write: bool, remaining: u32) -> u32 {
@@ -209,8 +209,8 @@ impl<R: Registers> Host<R> {
     /// [`InternalDirectMemoryAccess::new`] checked. The controller's state carries over: a card
     /// identified by the polled host stays selected.
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
-    /// `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `with_idmac`.
+    /// Name: ratified 2026-11-02 (UTC), #3092. `idmac` and the names built on it spell out
+    /// `internal_direct_memory_access`; the databook's `idmac` is kept as `doc(alias = "idmac")`.
     #[doc(alias = "idmac")]
     #[must_use]
     pub fn with_internal_direct_memory_access<D: DirectMemoryAccessRegion>(
@@ -230,8 +230,8 @@ impl<R: Registers> Host<R> {
 impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// The FIFO depth in words, as decided by [`Host::new`].
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
-    /// authors; was `fifo_depth`.
+    /// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree
+    /// authors; the databook's `fifo` is kept as `doc(alias = "fifo")`.
     #[doc(alias = "fifo")]
     #[must_use]
     pub fn queue_depth(&self) -> u32 {
@@ -312,7 +312,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     fn update_clock(&mut self) -> Result<(), Error> {
         self.registers.write(registers::CMD, UPDATE_CLOCK);
         if self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
-            window.read(registers::CMD) & registers::CMD_START_CMD == 0
+            window.read(registers::CMD) & registers::COMMAND_START == 0
         }) {
             Ok(())
         } else {
@@ -329,7 +329,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// [`Error::ClockUpdate`] if the controller does not take either update; `BufferSize` is never
     /// returned. A target no divider reaches runs at the slowest the controller has.
     ///
-    /// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+    /// Name: ratified 2026-11-02 (UTC), #3092. The clock is set in hertz and the method is spelled
+    /// out.
     pub fn set_clock(&mut self, hz: u32) -> Result<u32, Error> {
         let divider = clock_divider(self.base_hz, hz).unwrap_or(255);
         self.registers.write(registers::CLKENA, 0);
@@ -397,7 +398,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         self.registers.write(registers::CMDARG, command.argument);
         self.registers.write(registers::CMD, command.word());
         if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
-            window.read(registers::CMD) & registers::CMD_START_CMD == 0
+            window.read(registers::CMD) & registers::COMMAND_START == 0
         }) {
             return Err(Error::CommandNotTaken(command.index));
         }
