@@ -60,7 +60,7 @@ sudo systemctl start nife-fuzz.service
 ```
 
 If `diff` prints a difference, copy the new unit to `/etc/systemd/system/` and run `sudo systemctl
-daemon-reload` before the start. Verify: `systemctl is-active nife-fuzz.service` prints `active`, and
+reenable nife-fuzz.service`, which rereads the unit files, before the start. Verify: `systemctl is-active nife-fuzz.service` prints `active`, and
 after the next window the last column of `tail -1 /home/lane/fuzz/state/windows.tsv | cut -f7,8`
 shows the new short commit. If the service fails, `journalctl -u nife-fuzz.service -n 50` names the
 cause; the toolchain step and the KVM check each print their own refusal.
@@ -73,9 +73,10 @@ nothing, so it is safe before the clean-range fix.
 ```sh
 sudo cp /home/lane/nife/helpers/systemd/nife-fuzz-publish.service \
         /home/lane/nife/helpers/systemd/nife-fuzz-publish.timer /etc/systemd/system/
-sudo systemctl daemon-reload
 sudo systemctl enable --now nife-fuzz-publish.timer
 ```
+
+`enable` rereads the unit files itself.
 
 Verify: `systemctl list-timers nife-fuzz-publish.timer` shows the next run at 14:00 UTC, and `sudo
 systemctl start nife-fuzz-publish.service` followed by `ls /home/lane/fuzz/out/` shows today's date.
