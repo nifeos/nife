@@ -26,17 +26,17 @@ conditions in milestone 756 hold. calef renamed the three `process-tools`, `core
 contents are unchanged. The repository name and home, the citation identity and the SDK's
 place in milestone 691's order stay open.
 
-## 1. Are §151's preconditions met?
+## 1. What a cut that moves code still needs
 
-§151 lists two, from the records: the wire protocols carry real version numbers and have stopped
-churning weekly, and a package format exists. §235 and the blocks under it added more. Each is
-checked below.
+§151 orders the split bottom-up and sets no preconditions: churn does not hold a move. The records
+still name the conditions below, from milestone 39, §235 and the blocks under it, and the protocol
+rows measure what each move costs to coordinate. Each is checked below.
 
 | precondition | source | met? | measured |
 |---|---|---|---|
-| Protocols carry version numbers | §151, milestone 39 (repository structure for a loosely-coupled OS) | no | All 93 crates in the tree are `version = "0.1.0"`. Of 19 `*_protocol` crates, 5 carry a numbered magic on a shared-page layout (`TIMEBAS1`, `CURRCPU1`, `ENVCONF1`, `MACHSTA1`, `CLOCKv01`) and 2 an unnumbered one (`nifeargv`, `nifeklog`). None of the IPC operation sets (`filesystem_contract`, `socket_contract`, `login_contract`, `hot_swap_contract` and the rest) carries a version a peer could check. Formats do better: `capability_manifest_note` (`VERSION = 1`), `boot_slot` (`SLOT_VERSION = 1`), `package_archive` (`NIFEPKG1`), `nifefs` (`CRKR0002`). |
-| Protocols stopped churning weekly | §151 | no | Milestone 610's own series, last four weeks (2026W37 to W40): 6, 44, 46 and 61 breaking changes to the contract crates, 157 in all against the proposed threshold of four. Co-change excluding mass commits: 66.7%, 51.9%, 74.4%, 74.4%, against the proposed 50% line. Syscall surface: 3 changed and 1 renamed in W40. |
-| A package format exists | §151, milestone 198 (a package manager) | yes | §197 (a package is one archive file)'s archive (`crates/package_archive`), `cargo xtask package` from a reviewed recipe, and `package install`, `remove` and `rollback` at the prompt on all three architectures (milestone 198, rung 3a, built 2026-09-26). |
+| Protocols carry version numbers | milestone 39 (repository structure for a loosely-coupled OS) | no | All 93 crates in the tree are `version = "0.1.0"`. Of 19 `*_protocol` crates, 5 carry a numbered magic on a shared-page layout (`TIMEBAS1`, `CURRCPU1`, `ENVCONF1`, `MACHSTA1`, `CLOCKv01`) and 2 an unnumbered one (`nifeargv`, `nifeklog`). None of the IPC operation sets (`filesystem_contract`, `socket_contract`, `login_contract`, `hot_swap_contract` and the rest) carries a version a peer could check. Formats do better: `capability_manifest_note` (`VERSION = 1`), `boot_slot` (`SLOT_VERSION = 1`), `package_archive` (`NIFEPKG1`), `nifefs` (`CRKR0002`). |
+| Protocols stopped churning weekly | milestone 39 | no | Milestone 610's own series, last four weeks (2026W37 to W40): 6, 44, 46 and 61 breaking changes to the contract crates, 157 in all against the proposed threshold of four. Co-change excluding mass commits: 66.7%, 51.9%, 74.4%, 74.4%, against the proposed 50% line. Syscall surface: 3 changed and 1 renamed in W40. |
+| A package format exists | milestone 198 (a package manager) | yes | §197 (a package is one archive file)'s archive (`crates/package_archive`), `cargo xtask package` from a reviewed recipe, and `package install`, `remove` and `rollback` at the prompt on all three architectures (milestone 198, rung 3a, built 2026-09-26). |
 | No package moves before a per-package co-change column exists | §235 Fork 3 amendment | no | Milestone 610 is BUILT and its own Follow-on records the column as owed and not built. Section 2 below is a one-off reading of it, which is not the column. |
 | The image is assembled from base packages by digest | §235 P1, milestone 607 (nife is built and updated from packages) item 1 | no | Not started. `xtask/src/archive.rs` packs ELFs out of `target/`, not packages by digest. This is the thing `basalt` would assemble from. |
 | An SDK archive (S2) | §235 Fork 4, milestone 607 item 4 | no | No `xtask` command builds one. A program outside the tree has no way to get `abi` and its protocols except a clone. |
@@ -45,8 +45,8 @@ checked below.
 | A ratified home | milestone 611 (every program and crate belongs to a package), §235 Fork 3 | no | 0 of 29 packages ratified; 29 provisional, none undecided. |
 
 **Three of the nine hold no, structurally, for any code-carrying cut**: the components crate, the
-SDK archive, and the co-change column. Protocol churn is the precondition §151 named, and it is the
-furthest from met.
+SDK archive, and the co-change column. Protocol churn is the
+furthest from met, and under §151's order it sizes the coordination cost rather than holding a move.
 
 ### The churn per protocol crate
 
