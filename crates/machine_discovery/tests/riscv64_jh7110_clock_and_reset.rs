@@ -7,9 +7,9 @@
 
 use jh7110_clock_and_reset::{
     ALWAYS_ON_WINDOW, COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
-    COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR, COMPATIBLE_SYSTEM_CRG,
-    COMPATIBLE_SYSTEM_TOP_GROUP_CRG, COMPATIBLE_VENDOR_CLKGEN, SYSTEM_TOP_GROUP_WINDOW,
-    SYSTEM_WINDOW, Step,
+    COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR, COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR,
+    COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR, COMPATIBLE_VENDOR_CLKGEN,
+    SYSTEM_TOP_GROUP_WINDOW, SYSTEM_WINDOW, Step,
 };
 use machine_discovery::jh7110::clock_and_reset::{discover, discover_aon, discover_sys, pmic_bus};
 
@@ -85,7 +85,10 @@ fn mainlines_pmic_bus_gives_the_same_plan_through_syscrg() {
     assert_eq!(bus.skipped, 0);
     let found = discover_sys(&tree).unwrap();
     assert_eq!(found.base, SYSTEM_WINDOW.base);
-    assert_eq!(found.compatible, Some(COMPATIBLE_SYSTEM_CRG));
+    assert_eq!(
+        found.compatible,
+        Some(COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR)
+    );
 }
 
 #[test]
@@ -142,7 +145,10 @@ fn mainline_stgcrg_is_read_from_its_single_reg() {
     assert_eq!(found.base, 0x1023_0000);
     assert_eq!(found.size, 0x1_0000);
     assert!(found.from_tree);
-    assert_eq!(found.compatible, Some(COMPATIBLE_SYSTEM_TOP_GROUP_CRG));
+    assert_eq!(
+        found.compatible,
+        Some(COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR)
+    );
 }
 
 #[test]

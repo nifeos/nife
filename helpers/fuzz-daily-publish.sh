@@ -14,9 +14,18 @@
 # **What never leaves.** A held finding is an escape, a crash or hang reached from user mode, or
 # anything untriaged, and every window that is not clean is one. This script reads the held directory
 # only to count its files and take their ages. It never opens one, never copies one, and the report
-# names no seed, driver or commit of a held window. The ranges around a held window are published;
-# the held window's own range is not. The next clean range still starts one seed past a held replay
-# seed and so locates it (notes/fuzzing/continuous-host.md, BUGS); fix that before enabling --publish.
+# names no seed, driver or commit of a held window. After a held replay the supervisor starts the
+# slot's next window one seed past the held seed, so that window's first seed would locate it. The
+# table therefore leaves out every range of a slot from that slot's first held window onward, read
+# from windows.tsv alone; ranges of other slots, and of the same slot before it, are published
+# (design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md). A held window is
+# any window whose status is neither `ok` nor `infrastructure`, so a status this script does not
+# know withholds its slot too. The seed totals in report.md still count every clean window.
+#
+# BUGS: nothing brings a withheld slot's ranges back. They should return once the held finding turns
+# public, and the milestone that publishes it
+# (design/roadmap/proposals/a-held-finding-turns-public-after-its-fix-reruns-clean.md) defines the
+# signal; until it does, a slot that ever held a finding publishes no further ranges. That fails safe.
 #
 # **Where it goes.** Ruled 2026-11-01 (UTC): one GitHub release per day on nifeos/nife, tagged
 # `fuzz-YYYY-MM-DD`, with report.md and clean-ranges.tsv as assets
@@ -42,8 +51,12 @@ windows="$state/windows.tsv"
 mkdir -p "$out" "$state"
 [ -f "$windows" ] || : > "$windows"
 
-# Columns: utc, driver, slot, first, ran, ms, status, commit.
-awk -F'\t' '$7 == "ok" { print $2 "\t" $4 "\t" $5 "\t" $8 }' "$windows" > "$out/clean-ranges.tsv"
+# Columns: utc, driver, slot, first, ran, ms, status, commit. Rows are in the order the windows
+# ended, so a slot's rows after its first held one are the windows that ran after it.
+awk -F'\t' '
+    $7 != "ok" && $7 != "infrastructure" { held[$3] = 1 }
+    $7 == "ok" && !($3 in held) { print $2 "\t" $4 "\t" $5 "\t" $8 }
+' "$windows" > "$out/clean-ranges.tsv"
 
 held_count=0
 oldest_days=0
