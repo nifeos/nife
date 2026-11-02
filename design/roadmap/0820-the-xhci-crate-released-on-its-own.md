@@ -36,8 +36,9 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   capability and operational registers, device and endpoint contexts, the rings, port status and
   HID boot reports. Class A in #1806's note `notes/releasable-crates-2026-10-07.md`, so it depends
   on no other nife crate and needs no cut.
-- Three Kani harnesses, each with a falsification patch: the register window never maps a withheld
-  page, a producer ring stays in bounds, and the handoff round-trips.
+- Three Kani harnesses, each with a falsification patch: a producer ring stays in bounds, the
+  event ring stays in bounds and flips its cycle only at the wrap, and the extended-capability walk
+  ends inside its limit.
 - Its consumers: `kernel/src/extensible_host_controller_interface.rs` (finds and confines the
   controller), `kernel/src/user.rs`, `kernel/src/user/usb_keyboard_service.rs` and
   `components/src/usb_keyboard_driver.rs` (the EL0 driver).
@@ -63,18 +64,19 @@ rust-osdev to revive it, and calef ruled no offer, since nife does not depend on
 Each row is a property this crate must prove before it publishes. The harness cell names the Kani
 harness that proves it, or says `none yet`; every named harness carries a falsification patch that
 makes it fail at its own assertion. Each patch is at
-`crates/extensible_host_controller_interface/falsifications/`. Measured 2026-10-11 (UTC): 3 of 5
-proven. Since #2737 the crate carries one harness. The window and handoff rows left with their code
-for `driver_process_contract`, which does not publish, so the crate proves 1 of 3.
+`crates/extensible_host_controller_interface/falsifications/`. The window and handoff rows left with their code
+for `driver_process_contract`, which does not publish, so the crate proves 3 of 3.
 
 | property | harness |
 |---|---|
 | A producer ring stays in bounds | `verification::a_producer_ring_stays_in_bounds` |
-| The event ring stays in bounds and flips its cycle bit only at the wrap (`EventRing::advance`) | none yet |
-| The extended-capability walk (`regs::find_extended`) ends within its hop bound and inside `limit` for any register contents | none yet |
+| The event ring stays in bounds and flips its cycle bit only at the wrap (`EventRing::advance`) | `verification::the_event_ring_stays_in_bounds_and_flips_only_at_the_wrap` |
+| The extended-capability walk (`regs::find_extended`) ends within its hop bound and inside `limit` for any register contents | `verification::the_capability_walk_ends_and_stays_inside_the_limit` |
 
 The two new rows are this lane's reading of the hostile surface: the controller writes the event
-ring and the capability list. Not proven: event decoding (`Event::decode`), the context builders
+ring and the capability list. The event ring proof assumes the segment does not run past the end of the address space. The
+capability walk models the register file as an arbitrary dword per read, which covers every fixed
+register file. Not proven: event decoding (`Event::decode`), the context builders
 and port decoders (`context`, `port`). The report words left with the handoff for `driver_process_contract`.
 
 ## Release, by #1806's rulings
@@ -189,8 +191,7 @@ names until the ratification pass, so this section keeps the links it carried.
   and on milestone 610's per-package co-change column.
 - Milestone 242 is PARTIAL, and the crate's own `BUGS` says a device behind a hub cannot be
   addressed. A stranger meets that limit first, so the published README states it.
-- One harness covers the producer ring. *What is proven* requires two more, on the event ring and the capability walk; whether the context and port decoders want
-  proofs before 0.1 is still the lane's question, answered in its pull request.
+- Whether the context and port decoders want proofs before 0.1 is still open.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 6 can start now.
 

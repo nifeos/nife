@@ -8,17 +8,24 @@ hardware, allocate, or drive a controller on its own.
 
 ## What is proven
 
-One [Kani](https://github.com/model-checking/kani) harness, in `src/verification.rs`:
+Three [Kani](https://github.com/model-checking/kani) harnesses, in `src/verification.rs`:
 
 - `a_producer_ring_stays_in_bounds`: from every reachable state, a producer ring never places a TRB
   on its link slot or past its end, and places the link exactly on the last slot.
+- `the_event_ring_stays_in_bounds_and_flips_only_at_the_wrap`: from every reachable state, consuming
+  an event leaves the dequeue index inside the segment, flips the cycle bit exactly when the index
+  wraps to zero, and keeps the `ERDP` address inside the segment. The segment is assumed not to run
+  past the end of the 64-bit address space.
+- `the_capability_walk_ends_and_stays_inside_the_limit`: for any start, limit and id, and any dword
+  the controller returns at each read, `find_extended` makes at most 64 reads, each at a nonzero
+  offset whose whole dword is inside `limit` and past the previous read, and returns only an offset
+  it read whose id matched.
 
-Rerun it with `cargo kani` from the crate's directory. The harness has a falsification patch at
+Rerun them with `cargo kani` from the crate's directory. Each harness has a falsification patch at
 `falsifications/<module.path>.<harness>.patch`; apply it with `patch -p3` and the harness fails at
 its own assertion, which shows the proof checks something real. Revert the patch afterward.
 
-Not yet proven: the event ring's bounds and cycle flip, the extended-capability walk, event
-decoding, and the context and port decoders.
+Not yet proven: event decoding, and the context and port decoders.
 
 ## Usage
 

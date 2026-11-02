@@ -8,8 +8,15 @@ Expected to fail: the assertion in the harness's `read` closure that the read at
 before `limit`.
 
 diff --git a/crates/extensible_host_controller_interface/src/registers.rs b/crates/extensible_host_controller_interface/src/registers.rs
+index 22ff61a76..b8d3980c3 100644
 --- a/crates/extensible_host_controller_interface/src/registers.rs
 +++ b/crates/extensible_host_controller_interface/src/registers.rs
-@@ -1,1 +1,1 @@
+@@ -285,7 +285,7 @@ pub fn find_extended(
+ ) -> Option<u64> {
+     let mut at = first;
+     for _ in 0..64 {
 -        if at == 0 || at.checked_add(4)? > limit {
 +        if at == 0 || at > limit {
+             return None;
+         }
+         let head = read(at);

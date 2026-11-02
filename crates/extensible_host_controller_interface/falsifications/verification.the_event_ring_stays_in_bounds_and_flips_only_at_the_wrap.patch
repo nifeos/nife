@@ -8,8 +8,15 @@ Expected to fail: the harness's first assertion, `assert!(ring.dequeue < entries
 where the index is on the last entry.
 
 diff --git a/crates/extensible_host_controller_interface/src/ring.rs b/crates/extensible_host_controller_interface/src/ring.rs
+index c0d58366d..65e0d6074 100644
 --- a/crates/extensible_host_controller_interface/src/ring.rs
 +++ b/crates/extensible_host_controller_interface/src/ring.rs
-@@ -1,1 +1,1 @@
+@@ -168,7 +168,7 @@ impl EventRing {
+     /// Name: ratified 2026-10-25 (#2720).
+     pub fn advance(&mut self) {
+         self.dequeue += 1;
 -        if self.dequeue == self.entries {
 +        if self.dequeue > self.entries {
+             self.dequeue = 0;
+             self.cycle = !self.cycle;
+         }
