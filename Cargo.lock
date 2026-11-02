@@ -769,6 +769,7 @@ dependencies = [
  "abi",
  "address_space_identifier",
  "address_space_map",
+ "base_digest_contract",
  "block_roster",
  "boot_ladder",
  "boot_slot",
@@ -1416,6 +1417,7 @@ version = "0.1.0"
 dependencies = [
  "abi",
  "address_space_map",
+ "base_digest_contract",
  "byte_sink_contract",
  "capability_manifest_note",
  "credential_contract",

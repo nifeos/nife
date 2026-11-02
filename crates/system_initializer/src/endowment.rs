@@ -187,6 +187,15 @@ pub struct BootEndowment {
     ///
     /// Name: provisional, milestone 805's lane, 2026-10-06 (UTC).
     pub reboot: u64,
+    /// **The base digest page** (milestone 695 (the kernel trusts two digests from the loader),
+    /// part 1): a `PageFrame` capability with `READ` alone, no `GRANT`, granted on every boot. It
+    /// carries the loader's `nife.base` digest in `base_digest_contract`'s layout, and
+    /// [`boot`](crate::boot) checks the archive's `program_measurements` table against it before it
+    /// reads the table, then deletes it. A boot whose slot is empty, or whose table does not match,
+    /// stops with the reason on the console. Never delegated: without `GRANT` it cannot be.
+    ///
+    /// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
+    pub base_digest_page: u64,
     /// **Capabilities the kernel granted that the interactive system never uses**, deleted before
     /// anything is built. Empty on riscv64; on aarch64 the kernel's report endpoint and a test SGI,
     /// which exist because that boot path is shared with the test roles.

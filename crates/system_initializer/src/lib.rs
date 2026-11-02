@@ -28,6 +28,7 @@
 
 mod activation;
 mod announcement;
+mod base_digest;
 mod boot_sequence;
 mod boot_steps;
 mod children;
@@ -37,6 +38,7 @@ mod fault;
 mod image_request;
 mod layout;
 mod measurement;
+mod refusal_console;
 mod spawn_loop;
 mod std_layout;
 

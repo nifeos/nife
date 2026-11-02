@@ -69,6 +69,10 @@ clock_contract = { version = "0.1.0", path = "../crates/clock_contract" }
 # std program the same way it does the clock page, so no party has its own copy of the layout or
 # the validated domains.
 environment_contract = { version = "0.1.0", path = "../crates/environment_contract" }
+# The base digest page (milestone 695 (the kernel trusts two digests from the loader), part 1): the
+# kernel writes the loader's `nife.base` digest into it and grants it to the progenitor read-only,
+# and the progenitor reads it through the same crate, so the layout has one definition.
+base_digest_contract = { version = "0.1.0", path = "../crates/base_digest_contract" }
 # The std runtime contract (milestone 595 (provisional)): the slot numbers and page addresses the
 # kernel-side std wiring (`user::std_service`, `user::fs_service`) builds a std program with. The
 # progenitor builds std children from the same crate, and the std PAL has it generated in.

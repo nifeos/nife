@@ -37,6 +37,9 @@ line_editor = { version = "0.1.0", path = "../line_editor" }
 # The hash and the manifest format the kernel measures init with (milestone 104). This crate is the
 # next link: it reads the same shape of table out of the archive and applies it to what IT loads.
 measured_boot = { version = "0.1.0", path = "../measured_boot" }
+# The base digest page (milestone 695 (the kernel trusts two digests from the loader), part 1): the
+# kernel's `nife.base` digest, which this crate reads before it trusts the table above.
+base_digest_contract = { version = "0.1.0", path = "../base_digest_contract" }
 # The installed-programs table (DECISIONS §208 (installing a package is granting it)), for where it lives and one question: is this executable's
 # digest installed? §219 (how the shell names an installed program to the spawner) option D (milestone 198 (a package manager) rung 3a) looks every image request up in it. Pure
 # logic, and it brings only `measured_boot`, which is already here.
