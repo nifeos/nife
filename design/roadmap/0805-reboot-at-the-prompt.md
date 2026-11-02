@@ -202,10 +202,9 @@ Built 2026-10-06 (UTC). Every name below is provisional.
 - **The grant.** The kernel mints the one object at boot into the progenitor's slot 31, `WRITE |
   GRANT`. The spawn service keeps it and places `WRITE` alone at `grant_plan::REBOOT_SLOT` (13) in
   a child whose manifest declares `grant_plan::Manifest::reboot`. In the image only `reboot` does
-  (`only_reboot_declares_reboot_and_no_image_can`). §251 clause 2 lets an owner's `grant` line give
-  the object to installed bytes as well, and that half is unbuilt: `grant_plan::image_can_carry`
-  still keeps it off every installed image, and a manifest note cannot spell it yet
-  (`manifest_note::encode` refuses).
+  (`only_reboot_declares_reboot_and_no_image_can`). An owner's `grant` line may give it to
+  installed bytes (§251 clause 2), unbuilt: `grant_plan::image_can_carry` and
+  `manifest_note::encode` still refuse it.
 - **The sync-only capability.** `filesystem_contract::fs::BIND_SYNC` binds a client badge so
   the file server answers `SYNC` on it and refuses every other verb with `EPERM`
   (`subtree_scope::Binding::SyncOnly`, enforced in `redoxfs_server`'s dispatch). `reboot`
@@ -297,4 +296,4 @@ picked A on 2026-10-06.
 
 ## Index row
 
-Typing `reboot` at the `swish` prompt restarts the machine, after flushing the writable filesystem. The authority is a new kernel object with one method (§251), granted to the progenitor and endowed to `reboot` by default; an owner's grant line may give it to other installed bytes (§251). The per-architecture reset routes are already written and QEMU-proven; this gives them a caller outside the soak. It is a bench convenience on radon and the missing second half of the installer's last line.
+Typing `reboot` at the `swish` prompt restarts the machine, after flushing the writable filesystem. The authority is a new kernel object with one method (§251), granted to the progenitor and endowed to `reboot` and to installed bytes an owner grants it. The per-architecture reset routes are already written and QEMU-proven; this gives them a caller outside the soak. It is a bench convenience on radon and the missing second half of the installer's last line.

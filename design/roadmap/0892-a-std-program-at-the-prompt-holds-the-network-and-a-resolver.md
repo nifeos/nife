@@ -71,9 +71,9 @@ alone would have let the ninth `jig` of a boot be refused.
   with a network. The resolver's endpoint is one more capability the progenitor holds for life.
 - Item 2 was built for `jig` by milestone 809 (the package client becomes a program).
 - Item 3, for `jig`. `grant_plan::Program::resolver_zone` (provisional) names `jig`'s zone in the
-  program table, not in `Manifest`. Installed bytes ask for their zones in their note and hold each
-  on an owner's `grant` line (below); §270 (a package manager holds an installer endpoint, not the
-  spawn endpoint) extends that to the root zone a replacement package manager needs. Each `jig` job whose
+  program table, not in `Manifest`. Installed bytes ask for zones in their note and hold each on an
+  owner's `grant` line (below). §270 (a package manager holds an installer endpoint, not the spawn
+  endpoint) extends that to a replacement package manager's root zone. Each `jig` job whose
   verb holds the network gets a fresh badge granted the root zone (Q5), placed at slot 9, and
   forgotten at its reap. `caps jig install greeting@0.1.0` prints the row.
 - Item 4. The swish script now starts nine `jig install`s in one boot. With the

@@ -92,8 +92,7 @@ has the transcript and the BUGS.
 - The progenitor installs on the copy's word when the image's catalog does not vouch (ruling I2).
   `jig install greeting@0.3.0`, a package only the index names, passes; with the copy's check
   removed it is refused (falsified on aarch64, 2026-10-12).
-- The store is a directory grant the owner's console alone makes, to `jig` by default or to
-  installed bytes the owner granted it (§270), at the `std` layout's directory
+- The store is a directory grant the owner's console alone makes, at the `std` layout's directory
   slot, on a line that names no directory of its own; the sources page comes with it (slot 18).
 
 The status is PARTIAL rather than BUILT. Items 1 to 8 are built under QEMU on all three
