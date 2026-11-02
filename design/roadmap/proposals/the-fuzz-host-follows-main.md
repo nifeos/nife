@@ -40,11 +40,15 @@ unit file writes the journal line and installs nothing.
 
 ## Status
 
-Not started. Waits for #3045, which also edits `helpers/continuous-fuzz.sh`. Verified on 2026-11-01
-(UTC): the check runs of a main commit read without a credential (HTTP 200), and the documented
-unauthenticated limit is 60 requests an hour per address. Main's commit carried 125 check runs, so
-one look is two pages, and a look every 5 minutes costs 24 requests an hour. Many runs are watchers
-or skipped jobs, and a cancelled merge-drain run is not a red gate. That is why the step reads a
-named list.
-Unverified: whether every gate of a merge-queue commit appears as a check run on that commit once
-it is main.
+Built: `helpers/fuzz-follow-main.py`, the update step in
+`helpers/continuous-fuzz.sh`, and `helpers/fuzz-follow-main-selftest.sh`, which `script/lint` runs.
+It reaches the host through step P1 of
+[`finishing-the-setup.md`](../../../notes/fuzzing/finishing-the-setup.md), a person's step.
+
+The named list is main's required checks, read from the branch's rules through the public API with
+no credential (HTTP 200, verified 2026-11-02 UTC). A look whose fetch finds nothing new makes no API
+request; a look at a new commit makes three. A check on main's last 25 first-parent commits, on
+2026-11-02 (UTC), found every gate of a merge-queue commit as a successful check run on that commit.
+7 of the 25 carried only skipped runs of the required checks, because they were earlier
+commits of a merge-queue batch whose last commit carried the gates. The follower never moves to
+those, and main's tip is always a batch's last commit.

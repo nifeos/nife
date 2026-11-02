@@ -41,6 +41,32 @@ Decided by the maintainer 2026-11-01 (UTC), provisional; reversing costs one pul
 supervisor exits non-zero after five windows in a row fail without a finding. A broken build reaches
 systemd that way instead of looping silently.
 
+## Following main
+
+The host updates itself from main with no person pulling, within four limits that an architect ruled
+on 2026-11-01 (UTC) in
+[`fuzz-findings-without-a-person`](../../design/roadmap/proposals/fuzz-findings-without-a-person.md).
+At most every 5 minutes (`NIFE_FUZZ_FOLLOW_EVERY`, in seconds; 0 turns it off) the supervisor runs
+`helpers/fuzz-follow-main.py look`. It fetches main alone from `https://github.com/nifeos/nife.git`,
+with every other protocol refused and no credential helper. It refuses a commit that does not contain
+the clone's commit. It reads the names of main's required checks from the branch's rules and the
+commit's check runs from the public API, with no credential. It moves only when each required check
+has a successful run by GitHub Actions on that commit and none is unfinished or failed. An error
+or a rate limit keeps the current commit, and the journal says why once.
+
+When `look` names a commit, each slot stops after its current window. Then `apply` moves the clone
+and the supervisor re-executes itself from it, which reruns the toolchain step and moves every slot
+worktree. A change under `helpers/systemd/` is never applied. `apply` prints one journal line naming
+the changed unit files, and a person with root installs them as below. The mint helper lives outside
+the clone, so an update never replaces it.
+
+This runs main's code on the host unattended, as the fuzz account, within about one window of a
+merge. It widens nothing that account may do. `helpers/fuzz-follow-main-selftest.sh`, run by
+`script/lint`, holds each limit against a scratch upstream and stub API answers. The maintainer chose
+three details, provisionally; reversing any costs one pull request. The required checks come from
+main's rules, not from a list in the tree; a run counts only when GitHub Actions made it; and a check
+whose runs were all skipped is not green.
+
 ## What it keeps
 
 Everything lives under one state directory. `windows.tsv` holds one row per window: the driver, the
@@ -109,14 +135,15 @@ The lane has no root. A person copies the three files in `helpers/systemd/` to
 `enable --now nife-fuzz-publish.timer`.
 
 That installs phase 1: the publish unit writes the day's report and clean ranges to local files and
-publishes nothing. Phase 2 publishes the release. It waits on the mint
-helper and on a host clone that carries the clean-range fix, and step P5 of [`finishing-the-setup.md`](finishing-the-setup.md) gives its drop-in. The unit
-as shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag. Without
+publishes nothing. Phase 2 publishes the release. It waits on the mint helper and on a host clone
+that carries the clean-range fix, and step P5 of [`finishing-the-setup.md`](finishing-the-setup.md)
+gives its drop-in. The unit as shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag. Without
 `NIFE_FUZZ_PUBLISH=1` the script refuses to publish, and without a token `gh` fails; either way the
 local files are still written.
 
-A restart does not move the slots to a new commit. Each slot keeps its worktree at the commit it
-started on, so an update moves the clone and every slot worktree, as step P1 of that page shows.
+The supervisor moves every slot worktree to the clone's commit when it starts, so a restart after
+a person moves the clone runs every slot at that commit. The clone reaches the commit that carries
+the follower once, by hand, in step P1 of that page; from then on it follows main by itself.
 
 To check the wiring before the first release, run `helpers/fuzz-daily-publish.sh --dry-run` as the
 unit's user. It prints the tag and the assets and publishes nothing.
@@ -138,8 +165,13 @@ unit's user. It prints the tag and the assets and publishes nothing.
   held window's row carries its first seed and the seeds it ran before the replay, and their sum is
   the held seed. Only clean rows leave the host, so nothing has leaked; the filer's milestone should
   move held rows' seeds under the held directory.
-- Nothing moves an existing slot worktree to a newer commit. The milestone
-  [the fuzz host follows main](../../design/roadmap/proposals/the-fuzz-host-follows-main.md) covers it.
+- Each move to a newer main idles every slot until the slowest current window ends, and the first
+  window after it rebuilds. Main lands many commits a day, so this costs a share of the rate that
+  nobody has measured.
+- An unfinished run of any required check name keeps the current commit, even the skipped duplicate
+  that a push to main starts after the merge queue's run. The next look, 5 minutes later, moves.
+- A person who sets `url.<base>.insteadOf` for GitHub in the fuzz account's git configuration to a
+  non-https address stops the follower: the fetch refuses it, and the journal says so.
 - A slot that ever held a finding publishes no more clean ranges, even after the finding turns
   public. The ranges return only once
   [a held finding turns public after its fix reruns clean](../../design/roadmap/proposals/a-held-finding-turns-public-after-its-fix-reruns-clean.md)
