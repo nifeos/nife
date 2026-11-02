@@ -50,8 +50,8 @@ At most every 5 minutes (`NIFE_FUZZ_FOLLOW_EVERY`, in seconds; 0 turns it off) t
 `helpers/fuzz-follow-main.py look`. It fetches main alone from `https://github.com/nifeos/nife.git`,
 with every other protocol refused and no credential helper. It refuses a commit that does not contain
 the clone's commit. It reads the names of main's required checks from the branch's rules and the
-commit's check runs from the public API, with no credential, and it moves only when each required
-check has a successful run by GitHub Actions on that commit and none is unfinished or failed. An error
+commit's check runs from the public API, with no credential. It moves only when each required check
+has a successful run by GitHub Actions on that commit and none is unfinished or failed. An error
 or a rate limit keeps the current commit, and the journal says why once.
 
 When `look` names a commit, each slot stops after its current window. Then `apply` moves the clone
