@@ -204,9 +204,9 @@ holds the plan.
 1. The format is TOML (ruled 2026-09-27). Are the fields above the shape, and are
    `packages/<name>.package.toml`, `packages/homes.toml` and `.recipe.toml` the names?
 2. The kinds: answered, ratified at 07:23Z with the rule that a kind says where a package ends up.
-3. The homes. Answered, ruled 2026-10-28 (UTC) with the rule that a program package leaves as one
-   repository per package, named after the package (§316 (one repository per package leaves the
-   tree)). The ruling refuses grouping by #1389's seven divisions. The same day's naming review
+3. The homes. Answered, ruled 2026-10-28 (UTC) with the rule that a package's programs leave as one
+   repository named after the package, after their crates (§316 (a package's programs leave as one
+   repository, after their crates)). The ruling refuses grouping by #1389's seven divisions. The same day's naming review
    ratified `process-tools`, `core-tools` and `disk-tools` as the package names and the repository
    names; milestone 978 (the first cut's names) records that in
    `design/roadmap/0978-first-cut-names.md` and pull request #2870. Each `home` line stays

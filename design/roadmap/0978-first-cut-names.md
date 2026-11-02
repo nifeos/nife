@@ -13,8 +13,8 @@ needs_person: no
 *(Title and slug provisional.)*
 
 Raised 2026-10-28 (UTC) by the lane of milestone 756 (process-tools, core-tools and disk-tools are
-the first code to leave this repository), as that block's naming half. §316 (one repository per
-package leaves the tree) rules the grain the cut leaves at. This brief held the cut's names for
+the first code to leave this repository), as that block's naming half. §316 (a package's
+programs leave as one repository, after their crates) rules the grain the cut leaves at. This brief held the cut's names for
 calef's naming review, and calef ruled every question in it the same day, relayed by the maintainer
 on pull request #2870. What is in force now:
 

@@ -45,8 +45,7 @@ program naming the macro by the new path would read as linking the old crate. Sl
 
 ## 2. One repository per contract crate, or a few grouped repositories?
 
-The split's rule for a program package is one repository per package (§316 (one repository per
-package leaves the tree)). For a library crate released on its own it is one repository per crate,
+The split's rule for a program package is one repository per package (§316 (a package's programs leave as one repository, after their crates)). For a library crate released on its own it is one repository per crate,
 on a shared workflow template (milestone 857 (crates released on their own, and proofs offered to
 the projects that already exist)). The 22 contract crates belong to four packages: `contracts`
 holds 17, `runtime` 2, `network` 2 and `fixtures` 1.
