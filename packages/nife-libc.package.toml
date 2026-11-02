@@ -10,7 +10,8 @@
 # crates keep their names, `c_library` and `c_library_errno`; `c_library`'s own name comes up at
 # its first publication, under milestone 857 (crates released on their own, and proofs offered to
 # the projects that already exist)'s one-crate-at-a-time review. The `home` line stays provisional
-# until the repository exists (§316 (one repository per package leaves the tree)).
+# until the repository exists (§316 (a package's programs leave as one repository, after their
+# crates)).
 
 name = "nife-libc"
 kind = "sdk"

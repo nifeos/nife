@@ -27,13 +27,16 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   `nifeos/basalt`. That is milestone 755 (basalt v0 pins nife and runs its gate).
 - **Yes, the first code cut is `procps` + `coreutils` + `util-linux`, and only once all six
   conditions below hold.** This block is that cut.
-- Ruled 2026-10-28 (UTC): the cut moves to three repositories named after the packages,
-  `nifeos/process-tools`, `nifeos/core-tools` and `nifeos/disk-tools`. One repository holding all
+- Ruled 2026-10-28 (UTC): the cut leaves as three repositories named after the packages,
+  `nifeos/process-tools`, `nifeos/core-tools` and `nifeos/disk-tools`. Each holds that package's
+  programs, where those programs have one purpose; the crates behind them have already left, each
+  as its own repository, and the programs depend on them by version. One repository holding all
   three packages came up; the ruling refuses it. The packages' `home` lines in
   `packages/*.package.toml` keep `status = "provisional"` until each repository exists; this rules
   the destination and does not flip that status. §201 (one roadmap until a citation has to cross),
   amended the same day, rules the citation identity across repositories. Ruled 2026-10-28: the
-  home's grain, one repository per package (§316 (one repository per package leaves the tree)), and
+  home's grain, one repository for a package's programs (§316 (a package's programs leave as one
+  repository, after their crates)), and
   the names, ratified the same day on the naming review, now milestone 978 (the first cut's names),
   `design/roadmap/0978-first-cut-names.md` and pull request #2870. Still open, and not blocking
   until this block starts: the citation identity the first crossing writes (§201).
@@ -173,6 +176,7 @@ a two-repo change.
 ## Index row
 
 The first code to leave the monorepo: the `process-tools`, `core-tools` and `disk-tools` packages
-move to three repositories named after the packages and reach the image through basalt, once six
+leave as three repositories named after the packages, each holding its package's programs after
+the crates they link, and reach the image through basalt, once six
 measured preconditions hold (ruled by calef 2026-10-04). The homes and the sequencing carry the
 2026-10-28 ruling.
