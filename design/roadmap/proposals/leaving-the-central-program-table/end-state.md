@@ -171,7 +171,7 @@ A new version has new digests, and nothing carries an old digest's grants to a n
 `jig install` asks the owner again for the whole package before it sends anything (`say_asks`,
 `owner_says_yes`). The old version's lines stay with its rows.
 
-The end state keeps that rule: a grant is keyed on the digest, so every new digest asks the owner
+The end state keeps that rule: a grant binds to the digest, so every new digest asks the owner
 again, at the console, unless a delegated approval (`jig install --within`) covers it. The
 approval's entry must say `update true` for an installed package (`approval_gate` in
 `activation.rs`). The `update` word carries no grants: every ask of the new digest must still lie
@@ -184,9 +184,9 @@ repository the owner opted into (§195 (a reviewed recipe vouches for a package)
 A key's ceiling under §220 (signed builds: a vendor signs, a developer self-signs) stays within
 `domain entropy network` and never names an owner-granted kind (ruled 2026-11-02 (UTC)). The new
 kinds reach a program only through an owner's `grant` line or an approval, never through a key.
-No code reads a `key ed25519` line today; milestone 666 (a signed build installs up to its key's
-ceiling) will write the parser, and it must refuse a line whose ceiling holds a word it does not
-know, as `approval_file::File` refuses an unknown key (`Why::UnknownKey`). Today a vouched
+No code reads a `key ed25519` line today. Milestone 666 (a signed build installs up to its key's
+ceiling) will write the parser. It must refuse a line whose ceiling holds a word it does not know,
+as `approval_file::File` refuses an unknown key (`Why::UnknownKey`). Today a vouched
 manifest earns everything it declares except the network, which needs its line
 (`grant_plan::image_manifest`).
 
