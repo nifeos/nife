@@ -169,12 +169,13 @@ the wire-id rules and what changed from the first plan.
 7. The installed path reads the `VERBS` note.
 8. `reboot`, `jig` and `graphical_terminal` carry their own notes.
 9. The progenitor publishes the base list (ruled as decision 3).
-10. Archive programs spawn by name, with grants from generation 1's lines (decision 7).
+10. Archive programs spawn by name, with grants from generation 1's lines; the image's names are
+    the measured archive's (ruled as decision 7).
 11. The rows leave, one package per pull request; the last deletes `Program`.
 12. The leaf crate, if ruled.
 
-The pinned table keyed by name, and the wire ids it would have kept, are no longer steps. Steps 1
-to 9 need no further ruling.
+The pinned table keyed by name, and the wire ids it would have kept, are no longer steps. Every
+step except the leaf crate has its ruling.
 
 ## The decisions, in order
 
@@ -191,9 +192,10 @@ background, alternatives and example. The ruling dissolved the question of the s
 5. Ruled 2026-11-02 (UTC): a repository key's ceiling never covers an owner-granted kind.
 6. Ruled 2026-11-02 (UTC): no override. A bare word the image carries runs the image's program,
    and an installed program runs under its own name or by path.
-7. "A name the image carries" means the measured archive's names, with §229 (a bare name reaches an
-   installed program)'s refusals unchanged. One-way.
-8. The new names ship provisional. Two-way in effect.
+7. Ruled 2026-11-02 (UTC): "a name the image carries" means a name in the measured archive, with
+   §229 (a bare name reaches an installed program)'s refusals unchanged.
+8. Decided by the maintainer, provisional: every new name ships provisional and meets its own name
+   review. Reversing costs one pull request.
 
 The leaf crate stays the separate decision already before the architect.
 

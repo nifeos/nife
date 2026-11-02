@@ -1,10 +1,9 @@
 # Leaving the central program table: the decisions, in order
 
 [The proposal](../leaving-the-central-program-table.md) holds the end state and the order. These
-are the questions only the architect can answer, one at a time, in the order they block
-[the migration](migration.md). Each gives its background, the recommendation, the alternatives,
-an example and what was not verified, and ends in one question. Prior art here is from memory and
-not re-checked. Steps 1 to 9 and 11 wait on none of the open ones, decisions 7 and 8.
+are the questions the migration needed answered, in the order they block
+[the migration](migration.md), each with its ruling. Decisions 1 to 7 are the architect's, and
+decision 8 is the maintainer's. Only the leaf crate stays open.
 
 ## What the ruling of 2026-11-02 settled
 
@@ -18,8 +17,8 @@ two.
 - Changed: "every program carries its own record, with a central table kept only for what the
   system fixes" loses its second half. No table remains (decision 3, ruled).
 - Changed: the base image's approval file lists the owner-granted kinds too (decision 4, ruled).
-- Unchanged: what §229 means by a name the image carries (decision 7), and provisional names
-  (decision 8).
+- Unchanged: §229 (a bare name reaches an installed program)'s refusals, now read against the
+  measured archive (decision 7, ruled).
 
 Five two-way doors the maintainer may decide, each provisional. They are the order rows leave in,
 a generic sentence for a register answer, `SPAWN_NOT_IN_IMAGE` for a removed id, and pinning all
@@ -58,30 +57,21 @@ Ruled 2026-11-02 (UTC): §229 (a bare name reaches an installed program) stands.
 image carries runs the image's program, and an installed program runs under its own name or by
 path. [The command-name appendix](command-names.md) says how a word finds a program.
 
-## 7. Which bare names belong to the image, once the table no longer says?
+## 7. Ruled: the image's names are the measured archive's
 
-One-way: it conflicts with §229's present definition.
+Ruled 2026-11-02 (UTC): option A. "A name the image carries" means a name in the measured archive.
+That is one source, the archive the boot already measures, and it covers every image program
+whether or not it holds a grant. It does not depend on the grant records. Install refuses a package
+that takes such a name, and the prompt runs the image's program for such a bare word.
+[The command-name appendix](command-names.md) says how each side learns the names.
 
-Install refuses a package whose program has a name the image carries, and the prompt refuses a name
-that is both. Today "a name the image carries" means a row of the central table
-(`installed_programs::refuse_entry`'s caller, `Program::from_name`). §229's amendment narrows the
-install refusal to what a boot slot holds, and that narrowing is unbuilt.
+## 8. Decided: the new names ship provisional
 
-Recommendation: A. The measured archive's names, with both refusals unchanged until a lane builds
-the narrowing. Nothing a person sees changes.
-
-Alternatives: B, build the narrowing now, so a newer `core-tools` package may install `date`. C,
-keep the table's names, which keeps a fragment of the table alive.
-
-Example: under A, `jig install core-tools` still refuses while the image carries `date`.
-
-Question: A (the archive's names) or B (build the narrowing now)?
-
-## 8. The new names
-
-Two-way in effect: each ships provisional. The base list page, the by-name request bit,
-`OwnerGrants`, `NotGranted`, the `display` field and each grant line's spelling need names.
-Recommendation: ship each provisional and bring them in one naming pass once step 5 exists. Question: may they ship provisional? Yes or no.
+Decided by the maintainer, provisional; reversing costs one pull request. Every name this proposal
+introduces ships provisional, and its own name review ratifies it. The names are `OWNER_GRANTS`,
+the new `Granted` kinds and their grant-line spellings, and the note's flag bits and rights
+encoding. So are `OwnerGrants`, `NotGranted`, the `display` field, the base list page and the
+by-name request bit.
 
 ## The leaf crate, already before calef
 

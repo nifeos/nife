@@ -51,6 +51,15 @@ determine. They wrote no code and booted nothing.
   name to bytes in the measured archive or the live table, never to a grant: the graphics checks
   move to `Manifest::display`, and the rest look up the archive by name. Not traced: every reader
   of the timetable's plan mask.
+- How the shell and install learn the archive's names at run time. Read in the code: the
+  progenitor already holds the measurement table that `measured_boot::verdict` reads, one
+  `<name> <digest>` line per archive program, so install can ask it. The shell holds nothing of
+  the archive today and learns the names only once the base list page exists (migration step 9).
+  Not verified: that the base list carries every archive name, including programs with no note.
+- Whether builtins need their own rule once the table is gone. Read in the code: yes.
+  `grant_plan::parse` matches builtins first, and only
+  `every_listed_builtin_is_a_builtin_and_no_program` keeps a program off a builtin's name, through
+  `Program::from_name`. Migration step 10 replaces it with a build check on the archive's names.
 - What first boot needs with no table. The image's `reboot`, `jig` and `graphical_terminal`
   receive their owner-granted fields from `grant` lines in generation 1, which the composition
   writes from the base approval file ([the end state](end-state.md)). Read in the code: generation

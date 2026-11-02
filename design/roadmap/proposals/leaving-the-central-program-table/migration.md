@@ -54,8 +54,11 @@ proves, what tests it adds and what waits on a ruling.
     progenitor reads base grants as it reads an owner's. This needs generation 1 to fit what the
     progenitor reads (milestone 990 (the base image's first installed-programs table) measured 5,691 bytes against
     a 4,096-byte page). The
-    §229 (a bare name reaches an installed program) refusals switch from `Program::from_name` to
-    "the archive carries this name". Waits on decision 7.
+        §229 (a bare name reaches an installed program) refusals switch from `Program::from_name` to
+    "the measured archive carries this name" ([decision 7](decisions.md), ruled). The progenitor
+    reads its own measurement table; the shell reads the base list of step 9. A build check that
+    no archive program takes a builtin's name replaces
+    `every_listed_builtin_is_a_builtin_and_no_program`.
 11. The rows leave, one package per pull request: fixtures, `process-tools`, `core-tools`, `demos`,
     `mdr`, then `init` (`reboot`), `display` (`graphical_terminal`) and `jig`. The last one deletes
     `Program`, `programs!`, `Program::verbs`, `Program::resolver_zone` and the progenitor's

@@ -218,7 +218,7 @@ contract-crate order. The ruling adds no edge: the grant kinds live in `installe
 | §197 (a package is one archive file) | unchanged: the manifest lives in the hashed bytes, and grants bind to the digest |
 | §219 (how the shell names an installed program to the spawner) | unchanged: unvouched bytes earn the clock and configuration pages and nothing else |
 | §220 (signed builds: a vendor signs, a developer self-signs) | unchanged: a key's ceiling stays within `domain entropy network` and names no owner-granted kind (decision 5, ruled) |
-| §229 (a bare name reaches an installed program) | unchanged: a bare word the image carries runs the image's program (decision 6, ruled); where the image's names come from is [decision 7](decisions.md) |
+| §229 (a bare name reaches an installed program) | unchanged: a bare word the image carries runs the image's program (decision 6, ruled); the image's names are the measured archive's (decision 7, ruled) |
 | §251 (restarting the machine is a kernel object) | met: clause 2 endows any job whose declaration the archive or an owner's line vouches for |
 | §270 (a package manager holds an installer endpoint) | met, with the restriction in [the security appendix](security.md) that an installed holder is always bounded by an approval |
 | §316 (a package's programs leave as one repository) | required: no manifest stays behind in nife |

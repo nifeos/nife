@@ -58,12 +58,17 @@ programs could be added later without touching the grant records.
 
 ## Where the image's names come from
 
-Two checks read "a name the image carries": the install refusal (`Error::ImageName`, through the
-`image` test in `activation.rs`) and the prompt's `bare`. Both ask `Program::from_name` today, which
-is the central table. The end state has no central table, so both need another source. The
-measured archive holds every image program by name, and the base list page the progenitor
-publishes repeats those names for the shell. Which one defines "a name the image carries" is
-[decision 7](decisions.md), still open.
+A name the image carries is a name in the measured archive ([decision 7](decisions.md), ruled).
+Two checks read it: the install refusal (`Error::ImageName`, through the `image` closure in
+`activation.rs`) and the prompt's `bare`. Both ask `Program::from_name` today, which is the central
+table. In the end state the progenitor reads its own measurement table, the `<name> <digest>` lines
+`measured_boot::verdict` checks every archive load against. The shell reads the base list page the
+progenitor publishes from the same archive (migration step 9).
+
+Builtins keep their own rule. `grant_plan::parse` matches them before any program, so a program
+under a builtin's name could never run by its bare word. Today
+`every_listed_builtin_is_a_builtin_and_no_program` asks `Program::from_name`; without the table, a
+check at image build must refuse an archive entry named like a builtin.
 
 ## Not verified
 
