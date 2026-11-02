@@ -337,8 +337,7 @@ Milestone 607 keeps `status: NOT-STARTED`; nothing above changes its status.
 - Item 3 keeps both refusals, one repository per package and one per division. It drops the
   option letters and the question number, which no reader can follow outside the session that
   asked them. "A home is sized by what changes together" gives way to one purpose per repository.
-  The sentence on where a repository and a package coincide keeps §316 (one repository per package
-  leaves the tree)'s first cut possible without restating it; §316 itself conflicts elsewhere, as
+  The sentence on where a repository and a package coincide keeps §316 (a package's programs leave as one repository, after their crates)'s first cut possible without restating it; §316 itself conflicts elsewhere, as
   the references appendix shows. The co-change column informs grouping and gates nothing. Milestone 610
   records the column as done, so the sentence calling it owed work comes out.
 - Item 4 replaces "divides along what releases together" with "divides by purpose", the rule the
@@ -356,7 +355,7 @@ today, and 607 at 1,064 words with 3 passives, as today. Neither goes over a lim
 [The references](milestone-607-and-section-235-state-the-end-state/references.md) list the 38
 glosses the two new titles break, the 9 links to §235's file name, and 11 other statements in the
 tree that a package equals a repository or that a measurement gates a move. The strongest is §316
-(one repository per package leaves the tree): it rules one repository per program package, holding
+(a package's programs leave as one repository, after their crates): it rules one repository per program package, holding
 that package's crates, and the bottom-up order sends those crates to repositories of their own
 first. This proposal leaves §316 standing, and it is the next decision.
 

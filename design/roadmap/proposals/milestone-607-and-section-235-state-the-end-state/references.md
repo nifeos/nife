@@ -71,7 +71,7 @@ The 9 links to §235's file name, in 8 files, need no change unless someone rena
 
 This lane edits none of these. Each wants its own change once the text above lands.
 
-- §316 (one repository per package leaves the tree), lines 13 to 16, the strongest: "A program
+- §316 (a package's programs leave as one repository, after their crates), lines 13 to 16, the strongest: "A program
   package that leaves this repository leaves as one repository under `nifeos`, named after the
   package. The package is the unit that releases together (§235 (the tree divides by what releases
   together)), so the package is the unit that moves. One repository holds that package's crates and
@@ -81,16 +81,14 @@ This lane edits none of these. Each wants its own change once the text above lan
   leaves §316's three first-cut repositories possible, where each package's source has one purpose,
   but §316's premise and its crates clause want their own rewrite.
 - `notes/package-boundaries.md` lines 207 to 209: "Answered, ruled 2026-10-28 (UTC) with the rule
-  that a program package leaves as one repository per package, named after the package (§316 (one
-  repository per package leaves the tree))."
+  that a program package leaves as one repository per package, named after the package (§316 (a package's programs leave as one repository, after their crates))."
 - Milestone 756 (process-tools, core-tools and disk-tools are the first code to leave this
   repository), lines 35 to 36: "Ruled 2026-10-28: the home's grain, one repository per package
-  (§316 (one repository per package leaves the tree))". Lines 90 to 92: "And §235 (the OS is built
+  (§316 (a package's programs leave as one repository, after their crates))". Lines 90 to 92: "And §235 (the OS is built
   and updated from packages)'s own amendment says no package moves before 610's per-package
   co-change column exists."
 - `packages/process-tools.package.toml` lines 13 to 14, `core-tools` lines 13 to 14, `disk-tools`
-  lines 15 to 16: "one repository per package (§316 (one repository per package leaves the
-  tree))". `packages/nife-libc.package.toml` line 13 cites §316 for its provisional `home` only.
+  lines 15 to 16: "one repository per package (§316 (a package's programs leave as one repository, after their crates))". `packages/nife-libc.package.toml` line 13 cites §316 for its provisional `home` only.
 - `packages/homes.toml` lines 15 to 19: "A home is sized by what changes together, measured by a
   per-package co-change column milestone 610 (the interface's stability is measured weekly) owes and
   does not yet carry. No package moves to a new home, and no `.package.toml` file's `home = { status
@@ -111,8 +109,7 @@ This lane edits none of these. Each wants its own change once the text above lan
 - Milestone 854 (the init package holds only what init does), line 229: "611's question 3 (one
   repository per package, or one per division) is unanswered". §316 answered it on 2026-10-28.
 - `design/roadmap/proposals/the-contract-crates-leave-in-this-order/questions.md` lines 48 to 49:
-  "The split's rule for a program package is one repository per package (§316 (one repository per
-  package leaves the tree))."
+  "The split's rule for a program package is one repository per package (§316 (a package's programs leave as one repository, after their crates))."
 
 Two near misses read true and need nothing: the contract-crate proposal's "A repository per
 package or per layer is refused" (line 93), and `notes/interfaces-note.md` line 15, "Once a

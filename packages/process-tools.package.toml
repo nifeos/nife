@@ -10,8 +10,9 @@
 # names follow one rule, spelled out, with `core-tools` and `disk-tools`). The programs and crates
 # inside keep their names: `ps`, `pgrep`, `top`, `free` and the rest. Ratified 2026-10-28 as the
 # repository's name too (calef, relayed by the maintainer on the naming review, pull request
-# #2870): `nifeos/process-tools`, one repository per package (§316 (one repository per package
-# leaves the tree)). The `home` line stays provisional until the repository exists (§316).
+# #2870): `nifeos/process-tools`, the
+# repository its programs leave as (§316 (a package's programs leave as one repository, after their
+# crates)). The `home` line stays provisional until the repository exists (§316).
 
 name = "process-tools"
 kind = "base"
