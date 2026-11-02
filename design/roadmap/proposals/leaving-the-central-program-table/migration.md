@@ -6,7 +6,7 @@ proves, what tests it adds and what waits on a ruling.
 
 ## The steps
 
-1. Every row's program carries a note copied from its row, and every shipped id is pinned. Each
+1. Every row's program carries a note copied from its row, and a test pins every shipped id. Each
    tool and fixture the note can spell gains
    `capability_manifest_note::carry!(grant_plan::Program::X.manifest())`, as
    `least_authority_demo` already does. A system test beside `measured_boot_tests.rs` checks each
@@ -64,9 +64,9 @@ shell's budget. Base programs need none of it once step 10 lands.
 
 - Gone: the pinned table, keyed by name (old step 7), and the wire ids it would have kept. After
   step 11 no row exists, so no id survives except as a hole, and no table pins anything.
-- New: the note's version 4 (step 4), the grant lines and the vouch (step 5), the display field
-  (step 6), the `VERBS` reader (step 7, formerly in the transport track), the pinned programs'
-  notes (step 8) and the word table (step 12).
+- New: the note's version 4 (step 4), the grant lines and the vouch (step 5), and the display
+  field (step 6). Also new: the `VERBS` reader (step 7, out of the transport track), the notes of
+  `reboot`, `jig` and `graphical_terminal` (step 8) and the word table (step 12).
 - Kept, in order: the notes (1), the endowment (2), the second stream (3), the base list (9), spawn
   by name (10), the rows leaving (11) and the leaf crate (13).
 - The encoder's and `image_can_carry`'s refusals no longer stay forever. They go in step 5, in the

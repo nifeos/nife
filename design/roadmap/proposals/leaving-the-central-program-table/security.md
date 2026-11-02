@@ -44,13 +44,13 @@ is hostile.
   RedoxFS's crash consistency)), so the loss is the recent suffix, not the filesystem. A program run
   once does this once. A program that runs at every boot loops the machine: a lockout.
 - With `sync`: make the file server flush. Cheap denial of service at worst.
-- With the catalog or the activation directory: learn what the image carries and what is
+- With the catalog or the activation directory: learn what the image carries and what the owner
   installed. Disclosure, nothing more.
 - With the index store, read and write: rewrite the index copy so the next install by name fetches
   its bytes. That is a supply-chain substitution against every later `jig install`.
-- With the installer on the console's form: install anything, grant it anything, remove the
-  owner's own rows (`can_edit` lets any manager undo rows from before the manager column, and the
-  owner's), and approve a file that delegates the same to another program. A console takeover.
+- With the installer on the console's form: install anything and grant it anything. Remove the
+  owner's own rows, which `can_edit` lets any manager undo, along with rows from before the manager
+  column. Approve a file that delegates the same to another program. A console takeover.
 - With console input: read every line the owner types while it runs in the foreground, a
   password included, and keep asking. It cannot read once it exits or runs in the background
   (`SpawnLoop::console_input` gives a quiet job none).
@@ -74,9 +74,9 @@ Restrictive first. Each class says who may hold it and how the owner grants it.
    may hold them only bounded by an approval: its line reads
    `grant <digest> installer within <approval>`, and the progenitor serves it the delegated badge
    of §270, never the console's endpoint. It may not send `Approve`, `Revoke` or `Vouch`, and
-   every install it asks lies within the approval, checked by the progenitor (`approval_gate`).
+   the progenitor checks that every install it asks lies within the approval (`approval_gate`).
    A delegated holder may not install a package that asks for an exclusive or console-class
-   grant, whatever its approval allows, so it cannot grant the installer onward. Milestone 911's
+   grant, whatever its approval allows, so it cannot grant the installer onward. Milestone 911 (scripted installs grant only what an approval file allows)'s
    `installer` allow key keeps serving the owner's own `jig install --approved` at the console. Its index store is its own directory, `activation/indexes/<package>`, so it cannot
    poison `jig`'s copy, and the progenitor installs on a copy's word only for the manager whose
    copy it is.
@@ -145,5 +145,5 @@ that starts unattended. If the owner can still reach the prompt, rollback revert
   the code has no guard, and nothing tests it.
 - Whether two writers on `activation/indexes` can leave a torn file; no lock exists, and the
   file server's behavior under two writers was not read.
-- Whether a fake prompt drawn on the display can be told from the real one. No secure-attention
+- Whether an owner can tell a fake prompt drawn on the display from the real one. No secure-attention
   key exists; a key the display session cannot intercept would close it, and nothing proposes one.

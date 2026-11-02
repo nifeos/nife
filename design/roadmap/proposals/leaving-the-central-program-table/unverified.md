@@ -15,7 +15,7 @@ determine. They wrote no code and booted nothing.
 ## Read but not traced to the end
 
 - `crates/timetable/src/plan_text.rs` keeps a plan as a mask of wire ids. No writer that stores or
-  sends it turned up, and not every reader of `Plan` was traced.
+  sends it turned up, and the lanes did not trace every reader of `Plan`.
 - Why `image_can_carry` refuses a silent output. The code gives the refusal and no reason; the
   [gaps appendix](installed-path-gaps.md) marks its guess as inference.
 - Whether short options can travel without a directory grant.
@@ -27,7 +27,7 @@ determine. They wrote no code and booted nothing.
   behavior under two writers was not read.
 - Whether a per-manager index directory breaks `jig list`, which reads one copy today.
 - How version 4 of the note composes with version 3's service ask. The layout must carry both, and
-  no layout was drawn.
+  nobody drew one.
 - Whether the shell reads any start-up file of commands. A search found none; `main.rs` was not
   read whole.
 

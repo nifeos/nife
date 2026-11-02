@@ -26,7 +26,7 @@ Five parts, and none of them is a table of programs.
    vouch is its row in the live installed-programs table plus the owner's `grant` lines.
    `grant_plan::image_manifest` stays the one function the shell and the progenitor both call.
 3. A fixed list of owner-granted kinds, keyed by manifest field. `grant_plan` holds the set of
-   fields a vouch alone does not earn: today the network, and after the ruling the reboot object,
+   fields a vouch alone does not earn. Today that is the network; after the ruling it adds the reboot object,
    the sync-only capability, the installer, the catalog, the index store, the activation
    directory, console input and the display session. It names no program. It changes only when a
    new field joins `Manifest`.
@@ -80,7 +80,7 @@ The display session needs a `Manifest` field because nothing declares it today: 
 progenitor test `Program::GraphicalTerminal` (`components/src/swish/running.rs`, the request
 builder; `crates/system_initializer/src/spawn_loop.rs`, `Request::graphical`). Every new field also
 needs a note encoding. None of the fields above has a byte in versions 1 to 3 of the descriptor
-(`crates/capability_manifest_note/src/lib.rs`, the layout tables), so the end state adds a version
+(`crates/capability_manifest_note/src/lib.rs`, the layout tables). So the end state adds a version
 4 with one flag byte for them and one rights byte for the index store. That is a wire format, and
 [decision 1](decisions.md) asks for it.
 

@@ -11,7 +11,7 @@ not re-checked. Steps 1 to 3, 7 and 8 wait on none of them.
 Of the five decisions the first version of this proposal asked, the ruling dissolves one and changes
 two.
 
-- Dissolved: whether taking the screen and keyboard is pinned or an owner's grant. The ruling made
+- Dissolved: whether the system fixes the screen and keyboard or an owner grants them. The ruling made
   it an owner's grant. What remains is mechanism: a `display` field and a live-session guard
   (migration steps 4 and 6), which decision 1 and [the security appendix](security.md) cover.
 - Changed: "every program carries its own record, with a central table kept only for what the
@@ -20,10 +20,10 @@ two.
 - Unchanged: what §229 means by a name the image carries (decision 7), and provisional names
   (decision 8).
 
-Two-way doors the maintainer may decide, each provisional: the order rows leave in, a generic
-sentence for a register answer, `SPAWN_NOT_IN_IMAGE` for a removed id, pinning all 28 ids, and
-keeping the upgrade rule as it is (every new digest asks again unless an approval's `update`
-covers it). That last one is today's behavior, and it is the restrictive choice.
+Five two-way doors the maintainer may decide, each provisional. They are the order rows leave in,
+a generic sentence for a register answer, `SPAWN_NOT_IN_IMAGE` for a removed id, and pinning all
+28 ids. The fifth keeps the upgrade rule as it is: every new digest asks again unless an
+approval's `update` covers it. That last one is today's behavior, and it is the restrictive choice.
 
 ## 1. May the manifest note carry the owner-granted fields?
 
@@ -68,7 +68,7 @@ grants (`reboot`, `sync`, catalog, activation directory, zones) go to any instal
 owner's line. Exclusive grants (console input, display) go only to a foreground job at the
 owner's console, one holder at a time. Console-class grants (installer, the index store's write
 right) go to an installed program only in the delegated form of §270 (a package manager holds an
-installer endpoint, not the spawn endpoint): bounded by an approval, no `answered console`, no
+installer endpoint, not the spawn endpoint). That form holds to an approval, with no `answered console`, no
 `Approve`, `Revoke` or `Vouch`, its own index directory, and no installing of an exclusive or
 console-class ask. No recorded service may hold `reboot` or either class.
 
@@ -102,9 +102,9 @@ builds a one-page list of the image's programs from those records at boot, and t
 a program by name. It costs a page the shell reads, a request bit, and amending item 3 of §158 (the
 shell's table is one macro).
 
-Alternatives, from [the end state](end-state.md): a registry in the installed-programs table (a
-second copy of each record outside the trusted bytes), a table generated at build time (nife would
-build every package to produce it), or the image composer writing the list into the image.
+Alternatives, from [the end state](end-state.md). A registry in the installed-programs table keeps
+a second copy of each record outside the trusted bytes. A table generated at build time makes nife
+build every package. The image composer could also write the list into the image.
 
 Example: a person types `reboot`. The shell finds it on the boot list, sees the record asks for the
 reboot object, and asks for the program named `reboot`. The system finds it in the measured image
@@ -179,7 +179,7 @@ Alternative: the word table serves only words the image does not carry; `acme-re
 its own name and to any new word, never to `reboot`.
 
 Example: under yes, `jig use reboot acme-reboot`, then `reboot` runs the replacement. Under no,
-`jig use restart acme-reboot` works and `jig use reboot acme-reboot` is refused.
+`jig use restart acme-reboot` works and the progenitor refuses `jig use reboot acme-reboot`.
 
 Prior art: Debian's `update-alternatives` lets the administrator repoint `editor` at any provider.
 
@@ -196,8 +196,8 @@ that is both. Today "a name the image carries" means a row of the central table
 (`installed_programs::refuse_entry`'s caller, `Program::from_name`). §229's amendment narrows the
 install refusal to what a boot slot holds, and that narrowing is unbuilt.
 
-Recommendation: A. The measured archive's names, with both refusals unchanged until the narrowing
-is built. Nothing a person sees changes.
+Recommendation: A. The measured archive's names, with both refusals unchanged until a lane builds
+the narrowing. Nothing a person sees changes.
 
 Alternatives: B, build the narrowing now, so a newer `core-tools` package may install `date`. C,
 keep the table's names, which keeps a fragment of the table alive.

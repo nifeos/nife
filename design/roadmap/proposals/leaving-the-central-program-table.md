@@ -131,7 +131,7 @@ appendix](leaving-the-central-program-table/security.md) reads each one's behavi
 from the code and sorts them into three classes. `reboot`, `sync`, the catalog, the activation
 directory and zones are shareable. Console input and the display session are exclusive: one
 foreground holder at the owner's console. The installer and the index store's write right are
-console class, because a holder of either can turn one yes into every grant: an installed holder
+console class, because a holder of either can turn one yes into every grant. An installed holder
 gets them only in §270 (a package manager holds an installer endpoint, not the spawn endpoint)'s
 delegated form, bounded by an approval. The built-ins stay the default and the fallback: no install
 takes the archive's grants away, and rollback or removal drops a replacement's grants with its rows.

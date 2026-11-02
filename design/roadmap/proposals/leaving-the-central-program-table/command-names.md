@@ -90,7 +90,7 @@ $ reboot
 | Let `default <program> <digest>` point across names | the pointer's meaning, "which version of this program", would also become "which program", and §229's `Both` refusal reads it today |
 | An `alias` builtin and a start-up file per session | right for a person's shortcuts, wrong for the machine's `reboot`: each session would decide, and a login session's file is not the owner's |
 | Let a package install a program named `reboot` | the package would claim the word by installing, which §229 refuses for good reason; the owner did not choose it |
-| Debian `update-alternatives` priorities | a priority is a search order, which §229 (option B3) refused |
+| Debian `update-alternatives` priorities | a priority is a search order, which §229 (a bare name reaches an installed program) refused as B3 |
 
 Prior art, from memory and not re-checked: Debian's `update-alternatives` binds a generic name
 through `/etc/alternatives/` to one provider, chosen by the administrator or by priority. Android's
