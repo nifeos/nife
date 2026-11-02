@@ -96,9 +96,9 @@ milestone names its consumer. It is not BUILT until a record cites its first use
   the kernel's parser.
 - **Done.** Part 1, on branch `milestone/695-part-1-base-digest-capability`, ruled 2026-11-02
   (UTC). The kernel grants the base digest as a `PageFrame` with `READ` alone in slot 34, past every
-  other slot, on all three architectures; `crates/base_digest_contract` defines the page, and
-  `system_initializer::base_digest` maps it, checks the `program_measurements` table against it
-  before reading it, and refuses the boot with a named reason on the UART. Host tests cover every
+  other slot, on all three architectures. `crates/base_digest_contract` defines the page.
+  `system_initializer::base_digest` maps it and checks the `program_measurements` table against it
+  before reading it; a refusal stops the boot with a named reason on the UART. Host tests cover every
   refusal, a wrong digest included. The kernel still checks the table too, against both the words
   and `TRUST_ROOT`, until 697's part 2 removes `TRUST_ROOT`.
 - **Outstanding.** Part 4's fourth writer, 976's version 2 slot. Milestone 976's part 4c owns it,

@@ -176,7 +176,8 @@ pub(super) fn open_archive(
     }
 
     // Before the first read of the table, so nothing below acts on bytes the kernel's base digest
-    // does not name (milestone 695 part 1).
+    // does not name (milestone 695 (the kernel trusts two digests handed to
+    // it by the loader), part 1).
     base_digest::require_base_digest(g, g.untyped, &fs, uart_shape);
 
     // Bytes that are not UTF-8 are the empty table, which vouches for nothing.

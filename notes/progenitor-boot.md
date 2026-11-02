@@ -17,7 +17,7 @@ starts itself. How the progenitor loads its children is in
    name, before its address space exists (milestone 22 (trusted init) phase B.1). The progenitor is this board's
    boot program, so it is in the trust root like any boot program. Then it requires the
    program-measurement table the progenitor checks every load against (milestone 104 (the measurement continues past init)).
-   Both are held to the loader's two command-line words as well (milestone 695 (the kernel trusts two digests from the loader)).
+   The kernel holds both to the loader's two command-line words as well (milestone 695 (the kernel trusts two digests from the loader)).
 2. It builds the address space: the segments, a stack of `PROGENITOR_STACK_PAGES`, and the
    timebase page where the architecture has one. The whole initial ramdisk is mapped read-only at
    `INITIAL_RAMDISK_VIRTUAL_ADDRESS`, so the progenitor can parse the archive and load the rest by name. The

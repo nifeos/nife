@@ -89,11 +89,11 @@ the page, copies the content out, gives the page up, hashes the archive's `progr
 entry and compares, all before it reads a line of the table
 (`system_initializer::base_digest`).
 
-A refusal stops the boot. An empty slot, a slot holding something it may not map read-only, a page
-without the magic, another layout version, an all-zero digest, a missing table and a table with
-another digest each print their own line, `MEASURED BOOT REFUSED by the progenitor: <reason>`, and
-the progenitor then traps. The `console` server cannot carry that line, because it is measured
-against the very table in doubt, so the progenitor writes the UART itself
+A refusal stops the boot. Seven faults each have a line of their own: an empty slot, a slot it may
+not map read-only, a page without the magic, another layout version, an all-zero digest, a missing
+table and a table with another digest. The progenitor prints `MEASURED BOOT REFUSED by the
+progenitor: <reason>` and traps. The `console` server cannot carry that line, because the
+progenitor measures it against the very table in doubt, so the progenitor writes the UART itself
 (`system_initializer::refusal_console`), the way the console does on each architecture.
 
 ## The loader's verdict
