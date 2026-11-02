@@ -3,9 +3,7 @@
 //! [`Header::decode`] answers only "are these bytes a GPT header?". It knows neither the disk's
 //! size nor which copy it holds, so every judgement that needs the disk is in
 //! [`crate::GloballyUniqueIdentifierPartitionTable`], and the backup decodes on its own terms
-//! before anything compares it with the primary. See
-//! notes/globally-unique-identifier-partition-table.md, "The crate does no I/O, and that is the
-//! whole design".
+//! before anything compares it with the primary.
 
 use crate::crc::crc32_pieces;
 use crate::guid::{self, Uuid};
@@ -88,7 +86,7 @@ impl Header {
     /// offset 20 or non-zero byte after the header (UEFI 2.10 section 5.3.2 requires both zero; the
     /// strictest check here), and a header CRC that does not match over `header_size` bytes with
     /// the CRC field taken as zero. A size over 92 is accepted, as the spec asks of a reader that
-    /// does not know a later revision; see notes/globally-unique-identifier-partition-table.md.
+    /// does not know a later revision.
     pub fn decode(block: &[u8]) -> Result<Header, Error> {
         if !is_block_size_ok(block.len()) {
             return Err(Error::BlockSize(block.len()));
@@ -127,8 +125,7 @@ impl Header {
     /// separately from the **integrity**, which is what keeps the layout proof affordable: a
     /// harness that went through the CRC would have to reason about a 92-byte polynomial over
     /// symbolic bytes, which costs minutes of solver time to prove a fact about byte offsets. See
-    /// `verification::a_headers_fields_survive_the_round_trip` and
-    /// notes/globally-unique-identifier-partition-table.md.
+    /// `verification::a_headers_fields_survive_the_round_trip`.
     pub(crate) fn decode_fields(block: &[u8]) -> Header {
         Header {
             my_lba: le64(block, at::MY_LBA),

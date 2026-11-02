@@ -15,17 +15,19 @@
 # anything untriaged, and every window that is not clean is one. This script reads the held directory
 # only to count its files and take their ages. It never opens one, never copies one, and the report
 # names no seed, driver or commit of a held window. The ranges around a held window are published;
-# the held window's own range is not, so nothing published reproduces it.
+# the held window's own range is not. The next clean range still starts one seed past a held replay
+# seed and so locates it (notes/fuzzing/continuous-host.md, BUGS); fix that before enabling --publish.
 #
 # **Where it goes.** Ruled 2026-11-01 (UTC): one GitHub release per day on nifeos/nife, tagged
 # `fuzz-YYYY-MM-DD`, with report.md and clean-ranges.tsv as assets
 # (design/roadmap/proposals/where-the-daily-fuzz-output-goes.md). Without a flag the script stops at
 # the local files. `--dry-run` also prints the tag and the asset list. `--publish` runs
-# `gh release create` and refuses unless NIFE_FUZZ_PUBLISH=1 is set. The credential needs Contents:
-# write on a fine-grained token (from memory of GitHub's permission model, not verified), which also
-# permits a push, so the guarantee that this host never pushes a branch rests on this script: it
-# never calls `git push`. Findings start as private security advisories, filed by a person or by a
-# later change, not by this script.
+# `gh release create` and refuses unless NIFE_FUZZ_PUBLISH=1 is set. The credential is a one-hour
+# installation token of the `nife-fuzz` App, minted from the App's root-only key (Contents write and
+# Repository security advisories write on nifeos/nife alone; notes/fuzzing/the-fuzz-app.md). Main's
+# ruleset refuses a push without a pull request, and this script never calls `git push`. Findings
+# start as private security advisories, filed by a service on the host, not by this script
+# (design/roadmap/proposals/fuzz-findings-without-a-person.md).
 #
 # Name: provisional, minted 2026-11-01 (UTC) by lane/continuous-fuzzing-host. calef has not ruled on it.
 
@@ -37,7 +39,7 @@ today="$(date -u +%Y-%m-%d)"
 out="$home/out/$today"
 windows="$state/windows.tsv"
 
-mkdir -p "$out"
+mkdir -p "$out" "$state"
 [ -f "$windows" ] || : > "$windows"
 
 # Columns: utc, driver, slot, first, ran, ms, status, commit.

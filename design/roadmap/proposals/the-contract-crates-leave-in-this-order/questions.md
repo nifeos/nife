@@ -146,12 +146,33 @@ They also reach two crates outside the 22, `subtree_scope` and `memory_region_he
 first (`memory_region_heap` only for the target build's `el0` feature, with `user_mode_runtime`
 and `abi` behind it). `entropy_contract` is named in `mkfs.rs` prose and is not a dependency, so it
 need not have left. Both manifests also patch `talc` to `vendor/talc`, a reference back into nife
-that the ruling does not place. Unverified, not decided:
+that the ruling above does not place; the proposal's talc section records the maintainer's
+provisional decision of 2026-11-01 (UTC). Unverified, not decided:
 
 - Whether upstream `redoxfs` accepts AI submissions.
+
+`talc`, decided by the maintainer on 2026-11-01 (UTC) and provisional (the proposal states it), with
+the read-only checks of that day:
+
+- Divergence: `vendor/talc` equals the crates.io 5.1.1 package (sha256 `53f8ad14fa1c`, upstream
+  commit `15b2758a4538`) plus `vendor/talc.divergence.patch`, and differs in exactly two files.
+  Two hunks in `src/base/mod.rs` rewrite the in-place grow fit check and the gap fit check
+  (padding below an aligned base) so that wrapped arithmetic cannot pass, and
+  `tests/wasm_top_of_memory.rs` is a new 75-line wasm regression test. The patch is
+  SFBdragon/talc pull request 57, open, so no upstream revision carries it.
+- Users: `allocation_cache`, `memory_region_heap` and `redoxfs_server` depend on `talc`. The root
+  workspace, `jig`, `fuzz`, `redoxfs_server` and `tools/redoxfs_host` patch it to `vendor/talc`,
+  and the `std-nife` heap overlay and the `xtask` farm generator name it. When `redoxfs` leaves,
+  the other users stay on `vendor/talc` in nife until they leave.
+- Upstream: no `CONTRIBUTING` file, and no README line about AI submissions or generated code, so
+  the repository states no policy; I did not check issues and discussions. Its manifest requires
+  `allocator-api2` 0.4, the newest, and `lock_api` 0.4, while 0.5.0 appeared on 2026-10-21, 11 days
+  earlier. The newest release is 5.1.1 of 2026-09-09 and master holds one later documentation
+  commit.
+- Unverified: how the patch applies to a git dependency, which carries none. A rev that holds the
+  fix, once pull request 57 lands, would remove the patch file.
 - Whether the QEMU runners (254 path references in 64 files) can start the server from a pinned
   image and not from a path in the tree.
-- Where `vendor/talc` goes.
 
 ## 7. Do the contribute-disposition crates wait to move?
 

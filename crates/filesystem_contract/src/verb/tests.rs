@@ -63,7 +63,7 @@ fn every_verb_has_a_row_that_says_what_its_words_mean() {
     assert_eq!(mints, ["OPEN", "CREATE", "OPENDIR", "MKDIR", "NARROW"]);
 }
 
-/// **No caretaker can forward a binding** (milestone 606, ruling D). `BIND` and `UNBIND` are
+/// **No caretaker can forward a binding**. `BIND` and `UNBIND` are
 /// outside the verb table, so `verb::of` answers `None` and every caretaker refuses them, and a
 /// verb added to the table later cannot land on their numbers by accident.
 #[test]
@@ -77,7 +77,7 @@ fn bind_and_unbind_are_not_directory_verbs() {
     }
 }
 
-/// **`NARROW` names a handle and a mask, resolves no name and demands no right** (§173 (narrowing the root of the shell's namespace)). A name
+/// **`NARROW` names a handle and a mask, resolves no name and demands no right**. A name
 /// filter must not see it (nothing in it is a directory entry), a read-only grant must not refuse
 /// it (it cannot widen), and a renumbering proxy must install the handle it mints.
 #[test]
@@ -213,7 +213,7 @@ fn a_read_only_file_grant_refuses_every_verb_that_mutates() {
     }
 }
 
-/// **The four attribute verbs are forwarded through a per-file grant** (milestone 61's gap).
+/// **The four attribute verbs are forwarded through a per-file grant**.
 ///
 /// Pinned as its own test because the old behaviour was uniform and defensible: all four
 /// answered `EOPNOTSUPP`, which was honest about a capability that did not carry them. What
@@ -282,9 +282,9 @@ fn a_file_grants_refusals_keep_their_separate_meanings() {
     assert!(verb::of(0).is_none(), "0 is not a verb");
 }
 
-// The tests from here down each pin something the run of milestone 85 (mutation testing over the
-// host crates) showed nothing pinned. The equivalences (every `|` over disjoint masked fields,
-// where `^` cannot differ) are recorded in notes/mutation-testing.md rather than tested.
+// The tests from here down each pin something a mutation run over this crate showed nothing
+// pinned. The equivalences (every `|` over disjoint masked fields, where `^` cannot differ) are
+// recorded as such rather than tested.
 
 /// The two Verb predicates the caretakers key off, pinned per verb rather than by example. A
 /// `carries_len` that answered true (or false) for everything, and a `mutates` that lost a
@@ -340,8 +340,7 @@ fn the_verb_predicates_partition_the_table_as_documented() {
 ///
 /// `row` is only ever evaluated by the compiler, building [`verb::TABLE`], so a coverage run counts
 /// none of its lines; inside the old single-file crate root that went unnoticed, and in its own file
-/// it put `verb.rs` under the per-file coverage floor (milestone 845 (the filesystem-protocol crate
-/// root is split along its seams)). This runs it, and pins the one thing it decides on its own: a
+/// it put `verb.rs` under the per-file coverage floor. This runs it, and pins the one thing it decides on its own: a
 /// row spelled through it asks for no any-of right.
 #[test]
 fn a_row_built_at_run_time_is_the_row_the_compiler_built() {

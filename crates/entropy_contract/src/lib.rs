@@ -1,18 +1,16 @@
-//! **The entropy contract** (§44 (entropy is a capability), notes/entropy.md): the request and
+//! **The entropy contract** (entropy is a capability): the request and
 //! reply that carry random bytes out of the entropy service, defined once for the service, its
 //! clients, the std PAL and the kernel-side tests. One process holds the virtio-rng device; a
 //! client holds an endpoint that names no device, `CALL`s with a byte count and gets the bytes in
 //! the reply words, at most [`MAXIMUM_BYTES`] per round trip. No shared page, against the usual
 //! bulk rule, because random bytes are worth exactly that nobody else has seen them, and no byte is
-//! transformed, so the claim stays "these are the device's bytes". notes/entropy.md, "The shape"
-//! and "The bytes are the device's bytes", has the argument; the `entropy_rtt` benchmark prices it.
+//! transformed, so the claim stays "these are the device's bytes".
 
 //! # BUGS
 //!
 //! - **An all-zero first draw is read as a dead device** ([`readiness`]): wrong with probability
-//!   2^-64 to 2^-2048 by source, and the safe way round (notes/entropy/contract.md).
-//! - The check is bring-up only; continuous health testing is
-//!   `design/decisions/0137-trng-health-tests.md`'s to decide.
+//!   2^-64 to 2^-2048 by source, and the safe way round.
+//! - The check is bring-up only; continuous health testing is a decision still to be made.
 //!
 //! Name: ratified 2026-08-23 (calef): the service's own word, `entropy`, with the contract suffix
 //! `_contract` (calef's 2026-10-18 ruling).
@@ -29,23 +27,20 @@
 pub const MAXIMUM_BYTES: u64 = 8;
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position
-/// `filesystem_contract` and `line_editor::proto` use, so the contracts read alike.
+/// the sibling message contracts of the nife kernel use, so the contracts read alike.
 pub const OPERATION_SHIFT: u32 = 56;
 
-/// The protocol's version, one for the operation set and the reply shape together (calef's
-/// ruling of 2026-10-29 UTC, PR #2852, question 1: one constant per wire format). A break bumps
-/// this and owes the dated ledger entry the interface-stability discipline records; an addition
-/// (a new opcode, an optional field) owes no bump. The check lives at bind (milestone 956 (the
-/// linked interfaces carry checkable versions)): a client `CALL`s `OPERATION_VERSION` and binds
-/// only when its own version is in the served set.
+/// The protocol's version, one for the operation set and the reply shape together: one constant
+/// per wire format. A break bumps this and owes a dated ledger entry; an addition (a new opcode, an
+/// optional field) owes no bump. The check lives at bind: a client asks for the served versions and
+/// binds only when its own version is in the set.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 12, naming the entropy service
 /// request and reply. The number is this interface's for good: no other interface takes it, and a
-/// format change is a new version, never a new number. Milestone 956 (the linked interfaces carry
-/// checkable versions) holds the table of numbers, and `script/lint` holds the tree to it. A
+/// format change is a new version, never a new number. The project that links these crates keeps the table of numbers and holds it to that rule. A
 /// program declares the pair of this id and [`VERSION`].
 ///
 /// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
@@ -79,7 +74,7 @@ pub const fn want(w0: u64) -> u64 {
 ///
 /// **"Its first bytes are in hand" is a claim about the bytes, not about the handshake**: a service
 /// holding nothing, or a bufferful of zeros, must not send it, and [`readiness`] is what makes the
-/// claim (notes/entropy/contract.md, "Ready means bytes in hand").
+/// claim.
 pub const READY: u64 = 0x_52_4E_47_55_50;
 
 /// **The word a bring-up failure reports instead of [`READY`]**, with the step that failed in its
@@ -91,8 +86,8 @@ pub const DEAD: u64 = 0xDEAD_0000_0000_0000;
 /// **The service asked and got nothing at all**: the device never answered inside the driver's own
 /// bound. A dry source, an absent one, or a register window that reads as nothing.
 ///
-/// Steps `0x01..=0x0f` are each backend's own (`components/src/entropy.rs` numbers its virtio sequence
-/// there), so the two steps every backend shares start at `0x10` and cannot collide with them.
+/// Steps `0x01..=0x0f` are each backend's own, so the two steps every backend shares start at
+/// `0x10` and cannot collide with them.
 pub const STEP_NO_FIRST_BYTES: u64 = 0x10;
 
 /// **The service asked, was answered, and every byte of the answer was zero.** See [`readiness`]
@@ -147,14 +142,14 @@ pub fn readiness(first: impl IntoIterator<Item = u8>) -> u64 {
 /// the second word is meaningless. The service sends this rather than padding, repeating an
 /// earlier answer, or substituting a pseudo-random stand-in: a caller that cannot be given
 /// randomness must find out, because the alternative is the exact silent-degradation failure
-/// DECISIONS §42 forbids.
+/// that no caller should have to guess at.
 pub const NO_ENTROPY: u64 = 0;
 
 /// **Read a reply's first word.** `Some(n)` when the entropy service answered, with `n` the number
 /// of valid low bytes in the second word (0 means [`NO_ENTROPY`]). `None` when the word did not
 /// come from the service at all: every kernel failure from a `CALL` is a small negative
-/// (`abi::Error`, -1 to -8), an enormous `u64`, so a caller holding no entropy capability finds out
-/// without a probe (notes/entropy.md, "One number that could not collide").
+/// (the kernel's error numbers, -1 to -8), an enormous `u64`, so a caller holding no entropy capability finds out
+/// without a probe.
 ///
 /// # Examples
 ///
@@ -167,7 +162,7 @@ pub const NO_ENTROPY: u64 = 0;
 /// for n in 0..=MAXIMUM_BYTES {
 ///     assert_eq!(delivered(n), Some(n as usize));
 /// }
-/// // `abi::Error` is -1 to -8; as a u64 each is enormous, so none can be read as a count.
+/// // The kernel's errors are -1 to -8; as a u64 each is enormous, so none can be read as a count.
 /// assert_eq!(delivered(-4i64 as u64), None); // an empty slot: no entropy capability
 ///
 /// // And "the service has none to give" is a third answer, distinct from both.
@@ -229,8 +224,8 @@ pub fn take(n: usize, word: u64, out: &mut [u8]) -> usize {
 /// `None` if any reply is not a count (no entropy capability; see [`delivered`]) or delivers fewer
 /// bytes than asked (the service is dry); then `out` is unspecified and must not be used. Asks for
 /// [`MAXIMUM_BYTES`] at a time and the remainder last. The `CALL` is a parameter so this crate
-/// makes no syscall; `user_mode_runtime::entropy::fill` passes a real one. The std PAL accepts
-/// partial counts instead, deliberately (notes/entropy/contract.md).
+/// makes no syscall; the caller passes a real one. The std PAL accepts
+/// partial counts instead, deliberately.
 ///
 /// Name: ratified 2026-10-07 (calef, #1795). His word: "Yes". std's `_with` suffix, for a function
 /// that takes a closure.

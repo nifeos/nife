@@ -1,24 +1,20 @@
 /// **The session's bound directory, which is always handle 0.** The server installs it in the
 /// handle table before it serves anything, so every name-taking verb resolves against a handle.
 /// Two clients on two endpoints both say `0` and mean different directories; file handles start
-/// at 1. See notes/dir-capability.md, "Handle 0 is the bound directory".
+/// at 1.
 pub const ROOT: u64 = 0;
 
 /// The file protocol's version, one for this operation set and its reply shapes. Module-scoped,
-/// not per crate: the block protocol moves on its own version (calef's ruling of 2026-10-29 UTC,
-/// PR #2852, question 1). A break bumps this and owes the dated ledger entry the
-/// interface-stability discipline records; an addition (a new verb, an optional field) owes no
-/// bump. The check lives at bind (milestone 956 (the linked interfaces carry checkable
-/// versions)): a client `CALL`s `OPERATION_VERSION` and binds only when its own version is in
-/// the served set.
+/// not per crate: the block protocol moves on its own version. A break bumps this and owes a
+/// dated ledger entry; an addition (a new verb, an optional field) owes no bump. The check lives at
+/// bind: a client asks for the served versions and binds only when its own version is in the set.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 15, naming the file protocol. The
 /// number is this interface's for good: no other interface takes it, and a format change is a new
-/// version, never a new number. Milestone 956 (the linked interfaces carry checkable versions)
-/// holds the table of numbers, and `script/lint` holds the tree to it. A program declares the pair
+/// version, never a new number. The project that links these crates keeps the table of numbers and holds it to that rule. A program declares the pair
 /// of this id and [`VERSION`].
 ///
 /// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
@@ -32,8 +28,7 @@ pub const INTERFACE_ID: u64 = 15;
 /// Needs [`super::dir::READ`] or [`super::dir::WRITE`], and the handle inherits both bits; without
 /// either, `ENOENT`. `EISDIR` for a directory. A relative path `a/b/f` is walked as [`OPENDIR`]
 /// hops asking for `DESCEND | w1`, `w1` being the per-step rights: a step that comes up short is
-/// [`super::dir::EPERM`], and an empty step, `.` or `..` is `EINVAL`. See
-/// notes/fs-server/file-protocol.md.
+/// [`super::dir::EPERM`], and an empty step, `.` or `..` is `EINVAL`.
 pub const OPEN: u64 = 1;
 /// Read up to [`req_len`] bytes from the handle ([`req_handle`]) at offset `w1` into the shared
 /// page. Reply `r0` = bytes read (≥ 0, 0 at EOF) into the shared page, or an error.
@@ -49,19 +44,19 @@ pub const FSTAT: u64 = 5;
 /// [`req_handle`] and open it: [`OPEN`]'s shape, second word 0. Reply `r0` = a handle, or an error.
 ///
 /// Needs [`super::dir::CREATE`], else [`super::dir::EROFS`]. `EEXIST` if the name exists, and
-/// nothing is modified: create is create, not create-or-open. See notes/fs-server/file-protocol.md.
+/// nothing is modified: create is create, not create-or-open.
 pub const CREATE: u64 = 6;
 /// Set the size of the handle's ([`req_handle`]) file to exactly `w1` bytes; [`req_len`] is 0.
 /// Reply `r0` = 0, or an error.
 ///
 /// POSIX `ftruncate` in both directions: shrinking discards the bytes past the new size, growing
 /// extends with zeroes. Without the shrink a write shorter than the file would leave the old tail
-/// (DECISIONS §27 (the filesystem service)). Truncating to the current size is a no-op, which
+/// behind it. Truncating to the current size is a no-op, which
 /// `std::fs::write` relies on, since it truncates unconditionally.
 pub const TRUNCATE: u64 = 7;
 /// **Descend**: resolve the name in the shared page under the directory handle in [`req_handle`]
 /// and hand back a handle to the child directory. `w1` is the requested [`super::dir`] mask, or
-/// [`super::dir::PARENT_RIGHTS`] for "the parent's rights, whatever they are" (§98 (`OPENDIR` cannot be asked to attenuate)), which a client
+/// [`super::dir::PARENT_RIGHTS`] for "the parent's rights, whatever they are", which a client
 /// that cannot read its own capability asks for when it holds the directory for later use.
 /// Reply `r0` = the new directory handle, or an error.
 ///
@@ -69,14 +64,14 @@ pub const TRUNCATE: u64 = 7;
 /// carries a right its ancestor lacked. A short intersection is [`super::dir::EPERM`]; no
 /// [`super::dir::DESCEND`] on the parent is `ENOENT`; a file is `ENOTDIR`; an empty component, `.`
 /// or `..` is `EINVAL`. A relative path is walked hop by hop, each step obeying these rules and
-/// asking for `DESCEND | requested`. See notes/fs-server/file-protocol.md.
+/// asking for `DESCEND | requested`.
 pub const OPENDIR: u64 = 8;
 /// **Enumerate a directory handle.** [`req_handle`] is the directory and `w1` a cursor, the index
 /// of the first entry to return. Reply `r0` = bytes written into the shared page as
 /// [`super::dirent`] records; 0 means the cursor is past the end. [`req_len`] is ignored.
 ///
 /// Needs [`super::dir::ENUMERATE`]; its absence is [`super::dir::EPERM`], not an empty listing
-/// (DECISIONS §42 (a filesystem declares what it offers and must be truthful)). Entries are sorted
+/// (a filesystem declares what it offers and must be truthful). Entries are sorted
 /// by name, so a directory changed between two calls can repeat or skip a name.
 pub const READDIR: u64 = 9;
 /// **Make a child directory and hand back a capability to it**: [`OPENDIR`]'s shape and its
@@ -94,7 +89,7 @@ pub const MKDIR: u64 = 10;
 /// [`super::dir::CREATE`] on the destination, else [`super::dir::EROFS`]. A destination of the same
 /// kind is replaced; a file over a directory is `EISDIR`, the reverse `ENOTDIR`, a non-empty
 /// destination directory `ENOTEMPTY`, and a directory moved between directories `EINVAL`. A rename
-/// onto itself succeeds. See notes/dir-capability/rename.md.
+/// onto itself succeeds.
 pub const RENAME: u64 = 11;
 /// **Remove a name from a directory: `unlink`, not revocation.** The name in the shared page
 /// ([`req_len`] bytes) leaves the directory in [`req_handle`]; second word 0. Reply `r0` = 0, or an
@@ -104,16 +99,15 @@ pub const RENAME: u64 = 11;
 /// handle are gone. Needs [`super::dir::REMOVE`], else [`super::dir::EROFS`], checked before the
 /// name is resolved so a refusal says nothing about the name. A directory is
 /// [`super::dir::EISDIR`]: [`RMDIR`] takes only an empty one, so no single call removes a subtree.
-/// See notes/fs-server/file-protocol.md and notes/rm.md.
 pub const UNLINK: u64 = 12;
 /// **Remove an empty directory**, `rmdir(2)`: [`UNLINK`]'s shape, and it hands nothing back.
 /// Reply `r0` = 0, or an error.
 ///
 /// A non-empty directory is [`super::dir::ENOTEMPTY`], refused rather than emptied; `rm -r`
-/// recurses in userspace (`components/src/rm.rs`), one step and one set of rights at a time. Needs
+/// recurses in userspace one step and one set of rights at a time. Needs
 /// [`super::dir::REMOVE`] on the parent, else [`super::dir::EROFS`], checked before the name is
 /// resolved. A file is `ENOTDIR`. Not revocation: a handle onto the removed directory then fails
-/// with `ENOENT`. See notes/rm.md and its BUGS.
+/// with `ENOENT`.
 pub const RMDIR: u64 = 13;
 
 /// **Read one extended attribute of the node a handle names**, file or directory. The name is
@@ -129,11 +123,11 @@ pub const GETXATTR: u64 = 14;
 /// ([`super::xattr::spec`]). Reply `r0` = 0.
 ///
 /// Create and replace are one operation, and `XATTR_CREATE`/`XATTR_REPLACE` are not offered
-/// (DECISIONS §42). Needs [`super::dir::WRITE`], else [`super::dir::EROFS`]. `ERANGE` for a name the
+/// (the same rule). Needs [`super::dir::WRITE`], else [`super::dir::EROFS`]. `ERANGE` for a name the
 /// store cannot hold, [`super::xattr::E2BIG`] for an over-long value, [`super::xattr::ENOSPC`] at
-/// [`super::xattr::MAXIMUM_COUNT`] attributes. See notes/fs-server/file-protocol.md.
+/// [`super::xattr::MAXIMUM_COUNT`] attributes.
 pub const SETXATTR: u64 = 15;
-/// **List the attribute names on the node a handle names** (milestone 57).
+/// **List the attribute names on the node a handle names**.
 ///
 /// [`req_len`] and the second word are both 0. Reply `r0` = how many bytes of the shared page
 /// were filled with [`super::xattr::list`] records; 0 means the node has no attributes.
@@ -144,7 +138,7 @@ pub const SETXATTR: u64 = 15;
 ///
 /// Needs [`super::dir::READ`], refused with `EBADF`, for [`GETXATTR`]'s reason.
 pub const LISTXATTR: u64 = 16;
-/// **Remove one extended attribute from the node a handle names** (milestone 57).
+/// **Remove one extended attribute from the node a handle names**.
 ///
 /// [`GETXATTR`]'s shape: the name is [`req_len`] bytes at the start of the shared page, the
 /// second word is 0. Reply `r0` = 0, or `ENODATA` if the attribute was not set. Removing an
@@ -158,18 +152,18 @@ pub const REMOVEXATTR: u64 = 17;
 /// [`req_len`] and `w1` are 0; [`req_handle`] is any handle this server minted, [`ROOT`] included,
 /// and holding one is the whole qualification: it needs no right. Reply `r0` = the bytes of the
 /// shared page filled ([`super::statfs::LEN`]) with the [`super::statfs`] record, or an error;
-/// `EBADF` for a handle the server did not mint. See notes/fs-server/statfs.md.
+/// `EBADF` for a handle the server did not mint.
 ///
 /// # BUGS
 ///
 /// - It answers about the whole image, never a subtree; there are no quotas, so no smaller number
 ///   would be true.
 /// - Two subtrees on one image can signal through the free count; isolation needs two images
-///   (notes/fs-server/file-protocol.md).
+///   the same way.
 /// - The numbers are a forecast: the store's `ENOSPC` at write time decides.
 pub const STATFS: u64 = 18;
 
-/// **Make everything this server has acknowledged durable** (milestone 55 (Time Machine)).
+/// **Make everything this server has acknowledged durable**.
 /// [`req_len`] and `w1` are 0; [`req_handle`] is any handle this server minted. Reply `r0` = how
 /// many device flushes the block server has completed since it started, this one included, so a
 /// success is `>= 1`; or an error, `EBADF` for a handle the server did not mint.
@@ -177,8 +171,7 @@ pub const STATFS: u64 = 18;
 /// The FS server commits each write before replying, so after a successful `SYNC` every
 /// acknowledged write is on the medium the device calls durable. Needs [`super::dir::WRITE`], else
 /// [`super::dir::EROFS`]: a flush stalls the queue for every client, and a holder that may not write
-/// has nothing to make durable. The block server's `EOPNOTSUPP` passes through unchanged. See
-/// notes/fs-server/file-protocol.md.
+/// has nothing to make durable. The block server's `EOPNOTSUPP` passes through unchanged.
 ///
 /// # BUGS
 ///
@@ -187,38 +180,37 @@ pub const STATFS: u64 = 18;
 /// - The count is a fact about the device, so two clients of one image can watch each other sync.
 pub const SYNC: u64 = 19;
 
-/// **The modification time of `name`, in Unix seconds** (DECISIONS §112 (`touch`'s two behaviors
-/// need two rights)). [`UNLINK`]'s shape: the name is [`req_len`] bytes at the start of the shared
+/// **The modification time of `name`, in Unix seconds** (`touch`'s two behaviors
+/// need two rights). [`UNLINK`]'s shape: the name is [`req_len`] bytes at the start of the shared
 /// page, resolved directly under [`req_handle`], `w1` 0. Reply `r0` = the mtime, or an error.
 ///
 /// Name-taking, as the setters are, because `touch` never opens what it acts on. Needs
 /// [`super::dir::READ`], a naming right, so its absence is `ENOENT`, checked before the name is
-/// resolved. A directory answers as a file does. See notes/touch.md.
+/// resolved. A directory answers as a file does.
 ///
-/// Name: provisional (milestone 47 (navigation and naming)'s mtime lane, 2026-08-24); an architect's
+/// Name: provisional (2026-08-24); an architect's
 /// to ratify.
 pub const GETMTIME: u64 = 20;
 
-/// **Set `name`'s modification time to now** (DECISIONS §112). [`GETMTIME`]'s shape, `w1` 0.
+/// **Set `name`'s modification time to now**. [`GETMTIME`]'s shape, `w1` 0.
 /// Reply `r0` = 0, or an error.
 ///
 /// "Now" is this server's own advancing logical clock, the one that stamps every [`WRITE`], not
 /// the wall clock, so two `touch`es in order see increasing mtimes. Needs [`super::dir::WRITE`],
 /// else [`super::dir::EROFS`], checked before the name is resolved: the value is one the server
-/// observed, so recording it needs no more than writing the file. See notes/touch.md, whose BUGS
-/// has the missing wall clock.
+/// observed, so recording it needs no more than writing the file. The server has no wall clock to stamp with.
 ///
-/// Name: provisional (milestone 47's mtime lane, 2026-08-24); an architect's to ratify.
+/// Name: provisional (2026-08-24); an architect's to ratify.
 pub const SETMTIME: u64 = 21;
 
 /// **Set `name`'s modification time to a value the caller supplies** (`touch -t`). [`GETMTIME`]'s
 /// shape, with the Unix-seconds value in `w1`. Reply `r0` = 0, or an error.
 ///
 /// Needs [`super::dir::WRITE`] and [`super::dir::SETTIME`], else [`super::dir::EROFS`], checked
-/// before the name is resolved: the caller asserts this value, and DECISIONS §112 keeps that
-/// authority out of `WRITE`. Any `u64` is accepted. See notes/touch.md.
+/// before the name is resolved: the caller asserts this value, and that
+/// authority stays out of `WRITE`. Any `u64` is accepted.
 ///
-/// Name: provisional (milestone 47's mtime lane, 2026-08-24); an architect's to ratify.
+/// Name: provisional (2026-08-24); an architect's to ratify.
 pub const SETMTIME_AT: u64 = 22;
 /// **Narrow a directory handle you already hold**: [`req_handle`] is the directory and `w1` the
 /// requested [`super::dir`] mask. No name is resolved and [`req_len`] is 0. Reply `r0` = a second
@@ -229,22 +221,19 @@ pub const SETMTIME_AT: u64 = 22;
 /// lacks. A short intersection is [`super::dir::EPERM`], as for [`OPENDIR`]: no silent
 /// degradation. A file handle is [`super::dir::ENOTDIR`]. It needs no right, because narrowing
 /// cannot widen, and that is what lets the holder of [`ROOT`] attenuate the directory it is bound
-/// to when no name leads down to it. Decided by §173 (narrowing the root of the shell's
-/// namespace), option A, 2026-10-27 (UTC). See notes/fs-server/file-protocol.md.
+/// to when no name leads down to it. Decided on 2026-10-27 (UTC).
 ///
-/// Name: provisional (milestone 328 (a grant on the root of the shell's namespace)'s lane, 2026-10-27 UTC); an architect's to ratify. The number
-/// is §173's: verb 23.
+/// Name: provisional (2026-10-27 UTC); an architect's to ratify. The number is verb 23.
 pub const NARROW: u64 = 23;
 
-/// **Bind a badge to a directory: a subtree grant the server enforces itself** (milestone 606 (a
-/// directory walk costs what it does on Linux), ruling D). [`req_handle`] is a directory handle the
-/// caller holds, `w1` a badge (a client window's index, under §230 (badged endpoint
-/// capabilities)). A request carrying that badge then sees the directory as its [`ROOT`] and
+/// **Bind a badge to a directory: a subtree grant the server enforces itself**. [`req_handle`] is a directory handle the
+/// caller holds, `w1` a badge (a client window's index, under badged endpoint
+/// capabilities). A request carrying that badge then sees the directory as its [`ROOT`] and
 /// reaches only handles it minted (`subtree_scope::Bindings::bind`). Reply `r0` = 0, or `EPERM`
 /// when the caller's own badge is bound, the badge is 0, or it is bound already.
 ///
 /// Outside [`super::verb::TABLE`]'s range, so no caretaker forwards it. A server that does not
-/// resolve through `subtree_scope` answers `EINVAL`. See notes/fs-server/file-protocol.md. Name and
+/// resolve through `subtree_scope` answers `EINVAL`. Name and
 /// number provisional; the number sits above the directory verbs on purpose.
 pub const BIND: u64 = 64;
 /// **Take a badge's grant back** ([`BIND`]'s inverse). The second word is the badge; the handle
@@ -257,8 +246,7 @@ pub const BIND: u64 = 64;
 /// caretaker grant's revocation ended the caretaker instead.
 pub const UNBIND: u64 = 65;
 
-/// **Make a badge sync-only** (DECISIONS §251 (restarting the machine is a kernel object the
-/// progenitor hands out)). `w1` is the badge; the handle field is ignored. A request carrying it may
+/// **Make a badge sync-only**. `w1` is the badge; the handle field is ignored. A request carrying it may
 /// then be [`SYNC`] and nothing else, answered as any writer's; every other verb is `EPERM` before
 /// a handle is read. [`BIND`]'s caller rule and [`UNBIND`]'s revocation apply. The one holder is
 /// `reboot`, which syncs before it restarts the machine. Outside [`super::verb::TABLE`]'s range,
@@ -275,8 +263,7 @@ pub const BIND_SYNC: u64 = 66;
 /// The FS server maps all of them. A client maps as many as it intends to use and asks for no
 /// more, so one that moves 4096 bytes maps one page and needs no change. Nothing checks that a
 /// client asked for no more than it mapped: one that sends `len = TRANSFER_MAXIMUM` with one page
-/// mapped faults on its own second page, after the server has done the work. See
-/// notes/fs-server/file-protocol.md.
+/// mapped faults on its own second page, after the server has done the work.
 pub const TRANSFER_PAGES: usize = 16;
 
 /// **The largest payload one [`READ`] or [`WRITE`] may carry**, in bytes: the whole file
@@ -307,12 +294,11 @@ pub const TRANSFER_PAGES: usize = 16;
 /// Name: ratified 2026-10-27 (#2797).
 pub const TRANSFER_MAXIMUM: usize = TRANSFER_PAGES * super::PAGE;
 
-/// **How many client channels one file service keeps side by side** (milestone 599 (a frame per
-/// filesystem client channel)). Each is its own [`TRANSFER_MAXIMUM`]-byte window backed by its own
+/// **How many client channels one file service keeps side by side**. Each is its own [`TRANSFER_MAXIMUM`]-byte window backed by its own
 /// frame, and the server picks window `badge` for each request (`abi::rendezvous::BADGE`); window 0
 /// is the unbadged default. It bounds how many file clients a boot runs at once, and costs the
 /// server `CLIENT_WINDOWS * TRANSFER_MAXIMUM` = 512 KiB of mapped frames. Eight is provisional, a
-/// capacity decision not yet made. See notes/fs-server/file-protocol.md.
+/// capacity decision not yet made.
 pub const CLIENT_WINDOWS: usize = 8;
 
 /// The largest length or offset that fits the packing below (40 bits). Far above
@@ -328,7 +314,7 @@ pub const MAXIMUM_LENGTH_OR_OFFSET: u64 = (1 << 40) - 1;
 /// Both halves have a failure mode worth naming. A channel that is not a whole number of pages
 /// cannot be wired at all, since a mapping is per page. And a length the packing truncates would
 /// arrive at the server as a **smaller successful** read rather than as an error, which is
-/// DECISIONS §27's half-working write wearing a different hat.
+/// a half-working write wearing a different hat.
 const _: () = {
     assert!(TRANSFER_PAGES >= 1);
     assert!(TRANSFER_MAXIMUM == TRANSFER_PAGES * super::PAGE);

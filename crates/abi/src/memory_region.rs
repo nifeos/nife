@@ -6,9 +6,9 @@ pub const MAP: u64 = 0;
 
 /// `invoke(capability, RETYPE, pages, _, _)` -> slot. Retype `pages` contiguous pages out of the untyped
 /// into one **`PageFrame` capability** naming the run,
-/// per §102 (a Frame names a run of pages), and return the slot it landed in.
+/// and return the slot it landed in.
 /// `pages == 0` means one page, which is what every caller passed before the count existed
-/// (calef's ruling of 2026-09-26). Nothing is mapped: the caller decides where to map it, and
+/// (ruled on 2026-09-26). Nothing is mapped: the caller decides where to map it, and
 /// may delegate it first. This is the split that makes a page a first-class, delegatable object
 /// rather than something mapped in one shot. `OutOfMemory` when the run does not fit, and then
 /// the region's budget is untouched; also when the caller's capability table is full, and then
@@ -16,8 +16,8 @@ pub const MAP: u64 = 0;
 pub const RETYPE: u64 = 1;
 
 /// `invoke(capability, RETYPE_OBJ, objtype, space, floor)` -> slot: retype one page of the untyped into a
-/// **kernel object** living in it (milestone 19a (run a real workload)), with a full-rights
-/// capability at the returned slot. One object per page; see design/init-and-granular-spawn.md.
+/// **kernel object** living in it, with a full-rights
+/// capability at the returned slot. One object per page.
 ///
 /// `objtype` names what to make (see [`objtype`](super::objtype)). A region that has produced a
 /// kernel object is **pinned**: [`DESTROY`] reclaims it once the objects are torn down. `space` is
@@ -44,13 +44,11 @@ pub const SPLIT: u64 = 3;
 pub const DESTROY: u64 = 4;
 
 /// `invoke(capability, USAGE, record, _, _)` -> pages: **how much of this region has been spent, and on
-/// what**, for a `record` from [`usage`](super::usage) (milestone 126 (the `procps` package), §225
-/// (`free` sees the machine and your share) part 1). Needs `ENUMERATE` alone, the rule §114
-/// (`ENUMERATE` extends to the address-space object) set for `pmap`. `BadMethod` for an unknown
+/// what**, for a `record` from [`usage`](super::usage) . Needs `ENUMERATE` alone, the rule set for `pmap`. `BadMethod` for an unknown
 /// record, checked first; [`crate::Error::Gone`] for a region already reclaimed. Name and number
-/// ratified 2026-09-27 (calef, #1360's table).
+/// ratified 2026-09-27.
 ///
 /// # BUGS
 /// - **A subtree record walks the whole region table under the region lock, interrupts masked**:
-///   up to 62 µs a call, repeatable by any `ENUMERATE` holder; accepted (notes/abi/method-contracts.md).
+///   up to 62 µs a call, repeatable by any `ENUMERATE` holder; accepted.
 pub const USAGE: u64 = 5;

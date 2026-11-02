@@ -1,13 +1,12 @@
 //! **The GUID Partition Table**: reading one, writing one, and refusing a bad one.
 //!
-//! The disk format of UEFI 2.10 section 5.3, not the language models, for milestone 57
-//! (partitioning and formatting a real drive). No I/O, no allocation, no `unsafe`: it takes bytes
-//! the caller read and returns bytes to place, so its tests run on the host against real disks
-//! (DECISIONS §7 (testing: QEMU harness + host-testable crates)). [`header::Header::decode`]
+//! The disk format of UEFI 2.10 section 5.3, not the language models, for partitioning
+//! and formatting a real drive. No I/O, no allocation, no `unsafe`: it takes bytes
+//! the caller read and returns bytes to place, so its tests run on the host against real disks.
+//! [`header::Header::decode`]
 //! judges one block, [`entry::Entry::decode`] judges nothing,
 //! [`GloballyUniqueIdentifierPartitionTable::parse`] holds every geometry rule, `check_backup`
-//! compares the two copies, and every failure is an error. [`span`] says where to read. See
-//! notes/globally-unique-identifier-partition-table.md for the layout on disk and the traps.
+//! compares the two copies, and every failure is an error. [`span`] says where to read.
 
 //! Name: ratified 2026-09-18 (calef, `design/decisions/` §154 (the acronym test is whether the
 //! phrase is spoken)): "GUID partition table" and "globally unique identifier" are both spoken, so
@@ -16,8 +15,8 @@
 //! find this identifier. UEFI's own vocabulary (`GPT`, the GPT header) keeps its spelling.
 
 #![no_std]
-// milestone 68's ratchet is workspace-wide (§107); this crate opts out until its 23-item
-// worklist (notes/doc-coverage.md) is burned down.
+// The documentation lint is on everywhere else; this crate opts out until its 23 undocumented
+// items are documented.
 #![allow(missing_docs)]
 
 pub mod crc;
@@ -39,8 +38,8 @@ pub const MINIMUM_BLOCK_SIZE: usize = 512;
 /// The format's version: the generation of this crate's reading and writing of the two on-disk
 /// tables it implements, the GUID partition table and the MBR. The tables' own identities are the
 /// specifications' (`header::REVISION`, the `EFI PART` and `0x55AA` signatures); this constant is
-/// the declaration of milestone 956 (the linked interfaces carry checkable versions), so assembly
-/// can check what a package was built against after the split. Nothing checks it at run time.
+/// a declaration, so assembly can check what a package was built against. Nothing checks it at run
+/// time.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
@@ -60,7 +59,7 @@ pub const PRIMARY_HEADER_LBA: u64 = 1;
 /// [`ENTRY_ARRAY_BYTES`]-sized buffer, and what every tool in the world writes.
 pub const DEFAULT_ENTRY_COUNT: u32 = 128;
 
-/// 16 KiB: `DEFAULT_ENTRY_COUNT * entry::SIZE`, and the minimum array size UEFI 2.10 §5.3.3
+/// 16 KiB: `DEFAULT_ENTRY_COUNT * entry::SIZE`, and the minimum array size UEFI 2.10 section 5.3.3
 /// requires of a *conformant writer*.
 ///
 /// [`GloballyUniqueIdentifierPartitionTable::create`] will build a smaller array if handed a
@@ -94,11 +93,9 @@ pub mod mbr;
 /// tests can see is a helper the documentation cannot use.
 pub mod testing;
 
-// Machine-checked proofs (Kani), behind `#[cfg(kani)]`, which only `cargo kani` (script/verify)
-// sets. Where a domain is small enough to count, the tests count it exhaustively: every single-byte
+// Machine-checked proofs (Kani), behind `#[cfg(kani)]`, which only `cargo kani` sets. Where a domain is small enough to count, the tests count it exhaustively: every single-byte
 // corruption of a real header block (tests/real_disks.rs) and of a small table (tests/table.rs).
-// The harnesses quantify over the table itself, and over all 2^1024 entries and 2^128 GUIDs. See
-// notes/globally-unique-identifier-partition-table/the-proofs.md and notes/verification.md.
+// The harnesses quantify over the table itself, and over all 2^1024 entries and 2^128 GUIDs.
 #[cfg(kani)]
 mod verification;
 

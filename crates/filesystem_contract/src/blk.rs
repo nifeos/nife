@@ -1,19 +1,16 @@
 use super::PAGE;
 
 /// The block protocol's version, one for this operation set and its reply shapes. Module-scoped,
-/// not per crate: the file protocol moves on its own version (calef's ruling of 2026-10-29 UTC,
-/// PR #2852, question 1). A break bumps this and owes the dated ledger entry the
-/// interface-stability discipline records; an addition (a new opcode) owes no bump. The check
-/// lives at bind (milestone 956 (the linked interfaces carry checkable versions)): a client
-/// `CALL`s `OPERATION_VERSION` and binds only when its own version is in the served set.
+/// not per crate: the file protocol moves on its own version. A break bumps this and owes a
+/// dated ledger entry; an addition (a new opcode) owes no bump. The check lives at bind: a client
+/// asks for the served versions and binds only when its own version is in the set.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 14, naming the block protocol. The
 /// number is this interface's for good: no other interface takes it, and a format change is a new
-/// version, never a new number. Milestone 956 (the linked interfaces carry checkable versions)
-/// holds the table of numbers, and `script/lint` holds the tree to it. A program declares the pair
+/// version, never a new number. The project that links these crates keeps the table of numbers and holds it to that rule. A program declares the pair
 /// of this id and [`VERSION`].
 ///
 /// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
@@ -28,7 +25,7 @@ pub const READ: u64 = 1;
 pub const WRITE: u64 = 2;
 /// Ask the disk's size in bytes. `w1` ignored. Reply `r0` = the size (always non-negative here).
 pub const SIZE: u64 = 3;
-/// **Make everything the device has already acknowledged durable** (milestone 55 (Time Machine)):
+/// **Make everything the device has already acknowledged durable**:
 /// a `VIRTIO_BLK_T_FLUSH` the block server does not reply to until the device completes it. `w1`
 /// is 0 and ignored.
 ///
@@ -36,7 +33,7 @@ pub const SIZE: u64 = 3;
 /// included, so a success is `>= 1` and strictly increases across calls. `EOPNOTSUPP` (95) when the
 /// device did not offer `VIRTIO_BLK_F_FLUSH`; `EIO` (5) for any status but `VIRTIO_BLK_S_OK`,
 /// `VIRTIO_BLK_S_UNSUPP` included. Both reach a file client unchanged through
-/// [`super::fs::SYNC`]. See notes/fs-server/file-protocol.md.
+/// [`super::fs::SYNC`].
 pub const FLUSH: u64 = 4;
 
 /// One filesystem block, in bytes: the transfer unit [`SIZE`] and [`FLUSH`] see and the unit
@@ -61,8 +58,7 @@ pub const SECTORS_PER_BLOCK: u64 = (BLOCK_SIZE as u64) / SECTOR_BYTES;
 ///
 /// The device DMAs straight into the region, so a larger request would overrun it. A caller that
 /// sends [`super::req`]`(operation)`, whose low bits are zero, gets one block ([`req_blocks`]), so
-/// the single-block callers (`disk_surveyor`, `disk_partitioner`, `mkfs`) need no change. See
-/// notes/fs-server/file-protocol.md.
+/// the single-block callers (`disk_surveyor`, `disk_partitioner`, `mkfs`) need no change.
 pub const TRANSFER_BLOCKS: usize = 16;
 
 /// The largest payload one [`READ`] or [`WRITE`] may carry, in bytes: the whole shared region
