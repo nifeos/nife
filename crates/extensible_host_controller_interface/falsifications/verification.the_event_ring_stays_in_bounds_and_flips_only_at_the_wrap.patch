@@ -1,0 +1,15 @@
+Falsifies `extensible_host_controller_interface::verification::the_event_ring_stays_in_bounds_and_flips_only_at_the_wrap`.
+
+The defect: `EventRing::advance` wraps when the index passes the segment (`>`) instead of when it
+reaches the end (`==`). The consumer then stands one entry past the segment and the cycle flips a
+step late, so it reads memory the controller never writes and mistakes the next lap for the last.
+
+Expected to fail: the harness's first assertion, `assert!(ring.dequeue < entries)`, from the state
+where the index is on the last entry.
+
+diff --git a/crates/extensible_host_controller_interface/src/ring.rs b/crates/extensible_host_controller_interface/src/ring.rs
+--- a/crates/extensible_host_controller_interface/src/ring.rs
++++ b/crates/extensible_host_controller_interface/src/ring.rs
+@@ -1,1 +1,1 @@
+-        if self.dequeue == self.entries {
++        if self.dequeue > self.entries {

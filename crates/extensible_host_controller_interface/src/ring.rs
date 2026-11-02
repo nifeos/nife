@@ -125,10 +125,10 @@ impl ProducerRing {
 /// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EventRing {
-    base: u64,
-    entries: u16,
-    dequeue: u16,
-    cycle: bool,
+    pub(crate) base: u64,
+    pub(crate) entries: u16,
+    pub(crate) dequeue: u16,
+    pub(crate) cycle: bool,
 }
 
 impl EventRing {
