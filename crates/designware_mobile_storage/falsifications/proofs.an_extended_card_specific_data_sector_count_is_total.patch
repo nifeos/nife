@@ -1,0 +1,22 @@
+Falsifies `designware_mobile_storage::proofs::an_extended_card_specific_data_sector_count_is_total`.
+
+The defect: the sector count is read from bytes 211 to 214, one byte early, so it takes the top
+byte of the reserved field before it and drops its own top byte. A short buffer of 215 bytes also
+yields a count where the decoder owes zero.
+
+Expected to fail: the harness's check that a buffer under 216 bytes gives 0, and its check that
+216 bytes give the little-endian word at 212.
+
+diff --git a/crates/designware_mobile_storage/src/card.rs b/crates/designware_mobile_storage/src/card.rs
+index 552a189bb..69f585703 100644
+--- a/crates/designware_mobile_storage/src/card.rs
++++ b/crates/designware_mobile_storage/src/card.rs
+@@ -203,7 +203,7 @@ impl CardIdentification {
+ #[doc(alias = "ext_csd")]
+ #[must_use]
+ pub(crate) fn extended_card_specific_data_sectors(extended_card_specific_data: &[u8]) -> u64 {
+-    match extended_card_specific_data.get(212..216) {
++    match extended_card_specific_data.get(211..215) {
+         Some(b) => u32::from_le_bytes([b[0], b[1], b[2], b[3]]) as u64,
+         None => 0,
+     }
