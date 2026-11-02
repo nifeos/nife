@@ -33,9 +33,7 @@ rename, and the refusals that shaped all of it. Read it before you ratify or ren
 inventing a provisional name does not have to. Where it and this file disagree, that file is the
 rule for naming conventions and this one is the bug; this file keeps only the authority above.
 
-Where a permissively licensed source names a thing, copy its name: OpenBSD first, then FreeBSD, and Linux's only when no BSD source names it (new and provisional names; [the ruling](https://github.com/nifeos/nife/pull/3005#issuecomment-6559086117), 2026-11-01 UTC).
-
-This covers hardware register, field and constant names taken from a permissive source (clarified 2026-11-01 UTC). It does not cover a program, crate, command or other software name, which says what the thing does and follows the tree's own pattern (`system_installer`).
+A new or provisional hardware register, field or bit constant copied from a cited source takes the spelled-out identifier that says what the thing is. The source's spelling (the databook's or the BSD driver's) goes in `#[doc(alias = "...")]` and in the opening of the doc comment, with the source cited. OpenBSD's spelling is the one cited first, then FreeBSD's, and Linux's only when no BSD source names it. Ruled 2026-11-02 (UTC). A name already ratified keeps its spelling until its own name review. This does not cover a program, crate, command or other software name, which says what the thing does and follows the tree's own pattern (`system_installer`). The rule is in [design/naming.md](../../../design/naming.md).
 
 A name you mint or rename must pass the mechanical naming checks, which `script/lint` runs as
 "names meet the current naming rules" (`helpers/name_checks.py`). Renaming an unratified name to

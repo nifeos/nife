@@ -67,7 +67,9 @@ kept names and a proposed spelling for each public name are in
 
 Ruled 2026-10-26 (UTC), tree-wide: every name this tree authors spells `rx` and `tx` out
 (`receive_*`, `transmit_*`, `ReceiveVerdict`, `TransmitError`). Register and bit names transcribed
-from a datasheet or another project (`RDT`, `TXDCTL`, `CHAN_*`, `DD`, `EOP`) keep their spelling.
+from a datasheet or another project (`RDT`, `TXDCTL`, `CHAN_*`, `DD`, `EOP`) keep their spelling
+where ratified; a new or provisional one is spelled out and carries the source's spelling as a
+`doc(alias)` (see [design/naming.md](../naming.md)).
 The ruling turns the 2026-09-24 refusal of `rx_waiting` (now `is_byte_waiting` in
 `kernel/src/console.rs`) into the rule, and it follows the `receive` ruling in
 [vocabulary-rulings.md](vocabulary-rulings.md). Where the word is a side rather than a direction,

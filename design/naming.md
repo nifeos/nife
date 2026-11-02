@@ -50,16 +50,22 @@ The test applies to names this tree authors. A name that arrives across somebody
 keeps their spelling, with an expansion written where the reader meets it. The foreign spelling
 stops there: inside, `initrd` is `initial_ramdisk` (#1842). Ruled 2026-10-26 (UTC): a kept
 name's doc comment opens with its full name and the source's heading, and carries a `doc(alias)`,
-as does a specification's term of art in names this tree authors
+as does a specification's term of art in names this tree authors. A new or provisional register,
+field or bit constant is the exception: it is spelled out, per the next section
 ([precedents](naming/precedents-set-by-example.md)).
 
-### A permissive source's name is copied, BSD first
+### A register constant is spelled out; its source's name is the alias
 
-Where a permissively licensed source names a hardware register, field or constant, copy its name:
-OpenBSD's first, then FreeBSD's, and Linux's only when no BSD source names it. Ruled 2026-11-01
-(UTC), amending Decision 37c, for new and provisional names only ([the
-ruling](https://github.com/nifeos/nife/pull/3005#issuecomment-6559086117)). A program, crate or
-command takes the tree's own pattern (`system_installer`), not a BSD name.
+Ruled 2026-11-02 (UTC), for new and provisional names only. A hardware register, field or bit
+constant copied from a cited source takes the spelled-out identifier that says what the thing is.
+The source's own spelling, the databook's or the driver's, goes in `#[doc(alias = "...")]` and in
+the opening of the doc comment, with the source cited. A spelled-out name serves a newcomer, and the
+alias serves a reader with the databook open.
+
+Where a permissively licensed source names the constant, the order of sources decides which spelling
+becomes the alias and is cited: OpenBSD's first, then FreeBSD's, and Linux's only when no BSD source
+names it. A program, crate or command takes the tree's own pattern (`system_installer`), not a BSD
+name. A name already ratified keeps its ratified spelling and changes only at its own name review.
 
 ### Nouns, not verbs
 
