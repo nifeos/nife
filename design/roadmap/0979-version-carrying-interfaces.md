@@ -19,17 +19,15 @@ because the compiler catches every consumer in the same tree, so churn prices no
 is what prices breaks; waiting for stability inverts the causality.
 
 calef ruled the shape on 2026-10-29 (UTC), in PR #2852's comment. The five questions below record
-what calef weighed and ruled. The ruling also added a compatibility obligation and a retirement
-provision, in the section that names them. The
-implementing work is milestone 956 (the linked interfaces carry checkable versions);
-[that block](0956-the-linked-interfaces-carry-checkable-versions.md) came from a proposal on
-2026-10-28.
-This proposal writes no code: §311 (a contract is code, not prose) reserves the checks for an
-implementing lane, and every new name below is provisional.
+what calef weighed and ruled; the ruling also added a compatibility obligation and a retirement
+provision. The implementing work is milestone 956 (the linked interfaces carry checkable
+versions); [that block](0956-the-linked-interfaces-carry-checkable-versions.md) builds it. This
+proposal writes no code (§311 (a contract is code, not prose)), and every new name below is
+provisional.
 
 Reuse: the checks reuse the tree's rustdoc-JSON extraction and `FORMAT_CONST` pattern
-(`helpers/interface_stability.py`, milestone 610 (the interface's stability is measured weekly)). No new code and no dependency;
-`cargo-semver-checks` and `cargo-public-api` stay refused.
+(`helpers/interface_stability.py`, milestone 610 (the interface's stability is measured weekly)),
+with no new dependency; `cargo-semver-checks` and `cargo-public-api` stay refused.
 
 ## What the tree does today
 
@@ -69,15 +67,14 @@ refused. `capability_manifest_note` already carries three version constants, one
 The check is per bind, so the scope is per bind. `filesystem_contract` holds the block and
 file protocols; a per-crate constant would re-version file clients for a block-only break. The
 first cut's four interfaces do not share one kind. The rule: an interface with a peer or a layout
-carries one version constant per wire format, and a pure library is named by its crate version.
+carries a version constant per wire format; a pure library is named by its crate version.
 
 - `abi` is the syscall surface. One constant at the crate root, provisionally `ABI_VERSION`; its
   scope is the syscall, method and error numbers a program matches.
 - `address_space_map` is layout constants the loader and the kernel compile in. One constant,
   provisionally `VERSION`; the scope is the bands and the pair-page arithmetic.
-- `glob` is a library with no peer and no wire, so it carries no constant. Its name is its crate
-  version, the semantic version in its `Cargo.toml`, which every crate leaving the repository
-  carries from 0.1; the declaration of question 3 reads it from the link graph.
+- `glob` is a library with no peer and no wire, so it carries no constant. Its version is its
+  crate version, the semantic version in its `Cargo.toml`, which question 3's declaration reads.
 - `machine_statistics_contract` is a shared-page format; its first word is the magic `MACHSTA1`.
   The page gains a version word beside it (a new index in the `word` module, provisionally
   `VERSION`); a shared page has no CALL to carry one.
@@ -109,16 +106,13 @@ prose to drift (§311). Placement follows the interface's kind:
 - The syscall ABI: the check happens at spawn, already ruled. §235 puts the ABI revision a program
   built against into its manifest note, "so the progenitor can refuse one it no longer supports";
   the comparison pits the note's declared version against the kernel's `ABI_VERSION` constant.
-- A link-time library (`glob`): no run-time check exists. The declaration of question 3 records the
-  crate version, read from the link graph and `Cargo.lock` at assembly, and assembly checks the
-  record.
+- A link-time library (`glob`): no run-time check exists; the declaration of question 3 records the
+  crate version from the link graph and `Cargo.lock`, and assembly checks the record.
 
-A refusal names both sides: "the server serves 2 and 1; the client built against 3". The
-progenitor already refuses a program whose note it cannot accept (the malformed-note witness).
+A refusal names both sides: "the server serves 2 and 1; the client built against 3".
 
 The check is code both sides use, in the contract crate, as a sketch:
-`member(own: u32, served: &[u32]) -> Result<u32, Mismatch>`, `Mismatch` carrying both; the
-implementing proposal writes it. Refusals: a client-only check loses, because the server knows
+`member(own: u32, served: &[u32]) -> Result<u32, Mismatch>`, `Mismatch` carrying both. Refusals: a client-only check loses, because the server knows
 what it still serves; a server-only check loses symmetrically, because a client that binds an
 older server gets no refusal today and misreads bytes tomorrow.
 
@@ -144,13 +138,11 @@ it cannot rot. The encode and decode machinery and the one-encoding
 property carry over from 597's gate.
 
 The refused coarse byte matches Fuchsia's stamp, which RFC-0239 calls coarse. It spends the
-in-place amendment §235's condition protects and fails the equal-cost test the seven questions
-record.
+in-place amendment §235's condition protects.
 
 The pairs need an interface identity that survives a crate rename. Provisionally each interface
 crate with a peer or a layout carries `INTERFACE_ID: u64` beside its version constant, values never
-reused. A pure library has neither; the stamp names it by crate name and the crate version read
-from the link graph.
+reused. A pure library has neither; the stamp names it by crate name and crate version.
 
 Who checks the declaration: the kernel's served versions are the same constants, under rule 7's
 one definition, so the progenitor's comparison runs at spawn. After the split, basalt's manifest
@@ -298,8 +290,7 @@ the tree), the N-1 rule's event-triggered revisit, and the interface ids' ratifi
   renumbering reaches it only as a version-constant miss. The rustdoc diff would catch it.
 - The 610 series reads the new constants as additions in their first week; that is true, not a
   defect.
-- One recollection stands unverified in the prior art, and the appendix marks it.
-- "The implementing milestone" says eight steps; milestone 956 holds four. Correct it once 956 lands.
+- One recollection stands unverified in the prior art; the appendix marks it.
 
 ## Index row
 

@@ -122,9 +122,8 @@ a two-repo change.
    - The moving repository builds without a clone of this one: §235's S2 archive (milestone 607 (nife is built and updated from packages)
      item 4), or a dated, recorded exception for a git dependency on `nife` at a commit.
    - Every interface the cut links (`abi`, `address_space_map`, `glob`,
-     `machine_statistics_contract`) carries a checkable version (a pure library's is its crate version, a
-     format's is its version constant), and the moved package declares
-     what it links (milestone 956 (the linked interfaces carry checkable versions), minted
+     `machine_statistics_contract`) carries a checkable version, which for a pure library is its crate version.
+     The moved package declares what it links (milestone 956 (the linked interfaces carry checkable versions), minted
      2026-10-28 UTC). The cut re-derives the linked set at its start rather than trusting this
      2026-10-04 list.
    - basalt can take a component's output as a package by digest: §235's P1, milestone 607 item 1.
