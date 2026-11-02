@@ -1,115 +1,119 @@
 # Leaving the central program table: the migration, one pull request per step
 
 [The proposal](../leaving-the-central-program-table.md) holds the end state and the decisions. This
-appendix orders the work. Each step is one pull request, leaves `main` green, and says what it
-proves and what it unlocks. Steps 1 to 3 need no ruling and could start now.
+appendix orders the work. Each step is one pull request, leaves `main` shippable, and says what it
+proves, what tests it adds and what waits on a ruling.
 
 ## The steps
 
-1. Every row's program carries a note copied from its row, and the shipped ids are all pinned.
-   Each tool and fixture whose manifest the note can spell gains
-   `capability_manifest_note::carry!(grant_plan::Program::X.manifest())`, the line
-   `least_authority_demo` already carries. A system test beside `measured_boot_tests.rs` decodes
-   each archived program's note and checks it equals its row, skipping the pinned rows and `mdr`
-   (see the last section). The
-   same pull request extends `the_wire_ids_already_shipped_never_move` from 13 ids to all 28. It
-   proves that every non-pinned row is expressible as its program's own declaration, on every
-   boot. It changes one behavior: the progenitor endows a tool run by its path from its true note
-   rather than from `NO_NOTE_MANIFEST`. So it refuses `./date`, whose second stream the frames path
-   cannot carry; before, `./date` ran without its clock. It may split by package if the diff is large.
+1. Every row's program carries a note copied from its row, and every shipped id is pinned. Each
+   tool and fixture the note can spell gains
+   `capability_manifest_note::carry!(grant_plan::Program::X.manifest())`, as
+   `least_authority_demo` already does. A system test beside `measured_boot_tests.rs` checks each
+   archived note equals its row, skipping `reboot`, `jig`, `graphical_terminal` and `mdr` for now.
+   `the_wire_ids_already_shipped_never_move` grows from 13 ids to 28. The progenitor then endows a
+   tool run by path from its true note, so it refuses `./date`, whose second stream the frames path
+   cannot carry. No ruling.
 2. The endowment carries its manifest. `Endowment` gains its `Manifest`, and
-   `spawnproto::held_shares`, `hold_pages`, the preview and the timetable read it rather than
-   `e.program.manifest()`. No wire change. It proves need A of
-   [the consumers](consumers.md) no longer depends on a row, and it removes the three comments that
-   warn readers off `IMAGE_ROW`.
-3. The frames path carries a second stream and redirection. `run_image` delegates the
-   diagnostics, sink and source endpoints as `spawn` does, and `image_can_carry` admits
-   `BytesAndDiagnostics`. It proves an installed tool can hold the stream eight tools declare,
-   through a `script/swish-check` line that runs an installed copy. It unlocks installing those
-   eight from a disk. This track is independent of steps 4 to 8 and serves programs installed on a
-   disk.
-4. The progenitor publishes the base list, and the shell plans from it (waits on
-   [decision 1](decisions.md)). The progenitor writes the (name, note) page at boot and hands it to
-   the shell. The shell's planner, completion and `caps` read the page for every name it holds, and
-   still spawn by id. A host test checks the page round-trips; the shell refuses a line whose page
-   manifest disagrees with the row, which step 1 already made impossible. It proves the shell can
-   plan without the table.
-5. Archive programs spawn by name (waits on decisions 1 and 2). A new request bit carries the
-   name on the argument page; the progenitor looks it up in its measured archive, reads its own
-   copy of the note, and endows from it under the archive's vouch, minus every pinned field. In the
-   same pull request, the install refusal of §229 (a bare name reaches an installed program) and the
-   prompt's `bare` switch from `Program::from_name` to "the archive carries this name", so no later
-   step can quietly let a package claim `date`. The shell sends a bare word by name whenever the
-   base list holds it. Every row still exists and still answers its id. It proves each tool's
-   transcript stays the same when it runs by name.
-6. The rows leave, one package per pull request. Fixtures first (11 rows, kind `test`, no
-   package boundary), then `process-tools` (7), `core-tools` (5), `demos`, and `mdr` once it
-   carries a note. Each pull request
-   deletes the rows and their manifest functions, and moves each manifest constant into the
-   program's source. It also moves the sweeps of need E from `Program::ALL` to the programs that
-   carry a note: `check_declared_programs`, the script-line check, the measurement sweep, the
-   preview and sentence tests. Each removed id stays a hole, which step 1's pin enforces. It proves the program table is
-   no longer the source of any non-pinned grant. The fixtures step also replaces `sentences.rs`'s
-   two demonstration arms with one generic sentence for a register answer.
-7. The pinned table keys on names. What remains of `Program` is the pinned rows. The
-   progenitor's `[Option<Elf>; PROGRAM_COUNT]` shrinks to them or becomes a name lookup, and the
-   pinned rows spawn by name too, leaving every id reserved and unused. Whether the enum keeps the
-   name `Program` is a naming question (decision 5). It proves the table is the size of the pinned
-   grants.
-8. The leaf crate (waits on calef's open ruling on `program_manifest`, provisional name).
-   `Manifest`, its declaration types and the slot constants move to the leaf; the tools,
-   `capability_manifest_note` and `grant_plan` link it; `rm` holds its own option bits. It unlocks
-   the contract-crate order: the leaf and `capability_manifest_note` can leave before step 6 of
-   that order, so `process-tools` and `core-tools` stop waiting for `grant_plan`. This step can
-   come anywhere after step 2; it does not depend on steps 4 to 7.
+   `spawnproto::held_shares`, `hold_pages`, the preview and the timetable read it instead of
+   `e.program.manifest()`. No wire change, no ruling.
+3. The frames path carries a second stream and redirection. `run_image` delegates the diagnostics,
+   sink and source endpoints as `spawn` does, and `image_can_carry` admits `BytesAndDiagnostics`. A
+   `script/swish-check` line runs an installed copy of `date`. No ruling.
+4. The note spells the owner-granted fields. Descriptor version 4 adds a flag byte for `reboot`,
+   `sync`, `installer`, `catalog`, `activation_directory`, `console_input` and `display`, and a
+   rights byte for `indexes`; `Manifest` gains `display`. The encoder accepts them. `image_can_carry`
+   still refuses every one, so nothing a person sees changes. Host tests round-trip each field.
+   Waits on [decision 1](decisions.md).
+5. The grant lines and the vouch. `installed_programs::Granted` gains the kinds in
+   [the end state](end-state.md); `Vouch::Vouched` carries `OwnerGrants`; `image_manifest` refuses a
+   declared field without its line (`NotGranted`, naming it) and drops the blanket refusals in
+   `image_can_carry` and `encode`. `program_asks` and `jig`'s `say_asks` learn the new asks with
+   the confirmation of [the security appendix](security.md). In the same pull request, the
+   progenitor serves an installed installer holder only the delegated badge, refuses
+   `answered console` from it, and refuses a delegated install that asks for an exclusive or
+   console-class grant. Console input gains its `req.badge == 0` check. Waits on decisions 1 and 2.
+6. The display session keys on its field. The shell sets `Wiring::graphics` from
+   `Manifest::display`, not from `Program::GraphicalTerminal`, and the progenitor gates
+   `Request::graphical` on the vouched manifest and a live-session flag. No ruling beyond 1.
+7. The installed path reads the `VERBS` note. `endowed_image` stops refusing it; the shell's
+   `hold_pages`, the preview and the progenitor's `resolve` narrow by the note's table. A
+   replacement package manager then holds per verb what `jig` holds. No ruling.
+8. `reboot`, `jig` and `graphical_terminal` carry their own notes, copied from their rows, and the
+   step 1 check covers them. Their rows still decide. No ruling.
+9. The progenitor publishes the base list, and the shell plans from it. Waits on
+   [decision 3](decisions.md).
+10. Archive programs spawn by name, under `Vouch::Archive` bounded by the image's approval file. The
+    §229 (a bare name reaches an installed program) refusals switch from `Program::from_name` to
+    "the archive carries this name". Waits on decisions 3, 4 and 7.
+11. The rows leave, one package per pull request: fixtures, `process-tools`, `core-tools`, `demos`,
+    `mdr`, then `init` (`reboot`), `display` (`graphical_terminal`) and `jig`. The last one deletes
+    `Program`, `programs!`, `Program::verbs`, `Program::resolver_zone` and the progenitor's
+    `[Option<Elf>; PROGRAM_COUNT]`, which becomes a lookup by name. Every removed id stays a hole.
+12. The owner's word table ([the command-name appendix](command-names.md)): the `word` line, the
+    activation verb on the console's endpoint, `jig use`, and the lookup in `bare::resolve`. It can
+    land any time after step 5. Waits on [decision 6](decisions.md) for words the image carries;
+    without it, it serves every other word.
+13. The leaf crate, if ruled, anywhere after step 2.
 
-A transport track for programs installed on a disk follows step 3 and runs beside the rest, one
-pull request each. It covers images as pipeline stages (a staging region per stage) and the
-declared directory operand on the frames path. It also covers interruptible and held images built
-from the shell's budget, and reading the `VERBS` note at both ends. The base tools need none of it once step 5 lands.
+A transport track for programs installed on a disk follows step 3: images as pipeline stages, the
+declared directory operand on the frames path, and interruptible and held images built from the
+shell's budget. Base programs need none of it once step 10 lands.
 
-## What moves the contract-crate order
+## What changed from the eight-step plan
 
-Only step 8 moves a package earlier in the order, because only the leaf crate removes the tools'
-link to `grant_plan`. Steps 1 to 7 cut the churn instead. Measured on this branch's base over 30
-days (`git log --no-merges --since=2026-10-03`): 148 commits touched `crates/grant_plan`, 36 touched
-`program.rs` or `program/`, 55 touched `spawnproto.rs` and 43 touched `lib.rs`. About a third of
-the 36 add or change a program (the bench rows, the held jobs, `mdr`, the `jig` and resolver
-work); the rest are renames and documentation sweeps that would have touched
-any file. So leaving the table removes the per-program edits and perhaps a quarter of the crate's
-commits. It does not make `grant_plan` quiet; `spawnproto` is the larger source.
+- Gone: the pinned table, keyed by name (old step 7), and the wire ids it would have kept. After
+  step 11 no row exists, so no id survives except as a hole, and no table pins anything.
+- New: the note's version 4 (step 4), the grant lines and the vouch (step 5), the display field
+  (step 6), the `VERBS` reader (step 7, formerly in the transport track), the pinned programs'
+  notes (step 8) and the word table (step 12).
+- Kept, in order: the notes (1), the endowment (2), the second stream (3), the base list (9), spawn
+  by name (10), the rows leaving (11) and the leaf crate (13).
+- The encoder's and `image_can_carry`'s refusals no longer stay forever. They go in step 5, in the
+  same pull request that makes each field earn its grant, so no commit on `main` endows a field
+  nothing granted.
+
+## The tests that must exist
+
+Each lands with the step that makes it true.
+
+| test | proves | step |
+|---|---|---|
+| a version 4 note round-trips each owner-granted field, and `decode` refuses any byte `encode` would not write | the wire format | 4 |
+| installed bytes declaring `reboot` with no grant line answer `SPAWN_REFUSED_BY_MANIFEST`, and the refusal names `reboot` | a declaration alone earns nothing | 5 |
+| the same bytes with `grant <digest> reboot` hold the reboot object at slot 13 and restart the machine after their sync, in `script/swish-check` on all three architectures | the owner's grant endows | 5 |
+| a grant for one digest gives nothing to a second version of the same package until the owner answers again | grants bind to bytes | 5 |
+| `jig remove` of the replacement, and `jig rollback` past its install, leave its digest with no grant, and the image's `reboot` still restarts the machine | the way back | 5 |
+| two installed programs and the image's `reboot` all hold the reboot object in one boot | several holders | 5 |
+| an installed installer holder sending `answered console`, `Approve`, `Revoke` or `Vouch` is refused, and a delegated install asking for `display` is refused | the console class stays bounded | 5 |
+| a second display session while one runs answers `SPAWN_NO_DISPLAY`, and a second stdin reader gets `BAD_REQUEST` | exclusive grants stay exclusive | 6 |
+| an installed manager's `jig list` holds no installer, and its `jig install` does, by its own `VERBS` note | verb narrowing on the installed path | 7 |
+| each moved program's `script/swish-check` transcript, unchanged line for line from step 9 to step 11 | the rows left cleanly | 9 to 11 |
+| `reboot` typed after `jig use reboot acme-reboot` runs the replacement; after `jig use --default reboot`, the image's | the word table and its fallback | 12 |
+| `jig use` on a delegated badge answers `NotServedHere` | only the owner writes words | 12 |
+
+Every test above that refuses something gets a falsification patch under
+`system_tests/falsifications/`, as milestone 892 (a std program at the prompt holds the network and
+a resolver) did for its grants.
 
 ## Wire ids
 
-- A shipped id never moves and is never reused. Step 1 pins all 28, so steps 6 and 7 can only
-  leave holes.
-- The by-name bit is an addition. A progenitor that knows it still serves every id that has a row,
-  so a shell from before step 5 keeps working against a progenitor from after it, until its row
-  leaves.
-- An id whose row has left answers as `Program::from_id` answers today, `None`, so the request fails
-  with `SPAWN_FAILED`. Answering `SPAWN_NOT_IN_IMAGE` there instead would tell an older shell what
-  happened; that is a one-line change in `resolve`, worth making in step 6.
+- A shipped id never moves and is never reused. Step 1 pins all 28, so step 11 leaves only holes.
+- The by-name bit is an addition. A progenitor that knows it still serves every id that has a row.
+- An id whose row has left answers `SPAWN_NOT_IN_IMAGE`, a one-line change in `resolve` in step 11.
 - Inference, not checked against a release: one base image composes the shell and the progenitor
-  together today (`packages/base-image.toml`, one `version`). A skew between them can happen only
-  once §241 (a threadbare base) lets `swish` update as a package apart from the slot.
+  together today (`packages/base-image.toml`, one `version`).
 
-## Test strategy
+## What moves the contract-crate order
 
-- The proof for each moved program is its `script/swish-check` transcript, unchanged, line for
-  line, from step 4 to step 6. A program whose transcript changes did not move cleanly.
-- From step 1 to step 6 the note and the row coexist, and the on-target sweep checks they agree on
-  every boot. Disagreement cannot reach a person, because the row still decides.
-- The note encoder's compile-time refusals and `image_can_carry` keep the pinned fields off every
-  note; `every_compiled_in_manifest_round_trips` keeps checking the pinned rows' manifests.
-- Host tests that sweep `Program::ALL` for planner behavior (`crates/swish/src/preview/tests.rs`,
-  `planning/tests`) take their manifests from `test_support.rs` constants or from the fixtures' own
-  constants, so the planner keeps a test for every declaration shape once the rows leave.
+Only step 13 moves a package earlier, because only the leaf crate removes the tools' link to
+`grant_plan`. Steps 1 to 11 cut the churn instead. Measured on the base of the first version of
+this proposal over 30 days (`git log --no-merges --since=2026-10-03`): 148 commits touched
+`crates/grant_plan`, 36 of them `program.rs` or `program/`, and about a third of those 36 added or
+changed a program. `spawnproto` stays the larger source of commits.
 
-## The first step that needs no ruling
+## The first steps that need no ruling
 
-Step 1. It writes no wire format and names nothing new. It adds no dependency for the programs in
-`components/` and `fixtures/`, which already link `capability_manifest_note`. `mdr` is the
-exception: `mdr/Cargo.toml` links neither that crate nor `grant_plan`, so a note there would pull
-the planner into the `mdr` package. Step 1 leaves `mdr` out, and `mdr` gains its note in step 8,
-through the leaf crate, or with a recorded new edge if decision 6 refuses the leaf. Steps 2 and 3 also need no ruling and can run
-beside it.
+Steps 1, 2 and 3, as before, and steps 7 and 8 once step 2 lands. None of them writes a wire format
+or names anything new. `mdr` still waits: it links neither `capability_manifest_note` nor
+`grant_plan`, so its note comes with the leaf crate or with a recorded new edge.

@@ -8,9 +8,11 @@ code would let it, what approval rule fits, and what is risky.
 
 `grant_plan::image_can_carry` in `crates/grant_plan/src/image.rs` refuses a manifest that declares
 a file, a directory, an input, a short option, `interruptible`, a silent output or a second stream,
-and every pinned field. Read against the callers, those refusals mix two different limits.
+and every owner-granted field. Read against the callers, those refusals mix two different limits.
 
-- **Policy:** what a vouched note may earn. The pinned fields are pure policy, and they stay.
+- **Policy:** what a vouched note may earn. The owner-granted fields are pure policy: the ruling of
+  2026-11-02 (UTC) lets an owner's `grant` line earn each, and [the security
+  appendix](security.md) bounds the console class.
 - **Transport:** what the frames path can deliver. An image travels as page frames the shell
   copies from a file (`IMAGE_BIT`), and the progenitor carves its region from one image pool sized
   for a single largest image (`IMAGE_POOL_PAGES` in `crates/system_initializer/src/layout.rs`). The
@@ -37,9 +39,9 @@ name. The transport gaps stay open only for programs installed on a disk.
 | interruptible | `interrupt_heeder`, `interrupt_ignorer` | an interruptible job is built from the shell's job budget (§309 (a supervised job's `ThreadControlBlock` goes to the shell that asked for it)), and an image's region comes from the image pool | carve an interruptible image's region from the shell's budget, sized by `image_region_pages` | none for the interrupt pair; it is the shell's | the budget must hold an image's region; unmeasured |
 | held job, `&`, `jobs`, `fg` | every row the shell holds | the progenitor refuses `held && image` | the same region change as interruptible | none | as above |
 | redirection `>` and `2>` | any tool a person redirects (`uuid > id.txt`) | not a plain line | the sink and diagnostics endpoints on the image path | none | low |
-| verbs (`VERBS` note) | `jig` | `endowed_image` refuses installed bytes with a verb table | `narrow_by_verb` reading the note's table at the shell and the progenitor, with the verb read from the argument page as `resolve` already does | each verb's grants must lie within the note's manifest and its owner grants; the narrowing only removes | medium: a bug in narrowing hands a line every verb's grants, which is why the refusal exists |
+| verbs (`VERBS` note) | `jig`, and any replacement package manager | `endowed_image` refuses installed bytes with a verb table | `narrow_by_verb` reading the note's table at the shell and the progenitor, with the verb read from the argument page as `resolve` already does (migration step 7) | each verb's grants must lie within the note's manifest and its owner grants; the narrowing only removes | medium: a bug in narrowing hands a line every verb's grants, which is why the refusal exists |
 | network, zones, service, directory by name | `jig`, `network_echo_client`, installed fixtures | carried today, by the owner's `grant` lines | already built (milestone 892 (a std program at the prompt holds the network and a resolver), milestone 911 (scripted installs grant only what the owner's approval file allows)) | the owner's grant at install, or the approval file | as ruled |
-| pinned fields | `reboot`, `jig` | refused by design | nothing; they stay pinned | none can grant them | n/a |
+| owner-granted fields (`reboot`, `sync`, installer, catalog, index store, activation directory, console input, display) | `reboot`, `jig`, `graphical_terminal` | no note byte spells them, and `image_can_carry` refuses them | note version 4 and an `OwnerGrants` vouch (migration steps 4 and 5) | an owner's `grant` line each, within [the security appendix](security.md)'s classes | per class: from a denial of service (`reboot`) to a console takeover (installer) |
 
 ## Which tools could move today
 
@@ -57,8 +59,8 @@ name. Read strictly, no tool can move today without a loss.
   equals a name the image carries, so the row and the install cannot both exist; the row must go
   first.
 
-With the by-name path in place (step 5 of [the migration](migration.md)), every tool except the
-pinned rows moves with no loss, because the archive still carries it. With only the second-stream
+With the by-name path in place (step 10 of [the migration](migration.md)), every row moves with
+no loss, because the archive still carries it. With only the second-stream
 change on the frames path, eight tools become installable from a disk: `date`, `uuid`, `ps`,
 `pgrep`, `top`, `free`, `vmstat` and `slabtop`. `rm`, `wc` and `mdr` need the directory or input
 work as well.

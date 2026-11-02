@@ -1,8 +1,8 @@
 ---
 status: PROPOSED
 raised: 2026-11-02
-milestone_dependencies: 597, 805, 892, 909, 911, 990
-decision_dependencies: 158, 197, 219, 220, 229, 241, 251, 272, 316
+milestone_dependencies: 597, 801, 805, 809, 892, 909, 910, 911, 990
+decision_dependencies: 158, 195, 197, 219, 220, 229, 241, 251, 270, 272, 316
 machine_requirements: none
 specific_machine: none
 needs_person: yes
@@ -11,8 +11,12 @@ needs_person: yes
 
 Raised 2026-11-02 (UTC) by the lane `maintainer/leave-the-central-program-table`. The architect
 asked how `crates/grant_plan` stops holding one central table of the programs the shell can spawn,
-what replaces it, and how to get there. This proposal answers from the code, writes no code, and
-names everything new provisionally. A file and a symbol stand in for line numbers, which §277 (cite
+what replaces it, and how to get there. On 2026-11-02 (UTC) the architect ruled that no grant binds
+to a program's name: an owner's `grant` line may give installed bytes any capability the
+progenitor endows, `reboot` and the installer included, and several programs may hold one. The
+image's own programs keep their grants through the measured archive and stay the default. This
+proposal answers from the code under that ruling, writes no code, and names everything new
+provisionally. A file and a symbol stand in for line numbers, which §277 (cite
 a heading or a symbol) forbids.
 
 Reuse: the manifest note and its encoder (milestone 597 (a program carries its manifest in an ELF
@@ -24,7 +28,9 @@ archive. No new dependency.
 Appendices: [every row, classified](leaving-the-central-program-table/classification.md),
 [every consumer](leaving-the-central-program-table/consumers.md), [the end
 state](leaving-the-central-program-table/end-state.md), [what an installed program cannot hold
-yet](leaving-the-central-program-table/installed-path-gaps.md), [the
+yet](leaving-the-central-program-table/installed-path-gaps.md), [what each owner grant
+risks](leaving-the-central-program-table/security.md), [how a typed word finds a
+program](leaving-the-central-program-table/command-names.md), [the
 migration](leaving-the-central-program-table/migration.md), [prior
 art](leaving-the-central-program-table/prior-art.md), [the
 decisions](leaving-the-central-program-table/decisions.md) and [what was not
@@ -60,16 +66,17 @@ Each belief the brief carried, against the code.
    directory kind has no asking manifest yet.
 2. **What `image_can_carry` refuses.** Correct, with two corrections of wording. No field says
    "supervised job" or "second stream": the first is `interruptible`, the second is
-   `OutputDeclaration::BytesAndDiagnostics`. And the function also refuses every pinned field
+   `OutputDeclaration::BytesAndDiagnostics`. And the function also refuses every owner-granted field
    (`reboot`, `sync`, `installer`, `catalog`, `indexes`, the activation directory, console input).
    Beyond `image_can_carry`, the frames path has transport limits of its own: an image runs only on
    a plain line (no pipe, no redirection), and the progenitor refuses a held image. And `endowed_image`
    refuses installed bytes with a `VERBS` note. So no package can install `rm` or `wc` today. Nor
    can one install `mdr` (an input) or the eight tools that declare a second stream: the frames
    path blocks 11 of the 14 tools.
-3. **`reboot` and `sync` belong to one program, and no image may hold them.** Correct. The note
-   encoder refuses them at compile time and `image_can_carry` at spawn. The same two refusals pin
-   `jig`'s five owner's-console fields.
+3. **`reboot` and `sync` belong to one program, and no image may hold them.** Correct of the code:
+   the note encoder refuses them at compile time and `image_can_carry` at spawn, and the same two
+   refusals keep `jig`'s five owner's-console fields off every image. The ruling of 2026-11-02 makes
+   each an owner's grant; the code does not follow yet.
 4. **About 28 rows.** Exactly 28, ids 0 to 27, no hole. `Program::manifest` has 27 arms because
    `NullSyscall | SinkProducer` share one, and 26 manifest functions serve them. The wire-id pin
    covers ids 0 to 12 only. Fixtures sit in the table because it is the only way to make a program
@@ -94,89 +101,128 @@ Findings the brief did not carry:
 
 ## The end state recommended
 
-Each program declares its own grants in its own note, and the system pins only what it must fix
-itself. Six parts; [the end state appendix](leaving-the-central-program-table/end-state.md) has the
-graphs, the owners and the check against each ruling.
+Each program declares its own grants in its own note. The vouch decides what a note earns, and the
+owner's `grant` lines decide what installed bytes earn beyond it. Nothing in nife keys on a
+program's name. [The end state appendix](leaving-the-central-program-table/end-state.md) has the
+details.
 
-1. Each program's source holds its manifest and carries it as a note. 26 of the 28 rows already
-   encode (`every_compiled_in_manifest_round_trips`).
-2. The vouch decides what a note earns: the measured archive for the image's own programs, and the
-   installed-programs table with the owner's `grant` lines for the rest. Unvouched bytes keep
-   §219 (how the shell names an installed program to the spawner)'s clock and configuration pages
-   and nothing else.
-3. A pinned table in `grant_plan`, keyed by name, holds `reboot` and `jig`, and `graphical_terminal`
-   unless question 4 rules otherwise. It is the only place a pinned field is true.
-4. The progenitor builds a read-only page at boot listing each archive program's name and note. The
-   shell plans, completes and previews from it. The progenitor never trusts the page over its own
-   reading.
-5. A request names an archive program by name. Wire ids survive only for pinned rows, and every
-   removed id stays a hole.
-6. Fixtures register nowhere. They carry notes; test images pack them and release images do not.
+1. Each program's source holds its manifest and carries it as a note, `reboot`, `jig` and
+   `graphical_terminal` included. 26 of the 28 rows already encode
+   (`every_compiled_in_manifest_round_trips`); the other two need note version 4.
+2. The vouch: the measured archive, bounded by the image's approval file, for the image's own
+   programs; the live installed-programs table and the owner's `grant` lines for the rest.
+   `Vouch::Vouched` grows from `{ network }` to a set of owner-granted kinds, and `image_manifest`
+   refuses a declared kind without its grant, naming it, as it does for the network today.
+3. The owner's `grant` lines gain one kind per owner-granted field: `reboot`, `sync`,
+   `installer within <approval>`, `catalog`, `indexes r` or `rw`, `activation r`, `console`, and
+   `display`. The root zone already has one (`zone .`). The verb table needs none: the `VERBS` note
+   narrows within what the owner granted. Each line binds to a digest, and a new version asks
+   again unless an approval entry's `update` covers it.
+4. `grant_plan` keeps the planner, `spawnproto`, `Manifest`, `Vouch` and the list of owner-granted
+   fields. No `Program`, no pinned table and no role list remain.
+5. The progenitor publishes a base list page from the archive's notes, and the shell plans from it
+   and asks for an archive program by name. Every wire id becomes a hole.
+6. A word table the owner writes in the generation maps a typed word to an installed program, apart
+   from any grant. [The command-name appendix](leaving-the-central-program-table/command-names.md)
+   has it.
+
+The grants differ in danger. [The security
+appendix](leaving-the-central-program-table/security.md) reads each one's behavior with two holders
+from the code and sorts them into three classes. `reboot`, `sync`, the catalog, the activation
+directory and zones are shareable. Console input and the display session are exclusive: one
+foreground holder at the owner's console. The installer and the index store's write right are
+console class, because a holder of either can turn one yes into every grant: an installed holder
+gets them only in §270 (a package manager holds an installer endpoint, not the spawn endpoint)'s
+delegated form, bounded by an approval. The built-ins stay the default and the fallback: no install
+takes the archive's grants away, and rollback or removal drops a replacement's grants with its rows.
 
 Why this shape and not the others. A registry in the installed-programs table would copy each note
 outside the bytes the vouch covers, which §197 (a package is one archive file) chose against. A
-table generated at build time would still change for every program, and would make nife build each
-departed package to read its notes. A test-only registration is unnecessary once fixtures carry
-notes. And while a row in nife holds `ps`'s manifest, a `ps` release that needs a new grant needs a
-nife commit, which is the coupling §316 (a package's programs leave as one repository, after their
-crates) means to end.
+table generated at build time would still change for every program, and nife would build each
+departed package to read its notes. A pinned table for `reboot` and `jig` no longer has a reason:
+the ruling binds no grant to a name. And while a row in nife holds `ps`'s manifest, a `ps` release
+that needs a new grant needs a nife commit, which is the coupling §316 (a package's programs leave
+as one repository, after their crates) means to end.
 
-The trade-offs, plainly. It adds a page format and a wire bit, both one-way. It moves the decision
-about what a base tool may hold from nife's code review to the image's approval file, which today
-checks only four kinds of grant; question 3 asks to widen it. And it conflicts with §229 (a bare
-name reaches an installed program), whose install refusal this table defines today; question
-2 asks how to redefine it.
+The trade-offs, plainly. It adds a note version, a page format and a wire bit, all one-way. It
+moves the decision about what a base tool may hold from nife's code review to the image's approval
+file. It lets an owner hand a reviewed-by-nobody program the power to restart the machine, which is
+the ruling's intent and the reason for the confirmation in the security appendix.
 
 ## The migration, one line per step
 
-[The migration appendix](leaving-the-central-program-table/migration.md) gives each step's proof,
-the wire-id rules and the test strategy.
+[The migration appendix](leaving-the-central-program-table/migration.md) gives each step's tests,
+the wire-id rules and what changed from the first plan.
 
-1. Every non-pinned row's program except `mdr` carries a note copied from its row; an on-target
-   check holds note and row equal; the id pin covers all 28. No ruling needed.
-2. The `Endowment` carries its manifest, so nothing reads a row to plan. No ruling needed.
-3. The frames path carries a second stream and redirection, so eight tools can install from a disk.
-   No ruling needed.
-4. The progenitor publishes the base list and the shell plans from it (question 1).
-5. Archive programs spawn by name, and §229's refusals switch to the archive's names (questions 1
-   and 2).
-6. The rows leave, one package per pull request: fixtures, `process-tools`, `core-tools`, `demos`,
-   then `mdr`.
-7. The pinned table keys on names, and the progenitor's id array shrinks to it.
-8. The leaf crate, if ruled, lets the tools shed the planner and moves `process-tools` and
-   `core-tools` ahead of `grant_plan` in the contract-crate order.
+1. Every row's program except the three owner-granted ones and `mdr` carries a note copied from its
+   row; all 28 ids pinned. No ruling.
+2. The `Endowment` carries its manifest. No ruling.
+3. The frames path carries a second stream and redirection. No ruling.
+4. Note version 4 spells the owner-granted fields; `image_can_carry` still refuses them
+   (decision 1).
+5. The grant lines, the `OwnerGrants` vouch and the confirmation; the blanket refusals go in the
+   same pull request; the console class stays delegated (decisions 1 and 2).
+6. The display session keys on `Manifest::display` and allows one session.
+7. The installed path reads the `VERBS` note.
+8. `reboot`, `jig` and `graphical_terminal` carry their own notes.
+9. The progenitor publishes the base list (decision 3).
+10. Archive programs spawn by name under the archive's vouch (decisions 3, 4 and 7).
+11. The rows leave, one package per pull request; the last deletes `Program`.
+12. The owner's word table (decision 6 for words the image carries).
+13. The leaf crate, if ruled.
 
-Only step 8 moves a package earlier in that order. Steps 1 to 7 remove the per-program edits from
-`grant_plan`, about a quarter of its recent commits.
+The pinned table keyed by name, and the wire ids it would have kept, are no longer steps. Steps 1
+to 3, 7 and 8 need no ruling.
 
 ## The decisions, in order
 
 [The decisions appendix](leaving-the-central-program-table/decisions.md) gives each one with its
-background, alternatives and example.
+background, alternatives and example. The ruling dissolved the question of the screen and keyboard.
 
-1. Does every program carry its own grant record, with the central table kept only for grants the
-   system fixes? Recommended yes. One-way.
-2. Which bare names belong to the image once the table no longer says? Recommended: the measured
-   archive's names, with §229's refusals unchanged. One-way; it conflicts with §229's present
-   definition.
-3. Must the base approval file list every grant the system endows (`domain`, `entropy`, `machine`,
-   `share`)? Recommended yes. One-way.
-4. Is taking the screen and keyboard pinned, or an owner's grant? Recommended pinned. One-way.
-5. May the new names ship provisional? Recommended yes. Two-way in effect.
-6. The leaf crate stays the separate decision already before the architect.
+1. Note version 4 with one flag byte for the owner-granted fields. One-way.
+2. Three classes, with the installer and the index store's write right bounded by an approval for
+   installed bytes, and none of the sensitive grants for a recorded service. One-way.
+3. Every program carries its own grant record, and nothing central remains. One-way.
+4. The base approval file lists every grant the system endows, the owner-granted kinds included.
+   One-way.
+5. A repository key's ceiling never covers an owner-granted kind. One-way once shipped.
+6. An owner's word line may override a word the image carries. One-way once scripts rely on it.
+7. "A name the image carries" means the measured archive's names, with §229 (a bare name reaches an
+   installed program)'s refusals unchanged. One-way.
+8. The new names ship provisional. Two-way in effect.
+
+The leaf crate stays the separate decision already before the architect.
 
 ## BUGS
 
+Each of these holds today and matters only once installed bytes may hold the grant; the migration
+step named fixes it.
+
+- Console input has no badge check: `SpawnLoop::console_input` places stdin for any `std` job that
+  declares it, where the installer checks `req.badge == 0`. Safe today because only `jig` declares
+  it. Step 5.
+- Nothing keeps the display session to one holder. `Request::graphical` starts `gpu_driver` on the
+  lent capabilities with no live-session flag; only the shell's wait prevents a second. Step 6.
+- The index store has no lock, and the progenitor installs on its copy's word (milestone 801
+  (packages over the internet), ruling I2). Two writers race. Step 5 gives each manager its own
+  copy.
+- The progenitor believes a holder's `answered console` trailer and writes every ask as granted
+  (`activation.rs`, `program_asks::asked_grants`). The owner's yes lives only in `jig`'s prompt.
+  Step 5 refuses that trailer from an installed holder.
+- The manager column records the holder's program name (`hold_reply(label, reply, p.name())`), and
+  `can_edit` compares names. An installed manager needs an identity that is not a program name;
+  its package name is the obvious one. Step 5.
 - Nothing settles the bench rows' class: milestone 961 (the kernel's special boots become commands
   typed at the production shell) runs them at a production shell, and the release image excludes
   the package that holds them.
-- `pmap` ships in every image and nothing can spawn it, as the BUGS of §158 (the shell's table is one macro)
-  records. Under the end state it needs only a note and a script line; this proposal does not
-  schedule that.
+- `pmap` ships in every image and nothing can spawn it, as the BUGS of §158 (the shell's table is
+  one macro) records. Under the end state it needs only a note and a script line; this proposal
+  does not schedule that.
 
 ## Index row
 
-How `crates/grant_plan` stops holding the shell's program table. Each program declares its own
-grants in its own note, and the vouch decides what the note earns. A pinned table keeps only
-`reboot` and `jig`, and archive programs spawn by name. Eight steps get there, each keeping main
-green.
+How `crates/grant_plan` stops holding the shell's program table, under the ruling that no grant
+binds to a program's name. Each program declares its own grants in its own note; the archive
+vouches for the image's programs, and the owner's `grant` lines give installed bytes any
+capability, `reboot` and the installer included, sorted into three classes by danger. An owner's
+word table maps a typed word to a program. Thirteen steps get there, each keeping main shippable.

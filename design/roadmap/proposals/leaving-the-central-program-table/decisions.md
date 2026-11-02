@@ -1,132 +1,219 @@
 # Leaving the central program table: the decisions, in order
 
 [The proposal](../leaving-the-central-program-table.md) holds the end state and the order. These
-are the questions only the architect can answer, one at a time, in the order they block work. Each
-opens with its background, then the recommendation, the alternatives, an example and what was not
-verified. Each ends in one question. Steps 1 to 3 of [the migration](migration.md) wait on none of
-them.
+are the questions only the architect can answer, one at a time, in the order they block
+[the migration](migration.md). Each gives its background, the recommendation, the alternatives,
+an example and what was not verified, and ends in one question. Prior art here is from memory and
+not re-checked. Steps 1 to 3, 7 and 8 wait on none of them.
 
-Four two-way doors the maintainer may decide, each recorded as provisional. They are the order
-rows leave in (fixtures first), and the generic sentence for a register answer. They are also
-answering `SPAWN_NOT_IN_IMAGE` for an id whose row has left, and extending the wire-id pin to all
-28 ids.
+## What the ruling of 2026-11-02 settled
 
-## 1. Does each program declare its own grants, with only the system's own grants kept central?
+Of the five decisions the first version of this proposal asked, the ruling dissolves one and changes
+two.
 
-One-way: it changes who vouches for a base tool, adds a page format and adds a wire bit.
+- Dissolved: whether taking the screen and keyboard is pinned or an owner's grant. The ruling made
+  it an owner's grant. What remains is mechanism: a `display` field and a live-session guard
+  (migration steps 4 and 6), which decision 1 and [the security appendix](security.md) cover.
+- Changed: "every program carries its own record, with a central table kept only for what the
+  system fixes" loses its second half. No table remains (decision 3).
+- Changed: the base image's approval file must now list the owner-granted kinds too (decision 4).
+- Unchanged: what §229 means by a name the image carries (decision 7), and provisional names
+  (decision 8).
 
-Today the shell can start 28 programs by name, and a table inside the planner crate decides what
-each may hold. Adding a tool, or changing what one needs, edits that table. A package that leaves
-for its own repository would still need a commit in nife whenever its programs' needs change.
+Two-way doors the maintainer may decide, each provisional: the order rows leave in, a generic
+sentence for a register answer, `SPAWN_NOT_IN_IMAGE` for a removed id, pinning all 28 ids, and
+keeping the upgrade rule as it is (every new digest asks again unless an approval's `update`
+covers it). That last one is today's behavior, and it is the restrictive choice.
 
-Installed programs already work another way. Each carries a small record of its needs inside its
-own executable, and the system grants that record only for bytes it trusts: bytes the owner listed at install, or
-bytes the image's measurement covers. Such records can already express 26 of the 28 table rows; the two that cannot are `reboot` and `jig`, whose grants no installed program may
-hold.
+## 1. May the manifest note carry the owner-granted fields?
 
-So the question is whether every program, the image's own included, should carry its own record,
-with the central table kept only for those two (or three; see question 4). The shell would learn
-the image's programs from a one-page list the system builds at boot from those records, and would
-ask for a program by name. What it costs: a new page the shell reads, a new way to ask for a
-program, and an amendment to item 3 of §158 (the shell's table is one macro).
+One-way: a wire format programs carry in their bytes.
 
-Recommendation: yes. [The end state](end-state.md) weighs three alternatives. A registry kept in
-the installed-programs table loses, because it copies each record outside the trusted bytes. A
-table generated at build time loses, because nife would have to build every package to produce it.
-A test-only table for fixtures becomes unnecessary once fixtures carry records. For the list
-itself: the system builds it at boot (recommended), the image composer writes it into the image,
-the shell reads the whole image archive itself, or the shell asks per command.
+A program states what it needs in a small record inside its executable, the note. The format has
+three versions, and none has room for the reboot object, the sync-only capability, the installer,
+the catalog, the index store, the activation directory, console input or the display. They live
+today only in the central table, which only nife edits. The ruling lets an owner grant them to an
+installed program, but an installed program cannot yet ask for them.
 
-Example: a person types `date`. The shell finds `date` on the boot list, sees it asks for the clock
-and a second output stream, binds the line, and asks for the program named `date`. The system finds
-`date` in the measured image, reads its record again, and grants the clock.
+Recommendation: A, version 4, the 56 bytes of version 1 and the zones of version 2, plus one flag
+byte (a bit each for `reboot`, `sync`, `installer`, `catalog`, `activation_directory`,
+`console_input` and `display`) and one byte for the index store's rights. One manifest keeps one
+encoding: a manifest that asks for none of these stays version 1, 2 or 3.
 
-Not verified: the size of the list for a full base image (estimated under a page), the boot cost of
-reading every record, and whether any program outside the tree spawns by id.
+Alternatives: B, one byte per field, as version 1 does; clearer to read, eight bytes instead of two,
+and the tree's own precedent. C, a separate note type for owner-granted asks; it would split one
+manifest across two notes the progenitor must agree on.
 
-Question: should every program carry its own grant record, with the central table kept only for
-grants the system fixes itself? Yes or no.
+Example: `acme-reboot` declares `reboot` and `sync`; its note is version 4 with two bits set. A
+program that asks for the network only is still version 1.
 
-## 2. Which bare names belong to the image, once the table no longer says?
+Prior art: ELF notes in general version their descriptor and leave old readers to refuse new
+versions; this tree does the same.
 
-One-way: it conflicts with an existing ruling, and it decides which names a package may claim.
+Not verified: how version 4 composes with version 3's service ask; the layout must carry both.
 
-§229 (a bare name reaches an installed program) gives every bare word one owner. Install refuses a
-package whose program has a name the image carries, and the prompt refuses a name that is both.
-Today "a name the image carries" means "a row of the central table"
-(`crates/system_initializer/src/activation.rs`, the `image` check). §229's amendment narrows the
-install refusal to the programs a boot slot still holds, the progenitor and the root supervisor,
-and that narrowing is unbuilt. §241 (a threadbare base) says every other program is a package.
+Question: approve a version 4 note with a flag byte (A), or one byte per field (B)?
 
-Recommendation: A. "The image carries a name" means the measured archive holds that name, and both
-refusals keep their present force until its own work builds the amendment's narrowing. This
-changes nothing a person sees today and keeps a package from silently claiming `date`.
+## 2. Which grants may an installed program hold only within limits?
 
-Alternatives: B, build the amendment now, so a newer `core-tools` package may install `date` and
-the bare word runs the installed one. C, keep the table's names as the definition, which leaves a
-fragment of the table alive for this alone.
+One-way: it sets what an owner's yes can hand to bytes nobody reviewed.
 
-Example: under A, the progenitor refuses `jig install core-tools` while the image carries `date`,
-exactly as today.
+Two of the newly grantable capabilities can make more grants. The installer writes the owner's
+grants for whatever it installs, on its own word that the owner said yes. The index store's write
+right decides which bytes the installer accepts by name. A holder of either can turn one yes into
+every grant. Console input and the display can read what the owner types.
 
-Not verified: how B would order an installed `date` against the image's, which the amendment does
-not say.
+Recommendation: A, three classes, as [the security appendix](security.md) sets out. Shareable
+grants (`reboot`, `sync`, catalog, activation directory, zones) go to any installed bytes on an
+owner's line. Exclusive grants (console input, display) go only to a foreground job at the
+owner's console, one holder at a time. Console-class grants (installer, the index store's write
+right) go to an installed program only in the delegated form of §270 (a package manager holds an
+installer endpoint, not the spawn endpoint): bounded by an approval, no `answered console`, no
+`Approve`, `Revoke` or `Vouch`, its own index directory, and no installing of an exclusive or
+console-class ask. No recorded service may hold `reboot` or either class.
 
-Question: A (the archive's names, refusals unchanged) or B (build the narrowing now)?
+Alternatives: B, every grant on an owner's line with no class limits; the ruling's widest reading,
+and it makes a replacement manager a second owner. C, refuse the console class to installed bytes
+outright; it fails the ruling's goal of a third-party package manager.
 
-## 3. Must the image's approval file list every grant the system hands out, not only the owner's?
+Example: under A, `acme-pkg` with `grant <digest> installer within acme` installs and upgrades the
+packages the `acme` approval names, and `jig install` refuses its attempt to install a package that
+asks for `display`.
+
+Prior art: Android grants `INSTALL_PACKAGES` to no third-party app and lets others ask the system
+installer, which may stop for the user. Nix `trusted-users` shows the danger of B: a trusted user
+can add a substituter, and with it, trust.
+
+Not verified: whether a per-manager index directory breaks `jig list`'s reading of the one copy.
+
+Question: A (three classes), B (no limits) or C (no console class for installed bytes)?
+
+## 3. Does every program carry its own grant record, with no central table at all?
+
+One-way: it changes who vouches for a base tool, adds a page format and a wire bit.
+
+Today the shell starts 28 programs by name from a table inside the planner crate, and that table
+decides what each may hold. The first version of this question kept a small table for `reboot`,
+`jig` and perhaps the terminal. After the ruling no grant belongs to a name, so nothing needs to stay
+central.
+
+Recommendation: yes. Every program, the image's own included, carries its own record. The system
+builds a one-page list of the image's programs from those records at boot, and the shell asks for
+a program by name. It costs a page the shell reads, a request bit, and amending item 3 of §158 (the
+shell's table is one macro).
+
+Alternatives, from [the end state](end-state.md): a registry in the installed-programs table (a
+second copy of each record outside the trusted bytes), a table generated at build time (nife would
+build every package to produce it), or the image composer writing the list into the image.
+
+Example: a person types `reboot`. The shell finds it on the boot list, sees the record asks for the
+reboot object, and asks for the program named `reboot`. The system finds it in the measured image
+and endows the object because the measurement vouches.
+
+Not verified: the list's size for a full base image (estimated under a page) and the boot cost of
+reading every record.
+
+Question: every program carries its own record, and nothing central remains. Yes or no?
+
+## 4. Must the image's approval file list every grant the system hands out?
 
 One-way: it sets what vouches for a base tool.
 
-When the composer builds an image, it checks each package's records against an approval file. The file
-lists only four kinds of grant today: the network, name-resolution zones, running as a service, and
-named directories. The other grants a record can ask for, the process view, randomness and the
-machine counters, come with trust alone. Today the central table holds those, so a reviewed nife
-commit decides them. Under question 1 a base package's own record would decide them.
+When the composer builds an image, it checks each package's records against an approval file. The
+file lists the network, resolver zones, the service, named directories and the installer today. A
+record can also ask for the process view, randomness, the machine counters, and after decision 1
+the reboot object and the rest. Under decision 3 the measured archive would vouch for whatever a
+base package's record asks.
 
-Recommendation: yes. Restrictive first: an approval entry also names `domain`, `entropy`, `machine`
-and `share` for each base package that asks, so a package update cannot widen what `ps` sees without
-a reviewed line. Loosening later stays compatible; tightening later would not be.
+Recommendation: yes. Each base package's approval entry names every grant its programs ask,
+`domain`, `entropy`, `machine`, `share` and the owner-granted kinds included. A `process-tools`
+update that suddenly asks for `reboot` fails composition until a reviewed line allows it.
 
-Alternative: no, trust the record the way the system trusts an installed program's today. This matches the
-interactive install, which asks the owner only about the four.
+Alternative: trust the record, as for the progenitor-endowed grants of an installed program today.
 
-Example: a later `process-tools` whose `pgrep` asks for `entropy` fails composition until its
-approval entry says `entropy`.
+Example: basalt's approval file says `init` may hold `reboot` and `sync`, `jig` the installer,
+catalog, index store, activation directory and console input, and `display` the display session.
 
-Not verified: whether the interactive install should follow suit; it is a separate question.
+Not verified: whether the interactive install should list `domain`, `entropy`, `machine` and `share`
+too; a separate question.
 
 Question: should the base approval list every grant the system endows? Yes or no.
 
-## 4. Is taking the screen and keyboard a grant the system fixes, or one an owner may give?
+## 5. May a trusted repository key ever grant these without the owner?
 
-One-way: it is a security boundary.
+One-way once a key's ceiling ships in an image.
 
-`graphical_terminal` declares nothing a record cannot carry. Its power comes from its name: the
-shell and the system build a display session with the keyboard for it because of which program it
-is. Holding the keyboard is close to reading the owner's console, which only the owner's console
-grants.
+§220 (signed builds: a vendor signs, a developer self-signs) lets an owner trust a key with a
+ceiling, a subset of `domain entropy network`, and an install under that key earns up to the
+ceiling with no prompt. §195 (a reviewed recipe vouches for a package) leaves open how a ceiling
+covers grants added since.
 
-Recommendation: A, fixed by the system, a third pinned row, until a second program needs a
-display. Alternative: B, a new ask an owner grants at install, like the network, which needs a
-record field and a wire change.
+Recommendation: never. A key's ceiling stays within `domain entropy network`, and every
+owner-granted kind beyond the network needs the owner's own line, at the console or in an approval.
+A source vouches for bytes; only the owner grants.
 
-Example: under A, an installed terminal program cannot take the screen whatever vouches for it.
+Alternative: let a ceiling name any owner-granted kind, so a trusted vendor can ship a package
+manager that installs with no prompt.
 
-Question: A (pinned) or B (an owner's grant)?
+Example: a trust line for acme's key with ceiling `network` lets `acme-power` install with the
+network and no prompt; its `reboot` ask still stops for the owner's yes.
 
-## 5. The new names
+Not verified: no key trust exists in code yet (`installed_programs` has no `trust` line).
 
-Two-way in effect: each name ships provisional, and the architect can ratify it later. The base list page, the
-by-name request bit, the pinned table, and whether the shrunken enum keeps the name `Program` all
-need names. The recommendation is to ship each as provisional and bring them in one naming pass
-once steps 4 to 7 exist. Question: may they ship provisional? Yes or no.
+Question: may a key's ceiling include owner-granted kinds? Recommended no.
 
-## 6. The leaf crate, already before calef
+## 6. May the owner point a word the image carries at an installed program?
 
-The split of `Manifest`, its declaration types and the slot constants into a leaf crate
-(provisional name `program_manifest`) is a separate open decision; this proposal does not decide
-it. The end state works without it: the table still leaves, but the tools keep linking
-`grant_plan`, and `mdr` must take a new edge to the planner to carry its record. With it, the tools
-shed the planner and `process-tools` and `core-tools` stop waiting for `grant_plan` in the
-contract-crate order. [The end state](end-state.md) draws both graphs.
+One-way once scripts rely on what `reboot` means.
+
+§229 (a bare name reaches an installed program) gives every bare word one owner and keeps the
+image's program on the word, so a local program runs by path. It refused installs and vouches that
+claim a name. [The command-name appendix](command-names.md) proposes an owner's word table: lines in
+the generation, written only at the owner's console, mapping a word to an installed program.
+
+Recommendation: yes. An explicit line the owner writes is a third case §229 did not consider, and it
+is the only way typing `reboot` reaches a replacement. Rollback or `jig use --default` restores the
+image's program.
+
+Alternative: the word table serves only words the image does not carry; `acme-reboot` answers to
+its own name and to any new word, never to `reboot`.
+
+Example: under yes, `jig use reboot acme-reboot`, then `reboot` runs the replacement. Under no,
+`jig use restart acme-reboot` works and `jig use reboot acme-reboot` is refused.
+
+Prior art: Debian's `update-alternatives` lets the administrator repoint `editor` at any provider.
+
+Not verified: no syntax reaches an image program by path while a word overrides it.
+
+Question: may an owner's word line override an image name? Yes or no.
+
+## 7. Which bare names belong to the image, once the table no longer says?
+
+One-way: it conflicts with §229's present definition.
+
+Install refuses a package whose program has a name the image carries, and the prompt refuses a name
+that is both. Today "a name the image carries" means a row of the central table
+(`installed_programs::refuse_entry`'s caller, `Program::from_name`). §229's amendment narrows the
+install refusal to what a boot slot holds, and that narrowing is unbuilt.
+
+Recommendation: A. The measured archive's names, with both refusals unchanged until the narrowing
+is built. Nothing a person sees changes.
+
+Alternatives: B, build the narrowing now, so a newer `core-tools` package may install `date`. C,
+keep the table's names, which keeps a fragment of the table alive.
+
+Example: under A, `jig install core-tools` still refuses while the image carries `date`.
+
+Question: A (the archive's names) or B (build the narrowing now)?
+
+## 8. The new names
+
+Two-way in effect: each ships provisional. The base list page, the by-name request bit,
+`OwnerGrants`, `Vouch::Archive`, `NotGranted`, the `display` field, each grant line's spelling, the
+`word` line and `jig use` need names. Recommendation: ship each provisional and bring them in one
+naming pass once steps 5 and 12 exist. Question: may they ship provisional? Yes or no.
+
+## The leaf crate, already before calef
+
+The split of `Manifest`, its declaration types and the slot constants into a leaf crate (provisional
+name `program_manifest`) stays a separate open decision. The end state works without it.

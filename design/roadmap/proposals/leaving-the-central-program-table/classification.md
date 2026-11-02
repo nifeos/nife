@@ -19,11 +19,13 @@ have no pin.
 
 ## The classes
 
-Four classes, plus one row whose class depends on a ruling.
+Four classes.
 
-- **Pinned:** a grant no installed program may ever hold. The note encoder refuses these fields at
-  compile time (`capability_manifest_note::encode`), and `grant_plan::image_can_carry` refuses them
-  at spawn.
+- Owner-granted: a row whose manifest declares a field the note cannot spell yet, and which the
+  ruling of 2026-11-02 (UTC) makes an owner's grant for installed bytes. Today the note encoder
+  refuses these fields at compile time (`capability_manifest_note::encode`), and
+  `grant_plan::image_can_carry` refuses them at spawn. In the end state they are ordinary rows
+  whose notes carry those fields, vouched by the archive.
 - Tool: a program a person types at the prompt for its function, owned by a package under
   `packages/`.
 - Fixture: a program that exists to exercise or measure the system. Each lives in `fixtures/` or
@@ -53,9 +55,9 @@ Four classes, plus one row whose class depends on a ruling.
 | 17 | `free` | tool | `process-tools` | machine page, share view, second stream |
 | 18 | `vmstat` | tool | `process-tools` | machine page, second stream |
 | 19 | `slabtop` | tool | `process-tools` | share view, second stream |
-| 20 | `graphical_terminal` | unclear (below) | `display` (optional) | words; the progenitor builds a display session for it |
-| 21 | `reboot` | pinned | `init` | `reboot`, `sync`, second stream |
-| 22 | `jig` | pinned | `jig` | words; clock, entropy, network, installer, catalog, indexes, activation directory, console input; a verb table; the root resolver zone |
+| 20 | `graphical_terminal` | owner-granted (below) | `display` (optional) | words; the progenitor builds a display session for it |
+| 21 | `reboot` | owner-granted | `init` | `reboot`, `sync`, second stream |
+| 22 | `jig` | owner-granted | `jig` | words; clock, entropy, network, installer, catalog, indexes, activation directory, console input; a verb table; the root resolver zone |
 | 23 | `job_sleeper` | fixture | `fixtures` | an argument, `--mem` 4 to 16 |
 | 24 | `null_syscall` | fixture | `fixtures` | `--mem` 10 to 16 |
 | 25 | `sink_producer` | fixture | `fixtures` | `--mem` 10 to 16 |
@@ -72,10 +74,9 @@ Where each package comes from: `core-tools.package.toml` lists `date printenv rm
 
 | class | rows | names |
 |---|---|---|
-| pinned | 2 | `reboot`, `jig` |
+| owner-granted | 3 | `reboot`, `jig`, `graphical_terminal` |
 | tool | 14 | five in `core-tools`, seven in `process-tools`, `mdr`, `least_authority_demo` |
 | fixture | 11 | ids 1, 2, 3, 14, 15, 16, 23 to 27 |
-| unclear | 1 | `graphical_terminal` |
 | bootstrap | 0 | |
 
 ### Why no row is bootstrap
@@ -85,19 +86,19 @@ shell, the file servers and the drivers appear in `packages/base-image.toml` and
 `measure_spawnable` in `crates/system_initializer/src/boot_steps.rs` loads the table's programs only
 to serve the shell's later requests. So nothing in the table runs before the shell asks for it. The
 nearest case is `jig`: without it nobody can install a package, so an image must carry it. That is a
-reason to keep it in the base image, and its pinned grants already keep its row.
+reason to keep it in the base image, and the archive's vouch keeps its grants.
 
-### Why `graphical_terminal` is unclear
+### Why `graphical_terminal` is owner-granted
 
 Its manifest declares no field a note cannot carry, so `every_compiled_in_manifest_round_trips` in
 `crates/capability_manifest_note/src/tests.rs` encodes it. Its authority comes from its identity
 instead. The shell sets `spawnproto::Wiring::graphics` when `e.program ==
 Program::GraphicalTerminal` (`components/src/swish/running.rs`, the request builder). The
 progenitor then builds `gpu_driver`, `display_terminal` and the keyboard path and wires them to it
-(`crates/system_initializer/src/spawn_loop.rs`, the checks on `Program::GraphicalTerminal`). Holding
-the screen and the keyboard is the same kind of authority as `console_input`, which only the
-owner's console grants. Whether that may become an ask an owner grants at install, like the
-network, or stays pinned is a ruling; [decision 4](decisions.md) asks it. Until a ruling, the proposal treats the row as pinned.
+(`crates/system_initializer/src/spawn_loop.rs`, the checks on `Program::GraphicalTerminal`). The ruling
+of 2026-11-02 makes the screen and keyboard an owner's grant, so the session needs a `display`
+field the note can spell and a guard that keeps it to one holder ([the security
+appendix](security.md)).
 
 ### What the fixtures need, and a conflict about the bench rows
 
