@@ -211,12 +211,13 @@ impl Command {
     /// ```
     #[must_use]
     pub const fn word(&self) -> u32 {
-        let mut w =
-            registers::COMMAND_START | registers::CMD_USE_HOLD_REG | (self.index as u32 & 0x3f);
+        let mut w = registers::COMMAND_START
+            | registers::COMMAND_USE_HOLD_REGISTER
+            | (self.index as u32 & 0x3f);
         if self.index == STOP_TRANSMISSION {
-            w |= registers::CMD_STOP_ABORT_CMD;
+            w |= registers::COMMAND_STOP_OR_ABORT;
         } else if self.index != SEND_STATUS {
-            w |= registers::CMD_WAIT_PRVDATA_COMPLETE;
+            w |= registers::COMMAND_WAIT_FOR_PREVIOUS_DATA_COMPLETE;
         }
         if self.index == GO_IDLE_STATE {
             w |= registers::COMMAND_SEND_INITIALIZATION;
@@ -225,18 +226,18 @@ impl Command {
             w |= registers::COMMAND_RESPONSE_EXPECT;
         }
         if self.response.is_long() {
-            w |= registers::CMD_RESPONSE_LENGTH;
+            w |= registers::COMMAND_RESPONSE_LENGTH;
         }
         if self.response.has_crc() {
-            w |= registers::CMD_CHECK_RESPONSE_CRC;
+            w |= registers::COMMAND_CHECK_RESPONSE_CRC;
         }
         if let Some(d) = self.data {
-            w |= registers::CMD_DATA_EXPECTED;
+            w |= registers::COMMAND_DATA_EXPECTED;
             if d.write {
-                w |= registers::CMD_WR;
+                w |= registers::COMMAND_WRITE;
             }
             if d.blocks > 1 {
-                w |= registers::CMD_SEND_AUTO_STOP;
+                w |= registers::COMMAND_SEND_AUTOMATIC_STOP;
             }
         }
         w
@@ -245,8 +246,8 @@ impl Command {
 
 /// The word that loads new clock settings into the card clock domain and sends nothing.
 pub(crate) const UPDATE_CLOCK: u32 = registers::COMMAND_START
-    | registers::CMD_WAIT_PRVDATA_COMPLETE
-    | registers::CMD_UPDATE_CLOCK_REGISTERS_ONLY;
+    | registers::COMMAND_WAIT_FOR_PREVIOUS_DATA_COMPLETE
+    | registers::COMMAND_UPDATE_CLOCK_REGISTERS_ONLY;
 
 /// The three fields a `CMD` word composes share no bit (start at bit 31, the hold register at bit
 /// 29, the command index in bits 5:0), which the compiler checks here; the mutation exclusion for
@@ -257,7 +258,7 @@ pub(crate) const UPDATE_CLOCK: u32 = registers::COMMAND_START
 /// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 pub const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () =
-    assert!(registers::COMMAND_START + registers::CMD_USE_HOLD_REG + 0x3f == 0xa000_003f);
+    assert!(registers::COMMAND_START + registers::COMMAND_USE_HOLD_REGISTER + 0x3f == 0xa000_003f);
 
 #[cfg(test)]
 mod tests {
@@ -270,11 +271,11 @@ mod tests {
         assert_eq!(
             w,
             COMMAND_START
-                | CMD_USE_HOLD_REG
-                | CMD_WAIT_PRVDATA_COMPLETE
+                | COMMAND_USE_HOLD_REGISTER
+                | COMMAND_WAIT_FOR_PREVIOUS_DATA_COMPLETE
                 | COMMAND_RESPONSE_EXPECT
-                | CMD_RESPONSE_LENGTH
-                | CMD_CHECK_RESPONSE_CRC
+                | COMMAND_RESPONSE_LENGTH
+                | COMMAND_CHECK_RESPONSE_CRC
                 | 2
         );
     }
@@ -283,16 +284,16 @@ mod tests {
     fn the_operation_conditions_are_not_crc_checked_because_they_have_none() {
         let w = Command::new(SD_SEND_OP_COND, 0x4030_0000, Response::R3).word();
         assert_ne!(w & COMMAND_RESPONSE_EXPECT, 0);
-        assert_eq!(w & CMD_CHECK_RESPONSE_CRC, 0);
+        assert_eq!(w & COMMAND_CHECK_RESPONSE_CRC, 0);
     }
 
     #[test]
     fn status_and_stop_do_not_wait_behind_the_data_they_report_on() {
         let status = Command::new(SEND_STATUS, 1 << 16, Response::R1).word();
-        assert_eq!(status & CMD_WAIT_PRVDATA_COMPLETE, 0);
+        assert_eq!(status & COMMAND_WAIT_FOR_PREVIOUS_DATA_COMPLETE, 0);
         let stop = Command::new(STOP_TRANSMISSION, 0, Response::R1b).word();
-        assert_eq!(stop & CMD_WAIT_PRVDATA_COMPLETE, 0);
-        assert_ne!(stop & CMD_STOP_ABORT_CMD, 0);
+        assert_eq!(stop & COMMAND_WAIT_FOR_PREVIOUS_DATA_COMPLETE, 0);
+        assert_ne!(stop & COMMAND_STOP_OR_ABORT, 0);
     }
 
     #[test]
@@ -305,12 +306,12 @@ mod tests {
         let many = Data { blocks: 8, ..one };
         let r1 = Command::with_data(READ_SINGLE_BLOCK, 0, Response::R1, one).word();
         let r8 = Command::with_data(READ_MULTIPLE_BLOCK, 0, Response::R1, many).word();
-        assert_eq!(r1 & CMD_SEND_AUTO_STOP, 0);
-        assert_ne!(r8 & CMD_SEND_AUTO_STOP, 0);
-        assert_eq!(r8 & CMD_WR, 0);
+        assert_eq!(r1 & COMMAND_SEND_AUTOMATIC_STOP, 0);
+        assert_ne!(r8 & COMMAND_SEND_AUTOMATIC_STOP, 0);
+        assert_eq!(r8 & COMMAND_WRITE, 0);
         let w =
             Command::with_data(WRITE_BLOCK, 0, Response::R1, Data { write: true, ..one }).word();
-        assert_ne!(w & (CMD_WR | CMD_DATA_EXPECTED), 0);
+        assert_ne!(w & (COMMAND_WRITE | COMMAND_DATA_EXPECTED), 0);
     }
 
     /// Only R2 is 136 bits: a 48-bit response asked for as a long one would never complete.
@@ -325,7 +326,7 @@ mod tests {
         ] {
             assert!(!r.is_long(), "{r:?}");
             assert_eq!(
-                Command::new(SEND_STATUS, 0, r).word() & CMD_RESPONSE_LENGTH,
+                Command::new(SEND_STATUS, 0, r).word() & COMMAND_RESPONSE_LENGTH,
                 0
             );
         }

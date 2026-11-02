@@ -135,11 +135,13 @@ pub const COMMAND_START: u32 = 1 << 31;
 /// from the hold register (half a clock later). OpenBSD sets it on every command, on every `SoC` it
 /// supports, the JH7110 among them.
 #[doc(alias = "use hold register")]
-pub(crate) const CMD_USE_HOLD_REG: u32 = 1 << 29;
+#[doc(alias = "CMD_USE_HOLD_REG")]
+pub(crate) const COMMAND_USE_HOLD_REGISTER: u32 = 1 << 29;
 /// **Update clock registers only** (OpenBSD's `SDMMC_CMD_UPDATE_CLOCK_REGISTERS_ONLY`): load
 /// `CLKDIV`, `CLKSRC` and `CLKENA` into the card clock domain without sending anything.
 #[doc(alias = "update clock registers only")]
-pub(crate) const CMD_UPDATE_CLOCK_REGISTERS_ONLY: u32 = 1 << 21;
+#[doc(alias = "CMD_UPDATE_CLOCK_REGISTERS_ONLY")]
+pub(crate) const COMMAND_UPDATE_CLOCK_REGISTERS_ONLY: u32 = 1 << 21;
 /// **Send initialization** (OpenBSD's `SDMMC_CMD_SEND_INITIALIZATION`): send 80 clocks of
 /// initialization sequence before this command. CMD0 only.
 ///
@@ -151,28 +153,35 @@ pub const COMMAND_SEND_INITIALIZATION: u32 = 1 << 15;
 /// **Stop or abort command** (OpenBSD's `SDMMC_CMD_STOP_ABORT_CMD`): this command stops a data
 /// transfer in progress (CMD12).
 #[doc(alias = "stop or abort command")]
-pub(crate) const CMD_STOP_ABORT_CMD: u32 = 1 << 14;
+#[doc(alias = "CMD_STOP_ABORT_CMD")]
+pub(crate) const COMMAND_STOP_OR_ABORT: u32 = 1 << 14;
 /// **Wait for previous data to complete** (OpenBSD's `SDMMC_CMD_WAIT_PRVDATA_COMPLETE`): wait for a
 /// previous data transfer to finish before sending.
 #[doc(alias = "wait for previous data")]
-pub(crate) const CMD_WAIT_PRVDATA_COMPLETE: u32 = 1 << 13;
+#[doc(alias = "CMD_WAIT_PRVDATA_COMPLETE")]
+pub(crate) const COMMAND_WAIT_FOR_PREVIOUS_DATA_COMPLETE: u32 = 1 << 13;
 /// **Send auto stop** (OpenBSD's `SDMMC_CMD_SEND_AUTO_STOP`): send CMD12 automatically when the
 /// byte count is reached.
 #[doc(alias = "send automatic stop")]
-pub(crate) const CMD_SEND_AUTO_STOP: u32 = 1 << 12;
+#[doc(alias = "CMD_SEND_AUTO_STOP")]
+pub(crate) const COMMAND_SEND_AUTOMATIC_STOP: u32 = 1 << 12;
 /// **Read or write** (OpenBSD's `SDMMC_CMD_WR`): the data phase is a write to the card.
 #[doc(alias = "write to card")]
-pub(crate) const CMD_WR: u32 = 1 << 10;
+#[doc(alias = "CMD_WR")]
+pub(crate) const COMMAND_WRITE: u32 = 1 << 10;
 /// **Data expected** (OpenBSD's `SDMMC_CMD_DATA_EXPECTED`): the command has a data phase.
 #[doc(alias = "data expected")]
-pub(crate) const CMD_DATA_EXPECTED: u32 = 1 << 9;
+#[doc(alias = "CMD_DATA_EXPECTED")]
+pub(crate) const COMMAND_DATA_EXPECTED: u32 = 1 << 9;
 /// **Check response CRC** (the databook's `check_response_crc`, which `dwmmc-host` keeps): check
 /// the response's CRC7.
 #[doc(alias = "check response CRC")]
-pub(crate) const CMD_CHECK_RESPONSE_CRC: u32 = 1 << 8;
+#[doc(alias = "CMD_CHECK_RESPONSE_CRC")]
+pub(crate) const COMMAND_CHECK_RESPONSE_CRC: u32 = 1 << 8;
 /// **Response length** (OpenBSD's `SDMMC_CMD_RESPONSE_LENGTH`): the response is 136 bits (R2).
 #[doc(alias = "long response")]
-pub(crate) const CMD_RESPONSE_LENGTH: u32 = 1 << 7;
+#[doc(alias = "CMD_RESPONSE_LENGTH")]
+pub(crate) const COMMAND_RESPONSE_LENGTH: u32 = 1 << 7;
 /// **Response expect** (OpenBSD's `SDMMC_CMD_RESPONSE_EXPECT`): the command has a response.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; OpenBSD's `SDMMC_CMD_RESPONSE_EXPECT`
@@ -675,16 +684,16 @@ mod tests {
             (CTYPE_4BIT, 0x1),
             (CTYPE_8BIT, 0x10000),
             (COMMAND_START, 0x80000000),
-            (CMD_USE_HOLD_REG, 0x20000000),
-            (CMD_UPDATE_CLOCK_REGISTERS_ONLY, 0x200000),
+            (COMMAND_USE_HOLD_REGISTER, 0x20000000),
+            (COMMAND_UPDATE_CLOCK_REGISTERS_ONLY, 0x200000),
             (COMMAND_SEND_INITIALIZATION, 0x8000),
-            (CMD_STOP_ABORT_CMD, 0x4000),
-            (CMD_WAIT_PRVDATA_COMPLETE, 0x2000),
-            (CMD_SEND_AUTO_STOP, 0x1000),
-            (CMD_WR, 0x400),
-            (CMD_DATA_EXPECTED, 0x200),
-            (CMD_CHECK_RESPONSE_CRC, 0x100),
-            (CMD_RESPONSE_LENGTH, 0x80),
+            (COMMAND_STOP_OR_ABORT, 0x4000),
+            (COMMAND_WAIT_FOR_PREVIOUS_DATA_COMPLETE, 0x2000),
+            (COMMAND_SEND_AUTOMATIC_STOP, 0x1000),
+            (COMMAND_WRITE, 0x400),
+            (COMMAND_DATA_EXPECTED, 0x200),
+            (COMMAND_CHECK_RESPONSE_CRC, 0x100),
+            (COMMAND_RESPONSE_LENGTH, 0x80),
             (COMMAND_RESPONSE_EXPECT, 0x40),
             (RINTSTS_RE, 0x2),
             (RINTSTS_CD, 0x4),

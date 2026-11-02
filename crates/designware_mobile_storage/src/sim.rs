@@ -527,9 +527,9 @@ impl Sim {
         } else {
             self.land(rint, answer);
         }
-        if answer.is_some() && word & registers::CMD_DATA_EXPECTED != 0 {
+        if answer.is_some() && word & registers::COMMAND_DATA_EXPECTED != 0 {
             let bytes = *self.register(registers::BYTCNT) as usize;
-            let write = word & registers::CMD_WR != 0;
+            let write = word & registers::COMMAND_WRITE != 0;
             self.direct_memory_access_write = write;
             if self.internal_direct_memory_access_active()
                 && let Some(m) = &self.memory
@@ -547,7 +547,7 @@ impl Sim {
                 },
                 bytes,
                 moved: 0,
-                auto_stop: word & registers::CMD_SEND_AUTO_STOP != 0,
+                auto_stop: word & registers::COMMAND_SEND_AUTOMATIC_STOP != 0,
                 buffer: Vec::new(),
                 extended_card_specific_data,
             };
@@ -930,12 +930,12 @@ impl Registers for Sim {
             }
             registers::CMD => {
                 if value & registers::COMMAND_START != 0
-                    && value & registers::CMD_UPDATE_CLOCK_REGISTERS_ONLY == 0
+                    && value & registers::COMMAND_UPDATE_CLOCK_REGISTERS_ONLY == 0
                 {
                     self.command(value);
                 }
                 let stuck =
-                    self.clock_stuck && value & registers::CMD_UPDATE_CLOCK_REGISTERS_ONLY != 0;
+                    self.clock_stuck && value & registers::COMMAND_UPDATE_CLOCK_REGISTERS_ONLY != 0;
                 *self.register(registers::CMD) = if stuck {
                     value
                 } else {
