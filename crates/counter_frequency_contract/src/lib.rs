@@ -12,8 +12,8 @@
 //!   the reader there faults, on purpose.
 //! - The rate is read once per process, so a later, better number could not reach it.
 //!
-//! Name: ratified 2026-10-18 (calef): "ratify `counter_frequency_contract` and fix the docs". The stem
-//! `counter_frequency` was ruled on 2026-09-13. It mirrors `CNTFRQ_EL0`, the register this page
+//! Name: ratified 2026-11-01 (#3059). The stem
+//! `counter_frequency` mirrors `CNTFRQ_EL0`, the register this page
 //! substitutes for. Refused `timebase_proto` (the oscillator, where the contents are the frequency),
 //! `tick_rate_proto` (drops the `CNTFRQ_EL0` connection), `tsc_frequency_proto` and
 //! `x86_64_timebase_proto` (one architecture's name for a neutral contract).
@@ -22,12 +22,14 @@
 
 /// The page's first eight bytes: an assembled page from an unrecognized or zeroed frame. ASCII,
 /// unpadded, the same shape the sibling shared pages' magics use.
+///
+/// Name: ratified 2026-11-01 (#3059). Kept, and its value `TIMEBAS1` is kept: a wire value.
 pub const MAGIC: [u8; 8] = *b"TIMEBAS1";
 
 /// The page layout's version, the digit [`MAGIC`] carries. A reader's check is the magic itself;
 /// a break bumps this and re-mints the magic in one change, with a dated ledger entry.
 ///
-/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its layout version.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 9, naming the counter-frequency
@@ -35,7 +37,7 @@ pub const VERSION: u32 = 1;
 /// is a new version, never a new number. The project that links these crates keeps the table of numbers and holds it to that rule. A program declares
 /// the pair of this id and [`VERSION`].
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+/// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its interface identity.
 pub const INTERFACE_ID: u64 = 9;
 
 /// **The slowest counter this tree will believe**, 100 kHz. Far below anything real, because a
@@ -43,7 +45,7 @@ pub const INTERFACE_ID: u64 = 9;
 /// boot: radon's 4 MHz `time` CSR is the slowest counter here, and 100 kHz sits above the 32.768
 /// kHz watch crystal on purpose. Anything under it is a failed measurement, not a slow part.
 ///
-/// Name: ratified 2026-10-27 (#2797).
+/// Name: ratified 2026-11-01 (#3059).
 pub const MINIMUM_PLAUSIBLE_HZ: u64 = 100_000;
 
 /// **The fastest counter this tree will believe**, 100 GHz, and the same reasoning as
@@ -52,7 +54,7 @@ pub const MINIMUM_PLAUSIBLE_HZ: u64 = 100_000;
 /// division that went the wrong way or a register that was never written. Generous by two orders of
 /// magnitude on purpose: this band exists to catch nonsense, not to police hardware.
 ///
-/// Name: ratified 2026-10-27 (#2797).
+/// Name: ratified 2026-11-01 (#3059).
 pub const MAXIMUM_PLAUSIBLE_HZ: u64 = 100_000_000_000;
 
 /// Is `hz` a rate a real machine could plausibly have? See [`MINIMUM_PLAUSIBLE_HZ`] and
@@ -72,6 +74,8 @@ pub const MAXIMUM_PLAUSIBLE_HZ: u64 = 100_000_000_000;
 /// assert!(!is_plausible(0)); // firmware never wrote it
 /// assert!(!is_plausible(1)); // firmware wrote nonsense, and `> 0` would have believed it
 /// ```
+///
+/// Name: ratified 2026-11-01 (#3059). Kept.
 pub fn is_plausible(hz: u64) -> bool {
     (MINIMUM_PLAUSIBLE_HZ..=MAXIMUM_PLAUSIBLE_HZ).contains(&hz)
 }
@@ -83,7 +87,7 @@ const OFF_HZ: usize = OFF_MAGIC + 8;
 /// not a page size. The mapped page is one whole frame (4096 bytes), and this is how much of it
 /// carries data; the rest is zeroes.
 ///
-/// Name: ratified 2026-11-01 (decided by the architect), renamed from `PAGE_BYTES`.
+/// Name: ratified 2026-11-01 (#3059), renamed from `PAGE_BYTES`.
 pub const PAGE_CONTENT_BYTES: usize = OFF_HZ + 8;
 
 /// **The fixed virtual address the kernel maps this page at**, in every `x86_64` and every
@@ -92,7 +96,7 @@ pub const PAGE_CONTENT_BYTES: usize = OFF_HZ + 8;
 /// the address-space map hands out, because the page is mapped into every process unconditionally;
 /// the map's own table of fixed pages should list it, and does not yet.
 ///
-/// Name: ratified 2026-11-01 (decided by the architect), renamed from `PAGE_VA`. `VA` is the
+/// Name: ratified 2026-11-01 (#3059), renamed from `PAGE_VA`. `VA` is the
 /// abbreviation alias, short for virtual address.
 #[cfg(not(target_arch = "riscv64"))]
 pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_7000_0000_0000;
@@ -107,7 +111,7 @@ pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_7000_0000_0000;
 /// The host build of this crate takes the `x86_64` arm, which is harmless: nothing in the `cfg(test)`
 /// suite below depends on the value, only on the layout.
 ///
-/// Name: ratified 2026-11-01 (decided by the architect), renamed from `PAGE_VA`. `VA` is the
+/// Name: ratified 2026-11-01 (#3059), renamed from `PAGE_VA`. `VA` is the
 /// abbreviation alias, short for virtual address.
 #[cfg(target_arch = "riscv64")]
 pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_0038_0000_0000;
@@ -126,6 +130,8 @@ pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_0038_0000_0000;
 /// let page = unsafe { CounterFrequencyPage::new(bytes.as_ptr() as u64) };
 /// assert_eq!(page.hz(), Some(1_000_000_000));
 /// ```
+///
+/// Name: ratified 2026-11-01 (#3059). Kept.
 pub fn build_page(hz: u64) -> [u8; PAGE_CONTENT_BYTES] {
     let mut page = [0u8; PAGE_CONTENT_BYTES];
     page[OFF_MAGIC..OFF_MAGIC + 8].copy_from_slice(&MAGIC);
@@ -135,7 +141,7 @@ pub fn build_page(hz: u64) -> [u8; PAGE_CONTENT_BYTES] {
 
 /// **The counter frequency page**, as seen through one process's read-only mapping of it at [`PAGE_VIRTUAL_ADDRESS`].
 ///
-/// Name: ratified 2026-11-01 (decided by the architect), renamed from `TimebasePage`.
+/// Name: ratified 2026-11-01 (#3059), renamed from `TimebasePage`.
 #[derive(Debug, Clone, Copy)]
 pub struct CounterFrequencyPage {
     base: *const u8,
@@ -159,6 +165,8 @@ impl CounterFrequencyPage {
     /// mapped and unwritten by this process for as long as this value is used. the kernel
     /// maps exactly such a page, read-only, at [`PAGE_VIRTUAL_ADDRESS`], into every `x86_64` process; see the
     /// crate's own `BUGS` section for the one spawn path that does not.
+    ///
+    /// Name: ratified 2026-11-01 (#3059). Kept.
     pub const unsafe fn new(virtual_address: u64) -> Self {
         CounterFrequencyPage {
             base: virtual_address as *const u8,
@@ -190,6 +198,8 @@ impl CounterFrequencyPage {
     /// let page = unsafe { CounterFrequencyPage::new(zeroed.as_ptr() as u64) };
     /// assert_eq!(page.hz(), None);
     /// ```
+    ///
+    /// Name: ratified 2026-11-01 (#3059). Kept.
     pub fn hz(&self) -> Option<u64> {
         let bytes = self.bytes();
         if bytes[OFF_MAGIC..OFF_MAGIC + 8] != MAGIC {

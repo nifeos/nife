@@ -690,11 +690,6 @@ crates/confined_syscall_fuzzer_contract/src/lib.rs::WORDS
 crates/coremark/src/lib.rs::PINNED_CRC_64
 crates/coremark/src/lib.rs::PINNED_ITERS
 crates/coremark/src/lib.rs::run
-crates/counter_frequency_contract/src/lib.rs::MAGIC
-crates/counter_frequency_contract/src/lib.rs::build_page
-crates/counter_frequency_contract/src/lib.rs::hz
-crates/counter_frequency_contract/src/lib.rs::is_plausible
-crates/counter_frequency_contract/src/lib.rs::new
 crates/cpu_set/src/lib.rs::Cpus
 crates/cpu_set/src/lib.rs::cpus_in
 crates/cpu_set/src/lib.rs::nth_in
