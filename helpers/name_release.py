@@ -1,4 +1,4 @@
-"""The table a ratifying pull request carries for a release-track crate's names, for `script/names`.
+"""The table a ratifying pull request carries for a leaving crate's names, for `script/names`.
 
 **Why this file exists.** A crate on the release track (milestones 813 to 820, the eight crates of
 milestone 857 (crates released on their own)) leaves for its own repository. A ruling of 2026-10-26
@@ -19,8 +19,10 @@ block` where there is none. A feature has no block and no status to ratify, so i
 `no block`. `script/crate-standalone` step 0 passes only when every `Name:` block in the crate is
 ratified, and step 3 ignores the blocks, which the breaking-out change strips.
 
-**Only the track is covered.** The track is the crates the blocks of `crate_release.MILESTONES`
-name in their titles; `--draft` for any other crate is refused.
+**Any crate under `crates/` is covered.** `--draft` takes any directory under `crates/` that holds a
+`Cargo.toml`, which is every crate `script/crate-standalone` checks, and refuses a name that is no
+such crate. It does not read `crate_release.MILESTONES`, so the contract crates that leave in the
+order of the-contract-crates-leave-in-this-order can ratify without a roadmap block each.
 
 Name: provisional, minted 2026-10-25 (UTC) by lane release-crates-names-ratified-first. A shared
 helper under `helpers/`, which `script/names` puts out of its own scope, so this paragraph is the
@@ -35,21 +37,6 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import crate_release  # noqa: E402
-
-_MILESTONE = re.compile(r"^design/roadmap/0(\d{3})-[^/]+\.md$")
-
-
-def track(paths, read):
-    """The crates on the release track, from the titles of `crate_release.MILESTONES`' blocks."""
-    out = set()
-    for path in paths:
-        m = _MILESTONE.match(path)
-        if m and int(m.group(1)) in crate_release.MILESTONES:
-            crate = crate_release.crate_of(read(path) or "")
-            if crate:
-                out.add(crate)
-    return out
-
 
 def _module_stem(rel):
     stem = os.path.splitext(os.path.basename(rel))[0]
@@ -75,14 +62,14 @@ def _tree():
 
 
 def rows(crate, paths, read):
-    """`[(name, kind, path, status)]` for `crate` from its blocks, or None off the track.
+    """`[(name, kind, path, status)]` for `crate` from its blocks, or None for a name that is no crate.
 
     `path` is relative to the crate. The status is the first line of a block's text, or `no block`.
     """
     import name_census
-    if crate not in track(paths, read):
-        return None
     prefix = f"crates/{crate}/"
+    if f"{prefix}Cargo.toml" not in paths:
+        return None
     records, _problems, _missing, unblocked = name_census.census(paths, read)
     status = {}
     for r in records:
@@ -111,7 +98,7 @@ def draft(crate):
     paths, read = _tree()
     table = rows(crate, paths, read)
     if table is None:
-        print(f"name_release: `{crate}` is not on the release track", file=sys.stderr)
+        print(f"name_release: `{crate}` is not a crate under crates/", file=sys.stderr)
         return 1
     print("| name | kind | path | status |\n|---|---|---|---|")
     for name, kind, path, text in table:
@@ -129,6 +116,7 @@ def selftest():
     base = {"design/roadmap/0813-fat.md": block, "crates/fat/src/lib.rs": crate,
             "crates/fat/src/a.rs": module, "crates/fat/Cargo.toml": manifest,
             "crates/other/src/lib.rs": "//! Name: provisional.\npub fn f() {}\n",
+            "crates/other/Cargo.toml": '[package]\nname = "other"\n',
             "design/naming/convention-rulings.md": ""}
 
     def table(tree, name="fat"):
@@ -146,7 +134,8 @@ def selftest():
          and got[("read", "item")][1] == "no block"),
         ("a feature has a row and no block", got[("std", "feature")] == ("Cargo.toml", "no block")),
         ("paths are relative to the crate", got[("a", "module")][0] == "src/a.rs"),
-        ("a crate off the track has no table", table(base, "other") is None),
+        ("a name that is no crate has no table", table(base, "nothing") is None),
+        ("a crate off the release track has a table", table(base, "other") is not None),
         ("blanked blocks keep every line number",
          crate_release.strip_name_blocks(
              "//! A.\n//!\n//! Name: provisional. Long\n//! more.\n\nfn f() {}\n")

@@ -29,7 +29,7 @@ fn a_handle_never_collides_with_the_opcode_or_length() {
     assert_eq!(fs::req_len(w) as u64, fs::MAXIMUM_LENGTH_OR_OFFSET);
 }
 
-// --- The directory capability (milestone 47 (navigation and naming)) ---
+// --- The directory capability ---
 
 /// The three new verbs must not collide with the seven that were already on the wire, and
 /// `ROOT` must stay 0 because every client that ever sent an `OPEN` sent 0 in that field.
@@ -100,9 +100,9 @@ fn a_rename_carries_two_directories_and_two_lengths_without_them_bleeding() {
     assert_eq!(fs::dst_handle(0), fs::ROOT);
 }
 
-// The tests from here down each pin something the run of milestone 85 (mutation testing over the
-// host crates) showed nothing pinned. The equivalences (every `|` over disjoint masked fields,
-// where `^` cannot differ) are recorded in notes/mutation-testing.md rather than tested.
+// The tests from here down each pin something a mutation run over this crate showed nothing
+// pinned. The equivalences (every `|` over disjoint masked fields, where `^` cannot differ) are
+// recorded as such rather than tested.
 
 /// **A single-page request still means one page**, which is the compatibility claim
 /// [`fs::TRANSFER_PAGES`] makes in prose, checked through the packing rather than beside it.

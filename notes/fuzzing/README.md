@@ -20,6 +20,8 @@ These files carry the evidence its prose budget has no room for.
   the two in-guest drivers' rates at 1 to 16 guests under full emulation, and a host target's rate.
 - [`continuous-host.md`](continuous-host.md): the always-on x86_64 host, what it keeps and what it
   publishes.
+- [`the-fuzz-app.md`](the-fuzz-app.md): the runbook for the person who creates the host's GitHub App
+  and places its key, and what that key can do.
 
 *Name: provisional. The directory follows §212 (a prose budget)'s siting default, `notes/X/` beside
 `notes/X.md`. calef names directories.*

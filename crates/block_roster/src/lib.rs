@@ -3,10 +3,9 @@
 //! into exactly the programs granted it, so a program without it has nowhere to look.
 //!
 //! The roster says a device exists, its bus and its ordinal, and carries no capacity: size is
-//! learned by asking the device (`filesystem_contract::blk::SIZE`), which takes the endpoint. Like
-//! the compositor's window list (§33 (the compositor's authority is memory, not messages)), it is a
-//! read-only mapping, not a verb, so it has no server and needs no seqlock. See
-//! notes/block-devices.md, "2. Listing the drives and holding one are different authorities".
+//! learned by asking the device, which takes the endpoint. Listing the drives and holding one are
+//! different authorities, so the roster is a read-only mapping and not a verb: it has no server and
+//! needs no seqlock.
 
 //! The page, little-endian, fixed width and without pointers:
 //! ```text
@@ -28,15 +27,10 @@
 /// ([`VERSION`]), by the shared-page convention the other numbered magics here already follow
 /// (`CLOCKv01`, `MACHSTA1`); a bump re-mints both in one change.
 ///
-/// Amended in place 2026-10-29 (UTC): the unnumbered `"blkrostr"` gained its version digits when
-/// milestone 956 (the linked interfaces carry checkable versions) put a version beside every
-/// format the first cut links. Nothing outside this tree had read a roster page; readers and
-/// writers rebuilt together.
-///
 /// # Amendments
 ///
 /// - 2026-10-29: the magic gained the version digits, `"blkrostr"` to `"blkrosv1"`, version 1;
-///   layout unchanged. No migration: every reader and writer is in this tree.
+///   layout unchanged. No migration: every reader and writer was rebuilt together.
 pub const MAGIC: u64 = u64::from_le_bytes(*b"blkrosv1");
 
 /// The page layout's version, the digits [`MAGIC`] carries. A break bumps this and re-mints the
@@ -45,10 +39,10 @@ pub const MAGIC: u64 = u64::from_le_bytes(*b"blkrosv1");
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
 
-/// This interface's identity in a program's `INTERFACES` note: 5, naming the block roster page. The number
-/// is the crate's to keep across a rename and no other interface ever reuses it; `script/lint`
-/// holds the ids of every crate apart. A program declares the pair of this id and [`VERSION`]
-/// (milestone 956 (the linked interfaces carry checkable versions)).
+/// This interface's identity in a program's `INTERFACES` note: 5, naming the block roster page. The
+/// number is the crate's to keep across a rename and no other interface ever reuses it; the
+/// ids of the interfaces a program links must all differ. A program declares the pair of this id and
+/// [`VERSION`].
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const INTERFACE_ID: u64 = 5;
@@ -66,15 +60,15 @@ pub const HEADER_BYTES: usize = 16;
 /// the kind says virtio, because an NVMe disk is a PCI device too, and `mmio` expands under §154.
 pub const TRANSPORT_VIRTIO_MEMORY_MAPPED_IO: u32 = 0;
 
-/// A virtio-blk function on the PCIe bus (DECISIONS §18's transport).
+/// A virtio-blk function on the PCIe bus (the virtio specification's PCI transport).
 ///
 /// Name: ratified 2026-10-18 (calef), as §193 (what a block-roster entry calls an NVMe disk) rules:
 /// a bare `PCI` beside the NVMe kind would claim NVMe as well.
 pub const TRANSPORT_VIRTIO_PCI: u32 = 1;
 
 /// An NVMe controller on the PCIe bus, found by its class code: the ordinal is its position among
-/// NVMe controllers in the kernel's bus walk, so ordinal 0 is the controller
-/// `kernel/src/user/non_volatile_memory_express_service.rs` serves.
+/// NVMe controllers in the kernel's bus walk, so ordinal 0 is the first
+/// controller the kernel finds.
 ///
 /// Name: ratified 2026-10-18 (calef), as §193 (what a block-roster entry calls an NVMe disk) rules,
 /// by the `nvme` row of §154 (the acronym test is whether the phrase is spoken).

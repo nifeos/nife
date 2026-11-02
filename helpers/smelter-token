@@ -36,6 +36,12 @@ NIFE_SMELTER_CACHE. The key's default home is the login keychain, generic passwo
 prints a value with newlines in it as hex, so the PEM itself cannot go there as is).
 notes/session-identity.md has the setup steps.
 
+The release workflows in nifeos/crate-workflows read the same App from two organization secrets,
+visible to selected repositories only (ruled 2026-11-01 UTC):
+NIFE_SMELTER_APP_ID: the App id.
+NIFE_SMELTER_PRIVATE_KEY: the App's PEM.
+Nothing in this script reads either; it only names them so the notes that cite them resolve.
+
 Name provisional (milestone 128's lane, 2026-10-07 UTC); `design/naming.md` is the rule.
 
 EXAMPLES

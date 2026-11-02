@@ -5,8 +5,7 @@ use super::record;
 /// Every caller written before the selector existed passed 0 into the then-unused x1. If this
 /// constant ever moves, those callers silently start asking for a different record and read a
 /// cpu id as a run state. A wire's compatibility is a claim about a number, so it is asserted
-/// against the number rather than described in prose (milestone 85 (mutation testing over the host crates): a mutant that rewrites the
-/// constant is what this notices).
+/// against the number rather than described in prose.
 #[test]
 #[allow(clippy::assertions_on_constants)]
 fn the_state_record_is_zero_so_pre_selector_callers_select_it() {

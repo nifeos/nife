@@ -1,5 +1,5 @@
 ---
-status: DECIDED
+status: AMENDED
 raised: 2026-08-16
 decided: 2026-08-16
 ratified_by: calef
@@ -127,3 +127,21 @@ about the bottleneck moving, arriving as a defect becoming visible rather than a
 Both 2026-09-05 lanes recovered on their own by opening a replacement pull request, so nothing was
 lost. What was lost is the property the board is for: for part of that evening it showed no claim on
 two milestones that were actively being worked.
+
+## Amendment, 2026-11-01: a fix lane for a held fuzz finding claims without a draft
+
+Decided 2026-11-01 (UTC). A lane that fixes a held fuzz finding claims with `script/claim
+--no-claim`. It works in a worktree, commits locally and often, and pushes nothing until the fix is
+ready. Its pull request opens only then, ready for review, with auto-merge armed, a neutral title
+and no reproducer. The advisory records who holds the work. The fuzz host files one advisory per
+finding, so the advisory list is the board for this kind of lane, as the draft list is for every
+other.
+
+The reason is exposure. A draft pull request and its pushed branch are public from the first
+commit, and a held finding stays private until its fix is on main. Opening the pull request only when
+the fix is ready limits the public window to review and the merge queue.
+
+The cost is the property this section prefers: a lane that dies leaves no public stale draft. Its
+local commits survive in the worktree, and a loss of the machine before the push loses them.
+[`fuzz-findings-without-a-person`](../roadmap/proposals/fuzz-findings-without-a-person.md) records
+the rest of the findings path.

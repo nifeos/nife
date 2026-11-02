@@ -5,34 +5,31 @@ pub const ENUMERATE: u64 = 1 << 0;
 /// Open a name in it for reading, and read a file handle obtained through it.
 pub const READ: u64 = 1 << 1;
 /// Open a name in it for writing, and write or truncate a file handle obtained through it.
-/// Separate from [`READ`] because milestone 47's motivating case is a directory a program may
+/// Separate from [`READ`] because the motivating case is a directory a program may
 /// append to and not read.
 pub const WRITE: u64 = 1 << 2;
 /// Make a new name in it ([`super::fs::CREATE`]).
 pub const CREATE: u64 = 1 << 3;
 /// Take a name out of it. This is the right the log-writing case exists to withhold: [`WRITE`]
-/// and [`CREATE`] without [`REMOVE`] is "add to this, destroy nothing", which is milestone 47's
+/// and [`CREATE`] without [`REMOVE`] is "add to this, destroy nothing", which is the
 /// motivating sentence. Three verbs consult it: [`super::fs::RENAME`], whose source name goes
 /// away, [`super::fs::UNLINK`], which is `rm`'s, and [`super::fs::RMDIR`], which takes an empty
 /// directory's name out of its parent.
 pub const REMOVE: u64 = 1 << 4;
 /// Walk into a child directory ([`super::fs::OPENDIR`]).
 ///
-/// **Separate from [`READ`] on purpose**, and this is the rung milestone 47 did not name. If
+/// **Separate from [`READ`] on purpose**, and this is the rung the first design did not name. If
 /// descending came with reading, then granting a directory would silently grant its whole
 /// subtree, transitively and to any depth, and how much authority a grant carried would be
 /// decided by the shape of the tree rather than by the grant. That is ambient authority
-/// reintroduced by recursion, which is the thing this milestone exists to refuse.
+/// reintroduced by recursion, which is the thing this design exists to refuse.
 pub const DESCEND: u64 = 1 << 5;
-/// **Assert an arbitrary modification time** ([`super::fs::SETMTIME_AT`], `touch -t`; DECISIONS
-/// §112). Every other mutating right bounds what the caller may do to the bytes or names in a
+/// **Assert an arbitrary modification time** ([`super::fs::SETMTIME_AT`], `touch -t`). Every other mutating right bounds what the caller may do to the bytes or names in a
 /// directory; this one bounds what it may claim about when it did. Plain `touch`
 /// ([`super::fs::SETMTIME`]) needs only [`WRITE`], because the server observed that value. POSIX's
-/// `utime()` draws the same line, and DECISIONS §43 (reading the clock is a page, setting it is a
-/// page you may write) draws it between reading the wall clock and setting it. See notes/touch.md.
+/// `utime()` draws the same line, and the wall clock draws it between reading the clock and setting it.
 ///
-/// Name: provisional (milestone 47's mtime lane, 2026-08-24, DECISIONS §112 (`touch`'s two
-/// behaviors need two rights)); an architect's to ratify. Candidates considered and set aside:
+/// Name: provisional (2026-08-24); an architect's to ratify. Candidates considered and set aside:
 /// `BACKDATE` (the capability also permits a *future* value, so a name for lying only backward
 /// would be narrower than what it grants), `RETIME` (read as "change the pace of something" as
 /// readily as "reassign its recorded time"). `SETTIME` was chosen for reading as exactly what
@@ -46,7 +43,7 @@ pub const SETTIME: u64 = 1 << 6;
 pub const ALL: u64 = ENUMERATE | READ | WRITE | CREATE | REMOVE | DESCEND | SETTIME;
 
 /// **"The parent's rights, whatever they are"**, spelled as `1 << 63` in the rights word of
-/// [`super::fs::OPENDIR`] and [`super::fs::MKDIR`] (§98 (`OPENDIR` cannot be asked to attenuate), ruled 2026-10-27 UTC).
+/// [`super::fs::OPENDIR`] and [`super::fs::MKDIR`].
 ///
 /// A client cannot read its own capability, so a directory it holds for later use has no minimum to
 /// ask for, and asking for [`ALL`] is `EPERM` under every narrowed grant. This value says "whatever
@@ -68,7 +65,7 @@ const _: () = assert!(
     "the parent-rights sentinel must not be a rights mask: a right was added at bit 63"
 );
 
-/// **What a recursive removal needs, at every level** (milestone 47's `rm -r`): [`ENUMERATE`] to
+/// **What a recursive removal needs, at every level**: [`ENUMERATE`] to
 /// see what is there, [`DESCEND`] to walk into it, [`REMOVE`] to take names out. Named here
 /// because the `rm` program asks for exactly this on every descent and the wiring that grants it
 /// hands over exactly this, so the two cannot drift into a capability nobody meant.
@@ -108,7 +105,7 @@ pub const ENOTEMPTY: i32 = 39;
 /// that has to explain itself to a human. Every line is a statement about **the capability or
 /// the thing**, never about a policy: there is no policy here to have said yes.
 ///
-/// `EACCES` is deliberately absent: nothing in this contract answers it (DECISIONS §27, §47).
+/// `EACCES` is deliberately absent: nothing in this contract answers it.
 pub const fn explain(errno: i32) -> &'static str {
     match errno {
         // ENOENT. Two very different situations, one sentence, and that is the point: a holder
@@ -173,7 +170,7 @@ impl Rights {
 
     /// **The child's rights: what the parent has, intersected with what was asked for.**
     ///
-    /// The whole of milestone 47's monotonicity property is this one `&`. It is a total
+    /// The whole of the monotonicity property is this one `&`. It is a total
     /// function with no failure mode, which is the point: a caller cannot ask for a right the
     /// parent lacks and receive it, because there is no branch here to get wrong. The server
     /// separately *refuses* a request whose intersection came up short, so a caller is never

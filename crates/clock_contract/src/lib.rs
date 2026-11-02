@@ -1,12 +1,17 @@
-//! The wall-clock contract (§43 (reading the clock is a page, setting it is a page you may write,
-//! proposing is an endpoint)): the clock page's layout, the propose protocol and the policy the
+//! The wall-clock contract (reading the clock is a page, setting it is a page you may write,
+//! proposing is an endpoint): the clock page's layout, the propose protocol and the policy the
 //! service applies, defined once for the clock service, its readers, the std PAL and the tests.
 //!
 //! Reading is a read-only mapping of [`ClockPage`] plus the monotonic counter, setting is a
 //! read/write mapping of the same page, and proposing is an endpoint [`policy::decide`] answers.
 //! Wall-clock time is [`wall_ns`]: the counter plus an offset, and only the offset is ever
 //! written, so a clock step cannot perturb `Instant`. Every time is nanoseconds since the Unix
-//! epoch in a `u64`, which runs out in 2554. See notes/clock.md.
+//! epoch in a `u64`, which runs out in 2554.
+//!
+//! # BUGS
+//!
+//! - `NANOS_PER_SEC` and `wall_nanos` are older spellings of `NS_PER_SECOND` and `wall_ns`, kept for
+//!   nife's standard-library overlay, which reads them by those names. Use the newer spellings.
 //!
 //! Name: ratified 2026-08-23 (calef): the service's own word, `clock`, with the contract suffix
 //! `_contract` (calef's 2026-10-18 ruling).
@@ -14,8 +19,8 @@
 #![cfg_attr(not(test), no_std)]
 
 // The atomics are loom's under `--cfg loom` and the real ones otherwise, which is what lets
-// `script/interleaving-check` replay this seqlock under every interleaving the C11 model permits
-// (milestone 80; notes/interleaving.md). The algorithms below are written once and are the ones the
+// the `loom` model checker replay this seqlock under every interleaving the C11 model permits (build
+// with `RUSTFLAGS="--cfg loom"`). The algorithms below are written once and are the ones the
 // clock service runs: only where the words live differs, and that is not what is being checked.
 #[cfg(not(loom))]
 use core::sync::atomic::{AtomicU64, Ordering, fence};
@@ -79,14 +84,14 @@ pub const fn wall_ns(offset_ns: u64, monotonic_ns: u64) -> u64 {
     offset_ns.saturating_add(monotonic_ns)
 }
 
-/// The spelling of [`NS_PER_SECOND`] that `xtask`'s generated copy of this file hands the std
-/// overlay under `patches/std-nife`, which reads it by this name and which no sweep rewrites.
+/// The spelling of [`NS_PER_SECOND`] that nife's standard-library overlay reads from its generated
+/// copy of this file, by this name.
 ///
-/// Name: provisional. Kept for that reader; the unit-symbol ruling of 2026-10-27 (UTC) spells the
-/// name `NS_PER_SECOND`, and the overlay moves with an architect's edit to `patches/`.
+/// Name: provisional. Kept for that reader; the crate's own spelling is `NS_PER_SECOND`, and the
+/// overlay moves to it with its next edit.
 pub const NANOS_PER_SEC: u64 = NS_PER_SECOND;
 
-/// The spelling of [`wall_ns`] that the std overlay under `patches/std-nife` reads; see
+/// The spelling of [`wall_ns`] that nife's standard-library overlay reads; see
 /// [`NANOS_PER_SEC`].
 ///
 /// Name: provisional. Kept for the overlay, as [`NANOS_PER_SEC`] is.
@@ -106,7 +111,7 @@ pub const fn offset_for(wall_ns: u64, monotonic_ns: u64) -> u64 {
 
 /// **The states the wall clock can be in, and one of them is "I do not know".**
 ///
-/// This is DECISIONS §42's no-silent-degradation rule on a second axis. A machine with no RTC, or
+/// This is the no-silent-degradation rule on a second axis. A machine with no RTC, or
 /// with an RTC reporting something impossible, must say so; confidently reporting 1970 plus uptime
 /// is the failure, because the caller cannot tell it from a real answer.
 pub mod state {
@@ -151,8 +156,7 @@ pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 8, naming the clock page and its
 /// propose call. The number is this interface's for good: no other interface takes it, and a format
-/// change is a new version, never a new number. Milestone 956 (the linked interfaces carry
-/// checkable versions) holds the table of numbers, and `script/lint` holds the tree to it. A
+/// change is a new version, never a new number. The project that links these crates keeps the table of numbers and holds it to that rule. A
 /// program declares the pair of this id and [`VERSION`].
 ///
 /// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
@@ -183,8 +187,7 @@ pub struct Reading {
 
 /// **The clock page**, as seen through one process's mapping of it: a seqlock, because readers
 /// are many, writers are several (so the claim is a compare-exchange), and no lock can be held
-/// across an address-space boundary. Its memory ordering is load-bearing on ARM and RISC-V; see
-/// notes/clock.md ("The seqlock, and why the memory ordering is load-bearing").
+/// across an address-space boundary. Its memory ordering is load-bearing on ARM and RISC-V.
 ///
 /// # BUGS
 ///
@@ -264,13 +267,13 @@ impl ClockPage {
             // Keep the two data loads above the second sequence load. Without this the compiler or
             // the machine may reorder them after it, and the check would validate nothing. Removing
             // it fails the same three loom harnesses the writer's release fence does, so both
-            // halves of the pair are checked rather than argued (notes/interleaving.md).
+            // halves of the pair are checked rather than argued.
             //
             // PAIR: the writer's `fence(Ordering::Release)` after its claim of the sequence in
             // `publish`, below in this file. **The only protocol in the tree where both halves must
             // be here**, because a reader is in a different address space and reaches this page with
             // no syscall at all: there is no IPC rendezvous underneath to supply the edge the way
-            // there is for every other shared page (notes/memory-ordering.md).
+            // there is for every other shared page.
             fence(Ordering::Acquire);
             if self.word(W_SEQ).load(Ordering::Relaxed) == s1 {
                 return Reading {
@@ -307,11 +310,10 @@ impl ClockPage {
         // the new offset under an even, unchanged sequence and pass revalidation with a torn
         // reading. A store-store barrier, Linux's `smp_wmb()` in `write_seqcount_begin`: `AcqRel`
         // or `SeqCst` on the compare-exchange still tears, because an RMW orders accesses around
-        // itself, not its own store ahead of the plain stores after it (notes/clock.md).
+        // itself, not its own store ahead of the plain stores after it.
         //
         // PAIR: the reader's `fence(Ordering::Acquire)` in `read`, the load-load half: it keeps
-        // the revalidating load of `W_SEQ` behind the data. Loom fails with either one removed
-        // (notes/interleaving.md, notes/memory-ordering.md).
+        // the revalidating load of `W_SEQ` behind the data. Loom fails with either one removed.
         fence(Ordering::Release);
         self.word(W_STATE).store(new_state, Ordering::Relaxed);
         self.word(W_OFFSET).store(offset_ns, Ordering::Relaxed);
@@ -332,8 +334,8 @@ impl ClockPage {
 /// network time client: a compromised one can lie inside [`policy`]'s bounds and can do nothing
 /// else at all.
 pub mod propose {
-    /// Where the opcode sits in the first `CALL` word: bits 63:56, the same position `filesystem_contract`
-    /// and `line_editor::proto` use, so the contracts read alike.
+    /// Where the opcode sits in the first `CALL` word: bits 63:56, the same position the
+    /// sibling message contracts of the nife kernel use, so the contracts read alike.
     pub const OPERATION_SHIFT: u32 = 56;
 
     /// Build a request's first word.
@@ -398,9 +400,8 @@ pub mod policy {
     /// **The build-era floor: 2026-01-01T00:00:00Z.** No machine running this code existed before
     /// it, so any claimed time below this is wrong no matter who said it.
     ///
-    /// The milestone block calls this out as the escape from the NTS chicken-and-egg (TLS needs a
-    /// roughly correct clock, and a correct clock needs TLS), and it is chosen here on purpose
-    /// rather than discovered halfway through that work. It is a **floor on plausibility, not a
+    /// It is the escape from the network-time chicken-and-egg (TLS needs a roughly correct clock,
+    /// and a correct clock needs TLS), chosen here on purpose. It is a **floor on plausibility, not a
     /// claim of accuracy**: passing it means "not obviously a lie", never "trustworthy".
     pub const NOT_BEFORE_NS: u64 = 1_767_225_600 * super::NS_PER_SECOND;
 
@@ -521,7 +522,7 @@ pub mod policy {
 /// read, by the kernel, and arrives as data rather than as an address to poll.
 pub mod rtc {
     /// No RTC in the device tree. The clock service still runs and still serves proposals; it just
-    /// starts out not knowing what time it is, which is a state the contract has (DECISIONS §42).
+    /// starts out not knowing what time it is, which is a state the contract has.
     pub const NONE: u64 = 0;
     /// `arm,pl031`, QEMU `virt` on aarch64 at `0x9010000`. One 32-bit register at offset 0, `DR`,
     /// reading **seconds** since the Unix epoch.
@@ -532,16 +533,16 @@ pub mod rtc {
     /// correct except across the low word's wrap, which is a bug that shows up once every four
     /// seconds and looks like a 4-second jump.
     pub const GOLDFISH: u64 = 2;
-    /// **The `x86_64` CMOS RTC, and a categorically different kind from the two above** (milestone
-    /// 176; DECISIONS §121, §130). `PL031` and `GOLDFISH` name a register layout `components/src/clock.rs`
-    /// polls itself, through a mapping the service holds; CMOS is two fixed I/O ports with no page,
-    /// so no such mapping can ever exist under §121's current recommendation. The kernel reads the
-    /// device once (`arch::x86_64::rtc::read_unix_ns`) and hands the already-converted result
-    /// straight through as the wall clock's second `Spawn` argument, **nanoseconds since the Unix
-    /// epoch, ready to publish**. `components/src/clock.rs` takes it as data for this kind: `Some(a1)`,
-    /// no register read, no base address, nothing to poll.
+    /// **The `x86_64` CMOS RTC, and a categorically different kind from the two above** (the
+    /// binding names the fact that the value has already been read, not a register layout).
+    /// `PL031` and `GOLDFISH` name a register layout the clock service polls itself, through a
+    /// mapping it holds; CMOS is two fixed I/O ports with no page, so no such mapping can exist.
+    /// The kernel reads the device once and hands the already-converted result straight through as
+    /// the wall clock's second `Spawn` argument, **nanoseconds since the Unix epoch, ready to
+    /// publish**. The service takes it as data for this kind: no register read, no base address,
+    /// nothing to poll.
     ///
-    /// Name and value provisional (milestone 176's lane; calef names public items, AGENTS.md).
+    /// Name and value provisional.
     pub const CMOS: u64 = 3;
 }
 
@@ -738,8 +739,8 @@ mod tests {
 
     /// The request word is a wire format shared with the clock service at runtime; `req` and `operation`
     /// must be inverses AND put the opcode in bits 63:56 exactly, because the service on the other
-    /// side of the endpoint decodes with its own copy of the constant. Milestone 85's mutation run
-    /// showed the shift direction and the whole function bodies were pinned by nothing.
+    /// side of the endpoint decodes with its own copy of the constant. A mutation run
+    /// once showed the shift direction and the whole function bodies were pinned by nothing.
     #[test]
     fn the_request_word_is_the_wire_format_it_claims() {
         assert_eq!(propose::req(propose::PROPOSE), 1u64 << 56);
@@ -755,7 +756,7 @@ mod tests {
     /// microscopic, and every implausible proposal became plausible). Pin the products.
     #[test]
     // Asserting on constants is this test's entire purpose: the constant is the thing a mutant
-    // rewrites, and the assertion is what notices (milestone 85).
+    // rewrites, and the assertion is what notices.
     #[allow(clippy::assertions_on_constants)]
     fn the_sanity_window_is_where_it_says() {
         assert_eq!(policy::NOT_BEFORE_NS, 1_767_225_600_000_000_000);
@@ -765,7 +766,7 @@ mod tests {
 }
 
 // ================================================================================================
-// The seqlock under loom: every interleaving, and every reordering C11 permits (milestone 80).
+// The seqlock under loom: every interleaving, and every reordering C11 permits.
 // ================================================================================================
 #[cfg(all(test, loom))]
 mod interleavings {
@@ -775,7 +776,7 @@ mod interleavings {
     //! documentation says the memory ordering is the point rather than decoration. On x86 a sloppy
     //! version passes forever; on the aarch64 and riscv64 this project targets it does not.
     //!
-    //! Run with `script/interleaving-check`. See notes/interleaving.md.
+    //! Run with `RUSTFLAGS="--cfg loom" cargo test --release`.
 
     use loom::thread;
 

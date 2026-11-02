@@ -33,7 +33,7 @@ assets. It does not publish a branch of artifacts. The reasons:
 3. The newest release's date is the heartbeat.
 4. Moving from a release to a branch later is compatible; moving from a branch to a release is not.
 
-Option B is rejected for the reason given under it: every clone that fetches all branches pays for
+The ruling rejects option B for the reason under it: every clone that fetches all branches pays for
 it, and dropping data needs a force-push, which this project forbids. The implementation is in
 `helpers/fuzz-daily-publish.sh` and [the host note](../../../notes/fuzzing/continuous-host.md).
 
@@ -59,6 +59,7 @@ clone. Moving from a release to a branch later stays compatible; moving back doe
 ## What this blocked
 
 The `--publish` path in `helpers/fuzz-daily-publish.sh` refused until the ruling. It now calls
-`gh release create` and still refuses unless the host sets the enable variable. The credential needs
-Contents: write on a fine-grained token (from memory of GitHub's permission model, not verified),
-which also permits a push, so the guarantee that the host never pushes a branch rests on the script.
+`gh release create` and still refuses unless the host sets the enable variable. The credential is an
+installation token of the `nife-fuzz` App, which holds Contents write and advisories write on
+nifeos/nife alone (ruled 2026-11-01 UTC,
+[fuzz-findings-without-a-person](fuzz-findings-without-a-person.md)).

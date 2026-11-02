@@ -55,9 +55,20 @@ private directory and stays there. The next window for that slot starts one seed
 
 `helpers/fuzz-daily-publish.sh` runs from a daily timer and writes counter totals and a table of
 clean seed ranges. It reports held findings by count and age only. It never opens a held log, and it
-leaves the held window's own range out of the table, so nothing published reproduces a held finding.
-A finding stays private until its fix merges, and starts as a private security advisory. A finding
-sorted as public at triage is the exception.
+leaves the held window's own range out of the table. The next clean range still locates the held
+seed, which the BUGS list below records. A finding starts as a private security advisory and stays
+private until its fix is on main and a rerun of its input passes against that build, or until 90
+days after the report. A finding sorted as public at triage is the exception.
+
+## Who reads a held finding
+
+No lane opens, copies, prints or moves anything under the held directory. A plain service on the
+host, not an agent, files each held finding as a private security advisory on nifeos/nife, holding
+the finding class and the reproducer, and a fix lane reads that advisory and nothing else. Crash
+inputs, seeds and reproducers stay out of every public text until the fix is on main. An architect
+ruled this on 2026-11-01 (UTC) in
+[`fuzz-findings-without-a-person`](../../design/roadmap/proposals/fuzz-findings-without-a-person.md),
+which also lists the milestones that build it. Until they land, nothing files an advisory.
 
 With `--publish` it creates one GitHub release per day on nifeos/nife, tagged `fuzz-YYYY-MM-DD` (the
 UTC date), with `report.md` and `clean-ranges.tsv` as its assets: `gh release create fuzz-YYYY-MM-DD
@@ -71,9 +82,24 @@ The publish path refuses unless the host's environment holds `NIFE_FUZZ_PUBLISH=
 stays disabled until a person installs the credential and sets that variable. `--dry-run` prints the tag
 and the asset list and runs nothing else.
 
-The credential needs Contents: write on a fine-grained token (from memory of GitHub's
-permission model, not verified). That scope also permits a push, so the guarantee that the host never
-pushes a branch rests on the script, which only calls `gh release create`.
+The credential is a one-hour installation token of the `nife-fuzz` GitHub App, minted on the host
+from the App's private key, which only root can read. The App holds Contents write and Repository
+security advisories write on nifeos/nife alone (ruled 2026-11-01 UTC).
+[`the-fuzz-app.md`](the-fuzz-app.md) is the runbook for the person who creates it, and it states
+what the key can do. Main's ruleset requires a pull request and has no bypass actor, so the token
+cannot push to main; the script calls only `gh release create`.
+
+## When the loop breaks
+
+`.github/workflows/fuzz-heartbeat.yml` runs daily at 17:00 UTC on a GitHub-hosted runner and runs
+`helpers/fuzz-heartbeat.py`. It reads the releases of the last two UTC days and opens one issue
+with the label `fuzz-loop-broken` when no release exists, when the report shows no `ok` window, or when
+`infrastructure` windows are half or more of all windows. The issue names the check and the day, and
+no second one opens while one is open. It repairs nothing. A lane fixes anything in the tree; a repair
+of the host is a written spec the architect hands to the homelab agent. While no `fuzz-*` release has
+ever existed the workflow passes quietly, and it switches on by itself at the first release. The
+maintainer decides the bound, the label and the two-day window, provisionally; reversing costs
+one pull request. See [the proposal](../../design/roadmap/proposals/the-fuzz-loop-dead-mans-switch.md).
 
 ## Install, for a person with root
 
@@ -109,3 +135,8 @@ unit's user. It prints the tag and the assets and publishes nothing.
 - Only x86_64 runs. aarch64 and riscv64 need emulation and a larger machine.
 - Nobody has run the daily publish end to end against a real credential, because a person installs
   the credential.
+- After a held window with a replay line, the slot's next window starts one seed past the failing
+  one, so the first seed of the next published clean range, less one, is the held seed. The daily
+  publish must not run until the proposed fix in
+  [`the-clean-range-table-does-not-locate-a-held-seed`](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md)
+  lands.

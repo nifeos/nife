@@ -26,10 +26,10 @@ a separate refusal, the one the progenitor would make one level up.
 `BOOT_PROGRAMS` has three readers: `xtask::measure` writes the manifest from it, `uefi_loader`'s
 build refuses an unsealed pair against it, and `inspect` reads a card with it. With one list, a
 kernel cannot measure a name the checkers do not know about, which would be invisible to them.
-`progenitor` comes first, and `inspect` reads it as the one program every archive must carry. The
-six after it are not boot programs in the ordinary sense: they are milestone 19 (run a real
-workload)'s ELF child builders. `kernel::user::spawn_elf_child_builder` enters each of them
-directly, so the trust root has to name them, or the kernel could enter a program it never measured.
+It holds `progenitor` alone, and `inspect` reads it as the one program every archive must carry.
+Milestone 19 (run a real workload)'s six ELF child builders, which
+`kernel::user::spawn_elf_child_builder` enters for the system tests, are not on it: the kernel
+measures each through the archive's table, so the table's own check in `inspect` covers them.
 
 ## What it cannot see
 

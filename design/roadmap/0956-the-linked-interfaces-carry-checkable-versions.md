@@ -129,6 +129,7 @@ and stay Rust APIs: `calendar`, `domain_name_system`, `glob` and
 Carrying the note links `capability_manifest_note`, whose `grant_plan::Manifest` type brings
 `grant_plan` and `program_argument_contract` into five programs that do not otherwise link them,
 so those five declare both.
+Moving the note type into a leaf crate belongs to pull request #3026, ruled 2026-11-01 (UTC).
 
 ## What this block does not do
 
@@ -144,9 +145,11 @@ build waits for the first package that leaves the tree.
 
 - **Done.** The interface ids for the fourteen formats owed one, and the programs' lists, carried
   by this block's own `Interface ids` table and the declaration check.
-- **Proposed.** The `grant_plan::Manifest` type and the slot constants in a leaf crate, so that
-  carrying the note links no planner:
-  `design/roadmap/proposals/the-contract-crates-leave-in-this-order.md`.
+- **Recorded.** The `INTERFACES` note type in a leaf crate of its own, so carrying the note
+  links no planner (ruled 2026-11-01 (UTC) on pull request #3026; the order is in
+  `design/roadmap/proposals/the-contract-crates-leave-in-this-order.md`). The declaration check
+  names `capability_manifest_note::` as the macro's crate in two places and must classify the new
+  crate; both move with the crate.
 
 ## BUGS
 

@@ -11,7 +11,7 @@ undefined bit set.
 diff --git a/crates/filesystem_contract/src/dir.rs b/crates/filesystem_contract/src/dir.rs
 --- a/crates/filesystem_contract/src/dir.rs
 +++ b/crates/filesystem_contract/src/dir.rs
-@@ -131,7 +131,7 @@
+@@ -165,7 +165,7 @@
      /// The rights the endpoint's bound directory carries. This is the only place a rights set is
      /// made out of thin air, and the only caller is the code that binds a server to a directory.
      pub const fn root(mask: u64) -> Self {
