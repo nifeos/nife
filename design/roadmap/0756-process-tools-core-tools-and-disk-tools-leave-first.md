@@ -176,6 +176,6 @@ a two-repo change.
 ## Index row
 
 The first code to leave the monorepo: the programs of the `process-tools`, `core-tools` and
-`disk-tools` packages leave as three repositories named after the packages, after the crates they
-link, and reach the image through basalt, once six measured preconditions hold (ruled by calef
+`disk-tools` packages. They leave as three repositories named after the packages, after the crates
+they link, and reach the image through basalt, once six measured preconditions hold (ruled by calef
 2026-10-04). The homes and the sequencing carry the 2026-10-28 ruling.

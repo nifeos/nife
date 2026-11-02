@@ -18,12 +18,11 @@ list, and each member's `home` names the repository it comes from.
 The package is the unit of install: what releases together, and it may hold several programs. The
 repository is the unit of source: it has one purpose, it may be finer than a package, and one
 package may draw on several repositories. §235 (the OS is built and updated from packages, and the
-tree divides by what releases together) and milestone 607 (nife is built and updated from
-packages, and the repository divides along what releases together) say the same. A repository and a package
+tree divides by what releases together) says the same. A repository and a package
 coincide only where the package's programs have one purpose. This section rules the grain at which
 a package's programs leave; it does not rule that a package and its source are one thing.
 
-The first cut applies the rule to three packages: the programs of `process-tools` leave as
+The first cut applies the rule to three packages. The programs of `process-tools` leave as
 `nifeos/process-tools`, those of `core-tools` as `nifeos/core-tools`, and those of `disk-tools` as
 `nifeos/disk-tools` (milestone 756 (process-tools, core-tools and disk-tools are the first code to
 leave this repository)). A package's `home` line keeps `status = "provisional"` until its
