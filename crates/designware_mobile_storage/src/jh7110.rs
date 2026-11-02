@@ -30,7 +30,7 @@ pub const WINDOW_SIZE: u64 = 0x1_0000;
 /// gives the revisions; the vendor tag `VF2_v2.10.4` assigns none), which the controller divides
 /// for the card.
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+/// Name: ratified 2026-11-02 (UTC), #3092. `ciu` is spelled out as the card interface unit; `HZ` is the unit suffix.
 pub const CARD_INTERFACE_UNIT_HZ: u32 = 50_000_000;
 /// Both trees' `fifo-depth`.
 ///

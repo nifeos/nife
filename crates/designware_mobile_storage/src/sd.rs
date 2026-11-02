@@ -21,14 +21,14 @@ pub(crate) const IDENTIFY_HZ: u32 = 400_000;
 /// The transfer clock: default speed, the spec's ceiling for it on SD and the legacy eMMC ceiling
 /// (26 MHz) rounded down.
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+/// Name: ratified 2026-11-02 (UTC), #3092. `HZ` is the unit suffix.
 pub const TRANSFER_HZ: u32 = 25_000_000;
 /// One block.
 pub const BLOCK: usize = 512;
 /// How long `ACMD41` or `CMD1` may report busy before the card is declared dead: the SD spec gives
 /// a card one second from the first `ACMD41`.
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+/// Name: ratified 2026-11-02 (UTC), #3092. The unit is spelled out.
 pub const POWER_UP_DEADLINE_MICROSECONDS: u64 = 1_000_000;
 /// The relative card address the host assigns an eMMC with `CMD3`. An SD card proposes its own
 /// instead.

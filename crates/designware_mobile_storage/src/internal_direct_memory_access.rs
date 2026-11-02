@@ -79,7 +79,7 @@ pub(crate) const PAGE: u32 = 4096;
 pub(crate) const DESCRIPTOR_BYTES: u32 = 16;
 /// The most descriptors the chain page holds, and so the most data pages a region may have.
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+/// Name: ratified 2026-11-02 (UTC), #3092. The maximum is spelled out.
 pub const MAXIMUM_DESCRIPTORS: u32 = PAGE / DESCRIPTOR_BYTES;
 
 /// **Own, descriptor word 0** (OpenBSD's `DES0_OWN`): the IDMAC owns this descriptor. Cleared by

@@ -5,7 +5,7 @@
 //! an automatic CMD12 after a multi-block transfer. The response kinds are the SD Physical Layer
 //! Simplified Specification's (section 4.9) and JEDEC JESD84's for eMMC; which of them carry a
 //! CRC is the spec's statement, and the R3 exception (the OCR register has no CRC, its CRC field
-//! reads as all ones) is why [`Response::checks_crc`] exists.
+//! reads as all ones) is why [`Response::has_crc`] exists.
 //!
 //! The command constants keep the specifications' names: the SD specification's section 4.7.4 and
 //! JESD84-B51's section 6.10.4. Each doc gives the command's number and what it does.
@@ -121,9 +121,9 @@ pub enum Response {
 impl Response {
     /// Does the card send a CRC the controller can check? All but R3 and no response.
     ///
-    /// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+    /// Name: ratified 2026-11-02 (UTC), #3092. Whether the response carries a CRC the controller can check.
     #[must_use]
-    pub const fn checks_crc(self) -> bool {
+    pub const fn has_crc(self) -> bool {
         !matches!(self, Response::None | Response::R3)
     }
 
@@ -226,7 +226,7 @@ impl Command {
         if self.response.is_long() {
             w |= registers::CMD_RESPONSE_LENGTH;
         }
-        if self.response.checks_crc() {
+        if self.response.has_crc() {
             w |= registers::CMD_CHECK_RESPONSE_CRC;
         }
         if let Some(d) = self.data {
