@@ -15,6 +15,9 @@ interfaces = [
     "clock_contract",
     "confined_syscall_fuzzer_contract",
     "counter_frequency_contract",
+    # The base digest page the kernel hands the progenitor (milestone 695 (the kernel trusts two
+    # digests from the loader), part 1).
+    "base_digest_contract",
     "credential_contract",
     "current_cpu_contract",
     "machine_statistics_contract",

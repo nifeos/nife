@@ -1,0 +1,27 @@
+[package]
+name = "base_digest_contract"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "The base digest page: the SHA-256 digest of the base set's measurement table, handed read-only from a kernel to its first process"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "measured-boot", "shared-page"]
+categories = ["no-std", "embedded"]
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+
+# The base digest page: one definition of the read-only page that carries the digest of the
+# measurement table from the kernel, which holds it from the loader, to the first process, which
+# checks the table against it before reading a line of it. Written once, before the page has a
+# reader, so no seqlock is needed.
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
+
+[dependencies]

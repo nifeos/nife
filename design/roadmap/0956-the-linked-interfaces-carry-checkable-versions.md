@@ -121,6 +121,7 @@ table. No registry outside it exists.
 | 19 | `socket_contract` |
 | 20 | `user_mode_runtime` |
 | 21 | `interfaces_note` |
+| 22 | `base_digest_contract` |
 
 An interface is the module that holds the id, so `filesystem_contract` carries one in `blk` and
 one in `fs`. The check also classifies every crate the cut links. Four define no run-time format
