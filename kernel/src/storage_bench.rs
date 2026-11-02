@@ -687,9 +687,9 @@ fn through_idmac(
             say!(
                 slot,
                 "IDMAC read failed: {e:?}; IDSTS {:#x} DSCADDR {:#x} BUFADDR {:#x} STATUS {:#x} TCBCNT {}",
-                w.read(registers::IDSTS),
-                w.read(registers::DSCADDR),
-                w.read(registers::BUFADDR),
+                w.read(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER),
+                w.read(registers::CURRENT_DESCRIPTOR_ADDRESS_REGISTER),
+                w.read(registers::CURRENT_BUFFER_ADDRESS_REGISTER),
                 w.read(registers::STATUS),
                 w.read(registers::TCBCNT),
             );

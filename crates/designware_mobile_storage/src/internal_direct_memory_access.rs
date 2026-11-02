@@ -293,7 +293,10 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             registers::fifoth_for_direct_memory_access(self.depth),
         );
         self.registers.write(registers::IDINTEN, 0);
-        self.registers.write(registers::IDSTS, registers::IDSTS_ALL);
+        self.registers.write(
+            registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER,
+            registers::IDSTS_ALL,
+        );
         self.registers.write(registers::DBADDR, bus);
         let ctrl = self.registers.read(registers::CTRL);
         self.registers.write(
@@ -328,7 +331,9 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
                 return Err(Error::Data(command.index, rint));
             }
-            let idsts = self.registers.read(registers::IDSTS);
+            let idsts = self
+                .registers
+                .read(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER);
             if idsts & registers::IDSTS_ERRORS != 0 {
                 return Err(Error::DirectMemoryAccess(command.index, idsts));
             }
@@ -368,7 +373,10 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
                 == 0
                 && window.read(registers::BMOD) & registers::BMOD_SWR == 0
         });
-        self.registers.write(registers::IDSTS, registers::IDSTS_ALL);
+        self.registers.write(
+            registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER,
+            registers::IDSTS_ALL,
+        );
         self.registers
             .write(registers::FIFOTH, registers::fifoth_for_pio(self.depth));
         let ctrl = self.registers.read(registers::CTRL);
@@ -661,7 +669,10 @@ mod tests {
                     registers::fifoth_for_direct_memory_access(32)
                 ),
                 (registers::IDINTEN, 0),
-                (registers::IDSTS, registers::IDSTS_ALL),
+                (
+                    registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER,
+                    registers::IDSTS_ALL
+                ),
                 (registers::DBADDR, BASE as u32),
                 (registers::CTRL, firmware),
                 (registers::BMOD, registers::BMOD_DE | registers::BMOD_FB),
@@ -682,7 +693,10 @@ mod tests {
                     registers::CTRL,
                     1 << 8 | registers::CTRL_DMA_RESET | registers::CTRL_FIFO_RESET
                 ),
-                (registers::IDSTS, registers::IDSTS_ALL),
+                (
+                    registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER,
+                    registers::IDSTS_ALL
+                ),
                 (registers::FIFOTH, registers::fifoth_for_pio(32)),
             ]
         );

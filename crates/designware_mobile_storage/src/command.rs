@@ -204,21 +204,21 @@ impl Command {
     ///
     /// let w = Command::new(GO_IDLE_STATE, 0, Response::None).word();
     /// assert_eq!(w & 0x3f, 0);
-    /// assert_ne!(w & CMD_START_CMD, 0);
-    /// assert_ne!(w & CMD_SEND_INITIALIZATION, 0);
+    /// assert_ne!(w & COMMAND_START, 0);
+    /// assert_ne!(w & COMMAND_SEND_INITIALIZATION, 0);
     /// assert_eq!(w & CMD_RESPONSE_EXPECT, 0);
     /// ```
     #[must_use]
     pub const fn word(&self) -> u32 {
         let mut w =
-            registers::CMD_START_CMD | registers::CMD_USE_HOLD_REG | (self.index as u32 & 0x3f);
+            registers::COMMAND_START | registers::CMD_USE_HOLD_REG | (self.index as u32 & 0x3f);
         if self.index == STOP_TRANSMISSION {
             w |= registers::CMD_STOP_ABORT_CMD;
         } else if self.index != SEND_STATUS {
             w |= registers::CMD_WAIT_PRVDATA_COMPLETE;
         }
         if self.index == GO_IDLE_STATE {
-            w |= registers::CMD_SEND_INITIALIZATION;
+            w |= registers::COMMAND_SEND_INITIALIZATION;
         }
         if !matches!(self.response, Response::None) {
             w |= registers::CMD_RESPONSE_EXPECT;
@@ -243,7 +243,7 @@ impl Command {
 }
 
 /// The word that loads new clock settings into the card clock domain and sends nothing.
-pub(crate) const UPDATE_CLOCK: u32 = registers::CMD_START_CMD
+pub(crate) const UPDATE_CLOCK: u32 = registers::COMMAND_START
     | registers::CMD_WAIT_PRVDATA_COMPLETE
     | registers::CMD_UPDATE_CLOCK_REGISTERS_ONLY;
 
@@ -255,7 +255,7 @@ pub(crate) const UPDATE_CLOCK: u32 = registers::CMD_START_CMD
 /// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 pub const THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT: () =
-    assert!(registers::CMD_START_CMD + registers::CMD_USE_HOLD_REG + 0x3f == 0xa000_003f);
+    assert!(registers::COMMAND_START + registers::CMD_USE_HOLD_REG + 0x3f == 0xa000_003f);
 
 #[cfg(test)]
 mod tests {
@@ -267,7 +267,7 @@ mod tests {
         let w = Command::new(ALL_SEND_CID, 0, Response::R2).word();
         assert_eq!(
             w,
-            CMD_START_CMD
+            COMMAND_START
                 | CMD_USE_HOLD_REG
                 | CMD_WAIT_PRVDATA_COMPLETE
                 | CMD_RESPONSE_EXPECT

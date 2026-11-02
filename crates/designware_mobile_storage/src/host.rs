@@ -312,7 +312,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     fn update_clock(&mut self) -> Result<(), Error> {
         self.registers.write(registers::CMD, UPDATE_CLOCK);
         if self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
-            window.read(registers::CMD) & registers::CMD_START_CMD == 0
+            window.read(registers::CMD) & registers::COMMAND_START == 0
         }) {
             Ok(())
         } else {
@@ -397,7 +397,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         self.registers.write(registers::CMDARG, command.argument);
         self.registers.write(registers::CMD, command.word());
         if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
-            window.read(registers::CMD) & registers::CMD_START_CMD == 0
+            window.read(registers::CMD) & registers::COMMAND_START == 0
         }) {
             return Err(Error::CommandNotTaken(command.index));
         }

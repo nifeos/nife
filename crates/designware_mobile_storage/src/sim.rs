@@ -708,7 +708,8 @@ impl Sim {
             let (des0, size, buffer, next) = (word(0), word(1) & DES1_BS1_MASK, word(2), word(3));
             if des0 & DES0_OWN == 0 || done == 0 && self.unowned_at == Some(self.walked) {
                 self.walk = Walk::Suspended(desc);
-                *self.register(registers::IDSTS) |= registers::IDSTS_DU | registers::IDSTS_AIS;
+                *self.register(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER) |=
+                    registers::IDSTS_DU | registers::IDSTS_AIS;
                 return;
             }
             if done == 0 && self.bus_error_at == Some(self.walked) {
@@ -743,7 +744,8 @@ impl Sim {
                 } else {
                     registers::IDSTS_RI
                 };
-                *self.register(registers::IDSTS) |= finished | registers::IDSTS_NIS;
+                *self.register(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER) |=
+                    finished | registers::IDSTS_NIS;
             }
             self.walk = if des0 & DES0_LD != 0 {
                 Walk::Finished
@@ -775,7 +777,8 @@ impl Sim {
 
     fn halt(&mut self) {
         self.walk = Walk::Halted;
-        *self.register(registers::IDSTS) |= registers::IDSTS_FBE | registers::IDSTS_AIS;
+        *self.register(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER) |=
+            registers::IDSTS_FBE | registers::IDSTS_AIS;
     }
 
     /// A card read threshold enabled above the FIFO's size in bytes, which the databook does not
@@ -883,7 +886,9 @@ impl Registers for Sim {
         self.writes.push((offset, value));
         match offset {
             registers::RINTSTS => *self.register(registers::RINTSTS) &= !value,
-            registers::IDSTS => *self.register(registers::IDSTS) &= !value,
+            registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER => {
+                *self.register(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER) &= !value;
+            }
             registers::BMOD => {
                 if value & registers::BMOD_SWR != 0
                     || value & registers::BMOD_DE & !self.peek(registers::BMOD) != 0
@@ -920,7 +925,7 @@ impl Registers for Sim {
                 *self.register(registers::CTRL) = value;
             }
             registers::CMD => {
-                if value & registers::CMD_START_CMD != 0
+                if value & registers::COMMAND_START != 0
                     && value & registers::CMD_UPDATE_CLOCK_REGISTERS_ONLY == 0
                 {
                     self.command(value);
@@ -930,7 +935,7 @@ impl Registers for Sim {
                 *self.register(registers::CMD) = if stuck {
                     value
                 } else {
-                    value & !registers::CMD_START_CMD
+                    value & !registers::COMMAND_START
                 };
             }
             registers::VERID | registers::HCON | registers::STATUS => {}
