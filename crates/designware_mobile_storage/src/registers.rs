@@ -14,35 +14,40 @@
 
 /// **Control Register** (OpenBSD's `SDMMC_CTRL`): the three self-clearing resets, the interrupt and
 /// DMA enables.
+///
+/// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; OpenBSD's `SDMMC_CTRL`
+/// spelling `CTRL` is kept as an alias.
 #[doc(alias = "control register")]
-pub const CTRL: u32 = 0x000;
+#[doc(alias = "CTRL")]
+pub const CONTROL: u32 = 0x000;
 /// **Controller reset** (OpenBSD's `SDMMC_CTRL_CONTROLLER_RESET`): reset the controller's state
 /// machines. Self-clearing.
 #[doc(alias = "controller reset")]
-pub(crate) const CTRL_CONTROLLER_RESET: u32 = 1 << 0;
+pub(crate) const CONTROL_CONTROLLER_RESET: u32 = 1 << 0;
 /// **FIFO reset** (OpenBSD's `SDMMC_CTRL_FIFO_RESET`): reset the data FIFO. Self-clearing.
 #[doc(alias = "queue reset")]
-pub(crate) const CTRL_FIFO_RESET: u32 = 1 << 1;
+pub(crate) const CONTROL_FIFO_RESET: u32 = 1 << 1;
 /// **DMA reset** (OpenBSD's `SDMMC_CTRL_DMA_RESET`): reset the DMA interface. Self-clearing.
 #[doc(alias = "direct memory access reset")]
-pub(crate) const CTRL_DMA_RESET: u32 = 1 << 2;
+pub(crate) const CONTROL_DMA_RESET: u32 = 1 << 2;
 /// **All resets** (OpenBSD's `SDMMC_CTRL_ALL_RESET`): all three resets, which is how bring-up uses
 /// them.
 #[doc(alias = "all control resets")]
-pub(crate) const CTRL_ALL_RESET: u32 = CTRL_CONTROLLER_RESET | CTRL_FIFO_RESET | CTRL_DMA_RESET;
+pub(crate) const CONTROL_ALL_RESET: u32 =
+    CONTROL_CONTROLLER_RESET | CONTROL_FIFO_RESET | CONTROL_DMA_RESET;
 /// **Interrupt enable** (OpenBSD's `SDMMC_CTRL_INT_ENABLE`): the global interrupt enable. This
 /// driver polls, so it stays clear: an interrupt nobody routes is a line held asserted at the PLIC
 /// for no reader.
 #[doc(alias = "interrupt enable")]
-pub(crate) const CTRL_INT_ENABLE: u32 = 1 << 4;
+pub(crate) const CONTROL_INT_ENABLE: u32 = 1 << 4;
 /// **DMA enable** (OpenBSD's `SDMMC_CTRL_DMA_ENABLE`): hand the FIFO to a DMA engine instead of the
 /// CPU.
 #[doc(alias = "direct memory access enable")]
-pub(crate) const CTRL_DMA_ENABLE: u32 = 1 << 5;
+pub(crate) const CONTROL_DMA_ENABLE: u32 = 1 << 5;
 /// **Use internal DMAC** (OpenBSD's `SDMMC_CTRL_USE_INTERNAL_DMAC`): use the controller's own
 /// descriptor-walking DMA (IDMAC) rather than an external one.
 #[doc(alias = "use internal direct memory access controller")]
-pub(crate) const CTRL_USE_INTERNAL_DMAC: u32 = 1 << 25;
+pub(crate) const CONTROL_USE_INTERNAL_DMAC: u32 = 1 << 25;
 /// The three enables `reset` clears and the IDMAC arms share no bit (25, 5 and 4), which the
 /// compiler checks here; the mutation exclusions for `Host::reset` and
 /// `internal_direct_memory_access_start` name this constant. The constant-assertion lint is off on
@@ -52,7 +57,7 @@ pub(crate) const CTRL_USE_INTERNAL_DMAC: u32 = 1 << 25;
 /// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 pub const DIRECT_MEMORY_ACCESS_ENABLES_DO_NOT_OVERLAP: () =
-    assert!(CTRL_USE_INTERNAL_DMAC + CTRL_DMA_ENABLE + CTRL_INT_ENABLE == 0x0200_0030);
+    assert!(CONTROL_USE_INTERNAL_DMAC + CONTROL_DMA_ENABLE + CONTROL_INT_ENABLE == 0x0200_0030);
 
 /// **Power Enable Register** (OpenBSD's `SDMMC_PWREN`): one bit per card slot. Slot 0 is the only
 /// one on the JH7110.
@@ -169,8 +174,12 @@ pub(crate) const CMD_CHECK_RESPONSE_CRC: u32 = 1 << 8;
 #[doc(alias = "long response")]
 pub(crate) const CMD_RESPONSE_LENGTH: u32 = 1 << 7;
 /// **Response expect** (OpenBSD's `SDMMC_CMD_RESPONSE_EXPECT`): the command has a response.
+///
+/// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; OpenBSD's `SDMMC_CMD_RESPONSE_EXPECT`
+/// spelling `CMD_RESPONSE_EXPECT` is kept as an alias.
 #[doc(alias = "response expected")]
-pub const CMD_RESPONSE_EXPECT: u32 = 1 << 6;
+#[doc(alias = "CMD_RESPONSE_EXPECT")]
+pub const COMMAND_RESPONSE_EXPECT: u32 = 1 << 6;
 
 /// **Response Register 0** (OpenBSD's `SDMMC_RESP0`): response word 0, bits 31:0 of a short
 /// response, or bits 31:0 of a long one.
@@ -362,16 +371,28 @@ pub(crate) const fn fifoth_receive_watermark(fifoth: u32) -> u32 {
 #[doc(alias = "card detect register")]
 pub(crate) const CDETECT: u32 = 0x050;
 /// **Write Protect Register** (OpenBSD's `SDMMC_WRTPRT`): active high, slot 0.
+///
+/// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; OpenBSD's `SDMMC_WRTPRT`
+/// spelling `WRTPRT` is kept as an alias.
 #[doc(alias = "write protect register")]
-pub const WRTPRT: u32 = 0x054;
+#[doc(alias = "WRTPRT")]
+pub const WRITE_PROTECT: u32 = 0x054;
 /// **Transferred CIU Card Byte Count Register** (OpenBSD's `SDMMC_TCBCNT`): bytes the card
 /// interface has moved in the current data phase.
+///
+/// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; OpenBSD's `SDMMC_TCBCNT`
+/// spelling `TCBCNT` is kept as an alias.
 #[doc(alias = "transferred card byte count")]
-pub const TCBCNT: u32 = 0x05c;
+#[doc(alias = "TCBCNT")]
+pub const TRANSFERRED_CARD_BYTE_COUNT: u32 = 0x05c;
 /// **Transferred Host to BIU-FIFO Byte Count Register** (OpenBSD's `SDMMC_TBBCNT`): bytes moved
 /// between the host and the FIFO in the current data phase.
+///
+/// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; OpenBSD's `SDMMC_TBBCNT`
+/// spelling `TBBCNT` is kept as an alias.
 #[doc(alias = "transferred host byte count")]
-pub const TBBCNT: u32 = 0x060;
+#[doc(alias = "TBBCNT")]
+pub const TRANSFERRED_HOST_BYTE_COUNT: u32 = 0x060;
 /// **User ID Register** (OpenBSD's `SDMMC_USRID`): the integrator's user identifier, a free-form
 /// word.
 #[doc(alias = "user identifier register")]
@@ -396,19 +417,27 @@ pub(crate) const HCON: u32 = 0x070;
 pub const ULTRA_HIGH_SPEED_REGISTER: u32 = 0x074;
 /// **Hardware Reset Register** (Linux's `SDMMC_RST_N`; OpenBSD writes `SDMMC_RST_n`): per-slot
 /// hardware reset line to an eMMC device, active low.
+///
+/// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; Linux's `SDMMC_RST_N`
+/// spelling `RST_N` is kept as an alias.
 #[doc(alias = "hardware reset register")]
-pub const RST_N: u32 = 0x078;
+#[doc(alias = "RST_N")]
+pub const HARDWARE_RESET: u32 = 0x078;
 /// **Bus Mode Register** (OpenBSD's `SDMMC_BMOD`): the IDMAC's resets, burst mode and enable.
+///
+/// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; OpenBSD's `SDMMC_BMOD`
+/// spelling `BMOD` is kept as an alias.
 #[doc(alias = "bus mode register")]
-pub const BMOD: u32 = 0x080;
+#[doc(alias = "BMOD")]
+pub const BUS_MODE: u32 = 0x080;
 /// **Software reset** (OpenBSD's `SDMMC_BMOD_SWR`): reset the IDMAC's registers and state.
 /// Self-clearing.
 #[doc(alias = "software reset")]
-pub(crate) const BMOD_SWR: u32 = 1 << 0;
+pub(crate) const BUS_MODE_SWR: u32 = 1 << 0;
 /// **Fixed burst** (OpenBSD's `SDMMC_BMOD_FB`): fixed-length bursts on the bus, of the size
 /// `FIFOTH`'s burst field names.
 #[doc(alias = "fixed burst")]
-pub(crate) const BMOD_FB: u32 = 1 << 1;
+pub(crate) const BUS_MODE_FB: u32 = 1 << 1;
 /// The two bus-mode bits the IDMAC arm writes share no bit (7 and 1), which the compiler checks
 /// here; the mutation exclusion for `internal_direct_memory_access_start` names this constant. The
 /// constant-assertion lint is off on purpose: the assertion is constant by construction, and the
@@ -417,10 +446,10 @@ pub(crate) const BMOD_FB: u32 = 1 << 1;
 /// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
 /// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const BUS_MODE_BITS_DO_NOT_OVERLAP: () = assert!(BMOD_DE + BMOD_FB == 0x82);
+pub const BUS_MODE_BITS_DO_NOT_OVERLAP: () = assert!(BUS_MODE_DE + BUS_MODE_FB == 0x82);
 /// **IDMAC enable** (OpenBSD's `SDMMC_BMOD_DE`): the IDMAC walks descriptors.
 #[doc(alias = "internal direct memory access enable")]
-pub(crate) const BMOD_DE: u32 = 1 << 7;
+pub(crate) const BUS_MODE_DE: u32 = 1 << 7;
 /// **Poll Demand Register** (OpenBSD's `SDMMC_PLDMND`): any write wakes an IDMAC suspended on a
 /// descriptor it did not own.
 #[doc(alias = "poll demand register")]
@@ -557,7 +586,7 @@ pub const fn uses_64_bit_direct_memory_access(hcon: u32) -> bool {
 /// **The controller's external DMA interface**, `HCON` bits 17:16: 0 is none, 1 Synopsys' own
 /// `DW_DMA`, 2 a generic DMA handshake, 3 a non-Synopsys one. An IDMAC is built only into a
 /// controller that reads 0 here, which is how Linux's `dw_mci_probe` decides to use it. radon
-/// reads 0, and its firmware reads the card through the IDMAC (`CTRL` bit 25 as it hands over).
+/// reads 0, and its firmware reads the card through the IDMAC (`CONTROL` bit 25 as it hands over).
 #[must_use]
 pub(crate) const fn direct_memory_access_interface(hcon: u32) -> u32 {
     (hcon >> 16) & 0x3
@@ -635,12 +664,12 @@ mod tests {
     #[test]
     fn the_register_bits_are_the_databooks() {
         for (bit, value) in [
-            (CTRL_CONTROLLER_RESET, 0x1),
-            (CTRL_FIFO_RESET, 0x2),
-            (CTRL_DMA_RESET, 0x4),
-            (CTRL_INT_ENABLE, 0x10),
-            (CTRL_DMA_ENABLE, 0x20),
-            (CTRL_USE_INTERNAL_DMAC, 0x2000000),
+            (CONTROL_CONTROLLER_RESET, 0x1),
+            (CONTROL_FIFO_RESET, 0x2),
+            (CONTROL_DMA_RESET, 0x4),
+            (CONTROL_INT_ENABLE, 0x10),
+            (CONTROL_DMA_ENABLE, 0x20),
+            (CONTROL_USE_INTERNAL_DMAC, 0x2000000),
             (CLKENA_CCLK_ENABLE, 0x1),
             (CLKENA_CCLK_LOW_POWER, 0x10000),
             (CTYPE_4BIT, 0x1),
@@ -656,7 +685,7 @@ mod tests {
             (CMD_DATA_EXPECTED, 0x200),
             (CMD_CHECK_RESPONSE_CRC, 0x100),
             (CMD_RESPONSE_LENGTH, 0x80),
-            (CMD_RESPONSE_EXPECT, 0x40),
+            (COMMAND_RESPONSE_EXPECT, 0x40),
             (RINTSTS_RE, 0x2),
             (RINTSTS_CD, 0x4),
             (RINTSTS_DTO, 0x8),
@@ -674,9 +703,9 @@ mod tests {
             (RINTSTS_EBE, 0x8000),
             (STATUS_DATA_BUSY, 0x200),
             (CARDTHRCTL_RDTHREN, 0x1),
-            (BMOD_SWR, 0x1),
-            (BMOD_FB, 0x2),
-            (BMOD_DE, 0x80),
+            (BUS_MODE_SWR, 0x1),
+            (BUS_MODE_FB, 0x2),
+            (BUS_MODE_DE, 0x80),
             (IDSTS_TI, 0x1),
             (IDSTS_RI, 0x2),
             (IDSTS_FBE, 0x4),
@@ -693,7 +722,7 @@ mod tests {
         ] {
             assert_eq!(bit, value);
         }
-        assert_eq!(CTRL_ALL_RESET, 0x7);
+        assert_eq!(CONTROL_ALL_RESET, 0x7);
         assert_eq!(RINTSTS_DATA_ERR, 0xb880);
         assert_eq!(RINTSTS_DATA_TO, 0x600);
     }

@@ -8,7 +8,7 @@
 //! transfer region at
 //! `driver_process_contract::designware_mobile_storage::TRANSFER_VIRTUAL_ADDRESS`, the request
 //! (slot 0) and readiness (slot 1) endpoints, and the card's window, clock, width and FIFO depth.
-//! No DMA, but that page holds `BMOD` and `DBADDR` and the JH7110 has no IOMMU, so it is as
+//! No DMA, but that page holds `BUS_MODE` and `DBADDR` and the JH7110 has no IOMMU, so it is as
 //! confined as its own code, the position of milestone 261 (the NVMe driver leaves the kernel).
 
 //! Name: ratified 2026-10-17 (calef, a program-naming session). Kept, paired with its crate as

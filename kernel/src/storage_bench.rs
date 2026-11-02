@@ -325,13 +325,14 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         }
         Err(ReadFailure::Read(lba, e)) => {
             say!(slot, "read of block {lba} failed: {e:?}");
-            // TCBCNT counts bytes card to FIFO and TBBCNT FIFO to CPU: the CPU ahead of the card
-            // is an underrun, the card ahead with a full FIFO is an overrun.
+            // The card byte count counts bytes card to FIFO and the host byte count FIFO to CPU:
+            // the CPU ahead of the card is an underrun, the card ahead with a full FIFO is an
+            // overrun.
             let r = host.registers();
             let (status, tcb, tbb) = (
                 r.read(registers::STATUS),
-                r.read(registers::TCBCNT),
-                r.read(registers::TBBCNT),
+                r.read(registers::TRANSFERRED_CARD_BYTE_COUNT),
+                r.read(registers::TRANSFERRED_HOST_BYTE_COUNT),
             );
             say!(
                 slot,
@@ -691,7 +692,7 @@ fn through_idmac(
                 w.read(registers::CURRENT_DESCRIPTOR_ADDRESS_REGISTER),
                 w.read(registers::CURRENT_BUFFER_ADDRESS_REGISTER),
                 w.read(registers::STATUS),
-                w.read(registers::TCBCNT),
+                w.read(registers::TRANSFERRED_CARD_BYTE_COUNT),
             );
             return Dma::Failed(e);
         }

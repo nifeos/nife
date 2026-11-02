@@ -35,7 +35,7 @@ pub enum Error {
     /// `HCON` names a FIFO width this driver does not move: the raw width field.
     #[doc(alias = "fifo")]
     QueueWidth(u32),
-    /// A reset bit in `CTRL` or `BMOD` did not clear: the word last read.
+    /// A reset bit in `CONTROL` or `BUS_MODE` did not clear: the word last read.
     ResetStuck(u32),
     /// The controller did not take a clock update (the start bit stayed set).
     ClockUpdate,
@@ -72,7 +72,7 @@ pub struct Identity {
     pub fifoth: u32,
     /// `CDETECT` as found: bit 0 clear means a card is present.
     pub cdetect: u32,
-    /// `CTRL`, `PWREN`, `CLKDIV`, `CLKENA` and `CTYPE` as the firmware left them.
+    /// `CONTROL`, `PWREN`, `CLKDIV`, `CLKENA` and `CTYPE` as the firmware left them.
     pub firmware: [u32; 5],
 }
 
@@ -179,7 +179,7 @@ impl<R: Registers> Host<R> {
             fifoth: registers.read(registers::FIFOTH),
             cdetect: registers.read(registers::CDETECT),
             firmware: [
-                registers.read(registers::CTRL),
+                registers.read(registers::CONTROL),
                 registers.read(registers::PWREN),
                 registers.read(registers::CLKDIV),
                 registers.read(registers::CLKENA),
@@ -273,16 +273,16 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// [`Error::ResetStuck`] if a reset bit does not clear.
     pub fn reset(&mut self) -> Result<(), Error> {
         self.registers.write(registers::CLKENA, 0);
-        let ctrl = self.registers.read(registers::CTRL)
-            & !(registers::CTRL_USE_INTERNAL_DMAC
-                | registers::CTRL_DMA_ENABLE
-                | registers::CTRL_INT_ENABLE);
+        let ctrl = self.registers.read(registers::CONTROL)
+            & !(registers::CONTROL_USE_INTERNAL_DMAC
+                | registers::CONTROL_DMA_ENABLE
+                | registers::CONTROL_INT_ENABLE);
         self.registers
-            .write(registers::CTRL, ctrl | registers::CTRL_ALL_RESET);
+            .write(registers::CONTROL, ctrl | registers::CONTROL_ALL_RESET);
         if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
-            window.read(registers::CTRL) & registers::CTRL_ALL_RESET == 0
+            window.read(registers::CONTROL) & registers::CONTROL_ALL_RESET == 0
         }) {
-            return Err(Error::ResetStuck(self.registers.read(registers::CTRL)));
+            return Err(Error::ResetStuck(self.registers.read(registers::CONTROL)));
         }
         self.registers.write(registers::INTMASK, 0);
         self.registers.write(registers::RINTSTS, 0xffff_ffff);
@@ -381,13 +381,13 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         if let Some(d) = command.data {
             self.registers.write(registers::BYTCNT, d.bytes());
             self.registers.write(registers::BLKSIZ, d.block_size);
-            let ctrl = self.registers.read(registers::CTRL);
+            let ctrl = self.registers.read(registers::CONTROL);
             self.registers
-                .write(registers::CTRL, ctrl | registers::CTRL_FIFO_RESET);
+                .write(registers::CONTROL, ctrl | registers::CONTROL_FIFO_RESET);
             if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
-                window.read(registers::CTRL) & registers::CTRL_FIFO_RESET == 0
+                window.read(registers::CONTROL) & registers::CONTROL_FIFO_RESET == 0
             }) {
-                return Err(Error::ResetStuck(self.registers.read(registers::CTRL)));
+                return Err(Error::ResetStuck(self.registers.read(registers::CONTROL)));
             }
             if direct_memory_access {
                 self.internal_direct_memory_access_start()?;
@@ -664,11 +664,11 @@ mod tests {
         let mut h = take(Sim::new(CardKind::Empty, 1, 32));
         // Firmware left the DMA and interrupt enables on, bit 8, which is not the driver's, and a
         // card read threshold.
-        let firmware = registers::CTRL_USE_INTERNAL_DMAC
-            | registers::CTRL_DMA_ENABLE
-            | registers::CTRL_INT_ENABLE
+        let firmware = registers::CONTROL_USE_INTERNAL_DMAC
+            | registers::CONTROL_DMA_ENABLE
+            | registers::CONTROL_INT_ENABLE
             | 1 << 8;
-        h.registers().write(registers::CTRL, firmware);
+        h.registers().write(registers::CONTROL, firmware);
         h.registers().write(
             registers::CARDTHRCTL,
             512 << 16 | registers::CARDTHRCTL_RDTHREN,
@@ -679,7 +679,7 @@ mod tests {
             h.registers().writes,
             [
                 (registers::CLKENA, 0),
-                (registers::CTRL, 1 << 8 | registers::CTRL_ALL_RESET),
+                (registers::CONTROL, 1 << 8 | registers::CONTROL_ALL_RESET),
                 (registers::INTMASK, 0),
                 (registers::RINTSTS, 0xffff_ffff),
                 (registers::TMOUT, 0xffff_ffff),
@@ -691,12 +691,12 @@ mod tests {
         // A FIFO reset still in flight when the driver starts is asked for again, not toggled off.
         let mut h = take(Sim::new(CardKind::Empty, 1, 32));
         h.registers()
-            .write(registers::CTRL, registers::CTRL_FIFO_RESET);
+            .write(registers::CONTROL, registers::CONTROL_FIFO_RESET);
         h.registers().writes.clear();
         h.reset().unwrap();
         assert_eq!(
             h.registers().writes[1],
-            (registers::CTRL, registers::CTRL_ALL_RESET)
+            (registers::CONTROL, registers::CONTROL_ALL_RESET)
         );
     }
 
@@ -705,7 +705,10 @@ mod tests {
         let mut sim = Sim::new(CardKind::Empty, 1, 32);
         sim.reset_stuck = true;
         let mut h = take(sim);
-        assert_eq!(h.reset(), Err(Error::ResetStuck(registers::CTRL_ALL_RESET)));
+        assert_eq!(
+            h.reset(),
+            Err(Error::ResetStuck(registers::CONTROL_ALL_RESET))
+        );
     }
 
     #[test]
@@ -782,23 +785,23 @@ mod tests {
 
     /// Before a data command the FIFO is reset and the reset waited for, and the card read
     /// threshold is left off: a 512-byte one in radon's 32-word FIFO is what overran its first
-    /// read. Bit 8 of `CTRL`, left by firmware, makes a wait that tested anything but the reset
+    /// read. Bit 8 of `CONTROL`, left by firmware, makes a wait that tested anything but the reset
     /// bits never finish.
     #[test]
     fn a_data_command_resets_the_queue_and_leaves_the_threshold_off() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
-        h.registers().write(registers::CTRL, 1 << 8);
+        h.registers().write(registers::CONTROL, 1 << 8);
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers().writes.clear();
         let mut block = [0u8; 512];
         sd::read_blocks(&mut h, &card, 1, &mut block).unwrap();
         let read = core::mem::take(&mut h.registers().writes);
         assert!(!read.iter().any(|&(o, _)| o == registers::CARDTHRCTL));
-        assert!(read.contains(&(registers::CTRL, 1 << 8 | registers::CTRL_FIFO_RESET)));
+        assert!(read.contains(&(registers::CONTROL, 1 << 8 | registers::CONTROL_FIFO_RESET)));
         sd::write_blocks(&mut h, &card, 1, &block).unwrap();
         let write = &h.registers().writes;
         assert!(!write.iter().any(|&(o, _)| o == registers::CARDTHRCTL));
-        assert!(write.contains(&(registers::CTRL, 1 << 8 | registers::CTRL_FIFO_RESET)));
+        assert!(write.contains(&(registers::CONTROL, 1 << 8 | registers::CONTROL_FIFO_RESET)));
         // A FIFO reset that never clears stops the command before it is sent.
         h.registers().reset_stuck = true;
         assert!(matches!(
