@@ -33,8 +33,8 @@ proves, what tests it adds and what waits on a ruling.
    the confirmation of [the security appendix](security.md). In the same pull request, the
    progenitor serves an installed installer holder only the delegated badge, refuses
    `answered console` from it, and refuses a delegated install that asks for an exclusive or
-   console-class grant. Console input gains its `req.badge == 0` check. The classes are ruled
-   ([decision 2](decisions.md)).
+   console-class grant. Console input gains its `req.badge == 0` check. The ruling on the classes
+   is in ([decision 2](decisions.md)).
 6. The display session keys on its field. The shell sets `Wiring::graphics` from
    `Manifest::display`, not from `Program::GraphicalTerminal`, and the progenitor gates
    `Request::graphical` on the vouched manifest and a live-session flag. No ruling beyond 1.
