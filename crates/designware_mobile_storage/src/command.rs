@@ -207,7 +207,7 @@ impl Command {
     /// assert_eq!(w & 0x3f, 0);
     /// assert_ne!(w & COMMAND_START, 0);
     /// assert_ne!(w & COMMAND_SEND_INITIALIZATION, 0);
-    /// assert_eq!(w & CMD_RESPONSE_EXPECT, 0);
+    /// assert_eq!(w & COMMAND_RESPONSE_EXPECT, 0);
     /// ```
     #[must_use]
     pub const fn word(&self) -> u32 {
@@ -222,7 +222,7 @@ impl Command {
             w |= registers::COMMAND_SEND_INITIALIZATION;
         }
         if !matches!(self.response, Response::None) {
-            w |= registers::CMD_RESPONSE_EXPECT;
+            w |= registers::COMMAND_RESPONSE_EXPECT;
         }
         if self.response.is_long() {
             w |= registers::CMD_RESPONSE_LENGTH;
@@ -272,7 +272,7 @@ mod tests {
             COMMAND_START
                 | CMD_USE_HOLD_REG
                 | CMD_WAIT_PRVDATA_COMPLETE
-                | CMD_RESPONSE_EXPECT
+                | COMMAND_RESPONSE_EXPECT
                 | CMD_RESPONSE_LENGTH
                 | CMD_CHECK_RESPONSE_CRC
                 | 2
@@ -282,7 +282,7 @@ mod tests {
     #[test]
     fn the_operation_conditions_are_not_crc_checked_because_they_have_none() {
         let w = Command::new(SD_SEND_OP_COND, 0x4030_0000, Response::R3).word();
-        assert_ne!(w & CMD_RESPONSE_EXPECT, 0);
+        assert_ne!(w & COMMAND_RESPONSE_EXPECT, 0);
         assert_eq!(w & CMD_CHECK_RESPONSE_CRC, 0);
     }
 

@@ -326,7 +326,7 @@ pub struct MatrixRow {
     pub maximum_fill: u32,
     /// `STATUS` reads that found the queue full.
     pub full_reads: u32,
-    /// `STATUS`, `RINTSTS`, `TCBCNT` and `TBBCNT` read straight after it.
+    /// `STATUS`, `RINTSTS`, `TRANSFERRED_CARD_BYTE_COUNT` and `TRANSFERRED_HOST_BYTE_COUNT` read straight after it.
     pub after: [u32; 4],
 }
 
@@ -374,8 +374,12 @@ pub fn read_matrix<R: Registers>(
             let after = [
                 watch.inner.read(crate::registers::STATUS),
                 watch.inner.read(crate::registers::RINTSTS),
-                watch.inner.read(crate::registers::TCBCNT),
-                watch.inner.read(crate::registers::TBBCNT),
+                watch
+                    .inner
+                    .read(crate::registers::TRANSFERRED_CARD_BYTE_COUNT),
+                watch
+                    .inner
+                    .read(crate::registers::TRANSFERRED_HOST_BYTE_COUNT),
             ];
             row(MatrixRow {
                 asked_hz: hz,

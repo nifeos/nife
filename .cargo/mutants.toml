@@ -268,7 +268,7 @@ exclude_re = [
     '^crates/designware_mobile_storage/src/command\.rs:\d+:\d+: replace \| with \^ in Command::word$',
     # reset clears the three enables, disjoint per
     # DIRECT_MEMORY_ACCESS_ENABLES_DO_NOT_OVERLAP (registers.rs); the excluded
-    # `ctrl | CTRL_ALL_RESET` write's mutant, which
+    # `ctrl | CONTROL_ALL_RESET` write's mutant, which
     # reset_clears_the_enables_keeps_other_bits_and_asks_for_all_three_resets killed, is covered by
     # the same exclusion.
     '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::reset$',
@@ -285,9 +285,9 @@ exclude_re = [
     # descriptor writes OWN (31) with CH (4), disjoint per
     # DESCRIPTOR_OWN_AND_CHAIN_BITS_DO_NOT_OVERLAP (internal_direct_memory_access.rs).
     '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in descriptor$',
-    # internal_direct_memory_access_start ORs the enable pair and BMOD's enable with fixed burst,
+    # internal_direct_memory_access_start ORs the enable pair and BUS_MODE's enable with fixed burst,
     # disjoint per DIRECT_MEMORY_ACCESS_ENABLES_DO_NOT_OVERLAP and
-    # BUS_MODE_BITS_DO_NOT_OVERLAP (registers.rs); the `ctrl | CTRL_USE_INTERNAL_DMAC` write's
+    # BUS_MODE_BITS_DO_NOT_OVERLAP (registers.rs); the `ctrl | CONTROL_USE_INTERNAL_DMAC` write's
     # mutant, which one_transfer_arms_and_stops_the_internal_direct_memory_access_register_by_register
     # killed, is covered by the same exclusion.
     '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::internal_direct_memory_access_start$',

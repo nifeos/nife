@@ -2,7 +2,7 @@
 //! for any RISC-V machine (its one `dw_mmc`-shaped device, on some Arm boards, is unreachable from
 //! the machines this tree boots), so the tests run the real driver against this and the bench step
 //! checks this against silicon. It models only the contract the driver relies on, as the databook
-//! and OpenBSD describe it: self-clearing `CTRL` resets, the `CMD` start bit, a FIFO raising
+//! and OpenBSD describe it: self-clearing `CONTROL` resets, the `CMD` start bit, a FIFO raising
 //! `RXDR`, `TXDR`, `DTO` and `ACD`, `STATUS` fill and busy, `CARDTHRCTL` above the FIFO ending in
 //! `FRUN` and `DTO` as on radon, and the IDMAC walk, whose last read words reach memory after
 //! `DTO`. Time is one microsecond per `now_microseconds` call, so a test that would hang on silicon fails
@@ -204,7 +204,7 @@ pub struct Sim {
     pub strict_watermark: bool,
     /// Every register write the driver made, in order, FIFO words excepted.
     pub writes: Vec<(u32, u32)>,
-    /// `CTRL`'s reset bits never clear.
+    /// `CONTROL`'s reset bits never clear.
     pub reset_stuck: bool,
     /// The controller never takes a clock update: `CMD`'s start bit stays set.
     pub clock_stuck: bool,
@@ -241,9 +241,9 @@ pub struct Sim {
     /// The descriptor walked at this position (from 0) of a chain reads as the CPU's: a chain the
     /// driver did not finish handing over.
     pub unowned_at: Option<u32>,
-    /// This many `CTRL` reset requests clear; every later one holds, as `reset_stuck` does.
+    /// This many `CONTROL` reset requests clear; every later one holds, as `reset_stuck` does.
     pub control_resets_cleared: Option<u32>,
-    /// This many `BMOD` soft resets clear; every later one holds.
+    /// This many `BUS_MODE` soft resets clear; every later one holds.
     pub bus_mode_resets_cleared: Option<u32>,
     walked: u32,
     /// The IDMAC moves at most this many words each time the sim advances: a slow bus, which lets
@@ -515,7 +515,9 @@ impl Sim {
         }
         let mut rint = registers::RINTSTS_CD;
         match answer {
-            None if word & registers::CMD_RESPONSE_EXPECT != 0 => rint |= registers::RINTSTS_RTO,
+            None if word & registers::COMMAND_RESPONSE_EXPECT != 0 => {
+                rint |= registers::RINTSTS_RTO
+            }
             None => {}
             Some(_) if fault == Some(Fault::BadCrc) => rint |= registers::RINTSTS_RCRC,
             Some(_) => {}
@@ -660,9 +662,9 @@ impl Sim {
     }
 
     fn internal_direct_memory_access_active(&self) -> bool {
-        let both = registers::CTRL_USE_INTERNAL_DMAC | registers::CTRL_DMA_ENABLE;
-        self.peek(registers::CTRL) & both == both
-            && self.peek(registers::BMOD) & registers::BMOD_DE != 0
+        let both = registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE;
+        self.peek(registers::CONTROL) & both == both
+            && self.peek(registers::BUS_MODE) & registers::BUS_MODE_DE != 0
             && self.memory.is_some()
     }
 
@@ -818,17 +820,19 @@ impl Registers for Sim {
             return w;
         }
         match offset {
-            registers::CTRL if self.reset_pending => {
+            registers::CONTROL if self.reset_pending => {
                 // The bits read as set once, then clear: the driver must poll, not assume.
                 self.reset_pending = false;
-                let v = *self.register(registers::CTRL);
-                *self.register(registers::CTRL) &= !registers::CTRL_ALL_RESET;
+                let v = *self.register(registers::CONTROL);
+                *self.register(registers::CONTROL) &= !registers::CONTROL_ALL_RESET;
                 v
             }
-            registers::BMOD if self.peek(registers::BMOD) & registers::BMOD_SWR != 0 => {
-                let v = self.peek(registers::BMOD);
+            registers::BUS_MODE
+                if self.peek(registers::BUS_MODE) & registers::BUS_MODE_SWR != 0 =>
+            {
+                let v = self.peek(registers::BUS_MODE);
                 if !self.reset_stuck && !Self::holds(&mut self.bus_mode_resets_cleared) {
-                    *self.register(registers::BMOD) &= !registers::BMOD_SWR;
+                    *self.register(registers::BUS_MODE) &= !registers::BUS_MODE_SWR;
                 }
                 v
             }
@@ -889,14 +893,14 @@ impl Registers for Sim {
             registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER => {
                 *self.register(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER) &= !value;
             }
-            registers::BMOD => {
-                if value & registers::BMOD_SWR != 0
-                    || value & registers::BMOD_DE & !self.peek(registers::BMOD) != 0
+            registers::BUS_MODE => {
+                if value & registers::BUS_MODE_SWR != 0
+                    || value & registers::BUS_MODE_DE & !self.peek(registers::BUS_MODE) != 0
                 {
                     self.walk = Walk::Idle;
                     self.walked = 0;
                 }
-                *self.register(registers::BMOD) = value;
+                *self.register(registers::BUS_MODE) = value;
             }
             registers::DBADDR => {
                 self.walk = Walk::Idle;
@@ -908,21 +912,21 @@ impl Registers for Sim {
                     self.walk = Walk::At(d, 0);
                 }
             }
-            registers::CTRL => {
-                if value & registers::CTRL_DMA_RESET != 0 {
+            registers::CONTROL => {
+                if value & registers::CONTROL_DMA_RESET != 0 {
                     self.walk = Walk::Idle;
                 }
-                if value & registers::CTRL_ALL_RESET != 0 {
+                if value & registers::CONTROL_ALL_RESET != 0 {
                     self.reset_pending =
                         !self.reset_stuck && !Self::holds(&mut self.control_resets_cleared);
-                    if value & registers::CTRL_FIFO_RESET != 0 {
+                    if value & registers::CONTROL_FIFO_RESET != 0 {
                         self.queue.clear();
                     }
-                    if value & registers::CTRL_CONTROLLER_RESET != 0 {
+                    if value & registers::CONTROL_CONTROLLER_RESET != 0 {
                         self.transfer = None;
                     }
                 }
-                *self.register(registers::CTRL) = value;
+                *self.register(registers::CONTROL) = value;
             }
             registers::CMD => {
                 if value & registers::COMMAND_START != 0
