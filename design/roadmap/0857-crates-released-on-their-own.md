@@ -91,9 +91,9 @@ No per-crate milestone is minted by this block. They come from the reviews below
   of `components`; revisit if that changes. The name holds for now. The crate breaks up as
   components become programs and crates of their own, and each piece takes its name then.
 - Ruled 2026-11-01 (UTC): this repository breaks up into single-purpose repositories and remains,
-  as `nifeos/nife`, only for its history. Likely, as a direction and not a ruling: the design
-  record (roadmap, decisions, journeys, naming, notes) moves to a repository of its own and is
-  published as a website. The kernel, programs, tooling and crates all leave, and a crate consumable
+  as `nifeos/nife`, only for its history. The design record (roadmap, decisions,
+  journeys, naming, notes) moves to one repository, `nifeos.org`, which holds the site published
+  at nifeos.org. The kernel, programs, tooling and crates all leave, and a crate consumable
   outside nife shows good crate boundaries. What leaves references nothing back here, so moves go
   bottom-up: the crates a program links leave before it or with it. The kernel leaves last among
   the code, to `nife-kernel` (provisional): like Linux, a named part of the system, while the

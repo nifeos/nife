@@ -84,7 +84,7 @@ its author's and promotion is not the moment to improve it.
 
 ## The finding that shapes the options
 
-§151's preconditions are not met, and one of the two it named is the furthest from met. The
+Protocol churn is far from settled, and under §151's bottom-up order it does not hold a move. The
 contract crates took 157 breaking changes in the last four weeks, against milestone 610 (the
 interface's stability is measured weekly)'s proposed threshold of four. No IPC protocol carries a
 version a peer could check. Three more preconditions block any cut that moves code. One crate
@@ -151,7 +151,7 @@ a two-repo change.
    layered repositories and later folded them back. All of this is recalled, not re-read for this
    proposal, and should be read before a ruling leans on the Fuchsia case.
 4. Is the premise true? Partly. "Soon" is true for basalt and false for moving code: the
-   protocol churn §151 named is 157 breaking changes in four weeks.
+   protocol churn is 157 breaking changes in four weeks.
 5. What does each option cost? The table above, from the note. Unmeasured: the gate subset a
    moved repository needs, until a cut is chosen.
 6. How reversible? A is fully reversible: nobody outside the project builds from basalt, and
