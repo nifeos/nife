@@ -48,9 +48,10 @@ pub(crate) const CTRL_USE_INTERNAL_DMAC: u32 = 1 << 25;
 /// `internal_direct_memory_access_start` name this constant. The constant-assertion lint is off on
 /// purpose: the assertion is constant by construction, and the compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_DIRECT_MEMORY_ACCESS_ENABLES_SHARE_NO_BIT: () =
+pub const DIRECT_MEMORY_ACCESS_ENABLES_DO_NOT_OVERLAP: () =
     assert!(CTRL_USE_INTERNAL_DMAC + CTRL_DMA_ENABLE + CTRL_INT_ENABLE == 0x0200_0030);
 
 /// **Power Enable Register** (OpenBSD's `SDMMC_PWREN`): one bit per card slot. Slot 0 is the only
@@ -81,9 +82,10 @@ pub(crate) const CLKENA_CCLK_LOW_POWER: u32 = 1 << 16;
 /// lint is off on purpose: the assertion is constant by construction, and the compiler checking it
 /// is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_CLOCK_ENABLES_SHARE_NO_BIT: () =
+pub const CLOCK_ENABLES_DO_NOT_OVERLAP: () =
     assert!(CLKENA_CCLK_ENABLE + CLKENA_CCLK_LOW_POWER == 0x0001_0001);
 /// **Timeout Register** (OpenBSD's `SDMMC_TMOUT`): response timeout in bits 7:0 (card clocks), data
 /// read timeout in bits 31:8.
@@ -241,10 +243,10 @@ pub(crate) const RINTSTS_ACD: u32 = 1 << 14;
 /// constant. The constant-assertion lint is off on purpose: the assertion is constant by
 /// construction, and the compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_TRANSFER_OVER_BITS_SHARE_NO_BIT: () =
-    assert!(RINTSTS_DTO + RINTSTS_ACD == 0x0000_4008);
+pub const TRANSFER_OVER_BITS_DO_NOT_OVERLAP: () = assert!(RINTSTS_DTO + RINTSTS_ACD == 0x0000_4008);
 /// **End-bit error** (OpenBSD's `SDMMC_RINTSTS_EBE`): end bit error (read) or no CRC status
 /// (write).
 #[doc(alias = "end bit error")]
@@ -264,9 +266,10 @@ pub(crate) const RINTSTS_DATA_TO: u32 = RINTSTS_HTO | RINTSTS_DRTO;
 /// is off on purpose: the assertion is constant by construction, and the compiler checking it is
 /// its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_DATA_ERROR_AND_TIMEOUT_BITS_SHARE_NO_BIT: () =
+pub const DATA_ERROR_AND_TIMEOUT_BITS_DO_NOT_OVERLAP: () =
     assert!(RINTSTS_DATA_ERR + RINTSTS_DATA_TO == 0x0000_be80);
 /// Every bit below the SDIO interrupts, which is what a clear writes.
 pub(crate) const RINTSTS_ALL: u32 = 0xffff;
@@ -301,9 +304,10 @@ pub(crate) const FIFOTH: u32 = 0x04c;
 /// lint is off on purpose: the assertion is constant by construction, and the compiler checking it
 /// is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_POLLED_FIFO_THRESHOLD_FIELDS_SHARE_NO_BIT: () =
+pub const POLLED_QUEUE_THRESHOLD_FIELDS_DO_NOT_OVERLAP: () =
     assert!((2 << 28) + 0x0fff_0000 + 0x0000_0fff == 0x2fff_0fff);
 
 /// **The `FIFOTH` word for polled transfers** with a FIFO of `depth` words: a receive watermark one
@@ -322,9 +326,10 @@ pub(crate) const fn fifoth_for_pio(depth: u32) -> u32 {
 /// `fifoth_for_direct_memory_access` names this constant. The constant-assertion lint is off on
 /// purpose: the assertion is constant by construction, and the compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_DIRECT_MEMORY_ACCESS_FIFO_THRESHOLD_FIELDS_SHARE_NO_BIT: () =
+pub const DIRECT_MEMORY_ACCESS_QUEUE_THRESHOLD_FIELDS_DO_NOT_OVERLAP: () =
     assert!((7 << 28) + 0x0fff_0000 + 0x0000_0fff == 0x7fff_0fff);
 
 /// **The `FIFOTH` word for IDMAC transfers** with a FIFO of `depth` words. The transmit watermark
@@ -409,9 +414,10 @@ pub(crate) const BMOD_FB: u32 = 1 << 1;
 /// constant-assertion lint is off on purpose: the assertion is constant by construction, and the
 /// compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_BUS_MODE_BITS_SHARE_NO_BIT: () = assert!(BMOD_DE + BMOD_FB == 0x82);
+pub const BUS_MODE_BITS_DO_NOT_OVERLAP: () = assert!(BMOD_DE + BMOD_FB == 0x82);
 /// **IDMAC enable** (OpenBSD's `SDMMC_BMOD_DE`): the IDMAC walks descriptors.
 #[doc(alias = "internal direct memory access enable")]
 pub(crate) const BMOD_DE: u32 = 1 << 7;

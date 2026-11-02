@@ -111,9 +111,10 @@ pub(crate) const DES1_BS1_MASK: u32 = 0x1fff;
 /// lint is off on purpose: the assertion is constant by construction, and the compiler checking it
 /// is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_DESCRIPTOR_OWN_AND_CHAIN_BITS_SHARE_NO_BIT: () =
+pub const DESCRIPTOR_OWN_AND_CHAIN_BITS_DO_NOT_OVERLAP: () =
     assert!(DES0_OWN + DES0_CH == 0x8000_0010);
 
 /// Why a region was refused before anything was written.

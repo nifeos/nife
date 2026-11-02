@@ -43,7 +43,7 @@ WHAT IS CHECKED.
   pattern matches at least one function within the entry's path scope.
 - A module-path entry's module is declared somewhere in the tree (`mod verification`).
 - Where an entry's reason names a const assertion in the landed convention
-  (`THE_*_SHARE_NO_BIT`, milestone 954 (a survivor accepted once is not accepted forever),
+  (`THE_*_SHARE_NO_BIT` or `*_DO_NOT_OVERLAP`, milestone 954 (a survivor accepted once is not accepted forever),
   part 4), the named const exists beside the code the entry excludes. An annotation
   `(registers.rs)` names the file for every name before it that no
   annotation has claimed yet, which is how the reasons write a list of names sharing one file; a
@@ -104,7 +104,8 @@ IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 # The const-assertion convention the part 4 exclusions name, and the `(file.rs)` annotation that
 # says where a named const lives.
 NAMED_ASSERTION = re.compile(
-    r"\b(?P<name>THE_[A-Z0-9_]+)\b|\(\s*(?P<file>[A-Za-z0-9_./-]+?\.rs)\s*\)"
+    r"\b(?P<name>THE_[A-Z0-9_]+|[A-Z0-9_]+_DO_NOT_OVERLAP)\b"
+    r"|\(\s*(?P<file>[A-Za-z0-9_./-]+?\.rs)\s*\)"
 )
 
 ARRAY = re.compile(r"(?ms)^exclude_re\s*=\s*\[(.*?)^\]")
@@ -365,7 +366,7 @@ REMEDY = """
 An exclusion that names nothing excludes nothing: the mutants it covered run again and land in
 the census as survivors. Re-point the entry at the name that replaced the one it named, or delete
 the entry in the same pull request that deleted the code, moving its reason to whatever replaces
-it. A named const assertion (`THE_*_SHARE_NO_BIT`) must be declared in the file the reason
+it. A named const assertion (`THE_*_SHARE_NO_BIT` or `*_DO_NOT_OVERLAP`) must be declared in the file the reason
 annotates, or beside the excluded code when the reason annotates nothing.
 """
 
@@ -518,6 +519,20 @@ def selftest():
            "]\n")
     failures = tree_with(two, dict(files, **{"crates/x/src/regs.rs": "pub const WIDE: u32 = 1 << 6;\n"}))
     assert len(failures) == 1 and ":4: the reason names const" in failures[0], failures
+
+    # The `_DO_NOT_OVERLAP` form, with no `THE_` prefix: found in its file, and reported when gone.
+    new_form = config(("disjoint per FIELDS_DO_NOT_OVERLAP (bits.rs)", good_fn))
+    ok = tree_with(new_form, dict(files, **{
+        "crates/x/src/bits.rs": "pub const FIELDS_DO_NOT_OVERLAP: () = ();\n"}))
+    assert ok == [], ok
+    failures = tree_with(new_form, dict(files, **{"crates/x/src/bits.rs": "pub const OTHER: () = ();\n"}))
+    assert len(failures) == 1 and "FIELDS_DO_NOT_OVERLAP in bits.rs" in failures[0], failures
+    new_unannotated = config(("asserted beside the code, D_DO_NOT_OVERLAP", good_fn))
+    ok = tree_with(new_unannotated, dict(files, **{
+        "crates/x/src/lib.rs": LIB + "pub const D_DO_NOT_OVERLAP: () = ();\n"}))
+    assert ok == [], ok
+    failures = tree_with(new_unannotated, files)
+    assert len(failures) == 1 and "D_DO_NOT_OVERLAP" in failures[0], failures
 
 
 def main(argv):

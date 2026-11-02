@@ -253,9 +253,10 @@ pub(crate) const UPDATE_CLOCK: u32 = registers::COMMAND_START
 /// `Command::word` names this constant. The constant-assertion lint is off on purpose: the
 /// assertion is constant by construction, and the compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-designware-mobile-storage.
+/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT: () =
+pub const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () =
     assert!(registers::COMMAND_START + registers::CMD_USE_HOLD_REG + 0x3f == 0xa000_003f);
 
 #[cfg(test)]
