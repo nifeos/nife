@@ -83,7 +83,7 @@ KEPT = {
     "crates/designware_ethernet/src/management_data_input_output.rs::PA_SHIFT":
         ({"spelled-out"}, "DesignWare's `PA` field, the PHY address, not a physical address"),
     # The loader's three acts that report whether they worked, carried into `process_builder` by
-    # DECISIONS §235 (the OS is built and updated from packages, and the tree divides by what releases together) P3's split. Each takes an effect (unmap a page, destroy a region, start a
+    # DECISIONS §235 (the OS is built and updated from packages, and its source divides by purpose) P3's split. Each takes an effect (unmap a page, destroy a region, start a
     # child) and answers whether the kernel allowed it, which is the exemption `_ACTS` names.
     "crates/process_builder/src/lib.rs::give_up_own_page": ({"question-shape"}, _ACTS),
     "crates/process_builder/src/lib.rs::memory_region_destroy": ({"question-shape"}, _ACTS),

@@ -11,8 +11,8 @@ ratified_by: calef
 merge. Ruled 2026-10-28 (UTC) in the maintainer's session, and relayed by the maintainer.*
 
 A program package that leaves this repository leaves as one repository under `nifeos`, named after
-the package. The package is the unit that releases together (§235 (the tree divides by what
-releases together)), so the package is the unit that moves. One repository holds that package's
+the package. The package is the unit that releases together (§235 (its source divides by
+purpose)), so the package is the unit that moves. One repository holds that package's
 crates and its programs, and the member lists in `packages/<name>.package.toml` are the list of
 what moves. The first cut applies the rule to three packages: `process-tools` leaves as
 `nifeos/process-tools`, `core-tools` as `nifeos/core-tools`, and `disk-tools` as
