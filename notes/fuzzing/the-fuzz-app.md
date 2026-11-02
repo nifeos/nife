@@ -19,8 +19,8 @@ handles the key, reads it or looks for it.
 Read this first. It is the exposure you accept by placing the key.
 
 - The host runs main's code unattended once the milestone
-  [the fuzz host follows main](../../design/roadmap/proposals/the-fuzz-host-follows-main.md) lands:
-  its supervisor then fast-forwards to each green commit on main and re-executes itself as the fuzz
+  [the fuzz host follows main](../../design/roadmap/proposals/the-fuzz-host-follows-main.md) lands.
+  Its supervisor then fast-forwards to each green commit on main and re-executes itself as the fuzz
   account, so anything merged to main runs on the host within one window.
 - The key stays root-only, and the mint helper that reads it lives outside the clone, so an update
   never replaces it. The fuzz account can read the current installation token, which lives one
