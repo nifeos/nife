@@ -121,7 +121,7 @@ the limit pick a name.
 - Wire-contract crates end in `_contract` (calef, 2026-10-18 UTC; `supervision_contract` (calef,
   2026-10-28 UTC, relayed by the maintainer)); a standard keeps its word
   (`network_time_protocol`). `abi`
-  predates the suffix. `compositor` and `line_editor` hold protocol modules but are logic crates.
+  predates the suffix. [Page constants](naming/crates.md#page-contract-crates) share names. `compositor` and `line_editor` hold protocol modules but are logic crates.
 - A crate that is a component's engine takes the component's name.
 - An `_exerciser` loads a capability of the system, with no contract probed. A `_test_client`
   exercises a service contract from outside. Plain names like `fs_client` stay free for real
@@ -136,22 +136,6 @@ the limit pick a name.
   its standard names. `helpers/` holds helpers other scripts call, with an extension. Every
   `script/` entry needs a row in [notes/scripts.md](../notes/scripts.md).
 - `target/` is build output, and `targets/` holds the tracked target JSON.
-
-### Page contract crates
-
-A crate that exports a read-only mapped page (`counter_frequency_contract`, `current_cpu_contract`,
-`environment_contract`, `machine_statistics_contract`, `program_argument_contract`, and any later
-one) spells its constants the same way. Ruled 2026-11-02 (UTC).
-
-| Constant | Name |
-|---|---|
-| The length of the page's content, which is less than a page | `PAGE_CONTENT_BYTES` |
-| A real page size | `PAGE_BYTES` (`program_argument_contract`, 4096) |
-| The address the page is mapped at | `PAGE_VIRTUAL_ADDRESS`, and `virtual_address` for a parameter that takes it |
-
-`build_page`, `PageBuilder::build` and `build_header` are not part of the rule. A crate takes these
-names in its own name review before it leaves, and `helpers/name_release.py --draft` marks the rows
-the rule settles.
 
 ## Words calef has ruled on
 
