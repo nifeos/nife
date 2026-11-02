@@ -148,7 +148,7 @@ own driver read an image (`cargo test -- --ignored`, on macOS).
   is stored as a long name, since the crate writes no lower-case flag.
 - Names compare by simple Unicode upper-casing, not the volume's code page or upcase table.
 - A directory slot is found by walking from the directory's first cluster each time, so a directory
-  of thousands of clusters is slow. The 65,536-entry ceiling is not tested.
+  of thousands of clusters is slow.
 - The reader does not follow extended partitions and reads no GUID partition table.
 - exFAT is not covered; it is a sibling crate's job.
 

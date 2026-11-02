@@ -35,7 +35,7 @@ No nife type appears in a public signature.
 | falsification | a finder that forgets a used slot, and a tail written with its digits reversed; each turns its harness red at its own assertion |
 | unit tests | run placement across gaps, aliases from `~1` to `~999999`, collisions and reuse of a freed alias, directories with dot entries, removal only when empty, a failed make that gives its cluster back, renames that keep the bytes, `..` rewritten on a move, refusals for moves into itself and for dots and the label, stale entries, case-only renames |
 | oracle tests | on FAT12, FAT16 and FAT32 volumes rust-fatfs formatted: fifteen names with one alias base, a 255-unit name, non-ASCII names, nested directories, files moved across directories and a directory moved with its contents, then everything removed. rust-fatfs lists the same tree and `fsck.fat -n` accepts the volume at each stage. On FAT32 with 512-byte clusters above cluster 65535, directories keep their high half through make and move, and a new directory in a four-sector cluster over stale bytes reads empty |
-| mutation | the ledger rules on the survivors that tests cannot kill: two gaps (the 65,536-entry ceiling, homed in the block's BUGS) and three equivalents (search-bound arithmetic and a disjoint-bit OR) |
+| mutation | the ledger rules on the survivors that tests cannot kill: two gaps (the 65,536-entry ceiling, since killed by `a_directory_stops_growing_at_65536_entries`) and three equivalents (search-bound arithmetic and a disjoint-bit OR) |
 
 ## Names minted
 
