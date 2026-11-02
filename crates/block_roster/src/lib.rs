@@ -24,8 +24,7 @@
 
 /// `"blkrosv1"` little-endian, at offset 0. A page that does not start with this is not a roster,
 /// and in particular a zeroed frame is not an empty one. The digits are the page layout's version
-/// ([`VERSION`]), by the shared-page convention the other numbered magics here already follow
-/// (`CLOCKv01`, `MACHSTA1`); a bump re-mints both in one change.
+/// ([`VERSION`]); a bump re-mints both in one change.
 ///
 /// # Amendments
 ///
@@ -36,15 +35,15 @@ pub const MAGIC: u64 = u64::from_le_bytes(*b"blkrosv1");
 /// The page layout's version, the digits [`MAGIC`] carries. A break bumps this and re-mints the
 /// magic in the same change, with a dated amendment above.
 ///
-/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: provisional.
 pub const VERSION: u32 = 1;
 
-/// This interface's identity in a program's `INTERFACES` note: 5, naming the block roster page. The
-/// number is the crate's to keep across a rename and no other interface ever reuses it; the
-/// ids of the interfaces a program links must all differ. A program declares the pair of this id and
+/// This interface's identity: 5, naming the block roster page. The number is the crate's to keep
+/// across a rename and no other interface ever reuses it; the ids of the interfaces a program links
+/// must all differ. A program that links this interface declares the pair of this id and
 /// [`VERSION`].
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: provisional.
 pub const INTERFACE_ID: u64 = 5;
 
 /// Bytes per entry. Two `u32`s, and the fixed width is what lets a reader index without parsing.
@@ -56,22 +55,21 @@ pub const HEADER_BYTES: usize = 16;
 /// A virtio-mmio device: the ordinal is its position among block devices on the mmio bus, counted
 /// the way the kernel's own scan counts them.
 ///
-/// Name: ratified 2026-10-18 (calef), as §193 (what a block-roster entry calls an NVMe disk) rules:
-/// the kind says virtio, because an NVMe disk is a PCI device too, and `mmio` expands under §154.
+/// Name: ratified 2026-10-18 (calef): the kind says virtio, because an NVMe disk is a PCI device
+/// too, and the abbreviation `mmio` is spelled out in the identifier.
 pub const TRANSPORT_VIRTIO_MEMORY_MAPPED_IO: u32 = 0;
 
 /// A virtio-blk function on the PCIe bus (the virtio specification's PCI transport).
 ///
-/// Name: ratified 2026-10-18 (calef), as §193 (what a block-roster entry calls an NVMe disk) rules:
-/// a bare `PCI` beside the NVMe kind would claim NVMe as well.
+/// Name: ratified 2026-10-18 (calef): a bare `PCI` beside the NVMe kind would claim NVMe as well.
 pub const TRANSPORT_VIRTIO_PCI: u32 = 1;
 
 /// An NVMe controller on the PCIe bus, found by its class code: the ordinal is its position among
 /// NVMe controllers in the kernel's bus walk, so ordinal 0 is the first
 /// controller the kernel finds.
 ///
-/// Name: ratified 2026-10-18 (calef), as §193 (what a block-roster entry calls an NVMe disk) rules,
-/// by the `nvme` row of §154 (the acronym test is whether the phrase is spoken).
+/// Name: ratified 2026-10-18 (calef): the identifier spells out the phrase rather than the
+/// abbreviation `NVMe`.
 pub const TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS: u32 = 2;
 
 /// One attached block device: which bus, and which one of them.
@@ -95,7 +93,7 @@ impl Device {
     ///
     /// The printed names are the ones the outside world already uses rather than the identifiers:
     /// the virtio specification's two transports, and `nvme`, which is QEMU's device model, Linux's
-    /// driver and device prefix, and what this tree's own NVMe diagnostics print.
+    /// driver and device prefix, and what diagnostics for that hardware print.
     pub const fn transport_name(&self) -> Option<&'static str> {
         match self.transport {
             TRANSPORT_VIRTIO_MEMORY_MAPPED_IO => Some("virtio-mmio"),
@@ -195,7 +193,7 @@ impl<'a> Roster<'a> {
     }
 
     /// Whether the machine has no block devices at all. A real answer, not an error: a diskless
-    /// boot is a thing this OS does.
+    /// boot is a thing a machine can do.
     pub const fn is_empty(&self) -> bool {
         self.count == 0
     }
@@ -360,9 +358,9 @@ mod tests {
     }
 
     /// A page of exactly `HEADER_BYTES` is the smallest roster there is: room for the header,
-    /// zero devices, and it must read back as that rather than being refused as short. Milestone
-    /// 85's mutation run showed `read`'s length guard could rot from `<` to `<=` unnoticed
-    /// because every test used a whole 4096-byte page.
+    /// zero devices, and it must read back as that rather than being refused as short. A mutation run
+    /// showed `read`'s length guard could rot from `<` to `<=` unnoticed because every test used a
+    /// whole 4096-byte page.
     #[test]
     fn a_header_only_page_is_an_empty_roster_not_a_short_one() {
         let mut page = [0u8; HEADER_BYTES];
@@ -372,5 +370,76 @@ mod tests {
         assert_eq!(capacity_of(HEADER_BYTES), 0);
         // One byte shorter really is short.
         assert_eq!(Roster::read(&page[..HEADER_BYTES - 1]).map(|_| ()), None);
+    }
+}
+
+/// Machine-checked proofs, run with `cargo kani`. The bounds are small on purpose: a page of up to
+/// three entries exercises every branch of the header checks and the entry indexing.
+#[cfg(kani)]
+mod verification {
+    use super::*;
+
+    /// The page the harnesses build: the header and room for three entries.
+    /// A literal, not `HEADER_BYTES + 3 * ENTRY_BYTES`: arithmetic in a constant has no function
+    /// name, so the mutation census cannot attribute it to this module. The first harness checks it.
+    const PAGE: usize = 40;
+
+    /// **`Roster::read` is total on any bytes**: for any page of up to `PAGE` bytes, whatever its
+    /// contents and length, `read` neither panics nor indexes out of bounds, and when it accepts the
+    /// page every one of its `len()` entries can be fetched and the one after the last cannot.
+    /// Falsification: unfalsified
+    #[kani::proof]
+    #[kani::unwind(6)]
+    fn read_is_total_and_every_counted_entry_is_gettable() {
+        assert_eq!(PAGE, HEADER_BYTES + 3 * ENTRY_BYTES);
+        let bytes: [u8; PAGE] = kani::any();
+        let len: usize = kani::any();
+        kani::assume(len <= PAGE);
+
+        if let Some(roster) = Roster::read(&bytes[..len]) {
+            let mut i = 0;
+            while i < roster.len() {
+                assert!(roster.get(i).is_some(), "a counted entry is missing");
+                i += 1;
+            }
+            assert!(roster.get(roster.len()).is_none());
+        }
+    }
+
+    /// **A written roster reads back as written**: for any list of up to three devices, `write`
+    /// into a page that fits and then `read` returns the same devices in the same order, and no
+    /// more.
+    /// Falsification: unfalsified
+    #[kani::proof]
+    #[kani::unwind(6)]
+    fn write_then_read_returns_the_same_devices_in_order() {
+        let devices: [Device; 3] = [
+            Device {
+                ordinal: kani::any(),
+                transport: kani::any(),
+            },
+            Device {
+                ordinal: kani::any(),
+                transport: kani::any(),
+            },
+            Device {
+                ordinal: kani::any(),
+                transport: kani::any(),
+            },
+        ];
+        let count: usize = kani::any();
+        kani::assume(count <= devices.len());
+
+        let mut page = [0u8; PAGE];
+        assert_eq!(write(&mut page, &devices[..count]), Ok(()));
+
+        let roster = Roster::read(&page).expect("a written page reads");
+        assert_eq!(roster.len(), count);
+        let mut i = 0;
+        while i < count {
+            assert_eq!(roster.get(i), Some(devices[i]));
+            i += 1;
+        }
+        assert!(roster.get(count).is_none());
     }
 }
