@@ -227,6 +227,13 @@ echo "==> the continuous fuzz supervisor installs the pinned toolchain once, bef
 # window rows. helpers/continuous-fuzz-selftest.sh says more.
 helpers/continuous-fuzz-selftest.sh >/dev/null
 
+echo "==> the fuzz host follows only a green, fast-forward main and installs no unit file"
+# A scratch upstream, a stub git, curl and API, no network and no KVM, about five seconds. The four
+# limits ruled 2026-11-01 (UTC) are each held here; helpers/fuzz-follow-main-selftest.sh lists them,
+# and the green rule's own cases are in the helper's --selftest.
+python3 -I helpers/fuzz-follow-main.py --selftest >/dev/null
+helpers/fuzz-follow-main-selftest.sh >/dev/null
+
 echo "==> clippy: host crates + xtask"
 # lint-lane: host
 # lint-target-dir: host
