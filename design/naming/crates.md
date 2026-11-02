@@ -249,3 +249,19 @@ wires it is `display_terminal`. The crate is named for the protocol it implement
 bytes in and a character grid out). The program is named for its role: the terminal on the display,
 next to `gpu_driver`, the virtio-gpu driver it is a client of. Both facts are true and neither name
 says the other.
+
+## Page contract crates
+
+A crate that exports a read-only mapped page (`counter_frequency_contract`, `current_cpu_contract`,
+`environment_contract`, `machine_statistics_contract`, `program_argument_contract`, and any later
+one) spells its constants the same way. Ruled 2026-11-02 (UTC).
+
+| Constant | Name |
+|---|---|
+| The length of the page's content, which is less than a page | `PAGE_CONTENT_BYTES` |
+| A real page size | `PAGE_BYTES` (`program_argument_contract`, 4096) |
+| The address the page is mapped at | `PAGE_VIRTUAL_ADDRESS`, and `virtual_address` for a parameter that takes it |
+
+`build_page`, `PageBuilder::build` and `build_header` are not part of the rule. A crate takes the family
+names in its own name review before it leaves, and `helpers/name_release.py --draft` marks the rows
+the rule settles.

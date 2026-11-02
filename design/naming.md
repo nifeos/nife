@@ -121,7 +121,7 @@ the limit pick a name.
 - Wire-contract crates end in `_contract` (calef, 2026-10-18 UTC; `supervision_contract` (calef,
   2026-10-28 UTC, relayed by the maintainer)); a standard keeps its word
   (`network_time_protocol`). `abi`
-  predates the suffix. `compositor` and `line_editor` hold protocol modules but are logic crates.
+  predates the suffix. [Page constants](naming/crates.md#page-contract-crates) share names. `compositor` and `line_editor` hold protocol modules but are logic crates.
 - A crate that is a component's engine takes the component's name.
 - An `_exerciser` loads a capability of the system, with no contract probed. A `_test_client`
   exercises a service contract from outside. Plain names like `fs_client` stay free for real
