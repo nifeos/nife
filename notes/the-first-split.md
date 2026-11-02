@@ -28,9 +28,9 @@ place in milestone 691's order stay open.
 
 ## 1. What a cut that moves code still needs
 
-§151 orders the split bottom-up and sets no preconditions: churn does not hold a move. The records
-still name the conditions below, from milestone 39, §235 and the blocks under it, and the protocol
-rows measure what each move costs to coordinate. Each is checked below.
+§151 orders the split bottom-up and sets no preconditions; churn does not hold a move. Milestone 39,
+§235 and the blocks under it name the conditions below, and the protocol rows measure coordination
+cost.
 
 | precondition | source | met? | measured |
 |---|---|---|---|
