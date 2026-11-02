@@ -129,8 +129,8 @@ and stay Rust APIs: `calendar`, `domain_name_system`, `glob` and
 
 The `INTERFACES` note type lives in the leaf crate `interfaces_note`, which depends on nothing, so
 carrying the note adds that one crate to a program's linked set and no planner. `disk-tools` does
-not reach `grant_plan`. The `grant_plan::Manifest` type and the slot constants stay in `grant_plan`; moving
-them into a leaf crate belongs to pull request #3026.
+not reach `grant_plan`. The `grant_plan::Manifest` type and the slot constants stay in `grant_plan`;
+moving them into a leaf crate belongs to pull request #3026, ruled 2026-11-01 (UTC).
 
 ## What this block does not do
 
