@@ -10,10 +10,29 @@ depends on nothing, and is tested on the host. It was written for the nife kerne
 
 ## What is proven
 
-Nothing yet. The crate has no Kani harnesses, so `cargo kani` has nothing to prove. Its host tests
-pin every offset against both the mainline Linux and vendor U-Boot numbering, the order of each
-plan (every clock before any reset, a parent chosen while its clock is gated), the rate chain and
-the I2C timing formula, and the decoders on hand-built property values.
+Nine Kani harnesses (`cargo kani`, stock Kani) prove, each with a falsification patch under
+`falsifications/` that makes it fail at its own assertion:
+
+- `with_parent` changes only the mux field: every other bit of the word is unchanged, and an
+  over-wide parent never reaches the enable bit.
+- For every domain and every index, `clock_offset` and `reset_bit` answer `None` past the domain's
+  counts, and otherwise a word-aligned offset inside the domain, a reset mask of exactly one bit,
+  and assert and status words the same distance from their first words.
+- Every fixed plan (the TRNG, both halves of the Ethernet controller, the PMIC bus, both SD/MMC
+  slots) holds only ids in its domain, enables every clock before it releases any reset, and picks a
+  clock's parent before enabling that clock.
+- A `DevicePlan` or `PowerManagementChipBus` built from device-tree bytes holds only in-bounds ids,
+  never more steps than its bound, and every clock step ahead of every reset release. The bus plan
+  is never empty.
+- `is_deasserted`, `is_clock_enabled` and `clock_divider` read exactly the bit or field their
+  definition names, for every word.
+
+Not proved: that a plan's order is the one the silicon needs, which only a board shows; the
+specifier decoders when the lookup answers differently (another provider, another cell count, an
+error), or for property lengths that are not a whole number of specifiers; plans of more than three
+specifiers, so the truncation flag; and the I2C timing and SD divider arithmetic. The host tests
+cover those cases by example. Its host tests also pin every offset against both the mainline Linux
+and vendor U-Boot numbering, the order of each plan, the rate chain and the I2C timing formula.
 
 ## The two device trees
 
