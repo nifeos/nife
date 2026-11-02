@@ -1,0 +1,21 @@
+Falsifies `designware_ethernet::proofs::a_link_is_decoded_only_from_what_the_registers_say`.
+
+The defect: the link decode forgets that an isolated PHY is electrically cut off from the MAC.
+A PHY with the isolate bit set and its link bit up then reads as a working link.
+
+Expected to fail: the harness's `assert!(bmcr & mdio::BMCR_ISO == 0)`, on any control word with the
+isolate bit set and a status word with the link bit set.
+
+diff --git a/crates/designware_ethernet/src/motorcomm.rs b/crates/designware_ethernet/src/motorcomm.rs
+index b4c52597b..a81323d53 100644
+--- a/crates/designware_ethernet/src/motorcomm.rs
++++ b/crates/designware_ethernet/src/motorcomm.rs
+@@ -169,7 +169,7 @@ pub(crate) const fn link_from_registers(
+     gtsr: u16,
+ ) -> Option<Link> {
+     use management_data_input_output as mdio;
+-    if bmsr & mdio::BMSR_LSTATUS == 0 || bmcr & mdio::BMCR_ISO != 0 {
++    if bmsr & mdio::BMSR_LSTATUS == 0 {
+         return None;
+     }
+     if bmcr & mdio::BMCR_ANENABLE == 0 {

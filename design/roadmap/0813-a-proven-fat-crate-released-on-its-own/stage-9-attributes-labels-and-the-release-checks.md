@@ -71,16 +71,15 @@ The architect also ruled detail (b) on 2026-11-01 (UTC). The crate refuses a tim
 compatible; tightening a clamp is not. `None` is unchanged. The architect ruled detail (a) the same day: reading takes no clock and never writes. A read-only
 open is a `Volume` with no clock parameter, and only `WritableVolume<D, C: Clock>` stamps. A read
 leaves the last-accessed date alone, because a read must work on a read-only device or image. A
-clock-stamping read, if ever wanted, arrives as a new method. One recommendation stays open. The
-code follows it, and it is easy to change before release.
+clock-stamping read, if ever wanted, arrives as a new method. No recommendation stays open.
 
 - Ruled (a): `tests/a_read_never_writes.rs` reads every way the crate reads, over a device with no
   write method and over one whose write method panics, on FAT12, FAT16 and FAT32. The reads are
   lookup, listing, file bytes, the label, the free count, the clean bit, `FSInfo` and a chain. The
   image stays byte for byte as it was. The test found that `Volume::is_clean` needed a writable
   device; it now needs only a readable one.
-- Recommended, not yet ruled (c): the crate stores exactly what the clock reports. FAT carries no
-  time zone and a host shows the stored time as local time, so a caller chooses local time or UTC.
+- Ruled (c), by the UTC ruling above: the crate stores exactly what the clock reports. FAT carries no
+  time zone and a host shows the stored time as local time, so the caller's clock supplies UTC.
 
 | check | result |
 |---|---|

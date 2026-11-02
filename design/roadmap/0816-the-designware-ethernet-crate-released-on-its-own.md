@@ -31,8 +31,9 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   the Synopsys Ethernet QoS controller (`snps,dwmac-5.20`), the JH7110's two ports behind Motorcomm
   YT8531 PHYs on radon. The 4.x and 5.x descriptor format only; the 3.x GMAC that milestone 655 (DMA
   on a non-coherent RISC-V machine) names for the TH1520 would not fit.
-- Two Kani harnesses, each with a falsification patch: a delivered frame always fits the buffer and
-  the room, and every ring offset is inside the region.
+- Three Kani harnesses, each with a falsification patch: a delivered frame always fits the buffer and
+  the room, every ring offset is inside the region, and the PHY link decode returns a link only
+  the registers justify.
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut**, which is codebase
   rule 2 (a driver gets what it needs passed in): inline `address_space_map::pair_page`
   (`src/lib.rs`), and have the caller pass the register region instead of `jh7110::discover` and
@@ -63,17 +64,18 @@ nife depends on.
 Each row is a property this crate must prove before it publishes. The harness cell names the Kani
 harness that proves it, or says `none yet`; every named harness carries a falsification patch that
 makes it fail at its own assertion. Each patch is at `crates/designware_ethernet/falsifications/`.
-Measured 2026-10-11 (UTC): 2 of 3 proven.
+All 3 proven under stock Kani.
 
 | property | harness |
 |---|---|
 | A delivered frame always fits the buffer and the room | `proofs::a_delivered_frame_always_fits_the_buffer_and_the_room` |
 | Every ring offset is inside the region | `proofs::every_ring_offset_is_inside_the_region` |
-| The PHY link decode (`motorcomm::link`) is total: any register answer yields a link or none, never a panic | none yet |
+| The PHY link decode (`motorcomm::link_from_registers`, which `motorcomm::link` calls) is total and sound: any register answer yields a link or none without a panic, and a link needs the status bit up and the PHY not isolated, autonegotiation complete when it is on, and a speed and duplex both ends advertise (or the forced bits when it is off) | `proofs::a_link_is_decoded_only_from_what_the_registers_say` |
 
-The third row is this lane's answer to the question `BUGS` asks below: the PHY's answers are
-device input and the link decode is the state a stranger's driver acts on. Not proven: MDIO
-sequencing (`mdio`), the PHY configuration writes, the DMA-coherence probe's verdict (`coherence`)
+The third row answers the question `BUGS` asks below: the PHY's answers are device input and the
+link decode is the state a stranger's driver acts on. Its falsification patch drops the isolate
+check. Not proven: the register reads in `motorcomm::link` (the double read of the latched status
+bit), MDIO sequencing (`mdio`), the PHY configuration writes, the DMA-coherence probe's verdict (`coherence`)
 and controller bring-up.
 
 ## Release, by #1806's rulings
@@ -141,7 +143,7 @@ and `device_tree_blob` are still path dependencies, so the copy does not build; 
 the cut removes them.
 
 Measured again after the cut on 2026-10-25 (UTC), with Kani: the manifest has no dependencies, the
-crate builds for the host and the three targets on 1.88. Stock Kani proves both harnesses, and each
+crate builds for the host and the three targets on 1.88. Stock Kani proves the harnesses, and each
 falsification patch makes its harness fail. The only failures left are citations in `Name:` blocks,
 which the ratification pass settles.
 
@@ -232,13 +234,13 @@ names until the ratification pass, so this section keeps the links it carried.
   network lane is active, so the API is still moving.
 - The device-tree fixtures (`tests/fixtures/*.dts`) are excerpts of the mainline and vendor JH7110
   trees. Their licenses were not checked here; record each before `cargo package` ships them.
-- Two harnesses is thin for a published driver crate. *What is proven* now requires a third, on
-  the PHY link decode; whether MDIO sequencing wants one too is still the lane's question.
+- Three harnesses is still thin for a published driver crate; whether MDIO sequencing wants one
+  too is open.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 7 can start now.
 
 ## Index row
 
-nife's Synopsys DesignWare Ethernet QoS controller logic, two Kani proofs and their falsification
+nife's Synopsys DesignWare Ethernet QoS controller logic, three Kani proofs and their falsification
 patches, cut free of nife's device tree and address map and published on crates.io as
 `designware_ethernet` 0.1 from its own `nifeos` repository, then consumed back by nife.

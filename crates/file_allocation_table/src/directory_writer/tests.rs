@@ -244,3 +244,79 @@ fn a_volume_label_cannot_be_renamed() {
     assert_eq!(volume.rename(&label, 0, "NEW"), Err(WriteError::NotAFile));
     let _ = file;
 }
+
+extern crate std;
+use std::vec;
+use std::vec::Vec;
+
+/// A device of zeroed sectors, big enough for a FAT32 volume with small clusters.
+struct Blank(Vec<u8>);
+
+impl crate::sector::SectorDevice for Blank {
+    type Error = u64;
+
+    fn sector_size(&self) -> crate::SectorSize {
+        crate::SectorSize::Bytes512
+    }
+
+    fn read_sector(&mut self, index: u64, buffer: &mut [u8]) -> Result<(), u64> {
+        let start = index as usize * 512;
+        buffer.copy_from_slice(self.0.get(start..start + 512).ok_or(index)?);
+        Ok(())
+    }
+}
+
+impl crate::sector::WritableSectorDevice for Blank {
+    fn write_sector(&mut self, index: u64, buffer: &[u8]) -> Result<(), u64> {
+        let start = index as usize * 512;
+        self.0
+            .get_mut(start..start + 512)
+            .ok_or(index)?
+            .copy_from_slice(buffer);
+        Ok(())
+    }
+}
+
+/// A directory holds 65,536 entries and no more: it grows to exactly that many slots, then
+/// `grow_directory` says no and a run past the last slot is `DirectoryFull`. Cluster sizes of
+/// 512 and 1024 bytes put the limit at 4,096 and 2,048 clusters.
+#[test]
+fn a_directory_stops_growing_at_65536_entries() {
+    use crate::{FileAllocationTableType, FormatOptions, FormatPlan, SectorSize};
+    for sectors_per_cluster in [1u32, 2] {
+        let sectors = 140 * 1024u32;
+        let plan = FormatPlan::new(
+            FormatOptions::new(SectorSize::Bytes512, sectors)
+                .with_file_allocation_table_type(FileAllocationTableType::Fat32)
+                .with_sectors_per_cluster(sectors_per_cluster),
+            &mut NoClock,
+        )
+        .unwrap();
+        let mut device = Blank(vec![0; sectors as usize * 512]);
+        plan.write_to(&mut device).unwrap();
+        let mut volume = crate::Volume::open(device).unwrap();
+        let wanted = 65_536 * 32 / (512 * u64::from(sectors_per_cluster));
+
+        // The root is the FAT32 directory the loop grows; it starts with one cluster.
+        let mut grown = 1u64;
+        while volume.grow_directory(0).unwrap() {
+            grown += 1;
+            assert!(grown <= wanted, "the directory grew past 65,536 entries");
+        }
+        assert_eq!(grown, wanted);
+        let first = match volume.boot.root_directory() {
+            crate::RootDirectory::Cluster(root) => root,
+            crate::RootDirectory::Region { .. } => unreachable!("a FAT32 root is a chain"),
+        };
+        assert_eq!(volume.chain(first).count() as u64, wanted);
+
+        // The last slot exists and one more is refused, before any growing is tried.
+        assert_eq!(volume.ensure_slots(0, MOST_SLOTS), Ok(()));
+        assert_eq!(
+            volume.ensure_slots(0, MOST_SLOTS + 1),
+            Err(WriteError::DirectoryFull)
+        );
+        assert_eq!(volume.grow_directory(0), Ok(false));
+        assert_eq!(volume.chain(first).count() as u64, wanted);
+    }
+}
