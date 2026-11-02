@@ -28,12 +28,10 @@ import sys
 # Crates with hits that this lint found when it was added. Each entry is a ceiling, not a pardon:
 # the crate may not gain a hit, and a crate that falls below its ceiling is told to lower it. An
 # entry goes when its crate is clean, which the lint reports; until then it is the maintainer's list
-# of crates that still describe their consumers. block_roster is the one with a fix already in
-# flight in another lane, and it is the one whose entry must go first.
+# of crates that still describe their consumers.
 PENDING = "a text or value hit in the crate on the day the lint was added; reword or remove it, then delete the entry"
 WAIVERS = {
     "abi": (6, PENDING),
-    "block_roster": (2, "its README and Kani proofs are being rewritten by another lane; remove this entry when that pull request merges"),
     "byte_sink_contract": (2, PENDING),
     "capability_manifest_note": (37, PENDING),
     "clock_contract": (5, PENDING),
