@@ -5,9 +5,7 @@
 //! section 4 names as the one known exception to big-endian storage): `C12A7328-F81F-11D2-BA4B-...`
 //! is `28 73 2A C1 1F F8 D2 11 BA 4B ...` on disk. [`from_disk`] and [`to_disk`] alone see that
 //! order, so a [`Uuid`] here is always canonical. This module says GUID, as the UEFI fields do
-//! (`PartitionTypeGUID`, `UniquePartitionGUID`, `DiskGUID`); the rest says UUID (calef, 2026-10-06
-//! UTC). See notes/globally-unique-identifier-partition-table.md, "1. A GUID is mixed-endian, and
-//! only partly".
+//! (`PartitionTypeGUID`, `UniquePartitionGUID`, `DiskGUID`); the rest says UUID.
 
 pub use uuid::Uuid;
 
@@ -50,7 +48,7 @@ pub const fn to_disk(id: Uuid) -> [u8; 16] {
 /// Not an attempt at the full registry, which runs to several hundred entries and is a data problem
 /// rather than a kernel problem. These are the ones that answer a question this OS actually asks:
 /// which partition do I boot from, which one holds a Linux filesystem, which one is ours, and (for
-/// the recovery story in milestone 57) what are the two things a Mac will have put on a disk.
+/// the recovery story) what are the two things a Mac will have put on a disk.
 ///
 /// Every value here was read back out of `sgdisk` on the machine rather than typed from memory, and
 /// four of them are pinned by the committed fixtures.
@@ -138,13 +136,13 @@ pub mod types {
         &[0xAA, 0x11, 0x00, 0x30, 0x65, 0x43, 0xEC, 0xAC],
     );
 
-    /// **A nife data partition**, holding a RedoxFS volume (DECISIONS §34).
+    /// **A nife data partition**, holding a RedoxFS volume.
     ///
     /// A random version-4 GUID, generated once on 2026-07-30 and fixed forever. It has to be random:
     /// a type GUID's whole job is to not collide with anybody else's, and there is no registry to
     /// ask. **Never change this value.** A disk written by one release and read by another has only
-    /// this number to agree on, and the recovery story (milestone 57's "the board is dead, can I get
-    /// my data") depends on a `sgdisk -p` five years from now still showing it.
+    /// this number to agree on, and the recovery story ("the board is dead, can I get my
+    /// data") depends on a `sgdisk -p` five years from now still showing it.
     pub const NIFE_DATA: Uuid = Uuid::from_fields(
         0xEC5C_C08B,
         0xD749,
@@ -153,12 +151,11 @@ pub mod types {
     );
 
     /// **A nife boot slot**, holding one copy of the image the firmware's chooser starts
-    /// (rung 2b of milestone 198 (a package manager, and the trivial install that makes a second customer possible)).
+    /// (one slot of an A/B install).
     ///
-    /// A random version-4 GUID generated on 2026-09-21 and ratified by calef that day ("Ratify the
-    /// GUID and bit positions"). **Never change this value**, for [`NIFE_DATA`]'s reason. UEFI 2.11
+    /// A random version-4 GUID generated on 2026-09-21 and fixed. **Never change this value**, for [`NIFE_DATA`]'s reason. UEFI 2.11
     /// 5.3.3 reserves attribute bits 48 to 63 for "GUID specific use": *"Only the owner of the
-    /// `PartitionTypeGUID` is allowed to modify these bits"*. They carry `crates/boot_slot`'s
+    /// `PartitionTypeGUID` is allowed to modify these bits"*. They carry a boot slot's
     /// priority, tries and confirmed flag, and are ours because this GUID is, which is why a boot
     /// slot is a partition and not a file.
     pub const NIFE_BOOT: Uuid = Uuid::from_fields(

@@ -1,11 +1,17 @@
 //! **The filesystem test fixture**: the names and contents of the files the test image ships, the
 //! witnesses' verdict words, and the shapes of the `walk` and `throughput` benchmarks, in one place
-//! so the three programs that touch them agree: the host build (`cargo xtask`, which writes these
+//! so the three programs that touch them agree: the host build (which writes these
 //! into the RedoxFS image with the host tool), the client (which reads and writes them through the
 //! FS server), and the kernel test (which asserts the client's report). Not part of either wire
 //! protocol: test data and test hooks only, and nothing that boots depends on it. Its one
-//! dependency is `filesystem_contract`. notes/filesystem-fixture.md has the reasons behind each
-//! shape.
+//! dependency is `filesystem_contract`.
+//!
+//! # BUGS
+//!
+//! - The dependency on `filesystem_contract` is a path today, so this crate stands alone only once
+//!   that crate has left and this one pins it by revision. The two leave together.
+//! - Much of the crate describes nife's own QEMU test runs (the witnesses, the benchmark phases), not
+//!   a filesystem in general. A third party gets the file names and the shapes as examples.
 //!
 //! Name: provisional (proposed by block 886, its crate-root name lifted; considered and refused
 //! `filesystem_test_image`, which names the shipped files but not the verdict words or the
@@ -22,9 +28,8 @@ pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 16, naming the test disk layouts the
 /// host build writes and the programs read. The number is this interface's for good: no other
-/// interface takes it, and a format change is a new version, never a new number. Milestone 956 (the
-/// linked interfaces carry checkable versions) holds the table of numbers, and `script/lint` holds
-/// the tree to it. A program declares the pair of this id and [`VERSION`].
+/// interface takes it, and a format change is a new version, never a new number. The project that
+/// links these crates keeps the table of numbers and holds it to that rule. A program declares the pair of this id and [`VERSION`].
 ///
 /// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
 pub const INTERFACE_ID: u64 = 16;
@@ -46,13 +51,11 @@ pub const WRITE_PATTERN: &[u8] = b"CRKFS_WRITE_OK: this round-tripped through th
 /// first. Any other value (or silence) fails the test.
 pub const SUCCESS: u64 = 0xF11E_600D;
 
-/// **The shared-frame witness's two files** (milestone 599 (a frame per filesystem client channel),
-/// provisional): same-length names and distinct contents, so a substitution shows as the wrong
+/// **The shared-frame witness's two files**: same-length names and distinct contents, so a substitution shows as the wrong
 /// body. The lengths must be equal because the length a client sends travels in a register while
 /// the name travels in the shared page, which any holder of the frame can rewrite. A server that
 /// read the victim's own bytes returns [`SHARED_VICTIM_BODY`]; one that read the attacker's returns
-/// [`SHARED_USURPER_BODY`], the escape. See `system_tests/src/user/fs_shared_page_tests.rs` and
-/// notes/filesystem-fixture.md.
+/// [`SHARED_USURPER_BODY`], the escape.
 ///
 /// Names provisional (this lane's coinage); an architect names files.
 pub const SHARED_VICTIM_NAME: &str = "fs-witness-victim";
@@ -71,25 +74,24 @@ const _: () = assert!(SHARED_VICTIM_NAME.len() == SHARED_USURPER_NAME.len());
 
 /// The shared-frame witness's report words. The victim sends one of these as its report's first
 /// word. [`SHARED_SUBSTITUTED`] is the live defect (the server resolved the attacker's name);
-/// [`SHARED_ISOLATED`] is what milestone 599's fix would make true (the victim's own name
+/// [`SHARED_ISOLATED`] is what a fix would make true (the victim's own name
 /// resolved despite the attacker's write). A negative or [`SHARED_UNEXPECTED`] means the open
 /// failed or returned bytes matching neither file, which is a wiring fault in the witness.
 pub const SHARED_SUBSTITUTED: u64 = 0x5995_500B;
-/// See [`SHARED_SUBSTITUTED`]: the isolated outcome milestone 599 would produce.
+/// See [`SHARED_SUBSTITUTED`]: the isolated outcome that fix would produce.
 pub const SHARED_ISOLATED: u64 = 0x5991_150A;
 /// See [`SHARED_SUBSTITUTED`]: the open returned neither file's body, so the witness is wired wrong.
 pub const SHARED_UNEXPECTED: u64 = 0x599B_ADDD;
 
-/// **What the durability witness found** (milestone 55 (Time Machine: SMB3 with Apple's
-/// extensions)), sent as the report's third word by the in-guest role that runs it. It asks
+/// **What the durability witness found**, sent as the report's third word by the in-guest role that runs it. It asks
 /// [`filesystem_contract::fs::SYNC`] twice: the count must be non-zero at the first ask (another
 /// process answered a flush, the end-to-end leg) and must strictly increase between the two (a
 /// device round trip, not a constant). The classes are far apart so a device that cannot flush is
-/// never confused with a flush that never left the server (notes/filesystem-fixture.md).
+/// never confused with a flush that never left the server.
 ///
 /// # BUGS
 ///
-/// - Nothing produces these verdicts: the role that ran the witness went with SMB (notes/smb.md).
+/// - Nothing produces these verdicts: the role that ran the witness went with SMB.
 pub mod durability {
     /// Both checks passed: something above this process had already flushed the device, and
     /// this process's own sync moved the count again. The only passing verdict.
@@ -112,26 +114,25 @@ pub mod durability {
     pub const NOT_ADVANCING: u64 = 5;
 }
 
-/// **The file milestone 38's throughput benchmark writes and reads back.** Not shipped in the
+/// **The file the throughput benchmark writes and reads back.** Not shipped in the
 /// image: the throughput role creates it (or truncates it, if a previous run left it there),
 /// which is deliberate rather than incidental, because the sequential-write phase *is* the
 /// creation and a file the image already carried would have been laid out by the host tool
 /// rather than by the server under test.
 ///
-/// Name: provisional (2026-08-18, milestone 38 (filesystem throughput)): calef names files a
+/// Name: provisional (2026-08-18): calef names files a
 /// reader meets, and this one is met by anyone who lists the bench image after a run.
 pub const THROUGHPUT_NAME: &str = "throughput";
 
-/// **The shape of milestone 38's throughput measurement**, shared by the client that performs it
-/// (`fixtures/src/fs_test_client/throughput.rs`, the throughput role) and the bench boot that names
-/// its results (`kernel/src/bench.rs`). Two programs agree on these, so they are a crate and not a
-/// constant written twice (CLAUDE.md rule 7).
+/// **The shape of the throughput measurement**, shared by the client that performs it
+/// and the bench boot that names its results. Two programs agree on these, so they are a crate and
+/// not a constant written twice.
 pub mod throughput {
     /// **The transfer unit: the whole file channel, the most one `filesystem_contract` request can
     /// carry.** It is [`filesystem_contract::fs::TRANSFER_MAXIMUM`], so this phase measures the
     /// protocol's own ceiling and the tuning lives at that one constant. A figure here is how fast
     /// this architecture moves one request's worth, so a comparison against a system whose client
-    /// passes a differently sized buffer compares two different things; see notes/benchmarks.md.
+    /// passes a differently sized buffer compares two different things.
     pub const UNIT: usize = filesystem_contract::fs::TRANSFER_MAXIMUM;
 
     /// **Bytes moved per phase, held constant across transfer sizes on purpose.** 1 MiB, bounded by
@@ -175,16 +176,15 @@ pub mod throughput {
     /// milliseconds go. A read at a record's start was predicted to be cheaper than one in its
     /// middle; it measures the same as the other read phases, to within 3%, because `read_record`
     /// fetches the block the pointer stores, so a read of an ordinary file fetches the whole record
-    /// whatever offset it asked for. notes/filesystem-fixture.md, "The record read", has the
-    /// mechanism.
+    /// whatever offset it asked for.
     pub const RECORD_READ: u64 = 6;
 
     /// **A record boundary**, the one property [`RECORD_READ`] needs: the phase reads at multiples
     /// of this, which is meaningful exactly when each is also a multiple of the store's record
     /// size. 128 KiB is, at every RedoxFS record level from 0 to 5, so it stays put when the level
     /// changes and every figure this phase produced stays comparable. **This is the store's number,
-    /// not the protocol's**: `redoxfs_server/src/block.rs` asserts at compile time that it is a
-    /// whole number of records.
+    /// not the protocol's**: the filesystem server asserts at compile time that it is a whole number
+    /// of records.
     pub const RECORD: u64 = 128 * 1024;
 
     /// **The cost of producing one page of payload**, with no filesystem in it at all.
@@ -247,12 +247,12 @@ pub mod escape {
     /// **Its extended-attribute write was accepted.** Expected only with `grant::WRITE`, and it
     /// is `WROTE`'s twin for the same reason `TRUNCATED` is: an attribute is a way to change a
     /// file that carries no file bytes, so a direction check that only covered `WRITE` and
-    /// `TRUNCATE` would leave one open. Added by milestone 61 with the forwarding it guards.
+    /// `TRUNCATE` would leave one open. Added with the forwarding it guards.
     pub const WROTE_ATTR: u64 = 1 << 6;
     /// **Reading its own file's attributes failed**, so the capability does not carry what
-    /// milestone 61 says it carries. A control bit in [`GRANTED_READ_FAILED`]'s shape rather
+    /// it is meant to carry. A control bit in [`GRANTED_READ_FAILED`]'s shape rather
     /// than an escape, and the one that catches a regression to the old behaviour: before
-    /// milestone 61 the caretaker answered `EOPNOTSUPP` to all four attribute verbs, so this
+    /// attributes were forwarded the caretaker answered `EOPNOTSUPP` to all four attribute verbs, so this
     /// bit would be set in **both** runs.
     pub const GRANTED_ATTRS_FAILED: u64 = 1 << 7;
 }
@@ -261,9 +261,9 @@ pub mod escape {
 /// for a clean verdict of zero.
 pub const VERDICT: u64 = 0xE5_CA9E00;
 
-/// **The subtree milestone 47 (navigation and naming)'s directory capability is measured against.**
+/// **The subtree the directory capability is measured against.**
 /// `sub` is granted; `other` is its real sibling, so "it cannot reach a sibling" is about a real
-/// directory; `deeper` gives a second descent somewhere to go (notes/filesystem-fixture.md).
+/// directory; `deeper` gives a second descent somewhere to go.
 ///
 /// ```text
 ///   /            motd  scratch  sub/  other/
@@ -289,7 +289,7 @@ pub mod tree {
     /// A file in the sibling, pinned by the post-run host check.
     pub const SECRET: &str = "secret";
     /// [`INNER`] and [`SECRET`] **as absolute paths**, which the navigating witness types to
-    /// ask the same two questions with a leading slash (milestone 47's namespace half).
+    /// ask the same two questions with a leading slash.
     ///
     /// Constants rather than bytes built at the call site because the witness runs on two
     /// stack pages and has been one page short before now: a static string costs it nothing.
@@ -351,8 +351,7 @@ pub mod tree {
     /// that it changes nothing.
     pub const NAV_TOUCH_BODY: &[u8] = b"CRK47-TOUCH: a second touch must not disturb this\n";
 
-    /// **The instant `touch -t` asserts in the mtime probes** (milestone 47's mtime lane,
-    /// DECISIONS §112): 2030-01-01T00:00:00Z, far enough past this repository's own history
+    /// **The instant `touch -t` asserts in the mtime probes**: 2030-01-01T00:00:00Z, far enough past this repository's own history
     /// that neither this server's advancing logical clock nor a real wall-clock reading could
     /// coincidentally produce it. The RFC 3339 text a real command line carries.
     pub const NAV_TOUCH_AT_RFC3339: &str = "2030-01-01T00:00:00Z";
@@ -367,8 +366,7 @@ pub mod tree {
     /// `redoxfs_server`'s own host tests. Ten bytes plus a run digit, `run_name`'s bound.
     pub const NAV_TOUCH_NO_SETTIME: &str = "nav-notime";
 
-    /// **`bind`'s witness** (milestone 47, "`bind` is not blocked on a mount table. It is
-    /// blocked on a second grant"; milestone 154 supplied it). A directory nested inside
+    /// **`bind`'s witness**. A directory nested inside
     /// [`NAV_DIR`], holding [`NAV_BIND_MARKER`], and bound to a fresh top-level name
     /// ([`NAV_BIND_ALIAS`]) so `ls`, `cd` and `..` can all be checked through the bound name
     /// against the same real files a direct walk would reach.
@@ -381,7 +379,7 @@ pub mod tree {
     /// coincidence of the fixture tree's own shape.
     pub const NAV_BIND_ALIAS: &str = "nav-bound";
 
-    /// **The directory milestone 50 (pipes and redirection)'s redirection witness works in**, a
+    /// **The directory the redirection witness works in**, a
     /// sibling of [`SUB`]: the root is shared with every test in the boot, so a shell that writes
     /// files needs somewhere its writes cannot be mistaken for another test's. Two files, so `ls >
     /// out.txt` writes a listing with something in it and the `wc` that counts it counts more than
@@ -398,7 +396,7 @@ pub mod tree {
     /// What both [`REDIR_ONE`] and [`REDIR_TWO`] hold.
     pub const REDIR_BODY: &[u8] = b"CRK50: a file the redirection witness lists\n";
 
-    /// **The subtree the `rm` program is granted** (milestone 47's `rm -r`), a sibling of [`SUB`]
+    /// **The subtree the `rm` program is granted**, a sibling of [`SUB`]
     /// so a capability to one is provably not a capability to the other.
     ///
     /// ```text
@@ -472,7 +470,7 @@ pub mod tree {
     /// into a word-splitter. Its two consecutive spaces are the whole point.
     pub const GLOB_PLAIN: &[u8] = b"two  spaces";
 
-    /// **Milestone 109's batching tree**: a directory holding more matching names than one
+    /// **The batching tree**: a directory holding more matching names than one
     /// grant can carry, so `xargs` has something at the prompt to be about.
     ///
     /// A sibling of [`GLOBSET`] rather than an extension of it, deliberately: the globbing
@@ -528,15 +526,15 @@ pub mod tree {
     ];
 }
 
-/// **The tree milestone 121 (`ripgrep` on nife: enumeration as a capability) prices a walk over**:
+/// **The tree a walk is priced over**:
 /// a sibling of [`tree::SUB`], granted alone and written by nothing, so every figure the pricing
 /// prints is a function of this shape. One region per cost, each a slope over one variable: `chain`
 /// (a component per level), `wide` (an entry per name), `narrow` (the one-entry control) and
 /// `sizes` (a byte per byte). `walk_pricing` (provisional) stages it on a host and walks it on both
-/// sides; notes/filesystem-fixture.md draws it.
+/// sides.
 ///
-/// Names: provisional (2026-09-26, milestone 121's lane). They are met by anyone who lists
-/// the test image, which is calef's to name.
+/// Names: provisional (2026-09-26). They are met by anyone who lists
+/// the test image, which an architect names.
 pub mod walk {
     /// The directory the pricing is granted, one component under the image root.
     pub const ROOT: &str = "walk";
@@ -630,7 +628,7 @@ pub mod walk {
         sum + 2 * (WIDE_COUNT + 1 + SIZE_FILES.len())
     };
 
-    /// **What unmodified `ripgrep` is told to do over this tree** (milestone 121), as a line
+    /// **What unmodified `ripgrep` is told to do over this tree**, as a line
     /// typed at the prompt, with the tree as its working directory. The kernel harness turns
     /// it into an argv with `grant_plan::argv`, the shell's own function, and
     /// `walk_pricing`'s `rg_host` example runs the same words on a host, so nife and Linux run
@@ -638,7 +636,9 @@ pub mod walk {
     /// answered one thread when this was written and has no `mmap`, so the host must be held to
     /// the same. The threaded lines are below. `--stats`
     /// is what makes the search measurable from inside both: ripgrep times its own walk and
-    /// search. Name: provisional.
+    /// search.
+    ///
+    /// Name: provisional.
     pub const RG_SEARCH: &str = "rg --threads 1 --no-mmap --stats 'walk entry'";
     /// Lines [`RG_SEARCH`] matches: one in every file holding [`SMALL_BODY`], none in the
     /// sized files, whose bytes are the alphabet.
@@ -647,7 +647,9 @@ pub mod walk {
     /// and `DESCEND` and no `ENUMERATE`. Under a grant lacking `ENUMERATE` this still finds
     /// its one line, so a refused walk is about enumeration alone. Typed as a person would,
     /// with neither pin: a single named file is where `ripgrep` tries a memory map, so this
-    /// also shows nife needs no `--no-mmap`. Name: provisional.
+    /// also shows nife needs no `--no-mmap`.
+    ///
+    /// Name: provisional.
     pub const RG_NAMED: &str = "rg 'walk entry' narrow/n000";
 
     /// **[`RG_SEARCH`] without `--threads 1`**: `ripgrep` picks its own thread count from
@@ -700,7 +702,7 @@ pub mod walk {
     }
 }
 
-/// **The directory attacker's report** (milestone 47), a bitmap for the same reason the per-file
+/// **The directory attacker's report**, a bitmap for the same reason the per-file
 /// attacker's is one: the test asserts an *expected set*, so the read-only run and the wide run
 /// are each other's control and a caretaker that refused everything fails one of them.
 pub mod dirscape {
@@ -745,11 +747,11 @@ pub mod dirscape {
     /// **The thing it should be able to do failed**, so nothing above was proven. A capability
     /// that reaches nothing is trivially unescapable.
     pub const GRANTED_ACCESS_FAILED: u64 = 1 << 11;
-    /// **It listed the extended attributes of the file inside its grant** (milestone 61).
+    /// **It listed the extended attributes of the file inside its grant**.
     /// Expected wherever [`filesystem_contract::dir::READ`] is held, which is every configuration that
     /// can open the file at all: an attribute is part of what a file *is*, so a capability that
-    /// may read the file may read what is attached to it. Before milestone 61 the caretaker
-    /// answered `EOPNOTSUPP` and this bit was never set.
+    /// may read the file may read what is attached to it. Before attributes were forwarded the
+    /// caretaker answered `EOPNOTSUPP` and this bit was never set.
     pub const READ_ATTRS: u64 = 1 << 14;
     /// **It set an extended attribute on that file and read it back with its type code.**
     /// Expected only with [`filesystem_contract::dir::WRITE`], which is [`WROTE`]'s rule applied to the
@@ -763,7 +765,7 @@ pub mod dirscape {
     /// was never taught.
     pub const SET_AN_ATTR: u64 = 1 << 15;
     /// **It reached a name in the granted directory that the grant's *set* does not carry**
-    /// (milestone 61's name-set witness). Never allowed.
+    /// Never allowed.
     ///
     /// A set capability's whole property is that `rm *.txt` cannot reach `notes.md`. `rm` asks
     /// that question with [`filesystem_contract::dir::REMOVE`] and nothing else; this asks it with
@@ -772,14 +774,13 @@ pub mod dirscape {
     pub const REACHED_AN_UNMATCHED_NAME: u64 = 1 << 16;
 }
 
-/// **What the two-directory witness reports** (milestone 154,
-/// design/roadmap/0154-multi-directory-namespace.md): one process, two `fs_subtree_caretaker`s,
+/// **What the two-directory witness reports**: one process, two `fs_subtree_caretaker`s,
 /// two capability table slots, and the negative control that only a union of two grants can state.
 ///
 /// A bitmap for [`dirscape`]'s reason: the test asserts an *exact* set, so a witness that
 /// reached nothing and one that reached everything both fail. The witness is told nothing
 /// about its two grants beyond which capability table slot each landed in (slot 0 is always the first,
-/// slot 1 the second, per `kernel/src/user/fs_service/two_dirs.rs`'s `start_granted_two_dirs` doc); it
+/// slot 1 the second); it
 /// tries to name a file in each subtree, tries to cross from one to the other both by request
 /// and by `grant_plan::nav::TwoRoots`'s own client-side resolution, and reports what it found.
 pub mod twodir {
@@ -791,8 +792,8 @@ pub mod twodir {
     /// The control for the other half, for the same reason.
     pub const OPENED_B: u64 = 1 << 1;
     /// **It opened the second grant's file through the first grant's endpoint.** Never allowed:
-    /// this is the structural finding notes/dir-capability.md records (the endpoint is the
-    /// boundary), witnessed here with two live caretakers rather than inferred from one.
+    /// this is the structural finding that the endpoint is the
+    /// boundary, witnessed here with two live caretakers rather than inferred from one.
     pub const REACHED_B_VIA_A: u64 = 1 << 2;
     /// **It opened the first grant's file through the second grant's endpoint.** Never allowed,
     /// the same claim from the other side.
@@ -808,13 +809,12 @@ pub mod twodir {
     pub const GRANTED_ACCESS_FAILED: u64 = 1 << 5;
 }
 
-/// **What a shell holding two trees reports**, the live half of milestone 154 (a process that
-/// holds two directory capabilities): the real `swish` builtins, `cd`, `pwd`, `ls`, `bind` and a
+/// **What a shell holding two trees reports**, the live half of holding two directory
+/// capabilities: the real `swish` builtins, `cd`, `pwd`, `ls`, `bind` and a
 /// planned `<`, run over two live caretakers, the first over [`tree::SUB`] and the second over
 /// [`tree::OTHER`], mounted at [`twotrees::MOUNT`] in the first.
 ///
-/// calef ruled the presentation on 2026-09-26: one tree, with other trees mounted at names in
-/// it. [`twodir`] proved one process can hold two trees; this proves the shell presents them
+/// The presentation, ruled on 2026-09-26: one tree, with other trees mounted at names in it. [`twodir`] proved one process can hold two trees; this proves the shell presents them
 /// as one, with the same exact-set check, so the reaching bits are the controls for the
 /// refusal bits. Provisional names, all of them.
 pub mod twotrees {
@@ -865,8 +865,7 @@ pub mod twotrees {
     pub const TWO_TREES_FAILED: u64 = 1 << 19;
 }
 
-/// **What a navigating shell reports** (milestone 47's commands: `cd`, `pwd`, `ls`, `mkdir`,
-/// `rm`).
+/// **What a navigating shell reports**.
 ///
 /// A bitmap for the same reason the two attackers' are: the kernel test asserts an *exact* set,
 /// so a shell that could do nothing and a shell that could do everything both fail, and the two
@@ -950,35 +949,35 @@ pub mod navscape {
     /// is and there is no level above it to name.
     pub const ABSOLUTE_CLAMPED_AT_ROOT: u64 = 1 << 22;
     /// `touch` on a name that was not there created it: the name now opens and its size is
-    /// zero. The create half of milestone 47's `touch`, made a measurement rather than a claim.
+    /// zero. The create half of `touch`, made a measurement rather than a claim.
     pub const TOUCH_CREATED: u64 = 1 << 23;
     /// `touch` on a name that was already there, holding [`crate::tree::NAV_TOUCH_BODY`],
     /// left it holding exactly that afterward. Without this bit, [`TOUCH_CREATED`] is equally
     /// true of a `touch` that quietly truncates whatever it finds.
     pub const TOUCH_PRESERVED: u64 = 1 << 24;
-    /// **A bare second `touch`, real command line and all, observed a strictly later mtime**
-    /// (milestone 47's mtime lane; DECISIONS §112). [`TOUCH_CREATED`] and [`TOUCH_PRESERVED`]
+    /// **A bare second `touch`, real command line and all, observed a strictly later mtime**.
+    /// [`TOUCH_CREATED`] and [`TOUCH_PRESERVED`]
     /// prove the *bytes*; this is the first bit that reads a timestamp back through the wire
     /// (`GETMTIME`) at all, so it is also the first proof that the getter and the create-time
     /// stamp agree on what "before" means.
     pub const TOUCH_MTIME_ADVANCED: u64 = 1 << 25;
     /// **`touch -t 2030-01-01T00:00:00Z`, typed as a real command line, produced a mtime that
     /// reads back as exactly [`crate::tree::NAV_TOUCH_AT_UNIX`] and not the value
-    /// [`TOUCH_MTIME_ADVANCED`] just observed.** This is DECISIONS §112 made a measurement: a
+    /// [`TOUCH_MTIME_ADVANCED`] just observed.** This makes the rule a measurement: a
     /// `touch -t` that silently fell back to "now" would still be a later timestamp than the
     /// bare touch before it, so the *exact* comparison, not merely "later", is what makes this
     /// bit mean the caller's assertion moved rather than the server's own clock.
     pub const TOUCH_AT_ROUND_TRIPPED: u64 = 1 << 26;
     /// **A directory handle carrying `WRITE` and not `SETTIME` still bumped a name's mtime to
     /// now**, through the real wire and the real `fs_subtree_caretaker`, not just the
-    /// `redoxfs_server` host tests' in-process `Server`. DECISIONS §112's "plain `WRITE` covers
-    /// 'now'" made a measurement one layer further out: a bug in `verb::TABLE`'s row for
+    /// filesystem server's in-process host tests. The rule that plain `WRITE` covers
+    /// "now", made a measurement one layer further out: a bug in `verb::TABLE`'s row for
     /// `SETMTIME` (the wrong `needs_all`, or an off-by-one index after `SYNC`'s row was
     /// inserted ahead of it) would show up here and would not show up in a test that calls
     /// `Server::set_mtime_now` directly.
     pub const TOUCH_NOW_NEEDS_ONLY_WRITE: u64 = 1 << 27;
     /// **The same handle's `touch -t` attempt was refused.** The pair with
-    /// [`TOUCH_NOW_NEEDS_ONLY_WRITE`] is what makes DECISIONS §112's "no, they are not the same
+    /// [`TOUCH_NOW_NEEDS_ONLY_WRITE`] is what makes "no, they are not the same
     /// right" non-vacuous through the real wire: both probes run against **one** handle, so a
     /// caretaker or a table row that let `SETMTIME_AT` through on `WRITE` alone would set this
     /// bit's sibling and clear this one, and a caretaker that refused everything would clear
@@ -986,7 +985,7 @@ pub mod navscape {
     pub const TOUCH_AT_REFUSED_WITHOUT_SETTIME: u64 = 1 << 28;
     /// **`ls` of a bound name listed the real directory it points at**: [`crate::tree::NAV_BIND_MARKER`]
     /// appeared in a listing of [`crate::tree::NAV_BIND_ALIAS`], which this shell never `mkdir`ed
-    /// or `cd`ed into directly. `bind`'s own claim (milestone 47/154), made a measurement: a
+    /// or `cd`ed into directly. `bind`'s own claim, made a measurement: a
     /// bound name reaches what the position it was given reaches, over the real wire.
     pub const BIND_REACHED_TARGET: u64 = 1 << 29;
     /// **`..` from inside a bound path landed at the bind's own real parent**, not at some
@@ -1002,7 +1001,7 @@ pub mod navscape {
     pub const BIND_STOPS_AT_TRUE_ROOT: u64 = 1 << 31;
 }
 
-/// **What the globbing witness reports** (milestone 47's globbing lane): a bitmap, for the same
+/// **What the globbing witness reports**: a bitmap, for the same
 /// reason every other witness here reports one, and with the same vacuity control at the end.
 ///
 /// The shell it runs in holds a real directory capability served by a real
@@ -1023,7 +1022,7 @@ pub mod globscape {
     /// answer, and the model's: an empty expansion is an empty grant.
     pub const NO_MATCH_REFUSED: u64 = 1 << 3;
     /// A pattern in a leading path component was refused. Selecting directories to walk is an
-    /// authority question, so it is not one a matcher answers (notes/glob.md).
+    /// authority question, so it is not one a matcher answers.
     pub const PATTERN_IN_PATH_REFUSED: u64 = 1 << 4;
     /// A line with no pattern in it came out of `echo` **byte for byte**, spacing included.
     /// Globbing is not allowed to quietly turn `echo` into a word-splitter.
@@ -1033,7 +1032,7 @@ pub mod globscape {
     pub const GLOB_FAILED: u64 = 1 << 6;
 }
 
-/// **What the extended-attribute witness reports** (milestone 57), a bitmap for the reason every
+/// **What the extended-attribute witness reports**, a bitmap for the reason every
 /// other witness here reports one: the kernel test asserts an *exact* set, so a client that could
 /// do nothing and a client that could do everything both fail, and a failure names itself.
 ///
@@ -1060,7 +1059,7 @@ pub mod attrs {
     /// not wasted space, it is somebody else's metadata on a file that never asked for it.
     pub const GONE_AFTER_UNLINK: u64 = 1 << 4;
     /// A value past [`filesystem_contract::xattr::MAXIMUM_VALUE`] was refused with
-    /// [`filesystem_contract::xattr::E2BIG`], loudly, rather than stored short (DECISIONS §42 (a filesystem declares what it offers and must be truthful)).
+    /// [`filesystem_contract::xattr::E2BIG`], loudly, rather than stored short (a filesystem declares what it offers and must be truthful).
     pub const OVERSIZE_REFUSED: u64 = 1 << 5;
     /// The store's directory could not be opened, created, or descended into. A client that
     /// could name it could read any file's attributes as ordinary bytes.
@@ -1097,13 +1096,11 @@ pub mod attrs {
     pub const KIND: u32 = 0x4353_5452;
 }
 
-/// **The on-device crash test's vocabulary** (milestone 37 (prove RedoxFS's crash consistency),
-/// DECISIONS §34 (RedoxFS is the primary filesystem, on three conditions) condition 1): one crash
+/// **The on-device crash test's vocabulary**: one crash
 /// driven through the real stack on its own disk, so the recovery is a real FS-server process
 /// mounting an image a real virtio write left half finished. The host sweep in
-/// `redoxfs_server/tests/crash_consistency.rs` proves the property exhaustively. **The two payloads
-/// are the same length** because the contract's `WRITE` does not truncate (DECISIONS §27 (the
-/// filesystem service: a capability-shaped contract)): a shorter second payload would leave the
+/// the filesystem server's host sweep proves the property exhaustively. **The two payloads
+/// are the same length** because the contract's `WRITE` does not truncate: a shorter second payload would leave the
 /// first one's tail behind, and "the file is exactly A or exactly B" would have no answer.
 pub mod crash {
     /// The file the crash driver writes. Its own name on its own disk, so nothing this test does
@@ -1134,11 +1131,11 @@ pub mod crash {
     pub const SAW_NEITHER: u64 = 0x0037_00FF;
 }
 
-/// **The blank disk milestone 57's write half partitions and formats**, and the layout the two
+/// **The blank disk the write half partitions and formats**, and the layout the two
 /// programs and the post-run host check agree about. It is its own disk, regenerated every run: a
-/// test that writes a partition table cannot share a fixture other tests read (DECISIONS §27). It
+/// test that writes a partition table cannot share a fixture other tests read. It
 /// arrives as 64 MiB of zeros with no table, so a program denied entropy that wrote nothing leaves
-/// a disk that still parses as nothing. notes/filesystem-fixture.md, "The blank disk", draws it.
+/// a disk that still parses as nothing.
 pub mod blank {
     /// The disk's size in 512-byte logical blocks. 64 MiB, matching the `sgdisk` fixture disk so
     /// the two are comparable at a glance.

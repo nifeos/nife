@@ -6,6 +6,12 @@
 
 use super::*;
 
+// The timebase page stays above every band of the address-space map, so a program's image, stack,
+// heap or windows can never be placed over it. Checked here, where both are linked, and not in the
+// page's own crate, which knows nothing of the map; each architecture's build checks its own
+// address.
+const _: () = assert!(counter_frequency_contract::PAGE_VA >= address_space_map::CODE_MODEL_CEILING);
+
 /// Why a binary was refused.
 ///
 /// **A bad user program must not be a kernel panic.** Every one of these is a thing a file can

@@ -36,7 +36,7 @@ fn pack_name_refuses_what_two_words_cannot_hold() {
     assert!(grant::pack_name(b"sixteen-bytes!!!").is_some());
 }
 
-/// **What a grant can name is wider than what two words hold** (milestone 946 (a granted file name can be longer than sixteen bytes)): a 20-byte name
+/// **What a grant can name is wider than what two words hold**: a 20-byte name
 /// like `least_authority_demo` is grantable, and only the packer refuses it.
 #[test]
 fn a_granted_name_may_be_longer_than_two_words() {
@@ -71,9 +71,9 @@ fn a_grant_spec_carries_its_length_and_its_direction_apart() {
     assert!(!grant::is_writable(grant::spec(4, 0)));
 }
 
-// The tests from here down each pin something the run of milestone 85 (mutation testing over the
-// host crates) showed nothing pinned. The equivalences (every `|` over disjoint masked fields,
-// where `^` cannot differ) are recorded in notes/mutation-testing.md rather than tested.
+// The tests from here down each pin something a mutation run over this crate showed nothing
+// pinned. The equivalences (every `|` over disjoint masked fields, where `^` cannot differ) are
+// recorded as such rather than tested.
 
 /// The per-file grant words, byte for byte: the rights bits, the spec word, and a name packed
 /// across the two argument words, up to the sixteenth byte and refused at the seventeenth.
@@ -94,8 +94,7 @@ fn grant_words_pack_exactly() {
     assert_eq!(grant::pack_name(b"abcdefghijklmnopq"), None);
 }
 
-/// **The root of the shell's namespace is an empty name with the rights beside it** (milestone
-/// 328, §173 (narrowing the root of the shell's namespace)). `fits` refuses an empty name, so zero cannot be a real directory's length, and a
+/// **The root of the shell's namespace is an empty name with the rights beside it.** `fits` refuses an empty name, so zero cannot be a real directory's length, and a
 /// caretaker reads it as "narrow the handle you hold" with the rights from the same word.
 #[test]
 fn a_root_grant_is_an_empty_name_carrying_its_rights() {

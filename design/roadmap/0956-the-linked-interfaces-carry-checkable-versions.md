@@ -129,8 +129,8 @@ and stay Rust APIs: `calendar`, `domain_name_system`, `glob` and
 
 The `INTERFACES` note type lives in the leaf crate `interfaces_note`, which depends on nothing, so
 carrying the note adds that one crate to a program's linked set and no planner. `disk-tools` does
-not reach `grant_plan`. The `grant_plan::Manifest` type and the slot constants stay in `grant_plan`; moving
-them into a leaf crate belongs to pull request #3026.
+not reach `grant_plan`. The `grant_plan::Manifest` type and the slot constants stay in `grant_plan`;
+moving them into a leaf crate belongs to pull request #3026, ruled 2026-11-01 (UTC).
 
 ## What this block does not do
 
@@ -146,9 +146,11 @@ build waits for the first package that leaves the tree.
 
 - **Done.** The interface ids for the fourteen formats owed one, and the programs' lists, carried
   by this block's own `Interface ids` table and the declaration check.
-- **Proposed.** The `grant_plan::Manifest` type and the slot constants in a leaf crate, so that
-  carrying the note links no planner:
-  `design/roadmap/proposals/the-contract-crates-leave-in-this-order.md`.
+- **Recorded.** The `INTERFACES` note type in a leaf crate of its own, so carrying the note
+  links no planner (ruled 2026-11-01 (UTC) on pull request #3026; the order is in
+  `design/roadmap/proposals/the-contract-crates-leave-in-this-order.md`). The declaration check
+  names `capability_manifest_note::` as the macro's crate in two places and must classify the new
+  crate; both move with the crate.
 
 ## BUGS
 

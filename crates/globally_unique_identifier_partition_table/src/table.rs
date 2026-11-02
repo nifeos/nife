@@ -90,7 +90,6 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
             .ok_or(Error::TableOverlapsUsable)?;
         // `>=`, not `>`: `block_count - backup_reserved` IS the backup array's first block (what
         // `backup_entry_lba` computes), so equality puts a usable block inside the backup array.
-        // See notes/mutation-testing.md.
         if header.entry_array_lba <= PRIMARY_HEADER_LBA
             || primary_end > header.first_usable_lba
             || block_count < backup_reserved

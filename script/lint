@@ -189,6 +189,10 @@ echo "==> the heavy-job slots (a full machine holds a job back; a killed holder 
 # them. Proved in a scratch tree with a private slot directory and one slot, so it never waits on a
 # real job: helpers/heavy-slot-selftest.sh lists its five stages and what breaks each.
 helpers/heavy-slot-selftest.sh >/dev/null
+# The CI fuzz job (proposal a-short-sharded-fuzz-pass-in-ci): wired for merge_group only, on a hosted
+# runner, and a finding prints no guest output. helpers/fuzz-ci-selftest.sh lists both checks.
+echo "==> the CI fuzz job keeps a finding private"
+helpers/fuzz-ci-selftest.sh >/dev/null
 # The daily fuzz report must run before the supervisor's first window: a dry run on an empty home.
 helpers/fuzz-daily-publish-selftest.sh >/dev/null
 # The local parallel prove (milestone 957): the whole table forked into shard children that run
@@ -216,6 +220,12 @@ echo "==> the rustup retry (a dropped CDN connection retries; a real error does 
 # A stub rustup, no network. The retry only runs during a CDN outage, which no green CI run
 # exercises, so this is the only place its classifier and its bound are ever seen to work.
 helpers/rustup-retry-selftest.sh >/dev/null
+
+echo "==> the continuous fuzz supervisor installs the pinned toolchain once, before any slot"
+# A stub rustup, no network, no KVM. Four slots that each downloaded a newer pin at once collided on
+# the host's first start; this holds the one serial install, its clear failure and its absence of
+# window rows. helpers/continuous-fuzz-selftest.sh says more.
+helpers/continuous-fuzz-selftest.sh >/dev/null
 
 echo "==> clippy: host crates + xtask"
 # lint-lane: host
@@ -3265,6 +3275,25 @@ python3 "$(dirname "$0")/../helpers/workflow_swallows.py"
 echo "==> every workflow file parses"
 python3 "$(dirname "$0")/../helpers/workflow_parses.py" --selftest
 python3 "$(dirname "$0")/../helpers/workflow_parses.py"
+
+# 12c2. **The fuzz heartbeat** (helpers/fuzz-heartbeat.py, name provisional). Its selftest runs the
+#     checks over fixture reports with no network: missing release, no ok window, infrastructure
+#     share above the bound, a late release tolerated, an open issue not duplicated, and the quiet
+#     pass before the first release. The workflow that calls it keeps to what was ruled 2026-11-01
+#     (UTC): GitHub-hosted runner, `contents: read` and `issues: write`, no secrets, and only the
+#     schedule and manual triggers.
+echo "==> the fuzz heartbeat (selftest, and the workflow keeps to its limits)"
+python3 "$(dirname "$0")/../helpers/fuzz-heartbeat.py" --selftest >/dev/null
+hb=.github/workflows/fuzz-heartbeat.yml
+if grep -nE 'self-hosted|secrets\.|pull_request|push:|contents:[[:space:]]*write' "$hb" \
+    | grep -vE '^[0-9]+:[[:space:]]*#'; then
+    echo "lint: $hb breaks a limit: no self-hosted runner, no secrets, no trigger beyond schedule and workflow_dispatch, no contents: write" >&2
+    exit 1
+fi
+if [ "$(awk '/^permissions:/{f=1;next} f&&/^[^ ]/{f=0} f' "$hb" | tr -d ' ' | grep -v '^$' | sort | tr '\n' ,)" != "contents:read,issues:write," ]; then
+    echo "lint: $hb permissions must be exactly contents: read and issues: write" >&2
+    exit 1
+fi
 
 # 12d. **Every issue form under .github/ISSUE_TEMPLATE/ is one GitHub will render** (milestone 207
 #     (the four things GitHub asks for); helpers/issue_forms.py, name provisional). GitHub

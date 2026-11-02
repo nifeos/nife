@@ -69,6 +69,11 @@ difference. A setting changed by hand in the web interface is then a red run, no
   refused to everyone except the `nife-smelter` app, the only bypass actor, which the release
   workflow's tag job authenticates as. A hand-made `v*` tag is refused. The template's
   `script/apply-settings` applies it from the settings file.
+- Release secrets: the organization secrets `NIFE_SMELTER_APP_ID` and `NIFE_SMELTER_PRIVATE_KEY`
+  have the visibility "selected repositories" (ruled 2026-11-01 UTC), because a key that bypasses
+  the tag rulesets must stay out of nife and basalt. A person with an `admin:org` token adds each
+  crate repository to both lists, as a step of the extraction checklist; no agent handles the key
+  value.
 - A `crates-io` environment with calef as required reviewer, and the trusted publisher bound to
   it. Fork 6's approval is then enforced by GitHub rather than remembered.
 - Security: private vulnerability reporting and a `SECURITY.md`, secret scanning with push

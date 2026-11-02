@@ -1,7 +1,6 @@
 use super::Error;
 
-/// **A firmware's refusal reaches the caller as the reason it is** (milestone 805, calef's
-/// ruling on §251's amendment item 3). No QEMU machine this tree boots can be made to refuse a
+/// **A firmware's refusal reaches the caller as the reason it is**. No QEMU machine this tree boots can be made to refuse a
 /// reset (`virt` always has PSCI and SRST, and `q35` resets or exits), so the mapping is pinned
 /// here: each firmware code to its error, and each error back through the decode a caller
 /// uses.
@@ -89,7 +88,7 @@ fn non_errors_decode_to_none() {
 
 /// The rights words are an ABI, not an implementation detail: the kernel tests them with `&`
 /// and userspace builds masks with `|`, so each must be a distinct single bit, and the exact
-/// values are load-bearing on both sides of the syscall boundary. Milestone 85's mutation run
+/// values are load-bearing on both sides of the syscall boundary. A mutation run
 /// showed nothing pinned them (`1 << 1` could become `1 >> 1`, which is zero, and WRITE would
 /// silently mean nothing). A test that enumerates is a claim about a set, so a new right joins
 /// this list in the change that defines it.
@@ -115,7 +114,7 @@ fn all_is_every_right_and_spend_only_lacks_grant_alone() {
 /// supervised spawn would fail.
 #[test]
 // Asserting on constants is this test's entire purpose: the constant is the thing a mutant
-// rewrites, and the assertion is what notices (milestone 85).
+// rewrites, and the assertion is what notices.
 #[allow(clippy::assertions_on_constants)]
 fn the_fault_slot_is_inside_the_capability_table() {
     assert!(super::fault::FAULT_EP_SLOT < super::CAPABILITY_TABLE_SLOTS);
@@ -125,7 +124,7 @@ fn the_fault_slot_is_inside_the_capability_table() {
     );
 }
 
-/// **The futex call admits exactly one flags word**: private and 32-bit (§269 (how threads share a process)). Every other size,
+/// **The futex call admits exactly one flags word**: private and 32-bit. Every other size,
 /// and the shared form, is refused.
 #[test]
 fn the_futex_admits_only_a_private_32_bit_word() {
@@ -137,7 +136,7 @@ fn the_futex_admits_only_a_private_32_bit_word() {
     }
 }
 
-/// **The JH7110's line status register is at 0x14, read 32 bits wide** (milestone 890 (riscv64 and `x86_64` join the shared boot path)). Every
+/// **The JH7110's line status register is at 0x14, read 32 bits wide**. Every
 /// QEMU machine this tree boots has byte registers, so no emulator run can tell a driver that
 /// honors the shape from one that assumes QEMU's: radon's console did the second and waited
 /// forever on LSR at 0x05. This pins the board's offsets through the word the kernel sends, and
@@ -165,13 +164,11 @@ macro_rules! pinned {
     };
 }
 
-/// **Every public number the syscall surface spells is pinned as a literal** (milestone 956 (the linked interfaces carry checkable versions) step 4,
-/// the enforcement calef ruled 2026-10-29 UTC, PR #2852, question 5: a pinned-values test now, the
-/// rustdoc diff when a consumer outside the tree exists). A program built against one generation of
+/// **Every public number the syscall surface spells is pinned as a literal**. A program built against one generation of
 /// this crate carries these numbers in its binary, so a renumber is a break that bumps
 /// [`ABI_VERSION`](crate::ABI_VERSION). Changing a line below is the deliberate act a renumber
 /// should be: skipping it fails CI, and changing it without bumping the version is what
-/// `script/lint`'s "format values move with their constants" check catches.
+/// a check that format values move with their constants catches.
 ///
 /// A new public number joins this list in the change that defines it. The list is exhaustive
 /// over every `pub const` of type `u64` in this crate's modules; the enums and the object
@@ -219,7 +216,7 @@ fn the_syscall_numbers_and_the_first_object_modules_are_pinned() {
     }
 }
 
-/// The next third of the list above (milestone 956 (the linked interfaces carry checkable versions) step 4).
+/// The next third of the list above.
 #[test]
 fn the_middle_object_modules_are_pinned() {
     pinned! {
@@ -258,7 +255,7 @@ fn the_middle_object_modules_are_pinned() {
     }
 }
 
-/// The next third of the list above (milestone 956 (the linked interfaces carry checkable versions) step 4).
+/// The next third of the list above.
 #[test]
 fn the_last_object_modules_are_pinned() {
     pinned! {
@@ -300,7 +297,7 @@ fn the_last_object_modules_are_pinned() {
 }
 
 /// **Every error code is pinned to its number**, and the decode agrees. A program matches these
-/// negative values after every syscall, so a renumber is an ABI break (milestone 956 (the linked interfaces carry checkable versions) step 4).
+/// negative values after every syscall, so a renumber is an ABI break.
 #[test]
 fn every_error_is_pinned_to_its_number() {
     let all = [

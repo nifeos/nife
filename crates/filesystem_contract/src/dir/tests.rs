@@ -4,7 +4,7 @@ use crate::*;
 // are here only to build fixtures; nothing under test allocates.
 extern crate std;
 
-/// **A refusal explains itself as a fact, never as a policy.** The sentences are part of §47's
+/// **A refusal explains itself as a fact, never as a policy.** The sentences are part of the
 /// design (the errno decides what the holder learns), so they are pinned here rather than left
 /// to drift in whichever program prints them. The negative half is the load-bearing one: not one
 /// of these lines may read like Unix's "permission denied", because there is no policy in this
@@ -84,7 +84,7 @@ fn every_explained_errno_has_its_own_sentence() {
     }
 }
 
-// --- The directory capability (milestone 47 (navigation and naming)) ---
+// --- The directory capability ---
 
 /// **A child never carries a right its parent lacked**, over every single right and every
 /// request, at one level and at two. The Kani harness proves this for every mask; this is the
@@ -138,13 +138,13 @@ fn undefined_rights_bits_cannot_be_smuggled_into_a_root() {
     assert_eq!(
         dir::ALL.count_ones(),
         7,
-        "seven rungs on the ladder since DECISIONS §112"
+        "seven rungs on the ladder since the time right"
     );
 }
 
-// The tests from here down each pin something the run of milestone 85 (mutation testing over the
-// host crates) showed nothing pinned. The equivalences (every `|` over disjoint masked fields,
-// where `^` cannot differ) are recorded in notes/mutation-testing.md rather than tested.
+// The tests from here down each pin something a mutation run over this crate showed nothing
+// pinned. The equivalences (every `|` over disjoint masked fields, where `^` cannot differ) are
+// recorded as such rather than tested.
 
 /// The directory rights and the two named bundles, as numbers. `ALL` and `REMOVE_TREE` are
 /// built with `|`, and a mutant that made one an `&` collapsed the bundle to zero: a mount
@@ -167,7 +167,7 @@ fn the_rights_are_the_bits_they_say() {
     assert_eq!(dir::REMOVE_TREE, 1 | 16 | 32);
 }
 
-/// **The parent-rights sentinel is no rights mask, and resolving it never widens** (§98 (`OPENDIR` cannot be asked to attenuate)). Every
+/// **The parent-rights sentinel is no rights mask, and resolving it never widens**. Every
 /// subset of `dir::ALL` is a mask, so the test walks all of them: none equals the sentinel, none
 /// of the sentinel's bits is in `ALL`, and `resolve` leaves every real mask exactly as it was. The
 /// sentinel resolves to the parent's own bits whatever they are, so the child is `parent & parent`.
