@@ -93,10 +93,33 @@ def rows(crate, paths, read):
     return out
 
 
+# The page contract crates' family names, from design/naming.md ("Page contract crates"). A row
+# for one of these names in one of these crates reads as pre-ruled, so a reviewer sees the rename
+# the family rule already settles. `program_argument_contract` is absent from the content-length
+# set: its `PAGE_BYTES` is a real page size and keeps the name.
+PRE_RULED = {
+    "current_cpu_contract": {"PAGE_BYTES": "PAGE_CONTENT_BYTES", "PAGE_VA": "PAGE_VIRTUAL_ADDRESS"},
+    "environment_contract": {"PAGE_BYTES": "PAGE_CONTENT_BYTES"},
+    "machine_statistics_contract": {"PAGE_BYTES": "PAGE_CONTENT_BYTES",
+                                    "PAGE_VA": "PAGE_VIRTUAL_ADDRESS"},
+}
+
+
+def pre_ruled(crate, table):
+    """`table` with the family rename noted on each row it settles."""
+    ruled = PRE_RULED.get(crate, {})
+    return [(name, kind, path,
+             f"{text} Pre-ruled: rename to `{ruled[name]}`." if kind == "item" and name in ruled
+             else text)
+            for name, kind, path, text in table]
+
+
 def draft(crate):
     """Print the table for `crate` from today's blocks, for the ratifying pull request's body."""
     paths, read = _tree()
     table = rows(crate, paths, read)
+    if table is not None:
+        table = pre_ruled(crate, table)
     if table is None:
         print(f"name_release: `{crate}` is not a crate under crates/", file=sys.stderr)
         return 1
@@ -134,6 +157,12 @@ def selftest():
          and got[("read", "item")][1] == "no block"),
         ("a feature has a row and no block", got[("std", "feature")] == ("Cargo.toml", "no block")),
         ("paths are relative to the crate", got[("a", "module")][0] == "src/a.rs"),
+        ("a family name in a page crate reads as pre-ruled, and a real page size does not",
+         [r[3] for r in pre_ruled("current_cpu_contract",
+                                  [("PAGE_VA", "item", "src/lib.rs", "provisional.")])]
+         == ["provisional. Pre-ruled: rename to `PAGE_VIRTUAL_ADDRESS`."]
+         and pre_ruled("program_argument_contract",
+                       [("PAGE_BYTES", "item", "src/lib.rs", "no block")])[0][3] == "no block"),
         ("a name that is no crate has no table", table(base, "nothing") is None),
         ("a crate off the release track has a table", table(base, "other") is not None),
         ("blanked blocks keep every line number",
