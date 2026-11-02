@@ -171,14 +171,24 @@ A new version has new digests, and nothing carries an old digest's grants to a n
 `jig install` asks the owner again for the whole package before it sends anything (`say_asks`,
 `owner_says_yes`). The old version's lines stay with its rows.
 
-The end state keeps that rule: every new digest asks again, at the console, unless an approval entry
-with `update` covers it. Under an approval, a new version may hold only what the entry allows, and
+The end state keeps that rule: a grant is keyed on the digest, so every new digest asks the owner
+again, at the console, unless a delegated approval (`jig install --within`) covers it. The
+approval's entry must say `update true` for an installed package (`approval_gate` in
+`activation.rs`). The `update` word carries no grants: every ask of the new digest must still lie
+within the entry's `allows` (`entry.covers`), and
 [the security appendix](security.md) keeps the console-class grants out of every delegated install. So a
 repository the owner opted into (§195 (a reviewed recipe vouches for a package)) can ship a new
 `acme-reboot`, and the owner's scripted update grants it `reboot` again only if the entry says
-`reboot`. A source vouches for bytes; it never grants. A key's ceiling under §220 (signed builds: a
-vendor signs, a developer self-signs) covers `domain entropy network` and none of these, and
-[decision 5](decisions.md) asks to keep it that way.
+`reboot`. A source vouches for bytes, and only the owner grants.
+
+A key's ceiling under §220 (signed builds: a vendor signs, a developer self-signs) stays within
+`domain entropy network` and never names an owner-granted kind (ruled 2026-11-02 (UTC)). The new
+kinds reach a program only through an owner's `grant` line or an approval, never through a key.
+No code reads a `key ed25519` line today; milestone 666 (a signed build installs up to its key's
+ceiling) will write the parser, and it must refuse a line whose ceiling holds a word it does not
+know, as `approval_file::File` refuses an unknown key (`Why::UnknownKey`). Today a vouched
+manifest earns everything it declares except the network, which needs its line
+(`grant_plan::image_manifest`).
 
 ## Several holders, and the built-in default
 
@@ -207,7 +217,7 @@ contract-crate order. The ruling adds no edge: the grant kinds live in `installe
 | §158 (the shell's table is one macro) | item 3's macro goes away whole, which amends the section; item 4 (ids never reused) holds as holes |
 | §197 (a package is one archive file) | unchanged: the manifest lives in the hashed bytes, and grants bind to the digest |
 | §219 (how the shell names an installed program to the spawner) | unchanged: unvouched bytes earn the clock and configuration pages and nothing else |
-| §220 (signed builds: a vendor signs, a developer self-signs) | unchanged: a key's ceiling covers no owner-granted kind beyond the network ([decision 5](decisions.md)) |
+| §220 (signed builds: a vendor signs, a developer self-signs) | unchanged: a key's ceiling stays within `domain entropy network` and names no owner-granted kind (decision 5, ruled) |
 | §229 (a bare name reaches an installed program) | unchanged by the grant; the word table in [the command-name appendix](command-names.md) needs its own ruling ([decision 6](decisions.md)) |
 | §251 (restarting the machine is a kernel object) | met: clause 2 endows any job whose declaration the archive or an owner's line vouches for |
 | §270 (a package manager holds an installer endpoint) | met, with the restriction in [the security appendix](security.md) that an installed holder is always bounded by an approval |

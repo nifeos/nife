@@ -4,7 +4,7 @@
 are the questions only the architect can answer, one at a time, in the order they block
 [the migration](migration.md). Each gives its background, the recommendation, the alternatives,
 an example and what was not verified, and ends in one question. Prior art here is from memory and
-not re-checked. Steps 1 to 9 and 11 wait on none of the open ones.
+not re-checked. Steps 1 to 9 and 11 wait on none of the open ones, decisions 6 to 8.
 
 ## What the ruling of 2026-11-02 settled
 
@@ -47,28 +47,10 @@ Ruled 2026-11-02 (UTC). [The end state](end-state.md) says what `grant_plan` kee
 Ruled 2026-11-02 (UTC). Nothing comes from the measured archive implicitly; [the end
 state](end-state.md) says how the composition turns the file into `grant` lines.
 
-## 5. May a trusted repository key ever grant these without the owner?
+## 5. Ruled: a repository key never grants an owner-granted kind
 
-One-way once a key's ceiling ships in an image.
-
-§220 (signed builds: a vendor signs, a developer self-signs) lets an owner trust a key with a
-ceiling, a subset of `domain entropy network`, and an install under that key earns up to the
-ceiling with no prompt. §195 (a reviewed recipe vouches for a package) leaves open how a ceiling
-covers grants added since.
-
-Recommendation: never. A key's ceiling stays within `domain entropy network`, and every
-owner-granted kind beyond the network needs the owner's own line, at the console or in an approval.
-A source vouches for bytes; only the owner grants.
-
-Alternative: let a ceiling name any owner-granted kind, so a trusted vendor can ship a package
-manager that installs with no prompt.
-
-Example: a trust line for acme's key with ceiling `network` lets `acme-power` install with the
-network and no prompt; its `reboot` ask still stops for the owner's yes.
-
-Not verified: no key trust exists in code yet (`installed_programs` has no `trust` line).
-
-Question: may a key's ceiling include owner-granted kinds? Recommended no.
+Ruled 2026-11-02 (UTC): option A. [The end state](end-state.md) says what that means for upgrades
+and for the key-line parser of milestone 666 (a signed build installs up to its key's ceiling).
 
 ## 6. May the owner point a word the image carries at an installed program?
 

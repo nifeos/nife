@@ -188,7 +188,7 @@ background, alternatives and example. The ruling dissolved the question of the s
 3. Ruled 2026-11-02 (UTC): every program carries its own grant record, and nothing central remains.
 4. Ruled 2026-11-02 (UTC): the base approval file lists every grant the image makes to its own
    programs, and nothing comes from the archive implicitly.
-5. A repository key's ceiling never covers an owner-granted kind. One-way once shipped.
+5. Ruled 2026-11-02 (UTC): a repository key's ceiling never covers an owner-granted kind.
 6. An owner's word line may override a word the image carries. One-way once scripts rely on it.
 7. "A name the image carries" means the measured archive's names, with §229 (a bare name reaches an
    installed program)'s refusals unchanged. One-way.

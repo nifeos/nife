@@ -28,7 +28,9 @@ crosses machines, and it waits behind anything that gets a real workload running
 
 1. Trust lines. A table beside the installed-programs table, versioned the same way (§208 (installing a
    package is granting it)), one line per key: `key ed25519 <public key hex> <ceiling> <label>`,
-   where the ceiling is a subset of `domain entropy network`. Owner-written. No key in any image,
+   where the ceiling is a subset of `domain entropy network`. The parser is strict: a ceiling word it
+   does not know refuses the line, and no ceiling may name an owner-granted kind such as `reboot`
+   or `installer` (ruled 2026-11-02 (UTC)). Owner-written. No key in any image,
    and a test that proves the image carries none.
 2. Install-time verification. `package install` of a build with a beside signature (`rg.sig` in the
    archive of §197 (a package is one archive file), `a.out.sig` next to a loose build) checks the
