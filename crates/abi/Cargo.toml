@@ -2,10 +2,26 @@
 name = "abi"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "The syscall ABI: the five syscall numbers, every capability method number, the error codes and the right bits that a program and a kernel agree on"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "abi", "syscall", "capabilities"]
+categories = ["no-std", "embedded", "os"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]

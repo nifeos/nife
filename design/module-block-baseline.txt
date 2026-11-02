@@ -178,12 +178,10 @@ crates/abi/src/reply.rs
 crates/abi/src/reply.rs::REPLY
 crates/abi/src/reply.rs::REPLY_CAPABILITY
 crates/abi/src/rights.rs
-crates/abi/src/rights.rs::ALL
 crates/abi/src/rights.rs::BIND
 crates/abi/src/rights.rs::ENUMERATE
 crates/abi/src/rights.rs::GRANT
 crates/abi/src/rights.rs::READ
-crates/abi/src/rights.rs::SPEND_ONLY
 crates/abi/src/rights.rs::WRITE
 crates/abi/src/survey.rs
 crates/abi/src/survey.rs::BLOCKED
@@ -215,7 +213,6 @@ crates/abi/src/usage.rs::SIZE
 crates/abi/src/usage.rs::THREADS
 crates/abi/src/usage.rs::is_known
 crates/abi/src/virtio.rs
-crates/abi/src/virtio.rs::DMA_PHYS_OFFSET
 crates/abi/src/virtio.rs::NOTIFY
 crates/abi/src/virtio.rs::SETUP_QUEUE
 crates/address_space_identifier/src/lib.rs::ASIDS
@@ -1618,8 +1615,6 @@ crates/filesystem_fixture/src/lib.rs::RENAMED
 crates/filesystem_fixture/src/lib.rs::RETURNED
 crates/filesystem_fixture/src/lib.rs::RG_FOUR
 crates/filesystem_fixture/src/lib.rs::RG_MATCHES
-crates/filesystem_fixture/src/lib.rs::RG_NAMED
-crates/filesystem_fixture/src/lib.rs::RG_SEARCH
 crates/filesystem_fixture/src/lib.rs::RMDIR_REFUSED_NON_EMPTY
 crates/filesystem_fixture/src/lib.rs::RMDIR_REMOVED_EMPTY
 crates/filesystem_fixture/src/lib.rs::RMTREE

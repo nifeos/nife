@@ -254,8 +254,7 @@ fn the_entry_array_buffer_sets_the_entry_count() {
 /// The small-table twin of `real_disks.rs`'s sweeps: a four-entry array is 512 bytes, so the
 /// complete cross product is 130 MB of CRC rather than 68 GB. The symbolic form is the Kani harness
 /// `a_single_byte_change_always_changes_the_crc`. Skipped under Miri, where the parses would
-/// dominate the workspace run; every other test here walks the clean paths
-/// (notes/undefined-behavior.md).
+/// dominate the workspace run; every other test here walks the clean paths.
 #[test]
 #[cfg_attr(
     miri,
@@ -379,7 +378,7 @@ fn a_header_that_is_not_a_header_says_so() {
 /// relaxing, so it gets a test that says out loud what it costs: a header whose CRC is perfectly
 /// good is still refused if there is one stray byte after it in the block.
 ///
-/// Both committed fixtures, from two unrelated tools, zero the tail, and UEFI 2.10 §5.3.2 requires
+/// Both committed fixtures, from two unrelated tools, zero the tail, and UEFI 2.10 section 5.3.2 requires
 /// it. If a real disk ever trips this, the fix is to relax the check and record the disk that did
 /// it, not to weaken the CRC.
 #[test]
@@ -538,14 +537,13 @@ fn the_documentation_sample_is_a_valid_disk() {
 }
 
 // =================================================================================================
-// The layout guards, boundary by boundary. Milestone 85's mutation run showed the suite could not
+// The layout guards, boundary by boundary. A mutation run showed the suite could not
 // tell `>` from `>=` in any of `parse`'s range checks: `real_disks.rs` corrupts one byte at a time,
 // so every corrupt header dies at the CRC before the layout logic ever runs, and every table
 // `build` makes is TIGHT (array against usable range, usable range against backup array), so the
 // comparisons below were never exercised one side at a time. These tests forge headers with a
 // VALID CRC and one layout lie each. One of the survivors was not a missing test but a missing `=`:
-// `parse` accepted last_usable_lba equal to the backup array's first block. See
-// notes/mutation-testing.md.
+// `parse` accepted last_usable_lba equal to the backup array's first block.
 
 /// Recompute the header CRC after a patch, so the forgery reaches the layout checks.
 fn reforge(block: &mut [u8]) {
@@ -568,7 +566,7 @@ fn set_u64(block: &mut [u8], offset: usize, value: u64) {
     block[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
 }
 
-// UEFI 2.10 §5.3.2 header field offsets.
+// UEFI 2.10 section 5.3.2 header field offsets.
 const ALTERNATE_LBA: usize = 32;
 const FIRST_USABLE_LBA: usize = 40;
 const LAST_USABLE_LBA: usize = 48;
@@ -669,7 +667,7 @@ fn the_entry_array_shape_guards_are_exact() {
 }
 
 /// `check_protective_mbr` is a thin wrapper over `mbr::validate`, and every other call in the
-/// suite hands it a good block, so a body replaced with `Ok(())` passed (a milestone 85
+/// suite hands it a good block, so a body replaced with `Ok(())` passed (a mutation
 /// survivor). One bad block through the wrapper is what pins the plumbing.
 #[test]
 fn a_wrong_mbr_is_refused_through_the_wrapper_too() {
@@ -681,7 +679,7 @@ fn a_wrong_mbr_is_refused_through_the_wrapper_too() {
 
 // The second mutation pass reached the modules the first never got to (entry, guid, header, the
 // MBR validator), and its survivors have the same two shapes as the first pass's: boundaries
-// never met exactly, and values every fixture happened to share. See notes/mutation-testing.md.
+// never met exactly, and values every fixture happened to share.
 
 /// Every fixture and every built table uses 128-byte entries, so `check_entry_array`'s size guard
 /// was only ever met at its own boundary. A 256-byte-entry table is legal and a 64-byte one is

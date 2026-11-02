@@ -2,23 +2,36 @@
 name = "clock_contract"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "The wall-clock contract: a shared clock page read through a seqlock, the propose protocol, and the policy a proposal must meet"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "clock", "seqlock"]
+categories = ["no-std", "embedded", "date-and-time"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-# The wall-clock contract of milestone 51 (notes/clock.md, DECISIONS §43): the layout of the shared
-# clock page that IS the read authority, the small propose protocol the clock service serves, and
-# the policy it applies to a proposal. Pure logic, host-tested, no_std, dependency-free, so the
-# service, its readers, the std PAL and the kernel-side tests share ONE definition and cannot drift.
-# The same split `filesystem_contract` makes for the filesystem contract and `graphics_contract` for the framebuffer.
+# The wall-clock contract: the layout of the shared clock page that IS the read authority, the
+# small propose protocol the clock service serves, and the policy it applies to a proposal. Pure
+# logic, host-tested, no_std, dependency-free, so the service, its readers and their tests share ONE
+# definition and cannot drift.
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)', 'cfg(loom)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]
 
-# Loom, only under `--cfg loom`, which nothing but `script/interleaving-check` sets. Cargo evaluates
-# `cfg(loom)` as false for every real target, so no ordinary build resolves or compiles it. The
-# seqlock above is the second protocol milestone 80 modelled; see notes/interleaving.md for what the
-# retrofit cost, which was the milestone's actual question.
+# Loom, only under `--cfg loom`, which only a model-checking run sets. Cargo evaluates `cfg(loom)`
+# as false for every real target, so no ordinary build resolves or compiles it.
 [target.'cfg(loom)'.dependencies]
 loom = "0.7"

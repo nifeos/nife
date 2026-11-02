@@ -296,9 +296,6 @@ version = "0.1.0"
 [[package]]
 name = "counter_frequency_contract"
 version = "0.1.0"
-dependencies = [
- "address_space_map",
-]
 
 [[package]]
 name = "cpu_set"
@@ -498,10 +495,6 @@ dependencies = [
 [[package]]
 name = "filesystem_contract"
 version = "0.1.0"
-dependencies = [
- "filesystem_fixture",
- "glob",
-]
 
 [[package]]
 name = "filesystem_fixture"
@@ -604,6 +597,10 @@ dependencies = [
 [[package]]
 name = "glob"
 version = "0.1.0"
+dependencies = [
+ "filesystem_contract",
+ "filesystem_fixture",
+]
 
 [[package]]
 name = "globally_unique_identifier_partition_table"
@@ -747,7 +744,7 @@ version = "0.1.0"
 [[package]]
 name = "jh7110_entropy"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=535f79c91eaa61a3ed8f589b71bce537a42b3b52#535f79c91eaa61a3ed8f589b71bce537a42b3b52"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=9b8769fc79a4d3f934598dd48841b886baa7ccd5#9b8769fc79a4d3f934598dd48841b886baa7ccd5"
 
 [[package]]
 name = "jh7110_watchdog"

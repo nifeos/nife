@@ -2,16 +2,31 @@
 name = "entropy_contract"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+description = "Request and reply words for a service that hands out random bytes, and the rules for reading a reply that is not one"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "entropy", "random"]
+categories = ["no-std", "embedded", "cryptography"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
 
-# The entropy contract of milestone 56 (notes/entropy.md, DECISIONS §44): the tiny request/reply
-# shape a client uses to obtain random bytes from the entropy service, and the rule for reading a
-# reply that is not one. Pure logic, host-tested, no_std, dependency-free, so the service, its
-# clients, the std PAL and the kernel-side tests share ONE definition and cannot drift. The same
-# split `filesystem_contract` makes for the filesystem contract and `clock_contract` for the wall clock.
+# The entropy contract: the tiny request/reply shape a client uses to obtain random bytes from an
+# entropy service, and the rule for reading a reply that is not one. Pure logic, host-tested,
+# no_std, dependency-free, so the service, its clients and their tests share ONE definition and
+# cannot drift.
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]
