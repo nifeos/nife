@@ -8,9 +8,8 @@
 //! in `CTRL`, enable it in `BMOD`, send the command. Polled completion: `RINTSTS` for the card, the
 //! last descriptor's `OWN` for memory, since a read's `DTO` can beat its last words to memory.
 //!
-//! Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
-//! `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `idmac`, the databook's own
-//! name for the engine.
+//! Name: ratified 2026-11-02 (UTC), #3092. `idmac` and the names built on it spell out
+//! `internal_direct_memory_access`; the databook's `idmac` is kept as `doc(alias = "idmac")`.
 
 use crate::command::Command;
 use crate::host::{
@@ -137,8 +136,8 @@ pub enum Refusal {
 /// [`InternalDirectMemoryAccess::new`] makes one, so a [`Host`] holding one has an IDMAC, 32-bit
 /// descriptors and a region they can address.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
-/// `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `Idmac`.
+/// Name: ratified 2026-11-02 (UTC), #3092. `idmac` and the names built on it spell out
+/// `internal_direct_memory_access`; the databook's `idmac` is kept as `doc(alias = "idmac")`.
 #[doc(alias = "idmac")]
 pub struct InternalDirectMemoryAccess<D: DirectMemoryAccessRegion> {
     region: D,

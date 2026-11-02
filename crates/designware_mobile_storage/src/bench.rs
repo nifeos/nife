@@ -111,8 +111,8 @@ fn timed_read<R: Registers, D: DirectMemoryAccessRegion>(
 
 /// What the IDMAC's half of the read-only probe found.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
-/// `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `IdmacReport`.
+/// Name: ratified 2026-11-02 (UTC), #3092. `idmac` and the names built on it spell out
+/// `internal_direct_memory_access`; the databook's `idmac` is kept as `doc(alias = "idmac")`.
 #[doc(alias = "idmac")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InternalDirectMemoryAccessReport {
@@ -135,8 +135,8 @@ pub struct InternalDirectMemoryAccessReport {
 ///
 /// The read that failed.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `idmac` and the names built on it spell out
-/// `internal_direct_memory_access`, with `doc(alias = "idmac")`; was `idmac_read`.
+/// Name: ratified 2026-11-02 (UTC), #3092. `idmac` and the names built on it spell out
+/// `internal_direct_memory_access`; the databook's `idmac` is kept as `doc(alias = "idmac")`.
 #[doc(alias = "idmac")]
 pub fn internal_direct_memory_access_read<R: Registers, D: DirectMemoryAccessRegion>(
     host: &mut Host<R, D>,

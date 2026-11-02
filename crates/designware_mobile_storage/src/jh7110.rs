@@ -34,8 +34,9 @@ pub const WINDOW_SIZE: u64 = 0x1_0000;
 pub const CARD_INTERFACE_UNIT_HZ: u32 = 50_000_000;
 /// Both trees' `fifo-depth`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
-/// authors, and the device tree's `fifo-depth` keeps its spelling; was `FIFO_DEPTH`.
+/// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors,
+/// and the device tree's `fifo-depth` keeps its spelling; the databook's `fifo` is kept as
+/// `doc(alias = "fifo")`.
 #[doc(alias = "fifo")]
 pub const QUEUE_DEPTH: u32 = 32;
 /// Mainline's interrupt numbers at the PLIC, slot 0 and slot 1.

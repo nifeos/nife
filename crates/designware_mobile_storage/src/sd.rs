@@ -52,8 +52,8 @@ pub enum Kind {
 
 /// Which step of identification failed, and how.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `init` meaning initialize is spelled out wherever
-/// this tree authors it; was `InitError`.
+/// Name: ratified 2026-11-02 (UTC), #3092. `init` meaning initialize is spelled out wherever this
+/// tree authors it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InitializationError {
     /// Reset, power or the identification clock.

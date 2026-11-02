@@ -80,8 +80,8 @@ pub const fn bits(register: &[u32; 4], start: u32, len: u32) -> u32 {
 /// **The card-specific data register (CSD)**, decoded to the two facts this driver uses: SD
 /// Physical Layer Simplified Specification section 5.3, JESD84-B51 section 7.3 for eMMC.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): the SD and MMC vocabulary this tree authors spells
-/// out, with the specification's abbreviation as a `doc(alias)`; was `Csd`.
+/// Name: ratified 2026-11-02 (UTC), #3092. The SD and MMC vocabulary this tree authors is spelled
+/// out; the specification's abbreviation `csd` is kept as `doc(alias = "csd")`.
 #[doc(alias = "csd")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CardSpecificData {
@@ -150,8 +150,8 @@ impl CardSpecificData {
 /// **The card identification register (CID)**, decoded to what a transcript should name: SD
 /// Physical Layer Simplified Specification section 5.2, JESD84-B51 section 7.2 for eMMC.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): the SD and MMC vocabulary this tree authors spells
-/// out, with the specification's abbreviation as a `doc(alias)`; was `Cid`.
+/// Name: ratified 2026-11-02 (UTC), #3092. The SD and MMC vocabulary this tree authors is spelled
+/// out; the specification's abbreviation `cid` is kept as `doc(alias = "cid")`.
 #[doc(alias = "cid")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CardIdentification {

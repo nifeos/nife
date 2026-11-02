@@ -43,8 +43,8 @@ impl Entry {
 
 /// **A parsed master boot record (MBR)**: the four primary entries.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): the SD and MMC vocabulary this tree authors spells
-/// out, with the specification's abbreviation as a `doc(alias)`; was `Mbr`.
+/// Name: ratified 2026-11-02 (UTC), #3092. The SD and MMC vocabulary this tree authors is spelled
+/// out; the specification's abbreviation `mbr` is kept as `doc(alias = "mbr")`.
 #[doc(alias = "mbr")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MasterBootRecord {

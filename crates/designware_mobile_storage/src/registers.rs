@@ -9,8 +9,8 @@
 //! Only the first page matters to this driver: every register it touches, and the data FIFO, sit
 //! below `0x1000`. The JH7110's window is `0x1_0000`, the rest of it unused by anything here.
 //!
-//! Name: provisional. Ruled 2026-10-26 (UTC): every `regs` module this tree names becomes
-//! `registers`, and the constants inside keep the databook's names; was `regs`.
+//! Name: ratified 2026-11-02 (UTC), #3092. Every `regs` module this tree names is `registers`, and
+//! the constants inside keep the databook's names.
 
 /// **Control Register** (OpenBSD's `SDMMC_CTRL`): the three self-clearing resets, the interrupt and
 /// DMA enables.
@@ -509,8 +509,8 @@ pub(crate) const DW_MMC_240A: u32 = 0x240a;
 /// releases. Reading the version rather than assuming it is what lets the bench transcript say
 /// which applied.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
-/// authors, and copied register names keep `FIFO`; was `fifo_offset`.
+/// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors,
+/// and copied register names keep `FIFO`; the databook's `fifo` is kept as `doc(alias = "fifo")`.
 #[doc(alias = "fifo")]
 #[must_use]
 pub const fn queue_offset(verid: u32) -> u32 {
@@ -526,8 +526,8 @@ pub const fn queue_offset(verid: u32) -> u32 {
 /// OpenBSD does the same for 16-bit and handles 64-bit as two words, which is a step this driver
 /// has not needed yet.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `fifo` becomes `queue` in every name this tree
-/// authors; was `fifo_width`.
+/// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors;
+/// the databook's `fifo` is kept as `doc(alias = "fifo")`.
 #[doc(alias = "fifo")]
 #[must_use]
 pub const fn queue_width(hcon: u32) -> Option<u32> {
@@ -542,8 +542,7 @@ pub const fn queue_width(hcon: u32) -> Option<u32> {
 /// **Does the IDMAC use 64-bit addresses?** `HCON` bit 27. Changes the layout of every register
 /// from `0x88` up and doubles the descriptor, so the IDMAC path refuses it; radon's is clear.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `dma` is spelled out wherever this tree authors it;
-/// was `dma_64bit`.
+/// Name: ratified 2026-11-02 (UTC), #3092. `dma` is spelled out wherever this tree authors it.
 #[must_use]
 pub const fn uses_64_bit_direct_memory_access(hcon: u32) -> bool {
     hcon & (1 << 27) != 0
