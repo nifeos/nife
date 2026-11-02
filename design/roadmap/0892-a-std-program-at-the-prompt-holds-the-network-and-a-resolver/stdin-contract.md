@@ -16,8 +16,9 @@ written here. Names are provisional.
   follows the raw-reader badge of milestone 709 (a graphical terminal session on the no-keyboard arm
   holds only the raw half of the boot discipline). std reads it at
   `std_runtime_contract::STDIN_SLOT`, slot 29, after the resolver slots 22 to 28. The spawn service places it only for a table program whose
-  manifest sets `Manifest::console_input`, which no note can spell (as with `installer`). That is
-  `jig` today. The shell is parked on the job's result while the job runs, so the two never read
+  manifest sets `Manifest::console_input`, which no note can spell yet (as with `installer`). That is
+  `jig` today. §270 (a package manager holds an installer endpoint, not the spawn endpoint) lets an
+  owner's `grant` line give it to installed bytes, and that half is unbuilt. The shell is parked on the job's result while the job runs, so the two never read
   at once.
 - (b) Push. The shell feeds `byte_sink_contract` frames into an endpoint at that slot, as a
   pipe's upstream stage does. No new opcode. But the shell cannot read the console and wait on the

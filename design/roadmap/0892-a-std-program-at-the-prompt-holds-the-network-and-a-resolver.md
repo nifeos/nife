@@ -70,8 +70,10 @@ alone would have let the ninth `jig` of a boot be refused.
   10.0.2.3, the lease's name server`. `script/swish-check` requires that sentence on every boot
   with a network. The resolver's endpoint is one more capability the progenitor holds for life.
 - Item 2 was built for `jig` by milestone 809 (the package client becomes a program).
-- Item 3, for `jig`. `grant_plan::Program::resolver_zone` (provisional) names the zone in the
-  program table, not in `Manifest`, so installed bytes can never carry one. Each `jig` job whose
+- Item 3, for `jig`. `grant_plan::Program::resolver_zone` (provisional) names `jig`'s zone in the
+  program table, not in `Manifest`. Installed bytes ask for their zones in their note and hold each
+  on an owner's `grant` line (below); §270 (a package manager holds an installer endpoint, not the
+  spawn endpoint) extends that to the root zone a replacement package manager needs. Each `jig` job whose
   verb holds the network gets a fresh badge granted the root zone (Q5), placed at slot 9, and
   forgotten at its reap. `caps jig install greeting@0.1.0` prints the row.
 - Item 4. The swish script now starts nine `jig install`s in one boot. With the
@@ -148,8 +150,9 @@ Lane `milestone/892-installed-programs-hold-the-network-and-zones` (#2405).
   apart in capitals, and asks once; only `y` or `yes` sends the package. `jig` reads the answer as
   standard input: the boot terminal badged `line_editor::proto::STDIN_BADGE`, at
   `std_runtime_contract::STDIN_SLOT` (29), served `OPERATION_READ_LINE_BYTES` (eight bytes of the
-  typed line a reply) and nothing else. It is placed only for `Manifest::console_input`, which no
-  note can spell and which rides with the installer authority in `jig`'s verb table. The spawn
+  typed line a reply) and nothing else. It is placed only for `Manifest::console_input`, which
+  rides with the installer authority in `jig`'s verb table. No note can spell it yet; §270 lets an
+  owner's `grant` line give it to installed bytes, and that half is unbuilt. The spawn
   service holds that copy while it builds the job, which is the progenitor's capability peak:
   `kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED`, measured with and without it.
 

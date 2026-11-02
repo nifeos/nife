@@ -251,9 +251,9 @@ zones; a manifest that asks for zones and no service stays version 2, so no dige
   test the bound; nothing starts a recorded service. A real service package in the wild waits on
   910, as does the standing delegation form, whose ask ("installer, within approval X") rides
   910's declaration. The gate proves the delegation with `jig` as the holder, the only program
-  that can hold the endpoint, because a note cannot spell the installer ask (§270's rule,
-  unamended on that point).
-- A note cannot spell the installer ask, and no manifest asks for a directory at install, so the
+  that can hold the endpoint today, because a note cannot spell the installer ask yet. §270 lets
+  an owner's `grant` line give it to installed bytes, and that half is unbuilt.
+- A note cannot spell the installer ask yet, and no manifest asks for a directory at install, so the
   `installer` and `dirs` allow keys and the `Granted::Installer` and `Granted::Directory` records
   are exercised by host tests alone until 910's declaration exists.
 - The delegated holder in the gate is a fresh `jig` per line, so "a delegation already running"
