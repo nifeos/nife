@@ -71,7 +71,7 @@ milestone names its consumer. It is not BUILT until a record cites its first use
 
 | part | what | needs a ruling? | size |
 |---|---|---|---|
-| 1 | A contract crate for how the kernel hands the base digest to the progenitor, and the progenitor's check of the table against it, host-tested. The two release together, so the lane picks the form. | no | about 200 lines and host tests in `crates/` and `crates/system_initializer` |
+| 1 | A contract crate for how the kernel hands the base digest to the progenitor, and the progenitor's check of the table against it, host-tested. The two release together. | yes: the channel is new boot ABI | about 200 lines and host tests in `crates/` and `crates/system_initializer` |
 | 2 | The parser and writer for the handoff's two words, `measured_boot::loader_digests`. | question 1, decided | about 150 lines and host tests |
 | 3 | The kernel reads the two words on each path and holds the progenitor and the table to them. | question 1, decided | about 150 lines, one QEMU suite per architecture |
 | 4 | The writers: `xtask` and the QEMU runners, `uefi_loader`, the board's U-Boot scripts, and 976's slot writer. | question 2, decided | about 300 lines; the board half needs a bench boot |
@@ -90,18 +90,23 @@ milestone names its consumer. It is not BUILT until a record cites its first use
 - **Done.** Part 4's first three writers, on this block's branch. `device_tree_patch` gains
   `with_initial_ramdisk_and_boot_arguments`, and host tests read every writer's output back with
   the kernel's parser.
-- **Outstanding.** Part 1: the kernel still checks the table itself, against both the words and
-  `TRUST_ROOT`. Moving the check into the progenitor needs the contract crate part 1 names; checked
-  against `kernel/src/trust.rs`, which still calls `require_program_measurements`.
-- **Outstanding.** Part 4's fourth writer, 976's version 2 slot, which 976's part 4c lane owns.
+- **Outstanding, and waiting on the architect.** Part 1: the kernel still checks the table itself,
+  against both the words and `TRUST_ROOT`; checked against `kernel/src/trust.rs`, which still calls
+  `require_program_measurements`. Moving the check into the progenitor means the kernel hands the
+  progenitor the base digest, and every channel for that is a new piece of the kernel's boot ABI:
+  the three `START` words are spent (notes/progenitor-boot.md), so it takes a fourth word, a new
+  capability slot or a mapped page. That touches the syscall surface (§10 (the capability-based
+  microkernel process model)), so the contract crate waits for a ruling on the channel.
+- **Outstanding, and milestone 976's.** Part 4's fourth writer, 976's version 2 slot, which 976's
+  part 4c owns; 976's block holds the header and the work.
   Ruled 2026-11-01 (UTC): the header grows from 188 to 252 bytes, with the progenitor digest and
   the base digest after the three member entries and the CRC-32 last. The updater writes the two
   digests and the chooser copies them into the two words. Checked against draft PR #3032, which
   records the ruling; `crates/boot_slot` does not hold the fields yet.
-- **Outstanding.** A bench boot of the board scripts. No bench boot ran; the scripts use only
-  `setenv`, which the proven vocabulary already holds. They carry the card's words, so a network
-  boot of a rebuilt archive needs the card's script rewritten with it (`script/board-image --tftp
-  --card`).
+- **Outstanding, and waiting on the bench.** A bench boot of the board scripts and the TH1520 FIT;
+  notes/visionfive2.md's `BUGS` records it. The scripts use only `setenv`, which the proven
+  vocabulary already holds. They carry the card's words, so a network boot of a rebuilt archive
+  needs the card's script rewritten with it (`script/board-image --tftp --card`).
 - **Outstanding.** The composed image becomes the only image when this milestone and 697 land
   (ruled 2026-11-01 UTC), and the boot gates then run on it; 697's block has the end state.
   Checked: the tree still builds its own image (`cargo xtask uefi-image`).
