@@ -380,7 +380,9 @@ mod verification {
     use super::*;
 
     /// The page the harnesses build: the header and room for three entries.
-    const PAGE: usize = HEADER_BYTES + 3 * ENTRY_BYTES;
+    /// A literal, not `HEADER_BYTES + 3 * ENTRY_BYTES`: arithmetic in a constant has no function
+    /// name, so the mutation census cannot attribute it to this module. The first harness checks it.
+    const PAGE: usize = 40;
 
     /// **`Roster::read` is total on any bytes**: for any page of up to `PAGE` bytes, whatever its
     /// contents and length, `read` neither panics nor indexes out of bounds, and when it accepts the
@@ -389,6 +391,7 @@ mod verification {
     #[kani::proof]
     #[kani::unwind(6)]
     fn read_is_total_and_every_counted_entry_is_gettable() {
+        assert_eq!(PAGE, HEADER_BYTES + 3 * ENTRY_BYTES);
         let bytes: [u8; PAGE] = kani::any();
         let len: usize = kani::any();
         kani::assume(len <= PAGE);
