@@ -23,7 +23,7 @@ const POLLS_PER_BYTE: u32 = 1 << 20;
 ///
 /// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
-const REFUSAL_UART_VA: u64 = address_space_map::pair_page(0x0f70_0000);
+const REFUSAL_UART_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0f70_0000);
 
 /// **Write `parts`, in order, to the UART.** `uart_shape` is the register shape the kernel passed
 /// at start (`abi::uart`), which riscv64's NS16550 needs. Returns once every byte is written or
@@ -56,7 +56,7 @@ impl Uart {
     fn open(g: &BootEndowment, _uart_shape: u64) -> Option<Self> {
         (address_space_map_into(
             g.own_space,
-            REFUSAL_UART_VA,
+            REFUSAL_UART_VIRTUAL_ADDRESS,
             g.uart_dev,
             abi::address_space::MAP_RW,
         ) == 0)
@@ -65,15 +65,16 @@ impl Uart {
 
     fn put(&self, byte: u8) {
         for _ in 0..POLLS_PER_BYTE {
-            // SAFETY: REFUSAL_UART_VA is this process's device mapping of the PL011, made in
+            // SAFETY: REFUSAL_UART_VIRTUAL_ADDRESS is this process's device mapping of the PL011, made in
             // `open`, and FR is inside its one page and 4-byte aligned.
-            let flags =
-                unsafe { core::ptr::read_volatile((REFUSAL_UART_VA + Self::FR) as *const u32) };
+            let flags = unsafe {
+                core::ptr::read_volatile((REFUSAL_UART_VIRTUAL_ADDRESS + Self::FR) as *const u32)
+            };
             if flags & Self::FR_TXFF == 0 {
                 // SAFETY: as above, for DR.
                 unsafe {
                     core::ptr::write_volatile(
-                        (REFUSAL_UART_VA + Self::DR) as *mut u32,
+                        (REFUSAL_UART_VIRTUAL_ADDRESS + Self::DR) as *mut u32,
                         byte as u32,
                     );
                 }
@@ -96,7 +97,7 @@ impl Uart {
     fn open(g: &BootEndowment, uart_shape: u64) -> Option<Self> {
         (address_space_map_into(
             g.own_space,
-            REFUSAL_UART_VA,
+            REFUSAL_UART_VIRTUAL_ADDRESS,
             g.uart_dev,
             abi::address_space::MAP_RW,
         ) == 0)
@@ -116,8 +117,8 @@ impl Uart {
     }
 
     fn read(&self, index: u64) -> u8 {
-        let addr = REFUSAL_UART_VA + self.shape.offset(index);
-        // SAFETY: REFUSAL_UART_VA is this process's device mapping of the NS16550, made in `open`,
+        let addr = REFUSAL_UART_VIRTUAL_ADDRESS + self.shape.offset(index);
+        // SAFETY: REFUSAL_UART_VIRTUAL_ADDRESS is this process's device mapping of the NS16550, made in `open`,
         // and the largest offset `RegisterShape` allows stays inside that page. The 32-bit arm is
         // taken only when the stride keeps every register 4-byte aligned.
         unsafe {
@@ -130,7 +131,7 @@ impl Uart {
     }
 
     fn write(&self, index: u64, value: u8) {
-        let addr = REFUSAL_UART_VA + self.shape.offset(index);
+        let addr = REFUSAL_UART_VIRTUAL_ADDRESS + self.shape.offset(index);
         // SAFETY: as `read`.
         unsafe {
             if self.shape.is_word_access() {

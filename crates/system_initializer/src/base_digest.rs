@@ -15,7 +15,7 @@ use super::*;
 /// `UNMAP` straight after.
 ///
 /// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
-const BASE_DIGEST_PEEK_VA: u64 = address_space_map::pair_page(0x0f60_0000);
+const BASE_DIGEST_PEEK_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0f60_0000);
 
 /// **Why the progenitor refused the measurement table.** Each names a different fault, and
 /// [`reason`](BaseRefusal::reason) is the line the console shows.
@@ -100,22 +100,27 @@ fn read_granted_page(
     if !is_granted(g.base_digest_page) {
         return Err(BaseRefusal::NoCapability);
     }
-    if !map_page_frame(g.base_digest_page, BASE_DIGEST_PEEK_VA, false, ut) {
+    if !map_page_frame(
+        g.base_digest_page,
+        BASE_DIGEST_PEEK_VIRTUAL_ADDRESS,
+        false,
+        ut,
+    ) {
         capability_delete(g.base_digest_page);
         return Err(BaseRefusal::Unmappable);
     }
     let mut content = [0u8; base_digest_contract::PAGE_CONTENT_BYTES];
-    // SAFETY: the kernel just mapped one page read-only at BASE_DIGEST_PEEK_VA, and
+    // SAFETY: the kernel just mapped one page read-only at BASE_DIGEST_PEEK_VIRTUAL_ADDRESS, and
     // PAGE_CONTENT_BYTES (40) is far under a page. Nothing writes the frame after the kernel built
     // it, and `content` is this frame's own stack array, so the two do not overlap.
     unsafe {
         core::ptr::copy_nonoverlapping(
-            BASE_DIGEST_PEEK_VA as *const u8,
+            BASE_DIGEST_PEEK_VIRTUAL_ADDRESS as *const u8,
             content.as_mut_ptr(),
             content.len(),
         );
     }
-    process_builder::give_up_own_page(BASE_DIGEST_PEEK_VA);
+    process_builder::give_up_own_page(BASE_DIGEST_PEEK_VIRTUAL_ADDRESS);
     capability_delete(g.base_digest_page);
     Ok(content)
 }
