@@ -71,25 +71,29 @@ projects nife depends on.
 
 ## What is proven
 
-Four properties, proved by nine harnesses in `crates/jh7110_clock_and_reset/src/lib.rs`. Every
+Four properties, which nine harnesses prove in `crates/jh7110_clock_and_reset/src/lib.rs`. Every
 harness carries a falsification patch that makes it fail at its own assertion, at
 `crates/jh7110_clock_and_reset/falsifications/<module.path>.<harness>.patch`, as §134 (a harness
 carries a machine-replayable falsification record) and `script/falsifications` require.
 
 | property | harnesses |
 |---|---|
-| `with_parent` changes only the mux field: for every word and every parent, every bit outside `CLOCK_MUX_MASK` is unchanged and an over-wide parent never spills into the enable bit | `with_parent_changes_only_the_mux_field` |
+| `with_parent` changes only the mux field: for every word and every parent, every bit outside `CLOCK_MUX_MASK` stays as it was and an over-wide parent never spills into the enable bit | `with_parent_changes_only_the_mux_field` |
 | Every offset a domain answers is one of its own words: `Domain::clock_offset` and `Domain::reset_bit` return none past the domain's `clocks` or `resets` count, and otherwise a word-aligned offset inside its range and a one-bit mask, for all three domains | `a_clock_offset_is_one_of_the_domains_own_words`, `a_reset_line_is_one_bit_of_one_of_the_domains_own_words` |
-| Every plan ungates its clocks before it releases its reset: the six fixed plans, and plans built from caller-supplied specifiers, hold only in-bounds ids, never more than `MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS` (or `MAXIMUM_DEVICE_STEPS`), with every `EnableClock` ahead of every `DeassertReset` | `every_fixed_plan_ungates_its_clocks_before_releasing_a_reset`, `a_device_plan_from_specifiers_ungates_before_it_releases`, `the_pmic_bus_plan_is_never_empty_and_ungates_before_it_releases` |
+| Every plan ungates its clocks before it releases its reset: the six fixed plans, and plans the crate builds from caller-supplied specifiers, hold only in-bounds ids, never more than `MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS` (or `MAXIMUM_DEVICE_STEPS`), with every `EnableClock` ahead of every `DeassertReset` | `every_fixed_plan_ungates_its_clocks_before_releasing_a_reset`, `a_device_plan_from_specifiers_ungates_before_it_releases`, `the_pmic_bus_plan_is_never_empty_and_ungates_before_it_releases` |
 | The status decoders (`is_deasserted`, `is_clock_enabled`, `clock_divider`) are total and match their definitions for every word | `is_deasserted_reads_the_bit_the_mask_names`, `is_clock_enabled_reads_bit_31_and_nothing_else`, `clock_divider_is_the_low_24_bits_and_nothing_else` |
 
-The two built-plan harnesses are bounded by what the solver can afford (80 to 90 seconds each).
-They model the caller's phandle lookup as one SYS controller with one cell per specifier, and take
-two clock specifiers and one reset specifier of whole length. Not proved: a lookup that answers
-another provider, another cell count or an error; a property length that is not a whole number of
-specifiers; plans of more than three specifiers, so the truncation flag; and the `reg` decoders'
-short inputs. The host tests cover those by example. A lookup answering differently on every call
-ran for over an hour without finishing, and five specifiers timed out at 280 seconds.
+The two built-plan harnesses take the solver 80 to 90 seconds each. They model the caller's phandle
+lookup as one SYS controller with one cell per specifier, and feed two clock specifiers and one
+reset specifier of whole length. Not proved:
+
+- a lookup that answers with another provider, another cell count or an error;
+- a property length that is not a whole number of specifiers;
+- plans of more than three specifiers, so the truncation flag;
+- the short inputs of the `reg` decoders.
+
+The host tests cover those by example. A lookup that answered differently on every call ran for
+over an hour without finishing, and five specifiers timed out at 280 seconds.
 
 Not proven, by design: that a plan's order is the one the silicon needs, which only a board shows,
 and the device-tree queries, which the cut moves out of the crate.
@@ -100,7 +104,7 @@ and the device-tree queries, which the cut moves out of the crate.
    `script/names jh7110_clock_and_reset` reports it ratified, crates.io answers 404 for it (or it is
    already ours), and `nifeos/jh7110_clock_and_reset` does not exist yet. `script/crate-standalone`
    checks the first.
-2. The proofs above exist with their falsification patches, and the cut is made. `cargo tree -p
+2. The proofs above exist with their falsification patches, and the cut stands. `cargo tree -p
    jh7110_clock_and_reset` then lists no nife crate.
 3. In the tree, `script/verify` proves the harnesses and `Cargo.toml` says `publish = false`.
 4. The package is 0.1.0 with its own semver, states `rust-version` (#1806's note built it on stable
@@ -145,10 +149,10 @@ is not.
 
 `script/crate-standalone jh7110_clock_and_reset` builds the crate in a copy on 1.88 for the host and
 the three bare-metal targets, proves all nine harnesses with stock Kani, and replays all nine
-falsification patches red. It fails on one check: names. Nine names in the crate are `recorded`
+falsification patches red. It fails on one check: names. Nine names in the crate carry the state `recorded`
 and not `ratified`, the first being `CLOCK_MUX_MASK`; `python3 helpers/name_release.py --draft
-jh7110_clock_and_reset` prints the table for the pull request that ratifies them. That is an
-architect's call, and the crate stays unmoved until it is made. The only citations of this tree
+jh7110_clock_and_reset` prints the table for the pull request that ratifies them. An
+architect decides that, and the crate stays unmoved until then. The only citations of this tree
 that remain sit in `Name:` blocks, which stay until the ratification pass.
 
 `script/names` reports the crate's own name `jh7110_clock_and_reset` ratified.
