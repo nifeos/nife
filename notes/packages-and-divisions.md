@@ -1,7 +1,7 @@
 # Packages that build the OS, and divisions that release together: the measurements
 
-The evidence behind [§235 (the OS is built and updated from packages, and the tree divides by what
-releases together)](../design/decisions/0235-packages-build-the-os-and-the-tree-divides-by-release.md),
+The evidence behind [§235 (the OS is built and updated from packages, and its source divides by
+purpose)](../design/decisions/0235-packages-build-the-os-and-the-tree-divides-by-release.md),
 written for milestone 607 (nife is built and updated from packages). Both numbers are provisional. The decision holds the options; this note
 holds what was measured and what the prior art does. Measured 2026-09-26 (UTC) at base `de0c3664b`.
 The file name is a lane's coinage and provisional.

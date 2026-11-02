@@ -5,8 +5,8 @@ Measurements for the proposal
 on calef's prompt of 2026-10-04 (UTC): *"I do think we should soon be breaking things out of the mono
 repo and into their own repos. I also think the basalt repo is sitting there waiting to package up
 those repos for its distribution."* The direction is ruled (§151 (the goal of the repository split is
-independent release), §235 (the OS is built and updated from packages, and the tree divides by what
-releases together)); the order is not. This note holds the numbers; the proposal holds the options
+independent release), §235 (the OS is built and updated from packages, and its source divides by
+purpose)); the order is not. This note holds the numbers; the proposal holds the options
 and the recommendation. The file name is a lane's coinage and provisional.
 
 Measured 2026-10-04 at `origin/main` `04a8f9e6c`. "Thirty days" means non-merge commits reachable

@@ -47,8 +47,8 @@ lane re-measured on 2026-10-28:
 
 - Formats do better: `capability_manifest_note` (`VERSION = 1`, `ZONED_VERSION = 2`), `boot_slot`
   (`SLOT_VERSION = 1`), `package_archive` (`NIFEPKG1`), `nifefs` (`CRKR0002`).
-- §235 (the OS is built and updated from packages, and the tree divides by what releases
-  together) ruled an ABI revision field into the manifest note; it does not exist. The version 1
+- §235 (the OS is built and updated from packages, and its source divides by
+  purpose) ruled an ABI revision field into the manifest note; it does not exist. The version 1
   descriptor is 56 bytes, byte 55 its last zero;
   version 2 appends zones after it. A grep for `ABI_REVISION` over `crates/` returns nothing.
 
