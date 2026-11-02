@@ -20,10 +20,11 @@ Five parts, and none of them is a table of programs.
    `fixtures/` and three in `std_exerciser/` do today. `reboot`, `jig` and `graphical_terminal`
    do the same. The constant travels with the program when its package leaves for its own
    repository.
-2. The vouch decides what a declaration earns. For a program the image carries, the vouch is the
-   archive's measurement (`measure_spawnable` refuses an archive program whose digest the measured
-   table does not hold), bounded by the image's approval file. For an installed program, the
-   vouch is its row in the live installed-programs table plus the owner's `grant` lines.
+2. The vouch decides which bytes may run, and `grant` lines decide what they receive. For a
+   program the image carries, the vouch is the archive's measurement (`measure_spawnable` refuses
+   an archive program whose digest the measured table does not hold). For an installed program, it
+   is its row in the live installed-programs table. Either way, every owner-granted field needs a
+   `grant` line for the program's digest.
    `grant_plan::image_manifest` stays the one function the shell and the progenitor both call.
 3. A fixed list of owner-granted kinds, keyed by manifest field. `grant_plan` holds the set of
    fields a vouch alone does not earn. Today that is the network; after the ruling it adds the reboot object,
@@ -130,9 +131,17 @@ names the missing grant (`ImageRefusal::NotGranted(kind)`, provisional; today
 and `console_input` go, and so do the matching compile-time refusals in
 `capability_manifest_note::encode`.
 
-For the image's own programs the vouch is the archive: `Vouch::Archive`, provisional, earns every
-owner-granted field the note asks, because the composition already checked the note against the
-image's approval file ([decision 4](decisions.md)).
+The image's own programs earn nothing implicitly for being in the measured archive (ruled
+2026-11-02 (UTC)). The base approval file lists every grant the image makes to its own programs,
+the owner-granted kinds included, and the progenitor-endowed `domain`, `entropy`, `machine` and
+`share` too. The composition refuses a program whose note asks for a grant the file does not
+list, and names it. For each owner-granted kind the file allows, the composition writes a
+`grant <digest> ...` line for the program's digest into generation 1 of the installed-programs
+table (milestone 990 (the base image's first installed-programs table) writes that generation with
+`with_entries_granting`). So at spawn the progenitor reads a base program's grants through the same
+path as an owner's line, and refuses a missing one by name. The four progenitor-endowed kinds have
+no `grant` line; the composition's check is their only gate, as it is today for an installed
+program's.
 
 Refusing rather than narrowing is the restrictive choice, and the tree already makes it for the
 network. A program that asked for `reboot` and silently ran without it would fail later and further

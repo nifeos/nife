@@ -4,7 +4,7 @@
 are the questions only the architect can answer, one at a time, in the order they block
 [the migration](migration.md). Each gives its background, the recommendation, the alternatives,
 an example and what was not verified, and ends in one question. Prior art here is from memory and
-not re-checked. Steps 1 to 9 wait on none of the open ones.
+not re-checked. Steps 1 to 9 and 11 wait on none of the open ones.
 
 ## What the ruling of 2026-11-02 settled
 
@@ -17,7 +17,7 @@ two.
   appendix](security.md) cover.
 - Changed: "every program carries its own record, with a central table kept only for what the
   system fixes" loses its second half. No table remains (decision 3, ruled).
-- Changed: the base image's approval file must now list the owner-granted kinds too (decision 4).
+- Changed: the base image's approval file lists the owner-granted kinds too (decision 4, ruled).
 - Unchanged: what §229 means by a name the image carries (decision 7), and provisional names
   (decision 8).
 
@@ -42,30 +42,10 @@ two classes.
 
 Ruled 2026-11-02 (UTC). [The end state](end-state.md) says what `grant_plan` keeps.
 
-## 4. Must the image's approval file list every grant the system hands out?
+## 4. Ruled: the base approval file lists every grant the image makes
 
-One-way: it sets what vouches for a base tool.
-
-When the composer builds an image, it checks each package's records against an approval file. The
-file lists the network, resolver zones, the service, named directories and the installer today. A
-record can also ask for the process view, randomness, the machine counters, and through the
-`OWNER_GRANTS` note
-the reboot object and the rest. With no central table, the measured archive would vouch for whatever a
-base package's record asks.
-
-Recommendation: yes. Each base package's approval entry names every grant its programs ask,
-`domain`, `entropy`, `machine`, `share` and the owner-granted kinds included. A `process-tools`
-update that suddenly asks for `reboot` fails composition until a reviewed line allows it.
-
-Alternative: trust the record, as for the progenitor-endowed grants of an installed program today.
-
-Example: basalt's approval file says `init` may hold `reboot` and `sync`, `jig` the installer,
-catalog, index store, activation directory and console input, and `display` the display session.
-
-Not verified: whether the interactive install should list `domain`, `entropy`, `machine` and `share`
-too; a separate question.
-
-Question: should the base approval list every grant the system endows? Yes or no.
+Ruled 2026-11-02 (UTC). Nothing comes from the measured archive implicitly; [the end
+state](end-state.md) says how the composition turns the file into `grant` lines.
 
 ## 5. May a trusted repository key ever grant these without the owner?
 
@@ -137,7 +117,7 @@ Question: A (the archive's names) or B (build the narrowing now)?
 ## 8. The new names
 
 Two-way in effect: each ships provisional. The base list page, the by-name request bit,
-`OwnerGrants`, `Vouch::Archive`, `NotGranted`, the `display` field, each grant line's spelling, the
+`OwnerGrants`, `NotGranted`, the `display` field, each grant line's spelling, the
 `word` line and `jig use` need names. Recommendation: ship each provisional and bring them in one
 naming pass once steps 5 and 12 exist. Question: may they ship provisional? Yes or no.
 

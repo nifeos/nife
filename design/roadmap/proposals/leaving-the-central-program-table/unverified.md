@@ -51,12 +51,18 @@ determine. They wrote no code and booted nothing.
   name to bytes in the measured archive or the live table, never to a grant: the graphics checks
   move to `Manifest::display`, and the rest look up the archive by name. Not traced: every reader
   of the timetable's plan mask.
-- What first boot needs with no table. The image's `reboot`, `jig` and `graphical_terminal` must
-  receive their owner-granted fields before any owner has written a line. Two records could carry that. One is the image's approval file, which the composition checks
-  against each note. The other is generation 1 of the installed-programs table, which milestone
-  990 (the base image's first installed-programs table) writes with `with_entries_granting` from
-  the same asks; it could hold `grant` lines for base rows. Its base rows carry no grant lines today. [Decision 4](decisions.md)
-  asks what the approval file must list; this appendix does not answer it.
+- What first boot needs with no table. The image's `reboot`, `jig` and `graphical_terminal`
+  receive their owner-granted fields from `grant` lines in generation 1, which the composition
+  writes from the base approval file ([the end state](end-state.md)). Read in the code: generation
+  1's base rows carry no grant lines today, and milestone 990 (the base image's first
+  installed-programs table) measured that generation at 5,691 bytes against the progenitor's
+  4,096-byte page. Not verified: how much the new lines add.
+- Whether the base approval file can hold each kind. Read in the code, it cannot yet.
+  `approval_file::File` knows `network`, `zones`, `service`, `installer` (a boolean, with no
+  `within` form), `dirs`, `update` and `remove`, and refuses any other key (`Why::UnknownKey`).
+  It has no key for `reboot`, `sync`, `catalog`, the index store and its rights, the activation
+  directory, console input, the display, or `domain`, `entropy`, `machine` and `share`.
+  `installed_programs::Granted` lacks the same kinds. Migration step 5 adds them.
 
 ## Could not determine
 

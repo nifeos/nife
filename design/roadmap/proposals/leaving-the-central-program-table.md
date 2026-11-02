@@ -109,8 +109,10 @@ details.
 1. Each program's source holds its manifest and carries it as a note, `reboot`, `jig` and
    `graphical_terminal` included. 26 of the 28 rows already encode
    (`every_compiled_in_manifest_round_trips`); the other two need the `OWNER_GRANTS` note type.
-2. The vouch: the measured archive, bounded by the image's approval file, for the image's own
-   programs; the live installed-programs table and the owner's `grant` lines for the rest.
+2. The vouch: the measured archive for the image's own programs, the live installed-programs
+   table for the rest. Every owner-granted field needs a `grant` line for the program's digest; the
+   composition writes the image's own lines from the base approval file, which lists every grant
+   the image makes.
    `Vouch::Vouched` grows from `{ network }` to a set of owner-granted kinds, and `image_manifest`
    refuses a declared kind without its grant, naming it, as it does for the network today.
 3. The owner's `grant` lines gain one kind per owner-granted field: `reboot`, `sync`,
@@ -166,7 +168,7 @@ the wire-id rules and what changed from the first plan.
 7. The installed path reads the `VERBS` note.
 8. `reboot`, `jig` and `graphical_terminal` carry their own notes.
 9. The progenitor publishes the base list (ruled as decision 3).
-10. Archive programs spawn by name under the archive's vouch (decisions 4 and 7).
+10. Archive programs spawn by name, with grants from generation 1's lines (decision 7).
 11. The rows leave, one package per pull request; the last deletes `Program`.
 12. The owner's word table (decision 6 for words the image carries).
 13. The leaf crate, if ruled.
@@ -184,8 +186,8 @@ background, alternatives and example. The ruling dissolved the question of the s
    bounded by an approval for installed bytes, and none of the sensitive grants for a recorded
    service.
 3. Ruled 2026-11-02 (UTC): every program carries its own grant record, and nothing central remains.
-4. The base approval file lists every grant the system endows, the owner-granted kinds included.
-   One-way.
+4. Ruled 2026-11-02 (UTC): the base approval file lists every grant the image makes to its own
+   programs, and nothing comes from the archive implicitly.
 5. A repository key's ceiling never covers an owner-granted kind. One-way once shipped.
 6. An owner's word line may override a word the image carries. One-way once scripts rely on it.
 7. "A name the image carries" means the measured archive's names, with §229 (a bare name reaches an

@@ -86,7 +86,7 @@ shell, the file servers and the drivers appear in `packages/base-image.toml` and
 `measure_spawnable` in `crates/system_initializer/src/boot_steps.rs` loads the table's programs only
 to serve the shell's later requests. So nothing in the table runs before the shell asks for it. The
 nearest case is `jig`: without it nobody can install a package, so an image must carry it. That is a
-reason to keep it in the base image, and the archive's vouch keeps its grants.
+reason to keep it in the base image, and the base approval file's lines keep its grants.
 
 ### Why `graphical_terminal` is owner-granted
 
