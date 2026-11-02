@@ -246,7 +246,8 @@ fn a_volume_label_cannot_be_renamed() {
 }
 
 extern crate std;
-use std::{vec, vec::Vec};
+use std::vec;
+use std::vec::Vec;
 
 /// A device of zeroed sectors, big enough for a FAT32 volume with small clusters.
 struct Blank(Vec<u8>);
