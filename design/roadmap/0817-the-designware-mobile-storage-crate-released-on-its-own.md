@@ -71,7 +71,7 @@ only to projects nife depends on.
 Each row is a property this crate must prove before it publishes. The harness cell names the Kani
 harness that proves it, or says `none yet`; every named harness carries a falsification patch that
 makes it fail at its own assertion. Each patch is at
-`crates/designware_mobile_storage/falsifications/`. All 8 properties are proven, measured 2026-11-02 (UTC) with stock Kani in the tree.
+`crates/designware_mobile_storage/falsifications/`. Stock Kani proves all 8 properties in the tree, measured 2026-11-02 (UTC).
 
 | property | harness |
 |---|---|
