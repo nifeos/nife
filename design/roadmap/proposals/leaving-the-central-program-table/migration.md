@@ -33,7 +33,8 @@ proves, what tests it adds and what waits on a ruling.
    the confirmation of [the security appendix](security.md). In the same pull request, the
    progenitor serves an installed installer holder only the delegated badge, refuses
    `answered console` from it, and refuses a delegated install that asks for an exclusive or
-   console-class grant. Console input gains its `req.badge == 0` check. Waits on decision 2.
+   console-class grant. Console input gains its `req.badge == 0` check. The classes are ruled
+   ([decision 2](decisions.md)).
 6. The display session keys on its field. The shell sets `Wiring::graphics` from
    `Manifest::display`, not from `Program::GraphicalTerminal`, and the progenitor gates
    `Request::graphical` on the vouched manifest and a live-session flag. No ruling beyond 1.
@@ -42,11 +43,11 @@ proves, what tests it adds and what waits on a ruling.
    replacement package manager then holds per verb what `jig` holds. No ruling.
 8. `reboot`, `jig` and `graphical_terminal` carry their own notes, copied from their rows, and the
    step 1 check covers them. Their rows still decide. No ruling.
-9. The progenitor publishes the base list, and the shell plans from it. Waits on
-   [decision 3](decisions.md).
+9. The progenitor publishes the base list, and the shell plans from it. The ruling is in
+   ([decision 3](decisions.md)).
 10. Archive programs spawn by name, under `Vouch::Archive` bounded by the image's approval file. The
     §229 (a bare name reaches an installed program) refusals switch from `Program::from_name` to
-    "the archive carries this name". Waits on decisions 3, 4 and 7.
+    "the archive carries this name". Waits on decisions 4 and 7.
 11. The rows leave, one package per pull request: fixtures, `process-tools`, `core-tools`, `demos`,
     `mdr`, then `init` (`reboot`), `display` (`graphical_terminal`) and `jig`. The last one deletes
     `Program`, `programs!`, `Program::verbs`, `Program::resolver_zone` and the progenitor's
@@ -87,7 +88,7 @@ Each lands with the step that makes it true.
 | `jig remove` of the replacement, and `jig rollback` past its install, leave its digest with no grant, and the image's `reboot` still restarts the machine | the way back | 5 |
 | two installed programs and the image's `reboot` all hold the reboot object in one boot | several holders | 5 |
 | an installed installer holder sending `answered console`, `Approve`, `Revoke` or `Vouch` is refused, and a delegated install asking for `display` is refused | the console class stays bounded | 5 |
-| a second display session while one runs answers `SPAWN_NO_DISPLAY`, and a second stdin reader gets `BAD_REQUEST` | exclusive grants stay exclusive | 6 |
+| a line whose two stages both hold console input, or both the display, is refused at plan time naming the first holder; a second display session while one runs answers `SPAWN_NO_DISPLAY`, and a second stdin reader gets `BAD_REQUEST` | exclusive grants stay exclusive | 6 |
 | an installed manager's `jig list` holds no installer, and its `jig install` does, by its own `VERBS` note | verb narrowing on the installed path | 7 |
 | each moved program's `script/swish-check` transcript, unchanged line for line from step 9 to step 11 | the rows left cleanly | 9 to 11 |
 | `reboot` typed after `jig use reboot acme-reboot` runs the replacement; after `jig use --default reboot`, the image's | the word table and its fallback | 12 |
@@ -116,5 +117,6 @@ changed a program. `spawnproto` stays the larger source of commits.
 ## The first steps that need no ruling
 
 Steps 1, 2 and 3, as before, and steps 7 and 8 once step 2 lands. None of them writes a wire format
-or names anything new. Step 4 writes one, and its ruling is in. `mdr` still waits: it links neither `capability_manifest_note` nor
+or names anything new. Steps 4, 5, 6 and 9 write wire formats or change policy, and their rulings
+are in. `mdr` still waits: it links neither `capability_manifest_note` nor
 `grant_plan`, so its note comes with the leaf crate or with a recorded new edge.

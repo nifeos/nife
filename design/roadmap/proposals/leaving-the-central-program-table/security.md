@@ -59,20 +59,22 @@ is hostile.
   discipline raw and can switch its mode under the shell, which `components/src/graphical_terminal.rs`
   records as a disruption.
 
-## The recommendation: three classes
+## The three classes
 
-Restrictive first. Each class says who may hold it and how the owner grants it.
+Ruled 2026-11-02 (UTC). Each class says who may hold it and how the owner grants it. The classes
+set policy; the runtime guards in the proposal's BUGS stay separate work, each tied to its
+migration step.
 
-1. Shareable: `reboot`, `sync`, the catalog, the activation directory and zones. Any installed
-   bytes may hold them on an owner's line. The confirmation names each in plain words.
-2. Exclusive: console input and the display session. Any installed bytes may hold them on an
-   owner's line, but only in the foreground of the owner's console, and the progenitor enforces
-   one holder at a time. Console input gains the `req.badge == 0` check the installer already has
+1. Shareable: `reboot`, `sync`, the catalog, the activation directory and zones. Several holders
+   may run at once. Any installed bytes may hold them on an owner's line. The confirmation names each in plain words.
+2. Exclusive: console input and the display session. At most one holder at a time: the planner
+   refuses a second and names the first holder. Any installed bytes may hold them on an owner's
+   line, but only in the foreground of the owner's console. Console input gains the `req.badge == 0` check the installer already has
    (`spawn_loop.rs` places stdin for any std job that declares it, with no badge check). The
    display gains a live-session flag that refuses a second session with `SPAWN_NO_DISPLAY`.
 3. Console class: the installer endpoint and the index store's write right. An installed program
-   may hold them only bounded by an approval: its line reads
-   `grant <digest> installer within <approval>`, and the progenitor serves it the delegated badge
+   holds them only in §270's delegated form, bounded by an approval: its lines read
+   `grant <digest> installer within <approval>` and `grant <digest> indexes rw within <approval>`, and the progenitor serves it the delegated badge
    of §270, never the console's endpoint. It may not send `Approve`, `Revoke` or `Vouch`, and
    the progenitor checks that every install it asks lies within the approval (`approval_gate`).
    A delegated holder may not install a package that asks for an exclusive or console-class
@@ -83,7 +85,7 @@ Restrictive first. Each class says who may hold it and how the owner grants it.
 
 So the image's `jig` stays the one program that answers `answered console`, because the archive
 vouches for its bytes and its prompt. A replacement manager does everything `jig` does for packages
-the owner approved, and nothing beyond. [Decision 2](decisions.md) asks for this.
+the owner approved, and nothing beyond.
 
 Why not refuse the console class to installed bytes outright, as before the ruling? Because the
 ruling's goal includes a third-party package manager, and an approval-bounded one serves that goal
@@ -92,10 +94,10 @@ on bytes nobody reviewed, and the owner could not tell an honest prompt from a f
 from the bounded form to the console's form later stays possible. The reverse move would break
 every owner's grant.
 
-Should a service (milestone 910 (a package declares a service)) hold these? Restrictive first: no
-recorded service may hold `reboot`, an exclusive grant or a console-class grant. A service runs at
-every boot with nobody watching, which is exactly the reboot loop and the silent keylogger above.
-910 is unbuilt; its block should carry this as a refusal.
+No recorded service (milestone 910 (a package declares a service)) may hold `reboot`, an
+exclusive grant or a console-class grant. A service runs at every boot with nobody watching, which
+is exactly the reboot loop and the silent keylogger above. 910 is unbuilt; its block should carry
+this as a refusal.
 
 ## What the owner must see before granting
 

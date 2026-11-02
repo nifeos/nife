@@ -161,18 +161,18 @@ the wire-id rules and what changed from the first plan.
 4. A note type of its own, `OWNER_GRANTS`, spells the owner-granted fields; `image_can_carry`
    still refuses them (ruled as decision 1).
 5. The grant lines, the `OwnerGrants` vouch and the confirmation; the blanket refusals go in the
-   same pull request; the console class stays delegated (decision 2).
+   same pull request; the console class stays delegated (ruled as decision 2).
 6. The display session keys on `Manifest::display` and allows one session.
 7. The installed path reads the `VERBS` note.
 8. `reboot`, `jig` and `graphical_terminal` carry their own notes.
-9. The progenitor publishes the base list (decision 3).
-10. Archive programs spawn by name under the archive's vouch (decisions 3, 4 and 7).
+9. The progenitor publishes the base list (ruled as decision 3).
+10. Archive programs spawn by name under the archive's vouch (decisions 4 and 7).
 11. The rows leave, one package per pull request; the last deletes `Program`.
 12. The owner's word table (decision 6 for words the image carries).
 13. The leaf crate, if ruled.
 
 The pinned table keyed by name, and the wire ids it would have kept, are no longer steps. Steps 1
-to 4, 7 and 8 need no further ruling.
+to 9 need no further ruling.
 
 ## The decisions, in order
 
@@ -180,9 +180,10 @@ to 4, 7 and 8 need no further ruling.
 background, alternatives and example. The ruling dissolved the question of the screen and keyboard.
 
 1. Ruled 2026-11-02 (UTC): the owner-granted asks travel in their own note type, `OWNER_GRANTS`.
-2. Three classes, with the installer and the index store's write right bounded by an approval for
-   installed bytes, and none of the sensitive grants for a recorded service. One-way.
-3. Every program carries its own grant record, and nothing central remains. One-way.
+2. Ruled 2026-11-02 (UTC): three classes, with the installer and the index store's write right
+   bounded by an approval for installed bytes, and none of the sensitive grants for a recorded
+   service.
+3. Ruled 2026-11-02 (UTC): every program carries its own grant record, and nothing central remains.
 4. The base approval file lists every grant the system endows, the owner-granted kinds included.
    One-way.
 5. A repository key's ceiling never covers an owner-granted kind. One-way once shipped.

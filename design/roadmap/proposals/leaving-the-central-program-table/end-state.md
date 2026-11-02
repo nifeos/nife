@@ -48,7 +48,13 @@ The planner, `spawnproto`, `Manifest` and its declaration types, the slot consta
 `image_manifest`, `Vouch`, and the list of owner-granted fields in part 3. No `Program` enum, no
 `programs!` macro, no `Program::verbs` and no `Program::resolver_zone`. No role list either: which
 program answers the word `reboot` is the owner's record, not nife's
-([the command-name appendix](command-names.md)). Nothing in the crate keys on a program's name.
+([the command-name appendix](command-names.md)). Nothing in the crate keys on a program's name,
+and the planner treats no program as special: it plans every line against the manifest the note
+declares and the vouch admits. Ruled 2026-11-02 (UTC).
+
+Every program carries its own record. Its `MANIFEST` note, with its `OWNER_GRANTS` note where it
+has one, says what it asks for. An owner's `grant` line, or the image's approval file for the
+image's own programs, says what it receives, bound to its digest.
 
 ## The owner's `grant` lines
 
@@ -66,7 +72,7 @@ spellings are provisional.
 | the sync-only capability | `sync` | `grant <digest> sync` | none |
 | the installer endpoint | `installer` | `grant <digest> installer within <approval>` | the approval that bounds it ([the security appendix](security.md)) |
 | the image's catalog | `catalog` | `grant <digest> catalog` | none |
-| the index store | `indexes` | `grant <digest> indexes r` or `rw` | the rights |
+| the index store | `indexes` | `grant <digest> indexes r`, or `indexes rw within <approval>` | the rights; writing needs an approval ([the security appendix](security.md)) |
 | the activation directory | `activation_directory` | `grant <digest> activation r` | read only, the one right it has |
 | console input | `console_input` | `grant <digest> console` | none |
 | the display session | `display` (new) | `grant <digest> display` | none |

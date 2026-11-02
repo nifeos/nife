@@ -4,7 +4,7 @@
 are the questions only the architect can answer, one at a time, in the order they block
 [the migration](migration.md). Each gives its background, the recommendation, the alternatives,
 an example and what was not verified, and ends in one question. Prior art here is from memory and
-not re-checked. Steps 1 to 4, 7 and 8 wait on none of the open ones.
+not re-checked. Steps 1 to 9 wait on none of the open ones.
 
 ## What the ruling of 2026-11-02 settled
 
@@ -16,7 +16,7 @@ two.
   (migration steps 4 and 6), which [the end state](end-state.md) and [the security
   appendix](security.md) cover.
 - Changed: "every program carries its own record, with a central table kept only for what the
-  system fixes" loses its second half. No table remains (decision 3).
+  system fixes" loses its second half. No table remains (decision 3, ruled).
 - Changed: the base image's approval file must now list the owner-granted kinds too (decision 4).
 - Unchanged: what §229 means by a name the image carries (decision 7), and provisional names
   (decision 8).
@@ -32,66 +32,15 @@ Ruled 2026-11-02 (UTC): a fifth note type, `OWNER_GRANTS = 5`, with its own vers
 decoder and length; [the end state](end-state.md) has its layout. Descriptor versions 1 to 3 stay
 as they are.
 
-## 2. Which grants may an installed program hold only within limits?
+## 2. Ruled: three classes of owner grant
 
-One-way: it sets what an owner's yes can hand to bytes nobody reviewed.
+Ruled 2026-11-02 (UTC): shareable, exclusive and console class, as [the security
+appendix](security.md) sets out, with no recorded service holding `reboot` or either of the other
+two classes.
 
-Two of the newly grantable capabilities can make more grants. The installer writes the owner's
-grants for whatever it installs, on its own word that the owner said yes. The index store's write
-right decides which bytes the installer accepts by name. A holder of either can turn one yes into
-every grant. Console input and the display can read what the owner types.
+## 3. Ruled: every program carries its own record, and nothing central remains
 
-Recommendation: A, three classes, as [the security appendix](security.md) sets out. Shareable
-grants (`reboot`, `sync`, catalog, activation directory, zones) go to any installed bytes on an
-owner's line. Exclusive grants (console input, display) go only to a foreground job at the
-owner's console, one holder at a time. Console-class grants (installer, the index store's write
-right) go to an installed program only in the delegated form of §270 (a package manager holds an
-installer endpoint, not the spawn endpoint). That form holds to an approval, with no `answered console`, no
-`Approve`, `Revoke` or `Vouch`, its own index directory, and no installing of an exclusive or
-console-class ask. No recorded service may hold `reboot` or either class.
-
-Alternatives: B, every grant on an owner's line with no class limits; the ruling's widest reading,
-and it makes a replacement manager a second owner. C, refuse the console class to installed bytes
-outright; it fails the ruling's goal of a third-party package manager.
-
-Example: under A, `acme-pkg` with `grant <digest> installer within acme` installs and upgrades the
-packages the `acme` approval names, and `jig install` refuses its attempt to install a package that
-asks for `display`.
-
-Prior art: Android grants `INSTALL_PACKAGES` to no third-party app and lets others ask the system
-installer, which may stop for the user. Nix `trusted-users` shows the danger of B: a trusted user
-can add a substituter, and with it, trust.
-
-Not verified: whether a per-manager index directory breaks `jig list`'s reading of the one copy.
-
-Question: A (three classes), B (no limits) or C (no console class for installed bytes)?
-
-## 3. Does every program carry its own grant record, with no central table at all?
-
-One-way: it changes who vouches for a base tool, adds a page format and a wire bit.
-
-Today the shell starts 28 programs by name from a table inside the planner crate, and that table
-decides what each may hold. The first version of this question kept a small table for `reboot`,
-`jig` and perhaps the terminal. After the ruling no grant belongs to a name, so nothing needs to stay
-central.
-
-Recommendation: yes. Every program, the image's own included, carries its own record. The system
-builds a one-page list of the image's programs from those records at boot, and the shell asks for
-a program by name. It costs a page the shell reads, a request bit, and amending item 3 of §158 (the
-shell's table is one macro).
-
-Alternatives, from [the end state](end-state.md). A registry in the installed-programs table keeps
-a second copy of each record outside the trusted bytes. A table generated at build time makes nife
-build every package. The image composer could also write the list into the image.
-
-Example: a person types `reboot`. The shell finds it on the boot list, sees the record asks for the
-reboot object, and asks for the program named `reboot`. The system finds it in the measured image
-and endows the object because the measurement vouches.
-
-Not verified: the list's size for a full base image (estimated under a page) and the boot cost of
-reading every record.
-
-Question: every program carries its own record, and nothing central remains. Yes or no?
+Ruled 2026-11-02 (UTC). [The end state](end-state.md) says what `grant_plan` keeps.
 
 ## 4. Must the image's approval file list every grant the system hands out?
 
@@ -101,7 +50,7 @@ When the composer builds an image, it checks each package's records against an a
 file lists the network, resolver zones, the service, named directories and the installer today. A
 record can also ask for the process view, randomness, the machine counters, and through the
 `OWNER_GRANTS` note
-the reboot object and the rest. Under decision 3 the measured archive would vouch for whatever a
+the reboot object and the rest. With no central table, the measured archive would vouch for whatever a
 base package's record asks.
 
 Recommendation: yes. Each base package's approval entry names every grant its programs ask,

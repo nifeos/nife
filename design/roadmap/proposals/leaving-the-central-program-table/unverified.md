@@ -34,6 +34,33 @@ determine. They wrote no code and booted nothing.
 - Whether the shell reads any start-up file of commands. A search found none; `main.rs` was not
   read whole.
 
+- Whether the planner can enforce "at most one holder" of an exclusive grant at plan time. Read in
+  the code: no planner code checks it today (`console_input` appears in `grant_plan` only in the
+  manifest, `image_can_carry` and verb narrowing, and in the shell only to leave raw mode). The
+  shell plans one line at a time and is parked while a foreground job runs, a background job gets
+  no stdin (`SpawnLoop::console_input` skips a quiet job), and the shell refuses `&` for the
+  display. So plan time can catch two holders within one line and name the first. It cannot see a
+  holder another spawner started: a second shell, if a session ever gets a spawn endpoint (§270
+  (a package manager holds an installer endpoint, not the spawn endpoint)'s BUGS says none does),
+  or the timetable. At run time a second stdin reader gets `BAD_REQUEST` from the terminal's one
+  `pending_stdin` slot, and a second display session meets no guard at all. Not run: none of this
+  was booted.
+- Whether anything outside `grant_plan` still looks a program up by name once the table is gone,
+  beyond the manager column. Read in the code and in [the consumers](consumers.md): the shell's
+  `bare` and completion, the §229 (a bare name reaches an installed program) install check in
+  `activation.rs`, the progenitor's `archive_name` and its `Program::GraphicalTerminal` checks,
+  and the timetable's `resolve` and `plan_text`'s `saw`. In the end state each is a lookup from a
+  name to bytes in the measured archive or the live table, never to a grant: the graphics checks
+  move to `Manifest::display`, and the rest look up the archive by name. Not traced: every reader
+  of the timetable's plan mask.
+- What first boot needs with no table. The image's `reboot`, `jig` and `graphical_terminal` must
+  receive their owner-granted fields before any owner has written a line. Two records could carry
+  that: the image's approval file, which the composition checks against each note, and generation
+  1 of the installed-programs table, which milestone 990 (the base image's first
+  installed-programs table) writes with `with_entries_granting` from the same asks and could hold
+  `grant` lines for base rows. Its base rows carry no grant lines today. [Decision 4](decisions.md)
+  asks what the approval file must list; this appendix does not answer it.
+
 ## Could not determine
 
 - Whether milestone 961 (the kernel's special boots become commands typed at the production shell)
