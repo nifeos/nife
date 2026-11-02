@@ -2,7 +2,7 @@
 
 [The proposal](../leaving-the-central-program-table.md) holds the end state and the order. This
 appendix classifies each row of the `programs!` table in `crates/grant_plan/src/program/catalog.rs`.
-Every fact here was read from the tree at the commit this branch was cut from. A file and a symbol
+The lane read every fact here from the tree at this branch's base. A file and a symbol
 stand in for line numbers, which §277 (cite a heading or a symbol) forbids.
 
 ## The count
@@ -84,7 +84,7 @@ The progenitor starts every boot program by archive name, not through this table
 shell, the file servers and the drivers appear in `packages/base-image.toml` and in no row here.
 `measure_spawnable` in `crates/system_initializer/src/boot_steps.rs` loads the table's programs only
 to serve the shell's later requests. So nothing in the table runs before the shell asks for it. The
-nearest case is `jig`: without it no package can be installed, so an image must carry it. That is a
+nearest case is `jig`: without it nobody can install a package, so an image must carry it. That is a
 reason to keep it in the base image, and its pinned grants already keep its row.
 
 ### Why `graphical_terminal` is unclear
@@ -97,16 +97,14 @@ progenitor then builds `gpu_driver`, `display_terminal` and the keyboard path an
 (`crates/system_initializer/src/spawn_loop.rs`, the checks on `Program::GraphicalTerminal`). Holding
 the screen and the keyboard is the same kind of authority as `console_input`, which only the
 owner's console grants. Whether that may become an ask an owner grants at install, like the
-network, or stays pinned is a ruling; [decision 4](decisions.md) asks it. Until it is ruled, the
-proposal treats the row as pinned.
+network, or stays pinned is a ruling; [decision 4](decisions.md) asks it. Until a ruling, the proposal treats the row as pinned.
 
 ### What the fixtures need, and a conflict about the bench rows
 
 The bench rows (ids 24 to 27) are milestone 961 (the kernel's special boots become commands typed
 at the production shell)'s work, and that block says a production shell runs them. But
 `packages/base-image.toml` says no release image carries the `fixtures` package. The two agree
-only because `cargo xtask initial-ramdisk-*` packs every `[[bin]]` (§158 (a program is declared
-once), item 2), so the images that tests and benches boot carry fixtures anyway. A composed release
+only because `cargo xtask initial-ramdisk-*` packs every `[[bin]]` (§158 (the shell's table is one macro), item 2), so the images that tests and benches boot carry fixtures anyway. A composed release
 image would answer the bench rows with `SPAWN_NOT_IN_IMAGE`. Whether the bench rows belong in a
 release image settles their class; it is not this proposal's question, and the
 [unverified appendix](unverified.md) records it.
@@ -127,8 +125,7 @@ instead (`resolve_installed`). So it already holds both paths.
 
 ## Two programs outside the table
 
-`pmap` is in `process-tools` and in the base image, and no row names it. §158 (a program is
-declared once) records under its BUGS that every archive carries `pmap` and nothing spawns it. The
+`pmap` is in `process-tools` and in the base image, and no row names it. §158 (the shell's table is one macro) records under its BUGS that every archive carries `pmap` and nothing spawns it. The
 disk tools `disk_surveyor` and `disk_partitioner` are also rowless; only kernel tests reach them
 (`system_tests/src/user/disk_tests.rs`). Both facts show that membership in a package and a row in
 this table are already independent.

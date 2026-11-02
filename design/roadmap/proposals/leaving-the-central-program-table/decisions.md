@@ -6,9 +6,10 @@ opens with its background, then the recommendation, the alternatives, an example
 verified. Each ends in one question. Steps 1 to 3 of [the migration](migration.md) wait on none of
 them.
 
-Two-way doors the maintainer may decide, each recorded as provisional: the order rows leave in
-(fixtures first), the generic sentence for a register answer, answering `SPAWN_NOT_IN_IMAGE` for an
-id whose row has left, and extending the wire-id pin to all 28 ids.
+Four two-way doors the maintainer may decide, each recorded as provisional. They are the order
+rows leave in (fixtures first), and the generic sentence for a register answer. They are also
+answering `SPAWN_NOT_IN_IMAGE` for an id whose row has left, and extending the wire-id pin to all
+28 ids.
 
 ## 1. Does each program declare its own grants, with only the system's own grants kept central?
 
@@ -19,22 +20,20 @@ each may hold. Adding a tool, or changing what one needs, edits that table. A pa
 for its own repository would still need a commit in nife whenever its programs' needs change.
 
 Installed programs already work another way. Each carries a small record of its needs inside its
-own executable, and the system grants that record only when the bytes are trusted: listed by the
-owner at install, or measured as part of the image. 26 of the 28 table rows can already be written
-as such a record; the two that cannot are `reboot` and `jig`, whose grants no installed program may
+own executable, and the system grants that record only for bytes it trusts: bytes the owner listed at install, or
+bytes the image's measurement covers. Such records can already express 26 of the 28 table rows; the two that cannot are `reboot` and `jig`, whose grants no installed program may
 hold.
 
 So the question is whether every program, the image's own included, should carry its own record,
 with the central table kept only for those two (or three; see question 4). The shell would learn
 the image's programs from a one-page list the system builds at boot from those records, and would
 ask for a program by name. What it costs: a new page the shell reads, a new way to ask for a
-program, and an amendment to §158 (a program is declared once)'s item 3, which made the table one
-macro.
+program, and an amendment to item 3 of §158 (the shell's table is one macro).
 
-Recommendation: yes. Alternatives, each in [the end state](end-state.md): (b) a registry kept in
-the installed-programs table, refused because it copies each record outside the trusted bytes; (c)
-a table generated at build time, refused because nife would have to build every package to produce
-it; (d) a test-only table for fixtures, unnecessary once fixtures carry records. For the list
+Recommendation: yes. [The end state](end-state.md) weighs three alternatives. A registry kept in
+the installed-programs table loses, because it copies each record outside the trusted bytes. A
+table generated at build time loses, because nife would have to build every package to produce it.
+A test-only table for fixtures becomes unnecessary once fixtures carry records. For the list
 itself: the system builds it at boot (recommended), the image composer writes it into the image,
 the shell reads the whole image archive itself, or the shell asks per command.
 
@@ -60,15 +59,15 @@ install refusal to the programs a boot slot still holds, the progenitor and the 
 and that narrowing is unbuilt. §241 (a threadbare base) says every other program is a package.
 
 Recommendation: A. "The image carries a name" means the measured archive holds that name, and both
-refusals keep their present force until the amendment's narrowing is built as its own work. This
+refusals keep their present force until its own work builds the amendment's narrowing. This
 changes nothing a person sees today and keeps a package from silently claiming `date`.
 
 Alternatives: B, build the amendment now, so a newer `core-tools` package may install `date` and
-the bare word runs the installed one; C, keep the table's names as the definition, which leaves a
+the bare word runs the installed one. C, keep the table's names as the definition, which leaves a
 fragment of the table alive for this alone.
 
-Example: under A, `jig install core-tools` on a running image is refused while the image carries
-`date`, exactly as today.
+Example: under A, the progenitor refuses `jig install core-tools` while the image carries `date`,
+exactly as today.
 
 Not verified: how B would order an installed `date` against the image's, which the amendment does
 not say.
@@ -79,7 +78,7 @@ Question: A (the archive's names, refusals unchanged) or B (build the narrowing 
 
 One-way: it sets what vouches for a base tool.
 
-When an image is composed, each package's records are checked against an approval file. The file
+When the composer builds an image, it checks each package's records against an approval file. The file
 lists only four kinds of grant today: the network, name-resolution zones, running as a service, and
 named directories. The other grants a record can ask for, the process view, randomness and the
 machine counters, come with trust alone. Today the central table holds those, so a reviewed nife
@@ -89,7 +88,7 @@ Recommendation: yes. Restrictive first: an approval entry also names `domain`, `
 and `share` for each base package that asks, so a package update cannot widen what `ps` sees without
 a reviewed line. Loosening later stays compatible; tightening later would not be.
 
-Alternative: no, trust the record as installed programs are trusted today. This matches the
+Alternative: no, trust the record the way the system trusts an installed program's today. This matches the
 interactive install, which asks the owner only about the four.
 
 Example: a later `process-tools` whose `pgrep` asks for `entropy` fails composition until its
@@ -112,16 +111,16 @@ Recommendation: A, fixed by the system, a third pinned row, until a second progr
 display. Alternative: B, a new ask an owner grants at install, like the network, which needs a
 record field and a wire change.
 
-Example: under A, an installed terminal program cannot take the screen however it is vouched.
+Example: under A, an installed terminal program cannot take the screen whatever vouches for it.
 
 Question: A (pinned) or B (an owner's grant)?
 
 ## 5. The new names
 
-Two-way in effect: each name ships provisional and can be ratified later. The base list page, the
+Two-way in effect: each name ships provisional, and the architect can ratify it later. The base list page, the
 by-name request bit, the pinned table, and whether the shrunken enum keeps the name `Program` all
 need names. The recommendation is to ship each as provisional and bring them in one naming pass
-once steps 4 to 7 are built. Question: may they ship provisional? Yes or no.
+once steps 4 to 7 exist. Question: may they ship provisional? Yes or no.
 
 ## 6. The leaf crate, already before calef
 

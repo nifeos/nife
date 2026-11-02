@@ -36,7 +36,7 @@ Six parts, and only one of them is a table.
    remain only for the pinned rows. A row that leaves the table leaves a hole, and no later program
    takes its id.
 6. **Fixtures register nowhere.** A fixture carries a note like any program. The test images pack
-   every `[[bin]]` (§158 (a program is declared once), item 2), and a release image packs what
+   every `[[bin]]` (§158 (the shell's table is one macro), item 2), and a release image packs what
    `packages/base-image.toml` lists, which excludes the `fixtures` package. So the same mechanism
    that serves `date` serves `interrupt_heeder`, and nothing marks a program as a test.
 
@@ -55,13 +55,13 @@ Who owns each part:
 
 ### (a) Every program carries its own note, and the system pins only what it fixes
 
-Recommended. The note format, the vouch and the image path all exist and are BUILT (milestone 597
+Recommended. The note format, the vouch and the image path all exist, in milestones marked BUILT (milestone 597
 (a program carries its manifest in an ELF note), milestone 892 (a std program at the prompt holds
 the network and a resolver)). `every_compiled_in_manifest_round_trips` proves that 26 of the 28 rows
 encode as notes today; the two exceptions are the pinned rows. The precedent in the tree points the
-same way: milestone 956 (the linked interfaces carry checkable versions) put each program's
-interface list in its own source as an `INTERFACES` note, and a host check holds the list to the
-link graph. It built no central list.
+same way. Milestone 956 (the linked interfaces carry checkable versions) put each program's
+interface list in its own source as an `INTERFACES` note. A host check holds the list to the link
+graph. It built no central list.
 
 Its costs, stated plainly. It changes the wire (part 5) and adds a page format (part 4), and both
 are one-way. It moves the decision about what a base tool may hold from code review inside nife to
@@ -148,8 +148,8 @@ A note is a claim the program makes about itself. It earns nothing on its own.
   to the spawner), gate D2). Running them at all takes the run-unvouched capability.
 - Vouched bytes get what their note declares, because the digest that vouched covers the note
   (§197's M2). Four asks also need the owner's grant: the network, a resolver zone, the service and
-  a directory, each recorded as a `grant` line (`installed_programs::Granted`). A key-trusted install
-  is capped at `domain entropy network` (§220 (signed builds and scoped key trust)).
+  a directory, each recorded as a `grant` line (`installed_programs::Granted`). §220 caps a key-trusted install at `domain entropy network`
+  (§220 (signed builds: a vendor signs, a developer self-signs)).
 - The pinned grants no note can carry: `reboot`, `sync`, `installer` and `catalog`, `indexes`, the
   activation directory and console input. The encoder refuses each at compile time, and
   `image_can_carry` refuses each again at spawn. The end state keeps both refusals, and the pinned
@@ -166,16 +166,16 @@ base-package update cannot widen what `ps` sees without a reviewed line.
 
 | ruling | what it says | how the end state meets it |
 |---|---|---|
-| §158 (a program is declared once) | the table is one macro (item 3); ids are written and never reused (item 4); every spawnable row has a binary and a script line (item 5) | item 3 shrinks to the pinned rows, which amends the section; item 4 holds; item 5's check moves to "every `[[bin]]` with a note has a script line" |
+| §158 (the shell's table is one macro) | the table is one macro (item 3); ids are written and never reused (item 4); every spawnable row has a binary and a script line (item 5) | item 3 shrinks to the pinned rows, which amends the section; item 4 holds; item 5's check moves to "every `[[bin]]` with a note has a script line" |
 | §197 (a package is one archive file) | the manifest lives in the hashed bytes (M2) | unchanged; the base list page is a cache the progenitor never trusts |
 | §219 (how the shell names an installed program to the spawner) | option D, gate D2, unvouched bytes get clock and configuration only | unchanged |
-| §220 (signed builds and scoped key trust) | a key's ceiling is a subset of `domain entropy network` | unchanged; it governs key-trusted installs, not the image's own programs |
+| §220 (signed builds: a vendor signs, a developer self-signs) | a key's ceiling is a subset of `domain entropy network` | unchanged; it governs key-trusted installs, not the image's own programs |
 | §229 (a bare name reaches an installed program) | B2: a bare name resolves through the live set; install refuses a name the image carries; the amendment narrows that refusal to what a slot holds | **conflict**: today "a name the image carries" means a row of this table (`activation.rs`'s `image`). The end state must say what it means instead; [decision 2](decisions.md) asks |
 | §241 (a threadbare base) | the slot holds the kernel, the progenitor and the root supervisor; every other program is a package | supports the end state: the table is what keeps base tools from updating as packages |
 | §251 (restarting the machine is a kernel object) | the progenitor endows the reboot object only to a program whose manifest declares it, "the way `entropy` is endowed" | met by the pinned row. Milestone 805 (`reboot` at the prompt) rules that no note can spell `reboot`; §251's comparison with `entropy` describes the endowment, not a note. No conflict, but the wording invites one |
 | §270 (a package manager holds an installer endpoint) | only the owner's console grants it | met by the pinned `jig` row; milestone 911's delegated installer badge is an owner's grant and stays one |
 | §272 (the grant-plan crate root splits into private modules), fork 2 | the table is expected to shrink once packages install through `jig` | this is that shrinking |
-| §309 (a supervised job's thread control block goes to the shell) | an interruptible job is built from the shell's job budget | the by-name path builds archive programs the way rows build today, so it inherits this; the frames path does not ([gaps appendix](installed-path-gaps.md)) |
+| §309 (a supervised job's `ThreadControlBlock` goes to the shell that asked for it) | an interruptible job is built from the shell's job budget | the by-name path builds archive programs the way rows build today, so it inherits this; the frames path does not ([gaps appendix](installed-path-gaps.md)) |
 | §316 (a package's programs leave as one repository) | programs leave with their package | requires the end state: a manifest in nife cannot follow its program out |
 | milestone 892 | the owner grants the network at install; whether a zone is the manifest's word or the owner's is open, except `jig`'s root zone | unchanged; `jig`'s zone stays pinned |
 | milestone 990 (the base image's first installed-programs table) | a composed image writes a row per base program, with no pointer, claiming no bare word | gives the composed image an installed-programs vouch for each base program beside the measurement; the end state relies on the measurement, which the test images also have |

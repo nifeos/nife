@@ -1,8 +1,7 @@
 # Leaving the central program table: how other systems separate privileged programs
 
 [The proposal](../leaving-the-central-program-table.md) holds the end state. **Everything in this
-appendix comes from memory and was not re-checked against a source** for this proposal. Each claim
-should be read before anyone quotes it.
+appendix comes from memory and was not re-checked against a source** for this proposal. Read each claim at its source before quoting it.
 
 ## Five systems
 
@@ -19,7 +18,7 @@ should be read before anyone quotes it.
 nife's note is closest to Android's manifest and Apple's entitlements: a claim inside the bytes the
 vouch covers (§197 (a package is one archive file), option M2). It differs from both in what a
 vouch is. Android and Apple trust a signer's identity at install and at launch. nife pins a digest:
-§220 (signed builds and scoped key trust) checks a signature at install and then pins the digest,
+§220 (signed builds: a vendor signs, a developer self-signs) checks a signature at install and then pins the digest,
 and never asks who signed at spawn. So nife's analogue of Android's platform allowlist cannot key on
 a signer. It keys on the measured archive, by name, which is what the pinned table in
 [the end state](end-state.md) does.
@@ -32,7 +31,7 @@ of the parent's `offer`.
 
 nife differs from seL4 and Genode in that the program speaks at all. A static configuration is the
 strongest form, and today's table is that form for 28 programs. It does not survive packages
-installed after the image is built, which is why §219 (how the shell names an installed program to
+installed after the build, which is why §219 (how the shell names an installed program to
 the spawner) chose a note.
 
 Linux file capabilities show the cost nife avoided. The grant lives outside the bytes, so it can

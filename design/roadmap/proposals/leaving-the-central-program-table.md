@@ -16,8 +16,8 @@ names everything new provisionally. A file and a symbol stand in for line number
 a heading or a symbol) forbids.
 
 Reuse: the manifest note and its encoder (milestone 597 (a program carries its manifest in an ELF
-note)), the vouch in `grant_plan::image_manifest`, the owner's `grant` lines (milestone 892 (a std
-program at the prompt holds the network and a resolver)), the approval check (milestone 911
+note)) and the vouch in `grant_plan::image_manifest`. Also the owner's `grant` lines (milestone 892
+(a std program at the prompt holds the network and a resolver)), the approval check (milestone 911
 (scripted installs grant only what the owner's approval file allows)) and the progenitor's measured
 archive. No new dependency.
 
@@ -63,22 +63,22 @@ Each belief the brief carried, against the code.
    `OutputDeclaration::BytesAndDiagnostics`. And the function also refuses every pinned field
    (`reboot`, `sync`, `installer`, `catalog`, `indexes`, the activation directory, console input).
    Beyond `image_can_carry`, the frames path has transport limits of its own: an image runs only on
-   a plain line (no pipe, no redirection), and the progenitor refuses a held image. Installed bytes
-   with a `VERBS` note are refused in `endowed_image`. So `rm` and `wc` cannot be installed
-   packages today. Neither can `mdr` (an input) or the eight tools that declare a second stream, so
-   11 of the 14 tools are blocked.
+   a plain line (no pipe, no redirection), and the progenitor refuses a held image. And `endowed_image`
+   refuses installed bytes with a `VERBS` note. So no package can install `rm` or `wc` today. Nor
+   can one install `mdr` (an input) or the eight tools that declare a second stream: the frames
+   path blocks 11 of the 14 tools.
 3. **`reboot` and `sync` belong to one program, and no image may hold them.** Correct. The note
-   encoder refuses them at compile time and `image_can_carry` at spawn. `jig`'s five owner's-console
-   fields are pinned the same way.
+   encoder refuses them at compile time and `image_can_carry` at spawn. The same two refusals pin
+   `jig`'s five owner's-console fields.
 4. **About 28 rows.** Exactly 28, ids 0 to 27, no hole. `Program::manifest` has 27 arms because
    `NullSyscall | SinkProducer` share one, and 26 manifest functions serve them. The wire-id pin
    covers ids 0 to 12 only. Fixtures sit in the table because it is the only way to make a program
-   spawnable by bare name on a boot with no disk; with a disk, a fixture could run by path, but most
+   spawnable by bare name on a boot with no disk. With a disk a fixture could run by path, but most
    declare grants the frames path cannot carry.
-5. **`Program::resolver_zone` and `Program::verbs` are keyed by row.** Correct. Each answers
+5. **`Program::resolver_zone` and `Program::verbs` key on the row.** Correct. Each answers
    something only for `jig`. A `VERBS` note type exists (`capability_manifest_note::encode_verbs`),
    and nothing on the installed path reads it.
-6. **The leaf crate is undecided.** Correct; the design works with and without it.
+6. **The leaf crate waits on a ruling.** Correct; the design works with and without it.
 
 Findings the brief did not carry:
 
@@ -124,7 +124,7 @@ crates) means to end.
 The trade-offs, plainly. It adds a page format and a wire bit, both one-way. It moves the decision
 about what a base tool may hold from nife's code review to the image's approval file, which today
 checks only four kinds of grant; question 3 asks to widen it. And it conflicts with §229 (a bare
-name reaches an installed program), whose install refusal is defined by this table today; question
+name reaches an installed program), whose install refusal this table defines today; question
 2 asks how to redefine it.
 
 ## The migration, one line per step
@@ -142,7 +142,7 @@ the wire-id rules and the test strategy.
    and 2).
 6. The rows leave, one package per pull request: fixtures, `process-tools`, `core-tools`, `demos`,
    then `mdr`.
-7. The pinned table is keyed by name and the progenitor's id array shrinks to it.
+7. The pinned table keys on names, and the progenitor's id array shrinks to it.
 8. The leaf crate, if ruled, lets the tools shed the planner and moves `process-tools` and
    `core-tools` ahead of `grant_plan` in the contract-crate order.
 
@@ -167,15 +167,16 @@ background, alternatives and example.
 
 ## BUGS
 
-- The bench rows' class is unsettled: milestone 961 (the kernel's special boots become commands
+- Nothing settles the bench rows' class: milestone 961 (the kernel's special boots become commands
   typed at the production shell) runs them at a production shell, and the release image excludes
   the package that holds them.
-- `pmap` ships in every image and nothing can spawn it, as §158 (a program is declared once)'s BUGS
+- `pmap` ships in every image and nothing can spawn it, as the BUGS of §158 (the shell's table is one macro)
   records. Under the end state it needs only a note and a script line; this proposal does not
   schedule that.
 
 ## Index row
 
-How `crates/grant_plan` stops holding the shell's program table: each program declares its own
-grants in its own note, the vouch decides what the note earns, a pinned table keeps only `reboot`
-and `jig`, and archive programs spawn by name, in eight steps that keep main green.
+How `crates/grant_plan` stops holding the shell's program table. Each program declares its own
+grants in its own note, and the vouch decides what the note earns. A pinned table keeps only
+`reboot` and `jig`, and archive programs spawn by name. Eight steps get there, each keeping main
+green.

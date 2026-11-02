@@ -17,7 +17,7 @@ and every pinned field. Read against the callers, those refusals mix two differe
   shell runs an image only on a plain line, one stage with no operator
   (`components/src/swish/capabilities.rs`, the plain-run check; `pipeline.rs` sets `image: false`
   for every stage). The progenitor refuses a held image (`spawn_loop.rs`, the `held && image`
-  branch, milestone 933 (every job is built the way a supervised job is)'s BUGS).
+  branch and its comment).
 
 The end state's by-name path (part 5 in [the end state](end-state.md)) builds an archive program
 the way a row builds today: from the parsed ELF the progenitor already holds, in the job pool,
@@ -34,7 +34,7 @@ name. The transport gaps stay open only for programs installed on a disk.
 | input | `wc`, `mdr`, `sink_consumer` | a pipe or `<` makes a line not plain | images as pipeline stages: a staging region per image stage, so a pool that holds more than one image | none; the line designates the stream | memory: two image stages need two staging regions, unmeasured |
 | second stream (`BytesAndDiagnostics`) | `date`, `uuid`, `ps`, `pgrep`, `top`, `free`, `vmstat`, `slabtop`, `reboot` | `run_image`'s `Wiring` sets no `diagnostics`, `sink`, `source`, `interruptible` or `held`, so no endpoint follows for the second stream (`DIAG_BIT`) | `run_image` delegates the endpoint as `spawn` does; the progenitor reads the slot from the note | none; the stream exists because the program declares it (§67 (a program's second stream is a declaration)) | low; the smallest code change here, and it unlocks eight tools |
 | silent output | `interrupt_heeder`, `interrupt_ignorer` | not stated in code beyond the refusal list; inference: the image path's answer reader expects bytes or a word | the image answer path accepting no output | none | low; fixtures only |
-| interruptible | `interrupt_heeder`, `interrupt_ignorer` | an interruptible job is built from the shell's job budget (§309 (a supervised job's thread control block goes to the shell)), and an image's region comes from the image pool | carve an interruptible image's region from the shell's budget, sized by `image_region_pages` | none for the interrupt pair; it is the shell's | the budget must hold an image's region; unmeasured |
+| interruptible | `interrupt_heeder`, `interrupt_ignorer` | an interruptible job is built from the shell's job budget (§309 (a supervised job's `ThreadControlBlock` goes to the shell that asked for it)), and an image's region comes from the image pool | carve an interruptible image's region from the shell's budget, sized by `image_region_pages` | none for the interrupt pair; it is the shell's | the budget must hold an image's region; unmeasured |
 | held job, `&`, `jobs`, `fg` | every row since milestone 933 | `held && image` is refused | the same region change as interruptible | none | as above |
 | redirection `>` and `2>` | any tool a person redirects (`uuid > id.txt`) | not a plain line | the sink and diagnostics endpoints on the image path | none | low |
 | verbs (`VERBS` note) | `jig` | `endowed_image` refuses installed bytes with a verb table | `narrow_by_verb` reading the note's table at the shell and the progenitor, with the verb read from the argument page as `resolve` already does | each verb's grants must lie within the note's manifest and its owner grants; the narrowing only removes | medium: a bug in narrowing hands a line every verb's grants, which is why the refusal exists |

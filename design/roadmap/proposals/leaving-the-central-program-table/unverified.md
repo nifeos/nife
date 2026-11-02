@@ -38,8 +38,8 @@ determine. The lane wrote no code and booted nothing.
   by wire id. The search covered this tree only.
 - How an installed newer `date` would rank against the image's under §229 (a bare name reaches an
   installed program)'s amendment; the amendment does not say, and question 2 asks.
-- When the shell and the progenitor will first run at different versions. The lane infers they are
-  composed together today from `packages/base-image.toml`'s single `version`.
+- When the shell and the progenitor will first run at different versions. The lane infers that one base
+  image composes them together today, from `packages/base-image.toml`'s single `version`.
 
 ## Prior art
 
