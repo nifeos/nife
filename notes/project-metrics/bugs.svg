@@ -14,56 +14,58 @@
 <text class="mut" x="20" y="44" font-size="11">rising is good: an honest limitation beside the thing it limits</text>
 <line class="grid" x1="64" y1="324.0" x2="650.0" y2="324.0" stroke-width="1"/>
 <text class="mut" x="56" y="327.0" font-size="10" text-anchor="end">0</text>
-<line class="grid" x1="64" y1="270.8" x2="650.0" y2="270.8" stroke-width="1"/>
-<text class="mut" x="56" y="273.8" font-size="10" text-anchor="end">250</text>
-<line class="grid" x1="64" y1="217.6" x2="650.0" y2="217.6" stroke-width="1"/>
-<text class="mut" x="56" y="220.6" font-size="10" text-anchor="end">500</text>
-<line class="grid" x1="64" y1="164.4" x2="650.0" y2="164.4" stroke-width="1"/>
-<text class="mut" x="56" y="167.4" font-size="10" text-anchor="end">750</text>
-<line class="grid" x1="64" y1="111.2" x2="650.0" y2="111.2" stroke-width="1"/>
-<text class="mut" x="56" y="114.2" font-size="10" text-anchor="end">1000</text>
+<line class="grid" x1="64" y1="279.7" x2="650.0" y2="279.7" stroke-width="1"/>
+<text class="mut" x="56" y="282.7" font-size="10" text-anchor="end">250</text>
+<line class="grid" x1="64" y1="235.3" x2="650.0" y2="235.3" stroke-width="1"/>
+<text class="mut" x="56" y="238.3" font-size="10" text-anchor="end">500</text>
+<line class="grid" x1="64" y1="191.0" x2="650.0" y2="191.0" stroke-width="1"/>
+<text class="mut" x="56" y="194.0" font-size="10" text-anchor="end">750</text>
+<line class="grid" x1="64" y1="146.7" x2="650.0" y2="146.7" stroke-width="1"/>
+<text class="mut" x="56" y="149.7" font-size="10" text-anchor="end">1000</text>
+<line class="grid" x1="64" y1="102.3" x2="650.0" y2="102.3" stroke-width="1"/>
+<text class="mut" x="56" y="105.3" font-size="10" text-anchor="end">1250</text>
 <line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
-<text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">1250</text>
-<rect class="seg s0" x="74.0" y="287.0" width="38.7" height="37.0"><title>2026W35, in markdown: 174</title></rect>
-<path class="seg s1" d="M74.0,287.0 V266.3 Q74.0,262.3 78.0,262.3 H108.6 Q112.6,262.3 112.6,266.3 V287.0 Z"><title>2026W35, in Rust doc comments: 116</title></path>
-<text class="mut" x="93.3" y="342" font-size="10" text-anchor="middle">2026W35</text>
-<text class="fg val" x="93.3" y="257.3" font-size="10" text-anchor="middle">290</text>
-<rect class="seg s0" x="132.6" y="260.4" width="38.7" height="63.6"><title>2026W36, in markdown: 299</title></rect>
-<path class="seg s1" d="M132.6,260.4 V234.2 Q132.6,230.2 136.6,230.2 H167.2 Q171.2,230.2 171.2,234.2 V260.4 Z"><title>2026W36, in Rust doc comments: 142</title></path>
-<text class="mut" x="151.9" y="342" font-size="10" text-anchor="middle">2026W36</text>
-<text class="fg val" x="151.9" y="225.2" font-size="10" text-anchor="middle">441</text>
-<rect class="seg s0" x="191.2" y="255.7" width="38.7" height="68.3"><title>2026W37, in markdown: 321</title></rect>
-<path class="seg s1" d="M191.2,255.7 V229.5 Q191.2,225.5 195.2,225.5 H225.8 Q229.8,225.5 229.8,229.5 V255.7 Z"><title>2026W37, in Rust doc comments: 142</title></path>
-<text class="mut" x="210.5" y="342" font-size="10" text-anchor="middle">2026W37</text>
-<text class="fg val" x="210.5" y="220.5" font-size="10" text-anchor="middle">463</text>
-<rect class="seg s0" x="249.8" y="239.5" width="38.7" height="84.5"><title>2026W38, in markdown: 397</title></rect>
-<path class="seg s1" d="M249.8,239.5 V205.2 Q249.8,201.2 253.8,201.2 H284.4 Q288.4,201.2 288.4,205.2 V239.5 Z"><title>2026W38, in Rust doc comments: 180</title></path>
-<text class="mut" x="269.1" y="342" font-size="10" text-anchor="middle">2026W38</text>
-<text class="fg val" x="269.1" y="196.2" font-size="10" text-anchor="middle">577</text>
-<rect class="seg s0" x="308.4" y="210.6" width="38.7" height="113.4"><title>2026W39, in markdown: 533</title></rect>
-<path class="seg s1" d="M308.4,210.6 V164.1 Q308.4,160.1 312.4,160.1 H343.0 Q347.0,160.1 347.0,164.1 V210.6 Z"><title>2026W39, in Rust doc comments: 237</title></path>
-<text class="mut" x="327.7" y="342" font-size="10" text-anchor="middle">2026W39</text>
-<text class="fg val" x="327.7" y="155.1" font-size="10" text-anchor="middle">770</text>
-<rect class="seg s0" x="367.0" y="196.3" width="38.7" height="127.7"><title>2026W40, in markdown: 600</title></rect>
-<path class="seg s1" d="M367.0,196.3 V141.6 Q367.0,137.6 371.0,137.6 H401.6 Q405.6,137.6 405.6,141.6 V196.3 Z"><title>2026W40, in Rust doc comments: 276</title></path>
-<text class="mut" x="386.3" y="342" font-size="10" text-anchor="middle">2026W40</text>
-<text class="fg val" x="386.3" y="132.6" font-size="10" text-anchor="middle">876</text>
-<rect class="seg s0" x="425.6" y="175.9" width="38.7" height="148.1"><title>2026W41, in markdown: 696</title></rect>
-<path class="seg s1" d="M425.6,175.9 V108.6 Q425.6,104.6 429.6,104.6 H460.2 Q464.2,104.6 464.2,108.6 V175.9 Z"><title>2026W41, in Rust doc comments: 335</title></path>
-<text class="mut" x="444.9" y="342" font-size="10" text-anchor="middle">2026W41</text>
-<text class="fg val" x="444.9" y="99.6" font-size="10" text-anchor="middle">1031</text>
-<rect class="seg s0" x="484.2" y="165.3" width="38.7" height="158.7"><title>2026W42, in markdown: 746</title></rect>
-<path class="seg s1" d="M484.2,165.3 V93.7 Q484.2,89.7 488.2,89.7 H518.8 Q522.8,89.7 522.8,93.7 V165.3 Z"><title>2026W42, in Rust doc comments: 355</title></path>
-<text class="mut" x="503.5" y="342" font-size="10" text-anchor="middle">2026W42</text>
-<text class="fg val" x="503.5" y="84.7" font-size="10" text-anchor="middle">1101</text>
-<rect class="seg s0" x="542.8" y="149.9" width="38.7" height="174.1"><title>2026W43, in markdown: 818</title></rect>
-<path class="seg s1" d="M542.8,149.9 V71.2 Q542.8,67.2 546.8,67.2 H577.4 Q581.4,67.2 581.4,71.2 V149.9 Z"><title>2026W43, in Rust doc comments: 389</title></path>
-<text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="fg val" x="562.1" y="62.2" font-size="10" text-anchor="middle">1207</text>
-<rect class="seg s0" x="601.4" y="147.0" width="38.7" height="177.0"><title>2026W44, in markdown: 832</title></rect>
-<path class="seg s1" d="M601.4,147.0 V65.0 Q601.4,61.0 605.4,61.0 H636.0 Q640.0,61.0 640.0,65.0 V147.0 Z"><title>2026W44, in Rust doc comments: 404</title></path>
-<text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<text class="fg val" x="620.7" y="56.0" font-size="10" text-anchor="middle">1236</text>
+<text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">1500</text>
+<rect class="seg s0" x="74.0" y="271.0" width="38.7" height="53.0"><title>2026W36, in markdown: 299</title></rect>
+<path class="seg s1" d="M74.0,271.0 V249.8 Q74.0,245.8 78.0,245.8 H108.6 Q112.6,245.8 112.6,249.8 V271.0 Z"><title>2026W36, in Rust doc comments: 142</title></path>
+<text class="mut" x="93.3" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="fg val" x="93.3" y="240.8" font-size="10" text-anchor="middle">441</text>
+<rect class="seg s0" x="132.6" y="267.1" width="38.7" height="56.9"><title>2026W37, in markdown: 321</title></rect>
+<path class="seg s1" d="M132.6,267.1 V245.9 Q132.6,241.9 136.6,241.9 H167.2 Q171.2,241.9 171.2,245.9 V267.1 Z"><title>2026W37, in Rust doc comments: 142</title></path>
+<text class="mut" x="151.9" y="342" font-size="10" text-anchor="middle">2026W37</text>
+<text class="fg val" x="151.9" y="236.9" font-size="10" text-anchor="middle">463</text>
+<rect class="seg s0" x="191.2" y="253.6" width="38.7" height="70.4"><title>2026W38, in markdown: 397</title></rect>
+<path class="seg s1" d="M191.2,253.6 V225.7 Q191.2,221.7 195.2,221.7 H225.8 Q229.8,221.7 229.8,225.7 V253.6 Z"><title>2026W38, in Rust doc comments: 180</title></path>
+<text class="mut" x="210.5" y="342" font-size="10" text-anchor="middle">2026W38</text>
+<text class="fg val" x="210.5" y="216.7" font-size="10" text-anchor="middle">577</text>
+<rect class="seg s0" x="249.8" y="229.5" width="38.7" height="94.5"><title>2026W39, in markdown: 533</title></rect>
+<path class="seg s1" d="M249.8,229.5 V191.5 Q249.8,187.5 253.8,187.5 H284.4 Q288.4,187.5 288.4,191.5 V229.5 Z"><title>2026W39, in Rust doc comments: 237</title></path>
+<text class="mut" x="269.1" y="342" font-size="10" text-anchor="middle">2026W39</text>
+<text class="fg val" x="269.1" y="182.5" font-size="10" text-anchor="middle">770</text>
+<rect class="seg s0" x="308.4" y="217.6" width="38.7" height="106.4"><title>2026W40, in markdown: 600</title></rect>
+<path class="seg s1" d="M308.4,217.6 V172.7 Q308.4,168.7 312.4,168.7 H343.0 Q347.0,168.7 347.0,172.7 V217.6 Z"><title>2026W40, in Rust doc comments: 276</title></path>
+<text class="mut" x="327.7" y="342" font-size="10" text-anchor="middle">2026W40</text>
+<text class="fg val" x="327.7" y="163.7" font-size="10" text-anchor="middle">876</text>
+<rect class="seg s0" x="367.0" y="200.6" width="38.7" height="123.4"><title>2026W41, in markdown: 696</title></rect>
+<path class="seg s1" d="M367.0,200.6 V145.2 Q367.0,141.2 371.0,141.2 H401.6 Q405.6,141.2 405.6,145.2 V200.6 Z"><title>2026W41, in Rust doc comments: 335</title></path>
+<text class="mut" x="386.3" y="342" font-size="10" text-anchor="middle">2026W41</text>
+<text class="fg val" x="386.3" y="136.2" font-size="10" text-anchor="middle">1031</text>
+<rect class="seg s0" x="425.6" y="191.7" width="38.7" height="132.3"><title>2026W42, in markdown: 746</title></rect>
+<path class="seg s1" d="M425.6,191.7 V132.8 Q425.6,128.8 429.6,128.8 H460.2 Q464.2,128.8 464.2,132.8 V191.7 Z"><title>2026W42, in Rust doc comments: 355</title></path>
+<text class="mut" x="444.9" y="342" font-size="10" text-anchor="middle">2026W42</text>
+<text class="fg val" x="444.9" y="123.8" font-size="10" text-anchor="middle">1101</text>
+<rect class="seg s0" x="484.2" y="178.9" width="38.7" height="145.1"><title>2026W43, in markdown: 818</title></rect>
+<path class="seg s1" d="M484.2,178.9 V114.0 Q484.2,110.0 488.2,110.0 H518.8 Q522.8,110.0 522.8,114.0 V178.9 Z"><title>2026W43, in Rust doc comments: 389</title></path>
+<text class="mut" x="503.5" y="342" font-size="10" text-anchor="middle">2026W43</text>
+<text class="fg val" x="503.5" y="105.0" font-size="10" text-anchor="middle">1207</text>
+<rect class="seg s0" x="542.8" y="174.9" width="38.7" height="149.1"><title>2026W44, in markdown: 841</title></rect>
+<path class="seg s1" d="M542.8,174.9 V106.2 Q542.8,102.2 546.8,102.2 H577.4 Q581.4,102.2 581.4,106.2 V174.9 Z"><title>2026W44, in Rust doc comments: 410</title></path>
+<text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W44</text>
+<text class="fg val" x="562.1" y="97.2" font-size="10" text-anchor="middle">1251</text>
+<rect class="seg s0" x="601.4" y="174.7" width="38.7" height="149.3"><title>2026W45, in markdown: 842</title></rect>
+<path class="seg s1" d="M601.4,174.7 V106.0 Q601.4,102.0 605.4,102.0 H636.0 Q640.0,102.0 640.0,106.0 V174.7 Z"><title>2026W45, in Rust doc comments: 410</title></path>
+<text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W45</text>
+<text class="fg val" x="620.7" y="97.0" font-size="10" text-anchor="middle">1252</text>
 <rect class="s1" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">in Rust doc comments</tspan></text>
 <rect class="s0" x="672" y="83" width="11" height="11" rx="2"/>

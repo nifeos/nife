@@ -306,3 +306,7 @@ week,crate,breaking,additions,commits,commits_crossing
 2026W44,socket_contract,1,2,10,9
 2026W44,std_runtime_contract,1,1,7,6
 2026W44,supervision_contract,21,1,9,9
+2026W45,block_roster,0,0,3,1
+2026W45,capability_manifest_note,43,0,0,0
+2026W45,counter_frequency_contract,2,2,2,1
+2026W45,supervision_contract,0,0,1,1
