@@ -30,7 +30,8 @@ pub const WINDOW_SIZE: u64 = 0x1_0000;
 /// gives the revisions; the vendor tag `VF2_v2.10.4` assigns none), which the controller divides
 /// for the card.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3092. `ciu` is spelled out as the card interface unit; `HZ` is the unit suffix.
+/// Name: ratified 2026-11-02 (UTC), #3092. `ciu` is spelled out as the card interface unit; `HZ` is
+/// the unit suffix.
 pub const CARD_INTERFACE_UNIT_HZ: u32 = 50_000_000;
 /// Both trees' `fifo-depth`.
 ///
@@ -44,8 +45,7 @@ pub const INTERRUPTS: [u32; 2] = [74, 75];
 
 /// The node names each slot goes by: mainline's first, then the vendor's.
 ///
-/// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-tree
-/// walk and the process layout left the driver crates.
+/// Name: ratified 2026-11-02 (UTC), #3092. The device-tree node names of the two slots.
 pub const NODE_NAMES: [[&[u8]; 2]; 2] = [
     [b"mmc@16010000", b"sdio0@16010000"],
     [b"mmc@16020000", b"sdio1@16020000"],
@@ -103,8 +103,7 @@ impl Slot {
     ///
     /// Propagates the first error `prop` returns.
     ///
-    /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the device-
-    /// tree walk and the process layout left the driver crates.
+    /// Name: ratified 2026-11-02 (UTC), #3092. Builds a slot from its device-tree node.
     pub fn from_node<'t, E>(
         index: u8,
         base: u64,

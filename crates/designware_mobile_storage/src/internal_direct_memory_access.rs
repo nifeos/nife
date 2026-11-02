@@ -21,7 +21,8 @@ use crate::registers;
 /// first byte; an implementation bounds them. The kernel's is pages in the direct map, the tests'
 /// is memory `sim` walks too. `designware_ethernet::Region`'s shape.
 ///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+/// Name: ratified 2026-11-02 (UTC), #3092. The region the descriptors and data pages live in,
+/// spelled out.
 pub trait DirectMemoryAccessRegion {
     /// The region's first byte as the controller addresses it: on radon, its physical address.
     fn bus_address(&self) -> u64;
@@ -44,7 +45,8 @@ pub trait DirectMemoryAccessRegion {
 /// **No region**: a [`Host`] that moves its data through the FIFO. Uninhabited, so a host of this
 /// type provably never takes the IDMAC path.
 ///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+/// Name: ratified 2026-11-02 (UTC), #3092. The type for a host with no direct memory access,
+/// spelled out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NoDirectMemoryAccess {}
 
@@ -116,7 +118,7 @@ pub const THE_DESCRIPTOR_OWN_AND_CHAIN_BITS_SHARE_NO_BIT: () =
 
 /// Why a region was refused before anything was written.
 ///
-/// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+/// Name: ratified 2026-11-02 (UTC), #3092. Why a region is refused for the engine.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Refusal {
     /// `HCON` names an external DMA interface, so there is no IDMAC: the field.
@@ -153,7 +155,8 @@ impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
     /// A [`Refusal`]: no IDMAC, 64-bit addressing, or a region that is unaligned, the wrong size,
     /// or not wholly below 4 GiB.
     ///
-    /// Name: provisional, minted 2026-10-22 (UTC) by milestone/53-radon-idmac.
+    /// Name: ratified 2026-11-02 (UTC), #3092. The constructor, which checks the region against the
+    /// identity.
     pub fn new(region: D, id: &Identity) -> Result<InternalDirectMemoryAccess<D>, Refusal> {
         let interface = registers::direct_memory_access_interface(id.hcon);
         if interface != 0 {

@@ -329,7 +329,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// [`Error::ClockUpdate`] if the controller does not take either update; `BufferSize` is never
     /// returned. A target no divider reaches runs at the slowest the controller has.
     ///
-    /// Name: ratified 2026-11-02 (UTC), #3092. The clock is set in hertz and the method is spelled out.
+    /// Name: ratified 2026-11-02 (UTC), #3092. The clock is set in hertz and the method is spelled
+    /// out.
     pub fn set_clock(&mut self, hz: u32) -> Result<u32, Error> {
         let divider = clock_divider(self.base_hz, hz).unwrap_or(255);
         self.registers.write(registers::CLKENA, 0);

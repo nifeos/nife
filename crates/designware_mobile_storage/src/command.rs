@@ -121,7 +121,8 @@ pub enum Response {
 impl Response {
     /// Does the card send a CRC the controller can check? All but R3 and no response.
     ///
-    /// Name: ratified 2026-11-02 (UTC), #3092. Whether the response carries a CRC the controller can check.
+    /// Name: ratified 2026-11-02 (UTC), #3092. Whether the response carries a CRC the controller
+    /// can check.
     #[must_use]
     pub const fn has_crc(self) -> bool {
         !matches!(self, Response::None | Response::R3)
