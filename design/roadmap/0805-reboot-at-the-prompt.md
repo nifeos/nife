@@ -201,10 +201,10 @@ Built 2026-10-06 (UTC). Every name below is provisional.
   reason as one of four `abi::Error`s.
 - **The grant.** The kernel mints the one object at boot into the progenitor's slot 31, `WRITE |
   GRANT`. The spawn service keeps it and places `WRITE` alone at `grant_plan::REBOOT_SLOT` (13) in
-  a child whose manifest declares `grant_plan::Manifest::reboot`. Exactly one program does
-  (`only_reboot_declares_reboot_and_no_image_can`), and `grant_plan::image_can_carry` keeps it off
-  every installed image. A manifest note cannot spell it (`manifest_note::encode` refuses), so the
-  note's wire format is unchanged.
+  a child whose manifest declares `grant_plan::Manifest::reboot`. In the image only `reboot` does
+  (`only_reboot_declares_reboot_and_no_image_can`). An owner's `grant` line may give it to
+  installed bytes (§251 clause 2), unbuilt: `grant_plan::image_can_carry` and
+  `manifest_note::encode` still refuse it.
 - **The sync-only capability.** `filesystem_contract::fs::BIND_SYNC` binds a client badge so
   the file server answers `SYNC` on it and refuses every other verb with `EPERM`
   (`subtree_scope::Binding::SyncOnly`, enforced in `redoxfs_server`'s dispatch). `reboot`
@@ -235,7 +235,7 @@ Built 2026-10-06 (UTC). Every name below is provisional.
 | 4 | a refusal is loud | met: the kernel prints the firmware's code and `reboot` prints the reason. **No non-zero exit**: no program here has one |
 | 5 | `script/soak-test --reboot` still passes | met: passed on aarch64, riscv64 and x86_64 on 2026-10-06 (UTC), each resetting and soaking again 127 s in |
 | 6 | radon, after milestone 592 | met: `reboot` typed at radon's prompt reset the board through the AXP15060 into the next netbooted image, twice, with nobody at plug 2; see the scope note |
-| 7 | §251 records the semantics | met, with a 2026-10-06 amendment for what the build found |
+| 7 | §251 records the semantics | met: §251 states what the build found |
 
 ## What it costs
 
@@ -296,4 +296,4 @@ picked A on 2026-10-06.
 
 ## Index row
 
-Typing `reboot` at the `swish` prompt restarts the machine, after flushing the writable filesystem. The authority is a new kernel object with one method (§251), granted to the progenitor and endowed to one program, so no other program can reset the machine. The per-architecture reset routes are already written and QEMU-proven; this gives them a caller outside the soak. It is a bench convenience on radon and the missing second half of the installer's last line.
+Typing `reboot` at the `swish` prompt restarts the machine, after flushing the writable filesystem. The authority is a new kernel object with one method (§251), granted to the progenitor and endowed to `reboot` and to installed bytes an owner grants it. The per-architecture reset routes are already written and QEMU-proven; this gives them a caller outside the soak. It is a bench convenience on radon and the missing second half of the installer's last line.

@@ -250,6 +250,10 @@ if [ "$TH1520" = yes ]; then IMG="$OUT/nife-th1520.img"; fi
 cargo xtask initial-ramdisk-riscv
 mkdir -p "$OUT"
 cp target/initial-ramdisk-riscv.img "$OUT/nife-initial-ramdisk.img"
+# The loader's two digests for that archive (milestone 695 (the kernel trusts two digests handed to
+# it by the loader)), which the boot script hands the kernel as `bootargs`. They travel with the
+# archive, so they are copied with it.
+cp target/initial-ramdisk-riscv.img.loader-digests "$OUT/nife-initial-ramdisk.img.loader-digests"
 
 cargo build -p kernel --release --target "$TARGET" --features "$FEATURES"
 
@@ -284,8 +288,9 @@ if [ "$TH1520" = yes ]; then
     ITS="$OUT/nife-th1520.its"
     ENV="$OUT/nife-th1520-env.txt"
     # Scaleway's U-Boot reads these two keys out of the FIT's `env` image (their em-rv1 repo's
-    # fit/em-rv1-env.txt). nife reads no command line, so the bootargs are empty on purpose.
-    printf 'usr_bootargs=\nusr_has_ramdisk=1\n' > "$ENV"
+    # fit/em-rv1-env.txt). The bootargs are the loader's two digests for this archive (milestone
+    # 695), the only command line nife reads.
+    printf 'usr_bootargs=%s\nusr_has_ramdisk=1\n' "$(cat "$OUT/nife-initial-ramdisk.img.loader-digests")" > "$ENV"
     cat > "$ITS" <<'ITS'
 /dts-v1/;
 /*

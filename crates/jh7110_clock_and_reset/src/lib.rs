@@ -181,10 +181,12 @@ pub(crate) const ALWAYS_ON_SIZE: u64 = 0x1_0000;
 /// **AON clock and reset generator** (CRG, the device tree's `aoncrg` node, \[mainline-dts\]):
 /// mainline's dedicated AON clock-and-reset controller node, `aoncrg: clock-controller@17000000`.
 ///
-/// Name: provisional: the domain spelled out by the ruling on #2760, and CRG kept from the
-/// device-tree node.
+/// The vendor string is `starfive,jh7110-aoncrg`.
+///
+/// Name: ratified 2026-11-02 (UTC), #3090. The generator is spelled out, as the crate name
+/// spells it.
 #[doc(alias = "clock and reset generator")]
-pub const COMPATIBLE_ALWAYS_ON_CRG: &[u8] = b"starfive,jh7110-aoncrg";
+pub const COMPATIBLE_ALWAYS_ON_CLOCK_AND_RESET_GENERATOR: &[u8] = b"starfive,jh7110-aoncrg";
 
 /// The `reg-names` entry naming the AON window in each vendor node's spelling (`"aon"` in
 /// `clkgen`, the clock generator node, and `"aoncrg"` in `rstgen`, the reset generator node;
@@ -341,7 +343,7 @@ pub const SYSTEM: Domain = Domain {
 /// node and as `reg-names` entry `"sys"`/`"syscrg"` of both vendor nodes. The fallback when a tree
 /// names none of them, for `SYSTEM_TOP_GROUP_BASE`'s reason.
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+/// Name: ratified 2026-11-02 (UTC), #3090.
 pub const SYSTEM_BASE: u64 = 0x1302_0000;
 
 /// The SYS window's size, `0x10000` in every tree that names it.
@@ -435,7 +437,7 @@ pub const fn clock_divider(word: u32) -> u32 {
 /// node gives this string as its `compatible` and `0x36` as its `reg`. This is also the string
 /// radon's OpenSBI matches to find its reset device.
 ///
-/// Name: provisional. The same reason as `COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE`.
+/// Name: ratified 2026-11-02 (UTC), #3090.
 #[doc(alias = "pmic")]
 pub const COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR: &[u8] = b"stf,axp15060-regulator";
 
@@ -443,8 +445,7 @@ pub const COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR: &[u8] = b"stf,axp15060-regula
 /// `arch/riscv/boot/dts/starfive/jh7110-common.dtsi` of `torvalds/linux` at commit
 /// `cbbddb6b08cc`, fetched 2026-11-01 (UTC), whose `compatible` is this string.
 ///
-/// Name: provisional. PMIC spelled out as the 2026-10-26 (UTC) ruling spells it for
-/// `POWER_MANAGEMENT_CHIP_COMPATIBLES`; the ruling did not name this constant.
+/// Name: ratified 2026-11-02 (UTC), #3090.
 #[doc(alias = "pmic")]
 pub const COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE: &[u8] = b"x-powers,axp15060";
 
@@ -462,7 +463,7 @@ pub const POWER_MANAGEMENT_CHIP_COMPATIBLES: [&[u8]; 2] = [
 /// How many steps a tree-derived plan can hold. Radon's tree names two clocks and one reset, one
 /// of those clocks virtual; four is slack, and a bus naming more is recorded as truncated.
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+/// Name: ratified 2026-11-02 (UTC), #3090.
 pub const MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS: usize = 4;
 
 /// **The plan for the PMIC's bus, and where it came from.** The PMIC (power management integrated
@@ -549,8 +550,7 @@ impl PowerManagementChipBus {
     /// **The plan when the tree names no known PMIC**: the constant I2C5 plan, with `from_tree`
     /// false and `power_management_chip` `None`.
     ///
-    /// Name: provisional. Follows `PowerManagementChipBus`; the ruling named the type and the
-    /// constants, not this method.
+    /// Name: ratified 2026-11-02 (UTC), #3090.
     #[must_use]
     pub fn without_power_management_chip() -> Self {
         PowerManagementChipBus::fallback(None, 0)
@@ -1044,7 +1044,7 @@ fn system_step<'t, E>(
         return Ok(Spec::Foreign);
     };
     let known = [
-        COMPATIBLE_SYSTEM_CRG,
+        COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR,
         if is_clock {
             COMPATIBLE_VENDOR_CLKGEN
         } else {
@@ -1254,10 +1254,12 @@ pub struct WindowLocation {
 /// **STG clock and reset generator** (CRG, the device tree's `stgcrg` node, \[mainline-dts\]):
 /// mainline's dedicated STG clock-and-reset controller node.
 ///
-/// Name: provisional: the domain spelled out by the ruling on #2760, and CRG kept from the
-/// device-tree node.
+/// The vendor string is `starfive,jh7110-stgcrg`.
+///
+/// Name: ratified 2026-11-02 (UTC), #3090. The generator is spelled out, as the crate name
+/// spells it.
 #[doc(alias = "clock and reset generator")]
-pub const COMPATIBLE_SYSTEM_TOP_GROUP_CRG: &[u8] = b"starfive,jh7110-stgcrg";
+pub const COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR: &[u8] = b"starfive,jh7110-stgcrg";
 
 /// **Vendor clock generator** (the `clkgen` node, \[vendor-dts\]): the vendor U-Boot's single
 /// clock controller covering sys, stg and aon. This is the one radon's firmware actually serves,
@@ -1283,10 +1285,12 @@ const VENDOR_RSTGEN_SYSTEM_TOP_GROUP_NAME: &[u8] = b"stgcrg";
 /// **SYS clock and reset generator** (CRG, the device tree's `syscrg` node, \[mainline-dts\]):
 /// mainline's dedicated SYS clock-and-reset controller node, `syscrg: clock-controller@13020000`.
 ///
-/// Name: provisional: the domain spelled out by the ruling on #2760, and CRG kept from the
-/// device-tree node.
+/// The vendor string is `starfive,jh7110-syscrg`.
+///
+/// Name: ratified 2026-11-02 (UTC), #3090. The generator is spelled out, as the crate name
+/// spells it.
 #[doc(alias = "clock and reset generator")]
-pub const COMPATIBLE_SYSTEM_CRG: &[u8] = b"starfive,jh7110-syscrg";
+pub const COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR: &[u8] = b"starfive,jh7110-syscrg";
 
 /// The `reg-names` entry naming the SYS window, in each vendor node's own spelling (`"sys"` in
 /// `clkgen`, `"syscrg"` in `rstgen`; \[vendor-dts\]). Window 0 in both today, found by name anyway
@@ -1356,7 +1360,7 @@ impl RegisterWindow {
 pub const SYSTEM_TOP_GROUP_WINDOW: RegisterWindow = RegisterWindow {
     spellings: [
         WindowSpelling {
-            compatible: COMPATIBLE_SYSTEM_TOP_GROUP_CRG,
+            compatible: COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR,
             window: None,
         },
         WindowSpelling {
@@ -1379,7 +1383,7 @@ pub const SYSTEM_TOP_GROUP_WINDOW: RegisterWindow = RegisterWindow {
 pub const ALWAYS_ON_WINDOW: RegisterWindow = RegisterWindow {
     spellings: [
         WindowSpelling {
-            compatible: COMPATIBLE_ALWAYS_ON_CRG,
+            compatible: COMPATIBLE_ALWAYS_ON_CLOCK_AND_RESET_GENERATOR,
             window: None,
         },
         WindowSpelling {
@@ -1402,7 +1406,7 @@ pub const ALWAYS_ON_WINDOW: RegisterWindow = RegisterWindow {
 pub const SYSTEM_WINDOW: RegisterWindow = RegisterWindow {
     spellings: [
         WindowSpelling {
-            compatible: COMPATIBLE_SYSTEM_CRG,
+            compatible: COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR,
             window: None,
         },
         WindowSpelling {
@@ -1523,7 +1527,7 @@ mod verification {
     /// provider, a different cell count, an error) are covered by the host tests, not proved.
     fn sys_provider(_phandle: u32, name: &[u8]) -> Result<Option<&'static [u8]>, ()> {
         if name == b"compatible" {
-            Ok(Some(COMPATIBLE_SYSTEM_CRG))
+            Ok(Some(COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR))
         } else {
             Ok(Some(&[0, 0, 0, 1]))
         }

@@ -13,7 +13,7 @@ use crate::capability_object::{
 /// **The archive entry the kernel enters as the first process**, on every architecture: one name,
 /// one binary, one program (milestone 266 (one progenitor, on all three architectures)).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
-pub const PROGENITOR_ENTRY: &str = "progenitor";
+pub const PROGENITOR_ENTRY: &str = measured_boot::PROGENITOR;
 
 /// The progenitor's stack, in pages (19d.2c): it loads whole ELFs with deep call chains, so its
 /// stack is larger than an ordinary process's one page. The ELF child builders and the riscv64

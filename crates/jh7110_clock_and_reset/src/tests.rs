@@ -893,7 +893,7 @@ fn a_single_window_node_answers_with_its_one_reg() {
             base: 0x1023_0000,
             size: 0x1_0000,
             from_tree: true,
-            compatible: Some(COMPATIBLE_SYSTEM_TOP_GROUP_CRG),
+            compatible: Some(COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR),
         }
     );
     assert_eq!(
@@ -962,11 +962,19 @@ fn each_window_tries_mainline_first_and_falls_back_to_the_published_constant() {
     for (window, mainline, base) in [
         (
             SYSTEM_TOP_GROUP_WINDOW,
-            COMPATIBLE_SYSTEM_TOP_GROUP_CRG,
+            COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR,
             SYSTEM_TOP_GROUP_BASE,
         ),
-        (ALWAYS_ON_WINDOW, COMPATIBLE_ALWAYS_ON_CRG, ALWAYS_ON_BASE),
-        (SYSTEM_WINDOW, COMPATIBLE_SYSTEM_CRG, SYSTEM_BASE),
+        (
+            ALWAYS_ON_WINDOW,
+            COMPATIBLE_ALWAYS_ON_CLOCK_AND_RESET_GENERATOR,
+            ALWAYS_ON_BASE,
+        ),
+        (
+            SYSTEM_WINDOW,
+            COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR,
+            SYSTEM_BASE,
+        ),
     ] {
         assert_eq!(window.spellings[0].compatible, mainline);
         assert_eq!(window.spellings[0].window, None);

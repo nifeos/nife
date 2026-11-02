@@ -22,10 +22,10 @@ secret or variable.
 | CI shards | built, running on every merge-queue entry | `fuzz-guests` in `.github/workflows/ci.yml`, #3046 |
 | Held-findings store | built, running, mode 700 | `$NIFE_FUZZ_HOME/state/held/` |
 | Daily report, local | built, not installed on the host | `helpers/fuzz-daily-publish.sh`, `nife-fuzz-publish.timer` |
-| Daily release (phase 2) | built, blocked on the clean-range fix and the token | `--publish` in the same script |
+| Daily release (phase 2) | built, blocked on the token and on the host carrying the clean-range fix | `--publish` in the same script |
 | Watchdog workflow and its label | built, scheduled, quiet until the first release; it creates the label `fuzz-loop-broken` at its first failure | `.github/workflows/fuzz-heartbeat.yml`, #3049 |
-| The host follows main | ruled, not built | [proposal](../../design/roadmap/proposals/the-fuzz-host-follows-main.md) |
-| Clean-range fix | not built; it blocks phase 2 | [proposal](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md) |
+| The host follows main | built, reaches the host with P1 | `helpers/fuzz-follow-main.py`, [continuous-host.md](continuous-host.md#following-main) |
+| Clean-range fix | built; a slot that held a finding publishes no more ranges, because nothing yet signals that a finding turned public | `helpers/fuzz-daily-publish.sh`, [proposal](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md) |
 | Mint helper | not built | [proposal](../../design/roadmap/proposals/the-fuzz-host-mints-its-tokens-from-the-app-key.md) |
 | Advisory permission test | not run; a person runs it, step P3 below | [proposal](../../design/roadmap/proposals/an-app-with-only-the-advisory-permission-files-an-advisory.md) |
 | Finding filer | not built | [proposal](../../design/roadmap/proposals/the-fuzz-host-files-held-findings-as-advisories.md) |
@@ -44,10 +44,11 @@ Repository security advisories read and Metadata read.
 
 ### P1. Bring the host to main (person, root)
 
-The host runs the commit it was installed at. It has no self-update yet, and a restart alone moves
-nothing: each slot keeps its own worktree at the commit it started on. The supervisor's toolchain
-step from #3045 is missing until this runs, and the self-update code can only arrive this way the
-first time.
+The host runs the commit it was installed at, which predates the follower
+([`continuous-host.md`](continuous-host.md#following-main)), so this step moves it by hand once. From
+then on the supervisor fast-forwards to each green commit on main by itself, as the fuzz account, and
+prints one journal line when a unit file changes; installing a changed unit stays this step's `diff`
+and copy. The follower needs `python3` and `curl` on the host.
 
 ```sh
 sudo systemctl stop nife-fuzz.service
@@ -60,7 +61,9 @@ sudo systemctl start nife-fuzz.service
 ```
 
 If `diff` prints a difference, copy the new unit to `/etc/systemd/system/` and run `sudo systemctl
-reenable nife-fuzz.service`, which rereads the unit files, before the start. Verify: `systemctl is-active nife-fuzz.service` prints `active`, and
+reenable nife-fuzz.service`, which rereads the unit files, before the start. Verify: `systemctl
+is-active nife-fuzz.service` prints `active`; within about 5 minutes `journalctl -u
+nife-fuzz.service -g fuzz-follow-main -n 5` shows a look (the clone already at main, or a move); and
 after the next window the last column of `tail -1 /home/lane/fuzz/state/windows.tsv | cut -f7,8`
 shows the new short commit. If the service fails, `journalctl -u nife-fuzz.service -n 50` names the
 cause; the toolchain step and the KVM check each print their own refusal.
@@ -137,12 +140,12 @@ so this test does not try the comment step the publish milestone lists. That mil
 
 ### Lane steps that can start now
 
-- L1, the clean-range fix: build
+- L1, the clean-range fix: built in `helpers/fuzz-daily-publish.sh` with its selftest, as
   [the proposal](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md)
-  in `helpers/fuzz-daily-publish.sh` with its selftest. It unblocks phase 2.
-- L2, the host follows main: build
-  [the proposal](../../design/roadmap/proposals/the-fuzz-host-follows-main.md), including moving the
-  slot worktrees, which a restart does not do today. It needs P1 once to reach the host.
+  describes, except that withheld ranges do not return. It unblocks phase 2 once P1 carries it to
+  the host.
+- L2, the host follows main: built in `helpers/fuzz-follow-main.py` and the supervisor. It reaches
+  the host with P1.
 - L3, the mint helper: build
   [the proposal](../../design/roadmap/proposals/the-fuzz-host-mints-its-tokens-from-the-app-key.md),
   reading the key at `/etc/nife-fuzz/nife-fuzz.private-key.pem`, shipped with its own unit and timer

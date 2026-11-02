@@ -26,15 +26,22 @@ leaked, because nobody has switched publishing on.
 
 ## What it builds
 
-The table leaves out every range of a slot from a held window onward until the held finding turns
-public. The ranges return once the advisory publishes. The table still covers every other slot, and the count of seeds run stays the same.
+The table leaves out every range of a slot from that slot's first held window onward, reading
+`windows.tsv` alone. It still covers every other slot, and the count of seeds run stays the same.
+
+The ranges should return once the held finding turns public. Nothing builds that yet, because no
+milestone defines the signal that a finding has turned public. The milestone
+[a held finding turns public after its fix reruns clean](a-held-finding-turns-public-after-its-fix-reruns-clean.md)
+publishes the advisory and is where that signal belongs. Until then a slot that ever held a finding
+publishes no more ranges, which fails safe.
 
 ## How it is checked
 
-A selftest plants a `windows.tsv` with a held window followed by clean ones, runs the publish script
-with `--dry-run`, and fails if any published first seed minus one, or any range end, falls on the held
-seed.
+`helpers/fuzz-daily-publish-selftest.sh` plants a `windows.tsv` with a held window followed by clean
+ones, runs the publish script with `--dry-run`, and fails if any published first seed minus one, or
+any range end, falls on the held seed. It also fails if a slot with no held window loses a range.
 
 ## Status
 
-Not started. It must land before a person enables the daily publish timer.
+`helpers/fuzz-daily-publish.sh` withholds the ranges, and its `BUGS` note records that they do not
+return. Nothing builds the return yet; it waits on the signal above.

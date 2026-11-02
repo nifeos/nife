@@ -97,6 +97,8 @@ fn initialize_from_device_tree() {
         start: dtb_phys,
         size: dtb.total_size() as u64,
     });
+    // The loader's two digests, from `/chosen/bootargs`, read while the tree is the boot map's.
+    crate::trust::record_loader_digests(dtb.boot_arguments().expect("cannot read /chosen"));
     if let Some(image) = dtb.initial_ramdisk().expect("cannot read /chosen") {
         INITIAL_RAMDISK_START.store(image.start as usize, core::sync::atomic::Ordering::Relaxed);
         INITIAL_RAMDISK_SIZE.store(image.size as usize, core::sync::atomic::Ordering::Relaxed);
