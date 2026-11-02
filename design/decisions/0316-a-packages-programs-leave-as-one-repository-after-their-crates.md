@@ -17,9 +17,9 @@ list, and each member's `home` names the repository it comes from.
 
 The package is the unit of install: what releases together, and it may hold several programs. The
 repository is the unit of source: it has one purpose, it may be finer than a package, and one
-package may draw on several repositories (§235 (the OS is built and updated from packages, and the
-tree divides by what releases together), and milestone 607 (nife is built and updated from
-packages, and the repository divides along what releases together)). A repository and a package
+package may draw on several repositories. §235 (the OS is built and updated from packages, and the
+tree divides by what releases together) and milestone 607 (nife is built and updated from
+packages, and the repository divides along what releases together) say the same. A repository and a package
 coincide only where the package's programs have one purpose. This section rules the grain at which
 a package's programs leave; it does not rule that a package and its source are one thing.
 
@@ -54,8 +54,8 @@ size.
 Ruled 2026-10-28 (UTC), on the naming review this section held open
 ([milestone 978 (the first cut's names)](../roadmap/0978-first-cut-names.md), relayed by
 the maintainer on pull request #2870). `process-tools`, `core-tools` and `disk-tools` stand as the
-package names and as the repository names of the first cut. The repositories do not exist yet, so
-ratifying a name and ratifying a home stay two events, per the rule above. milestone 756
+package names and as the repository names of the first cut. The repositories do not exist yet. Ratifying a name and ratifying a home stay two events, per
+the rule above. milestone 756
 (process-tools, core-tools and disk-tools are the first code to leave this repository)'s
 precondition 6 asks for the home and the repository name ratified. The ruling covers the names;
 the gap that remains is the homes, which wait on the repositories.

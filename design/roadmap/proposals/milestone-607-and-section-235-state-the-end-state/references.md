@@ -81,8 +81,7 @@ This lane edits none of these. Each wants its own change once the text above lan
   leaves §316's three first-cut repositories possible, where each package's source has one purpose,
   but §316's premise and its crates clause want their own rewrite.
 - `notes/package-boundaries.md` lines 207 to 209: "Answered, ruled 2026-10-28 (UTC) with the rule
-  that a program package leaves as one repository per package, named after the package (§316 (one
-  repository per package leaves the tree))."
+  that a program package leaves as one repository per package, named after the package (§316 (a package's programs leave as one repository, after their crates))."
 - Milestone 756 (process-tools, core-tools and disk-tools are the first code to leave this
   repository), lines 35 to 36: "Ruled 2026-10-28: the home's grain, one repository per package
   (§316 (a package's programs leave as one repository, after their crates))". Lines 90 to 92: "And §235 (the OS is built
