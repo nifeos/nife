@@ -43,7 +43,15 @@ on:
   # The failure looks like the queue hanging rather than like a missing trigger, which is why this
   # is here before the queue is switched on rather than after.
   merge_group:
+  # `full_ci` false runs only the pull-request set; the default runs everything, heavy gates
+  # included, which is how a lane runs them on its branch (helpers/full_ci.py).
   workflow_dispatch:
+    inputs:
+      full_ci:
+        description: "run the heavy gates too (false: only the set a pull request runs)"
+        type: boolean
+        required: false
+        default: true
 
 # Least privilege for GITHUB_TOKEN, set once for every job below. CodeQL flagged its absence
 # (actions/missing-workflow-permissions, 7 alerts) and it is the right call for this repo in
@@ -331,6 +339,7 @@ jobs:
       prose_tests: ${{ steps.prose.outputs.prose_tests }}
       comments: ${{ steps.prose.outputs.comments }}
       comment_tests: ${{ steps.prose.outputs.comment_tests }}
+      heavy: ${{ steps.heavy.outputs.heavy }}
     timeout-minutes: 25
     steps:
       - name: Start the job wall-time clock
@@ -403,6 +412,16 @@ jobs:
           echo "==> classifying $base..HEAD"
           # A classifier that fails writes no `prose`, and every heavy job reads empty as "run".
           python3 helpers/prose_only.py classify "$base"
+      # The heavy gates run only in the merge queue: see the comment above `test-host`.
+      - name: Does this run take the heavy gates?
+        id: heavy
+        if: steps.state.outputs.run != 'false'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          FULL_CI_INPUT: ${{ inputs.full_ci }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 helpers/full_ci.py decide
       - name: Check the job's wall time against its budget
         if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
@@ -514,7 +533,7 @@ jobs:
     name: test shard (${{ matrix.legs }})
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     strategy:
       # Both shards finish, so a red one says which architectures failed and the other still
       # reports.
@@ -621,6 +640,59 @@ jobs:
         if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
 
+  # **The heavy gates run only in the merge queue** (provisional, ruled 2026-11-03 UTC;
+  # notes/merge-queue.md lists both sides). A pull request runs the cheap set: rustfmt, `lint`
+  # (script/lint, whose clippy builds every target), this job's host pass, the mutation gate and
+  # the short build checks (fastpath footprint, boot file size, stack frames, image permissions,
+  # reproducible build, interleavings, coverage, supply chain). The jobs that boot kernels under
+  # QEMU, fuzz, bench and probe crates, and verify.yml's proofs, run in the merge group, on a push
+  # to `main` that no merge group tested, and on a pull request carrying the `full-ci` label. Each
+  # of those jobs ends its `if:` with the same clause: a merge group or a push runs it by event
+  # name alone, and only a gate that answered `heavy=false` (helpers/full_ci.py) skips it. A job
+  # skipped by its condition reports Success, so the required names hold on a pull request
+  # unchanged, and the merge group, whose results the queue merges on, runs every one of them.
+  #
+  # So on a pull request the `test` name means this job: the host crates and no kernel. In a merge
+  # group it means the two shards above, whose first one runs the same host pass. `test-host` runs
+  # on the x86_64 pool, where the host tests reproduced arm64's results (the header's 2026-09-24
+  # paragraph), and restores QEMU only so that script/bootstrap skips its apt install.
+  test-host:
+    name: test-host (the host crates, on a pull request)
+    runs-on: ubuntu-24.04
+    needs: gate
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && github.event_name != 'merge_group' && github.event_name != 'push' && needs.gate.outputs.heavy == 'false' }}
+    timeout-minutes: 25
+    steps:
+      - name: Start the job wall-time clock
+        run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Cache QEMU
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/nife-qemu
+          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+      - name: Build QEMU if the cache missed
+        run: script/ci-qemu
+      - name: Put it on PATH
+        run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
+      - run: script/bootstrap
+        env:
+          NIFE_SKIP_LINT_TOOLS: "1"
+      - run: helpers/hang_evidence.py run -- script/ci-build test-host
+      - name: Summarize where the time went
+        if: always() && hashFiles('target/time-record.tsv') != ''
+        run: cargo xtask time-summary target/time-record.tsv >> "$GITHUB_STEP_SUMMARY"
+      # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
+      - name: Upload the hang evidence
+        if: always() && hashFiles('target/hang-evidence/**') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: hang-evidence-${{ github.job }}
+          path: target/hang-evidence/
+      - name: Check the job's wall time against its budget
+        if: always()
+        run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
+
   # The name the ruleset requires, kept stable over the shards. It reads one result and boots
   # nothing, so it runs on the x86_64 pool and has no checkout (helpers/job-budget.py exempts a job
   # without one from the clock steps; the timeout still binds).
@@ -635,17 +707,30 @@ jobs:
   test:
     name: test (host crates and the kernel suite under QEMU)
     runs-on: ubuntu-24.04
-    needs: [gate, test-shard]
+    needs: [gate, test-shard, test-host]
     # The shards' own condition, so a draft or a prose-only change skips this by condition (which
     # reports Success) rather than leaving the required check unreported. `!cancelled()` reaches the
     # condition when a shard failed, which is the case this job exists to report.
     if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
     timeout-minutes: 5
     steps:
+      # Which side ran is the heavy clause's own answer, never the results', so a merge group
+      # whose shards were skipped fails here rather than passing on the host job.
       - name: Report the shards' combined result
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAVY: ${{ needs.gate.outputs.heavy }}
+          HOST_RESULT: ${{ needs['test-host'].result }}
         run: |
           result="${{ needs['test-shard'].result }}"
-          if [ "$result" = success ]; then
+          if [ "$EVENT_NAME" != merge_group ] && [ "$EVENT_NAME" != push ] && [ "$HEAVY" = false ]; then
+            if [ "$HOST_RESULT" = success ]; then
+              echo "==> test-host: the host crates passed; the kernel legs run in the merge queue"
+            else
+              echo "==> test-host: $HOST_RESULT (the kernel legs run in the merge queue)"
+              exit 1
+            fi
+          elif [ "$result" = success ]; then
             echo "==> test shards: the host crates and every kernel leg passed"
           else
             # script/ci-log-baseline attributes this job by its last `==>` line; the failing
@@ -663,7 +748,7 @@ jobs:
     name: swish-check (the interactive shell, three architectures)
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # A hung kernel means QEMU never exits and the runner would block until the 6-hour default.
     # Fail loudly instead. The bound is a hang detector, not a budget, so it sits well above an
     # honest run. Derivation, from when this job carried x86_64's leg: that leg alone was about 17
@@ -818,7 +903,7 @@ jobs:
     name: swish-check-x86_64 (the interactive shell, x86_64 under KVM)
     runs-on: ubuntu-24.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # A hang detector, not a budget: setup and build are about ten minutes, a cold QEMU build can
     # add 10-20, and the leg itself is measured in the note above. Kept at the arm64 job's 60 so a
     # run that falls back to TCG (no /dev/kvm on some future image) still finishes and says so
@@ -942,7 +1027,7 @@ jobs:
     name: rg-threads (aarch64 and riscv64)
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
@@ -993,7 +1078,7 @@ jobs:
     name: rg-threads-x86_64 (x86_64 under TCG)
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
@@ -1044,7 +1129,7 @@ jobs:
     name: boot-check (the default kernels' interactive boot)
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # A hung kernel means QEMU never exits and the runner would block until the 6-hour default.
     # Fail loudly instead. The bound is a hang detector, not a budget, so it sits well above an
     # honest run. Derivation: three debug boots are about a minute against a warm target, so the
@@ -1187,7 +1272,7 @@ jobs:
     name: base-image (an image composed from packages boots to the shell)
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # A hung kernel means QEMU never exits and the runner would block until the 6-hour default.
     # Fail loudly instead. This is the 20-minute budget plus `helpers/job-budget.py`'s margin, with
     # no measured run behind it yet: the row is new in this lane, so the first green run is what
@@ -1303,7 +1388,7 @@ jobs:
     name: cpu matrix shard (${{ matrix.models }})
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     strategy:
       # Every shard finishes, for the reason script/cpu-matrix does not stop at the first model:
       # which models failed is the diagnosis.
@@ -1420,7 +1505,7 @@ jobs:
     # The shards' own condition, so a draft or a prose-only change skips this by condition (which
     # reports Success) rather than leaving the required check unreported. `!cancelled()` reaches the
     # condition when a shard failed, which is the case this job exists to report.
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     timeout-minutes: 5
     steps:
       - name: Report the shards' combined result
@@ -1439,7 +1524,7 @@ jobs:
     name: watchdog (x86_64 TCO reset under q35)
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # Two soaks that wait on the wall clock (about six minutes together) plus two kernel builds.
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
@@ -2016,7 +2101,7 @@ jobs:
     name: crate probes (fifty crates.io crates build against nife std)
     runs-on: ubuntu-24.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
@@ -2063,7 +2148,7 @@ jobs:
     name: bench (icount regression tripwire)
     runs-on: ubuntu-24.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
@@ -2258,7 +2343,7 @@ jobs:
     name: fuzz shard (${{ matrix.check }})
     runs-on: ubuntu-24.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     strategy:
       # Both shards finish, so a red one names its own targets and the other still reports.
       fail-fast: false
@@ -2366,7 +2451,7 @@ jobs:
     # The shards' own condition, so a draft or a prose-only change skips this by condition (which
     # reports Success) rather than leaving the required check unreported. `!cancelled()` reaches the
     # condition when a shard failed, which is the case this job exists to report.
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     timeout-minutes: 5
     steps:
       - name: Report the shards' combined result
@@ -2405,7 +2490,7 @@ jobs:
     name: fuzz-guests (shard ${{ matrix.shard }}, the in-guest drivers under KVM)
     runs-on: ubuntu-24.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch') }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch') && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.

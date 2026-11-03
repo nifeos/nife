@@ -187,6 +187,30 @@ logs the run it cites; otherwise it runs everything. The queue's check timeout i
 [`merge-queue/main-push-and-check-timeout.md`](merge-queue/main-push-and-check-timeout.md) has the
 premise checked against history and the eviction timeline.
 
+## The heavy gates run only in the queue (provisional, ruled 2026-11-03 UTC)
+
+A pull request runs the cheap checks, and the merge group runs everything. The ruleset's 22
+required names are the same on both: a job skipped by its condition reports Success, so a pull
+request satisfies the heavy names without running them, and the queue merges on the merge group's
+own run, which skips none of them. A job runs only in the queue when it boots a kernel under QEMU
+or proves with Kani, or when it took about five minutes or more in the runs of 2026-11-03 UTC. The
+mutation gate stays on the pull request at about three, since a survivor is the lane's to triage.
+
+| on a pull request | in the merge group only |
+|---|---|
+| `rustfmt`, `lint` (script/lint and its clippy over every target) | the `test` shards: every kernel leg under QEMU |
+| `test`, as `test-host`: the host crates alone | `swish-check`, `swish-check-x86_64`, `boot-check`, `base-image` |
+| `mutation gate` | `rg-threads`, `rg-threads-x86_64`, `cpu matrix`, `watchdog`, `fuzz-guests` |
+| fastpath footprint, boot file size, stack frames, image permissions | `fuzz` (both shards), `bench`, `crate probes` |
+| reproducible build, `interleavings`, `coverage`, `supply chain` | verify.yml: `verify scope`, the `prove` shards, the kernel proofs, `re-falsify` |
+| `architect hold`, `ready status`, `empty diff` | kernel mutants (diff-scoped) and CodeQL run on pushes to `main` |
+
+A lane that changes kernel logic, or a workflow that runs a heavy job, runs the heavy set before it
+queues. Adding the `full-ci` label dispatches ci.yml and verify.yml on the branch at once
+(`.github/workflows/full-ci-label.yml`), and while the label stays on, every push runs the heavy
+set too. `gh workflow run ci.yml --ref <branch>` does the same by hand; its `full_ci` input
+defaults to true. `helpers/full_ci.py` decides, and fails toward running.
+
 ## `script/preflight-queue`: the group build, run here first
 
 The queue's prevention has a price, and a red member is where it is paid. A group of up to five
