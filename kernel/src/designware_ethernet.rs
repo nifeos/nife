@@ -108,7 +108,7 @@ pub(crate) struct Report {
     /// The PHY's identifier.
     pub physical_layer_device_id: u32,
     /// The PHY's I/O voltage and which tree spelling its settings came from.
-    pub physical_layer_device: Option<(u32, motorcomm::Source)>,
+    pub physical_layer_device: Option<(u32, motorcomm::SettingsSource)>,
     /// The station address and where it came from.
     pub mac: Option<([u8; 6], AddressSource)>,
     /// How long each software reset took, in microseconds (the probe's and the real one's).
@@ -315,7 +315,10 @@ fn bring_up_physical_layer_device(
         &e.port.physical_layer_device,
     )
     .map_err(Error::Mdio)?;
-    r.physical_layer_device = Some((applied.voltage_mv, e.port.physical_layer_device.source));
+    r.physical_layer_device = Some((
+        applied.voltage_millivolts,
+        e.port.physical_layer_device.source,
+    ));
     Ok(())
 }
 
@@ -334,7 +337,7 @@ fn wait_for_link(
     let deadline = started + LINK_WAIT_MS * crate::arch::timer::frequency() / 1000;
     let link = loop {
         if let Some(l) =
-            motorcomm::link(&mut bus, physical_layer_device_address).map_err(Error::Mdio)?
+            motorcomm::read_link(&mut bus, physical_layer_device_address).map_err(Error::Mdio)?
         {
             break Some(l);
         }
@@ -400,9 +403,10 @@ fn region() -> Result<u64, Error> {
     if base != 0 {
         return Ok(base);
     }
-    let base = crate::memory::alloc_contiguous_zeroed(layout::PAGES as usize)
-        .ok_or(Error::NoRegion)?
-        .addr();
+    let base =
+        crate::memory::alloc_contiguous_zeroed(layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as usize)
+            .ok_or(Error::NoRegion)?
+            .addr();
     REGION.store(base, Ordering::Release);
     Ok(base)
 }
@@ -410,14 +414,14 @@ fn region() -> Result<u64, Error> {
 /// Zero the region. A stale descriptor from the probe, or a previous wiring, would otherwise read
 /// as a received frame.
 fn zero(region: u64) {
-    // SAFETY: `region` is the run `region` allocated, `layout::BYTES` long, in the direct map. The
+    // SAFETY: `region` is the run `region` allocated, `layout::DIRECT_MEMORY_ACCESS_REGION_BYTES` long, in the direct map. The
     // controller was reset (or is about to be configured with nothing available) so it is not
     // writing it, and the service refuses a new wiring while a previous process lives.
     unsafe {
         core::ptr::write_bytes(
             mmu::phys_to_virt(region) as *mut u8,
             0,
-            layout::BYTES as usize,
+            layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize,
         );
     }
 }
@@ -468,7 +472,7 @@ struct Plane(u64);
 
 impl Plane {
     fn at(&self, off: u64, len: usize) -> u64 {
-        assert!(off + len as u64 <= layout::BYTES);
+        assert!(off + len as u64 <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES);
         self.0 + off
     }
 }
