@@ -26,10 +26,10 @@ Title and slug are drafts.
 The double-fault safety net is documented, selected by the IDT, and never installed.
 
 - The IDT gate for vector 8 selects IST slot 1: `let ist = if vector == 8 { IST_DOUBLE_FAULT } else
-  { 0 };` (in `initialize` in `kernel/src/arch/x86_64/exceptions.rs`), with `IST_DOUBLE_FAULT = 1`
-  (`IST_DOUBLE_FAULT` in `arch/x86_64/segments.rs`).
-- The TSS has the seven entries (`ist: [u64; 7]`, a field of the task state segment in `segments.rs`) and zeroes them at init
-  (`new` in `segments.rs`).
+  { 0 };` (`kernel/src/arch/x86_64/exceptions.rs::initialize`), with `IST_DOUBLE_FAULT = 1`
+  (`arch/x86_64/segments.rs`).
+- The TSS has the seven entries (`ist: [u64; 7]`, a field of the task state segment in `segments.rs`)
+  and zeroes them at init (`new` in `segments.rs`).
 - `set_interrupt_stack` (in `segments.rs`) is the only writer after init, and
   `grep -rn set_interrupt_stack kernel xtask crates` finds no caller outside its own definition.
   The compiler agrees: `notes/ci.md` on #1472 records the `never used` warning as how this was found.
