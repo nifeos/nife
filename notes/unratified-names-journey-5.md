@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 118 | 99 | 19 | 14 |
+| `designware_ethernet` | 110 | 91 | 19 | 13 |
 | `designware_mobile_storage` | 74 | 74 | 0 | 10 |
 | `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 336 | 267 | 69 | 39 |
+| total | 328 | 259 | 69 | 38 |
 
 ## How to read a group
 
@@ -35,11 +35,11 @@ In order, easiest to rule on first:
 3. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
 4. The `no` groups of designware_mobile_storage (`DM1` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
-The groups that need a real ruling are the register and bit constants: `DE7` to `DE10`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
+The groups that need a real ruling are the register and bit constants: `DE7` to `DE9`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
-118 unratified names: 99 with no block, 19 provisional.
+110 unratified names: 91 with no block, 19 provisional.
 
 ### DE1. Module names (10)
 
@@ -103,13 +103,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: yes (one name).
 - Provisional recommendation: `WINDOW` is a plain word and can be ratified; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
-
-### DE10. MDIO command-word bits and shifts (8)
-
-`management_data_input_output::BMCR_RESET`, `management_data_input_output::CR_500_800`, `management_data_input_output::CR_SHIFT`, `management_data_input_output::GB`, `management_data_input_output::GOC_READ`, `management_data_input_output::GOC_WRITE`, `management_data_input_output::PA_SHIFT`, `management_data_input_output::RDA_SHIFT`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out with aliases: `BMCR_RESET` after the `BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE` precedent, and the rest by the same method (`GB` is the GMII busy bit, `GOC_*` the operation code, `CR_*` the clock range, `PA_SHIFT` and `RDA_SHIFT` the address field positions). A short group; the docs give the plain words.
 
 ### DE11. MDIO software surface (6)
 
