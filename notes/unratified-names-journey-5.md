@@ -1,10 +1,10 @@
 # Names journey 5 has not ratified yet
 
-*Name: provisional, minted 2026-11-03 (UTC) by lane/unratified-names-journey-5. The file name says what the list is; `names-awaiting-ratification` was considered.*
+*Name: provisional, minted 2026-11-03 (UTC) by lane/unratified-names-journey-5. The file name says what the list holds; `names-awaiting-ratification` was another candidate.*
 
 This note lists, for every crate on [journey 5](../design/journeys/05-crates-released-on-their-own.md) that still sits under `crates/`, each module, type, function, constant and register whose `Name:` block is missing or still provisional, in groups an architect can rule on one at a time. It proposes and renames nothing. Names are an architect's call ([design/naming.md](../design/naming.md)); every recommendation below is provisional and leaves the current spelling in force until a ruling.
 
-`script/crate-standalone` step 0 passes a crate only when every `Name:` block in it is ratified, so each group here stands between a crate and its move. The lists come from `python3 helpers/name_release.py --draft <crate>`: a row whose status reads `no block` or starts with `provisional`. Rerun it for the live state; this note is not regenerated, and a ruling removes its group.
+`script/crate-standalone` step 0 passes a crate only when every `Name:` block in it is ratified, so each group here stands between a crate and its move. The lists come from `python3 helpers/name_release.py --draft <crate>`: a row whose status reads `no block` or starts with `provisional`. Rerun it for the live state; nothing regenerates this note, and a ruling removes its group.
 
 `file_allocation_table` and `jh7110_clock_and_reset` have no unratified name left. `jh7110_entropy` has already left `crates/`.
 
@@ -24,19 +24,19 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 ## How to read a group
 
-Each group lists its items in their current spelling, as `path::name` (a module is listed by its own name). *Breaks the spelled-out rule* answers the 2026-11-02 rule in [design/naming.md](../design/naming.md): outside register modules, identifiers say what the thing is and not the specification's abbreviation. A hardware register, field or bit constant takes the spelled-out name with the source's spelling in `#[doc(alias)]`, OpenBSD's cited first. `yes` means the group has at least that kind of abbreviation; `one` means a few named items do; `no` means none. The recommendation is the stricter reading wherever a call was close, since loosening later is compatible and tightening is not.
+Each group gives its items in their current spelling, as `path::name`, and a module by its own name. *Breaks the spelled-out rule* answers the 2026-11-02 rule in [design/naming.md](../design/naming.md): outside register modules, identifiers say what the thing is and not the specification's abbreviation. A hardware register, field or bit constant takes the spelled-out name with the source's spelling in `#[doc(alias)]`, OpenBSD's cited first. `yes` means the group has at least that kind of abbreviation; `one` means a few named items do; `no` means none. The recommendation is the stricter reading wherever a call was close, since loosening later is compatible and tightening is not.
 
 ## Smallest first decisions
 
 In order, easiest to rule on first:
 
-1. **X1**, the nine `extensible_host_controller_interface` assertions: the same rename the architect already ruled for two sister crates.
-2. **N1**, the three NVMe namespace names: a full proposal already exists ([ratify-the-nvme-namespace-names](../design/roadmap/proposals/ratify-the-nvme-namespace-names.md)).
-3. **G1**, the fourteen `generational_table` names: one crate, no abbreviation, plain collection verbs, and the crate is third in the ruled publication order.
-4. **DE2**, the sixteen designware_ethernet assertions: already chosen by the maintainer, reversing costs one pull request.
-5. The `no` groups of designware_mobile_storage (**DM1** to **DM4**, **DM6** to **DM8**, **DM10**): ratify as they stand, which clears the module apart from DM5 and DM9.
+1. `X1`, the nine `extensible_host_controller_interface` assertions: the same rename the architect already ruled for two sister crates.
+2. `N1`, the three NVMe namespace names: a full proposal already exists ([ratify-the-nvme-namespace-names](../design/roadmap/proposals/ratify-the-nvme-namespace-names.md)).
+3. `G1`, the fourteen `generational_table` names: one crate, no abbreviation, plain collection verbs, and the crate is third in the ruled publication order.
+4. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
+5. The `no` groups of designware_mobile_storage (`DM1` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
-The groups that need a real ruling are the register and bit constants: **DE7** to **DE10**, **E7** and **E8**. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
+The groups that need a real ruling are the register and bit constants: `DE7` to `DE10`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
