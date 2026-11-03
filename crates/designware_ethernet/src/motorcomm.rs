@@ -111,7 +111,6 @@ pub(crate) const RGMII_RXD_DS_MASK: u16 = (1 << 12) | (0x3 << 4);
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-#[doc(alias = "THE_RECEIVE_DATA_DRIVE_FIELDS_SHARE_NO_BIT")]
 pub const RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!((1 << 12) & (0x3 << 4) == 0);
 /// **Extended register, synchronous Ethernet configuration** (`YT8521_EXT_SYNCE_CFG`, `ytphy.c`).
 #[doc(alias = "extended register, synchronous ethernet configuration")]
@@ -218,7 +217,6 @@ pub(crate) const fn link_from_registers(
 /// `link_from_registers` names this constant.
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
-#[doc(alias = "THE_PARTNER_HUNDRED_MEGABIT_ABILITIES_SHARE_NO_BIT")]
 pub const PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP: () =
     assert!(management_data_input_output::ANLPAR_T4 & management_data_input_output::ANLPAR_TX == 0);
 
@@ -490,7 +488,6 @@ pub fn configure(
 /// compiler checks both here, and the mutation exclusions for `configure` name this constant.
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
-#[doc(alias = "THE_RGMII_DELAY_AND_DRIVE_FIELDS_SHARE_NO_BIT")]
 pub const RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!(
     (0xf << RX_DELAY_SEL_SHIFT) & (0xf << TX_DELAY_SEL_SHIFT) == 0
         && (0x7 << RGMII_RXC_DS_SHIFT) & RGMII_RXD_DS_MASK == 0
