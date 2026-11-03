@@ -45,9 +45,8 @@ history and in nothing that lives in this tree.
 
 Nineteen check names reached a pull request then. The 2026-09-30 split (#1468) replaced the first
 row with four jobs pending calef's ruleset edit; later checks have no rows yet. "Blocks" means in
-ruleset 19596094's `required_status_checks`. A heavy check skips on a pull request without the
-`full-ci` label and reports Success there (notes/merge-queue.md); on such a pull request `test`
-runs the host crates only.
+ruleset 19596094's `required_status_checks`. Without the `full-ci` label, a pull request skips
+the heavy checks, which report Success (notes/merge-queue.md).
 
 | check name | workflow | trigger | blocks | result 2026-09-03 |
 |---|---|---|---|---|

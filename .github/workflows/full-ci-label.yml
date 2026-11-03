@@ -1,5 +1,10 @@
 name: full-ci label
 
+# Observed failing: 2026-11-03, by script: nothing yet; the arm that carries this workflow's claim
+#   is the dispatch, and its first chance to fire is the label on its own pull request, which this
+#   record must be pushed before (notes/observed-failing.md, BUGS, the bootstrap). helpers/full_ci.py
+#   --selftest ran the label rule it hands to the dispatched runs. A run id replaces this record.
+
 # **Adding the `full-ci` label runs the heavy gates on the pull request's branch now** (lane
 # heavy-gates-only-in-queue, provisional; the heavy gates run only in the merge queue, ruled
 # 2026-11-03 UTC, and ci.yml's comment above `test-host` has the rule). The label alone changes
