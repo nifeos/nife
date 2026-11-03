@@ -49,12 +49,12 @@ were dismissed, each with a comment naming the file and line and why.
 | `py/redos` | 1 | Fixed (#26) | Real. See below. |
 | `rust/hard-coded-cryptographic-value` | 23 | Used in tests | Fixture salts and the phc-winner-argon2 reference vector inside `#[cfg(test)] mod tests` in `crates/credentialer/src/lib.rs` |
 | `rust/hard-coded-cryptographic-value` | 2 | Used in tests | GCM test case 2's all-zero key and IV in `cryptography_exerciser`, a known-answer program |
-| `rust/hard-coded-cryptographic-value` | 2 | False positive | `components/src/credentialer.rs:216` and `:286`: zeroed buffers that `fill()` overwrites from the entropy service before use, or the service refuses |
-| `rust/hard-coded-cryptographic-value` | 1 | False positive | `vendor/redoxfs/src/key.rs:71`: a zeroed output buffer Argon2 writes into |
+| `rust/hard-coded-cryptographic-value` | 2 | False positive | `start` and `put` in `components/src/credentialer.rs`: zeroed buffers that `fill()` overwrites from the entropy service before use, or the service refuses |
+| `rust/hard-coded-cryptographic-value` | 1 | False positive | `password_aes` in `vendor/redoxfs/src/key.rs`: a zeroed output buffer Argon2 writes into |
 | `rust/access-invalid-pointer` | 9 | False positive | `uefi_loader`: UEFI protocol out-pointers dereferenced only after `SUCCESS` and an `is_null()` check. CodeQL tracks the `ptr::null_mut()` initializer and does not see the firmware write. Firmware is in the trusted computing base, and no untrusted input reaches these pointers |
 | `rust/cleartext-logging` | 4 | False positive | `vendor/redoxfs/src/bin/` host tools printing a filesystem UUID, sizes and paths, none derived from the password |
-| `rust/cleartext-logging` | 1 | False positive | `kernel/src/arch/x86_64/timer.rs:424`: a TSC rate in Hz in a boot assert |
-| `rust/cleartext-logging` | 1 | Used in tests | `crates/credentialer/src/lib.rs:809`: a test assert printing a fixture secret |
+| `rust/cleartext-logging` | 1 | False positive | `initialize_frequency` in `kernel/src/arch/x86_64/timer.rs`: a TSC rate in Hz in a boot assert |
+| `rust/cleartext-logging` | 1 | Used in tests | `one_byte_off_is_a_mismatch_at_either_end` in `crates/credentialer/src/lib.rs`: a test assert printing a fixture secret |
 
 Totals: 1 fixed, 26 dismissed as used in tests, 17 as false positives. None of the flagged code had
 been removed.

@@ -201,7 +201,7 @@ was then run once through all three architectures at one-minute load averages of
 
 The two old-form reds were at one-minute load averages of about 10 and about 37. That is the range
 this laptop sits in whenever two lanes are gating: 2x to 5x oversubscribed on eight cores, not a
-pathological host. Of the runs that did not reach the test, one died at `live_swap_tests.rs:263` and
+pathological host. Of the runs that did not reach the test, one died in `run_swap` in `live_swap_tests.rs` and
 one at `holding_a_lock_masks_the_timer`. Both are in [the unowned reds](unowned-reds.md).
 
 Eleven green runs do not prove the rate is zero. By the rule of three, 0 failures in 110 waits
@@ -237,9 +237,9 @@ taken here. (Minted as milestone 185 (sweep userspace's bounded retry loops onto
 started as of 2026-09-24.)
 
 Two more kernel sites went red under this lane's load and are nobody's yet. Neither is in the scope
-note. `user/live_swap_tests.rs:263`, "reclaiming the operator's budget returned 277 of 224 pages", is
+note. `run_swap` in `user/live_swap_tests.rs`, "reclaiming the operator's budget returned 277 of 224 pages", is
 a negative-direction failure against a global count. The first diagnostic points straight at a wait
-written against something wider than the property. `arch/aarch64/timer.rs:680`, "the timer is not
+written against something wider than the property. `holding_a_lock_masks_the_timer` in `arch/aarch64/timer.rs`, "the timer is not
 ticking at all", killed a run before it reached the suite's userspace half. It is a sibling of the
 assertions milestone 62 dispositioned, and it was not one of them. Both are recorded in full in
 [the unowned reds](unowned-reds.md).
