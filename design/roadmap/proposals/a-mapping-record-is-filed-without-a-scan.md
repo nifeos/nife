@@ -53,8 +53,8 @@ Each log page counts its tombstones, and `file` scans a page only when that coun
   call sites that each remember to count are not.
 - A debug assertion in `file` checks, on a scan that finds nothing, that the count was zero.
 
-Refused: a free-slot index per page. It costs a second word per page and must be recomputed when
-the slot it names is reused, which is the scan again. Refused: dropping tombstone reuse and always
+Refused: a free-slot index per page. It costs a second word per page, and reusing the slot it names
+means finding the next free one, which is the scan again. Refused: dropping tombstone reuse and always
 appending. A space that maps and unmaps in a loop would then grow its log without bound, paid from
 its own region.
 
