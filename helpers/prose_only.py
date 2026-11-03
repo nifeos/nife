@@ -669,6 +669,7 @@ def selftest():
     cases.append(("script reader logged", any("script/lint" in x for x in r)))
     # A note named by code (DOC_BUNDLES): an input, runs everything.
     p, t, r = run(["notes/pipes.md"])
+    # line-citation: exception. Reason: the fixture expects the census's own path:line report form
     cases.append(("named .md", p is False and "xtask/src/manual.rs:1" in r[0]))
     # include_str! relative to the source file, added in the same diff.
     p, t, r = run(["notes/plain.md", "crates/abi/src/lib.rs"],
