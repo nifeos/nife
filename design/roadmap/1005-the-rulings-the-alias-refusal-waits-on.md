@@ -13,8 +13,7 @@ needs_person: yes
 The lane for milestone 969 (no frame is writable and executable in one address space) wrote
 this on 2026-10-31 (UTC). Milestone 969 cannot start until an architect rules three things. This file sets each one out in the block's order. Each gets its background, the recommendation
 and the other options, prior art, where nife differs, an example on the tenth pass's reproduction,
-the cost, and what the ruling does to 969 and to claim 11. Once an architect rules, an integrator
-folds them into 969's block and disposes of this file by promotion, as the proposals README requires.
+the cost, and what the ruling does to 969 and to claim 11.
 
 This lane read every fact about the tree below at `main` 9f62334f5. It booted nothing and
 measured nothing.

@@ -274,17 +274,16 @@ One decision each, recommendation first. Ask them one at a time.
    `nifeos/<repo>:<path>` at basalt's pin. The site gives each number a stable address derived from
    the number alone. §201 section 4 now says so, and its revisit condition stays armed.
 3. Ruled 2026-11-01 (UTC): GitHub Pages from Actions in `nifeos.org`, with the nifeos.org custom
-   domain. Addresses derive from kind and number alone. The Background states the limits, and
+   domain. The Background states the limits, and
    step 8 names the person-only tasks.
 4. Ruled 2026-11-01 (UTC), as recommended: the division the Background states, with a crate's
    notes moving with the crate under §315 (a crate's documentation leaves with it).
 
 5. Raised and not yet put to the architect: where the tutorial's source lives. The planned
    tutorial on building a RISC-V operating system publishes on the site. Its source could sit in
-   the `nifeos.org` repository or in a repository of its own. It needs background and a recommendation before it is asked.
+   the `nifeos.org` repository or in a repository of its own.
 
-Steps 6 to 8 wait on step 5's measurement and the architect's approval of creation. Nothing in
-flight waits on this.
+Steps 6 to 8 wait on step 5's measurement and the architect's approval of creation.
 
 ## Index row
 
