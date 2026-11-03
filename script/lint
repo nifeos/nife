@@ -3134,7 +3134,10 @@ echo "==> the audit index"
 #    appears exactly once, the `### Run <n>, <date>:` headings are numbered from 1 without a gap,
 #    and their dates are in order. Both numbers the tripwire needs come out of that note, so a
 #    malformed heading does not fail loudly, it silently moves the date a run is measured from.
+#    The selftest runs first, for the reason `fatal-risks --selftest` does: a green `--check` looks
+#    the same whether the pause line parses or matches nothing.
 echo "==> the stranger test's run record"
+"$(dirname "$0")/stranger-test" --selftest >/dev/null
 "$(dirname "$0")/stranger-test" --check
 
 # 9. **An environment variable named in prose has to exist** (milestone 93's first documentation

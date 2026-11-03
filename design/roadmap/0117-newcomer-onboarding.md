@@ -90,7 +90,9 @@ candidate rubric and the predicted worklist.
   asks it at 08:00 UTC each Monday, and `--check` in `script/lint` keeps the record well formed.
   Both numbers come from notes/stranger-test.md alone: the cadence sentence and the newest run
   heading. It is notification, never execution, because a run spends real budget and ends in a
-  debrief a person scores.
+  debrief a person scores. calef ruled on 2026-11-03 that the cadence pauses until the kernel
+  leaves nife: one line in the note makes `--due` report "suspended" and exit 0, and the milestone
+  that moves the kernel deletes it.
 - `CONTRIBUTING.md` and the `README.md` reading order, both landed 2026-08-18, both provisional.
 - `script/apropos`, named in `README.md` and `CONTRIBUTING.md` since 2026-09-19.
 - Fixes for every run's findings, each homed where a reader meets it: the host-load sampler beside
@@ -218,7 +220,7 @@ The third principle says a newcomer must succeed without asking anyone, and noth
 agent with no context is handed the repository and nothing else; its questions are the deliverable
 and its confident wrong answers are the worse defect. Six runs through 2026-09-19;
 `script/stranger-test` is the harness and a weekly workflow says when the next one is owed, monthly
-per calef (2026-08-18). Run 6 found milestone 150's one-place program declaration working on first
-contact and a stranger that provisioned the machine chasing a wrong diagnosis the tree invited;
-`script/apropos` is now placed where newcomers start. The cadence has never fired on its own: how a
+per calef (2026-08-18), paused until the kernel leaves nife (2026-11-03). Run 6 found milestone
+150's one-place program declaration working on first contact and a stranger that provisioned the
+machine chasing a wrong diagnosis the tree invited; `script/apropos` is now placed where newcomers start. The cadence has never fired on its own: how a
 "due" reaches a person is a proposal shared with the audit cadence

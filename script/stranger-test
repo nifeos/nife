@@ -8,6 +8,7 @@
 #   script/stranger-test --prepare-only           build the isolated tree and stop
 #   script/stranger-test --due                    is a run due? exit 1 if it is; runs nothing
 #   script/stranger-test --check                  the run record parses (script/lint)
+#   script/stranger-test --selftest               --due and --check against fixtures (script/lint)
 #   script/stranger-test --help
 #
 # Why this exists, and why it is a script rather than a page. Milestone 117 asks whether a competent
@@ -64,6 +65,14 @@
 # .github/workflows/stranger-cadence.yml asks it every week so that recurrence does not depend on
 # anyone remembering. `--check` is the structural half and runs in script/lint, because a run record
 # that does not parse is a defect in the commit that malformed it while a due run is not.
+#
+# **The cadence can be paused, and the pause is one line in the same note.** While
+# notes/stranger-test.md carries `**The cadence pauses until <what ends it>.**`, `--due` reports
+# "suspended" and exits 0, and `--check` names the pause. The interval sentence stays in the note
+# throughout, so deleting the pause line is the whole of restoring the cadence. A bold line that
+# speaks of a pause in any other words fails `--check`, because a pause the tripwire cannot read
+# would either silence it or be ignored by it. `--selftest` holds each answer against fixtures,
+# the pause and its removal included, and runs in script/lint ahead of `--check`.
 #
 # **Both read notes/stranger-test.md and nothing else, and both are handled before this script does
 # any of the work above.** They need no clone, no `claude`, and no toolchain, which is what lets the
@@ -300,6 +309,7 @@ script/stranger-test: hand this repository to a process that has never seen it.
   --smoke            exercise the whole pipeline with a trivial task; NOT a measurement
   --due              is a run due? exit 1 if one is. Runs nothing and spends nothing
   --check            the run record in notes/stranger-test.md parses (script/lint)
+  --selftest         the cadence's answers, against fixtures (script/lint)
   --help
 USAGE
 }
@@ -322,6 +332,7 @@ while [ $# -gt 0 ]; do
         --smoke) smoke=1; budget="5"; shift ;;
         --due)   cadence="due";   shift ;;
         --check) cadence="check"; shift ;;
+        --selftest) cadence="selftest"; shift ;;
         --help|-h) usage; exit 0 ;;
         *) echo "stranger-test: unknown argument '$1'" >&2; usage >&2; exit 2 ;;
     esac
@@ -359,85 +370,164 @@ import sys
 
 path, shown, mode = sys.argv[1], sys.argv[2], sys.argv[3]
 
-with open(path, errors="replace") as f:
-    text = f.read()
-
 # One sentence in the note carries the interval, and it is the sentence a reader meets rather than a
 # number kept for the tripwire. One heading per run carries the dates, and every run already writes
 # it because that is how the note records a run. Nothing here is maintained for this script's sake,
 # which is the property that stops the schedule and the record from drifting apart.
 CADENCE = re.compile(r"^\*\*A run is due every (\d+) days\.\*\*", re.M)
 RUN = re.compile(r"^### Run (\d+), (\d{4}-\d{2}-\d{2}):", re.M)
+# The pause is one more sentence of the same kind. While it stands, no run is owed and `--due`
+# reports "suspended" with exit 0; deleting that one line restores the cadence unchanged, because
+# the interval sentence stays in the note throughout. Any bold line that speaks of a pause or a
+# suspension must be this exact sentence, so a reworded one fails `--check` rather than being read
+# as no pause at all, or as one.
+PAUSE = re.compile(r"^\*\*The cadence pauses until ([^*\n]+?)\.\*\*", re.M)
+PAUSE_LIKE = re.compile(r"^\*\*[^*\n]*\b(?:paus|suspen)", re.M | re.I)
 
-problems = []
 
-intervals = CADENCE.findall(text)
-if len(intervals) != 1:
-    problems.append(
-        f"{len(intervals)} lines match '**A run is due every N days.**' and exactly one must. That "
-        f"sentence is the cadence: the tripwire reads the same characters a reader does, so a "
-        f"second copy is a second cadence and none at all is a schedule nobody can find.")
+def judge(text, today, mode, shown):
+    """Read the note's text as of `today`; return (exit status, stdout lines, stderr lines)."""
+    problems = []
 
-runs = []
-for num, date in RUN.findall(text):
-    try:
-        runs.append((int(num), datetime.date.fromisoformat(date)))
-    except ValueError:
-        problems.append(f"run {num}: {date!r} is not a real date")
+    intervals = CADENCE.findall(text)
+    if len(intervals) != 1:
+        problems.append(
+            f"{len(intervals)} lines match '**A run is due every N days.**' and exactly one must. "
+            f"That sentence is the cadence: the tripwire reads the same characters a reader does, "
+            f"so a second copy is a second cadence and none at all is a schedule nobody can find.")
 
-if not runs:
-    problems.append(
-        "no '### Run <n>, <YYYY-MM-DD>: ' heading, so the date of the last run has nowhere to come "
-        "from. A run that is not written up did not happen as far as this tree is concerned.")
+    pauses = PAUSE.findall(text)
+    if len(PAUSE_LIKE.findall(text)) != len(pauses) or len(pauses) > 1:
+        problems.append(
+            "a bold line speaks of a pause, and the pause must be exactly one line reading "
+            "'**The cadence pauses until <what ends it>.**'. A pause that does not parse would "
+            "either silence the tripwire or be ignored by it, and the reader could not tell which.")
 
-if [n for n, _ in runs] != list(range(1, len(runs) + 1)):
-    problems.append(
-        f"the run headings are numbered {[n for n, _ in runs]} and must be 1..{len(runs)} in order. "
-        f"The tripwire reads the last one, so a gap or a repeat silently moves the date.")
+    runs = []
+    for num, date in RUN.findall(text):
+        try:
+            runs.append((int(num), datetime.date.fromisoformat(date)))
+        except ValueError:
+            problems.append(f"run {num}: {date!r} is not a real date")
 
-if any(runs[i][1] < runs[i - 1][1] for i in range(1, len(runs))):
-    problems.append("the runs are not in date order, and the last heading is what the tripwire "
-                    "reads")
+    if not runs:
+        problems.append(
+            "no '### Run <n>, <YYYY-MM-DD>: ' heading, so the date of the last run has nowhere to "
+            "come from. A run that is not written up did not happen as far as this tree is "
+            "concerned.")
 
-if problems:
-    for p in problems:
-        print(f"stranger-test: {shown}: {p}", file=sys.stderr)
-    sys.exit(1)
+    if [n for n, _ in runs] != list(range(1, len(runs) + 1)):
+        problems.append(
+            f"the run headings are numbered {[n for n, _ in runs]} and must be 1..{len(runs)} in "
+            f"order. The tripwire reads the last one, so a gap or a repeat silently moves the date.")
 
-interval = int(intervals[0])
-number, when = runs[-1]
-days = (datetime.date.today() - when).days
+    if any(runs[i][1] < runs[i - 1][1] for i in range(1, len(runs))):
+        problems.append("the runs are not in date order, and the last heading is what the tripwire "
+                        "reads")
 
-if mode == "check":
-    print(f"stranger-test: {len(runs)} runs on record, last {when} (run {number}), "
-          f"cadence {interval} days")
-    sys.exit(0)
+    if problems:
+        return 1, [], [f"stranger-test: {shown}: {p}" for p in problems]
 
-print(f"Last run: {number}, {when}, {days} day{'' if days == 1 else 's'} ago.")
-print(f"Cadence:  every {interval} days ({shown}).")
-print()
+    interval = int(intervals[0])
+    number, when = runs[-1]
+    days = (today - when).days
+    until = pauses[0] if pauses else None
 
-if days < interval:
-    print(f"stranger-test: not due for another {interval - days} day"
-          f"{'' if interval - days == 1 else 's'}.")
-    sys.exit(0)
+    if mode == "check":
+        line = (f"stranger-test: {len(runs)} runs on record, last {when} (run {number}), "
+                f"cadence {interval} days")
+        return 0, [line + (f", paused until {until}" if until else "")], []
 
-print(f"stranger-test: DUE. Run {number} was {days} days ago and the cadence is {interval}.")
-print()
-print("  script/stranger-test --commit origin/main")
-print()
-print("Then score it against the rubric in the same file, write the run up as an appendix under")
-print("notes/stranger-test/, and add a '### Run <n>, <date>:' heading under '## Runs' that links it.")
-print("That heading is what this check reads, so a run that is not written up leaves this red.")
-print()
-print("Nothing here ran the test and nothing here can: a run spawns a claude process, spends real")
-print("budget, and needs a machine with the toolchain and both QEMUs. Red means run it.")
-print()
-print("What it costs: one stranger session plus one lane to brief it and score it. Roughly 200k")
-print("lane tokens on top of the stranger's own, and about half an hour of wall clock. Run 5's")
-print("$10.56 is the CLI's total_cost_usd for the stranger process alone and excludes the lane,")
-print("which is the larger half.")
-sys.exit(1)
+    out = [f"Last run: {number}, {when}, {days} day{'' if days == 1 else 's'} ago.",
+           f"Cadence:  every {interval} days ({shown}).", ""]
+
+    if until:
+        out += [f"stranger-test: suspended until {until}. No run is owed while the pause stands.",
+                "",
+                f"The pause is one line in {shown}. Removing it restores the {interval}-day "
+                f"cadence, measured from run {number}."]
+        return 0, out, []
+
+    if days < interval:
+        out.append(f"stranger-test: not due for another {interval - days} day"
+                   f"{'' if interval - days == 1 else 's'}.")
+        return 0, out, []
+
+    out += [
+        f"stranger-test: DUE. Run {number} was {days} days ago and the cadence is {interval}.",
+        "",
+        "  script/stranger-test --commit origin/main",
+        "",
+        "Then score it against the rubric in the same file, write the run up as an appendix under",
+        "notes/stranger-test/, and add a '### Run <n>, <date>:' heading under '## Runs' that links it.",
+        "That heading is what this check reads, so a run that is not written up leaves this red.",
+        "",
+        "Nothing here ran the test and nothing here can: a run spawns a claude process, spends real",
+        "budget, and needs a machine with the toolchain and both QEMUs. Red means run it.",
+        "",
+        "What it costs: one stranger session plus one lane to brief it and score it. Roughly 200k",
+        "lane tokens on top of the stranger's own, and about half an hour of wall clock. Run 5's",
+        "$10.56 is the CLI's total_cost_usd for the stranger process alone and excludes the lane,",
+        "which is the larger half.",
+    ]
+    return 1, out, []
+
+
+def selftest():
+    """Fixtures for each answer `--due` and `--check` can give, the pause's included."""
+    day = datetime.date(2026, 11, 3)
+    base = ("**A run is due every 30 days.** Prose.\n\n"
+            "### Run 1, 2026-08-14: one\n\n### Run 2, 2026-09-19: two\n")
+    paused = "**The cadence pauses until the kernel leaves nife.**\n\n" + base
+    cases = [
+        # (name, text, mode, status wanted, a line that must appear)
+        ("overdue is due", base, "due", 1, "stranger-test: DUE. Run 2 was 45 days ago"),
+        ("recent is not due", base.replace("2026-09-19", "2026-10-20"), "due", 0,
+         "stranger-test: not due for another 16 days."),
+        ("the pause reports suspended and green", paused, "due", 0,
+         "stranger-test: suspended until the kernel leaves nife."),
+        ("check reads the pause", paused, "check", 0, "paused until the kernel leaves nife"),
+        ("removing the pause line restores due",
+         paused.replace("**The cadence pauses until the kernel leaves nife.**\n", ""),
+         "due", 1, "stranger-test: DUE."),
+        ("a pause with no end fails check", "**The cadence is paused.**\n" + base, "check", 1,
+         "the pause must be exactly one line"),
+        ("a reworded pause fails check",
+         "**The cadence is suspended until the kernel leaves nife.**\n" + base, "check", 1,
+         "the pause must be exactly one line"),
+        ("a pause in the passive fails check",
+         "**The cadence is paused until the kernel leaves nife.**\n" + base, "check", 1,
+         "the pause must be exactly one line"),
+        ("two pauses fail check", "**The cadence pauses until x.**\n" + paused, "check", 1,
+         "the pause must be exactly one line"),
+        ("a malformed pause fails due as well", "**The cadence is paused.**\n" + base, "due", 1,
+         "the pause must be exactly one line"),
+        ("a gap in the runs fails check", base.replace("Run 2,", "Run 3,"), "check", 1,
+         "must be 1..2 in order"),
+    ]
+    failed = 0
+    for name, text, m, want, needle in cases:
+        status, out, err = judge(text, day, m, "fixture")
+        if status != want or not any(needle in line for line in out + err):
+            failed += 1
+            print(f"stranger-test --selftest: FAIL {name}: exit {status}, wanted {want} and a line "
+                  f"containing {needle!r}; got {out + err}", file=sys.stderr)
+    print(f"stranger-test --selftest: {len(cases) - failed} of {len(cases)} cases pass")
+    return 1 if failed else 0
+
+
+if mode == "selftest":
+    sys.exit(selftest())
+
+with open(path, errors="replace") as f:
+    text = f.read()
+
+status, out, err = judge(text, datetime.date.today(), mode, shown)
+for line in out:
+    print(line)
+for line in err:
+    print(line, file=sys.stderr)
+sys.exit(status)
 PY
 fi
 
