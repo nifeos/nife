@@ -389,7 +389,6 @@ pub struct Namespace {
     /// same quantity.
     ///
     /// Name: ratified 2026-11-03 (#3118).
-    #[doc(alias = "size_bytes")]
     pub capacity_bytes: u64,
     /// The logical blocks in one transfer unit, the `unit` every call on this value passes.
     pub blocks_per_transfer: u16,
@@ -406,7 +405,6 @@ impl Namespace {
     ///
     /// Name: ratified 2026-11-03 (#3118). The check is that the entire block fits (`end <= capacity`),
     /// not only that its start lies inside, hence `holds_whole_block`.
-    #[doc(alias = "holds_block")]
     pub fn holds_whole_block(&self, block: u64, unit: u64) -> bool {
         match block.checked_add(1).and_then(|n| n.checked_mul(unit)) {
             Some(end) => end <= self.capacity_bytes,
