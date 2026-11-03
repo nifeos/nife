@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 71 | 55 | 16 | 9 |
+| `designware_ethernet` | 57 | 41 | 16 | 6 |
 | `designware_mobile_storage` | 65 | 65 | 0 | 9 |
 | `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 280 | 214 | 66 | 33 |
+| total | 266 | 200 | 66 | 30 |
 ## How to read a group
 
 Each group gives its items in their current spelling, as `path::name`, and a module by its own name. *Breaks the spelled-out rule* answers the 2026-11-02 rule in [design/naming.md](../design/naming.md): outside register modules, identifiers say what the thing is and not the specification's abbreviation. A hardware register, field or bit constant takes the spelled-out name with the source's spelling in `#[doc(alias)]`, OpenBSD's cited first. `yes` means the group has at least that kind of abbreviation; `one` means a few named items do; `no` means none. The recommendation is the stricter reading wherever a call was close, since loosening later is compatible and tightening is not.
@@ -38,7 +38,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_ethernet`
 
-71 unratified names: 55 with no block, 16 provisional.
+57 unratified names: 41 with no block, 16 provisional.
 
 ### DE2. The sixteen non-overlap assertions (16)
 
@@ -82,12 +82,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 - Breaks the spelled-out rule: yes (one name).
 - Provisional recommendation: `WINDOW` is a plain word and can be ratified; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
 
-### DE11. MDIO software surface (6)
-
-`management_data_input_output::Bus`, `management_data_input_output::COMMAND_LIMIT_MICROSECONDS`, `management_data_input_output::Error`, `management_data_input_output::command`, `management_data_input_output::link_is_up`, `management_data_input_output::restart_autonegotiation`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. The module name is already spelled out; these are ordinary names.
 
 ## `designware_mobile_storage`
 

@@ -788,12 +788,6 @@ crates/designware_ethernet/src/descriptor.rs::TDES3_FRAME_LEN
 crates/designware_ethernet/src/descriptor.rs::TDES3_FS
 crates/designware_ethernet/src/descriptor.rs::TDES3_LS
 crates/designware_ethernet/src/descriptor.rs::TDES3_OWN
-crates/designware_ethernet/src/management_data_input_output.rs::Bus
-crates/designware_ethernet/src/management_data_input_output.rs::COMMAND_LIMIT_MICROSECONDS
-crates/designware_ethernet/src/management_data_input_output.rs::Error
-crates/designware_ethernet/src/management_data_input_output.rs::command
-crates/designware_ethernet/src/management_data_input_output.rs::link_is_up
-crates/designware_ethernet/src/management_data_input_output.rs::restart_autonegotiation
 crates/designware_ethernet/src/registers.rs::CHAN_CUR_RX_DESC
 crates/designware_ethernet/src/registers.rs::CHAN_CUR_TX_DESC
 crates/designware_ethernet/src/registers.rs::CHAN_STATUS
