@@ -51,4 +51,4 @@ script, as
 reads it from `NIFE_ADVISORY_READER_TOKEN` and never falls back to `GH_TOKEN`. Still open: the check
 of a pull request's title and body in CI. Unverified: how long a fix pull request stays public before it merges. That window runs
 from the push to the merge, and it grows whenever a hold applies (`needs-architect` on a fix that
-touches the syscall surface, or a red trunk). The first fix measures it. A real read waits on the key and the sudo rule being installed.
+touches the syscall surface, or a red trunk). The first fix measures it. A real read waits until a person places the key and writes the sudo rule.

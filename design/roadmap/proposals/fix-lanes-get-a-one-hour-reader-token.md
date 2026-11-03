@@ -38,7 +38,7 @@ key. The helper must refuse when the key file is missing or readable by anyone b
 ## Status
 
 Built as `issue reader` in `fuzz-token` (nifeos/fuzz-host, pull request 4), with install steps in
-that repository's `docs/fuzz-token-reader.md`. The sudo question is answered provisionally: an
+that repository's `docs/fuzz-token-reader.md`. The sudo question has a provisional answer: an
 architect ruled on 2026-11-03 (UTC) that a sudo rule names exactly `fuzz-token issue reader`, and a
 lane takes the token for one command:
 
@@ -48,6 +48,6 @@ NIFE_ADVISORY_READER_TOKEN="$(sudo -n /usr/local/sbin/fuzz-token issue reader)" 
 
 The same ruling lets any lane on the machine take a reader token, since every lane runs as one
 account. The protections are the fix-lane skill, the replay-line check and sudo's log, and the
-account split is revisited after the first fix lane. Unverified: that sudo-rs matches the rule's
+first fix lane starts a revisit of the account split. Unverified: that sudo-rs matches the rule's
 arguments exactly and that each sudo hands the helper a pipe, not a terminal, for standard output;
 no one has run the rule yet.

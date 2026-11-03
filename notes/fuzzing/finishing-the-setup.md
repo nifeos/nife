@@ -99,7 +99,7 @@ administrator". An App with the advisory permission alone qualifies.
 Publishing a draft needs at least one vulnerability entry that names a package (ecosystem and name)
 and a `vulnerable_version_range`. Without a range GitHub answers 422, "Advisory is not publishable".
 So the filer files each advisory with a package and range the host can supply. It leaves
-`patched_versions` unset, because no fix is known at filing; the publish milestone sets it. To repeat the test, mint an installation token for a throwaway App and
+`patched_versions` unset, because no fix exists at filing; the publish milestone sets it. To repeat the test, mint an installation token for a throwaway App and
 call create, then PATCH `vulnerabilities` with the range, then PATCH `state` to `published`.
 
 The REST API has no endpoint for comments on a repository advisory (from memory, not checked), so
@@ -196,11 +196,11 @@ names the refusal: a missing `NIFE_FUZZ_PUBLISH`, a stale token or a `gh` error.
 
 ### P6. Turn on the filer, then the rerun and publish (person, root)
 
-The filer is built, and its install steps are in nifeos/fuzz-host's
-[`docs/fuzz-filer.md`](https://github.com/nifeos/fuzz-host/blob/lane/fuzz-finding-filer/docs/fuzz-filer.md).
-Nothing waits on an account ruling: an architect ruled on 2026-11-03 (UTC) that the filer runs as
-`lane`, the account that also runs the fuzzed code, and accepted the cost that code reaching main
-then runs as an account that can read the filer token. The filer uses one-hour installation tokens
+The filer exists, and nifeos/fuzz-host's
+[`docs/fuzz-filer.md`](https://github.com/nifeos/fuzz-host/blob/lane/fuzz-finding-filer/docs/fuzz-filer.md)
+holds its install steps. Nothing waits on an account ruling. An architect ruled on 2026-11-03 (UTC) that the filer runs as
+`lane`, the account that also runs the fuzzed code. The accepted cost: code reaching main then runs
+as an account that can read the filer token. The filer uses one-hour installation tokens
 that a root timer mints (`fuzz-token@filer.timer`) and holds no long-lived credential. Install the
 unit and timer as that document says, after P4. Verify that one draft advisory per held finding
 appears under <https://github.com/nifeos/nife/security/advisories>, and that the journal names
@@ -229,7 +229,7 @@ repositories it reaches (nifeos/nife alone), revokes it and prints no token.
 
 Any lane on the machine can take a reader token, because every lane runs as one account. An
 architect accepted that on 2026-11-03 (UTC). The protections are the fix-lane skill, the
-replay-line check and sudo's log, and the account split is revisited after the first fix lane.
+replay-line check and sudo's log, and the first fix lane starts a revisit of the account split.
 
 ## Risks
 
@@ -258,9 +258,9 @@ No one has run these against GitHub or a real host. Each is a check for the firs
 
 - GitHub accepting `<= <commit>` as a range for the ecosystem `other`. A refusal is a 422 that
   names the field, and the finding stays pending.
-- The replay command the filer writes into an advisory. It is written from the supervisor's build
-  steps, and no fix lane has run one.
-- The seed count 1000000 the filer writes for a crash or a hang. It is copied from the supervisor,
-  which records it in no row.
+- The replay command the filer writes into an advisory. The author took it from the supervisor's
+  build steps, and no fix lane has run one.
+- The seed count 1000000 the filer writes for a crash or a hang. The author copied it from the
+  supervisor, which records it in no row.
 - sudo-rs matching the rule's arguments as classic sudo does, and each sudo handing the helper a
   pipe, not a terminal, for standard output.
