@@ -4,6 +4,10 @@
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 /// Intel's PCI vendor id.
+///
+/// Name: ratified 2026-11-03 (UTC), #3146. `VENDOR_INTEL` matches OpenBSD's `PCI_VENDOR_INTEL`;
+/// Linux writes it `PCI_VENDOR_ID_INTEL`. Both are the source spellings. `id` is the standard
+/// library's spelling of identifier (`ThreadId`), so the bare `ID` is not spelled out here.
 pub const VENDOR_INTEL: u16 = 0x8086;
 
 /// The device ids this driver claims, with what each is. Read from Linux's `hw.h` on 2026-10-04.
@@ -15,6 +19,11 @@ pub const VENDOR_INTEL: u16 = 0x8086;
 /// stay because FreeBSD runs one sequence for the whole class. Later PCH generations (Cannon Lake onward,
 /// dozens of ids) need the bench to prove one before the family is widened, because the
 /// generation-specific workarounds are exactly what this crate does not do (`BUGS`).
+///
+/// Name: ratified 2026-11-03 (UTC), #3146. `DEVICE_IDS` is the list of PCI device ids; `id` is the
+/// standard library's spelling (`ThreadId`), so the bare `ID` is not spelled out. OpenBSD's
+/// `PCI_VENDOR_INTEL` and Linux's `PCI_VENDOR_ID_INTEL` are the source spellings of the vendor
+/// half, see [`VENDOR_INTEL`].
 pub const DEVICE_IDS: &[(u16, &str)] = &[
     (0x10d3, "82574L (QEMU's e1000e)"),
     (0x156f, "I219-LM (SPT)"),
@@ -29,12 +38,18 @@ pub const DEVICE_IDS: &[(u16, &str)] = &[
 ];
 
 /// Is `vendor:device` a part this driver claims? See [`DEVICE_IDS`] for why the list is short.
-pub fn is_supported(vendor: u16, device: u16) -> bool {
+///
+/// Name: ratified 2026-11-03 (UTC), #3146. Renamed from `is_supported`, which has no object where
+/// the crate root re-exports it; the object is the device.
+pub fn is_supported_device(vendor: u16, device: u16) -> bool {
     vendor == VENDOR_INTEL && DEVICE_IDS.iter().any(|&(id, _)| id == device)
 }
 
 /// What a claimed device id is, for a boot line; `None` for one this driver does not claim.
-pub fn model(device: u16) -> Option<&'static str> {
+///
+/// Name: ratified 2026-11-03 (UTC), #3146. Renamed from `model`, because it returns a string
+/// naming the model, not the model itself.
+pub fn model_name(device: u16) -> Option<&'static str> {
     DEVICE_IDS
         .iter()
         .find(|&&(id, _)| id == device)

@@ -329,17 +329,17 @@ fn the_station_address_reads_from_entry_zero_and_refuses_an_invalid_one() {
 
 #[test]
 fn the_claimed_ids_are_intel_and_qemus_is_among_them() {
-    assert!(is_supported(0x8086, 0x10d3));
-    assert!(is_supported(0x8086, 0x15b7));
+    assert!(is_supported_device(0x8086, 0x10d3));
+    assert!(is_supported_device(0x8086, 0x15b7));
     assert!(
-        !is_supported(0x10ec, 0x10d3),
+        !is_supported_device(0x10ec, 0x10d3),
         "a Realtek part with a colliding id"
     );
     assert!(
-        !is_supported(0x8086, 0x100e),
+        !is_supported_device(0x8086, 0x100e),
         "the older e1000, a different register map"
     );
-    assert_eq!(model(0x10d3), Some("82574L (QEMU's e1000e)"));
+    assert_eq!(model_name(0x10d3), Some("82574L (QEMU's e1000e)"));
 }
 
 #[test]

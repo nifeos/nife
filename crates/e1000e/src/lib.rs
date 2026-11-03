@@ -56,7 +56,7 @@ pub use descriptor::{
     RECEIVE_STATUS_DD, RECEIVE_STATUS_EOP, ReceiveVerdict, TAIL_IN_PAGE, TRANSMIT_COMMAND,
     TRANSMIT_ENTRIES, TRANSMIT_QUEUE_PAGE, TRANSMIT_STATUS_DD, receive_verdict, transmit_word,
 };
-pub use device::{DEVICE_IDS, VENDOR_INTEL, is_supported, model};
+pub use device::{DEVICE_IDS, VENDOR_INTEL, is_supported_device, model_name};
 
 #[cfg(kani)]
 mod proofs;

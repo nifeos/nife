@@ -943,7 +943,7 @@ pub(crate) struct PciE1000eDevice {
     pub bar0: u64,
     /// The PCIe requester id, the key the IOMMU confines DMA by.
     pub rid: u32,
-    /// The PCI device id, which says which part this is (`e1000e::model`).
+    /// The PCI device id, which says which part this is (`e1000e::model_name`).
     pub device: u16,
     bdf: Bdf,
 }
@@ -957,7 +957,7 @@ impl PciE1000eDevice {
     }
 }
 
-/// Find the first function `e1000e::is_supported` claims and bring its transport up, in
+/// Find the first function `e1000e::is_supported_device` claims and bring its transport up, in
 /// [`find_nvme_device`]'s order and for its reasons: BARs placed, then memory decoding and bus
 /// mastering last. `None` if no such function is on the bus.
 ///
@@ -972,7 +972,7 @@ pub(crate) fn find_e1000e_device() -> Option<PciE1000eDevice> {
         ecam_buses(),
         &mut |b, o| cfg_read32(b, o),
         &mut |bdf, vendor, device| {
-            if found.is_none() && ::e1000e::is_supported(vendor, device) {
+            if found.is_none() && ::e1000e::is_supported_device(vendor, device) {
                 found = Some((bdf, device));
             }
         },
