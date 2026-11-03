@@ -1,12 +1,13 @@
 # Owned runners: what they are, how to flip them, and how the canary judges them
 
-*Name provisional, minted 2026-11-03 (UTC) by lane/owned-runners-canary. So are the variable
-`NIFE_RUNNER_OWNED`, `helpers/owned_runner_check.py` and the canary workflow's job names.*
+*Name: provisional, minted 2026-11-03 (UTC) by lane/owned-runners-canary.*
+
+The variable `NIFE_RUNNER_OWNED`, `helpers/owned_runner_check.py` and the canary workflow's job names are provisional too.
 
 The organization runs a small pool of its own CI runners next to GitHub's hosted ones. This page is
 the runbook: what the pool is, what may run on it, how a repository maintainer switches work between
-owned and hosted, how the pool earns its place, and what to do when it misbehaves. Machine-local
-facts (which hosts, where they sit) are kept off-tree by the maintainers and are not needed here.
+owned and hosted, how the pool earns its place, and what to do when it misbehaves. The maintainers keep
+machine-local facts (which hosts, where they sit) off-tree, and this page does not need them.
 
 ## What the owned runners are
 
@@ -16,20 +17,20 @@ facts (which hosts, where they sit) are kept off-tree by the maintainers and are
   ephemeral, so no job sees another's files.
 - Each container has 4 vCPUs, 16 GiB of memory, `/dev/kvm`, a 50 GB volume and a 90-minute limit.
 - The image is Ubuntu 26.04 with runner 2.338.2 and `qemu-system-x86` installed.
-- Egress goes through an allowlist proxy. A host not on the list is refused and reported to the
+- Egress goes through an allowlist proxy. The proxy refuses a host not on the list and reports it to the
   maintainers, who add it (see "A blocked host" below).
 
 ## The admission rule
 
-A host-side hook admits exactly two kinds of job and refuses the rest:
+A host-side hook admits exactly two kinds of job and turns the rest away:
 
 - `merge_group` on a ref under `gh-readonly-queue/main/`
 - `push` to `main`
 
-A `pull_request` job is refused at the door, and so is `workflow_dispatch`. A fork's pull request
-therefore never runs on owned hardware: its code is the author's, and the hook says no before a
-container starts. A refused job does not fail; it waits for a runner that will never take it and
-blocks whatever needs it. For that reason `script/lint` refuses the tree that would send one there
+The hook turns away a `pull_request` job at the door, and a `workflow_dispatch` job too. A fork's
+pull request therefore never runs on owned hardware: its code belongs to the author, and the hook
+says no before a container starts. A turned-away job does not fail; it waits for a runner that
+will never take it and blocks whatever needs it. For that reason `script/lint` rejects the tree that would send one there
 (see "The lint" below).
 
 ## What runs on them
@@ -77,7 +78,7 @@ A canary week passes when all of these hold across every queue run in seven days
 2. The two curl lines return a success status on both sides on every run.
 3. `/dev/kvm` is writable on the owned side on every run.
 4. The owned job's total time is no more than the hosted job's on the median run. The comparison is
-   a reading of the summaries; queue time before the job starts is reported separately and does not
+   a reading of the summaries; queue time before the job starts is a separate number and does not
    count against the pool.
 
 Fewer than twenty runs in the week extends the week; a week with no run proves nothing.
@@ -90,11 +91,11 @@ runner name and machine name lines with the run's URL for the maintainers who op
 
 ## A blocked host
 
-If a step fails to reach a host, the proxy has refused it. Report it with the host name, the step
+If a step fails to reach a host, the proxy has refused it. Name the host, the step
 that wanted it and the run URL, in a comment on the pull request that introduced the step or in an
 issue labelled `ci`. The maintainers who operate the pool add the host to the allowlist. Do not work
 around the proxy and do not route a pull request job to a hosted runner to avoid it. The hosted
-twin is unaffected, so the switch below keeps the queue moving while the host is added.
+twin is unaffected, so the rollback below keeps the queue moving until the maintainers add the host.
 
 ## Rollback
 
