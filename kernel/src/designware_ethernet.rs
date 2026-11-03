@@ -387,7 +387,7 @@ fn probe(
     let _ = cache_coherence::prepare(&mut dp, &mut plane, &mut tails, mac);
     let deadline = crate::arch::timer::now()
         + cache_coherence::WAIT_MICROSECONDS * crate::arch::timer::frequency() / 1_000_000;
-    while !cache_coherence::delivered(&plane) && crate::arch::timer::now() < deadline {
+    while !cache_coherence::is_delivered(&plane) && crate::arch::timer::now() < deadline {
         core::hint::spin_loop();
     }
     let status = w.read(registers::CHAN_STATUS);

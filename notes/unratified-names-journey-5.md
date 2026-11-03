@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 109 | 93 | 16 | 14 |
+| `designware_ethernet` | 100 | 84 | 16 | 13 |
 | `designware_mobile_storage` | 75 | 75 | 0 | 10 |
 | `e1000e` | 133 | 95 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 329 | 263 | 66 | 39 |
+| total | 320 | 254 | 66 | 38 |
 
 ## How to read a group
 
@@ -39,7 +39,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_ethernet`
 
-109 unratified names: 93 with no block, 16 provisional.
+100 unratified names: 84 with no block, 16 provisional.
 
 ### DE1. Module name (1)
 
@@ -54,13 +54,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. The maintainer chose the `..._DO_NOT_OVERLAP` form (the 2026-11-02 ruling that renamed the `THE_..._SHARE_NO_BIT` set) and reversing costs one pull request; each says which fields it checks. Each is a private compile-time assertion.
-
-### DE3. Coherence probe (9)
-
-`cache_coherence::Observation`, `cache_coherence::POSTED`, `cache_coherence::Payload`, `cache_coherence::Verdict`, `cache_coherence::WAIT_MICROSECONDS`, `cache_coherence::classify`, `cache_coherence::delivered`, `cache_coherence::observe`, `cache_coherence::prepare`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. Plain words, no abbreviation. `POSTED` is a count of posted descriptors, not the bus term, and its doc says so.
 
 ### DE4. Controller bring-up (10)
 

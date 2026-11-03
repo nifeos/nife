@@ -29,6 +29,8 @@ pub const POISON: u8 = 0xa5;
 /// How long the caller waits for receive descriptor 0 before reading the device's account. A
 /// 128-byte frame at any speed through a loopback is microseconds; a hundred milliseconds is
 /// slack for a slow first descriptor fetch, not a guess at the wire.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub const WAIT_MICROSECONDS: u64 = 100_000;
 
 /// **The probe frame**: addressed from and to `station_address` (so the packet filter passes it),
@@ -62,6 +64,8 @@ pub const PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP: () = assert!(0x40 & 
 /// **Steps 1 to 3**: post the receive ring, poison and read back receive buffer 0, queue the
 /// probe frame. The controller must already be configured and started in loopback; the receive
 /// tail write in step 1 and the transmit tail write in step 3 are what set it moving.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn prepare(
     data_plane: &mut DataPlane,
     region: &mut impl DirectMemoryAccessRegion,
@@ -80,11 +84,15 @@ pub fn prepare(
 }
 
 /// **Step 4's poll**: has the CPU seen receive descriptor 0 handed back?
-pub fn delivered(region: &impl DirectMemoryAccessRegion) -> bool {
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
+pub fn is_delivered(region: &impl DirectMemoryAccessRegion) -> bool {
     (region.read_u64(layout::receive_descriptor(0) + 8) >> 32) as u32 & RDES3_OWN == 0
 }
 
 /// What receive buffer 0 held when it was read.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Payload {
     /// The probe frame, byte for byte.
@@ -97,6 +105,8 @@ pub enum Payload {
 
 /// Everything the probe saw: the CPU's view of the ring and buffer, and the device's view of
 /// itself.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Observation {
     /// Receive descriptor 0's word 3, read by the CPU.
@@ -110,6 +120,8 @@ pub struct Observation {
 }
 
 /// **Read the CPU's half of the observation** and pair it with the device's status word.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn observe(
     region: &impl DirectMemoryAccessRegion,
     station_address: [u8; 6],
@@ -137,6 +149,8 @@ pub fn observe(
 }
 
 /// The probe's answer.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Verdict {
     /// **Coherent in both directions.** The device read descriptors and a payload the CPU had
@@ -165,6 +179,8 @@ pub enum Verdict {
 }
 
 /// **Compare the two accounts.**
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn classify(o: &Observation) -> Verdict {
     let s = o.status;
     if s & registers::CHAN_STATUS_FBE != 0 {
@@ -201,7 +217,9 @@ pub const fn is_transmit_complete(o: &Observation) -> bool {
 
 /// How many receive descriptors the probe posts, for a report line: every one but the held-back
 /// slot, as [`DataPlane::start`] does.
-pub const POSTED: u16 = RECEIVE_ENTRIES - 1;
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
+pub const POSTED_RECEIVE_ENTRIES: u16 = RECEIVE_ENTRIES - 1;
 
 #[cfg(test)]
 mod tests {
@@ -233,7 +251,7 @@ mod tests {
         nic.with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
             .unwrap();
         let mut waited = 0;
-        while !nic.with(|r, _| delivered(r)) && waited < WAIT_MICROSECONDS {
+        while !nic.with(|r, _| is_delivered(r)) && waited < WAIT_MICROSECONDS {
             nic.delay_microseconds(1000);
             waited += 1000;
         }
@@ -346,10 +364,10 @@ mod tests {
             r.read_bytes(layout::receive_buffer(0), &mut b);
             assert!(b[..PROBE_LENGTH + CRC_BYTES].iter().all(|&x| x == POISON));
             assert_eq!(b[PROBE_LENGTH + CRC_BYTES], 0);
-            assert!(!delivered(r));
+            assert!(!is_delivered(r));
         });
-        assert_eq!(nic.receive_available(), usize::from(POSTED));
-        assert_eq!(POSTED, 15);
+        assert_eq!(nic.receive_available(), usize::from(POSTED_RECEIVE_ENTRIES));
+        assert_eq!(POSTED_RECEIVE_ENTRIES, 15);
     }
 
     /// After a coherent loopback, the CPU sees receive descriptor 0 handed back and transmit
@@ -366,7 +384,7 @@ mod tests {
             .unwrap();
         nic.step();
         let o = nic.with(|r, _| {
-            assert!(delivered(r));
+            assert!(is_delivered(r));
             observe(r, STATION_ADDRESS, 0)
         });
         assert_eq!(

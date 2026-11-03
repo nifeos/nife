@@ -174,13 +174,6 @@ work, and the lane that renames a name drops its line.
 
 ### Generic
 
-- `Observation` (`src/cache_coherence.rs`): generic
-- `POSTED` (`src/cache_coherence.rs`): generic
-- `Verdict` (`src/cache_coherence.rs`): generic
-- `classify` (`src/cache_coherence.rs`): generic
-- `delivered` (`src/cache_coherence.rs`): generic
-- `observe` (`src/cache_coherence.rs`): generic
-- `prepare` (`src/cache_coherence.rs`): generic
 - `Bus` (`src/controller.rs`): generic: two `Bus` types in two modules
 - `interface` (`src/jh7110.rs`): generic
 - `Applied` (`src/motorcomm_physical_layer_device.rs`): generic
