@@ -71,7 +71,7 @@
 
 //! # BUGS
 //!
-//! - Nothing here has touched the device; every test runs against `sim`. One receive and one
+//! - Nothing here has touched the device; every test runs against `simulator`. One receive and one
 //!   transmit queue, polled: no interrupt, offloads, jumbo frames or multicast.
 //! - Only `gmac0` (`16030000`) is wired; `gmac1`'s SYS-domain clocks have no plan.
 #[cfg(test)]
@@ -86,7 +86,7 @@ pub mod network_interface_controller;
 #[doc(alias = "regs")]
 pub mod registers;
 #[cfg(test)]
-mod sim;
+mod simulator;
 
 /// Offsets inside the DMA region, which the kernel allocates contiguous: `e1000e`'s layout,
 /// because the two NICs' data planes have the same shape.

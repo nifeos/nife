@@ -77,7 +77,7 @@ Most of the residue was already argued in prose and had no row. The equivalents 
 - `filesystem_protocol`'s `verb::TABLE` order walk. It is the `const` shape above, now
   `in_opcode_order`, and a test refuses two rows swapped.
 - `designware_ethernet::cache_coherence::prepare`. The read-back buffer had its own length expression,
-  which `sim::Memory`'s write-allocate cache hid. It is now a copy of the poison array, so the two
+  which `simulator::Memory`'s write-allocate cache hid. It is now a copy of the poison array, so the two
   lengths cannot differ, and that mutant no longer exists.
 - `walk_pricing::price`. Both medians take `middle()`, which a test checks on values a test
   controls.

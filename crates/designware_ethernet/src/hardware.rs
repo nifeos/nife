@@ -3,7 +3,7 @@
 //! Name: ratified 2026-11-03 (UTC), #3122.
 
 /// **The controller's register window, as a driver reaches it.** The kernel's implementation is a
-/// pair of volatile accesses into the direct map; the tests' is `sim`. Offsets are bytes from the
+/// pair of volatile accesses into the direct map; the tests' is `simulator`. Offsets are bytes from the
 /// window's base, and every one this crate passes is a constant from
 /// [`registers`](crate::registers), below [`registers::WINDOW`](crate::registers::WINDOW).
 ///
