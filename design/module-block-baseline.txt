@@ -1120,16 +1120,6 @@ crates/domain_name_system/src/lib.rs::root
 crates/domain_name_system/src/lib.rs::ttl
 crates/domain_name_system/src/lib.rs::write
 crates/domain_name_system/src/proofs.rs
-crates/e1000e/src/control.rs::CTRL_ASDE
-crates/e1000e/src/control.rs::CTRL_EXT_DRV_LOAD
-crates/e1000e/src/control.rs::CTRL_RST
-crates/e1000e/src/control.rs::CTRL_SLU
-crates/e1000e/src/control.rs::RAH_AV
-crates/e1000e/src/control.rs::RFCTL_EXTEN
-crates/e1000e/src/control.rs::STATUS_LU
-crates/e1000e/src/control.rs::rctl
-crates/e1000e/src/control.rs::tctl
-crates/e1000e/src/control.rs::tipg
 crates/e1000e/src/data_plane.rs::DataPlane
 crates/e1000e/src/data_plane.rs::Region
 crates/e1000e/src/data_plane.rs::Tails
@@ -1148,9 +1138,7 @@ crates/e1000e/src/layout.rs
 crates/e1000e/src/layout.rs::BYTES
 crates/e1000e/src/layout.rs::PAGES
 crates/e1000e/src/pch/flush.rs
-crates/e1000e/src/pch/flush.rs::FEXTNVM11_DISABLE_MULR_FIX
 crates/e1000e/src/pch/flush.rs::required
-crates/e1000e/src/pch/flush.rs::rxdctl
 crates/e1000e/src/pch/flush.rs::tail_after
 crates/e1000e/src/pch/hardware.rs::is_pch
 crates/e1000e/src/pch/mod.rs
