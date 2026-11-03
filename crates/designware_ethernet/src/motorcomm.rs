@@ -122,6 +122,8 @@ pub(crate) const EXT_SYNCE_CFG: u16 = 0xa012;
 pub(crate) const EN_SYNC_E: u16 = 1 << 6;
 
 /// A link speed.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Speed {
     /// 10 Mbit/s.
@@ -134,7 +136,9 @@ pub enum Speed {
 
 impl Speed {
     /// Megabits per second.
-    pub const fn mbps(self) -> u32 {
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `mbps`, which abbreviated a unit.
+    pub const fn megabits_per_second(self) -> u32 {
         match self {
             Speed::Ten => 10,
             Speed::Hundred => 100,
@@ -144,6 +148,8 @@ impl Speed {
 }
 
 /// A resolved link.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Link {
     /// The speed negotiated.
@@ -207,7 +213,7 @@ pub(crate) const fn link_from_registers(
 }
 
 /// The 100BASE-T4 and 100BASE-TX partner abilities share no bit, so the one `|` in
-/// [`link_from_registers`] is its `^`, which the compiler checks here; the mutation exclusion for
+/// `link_from_registers` is its `^`, which the compiler checks here; the mutation exclusion for
 /// `link_from_registers` names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
@@ -215,8 +221,10 @@ pub const PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP: () =
     assert!(management_data_input_output::ANLPAR_T4 & management_data_input_output::ANLPAR_TX == 0);
 
 /// A pad drive strength, as a tree states it.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `Drive`, which did not say what is driven.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Drive {
+pub enum PadDriveStrength {
     /// The register code itself, 0 to 7 (the vendor tree's `rgmii_sw_dr*`).
     Code(u8),
     /// A current in microamps (mainline's `motorcomm,*-drv-microamp`), which means a different
@@ -225,8 +233,10 @@ pub enum Drive {
 }
 
 /// Where a [`Settings`] came from.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `Source`, which named no owner.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Source {
+pub enum SettingsSource {
     /// The vendor U-Boot's register-value properties.
     VendorTree,
     /// Mainline Linux's picosecond and microamp properties.
@@ -236,6 +246,8 @@ pub enum Source {
 }
 
 /// **What the board wants of this PHY.**
+///
+/// Name: ratified 2026-11-03 (UTC), #3132.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Settings {
     /// The receive delay select, 0 to 15, in 150 ps steps.
@@ -245,13 +257,13 @@ pub struct Settings {
     /// The transmit delay select, 0 to 15.
     pub transmit_delay: u8,
     /// The receive clock pad's drive.
-    pub receive_clock_drive: Drive,
+    pub receive_clock_drive: PadDriveStrength,
     /// The receive data pads' drive.
-    pub receive_data_drive: Drive,
+    pub receive_data_drive: PadDriveStrength,
     /// Whether to invert the transmit clock at 10, 100 and 1000 Mbit/s, in that order.
     pub transmit_clock_inverted: [bool; 3],
     /// Which spelling this was read from.
-    pub source: Source,
+    pub source: SettingsSource,
 }
 
 /// The receive delay at or above which the fixed extra delay is used (OpenBSD's `1900`).
@@ -268,10 +280,10 @@ impl Settings {
         receive_delay: 0xa,
         receive_fixed_delay: false,
         transmit_delay: 0xa,
-        receive_clock_drive: Drive::Code(6),
-        receive_data_drive: Drive::Code(3),
+        receive_clock_drive: PadDriveStrength::Code(6),
+        receive_data_drive: PadDriveStrength::Code(3),
         transmit_clock_inverted: [true, true, true],
-        source: Source::Fallback,
+        source: SettingsSource::Fallback,
     };
 
     /// **From mainline's quantities**, by OpenBSD's arithmetic: a receive delay at or past 1.9 ns
@@ -300,17 +312,17 @@ impl Settings {
             receive_delay: sel(receive_ps),
             receive_fixed_delay,
             transmit_delay: sel(transmit_ps),
-            receive_clock_drive: Drive::Microamps(receive_clock_ua),
-            receive_data_drive: Drive::Microamps(receive_data_ua),
+            receive_clock_drive: PadDriveStrength::Microamps(receive_clock_ua),
+            receive_data_drive: PadDriveStrength::Microamps(receive_data_ua),
             transmit_clock_inverted: transmit_inverted.unwrap_or([false; 3]),
-            source: Source::MainlineTree,
+            source: SettingsSource::MainlineTree,
         }
     }
 }
 
 /// **The pad drive code for a current at a voltage**, OpenBSD's `ytphy_yt8531_ds_map`. Unknown
 /// pairs, which includes everything at 2.5 V, get the part's default of 3, as there.
-pub(crate) fn drive_code(voltage_mv: u32, d: Drive) -> u8 {
+pub(crate) fn drive_code(voltage_mv: u32, d: PadDriveStrength) -> u8 {
     const MAP: [(u32, u32, u8); 16] = [
         (1800, 1200, 0),
         (1800, 2100, 1),
@@ -330,8 +342,8 @@ pub(crate) fn drive_code(voltage_mv: u32, d: Drive) -> u8 {
         (3300, 6140, 7),
     ];
     match d {
-        Drive::Code(c) => c & 0x7,
-        Drive::Microamps(ua) => MAP
+        PadDriveStrength::Code(c) => c & 0x7,
+        PadDriveStrength::Microamps(ua) => MAP
             .iter()
             .find(|&&(v, a, _)| v == voltage_mv && a == ua)
             .map_or(3, |&(_, _, c)| c),
@@ -386,12 +398,18 @@ fn modify_extended(
 }
 
 /// What [`configure`] found and wrote.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Applied {
     /// The I/O voltage the PHY is strapped to.
-    pub voltage_mv: u32,
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `voltage_mv`.
+    pub voltage_millivolts: u32,
     /// RGMII configuration 1 after the write.
-    pub rgmii_config1: u16,
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `rgmii_config1`, which abbreviated the interface and the word configuration.
+    pub reduced_gigabit_media_independent_interface_configuration_1: u16,
     /// The pad drive word after the write.
     pub pad_drive: u16,
 }
@@ -401,6 +419,8 @@ pub struct Applied {
 /// driver's two additions, the clocks kept running with no cable. The extended-address port is
 /// restored at the end, as OpenBSD does, so a firmware access interleaved before or after finds
 /// it where it left it.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132.
 pub fn configure(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
@@ -418,7 +438,7 @@ pub fn configure(
     let volt = voltage_mv(chip);
     let delays = u16::from(s.receive_delay & 0xf) << RX_DELAY_SEL_SHIFT
         | u16::from(s.transmit_delay & 0xf) << TX_DELAY_SEL_SHIFT;
-    let rgmii_config1 = modify_extended(
+    let reduced_gigabit_media_independent_interface_configuration_1 = modify_extended(
         bus,
         physical_layer_device_address,
         EXT_RGMII_CONFIG1,
@@ -457,8 +477,8 @@ pub fn configure(
     )?;
     bus.write(physical_layer_device_address, REG_ADDR, saved)?;
     Ok(Applied {
-        voltage_mv: volt,
-        rgmii_config1,
+        voltage_millivolts: volt,
+        reduced_gigabit_media_independent_interface_configuration_1,
         pad_drive,
     })
 }
@@ -476,6 +496,8 @@ pub const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_
 
 /// **Set the transmit clock's inversion for the speed just negotiated**, OpenBSD's
 /// `ytphy_yt8521_update`. Returns the new RGMII configuration word.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132.
 pub fn apply_speed(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
@@ -503,7 +525,9 @@ pub fn apply_speed(
 /// **The link, if there is one**, read from the standard clause 22 registers the way OpenBSD's
 /// `ukphy_status` does. The basic mode status register is read twice, because its link bit
 /// latches low.
-pub fn link(
+///
+/// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `link`: a verb phrase, since it reads the registers.
+pub fn read_link(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
 ) -> Result<Option<Link>, management_data_input_output::Error> {
@@ -556,9 +580,9 @@ mod tests {
 
     #[test]
     fn an_unknown_current_gets_the_parts_default_drive() {
-        assert_eq!(drive_code(2500, Drive::Microamps(3970)), 3);
-        assert_eq!(drive_code(1800, Drive::Microamps(1)), 3);
-        assert_eq!(drive_code(3300, Drive::Microamps(6140)), 7);
+        assert_eq!(drive_code(2500, PadDriveStrength::Microamps(3970)), 3);
+        assert_eq!(drive_code(1800, PadDriveStrength::Microamps(1)), 3);
+        assert_eq!(drive_code(3300, PadDriveStrength::Microamps(6140)), 7);
     }
 
     #[test]
@@ -657,7 +681,7 @@ mod tests {
         let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
         physical_layer_device.write_raw(REG_ADDR, 0x1234);
         let a = configure(&mut physical_layer_device, 0, &Settings::FALLBACK_GMAC0).unwrap();
-        assert_eq!(a.voltage_mv, 1800);
+        assert_eq!(a.voltage_millivolts, 1800);
         assert_eq!(
             physical_layer_device.extended(EXT_RGMII_CONFIG1) & 0x3c0f,
             0xa << 10 | 0xa
@@ -692,7 +716,7 @@ mod tests {
     fn a_drive_code_with_its_high_bit_set_lands_in_bit_twelve() {
         let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
         let s = Settings {
-            receive_data_drive: Drive::Code(7),
+            receive_data_drive: PadDriveStrength::Code(7),
             ..Settings::FALLBACK_GMAC0
         };
         configure(&mut physical_layer_device, 0, &s).unwrap();
@@ -705,14 +729,14 @@ mod tests {
     #[test]
     fn the_link_reads_none_until_a_cable_resolves_it() {
         let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
-        assert_eq!(link(&mut physical_layer_device, 0).unwrap(), None);
+        assert_eq!(read_link(&mut physical_layer_device, 0).unwrap(), None);
         assert!(!management_data_input_output::link_is_up(&mut physical_layer_device, 0).unwrap());
         let gig = Link {
             speed: Speed::Thousand,
             full_duplex: true,
         };
         physical_layer_device.set_link(Some(gig));
-        assert_eq!(link(&mut physical_layer_device, 0).unwrap(), Some(gig));
+        assert_eq!(read_link(&mut physical_layer_device, 0).unwrap(), Some(gig));
         assert!(management_data_input_output::link_is_up(&mut physical_layer_device, 0).unwrap());
     }
 
@@ -754,7 +778,7 @@ mod tests {
     #[test]
     fn each_speed_is_its_megabits() {
         assert_eq!(
-            [Speed::Ten, Speed::Hundred, Speed::Thousand].map(Speed::mbps),
+            [Speed::Ten, Speed::Hundred, Speed::Thousand].map(Speed::megabits_per_second),
             [10, 100, 1000]
         );
     }
@@ -784,12 +808,15 @@ mod tests {
         write_extended(&mut physical_layer_device, 0, EXT_RGMII_CONFIG1, 0xffff).unwrap();
         write_extended(&mut physical_layer_device, 0, EXT_PAD_DRIVE_STRENGTH, 0).unwrap();
         let s = Settings {
-            receive_data_drive: Drive::Code(7),
+            receive_data_drive: PadDriveStrength::Code(7),
             ..Settings::FALLBACK_GMAC0
         };
         let a = configure(&mut physical_layer_device, 0, &s).unwrap();
         // 0xffff with bits 13:10 and 3:0 replaced by 0xa each.
-        assert_eq!(a.rgmii_config1, 0xebfa);
+        assert_eq!(
+            a.reduced_gigabit_media_independent_interface_configuration_1,
+            0xebfa
+        );
         // Clock drive 6 in bits 15:13; data drive 7 as 0b11 in bits 5:4 and 0b1 in bit 12.
         assert_eq!(a.pad_drive, 0xd030);
         assert_eq!(

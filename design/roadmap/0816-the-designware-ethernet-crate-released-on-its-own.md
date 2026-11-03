@@ -70,11 +70,11 @@ All 3 proven under stock Kani.
 |---|---|
 | A delivered frame always fits the buffer and the room | `proofs::a_delivered_frame_always_fits_the_buffer_and_the_room` |
 | Every ring offset is inside the region | `proofs::every_ring_offset_is_inside_the_region` |
-| The PHY link decode (`motorcomm::link_from_registers`, which `motorcomm::link` calls) is total and sound: any register answer yields a link or none without a panic, and a link needs the status bit up and the PHY not isolated, autonegotiation complete when it is on, and a speed and duplex both ends advertise (or the forced bits when it is off) | `proofs::a_link_is_decoded_only_from_what_the_registers_say` |
+| The PHY link decode (`motorcomm::link_from_registers`, which `motorcomm::read_link` calls) is total and sound: any register answer yields a link or none without a panic, and a link needs the status bit up and the PHY not isolated, autonegotiation complete when it is on, and a speed and duplex both ends advertise (or the forced bits when it is off) | `proofs::a_link_is_decoded_only_from_what_the_registers_say` |
 
 The third row answers the question `BUGS` asks below: the PHY's answers are device input and the
 link decode is the state a stranger's driver acts on. Its falsification patch drops the isolate
-check. Not proven: the register reads in `motorcomm::link` (the double read of the latched status
+check. Not proven: the register reads in `motorcomm::read_link` (the double read of the latched status
 bit), MDIO sequencing (`mdio`), the PHY configuration writes, the DMA-coherence probe's verdict (`coherence`)
 and controller bring-up.
 
@@ -184,9 +184,9 @@ work, and the lane that renames a name drops its line.
 - `Bus` (`src/controller.rs`): generic: two `Bus` types in two modules
 - `interface` (`src/jh7110.rs`): generic
 - `Applied` (`src/motorcomm.rs`): generic
-- `Drive` (`src/motorcomm.rs`): generic
+- `PadDriveStrength` (`src/motorcomm.rs`): generic
 - `Settings` (`src/motorcomm.rs`): generic
-- `Source` (`src/motorcomm.rs`): generic
+- `SettingsSource` (`src/motorcomm.rs`): generic
 
 ## Exit
 

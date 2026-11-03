@@ -18,7 +18,7 @@
 //! names neither.
 
 use crate::controller::Bus;
-use crate::motorcomm::{Drive, Settings, Source};
+use crate::motorcomm::{PadDriveStrength, Settings, SettingsSource};
 use crate::registers;
 
 /// Mainline's compatible for both ports.
@@ -290,16 +290,18 @@ pub fn vendor_physical_layer_device<'t, E>(
             receive_delay: (receive & 0xf) as u8,
             receive_fixed_delay: flag(num(b"rxc_dly_en")?, f.receive_fixed_delay),
             transmit_delay: num(b"tx_delay_sel")?.map_or(f.transmit_delay, |v| (v & 0xf) as u8),
-            receive_clock_drive: num(b"rgmii_sw_dr_rxc")?
-                .map_or(f.receive_clock_drive, |v| Drive::Code((v & 7) as u8)),
-            receive_data_drive: num(b"rgmii_sw_dr")?
-                .map_or(f.receive_data_drive, |v| Drive::Code((v & 7) as u8)),
+            receive_clock_drive: num(b"rgmii_sw_dr_rxc")?.map_or(f.receive_clock_drive, |v| {
+                PadDriveStrength::Code((v & 7) as u8)
+            }),
+            receive_data_drive: num(b"rgmii_sw_dr")?.map_or(f.receive_data_drive, |v| {
+                PadDriveStrength::Code((v & 7) as u8)
+            }),
             transmit_clock_inverted: [
                 flag(num(b"tx_inverted_10")?, f.transmit_clock_inverted[0]),
                 flag(num(b"tx_inverted_100")?, f.transmit_clock_inverted[1]),
                 flag(num(b"tx_inverted_1000")?, f.transmit_clock_inverted[2]),
             ],
-            source: Source::VendorTree,
+            source: SettingsSource::VendorTree,
         },
     ))
 }
@@ -449,7 +451,7 @@ mod tests {
             s,
             Settings::from_mainline(1500, 1500, 3970, 2910, Some([false, true, true]))
         );
-        assert_eq!(s.source, Source::MainlineTree);
+        assert_eq!(s.source, SettingsSource::MainlineTree);
     }
 
     #[test]
@@ -496,13 +498,13 @@ mod tests {
         assert!(s.receive_fixed_delay);
         assert_eq!(
             (s.receive_clock_drive, s.receive_data_drive),
-            (Drive::Code(6), Drive::Code(3))
+            (PadDriveStrength::Code(6), PadDriveStrength::Code(3))
         );
         assert_eq!(
             s.transmit_clock_inverted,
             [true, false, f.transmit_clock_inverted[2]]
         );
-        assert_eq!(s.source, Source::VendorTree);
+        assert_eq!(s.source, SettingsSource::VendorTree);
         let table: &[(&[u8], &[u8])] = &[(b"rx_delay_sel", ZERO), (b"rxc_dly_en", ZERO)];
         let (address, s) = vendor_physical_layer_device(node(table)).unwrap();
         assert_eq!(address, 0);
