@@ -228,7 +228,7 @@ pub(super) fn boot_designware_network()
             "  network     : NONE. The JH7110's Ethernet port at {:#x} is described and left as \
              the firmware left it: no bench boot has proved this driver yet (milestone 53's \
              runbook, notes/designware-ethernet.md, is how one does)",
-            port.port.base,
+            port.port.registers_physical_address,
         );
         return None;
     }

@@ -8,6 +8,10 @@
 //! line of the probe's `expected.sha256` for that file. Path lookup finds
 //! each file too, by its long name and its short name.
 
+// Not under Miri: reading both recorded images whole took over an hour in the interpreter, and
+// the crate has no `unsafe`; the library's unit tests walk the same reader.
+#![cfg(not(miri))]
+
 use file_allocation_table::{MasterBootRecord, NamedEntry, SectorDevice, SectorSize, Volume};
 
 const BARE: &[u8] = include_bytes!("fixtures/macos/fat32.img.zst");

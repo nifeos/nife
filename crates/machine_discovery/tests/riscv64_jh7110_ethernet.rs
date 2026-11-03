@@ -5,7 +5,9 @@
 //! `machine_discovery::jh7110::designware_ethernet` walks the tree. These pin the walk against the
 //! board-shaped fixtures and the tree every CI boot uses.
 
-use designware_ethernet::jh7110::{COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, GMAC0_BASE};
+use designware_ethernet::jh7110::{
+    COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, GMAC0_REGISTERS_PHYSICAL_ADDRESS,
+};
 use designware_ethernet::motorcomm::{Settings, SettingsSource};
 use machine_discovery::jh7110::designware_ethernet::{discover, discover_aon_syscon};
 
@@ -24,7 +26,10 @@ fn tree(bytes: &[u8]) -> device_tree_blob::DeviceTreeBlob<'_> {
 fn radons_vendor_tree_gives_gmac0_its_physical_layer_device_settings_and_its_address() {
     let tree = tree(VENDOR);
     let d = discover(&tree).unwrap().unwrap();
-    assert_eq!((d.base, d.size), (GMAC0_BASE, 0x1_0000));
+    assert_eq!(
+        (d.registers_physical_address, d.registers_size_bytes),
+        (GMAC0_REGISTERS_PHYSICAL_ADDRESS, 0x1_0000)
+    );
     assert_eq!(d.compatible, COMPATIBLE_VENDOR);
     assert_eq!(d.interrupt, Some(7));
     assert!(d.status_okay && d.reduced_gigabit_media_independent_interface);
@@ -48,7 +53,10 @@ fn radons_vendor_tree_gives_gmac0_its_physical_layer_device_settings_and_its_add
 fn mainlines_tree_reaches_the_same_registers_through_phy_handle() {
     let tree = tree(MAINLINE);
     let d = discover(&tree).unwrap().unwrap();
-    assert_eq!(d.base, GMAC0_BASE);
+    assert_eq!(
+        d.registers_physical_address,
+        GMAC0_REGISTERS_PHYSICAL_ADDRESS
+    );
     assert_eq!(d.compatible, COMPATIBLE_MAINLINE);
     assert_eq!(d.station_address, None);
     assert_eq!(d.physical_layer_device.source, SettingsSource::MainlineTree);

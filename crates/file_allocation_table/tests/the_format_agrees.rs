@@ -5,6 +5,11 @@
 //! `fsck -n`, and take files from this crate's writer. Where `mkfs.fat` is installed it formats the
 //! same sizes, and this crate reads and writes those FAT12 and FAT16 images too.
 
+// Not under Miri: this suite checks volumes against the host's `fsck` and `mkfs.fat` through
+// temporary files, which Miri's isolation refuses. The crate has no `unsafe`, and its library unit
+// tests run under Miri.
+#![cfg(not(miri))]
+
 use std::io::{Cursor, Read};
 use std::path::Path;
 use std::process::Command;
