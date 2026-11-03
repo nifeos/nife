@@ -406,9 +406,10 @@ fn region() -> Result<u64, Error> {
     if base != 0 {
         return Ok(base);
     }
-    let base = crate::memory::alloc_contiguous_zeroed(layout::PAGES as usize)
-        .ok_or(Error::NoRegion)?
-        .addr();
+    let base =
+        crate::memory::alloc_contiguous_zeroed(layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as usize)
+            .ok_or(Error::NoRegion)?
+            .addr();
     REGION.store(base, Ordering::Release);
     Ok(base)
 }
@@ -416,14 +417,14 @@ fn region() -> Result<u64, Error> {
 /// Zero the region. A stale descriptor from the probe, or a previous wiring, would otherwise read
 /// as a received frame.
 fn zero(region: u64) {
-    // SAFETY: `region` is the run `region` allocated, `layout::BYTES` long, in the direct map. The
+    // SAFETY: `region` is the run `region` allocated, `layout::DIRECT_MEMORY_ACCESS_REGION_BYTES` long, in the direct map. The
     // controller was reset (or is about to be configured with nothing available) so it is not
     // writing it, and the service refuses a new wiring while a previous process lives.
     unsafe {
         core::ptr::write_bytes(
             mmu::phys_to_virt(region) as *mut u8,
             0,
-            layout::BYTES as usize,
+            layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize,
         );
     }
 }
@@ -474,7 +475,7 @@ struct Plane(u64);
 
 impl Plane {
     fn at(&self, off: u64, len: usize) -> u64 {
-        assert!(off + len as u64 <= layout::BYTES);
+        assert!(off + len as u64 <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES);
         self.0 + off
     }
 }
