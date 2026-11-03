@@ -36,7 +36,8 @@ right mode and that nothing printed contains the key.
 
 ## Status
 
-Built as `fuzz-token` in [nifeos/fuzz-host](https://github.com/nifeos/fuzz-host), with its selftest,
+Built as `fuzz-token` in nifeos/fuzz-host@0c85820b2ff280c993613cbc66f95f71548ea229
+([the repository](https://github.com/nifeos/fuzz-host)), with its selftest,
 unit, timer and install section. It narrows each token further than this proposal asked: one token
 per service, Contents write alone for the daily release and Repository security advisories write
 alone for the filer. The token file sits under `/run/fuzz-token/`, and systemd's `EnvironmentFile=`
