@@ -65,7 +65,7 @@ ruleset 19596094's `required_status_checks`.
 | `architect hold (needs-architect label)` | architect-hold | PR, merge queue | no | green |
 | `verify scope` | verify | PR, merge queue, push | no | green |
 | `prove (shard N/3)` | verify | PR, merge queue, push | no | green |
-| `draft gate` (two jobs, one name) | ci, verify | PR, merge queue, push | no | green |
+| `draft gate` (two jobs, one name) | ci, verify | PR, push | no | green |
 
 Three of the unrequired five are correct as they stand. `verify scope` and the two `prove` shards
 are aggregated by `verify (Kani proofs)`, which is required. It fails unless scope succeeded and
