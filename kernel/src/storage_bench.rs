@@ -12,7 +12,9 @@
 //! - It re-initializes the card U-Boot booted from, so it halts rather than hand the card back.
 //! - The eMMC socket is probed read-only, always.
 
-use designware_mobile_storage::bench::{self, ReadOnlyProbeFailure, ReadOnlyProbeReport, ScratchWriteVerdict};
+use designware_mobile_storage::bench::{
+    self, ReadOnlyProbeFailure, ReadOnlyProbeReport, ScratchWriteVerdict,
+};
 use designware_mobile_storage::host::{Error, Host, Identity, Registers};
 use designware_mobile_storage::internal_direct_memory_access::{
     DirectMemoryAccessRegion, InternalDirectMemoryAccess, Refusal,
@@ -350,7 +352,12 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
     if slot.index == 1 {
         let el0 = through_el0(slot, &r, write);
         say!(slot, "EL0 block server: {el0:?}");
-        if el0 != El0::Served && !matches!(outcome, Outcome::Written(_, ScratchWriteVerdict::Refused, _)) {
+        if el0 != El0::Served
+            && !matches!(
+                outcome,
+                Outcome::Written(_, ScratchWriteVerdict::Refused, _)
+            )
+        {
             return Outcome::El0(el0);
         }
     }
@@ -370,7 +377,8 @@ fn write_and_idmac(
         let (Some(a), Some(b)) = (pages(1), pages(1)) else {
             return Outcome::NoMemory;
         };
-        let v = bench::run_scratch_write_test(&mut host, &r.card, r.master_boot_record.as_ref(), a, b);
+        let v =
+            bench::run_scratch_write_test(&mut host, &r.card, r.master_boot_record.as_ref(), a, b);
         say!(slot, "scratch write test: {v:?}");
         Some(v)
     } else {
@@ -489,7 +497,11 @@ fn el0_window(
 }
 
 /// A read-only build's checks: block 0 is the boot sector the kernel read, and a WRITE is refused.
-fn read_only_checks(call: &impl Fn(u64, u64) -> i64, shared: &[u8], r: &ReadOnlyProbeReport) -> El0 {
+fn read_only_checks(
+    call: &impl Fn(u64, u64) -> i64,
+    shared: &[u8],
+    r: &ReadOnlyProbeReport,
+) -> El0 {
     use filesystem_contract::blk;
 
     if shared[510..512] != [0x55, 0xaa] || shared[82..90] != r.file_system_type {
@@ -522,10 +534,9 @@ fn write_cycle_checks(
     }
     shared.fill(0);
     let got = call(blk::READ, 0);
-    let intact = shared
-        .iter()
-        .enumerate()
-        .all(|(i, &b)| b == bench::scratch_pattern_byte(window.first + (i / BLOCK) as u64, i % BLOCK) ^ 0xff);
+    let intact = shared.iter().enumerate().all(|(i, &b)| {
+        b == bench::scratch_pattern_byte(window.first + (i / BLOCK) as u64, i % BLOCK) ^ 0xff
+    });
     shared.copy_from_slice(&original);
     let restored = call(blk::WRITE, 0);
     if got != 1 || !intact {
@@ -715,7 +726,8 @@ fn through_idmac(
         let (Some(a), Some(b)) = (pages(1), pages(1)) else {
             return Dma::NoMemory;
         };
-        let v = bench::run_scratch_write_test(&mut host, &r.card, r.master_boot_record.as_ref(), a, b);
+        let v =
+            bench::run_scratch_write_test(&mut host, &r.card, r.master_boot_record.as_ref(), a, b);
         say!(slot, "scratch write test through the IDMAC: {v:?}");
         Some(v)
     } else {
