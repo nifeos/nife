@@ -30,7 +30,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use designware_mobile_storage::host::{Host, Registers};
+use designware_mobile_storage::host::{HostController, RegisterWindowAndClock};
 use designware_mobile_storage::sd::{self, Card};
 use designware_mobile_storage::{command as c, registers};
 use driver_process_contract::designware_mobile_storage::{
@@ -59,7 +59,7 @@ const EROFS: i32 = 30;
 /// The controller's first page, as the kernel mapped it.
 struct Page;
 
-impl Registers for Page {
+impl RegisterWindowAndClock for Page {
     fn read(&mut self, offset: u32) -> u32 {
         debug_assert!(offset < registers::WINDOW_USED);
         // SAFETY: the spawner maps one device-typed page of the controller at
@@ -102,7 +102,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         send(READY, STEP_BAD_HANDOFF, arg0, 0);
         exit();
     };
-    let Ok((mut host, _)) = Host::new(
+    let Ok((mut host, _)) = HostController::new(
         Page,
         h.card_interface_unit_hz,
         Some(u32::from(h.queue_depth)),
@@ -138,7 +138,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
 /// Move `count` blocks from window block `block` through the transfer region. The `blk` answer:
 /// the block count, or a negated errno.
 fn transfer_blocks(
-    host: &mut Host<Page>,
+    host: &mut HostController<Page>,
     card: &Card,
     h: &Handoff,
     block: u64,
@@ -164,7 +164,7 @@ fn transfer_blocks(
 }
 
 /// The serve loop: one endpoint, one wait point, forever.
-fn serve(mut host: Host<Page>, card: Card, h: Handoff) -> ! {
+fn serve(mut host: HostController<Page>, card: Card, h: Handoff) -> ! {
     let mut flushes = 0i64;
     loop {
         let req = receive_request(REQ);
@@ -179,7 +179,7 @@ fn serve(mut host: Host<Page>, card: Card, h: Handoff) -> ! {
             blk::WRITE => transfer_blocks(&mut host, &card, &h, block, count, true),
             blk::SIZE => (h.window.sectors * sd::BLOCK as u64) as i64,
             blk::FLUSH => {
-                let status = host.command(&c::Command::new(
+                let status = host.send_command(&c::Command::new(
                     c::SEND_STATUS,
                     u32::from(card.relative_card_address) << 16,
                     c::Response::R1,
