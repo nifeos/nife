@@ -268,13 +268,6 @@ code: unharnessed code is outside it ([what each ratio is of](denominators.md#th
 Open while what an item names is not done; the direction is down (`script/roadmap --coe-actions`).
 Each week is read from its own commit, so 2026W39 is the first correction, already in this form.
 
-## Writing standards
-
-![Documents over a writing-standards limit](project-metrics/writing-standards.svg)
-
-Documents over each writing-standards limit; exempted ones count
-([definitions](register-of-measures/ratchet-debt.md)).
-
 ## Passive voice
 
 ![Passive constructions in the prose](project-metrics/passive-voice.svg)

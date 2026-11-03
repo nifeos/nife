@@ -4,8 +4,7 @@
 defines. Naming is an architect's.*
 
 *(Appendix of [the register](../register-of-measures.md). Stem provisional, minted on 2026-10-13
-(UTC) by lane/ratchet-metrics, as is the file `writing-standards.csv`,
-its columns and its charts. `line-citations.csv`, its columns, its chart and
+(UTC) by lane/ratchet-metrics. `line-citations.csv`, its columns, its chart and
 `line_citation_debt` are provisional too, minted 2026-10-14 (UTC) by
 maintainer/line-citations-chart. calef asked for these charts so the baselines' debt can be driven
 down.)*
@@ -17,9 +16,6 @@ week's commit.
 
 | file | column | what it is |
 |---|---|---|
-| `writing-standards.csv` | `writing_over_median` | documents whose median sentence is over 20 words |
-| | `writing_over_longest` | documents whose longest sentence is over 40 words |
-| | `writing_over_bold` | documents with more than 4 bold spans per 1,000 words |
 | `passive-voice.csv` | `passives_total` | passive constructions in the prose of every document |
 | | `passive_prose_words` | the prose words they sit in |
 | | `passives_per_1000` | the first over the second, per 1,000 words |
@@ -32,10 +28,6 @@ week's commit.
 Each series calls the gate's own functions on the week's text, so the chart and the gate cannot
 disagree about a file:
 
-- §213: `prose_ratchet.measured` measures each document and `prose_ratchet.over` judges it, over
-  `prose_ratchet.documents`, the scope `prose_budget` already shares. The 200-word floor for the
-  median and the bold density is the gate's. A document over two limits counts in both columns, so
-  the chart groups the three bars rather than stacking them.
 - §277: `line_citations.file_hits` over its `in_scope` files, every text file but data, symlinks and
   `vendor/`. `script/metrics` reads the ceiling from the week's own `helpers/line_citations.py`, so
   the chart draws the ceiling that week's gate held.
@@ -65,8 +57,6 @@ would have found then. That is every row's rule here, and it is why no week is b
 
 ## BUGS
 
-- `writing_over_bold` reads zero from 2026W41, where §213's bold backlog was cleared, and the gate
-  refuses any bold ceiling. It stays a column so a regression would show.
 - Today's measure applied to an old week can read a construct the old tree used differently. The
   roadmap's field tokens are one: `measured` reads both forms, so they do not inflate the median.
 - The line-citation gate landed in 2026W41, so earlier weeks are today's counter on older text.
