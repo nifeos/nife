@@ -56,7 +56,7 @@ outside the tripwire, with every other row flat. Live threads did not change; on
 Two costs live in `delete_page_frame_caps_where` and it is worth keeping them apart, because only
 the second is this milestone's:
 
-- Visiting slots nothing occupies. `generational_table::iter_mut` is
+- Visiting slots nothing occupies. `generational_table::Table::values_mut` is
   `slots.iter_mut().filter_map(...)`. It yields live entries but walks the whole backing array to
   find them. Doubling the ceiling doubled the walk for 126 slots holding nothing. That is an
   implementation defect independent of this milestone's architecture. Bounding the scan is the
