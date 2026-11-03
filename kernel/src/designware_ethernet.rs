@@ -30,8 +30,8 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use ::designware_ethernet::controller::{self, Identity};
 use ::designware_ethernet::motorcomm::{self, Link, Speed};
 use ::designware_ethernet::{
-    DataPlane, Hardware, Region, Tails, coherence, jh7110, layout, management_data_input_output,
-    registers,
+    DataPlane, DirectMemoryAccessRegion, Hardware, Tails, coherence, jh7110, layout,
+    management_data_input_output, registers,
 };
 use driver_process_contract::designware_ethernet::Handoff;
 use jh7110_clock_and_reset as crg;
@@ -304,7 +304,7 @@ fn bring_up_physical_layer_device(
         physical_layer_device_address,
     )
     .map_err(Error::Mdio)?;
-    if r.physical_layer_device_id != motorcomm::PHY_ID_YT8531 {
+    if r.physical_layer_device_id != motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID {
         return Err(Error::UnknownPhysicalLayerDevice {
             id: r.physical_layer_device_id,
         });
@@ -447,10 +447,16 @@ struct TailRegs(u64);
 
 impl Tails for TailRegs {
     fn set_receive_tail(&mut self, addr: u32) {
-        Window(self.0).write(registers::CHAN_RX_END_ADDR, addr);
+        Window(self.0).write(
+            registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER,
+            addr,
+        );
     }
     fn set_transmit_tail(&mut self, addr: u32) {
-        Window(self.0).write(registers::CHAN_TX_END_ADDR, addr);
+        Window(self.0).write(
+            registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER,
+            addr,
+        );
     }
     fn barrier(&mut self) {
         crate::arch::direct_memory_access_write_barrier();
@@ -467,7 +473,7 @@ impl Plane {
     }
 }
 
-impl Region for Plane {
+impl DirectMemoryAccessRegion for Plane {
     fn read_u64(&self, off: u64) -> u64 {
         // SAFETY: `at` bounds the access to the region, which is mapped normal memory in the
         // direct map; descriptor offsets are 8-aligned.

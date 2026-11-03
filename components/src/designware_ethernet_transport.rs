@@ -21,7 +21,9 @@
 
 use alloc::vec::Vec;
 
-use designware_ethernet::{DataPlane, MAXIMUM_FRAME, Region, Tails, layout, registers};
+use designware_ethernet::{
+    DataPlane, DirectMemoryAccessRegion, MAXIMUM_FRAME, Tails, layout, registers,
+};
 use driver_process_contract::designware_ethernet::{
     DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS, Handoff,
 };
@@ -40,7 +42,7 @@ const DMA: MappedWindow =
 /// The region, through its window: every offset bounds-checked by `MappedWindow`.
 struct Plane;
 
-impl Region for Plane {
+impl DirectMemoryAccessRegion for Plane {
     fn read_u64(&self, off: u64) -> u64 {
         PLANE.r64(off)
     }
@@ -61,13 +63,19 @@ struct Channel;
 impl Tails for Channel {
     fn set_receive_tail(&mut self, addr: u32) {
         DMA.w32(
-            u64::from(registers::CHAN_RX_END_ADDR - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
+            u64::from(
+                registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER
+                    - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE,
+            ),
             addr,
         );
     }
     fn set_transmit_tail(&mut self, addr: u32) {
         DMA.w32(
-            u64::from(registers::CHAN_TX_END_ADDR - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
+            u64::from(
+                registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER
+                    - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE,
+            ),
             addr,
         );
     }

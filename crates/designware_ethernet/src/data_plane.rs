@@ -1,13 +1,16 @@
 //! **The data plane**: the regions and tails a driver supplies, and the receive and transmit loop
 //! over them.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: provisional, decided by the maintainer; reversing costs one pull request.
 
 use super::*;
 
 /// The DMA region, as the data plane reads and writes it. Offsets are bytes from the region's
 /// base; an implementation bounds them. `e1000e::Region`'s shape.
-pub trait Region {
+///
+/// Name: ratified 2026-11-02 (UTC), #3094.
+#[doc(alias = "Region")]
+pub trait DirectMemoryAccessRegion {
     /// Read the little-endian `u64` at `offset`.
     fn read_u64(&self, offset: u64) -> u64;
     /// Write `v` at `offset`, little-endian.
@@ -21,9 +24,9 @@ pub trait Region {
 /// The two tail pointers, and the ordering between them and the region: the only register writes
 /// the data plane makes.
 pub trait Tails {
-    /// Write the receive tail pointer's low 32 bits ([`registers::CHAN_RX_END_ADDR`]).
+    /// Write the receive tail pointer's low 32 bits ([`registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER`]).
     fn set_receive_tail(&mut self, address: u32);
-    /// Write the transmit tail pointer's low 32 bits ([`registers::CHAN_TX_END_ADDR`]).
+    /// Write the transmit tail pointer's low 32 bits ([`registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER`]).
     fn set_transmit_tail(&mut self, address: u32);
     /// Order every region access before this against every access after it, as seen by the
     /// device. Called between filling a descriptor and the tail write that announces it, and
@@ -33,7 +36,7 @@ pub trait Tails {
 
 /// Why a frame was not queued.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `TxError`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransmitError {
     /// Empty, or longer than [`MAXIMUM_FRAME`].
@@ -74,7 +77,7 @@ impl DataPlane {
 
     /// The receive descriptor the next [`DataPlane::receive`] looks at.
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC): `rx` and `tx` spelled out, replacing `rx_cursor`.
+    /// Name: ratified 2026-11-02 (UTC), #3094.
     pub fn receive_cursor(&self) -> u16 {
         self.receive_next
     }
@@ -93,7 +96,7 @@ impl DataPlane {
     /// programmed both ring bases and lengths and started the DMA with both tails at the ring
     /// bases (nothing available); the receive tail write here is what hands the device its
     /// buffers.
-    pub fn start(&mut self, region: &mut impl Region, tails: &mut impl Tails) {
+    pub fn start(&mut self, region: &mut impl DirectMemoryAccessRegion, tails: &mut impl Tails) {
         for i in 0..RECEIVE_ENTRIES {
             let d = layout::receive_descriptor(i);
             let [w01, w23] = if i == RECEIVE_ENTRIES - 1 {
@@ -118,7 +121,7 @@ impl DataPlane {
     /// and the next tried, so one bad frame cannot stall the ring.
     pub fn receive(
         &mut self,
-        region: &mut impl Region,
+        region: &mut impl DirectMemoryAccessRegion,
         tails: &mut impl Tails,
         out: &mut [u8],
     ) -> Option<usize> {
@@ -163,7 +166,7 @@ impl DataPlane {
     /// Queue `frame` for transmission.
     pub fn transmit(
         &mut self,
-        region: &mut impl Region,
+        region: &mut impl DirectMemoryAccessRegion,
         tails: &mut impl Tails,
         frame: &[u8],
     ) -> Result<(), TransmitError> {
@@ -191,13 +194,13 @@ impl DataPlane {
     }
 
     /// Is there a free transmit descriptor right now? Reclaims first.
-    pub fn can_transmit(&mut self, region: &mut impl Region) -> bool {
+    pub fn can_transmit(&mut self, region: &mut impl DirectMemoryAccessRegion) -> bool {
         self.reclaim(region);
         (self.transmit_next + 1) % TRANSMIT_ENTRIES != self.transmit_clean
     }
 
     /// Move the clean cursor past every descriptor the device has handed back.
-    fn reclaim(&mut self, region: &impl Region) {
+    fn reclaim(&mut self, region: &impl DirectMemoryAccessRegion) {
         while self.transmit_clean != self.transmit_next {
             let descriptor_word_3 = (region
                 .read_u64(layout::transmit_descriptor(self.transmit_clean) + 8)

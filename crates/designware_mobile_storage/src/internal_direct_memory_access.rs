@@ -19,7 +19,7 @@ use crate::registers;
 
 /// **The DMA region**, as the driver reads and writes it. Offsets are bytes from the region's
 /// first byte; an implementation bounds them. The kernel's is pages in the direct map, the tests'
-/// is memory `sim` walks too. `designware_ethernet::Region`'s shape.
+/// is memory `sim` walks too. `designware_ethernet::DirectMemoryAccessRegion`'s shape.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. The region the descriptors and data pages live in,
 /// spelled out.
