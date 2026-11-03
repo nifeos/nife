@@ -108,7 +108,7 @@ pub(crate) struct Report {
     /// The PHY's identifier.
     pub physical_layer_device_id: u32,
     /// The PHY's I/O voltage and which tree spelling its settings came from.
-    pub physical_layer_device: Option<(u32, motorcomm::Source)>,
+    pub physical_layer_device: Option<(u32, motorcomm::SettingsSource)>,
     /// The station address and where it came from.
     pub mac: Option<([u8; 6], AddressSource)>,
     /// How long each software reset took, in microseconds (the probe's and the real one's).
@@ -315,7 +315,10 @@ fn bring_up_physical_layer_device(
         &e.port.physical_layer_device,
     )
     .map_err(Error::Mdio)?;
-    r.physical_layer_device = Some((applied.voltage_mv, e.port.physical_layer_device.source));
+    r.physical_layer_device = Some((
+        applied.voltage_millivolts,
+        e.port.physical_layer_device.source,
+    ));
     Ok(())
 }
 
@@ -334,7 +337,7 @@ fn wait_for_link(
     let deadline = started + LINK_WAIT_MS * crate::arch::timer::frequency() / 1000;
     let link = loop {
         if let Some(l) =
-            motorcomm::link(&mut bus, physical_layer_device_address).map_err(Error::Mdio)?
+            motorcomm::read_link(&mut bus, physical_layer_device_address).map_err(Error::Mdio)?
         {
             break Some(l);
         }
