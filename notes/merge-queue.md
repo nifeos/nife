@@ -190,10 +190,10 @@ premise checked against history and the eviction timeline.
 ## The heavy gates run only in the queue (provisional, ruled 2026-11-03 UTC)
 
 A pull request runs the cheap checks, and the merge group runs everything. The ruleset's 22
-required names are the same on both: a job skipped by its condition reports Success, so a pull
-request satisfies the heavy names without running them, and the queue merges on the merge group's
-own run, which skips none of them. A job runs only in the queue when it boots a kernel under QEMU
-or proves with Kani, or when it took about five minutes or more in the runs of 2026-11-03 UTC. The
+required names are the same on both. A job skipped by its condition reports Success, so a pull
+request satisfies the heavy names without running them. The queue merges on the merge group's own
+run, which skips none of them. A job runs only in the queue when it boots a kernel under QEMU or
+proves with Kani. So does one that took five minutes or more in the runs of 2026-11-03 UTC. The
 mutation gate stays on the pull request at about three, since a survivor is the lane's to triage.
 
 | on a pull request | in the merge group only |
