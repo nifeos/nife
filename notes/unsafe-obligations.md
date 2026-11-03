@@ -73,16 +73,16 @@ contain **no unsafe operation**:
 
 | Site | Why it is `unsafe fn` anyway |
 |---|---|
-| `crates/clock_contract/src/lib.rs:178` `Clock::new` | takes a VA the caller promises is a mapped clock page |
-| `crates/paging/src/lib.rs:323` `assume_no_stale_entry` | the name is the contract: the caller asserts a TLB fact |
-| `crates/paging/src/lib.rs:410` `Mapper::new` | the caller promises `root` is a live table |
-| `crates/user_mode_runtime/src/heap.rs:193` `GlobalAlloc::alloc` | unsafe because the trait method is |
-| `kernel/src/arch/riscv64/mmu.rs:513` `activate_user` | forwards to `write_satp`, which is a safe fn |
-| `kernel/src/drivers/gic.rs:149` `init` | takes two MMIO virtual addresses on trust |
-| `kernel/src/drivers/ns16550.rs:55` `Ns16550::new` | takes an MMIO base on trust |
-| `kernel/src/drivers/pl011.rs:88` `Pl011::new` | takes an MMIO base on trust |
-| `kernel/src/drivers/plic.rs:83` `init` | takes an MMIO base and a hart context on trust |
-| `kernel/src/sync.rs:263` `force_reset_ranks` | breaks lock-order bookkeeping, which is not a memory operation |
+| `Clock::new` in `crates/clock_contract/src/lib.rs` | takes a VA the caller promises is a mapped clock page |
+| `assume_no_stale_entry` in `crates/paging/src/tlb_flush.rs` | the name is the contract: the caller asserts a TLB fact |
+| `Mapper::new` in `crates/paging/src/mapper.rs` | the caller promises `root` is a live table |
+| `GlobalAlloc::alloc` in `crates/memory_region_heap/src/lib.rs` | unsafe because the trait method is |
+| `activate_user` in `kernel/src/arch/riscv64/mmu.rs` | forwards to `write_satp`, which is a safe fn |
+| `initialize` in `kernel/src/drivers/gic.rs` | takes two MMIO virtual addresses on trust |
+| `Ns16550::new` in `kernel/src/drivers/ns16550.rs` | takes an MMIO base on trust |
+| `Pl011::new` in `kernel/src/drivers/pl011.rs` | takes an MMIO base on trust |
+| `initialize` in `kernel/src/drivers/plic.rs` | takes an MMIO base and a hart context on trust |
+| `force_reset_ranks` in `kernel/src/sync.rs` | breaks lock-order bookkeeping, which is not a memory operation |
 
 For these ten the lint composition buys nothing, and that is not a defect in them. Their
 unsafety is a **contract about meaning**, not a memory operation the compiler can point at: writing
@@ -101,10 +101,10 @@ Four sites in `kernel/`:
 
 | Site | The comment's claim |
 |---|---|
-| `kernel/src/virtio.rs:233` `pread` | "the caller passes addresses inside a device-mapped BAR or mmio window" |
-| `kernel/src/stack.rs:121` `paint` | "the caller hands us a mapped, unused stack region" (`#[cfg(test)]`, so test builds only) |
-| `kernel/src/arch/aarch64/mmu.rs:843` `switch_user_root` | "the caller passes either a live `AddressSpace`'s composed value or ..." |
-| `kernel/src/arch/riscv64/mmu.rs:48` `write_satp` | "the caller guarantees `satp` names a well-formed Sv39 root" |
+| `pread` in `kernel/src/virtio.rs` | "the caller passes addresses inside a device-mapped BAR or mmio window" |
+| `paint` in `kernel/src/stack.rs` | "the caller hands us a mapped, unused stack region" (`#[cfg(test)]`, so test builds only) |
+| `switch_user_root` in `kernel/src/arch/aarch64/mmu.rs` | "the caller passes either a live `AddressSpace`'s composed value or ..." |
+| `write_satp` in `kernel/src/arch/riscv64/mmu.rs` | "the caller guarantees `satp` names a well-formed Sv39 root" |
 
 The last is also an ISA asymmetry: aarch64's equivalent, `set_ttbr0`, **is** an `unsafe fn`, so the
 same register write is a contract on one architecture and an ordinary call on the other. Not fixed
