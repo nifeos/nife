@@ -133,7 +133,7 @@ Full rows: the appendices above.
 | script | what it does |
 |---|---|
 | `script/lint-fleet` | The fleet tooling's checks, apart from `script/lint`; CI runs both. |
-| `script/read-advisory <GHSA id>` | A fix lane's read of one private security advisory of a held fuzz finding, with the one-hour reader token on `NIFE_ADVISORY_READER_TOKEN`. Prints to the terminal, writes nothing, refuses without a token. `--selftest` runs it against a stub `gh`. Name provisional. |
+| `script/read-advisory <id>` | Fix lanes read one held finding's private advisory; the token comes from the environment. |
 | `script/claim <branch-name>` | Cut a lane's branch, worktree and draft pull request; sets `nife.fleet`. Push with `script/push`. `--debt-paydown` or `--new-work` ([debt-paydown.md](debt-paydown.md)). |
 | `script/preflight-queue` | Replay the merge queue locally before a group build does. |
 | `script/architect-queue`, `script/record-ruling` | calef's queue; rulings. |
