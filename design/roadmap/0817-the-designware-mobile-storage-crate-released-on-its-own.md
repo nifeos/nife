@@ -29,7 +29,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
 - `crates/designware_mobile_storage`: 2,645 code lines (3,736 with comments), written by milestone
   53 (the board's own peripherals: network and storage on real silicon), which is PARTIAL. It is
   the whole Synopsys Mobile Storage Host Controller driver (`snps,dw-mshc`) behind one small
-  `host::Registers` trait: card bring-up, SD and eMMC commands, the FIFO, partitions. It drives
+  `host::RegisterWindowAndClock` trait: card bring-up, SD and eMMC commands, the FIFO, partitions. It drives
   radon's microSD slot and eMMC socket.
 - Eight Kani harnesses in the crate, each with a falsification patch. The scratch range never
   touches a partition or sector zero. A FIFO step never overruns the FIFO or the buffer, an admitted
@@ -80,7 +80,7 @@ makes it fail at its own assertion. Each patch is at
 | An admitted range is inside the card and the address | `proofs::an_admitted_range_is_inside_the_card_and_the_address` |
 | An IDMAC chain describes exactly its bytes, inside the region | `proofs::a_chain_describes_its_bytes_inside_the_region` |
 | The MBR parse (`partition::MasterBootRecord::parse`) is total, accepts exactly the signed sectors, and reads each entry from its own bytes | `proofs::the_master_boot_record_parse_is_total_and_reads_each_entry_from_its_own_bytes` |
-| A register field (`card::bits`) never exceeds its width | `proofs::a_register_field_never_exceeds_its_width` |
+| A register field (`card::extract_bits`) never exceeds its width | `proofs::a_register_field_never_exceeds_its_width` |
 | The CSD decoders (`card::CardSpecificData`) are total for any register and size a card without overflow | `proofs::a_card_specific_data_decode_is_total_and_never_overflows` |
 | The EXT_CSD sector count (`card::extended_card_specific_data_sectors`) is total for any bytes | `proofs::an_extended_card_specific_data_sector_count_is_total` |
 
@@ -227,7 +227,7 @@ names until the ratification pass, so this section keeps the links it carried.
   uses. Milestone 53 (the board's own peripherals: network and storage on real silicon) wrote the
   crate.
 - `src/lib.rs`, the crate doc: the design is in `notes/designware-mobile-storage.md`, and
-  `kernel/src/designware_mobile_storage.rs` implements `host::Registers` over the mapped window.
+  `kernel/src/designware_mobile_storage.rs` implements `host::RegisterWindowAndClock` over the mapped window.
   That note also records why the lane did not take the crates.io candidate. The IDMAC bench step
   that the crate's BUGS waits on is the one that note describes.
 - `src/simulator.rs`, the module doc: `notes/designware-mobile-storage/driver.md` lists each behavior

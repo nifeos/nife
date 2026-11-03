@@ -13,14 +13,14 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
 | `designware_ethernet` | 100 | 81 | 19 | 12 |
-| `designware_mobile_storage` | 68 | 68 | 0 | 9 |
+| `designware_mobile_storage` | 31 | 31 | 0 | 5 |
 | `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 312 | 243 | 69 | 36 |
+| total | 275 | 206 | 69 | 32 |
 
 ## How to read a group
 
@@ -127,7 +127,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_mobile_storage`
 
-68 unratified names: 68 with no block, 0 provisional.
+31 unratified names: 31 with no block, 0 provisional.
 
 ### DM1. Module names (9)
 
@@ -136,33 +136,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify all nine. `sd` passes the acronym test (Secure Digital is a spoken phrase, but nobody says it); the rest are plain.
 
-### DM2. Host controller (13)
-
-`host::Error`, `host::Host`, `host::Identity`, `host::Registers`, `host::card_clock`, `host::clock_divider`, `host::command`, `host::into_registers`, `host::new`, `host::read`, `host::registers`, `host::reset`, `host::write`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. The register-level names inside this module were already ratified spelled out under #3092; these are the software surface around them.
-
-### DM3. Command words (9)
-
-`command::Command`, `command::Data`, `command::GO_IDLE_STATE`, `command::Response`, `command::SEND_STATUS`, `command::SWITCH`, `command::bytes`, `command::new`, `command::word`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. `GO_IDLE_STATE`, `SEND_STATUS` and `SWITCH` are the SD specification's own command names, spelled in full; OpenBSD's `sdmmcreg.h` uses the same words.
-
-### DM4. Card status (6)
-
-`card::R1_ERRORS`, `card::R1_READY_FOR_DATA`, `card::STATE_TRANSFER`, `card::bits`, `card::r1_state`, `card::sd`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. `R1` is the specification's own name for the response type, a noun with no spelled-out form.
-
-### DM5. Card access (9)
-
-`sd::BLOCK`, `sd::Card`, `sd::IoError`, `sd::Kind`, `sd::address`, `sd::identify`, `sd::in_range`, `sd::read_blocks`, `sd::write_blocks`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify all but `BLOCK`. `BLOCK` is the 512-byte size; recommend `BLOCK_BYTES` so it names its unit, as `TRANSFER_HZ` already does (ratified #3092).
 
 ### DM7. Read and write bench (7)
 

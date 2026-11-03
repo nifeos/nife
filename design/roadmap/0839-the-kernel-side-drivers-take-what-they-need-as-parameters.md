@@ -15,7 +15,7 @@ Codebase rule 2 says a driver never reaches into a kernel global: it gets a base
 DMA allocator, later an interrupt registration". The driver crates underneath already obey it.
 `crates/e1000e` takes its hardware through the `Region`, `Tails` and `pch::Hardware` traits.
 `crates/designware_ethernet` has `Hw`, `Region`, `Tails` and `Mdio`, and
-`crates/designware_mobile_storage` has `Registers`. None of them names a kernel path or keeps a
+`crates/designware_mobile_storage` has `RegisterWindowAndClock`. None of them names a kernel path or keeps a
 static. The kernel files that wire those crates to a device do not obey it. This milestone moves the
 three things they reach for into parameters: the device's base address, a DMA allocator, and an
 IOMMU handle.

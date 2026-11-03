@@ -10,10 +10,10 @@
 use crate::card::{
     self, CardIdentification, CardSpecificData, INTERFACE_CONDITION_ARGUMENT,
     MULTIMEDIA_CARD_OPERATION_CONDITIONS_ARGUMENT, OPERATION_CONDITIONS_BUSY_DONE,
-    OPERATION_CONDITIONS_HIGH_CAPACITY, R1_ERRORS, SD_OPERATION_CONDITIONS_ARGUMENT,
+    OPERATION_CONDITIONS_HIGH_CAPACITY, R1_ERROR_MASK, SD_OPERATION_CONDITIONS_ARGUMENT,
 };
 use crate::command::{self as c, Command, Data, Response};
-use crate::host::{Error, Host, Registers};
+use crate::host::{Error, HostController, RegisterWindowAndClock};
 use crate::internal_direct_memory_access::DirectMemoryAccessRegion;
 
 /// The identification clock, the spec's ceiling for it.
@@ -23,8 +23,11 @@ pub(crate) const IDENTIFY_HZ: u32 = 400_000;
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. `HZ` is the unit suffix.
 pub const TRANSFER_HZ: u32 = 25_000_000;
-/// One block.
-pub const BLOCK: usize = 512;
+/// One block, in bytes.
+///
+/// Name: ratified 2026-11-03 (UTC), #3139. Renamed from `BLOCK`, which
+/// did not say its unit; the suffix is the one `TRANSFER_HZ` uses.
+pub const BLOCK_BYTES: usize = 512;
 /// How long `ACMD41` or `CMD1` may report busy before the card is declared dead: the SD spec gives
 /// a card one second from the first `ACMD41`.
 ///
@@ -36,8 +39,11 @@ pub const POWER_UP_DEADLINE_MICROSECONDS: u64 = 1_000_000;
 pub(crate) const MULTIMEDIA_CARD_RELATIVE_CARD_ADDRESS: u16 = 1;
 
 /// What kind of card answered.
+///
+/// Name: ratified 2026-11-03 (UTC), #3139. Renamed from `Kind`, which
+/// said nothing outside its module; the name now says it is the kind of a card.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Kind {
+pub enum CardKind {
     /// SD 1.x, standard capacity, byte addressed.
     SdV1,
     /// SD 2.0 or later, standard capacity, byte addressed.
@@ -77,10 +83,12 @@ pub enum InitializationError {
 }
 
 /// A card that is selected and in the transfer state.
+///
+/// Name: ratified 2026-11-03 (UTC), #3139.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Card {
     /// Which kind.
-    pub kind: Kind,
+    pub kind: CardKind,
     /// Its relative card address (RCA).
     #[doc(alias = "rca")]
     pub relative_card_address: u16,
@@ -108,12 +116,15 @@ pub struct Card {
 
 impl Card {
     /// The command argument that addresses block `logical_block_address`.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3139. Renamed from
+    /// `address`, which did not say it is the argument of a command that addresses a block.
     #[must_use]
-    pub const fn address(&self, logical_block_address: u64) -> u32 {
+    pub const fn block_address_argument(&self, logical_block_address: u64) -> u32 {
         if self.block_addressed {
             logical_block_address as u32
         } else {
-            (logical_block_address * BLOCK as u64) as u32
+            (logical_block_address * BLOCK_BYTES as u64) as u32
         }
     }
 
@@ -123,7 +134,7 @@ impl Card {
 }
 
 fn r1_ok(index: u8, r1: u32) -> Result<(), InitializationError> {
-    if r1 & R1_ERRORS != 0 {
+    if r1 & R1_ERROR_MASK != 0 {
         Err(InitializationError::Status(index, r1))
     } else {
         Ok(())
@@ -134,11 +145,13 @@ fn r1_ok(index: u8, r1: u32) -> Result<(), InitializationError> {
 /// [`TRANSFER_HZ`]. `maximum_bus_width` is the tree's `bus-width` for the slot (4 on radon's SD
 /// slot, 8 on its eMMC slot).
 ///
+/// Name: ratified 2026-11-03 (UTC), #3139.
+///
 /// # Errors
 ///
 /// The step that failed; see [`InitializationError`].
-pub fn identify<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+pub fn identify<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
     maximum_bus_width: u8,
 ) -> Result<Card, InitializationError> {
     let v2 = go_idle_and_check_interface(host)?;
@@ -152,29 +165,31 @@ pub fn identify<R: Registers, D: DirectMemoryAccessRegion>(
         operation_conditions,
         card_identification_raw,
         card_specific_data_raw,
-        card_identification: if kind == Kind::MultimediaCard {
+        card_identification: if kind == CardKind::MultimediaCard {
             CardIdentification::multimedia_card(&card_identification_raw)
         } else {
-            CardIdentification::sd(&card_identification_raw)
+            CardIdentification::from_sd_register(&card_identification_raw)
         },
         blocks: 0,
         block_addressed: match kind {
-            Kind::SdHighCapacity => true,
-            Kind::MultimediaCard => operation_conditions & OPERATION_CONDITIONS_HIGH_CAPACITY != 0,
+            CardKind::SdHighCapacity => true,
+            CardKind::MultimediaCard => {
+                operation_conditions & OPERATION_CONDITIONS_HIGH_CAPACITY != 0
+            }
             _ => false,
         },
         bus_width: 1,
         clock_hz: 0,
     };
 
-    if kind == Kind::MultimediaCard {
+    if kind == CardKind::MultimediaCard {
         configure_multimedia_card(host, &mut card, &card_specific_data_raw)?;
     } else {
         configure_sd(host, &mut card, &card_specific_data_raw, maximum_bus_width)?;
     }
     if card.blocks == 0 {
         return Err(InitializationError::Capacity(
-            CardSpecificData::sd(&card_specific_data_raw).structure,
+            CardSpecificData::from_sd_register(&card_specific_data_raw).structure,
         ));
     }
     Ok(card)
@@ -182,8 +197,8 @@ pub fn identify<R: Registers, D: DirectMemoryAccessRegion>(
 
 /// Steps 1 and 2: reset the controller at the identification clock, `CMD0`, then `CMD8`. Returns
 /// whether the card echoed the check pattern (SD 2.0 or later).
-fn go_idle_and_check_interface<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+fn go_idle_and_check_interface<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
 ) -> Result<bool, InitializationError> {
     host.reset().map_err(InitializationError::Controller)?;
     host.power_on();
@@ -191,10 +206,10 @@ fn go_idle_and_check_interface<R: Registers, D: DirectMemoryAccessRegion>(
         .map_err(InitializationError::Controller)?;
     host.set_bus_width(1);
 
-    host.command(&Command::new(c::GO_IDLE_STATE, 0, Response::None))
+    host.send_command(&Command::new(c::GO_IDLE_STATE, 0, Response::None))
         .map_err(InitializationError::GoIdle)?;
 
-    let v2 = match host.command(&Command::new(
+    let v2 = match host.send_command(&Command::new(
         c::SEND_IF_COND,
         INTERFACE_CONDITION_ARGUMENT,
         Response::R7,
@@ -209,27 +224,27 @@ fn go_idle_and_check_interface<R: Registers, D: DirectMemoryAccessRegion>(
 
 /// Step 3: `ACMD41` until the card is powered up, or `CMD1` for an eMMC. Returns which kind of card
 /// answered and its OCR.
-fn power_up<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+fn power_up<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
     v2: bool,
-) -> Result<(Kind, u32), InitializationError> {
+) -> Result<(CardKind, u32), InitializationError> {
     let (kind, operation_conditions) = match sd_power_up(host, v2) {
         Ok(operation_conditions) => {
             let kind = if operation_conditions & OPERATION_CONDITIONS_HIGH_CAPACITY != 0 {
-                Kind::SdHighCapacity
+                CardKind::SdHighCapacity
             } else if v2 {
-                Kind::SdV2
+                CardKind::SdV2
             } else {
-                Kind::SdV1
+                CardKind::SdV1
             };
             (kind, operation_conditions)
         }
         // No answer to CMD55: not an SD card. An eMMC, or nothing. CMD0 again first, since a
         // failed ACMD may have left a card confused about whether it is in application mode.
         Err(InitializationError::NoCard(_)) if !v2 => {
-            host.command(&Command::new(c::GO_IDLE_STATE, 0, Response::None))
+            host.send_command(&Command::new(c::GO_IDLE_STATE, 0, Response::None))
                 .map_err(InitializationError::GoIdle)?;
-            (Kind::MultimediaCard, multimedia_card_power_up(host)?)
+            (CardKind::MultimediaCard, multimedia_card_power_up(host)?)
         }
         Err(e) => return Err(e),
     };
@@ -238,17 +253,17 @@ fn power_up<R: Registers, D: DirectMemoryAccessRegion>(
 
 /// Step 4: `CMD2` for the CID, `CMD3` for the relative address, `CMD9` for the CSD, `CMD7` to
 /// select. Returns the raw CID, the address and the raw CSD.
-fn address_and_select<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
-    kind: Kind,
+fn address_and_select<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
+    kind: CardKind,
 ) -> Result<([u32; 4], u16, [u32; 4]), InitializationError> {
     let card_identification_raw = host
-        .command(&Command::new(c::ALL_SEND_CID, 0, Response::R2))
+        .send_command(&Command::new(c::ALL_SEND_CID, 0, Response::R2))
         .map_err(|e| InitializationError::Identify(c::ALL_SEND_CID, e))?;
 
-    let relative_card_address = if kind == Kind::MultimediaCard {
+    let relative_card_address = if kind == CardKind::MultimediaCard {
         let r1 = host
-            .command(&Command::new(
+            .send_command(&Command::new(
                 c::SEND_RELATIVE_ADDR,
                 u32::from(MULTIMEDIA_CARD_RELATIVE_CARD_ADDRESS) << 16,
                 Response::R1,
@@ -258,13 +273,13 @@ fn address_and_select<R: Registers, D: DirectMemoryAccessRegion>(
         MULTIMEDIA_CARD_RELATIVE_CARD_ADDRESS
     } else {
         let r6 = host
-            .command(&Command::new(c::SEND_RELATIVE_ADDR, 0, Response::R6))
+            .send_command(&Command::new(c::SEND_RELATIVE_ADDR, 0, Response::R6))
             .map_err(|e| InitializationError::Identify(c::SEND_RELATIVE_ADDR, e))?;
         (r6[0] >> 16) as u16
     };
 
     let card_specific_data_raw = host
-        .command(&Command::new(
+        .send_command(&Command::new(
             c::SEND_CSD,
             u32::from(relative_card_address) << 16,
             Response::R2,
@@ -272,7 +287,7 @@ fn address_and_select<R: Registers, D: DirectMemoryAccessRegion>(
         .map_err(|e| InitializationError::Identify(c::SEND_CSD, e))?;
 
     let r1 = host
-        .command(&Command::new(
+        .send_command(&Command::new(
             c::SELECT_CARD,
             u32::from(relative_card_address) << 16,
             Response::R1b,
@@ -289,8 +304,8 @@ fn address_and_select<R: Registers, D: DirectMemoryAccessRegion>(
 }
 
 /// Steps 5 and 6 for an eMMC: the transfer clock, then `EXT_CSD` for the true sector count.
-fn configure_multimedia_card<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+fn configure_multimedia_card<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
     card: &mut Card,
     card_specific_data_raw: &[u32; 4],
 ) -> Result<(), InitializationError> {
@@ -300,19 +315,19 @@ fn configure_multimedia_card<R: Registers, D: DirectMemoryAccessRegion>(
     card.clock_hz = host
         .set_clock(TRANSFER_HZ)
         .map_err(|e| InitializationError::Configure(c::SEND_IF_COND, e))?;
-    let mut ext = [0u8; BLOCK];
+    let mut ext = [0u8; BLOCK_BYTES];
     let command = Command::with_data(
         c::SEND_IF_COND,
         0,
         Response::R1,
         Data {
-            block_size: BLOCK as u32,
+            block_size: BLOCK_BYTES as u32,
             blocks: 1,
-            write: false,
+            is_write: false,
         },
     );
     let r1 = host
-        .read(&command, &mut ext)
+        .read_data(&command, &mut ext)
         .map_err(|e| InitializationError::Configure(c::SEND_IF_COND, e))?;
     r1_ok(c::SEND_IF_COND, r1[0])?;
     // Above 2 GB the CSD's size is a placeholder; EXT_CSD's count is the truth.
@@ -325,13 +340,13 @@ fn configure_multimedia_card<R: Registers, D: DirectMemoryAccessRegion>(
 
 /// Steps 5 and 6 for an SD card: the capacity from the CSD, `ACMD6` to 4-bit if the slot allows,
 /// `CMD16` to 512 bytes, then the transfer clock.
-fn configure_sd<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+fn configure_sd<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
     card: &mut Card,
     card_specific_data_raw: &[u32; 4],
     maximum_bus_width: u8,
 ) -> Result<(), InitializationError> {
-    let card_specific_data = CardSpecificData::sd(card_specific_data_raw);
+    let card_specific_data = CardSpecificData::from_sd_register(card_specific_data_raw);
     if card_specific_data.blocks == 0 {
         return Err(InitializationError::Capacity(card_specific_data.structure));
     }
@@ -339,14 +354,18 @@ fn configure_sd<R: Registers, D: DirectMemoryAccessRegion>(
     if maximum_bus_width >= 4 {
         app_command(host, card)?;
         let r1 = host
-            .command(&Command::new(c::SET_BUS_WIDTH, 2, Response::R1))
+            .send_command(&Command::new(c::SET_BUS_WIDTH, 2, Response::R1))
             .map_err(|e| InitializationError::Configure(c::SET_BUS_WIDTH, e))?;
         r1_ok(c::SET_BUS_WIDTH, r1[0])?;
         host.set_bus_width(4);
         card.bus_width = 4;
     }
     let r1 = host
-        .command(&Command::new(c::SET_BLOCKLEN, BLOCK as u32, Response::R1))
+        .send_command(&Command::new(
+            c::SET_BLOCKLEN,
+            BLOCK_BYTES as u32,
+            Response::R1,
+        ))
         .map_err(|e| InitializationError::Configure(c::SET_BLOCKLEN, e))?;
     r1_ok(c::SET_BLOCKLEN, r1[0])?;
     card.clock_hz = host
@@ -355,12 +374,12 @@ fn configure_sd<R: Registers, D: DirectMemoryAccessRegion>(
     Ok(())
 }
 
-fn app_command<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+fn app_command<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
     card: &Card,
 ) -> Result<(), InitializationError> {
     let r1 = host
-        .command(&Command::new(
+        .send_command(&Command::new(
             c::APP_CMD,
             card.relative_card_address_argument(),
             Response::R1,
@@ -369,8 +388,8 @@ fn app_command<R: Registers, D: DirectMemoryAccessRegion>(
     r1_ok(c::APP_CMD, r1[0])
 }
 
-fn sd_power_up<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+fn sd_power_up<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
     v2: bool,
 ) -> Result<u32, InitializationError> {
     let argument = if v2 {
@@ -378,30 +397,31 @@ fn sd_power_up<R: Registers, D: DirectMemoryAccessRegion>(
     } else {
         SD_OPERATION_CONDITIONS_ARGUMENT & !OPERATION_CONDITIONS_HIGH_CAPACITY
     };
-    let start = host.registers().now_microseconds();
+    let start = host.registers_mut().now_microseconds();
     loop {
-        host.command(&Command::new(c::APP_CMD, 0, Response::R1))
+        host.send_command(&Command::new(c::APP_CMD, 0, Response::R1))
             .map_err(InitializationError::NoCard)?;
         let operation_conditions = host
-            .command(&Command::new(c::SD_SEND_OP_COND, argument, Response::R3))
+            .send_command(&Command::new(c::SD_SEND_OP_COND, argument, Response::R3))
             .map_err(InitializationError::NoCard)?[0];
         if operation_conditions & OPERATION_CONDITIONS_BUSY_DONE != 0 {
             return Ok(operation_conditions);
         }
-        if host.registers().now_microseconds().wrapping_sub(start) > POWER_UP_DEADLINE_MICROSECONDS
+        if host.registers_mut().now_microseconds().wrapping_sub(start)
+            > POWER_UP_DEADLINE_MICROSECONDS
         {
             return Err(InitializationError::PowerUp(operation_conditions));
         }
     }
 }
 
-fn multimedia_card_power_up<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+fn multimedia_card_power_up<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
 ) -> Result<u32, InitializationError> {
-    let start = host.registers().now_microseconds();
+    let start = host.registers_mut().now_microseconds();
     loop {
         let operation_conditions = host
-            .command(&Command::new(
+            .send_command(&Command::new(
                 c::SEND_OP_COND,
                 MULTIMEDIA_CARD_OPERATION_CONDITIONS_ARGUMENT,
                 Response::R3,
@@ -410,7 +430,8 @@ fn multimedia_card_power_up<R: Registers, D: DirectMemoryAccessRegion>(
         if operation_conditions & OPERATION_CONDITIONS_BUSY_DONE != 0 {
             return Ok(operation_conditions);
         }
-        if host.registers().now_microseconds().wrapping_sub(start) > POWER_UP_DEADLINE_MICROSECONDS
+        if host.registers_mut().now_microseconds().wrapping_sub(start)
+            > POWER_UP_DEADLINE_MICROSECONDS
         {
             return Err(InitializationError::PowerUp(operation_conditions));
         }
@@ -418,8 +439,11 @@ fn multimedia_card_power_up<R: Registers, D: DirectMemoryAccessRegion>(
 }
 
 /// Why a block transfer was refused or failed.
+///
+/// Name: ratified 2026-11-03 (UTC), #3139. Renamed from `IoError`, which
+/// covers only block transfers and not the other input and output a card does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum IoError {
+pub enum BlockTransferError {
     /// The buffer is empty or not a whole number of blocks.
     Length,
     /// The range runs past the card's end (or past what a 32-bit address reaches).
@@ -432,8 +456,11 @@ pub enum IoError {
 
 /// **Can `count` blocks from `logical_block_address` be addressed on `card`?** Inside the card, and
 /// (on a byte-addressed card) inside the four gigabytes a 32-bit byte address reaches.
+///
+/// Name: ratified 2026-11-03 (UTC), #3139. Renamed from `in_range`, to
+/// state the yes or no question it answers.
 #[must_use]
-pub const fn in_range(
+pub const fn can_address_blocks(
     card_blocks: u64,
     block_addressed: bool,
     logical_block_address: u64,
@@ -448,7 +475,7 @@ pub const fn in_range(
     if block_addressed {
         end <= 1 << 32
     } else {
-        end <= (1 << 32) / BLOCK as u64
+        end <= (1 << 32) / BLOCK_BYTES as u64
     }
 }
 
@@ -461,30 +488,30 @@ fn data_command(card: &Card, logical_block_address: u64, blocks: u32, write: boo
     };
     Command::with_data(
         index,
-        card.address(logical_block_address),
+        card.block_address_argument(logical_block_address),
         Response::R1,
         Data {
-            block_size: BLOCK as u32,
+            block_size: BLOCK_BYTES as u32,
             blocks,
-            write,
+            is_write: write,
         },
     )
 }
 
-fn check(len: usize, card: &Card, logical_block_address: u64) -> Result<u32, IoError> {
-    if len == 0 || !len.is_multiple_of(BLOCK) {
-        return Err(IoError::Length);
+fn check(len: usize, card: &Card, logical_block_address: u64) -> Result<u32, BlockTransferError> {
+    if len == 0 || !len.is_multiple_of(BLOCK_BYTES) {
+        return Err(BlockTransferError::Length);
     }
-    let blocks = (len / BLOCK) as u64;
-    if blocks > u64::from(u32::MAX) / BLOCK as u64
-        || !in_range(
+    let blocks = (len / BLOCK_BYTES) as u64;
+    if blocks > u64::from(u32::MAX) / BLOCK_BYTES as u64
+        || !can_address_blocks(
             card.blocks,
             card.block_addressed,
             logical_block_address,
             blocks,
         )
     {
-        return Err(IoError::Range);
+        return Err(BlockTransferError::Range);
     }
     Ok(blocks as u32)
 }
@@ -492,25 +519,27 @@ fn check(len: usize, card: &Card, logical_block_address: u64) -> Result<u32, IoE
 /// **Read whole blocks from `logical_block_address` into `buffer`**, one command: `CMD17` for one
 /// block, `CMD18` with the automatic stop for more.
 ///
+/// Name: ratified 2026-11-03 (UTC), #3139.
+///
 /// # Errors
 ///
-/// [`IoError::Length`] or [`IoError::Range`] before anything is sent; otherwise what the
+/// [`BlockTransferError::Length`] or [`BlockTransferError::Range`] before anything is sent; otherwise what the
 /// controller or the card reported.
-pub fn read_blocks<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+pub fn read_blocks<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
     card: &Card,
     logical_block_address: u64,
     buffer: &mut [u8],
-) -> Result<(), IoError> {
+) -> Result<(), BlockTransferError> {
     let blocks = check(buffer.len(), card, logical_block_address)?;
     let r1 = host
-        .read(
+        .read_data(
             &data_command(card, logical_block_address, blocks, false),
             buffer,
         )
-        .map_err(IoError::Host)?;
-    if r1[0] & R1_ERRORS != 0 {
-        return Err(IoError::Status(r1[0]));
+        .map_err(BlockTransferError::Host)?;
+    if r1[0] & R1_ERROR_MASK != 0 {
+        return Err(BlockTransferError::Status(r1[0]));
     }
     Ok(())
 }
@@ -518,36 +547,38 @@ pub fn read_blocks<R: Registers, D: DirectMemoryAccessRegion>(
 /// **Write whole blocks from `buffer` at `logical_block_address`**, one command: `CMD24` or
 /// `CMD25`, then wait for the card to finish programming.
 ///
+/// Name: ratified 2026-11-03 (UTC), #3139.
+///
 /// # Errors
 ///
 /// As [`read_blocks`].
-pub fn write_blocks<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+pub fn write_blocks<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
     card: &Card,
     logical_block_address: u64,
     buffer: &[u8],
-) -> Result<(), IoError> {
+) -> Result<(), BlockTransferError> {
     let blocks = check(buffer.len(), card, logical_block_address)?;
     let r1 = host
-        .write(
+        .write_data(
             &data_command(card, logical_block_address, blocks, true),
             buffer,
         )
-        .map_err(IoError::Host)?;
-    if r1[0] & R1_ERRORS != 0 {
-        return Err(IoError::Status(r1[0]));
+        .map_err(BlockTransferError::Host)?;
+    if r1[0] & R1_ERROR_MASK != 0 {
+        return Err(BlockTransferError::Status(r1[0]));
     }
     // The card has the data; ask whether it took it (a write error is reported in the status
     // after the transfer, not in the R1 that started it).
     let status = host
-        .command(&Command::new(
+        .send_command(&Command::new(
             c::SEND_STATUS,
             card.relative_card_address_argument(),
             Response::R1,
         ))
-        .map_err(IoError::Host)?[0];
-    if status & R1_ERRORS != 0 {
-        return Err(IoError::Status(status));
+        .map_err(BlockTransferError::Host)?[0];
+    if status & R1_ERROR_MASK != 0 {
+        return Err(BlockTransferError::Status(status));
     }
     Ok(())
 }
@@ -558,12 +589,12 @@ mod tests {
 
     fn card(blocks: u64, block_addressed: bool) -> Card {
         Card {
-            kind: Kind::SdHighCapacity,
+            kind: CardKind::SdHighCapacity,
             relative_card_address: 1,
             operation_conditions: 0,
             card_identification_raw: [0; 4],
             card_specific_data_raw: [0; 4],
-            card_identification: CardIdentification::sd(&[0; 4]),
+            card_identification: CardIdentification::from_sd_register(&[0; 4]),
             blocks,
             block_addressed,
             bus_width: 4,
@@ -573,9 +604,9 @@ mod tests {
 
     #[test]
     fn the_last_block_is_in_range_and_the_one_after_it_is_not() {
-        assert!(in_range(10, true, 9, 1));
-        assert!(!in_range(10, true, 9, 2));
-        assert!(!in_range(10, true, 10, 1));
+        assert!(can_address_blocks(10, true, 9, 1));
+        assert!(!can_address_blocks(10, true, 9, 2));
+        assert!(!can_address_blocks(10, true, 10, 1));
     }
 
     /// One command moves at most `u32::MAX / 512` blocks, because `BYTCNT` is a 32-bit byte count.
@@ -583,11 +614,17 @@ mod tests {
     #[test]
     fn one_command_moves_no_more_blocks_than_a_32_bit_byte_count_holds() {
         let huge = card(1 << 40, true);
-        let most = (u32::MAX / BLOCK as u32) as usize;
+        let most = (u32::MAX / BLOCK_BYTES as u32) as usize;
         assert_eq!(most, 8_388_607);
-        assert_eq!(check(most * BLOCK, &huge, 0), Ok(most as u32));
-        assert_eq!(check((most + 1) * BLOCK, &huge, 0), Err(IoError::Range));
-        assert_eq!(check((most + 2) * BLOCK, &huge, 0), Err(IoError::Range));
-        assert_eq!(check(512 * BLOCK, &huge, 0), Ok(512));
+        assert_eq!(check(most * BLOCK_BYTES, &huge, 0), Ok(most as u32));
+        assert_eq!(
+            check((most + 1) * BLOCK_BYTES, &huge, 0),
+            Err(BlockTransferError::Range)
+        );
+        assert_eq!(
+            check((most + 2) * BLOCK_BYTES, &huge, 0),
+            Err(BlockTransferError::Range)
+        );
+        assert_eq!(check(512 * BLOCK_BYTES, &huge, 0), Ok(512));
     }
 }
