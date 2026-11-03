@@ -124,7 +124,7 @@ pub(crate) struct Report {
 impl Report {
     fn new(e: &crate::memory::Jh7110Ethernet) -> Report {
         Report {
-            base: e.port.base,
+            base: e.port.registers_physical_address,
             compatible: e.port.compatible,
             windows_from_tree: e.aon.from_tree && e.sys.from_tree && e.syscon.from_tree,
             sys: crg::BringUpReport::default(),
@@ -187,7 +187,8 @@ pub fn bring_up() -> Result<Found, Absent> {
     let (handoff, link) = outcome.map_err(Absent::Refused)?;
     Ok(Found {
         handoff,
-        dma_page: e.port.base + u64::from(registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
+        dma_page: e.port.registers_physical_address
+            + u64::from(registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
         link,
     })
 }
@@ -239,7 +240,7 @@ fn run(
         r.syscon = (before, core::ptr::read_volatile(syscon));
     }
 
-    let mut w = Window(mmu::phys_to_virt(e.port.base));
+    let mut w = Window(mmu::phys_to_virt(e.port.registers_physical_address));
     let id = Identity::read(&mut w);
     r.version = id.version;
     r.direct_memory_access_address_bits = id.direct_memory_access_address_bits();
@@ -280,7 +281,8 @@ fn run(
     let _ = controller::stop(&mut w);
     r.resets_microseconds[1] = controller::soft_reset(&mut w).map_err(Error::Controller)?;
     zero(region);
-    controller::configure(&mut w, &id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
+    controller::configure(&mut w, &id, &jh7110::BUS_CONFIGURATION, region, mac)
+        .map_err(Error::Controller)?;
 
     let link = wait_for_link(&mut w, e, r)?;
     Ok((
@@ -375,7 +377,8 @@ fn probe(
     r: &mut Report,
 ) -> Result<cache_coherence::Verdict, Error> {
     zero(region);
-    controller::configure(w, id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
+    controller::configure(w, id, &jh7110::BUS_CONFIGURATION, region, mac)
+        .map_err(Error::Controller)?;
     let loopback = Link {
         speed: Speed::Thousand,
         full_duplex: true,
@@ -406,9 +409,10 @@ fn region() -> Result<u64, Error> {
     if base != 0 {
         return Ok(base);
     }
-    let base = crate::memory::alloc_contiguous_zeroed(layout::PAGES as usize)
-        .ok_or(Error::NoRegion)?
-        .addr();
+    let base =
+        crate::memory::alloc_contiguous_zeroed(layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as usize)
+            .ok_or(Error::NoRegion)?
+            .addr();
     REGION.store(base, Ordering::Release);
     Ok(base)
 }
@@ -416,14 +420,14 @@ fn region() -> Result<u64, Error> {
 /// Zero the region. A stale descriptor from the probe, or a previous wiring, would otherwise read
 /// as a received frame.
 fn zero(region: u64) {
-    // SAFETY: `region` is the run `region` allocated, `layout::BYTES` long, in the direct map. The
+    // SAFETY: `region` is the run `region` allocated, `layout::DIRECT_MEMORY_ACCESS_REGION_BYTES` long, in the direct map. The
     // controller was reset (or is about to be configured with nothing available) so it is not
     // writing it, and the service refuses a new wiring while a previous process lives.
     unsafe {
         core::ptr::write_bytes(
             mmu::phys_to_virt(region) as *mut u8,
             0,
-            layout::BYTES as usize,
+            layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize,
         );
     }
 }
@@ -474,7 +478,7 @@ struct Plane(u64);
 
 impl Plane {
     fn at(&self, off: u64, len: usize) -> u64 {
-        assert!(off + len as u64 <= layout::BYTES);
+        assert!(off + len as u64 <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES);
         self.0 + off
     }
 }

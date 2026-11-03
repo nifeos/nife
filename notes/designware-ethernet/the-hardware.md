@@ -40,7 +40,7 @@ TRNG, so a working driver never runs)'s correction). The two describe the same c
 | interface select | not in the tree: board code writes `AON_SYSCON_BASE + AON_SYSCFG_12`, bits `0x1c0000` | `starfive,syscon = <&aon_syscon 0xc 0x12>` |
 
 Both say `0x1603_0000` and `0x1604_0000`, `phy-mode = "rgmii-id"`, interrupts 7 and 78, and the
-same AXI configuration (`jh7110::BUS`). `jh7110.rs` follows OpenBSD's `if_dwqe_fdt.c`
+same AXI configuration (`jh7110::BUS_CONFIGURATION`). `jh7110.rs` follows OpenBSD's `if_dwqe_fdt.c`
 (`dwqe_fdt_attach`, `dwqe_setup_jh7110`). The controller's address picks the port, the `phy-mode`
 picks the interface select, and the PHY's node supplies its delays.
 

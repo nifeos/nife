@@ -83,7 +83,6 @@ pub mod jh7110;
 pub mod management_data_input_output;
 pub mod motorcomm_physical_layer_device;
 pub mod network_interface_controller;
-#[doc(alias = "regs")]
 pub mod registers;
 #[cfg(test)]
 mod simulator;

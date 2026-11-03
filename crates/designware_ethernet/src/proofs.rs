@@ -28,7 +28,7 @@ fn every_ring_offset_is_inside_the_region() {
     assert!(layout::receive_descriptor(i) + DESCRIPTOR_BYTES <= layout::TRANSMIT_RING);
     assert!(layout::transmit_descriptor(i) + DESCRIPTOR_BYTES <= layout::RECEIVE_BUFFERS);
     assert!(layout::receive_buffer(i) + BUFFER_SIZE <= layout::TRANSMIT_BUFFERS);
-    assert!(layout::transmit_buffer(i) + BUFFER_SIZE <= layout::BYTES);
+    assert!(layout::transmit_buffer(i) + BUFFER_SIZE <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES);
 }
 
 /// **Whatever the PHY answers, the link decode returns a link only the registers justify.** All
