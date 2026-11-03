@@ -19,7 +19,9 @@ use designware_mobile_storage::internal_direct_memory_access::{
 };
 use designware_mobile_storage::jh7110::Slot;
 use designware_mobile_storage::registers;
-use designware_mobile_storage::sd::{self, BLOCK, InitializationError, IoError, Kind};
+use designware_mobile_storage::sd::{
+    self, BLOCK_BYTES, BlockTransferError, CardKind, InitializationError,
+};
 
 use crate::designware_mobile_storage::{Region, Window};
 use crate::{arch, println};
@@ -105,7 +107,7 @@ enum Outcome {
     /// Identification stopped: no card, or a card that did not finish.
     NoCard(InitializationError),
     /// A read failed: the block and the error.
-    ReadFailed(u64, IoError),
+    ReadFailed(u64, BlockTransferError),
     /// Read-only, and every polled read succeeded: the timed rate in KiB/s, and the IDMAC phase.
     ReadOk(u64, Dma),
     /// Read, then the scratch write test: the rate, the test's verdict, and the IDMAC phase.
@@ -442,7 +444,7 @@ fn through_el0(slot: &Slot, r: &ReadReport, write: bool) -> El0 {
             blk::BLOCK_SIZE,
         )
     };
-    if call(blk::SIZE, 0) != (window.sectors * BLOCK as u64) as i64 {
+    if call(blk::SIZE, 0) != (window.sectors * BLOCK_BYTES as u64) as i64 {
         return El0::Wrong("SIZE", call(blk::SIZE, 0));
     }
     let past = window.sectors / 8;
@@ -514,7 +516,7 @@ fn write_cycle_checks(
     let mut original = [0u8; blk::BLOCK_SIZE];
     original.copy_from_slice(shared);
     for (i, b) in shared.iter_mut().enumerate() {
-        *b = bench::pattern(window.first + (i / BLOCK) as u64, i % BLOCK) ^ 0xff;
+        *b = bench::pattern(window.first + (i / BLOCK_BYTES) as u64, i % BLOCK_BYTES) ^ 0xff;
     }
     let got = call(blk::WRITE, 0);
     if got != 1 {
@@ -522,10 +524,9 @@ fn write_cycle_checks(
     }
     shared.fill(0);
     let got = call(blk::READ, 0);
-    let intact = shared
-        .iter()
-        .enumerate()
-        .all(|(i, &b)| b == bench::pattern(window.first + (i / BLOCK) as u64, i % BLOCK) ^ 0xff);
+    let intact = shared.iter().enumerate().all(|(i, &b)| {
+        b == bench::pattern(window.first + (i / BLOCK_BYTES) as u64, i % BLOCK_BYTES) ^ 0xff
+    });
     shared.copy_from_slice(&original);
     let restored = call(blk::WRITE, 0);
     if got != 1 || !intact {
@@ -584,13 +585,13 @@ fn print_read(slot: &Slot, r: &ReadReport) {
         core::str::from_utf8(&name).unwrap_or("?"),
         c.card_identification.serial,
         c.blocks,
-        c.blocks * BLOCK as u64 / (1 << 20),
+        c.blocks * BLOCK_BYTES as u64 / (1 << 20),
         if c.block_addressed { "block" } else { "byte" },
         c.bus_width,
         c.clock_hz,
         c.operation_conditions,
     );
-    if c.kind == Kind::MultimediaCard {
+    if c.kind == CardKind::MultimediaCard {
         say!(
             slot,
             "an eMMC answered; this boot reads it and never writes it"
@@ -632,12 +633,12 @@ fn print_read(slot: &Slot, r: &ReadReport) {
         r.timed_blocks,
         r.timed_microseconds,
         kib_per_second(r.timed_blocks, r.timed_microseconds),
-        READ_PAGES * 4096 / BLOCK,
+        READ_PAGES * 4096 / BLOCK_BYTES,
     );
 }
 
 fn kib_per_second(blocks: u64, microseconds: u64) -> u64 {
-    (blocks * BLOCK as u64 * 1_000_000)
+    (blocks * BLOCK_BYTES as u64 * 1_000_000)
         .checked_div(microseconds)
         .unwrap_or(0)
         / 1024
@@ -703,7 +704,7 @@ fn through_idmac(
         "timed read: {} blocks in {} us, {kib} KiB/s ({} blocks per command, IDMAC); the first {} KiB {} the polled read",
         report.timed_blocks,
         report.timed_microseconds,
-        READ_PAGES * 4096 / BLOCK,
+        READ_PAGES * 4096 / BLOCK_BYTES,
         READ_PAGES * 4,
         if report.matches {
             "match"

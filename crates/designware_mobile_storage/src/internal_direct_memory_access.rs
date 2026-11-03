@@ -403,7 +403,7 @@ mod tests {
     use std::vec::Vec;
 
     use super::*;
-    use crate::sd::{self, Card, IoError};
+    use crate::sd::{self, BlockTransferError, Card};
     use crate::simulator::{CardKind, Memory, Sim};
 
     /// A bus address with high bits set, so an offset taken as an address shows.
@@ -561,11 +561,11 @@ mod tests {
         let mut big = vec![0u8; 17 * 512];
         assert_eq!(
             sd::read_blocks(&mut h, &card, 0, &mut big),
-            Err(IoError::Host(Error::BufferSize))
+            Err(BlockTransferError::Host(Error::BufferSize))
         );
         assert_eq!(
             sd::write_blocks(&mut h, &card, 0, &big),
-            Err(IoError::Host(Error::BufferSize))
+            Err(BlockTransferError::Host(Error::BufferSize))
         );
         assert!(h.registers().commands.is_empty());
     }
@@ -601,7 +601,7 @@ mod tests {
             inject(h.registers());
             let mut back = vec![0u8; 9 * 512];
             match sd::read_blocks(&mut h, &card, 60, &mut back) {
-                Err(IoError::Host(e)) => assert!(expected(&e), "{e:?}"),
+                Err(BlockTransferError::Host(e)) => assert!(expected(&e), "{e:?}"),
                 other => panic!("{other:?}"),
             }
             let sim = h.registers();
@@ -646,7 +646,7 @@ mod tests {
             .expect("the deadline never fired");
         assert!(matches!(
             r,
-            Err(IoError::Host(Error::DataTimeout(18, _, 4608)))
+            Err(BlockTransferError::Host(Error::DataTimeout(18, _, 4608)))
         ));
         assert_eq!(bmod & registers::BUS_MODE_DE, 0);
     }
@@ -758,7 +758,7 @@ mod tests {
             h.registers().commands.clear();
             let mut block = [0u8; 512];
             match sd::read_blocks(&mut h, &card, 7, &mut block) {
-                Err(IoError::Host(Error::ResetStuck(w))) => assert!(word(w), "{w:#x}"),
+                Err(BlockTransferError::Host(Error::ResetStuck(w))) => assert!(word(w), "{w:#x}"),
                 other => panic!("{other:?}"),
             }
             assert_eq!(h.registers().commands.iter().any(|c| c.0 == 17), sent);

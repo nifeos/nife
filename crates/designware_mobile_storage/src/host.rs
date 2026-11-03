@@ -639,7 +639,7 @@ mod tests {
     use std::vec::Vec;
 
     use crate::command::{Command, Data, Response, SEND_IF_COND, WRITE_BLOCK};
-    use crate::sd::{self, IoError};
+    use crate::sd::{self, BlockTransferError};
     use crate::simulator::{CardKind, Fault, Sim};
 
     fn take(sim: Sim) -> Host<Sim> {
@@ -806,7 +806,7 @@ mod tests {
         h.registers().reset_stuck = true;
         assert!(matches!(
             sd::read_blocks(&mut h, &card, 1, &mut block),
-            Err(IoError::Host(Error::ResetStuck(_)))
+            Err(BlockTransferError::Host(Error::ResetStuck(_)))
         ));
     }
 
@@ -840,14 +840,14 @@ mod tests {
         let mut block = [0u8; 512];
         assert!(matches!(
             sd::read_blocks(&mut h, &card, 1, &mut block),
-            Err(IoError::Host(Error::DataTimeout(17, _, 384)))
+            Err(BlockTransferError::Host(Error::DataTimeout(17, _, 384)))
         ));
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers().stall_after = Some(128);
         assert!(matches!(
             sd::write_blocks(&mut h, &card, 1, &block),
-            Err(IoError::Host(Error::DataTimeout(24, _, 256)))
+            Err(BlockTransferError::Host(Error::DataTimeout(24, _, 256)))
         ));
     }
 
@@ -865,7 +865,7 @@ mod tests {
         });
         assert!(matches!(
             r,
-            Err(IoError::Host(Error::DataTimeout(17, _, 384)))
+            Err(BlockTransferError::Host(Error::DataTimeout(17, _, 384)))
         ));
     }
 
@@ -894,7 +894,7 @@ mod tests {
         let start = h.registers().now_microseconds();
         assert!(matches!(
             sd::write_blocks(&mut h, &card, 1, &[0u8; 512]),
-            Err(IoError::Host(Error::Data(24, rint))) if rint & registers::RINTSTS_DCRC != 0
+            Err(BlockTransferError::Host(Error::Data(24, rint))) if rint & registers::RINTSTS_DCRC != 0
         ));
         assert!(h.registers().now_microseconds() - start < DATA_DEADLINE_MICROSECONDS);
     }
@@ -909,7 +909,7 @@ mod tests {
         let mut block = [0u8; 512];
         assert!(matches!(
             sd::read_blocks(&mut h, &card, 1, &mut block),
-            Err(IoError::Host(Error::Data(17, _)))
+            Err(BlockTransferError::Host(Error::Data(17, _)))
         ));
         assert!(h.registers().now_microseconds() - start < DATA_DEADLINE_MICROSECONDS);
     }

@@ -4,7 +4,7 @@
 use crate::bench::{self, WriteVerdict};
 use crate::card;
 use crate::host::{Error, Host};
-use crate::sd::{self, BLOCK, InitializationError, IoError, Kind};
+use crate::sd::{self, BLOCK_BYTES, BlockTransferError, InitializationError};
 use crate::simulator::{CardKind, Sim};
 
 fn host(kind: CardKind, blocks: usize) -> Host<Sim> {
@@ -32,7 +32,7 @@ fn master_boot_record_card(blocks: usize, first: u32) -> Sim {
 fn an_sdhc_card_is_identified_selected_and_widened_in_the_spec_order() {
     let mut h = host(CardKind::SdHighCapacity, 8192);
     let card = sd::identify(&mut h, 4).unwrap();
-    assert_eq!(card.kind, Kind::SdHighCapacity);
+    assert_eq!(card.kind, sd::CardKind::SdHighCapacity);
     assert!(card.block_addressed);
     assert_eq!(card.blocks, 8192);
     assert_eq!((card.bus_width, card.clock_hz), (4, 25_000_000));
@@ -55,13 +55,13 @@ fn an_sdhc_card_is_identified_selected_and_widened_in_the_spec_order() {
 fn an_old_sd_card_is_byte_addressed_and_an_emmc_is_told_apart_by_its_silence() {
     let mut h = host(CardKind::SdV1, 4096);
     let card = sd::identify(&mut h, 4).unwrap();
-    assert_eq!(card.kind, Kind::SdV1);
+    assert_eq!(card.kind, sd::CardKind::SdV1);
     assert!(!card.block_addressed);
-    assert_eq!(card.address(3), 3 * 512);
+    assert_eq!(card.block_address_argument(3), 3 * 512);
 
     let mut h = host(CardKind::MultimediaCard, 16_384);
     let card = sd::identify(&mut h, 8).unwrap();
-    assert_eq!(card.kind, Kind::MultimediaCard);
+    assert_eq!(card.kind, sd::CardKind::MultimediaCard);
     assert_eq!(
         card.relative_card_address,
         sd::MULTIMEDIA_CARD_RELATIVE_CARD_ADDRESS
@@ -85,14 +85,14 @@ fn an_empty_slot_is_no_card_not_a_hang() {
 fn blocks_written_read_back_and_multi_block_transfers_stop_by_themselves() {
     let mut h = host(CardKind::SdHighCapacity, 8192);
     let card = sd::identify(&mut h, 4).unwrap();
-    let data: Vec<u8> = (0..8 * BLOCK).map(|i| (i * 7 % 251) as u8).collect();
+    let data: Vec<u8> = (0..8 * BLOCK_BYTES).map(|i| (i * 7 % 251) as u8).collect();
     sd::write_blocks(&mut h, &card, 100, &data).unwrap();
-    let mut back = vec![0u8; 8 * BLOCK];
+    let mut back = vec![0u8; 8 * BLOCK_BYTES];
     sd::read_blocks(&mut h, &card, 100, &mut back).unwrap();
     assert_eq!(back, data);
-    let mut one = [0u8; BLOCK];
+    let mut one = [0u8; BLOCK_BYTES];
     sd::read_blocks(&mut h, &card, 103, &mut one).unwrap();
-    assert_eq!(one[..], data[3 * BLOCK..4 * BLOCK]);
+    assert_eq!(one[..], data[3 * BLOCK_BYTES..4 * BLOCK_BYTES]);
     let sim = h.into_registers();
     assert_eq!(sim.written, (100..108).collect::<Vec<u64>>());
     // CMD25 and CMD18 each followed by the controller's own CMD12; CMD17 not.
@@ -105,18 +105,18 @@ fn a_transfer_that_does_not_fit_the_card_or_the_buffer_is_refused_before_anythin
     let mut h = host(CardKind::SdHighCapacity, 8192);
     let card = sd::identify(&mut h, 4).unwrap();
     let sent = h.registers().commands.len();
-    let mut buffer = [0u8; BLOCK];
+    let mut buffer = [0u8; BLOCK_BYTES];
     assert_eq!(
         sd::read_blocks(&mut h, &card, 8192, &mut buffer),
-        Err(IoError::Range)
+        Err(BlockTransferError::Range)
     );
     assert_eq!(
         sd::read_blocks(&mut h, &card, 0, &mut buffer[..100]),
-        Err(IoError::Length)
+        Err(BlockTransferError::Length)
     );
     assert_eq!(
         sd::write_blocks(&mut h, &card, u64::MAX, &buffer),
-        Err(IoError::Range)
+        Err(BlockTransferError::Range)
     );
     assert_eq!(h.registers().commands.len(), sent);
 }
@@ -127,9 +127,9 @@ fn a_controller_before_2_40a_reads_through_its_queue_at_0x100_and_gets_no_thresh
     let (mut h, id) = Host::new(sim, 50_000_000, Some(32)).unwrap();
     assert_eq!(crate::registers::queue_offset(id.verid), 0x100);
     let card = sd::identify(&mut h, 4).unwrap();
-    let data: Vec<u8> = (0..2 * BLOCK).map(|i| (i % 253) as u8).collect();
+    let data: Vec<u8> = (0..2 * BLOCK_BYTES).map(|i| (i % 253) as u8).collect();
     sd::write_blocks(&mut h, &card, 7, &data).unwrap();
-    let mut back = vec![0u8; 2 * BLOCK];
+    let mut back = vec![0u8; 2 * BLOCK_BYTES];
     // A threshold write to 0x100 here would land in the FIFO and shift every word read.
     sd::read_blocks(&mut h, &card, 7, &mut back).unwrap();
     assert_eq!(back, data);
@@ -145,7 +145,7 @@ fn a_read_whose_tail_is_below_the_watermark_is_drained_on_transfer_over() {
     sim.storage[5] = core::array::from_fn(|i| (i % 249) as u8);
     let (mut h, _) = Host::new(sim, 50_000_000, Some(24)).unwrap();
     let card = sd::identify(&mut h, 4).unwrap();
-    let mut one = [0u8; BLOCK];
+    let mut one = [0u8; BLOCK_BYTES];
     sd::read_blocks(&mut h, &card, 5, &mut one).unwrap();
     assert_eq!(one, h.registers().storage[5]);
 }
@@ -155,17 +155,17 @@ fn a_data_crc_error_is_reported_with_its_command() {
     let mut h = host(CardKind::SdHighCapacity, 8192);
     let card = sd::identify(&mut h, 4).unwrap();
     h.registers().fail_next_read_crc = true;
-    let mut buffer = [0u8; BLOCK];
+    let mut buffer = [0u8; BLOCK_BYTES];
     assert!(matches!(
         sd::read_blocks(&mut h, &card, 0, &mut buffer),
-        Err(IoError::Host(Error::Data(17, rint))) if rint & crate::registers::RINTSTS_DCRC != 0
+        Err(BlockTransferError::Host(Error::Data(17, rint))) if rint & crate::registers::RINTSTS_DCRC != 0
     ));
 }
 
 #[test]
 fn the_read_only_probe_reads_and_never_writes() {
     let (mut h, _) = Host::new(master_boot_record_card(8192, 2048), 50_000_000, Some(32)).unwrap();
-    let mut buffer = vec![0u8; 128 * BLOCK];
+    let mut buffer = vec![0u8; 128 * BLOCK_BYTES];
     let r = bench::read_only(&mut h, 4, &mut buffer, 1024).unwrap();
     assert_eq!(r.master_boot_record.unwrap().first_start(), Some(2048));
     assert!(r.partition_boot_signature);
@@ -187,7 +187,7 @@ fn the_read_matrix_reads_every_row_and_never_writes() {
     let sim = master_boot_record_card(8192, 2048);
     let want = sim.storage[2048..2048 + 128].concat();
     let (mut h, _) = Host::new(bench::QueueWatch::new(sim), 50_000_000, Some(32)).unwrap();
-    let mut buffer = vec![0u8; 128 * BLOCK];
+    let mut buffer = vec![0u8; 128 * BLOCK_BYTES];
     let mut rows = 0;
     let mut asked = Vec::new();
     bench::read_matrix(&mut h, 4, 2048, &mut buffer, |r| {
@@ -252,9 +252,9 @@ fn the_write_test_touches_only_the_gap_and_puts_back_what_was_there() {
     sim.storage[2043][0] = 0x42;
     let before = sim.storage.clone();
     let (mut h, _) = Host::new(sim, 50_000_000, Some(32)).unwrap();
-    let mut buffer = vec![0u8; 8 * BLOCK];
+    let mut buffer = vec![0u8; 8 * BLOCK_BYTES];
     let r = bench::read_only(&mut h, 4, &mut buffer, 0).unwrap();
-    let (mut a, mut b) = (vec![0u8; 8 * BLOCK], vec![0u8; 8 * BLOCK]);
+    let (mut a, mut b) = (vec![0u8; 8 * BLOCK_BYTES], vec![0u8; 8 * BLOCK_BYTES]);
     let v = bench::scratch_write(
         &mut h,
         &r.card,
@@ -276,9 +276,9 @@ fn the_write_test_touches_only_the_gap_and_puts_back_what_was_there() {
 #[test]
 fn a_card_with_no_gap_is_refused_and_not_written() {
     let (mut h, _) = Host::new(master_boot_record_card(8192, 1), 50_000_000, Some(32)).unwrap();
-    let mut buffer = vec![0u8; 8 * BLOCK];
+    let mut buffer = vec![0u8; 8 * BLOCK_BYTES];
     let r = bench::read_only(&mut h, 4, &mut buffer, 0).unwrap();
-    let (mut a, mut b) = (vec![0u8; 8 * BLOCK], vec![0u8; 8 * BLOCK]);
+    let (mut a, mut b) = (vec![0u8; 8 * BLOCK_BYTES], vec![0u8; 8 * BLOCK_BYTES]);
     let v = bench::scratch_write(
         &mut h,
         &r.card,
@@ -343,10 +343,10 @@ fn faulty(kind: CardKind, blocks: usize, faults: &[(u8, usize, Fault)]) -> Host<
 fn an_sd_2_0_standard_capacity_card_answers_the_echo_and_is_still_byte_addressed() {
     let mut h = host(CardKind::SdV2, 4096);
     let card = sd::identify(&mut h, 4).unwrap();
-    assert_eq!(card.kind, Kind::SdV2);
+    assert_eq!(card.kind, sd::CardKind::SdV2);
     assert!(!card.block_addressed);
     // It answered CMD8 but did not set CCS in its OCR, so it is not mistaken for SDHC.
-    assert_eq!(card.address(2), 1024);
+    assert_eq!(card.block_address_argument(2), 1024);
 }
 
 #[test]
@@ -507,10 +507,10 @@ fn a_status_error_on_a_transfer_is_reported_not_swallowed() {
         &[(17, 0, Fault::ErrorStatus)],
     );
     let card = sd::identify(&mut h, 4).unwrap();
-    let mut one = [0u8; BLOCK];
+    let mut one = [0u8; BLOCK_BYTES];
     assert!(matches!(
         sd::read_blocks(&mut h, &card, 0, &mut one),
-        Err(IoError::Status(_))
+        Err(BlockTransferError::Status(_))
     ));
     // A single-block write is CMD24; its R1, then the status after programming, are each
     // checked.
@@ -522,7 +522,7 @@ fn a_status_error_on_a_transfer_is_reported_not_swallowed() {
     let card = sd::identify(&mut h, 4).unwrap();
     assert!(matches!(
         sd::write_blocks(&mut h, &card, 9, &one),
-        Err(IoError::Status(_))
+        Err(BlockTransferError::Status(_))
     ));
     let mut h = faulty(
         CardKind::SdHighCapacity,
@@ -532,7 +532,7 @@ fn a_status_error_on_a_transfer_is_reported_not_swallowed() {
     let card = sd::identify(&mut h, 4).unwrap();
     assert!(matches!(
         sd::write_blocks(&mut h, &card, 9, &one),
-        Err(IoError::Status(_))
+        Err(BlockTransferError::Status(_))
     ));
     let mut h = host(CardKind::SdHighCapacity, 8192);
     let card = sd::identify(&mut h, 4).unwrap();
@@ -547,10 +547,10 @@ fn a_status_error_on_a_transfer_is_reported_not_swallowed() {
 
 #[test]
 fn a_byte_addressed_card_stops_where_a_32_bit_byte_address_does() {
-    let last = (1u64 << 32) / BLOCK as u64;
-    assert!(sd::in_range(1 << 40, false, last - 1, 1));
-    assert!(!sd::in_range(1 << 40, false, last, 1));
-    assert!(sd::in_range(1 << 40, true, last, 1));
+    let last = (1u64 << 32) / BLOCK_BYTES as u64;
+    assert!(sd::can_address_blocks(1 << 40, false, last - 1, 1));
+    assert!(!sd::can_address_blocks(1 << 40, false, last, 1));
+    assert!(sd::can_address_blocks(1 << 40, true, last, 1));
 }
 
 #[test]
@@ -559,17 +559,23 @@ fn the_read_only_probe_says_which_block_it_could_not_read() {
     let mut sim = master_boot_record_card(8192, 2048);
     sim.faults = vec![(17, 1, Fault::ErrorStatus)];
     let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
-    let mut buffer = vec![0u8; 8 * BLOCK];
+    let mut buffer = vec![0u8; 8 * BLOCK_BYTES];
     assert!(matches!(
         bench::read_only(&mut h, 4, &mut buffer, 64),
-        Err(bench::ReadFailure::Read(2048, IoError::Status(_)))
+        Err(bench::ReadFailure::Read(
+            2048,
+            BlockTransferError::Status(_)
+        ))
     ));
     let mut sim = master_boot_record_card(8192, 2048);
     sim.faults = vec![(18, 1, Fault::ErrorStatus)];
     let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
     assert!(matches!(
         bench::read_only(&mut h, 4, &mut buffer, 64),
-        Err(bench::ReadFailure::Read(2056, IoError::Status(_)))
+        Err(bench::ReadFailure::Read(
+            2056,
+            BlockTransferError::Status(_)
+        ))
     ));
 }
 
@@ -579,7 +585,7 @@ fn write_test(setup: impl FnOnce(&mut Sim), len: usize) -> (WriteVerdict, Sim) {
     let mut sim = master_boot_record_card(8192, 2048);
     setup(&mut sim);
     let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
-    let mut buffer = vec![0u8; 8 * BLOCK];
+    let mut buffer = vec![0u8; 8 * BLOCK_BYTES];
     let r = bench::read_only(&mut h, 4, &mut buffer, 0).unwrap();
     let (mut a, mut b) = (vec![0u8; len], vec![0u8; len]);
     let v = bench::scratch_write(
@@ -594,8 +600,8 @@ fn write_test(setup: impl FnOnce(&mut Sim), len: usize) -> (WriteVerdict, Sim) {
 
 #[test]
 fn the_write_test_refuses_buffers_too_small_for_its_range_before_touching_the_card() {
-    let (v, sim) = write_test(|_| {}, 7 * BLOCK);
-    assert_eq!(v, WriteVerdict::Failed(0, IoError::Length));
+    let (v, sim) = write_test(|_| {}, 7 * BLOCK_BYTES);
+    assert_eq!(v, WriteVerdict::Failed(0, BlockTransferError::Length));
     assert!(sim.written.is_empty());
 }
 
@@ -612,10 +618,10 @@ fn the_write_test_names_the_phase_that_failed() {
     ] {
         let (v, _) = write_test(
             |s| s.faults = vec![(index, nth, Fault::ErrorStatus)],
-            8 * BLOCK,
+            8 * BLOCK_BYTES,
         );
         assert!(
-            matches!(v, WriteVerdict::Failed(p, IoError::Status(_)) if p == phase),
+            matches!(v, WriteVerdict::Failed(p, BlockTransferError::Status(_)) if p == phase),
             "CMD{index}#{nth}: {v:?}"
         );
     }
@@ -623,10 +629,10 @@ fn the_write_test_names_the_phase_that_failed() {
 
 #[test]
 fn a_card_that_drops_writes_is_a_pattern_mismatch_and_one_that_drops_the_restore_says_so() {
-    let (v, sim) = write_test(|s| s.writes_stored = Some(0), 8 * BLOCK);
+    let (v, sim) = write_test(|s| s.writes_stored = Some(0), 8 * BLOCK_BYTES);
     assert_eq!(v, WriteVerdict::PatternMismatch(2040));
     assert!(sim.storage[2040].iter().all(|&b| b == 0));
-    let (v, sim) = write_test(|s| s.writes_stored = Some(1), 8 * BLOCK);
+    let (v, sim) = write_test(|s| s.writes_stored = Some(1), 8 * BLOCK_BYTES);
     assert_eq!(v, WriteVerdict::RestoreMismatch(2040));
     // The pattern stayed, inside the gap, and partition 1 was never touched.
     assert!(sim.storage[2040].iter().any(|&b| b != 0));
@@ -641,7 +647,7 @@ fn a_card_that_drops_writes_is_a_pattern_mismatch_and_one_that_drops_the_restore
 /// a card drops the restore and the pattern stays.
 #[test]
 fn the_pattern_left_behind_is_each_sectors_own() {
-    let (v, sim) = write_test(|s| s.writes_stored = Some(1), 8 * BLOCK);
+    let (v, sim) = write_test(|s| s.writes_stored = Some(1), 8 * BLOCK_BYTES);
     assert_eq!(v, WriteVerdict::RestoreMismatch(2040));
     for logical_block_address in 2040..2048u64 {
         for (i, &b) in sim.storage[logical_block_address as usize]
@@ -660,9 +666,9 @@ fn the_pattern_left_behind_is_each_sectors_own() {
 /// A mismatch is named by the sector it is in, not the first of the range: here the second.
 #[test]
 fn a_mismatch_names_its_own_sector() {
-    let (v, _) = write_test(|s| s.mangle_write = Some((0, 2041)), 8 * BLOCK);
+    let (v, _) = write_test(|s| s.mangle_write = Some((0, 2041)), 8 * BLOCK_BYTES);
     assert_eq!(v, WriteVerdict::PatternMismatch(2041));
-    let (v, _) = write_test(|s| s.mangle_write = Some((1, 2041)), 8 * BLOCK);
+    let (v, _) = write_test(|s| s.mangle_write = Some((1, 2041)), 8 * BLOCK_BYTES);
     assert_eq!(v, WriteVerdict::RestoreMismatch(2041));
 }
 
@@ -670,17 +676,17 @@ fn a_mismatch_names_its_own_sector() {
 /// one too short is refused, and the verdict says whether the gap was blank.
 #[test]
 fn the_write_test_takes_long_buffers_refuses_either_short_one_and_reports_a_blank_gap() {
-    let (v, _) = write_test(|_| {}, 9 * BLOCK);
+    let (v, _) = write_test(|_| {}, 9 * BLOCK_BYTES);
     assert_eq!(v, WriteVerdict::Verified(2040, 8, true));
-    let (v, _) = write_test(|s| s.storage[2047][511] = 1, 8 * BLOCK);
+    let (v, _) = write_test(|s| s.storage[2047][511] = 1, 8 * BLOCK_BYTES);
     assert_eq!(v, WriteVerdict::Verified(2040, 8, false));
     for (a, b) in [(7, 8), (8, 7)] {
         let mut h = Host::new(master_boot_record_card(8192, 2048), 50_000_000, Some(32))
             .unwrap()
             .0;
-        let mut buffer = vec![0u8; 8 * BLOCK];
+        let mut buffer = vec![0u8; 8 * BLOCK_BYTES];
         let r = bench::read_only(&mut h, 4, &mut buffer, 0).unwrap();
-        let (mut a, mut b) = (vec![0u8; a * BLOCK], vec![0u8; b * BLOCK]);
+        let (mut a, mut b) = (vec![0u8; a * BLOCK_BYTES], vec![0u8; b * BLOCK_BYTES]);
         let v = bench::scratch_write(
             &mut h,
             &r.card,
@@ -688,7 +694,7 @@ fn the_write_test_takes_long_buffers_refuses_either_short_one_and_reports_a_blan
             &mut a,
             &mut b,
         );
-        assert_eq!(v, WriteVerdict::Failed(0, IoError::Length));
+        assert_eq!(v, WriteVerdict::Failed(0, BlockTransferError::Length));
     }
 }
 
@@ -713,7 +719,7 @@ fn the_write_pattern_is_the_formula_and_its_halves_differ() {
 #[test]
 fn the_timed_reads_stop_at_the_end_of_the_card() {
     let (mut h, _) = Host::new(master_boot_record_card(2048, 16), 50_000_000, Some(32)).unwrap();
-    let mut buffer = vec![0u8; 256 * BLOCK];
+    let mut buffer = vec![0u8; 256 * BLOCK_BYTES];
     let r = bench::read_only(&mut h, 4, &mut buffer, 100_000).unwrap();
     // Partition 1 starts at 16, so blocks 16 to 2047 fit seven 256-block reads and not eight.
     assert_eq!(r.timed_blocks, 7 * 256);

@@ -129,7 +129,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     send(
         READY,
         report,
-        h.window.sectors * sd::BLOCK as u64,
+        h.window.sectors * sd::BLOCK_BYTES as u64,
         card.blocks,
     );
     serve(host, card, h)
@@ -177,7 +177,7 @@ fn serve(mut host: Host<Page>, card: Card, h: Handoff) -> ! {
         let r0 = match filesystem_contract::operation(w0) {
             blk::READ => transfer_blocks(&mut host, &card, &h, block, count, false),
             blk::WRITE => transfer_blocks(&mut host, &card, &h, block, count, true),
-            blk::SIZE => (h.window.sectors * sd::BLOCK as u64) as i64,
+            blk::SIZE => (h.window.sectors * sd::BLOCK_BYTES as u64) as i64,
             blk::FLUSH => {
                 let status = host.command(&c::Command::new(
                     c::SEND_STATUS,
