@@ -28,10 +28,10 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use ::designware_ethernet::controller::{self, Identity};
-use ::designware_ethernet::motorcomm::{self, Link, Speed};
+use ::designware_ethernet::motorcomm_physical_layer_device::{self, Link, Speed};
 use ::designware_ethernet::{
-    DataPlane, DirectMemoryAccessRegion, Hardware, Tails, coherence, jh7110, layout,
-    management_data_input_output, registers,
+    coherence, jh7110, layout, management_data_input_output, registers, DataPlane,
+    DirectMemoryAccessRegion, Hardware, Tails,
 };
 use driver_process_contract::designware_ethernet::Handoff;
 use jh7110_clock_and_reset as crg;
@@ -71,7 +71,7 @@ pub enum Error {
     /// The DMA region could not be allocated.
     NoRegion,
     /// The coherence probe found device DMA not coherent with the caches.
-    NotCoherent(coherence::Verdict),
+    NotCoherent(cache_coherence::Verdict),
 }
 
 /// Where the station address came from.
@@ -108,13 +108,13 @@ pub(crate) struct Report {
     /// The PHY's identifier.
     pub physical_layer_device_id: u32,
     /// The PHY's I/O voltage and which tree spelling its settings came from.
-    pub physical_layer_device: Option<(u32, motorcomm::Source)>,
+    pub physical_layer_device: Option<(u32, motorcomm_physical_layer_device::Source)>,
     /// The station address and where it came from.
     pub mac: Option<([u8; 6], AddressSource)>,
     /// How long each software reset took, in microseconds (the probe's and the real one's).
     pub resets_microseconds: [u64; 2],
     /// The coherence probe's verdict and what it saw.
-    pub coherence: Option<(coherence::Verdict, coherence::Observation)>,
+    pub coherence: Option<(cache_coherence::Verdict, cache_coherence::Observation)>,
     /// The negotiated link, if one resolved.
     pub link: Option<Link>,
     /// How long the link took to resolve, or how long was waited for it.
@@ -271,7 +271,7 @@ fn run(
     let verdict = probe(&mut w, &id, region, mac, r)?;
     if !matches!(
         verdict,
-        coherence::Verdict::Coherent | coherence::Verdict::Inconclusive
+        cache_coherence::Verdict::Coherent | cache_coherence::Verdict::Inconclusive
     ) {
         return Err(Error::NotCoherent(verdict));
     }
@@ -304,12 +304,14 @@ fn bring_up_physical_layer_device(
         physical_layer_device_address,
     )
     .map_err(Error::Mdio)?;
-    if r.physical_layer_device_id != motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID {
+    if r.physical_layer_device_id
+        != motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID
+    {
         return Err(Error::UnknownPhysicalLayerDevice {
             id: r.physical_layer_device_id,
         });
     }
-    let applied = motorcomm::configure(
+    let applied = motorcomm_physical_layer_device::configure(
         &mut management_data_input_output::Bus(w),
         physical_layer_device_address,
         &e.port.physical_layer_device,
@@ -334,7 +336,8 @@ fn wait_for_link(
     let deadline = started + LINK_WAIT_MS * crate::arch::timer::frequency() / 1000;
     let link = loop {
         if let Some(l) =
-            motorcomm::link(&mut bus, physical_layer_device_address).map_err(Error::Mdio)?
+            motorcomm_physical_layer_device::link(&mut bus, physical_layer_device_address)
+                .map_err(Error::Mdio)?
         {
             break Some(l);
         }
@@ -347,7 +350,7 @@ fn wait_for_link(
         (crate::arch::timer::now() - started) * 1000 / crate::arch::timer::frequency().max(1);
     r.link = link;
     if let Some(l) = link {
-        motorcomm::apply_speed(
+        motorcomm_physical_layer_device::apply_speed(
             &mut bus,
             physical_layer_device_address,
             &e.port.physical_layer_device,
@@ -367,7 +370,7 @@ fn probe(
     region: u64,
     mac: [u8; 6],
     r: &mut Report,
-) -> Result<coherence::Verdict, Error> {
+) -> Result<cache_coherence::Verdict, Error> {
     zero(region);
     controller::configure(w, id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
     let loopback = Link {
@@ -381,15 +384,15 @@ fn probe(
     // A probe frame is a fixed 128 bytes, so `transmit` cannot refuse it for its length, and the
     // ring was just emptied, so it cannot be full; an error here would leave nothing to observe,
     // which `classify` reports as inconclusive.
-    let _ = coherence::prepare(&mut dp, &mut plane, &mut tails, mac);
+    let _ = cache_coherence::prepare(&mut dp, &mut plane, &mut tails, mac);
     let deadline = crate::arch::timer::now()
-        + coherence::WAIT_MICROSECONDS * crate::arch::timer::frequency() / 1_000_000;
-    while !coherence::delivered(&plane) && crate::arch::timer::now() < deadline {
+        + cache_coherence::WAIT_MICROSECONDS * crate::arch::timer::frequency() / 1_000_000;
+    while !cache_coherence::delivered(&plane) && crate::arch::timer::now() < deadline {
         core::hint::spin_loop();
     }
     let status = w.read(registers::CHAN_STATUS);
-    let o = coherence::observe(&plane, mac, status);
-    let v = coherence::classify(&o);
+    let o = cache_coherence::observe(&plane, mac, status);
+    let v = cache_coherence::classify(&o);
     r.coherence = Some((v, o));
     Ok(v)
 }

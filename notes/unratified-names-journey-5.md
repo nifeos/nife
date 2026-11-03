@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 119 | 100 | 19 | 14 |
+| `designware_ethernet` | 109 | 93 | 16 | 14 |
 | `designware_mobile_storage` | 75 | 75 | 0 | 10 |
 | `e1000e` | 133 | 95 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 339 | 270 | 69 | 39 |
+| total | 329 | 263 | 66 | 39 |
 
 ## How to read a group
 
@@ -39,25 +39,25 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_ethernet`
 
-119 unratified names: 100 with no block, 19 provisional.
+109 unratified names: 93 with no block, 16 provisional.
 
-### DE1. Module names (11)
+### DE1. Module name (1)
 
-`coherence`, `controller`, `data_plane`, `descriptor`, `hardware`, `jh7110`, `layout`, `motorcomm`, `proofs`, `sim`, `tests`
+`sim`
 
 - Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify all eleven as they stand. `data_plane`, `descriptor` and `hardware` are private and already provisional; `proofs`, `sim` and `tests` follow the tree's usual names for harness, simulator and test modules; the rest say what the module holds.
+- Provisional recommendation: Another lane renames it; the name follows the tree's usual name for a simulator module.
 
 ### DE2. The sixteen non-overlap assertions (16)
 
-`coherence::PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP`, `controller::CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP`, `controller::MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP`, `controller::RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `controller::TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `descriptor::FIRST_AND_LAST_BITS_DO_NOT_OVERLAP`, `descriptor::RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP`, `descriptor::TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP`, `jh7110::BURST_LENGTH_BITS_DO_NOT_OVERLAP`, `jh7110::INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP`, `management_data_input_output::AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP`, `management_data_input_output::COMMAND_WORD_FIELDS_DO_NOT_OVERLAP`, `management_data_input_output::PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP`, `motorcomm::PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP`, `motorcomm::RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP`, `motorcomm::RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP`
+`cache_coherence::PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP`, `controller::CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP`, `controller::MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP`, `controller::RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `controller::TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `descriptor::FIRST_AND_LAST_BITS_DO_NOT_OVERLAP`, `descriptor::RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP`, `descriptor::TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP`, `jh7110::BURST_LENGTH_BITS_DO_NOT_OVERLAP`, `jh7110::INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP`, `management_data_input_output::AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP`, `management_data_input_output::COMMAND_WORD_FIELDS_DO_NOT_OVERLAP`, `management_data_input_output::PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP`, `motorcomm_physical_layer_device::PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP`, `motorcomm_physical_layer_device::RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP`, `motorcomm_physical_layer_device::RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. The maintainer chose the `..._DO_NOT_OVERLAP` form (the 2026-11-02 ruling that renamed the `THE_..._SHARE_NO_BIT` set) and reversing costs one pull request; each says which fields it checks. Each is a private compile-time assertion.
 
 ### DE3. Coherence probe (9)
 
-`coherence::Observation`, `coherence::POSTED`, `coherence::Payload`, `coherence::Verdict`, `coherence::WAIT_MICROSECONDS`, `coherence::classify`, `coherence::delivered`, `coherence::observe`, `coherence::prepare`
+`cache_coherence::Observation`, `cache_coherence::POSTED`, `cache_coherence::Payload`, `cache_coherence::Verdict`, `cache_coherence::WAIT_MICROSECONDS`, `cache_coherence::classify`, `cache_coherence::delivered`, `cache_coherence::observe`, `cache_coherence::prepare`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. Plain words, no abbreviation. `POSTED` is a count of posted descriptors, not the bus term, and its doc says so.
@@ -120,7 +120,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ### DE12. Motorcomm PHY software surface (10)
 
-`motorcomm::Applied`, `motorcomm::Drive`, `motorcomm::Link`, `motorcomm::Settings`, `motorcomm::Source`, `motorcomm::Speed`, `motorcomm::apply_speed`, `motorcomm::configure`, `motorcomm::link`, `motorcomm::mbps`
+`motorcomm_physical_layer_device::Applied`, `motorcomm_physical_layer_device::Drive`, `motorcomm_physical_layer_device::Link`, `motorcomm_physical_layer_device::Settings`, `motorcomm_physical_layer_device::Source`, `motorcomm_physical_layer_device::Speed`, `motorcomm_physical_layer_device::apply_speed`, `motorcomm_physical_layer_device::configure`, `motorcomm_physical_layer_device::link`, `motorcomm_physical_layer_device::mbps`
 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify all but `mbps`. `mbps` abbreviates a unit; recommend `megabits_per_second` (the stricter reading, a close call since 'Mbps' is a standard unit symbol).

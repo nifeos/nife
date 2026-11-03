@@ -342,7 +342,7 @@ exclude_re = [
     "^crates/designware_ethernet/src/jh7110\\.rs:\\d+:\\d+: replace \\| with \\^$",
     # RGMII_RXD_DS_MASK's two fields are asserted disjoint by
     # RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP, beside the mask.
-    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^$",
+    "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^$",
     # RSF against the threshold field, and the two flow-control threshold fields against each
     # other, are asserted disjoint by RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP, beside
     # receive_queue_mode.
@@ -362,15 +362,15 @@ exclude_re = [
     "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in mac_configuration$",
     # RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP, beside configure, asserts the delay and drive
     # fields pairwise disjoint.
-    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
+    "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
     # ANLPAR_T4 and ANLPAR_TX are asserted disjoint by
     # PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP, beside link_from_registers.
-    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^ in link_from_registers$",
+    "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in link_from_registers$",
     # The transmit delay select is zero (RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP asserts
     # it), so those two shifts are the identity; the same entry covers the function's
     # shift-by-nonzero sites, which
-    # motorcomm::tests::configure_replaces_the_delay_and_drive_fields_and_nothing_else kills.
-    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace << with >> in configure$",
+    # motorcomm_physical_layer_device::tests::configure_replaces_the_delay_and_drive_fields_and_nothing_else kills.
+    "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace << with >> in configure$",
     # The command word's five field masks are asserted pairwise disjoint by
     # COMMAND_WORD_FIELDS_DO_NOT_OVERLAP, beside command; every operand enters through its own
     # field's mask.
@@ -386,7 +386,7 @@ exclude_re = [
     "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in restart_autonegotiation$",
     # The payload's set bit and its six-bit counter are asserted disjoint by
     # PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP, beside probe_frame.
-    "^crates/designware_ethernet/src/coherence\\.rs:\\d+:\\d+: replace \\| with \\^ in probe_frame$",
+    "^crates/designware_ethernet/src/cache_coherence\\.rs:\\d+:\\d+: replace \\| with \\^ in probe_frame$",
     # OWN, IC and BUF1V are asserted pairwise disjoint by
     # RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP, beside the function.
     "^crates/designware_ethernet/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_descriptor_words$",

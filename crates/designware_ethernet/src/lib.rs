@@ -77,12 +77,12 @@
 #[cfg(test)]
 extern crate std;
 
-pub mod coherence;
+pub mod cache_coherence;
 pub mod controller;
 pub mod jh7110;
 #[doc(alias = "mdio")]
 pub mod management_data_input_output;
-pub mod motorcomm;
+pub mod motorcomm_physical_layer_device;
 #[doc(alias = "regs")]
 pub mod registers;
 #[cfg(test)]

@@ -16,9 +16,11 @@
 //! [`COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER`] node or the vendor's node named
 //! [`ALWAYS_ON_SYSTEM_CONTROLLER_NODE`], and [`SystemController::fallback`] answers for a tree that
 //! names neither.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
 use crate::controller::Bus;
-use crate::motorcomm::{Drive, Settings, Source};
+use crate::motorcomm_physical_layer_device::{Drive, Settings, Source};
 use crate::registers;
 
 /// Mainline's compatible for both ports.

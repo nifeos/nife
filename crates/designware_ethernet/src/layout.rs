@@ -1,3 +1,7 @@
+//! **Where each region of the DMA block sits**: the rings and buffers, as offsets from its start.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3122.
+
 use super::{BUFFER_SIZE, DESCRIPTOR_BYTES, PAGE, RECEIVE_ENTRIES, TRANSMIT_ENTRIES};
 /// The receive descriptor ring.
 pub(crate) const RECEIVE_RING: u64 = 0;

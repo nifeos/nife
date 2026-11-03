@@ -7,6 +7,8 @@
 //! [`WAIT_MICROSECONDS`], then read the channel status register. [`classify`] compares the two accounts; the
 //! status register is read over MMIO, which no cache stands in front of, so a non-coherent machine
 //! fails in a way that names the direction.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
 use crate::{
     CRC_BYTES, DataPlane, DirectMemoryAccessRegion, RDES3_OWN, RECEIVE_ENTRIES, ReceiveVerdict,
@@ -206,7 +208,7 @@ mod tests {
     use super::*;
     use crate::controller::{self, Identity};
     use crate::jh7110::BUS;
-    use crate::motorcomm::{Link, Speed};
+    use crate::motorcomm_physical_layer_device::{Link, Speed};
     use crate::sim::{Memory, NetworkInterfaceController};
     use crate::{Hardware, RDES3_FD, RDES3_LD};
 

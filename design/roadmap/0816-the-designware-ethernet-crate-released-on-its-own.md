@@ -70,12 +70,12 @@ All 3 proven under stock Kani.
 |---|---|
 | A delivered frame always fits the buffer and the room | `proofs::a_delivered_frame_always_fits_the_buffer_and_the_room` |
 | Every ring offset is inside the region | `proofs::every_ring_offset_is_inside_the_region` |
-| The PHY link decode (`motorcomm::link_from_registers`, which `motorcomm::link` calls) is total and sound: any register answer yields a link or none without a panic, and a link needs the status bit up and the PHY not isolated, autonegotiation complete when it is on, and a speed and duplex both ends advertise (or the forced bits when it is off) | `proofs::a_link_is_decoded_only_from_what_the_registers_say` |
+| The PHY link decode (`motorcomm_physical_layer_device::link_from_registers`, which `motorcomm_physical_layer_device::link` calls) is total and sound: any register answer yields a link or none without a panic, and a link needs the status bit up and the PHY not isolated, autonegotiation complete when it is on, and a speed and duplex both ends advertise (or the forced bits when it is off) | `proofs::a_link_is_decoded_only_from_what_the_registers_say` |
 
 The third row answers the question `BUGS` asks below: the PHY's answers are device input and the
 link decode is the state a stranger's driver acts on. Its falsification patch drops the isolate
-check. Not proven: the register reads in `motorcomm::link` (the double read of the latched status
-bit), MDIO sequencing (`mdio`), the PHY configuration writes, the DMA-coherence probe's verdict (`coherence`)
+check. Not proven: the register reads in `motorcomm_physical_layer_device::link` (the double read of the latched status
+bit), MDIO sequencing (`mdio`), the PHY configuration writes, the DMA-coherence probe's verdict (`cache_coherence`)
 and controller bring-up.
 
 ## Release, by #1806's rulings
@@ -168,25 +168,25 @@ work, and the lane that renames a name drops its line.
 ### Belongs to something else
 
 - `jh7110` (`src/jh7110.rs`): scope: one SoC's glue in a MAC crate
-- `motorcomm` (`src/motorcomm.rs`): scope: one vendor's PHY in a MAC crate
+- `motorcomm_physical_layer_device` (`src/motorcomm_physical_layer_device.rs`): scope: one vendor's PHY in a MAC crate
 - `first_cell` (`src/jh7110.rs`): scope: a device-tree cell reader in a MAC crate
-- `FALLBACK_GMAC0` (`src/motorcomm.rs`): scope: one board's PHY values in a MAC crate
+- `FALLBACK_GMAC0` (`src/motorcomm_physical_layer_device.rs`): scope: one board's PHY values in a MAC crate
 
 ### Generic
 
-- `Observation` (`src/coherence.rs`): generic
-- `POSTED` (`src/coherence.rs`): generic
-- `Verdict` (`src/coherence.rs`): generic
-- `classify` (`src/coherence.rs`): generic
-- `delivered` (`src/coherence.rs`): generic
-- `observe` (`src/coherence.rs`): generic
-- `prepare` (`src/coherence.rs`): generic
+- `Observation` (`src/cache_coherence.rs`): generic
+- `POSTED` (`src/cache_coherence.rs`): generic
+- `Verdict` (`src/cache_coherence.rs`): generic
+- `classify` (`src/cache_coherence.rs`): generic
+- `delivered` (`src/cache_coherence.rs`): generic
+- `observe` (`src/cache_coherence.rs`): generic
+- `prepare` (`src/cache_coherence.rs`): generic
 - `Bus` (`src/controller.rs`): generic: two `Bus` types in two modules
 - `interface` (`src/jh7110.rs`): generic
-- `Applied` (`src/motorcomm.rs`): generic
-- `Drive` (`src/motorcomm.rs`): generic
-- `Settings` (`src/motorcomm.rs`): generic
-- `Source` (`src/motorcomm.rs`): generic
+- `Applied` (`src/motorcomm_physical_layer_device.rs`): generic
+- `Drive` (`src/motorcomm_physical_layer_device.rs`): generic
+- `Settings` (`src/motorcomm_physical_layer_device.rs`): generic
+- `Source` (`src/motorcomm_physical_layer_device.rs`): generic
 
 ## Exit
 
@@ -211,9 +211,9 @@ names until the ratification pass, so this section keeps the links it carried.
 - `src/lib.rs`, the crate root: the design lives in `notes/designware-ethernet.md`.
 - `src/data_plane.rs`, `DataPlane`: `notes/designware-ethernet/the-hardware.md` explains the
   held-back receive slot.
-- `src/regs.rs`, `src/jh7110.rs` and `src/motorcomm.rs`, each module's doc: the register pages,
+- `src/regs.rs`, `src/jh7110.rs` and `src/motorcomm_physical_layer_device.rs`, each module's doc: the register pages,
   the two device trees and the PHY settings are in `notes/designware-ethernet/the-hardware.md`.
-- `src/coherence.rs`, the module's doc: `notes/designware-ethernet.md`, "Is radon's DMA coherent?
+- `src/cache_coherence.rs`, the module's doc: `notes/designware-ethernet.md`, "Is radon's DMA coherent?
   Yes, by measurement", records the probe reporting `Coherent` on radon over three boots on
   2026-10-20 (UTC).
 - `src/descriptor.rs`, `rx_verdict`: the distrust of every descriptor field applies finding 6 of

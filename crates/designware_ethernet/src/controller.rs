@@ -6,8 +6,10 @@
 //! jumbo frames are not enabled, and nothing is allocated (the DMA region is the caller's, laid out
 //! by [`crate::layout`]). Every sequence runs against [`Hardware`], so the host tests run them
 //! against `sim`'s controller.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
-use crate::motorcomm::{Link, Speed};
+use crate::motorcomm_physical_layer_device::{Link, Speed};
 use crate::{BUFFER_SIZE, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, registers};
 
 /// Why the controller was not brought up.

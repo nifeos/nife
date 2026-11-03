@@ -6,7 +6,7 @@
 //! board-shaped fixtures and the tree every CI boot uses.
 
 use designware_ethernet::jh7110::{COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, GMAC0_BASE};
-use designware_ethernet::motorcomm::{Settings, Source};
+use designware_ethernet::motorcomm_physical_layer_device::{Settings, Source};
 use machine_discovery::jh7110::designware_ethernet::{discover, discover_aon_syscon};
 
 const VENDOR: &[u8] = include_bytes!("fixtures/jh7110-gmac-vendor.dtb");
