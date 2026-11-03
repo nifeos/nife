@@ -54,7 +54,6 @@ pub fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-#[doc(alias = "THE_PROBE_PAYLOAD_SET_BIT_AND_COUNTER_SHARE_NO_BIT")]
 pub const PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP: () = assert!(0x40 & 0x3f == 0);
 
 /// **Steps 1 to 3**: post the receive ring, poison and read back receive buffer 0, queue the
