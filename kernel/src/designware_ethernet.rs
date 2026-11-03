@@ -30,8 +30,8 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use ::designware_ethernet::motorcomm_physical_layer_device::{self, Link, Speed};
 use ::designware_ethernet::network_interface_controller::{self as controller, Identity};
 use ::designware_ethernet::{
-    cache_coherence, jh7110, layout, management_data_input_output, registers, DataPlane,
-    DirectMemoryAccessRegion, Hardware, Tails,
+    DataPlane, DirectMemoryAccessRegion, Hardware, Tails, cache_coherence, jh7110, layout,
+    management_data_input_output, registers,
 };
 use driver_process_contract::designware_ethernet::Handoff;
 use jh7110_clock_and_reset as crg;
