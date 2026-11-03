@@ -80,8 +80,6 @@ _SBI = "RISC-V SBI's own name, kept as the precedents keep `sbi_send_ipi`"
 _ACTS = ("acts and reports whether it worked, which design/naming.md exempts from the question "
          "shape")
 KEPT = {
-    "crates/designware_ethernet/src/management_data_input_output.rs::PA_SHIFT":
-        ({"spelled-out"}, "DesignWare's `PA` field, the PHY address, not a physical address"),
     # The loader's three acts that report whether they worked, carried into `process_builder` by
     # DECISIONS §235 (the OS is built and updated from packages, and its source divides by purpose) P3's split. Each takes an effect (unmap a page, destroy a region, start a
     # child) and answers whether the kernel allowed it, which is the exemption `_ACTS` names.

@@ -81,12 +81,12 @@
 <path class="seg s4" d="M568.5,324.0 V265.4 Q568.5,262.7 571.3,262.7 H571.3 Q574.0,262.7 574.0,265.4 V324.0 Z"><title>2026W44, xtask/: 1844</title></path>
 <path class="seg s5" d="M575.0,324.0 V253.5 Q575.0,250.8 577.7,250.8 H577.7 Q580.4,250.8 580.4,253.5 V324.0 Z"><title>2026W44, every other directory: 2202</title></path>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<path class="seg s0" d="M601.4,324.0 V232.6 Q601.4,229.9 604.1,229.9 H604.1 Q606.8,229.9 606.8,232.6 V324.0 Z"><title>2026W45, kernel/: 2831</title></path>
-<path class="seg s1" d="M607.8,324.0 V171.4 Q607.8,168.7 610.5,168.7 H610.5 Q613.3,168.7 613.3,171.4 V324.0 Z"><title>2026W45, crates/: 4670</title></path>
+<path class="seg s0" d="M601.4,324.0 V232.4 Q601.4,229.7 604.1,229.7 H604.1 Q606.8,229.7 606.8,232.4 V324.0 Z"><title>2026W45, kernel/: 2837</title></path>
+<path class="seg s1" d="M607.8,324.0 V171.1 Q607.8,168.4 610.5,168.4 H610.5 Q613.3,168.4 613.3,171.1 V324.0 Z"><title>2026W45, crates/: 4681</title></path>
 <path class="seg s2" d="M614.3,324.0 V255.9 Q614.3,253.2 617.0,253.2 H617.0 Q619.7,253.2 619.7,255.9 V324.0 Z"><title>2026W45, components/: 2129</title></path>
 <path class="seg s3" d="M620.7,324.0 V259.9 Q620.7,257.1 623.4,257.1 H623.4 Q626.1,257.1 626.1,259.9 V324.0 Z"><title>2026W45, system_tests/: 2011</title></path>
 <path class="seg s4" d="M627.1,324.0 V265.4 Q627.1,262.7 629.9,262.7 H629.9 Q632.6,262.7 632.6,265.4 V324.0 Z"><title>2026W45, xtask/: 1844</title></path>
-<path class="seg s5" d="M633.6,324.0 V253.5 Q633.6,250.8 636.3,250.8 H636.3 Q639.0,250.8 639.0,253.5 V324.0 Z"><title>2026W45, every other directory: 2202</title></path>
+<path class="seg s5" d="M633.6,324.0 V253.5 Q633.6,250.8 636.3,250.8 H636.3 Q639.0,250.8 639.0,253.5 V324.0 Z"><title>2026W45, every other directory: 2203</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W45</text>
 <line class="tr" x1="503.5" y1="148.1" x2="562.1" y2="148.1" stroke-width="2"/>
 <line class="tr" x1="562.1" y1="148.1" x2="620.7" y2="148.1" stroke-width="2"/>

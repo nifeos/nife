@@ -12,15 +12,15 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 102 | 83 | 19 | 12 |
-| `designware_mobile_storage` | 75 | 75 | 0 | 10 |
-| `e1000e` | 133 | 95 | 38 | 13 |
+| `designware_ethernet` | 93 | 74 | 19 | 11 |
+| `designware_mobile_storage` | 74 | 74 | 0 | 10 |
+| `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 322 | 253 | 69 | 37 |
+| total | 311 | 242 | 69 | 36 |
 
 ## How to read a group
 
@@ -35,18 +35,18 @@ In order, easiest to rule on first:
 3. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
 4. The `no` groups of designware_mobile_storage (`DM1` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
-The groups that need a real ruling are the register and bit constants: `DE7`, `DE10`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
+The groups that need a real ruling are the register and bit constants: `DE7`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
-102 unratified names: 83 with no block, 19 provisional.
+93 unratified names: 74 with no block, 19 provisional.
 
-### DE1. Module names (11)
+### DE1. Module names (10)
 
-`coherence`, `controller`, `data_plane`, `descriptor`, `hardware`, `jh7110`, `layout`, `motorcomm`, `proofs`, `sim`, `tests`
+`coherence`, `controller`, `data_plane`, `descriptor`, `hardware`, `jh7110`, `layout`, `motorcomm`, `proofs`, `tests`
 
 - Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify all eleven as they stand. `data_plane`, `descriptor` and `hardware` are private and already provisional; `proofs`, `sim` and `tests` follow the tree's usual names for harness, simulator and test modules; the rest say what the module holds.
+- Provisional recommendation: Ratify all ten as they stand. `data_plane`, `descriptor` and `hardware` are private and already provisional; `proofs` and `tests` follow the tree's usual names for harness and test modules; the rest say what the module holds.
 
 ### DE2. The sixteen non-overlap assertions (16)
 
@@ -90,12 +90,6 @@ The groups that need a real ruling are the register and bit constants: `DE7`, `D
 - Breaks the spelled-out rule: yes.
 - Provisional recommendation: Spell out, with the databook spelling kept as `#[doc(alias)]` and cited in the doc comment, as the 2026-11-02 rule and the earlier `RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION` rename already do. The docs already carry the plain-words title of each (for example 'owned by the device'), so the candidate names come from the crate's own text. Decide as one group; the items share one pattern.
 
-### DE10. MDIO command-word bits and shifts (8)
-
-`management_data_input_output::BMCR_RESET`, `management_data_input_output::CR_500_800`, `management_data_input_output::CR_SHIFT`, `management_data_input_output::GB`, `management_data_input_output::GOC_READ`, `management_data_input_output::GOC_WRITE`, `management_data_input_output::PA_SHIFT`, `management_data_input_output::RDA_SHIFT`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out with aliases: `BMCR_RESET` after the `BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE` precedent, and the rest by the same method (`GB` is the GMII busy bit, `GOC_*` the operation code, `CR_*` the clock range, `PA_SHIFT` and `RDA_SHIFT` the address field positions). A short group; the docs give the plain words.
 
 ### DE11. MDIO software surface (6)
 
@@ -120,21 +114,21 @@ The groups that need a real ruling are the register and bit constants: `DE7`, `D
 
 ### DE14. Layout and simulator odds and ends (3)
 
-`layout::BYTES`, `layout::PAGES`, `sim::with`
+`layout::BYTES`, `layout::PAGES`, `simulator::with`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand: `BYTES` and `PAGES` are the layout sizes, `with` is the simulator builder.
 
 ## `designware_mobile_storage`
 
-75 unratified names: 75 with no block, 0 provisional.
+74 unratified names: 74 with no block, 0 provisional.
 
-### DM1. Module names (10)
+### DM1. Module names (9)
 
-`bench`, `card`, `command`, `host`, `jh7110`, `partition`, `proofs`, `sd`, `sim`, `tests`
+`bench`, `card`, `command`, `host`, `jh7110`, `partition`, `proofs`, `sd`, `tests`
 
 - Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify all ten. `sd` passes the acronym test (Secure Digital is a spoken phrase, but nobody says it); the rest are plain.
+- Provisional recommendation: Ratify all nine. `sd` passes the acronym test (Secure Digital is a spoken phrase, but nobody says it); the rest are plain.
 
 ### DM2. Host controller (13)
 
@@ -180,7 +174,7 @@ The groups that need a real ruling are the register and bit constants: `DE7`, `D
 
 ### DM8. Simulator (5)
 
-`sim::Fault`, `sim::Sim`, `sim::depth`, `sim::new`, `sim::peek`
+`simulator::Fault`, `simulator::Sim`, `simulator::depth`, `simulator::new`, `simulator::peek`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
@@ -201,14 +195,14 @@ The groups that need a real ruling are the register and bit constants: `DE7`, `D
 
 ## `e1000e`
 
-133 unratified names: 95 with no block, 38 provisional.
+132 unratified names: 94 with no block, 38 provisional.
 
-### E1. Module names (15)
+### E1. Module names (14)
 
-`control`, `data_plane`, `descriptor`, `device`, `layout`, `pch`, `pch/flush`, `pch/hardware`, `pch/reset`, `pch/sequence`, `pch/sim`, `pch/tests`, `pch/ulp`, `proofs`, `tests`
+`control`, `data_plane`, `descriptor`, `device`, `layout`, `pch`, `pch/flush`, `pch/hardware`, `pch/reset`, `pch/sequence`, `pch/tests`, `pch/ulp`, `proofs`, `tests`
 
 - Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify all but two. `pch` and `ulp` abbreviate 'platform controller hub' and 'ultra low power'; recommend `platform_controller_hub` and `ultra_low_power` (the stricter reading, a close call since Intel and Linux write both as letters; the sibling modules `non_volatile_memory` and `physical_layer_device` already spell out their words). The other thirteen are plain.
+- Provisional recommendation: Ratify all but two. `pch` and `ulp` abbreviate 'platform controller hub' and 'ultra low power'; recommend `platform_controller_hub` and `ultra_low_power` (the stricter reading, a close call since Intel and Linux write both as letters; the sibling modules `non_volatile_memory` and `physical_layer_device` already spell out their words). The other twelve are plain.
 
 ### E2. Device identity (4)
 
@@ -289,7 +283,7 @@ The groups that need a real ruling are the register and bit constants: `DE7`, `D
 
 ### E13. Ultra low power and simulator (7)
 
-`pch::ulp::WAIT_MS`, `pch::ulp::done`, `pch::ulp::release`, `pch::ulp::request`, `pch::sim::Sim`, `pch::sim::Start`, `pch::sim::new`
+`pch::ulp::WAIT_MS`, `pch::ulp::done`, `pch::ulp::release`, `pch::ulp::request`, `pch::simulator::Sim`, `pch::simulator::Start`, `pch::simulator::new`
 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify `done`, `release`, `request` and the simulator names; recommend `WAIT_MS` become `WAIT_MILLISECONDS`, matching `POLL_MICROSECONDS`.

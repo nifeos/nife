@@ -19,7 +19,7 @@ use crate::registers;
 
 /// **The DMA region**, as the driver reads and writes it. Offsets are bytes from the region's
 /// first byte; an implementation bounds them. The kernel's is pages in the direct map, the tests'
-/// is memory `sim` walks too. `designware_ethernet::DirectMemoryAccessRegion`'s shape.
+/// is memory `simulator` walks too. `designware_ethernet::DirectMemoryAccessRegion`'s shape.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. The region the descriptors and data pages live in,
 /// spelled out.
@@ -404,7 +404,7 @@ mod tests {
 
     use super::*;
     use crate::sd::{self, Card, IoError};
-    use crate::sim::{CardKind, Memory, Sim};
+    use crate::simulator::{CardKind, Memory, Sim};
 
     /// A bus address with high bits set, so an offset taken as an address shows.
     const BASE: u64 = 0x8000_0000;
@@ -447,7 +447,7 @@ mod tests {
     }
 
     /// **Every descriptor bit, as a number, and a chain as the databook lays it out.** The driver
-    /// and `sim` share these constants, so a wrong one would agree with itself in every walk; only
+    /// and `simulator` share these constants, so a wrong one would agree with itself in every walk; only
     /// the databook's values catch it. 4608 bytes is a full page and a 512-byte tail.
     #[test]
     fn the_descriptor_bits_and_a_two_page_chain_are_the_databooks() {

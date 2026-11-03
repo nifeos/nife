@@ -32,7 +32,7 @@ FreeBSD's `e1000_pch_spt` class are carried, because every I219 the crate claims
 (`pch::is_pch`).
 
 Every sequence is generic over `pch::Hardware`, so it runs on the host against a simulated I219
-(`pch/sim.rs`) as well as in the kernel. QEMU's 82574L is not a PCH part and never reaches
+(`pch/simulator.rs`) as well as in the kernel. QEMU's 82574L is not a PCH part and never reaches
 `sequence`. It does reach `physical_layer_device::id_at`, which shares
 `physical_layer_device::read_mdic` with everything here, so the MDIO primitive is the one piece the
 QEMU gates prove.
@@ -41,7 +41,7 @@ QEMU gates prove.
 
 - The port has run on silicon once, with no cable ([the note's BUGS](../e1000e.md#bugs)). Under
   the gates `sequence` is skipped, since `is_pch` is false for QEMU's 82574L. It is proved only
-  against `sim`, which is this crate's reading of FreeBSD and not the device.
+  against `simulator`, which is this crate's reading of FreeBSD and not the device.
 - The link-up half is not ported. FreeBSD reconfigures the PHY each time link comes up, from a
   link-change interrupt this driver does not take (`e1000_check_for_copper_link_ich8lan`). That
   covers the EMI receive configuration, the PLL clock gate, the 776.20 pointer gap at 1000 Mb/s,
