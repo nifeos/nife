@@ -1,4 +1,7 @@
 //! The crate's host tests.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3145. Ruled in the group E1 ruling on e1000e's module names;
+//! kept as it stands.
 
 use std::vec;
 use std::vec::Vec;
@@ -103,7 +106,7 @@ impl Sim {
             let mut f = vec![0; len];
             self.read_bytes(address - PHYS, &mut f);
             self.sent.push(f);
-            self.write_u64(d + 8, word | (TRANSMIT_STATUS_DD as u64) << 32);
+            self.write_u64(d + 8, word | (TRANSMIT_STATUS_DESCRIPTOR_DONE as u64) << 32);
             self.tdh = (self.tdh + 1) % TRANSMIT_ENTRIES;
         }
     }
@@ -120,7 +123,7 @@ fn frame(tag: u8, length: usize) -> Vec<u8> {
     (0..length).map(|k| tag ^ k as u8).collect()
 }
 
-const GOOD: u8 = RECEIVE_STATUS_DD | RECEIVE_STATUS_EOP;
+const GOOD: u8 = RECEIVE_STATUS_DESCRIPTOR_DONE | RECEIVE_STATUS_END_OF_PACKET;
 
 #[test]
 fn start_posts_every_receive_buffer_but_one_and_names_only_its_own_buffers() {
@@ -184,7 +187,7 @@ fn a_lying_or_bad_descriptor_is_dropped_and_the_ring_moves_on() {
     let (mut sim, mut dp) = started();
     let mut out = [0u8; MAXIMUM_FRAME];
     assert!(sim.deliver(&frame(1, 64), 0xffff, GOOD, 0)); // longer than any buffer
-    assert!(sim.deliver(&frame(2, 64), 64, RECEIVE_STATUS_DD, 0)); // no end of packet
+    assert!(sim.deliver(&frame(2, 64), 64, RECEIVE_STATUS_DESCRIPTOR_DONE, 0)); // no end of packet
     assert!(sim.deliver(&frame(3, 64), 64, GOOD, 0x01)); // CRC error
     assert!(sim.deliver(&frame(4, 8), 8, GOOD, 0)); // shorter than a header
     let f = frame(5, 99);
@@ -329,17 +332,17 @@ fn the_station_address_reads_from_entry_zero_and_refuses_an_invalid_one() {
 
 #[test]
 fn the_claimed_ids_are_intel_and_qemus_is_among_them() {
-    assert!(is_supported(0x8086, 0x10d3));
-    assert!(is_supported(0x8086, 0x15b7));
+    assert!(is_supported_device(0x8086, 0x10d3));
+    assert!(is_supported_device(0x8086, 0x15b7));
     assert!(
-        !is_supported(0x10ec, 0x10d3),
+        !is_supported_device(0x10ec, 0x10d3),
         "a Realtek part with a colliding id"
     );
     assert!(
-        !is_supported(0x8086, 0x100e),
+        !is_supported_device(0x8086, 0x100e),
         "the older e1000, a different register map"
     );
-    assert_eq!(model(0x10d3), Some("82574L (QEMU's e1000e)"));
+    assert_eq!(model_name(0x10d3), Some("82574L (QEMU's e1000e)"));
 }
 
 #[test]

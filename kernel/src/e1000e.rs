@@ -28,10 +28,10 @@ pub enum Error {
     ResetTimeout,
     /// Receive-address entry 0 was not marked valid after reset: the NVM load did not happen.
     NoStationAddress,
-    /// An I219 bring-up pass stopped (`crates/e1000e/src/pch/sequence.rs`).
-    Pch(::e1000e::pch::sequence::Error),
+    /// An I219 bring-up pass stopped (`crates/e1000e/src/platform_controller_hub/sequence.rs`).
+    Pch(::e1000e::platform_controller_hub::sequence::Error),
     /// The PHY identifier could not be read over MDIO.
-    PhysicalLayerDeviceId(::e1000e::pch::physical_layer_device::Error),
+    PhysicalLayerDeviceId(::e1000e::platform_controller_hub::physical_layer_device::Error),
 }
 
 /// Why there is no NIC to hand out.
@@ -63,7 +63,7 @@ pub struct Found {
     /// Whether `STATUS.LU` was set before [`LINK_WAIT_MS`] ran out.
     pub link_up: bool,
     /// The PHY's identifier, revision masked off, read over MDIO. On the 82574L this is the read
-    /// that proves [`::e1000e::pch::physical_layer_device::read_mdic`] under QEMU.
+    /// that proves [`::e1000e::platform_controller_hub::physical_layer_device::read_mdic`] under QEMU.
     pub physical_layer_device_id: u32,
 }
 
@@ -79,13 +79,13 @@ pub fn bring_up() -> Result<Found, Absent> {
     let region = region_for(dev.rid);
     let c = Controller(mmu::phys_to_virt(dev.bar0));
     let refused = |why| Absent::Refused { rid: dev.rid, why };
-    let pch = ::e1000e::pch::is_pch(dev.device);
+    let pch = ::e1000e::platform_controller_hub::is_pch(dev.device);
     let mut hw = Bar { c: &c, dev: &dev };
     let mut physical_layer_device_id = None;
     if pch {
         // An I219 behind a PCH: FreeBSD's passes, in FreeBSD's order; QEMU's 82574L never comes
         // here.
-        use ::e1000e::pch::sequence;
+        use ::e1000e::platform_controller_hub::sequence;
         let id = sequence::initialize_physical_layer_device_workarounds(&mut hw)
             .map_err(|e| refused(Error::Pch(e)))?;
         physical_layer_device_id = Some(id);
@@ -107,7 +107,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     );
     if pch {
         // FreeBSD's `e1000_init_hw_ich8lan`, whose copper-link setup sets `CTRL.SLU` itself.
-        ::e1000e::pch::sequence::initialize_hardware(&mut hw)
+        ::e1000e::platform_controller_hub::sequence::initialize_hardware(&mut hw)
             .map_err(|e| refused(Error::Pch(e)))?;
     } else {
         c.w(
@@ -147,14 +147,14 @@ pub fn bring_up() -> Result<Found, Absent> {
     c.w(registers::TIPG, ::e1000e::tipg());
     c.w(registers::TCTL, ::e1000e::tctl());
     if pch {
-        ::e1000e::pch::sequence::transmit_errata(&mut hw);
+        ::e1000e::platform_controller_hub::sequence::transmit_errata(&mut hw);
     }
     c.w(registers::RCTL, ::e1000e::rctl());
 
     // The 82574L's PHY answers at address 1 with no pages and no semaphore.
     let physical_layer_device_id = match physical_layer_device_id {
         Some(id) => id,
-        None => ::e1000e::pch::physical_layer_device::id_at(&mut hw, 1)
+        None => ::e1000e::platform_controller_hub::physical_layer_device::id_at(&mut hw, 1)
             .map_err(|e| refused(Error::PhysicalLayerDeviceId(e)))?,
     };
 
@@ -253,7 +253,7 @@ fn zero(region: u64) {
 /// STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 /// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, region: u64) {
-    use ::e1000e::pch::{flush, registers as pch};
+    use ::e1000e::platform_controller_hub::{flush, registers as pch};
     c.w(
         pch::FEXTNVM11,
         c.r(pch::FEXTNVM11) | flush::FEXTNVM11_DISABLE_MULR_FIX,
@@ -334,7 +334,7 @@ struct Bar<'a> {
     dev: &'a crate::pci::PciE1000eDevice,
 }
 
-impl ::e1000e::pch::Hardware for Bar<'_> {
+impl ::e1000e::platform_controller_hub::Hardware for Bar<'_> {
     fn read(&mut self, off: u64) -> u32 {
         self.c.r(off)
     }
@@ -350,8 +350,8 @@ impl ::e1000e::pch::Hardware for Bar<'_> {
     fn pci_vendor_id(&mut self) -> u16 {
         self.dev.config_read32(0) as u16
     }
-    fn note(&mut self, n: ::e1000e::pch::sequence::Note) {
-        use ::e1000e::pch::sequence::Note;
+    fn note(&mut self, n: ::e1000e::platform_controller_hub::sequence::Note) {
+        use ::e1000e::platform_controller_hub::sequence::Note;
         match n {
             // The identifier in hex, as the bench card compares it.
             Note::PhysicalLayerDeviceReached { at, id } => {
