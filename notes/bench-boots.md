@@ -94,7 +94,7 @@ microSD slot (slot 1) and then the eMMC socket (slot 0), every line `storage-ben
 2. Its clocks and reset as found, walked through `SDIO_BRING_UP`, every step idempotent.
 3. The controller's identity (`VERID`, `HCON`, the FIFO, `CDETECT`) and the five registers the
    firmware's driver last wrote, read before anything is written.
-4. The read-only probe (`designware_mobile_storage::bench::read_only`): identification, the CID, the
+4. The read-only probe (`designware_mobile_storage::bench::run_read_only_probe`): identification, the CID, the
    capacity, sector 0's partition table, the first partition's boot sector, and a timed 8 MiB
    sequential read from the start of that partition.
 5. Only on the microSD slot, and only in a build made with `NIFE_STORAGE_BENCH_WRITE=scratch`, the

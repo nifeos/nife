@@ -8,7 +8,7 @@
 //! # BUGS
 //! - Two bring-ups share this file (the 82574L's and the I219's), and QEMU proves only one.
 //! - Waiting for link is a spin of up to [`LINK_WAIT_MS`], holding a core once per wiring.
-//! - The DMA region is never returned: a wired boot keeps [`::e1000e::layout::PAGES`] pages.
+//! - The DMA region is never returned: a wired boot keeps [`::e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES`] pages.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -28,10 +28,10 @@ pub enum Error {
     ResetTimeout,
     /// Receive-address entry 0 was not marked valid after reset: the NVM load did not happen.
     NoStationAddress,
-    /// An I219 bring-up pass stopped (`crates/e1000e/src/pch/sequence.rs`).
-    Pch(::e1000e::pch::sequence::Error),
+    /// An I219 bring-up pass stopped (`crates/e1000e/src/platform_controller_hub/sequence.rs`).
+    Pch(::e1000e::platform_controller_hub::sequence::Error),
     /// The PHY identifier could not be read over MDIO.
-    PhysicalLayerDeviceId(::e1000e::pch::physical_layer_device::Error),
+    PhysicalLayerDeviceId(::e1000e::platform_controller_hub::physical_layer_device::Error),
 }
 
 /// Why there is no NIC to hand out.
@@ -63,7 +63,7 @@ pub struct Found {
     /// Whether `STATUS.LU` was set before [`LINK_WAIT_MS`] ran out.
     pub link_up: bool,
     /// The PHY's identifier, revision masked off, read over MDIO. On the 82574L this is the read
-    /// that proves [`::e1000e::pch::physical_layer_device::read_mdic`] under QEMU.
+    /// that proves [`::e1000e::platform_controller_hub::physical_layer_device::read_mdic`] under QEMU.
     pub physical_layer_device_id: u32,
 }
 
@@ -79,13 +79,13 @@ pub fn bring_up() -> Result<Found, Absent> {
     let region = region_for(dev.rid);
     let c = Controller(mmu::phys_to_virt(dev.bar0));
     let refused = |why| Absent::Refused { rid: dev.rid, why };
-    let pch = ::e1000e::pch::is_pch(dev.device);
+    let pch = ::e1000e::platform_controller_hub::is_pch(dev.device);
     let mut hw = Bar { c: &c, dev: &dev };
     let mut physical_layer_device_id = None;
     if pch {
         // An I219 behind a PCH: FreeBSD's passes, in FreeBSD's order; QEMU's 82574L never comes
         // here.
-        use ::e1000e::pch::sequence;
+        use ::e1000e::platform_controller_hub::sequence;
         let id = sequence::initialize_physical_layer_device_workarounds(&mut hw)
             .map_err(|e| refused(Error::Pch(e)))?;
         physical_layer_device_id = Some(id);
@@ -107,7 +107,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     );
     if pch {
         // FreeBSD's `e1000_init_hw_ich8lan`, whose copper-link setup sets `CTRL.SLU` itself.
-        ::e1000e::pch::sequence::initialize_hardware(&mut hw)
+        ::e1000e::platform_controller_hub::sequence::initialize_hardware(&mut hw)
             .map_err(|e| refused(Error::Pch(e)))?;
     } else {
         c.w(
@@ -140,14 +140,14 @@ pub fn bring_up() -> Result<Found, Absent> {
     );
     c.w(registers::TRANSMIT_CONTROL_REGISTER, ::e1000e::tctl());
     if pch {
-        ::e1000e::pch::sequence::transmit_errata(&mut hw);
+        ::e1000e::platform_controller_hub::sequence::transmit_errata(&mut hw);
     }
     c.w(registers::RECEIVE_CONTROL_REGISTER, ::e1000e::rctl());
 
     // The 82574L's PHY answers at address 1 with no pages and no semaphore.
     let physical_layer_device_id = match physical_layer_device_id {
         Some(id) => id,
-        None => ::e1000e::pch::physical_layer_device::id_at(&mut hw, 1)
+        None => ::e1000e::platform_controller_hub::physical_layer_device::id_at(&mut hw, 1)
             .map_err(|e| refused(Error::PhysicalLayerDeviceId(e)))?,
     };
 
@@ -171,8 +171,8 @@ pub fn bring_up() -> Result<Found, Absent> {
 /// Point the device at both rings, with every head and tail at zero.
 fn program_rings(c: &Controller, region: u64) {
     // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
-    let rx = region + layout::RECEIVE_RING;
-    let tx = region + layout::TRANSMIT_RING;
+    let rx = region + layout::RECEIVE_RING_OFFSET_BYTES;
+    let tx = region + layout::TRANSMIT_RING_OFFSET_BYTES;
     c.w(
         registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
         rx as u32,
@@ -231,15 +231,16 @@ fn region_for(rid: u32) -> u64 {
     if base != 0 {
         return base;
     }
-    let base = crate::memory::alloc_contiguous_zeroed(layout::PAGES as usize)
-        .expect("no DMA region for the e1000e NIC")
-        .addr();
+    let base =
+        crate::memory::alloc_contiguous_zeroed(layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as usize)
+            .expect("no DMA region for the e1000e NIC")
+            .addr();
     if crate::iommu::is_active() {
         crate::iommu::confine(
             rid,
             &[paging::domain::DmaRegion {
                 base,
-                size: layout::PAGES * page_frames::FRAME_SIZE,
+                size: layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * page_frames::FRAME_SIZE,
                 writable: true,
             }],
         );
@@ -251,14 +252,14 @@ fn region_for(rid: u32) -> u64 {
 /// Zero the region, after the reset and before the rings are programmed. A stale descriptor status
 /// from a previous wiring would otherwise read as a received frame.
 fn zero(region: u64) {
-    // SAFETY: `region` is the run `region_for` allocated, `layout::BYTES` long, in the direct map.
+    // SAFETY: `region` is the run `region_for` allocated, `layout::DIRECT_MEMORY_ACCESS_REGION_BYTES` long, in the direct map.
     // The device was reset just before this, so it is not DMA-ing into it, and the service refuses
     // a new wiring while the previous process lives, so no process has it mapped.
     unsafe {
         core::ptr::write_bytes(
             mmu::phys_to_virt(region) as *mut u8,
             0,
-            layout::BYTES as usize,
+            layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize,
         );
     }
 }
@@ -283,7 +284,7 @@ fn zero(region: u64) {
 /// STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 /// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, region: u64) {
-    use ::e1000e::pch::{flush, registers as pch};
+    use ::e1000e::platform_controller_hub::{flush, registers as pch};
     c.w(
         pch::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER,
         c.r(pch::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER)
@@ -296,7 +297,7 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
     ) {
         return;
     }
-    let ring = region + layout::TRANSMIT_RING;
+    let ring = region + layout::TRANSMIT_RING_OFFSET_BYTES;
     let tdba = u64::from(c.r(registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER))
         | u64::from(c.r(registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER)) << 32;
     if tdba != ring {
@@ -376,7 +377,7 @@ struct Bar<'a> {
     dev: &'a crate::pci::PciE1000eDevice,
 }
 
-impl ::e1000e::pch::Hardware for Bar<'_> {
+impl ::e1000e::platform_controller_hub::Hardware for Bar<'_> {
     fn read(&mut self, off: u64) -> u32 {
         self.c.r(off)
     }
@@ -392,8 +393,8 @@ impl ::e1000e::pch::Hardware for Bar<'_> {
     fn pci_vendor_id(&mut self) -> u16 {
         self.dev.config_read32(0) as u16
     }
-    fn note(&mut self, n: ::e1000e::pch::sequence::Note) {
-        use ::e1000e::pch::sequence::Note;
+    fn note(&mut self, n: ::e1000e::platform_controller_hub::sequence::Note) {
+        use ::e1000e::platform_controller_hub::sequence::Note;
         match n {
             // The identifier in hex, as the bench card compares it.
             Note::PhysicalLayerDeviceReached { at, id } => {
