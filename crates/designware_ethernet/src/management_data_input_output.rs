@@ -48,6 +48,8 @@ pub const GOC_WRITE: u32 = 1 << 2;
 pub const GB: u32 = 1 << 0;
 
 /// How long one MDIO command may take before it is a timeout: OpenBSD's 2000 polls 10 µs apart.
+///
+/// Name: ratified 2026-11-03 (UTC), #3128.
 pub const COMMAND_LIMIT_MICROSECONDS: u64 = 20_000;
 /// The poll interval.
 const POLL_MICROSECONDS: u64 = 10;
@@ -147,6 +149,8 @@ pub(crate) const PHYSID1: u8 = 0x02;
 pub(crate) const PHYSID2: u8 = 0x03;
 
 /// Why an MDIO command did not complete.
+///
+/// Name: ratified 2026-11-03 (UTC), #3128.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// The busy bit stayed set for [`COMMAND_LIMIT_MICROSECONDS`]: the MAC's CSR clock is off, or the
@@ -165,8 +169,10 @@ pub enum Error {
 
 /// **An MDIO command word**: the clock range, the PHY and register addresses, the operation, and
 /// the busy bit that starts it. Out-of-range addresses are reduced to the field (5 bits each)
-/// rather than spilling into the neighbors.
-pub const fn command(physical_layer_device_address: u8, register: u8, write: bool) -> u32 {
+/// rather than spilling into the neighbors. It builds the word and sends nothing.
+///
+/// Name: ratified 2026-11-03 (UTC), #3128.
+pub const fn command_word(physical_layer_device_address: u8, register: u8, write: bool) -> u32 {
     (CR_500_800 << CR_SHIFT)
         | (((physical_layer_device_address & 0x1f) as u32) << PA_SHIFT)
         | (((register & 0x1f) as u32) << RDA_SHIFT)
@@ -177,7 +183,7 @@ pub const fn command(physical_layer_device_address: u8, register: u8, write: boo
 /// The command word's five fields share no bit, so its `|`s are its `^`s: the clock range, the
 /// PHY and register addresses (five bits each, reduced by mask), the operation, and the busy
 /// bit; the compiler checks the pairwise disjointness here, and the mutation exclusion for
-/// `command` names this constant. Each operand enters through its own field mask.
+/// `command_word` names this constant. Each operand enters through its own field mask.
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[doc(alias = "THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT")]
@@ -204,6 +210,8 @@ pub trait ManagementDataInputOutput {
 }
 
 /// The MAC's MDIO registers, through whatever [`Hardware`] reaches the controller.
+///
+/// Name: ratified 2026-11-03 (UTC), #3128.
 pub struct Bus<'a, H: Hardware>(pub &'a mut H);
 
 impl<H: Hardware> Bus<'_, H> {
@@ -231,7 +239,7 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
         self.wait(physical_layer_device_address, register)?;
         self.0.write(
             registers::MAC_MDIO_ADDR,
-            command(physical_layer_device_address, register, false),
+            command_word(physical_layer_device_address, register, false),
         );
         self.wait(physical_layer_device_address, register)?;
         Ok(self.0.read(registers::MAC_MDIO_DATA) as u16)
@@ -247,7 +255,7 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
         self.0.write(registers::MAC_MDIO_DATA, u32::from(v));
         self.0.write(
             registers::MAC_MDIO_ADDR,
-            command(physical_layer_device_address, register, true),
+            command_word(physical_layer_device_address, register, true),
         );
         self.wait(physical_layer_device_address, register)
     }
@@ -279,7 +287,9 @@ pub const PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP: () =
 
 /// **Is the link up right now?** Two reads of the latched-low status bit, so a drop since the last
 /// look does not read as down forever and a link that is up now reads as up.
-pub fn link_is_up(
+///
+/// Name: ratified 2026-11-03 (UTC), #3128.
+pub fn is_link_up(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
 ) -> Result<bool, Error> {
@@ -289,6 +299,8 @@ pub fn link_is_up(
 
 /// **Restart autonegotiation**, advertising whatever the PHY's own defaults advertise (every speed
 /// on a gigabit part).
+///
+/// Name: ratified 2026-11-03 (UTC), #3128.
 pub fn restart_autonegotiation(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
@@ -316,9 +328,9 @@ mod tests {
 
     #[test]
     fn a_read_command_carries_the_largest_divider_the_addresses_and_the_busy_bit() {
-        let c = command(0, PHYSID1, false);
+        let c = command_word(0, PHYSID1, false);
         assert_eq!(c, 7 << 8 | 2 << 16 | 3 << 2 | 1);
-        let w = command(31, 31, true);
+        let w = command_word(31, 31, true);
         assert_eq!(w, 7 << 8 | 31 << 21 | 31 << 16 | 1 << 2 | 1);
     }
 
@@ -390,7 +402,7 @@ mod tests {
         assert_eq!(Bus(&mut hardware).read(4, BMSR), Ok(0xbeef));
         assert_eq!(
             hardware.writes,
-            [(registers::MAC_MDIO_ADDR, command(4, BMSR, false))]
+            [(registers::MAC_MDIO_ADDR, command_word(4, BMSR, false))]
         );
         assert_eq!(
             hardware.waited_microseconds,
@@ -408,7 +420,7 @@ mod tests {
             hardware.writes,
             [
                 (registers::MAC_MDIO_DATA, 0x1200),
-                (registers::MAC_MDIO_ADDR, command(1, BMCR, true))
+                (registers::MAC_MDIO_ADDR, command_word(1, BMCR, true))
             ]
         );
     }
@@ -416,7 +428,7 @@ mod tests {
     #[test]
     fn a_command_still_busy_from_someone_else_is_waited_out_not_overwritten() {
         let mut hardware = Pair::new(0x1234, 2);
-        hardware.address = command(7, 9, false); // firmware's read, in flight
+        hardware.address = command_word(7, 9, false); // firmware's read, in flight
         assert_eq!(Bus(&mut hardware).read(0, PHYSID1), Ok(0x1234));
         // Nothing was written until the firmware's command had cleared its busy bit.
         assert_eq!(hardware.writes.len(), 1);
@@ -486,9 +498,9 @@ mod tests {
             link_now: true,
             dropped_since_read: true,
         };
-        assert!(link_is_up(&mut physical_layer_device, 0).unwrap());
+        assert!(is_link_up(&mut physical_layer_device, 0).unwrap());
         physical_layer_device.link_now = false;
-        assert!(!link_is_up(&mut physical_layer_device, 0).unwrap());
+        assert!(!is_link_up(&mut physical_layer_device, 0).unwrap());
     }
 
     #[test]
@@ -524,8 +536,8 @@ mod tests {
     #[test]
     fn an_address_too_wide_for_its_field_does_not_spill_into_the_next() {
         // PHY 33 is PHY 1; it must not set bit 26, which is outside the 5-bit field.
-        assert_eq!(command(33, 0, false), command(1, 0, false));
-        assert_eq!(command(0, 0x3f, false) & (1 << PA_SHIFT), 0);
+        assert_eq!(command_word(33, 0, false), command_word(1, 0, false));
+        assert_eq!(command_word(0, 0x3f, false) & (1 << PA_SHIFT), 0);
     }
 
     /// A restart asked of a PHY already negotiating (both bits read set) leaves both set rather

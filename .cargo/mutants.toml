@@ -372,9 +372,9 @@ exclude_re = [
     # motorcomm::tests::configure_replaces_the_delay_and_drive_fields_and_nothing_else kills.
     "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace << with >> in configure$",
     # The command word's five field masks are asserted pairwise disjoint by
-    # COMMAND_WORD_FIELDS_DO_NOT_OVERLAP, beside command; every operand enters through its own
+    # COMMAND_WORD_FIELDS_DO_NOT_OVERLAP, beside command_word; every operand enters through its own
     # field's mask.
-    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in command$",
+    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in command_word$",
     # The high half is shifted above the low half's whole width;
     # PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP, beside the function, asserts it for the
     # widest values either can hold.

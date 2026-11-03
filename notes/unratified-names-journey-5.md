@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 118 | 99 | 19 | 14 |
+| `designware_ethernet` | 112 | 93 | 19 | 13 |
 | `designware_mobile_storage` | 74 | 74 | 0 | 10 |
 | `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 336 | 267 | 69 | 39 |
+| total | 330 | 261 | 69 | 38 |
 
 ## How to read a group
 
@@ -110,13 +110,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: yes.
 - Provisional recommendation: Spell out with aliases: `BMCR_RESET` after the `BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE` precedent, and the rest by the same method (`GB` is the GMII busy bit, `GOC_*` the operation code, `CR_*` the clock range, `PA_SHIFT` and `RDA_SHIFT` the address field positions). A short group; the docs give the plain words.
-
-### DE11. MDIO software surface (6)
-
-`management_data_input_output::Bus`, `management_data_input_output::COMMAND_LIMIT_MICROSECONDS`, `management_data_input_output::Error`, `management_data_input_output::command`, `management_data_input_output::link_is_up`, `management_data_input_output::restart_autonegotiation`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. The module name is already spelled out; these are ordinary names.
 
 ### DE12. Motorcomm PHY software surface (10)
 
