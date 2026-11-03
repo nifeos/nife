@@ -59,10 +59,10 @@ states.
    Three pieces make that possible. The instrument (`script/stranger-test`, the rubric and run
    record `notes/stranger-test.md` with its appendices, and `stranger-cadence.yml`) has moved to
    its own repository, provisionally `nifeos/stranger-test`, which exists, created with the
-   architect's approval. The new rubric is written, dated and committed there before its first
+   architect's approval. The new rubric lives there, with a date, committed before its first
    run. And `nife-kernel` carries the crate template's stranger test of milestone 887 for its own
    build half. One run then goes, scored against the new rubric, which starts series 2 at run 1.
-6. The pause line, `**The cadence pauses until the kernel leaves nife.**`, is gone, and the
+6. The pause line, `**The cadence pauses until the kernel leaves nife.**`, no longer exists, and the
    instrument repository holds the single 28-day cadence constant. Both live where the instrument
    lives, after the move; the stranger note in nife no longer exists to carry them.
    `script/stranger-test --selftest` proves that without the pause line the cadence runs at 28
@@ -144,15 +144,15 @@ The architect ruled on all five questions on 2026-11-03 (UTC).
    architect's approval". The reasons: the stranger must not meet the rubric; one instrument serves
    `nife-kernel`, basalt and every crate repository; and the dependency runs one way, from
    instrument to subject.
-3. **The rubric.** The rubric changes before the restart and counts as a new rubric. It is
-   written, dated and committed before its first run. Runs 1 to 6 stay as series 1, the new rubric
-   starts series 2 at run 1, and scores are not compared across series. A note may track B1 to B4
+3. **The rubric.** The rubric changes before the restart and counts as a new rubric. The
+   author writes, dates and commits it before its first run. Runs 1 to 6 stay as series 1, the new rubric
+   starts series 2 at run 1, and scores do not compare across series. A note may track B1 to B4
    across both. The reason: five of the eight M rows ask about things that will not be in the
    repository.
 4. **The cadence.** One cadence serves every repository: 28 days, exactly four Mondays, so the
    weekly job notices on the due day. It is one constant in the instrument repository and replaces
    nife's 30 days. Scoring a run is a person's work, so the number of subjects is the real cost;
    no decision about that number has been made.
-5. **The name.** The repository is named `nife-kernel` (the name only; creating it needs the
+5. **The name.** The repository takes the name `nife-kernel` (the name only; creating it needs the
    architect's separate go). It stays distinct on disk from the `kernel/` directory inside nife
    and from generic names, and it matches the hyphenated non-crate repositories.
