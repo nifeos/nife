@@ -110,8 +110,9 @@ commit. The record is
   messages and comments name none either, and neither do logs or artifacts the lane makes. A seed is
   not a single token to avoid: a description detailed enough to rebuild the input is the same leak.
   `script/lint` refuses a commit message with a replay line or a seed assignment
-  (`helpers/replay-line-check.sh`). Nothing yet reads a pull request's title or body, so before
-  opening the pull request the lane pipes its title and its body through the same script. The check
+  (`helpers/replay-line-check.sh`). A workflow (`.github/workflows/pr-text-replay-check.yml`) runs
+  the same script over the pull request's title and body, on open and on every edit, and fails the
+  pull request's check, so the lane does not pipe them by hand. The check
   catches the two forms the drivers print and not a seed written some other way, so the lane also
   reads its own text before pushing.
 - **The seed joins the fixed-seed regression list later.** A second pull request, opened after the
