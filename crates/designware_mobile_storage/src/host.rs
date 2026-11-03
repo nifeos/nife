@@ -379,7 +379,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     ) -> Result<[u32; 4], Error> {
         self.wait_not_busy()?;
         if let Some(d) = command.data {
-            self.registers.write(registers::BYTCNT, d.bytes());
+            self.registers.write(registers::BYTCNT, d.total_bytes());
             self.registers.write(registers::BLKSIZ, d.block_size);
             let ctrl = self.registers.read(registers::CONTROL);
             self.registers
@@ -396,7 +396,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         self.registers
             .write(registers::RINTSTS, registers::RINTSTS_ALL);
         self.registers.write(registers::CMDARG, command.argument);
-        self.registers.write(registers::CMD, command.word());
+        self.registers
+            .write(registers::CMD, command.register_word());
         if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::CMD) & registers::COMMAND_START == 0
         }) {
@@ -452,7 +453,9 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         let Some(d) = command.data else {
             return Err(Error::BufferSize);
         };
-        if d.write || buffer.len() as u64 != u64::from(d.bytes()) || !buffer.len().is_multiple_of(4)
+        if d.is_write
+            || buffer.len() as u64 != u64::from(d.total_bytes())
+            || !buffer.len().is_multiple_of(4)
         {
             return Err(Error::BufferSize);
         }
@@ -461,10 +464,10 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             .as_ref()
             .map(InternalDirectMemoryAccess::capacity)
         {
-            if d.bytes() > capacity {
+            if d.total_bytes() > capacity {
                 return Err(Error::BufferSize);
             }
-            let resp = self.internal_direct_memory_access_transfer(command, d.bytes())?;
+            let resp = self.internal_direct_memory_access_transfer(command, d.total_bytes())?;
             if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
                 direct_memory_access.region().read_bytes(PAGE, buffer);
             }
@@ -499,18 +502,18 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         let Some(d) = command.data else {
             return Err(Error::BufferSize);
         };
-        if !d.write
-            || buffer.len() as u64 != u64::from(d.bytes())
+        if !d.is_write
+            || buffer.len() as u64 != u64::from(d.total_bytes())
             || !buffer.len().is_multiple_of(4)
         {
             return Err(Error::BufferSize);
         }
         if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
-            if d.bytes() > direct_memory_access.capacity() {
+            if d.total_bytes() > direct_memory_access.capacity() {
                 return Err(Error::BufferSize);
             }
             direct_memory_access.region().write_bytes(PAGE, buffer);
-            let resp = self.internal_direct_memory_access_transfer(command, d.bytes())?;
+            let resp = self.internal_direct_memory_access_transfer(command, d.total_bytes())?;
             self.wait_not_busy()?;
             return Ok(resp);
         }
@@ -818,7 +821,7 @@ mod tests {
         let one = |write| Data {
             block_size: 512,
             blocks: 1,
-            write,
+            is_write: write,
         };
         let read = Command::with_data(17, 0, Response::R1, one(false));
         let write = Command::with_data(WRITE_BLOCK, 0, Response::R1, one(true));

@@ -308,7 +308,7 @@ fn configure_multimedia_card<R: Registers, D: DirectMemoryAccessRegion>(
         Data {
             block_size: BLOCK as u32,
             blocks: 1,
-            write: false,
+            is_write: false,
         },
     );
     let r1 = host
@@ -466,7 +466,7 @@ fn data_command(card: &Card, logical_block_address: u64, blocks: u32, write: boo
         Data {
             block_size: BLOCK as u32,
             blocks,
-            write,
+            is_write: write,
         },
     )
 }
