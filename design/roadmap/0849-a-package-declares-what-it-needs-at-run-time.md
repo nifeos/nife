@@ -24,9 +24,9 @@ stand, and the gate extends `helpers/packages.py`. No outside tool fits, for the
 
 A package has one relationship to another today: linking.
 
-- `depends` is checked only for link edges across a package boundary. `helpers/packages.py:410`
+- `depends` is checked only for link edges across a package boundary. `evaluate` in `helpers/packages.py`
   allows a link if the target crate is an `interface` or its package is in `depends`, and nothing
-  else reads `depends` except the kind rules below it. `script/lint:3298-3313` runs it.
+  else reads `depends` except the kind rules below it. The `package boundaries` section of `script/lint` runs it.
 - So a client of a service never declares the service. `system_log`'s clients link
   `system_log_contract`, which `contracts` exports as an interface, so calef's ruling on #1796 (fork
   1, 2026-10-07 UTC) added no `depends` edge to `system-log` anywhere. That is right for linking. It
@@ -34,18 +34,18 @@ A package has one relationship to another today: linking.
 
 What a program needs at run time is declared, but per program and in code, never per package:
 
-- `grant_plan::Manifest` (`crates/grant_plan/src/lib.rs:1731`) has a field per service a program may
+- `grant_plan::Manifest` (`crates/grant_plan/src/manifest.rs`) has a field per service a program may
   be endowed with: `clock`, `domain`, `config`, `entropy` (`:1836`), `network` (`:1857`), `machine`
   and `share`. Its `runtime` field (`:1888`) says whether capabilities land in native order or at
   `std`'s fixed slots. An archive program's manifest is a `match` arm. A foreign program's travels
   as an ELF note (milestone 597 (a program carries its manifest in an ELF note), `crates/capability_manifest_note`).
-- Who provides each service is a string at a call site. `crates/system_initializer/src/lib.rs:1168`
+- Who provides each service is a string at a call site. `boot` in `crates/system_initializer/src/boot_sequence.rs`
   looks up `"system_log"`, `:1190` `"entropy"`, `:1194` `"net_stack"` and `:1244` `"redoxfs_server"`.
   Each is optional by design: a missing provider costs a feature, and a declaring child gets an empty
   slot (`:3550`, `:3559`) and says so.
 - The log service has no client side at all yet. `:1728` records that nothing registers a log writer,
   so there is no manifest field for it either.
-- `capability_plan::Requirements` (`crates/capability_plan/src/lib.rs:206`) is the closest thing to
+- `capability_plan::Requirements` (`crates/capability_plan/src/lib.rs`) is the closest thing to
   a provider declaration in the tree: a `contract`, capabilities tagged `Serve` or `Use` (`:216`),
   and `depends_on` (`:396`) naming contracts. Only milestone 23 (a capability-routed component OS
   with live replacement)'s swappable components use it. The boot's own services are built from
@@ -60,14 +60,14 @@ Nothing joins these. No gate knows that `uuid` (in `core-tools`) declares `entro
 
 - Built by `helpers/build-ripgrep.sh`, which nothing in `script/test` or CI runs, for all three
   targets with `-Zbuild-std`, into `target/ripgrep/<triple>/rg`.
-- Packed by `xtask` iff that file exists: `xtask/src/farm.rs:71` names the path, and
-  `xtask/src/archive.rs:653` (aarch64), `:354` (riscv64) and `:525` (x86_64) push it as `rg`. It is
+- Packed by `xtask` iff that file exists: `ripgrep_elf` in `xtask/src/basalt.rs` names the path, and
+  `ported_program_blobs` in `xtask/src/archive.rs` pushes it as `rg` for each architecture. It is
   one of six names in a hand list, `BUILT_ELSEWHERE` (`:236`).
-- No package file can name it: `helpers/packages.py:325` admits only in-tree binaries.
-- It carries no manifest note (`helpers/build-ripgrep.sh:67-69`).
+- No package file can name it: `evaluate` in `helpers/packages.py` admits only in-tree binaries.
+- It carries no manifest note (the header of `helpers/build-ripgrep.sh`).
 
 What it is handed, and by whom: the only thing that runs it is the kernel's test harness, not
-the progenitor. `system_tests/src/user/ripgrep_tests.rs:71` calls `fs_service::start_std_full`, which
+the progenitor. `unmodified_ripgrep_runs_and_has_no_arguments_to_run_on` in `system_tests/src/user/ripgrep_tests.rs` calls `fs_service::start_std_full`, which
 starts a RedoxFS server if none is running and spawns `rg` with three capabilities
 (`fs_service/std_start.rs`):
 
@@ -116,9 +116,9 @@ Per fork 1, needs live only in program manifests and the build derives the rest.
    a compile error until it is mapped (rung 1). A manifest also names its runner (fork B).
 2. Expose: a `provides` table in a package file, covering contracts and runners (fork 2).
    `packages.py` checks each named program is a member, the `subtree_grants` precedent
-   (`helpers/packages.py:449-458`).
+   (`evaluate` in `helpers/packages.py`).
 3. Route check: `xtask` already links `grant_plan` and checks every archive it packs
-   (`check_declared_programs`, `xtask/src/archive.rs:265`). It emits each package's derived needs,
+   (`check_declared_programs`, `xtask/src/archive.rs`). It emits each package's derived needs,
    and `packages.py` applies the kind rules `depends` already has (fork 3).
 4. Install: the derived needs go into the package metadata and the index, per fork 1.
 5. Versions: levels, the gates and the badge field, as the versioning appendix lists.
