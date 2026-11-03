@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 96 | 77 | 19 | 12 |
+| `designware_ethernet` | 86 | 67 | 19 | 11 |
 | `designware_mobile_storage` | 74 | 74 | 0 | 10 |
 | `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 314 | 245 | 69 | 37 |
+| total | 304 | 235 | 69 | 36 |
 
 ## How to read a group
 
@@ -39,7 +39,7 @@ The groups that need a real ruling are the register and bit constants: `DE8`, `D
 
 ## `designware_ethernet`
 
-96 unratified names: 77 with no block, 19 provisional.
+86 unratified names: 67 with no block, 19 provisional.
 
 ### DE1. Module names (10)
 
@@ -103,13 +103,6 @@ The groups that need a real ruling are the register and bit constants: `DE8`, `D
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. The module name is already spelled out; these are ordinary names.
-
-### DE12. Motorcomm PHY software surface (10)
-
-`motorcomm::Applied`, `motorcomm::Drive`, `motorcomm::Link`, `motorcomm::Settings`, `motorcomm::Source`, `motorcomm::Speed`, `motorcomm::apply_speed`, `motorcomm::configure`, `motorcomm::link`, `motorcomm::mbps`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify all but `mbps`. `mbps` abbreviates a unit; recommend `megabits_per_second` (the stricter reading, a close call since 'Mbps' is a standard unit symbol).
 
 ### DE13. JH7110 node description (5)
 
