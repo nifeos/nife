@@ -905,12 +905,6 @@ crates/designware_mobile_storage/src/jh7110.rs::Slot
 crates/designware_mobile_storage/src/jh7110.rs::WINDOW_SIZE
 crates/designware_mobile_storage/src/jh7110.rs::role
 crates/designware_mobile_storage/src/partition.rs
-crates/designware_mobile_storage/src/partition.rs::Entry
-crates/designware_mobile_storage/src/partition.rs::SIGNATURE
-crates/designware_mobile_storage/src/partition.rs::contains
-crates/designware_mobile_storage/src/partition.rs::is_used
-crates/designware_mobile_storage/src/partition.rs::parse
-crates/designware_mobile_storage/src/partition.rs::scratch
 crates/designware_mobile_storage/src/proofs.rs
 crates/designware_mobile_storage/src/registers.rs::STATUS
 crates/designware_mobile_storage/src/registers.rs::WINDOW_USED

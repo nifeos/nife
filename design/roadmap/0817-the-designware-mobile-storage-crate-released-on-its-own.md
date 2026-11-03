@@ -194,10 +194,6 @@ work, and the lane that renames a name drops its line.
 - `read_matrix` (`src/bench.rs`): scope: a bench
 - `read_only` (`src/bench.rs`): scope: a bench
 - `scratch_write` (`src/bench.rs`): scope: a bench
-- `Entry` (`src/partition.rs`): scope: partitions
-- `SIGNATURE` (`src/partition.rs`): scope: partitions
-- `is_used` (`src/partition.rs`): scope: partitions
-- `scratch` (`src/partition.rs`): scope: partitions
 
 ### Generic
 
