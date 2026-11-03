@@ -1,6 +1,8 @@
 name: pr text replay check
 
-# Observed failing: 2026-11-03, run 1: placeholder until the staged run is recorded in the next commit.
+# Observed failing: 2026-11-03, run 41574751664: red on #3116, a throwaway draft (closed unmerged)
+#   whose body held an invented replay line; the log named line 3 of the body as a replay line and a
+#   seed assignment, and printed neither the line nor the seed.
 
 # **Refuses a pull request whose title or body carries a reproducer.** A seed, a crash input and a
 # replay line stay out of public text until the fix for the finding is on main
