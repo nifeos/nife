@@ -1,6 +1,6 @@
 name: pr text replay check
 
-# Observed failing: PENDING
+# Observed failing: 2026-11-03, run 1: placeholder until the staged run is recorded in the next commit.
 
 # **Refuses a pull request whose title or body carries a reproducer.** A seed, a crash input and a
 # replay line stay out of public text until the fix for the finding is on main
