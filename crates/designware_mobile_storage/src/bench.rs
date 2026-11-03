@@ -7,7 +7,7 @@
 //! is there: a pattern, read back, then the original, read back too. A card with no gap is refused,
 //! not written.
 
-use crate::host::{Host, Registers};
+use crate::host::{HostController, RegisterWindowAndClock};
 use crate::internal_direct_memory_access::DirectMemoryAccessRegion;
 use crate::partition::MasterBootRecord;
 use crate::sd::{self, BLOCK, Card, InitializationError, IoError};
@@ -51,8 +51,8 @@ pub enum ReadFailure {
 /// # Errors
 ///
 /// The first step that failed.
-pub fn read_only<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+pub fn read_only<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
     bus_width: u8,
     buffer: &mut [u8],
     timed_blocks: u64,
@@ -86,8 +86,8 @@ pub fn read_only<R: Registers, D: DirectMemoryAccessRegion>(
 
 /// **The timed sequential read**: up to `timed_blocks` blocks from `first`, `buffer.len()` bytes a
 /// command, stopping before the card's end. Returns the blocks read and the microseconds taken.
-fn timed_read<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+fn timed_read<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
     card: &Card,
     first: u64,
     buffer: &mut [u8],
@@ -95,7 +95,7 @@ fn timed_read<R: Registers, D: DirectMemoryAccessRegion>(
 ) -> Result<(u64, u64), ReadFailure> {
     let per = (buffer.len() / BLOCK) as u64;
     let mut timed = 0u64;
-    let start = host.registers().now_microseconds();
+    let start = host.registers_mut().now_microseconds();
     if per > 0 {
         while timed < timed_blocks && first + timed + per <= card.blocks {
             sd::read_blocks(host, card, first + timed, buffer)
@@ -105,7 +105,7 @@ fn timed_read<R: Registers, D: DirectMemoryAccessRegion>(
     }
     Ok((
         timed,
-        host.registers().now_microseconds().wrapping_sub(start),
+        host.registers_mut().now_microseconds().wrapping_sub(start),
     ))
 }
 
@@ -125,7 +125,7 @@ pub struct InternalDirectMemoryAccessReport {
 }
 
 /// **The IDMAC's half of the read-only probe**, on a host
-/// [`Host::with_internal_direct_memory_access`] made from the one [`read_only`] ran on and reported
+/// [`HostController::with_internal_direct_memory_access`] made from the one [`read_only`] ran on and reported
 /// `report`. `reference` is the polled host's read of `reference.len()` bytes from
 /// `report.timed_from`; the same blocks are read through the IDMAC and compared, then
 /// [`read_only`]'s timed read runs again from there in `buffer.len()`-byte commands, so the two
@@ -138,8 +138,11 @@ pub struct InternalDirectMemoryAccessReport {
 /// Name: ratified 2026-11-02 (UTC), #3092. `idmac` and the names built on it spell out
 /// `internal_direct_memory_access`; the databook's `idmac` is kept as `doc(alias = "idmac")`.
 #[doc(alias = "idmac")]
-pub fn internal_direct_memory_access_read<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+pub fn internal_direct_memory_access_read<
+    R: RegisterWindowAndClock,
+    D: DirectMemoryAccessRegion,
+>(
+    host: &mut HostController<R, D>,
     report: &ReadReport,
     reference: &[u8],
     buffer: &mut [u8],
@@ -191,8 +194,8 @@ pub enum WriteVerdict {
 
 /// **The scratch write test.** `master_boot_record` is what [`read_only`] parsed from this card;
 /// `original` and `scratch` are two buffers of at least [`SCRATCH_SECTORS`] blocks.
-pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
-    host: &mut Host<R, D>,
+pub fn scratch_write<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+    host: &mut HostController<R, D>,
     card: &Card,
     master_boot_record: Option<&MasterBootRecord>,
     original: &mut [u8],
@@ -259,7 +262,7 @@ pub fn scratch_write<R: Registers, D: DirectMemoryAccessRegion>(
 /// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors;
 /// the databook's `fifo` is kept as `doc(alias = "fifo")`.
 #[doc(alias = "fifo")]
-pub struct QueueWatch<R: Registers> {
+pub struct QueueWatch<R: RegisterWindowAndClock> {
     inner: R,
     /// The highest `STATUS` queue count seen since the last [`QueueWatch::clear`].
     pub maximum_fill: u32,
@@ -267,7 +270,7 @@ pub struct QueueWatch<R: Registers> {
     pub full_reads: u32,
 }
 
-impl<R: Registers> QueueWatch<R> {
+impl<R: RegisterWindowAndClock> QueueWatch<R> {
     /// Watch the queue of `inner`.
     ///
     /// Name: ratified 2026-11-02 (UTC), #3092. The constructor of the queue watch.
@@ -288,7 +291,7 @@ impl<R: Registers> QueueWatch<R> {
     }
 }
 
-impl<R: Registers> Registers for QueueWatch<R> {
+impl<R: RegisterWindowAndClock> RegisterWindowAndClock for QueueWatch<R> {
     fn read(&mut self, offset: u32) -> u32 {
         let v = self.inner.read(offset);
         if offset == crate::registers::STATUS {
@@ -349,8 +352,8 @@ pub const MATRIX_BLOCKS: [u32; 4] = [2, 8, 32, 128];
 /// Identification failing, which ends the matrix; a failed read is a row, not an error.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. The function that reads the whole matrix.
-pub fn read_matrix<R: Registers>(
-    host: &mut Host<QueueWatch<R>>,
+pub fn read_matrix<R: RegisterWindowAndClock>(
+    host: &mut HostController<QueueWatch<R>>,
     bus_width: u8,
     logical_block_address: u64,
     buffer: &mut [u8],
@@ -366,11 +369,11 @@ pub fn read_matrix<R: Registers>(
             let Some(dst) = buffer.get_mut(..len) else {
                 continue;
             };
-            host.registers().clear();
-            let start = host.registers().now_microseconds();
+            host.registers_mut().clear();
+            let start = host.registers_mut().now_microseconds();
             let result = sd::read_blocks(host, &card, logical_block_address, dst);
-            let microseconds = host.registers().now_microseconds().wrapping_sub(start);
-            let watch = host.registers();
+            let microseconds = host.registers_mut().now_microseconds().wrapping_sub(start);
+            let watch = host.registers_mut();
             let after = [
                 watch.inner.read(crate::registers::STATUS),
                 watch.inner.read(crate::registers::RINTSTS),
