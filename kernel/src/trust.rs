@@ -204,7 +204,7 @@ pub(crate) fn record_loader_digests(cmdline: Option<&[u8]>) {
 /// or `None` when the loader handed no usable words. A caller past that check gets `Some`: the
 /// check halts on every other outcome. `user::boot_progenitor` writes it into the base digest page.
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
+/// Name: ratified 2026-11-03 (UTC), #3102.
 pub(crate) fn base_digest() -> Option<measured_boot::Digest> {
     match *LOADER_DIGESTS.lock() {
         Some(Ok(digests)) => Some(digests.base),

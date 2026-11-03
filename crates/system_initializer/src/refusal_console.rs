@@ -7,8 +7,7 @@
 //! Best effort, and silent when it cannot write: a slot 28 or slot 1 the kernel did not grant, or a
 //! mapping it refuses, leaves the trap that follows as the only report.
 //!
-//! Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability, for
-//! the module and the file.
+//! Name: ratified 2026-11-03 (UTC), #3102. The module and the file.
 
 use super::*;
 
@@ -21,7 +20,7 @@ const POLLS_PER_BYTE: u32 = 1 << 20;
 /// on aarch64 and riscv64. In the scratch family of [`RNG_DMA_PEEK_VA`]; never given up, because
 /// the process traps straight after.
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
+/// Name: ratified 2026-11-03 (UTC), #3102.
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 const REFUSAL_UART_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0f70_0000);
 
