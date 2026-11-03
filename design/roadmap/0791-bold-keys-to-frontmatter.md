@@ -42,23 +42,23 @@ or recorded below.
 "Live docs" counts tracked Markdown carrying the shape as a line opener today. "If the bold goes"
 says what the reader does when it is missing.
 
-| Reader (file:line) | Key shape | Live docs | If the bold goes |
+| Reader (file and symbol) | Key shape | Live docs | If the bold goes |
 |---|---|---|---|
-| `helpers/roadmap_block.py:163-166` (read by `script/roadmap`, `metrics`, `catch-up`, `citations`) | `**Status: WORD**`, `**Built:** date`, `**Gate: X.**` | 0 (frontmatter wins) | Nothing for live docs. History blobs that `script/metrics` and `catch-up` walk still parse, which is why the prose reader is permanent. |
-| `helpers/roadmap_block.py:68-69`, `catch-up:335` | same, as the fallback | 0 | Same. |
-| `helpers/roadmap_block.py:169-171`, read by `script/roadmap:1334-1473` and `helpers/coe_actions.py` | `- **Recorded.**`, `**Done.**`, `**Refused.**`, `**Decision.**`, `**Proposed.**`, `**Outstanding.**`, `**None.**`, `**Milestone N.**`; Revisit: `**Condition.**`, `**Nothing.**`, `**Unstated.**` | 415 roadmap, 1 decision, 5 notes (about 1,400 spans) | `script/lint` fails loudly: a Follow-on section must open with a tag. The COE open-action count in the metrics row also reads these. |
-| `script/fatal-risks:241` | `**The experiment:**` lead-in | 8 risk files, 3 roadmap, 1 journey, 1 note | Lint fails: a risk with no experiment lead-in is refused. |
-| `script/fatal-risks:249`, `script/metrics:1534` | `**Experiment status: RUN, date.**` | 9 risk files | `script/fatal-risks` fails. `script/metrics` reads `None` for the color and, if the appendix frontmatter disagrees, aborts the weekly run. |
-| `script/metrics:1544` | `**Status: WORD` (retired-risk fallback) | 0 | Old history only. |
-| `script/fatal-risks:257` | `^**WORD` in the running-order table | 1 (README) | Lint fails. Table rows are never counted by the ratchet, so it is in `NOT_MARKERS`. |
-| `script/roadmap:259` | `**Reuse:**` (optional: plain `Reuse:` also matches) | 12 | Nothing. The bold is not needed. |
-| `script/roadmap:891`, `helpers/roadmap_proposals.py:41,44`, `helpers/roadmap_migrate.py:152,153,304` | Index-row `**Built:**`; proposal `**Status: PROPOSED d.**` and `**Gate:**`; one-shot migrator | 0 live | Migrator and old-proposal readers only. |
-| `script/stranger-test:369` | `**A run is due every N days.**` | 1 note | Lint fails ("exactly one must match"). |
+| `STATUS_TOKEN`, `BUILT_TOKEN` and `GATE_TOKEN` in `helpers/roadmap_block.py` (read by `script/roadmap`, `metrics`, `catch-up`, `citations`) | `**Status: WORD**`, `**Built:** date`, `**Gate: X.**` | 0 (frontmatter wins) | Nothing for live docs. History blobs that `script/metrics` and `catch-up` walk still parse, which is why the prose reader is permanent. |
+| `PROSE_STATUS` in `helpers/roadmap_block.py`, `parse_decisions` in `script/catch-up` | same, as the fallback | 0 | Same. |
+| `DISPOSITION` in `helpers/roadmap_block.py`, read by the `## Follow-on` checks in `script/roadmap` and by `helpers/coe_actions.py` | `- **Recorded.**`, `**Done.**`, `**Refused.**`, `**Decision.**`, `**Proposed.**`, `**Outstanding.**`, `**None.**`, `**Milestone N.**`; Revisit: `**Condition.**`, `**Nothing.**`, `**Unstated.**` | 415 roadmap, 1 decision, 5 notes (about 1,400 spans) | `script/lint` fails loudly: a Follow-on section must open with a tag. The COE open-action count in the metrics row also reads these. |
+| `EXPERIMENT` in `script/fatal-risks` | `**The experiment:**` lead-in | 8 risk files, 3 roadmap, 1 journey, 1 note | Lint fails: a risk with no experiment lead-in is refused. |
+| `BOLD_STATUS` in `script/fatal-risks`, `FATAL_RISK_STATUS_BOLD` in `script/metrics` | `**Experiment status: RUN, date.**` | 9 risk files | `script/fatal-risks` fails. `script/metrics` reads `None` for the color and, if the appendix frontmatter disagrees, aborts the weekly run. |
+| `RETIRED_FATAL_RISK_STATUS` in `script/metrics` | `**Status: WORD` (retired-risk fallback) | 0 | Old history only. |
+| `ROW_VERDICT` in `script/fatal-risks` | `^**WORD` in the running-order table | 1 (README) | Lint fails. Table rows are never counted by the ratchet, so it is in `NOT_MARKERS`. |
+| `REUSE_LINE` in `script/roadmap` | `**Reuse:**` (optional: plain `Reuse:` also matches) | 12 | Nothing. The bold is not needed. |
+| `check_fields` in `script/roadmap`, `_STATUS` and `_GATE` in `helpers/roadmap_proposals.py`, `STATUS_HEAD`, `GATE_HEAD` and `migrate` in `helpers/roadmap_migrate.py` | Index-row `**Built:**`; proposal `**Status: PROPOSED d.**` and `**Gate:**`; one-shot migrator | 0 live | Migrator and old-proposal readers only. |
+| `CADENCE` in `script/stranger-test` | `**A run is due every N days.**` | 1 note | Lint fails ("exactly one must match"). |
 | `script/journeys` | none: no bold marker | 0 | Nothing. A journey's status is its frontmatter's `status` key, with `retired` beside it, and `script/journeys --check` holds the file to that schema. |
-| `helpers/name_provenance.py:368,473` | `**Provisional name`; a bold `**Name:` header is a stray | 9 (briefs, notes) | Removing a stray `**Name:` bold clears a defect. Removing `**Provisional name` hides an ad hoc opener the gate wants to see. |
-| `script/decisions:309`, `script/roadmap:666` | bans on `**Status:` and restated statuses | 0 | Not keys. |
-| `script/citations:293,331`; `script/fatal-risks:387,393` | emphasis optional around a citation or a status word | many | Nothing. The pattern tolerates bold and does not need it. |
-| `helpers/prose_ratchet.py:192` | `**Milestone N.**` and `**Proposed.**` folded when comparing a promotion | same as tags | Promotion diffs read as edits. |
+| `AD_HOC` and `stem_paragraph` in `helpers/name_provenance.py` | `**Provisional name`; a bold `**Name:` header is a stray | 9 (briefs, notes) | Removing a stray `**Name:` bold clears a defect. Removing `**Provisional name` hides an ad hoc opener the gate wants to see. |
+| `RESTATED` in `script/decisions` and in `script/roadmap` | bans on `**Status:` and restated statuses | 0 | Not keys. |
+| `EMPHASIS` and `PREFILTER` in `script/citations`; `analyse` in `script/fatal-risks` | emphasis optional around a citation or a status word | many | Nothing. The pattern tolerates bold and does not need it. |
+| `_PROMOTION_RES` in `helpers/prose_ratchet.py` | `**Milestone N.**` and `**Proposed.**` folded when comparing a promotion | same as tags | Promotion diffs read as edits. |
 
 Not readers of a document: `**Lane:**` in a pull request body is written by `script/claim` and
 `helpers/ci-failing.sh` and read by no script. `script/vendor-watch` and `xtask/src/restamp.rs` write
