@@ -924,11 +924,6 @@ crates/designware_mobile_storage/src/sd.rs::identify
 crates/designware_mobile_storage/src/sd.rs::in_range
 crates/designware_mobile_storage/src/sd.rs::read_blocks
 crates/designware_mobile_storage/src/sd.rs::write_blocks
-crates/designware_mobile_storage/src/simulator.rs::Fault
-crates/designware_mobile_storage/src/simulator.rs::Sim
-crates/designware_mobile_storage/src/simulator.rs::depth
-crates/designware_mobile_storage/src/simulator.rs::new
-crates/designware_mobile_storage/src/simulator.rs::peek
 crates/designware_mobile_storage/src/tests.rs
 crates/device_tree_blob/src/lib.rs::DeviceTreeBlob
 crates/device_tree_blob/src/lib.rs::Error

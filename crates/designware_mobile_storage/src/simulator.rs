@@ -126,6 +126,8 @@ pub(crate) enum CardKind {
 }
 
 /// What an injected fault does to the command it hits.
+///
+/// Name: ratified 2026-11-03 (UTC), #3142. A fault is what a test injects into the simulated card.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Fault {
     /// The card does not answer: `RTO`.
@@ -159,7 +161,10 @@ struct Transfer {
 }
 
 /// The simulation. Public fields are what a test sets up or checks.
-pub struct Sim {
+///
+/// Name: ratified 2026-11-03 (UTC), #3142. Renamed from `SimulatedHostController`, which abbreviated what it is: a
+/// simulated host controller, the counterpart of the driver's `Host`.
+pub struct SimulatedHostController {
     registers: [u32; 0x220 / 4],
     reset_pending: bool,
     now: u64,
@@ -262,11 +267,13 @@ pub(crate) const VERID: u32 = 0x5342_290a;
 /// The `HCON` it reports: a 32-bit FIFO, 32-bit addresses.
 pub(crate) const HCON: u32 = 1 << 7;
 
-impl Sim {
+impl SimulatedHostController {
     /// A controller of FIFO `depth` words with `kind` of card holding `blocks` blocks of zero.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3142. `new` stays: it builds the value from its parts.
     #[must_use]
-    pub fn new(kind: CardKind, blocks: usize, depth: usize) -> Sim {
-        let mut s = Sim {
+    pub fn new(kind: CardKind, blocks: usize, depth: usize) -> SimulatedHostController {
+        let mut s = SimulatedHostController {
             registers: [0; 0x220 / 4],
             reset_pending: false,
             now: 0,
@@ -332,19 +339,25 @@ impl Sim {
     /// The same controller, reporting release `verid` instead (an older one puts the FIFO at
     /// `0x100`, where a later one has the card threshold register).
     #[must_use]
-    pub(crate) fn with_verid(mut self, verid: u32) -> Sim {
+    pub(crate) fn with_verid(mut self, verid: u32) -> SimulatedHostController {
         self.verid = verid;
         self.registers[(registers::VERID / 4) as usize] = verid;
         self
     }
 
     /// The FIFO depth in words.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3142. Renamed from `depth`: the FIFO is `queue` in this
+    /// tree, and the unit is words, so the name says both.
     #[must_use]
-    pub fn depth(&self) -> usize {
+    pub fn queue_depth_words(&self) -> usize {
         self.depth
     }
 
     /// A register's value as the driver last left it, without the side effects of a read.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3142. `peek` keeps its standard-library meaning, as in
+    /// `Peekable::peek`: look without side effects.
     #[must_use]
     pub fn peek(&self, offset: u32) -> u32 {
         self.registers[(offset / 4) as usize]
@@ -813,7 +826,7 @@ impl Sim {
     }
 }
 
-impl Registers for Sim {
+impl Registers for SimulatedHostController {
     fn read(&mut self, offset: u32) -> u32 {
         let queue_offset = registers::queue_offset(self.verid);
         if offset == queue_offset {
