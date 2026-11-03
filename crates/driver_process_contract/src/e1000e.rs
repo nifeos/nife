@@ -6,7 +6,7 @@
 
 use address_space_map::{PAGE, pair_page};
 
-/// The DMA region, `e1000e::layout::PAGES` pages, normal memory. The virtio server's one DMA
+/// The DMA region, `e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` pages, normal memory. The virtio server's one DMA
 /// page lives at the same address; a `net_stack` drives one NIC or the other, never both.
 ///
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the

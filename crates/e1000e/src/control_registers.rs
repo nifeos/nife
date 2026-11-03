@@ -1,7 +1,8 @@
 //! **What the driver writes to the controller's control registers**: the bits it sets, and the
 //! Receive Control, Transmit Control and Transmit Inter-Packet Gap (`RCTL`, `TCTL` and `TIPG`) values it programs, and the MAC address read back.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: ratified 2026-11-03 (UTC), #3145. Renamed from `control`, which did not say that the
+//! module holds the controller's control registers.
 
 /// Device Control (`CTRL`): set link up. OpenBSD's `E1000_CTRL_SLU` (`sys/dev/pci/if_em_hw.h`), which FreeBSD's `sys/dev/e1000/e1000_defines.h` and Linux spell the same.
 ///
