@@ -112,7 +112,7 @@ impl Prefix {
 
 /// Write `<prefix>: <row> <ticks> <count>\n` into `out` and return its length.
 ///
-/// Panics if `out` is shorter than the longest row (96 bytes covers any row name up to 40 bytes).
+/// Panics if `out` is shorter than the longest row (96 bytes covers any row name up to 35 bytes).
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane/961-step-1-bench-commands.
 pub fn format_row(out: &mut [u8], prefix: Prefix, row: &str, ticks: u64, count: u64) -> usize {

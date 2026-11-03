@@ -13,7 +13,7 @@
 //! - [`read_page`] refuses an all-zero digest as a frame nobody wrote. A table whose real SHA-256
 //!   is all zeroes would be refused too; finding one is a preimage attack on SHA-256.
 //!
-//! Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
+//! Name: ratified 2026-11-03 (UTC), #3102.
 //! `base` is the loader's word for the same digest; `digest` says what the page carries;
 //! `_contract` is the family suffix. Refused `base_set_page` (names the page's shape, not its
 //! content) and `measurement_table_digest_contract` (accurate, and longer than the loader's word
@@ -25,14 +25,14 @@
 /// byte is the layout's [`VERSION`] as a digit, so [`read_page`] can tell another layout of this
 /// page from a page that is not this one.
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability. Its
+/// Name: ratified 2026-11-03 (UTC), #3102. Its
 /// value `BASEDIG1` is a wire value.
 pub const MAGIC: [u8; 8] = *b"BASEDIG1";
 
 /// The page layout's version, the digit [`MAGIC`] carries. A layout break bumps this and re-mints
 /// the magic in one change.
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability. The
+/// Name: ratified 2026-11-03 (UTC), #3102. The
 /// name every contract crate uses for its layout version.
 pub const VERSION: u32 = 1;
 
@@ -40,18 +40,18 @@ pub const VERSION: u32 = 1;
 /// The number is this interface's for good: no other interface takes it, and a format change is a
 /// new version, never a new number. A program declares the pair of this id and [`VERSION`].
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability. The
+/// Name: ratified 2026-11-03 (UTC), #3102. The
 /// name every contract crate uses for its interface identity.
 pub const INTERFACE_ID: u64 = 22;
 
 /// The length of a SHA-256 digest, in bytes.
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
+/// Name: ratified 2026-11-03 (UTC), #3102.
 pub const DIGEST_BYTES: usize = 32;
 
 /// A SHA-256 digest: the 32 bytes of the hash, with no algorithm label.
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
+/// Name: ratified 2026-11-03 (UTC), #3102.
 pub type Digest = [u8; DIGEST_BYTES];
 
 const OFF_MAGIC: usize = 0;
@@ -60,7 +60,7 @@ const OFF_DIGEST: usize = OFF_MAGIC + MAGIC.len();
 /// **The size of the page's content** in bytes: the magic, then the digest. This is not a page
 /// size. The page is one whole frame, and this is how much of it carries data; the rest is zeroes.
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability. The
+/// Name: ratified 2026-11-03 (UTC), #3102. The
 /// page-crate family's name for the content length (design/naming/crates.md).
 pub const PAGE_CONTENT_BYTES: usize = OFF_DIGEST + DIGEST_BYTES;
 
@@ -76,7 +76,7 @@ pub const PAGE_CONTENT_BYTES: usize = OFF_DIGEST + DIGEST_BYTES;
 /// assert_eq!(read_page(&build_page(&digest)), Ok(digest));
 /// ```
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
+/// Name: ratified 2026-11-03 (UTC), #3102.
 /// `counter_frequency_contract`'s name for the same function.
 pub fn build_page(digest: &Digest) -> [u8; PAGE_CONTENT_BYTES] {
     let mut page = [0u8; PAGE_CONTENT_BYTES];
@@ -88,9 +88,10 @@ pub fn build_page(digest: &Digest) -> [u8; PAGE_CONTENT_BYTES] {
 /// **Why [`read_page`] refused a page.** Each refusal names a different fault, so a reader that
 /// refuses its boot can say which one it met.
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
+/// Name: ratified 2026-11-03 (UTC), #3102.
+#[doc(alias = "Refusal")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Refusal {
+pub enum Refused {
     /// Fewer than [`PAGE_CONTENT_BYTES`] bytes: `length` is how many there were.
     ShortPage {
         /// How many bytes the reader handed over.
@@ -109,27 +110,27 @@ pub enum Refusal {
     ZeroDigest,
 }
 
-impl Refusal {
+impl Refused {
     /// One line that names the refusal, for a console. Fixed text, because the reader that prints
     /// it may have no formatter.
     ///
     /// # Examples
     ///
     /// ```
-    /// use base_digest_contract::{Refusal, read_page};
+    /// use base_digest_contract::{Refused, read_page};
     ///
-    /// assert_eq!(read_page(&[0u8; 40]).unwrap_err().reason(), Refusal::NotThisPage.reason());
+    /// assert_eq!(read_page(&[0u8; 40]).unwrap_err().reason(), Refused::NotThisPage.reason());
     /// ```
     ///
-    /// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
+    /// Name: ratified 2026-11-03 (UTC), #3102.
     pub fn reason(&self) -> &'static str {
         match self {
-            Refusal::ShortPage { .. } => "the base digest page is shorter than its content",
-            Refusal::NotThisPage => "the base digest page does not carry its magic",
-            Refusal::UnsupportedVersion { .. } => {
+            Refused::ShortPage { .. } => "the base digest page is shorter than its content",
+            Refused::NotThisPage => "the base digest page does not carry its magic",
+            Refused::UnsupportedVersion { .. } => {
                 "the base digest page carries a layout version this reader does not know"
             }
-            Refusal::ZeroDigest => "the base digest page carries an all-zero digest",
+            Refused::ZeroDigest => "the base digest page carries an all-zero digest",
         }
     }
 }
@@ -146,7 +147,7 @@ impl Refusal {
 /// assert!(!is_plausible(&[0u8; 32]));
 /// ```
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
+/// Name: ratified 2026-11-03 (UTC), #3102.
 /// `counter_frequency_contract`'s name for its band check.
 pub fn is_plausible(digest: &Digest) -> bool {
     digest.iter().any(|&b| b != 0)
@@ -157,39 +158,39 @@ pub fn is_plausible(digest: &Digest) -> bool {
 /// same as its content alone.
 ///
 /// Refuses a short buffer, a page without the magic, another layout version and an all-zero
-/// digest ([`Refusal`]), in that order.
+/// digest ([`Refused`]), in that order.
 ///
 /// # Examples
 ///
 /// ```
-/// use base_digest_contract::{Refusal, build_page, read_page};
+/// use base_digest_contract::{Refused, build_page, read_page};
 ///
 /// let mut page = build_page(&[9u8; 32]);
 /// page[7] = b'2';
-/// assert_eq!(read_page(&page), Err(Refusal::UnsupportedVersion { byte: b'2' }));
+/// assert_eq!(read_page(&page), Err(Refused::UnsupportedVersion { byte: b'2' }));
 /// ```
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
-pub fn read_page(bytes: &[u8]) -> Result<Digest, Refusal> {
+/// Name: ratified 2026-11-03 (UTC), #3102.
+pub fn read_page(bytes: &[u8]) -> Result<Digest, Refused> {
     let Some(content) = bytes.get(..PAGE_CONTENT_BYTES) else {
-        return Err(Refusal::ShortPage {
+        return Err(Refused::ShortPage {
             length: bytes.len(),
         });
     };
     let (magic, rest) = content.split_at(OFF_DIGEST);
     let version_at = MAGIC.len() - 1;
     if magic[..version_at] != MAGIC[..version_at] {
-        return Err(Refusal::NotThisPage);
+        return Err(Refused::NotThisPage);
     }
     if magic[version_at] != MAGIC[version_at] {
-        return Err(Refusal::UnsupportedVersion {
+        return Err(Refused::UnsupportedVersion {
             byte: magic[version_at],
         });
     }
     let mut digest = [0u8; DIGEST_BYTES];
     digest.copy_from_slice(rest);
     if !is_plausible(&digest) {
-        return Err(Refusal::ZeroDigest);
+        return Err(Refused::ZeroDigest);
     }
     Ok(digest)
 }
@@ -221,18 +222,18 @@ mod tests {
         let page = build_page(&sample());
         assert_eq!(
             read_page(&page[..PAGE_CONTENT_BYTES - 1]),
-            Err(Refusal::ShortPage {
+            Err(Refused::ShortPage {
                 length: PAGE_CONTENT_BYTES - 1
             })
         );
-        assert_eq!(read_page(&[]), Err(Refusal::ShortPage { length: 0 }));
+        assert_eq!(read_page(&[]), Err(Refused::ShortPage { length: 0 }));
     }
 
     #[test]
     fn a_zeroed_frame_is_not_this_page() {
         assert_eq!(
             read_page(&[0u8; PAGE_CONTENT_BYTES]),
-            Err(Refusal::NotThisPage)
+            Err(Refused::NotThisPage)
         );
     }
 
@@ -242,7 +243,7 @@ mod tests {
         for at in 0..MAGIC.len() - 1 {
             let mut page = build_page(&sample());
             page[at] ^= 0x20;
-            assert_eq!(read_page(&page), Err(Refusal::NotThisPage), "byte {at}");
+            assert_eq!(read_page(&page), Err(Refused::NotThisPage), "byte {at}");
         }
     }
 
@@ -252,7 +253,7 @@ mod tests {
         page[MAGIC.len() - 1] = b'2';
         assert_eq!(
             read_page(&page),
-            Err(Refusal::UnsupportedVersion { byte: b'2' })
+            Err(Refused::UnsupportedVersion { byte: b'2' })
         );
     }
 
@@ -260,7 +261,7 @@ mod tests {
     fn an_all_zero_digest_is_refused() {
         assert_eq!(
             read_page(&build_page(&[0u8; DIGEST_BYTES])),
-            Err(Refusal::ZeroDigest)
+            Err(Refused::ZeroDigest)
         );
     }
 
@@ -278,10 +279,10 @@ mod tests {
     #[test]
     fn every_refusal_has_its_own_reason() {
         let all = [
-            Refusal::ShortPage { length: 0 },
-            Refusal::NotThisPage,
-            Refusal::UnsupportedVersion { byte: b'2' },
-            Refusal::ZeroDigest,
+            Refused::ShortPage { length: 0 },
+            Refused::NotThisPage,
+            Refused::UnsupportedVersion { byte: b'2' },
+            Refused::ZeroDigest,
         ];
         for (i, a) in all.iter().enumerate() {
             for b in &all[i + 1..] {

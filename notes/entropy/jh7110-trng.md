@@ -1,7 +1,7 @@
 # The JH7110 TRNG: sources, bring-up and health testing
 
-This is the reference behind `crates/jh7110_entropy`, which holds the TRNG's register layout, its
-device-tree query and the decision of whether a generation succeeded. Nothing here has been
+This is the reference behind the `jh7110_entropy` crate (nifeos/jh7110_entropy), which holds the
+TRNG's register layout, its device-tree query and the decision of whether a generation succeeded. Nothing here has been
 checked against real silicon. Every fact below comes from documentation and other drivers, so the
 milestone's gate stays HARDWARE.
 

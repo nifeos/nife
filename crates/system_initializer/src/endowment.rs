@@ -194,7 +194,7 @@ pub struct BootEndowment {
     /// reads the table, then deletes it. A boot whose slot is empty, or whose table does not match,
     /// stops with the reason on the console. Never delegated: without `GRANT` it cannot be.
     ///
-    /// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
+    /// Name: ratified 2026-11-03 (UTC), #3102.
     pub base_digest_page: u64,
     /// **Capabilities the kernel granted that the interactive system never uses**, deleted before
     /// anything is built. Empty on riscv64; on aarch64 the kernel's report endpoint and a test SGI,

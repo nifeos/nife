@@ -50,7 +50,7 @@ fn a_link_is_decoded_only_from_what_the_registers_say() {
         if bmcr & mdio::BMCR_ANENABLE == 0 {
             assert!(link.full_duplex == (bmcr & mdio::BMCR_FDX != 0));
         } else {
-            assert!(bmsr & mdio::BMSR_ANEGCOMPLETE != 0);
+            assert!(bmsr & mdio::BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE != 0);
             let common = anar & anlpar;
             let gigabit_full =
                 gtcr & mdio::GTCR_ADV_1000TFDX != 0 && gtsr & mdio::GTSR_LP_1000TFDX != 0;

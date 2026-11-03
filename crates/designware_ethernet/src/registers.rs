@@ -2,9 +2,9 @@
 //! driver writes or reads.
 //!
 //! Transcribed from OpenBSD's `sys/dev/ic/dwqereg.h` (revision of 2026-07-31, commit
-//! `59ec3ab4d107`, ISC license, notice in the crate root), with [`CONFIG_LM`] from Linux's
-//! `stmmac/dwmac4.h` and `DMA_CH0_RX_CONTROL_RBSZ_SHIFT` from U-Boot's `dwc_eth_qos.h`. The MAC
-//! and MTL are page `0x0000`; page `0x1000` holds the DMA channel's tail pointers beside its ring
+//! `59ec3ab4d107`, ISC license, notice in the crate root), with [`MAC_CONFIGURATION_LOOPBACK_MODE`] from Linux's
+//! `stmmac/dwmac4.h` and `DMA_CH0_RX_CONTROL_RBSZ_SHIFT` from U-Boot's `dwc_eth_qos.h`. The media
+//! access control (MAC) and MTL are page `0x0000`; page `0x1000` holds the DMA channel's tail pointers beside its ring
 //! bases and the controller's software reset, and there is no IOMMU, so a process given that page
 //! can repoint a ring and reset the MAC.
 //!
@@ -13,8 +13,7 @@
 //! becomes the constant for instance 0 under the macro's name, here `CHAN_CONTROL`. Each
 //! constant's documentation opens with its full name and its source's spelling.
 //!
-//! Name: provisional. Ruled 2026-10-26 (UTC): every `regs` module this tree names becomes
-//! `registers`, replacing `regs`.
+//! Name: ratified 2026-11-02 (UTC), #3094.
 
 /// **MAC configuration register** (`GMAC_MAC_CONF`, `dwqereg.h`).
 #[doc(alias = "mac configuration register")]
@@ -30,12 +29,14 @@ pub(crate) const MAC_CONF_TE: u32 = 1 << 1;
 pub const MAC_CONF_DCRS: u32 = 1 << 9;
 /// **Loopback mode** (`GMAC_CONFIG_LM`, `dwmac4.h`): the MAC returns what it transmits to its own
 /// receive path. The coherence probe uses it so the measurement does not depend on a cable or a
-/// link partner.
+/// link partner. Linux calls it `CONFIG_LM` in `dwmac4.h`; the media access control (MAC)
+/// configuration register's bit is also spelled `MAC_CONF_LM`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
-/// replacing `MAC_CONF_LM`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "loopback mode")]
-pub const CONFIG_LM: u32 = 1 << 12;
+#[doc(alias = "CONFIG_LM")]
+#[doc(alias = "MAC_CONF_LM")]
+pub const MAC_CONFIGURATION_LOOPBACK_MODE: u32 = 1 << 12;
 /// **Duplex mode** (`GMAC_MAC_CONF_DM`, `dwqereg.h`). Full duplex.
 #[doc(alias = "duplex mode")]
 pub const MAC_CONF_DM: u32 = 1 << 13;
@@ -89,10 +90,11 @@ pub(crate) const INT_EN: u32 = 0x00b4;
 /// **Synopsys version register** (`GMAC_VERSION`, `dwqereg.h`); the low byte is the core version
 /// (`0x52` for 5.20).
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
-/// replacing `MAC_VERSION`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "synopsys version register")]
-pub const VERSION: u32 = 0x0110;
+#[doc(alias = "VERSION")]
+#[doc(alias = "GMAC_VERSION")]
+pub const CORE_VERSION_REGISTER: u32 = 0x0110;
 /// **MAC hardware feature register** (`GMAC_MAC_HW_FEATURE(x)`, `dwqereg.h`), register `i` for `i`
 /// in `0..4`.
 #[doc(alias = "mac hardware feature register")]
@@ -280,17 +282,17 @@ pub(crate) const CHAN_RX_BASE_ADDR: u32 = 0x111c;
 /// **Transmit descriptor tail pointer** (`GMAC_CHAN_TX_END_ADDR(0)`, `dwqereg.h`): the address
 /// one past the last descriptor handed to the device.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
-/// replacing `CHAN_TX_TAIL`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "transmit descriptor tail pointer")]
-pub const CHAN_TX_END_ADDR: u32 = 0x1120;
+#[doc(alias = "CHAN_TX_END_ADDR")]
+pub const CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER: u32 = 0x1120;
 /// **Receive descriptor tail pointer** (`GMAC_CHAN_RX_END_ADDR(0)`, `dwqereg.h`), the same for
 /// the receive ring.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
-/// replacing `CHAN_RX_TAIL`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "receive descriptor tail pointer")]
-pub const CHAN_RX_END_ADDR: u32 = 0x1128;
+#[doc(alias = "CHAN_RX_END_ADDR")]
+pub const CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER: u32 = 0x1128;
 /// **Transmit descriptor ring length** (`GMAC_CHAN_TX_RING_LEN(0)`, `dwqereg.h`): the descriptor
 /// count minus one.
 #[doc(alias = "transmit descriptor ring length")]
@@ -342,8 +344,7 @@ pub(crate) const CHAN_STATUS_FBE: u32 = 1 << 12;
 /// The page of the window holding channel 0's registers, which is the page the data plane is
 /// mapped. Every `CHAN_*` offset, `BUS_MODE` and `SYS_BUS_MODE` is inside it.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `dma` spelled out as `direct_memory_access`,
-/// replacing `DMA_PAGE`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "dma_page")]
 pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE: u32 = 0x1000;
 /// The window's size, `reg`'s `0x10000` in both JH7110 trees.
@@ -358,8 +359,8 @@ mod tests {
     #[test]
     fn the_data_plane_registers_are_all_on_the_direct_memory_access_register_page() {
         for r in [
-            CHAN_TX_END_ADDR,
-            CHAN_RX_END_ADDR,
+            CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER,
+            CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER,
             CHAN_STATUS,
             CHAN_CUR_RX_DESC,
             BUS_MODE,
@@ -392,7 +393,7 @@ mod tests {
         assert_eq!(
             [
                 MAC_CONF_DCRS,
-                CONFIG_LM,
+                MAC_CONFIGURATION_LOOPBACK_MODE,
                 MAC_CONF_DM,
                 MAC_CONF_FES,
                 MAC_CONF_PS,

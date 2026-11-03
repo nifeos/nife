@@ -633,10 +633,10 @@ for c in $crates; do
     desc="$(printf '%s\n' "$CRATES" | awk -F'\t' -v c="$c" '$1 == c { print $3 }')"
     case "$c" in
         kernel) extra="-Z unstable-options --ignore-global-asm -Z stubbing" ;;
-        # `components` is 49 `[[bin]]` targets and one package, so a bare `cargo kani -p components`
-        # compiles all 49. Kani refuses every `#![no_std]` crate root that does not mention it
+        # `components` is many `[[bin]]` targets and one package, so a bare `cargo kani -p components`
+        # compiles all of them. Kani refuses every `#![no_std]` crate root that does not mention it
         # ("Failed to detect Kani functions"), so that run fails on the first binary carrying no
-        # harness, and the alternative -- `extern crate kani` in 49 files -- would be an edit in
+        # harness, and the alternative -- `extern crate kani` in every one of those files -- would be an edit in
         # every program in the tree to prove logic in one of them.
         #
         # So the binaries are SELECTED, and the selection is **derived from the tree** rather than
