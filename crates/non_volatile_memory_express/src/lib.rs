@@ -694,10 +694,7 @@ pub struct IdentifyNamespace {
 }
 
 impl IdentifyNamespace {
-    /// The namespace's capacity in bytes, the word [`IdentifyNamespace::capacity_bytes`] uses for the
-    /// same quantity.
-    ///
-    /// Name: ratified 2026-11-03 (#3118).
+    /// The namespace's capacity in bytes.
     ///
     /// Name: ratified 2026-10-25 (#2720). Refused `bytes` (it is the namespace's capacity in bytes,
     /// not its bytes).
