@@ -130,9 +130,18 @@ different stranger.
 The rubric can be wrong. If a stranger falls down somewhere the rubric does not ask about, the
 finding is real and the rubric is what needs amending.
 
-## The cadence: monthly, decided 2026-08-18
+## The cadence: monthly, and paused while code moves out of nife
 
-calef decided on 2026-08-18 that the stranger test runs monthly.
+**The cadence pauses until the kernel leaves nife.**
+
+calef ruled on 2026-11-03 that a stranger test is not useful while code moves out of this
+repository. Each move changes the tree a stranger would meet, and every crate that has left runs its
+own stranger test. The test here restarts as an acceptance item of
+the milestone that moves the kernel to `nife-kernel` (provisional), which
+[the-kernel-leaves-nife.md](../design/roadmap/proposals/the-kernel-leaves-nife.md) proposes. That
+milestone deletes the line above to restore the cadence. Until then the tree owes no run.
+
+Beneath the pause stands the monthly cadence calef decided on 2026-08-18.
 
 **A run is due every 30 days.** Thirty rather than a calendar month, because a month is not a number
 of days. `script/stranger-test --due` reads the integer out of that sentence, so the interval a
@@ -144,15 +153,19 @@ The mechanism is notification. A run spawns a `claude` process, spends real budg
 toolchain and both QEMUs, and ends in a debrief a person scores. CI can do none of that. So:
 
 - `script/stranger-test --due` exits 1 when a run is due and prints the command to run. It runs
-  nothing.
+  nothing. While the pause line stands, it prints "suspended" and exits 0.
 - `.github/workflows/stranger-cadence.yml` asks it every Monday, in its own workflow, because a due
-  run is information about the tree and not a defect in that week's commit.
+  run is information about the tree and not a defect in that week's commit. Under the pause the job
+  reports green.
 - `script/stranger-test --check` runs in `script/lint`. It checks that the cadence sentence appears
-  once, that the run headings are numbered from 1 without a gap, and that their dates are in order.
-  A malformed record is a defect in the commit that malformed it.
+  once, that any pause is exactly one line in the form above, that the run headings count from 1
+  without a gap, and that their dates are in order. A malformed record is a defect in the
+  commit that malformed it. `--selftest` beside it tests each answer, the pause included, on
+  fixtures.
 
 Red means run the test. Closing it by editing a heading is available, cheap, and the one thing that
-makes the whole mechanism a lie. Run 7 is due on 2026-10-19.
+makes the whole mechanism a lie. The pause, which names what ends it, is the one sanctioned
+silence.
 
 ## The latest result: run 6, 2026-09-19
 
@@ -189,7 +202,7 @@ findings with their homes, and the four predictions.
   that version.
 - No stranger has ever run `script/apropos`. Run 5 had its name in front of it three times.
   It was placed in `README.md` and `CONTRIBUTING.md` on 2026-09-19, after run 6's clone was cut, so
-  run 7 is the first measurement of that placement.
+  the next run is the first measurement of that placement.
 - `uefi-test` can exit 1 after its own suite passed, beside fault lines that read as the cause. It
   is milestone 516 (`uefi-test` can exit 1 after its own suite has passed), not started. The VT-d
   lines are documented as expected in `notes/x86-uefi-boot.md`'s `BUGS`.
@@ -273,7 +286,7 @@ These are the limits still open on 2026-09-24.
   mitigations are an unchanged task text, a rubric that predates every run, and answers recorded as
   the stranger gave them.
 - The rubric ages against a moving tree. A row that counts something goes stale first, as M8 did.
-- `**A run is due every 30 days.**` is bold because `script/stranger-test` parses it. It is markup,
-  not emphasis, and it counts against the bold budget of §213 (writing standards) like any other
-  span.
+- `**A run is due every 30 days.**` and the pause line are bold because `script/stranger-test`
+  parses them. They are markup, not emphasis, and count against the bold budget of §213 (writing
+  standards) like any other span.
 - Six runs by six agents are not six data points about a person. Every number here is a lower bound.

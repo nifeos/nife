@@ -43,7 +43,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  notes/hvf-leg.md | Nothing asserts the `test result: ok. N passed` string `hvf_kernel_leg` matches; a rewording makes the leg always fail | Assert the HVF verdict string exists | S  |
 |  notes/hvf-leg.md | Failed HVF run leaves an exception storm; guest should park in `wfi` after a marker, host must stop on the marker (both halves together) | HVF guest parks after the semihosting exit | M  |
 |  notes/interactive-stack-swap.md | A hung `line_editor` caused by the console can answer the replacement one flush early | Fence stale console acks across a swap | S  |
-|  notes/mutation-testing/inflow-design/roadmap/2026-10-12-triage.md | `designware_ethernet` `prepare` keys survive because `sim::Memory` hides the read-back length | No-write-allocate mode for sim::Memory | S  |
+|  notes/mutation-testing/inflow-design/roadmap/2026-10-12-triage.md | `designware_ethernet` `prepare` keys survive because `simulator::Memory` hides the read-back length | No-write-allocate mode for simulator::Memory | S  |
 |  notes/non-cooperative-fallback.md | steady-state cost of `broker` reading its warning page per request is unmeasured | Benchmark the real broker program | S  |
 |  notes/overflow-checks.md | no release cycle measurement of overflow checks on riscv64 or x86_64 | Overflow-check release cycles on riscv64 and x86_64 | M  |
 |  notes/ripgrep-on-nife.md (gitignore, thread count) | `ignore` matching never exercised (no ignore files in fixture); no gate counts the walk's threads at the prompt | Gitignore fixture and a thread-count assertion in `swish-check`'s `rg` walk | S  |

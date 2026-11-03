@@ -10,15 +10,16 @@
 //! family prefix, `GMAC_MAC_MDIO_ADDR_` or `MII_`, and its documentation opens with its full name
 //! and its source's spelling.
 //!
-//! Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, IEEE 802.3's
-//! phrase, replacing `mdio`.
+//! Name: ratified 2026-11-02 (UTC), #3094.
 
 use crate::{Hardware, registers};
 
 /// **CSR clock range shift** (`GMAC_MAC_MDIO_ADDR_CR_SHIFT`, `dwqereg.h`), the MDC clock range
 /// field in [`registers::MAC_MDIO_ADDR`].
-#[doc(alias = "csr clock range shift")]
-pub const CR_SHIFT: u32 = 8;
+///
+/// Name: ratified 2026-11-03 (UTC), #3127.
+#[doc(alias = "GMAC_MAC_MDIO_ADDR_CR_SHIFT")]
+pub const CLOCK_RANGE_SHIFT: u32 = 8;
 /// **MDIO clock range for a 500 to 800 MHz CSR clock** (`GMAC_MAC_MDIO_ADDR_CR_500_800`,
 /// `dwqereg.h`), the range this driver always programs: `0b0111`, which divides the CSR clock by
 /// 324 (Linux's `include/linux/stmmac.h`, `STMMAC_CSR_500_800M`).
@@ -29,24 +30,36 @@ pub const CR_SHIFT: u32 = 8;
 /// below, which MDIO tolerates. So the driver needs no rate at all, at the cost of slower PHY
 /// register access during bring-up (tens of microseconds per access rather than a few), which is
 /// off every path that repeats.
-#[doc(alias = "mdio clock range")]
-pub const CR_500_800: u32 = 7;
+///
+/// Name: ratified 2026-11-03 (UTC), #3127.
+#[doc(alias = "GMAC_MAC_MDIO_ADDR_CR_500_800")]
+pub const CLOCK_RANGE_500_TO_800_MEGAHERTZ: u32 = 7;
 /// **MDIO physical layer device address shift** (`GMAC_MAC_MDIO_ADDR_PA_SHIFT`, `dwqereg.h`).
-#[doc(alias = "mdio physical layer device address shift")]
-pub const PA_SHIFT: u32 = 21;
+///
+/// Name: ratified 2026-11-03 (UTC), #3127.
+#[doc(alias = "GMAC_MAC_MDIO_ADDR_PA_SHIFT")]
+pub const PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT: u32 = 21;
 /// **MDIO register address shift** (`GMAC_MAC_MDIO_ADDR_RDA_SHIFT`, `dwqereg.h`).
-#[doc(alias = "mdio register address shift")]
-pub const RDA_SHIFT: u32 = 16;
+///
+/// Name: ratified 2026-11-03 (UTC), #3127.
+#[doc(alias = "GMAC_MAC_MDIO_ADDR_RDA_SHIFT")]
+pub const REGISTER_ADDRESS_SHIFT: u32 = 16;
 /// **GMII operation command, read** (`GMAC_MAC_MDIO_ADDR_GOC_READ`, `dwqereg.h`).
-#[doc(alias = "gmii operation command, read")]
-pub const GOC_READ: u32 = 3 << 2;
+///
+/// Name: ratified 2026-11-03 (UTC), #3127.
+#[doc(alias = "GMAC_MAC_MDIO_ADDR_GOC_READ")]
+pub const OPERATION_COMMAND_READ: u32 = 3 << 2;
 /// **GMII operation command, write** (`GMAC_MAC_MDIO_ADDR_GOC_WRITE`, `dwqereg.h`).
-#[doc(alias = "gmii operation command, write")]
-pub const GOC_WRITE: u32 = 1 << 2;
+///
+/// Name: ratified 2026-11-03 (UTC), #3127.
+#[doc(alias = "GMAC_MAC_MDIO_ADDR_GOC_WRITE")]
+pub const OPERATION_COMMAND_WRITE: u32 = 1 << 2;
 /// **GMII busy** (`GMAC_MAC_MDIO_ADDR_GB`, `dwqereg.h`): set by the driver to start a command,
 /// cleared by the controller when it is done.
-#[doc(alias = "gmii busy")]
-pub const GB: u32 = 1 << 0;
+///
+/// Name: ratified 2026-11-03 (UTC), #3127.
+#[doc(alias = "GMAC_MAC_MDIO_ADDR_GB")]
+pub const COMMAND_BUSY: u32 = 1 << 0;
 
 /// How long one MDIO command may take before it is a timeout: OpenBSD's 2000 polls 10 µs apart.
 pub const COMMAND_LIMIT_MICROSECONDS: u64 = 20_000;
@@ -64,8 +77,10 @@ pub(crate) const BMCR_ANRESTART: u16 = 1 << 9;
 pub(crate) const BMCR_ANENABLE: u16 = 1 << 12;
 /// **Reset to the default state** (`BMCR_RESET`, `mii.h`): a software reset of the PHY,
 /// self-clearing.
-#[doc(alias = "reset to the default state")]
-pub const BMCR_RESET: u16 = 1 << 15;
+///
+/// Name: ratified 2026-11-03 (UTC), #3127.
+#[doc(alias = "BMCR_RESET")]
+pub const BASIC_MODE_CONTROL_RESET: u16 = 1 << 15;
 /// **Basic mode status register** (`MII_BMSR`, `mii.h`), clause 22.
 #[doc(alias = "basic mode status register")]
 pub(crate) const BMSR: u8 = 0x01;
@@ -134,10 +149,11 @@ pub(crate) const GTSR_LP_1000TFDX: u16 = 0x0800;
 pub(crate) const GTSR_LP_1000THDX: u16 = 0x0400;
 /// **Autonegotiation complete** (`BMSR_ANEGCOMPLETE`, `mii.h`).
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
-/// replacing `BMSR_ANEG_COMPLETE`.
-#[doc(alias = "autonegotiation complete")]
-pub const BMSR_ANEGCOMPLETE: u16 = 1 << 5;
+/// Name: ratified 2026-11-03 (UTC), #3127, renamed from the ratified
+/// `BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE` (#3094) to match the tree's one-word spelling of
+/// autonegotiation.
+#[doc(alias = "BMSR_ANEGCOMPLETE")]
+pub const BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE: u16 = 1 << 5;
 /// **Physical layer device identifier 1** (`MII_PHYSID1`, `mii.h`), clause 22: the
 /// identifier's high half.
 #[doc(alias = "physical layer device identifier 1")]
@@ -168,11 +184,15 @@ pub enum Error {
 /// the busy bit that starts it. Out-of-range addresses are reduced to the field (5 bits each)
 /// rather than spilling into the neighbors.
 pub const fn command(physical_layer_device_address: u8, register: u8, write: bool) -> u32 {
-    (CR_500_800 << CR_SHIFT)
-        | (((physical_layer_device_address & 0x1f) as u32) << PA_SHIFT)
-        | (((register & 0x1f) as u32) << RDA_SHIFT)
-        | if write { GOC_WRITE } else { GOC_READ }
-        | GB
+    (CLOCK_RANGE_500_TO_800_MEGAHERTZ << CLOCK_RANGE_SHIFT)
+        | (((physical_layer_device_address & 0x1f) as u32) << PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
+        | (((register & 0x1f) as u32) << REGISTER_ADDRESS_SHIFT)
+        | if write {
+            OPERATION_COMMAND_WRITE
+        } else {
+            OPERATION_COMMAND_READ
+        }
+        | COMMAND_BUSY
 }
 
 /// The command word's five fields share no bit, so its `|`s are its `^`s: the clock range, the
@@ -180,17 +200,25 @@ pub const fn command(physical_layer_device_address: u8, register: u8, write: boo
 /// bit; the compiler checks the pairwise disjointness here, and the mutation exclusion for
 /// `command` names this constant. Each operand enters through its own field mask.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
-pub const THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT: () = assert!(
-    (CR_500_800 << CR_SHIFT) | (0x1f << PA_SHIFT) | (0x1f << RDA_SHIFT) | (0x3 << 2) | GB
-        == (CR_500_800 << CR_SHIFT) ^ (0x1f << PA_SHIFT) ^ (0x1f << RDA_SHIFT) ^ (0x3 << 2) ^ GB
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+#[doc(alias = "THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT")]
+pub const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () = assert!(
+    (CLOCK_RANGE_500_TO_800_MEGAHERTZ << CLOCK_RANGE_SHIFT)
+        | (0x1f << PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
+        | (0x1f << REGISTER_ADDRESS_SHIFT)
+        | (0x3 << 2)
+        | COMMAND_BUSY
+        == (CLOCK_RANGE_500_TO_800_MEGAHERTZ << CLOCK_RANGE_SHIFT)
+            ^ (0x1f << PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
+            ^ (0x1f << REGISTER_ADDRESS_SHIFT)
+            ^ (0x3 << 2)
+            ^ COMMAND_BUSY
 );
 
 /// **A management data input/output (MDIO) bus**: a clause 22 PHY register file, reached somehow.
 /// The MAC's MDIO pair is one implementation ([`Bus`]); a test's simulated PHY is another.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
-/// `Mdio`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "mdio")]
 pub trait ManagementDataInputOutput {
     /// Read register `register` of the PHY at `physical_layer_device_address`.
@@ -211,7 +239,7 @@ impl<H: Hardware> Bus<'_, H> {
     fn wait(&mut self, physical_layer_device_address: u8, register: u8) -> Result<(), Error> {
         let mut waited = 0;
         loop {
-            if self.0.read(registers::MAC_MDIO_ADDR) & GB == 0 {
+            if self.0.read(registers::MAC_MDIO_ADDR) & COMMAND_BUSY == 0 {
                 return Ok(());
             }
             if waited >= COMMAND_LIMIT_MICROSECONDS {
@@ -254,11 +282,12 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
     }
 }
 
-/// **The PHY's identifier**, `PHYSID1 << 16 | PHYSID2`, revision included.
+/// **The PHY's identifier**, `PHYSID1 << 16 | PHYSID2`, revision included. It returns the
+/// identifier; `physical_layer_device_address` is the bus address of the device to ask.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `phy` spelled out as IEEE 802.3's
-/// `physical_layer_device_address`, replacing `phy_id`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "phy")]
+#[doc(alias = "phy_id")]
 pub fn physical_layer_device_id(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
@@ -272,8 +301,9 @@ pub fn physical_layer_device_id(
 /// bit for every value the bus can return; the compiler checks it here, and the mutation
 /// exclusion for `physical_layer_device_id` names this constant.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
-pub const THE_PHYSICAL_LAYER_DEVICE_ID_HALVES_SHARE_NO_BIT: () =
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+#[doc(alias = "THE_PHYSICAL_LAYER_DEVICE_ID_HALVES_SHARE_NO_BIT")]
+pub const PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP: () =
     assert!(((u16::MAX as u32) << 16) & (u16::MAX as u32) == 0);
 
 /// **Is the link up right now?** Two reads of the latched-low status bit, so a drop since the last
@@ -304,8 +334,9 @@ pub fn restart_autonegotiation(
 /// disjoint bits; the compiler checks it here, and the mutation exclusion for
 /// `restart_autonegotiation` names this constant.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
-pub const THE_AUTONEGOTIATION_ENABLE_AND_RESTART_SHARE_NO_BIT: () =
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+#[doc(alias = "THE_AUTONEGOTIATION_ENABLE_AND_RESTART_SHARE_NO_BIT")]
+pub const AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP: () =
     assert!(BMCR_ANENABLE & BMCR_ANRESTART == 0);
 
 #[cfg(test)]
@@ -353,10 +384,10 @@ mod tests {
         fn read(&mut self, offset: u32) -> u32 {
             match offset {
                 registers::MAC_MDIO_ADDR => {
-                    if self.address & GB != 0 && !self.stuck {
+                    if self.address & COMMAND_BUSY != 0 && !self.stuck {
                         if self.busy_reads == 0 {
-                            self.address &= !GB;
-                            if self.address & (0x3 << 2) == GOC_READ {
+                            self.address &= !COMMAND_BUSY;
+                            if self.address & (0x3 << 2) == OPERATION_COMMAND_READ {
                                 self.data = u32::from(self.answer);
                             }
                         } else {
@@ -425,7 +456,7 @@ mod tests {
     fn a_busy_bit_that_never_clears_is_a_bounded_timeout_naming_the_access() {
         let mut hardware = Pair::new(0, 0);
         hardware.stuck = true;
-        hardware.address = GB;
+        hardware.address = COMMAND_BUSY;
         assert_eq!(
             Bus(&mut hardware).read(3, BMSR),
             Err(Error::Timeout {
@@ -523,7 +554,10 @@ mod tests {
     fn an_address_too_wide_for_its_field_does_not_spill_into_the_next() {
         // PHY 33 is PHY 1; it must not set bit 26, which is outside the 5-bit field.
         assert_eq!(command(33, 0, false), command(1, 0, false));
-        assert_eq!(command(0, 0x3f, false) & (1 << PA_SHIFT), 0);
+        assert_eq!(
+            command(0, 0x3f, false) & (1 << PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT),
+            0
+        );
     }
 
     /// A restart asked of a PHY already negotiating (both bits read set) leaves both set rather
@@ -549,9 +583,9 @@ mod tests {
             [
                 BMCR_ANRESTART,
                 BMCR_ANENABLE,
-                BMCR_RESET,
+                BASIC_MODE_CONTROL_RESET,
                 BMSR_LSTATUS,
-                BMSR_ANEGCOMPLETE
+                BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE
             ],
             [0x0200, 0x1000, 0x8000, 0x0004, 0x0020]
         );

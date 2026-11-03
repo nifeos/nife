@@ -7,7 +7,7 @@ the controller and PHY bring-up sequences, MDIO, and a probe that measures wheth
 coherent with the CPU's caches. It is `no_std` and needs no allocator.
 
 It dereferences no pointer and touches no hardware. You supply register access through the
-`Hardware` trait, the DMA region through `Region`, and the tail-pointer writes and barrier
+`Hardware` trait, the DMA region through `DirectMemoryAccessRegion`, and the tail-pointer writes and barrier
 through `Tails`; the tests run all of it against a simulated controller. It does not support the
 older 3.x GMAC.
 
@@ -39,10 +39,10 @@ controller bring-up have unit tests against the simulator but no proof.
 is ordinary memory and the tails go nowhere, so nothing answers the frame:
 
 ```rust
-use designware_ethernet::{DataPlane, Region, Tails, layout};
+use designware_ethernet::{DataPlane, DirectMemoryAccessRegion, Tails, layout};
 
 struct Memory(Vec<u8>);
-impl Region for Memory {
+impl DirectMemoryAccessRegion for Memory {
     fn read_u64(&self, off: u64) -> u64 {
         let mut b = [0; 8];
         self.read_bytes(off, &mut b);

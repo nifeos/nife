@@ -150,6 +150,8 @@ malformed it.
 | 2026-10-20 | security | The window the supply-chain audit left unread, as a confined process trying to widen: the device authority minted since 2026-10-03, the ABI names added since then followed into their handlers, and the atlas's six host packages read inward to the tables the target draws | fixed 4, minted 3, accepted 2 | [The window the supply-chain audit left unread](2026-10-20-the-window-the-supply-chain-audit-left-unread.md) |
 | 2026-10-26 | security | The compiler, read as code that runs with authority nobody reviewed: the nightly pin and its path to `main`, the workflow that bumps it, and `patches/std-nife` read as a confined program facing a hostile counterparty | fixed 4, minted 1, accepted 3 | [The compiler](2026-10-26-the-compiler.md) |
 | 2026-10-27 | documentation | A subsystem rewritten inside its existing crate: `file_allocation_table`, which gained a reader in the window, read from the notes that describe it and its two writers from the outside, passage by passage against the code, with the installer's and the boot stick's spawn and report words swept for contracts stated only in prose | fixed 6, minted 4, accepted 4 | [The FAT crate, read from the outside](2026-10-27-the-fat-crate-read-from-the-outside.md) |
+| 2026-11-03 | documentation | Names the window moved, read from the prose that still uses them: the four spelled-out capability names, the four crates that left the tree or took a new name, and the removed `rmle`, each followed to every current document, script and comment that names it | fixed 4, minted 0, accepted 1 | [Names the window moved](2026-11-03-names-the-window-moved.md) |
+| 2026-11-03 | security | From the package to the grant, as a hostile package and a confined process trying to widen: the approval file, a program's asks, the `INTERFACES` note, the system manifest and the base digest page, then the runtime halves split out of the supervision and hot-swap contracts, the survey `PROCESS` record, the device-tree patcher and the eight new fixtures | fixed 2, minted 4, accepted 4 | [From the package to the grant](2026-11-03-from-the-package-to-the-grant.md) |
 
 ## What the tree looked like when each ran
 
@@ -194,6 +196,8 @@ must not err in. So the count spans both, and it stays continuous across the spl
 | 2026-10-20 | security | 469 | 236 | 97 | 196 |
 | 2026-10-26 | security | 488 | 236 | 97 | 201 |
 | 2026-10-27 | documentation | 488 | 235 | 97 | 201 |
+| 2026-11-03 | documentation | 489 | 252 | 99 | 199 |
+| 2026-11-03 | security | 489 | 252 | 99 | 199 |
 
 The two `-` cells are honest rather than lazy: the roadmap was a single file with no status column
 until milestone 76 (split the roadmap: `design/roadmap/README.md` as index, one file per milestone) split it into `design/roadmap/` on 2026-08-03, and milestones 1 to 11 were

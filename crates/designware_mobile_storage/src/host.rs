@@ -18,7 +18,7 @@ use crate::registers;
 /// **The register window, and a clock**: everything the driver needs from the machine.
 ///
 /// The kernel implements it over a mapped device window and the architecture's counter; the tests
-/// implement it over `sim`. Rule 2 in one trait: the driver is handed a window and knows
+/// implement it over `simulator`. Rule 2 in one trait: the driver is handed a window and knows
 /// nothing about where it is.
 pub trait Registers {
     /// Read the 32-bit register at `offset` bytes from the base.
@@ -637,7 +637,7 @@ mod tests {
         assert_eq!(queue_step(filled(0x1fff), 32, false, 4096), 128);
     }
 
-    // The sequences below run against `sim`, which models the contract and, through its knobs, the
+    // The sequences below run against `simulator`, which models the contract and, through its knobs, the
     // ways silicon can break it: a reset or a clock update that never completes, an answer that
     // takes time on the wire, a card that stalls or ends a transfer early, a confused `STATUS`.
 
@@ -647,7 +647,7 @@ mod tests {
 
     use crate::command::{Command, Data, Response, SEND_IF_COND, WRITE_BLOCK};
     use crate::sd::{self, IoError};
-    use crate::sim::{CardKind, Fault, Sim};
+    use crate::simulator::{CardKind, Fault, Sim};
 
     fn take(sim: Sim) -> Host<Sim> {
         let depth = u32::try_from(sim.depth()).unwrap();

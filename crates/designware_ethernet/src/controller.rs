@@ -5,7 +5,7 @@
 //! each argued at the place it is made: the receive buffer size is written rather than inherited,
 //! jumbo frames are not enabled, and nothing is allocated (the DMA region is the caller's, laid out
 //! by [`crate::layout`]). Every sequence runs against [`Hardware`], so the host tests run them
-//! against `sim`'s controller.
+//! against `simulator`'s controller.
 
 use crate::motorcomm::{Link, Speed};
 use crate::{BUFFER_SIZE, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, registers};
@@ -29,13 +29,13 @@ pub enum Error {
 
 /// How long the software reset may take: OpenBSD's 30000 polls 10 µs apart.
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub const RESET_LIMIT_MICROSECONDS: u64 = 300_000;
 
 /// What the controller says it is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Identity {
-    /// [`registers::VERSION`].
+    /// [`registers::CORE_VERSION_REGISTER`].
     pub version: u32,
     /// The four hardware feature registers.
     pub features: [u32; 4],
@@ -49,7 +49,7 @@ impl Identity {
             *f = hardware.read(registers::mac_hw_feature(i as u32));
         }
         Identity {
-            version: hardware.read(registers::VERSION),
+            version: hardware.read(registers::CORE_VERSION_REGISTER),
             features,
         }
     }
@@ -61,8 +61,7 @@ impl Identity {
 
     /// The DMA's address width from feature register 1's `ADDR64` field: 32, 40 or 48 bits.
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC): `dma` spelled out as `direct_memory_access`,
-    /// replacing `dma_bits`.
+    /// Name: ratified 2026-11-02 (UTC), #3094.
     #[doc(alias = "dma_address_bits")]
     pub const fn direct_memory_access_address_bits(&self) -> u8 {
         match (self.features[1] >> 14) & 0x3 {
@@ -194,9 +193,10 @@ pub(crate) fn receive_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u
 /// constant. Clippy's `eq_op` lint folds the second conjunct's literals to `0 == 0`; that is
 /// what a gate is, allowed here for exactly that reason.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(clippy::eq_op)]
-pub const THE_RECEIVE_QUEUE_MODE_FIELDS_SHARE_NO_BIT: () = assert!(
+#[doc(alias = "THE_RECEIVE_QUEUE_MODE_FIELDS_SHARE_NO_BIT")]
+pub const RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () = assert!(
     registers::MTL_CHAN_RX_OP_MODE_RSF & registers::MTL_CHAN_RX_OP_MODE_RTC_MASK == 0
         && (0x3f << 14) & (0x3f << 8) == 0
 );
@@ -223,8 +223,9 @@ pub(crate) fn transmit_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> 
 /// the compiler checks here; the mutation exclusion for `transmit_queue_mode` names this
 /// constant.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
-pub const THE_TRANSMIT_QUEUE_MODE_FIELDS_SHARE_NO_BIT: () =
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+#[doc(alias = "THE_TRANSMIT_QUEUE_MODE_FIELDS_SHARE_NO_BIT")]
+pub const TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () =
     assert!(registers::MTL_CHAN_TX_OP_MODE_TSF & registers::MTL_CHAN_TX_OP_MODE_TTC_MASK == 0);
 
 /// Can a controller of `direct_memory_access_address_bits` address a region of `bytes` at
@@ -320,11 +321,17 @@ pub fn configure(
     );
     hardware.write(registers::CHAN_TX_BASE_ADDR, transmit_ring as u32);
     hardware.write(registers::CHAN_TX_RING_LEN, u32::from(TRANSMIT_ENTRIES) - 1);
-    hardware.write(registers::CHAN_TX_END_ADDR, transmit_ring as u32);
+    hardware.write(
+        registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER,
+        transmit_ring as u32,
+    );
     hardware.write(registers::CHAN_RX_BASE_ADDR_HI, (receive_ring >> 32) as u32);
     hardware.write(registers::CHAN_RX_BASE_ADDR, receive_ring as u32);
     hardware.write(registers::CHAN_RX_RING_LEN, u32::from(RECEIVE_ENTRIES) - 1);
-    hardware.write(registers::CHAN_RX_END_ADDR, receive_ring as u32);
+    hardware.write(
+        registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER,
+        receive_ring as u32,
+    );
 
     let receive_mode = receive_queue_mode(
         hardware.read(registers::MTL_CHAN_RX_OP_MODE),
@@ -371,8 +378,9 @@ pub fn configure(
 /// above cleared takes a value only inside that field; where neither holds, the configure tests
 /// kill the swap.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
-pub const THE_CONFIGURED_BUS_FIELDS_SHARE_NO_BIT: () = assert!(
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+#[doc(alias = "THE_CONFIGURED_BUS_FIELDS_SHARE_NO_BIT")]
+pub const CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP: () = assert!(
     registers::SYS_BUS_MODE_RD_OSR_LMT_MASK & registers::SYS_BUS_MODE_WR_OSR_LMT_MASK == 0
         && registers::SYS_BUS_MODE_RD_OSR_LMT_MASK
             & (registers::SYS_BUS_MODE_BLEN_256
@@ -393,7 +401,7 @@ pub const THE_CONFIGURED_BUS_FIELDS_SHARE_NO_BIT: () = assert!(
         && (0xffff << registers::QX_TX_FLOW_CTRL_PT_SHIFT) & registers::QX_TX_FLOW_CTRL_TFE == 0
 );
 
-/// **The MAC configuration word for a link**, OpenBSD's `dwqe_mii_statchg` and `dwqe_up`: the
+/// **The media access control (MAC) configuration word for a link**, OpenBSD's `dwqe_mii_statchg` and `dwqe_up`: the
 /// port and speed select for the negotiated speed, duplex, carrier sense off, jabber off, burst
 /// on, transmitter and receiver on. `loopback` turns the MAC's own loopback on for the coherence
 /// probe.
@@ -402,14 +410,13 @@ pub const THE_CONFIGURED_BUS_FIELDS_SHARE_NO_BIT: () = assert!(
 /// buffer, would span descriptors, and would be dropped by [`crate::receive_verdict`] anyway, so
 /// accepting it into the FIFO only spends ring slots on frames that are thrown away.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): `conf` spelled out as `configuration`, replacing
-/// `mac_conf`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 {
     let mut conf = current
         & !(registers::MAC_CONF_PS
             | registers::MAC_CONF_FES
             | registers::MAC_CONF_DM
-            | registers::CONFIG_LM);
+            | registers::MAC_CONFIGURATION_LOOPBACK_MODE);
     conf |= match link.speed {
         Speed::Thousand => 0,
         Speed::Hundred => registers::MAC_CONF_PS | registers::MAC_CONF_FES,
@@ -419,7 +426,7 @@ pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 
         conf |= registers::MAC_CONF_DM;
     }
     if loopback {
-        conf |= registers::CONFIG_LM;
+        conf |= registers::MAC_CONFIGURATION_LOOPBACK_MODE;
     }
     conf | registers::MAC_CONF_BE
         | registers::MAC_CONF_JD
@@ -434,16 +441,17 @@ pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 
 /// `|`-versus-`^` over disjoint bits; the chain's first swap toggles `conf` itself, and
 /// `the_mac_word_from_zero_and_from_all_ones` kills it.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
-pub const THE_MAC_CONFIGURATION_BITS_SHARE_NO_BIT: () = assert!(
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+#[doc(alias = "THE_MAC_CONFIGURATION_BITS_SHARE_NO_BIT")]
+pub const MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP: () = assert!(
     registers::MAC_CONF_PS
         | registers::MAC_CONF_FES
         | registers::MAC_CONF_DM
-        | registers::CONFIG_LM
+        | registers::MAC_CONFIGURATION_LOOPBACK_MODE
         == registers::MAC_CONF_PS
             ^ registers::MAC_CONF_FES
             ^ registers::MAC_CONF_DM
-            ^ registers::CONFIG_LM
+            ^ registers::MAC_CONFIGURATION_LOOPBACK_MODE
         && (registers::MAC_CONF_BE
             | registers::MAC_CONF_JD
             | registers::MAC_CONF_DCRS
@@ -515,7 +523,7 @@ pub fn stop(hardware: &mut impl Hardware) -> Result<(), Error> {
 mod tests {
     use super::*;
     use crate::jh7110::BUS;
-    use crate::sim::{Memory, NetworkInterfaceController};
+    use crate::simulator::{Memory, NetworkInterfaceController};
 
     const PHYSICAL_ADDRESS: u64 = 0x4800_0000;
     const STATION_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
@@ -593,11 +601,11 @@ mod tests {
             (PHYSICAL_ADDRESS + layout::TRANSMIT_RING) as u32
         );
         assert_eq!(
-            nic.register(registers::CHAN_RX_END_ADDR),
+            nic.register(registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER),
             nic.register(registers::CHAN_RX_BASE_ADDR)
         );
         assert_eq!(
-            nic.register(registers::CHAN_TX_END_ADDR),
+            nic.register(registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER),
             nic.register(registers::CHAN_TX_BASE_ADDR)
         );
         assert_eq!(nic.register(registers::CHAN_RX_RING_LEN), 15);
@@ -656,10 +664,18 @@ mod tests {
             speed: Speed::Thousand,
             full_duplex: true,
         };
-        let c = mac_configuration(registers::MAC_CONF_PS | registers::CONFIG_LM, gig, false);
+        let c = mac_configuration(
+            registers::MAC_CONF_PS | registers::MAC_CONFIGURATION_LOOPBACK_MODE,
+            gig,
+            false,
+        );
         assert_eq!(c & (registers::MAC_CONF_PS | registers::MAC_CONF_FES), 0);
         assert_ne!(c & registers::MAC_CONF_DM, 0);
-        assert_eq!(c & registers::CONFIG_LM, 0, "loopback cleared");
+        assert_eq!(
+            c & registers::MAC_CONFIGURATION_LOOPBACK_MODE,
+            0,
+            "loopback cleared"
+        );
         assert_eq!(c & (1 << 16), 0, "JE");
         let c = mac_configuration(
             0,
@@ -673,7 +689,7 @@ mod tests {
             c & (registers::MAC_CONF_PS | registers::MAC_CONF_FES | registers::MAC_CONF_DM),
             registers::MAC_CONF_PS | registers::MAC_CONF_FES
         );
-        assert_ne!(c & registers::CONFIG_LM, 0);
+        assert_ne!(c & registers::MAC_CONFIGURATION_LOOPBACK_MODE, 0);
     }
 
     #[test]

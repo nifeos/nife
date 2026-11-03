@@ -5,11 +5,11 @@ use crate::bench::{self, WriteVerdict};
 use crate::card;
 use crate::host::{Error, Host};
 use crate::sd::{self, BLOCK, InitializationError, IoError, Kind};
-use crate::sim::{CardKind, Sim};
+use crate::simulator::{CardKind, Sim};
 
 fn host(kind: CardKind, blocks: usize) -> Host<Sim> {
     let (h, id) = Host::new(Sim::new(kind, blocks, 32), 50_000_000, Some(32)).unwrap();
-    assert_eq!(id.verid, crate::sim::VERID);
+    assert_eq!(id.verid, crate::simulator::VERID);
     h
 }
 
@@ -331,7 +331,7 @@ fn without_a_tree_depth_the_queue_depth_is_read_from_its_reset_watermark() {
 // the driver names the step it happened at, because a bench transcript that stops is only as
 // useful as what its last line says.
 
-use crate::sim::Fault;
+use crate::simulator::Fault;
 
 fn faulty(kind: CardKind, blocks: usize, faults: &[(u8, usize, Fault)]) -> Host<Sim> {
     let mut sim = Sim::new(kind, blocks, 32);

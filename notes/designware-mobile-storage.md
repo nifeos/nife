@@ -80,7 +80,7 @@ read works (Results, below).
 - Every transfer, finished or failed, stops and resets the engine before returning, so none is
   left walking a chain the caller reuses.
 
-`sim` walks the chain through memory it shares with the tests, and a Kani harness proves a chain
+`simulator` walks the chain through memory it shares with the tests, and a Kani harness proves a chain
 describes exactly its bytes inside the region.
 
 ## Never break the card radon boots from
@@ -241,7 +241,7 @@ have one) would need the kernel half's twenty lines and a device-tree match.
 
 - **The scratch write has run on one card, through the polled FIFO.** No write has gone through
   the IDMAC on silicon, nor outside the pre-partition gap.
-- **The IDMAC has not run on silicon.** It is tested against `sim`; step 1 measures its rate
+- **The IDMAC has not run on silicon.** It is tested against `simulator`; step 1 measures its rate
   against the polled 10,959 KiB/s and checks its bytes, and step 2 its writes.
 - The IDMAC's error bits are read from `IDSTS` with `IDINTEN` zero, which the databook describes
   as raw status. If radon's set only when enabled, a bus error would surface as a timeout instead.
@@ -250,7 +250,7 @@ have one) would need the kernel half's twenty lines and a device-tree match.
   controller yet, and whatever does must set the clock the same way first.
 - The card read threshold stays off. With the FIFO at least 128 words, one block now fits, but no
   bus mode this driver runs needs it.
-- Every other test is against `sim`, which models the contract as the databook and OpenBSD
+- Every other test is against `simulator`, which models the contract as the databook and OpenBSD
   describe it.
 - **The booted system has no disk on radon yet.** The EL0 block server exists and the bench boot
   calls it. `PROVEN_ON_SILICON` keeps the booted system from starting it, and which part of the

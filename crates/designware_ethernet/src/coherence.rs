@@ -9,8 +9,8 @@
 //! fails in a way that names the direction.
 
 use crate::{
-    CRC_BYTES, DataPlane, RDES3_OWN, RECEIVE_ENTRIES, ReceiveVerdict, Region, TDES3_OWN, Tails,
-    TransmitError, layout, receive_verdict, registers,
+    CRC_BYTES, DataPlane, DirectMemoryAccessRegion, RDES3_OWN, RECEIVE_ENTRIES, ReceiveVerdict,
+    TDES3_OWN, Tails, TransmitError, layout, receive_verdict, registers,
 };
 
 /// The probe frame's `EtherType`: IEEE 802's first local experimental type, which no real
@@ -22,7 +22,7 @@ pub(crate) const PROBE_LENGTH: usize = 128;
 /// What receive buffer 0 holds before the device writes it. Never a byte of [`probe_frame`]'s
 /// payload, so a buffer still holding it cannot be mistaken for a delivery.
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub const POISON: u8 = 0xa5;
 /// How long the caller waits for receive descriptor 0 before reading the device's account. A
 /// 128-byte frame at any speed through a loopback is microseconds; a hundred milliseconds is
@@ -33,7 +33,7 @@ pub const WAIT_MICROSECONDS: u64 = 100_000;
 /// the experimental `EtherType`, and a payload whose every byte differs from [`POISON`] and from
 /// zero.
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
     let mut f = [0u8; PROBE_LENGTH];
     f[..6].copy_from_slice(&station_address);
@@ -52,16 +52,17 @@ pub fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
 /// build if the two ever share a bit. The clippy lints read any constant assertion as a runtime
 /// suspicion and fold it; that is what a gate is, allowed here for exactly that reason.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_PROBE_PAYLOAD_SET_BIT_AND_COUNTER_SHARE_NO_BIT: () = assert!(0x40 & 0x3f == 0);
+#[doc(alias = "THE_PROBE_PAYLOAD_SET_BIT_AND_COUNTER_SHARE_NO_BIT")]
+pub const PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP: () = assert!(0x40 & 0x3f == 0);
 
 /// **Steps 1 to 3**: post the receive ring, poison and read back receive buffer 0, queue the
 /// probe frame. The controller must already be configured and started in loopback; the receive
 /// tail write in step 1 and the transmit tail write in step 3 are what set it moving.
 pub fn prepare(
     data_plane: &mut DataPlane,
-    region: &mut impl Region,
+    region: &mut impl DirectMemoryAccessRegion,
     tails: &mut impl Tails,
     station_address: [u8; 6],
 ) -> Result<(), TransmitError> {
@@ -69,7 +70,7 @@ pub fn prepare(
     let poison = [POISON; PROBE_LENGTH + CRC_BYTES];
     region.write_bytes(layout::receive_buffer(0), &poison);
     // A copy of the poison, so the read-back covers exactly the bytes poisoned: a second length
-    // written out here could drift from the first, and `sim::Memory`'s write-allocate cache would
+    // written out here could drift from the first, and `simulator::Memory`'s write-allocate cache would
     // hide a short one.
     let mut back = poison;
     region.read_bytes(layout::receive_buffer(0), &mut back);
@@ -77,7 +78,7 @@ pub fn prepare(
 }
 
 /// **Step 4's poll**: has the CPU seen receive descriptor 0 handed back?
-pub fn delivered(region: &impl Region) -> bool {
+pub fn delivered(region: &impl DirectMemoryAccessRegion) -> bool {
     (region.read_u64(layout::receive_descriptor(0) + 8) >> 32) as u32 & RDES3_OWN == 0
 }
 
@@ -107,7 +108,11 @@ pub struct Observation {
 }
 
 /// **Read the CPU's half of the observation** and pair it with the device's status word.
-pub fn observe(region: &impl Region, station_address: [u8; 6], status: u32) -> Observation {
+pub fn observe(
+    region: &impl DirectMemoryAccessRegion,
+    station_address: [u8; 6],
+    status: u32,
+) -> Observation {
     let receive_descriptor_word_3 =
         (region.read_u64(layout::receive_descriptor(0) + 8) >> 32) as u32;
     let transmit_descriptor_word_3 =
@@ -187,8 +192,7 @@ pub fn classify(o: &Observation) -> Verdict {
 
 /// Whether the transmit descriptor was handed back, for a report line.
 ///
-/// Name: provisional, minted 2026-10-18 (UTC) by maintainer/names-comply-question-shapes. Refused
-/// `transmit_completed` (a participle alone reads as a getter).
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub const fn is_transmit_complete(o: &Observation) -> bool {
     o.transmit_descriptor_word_3 & TDES3_OWN == 0
 }
@@ -203,7 +207,7 @@ mod tests {
     use crate::controller::{self, Identity};
     use crate::jh7110::BUS;
     use crate::motorcomm::{Link, Speed};
-    use crate::sim::{Memory, NetworkInterfaceController};
+    use crate::simulator::{Memory, NetworkInterfaceController};
     use crate::{Hardware, RDES3_FD, RDES3_LD};
 
     const PHYSICAL_ADDRESS: u64 = 0x4800_0000;

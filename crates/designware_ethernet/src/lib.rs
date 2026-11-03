@@ -71,7 +71,7 @@
 
 //! # BUGS
 //!
-//! - Nothing here has touched the device; every test runs against `sim`. One receive and one
+//! - Nothing here has touched the device; every test runs against `simulator`. One receive and one
 //!   transmit queue, polled: no interrupt, offloads, jumbo frames or multicast.
 //! - Only `gmac0` (`16030000`) is wired; `gmac1`'s SYS-domain clocks have no plan.
 #[cfg(test)]
@@ -86,7 +86,7 @@ pub mod motorcomm;
 #[doc(alias = "regs")]
 pub mod registers;
 #[cfg(test)]
-mod sim;
+mod simulator;
 
 /// Offsets inside the DMA region, which the kernel allocates contiguous: `e1000e`'s layout,
 /// because the two NICs' data planes have the same shape.
@@ -99,13 +99,14 @@ mod data_plane;
 mod descriptor;
 mod hardware;
 
-pub use data_plane::{DataPlane, Region, Tails, TransmitError};
+pub use data_plane::{DataPlane, DirectMemoryAccessRegion, Tails, TransmitError};
 use descriptor::*;
 pub use descriptor::{
     BUFFER_SIZE, CRC_BYTES, DESCRIPTOR_BYTES, MAXIMUM_FRAME, RDES3_BUF1V, RDES3_CTXT, RDES3_ES,
-    RDES3_FD, RDES3_IC, RDES3_LD, RDES3_LENGTH, RDES3_OWN, RECEIVE_ENTRIES, ReceiveVerdict,
-    TDES2_BUF1_LEN, TDES2_IC, TDES3_ES, TDES3_FRAME_LEN, TDES3_FS, TDES3_LS, TDES3_OWN,
-    TRANSMIT_ENTRIES, receive_descriptor_words, receive_verdict, transmit_descriptor_words,
+    RDES3_FD, RDES3_LD, RDES3_LENGTH, RDES3_OWN, RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION,
+    RECEIVE_ENTRIES, ReceiveVerdict, TDES2_BUF1_LEN, TDES2_IC, TDES3_ES, TDES3_FRAME_LEN, TDES3_FS,
+    TDES3_LS, TDES3_OWN, TRANSMIT_ENTRIES, receive_descriptor_words, receive_verdict,
+    transmit_descriptor_words,
 };
 pub use hardware::Hardware;
 

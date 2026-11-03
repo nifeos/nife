@@ -63,6 +63,18 @@ reads, looks things up, writes briefs and records rulings in the conversation.
 A lane that carries an architect's ruling may edit `design/decisions/` to record it, on the terms
 the [developer lane](../developer-lane/SKILL.md) sets.
 
+## A held finding gets one lane
+
+The fuzz host files each held fuzz finding as a private security advisory. The maintainer raises at
+most one lane per open advisory, and records on the advisory which lane holds it, because the
+advisory list is the claim board for this kind of lane: such a lane pushes nothing until its fix is
+ready, so `gh pr list --draft` shows nothing of it. Check the advisory for a holder before raising a
+lane. The brief names the advisory by its identifier, says the lane claims with `--no-claim`, and
+points at "A fix lane for a held finding" in the [developer lane](../developer-lane/SKILL.md) skill.
+The brief and the record on the advisory name no seed or input, and the maintainer does not open the
+fuzz host's held directory either. The lane is launched with a one-hour reader token, which the
+maintainer's tooling supplies and never writes into a brief, a log or a pull request.
+
 ## Dependency bumps
 
 Decided 2026-10-25 (UTC); [notes/dependency-updates.md](../../dependency-updates.md) has the whole

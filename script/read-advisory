@@ -1,0 +1,121 @@
+#!/bin/sh
+#
+# Read one private security advisory of nifeos/nife, for a lane that fixes the held finding it
+# describes.
+#
+#     NIFE_ADVISORY_READER_TOKEN=<one-hour token> script/read-advisory GHSA-xxxx-xxxx-xxxx
+#     script/read-advisory --selftest
+#
+# Name: provisional, minted 2026-11-03 (UTC) by lane/fix-lanes-read-the-advisory. A verb, because it
+# fetches something on request, as the other scripts that do something are. No architect has ruled on it.
+#
+# # What it does
+#
+# `GET /repos/nifeos/nife/security-advisories/<id>` through `gh api`, with the token the channel
+# below hands it, and prints the advisory to standard output: identifier, state, severity, summary,
+# the affected packages and the description. A fuzz finding's advisory holds the finding class and
+# the reproducer (fuzz-findings-without-a-person, step 1), so what this prints is the one place a
+# lane learns a held finding. The ruling is design/roadmap/proposals/fix-lanes-read-the-advisory.md.
+#
+# # What it never does
+#
+# - **Write to disk inside a worktree.** It writes nothing at all, only to standard output. A lane
+#   that wants the text in a file puts it in its own scratch space, outside every repository, and
+#   never commits it. It refuses when standard output is a file inside the repository it runs in.
+# - **Look for a credential.** It reads the one channel named below and nothing else. It does not
+#   fall back to GH_TOKEN, GITHUB_TOKEN, `gh auth`, a keychain or a file, so a lane that holds
+#   another credential never reads an advisory with it by accident. With no token on the channel it
+#   refuses, by name, and calls nothing.
+# - **Print the token.** Not on success, and not in an error.
+# - **Put a seed or input anywhere public.** That is the lane's duty after reading: see the
+#   developer-lane skill, "A fix lane for a held finding".
+#
+# # The token channel
+#
+# The helper that mints the one-hour `nife-fuzz-reader` installation token is a separate milestone
+# (fix-lanes-get-a-one-hour-reader-token.md), and how it delivers the token is not final. The whole
+# channel is the one function below. To read the token from a command instead of a variable, change
+# its body to the command, e.g. `nife-fuzz-reader-token`; nothing else in this file knows where the
+# token came from.
+token_channel() { printf '%s' "${NIFE_ADVISORY_READER_TOKEN-}"; }
+channel_name='NIFE_ADVISORY_READER_TOKEN'
+
+repo="${NIFE_ADVISORY_REPO:-nifeos/nife}"
+
+say() { echo "read-advisory: $*" >&2; }
+
+if [ "${1:-}" = "--selftest" ]; then
+    exec "$(dirname "$0")/../helpers/read-advisory-selftest.sh"
+fi
+
+case "${1:-}" in
+    GHSA-????-????-????) id="$1" ;;
+    *)
+        say "usage: script/read-advisory GHSA-xxxx-xxxx-xxxx (the advisory's identifier)"
+        exit 2
+        ;;
+esac
+[ "$#" -eq 1 ] || { say "one advisory per run"; exit 2; }
+case "$id" in
+    *[!A-Za-z0-9-]*) say "not an advisory identifier"; exit 2 ;;
+esac
+
+token="$(token_channel)"
+if [ -z "$token" ]; then
+    say "no credential: $channel_name is empty or unset. A lane is handed a one-hour reader token at"
+    say "launch (fix-lanes-get-a-one-hour-reader-token.md); this script looks nowhere else."
+    exit 1
+fi
+
+# Refuse a redirect into the tree. A regular file on standard output is placed from a copy of the
+# descriptor (a command substitution has a pipe of its own for its standard output): Linux names it
+# under /proc, macOS answers F_GETPATH. A pipe or a terminal passes. A regular file whose path cannot
+# be worked out is refused too: the safe answer when the rule cannot be checked.
+exec 3>&1
+out="$(python3 -I -c '
+import os, sys, stat
+if not stat.S_ISREG(os.fstat(3).st_mode):
+    sys.exit(0)
+try:
+    p = os.readlink("/proc/self/fd/3")
+except OSError:
+    import fcntl
+    p = fcntl.fcntl(3, 50, b"\0" * 1024).split(b"\0")[0].decode()
+print(os.path.realpath(p))
+' 2>/dev/null)" || out='?'
+exec 3>&-
+if [ -n "$out" ]; then
+    top="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+    if [ "$out" = '?' ]; then
+        say "standard output is a file I cannot place; write to a pipe or a terminal"
+        exit 1
+    fi
+    case "$out" in
+        "$top"/*)
+            say "standard output is a file inside $top; keep an advisory's text outside every repository"
+            exit 1
+            ;;
+    esac
+fi
+
+# The token reaches `gh` in this one command's environment and nowhere else. GITHUB_TOKEN and the
+# enterprise variants are cleared so that `gh` cannot pick another credential over ours.
+json="$(env -u GITHUB_TOKEN -u GH_ENTERPRISE_TOKEN -u GITHUB_ENTERPRISE_TOKEN GH_TOKEN="$token" \
+    gh api -H "Accept: application/vnd.github+json" "/repos/$repo/security-advisories/$id" 2>/dev/null)" || {
+    say "GitHub refused or could not be reached for $id (token expired, wrong id, or no network)"
+    exit 1
+}
+
+printf '%s' "$json" | python3 -I -c '
+import json, sys
+a = json.load(sys.stdin)
+print("advisory:", a.get("ghsa_id", ""))
+print("state:", a.get("state", ""))
+print("severity:", a.get("severity", ""))
+print("summary:", a.get("summary", ""))
+for v in a.get("vulnerabilities") or []:
+    pkg = (v.get("package") or {}).get("name", "")
+    print("affected:", pkg, v.get("vulnerable_version_range", ""))
+print()
+print(a.get("description", ""))
+'

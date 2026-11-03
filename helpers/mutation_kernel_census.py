@@ -149,7 +149,7 @@ SLICES = (
     Slice("kernel-rest", ("kernel/src/**",), "aarch64", "kernel"),
     Slice("kernel-needing-crates",
           ("crates/system_initializer/**", "crates/virtio/**", "crates/user_mode_runtime/**",
-           "crates/hot_swap_contract/**", "crates/supervision_protocol/**",
+           "crates/hot_swap_contract/**", "crates/hot_swap_server/**", "crates/process_builder/**",
            "crates/memory_region_heap/**"),
           "aarch64", "system"),
 )
@@ -159,8 +159,8 @@ SLICE_TABLE = {s.name: s for s in SLICES}
 # The packages the corpus keeps, which the proposal's own census priced: 18,518 mutants. A path
 # under none of these roots is dropped before the slices are consulted.
 ROOTS = ("kernel", "components", "crates/system_initializer", "crates/virtio",
-         "crates/user_mode_runtime", "crates/hot_swap_contract", "crates/supervision_protocol",
-         "crates/memory_region_heap")
+         "crates/user_mode_runtime", "crates/hot_swap_contract", "crates/hot_swap_server",
+         "crates/process_builder", "crates/memory_region_heap")
 
 RECORD_PATH = "notes/project-metrics/kernel-mutation-census.csv"
 RECORD_HEADER = "date,run,rotation,slice,arch,mutants,survived,caught,unviable,stale,timeout\n"

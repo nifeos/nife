@@ -94,7 +94,10 @@ the finding class and the reproducer, and a fix lane reads that advisory and not
 inputs, seeds and reproducers stay out of every public text until the fix is on main. An architect
 ruled this on 2026-11-01 (UTC) in
 [`fuzz-findings-without-a-person`](../../design/roadmap/proposals/fuzz-findings-without-a-person.md),
-which also lists the milestones that build it. Until they land, nothing files an advisory.
+which also lists the milestones that build it. The filer is `fuzz-filer` in
+[nifeos/fuzz-host](https://github.com/nifeos/fuzz-host); it runs as the fuzz account and files from a
+one-hour token that a root timer mints. It is built and not yet installed, so until a person installs
+it, nothing files an advisory.
 
 With `--publish` it creates one GitHub release per day on nifeos/nife, tagged `fuzz-YYYY-MM-DD` (the
 UTC date), with `report.md` and `clean-ranges.tsv` as its assets: `gh release create fuzz-YYYY-MM-DD
@@ -109,8 +112,9 @@ stays disabled until a person installs the credential and sets that variable. `-
 and the asset list and runs nothing else.
 
 The credential is a one-hour installation token of the `nife-fuzz` GitHub App, which a mint helper
-on the host makes from the App's private key, readable by root alone. Neither the helper nor the key
-exists yet; [`finishing-the-setup.md`](finishing-the-setup.md) lists what remains and in what order. The App holds Contents write and Repository
+on the host makes from the App's private key, readable by root alone. The helper is `fuzz-token` in
+[nifeos/fuzz-host](https://github.com/nifeos/fuzz-host), and it mints one token per service, each
+narrower than the App. Nobody has placed the key yet; [`finishing-the-setup.md`](finishing-the-setup.md) lists what remains and in what order. The App holds Contents write and Repository
 security advisories write on nifeos/nife alone (ruled 2026-11-01 UTC).
 [`the-fuzz-app.md`](the-fuzz-app.md) is the runbook for the person who creates it, and it states
 what the key can do. Main's ruleset requires a pull request and has no bypass actor, so the token
@@ -138,8 +142,9 @@ That installs phase 1: the publish unit writes the day's report and clean ranges
 publishes nothing. Phase 2 publishes the release. It waits on the mint helper and on a host clone
 that carries the clean-range fix, and step P5 of [`finishing-the-setup.md`](finishing-the-setup.md)
 gives its drop-in. The unit as shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag. Without
-`NIFE_FUZZ_PUBLISH=1` the script refuses to publish, and without a token `gh` fails; either way the
-local files are still written.
+`NIFE_FUZZ_PUBLISH=1` the script refuses to publish. It also refuses, by name and before any `gh`
+call, a missing `GH_TOKEN`, a missing or unreadable `GH_TOKEN_EXPIRES_AT`, and a token that has expired
+or expires within five minutes. Either way the local files are still written.
 
 The supervisor moves every slot worktree to the clone's commit when it starts, so a restart after
 a person moves the clone runs every slot at that commit. The clone reaches the commit that carries

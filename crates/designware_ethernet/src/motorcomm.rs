@@ -5,9 +5,9 @@
 //! in the crate root). The link, speed and duplex come from the standard clause 22 registers, as
 //! OpenBSD's `ukphy_status` (`sys/dev/mii/ukphy_subr.c`) reads them, with IEEE 802.3's registers
 //! and OpenBSD's `mii.h` names. The part's vendor status register is not read.
-//! [`EXT_SLEEP_CTRL`] and [`EXT_CLK_GATE`] take OpenBSD's names (`ytphy.c`); FreeBSD's `mcommphy.c`
+//! [`MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER`] and [`MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER`] take OpenBSD's names (`ytphy.c`); FreeBSD's `mcommphy.c`
 //! names the same two registers too, and each constant's documentation gives Linux's spelling.
-//! The bits inside them, and [`PHY_ID_YT8531`] (OpenBSD and FreeBSD match the OUI and model, not
+//! The bits inside them, and [`MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID`] (OpenBSD and FreeBSD match the OUI and model, not
 //! the whole identifier), come from Linux's `drivers/net/phy/motorcomm.c`, read as facts about the
 //! part (#2762 Decision 52's source order); why this driver writes them is at each. Each constant keeps its source's
 //! name without the part prefix (`YT8511_`, `YT8521_` or `YT8531_`), and its documentation opens
@@ -21,10 +21,10 @@ use crate::management_data_input_output::{self, ManagementDataInputOutput};
 /// **The YT8531's PHY identifier** (`PHY_ID_YT8531`, `motorcomm.c`), `PHYSID1 << 16 | PHYSID2`,
 /// matched exactly there; OpenBSD matches the OUI and model.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): #2762 Decision 37c, the source's name copied strictly,
-/// replacing `YT8531_ID`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "yt8531 identifier")]
-pub const PHY_ID_YT8531: u32 = 0x4f51_e91b;
+#[doc(alias = "PHY_ID_YT8531")]
+pub const MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID: u32 = 0x4f51_e91b;
 
 /// **Extended register address port** (`YT8511_REG_ADDR`, `ytphy.c`): write an extended register's
 /// number here.
@@ -38,12 +38,11 @@ pub(crate) const REG_DATA: u8 = 0x1f;
 /// **Clock gate register** (`YT8511_EXT_CLK_GATE`, `ytphy.c`). Linux calls it
 /// `YT8521_CLOCK_GATING_REG` (`motorcomm.c`) and FreeBSD `PHY_CLOCK_GATING_REG` (`mcommphy.c`).
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by `lane/citation-fixes-from-the-audit`. Ruled
-/// 2026-11-01 (UTC): where a permissively licensed source names a thing, copy its name, OpenBSD's
-/// first, then FreeBSD's, then Linux's. The part prefix is dropped as elsewhere in this module.
-/// Replaces `CLOCK_GATING_REG`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "clock gating register")]
-pub const EXT_CLK_GATE: u16 = 0x000c;
+#[doc(alias = "EXT_CLK_GATE")]
+#[doc(alias = "YT8521_CLOCK_GATING_REG")]
+pub const MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER: u16 = 0x000c;
 /// **Clock gating register, receive clock enable** (`YT8521_CGR_RX_CLK_EN`, `motorcomm.c`). Clear
 /// it to keep the receive clock running with no cable; Linux clears it for
 /// `motorcomm,keep-pll-enabled`. Cleared here unconditionally, because the controller's
@@ -56,12 +55,11 @@ pub(crate) const CGR_RX_CLK_EN: u16 = 1 << 12;
 /// `YT8521_EXTREG_SLEEP_CONTROL1_REG` (`motorcomm.c`) and FreeBSD `PHY_SLEEP_CONTROL1_REG`
 /// (`mcommphy.c`).
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by `lane/citation-fixes-from-the-audit`. Ruled
-/// 2026-11-01 (UTC): where a permissively licensed source names a thing, copy its name, OpenBSD's
-/// first, then FreeBSD's, then Linux's. The part prefix is dropped as elsewhere in this module.
-/// Replaces `EXTREG_SLEEP_CONTROL1_REG`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "extended register, sleep control 1")]
-pub const EXT_SLEEP_CTRL: u16 = 0x0027;
+#[doc(alias = "EXT_SLEEP_CTRL")]
+#[doc(alias = "YT8521_EXTREG_SLEEP_CONTROL1_REG")]
+pub const MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER: u16 = 0x0027;
 /// **Sleep control 1, sleep switch** (`YT8521_ESC1R_SLEEP_SW`, `motorcomm.c`). Clear it to stop the
 /// PHY sleeping when the cable is out, which also stops its clocks. Linux clears it for
 /// `motorcomm,auto-sleep-disabled`; this driver clears it for
@@ -111,9 +109,10 @@ pub(crate) const RGMII_RXD_DS_MASK: u16 = (1 << 12) | (0x3 << 4);
 /// exclusion of the mask's or-versus-xor mutant names this constant. The clippy lints fold the
 /// literals; that is what a gate is, allowed here for exactly that reason.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_RECEIVE_DATA_DRIVE_FIELDS_SHARE_NO_BIT: () = assert!((1 << 12) & (0x3 << 4) == 0);
+#[doc(alias = "THE_RECEIVE_DATA_DRIVE_FIELDS_SHARE_NO_BIT")]
+pub const RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!((1 << 12) & (0x3 << 4) == 0);
 /// **Extended register, synchronous Ethernet configuration** (`YT8521_EXT_SYNCE_CFG`, `ytphy.c`).
 #[doc(alias = "extended register, synchronous ethernet configuration")]
 pub(crate) const EXT_SYNCE_CFG: u16 = 0xa012;
@@ -124,6 +123,8 @@ pub(crate) const EXT_SYNCE_CFG: u16 = 0xa012;
 pub(crate) const EN_SYNC_E: u16 = 1 << 6;
 
 /// A link speed.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Speed {
     /// 10 Mbit/s.
@@ -136,7 +137,9 @@ pub enum Speed {
 
 impl Speed {
     /// Megabits per second.
-    pub const fn mbps(self) -> u32 {
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `mbps`, which abbreviated a unit.
+    pub const fn megabits_per_second(self) -> u32 {
         match self {
             Speed::Ten => 10,
             Speed::Hundred => 100,
@@ -146,6 +149,8 @@ impl Speed {
 }
 
 /// A resolved link.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Link {
     /// The speed negotiated.
@@ -185,7 +190,7 @@ pub(crate) const fn link_from_registers(
             full_duplex: bmcr & mdio::BMCR_FDX != 0,
         });
     }
-    if bmsr & mdio::BMSR_ANEGCOMPLETE == 0 {
+    if bmsr & mdio::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE == 0 {
         return None;
     }
     let common = anar & anlpar;
@@ -209,16 +214,19 @@ pub(crate) const fn link_from_registers(
 }
 
 /// The 100BASE-T4 and 100BASE-TX partner abilities share no bit, so the one `|` in
-/// [`link_from_registers`] is its `^`, which the compiler checks here; the mutation exclusion for
+/// `link_from_registers` is its `^`, which the compiler checks here; the mutation exclusion for
 /// `link_from_registers` names this constant.
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane/954-designware-ethernet-noise.
-pub const THE_PARTNER_HUNDRED_MEGABIT_ABILITIES_SHARE_NO_BIT: () =
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+#[doc(alias = "THE_PARTNER_HUNDRED_MEGABIT_ABILITIES_SHARE_NO_BIT")]
+pub const PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP: () =
     assert!(management_data_input_output::ANLPAR_T4 & management_data_input_output::ANLPAR_TX == 0);
 
 /// A pad drive strength, as a tree states it.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `Drive`, which did not say what is driven.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Drive {
+pub enum PadDriveStrength {
     /// The register code itself, 0 to 7 (the vendor tree's `rgmii_sw_dr*`).
     Code(u8),
     /// A current in microamps (mainline's `motorcomm,*-drv-microamp`), which means a different
@@ -227,8 +235,10 @@ pub enum Drive {
 }
 
 /// Where a [`Settings`] came from.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `Source`, which named no owner.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Source {
+pub enum SettingsSource {
     /// The vendor U-Boot's register-value properties.
     VendorTree,
     /// Mainline Linux's picosecond and microamp properties.
@@ -238,6 +248,8 @@ pub enum Source {
 }
 
 /// **What the board wants of this PHY.**
+///
+/// Name: ratified 2026-11-03 (UTC), #3132.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Settings {
     /// The receive delay select, 0 to 15, in 150 ps steps.
@@ -247,13 +259,13 @@ pub struct Settings {
     /// The transmit delay select, 0 to 15.
     pub transmit_delay: u8,
     /// The receive clock pad's drive.
-    pub receive_clock_drive: Drive,
+    pub receive_clock_drive: PadDriveStrength,
     /// The receive data pads' drive.
-    pub receive_data_drive: Drive,
+    pub receive_data_drive: PadDriveStrength,
     /// Whether to invert the transmit clock at 10, 100 and 1000 Mbit/s, in that order.
     pub transmit_clock_inverted: [bool; 3],
     /// Which spelling this was read from.
-    pub source: Source,
+    pub source: SettingsSource,
 }
 
 /// The receive delay at or above which the fixed extra delay is used (OpenBSD's `1900`).
@@ -262,19 +274,18 @@ const FIXED_DELAY_PS: u32 = 1900;
 const STEP_PS: u32 = 150;
 
 impl Settings {
-    /// **radon's `gmac0`, from the table in this module's header.** Both trees give these values,
+    /// **radon's `gmac0` (Gigabit MAC, GMAC), from the table in this module's header.** Both trees give these values,
     /// so a tree that names neither spelling still gets the board it is on, and says so.
     ///
-    /// Name: provisional, made public 2026-10-25 (UTC) by lane crates-stand-alone-cuts, when the
-    /// device-tree walk that compares against it left the crate.
+    /// Name: ratified 2026-11-02 (UTC), #3094.
     pub const FALLBACK_GMAC0: Settings = Settings {
         receive_delay: 0xa,
         receive_fixed_delay: false,
         transmit_delay: 0xa,
-        receive_clock_drive: Drive::Code(6),
-        receive_data_drive: Drive::Code(3),
+        receive_clock_drive: PadDriveStrength::Code(6),
+        receive_data_drive: PadDriveStrength::Code(3),
         transmit_clock_inverted: [true, true, true],
-        source: Source::Fallback,
+        source: SettingsSource::Fallback,
     };
 
     /// **From mainline's quantities**, by OpenBSD's arithmetic: a receive delay at or past 1.9 ns
@@ -303,17 +314,17 @@ impl Settings {
             receive_delay: sel(receive_ps),
             receive_fixed_delay,
             transmit_delay: sel(transmit_ps),
-            receive_clock_drive: Drive::Microamps(receive_clock_ua),
-            receive_data_drive: Drive::Microamps(receive_data_ua),
+            receive_clock_drive: PadDriveStrength::Microamps(receive_clock_ua),
+            receive_data_drive: PadDriveStrength::Microamps(receive_data_ua),
             transmit_clock_inverted: transmit_inverted.unwrap_or([false; 3]),
-            source: Source::MainlineTree,
+            source: SettingsSource::MainlineTree,
         }
     }
 }
 
 /// **The pad drive code for a current at a voltage**, OpenBSD's `ytphy_yt8531_ds_map`. Unknown
 /// pairs, which includes everything at 2.5 V, get the part's default of 3, as there.
-pub(crate) fn drive_code(voltage_mv: u32, d: Drive) -> u8 {
+pub(crate) fn drive_code(voltage_mv: u32, d: PadDriveStrength) -> u8 {
     const MAP: [(u32, u32, u8); 16] = [
         (1800, 1200, 0),
         (1800, 2100, 1),
@@ -333,8 +344,8 @@ pub(crate) fn drive_code(voltage_mv: u32, d: Drive) -> u8 {
         (3300, 6140, 7),
     ];
     match d {
-        Drive::Code(c) => c & 0x7,
-        Drive::Microamps(ua) => MAP
+        PadDriveStrength::Code(c) => c & 0x7,
+        PadDriveStrength::Microamps(ua) => MAP
             .iter()
             .find(|&&(v, a, _)| v == voltage_mv && a == ua)
             .map_or(3, |&(_, _, c)| c),
@@ -352,8 +363,7 @@ pub(crate) const fn voltage_mv(chip_configuration: u16) -> u32 {
 
 /// Read extended register `extended`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
-/// `read_ext`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub fn read_extended(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
@@ -365,8 +375,7 @@ pub fn read_extended(
 
 /// Write extended register `extended`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC): renamed by the crate's rename table, replacing
-/// `write_ext`.
+/// Name: ratified 2026-11-02 (UTC), #3094.
 pub fn write_extended(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
@@ -391,12 +400,18 @@ fn modify_extended(
 }
 
 /// What [`configure`] found and wrote.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Applied {
     /// The I/O voltage the PHY is strapped to.
-    pub voltage_mv: u32,
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `voltage_mv`.
+    pub voltage_millivolts: u32,
     /// RGMII configuration 1 after the write.
-    pub rgmii_config1: u16,
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `rgmii_config1`, which abbreviated the interface and the word configuration.
+    pub reduced_gigabit_media_independent_interface_configuration_1: u16,
     /// The pad drive word after the write.
     pub pad_drive: u16,
 }
@@ -406,6 +421,8 @@ pub struct Applied {
 /// driver's two additions, the clocks kept running with no cable. The extended-address port is
 /// restored at the end, as OpenBSD does, so a firmware access interleaved before or after finds
 /// it where it left it.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132.
 pub fn configure(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
@@ -423,7 +440,7 @@ pub fn configure(
     let volt = voltage_mv(chip);
     let delays = u16::from(s.receive_delay & 0xf) << RX_DELAY_SEL_SHIFT
         | u16::from(s.transmit_delay & 0xf) << TX_DELAY_SEL_SHIFT;
-    let rgmii_config1 = modify_extended(
+    let reduced_gigabit_media_independent_interface_configuration_1 = modify_extended(
         bus,
         physical_layer_device_address,
         EXT_RGMII_CONFIG1,
@@ -449,21 +466,21 @@ pub fn configure(
     modify_extended(
         bus,
         physical_layer_device_address,
-        EXT_CLK_GATE,
+        MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER,
         CGR_RX_CLK_EN,
         0,
     )?;
     modify_extended(
         bus,
         physical_layer_device_address,
-        EXT_SLEEP_CTRL,
+        MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER,
         ESC1R_SLEEP_SW,
         0,
     )?;
     bus.write(physical_layer_device_address, REG_ADDR, saved)?;
     Ok(Applied {
-        voltage_mv: volt,
-        rgmii_config1,
+        voltage_millivolts: volt,
+        reduced_gigabit_media_independent_interface_configuration_1,
         pad_drive,
     })
 }
@@ -472,8 +489,9 @@ pub fn configure(
 /// is zero: every `|` here is its `^`, and a shift by `TX_DELAY_SEL_SHIFT` is the identity; the
 /// compiler checks both here, and the mutation exclusions for `configure` name this constant.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-ethernet-assertion-names.
-pub const THE_RGMII_DELAY_AND_DRIVE_FIELDS_SHARE_NO_BIT: () = assert!(
+/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+#[doc(alias = "THE_RGMII_DELAY_AND_DRIVE_FIELDS_SHARE_NO_BIT")]
+pub const RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!(
     (0xf << RX_DELAY_SEL_SHIFT) & (0xf << TX_DELAY_SEL_SHIFT) == 0
         && (0x7 << RGMII_RXC_DS_SHIFT) & RGMII_RXD_DS_MASK == 0
         && TX_DELAY_SEL_SHIFT == 0
@@ -481,6 +499,8 @@ pub const THE_RGMII_DELAY_AND_DRIVE_FIELDS_SHARE_NO_BIT: () = assert!(
 
 /// **Set the transmit clock's inversion for the speed just negotiated**, OpenBSD's
 /// `ytphy_yt8521_update`. Returns the new RGMII configuration word.
+///
+/// Name: ratified 2026-11-03 (UTC), #3132.
 pub fn apply_speed(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
@@ -508,7 +528,9 @@ pub fn apply_speed(
 /// **The link, if there is one**, read from the standard clause 22 registers the way OpenBSD's
 /// `ukphy_status` does. The basic mode status register is read twice, because its link bit
 /// latches low.
-pub fn link(
+///
+/// Name: ratified 2026-11-03 (UTC), #3132. Renamed from `link`: a verb phrase, since it reads the registers.
+pub fn read_link(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
 ) -> Result<Option<Link>, management_data_input_output::Error> {
@@ -527,7 +549,7 @@ pub fn link(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sim::PhysicalLayerDevice;
+    use crate::simulator::PhysicalLayerDevice;
 
     #[test]
     fn the_two_trees_spell_the_same_registers_for_radons_gmac0() {
@@ -561,15 +583,15 @@ mod tests {
 
     #[test]
     fn an_unknown_current_gets_the_parts_default_drive() {
-        assert_eq!(drive_code(2500, Drive::Microamps(3970)), 3);
-        assert_eq!(drive_code(1800, Drive::Microamps(1)), 3);
-        assert_eq!(drive_code(3300, Drive::Microamps(6140)), 7);
+        assert_eq!(drive_code(2500, PadDriveStrength::Microamps(3970)), 3);
+        assert_eq!(drive_code(1800, PadDriveStrength::Microamps(1)), 3);
+        assert_eq!(drive_code(3300, PadDriveStrength::Microamps(6140)), 7);
     }
 
     #[test]
     fn the_clause_22_registers_decode_every_speed_and_duplex() {
         use management_data_input_output::*;
-        let up = BMSR_LSTATUS | BMSR_ANEGCOMPLETE;
+        let up = BMSR_LSTATUS | BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE;
         let advertise = ANLPAR_TX_FD | ANLPAR_TX | ANLPAR_10_FD | ANLPAR_10;
         let both = GTCR_ADV_1000TFDX | GTCR_ADV_1000THDX;
         let l = |speed, full_duplex| Some(Link { speed, full_duplex });
@@ -631,10 +653,17 @@ mod tests {
         use management_data_input_output::*;
         let all = ANLPAR_TX_FD | ANLPAR_TX | ANLPAR_10_FD | ANLPAR_10;
         let go = |bmsr, bmcr| link_from_registers(bmsr, bmcr, all, all, 0, 0);
-        assert_eq!(go(BMSR_ANEGCOMPLETE, BMCR_ANENABLE), None, "link down");
+        assert_eq!(
+            go(BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE, BMCR_ANENABLE),
+            None,
+            "link down"
+        );
         assert_eq!(go(BMSR_LSTATUS, BMCR_ANENABLE), None, "negotiation running");
         assert_eq!(
-            go(BMSR_LSTATUS | BMSR_ANEGCOMPLETE, BMCR_ANENABLE | BMCR_ISO),
+            go(
+                BMSR_LSTATUS | BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE,
+                BMCR_ANENABLE | BMCR_ISO
+            ),
             None
         );
     }
@@ -655,7 +684,7 @@ mod tests {
         let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
         physical_layer_device.write_raw(REG_ADDR, 0x1234);
         let a = configure(&mut physical_layer_device, 0, &Settings::FALLBACK_GMAC0).unwrap();
-        assert_eq!(a.voltage_mv, 1800);
+        assert_eq!(a.voltage_millivolts, 1800);
         assert_eq!(
             physical_layer_device.extended(EXT_RGMII_CONFIG1) & 0x3c0f,
             0xa << 10 | 0xa
@@ -674,11 +703,13 @@ mod tests {
         );
         assert_eq!(physical_layer_device.extended(EXT_SYNCE_CFG) & EN_SYNC_E, 0);
         assert_eq!(
-            physical_layer_device.extended(EXT_SLEEP_CTRL) & ESC1R_SLEEP_SW,
+            physical_layer_device.extended(MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER)
+                & ESC1R_SLEEP_SW,
             0
         );
         assert_eq!(
-            physical_layer_device.extended(EXT_CLK_GATE) & CGR_RX_CLK_EN,
+            physical_layer_device.extended(MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER)
+                & CGR_RX_CLK_EN,
             0
         );
         assert_eq!(physical_layer_device.raw(REG_ADDR), 0x1234);
@@ -688,7 +719,7 @@ mod tests {
     fn a_drive_code_with_its_high_bit_set_lands_in_bit_twelve() {
         let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
         let s = Settings {
-            receive_data_drive: Drive::Code(7),
+            receive_data_drive: PadDriveStrength::Code(7),
             ..Settings::FALLBACK_GMAC0
         };
         configure(&mut physical_layer_device, 0, &s).unwrap();
@@ -701,14 +732,14 @@ mod tests {
     #[test]
     fn the_link_reads_none_until_a_cable_resolves_it() {
         let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
-        assert_eq!(link(&mut physical_layer_device, 0).unwrap(), None);
+        assert_eq!(read_link(&mut physical_layer_device, 0).unwrap(), None);
         assert!(!management_data_input_output::link_is_up(&mut physical_layer_device, 0).unwrap());
         let gig = Link {
             speed: Speed::Thousand,
             full_duplex: true,
         };
         physical_layer_device.set_link(Some(gig));
-        assert_eq!(link(&mut physical_layer_device, 0).unwrap(), Some(gig));
+        assert_eq!(read_link(&mut physical_layer_device, 0).unwrap(), Some(gig));
         assert!(management_data_input_output::link_is_up(&mut physical_layer_device, 0).unwrap());
     }
 
@@ -750,7 +781,7 @@ mod tests {
     #[test]
     fn each_speed_is_its_megabits() {
         assert_eq!(
-            [Speed::Ten, Speed::Hundred, Speed::Thousand].map(Speed::mbps),
+            [Speed::Ten, Speed::Hundred, Speed::Thousand].map(Speed::megabits_per_second),
             [10, 100, 1000]
         );
     }
@@ -780,12 +811,15 @@ mod tests {
         write_extended(&mut physical_layer_device, 0, EXT_RGMII_CONFIG1, 0xffff).unwrap();
         write_extended(&mut physical_layer_device, 0, EXT_PAD_DRIVE_STRENGTH, 0).unwrap();
         let s = Settings {
-            receive_data_drive: Drive::Code(7),
+            receive_data_drive: PadDriveStrength::Code(7),
             ..Settings::FALLBACK_GMAC0
         };
         let a = configure(&mut physical_layer_device, 0, &s).unwrap();
         // 0xffff with bits 13:10 and 3:0 replaced by 0xa each.
-        assert_eq!(a.rgmii_config1, 0xebfa);
+        assert_eq!(
+            a.reduced_gigabit_media_independent_interface_configuration_1,
+            0xebfa
+        );
         // Clock drive 6 in bits 15:13; data drive 7 as 0b11 in bits 5:4 and 0b1 in bit 12.
         assert_eq!(a.pad_drive, 0xd030);
         assert_eq!(
