@@ -40,8 +40,11 @@ dependency graph: the crates a program links leave before it or with it, and not
 depends on a path or a pin into this repository. This repository may depend on what has left. The
 leaf pilot `jh7110_entropy` (milestone 818 (proven JH7110 TRNG logic, released on its own)) leaves
 first, then the contract crates, then the programs and tooling once the crates they link have left.
-The kernel leaves last among the code, to `nife-kernel` (provisional). Once everything has left,
-`nifeos/nife` holds only the history.
+The kernel leaves last among the code, to a repository named `nife-kernel` (ratified 2026-11-03, the
+name only). The name is distinct on disk from the `kernel/` directory inside this repository,
+matches the hyphenated repositories that are not crates (`crate-workflows` and `fuzz-host`), and
+says what the repository holds. Creating the repository still needs the architect's separate, named
+go. Once everything has left, `nifeos/nife` holds only the history.
 
 Churn does not hold a move. A contract crate leaves and carries a version while its interface still
 changes, and each consumer checks that version (milestone 956 (the linked interfaces carry checkable

@@ -647,8 +647,15 @@ mod tests {
         // Every target the card could be asked for, at the base radon runs: exhaustive rather
         // than a Kani harness, because two symbolic 32-bit divisions ran past twelve minutes
         // without finishing on 2026-10-06 and the domain that matters here is fifty million.
+        // Under Miri the fifty million take over two hours, so it strides by 9,973 (prime) and
+        // adds the edges: the slowest rate the field reaches and the base itself.
         let base = 50_000_000;
-        for target in 1..=base {
+        let stride = if cfg!(miri) { 9_973 } else { 1 };
+        let targets = (1..=base)
+            .step_by(stride)
+            .chain(97_000..=99_000)
+            .chain(base - 1_000..=base);
+        for target in targets {
             if let Some(d) = clock_divider(base, target) {
                 assert!(card_clock(base, d) <= target, "{target} {d}");
                 // And it is the fastest that does not exceed: one divider less would, in exact
@@ -788,6 +795,10 @@ mod tests {
     /// A clock that advances seven microseconds a read never lands on the deadline exactly, as a
     /// real one need not, so the give-up test has to be a comparison past it.
     #[test]
+    #[cfg_attr(
+        miri,
+        ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
+    )]
     fn a_card_busy_forever_is_reported_once_the_deadline_has_passed() {
         let mut sim = Sim::new(CardKind::Empty, 1, 32);
         sim.busy_forever = true;
@@ -886,6 +897,10 @@ mod tests {
     /// A card that stops moving data is a timeout naming exactly the bytes still owed: the first
     /// 128 moved (a 32-word FIFO's worth), and for a write a second 128 sits in the full FIFO.
     #[test]
+    #[cfg_attr(
+        miri,
+        ignore = "spins the driver to its simulated data deadline twice; seventeen minutes under Miri"
+    )]
     fn a_stalled_transfer_times_out_owing_what_did_not_move() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         let card = sd::identify(&mut h, 4).unwrap();
@@ -907,6 +922,10 @@ mod tests {
     /// A card that raises `DTO` having sent only part of a read leaves nothing to move and nothing
     /// coming: the driver must wait out the deadline, not spin on an end that has no data.
     #[test]
+    #[cfg_attr(
+        miri,
+        ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
+    )]
     fn a_read_the_card_ends_early_times_out_rather_than_spinning() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         let card = sd::identify(&mut h, 4).unwrap();
