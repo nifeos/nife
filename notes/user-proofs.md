@@ -37,9 +37,9 @@ What is left is still worth proving, and one attempt at proving it found a live 
 
 ## The defect this found, which is the point
 
-`rmle`, the text editor this tree carried until it was removed (`design/removed.tsv` names the
-commit that holds its source), held a document as `MAXIMUM_ROWS` rows of at most
-`MAXIMUM_COLUMNS` bytes, and saved it by joining the rows with `\n` into one scratch buffer before
+`rmle` was a text editor this tree no longer carries; `design/removed.tsv` names the commit that
+holds its source. It held a document as `MAXIMUM_ROWS` rows of at most `MAXIMUM_COLUMNS` bytes,
+and saved it by joining the rows with `\n` into one scratch buffer before
 writing that buffer to the filesystem. The buffer was `MAXIMUM_ROWS * MAXIMUM_COLUMNS`.
 
 That is the size of the document's text, not the size of what `save` writes. The separators cost

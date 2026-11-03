@@ -24,9 +24,9 @@ the buffer before it copies through it. A device tree laid out so that the round
 of the buffer panics the loader with an out-of-range slice instead of returning `Error::Truncated`.
 `prop` has the check; `begin_node` does not.
 
-The bytes come from firmware, which already runs below the loader and is trusted, so the outcome is
-a boot that stops and not authority gained. It is still a parser that panics on input it was
-written to refuse.
+The bytes come from firmware, which already runs below the loader and holds its trust, so the outcome is
+a boot that stops and not authority gained. It is still a parser that panics on input its
+authors meant it to refuse.
 
 ## The work
 

@@ -20,7 +20,7 @@ Reuse: `program_asks::checked_asked_grants_of`, which already exists and is what
 `xtask/src/base_image.rs` checks each carried program's asks against the approval with
 `program_asks::checked_asked_grants_of`, which reads the note from an ELF of any machine. It then
 writes the first generation's grant lines with `program_asks::asked_grants`, which goes through
-`elf::Elf::parse`. That parser refuses an ELF whose machine is not the one it was built for, and
+`elf::Elf::parse`. That parser refuses an ELF whose machine is not its own build target's, and
 `asked_grants` turns the refusal into no asks. Composing an image on a host of another
 architecture than the image's therefore checks the asks and then records no grants for them.
 

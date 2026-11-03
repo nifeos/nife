@@ -89,7 +89,8 @@ moot `BUGS` lines are gone. `script/verify`'s comment on the same selection said
 `notes/the-first-split.md` measured each split candidate's commits while `rmle` was in the tree,
 and its `rmle` + `mdr` + `demos` row counts commits to a program that is gone. The table is a
 measurement at one commit, and changing a measured number by hand would make it neither. Recorded
-in the note's `BUGS`: that candidate is `mdr` + `demos` until the table is measured again.
+in the note's `BUGS` (the note sits at its 3,000-word cap, so the line is short): the row predates
+the removal, and that candidate is `mdr` + `demos` until someone measures the table again.
 
 ## What was deliberately not examined
 

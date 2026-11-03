@@ -19,14 +19,14 @@ they are. The work is their order, and one check in `package_archive`.
 ## The failure
 
 Milestone 911 (scripted installs grant only what an approval file allows) bounds what a holder of
-a delegated installer badge may do. The comment on the delegated check says it runs "before anything
-is placed or written". It does not. `install` calls `place_program` for every program in the
-package first, and `approval_gate` only after. A package the approval does not cover, or one marked
-`update = false` that is already installed, is refused, but its bytes are already under
-`packages/<name>/<version>/`, written or replaced in place.
+a delegated installer badge may do. The comment on the delegated check says it runs before the
+installer places or writes anything. It does not. `install` calls `place_program` for every
+program in the package first, and `approval_gate` only after. The gate refuses a package the
+approval does not cover, or one the table holds already whose entry says `update = false`. By then
+the installer has written its bytes under `packages/<name>/<version>/`, or replaced them in place.
 
-No authority widens. No table row or grant is written, and spawn hashes the bytes it runs. What
-is lost is the bound the approval claims on the store: a delegated holder can fill the disk, or
+No authority widens. The installer writes no table row and no grant, and spawn hashes the bytes it
+runs. The loss is the bound the approval claims on the store. A delegated holder can fill the disk, or
 replace the bytes at a path a person runs by name, with any package the catalog vouches for,
 whether or not the owner approved it.
 
