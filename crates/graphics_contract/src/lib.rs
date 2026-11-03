@@ -105,6 +105,8 @@ pub const fn pixel_at(i: usize) -> u32 {
 ///
 /// ```
 /// use graphics_contract::{checksum, expected_checksum, first_mismatch, pixel_at};
+/// # // Each whole-surface digest takes minutes under Miri, which skips the example.
+/// # if cfg!(miri) { return; }
 ///
 /// // A client that painted the surface correctly. `checksum`/`first_mismatch` read through a
 /// // closure rather than a materialized buffer, which is not just convenient here: at 1120x624

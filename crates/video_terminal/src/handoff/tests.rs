@@ -35,6 +35,10 @@ fn blob_of(t: &Vt) -> std::vec::Vec<u8> {
 /// every row of history, and after feeding both the rest of the cut sequence and more text, so a
 /// field the blob dropped shows as a difference somewhere a person would see it.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "compares every pixel of two terminals at four scroll depths, twice; over four hours under Miri without finishing"
+)]
 fn an_absorbed_terminal_carries_on_exactly_where_the_incumbent_stopped() {
     // A ring that has wrapped, and one that has not, whose tail is not at slot zero.
     carries_on(400);

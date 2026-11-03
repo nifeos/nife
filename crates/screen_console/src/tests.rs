@@ -422,6 +422,10 @@ fn the_grid_scroll_paints_exactly_what_the_copy_up_painted() {
 /// of them on every scroll; this reads nothing, because it cannot, and writes the cells whose
 /// glyph changed. Run with `--nocapture` to see the numbers the assertion bounds.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "replays a recorded tour on a 1920x1080 framebuffer and counts every store; over four hours under Miri without finishing"
+)]
 fn a_scroll_writes_only_the_cells_that_changed() {
     let found = Framebuffer {
         base: 0,
