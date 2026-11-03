@@ -46,6 +46,10 @@ recursively), ruled 2026-09-18. Ask it again of any acronym inside the expansion
 `device_tree_blob` and `pcie` becomes `pci_express`, while `pci` and `elf` stay. §154 deratified
 `dma_validator`, `nvme`, `gpt`, `dtb`, `ipc` and `asid`.
 
+Accepted acronyms: `MAC` and `GMAC` (ruled with #3094) and `SD` (ruled 2026-11-03 (UTC)). `SDIO` is
+not accepted, because it is the vendor's label for a controller instance. `RGMII` is spelled
+`reduced_gigabit_media_independent_interface`, and `MDIO` is `management_data_input_output`.
+
 The test applies to names this tree authors. A name that arrives across somebody else's interface
 keeps their spelling, with an expansion written where the reader meets it. The foreign spelling
 stops there: inside, `initrd` is `initial_ramdisk` (#1842). Ruled 2026-10-26 (UTC): a kept
@@ -55,10 +59,48 @@ as does a specification's term of art in names this tree authors.
 
 ### A register constant takes the spelled-out name
 
-Ruled 2026-11-02 (UTC), for new and provisional names. A hardware register, field or bit constant
-copied from a cited source gets a spelled-out name. The source's spelling goes in
-`doc(alias)` and the doc comment's opening, cited: OpenBSD's first, then FreeBSD's, and Linux's only
-when no BSD source names it. A ratified name waits for its own review.
+Ruled 2026-11-02 (UTC) and again 2026-11-03 (UTC), for new and renamed names. A hardware register,
+field or bit constant copied from a cited source gets a spelled-out name, including a module that
+once kept the source's names (the e1000e `registers` module). The source's spelling goes in
+`doc(alias)` and the doc comment's opening, cited. BSD comes first: OpenBSD's spelling, then
+FreeBSD's, then Linux's. The Intel `E1000_*` macros are spelled the same in all three. A ratified
+name waits for its own review.
+
+- A constant for a register offset ends `_REGISTER`. A mask of several bits ends `_MASK`.
+- A limit is `MAXIMUM_...` with the unit last: `MAXIMUM_FRAME_BYTES`.
+- An assertion constant is `..._DO_NOT_OVERLAP`, without a leading `THE_`.
+- When no source defines an abbreviation (`MULR` in `E1000_FEXTNVM11_DISABLE_MULR_FIX`), the name
+  keeps it as written and the documentation says that no source expands it. A name is a claim, and
+  an expansion needs a source.
+
+### Units are spelled out
+
+Ruled 2026-11-03 (UTC). A name spells its unit: `_HERTZ`, `_MILLISECONDS`, `_MICROSECONDS`,
+`_NANOSECONDS`, `_BYTES`, `megabits_per_second`. An SI symbol (`_HZ`, `_MS`, `_NS`, `mbps`) is not a
+valid suffix. Uppercase constants erase the case that SI symbols depend on: `MHZ` and `mHz` become
+one name, and `_MS` could be megasiemens. The micro sign has no ASCII symbol. The rule applies to
+new and renamed names now, and existing symbol names (`TRANSFER_HZ`, `CARD_INTERFACE_UNIT_HZ` and
+`MATRIX_HZ` among them) are being brought into line.
+
+### `id` is an accepted word
+
+Ruled 2026-11-03 (UTC). `id` and `Id` stand: `ThreadId`, `device_id`, `DEVICE_IDS`. The standard
+library spells it `ThreadId`, `TypeId` and `process::id`. `identifier` is spelled out only where ID
+is one letter of a compound specification acronym: `address_space_identifier`,
+`CardIdentification`, `GloballyUniqueIdentifierPartitionTable`, `version_identification`.
+
+### Where the standard library has a name, use it
+
+Ruled 2026-11-03 (UTC). Use Rust's spelling and match its meaning: `len`, `iter`, `iter_mut`,
+`get_mut`, `values`, `contains`, `is_empty`, `peek`, `with`, and a `_mut` suffix for a method that
+returns `&mut`. A reader who knows std then knows what the method does.
+
+### No alias for an old nife spelling before first release
+
+Ruled 2026-11-03 (UTC). A crate does not carry `#[doc(alias)]` for its own earlier spelling before
+its first release, because nobody outside the tree has searched for it. Aliases for a specification
+or source term stay (`rgmii`, `E1000_*`, a vendor or OpenBSD symbol, `csd`, `mbr`). After first
+publication a rename is a breaking change, which is when an old-name alias could matter.
 
 ### Nouns, not verbs
 
@@ -85,7 +127,8 @@ question and changes nothing is named in one of four shapes:
   `allows`, `needs_drop`.
 
 A bare adjective, participle or noun (`enabled`, `pending`, `present`, `truncated`) reads as a
-getter, and std spells those `is_enabled`. Exempt: a function that acts and reports whether it
+getter, and std spells those `is_enabled`. A bare adjective or participle is not a name for a
+function that runs something (`read_only`, `done`, `required`); ruled 2026-11-03 (UTC). Exempt: a function that acts and reports whether it
 worked (`insert`, `push`, `claim`, a `take_` that clears a flag). Also exempt: test functions, which are
 sentences here; fields; a trait method or a name another project owns (`eq`, `readonly`); and an
 `extern` symbol. The prior art is in
