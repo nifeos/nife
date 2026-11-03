@@ -24,7 +24,7 @@ pub trait Hardware {
     /// the delay `e1000_reset_hw_ich8lan` needs around the global reset.
     fn pci_vendor_id(&mut self) -> u16;
     /// Something the bench boot should show. Never needed for correctness.
-    fn note(&mut self, note: sequence::Note);
+    fn note(&mut self, note: sequence::BringUpObservation);
 }
 
 pub(super) fn delay_ms(hardware: &mut impl Hardware, ms: u64) {

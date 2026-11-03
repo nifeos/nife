@@ -14,13 +14,13 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 |---|---|---|---|---|
 | `designware_ethernet` | 110 | 91 | 19 | 13 |
 | `designware_mobile_storage` | 74 | 74 | 0 | 10 |
-| `e1000e` | 132 | 94 | 38 | 13 |
+| `e1000e` | 122 | 89 | 33 | 12 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 328 | 259 | 69 | 38 |
+| total | 318 | 254 | 64 | 37 |
 
 ## How to read a group
 
@@ -208,7 +208,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `e1000e`
 
-132 unratified names: 94 with no block, 38 provisional.
+122 unratified names: 89 with no block, 33 provisional.
 
 ### E1. Module names (14)
 
@@ -286,13 +286,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify as they stand except `Swflag`, `SWFLAG_FREE_MS`, `SWFLAG_TAKE_MS` and `read_mdic`, which abbreviate 'software flag', 'milliseconds' and the register MDIC; recommend `SoftwareFlag`, `SOFTWARE_FLAG_FREE_MILLISECONDS`, `SOFTWARE_FLAG_TAKE_MILLISECONDS` and keeping `read_mdic` as a register-named function with its expansion in the doc. `physical_layer_device_address` and `paged_offset` are provisional and ratify as they stand.
-
-### E12. Reset sequence (10)
-
-`pch::sequence::BlockedAfterPhysicalLayerDeviceReset`, `pch::sequence::Error`, `pch::sequence::Note`, `pch::sequence::PhysicalLayerDevice`, `pch::sequence::PhysicalLayerDeviceInaccessible`, `pch::sequence::PhysicalLayerDeviceReached`, `pch::sequence::PhysicalLayerDeviceResetNotAsserted`, `pch::sequence::Reached`, `pch::sequence::global_reset`, `pch::sequence::transmit_errata`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand, including the five provisional `PhysicalLayerDevice*` and `BlockedAfterPhysicalLayerDeviceReset` variants; all spell out their words.
 
 ### E13. Ultra low power and simulator (7)
 
