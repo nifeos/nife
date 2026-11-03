@@ -62,9 +62,9 @@ U-Boot's driver and both device trees are GPL and were read only for facts about
 
 ## Two data paths: the FIFO and the IDMAC
 
-`Host<R>` moves every word through the FIFO by MMIO, so radon's first silicon read could fail only
+`HostController<R>` moves every word through the FIFO by MMIO, so radon's first silicon read could fail only
 in the controller or the card protocol, not in DMA as well.
-`Host::with_internal_direct_memory_access` hands each data phase to the controller's own DMA engine,
+`HostController::with_internal_direct_memory_access` hands each data phase to the controller's own DMA engine,
 the IDMAC; `crates/designware_mobile_storage/src/internal_direct_memory_access.rs` holds its
 sequence. It waited on two things, both met: radon's DMA is coherent with its caches
 (`designware_ethernet::coherence` read `Coherent` on 2026-10-20 (UTC),
@@ -203,7 +203,7 @@ clocks, four lengths and two FIFO depths, each row printing the FIFO's peak fill
 12.5 MHz, 64 KiB read in 3,147 µs, 20.8 MB/s, three times what a 4-bit bus at 12.5 MHz can carry.
 At nominal 25 MHz every read failed with a data CRC error once the FIFO first filled
 (`bench/radon-2026-10-21/53-read-matrix.log`). The storage bench now sets the divider from the
-tree's rate (8, 49.5 MHz) and hands `Host::new` the rate computed from PLL2's and the dividers'
+tree's rate (8, 49.5 MHz) and hands `HostController::new` the rate computed from PLL2's and the dividers'
 words. Every row then passes, the FIFO never fills (peak 27 of its words at 24.75 MHz), and the
 8 MiB read runs at 10,959 KiB/s (`bench/radon-2026-10-21/53-card-clock.log`). `STATUS` counted 128
 words with its full flag set, so radon's FIFO holds at least 128 words, not the tree's 32.
@@ -213,7 +213,7 @@ Each row's log and how it ran are in `bench/radon-<date>/`: `53-storage-write.lo
 
 - U-Boot hands both controllers over running (`already up true`). It leaves the microSD
   controller with `CTRL 0x2000000` (its IDMAC selected), `CLKDIV 0x2`, `CLKENA 0x10001` and a
-  4-bit bus; `Host::reset` clears the DMA selection before this driver uses the FIFO.
+  4-bit bus; `HostController::reset` clears the DMA selection before this driver uses the FIFO.
 - **Identification works on silicon.** `bench::read_only` prints the `card` line only after the
   whole probe returns, so the line's absence does not mean identification failed: the failure is
   `ReadFailure::Read(0, ..)`, which `sd::identify` returning `Ok` precedes. Every command of
@@ -222,7 +222,7 @@ Each row's log and how it ran are in `bench/radon-<date>/`: `53-storage-write.lo
   (`READ_SINGLE_BLOCK`, block 0) and the `RINTSTS` word at the failure, `0x080c`. That is bits 2
   (`CD`, command done), 3 (`DTO`, data transfer over) and 11 (`FRUN`, FIFO underrun or overrun),
   and nothing else: no CRC error (`DCRC`), no start-bit or end-bit error, no read timeout
-  (`DRTO`, `HTO`). `RXDR` is absent, but `Host::read` clears it after each batch it drains, so
+  (`DRTO`, `HTO`). `RXDR` is absent, but `HostController::read_data` clears it after each batch it drains, so
   its absence does not say whether any words moved. The card answered and sent its block; the
   FIFO's accounting between the card and the CPU broke. `FRUN` is in `RINTSTS_DATA_ERR`, so the
   driver stopped there.

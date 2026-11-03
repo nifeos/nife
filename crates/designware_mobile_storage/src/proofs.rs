@@ -1,4 +1,4 @@
-use crate::card::{CardSpecificData, bits, extended_card_specific_data_sectors};
+use crate::card::{CardSpecificData, extended_card_specific_data_sectors, extract_bits};
 use crate::host::queue_step;
 use crate::internal_direct_memory_access::{
     DESCRIPTOR_BYTES, MAXIMUM_DESCRIPTORS, PAGE, descriptor, descriptors_for,
@@ -161,7 +161,7 @@ fn a_register_field_never_exceeds_its_width() {
     let register: [u32; 4] = kani::any();
     let start: u32 = kani::any();
     let len: u32 = kani::any();
-    let field = bits(&register, start, len);
+    let field = extract_bits(&register, start, len);
     if len < 32 {
         assert!(u64::from(field) < 1u64 << len);
     }
@@ -178,7 +178,7 @@ fn a_register_field_never_exceeds_its_width() {
 #[kani::proof]
 fn a_card_specific_data_decode_is_total_and_never_overflows() {
     let register: [u32; 4] = kani::any();
-    let sd = CardSpecificData::sd(&register);
+    let sd = CardSpecificData::from_sd_register(&register);
     assert!(sd.structure == register[3] >> 30);
     match sd.structure {
         0 => assert!(sd.blocks <= 1 << 27),
@@ -189,7 +189,7 @@ fn a_card_specific_data_decode_is_total_and_never_overflows() {
     let multimedia_card = CardSpecificData::multimedia_card(&register);
     assert!(multimedia_card.structure == sd.structure);
     assert!(multimedia_card.blocks <= 1 << 27);
-    if bits(&register, 80, 4) < 9 {
+    if extract_bits(&register, 80, 4) < 9 {
         assert!(multimedia_card.blocks == 0);
     }
 }
