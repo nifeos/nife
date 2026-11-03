@@ -100,7 +100,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 `registers::WINDOW`, `registers::mac_hw_feature`
 
 - Breaks the spelled-out rule: yes (one name).
-- Provisional recommendation: `WINDOW` is a plain word and can be ratified; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
+- Provisional recommendation: ratify `WINDOW`, a plain word; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
 
 ### DE11. MDIO software surface (6)
 
