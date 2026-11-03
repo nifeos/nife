@@ -173,12 +173,11 @@ sudo usermod -a -G fuzz-token-publish lane
 sudo install -o root -g root -m 0555 ~/fuzz-host/bin/fuzz-token /usr/local/sbin/fuzz-token
 sudo install -o root -g root -m 0644 ~/fuzz-host/systemd/fuzz-token@.service \
     ~/fuzz-host/systemd/fuzz-token@.timer /etc/systemd/system/
-sudo systemctl daemon-reload
 sudo systemctl enable --now fuzz-token@publish.timer
 sudo systemctl start fuzz-token@publish.service
 ```
 
-Verify:
+`enable` rereads the unit files itself. Verify:
 
 - `getent group fuzz-token-publish`: the group with `lane` as its only member.
 - `sudo stat -c '%U %G %a' /run/fuzz-token /run/fuzz-token/publish.env`: `root root 711`, then
@@ -252,7 +251,6 @@ sudo usermod -a -G fuzz-token-filer lane
 sudo install -o root -g root -m 0555 ~/fuzz-host/bin/fuzz-filer /usr/local/bin/fuzz-filer
 sudo install -o root -g root -m 0644 ~/fuzz-host/systemd/fuzz-filer.service \
     ~/fuzz-host/systemd/fuzz-filer.timer /etc/systemd/system/
-sudo systemctl daemon-reload
 sudo systemctl enable --now fuzz-token@filer.timer
 sudo systemctl start fuzz-token@filer.service
 sudo /usr/local/sbin/fuzz-token check filer
