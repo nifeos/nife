@@ -114,11 +114,13 @@ written next to the test:
 | `cred` `an_unknown_identity_costs_what_a_known_one_costs` | 50 timed KDF runs | skipped: a wall-clock ratio under an interpreter measures Miri, not the KDF |
 | `compositor` `a_damaged_composite_leaves_the_rest_of_the_screen_alone` | all 317,856 screen pixels, 20 ms | every 37th row plus every row the damage rectangle touches, 15,708 pixels, pinned exactly |
 | `manual` `every_character_survives` | 547 markdown files off disk, 7.2 MB, 0.74 s | skipped: the corpus is on the filesystem, which Miri isolates; the nineteen other tests in that file drive the same renderer on in-memory input |
+| `capability_manifest_note` `the_committed_seeds_are_what_the_crate_encodes_and_each_decodes` | lists and reads `fuzz/seeds/capability_manifest_note_decode/` | skipped: the seeds are on the filesystem, which Miri isolates; `the_seeds_reach_the_zone_walk_past_the_count_byte` decodes the same seeds in memory |
 
-### The `manual` row is a different kind of skip, and worth telling apart
+### The filesystem rows are a different kind of skip, and worth telling apart
 
 Every other row is a sampling decision: the test is too slow under an interpreter, so it runs a
-smaller version of the same claim. The `manual` row is not that. That test does host I/O, and Miri's
+smaller version of the same claim. The `manual` and `capability_manifest_note` rows are not that.
+Each test does host I/O, and Miri's
 isolation refuses `open` and `opendir` outright; there is no smaller version, only a decision about
 `-Zmiri-disable-isolation`.
 
