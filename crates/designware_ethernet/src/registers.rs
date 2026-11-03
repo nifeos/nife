@@ -393,7 +393,6 @@ pub(crate) const CHAN_STATUS_FBE: u32 = 1 << 12;
 /// mapped. Every `CHAN_*` offset, `BUS_MODE` and `SYS_BUS_MODE` is inside it.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
-#[doc(alias = "dma_page")]
 pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE: u32 = 0x1000;
 /// The register window's size in bytes, `reg`'s `0x10000` in both JH7110 trees.
 ///

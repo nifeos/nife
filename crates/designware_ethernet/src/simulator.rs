@@ -49,7 +49,7 @@ impl Memory {
     fn new(base: u64, mode: Mode) -> Memory {
         Memory {
             base,
-            dram: RefCell::new(vec![0; layout::BYTES as usize]),
+            dram: RefCell::new(vec![0; layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize]),
             cache: RefCell::new(BTreeMap::new()),
             mode,
         }
@@ -101,7 +101,7 @@ impl Memory {
 
     fn offset(&self, physical_address: u64, length: usize) -> Option<u64> {
         let offset = physical_address.checked_sub(self.base)?;
-        (offset + length as u64 <= layout::BYTES).then_some(offset)
+        (offset + length as u64 <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES).then_some(offset)
     }
 
     /// The device reads `out.len()` bytes at `physical_address`, from memory, never from the CPU's
@@ -136,7 +136,7 @@ impl DirectMemoryAccessRegion for Cpu<'_> {
     }
     fn read_bytes(&self, offset: u64, out: &mut [u8]) {
         assert!(
-            offset + out.len() as u64 <= layout::BYTES,
+            offset + out.len() as u64 <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES,
             "read outside the region"
         );
         for (i, b) in out.iter_mut().enumerate() {
@@ -145,7 +145,7 @@ impl DirectMemoryAccessRegion for Cpu<'_> {
     }
     fn write_bytes(&mut self, offset: u64, source: &[u8]) {
         assert!(
-            offset + source.len() as u64 <= layout::BYTES,
+            offset + source.len() as u64 <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES,
             "write outside the region"
         );
         for (i, &b) in source.iter().enumerate() {
@@ -395,6 +395,9 @@ impl NetworkInterfaceController {
     }
 
     /// Run `f` with the CPU's handle on the region and the tail registers.
+    ///
+    /// Name: ratified 2026-11-03 (UTC). `with` is the Rust idiom for borrowing a value for the
+    /// duration of a closure, as in `LocalKey::with`.
     pub fn with<R>(&mut self, f: impl FnOnce(&mut Cpu<'_>, &mut TailRegisters<'_>) -> R) -> R {
         let mut cpu = Cpu(&self.memory);
         let mut tails = TailRegisters {
@@ -411,7 +414,7 @@ impl NetworkInterfaceController {
         controller::configure(
             self,
             &id,
-            &crate::jh7110::BUS,
+            &crate::jh7110::BUS_CONFIGURATION,
             region,
             [0x6c, 0xcf, 0x39, 0, 0x47, 0x2c],
         )
