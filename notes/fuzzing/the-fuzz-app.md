@@ -134,8 +134,7 @@ App on nifeos/nife.
 ## BUGS
 
 - Nobody has followed the key steps yet. The first person to do so confirms each one or corrects it.
-- The mint helper and the filing service do not exist yet. The ruling's proposal lists them as proposed
-  milestones.
+- The filing service does not exist yet. The ruling's proposal lists it as a proposed milestone.
 - The helper that hands a fix lane its one-hour reader token does not exist yet. The ruling's
   proposal lists it as a proposed milestone.
 - A nife release that uses a tag outside `fuzz-*` needs the tag ruleset amended first, as its own

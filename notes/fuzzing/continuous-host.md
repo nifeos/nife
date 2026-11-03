@@ -109,8 +109,9 @@ stays disabled until a person installs the credential and sets that variable. `-
 and the asset list and runs nothing else.
 
 The credential is a one-hour installation token of the `nife-fuzz` GitHub App, which a mint helper
-on the host makes from the App's private key, readable by root alone. Neither the helper nor the key
-exists yet; [`finishing-the-setup.md`](finishing-the-setup.md) lists what remains and in what order. The App holds Contents write and Repository
+on the host makes from the App's private key, readable by root alone. The helper is `fuzz-token` in
+[nifeos/fuzz-host](https://github.com/nifeos/fuzz-host), and it mints one token per service, each
+narrower than the App. Nobody has placed the key yet; [`finishing-the-setup.md`](finishing-the-setup.md) lists what remains and in what order. The App holds Contents write and Repository
 security advisories write on nifeos/nife alone (ruled 2026-11-01 UTC).
 [`the-fuzz-app.md`](the-fuzz-app.md) is the runbook for the person who creates it, and it states
 what the key can do. Main's ruleset requires a pull request and has no bypass actor, so the token

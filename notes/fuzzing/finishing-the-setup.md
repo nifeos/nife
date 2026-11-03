@@ -26,7 +26,7 @@ secret or variable.
 | Watchdog workflow and its label | built, scheduled, quiet until the first release; it creates the label `fuzz-loop-broken` at its first failure | `.github/workflows/fuzz-heartbeat.yml`, #3049 |
 | The host follows main | built, running on the host | `helpers/fuzz-follow-main.py`, [continuous-host.md](continuous-host.md#following-main) |
 | Clean-range fix | built, on the host; a slot that held a finding publishes no more ranges, because nothing yet signals that a finding turned public | `helpers/fuzz-daily-publish.sh`, [proposal](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md) |
-| Mint helper | not built | [proposal](../../design/roadmap/proposals/the-fuzz-host-mints-its-tokens-from-the-app-key.md) |
+| Mint helper | built in nifeos/fuzz-host, not installed on the host | `fuzz-token` in [nifeos/fuzz-host](https://github.com/nifeos/fuzz-host), [proposal](../../design/roadmap/proposals/the-fuzz-host-mints-its-tokens-from-the-app-key.md) |
 | Advisory permission | verified: an App holding only Repository security advisories write, installed on one repository, creates, completes, publishes and publicly reads an advisory | [below](#the-advisory-permission) |
 | Finding filer | not built | [proposal](../../design/roadmap/proposals/the-fuzz-host-files-held-findings-as-advisories.md) |
 | Fix lanes read the advisory: script, skill rule text, replay-line lint | not built; §90 (the claim is a draft pull request) carries the amendment, the skills do not | [proposal](../../design/roadmap/proposals/fix-lanes-read-the-advisory.md) |
@@ -112,10 +112,12 @@ the test did not try the comment step that the publish milestone lists. That mil
   describes, except that withheld ranges do not return. It is on the host and unblocks phase 2.
 - L2, the host follows main: built in `helpers/fuzz-follow-main.py` and the supervisor. It is on the
   host.
-- L3, the mint helper: build
-  [the proposal](../../design/roadmap/proposals/the-fuzz-host-mints-its-tokens-from-the-app-key.md),
-  reading the key at `/etc/nife-fuzz/nife-fuzz.private-key.pem`, shipped with its own unit and timer
-  and an install section that a person follows outside the clone.
+- L3, the mint helper: built as `fuzz-token` in [nifeos/fuzz-host](https://github.com/nifeos/fuzz-host),
+  from [the proposal](../../design/roadmap/proposals/the-fuzz-host-mints-its-tokens-from-the-app-key.md).
+  It reads the key at `/etc/nife-fuzz/nife-fuzz.private-key.pem` and mints one token per service:
+  Contents write alone for the daily release, Repository security advisories write alone for the
+  filer, each on nifeos/nife alone. Its own unit, timer and install section live in that
+  repository.
 - L4, the filer: build
   [the proposal](../../design/roadmap/proposals/the-fuzz-host-files-held-findings-as-advisories.md)
   to its selftest; a real run waits on P4 and L3.
@@ -149,9 +151,12 @@ ssh -t <you>@<fuzz host> 'sudo install -o root -g root -m 0400 ~/nife-fuzz.pem \
      `refused`.
    - `sudo openssl rsa -in /etc/nife-fuzz/nife-fuzz.private-key.pem -pubout -outform DER | openssl
      sha256 -binary | openssl base64`: the fingerprint from step 1, without its `SHA256:` prefix.
-5. Install the mint helper as its own install section says, outside `/home/lane/nife`, and enable its
-   timer. Verify with the helper's own check, which prints the token's repository list and expiry
-   and never the token. It must list `nifeos/nife` alone.
+5. Install the mint helper as the install section of nifeos/fuzz-host's
+   [`docs/fuzz-token.md`](https://github.com/nifeos/fuzz-host/blob/main/docs/fuzz-token.md) says:
+   a group `fuzz-token-publish` that holds `lane` alone, a root-owned copy at
+   `/usr/local/sbin/fuzz-token`, outside `/home/lane/nife`, and `fuzz-token@publish.timer` enabled.
+   Verify with `sudo /usr/local/sbin/fuzz-token check publish`, which prints the token's repository
+   list and expiry and never the token. It must list `nifeos/nife` alone.
 
 If the fingerprint differs, the file on the host is not the key you generated: delete it on the host
 and on GitHub, and start again at step 1. If the mint check lists any repository besides
@@ -167,9 +172,22 @@ repositories to `nifeos/nife` alone.
 sudo systemctl edit nife-fuzz-publish.service
 ```
 
-In the drop-in, name the token file the mint helper writes with `EnvironmentFile=`, add
-`Environment=NIFE_FUZZ_PUBLISH=1`, and replace the start line: `ExecStart=` on its own line, then
-`ExecStart=/home/lane/nife/helpers/fuzz-daily-publish.sh --publish`. Save, then `sudo systemctl
+In the drop-in, paste:
+
+```ini
+[Unit]
+Wants=fuzz-token@publish.service
+After=fuzz-token@publish.service
+
+[Service]
+EnvironmentFile=/run/fuzz-token/publish.env
+Environment=NIFE_FUZZ_PUBLISH=1
+ExecStart=
+ExecStart=/home/lane/nife/helpers/fuzz-daily-publish.sh --publish
+```
+
+The `Wants=` and `After=` lines mint a fresh token before each run, and systemd reads the token file
+as root before the service starts as `lane`. Save, then `sudo systemctl
 start nife-fuzz-publish.service`. Verify: a release `fuzz-<today>` appears at
 <https://github.com/nifeos/nife/releases>, made by `nife-fuzz[bot]`, and the watchdog stops passing
 quietly from that day on. If the start fails, `journalctl -u nife-fuzz-publish.service -n 30`
@@ -209,5 +227,5 @@ fuzz host.
   every token. Then delete the key on the App's page, place a fresh one as in P4, and unsuspend.
 - The permissions match the ruling and are the least a single App can hold for the ruled path: a
   release needs Contents write, and filing and publishing need advisories write. A token can narrow
-  further than its App, so the mint helper can mint one token per service: Contents alone for the
+  further than its App, so the mint helper mints one token per service: Contents alone for the
   release, advisories alone for the filer.
