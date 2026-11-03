@@ -2,7 +2,7 @@
 //! The Synopsys `DesignWare` Mobile Storage Host Controller, as pure logic: radon's microSD slot
 //! and eMMC socket. The whole driver sits behind [`host::Registers`], a window and a clock; a
 //! kernel implements it over a mapped window and nothing more, so every sequence is tested against
-//! `sim` on a host. [`jh7110`] has the evidence for the part and the board's constants. Modules:
+//! `simulator` on a host. [`jh7110`] has the evidence for the part and the board's constants. Modules:
 //! [`registers`], [`command`], [`host`], [`internal_direct_memory_access`], [`card`], [`sd`],
 //! [`partition`], [`bench`](mod@bench).
 //!
@@ -43,7 +43,7 @@
 //! ```
 
 //! # BUGS
-//! - The polled path has read radon's card; the IDMAC path has run only against `sim`, until a
+//! - The polled path has read radon's card; the IDMAC path has run only against `simulator`, until a
 //!   bench step on silicon measures it.
 //! - The IDMAC moves at most its region's data pages per command and copies once each way
 //!   through them; the EL0 server moves its data through the FIFO.
@@ -64,7 +64,7 @@ pub mod registers;
 pub mod sd;
 
 #[cfg(test)]
-mod sim;
+mod simulator;
 
 #[cfg(test)]
 mod tests;

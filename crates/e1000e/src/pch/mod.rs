@@ -5,7 +5,7 @@
 //! files `if_em.c` and `if_em.h` (BSD-2-Clause, second notice below) are the only sources read for
 //! it: [`ulp`], [`flush`], [`reset`], [`physical_layer_device`],
 //! [`non_volatile_memory`] and [`sequence`] each name the FreeBSD functions they follow. Every
-//! sequence is generic over [`Hardware`], so it runs on the host against a simulated I219 (`sim`)
+//! sequence is generic over [`Hardware`], so it runs on the host against a simulated I219 (`simulator`)
 //! as well as in the kernel. The constants are facts about the hardware; the sequences are
 //! FreeBSD's, adapted, and carry the licenses below as their first conditions require.
 
@@ -81,7 +81,7 @@
 
 //! # BUGS
 //!
-//! - **It has run on silicon once, with no cable.** Otherwise it is proven only against `sim`,
+//! - **It has run on silicon once, with no cable.** Otherwise it is proven only against `simulator`,
 //!   which is this crate's reading of FreeBSD and not the device.
 //! - **The link-up half is not ported** (`e1000_check_for_copper_link_ich8lan`). A link that comes
 //!   up and then loses frames points here first.
@@ -94,7 +94,7 @@ pub mod non_volatile_memory;
 pub mod physical_layer_device;
 pub mod sequence;
 #[cfg(test)]
-mod sim;
+mod simulator;
 
 /// MAC registers the I219 adds. Offsets from FreeBSD's `e1000_regs.h` and `e1000_ich8lan.h`.
 pub mod registers;

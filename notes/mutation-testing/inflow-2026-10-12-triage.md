@@ -77,7 +77,7 @@ survivors with no row, and are triaged once, under the names cargo-mutants gives
 - The three gaps: `direct_memory_access_validator`'s `verification::ChainMem::racing` is in the
   `cfg(kani)` module, and cargo-mutants 27.1.0 applies `.cargo/mutants.toml`'s `verification::`
   exclusion to function mutants but not to a struct-field deletion. `designware_ethernet`'s two
-  `prepare` keys cover the coherence probe's read-back length, which `sim::Memory`'s
+  `prepare` keys cover the coherence probe's read-back length, which `simulator::Memory`'s
   write-allocate cache hides; a no-write-allocate mode would close them. `package_index`'s
   `ipv4_literal` key was a fourth, differing only for a zero-padded part such as `0010.0.0.1`.
   calef ruled on 2026-10-12 (UTC) that such a host is refused outright; #2020 built the refusal,

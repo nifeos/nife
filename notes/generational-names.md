@@ -100,6 +100,14 @@ A bound that came down too far is the one way a walk could miss a live entry, so
 filled slots rather than running an arbitrary operation sequence. The sequence version did not
 finish, and `script/verify` is already the merge queue's long pole.
 
+## Iteration names
+
+`values` and `values_mut` yield the live entries alone, by shared and by mutable reference. `iter`
+yields `(name, &T)` pairs and `iter_from` yields `(slot, name, &T)`, for a sweep that must remove
+what it finds. The names follow the standard library: `iter` yields what the collection holds
+together with its key, as `HashMap::iter` does, and `values_mut` pairs with `values` as
+`HashMap::values_mut` does.
+
 ## Resumable sweeps
 
 `iter_from` yields `(slot, name, &T)` from a given slot onward. The slot index is what lets a sweep
