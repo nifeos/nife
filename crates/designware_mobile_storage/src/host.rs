@@ -745,6 +745,10 @@ mod tests {
     /// A clock that advances seven microseconds a read never lands on the deadline exactly, as a
     /// real one need not, so the give-up test has to be a comparison past it.
     #[test]
+    #[cfg_attr(
+        miri,
+        ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
+    )]
     fn a_card_busy_forever_is_reported_once_the_deadline_has_passed() {
         let mut sim = Sim::new(CardKind::Empty, 1, 32);
         sim.busy_forever = true;
@@ -861,6 +865,10 @@ mod tests {
     /// A card that raises `DTO` having sent only part of a read leaves nothing to move and nothing
     /// coming: the driver must wait out the deadline, not spin on an end that has no data.
     #[test]
+    #[cfg_attr(
+        miri,
+        ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
+    )]
     fn a_read_the_card_ends_early_times_out_rather_than_spinning() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         let card = sd::identify(&mut h, 4).unwrap();

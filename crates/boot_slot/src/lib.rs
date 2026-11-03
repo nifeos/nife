@@ -1104,8 +1104,21 @@ pub mod members {
         fn flipping_any_byte_of_the_188_is_refused_or_changes_the_content_legally() {
             let original = sample();
             let block = block_of(&original);
+            // All 255 masks at every byte take sixteen minutes under Miri, which flips each byte
+            // with its eight single bits and with all of them; native runs every mask.
+            const MIRI_MASKS: [u8; 9] = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0xff];
+            const EVERY_MASK: [u8; 255] = {
+                let mut masks = [0u8; 255];
+                let mut i = 0;
+                while i < 255 {
+                    masks[i] = i as u8 + 1;
+                    i += 1;
+                }
+                masks
+            };
+            let masks: &[u8] = if cfg!(miri) { &MIRI_MASKS } else { &EVERY_MASK };
             for at in 0..MEMBERS_HEADER_BYTES {
-                for mask in 1..=255u8 {
+                for &mask in masks {
                     let mut flipped = block;
                     flipped[at] ^= mask;
                     match parse(&flipped, PARTITION) {

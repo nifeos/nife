@@ -361,6 +361,10 @@ fn a_wrong_interface_echo_is_refused_rather_than_guessed_at() {
 /// A worker with its own deadline turns a spin into a named failure: a mutant that removes the
 /// power-up loop's exit makes this test fail instead of hanging the run.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
+)]
 fn a_card_that_never_finishes_power_up_is_reported_with_its_last_operation_conditions() {
     let (sender, receiver) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
@@ -778,6 +782,10 @@ fn an_emmc_is_sized_by_extended_card_specific_data_only_when_it_is_sector_addres
 /// steps seven microseconds a read the elapsed time never equals the deadline, as a real
 /// clock's need not. A worker with its own deadline turns a spin into a named failure.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
+)]
 fn an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
     assert_ne!(sd::POWER_UP_DEADLINE_MICROSECONDS % 7, 0);
     let (sender, receiver) = std::sync::mpsc::channel();
@@ -802,6 +810,10 @@ fn an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
 /// The SD twin of the test above: `ACMD41` polled for a card that stays busy gives up whatever
 /// the clock steps, so the loop's deadline is `>` and never `==`.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
+)]
 fn an_sd_card_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
     assert_ne!(sd::POWER_UP_DEADLINE_MICROSECONDS % 7, 0);
     let (sender, receiver) = std::sync::mpsc::channel();

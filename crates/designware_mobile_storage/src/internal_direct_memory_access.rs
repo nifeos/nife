@@ -629,6 +629,10 @@ mod tests {
     /// give-up test has to be a comparison past it. On a worker, so a wait that never gives up is
     /// a named failure rather than a hung run.
     #[test]
+    #[cfg_attr(
+        miri,
+        ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
+    )]
     fn a_stalled_transfer_gives_up_once_the_deadline_has_passed() {
         let (h, card, memory) = polled(3);
         let mut h = with_internal_direct_memory_access(h, &memory);

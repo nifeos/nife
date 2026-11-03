@@ -431,7 +431,7 @@ fn a_damaged_composite_leaves_the_rest_of_the_screen_alone() {
     // covering the screen would otherwise still pass.
     assert_eq!(
         checked,
-        if cfg!(miri) { 15_708 } else { SCREEN_PIXELS },
+        if cfg!(miri) { 26_880 } else { SCREEN_PIXELS },
         "the sweep did not cover what it claims to",
     );
     // The damaged region is window 1's, and window 0 lies **underneath** it there, so the check
