@@ -1,4 +1,4 @@
-# Three ratchets' debt
+# Two ratchets' debt
 
 *Name: provisional, minted 2026-10-13 (UTC) by lane/ratchet-metrics, with the files and charts it
 defines. Naming is an architect's.*
@@ -6,14 +6,11 @@ defines. Naming is an architect's.*
 *(Appendix of [the register](../register-of-measures.md). Stem provisional, minted on 2026-10-13
 (UTC) by lane/ratchet-metrics. `line-citations.csv`, its columns, its chart and
 `line_citation_debt` are provisional too, minted 2026-10-14 (UTC) by
-maintainer/line-citations-chart. `comment-by-directory.csv`, its columns, its three charts and
-`comment_debt_by_directory` are provisional, minted 2026-10-23 (UTC) by
-comments/929-metrics-per-directory. calef asked for these charts so the baselines' debt can be driven
+maintainer/line-citations-chart. calef asked for these charts so the baselines' debt can be driven
 down.)*
 
-Gates in `script/lint` hold a debt to a baseline that only falls. The series here chart two of them, §267
-(a comment states the constraint as it is now) and §277 (cite a heading or a symbol, never a line
-number), and the passive-voice count of §213 (writing standards). A baseline says what may not grow. These series say how much
+Two gates in `script/lint` hold a debt to a baseline that only falls. They enforce §213
+(writing standards) and §277 (cite a heading or a symbol, never a line number). A baseline says what may not grow. These series say how much
 is left, one row per ISO week in `notes/project-metrics/`, read by `script/metrics` from that
 week's commit.
 
@@ -22,11 +19,6 @@ week's commit.
 | `passive-voice.csv` | `passives_total` | passive constructions in the prose of every document |
 | | `passive_prose_words` | the prose words they sit in |
 | | `passives_per_1000` | the first over the second, per 1,000 words |
-| `comment-by-directory.csv` | `comment_cap_<dir>` | the cap the week's baseline puts the directory at; `other` is its lowest |
-| | `comment_blocks_over_cap_<dir>` | blocks over that cap |
-| | `comment_excess_lines_<dir>` | their lines past it, summed |
-| | `comment_in_body_<dir>` | plain comment lines inside function bodies |
-| | `comment_in_body_ceiling_<dir>` | the baseline's `in-body` row for the directory, blank without one |
 | `line-citations.csv` | `line_citations_code` | citations by line number into code |
 | | `line_citations_doc` | citations by line number into a Markdown document |
 | | `line_citations_ceiling` | the week's own `CODE_CEILING`, blank before the gate existed |
@@ -36,11 +28,6 @@ week's commit.
 Each series calls the gate's own functions on the week's text, so the chart and the gate cannot
 disagree about a file:
 
-- §267: `comment_block_ratchet.blocks_over` over its `in_scope` files, every `.rs` outside
-  `vendor/`. `comment-by-directory.csv` judges each
-  at `cap_of` its path under that week's `cap` rows and counts `in_body_lines`, for milestone 929
-  (comments in the Linux style across first-party Rust). `<dir>` is `kernel`, `crates`,
-  `components`, `system_tests`, `xtask`, or `other` for every other directory holding Rust.
 - §277: `line_citations.file_hits` over its `in_scope` files, every text file but data, symlinks and
   `vendor/`. `script/metrics` reads the ceiling from the week's own `helpers/line_citations.py`, so
   the chart draws the ceiling that week's gate held.
