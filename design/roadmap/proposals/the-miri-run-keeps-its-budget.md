@@ -75,8 +75,7 @@ Part 1 comes first. It alone turns the next cancellation into a named failing te
 - Part 1: an hour of xtask work, plus one measurement. The lane checks that the pinned nightly still
   has `--ensure-time` and its `RUST_TEST_TIME_UNIT`, `RUST_TEST_TIME_INTEGRATION` and
   `RUST_TEST_TIME_DOCTEST` thresholds, and that `MIRIFLAGS` forwards them with
-  `-Zmiri-env-forward`, since Miri does not forward the host environment. Both are recalled, not
-  re-read. The threshold is a two-way door, and it should start strict: ten minutes of Miri time per
+  `-Zmiri-env-forward`, since Miri does not forward the host environment. This proposal recalls both and has not re-read them. The threshold is a two-way door, and it should start strict: ten minutes of Miri time per
   test is the suggestion. The lane sets it from the first `--report-time` table, not from a guess,
   and fixes or skips each test over it in the same pull request.
 - Part 2: milestone 663's work, applied to one more invocation.
@@ -91,8 +90,7 @@ Part 1 comes first. It alone turns the next cancellation into a named failing te
 ## A concrete case
 
 The divider sweep is the example. Natively it checks fifty million targets in about four seconds.
-Under Miri it took 8,002 s, more than half the job's 240 minutes, and nobody saw it. Its run was
-cancelled first, and then the leak in front of it failed the run. Under part 1 the first weekly run
+Under Miri it took 8,002 s, more than half the job's 240 minutes, and nobody saw it. GitHub cancelled its run first, and then the leak in front of it failed the run. Under part 1 the first weekly run
 after it merged would have failed with one line: `the_divider_never_runs_the_card_faster_than_asked`,
 over the ten-minute critical time. The 9,973 stride #3105 gave it takes 6 s.
 
@@ -103,21 +101,21 @@ keeps every test under its budget, though a crate can still hold many tests.
 
 ## Prior art
 
-- **cargo-nextest.** Its `slow-timeout` with `terminate-after` kills a test that runs too long and
+- cargo-nextest. Its `slow-timeout` with `terminate-after` kills a test that runs too long and
   names it, and `cargo miri nextest run` runs each test as its own Miri process, in parallel. It is
   the closest existing shape, and this proposal still refuses it, for the reasons milestones 663 and
   970 (a mutant that hangs is its own verdict) recorded. It is a dependency, which §46 (thin
   primitives or whole subsystems) makes a decision. It also does not run doctests, and the
   `graphics_contract` doctest took 77 minutes here. Its timer is also wall-clock,
   so its verdict moves with the runner. Part 1's clock does not.
-- **Miri's own flags.** None of them bounds time. The flags that would make a red go away,
+- Miri's own flags. None of them bounds time. The flags that would make a red go away,
   `-Zmiri-ignore-leaks` and `-Zmiri-disable-isolation`, turn off the checks the run exists for, and
   `notes/undefined-behavior.md` refuses both. Miri's deterministic clock under isolation is the one
   feature this proposal builds on.
-- **The Rust standard library's Miri run.** rust-lang/rust runs Miri over `core`, `alloc` and `std`
+- The Rust standard library's Miri run. rust-lang/rust runs Miri over `core`, `alloc` and `std`
   as a CI job of its own, apart from the ordinary test jobs. Its tests shrink themselves under
   `cfg(miri)` and skip with `#[cfg_attr(miri, ignore)]`, the convention this tree already uses.
-  That is recalled, not re-read; the lane should check how that job bounds its time.
+  This proposal recalls that and has not re-read it; the lane checks how that job bounds its time.
 
 Where nife differs: the tree has one runner's budget for 112 crates, and a weekly cadence. A slow
 test costs a week of signal before anyone sees it, which is why the budget has to fail per test and
