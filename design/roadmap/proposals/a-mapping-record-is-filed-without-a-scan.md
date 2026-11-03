@@ -34,11 +34,10 @@ and QEMU 11.1.2. Deleting the scan and nothing else, so every record appends:
 | every other row | | | within one tick |
 
 About 3,400 guest instructions of a 9,600-instruction map are the scan. Milestone 969 (no frame is
-writable and executable in one address space, #2965) changed the scan from `iter_mut().find` to
-`iter().position` to return the slot's index, which made each scanned record about 9% dearer at
--O0 and is part of the +2.89% #2965 put on `map_el0`. The scan predates #2965. A release build
-was not measured, and its cost will be smaller, since the loop optimizes to a compare and a branch
-per record.
+writable and executable in one address space) changed the scan in #2965 from `iter_mut().find`
+to `iter().position` to return the slot's index. That made each scanned record about 9% dearer at
+-O0, part of the +2.89% #2965 put on `map_el0`. The scan predates #2965. Nobody measured a release
+build, where the loop optimizes to a compare and a branch per record and costs less.
 
 ## What to build
 

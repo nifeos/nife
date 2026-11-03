@@ -245,10 +245,11 @@ x86_64	cb1819920	*	*	milestone 939: no preemption tick in a timed window; ipc_rt
 # every merge; aarch64 and x86_64 for the merges that move all three.
 # The lines cite milestone 126 (the `procps` package), milestone 151 (notification objects),
 # milestone 632 (graphics launched from the prompt), milestone 754 (the capability table grows to
-# 64 slots), milestone 758 (the IPC fast paths shrunk), milestone 761 (capability lookup off the
-# global lock), milestone 812 (threads in one address space), milestone 961 (the kernel's special
-# boots become commands typed at the production shell), milestone 969 (no frame is writable and
-# executable in one address space), fatal risk 4 (null_syscall under load).
+# 64 slots), milestone 758 (the IPC fast paths shrink back inside their band),
+# milestone 761 (capability lookup off the global lock), milestone 812 (threads in one address
+# space), milestone 961 (the kernel's special boots become commands typed at the production
+# shell), milestone 969 (no frame is writable and executable in one address space),
+# fatal risk 4 (null_syscall under load).
 riscv64	d621759ec	yield_switch	+2.87	#1360, milestone 126: the switch counter
 riscv64	d621759ec	ipc_rtt	+1.57	#1360, milestone 126: the switch counter
 riscv64	d621759ec	relay_rtt	+1.56	#1360, milestone 126: the switch counter

@@ -80,15 +80,16 @@ Percent of the merge's parent, tick-free:
 
 **#1360** is the context-switch counter
 [drift-since-the-2026-09-26-floors](drift-since-the-2026-09-26-floors.md) found, priced there on
-the switch rows. It costs the IPC rows too, because a call and its reply switch twice. Milestone
-629 (the context-switch statistic stops costing the switch path) took most of it back on
-2026-10-03.
+the switch rows. It costs the IPC rows too, because a call and its reply switch twice.
+Milestone 629 (the context-switch statistic stops costing the switch path) took most of it back
+on 2026-10-03.
 
 **#1617** is milestone 761 (capability lookup off the global lock). The profile of
-`ccea3ba7f` against `1b4e13ef3`, in executed instructions over the run: `IpcTables`' lock split in
-two, `lock` -17.2M and `lock_masked` +18.5M; each capability lookup now takes the table's own lock
-(`lock_masked` on `CapabilityTable` +3.2M, `lock_found` +1.2M, the lookup closures and slot
-reads about +2.9M net); and `set_current` stores the running thread's table pointer, +2.1M.
+`ccea3ba7f` against `1b4e13ef3` finds three costs, in executed instructions over the run.
+`IpcTables`' lock splits in two, `lock` -17.2M and `lock_masked` +18.5M. Each capability lookup
+takes the table's own lock: `lock_masked` on `CapabilityTable` +3.2M, `lock_found` +1.2M, the
+lookup closures and slot reads about +2.9M net. And `set_current` stores the running thread's
+table pointer, +2.1M.
 [riscv64-spawn-reap-drift](riscv64-spawn-reap-drift.md) priced the same merge on `yield_switch` and
 `spawn_reap`; the IPC rows pay the lookup's lock on top, since every call resolves an endpoint
 capability. `0ec577bde` later inlined `lock_masked`.
@@ -98,7 +99,7 @@ capability. `0ec577bde` later inlined `lock_masked`.
 `IpcTables` lock alone the run lost 13.8M instructions of `spin` guard code and gained 7.4M of
 `spin_lock`'s. It is the broad drop in the 2026W43 to W44 readings on all three ISAs.
 
-#1620 (milestone 758, the IPC fast paths shrunk) is the counterexample: +0.25% on riscv64
+#1620 (milestone 758 (the IPC fast paths shrink back inside their band)) is the counterexample: +0.25% on riscv64
 `call_reply`, -0.39% on aarch64 and -2.67% on x86_64. On riscv64 it takes `IpcTables` more often
 (+6.3% of the run's instructions in its `lock`).
 
@@ -113,7 +114,7 @@ this note are left out (#1360's switch rows, #2565's `spawn_reap` and `yield_swi
 | C: #1351, milestone 151 (notification objects) | +0.23 | +0.40 | | +0.22 | | +0.20 |
 | B: #1493, milestone 632 (graphics launched from the prompt) | +0.10 | | | | | |
 | B: #1517, a region reclaims its out-of-order holes | | | | | | +1.64 |
-| B: #1620, milestone 758 (the IPC fast paths shrunk) | +0.25 | +0.23 | +0.16 | +0.22 | +0.16 | +0.18 |
+| B: #1620, milestone 758 | +0.25 | +0.23 | +0.16 | +0.22 | +0.16 | +0.18 |
 | B: #1614, fatal risk 4 (`null_syscall` under load) | | | -0.53 | -0.32 | -0.19 | +0.32 |
 | B: #1617, milestones 754 and 761 | +4.15 | +2.35 | +3.15 | -1.77 | (save) | (save) |
 | D: #1892, milestone 812 (threads in one address space) | +0.37 | +0.37 | +0.62 | +0.27 | +0.50 | +4.09 |
@@ -132,7 +133,8 @@ this note are left out (#1360's switch rows, #2565's `spawn_reap` and `yield_swi
 #1351's profile: the thread's wait state becomes a `Wait` enum that also holds a notification
 wait (`try_wake` +11%), and the IPC path takes `IpcTables` more often (+4.3% in its `lock`).
 
-#2933 moves the sink and map rows out of `os_primitives_benchmarker` into programs of their own.
+#2933, milestone 961 (the kernel's special boots become commands typed at the production shell)
+step 1, moves the sink and map rows out of `os_primitives_benchmarker` into programs of their own.
 The new `sink_consumer` unpacks each message into a buffer and counts its bytes inside the timed
 loop, where the old one only received, so the row now prices what a real consumer does. The
 benchmarker lost about 200 lines, so its image spawns cheaper. aarch64 reads the same: +5.16% and
@@ -151,12 +153,11 @@ The 46,103 the A/B saw was the preemption tick's other mode, which the second 20
 inflated the row's unexplained figure by 1/0.97073, about 3.0 points. The line now carries the
 measured term, and the save's step on this row is the tick's phase, reversed by the next save.
 
-**#2965, +2.89%,** milestone 969 (no frame is writable and executable in one address space).
+#2965, +2.89%, is milestone 969 (no frame is writable and executable in one address space).
 `map_el0` maps read-only, so the new writable-and-executable check returns before it scans. The
-cost is in `MappingHold::file`, which now returns where it filed the record: its scan of the head
-log page for a tombstone changed from `iter_mut().find` to `iter().position`, +117k
-instructions over the run (+9.5% on that scan), and the `Recorded` and `Result` plumbing adds
-about 36k more. aarch64 reads +2.81%.
+cost is in `MappingHold::file`, which now returns where it filed the record. Its scan of the head
+log page for a tombstone changed from `iter_mut().find` to `iter().position`, +117k instructions
+over the run (+9.5% on that scan). The `Recorded` and `Result` plumbing adds about 36k more. aarch64 reads +2.81%.
 
 That scan is the larger story. Deleting it on `main` at `7f54880c4`, and nothing else, takes
 `map_el0` from 47,891 to 30,785 (-35.7%), about 3,400 of a map's 9,600 instructions; every other
@@ -195,8 +196,8 @@ longer cancels an unexplained cost. x86_64 reads 2.85 in 2026W45 against 0.98 be
 
 - **Chosen:** #1360 (the counter `free` and `vmstat` read; milestone 629 made it cheap), #1617
   (milestone 761's design; [riscv64-spawn-reap-drift](riscv64-spawn-reap-drift.md) fixed its lock
-  split), #1892 (milestone 812's process join), #1351 (notification waits), #2965 (claim 11 of the
-  confinement record) and #2933 (the sink row now pays for unpacking).
+  split) and #1892 (milestone 812's process join). Also #1351 (notification waits), #2965 (claim
+  11 of the confinement record) and #2933 (the sink row now pays for unpacking).
 - **A fix that costs:** #1517 reclaims a region's holes so the riscv64 progenitor stops running
   out of memory; spawning pays for the reclaim.
 - **Incidental:** #1620 costs riscv64 what it saves elsewhere. #2965's `position` scan is
@@ -206,12 +207,12 @@ longer cancels an unexplained cost. x86_64 reads 2.85 in 2026W45 against 0.98 be
 
 ## What stays unexplained
 
-- riscv64 `ipc_rtt` reads +1.43% in 2026W41. #1525 (milestone 633, an outside agent attacks the
-  confinement claim) moves it +3.07% tick-free and `sink_throughput` +0.87%, and nothing else.
+- riscv64 `ipc_rtt` reads +1.43% in 2026W41. #1525 (milestone 633 (an outside agent attacks the
+  confinement claim)) moves it +3.07% tick-free and `sink_throughput` +0.87%, and nothing else.
   It clears a collected sender's `outgoing_cap` on the plain `RECV` path both rows take. The
   profile grows `Threads::get_mut` and `ipc_recv` by about 225k instructions over the run,
-  against the 528k that `ipc_rtt`'s step needs. So part of the step is the ping-pong's mode, and
-  this note gives #1525 no line.
+  against the 528k that `ipc_rtt`'s step needs. Part of the step is the ping-pong's mode, so #1525
+  has no line here.
 - riscv64 `spawn_el0` keeps +0.74% inside the 2026-10-03 save's step, in window C steps under 0.2%
   each, and `sink_throughput` at most +0.80%.
 - x86_64 `spawn_reap` (+5.80% in 2026W41) and `ipc_rtt` were not bisected.
