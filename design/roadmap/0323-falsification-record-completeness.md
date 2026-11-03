@@ -82,8 +82,8 @@ question that wants one.
    boot test on real geometry) were not. `Handoff::transfer_command` sends a filesystem block
    number as an LBA (`let slba = block;`), the factor-of-8 confusion the test's block 37 exists to
    catch. Replayed on aarch64 with `cargo xtask test --arch aarch64 --test
-   a_confined_el0_process_serves_the_block_interface_end_to_end`: red in
-   `system_tests/src/user/non_volatile_memory_express_tests.rs`, "byte 512 of block 37 came back wrong", exactly the
+   a_confined_el0_process_serves_the_block_interface_end_to_end`: red on "byte 512 of block 37 came back wrong", from
+   `system_tests/src/user/non_volatile_memory_express_tests.rs`, exactly the
    assertion the patch predicts. `script/falsifications --sweep system_tests` then swept it red in
    21.8 s.
 

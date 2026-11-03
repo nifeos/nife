@@ -10,8 +10,8 @@ name is not a hardware fact, and source comments should say the hardware), decid
 numbered 2026-09-19 by milestone 433. **Premise re-checked 2026-09-19 and most of it has been done,
 by nobody in particular.** Ten of the twelve uses are now in §143's shape and two are not. Both
 comments the proposal singled out as carrying a machine name with no hardware at all have been
-fixed: the module documentation of `kernel/src/soak.rs` now reads "on JH7110 silicon (radon, the board it was seen on)" and
-the documentation of `is_cycle_counter_grantable` in `kernel/src/arch/riscv64/timer.rs` now reads "the VisionFive 2's OpenSBI build (radon)".
+fixed. The module documentation of `kernel/src/soak.rs` now reads "on JH7110 silicon (radon, the board it was seen on)".
+The documentation of `is_cycle_counter_grantable` in `kernel/src/arch/riscv64/timer.rs` now reads "the VisionFive 2's OpenSBI build (radon)".
 `notes/README.md`'s index line is fixed too, and it was the smallest and most valuable part:
 `target-hardware.md` is now indexed as "Where nife could actually run, **and what the three bench
 machines are named**", so a stranger who meets `radon` has a route. `crates/multicast_dns_protocol`
@@ -54,7 +54,7 @@ already on AGENTS.md's record.
 
 ## Follow-on
 
-- **Done.** The last two comments are in §143's shape. the module documentation of `kernel/src/arch/riscv64/iommu.rs`
+- **Done.** The last two comments are in §143's shape. The module documentation of `kernel/src/arch/riscv64/iommu.rs`
   now reads "the JH7110 (radon, the `VisionFive` 2) has no IOMMU at all", hardware first. The
   `xtask/src/main.rs` comment no longer exists. It went when `xtask` was split into modules
   and the cargo-feature pack (`5d210e035`). Grepping `kernel/`, `crates/`, `components/`,

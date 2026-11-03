@@ -60,7 +60,7 @@ All of them, and none of them observe the thing this milestone moved.
 by `kernel_main` in `kernel/src/main.rs` in the RISC-V arm. The aarch64 tour prints no marker at all. The
 consumers are `crates/serial_console/src/progress.rs` (which reaches the stage and labels it),
 `watch.rs` (whose `quiet_after` policy exempts exactly this stage, because a boot that ends in `wfi`
-is quiet on purpose), `port.rs`, and `parse_stage` in `xtask/src/board.rs`, which parses `--until tour` on the
+is quiet on purpose), `port.rs`, and `parse_stage` in `xtask/src/board.rs`. The last parses `--until tour` on the
 command line. Six tests in `board_console` assert on it.
 
 Nothing in that set was touched, and nothing in it could have been: it is the VisionFive 2's boot

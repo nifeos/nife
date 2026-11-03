@@ -20,7 +20,7 @@ stricter ISA. `switch_user_root` is `unsafe fn` on both ISAs
 (in `kernel/src/arch/aarch64/mmu.rs` and `kernel/src/arch/riscv64/mmu.rs`). `stack::paint` is
 `unsafe fn` (in `kernel/src/stack.rs`), and its sibling `high_water` went with it. `virtio::pread`
 stayed a safe fn on purpose, with the argument written where a reader meets it
-(`pread` in `kernel/src/virtio.rs`, "Why these two stay safe fns"). It is private, all twenty call sites
+(`pread` in `kernel/src/virtio.rs`, "Safe fns over a module invariant"). It is private, all twenty call sites
 are one `impl Transport` block, and the compiler closes the caller set. So the obligation really is
 discharged by the module rather than onto nobody.
 
