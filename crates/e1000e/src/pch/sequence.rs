@@ -778,7 +778,7 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
     f.release(hardware);
     match out {
         Ok(Some(pairs)) => {
-            hardware.note(BringUpObservation::LanConnectedDeviceConfigured { pairs })
+            hardware.note(BringUpObservation::LanConnectedDeviceConfigured { pairs });
         }
         Ok(None) => hardware.note(BringUpObservation::LanConnectedDeviceNotConfigured),
         Err(e) => return Err(e),
