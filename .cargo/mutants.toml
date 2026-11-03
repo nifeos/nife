@@ -263,25 +263,25 @@ exclude_re = [
     # Where a function's survivor set also holds a site the disjointness claim does not cover, the
     # site's own row stays and says so; only the all-disjoint functions are excluded here.
     #
-    # Command::word composes the start bit (31), the hold register (29) and the index masked to
+    # Command::register_word composes the start bit (31), the hold register (29) and the index masked to
     # bits 5:0: COMMAND_WORD_FIELDS_DO_NOT_OVERLAP (command.rs).
-    '^crates/designware_mobile_storage/src/command\.rs:\d+:\d+: replace \| with \^ in Command::word$',
+    '^crates/designware_mobile_storage/src/command\.rs:\d+:\d+: replace \| with \^ in Command::register_word$',
     # reset clears the three enables, disjoint per
     # DIRECT_MEMORY_ACCESS_ENABLES_DO_NOT_OVERLAP (registers.rs); the excluded
     # `ctrl | CONTROL_ALL_RESET` write's mutant, which
     # reset_clears_the_enables_keeps_other_bits_and_asks_for_all_three_resets killed, is covered by
     # the same exclusion.
-    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::reset$',
+    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::reset$',
     # set_clock writes the card clock enable (0) and low power (16), disjoint per
     # CLOCK_ENABLES_DO_NOT_OVERLAP (registers.rs).
-    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::set_clock$',
+    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::set_clock$',
     # finish waits for DTO with ACD, and the data-error group with the data-timeout group, disjoint
     # per TRANSFER_OVER_BITS_DO_NOT_OVERLAP and
     # DATA_ERROR_AND_TIMEOUT_BITS_DO_NOT_OVERLAP (registers.rs).
-    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::finish$',
+    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::finish$',
     # wait_queue tests the data-error group against the data-timeout group, disjoint per
     # DATA_ERROR_AND_TIMEOUT_BITS_DO_NOT_OVERLAP (registers.rs).
-    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::wait_queue$',
+    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::wait_queue$',
     # descriptor writes OWN (31) with CH (4), disjoint per
     # DESCRIPTOR_OWN_AND_CHAIN_BITS_DO_NOT_OVERLAP (internal_direct_memory_access.rs).
     '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in descriptor$',
@@ -290,11 +290,11 @@ exclude_re = [
     # BUS_MODE_BITS_DO_NOT_OVERLAP (registers.rs); the `ctrl | CONTROL_USE_INTERNAL_DMAC` write's
     # mutant, which one_transfer_arms_and_stops_the_internal_direct_memory_access_register_by_register
     # killed, is covered by the same exclusion.
-    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::internal_direct_memory_access_start$',
+    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::internal_direct_memory_access_start$',
     # internal_direct_memory_access_wait tests the same two disjoint pairs as finish, per
     # TRANSFER_OVER_BITS_DO_NOT_OVERLAP and DATA_ERROR_AND_TIMEOUT_BITS_DO_NOT_OVERLAP
     # (registers.rs).
-    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::internal_direct_memory_access_wait$',
+    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::internal_direct_memory_access_wait$',
     # fifoth_for_pio composes the burst code (bit 29), the receive watermark (bits 27:16) and the
     # transmit watermark (bits 11:0), disjoint per
     # POLLED_QUEUE_THRESHOLD_FIELDS_DO_NOT_OVERLAP (registers.rs).

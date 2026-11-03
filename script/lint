@@ -3538,7 +3538,7 @@ echo "==> the prose ratchet (§212 words, §213 sentences, bold and passives)"
 # word cap slipped twice in one day because nothing checked it: one lane moved facts into eight
 # notes already over the cap and every one of them grew. The measuring, the baseline and the orphan
 # check live in helpers/prose_ratchet.py, whose header is the manual. The document scope there is
-# shared with script/metrics' writing-standards chart, so the gate and the chart judge the same
+# shared with script/metrics' passive-voice chart, so the gate and the chart judge the same
 # files; the word count is `budget_words` (calef's ruling of 2026-10-13 UTC).
 #
 # A document over a limit passes only while it is no worse than design/prose-baseline.tsv and no
