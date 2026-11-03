@@ -3,7 +3,7 @@
 Two ratchets keep a committed list of rows that only shrinks: `helpers/module_block_ratchet.py`
 (`design/module-block-baseline.txt`) and `helpers/name_checks.py` (`design/naming-rule-baseline.txt`).
 Naming pull requests each clear a run of rows, and rows sort by path, so two pull requests that clear
-adjacent rows touched adjacent lines. Git reports adjacent changed lines as a conflict even
+rows next to each other touched adjacent lines. Git reports adjacent changed lines as a conflict even
 though the two changes never overlap, and a merge queue that meets one removes every entry behind it.
 Measured on the 28 open naming pull requests of 2026-11-03: 243 of the 351 pairs that edited the
 module-block baseline cleared rows on the same or adjacent lines.
@@ -148,7 +148,7 @@ def selftest():
     case('git merges adjacent clears in the spaced layout', merges(many, mine, theirs))
     case('git conflicts on adjacent clears in the flat layout (the old layout)',
          not merges(flat, flat_mine, flat_theirs))
-    case('git merges a whole run cleared beside a adjacent row',
+    case('git merges a whole run cleared beside another row',
          merges(many, rewrite(many, header, rows(f'row{n:02}' for n in range(10) if n not in (1, 2, 3))),
                 rewrite(many, header, rows(f'row{n:02}' for n in range(10) if n != 4))))
     for name in failed:
