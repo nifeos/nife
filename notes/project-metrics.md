@@ -284,14 +284,6 @@ Documents over each writing-standards limit; exempted ones count
 §213 (writing standards) rule 6's count over the prose ratchet's documents, then per 1,000 words of prose. The line is
 the limit a new document meets ([definitions](register-of-measures/ratchet-debt.md#passive-voice)).
 
-## Comment blocks
-
-![Files with a long comment block](project-metrics/comment-blocks.svg)
-
-![Comment lines past the cap](project-metrics/comment-blocks-excess.svg)
-
-The 40-line comment-block cap: files holding a longer block, then the lines past it.
-
 ## Comments by directory
 
 ![Comment blocks over their directory's cap](project-metrics/comment-blocks-by-directory.svg)

@@ -73,7 +73,7 @@ MARKER = 'line-citation: exception'
 
 # Citations into code on 2026-10-11 (UTC), 835 in 161 files, and since lowered by `--bank`. Never raise it by hand: a
 # new citation names a symbol, not a line.
-CODE_CEILING = 574
+CODE_CEILING = 552
 
 DOC_EXTENSIONS = ('md',)
 CODE_EXTENSIONS = ('rs', 'S', 's', 'py', 'sh', 'c', 'h', 'toml', 'yml', 'yaml', 'ld', 'lds', 'x',
