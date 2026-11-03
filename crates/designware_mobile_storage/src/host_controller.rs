@@ -9,10 +9,9 @@
 //! engine ([`crate::internal_direct_memory_access`]). Commands and identification are the same on
 //! both.
 //!
-//! Name: ratified 2026-11-03 (UTC), #3135. Renamed from `host`, which also means the CPU side of the
-//! bus. The crate's own name says Host Controller, and the Ethernet crate's `controller` became
-//! `network_controller` for the same reason. The items inside keep their names until their own
-//! review.
+//! Name: ratified 2026-11-03 (UTC), #3135. The bare word `host` also means the CPU side of the
+//! bus, and the crate's own name says Host Controller; the Ethernet crate's `network_controller`
+//! made the same choice over `controller`. The items inside are ruled separately.
 
 use crate::command::{Command, UPDATE_CLOCK};
 use crate::internal_direct_memory_access::{
