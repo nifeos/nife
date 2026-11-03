@@ -2,7 +2,7 @@
 //! `entropy.rs`'s virtio-rng one, with no virtqueue and no DMA page, just a register window.
 //! `kernel/src/user/entropy_service.rs` spawns it on the riscv64 boot tour; QEMU has no JH7110, so
 //! CI resolves that to a skip. The register decode, the device-tree query and the byte buffer are
-//! in the `jh7110_entropy` crate (nifeos/jh7110_entropy), host-tested and Kani-reachable. It holds
+//! in the `jh7110_entropy` crate (`nifeos/jh7110_entropy`), host-tested and Kani-reachable. It holds
 //! [`REQ`], [`READY`] and one device page at [`TRNG_VA`], and no interrupt, so its authority is
 //! smaller than virtio-rng's by construction. It polls `ISTAT` rather than taking PLIC line 30: a
 //! wrong interrupt binding fails silently as a hang, a wrong poll bound loudly as `NO_ENTROPY`. See

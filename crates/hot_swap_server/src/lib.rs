@@ -79,17 +79,17 @@ fn probe_device() -> u64 {
 /// Write the version byte to the log page at `seq`, or refuse an offset outside it. Volatile
 /// because two address spaces write the page and one reads it.
 ///
+/// BUGS: the bound is the page, not the caller's system's region of it. The broker system's log
+/// starts at `hot_swap_contract::BROKER_LOG_BASE` in the same page, so a client of the other system
+/// can have its server write that server's version byte into the broker's log. It cannot choose
+/// the byte or leave the page, and both systems are fixtures that no release image carries.
+///
 /// `seq` comes from a client's request word, so it is bounded here and not trusted: the log
 /// capability grants one page, and an unbounded offset let a client holding only `WRITE` on the
 /// endpoint make the server write into the device page mapped after it, a confused deputy found by
 /// milestone 633's third outsider pass and pinned by
 /// `live_swap_tests::a_confined_client_drives_the_server_to_write_past_its_log`. Returns whether
 /// the byte was written.
-///
-/// BUGS: the bound is the page, not the caller's system's region of it. The broker system's log
-/// starts at `hot_swap_contract::BROKER_LOG_BASE` in the same page, so a client of the other system
-/// can have its server write that server's version byte into the broker's log. It cannot choose
-/// the byte or leave the page, and both systems are fixtures that no release image carries.
 fn log_put(seq: u64, version: u64) -> bool {
     if seq >= LOG_BYTES {
         return false;
