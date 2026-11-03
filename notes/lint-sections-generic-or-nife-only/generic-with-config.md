@@ -4,10 +4,14 @@
 
 Thirty-six sections port to a second repository once it supplies the values in the config column. The number is the section's place in `script/lint`, counted by `helpers/lint-no-cargo.awk`. Seconds come from merge-group run 41694693300.
 
-The section headers cite §81 (a dependency stays upgradable), §212 (a prose budget), §213 (writing
-standards), §266 (a Rust source file stays under 2,000 lines), §277 (cite a heading or a symbol,
-never a line number), §282 (when a file is split, the parent becomes an index) and milestone 929
-(comments in the Linux style across first-party Rust).
+The section headers cite these records:
+
+- §81 (a dependency stays upgradable)
+- §212 (a prose budget) and §213 (writing standards)
+- §266 (a Rust source file stays under 2,000 lines)
+- §277 (cite a heading or a symbol, never a line number)
+- §282 (when a file is split, the parent becomes an index)
+- milestone 929 (comments in the Linux style across first-party Rust)
 
 | # | section | what it checks | tag | what it reads | config a second repository supplies | seconds (wall / CPU) |
 |---|---|---|---|---|---|---|
