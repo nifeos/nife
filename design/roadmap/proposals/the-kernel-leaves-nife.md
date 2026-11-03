@@ -39,7 +39,7 @@ states.
 - Nothing that has left references nife: no path, no pin, no `#[path]` module, no script that
   reads a nife file.
 - The design record has moved to `nifeos.org`, or its move has a date. [The proposal for that
-  move](the-design-record-moves-and-is-published.md) holds the plan.
+  move](../1018-the-design-record-moves-and-is-published.md) holds the plan.
 - basalt pins `nife-kernel` beside the other components, so the whole-system test runs from basalt
   and not from nife.
 

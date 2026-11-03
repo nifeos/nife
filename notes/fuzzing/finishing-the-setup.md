@@ -5,7 +5,7 @@ has ruled on it.*
 
 An appendix to [`continuous-host.md`](continuous-host.md). The architect ruled the findings path on
 2026-11-01 (UTC) in
-[`fuzz-findings-without-a-person`](../../design/roadmap/proposals/fuzz-findings-without-a-person.md):
+[`fuzz-findings-without-a-person`](../../design/roadmap/1015-fuzz-findings-without-a-person.md):
 after a person places one credential once, the host files, reruns and publishes held findings with no
 person in the loop. This page lists what exists, what remains, and the order. The steps that only a
 person can take come first in each stage, with commands to paste.
@@ -25,14 +25,14 @@ secret or variable.
 | Daily release (phase 2) | built, blocked on the token and on the host carrying the clean-range fix | `--publish` in the same script |
 | Watchdog workflow and its label | built, scheduled, quiet until the first release; it creates the label `fuzz-loop-broken` at its first failure | `.github/workflows/fuzz-heartbeat.yml`, #3049 |
 | The host follows main | built, running on the host | `helpers/fuzz-follow-main.py`, [continuous-host.md](continuous-host.md#following-main) |
-| Clean-range fix | built, on the host; a slot that held a finding publishes no more ranges, because nothing yet signals that a finding turned public | `helpers/fuzz-daily-publish.sh`, [proposal](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md) |
-| Mint helper | built in nifeos/fuzz-host, not installed on the host | `fuzz-token` in [nifeos/fuzz-host](https://github.com/nifeos/fuzz-host), [proposal](../../design/roadmap/proposals/the-fuzz-host-mints-its-tokens-from-the-app-key.md) |
+| Clean-range fix | built, on the host; a slot that held a finding publishes no more ranges, because nothing yet signals that a finding turned public | `helpers/fuzz-daily-publish.sh`, [proposal](../../design/roadmap/1016-the-clean-range-table-does-not-locate-a-held-seed.md) |
+| Mint helper | built in nifeos/fuzz-host, not installed on the host | `fuzz-token` in [nifeos/fuzz-host](https://github.com/nifeos/fuzz-host), [proposal](../../design/roadmap/1022-the-fuzz-host-mints-its-tokens-from-the-app-key.md) |
 | Advisory permission | verified: an App holding only Repository security advisories write, installed on one repository, creates, completes, publishes and publicly reads an advisory | [below](#the-advisory-permission) |
-| Finding filer | built in nifeos/fuzz-host (pull request 5), not installed on the host; unverified against GitHub and systemd | `fuzz-filer` and its [docs/fuzz-filer.md](https://github.com/nifeos/fuzz-host/blob/lane/fuzz-finding-filer/docs/fuzz-filer.md), [proposal](../../design/roadmap/proposals/the-fuzz-host-files-held-findings-as-advisories.md) |
-| Fix lanes read the advisory: script, skill rule text, replay-line lint | built and merged | `script/read-advisory`, `helpers/replay-line-check.sh`, the developer-lane skill, [proposal](../../design/roadmap/proposals/fix-lanes-read-the-advisory.md) |
-| Reader token helper | built in nifeos/fuzz-host (pull request 4) as the `reader` profile of `fuzz-token`, not installed; unverified under a real sudo rule | [docs/fuzz-token-reader.md](https://github.com/nifeos/fuzz-host/blob/lane/fuzz-reader-token/docs/fuzz-token-reader.md), [proposal](../../design/roadmap/proposals/fix-lanes-get-a-one-hour-reader-token.md) |
-| Publish after a clean rerun | not built; reads the filer's ledger | [proposal](../../design/roadmap/proposals/a-held-finding-turns-public-after-its-fix-reruns-clean.md) |
-| Host replays a red CI shard | not built, and no proposal file exists | [the CI proposal's follow-on](../../design/roadmap/proposals/a-short-sharded-fuzz-pass-in-ci.md) |
+| Finding filer | built in nifeos/fuzz-host (pull request 5), not installed on the host; unverified against GitHub and systemd | `fuzz-filer` and its [docs/fuzz-filer.md](https://github.com/nifeos/fuzz-host/blob/lane/fuzz-finding-filer/docs/fuzz-filer.md), [proposal](../../design/roadmap/1020-the-fuzz-host-files-held-findings-as-advisories.md) |
+| Fix lanes read the advisory: script, skill rule text, replay-line lint | built and merged | `script/read-advisory`, `helpers/replay-line-check.sh`, the developer-lane skill, [proposal](../../design/roadmap/1014-fix-lanes-read-the-advisory.md) |
+| Reader token helper | built in nifeos/fuzz-host (pull request 4) as the `reader` profile of `fuzz-token`, not installed; unverified under a real sudo rule | [docs/fuzz-token-reader.md](https://github.com/nifeos/fuzz-host/blob/lane/fuzz-reader-token/docs/fuzz-token-reader.md), [proposal](../../design/roadmap/1013-fix-lanes-get-a-one-hour-reader-token.md) |
+| Publish after a clean rerun | not built; reads the filer's ledger | [proposal](../../design/roadmap/1010-a-held-finding-turns-public-after-its-fix-reruns-clean.md) |
+| Host replays a red CI shard | not built, and no proposal file exists | [the CI proposal's follow-on](../../design/roadmap/1012-a-short-sharded-fuzz-pass-in-ci.md) |
 | `nife-fuzz` App | created, installed, no key | App ID 5571801, installation 177641059 |
 | `nife-fuzz-reader` App | created, installed, no key | App ID 5571868, installation 177642435 |
 
@@ -108,24 +108,24 @@ the test did not try the comment step that the publish milestone lists. That mil
 ### Lane steps that can start now
 
 - L1, the clean-range fix: built in `helpers/fuzz-daily-publish.sh` with its selftest, as
-  [the proposal](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md)
+  [the proposal](../../design/roadmap/1016-the-clean-range-table-does-not-locate-a-held-seed.md)
   describes, except that withheld ranges do not return. It is on the host and unblocks phase 2.
 - L2, the host follows main: built in `helpers/fuzz-follow-main.py` and the supervisor. It is on the
   host.
 - L3, the mint helper: built as `fuzz-token` in [nifeos/fuzz-host](https://github.com/nifeos/fuzz-host),
-  from [the proposal](../../design/roadmap/proposals/the-fuzz-host-mints-its-tokens-from-the-app-key.md).
+  from [the proposal](../../design/roadmap/1022-the-fuzz-host-mints-its-tokens-from-the-app-key.md).
   It reads the key at `/etc/nife-fuzz/nife-fuzz.private-key.pem` and mints one token per service:
   Contents write alone for the daily release, Repository security advisories write alone for the
   filer, each on nifeos/nife alone. Its own unit, timer and install section live in that
   repository.
 - L4, the filer: done. It is `fuzz-filer` in nifeos/fuzz-host, built from
-  [the proposal](../../design/roadmap/proposals/the-fuzz-host-files-held-findings-as-advisories.md)
+  [the proposal](../../design/roadmap/1020-the-fuzz-host-files-held-findings-as-advisories.md)
   to its selftest; a real run waits on P4 and P6.
 - L5, fix lanes read the advisory: done. The script, the skill rule text for held-finding lanes and
   the lint for replay lines are in this repository, from
-  [the proposal](../../design/roadmap/proposals/fix-lanes-read-the-advisory.md).
+  [the proposal](../../design/roadmap/1014-fix-lanes-read-the-advisory.md).
 - L6, the reader token helper: done. It is the `reader` profile of `fuzz-token` in nifeos/fuzz-host,
-  from [the proposal](../../design/roadmap/proposals/fix-lanes-get-a-one-hour-reader-token.md).
+  from [the proposal](../../design/roadmap/1013-fix-lanes-get-a-one-hour-reader-token.md).
 - L7, a proposal for the host's replay of a red CI shard, which has no file yet.
 
 ## Stage 2: after L3 merges and the architect gives the go
