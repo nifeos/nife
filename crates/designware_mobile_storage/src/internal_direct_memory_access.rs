@@ -775,7 +775,7 @@ mod tests {
         sd::write_blocks(&mut h, &card, 2048, &data).unwrap();
         let mut reference = vec![0u8; 128 * 512];
         sd::read_blocks(&mut h, &card, 2048, &mut reference).unwrap();
-        let report = crate::bench::ReadReport {
+        let report = crate::bench::ReadOnlyProbeReport {
             card,
             master_boot_record: None,
             partition_boot_signature: false,

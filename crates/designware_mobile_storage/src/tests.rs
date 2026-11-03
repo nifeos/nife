@@ -1,7 +1,7 @@
 //! The crate's host tests, kept out of `lib.rs` so the crate root stays an index of its modules as
 //! the tests grow.
 
-use crate::bench::{self, WriteVerdict};
+use crate::bench::{self, ScratchWriteVerdict};
 use crate::card;
 use crate::host::{Error, Host};
 use crate::sd::{self, BLOCK, InitializationError, IoError, Kind};
@@ -166,7 +166,7 @@ fn a_data_crc_error_is_reported_with_its_command() {
 fn the_read_only_probe_reads_and_never_writes() {
     let (mut h, _) = Host::new(master_boot_record_card(8192, 2048), 50_000_000, Some(32)).unwrap();
     let mut buffer = vec![0u8; 128 * BLOCK];
-    let r = bench::read_only(&mut h, 4, &mut buffer, 1024).unwrap();
+    let r = bench::run_read_only_probe(&mut h, 4, &mut buffer, 1024).unwrap();
     assert_eq!(r.master_boot_record.unwrap().first_start(), Some(2048));
     assert!(r.partition_boot_signature);
     assert_eq!(&r.file_system_type, b"FAT32   ");
@@ -253,16 +253,16 @@ fn the_write_test_touches_only_the_gap_and_puts_back_what_was_there() {
     let before = sim.storage.clone();
     let (mut h, _) = Host::new(sim, 50_000_000, Some(32)).unwrap();
     let mut buffer = vec![0u8; 8 * BLOCK];
-    let r = bench::read_only(&mut h, 4, &mut buffer, 0).unwrap();
+    let r = bench::run_read_only_probe(&mut h, 4, &mut buffer, 0).unwrap();
     let (mut a, mut b) = (vec![0u8; 8 * BLOCK], vec![0u8; 8 * BLOCK]);
-    let v = bench::scratch_write(
+    let v = bench::run_scratch_write_test(
         &mut h,
         &r.card,
         r.master_boot_record.as_ref(),
         &mut a,
         &mut b,
     );
-    assert_eq!(v, WriteVerdict::Verified(2040, 8, false));
+    assert_eq!(v, ScratchWriteVerdict::Verified(2040, 8, false));
     let sim = h.into_registers();
     assert!(
         sim.written
@@ -277,16 +277,16 @@ fn the_write_test_touches_only_the_gap_and_puts_back_what_was_there() {
 fn a_card_with_no_gap_is_refused_and_not_written() {
     let (mut h, _) = Host::new(master_boot_record_card(8192, 1), 50_000_000, Some(32)).unwrap();
     let mut buffer = vec![0u8; 8 * BLOCK];
-    let r = bench::read_only(&mut h, 4, &mut buffer, 0).unwrap();
+    let r = bench::run_read_only_probe(&mut h, 4, &mut buffer, 0).unwrap();
     let (mut a, mut b) = (vec![0u8; 8 * BLOCK], vec![0u8; 8 * BLOCK]);
-    let v = bench::scratch_write(
+    let v = bench::run_scratch_write_test(
         &mut h,
         &r.card,
         r.master_boot_record.as_ref(),
         &mut a,
         &mut b,
     );
-    assert_eq!(v, WriteVerdict::Refused);
+    assert_eq!(v, ScratchWriteVerdict::Refused);
     assert!(h.into_registers().written.is_empty());
 }
 
@@ -561,28 +561,28 @@ fn the_read_only_probe_says_which_block_it_could_not_read() {
     let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
     let mut buffer = vec![0u8; 8 * BLOCK];
     assert!(matches!(
-        bench::read_only(&mut h, 4, &mut buffer, 64),
-        Err(bench::ReadFailure::Read(2048, IoError::Status(_)))
+        bench::run_read_only_probe(&mut h, 4, &mut buffer, 64),
+        Err(bench::ReadOnlyProbeFailure::Read(2048, IoError::Status(_)))
     ));
     let mut sim = master_boot_record_card(8192, 2048);
     sim.faults = vec![(18, 1, Fault::ErrorStatus)];
     let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
     assert!(matches!(
-        bench::read_only(&mut h, 4, &mut buffer, 64),
-        Err(bench::ReadFailure::Read(2056, IoError::Status(_)))
+        bench::run_read_only_probe(&mut h, 4, &mut buffer, 64),
+        Err(bench::ReadOnlyProbeFailure::Read(2056, IoError::Status(_)))
     ));
 }
 
 /// Run the write test on a card prepared by `setup`, after a read-only probe that times
 /// nothing, and return its verdict and the card.
-fn write_test(setup: impl FnOnce(&mut Sim), len: usize) -> (WriteVerdict, Sim) {
+fn write_test(setup: impl FnOnce(&mut Sim), len: usize) -> (ScratchWriteVerdict, Sim) {
     let mut sim = master_boot_record_card(8192, 2048);
     setup(&mut sim);
     let mut h = Host::new(sim, 50_000_000, Some(32)).unwrap().0;
     let mut buffer = vec![0u8; 8 * BLOCK];
-    let r = bench::read_only(&mut h, 4, &mut buffer, 0).unwrap();
+    let r = bench::run_read_only_probe(&mut h, 4, &mut buffer, 0).unwrap();
     let (mut a, mut b) = (vec![0u8; len], vec![0u8; len]);
-    let v = bench::scratch_write(
+    let v = bench::run_scratch_write_test(
         &mut h,
         &r.card,
         r.master_boot_record.as_ref(),
@@ -595,7 +595,7 @@ fn write_test(setup: impl FnOnce(&mut Sim), len: usize) -> (WriteVerdict, Sim) {
 #[test]
 fn the_write_test_refuses_buffers_too_small_for_its_range_before_touching_the_card() {
     let (v, sim) = write_test(|_| {}, 7 * BLOCK);
-    assert_eq!(v, WriteVerdict::Failed(0, IoError::Length));
+    assert_eq!(v, ScratchWriteVerdict::Failed(0, IoError::Length));
     assert!(sim.written.is_empty());
 }
 
@@ -615,7 +615,7 @@ fn the_write_test_names_the_phase_that_failed() {
             8 * BLOCK,
         );
         assert!(
-            matches!(v, WriteVerdict::Failed(p, IoError::Status(_)) if p == phase),
+            matches!(v, ScratchWriteVerdict::Failed(p, IoError::Status(_)) if p == phase),
             "CMD{index}#{nth}: {v:?}"
         );
     }
@@ -624,10 +624,10 @@ fn the_write_test_names_the_phase_that_failed() {
 #[test]
 fn a_card_that_drops_writes_is_a_pattern_mismatch_and_one_that_drops_the_restore_says_so() {
     let (v, sim) = write_test(|s| s.writes_stored = Some(0), 8 * BLOCK);
-    assert_eq!(v, WriteVerdict::PatternMismatch(2040));
+    assert_eq!(v, ScratchWriteVerdict::PatternMismatch(2040));
     assert!(sim.storage[2040].iter().all(|&b| b == 0));
     let (v, sim) = write_test(|s| s.writes_stored = Some(1), 8 * BLOCK);
-    assert_eq!(v, WriteVerdict::RestoreMismatch(2040));
+    assert_eq!(v, ScratchWriteVerdict::RestoreMismatch(2040));
     // The pattern stayed, inside the gap, and partition 1 was never touched.
     assert!(sim.storage[2040].iter().any(|&b| b != 0));
     assert!(
@@ -642,7 +642,7 @@ fn a_card_that_drops_writes_is_a_pattern_mismatch_and_one_that_drops_the_restore
 #[test]
 fn the_pattern_left_behind_is_each_sectors_own() {
     let (v, sim) = write_test(|s| s.writes_stored = Some(1), 8 * BLOCK);
-    assert_eq!(v, WriteVerdict::RestoreMismatch(2040));
+    assert_eq!(v, ScratchWriteVerdict::RestoreMismatch(2040));
     for logical_block_address in 2040..2048u64 {
         for (i, &b) in sim.storage[logical_block_address as usize]
             .iter()
@@ -650,7 +650,7 @@ fn the_pattern_left_behind_is_each_sectors_own() {
         {
             assert_eq!(
                 b,
-                bench::pattern(logical_block_address, i),
+                bench::scratch_pattern_byte(logical_block_address, i),
                 "sector {logical_block_address} byte {i}"
             );
         }
@@ -661,9 +661,9 @@ fn the_pattern_left_behind_is_each_sectors_own() {
 #[test]
 fn a_mismatch_names_its_own_sector() {
     let (v, _) = write_test(|s| s.mangle_write = Some((0, 2041)), 8 * BLOCK);
-    assert_eq!(v, WriteVerdict::PatternMismatch(2041));
+    assert_eq!(v, ScratchWriteVerdict::PatternMismatch(2041));
     let (v, _) = write_test(|s| s.mangle_write = Some((1, 2041)), 8 * BLOCK);
-    assert_eq!(v, WriteVerdict::RestoreMismatch(2041));
+    assert_eq!(v, ScratchWriteVerdict::RestoreMismatch(2041));
 }
 
 /// Buffers longer than the range are fine (only their first eight sectors are used), either
@@ -671,24 +671,24 @@ fn a_mismatch_names_its_own_sector() {
 #[test]
 fn the_write_test_takes_long_buffers_refuses_either_short_one_and_reports_a_blank_gap() {
     let (v, _) = write_test(|_| {}, 9 * BLOCK);
-    assert_eq!(v, WriteVerdict::Verified(2040, 8, true));
+    assert_eq!(v, ScratchWriteVerdict::Verified(2040, 8, true));
     let (v, _) = write_test(|s| s.storage[2047][511] = 1, 8 * BLOCK);
-    assert_eq!(v, WriteVerdict::Verified(2040, 8, false));
+    assert_eq!(v, ScratchWriteVerdict::Verified(2040, 8, false));
     for (a, b) in [(7, 8), (8, 7)] {
         let mut h = Host::new(master_boot_record_card(8192, 2048), 50_000_000, Some(32))
             .unwrap()
             .0;
         let mut buffer = vec![0u8; 8 * BLOCK];
-        let r = bench::read_only(&mut h, 4, &mut buffer, 0).unwrap();
+        let r = bench::run_read_only_probe(&mut h, 4, &mut buffer, 0).unwrap();
         let (mut a, mut b) = (vec![0u8; a * BLOCK], vec![0u8; b * BLOCK]);
-        let v = bench::scratch_write(
+        let v = bench::run_scratch_write_test(
             &mut h,
             &r.card,
             r.master_boot_record.as_ref(),
             &mut a,
             &mut b,
         );
-        assert_eq!(v, WriteVerdict::Failed(0, IoError::Length));
+        assert_eq!(v, ScratchWriteVerdict::Failed(0, IoError::Length));
     }
 }
 
@@ -697,14 +697,18 @@ fn the_write_test_takes_long_buffers_refuses_either_short_one_and_reports_a_blan
 /// what makes a sector's two halves differ.
 #[test]
 fn the_write_pattern_is_the_formula_and_its_halves_differ() {
-    assert_eq!(bench::pattern(0, 0), 0x5a);
-    assert_eq!(bench::pattern(0, 1), 31 ^ 0x5a);
-    assert_eq!(bench::pattern(1, 0), 7 ^ 0x5a);
-    assert_eq!(bench::pattern(3, 5), 155 ^ 21 ^ 0x5a);
-    assert_eq!(bench::pattern(0, 256), 0x5a ^ 1);
+    assert_eq!(bench::scratch_pattern_byte(0, 0), 0x5a);
+    assert_eq!(bench::scratch_pattern_byte(0, 1), 31 ^ 0x5a);
+    assert_eq!(bench::scratch_pattern_byte(1, 0), 7 ^ 0x5a);
+    assert_eq!(bench::scratch_pattern_byte(3, 5), 155 ^ 21 ^ 0x5a);
+    assert_eq!(bench::scratch_pattern_byte(0, 256), 0x5a ^ 1);
     assert_ne!(
-        (0..256).map(|i| bench::pattern(9, i)).collect::<Vec<_>>(),
-        (256..512).map(|i| bench::pattern(9, i)).collect::<Vec<_>>()
+        (0..256)
+            .map(|i| bench::scratch_pattern_byte(9, i))
+            .collect::<Vec<_>>(),
+        (256..512)
+            .map(|i| bench::scratch_pattern_byte(9, i))
+            .collect::<Vec<_>>()
     );
 }
 
@@ -714,7 +718,7 @@ fn the_write_pattern_is_the_formula_and_its_halves_differ() {
 fn the_timed_reads_stop_at_the_end_of_the_card() {
     let (mut h, _) = Host::new(master_boot_record_card(2048, 16), 50_000_000, Some(32)).unwrap();
     let mut buffer = vec![0u8; 256 * BLOCK];
-    let r = bench::read_only(&mut h, 4, &mut buffer, 100_000).unwrap();
+    let r = bench::run_read_only_probe(&mut h, 4, &mut buffer, 100_000).unwrap();
     // Partition 1 starts at 16, so blocks 16 to 2047 fit seven 256-block reads and not eight.
     assert_eq!(r.timed_blocks, 7 * 256);
     // Each read was of the next 256 blocks up from the partition, not below it.
@@ -727,7 +731,7 @@ fn the_timed_reads_stop_at_the_end_of_the_card() {
         .collect();
     assert_eq!(reads, (0..7).map(|k| 16 + 256 * k).collect::<Vec<u32>>());
     let (mut h, _) = Host::new(master_boot_record_card(2048, 1024), 50_000_000, Some(32)).unwrap();
-    let r = bench::read_only(&mut h, 4, &mut [], 8).unwrap();
+    let r = bench::run_read_only_probe(&mut h, 4, &mut [], 8).unwrap();
     assert_eq!(r.timed_blocks, 0);
 }
 
