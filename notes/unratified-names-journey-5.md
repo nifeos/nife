@@ -10,7 +10,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 ## How a naming pull request edits this note and the baselines
 
-Two pull requests that change the same or neighbouring lines conflict in git, so no line here or in
+Two pull requests that change the same or adjacent lines conflict in git, so no line here or in
 the baselines is shared by two naming pull requests:
 
 - This note carries no total, count table or per-crate count. A pull request edits only the group it

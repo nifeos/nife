@@ -5,7 +5,7 @@
 # change that fixes it (`python3 helpers/name_checks.py --bank`). A row may be added only by the
 # change that bumps the rules line above, because it adds or revises the check.
 # Layout (helpers/baseline_layout.py): rows sorted, a blank line after every row. A change deletes a
-# cleared row's line and leaves the blank line, so two changes that clear neighbours merge in git.
+# cleared row's line and leaves the blank line, so two changes that clear adjacent rows merge in git.
 components/src/swish/witness.rs::removed question-shape
 
 crates/abi/src/futex.rs::admitted question-shape
@@ -292,7 +292,7 @@ kernel/src/user/address_space.rs::current_cpu_page_kernel_va spelled-out
 
 kernel/src/user/clock_service.rs::CLOCK_VA spelled-out
 
-kernel/src/user/compositor_service.rs::neighbour_probe_va spelled-out
+kernel/src/user/compositor_service.rs::adjacent row_probe_va spelled-out
 
 kernel/src/user/disk_service.rs::ROSTER_VA spelled-out
 

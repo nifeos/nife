@@ -3,10 +3,10 @@
 Two ratchets keep a committed list of rows that only shrinks: `helpers/module_block_ratchet.py`
 (`design/module-block-baseline.txt`) and `helpers/name_checks.py` (`design/naming-rule-baseline.txt`).
 Naming pull requests each clear a run of rows, and rows sort by path, so two pull requests that clear
-neighbouring rows touched adjacent lines. Git reports adjacent changed lines as a conflict even
+adjacent rows touched adjacent lines. Git reports adjacent changed lines as a conflict even
 though the two changes never overlap, and a merge queue that meets one removes every entry behind it.
 Measured on the 28 open naming pull requests of 2026-11-03: 243 of the 351 pairs that edited the
-module-block baseline cleared rows on the same or neighbouring lines.
+module-block baseline cleared rows on the same or adjacent lines.
 
     python3 helpers/baseline_layout.py --selftest      # the rules, as fixtures, and git's own merge
 
@@ -138,17 +138,17 @@ def selftest():
     case('a repeated row is cleared one at a time',
          rewrite('# h\na\n\na\n\n', header, rows(['a'])) == '# header\na\n\n\n')
 
-    # The point of the layout, against git's own merge: two changes clear neighbouring rows.
+    # The point of the layout, against git's own merge: two changes clear adjacent rows.
     many = ''.join(f'row{n:02}\n\n' for n in range(10))
     mine = rewrite(many, header, rows(f'row{n:02}' for n in range(10) if n != 3))
     theirs = rewrite(many, header, rows(f'row{n:02}' for n in range(10) if n != 4))
     flat = ''.join(f'row{n:02}\n' for n in range(10))
     flat_mine = ''.join(f'row{n:02}\n' for n in range(10) if n != 3)
     flat_theirs = ''.join(f'row{n:02}\n' for n in range(10) if n != 4)
-    case('git merges neighbouring clears in the spaced layout', merges(many, mine, theirs))
-    case('git conflicts on neighbouring clears in the flat layout (the old layout)',
+    case('git merges adjacent clears in the spaced layout', merges(many, mine, theirs))
+    case('git conflicts on adjacent clears in the flat layout (the old layout)',
          not merges(flat, flat_mine, flat_theirs))
-    case('git merges a whole run cleared beside a neighbour',
+    case('git merges a whole run cleared beside a adjacent row',
          merges(many, rewrite(many, header, rows(f'row{n:02}' for n in range(10) if n not in (1, 2, 3))),
                 rewrite(many, header, rows(f'row{n:02}' for n in range(10) if n != 4))))
     for name in failed:

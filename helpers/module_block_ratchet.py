@@ -64,7 +64,7 @@ HEADER = FORMAT + """
 # writes its block or deletes it (`python3 helpers/module_block_ratchet.py --bank` does it); a row
 # may not be added (script/lint compares against the merge base), and a rename moves its rows.
 # Layout (helpers/baseline_layout.py): rows sorted, a blank line after every row. A change deletes a
-# cleared row's line and leaves the blank line, so two changes that clear neighbours merge in git.
+# cleared row's line and leaves the blank line, so two changes that clear adjacent rows merge in git.
 """
 
 def path_of(row):

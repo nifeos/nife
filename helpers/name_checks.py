@@ -350,7 +350,7 @@ HEADER = """# rules {rules}
 # change that fixes it (`python3 helpers/name_checks.py --bank`). A row may be added only by the
 # change that bumps the rules line above, because it adds or revises the check.
 # Layout (helpers/baseline_layout.py): rows sorted, a blank line after every row. A change deletes a
-# cleared row's line and leaves the blank line, so two changes that clear neighbours merge in git.
+# cleared row's line and leaves the blank line, so two changes that clear adjacent rows merge in git.
 """
 
 
