@@ -110,6 +110,7 @@ written next to the test:
 | `glob` pathological/quadratic bound tests | 100,000- and 2,000-byte names | 2,000 and 200; both assertions still run |
 | `globally_unique_identifier_partition_table` header and entry-array corruption sweeps (`real_disks.rs`; two live, one already `#[ignore]`) | 260k+ parses, each re-CRCing 16 KiB | skipped; the clean-fixture tests walk the same paths |
 | `globally_unique_identifier_partition_table` small-table sweep (`table.rs`) | 261,120 parses | skipped, same reason |
+| `boot_slot` `flipping_any_padding_byte_is_refused` | all 3,908 padding bytes of the 4 KiB block | every 61st byte plus the last, 66 flips; 2,289 s under Miri before the stride |
 | `cred` store tests via `cheap()` | Argon2id at m=256 KiB, t=2 | Argon2's floor (m=8 KiB, t=1); same paths, fewer blocks. The known-answer vector tests keep their published costs |
 | `cred` `an_unknown_identity_costs_what_a_known_one_costs` | 50 timed KDF runs | skipped: a wall-clock ratio under an interpreter measures Miri, not the KDF |
 | `compositor` `a_damaged_composite_leaves_the_rest_of_the_screen_alone` | all 317,856 screen pixels, 20 ms | every 37th row plus every row the damage rectangle touches, 15,708 pixels, pinned exactly |

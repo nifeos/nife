@@ -1127,7 +1127,13 @@ pub mod members {
         #[test]
         fn flipping_any_padding_byte_is_refused() {
             let block = block_of(&sample());
-            for at in MEMBERS_HEADER_BYTES..BLOCK {
+            // Each flip scans the padding up to `at`, so all 3,908 bytes take 38 minutes under
+            // Miri. Miri samples every 61st byte (prime) plus the last; native runs every byte.
+            let stride = if cfg!(miri) { 61 } else { 1 };
+            let sites = (MEMBERS_HEADER_BYTES..BLOCK)
+                .step_by(stride)
+                .chain([BLOCK - 1]);
+            for at in sites {
                 let mut flipped = block;
                 flipped[at] ^= 0x01;
                 assert_eq!(
