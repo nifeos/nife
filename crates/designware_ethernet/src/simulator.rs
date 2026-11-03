@@ -6,6 +6,8 @@
 //! least that still lets a wrong driver fail. Its one unusual part is [`Memory`], which can model
 //! a CPU cache the device does not snoop, so the coherence probe can be shown to tell the
 //! directions apart.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3121.
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;

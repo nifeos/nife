@@ -525,7 +525,7 @@ pub fn link(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sim::PhysicalLayerDevice;
+    use crate::simulator::PhysicalLayerDevice;
 
     #[test]
     fn the_two_trees_spell_the_same_registers_for_radons_gmac0() {
