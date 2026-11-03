@@ -372,21 +372,25 @@ pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
 ///
 /// // An 8 MiB namespace of 512-byte logical blocks holds 2048 blocks of 4096 bytes, numbered 0 to
 /// // 2047, and each one is 8 logical blocks.
-/// let namespace = Namespace { size_bytes: 8 << 20, blocks_per_transfer: 8 };
-/// assert!(namespace.holds_block(2047, 4096));
-/// assert!(!namespace.holds_block(2048, 4096));
+/// let namespace = Namespace { capacity_bytes: 8 << 20, blocks_per_transfer: 8 };
+/// assert!(namespace.holds_whole_block(2047, 4096));
+/// assert!(!namespace.holds_whole_block(2048, 4096));
 ///
 /// let cmd = namespace.transfer_command(7, 1, 2047, 4096, 0x4001_5000, 4096, false).unwrap();
 /// assert_eq!(cmd.0[0] & 0xff, NON_VOLATILE_MEMORY_READ as u32);
 /// assert!(namespace.transfer_command(7, 1, 2048, 4096, 0x4001_5000, 4096, false).is_none());
 /// ```
 ///
-/// Name: provisional. A namespace's capacity and its logical blocks per transfer, what the bounds
-/// check and the transfer builder need.
+/// Name: ratified 2026-11-03 (#3118). A namespace's capacity and its logical blocks per transfer,
+/// what the bounds check and the transfer builder need.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Namespace {
-    /// The namespace's capacity in bytes.
-    pub size_bytes: u64,
+    /// The namespace's capacity in bytes, the word [`IdentifyNamespace::capacity_bytes`] uses for the
+    /// same quantity.
+    ///
+    /// Name: ratified 2026-11-03 (#3118).
+    #[doc(alias = "size_bytes")]
+    pub capacity_bytes: u64,
     /// The logical blocks in one transfer unit, the `unit` every call on this value passes.
     pub blocks_per_transfer: u16,
 }
@@ -397,28 +401,29 @@ impl Namespace {
     /// because a driver that asks for an LBA past the end learns about it far from where it
     /// computed it.
     ///
-    /// `false` for any `block` whose transfer would run past [`Namespace::size_bytes`], for one
+    /// `false` for any `block` whose transfer would run past [`Namespace::capacity_bytes`], for one
     /// whose end overflows a `u64`, and for a `unit` of zero.
     ///
-    /// Name: provisional. The method form of `namespace_holds_block` (ratified 2026-10-26 (UTC), on
-    /// #2749), whose subject is now the receiver.
-    pub fn holds_block(&self, block: u64, unit: u64) -> bool {
+    /// Name: ratified 2026-11-03 (#3118). The check is that the entire block fits (`end <= capacity`),
+    /// not only that its start lies inside, hence `holds_whole_block`.
+    #[doc(alias = "holds_block")]
+    pub fn holds_whole_block(&self, block: u64, unit: u64) -> bool {
         match block.checked_add(1).and_then(|n| n.checked_mul(unit)) {
-            Some(end) => end <= self.size_bytes,
+            Some(end) => end <= self.capacity_bytes,
             None => false,
         }
     }
 
     /// **The NVM command for one whole-block transfer**, or `None` when the arithmetic will not
-    /// close: a block outside the namespace ([`Namespace::holds_block`]), an LBA that overflows,
+    /// close: a block outside the namespace ([`Namespace::holds_whole_block`]), an LBA that overflows,
     /// or a buffer that is not expressible as a PRP pair (which for a page-aligned `unit`-byte
     /// buffer with `unit <= 2 * page_size` it always is; see [`prp_pair`]).
     ///
     /// `cid` and `nsid` go to the command as they are, `data_physical_address` is the buffer's bus
     /// address, and `write` picks [`Command::write`] over [`Command::read`].
     ///
-    /// Name: provisional. Ratified 2026-10-26 (UTC), on #2749, as a free function; the method on
-    /// `Namespace` keeps the word.
+    /// Name: ratified 2026-11-03 (#3118). Ratified 2026-10-26 (UTC), on #2749, as a free function;
+    /// the method on `Namespace` keeps the word.
     #[allow(clippy::too_many_arguments)]
     pub fn transfer_command(
         &self,
@@ -430,7 +435,7 @@ impl Namespace {
         page_size: u64,
         write: bool,
     ) -> Option<Command> {
-        if !self.holds_block(block, unit) {
+        if !self.holds_whole_block(block, unit) {
             return None;
         }
         let slba = block.checked_mul(self.blocks_per_transfer as u64)?;
@@ -689,7 +694,10 @@ pub struct IdentifyNamespace {
 }
 
 impl IdentifyNamespace {
-    /// The namespace's capacity in bytes.
+    /// The namespace's capacity in bytes, the word [`IdentifyNamespace::capacity_bytes`] uses for the
+    /// same quantity.
+    ///
+    /// Name: ratified 2026-11-03 (#3118).
     ///
     /// Name: ratified 2026-10-25 (#2720). Refused `bytes` (it is the namespace's capacity in bytes,
     /// not its bytes).
@@ -914,13 +922,13 @@ mod tests {
         const SIZE: u64 = 8 * 1024 * 1024;
         const LAST: u64 = SIZE / 4096 - 1;
         let namespace = Namespace {
-            size_bytes: SIZE,
+            capacity_bytes: SIZE,
             blocks_per_transfer: 8,
         };
-        assert!(namespace.holds_block(LAST, 4096));
-        assert!(!namespace.holds_block(LAST + 1, 4096));
+        assert!(namespace.holds_whole_block(LAST, 4096));
+        assert!(!namespace.holds_whole_block(LAST + 1, 4096));
         assert!(
-            !namespace.holds_block(u64::MAX, 4096),
+            !namespace.holds_whole_block(u64::MAX, 4096),
             "no overflow, no wrap-around"
         );
 
@@ -1166,7 +1174,7 @@ mod verification {
     #[kani::proof]
     fn a_transfer_command_is_only_built_for_a_block_the_namespace_has() {
         let namespace = Namespace {
-            size_bytes: kani::any(),
+            capacity_bytes: kani::any(),
             blocks_per_transfer: kani::any(),
         };
         kani::assume((1..=8).contains(&namespace.blocks_per_transfer));
@@ -1179,10 +1187,10 @@ mod verification {
             .transfer_command(1, 1, block, 4096, data_physical_address, 4096, kani::any())
             .is_some()
         {
-            assert!(namespace.holds_block(block, 4096));
+            assert!(namespace.holds_whole_block(block, 4096));
             // The transfer's last byte is inside the namespace, which is the property
-            // `holds_block` exists to state and the one a wrap would quietly break.
-            assert!((block + 1) * 4096 <= namespace.size_bytes);
+            // `holds_whole_block` exists to state and the one a wrap would quietly break.
+            assert!((block + 1) * 4096 <= namespace.capacity_bytes);
         }
     }
 
