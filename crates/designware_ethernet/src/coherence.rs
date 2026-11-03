@@ -205,7 +205,7 @@ pub const POSTED: u16 = RECEIVE_ENTRIES - 1;
 mod tests {
     use super::*;
     use crate::controller::{self, Identity};
-    use crate::jh7110::BUS;
+    use crate::jh7110::BUS_CONFIGURATION;
     use crate::motorcomm::{Link, Speed};
     use crate::simulator::{Memory, NetworkInterfaceController};
     use crate::{Hardware, RDES3_FD, RDES3_LD};
@@ -225,7 +225,14 @@ mod tests {
             nic.break_loopback();
         }
         let id = Identity::read(&mut nic);
-        controller::configure(&mut nic, &id, &BUS, PHYSICAL_ADDRESS, STATION_ADDRESS).unwrap();
+        controller::configure(
+            &mut nic,
+            &id,
+            &BUS_CONFIGURATION,
+            PHYSICAL_ADDRESS,
+            STATION_ADDRESS,
+        )
+        .unwrap();
         controller::start(&mut nic, GIG, true);
         let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
         nic.with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
@@ -334,7 +341,14 @@ mod tests {
         let mut nic =
             NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         let id = Identity::read(&mut nic);
-        controller::configure(&mut nic, &id, &BUS, PHYSICAL_ADDRESS, STATION_ADDRESS).unwrap();
+        controller::configure(
+            &mut nic,
+            &id,
+            &BUS_CONFIGURATION,
+            PHYSICAL_ADDRESS,
+            STATION_ADDRESS,
+        )
+        .unwrap();
         controller::start(&mut nic, GIG, true);
         let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
         nic.with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
@@ -357,7 +371,14 @@ mod tests {
         let mut nic =
             NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         let id = Identity::read(&mut nic);
-        controller::configure(&mut nic, &id, &BUS, PHYSICAL_ADDRESS, STATION_ADDRESS).unwrap();
+        controller::configure(
+            &mut nic,
+            &id,
+            &BUS_CONFIGURATION,
+            PHYSICAL_ADDRESS,
+            STATION_ADDRESS,
+        )
+        .unwrap();
         controller::start(&mut nic, GIG, true);
         let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
         nic.with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))

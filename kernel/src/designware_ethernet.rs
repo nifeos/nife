@@ -124,7 +124,7 @@ pub(crate) struct Report {
 impl Report {
     fn new(e: &crate::memory::Jh7110Ethernet) -> Report {
         Report {
-            base: e.port.base,
+            base: e.port.registers_physical_address,
             compatible: e.port.compatible,
             windows_from_tree: e.aon.from_tree && e.sys.from_tree && e.syscon.from_tree,
             sys: crg::BringUpReport::default(),
@@ -187,7 +187,8 @@ pub fn bring_up() -> Result<Found, Absent> {
     let (handoff, link) = outcome.map_err(Absent::Refused)?;
     Ok(Found {
         handoff,
-        dma_page: e.port.base + u64::from(registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
+        dma_page: e.port.registers_physical_address
+            + u64::from(registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
         link,
     })
 }
@@ -239,7 +240,7 @@ fn run(
         r.syscon = (before, core::ptr::read_volatile(syscon));
     }
 
-    let mut w = Window(mmu::phys_to_virt(e.port.base));
+    let mut w = Window(mmu::phys_to_virt(e.port.registers_physical_address));
     let id = Identity::read(&mut w);
     r.version = id.version;
     r.direct_memory_access_address_bits = id.direct_memory_access_address_bits();
@@ -280,7 +281,8 @@ fn run(
     let _ = controller::stop(&mut w);
     r.resets_microseconds[1] = controller::soft_reset(&mut w).map_err(Error::Controller)?;
     zero(region);
-    controller::configure(&mut w, &id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
+    controller::configure(&mut w, &id, &jh7110::BUS_CONFIGURATION, region, mac)
+        .map_err(Error::Controller)?;
 
     let link = wait_for_link(&mut w, e, r)?;
     Ok((
@@ -372,7 +374,8 @@ fn probe(
     r: &mut Report,
 ) -> Result<coherence::Verdict, Error> {
     zero(region);
-    controller::configure(w, id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
+    controller::configure(w, id, &jh7110::BUS_CONFIGURATION, region, mac)
+        .map_err(Error::Controller)?;
     let loopback = Link {
         speed: Speed::Thousand,
         full_duplex: true,
