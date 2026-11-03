@@ -1,0 +1,68 @@
+name: pr text replay check
+
+# Observed failing: PENDING
+
+# **Refuses a pull request whose title or body carries a reproducer.** A seed, a crash input and a
+# replay line stay out of public text until the fix for the finding is on main
+# (fuzz-findings-without-a-person, step 5). `script/lint` already runs helpers/replay-line-check.sh
+# over a branch's commit messages; nothing read a pull request's title or body, which is public text
+# from the moment the pull request opens. This runs the same helper over both.
+#
+# **Safe on untrusted text and untrusted code.** The title and the body are attacker-controlled
+# strings. They reach the shell only through `env:` and are written with `printf '%s'`, never
+# interpolated into the script, so no title can end a command. The helper that reads them is the one
+# on the base branch: the checkout names `github.event.pull_request.base.sha` and takes that one
+# file, so a pull request that edits the helper is judged by the helper it is trying to change, not
+# by its own copy. Nothing from the pull request's head is checked out or run. The trigger is
+# `pull_request`, not `pull_request_target`: it needs no secret, a fork gets a read-only token, and
+# a pull request branch that carries this workflow can exercise it before it lands.
+#
+# **Triggers.** `edited` is the one that matters most: a body is often rewritten after the push, and
+# a check that only ran on `synchronize` would keep reporting what it saw before the edit. No
+# `merge_group`: the queue entry has no title or body to read, so this is not a required context.
+# It reports on the pull request, and the lane reads it there before marking ready.
+#
+# **What it does not catch.** The two forms the fuzz drivers print (a `replay:` line, a
+# `NIFE_*SEED(S)=` assignment). A seed written some other way passes, so a lane still reads its own
+# text.
+#
+# **Falsified:** helpers/replay-line-check-selftest.sh (in `script/lint`) plants each form. Live: the
+# run in the record above, on a throwaway draft whose body held an invented replay line.
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-text-replay-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-text-replay-check:
+    name: pr text carries no reproducer
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    steps:
+      # The base branch's copy of the helper, and only that file. No credentials are kept.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          sparse-checkout: helpers/replay-line-check.sh
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Read the title and the body through the helper
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          status=0
+          printf '%s\n' "$PR_TITLE" | sh helpers/replay-line-check.sh || { echo "==> in the pull request title" >&2; status=1; }
+          printf '%s\n' "$PR_BODY" | sh helpers/replay-line-check.sh || { echo "==> in the pull request body" >&2; status=1; }
+          if [ "$status" -ne 0 ]; then
+              echo "pr-text-replay-check: rewrite the title or body to name the invariant that broke and nothing that reproduces it." >&2
+          fi
+          exit "$status"
