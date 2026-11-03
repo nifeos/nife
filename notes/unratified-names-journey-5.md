@@ -4,7 +4,7 @@
 
 This note lists, for every crate on [journey 5](../design/journeys/05-crates-released-on-their-own.md) that still sits under `crates/`, each module, type, function, constant and register whose `Name:` block is missing or still provisional, in groups an architect can rule on one at a time. It proposes and renames nothing. Names are an architect's call ([design/naming.md](../design/naming.md)); every recommendation below is provisional and leaves the current spelling in force until a ruling.
 
-`script/crate-standalone` step 0 passes a crate only when every `Name:` block in it is ratified, so each group here stands between a crate and its move. The lists come from `python3 helpers/name_release.py --draft <crate>`: a row whose status reads `no block` or starts with `provisional`. Rerun it for the live state; nothing regenerates this note, and a ruling removes its group.
+`script/crate-standalone` step 0 passes a crate only when it finds every `Name:` block in it ratified, so each group here stands between a crate and its move. The lists come from `python3 helpers/name_release.py --draft <crate>`: a row whose status reads `no block` or starts with `provisional`. Rerun it for the live state; nothing regenerates this note, and a ruling removes its group.
 
 `file_allocation_table`, `generational_table` and `jh7110_clock_and_reset` have no unratified name left. `jh7110_entropy` has already left `crates/`.
 
@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 84 | 81 | 3 | 11 |
+| `designware_ethernet` | 76 | 73 | 3 | 9 |
 | `designware_mobile_storage` | 74 | 74 | 0 | 10 |
 | `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 302 | 249 | 53 | 36 |
+| total | 294 | 241 | 53 | 34 |
 
 ## How to read a group
 
@@ -38,7 +38,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_ethernet`
 
-84 unratified names: 81 with no block, 3 provisional.
+76 unratified names: 73 with no block, 3 provisional.
 
 ### DE1. Module names (10)
 
@@ -94,7 +94,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 `registers::WINDOW`, `registers::mac_hw_feature`
 
 - Breaks the spelled-out rule: yes (one name).
-- Provisional recommendation: `WINDOW` is a plain word and can be ratified; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
+- Provisional recommendation: `WINDOW` is a plain word and stays as it is; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
 
 ### DE11. MDIO software surface (6)
 
@@ -102,20 +102,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. The module name is already spelled out; these are ordinary names.
-
-### DE13. JH7110 node description (5)
-
-`jh7110::BUS`, `jh7110::Discovered`, `jh7110::GMAC0_BASE`, `jh7110::GMAC1_BASE`, `jh7110::interface`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. `GMAC0_BASE` and `GMAC1_BASE` keep `GMAC`, an accepted acronym since #3094, whose expansion is already in the doc comments.
-
-### DE14. Layout and simulator odds and ends (3)
-
-`layout::BYTES`, `layout::PAGES`, `simulator::with`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand: `BYTES` and `PAGES` are the layout sizes, `with` is the simulator builder.
 
 ## `designware_mobile_storage`
 
