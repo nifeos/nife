@@ -469,7 +469,7 @@ pub(crate) const PLDMND: u32 = 0x084;
 pub(crate) const DBADDR: u32 = 0x088;
 /// **Internal DMAC Status Register** (Linux's `SDMMC_IDSTS`, OpenBSD's `SDMMC_IDSTS32`): write one
 /// to clear. Raw: set whatever `IDINTEN` holds. The driver reads only its error bits; the
-/// completion bits are `sim`'s, and the tests'.
+/// completion bits are `simulator`'s, and the tests'.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. The spelled-out form; the databook's `IDSTS` is kept as
 /// an alias.
@@ -666,7 +666,7 @@ mod tests {
         assert_eq!(queue_count(!(0x1fff << 17)), 0);
     }
 
-    /// **Every bit, as a number.** The driver and `sim` both name these constants, so a wrong one
+    /// **Every bit, as a number.** The driver and `simulator` both name these constants, so a wrong one
     /// would agree with itself in every sequence test; only the databook's values can catch it.
     /// Read from OpenBSD's `dwmmc.c` (the bit numbers in its `#define`s) and the `dwmmc-host`
     /// cross-check, written out as hexadecimal.

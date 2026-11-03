@@ -234,7 +234,7 @@ names until the ratification pass, so this section keeps the links it carried.
   `kernel/src/designware_mobile_storage.rs` implements `host::Registers` over the mapped window.
   That note also records why the lane did not take the crates.io candidate. The IDMAC bench step
   that the crate's BUGS waits on is the one that note describes.
-- `src/sim.rs`, the module doc: `notes/designware-mobile-storage/driver.md` lists each behavior
+- `src/simulator.rs`, the module doc: `notes/designware-mobile-storage/driver.md` lists each behavior
   the simulated controller models.
 - `src/tests.rs`, the module doc: the tests left `lib.rs` on 2026-10-12 (UTC), in lane
   maintainer/mutation-triage-2026w42, so the crate root stays an index under §282 (when a file is

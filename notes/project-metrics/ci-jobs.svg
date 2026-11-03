@@ -96,14 +96,14 @@
 <path class="seg s6" d="M571.8,324.0 V253.4 Q571.8,251.5 573.7,251.5 H573.7 Q575.6,251.5 575.6,253.4 V324.0 Z"><title>2026W44, bench: 10.9</title></path>
 <path class="seg s7" d="M576.6,324.0 V257.8 Q576.6,255.8 578.5,255.8 H578.5 Q580.4,255.8 580.4,257.8 V324.0 Z"><title>2026W44, boot-check: 10.2</title></path>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<path class="seg s0" d="M601.4,324.0 V323.8 Q601.4,323.7 601.5,323.7 H605.0 Q605.2,323.7 605.2,323.8 V324.0 Z"><title>2026W45, falsify (verify): 0.1</title></path>
-<path class="seg s1" d="M606.2,324.0 V229.4 Q606.2,227.5 608.1,227.5 H608.1 Q610.0,227.5 610.0,229.4 V324.0 Z"><title>2026W45, prove (verify): 14.5</title></path>
-<path class="seg s2" d="M611.0,324.0 V232.2 Q611.0,230.2 612.9,230.2 H612.9 Q614.9,230.2 614.9,232.2 V324.0 Z"><title>2026W45, test: 14.1</title></path>
-<path class="seg s3" d="M615.9,324.0 V194.1 Q615.9,192.2 617.8,192.2 H617.8 Q619.7,192.2 619.7,194.1 V324.0 Z"><title>2026W45, fuzz: 19.8</title></path>
-<path class="seg s4" d="M620.7,324.0 V226.2 Q620.7,224.2 622.6,224.2 H622.6 Q624.5,224.2 624.5,226.2 V324.0 Z"><title>2026W45, cpu-matrix: 15</title></path>
-<path class="seg s5" d="M625.5,324.0 V234.4 Q625.5,232.5 627.5,232.5 H627.5 Q629.4,232.5 629.4,234.4 V324.0 Z"><title>2026W45, swish-check: 13.8</title></path>
-<path class="seg s6" d="M630.4,324.0 V250.8 Q630.4,248.9 632.3,248.9 H632.3 Q634.2,248.9 634.2,250.8 V324.0 Z"><title>2026W45, bench: 11.3</title></path>
-<path class="seg s7" d="M635.2,324.0 V257.1 Q635.2,255.2 637.1,255.2 H637.1 Q639.0,255.2 639.0,257.1 V324.0 Z"><title>2026W45, boot-check: 10.3</title></path>
+<path class="seg s0" d="M601.4,324.0 V323.6 Q601.4,323.2 601.8,323.2 H604.8 Q605.2,323.2 605.2,323.6 V324.0 Z"><title>2026W45, falsify (verify): 0.1</title></path>
+<path class="seg s1" d="M606.2,324.0 V228.7 Q606.2,226.8 608.1,226.8 H608.1 Q610.0,226.8 610.0,228.7 V324.0 Z"><title>2026W45, prove (verify): 14.6</title></path>
+<path class="seg s2" d="M611.0,324.0 V231.6 Q611.0,229.7 612.9,229.7 H612.9 Q614.9,229.7 614.9,231.6 V324.0 Z"><title>2026W45, test: 14.2</title></path>
+<path class="seg s3" d="M615.9,324.0 V194.9 Q615.9,193.0 617.8,193.0 H617.8 Q619.7,193.0 619.7,194.9 V324.0 Z"><title>2026W45, fuzz: 19.7</title></path>
+<path class="seg s4" d="M620.7,324.0 V226.3 Q620.7,224.4 622.6,224.4 H622.6 Q624.5,224.4 624.5,226.3 V324.0 Z"><title>2026W45, cpu-matrix: 15.0</title></path>
+<path class="seg s5" d="M625.5,324.0 V233.3 Q625.5,231.3 627.5,231.3 H627.5 Q629.4,231.3 629.4,233.3 V324.0 Z"><title>2026W45, swish-check: 13.9</title></path>
+<path class="seg s6" d="M630.4,324.0 V260.4 Q630.4,258.5 632.3,258.5 H632.3 Q634.2,258.5 634.2,260.4 V324.0 Z"><title>2026W45, bench: 9.8</title></path>
+<path class="seg s7" d="M635.2,324.0 V256.8 Q635.2,254.8 637.1,254.8 H637.1 Q639.0,254.8 639.0,256.8 V324.0 Z"><title>2026W45, boot-check: 10.4</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W45</text>
 <line class="tr" x1="93.3" y1="232.9" x2="151.9" y2="201.6" stroke-width="2"/>
 <line class="tr" x1="151.9" y1="201.6" x2="210.5" y2="225.6" stroke-width="2"/>
@@ -113,7 +113,7 @@
 <line class="tr" x1="386.3" y1="204.3" x2="444.9" y2="225.6" stroke-width="2"/>
 <line class="tr" x1="444.9" y1="225.6" x2="503.5" y2="220.3" stroke-width="2"/>
 <line class="tr" x1="503.5" y1="220.3" x2="562.1" y2="222.9" stroke-width="2"/>
-<line class="tr" x1="562.1" y1="222.9" x2="620.7" y2="191.7" stroke-width="2"/>
+<line class="tr" x1="562.1" y1="222.9" x2="620.7" y2="196.3" stroke-width="2"/>
 <circle class="trd" cx="93.3" cy="232.9" r="3"><title>2026W36, median build: 13.7</title></circle>
 <text class="fg val" x="93.3" y="225.9" font-size="10" text-anchor="middle">13.7</text>
 <circle class="trd" cx="151.9" cy="201.6" r="3"><title>2026W37, median build: 18.4</title></circle>
@@ -132,8 +132,8 @@
 <text class="fg val" x="503.5" y="213.3" font-size="10" text-anchor="middle">15.6</text>
 <circle class="trd" cx="562.1" cy="222.9" r="3"><title>2026W44, median build: 15.2</title></circle>
 <text class="fg val" x="562.1" y="215.9" font-size="10" text-anchor="middle">15.2</text>
-<circle class="trd" cx="620.7" cy="191.7" r="3"><title>2026W45, median build: 19.9</title></circle>
-<text class="fg val" x="620.7" y="184.7" font-size="10" text-anchor="middle">19.9</text>
+<circle class="trd" cx="620.7" cy="196.3" r="3"><title>2026W45, median build: 19.2</title></circle>
+<text class="fg val" x="620.7" y="189.3" font-size="10" text-anchor="middle">19.2</text>
 <line class="tr" x1="93.3" y1="193.0" x2="151.9" y2="152.4" stroke-width="2" stroke-dasharray="0.1 4" stroke-linecap="round"/>
 <line class="tr" x1="151.9" y1="152.4" x2="210.5" y2="171.1" stroke-width="2" stroke-dasharray="0.1 4" stroke-linecap="round"/>
 <line class="tr" x1="210.5" y1="171.1" x2="269.1" y2="69.3" stroke-width="2" stroke-dasharray="0.1 4" stroke-linecap="round"/>
@@ -142,7 +142,7 @@
 <line class="tr" x1="386.3" y1="133.8" x2="444.9" y2="200.3" stroke-width="2" stroke-dasharray="0.1 4" stroke-linecap="round"/>
 <line class="tr" x1="444.9" y1="200.3" x2="503.5" y2="113.2" stroke-width="2" stroke-dasharray="0.1 4" stroke-linecap="round"/>
 <line class="tr" x1="503.5" y1="113.2" x2="562.1" y2="145.1" stroke-width="2" stroke-dasharray="0.1 4" stroke-linecap="round"/>
-<line class="tr" x1="562.1" y1="145.1" x2="620.7" y2="182.4" stroke-width="2" stroke-dasharray="0.1 4" stroke-linecap="round"/>
+<line class="tr" x1="562.1" y1="145.1" x2="620.7" y2="168.4" stroke-width="2" stroke-dasharray="0.1 4" stroke-linecap="round"/>
 <circle class="trh" cx="93.3" cy="193.0" r="3" stroke-width="1.5"><title>2026W36, p90 build: 19.7</title></circle>
 <text class="fg val" x="93.3" y="186.0" font-size="10" text-anchor="middle">19.7</text>
 <circle class="trh" cx="151.9" cy="152.4" r="3" stroke-width="1.5"><title>2026W37, p90 build: 25.8</title></circle>
@@ -161,8 +161,8 @@
 <text class="fg val" x="503.5" y="106.2" font-size="10" text-anchor="middle">31.7</text>
 <circle class="trh" cx="562.1" cy="145.1" r="3" stroke-width="1.5"><title>2026W44, p90 build: 26.9</title></circle>
 <text class="fg val" x="562.1" y="138.1" font-size="10" text-anchor="middle">26.9</text>
-<circle class="trh" cx="620.7" cy="182.4" r="3" stroke-width="1.5"><title>2026W45, p90 build: 21.3</title></circle>
-<text class="fg val" x="620.7" y="175.4" font-size="10" text-anchor="middle">21.3</text>
+<circle class="trh" cx="620.7" cy="168.4" r="3" stroke-width="1.5"><title>2026W45, p90 build: 23.4</title></circle>
+<text class="fg val" x="620.7" y="161.4" font-size="10" text-anchor="middle">23.4</text>
 <text class="mut" x="20" y="368" font-size="10">26 other jobs, past the palette’s eight bars or under 6.7 minutes</text>
 <line class="tr" x1="672" y1="69" x2="683" y2="69" stroke-width="2"/>
 <circle class="trd" cx="677.5" cy="69" r="3"/>

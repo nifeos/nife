@@ -1027,7 +1027,7 @@ mod tests {
     use std::collections::HashMap;
     use std::vec::Vec;
 
-    use super::super::sim::{Sim, Start};
+    use super::super::simulator::{Sim, Start};
     use super::*;
 
     /// **Registers that hold what is written and do nothing else**: no self-clearing reset, no PHY
