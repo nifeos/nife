@@ -1,4 +1,7 @@
 //! The module's host tests.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3145. Ruled in the group E1 ruling on e1000e's module names;
+//! kept as it stands.
 
 use super::*;
 
@@ -16,9 +19,14 @@ fn the_ulp_request_clears_the_indication_and_enforces() {
     assert_eq!(h & ultra_low_power::H2ME_ULP, 0);
     assert_ne!(h & ultra_low_power::H2ME_ENFORCE_SETTINGS, 0);
     assert_eq!(h & 1, 1, "other bits survive");
-    assert_eq!(ultra_low_power::release(h) & ultra_low_power::H2ME_ENFORCE_SETTINGS, 0);
+    assert_eq!(
+        ultra_low_power::release(h) & ultra_low_power::H2ME_ENFORCE_SETTINGS,
+        0
+    );
     assert!(!ultra_low_power::done(ultra_low_power::FWSM_ULP_CFG_DONE));
-    assert!(ultra_low_power::has_management_engine(ultra_low_power::ICH_FWSM_FW_VALID));
+    assert!(ultra_low_power::has_management_engine(
+        ultra_low_power::ICH_FWSM_FW_VALID
+    ));
 }
 
 #[test]
@@ -51,10 +59,14 @@ fn the_flush_values_are_freebsds() {
 #[test]
 fn the_ulp_handshake_changes_only_its_own_bits() {
     assert_eq!(
-        ultra_low_power::request(ultra_low_power::H2ME_ENFORCE_SETTINGS) & ultra_low_power::H2ME_ENFORCE_SETTINGS,
+        ultra_low_power::request(ultra_low_power::H2ME_ENFORCE_SETTINGS)
+            & ultra_low_power::H2ME_ENFORCE_SETTINGS,
         ultra_low_power::H2ME_ENFORCE_SETTINGS
     );
-    assert_eq!(ultra_low_power::release(u32::MAX), !ultra_low_power::H2ME_ENFORCE_SETTINGS);
+    assert_eq!(
+        ultra_low_power::release(u32::MAX),
+        !ultra_low_power::H2ME_ENFORCE_SETTINGS
+    );
     assert_eq!(ultra_low_power::release(0x1), 0x1);
 }
 

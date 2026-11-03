@@ -5,6 +5,9 @@
 //! rings are programmed, with [`transmit_errata`] once transmit is on. Only FreeBSD's
 //! `e1000_pch_spt` branches are carried ([`super::is_pch`]), and each function names the FreeBSD
 //! function it follows.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3145. Ruled in the group E1 ruling on e1000e's module names;
+//! kept as it stands.
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause
@@ -40,7 +43,9 @@
 //! ```
 
 use super::physical_layer_device::{self, Swflag};
-use super::{Hardware, delay_ms, flush_writes, non_volatile_memory, registers, reset, ultra_low_power};
+use super::{
+    Hardware, delay_ms, flush_writes, non_volatile_memory, registers, reset, ultra_low_power,
+};
 use crate::registers as mac;
 
 /// Why the bring-up stopped. Each is a line on the bench boot.

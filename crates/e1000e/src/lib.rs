@@ -29,6 +29,7 @@
 #[cfg(test)]
 extern crate std;
 
+#[doc(alias = "pch")]
 pub mod platform_controller_hub;
 
 /// Register offsets in BAR0. Read from Linux's `regs.h`; queue 0 only.

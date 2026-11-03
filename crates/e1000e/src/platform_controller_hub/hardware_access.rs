@@ -1,7 +1,8 @@
 //! **What the PCH sequences need from the hardware**: the register access, delays and flushes a
 //! sequence is written against, so the simulator can stand in for the device.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: ratified 2026-11-03 (UTC), #3145. Renamed from `hardware`, which did not say that the
+//! module holds the access a sequence makes to the hardware.
 
 use super::*;
 

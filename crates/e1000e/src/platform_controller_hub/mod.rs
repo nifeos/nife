@@ -8,6 +8,9 @@
 //! sequence is generic over [`Hardware`], so it runs on the host against a simulated I219 (`simulator`)
 //! as well as in the kernel. The constants are facts about the hardware; the sequences are
 //! FreeBSD's, adapted, and carry the licenses below as their first conditions require.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3145. Renamed from `pch`, Intel's abbreviation, which spells
+//! out here as platform controller hub. The specification's `pch` is kept as `doc(alias = "pch")`.
 
 //! The files under `src/platform_controller_hub/` are `SPDX-License-Identifier: BSD-2-Clause AND BSD-3-Clause`, with
 //! the crate's own `MIT OR Apache-2.0` beside them. The Intel shared code (`e1000_ich8lan.c` and
@@ -101,6 +104,7 @@ pub mod registers;
 
 /// Leaving ultra-low-power (ULP) mode through the Management Engine: the ME branch of FreeBSD's
 /// `e1000_disable_ulp_lpt_lp` (`e1000_ich8lan.c`).
+#[doc(alias = "ulp")]
 pub mod ultra_low_power;
 
 /// The SPT descriptor-ring flush. FreeBSD's comment: "In I219, the descriptor rings must be

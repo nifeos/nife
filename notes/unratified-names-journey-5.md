@@ -14,13 +14,13 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 |---|---|---|---|---|
 | `designware_ethernet` | 110 | 91 | 19 | 13 |
 | `designware_mobile_storage` | 74 | 74 | 0 | 10 |
-| `e1000e` | 132 | 94 | 38 | 13 |
+| `e1000e` | 118 | 85 | 33 | 12 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 328 | 259 | 69 | 38 |
+| total | 314 | 250 | 64 | 37 |
 
 ## How to read a group
 
@@ -208,18 +208,11 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `e1000e`
 
-132 unratified names: 94 with no block, 38 provisional.
-
-### E1. Module names (14)
-
-`control`, `data_plane`, `descriptor`, `device`, `layout`, `pch`, `pch/flush`, `pch/hardware`, `pch/reset`, `pch/sequence`, `pch/tests`, `pch/ulp`, `proofs`, `tests`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify all but two. `pch` and `ulp` abbreviate 'platform controller hub' and 'ultra low power'; recommend `platform_controller_hub` and `ultra_low_power` (the stricter reading, a close call since Intel and Linux write both as letters; the sibling modules `non_volatile_memory` and `physical_layer_device` already spell out their words). The other twelve are plain.
+118 unratified names: 85 with no block, 33 provisional.
 
 ### E2. Device identity (4)
 
-`device::DEVICE_IDS`, `device::VENDOR_INTEL`, `device::is_supported`, `device::model`
+`supported_devices::DEVICE_IDS`, `supported_devices::VENDOR_INTEL`, `supported_devices::is_supported`, `supported_devices::model`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
@@ -254,49 +247,49 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ### E7. Register offsets (24)
 
-`registers::CTRL`, `registers::CTRL_EXT`, `registers::ICR`, `registers::IMC`, `registers::MTA`, `registers::RAH0`, `registers::RAL0`, `registers::RCTL`, `registers::RDBAH`, `registers::RDBAL`, `registers::RDH`, `registers::RDLEN`, `registers::RDT`, `registers::RFCTL`, `registers::STATUS`, `registers::TCTL`, `registers::TDBAH`, `registers::TDBAL`, `registers::TDH`, `registers::TDLEN`, `registers::TDT`, `registers::TIPG`, `pch::registers::FEXTNVM11`, `pch::registers::RXDCTL`
+`registers::CTRL`, `registers::CTRL_EXT`, `registers::ICR`, `registers::IMC`, `registers::MTA`, `registers::RAH0`, `registers::RAL0`, `registers::RCTL`, `registers::RDBAH`, `registers::RDBAL`, `registers::RDH`, `registers::RDLEN`, `registers::RDT`, `registers::RFCTL`, `registers::STATUS`, `registers::TCTL`, `registers::TDBAH`, `registers::TDBAL`, `registers::TDH`, `registers::TDLEN`, `registers::TDT`, `registers::TIPG`, `platform_controller_hub::registers::FEXTNVM11`, `platform_controller_hub::registers::RXDCTL`
 
 - Breaks the spelled-out rule: yes.
 - Provisional recommendation: Spell out with the Linux `E1000_` spelling as alias (the docs already give each register's plain title, 'Device Control' and so on), and cite OpenBSD's em driver first if it names the register. One group because they share the pattern; the 2026-10-26 ruling for the `registers` module says the constants keep their sources' names, so the architect should say whether the 2026-11-02 rule overrides that for these.
 
 ### E8. Register bit constants and register-shaped helpers (12)
 
-`control::CTRL_ASDE`, `control::CTRL_EXT_DRV_LOAD`, `control::CTRL_RST`, `control::CTRL_SLU`, `control::RAH_AV`, `control::RFCTL_EXTEN`, `control::STATUS_LU`, `control::rctl`, `control::tctl`, `control::tipg`, `pch::flush::FEXTNVM11_DISABLE_MULR_FIX`, `pch::flush::rxdctl`
+`control_registers::CTRL_ASDE`, `control_registers::CTRL_EXT_DRV_LOAD`, `control_registers::CTRL_RST`, `control_registers::CTRL_SLU`, `control_registers::RAH_AV`, `control_registers::RFCTL_EXTEN`, `control_registers::STATUS_LU`, `control_registers::rctl`, `control_registers::tctl`, `control_registers::tipg`, `platform_controller_hub::flush::FEXTNVM11_DISABLE_MULR_FIX`, `platform_controller_hub::flush::rxdctl`
 
 - Breaks the spelled-out rule: yes.
 - Provisional recommendation: Spell out with aliases, after the offsets: `CTRL_ASDE`, `CTRL_EXT_DRV_LOAD`, `CTRL_RST`, `CTRL_SLU`, `RAH_AV`, `RFCTL_EXTEN`, `STATUS_LU`, `FEXTNVM11_DISABLE_MULR_FIX`, and the functions `rctl`, `tctl`, `tipg`, `rxdctl` that build register values.
 
 ### E9. PCH flush and hardware (4)
 
-`pch::flush::required`, `pch::flush::tail_after`, `pch::flush::transmit_word`, `pch::hardware::is_pch`
+`platform_controller_hub::flush::required`, `platform_controller_hub::flush::tail_after`, `platform_controller_hub::flush::transmit_word`, `platform_controller_hub::hardware_access::is_pch`
 
 - Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; `is_pch` follows the module-name decision (`is_platform_controller_hub` if `pch` is spelled out).
+- Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; the module-name decision is made (`platform_controller_hub`), so `is_pch` can be spelled out as `is_platform_controller_hub`.
 
 ### E10. Non-volatile memory words (6)
 
-`pch::non_volatile_memory::DONE`, `pch::non_volatile_memory::ERROR`, `pch::non_volatile_memory::Error`, `pch::non_volatile_memory::GO`, `pch::non_volatile_memory::WORDS`, `pch::non_volatile_memory::read`
+`platform_controller_hub::non_volatile_memory::DONE`, `platform_controller_hub::non_volatile_memory::ERROR`, `platform_controller_hub::non_volatile_memory::Error`, `platform_controller_hub::non_volatile_memory::GO`, `platform_controller_hub::non_volatile_memory::WORDS`, `platform_controller_hub::non_volatile_memory::read`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
 
 ### E11. Physical layer device access (17)
 
-`pch::physical_layer_device::ERROR`, `pch::physical_layer_device::Error`, `pch::physical_layer_device::POLL_MICROSECONDS`, `pch::physical_layer_device::Plan`, `pch::physical_layer_device::READY`, `pch::physical_layer_device::SWFLAG_FREE_MS`, `pch::physical_layer_device::SWFLAG_TAKE_MS`, `pch::physical_layer_device::Swflag`, `pch::physical_layer_device::id_at`, `pch::physical_layer_device::paged_offset`, `pch::physical_layer_device::physical_layer_device_address`, `pch::physical_layer_device::plan`, `pch::physical_layer_device::read`, `pch::physical_layer_device::read_mdic`, `pch::physical_layer_device::release`, `pch::physical_layer_device::update`, `pch::physical_layer_device::write`
+`platform_controller_hub::physical_layer_device::ERROR`, `platform_controller_hub::physical_layer_device::Error`, `platform_controller_hub::physical_layer_device::POLL_MICROSECONDS`, `platform_controller_hub::physical_layer_device::Plan`, `platform_controller_hub::physical_layer_device::READY`, `platform_controller_hub::physical_layer_device::SWFLAG_FREE_MS`, `platform_controller_hub::physical_layer_device::SWFLAG_TAKE_MS`, `platform_controller_hub::physical_layer_device::Swflag`, `platform_controller_hub::physical_layer_device::id_at`, `platform_controller_hub::physical_layer_device::paged_offset`, `platform_controller_hub::physical_layer_device::physical_layer_device_address`, `platform_controller_hub::physical_layer_device::plan`, `platform_controller_hub::physical_layer_device::read`, `platform_controller_hub::physical_layer_device::read_mdic`, `platform_controller_hub::physical_layer_device::release`, `platform_controller_hub::physical_layer_device::update`, `platform_controller_hub::physical_layer_device::write`
 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify as they stand except `Swflag`, `SWFLAG_FREE_MS`, `SWFLAG_TAKE_MS` and `read_mdic`, which abbreviate 'software flag', 'milliseconds' and the register MDIC; recommend `SoftwareFlag`, `SOFTWARE_FLAG_FREE_MILLISECONDS`, `SOFTWARE_FLAG_TAKE_MILLISECONDS` and keeping `read_mdic` as a register-named function with its expansion in the doc. `physical_layer_device_address` and `paged_offset` are provisional and ratify as they stand.
 
 ### E12. Reset sequence (10)
 
-`pch::sequence::BlockedAfterPhysicalLayerDeviceReset`, `pch::sequence::Error`, `pch::sequence::Note`, `pch::sequence::PhysicalLayerDevice`, `pch::sequence::PhysicalLayerDeviceInaccessible`, `pch::sequence::PhysicalLayerDeviceReached`, `pch::sequence::PhysicalLayerDeviceResetNotAsserted`, `pch::sequence::Reached`, `pch::sequence::global_reset`, `pch::sequence::transmit_errata`
+`platform_controller_hub::sequence::BlockedAfterPhysicalLayerDeviceReset`, `platform_controller_hub::sequence::Error`, `platform_controller_hub::sequence::Note`, `platform_controller_hub::sequence::PhysicalLayerDevice`, `platform_controller_hub::sequence::PhysicalLayerDeviceInaccessible`, `platform_controller_hub::sequence::PhysicalLayerDeviceReached`, `platform_controller_hub::sequence::PhysicalLayerDeviceResetNotAsserted`, `platform_controller_hub::sequence::Reached`, `platform_controller_hub::sequence::global_reset`, `platform_controller_hub::sequence::transmit_errata`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand, including the five provisional `PhysicalLayerDevice*` and `BlockedAfterPhysicalLayerDeviceReset` variants; all spell out their words.
 
 ### E13. Ultra low power and simulator (7)
 
-`pch::ulp::WAIT_MS`, `pch::ulp::done`, `pch::ulp::release`, `pch::ulp::request`, `pch::simulator::Sim`, `pch::simulator::Start`, `pch::simulator::new`
+`platform_controller_hub::ultra_low_power::WAIT_MS`, `platform_controller_hub::ultra_low_power::done`, `platform_controller_hub::ultra_low_power::release`, `platform_controller_hub::ultra_low_power::request`, `platform_controller_hub::simulator::Sim`, `platform_controller_hub::simulator::Start`, `platform_controller_hub::simulator::new`
 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify `done`, `release`, `request` and the simulator names; recommend `WAIT_MS` become `WAIT_MILLISECONDS`, matching `POLL_MICROSECONDS`.
