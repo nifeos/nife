@@ -35,7 +35,8 @@ impl Window {
 impl Registers for Window {
     fn read(&mut self, offset: u32) -> u32 {
         debug_assert!(
-            offset < designware_mobile_storage::registers::USED_REGISTER_WINDOW_BYTES && offset.is_multiple_of(4)
+            offset < designware_mobile_storage::registers::USED_REGISTER_WINDOW_BYTES
+                && offset.is_multiple_of(4)
         );
         // SAFETY: `new`'s contract: the base is a mapped, device-typed controller window at least
         // `USED_REGISTER_WINDOW_BYTES` bytes long, and every offset the crate passes is a register below that
@@ -45,7 +46,8 @@ impl Registers for Window {
 
     fn write(&mut self, offset: u32, value: u32) {
         debug_assert!(
-            offset < designware_mobile_storage::registers::USED_REGISTER_WINDOW_BYTES && offset.is_multiple_of(4)
+            offset < designware_mobile_storage::registers::USED_REGISTER_WINDOW_BYTES
+                && offset.is_multiple_of(4)
         );
         // SAFETY: as `read`.
         unsafe { core::ptr::write_volatile((self.base + offset as usize) as *mut u32, value) }
