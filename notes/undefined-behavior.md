@@ -219,5 +219,6 @@ adds it itself on a machine bootstrapped before milestone 79.
 - Nothing bounds one test's time under Miri. A test that is milliseconds natively and an hour
   interpreted shows itself only when the weekly run passes its 240-minute limit, and because
   `cargo miri test` stops at the first failing binary, a red run hides every cost behind it. Each
-  row in the table above came to light that way. A per-test time limit that names the test, such as
-  `cargo miri nextest run` with a slow-test timeout, would turn the budget into a gate.
+  row in the table above came to light that way. The proposal
+  [the Miri run keeps its budget](../design/roadmap/proposals/the-miri-run-keeps-its-budget.md)
+  turns the budget into a gate that names the test.
