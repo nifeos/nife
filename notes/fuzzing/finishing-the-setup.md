@@ -61,8 +61,9 @@ sudo diff /etc/systemd/system/nife-fuzz.service /home/lane/nife/helpers/systemd/
 sudo systemctl start nife-fuzz.service
 ```
 
-The diff needs `sudo` because a normal administrator account cannot read `/home/lane`. If it
-prints a difference, copy the new unit to `/etc/systemd/system/` and run `sudo systemctl
+The diff needs `sudo` because a normal administrator account cannot read `/home/lane`.
+
+If it prints a difference, copy the new unit to `/etc/systemd/system/` and run `sudo systemctl
 reenable nife-fuzz.service`, which rereads the unit files, before the start. Verify: `systemctl
 is-active nife-fuzz.service` prints `active`; within about 5 minutes `journalctl -u
 nife-fuzz.service -g fuzz-follow-main -n 5` shows a look (the clone already at main, or a move); and
