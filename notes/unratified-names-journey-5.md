@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 100 | 81 | 19 | 12 |
+| `designware_ethernet` | 92 | 73 | 19 | 10 |
 | `designware_mobile_storage` | 61 | 61 | 0 | 9 |
 | `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,8 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 305 | 236 | 69 | 36 |
-
+| total | 297 | 228 | 69 | 34 |
 ## How to read a group
 
 Each group gives its items in their current spelling, as `path::name`, and a module by its own name. *Breaks the spelled-out rule* answers the 2026-11-02 rule in [design/naming.md](../design/naming.md): outside register modules, identifiers say what the thing is and not the specification's abbreviation. A hardware register, field or bit constant takes the spelled-out name with the source's spelling in `#[doc(alias)]`, OpenBSD's cited first. `yes` means the group has at least that kind of abbreviation; `one` means a few named items do; `no` means none. The recommendation is the stricter reading wherever a call was close, since loosening later is compatible and tightening is not.
@@ -39,8 +38,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_ethernet`
 
-100 unratified names: 81 with no block, 19 provisional.
-
+92 unratified names: 73 with no block, 19 provisional.
 ### DE1. Module names (10)
 
 `coherence`, `controller`, `data_plane`, `descriptor`, `hardware`, `jh7110`, `layout`, `motorcomm`, `proofs`, `tests`
@@ -110,20 +108,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. The module name is already spelled out; these are ordinary names.
-
-### DE13. JH7110 node description (5)
-
-`jh7110::BUS`, `jh7110::Discovered`, `jh7110::GMAC0_BASE`, `jh7110::GMAC1_BASE`, `jh7110::interface`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. `GMAC0_BASE` and `GMAC1_BASE` keep `GMAC`, an accepted acronym since #3094, whose expansion is already in the doc comments.
-
-### DE14. Layout and simulator odds and ends (3)
-
-`layout::BYTES`, `layout::PAGES`, `simulator::with`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand: `BYTES` and `PAGES` are the layout sizes, `with` is the simulator builder.
 
 ## `designware_mobile_storage`
 
