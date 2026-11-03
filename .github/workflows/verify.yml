@@ -169,7 +169,8 @@ jobs:
         if: steps.state.outputs.run != 'false'
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          # On a push, `main` before it: a batch lands as one push, and `HEAD~1` is its last entry.
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
         run: |
           base="$(helpers/scope-merge-base.sh \
               "$BASE_REF" \
@@ -215,7 +216,8 @@ jobs:
       - name: Does this change need the proofs?
         id: scope
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          # On a push, `main` before it, for the gate's reason: a batch lands as one push.
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
           PROSE_ONLY_MERGE_GROUP: ${{ steps.merge-group-gate.outputs.skip }}
         run: |
           base="$BASE_SHA"

@@ -381,7 +381,9 @@ jobs:
         if: steps.state.outputs.run != 'false'
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          # On a push, the commit `main` held before it: a merge-queue batch lands as one push whose
+          # tip is the last pull request's merge, so `HEAD~1` alone would classify that one only.
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
         run: |
           # The base, resolved exactly as the scope checks this replaced resolved it.
           # `helpers/scope-merge-base.sh` (its header has #1416) takes the merge base against the
