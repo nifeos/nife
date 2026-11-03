@@ -162,7 +162,7 @@ pub(super) fn boot_virtio_net_device() -> Option<VirtioBootGrant> {
 pub(super) fn boot_e1000e_network() -> Option<e1000e_service::Wiring> {
     use e1000e_service::{Absent, NotAtBoot};
     let image = program("net_stack")?;
-    let name = |device| ::e1000e::model(device).unwrap_or("an unnamed part");
+    let name = |device| ::e1000e::model_name(device).unwrap_or("an unnamed part");
     match e1000e_service::start_for_boot(image) {
         Ok(w) => {
             crate::println!(

@@ -1,7 +1,8 @@
 //! **The data plane**: the regions and tails a driver supplies, and the receive and transmit loop
 //! over them.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: ratified 2026-11-03 (UTC), #3145. Ruled in the group E1 ruling on e1000e's module names;
+//! kept as it stands.
 
 use super::*;
 

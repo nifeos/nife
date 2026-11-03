@@ -1,3 +1,6 @@
+//! Name: ratified 2026-11-03 (UTC), #3145. Ruled in the group E1 ruling on e1000e's module names;
+//! kept as it stands.
+
 /// PCI configuration offset of the descriptor ring status word.
 ///
 /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling that keeps a register or bit name copied
