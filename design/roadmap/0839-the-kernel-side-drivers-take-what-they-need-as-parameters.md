@@ -15,7 +15,7 @@ Codebase rule 2 says a driver never reaches into a kernel global: it gets a base
 DMA allocator, later an interrupt registration". The driver crates underneath already obey it.
 `crates/e1000e` takes its hardware through the `Region`, `Tails` and `pch::Hardware` traits.
 `crates/designware_ethernet` has `Hw`, `Region`, `Tails` and `Mdio`, and
-`crates/designware_mobile_storage` has `Registers`. None of them names a kernel path or keeps a
+`crates/designware_mobile_storage` has `RegisterWindowAndClock`. None of them names a kernel path or keeps a
 static. The kernel files that wire those crates to a device do not obey it. This milestone moves the
 three things they reach for into parameters: the device's base address, a DMA allocator, and an
 IOMMU handle.
@@ -74,7 +74,7 @@ somebody boots radon. It should become a proposal when this lands, with `needs_p
 ## The shape
 
 The composition root is the service under `kernel/src/user/` that calls each bring-up
-(`e1000e_service.rs:176` calls `e1000e::bring_up`). It finds the device, owns the region, and hands
+(`bring_up` in `e1000e_service.rs` calls `e1000e::bring_up`). It finds the device, owns the region, and hands
 both to the driver. So:
 
 1. Bring-up takes the device record the service found (`PciE1000eDevice` and its siblings already
@@ -113,7 +113,7 @@ separate argument.
 
 ## What the seam buys
 
-Today `e1000e.rs:216` and `virtio.rs:736` panic on an exhausted allocator with `.expect`. With the
+Today `region_for` in `e1000e.rs` and `register` in `virtio.rs` panic on an exhausted allocator with `.expect`. With the
 allocator a parameter, a kernel test can hand in one that fails, the way milestone 774 does for page
 tables. Turning those panics into refusals is the obvious next step. It changes behavior, so it is
 not part of this refactor.

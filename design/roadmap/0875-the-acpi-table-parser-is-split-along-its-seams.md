@@ -146,7 +146,7 @@ Found with `grep` at `396187b0b`. A lane has to carry each one.
   still resolve, since `acpi.rs` stays. Milestone 161 (the x86_64 kernel port: bring up the HAL's
   third architecture) and notes on the HPET describe what `acpi.rs` decodes, and each is history.
 - `design/file-length-baseline.tsv` has a row for this file at 3,009. It goes in the same change.
-  `design/comment-block-baseline.tsv` holds the module header (`acpi.rs:1`, 61 lines), which
+  `design/comment-block-baseline.tsv` holds the module header (`acpi.rs`, 61 lines), which
   stays in `acpi.rs`. Its list of what is here is already out of date: it names MADT and MCFG
   only. Rewriting it as a list of the child modules must not grow it past 61.
 - The doc comments link items like [`DmarUnits`] and [`mcfg_entry`] by bare name. An intra-doc
