@@ -427,13 +427,13 @@ struct Window(u64);
 
 impl Hardware for Window {
     fn read(&mut self, off: u32) -> u32 {
-        assert!(off + 4 <= registers::WINDOW);
+        assert!(off + 4 <= registers::REGISTER_WINDOW_BYTES);
         // SAFETY: the window is device-mapped (step 6d), and the assertion keeps `off` inside its
         // 64 KiB.
         unsafe { core::ptr::read_volatile((self.0 + u64::from(off)) as *const u32) }
     }
     fn write(&mut self, off: u32, v: u32) {
-        assert!(off + 4 <= registers::WINDOW);
+        assert!(off + 4 <= registers::REGISTER_WINDOW_BYTES);
         // SAFETY: as `read`.
         unsafe { core::ptr::write_volatile((self.0 + u64::from(off)) as *mut u32, v) }
     }

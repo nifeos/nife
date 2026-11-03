@@ -116,8 +116,10 @@ pub(crate) const INT_EN: u32 = 0x00b4;
 pub const CORE_VERSION_REGISTER: u32 = 0x0110;
 /// **MAC hardware feature register** (`GMAC_MAC_HW_FEATURE(x)`, `dwqereg.h`), register `i` for `i`
 /// in `0..4`.
-#[doc(alias = "mac hardware feature register")]
-pub const fn mac_hw_feature(i: u32) -> u32 {
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_MAC_HW_FEATURE")]
+pub const fn mac_hardware_feature_register(i: u32) -> u32 {
     0x011c + 4 * (i % 4)
 }
 /// **MDIO (management data input/output) address register** (`GMAC_MAC_MDIO_ADDR`, `dwqereg.h`),
@@ -393,8 +395,10 @@ pub(crate) const CHAN_STATUS_FBE: u32 = 1 << 12;
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "dma_page")]
 pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE: u32 = 0x1000;
-/// The window's size, `reg`'s `0x10000` in both JH7110 trees.
-pub const WINDOW: u32 = 0x1_0000;
+/// The register window's size in bytes, `reg`'s `0x10000` in both JH7110 trees.
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+pub const REGISTER_WINDOW_BYTES: u32 = 0x1_0000;
 
 #[cfg(test)]
 mod tests {
@@ -497,7 +501,7 @@ mod tests {
     #[test]
     fn the_feature_registers_are_four_words_from_0x11c() {
         assert_eq!(
-            [0, 1, 2, 3, 4, 5].map(mac_hw_feature),
+            [0, 1, 2, 3, 4, 5].map(mac_hardware_feature_register),
             [0x11c, 0x120, 0x124, 0x128, 0x11c, 0x120]
         );
     }

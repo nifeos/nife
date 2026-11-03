@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 104 | 85 | 19 | 13 |
+| `designware_ethernet` | 102 | 83 | 19 | 12 |
 | `designware_mobile_storage` | 75 | 75 | 0 | 10 |
 | `e1000e` | 133 | 95 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 324 | 255 | 69 | 38 |
+| total | 322 | 253 | 69 | 37 |
 
 ## How to read a group
 
@@ -35,11 +35,11 @@ In order, easiest to rule on first:
 3. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
 4. The `no` groups of designware_mobile_storage (`DM1` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
-The groups that need a real ruling are the register and bit constants: `DE7`, `DE9`, `DE10`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
+The groups that need a real ruling are the register and bit constants: `DE7`, `DE10`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
-104 unratified names: 85 with no block, 19 provisional.
+102 unratified names: 83 with no block, 19 provisional.
 
 ### DE1. Module names (11)
 
@@ -89,13 +89,6 @@ The groups that need a real ruling are the register and bit constants: `DE7`, `D
 
 - Breaks the spelled-out rule: yes.
 - Provisional recommendation: Spell out, with the databook spelling kept as `#[doc(alias)]` and cited in the doc comment, as the 2026-11-02 rule and the earlier `RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION` rename already do. The docs already carry the plain-words title of each (for example 'owned by the device'), so the candidate names come from the crate's own text. Decide as one group; the items share one pattern.
-
-### DE9. Register window and the hardware-feature accessor (2)
-
-`registers::WINDOW`, `registers::mac_hw_feature`
-
-- Breaks the spelled-out rule: yes (one name).
-- Provisional recommendation: `WINDOW` is a plain word and can be ratified; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
 
 ### DE10. MDIO command-word bits and shifts (8)
 

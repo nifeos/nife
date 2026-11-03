@@ -350,7 +350,7 @@ impl NetworkInterfaceController {
         self.registers
             .insert(registers::CORE_VERSION_REGISTER, VERSION);
         self.registers
-            .insert(registers::mac_hw_feature(1), FEATURE1);
+            .insert(registers::mac_hardware_feature_register(1), FEATURE1);
         self.registers
             .insert(registers::MAC_ADDRESS_0_HIGH_REGISTER, 0xffff);
         self.registers

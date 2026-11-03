@@ -46,7 +46,7 @@ impl Identity {
     pub fn read(hardware: &mut impl Hardware) -> Identity {
         let mut features = [0; 4];
         for (i, f) in features.iter_mut().enumerate() {
-            *f = hardware.read(registers::mac_hw_feature(i as u32));
+            *f = hardware.read(registers::mac_hardware_feature_register(i as u32));
         }
         Identity {
             version: hardware.read(registers::CORE_VERSION_REGISTER),
