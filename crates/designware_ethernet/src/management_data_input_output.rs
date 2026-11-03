@@ -201,7 +201,6 @@ pub const fn command(physical_layer_device_address: u8, register: u8, write: boo
 /// `command` names this constant. Each operand enters through its own field mask.
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
-#[doc(alias = "THE_COMMAND_WORD_FIELDS_SHARE_NO_BIT")]
 pub const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () = assert!(
     (CLOCK_RANGE_500_TO_800_MEGAHERTZ << CLOCK_RANGE_SHIFT)
         | (0x1f << PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
@@ -287,7 +286,6 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "phy")]
-#[doc(alias = "phy_id")]
 pub fn physical_layer_device_id(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
@@ -302,7 +300,6 @@ pub fn physical_layer_device_id(
 /// exclusion for `physical_layer_device_id` names this constant.
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
-#[doc(alias = "THE_PHYSICAL_LAYER_DEVICE_ID_HALVES_SHARE_NO_BIT")]
 pub const PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP: () =
     assert!(((u16::MAX as u32) << 16) & (u16::MAX as u32) == 0);
 
@@ -335,7 +332,6 @@ pub fn restart_autonegotiation(
 /// `restart_autonegotiation` names this constant.
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
-#[doc(alias = "THE_AUTONEGOTIATION_ENABLE_AND_RESTART_SHARE_NO_BIT")]
 pub const AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP: () =
     assert!(BMCR_ANENABLE & BMCR_ANRESTART == 0);
 

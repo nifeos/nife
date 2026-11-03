@@ -297,8 +297,8 @@ mod radon {
             "network-bench: syscon    : {:#010x} -> {:#010x} (gmac0 interface {} before, {} after; 1 is RGMII)",
             r.syscon.0,
             r.syscon.1,
-            jh7110::interface(r.syscon.0),
-            jh7110::interface(r.syscon.1),
+            jh7110::gmac0_interface_select(r.syscon.0),
+            jh7110::gmac0_interface_select(r.syscon.1),
         );
         println!(
             "network-bench: mac core  : version {:#010x}, {}-bit DMA",
