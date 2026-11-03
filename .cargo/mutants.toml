@@ -360,14 +360,14 @@ exclude_re = [
     # chain's first swap toggles `conf` itself and the_mac_word_from_zero_and_from_all_ones kills
     # it.
     "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in mac_configuration$",
-    # RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP, beside configure, asserts the delay and drive
-    # fields pairwise disjoint.
+    # REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP,
+    # beside configure, asserts the delay and drive fields pairwise disjoint.
     "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
     # ANLPAR_T4 and ANLPAR_TX are asserted disjoint by
     # PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP, beside link_from_registers.
     "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^ in link_from_registers$",
-    # The transmit delay select is zero (RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP asserts
-    # it), so those two shifts are the identity; the same entry covers the function's
+    # The transmit delay select is zero (REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP
+    # asserts it), so those two shifts are the identity; the same entry covers the function's
     # shift-by-nonzero sites, which
     # motorcomm::tests::configure_replaces_the_delay_and_drive_fields_and_nothing_else kills.
     "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace << with >> in configure$",
