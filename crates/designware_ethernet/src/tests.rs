@@ -5,7 +5,7 @@ use std::vec;
 use std::vec::Vec;
 
 use super::*;
-use crate::sim::{Memory, NetworkInterfaceController};
+use crate::simulator::{Memory, NetworkInterfaceController};
 
 const PHYSICAL_ADDRESS: u64 = 0x4800_0000;
 

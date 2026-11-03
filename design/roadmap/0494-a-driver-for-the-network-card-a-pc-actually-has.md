@@ -64,7 +64,7 @@ The I219's PHY half; QEMU never takes the PCH path, so xenon is the test.
 - FreeBSD's SPT-class attach and reset path in `crates/e1000e/src/pch/` (Reuse, below): MDIO under
   the semaphore (`physical_layer_device.rs`), the NVM read (`non_volatile_memory.rs`), and FreeBSD's
   three passes (`sequence.rs`), called through a small `Hw` trait.
-- Fifteen host tests against a simulated I219 (`pch/sim.rs`). The semaphore is a non-`Clone` token,
+- Fifteen host tests against a simulated I219 (`pch/simulator.rs`). The semaphore is a non-`Clone` token,
   so a PHY access without it does not compile. One falsifiable Kani harness; writing it found that
   FreeBSD truncates a page select above `0x7ff`, which this port refuses.
 - QEMU proves the MDIO read: the DHCP gate asserts the 82574L's PHY identifier, `0x01410cb0`.

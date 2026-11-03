@@ -71,7 +71,7 @@ pub fn prepare(
     let poison = [POISON; PROBE_LENGTH + CRC_BYTES];
     region.write_bytes(layout::receive_buffer(0), &poison);
     // A copy of the poison, so the read-back covers exactly the bytes poisoned: a second length
-    // written out here could drift from the first, and `sim::Memory`'s write-allocate cache would
+    // written out here could drift from the first, and `simulator::Memory`'s write-allocate cache would
     // hide a short one.
     let mut back = poison;
     region.read_bytes(layout::receive_buffer(0), &mut back);
@@ -210,7 +210,7 @@ mod tests {
     use crate::controller::{self, Identity};
     use crate::jh7110::BUS;
     use crate::motorcomm::{Link, Speed};
-    use crate::sim::{Memory, NetworkInterfaceController};
+    use crate::simulator::{Memory, NetworkInterfaceController};
     use crate::{
         Hardware, RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR,
         RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR,

@@ -56,7 +56,7 @@ decided by what answers.
 
 Nothing emulates this controller. QEMU has no `DW_mshc` model for any RISC-V machine, and the one
 `dw_mmc`-shaped device QEMU does have, on some Arm boards, is not reachable from the machines this
-tree boots. So the host tests run the real driver against `sim`, and the bench step checks `sim`
+tree boots. So the host tests run the real driver against `simulator`, and the bench step checks `simulator`
 against silicon. It models the contract the driver relies on, as the databook and OpenBSD's driver
 describe it, and no more.
 

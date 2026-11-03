@@ -5,7 +5,7 @@
 //! each argued at the place it is made: the receive buffer size is written rather than inherited,
 //! jumbo frames are not enabled, and nothing is allocated (the DMA region is the caller's, laid out
 //! by [`crate::layout`]). Every sequence runs against [`Hardware`], so the host tests run them
-//! against `sim`'s controller.
+//! against `simulator`'s controller.
 
 use crate::motorcomm::{Link, Speed};
 use crate::{BUFFER_SIZE, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, registers};
@@ -523,7 +523,7 @@ pub fn stop(hardware: &mut impl Hardware) -> Result<(), Error> {
 mod tests {
     use super::*;
     use crate::jh7110::BUS;
-    use crate::sim::{Memory, NetworkInterfaceController};
+    use crate::simulator::{Memory, NetworkInterfaceController};
 
     const PHYSICAL_ADDRESS: u64 = 0x4800_0000;
     const STATION_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];

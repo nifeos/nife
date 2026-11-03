@@ -6,6 +6,8 @@
 //! least that still lets a wrong driver fail. Its one unusual part is [`Memory`], which can model
 //! a CPU cache the device does not snoop, so the coherence probe can be shown to tell the
 //! directions apart.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3121.
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;
@@ -247,7 +249,7 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
             management_data_input_output::BMSR => {
                 if self.link.is_some() {
                     management_data_input_output::BMSR_LSTATUS
-                        | management_data_input_output::BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE
+                        | management_data_input_output::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE
                 } else {
                     0
                 }
@@ -297,7 +299,7 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
             }
             management_data_input_output::BMCR => {
                 self.registers[0] = v & !(management_data_input_output::BMCR_ANRESTART
-                    | management_data_input_output::BMCR_RESET);
+                    | management_data_input_output::BASIC_MODE_CONTROL_RESET);
             }
             r => self.registers[r as usize] = v,
         }
@@ -618,11 +620,13 @@ impl Hardware for NetworkInterfaceController {
                 self.registers.insert(offset, v);
                 self.reset_left = Some(self.reset_polls);
             }
-            registers::MAC_MDIO_ADDR if v & management_data_input_output::GB != 0 => {
-                let physical_layer_device =
-                    ((v >> management_data_input_output::PA_SHIFT) & 0x1f) as u8;
-                let register = ((v >> management_data_input_output::RDA_SHIFT) & 0x1f) as u8;
-                if v & (0x3 << 2) == management_data_input_output::GOC_READ {
+            registers::MAC_MDIO_ADDR if v & management_data_input_output::COMMAND_BUSY != 0 => {
+                let physical_layer_device = ((v
+                    >> management_data_input_output::PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
+                    & 0x1f) as u8;
+                let register =
+                    ((v >> management_data_input_output::REGISTER_ADDRESS_SHIFT) & 0x1f) as u8;
+                if v & (0x3 << 2) == management_data_input_output::OPERATION_COMMAND_READ {
                     let r = self
                         .physical_layer_device
                         .read(physical_layer_device, register)
@@ -636,7 +640,7 @@ impl Hardware for NetworkInterfaceController {
                         .unwrap();
                 }
                 self.registers
-                    .insert(offset, v & !management_data_input_output::GB);
+                    .insert(offset, v & !management_data_input_output::COMMAND_BUSY);
             }
             registers::CHAN_STATUS => {
                 let s = self.register(offset) & !v;
