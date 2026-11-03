@@ -6,7 +6,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 `script/crate-standalone` step 0 passes a crate only when every `Name:` block in it is ratified, so each group here stands between a crate and its move. The lists come from `python3 helpers/name_release.py --draft <crate>`: a row whose status reads `no block` or starts with `provisional`. Rerun it for the live state; nothing regenerates this note, and a ruling removes its group.
 
-`file_allocation_table` and `jh7110_clock_and_reset` have no unratified name left. `jh7110_entropy` has already left `crates/`.
+`extensible_host_controller_interface`, `file_allocation_table` and `jh7110_clock_and_reset` have no unratified name left. `jh7110_entropy` has already left `crates/`.
 
 ## Counts
 
@@ -15,12 +15,12 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `designware_ethernet` | 119 | 100 | 19 | 14 |
 | `designware_mobile_storage` | 75 | 75 | 0 | 10 |
 | `e1000e` | 133 | 95 | 38 | 13 |
-| `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 14 | 14 | 0 | 1 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
+| `extensible_host_controller_interface` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 353 | 284 | 69 | 40 |
+| total | 344 | 284 | 60 | 39 |
 
 ## How to read a group
 
@@ -30,11 +30,10 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 
 In order, easiest to rule on first:
 
-1. `X1`, the nine `extensible_host_controller_interface` assertions: the same rename the architect already ruled for two sister crates.
-2. `N1`, the three NVMe namespace names: a full proposal already exists ([ratify-the-nvme-namespace-names](../design/roadmap/proposals/ratify-the-nvme-namespace-names.md)).
-3. `G1`, the fourteen `generational_table` names: one crate, no abbreviation, plain collection verbs, and the crate is third in the ruled publication order.
-4. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
-5. The `no` groups of designware_mobile_storage (`DM1` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
+1. `N1`, the three NVMe namespace names: a full proposal already exists ([ratify-the-nvme-namespace-names](../design/roadmap/proposals/ratify-the-nvme-namespace-names.md)).
+2. `G1`, the fourteen `generational_table` names: one crate, no abbreviation, plain collection verbs, and the crate is third in the ruled publication order.
+3. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
+4. The `no` groups of designware_mobile_storage (`DM1` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
 The groups that need a real ruling are the register and bit constants: `DE7` to `DE10`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
@@ -308,17 +307,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify `done`, `release`, `request` and the simulator names; recommend `WAIT_MS` become `WAIT_MILLISECONDS`, matching `POLL_MICROSECONDS`.
-
-## `extensible_host_controller_interface`
-
-9 unratified names: 0 with no block, 9 provisional.
-
-### X1. The nine non-overlap assertions (9)
-
-`context::THE_ENDPOINT_CONTEXT_FIELDS_SHARE_NO_BIT`, `context::THE_SLOT_CONTEXT_FIELDS_SHARE_NO_BIT`, `event::THE_EVENT_POINTER_HALVES_SHARE_NO_BIT`, `port::THE_PORT_CHANGE_BITS_SHARE_NO_BIT`, `port::THE_PRESERVED_FIELDS_SHARE_NO_BIT`, `registers::THE_LEGACY_ENABLE_BITS_SHARE_NO_BIT`, `registers::THE_SCRATCHPAD_FIELDS_SHARE_NO_BIT`, `transfer_request_block::THE_CYCLE_BIT_AND_CLEARED_WORD_SHARE_NO_BIT`, `transfer_request_block::THE_TRANSFER_CONTROL_FIELDS_SHARE_NO_BIT`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Rename the nine from `THE_..._SHARE_NO_BIT` to `..._DO_NOT_OVERLAP` (dropping `THE_`), the form the maintainer chose and the architect's 2026-11-02 ruling applied in designware_ethernet and designware_mobile_storage, then ratify. Mechanical; same wording, so the least contentious group in this list.
 
 ## `non_volatile_memory_express`
 
