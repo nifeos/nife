@@ -1,18 +1,17 @@
-# Three ratchets' debt
+# Two ratchets' debt
 
 *Name: provisional, minted 2026-10-13 (UTC) by lane/ratchet-metrics, with the files and charts it
 defines. Naming is an architect's.*
 
 *(Appendix of [the register](../register-of-measures.md). Stem provisional, minted on 2026-10-13
-(UTC) by lane/ratchet-metrics, as are the files `writing-standards.csv` and `comment-blocks.csv`,
-their columns and their charts. `line-citations.csv`, its columns, its chart and
+(UTC) by lane/ratchet-metrics, as is the file `writing-standards.csv`,
+its columns and its charts. `line-citations.csv`, its columns, its chart and
 `line_citation_debt` are provisional too, minted 2026-10-14 (UTC) by
 maintainer/line-citations-chart. calef asked for these charts so the baselines' debt can be driven
 down.)*
 
-Three gates in `script/lint` hold a debt to a baseline that only falls. They enforce §213
-(writing standards), §267 (a comment states the constraint as it is now) and §277 (cite a heading
-or a symbol, never a line number). A baseline says what may not grow. These series say how much
+Two gates in `script/lint` hold a debt to a baseline that only falls. They enforce §213
+(writing standards) and §277 (cite a heading or a symbol, never a line number). A baseline says what may not grow. These series say how much
 is left, one row per ISO week in `notes/project-metrics/`, read by `script/metrics` from that
 week's commit.
 
@@ -24,9 +23,6 @@ week's commit.
 | `passive-voice.csv` | `passives_total` | passive constructions in the prose of every document |
 | | `passive_prose_words` | the prose words they sit in |
 | | `passives_per_1000` | the first over the second, per 1,000 words |
-| `comment-blocks.csv` | `comment_block_files_over_cap` | Rust files holding a comment block over 40 lines |
-| | `comment_blocks_over_cap` | the blocks themselves, which is what a baseline row counts |
-| | `comment_block_excess_lines` | each such block's lines past 40, summed |
 | `line-citations.csv` | `line_citations_code` | citations by line number into code |
 | | `line_citations_doc` | citations by line number into a Markdown document |
 | | `line_citations_ceiling` | the week's own `CODE_CEILING`, blank before the gate existed |
@@ -40,8 +36,6 @@ disagree about a file:
   `prose_ratchet.documents`, the scope `prose_budget` already shares. The 200-word floor for the
   median and the bold density is the gate's. A document over two limits counts in both columns, so
   the chart groups the three bars rather than stacking them.
-- §267: `comment_block_ratchet.blocks_over` over its `in_scope` files, every `.rs` outside
-  `vendor/`. `comment-blocks.csv` judges every file at 40.
 - §277: `line_citations.file_hits` over its `in_scope` files, every text file but data, symlinks and
   `vendor/`. `script/metrics` reads the ceiling from the week's own `helpers/line_citations.py`, so
   the chart draws the ceiling that week's gate held.

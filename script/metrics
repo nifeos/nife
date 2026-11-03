@@ -188,7 +188,6 @@ sys.path.insert(0, 'helpers')
 import baseline_drift                                                       # noqa: E402
 import coe_actions                                                          # noqa: E402
 import history_ratchet                                                      # noqa: E402
-import comment_block_ratchet                                                # noqa: E402
 import counted_claims                                                       # noqa: E402
 import crate_release                                                        # noqa: E402
 import interface_stability                                                  # noqa: E402
@@ -481,7 +480,7 @@ MEASURES = [
                       for part in ('harnesses', 'patches', 'proven', 'required')]
      + ['crate_properties_proven', 'crate_properties_owed', 'crate_properties_required']),
     # Two ratchets' debt, calef's ask of 2026-10-13 (UTC), each read from the week's tree by the
-    # gate's own measure (`writing_standards` and `comment_block_debt` below).
+    # gate's own measure (`writing_standards` below).
     # File, column and chart names provisional, minted 2026-10-13 (UTC) by lane/ratchet-metrics;
     # notes/register-of-measures/ratchet-debt.md defines them.
     ('writing-standards', ['writing_over_median', 'writing_over_longest', 'writing_over_bold']),
@@ -489,8 +488,6 @@ MEASURES = [
     # we can drive it down over time"), by `passive_voice_counts` below. File, column and chart
     # names provisional, minted 2026-10-25 (UTC) by milestone/952-a-passive-voice-ratchet.
     ('passive-voice', ['passives_total', 'passive_prose_words', 'passives_per_1000']),
-    ('comment-blocks', ['comment_block_files_over_cap', 'comment_blocks_over_cap',
-                        'comment_block_excess_lines']),
     # §277's ratchet the same way, through `line_citations.file_hits`, with the week's own ceiling.
     # File, column and chart names provisional (maintainer/line-citations-chart).
     ('line-citations', ['line_citations_code', 'line_citations_doc', 'line_citations_ceiling']),
@@ -1736,22 +1733,8 @@ def passive_voice_counts(tree):
             'passives_per_1000': round(1000.0 * passives / words, 2) if words else ''}
 
 
-def comment_block_debt(tree):
-    """Comment blocks over the 40-line cap of §267 (a comment states the constraint as it is now),
-    by `comment_block_ratchet.blocks_over` over its `in_scope` files: files holding one, the
-    blocks, and the lines past the cap summed."""
-    cap = comment_block_ratchet.CEILING
-    files = blocks = excess = 0
-    for path, text in tree.text.items():
-        if not comment_block_ratchet.in_scope(path):
-            continue
-        over = comment_block_ratchet.blocks_over(text)
-        if over:
-            files += 1
-            blocks += len(over)
-            excess += sum(size - cap for _first, size in over)
-    return {'comment_block_files_over_cap': files, 'comment_blocks_over_cap': blocks,
-            'comment_block_excess_lines': excess}
+                 writing_standards(tree), passive_voice_counts(tree),
+                 line_citation_debt(tree),
 
 
 _CODE_CEILING = re.compile(r'(?m)^CODE_CEILING = ([\d_]+)$')
@@ -2062,7 +2045,7 @@ def row_for(rev, week, coverage='', person_weeks='', coverage_min=''):
                  harnesses(tree),
                  unsafe_census(tree), unsafe_trust_census(tree),
                  fatal_risks_colors(tree), coe_action_counts(tree),
-                 writing_standards(tree), passive_voice_counts(tree), comment_block_debt(tree),
+                 writing_standards(tree), passive_voice_counts(tree),
                  line_citation_debt(tree),
                  homes(tree), crate_release_cells(tree)):
         row.update(part)
@@ -2873,16 +2856,6 @@ CHARTS = [
     ('passive-voice-rate.svg', 'Passive constructions per 1,000 words of prose',
      'the same count over the same prose words; the line is the limit a new document meets',
      [('per 1,000 words', 'passives_per_1000')], 1.0, (PASSIVE_LIMIT, 'limit'), None),
-    ('comment-blocks.svg', 'Rust files with a comment block over 40 lines',
-     'helpers/comment_block_ratchet.py\'s measure, over every .rs file outside vendor/; the '
-     'chart below is the same debt in lines',
-     [('files with an over-cap block', 'comment_block_files_over_cap')], 1.0, None,
-     'comment_block_files_over_cap'),
-    ('comment-blocks-excess.svg', 'Comment lines past the 40-line cap, in thousands',
-     'each over-cap block\'s lines beyond 40, summed; shortening a block moves this and not the '
-     'file count',
-     [('lines past the cap', 'comment_block_excess_lines')], 1000.0, None,
-     'comment_block_excess_lines'),
     # The ceiling moves when `--bank` lowers it, so it is a stored line (LINES), not `ceiling`.
     ('line-citations.svg', 'Line-number citations',
      'helpers/line_citations.py\'s measure; a marked citation counts, and the line is the week\'s '
@@ -3585,10 +3558,6 @@ def _ratchet_debt_cases():
         ('writing standards: the gate\'s verdict, an exempted document counted, scope kept',
          writing_standards(prose),
          {'writing_over_median': 0, 'writing_over_longest': 2, 'writing_over_bold': 1}),
-        ('comment blocks: files, blocks and lines past 40, outside vendor/ and .md alike',
-         comment_block_debt(rust),
-         {'comment_block_files_over_cap': 1, 'comment_blocks_over_cap': 2,
-          'comment_block_excess_lines': 10}),
     ]
 
 
