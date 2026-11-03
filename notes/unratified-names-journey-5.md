@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 110 | 91 | 19 | 13 |
+| `designware_ethernet` | 100 | 81 | 19 | 12 |
 | `designware_mobile_storage` | 69 | 69 | 0 | 9 |
 | `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 323 | 254 | 69 | 37 |
+| total | 313 | 244 | 69 | 36 |
 
 ## How to read a group
 
@@ -39,7 +39,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_ethernet`
 
-110 unratified names: 91 with no block, 19 provisional.
+100 unratified names: 81 with no block, 19 provisional.
 
 ### DE1. Module names (10)
 
@@ -111,13 +111,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. The module name is already spelled out; these are ordinary names.
 
-### DE12. Motorcomm PHY software surface (10)
-
-`motorcomm::Applied`, `motorcomm::Drive`, `motorcomm::Link`, `motorcomm::Settings`, `motorcomm::Source`, `motorcomm::Speed`, `motorcomm::apply_speed`, `motorcomm::configure`, `motorcomm::link`, `motorcomm::mbps`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify all but `mbps`. `mbps` abbreviates a unit; recommend `megabits_per_second` (the stricter reading, a close call since 'Mbps' is a standard unit symbol).
-
 ### DE13. JH7110 node description (5)
 
 `jh7110::BUS`, `jh7110::Discovered`, `jh7110::GMAC0_BASE`, `jh7110::GMAC1_BASE`, `jh7110::interface`
@@ -134,7 +127,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_mobile_storage`
 
-74 unratified names: 74 with no block, 0 provisional.
+69 unratified names: 69 with no block, 0 provisional.
 
 ### DM1. Module names (9)
 
