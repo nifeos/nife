@@ -801,16 +801,6 @@ crates/designware_ethernet/src/management_data_input_output.rs::Error
 crates/designware_ethernet/src/management_data_input_output.rs::command
 crates/designware_ethernet/src/management_data_input_output.rs::link_is_up
 crates/designware_ethernet/src/management_data_input_output.rs::restart_autonegotiation
-crates/designware_ethernet/src/motorcomm_physical_layer_device.rs::Applied
-crates/designware_ethernet/src/motorcomm_physical_layer_device.rs::Drive
-crates/designware_ethernet/src/motorcomm_physical_layer_device.rs::Link
-crates/designware_ethernet/src/motorcomm_physical_layer_device.rs::Settings
-crates/designware_ethernet/src/motorcomm_physical_layer_device.rs::Source
-crates/designware_ethernet/src/motorcomm_physical_layer_device.rs::Speed
-crates/designware_ethernet/src/motorcomm_physical_layer_device.rs::apply_speed
-crates/designware_ethernet/src/motorcomm_physical_layer_device.rs::configure
-crates/designware_ethernet/src/motorcomm_physical_layer_device.rs::link
-crates/designware_ethernet/src/motorcomm_physical_layer_device.rs::mbps
 crates/designware_ethernet/src/registers.rs::CHAN_CUR_RX_DESC
 crates/designware_ethernet/src/registers.rs::CHAN_CUR_TX_DESC
 crates/designware_ethernet/src/registers.rs::CHAN_STATUS

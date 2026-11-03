@@ -6,7 +6,7 @@
 //! board-shaped fixtures and the tree every CI boot uses.
 
 use designware_ethernet::jh7110::{COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, GMAC0_BASE};
-use designware_ethernet::motorcomm_physical_layer_device::{Settings, Source};
+use designware_ethernet::motorcomm_physical_layer_device::{Settings, SettingsSource};
 use machine_discovery::jh7110::designware_ethernet::{discover, discover_aon_syscon};
 
 const VENDOR: &[u8] = include_bytes!("fixtures/jh7110-gmac-vendor.dtb");
@@ -33,10 +33,10 @@ fn radons_vendor_tree_gives_gmac0_its_physical_layer_device_settings_and_its_add
         Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c])
     );
     assert_eq!(d.physical_layer_device_address, 0);
-    assert_eq!(d.physical_layer_device.source, Source::VendorTree);
+    assert_eq!(d.physical_layer_device.source, SettingsSource::VendorTree);
     assert_eq!(
         Settings {
-            source: Source::Fallback,
+            source: SettingsSource::Fallback,
             ..d.physical_layer_device
         },
         Settings::FALLBACK_GMAC0,
@@ -51,7 +51,7 @@ fn mainlines_tree_reaches_the_same_registers_through_phy_handle() {
     assert_eq!(d.base, GMAC0_BASE);
     assert_eq!(d.compatible, COMPATIBLE_MAINLINE);
     assert_eq!(d.station_address, None);
-    assert_eq!(d.physical_layer_device.source, Source::MainlineTree);
+    assert_eq!(d.physical_layer_device.source, SettingsSource::MainlineTree);
     assert_eq!(d.physical_layer_device.receive_delay, 0xa);
     assert_eq!(d.physical_layer_device.transmit_delay, 0xa);
     assert!(!d.physical_layer_device.receive_fixed_delay);
@@ -87,7 +87,7 @@ fn both_trees_name_the_aon_syscon() {
 fn a_mainline_physical_layer_device_with_one_delay_is_read_not_replaced_by_the_fallback() {
     let one_delay = tree(ONE_DELAY);
     let d = discover(&one_delay).unwrap().unwrap();
-    assert_eq!(d.physical_layer_device.source, Source::MainlineTree);
+    assert_eq!(d.physical_layer_device.source, SettingsSource::MainlineTree);
     assert_eq!(
         (
             d.physical_layer_device.receive_delay,
@@ -112,6 +112,6 @@ fn a_mainline_physical_layer_device_with_one_delay_is_read_not_replaced_by_the_f
 fn a_vendor_physical_layer_device_reg_is_its_mdio_address() {
     let tree = tree(VENDOR_ADDRESSED);
     let d = discover(&tree).unwrap().unwrap();
-    assert_eq!(d.physical_layer_device.source, Source::VendorTree);
+    assert_eq!(d.physical_layer_device.source, SettingsSource::VendorTree);
     assert_eq!(d.physical_layer_device_address, 3);
 }
