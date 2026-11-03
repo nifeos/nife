@@ -183,7 +183,7 @@ pub(crate) const fn link_from_registers(
             full_duplex: bmcr & mdio::BMCR_FDX != 0,
         });
     }
-    if bmsr & mdio::BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE == 0 {
+    if bmsr & mdio::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE == 0 {
         return None;
     }
     let common = anar & anlpar;
@@ -522,7 +522,7 @@ pub fn link(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sim::PhysicalLayerDevice;
+    use crate::simulator::PhysicalLayerDevice;
 
     #[test]
     fn the_two_trees_spell_the_same_registers_for_radons_gmac0() {
@@ -564,7 +564,7 @@ mod tests {
     #[test]
     fn the_clause_22_registers_decode_every_speed_and_duplex() {
         use management_data_input_output::*;
-        let up = BMSR_LSTATUS | BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE;
+        let up = BMSR_LSTATUS | BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE;
         let advertise = ANLPAR_TX_FD | ANLPAR_TX | ANLPAR_10_FD | ANLPAR_10;
         let both = GTCR_ADV_1000TFDX | GTCR_ADV_1000THDX;
         let l = |speed, full_duplex| Some(Link { speed, full_duplex });
@@ -627,14 +627,14 @@ mod tests {
         let all = ANLPAR_TX_FD | ANLPAR_TX | ANLPAR_10_FD | ANLPAR_10;
         let go = |bmsr, bmcr| link_from_registers(bmsr, bmcr, all, all, 0, 0);
         assert_eq!(
-            go(BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE, BMCR_ANENABLE),
+            go(BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE, BMCR_ANENABLE),
             None,
             "link down"
         );
         assert_eq!(go(BMSR_LSTATUS, BMCR_ANENABLE), None, "negotiation running");
         assert_eq!(
             go(
-                BMSR_LSTATUS | BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE,
+                BMSR_LSTATUS | BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE,
                 BMCR_ANENABLE | BMCR_ISO
             ),
             None

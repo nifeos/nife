@@ -62,7 +62,7 @@ fn the_ulp_handshake_changes_only_its_own_bits() {
 /// one read of `STATUS`, FreeBSD's `E1000_WRITE_FLUSH`.
 #[test]
 fn a_delay_is_in_milliseconds_and_a_flush_reads_status() {
-    let mut s = sim::Sim::new(sim::Start::Healthy, true);
+    let mut s = simulator::Sim::new(simulator::Start::Healthy, true);
     delay_ms(&mut s, 3);
     assert_eq!(s.elapsed_microseconds, 3000);
     flush_writes(&mut s);

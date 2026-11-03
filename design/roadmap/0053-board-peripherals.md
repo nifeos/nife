@@ -117,7 +117,7 @@ notes/designware-mobile-storage.md has the evidence, the safety argument and the
   tested the controller and the card protocol without DMA. The IDMAC one (`idmac`,
   `Host::with_idmac`) hands each data phase to the controller's DMA engine over one region, a
   descriptor page and up to 256 data pages, and stops the engine before every return. It is
-  built and tested against a `sim` that walks the descriptor chain, with a Kani harness on the
+  built and tested against a `simulator` that walks the descriptor chain, with a Kani harness on the
   chain; its bench run is outstanding. The storage bench times the same 8 MiB both ways, checks
   the IDMAC's bytes against the polled read's, and in a write build runs the write test through
   it too.
