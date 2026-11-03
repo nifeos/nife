@@ -8,6 +8,11 @@
 //! [`Host::with_internal_direct_memory_access`], hands each data phase to the controller's DMA
 //! engine ([`crate::internal_direct_memory_access`]). Commands and identification are the same on
 //! both.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3135. Renamed from `host`, which also means the CPU side of the
+//! bus. The crate's own name says Host Controller, and the Ethernet crate's `controller` became
+//! `network_controller` for the same reason. The items inside keep their names until their own
+//! review.
 
 use crate::command::{Command, UPDATE_CLOCK};
 use crate::internal_direct_memory_access::{
@@ -92,7 +97,7 @@ pub(crate) const DATA_DEADLINE_MICROSECONDS: u64 = 500_000;
 /// eight-bit field, which reads back as 0, the fastest setting there is.
 ///
 /// ```
-/// use designware_mobile_storage::host::{clock_divider, card_clock};
+/// use designware_mobile_storage::host_controller::{clock_divider, card_clock};
 ///
 /// // radon's controllers run from 50 MHz (`assigned-clock-rates` in mainline and the vendor branch head).
 /// let d = clock_divider(50_000_000, 400_000).unwrap();

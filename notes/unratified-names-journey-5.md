@@ -13,14 +13,14 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
 | `designware_ethernet` | 110 | 91 | 19 | 13 |
-| `designware_mobile_storage` | 74 | 74 | 0 | 10 |
+| `designware_mobile_storage` | 65 | 65 | 0 | 9 |
 | `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 328 | 259 | 69 | 38 |
+| total | 319 | 250 | 69 | 37 |
 
 ## How to read a group
 
@@ -33,7 +33,7 @@ In order, easiest to rule on first:
 1. `X1`, the nine `extensible_host_controller_interface` assertions: the same rename the architect already ruled for two sister crates.
 2. `N1`, the three NVMe namespace names: a full proposal already exists ([ratify-the-nvme-namespace-names](../design/roadmap/proposals/ratify-the-nvme-namespace-names.md)).
 3. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
-4. The `no` groups of designware_mobile_storage (`DM1` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
+4. The `no` groups of designware_mobile_storage (`DM2` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
 The groups that need a real ruling are the register and bit constants: `DE7` to `DE9`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
@@ -134,18 +134,11 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_mobile_storage`
 
-74 unratified names: 74 with no block, 0 provisional.
-
-### DM1. Module names (9)
-
-`bench`, `card`, `command`, `host`, `jh7110`, `partition`, `proofs`, `sd`, `tests`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify all nine. `sd` passes the acronym test (Secure Digital is a spoken phrase, but nobody says it); the rest are plain.
+65 unratified names: 65 with no block, 0 provisional.
 
 ### DM2. Host controller (13)
 
-`host::Error`, `host::Host`, `host::Identity`, `host::Registers`, `host::card_clock`, `host::clock_divider`, `host::command`, `host::into_registers`, `host::new`, `host::read`, `host::registers`, `host::reset`, `host::write`
+`host_controller::Error`, `host_controller::Host`, `host_controller::Identity`, `host_controller::Registers`, `host_controller::card_clock`, `host_controller::clock_divider`, `host_controller::command`, `host_controller::into_registers`, `host_controller::new`, `host_controller::read`, `host_controller::registers`, `host_controller::reset`, `host_controller::write`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. The register-level names inside this module were already ratified spelled out under #3092; these are the software surface around them.
