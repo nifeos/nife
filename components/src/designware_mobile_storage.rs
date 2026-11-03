@@ -185,7 +185,7 @@ fn serve(mut host: HostController<Page>, card: Card, h: Handoff) -> ! {
                     c::Response::R1,
                 ));
                 match status {
-                    Ok(r) if r[0] & designware_mobile_storage::card::R1_ERRORS == 0 => {
+                    Ok(r) if r[0] & designware_mobile_storage::card::R1_ERROR_MASK == 0 => {
                         flushes += 1;
                         flushes
                     }

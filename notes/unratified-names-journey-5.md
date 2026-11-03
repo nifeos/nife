@@ -13,14 +13,14 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
 | `designware_ethernet` | 92 | 73 | 19 | 10 |
-| `designware_mobile_storage` | 52 | 52 | 0 | 8 |
+| `designware_mobile_storage` | 46 | 46 | 0 | 7 |
 | `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 288 | 219 | 69 | 33 |
+| total | 282 | 213 | 69 | 32 |
 ## How to read a group
 
 Each group gives its items in their current spelling, as `path::name`, and a module by its own name. *Breaks the spelled-out rule* answers the 2026-11-02 rule in [design/naming.md](../design/naming.md): outside register modules, identifiers say what the thing is and not the specification's abbreviation. A hardware register, field or bit constant takes the spelled-out name with the source's spelling in `#[doc(alias)]`, OpenBSD's cited first. `yes` means the group has at least that kind of abbreviation; `one` means a few named items do; `no` means none. The recommendation is the stricter reading wherever a call was close, since loosening later is compatible and tightening is not.
@@ -32,7 +32,7 @@ In order, easiest to rule on first:
 1. `X1`, the nine `extensible_host_controller_interface` assertions: the same rename the architect already ruled for two sister crates.
 2. `N1`, the three NVMe namespace names: a full proposal already exists ([ratify-the-nvme-namespace-names](../design/roadmap/proposals/ratify-the-nvme-namespace-names.md)).
 3. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
-4. The `no` groups of designware_mobile_storage (`DM1`, `DM2`, `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
+4. The `no` groups of designware_mobile_storage (`DM1` to `DM3`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
 The groups that need a real ruling are the register and bit constants: `DE7` to `DE9`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
@@ -111,7 +111,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_mobile_storage`
 
-52 unratified names: 52 with no block, 0 provisional.
+46 unratified names: 46 with no block, 0 provisional.
 
 ### DM1. Module names (9)
 
@@ -120,13 +120,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify all nine. `sd` passes the acronym test (Secure Digital is a spoken phrase, but nobody says it); the rest are plain.
 
-
-### DM4. Card status (6)
-
-`card::R1_ERRORS`, `card::R1_READY_FOR_DATA`, `card::STATE_TRANSFER`, `card::bits`, `card::r1_state`, `card::sd`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. `R1` is the specification's own name for the response type, a noun with no spelled-out form.
 
 ### DM5. Card access (9)
 
