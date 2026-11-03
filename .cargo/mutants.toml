@@ -263,9 +263,9 @@ exclude_re = [
     # Where a function's survivor set also holds a site the disjointness claim does not cover, the
     # site's own row stays and says so; only the all-disjoint functions are excluded here.
     #
-    # Command::word composes the start bit (31), the hold register (29) and the index masked to
+    # Command::register_word composes the start bit (31), the hold register (29) and the index masked to
     # bits 5:0: COMMAND_WORD_FIELDS_DO_NOT_OVERLAP (command.rs).
-    '^crates/designware_mobile_storage/src/command\.rs:\d+:\d+: replace \| with \^ in Command::word$',
+    '^crates/designware_mobile_storage/src/command\.rs:\d+:\d+: replace \| with \^ in Command::register_word$',
     # reset clears the three enables, disjoint per
     # DIRECT_MEMORY_ACCESS_ENABLES_DO_NOT_OVERLAP (registers.rs); the excluded
     # `ctrl | CONTROL_ALL_RESET` write's mutant, which
