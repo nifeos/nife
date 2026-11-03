@@ -6,6 +6,11 @@
 //! clusters, and the host's `fsck -n` must accept the volume. The dirty bit is set while the crate
 //! changes the volume and clear after `mark_clean`.
 
+// Not under Miri: this suite checks volumes against the host's `fsck` and `mkfs.fat` through
+// temporary files, which Miri's isolation refuses. The crate has no `unsafe`, and its library unit
+// tests run under Miri.
+#![cfg(not(miri))]
+
 use std::io::{Cursor, Read};
 use std::path::Path;
 use std::process::Command;
