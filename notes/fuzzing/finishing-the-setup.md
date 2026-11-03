@@ -42,14 +42,14 @@ Repository security advisories read and Metadata read.
 
 ## P1 to P3: done on the host
 
-P1 to P3 are done. Each stays here as the procedure to repeat after a rebuild of the host.
+Each stays here as the procedure to repeat after a rebuild of the host.
 
 ### P1. Bring the host to main (person, root)
 
 The follower ([`continuous-host.md`](continuous-host.md#following-main)) cannot move a host that
-predates it, so this step moves the host by hand once. From then on the supervisor fast-forwards to each green commit on main by itself, as the fuzz account, and
-prints one journal line when a unit file changes; installing a changed unit stays this step's `diff`
-and copy. The follower needs `python3` and `curl` on the host.
+predates it, so this step moves the host by hand once. From then on the supervisor follows main by
+itself. Installing a changed unit stays this step's `diff` and copy. The follower needs `python3` and
+`curl`.
 
 ```sh
 sudo systemctl stop nife-fuzz.service
@@ -61,15 +61,11 @@ sudo diff /etc/systemd/system/nife-fuzz.service /home/lane/nife/helpers/systemd/
 sudo systemctl start nife-fuzz.service
 ```
 
-The diff needs `sudo` because a normal administrator account cannot read `/home/lane`.
-
-If it prints a difference, copy the new unit to `/etc/systemd/system/` and run `sudo systemctl
-reenable nife-fuzz.service`, which rereads the unit files, before the start. Verify: `systemctl
-is-active nife-fuzz.service` prints `active`; within about 5 minutes `journalctl -u
-nife-fuzz.service -g fuzz-follow-main -n 5` shows a look (the clone already at main, or a move); and
-after the next window the last column of `tail -1 /home/lane/fuzz/state/windows.tsv | cut -f7,8`
-shows the new short commit. If the service fails, `journalctl -u nife-fuzz.service -n 50` names the
-cause; the toolchain step and the KVM check each print their own refusal.
+If the diff prints a difference, copy the new unit to `/etc/systemd/system/` and run `sudo systemctl
+reenable nife-fuzz.service` before the start. Verify: `systemctl is-active nife-fuzz.service` prints
+`active`; within about 5 minutes `journalctl -u nife-fuzz.service -g fuzz-follow-main -n 5` shows a
+look; and after the next window `tail -1 /home/lane/fuzz/state/windows.tsv | cut -f7,8` shows the
+new short commit. If the service fails, `journalctl -u nife-fuzz.service -n 50` names the cause.
 
 ### P2. Install the local daily report (person, root)
 
@@ -82,34 +78,27 @@ sudo cp /home/lane/nife/helpers/systemd/nife-fuzz-publish.service \
 sudo systemctl enable --now nife-fuzz-publish.timer
 ```
 
-`enable` rereads the unit files itself.
-
 Verify: `systemctl list-timers nife-fuzz-publish.timer` shows the next run at 14:00 UTC, and `sudo
 systemctl start nife-fuzz-publish.service` followed by `ls /home/lane/fuzz/out/` shows today's date.
 
 ## The advisory permission
 
-Step P3 is this check, and it passed. An App holding only Repository security advisories read and
-write, installed on one repository, creates a draft advisory, adds an affected version range to it,
-publishes it, and the public reads it without a credential. A throwaway App on a throwaway repository showed it, with HTTP statuses 201
-for the create, 200 for the range update, 200 for the publish and 200 for the unauthenticated read.
-The App, repository and key are deleted. GitHub documents the caller as "a security manager or
-administrator". An App with the advisory permission alone qualifies.
+Step P3 is this check, and it passed. A throwaway App holding only Repository security advisories
+write, installed on one repository, created a draft advisory, added a version range, published it,
+and the public read it without a credential (HTTP 201, 200, 200, 200). GitHub documents the caller
+as "a security manager or administrator", and the permission alone qualifies.
 
-Publishing a draft needs at least one vulnerability entry that names a package (ecosystem and name)
-and a `vulnerable_version_range`. Without a range GitHub answers 422, "Advisory is not publishable".
-So the filer files each advisory with a package and range the host can supply. It leaves
-`patched_versions` unset, because no fix exists at filing; milestone 1010 sets it. To repeat the
-test, mint an installation token for a throwaway App and call create, then PATCH `vulnerabilities`
-with the range, then PATCH `state` to `published`.
+A draft needs a vulnerability entry with a package and a `vulnerable_version_range`, or GitHub
+answers 422, "Advisory is not publishable". So the filer files both. It leaves `patched_versions`
+unset, because no fix exists at filing; milestone 1010 (a held finding turns public after its fix
+reruns clean) sets it.
 
 ## The sequence for a person: P4 to P11
 
 Every piece below is built and merged, and none is installed. P5 and P10 place a key, and only a
 person does them. Every other step may go to the agent that maintains the host as a written spec:
-hand it the step, its commands and its verify lines, and have it report the output. That agent runs
-P4 to P8 on the fuzz host and P9 and P11 on the machine that launches fix lanes. It never holds a
-key, and it asks for nothing but the root those steps need.
+hand it the step, its commands and its verify lines, and have it report the output. It never holds a
+key.
 
 The first step to take yourself is P5. P4 can run before it or in parallel.
 
@@ -123,13 +112,11 @@ sequence:
 FUZZ_HOST_COMMIT=a3f3d443de13cb27a01c8eff25016a91d4c1651b
 ```
 
-That is main of nifeos/fuzz-host when this page was written. Read the diff from it before using a
-later one.
+Read the diff before using a later commit.
 
 ### P4. Fetch and test the fuzz-host commit (both machines; root is not needed)
 
-Fetch it into your own account, never the fuzz account, and review what you are about to run as
-root. `script/test` makes its own throwaway keys and never touches GitHub.
+Fetch it into your own account, never the fuzz account, and review what you will run as root.
 
 ```sh
 git clone https://github.com/nifeos/fuzz-host.git ~/fuzz-host
@@ -139,13 +126,12 @@ git -C ~/fuzz-host log --oneline -1
 ```
 
 Verify: `git log` prints `a3f3d44 Merge pull request #4 from nifeos/lane/fuzz-reader-token`, and
-`script/test` ends with every selftest passing and exit status 0. It needs `python3` and `openssl`.
-Run it as yourself, not as root.
+`script/test` (which needs `python3` and `openssl`, makes its own throwaway keys and never touches
+GitHub) ends with every selftest passing. Run it as yourself.
 
 ### P5. Generate the `nife-fuzz` key and place it on the fuzz host (person only, root)
 
-The key is the one credential that the whole path rests on. It stays in a file that root alone reads,
-and it never enters a repository, a chat, a pull request, a log, a shell history or a lane's
+The key never enters a repository, a chat, a pull request, a log, a shell history or a lane's
 environment.
 
 1. At <https://github.com/organizations/nifeos/settings/apps/nife-fuzz>, open Credentials, Key pairs
@@ -206,8 +192,7 @@ Verify:
 If `check` lists any repository besides `nifeos/nife`, open
 <https://github.com/organizations/nifeos/settings/installations/177641059> and set Only select
 repositories to `nifeos/nife` alone. If a mint fails, `journalctl -u fuzz-token@publish.service -n 20`
-names the refusal: the key's owner or mode, an HTTP status, a token wider than asked, or a group that
-holds more than its reader.
+names the refusal.
 
 ### P7. Turn on the daily release (root on the fuzz host; may go to the agent)
 
@@ -229,8 +214,7 @@ ExecStart=
 ExecStart=/home/lane/nife/helpers/fuzz-daily-publish.sh --publish
 ```
 
-The `Wants=` and `After=` lines mint a fresh token before each run. systemd reads `EnvironmentFile=`
-as root before the service starts as `lane`. Save, then:
+The `Wants=` and `After=` lines mint a fresh token before each run. Save, then:
 
 ```sh
 sudo systemctl start nife-fuzz-publish.service
@@ -245,10 +229,9 @@ start fails, `journalctl -u nife-fuzz-publish.service -n 30` names the refusal: 
 ### P8. Turn on the filer (root on the fuzz host; may go to the agent)
 
 The filer runs as `lane`, the account that also runs the fuzzed code. An architect ruled this on
-2026-11-03 (UTC). The accepted cost: code that reaches main then runs as an account that can read the
-filer token, which lets its holder publish any advisory on nifeos/nife, and a published advisory
-cannot be unpublished. The protection is that main requires pull requests and checks. Tokens stay at
-one hour, and the filer holds no long-lived credential.
+2026-11-03 (UTC). Code that reaches main then runs as an account that can read the filer token, and a
+published advisory cannot be unpublished. Main's pull requests and checks are the protection. Tokens
+stay at one hour.
 
 The unit's identity lines, as `systemd/fuzz-filer.service` carries them:
 
@@ -300,16 +283,14 @@ Verify:
 - Start the service again: the journal says `none to file`.
 - `systemctl list-timers fuzz-filer.timer`: the next run within 30 minutes.
 
-If a run fails, the journal names the refusal: the token file (its owner, mode, group, profile or
-age), the ledger, a finding by id, or an HTTP status. A 422 that names the range field means GitHub
-refused `<= <commit>` as a range for the ecosystem `other`; the finding stays pending.
+If a run fails, the journal names the refusal. A 422 that names the range field means GitHub refused
+the range, and the finding stays pending.
 
 ### P9. Install the reader helper (root on the fix-lane machine; may go to the agent)
 
-P4 must be done on this machine. `/usr/local/sbin` and each directory above it must be owned by root
-and writable by no one else (`ls -ld /usr /usr/local /usr/local/sbin`). On a macOS host where a
-package manager made `/usr/local` its user's, install the helper where root owns the path, and use
-that path in P11.
+P4 must be done on this machine. `/usr/local/sbin` and each directory above it must belong to root and
+admit no other writer (`ls -ld /usr /usr/local /usr/local/sbin`). Where a package manager made
+`/usr/local` its user's, install the helper where root owns the path, and use that path in P11.
 
 ```sh
 sudo install -d -o root -g 0 -m 0755 /usr/local/sbin
@@ -340,8 +321,8 @@ Verify without showing the key:
 - `sudo openssl pkey -in /etc/nife-fuzz-reader/nife-fuzz-reader.private-key.pem -pubout -outform DER |
   openssl sha256 -binary | openssl base64`: the fingerprint, without its `SHA256:` prefix.
 
-Never put this key on the fuzz host or in a lane's environment. On macOS, `ls -lde` on the directory
-and `sudo ls -le` on the key must show no ACL line, because the helper cannot see a macOS ACL.
+On macOS, `ls -lde` on the directory and `sudo ls -le` on the key must show no ACL line, because the
+helper cannot see a macOS ACL.
 
 ### P11. Write the sudo rule for fix lanes (root on the fix-lane machine; may go to the agent)
 
@@ -360,9 +341,8 @@ Defaults!/usr/local/sbin/fuzz-token !log_output, !log_input
 ```
 
 The rule line matches those arguments exactly: no `mint`, no `check`, no flag. The second `Defaults`
-line keeps classic sudo's input and output logging from recording the token. sudo-rs, the default on
-recent Ubuntu, refuses that setting as unknown, so leave the line out there. `visudo` refuses a file
-with a syntax error. Never widen the rule with a wildcard.
+line keeps classic sudo's logging from recording the token. sudo-rs, the default on recent Ubuntu,
+refuses that setting, so leave the line out there. Never widen the rule with a wildcard.
 
 A lane then takes a token on demand:
 
@@ -386,11 +366,10 @@ Verify. After each command, the text after the colon is its expected output:
 
 Any lane on the machine can take a reader token, because every lane runs as one account, and the
 token reads every advisory on nifeos/nife. An architect accepted that on 2026-11-03 (UTC). The
-protections are the fix-lane skill, the replay-line check and sudo's log, and the first fix lane
-starts a revisit of the account split. If sudo gives `issue` a terminal where the caller's output is
-a pipe, every request is refused until the rule or the helper changes. If `check` lists another
-repository, open <https://github.com/organizations/nifeos/settings/installations/177642435> and set
-Only select repositories to `nifeos/nife` alone.
+fix-lane skill, the replay-line check and sudo's log protect it, and the first fix lane starts a
+revisit of the account split. If `check` lists another repository, open
+<https://github.com/organizations/nifeos/settings/installations/177642435> and set Only select
+repositories to `nifeos/nife` alone.
 
 ## What is not built
 
@@ -403,40 +382,27 @@ Only select repositories to `nifeos/nife` alone.
 - **The host replays a red CI shard.** A red `fuzz-guests` job names a commit and a shard, and nobody
   replays it. The proposal is
   [the fuzz host replays a red CI shard](../../design/roadmap/proposals/the-fuzz-host-replays-a-red-ci-shard.md).
-- **Held rows' seeds under the held directory.** `windows.tsv` carries a held window's first seed and
-  seed count, and the fuzz account reads it. That is a change to nife's supervisor, recorded in the
+- **Held rows' seeds under the held directory.** A change to nife's supervisor, recorded in the
   `BUGS` of [`continuous-host.md`](continuous-host.md#bugs).
 
 ## Risks
 
-- A leaked `nife-fuzz` key mints tokens until someone revokes it. With Contents write a token can
-  create, move or delete any `fuzz-*` tag, create, edit or delete any release, and create, rewrite or
-  delete any branch except main. Main requires a pull request with no bypass actor. The main ruleset
-  requires zero approving reviews, so a token that pushes to an open pull request's branch with
-  auto-merge armed can reach main through the merge queue when its checks pass. A change to workflow
-  files needs the Workflows permission, which the App lacks. With advisories write a token can
-  publish any held finding early.
-- Revoke: suspend the installation at once, at
-  <https://github.com/organizations/nifeos/settings/installations/177641059> (Suspend), which stops
-  every token. Then delete the key on the App's page, place a fresh one as in P5, and unsuspend. For
-  the reader, suspend installation 177642435 and place a fresh key as in P10.
-- The permissions are the least a single App can hold for the ruled path: a release needs Contents
-  write, and filing and publishing need advisories write. A token can narrow further than its App, so
-  the mint helper mints one token per service: Contents alone for the release, advisories alone for
-  the filer. Both default to the reader `lane`, so the split narrows each token and isolates neither.
+[`the-fuzz-app.md`](the-fuzz-app.md) states what a leaked key can do. To revoke, suspend the
+installation at once, at <https://github.com/organizations/nifeos/settings/installations/177641059>
+(Suspend), which stops every token. Delete the key on the App's page, place a fresh one as in P5, and
+unsuspend. For the reader, suspend installation 177642435 and place a fresh key as in P10. The mint
+helper narrows each token, but both fuzz-host profiles default to the reader `lane`, so the split
+isolates nothing between them.
 
 ## Not yet verified
 
 No one has run these against GitHub or a real host. Each is a check for the first install.
 
 - GitHub accepting `<= <commit>` as a range for the ecosystem `other`.
-- The replay command the filer writes into an advisory. The author took it from the supervisor's
-  build steps, and no fix lane has run one.
-- The seed count 1000000 the filer writes for a crash or a hang. The author copied it from the
-  supervisor, which records it in no row.
-- sudo-rs matching the rule's arguments as classic sudo does, and each sudo handing the helper a
-  pipe, not a terminal, for standard output.
-- The hardening lines of the fuzz-token and fuzz-filer units under systemd. `systemd-analyze verify`
-  passes on them.
+- The replay command and the seed count 1000000 that the filer writes. The author took both from the
+  supervisor's build steps, and no fix lane has run one.
+- sudo-rs matching the rule's arguments as classic sudo does, and each sudo handing the helper a pipe
+  for standard output.
+- The hardening lines of the fuzz-token and fuzz-filer units under systemd.
 - A comment on a repository advisory, which the publish step wants for a failing replay. The REST API
   may have no endpoint for it (from memory, not checked).

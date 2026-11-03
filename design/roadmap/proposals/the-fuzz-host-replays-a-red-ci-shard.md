@@ -10,8 +10,8 @@ needs_person: no
 # The fuzz host replays a red CI shard
 
 Raised by lane/fuzz-setup-reconcile on 2026-11-03 (UTC), while it reconciled the fuzz setup page with
-what is built. [Milestone 1012](../1012-a-short-sharded-fuzz-pass-in-ci.md) names this work as a
-follow-on "written by another lane", and no file held it. The integrator mints the number at
+what is built. [Milestone 1012 (a short sharded in-guest fuzz pass in CI)](../1012-a-short-sharded-fuzz-pass-in-ci.md) names this work as a
+follow-on, and no file held it. The integrator mints the number at
 promotion.
 
 Reuse: the window logic of `helpers/continuous-fuzz.sh`, whose `--ci-range SHARD` gives a shard's
@@ -29,15 +29,15 @@ log is public. Nothing replays the shard today, so a red job is a pointer to nob
 
 The host side of that pointer, in three parts. Each part is the one milestone 1012 lists.
 
-1. **The host learns that a shard went red.** Open: the trigger needs a path from GitHub to the host.
+1. The host learns that a shard went red. Open: the trigger needs a path from GitHub to the host.
    The host already reads public check runs without a credential when it follows main, so the first
    candidate is the same poll. It would look for a failed `fuzz-guests` run on a merge-group commit,
    and read the commit and shard from the pointer line alone.
-2. **The host replays the shard.** It checks out the commit and runs `--ci-range SHARD`, so the replay
+2. The host replays the shard. It checks out the commit and runs `--ci-range SHARD`, so the replay
    is deterministic. The commit of a merge-group run lives on a `gh-readonly-queue/` branch that
-   GitHub deletes after the merge, so the host must fetch it while GitHub still holds it, or take the
-   tree some other way. That is the open question milestone 1012 left here.
-3. **A reproduction becomes a held finding.** It enters the existing path: the supervisor holds it, the
+   GitHub deletes after the merge, so the host must fetch it in time, or take the tree some other
+   way. That is the open question milestone 1012 left here.
+3. A reproduction becomes a held finding. It enters the existing path: the supervisor holds it, the
    filer files a private advisory, and a fix lane reads the advisory. Nothing that reproduces reaches a
    public log, release or artifact.
 
@@ -58,5 +58,5 @@ on an unrelated job each start no replay.
 
 ## Status
 
-Not started. The filer it feeds is built and not installed
+Not started. The filer it feeds exists, and no one has installed it yet
 ([`finishing-the-setup.md`](../../../notes/fuzzing/finishing-the-setup.md)).
