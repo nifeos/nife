@@ -9,8 +9,9 @@
 //! fails in a way that names the direction.
 
 use crate::{
-    CRC_BYTES, DataPlane, DirectMemoryAccessRegion, RDES3_OWN, RECEIVE_ENTRIES, ReceiveVerdict,
-    TDES3_OWN, Tails, TransmitError, layout, receive_verdict, registers,
+    CRC_BYTES, DataPlane, DirectMemoryAccessRegion, RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
+    RECEIVE_ENTRIES, ReceiveVerdict, TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE, Tails,
+    TransmitError, layout, receive_verdict, registers,
 };
 
 /// The probe frame's `EtherType`: IEEE 802's first local experimental type, which no real
@@ -79,7 +80,9 @@ pub fn prepare(
 
 /// **Step 4's poll**: has the CPU seen receive descriptor 0 handed back?
 pub fn delivered(region: &impl DirectMemoryAccessRegion) -> bool {
-    (region.read_u64(layout::receive_descriptor(0) + 8) >> 32) as u32 & RDES3_OWN == 0
+    (region.read_u64(layout::receive_descriptor(0) + 8) >> 32) as u32
+        & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
+        == 0
 }
 
 /// What receive buffer 0 held when it was read.
@@ -168,7 +171,7 @@ pub fn classify(o: &Observation) -> Verdict {
     if s & registers::CHAN_STATUS_FBE != 0 {
         return Verdict::BusError;
     }
-    if o.receive_descriptor_word_3 & RDES3_OWN == 0 {
+    if o.receive_descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0 {
         return match (
             o.payload,
             receive_verdict(o.receive_descriptor_word_3, PROBE_LENGTH),
@@ -194,7 +197,7 @@ pub fn classify(o: &Observation) -> Verdict {
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub const fn is_transmit_complete(o: &Observation) -> bool {
-    o.transmit_descriptor_word_3 & TDES3_OWN == 0
+    o.transmit_descriptor_word_3 & TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0
 }
 
 /// How many receive descriptors the probe posts, for a report line: every one but the held-back
@@ -208,7 +211,10 @@ mod tests {
     use crate::jh7110::BUS;
     use crate::motorcomm::{Link, Speed};
     use crate::sim::{Memory, NetworkInterfaceController};
-    use crate::{Hardware, RDES3_FD, RDES3_LD};
+    use crate::{
+        Hardware, RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR,
+        RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR,
+    };
 
     const PHYSICAL_ADDRESS: u64 = 0x4800_0000;
     const STATION_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
@@ -283,7 +289,9 @@ mod tests {
     #[test]
     fn a_whole_frame_that_is_not_the_one_written_is_a_stale_transmit() {
         let o = Observation {
-            receive_descriptor_word_3: RDES3_FD | RDES3_LD | (PROBE_LENGTH + CRC_BYTES) as u32,
+            receive_descriptor_word_3: RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR
+                | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR
+                | (PROBE_LENGTH + CRC_BYTES) as u32,
             transmit_descriptor_word_3: 0,
             status: registers::CHAN_STATUS_RI | registers::CHAN_STATUS_TI,
             payload: Payload::Other,
@@ -306,7 +314,7 @@ mod tests {
         // A transmit DMA that sent its one frame then found the next slot empty sets TI and TBU
         // together; that is success, and only the receive side's silence makes it inconclusive.
         let o = Observation {
-            receive_descriptor_word_3: RDES3_OWN,
+            receive_descriptor_word_3: RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
             transmit_descriptor_word_3: 0,
             status: registers::CHAN_STATUS_TI | registers::CHAN_STATUS_TBU,
             payload: Payload::Poison,
@@ -369,12 +377,14 @@ mod tests {
         });
         assert_eq!(
             o.transmit_descriptor_word_3,
-            crate::TDES3_FS | crate::TDES3_LS | PROBE_LENGTH as u32
+            crate::TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
+                | crate::TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT
+                | PROBE_LENGTH as u32
         );
         assert!(is_transmit_complete(&o));
         assert_eq!(o.payload, Payload::Matches);
         assert!(!is_transmit_complete(&Observation {
-            transmit_descriptor_word_3: crate::TDES3_OWN,
+            transmit_descriptor_word_3: crate::TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
             ..o
         }));
     }
@@ -400,8 +410,8 @@ mod tests {
     #[test]
     fn a_status_of_nothing_is_inconclusive() {
         let o = Observation {
-            receive_descriptor_word_3: RDES3_OWN,
-            transmit_descriptor_word_3: TDES3_OWN,
+            receive_descriptor_word_3: RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
+            transmit_descriptor_word_3: TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
             status: 0,
             payload: Payload::Poison,
         };

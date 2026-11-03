@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 119 | 100 | 19 | 14 |
+| `designware_ethernet` | 105 | 86 | 19 | 13 |
 | `designware_mobile_storage` | 75 | 75 | 0 | 10 |
 | `e1000e` | 133 | 95 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 339 | 270 | 69 | 39 |
+| total | 325 | 256 | 69 | 38 |
 
 ## How to read a group
 
@@ -35,11 +35,11 @@ In order, easiest to rule on first:
 3. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
 4. The `no` groups of designware_mobile_storage (`DM1` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
-The groups that need a real ruling are the register and bit constants: `DE7` to `DE10`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
+The groups that need a real ruling are the register and bit constants: `DE8` to `DE10`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
-119 unratified names: 100 with no block, 19 provisional.
+105 unratified names: 86 with no block, 19 provisional.
 
 ### DE1. Module names (11)
 
@@ -82,13 +82,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify `CRC_BYTES` and `DESCRIPTOR_BYTES`; recommend `BUFFER_SIZE` become `BUFFER_BYTES` so the three sizes share the unit word (the stricter reading; `BUFFER_SIZE` does not break the spelled-out rule, it only disagrees with its neighbors).
-
-### DE7. Descriptor bit and field constants (RDES3_*, TDES2_*, TDES3_*) (14)
-
-`descriptor::RDES3_BUF1V`, `descriptor::RDES3_CTXT`, `descriptor::RDES3_ES`, `descriptor::RDES3_FD`, `descriptor::RDES3_LD`, `descriptor::RDES3_LENGTH`, `descriptor::RDES3_OWN`, `descriptor::TDES2_BUF1_LEN`, `descriptor::TDES2_IC`, `descriptor::TDES3_ES`, `descriptor::TDES3_FRAME_LEN`, `descriptor::TDES3_FS`, `descriptor::TDES3_LS`, `descriptor::TDES3_OWN`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out, with the databook spelling kept as `#[doc(alias)]` and cited in the doc comment, as the 2026-11-02 rule and the earlier `RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION` rename already do. The docs already carry the plain-words title of each (for example 'owned by the device'), so the candidate names come from the crate's own text. Decide as one group; the items share one pattern.
 
 ### DE8. MAC and channel register constants (CHAN_*, MAC_*) (15)
 
