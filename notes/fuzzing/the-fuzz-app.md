@@ -36,7 +36,10 @@ Read this first. It is the exposure you accept by placing the key.
   2026-11-01 (UTC) on that condition.
 - It cannot push to main: main's ruleset requires a pull request and has no bypass actor.
 - With Repository security advisories write, a token can create, edit and publish any advisory on
-  nifeos/nife, including a held finding before its fix.
+  nifeos/nife, including a held finding before its fix. A throwaway App with that permission alone
+  did create, complete and publish an advisory, so the permission is enough for the filer.
+- Publishing needs a package and a vulnerable version range on the advisory; the filer supplies
+  both ([`finishing-the-setup.md`](finishing-the-setup.md#the-advisory-permission)).
 - The App reaches no other repository. It holds no Workflows, Administration or other permission,
   and neither ruleset lists it as a bypass actor.
 - The key does not expire, so nothing rotates it on a schedule. Revoke it when you suspect a leak.
@@ -66,12 +69,11 @@ Repository security advisories and Metadata.
 
 ## Generate the key and place it on the host
 
-1. Before any key exists, run the throwaway-repository test, step P3 of
-   [`finishing-the-setup.md`](finishing-the-setup.md). It confirms that an App with the advisory
-   permission alone can create an advisory. That page's step P4 gives the commands for the steps
-   below.
+1. [`finishing-the-setup.md`](finishing-the-setup.md) step P4 gives the commands for the steps
+   below. The advisory permission is verified there: this App needs nothing more to file and
+   publish an advisory.
 2. On the App's settings page, <https://github.com/organizations/nifeos/settings/apps/nife-fuzz>,
-   under Private keys, generate a private key. The browser downloads one
+   under Credentials, Key pairs, generate a private key. The browser downloads one
    `.pem` file.
 3. Copy it to the fuzz host over a channel you already trust, straight into a directory only root
    can enter. Make the file owned by root with mode 0400.
@@ -108,8 +110,8 @@ write nothing.
 5. At <https://github.com/organizations/nifeos/settings/apps/nife-fuzz-reader/installations>,
    install it on the nifeos organization with Only select repositories, nifeos/nife alone. Note the
    installation ID from the installation page's address.
-6. At <https://github.com/organizations/nifeos/settings/apps/nife-fuzz-reader>, generate a private
-   key. Copy it into a directory only root can enter on the machine that launches fix lanes, owned
+6. At <https://github.com/organizations/nifeos/settings/apps/nife-fuzz-reader>, under Credentials,
+   Key pairs, generate a private key. Copy it into a directory only root can enter on the machine that launches fix lanes, owned
    by root, mode 0400. Delete every other copy.
 7. Write the App ID and installation ID beside the helper's configuration on that machine. Neither is
    secret.
@@ -136,8 +138,5 @@ App on nifeos/nife.
   milestones.
 - The helper that hands a fix lane its one-hour reader token does not exist yet. The ruling's
   proposal lists it as a proposed milestone.
-- Nobody has confirmed that an App with the advisory permission alone may create an advisory. GitHub's
-  documentation names "a security manager or administrator" as the caller. The throwaway-repository
-  test answers it before any key exists.
 - A nife release that uses a tag outside `fuzz-*` needs the tag ruleset amended first, as its own
   step recorded in a pull request.
