@@ -7,7 +7,7 @@ An appendix to [`continuous-host.md`](continuous-host.md). The continuous fuzzin
 daily release and files and publishes private security advisories with no person in the loop. It
 acts as one GitHub App, `nife-fuzz`, and holds that App's private key. An architect ruled this on
 2026-11-01 (UTC) in
-[`fuzz-findings-without-a-person`](../../design/roadmap/proposals/fuzz-findings-without-a-person.md).
+[`fuzz-findings-without-a-person`](../../design/roadmap/1015-fuzz-findings-without-a-person.md).
 
 The App exists. A person created it on 2026-11-01 (UTC) and installed it on nifeos/nife only. Its
 App ID is 5571801 and its installation ID is 177641059; neither is secret. The steps below stay as

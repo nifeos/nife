@@ -85,7 +85,7 @@ The proposals, none minted, in the recommended order. §235 has the reasoning.
    the kernel binary). Its first consumer is item 5's updater, milestone 976 part 4, and its code
    waits until that part shows what a kernel download costs per update (calef, 2026-10-31 UTC).
    The handoff's bytes and the source of the loader's digests are two questions for calef, in
-   `design/roadmap/proposals/how-the-loader-hands-the-kernel-two-digests.md`.
+   `design/roadmap/0999-how-the-loader-hands-the-kernel-two-digests.md`.
    Ruled 2026-11-01 (UTC) by the architect: this item also holds the anchor for installed rows
    and their grant lines in the installed-programs table (milestone 990 (the base image's first
    installed-programs table)). Candidates are a MAC the progenitor makes with a key the volume
