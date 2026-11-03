@@ -61,10 +61,10 @@ evidence and the confinement finding: [notes/e1000e.md](../../notes/e1000e.md).
 
 The I219's PHY half; QEMU never takes the PCH path, so xenon is the test.
 
-- FreeBSD's SPT-class attach and reset path in `crates/e1000e/src/pch/` (Reuse, below): MDIO under
+- FreeBSD's SPT-class attach and reset path in `crates/e1000e/src/platform_controller_hub/` (Reuse, below): MDIO under
   the semaphore (`physical_layer_device.rs`), the NVM read (`non_volatile_memory.rs`), and FreeBSD's
   three passes (`sequence.rs`), called through a small `Hw` trait.
-- Fifteen host tests against a simulated I219 (`pch/simulator.rs`). The semaphore is a non-`Clone` token,
+- Fifteen host tests against a simulated I219 (`platform_controller_hub/simulator.rs`). The semaphore is a non-`Clone` token,
   so a PHY access without it does not compile. One falsifiable Kani harness; writing it found that
   FreeBSD truncates a page select above `0x7ff`, which this port refuses.
 - QEMU proves the MDIO read: the DHCP gate asserts the 82574L's PHY identifier, `0x01410cb0`.
@@ -204,8 +204,8 @@ block's own BUGS list:
 
 | I219 step | FreeBSD source | decision |
 |---|---|---|
-| leave ultra-low-power mode through the Management Engine | `e1000_disable_ulp_lpt_lp`, ME branch | ported, `crates/e1000e/src/pch/` (`ulp`, `sequence`) |
-| empty the descriptor rings before a reset (SPT unit hang) | `em_flush_desc_rings`, `em_flush_tx_ring`, `em_flush_rx_ring` | ported, one recorded divergence (`pch::flush::tail_after`) |
+| leave ultra-low-power mode through the Management Engine | `e1000_disable_ulp_lpt_lp`, ME branch | ported, `crates/e1000e/src/platform_controller_hub/` (`ultra_low_power`, `sequence`) |
+| empty the descriptor rings before a reset (SPT unit hang) | `em_flush_desc_rings`, `em_flush_tx_ring`, `em_flush_rx_ring` | ported, one recorded divergence (`platform_controller_hub::flush::tail_after`) |
 | stop bus mastering before reset; STRAP writes around it; `KABGTXD.BGSQLBIAS` after | `e1000_disable_pcie_master_generic`, `e1000_reset_hw_ich8lan` | ported |
 | leave ULP without an ME, the `SMBus` switch and `LANPHYPC`; the semaphore and MDIO; the PHY reset and its NVM-driven configuration; the SPT NVM read; hardware bits, copper link, transmit errata | `e1000_init_phy_workarounds_pchlan` and what it calls, `e1000_acquire_swflag_ich8lan`, `__e1000_read_phy_reg_hv`, `e1000_reset_hw_ich8lan`, `e1000_post_phy_reset_ich8lan`, `e1000_read_nvm_spt`, `e1000_init_hw_ich8lan`, `e1000_setup_copper_link_pch_lpt` | ported 2026-10-05, `pch/physical_layer_device.rs`, `pch/non_volatile_memory.rs`, `pch/sequence.rs`; each function's comment names its source, and the divergences are in `pch`'s `BUGS` |
 | reconfiguration each time link comes up | `e1000_check_for_copper_link_ich8lan` | not ported: it runs from a link-change interrupt this driver does not take (Follow-on) |
@@ -234,7 +234,7 @@ meet a known gap). Take no dependency; vendor nothing.
   runbook is its first run.
 - xenon's room has no Ethernet port (calef, 2026-10-04); the runbook in notes/e1000e.md gives
   the three ways round it.
-- The adapted files' BSD licenses ask a binary redistribution to reproduce their notices. The source carries them (`crates/e1000e/src/pch/`); no shipped image or package has a third-party notices file.
+- The adapted files' BSD licenses ask a binary redistribution to reproduce their notices. The source carries them (`crates/e1000e/src/platform_controller_hub/`); no shipped image or package has a third-party notices file.
 
 ## Follow-on
 
@@ -253,7 +253,7 @@ meet a known gap). Take no dependency; vendor nothing.
 - **Milestone 804.** Milestone 804 (the I219 reconfigures its PHY when link comes up). The I219's link-up reconfiguration, about 250 lines of FreeBSD, once the bench
   boot leases. `design/roadmap/0804-the-i219-reconfigures-its-phy-when-link-comes-up.md`.
 - **Recorded.** No third-party notices file ships with an image, which Intel's BSD license asks
-  of binary redistribution. `crates/e1000e/src/pch/mod.rs`'s BUGS.
+  of binary redistribution. `crates/e1000e/src/platform_controller_hub/mod.rs`'s BUGS.
 - **Recorded.** `disk_throughput`, the other bench feature, is linted by nothing. `script/lint`,
   beside the `network_bench` line.
 

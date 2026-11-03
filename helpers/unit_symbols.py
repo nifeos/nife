@@ -110,7 +110,7 @@ KEPT = {
     'crates/clock_contract/src/lib.rs':
         ({'NANOS_PER_SEC', 'wall_nanos', 'offset_nanos', 'monotonic_nanos'},
          'the names the std overlay reads'),
-    'crates/e1000e/src/pch/sequence.rs':
+    'crates/e1000e/src/platform_controller_hub/sequence.rs':
         ({'FEXTNVM3_PHY_CFG_COUNTER_50MSEC'}, 'a register field, spelled as Linux spells it'),
     'cryptography_provider/src/lib.rs': ({'Sec1Point', 'ToSec1Point', 'from_sec1_bytes', 'to_sec1_point', 'sec1'}, _SEC1),
     'cryptography_exerciser/src/main.rs': ({'Sec1Point', 'ToSec1Point', 'from_sec1_bytes', 'to_sec1_point', 'sec1'}, _SEC1),

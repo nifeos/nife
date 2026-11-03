@@ -3,13 +3,13 @@
 //! The I219 is a MAC inside the platform controller hub (PCH) talking to a separate PHY that the
 //! Management Engine shares. FreeBSD's Intel shared code (BSD-3-Clause, notice below) and its driver
 //! files `if_em.c` and `if_em.h` (BSD-2-Clause, second notice below) are the only sources read for
-//! it: [`ulp`], [`flush`], [`reset`], [`physical_layer_device`],
+//! it: [`ultra_low_power`], [`flush`], [`reset`], [`physical_layer_device`],
 //! [`non_volatile_memory`] and [`sequence`] each name the FreeBSD functions they follow. Every
 //! sequence is generic over [`Hardware`], so it runs on the host against a simulated I219 (`simulator`)
 //! as well as in the kernel. The constants are facts about the hardware; the sequences are
 //! FreeBSD's, adapted, and carry the licenses below as their first conditions require.
 
-//! The files under `src/pch/` are `SPDX-License-Identifier: BSD-2-Clause AND BSD-3-Clause`, with
+//! The files under `src/platform_controller_hub/` are `SPDX-License-Identifier: BSD-2-Clause AND BSD-3-Clause`, with
 //! the crate's own `MIT OR Apache-2.0` beside them. The Intel shared code (`e1000_ich8lan.c` and
 //! the files beside it) carries, as found:
 //!
@@ -101,7 +101,7 @@ pub mod registers;
 
 /// Leaving ultra-low-power (ULP) mode through the Management Engine: the ME branch of FreeBSD's
 /// `e1000_disable_ulp_lpt_lp` (`e1000_ich8lan.c`).
-pub mod ulp;
+pub mod ultra_low_power;
 
 /// The SPT descriptor-ring flush. FreeBSD's comment: "In I219, the descriptor rings must be
 /// emptied before resetting the HW ... Failure to do this will cause the HW to enter a unit hang
@@ -116,7 +116,7 @@ pub mod reset;
 #[cfg(test)]
 mod tests;
 
-mod hardware;
+mod hardware_access;
 
-use hardware::*;
-pub use hardware::{Hardware, is_pch};
+use hardware_access::*;
+pub use hardware_access::{Hardware, is_pch};
