@@ -7,9 +7,7 @@ defines. Naming is an architect's.*
 (UTC) by lane/ratchet-metrics, as are the files `writing-standards.csv` and `comment-blocks.csv`,
 their columns and their charts. `line-citations.csv`, its columns, its chart and
 `line_citation_debt` are provisional too, minted 2026-10-14 (UTC) by
-maintainer/line-citations-chart. `comment-by-directory.csv`, its columns, its three charts and
-`comment_debt_by_directory` are provisional, minted 2026-10-23 (UTC) by
-comments/929-metrics-per-directory. calef asked for these charts so the baselines' debt can be driven
+maintainer/line-citations-chart. calef asked for these charts so the baselines' debt can be driven
 down.)*
 
 Three gates in `script/lint` hold a debt to a baseline that only falls. They enforce §213
@@ -29,11 +27,6 @@ week's commit.
 | `comment-blocks.csv` | `comment_block_files_over_cap` | Rust files holding a comment block over 40 lines |
 | | `comment_blocks_over_cap` | the blocks themselves, which is what a baseline row counts |
 | | `comment_block_excess_lines` | each such block's lines past 40, summed |
-| `comment-by-directory.csv` | `comment_cap_<dir>` | the cap the week's baseline puts the directory at; `other` is its lowest |
-| | `comment_blocks_over_cap_<dir>` | blocks over that cap |
-| | `comment_excess_lines_<dir>` | their lines past it, summed |
-| | `comment_in_body_<dir>` | plain comment lines inside function bodies |
-| | `comment_in_body_ceiling_<dir>` | the baseline's `in-body` row for the directory, blank without one |
 | `line-citations.csv` | `line_citations_code` | citations by line number into code |
 | | `line_citations_doc` | citations by line number into a Markdown document |
 | | `line_citations_ceiling` | the week's own `CODE_CEILING`, blank before the gate existed |
@@ -48,10 +41,7 @@ disagree about a file:
   median and the bold density is the gate's. A document over two limits counts in both columns, so
   the chart groups the three bars rather than stacking them.
 - §267: `comment_block_ratchet.blocks_over` over its `in_scope` files, every `.rs` outside
-  `vendor/`. `comment-blocks.csv` judges every file at 40. `comment-by-directory.csv` judges each
-  at `cap_of` its path under that week's `cap` rows and counts `in_body_lines`, for milestone 929
-  (comments in the Linux style across first-party Rust). `<dir>` is `kernel`, `crates`,
-  `components`, `system_tests`, `xtask`, or `other` for every other directory holding Rust.
+  `vendor/`. `comment-blocks.csv` judges every file at 40.
 - §277: `line_citations.file_hits` over its `in_scope` files, every text file but data, symlinks and
   `vendor/`. `script/metrics` reads the ceiling from the week's own `helpers/line_citations.py`, so
   the chart draws the ceiling that week's gate held.
