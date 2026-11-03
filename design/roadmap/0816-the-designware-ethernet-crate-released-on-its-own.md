@@ -174,7 +174,6 @@ work, and the lane that renames a name drops its line.
 
 ### Generic
 
-- `Bus` (`src/controller.rs`): generic: two `Bus` types in two modules
 - `interface` (`src/jh7110.rs`): generic
 - `Applied` (`src/motorcomm_physical_layer_device.rs`): generic
 - `Drive` (`src/motorcomm_physical_layer_device.rs`): generic

@@ -224,9 +224,9 @@ pub const POSTED_RECEIVE_ENTRIES: u16 = RECEIVE_ENTRIES - 1;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::controller::{self, Identity};
     use crate::jh7110::BUS;
     use crate::motorcomm_physical_layer_device::{Link, Speed};
+    use crate::network_interface_controller::{self as controller, Identity};
     use crate::sim::{Memory, NetworkInterfaceController};
     use crate::{Hardware, RDES3_FD, RDES3_LD};
 

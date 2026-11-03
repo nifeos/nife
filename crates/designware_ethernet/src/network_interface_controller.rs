@@ -13,6 +13,8 @@ use crate::motorcomm_physical_layer_device::{Link, Speed};
 use crate::{BUFFER_SIZE, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, registers};
 
 /// Why the controller was not brought up.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// The software reset did not self-clear in [`RESET_LIMIT_MICROSECONDS`]. On this controller the usual
@@ -35,6 +37,8 @@ pub enum Error {
 pub const RESET_LIMIT_MICROSECONDS: u64 = 300_000;
 
 /// What the controller says it is.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Identity {
     /// [`registers::CORE_VERSION_REGISTER`].
@@ -45,6 +49,8 @@ pub struct Identity {
 
 impl Identity {
     /// Read the version and feature registers.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3122.
     pub fn read(hardware: &mut impl Hardware) -> Identity {
         let mut features = [0; 4];
         for (i, f) in features.iter_mut().enumerate() {
@@ -57,6 +63,8 @@ impl Identity {
     }
 
     /// The Synopsys core version, `0x52` for the 5.20 both trees name.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3122.
     pub const fn core_version(&self) -> u8 {
         self.version as u8
     }
@@ -95,6 +103,8 @@ const fn queue_bytes(field: u32) -> u32 {
 }
 
 /// **Reset the whole controller** and wait for the reset to finish. Returns how long it took.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn soft_reset(hardware: &mut impl Hardware) -> Result<u64, Error> {
     let mode = hardware.read(registers::BUS_MODE);
     hardware.write(registers::BUS_MODE, mode | registers::BUS_MODE_SWR);
@@ -114,6 +124,8 @@ pub fn soft_reset(hardware: &mut impl Hardware) -> Result<u64, Error> {
 /// **The station address in the two address registers**, OpenBSD's `dwqe_lladdr_read` byte order,
 /// or `None` when they hold nothing a station could own: all zero or all ones (the reset value),
 /// or a multicast address.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn station_address(high: u32, low: u32) -> Option<[u8; 6]> {
     let [a, b, c, d] = low.to_le_bytes();
     let [e, f, _, _] = high.to_le_bytes();
@@ -140,8 +152,10 @@ pub(crate) const fn address_words(station_address: [u8; 6]) -> (u32, u32) {
 
 /// **How the DMA meets the bus**: the `snps,*` properties of a board's node and its
 /// `snps,axi-config`. [`crate::jh7110::BUS`] is radon's.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Bus {
+pub struct BusConfiguration {
     /// `snps,fixed-burst`.
     pub fixed_burst: bool,
     /// Multiply both channel burst lengths by eight (the databook's programmable burst length
@@ -168,7 +182,7 @@ pub struct Bus {
 /// The receive operation mode word for a queue of `queue_bytes` bytes, OpenBSD's arithmetic: the
 /// queue size in 256-byte units less one, threshold or store-and-forward, and hardware flow control
 /// with its thresholds once the queue is large enough for them to mean anything.
-pub(crate) fn receive_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
+pub(crate) fn receive_queue_mode(current: u32, bus: &BusConfiguration, queue_bytes: u32) -> u32 {
     let mut mode = current;
     if bus.threshold_mode {
         mode &= !(registers::MTL_CHAN_RX_OP_MODE_RSF | registers::MTL_CHAN_RX_OP_MODE_RTC_MASK);
@@ -204,7 +218,7 @@ pub const RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () = assert!(
 );
 
 /// The transmit operation mode word for a queue of `queue_bytes` bytes, OpenBSD's arithmetic.
-pub(crate) fn transmit_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
+pub(crate) fn transmit_queue_mode(current: u32, bus: &BusConfiguration, queue_bytes: u32) -> u32 {
     let mut mode = current;
     if bus.threshold_mode {
         mode &= !(registers::MTL_CHAN_TX_OP_MODE_TSF | registers::MTL_CHAN_TX_OP_MODE_TTC_MASK);
@@ -253,10 +267,12 @@ pub(crate) const fn region_in_reach(
 /// says `rx-fifo-depth = <262144>` and mainline says `<2048>` for the same silicon, and a queue
 /// size computed from the first would overflow the field into the next. The hardware's statement
 /// is the one fact about the FIFO both trees are describing.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn configure(
     hardware: &mut impl Hardware,
     id: &Identity,
-    bus: &Bus,
+    bus: &BusConfiguration,
     region: u64,
     station_address: [u8; 6],
 ) -> Result<(), Error> {
@@ -468,6 +484,8 @@ pub const MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP: () = assert!(
 
 /// **Start both DMA channels and the MAC** at `link`, OpenBSD's order: receive DMA, transmit DMA,
 /// then the MAC. Nothing moves until the data plane hands the device descriptors.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn start(hardware: &mut impl Hardware, link: Link, loopback: bool) {
     let receive = hardware.read(registers::CHAN_RX_CONTROL);
     hardware.write(
@@ -485,6 +503,8 @@ pub fn start(hardware: &mut impl Hardware, link: Link, loopback: bool) {
 
 /// **Stop the MAC and both DMA channels**, OpenBSD's `dwqe_down` order: receiver off, receive DMA
 /// off, transmit DMA off, flush the transmit queue, transmitter off.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn stop(hardware: &mut impl Hardware) -> Result<(), Error> {
     let conf = hardware.read(registers::MAC_CONF);
     hardware.write(registers::MAC_CONF, conf & !registers::MAC_CONF_RE);
@@ -764,7 +784,7 @@ mod tests {
     /// A bus unlike radon's in every field, with values wider than their fields, so each field's
     /// mask and shift is seen: `PBLx8` on, store and forward, one burst length, and 4 KiB FIFOs
     /// (big enough for flow control) at 32 bits.
-    const ODD: Bus = Bus {
+    const ODD: BusConfiguration = BusConfiguration {
         fixed_burst: false,
         channel_burst_length_times_8: true,
         transmit_channel_burst_length: 0x48,
@@ -779,7 +799,7 @@ mod tests {
         features: [0, 5 << 6 | 5, 0, 0],
     };
 
-    fn configured(fill: u32, id: &Identity, bus: &Bus, region: u64) -> Seeded {
+    fn configured(fill: u32, id: &Identity, bus: &BusConfiguration, region: u64) -> Seeded {
         let mut hardware = Seeded::new(fill);
         configure(&mut hardware, id, bus, region, STATION_ADDRESS).unwrap();
         hardware
@@ -859,7 +879,7 @@ mod tests {
     /// RFD 3 and RFA 1 in place of whatever was there.
     #[test]
     fn the_queue_modes_from_zero_and_from_all_ones() {
-        let sf = Bus {
+        let sf = BusConfiguration {
             threshold_mode: false,
             ..BUS
         };

@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 100 | 84 | 16 | 13 |
+| `designware_ethernet` | 90 | 74 | 16 | 12 |
 | `designware_mobile_storage` | 75 | 75 | 0 | 10 |
 | `e1000e` | 133 | 95 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 320 | 254 | 66 | 38 |
+| total | 310 | 244 | 66 | 37 |
 
 ## How to read a group
 
@@ -39,7 +39,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_ethernet`
 
-100 unratified names: 84 with no block, 16 provisional.
+90 unratified names: 74 with no block, 16 provisional.
 
 ### DE1. Module name (1)
 
@@ -50,17 +50,10 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ### DE2. The sixteen non-overlap assertions (16)
 
-`cache_coherence::PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP`, `controller::CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP`, `controller::MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP`, `controller::RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `controller::TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `descriptor::FIRST_AND_LAST_BITS_DO_NOT_OVERLAP`, `descriptor::RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP`, `descriptor::TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP`, `jh7110::BURST_LENGTH_BITS_DO_NOT_OVERLAP`, `jh7110::INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP`, `management_data_input_output::AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP`, `management_data_input_output::COMMAND_WORD_FIELDS_DO_NOT_OVERLAP`, `management_data_input_output::PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP`, `motorcomm_physical_layer_device::PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP`, `motorcomm_physical_layer_device::RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP`, `motorcomm_physical_layer_device::RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP`
+`cache_coherence::PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP`, `network_interface_controller::CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP`, `network_interface_controller::MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP`, `network_interface_controller::RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `network_interface_controller::TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `descriptor::FIRST_AND_LAST_BITS_DO_NOT_OVERLAP`, `descriptor::RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP`, `descriptor::TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP`, `jh7110::BURST_LENGTH_BITS_DO_NOT_OVERLAP`, `jh7110::INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP`, `management_data_input_output::AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP`, `management_data_input_output::COMMAND_WORD_FIELDS_DO_NOT_OVERLAP`, `management_data_input_output::PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP`, `motorcomm_physical_layer_device::PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP`, `motorcomm_physical_layer_device::RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP`, `motorcomm_physical_layer_device::RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. The maintainer chose the `..._DO_NOT_OVERLAP` form (the 2026-11-02 ruling that renamed the `THE_..._SHARE_NO_BIT` set) and reversing costs one pull request; each says which fields it checks. Each is a private compile-time assertion.
-
-### DE4. Controller bring-up (10)
-
-`controller::Bus`, `controller::Error`, `controller::Identity`, `controller::configure`, `controller::core_version`, `controller::read`, `controller::soft_reset`, `controller::start`, `controller::station_address`, `controller::stop`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. Plain verbs and nouns; `core_version` and `station_address` say what they return.
 
 ### DE5. Data plane (7)
 

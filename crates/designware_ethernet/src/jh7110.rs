@@ -19,8 +19,8 @@
 //!
 //! Name: ratified 2026-11-03 (UTC), #3122.
 
-use crate::controller::Bus;
 use crate::motorcomm_physical_layer_device::{Drive, Settings, Source};
+use crate::network_interface_controller::BusConfiguration;
 use crate::registers;
 
 /// Mainline's compatible for both ports.
@@ -46,7 +46,7 @@ pub const GMAC1_BASE: u64 = 0x1604_0000;
 /// the `stmmac-axi-config` node's `snps,blen = <256 128 64 32 0 0 0>` with both outstanding-request
 /// limits `0xf`. Carried as a constant rather than read, because the tree's spelling of it is the
 /// one thing both trees share verbatim and parsing it would add a failure path for no new fact.
-pub const BUS: Bus = Bus {
+pub const BUS: BusConfiguration = BusConfiguration {
     fixed_burst: true,
     channel_burst_length_times_8: false,
     transmit_channel_burst_length: 16,

@@ -12,9 +12,9 @@ use std::collections::BTreeMap;
 use std::vec;
 use std::vec::Vec;
 
-use crate::controller::{self, Identity};
 use crate::management_data_input_output::{self, ManagementDataInputOutput};
 use crate::motorcomm_physical_layer_device::{self, Link, Speed};
+use crate::network_interface_controller::{self as controller, Identity};
 use crate::{
     DirectMemoryAccessRegion, Hardware, RDES3_ES, RDES3_FD, RDES3_LD, RDES3_OWN, TDES2_BUF1_LEN,
     TDES2_IC, TDES3_OWN, Tails, layout, registers,

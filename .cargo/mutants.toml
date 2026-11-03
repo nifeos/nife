@@ -346,20 +346,20 @@ exclude_re = [
     # RSF against the threshold field, and the two flow-control threshold fields against each
     # other, are asserted disjoint by RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP, beside
     # receive_queue_mode.
-    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_queue_mode$",
+    "^crates/designware_ethernet/src/network_interface_controller\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_queue_mode$",
     # TSF against the threshold field, asserted disjoint by
     # TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP, beside transmit_queue_mode.
-    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_queue_mode$",
+    "^crates/designware_ethernet/src/network_interface_controller\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_queue_mode$",
     # CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP, beside configure, asserts its fields pairwise
     # disjoint; field values reach their `|` through their own mask or a word the line above
     # cleared, and the configure tests hold the rest (they kill the swaps at the two words read
     # unmasked).
-    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
+    "^crates/designware_ethernet/src/network_interface_controller\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
     # MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP, beside mac_configuration, asserts the cleared
     # speed, duplex and loopback bits and the final chain's five bits each pairwise disjoint; the
     # chain's first swap toggles `conf` itself and the_mac_word_from_zero_and_from_all_ones kills
     # it.
-    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in mac_configuration$",
+    "^crates/designware_ethernet/src/network_interface_controller\\.rs:\\d+:\\d+: replace \\| with \\^ in mac_configuration$",
     # RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP, beside configure, asserts the delay and drive
     # fields pairwise disjoint.
     "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",

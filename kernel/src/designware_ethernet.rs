@@ -27,10 +27,10 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use ::designware_ethernet::controller::{self, Identity};
 use ::designware_ethernet::motorcomm_physical_layer_device::{self, Link, Speed};
+use ::designware_ethernet::network_interface_controller::{self as controller, Identity};
 use ::designware_ethernet::{
-    coherence, jh7110, layout, management_data_input_output, registers, DataPlane,
+    cache_coherence, jh7110, layout, management_data_input_output, registers, DataPlane,
     DirectMemoryAccessRegion, Hardware, Tails,
 };
 use driver_process_contract::designware_ethernet::Handoff;

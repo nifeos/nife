@@ -194,6 +194,7 @@ crates/abi/src/survey.rs::RUNNING
 crates/abi/src/survey.rs::STATE
 crates/abi/src/survey.rs::is_known
 crates/abi/src/survey/tests.rs
+crates/abi/src/tests.rs
 crates/abi/src/thread_control_block.rs
 crates/abi/src/thread_control_block.rs::CONFIGURE
 crates/abi/src/thread_control_block.rs::SET_THREAD_POINTER
@@ -268,6 +269,7 @@ crates/bitmap_font/src/lib.rs::MISSING
 crates/bitmap_font/src/render.rs::cell_pixel
 crates/bitmap_font/src/render.rs::glyph
 crates/bitmap_font/src/render.rs::is_ink
+crates/bitmap_font/src/tests.rs
 crates/block_roster/src/lib.rs::Device
 crates/block_roster/src/lib.rs::ENTRY_BYTES
 crates/block_roster/src/lib.rs::Full
@@ -462,6 +464,7 @@ crates/calendar/src/lib.rs::to_unix
 crates/calendar/src/lib.rs::to_unix
 crates/calendar/src/lib.rs::weekday
 crates/calendar/src/lib.rs::year
+crates/calendar/src/tests.rs
 crates/capability/src/lib.rs::ALL
 crates/capability/src/lib.rs::BIND
 crates/capability/src/lib.rs::CapabilityTable
@@ -497,6 +500,7 @@ crates/capability/src/lib.rs::reap_decision
 crates/capability/src/lib.rs::survey_includes
 crates/capability/src/lib.rs::union
 crates/capability/src/lib.rs::used
+crates/capability/src/tests.rs
 crates/capability_manifest_note/src/lib.rs::DESCRIPTOR_LEN
 crates/capability_manifest_note/src/lib.rs::Error
 crates/capability_manifest_note/src/lib.rs::NOTE_LEN
@@ -661,6 +665,7 @@ crates/compositor/src/lib.rs::surface_checksum
 crates/compositor/src/lib.rs::translate
 crates/compositor/src/lib.rs::union
 crates/compositor/src/lib.rs::window_pixel
+crates/compositor/src/tests.rs
 crates/confined_syscall_fuzzer_contract/src/lib.rs::ARGS
 crates/confined_syscall_fuzzer_contract/src/lib.rs::CLIENT
 crates/confined_syscall_fuzzer_contract/src/lib.rs::ENDOWED
@@ -759,16 +764,6 @@ crates/current_cpu_contract/src/lib.rs::cpu
 crates/current_cpu_contract/src/lib.rs::new
 crates/current_cpu_contract/src/lib.rs::publish
 crates/current_cpu_contract/src/lib.rs::thread_page_va
-crates/designware_ethernet/src/controller.rs::Bus
-crates/designware_ethernet/src/controller.rs::Error
-crates/designware_ethernet/src/controller.rs::Identity
-crates/designware_ethernet/src/controller.rs::configure
-crates/designware_ethernet/src/controller.rs::core_version
-crates/designware_ethernet/src/controller.rs::read
-crates/designware_ethernet/src/controller.rs::soft_reset
-crates/designware_ethernet/src/controller.rs::start
-crates/designware_ethernet/src/controller.rs::station_address
-crates/designware_ethernet/src/controller.rs::stop
 crates/designware_ethernet/src/data_plane.rs::DataPlane
 crates/designware_ethernet/src/data_plane.rs::Tails
 crates/designware_ethernet/src/data_plane.rs::can_transmit
@@ -883,6 +878,7 @@ crates/designware_mobile_storage/src/host.rs::read
 crates/designware_mobile_storage/src/host.rs::registers
 crates/designware_mobile_storage/src/host.rs::reset
 crates/designware_mobile_storage/src/host.rs::write
+crates/designware_mobile_storage/src/jh7110.rs
 crates/designware_mobile_storage/src/jh7110.rs::COMPATIBLE_MAINLINE
 crates/designware_mobile_storage/src/jh7110.rs::COMPATIBLE_VENDOR
 crates/designware_mobile_storage/src/jh7110.rs::INTERRUPTS
@@ -898,6 +894,7 @@ crates/designware_mobile_storage/src/partition.rs::contains
 crates/designware_mobile_storage/src/partition.rs::is_used
 crates/designware_mobile_storage/src/partition.rs::parse
 crates/designware_mobile_storage/src/partition.rs::scratch
+crates/designware_mobile_storage/src/proofs.rs
 crates/designware_mobile_storage/src/registers.rs::STATUS
 crates/designware_mobile_storage/src/registers.rs::WINDOW_USED
 crates/designware_mobile_storage/src/sd.rs
@@ -916,6 +913,7 @@ crates/designware_mobile_storage/src/sim.rs::Sim
 crates/designware_mobile_storage/src/sim.rs::depth
 crates/designware_mobile_storage/src/sim.rs::new
 crates/designware_mobile_storage/src/sim.rs::peek
+crates/designware_mobile_storage/src/tests.rs
 crates/device_tree_blob/src/lib.rs::DeviceTreeBlob
 crates/device_tree_blob/src/lib.rs::Error
 crates/device_tree_blob/src/lib.rs::Region
@@ -1028,6 +1026,7 @@ crates/domain_name_resolution_contract/src/grants.rs::granted
 crates/domain_name_resolution_contract/src/grants.rs::new
 crates/domain_name_resolution_contract/src/messages.rs::grant_messages
 crates/domain_name_resolution_contract/src/messages.rs::reject_code
+crates/domain_name_resolution_contract/src/tests.rs
 crates/domain_name_resolution_contract/src/wire.rs
 crates/domain_name_resolution_contract/src/wire.rs::BAD_NAME
 crates/domain_name_resolution_contract/src/wire.rs::BAD_REQUEST
@@ -1104,6 +1103,7 @@ crates/domain_name_system/src/lib.rs::request_tcp
 crates/domain_name_system/src/lib.rs::root
 crates/domain_name_system/src/lib.rs::ttl
 crates/domain_name_system/src/lib.rs::write
+crates/domain_name_system/src/proofs.rs
 crates/e1000e/src/control.rs::CTRL_ASDE
 crates/e1000e/src/control.rs::CTRL_EXT_DRV_LOAD
 crates/e1000e/src/control.rs::CTRL_RST
@@ -1128,6 +1128,7 @@ crates/e1000e/src/device.rs::DEVICE_IDS
 crates/e1000e/src/device.rs::VENDOR_INTEL
 crates/e1000e/src/device.rs::is_supported
 crates/e1000e/src/device.rs::model
+crates/e1000e/src/layout.rs
 crates/e1000e/src/layout.rs::BYTES
 crates/e1000e/src/layout.rs::PAGES
 crates/e1000e/src/pch/flush.rs
@@ -1174,6 +1175,7 @@ crates/e1000e/src/pch/ulp.rs
 crates/e1000e/src/pch/ulp.rs::done
 crates/e1000e/src/pch/ulp.rs::release
 crates/e1000e/src/pch/ulp.rs::request
+crates/e1000e/src/proofs.rs
 crates/e1000e/src/registers.rs::CTRL
 crates/e1000e/src/registers.rs::CTRL_EXT
 crates/e1000e/src/registers.rs::ICR
@@ -1196,6 +1198,7 @@ crates/e1000e/src/registers.rs::TDH
 crates/e1000e/src/registers.rs::TDLEN
 crates/e1000e/src/registers.rs::TDT
 crates/e1000e/src/registers.rs::TIPG
+crates/e1000e/src/tests.rs
 crates/elf/src/error.rs::Error
 crates/elf/src/machine.rs::FOREIGN_MACHINES
 crates/elf/src/machine.rs::KNOWN_MACHINES
@@ -1223,6 +1226,7 @@ crates/elf/src/segment.rs::is_executable
 crates/elf/src/segment.rs::is_readable
 crates/elf/src/segment.rs::is_writable
 crates/elf/src/segment.rs::page_range
+crates/elf/src/tests.rs
 crates/elf/src/verification.rs
 crates/entropy_contract/src/lib.rs::DEAD
 crates/entropy_contract/src/lib.rs::GET
@@ -1369,6 +1373,7 @@ crates/filesystem_contract/src/statfs.rs::encode
 crates/filesystem_contract/src/statfs.rs::free_bytes
 crates/filesystem_contract/src/statfs.rs::total_bytes
 crates/filesystem_contract/src/statfs/tests.rs
+crates/filesystem_contract/src/tests.rs
 crates/filesystem_contract/src/verb.rs
 crates/filesystem_contract/src/verb.rs::EBADF
 crates/filesystem_contract/src/verb.rs::FIRST
@@ -1646,6 +1651,7 @@ crates/filesystem_fixture/src/lib.rs::WROTE_ATTR
 crates/filesystem_fixture/src/lib.rs::name
 crates/filesystem_fixture/src/lib.rs::sized_byte
 crates/filesystem_fixture/src/lib.rs::wide_name
+crates/filesystem_fixture/src/tests.rs
 crates/firmware_configuration/src/lib.rs::COMMAND_LEN
 crates/firmware_configuration/src/lib.rs::DIRECTORY_KEY
 crates/firmware_configuration/src/lib.rs::DirectoryEntry
@@ -1983,6 +1989,7 @@ crates/grant_plan/src/spawnproto.rs::prog_id
 crates/grant_plan/src/spawnproto.rs::reaped
 crates/grant_plan/src/spawnproto.rs::request
 crates/grant_plan/src/spawnproto.rs::wiring
+crates/grant_plan/src/tests.rs
 crates/grant_plan/src/verbs.rs::ALL
 crates/grant_plan/src/verbs.rs::CATALOG
 crates/grant_plan/src/verbs.rs::CLOCK
@@ -2182,6 +2189,7 @@ crates/inter_process_communication/src/rendezvous.rs::remove_receiver
 crates/inter_process_communication/src/rendezvous.rs::remove_sender
 crates/inter_process_communication/src/rendezvous.rs::send
 crates/inter_process_communication/src/rendezvous.rs::signal
+crates/inter_process_communication/src/tests.rs
 crates/inter_process_communication/src/timer.rs
 crates/inter_process_communication/src/timer.rs::Arm
 crates/inter_process_communication/src/timer.rs::NEVER
@@ -2706,6 +2714,7 @@ crates/memory_region_heap/src/lib.rs::committed_bytes
 crates/memory_region_heap/src/lib.rs::new
 crates/memory_regions/src/destroy.rs::DestroyOutcome
 crates/memory_regions/src/destroy.rs::destroy_outcome
+crates/memory_regions/src/proofs.rs
 crates/memory_regions/src/table.rs::DestroyClaim
 crates/memory_regions/src/table.rs::NO_PARENT
 crates/memory_regions/src/table.rs::RegionTable
@@ -2726,6 +2735,7 @@ crates/memory_regions/src/table.rs::spent
 crates/memory_regions/src/table.rs::split
 crates/memory_regions/src/table.rs::unpin
 crates/memory_regions/src/table.rs::usage
+crates/memory_regions/src/tests.rs
 crates/memory_regions/src/watermark.rs::coalesced_watermark
 crates/memory_regions/src/watermark.rs::retype_new_watermark
 crates/memory_regions/src/watermark.rs::retype_pages
@@ -3020,6 +3030,7 @@ crates/pci/src/lib.rs::mem32_window
 crates/pci/src/lib.rs::read_bars
 crates/pci/src/lib.rs::requester_id
 crates/pci/src/lib.rs::walk
+crates/pci/src/tests.rs
 crates/pgrep/src/lib.rs::BLOCKED
 crates/pgrep/src/lib.rs::DEAD
 crates/pgrep/src/lib.rs::EVERY
@@ -3106,6 +3117,7 @@ crates/screen_console/src/lib.rs::span
 crates/screen_console/src/lib.rs::span
 crates/screen_console/src/lib.rs::to_words
 crates/screen_console/src/lib.rs::write
+crates/screen_console/src/tests.rs
 crates/sealed_pair/src/lib.rs::BOOT_PROGRAMS
 crates/sealed_pair/src/lib.rs::EntrySeal
 crates/sealed_pair/src/lib.rs::Seal
@@ -3527,6 +3539,7 @@ crates/system_log/src/ring.rs::first_seq
 crates/system_log/src/ring.rs::held
 crates/system_log/src/ring.rs::new
 crates/system_log/src/ring.rs::read
+crates/system_log/src/tests.rs
 crates/system_log_contract/src/lib.rs::ALERT
 crates/system_log_contract/src/lib.rs::BUSY
 crates/system_log_contract/src/lib.rs::BYTES
@@ -3672,6 +3685,7 @@ crates/timetable/src/plan_text.rs::planned
 crates/timetable/src/plan_text.rs::saw
 crates/timetable/src/plan_text.rs::write
 crates/timetable/src/plan_text.rs::write_plan
+crates/timetable/src/proofs.rs
 crates/timetable/src/recurrence.rs::Freq
 crates/timetable/src/recurrence.rs::MonthDay
 crates/timetable/src/recurrence.rs::Parsed
@@ -4610,6 +4624,7 @@ kernel/src/testing.rs::new
 kernel/src/testing.rs::of
 kernel/src/testing.rs::run_was_filtered
 kernel/src/testing.rs::runner
+kernel/src/tests.rs
 kernel/src/thread.rs
 kernel/src/thread.rs::KernelStack
 kernel/src/thread.rs::QuotaToken
@@ -5322,6 +5337,7 @@ redoxfs_server/src/server.rs::truncate
 redoxfs_server/src/server.rs::unbind
 redoxfs_server/src/server.rs::unlink
 redoxfs_server/src/server.rs::write
+redoxfs_server/src/tests.rs
 redoxfs_server/src/tests/directory_capability.rs
 redoxfs_server/src/tests/entries.rs
 redoxfs_server/src/tests/extended_attributes.rs
