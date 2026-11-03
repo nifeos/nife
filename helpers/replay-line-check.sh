@@ -30,7 +30,7 @@ set -e
 tmp="$(mktemp "${TMPDIR:-/tmp}/replay-line-check.XXXXXX")"
 trap 'rm -f "$tmp"' EXIT
 
-# One scan: reads standard input, prints "line N: <rule>" per offence, no text.
+# One scan: reads standard input, prints "line N: <rule>" per offense, no text.
 scan() {
     awk '
         { line = $0 }

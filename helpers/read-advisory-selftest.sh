@@ -133,7 +133,8 @@ grep -q 'cannot place' "$dir/err" || fail "an unplaceable file: the refusal does
 
 # 6. nothing written to the working directory
 run NIFE_ADVISORY_READER_TOKEN=$secret -- "$id"
-[ -z "$(ls -A "$dir/repo" | grep -v -e '^advisory.txt$' -e '^.git$')" ] || fail "a read left files in the working directory"
+left="$(find "$dir/repo" -mindepth 1 -maxdepth 1 ! -name .git ! -name advisory.txt)"
+[ -z "$left" ] || fail "a read left files in the working directory"
 [ -z "$(git -C "$dir/repo" status --porcelain | grep -v advisory.txt)" ] || fail "a read dirtied the repository"
 
 echo "read-advisory-selftest: ok"

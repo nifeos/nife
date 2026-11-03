@@ -189,9 +189,9 @@ echo "==> no reproducer in this branch's commit messages (a replay line, a seed 
 # Proposal fix-lanes-read-the-advisory, name provisional. A seed, a crash input and a replay line stay
 # out of public text until the fix for the finding is on main, and a commit message is public text
 # from the push. helpers/replay-line-check.sh refuses the two forms a reproducer takes in this tree;
-# its selftest plants each and a clean message. The pull request body is the same check run from
-# .github/workflows/replay-line.yml, since lint reads no pull request. This run reads the commits
-# the branch adds to origin/main, and says so when there is no origin/main to compare with.
+# its selftest plants each and a clean message. Lint reads no pull request, so a title or body is
+# checked by piping it through the same script (`gh pr view --json body --jq .body | helpers/replay-line-check.sh`).
+# This run reads the commits the branch adds to origin/main, and says so when there is no origin/main.
 helpers/replay-line-check-selftest.sh >/dev/null
 helpers/read-advisory-selftest.sh >/dev/null
 if git rev-parse --verify -q origin/main >/dev/null; then
