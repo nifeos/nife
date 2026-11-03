@@ -351,8 +351,10 @@ impl NetworkInterfaceController {
             .insert(registers::CORE_VERSION_REGISTER, VERSION);
         self.registers
             .insert(registers::mac_hw_feature(1), FEATURE1);
-        self.registers.insert(registers::MAC_ADDR0_HI, 0xffff);
-        self.registers.insert(registers::MAC_ADDR0_LO, 0xffff_ffff);
+        self.registers
+            .insert(registers::MAC_ADDRESS_0_HIGH_REGISTER, 0xffff);
+        self.registers
+            .insert(registers::MAC_ADDRESS_0_LOW_REGISTER, 0xffff_ffff);
         self.receive_cursor = 0;
         self.transmit_cursor = 0;
     }
@@ -447,7 +449,10 @@ impl NetworkInterfaceController {
     }
 
     fn status(&mut self, bit: u32) {
-        *self.registers.entry(registers::CHAN_STATUS).or_insert(0) |= bit;
+        *self
+            .registers
+            .entry(registers::CHANNEL_STATUS_REGISTER)
+            .or_insert(0) |= bit;
     }
 
     /// How many receive descriptors the device could fill right now.
@@ -590,7 +595,9 @@ impl Hardware for NetworkInterfaceController {
                 self.registers.insert(offset, v);
                 self.reset_left = Some(self.reset_polls);
             }
-            registers::MAC_MDIO_ADDR if v & management_data_input_output::GB != 0 => {
+            registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER
+                if v & management_data_input_output::GB != 0 =>
+            {
                 let physical_layer_device =
                     ((v >> management_data_input_output::PA_SHIFT) & 0x1f) as u8;
                 let register = ((v >> management_data_input_output::RDA_SHIFT) & 0x1f) as u8;
@@ -599,10 +606,14 @@ impl Hardware for NetworkInterfaceController {
                         .physical_layer_device
                         .read(physical_layer_device, register)
                         .unwrap();
-                    self.registers
-                        .insert(registers::MAC_MDIO_DATA, u32::from(r));
+                    self.registers.insert(
+                        registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
+                        u32::from(r),
+                    );
                 } else {
-                    let data = self.register(registers::MAC_MDIO_DATA) as u16;
+                    let data = self
+                        .register(registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER)
+                        as u16;
                     self.physical_layer_device
                         .write(physical_layer_device, register, data)
                         .unwrap();
@@ -610,7 +621,7 @@ impl Hardware for NetworkInterfaceController {
                 self.registers
                     .insert(offset, v & !management_data_input_output::GB);
             }
-            registers::CHAN_STATUS => {
+            registers::CHANNEL_STATUS_REGISTER => {
                 let s = self.register(offset) & !v;
                 self.registers.insert(offset, s);
             }

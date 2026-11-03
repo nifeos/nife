@@ -253,8 +253,8 @@ fn run(
     let mac = match e.port.station_address {
         Some(m) => (m, AddressSource::Tree),
         None => controller::station_address(
-            w.read(registers::MAC_ADDR0_HI),
-            w.read(registers::MAC_ADDR0_LO),
+            w.read(registers::MAC_ADDRESS_0_HIGH_REGISTER),
+            w.read(registers::MAC_ADDRESS_0_LOW_REGISTER),
         )
         .map(|m| (m, AddressSource::Registers))
         .ok_or(Error::NoStationAddress)?,
@@ -387,7 +387,7 @@ fn probe(
     while !coherence::delivered(&plane) && crate::arch::timer::now() < deadline {
         core::hint::spin_loop();
     }
-    let status = w.read(registers::CHAN_STATUS);
+    let status = w.read(registers::CHANNEL_STATUS_REGISTER);
     let o = coherence::observe(&plane, mac, status);
     let v = coherence::classify(&o);
     r.coherence = Some((v, o));

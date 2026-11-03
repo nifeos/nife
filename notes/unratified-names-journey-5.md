@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 119 | 100 | 19 | 14 |
+| `designware_ethernet` | 104 | 85 | 19 | 13 |
 | `designware_mobile_storage` | 75 | 75 | 0 | 10 |
 | `e1000e` | 133 | 95 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 339 | 270 | 69 | 39 |
+| total | 324 | 255 | 69 | 38 |
 
 ## How to read a group
 
@@ -35,11 +35,11 @@ In order, easiest to rule on first:
 3. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
 4. The `no` groups of designware_mobile_storage (`DM1` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
-The groups that need a real ruling are the register and bit constants: `DE7` to `DE10`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
+The groups that need a real ruling are the register and bit constants: `DE7`, `DE9`, `DE10`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
-119 unratified names: 100 with no block, 19 provisional.
+104 unratified names: 85 with no block, 19 provisional.
 
 ### DE1. Module names (11)
 
@@ -89,13 +89,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: yes.
 - Provisional recommendation: Spell out, with the databook spelling kept as `#[doc(alias)]` and cited in the doc comment, as the 2026-11-02 rule and the earlier `RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION` rename already do. The docs already carry the plain-words title of each (for example 'owned by the device'), so the candidate names come from the crate's own text. Decide as one group; the items share one pattern.
-
-### DE8. MAC and channel register constants (CHAN_*, MAC_*) (15)
-
-`registers::CHAN_CUR_RX_DESC`, `registers::CHAN_CUR_TX_DESC`, `registers::CHAN_STATUS`, `registers::CHAN_STATUS_RPS`, `registers::CHAN_STATUS_TPS`, `registers::MAC_ADDR0_HI`, `registers::MAC_ADDR0_LO`, `registers::MAC_CONF_BE`, `registers::MAC_CONF_DCRS`, `registers::MAC_CONF_DM`, `registers::MAC_CONF_FES`, `registers::MAC_CONF_JD`, `registers::MAC_CONF_PS`, `registers::MAC_MDIO_ADDR`, `registers::MAC_MDIO_DATA`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out under the same rule, in the pattern of the nine renames in #3094 (for example `CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER`). Decide as one group; the `MAC_CONF_*` bits and the `CHAN_STATUS_*` fields can ride with their parent register.
 
 ### DE9. Register window and the hardware-feature accessor (2)
 
