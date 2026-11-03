@@ -41,6 +41,8 @@
 /// assert_eq!(t.get(a), None);
 /// assert_eq!(t.get(b), Some(&"second"));
 /// ```
+///
+/// Name: ratified 2026-11-03 (UTC), #3119.
 pub struct Table<T, const N: usize> {
     slots: [Option<T>; N],
     /// The current generation of each slot: the one a live occupant's name carries, and the one
@@ -57,6 +59,8 @@ pub struct Table<T, const N: usize> {
 
 impl<T, const N: usize> Table<T, N> {
     /// An empty table: every slot free, every generation at 0.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3119.
     pub const fn new() -> Self {
         // A compile-time guard on the packing: slots must fit in the low 32 bits.
         const { assert!(N > 0 && N <= u32::MAX as usize) };
@@ -91,6 +95,8 @@ impl<T, const N: usize> Table<T, N> {
     /// assert!(t.insert_with(|_| 2).is_some());
     /// assert!(t.insert_with(|_| 3).is_none(), "a full table refuses");
     /// ```
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn insert_with(&mut self, f: impl FnOnce(u64) -> T) -> Option<u64> {
         let slot = self.slots.iter().position(|s| s.is_none())?;
         let name = Self::name(slot, self.gens[slot]);
@@ -108,6 +114,8 @@ impl<T, const N: usize> Table<T, N> {
     /// the kernel stores TCBs in a parallel pool with pool slot i = table slot i, so the index
     /// *is* the storage address. `get`/`get_mut`/`remove` are built on this, so every harness
     /// that proves a stale name never resolves proves it for `slot_of` too.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn slot_of(&self, name: u64) -> Option<usize> {
         let (slot, generation) = Self::unpack(name);
         if *self.gens.get(slot)? != generation {
@@ -119,12 +127,16 @@ impl<T, const N: usize> Table<T, N> {
 
     /// Resolve a name. `None` for a name whose entry was removed (however long ago), a name from
     /// a previous occupant of the slot, or garbage. Never the wrong entry.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn get(&self, name: u64) -> Option<&T> {
         let slot = self.slot_of(name)?;
         self.slots[slot].as_ref()
     }
 
     /// [`get`](Self::get), mutably.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because nife uses the standard library's name where it has one.
     pub fn get_mut(&mut self, name: u64) -> Option<&mut T> {
         let slot = self.slot_of(name)?;
         self.slots[slot].as_mut()
@@ -132,6 +144,8 @@ impl<T, const N: usize> Table<T, N> {
 
     /// Remove and return the entry, bumping the slot's generation: from this moment `name` (and
     /// every copy of it, wherever it is held) resolves to `None`, forever.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn remove(&mut self, name: u64) -> Option<T> {
         let slot = self.slot_of(name)?;
         let value = self.slots[slot].take()?;
@@ -157,24 +171,32 @@ impl<T, const N: usize> Table<T, N> {
 
     /// The number of live entries. O(1): maintained on every insert and remove rather than
     /// counted by walking `slots`.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because nife uses the standard library's name where it has one.
     pub fn len(&self) -> usize {
         self.live
     }
 
     /// Whether the table currently holds no live entries.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn is_empty(&self) -> bool {
         self.live == 0
     }
 
-    /// Every live entry, in slot order. For whole-table sweeps (revocation walks every capability table);
+    /// Every live entry by mutable reference, in slot order. For whole-table sweeps (revocation walks every capability table);
     /// nothing on a hot path iterates.
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3119. Renamed from `iter_mut`, which yielded only values and so disagreed with the standard library's `iter_mut`; it now pairs with `values`.
+    pub fn values_mut(&mut self) -> impl Iterator<Item = &mut T> {
         let top = self.top;
         self.slots[..top].iter_mut().filter_map(|s| s.as_mut())
     }
 
     /// The slot index of every live entry, in slot order; each index appears at most once. The
     /// pool-backed kernel table iterates its parallel storage with this.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn live_slots(&self) -> impl Iterator<Item = usize> + '_ {
         self.slots[..self.top]
             .iter()
@@ -185,14 +207,18 @@ impl<T, const N: usize> Table<T, N> {
     /// Every live entry by shared reference, in slot order. For a table whose values *are* the
     /// storage (the kernel's page-resident TCB table stores a `*mut Thread` per name), this is
     /// how the caller reaches each without a second lookup.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn values(&self) -> impl Iterator<Item = &T> + '_ {
         self.slots[..self.top].iter().filter_map(|s| s.as_ref())
     }
 
     /// Every live entry with its current name, in slot order. For sweeps that must *remove* what
     /// they find and so need the name, not just the value (object revocation: find every object
-    /// backed by a region, then remove it by name). `values`/`iter_mut` suffice when the caller
+    /// backed by a region, then remove it by name). `values`/`values_mut` suffice when the caller
     /// only needs the entry, as a TCB carries its own name and does not need this.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because nife uses the standard library's name where it has one.
     pub fn iter(&self) -> impl Iterator<Item = (u64, &T)> + '_ {
         self.iter_from(0).map(|(_, name, t)| (name, t))
     }
@@ -225,6 +251,8 @@ impl<T, const N: usize> Table<T, N> {
     /// // And a cursor past the end is empty rather than a panic.
     /// assert_eq!(t.iter_from(99).count(), 0);
     /// ```
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn iter_from(&self, from: usize) -> impl Iterator<Item = (usize, u64, &T)> + '_ {
         self.slots[..self.top]
             .iter()
@@ -414,13 +442,13 @@ mod tests {
     }
 
     #[test]
-    fn iter_mut_sees_only_live_entries() {
+    fn values_mut_sees_only_live_entries() {
         let mut t: Table<u32, 4> = Table::new();
         let a = t.insert_with(|_| 1).unwrap();
         t.insert_with(|_| 2).unwrap();
         t.remove(a);
 
-        let live: Vec<u32> = t.iter_mut().map(|v| *v).collect();
+        let live: Vec<u32> = t.values_mut().map(|v| *v).collect();
         assert_eq!(live, vec![2]);
         assert_eq!(t.len(), 1);
     }

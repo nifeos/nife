@@ -58,8 +58,8 @@ projects nife depends on.
 
 Each row is a property this crate must prove before it publishes. The harness cell names the Kani
 harness that proves it, or says `none yet`; every named harness carries a falsification patch that
-makes it fail at its own assertion. Each patch is at `crates/jh7110_entropy/falsifications/`.
-Measured 2026-10-11 (UTC): 4 of 4 proven.
+makes it fail at its own assertion. Each patch is at `falsifications/` in `nifeos/jh7110_entropy`.
+All four prove.
 
 | property | harness |
 |---|---|
@@ -152,17 +152,17 @@ harness.
 - A bump of the pin is a separate pull request citing the landed commit as
   `nifeos/jh7110_entropy@<sha>`.
 
-## The architect's review, and the tag it needs first
+## The architect's review and the tags
 
 The architect reads every crate by hand before it leaves (condition 4 of §247 (the split begins
 with basalt holding nife, and `procps` moves first), ruled 2026-11-01 (UTC)). This crate is the
 first so reviewed, the pilot of the review as of the mechanics. It moved on 2026-10-31 (UTC),
 before that ruling, so the review reads its repository, and it comes before any contract crate
-leaves. A tag is a prerequisite: the crate has none, and the
-ruling's second item needs a tagged release whose commit carries the Cargo version, so that
-`cargo-semver-checks --baseline-rev` has a baseline. The steps: tag `v0.1.0` on the commit that
-carries version 0.1.0, state the version requirement beside the revision in nife's three pins, then
-the review.
+leaves. The ruling's second item needs a tagged release whose
+commit carries the Cargo version, so that `cargo-semver-checks --baseline-rev` has a baseline.
+`nifeos/jh7110_entropy` carries the tags `v0.1.0` and `v0.1.1`, and nife's three pins state
+`version = "0.1.1"` beside the revision. The architect cleared this crate's review on 2026-11-01
+(UTC).
 
 ## Review before release
 

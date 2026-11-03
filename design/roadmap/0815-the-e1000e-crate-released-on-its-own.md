@@ -30,18 +30,19 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   the network card a PC actually has), which is PARTIAL. It claims the 82574L that QEMU's
   `-device e1000e` presents and the Sunrise Point I219 rows, which is xenon's I219-LM5. Later PCH
   generations are refused until a bench proves one; the crate's `BUGS` says why.
-- Four Kani harnesses, each with a falsification patch. A delivered frame always fits the buffer
-  and the room. The handoff round-trips and accepts only what `pack` can make. Every ring offset is
-  inside the region, and a paged access selects the offset's own page and register.
+- Three Kani harnesses, each with a falsification patch. A delivered frame always fits the buffer
+  and the room. Every ring offset is inside the region, and a paged access selects the offset's own
+  page and register. The harness that the handoff round-trips and accepts only what `pack` can make
+  lives with `Handoff` in `driver_process_contract`.
 - Class B in #1806's note `notes/releasable-crates-2026-10-07.md`. **The cut**: inline
   `address_space_map::pair_page`, its one use (`src/lib.rs`, in the handoff). That function places
   nife's virtual addresses, so the handoff it serves is nife's spawn ABI; whether the handoff stays
   in the published crate or moves to the driver is the lane's call, recorded in its pull request.
 - Ruled 2026-10-25 (UTC): the crates take plain values; the device-tree walk moves to nife, and
   the knowledge of the vendor and mainline JH7110 trees stays in each crate as data and decoders.
-- Cut on 2026-10-25 (UTC) by #2719. The handoff stays in the crate, since it is the driver's own
-  spawn record. The three virtual addresses that `pair_page` placed moved to
-  `crates/driver_process_contract`, which the kernel and the components link.
+- Cut on 2026-10-25 (UTC) by #2719. The three virtual addresses that `pair_page` placed moved to
+  `crates/driver_process_contract`, which the kernel and the components link, and `Handoff`, its
+  `pack` and its harness have since moved there too.
 - Its consumers: `kernel/src/e1000e.rs` (reset, MAC address, ring bases), `kernel/src/pci.rs`,
   `kernel/src/user/e1000e_service.rs`, `kernel/src/network_bench.rs`, and in `components/`,
   `e1000e_transport.rs` and `net_stack.rs` (descriptors and tails).
@@ -59,13 +60,12 @@ nife contributes only to projects nife depends on.
 
 Each row is a property this crate must prove before it publishes. The harness cell names the Kani
 harness that proves it, or says `none yet`; every named harness carries a falsification patch that
-makes it fail at its own assertion. Each patch is at `crates/e1000e/falsifications/`. Measured
-2026-10-11 (UTC): 4 of 4 proven.
+makes it fail at its own assertion. Each patch is at `crates/e1000e/falsifications/`. All
+three prove.
 
 | property | harness |
 |---|---|
 | A delivered frame always fits the buffer and the room | `proofs::a_delivered_frame_always_fits_the_buffer_and_the_room` |
-| The handoff round-trips and accepts only what `pack` can make | `proofs::the_handoff_round_trips_and_accepts_only_what_pack_can_make` |
 | Every ring offset is inside the region | `proofs::every_ring_offset_is_inside_the_region` |
 | A paged PHY access selects the offset's own page and register | `pch::physical_layer_device::proofs::a_paged_access_selects_the_offsets_own_page_and_register` |
 
@@ -134,7 +134,7 @@ citations left sit in `Name:` blocks, which stay until the ratification pass. `a
 still a path dependency, so the copy does not build; the second half of the cut removes it.
 
 Measured again after the cut on 2026-10-25 (UTC), with Kani: the manifest has no dependencies, the
-crate builds for the host and the three targets on 1.88. Stock Kani proves all 4 harnesses, and
+crate builds for the host and the three targets on 1.88. Stock Kani proves all three harnesses, and
 each falsification patch makes its harness fail. The only failures left are citations in `Name:`
 blocks, which the ratification pass settles.
 
@@ -142,7 +142,7 @@ blocks, which the ratification pass settles.
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
-  `Handoff` is nife's spawn ABI. The addresses taken from `address_space_map` left with the cut.
+  `Handoff`, nife's spawn ABI, no longer sits in the crate. The addresses taken from `address_space_map` left with the cut.
 
 ## Names a stranger may misread, open before release
 
@@ -212,6 +212,6 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Index row
 
-nife's Intel e1000e ring and register logic, with four Kani proofs and their falsification patches,
+nife's Intel e1000e ring and register logic, with three Kani proofs and their falsification patches,
 cut free of nife's address map. It is published on crates.io as `e1000e` 0.1 from its own `nifeos`
 repository, and nife consumes that release.
