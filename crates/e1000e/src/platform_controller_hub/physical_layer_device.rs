@@ -460,7 +460,7 @@ mod proofs {
     /// five-bit register that is the offset's own, and a page select that is the offset's page**
     /// (768 shown as 0), written only when the register is above the unpaged range.
     ///
-    /// Falsification: replayable `crates/e1000e/falsifications/pch.physical_layer_device.proofs.a_paged_access_selects_the_offsets_own_page_and_register.patch`
+    /// Falsification: replayable `crates/e1000e/falsifications/platform_controller_hub.physical_layer_device.proofs.a_paged_access_selects_the_offsets_own_page_and_register.patch`
     #[kani::proof]
     fn a_paged_access_selects_the_offsets_own_page_and_register() {
         let off: u32 = kani::any();

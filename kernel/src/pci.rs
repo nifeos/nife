@@ -950,7 +950,7 @@ pub(crate) struct PciE1000eDevice {
 
 impl PciE1000eDevice {
     /// Read a dword of this function's configuration space. The I219's descriptor-ring flush
-    /// reads its status word at `0xe4` (`e1000e::pch::flush`), which is the one reason a NIC
+    /// reads its status word at `0xe4` (`e1000e::platform_controller_hub::flush`), which is the one reason a NIC
     /// driver here needs configuration space after bring-up.
     pub(crate) fn config_read32(&self, off: u64) -> u32 {
         cfg_read32(self.bdf, off)

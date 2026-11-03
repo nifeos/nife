@@ -6,7 +6,7 @@
 //! descriptors and moves the tails. A ring's base and tail share a page ([`registers`]), so the
 //! IOMMU is the whole DMA confinement; the process holds only [`RECEIVE_QUEUE_PAGE`] and
 //! [`TRANSMIT_QUEUE_PAGE`]. The register facts come from Linux's `regs.h`, `defines.h` and `hw.h`
-//! for the 82574L and from FreeBSD's Intel shared code for the I219 ([`pch`]).
+//! for the 82574L and from FreeBSD's Intel shared code for the I219 ([`platform_controller_hub`]).
 //!
 //! Name: ratified 2026-10-07 (calef, #1806), permanent on first publication: the family name QEMU's
 //! `-device e1000e` and Linux's driver directory use, kept across their interface
@@ -19,7 +19,7 @@
 
 //! # BUGS
 //!
-//! - **The I219's bring-up is ported in [`pch`] but not its link-up half**, which [`pch`]'s own
+//! - **The I219's bring-up is ported in [`platform_controller_hub`] but not its link-up half**, which [`platform_controller_hub`]'s own
 //!   BUGS records.
 //! - **Legacy descriptors on the I219 are an assumption**, believed from the 8254x lineage and not
 //!   read anywhere.
@@ -29,7 +29,8 @@
 #[cfg(test)]
 extern crate std;
 
-pub mod pch;
+#[doc(alias = "pch")]
+pub mod platform_controller_hub;
 
 /// Register offsets in BAR0. Read from Linux's `regs.h`; queue 0 only.
 pub mod registers;
@@ -40,12 +41,12 @@ pub mod layout;
 #[cfg(test)]
 mod tests;
 
-mod control;
+mod control_registers;
 mod data_plane;
 mod descriptor;
-mod device;
+mod supported_devices;
 
-pub use control::{
+pub use control_registers::{
     CTRL_ASDE, CTRL_EXT_DRV_LOAD, CTRL_RST, CTRL_SLU, RAH_AV, RFCTL_EXTEN, STATUS_LU, rctl,
     station_address_from_receive_address, tctl, tipg,
 };
@@ -56,7 +57,7 @@ pub use descriptor::{
     RECEIVE_STATUS_DD, RECEIVE_STATUS_EOP, ReceiveVerdict, TAIL_IN_PAGE, TRANSMIT_COMMAND,
     TRANSMIT_ENTRIES, TRANSMIT_QUEUE_PAGE, TRANSMIT_STATUS_DD, receive_verdict, transmit_word,
 };
-pub use device::{DEVICE_IDS, VENDOR_INTEL, is_supported_device, model_name};
+pub use supported_devices::{DEVICE_IDS, VENDOR_INTEL, is_supported_device, model_name};
 
 #[cfg(kani)]
 mod proofs;

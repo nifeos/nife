@@ -17,7 +17,7 @@ Three Kani harnesses cover the input a device or a caller controls:
   receive buffer and the caller's space.
 - `proofs::every_ring_offset_is_inside_the_region`: for any index, every descriptor and buffer
   offset lies inside its part of the DMA region.
-- `pch::physical_layer_device::proofs::a_paged_access_selects_the_offsets_own_page_and_register`:
+- `platform_controller_hub::physical_layer_device::proofs::a_paged_access_selects_the_offsets_own_page_and_register`:
   every paged PHY access names a PHY address that exists, the offset's own register and the offset's
   own page.
 
@@ -85,14 +85,14 @@ item says so.
 The I219 needs a port rather than a reading of registers. It is a MAC inside the platform
 controller hub, talking to a separate PHY that it shares with the Management Engine, and it
 carries workarounds that only field exposure finds. FreeBSD's Intel shared code (BSD-3-Clause) and its
-`if_em.c` and `if_em.h` (BSD-2-Clause) are the only sources read for `pch`; Linux's `e1000e` is GPL and was not consulted for any of it. Each
-item in `pch` names the FreeBSD function it follows. Everything was read from `sys/dev/e1000/` on
-FreeBSD's `main`: `ulp`, `flush` and `reset` on 2026-10-04, the rest on 2026-10-05. The last
+`if_em.c` and `if_em.h` (BSD-2-Clause) are the only sources read for `platform_controller_hub`; Linux's `e1000e` is GPL and was not consulted for any of it. Each
+item in `platform_controller_hub` names the FreeBSD function it follows. Everything was read from `sys/dev/e1000/` on
+FreeBSD's `main`: `ultra_low_power`, `flush` and `reset` on 2026-10-04, the rest on 2026-10-05. The last
 commit touching `e1000_ich8lan.c` was then 46cf612d (2026-08-30).
 
 ## License
 
 Licensed under either of MIT (LICENSE-MIT) or Apache-2.0 (LICENSE-APACHE), at your option. The
-files under `src/pch/` adapt FreeBSD's Intel shared code and `if_em.c` and also carry Intel's BSD-3-Clause
+files under `src/platform_controller_hub/` adapt FreeBSD's Intel shared code and `if_em.c` and also carry Intel's BSD-3-Clause
 notice and the BSD-2-Clause notice of `if_em.c` and `if_em.h` (Intel, Nicole Graziano, Kevin Bowling),
 which a binary redistribution must reproduce. Their SPDX expression is `BSD-2-Clause AND BSD-3-Clause`.

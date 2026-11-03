@@ -404,15 +404,15 @@ mod tests {
 
     use super::*;
     use crate::sd::{self, Card, IoError};
-    use crate::simulator::{CardKind, Memory, Sim};
+    use crate::simulator::{CardKind, Memory, SimulatedHostController};
 
     /// A bus address with high bits set, so an offset taken as an address shows.
     const BASE: u64 = 0x8000_0000;
 
     /// An identified SDHC card behind a polled host, and memory of `pages` pages the sim's IDMAC
     /// reaches.
-    fn polled(pages: usize) -> (Host<Sim>, Card, Memory) {
-        let mut sim = Sim::new(CardKind::SdHighCapacity, 4096, 32);
+    fn polled(pages: usize) -> (Host<SimulatedHostController>, Card, Memory) {
+        let mut sim = SimulatedHostController::new(CardKind::SdHighCapacity, 4096, 32);
         let memory = Memory::new(BASE, pages);
         sim.memory = Some(memory.clone());
         let (mut h, _) = Host::new(sim, 50_000_000, Some(32)).unwrap();
@@ -420,7 +420,10 @@ mod tests {
         (h, card, memory)
     }
 
-    fn with_internal_direct_memory_access(h: Host<Sim>, memory: &Memory) -> Host<Sim, Memory> {
+    fn with_internal_direct_memory_access(
+        h: Host<SimulatedHostController>,
+        memory: &Memory,
+    ) -> Host<SimulatedHostController, Memory> {
         let mut h = h;
         let hcon = h.registers().peek(registers::HCON);
         let id = Identity {
@@ -436,7 +439,7 @@ mod tests {
         )
     }
 
-    fn polled_again(h: Host<Sim, Memory>) -> Host<Sim> {
+    fn polled_again(h: Host<SimulatedHostController, Memory>) -> Host<SimulatedHostController> {
         Host::new(h.into_registers(), 50_000_000, Some(32))
             .unwrap()
             .0
@@ -577,7 +580,7 @@ mod tests {
     #[test]
     fn every_failed_transfer_stops_the_internal_direct_memory_access_engine_and_the_next_one_works()
     {
-        type Inject = fn(&mut Sim);
+        type Inject = fn(&mut SimulatedHostController);
         type Expect = fn(&Error) -> bool;
         let cases: [(Inject, Expect); 3] = [
             (
@@ -615,7 +618,7 @@ mod tests {
             sim.unowned_at = None;
             let written = memory.bus().device_written;
             for _ in 0..64 {
-                sim.read(registers::STATUS);
+                sim.read(registers::STATUS_REGISTER);
             }
             assert_eq!(memory.bus().device_written, written);
             sd::read_blocks(&mut h, &card, 60, &mut back).unwrap();
@@ -733,7 +736,7 @@ mod tests {
     /// `BUS_MODE` when arming, and when stopping `BUS_MODE` or `CONTROL`, whichever is held.
     #[test]
     fn an_internal_direct_memory_access_reset_that_never_clears_is_reported_with_its_register() {
-        type Hold = fn(&mut Sim);
+        type Hold = fn(&mut SimulatedHostController);
         type Word = fn(u32) -> bool;
         // Whether the read command reached the card: a stuck arming reset stops before it.
         let sent = [false, true, true];
@@ -775,7 +778,7 @@ mod tests {
         sd::write_blocks(&mut h, &card, 2048, &data).unwrap();
         let mut reference = vec![0u8; 128 * 512];
         sd::read_blocks(&mut h, &card, 2048, &mut reference).unwrap();
-        let report = crate::bench::ReadReport {
+        let report = crate::bench::ReadOnlyProbeReport {
             card,
             master_boot_record: None,
             partition_boot_signature: false,
