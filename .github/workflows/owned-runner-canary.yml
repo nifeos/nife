@@ -24,14 +24,16 @@ jobs:
   canary-owned:
     if: github.event_name == 'merge_group' || github.event_name == 'push'
     runs-on: [nife-owned-x86_64]
-    continue-on-error: true
+    continue-on-error: true  # outcome: exception, the canary measures the owned pool and must never block the queue
     timeout-minutes: 15
     steps:
       - name: Probe
         env:
           CANARY_KIND: owned
+        shell: bash
         run: |
           set +e
+          set -o pipefail
           start=$(date +%s)
           {
             echo "## canary-owned"
@@ -62,8 +64,10 @@ jobs:
       - name: Probe
         env:
           CANARY_KIND: hosted
+        shell: bash
         run: |
           set +e
+          set -o pipefail
           start=$(date +%s)
           {
             echo "## canary-hosted"

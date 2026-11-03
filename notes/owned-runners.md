@@ -93,7 +93,7 @@ runner name and machine name lines with the run's URL for the maintainers who op
 
 If a step fails to reach a host, the proxy has refused it. Name the host, the step
 that wanted it and the run URL, in a comment on the pull request that introduced the step or in an
-issue labelled `ci`. The maintainers who operate the pool add the host to the allowlist. Do not work
+issue labeled `ci`. The maintainers who operate the pool add the host to the allowlist. Do not work
 around the proxy and do not route a pull request job to a hosted runner to avoid it. The hosted
 twin is unaffected, so the rollback below keeps the queue moving until the maintainers add the host.
 
