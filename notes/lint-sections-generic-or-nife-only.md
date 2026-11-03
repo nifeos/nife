@@ -39,7 +39,7 @@ seconds.
 
 The full rows are in three appendices, one per tag:
 [generic](lint-sections-generic-or-nife-only/generic.md),
-[generic-with-config](lint-sections-generic-or-nife-only/generic-with-config.md) and
+[generic-with-config](lint-sections-generic-or-nife-only/generic-with-configuration.md) and
 [nife-only](lint-sections-generic-or-nife-only/nife-only.md). Each row gives the section's header,
 what it checks, what it reads, the config a second repository would supply, and its seconds.
 
