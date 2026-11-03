@@ -810,11 +810,6 @@ crates/designware_ethernet/src/descriptor.rs::TDES3_FS
 crates/designware_ethernet/src/descriptor.rs::TDES3_LS
 crates/designware_ethernet/src/descriptor.rs::TDES3_OWN
 crates/designware_ethernet/src/jh7110.rs
-crates/designware_ethernet/src/jh7110.rs::BUS
-crates/designware_ethernet/src/jh7110.rs::Discovered
-crates/designware_ethernet/src/jh7110.rs::GMAC0_BASE
-crates/designware_ethernet/src/jh7110.rs::GMAC1_BASE
-crates/designware_ethernet/src/jh7110.rs::interface
 crates/designware_ethernet/src/layout.rs
 crates/designware_ethernet/src/layout.rs::BYTES
 crates/designware_ethernet/src/layout.rs::PAGES
