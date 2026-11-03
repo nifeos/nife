@@ -82,8 +82,8 @@ question that wants one.
    boot test on real geometry) were not. `Handoff::transfer_command` sends a filesystem block
    number as an LBA (`let slba = block;`), the factor-of-8 confusion the test's block 37 exists to
    catch. Replayed on aarch64 with `cargo xtask test --arch aarch64 --test
-   a_confined_el0_process_serves_the_block_interface_end_to_end`: red at
-   `non_volatile_memory_express_tests.rs:151`, "byte 512 of block 37 came back wrong", exactly the
+   a_confined_el0_process_serves_the_block_interface_end_to_end`: red in
+   `system_tests/src/user/non_volatile_memory_express_tests.rs`, "byte 512 of block 37 came back wrong", exactly the
    assertion the patch predicts. `script/falsifications --sweep system_tests` then swept it red in
    21.8 s.
 
@@ -94,7 +94,7 @@ question that wants one.
    bit while `CR4.SMAP` stays off. One record cannot name two files, so `script/falsifications`
    now accepts `Architecture: aarch64, x86_64` and replays the patch on each leg, requiring red on
    every one; a hunk for an ISA that is not booted is dead text to that boot. Row 21's patch carries
-   both hunks. Replayed: red at `system_tests/src/user/tests.rs:257` on aarch64 and on `x86_64`
+   both hunks. Replayed: red in `a_user_program_cannot_read_a_kernel_address` in `system_tests/src/user/el0_boundary_tests.rs` on aarch64 and on `x86_64`
    ("the user program read a kernel address and was NOT stopped"). riscv64 stays out because the
    defect cannot be booted there (a `U` kernel page faults the kernel, see the row 21 section of
    `notes/confinement-claims.md`), and its evidence is the software walk.
@@ -109,11 +109,11 @@ question that wants one.
    Two things the replays found. The `x86_64` leg boots twice (direct, then real firmware) and
    the sweep summed the selections, so a record red only under firmware read as stale; it now counts
    distinct tests. And `port_holder_transmits_then_a_non_holder_faults` is exactly that record: its defect stays
-   green on the direct boot and goes red only under real firmware, at `x86_port_tests.rs:221`. The
+   green on the direct boot and goes red only under real firmware, in the non-holder assertion of `system_tests/src/user/x86_port_tests.rs`. The
    patch now says so. The cause, measured 2026-10-03 by lane `x86-port-falsification-split`: the
    direct boot runs two cores, the per-core TSS bitmap kept the holder's grant on cpu 0, and the
    non-holder ran on cpu 1. The test now puts its non-holder's `out` on the holder's core and the
-   record is red on both boots (`x86_port_tests.rs:270`).
+   record is red on both boots (the same assertion in `system_tests/src/user/x86_port_tests.rs`).
 
 4. A record does not say which assertion it expects to fire, so a patch that turns a test red for
    the wrong reason is indistinguishable from one that works. Milestone 307 swept all 26 rows of
@@ -194,8 +194,8 @@ tell a stale premise from a live one. It is rung three, written where the next p
   falsified by hand before being written down. `script/falsifications --sweep device_tree_blob`:
   4 swept, 0 survivors, 0 stale.
 - **Done.** Part 2, in `system_tests/falsifications/` on branch `milestone/323-falsification-gaps`:
-  the NVMe end-to-end test carries a `replayable` record, red on aarch64 at
-  `non_volatile_memory_express_tests.rs:151`.
+  the NVMe end-to-end test carries a `replayable` record, red on aarch64 in
+  `system_tests/src/user/non_volatile_memory_express_tests.rs`.
 - **Done.** Part 3, same branch: `script/falsifications` takes a comma list in `Architecture:`,
   row 21 is red on aarch64 and `x86_64`, and rows 22, 23, 24 and 30 are red on all three ISAs.
   A sweep of `system_tests` on 2026-10-03 reported 18 swept, 0 survivors.

@@ -46,7 +46,7 @@ suffix and an anchor.
 The false positives are the whole design problem, and they are enumerable, which is what makes
 this rung two rather than a `git grep -w TODO` at 82%. Milestone 259 hit exactly four kinds:
 
-1. **Verbatim transcripts.** A quoted panic said `crates/frames/src/lib.rs:315` because that is what
+1. **Verbatim transcripts.** A quoted panic named `crates/frames/src/lib.rs` and a line number because that is what
    it said, and rewriting it would falsify the evidence. Two instances.
 2. Deliberate past tense. `notes/ntlm.md` and `notes/smb.md` describe code removed on
    2026-08-30 and say so in their first line; `notes/heap.md` carries a banner recording that
