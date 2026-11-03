@@ -9,7 +9,6 @@ use super::*;
 /// base; an implementation bounds them. `e1000e::Region`'s shape.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
-#[doc(alias = "Region")]
 pub trait DirectMemoryAccessRegion {
     /// Read the little-endian `u64` at `offset`.
     fn read_u64(&self, offset: u64) -> u64;

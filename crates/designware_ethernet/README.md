@@ -66,7 +66,7 @@ impl Tails for NoDevice {
     fn barrier(&mut self) {}
 }
 
-let mut region = Memory(vec![0; layout::BYTES as usize]);
+let mut region = Memory(vec![0; layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize]);
 let mut tails = NoDevice;
 let mut plane = DataPlane::new(0x4000_0000); // the region's physical address
 plane.start(&mut region, &mut tails); // posts the receive buffers

@@ -6,7 +6,7 @@
 
 use address_space_map::{PAGE, pair_page};
 
-/// The DMA region, `designware_ethernet::layout::PAGES` pages, normal memory. The same address as
+/// The DMA region, `designware_ethernet::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` pages, normal memory. The same address as
 /// the virtio and `e1000e` servers' DMA windows; a `net_stack` drives one NIC, never two.
 ///
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the

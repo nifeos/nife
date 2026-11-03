@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 81 | 78 | 3 | 10 |
+| `designware_ethernet` | 73 | 70 | 3 | 8 |
 | `designware_mobile_storage` | 74 | 74 | 0 | 10 |
 | `e1000e` | 126 | 92 | 34 | 12 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 293 | 244 | 49 | 34 |
+| total | 285 | 236 | 49 | 32 |
 
 ## How to read a group
 
@@ -38,7 +38,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_ethernet`
 
-81 unratified names: 78 with no block, 3 provisional.
+73 unratified names: 70 with no block, 3 provisional.
 
 ### DE1. Module names (10)
 
@@ -95,20 +95,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. The module name is already spelled out; these are ordinary names.
-
-### DE13. JH7110 node description (5)
-
-`jh7110::BUS`, `jh7110::Discovered`, `jh7110::GMAC0_BASE`, `jh7110::GMAC1_BASE`, `jh7110::interface`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. `GMAC0_BASE` and `GMAC1_BASE` keep `GMAC`, an accepted acronym since #3094, whose expansion is already in the doc comments.
-
-### DE14. Layout and simulator odds and ends (3)
-
-`layout::BYTES`, `layout::PAGES`, `simulator::with`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand: `BYTES` and `PAGES` are the layout sizes, `with` is the simulator builder.
 
 ## `designware_mobile_storage`
 

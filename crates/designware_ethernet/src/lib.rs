@@ -83,7 +83,6 @@ pub mod jh7110;
 #[doc(alias = "mdio")]
 pub mod management_data_input_output;
 pub mod motorcomm;
-#[doc(alias = "regs")]
 pub mod registers;
 #[cfg(test)]
 mod simulator;
