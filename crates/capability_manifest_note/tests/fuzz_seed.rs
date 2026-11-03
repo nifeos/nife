@@ -123,6 +123,10 @@ fn directory() -> PathBuf {
 }
 
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "lists and reads fuzz/seeds/ off disk, which Miri isolates; the zone-walk test decodes the same seeds in memory"
+)]
 fn the_committed_seeds_are_what_the_crate_encodes_and_each_decodes() {
     let want = seeds();
     let mut files: Vec<String> = std::fs::read_dir(directory())

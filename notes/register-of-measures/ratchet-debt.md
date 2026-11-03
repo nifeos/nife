@@ -4,8 +4,8 @@
 defines. Naming is an architect's.*
 
 *(Appendix of [the register](../register-of-measures.md). Stem provisional, minted on 2026-10-13
-(UTC) by lane/ratchet-metrics, as are the files `writing-standards.csv` and `comment-blocks.csv`,
-their columns and their charts. `line-citations.csv`, its columns, its chart and
+(UTC) by lane/ratchet-metrics, as is the file `writing-standards.csv`,
+its columns and its charts. `line-citations.csv`, its columns, its chart and
 `line_citation_debt` are provisional too, minted 2026-10-14 (UTC) by
 maintainer/line-citations-chart. `comment-by-directory.csv`, its columns, its three charts and
 `comment_debt_by_directory` are provisional, minted 2026-10-23 (UTC) by
@@ -26,9 +26,6 @@ week's commit.
 | `passive-voice.csv` | `passives_total` | passive constructions in the prose of every document |
 | | `passive_prose_words` | the prose words they sit in |
 | | `passives_per_1000` | the first over the second, per 1,000 words |
-| `comment-blocks.csv` | `comment_block_files_over_cap` | Rust files holding a comment block over 40 lines |
-| | `comment_blocks_over_cap` | the blocks themselves, which is what a baseline row counts |
-| | `comment_block_excess_lines` | each such block's lines past 40, summed |
 | `comment-by-directory.csv` | `comment_cap_<dir>` | the cap the week's baseline puts the directory at; `other` is its lowest |
 | | `comment_blocks_over_cap_<dir>` | blocks over that cap |
 | | `comment_excess_lines_<dir>` | their lines past it, summed |
@@ -48,7 +45,7 @@ disagree about a file:
   median and the bold density is the gate's. A document over two limits counts in both columns, so
   the chart groups the three bars rather than stacking them.
 - §267: `comment_block_ratchet.blocks_over` over its `in_scope` files, every `.rs` outside
-  `vendor/`. `comment-blocks.csv` judges every file at 40. `comment-by-directory.csv` judges each
+  `vendor/`. `comment-by-directory.csv` judges each
   at `cap_of` its path under that week's `cap` rows and counts `in_body_lines`, for milestone 929
   (comments in the Linux style across first-party Rust). `<dir>` is `kernel`, `crates`,
   `components`, `system_tests`, `xtask`, or `other` for every other directory holding Rust.
