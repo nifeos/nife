@@ -169,10 +169,6 @@ Read on 2026-11-01 (UTC):
 
 ## What is not verified
 
-- The create endpoint says the caller "must be a security manager or administrator" of the
-  repository. The documentation does not say whether an App with the advisory permission alone
-  qualifies, and nobody has tried. A test on a throwaway repository settles it before any key
-  reaches the host.
 - How long a fix pull request stays public is unmeasured. The window runs from the push of the fix
   branch to the merge. It grows whenever a hold applies: `needs-architect` on a fix that touches the
   syscall surface, or a red trunk. The first fix measures it.
@@ -199,6 +195,5 @@ Each is a proposal in this directory, unnumbered until an integrator promotes it
 - [Fix lanes get a one-hour reader token](fix-lanes-get-a-one-hour-reader-token.md)
 - [A held finding turns public after its fix reruns clean](a-held-finding-turns-public-after-its-fix-reruns-clean.md)
 - [The fuzz host mints its tokens from the App key](the-fuzz-host-mints-its-tokens-from-the-app-key.md)
-- [An App with only the advisory permission files an advisory](an-app-with-only-the-advisory-permission-files-an-advisory.md)
 - [The clean-range table does not locate a held seed](the-clean-range-table-does-not-locate-a-held-seed.md)
 - [The fuzz host follows main](the-fuzz-host-follows-main.md)

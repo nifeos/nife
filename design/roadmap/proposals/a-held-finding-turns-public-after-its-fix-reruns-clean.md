@@ -36,5 +36,8 @@ carry a seed in a public field.
 
 ## Status
 
-Not started. It waits on the filing service. Unverified: whether a published advisory shows its
-comments to the public, and whether publishing needs more than the advisory write permission.
+Not started. It waits on the filing service. Publishing needs only the advisory write permission, once the advisory carries a package and range.
+GitHub answers 422 without them, and the filer supplies them
+([the test](../../../notes/fuzzing/finishing-the-setup.md#the-advisory-permission)). Unverified:
+whether a published advisory shows its comments to the public. Also unverified: whether the REST API
+can add a comment at all.
