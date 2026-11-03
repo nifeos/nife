@@ -16,8 +16,8 @@ use crate::controller::{self, Identity};
 use crate::management_data_input_output::{self, ManagementDataInputOutput};
 use crate::motorcomm::{self, Link, Speed};
 use crate::{
-    Hardware, RDES3_ES, RDES3_FD, RDES3_LD, RDES3_OWN, Region, TDES2_BUF1_LEN, TDES2_IC, TDES3_OWN,
-    Tails, layout, registers,
+    DirectMemoryAccessRegion, Hardware, RDES3_ES, RDES3_FD, RDES3_LD, RDES3_OWN, TDES2_BUF1_LEN,
+    TDES2_IC, TDES3_OWN, Tails, layout, registers,
 };
 
 const LINE: u64 = 64;
@@ -123,7 +123,7 @@ impl Memory {
 /// The CPU's handle on the region.
 pub(crate) struct Cpu<'a>(&'a Memory);
 
-impl Region for Cpu<'_> {
+impl DirectMemoryAccessRegion for Cpu<'_> {
     fn read_u64(&self, offset: u64) -> u64 {
         let mut b = [0; 8];
         self.read_bytes(offset, &mut b);
@@ -160,10 +160,16 @@ pub(crate) struct TailRegisters<'a> {
 
 impl Tails for TailRegisters<'_> {
     fn set_receive_tail(&mut self, address: u32) {
-        self.registers.insert(registers::CHAN_RX_END_ADDR, address);
+        self.registers.insert(
+            registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER,
+            address,
+        );
     }
     fn set_transmit_tail(&mut self, address: u32) {
-        self.registers.insert(registers::CHAN_TX_END_ADDR, address);
+        self.registers.insert(
+            registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER,
+            address,
+        );
     }
     fn barrier(&mut self) {
         // A fence orders; it cleans and invalidates nothing. On a non-coherent machine it is not
@@ -185,16 +191,20 @@ impl PhysicalLayerDevice {
     pub(crate) fn yt8531_at_1v8() -> PhysicalLayerDevice {
         let mut registers = [0; 32];
         registers[management_data_input_output::PHYSID1 as usize] =
-            (motorcomm::PHY_ID_YT8531 >> 16) as u16;
-        registers[management_data_input_output::PHYSID2 as usize] = motorcomm::PHY_ID_YT8531 as u16;
+            (motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID >> 16) as u16;
+        registers[management_data_input_output::PHYSID2 as usize] =
+            motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID as u16;
         let mut extended = BTreeMap::new();
         extended.insert(motorcomm::EXT_CHIP_CONFIG, 0x2 << 4 | motorcomm::RXC_DLY_EN);
         extended.insert(motorcomm::EXT_SYNCE_CFG, motorcomm::EN_SYNC_E);
         extended.insert(
-            motorcomm::EXT_SLEEP_CTRL,
+            motorcomm::MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER,
             motorcomm::ESC1R_SLEEP_SW | 1 << 14,
         );
-        extended.insert(motorcomm::EXT_CLK_GATE, motorcomm::CGR_RX_CLK_EN);
+        extended.insert(
+            motorcomm::MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER,
+            motorcomm::CGR_RX_CLK_EN,
+        );
         extended.insert(motorcomm::EXT_PAD_DRIVE_STRENGTH, 0xffff);
         registers[management_data_input_output::BMCR as usize] =
             management_data_input_output::BMCR_ANENABLE;
@@ -234,7 +244,7 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
             management_data_input_output::BMSR => {
                 if self.link.is_some() {
                     management_data_input_output::BMSR_LSTATUS
-                        | management_data_input_output::BMSR_ANEGCOMPLETE
+                        | management_data_input_output::BASIC_MODE_STATUS_AUTO_NEGOTIATION_COMPLETE
                 } else {
                     0
                 }
@@ -337,7 +347,8 @@ impl NetworkInterfaceController {
 
     fn reset_registers(&mut self) {
         self.registers.clear();
-        self.registers.insert(registers::VERSION, VERSION);
+        self.registers
+            .insert(registers::CORE_VERSION_REGISTER, VERSION);
         self.registers
             .insert(registers::mac_hw_feature(1), FEATURE1);
         self.registers.insert(registers::MAC_ADDR0_HI, 0xffff);
@@ -368,7 +379,7 @@ impl NetworkInterfaceController {
     }
     /// The receive tail register.
     pub(crate) fn receive_tail(&self) -> u32 {
-        self.register(registers::CHAN_RX_END_ADDR)
+        self.register(registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER)
     }
     /// How many barriers the data plane has taken.
     pub(crate) fn barriers(&self) -> usize {
@@ -512,7 +523,11 @@ impl NetworkInterfaceController {
             registers::CHAN_TX_RING_LEN,
         );
         loop {
-            let tail = self.index_of_tail(base, self.register(registers::CHAN_TX_END_ADDR), n);
+            let tail = self.index_of_tail(
+                base,
+                self.register(registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER),
+                n,
+            );
             if self.transmit_cursor == tail {
                 return;
             }
@@ -531,7 +546,7 @@ impl NetworkInterfaceController {
             }
             self.transmit_cursor = (self.transmit_cursor + 1) % n;
             let conf = self.register(registers::MAC_CONF);
-            if conf & registers::CONFIG_LM != 0 {
+            if conf & registers::MAC_CONFIGURATION_LOOPBACK_MODE != 0 {
                 if !self.loopback_broken {
                     let mut w = frame.clone();
                     w.extend_from_slice(&[0xc0, 0xff, 0xee, 0x00]);
@@ -622,7 +637,7 @@ mod tests {
             0,
         )
         .unwrap();
-        assert_eq!(id, motorcomm::PHY_ID_YT8531);
+        assert_eq!(id, motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID);
     }
 
     #[test]
