@@ -155,7 +155,7 @@ aarch64	4a58737d0	map_el0	*	nightly-2026-10-10, the compiler term alone
 aarch64	4a58737d0	map_new	*	nightly-2026-10-10, the compiler term alone
 aarch64	4a58737d0	sink_throughput	*	nightly-2026-10-10, the compiler term alone
 
-riscv64	ae940dc46	map_el0	-2.927	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
+riscv64	ae940dc46	map_el0	+0.002	nightly-2026-10-22, the compiler term measured alone (remeasured; the rest of the step is the tick's phase)
 riscv64	ae940dc46	ipc_rtt_el0	-0.473	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
 riscv64	ae940dc46	sink_throughput	+0.008	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
 riscv64	ae940dc46	spawn_el0	-0.002	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
@@ -238,3 +238,230 @@ riscv64	ccea3ba7f	yield_switch	+3.42	#1617, milestone 761: set_current stores th
 aarch64	cb1819920	*	*	milestone 939: no preemption tick in a timed window; ipc_rtt runs receiver-first
 riscv64	cb1819920	*	*	milestone 939: no preemption tick in a timed window; ipc_rtt runs receiver-first
 x86_64	cb1819920	*	*	milestone 939: no preemption tick in a timed window; ipc_rtt runs receiver-first
+
+# lane/riscv64-benchmark-drift (notes/benchmarks/riscv64-unexplained-drift.md): each merge against
+# its first parent, measured with no preemption tick in a window (`TICK_HZ` 1), one nightly held
+# fixed per window. Every row the merge moved by 0.1% or more and no line above names. riscv64 for
+# every merge; aarch64 and x86_64 for the merges that move all three.
+# The lines cite milestone 126 (the `procps` package), milestone 151 (notification objects),
+# milestone 632 (graphics launched from the prompt), milestone 754 (the capability table grows to
+# 64 slots), milestone 758 (the IPC fast paths shrunk), milestone 761 (capability lookup off the
+# global lock), milestone 812 (threads in one address space), milestone 961 (the kernel's special
+# boots become commands typed at the production shell), milestone 969 (no frame is writable and
+# executable in one address space), fatal risk 4 (null_syscall under load).
+riscv64	d621759ec	yield_switch	+2.87	#1360, milestone 126: the switch counter
+riscv64	d621759ec	ipc_rtt	+1.57	#1360, milestone 126: the switch counter
+riscv64	d621759ec	relay_rtt	+1.56	#1360, milestone 126: the switch counter
+riscv64	d621759ec	call_reply	+1.65	#1360, milestone 126: the switch counter
+riscv64	d621759ec	broker_rtt	+1.65	#1360, milestone 126: the switch counter
+riscv64	d621759ec	spawn_reap	+1.67	#1360, milestone 126: the switch counter
+riscv64	d621759ec	map_new	+0.43	#1360, milestone 126: the switch counter
+riscv64	d621759ec	ctx_switch	+2.61	#1360, milestone 126: the switch counter
+riscv64	d621759ec	ipc_rtt_el0	+1.48	#1360, milestone 126: the switch counter
+riscv64	d621759ec	sink_throughput	+1.03	#1360, milestone 126: the switch counter
+riscv64	d621759ec	map_el0	+0.18	#1360, milestone 126: the switch counter
+riscv64	d621759ec	spawn_el0	-0.57	#1360, milestone 126: the switch counter
+riscv64	146d56024	ipc_rtt	+0.38	#1351, milestone 151: notification objects; a thread waits on a Wait
+riscv64	146d56024	relay_rtt	+0.40	#1351, milestone 151: notification objects; a thread waits on a Wait
+riscv64	146d56024	call_reply	+0.23	#1351, milestone 151: notification objects; a thread waits on a Wait
+riscv64	146d56024	broker_rtt	+0.23	#1351, milestone 151: notification objects; a thread waits on a Wait
+riscv64	146d56024	ipc_rtt_el0	+0.18	#1351, milestone 151: notification objects; a thread waits on a Wait
+riscv64	146d56024	sink_throughput	+0.22	#1351, milestone 151: notification objects; a thread waits on a Wait
+riscv64	146d56024	spawn_el0	+0.20	#1351, milestone 151: notification objects; a thread waits on a Wait
+riscv64	9148e34b8	call_reply	+0.10	#1493, milestone 632: graphics launched from the prompt
+riscv64	9148e34b8	broker_rtt	+0.10	#1493, milestone 632: graphics launched from the prompt
+riscv64	ccea3ba7f	ipc_rtt	+2.13	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+riscv64	ccea3ba7f	relay_rtt	+2.35	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+riscv64	ccea3ba7f	call_reply	+4.15	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+riscv64	ccea3ba7f	broker_rtt	+4.16	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+riscv64	ccea3ba7f	map_new	+0.35	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+riscv64	ccea3ba7f	ctx_switch	+3.15	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+riscv64	ccea3ba7f	ipc_rtt_el0	-0.64	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+riscv64	ccea3ba7f	sink_throughput	-1.77	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+riscv64	ccea3ba7f	map_el0	-3.62	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+riscv64	ccea3ba7f	spawn_el0	+4.37	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+riscv64	476641ddf	yield_switch	+0.17	#1620, milestone 758: the IPC fast paths shrunk
+riscv64	476641ddf	ipc_rtt	+0.18	#1620, milestone 758: the IPC fast paths shrunk
+riscv64	476641ddf	relay_rtt	+0.23	#1620, milestone 758: the IPC fast paths shrunk
+riscv64	476641ddf	call_reply	+0.25	#1620, milestone 758: the IPC fast paths shrunk
+riscv64	476641ddf	broker_rtt	+0.25	#1620, milestone 758: the IPC fast paths shrunk
+riscv64	476641ddf	ctx_switch	+0.16	#1620, milestone 758: the IPC fast paths shrunk
+riscv64	476641ddf	ipc_rtt_el0	+0.23	#1620, milestone 758: the IPC fast paths shrunk
+riscv64	476641ddf	sink_throughput	+0.22	#1620, milestone 758: the IPC fast paths shrunk
+riscv64	476641ddf	map_el0	+0.16	#1620, milestone 758: the IPC fast paths shrunk
+riscv64	476641ddf	spawn_el0	+0.18	#1620, milestone 758: the IPC fast paths shrunk
+riscv64	62619d7ff	null_syscall	-7.99	#1614, fatal risk 4: the syscall counter leaves non-test builds
+riscv64	62619d7ff	ctx_switch	-0.53	#1614, fatal risk 4: the syscall counter leaves non-test builds
+riscv64	62619d7ff	ipc_rtt_el0	-0.39	#1614, fatal risk 4: the syscall counter leaves non-test builds
+riscv64	62619d7ff	sink_throughput	-0.32	#1614, fatal risk 4: the syscall counter leaves non-test builds
+riscv64	62619d7ff	map_el0	-0.19	#1614, fatal risk 4: the syscall counter leaves non-test builds
+riscv64	62619d7ff	spawn_el0	+0.32	#1614, fatal risk 4: the syscall counter leaves non-test builds
+riscv64	ddd38f0b0	yield_switch	+0.59	#1892, milestone 812: threads in one address space
+riscv64	ddd38f0b0	ipc_rtt	+0.36	#1892, milestone 812: threads in one address space
+riscv64	ddd38f0b0	relay_rtt	+0.37	#1892, milestone 812: threads in one address space
+riscv64	ddd38f0b0	call_reply	+0.37	#1892, milestone 812: threads in one address space
+riscv64	ddd38f0b0	broker_rtt	+0.37	#1892, milestone 812: threads in one address space
+riscv64	ddd38f0b0	null_syscall	+1.20	#1892, milestone 812: threads in one address space
+riscv64	ddd38f0b0	ctx_switch	+0.62	#1892, milestone 812: threads in one address space
+riscv64	ddd38f0b0	ipc_rtt_el0	+0.38	#1892, milestone 812: threads in one address space
+riscv64	ddd38f0b0	sink_throughput	+0.27	#1892, milestone 812: threads in one address space
+riscv64	ddd38f0b0	map_el0	+0.50	#1892, milestone 812: threads in one address space
+riscv64	ddd38f0b0	spawn_el0	+4.09	#1892, milestone 812: threads in one address space
+riscv64	9bda691ce	yield_switch	+0.45	#2025: schedule split along its decision
+riscv64	9bda691ce	ipc_rtt	+0.23	#2025: schedule split along its decision
+riscv64	9bda691ce	relay_rtt	+0.24	#2025: schedule split along its decision
+riscv64	9bda691ce	call_reply	+0.22	#2025: schedule split along its decision
+riscv64	9bda691ce	broker_rtt	+0.22	#2025: schedule split along its decision
+riscv64	9bda691ce	ctx_switch	+0.46	#2025: schedule split along its decision
+riscv64	9bda691ce	ipc_rtt_el0	+0.24	#2025: schedule split along its decision
+riscv64	9bda691ce	sink_throughput	+0.15	#2025: schedule split along its decision
+riscv64	025722fb3	yield_switch	-0.64	#2148: split parents to zero (6)
+riscv64	025722fb3	ipc_rtt	-0.63	#2148: split parents to zero (6)
+riscv64	025722fb3	relay_rtt	-0.81	#2148: split parents to zero (6)
+riscv64	025722fb3	call_reply	-0.76	#2148: split parents to zero (6)
+riscv64	025722fb3	broker_rtt	-0.76	#2148: split parents to zero (6)
+riscv64	025722fb3	map_new	-0.23	#2148: split parents to zero (6)
+riscv64	025722fb3	ctx_switch	-0.59	#2148: split parents to zero (6)
+riscv64	025722fb3	ipc_rtt_el0	-0.75	#2148: split parents to zero (6)
+riscv64	025722fb3	sink_throughput	-0.69	#2148: split parents to zero (6)
+riscv64	025722fb3	map_el0	-0.29	#2148: split parents to zero (6)
+riscv64	025722fb3	spawn_el0	-0.36	#2148: split parents to zero (6)
+riscv64	8d6f3964f	yield_switch	-1.21	#2188: read_current_thread masks IRQs
+riscv64	8d6f3964f	ipc_rtt	-1.87	#2188: read_current_thread masks IRQs
+riscv64	8d6f3964f	relay_rtt	-2.55	#2188: read_current_thread masks IRQs
+riscv64	8d6f3964f	call_reply	-1.81	#2188: read_current_thread masks IRQs
+riscv64	8d6f3964f	broker_rtt	-1.81	#2188: read_current_thread masks IRQs
+riscv64	8d6f3964f	ctx_switch	-1.11	#2188: read_current_thread masks IRQs
+riscv64	8d6f3964f	ipc_rtt_el0	-2.12	#2188: read_current_thread masks IRQs
+riscv64	8d6f3964f	sink_throughput	-2.07	#2188: read_current_thread masks IRQs
+riscv64	8d6f3964f	spawn_el0	-0.26	#2188: read_current_thread masks IRQs
+riscv64	cec04e4a9	yield_switch	+0.33	#2331: SUSPEND and RESUME
+riscv64	cec04e4a9	ipc_rtt	+0.19	#2331: SUSPEND and RESUME
+riscv64	cec04e4a9	relay_rtt	+0.20	#2331: SUSPEND and RESUME
+riscv64	cec04e4a9	call_reply	+0.17	#2331: SUSPEND and RESUME
+riscv64	cec04e4a9	broker_rtt	+0.17	#2331: SUSPEND and RESUME
+riscv64	cec04e4a9	ctx_switch	+0.30	#2331: SUSPEND and RESUME
+riscv64	cec04e4a9	ipc_rtt_el0	+0.17	#2331: SUSPEND and RESUME
+riscv64	cec04e4a9	sink_throughput	+0.12	#2331: SUSPEND and RESUME
+riscv64	d5b79700e	spawn_el0	+0.60	#2454: run TLB maintenance batched
+riscv64	834860161	spawn_el0	+1.64	#1517: a region reclaims its out-of-order holes
+riscv64	2a3cc0dbd	yield_switch	-1.58	#2734: the kernel lock is the in-tree spin_lock crate
+riscv64	2a3cc0dbd	ipc_rtt	-2.09	#2734: the kernel lock is the in-tree spin_lock crate
+riscv64	2a3cc0dbd	relay_rtt	-2.09	#2734: the kernel lock is the in-tree spin_lock crate
+riscv64	2a3cc0dbd	call_reply	-2.44	#2734: the kernel lock is the in-tree spin_lock crate
+riscv64	2a3cc0dbd	broker_rtt	-2.45	#2734: the kernel lock is the in-tree spin_lock crate
+riscv64	2a3cc0dbd	spawn_reap	-3.50	#2734: the kernel lock is the in-tree spin_lock crate
+riscv64	2a3cc0dbd	map_new	-0.94	#2734: the kernel lock is the in-tree spin_lock crate
+riscv64	2a3cc0dbd	ctx_switch	-1.44	#2734: the kernel lock is the in-tree spin_lock crate
+riscv64	2a3cc0dbd	ipc_rtt_el0	-2.17	#2734: the kernel lock is the in-tree spin_lock crate
+riscv64	2a3cc0dbd	sink_throughput	-2.08	#2734: the kernel lock is the in-tree spin_lock crate
+riscv64	2a3cc0dbd	map_el0	-1.53	#2734: the kernel lock is the in-tree spin_lock crate
+riscv64	2a3cc0dbd	spawn_el0	-2.31	#2734: the kernel lock is the in-tree spin_lock crate
+riscv64	794b9d98d	sink_throughput	+4.92	#2933, milestone 961 step 1: the EL0 rows are their own programs
+riscv64	794b9d98d	spawn_el0	-1.90	#2933, milestone 961 step 1: the EL0 rows are their own programs
+riscv64	a96d5e39f	map_el0	+2.89	#2965, milestone 969: no frame is writable and executable in one space
+riscv64	a96d5e39f	spawn_el0	+1.15	#2965, milestone 969: no frame is writable and executable in one space
+aarch64	d621759ec	yield_switch	+3.38	#1360, milestone 126: the switch counter
+aarch64	d621759ec	ipc_rtt	+1.82	#1360, milestone 126: the switch counter
+aarch64	d621759ec	relay_rtt	+1.84	#1360, milestone 126: the switch counter
+aarch64	d621759ec	call_reply	+1.76	#1360, milestone 126: the switch counter
+aarch64	d621759ec	broker_rtt	+1.76	#1360, milestone 126: the switch counter
+aarch64	d621759ec	spawn_reap	+1.50	#1360, milestone 126: the switch counter
+aarch64	d621759ec	map_new	+0.55	#1360, milestone 126: the switch counter
+aarch64	d621759ec	ctx_switch	+3.11	#1360, milestone 126: the switch counter
+aarch64	d621759ec	ipc_rtt_el0	+1.74	#1360, milestone 126: the switch counter
+aarch64	d621759ec	sink_throughput	+1.19	#1360, milestone 126: the switch counter
+aarch64	d621759ec	map_el0	+0.16	#1360, milestone 126: the switch counter
+aarch64	d621759ec	spawn_el0	-1.06	#1360, milestone 126: the switch counter
+aarch64	146d56024	ipc_rtt	+0.48	#1351, milestone 151: notification objects; a thread waits on a Wait
+aarch64	146d56024	relay_rtt	+0.52	#1351, milestone 151: notification objects; a thread waits on a Wait
+aarch64	146d56024	call_reply	+0.35	#1351, milestone 151: notification objects; a thread waits on a Wait
+aarch64	146d56024	broker_rtt	+0.35	#1351, milestone 151: notification objects; a thread waits on a Wait
+aarch64	146d56024	ipc_rtt_el0	+0.38	#1351, milestone 151: notification objects; a thread waits on a Wait
+aarch64	146d56024	sink_throughput	+0.43	#1351, milestone 151: notification objects; a thread waits on a Wait
+aarch64	146d56024	map_el0	-0.11	#1351, milestone 151: notification objects; a thread waits on a Wait
+aarch64	146d56024	spawn_el0	+0.21	#1351, milestone 151: notification objects; a thread waits on a Wait
+aarch64	ccea3ba7f	yield_switch	+3.49	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+aarch64	ccea3ba7f	ipc_rtt	+2.13	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+aarch64	ccea3ba7f	relay_rtt	+2.38	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+aarch64	ccea3ba7f	call_reply	+4.02	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+aarch64	ccea3ba7f	broker_rtt	+4.02	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+aarch64	ccea3ba7f	spawn_reap	+2.16	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+aarch64	ccea3ba7f	map_new	+0.32	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+aarch64	ccea3ba7f	ctx_switch	+3.25	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+aarch64	ccea3ba7f	ipc_rtt_el0	-0.58	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+aarch64	ccea3ba7f	sink_throughput	-1.72	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+aarch64	ccea3ba7f	map_el0	-3.43	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+aarch64	ccea3ba7f	spawn_el0	+3.92	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+aarch64	476641ddf	yield_switch	-0.26	#1620, milestone 758: the IPC fast paths shrunk
+aarch64	476641ddf	ipc_rtt	-0.28	#1620, milestone 758: the IPC fast paths shrunk
+aarch64	476641ddf	relay_rtt	-0.36	#1620, milestone 758: the IPC fast paths shrunk
+aarch64	476641ddf	call_reply	-0.39	#1620, milestone 758: the IPC fast paths shrunk
+aarch64	476641ddf	broker_rtt	-0.39	#1620, milestone 758: the IPC fast paths shrunk
+aarch64	476641ddf	spawn_reap	-0.37	#1620, milestone 758: the IPC fast paths shrunk
+aarch64	476641ddf	map_new	-0.15	#1620, milestone 758: the IPC fast paths shrunk
+aarch64	476641ddf	ctx_switch	-0.24	#1620, milestone 758: the IPC fast paths shrunk
+aarch64	476641ddf	ipc_rtt_el0	-0.37	#1620, milestone 758: the IPC fast paths shrunk
+aarch64	476641ddf	sink_throughput	-0.35	#1620, milestone 758: the IPC fast paths shrunk
+aarch64	476641ddf	map_el0	-0.24	#1620, milestone 758: the IPC fast paths shrunk
+aarch64	476641ddf	spawn_el0	-0.27	#1620, milestone 758: the IPC fast paths shrunk
+aarch64	2a3cc0dbd	yield_switch	-1.44	#2734: the kernel lock is the in-tree spin_lock crate
+aarch64	2a3cc0dbd	ipc_rtt	-1.91	#2734: the kernel lock is the in-tree spin_lock crate
+aarch64	2a3cc0dbd	relay_rtt	-1.92	#2734: the kernel lock is the in-tree spin_lock crate
+aarch64	2a3cc0dbd	call_reply	-2.26	#2734: the kernel lock is the in-tree spin_lock crate
+aarch64	2a3cc0dbd	broker_rtt	-2.26	#2734: the kernel lock is the in-tree spin_lock crate
+aarch64	2a3cc0dbd	spawn_reap	-3.05	#2734: the kernel lock is the in-tree spin_lock crate
+aarch64	2a3cc0dbd	map_new	-0.80	#2734: the kernel lock is the in-tree spin_lock crate
+aarch64	2a3cc0dbd	ctx_switch	-1.33	#2734: the kernel lock is the in-tree spin_lock crate
+aarch64	2a3cc0dbd	ipc_rtt_el0	-2.03	#2734: the kernel lock is the in-tree spin_lock crate
+aarch64	2a3cc0dbd	sink_throughput	-1.93	#2734: the kernel lock is the in-tree spin_lock crate
+aarch64	2a3cc0dbd	map_el0	-1.33	#2734: the kernel lock is the in-tree spin_lock crate
+aarch64	2a3cc0dbd	spawn_el0	-2.03	#2734: the kernel lock is the in-tree spin_lock crate
+aarch64	794b9d98d	sink_throughput	+5.16	#2933, milestone 961 step 1: the EL0 rows are their own programs
+aarch64	794b9d98d	spawn_el0	-1.81	#2933, milestone 961 step 1: the EL0 rows are their own programs
+aarch64	a96d5e39f	map_el0	+2.81	#2965, milestone 969: no frame is writable and executable in one space
+aarch64	a96d5e39f	spawn_el0	+1.14	#2965, milestone 969: no frame is writable and executable in one space
+x86_64	d621759ec	yield_switch	+2.88	#1360, milestone 126: the switch counter
+x86_64	d621759ec	tss_iomap_switch	+2.31	#1360, milestone 126: the switch counter
+x86_64	d621759ec	tss_iomap_lazy_switch	+2.34	#1360, milestone 126: the switch counter
+x86_64	d621759ec	tss_iomap_lazy_nop	+2.81	#1360, milestone 126: the switch counter
+x86_64	d621759ec	ipc_rtt	+1.60	#1360, milestone 126: the switch counter
+x86_64	d621759ec	relay_rtt	+1.61	#1360, milestone 126: the switch counter
+x86_64	d621759ec	call_reply	+1.77	#1360, milestone 126: the switch counter
+x86_64	d621759ec	broker_rtt	+1.77	#1360, milestone 126: the switch counter
+x86_64	d621759ec	spawn_reap	+0.94	#1360, milestone 126: the switch counter
+x86_64	d621759ec	map_new	+0.76	#1360, milestone 126: the switch counter
+x86_64	146d56024	ipc_rtt	+0.38	#1351, milestone 151: notification objects; a thread waits on a Wait
+x86_64	146d56024	relay_rtt	+0.41	#1351, milestone 151: notification objects; a thread waits on a Wait
+x86_64	146d56024	call_reply	+0.22	#1351, milestone 151: notification objects; a thread waits on a Wait
+x86_64	146d56024	broker_rtt	+0.23	#1351, milestone 151: notification objects; a thread waits on a Wait
+x86_64	ccea3ba7f	yield_switch	+3.12	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+x86_64	ccea3ba7f	tss_iomap_switch	+2.49	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+x86_64	ccea3ba7f	tss_iomap_lazy_switch	+2.53	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+x86_64	ccea3ba7f	tss_iomap_lazy_nop	+3.05	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+x86_64	ccea3ba7f	ipc_rtt	+2.07	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+x86_64	ccea3ba7f	relay_rtt	+2.35	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+x86_64	ccea3ba7f	call_reply	+3.59	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+x86_64	ccea3ba7f	broker_rtt	+3.59	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+x86_64	ccea3ba7f	spawn_reap	+2.11	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+x86_64	ccea3ba7f	map_new	+0.58	#1617, milestones 754 and 761: the capability table takes its own lock on each lookup
+x86_64	476641ddf	yield_switch	-2.73	#1620, milestone 758: the IPC fast paths shrunk
+x86_64	476641ddf	tss_iomap_switch	-2.19	#1620, milestone 758: the IPC fast paths shrunk
+x86_64	476641ddf	tss_iomap_lazy_switch	-2.43	#1620, milestone 758: the IPC fast paths shrunk
+x86_64	476641ddf	tss_iomap_lazy_nop	-2.92	#1620, milestone 758: the IPC fast paths shrunk
+x86_64	476641ddf	ipc_rtt	-2.19	#1620, milestone 758: the IPC fast paths shrunk
+x86_64	476641ddf	relay_rtt	-2.63	#1620, milestone 758: the IPC fast paths shrunk
+x86_64	476641ddf	call_reply	-2.67	#1620, milestone 758: the IPC fast paths shrunk
+x86_64	476641ddf	broker_rtt	-2.67	#1620, milestone 758: the IPC fast paths shrunk
+x86_64	476641ddf	spawn_reap	-2.19	#1620, milestone 758: the IPC fast paths shrunk
+x86_64	476641ddf	map_new	-0.75	#1620, milestone 758: the IPC fast paths shrunk
+x86_64	2a3cc0dbd	yield_switch	-1.09	#2734: the kernel lock is the in-tree spin_lock crate
+x86_64	2a3cc0dbd	tss_iomap_switch	-0.86	#2734: the kernel lock is the in-tree spin_lock crate
+x86_64	2a3cc0dbd	tss_iomap_lazy_switch	-0.87	#2734: the kernel lock is the in-tree spin_lock crate
+x86_64	2a3cc0dbd	tss_iomap_lazy_nop	-1.06	#2734: the kernel lock is the in-tree spin_lock crate
+x86_64	2a3cc0dbd	ipc_rtt	-1.47	#2734: the kernel lock is the in-tree spin_lock crate
+x86_64	2a3cc0dbd	relay_rtt	-1.47	#2734: the kernel lock is the in-tree spin_lock crate
+x86_64	2a3cc0dbd	call_reply	-1.72	#2734: the kernel lock is the in-tree spin_lock crate
+x86_64	2a3cc0dbd	broker_rtt	-1.72	#2734: the kernel lock is the in-tree spin_lock crate
+x86_64	2a3cc0dbd	spawn_reap	-2.73	#2734: the kernel lock is the in-tree spin_lock crate
+x86_64	2a3cc0dbd	map_new	-0.86	#2734: the kernel lock is the in-tree spin_lock crate
