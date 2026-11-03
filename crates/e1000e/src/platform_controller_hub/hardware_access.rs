@@ -1,7 +1,8 @@
 //! **What the PCH sequences need from the hardware**: the register access, delays and flushes a
 //! sequence is written against, so the simulator can stand in for the device.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: ratified 2026-11-03 (UTC), #3145. Renamed from `hardware`, which did not say that the
+//! module holds the access a sequence makes to the hardware.
 
 use super::*;
 
@@ -33,12 +34,15 @@ pub(super) fn delay_ms(hardware: &mut impl Hardware, ms: u64) {
 
 /// A posted-write flush (`E1000_WRITE_FLUSH`): any read of BAR0 will do; FreeBSD reads `STATUS`.
 pub(super) fn flush_writes(hardware: &mut impl Hardware) {
-    let _ = hardware.read(crate::registers::STATUS);
+    let _ = hardware.read(crate::registers::DEVICE_STATUS_REGISTER);
 }
 
 /// Is `device` a PCH part (an I219) rather than the 82574L? Every I219 id this crate claims is in
 /// FreeBSD's `e1000_pch_spt` class (`e1000_api.c`, `e1000_set_mac_type`), which is the class all
 /// three ported sequences are written for.
-pub fn is_pch(device: u16) -> bool {
-    crate::is_supported(crate::VENDOR_INTEL, device) && device != 0x10d3
+///
+/// Name: ratified 2026-11-03 (UTC), #3151. Renamed from `is_pch`; it takes a device id, and the
+/// module it serves is the platform controller hub.
+pub fn is_platform_controller_hub_device(device: u16) -> bool {
+    crate::is_supported_device(crate::VENDOR_INTEL, device) && device != 0x10d3
 }

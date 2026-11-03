@@ -1,20 +1,20 @@
 # The I219 port: `crates/e1000e`'s sources, and its PCH bring-up
 
 An appendix to [the `e1000e` NIC](../e1000e.md). The crate tells its own story of the I219
-bring-up in `crates/e1000e/src/pch/`. This page holds what nife adds to it: why the port reads
+bring-up in `crates/e1000e/src/platform_controller_hub/`. This page holds what nife adds to it: why the port reads
 FreeBSD, how the kernel calls it, and what the QEMU gates prove of it. The stem `the-i219-port` is
 a provisional name.
 
 ## Where the crate's facts come from
 
 The crate's README, under "Sources", says what was read for its register facts and its PCH port,
-and when. Each item in `pch` names the FreeBSD function it follows. `pch::physical_layer_device`'s
-module doc gives the PHY layer's two deliberate divergences, and `pch::non_volatile_memory`'s says
+and when. Each item in `platform_controller_hub` names the FreeBSD function it follows. `platform_controller_hub::physical_layer_device`'s
+module doc gives the PHY layer's two deliberate divergences, and `platform_controller_hub::non_volatile_memory`'s says
 that the NVM port is read only.
 
 ## Why the I219 needs a port at all
 
-The I219 carries workarounds that only field exposure finds, so `pch` adapts FreeBSD's rather than
+The I219 carries workarounds that only field exposure finds, so `platform_controller_hub` adapts FreeBSD's rather than
 writing its own. FreeBSD's Intel shared code (BSD-3-Clause) and `if_em.c` and `if_em.h` (BSD-2-Clause) are the only
 sources this tree reads for them. Linux's `e1000e` is GPL and was not consulted for any of it. This follows calef's amendment of
 2026-10-04 to §46 (thin primitives or whole subsystems): outside the kernel and the Kani-proved
@@ -23,15 +23,15 @@ FreeBSD's, adapted, and each adapted file carries the license of the FreeBSD fil
 
 ## The three passes
 
-`kernel/src/e1000e.rs`'s `bring_up` calls `pch::sequence`'s three passes in FreeBSD's order:
+`kernel/src/e1000e.rs`'s `bring_up` calls `platform_controller_hub::sequence`'s three passes in FreeBSD's order:
 `initialize_physical_layer_device_workarounds` at attach, `global_reset` after the kernel's
 `flush_descriptor_rings`, and `initialize_hardware` before the rings are programmed, with
-`transmit_errata` once `TCTL` is written. `pch::sequence`'s module doc gives that order. Each
+`transmit_errata` once `TCTL` is written. `platform_controller_hub::sequence`'s module doc gives that order. Each
 function's doc says what it does and names the FreeBSD function it follows. Only the branches for
 FreeBSD's `e1000_pch_spt` class are carried, because every I219 the crate claims is in it
-(`pch::is_pch`).
+(`platform_controller_hub::is_platform_controller_hub_device`).
 
-Every sequence is generic over `pch::Hardware`, so it runs on the host against a simulated I219
+Every sequence is generic over `platform_controller_hub::Hardware`, so it runs on the host against a simulated I219
 (`pch/simulator.rs`) as well as in the kernel. QEMU's 82574L is not a PCH part and never reaches
 `sequence`. It does reach `physical_layer_device::read_identifier_at_address`, which shares
 `physical_layer_device::read_management_data_input_output` with everything here, so the MDIO primitive is the one piece the
@@ -40,7 +40,7 @@ QEMU gates prove.
 ## BUGS
 
 - The port has run on silicon once, with no cable ([the note's BUGS](../e1000e.md#bugs)). Under
-  the gates `sequence` is skipped, since `is_pch` is false for QEMU's 82574L. It is proved only
+  the gates `sequence` is skipped, since `is_platform_controller_hub_device` is false for QEMU's 82574L. It is proved only
   against `simulator`, which is this crate's reading of FreeBSD and not the device.
 - The link-up half is not ported. FreeBSD reconfigures the PHY each time link comes up, from a
   link-change interrupt this driver does not take (`e1000_check_for_copper_link_ich8lan`). That
@@ -51,13 +51,13 @@ QEMU gates prove.
 - Flow control is not configured, so it is not advertised. FreeBSD advertises symmetric pause and
   programs the watermarks to match (`e1000_set_fc_watermarks_generic`). This driver does neither
   (`sequence::setup_copper_link`).
-- The transmit flush diverges from FreeBSD in one place, said at `flush::tail_after`.
+- The transmit flush diverges from FreeBSD in one place, said at `flush::tail_after_dummy_transmit`.
 - One read in FreeBSD's `SMBus` unforce is not mirrored. In `e1000_phy_is_accessible_pchlan`, a
   failed read of `CV_SMB_CTRL` leaves the previous register's value in the variable. That value is
   then written back with one bit cleared. This port writes only when the read succeeded.
 - The licenses' second condition is not met by any binary this tree ships yet. A binary
   redistribution must reproduce Intel's notice and the `if_em.c` notice "in the documentation and/or
-  other materials". The source carries both in `pch/mod.rs`. Nothing that ships an image (the stick, a package)
+  other materials". The source carries both in `platform_controller_hub/mod.rs`. Nothing that ships an image (the stick, a package)
   carries a third-party notices file, and none exists in the tree. Milestone 494's block records
   it.
 - Legacy descriptors on the I219 are an assumption. The 82574L supports them, and QEMU uses them

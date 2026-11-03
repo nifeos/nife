@@ -8,7 +8,7 @@
 //! # BUGS
 //! - Two bring-ups share this file (the 82574L's and the I219's), and QEMU proves only one.
 //! - Waiting for link is a spin of up to [`LINK_WAIT_MS`], holding a core once per wiring.
-//! - The DMA region is never returned: a wired boot keeps [`::e1000e::layout::PAGES`] pages.
+//! - The DMA region is never returned: a wired boot keeps [`::e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES`] pages.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -28,10 +28,10 @@ pub enum Error {
     ResetTimeout,
     /// Receive-address entry 0 was not marked valid after reset: the NVM load did not happen.
     NoStationAddress,
-    /// An I219 bring-up pass stopped (`crates/e1000e/src/pch/sequence.rs`).
-    Pch(::e1000e::pch::sequence::Error),
+    /// An I219 bring-up pass stopped (`crates/e1000e/src/platform_controller_hub/sequence.rs`).
+    Pch(::e1000e::platform_controller_hub::sequence::Error),
     /// The PHY identifier could not be read over MDIO.
-    PhysicalLayerDeviceId(::e1000e::pch::physical_layer_device::Error),
+    PhysicalLayerDeviceId(::e1000e::platform_controller_hub::physical_layer_device::Error),
 }
 
 /// Why there is no NIC to hand out.
@@ -63,7 +63,7 @@ pub struct Found {
     /// Whether `STATUS.LU` was set before [`LINK_WAIT_MS`] ran out.
     pub link_up: bool,
     /// The PHY's identifier, revision masked off, read over MDIO. On the 82574L this is the read
-    /// that proves [`::e1000e::pch::physical_layer_device::read_management_data_input_output`] under QEMU.
+    /// that proves [`::e1000e::platform_controller_hub::physical_layer_device::read_management_data_input_output`] under QEMU.
     pub physical_layer_device_id: u32,
 }
 
@@ -79,13 +79,13 @@ pub fn bring_up() -> Result<Found, Absent> {
     let region = region_for(dev.rid);
     let c = Controller(mmu::phys_to_virt(dev.bar0));
     let refused = |why| Absent::Refused { rid: dev.rid, why };
-    let pch = ::e1000e::pch::is_pch(dev.device);
+    let pch = ::e1000e::platform_controller_hub::is_platform_controller_hub_device(dev.device);
     let mut hw = Bar { c: &c, dev: &dev };
     let mut physical_layer_device_id = None;
     if pch {
         // An I219 behind a PCH: FreeBSD's passes, in FreeBSD's order; QEMU's 82574L never comes
         // here.
-        use ::e1000e::pch::sequence;
+        use ::e1000e::platform_controller_hub::sequence;
         let id = sequence::initialize_physical_layer_device_workarounds(&mut hw)
             .map_err(|e| refused(Error::Pch(e)))?;
         physical_layer_device_id = Some(id);
@@ -96,70 +96,77 @@ pub fn bring_up() -> Result<Found, Absent> {
     }
 
     // Reset re-enabled nothing we want; mask again and clear anything pending.
-    c.w(registers::IMC, u32::MAX);
-    let _ = c.r(registers::ICR);
+    c.w(registers::INTERRUPT_MASK_CLEAR_REGISTER, u32::MAX);
+    let _ = c.r(registers::INTERRUPT_CAUSE_READ_REGISTER);
     zero(region);
 
     // Tell management firmware a driver has the device, and bring the link up.
     c.w(
-        registers::CTRL_EXT,
-        c.r(registers::CTRL_EXT) | ::e1000e::CTRL_EXT_DRV_LOAD,
+        registers::EXTENDED_DEVICE_CONTROL_REGISTER,
+        c.r(registers::EXTENDED_DEVICE_CONTROL_REGISTER)
+            | ::e1000e::EXTENDED_DEVICE_CONTROL_DRIVER_LOAD,
     );
     if pch {
         // FreeBSD's `e1000_init_hw_ich8lan`, whose copper-link setup sets `CTRL.SLU` itself.
-        ::e1000e::pch::sequence::initialize_hardware(&mut hw)
+        ::e1000e::platform_controller_hub::sequence::initialize_hardware(&mut hw)
             .map_err(|e| refused(Error::Pch(e)))?;
     } else {
         c.w(
-            registers::CTRL,
-            c.r(registers::CTRL) | ::e1000e::CTRL_SLU | ::e1000e::CTRL_ASDE,
+            registers::DEVICE_CONTROL_REGISTER,
+            c.r(registers::DEVICE_CONTROL_REGISTER)
+                | ::e1000e::DEVICE_CONTROL_SET_LINK_UP
+                | ::e1000e::DEVICE_CONTROL_AUTO_SPEED_DETECTION_ENABLE,
         );
     }
 
-    let station_address =
-        ::e1000e::station_address_from_receive_address(c.r(registers::RAL0), c.r(registers::RAH0))
-            .ok_or(refused(Error::NoStationAddress))?;
+    let station_address = ::e1000e::station_address_from_receive_address(
+        c.r(registers::RECEIVE_ADDRESS_0_LOW_REGISTER),
+        c.r(registers::RECEIVE_ADDRESS_0_HIGH_REGISTER),
+    )
+    .ok_or(refused(Error::NoStationAddress))?;
 
     // No multicast groups: the table is unspecified after reset.
     for k in 0..registers::MTA_ENTRIES {
-        c.w(registers::MTA + 4 * k, 0);
+        c.w(registers::MULTICAST_TABLE_ARRAY_REGISTER + 4 * k, 0);
     }
     // Legacy receive descriptors, the only format `crates/e1000e` reads.
     c.w(
-        registers::RFCTL,
-        c.r(registers::RFCTL) & !::e1000e::RFCTL_EXTEN,
+        registers::RECEIVE_FILTER_CONTROL_REGISTER,
+        c.r(registers::RECEIVE_FILTER_CONTROL_REGISTER)
+            & !::e1000e::RECEIVE_FILTER_CONTROL_EXTENDED_DESCRIPTORS_ENABLE,
     );
 
-    // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
-    let rx = region + layout::RECEIVE_RING;
-    let tx = region + layout::TRANSMIT_RING;
-    c.w(registers::RDBAL, rx as u32);
-    c.w(registers::RDBAH, (rx >> 32) as u32);
-    c.w(registers::RDLEN, u32::from(::e1000e::RECEIVE_ENTRIES) * 16);
-    c.w(registers::RDH, 0);
-    c.w(registers::RDT, 0);
-    c.w(registers::TDBAL, tx as u32);
-    c.w(registers::TDBAH, (tx >> 32) as u32);
-    c.w(registers::TDLEN, u32::from(::e1000e::TRANSMIT_ENTRIES) * 16);
-    c.w(registers::TDH, 0);
-    c.w(registers::TDT, 0);
+    program_rings(&c, region);
 
-    c.w(registers::TIPG, ::e1000e::tipg());
-    c.w(registers::TCTL, ::e1000e::tctl());
+    c.w(
+        registers::TRANSMIT_INTER_PACKET_GAP_REGISTER,
+        ::e1000e::transmit_inter_packet_gap_register_value(),
+    );
+    c.w(
+        registers::TRANSMIT_CONTROL_REGISTER,
+        ::e1000e::transmit_control_register_value(),
+    );
     if pch {
-        ::e1000e::pch::sequence::transmit_errata(&mut hw);
+        ::e1000e::platform_controller_hub::sequence::transmit_errata(&mut hw);
     }
-    c.w(registers::RCTL, ::e1000e::rctl());
+    c.w(
+        registers::RECEIVE_CONTROL_REGISTER,
+        ::e1000e::receive_control_register_value(),
+    );
 
     // The 82574L's PHY answers at address 1 with no pages and no semaphore.
     let physical_layer_device_id = match physical_layer_device_id {
         Some(id) => id,
-        None => ::e1000e::pch::physical_layer_device::read_identifier_at_address(&mut hw, 1)
-            .map_err(|e| refused(Error::PhysicalLayerDeviceId(e)))?,
+        None => {
+            ::e1000e::platform_controller_hub::physical_layer_device::read_identifier_at_address(
+                &mut hw, 1,
+            )
+            .map_err(|e| refused(Error::PhysicalLayerDeviceId(e)))?
+        }
     };
 
     let link_up = wait_ms(LINK_WAIT_MS, || {
-        c.r(registers::STATUS) & ::e1000e::STATUS_LU != 0
+        c.r(registers::DEVICE_STATUS_REGISTER) & ::e1000e::DEVICE_STATUS_LINK_UP != 0
     });
 
     Ok(Found {
@@ -175,19 +182,57 @@ pub fn bring_up() -> Result<Found, Absent> {
     })
 }
 
+/// Point the device at both rings, with every head and tail at zero.
+fn program_rings(c: &Controller, region: u64) {
+    // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
+    let rx = region + layout::RECEIVE_RING_OFFSET_BYTES;
+    let tx = region + layout::TRANSMIT_RING_OFFSET_BYTES;
+    c.w(
+        registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
+        rx as u32,
+    );
+    c.w(
+        registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+        (rx >> 32) as u32,
+    );
+    c.w(
+        registers::RECEIVE_DESCRIPTOR_LENGTH_REGISTER,
+        u32::from(::e1000e::RECEIVE_ENTRIES) * 16,
+    );
+    c.w(registers::RECEIVE_DESCRIPTOR_HEAD_REGISTER, 0);
+    c.w(registers::RECEIVE_DESCRIPTOR_TAIL_REGISTER, 0);
+    c.w(
+        registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
+        tx as u32,
+    );
+    c.w(
+        registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+        (tx >> 32) as u32,
+    );
+    c.w(
+        registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER,
+        u32::from(::e1000e::TRANSMIT_ENTRIES) * 16,
+    );
+    c.w(registers::TRANSMIT_DESCRIPTOR_HEAD_REGISTER, 0);
+    c.w(registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER, 0);
+}
+
 /// **The 82574L's quiesce and global reset**, unchanged from before the I219 passes existed.
 fn reset_82574(c: &Controller) -> Result<(), Error> {
     // Quiesce: no interrupts, receiver and transmitter off, then a posted-write flush.
-    c.w(registers::IMC, u32::MAX);
-    c.w(registers::RCTL, 0);
-    c.w(registers::TCTL, 0);
-    let _ = c.r(registers::STATUS);
+    c.w(registers::INTERRUPT_MASK_CLEAR_REGISTER, u32::MAX);
+    c.w(registers::RECEIVE_CONTROL_REGISTER, 0);
+    c.w(registers::TRANSMIT_CONTROL_REGISTER, 0);
+    let _ = c.r(registers::DEVICE_STATUS_REGISTER);
     spin_ms(10);
     // Global reset. Self-clearing; the registers read garbage while it runs, so wait first.
-    c.w(registers::CTRL, c.r(registers::CTRL) | ::e1000e::CTRL_RST);
+    c.w(
+        registers::DEVICE_CONTROL_REGISTER,
+        c.r(registers::DEVICE_CONTROL_REGISTER) | ::e1000e::DEVICE_CONTROL_GLOBAL_RESET,
+    );
     spin_ms(20);
     if !wait_ms(RESET_WAIT_MS, || {
-        c.r(registers::CTRL) & ::e1000e::CTRL_RST == 0
+        c.r(registers::DEVICE_CONTROL_REGISTER) & ::e1000e::DEVICE_CONTROL_GLOBAL_RESET == 0
     }) {
         return Err(Error::ResetTimeout);
     }
@@ -200,15 +245,16 @@ fn region_for(rid: u32) -> u64 {
     if base != 0 {
         return base;
     }
-    let base = crate::memory::alloc_contiguous_zeroed(layout::PAGES as usize)
-        .expect("no DMA region for the e1000e NIC")
-        .addr();
+    let base =
+        crate::memory::alloc_contiguous_zeroed(layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as usize)
+            .expect("no DMA region for the e1000e NIC")
+            .addr();
     if crate::iommu::is_active() {
         crate::iommu::confine(
             rid,
             &[paging::domain::DmaRegion {
                 base,
-                size: layout::PAGES * page_frames::FRAME_SIZE,
+                size: layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * page_frames::FRAME_SIZE,
                 writable: true,
             }],
         );
@@ -220,14 +266,14 @@ fn region_for(rid: u32) -> u64 {
 /// Zero the region, after the reset and before the rings are programmed. A stale descriptor status
 /// from a previous wiring would otherwise read as a received frame.
 fn zero(region: u64) {
-    // SAFETY: `region` is the run `region_for` allocated, `layout::BYTES` long, in the direct map.
+    // SAFETY: `region` is the run `region_for` allocated, `layout::DIRECT_MEMORY_ACCESS_REGION_BYTES` long, in the direct map.
     // The device was reset just before this, so it is not DMA-ing into it, and the service refuses
     // a new wiring while the previous process lives, so no process has it mapped.
     unsafe {
         core::ptr::write_bytes(
             mmu::phys_to_virt(region) as *mut u8,
             0,
-            layout::BYTES as usize,
+            layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize,
         );
     }
 }
@@ -252,17 +298,22 @@ fn zero(region: u64) {
 /// STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 /// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, region: u64) {
-    use ::e1000e::pch::{flush, registers as pch};
+    use ::e1000e::platform_controller_hub::{flush, registers as pch};
     c.w(
-        pch::FEXTNVM11,
-        c.r(pch::FEXTNVM11) | flush::FEXTNVM11_DISABLE_MULR_FIX,
+        pch::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER,
+        c.r(pch::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER)
+            | flush::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_DISABLE_MULR_FIX,
     );
     let status = || dev.config_read32(flush::PCICFG_DESC_RING_STATUS) as u16;
-    if !flush::required(status(), c.r(registers::TDLEN)) {
+    if !flush::is_flush_required(
+        status(),
+        c.r(registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER),
+    ) {
         return;
     }
-    let ring = region + layout::TRANSMIT_RING;
-    let tdba = u64::from(c.r(registers::TDBAL)) | u64::from(c.r(registers::TDBAH)) << 32;
+    let ring = region + layout::TRANSMIT_RING_OFFSET_BYTES;
+    let tdba = u64::from(c.r(registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER))
+        | u64::from(c.r(registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER)) << 32;
     if tdba != ring {
         crate::println!(
             "  e1000e: the rings need flushing and the transmit ring at {tdba:#x} is not this \
@@ -270,34 +321,43 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
         );
         return;
     }
-    c.w(registers::TCTL, c.r(registers::TCTL) | 0x2);
-    let tdt = c.r(registers::TDT) % u32::from(::e1000e::TRANSMIT_ENTRIES);
+    c.w(
+        registers::TRANSMIT_CONTROL_REGISTER,
+        c.r(registers::TRANSMIT_CONTROL_REGISTER) | 0x2,
+    );
+    let tdt =
+        c.r(registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER) % u32::from(::e1000e::TRANSMIT_ENTRIES);
     let d = mmu::phys_to_virt(region + layout::transmit_descriptor(tdt as u16)) as *mut u64;
     // SAFETY: `d` is a 16-byte descriptor inside the transmit ring page of this driver's region
     // (`layout::transmit_descriptor` reduces its index), in the direct map. The device reads it
     // only after the tail write below, which the barrier orders after these stores.
     unsafe {
         core::ptr::write_volatile(d, ring);
-        core::ptr::write_volatile(d.add(1), flush::transmit_word());
+        core::ptr::write_volatile(d.add(1), flush::dummy_transmit_descriptor_command_word());
     }
     crate::arch::direct_memory_access_write_barrier();
     c.w(
-        registers::TDT,
-        flush::tail_after(tdt, ::e1000e::TRANSMIT_ENTRIES),
+        registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER,
+        flush::tail_after_dummy_transmit(tdt, ::e1000e::TRANSMIT_ENTRIES),
     );
     spin_microseconds(250);
     if status() & flush::FLUSH_DESC_REQUIRED == 0 {
         return;
     }
-    let rctl = c.r(registers::RCTL);
-    c.w(registers::RCTL, rctl & !0x2);
-    let _ = c.r(registers::STATUS);
+    let rctl = c.r(registers::RECEIVE_CONTROL_REGISTER);
+    c.w(registers::RECEIVE_CONTROL_REGISTER, rctl & !0x2);
+    let _ = c.r(registers::DEVICE_STATUS_REGISTER);
     spin_microseconds(150);
-    c.w(pch::RXDCTL, flush::rxdctl(c.r(pch::RXDCTL)));
-    c.w(registers::RCTL, rctl | 0x2);
-    let _ = c.r(registers::STATUS);
+    c.w(
+        pch::RECEIVE_DESCRIPTOR_CONTROL_REGISTER,
+        flush::receive_descriptor_control_register_value_for_flush(
+            c.r(pch::RECEIVE_DESCRIPTOR_CONTROL_REGISTER),
+        ),
+    );
+    c.w(registers::RECEIVE_CONTROL_REGISTER, rctl | 0x2);
+    let _ = c.r(registers::DEVICE_STATUS_REGISTER);
     spin_microseconds(150);
-    c.w(registers::RCTL, rctl & !0x2);
+    c.w(registers::RECEIVE_CONTROL_REGISTER, rctl & !0x2);
 }
 
 /// BAR0, through the direct map.
@@ -333,7 +393,7 @@ struct Bar<'a> {
     dev: &'a crate::pci::PciE1000eDevice,
 }
 
-impl ::e1000e::pch::Hardware for Bar<'_> {
+impl ::e1000e::platform_controller_hub::Hardware for Bar<'_> {
     fn read(&mut self, off: u64) -> u32 {
         self.c.r(off)
     }
@@ -349,8 +409,8 @@ impl ::e1000e::pch::Hardware for Bar<'_> {
     fn pci_vendor_id(&mut self) -> u16 {
         self.dev.config_read32(0) as u16
     }
-    fn note(&mut self, n: ::e1000e::pch::sequence::Note) {
-        use ::e1000e::pch::sequence::Note;
+    fn note(&mut self, n: ::e1000e::platform_controller_hub::sequence::Note) {
+        use ::e1000e::platform_controller_hub::sequence::Note;
         match n {
             // The identifier in hex, as the bench card compares it.
             Note::PhysicalLayerDeviceReached { at, id } => {

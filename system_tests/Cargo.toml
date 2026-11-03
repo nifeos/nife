@@ -52,7 +52,7 @@ pmap = { version = "0.1.0", path = "../crates/pmap" }
 # rather than by a second spelling of it.
 package_archive = { version = "0.1.0", path = "../crates/package_archive" }
 # The e1000e family (milestone 494 (a driver for the network card a PC actually has)).
-# `wired_or_skip!` asks `e1000e::pch::is_pch` whether a NIC with no link is silicon or the
+# `wired_or_skip!` asks `e1000e::platform_controller_hub::is_platform_controller_hub_device` whether a NIC with no link is silicon or the
 # runner's, by the same predicate the boot uses to tell them apart.
 e1000e = { version = "0.1.0", path = "../crates/e1000e" }
 coremark = { version = "0.1.0", path = "../crates/coremark" }

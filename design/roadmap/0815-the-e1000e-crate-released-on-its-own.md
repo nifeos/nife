@@ -67,7 +67,7 @@ three prove.
 |---|---|
 | A delivered frame always fits the buffer and the room | `proofs::a_delivered_frame_always_fits_the_buffer_and_the_room` |
 | Every ring offset is inside the region | `proofs::every_ring_offset_is_inside_the_region` |
-| A paged PHY access selects the offset's own page and register | `pch::physical_layer_device::proofs::a_paged_access_selects_the_offsets_own_page_and_register` |
+| A paged PHY access selects the offset's own page and register | `platform_controller_hub::physical_layer_device::proofs::a_paged_access_selects_the_offsets_own_page_and_register` |
 
 Not proven: the NVM (flash) reads that yield the MAC address and pick a bank, the reset, ULP and
 PHY workaround sequences (ordered register writes, tested against the simulated device but not
@@ -158,13 +158,13 @@ work, and the lane that renames a name drops its line.
 
 ### Generic
 
-- `required` (`src/pch/flush.rs`): generic
-- `Note` (`src/pch/sequence.rs`): generic
-- `Reached` (`src/pch/sequence.rs`): generic
+- `is_flush_required` (`src/platform_controller_hub/flush.rs`): generic
+- `Note` (`src/platform_controller_hub/sequence.rs`): generic
+- `Reached` (`src/platform_controller_hub/sequence.rs`): generic
 
 ### Unclear
 
-- `ulp` (`src/pch/ulp.rs`): unclear: Intel's ultra low power, an abbreviation
+- `ulp` (`src/platform_controller_hub/ultra_low_power.rs`): unclear: Intel's ultra low power, an abbreviation
 
 ## Exit
 
@@ -193,11 +193,11 @@ names until the ratification pass, so this section keeps the links it carried.
   harness), no_std for the kernel and `net_stack` and std for host tests.
 - `src/descriptor.rs`, `receive_verdict`: trusting no field of the status word answers finding 6 of
   `notes/shared-page-audit.md`.
-- `src/pch/mod.rs`, `non_volatile_memory.rs`, `physical_layer_device.rs` and `sequence.rs`, the
+- `src/platform_controller_hub/mod.rs`, `non_volatile_memory.rs`, `physical_layer_device.rs` and `sequence.rs`, the
   module docs: each cited milestone 494 and `notes/e1000e/the-i219-port.md`, the whole note for
-  `pch` and its sections "The NVM", "The PHY layer" and "The three passes" for the others. The PHY
+  `platform_controller_hub` and its sections "The NVM", "The PHY layer" and "The three passes" for the others. The PHY
   layer's two divergences now stand in `physical_layer_device.rs` itself.
-- `src/pch/mod.rs`, the first BUGS entry: the run on silicon without a cable is in that note's
+- `src/platform_controller_hub/mod.rs`, the first BUGS entry: the run on silicon without a cable is in that note's
   "BUGS", which links the BUGS of `notes/e1000e.md`.
 
 ## BUGS
