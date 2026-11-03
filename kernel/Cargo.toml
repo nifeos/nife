@@ -497,7 +497,7 @@ cycle_counter_grant = []
 fastpath_pad = []
 # Milestone 134's per-IPC kernel stack depth (kernel/src/ipc_stack_depth.rs): paints a thread's own
 # kernel stack before each IPC operation and scans it after, so the deepest byte one SEND, RECEIVE,
-# CALL, RECEIVE_CAP or REPLY reaches is a measurement rather than E1's estimate. `script/test` builds it
+# CALL, RECEIVE_CAPABILITY or REPLY reaches is a measurement rather than E1's estimate. `script/test` builds it
 # unconditionally (every piece is `any(test, feature = "ipc_stack_depth")`, the `cycle_counter_grant`
 # shape, so the path cannot rot); this feature exists so the **release** kernel, which is what radon
 # boots and what E1 ran on, can be measured too, by a bench boot that prints the same lines. Off by

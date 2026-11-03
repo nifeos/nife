@@ -186,8 +186,8 @@ it.
   conditions them.
 - **No hardware TRNG yet, but "needs verifying" is now precise rather than open-ended** (milestone
   159, 2026-08-24). The StarFive JH7110's TRNG is documented, from the chip's own datasheet and
-  Linux's mainline driver, but nothing about it has run. `crates/jh7110_entropy` holds the register
-  layout (`CTRL`/`STAT`/`MODE`/`SMODE`/`IE`/`ISTAT`/`RAND0..RAND7`/`AUTO_RQSTS`/`AUTO_AGE`,
+  Linux's mainline driver, but nothing about it has run. The `jh7110_entropy` crate
+  (nifeos/jh7110_entropy) holds the register layout (`CTRL`/`STAT`/`MODE`/`SMODE`/`IE`/`ISTAT`/`RAND0..RAND7`/`AUTO_RQSTS`/`AUTO_AGE`,
   transcribed from `drivers/char/hw_random/jh7110-trng.c`, mainline as of 2026-08-24) and a DTB
   discovery query (`starfive,jh7110-trng`, `reg = <0x1600C000 0x4000>`, PLIC interrupt 30, from the
   device-tree binding's own worked example). Both are host-tested against fixtures, never against
