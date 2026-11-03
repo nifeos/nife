@@ -89,7 +89,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 `descriptor::RDES3_BUF1V`, `descriptor::RDES3_CTXT`, `descriptor::RDES3_ES`, `descriptor::RDES3_FD`, `descriptor::RDES3_LD`, `descriptor::RDES3_LENGTH`, `descriptor::RDES3_OWN`, `descriptor::TDES2_BUF1_LEN`, `descriptor::TDES2_IC`, `descriptor::TDES3_ES`, `descriptor::TDES3_FRAME_LEN`, `descriptor::TDES3_FS`, `descriptor::TDES3_LS`, `descriptor::TDES3_OWN`
 
 - Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out, with the databook spelling kept as `#[doc(alias)]` and cited in the doc comment, as the 2026-11-02 rule and the earlier `RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION` rename already do. The docs already carry the plain-words title of each (for example 'owned by the device'), so the candidate names come from the crate's own text. Decide as one group because the pattern is shared.
+- Provisional recommendation: Spell out, with the databook spelling kept as `#[doc(alias)]` and cited in the doc comment, as the 2026-11-02 rule and the earlier `RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION` rename already do. The docs already carry the plain-words title of each (for example 'owned by the device'), so the candidate names come from the crate's own text. Decide as one group; the items share one pattern.
 
 ### DE8. MAC and channel register constants (CHAN_*, MAC_*) (15)
 
@@ -223,7 +223,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 `control`, `data_plane`, `descriptor`, `device`, `layout`, `pch`, `pch/flush`, `pch/hardware`, `pch/reset`, `pch/sequence`, `pch/sim`, `pch/tests`, `pch/ulp`, `proofs`, `tests`
 
 - Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify all but two. `pch` and `ulp` abbreviate 'platform controller hub' and 'ultra low power'; recommend `platform_controller_hub` and `ultra_low_power` (the stricter reading, a close call since Intel and Linux write both as letters; the sibling modules `non_volatile_memory` and `physical_layer_device` are already spelled out). The other thirteen are plain.
+- Provisional recommendation: Ratify all but two. `pch` and `ulp` abbreviate 'platform controller hub' and 'ultra low power'; recommend `platform_controller_hub` and `ultra_low_power` (the stricter reading, a close call since Intel and Linux write both as letters; the sibling modules `non_volatile_memory` and `physical_layer_device` already spell out their words). The other thirteen are plain.
 
 ### E2. Device identity (4)
 
@@ -258,7 +258,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 `layout::BYTES`, `layout::PAGES`, `layout::RECEIVE_BUFFERS`, `layout::RECEIVE_RING`, `layout::TRANSMIT_BUFFERS`, `layout::TRANSMIT_RING`, `layout::receive_buffer`, `layout::receive_descriptor`, `layout::transmit_buffer`, `layout::transmit_descriptor`
 
 - Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand; `rx` and `tx` are already spelled out.
+- Provisional recommendation: Ratify as they stand; `rx` and `tx` already read `receive` and `transmit`.
 
 ### E7. Register offsets (24)
 
@@ -272,7 +272,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 `control::CTRL_ASDE`, `control::CTRL_EXT_DRV_LOAD`, `control::CTRL_RST`, `control::CTRL_SLU`, `control::RAH_AV`, `control::RFCTL_EXTEN`, `control::STATUS_LU`, `control::rctl`, `control::tctl`, `control::tipg`, `pch::flush::FEXTNVM11_DISABLE_MULR_FIX`, `pch::flush::rxdctl`
 
 - Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out with aliases, after the register offsets are decided: `CTRL_ASDE`, `CTRL_EXT_DRV_LOAD`, `CTRL_RST`, `CTRL_SLU`, `RAH_AV`, `RFCTL_EXTEN`, `STATUS_LU`, `FEXTNVM11_DISABLE_MULR_FIX`, and the functions `rctl`, `tctl`, `tipg`, `rxdctl` that build register values.
+- Provisional recommendation: Spell out with aliases, after the offsets: `CTRL_ASDE`, `CTRL_EXT_DRV_LOAD`, `CTRL_RST`, `CTRL_SLU`, `RAH_AV`, `RFCTL_EXTEN`, `STATUS_LU`, `FEXTNVM11_DISABLE_MULR_FIX`, and the functions `rctl`, `tctl`, `tipg`, `rxdctl` that build register values.
 
 ### E9. PCH flush and hardware (4)
 
@@ -300,7 +300,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 `pch::sequence::BlockedAfterPhysicalLayerDeviceReset`, `pch::sequence::Error`, `pch::sequence::Note`, `pch::sequence::PhysicalLayerDevice`, `pch::sequence::PhysicalLayerDeviceInaccessible`, `pch::sequence::PhysicalLayerDeviceReached`, `pch::sequence::PhysicalLayerDeviceResetNotAsserted`, `pch::sequence::Reached`, `pch::sequence::global_reset`, `pch::sequence::transmit_errata`
 
 - Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand, including the five provisional `PhysicalLayerDevice*` and `BlockedAfterPhysicalLayerDeviceReset` variants; all are spelled out.
+- Provisional recommendation: Ratify as they stand, including the five provisional `PhysicalLayerDevice*` and `BlockedAfterPhysicalLayerDeviceReset` variants; all spell out their words.
 
 ### E13. Ultra low power and simulator (7)
 
