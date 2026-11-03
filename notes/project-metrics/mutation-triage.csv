@@ -642,6 +642,7 @@ designware_ethernet,,replace + with *,killed,killed by tests::the_region_is_two_
 designware_ethernet,,replace - with +,killed,killed by coherence::tests::prepare_poisons_exactly_the_frame_and_its_crc_and_waits_on_descriptor_0,,,
 designware_ethernet,,replace - with /,killed,killed by coherence::tests::prepare_poisons_exactly_the_frame_and_its_crc_and_waits_on_descriptor_0,,,
 designware_ethernet,,replace | with &,killed,killed by jh7110::tests::radons_burst_lengths_are_all_four_bits,,,
+designware_ethernet,,replace << with >>,gap,"on RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE the mutant makes the bit 0, so a reposted descriptor is never handed to the device and the receive loop never ends; the test run hits cargo-mutants' 20 s cap and the gate reads that as a hang, not a clean failure. A test does fail on the mutant, but only after the suite spins in DataPlane::receive; bounding the loop would change production logic in a naming-only pull request",,,milestone 970
 designware_ethernet,DataPlane::can_transmit,replace % with +,killed,killed by tests::the_largest_frame_is_sent_and_a_full_ring_says_so_in_advance,,,
 designware_ethernet,DataPlane::can_transmit,replace % with /,killed,killed by tests::the_largest_frame_is_sent_and_a_full_ring_says_so_in_advance,,,
 designware_ethernet,DataPlane::can_transmit,replace + with -,killed,killed by tests::the_largest_frame_is_sent_and_a_full_ring_says_so_in_advance,,,
