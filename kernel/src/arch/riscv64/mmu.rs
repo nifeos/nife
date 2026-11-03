@@ -475,7 +475,12 @@ where
 
     // 6d. The JH7110's first Ethernet port, its AON clock-and-reset window and AON syscon page.
     if let Some(e) = memory::jh7110_ethernet() {
-        direct_map(m, e.port.base, e.port.base + e.port.size, Flags::device())?;
+        direct_map(
+            m,
+            e.port.registers_physical_address,
+            e.port.registers_physical_address + e.port.registers_size_bytes,
+            Flags::device(),
+        )?;
         direct_map(m, e.aon.base, e.aon.base + e.aon.size, Flags::device())?;
         direct_map(
             m,
