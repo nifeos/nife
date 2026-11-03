@@ -94,7 +94,10 @@ the finding class and the reproducer, and a fix lane reads that advisory and not
 inputs, seeds and reproducers stay out of every public text until the fix is on main. An architect
 ruled this on 2026-11-01 (UTC) in
 [`fuzz-findings-without-a-person`](../../design/roadmap/proposals/fuzz-findings-without-a-person.md),
-which also lists the milestones that build it. Until they land, nothing files an advisory.
+which also lists the milestones that build it. The filer is `fuzz-filer` in
+[nifeos/fuzz-host](https://github.com/nifeos/fuzz-host); it runs as the fuzz account and files from a
+one-hour token that a root timer mints. It is built and not yet installed, so until a person installs
+it, nothing files an advisory.
 
 With `--publish` it creates one GitHub release per day on nifeos/nife, tagged `fuzz-YYYY-MM-DD` (the
 UTC date), with `report.md` and `clean-ranges.tsv` as its assets: `gh release create fuzz-YYYY-MM-DD

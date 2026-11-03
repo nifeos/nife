@@ -17,7 +17,7 @@ Reuse: `gh api` reads the advisory. No new transport.
 ## What it builds
 
 - A script a fix lane runs to read one advisory: `GET /repos/nifeos/nife/security-advisories/<id>`
-  with a one-hour token of the `nife-fuzz-reader` App, handed to the lane at launch. It prints the advisory to
+  with a one-hour token of the `nife-fuzz-reader` App, which the lane takes for that one command. It prints the advisory to
   the lane's terminal and writes nothing to disk inside a worktree. It refuses, by name, when no
   credential is present, and it never searches for one.
 - The rule text in the developer-lane and maintainer skills:
@@ -44,8 +44,11 @@ credential. The gate's selftest feeds it a planted replay line and a clean messa
 
 ## Status
 
-Not started. Unverified: how long a fix pull request stays public before it merges. That window runs
+Built: `script/read-advisory`, the replay-line check, and the rule text in the developer-lane and
+maintainer skills. The token comes from `fuzz-token issue reader` in the same command that runs the
+script, as
+[fix lanes get a one-hour reader token](fix-lanes-get-a-one-hour-reader-token.md) shows. The script
+reads it from `NIFE_ADVISORY_READER_TOKEN` and never falls back to `GH_TOKEN`. Still open: the check
+of a pull request's title and body in CI. Unverified: how long a fix pull request stays public before it merges. That window runs
 from the push to the merge, and it grows whenever a hold applies (`needs-architect` on a fix that
-touches the syscall surface, or a red trunk). The first fix measures it. It waits on
-[fix lanes get a one-hour reader token](fix-lanes-get-a-one-hour-reader-token.md) for a real read, not
-for its selftests.
+touches the syscall surface, or a red trunk). The first fix measures it. A real read waits on the key and the sudo rule being installed.
