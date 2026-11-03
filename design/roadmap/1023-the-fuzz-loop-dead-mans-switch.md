@@ -44,4 +44,4 @@ not reach.
 
 ## Index row
 
-A scheduled workflow on a hosted runner opens a labelled issue when the continuous fuzz loop has produced nothing for two days. A silent loop becomes a visible issue.
+A scheduled workflow on a hosted runner opens a labeled issue when the continuous fuzz loop has produced nothing for two days. A silent loop becomes a visible issue.
