@@ -1,0 +1,87 @@
+name: owned runner canary
+
+# Observed failing: 2026-11-03, by script: a failing canary needs an owned runner that is down or
+#   an egress host that is blocked, which cannot be staged from a branch. helpers/owned_runner_check.py
+#   --selftest plants the two ways a workflow can send an owned job where it must not go (a
+#   pull_request trigger, and a missing merge_group/push guard) and requires both to fail; the real
+#   first run after merge is the first observation of the canary itself. notes/owned-runners.md.
+
+# **A week-long comparison of an owned runner against its hosted twin** (rulings,
+# 2026-11-03 UTC: owned runners in two stages, one week of canary, a repository variable to flip
+# back). Both jobs run the same steps on the merge queue and on `main`, never on a pull request: the
+# owned host admits nothing else. `canary-owned` cannot fail the queue (continue-on-error), and
+# neither job is a required check. Names are provisional. notes/owned-runners.md is the runbook.
+
+on:
+  merge_group:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  canary-owned:
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    runs-on: [nife-owned-x86_64]
+    continue-on-error: true
+    timeout-minutes: 15
+    steps:
+      - name: Probe
+        env:
+          CANARY_KIND: owned
+        run: |
+          set +e
+          start=$(date +%s)
+          {
+            echo "## canary-owned"
+            echo '```'
+            echo "kind: $CANARY_KIND"
+            echo "runner: ${RUNNER_NAME:-unknown}"
+            echo "hostname: $(hostname)"
+            echo "id: $(id)"
+            if test -w /dev/kvm; then echo "kvm: writable"; else echo "kvm: NOT writable"; fi
+            qemu-system-x86_64 --version 2>&1 | head -1 || echo "qemu: missing"
+            if command -v cargo >/dev/null 2>&1; then cargo --version; else echo "cargo: not installed"; fi
+            for url in https://index.crates.io/config.json https://api.github.com; do
+              t=$(date +%s)
+              code=$(curl -sS -o /dev/null -m 30 -w '%{http_code}' "$url" 2>&1)
+              echo "curl $url: $code ($(( $(date +%s) - t )) s)"
+            done
+            echo "total: $(( $(date +%s) - start )) s"
+            echo '```'
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          # The summary is the record; the verdict comes from the same facts.
+          test -w /dev/kvm && command -v qemu-system-x86_64 >/dev/null
+
+  canary-hosted:
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    steps:
+      - name: Probe
+        env:
+          CANARY_KIND: hosted
+        run: |
+          set +e
+          start=$(date +%s)
+          {
+            echo "## canary-hosted"
+            echo '```'
+            echo "kind: $CANARY_KIND"
+            echo "runner: ${RUNNER_NAME:-unknown}"
+            echo "hostname: $(hostname)"
+            echo "id: $(id)"
+            if test -w /dev/kvm; then echo "kvm: writable"; else echo "kvm: NOT writable"; fi
+            qemu-system-x86_64 --version 2>&1 | head -1 || echo "qemu: missing"
+            if command -v cargo >/dev/null 2>&1; then cargo --version; else echo "cargo: not installed"; fi
+            for url in https://index.crates.io/config.json https://api.github.com; do
+              t=$(date +%s)
+              code=$(curl -sS -o /dev/null -m 30 -w '%{http_code}' "$url" 2>&1)
+              echo "curl $url: $code ($(( $(date +%s) - t )) s)"
+            done
+            echo "total: $(( $(date +%s) - start )) s"
+            echo '```'
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          # The hosted twin reports the same facts but never fails: it is the reference.
+          true
