@@ -788,6 +788,9 @@ mod tests {
             timed_blocks: 0,
             timed_microseconds: 0,
         };
+        // The timed reads are the bench's own length natively; under Miri each 128-block command
+        // costs minutes, so the timed part reads two commands and one.
+        let (long, short) = if cfg!(miri) { (256, 128) } else { (1024, 256) };
         let mut h = with_internal_direct_memory_access(h, &memory);
         let mut buffer = vec![0u8; 128 * 512];
         let r = crate::bench::internal_direct_memory_access_read(
@@ -795,21 +798,21 @@ mod tests {
             &report,
             &reference,
             &mut buffer,
-            1024,
+            long,
         )
         .unwrap();
         assert!(r.matches);
-        assert_eq!(r.timed_blocks, 1024);
+        assert_eq!(r.timed_blocks, long);
         h.registers().direct_memory_access_corrupts = true;
         let r = crate::bench::internal_direct_memory_access_read(
             &mut h,
             &report,
             &reference,
             &mut buffer,
-            256,
+            short,
         )
         .unwrap();
         assert!(!r.matches);
-        assert_eq!(r.timed_blocks, 256);
+        assert_eq!(r.timed_blocks, short);
     }
 }
