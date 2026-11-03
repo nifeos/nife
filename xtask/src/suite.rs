@@ -135,7 +135,7 @@ impl ArchLegs {
 /// reasons.
 pub(crate) fn test() -> bool {
     if std::env::args().any(|a| a == "--host-only") {
-        return run_host_pass_alone();
+        return host_pass_alone_passes();
     }
     let Some((hvf, legs)) = legs_from_flags() else {
         return false;
@@ -373,7 +373,7 @@ pub(crate) fn export_test_filter() -> Option<String> {
 /// `--host-only`: the host pass alone, with no QEMU and no kernel build. True when it passed;
 /// false after refusing a flag that names kernel legs or boots, since the run would ignore it.
 /// Name: provisional, minted 2026-11-03 (UTC) by lane/heavy-gates-only-in-queue.
-fn run_host_pass_alone() -> bool {
+fn host_pass_alone_passes() -> bool {
     for flag in [
         "--arch",
         "--no-host",
