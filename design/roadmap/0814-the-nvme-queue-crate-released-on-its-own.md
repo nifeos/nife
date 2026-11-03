@@ -30,11 +30,12 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
 - `crates/non_volatile_memory_express`: 733 code lines (1,335 with comments, one file), class A in
   #1806's note `notes/releasable-crates-2026-10-07.md`, so it depends on no other nife crate and
   needs no cut.
-- Eight Kani harnesses, each with a falsification patch in `falsifications/`. Submission pushes and
+- Six Kani harnesses, each with a falsification patch in `falsifications/`. Submission pushes and
   completion pops stay in bounds, and the phase flips only at the wrap. Doorbells never collide.
   The PRP pair is total and page-disciplined, and the identify parse is total and bounds its shift.
-  The spawn handoff round-trips and keeps its doorbells inside the mapped page. A transfer command
-  is only built for a block the namespace has.
+  A transfer command is only built for a block the namespace has. The two harnesses on the spawn
+  handoff (it round-trips, and an accepted one keeps its doorbells inside the mapped page) and their
+  patches live in `driver_process_contract`.
 - Its consumers: `kernel/src/non_volatile_memory_express.rs` (the volatile shell),
   `kernel/src/user/non_volatile_memory_express_service.rs`, `kernel/src/user/install_service.rs`,
   `kernel/src/disk_throughput.rs`, `components/src/non_volatile_memory_express.rs` (the EL0
@@ -44,7 +45,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
   kernel has no use for them.
 - Ruled 2026-10-25 (UTC), on #2720: nife's process plan leaves the crate. Pull request #2736 moved
   the client windows, `client_window`, `ESCAPE_MAGIC`, `Handoff` and its methods, the
-  `confinement_attackers` feature and the three handoff harnesses into the nife-internal crate
+  `confinement_attackers` feature and the two handoff harnesses into the nife-internal crate
   `non_volatile_memory_express_contract` (a provisional name). It moved `can_write` into the EL0
   server, its only caller. The crate's remaining names are all ratified, in the `Name:` blocks of
   its source.
@@ -63,9 +64,8 @@ on #1806 that nife contributes only to projects nife depends on.
 Each row is a property this crate must prove before it publishes. The harness cell names the Kani
 harness that proves it, or says `none yet`; every named harness carries a falsification patch that
 makes it fail at its own assertion. Each patch is at
-`crates/non_volatile_memory_express/falsifications/`. Measured 2026-10-11 (UTC): 8 of 8 proven.
-Since #2736 the crate carries five. The three handoff rows below moved with `Handoff` to
-`non_volatile_memory_express_contract`, which does not publish.
+`crates/non_volatile_memory_express/falsifications/`. All six prove. The spawn handoff has two harnesses, which sit with `Handoff` in
+`driver_process_contract`, which does not publish.
 
 | property | harness |
 |---|---|
@@ -74,13 +74,11 @@ Since #2736 the crate carries five. The three handoff rows below moved with `Han
 | Distinct doorbells never collide | `verification::distinct_doorbells_never_collide` |
 | The PRP pair is total and page-disciplined | `verification::prp_pair_is_total_and_page_disciplined` |
 | The identify-namespace parse is total and bounds its shift | `verification::identify_parse_is_total_and_bounds_the_shift` |
-| The spawn handoff round-trips | `verification::the_spawn_handoff_round_trips` |
-| An accepted handoff keeps its doorbells inside the mapped page | `verification::an_accepted_handoff_keeps_its_doorbells_inside_the_mapped_page` |
 | A transfer command is built only for a block the namespace has | `verification::a_transfer_command_is_only_built_for_a_block_the_namespace_has` |
 
 Not proven: the `Capabilities` register decode beyond the doorbell stride the handoff harness bounds, the
 status fields of `Completion::from_dwords`, and anything in time (reset, enable, timeouts), which
-lives in the driver's volatile shell. The last three rows proved nife's spawn handoff, not NVMe;
+lives in the driver's volatile shell. The handoff harnesses prove nife's spawn handoff, not NVMe;
 they left with `Handoff` on 2026-10-26 (#2736).
 
 ## Release, by #1806's rulings
@@ -132,7 +130,7 @@ host, all exit 0. The release workflow builds the same four.
 `script/crate-standalone non_volatile_memory_express` fails today, at base `ae6b91e79`. The manifest
 inherits `license` and `lints` from nife's workspace and states no `rust-version`, and there is no
 README, `LICENSE-MIT` or `LICENSE-APACHE`. Those hold for all nine crates. Builds and tests on
-stable for the host and the three bare-metal targets. Stock Kani proves all eight harnesses in the
+stable for the host and the three bare-metal targets. Stock Kani proves all six harnesses in the
 copy, and each falsification patch, applied with `-p3`, turns its harness red. It fails on manifest
 and files only, plus 25 lines citing this tree: 12 `§N`, 8 `milestone N`, 2 tree paths, 2 naming
 calef and 1 provenance block.
@@ -225,6 +223,6 @@ handoff harnesses and the `confinement_attackers` feature describe code that lef
 
 ## Index row
 
-nife's NVMe queue arithmetic, with eight Kani proofs and their falsification patches, published on
+nife's NVMe queue arithmetic, with six Kani proofs and their falsification patches, published on
 crates.io as `non_volatile_memory_express` 0.1 from its own `nifeos` repository. Another hobby OS
 can then drive NVMe on proven queue logic, and nife consumes the same release.
