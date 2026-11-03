@@ -96,7 +96,7 @@ to 5 below stay as the procedure for replacing it.
 
 Its key lives in a file only root can read on the machine that launches fix lanes. It never sits on
 the fuzz host and never enters a lane's environment. A lane receives a one-hour installation token at
-launch, from a helper that a proposed milestone builds.
+launch, from `fuzz-token issue reader`, which a sudo rule lets a lane run.
 
 What the key can do: list and read every advisory on nifeos/nife, held findings included. It can
 write nothing.
@@ -113,8 +113,9 @@ write nothing.
 6. At <https://github.com/organizations/nifeos/settings/apps/nife-fuzz-reader>, under Credentials,
    Key pairs, generate a private key. Copy it into a directory only root can enter on the machine that launches fix lanes, owned
    by root, mode 0400. Delete every other copy.
-7. Write the App ID and installation ID beside the helper's configuration on that machine. Neither is
-   secret.
+7. Install the helper and the sudo rule as nifeos/fuzz-host's
+   [`docs/fuzz-token-reader.md`](https://github.com/nifeos/fuzz-host/blob/lane/fuzz-reader-token/docs/fuzz-token-reader.md)
+   says. The App ID and installation ID are in the helper; neither is secret.
 
 Never paste this key anywhere else either, a lane's environment included.
 
@@ -134,8 +135,6 @@ App on nifeos/nife.
 ## BUGS
 
 - Nobody has followed the key steps yet. The first person to do so confirms each one or corrects it.
-- The filing service does not exist yet. The ruling's proposal lists it as a proposed milestone.
-- The helper that hands a fix lane its one-hour reader token does not exist yet. The ruling's
-  proposal lists it as a proposed milestone.
+- The filer is built and not installed. Nothing has filed an advisory on GitHub yet.
 - A nife release that uses a tag outside `fuzz-*` needs the tag ruleset amended first, as its own
   step recorded in a pull request.

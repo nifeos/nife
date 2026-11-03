@@ -13,15 +13,15 @@ Raised by lane/fuzz-findings-without-a-person on 2026-11-01 (UTC), from step 4 o
 in [fuzz-findings-without-a-person](fuzz-findings-without-a-person.md), and from the 90-day outer cap
 of the disclosure ruling of 2026-10-31 (UTC).
 
-Reuse: the window code of `helpers/continuous-fuzz.sh` replays a seed; the filing service's token
-code calls the API.
+Reuse: the window code of `helpers/continuous-fuzz.sh` replays a seed; the filer's ledger (`ledger_state()` in
+`bin/fuzz-filer` of nifeos/fuzz-host) says which findings it filed, and with which advisory id.
 
 ## What it builds
 
-Once a day the service replays the seed of every advisory it filed that is still a draft. It runs
+Once a day the service replays the seed of every advisory the filer's ledger records as filed that is still a draft. A ledger line is a UTC time, a finding id, `pending` or `filed`, and an advisory id or `-`, tab separated, and the last line of a finding wins. Each advisory's description starts with a `Finding:` line holding the finding id, and the service matches an advisory to its ledger line by it. It runs
 one seed per guest, against the newest green main the host runs.
 
-- A clean replay publishes the advisory (an update that sets its state to `published`) and moves the
+- A clean replay publishes the advisory (an update that sets `patched_versions` to the commit that fixed it and its state to `published`) and moves the
   held log out of the held directory, so the daily report's held count falls.
 - A failing replay keeps the advisory private and adds a comment to it naming the commit that still
   fails. The maintainer reads open advisories with such a comment as the cue to raise a new lane.
@@ -36,7 +36,7 @@ carry a seed in a public field.
 
 ## Status
 
-Not started. It waits on the filing service. Publishing needs only the advisory write permission, once the advisory carries a package and range.
+Not started. It reads the filer's ledger, which exists. Publishing needs only the advisory write permission, once the advisory carries a package and range.
 GitHub answers 422 without them, and the filer supplies them
 ([the test](../../../notes/fuzzing/finishing-the-setup.md#the-advisory-permission)). Unverified:
 whether a published advisory shows its comments to the public. Also unverified: whether the REST API
