@@ -283,20 +283,20 @@ fn the_layout_fits_its_pages_and_the_rings_fit_theirs() {
 
 #[test]
 fn the_queue_pages_hold_the_tails_and_not_the_control_registers() {
-    assert_eq!(registers::RDT & !0xfff, RECEIVE_QUEUE_PAGE);
-    assert_eq!(registers::TDT & !0xfff, TRANSMIT_QUEUE_PAGE);
-    assert_eq!(registers::TDT - TRANSMIT_QUEUE_PAGE, TAIL_IN_PAGE);
+    assert_eq!(registers::RECEIVE_DESCRIPTOR_TAIL_REGISTER & !0xfff, RECEIVE_QUEUE_PAGE);
+    assert_eq!(registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER & !0xfff, TRANSMIT_QUEUE_PAGE);
+    assert_eq!(registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER - TRANSMIT_QUEUE_PAGE, TAIL_IN_PAGE);
     // The finding: base and tail share a page, so the split cannot keep ring placement.
-    assert_eq!(registers::RDBAL & !0xfff, RECEIVE_QUEUE_PAGE);
+    assert_eq!(registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER & !0xfff, RECEIVE_QUEUE_PAGE);
     for r in [
-        registers::CTRL,
-        registers::STATUS,
-        registers::RCTL,
-        registers::TCTL,
-        registers::IMC,
-        registers::RAL0,
-        registers::RAH0,
-        registers::RFCTL,
+        registers::DEVICE_CONTROL_REGISTER,
+        registers::DEVICE_STATUS_REGISTER,
+        registers::RECEIVE_CONTROL_REGISTER,
+        registers::TRANSMIT_CONTROL_REGISTER,
+        registers::INTERRUPT_MASK_CLEAR_REGISTER,
+        registers::RECEIVE_ADDRESS_0_LOW_REGISTER,
+        registers::RECEIVE_ADDRESS_0_HIGH_REGISTER,
+        registers::RECEIVE_FILTER_CONTROL_REGISTER,
     ] {
         let page = r & !0xfff;
         assert!(
