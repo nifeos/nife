@@ -310,7 +310,11 @@ pub fn initialize_physical_layer_device_workarounds(
             return Ok(Reached::Directly);
         }
         // Before toggling LANPHYPC, see whether forcing the MAC into SMBus mode is enough.
-        set(hardware, mac::EXTENDED_DEVICE_CONTROL_REGISTER, CTRL_EXT_FORCE_SMBUS);
+        set(
+            hardware,
+            mac::EXTENDED_DEVICE_CONTROL_REGISTER,
+            CTRL_EXT_FORCE_SMBUS,
+        );
         // "Wait 50 milliseconds for MAC to finish any retries that it might be trying to
         // perform from previous attempts to acknowledge any phy read requests."
         delay_ms(hardware, 50);
@@ -325,7 +329,11 @@ pub fn initialize_physical_layer_device_workarounds(
             return Ok(Reached::AfterLanphypc);
         }
         // Toggling LANPHYPC brings the PHY out of SMBus mode, so take the MAC out too.
-        clear(hardware, mac::EXTENDED_DEVICE_CONTROL_REGISTER, CTRL_EXT_FORCE_SMBUS);
+        clear(
+            hardware,
+            mac::EXTENDED_DEVICE_CONTROL_REGISTER,
+            CTRL_EXT_FORCE_SMBUS,
+        );
         if accessible(hardware, &f, &mut id) {
             return Ok(Reached::AfterUnforce);
         }
@@ -390,7 +398,11 @@ fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<()
         ) {
             Ok(v) => v,
             Err(_) => {
-                set(hardware, mac::EXTENDED_DEVICE_CONTROL_REGISTER, CTRL_EXT_FORCE_SMBUS);
+                set(
+                    hardware,
+                    mac::EXTENDED_DEVICE_CONTROL_REGISTER,
+                    CTRL_EXT_FORCE_SMBUS,
+                );
                 delay_ms(hardware, 50);
                 physical_layer_device::read(
                     hardware,
@@ -406,7 +418,11 @@ fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<()
             physical_layer_device::registers::CV_SMB_CTRL,
             v & !CV_SMB_CTRL_FORCE_SMBUS,
         );
-        clear(hardware, mac::EXTENDED_DEVICE_CONTROL_REGISTER, CTRL_EXT_FORCE_SMBUS);
+        clear(
+            hardware,
+            mac::EXTENDED_DEVICE_CONTROL_REGISTER,
+            CTRL_EXT_FORCE_SMBUS,
+        );
         // "When ULP mode was previously entered, K1 was disabled by the hardware. Re-Enable K1
         // in the PHY when exiting ULP."
         let pm = physical_layer_device::read(
@@ -501,7 +517,11 @@ fn accessible(hardware: &mut impl Hardware, flag: &Swflag, id: &mut u32) -> bool
                 v & !CV_SMB_CTRL_FORCE_SMBUS,
             );
         }
-        clear(hardware, mac::EXTENDED_DEVICE_CONTROL_REGISTER, CTRL_EXT_FORCE_SMBUS);
+        clear(
+            hardware,
+            mac::EXTENDED_DEVICE_CONTROL_REGISTER,
+            CTRL_EXT_FORCE_SMBUS,
+        );
     }
     ok
 }
@@ -521,7 +541,8 @@ fn toggle_lanphypc(hardware: &mut impl Hardware) {
         registers::FEXTNVM3,
         (n3 & !FEXTNVM3_PHY_CFG_COUNTER_MASK) | FEXTNVM3_PHY_CFG_COUNTER_50MSEC,
     );
-    let ctrl = (hardware.read(mac::DEVICE_CONTROL_REGISTER) | CTRL_LANPHYPC_OVERRIDE) & !CTRL_LANPHYPC_VALUE;
+    let ctrl = (hardware.read(mac::DEVICE_CONTROL_REGISTER) | CTRL_LANPHYPC_OVERRIDE)
+        & !CTRL_LANPHYPC_VALUE;
     hardware.write(mac::DEVICE_CONTROL_REGISTER, ctrl);
     flush_writes(hardware);
     delay_ms(hardware, 1);
@@ -614,7 +635,11 @@ pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<
     hardware.write(registers::PBA, PBA_26K);
 
     // `e1000_disable_pcie_master_generic`: stop new bus-master requests, wait for pending ones.
-    set(hardware, mac::DEVICE_CONTROL_REGISTER, reset::CTRL_GIO_MASTER_DISABLE);
+    set(
+        hardware,
+        mac::DEVICE_CONTROL_REGISTER,
+        reset::CTRL_GIO_MASTER_DISABLE,
+    );
     let mut idle = false;
     for _ in 0..reset::MASTER_WAIT_MICROSECONDS / 100 {
         if hardware.read(mac::DEVICE_STATUS_REGISTER) & reset::STATUS_GIO_MASTER_ENABLE == 0 {
@@ -889,7 +914,11 @@ const _: () = assert!(
 pub fn initialize_hardware(hardware: &mut impl Hardware) -> Result<(), Error> {
     // `e1000_initialize_hw_bits_ich8lan`. Bit 22 of CTRL_EXT, TXDCTL and the TARC bits are
     // unnamed in FreeBSD too; they are Intel's.
-    set(hardware, mac::EXTENDED_DEVICE_CONTROL_REGISTER, 1 << 22 | CTRL_EXT_PHYPDEN);
+    set(
+        hardware,
+        mac::EXTENDED_DEVICE_CONTROL_REGISTER,
+        1 << 22 | CTRL_EXT_PHYPDEN,
+    );
     set(hardware, registers::TXDCTL0, 1 << 22);
     set(hardware, registers::TXDCTL1, 1 << 22);
     set(
@@ -905,7 +934,11 @@ pub fn initialize_hardware(hardware: &mut impl Hardware) -> Result<(), Error> {
     }
     hardware.write(registers::TARC1, t1 | 1 << 24 | 1 << 26 | 1 << 30);
     // "work-around descriptor data corruption issue during nfs v2 udp traffic"
-    set(hardware, mac::RECEIVE_FILTER_CONTROL_REGISTER, RFCTL_NFSW_DIS | RFCTL_NFSR_DIS);
+    set(
+        hardware,
+        mac::RECEIVE_FILTER_CONTROL_REGISTER,
+        RFCTL_NFSW_DIS | RFCTL_NFSR_DIS,
+    );
     // "Enable ECC on Lynxpoint"
     set(hardware, registers::PBECCSTS, PBECCSTS_ECC_ENABLE);
     set(hardware, mac::DEVICE_CONTROL_REGISTER, CTRL_MEHE);
@@ -920,7 +953,11 @@ pub fn initialize_hardware(hardware: &mut impl Hardware) -> Result<(), Error> {
         let t = (t & !TXDCTL_WTHRESH) | TXDCTL_FULL_TX_DESC_WB;
         hardware.write(q, (t & !TXDCTL_PTHRESH) | TXDCTL_MAX_TX_DESC_PREFETCH);
     }
-    set(hardware, mac::EXTENDED_DEVICE_CONTROL_REGISTER, CTRL_EXT_RO_DIS);
+    set(
+        hardware,
+        mac::EXTENDED_DEVICE_CONTROL_REGISTER,
+        CTRL_EXT_RO_DIS,
+    );
     Ok(())
 }
 
@@ -958,7 +995,8 @@ const _: () = assert!(
 ///
 /// Name: recorded (FreeBSD's `e1000_setup_copper_link_pch_lpt`).
 pub fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Error> {
-    let c = (hardware.read(mac::DEVICE_CONTROL_REGISTER) | crate::CTRL_SLU) & !(CTRL_FRCSPD | CTRL_FRCDPX);
+    let c = (hardware.read(mac::DEVICE_CONTROL_REGISTER) | crate::CTRL_SLU)
+        & !(CTRL_FRCSPD | CTRL_FRCDPX);
     hardware.write(mac::DEVICE_CONTROL_REGISTER, c);
     let f = Swflag::acquire(hardware)?;
     let out = (|| {
@@ -1129,10 +1167,15 @@ mod tests {
         let mut hardware = Inert::default();
         hardware.registers.insert(registers::FEXTNVM3, 0x0c00_00ff);
         // SLU, with the override and the value bit both left set by someone else.
-        hardware.registers.insert(mac::DEVICE_CONTROL_REGISTER, 0x0003_0040);
+        hardware
+            .registers
+            .insert(mac::DEVICE_CONTROL_REGISTER, 0x0003_0040);
         toggle_lanphypc(&mut hardware);
         assert_eq!(hardware.registers[&registers::FEXTNVM3], 0x0800_00ff);
-        assert_eq!(hardware.written(mac::DEVICE_CONTROL_REGISTER), [0x0001_0040, 0x0000_0040]);
+        assert_eq!(
+            hardware.written(mac::DEVICE_CONTROL_REGISTER),
+            [0x0001_0040, 0x0000_0040]
+        );
         assert_eq!(hardware.elapsed_microseconds, 136_000, "LPCD never rose");
 
         let mut s = Sim::new(Start::Dead, true);
@@ -1187,13 +1230,18 @@ mod tests {
             .registers
             .insert(mac::DEVICE_STATUS_REGISTER, reset::STATUS_GIO_MASTER_ENABLE);
         // The last reset never cleared.
-        hardware.registers.insert(mac::DEVICE_CONTROL_REGISTER, crate::CTRL_RST);
+        hardware
+            .registers
+            .insert(mac::DEVICE_CONTROL_REGISTER, crate::CTRL_RST);
         assert_eq!(global_reset(&mut hardware, 0), Err(Error::ResetTimeout));
         assert_eq!(hardware.notes, [Note::MasterRequestsPending]);
         // 80 ms for the master requests, 10 ms after disabling receive and transmit, and 20 ms
         // after the reset.
         assert_eq!(hardware.elapsed_microseconds, 80_000 + 10_000 + 20_000);
-        let last = *hardware.written(mac::DEVICE_CONTROL_REGISTER).last().unwrap();
+        let last = *hardware
+            .written(mac::DEVICE_CONTROL_REGISTER)
+            .last()
+            .unwrap();
         assert_ne!(last & crate::CTRL_RST, 0);
         assert_ne!(last & CTRL_PHY_RST, 0, "the PHY is reset with the MAC");
     }
@@ -1308,7 +1356,11 @@ mod tests {
         );
         assert_eq!(mac(&s, mac::RECEIVE_FILTER_CONTROL_REGISTER), 0x00c0);
         assert_eq!(mac(&s, registers::PBECCSTS), 0x0001_0000);
-        assert_eq!(mac(&s, mac::DEVICE_CONTROL_REGISTER), 0x0008_0040, "MEHE and SLU");
+        assert_eq!(
+            mac(&s, mac::DEVICE_CONTROL_REGISTER),
+            0x0008_0040,
+            "MEHE and SLU"
+        );
         assert_eq!(
             s.physical_layer_device_registers[&physical_layer_device::registers::I82577_CFG_REG],
             0x8c00
@@ -1335,8 +1387,10 @@ mod tests {
         s.mac.insert(registers::TARC1, 0x5500_00ff);
         s.mac.insert(registers::TXDCTL0, 0x013f_ff3f);
         s.mac.insert(mac::RECEIVE_FILTER_CONTROL_REGISTER, 0x00c0);
-        s.mac
-            .insert(mac::DEVICE_CONTROL_REGISTER, crate::CTRL_SLU | CTRL_FRCSPD | CTRL_FRCDPX);
+        s.mac.insert(
+            mac::DEVICE_CONTROL_REGISTER,
+            crate::CTRL_SLU | CTRL_FRCSPD | CTRL_FRCDPX,
+        );
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::I82577_CFG_REG, 0x8c01);
         s.physical_layer_device_registers
@@ -1355,7 +1409,11 @@ mod tests {
         );
         assert_eq!(mac(&s, registers::TXDCTL0), 0x0141_ff1f);
         assert_eq!(mac(&s, mac::RECEIVE_FILTER_CONTROL_REGISTER), 0x00c0);
-        assert_eq!(mac(&s, mac::DEVICE_CONTROL_REGISTER), 0x0008_0040, "speed and duplex unforced");
+        assert_eq!(
+            mac(&s, mac::DEVICE_CONTROL_REGISTER),
+            0x0008_0040,
+            "speed and duplex unforced"
+        );
         assert_eq!(
             s.physical_layer_device_registers[&physical_layer_device::registers::I82577_CFG_REG],
             0x8c01
@@ -1385,7 +1443,10 @@ mod tests {
         let mut hardware = Inert::default();
         hardware.registers.insert(registers::TARC0, 0x3000_00ff);
         transmit_errata(&mut hardware);
-        assert_eq!(hardware.registers[&mac::TRANSMIT_CONTROL_REGISTER], TCTL_MULR);
+        assert_eq!(
+            hardware.registers[&mac::TRANSMIT_CONTROL_REGISTER],
+            TCTL_MULR
+        );
         assert_eq!(hardware.registers[&registers::IOSFPC], 0x0001_0000);
         assert_eq!(hardware.registers[&registers::TARC0], 0x2000_00ff);
     }

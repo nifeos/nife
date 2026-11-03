@@ -194,7 +194,8 @@ impl Sim {
             self.physical_layer_device_dead = false;
             self.physical_layer_device_in_system_management_bus = false;
             let e = self.get(mac::EXTENDED_DEVICE_CONTROL_REGISTER);
-            self.mac.insert(mac::EXTENDED_DEVICE_CONTROL_REGISTER, e | 0x4); // LPCD
+            self.mac
+                .insert(mac::EXTENDED_DEVICE_CONTROL_REGISTER, e | 0x4); // LPCD
         }
         let mut stored = value;
         if value & 0x8000_0000 != 0 {

@@ -116,9 +116,11 @@ pub fn bring_up() -> Result<Found, Absent> {
         );
     }
 
-    let station_address =
-        ::e1000e::station_address_from_receive_address(c.r(registers::RECEIVE_ADDRESS_0_LOW_REGISTER), c.r(registers::RECEIVE_ADDRESS_0_HIGH_REGISTER))
-            .ok_or(refused(Error::NoStationAddress))?;
+    let station_address = ::e1000e::station_address_from_receive_address(
+        c.r(registers::RECEIVE_ADDRESS_0_LOW_REGISTER),
+        c.r(registers::RECEIVE_ADDRESS_0_HIGH_REGISTER),
+    )
+    .ok_or(refused(Error::NoStationAddress))?;
 
     // No multicast groups: the table is unspecified after reset.
     for k in 0..registers::MTA_ENTRIES {
@@ -133,18 +135,39 @@ pub fn bring_up() -> Result<Found, Absent> {
     // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
     let rx = region + layout::RECEIVE_RING;
     let tx = region + layout::TRANSMIT_RING;
-    c.w(registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER, rx as u32);
-    c.w(registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER, (rx >> 32) as u32);
-    c.w(registers::RECEIVE_DESCRIPTOR_LENGTH_REGISTER, u32::from(::e1000e::RECEIVE_ENTRIES) * 16);
+    c.w(
+        registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
+        rx as u32,
+    );
+    c.w(
+        registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+        (rx >> 32) as u32,
+    );
+    c.w(
+        registers::RECEIVE_DESCRIPTOR_LENGTH_REGISTER,
+        u32::from(::e1000e::RECEIVE_ENTRIES) * 16,
+    );
     c.w(registers::RECEIVE_DESCRIPTOR_HEAD_REGISTER, 0);
     c.w(registers::RECEIVE_DESCRIPTOR_TAIL_REGISTER, 0);
-    c.w(registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER, tx as u32);
-    c.w(registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER, (tx >> 32) as u32);
-    c.w(registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER, u32::from(::e1000e::TRANSMIT_ENTRIES) * 16);
+    c.w(
+        registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
+        tx as u32,
+    );
+    c.w(
+        registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+        (tx >> 32) as u32,
+    );
+    c.w(
+        registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER,
+        u32::from(::e1000e::TRANSMIT_ENTRIES) * 16,
+    );
     c.w(registers::TRANSMIT_DESCRIPTOR_HEAD_REGISTER, 0);
     c.w(registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER, 0);
 
-    c.w(registers::TRANSMIT_INTER_PACKET_GAP_REGISTER, ::e1000e::tipg());
+    c.w(
+        registers::TRANSMIT_INTER_PACKET_GAP_REGISTER,
+        ::e1000e::tipg(),
+    );
     c.w(registers::TRANSMIT_CONTROL_REGISTER, ::e1000e::tctl());
     if pch {
         ::e1000e::pch::sequence::transmit_errata(&mut hw);
@@ -184,7 +207,10 @@ fn reset_82574(c: &Controller) -> Result<(), Error> {
     let _ = c.r(registers::DEVICE_STATUS_REGISTER);
     spin_ms(10);
     // Global reset. Self-clearing; the registers read garbage while it runs, so wait first.
-    c.w(registers::DEVICE_CONTROL_REGISTER, c.r(registers::DEVICE_CONTROL_REGISTER) | ::e1000e::CTRL_RST);
+    c.w(
+        registers::DEVICE_CONTROL_REGISTER,
+        c.r(registers::DEVICE_CONTROL_REGISTER) | ::e1000e::CTRL_RST,
+    );
     spin_ms(20);
     if !wait_ms(RESET_WAIT_MS, || {
         c.r(registers::DEVICE_CONTROL_REGISTER) & ::e1000e::CTRL_RST == 0
@@ -255,14 +281,19 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
     use ::e1000e::pch::{flush, registers as pch};
     c.w(
         pch::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER,
-        c.r(pch::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER) | flush::FEXTNVM11_DISABLE_MULR_FIX,
+        c.r(pch::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER)
+            | flush::FEXTNVM11_DISABLE_MULR_FIX,
     );
     let status = || dev.config_read32(flush::PCICFG_DESC_RING_STATUS) as u16;
-    if !flush::required(status(), c.r(registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER)) {
+    if !flush::required(
+        status(),
+        c.r(registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER),
+    ) {
         return;
     }
     let ring = region + layout::TRANSMIT_RING;
-    let tdba = u64::from(c.r(registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER)) | u64::from(c.r(registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER)) << 32;
+    let tdba = u64::from(c.r(registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER))
+        | u64::from(c.r(registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER)) << 32;
     if tdba != ring {
         crate::println!(
             "  e1000e: the rings need flushing and the transmit ring at {tdba:#x} is not this \
@@ -270,8 +301,12 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
         );
         return;
     }
-    c.w(registers::TRANSMIT_CONTROL_REGISTER, c.r(registers::TRANSMIT_CONTROL_REGISTER) | 0x2);
-    let tdt = c.r(registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER) % u32::from(::e1000e::TRANSMIT_ENTRIES);
+    c.w(
+        registers::TRANSMIT_CONTROL_REGISTER,
+        c.r(registers::TRANSMIT_CONTROL_REGISTER) | 0x2,
+    );
+    let tdt =
+        c.r(registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER) % u32::from(::e1000e::TRANSMIT_ENTRIES);
     let d = mmu::phys_to_virt(region + layout::transmit_descriptor(tdt as u16)) as *mut u64;
     // SAFETY: `d` is a 16-byte descriptor inside the transmit ring page of this driver's region
     // (`layout::transmit_descriptor` reduces its index), in the direct map. The device reads it
@@ -293,7 +328,10 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
     c.w(registers::RECEIVE_CONTROL_REGISTER, rctl & !0x2);
     let _ = c.r(registers::DEVICE_STATUS_REGISTER);
     spin_microseconds(150);
-    c.w(pch::RECEIVE_DESCRIPTOR_CONTROL_REGISTER, flush::rxdctl(c.r(pch::RECEIVE_DESCRIPTOR_CONTROL_REGISTER)));
+    c.w(
+        pch::RECEIVE_DESCRIPTOR_CONTROL_REGISTER,
+        flush::rxdctl(c.r(pch::RECEIVE_DESCRIPTOR_CONTROL_REGISTER)),
+    );
     c.w(registers::RECEIVE_CONTROL_REGISTER, rctl | 0x2);
     let _ = c.r(registers::DEVICE_STATUS_REGISTER);
     spin_microseconds(150);
