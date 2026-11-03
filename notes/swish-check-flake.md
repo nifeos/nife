@@ -28,7 +28,7 @@ Two lane hazards found while setting up, for the next lane:
 
 - **`CARGO_TARGET_DIR` silently drops the file server from the archive.** `redoxfs_server_build`
   honors the variable but `redoxfs_server_elf` reads `redoxfs_server/target/<triple>/release/...`
-  (in xtask/src/disk.rs), so the packer cannot find the server and the boot runs with no
+  (xtask/src/disk.rs), so the packer cannot find the server and the boot runs with no
   filesystem. The archive shrinks 101 programs to 99, the progenitor prints neither
   directory-grant sentence, and the gate fails on the missing sentence rather than naming the
   cause. Symlink `redoxfs_server/target` at the same directory `CARGO_TARGET_DIR` names.
@@ -42,7 +42,7 @@ Two lane hazards found while setting up, for the next lane:
 - 5380 CI runs in the window: 4278 green, 447 failed at latest attempt, 653 cancelled. Events:
   3399 pull_request, 1170 merge_group, 639 push, 172 workflow_dispatch.
 - 158 runs failed `build + test (host + QEMU)`. Of those, the gate's step
-  (`script/ci-build test swish-check swish-check-graphical boot-check` (the graphical row was folded into swish-check on 2026-10-03), the `swish-check` job in .github/workflows/ci.yml)
+  (`script/ci-build test swish-check swish-check-graphical boot-check` (the graphical row was folded into swish-check on 2026-10-03), .github/workflows/ci.yml)
   failed in 84, and its pre-rename `shell-check` spelling in 54 more (renamed 2026-09-23). Nineteen
   failed an older generic step name and are unclassified: no log budget was spent on them. With 16
   rerun-hidden failures found in prior attempts, 154 runs are known to have failed the gate's step
@@ -51,7 +51,7 @@ Two lane hazards found while setting up, for the next lane:
   and stand green now, including both phenomenon runs. Rerun-green is where flakes hide: run-level
   counts undercount them by construction.
 - The 84 swish-named failures concentrate: 49 on 2026-09-26, 25 on 2026-09-27 (an incident block;
-  sampled logs show kernel test panics in `kernel/src/sched.rs` and `kernel/src/virtio.rs`, not
+  sampled logs show kernel test panics, `kernel/src/sched.rs`, `kernel/src/virtio.rs`, not
   flakes), 5 on 2026-09-29, 3 on 2026-09-25, 2 on 2026-09-28.
 - Signatures in the 15 sampled logs: 7 real breakage (kernel test panics or in-flux code,
   including one `kernel/src/user/fs_service.rs` panic) and 4 one-cluster package-source truncation ("the
@@ -117,17 +117,17 @@ that is about four in a million. The fix stands. Rows, ancestry checks and the r
 are in [2026W40](swish-check-flake-2026w40.md).
 
 **The progenitor OOM (signature of #1444).** The shell prints the sentence when the progenitor
-answers with the `SPAWN_FAILED` sentinel (the `SPAWN_FAILED` check in components/src/swish/running.rs; the sentinel is
-`u64::MAX`, `SPAWN_FAILED` in crates/grant_plan/src/spawnproto.rs). A `std` program needs one contiguous
-384-page region (`STD_REGION_PAGES` in crates/grant_plan/src/manifest.rs) carved from a job pool of
+answers with the `SPAWN_FAILED` sentinel (components/src/swish/running.rs; the sentinel is
+`u64::MAX`, crates/grant_plan/src/spawnproto.rs). A `std` program needs one contiguous
+384-page region (`STD_REGION_PAGES`, crates/grant_plan/src/manifest.rs) carved from a job pool of
 exactly six native regions plus one std region (`system_initializer::JOBS_BUDGET_PAGES`).
 `split_job` waits for an in-flight reap by yielding 1024 times, and its own doc calls that
 "kept on effort, and a foot gun", recording the same CI failure on 2026-09-27 (its doc in
 `crates/system_initializer` at `402e122d3`). `7fdd76557` later removed `split_job`, when the pool
 began waiting on the undertaker. Reclamation is asynchronous (`components/src/job_undertaker.rs`),
 and its BUGS note a mode where a parked fault-report SEND wedges the collecting loop entirely
-(its module comment, job_undertaker.rs). QEMU memory is not implicated: both runners give 256 MiB
-(the `-m 256M` argument in helpers/qemu-runner-aarch64.sh and helpers/qemu-runner-riscv64.sh), and the constraint is the
+(job_undertaker.rs). QEMU memory is not implicated: both runners give 256 MiB
+(helpers/qemu-runner-aarch64.sh, helpers/qemu-runner-riscv64.sh), and the constraint is the
 progenitor's own bounded pool. Whether the 2026-09-29 instance was the yield budget or
 fragmentation of the pool is not determined; the in-tree precedent says yield budget.
 Corrected 2026-10-03 UTC: it was the pool. A region returned out of order stayed a hole for the

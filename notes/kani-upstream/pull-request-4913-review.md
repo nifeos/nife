@@ -29,7 +29,7 @@ Nothing found. The two highest-risk areas both check out, verified rather than t
    local failure (`verify_std_cmd`, undiagnosed) and `coverage` never produced a result. Fill the
    token honestly or drop it, and say which suites were clean.
 2. The two rejections and the missing-library error have no test. The pull request adds the
-   `--concrete-playback` conflict (`validate` for `VerificationArgs` in `kani-driver/src/args/mod.rs`), the `verify-std`
+   `--concrete-playback` conflict (`validate` in `kani-driver/src/args/mod.rs`), the `verify-std`
    rejection (`validate` in `kani-driver/src/args/std_args.rs`), and the bail naming the build command
    (`lib_folder_for` in `kani-driver/src/session.rs`). The new script test covers only the `-Z` gate
    (the `[TEST] --target needs -Z unstable-options` block of `tests/script-based-pre/target_riscv64/target_riscv64.sh`). Each check is one more
@@ -52,7 +52,7 @@ Nothing found. The two highest-risk areas both check out, verified rather than t
    says "not for every host", which the first two assertions satisfy and this one does not.
    Harmless as a sanity check; misleading as evidence of cross-compilation.
 6. `verify-std` rejects `--target` even when the triple is the host's (`validate` in `std_args.rs`), while the
-   `--concrete-playback` gate allows the host triple (`validate` for `VerificationArgs` in `args/mod.rs`). Both defensible; worth
+   `--concrete-playback` gate allows the host triple (`validate` in `args/mod.rs`). Both defensible; worth
    one comment line each, or align them.
 7. `cargo build-dev --skip-libs --lib-target T` silently ignores the target
    (the `skip_libs` branch of `main` in `tools/build-kani/src/main.rs` at head). A warning would save a confusing missing-library
@@ -93,8 +93,8 @@ playback stay on `HOST_TARGET`, correctly, since both are host activities. Both 
 use it; single-file passes `--target` only when given. With no flag, every path passes the same
 string `env!("TARGET")` produced before.
 
-The layout: build and driver agree on `targets/<TRIPLE>/lib/` (`kani_target_lib` in `tools/build-kani/src/sysroot.rs`
-and `lib_folder_for` in `kani-driver/src/session.rs`); the host `lib/` path is unchanged; playback and `no_core` libraries stay
+The layout: build and driver agree on `targets/<TRIPLE>/lib/` (`tools/build-kani/src/sysroot.rs::kani_target_lib`
+and `kani-driver/src/session.rs::lib_folder_for`); the host `lib/` path is unchanged; playback and `no_core` libraries stay
 host-built; no packaging or setup file is touched, verified against the pull request's file list.
 The missing-library error names `cargo build-dev --lib-target <TRIPLE>`, which is the exact command.
 

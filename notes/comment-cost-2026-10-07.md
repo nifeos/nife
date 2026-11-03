@@ -200,24 +200,25 @@ AGENTS.md's own rule.
 
 **Keep 24 (80%), cut 4 (13%), move 2 (7%).**
 
-- Keep: `ALLOCATION_CEILING` in `uefi_loader/src/arch/aarch64/mod.rs`, why `ALLOCATION_CEILING` is `0x7fff_ffff` (the
-  boot map's 1 GiB block). `transmit_frame` in `components/src/virtio_net_transport.rs`, why a bounded wait guards
-  the transmit ring. `iteration` in `crates/coremark/src/lib.rs`, why no iteration can be hoisted.
-- Cut: the `progress` field of `Session` in `crates/serial_console/src/watch.rs`, "How far the boot got, and what it announced." on a
-  field named `progress`. `senders_queue_in_arrival_order` in `crates/inter_process_communication/src/tests.rs`, a test doc restating
-  `senders_queue_fifo`. `a_whole_tree_survives_the_trip_through_the_image` in `tools/redoxfs_host/tests/recovery.rs`, "The comparison." Two of the
-  four are on public items, where `missing_docs = "warn"` in the workspace `Cargo.toml` demands a
-  line, so they are lint-forced rather than chosen.
-- Move: the comment on `TREE` in `std_exerciser/src/main.rs`, the history of `remove_dir_all` being `Unsupported` for
-  two milestones (a finding). the `syscall` instruction pair section in `kernel/src/arch/x86_64/exceptions.rs`, a tutorial on x86's two
-  kernel entries whose last sentence is the only constraint.
+- Keep: `uefi_loader/src/arch/aarch64/mod.rs::ALLOCATION_CEILING`, why it is `0x7fff_ffff` (the
+  boot map's 1 GiB block). `components/src/virtio_net_transport.rs::transmit_frame`, why a
+  bounded wait guards the transmit ring. `crates/coremark/src/lib.rs::iteration`, why no
+  iteration can be hoisted.
+- Cut: `crates/serial_console/src/watch.rs::Session::progress`, "How far the boot got, and what it
+  announced." on a field named `progress`. `crates/inter_process_communication/src/tests.rs::senders_queue_in_arrival_order`,
+  a test doc restating `senders_queue_fifo`.
+  `tools/redoxfs_host/tests/recovery.rs::a_whole_tree_survives_the_trip_through_the_image`, "The
+  comparison." Two of the four are on public items, where `missing_docs = "warn"` in the workspace
+  `Cargo.toml` demands a line, so they are lint-forced rather than chosen.
+- Move: `std_exerciser/src/main.rs::TREE`, the history of `remove_dir_all` being `Unsupported`
+  for two milestones (a finding). `kernel/src/arch/x86_64/exceptions.rs`, a
+  tutorial on x86's two kernel entries whose last sentence is the only constraint.
 
 A uniform draw over blocks favors two-line comments, so 15 more were drawn weighted by length,
-which is where the bytes are. 12 keep, 3 move, 0 cut. The moves:
-the module comment of `components/src/login.rs` (a 689-line design document that already has `notes/login.md` beside
-it), the module comment of `components/src/rmle.rs` (the naming search, a record), and the module comment of `components/src/uptime.rs`
-("the finding worth stating"). The keeps were long for a reason, such as
-`DestroyClaim` in `crates/memory_regions/src/table.rs`, whose doctests are a gate on a type's traits.
+which is where the bytes are. 12 keep, 3 move, 0 cut. The moves: `components/src/login.rs` (a 689-line design document that already has
+`notes/login.md` beside it), `components/src/rmle.rs` (the naming search, a record), and
+`components/src/uptime.rs` ("the finding worth stating"). The keeps were long for a reason, such as
+`crates/memory_regions/src/table.rs::DestroyClaim`, whose doctests are a gate on a type's traits.
 
 The finding: almost nothing in this tree's comments restates the code. The cost is volume of
 legitimate explanation plus history and findings that accumulate in place, which is what "correct
