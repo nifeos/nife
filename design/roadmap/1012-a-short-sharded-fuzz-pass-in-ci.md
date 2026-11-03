@@ -90,4 +90,4 @@ nobody replays it.
 
 ## Index row
 
-A short in-guest fuzz pass on every merge group puts the fuzzers in front of a change before it lands, on hosted runners and as a non-required check. A finding stays private until it is fixed.
+A short in-guest fuzz pass on every merge group puts the fuzzers in front of a change before it lands, on hosted runners and as a non-required check. A finding stays private until a fix lands.

@@ -36,4 +36,4 @@ part of milestone 976 that adds that reader.
 
 ## Index row
 
-The system manifest check accepts a held list that names one stem twice, first at the listed digest and then at another. Closing it before the device updater arrives keeps the rule that nothing else is held.
+The system manifest check accepts a held list that names one stem twice, first at the listed digest and then at another. Closing it before the device updater arrives keeps the rule that the slot holds nothing else.

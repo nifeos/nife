@@ -301,4 +301,4 @@ proposes the question for its own ruling.
 
 ## Index row
 
-Refusing a frame that is writable and executable in one address space needed three rulings before it could start: how wide the refusal is, where the check lives, and whether claim 11 covers aliases across spaces. This file sets each out with its background, options and cost.
+Three rulings gate the writable-and-executable refusal: its width, the home of its check, and claim 11 across spaces.

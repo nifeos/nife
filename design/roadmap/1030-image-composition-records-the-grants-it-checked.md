@@ -38,4 +38,4 @@ build host's machine.
 
 ## Index row
 
-Composing a base image on a host of another architecture checks a program's asks and then records none. The program starts without the network or resolver zone it was approved for and nothing reports the difference.
+Composing a base image on a host of another architecture checks a program's asks and then records none. The program starts without the network or resolver zone its approval named, and nothing reports the difference.

@@ -288,4 +288,4 @@ flight waits on this.
 
 ## Index row
 
-The design record leaves this repository for its own, nifeos.org, and is published as a website with a stable address for every number. The milestone sets out the measurements, the rulings so far and the steps that remain.
+The design record moves to its own repository and becomes a website with a stable address per number.

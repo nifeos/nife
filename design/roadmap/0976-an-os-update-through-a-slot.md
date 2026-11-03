@@ -216,7 +216,7 @@ slot. Every new name here is provisional.
   the chooser refuses both slots, it prints each slot's reason and then boots its own embedded
   image, as milestone 525 (a bad upgrade cannot brick the machine) rules for two bad slots. The
   milestone has the full list.
-- **Milestone 1006.** Milestone 1006 (what an OS update writes into a boot slot) holds it (ruled 2026-11-01 UTC): the updater replaces the chooser
+- **Milestone 1006.** Milestone 1006 (what an OS update writes into a boot slot) holds it, ruled 2026-11-01 (UTC). The updater replaces the chooser
   file on the EFI system partition before it writes the first version 2 slot, and only if the new
   chooser reads version 2. It writes the new chooser under a second name, verifies it by digest,
   then renames it over the old name; the rename is the commit. The chooser is also the install-time
