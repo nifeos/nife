@@ -4,7 +4,7 @@
 
 This note lists, for every crate on [journey 5](../design/journeys/05-crates-released-on-their-own.md) that still sits under `crates/`, each module, type, function, constant and register whose `Name:` block is missing or still provisional, in groups an architect can rule on one at a time. It proposes and renames nothing. Names are an architect's call ([design/naming.md](../design/naming.md)); every recommendation below is provisional and leaves the current spelling in force until a ruling.
 
-`script/crate-standalone` step 0 passes a crate only when every `Name:` block in it is ratified, so each group here stands between a crate and its move. The lists come from `python3 helpers/name_release.py --draft <crate>`: a row whose status reads `no block` or starts with `provisional`. Rerun it for the live state; nothing regenerates this note, and a ruling removes its group.
+`script/crate-standalone` step 0 passes a crate only when it finds every `Name:` block in it ratified, so each group here stands between a crate and its move. The lists come from `python3 helpers/name_release.py --draft <crate>`: a row whose status reads `no block` or starts with `provisional`. Rerun it for the live state; nothing regenerates this note, and a ruling removes its group.
 
 `file_allocation_table`, `generational_table` and `jh7110_clock_and_reset` have no unratified name left. `jh7110_entropy` has already left `crates/`.
 
