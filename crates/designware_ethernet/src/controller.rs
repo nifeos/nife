@@ -62,7 +62,6 @@ impl Identity {
     /// The DMA's address width from feature register 1's `ADDR64` field: 32, 40 or 48 bits.
     ///
     /// Name: ratified 2026-11-02 (UTC), #3094.
-    #[doc(alias = "dma_address_bits")]
     pub const fn direct_memory_access_address_bits(&self) -> u8 {
         match (self.features[1] >> 14) & 0x3 {
             1 => 40,

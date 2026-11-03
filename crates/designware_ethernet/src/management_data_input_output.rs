@@ -286,7 +286,6 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "phy")]
-#[doc(alias = "phy_id")]
 pub fn physical_layer_device_id(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
