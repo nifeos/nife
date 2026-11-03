@@ -12,7 +12,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 104 | 85 | 19 | 12 |
+| `designware_ethernet` | 94 | 75 | 19 | 11 |
 | `designware_mobile_storage` | 74 | 74 | 0 | 10 |
 | `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
@@ -20,7 +20,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 322 | 253 | 69 | 37 |
+| total | 312 | 243 | 69 | 36 |
 ## How to read a group
 
 Each group gives its items in their current spelling, as `path::name`, and a module by its own name. *Breaks the spelled-out rule* answers the 2026-11-02 rule in [design/naming.md](../design/naming.md): outside register modules, identifiers say what the thing is and not the specification's abbreviation. A hardware register, field or bit constant takes the spelled-out name with the source's spelling in `#[doc(alias)]`, OpenBSD's cited first. `yes` means the group has at least that kind of abbreviation; `one` means a few named items do; `no` means none. The recommendation is the stricter reading wherever a call was close, since loosening later is compatible and tightening is not.
@@ -38,7 +38,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_ethernet`
 
-104 unratified names: 85 with no block, 19 provisional.
+94 unratified names: 75 with no block, 19 provisional.
 
 ### DE1. Module names (10)
 
@@ -103,12 +103,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 - Breaks the spelled-out rule: yes (one name).
 - Provisional recommendation: `WINDOW` is a plain word and can be ratified; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
 
-### DE12. Motorcomm PHY software surface (10)
-
-`motorcomm::Applied`, `motorcomm::Drive`, `motorcomm::Link`, `motorcomm::Settings`, `motorcomm::Source`, `motorcomm::Speed`, `motorcomm::apply_speed`, `motorcomm::configure`, `motorcomm::link`, `motorcomm::mbps`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify all but `mbps`. `mbps` abbreviates a unit; recommend `megabits_per_second` (the stricter reading, a close call since 'Mbps' is a standard unit symbol).
 
 ### DE13. JH7110 node description (5)
 
