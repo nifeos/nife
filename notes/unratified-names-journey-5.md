@@ -14,13 +14,13 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 |---|---|---|---|---|
 | `designware_ethernet` | 110 | 91 | 19 | 13 |
 | `designware_mobile_storage` | 74 | 74 | 0 | 10 |
-| `e1000e` | 132 | 94 | 38 | 13 |
+| `e1000e` | 122 | 92 | 30 | 12 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 328 | 259 | 69 | 38 |
+| total | 318 | 257 | 61 | 37 |
 
 ## How to read a group
 
@@ -244,13 +244,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: yes.
 - Provisional recommendation: Spell out `RECEIVE_STATUS_DD`, `RECEIVE_STATUS_EOP` and `TRANSMIT_STATUS_DD` (descriptor done, end of packet), keeping the Linux spelling as an alias; ratify the rest as they stand. These three are the only abbreviations in the module.
-
-### E6. Buffer layout (10)
-
-`layout::BYTES`, `layout::PAGES`, `layout::RECEIVE_BUFFERS`, `layout::RECEIVE_RING`, `layout::TRANSMIT_BUFFERS`, `layout::TRANSMIT_RING`, `layout::receive_buffer`, `layout::receive_descriptor`, `layout::transmit_buffer`, `layout::transmit_descriptor`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand; `rx` and `tx` already read `receive` and `transmit`.
 
 ### E7. Register offsets (24)
 

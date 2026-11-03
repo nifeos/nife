@@ -55,7 +55,7 @@ impl Tails for Regs<'_> {
 impl Sim {
     fn new() -> Sim {
         Sim {
-            mem: vec![0xa5; layout::BYTES as usize],
+            mem: vec![0xa5; layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize],
             rdt: 0,
             tdt: 0,
             rdh: 0,
@@ -264,7 +264,7 @@ fn transmit_refuses_empty_and_oversized_frames() {
 
 #[test]
 fn the_layout_fits_its_pages_and_the_rings_fit_theirs() {
-    assert_eq!(layout::PAGES, 18);
+    assert_eq!(layout::DIRECT_MEMORY_ACCESS_REGION_PAGES, 18);
     assert!(RECEIVE_ENTRIES as u64 * 16 <= PAGE && TRANSMIT_ENTRIES as u64 * 16 <= PAGE);
     assert_eq!(
         RECEIVE_ENTRIES as u64 * 16 % 128,
@@ -277,8 +277,8 @@ fn the_layout_fits_its_pages_and_the_rings_fit_theirs() {
         "TDLEN must be a multiple of 128"
     );
     assert!(MAXIMUM_FRAME as u64 <= BUFFER_SIZE);
-    assert_eq!(layout::RECEIVE_BUFFERS % PAGE, 0);
-    assert_eq!(layout::TRANSMIT_BUFFERS % PAGE, 0);
+    assert_eq!(layout::RECEIVE_BUFFERS_OFFSET_BYTES % PAGE, 0);
+    assert_eq!(layout::TRANSMIT_BUFFERS_OFFSET_BYTES % PAGE, 0);
 }
 
 #[test]
@@ -413,11 +413,12 @@ fn ring_slots_are_distinct_evenly_spaced_and_wrap() {
             layout::receive_descriptor(i % RECEIVE_ENTRIES)
         );
         assert!(
-            (layout::RECEIVE_BUFFERS..layout::TRANSMIT_BUFFERS)
+            (layout::RECEIVE_BUFFERS_OFFSET_BYTES..layout::TRANSMIT_BUFFERS_OFFSET_BYTES)
                 .contains(&layout::receive_buffer(i))
         );
         assert!(
-            (layout::RECEIVE_RING..layout::TRANSMIT_RING).contains(&layout::receive_descriptor(i))
+            (layout::RECEIVE_RING_OFFSET_BYTES..layout::TRANSMIT_RING_OFFSET_BYTES)
+                .contains(&layout::receive_descriptor(i))
         );
         if next != 0 {
             assert_eq!(
@@ -440,9 +441,12 @@ fn ring_slots_are_distinct_evenly_spaced_and_wrap() {
             layout::transmit_descriptor(i),
             layout::transmit_descriptor(i % TRANSMIT_ENTRIES)
         );
-        assert!((layout::TRANSMIT_BUFFERS..layout::BYTES).contains(&layout::transmit_buffer(i)));
         assert!(
-            (layout::TRANSMIT_RING..layout::RECEIVE_BUFFERS)
+            (layout::TRANSMIT_BUFFERS_OFFSET_BYTES..layout::DIRECT_MEMORY_ACCESS_REGION_BYTES)
+                .contains(&layout::transmit_buffer(i))
+        );
+        assert!(
+            (layout::TRANSMIT_RING_OFFSET_BYTES..layout::RECEIVE_BUFFERS_OFFSET_BYTES)
                 .contains(&layout::transmit_descriptor(i))
         );
         if next != 0 {
@@ -457,10 +461,22 @@ fn ring_slots_are_distinct_evenly_spaced_and_wrap() {
             );
         }
     }
-    assert_eq!(layout::receive_buffer(0), layout::RECEIVE_BUFFERS);
-    assert_eq!(layout::transmit_buffer(0), layout::TRANSMIT_BUFFERS);
-    assert_eq!(layout::receive_descriptor(0), layout::RECEIVE_RING);
-    assert_eq!(layout::transmit_descriptor(0), layout::TRANSMIT_RING);
+    assert_eq!(
+        layout::receive_buffer(0),
+        layout::RECEIVE_BUFFERS_OFFSET_BYTES
+    );
+    assert_eq!(
+        layout::transmit_buffer(0),
+        layout::TRANSMIT_BUFFERS_OFFSET_BYTES
+    );
+    assert_eq!(
+        layout::receive_descriptor(0),
+        layout::RECEIVE_RING_OFFSET_BYTES
+    );
+    assert_eq!(
+        layout::transmit_descriptor(0),
+        layout::TRANSMIT_RING_OFFSET_BYTES
+    );
 }
 
 /// `start` clears the whole transmit ring, so no descriptor holds the region's stale bytes

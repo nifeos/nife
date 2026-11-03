@@ -1145,8 +1145,6 @@ crates/e1000e/src/device.rs::VENDOR_INTEL
 crates/e1000e/src/device.rs::is_supported
 crates/e1000e/src/device.rs::model
 crates/e1000e/src/layout.rs
-crates/e1000e/src/layout.rs::BYTES
-crates/e1000e/src/layout.rs::PAGES
 crates/e1000e/src/pch/flush.rs
 crates/e1000e/src/pch/flush.rs::FEXTNVM11_DISABLE_MULR_FIX
 crates/e1000e/src/pch/flush.rs::required

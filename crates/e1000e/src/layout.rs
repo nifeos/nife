@@ -1,55 +1,57 @@
 use super::{BUFFER_SIZE, PAGE, RECEIVE_ENTRIES, TRANSMIT_ENTRIES};
-/// The receive descriptor ring.
+/// The receive descriptor ring's offset in the region, in bytes.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `RX_RING` (rx abbreviates receive).
-pub const RECEIVE_RING: u64 = 0;
-/// The transmit descriptor ring.
+/// Name: ratified 2026-11-03 (UTC), #3148. Renamed from `RECEIVE_RING`: the unit goes in the name, and `rx` stays spelled out
+/// (refused `RX_RING`, since rx abbreviates receive).
+pub const RECEIVE_RING_OFFSET_BYTES: u64 = 0;
+/// The transmit descriptor ring's offset in the region, in bytes.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `TX_RING` (tx abbreviates transmit).
-pub const TRANSMIT_RING: u64 = PAGE;
-/// The first receive buffer.
+/// Name: ratified 2026-11-03 (UTC), #3148. Renamed from `TRANSMIT_RING`: the unit goes in the name, and `tx` stays spelled out
+/// (refused `TX_RING`, since tx abbreviates transmit).
+pub const TRANSMIT_RING_OFFSET_BYTES: u64 = PAGE;
+/// The first receive buffer's offset in the region, in bytes.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `RX_BUFFERS` (rx abbreviates receive).
-pub const RECEIVE_BUFFERS: u64 = 2 * PAGE;
-/// The first transmit buffer.
+/// Name: ratified 2026-11-03 (UTC), #3148. Renamed from `RECEIVE_BUFFERS`: the unit goes in the name, and `rx` stays spelled out
+/// (refused `RX_BUFFERS`, since rx abbreviates receive).
+pub const RECEIVE_BUFFERS_OFFSET_BYTES: u64 = 2 * PAGE;
+/// The first transmit buffer's offset in the region, in bytes.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `TX_BUFFERS` (tx abbreviates transmit).
-pub const TRANSMIT_BUFFERS: u64 = RECEIVE_BUFFERS + RECEIVE_ENTRIES as u64 * BUFFER_SIZE;
-/// The region's size in bytes.
-pub const BYTES: u64 = TRANSMIT_BUFFERS + TRANSMIT_ENTRIES as u64 * BUFFER_SIZE;
-/// The region's size in pages.
-pub const PAGES: u64 = BYTES.div_ceil(PAGE);
+/// Name: ratified 2026-11-03 (UTC), #3148. Renamed from `TRANSMIT_BUFFERS`: the unit goes in the name, and `tx` stays spelled out
+/// (refused `TX_BUFFERS`, since tx abbreviates transmit).
+pub const TRANSMIT_BUFFERS_OFFSET_BYTES: u64 =
+    RECEIVE_BUFFERS_OFFSET_BYTES + RECEIVE_ENTRIES as u64 * BUFFER_SIZE;
+/// The direct memory access region's size in bytes.
+///
+/// Name: ratified 2026-11-03 (UTC), #3148. Renamed from `BYTES`, to agree with `designware_ethernet`'s region size.
+pub const DIRECT_MEMORY_ACCESS_REGION_BYTES: u64 =
+    TRANSMIT_BUFFERS_OFFSET_BYTES + TRANSMIT_ENTRIES as u64 * BUFFER_SIZE;
+/// The direct memory access region's size in pages.
+///
+/// Name: ratified 2026-11-03 (UTC), #3148. Renamed from `PAGES`, to agree with `designware_ethernet`'s region size.
+pub const DIRECT_MEMORY_ACCESS_REGION_PAGES: u64 = DIRECT_MEMORY_ACCESS_REGION_BYTES.div_ceil(PAGE);
 
 /// Receive buffer `index`'s offset. `index` is reduced modulo the ring so no input leaves the
 /// region.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `rx_buffer` (rx abbreviates receive).
+/// Name: ratified 2026-11-03 (UTC), #3148. Kept; `rx` stays spelled out (refused `rx_buffer`, since rx abbreviates receive).
 pub const fn receive_buffer(index: u16) -> u64 {
-    RECEIVE_BUFFERS + (index % RECEIVE_ENTRIES) as u64 * BUFFER_SIZE
+    RECEIVE_BUFFERS_OFFSET_BYTES + (index % RECEIVE_ENTRIES) as u64 * BUFFER_SIZE
 }
 /// Transmit buffer `index`'s offset, reduced the same way.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `tx_buffer` (tx abbreviates transmit).
+/// Name: ratified 2026-11-03 (UTC), #3148. Kept; `tx` stays spelled out (refused `tx_buffer`, since tx abbreviates transmit).
 pub const fn transmit_buffer(index: u16) -> u64 {
-    TRANSMIT_BUFFERS + (index % TRANSMIT_ENTRIES) as u64 * BUFFER_SIZE
+    TRANSMIT_BUFFERS_OFFSET_BYTES + (index % TRANSMIT_ENTRIES) as u64 * BUFFER_SIZE
 }
 /// Receive descriptor `index`'s offset.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `rx_descriptor` (rx abbreviates receive).
+/// Name: ratified 2026-11-03 (UTC), #3148. Kept; `rx` stays spelled out (refused `rx_descriptor`, since rx abbreviates receive).
 pub const fn receive_descriptor(index: u16) -> u64 {
-    RECEIVE_RING + (index % RECEIVE_ENTRIES) as u64 * 16
+    RECEIVE_RING_OFFSET_BYTES + (index % RECEIVE_ENTRIES) as u64 * 16
 }
 /// Transmit descriptor `index`'s offset.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `tx_descriptor` (tx abbreviates transmit).
+/// Name: ratified 2026-11-03 (UTC), #3148. Kept; `tx` stays spelled out (refused `tx_descriptor`, since tx abbreviates transmit).
 pub const fn transmit_descriptor(index: u16) -> u64 {
-    TRANSMIT_RING + (index % TRANSMIT_ENTRIES) as u64 * 16
+    TRANSMIT_RING_OFFSET_BYTES + (index % TRANSMIT_ENTRIES) as u64 * 16
 }
