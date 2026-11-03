@@ -132,37 +132,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         c.r(registers::RECEIVE_FILTER_CONTROL_REGISTER) & !::e1000e::RFCTL_EXTEN,
     );
 
-    // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
-    let rx = region + layout::RECEIVE_RING;
-    let tx = region + layout::TRANSMIT_RING;
-    c.w(
-        registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
-        rx as u32,
-    );
-    c.w(
-        registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
-        (rx >> 32) as u32,
-    );
-    c.w(
-        registers::RECEIVE_DESCRIPTOR_LENGTH_REGISTER,
-        u32::from(::e1000e::RECEIVE_ENTRIES) * 16,
-    );
-    c.w(registers::RECEIVE_DESCRIPTOR_HEAD_REGISTER, 0);
-    c.w(registers::RECEIVE_DESCRIPTOR_TAIL_REGISTER, 0);
-    c.w(
-        registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
-        tx as u32,
-    );
-    c.w(
-        registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
-        (tx >> 32) as u32,
-    );
-    c.w(
-        registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER,
-        u32::from(::e1000e::TRANSMIT_ENTRIES) * 16,
-    );
-    c.w(registers::TRANSMIT_DESCRIPTOR_HEAD_REGISTER, 0);
-    c.w(registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER, 0);
+    program_rings(&c, region);
 
     c.w(
         registers::TRANSMIT_INTER_PACKET_GAP_REGISTER,
@@ -196,6 +166,41 @@ pub fn bring_up() -> Result<Found, Absent> {
         link_up,
         physical_layer_device_id,
     })
+}
+
+/// Point the device at both rings, with every head and tail at zero.
+fn program_rings(c: &Controller, region: u64) {
+    // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
+    let rx = region + layout::RECEIVE_RING;
+    let tx = region + layout::TRANSMIT_RING;
+    c.w(
+        registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
+        rx as u32,
+    );
+    c.w(
+        registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+        (rx >> 32) as u32,
+    );
+    c.w(
+        registers::RECEIVE_DESCRIPTOR_LENGTH_REGISTER,
+        u32::from(::e1000e::RECEIVE_ENTRIES) * 16,
+    );
+    c.w(registers::RECEIVE_DESCRIPTOR_HEAD_REGISTER, 0);
+    c.w(registers::RECEIVE_DESCRIPTOR_TAIL_REGISTER, 0);
+    c.w(
+        registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
+        tx as u32,
+    );
+    c.w(
+        registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+        (tx >> 32) as u32,
+    );
+    c.w(
+        registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER,
+        u32::from(::e1000e::TRANSMIT_ENTRIES) * 16,
+    );
+    c.w(registers::TRANSMIT_DESCRIPTOR_HEAD_REGISTER, 0);
+    c.w(registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER, 0);
 }
 
 /// **The 82574L's quiesce and global reset**, unchanged from before the I219 passes existed.
