@@ -43,7 +43,7 @@ Full rows: [records-and-indexes.md](scripts/records-and-indexes.md).
 
 | script | what it does |
 |---|---|
-| `script/decisions` | Index `design/decisions/`; `--check` is gated in `lint`; `--renumber-from <n>` shifts a collided run up by `--by <k>`, keyed on the filename, per §194 (sessions interleave rather than serialize). |
+| `script/decisions` | Index `design/decisions/`; `--check` is gated in `lint`; `--renumber-from <n>` shifts a collided run up by `--by <k>`, keyed on the filename. |
 | `script/roadmap` | Index the milestones; `--ready`, `--unclaimed`, `--outstanding`, `--proposed`. |
 | `script/journeys` | Progress against the end-to-end user journeys. |
 | `script/citations` | Does each `§N` or `milestone N` gloss match what it cites? `--ratchet` gates added lines. |
@@ -75,7 +75,7 @@ Full rows: [boards-and-boot-checks.md](scripts/boards-and-boot-checks.md).
 | `script/card-check` | Does this card's kernel vouch for its archive? |
 | `script/board-netboot` | Serve `target/board` over TFTP so radon boots without a card. |
 | `script/netboot-rehearsal` | Boot nife the way xenon will, on your machine, with nothing plugged in. |
-| `script/swish-check` | `console`'s gating twin: type at the prompt and check what came back. On aarch64 and riscv64 it also launches `graphical_terminal` with a virtio-gpu and reads the screen (the old `--graphical` flags, folded in 2026-10-03). |
+| `script/swish-check` | `console`'s gating twin: type at the prompt and check what came back. On aarch64 and riscv64 it also launches `graphical_terminal` with a virtio-gpu and reads the screen. |
 | `script/boot-check` | Boot the default kernel on all three architectures to a green verdict. |
 
 ### Load, concurrency and reliability
@@ -133,7 +133,7 @@ Full rows: the appendices above.
 | script | what it does |
 |---|---|
 | `script/lint-fleet` | The fleet tooling's checks, apart from `script/lint`; CI runs both. |
-| `script/read-advisory <id>` | Fix lanes read one held finding's private advisory; the token comes from the environment. |
+| `script/read-advisory <id>` | A fix lane reads one held finding's private advisory. |
 | `script/claim <branch-name>` | Cut a lane's branch, worktree and draft pull request; sets `nife.fleet`. Push with `script/push`. `--debt-paydown` or `--new-work` ([debt-paydown.md](debt-paydown.md)). |
 | `script/preflight-queue` | Replay the merge queue locally before a group build does. |
 | `script/architect-queue`, `script/record-ruling` | calef's queue; rulings. |
