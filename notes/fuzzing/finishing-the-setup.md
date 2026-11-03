@@ -187,8 +187,8 @@ ssh -t <you>@<fuzz host> 'sudo install -o root -g root -m 0400 ~/nife-fuzz.pem \
      sha256 -binary | openssl base64`: the fingerprint from step 1, without its `SHA256:` prefix.
 5. Install the mint helper as the install section of nifeos/fuzz-host's
    [`docs/fuzz-token.md`](https://github.com/nifeos/fuzz-host/blob/main/docs/fuzz-token.md) says:
-   a root-owned copy at `/usr/local/sbin/fuzz-token`, outside `/home/lane/nife`, and
-   `fuzz-token@publish.timer` enabled. Verify with `sudo /usr/local/sbin/fuzz-token check publish`,
+   a group `fuzz-token-publish` that holds `lane` alone, a root-owned copy at
+   `/usr/local/sbin/fuzz-token`, outside `/home/lane/nife`, and `fuzz-token@publish.timer` enabled. Verify with `sudo /usr/local/sbin/fuzz-token check publish`,
    which prints the token's repository list and expiry and never the token. It must list
    `nifeos/nife` alone.
 
