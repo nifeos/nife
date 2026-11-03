@@ -138,8 +138,9 @@ That installs phase 1: the publish unit writes the day's report and clean ranges
 publishes nothing. Phase 2 publishes the release. It waits on the mint helper and on a host clone
 that carries the clean-range fix, and step P5 of [`finishing-the-setup.md`](finishing-the-setup.md)
 gives its drop-in. The unit as shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag. Without
-`NIFE_FUZZ_PUBLISH=1` the script refuses to publish, and without a token `gh` fails; either way the
-local files are still written.
+`NIFE_FUZZ_PUBLISH=1` the script refuses to publish. It also refuses, by name and before any `gh`
+call, a missing `GH_TOKEN`, a missing or unreadable `GH_TOKEN_EXPIRES_AT`, and a token that has expired
+or expires within five minutes. Either way the local files are still written.
 
 The supervisor moves every slot worktree to the clone's commit when it starts, so a restart after
 a person moves the clone runs every slot at that commit. The clone reaches the commit that carries
