@@ -1,8 +1,8 @@
 name: stranger cadence
 
-# Observed failing: never. Six scheduled runs, none red, because no stranger run has come due on a
-#   Monday yet. Dispatching it on a branch whose notes/stranger-test.md dates the last run past the
-#   interval would stage it. See notes/observed-failing.md.
+# Observed failing: 2026-10-19, run 39277442934: red because run 6 (2026-09-19) was 30 days old
+#   against the 30-day cadence, which is the due signal this workflow exists to raise. See
+#   notes/observed-failing.md.
 
 # **Is a stranger run due?** Asked weekly, answered before somebody has to remember to ask.
 #
