@@ -5,8 +5,7 @@
 //! `program_measurements` entry and refuses the boot, out loud, unless the two agree. See
 //! notes/trusted-init/measured-boot.md.
 //!
-//! Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability, for
-//! the module and the file.
+//! Name: ratified 2026-11-03 (UTC), #3102. The module and the file.
 
 use super::*;
 
@@ -14,37 +13,37 @@ use super::*;
 /// takes to copy the content out. In the scratch family of [`RNG_DMA_PEEK_VA`]; given up with
 /// `UNMAP` straight after.
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
+/// Name: ratified 2026-11-03 (UTC), #3102.
 const BASE_DIGEST_PEEK_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0f60_0000);
 
 /// **Why the progenitor refused the measurement table.** Each names a different fault, and
-/// [`reason`](BaseRefusal::reason) is the line the console shows.
+/// [`reason`](BaseRefused::reason) is the line the console shows.
 ///
-/// Name: provisional, minted 2026-11-02 (UTC) by milestone/695-part-1-base-digest-capability.
+/// Name: ratified 2026-11-03 (UTC), #3102.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum BaseRefusal {
+pub(super) enum BaseRefused {
     /// Nothing in the base digest page's slot: a kernel that granted no digest.
     NoCapability,
     /// The slot holds something `PageFrame::MAP` will not map read-only: the wrong kind of
     /// capability, or one without `READ`.
     Unmappable,
     /// The page mapped, and `base_digest_contract` refused its content.
-    Page(base_digest_contract::Refusal),
+    Page(base_digest_contract::Refused),
     /// The archive has no `program_measurements` entry to check.
     NoTable,
     /// The table's SHA-256 is not the digest the page carries.
     Mismatch,
 }
 
-impl BaseRefusal {
+impl BaseRefused {
     /// One fixed line naming the refusal, for the console.
     pub(super) fn reason(&self) -> &'static str {
         match self {
-            BaseRefusal::NoCapability => "the kernel granted no base digest page",
-            BaseRefusal::Unmappable => "the base digest slot holds no page this process may read",
-            BaseRefusal::Page(refusal) => refusal.reason(),
-            BaseRefusal::NoTable => "the archive carries no program_measurements table",
-            BaseRefusal::Mismatch => {
+            BaseRefused::NoCapability => "the kernel granted no base digest page",
+            BaseRefused::Unmappable => "the base digest slot holds no page this process may read",
+            BaseRefused::Page(refusal) => refusal.reason(),
+            BaseRefused::NoTable => "the archive carries no program_measurements table",
+            BaseRefused::Mismatch => {
                 "the program_measurements table is not the one the base digest names"
             }
         }
@@ -55,11 +54,11 @@ impl BaseRefusal {
 /// `table`, the archive's `program_measurements` entry, to it. `Ok` only when the page is well
 /// formed and the table's SHA-256 is the digest it carries. Pure, so a host test can call it with
 /// a wrong digest.
-pub(super) fn check_table(page: &[u8], table: Option<&[u8]>) -> Result<(), BaseRefusal> {
-    let want = base_digest_contract::read_page(page).map_err(BaseRefusal::Page)?;
-    let table = table.ok_or(BaseRefusal::NoTable)?;
+pub(super) fn check_table(page: &[u8], table: Option<&[u8]>) -> Result<(), BaseRefused> {
+    let want = base_digest_contract::read_page(page).map_err(BaseRefused::Page)?;
+    let table = table.ok_or(BaseRefused::NoTable)?;
     if measured_boot::sha256(table) != want {
-        return Err(BaseRefusal::Mismatch);
+        return Err(BaseRefused::Mismatch);
     }
     Ok(())
 }
@@ -96,9 +95,9 @@ pub(super) fn require_base_digest(
 fn read_granted_page(
     g: &BootEndowment,
     ut: u64,
-) -> Result<[u8; base_digest_contract::PAGE_CONTENT_BYTES], BaseRefusal> {
+) -> Result<[u8; base_digest_contract::PAGE_CONTENT_BYTES], BaseRefused> {
     if !is_granted(g.base_digest_page) {
-        return Err(BaseRefusal::NoCapability);
+        return Err(BaseRefused::NoCapability);
     }
     if !map_page_frame(
         g.base_digest_page,
@@ -107,7 +106,7 @@ fn read_granted_page(
         ut,
     ) {
         capability_delete(g.base_digest_page);
-        return Err(BaseRefusal::Unmappable);
+        return Err(BaseRefused::Unmappable);
     }
     let mut content = [0u8; base_digest_contract::PAGE_CONTENT_BYTES];
     // SAFETY: the kernel just mapped one page read-only at BASE_DIGEST_PEEK_VIRTUAL_ADDRESS, and
@@ -127,7 +126,7 @@ fn read_granted_page(
 
 #[cfg(test)]
 mod tests {
-    use base_digest_contract::{PAGE_CONTENT_BYTES, Refusal, build_page};
+    use base_digest_contract::{PAGE_CONTENT_BYTES, Refused, build_page};
 
     use super::*;
 
@@ -145,7 +144,7 @@ mod tests {
     fn a_wrong_digest_is_refused_as_a_mismatch() {
         let page = build_page(&measured_boot::sha256(b"another table\n"));
         let refused = check_table(&page, Some(TABLE));
-        assert_eq!(refused, Err(BaseRefusal::Mismatch));
+        assert_eq!(refused, Err(BaseRefused::Mismatch));
         assert_eq!(
             refused.unwrap_err().reason(),
             "the program_measurements table is not the one the base digest names"
@@ -160,14 +159,14 @@ mod tests {
         changed[0] ^= 1;
         assert_eq!(
             check_table(&page, Some(&changed)),
-            Err(BaseRefusal::Mismatch)
+            Err(BaseRefused::Mismatch)
         );
     }
 
     #[test]
     fn a_missing_table_is_refused() {
         let page = build_page(&measured_boot::sha256(TABLE));
-        assert_eq!(check_table(&page, None), Err(BaseRefusal::NoTable));
+        assert_eq!(check_table(&page, None), Err(BaseRefused::NoTable));
     }
 
     /// The page is read before the table, so a bad page refuses even beside a missing table.
@@ -177,25 +176,25 @@ mod tests {
         page[0] = b'X';
         assert_eq!(
             check_table(&page, None),
-            Err(BaseRefusal::Page(Refusal::NotThisPage))
+            Err(BaseRefused::Page(Refused::NotThisPage))
         );
         page = build_page(&measured_boot::sha256(TABLE));
         page[7] = b'9';
         assert_eq!(
             check_table(&page, Some(TABLE)),
-            Err(BaseRefusal::Page(Refusal::UnsupportedVersion {
+            Err(BaseRefused::Page(Refused::UnsupportedVersion {
                 byte: b'9'
             }))
         );
         assert_eq!(
             check_table(&page[..PAGE_CONTENT_BYTES - 1], Some(TABLE)),
-            Err(BaseRefusal::Page(Refusal::ShortPage {
+            Err(BaseRefused::Page(Refused::ShortPage {
                 length: PAGE_CONTENT_BYTES - 1
             }))
         );
         assert_eq!(
             check_table(&build_page(&[0; 32]), Some(TABLE)),
-            Err(BaseRefusal::Page(Refusal::ZeroDigest))
+            Err(BaseRefused::Page(Refused::ZeroDigest))
         );
     }
 
@@ -203,11 +202,11 @@ mod tests {
     #[test]
     fn every_refusal_has_its_own_reason() {
         let all = [
-            BaseRefusal::NoCapability,
-            BaseRefusal::Unmappable,
-            BaseRefusal::Page(Refusal::NotThisPage),
-            BaseRefusal::NoTable,
-            BaseRefusal::Mismatch,
+            BaseRefused::NoCapability,
+            BaseRefused::Unmappable,
+            BaseRefused::Page(Refused::NotThisPage),
+            BaseRefused::NoTable,
+            BaseRefused::Mismatch,
         ];
         for (i, a) in all.iter().enumerate() {
             for b in &all[i + 1..] {

@@ -11,9 +11,9 @@ before it reads a line of the table.
 - The page content is `PAGE_CONTENT_BYTES` (40) bytes: `MAGIC` (the ASCII text `BASEDIG1`) and then
   the 32 bytes of the digest. The rest of the frame is zeroes. `VERSION` (1) is the digit the magic
   carries; a layout break bumps both in one change.
-- `build_page(&digest)` makes the content. `read_page(bytes)` returns the digest or a `Refusal`: a
+- `build_page(&digest)` makes the content. `read_page(bytes)` returns the digest or a `Refused`: a
   buffer shorter than the content, a page without the magic, another layout version, or an all-zero
-  digest. `Refusal::reason()` is one fixed line for a console.
+  digest. `Refused::reason()` is one fixed line for a console.
 - `is_plausible(&digest)` is false for an all-zero digest, a frame nobody wrote.
 - `INTERFACE_ID` (22) names this interface in a program's `INTERFACES` note.
 - The page has no fixed address. A capability names it, and only its one reader maps it.
@@ -21,12 +21,12 @@ before it reads a line of the table.
 ## Usage
 
 ```rust
-use base_digest_contract::{Refusal, build_page, read_page};
+use base_digest_contract::{Refused, build_page, read_page};
 
 let digest = [7u8; 32];
 let page = build_page(&digest);
 assert_eq!(read_page(&page), Ok(digest));
-assert_eq!(read_page(&[0u8; 40]), Err(Refusal::NotThisPage));
+assert_eq!(read_page(&[0u8; 40]), Err(Refused::NotThisPage));
 ```
 
 ## Building and testing
