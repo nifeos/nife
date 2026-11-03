@@ -844,6 +844,10 @@ mod tests {
     /// A card that stops moving data is a timeout naming exactly the bytes still owed: the first
     /// 128 moved (a 32-word FIFO's worth), and for a write a second 128 sits in the full FIFO.
     #[test]
+    #[cfg_attr(
+        miri,
+        ignore = "spins the driver to its simulated data deadline twice; seventeen minutes under Miri"
+    )]
     fn a_stalled_transfer_times_out_owing_what_did_not_move() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         let card = sd::identify(&mut h, 4).unwrap();

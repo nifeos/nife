@@ -162,6 +162,10 @@ const FIXTURES: &[(u32, &[u8])] = &[
 /// and after the cut sequence is finished. Compared through behavior rather than bytes, so the
 /// test holds across a bump whatever the new layout looks like.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "compares every pixel at every history depth of each fixture; over two hours under Miri"
+)]
 fn a_replacement_reads_every_earlier_handoff_layout() {
     for &(layout, blob) in FIXTURES {
         let mut want = fixture_terminal();

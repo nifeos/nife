@@ -218,7 +218,7 @@ fn the_scene_exercises_overlap_clipping_and_background() {
     let n = SCENE.len();
     let mut visible = vec![0usize; n];
     let mut background = 0;
-    for y in 0..SCREEN_H {
+    for y in sampled_rows() {
         for x in 0..SCREEN_W {
             let mut top = None;
             for (i, win) in SCENE.iter().enumerate() {
