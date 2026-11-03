@@ -334,7 +334,7 @@ mod radon {
         match r.link {
             Some(l) => println!(
                 "network-bench: link      : {} Mbit/s {} duplex, {} ms after autonegotiation restarted",
-                l.speed.mbps(),
+                l.speed.megabits_per_second(),
                 if l.full_duplex { "full" } else { "half" },
                 r.link_wait_ms
             ),
