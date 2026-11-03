@@ -13,14 +13,14 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
 | `designware_ethernet` | 100 | 81 | 19 | 12 |
-| `designware_mobile_storage` | 69 | 69 | 0 | 9 |
+| `designware_mobile_storage` | 62 | 62 | 0 | 8 |
 | `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 313 | 244 | 69 | 36 |
+| total | 306 | 237 | 69 | 35 |
 
 ## How to read a group
 
@@ -127,7 +127,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_mobile_storage`
 
-69 unratified names: 69 with no block, 0 provisional.
+62 unratified names: 62 with no block, 0 provisional.
 
 ### DM1. Module names (9)
 
@@ -171,9 +171,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
 
-### DM7. Read and write bench (7)
-
-`bench::ReadFailure`, `bench::ReadReport`, `bench::SCRATCH_SECTORS`, `bench::WriteVerdict`, `bench::pattern`, `bench::read_only`, `bench::scratch_write`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
