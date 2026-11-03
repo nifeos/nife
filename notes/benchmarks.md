@@ -283,6 +283,7 @@ section" resolves here.
 | [drift-since-the-2026-09-26-floors](benchmarks/drift-since-the-2026-09-26-floors.md) | drift on `main` on all three ISAs | 2026-10-02 |
 | [drift-since-the-2026-10-10-floor](benchmarks/drift-since-the-2026-10-10-floor.md) | four merges, and a tick that doubles one | 2026-10-19 |
 | [riscv64-spawn-reap-drift](benchmarks/riscv64-spawn-reap-drift.md) | the double copy | 2026-10-22 |
+| [riscv64-unexplained-drift](benchmarks/riscv64-unexplained-drift.md) | the chart's riscv64 line, a false compiler term | 2026-11-03 |
 
 ## BUGS
 
