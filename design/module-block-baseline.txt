@@ -829,7 +829,6 @@ crates/designware_ethernet/src/registers.rs::MAC_MDIO_DATA
 crates/designware_ethernet/src/registers.rs::WINDOW
 crates/designware_ethernet/src/registers.rs::mac_hw_feature
 crates/designware_ethernet/src/simulator.rs::with
-crates/designware_ethernet/src/tests.rs
 crates/designware_mobile_storage/src/bench.rs
 crates/designware_mobile_storage/src/bench.rs::ReadFailure
 crates/designware_mobile_storage/src/bench.rs::ReadReport
