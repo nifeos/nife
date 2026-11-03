@@ -8,7 +8,7 @@
 //! against `sim`'s controller.
 
 use crate::motorcomm::{Link, Speed};
-use crate::{BUFFER_SIZE, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, registers};
+use crate::{BUFFER_BYTES, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, registers};
 
 /// Why the controller was not brought up.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -310,7 +310,7 @@ pub fn configure(
         receive
             | (bus.receive_channel_burst_length << registers::CHAN_RX_CONTROL_RPBL_SHIFT)
                 & registers::CHAN_RX_CONTROL_RPBL_MASK
-            | (BUFFER_SIZE as u32) << registers::DMA_CH0_RX_CONTROL_RBSZ_SHIFT,
+            | (BUFFER_BYTES as u32) << registers::DMA_CH0_RX_CONTROL_RBSZ_SHIFT,
     );
 
     let transmit_ring = region + layout::TRANSMIT_RING;

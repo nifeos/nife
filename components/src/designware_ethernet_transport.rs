@@ -22,7 +22,7 @@
 use alloc::vec::Vec;
 
 use designware_ethernet::{
-    DataPlane, DirectMemoryAccessRegion, MAXIMUM_FRAME, Tails, layout, registers,
+    DataPlane, DirectMemoryAccessRegion, MAXIMUM_FRAME_BYTES, Tails, layout, registers,
 };
 use driver_process_contract::designware_ethernet::{
     DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS, Handoff,
@@ -108,7 +108,7 @@ impl DesignWareNic {
 
     /// The next received frame, if the device has written one.
     pub(crate) fn receive_frame(&mut self) -> Option<Vec<u8>> {
-        let mut buf = [0u8; MAXIMUM_FRAME];
+        let mut buf = [0u8; MAXIMUM_FRAME_BYTES];
         let n = self.plane.receive(&mut Plane, &mut Channel, &mut buf)?;
         Some(buf[..n].to_vec())
     }
@@ -130,7 +130,7 @@ impl DesignWareNic {
     pub(crate) fn frame_waiting(&self) -> bool {
         let des3 =
             (PLANE.r64(layout::receive_descriptor(self.plane.receive_cursor()) + 8) >> 32) as u32;
-        designware_ethernet::receive_verdict(des3, MAXIMUM_FRAME)
+        designware_ethernet::receive_verdict(des3, MAXIMUM_FRAME_BYTES)
             != designware_ethernet::ReceiveVerdict::NotYet
     }
 }

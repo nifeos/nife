@@ -12,15 +12,15 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 119 | 100 | 19 | 14 |
+| `designware_ethernet` | 117 | 98 | 19 | 13 |
 | `designware_mobile_storage` | 75 | 75 | 0 | 10 |
-| `e1000e` | 133 | 95 | 38 | 13 |
+| `e1000e` | 127 | 93 | 34 | 12 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 339 | 270 | 69 | 39 |
+| total | 331 | 266 | 65 | 37 |
 
 ## How to read a group
 
@@ -39,7 +39,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_ethernet`
 
-119 unratified names: 100 with no block, 19 provisional.
+117 unratified names: 98 with no block, 19 provisional.
 
 ### DE1. Module names (11)
 
@@ -75,13 +75,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand, and decide together with the e1000e data plane group, which uses the same seven words, so the two crates keep agreeing.
-
-### DE6. Descriptor sizes and the small constants (3)
-
-`descriptor::BUFFER_SIZE`, `descriptor::CRC_BYTES`, `descriptor::DESCRIPTOR_BYTES`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify `CRC_BYTES` and `DESCRIPTOR_BYTES`; recommend `BUFFER_SIZE` become `BUFFER_BYTES` so the three sizes share the unit word (the stricter reading; `BUFFER_SIZE` does not break the spelled-out rule, it only disagrees with its neighbors).
 
 ### DE7. Descriptor bit and field constants (RDES3_*, TDES2_*, TDES3_*) (14)
 
@@ -215,7 +208,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `e1000e`
 
-133 unratified names: 95 with no block, 38 provisional.
+127 unratified names: 93 with no block, 34 provisional.
 
 ### E1. Module names (15)
 
@@ -237,13 +230,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify as they stand, except `Region`: recommend `DirectMemoryAccessRegion` (alias `Region`), the name designware_ethernet already took in #3094, so both crates agree. Decide together with designware_ethernet's data plane group. `receive_cursor`, `set_receive_tail` and `set_transmit_tail` are provisional already, with `rx` and `tx` spelled out by the 2026-10-26 tree-wide ruling.
-
-### E4. Descriptor ring sizes and positions (6)
-
-`descriptor::BUFFER_SIZE`, `descriptor::RECEIVE_ENTRIES`, `descriptor::RECEIVE_QUEUE_PAGE`, `descriptor::TAIL_IN_PAGE`, `descriptor::TRANSMIT_ENTRIES`, `descriptor::TRANSMIT_QUEUE_PAGE`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. `RECEIVE_ENTRIES`, `TRANSMIT_ENTRIES`, `*_QUEUE_PAGE`, `TAIL_IN_PAGE` and `BUFFER_SIZE` carry no abbreviation (`BUFFER_SIZE` has the same unit-word question as in designware_ethernet).
 
 ### E5. Descriptor status and command bits (7)
 

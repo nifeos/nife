@@ -17,17 +17,22 @@ pub const RECEIVE_ENTRIES: u16 = 16;
 pub const TRANSMIT_ENTRIES: u16 = 16;
 
 /// Bytes per descriptor: four little-endian words.
+///
+/// Name: ratified 2026-11-03 (UTC), #3124.
 pub const DESCRIPTOR_BYTES: u64 = 16;
 
 /// Bytes per buffer. Written into the receive control register's buffer size field, so the
 /// device never writes past it, and large enough that a 1518-byte frame never spans two.
-pub const BUFFER_SIZE: u64 = 2048;
-
-/// The largest frame either direction carries: 1500 bytes of payload and the 14-byte header, CRC
-/// excluded (the device appends it on transmit, and the driver strips it on receive).
 ///
-/// Name: ratified 2026-11-02 (UTC), #3094.
-pub const MAXIMUM_FRAME: usize = 1514;
+/// Name: ratified 2026-11-03 (UTC), #3124.
+pub const BUFFER_BYTES: u64 = 2048;
+
+/// The largest frame either direction carries, in bytes: 1500 bytes of payload and the 14-byte
+/// header, CRC excluded (the device appends it on transmit, and the driver strips it on receive).
+/// This is not the maximum transmission unit, which is the 1500 bytes of payload alone.
+///
+/// Name: ratified 2026-11-03 (UTC), #3124; renamed from `MAXIMUM_FRAME`, which #3094 had ratified.
+pub const MAXIMUM_FRAME_BYTES: usize = 1514;
 
 /// The frame check sequence the device leaves on every received frame.
 pub const CRC_BYTES: usize = 4;
@@ -193,7 +198,7 @@ pub enum ReceiveVerdict {
 ///
 /// Every field is the device's statement and none is trusted, since a device that lies about a
 /// length would lead a trusting driver past its buffer: a `Frame(n)` always has `n <= room`,
-/// `n <= MAXIMUM_FRAME` and `n + CRC_BYTES <= BUFFER_SIZE`, which the Kani harness below proves for
+/// `n <= MAXIMUM_FRAME_BYTES` and `n + CRC_BYTES <= BUFFER_BYTES`, which the Kani harness below proves for
 /// every word.
 ///
 /// # Examples
@@ -220,8 +225,9 @@ pub fn receive_verdict(descriptor_word_3: u32, room: usize) -> ReceiveVerdict {
     let Some(length) = wire.checked_sub(CRC_BYTES) else {
         return ReceiveVerdict::Drop;
     };
-    let fits =
-        (14..=MAXIMUM_FRAME).contains(&length) && length <= room && wire as u64 <= BUFFER_SIZE;
+    let fits = (14..=MAXIMUM_FRAME_BYTES).contains(&length)
+        && length <= room
+        && wire as u64 <= BUFFER_BYTES;
     if !fits {
         return ReceiveVerdict::Drop;
     }

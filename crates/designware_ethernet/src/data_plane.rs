@@ -39,7 +39,7 @@ pub trait Tails {
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransmitError {
-    /// Empty, or longer than [`MAXIMUM_FRAME`].
+    /// Empty, or longer than [`MAXIMUM_FRAME_BYTES`].
     BadLength,
     /// Every descriptor is still the device's.
     Full,
@@ -170,7 +170,7 @@ impl DataPlane {
         tails: &mut impl Tails,
         frame: &[u8],
     ) -> Result<(), TransmitError> {
-        if frame.is_empty() || frame.len() > MAXIMUM_FRAME {
+        if frame.is_empty() || frame.len() > MAXIMUM_FRAME_BYTES {
             return Err(TransmitError::BadLength);
         }
         self.reclaim(region);
