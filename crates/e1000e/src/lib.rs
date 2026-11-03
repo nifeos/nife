@@ -49,7 +49,7 @@ pub use control::{
     CTRL_ASDE, CTRL_EXT_DRV_LOAD, CTRL_RST, CTRL_SLU, RAH_AV, RFCTL_EXTEN, STATUS_LU, rctl,
     station_address_from_receive_address, tctl, tipg,
 };
-pub use data_plane::{DataPlane, Region, Tails, TransmitError};
+pub use data_plane::{DataPlane, DirectMemoryAccessRegion, Tails, TransmitError};
 use descriptor::*;
 pub use descriptor::{
     BUFFER_SIZE, MAXIMUM_FRAME, RECEIVE_ENTRIES, RECEIVE_ERRORS_FRAME, RECEIVE_QUEUE_PAGE,

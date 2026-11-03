@@ -20,7 +20,7 @@ struct Sim {
     sent: Vec<Vec<u8>>,
 }
 
-impl Region for Sim {
+impl DirectMemoryAccessRegion for Sim {
     fn read_u64(&self, offset: u64) -> u64 {
         let o = offset as usize;
         u64::from_le_bytes(self.mem[o..o + 8].try_into().unwrap())

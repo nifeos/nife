@@ -32,7 +32,7 @@ use driver_process_contract::e1000e::{
     DATA_PLANE_VIRTUAL_ADDRESS, Handoff, RECEIVE_QUEUE_VIRTUAL_ADDRESS,
     TRANSMIT_QUEUE_VIRTUAL_ADDRESS,
 };
-use e1000e::{DataPlane, MAXIMUM_FRAME, Region, TAIL_IN_PAGE, Tails, layout};
+use e1000e::{DataPlane, DirectMemoryAccessRegion, MAXIMUM_FRAME, TAIL_IN_PAGE, Tails, layout};
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 
 /// How long the poll loop asks to sleep between looks at an idle receive ring when smoltcp has
@@ -55,7 +55,7 @@ const TRANSMIT_QUEUE: MappedWindow =
 /// The region, through its window: every offset bounds-checked by `MappedWindow`.
 struct Plane;
 
-impl Region for Plane {
+impl DirectMemoryAccessRegion for Plane {
     fn read_u64(&self, off: u64) -> u64 {
         PLANE.r64(off)
     }

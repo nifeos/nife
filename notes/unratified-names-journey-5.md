@@ -12,9 +12,9 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 119 | 100 | 19 | 14 |
+| `designware_ethernet` | 112 | 93 | 19 | 13 |
 | `designware_mobile_storage` | 75 | 75 | 0 | 10 |
-| `e1000e` | 133 | 95 | 38 | 13 |
+| `e1000e` | 122 | 87 | 35 | 12 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
@@ -68,13 +68,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. Plain verbs and nouns; `core_version` and `station_address` say what they return.
-
-### DE5. Data plane (7)
-
-`data_plane::DataPlane`, `data_plane::Tails`, `data_plane::can_transmit`, `data_plane::new`, `data_plane::receive`, `data_plane::start`, `data_plane::transmit`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand, and decide together with the e1000e data plane group, which uses the same seven words, so the two crates keep agreeing.
 
 ### DE6. Descriptor sizes and the small constants (3)
 
@@ -230,13 +223,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
-
-### E3. Data plane (11)
-
-`data_plane::DataPlane`, `data_plane::Region`, `data_plane::Tails`, `data_plane::can_transmit`, `data_plane::new`, `data_plane::receive`, `data_plane::receive_cursor`, `data_plane::set_receive_tail`, `data_plane::set_transmit_tail`, `data_plane::start`, `data_plane::transmit`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify as they stand, except `Region`: recommend `DirectMemoryAccessRegion` (alias `Region`), the name designware_ethernet already took in #3094, so both crates agree. Decide together with designware_ethernet's data plane group. `receive_cursor`, `set_receive_tail` and `set_transmit_tail` are provisional already, with `rx` and `tx` spelled out by the 2026-10-26 tree-wide ruling.
 
 ### E4. Descriptor ring sizes and positions (6)
 
