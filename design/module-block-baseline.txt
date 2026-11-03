@@ -872,13 +872,6 @@ crates/designware_mobile_storage/src/card.rs::r1_state
 crates/designware_mobile_storage/src/card.rs::sd
 crates/designware_mobile_storage/src/card.rs::sd
 crates/designware_mobile_storage/src/command.rs
-crates/designware_mobile_storage/src/command.rs::Command
-crates/designware_mobile_storage/src/command.rs::Data
-crates/designware_mobile_storage/src/command.rs::GO_IDLE_STATE
-crates/designware_mobile_storage/src/command.rs::Response
-crates/designware_mobile_storage/src/command.rs::SEND_STATUS
-crates/designware_mobile_storage/src/command.rs::SWITCH
-crates/designware_mobile_storage/src/command.rs::new
 crates/designware_mobile_storage/src/host.rs
 crates/designware_mobile_storage/src/host.rs::Error
 crates/designware_mobile_storage/src/host.rs::Host
