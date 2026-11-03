@@ -184,10 +184,11 @@ its milestone merges.
 
 ### P7. Place the reader key (person, root on the machine that launches fix lanes)
 
-After L6 merges, generate a key under Credentials, Key pairs at
-<https://github.com/organizations/nifeos/settings/apps/nife-fuzz-reader> and place it in a directory
-only root can enter on the machine that launches fix lanes, owned by root, mode 0400, at the path
-the helper's install section names. Verify the mode and fingerprint as in P4. It never goes to the
+After L6 merges, generate a key at
+<https://github.com/organizations/nifeos/settings/apps/nife-fuzz-reader>, under Credentials, Key
+pairs. Place it in a directory
+only root can enter, on the machine that launches fix lanes. The file is owned by root, mode 0400,
+at the path the helper's install section names. Verify the mode and fingerprint as in P4. It never goes to the
 fuzz host.
 
 ## Risks
