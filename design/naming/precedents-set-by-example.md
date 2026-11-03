@@ -21,7 +21,7 @@ acronyms. The same question settles every abbreviation: does a person say the ex
   outcomes are rows in §154's table.
 - Earned, so they stay: `usb`, `syscall`, `cpu`, `xor` and QEMU.
 - `ipc` was already ruled by §154. The sweep that applies it is owed.
-- Ruled 2026-10-26 (UTC): `id`, `io` and `bios` earn their place and stay (`ms` and `us` as unit suffixes were overruled 2026-11-03, see [2026-11-03-rulings.md](2026-11-03-rulings.md)); `min`
+- Ruled 2026-10-26 (UTC): `id`, `io` and `bios` earn their place and stay (`ms` and `us` as unit suffixes lost on 2026-11-03, see [2026-11-03-rulings.md](2026-11-03-rulings.md)); `min`
   expands to `minimum`, `max` to `maximum` and `os` to `operating_system`.
 
 ### The rules cover function parameters

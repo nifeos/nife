@@ -44,8 +44,7 @@ An acronym is spelled out where its expansion is a phrase people actually say, a
 nobody says it. That is §154 (the acronym test is whether the phrase is spoken, applied
 recursively), ruled 2026-09-18. Ask it again of any acronym inside the expansion. So `dtb` became
 `device_tree_blob` and `pcie` becomes `pci_express`, while `pci` and `elf` stay. §154 deratified
-`dma_validator`, `nvme`, `gpt`, `dtb`, `ipc` and `asid`. `MAC`, `GMAC` and `SD` are accepted; `SDIO`
-is not.
+`dma_validator`, `nvme`, `gpt`, `dtb`, `ipc` and `asid`. Accepted: `MAC`, `GMAC`, `SD`.
 
 The test applies to names this tree authors. A name that arrives across somebody else's interface
 keeps their spelling, with an expansion written where the reader meets it. The foreign spelling
@@ -56,11 +55,9 @@ as does a specification's term of art in names this tree authors.
 
 ### A register constant takes the spelled-out name
 
-Ruled 2026-11-02 and 2026-11-03 (UTC), for new and renamed names, the e1000e `registers` module
-included. A hardware register, field or bit constant copied from a cited source gets a spelled-out
-name. The source's spelling goes in `doc(alias)` and the doc comment's opening, cited: OpenBSD's
-first, then FreeBSD's, then Linux's. A ratified name waits for its own review. The suffixes, units,
-`id`, std names, aliases and accepted acronyms are in
+Ruled 2026-11-02 and 2026-11-03 (UTC), for new and renamed names. A register, field or bit constant copied from a cited source gets a spelled-out name. The
+source's spelling goes in `doc(alias)` and the doc comment's opening: OpenBSD's first, then
+FreeBSD's, then Linux's. A ratified name waits for its own review. More:
 [2026-11-03-rulings.md](naming/2026-11-03-rulings.md).
 
 ### Nouns, not verbs
@@ -88,8 +85,7 @@ question and changes nothing is named in one of four shapes:
   `allows`, `needs_drop`.
 
 A bare adjective, participle or noun (`enabled`, `pending`, `present`, `truncated`) reads as a
-getter, and std spells those `is_enabled`. A function that runs something is never a bare adjective
-or participle either (`read_only`, `done`, `required`). Exempt: a function that acts and reports whether it
+getter, and std spells those `is_enabled`. Exempt: a function that acts and reports whether it
 worked (`insert`, `push`, `claim`, a `take_` that clears a flag). Also exempt: test functions, which are
 sentences here; fields; a trait method or a name another project owns (`eq`, `readonly`); and an
 `extern` symbol. The prior art is in
