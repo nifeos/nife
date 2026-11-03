@@ -24,7 +24,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 ## How to read a group
 
-Each group gives its items in their current spelling, as `path::name`, and a module by its own name. *Breaks the spelled-out rule* answers the 2026-11-02 rule in [design/naming.md](../design/naming.md): outside register modules, identifiers say what the thing is and not the specification's abbreviation. A hardware register, field or bit constant takes the spelled-out name with the source's spelling in `#[doc(alias)]`, OpenBSD's cited first. `SDIO` is not an accepted acronym (ruled 2026-11-03 UTC): it is the vendor's label for the controller instance, no input/output cards are used here, and a name that needs it keeps the label as a `doc(alias)`. `yes` means the group has at least that kind of abbreviation; `one` means a few named items do; `no` means none. The recommendation is the stricter reading wherever a call was close, since loosening later is compatible and tightening is not.
+Each group gives its items in their current spelling, as `path::name`, and a module by its own name. *Breaks the spelled-out rule* answers the 2026-11-02 rule in [design/naming.md](../design/naming.md): outside register modules, identifiers say what the thing is and not the specification's abbreviation. A hardware register, field or bit constant takes the spelled-out name with the source's spelling in `#[doc(alias)]`, OpenBSD's cited first. `SDIO` is not an accepted acronym (ruled 2026-11-03 UTC): it is the vendor's label for the controller instance, nothing here uses input/output cards, and a name that needs it keeps the label as a `doc(alias)`. `yes` means the group has at least that kind of abbreviation; `one` means a few named items do; `no` means none. The recommendation is the stricter reading wherever a call was close, since loosening later is compatible and tightening is not.
 
 ## Smallest first decisions
 
@@ -102,7 +102,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 `registers::WINDOW`, `registers::mac_hw_feature`
 
 - Breaks the spelled-out rule: yes (one name).
-- Provisional recommendation: `WINDOW` is a plain word and can be ratified; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
+- Provisional recommendation: `WINDOW` is a plain word and stays as it is; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
 
 ### DE11. MDIO software surface (6)
 
@@ -201,7 +201,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 `platform_controller_hub::flush::required`, `platform_controller_hub::flush::tail_after`, `platform_controller_hub::flush::transmit_word`, `platform_controller_hub::hardware_access::is_pch`
 
 - Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; the module-name decision is made (`platform_controller_hub`), so `is_pch` can be spelled out as `is_platform_controller_hub`.
+- Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; the module-name decision stands (`platform_controller_hub`), so `is_pch` becomes `is_platform_controller_hub`.
 
 ### E10. Non-volatile memory words (6)
 
