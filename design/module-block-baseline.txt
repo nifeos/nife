@@ -1140,10 +1140,6 @@ crates/e1000e/src/data_plane.rs::start
 crates/e1000e/src/data_plane.rs::transmit
 crates/e1000e/src/descriptor.rs::BUFFER_SIZE
 crates/e1000e/src/descriptor.rs::TAIL_IN_PAGE
-crates/e1000e/src/device.rs::DEVICE_IDS
-crates/e1000e/src/device.rs::VENDOR_INTEL
-crates/e1000e/src/device.rs::is_supported_device
-crates/e1000e/src/device.rs::model_name
 crates/e1000e/src/layout.rs
 crates/e1000e/src/layout.rs::BYTES
 crates/e1000e/src/layout.rs::PAGES
