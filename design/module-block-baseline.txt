@@ -9377,9 +9377,9 @@ kernel/src/user/compositor_service.rs::client_surface_digest
 
 kernel/src/user/compositor_service.rs::focused
 
-kernel/src/user/compositor_service.rs::adjacent row_probe_phys
+kernel/src/user/compositor_service.rs::neighbour_probe_phys
 
-kernel/src/user/compositor_service.rs::adjacent row_probe_va
+kernel/src/user/compositor_service.rs::neighbour_probe_va
 
 kernel/src/user/compositor_service.rs::poison_screen_pixel
 

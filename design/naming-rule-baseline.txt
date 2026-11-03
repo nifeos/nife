@@ -292,7 +292,7 @@ kernel/src/user/address_space.rs::current_cpu_page_kernel_va spelled-out
 
 kernel/src/user/clock_service.rs::CLOCK_VA spelled-out
 
-kernel/src/user/compositor_service.rs::adjacent row_probe_va spelled-out
+kernel/src/user/compositor_service.rs::neighbour_probe_va spelled-out
 
 kernel/src/user/disk_service.rs::ROSTER_VA spelled-out
 
