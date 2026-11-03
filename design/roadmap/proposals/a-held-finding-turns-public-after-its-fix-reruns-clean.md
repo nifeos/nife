@@ -21,7 +21,8 @@ code calls the API.
 Once a day the service replays the seed of every advisory it filed that is still a draft. It runs
 one seed per guest, against the newest green main the host runs.
 
-- A clean replay publishes the advisory (an update that sets its state to `published`) and moves the
+- A clean replay publishes the advisory (an update that sets its state to `published`; the filer
+  already gave it a package and a vulnerable version range, without which GitHub answers 422) and moves the
   held log out of the held directory, so the daily report's held count falls.
 - A failing replay keeps the advisory private and adds a comment to it naming the commit that still
   fails. The maintainer reads open advisories with such a comment as the cue to raise a new lane.
@@ -36,5 +37,7 @@ carry a seed in a public field.
 
 ## Status
 
-Not started. It waits on the filing service. Unverified: whether a published advisory shows its
-comments to the public, and whether publishing needs more than the advisory write permission.
+Not started. It waits on the filing service. Publishing needs only the advisory write permission, once the advisory carries a package and range
+([verified](../../../notes/fuzzing/finishing-the-setup.md#the-advisory-permission)). Unverified:
+whether a published advisory shows its comments to the public, and whether the REST API can add a
+comment at all.

@@ -25,6 +25,9 @@ window that has none yet. It is a program, not an agent or a language model.
   `windows.tsv` for the window's driver, first seed, commit and status.
 - It takes the replay seed from the held log's `replay:` line. For a crash or hang it takes the
   window's first seed and count instead.
+- It files each advisory with a package (ecosystem and name) and a `vulnerable_version_range` that it
+  can supply, and sets `patched_versions` too. GitHub refuses to publish one without a range (422,
+  "Advisory is not publishable"), and the publish proposal depends on it.
 - The advisory body holds the class (`held-finding`, `held-crash` or `held-hang`), the driver, the
   commit, the seed or range, and the one-line replay command.
 - It records the advisory id beside the held log, in a file under the held directory, so a second
@@ -45,6 +48,6 @@ send none, nothing it prints may contain a planted seed, and it must refuse to r
 
 Not started. It waits on the mint helper
 ([the host mints its tokens](the-fuzz-host-mints-its-tokens-from-the-app-key.md)) for a real run, not
-for its selftest. Unverified: whether an App with the advisory permission may create an advisory. The
-API names "a security manager or administrator" as the caller, and the first real filing settles
-it.
+for its selftest. An App with the advisory permission alone is verified to create, complete,
+publish and publicly read an advisory
+([the result](../../../notes/fuzzing/finishing-the-setup.md#the-advisory-permission)).
