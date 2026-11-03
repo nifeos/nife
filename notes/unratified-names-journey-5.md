@@ -14,13 +14,13 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 |---|---|---|---|---|
 | `designware_ethernet` | 110 | 91 | 19 | 13 |
 | `designware_mobile_storage` | 74 | 74 | 0 | 10 |
-| `e1000e` | 132 | 94 | 38 | 13 |
+| `e1000e` | 115 | 81 | 34 | 12 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 328 | 259 | 69 | 38 |
+| total | 311 | 246 | 65 | 37 |
 
 ## How to read a group
 
@@ -208,7 +208,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `e1000e`
 
-132 unratified names: 94 with no block, 38 provisional.
+115 unratified names: 81 with no block, 34 provisional.
 
 ### E1. Module names (14)
 
@@ -279,13 +279,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
-
-### E11. Physical layer device access (17)
-
-`pch::physical_layer_device::ERROR`, `pch::physical_layer_device::Error`, `pch::physical_layer_device::POLL_MICROSECONDS`, `pch::physical_layer_device::Plan`, `pch::physical_layer_device::READY`, `pch::physical_layer_device::SWFLAG_FREE_MS`, `pch::physical_layer_device::SWFLAG_TAKE_MS`, `pch::physical_layer_device::Swflag`, `pch::physical_layer_device::id_at`, `pch::physical_layer_device::paged_offset`, `pch::physical_layer_device::physical_layer_device_address`, `pch::physical_layer_device::plan`, `pch::physical_layer_device::read`, `pch::physical_layer_device::read_mdic`, `pch::physical_layer_device::release`, `pch::physical_layer_device::update`, `pch::physical_layer_device::write`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify as they stand except `Swflag`, `SWFLAG_FREE_MS`, `SWFLAG_TAKE_MS` and `read_mdic`, which abbreviate 'software flag', 'milliseconds' and the register MDIC; recommend `SoftwareFlag`, `SOFTWARE_FLAG_FREE_MILLISECONDS`, `SOFTWARE_FLAG_TAKE_MILLISECONDS` and keeping `read_mdic` as a register-named function with its expansion in the doc. `physical_layer_device_address` and `paged_offset` are provisional and ratify as they stand.
 
 ### E12. Reset sequence (10)
 

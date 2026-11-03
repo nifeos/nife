@@ -39,7 +39,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 //! ```
 
-use super::physical_layer_device::{self, Swflag};
+use super::physical_layer_device::{self, SoftwareFlag};
 use super::{Hardware, delay_ms, flush_writes, non_volatile_memory, registers, reset, ulp};
 use crate::registers as mac;
 
@@ -303,7 +303,7 @@ pub fn initialize_physical_layer_device_workarounds(
     // FreeBSD reports a failure here and carries on; so does this.
     leave_ulp(hardware);
 
-    let f = Swflag::acquire(hardware)?;
+    let f = SoftwareFlag::acquire(hardware)?;
     let mut id = 0;
     let reached = (|| {
         if accessible(hardware, &f, &mut id) {
@@ -378,7 +378,7 @@ fn leave_ulp(hardware: &mut impl Hardware) {
 
 /// The software branch of `e1000_disable_ulp_lpt_lp`.
 fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<(), Error> {
-    let f = Swflag::acquire(hardware)?;
+    let f = SoftwareFlag::acquire(hardware)?;
     toggle_lanphypc(hardware);
     let done = (|| -> Result<(), physical_layer_device::Error> {
         // Unforce SMBus mode in the PHY. If the MAC is in PCIe mode the read fails, so force the
@@ -460,7 +460,7 @@ const _: () = assert!(((u16::MAX as u32) << 16) & (u16::MAX as u32) == 0);
 ///
 /// FreeBSD's quirk is kept: an identifier that reads as `0xffff` without an `MDIC` error counts as
 /// accessible on a first probe (its `ret_val` is zero), so does this.
-fn accessible(hardware: &mut impl Hardware, flag: &Swflag, id: &mut u32) -> bool {
+fn accessible(hardware: &mut impl Hardware, flag: &SoftwareFlag, id: &mut u32) -> bool {
     let mut seen = 0u32;
     let mut last = Ok(0);
     for _ in 0..2 {
@@ -543,7 +543,7 @@ fn physical_layer_device_reset_generic(hardware: &mut impl Hardware) -> Result<(
     if physical_layer_device::reset_blocked(hardware) {
         return Ok(());
     }
-    let f = Swflag::acquire(hardware)?;
+    let f = SoftwareFlag::acquire(hardware)?;
     let ctrl = hardware.read(mac::CTRL);
     // CTRL.PHY_RST is clear on every entry: each pulse writes CTRL back without it and a global
     // reset returns CTRL to its defaults. On that caller claim `ctrl | CTRL_PHY_RST` and
@@ -640,7 +640,7 @@ pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<
     if with_physical_layer_device {
         ctrl |= CTRL_PHY_RST;
     }
-    match Swflag::acquire(hardware) {
+    match SoftwareFlag::acquire(hardware) {
         Ok(f) => f.lost_to_reset(),
         Err(e) => hardware.note(Note::SwflagBeforeReset(e)),
     }
@@ -685,7 +685,7 @@ fn post_physical_layer_device_reset(hardware: &mut impl Hardware) -> Result<(), 
     // "Allow time for h/w to get to quiescent state after reset"
     delay_ms(hardware, 10);
     {
-        let f = Swflag::acquire(hardware)?;
+        let f = SoftwareFlag::acquire(hardware)?;
         match physical_layer_device::read(
             hardware,
             &f,
@@ -714,7 +714,7 @@ fn post_physical_layer_device_reset(hardware: &mut impl Hardware) -> Result<(), 
 /// (value, register) pairs into the PHY.
 #[doc(alias = "lcd")]
 fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<(), Error> {
-    let f = Swflag::acquire(hardware)?;
+    let f = SoftwareFlag::acquire(hardware)?;
     let out = (|| {
         if hardware.read(registers::FEXTNVM) & FEXTNVM_SW_CONFIG_ICH8M == 0 {
             return Ok(None);
@@ -784,7 +784,7 @@ const _: () = assert!(
 #[doc(alias = "smbus")]
 fn write_system_management_bus_address(
     hardware: &mut impl Hardware,
-    flag: &Swflag,
+    flag: &SoftwareFlag,
 ) -> Result<(), Error> {
     let strap = hardware.read(registers::STRAP);
     let freq = ((strap & STRAP_SMT_FREQ_MASK) >> STRAP_SMT_FREQ_SHIFT) as u16;
@@ -822,7 +822,7 @@ const _: () = assert!(HV_OEM_BITS_GBE_DIS & HV_OEM_BITS_LPLU == 0);
 /// **`e1000_oem_bits_config_ich8lan`** for D0: carry the MAC's gigabit-disable and LPLU settings
 /// into the PHY's OEM bits and restart autonegotiation to apply them.
 fn oem_bits(hardware: &mut impl Hardware) -> Result<(), Error> {
-    let f = Swflag::acquire(hardware)?;
+    let f = SoftwareFlag::acquire(hardware)?;
     let out = (|| {
         if hardware.read(registers::FEXTNVM) & FEXTNVM_SW_CONFIG_ICH8M == 0 {
             return Ok(());
@@ -960,7 +960,7 @@ const _: () = assert!(
 pub fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Error> {
     let c = (hardware.read(mac::CTRL) | crate::CTRL_SLU) & !(CTRL_FRCSPD | CTRL_FRCDPX);
     hardware.write(mac::CTRL, c);
-    let f = Swflag::acquire(hardware)?;
+    let f = SoftwareFlag::acquire(hardware)?;
     let out = (|| {
         physical_layer_device::update(
             hardware,
@@ -1237,7 +1237,7 @@ mod tests {
             s.mac.insert(registers::STRAP, strap(2, freq));
             s.physical_layer_device_registers
                 .insert(physical_layer_device::registers::HV_SMB_ADDR, preset);
-            let f = Swflag::acquire(&mut s).unwrap();
+            let f = SoftwareFlag::acquire(&mut s).unwrap();
             write_system_management_bus_address(&mut s, &f).unwrap();
             f.release(&mut s);
             assert_eq!(
