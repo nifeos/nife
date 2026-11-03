@@ -2,17 +2,41 @@
 //! (`fuzz/seeds/make-acpi-tables.py`) intends. A seed that stops decoding is not a seed, and a fuzz
 //! run would not say so.
 
-use std::fs;
-use std::path::Path;
-
 use machine_discovery::acpi::ivrs::IvrsUnits;
 use machine_discovery::acpi::{parse_arm_boot, parse_fadt_reset, parse_gtdt, parse_spcr};
 
+/// One seed's name and bytes, compiled in so the test reads no file and also runs under Miri,
+/// whose isolation refuses `open`.
+macro_rules! seed_entry {
+    ($name:literal) => {
+        (
+            $name,
+            include_bytes!(concat!(
+                "../../../fuzz/seeds/acpi_firmware_tables/",
+                $name,
+                ".bin"
+            ))
+            .as_slice(),
+        )
+    };
+}
+
+const SEEDS: &[(&str, &[u8])] = &[
+    seed_entry!("fadt_arm_boot_psci_hvc"),
+    seed_entry!("fadt_reset_register_q35"),
+    seed_entry!("gtdt_qemu_virt"),
+    seed_entry!("ivrs_acpi_hid_entry"),
+    seed_entry!("ivrs_memory_definitions"),
+    seed_entry!("ivrs_q35_amd_iommu"),
+    seed_entry!("ivrs_ranges_and_aliases"),
+    seed_entry!("spcr_pl011"),
+];
+
 fn seed(name: &str) -> (u8, Vec<u8>) {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../fuzz/seeds/acpi_firmware_tables")
-        .join(format!("{name}.bin"));
-    let bytes = fs::read(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let (_, bytes) = SEEDS
+        .iter()
+        .find(|(n, _)| *n == name)
+        .unwrap_or_else(|| panic!("{name}: not a seed this test compiles in"));
     (bytes[0], bytes[1..].to_vec())
 }
 
