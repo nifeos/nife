@@ -11,6 +11,11 @@
 //! it with `-n`. Neither is linked; each runs as a process, and its absence is reported and
 //! skipped.
 
+// Not under Miri: this suite checks volumes against the host's `fsck` and `mkfs.fat` through
+// temporary files, which Miri's isolation refuses. The crate has no `unsafe`, and its library unit
+// tests run under Miri.
+#![cfg(not(miri))]
+
 use std::io::Cursor;
 use std::path::Path;
 use std::process::Command;

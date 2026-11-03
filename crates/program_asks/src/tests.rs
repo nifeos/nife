@@ -65,10 +65,9 @@ fn elf_image(whole_note: &[u8]) -> Vec<u8> {
     v
 }
 
-/// A packaged program carrying `desc`'s note. Leaked so the `Program`'s borrowed bytes outlive
-/// the test frame, which is the one allocation a test makes and never frees.
-fn program(desc: &[u8]) -> package_archive::Program<'static> {
-    let bytes: &'static [u8] = std::boxed::Box::leak(elf_image(desc).into_boxed_slice());
+/// A packaged program over `bytes`, an image [`elf_image`] built. The test owns the image and the
+/// `Program` borrows it, so nothing outlives the test frame and Miri's leak check stays clean.
+fn program(bytes: &[u8]) -> package_archive::Program<'_> {
     package_archive::Program {
         name: "seeker",
         bytes,
@@ -85,7 +84,8 @@ fn a_note_asking_the_network_and_one_zone_yields_both_in_record_order() {
     > = capability_manifest_note::ServicedNote::of::<
         { capability_manifest_note::serviced_len(ZONES) },
     >(&MANIFEST_NETWORK, ZONES, false);
-    let p = program(&DESC.0);
+    let image = elf_image(&DESC.0);
+    let p = program(&image);
     let asks: Vec<Granted<'_>> = asked_grants_of(&p).collect();
     assert_eq!(
         asks,
@@ -108,7 +108,8 @@ fn a_service_ask_yields_the_service_grant() {
         &[],
         true,
     );
-    let p = program(&DESC.0);
+    let image = elf_image(&DESC.0);
+    let p = program(&image);
     let asks: Vec<Granted<'_>> = asked_grants_of(&p).collect();
     assert_eq!(asks, [Granted::Service]);
 }
@@ -121,7 +122,8 @@ fn a_serviced_note_yields_the_network_the_service_and_each_zone() {
     > = capability_manifest_note::ServicedNote::of::<
         { capability_manifest_note::serviced_len(ZONES) },
     >(&MANIFEST_NETWORK, ZONES, true);
-    let p = program(&DESC.0);
+    let image = elf_image(&DESC.0);
+    let p = program(&image);
     let asks: Vec<Granted<'_>> = asked_grants_of(&p).collect();
     assert_eq!(
         asks,
@@ -144,10 +146,9 @@ fn a_program_without_a_readable_note_asks_for_nothing() {
     bare_elf[4] = 2;
     bare_elf[5] = 1;
     for bytes in [&b"not an elf"[..], &bare_elf[..]] {
-        let owned: &'static [u8] = std::boxed::Box::leak(bytes.to_vec().into_boxed_slice());
         let p = package_archive::Program {
             name: "noteless",
-            bytes: owned,
+            bytes,
             digest: [0u8; 32],
             member: 0,
         };
@@ -171,10 +172,9 @@ fn a_program_built_for_another_machine_still_has_its_note_read() {
         elf::Elf::parse(&bytes).err(),
         Some(elf::Error::WrongMachine)
     );
-    let owned: &'static [u8] = std::boxed::Box::leak(bytes.into_boxed_slice());
     let p = package_archive::Program {
         name: "abroad",
-        bytes: owned,
+        bytes: &bytes,
         digest: [0u8; 32],
         member: 0,
     };
@@ -184,9 +184,10 @@ fn a_program_built_for_another_machine_still_has_its_note_read() {
 
 #[test]
 fn the_checked_reading_refuses_what_the_lenient_one_reads_as_nothing() {
+    let bare_image = elf_image(&[]);
     let bare = package_archive::Program {
         name: "bare",
-        bytes: std::boxed::Box::leak(elf_image(&[]).into_boxed_slice()),
+        bytes: &bare_image,
         digest: [0u8; 32],
         member: 0,
     };
@@ -194,8 +195,7 @@ fn the_checked_reading_refuses_what_the_lenient_one_reads_as_nothing() {
     assert_eq!(checked_asked_grants_of(&bare).unwrap().count(), 0);
     // Not an ELF, and a truncated note: refused by the checked reading, nothing by the other.
     let cut = elf_image(&[1, 0, 0, 0, 200, 0, 0, 0, 1, 0, 0, 0]);
-    let owned: &'static [u8] = std::boxed::Box::leak(cut.into_boxed_slice());
-    for bytes in [&b"not an elf"[..], owned] {
+    for bytes in [&b"not an elf"[..], &cut[..]] {
         let p = package_archive::Program {
             name: "broken",
             bytes,
