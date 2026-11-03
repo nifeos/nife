@@ -203,6 +203,13 @@ fn damage_is_clipped_to_the_surface_and_then_to_the_screen() {
     );
 }
 
+/// The rows a full-screen sweep checks: every row natively, every 37th under Miri, where each
+/// 698,880-pixel sweep took over fifteen minutes. The digest over the whole screen is skipped under
+/// Miri for the same reason; it is pure arithmetic and runs natively.
+fn sampled_rows() -> impl Iterator<Item = u32> {
+    (0..SCREEN_H).step_by(if cfg!(miri) { 37 } else { 1 })
+}
+
 /// The scene is a fair test: every window is visible somewhere, some window is on top of another
 /// somewhere, some window is clipped, and the background shows. A scene that failed any of these
 /// would let a broken compositor pass.
@@ -272,7 +279,7 @@ fn the_scene_exercises_overlap_clipping_and_background() {
 /// coincidence and the pixel checks would not see it.
 #[test]
 fn every_screen_pixel_distinguishes_its_owner() {
-    for y in 0..SCREEN_H {
+    for y in sampled_rows() {
         for x in 0..SCREEN_W {
             let want = expected_screen_pixel(SCENE.len(), x, y);
             let bg = background_pixel(x, y);
@@ -352,7 +359,7 @@ fn compositing_the_whole_screen_matches_the_expected_picture() {
     let refs: Vec<&[u32]> = surfaces.iter().map(|s| s.as_slice()).collect();
     let mut screen = vec![0u32; SCREEN_PIXELS];
     composite(&mut screen, &refs, SCENE.len(), Rect::screen());
-    for y in 0..SCREEN_H {
+    for y in sampled_rows() {
         for x in 0..SCREEN_W {
             assert_eq!(
                 screen[(y * SCREEN_W + x) as usize],
@@ -361,11 +368,13 @@ fn compositing_the_whole_screen_matches_the_expected_picture() {
             );
         }
     }
-    assert_eq!(
-        graphics_contract::checksum(|i| screen[i]),
-        expected_screen_checksum(SCENE.len()),
-        "the digest the guest reports and the picture the host checks must agree",
-    );
+    if !cfg!(miri) {
+        assert_eq!(
+            graphics_contract::checksum(|i| screen[i]),
+            expected_screen_checksum(SCENE.len()),
+            "the digest the guest reports and the picture the host checks must agree",
+        );
+    }
 }
 
 /// **A damaged composite touches the damage and nothing else.** Poison the screen, composite one
@@ -445,7 +454,7 @@ fn an_uncommitted_window_is_not_drawn() {
     let mut screen = vec![0u32; SCREEN_PIXELS];
     let none: [&[u32]; 3] = [&[], &[], &[]];
     composite(&mut screen, &none, SCENE.len(), Rect::screen());
-    for y in 0..SCREEN_H {
+    for y in sampled_rows() {
         for x in 0..SCREEN_W {
             assert_eq!(
                 screen[(y * SCREEN_W + x) as usize],
@@ -454,17 +463,19 @@ fn an_uncommitted_window_is_not_drawn() {
             );
         }
     }
-    assert_eq!(
-        graphics_contract::checksum(|i| screen[i]),
-        expected_screen_checksum(0),
-        "the empty screen must be the n=0 expected picture",
-    );
+    if !cfg!(miri) {
+        assert_eq!(
+            graphics_contract::checksum(|i| screen[i]),
+            expected_screen_checksum(0),
+            "the empty screen must be the n=0 expected picture",
+        );
+    }
 
     // And one committed window among uncommitted ones draws only itself.
     let surfaces = painted_scene();
     let one: [&[u32]; 3] = [&[], surfaces[1].as_slice(), &[]];
     composite(&mut screen, &one, SCENE.len(), Rect::screen());
-    for y in 0..SCREEN_H {
+    for y in sampled_rows() {
         for x in 0..SCREEN_W {
             let inside = SCENE[1].rect().contains(x as i32, y as i32);
             let want = if inside {

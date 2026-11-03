@@ -601,8 +601,15 @@ mod tests {
         // Every target the card could be asked for, at the base radon runs: exhaustive rather
         // than a Kani harness, because two symbolic 32-bit divisions ran past twelve minutes
         // without finishing on 2026-10-06 and the domain that matters here is fifty million.
+        // Under Miri the fifty million take over two hours, so it strides by 9,973 (prime) and
+        // adds the edges: the slowest rate the field reaches and the base itself.
         let base = 50_000_000;
-        for target in 1..=base {
+        let stride = if cfg!(miri) { 9_973 } else { 1 };
+        let targets = (1..=base)
+            .step_by(stride)
+            .chain(97_000..=99_000)
+            .chain(base - 1_000..=base);
+        for target in targets {
             if let Some(d) = clock_divider(base, target) {
                 assert!(card_clock(base, d) <= target, "{target} {d}");
                 // And it is the fastest that does not exceed: one divider less would, in exact

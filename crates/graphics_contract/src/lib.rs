@@ -346,6 +346,10 @@ mod tests {
     /// The checksum catches the four ways a framebuffer goes wrong that a length check does not:
     /// blank, stale, shifted, and one wrong pixel.
     #[test]
+    #[cfg_attr(
+        miri,
+        ignore = "digests every pixel of the 1120x624 surface, about twenty minutes under Miri; no unsafe here"
+    )]
     fn the_checksum_catches_a_wrong_surface() {
         let good = expected_checksum();
 
@@ -387,6 +391,10 @@ mod tests {
     /// back as words) digests to the expected value. This is the round trip the two userspace
     /// programs make, done on the host where a failure is a millisecond instead of a QEMU boot.
     #[test]
+    #[cfg_attr(
+        miri,
+        ignore = "digests every pixel of the 1120x624 surface, about twenty minutes under Miri; no unsafe here"
+    )]
     fn a_byte_buffer_painted_with_the_pattern_digests_correctly() {
         let mut buf = vec![0u8; SURFACE_BYTES as usize];
         for y in 0..HEIGHT {
@@ -455,6 +463,10 @@ mod tests {
     /// bits and collides exactly where it matters. Two surfaces differing in one low bit of one
     /// pixel must digest differently.
     #[test]
+    #[cfg_attr(
+        miri,
+        ignore = "digests every pixel of the 1120x624 surface, about twenty minutes under Miri; no unsafe here"
+    )]
     fn the_checksum_sees_a_one_bit_change() {
         let a = checksum(pixel_at);
         let b = checksum(|i| if i == 0 { pixel_at(0) ^ 1 } else { pixel_at(i) });
