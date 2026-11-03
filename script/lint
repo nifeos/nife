@@ -184,6 +184,22 @@ helpers/lint-no-cargo-selftest.sh >/dev/null
 # Every section runs, and the verdict is still fail-fast's (helpers/lint-sections.sh).
 helpers/lint-sections-selftest.sh >/dev/null
 
+echo "==> no reproducer in this branch's commit messages (a replay line, a seed assignment)"
+# lint-quick
+# Proposal fix-lanes-read-the-advisory, name provisional. A seed, a crash input and a replay line stay
+# out of public text until the fix for the finding is on main, and a commit message is public text
+# from the push. helpers/replay-line-check.sh refuses the two forms a reproducer takes in this tree;
+# its selftest plants each and a clean message. The pull request body is the same check run from
+# .github/workflows/replay-line.yml, since lint reads no pull request. This run reads the commits
+# the branch adds to origin/main, and says so when there is no origin/main to compare with.
+helpers/replay-line-check-selftest.sh >/dev/null
+helpers/read-advisory-selftest.sh >/dev/null
+if git rev-parse --verify -q origin/main >/dev/null; then
+    helpers/replay-line-check.sh --range origin/main..HEAD
+else
+    echo "lint: no origin/main to compare with; the commit messages were not read for a reproducer" >&2
+fi
+
 echo "==> the heavy-job slots (a full machine holds a job back; a killed holder frees its slot)"
 # helpers/heavy_slot.py caps how many heavy jobs run on the machine at once, and this file is one of
 # them. Proved in a scratch tree with a private slot directory and one slot, so it never waits on a

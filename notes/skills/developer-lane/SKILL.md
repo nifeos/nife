@@ -38,7 +38,8 @@ The maintainer side of the same queue is in [the maintainer](../maintainer/SKILL
   open the pull request as a draft, before any work. That is the claim, and it is why two lanes
   cannot silently take the same milestone: the board is `gh pr list --draft`. The empty commit is
   what keeps that true: without it GitHub closes the draft as *merged* when the lane's base lands.
-  Check that board before briefing, alongside `git ls-remote --heads`.
+  Check that board before briefing, alongside `git ls-remote --heads`. One kind of lane claims
+  otherwise: a fix lane for a held fuzz finding, below.
 - `script/claim <branch> --debt-paydown` or `script/claim <branch> --new-work` makes that claim in
   one command, and refuses a lane that passes neither or both (calef's ruling R1 on #1894,
   2026-10-10 UTC). `--debt-paydown` is for work that meets the definition in
@@ -78,6 +79,45 @@ keeps the reason, and what is about one crate alone goes into that crate. An agr
 programs is code both sides use, never prose alone, [§311 (a contract is code, not
 prose)](../../../design/decisions/0311-a-contract-is-code-not-prose.md). A lane that finds one held
 only in prose proposes a milestone with a sketch of that code, and does not write it.
+
+## A fix lane for a held finding
+
+A held finding is a fuzz finding whose fix has not reached main, so it stays private. The fuzz host
+files one private security advisory per finding, and the advisory holds the finding class and the
+reproducer. §90 (the claim is a draft pull request) allows this kind of lane to claim differently,
+and the reason is exposure: a draft pull request and its pushed branch are public from the first
+commit. The record is
+[the proposal](../../../design/roadmap/proposals/fix-lanes-read-the-advisory.md).
+
+- **Read the advisory, and only the advisory.** No lane opens, copies, prints or moves anything under
+  the fuzz host's held directory, and none looks for a credential. The advisory is the one way a lane
+  learns a finding. `script/read-advisory GHSA-xxxx-xxxx-xxxx` reads it with the one-hour reader token
+  the lane was launched with, from the channel named at the top of that script, and refuses without
+  one. It prints to the terminal and writes nothing; it refuses a redirect into the repository. If a
+  lane wants the text in a file, the file goes in the lane's own scratch space outside every
+  repository, and is never committed.
+- **Claim with `script/claim <branch> --new-work --no-claim`.** The branch and worktree exist, and
+  nothing is pushed. Commit locally and often. A dead session leaves the commits in the worktree for
+  the next one to resume; the loss of the machine or the worktree before the push loses them, which
+  is the cost of keeping the fix off GitHub until it is ready. Push nothing, not a branch, not a
+  draft, until the fix is ready.
+- **Open the pull request once, ready for review.** Push with `script/push`, confirm the remote
+  head, open the pull request ready (not as a draft), and arm auto-merge. The title is neutral: it
+  names the area and says "fix", never the finding. The advisory records which lane holds the work,
+  since the advisory list is the board for this kind of lane.
+- **Name no reproducer in public text.** The fix carries the fix and a regression test of the
+  invariant that broke. The test names no seed, input or replay line. The title, body, commit
+  messages and comments name none either, and neither do logs or artifacts the lane makes. A seed is
+  not a single token to avoid: a description detailed enough to rebuild the input is the same leak.
+  `script/lint` refuses a commit message with a replay line or a seed assignment
+  (`helpers/replay-line-check.sh`), and a workflow checks the pull request's title and body. Those
+  catch the two forms the drivers print; they do not catch a seed written some other way, so the
+  lane reads its own text before pushing.
+- **The seed joins the fixed-seed regression list later.** A second pull request, opened after the
+  advisory turns public, adds it. The lane that fixed the finding does not add it in the fix.
+- **The public window is the time the pull request spends in review and the merge queue.** If a hold
+  lengthens it (`needs-architect` on a fix that touches the syscall surface, or a red trunk), say so
+  in the report, with the push and merge times, so the window is measured.
 
 ## Identified work leaves the lane in a tracked form, or the merge waits
 

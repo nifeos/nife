@@ -1,0 +1,44 @@
+name: replay line
+
+# **Fails a pull request whose title or body carries a reproducer.** A seed, a crash input and a
+# replay line stay out of public text until the fix for the finding is on main
+# (design/roadmap/proposals/fix-lanes-read-the-advisory.md; name provisional). `script/lint` reads
+# the commit messages of a branch; it reads no pull request, so this reads the title and the body.
+# The check is `helpers/replay-line-check.sh`, the one script both use, and its selftest plants each
+# form in `script/lint`.
+#
+# The title and body reach the script through the environment and never through the shell text,
+# because they are text a stranger writes. The job reads the checked-out tree and holds no secret.
+#
+# **Not required.** It runs on `edited` as well, which a required check on the merge queue would not
+# see; making it required is the ruleset change a person makes after it has run on a real pull
+# request. Until then it is a visible red mark, not a block.
+
+on:
+  pull_request:
+    types: [opened, reopened, edited, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: replay-line-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  replay-line:
+    name: replay line (a pull request names no reproducer)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 1
+
+      - name: Read the title and the body for a reproducer
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s\n' "$TITLE" | sh helpers/replay-line-check.sh
+          printf '%s\n' "$BODY" | sh helpers/replay-line-check.sh
