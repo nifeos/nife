@@ -57,7 +57,7 @@ says what the reader does when it is missing.
 | `script/journeys` | none: no bold marker | 0 | Nothing. A journey's status is its frontmatter's `status` key, with `retired` beside it, and `script/journeys --check` holds the file to that schema. |
 | `AD_HOC` and `stem_paragraph` in `helpers/name_provenance.py` | `**Provisional name`; a bold `**Name:` header is a stray | 9 (briefs, notes) | Removing a stray `**Name:` bold clears a defect. Removing `**Provisional name` hides an ad hoc opener the gate wants to see. |
 | `RESTATED` in `script/decisions` and in `script/roadmap` | bans on `**Status:` and restated statuses | 0 | Not keys. |
-| `EMPHASIS` and `PREFILTER` in `script/citations`; `analyse` in `script/fatal-risks` | emphasis optional around a citation or a status word | many | Nothing. The pattern tolerates bold and does not need it. |
+| `EMPHASIS` and `PREFILTER` in `script/citations`; the milestone and section status scans in `script/fatal-risks` | emphasis optional around a citation or a status word | many | Nothing. The pattern tolerates bold and does not need it. |
 | `_PROMOTION_RES` in `helpers/prose_ratchet.py` | `**Milestone N.**` and `**Proposed.**` folded when comparing a promotion | same as tags | Promotion diffs read as edits. |
 
 Not readers of a document: `**Lane:**` in a pull request body is written by `script/claim` and
