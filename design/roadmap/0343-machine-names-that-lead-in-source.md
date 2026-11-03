@@ -74,7 +74,7 @@ trailing gloss where the instance is genuinely the point. The reason is that a m
 a hardware fact and a reader who meets `radon` in a comment about a SoC erratum learns nothing. Twelve uses in
 source needed bringing into line when this was filed, plus one index line in `notes/README.md` that
 did not advertise where the machine names are defined. Ten of the twelve and the index line have
-since been fixed incrementally by lanes touching the files for other reasons, and the last two
+since been fixed incrementally by lanes touching the files for other reasons. The last two
 (the module documentation of `kernel/src/arch/riscv64/iommu.rs`, and an `xtask` comment that has since been deleted) were
 closed 2026-10-03. `notes/` and `design/` keep their machine
 names, about a hundred uses, because a measurement series has to assert that the same physical

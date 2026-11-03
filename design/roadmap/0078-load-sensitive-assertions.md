@@ -33,12 +33,12 @@ All three negative-discrepancy assertions were fixed. The line numbers in this t
 `notes/load-sensitive-assertions/miss-taxonomy-and-clockless-loops.md`, "The fourth round,
 2026-08-16", had already
 named this exact defect, that a reader coming to the block first is sent to three finished sites). The
-reaper count is now in `a_finished_thread_is_reaped_and_its_memory_returned` in
-`kernel/src/sched/tests.rs`, rescoped to per-`Tid` waits and `used() <= before`.
-The address-space frame check is in `a_dead_user_thread_frees_its_whole_address_space` in
-`system_tests/src/user/address_space_tests.rs`, where the old "-19" survives as a
+reaper count is now `a_finished_thread_is_reaped_and_its_memory_returned`
+(`kernel/src/sched/tests.rs`), rescoped to per-`Tid` waits and `used() <= before`.
+The address-space frame check is `a_dead_user_thread_frees_its_whole_address_space`
+(`system_tests/src/user/address_space_tests.rs`), where the old "-19" survives as a
 comment recording the past failure rather than as a live baseline. The frame-hygiene check was
-removed rather than rescoped. `threads_round_robin` is in `kernel/src/sched/tests.rs` and waits on
+removed rather than rescoped. `threads_round_robin` (`kernel/src/sched/tests.rs`) waits on
 the clock. The timer twins were rebuilt against the re-arm law on both ISAs
 (`ticks_arrive_at_the_configured_rate` in `kernel/src/arch/aarch64/timer.rs` and
 `kernel/src/arch/riscv64/timer.rs`).
@@ -67,8 +67,8 @@ this block is the spec and the day's evidence.
 it, including the case where the control model `rv64` failed too, which is what proves the failures
 are not model-specific.
 
-A seventh, found by a lane on 2026-08-03 and reported rather than absorbed. `threads_round_robin` in
-`kernel/src/sched/tests.rs`, asserting every spawned thread ran at least once. It failed on one
+A seventh, found by a lane on 2026-08-03 and reported rather than absorbed. `threads_round_robin`
+(`kernel/src/sched/tests.rs`), asserting every spawned thread ran at least once. It failed on one
 `script/gates` run and passed on the immediate re-run, with two full `script/test` runs either side of
 it green. The lane judged it pre-existing on grounds worth repeating, because they are the right
 shape for this call. Its own code runs before the scheduler exists, does three register reads and an
