@@ -80,7 +80,7 @@ makes it fail at its own assertion. Each patch is at
 | An admitted range is inside the card and the address | `proofs::an_admitted_range_is_inside_the_card_and_the_address` |
 | An IDMAC chain describes exactly its bytes, inside the region | `proofs::a_chain_describes_its_bytes_inside_the_region` |
 | The MBR parse (`partition::MasterBootRecord::parse`) is total, accepts exactly the signed sectors, and reads each entry from its own bytes | `proofs::the_master_boot_record_parse_is_total_and_reads_each_entry_from_its_own_bytes` |
-| A register field (`card::bits`) never exceeds its width | `proofs::a_register_field_never_exceeds_its_width` |
+| A register field (`card::extract_bits`) never exceeds its width | `proofs::a_register_field_never_exceeds_its_width` |
 | The CSD decoders (`card::CardSpecificData`) are total for any register and size a card without overflow | `proofs::a_card_specific_data_decode_is_total_and_never_overflows` |
 | The EXT_CSD sector count (`card::extended_card_specific_data_sectors`) is total for any bytes | `proofs::an_extended_card_specific_data_sector_count_is_total` |
 

@@ -864,13 +864,6 @@ crates/designware_mobile_storage/src/bench.rs::pattern
 crates/designware_mobile_storage/src/bench.rs::read_only
 crates/designware_mobile_storage/src/bench.rs::scratch_write
 crates/designware_mobile_storage/src/card.rs
-crates/designware_mobile_storage/src/card.rs::R1_ERRORS
-crates/designware_mobile_storage/src/card.rs::R1_READY_FOR_DATA
-crates/designware_mobile_storage/src/card.rs::STATE_TRANSFER
-crates/designware_mobile_storage/src/card.rs::bits
-crates/designware_mobile_storage/src/card.rs::r1_state
-crates/designware_mobile_storage/src/card.rs::sd
-crates/designware_mobile_storage/src/card.rs::sd
 crates/designware_mobile_storage/src/command.rs
 crates/designware_mobile_storage/src/command.rs::Command
 crates/designware_mobile_storage/src/command.rs::Data

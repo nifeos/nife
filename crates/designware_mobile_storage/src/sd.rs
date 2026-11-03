@@ -10,7 +10,7 @@
 use crate::card::{
     self, CardIdentification, CardSpecificData, INTERFACE_CONDITION_ARGUMENT,
     MULTIMEDIA_CARD_OPERATION_CONDITIONS_ARGUMENT, OPERATION_CONDITIONS_BUSY_DONE,
-    OPERATION_CONDITIONS_HIGH_CAPACITY, R1_ERRORS, SD_OPERATION_CONDITIONS_ARGUMENT,
+    OPERATION_CONDITIONS_HIGH_CAPACITY, R1_ERROR_MASK, SD_OPERATION_CONDITIONS_ARGUMENT,
 };
 use crate::command::{self as c, Command, Data, Response};
 use crate::host::{Error, Host, Registers};
@@ -123,7 +123,7 @@ impl Card {
 }
 
 fn r1_ok(index: u8, r1: u32) -> Result<(), InitializationError> {
-    if r1 & R1_ERRORS != 0 {
+    if r1 & R1_ERROR_MASK != 0 {
         Err(InitializationError::Status(index, r1))
     } else {
         Ok(())
@@ -155,7 +155,7 @@ pub fn identify<R: Registers, D: DirectMemoryAccessRegion>(
         card_identification: if kind == Kind::MultimediaCard {
             CardIdentification::multimedia_card(&card_identification_raw)
         } else {
-            CardIdentification::sd(&card_identification_raw)
+            CardIdentification::from_sd_register(&card_identification_raw)
         },
         blocks: 0,
         block_addressed: match kind {
@@ -174,7 +174,7 @@ pub fn identify<R: Registers, D: DirectMemoryAccessRegion>(
     }
     if card.blocks == 0 {
         return Err(InitializationError::Capacity(
-            CardSpecificData::sd(&card_specific_data_raw).structure,
+            CardSpecificData::from_sd_register(&card_specific_data_raw).structure,
         ));
     }
     Ok(card)
@@ -331,7 +331,7 @@ fn configure_sd<R: Registers, D: DirectMemoryAccessRegion>(
     card_specific_data_raw: &[u32; 4],
     maximum_bus_width: u8,
 ) -> Result<(), InitializationError> {
-    let card_specific_data = CardSpecificData::sd(card_specific_data_raw);
+    let card_specific_data = CardSpecificData::from_sd_register(card_specific_data_raw);
     if card_specific_data.blocks == 0 {
         return Err(InitializationError::Capacity(card_specific_data.structure));
     }
@@ -509,7 +509,7 @@ pub fn read_blocks<R: Registers, D: DirectMemoryAccessRegion>(
             buffer,
         )
         .map_err(IoError::Host)?;
-    if r1[0] & R1_ERRORS != 0 {
+    if r1[0] & R1_ERROR_MASK != 0 {
         return Err(IoError::Status(r1[0]));
     }
     Ok(())
@@ -534,7 +534,7 @@ pub fn write_blocks<R: Registers, D: DirectMemoryAccessRegion>(
             buffer,
         )
         .map_err(IoError::Host)?;
-    if r1[0] & R1_ERRORS != 0 {
+    if r1[0] & R1_ERROR_MASK != 0 {
         return Err(IoError::Status(r1[0]));
     }
     // The card has the data; ask whether it took it (a write error is reported in the status
@@ -546,7 +546,7 @@ pub fn write_blocks<R: Registers, D: DirectMemoryAccessRegion>(
             Response::R1,
         ))
         .map_err(IoError::Host)?[0];
-    if status & R1_ERRORS != 0 {
+    if status & R1_ERROR_MASK != 0 {
         return Err(IoError::Status(status));
     }
     Ok(())
@@ -563,7 +563,7 @@ mod tests {
             operation_conditions: 0,
             card_identification_raw: [0; 4],
             card_specific_data_raw: [0; 4],
-            card_identification: CardIdentification::sd(&[0; 4]),
+            card_identification: CardIdentification::from_sd_register(&[0; 4]),
             blocks,
             block_addressed,
             bus_width: 4,
