@@ -6,8 +6,8 @@
 #     NIFE_ADVISORY_READER_TOKEN=<one-hour token> script/read-advisory GHSA-xxxx-xxxx-xxxx
 #     script/read-advisory --selftest
 #
-# Name: provisional, minted 2026-11-03 (UTC) by lane/fix-lanes-read-the-advisory. A verb, per
-# DECISIONS §134, because it fetches something on request. No architect has ruled on it.
+# Name: provisional, minted 2026-11-03 (UTC) by lane/fix-lanes-read-the-advisory. A verb, because it
+# fetches something on request, as the other scripts that do something are. No architect has ruled on it.
 #
 # # What it does
 #
