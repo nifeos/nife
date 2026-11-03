@@ -1182,14 +1182,8 @@ crates/e1000e/src/pch/sequence.rs::Note
 crates/e1000e/src/pch/sequence.rs::Reached
 crates/e1000e/src/pch/sequence.rs::global_reset
 crates/e1000e/src/pch/sequence.rs::transmit_errata
-crates/e1000e/src/pch/simulator.rs::Sim
-crates/e1000e/src/pch/simulator.rs::Start
-crates/e1000e/src/pch/simulator.rs::new
 crates/e1000e/src/pch/tests.rs
 crates/e1000e/src/pch/ulp.rs
-crates/e1000e/src/pch/ulp.rs::done
-crates/e1000e/src/pch/ulp.rs::release
-crates/e1000e/src/pch/ulp.rs::request
 crates/e1000e/src/proofs.rs
 crates/e1000e/src/registers.rs::CTRL
 crates/e1000e/src/registers.rs::CTRL_EXT

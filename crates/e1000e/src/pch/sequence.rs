@@ -109,7 +109,7 @@ pub enum Reached {
 pub enum Note {
     /// The Management Engine was asked to leave ULP; `cleared` says whether it finished in time.
     UlpByMe {
-        /// `FWSM.ULP_CFG_DONE` cleared before [`ulp::WAIT_MS`].
+        /// `FWSM.ULP_CFG_DONE` cleared before [`ulp::MANAGEMENT_ENGINE_WAIT_MILLISECONDS`].
         cleared: bool,
     },
     /// There is no ME; ULP was left by PHY registers, with this outcome.
@@ -354,20 +354,20 @@ pub fn initialize_physical_layer_device_workarounds(
 fn leave_ulp(hardware: &mut impl Hardware) {
     if has_management_engine(hardware) {
         let h = hardware.read(registers::H2ME);
-        hardware.write(registers::H2ME, ulp::request(h));
+        hardware.write(registers::H2ME, ulp::register_value_requesting_exit(h));
         let mut cleared = false;
-        for i in 0..=ulp::WAIT_MS / 10 {
-            if ulp::done(hardware.read(registers::FWSM)) {
+        for i in 0..=ulp::MANAGEMENT_ENGINE_WAIT_MILLISECONDS / 10 {
+            if ulp::is_configuration_done(hardware.read(registers::FWSM)) {
                 cleared = true;
                 break;
             }
-            if i < ulp::WAIT_MS / 10 {
+            if i < ulp::MANAGEMENT_ENGINE_WAIT_MILLISECONDS / 10 {
                 delay_ms(hardware, 10);
             }
         }
         if cleared {
             let h = hardware.read(registers::H2ME);
-            hardware.write(registers::H2ME, ulp::release(h));
+            hardware.write(registers::H2ME, ulp::register_value_releasing_request(h));
         }
         hardware.note(Note::UlpByMe { cleared });
         return;
@@ -1027,7 +1027,7 @@ mod tests {
     use std::collections::HashMap;
     use std::vec::Vec;
 
-    use super::super::simulator::{Sim, Start};
+    use super::super::simulator::{PhysicalLayerDeviceStartState, SimulatedHardware};
     use super::*;
 
     /// **Registers that hold what is written and do nothing else**: no self-clearing reset, no PHY
@@ -1075,7 +1075,7 @@ mod tests {
         }
     }
 
-    fn mac(sim: &Sim, offset: u64) -> u32 {
+    fn mac(sim: &SimulatedHardware, offset: u64) -> u32 {
         *sim.mac.get(&offset).unwrap_or(&0)
     }
 
@@ -1135,7 +1135,7 @@ mod tests {
         assert_eq!(hardware.written(mac::CTRL), [0x0001_0040, 0x0000_0040]);
         assert_eq!(hardware.elapsed_microseconds, 136_000, "LPCD never rose");
 
-        let mut s = Sim::new(Start::Dead, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Dead, true);
         toggle_lanphypc(&mut s);
         assert_eq!(s.lanphypc_toggles, 1);
         assert_eq!(
@@ -1167,7 +1167,7 @@ mod tests {
         assert_eq!(hardware.elapsed_microseconds, 10_000 + 1500 * 100 + 1);
 
         // The simulated reset raises both, and nothing is reported.
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         global_reset(&mut s, 1000).unwrap();
         assert!(!s.notes.contains(&Note::LanInitTimeout));
         assert!(!s.notes.contains(&Note::PhysicalLayerDeviceResetNotAsserted));
@@ -1203,7 +1203,7 @@ mod tests {
     /// does it, whatever size the hardware reports.
     #[test]
     fn the_post_reset_clears_host_wakeup_and_replays_only_when_asked() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::BM_PORT_GEN_CFG, 0x0011);
         s.mac.insert(registers::EXTCNF_CTRL, 0x40 << 16);
@@ -1233,7 +1233,7 @@ mod tests {
             (3, 0x02d5, 0x1282),
             (0, 0x1155, 0x1382),
         ] {
-            let mut s = Sim::new(Start::Healthy, true);
+            let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
             s.mac.insert(registers::STRAP, strap(2, freq));
             s.physical_layer_device_registers
                 .insert(physical_layer_device::registers::HV_SMB_ADDR, preset);
@@ -1267,7 +1267,7 @@ mod tests {
             (0, both, 0x8044, false, 0x8044),
             (sw, 0, 0x0000, true, 0x0000),
         ] {
-            let mut s = Sim::new(Start::Healthy, true);
+            let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
             s.mac.insert(registers::FEXTNVM, fextnvm);
             s.mac.insert(registers::PHY_CTRL, pc);
             if blocked {
@@ -1289,7 +1289,7 @@ mod tests {
     /// bit from toggling it, and keeping a register's other bits from clearing them.
     #[test]
     fn initialize_hardware_writes_freebsds_values_from_any_starting_state() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::PHY_AUTONEG_ADV, 0x0c01);
         initialize_hardware(&mut s).unwrap();
@@ -1330,7 +1330,7 @@ mod tests {
             0x1200
         );
 
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.mac.insert(mac::TCTL, TCTL_MULR);
         s.mac.insert(registers::TARC1, 0x5500_00ff);
         s.mac.insert(registers::TXDCTL0, 0x013f_ff3f);
@@ -1395,7 +1395,8 @@ mod tests {
     /// and once by the attach that follows it.
     #[test]
     fn leaving_ulp_without_a_management_engine_changes_only_the_bits_it_names() {
-        let mut s = Sim::new(Start::InSystemManagementBus, false);
+        let mut s =
+            SimulatedHardware::new(PhysicalLayerDeviceStartState::InSystemManagementBus, false);
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::CV_SMB_CTRL, 0x0101);
         s.physical_layer_device_registers
