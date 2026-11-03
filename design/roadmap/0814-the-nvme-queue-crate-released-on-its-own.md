@@ -145,7 +145,7 @@ Measured again on 2026-10-31 (UTC) with `--no-kani`: the build passes on all fou
 failure left is the name check, on three provisional names (`Namespace`, `Namespace::holds_block`
 and `Namespace::transfer_command`). The two assertion constants `THE_*_SHARE_NO_BIT` are private
 now, so they are not among the crate's names. The ratification waits for calef, in the proposal
-`design/roadmap/proposals/ratify-the-nvme-namespace-names.md`. Until it lands the move cannot start,
+`design/roadmap/1002-ratify-the-nvme-namespace-names.md`. Until it lands the move cannot start,
 and creating the repository is calef's to approve after that.
 
 ## Review before release

@@ -110,15 +110,31 @@ written next to the test:
 | `glob` pathological/quadratic bound tests | 100,000- and 2,000-byte names | 2,000 and 200; both assertions still run |
 | `globally_unique_identifier_partition_table` header and entry-array corruption sweeps (`real_disks.rs`; two live, one already `#[ignore]`) | 260k+ parses, each re-CRCing 16 KiB | skipped; the clean-fixture tests walk the same paths |
 | `globally_unique_identifier_partition_table` small-table sweep (`table.rs`) | 261,120 parses | skipped, same reason |
+| `boot_slot` `flipping_any_padding_byte_is_refused` | all 3,908 padding bytes of the 4 KiB block | every 61st byte plus the last, 66 flips; 2,289 s under Miri before the stride |
+| `boot_slot` `flipping_any_byte_of_the_188_is_refused_or_changes_the_content_legally` | all 255 masks at each of the 188 header bytes | each byte's eight single-bit masks and `0xff`; sixteen minutes under Miri before |
 | `cred` store tests via `cheap()` | Argon2id at m=256 KiB, t=2 | Argon2's floor (m=8 KiB, t=1); same paths, fewer blocks. The known-answer vector tests keep their published costs |
 | `cred` `an_unknown_identity_costs_what_a_known_one_costs` | 50 timed KDF runs | skipped: a wall-clock ratio under an interpreter measures Miri, not the KDF |
-| `compositor` `a_damaged_composite_leaves_the_rest_of_the_screen_alone` | all 317,856 screen pixels, 20 ms | every 37th row plus every row the damage rectangle touches, 15,708 pixels, pinned exactly |
+| `compositor` `a_damaged_composite_leaves_the_rest_of_the_screen_alone` | all 698,880 screen pixels, 20 ms | every 37th row plus every row the damage rectangle touches, 26,880 pixels, pinned exactly |
+| `compositor` whole-screen sweeps: `compositing_the_whole_screen_matches_the_expected_picture`, `every_screen_pixel_distinguishes_its_owner`, `an_uncommitted_window_is_not_drawn`, `the_scene_exercises_overlap_clipping_and_background` | every row of 698,880 pixels, and the screen digest | every 37th row through `sampled_rows()`, with no screen digest. About 40 minutes under Miri before |
+| `graphics_contract` `the_checksum_catches_a_wrong_surface`, `the_checksum_sees_a_one_bit_change`, `a_byte_buffer_painted_with_the_pattern_digests_correctly` | the FNV-1a digest of all 698,880 pixels, several times | skipped: the digest is the claim and has no smaller version; about an hour under Miri, and the crate has no `unsafe` |
+| `designware_mobile_storage` `the_divider_never_runs_the_card_faster_than_asked` | every target from 1 Hz to 50 MHz | every 9,973rd target plus the bands at the slowest reachable rate and at the base; over two hours under Miri before |
+| `designware_mobile_storage` `a_stalled_transfer_times_out_owing_what_did_not_move` | the driver spins to its simulated data deadline, twice | skipped: seventeen minutes under Miri; the crate has no `unsafe` |
+| `designware_mobile_storage` six deadline tests (`a_card_busy_forever_...`, `a_read_the_card_ends_early_...`, `a_stalled_transfer_gives_up_...`, and the three power-up tests) | the driver spins to its simulated deadline inside a ten-second wall-clock watchdog | skipped: under the interpreter the spin outlasts the watchdog, so they fail against correct code; the same class as the `cred` timing row, and the crate has no `unsafe` |
+| `designware_mobile_storage` `the_bench_compares_the_internal_direct_memory_access_read_with_the_polled_one` | timed reads of 1,024 and 256 blocks | 256 and 128, two commands and one; the comparison against the polled read stays whole. 23 minutes under Miri before |
+| `file_allocation_table` `a_directory_stops_growing_at_65536_entries` | formats a 70 MiB FAT32 volume twice and grows its root to the 65,536-entry ceiling | skipped: FAT32's minimum cluster count fixes the volume's size, so there is no smaller version; over twenty minutes under Miri without finishing |
+| `file_allocation_table` oracle suites (`the_*_agree.rs`, `the_oracle_agrees.rs`) | each volume checked against the host's `fsck` and `mkfs.fat` through temporary files | skipped whole by `#![cfg(not(miri))]`: isolation refuses the file and the process; the library's unit tests run under Miri |
+| `file_allocation_table` `the_macos_images_read.rs`, `the_zero_timestamp_images_do_not_change.rs` | two recorded images read whole; every metadata sector of each volume digested | skipped whole by `#![cfg(not(miri))]`: over an hour and 25 minutes under Miri, through the reader and formatter the unit tests already run |
+| `graphics_contract` `checksum` doctest | three digests of the whole surface | returns at once under Miri through a hidden line; 77 minutes under Miri before |
+| `screen_console` `a_scroll_writes_only_the_cells_that_changed`, `the_grid_scroll_paints_exactly_what_the_copy_up_painted`, `a_1920x1080_screen_is_covered_entirely_at_scale_two` | whole framebuffers painted and compared, up to 1920x1080, after every write | skipped: from over an hour and a half to over four hours each under Miri; the crate has no `unsafe` |
+| `video_terminal` `an_absorbed_terminal_carries_on_exactly_where_the_incumbent_stopped`, `a_replacement_reads_every_earlier_handoff_layout`, `moving_pixels_and_rendering_the_damage_reproduces_the_whole_picture`, `a_painter_that_moves_and_renders_what_damage_says_ends_with_the_engines_picture` | every pixel of two terminals compared after each step or at each scroll depth | skipped: from sixteen minutes to over four hours each under Miri; the crate has no `unsafe` |
 | `manual` `every_character_survives` | 547 markdown files off disk, 7.2 MB, 0.74 s | skipped: the corpus is on the filesystem, which Miri isolates; the nineteen other tests in that file drive the same renderer on in-memory input |
+| `capability_manifest_note` `the_committed_seeds_are_what_the_crate_encodes_and_each_decodes` | lists and reads `fuzz/seeds/capability_manifest_note_decode/` | skipped: the seeds are on the filesystem, which Miri isolates; `the_seeds_reach_the_zone_walk_past_the_count_byte` decodes the same seeds in memory |
 
-### The `manual` row is a different kind of skip, and worth telling apart
+### The filesystem rows are a different kind of skip, and worth telling apart
 
 Every other row is a sampling decision: the test is too slow under an interpreter, so it runs a
-smaller version of the same claim. The `manual` row is not that. That test does host I/O, and Miri's
+smaller version of the same claim. The `manual` and `capability_manifest_note` rows are not that.
+Each test does host I/O, and Miri's
 isolation refuses `open` and `opendir` outright; there is no smaller version, only a decision about
 `-Zmiri-disable-isolation`.
 
@@ -200,3 +216,9 @@ adds it itself on a machine bootstrapped before milestone 79.
 - The samples under `cfg(miri)` are hand-maintained twins of the native domains. The `glob`
   completeness pin (43,720) is the honest version of that risk: it is asserted, so a drifted
   sample fails loudly, but most of the other samples have no such pin and would shrink silently.
+- Nothing bounds one test's time under Miri. A test that is milliseconds natively and an hour
+  interpreted shows itself only when the weekly run passes its 240-minute limit, and because
+  `cargo miri test` stops at the first failing binary, a red run hides every cost behind it. Each
+  row in the table above came to light that way. The proposal
+  [the Miri run keeps its budget](../design/roadmap/proposals/the-miri-run-keeps-its-budget.md)
+  turns the budget into a gate that names the test.

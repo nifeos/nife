@@ -2380,7 +2380,7 @@ jobs:
           fi
 
   # **The in-guest fuzz drivers, a short pass on the queue entry** (proposal
-  # design/roadmap/proposals/a-short-sharded-fuzz-pass-in-ci.md; the job id and name are
+  # design/roadmap/1012-a-short-sharded-fuzz-pass-in-ci.md; the job id and name are
   # provisional). Four shards, two per driver, each one window of the harness the continuous fuzz host
   # runs (`helpers/continuous-fuzz.sh --ci`): a build with a baked seed range, then one KVM guest that
   # sweeps for 60 seconds of guest time. The seed range derives from the commit and the shard, so the
