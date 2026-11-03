@@ -91,10 +91,8 @@ pub struct Card {
     #[doc(alias = "ocr")]
     pub operation_conditions: u32,
     /// The raw card identification register (CID).
-    #[doc(alias = "cid_raw")]
     pub card_identification_raw: [u32; 4],
     /// The raw card-specific data register (CSD).
-    #[doc(alias = "csd_raw")]
     pub card_specific_data_raw: [u32; 4],
     /// The CID, decoded.
     #[doc(alias = "cid")]

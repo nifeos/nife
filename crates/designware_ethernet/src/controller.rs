@@ -62,7 +62,6 @@ impl Identity {
     /// The DMA's address width from feature register 1's `ADDR64` field: 32, 40 or 48 bits.
     ///
     /// Name: ratified 2026-11-02 (UTC), #3094.
-    #[doc(alias = "dma_address_bits")]
     pub const fn direct_memory_access_address_bits(&self) -> u8 {
         match (self.features[1] >> 14) & 0x3 {
             1 => 40,
@@ -195,7 +194,6 @@ pub(crate) fn receive_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(clippy::eq_op)]
-#[doc(alias = "THE_RECEIVE_QUEUE_MODE_FIELDS_SHARE_NO_BIT")]
 pub const RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () = assert!(
     registers::MTL_CHAN_RX_OP_MODE_RSF & registers::MTL_CHAN_RX_OP_MODE_RTC_MASK == 0
         && (0x3f << 14) & (0x3f << 8) == 0
@@ -224,7 +222,6 @@ pub(crate) fn transmit_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> 
 /// constant.
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
-#[doc(alias = "THE_TRANSMIT_QUEUE_MODE_FIELDS_SHARE_NO_BIT")]
 pub const TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () =
     assert!(registers::MTL_CHAN_TX_OP_MODE_TSF & registers::MTL_CHAN_TX_OP_MODE_TTC_MASK == 0);
 
@@ -379,7 +376,6 @@ pub fn configure(
 /// kill the swap.
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
-#[doc(alias = "THE_CONFIGURED_BUS_FIELDS_SHARE_NO_BIT")]
 pub const CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP: () = assert!(
     registers::SYS_BUS_MODE_RD_OSR_LMT_MASK & registers::SYS_BUS_MODE_WR_OSR_LMT_MASK == 0
         && registers::SYS_BUS_MODE_RD_OSR_LMT_MASK
@@ -442,7 +438,6 @@ pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 
 /// `the_mac_word_from_zero_and_from_all_ones` kills it.
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
-#[doc(alias = "THE_MAC_CONFIGURATION_BITS_SHARE_NO_BIT")]
 pub const MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP: () = assert!(
     registers::MAC_CONF_PS
         | registers::MAC_CONF_FES
