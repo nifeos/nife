@@ -1,9 +1,10 @@
 name: full-ci label
 
-# Observed failing: 2026-11-03, by script: nothing yet; the arm that carries this workflow's claim
-#   is the dispatch, and its first chance to fire is the label on its own pull request, which this
-#   record must be pushed before (notes/observed-failing.md, BUGS, the bootstrap). helpers/full_ci.py
-#   --selftest ran the label rule it hands to the dispatched runs. A run id replaces this record.
+# Observed failing: 2026-11-03, run 41723250367: the `full-ci` label on this workflow's own pull
+#   request fired the dispatch arm, which started ci.yml (run 41726516300) and verify.yml (run
+#   41726520368) on the branch with full_ci=true. That dispatch is the thing this workflow exists to
+#   do; it is green by design, so the arm that fired is the evidence. helpers/full_ci.py --selftest
+#   covers the label rule it hands to the dispatched runs.
 
 # **Adding the `full-ci` label runs the heavy gates on the pull request's branch now** (lane
 # heavy-gates-only-in-queue, provisional; the heavy gates run only in the merge queue, ruled
