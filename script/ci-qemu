@@ -1,17 +1,17 @@
 #!/bin/sh
 # script/ci-qemu: build the QEMU this project needs, into a cacheable prefix.
 #
-# **Not CI only, though the name says CI and this line used to as well.** Every Ubuntu release ships
-# a QEMU without `riscv-iommu-pci`, so a Linux developer needs this exactly as much as the runner
-# does: `script/setup` cannot complete on a stock Linux box until it has run. Milestone 117's second
+# **Not CI only, though the name says CI and this line used to as well.** Ubuntu 24.04 ships
+# a QEMU without `riscv-iommu-pci` (26.04 has it), so a Linux developer on 24.04 needs this as much as
+# the runner once did, and anyone wanting the pinned emulator needs it on any release: `script/setup` cannot complete on a stock Linux box until it has run. Milestone 117's second
 # stranger run hit that from cold, was told by `script/qemu-check` to run this script, read "CI only"
 # here, and ran it anyway because the machine said so. The name is what it is (renaming it is a
 # naming decision, not a drive-by); the claim was wrong and is fixed.
 #
-# **Why this exists.** Ubuntu 24.04 ships QEMU 8.2, and `-device riscv-iommu-pci` (milestone 16b, the
+# **Why this exists.** Ubuntu 24.04 shipped QEMU 8.2 (26.04 ships 10.2, which has the device, but the pin is what CI and the developer machine share), and `-device riscv-iommu-pci` (milestone 16b, the
 # ratified RISC-V IOMMU, DECISIONS §20) arrived later, so the riscv leg cannot run on the runner's
 # packaged QEMU: it dies with "not a valid device model name". `apt-get install` cannot help, because
-# it already installs the newest package for the release, and GitHub offers no newer Ubuntu ARM image.
+# it already installs the newest package for the release, and the pin is what keeps CI and the developer machine on one emulator.
 #
 # The alternative was to drop the IOMMU device when QEMU cannot provide it. That is rejected on
 # purpose: it would let the confinement tests pass while testing nothing, which is precisely the

@@ -384,7 +384,7 @@ fn one_minute_load_average() -> Option<f64> {
 /// an `uptime` to run.
 ///
 /// **The two formats are not both reachable from one machine**, which is what makes the test worth
-/// having rather than filler: development is macOS and CI is `ubuntu-24.04-arm`, so a parse that
+/// having rather than filler: development is macOS and CI is `ubuntu-26.04-arm`, so a parse that
 /// only understood the shape in front of its author would keep working here and quietly report
 /// "unavailable" on every CI run, which is exactly the silence this whole feature exists to end.
 fn parse_load_average(uptime_output: &str) -> Option<f64> {
@@ -792,7 +792,7 @@ mod tests {
     use super::*;
 
     /// **Both operating systems' `uptime`, because only one of them is ever in front of you.**
-    /// Development happens on macOS and CI runs on `ubuntu-24.04-arm`, so the format not under the
+    /// Development happens on macOS and CI runs on `ubuntu-26.04-arm`, so the format not under the
     /// author's nose is the one that breaks silently: a failed parse reports "unavailable" rather
     /// than erroring, which is right at run time and useless as a signal.
     ///

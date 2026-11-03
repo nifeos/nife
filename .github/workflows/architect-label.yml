@@ -99,7 +99,7 @@ concurrency:
 jobs:
   label:
     name: label the diff's syscall/dependency/format/decision surface
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 10
     steps:
       # `fetch-depth: 0` + `filter: blob:none` is `merge-drain.yml`'s own pairing for the same

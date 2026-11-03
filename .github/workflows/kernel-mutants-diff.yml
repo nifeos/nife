@@ -28,7 +28,7 @@ name: kernel mutants (diff-scoped)
 # full run out of the merge queue's way. The tier boots are bounded at 600 s
 # (FALSIFICATIONS_RECORD_LIMIT), so one hung boot costs the job its verdict, not its bound.
 #
-# **Hosted runners only, and no fork runs mutants.** Every job names a `ubuntu-24.04-arm` hosted
+# **Hosted runners only, and no fork runs mutants.** Every job names a `ubuntu-26.04-arm` hosted
 # runner, and the plan job refuses a pull request from a fork, so nothing here runs on owned
 # hardware (a fork's pull request never may) and no fork burns the pool.
 #
@@ -100,7 +100,7 @@ concurrency:
 jobs:
   draft-gate:
     name: draft gate
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       pull-requests: read
@@ -136,7 +136,7 @@ jobs:
     if: ${{ needs.draft-gate.outputs.run != 'false' && !cancelled()
             && (github.event_name != 'pull_request'
                 || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 10
     outputs:
       matrix: ${{ steps.shards.outputs.matrix }}
@@ -180,7 +180,7 @@ jobs:
       # and checks it against the digest in .cargo-mutants-sha256, whose comments carry the URL
       # and provenance: same bytes every run, and a version bump without a new digest fails
       # here rather than drifting. Every job that reaches this step is aarch64
-      # (ubuntu-24.04-arm); the noop shard on ubuntu-24.04 skips it.
+      # (ubuntu-26.04-arm); the noop shard on ubuntu-26.04 skips it.
       - name: Install the pinned cargo-mutants
         run: |
           version="$(cat .cargo-mutants-version)"
@@ -232,7 +232,7 @@ jobs:
     name: "${{ matrix.noop && 'kernel mutants (diff-scoped): nothing to mutate' || format('shard {0}/{1} ({2})', matrix.index, matrix.total, matrix.arch) }}"
     needs: plan
     if: ${{ !cancelled() && needs.plan.result == 'success' }}
-    runs-on: ${{ matrix.noop && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    runs-on: ${{ matrix.noop && 'ubuntu-26.04' || 'ubuntu-26.04-arm' }}
     # The design point is 20 minutes (baseline plus the budgeted mutant phase); the job bound
     # leaves room for setup and for one 600 s hung boot the tier limit must pay for.
     timeout-minutes: ${{ matrix.noop && 5 || 35 }}
@@ -273,7 +273,7 @@ jobs:
       # and checks it against the digest in .cargo-mutants-sha256, whose comments carry the URL
       # and provenance: same bytes every run, and a version bump without a new digest fails
       # here rather than drifting. Every job that reaches this step is aarch64
-      # (ubuntu-24.04-arm); the noop shard on ubuntu-24.04 skips it.
+      # (ubuntu-26.04-arm); the noop shard on ubuntu-26.04 skips it.
       - name: Install the pinned cargo-mutants
         if: ${{ !matrix.noop }}
         run: |
@@ -303,7 +303,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
-          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+          key: qemu-ubuntu-26.04-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
       - name: Build QEMU if the cache missed
         if: ${{ !matrix.noop }}
         run: script/ci-qemu

@@ -79,7 +79,7 @@ jobs:
   # Success, a path-filtered workflow leaves its checks Pending forever.
   gate:
     name: draft gate
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       pull-requests: read
@@ -140,7 +140,7 @@ jobs:
     name: Analyze (${{ matrix.language }})
     needs: gate
     if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     strategy:
       # One language failing must not kill the other three's reports; each posts its own checks.
@@ -179,7 +179,7 @@ jobs:
     name: Upload SARIF (${{ matrix.language }})
     needs: [gate, analyze]
     if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && needs.analyze.result == 'success' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # `security-events: write` is the SARIF upload; `contents: read` keeps what the workflow
     # default already granted explicit in a job that replaces it.
     permissions:
@@ -209,7 +209,7 @@ jobs:
     name: Upload SARIF, retried (${{ matrix.language }})
     needs: [gate, upload]
     if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && needs.upload.result == 'failure' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       security-events: write
