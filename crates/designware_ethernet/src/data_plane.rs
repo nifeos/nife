@@ -9,7 +9,6 @@ use super::*;
 /// base; an implementation bounds them. `e1000e::DirectMemoryAccessRegion`'s shape.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
-#[doc(alias = "Region")]
 pub trait DirectMemoryAccessRegion {
     /// Read the little-endian `u64` at `offset`.
     fn read_u64(&self, offset: u64) -> u64;
@@ -41,7 +40,7 @@ pub trait Tails {
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransmitError {
-    /// Empty, or longer than [`MAXIMUM_FRAME`].
+    /// Empty, or longer than [`MAXIMUM_FRAME_BYTES`].
     BadLength,
     /// Every descriptor is still the device's.
     Full,
@@ -182,7 +181,7 @@ impl DataPlane {
         tails: &mut impl Tails,
         frame: &[u8],
     ) -> Result<(), TransmitError> {
-        if frame.is_empty() || frame.len() > MAXIMUM_FRAME {
+        if frame.is_empty() || frame.len() > MAXIMUM_FRAME_BYTES {
             return Err(TransmitError::BadLength);
         }
         self.reclaim(region);

@@ -8,7 +8,7 @@
 //! against `simulator`'s controller.
 
 use crate::motorcomm::{Link, Speed};
-use crate::{BUFFER_SIZE, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, registers};
+use crate::{BUFFER_BYTES, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, registers};
 
 /// Why the controller was not brought up.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,7 +62,6 @@ impl Identity {
     /// The DMA's address width from feature register 1's `ADDR64` field: 32, 40 or 48 bits.
     ///
     /// Name: ratified 2026-11-02 (UTC), #3094.
-    #[doc(alias = "dma_address_bits")]
     pub const fn direct_memory_access_address_bits(&self) -> u8 {
         match (self.features[1] >> 14) & 0x3 {
             1 => 40,
@@ -137,7 +136,7 @@ pub(crate) const fn address_words(station_address: [u8; 6]) -> (u32, u32) {
 }
 
 /// **How the DMA meets the bus**: the `snps,*` properties of a board's node and its
-/// `snps,axi-config`. [`crate::jh7110::BUS`] is radon's.
+/// `snps,axi-config`. [`crate::jh7110::BUS_CONFIGURATION`] is radon's.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Bus {
     /// `snps,fixed-burst`.
@@ -193,9 +192,8 @@ pub(crate) fn receive_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u
 /// constant. Clippy's `eq_op` lint folds the second conjunct's literals to `0 == 0`; that is
 /// what a gate is, allowed here for exactly that reason.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+/// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(clippy::eq_op)]
-#[doc(alias = "THE_RECEIVE_QUEUE_MODE_FIELDS_SHARE_NO_BIT")]
 pub const RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () = assert!(
     registers::MTL_CHAN_RX_OP_MODE_RSF & registers::MTL_CHAN_RX_OP_MODE_RTC_MASK == 0
         && (0x3f << 14) & (0x3f << 8) == 0
@@ -223,8 +221,7 @@ pub(crate) fn transmit_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> 
 /// the compiler checks here; the mutation exclusion for `transmit_queue_mode` names this
 /// constant.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
-#[doc(alias = "THE_TRANSMIT_QUEUE_MODE_FIELDS_SHARE_NO_BIT")]
+/// Name: ratified 2026-11-03 (UTC), #3120.
 pub const TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () =
     assert!(registers::MTL_CHAN_TX_OP_MODE_TSF & registers::MTL_CHAN_TX_OP_MODE_TTC_MASK == 0);
 
@@ -260,7 +257,7 @@ pub fn configure(
 ) -> Result<(), Error> {
     if !region_in_reach(
         region,
-        layout::BYTES,
+        layout::DIRECT_MEMORY_ACCESS_REGION_BYTES,
         id.direct_memory_access_address_bits(),
     ) {
         return Err(Error::RegionOutOfReach {
@@ -310,7 +307,7 @@ pub fn configure(
         receive
             | (bus.receive_channel_burst_length << registers::CHAN_RX_CONTROL_RPBL_SHIFT)
                 & registers::CHAN_RX_CONTROL_RPBL_MASK
-            | (BUFFER_SIZE as u32) << registers::DMA_CH0_RX_CONTROL_RBSZ_SHIFT,
+            | (BUFFER_BYTES as u32) << registers::DMA_CH0_RX_CONTROL_RBSZ_SHIFT,
     );
 
     let transmit_ring = region + layout::TRANSMIT_RING;
@@ -378,8 +375,7 @@ pub fn configure(
 /// above cleared takes a value only inside that field; where neither holds, the configure tests
 /// kill the swap.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
-#[doc(alias = "THE_CONFIGURED_BUS_FIELDS_SHARE_NO_BIT")]
+/// Name: ratified 2026-11-03 (UTC), #3120.
 pub const CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP: () = assert!(
     registers::SYS_BUS_MODE_RD_OSR_LMT_MASK & registers::SYS_BUS_MODE_WR_OSR_LMT_MASK == 0
         && registers::SYS_BUS_MODE_RD_OSR_LMT_MASK
@@ -441,8 +437,7 @@ pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 
 /// `|`-versus-`^` over disjoint bits; the chain's first swap toggles `conf` itself, and
 /// `the_mac_word_from_zero_and_from_all_ones` kills it.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
-#[doc(alias = "THE_MAC_CONFIGURATION_BITS_SHARE_NO_BIT")]
+/// Name: ratified 2026-11-03 (UTC), #3120.
 pub const MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP: () = assert!(
     registers::MAC_CONF_PS
         | registers::MAC_CONF_FES
@@ -522,7 +517,7 @@ pub fn stop(hardware: &mut impl Hardware) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::jh7110::BUS;
+    use crate::jh7110::BUS_CONFIGURATION;
     use crate::simulator::{Memory, NetworkInterfaceController};
 
     const PHYSICAL_ADDRESS: u64 = 0x4800_0000;
@@ -575,7 +570,7 @@ mod tests {
 
     #[test]
     fn a_region_past_the_address_width_or_across_4_gib_is_refused() {
-        let bytes = layout::BYTES;
+        let bytes = layout::DIRECT_MEMORY_ACCESS_REGION_BYTES;
         assert!(region_in_reach(0x4000_0000, bytes, 32));
         assert!(!region_in_reach(0x1_0000_0000, bytes, 32));
         assert!(region_in_reach(0x1_0000_0000, bytes, 40));
@@ -591,7 +586,14 @@ mod tests {
         let mut nic =
             NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         let id = Identity::read(&mut nic);
-        configure(&mut nic, &id, &BUS, PHYSICAL_ADDRESS, STATION_ADDRESS).unwrap();
+        configure(
+            &mut nic,
+            &id,
+            &BUS_CONFIGURATION,
+            PHYSICAL_ADDRESS,
+            STATION_ADDRESS,
+        )
+        .unwrap();
         assert_eq!(
             nic.register(registers::CHAN_RX_BASE_ADDR),
             PHYSICAL_ADDRESS as u32
@@ -647,10 +649,10 @@ mod tests {
     fn the_queue_size_comes_from_the_hardware_not_the_vendor_trees_number() {
         // 262144 bytes, the vendor tree's rx-fifo-depth, is 1023 in a 10-bit field: it would fit,
         // and it would be a lie. The hardware's 2048 is 7.
-        let mode = receive_queue_mode(0, &BUS, 2048);
+        let mode = receive_queue_mode(0, &BUS_CONFIGURATION, 2048);
         assert_eq!(mode >> registers::MTL_CHAN_RX_OP_MODE_RQS_SHIFT & 0x3ff, 7);
         assert_eq!(mode & 1 << 7, 0, "no flow control thresholds below 4 KiB");
-        let mode = transmit_queue_mode(0, &BUS, 2048);
+        let mode = transmit_queue_mode(0, &BUS_CONFIGURATION, 2048);
         assert_eq!(mode >> registers::MTL_CHAN_TX_OP_MODE_TQS_SHIFT & 0x1ff, 7);
         assert_eq!(
             mode & registers::MTL_CHAN_TX_OP_MODE_TXQEN_MASK,
@@ -697,7 +699,14 @@ mod tests {
         let mut nic =
             NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         let id = Identity::read(&mut nic);
-        configure(&mut nic, &id, &BUS, PHYSICAL_ADDRESS, STATION_ADDRESS).unwrap();
+        configure(
+            &mut nic,
+            &id,
+            &BUS_CONFIGURATION,
+            PHYSICAL_ADDRESS,
+            STATION_ADDRESS,
+        )
+        .unwrap();
         start(
             &mut nic,
             Link {
@@ -792,8 +801,8 @@ mod tests {
     #[test]
     fn configure_writes_each_field_and_keeps_every_other_bit() {
         let region = 0x1_4800_0000;
-        let zero = configured(0, &FORTY_BIT, &BUS, region);
-        let ones = configured(u32::MAX, &FORTY_BIT, &BUS, region);
+        let zero = configured(0, &FORTY_BIT, &BUS_CONFIGURATION, region);
+        let ones = configured(u32::MAX, &FORTY_BIT, &BUS_CONFIGURATION, region);
         for (register, from_zero, from_ones) in [
             (registers::SYS_BUS_MODE, 0x0f0f_08f1, 0xffff_ffff),
             (registers::CHAN_CONTROL, 0, 0xfffe_ffff),
@@ -859,14 +868,23 @@ mod tests {
     fn the_queue_modes_from_zero_and_from_all_ones() {
         let sf = Bus {
             threshold_mode: false,
-            ..BUS
+            ..BUS_CONFIGURATION
         };
-        assert_eq!(receive_queue_mode(0, &BUS, 2048), 0x0070_0018);
-        assert_eq!(receive_queue_mode(u32::MAX, &BUS, 2048), 0xc07f_ffdf);
+        assert_eq!(receive_queue_mode(0, &BUS_CONFIGURATION, 2048), 0x0070_0018);
+        assert_eq!(
+            receive_queue_mode(u32::MAX, &BUS_CONFIGURATION, 2048),
+            0xc07f_ffdf
+        );
         assert_eq!(receive_queue_mode(0, &sf, 8192), 0x01f0_c1a0);
         assert_eq!(receive_queue_mode(u32::MAX, &sf, 8192), 0xc1f0_c1ff);
-        assert_eq!(transmit_queue_mode(0, &BUS, 2048), 0x0007_0078);
-        assert_eq!(transmit_queue_mode(u32::MAX, &BUS, 2048), 0xfe07_fff9);
+        assert_eq!(
+            transmit_queue_mode(0, &BUS_CONFIGURATION, 2048),
+            0x0007_0078
+        );
+        assert_eq!(
+            transmit_queue_mode(u32::MAX, &BUS_CONFIGURATION, 2048),
+            0xfe07_fff9
+        );
         assert_eq!(transmit_queue_mode(0, &sf, 8192), 0x001f_000a);
         assert_eq!(transmit_queue_mode(u32::MAX, &sf, 8192), 0xfe1f_fffb);
     }
@@ -964,7 +982,7 @@ mod tests {
     /// A region that ends exactly at a 4 GiB boundary is in reach: its last byte is below it.
     #[test]
     fn a_region_ending_at_4_gib_is_in_reach() {
-        let bytes = layout::BYTES;
+        let bytes = layout::DIRECT_MEMORY_ACCESS_REGION_BYTES;
         assert!(region_in_reach(0x1_0000_0000 - bytes, bytes, 32));
     }
 }
