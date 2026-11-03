@@ -71,7 +71,7 @@ Both ports eventually print. x86_64 resets. That is the parity gap this closes (
    frame (`rip`, `rsp`, `cs`, `ss`, `rflags`; the error code is architecturally zero) and does not
    return. The report is deliberately minimal and takes no lock and no allocator.
 4. Exempt vector 8 from `x86_trap_dispatch`'s interrupt-stack move, the way NMI is exempted
-   (the NMI exemption in `x86_trap_dispatch` in `exceptions.rs`): `top_for_trap` (in `interrupt_stack.rs`) would otherwise find `rsp`
+   (`exceptions.rs::x86_trap_dispatch`): `interrupt_stack.rs::top_for_trap` would otherwise find `rsp`
    outside the interrupt-stack region and move the handler off the IST stack onto a different one.
    This is read from the code, not measured.
 
