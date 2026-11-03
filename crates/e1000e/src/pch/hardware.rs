@@ -39,6 +39,9 @@ pub(super) fn flush_writes(hardware: &mut impl Hardware) {
 /// Is `device` a PCH part (an I219) rather than the 82574L? Every I219 id this crate claims is in
 /// FreeBSD's `e1000_pch_spt` class (`e1000_api.c`, `e1000_set_mac_type`), which is the class all
 /// three ported sequences are written for.
-pub fn is_pch(device: u16) -> bool {
+///
+/// Name: ratified 2026-11-03 (UTC), #3151. Renamed from `is_pch`; it takes a device id, and the
+/// module it serves is the platform controller hub.
+pub fn is_platform_controller_hub_device(device: u16) -> bool {
     crate::is_supported(crate::VENDOR_INTEL, device) && device != 0x10d3
 }

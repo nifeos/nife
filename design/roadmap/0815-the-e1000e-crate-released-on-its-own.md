@@ -158,7 +158,7 @@ work, and the lane that renames a name drops its line.
 
 ### Generic
 
-- `required` (`src/pch/flush.rs`): generic
+- `is_flush_required` (`src/pch/flush.rs`): generic
 - `Note` (`src/pch/sequence.rs`): generic
 - `Reached` (`src/pch/sequence.rs`): generic
 

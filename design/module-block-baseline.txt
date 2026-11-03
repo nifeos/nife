@@ -1149,10 +1149,7 @@ crates/e1000e/src/layout.rs::BYTES
 crates/e1000e/src/layout.rs::PAGES
 crates/e1000e/src/pch/flush.rs
 crates/e1000e/src/pch/flush.rs::FEXTNVM11_DISABLE_MULR_FIX
-crates/e1000e/src/pch/flush.rs::required
 crates/e1000e/src/pch/flush.rs::rxdctl
-crates/e1000e/src/pch/flush.rs::tail_after
-crates/e1000e/src/pch/hardware.rs::is_pch
 crates/e1000e/src/pch/mod.rs
 crates/e1000e/src/pch/non_volatile_memory.rs::DONE
 crates/e1000e/src/pch/non_volatile_memory.rs::ERROR

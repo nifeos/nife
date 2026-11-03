@@ -4,9 +4,13 @@ use super::*;
 
 #[test]
 fn the_pch_class_is_every_claimed_i219_and_not_qemus_part() {
-    assert!(!is_pch(0x10d3));
+    assert!(!is_platform_controller_hub_device(0x10d3));
     for &(id, model) in super::super::DEVICE_IDS {
-        assert_eq!(is_pch(id), model.starts_with("I219"), "{id:#06x} {model}");
+        assert_eq!(
+            is_platform_controller_hub_device(id),
+            model.starts_with("I219"),
+            "{id:#06x} {model}"
+        );
     }
 }
 
@@ -23,14 +27,17 @@ fn the_ulp_request_clears_the_indication_and_enforces() {
 
 #[test]
 fn the_flush_runs_only_when_asked_and_the_ring_has_length() {
-    assert!(flush::required(flush::FLUSH_DESC_REQUIRED, 256));
-    assert!(!flush::required(flush::FLUSH_DESC_REQUIRED, 0));
-    assert!(!flush::required(0, 256));
-    assert_eq!(flush::tail_after(15, 16), 0);
+    assert!(flush::is_flush_required(flush::FLUSH_DESC_REQUIRED, 256));
+    assert!(!flush::is_flush_required(flush::FLUSH_DESC_REQUIRED, 0));
+    assert!(!flush::is_flush_required(0, 256));
+    assert_eq!(flush::tail_after_dummy_transmit(15, 16), 0);
     assert_eq!(flush::rxdctl(0xffff_ffff) & 0x3fff, 0x1f | 1 << 8);
     assert_ne!(flush::rxdctl(0) & 0x0100_0000, 0);
     // No end of packet, no report status: the dummy is never a frame anyone waits on.
-    assert_eq!((flush::transmit_word() >> 24) as u8 & (0x01 | 0x08), 0);
+    assert_eq!(
+        (flush::dummy_transmit_descriptor_command_word() >> 24) as u8 & (0x01 | 0x08),
+        0
+    );
 }
 
 /// The flush's register values exactly as FreeBSD writes them: the dummy descriptor is 512
@@ -38,9 +45,9 @@ fn the_flush_runs_only_when_asked_and_the_ring_has_length() {
 /// every bit above the two thresholds, including the granularity bit when it was already set.
 #[test]
 fn the_flush_values_are_freebsds() {
-    assert_eq!(flush::transmit_word(), 0x0200_0200);
-    assert_eq!(flush::tail_after(3, 16), 4);
-    assert_eq!(flush::tail_after(15, 16), 0);
+    assert_eq!(flush::dummy_transmit_descriptor_command_word(), 0x0200_0200);
+    assert_eq!(flush::tail_after_dummy_transmit(3, 16), 4);
+    assert_eq!(flush::tail_after_dummy_transmit(15, 16), 0);
     assert_eq!(flush::rxdctl(0xffff_ffff), 0xffff_c11f);
     assert_eq!(flush::rxdctl(0x0100_0000), 0x0100_011f);
     assert_eq!(flush::rxdctl(0), 0x0100_011f);

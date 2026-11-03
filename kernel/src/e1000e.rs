@@ -79,7 +79,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     let region = region_for(dev.rid);
     let c = Controller(mmu::phys_to_virt(dev.bar0));
     let refused = |why| Absent::Refused { rid: dev.rid, why };
-    let pch = ::e1000e::pch::is_pch(dev.device);
+    let pch = ::e1000e::pch::is_platform_controller_hub_device(dev.device);
     let mut hw = Bar { c: &c, dev: &dev };
     let mut physical_layer_device_id = None;
     if pch {
@@ -258,7 +258,7 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
         c.r(pch::FEXTNVM11) | flush::FEXTNVM11_DISABLE_MULR_FIX,
     );
     let status = || dev.config_read32(flush::PCICFG_DESC_RING_STATUS) as u16;
-    if !flush::required(status(), c.r(registers::TDLEN)) {
+    if !flush::is_flush_required(status(), c.r(registers::TDLEN)) {
         return;
     }
     let ring = region + layout::TRANSMIT_RING;
@@ -278,12 +278,12 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
     // only after the tail write below, which the barrier orders after these stores.
     unsafe {
         core::ptr::write_volatile(d, ring);
-        core::ptr::write_volatile(d.add(1), flush::transmit_word());
+        core::ptr::write_volatile(d.add(1), flush::dummy_transmit_descriptor_command_word());
     }
     crate::arch::direct_memory_access_write_barrier();
     c.w(
         registers::TDT,
-        flush::tail_after(tdt, ::e1000e::TRANSMIT_ENTRIES),
+        flush::tail_after_dummy_transmit(tdt, ::e1000e::TRANSMIT_ENTRIES),
     );
     spin_microseconds(250);
     if status() & flush::FLUSH_DESC_REQUIRED == 0 {
