@@ -7,6 +7,8 @@
 //! `FRUN` and `DTO` as on radon, and the IDMAC walk, whose last read words reach memory after
 //! `DTO`. Time is one microsecond per `now_microseconds` call, so a test that would hang on silicon fails
 //! here.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3121.
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard};

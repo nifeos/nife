@@ -224,7 +224,7 @@ accounts for, read at each week's last merge. Above 5% is a lane (calef, 2026-10
 save and reason: [the drift report](project-metrics/baseline-drift.md).
 
 <!-- baseline-drift: script/metrics writes this -->
-2026W45, `main` at `23765cb46`: nothing unexplained past 5%; the largest, aarch64 `ipc_rtt` +1.42%, riscv64 `map_el0` +4.27%, x86_64 `spawn_reap` +0.98%.
+2026W45, `main` at `4eedc6fc5`: nothing unexplained past 5%; the largest, aarch64 `ipc_rtt` +1.42%, riscv64 `map_el0` +4.27%, x86_64 `spawn_reap` +0.98%.
 <!-- /baseline-drift -->
 
 ## Interface stability
@@ -236,7 +236,7 @@ and wire-format value changes. [definitions](interface-stability.md),
 [per crate and package](project-metrics/interface-stability.md).
 
 <!-- interface-stability: script/metrics writes this -->
-interface, 2026W42 to 2026W45: 10 breaking changes (14 additions); 0 syscall numbers changed, 1 format bumps; 62% co-change, 33% across packages.
+interface, 2026W42 to 2026W45: 10 breaking changes (14 additions); 0 syscall numbers changed, 1 format bumps; 62% co-change, 34% across packages.
 <!-- /interface-stability -->
 
 ## The crates 857 releases
