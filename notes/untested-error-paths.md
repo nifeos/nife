@@ -87,26 +87,26 @@ refuse a grant or an allocation. Line numbers are at base `1a145fcaa`.
 
 | # | where | path | what a fault there would cost |
 |---|---|---|---|
-| 1 | `crates/subtree_scope/src/lib.rs:280` | `unbind` refuses a caller that is not the open root | a client revoking another's subtree grant; the check is untested |
-| 2 | `crates/paging/src/lib.rs:866` | `unmap` finds no leaf | a revoke that believes it unmapped |
-| 3 | `crates/paging/src/lib.rs:840` | `unmap` on the wrong half | same, by address |
-| 4 | `crates/paging/src/lib.rs:843` | `unmap` misaligned | same, by alignment |
-| 5 | `crates/capability/src/lib.rs:394` | `empty`, slot out of range (first `?`) | the one door a capability leaves a table through |
-| 6 | `crates/generational_table/src/lib.rs:175` | `remove` of a stale name | the kernel's table: a stale name removing a live entry |
-| 7 | `crates/generational_table/src/lib.rs:176` | `remove` of an empty slot | `live` miscounted |
-| 8 | `crates/paging/src/lib.rs:808` | `map_span` fails after `done` bytes are mapped | a half-mapped span, with no unwind in the crate |
-| 9 | `crates/paging/src/lib.rs:823` | `map_range` fails midway | the same, page by page |
-| 10 | `crates/paging/src/lib.rs:760` | `map_block`'s allocator returns nothing | tables taken at upper levels stay |
-| 11 | `crates/paging/src/domain.rs:148` | an IOMMU domain's `map` fails after earlier pages | `kernel/src/iommu.rs` `expect`s it, so a panic, not a leak |
-| 12 | `crates/paging/src/domain.rs:138` | a later region's `grant_pages` fails | earlier regions already in the domain |
-| 13 | `crates/paging/src/domain.rs:72` | DMA grant misaligned | a device granted a page it should not reach |
-| 14 | `crates/paging/src/domain.rs:75` | DMA grant region malformed | the same |
-| 15 | `crates/paging/src/domain.rs:143` | `grant_page` past the count | proved unreachable by Kani; the branch stays |
-| 16 | `crates/capability/src/lib.rs:477` | `put` to a slot out of range | a grant into nowhere |
-| 17 | `crates/capability/src/lib.rs:372` | `fill` out of range | the same door, one level down |
-| 18 | `crates/memory_regions/src/table.rs:381` | `split` past the watermark | refused before any mutation |
-| 19 | `crates/page_frames/src/lib.rs:263` | `alloc_contiguous` of zero or too many | a DMA ring allocation refused |
-| 20 | `crates/paging/src/lib.rs:743` | `map_block` on the wrong half | a user mapping into the kernel half |
+| 1 | `crates/subtree_scope/src/lib.rs` (`unbind`) | `unbind` refuses a caller that is not the open root | a client revoking another's subtree grant; the check is untested |
+| 2 | `crates/paging/src/mapper.rs` (`unmap`) | `unmap` finds no leaf | a revoke that believes it unmapped |
+| 3 | `crates/paging/src/mapper.rs` (`unmap`) | `unmap` on the wrong half | same, by address |
+| 4 | `crates/paging/src/mapper.rs` (`unmap`) | `unmap` misaligned | same, by alignment |
+| 5 | `crates/capability/src/lib.rs` (`empty`) | `empty`, slot out of range (first `?`) | the one door a capability leaves a table through |
+| 6 | `crates/generational_table/src/lib.rs` (`remove`) | `remove` of a stale name | the kernel's table: a stale name removing a live entry |
+| 7 | `crates/generational_table/src/lib.rs` (`remove`) | `remove` of an empty slot | `live` miscounted |
+| 8 | `crates/paging/src/mapper.rs` (`map_span`) | `map_span` fails after `done` bytes are mapped | a half-mapped span, with no unwind in the crate |
+| 9 | `crates/paging/src/mapper.rs` (`map_range`) | `map_range` fails midway | the same, page by page |
+| 10 | `crates/paging/src/mapper.rs` (`map_block`) | `map_block`'s allocator returns nothing | tables taken at upper levels stay |
+| 11 | `crates/paging/src/domain.rs` (`build_identity_domain`) | an IOMMU domain's `map` fails after earlier pages | `kernel/src/iommu.rs` `expect`s it, so a panic, not a leak |
+| 12 | `crates/paging/src/domain.rs` (`build_identity_domain`) | a later region's `grant_pages` fails | earlier regions already in the domain |
+| 13 | `crates/paging/src/domain.rs` (`grant_pages`) | DMA grant misaligned | a device granted a page it should not reach |
+| 14 | `crates/paging/src/domain.rs` (`grant_pages`) | DMA grant region malformed | the same |
+| 15 | `crates/paging/src/domain.rs` (`build_identity_domain`) | `grant_page` past the count | proved unreachable by Kani; the branch stays |
+| 16 | `crates/capability/src/lib.rs` (`put`) | `put` to a slot out of range | a grant into nowhere |
+| 17 | `crates/capability/src/lib.rs` (`fill`) | `fill` out of range | the same door, one level down |
+| 18 | `crates/memory_regions/src/table.rs` (`split`) | `split` past the watermark | refused before any mutation |
+| 19 | `crates/page_frames/src/lib.rs` (`alloc_contiguous`) | `alloc_contiguous` of zero or too many | a DMA ring allocation refused |
+| 20 | `crates/paging/src/mapper.rs` (`map_block`) | `map_block` on the wrong half | a user mapping into the kernel half |
 
 Twelve of the twenty are in `paging`. The 2026-08-03 mutation baseline found the same soft spot from
 the other side: every DMA-domain test granted exactly one page, so a page count could not be told
@@ -134,9 +134,10 @@ syscalls run under QEMU, where host instrumentation does not reach. The run excl
 
 The 75 cleanup paths are all here: 27 in `system_initializer`, 17 in `login`, 10 in `swish`, 13 in
 the kernel, 8 in other services. They are the rollbacks risk 7 depends on. One is
-`MEMORY_REGION_SPLIT`'s destroy-on-full-table (`kernel/src/syscall.rs:844`). Another is
-`PAGE_FRAME_MAP`'s all-or-nothing `unmap_run_prefix` (`kernel/src/syscall.rs:1076`). The rest
-include `login`'s `connect` and `mint`, whose own comments admit slot leaks. A grep for a test naming
+`MEMORY_REGION_SPLIT`'s destroy-on-full-table (`memory_region_split` in
+`kernel/src/syscall/memory_region.rs`). Another is `PAGE_FRAME_MAP`'s all-or-nothing
+`unmap_run_prefix` (`page_frame_map` in `kernel/src/syscall/page_frame.rs`). The rest include
+`login`'s `connect` and `mint`, whose own comments admit slot leaks. A grep for a test naming
 `unmap_run_prefix` finds none, which is evidence and not a measurement.
 
 Two ways to measure it, neither built:

@@ -135,7 +135,6 @@ pub const fn receive_descriptor_words(buffer_physical_address: u64) -> [u64; 2] 
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(dead_code)]
-#[doc(alias = "THE_RECEIVE_DESCRIPTOR_SET_BITS_SHARE_NO_BIT")]
 pub const RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP: () = assert!(
     RDES3_OWN | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION | RDES3_BUF1V
         == RDES3_OWN ^ RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION ^ RDES3_BUF1V
@@ -165,7 +164,6 @@ pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(dead_code)]
-#[doc(alias = "THE_TRANSMIT_DESCRIPTOR_BITS_SHARE_NO_BIT")]
 pub const TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP: () = assert!(
     TDES2_IC & TDES2_BUF1_LEN == 0
         && (TDES3_OWN | TDES3_FS | TDES3_LS == TDES3_OWN ^ TDES3_FS ^ TDES3_LS)
@@ -235,6 +233,5 @@ pub fn receive_verdict(descriptor_word_3: u32, room: usize) -> ReceiveVerdict {
 ///
 /// Name: provisional, decided by the maintainer; reversing costs one pull request.
 #[allow(dead_code)]
-#[doc(alias = "THE_FIRST_AND_LAST_BITS_SHARE_NO_BIT")]
 pub const FIRST_AND_LAST_BITS_DO_NOT_OVERLAP: () =
     assert!(RDES3_FD | RDES3_LD == RDES3_FD ^ RDES3_LD);
