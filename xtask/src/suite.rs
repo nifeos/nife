@@ -128,10 +128,15 @@ impl ArchLegs {
 /// the host pass; `--cpu <model>` sets `NIFE_CPU`; `--hvf` runs the aarch64 leg on the physical core
 /// ([`hvf_kernel_leg`], notes/hvf-leg.md) and refuses `--cpu`; `--test <substring>` runs matching
 /// kernel tests on every leg (§19), skips the host pass, the image checks and the referees'
-/// verdicts, and fails when nothing matches; `--repeat <N>` repeats that selection in one boot.
+/// verdicts, and fails when nothing matches; `--repeat <N>` repeats that selection in one boot;
+/// `--host-only` runs the host pass and boots nothing.
 /// Callers: `script/cpu-matrix` (`--arch`, `--cpu`; notes/cpu-models.md) and `script/ci-build`
-/// (`--hvf`, an `--arch` list, `--no-host`). See notes/xtask-test.md for each flag's reasons.
+/// (`--hvf`, an `--arch` list, `--no-host`, `--host-only`). See notes/xtask-test.md for each flag's
+/// reasons.
 pub(crate) fn test() -> bool {
+    if std::env::args().any(|a| a == "--host-only") {
+        return host_only();
+    }
     let Some((hvf, legs)) = legs_from_flags() else {
         return false;
     };
@@ -363,6 +368,32 @@ pub(crate) fn export_test_filter() -> Option<String> {
         },
     }
     filter
+}
+
+/// `--host-only`: the host pass alone, with no QEMU and no kernel build. True when it passed;
+/// false after refusing a flag that names kernel legs or boots, since the run would ignore it.
+/// Name: provisional.
+fn host_only() -> bool {
+    for flag in [
+        "--arch",
+        "--no-host",
+        "--cpu",
+        "--hvf",
+        "--test",
+        "--image",
+        "--repeat",
+    ] {
+        let joined = format!("{flag}=");
+        if std::env::args().any(|a| a == flag || a.starts_with(&joined)) {
+            eprintln!("test: --host-only boots nothing, so it does not combine with {flag}");
+            return false;
+        }
+    }
+    time_record::start();
+    let began = std::time::Instant::now();
+    let ok = host_tests();
+    time_record::host_pass(began.elapsed());
+    ok
 }
 
 /// **The host pass**: every host crate's tests, the vendored RedoxFS round trip and `no_std` build,
