@@ -86,7 +86,8 @@ macro_rules! wired_or_skip {
             }
             Err(crate::user::e1000e_service::Absent::NoLink { device }) => {
                 assert!(
-                    ::e1000e::pch::is_platform_controller_hub_device(device) || !X86_NIC_ATTACHED,
+                    ::e1000e::platform_controller_hub::is_platform_controller_hub_device(device)
+                        || !X86_NIC_ATTACHED,
                     "the runner's e1000e (8086:{device:04x}) has no link: QEMU's reports link at \
                      once, so bring-up never saw STATUS.LU",
                 );

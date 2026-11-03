@@ -67,7 +67,7 @@ describe it, and no more.
 - A data phase moves through a FIFO of `depth` words. Reads fill it from the card and raise `RXDR`,
   writes drain it to the card and raise `TXDR`, and the end raises `DTO`. A multi-block transfer
   also raises `ACD`, the automatic CMD12.
-- `STATUS` reports the FIFO's fill and, for a few reads after a write, data busy.
+- `STATUS_REGISTER` reports the FIFO's fill and, for a few reads after a write, data busy.
 - A read with the card read threshold (`CARDTHRCTL`) enabled above the FIFO's size ends at once
   with `FRUN` and `DTO`, the word radon's controller gave for it.
 - With the IDMAC selected in `CONTROL` and enabled in `BUS_MODE`, the FIFO's other end is `Memory`. The
