@@ -6,7 +6,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 `script/crate-standalone` step 0 passes a crate only when every `Name:` block in it is ratified, so each group here stands between a crate and its move. The lists come from `python3 helpers/name_release.py --draft <crate>`: a row whose status reads `no block` or starts with `provisional`. Rerun it for the live state; nothing regenerates this note, and a ruling removes its group.
 
-`file_allocation_table` and `jh7110_clock_and_reset` have no unratified name left. `jh7110_entropy` has already left `crates/`.
+`file_allocation_table`, `generational_table` and `jh7110_clock_and_reset` have no unratified name left. `jh7110_entropy` has already left `crates/`.
 
 ## Counts
 
@@ -17,10 +17,10 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 | `e1000e` | 133 | 95 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
-| `generational_table` | 14 | 14 | 0 | 1 |
+| `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 353 | 284 | 69 | 40 |
+| total | 339 | 270 | 69 | 39 |
 
 ## How to read a group
 
@@ -32,9 +32,8 @@ In order, easiest to rule on first:
 
 1. `X1`, the nine `extensible_host_controller_interface` assertions: the same rename the architect already ruled for two sister crates.
 2. `N1`, the three NVMe namespace names: a full proposal already exists ([ratify-the-nvme-namespace-names](../design/roadmap/proposals/ratify-the-nvme-namespace-names.md)).
-3. `G1`, the fourteen `generational_table` names: one crate, no abbreviation, plain collection verbs, and the crate is third in the ruled publication order.
-4. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
-5. The `no` groups of designware_mobile_storage (`DM1` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
+3. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
+4. The `no` groups of designware_mobile_storage (`DM1` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
 The groups that need a real ruling are the register and bit constants: `DE7` to `DE10`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
@@ -330,17 +329,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Already proposed in full in design/roadmap/proposals/ratify-the-nvme-namespace-names.md (ratify as they stand, plus the `size_bytes` to `capacity_bytes` field loose end). Do not repeat it; bring that proposal.
-
-## `generational_table`
-
-14 unratified names: 14 with no block, 0 provisional.
-
-### G1. The whole public surface (14)
-
-`lib::Table`, `lib::get`, `lib::get_mut`, `lib::insert_with`, `lib::is_empty`, `lib::iter`, `lib::iter_from`, `lib::iter_mut`, `lib::len`, `lib::live_slots`, `lib::new`, `lib::remove`, `lib::slot_of`, `lib::values`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify all fourteen as they stand. Every name is a plain word or the standard collection verb (`new`, `get`, `get_mut`, `remove`, `len`, `is_empty`, `iter`, `iter_mut`, `values`); `insert_with`, `iter_from`, `live_slots` and `slot_of` say what they do; no abbreviation or hardware mnemonic appears. The crate name is already ratified. `slotmap` calls its type `SlotMap`; `Table` is shorter and the crate path carries the rest (`generational_table::Table`).
 
 ## Not covered
 
