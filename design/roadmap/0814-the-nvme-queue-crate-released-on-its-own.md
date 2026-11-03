@@ -143,11 +143,11 @@ Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass
 on all four targets, and the only citations left sit in `Name:` blocks, which stay until the
 ratification pass. With Kani, every harness proves and every falsification patch fails its harness.
 
-Every name in the crate is ratified (`Namespace`, `Namespace::holds_whole_block`,
+calef ratified every name in the crate (`Namespace`, `Namespace::holds_whole_block`,
 `Namespace::transfer_command` and the field `Namespace::capacity_bytes`, 2026-11-03 UTC, #3118). The
-two assertion constants `THE_*_SHARE_NO_BIT` are private, so they are not among the crate's names.
-`script/crate-standalone non_volatile_memory_express` exits 0. Creating the repository is calef's to
-approve after the crate's review.
+two assertion constants `THE_*_SHARE_NO_BIT` are private, so they do not count among the crate's names.
+`script/crate-standalone non_volatile_memory_express` exits 0. calef approves creating the repository
+after the crate's review.
 
 ## Review before release
 
