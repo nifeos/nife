@@ -14,13 +14,13 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 |---|---|---|---|---|
 | `designware_ethernet` | 110 | 91 | 19 | 13 |
 | `designware_mobile_storage` | 74 | 74 | 0 | 10 |
-| `e1000e` | 132 | 94 | 38 | 13 |
+| `e1000e` | 125 | 94 | 31 | 12 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 328 | 259 | 69 | 38 |
+| total | 321 | 259 | 62 | 37 |
 
 ## How to read a group
 
@@ -208,7 +208,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `e1000e`
 
-132 unratified names: 94 with no block, 38 provisional.
+125 unratified names: 94 with no block, 31 provisional.
 
 ### E1. Module names (14)
 
@@ -237,13 +237,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. `RECEIVE_ENTRIES`, `TRANSMIT_ENTRIES`, `*_QUEUE_PAGE`, `TAIL_IN_PAGE` and `BUFFER_SIZE` carry no abbreviation (`BUFFER_SIZE` has the same unit-word question as in designware_ethernet).
-
-### E5. Descriptor status and command bits (7)
-
-`descriptor::RECEIVE_ERRORS_FRAME`, `descriptor::RECEIVE_STATUS_DD`, `descriptor::RECEIVE_STATUS_EOP`, `descriptor::TRANSMIT_COMMAND`, `descriptor::TRANSMIT_STATUS_DD`, `descriptor::receive_verdict`, `descriptor::transmit_word`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out `RECEIVE_STATUS_DD`, `RECEIVE_STATUS_EOP` and `TRANSMIT_STATUS_DD` (descriptor done, end of packet), keeping the Linux spelling as an alias; ratify the rest as they stand. These three are the only abbreviations in the module.
 
 ### E6. Buffer layout (10)
 

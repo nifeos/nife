@@ -52,9 +52,10 @@ pub use control::{
 pub use data_plane::{DataPlane, Region, Tails, TransmitError};
 use descriptor::*;
 pub use descriptor::{
-    BUFFER_SIZE, MAXIMUM_FRAME, RECEIVE_ENTRIES, RECEIVE_ERRORS_FRAME, RECEIVE_QUEUE_PAGE,
-    RECEIVE_STATUS_DD, RECEIVE_STATUS_EOP, ReceiveVerdict, TAIL_IN_PAGE, TRANSMIT_COMMAND,
-    TRANSMIT_ENTRIES, TRANSMIT_QUEUE_PAGE, TRANSMIT_STATUS_DD, receive_verdict, transmit_word,
+    BUFFER_SIZE, MAXIMUM_FRAME, RECEIVE_ENTRIES, RECEIVE_FRAME_ERROR_MASK, RECEIVE_QUEUE_PAGE,
+    RECEIVE_STATUS_DESCRIPTOR_DONE, RECEIVE_STATUS_END_OF_PACKET, ReceiveVerdict, TAIL_IN_PAGE,
+    TRANSMIT_COMMAND, TRANSMIT_ENTRIES, TRANSMIT_QUEUE_PAGE, TRANSMIT_STATUS_DESCRIPTOR_DONE,
+    receive_verdict, transmit_descriptor_command_word,
 };
 pub use device::{DEVICE_IDS, VENDOR_INTEL, is_supported, model};
 

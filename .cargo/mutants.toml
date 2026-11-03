@@ -208,7 +208,7 @@ exclude_re = [
     # descriptor word: single distinct bits, and a u16 length under a command byte at bit 24; the
     # assertions beside them compile both arguments.
     "^crates/e1000e/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^$",
-    "^crates/e1000e/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_word$",
+    "^crates/e1000e/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_descriptor_command_word$",
     # The flush (pch/flush.rs): the dummy transmit's 512-byte length under a flag byte at bit 24,
     # and RXDCTL's three added constants, which land in the register half the mask clears or
     # share no bits with each other; the assertions beside each function compile both.

@@ -34,7 +34,7 @@ Claim a device, then judge each receive descriptor's status word before trusting
 
 ```rust
 use e1000e::{
-    RECEIVE_STATUS_DD, RECEIVE_STATUS_EOP, ReceiveVerdict, VENDOR_INTEL, is_supported, model,
+    RECEIVE_STATUS_DESCRIPTOR_DONE, RECEIVE_STATUS_END_OF_PACKET, ReceiveVerdict, VENDOR_INTEL, is_supported, model,
     receive_verdict,
 };
 
@@ -42,7 +42,7 @@ assert!(is_supported(VENDOR_INTEL, 0x10d3));
 assert_eq!(model(0x10d3), Some("82574L (QEMU's e1000e)"));
 
 let word = |len: u64, status: u8| len | (status as u64) << 32;
-let done = RECEIVE_STATUS_DD | RECEIVE_STATUS_EOP;
+let done = RECEIVE_STATUS_DESCRIPTOR_DONE | RECEIVE_STATUS_END_OF_PACKET;
 assert_eq!(receive_verdict(word(60, done), 1514), ReceiveVerdict::Frame(60));
 assert_eq!(receive_verdict(word(60, 0), 1514), ReceiveVerdict::NotYet);
 assert_eq!(receive_verdict(word(0xffff, done), 1514), ReceiveVerdict::Drop);
