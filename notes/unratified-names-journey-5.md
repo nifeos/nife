@@ -14,13 +14,13 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 |---|---|---|---|---|
 | `designware_ethernet` | 110 | 91 | 19 | 13 |
 | `designware_mobile_storage` | 74 | 74 | 0 | 10 |
-| `e1000e` | 132 | 94 | 38 | 13 |
+| `e1000e` | 126 | 88 | 38 | 12 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 328 | 259 | 69 | 38 |
+| total | 322 | 253 | 69 | 37 |
 
 ## How to read a group
 
@@ -208,7 +208,7 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `e1000e`
 
-132 unratified names: 94 with no block, 38 provisional.
+126 unratified names: 88 with no block, 38 provisional.
 
 ### E1. Module names (14)
 
@@ -272,13 +272,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; `is_pch` follows the module-name decision (`is_platform_controller_hub` if `pch` is spelled out).
-
-### E10. Non-volatile memory words (6)
-
-`pch::non_volatile_memory::DONE`, `pch::non_volatile_memory::ERROR`, `pch::non_volatile_memory::Error`, `pch::non_volatile_memory::GO`, `pch::non_volatile_memory::WORDS`, `pch::non_volatile_memory::read`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand.
 
 ### E11. Physical layer device access (17)
 

@@ -590,7 +590,7 @@ fn config_done(hardware: &mut impl Hardware) -> Result<(), Error> {
     } else {
         hardware.note(Note::PhysicalLayerDeviceResetNotAsserted);
     }
-    let g = non_volatile_memory::Geometry::read(hardware);
+    let g = non_volatile_memory::Geometry::read_from_hardware(hardware);
     non_volatile_memory::valid_bank(hardware, g)?;
     Ok(())
 }
@@ -734,7 +734,7 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
             physical_layer_device::registers::HV_LED_CONFIG,
             led,
         )?;
-        let g = non_volatile_memory::Geometry::read(hardware);
+        let g = non_volatile_memory::Geometry::read_from_hardware(hardware);
         let word = base << 1;
         let mut page: u32 = 0;
         for i in 0..size {

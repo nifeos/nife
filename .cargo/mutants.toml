@@ -214,13 +214,14 @@ exclude_re = [
     # share no bits with each other; the assertions beside each function compile both.
     "^crates/e1000e/src/pch/flush\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_word$",
     "^crates/e1000e/src/pch/flush\\.rs:\\d+:\\d+: replace \\| with \\^ in rxdctl$",
-    # The flash registers (pch/non_volatile_memory.rs). status::DONE and control::GO are `1 << 0`
-    # and `1 >> 0` is the same word, the shift identity; the file-level shift entry also sweeps
-    # the other `1 << n` status bits and the two `0b11 << n` masks, whose swaps are killed by
-    # the_flash_register_bits_are_the_ich8_unions. initialize_cycle ORs two write-one-to-clear
-    # error bits that share no bit (assertion beside the const modules), and its DONE write meets
-    # a bit the status write before it has already carried. read_u32_at_byte ORs the byte count
-    # into the field it just masked out (assertion beside the const modules).
+    # The flash registers (pch/non_volatile_memory.rs). status::FLASH_CYCLE_DONE and
+    # control::FLASH_CYCLE_GO are `1 << 0` and `1 >> 0` is the same word, the shift identity; the
+    # file-level shift entry also sweeps the other `1 << n` status bits and the two `0b11 << n`
+    # masks, whose swaps are killed by the_flash_register_bits_are_the_ich8_unions.
+    # initialize_cycle ORs two write-one-to-clear error bits that share no bit (assertion beside
+    # the const modules), and its FLASH_CYCLE_DONE write meets a bit the status write before it
+    # has already carried. read_u32_at_byte ORs the byte count into the field it just masked out
+    # (assertion beside the const modules).
     "^crates/e1000e/src/pch/non_volatile_memory\\.rs:\\d+:\\d+: replace << with >>$",
     "^crates/e1000e/src/pch/non_volatile_memory\\.rs:\\d+:\\d+: replace \\| with \\^ in initialize_cycle$",
     "^crates/e1000e/src/pch/non_volatile_memory\\.rs:\\d+:\\d+: replace \\| with \\^ in read_u32_at_byte$",
