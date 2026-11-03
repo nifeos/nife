@@ -409,7 +409,7 @@ impl NetworkInterfaceController {
         controller::configure(
             self,
             &id,
-            &crate::jh7110::BUS,
+            &crate::jh7110::BUS_CONFIGURATION,
             region,
             [0x6c, 0xcf, 0x39, 0, 0x47, 0x2c],
         )

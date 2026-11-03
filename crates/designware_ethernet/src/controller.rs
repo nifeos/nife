@@ -137,7 +137,7 @@ pub(crate) const fn address_words(station_address: [u8; 6]) -> (u32, u32) {
 }
 
 /// **How the DMA meets the bus**: the `snps,*` properties of a board's node and its
-/// `snps,axi-config`. [`crate::jh7110::BUS`] is radon's.
+/// `snps,axi-config`. [`crate::jh7110::BUS_CONFIGURATION`] is radon's.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Bus {
     /// `snps,fixed-burst`.
@@ -522,7 +522,7 @@ pub fn stop(hardware: &mut impl Hardware) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::jh7110::BUS;
+    use crate::jh7110::BUS_CONFIGURATION;
     use crate::simulator::{Memory, NetworkInterfaceController};
 
     const PHYSICAL_ADDRESS: u64 = 0x4800_0000;
@@ -591,7 +591,14 @@ mod tests {
         let mut nic =
             NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         let id = Identity::read(&mut nic);
-        configure(&mut nic, &id, &BUS, PHYSICAL_ADDRESS, STATION_ADDRESS).unwrap();
+        configure(
+            &mut nic,
+            &id,
+            &BUS_CONFIGURATION,
+            PHYSICAL_ADDRESS,
+            STATION_ADDRESS,
+        )
+        .unwrap();
         assert_eq!(
             nic.register(registers::CHAN_RX_BASE_ADDR),
             PHYSICAL_ADDRESS as u32
@@ -647,10 +654,10 @@ mod tests {
     fn the_queue_size_comes_from_the_hardware_not_the_vendor_trees_number() {
         // 262144 bytes, the vendor tree's rx-fifo-depth, is 1023 in a 10-bit field: it would fit,
         // and it would be a lie. The hardware's 2048 is 7.
-        let mode = receive_queue_mode(0, &BUS, 2048);
+        let mode = receive_queue_mode(0, &BUS_CONFIGURATION, 2048);
         assert_eq!(mode >> registers::MTL_CHAN_RX_OP_MODE_RQS_SHIFT & 0x3ff, 7);
         assert_eq!(mode & 1 << 7, 0, "no flow control thresholds below 4 KiB");
-        let mode = transmit_queue_mode(0, &BUS, 2048);
+        let mode = transmit_queue_mode(0, &BUS_CONFIGURATION, 2048);
         assert_eq!(mode >> registers::MTL_CHAN_TX_OP_MODE_TQS_SHIFT & 0x1ff, 7);
         assert_eq!(
             mode & registers::MTL_CHAN_TX_OP_MODE_TXQEN_MASK,
@@ -697,7 +704,14 @@ mod tests {
         let mut nic =
             NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
         let id = Identity::read(&mut nic);
-        configure(&mut nic, &id, &BUS, PHYSICAL_ADDRESS, STATION_ADDRESS).unwrap();
+        configure(
+            &mut nic,
+            &id,
+            &BUS_CONFIGURATION,
+            PHYSICAL_ADDRESS,
+            STATION_ADDRESS,
+        )
+        .unwrap();
         start(
             &mut nic,
             Link {
@@ -792,8 +806,8 @@ mod tests {
     #[test]
     fn configure_writes_each_field_and_keeps_every_other_bit() {
         let region = 0x1_4800_0000;
-        let zero = configured(0, &FORTY_BIT, &BUS, region);
-        let ones = configured(u32::MAX, &FORTY_BIT, &BUS, region);
+        let zero = configured(0, &FORTY_BIT, &BUS_CONFIGURATION, region);
+        let ones = configured(u32::MAX, &FORTY_BIT, &BUS_CONFIGURATION, region);
         for (register, from_zero, from_ones) in [
             (registers::SYS_BUS_MODE, 0x0f0f_08f1, 0xffff_ffff),
             (registers::CHAN_CONTROL, 0, 0xfffe_ffff),
@@ -859,14 +873,23 @@ mod tests {
     fn the_queue_modes_from_zero_and_from_all_ones() {
         let sf = Bus {
             threshold_mode: false,
-            ..BUS
+            ..BUS_CONFIGURATION
         };
-        assert_eq!(receive_queue_mode(0, &BUS, 2048), 0x0070_0018);
-        assert_eq!(receive_queue_mode(u32::MAX, &BUS, 2048), 0xc07f_ffdf);
+        assert_eq!(receive_queue_mode(0, &BUS_CONFIGURATION, 2048), 0x0070_0018);
+        assert_eq!(
+            receive_queue_mode(u32::MAX, &BUS_CONFIGURATION, 2048),
+            0xc07f_ffdf
+        );
         assert_eq!(receive_queue_mode(0, &sf, 8192), 0x01f0_c1a0);
         assert_eq!(receive_queue_mode(u32::MAX, &sf, 8192), 0xc1f0_c1ff);
-        assert_eq!(transmit_queue_mode(0, &BUS, 2048), 0x0007_0078);
-        assert_eq!(transmit_queue_mode(u32::MAX, &BUS, 2048), 0xfe07_fff9);
+        assert_eq!(
+            transmit_queue_mode(0, &BUS_CONFIGURATION, 2048),
+            0x0007_0078
+        );
+        assert_eq!(
+            transmit_queue_mode(u32::MAX, &BUS_CONFIGURATION, 2048),
+            0xfe07_fff9
+        );
         assert_eq!(transmit_queue_mode(0, &sf, 8192), 0x001f_000a);
         assert_eq!(transmit_queue_mode(u32::MAX, &sf, 8192), 0xfe1f_fffb);
     }
