@@ -69,7 +69,7 @@ Repository security advisories and Metadata.
 
 ## Generate the key and place it on the host
 
-1. [`finishing-the-setup.md`](finishing-the-setup.md) step P4 gives the commands for the steps
+1. [`finishing-the-setup.md`](finishing-the-setup.md) step P5 gives the commands for the steps
    below. The advisory permission is verified there: this App needs nothing more to file and
    publish an advisory.
 2. On the App's settings page, <https://github.com/organizations/nifeos/settings/apps/nife-fuzz>,
@@ -114,7 +114,7 @@ write nothing.
    Key pairs, generate a private key. Copy it into a directory only root can enter on the machine that launches fix lanes, owned
    by root, mode 0400. Delete every other copy.
 7. Install the helper and the sudo rule as nifeos/fuzz-host's
-   [`docs/fuzz-token-reader.md`](https://github.com/nifeos/fuzz-host/blob/lane/fuzz-reader-token/docs/fuzz-token-reader.md)
+   [`docs/fuzz-token-reader.md`](https://github.com/nifeos/fuzz-host/blob/main/docs/fuzz-token-reader.md)
    says. The App ID and installation ID are in the helper; neither is secret.
 
 Never paste this key anywhere else either, a lane's environment included.
