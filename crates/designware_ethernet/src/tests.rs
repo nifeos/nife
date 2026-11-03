@@ -1,5 +1,7 @@
 //! The crate's host tests, kept apart from `lib.rs` so the crate root stays an index of its
 //! modules as the tests grow.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
 use std::vec;
 use std::vec::Vec;

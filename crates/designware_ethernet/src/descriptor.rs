@@ -2,7 +2,7 @@
 //! driver writes and reads, and what a receive descriptor says. The descriptor bits keep
 //! OpenBSD's `dwqereg.h` names, and each one's documentation opens with its full name.
 //!
-//! Name: provisional, decided by the maintainer; reversing costs one pull request.
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
 pub(crate) const PAGE: u64 = 4096;
 

@@ -16,9 +16,11 @@
 //! [`COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER`] node or the vendor's node named
 //! [`ALWAYS_ON_SYSTEM_CONTROLLER_NODE`], and [`SystemController::fallback`] answers for a tree that
 //! names neither.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
-use crate::controller::Bus;
-use crate::motorcomm::{PadDriveStrength, Settings, SettingsSource};
+use crate::motorcomm_physical_layer_device::{PadDriveStrength, Settings, SettingsSource};
+use crate::network_interface_controller::BusConfiguration;
 use crate::registers;
 
 /// Mainline's compatible for both ports.
@@ -53,7 +55,7 @@ pub const GMAC1_REGISTERS_PHYSICAL_ADDRESS: u64 = 0x1604_0000;
 /// one thing both trees share verbatim and parsing it would add a failure path for no new fact.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3133, renamed from `BUS`.
-pub const BUS_CONFIGURATION: Bus = Bus {
+pub const BUS_CONFIGURATION: BusConfiguration = BusConfiguration {
     fixed_burst: true,
     channel_burst_length_times_8: false,
     transmit_channel_burst_length: 16,

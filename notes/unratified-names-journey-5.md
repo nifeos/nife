@@ -12,15 +12,15 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 | crate | unratified | no block | provisional | groups |
 |---|---|---|---|---|
-| `designware_ethernet` | 75 | 56 | 19 | 8 |
-| `designware_mobile_storage` | 74 | 74 | 0 | 10 |
+| `designware_ethernet` | 40 | 24 | 16 | 4 |
+| `designware_mobile_storage` | 65 | 65 | 0 | 9 |
 | `e1000e` | 132 | 94 | 38 | 13 |
 | `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
 | `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
 | `generational_table` | 0 | 0 | 0 | 0 |
 | `file_allocation_table` | 0 | 0 | 0 | 0 |
 | `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 293 | 224 | 69 | 33 |
+| total | 249 | 183 | 66 | 28 |
 ## How to read a group
 
 Each group gives its items in their current spelling, as `path::name`, and a module by its own name. *Breaks the spelled-out rule* answers the 2026-11-02 rule in [design/naming.md](../design/naming.md): outside register modules, identifiers say what the thing is and not the specification's abbreviation. A hardware register, field or bit constant takes the spelled-out name with the source's spelling in `#[doc(alias)]`, OpenBSD's cited first. `yes` means the group has at least that kind of abbreviation; `one` means a few named items do; `no` means none. The recommendation is the stricter reading wherever a call was close, since loosening later is compatible and tightening is not.
@@ -32,40 +32,20 @@ In order, easiest to rule on first:
 1. `X1`, the nine `extensible_host_controller_interface` assertions: the same rename the architect already ruled for two sister crates.
 2. `N1`, the three NVMe namespace names: a full proposal already exists ([ratify-the-nvme-namespace-names](../design/roadmap/proposals/ratify-the-nvme-namespace-names.md)).
 3. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
-4. The `no` groups of designware_mobile_storage (`DM1` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
+4. The `no` groups of designware_mobile_storage (`DM2` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
 The groups that need a real ruling are the register and bit constants: `DE7`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
-75 unratified names: 56 with no block, 19 provisional.
-### DE1. Module names (10)
-
-`coherence`, `controller`, `data_plane`, `descriptor`, `hardware`, `jh7110`, `layout`, `motorcomm`, `proofs`, `tests`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify all ten as they stand. `data_plane`, `descriptor` and `hardware` are private and already provisional; `proofs` and `tests` follow the tree's usual names for harness and test modules; the rest say what the module holds.
+40 unratified names: 24 with no block, 16 provisional.
 
 ### DE2. The sixteen non-overlap assertions (16)
 
-`coherence::PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP`, `controller::CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP`, `controller::MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP`, `controller::RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `controller::TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `descriptor::FIRST_AND_LAST_BITS_DO_NOT_OVERLAP`, `descriptor::RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP`, `descriptor::TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP`, `jh7110::BURST_LENGTH_BITS_DO_NOT_OVERLAP`, `jh7110::INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP`, `management_data_input_output::AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP`, `management_data_input_output::COMMAND_WORD_FIELDS_DO_NOT_OVERLAP`, `management_data_input_output::PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP`, `motorcomm::PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP`, `motorcomm::RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP`, `motorcomm::RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP`
+`cache_coherence::PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP`, `network_interface_controller::CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP`, `network_interface_controller::MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP`, `network_interface_controller::RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `network_interface_controller::TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `descriptor::FIRST_AND_LAST_BITS_DO_NOT_OVERLAP`, `descriptor::RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP`, `descriptor::TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP`, `jh7110::BURST_LENGTH_BITS_DO_NOT_OVERLAP`, `jh7110::INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP`, `management_data_input_output::AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP`, `management_data_input_output::COMMAND_WORD_FIELDS_DO_NOT_OVERLAP`, `management_data_input_output::PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP`, `motorcomm_physical_layer_device::PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP`, `motorcomm_physical_layer_device::RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP`, `motorcomm_physical_layer_device::RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. The maintainer chose the `..._DO_NOT_OVERLAP` form (the 2026-11-02 ruling that renamed the `THE_..._SHARE_NO_BIT` set) and reversing costs one pull request; each says which fields it checks. Each is a private compile-time assertion.
-
-### DE3. Coherence probe (9)
-
-`coherence::Observation`, `coherence::POSTED`, `coherence::Payload`, `coherence::Verdict`, `coherence::WAIT_MICROSECONDS`, `coherence::classify`, `coherence::delivered`, `coherence::observe`, `coherence::prepare`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. Plain words, no abbreviation. `POSTED` is a count of posted descriptors, not the bus term, and its doc says so.
-
-### DE4. Controller bring-up (10)
-
-`controller::Bus`, `controller::Error`, `controller::Identity`, `controller::configure`, `controller::core_version`, `controller::read`, `controller::soft_reset`, `controller::start`, `controller::station_address`, `controller::stop`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. Plain verbs and nouns; `core_version` and `station_address` say what they return.
 
 ### DE5. Data plane (7)
 
@@ -89,27 +69,14 @@ The groups that need a real ruling are the register and bit constants: `DE7`, `E
 - Provisional recommendation: Spell out, with the databook spelling kept as `#[doc(alias)]` and cited in the doc comment, as the 2026-11-02 rule and the earlier `RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION` rename already do. The docs already carry the plain-words title of each (for example 'owned by the device'), so the candidate names come from the crate's own text. Decide as one group; the items share one pattern.
 
 
-### DE11. MDIO software surface (6)
-
-`management_data_input_output::Bus`, `management_data_input_output::COMMAND_LIMIT_MICROSECONDS`, `management_data_input_output::Error`, `management_data_input_output::command`, `management_data_input_output::link_is_up`, `management_data_input_output::restart_autonegotiation`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. The module name is already spelled out; these are ordinary names.
 
 ## `designware_mobile_storage`
 
-74 unratified names: 74 with no block, 0 provisional.
-
-### DM1. Module names (9)
-
-`bench`, `card`, `command`, `host`, `jh7110`, `partition`, `proofs`, `sd`, `tests`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify all nine. `sd` passes the acronym test (Secure Digital is a spoken phrase, but nobody says it); the rest are plain.
+65 unratified names: 65 with no block, 0 provisional.
 
 ### DM2. Host controller (13)
 
-`host::Error`, `host::Host`, `host::Identity`, `host::Registers`, `host::card_clock`, `host::clock_divider`, `host::command`, `host::into_registers`, `host::new`, `host::read`, `host::registers`, `host::reset`, `host::write`
+`host_controller::Error`, `host_controller::Host`, `host_controller::Identity`, `host_controller::Registers`, `host_controller::card_clock`, `host_controller::clock_divider`, `host_controller::command`, `host_controller::into_registers`, `host_controller::new`, `host_controller::read`, `host_controller::registers`, `host_controller::reset`, `host_controller::write`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. The register-level names inside this module were already ratified spelled out under #3092; these are the software surface around them.
