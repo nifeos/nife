@@ -115,10 +115,11 @@ first sweep's finding 5). The heading was retitled to say so and a dated paragra
 surface is today, so the number stays true as history and a reader cannot leave with a wrong
 present-tense belief.
 
-**Left as history, deliberately:** `crates/abi/src/lib.rs` (the `Name:` paragraph of its module documentation, "milestone 7d's first three
-syscalls", correct), `design/roadmap/0007-user-mode.md`'s `ec6f1b5` entry and `notes/README.md`'s "Rust" section, as
-it read then (both "**7d**:
-three syscalls", correct as changelog entries).
+**Left as history, deliberately:** `crates/abi/src/lib.rs` (the `Name:` paragraph of its module
+documentation, written for milestone 7d (User mode: EL0, capabilities, the ELF loader, and IPC):
+"milestone 7d's first three syscalls", correct), `design/roadmap/0007-user-mode.md`'s `ec6f1b5`
+entry and `notes/README.md`'s "Rust" section, as it read then (both "**7d**: three syscalls",
+correct as changelog entries).
 
 ### 2. FIXED: `abi::rights` had no documentation, and `objtype`'s claimed to be the rights bits
 
