@@ -93,7 +93,7 @@ creates a draft advisory, adds an affected version range to it, publishes it, an
 it without a credential. A throwaway App on a throwaway repository showed it, with HTTP statuses 201
 for the create, 200 for the range update, 200 for the publish and 200 for the unauthenticated read.
 The App, repository and key are deleted. GitHub documents the caller as "a security manager or
-administrator", and an App with the advisory permission alone qualifies.
+administrator". An App with the advisory permission alone qualifies.
 
 Publishing a draft needs at least one vulnerability entry that names a package (ecosystem and name)
 and a `vulnerable_version_range`. Without a range GitHub answers 422, "Advisory is not publishable".

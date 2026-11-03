@@ -48,6 +48,6 @@ send none, nothing it prints may contain a planted seed, and it must refuse to r
 
 Not started. It waits on the mint helper
 ([the host mints its tokens](the-fuzz-host-mints-its-tokens-from-the-app-key.md)) for a real run, not
-for its selftest. An App with the advisory permission alone is verified to create, complete,
+for its selftest. A test showed that an App with the advisory permission alone can create, complete,
 publish and publicly read an advisory
 ([the result](../../../notes/fuzzing/finishing-the-setup.md#the-advisory-permission)).
