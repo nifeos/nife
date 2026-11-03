@@ -4,6 +4,11 @@
 
 Thirty-six sections port to a second repository once it supplies the values in the config column. The number is the section's place in `script/lint`, counted by `helpers/lint-no-cargo.awk`. Seconds come from merge-group run 41694693300.
 
+The section headers cite §81 (a dependency stays upgradable), §212 (a prose budget), §213 (writing
+standards), §266 (a Rust source file stays under 2,000 lines), §277 (cite a heading or a symbol,
+never a line number), §282 (when a file is split, the parent becomes an index) and milestone 929
+(comments in the Linux style across first-party Rust).
+
 | # | section | what it checks | tag | what it reads | config a second repository supplies | seconds (wall / CPU) |
 |---|---|---|---|---|---|---|
 | 1 | the pre-push hook's contract with this script | the pre-push hook exists and every script and flag it names still exists; two hook selftests | generic-with-config | `.githooks/pre-push`, `script/lint` | the hook path and the runner's flag names | 3 / 3.1 |

@@ -69,10 +69,11 @@ clippy, rustdoc, cargo-machete, markdown links, the falsification form check and
 So the live question is not whether to extract. It is whether two implementations of one rule
 should keep drifting apart, or become one.
 
-A crate repository does not yet run these portable sections: 32 (unsafe fn contracts), 41
-(module-wide dead-code suppression), 43 (conflict markers), 78 (workflow steps that swallow a
-failure), 79 (every workflow file parses), 81 (issue forms), 96 (the history ratchet), 98 (unit
-symbols), 99 (line-number citations) and 40 (fence pairs). jh7110_entropy passes the greps among
+A crate repository does not yet run ten portable sections. Four read Rust: 32 (unsafe fn
+contracts), 40 (fence pairs), 41 (module-wide dead-code suppression) and 98 (unit symbols). Three
+read workflows and forms: 78 (steps that swallow a failure), 79 (every workflow file parses) and 81
+(issue forms). Three read any text: 43 (conflict markers), 96 (the history ratchet) and 99
+(line-number citations). jh7110_entropy passes the greps among
 them today, and nothing holds it there.
 
 ## Hidden couplings
@@ -230,9 +231,9 @@ nife's helpers instead of its rewrites.
 ## Proposed milestone (number for the integrator)
 
 *Portable lint helpers judge the repository they run in.* Every helper behind a generic or
-generic-with-config section reads the root from the working directory's git top level, treats a
-missing baseline as empty, takes its ceiling and exclusions as arguments with nife's values as
-defaults, and fails on an empty subject unless told otherwise. A selftest runs each helper from a
+generic-with-config section reads the root from the working directory's git top level. It treats a
+missing baseline as empty and takes its ceiling and exclusions as arguments, with nife's values as
+defaults. It fails on an empty subject unless told otherwise. A selftest runs each helper from a
 scratch repository and proves it judges that repository and not nife. `cap_abbreviation.py`'s
 lexer and `roadmap_block.py`'s block parser split into modules a generic helper may import. What
 drives it: crate-workflows can then call these helpers at a pinned nife commit instead of carrying
