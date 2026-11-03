@@ -1,28 +1,56 @@
 //! **What the driver writes to the controller's control registers**: the bits it sets, and the
-//! `RCTL`, `TCTL` and `TIPG` values it programs, and the MAC address read back.
+//! Receive Control, Transmit Control and Transmit Inter-Packet Gap (`RCTL`, `TCTL` and `TIPG`) values it programs, and the MAC address read back.
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
-/// `CTRL`: set link up.
-pub const CTRL_SLU: u32 = 0x0000_0040;
+/// Device Control (`CTRL`): set link up. OpenBSD's `E1000_CTRL_SLU` (`sys/dev/pci/if_em_hw.h`), which FreeBSD's `sys/dev/e1000/e1000_defines.h` and Linux spell the same.
+///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `CTRL_SLU`: the abbreviation is spelled out, and the source spellings are the aliases.
+#[doc(alias = "CTRL_SLU")]
+#[doc(alias = "E1000_CTRL_SLU")]
+pub const DEVICE_CONTROL_SET_LINK_UP: u32 = 0x0000_0040;
 
-/// `CTRL`: auto-speed detection.
-pub const CTRL_ASDE: u32 = 0x0000_0020;
+/// Device Control (`CTRL`): auto-speed detection enable. OpenBSD's `E1000_CTRL_ASDE` (`sys/dev/pci/if_em_hw.h`), which FreeBSD's `sys/dev/e1000/e1000_defines.h` and Linux spell the same.
+///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `CTRL_ASDE`: the abbreviation is spelled out, and the source spellings are the aliases.
+#[doc(alias = "CTRL_ASDE")]
+#[doc(alias = "E1000_CTRL_ASDE")]
+pub const DEVICE_CONTROL_AUTO_SPEED_DETECTION_ENABLE: u32 = 0x0000_0020;
 
-/// `CTRL`: global reset, self-clearing.
-pub const CTRL_RST: u32 = 0x0400_0000;
+/// Device Control (`CTRL`): global reset, self-clearing. OpenBSD's `E1000_CTRL_RST` (`sys/dev/pci/if_em_hw.h`), which FreeBSD's `sys/dev/e1000/e1000_defines.h` and Linux spell the same.
+///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `CTRL_RST`: the abbreviation is spelled out, and the source spellings are the aliases.
+#[doc(alias = "CTRL_RST")]
+#[doc(alias = "E1000_CTRL_RST")]
+pub const DEVICE_CONTROL_GLOBAL_RESET: u32 = 0x0400_0000;
 
-/// `CTRL_EXT`: tells management firmware a driver has the device.
-pub const CTRL_EXT_DRV_LOAD: u32 = 0x1000_0000;
+/// Extended Device Control (`CTRL_EXT`): tells management firmware a driver has the device. OpenBSD's `E1000_CTRL_EXT_DRV_LOAD` (`sys/dev/pci/if_em_hw.h`), which FreeBSD's `sys/dev/e1000/e1000_defines.h` and Linux spell the same.
+///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `CTRL_EXT_DRV_LOAD`: the abbreviation is spelled out, and the source spellings are the aliases.
+#[doc(alias = "CTRL_EXT_DRV_LOAD")]
+#[doc(alias = "E1000_CTRL_EXT_DRV_LOAD")]
+pub const EXTENDED_DEVICE_CONTROL_DRIVER_LOAD: u32 = 0x1000_0000;
 
-/// `STATUS`: link up.
-pub const STATUS_LU: u32 = 0x0000_0002;
+/// Device Status (`STATUS`): link up. OpenBSD's `E1000_STATUS_LU` (`sys/dev/pci/if_em_hw.h`), which FreeBSD's `sys/dev/e1000/e1000_defines.h` and Linux spell the same.
+///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `STATUS_LU`: the abbreviation is spelled out, and the source spellings are the aliases.
+#[doc(alias = "STATUS_LU")]
+#[doc(alias = "E1000_STATUS_LU")]
+pub const DEVICE_STATUS_LINK_UP: u32 = 0x0000_0002;
 
-/// `RFCTL`: extended receive descriptors. Cleared, so the device writes the legacy format.
-pub const RFCTL_EXTEN: u32 = 0x0000_8000;
+/// Receive Filter Control (`RFCTL`): extended receive descriptors. Cleared, so the device writes the legacy format. OpenBSD's `E1000_RFCTL_EXTEN` (`sys/dev/pci/if_em_hw.h`), which FreeBSD's `sys/dev/e1000/e1000_defines.h` and Linux spell the same.
+///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `RFCTL_EXTEN`: the abbreviation is spelled out, and the source spellings are the aliases.
+#[doc(alias = "RFCTL_EXTEN")]
+#[doc(alias = "E1000_RFCTL_EXTEN")]
+pub const RECEIVE_FILTER_CONTROL_EXTENDED_DESCRIPTORS_ENABLE: u32 = 0x0000_8000;
 
-/// `RAH`: the address in this entry is valid.
-pub const RAH_AV: u32 = 0x8000_0000;
+/// Receive Address High (`RAH`): the address in this entry is valid. OpenBSD's `E1000_RAH_AV` (`sys/dev/pci/if_em_hw.h`), which FreeBSD's `sys/dev/e1000/e1000_defines.h` and Linux spell the same.
+///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `RAH_AV`: the abbreviation is spelled out, and the source spellings are the aliases.
+#[doc(alias = "RAH_AV")]
+#[doc(alias = "E1000_RAH_AV")]
+pub const RECEIVE_ADDRESS_HIGH_ADDRESS_VALID: u32 = 0x8000_0000;
 
 /// `RCTL`: receive enable (Linux's `regs.h`).
 const RCTL_EN: u32 = 0x0000_0002;
@@ -34,7 +62,7 @@ const RCTL_BAM: u32 = 0x0000_8000;
 const RCTL_SECRC: u32 = 0x0400_0000;
 
 // The three share no bit, so | and ^ compose the word identically; the compiler checks that here,
-// and .cargo/mutants.toml excludes rctl's OR-to-XOR swaps on this assertion.
+// and .cargo/mutants.toml excludes receive_control_register_value's OR-to-XOR swaps on this assertion.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(RCTL_EN ^ RCTL_BAM ^ RCTL_SECRC == RCTL_EN | RCTL_BAM | RCTL_SECRC);
 
@@ -42,8 +70,12 @@ const _: () = assert!(RCTL_EN ^ RCTL_BAM ^ RCTL_SECRC == RCTL_EN | RCTL_BAM | RC
 /// broadcast accepted (DHCP's offer is broadcast), 2048-byte buffers (size field zero), the CRC
 /// stripped. **Not** promiscuous: unicast is filtered to receive-address entry 0, which the process
 /// cannot write.
+///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `rctl`: the register mnemonic is spelled out, and it stays as an alias beside the register's title.
 #[doc(alias = "receive control")]
-pub const fn rctl() -> u32 {
+#[doc(alias = "rctl")]
+#[doc(alias = "E1000_RCTL")]
+pub const fn receive_control_register_value() -> u32 {
     RCTL_EN | RCTL_BAM | RCTL_SECRC
 }
 
@@ -54,7 +86,7 @@ const TCTL_EN: u32 = 0x0000_0002;
 const TCTL_PSP: u32 = 0x0000_0008;
 
 // The four operands share no bit, so | and ^ compose the word identically; the compiler checks
-// that here, and .cargo/mutants.toml excludes tctl's OR-to-XOR swaps on this assertion.
+// that here, and .cargo/mutants.toml excludes transmit_control_register_value's OR-to-XOR swaps on this assertion.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(
     TCTL_EN ^ TCTL_PSP ^ (15 << 4) ^ (63 << 12) == TCTL_EN | TCTL_PSP | (15 << 4) | (63 << 12)
@@ -63,20 +95,28 @@ const _: () = assert!(
 /// **Transmit Control** (`E1000_TCTL`, Linux's `regs.h`) as the kernel programs it: enabled, short
 /// frames padded, collision threshold 15 and distance 63 (Linux's `E1000_COLLISION_THRESHOLD` and
 /// `E1000_COLLISION_DISTANCE`, `defines.h`).
+///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `tctl`: the register mnemonic is spelled out, and it stays as an alias beside the register's title.
 #[doc(alias = "transmit control")]
-pub const fn tctl() -> u32 {
+#[doc(alias = "tctl")]
+#[doc(alias = "E1000_TCTL")]
+pub const fn transmit_control_register_value() -> u32 {
     TCTL_EN | TCTL_PSP | 15 << 4 | 63 << 12
 }
 
 // The three field values share no bit, so | and ^ compose the word identically; the compiler
-// checks that here, and .cargo/mutants.toml excludes tipg's OR-to-XOR swaps on this assertion.
+// checks that here, and .cargo/mutants.toml excludes transmit_inter_packet_gap_register_value's OR-to-XOR swaps on this assertion.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(8 ^ (8 << 10) ^ (6 << 20) == 8 | (8 << 10) | (6 << 20));
 
 /// **Transmit Inter-Packet Gap** (`E1000_TIPG`, Linux's `regs.h`) for copper: IPGT 8, IPGR1 8,
 /// IPGR2 6 (Linux's `DEFAULT_82543_TIPG_*`).
+///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `tipg`: the register mnemonic is spelled out, and it stays as an alias beside the register's title.
 #[doc(alias = "transmit inter-packet gap")]
-pub const fn tipg() -> u32 {
+#[doc(alias = "tipg")]
+#[doc(alias = "E1000_TIPG")]
+pub const fn transmit_inter_packet_gap_register_value() -> u32 {
     8 | 8 << 10 | 6 << 20
 }
 
@@ -90,7 +130,7 @@ pub const fn tipg() -> u32 {
 #[doc(alias = "mac")]
 #[doc(alias = "mac_address")]
 pub fn station_address_from_receive_address(ral: u32, rah: u32) -> Option<[u8; 6]> {
-    if rah & RAH_AV == 0 {
+    if rah & RECEIVE_ADDRESS_HIGH_ADDRESS_VALID == 0 {
         return None;
     }
     let l = ral.to_le_bytes();

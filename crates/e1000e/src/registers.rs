@@ -82,6 +82,6 @@ pub const MTA_ENTRIES: u64 = 128;
 #[doc(alias = "receive address low")]
 pub const RAL0: u64 = 0x0_5400;
 /// **Receive Address High** (`E1000_RAH(0)`, Linux's `regs.h`). Entry 0: the last two octets, and
-/// [`super::RAH_AV`].
+/// [`super::RECEIVE_ADDRESS_HIGH_ADDRESS_VALID`].
 #[doc(alias = "receive address high")]
 pub const RAH0: u64 = 0x0_5404;

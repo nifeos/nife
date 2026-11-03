@@ -202,9 +202,9 @@ impl Sim {
             let s = self.get(mac::STATUS);
             self.mac.insert(mac::STATUS, s | 0x600); // PHYRA, LAN_INIT_DONE
         }
-        if value & crate::CTRL_RST != 0 {
+        if value & crate::DEVICE_CONTROL_GLOBAL_RESET != 0 {
             self.global_resets += 1;
-            stored &= !crate::CTRL_RST; // self-clears in the model at once
+            stored &= !crate::DEVICE_CONTROL_GLOBAL_RESET; // self-clears in the model at once
             // The reset drops the semaphore; the configuration pointer is reloaded from the NVM.
             let e = self.get(registers::EXTCNF_CTRL);
             self.mac.insert(
@@ -730,7 +730,7 @@ mod tests {
             s.physical_layer_device_registers[&physical_layer_device::registers::PHY_CONTROL],
             0x1200
         );
-        assert_ne!(s.get(mac::CTRL) & crate::CTRL_SLU, 0);
+        assert_ne!(s.get(mac::CTRL) & crate::DEVICE_CONTROL_SET_LINK_UP, 0);
         assert_eq!(s.get(registers::TXDCTL0) & 0x013f_003f, 0x0101_001f);
         assert!(swflag_free(&s));
     }

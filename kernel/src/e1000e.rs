@@ -103,7 +103,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     // Tell management firmware a driver has the device, and bring the link up.
     c.w(
         registers::CTRL_EXT,
-        c.r(registers::CTRL_EXT) | ::e1000e::CTRL_EXT_DRV_LOAD,
+        c.r(registers::CTRL_EXT) | ::e1000e::EXTENDED_DEVICE_CONTROL_DRIVER_LOAD,
     );
     if pch {
         // FreeBSD's `e1000_init_hw_ich8lan`, whose copper-link setup sets `CTRL.SLU` itself.
@@ -112,7 +112,9 @@ pub fn bring_up() -> Result<Found, Absent> {
     } else {
         c.w(
             registers::CTRL,
-            c.r(registers::CTRL) | ::e1000e::CTRL_SLU | ::e1000e::CTRL_ASDE,
+            c.r(registers::CTRL)
+                | ::e1000e::DEVICE_CONTROL_SET_LINK_UP
+                | ::e1000e::DEVICE_CONTROL_AUTO_SPEED_DETECTION_ENABLE,
         );
     }
 
@@ -127,7 +129,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     // Legacy receive descriptors, the only format `crates/e1000e` reads.
     c.w(
         registers::RFCTL,
-        c.r(registers::RFCTL) & !::e1000e::RFCTL_EXTEN,
+        c.r(registers::RFCTL) & !::e1000e::RECEIVE_FILTER_CONTROL_EXTENDED_DESCRIPTORS_ENABLE,
     );
 
     // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
@@ -144,12 +146,15 @@ pub fn bring_up() -> Result<Found, Absent> {
     c.w(registers::TDH, 0);
     c.w(registers::TDT, 0);
 
-    c.w(registers::TIPG, ::e1000e::tipg());
-    c.w(registers::TCTL, ::e1000e::tctl());
+    c.w(
+        registers::TIPG,
+        ::e1000e::transmit_inter_packet_gap_register_value(),
+    );
+    c.w(registers::TCTL, ::e1000e::transmit_control_register_value());
     if pch {
         ::e1000e::pch::sequence::transmit_errata(&mut hw);
     }
-    c.w(registers::RCTL, ::e1000e::rctl());
+    c.w(registers::RCTL, ::e1000e::receive_control_register_value());
 
     // The 82574L's PHY answers at address 1 with no pages and no semaphore.
     let physical_layer_device_id = match physical_layer_device_id {
@@ -159,7 +164,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     };
 
     let link_up = wait_ms(LINK_WAIT_MS, || {
-        c.r(registers::STATUS) & ::e1000e::STATUS_LU != 0
+        c.r(registers::STATUS) & ::e1000e::DEVICE_STATUS_LINK_UP != 0
     });
 
     Ok(Found {
@@ -184,10 +189,13 @@ fn reset_82574(c: &Controller) -> Result<(), Error> {
     let _ = c.r(registers::STATUS);
     spin_ms(10);
     // Global reset. Self-clearing; the registers read garbage while it runs, so wait first.
-    c.w(registers::CTRL, c.r(registers::CTRL) | ::e1000e::CTRL_RST);
+    c.w(
+        registers::CTRL,
+        c.r(registers::CTRL) | ::e1000e::DEVICE_CONTROL_GLOBAL_RESET,
+    );
     spin_ms(20);
     if !wait_ms(RESET_WAIT_MS, || {
-        c.r(registers::CTRL) & ::e1000e::CTRL_RST == 0
+        c.r(registers::CTRL) & ::e1000e::DEVICE_CONTROL_GLOBAL_RESET == 0
     }) {
         return Err(Error::ResetTimeout);
     }
@@ -255,7 +263,7 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
     use ::e1000e::pch::{flush, registers as pch};
     c.w(
         pch::FEXTNVM11,
-        c.r(pch::FEXTNVM11) | flush::FEXTNVM11_DISABLE_MULR_FIX,
+        c.r(pch::FEXTNVM11) | flush::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_DISABLE_MULR_FIX,
     );
     let status = || dev.config_read32(flush::PCICFG_DESC_RING_STATUS) as u16;
     if !flush::required(status(), c.r(registers::TDLEN)) {
@@ -293,7 +301,10 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
     c.w(registers::RCTL, rctl & !0x2);
     let _ = c.r(registers::STATUS);
     spin_microseconds(150);
-    c.w(pch::RXDCTL, flush::rxdctl(c.r(pch::RXDCTL)));
+    c.w(
+        pch::RXDCTL,
+        flush::receive_descriptor_control_register_value_for_flush(c.r(pch::RXDCTL)),
+    );
     c.w(registers::RCTL, rctl | 0x2);
     let _ = c.r(registers::STATUS);
     spin_microseconds(150);

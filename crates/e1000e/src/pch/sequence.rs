@@ -648,7 +648,7 @@ pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<
     // the read happens before the reset, and again before any MAC access after it.
     let v = hardware.pci_vendor_id();
     hardware.write(registers::STRAP, u32::from(v));
-    hardware.write(mac::CTRL, ctrl | crate::CTRL_RST);
+    hardware.write(mac::CTRL, ctrl | crate::DEVICE_CONTROL_GLOBAL_RESET);
     // "cannot issue a flush here because it hangs the hardware"
     delay_ms(hardware, 20);
     let v = hardware.pci_vendor_id();
@@ -656,7 +656,7 @@ pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<
 
     let mut cleared = false;
     for _ in 0..reset_wait_ms {
-        if hardware.read(mac::CTRL) & crate::CTRL_RST == 0 {
+        if hardware.read(mac::CTRL) & crate::DEVICE_CONTROL_GLOBAL_RESET == 0 {
             cleared = true;
             break;
         }
@@ -958,7 +958,8 @@ const _: () = assert!(
 ///
 /// Name: recorded (FreeBSD's `e1000_setup_copper_link_pch_lpt`).
 pub fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Error> {
-    let c = (hardware.read(mac::CTRL) | crate::CTRL_SLU) & !(CTRL_FRCSPD | CTRL_FRCDPX);
+    let c = (hardware.read(mac::CTRL) | crate::DEVICE_CONTROL_SET_LINK_UP)
+        & !(CTRL_FRCSPD | CTRL_FRCDPX);
     hardware.write(mac::CTRL, c);
     let f = Swflag::acquire(hardware)?;
     let out = (|| {
@@ -1187,14 +1188,16 @@ mod tests {
             .registers
             .insert(mac::STATUS, reset::STATUS_GIO_MASTER_ENABLE);
         // The last reset never cleared.
-        hardware.registers.insert(mac::CTRL, crate::CTRL_RST);
+        hardware
+            .registers
+            .insert(mac::CTRL, crate::DEVICE_CONTROL_GLOBAL_RESET);
         assert_eq!(global_reset(&mut hardware, 0), Err(Error::ResetTimeout));
         assert_eq!(hardware.notes, [Note::MasterRequestsPending]);
         // 80 ms for the master requests, 10 ms after disabling receive and transmit, and 20 ms
         // after the reset.
         assert_eq!(hardware.elapsed_microseconds, 80_000 + 10_000 + 20_000);
         let last = *hardware.written(mac::CTRL).last().unwrap();
-        assert_ne!(last & crate::CTRL_RST, 0);
+        assert_ne!(last & crate::DEVICE_CONTROL_GLOBAL_RESET, 0);
         assert_ne!(last & CTRL_PHY_RST, 0, "the PHY is reset with the MAC");
     }
 
@@ -1335,8 +1338,10 @@ mod tests {
         s.mac.insert(registers::TARC1, 0x5500_00ff);
         s.mac.insert(registers::TXDCTL0, 0x013f_ff3f);
         s.mac.insert(mac::RFCTL, 0x00c0);
-        s.mac
-            .insert(mac::CTRL, crate::CTRL_SLU | CTRL_FRCSPD | CTRL_FRCDPX);
+        s.mac.insert(
+            mac::CTRL,
+            crate::DEVICE_CONTROL_SET_LINK_UP | CTRL_FRCSPD | CTRL_FRCDPX,
+        );
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::I82577_CFG_REG, 0x8c01);
         s.physical_layer_device_registers

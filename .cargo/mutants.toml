@@ -201,9 +201,9 @@ exclude_re = [
     #
     # The control words and the transmit inter-packet gap (control.rs): the assertion beside each
     # const fn states its operands' pairwise disjointness.
-    "^crates/e1000e/src/control\\.rs:\\d+:\\d+: replace \\| with \\^ in rctl$",
-    "^crates/e1000e/src/control\\.rs:\\d+:\\d+: replace \\| with \\^ in tctl$",
-    "^crates/e1000e/src/control\\.rs:\\d+:\\d+: replace \\| with \\^ in tipg$",
+    "^crates/e1000e/src/control\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_control_register_value$",
+    "^crates/e1000e/src/control\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_control_register_value$",
+    "^crates/e1000e/src/control\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_inter_packet_gap_register_value$",
     # The receive-error and transmit-command bytes (descriptor.rs) and the file's transmit
     # descriptor word: single distinct bits, and a u16 length under a command byte at bit 24; the
     # assertions beside them compile both arguments.
@@ -213,7 +213,7 @@ exclude_re = [
     # and RXDCTL's three added constants, which land in the register half the mask clears or
     # share no bits with each other; the assertions beside each function compile both.
     "^crates/e1000e/src/pch/flush\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_word$",
-    "^crates/e1000e/src/pch/flush\\.rs:\\d+:\\d+: replace \\| with \\^ in rxdctl$",
+    "^crates/e1000e/src/pch/flush\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_descriptor_control_register_value_for_flush$",
     # The flash registers (pch/non_volatile_memory.rs). status::DONE and control::GO are `1 << 0`
     # and `1 >> 0` is the same word, the shift identity; the file-level shift entry also sweeps
     # the other `1 << n` status bits and the two `0b11 << n` masks, whose swaps are killed by
