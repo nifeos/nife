@@ -17,6 +17,13 @@ name: stranger cadence
 # notes/stranger-test.md, the interval as the sentence a reader meets and the date as the newest
 # `### Run <n>, <date>:` heading, so the schedule and the record cannot drift apart.
 #
+# **The cadence is paused, and this job reports green while the pause holds.** calef ruled on
+# 2026-11-03 that a stranger test is not useful while code moves out of nife; every crate that has
+# left runs its own. The pause is one line in notes/stranger-test.md, and while it stands
+# `--due` prints "suspended" and exits 0. The job still runs every Monday, `--check` first, so a
+# malformed pause line goes red here as well as in script/lint. The cadence restarts with the
+# milestone that moves the kernel out of nife, which deletes that line.
+#
 # **Nothing here runs the test, and nothing here can.** A run spawns a `claude` process, spends real
 # budget, needs a machine with the pinned toolchain and both QEMUs, and ends in a debrief a person
 # scores against a rubric. **Red means run it**, exactly as audit-cadence.yml means run the audit.
@@ -53,6 +60,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # The record parses, the pause line included. script/lint runs the same check on every pull
+      # request; here it separates "the record is malformed" from "a run is due" in the summary.
+      # `pipefail` is here for the reason the next step gives.
+      - name: script/stranger-test --check
+        shell: bash
+        run: |
+          set -o pipefail
+          script/stranger-test --check | tee -a "$GITHUB_STEP_SUMMARY"
+
       # No toolchain, no cache, no build, no `claude`: this reads one markdown file. The cadence
       # modes are handled at the top of script/stranger-test, above every line that would clone or
       # spawn anything, so a runner without the CLI is not a problem and a dropped flag cannot fall
@@ -63,13 +79,14 @@ jobs:
       # this line the step would be green no matter what the script said, and the mechanism would
       # report the absence of a signal as the absence of a problem.
       - name: script/stranger-test --due
+        id: due
         shell: bash
         run: |
           set -o pipefail
           script/stranger-test --due | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: What to do if this went red
-        if: failure()
+        if: failure() && steps.due.outcome == 'failure'
         run: |
           {
             echo
