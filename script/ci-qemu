@@ -1,9 +1,10 @@
 #!/bin/sh
 # script/ci-qemu: build the QEMU this project needs, into a cacheable prefix.
 #
-# **Not CI only, though the name says CI and this line used to as well.** Ubuntu 24.04 ships
-# a QEMU without `riscv-iommu-pci` (26.04 has it), so a Linux developer on 24.04 needs this as much as
-# the runner once did, and anyone wanting the pinned emulator needs it on any release: `script/setup` cannot complete on a stock Linux box until it has run. Milestone 117's second
+# **Not CI only, though the name says CI and this line used to as well.** Ubuntu 24.04 ships a QEMU
+# without `riscv-iommu-pci` (26.04 has it), so a Linux developer on 24.04 needs this as much as the
+# runner once did, and anyone wanting the pinned emulator needs it on any release. `script/setup`
+# cannot complete on a stock 24.04 box until it has run. Milestone 117 (the stranger test)'s second
 # stranger run hit that from cold, was told by `script/qemu-check` to run this script, read "CI only"
 # here, and ran it anyway because the machine said so. The name is what it is (renaming it is a
 # naming decision, not a drive-by); the claim was wrong and is fixed.
