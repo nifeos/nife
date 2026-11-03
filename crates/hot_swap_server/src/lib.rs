@@ -85,6 +85,11 @@ fn probe_device() -> u64 {
 /// milestone 633's third outsider pass and pinned by
 /// `live_swap_tests::a_confined_client_drives_the_server_to_write_past_its_log`. Returns whether
 /// the byte was written.
+///
+/// BUGS: the bound is the page, not the caller's system's region of it. The broker system's log
+/// starts at `hot_swap_contract::BROKER_LOG_BASE` in the same page, so a client of the other system
+/// can have its server write that server's version byte into the broker's log. It cannot choose
+/// the byte or leave the page, and both systems are fixtures that no release image carries.
 fn log_put(seq: u64, version: u64) -> bool {
     if seq >= LOG_BYTES {
         return false;

@@ -195,6 +195,9 @@ landings, and the SDK cut 187 of 298. Merge throughput is this project's binding
 
 - The co-change reading is a one-off, at one commit, over one month. It is not milestone 610's
   owed column and should not be cited as if it were.
+- The candidate table was measured while `rmle` was in the tree. The editor has since been
+  removed (`design/removed.tsv`), so the `rmle` + `mdr` + `demos` row counts commits to a program
+  that no longer exists, and that candidate is `mdr` + `demos` until the table is measured again.
 - "Sweep" uses two thresholds: six or more packages for the coupling table, fifteen or more
   top-level directories for the protocol table. They are judgment calls and change the focused
   numbers by a few commits either way.

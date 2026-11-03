@@ -2,9 +2,11 @@
 //!
 //! A package declares what it links by carrying one note in `.note.nife.manifest`, the section and
 //! `PT_NOTE` that `capability_manifest_note` uses for its own types. The progenitor reads it at
-//! spawn and refuses a program built against an interface version it does not serve (milestone
-//! 956 (the linked interfaces carry checkable versions) step 3). The note has a type of its own,
-//! `4`, on the pattern of `SUBTREE_GRANTS` and `VERBS`, and not a descriptor version.
+//! spawn and refuses a program whose note does not decode, or declares a syscall ABI version
+//! (`abi::INTERFACE_ID`) it does not serve (milestone 956 (the linked interfaces carry checkable
+//! versions) step 3). The other interfaces a note lists are carried and not compared at spawn. The
+//! note has a type of its own, `4`, on the pattern of `SUBTREE_GRANTS` and `VERBS`, and not a
+//! descriptor version.
 //!
 //! The descriptor, version 1, little-endian: a version word, a count word, then `count` records of
 //! an interface id (`u64`, each crate's `INTERFACE_ID`, strictly ascending) and that interface's
@@ -16,6 +18,10 @@
 //! BUGS: a program names its interfaces by hand in [`carry_interfaces!`], although each version
 //! comes from the crate's constant. Deriving the list from the dependency graph at package build
 //! waits for the first package that leaves the tree.
+//!
+//! BUGS: a program with no `INTERFACES` note declares nothing and is spawned unchecked. The note is
+//! a compatibility check and not an authority check, so leaving it out costs a hostile package
+//! nothing it could have gained.
 //!
 //! Name: provisional. Moved here from `capability_manifest_note` on 2026-11-01 (UTC) so that
 //! `disk-tools` need not link `grant_plan`; the items keep the names they had there. The crate

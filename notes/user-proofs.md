@@ -1,9 +1,9 @@
-# Proving things about `user/`
+# Proving things about the EL0 programs
 
 Milestone 197. The companion to [kernel-proofs.md](kernel-proofs.md), which did the same thing one
 privilege level down; both are downstream of [verification.md](verification.md), which is about
-proving the pure crates. This one is about the 68 EL0 programs the prover could not compile until
-2026-08-31. It covers the stubs you take on when you point it at them, and the shapes of property
+proving the pure crates. This one is about the EL0 programs in `components` and `fixtures`, which
+the prover could not compile until 2026-08-31. It covers the stubs you take on when you point it at them, and the shapes of property
 that turned out to be out of reach. The measurements behind two sections are in
 [`user-proofs/`](user-proofs/README.md).
 
@@ -21,7 +21,7 @@ parsers over bytes this system did not produce.
 That premise is half right, and the half that is wrong is worth stating first, because it is a
 finding rather than a disappointment.
 
-Most of the parsing is not in `user/` any more. Rule 7 (anything two binaries agree on is a
+Most of the parsing is not in the program packages any more. Rule 7 (anything two binaries agree on is a
 crate) and the host-testability discipline have already lifted it out. The initrd parser is
 `nifefs`, the ELF front half is `elf`, the partition table is
 `globally_unique_identifier_partition_table`, the directory entries are
@@ -37,8 +37,9 @@ What is left is still worth proving, and one attempt at proving it found a live 
 
 ## The defect this found, which is the point
 
-`components/src/rmle.rs` (the editor) holds a document as `MAXIMUM_ROWS` rows of at most
-`MAXIMUM_COLUMNS` bytes, and saves it by joining the rows with `\n` into one scratch buffer before
+`rmle`, the text editor this tree carried until it was removed (`design/removed.tsv` names the
+commit that holds its source), held a document as `MAXIMUM_ROWS` rows of at most
+`MAXIMUM_COLUMNS` bytes, and saved it by joining the rows with `\n` into one scratch buffer before
 writing that buffer to the filesystem. The buffer was `MAXIMUM_ROWS * MAXIMUM_COLUMNS`.
 
 That is the size of the document's text, not the size of what `save` writes. The separators cost
@@ -110,7 +111,7 @@ Shorter than milestone 193's list, because the kernel had already paid for most 
 `-C panic=abort` handled the unwinding error. `#[cfg(not(kani))]` on the panic-handler macro removed
 a duplicate lang item. `script/verify` selects the binaries with `--bin`, derived from a grep of
 the tree, because Kani refuses a `no_std` crate root that never mentions it. No
-`--ignore-global-asm` is needed, since `user/` has no `global_asm!`. The derivation matters: a
+`--ignore-global-asm` is needed, since `components` has no `global_asm!`. The derivation matters: a
 hand-written list would silently drop the next binary to gain a harness.
 [`what-it-took.md`](user-proofs/what-it-took.md) has each error and fix.
 
@@ -136,7 +137,7 @@ exhaustive list of what a harness in a program package cannot see. The same list
    excludes `kernel`, and for
    the same two tooling reasons that pass's own comment carries. Practical consequence: keep these
    harnesses free of `unsafe`, because `undocumented_unsafe_blocks` does not fire inside them.
-5. Only the binaries carrying harnesses are compiled at all. `cargo kani -p user` is never run
+5. Only the binaries carrying harnesses are compiled at all. `cargo kani -p components` is never run
    bare, so a construct that would stop Kani in some *other* program is not discovered until somebody
    adds a harness there. That is a cost of the `--bin` selection and is the honest half of the
    argument for it.
@@ -205,7 +206,7 @@ is the right place for exactly this reason.
 Prove the user programs' harnesses:
 
 ```console
-$ cargo kani -p user --bin printenv --output-format=terse
+$ cargo kani -p components --bin printenv --output-format=terse
 ...
 Complete - 2 successfully verified harnesses, 0 failures, 2 total.
 ```
@@ -213,7 +214,7 @@ Complete - 2 successfully verified harnesses, 0 failures, 2 total.
 One harness on its own, with a counterexample trace on failure:
 
 ```console
-$ cargo kani -p user --bin printenv \
+$ cargo kani -p components --bin printenv \
       --harness push_never_writes_past_the_buffer_it_was_given
 ```
 
@@ -229,7 +230,7 @@ replays this one (see BUGS), so it is done by hand:
 
 ```console
 $ git apply components/falsifications/proofs.push_never_writes_past_the_buffer_it_was_given.patch
-$ cargo kani -p user --bin printenv --output-format=terse
+$ cargo kani -p components --bin printenv --output-format=terse
 Failed Checks: index out of bounds: the length is less than or equal to the given index
  File: "components/src/printenv.rs", line 126, in push
 Complete - 0 successfully verified harnesses, 2 failures, 2 total.
@@ -264,19 +265,12 @@ are worth their place rather than an assertion that they are.
   `kernel`'s now carry records and are counted. Struck 2026-09-23, part 5 of milestone 323 (the
   falsification record is incomplete in five ways), the same unstruck-`BUGS`-entry shape
   found twice more in `design/roadmap/0197-user-and-xtask-proofs.md`.
-- Two harnesses is not coverage of 68 programs, and the number to watch is not the count but
+- Two harnesses is not coverage of every program, and the number to watch is not the count but
   whether the properties are ones a defect would violate. This one is: the same guard, one character
   different, is the whole failure.
 - The three shapes in [`what-kani-could-not-do.md`](user-proofs/what-kani-could-not-do.md)'s
-  table are recorded, not solved. In particular the editor's
-  editing operations (`insert_char`, `insert_newline`, `backspace`, `delete_at_cursor`) are the
-  richest untrusted-input surface left in `user/` and are out of reach as the document is laid out
-  today.
-- `user/` is a package with 68 binaries and no library, so there is no `cargo kani -p user` that
-  means "everything". Stub 5 above is the consequence.
-- `user`'s 3 seconds in `script/verify`'s table is a dev-Mac number, like
-  `jh7110_entropy`'s and `kernel`'s, and the wrong machine for that column. Replace it from the first
-  CI log that carries it. Almost all of it is compile rather than solver time, so it will grow with
-  the harnesses and not with the programs.
+  table are recorded, not solved.
+- `components` is a package of many binaries and no library, so there is no `cargo kani -p
+  components` that means "everything". Stub 5 above is the consequence.
 - This note does not price the rest of the work. What was measured is which shapes open and
   which do not.
