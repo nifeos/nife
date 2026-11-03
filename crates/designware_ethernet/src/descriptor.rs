@@ -35,6 +35,8 @@ pub const BUFFER_BYTES: u64 = 2048;
 pub const MAXIMUM_FRAME_BYTES: usize = 1514;
 
 /// The frame check sequence the device leaves on every received frame.
+///
+/// Name: ratified 2026-11-03 (UTC), #3124.
 pub const CRC_BYTES: usize = 4;
 
 // Receive and transmit, read and write-back formats: descriptor word 3 is the one that carries
