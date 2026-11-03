@@ -131,7 +131,7 @@ pub const fn card_clock(base: u32, divider: u8) -> u32 {
 
 /// **How many bytes the next FIFO step moves**: the FIFO's filled words (reading) or empty words
 /// (writing), in bytes, never more than `remaining`. A count the controller reports above `depth`
-/// is clamped to `depth`, so a confused `STATUS` cannot make a write overrun the FIFO.
+/// is clamped to `depth`, so a confused `STATUS_REGISTER` cannot make a write overrun the FIFO.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors;
 /// the databook's `fifo` is kept as `doc(alias = "fifo")`.
@@ -362,7 +362,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// [`Error::Busy`] past [`DATA_DEADLINE_MICROSECONDS`].
     pub(crate) fn wait_not_busy(&mut self) -> Result<(), Error> {
         if self.wait(DATA_DEADLINE_MICROSECONDS, |window| {
-            window.read(registers::STATUS) & registers::STATUS_DATA_BUSY == 0
+            window.read(registers::STATUS_REGISTER) & registers::STATUS_DATA_BUSY == 0
         }) {
             Ok(())
         } else {
@@ -537,7 +537,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     }
 
     /// Wait for the FIFO to want service (`want`) or the transfer to end; a data error ends it.
-    /// Returns `STATUS` and `RINTSTS` once there is something to move.
+    /// Returns `STATUS_REGISTER` and `RINTSTS` once there is something to move.
     fn wait_queue(&mut self, index: u8, want: u32, owed: u32) -> Result<(u32, u32), Error> {
         let mut rint = 0;
         let mut status = 0;
@@ -548,7 +548,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
                 return true;
             }
-            status = window.read(registers::STATUS);
+            status = window.read(registers::STATUS_REGISTER);
             // Something to move: the controller's request, or (at the tail of a read, below the
             // watermark) words sitting in the FIFO after the transfer is over.
             rint & want != 0 && queue_step(status, depth, write, owed) > 0
@@ -632,7 +632,7 @@ mod tests {
 
     // The sequences below run against `simulator`, which models the contract and, through its knobs, the
     // ways silicon can break it: a reset or a clock update that never completes, an answer that
-    // takes time on the wire, a card that stalls or ends a transfer early, a confused `STATUS`.
+    // takes time on the wire, a card that stalls or ends a transfer early, a confused `STATUS_REGISTER`.
 
     use std::sync::mpsc;
     use std::time::Duration;
@@ -871,7 +871,7 @@ mod tests {
 
     /// A 48-word FIFO does not divide a 512-byte block, so the last step of a transfer is shorter
     /// than the FIFO: each step must move what is owed, not what fits. The read half is with a
-    /// `STATUS` that says the FIFO is full whatever it holds, which `queue_step` exists to survive.
+    /// `STATUS_REGISTER` that says the FIFO is full whatever it holds, which `queue_step` exists to survive.
     #[test]
     fn the_last_queue_step_moves_only_what_is_owed() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 48));

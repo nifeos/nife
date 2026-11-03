@@ -615,7 +615,7 @@ mod tests {
             sim.unowned_at = None;
             let written = memory.bus().device_written;
             for _ in 0..64 {
-                sim.read(registers::STATUS);
+                sim.read(registers::STATUS_REGISTER);
             }
             assert_eq!(memory.bus().device_written, written);
             sd::read_blocks(&mut h, &card, 60, &mut back).unwrap();
