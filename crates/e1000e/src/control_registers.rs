@@ -26,7 +26,7 @@ pub const RFCTL_EXTEN: u32 = 0x0000_8000;
 pub const RAH_AV: u32 = 0x8000_0000;
 
 /// `RCTL`: receive enable (Linux's `regs.h`).
-const RCTL_EN: u32 = 0x0000_0002;
+pub(crate) const RCTL_EN: u32 = 0x0000_0002;
 
 /// `RCTL`: accept broadcast, which DHCP's offer needs (`E1000_RCTL_BAM`).
 const RCTL_BAM: u32 = 0x0000_8000;
@@ -49,7 +49,7 @@ pub const fn rctl() -> u32 {
 }
 
 /// `TCTL`: transmit enable (Linux's `regs.h`).
-const TCTL_EN: u32 = 0x0000_0002;
+pub(crate) const TCTL_EN: u32 = 0x0000_0002;
 
 /// `TCTL`: pad short frames (`E1000_TCTL_PSP`).
 const TCTL_PSP: u32 = 0x0000_0008;

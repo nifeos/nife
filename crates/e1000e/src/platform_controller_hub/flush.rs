@@ -1,6 +1,8 @@
 //! Name: ratified 2026-11-03 (UTC), #3145. Ruled in the group E1 ruling on e1000e's module names;
 //! kept as it stands.
 
+use super::Hardware;
+
 /// PCI configuration offset of the descriptor ring status word.
 ///
 /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling that keeps a register or bit name copied
@@ -64,4 +66,87 @@ const _: () = assert!(
 #[doc(alias = "receive descriptor control")]
 pub const fn rxdctl(rxdctl: u32) -> u32 {
     (rxdctl & 0xffff_c000) | 0x1f | 1 << 8 | 0x0100_0000
+}
+
+/// **What the flush needs beyond BAR0**: the configuration-space status word and the transmit
+/// ring's memory, which [`Hardware`] does not reach.
+///
+/// Name: provisional. No ruling covers it.
+pub trait RingAccess {
+    /// Read the 16-bit descriptor ring status word at [`PCICFG_DESC_RING_STATUS`] in the
+    /// function's configuration space.
+    fn descriptor_ring_status(&mut self) -> u16;
+    /// Store `words` as transmit descriptor `index` of the ring the device reads, and order the
+    /// stores before any later register write, since the next write hands the descriptor to the
+    /// device.
+    fn write_transmit_descriptor(&mut self, index: u16, words: [u64; 2]);
+}
+
+/// What [`descriptor_rings`] did.
+///
+/// Name: provisional. No ruling covers it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Outcome {
+    /// The device did not ask for a flush, or the transmit ring has no length.
+    NotRequired,
+    /// The device asked, and its transmit ring is at `base`, not where the caller's ring is. Nothing
+    /// was sent, since the dummy descriptor must go where the device reads and the caller owns,
+    /// so the reset that follows may hang the device.
+    ForeignTransmitRing {
+        /// The transmit ring's base as `TDBAL` and `TDBAH` hold it.
+        base: u64,
+    },
+    /// The transmit ring was flushed, and the device then stopped asking.
+    TransmitFlushed,
+    /// The transmit ring was flushed, the device still asked, and the receive ring was flushed.
+    BothFlushed,
+}
+
+/// **Empty the descriptor rings before the reset, if the device says it must**: FreeBSD's
+/// `em_flush_desc_rings`, `em_flush_tx_ring` and `em_flush_rx_ring` (`if_em.c`), in their order.
+/// `transmit_ring` is the bus address of the caller's transmit ring, which is also the dummy
+/// descriptor's buffer. The one divergence is said at [`tail_after`], and one check is added: the
+/// flush runs only when the device's transmit ring is `transmit_ring`.
+///
+/// Name: provisional. No ruling covers it.
+pub fn descriptor_rings(
+    hardware: &mut impl Hardware,
+    rings: &mut impl RingAccess,
+    transmit_ring: u64,
+) -> Outcome {
+    use crate::control_registers::{RCTL_EN, TCTL_EN};
+    use crate::registers::{RCTL, TCTL, TDBAH, TDBAL, TDLEN, TDT};
+    let extended = hardware.read(super::registers::FEXTNVM11);
+    hardware.write(
+        super::registers::FEXTNVM11,
+        extended | FEXTNVM11_DISABLE_MULR_FIX,
+    );
+    let status = rings.descriptor_ring_status();
+    if !required(status, hardware.read(TDLEN)) {
+        return Outcome::NotRequired;
+    }
+    let base = u64::from(hardware.read(TDBAL)) | u64::from(hardware.read(TDBAH)) << 32;
+    if base != transmit_ring {
+        return Outcome::ForeignTransmitRing { base };
+    }
+    let transmit_control = hardware.read(TCTL);
+    hardware.write(TCTL, transmit_control | TCTL_EN);
+    let tail = hardware.read(TDT) % u32::from(crate::TRANSMIT_ENTRIES);
+    rings.write_transmit_descriptor(tail as u16, [transmit_ring, transmit_word()]);
+    hardware.write(TDT, tail_after(tail, crate::TRANSMIT_ENTRIES));
+    hardware.delay_microseconds(250);
+    if rings.descriptor_ring_status() & FLUSH_DESC_REQUIRED == 0 {
+        return Outcome::TransmitFlushed;
+    }
+    let receive_control = hardware.read(RCTL);
+    hardware.write(RCTL, receive_control & !RCTL_EN);
+    super::flush_writes(hardware);
+    hardware.delay_microseconds(150);
+    let current = hardware.read(super::registers::RXDCTL);
+    hardware.write(super::registers::RXDCTL, rxdctl(current));
+    hardware.write(RCTL, receive_control | RCTL_EN);
+    super::flush_writes(hardware);
+    hardware.delay_microseconds(150);
+    hardware.write(RCTL, receive_control & !RCTL_EN);
+    Outcome::BothFlushed
 }
