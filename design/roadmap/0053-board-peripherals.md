@@ -81,11 +81,12 @@ notes/designware-ethernet.md has the split, the evidence and the runbook.
   note's Results row). The booted system brings the port up (`PROVEN_ON_SILICON` is `true`).
   The rate is outstanding, below.
 
-Reuse: OpenBSD's `dwqe` and `ytphy` (ISC) and `ukphy_subr.c` (NetBSD Foundation, BSD-2-Clause), adapted with the notices carried in the crate root,
+Reuse: OpenBSD's `dwqe` and `ytphy` (ISC) and `ukphy_status` (`sys/dev/mii/ukphy_subr.c`, NetBSD Foundation, BSD-2-Clause), adapted with the notices carried in the crate root,
 because its JH7110 glue handles radon's v1.3B transmit clock (`starfive,tx-use-rgmii-clk`).
 FreeBSD's `if_eqos_starfive.c` and `mcommphy.c` (BSD-2-Clause) also support this chip and were
-read as an independent cross-check. Linux stmmac, U-Boot `dwc_eth_qos` and both JH7110 trees are
-GPL and were read for hardware facts only. crates.io has one Rust driver for this board,
+read as an independent cross-check. Linux stmmac, `include/linux/stmmac.h`, `include/uapi/linux/mii.h`,
+`drivers/net/phy/motorcomm.c`, U-Boot `dwc_eth_qos` and both JH7110 trees are GPL and were read for
+hardware facts only. crates.io has one Rust driver for this board,
 `dwmac-my` 0.2.0 (MIT, 3,650 lines). The search, on 2026-10-06, was for `dwmac`, `stmmac`,
 `eqos`, `designware ethernet`, `jh7110` and `starfive`. It is refused as a dependency, for the
 reasons 494 refused Redox's `e1000d`. It slices a receive buffer by the descriptor's length unchecked, up to 32 KiB against a
