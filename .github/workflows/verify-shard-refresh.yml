@@ -45,7 +45,7 @@ jobs:
     # The App's secrets live in the `automation` environment, whose deployment branches are `main`
     # only (see trunk-health.yml's comment for why).
     environment: automation
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # Twenty runs is about 20 job listings and 40 log downloads; minutes, not tens of them.
     timeout-minutes: 20
     # **The App is optional** (milestone 889 (the tree's gates stop depending on the fleet tooling),

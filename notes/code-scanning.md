@@ -2,7 +2,8 @@
 
 GitHub's CodeQL ran on every push and pull request through default setup, with no workflow file
 in the tree, until calef ordered the move to advanced setup on 2026-10-08 (UTC); the committed
-workflow is `.github/workflows/codeql.yml`. DECISIONS §36 (the repository is part of the TCB)
+workflow is `.github/workflows/codeql.yml`. It scans each push to `main`. It skips pull requests.
+An alert opens after the merge. The trigger comment says why. DECISIONS §36 (the repository is part of the TCB)
 says why the repository is scanned at all; its stated trigger for leaving default setup is what
 fired. Every
 alert gets one of the three dispositions in DECISIONS §35 (what a scanner is for here, and how

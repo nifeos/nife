@@ -6,7 +6,7 @@
 //! boards) needs only this file's twenty lines and a device-tree match. See
 //! notes/designware-mobile-storage.md.
 
-use designware_mobile_storage::host::Registers;
+use designware_mobile_storage::host_controller::RegisterWindowAndClock;
 use designware_mobile_storage::internal_direct_memory_access::DirectMemoryAccessRegion;
 
 /// A controller's register window in the direct map, and the counter as a microsecond clock.
@@ -32,7 +32,7 @@ impl Window {
     }
 }
 
-impl Registers for Window {
+impl RegisterWindowAndClock for Window {
     fn read(&mut self, offset: u32) -> u32 {
         debug_assert!(
             offset < designware_mobile_storage::registers::WINDOW_USED && offset.is_multiple_of(4)

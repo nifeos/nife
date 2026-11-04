@@ -26,13 +26,14 @@ pub(crate) const IDT: u32 = 1 << 6;
 /// constant-assertion lint is off on purpose: the assertion is constant by construction, and the
 /// compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+/// Name: ratified 2026-11-03 (UTC), #3117. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 // This module is private, so nothing outside can reach the constants; the mutation exclusions in
 // .cargo/mutants.toml are their readers, and helpers/mutation_exclusion_check.py fails if they
 // are gone.
 #[allow(dead_code)]
-pub const THE_TRANSFER_CONTROL_FIELDS_SHARE_NO_BIT: () = assert!(
+pub const TRANSFER_CONTROL_FIELDS_DO_NOT_OVERLAP: () = assert!(
     ((0x3fu32 << 10) & (1 << 1 | 1 << 2 | 1 << 5 | 1 << 6)) == 0
         && ((0x3fu32 << 10 | 1 << 1 | 1 << 2 | 1 << 5 | 1 << 6) & (u32::MAX << 16)) == 0
         && ((0xffu32 << 16) & (0xff << 24)) == 0
@@ -44,13 +45,14 @@ pub const THE_TRANSFER_CONTROL_FIELDS_SHARE_NO_BIT: () = assert!(
 /// constant-assertion lint is off on purpose: the assertion is constant by construction, and the
 /// compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+/// Name: ratified 2026-11-03 (UTC), #3117. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 // This module is private, so nothing outside can reach the constant; the mutation exclusions in
 // .cargo/mutants.toml are its readers, and helpers/mutation_exclusion_check.py fails if it is
 // gone.
 #[allow(dead_code)]
-pub const THE_CYCLE_BIT_AND_CLEARED_WORD_SHARE_NO_BIT: () = assert!(((!1u32) & 1) == 0);
+pub const CYCLE_BIT_AND_CLEARED_WORD_DO_NOT_OVERLAP: () = assert!(((!1u32) & 1) == 0);
 
 pub(crate) const fn control(kind: u8) -> u32 {
     (kind as u32) << 10

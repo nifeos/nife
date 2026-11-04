@@ -1092,8 +1092,7 @@ mod proofs {
     /// restores `GSI_VECTOR_BASE.wrapping_add(gsi as u8)` and turns **both** this harness and the
     /// kernel test it names red. Here it fires **both** assertions in the `if let` below, the one
     /// whose message begins "a GSI the IO APIC owns" and the one beginning "a vector this kernel
-    /// routed". Named rather than numbered because the lines move: they were
-    /// `interrupt_controller.rs:1164` and `interrupt_controller.rs:1168` when this was measured.
+    /// routed". Named rather than numbered because the lines move.
     /// The second red is that assertion earning its place: the two functions really did disagree,
     /// rather than merely looking as though they might. It is filed against the test rather than
     /// against this, because a

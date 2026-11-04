@@ -26,7 +26,7 @@ previous tag), never what Cargo follows. At first publication the line becomes a
 requirement. Each publication, and each repository a move creates, waits for the architect's
 review of the exact crate, version and name, and a contract crate may never publish. How a
 consumer's revision follows a producer's release is a
-[proposal](../roadmap/proposals/a-producer-release-moves-each-consumers-pin.md). The program serves
+[proposal](../roadmap/1011-a-producer-release-moves-each-consumers-pin.md). The program serves
 [risk 8](../fatal-risks/8-nobody-else-builds-on-nife.md): nife shrinks by pushing its mechanisms
 out into the Rust ecosystem (calef, 2026-10-18 (UTC): *"I have no desire to maintain 50 crates.
 Rather I desire 50 crates that I would confidently use to build a nife."*). A lane reads the next
