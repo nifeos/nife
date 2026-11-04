@@ -133,6 +133,7 @@ def selftest():
                 fh.write(src)
         subprocess.run(['git', '-C', d, 'add', '.'], check=True)
         bad, traps = run(d)
+        # line-citation: exception. Reason: the fixture expects the checker's own path:line report form
         if len(bad) != 1 or not bad[0].startswith('a/x.rs:1') or traps != 2:
             print(f'syscall_asm selftest: tree walk found {bad}, {traps} traps', file=sys.stderr)
             ok = False

@@ -27,7 +27,7 @@ interpreting regexes:
 
 A scoped entry's `<file>` is escaped-literal text (`registers\\.rs`); its line and column stay
 `\\d+` because they move with every edit; `<function path>` is the function as the tool names it
-(`receive_queue_mode`, `Command::word`, `Host<R, D>::reset`). A scoped entry with no ` in ` part
+(`receive_queue_mode`, `Command::register_word`, `Host<R, D>::reset`). A scoped entry with no ` in ` part
 is a const item's mutant: cargo-mutants names it with no function, so the file is the whole scope
 (what .cargo/mutants.toml's part 4 entries say in place). A module-path entry is unanchored and
 names the head of a module path (`verification::`), which nothing else in the tree uses.
