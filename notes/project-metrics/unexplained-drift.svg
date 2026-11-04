@@ -53,9 +53,9 @@
 <path class="seg s1" d="M555.7,324.0 V185.0 Q555.7,182.0 558.7,182.0 H564.5 Q567.5,182.0 567.5,185.0 V324.0 Z"><title>2026W44, riscv64: 4.3</title></path>
 <path class="seg s2" d="M568.5,324.0 V294.4 Q568.5,291.4 571.5,291.4 H577.4 Q580.4,291.4 580.4,294.4 V324.0 Z"><title>2026W44, x86_64: 1.0</title></path>
 <text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<path class="seg s0" d="M601.4,324.0 V279.8 Q601.4,276.8 604.4,276.8 H610.3 Q613.3,276.8 613.3,279.8 V324.0 Z"><title>2026W45, aarch64: 1.4</title></path>
-<path class="seg s1" d="M614.3,324.0 V185.0 Q614.3,182.0 617.3,182.0 H623.1 Q626.1,182.0 626.1,185.0 V324.0 Z"><title>2026W45, riscv64: 4.3</title></path>
-<path class="seg s2" d="M627.1,324.0 V294.4 Q627.1,291.4 630.1,291.4 H636.0 Q639.0,291.4 639.0,294.4 V324.0 Z"><title>2026W45, x86_64: 1.0</title></path>
+<path class="seg s0" d="M601.4,324.0 V285.8 Q601.4,282.8 604.4,282.8 H610.3 Q613.3,282.8 613.3,285.8 V324.0 Z"><title>2026W45, aarch64: 1.2</title></path>
+<path class="seg s1" d="M614.3,324.0 V322.2 Q614.3,320.3 616.1,320.3 H624.3 Q626.1,320.3 626.1,322.2 V324.0 Z"><title>2026W45, riscv64: 0.1</title></path>
+<path class="seg s2" d="M627.1,324.0 V232.2 Q627.1,229.2 630.1,229.2 H636.0 Q639.0,229.2 639.0,232.2 V324.0 Z"><title>2026W45, x86_64: 2.9</title></path>
 <text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W45</text>
 <rect class="s0" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">aarch64</tspan></text>

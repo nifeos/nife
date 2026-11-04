@@ -15,7 +15,7 @@
 use designware_mobile_storage::bench::{
     self, ReadOnlyProbeFailure, ReadOnlyProbeReport, ScratchWriteVerdict,
 };
-use designware_mobile_storage::host::{Error, Host, Identity, Registers};
+use designware_mobile_storage::host_controller::{Error, Host, Identity, Registers};
 use designware_mobile_storage::internal_direct_memory_access::{
     DirectMemoryAccessRegion, InternalDirectMemoryAccess, Refusal,
 };

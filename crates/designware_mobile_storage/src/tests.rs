@@ -1,9 +1,11 @@
 //! The crate's host tests, kept out of `lib.rs` so the crate root stays an index of its modules as
 //! the tests grow.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3135. The crate's host tests.
 
 use crate::bench::{self, ScratchWriteVerdict};
 use crate::card;
-use crate::host::{Error, Host};
+use crate::host_controller::{Error, Host};
 use crate::sd::{self, BLOCK, InitializationError, IoError, Kind};
 use crate::simulator::{CardKind, Sim};
 
@@ -211,7 +213,7 @@ fn the_read_matrix_reads_every_row_and_never_writes() {
 /// `STATUS` alone, count every full read, and start again at `clear`.
 #[test]
 fn the_watch_counts_status_fill_and_nothing_else() {
-    use crate::host::Registers;
+    use crate::host_controller::Registers;
     /// `STATUS` reads `status`; every other register reads all ones.
     struct Fixed {
         status: u32,
@@ -294,7 +296,7 @@ fn a_card_with_no_gap_is_refused_and_not_written() {
 fn a_sixteen_bit_queue_is_refused_at_the_door() {
     // A controller whose HCON says 16-bit, over the sim.
     struct Narrow(Sim);
-    impl crate::host::Registers for Narrow {
+    impl crate::host_controller::Registers for Narrow {
         fn read(&mut self, o: u32) -> u32 {
             if o == crate::registers::HCON {
                 0
@@ -361,6 +363,10 @@ fn a_wrong_interface_echo_is_refused_rather_than_guessed_at() {
 /// A worker with its own deadline turns a spin into a named failure: a mutant that removes the
 /// power-up loop's exit makes this test fail instead of hanging the run.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
+)]
 fn a_card_that_never_finishes_power_up_is_reported_with_its_last_operation_conditions() {
     let (sender, receiver) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
@@ -782,6 +788,10 @@ fn an_emmc_is_sized_by_extended_card_specific_data_only_when_it_is_sector_addres
 /// steps seven microseconds a read the elapsed time never equals the deadline, as a real
 /// clock's need not. A worker with its own deadline turns a spin into a named failure.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
+)]
 fn an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
     assert_ne!(sd::POWER_UP_DEADLINE_MICROSECONDS % 7, 0);
     let (sender, receiver) = std::sync::mpsc::channel();
@@ -806,6 +816,10 @@ fn an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
 /// The SD twin of the test above: `ACMD41` polled for a card that stays busy gives up whatever
 /// the clock steps, so the loop's deadline is `>` and never `==`.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
+)]
 fn an_sd_card_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
     assert_ne!(sd::POWER_UP_DEADLINE_MICROSECONDS % 7, 0);
     let (sender, receiver) = std::sync::mpsc::channel();

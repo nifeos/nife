@@ -5,6 +5,11 @@
 //! them, the odd second included, and `fsck -n` must accept every volume, including the edges. The format's label entry and the EFI volume's
 //! directories carry the clock's time, and a volume made with `NoClock` carries none.
 
+// Not under Miri: this suite checks volumes against the host's `fsck` and `mkfs.fat` through
+// temporary files, which Miri's isolation refuses. The crate has no `unsafe`, and its library unit
+// tests run under Miri.
+#![cfg(not(miri))]
+
 use std::cell::Cell;
 use std::io::Cursor;
 use std::path::Path;

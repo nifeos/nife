@@ -338,7 +338,7 @@ mod interface_verification {
     /// for a list of two. This is the one-encoding claim of the manifest note's own harness,
     /// carried to this note.
     ///
-    /// Falsification: unfalsified. Kani does not run in the lane that wrote this; the gate does.
+    /// Falsification: replayable `crates/interfaces_note/falsifications/interface_verification.a_decoded_interface_list_encodes_back_to_its_bytes.patch`
     #[kani::proof]
     #[kani::unwind(33)]
     fn a_decoded_interface_list_encodes_back_to_its_bytes() {
@@ -357,7 +357,7 @@ mod interface_verification {
 
     /// **`decode_interfaces` never panics, at any length up to one past a list of two.**
     ///
-    /// Falsification: unfalsified. Kani does not run in the lane that wrote this; the gate does.
+    /// Falsification: replayable `crates/interfaces_note/falsifications/interface_verification.decode_interfaces_never_panics.patch`
     #[kani::proof]
     #[kani::unwind(34)]
     fn decode_interfaces_never_panics() {
