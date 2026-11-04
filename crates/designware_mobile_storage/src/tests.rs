@@ -133,7 +133,10 @@ fn a_controller_before_2_40a_reads_through_its_queue_at_0x100_and_gets_no_thresh
     let sim =
         SimulatedHostController::new(CardKind::SdHighCapacity, 8192, 32).with_verid(0x5342_230a);
     let (mut h, id) = HostController::new(sim, 50_000_000, Some(32)).unwrap();
-    assert_eq!(crate::registers::queue_offset(id.version_identification), 0x100);
+    assert_eq!(
+        crate::registers::queue_offset(id.version_identification),
+        0x100
+    );
     let card = sd::identify(&mut h, 4).unwrap();
     let data: Vec<u8> = (0..2 * BLOCK_BYTES).map(|i| (i % 253) as u8).collect();
     sd::write_blocks(&mut h, &card, 7, &data).unwrap();
