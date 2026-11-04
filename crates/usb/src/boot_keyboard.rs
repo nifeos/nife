@@ -334,7 +334,10 @@ mod tests {
                 hash = (hash ^ u32::from(byte)).wrapping_mul(0x0100_0193);
             }
         }
-        assert_eq!(hash, FINGERPRINT, "the table changed: rerun the cross-check");
+        assert_eq!(
+            hash, FINGERPRINT,
+            "the table changed: rerun the cross-check"
+        );
     }
 
     /// **`echo hello`, typed the way QEMU's `sendkey` presses it**: one key down, then up, eleven
