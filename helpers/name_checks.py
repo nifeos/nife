@@ -46,6 +46,7 @@ import sys
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import baseline_layout  # noqa: E402
 import cap_abbreviation  # noqa: E402
 import moved_rows  # noqa: E402
 import name_census  # noqa: E402
@@ -348,6 +349,8 @@ HEADER = """# rules {rules}
 # `<path>::<name> <check>`, once per break. The list only shrinks: a fixed name's row goes in the
 # change that fixes it (`python3 helpers/name_checks.py --bank`). A row may be added only by the
 # change that bumps the rules line above, because it adds or revises the check.
+# Layout (helpers/baseline_layout.py): rows sorted, a blank line after every row. A change deletes a
+# cleared row's line and leaves the blank line, so two changes that clear adjacent rows merge in git.
 """
 
 
@@ -366,8 +369,12 @@ def read_baseline(text):
 
 
 def write_baseline(root, rows):
-    with open(os.path.join(root, BASELINE), "w") as f:
-        f.write(HEADER.format(rules=RULES) + "".join(f"{row}\n" for row in sorted(rows.elements())))
+    path = os.path.join(root, BASELINE)
+    header = HEADER.format(rules=RULES)
+    old = open(path).read() if os.path.exists(path) else None
+    with open(path, "w") as f:
+        f.write(baseline_layout.rewrite(old, header, rows) if old is not None
+                else baseline_layout.spaced(header, rows))
 
 
 def _git(root, *args):
@@ -465,8 +472,9 @@ def run_check(root, rows_now, judged):
         renames = _renames(root, merge)
     else:
         merge = None
-    bad = ratchet_problems(judged, rows_now, rows, rules, base, renames, KEPT,
-                           _reader(root, merge) if merge else None, _reader(root))
+    bad = baseline_layout.problems(open(path).read(), BASELINE)
+    bad += ratchet_problems(judged, rows_now, rows, rules, base, renames, KEPT,
+                            _reader(root, merge) if merge else None, _reader(root))
     if bad:
         print("names: unratified names must meet the current naming rules:", file=sys.stderr)
         for b in bad:
@@ -586,6 +594,10 @@ def _selftest():
     rest, ruled = _split_ruled([dict(listed[0], path="notes/other.md", name="other")])
     assert rest and not ruled, "a name no ruling names stays listed"
     _selftest_split()
+    assert baseline_layout.problems("# rules 1\na x\nb x\n\n", BASELINE), \
+        "rows on adjacent lines fail the layout check"
+    spaced = baseline_layout.spaced(HEADER.format(rules=RULES), collections.Counter(["a x", "b x"]))
+    assert not baseline_layout.problems(spaced, BASELINE), "a spaced list passes"
     print("name_checks: selftest ok")
 
 

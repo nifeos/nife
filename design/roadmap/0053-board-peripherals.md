@@ -102,7 +102,7 @@ notes/designware-mobile-storage.md has the evidence, the safety argument and the
 - The part is a Synopsys DesignWare Mobile Storage Host Controller (`snps,dw-mshc` in the vendor
   tree radon hands over, `starfive,jh7110-mmc` in mainline): the microSD slot at `0x1602_0000`
   and the eMMC socket at `0x1601_0000`.
-- `crates/designware_mobile_storage`: the whole driver behind one `Registers` trait, tested
+- `crates/designware_mobile_storage`: the whole driver behind one `RegisterWindowAndClock` trait, tested
   against a simulated controller and card (SDHC, SD 1.x, eMMC, an empty slot, CRC faults, an old
   release's FIFO, a short tail), four Kani harnesses with replayable falsifications.
   `crates/jh7110_clock_and_reset` gains both controllers' SYS clocks and resets.
@@ -115,7 +115,7 @@ notes/designware-mobile-storage.md has the evidence, the safety argument and the
   does not start it (`PROVEN_ON_SILICON`).
 - Two data paths. The polled one moves every word through the FIFO, so the first silicon read
   tested the controller and the card protocol without DMA. The IDMAC one (`idmac`,
-  `Host::with_idmac`) hands each data phase to the controller's DMA engine over one region, a
+  `HostController::with_idmac`) hands each data phase to the controller's DMA engine over one region, a
   descriptor page and up to 256 data pages, and stops the engine before every return. It is
   built and tested against a `simulator` that walks the descriptor chain, with a Kani harness on the
   chain; its bench run is outstanding. The storage bench times the same 8 MiB both ways, checks

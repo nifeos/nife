@@ -15,7 +15,7 @@ name: kani reach
 # A measurement, not a gate, and on demand only: one Kani compile per mutant is hours of CPU. Run it
 # here rather than on a laptop, per AGENTS.md's memory ceiling (never a mutation sweep beside lanes).
 #
-# `ubuntu-24.04-arm`, because `cargo kani -p kernel` compiles the host's `arch/` subtree, so the
+# `ubuntu-26.04-arm`, because `cargo kani -p kernel` compiles the host's `arch/` subtree, so the
 # kernel row proves `arch/aarch64/` here as it does on an Apple Silicon Mac. The riscv64 and x86_64 kernel
 # harnesses are not in this measurement; see the note.
 
@@ -40,7 +40,7 @@ concurrency:
 
 jobs:
   plan:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 30
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
@@ -103,11 +103,11 @@ jobs:
   prove:
     needs: plan
     name: "prove ${{ matrix.package }} ${{ matrix.shard }}"
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 330
     strategy:
       fail-fast: false
-      # **Four shards at a time, never the whole matrix.** The org's `ubuntu-24.04-arm` runners are
+      # **Four shards at a time, never the whole matrix.** The org's `ubuntu-26.04-arm` runners are
       # one shared pool with every PR check and the merge queue. The first scaled run (37178899420,
       # 2026-10-04) launched 41 shards at once, left 40 jobs queued behind it, and was cancelled by
       # the maintainer for starving the queue. Nobody waits on this measurement, so wall clock is
@@ -137,7 +137,7 @@ jobs:
   report:
     needs: prove
     if: always()
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

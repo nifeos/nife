@@ -5,7 +5,7 @@
 An appendix to [`notes/fuzzing.md`](../fuzzing.md). It records rates, so that a budget in seeds
 turns into hours. The consumer is the fuzz-budget proposal for risk 7's criterion (d), which sizes a run
 in seeds and CPU-hours. It sits in pull request 2955 as
-`design/roadmap/proposals/the-fuzz-budget-that-counts-for-risk-7.md`. That proposal's measurements section does not carry these figures, because its
+`design/roadmap/1003-the-fuzz-budget-that-counts-for-risk-7.md`. That proposal's measurements section does not carry these figures, because its
 pull request was open and waiting on an architect when they came in. A follow-up links this page
 from it. Every date is 2026-10-31 (UTC).
 
