@@ -35,7 +35,8 @@
 #    and on a feature whose name says `nife`. Inherited keys are then inlined from the workspace
 #    root in the copy only, so the later steps still report something.
 # 2. Files a stranger needs: a README, and `LICENSE-MIT` and `LICENSE-APACHE` at the crate's root
-#    with `license = "MIT OR Apache-2.0"` in the manifest, nife's own license.
+#    with `license = "MIT OR Apache-2.0"` in the manifest, nife's own license, or that pair joined
+#    with the license of a file the crate adapts (`(MIT OR Apache-2.0) AND ISC`).
 # 3. Citations of this tree, in every shipped text file (and an `include_bytes!` or `include_str!`
 #    that reads outside the crate, which `cargo package` cannot ship): `§N`, `milestone N`, paths
 #    into `design/`, `notes/`, `script/`, `helpers/` or `briefs/`, the architect's name, and
