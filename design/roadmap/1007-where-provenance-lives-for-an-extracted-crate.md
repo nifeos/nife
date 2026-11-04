@@ -20,8 +20,8 @@ Reuse: none exists. This is about where a record goes, and `script/names` and
 
 ## Decision
 
-Ruled 2026-11-04 (UTC). Once a crate leaves nife it is treated like a third-party crate. Every
-public name is ratified before the move, so nife keeps no provenance record for it: no table in
+Ruled 2026-11-04 (UTC). Once a crate leaves nife, nife treats it like a third-party crate. The
+architects ratify every public name before the move, so nife keeps no provenance record for it: no table in
 nife, no `PROVENANCE.md` in the crate, and no `Name:` blocks kept. Git history and the pull
 requests that ratified the names are the only record.
 
@@ -49,7 +49,7 @@ Both entries come from memory and nobody checked them.
 ## Where nife differs
 
 nife ratifies names as a matter of rule (`design/naming.md`), so every name has an owner and a date
-that a stranger's crate usually lacks. That ratification happens before the move, in a pull request,
+that a stranger's crate usually lacks. Ratification happens before the move, in a pull request,
 and that pull request is the record.
 
 ## Alternatives not taken
