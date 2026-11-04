@@ -35,7 +35,7 @@ In order, easiest to rule on first:
 1. `N1`, the three NVMe namespace names: a full proposal already exists ([ratify-the-nvme-namespace-names](../design/roadmap/1002-ratify-the-nvme-namespace-names.md)).
 2. The `no` groups of designware_mobile_storage (`DM2` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
-The groups that need a real ruling are the register and bit constants: `DE8`, `DE9`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
+The groups that need a real ruling are the register and bit constants: `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
@@ -45,20 +45,6 @@ The groups that need a real ruling are the register and bit constants: `DE8`, `D
 
 - Breaks the spelled-out rule: yes.
 - Provisional recommendation: Spell out, with the databook spelling kept as `#[doc(alias)]` and cited in the doc comment, as the 2026-11-02 rule and the earlier `RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION` rename already do. The docs already carry the plain-words title of each (for example 'owned by the device'), so the candidate names come from the crate's own text. Decide as one group; the items share one pattern.
-
-### DE8. MAC and channel register constants (CHAN_*, MAC_*) (15)
-
-`registers::CHAN_CUR_RX_DESC`, `registers::CHAN_CUR_TX_DESC`, `registers::CHAN_STATUS`, `registers::CHAN_STATUS_RPS`, `registers::CHAN_STATUS_TPS`, `registers::MAC_ADDR0_HI`, `registers::MAC_ADDR0_LO`, `registers::MAC_CONF_BE`, `registers::MAC_CONF_DCRS`, `registers::MAC_CONF_DM`, `registers::MAC_CONF_FES`, `registers::MAC_CONF_JD`, `registers::MAC_CONF_PS`, `registers::MAC_MDIO_ADDR`, `registers::MAC_MDIO_DATA`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out under the same rule, in the pattern of the nine renames in #3094 (for example `CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER`). Decide as one group; the `MAC_CONF_*` bits and the `CHAN_STATUS_*` fields can ride with their parent register.
-
-### DE9. Register window and the hardware-feature accessor (2)
-
-`registers::WINDOW`, `registers::mac_hw_feature`
-
-- Breaks the spelled-out rule: yes (one name).
-- Provisional recommendation: `WINDOW` is a plain word and stays as it is; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
 
 ## `designware_mobile_storage`
 

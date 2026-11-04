@@ -15,10 +15,10 @@
 use crate::{Hardware, registers};
 
 /// **CSR clock range shift** (`GMAC_MAC_MDIO_ADDR_CR_SHIFT`, `dwqereg.h`), the MDC clock range
-/// field in [`registers::MAC_MDIO_ADDR`].
+/// field in [`registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER`].
 ///
 /// Name: ratified 2026-11-03 (UTC), #3127.
-#[doc(alias = "GMAC_MAC_MDIO_ADDR_CR_SHIFT")]
+#[doc(alias = "GMAC_MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER_CR_SHIFT")]
 pub const CLOCK_RANGE_SHIFT: u32 = 8;
 /// **MDIO clock range for a 500 to 800 MHz CSR clock** (`GMAC_MAC_MDIO_ADDR_CR_500_800`,
 /// `dwqereg.h`), the range this driver always programs: `0b0111`, which divides the CSR clock by
@@ -246,7 +246,12 @@ impl<H: Hardware> Bus<'_, H> {
     fn wait(&mut self, physical_layer_device_address: u8, register: u8) -> Result<(), Error> {
         let mut waited = 0;
         loop {
-            if self.0.read(registers::MAC_MDIO_ADDR) & COMMAND_BUSY == 0 {
+            if self
+                .0
+                .read(registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER)
+                & COMMAND_BUSY
+                == 0
+            {
                 return Ok(());
             }
             if waited >= COMMAND_LIMIT_MICROSECONDS {
@@ -266,11 +271,13 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
         // A command still running from someone else (firmware) would be overwritten mid-flight.
         self.wait(physical_layer_device_address, register)?;
         self.0.write(
-            registers::MAC_MDIO_ADDR,
+            registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
             command_word(physical_layer_device_address, register, false),
         );
         self.wait(physical_layer_device_address, register)?;
-        Ok(self.0.read(registers::MAC_MDIO_DATA) as u16)
+        Ok(self
+            .0
+            .read(registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER) as u16)
     }
 
     fn write(
@@ -280,9 +287,12 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
         v: u16,
     ) -> Result<(), Error> {
         self.wait(physical_layer_device_address, register)?;
-        self.0.write(registers::MAC_MDIO_DATA, u32::from(v));
         self.0.write(
-            registers::MAC_MDIO_ADDR,
+            registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
+            u32::from(v),
+        );
+        self.0.write(
+            registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
             command_word(physical_layer_device_address, register, true),
         );
         self.wait(physical_layer_device_address, register)
@@ -391,7 +401,7 @@ mod tests {
     impl Hardware for Pair {
         fn read(&mut self, offset: u32) -> u32 {
             match offset {
-                registers::MAC_MDIO_ADDR => {
+                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER => {
                     if self.address & COMMAND_BUSY != 0 && !self.stuck {
                         if self.busy_reads == 0 {
                             self.address &= !COMMAND_BUSY;
@@ -404,15 +414,15 @@ mod tests {
                     }
                     self.address
                 }
-                registers::MAC_MDIO_DATA => self.data,
+                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER => self.data,
                 _ => panic!("MDIO touched {offset:#x}, outside its two registers"),
             }
         }
         fn write(&mut self, offset: u32, v: u32) {
             self.writes.push((offset, v));
             match offset {
-                registers::MAC_MDIO_ADDR => self.address = v,
-                registers::MAC_MDIO_DATA => self.data = v,
+                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER => self.address = v,
+                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER => self.data = v,
                 _ => panic!("MDIO wrote {offset:#x}, outside its two registers"),
             }
         }
@@ -427,7 +437,10 @@ mod tests {
         assert_eq!(Bus(&mut hardware).read(4, BMSR), Ok(0xbeef));
         assert_eq!(
             hardware.writes,
-            [(registers::MAC_MDIO_ADDR, command_word(4, BMSR, false))]
+            [(
+                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
+                command_word(4, BMSR, false)
+            )]
         );
         assert_eq!(
             hardware.waited_microseconds,
@@ -444,8 +457,14 @@ mod tests {
         assert_eq!(
             hardware.writes,
             [
-                (registers::MAC_MDIO_DATA, 0x1200),
-                (registers::MAC_MDIO_ADDR, command_word(1, BMCR, true))
+                (
+                    registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
+                    0x1200
+                ),
+                (
+                    registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
+                    command_word(1, BMCR, true)
+                )
             ]
         );
     }

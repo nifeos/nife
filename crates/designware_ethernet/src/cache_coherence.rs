@@ -115,7 +115,7 @@ pub struct Observation {
     pub receive_descriptor_word_3: u32,
     /// Transmit descriptor 0's word 3, read by the CPU.
     pub transmit_descriptor_word_3: u32,
-    /// [`registers::CHAN_STATUS`], read through MMIO.
+    /// [`registers::CHANNEL_STATUS_REGISTER`], read through MMIO.
     pub status: u32,
     /// Receive buffer 0, judged.
     pub payload: Payload,
@@ -267,7 +267,7 @@ mod tests {
             nic.delay_microseconds(1000);
             waited += 1000;
         }
-        let status = nic.read(registers::CHAN_STATUS);
+        let status = nic.read(registers::CHANNEL_STATUS_REGISTER);
         let o = nic.with(|r, _| observe(r, STATION_ADDRESS, status));
         classify(&o)
     }
