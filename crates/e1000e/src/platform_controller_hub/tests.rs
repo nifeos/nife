@@ -20,11 +20,16 @@ fn the_ulp_request_clears_the_indication_and_enforces() {
     assert_ne!(h & ultra_low_power::H2ME_ENFORCE_SETTINGS, 0);
     assert_eq!(h & 1, 1, "other bits survive");
     assert_eq!(
-        ultra_low_power::register_value_releasing_request(h) & ultra_low_power::H2ME_ENFORCE_SETTINGS,
+        ultra_low_power::register_value_releasing_request(h)
+            & ultra_low_power::H2ME_ENFORCE_SETTINGS,
         0
     );
-    assert!(!ultra_low_power::is_configuration_done(ultra_low_power::FWSM_ULP_CFG_DONE));
-    assert!(ultra_low_power::has_management_engine(ultra_low_power::ICH_FWSM_FW_VALID));
+    assert!(!ultra_low_power::is_configuration_done(
+        ultra_low_power::FWSM_ULP_CFG_DONE
+    ));
+    assert!(ultra_low_power::has_management_engine(
+        ultra_low_power::ICH_FWSM_FW_VALID
+    ));
 }
 
 #[test]

@@ -359,7 +359,10 @@ pub fn initialize_physical_layer_device_workarounds(
 fn leave_ulp(hardware: &mut impl Hardware) {
     if has_management_engine(hardware) {
         let h = hardware.read(registers::H2ME);
-        hardware.write(registers::H2ME, ultra_low_power::register_value_requesting_exit(h));
+        hardware.write(
+            registers::H2ME,
+            ultra_low_power::register_value_requesting_exit(h),
+        );
         let mut cleared = false;
         for i in 0..=ultra_low_power::MANAGEMENT_ENGINE_WAIT_MILLISECONDS / 10 {
             if ultra_low_power::is_configuration_done(hardware.read(registers::FWSM)) {
@@ -372,7 +375,10 @@ fn leave_ulp(hardware: &mut impl Hardware) {
         }
         if cleared {
             let h = hardware.read(registers::H2ME);
-            hardware.write(registers::H2ME, ultra_low_power::register_value_releasing_request(h));
+            hardware.write(
+                registers::H2ME,
+                ultra_low_power::register_value_releasing_request(h),
+            );
         }
         hardware.note(Note::UlpByMe { cleared });
         return;
