@@ -4,7 +4,7 @@ An SD card and eMMC driver for the Synopsys DesignWare Mobile Storage Host Contr
 (`snps,dw-mshc`, Linux's `dw_mmc`), as pure logic. It holds the register map, the command encoding,
 the polled controller sequences, the internal DMA controller (IDMAC), card identification, block
 reads and writes, the card registers' decoding, and an MBR rule for where a write test may land.
-It never touches memory itself: you implement one small trait, `host::RegisterWindowAndClock` (read a register,
+It never touches memory itself: you implement one small trait, `host_controller::RegisterWindowAndClock` (read a register,
 write one, read a microsecond clock), over your own mapped window. The crate is `no_std`, has no
 allocator, and was built against the StarFive JH7110 (VisionFive 2).
 
@@ -36,7 +36,7 @@ Hand `HostController::new` your register window, the controller's input clock an
 device tree, then identify the card and move whole 512-byte blocks:
 
 ```rust
-use designware_mobile_storage::host::{HostController, RegisterWindowAndClock};
+use designware_mobile_storage::host_controller::{HostController, RegisterWindowAndClock};
 use designware_mobile_storage::sd;
 
 fn first_sector<R: RegisterWindowAndClock>(registers: R) -> Option<[u8; 512]> {

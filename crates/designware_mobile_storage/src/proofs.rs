@@ -1,5 +1,7 @@
+//! Name: ratified 2026-11-03 (UTC), #3135. The Kani harnesses, named for what they are.
+
 use crate::card::{CardSpecificData, extended_card_specific_data_sectors, extract_bits};
-use crate::host::queue_step;
+use crate::host_controller::queue_step;
 use crate::internal_direct_memory_access::{
     DESCRIPTOR_BYTES, MAXIMUM_DESCRIPTORS, PAGE, descriptor, descriptors_for,
 };

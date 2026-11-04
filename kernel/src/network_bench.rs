@@ -176,7 +176,7 @@ fn parse_peer(s: &str) -> Option<u64> {
 /// `e1000e` arm spells them.
 #[cfg(target_arch = "riscv64")]
 mod radon {
-    use ::designware_ethernet::coherence::Verdict;
+    use ::designware_ethernet::cache_coherence::Verdict;
     use ::designware_ethernet::jh7110;
 
     use crate::designware_ethernet::{Absent, Report, last_report};
