@@ -43,6 +43,14 @@ reason = "documentation; the site, a package or the records is an open question"
 paths = ["notes/", "vendor/README.md", "vendor/upstream-status.md"]
 
 [[home]]
+# The design record's site build, milestone 1018 (the design record moves to `nifeos.org` and is
+# published as a website) step 3. The ruling of 2026-11-01 (UTC) puts the whole site in that
+# repository; where its builder sits there is not yet ruled.
+status = "provisional"
+repo = "nifeos.org"
+paths = ["site/"]
+
+[[home]]
 status = "undecided"
 reason = "the build and gates follow the integrating repository, not yet named"
 paths = ["script/", "helpers/", ".github/", ".githooks/", ".claude/", ".agents/"]

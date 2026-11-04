@@ -163,6 +163,11 @@ python3 "$(dirname "$0")/../helpers/smelter-token" --selftest >/dev/null
 #     lane with neither or both of `--debt-paydown` and `--new-work`, before git, `gh` or the disk.
 #     Both tools are stubs here, so a refusal that regresses fails this rather than claiming.
 "$(dirname "$0")/../helpers/claim-selftest.sh" >/dev/null
+#     And the queue-conflict precheck (COE 2026-11-03 action 6; helpers/queue_conflicts.py, name
+#     provisional): a pull request is merged with `git merge-tree` against main plus the entries
+#     ahead of it, in scratch repositories with no network, and one test replaces merge-tree with a
+#     no-op and requires the conflict case to fail.
+python3 "$(dirname "$0")/../helpers/queue_conflicts.py" --selftest >/dev/null
 #     And the decisions renumber, milestone 499 (a renumber that cannot cite the wrong section),
 #     provisional name: the collision shift of §194 (sessions interleave rather than serialize),
 #     planted in a fixture tree, renaming descending

@@ -24,6 +24,13 @@ made between calls, so a wrong answer cannot steer what the generator does next.
   carries `REPLY_DELIVERED` exactly when the fill is a `Reply`.
 - The badge. Everything drained off the server endpoint carries a fuzzer's badge or one it minted
   under the conductor's eye. Badge 0 is the shape of #1494.
+- Process retypes. A process retype consumes the address space it names. The oracle accepts the
+  fill when the space slot held an address space with `WRITE` and no longer holds it. The
+  process's rights must stay within the region capability's.
+- Replaced slots. The oracle judges a slot that held one object and now holds another as a fill.
+  A process retype can file the process in the slot it deleted its address space from.
+- Held objects. Every endpoint, notification, timer, process, address space and thread the fuzzer
+  holds has its page inside a granted region.
 - The witness. It holds only slot 0, which is never named, so every `SYS_INVOKE` it makes must fail.
 - The page oracle. Every mapping lies in the spawned pages or the 32-page playground, and every
   frame behind them lies in a granted region or one of the two gift frames.

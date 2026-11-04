@@ -697,10 +697,10 @@ mod tests {
 
     use crate::command::{Command, Data, Response, SEND_IF_COND, WRITE_BLOCK};
     use crate::sd::{self, BlockTransferError};
-    use crate::simulator::{CardKind, Fault, Sim};
+    use crate::simulator::{CardKind, Fault, SimulatedHostController};
 
-    fn take(sim: Sim) -> HostController<Sim> {
-        let depth = u32::try_from(sim.depth()).unwrap();
+    fn take(sim: SimulatedHostController) -> HostController<SimulatedHostController> {
+        let depth = u32::try_from(sim.queue_depth_words()).unwrap();
         HostController::new(sim, 50_000_000, Some(depth)).unwrap().0
     }
 
@@ -718,7 +718,7 @@ mod tests {
 
     #[test]
     fn reset_clears_the_enables_keeps_other_bits_and_asks_for_all_three_resets() {
-        let mut h = take(Sim::new(CardKind::Empty, 1, 32));
+        let mut h = take(SimulatedHostController::new(CardKind::Empty, 1, 32));
         // Firmware left the DMA and interrupt enables on, bit 8, which is not the driver's, and a
         // card read threshold.
         let firmware = registers::CONTROL_USE_INTERNAL_DMAC
@@ -746,7 +746,7 @@ mod tests {
             ]
         );
         // A FIFO reset still in flight when the driver starts is asked for again, not toggled off.
-        let mut h = take(Sim::new(CardKind::Empty, 1, 32));
+        let mut h = take(SimulatedHostController::new(CardKind::Empty, 1, 32));
         h.registers_mut()
             .write(registers::CONTROL, registers::CONTROL_FIFO_RESET);
         h.registers_mut().writes.clear();
@@ -759,7 +759,7 @@ mod tests {
 
     #[test]
     fn a_reset_that_never_clears_is_reported_with_the_word_read() {
-        let mut sim = Sim::new(CardKind::Empty, 1, 32);
+        let mut sim = SimulatedHostController::new(CardKind::Empty, 1, 32);
         sim.reset_stuck = true;
         let mut h = take(sim);
         assert_eq!(
@@ -770,7 +770,7 @@ mod tests {
 
     #[test]
     fn power_and_bus_width_land_in_their_registers() {
-        let mut h = take(Sim::new(CardKind::Empty, 1, 32));
+        let mut h = take(SimulatedHostController::new(CardKind::Empty, 1, 32));
         h.power_on();
         assert_eq!(h.registers_mut().peek(registers::PWREN), 1);
         for (width, ctype) in [
@@ -790,7 +790,7 @@ mod tests {
 
     #[test]
     fn a_clock_update_the_controller_never_takes_is_an_error() {
-        let mut sim = Sim::new(CardKind::Empty, 1, 32);
+        let mut sim = SimulatedHostController::new(CardKind::Empty, 1, 32);
         sim.clock_stuck = true;
         let mut h = take(sim);
         assert_eq!(h.set_clock(400_000), Err(Error::ClockUpdate));
@@ -804,7 +804,7 @@ mod tests {
         ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
     )]
     fn a_card_busy_forever_is_reported_once_the_deadline_has_passed() {
-        let mut sim = Sim::new(CardKind::Empty, 1, 32);
+        let mut sim = SimulatedHostController::new(CardKind::Empty, 1, 32);
         sim.busy_forever = true;
         sim.clock_step = 7;
         assert_ne!(DATA_DEADLINE_MICROSECONDS % 7, 0);
@@ -819,7 +819,7 @@ mod tests {
     /// after the write to `CMD`. The driver must wait for `CD` before it reads either.
     #[test]
     fn the_response_is_read_only_once_the_command_is_done() {
-        let mut sim = Sim::new(CardKind::SdHighCapacity, 2048, 32);
+        let mut sim = SimulatedHostController::new(CardKind::SdHighCapacity, 2048, 32);
         sim.late_answer = 3;
         let mut h = take(sim);
         h.send_command(&Command::new(0, 0, Response::None)).unwrap();
@@ -827,7 +827,7 @@ mod tests {
             .send_command(&Command::new(SEND_IF_COND, 0x1aa, Response::R7))
             .unwrap();
         assert_eq!(echo[0] & 0xfff, 0x1aa);
-        let mut sim = Sim::new(CardKind::Empty, 1, 32);
+        let mut sim = SimulatedHostController::new(CardKind::Empty, 1, 32);
         sim.late_answer = 3;
         let mut h = take(sim);
         assert_eq!(
@@ -838,7 +838,7 @@ mod tests {
 
     #[test]
     fn a_response_crc_error_is_a_bad_response() {
-        let mut sim = Sim::new(CardKind::SdHighCapacity, 2048, 32);
+        let mut sim = SimulatedHostController::new(CardKind::SdHighCapacity, 2048, 32);
         sim.faults = vec![(SEND_IF_COND, 0, Fault::BadCrc)];
         let mut h = take(sim);
         h.send_command(&Command::new(0, 0, Response::None)).unwrap();
@@ -854,7 +854,11 @@ mod tests {
     /// bits never finish.
     #[test]
     fn a_data_command_resets_the_queue_and_leaves_the_threshold_off() {
-        let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
+        let mut h = take(SimulatedHostController::new(
+            CardKind::SdHighCapacity,
+            2048,
+            32,
+        ));
         h.registers_mut().write(registers::CONTROL, 1 << 8);
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers_mut().writes.clear();
@@ -879,7 +883,7 @@ mod tests {
     /// answer `NoResponse` to anything sent) shows that nothing was.
     #[test]
     fn a_buffer_or_direction_that_does_not_match_the_command_is_refused_unsent() {
-        let mut h = take(Sim::new(CardKind::Empty, 1, 32));
+        let mut h = take(SimulatedHostController::new(CardKind::Empty, 1, 32));
         let one = |write| Data {
             block_size: 512,
             blocks: 1,
@@ -906,7 +910,11 @@ mod tests {
         ignore = "spins the driver to its simulated data deadline twice; seventeen minutes under Miri"
     )]
     fn a_stalled_transfer_times_out_owing_what_did_not_move() {
-        let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
+        let mut h = take(SimulatedHostController::new(
+            CardKind::SdHighCapacity,
+            2048,
+            32,
+        ));
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers_mut().stall_after = Some(128);
         let mut block = [0u8; 512];
@@ -914,7 +922,11 @@ mod tests {
             sd::read_blocks(&mut h, &card, 1, &mut block),
             Err(BlockTransferError::Host(Error::DataTimeout(17, _, 384)))
         ));
-        let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
+        let mut h = take(SimulatedHostController::new(
+            CardKind::SdHighCapacity,
+            2048,
+            32,
+        ));
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers_mut().stall_after = Some(128);
         assert!(matches!(
@@ -931,7 +943,11 @@ mod tests {
         ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
     )]
     fn a_read_the_card_ends_early_times_out_rather_than_spinning() {
-        let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
+        let mut h = take(SimulatedHostController::new(
+            CardKind::SdHighCapacity,
+            2048,
+            32,
+        ));
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers_mut().stall_after = Some(128);
         h.registers_mut().end_early = true;
@@ -950,7 +966,11 @@ mod tests {
     /// `STATUS` that says the FIFO is full whatever it holds, which `queue_step` exists to survive.
     #[test]
     fn the_last_queue_step_moves_only_what_is_owed() {
-        let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 48));
+        let mut h = take(SimulatedHostController::new(
+            CardKind::SdHighCapacity,
+            2048,
+            48,
+        ));
         let card = sd::identify(&mut h, 4).unwrap();
         let data: Vec<u8> = (0..512).map(|i| (i % 253) as u8).collect();
         sd::write_blocks(&mut h, &card, 5, &data).unwrap();
@@ -964,7 +984,11 @@ mod tests {
     /// transfer that never ends would wait out.
     #[test]
     fn a_data_error_at_the_end_of_a_write_is_reported_promptly() {
-        let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
+        let mut h = take(SimulatedHostController::new(
+            CardKind::SdHighCapacity,
+            2048,
+            32,
+        ));
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers_mut().crc_error_at_end = true;
         let start = h.registers_mut().now_microseconds();
@@ -978,7 +1002,11 @@ mod tests {
     /// The same for a read whose data phase fails its CRC: the wait for the FIFO ends on the error.
     #[test]
     fn a_data_error_during_a_read_ends_the_wait_at_once() {
-        let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
+        let mut h = take(SimulatedHostController::new(
+            CardKind::SdHighCapacity,
+            2048,
+            32,
+        ));
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers_mut().fail_next_read_crc = true;
         let start = h.registers_mut().now_microseconds();
@@ -993,7 +1021,11 @@ mod tests {
     /// A multi-block transfer is over when the automatic CMD12 is, which can land after `DTO`.
     #[test]
     fn a_multi_block_transfer_waits_for_the_automatic_stop() {
-        let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
+        let mut h = take(SimulatedHostController::new(
+            CardKind::SdHighCapacity,
+            2048,
+            32,
+        ));
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers_mut().late_acd = 5;
         let mut blocks = [0u8; 4 * 512];
