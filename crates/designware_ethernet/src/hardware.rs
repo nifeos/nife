@@ -1,11 +1,11 @@
 //! **What the data plane needs from the hardware**, so the simulator can stand in for the MAC.
 //!
-//! Name: provisional, decided by the maintainer; reversing costs one pull request.
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
 /// **The controller's register window, as a driver reaches it.** The kernel's implementation is a
 /// pair of volatile accesses into the direct map; the tests' is `simulator`. Offsets are bytes from the
 /// window's base, and every one this crate passes is a constant from
-/// [`registers`](crate::registers), below [`registers::WINDOW`](crate::registers::WINDOW).
+/// [`registers`](crate::registers), below [`registers::REGISTER_WINDOW_BYTES`](crate::registers::REGISTER_WINDOW_BYTES).
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub trait Hardware {

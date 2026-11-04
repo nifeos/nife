@@ -118,7 +118,7 @@ concurrency:
 jobs:
   gate:
     name: draft gate
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       pull-requests: read
@@ -153,7 +153,7 @@ jobs:
     # reading ci.yml's jobs put on their draft gate, and `!cancelled()` keeps a superseded run
     # from executing its own replacement's work.
     if: ${{ needs.gate.outputs.run != 'false' && !cancelled() }}
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     # The cap below is on the mutant run, not the job: checkout, the toolchain, the baseline
     # build and the verdict all sit outside it, so the job's own bound is the cap plus room.
     timeout-minutes: 45
