@@ -790,6 +790,7 @@ pub fn wait_on_every_core(mut done: impl FnMut() -> bool) -> Result<(), EveryCor
 ///
 /// Name: provisional, minted 2026-11-04 (UTC) by lane/fuzz-budget-expired-class.
 #[cfg(any(test, feature = "system_tests"))]
+#[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests print it; the kernel's own do not
 pub const BUDGET_EXPIRED_MARKER: &str = "budget-expired:";
 
 /// Seconds of ticks every online core must take before [`wait_on_every_core`] gives up.
