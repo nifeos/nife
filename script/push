@@ -4,9 +4,18 @@
 #
 #     script/push
 #     script/push --set-upstream
+#     script/push --requeue
 #
 # Pushes HEAD to the branch of the same name on origin. Arguments go to `git push` as options; a
-# refspec is not accepted, because the confirmation reads back exactly one branch. The last line it
+# refspec is not accepted, because the confirmation reads back exactly one branch.
+#
+# `--requeue` is for a branch whose pull request is in the merge queue or has auto-merge on. It
+# dequeues the pull request, pushes, and, only once origin holds HEAD, arms it again through
+# helpers/arm.sh, which refuses a pull request carrying `needs-architect`, `held-by-lane` or
+# `held-for-red-trunk` and exits 1 unless GitHub then shows it queued or armed. A pull request that
+# was not armed before the push stays unarmed. Without the flag the pre-push hook keeps refusing a
+# push to a queued branch (helpers/push-queued-check.sh). The two halves are
+# helpers/push-requeue.sh (COE action 7, notes/coes/2026-11-03-merge-queue-backlog.md). The last line it
 # prints is the verdict, so `script/push | tail -n 3` still shows whether the commit landed.
 #
 # # Why this exists
@@ -37,6 +46,12 @@
 
 set -u
 
+requeue=
+for arg in "$@"; do
+    shift
+    if [ "$arg" = "--requeue" ]; then requeue=1; else set -- "$@" "$arg"; fi
+done
+
 branch="$(git symbolic-ref --quiet --short HEAD)" || {
     echo "push: HEAD is detached; check out the lane's branch first." >&2
     exit 2
@@ -50,6 +65,17 @@ for arg in "$@"; do
         ;;
     esac
 done
+
+requeue_number=
+if [ -n "$requeue" ]; then
+    requeue_dir="$(CDPATH='' cd -- "$(dirname -- "$0")/../helpers" && pwd)"
+    requeue_state="$("$requeue_dir/push-requeue.sh" before "$branch")" || exit 1
+    case "$requeue_state" in
+    "none 0") echo "push: --requeue: $branch has no open pull request, so there is nothing to re-arm." ;;
+    *" 0") echo "push: --requeue: #${requeue_state% *} was not armed, so it stays unarmed." ;;
+    *) requeue_number="${requeue_state% *}" ;;
+    esac
+fi
 head="$(git rev-parse HEAD)"
 short="$(git rev-parse --short=12 HEAD)"
 
@@ -69,9 +95,16 @@ remote="${remote%%	*}"
 if [ "$remote" = "$head" ]; then
     if [ "$status" -ne 0 ]; then
         echo "push: git push exited $status, but origin/$branch is at $short, HEAD's commit." >&2
+        [ -z "$requeue_number" ] || echo "push: --requeue: #$requeue_number is NOT re-armed; run helpers/arm.sh $requeue_number." >&2
         exit "$status"
     fi
     echo "push: origin/$branch is at $short, HEAD's commit."
+    if [ -n "$requeue_number" ]; then
+        "$requeue_dir/push-requeue.sh" after "$requeue_number" || {
+            echo "push: --requeue: the push landed but #$requeue_number is NOT re-armed." >&2
+            exit 1
+        }
+    fi
     # Tell a lane, before it arms, that its ready pull request conflicts with the merge queue.
     # Advisory: it never changes this script's exit. NIFE_SKIP_QUEUE_CHECK=1 skips it.
     # script/queue-conflicts says more.
@@ -80,6 +113,9 @@ if [ "$remote" = "$head" ]; then
 fi
 
 echo "" >&2
+if [ -n "$requeue_number" ]; then
+    echo "push: --requeue: #$requeue_number was dequeued and is NOT armed; arm it with helpers/arm.sh $requeue_number once the push lands." >&2
+fi
 echo "push: NOT PUSHED. origin/$branch is at ${remote:-nothing (no such branch)}, not HEAD's $head." >&2
 if [ "$status" -eq 0 ]; then
     echo "push: git push exited 0 anyway; the read-back is what to believe." >&2

@@ -56,6 +56,8 @@ held_seed=7777777
     row 9 kernel-thread 2 3000401 400 ok
     row 10 kernel-thread 0 7778778 1000 ok
     row 11 confined 1 1001001 500 ok
+    row 12 confined 3 5000000 10 held-budget-expired
+    row 13 confined 3 5000011 500 ok
 } > "$NIFE_FUZZ_HOME/state/windows.tsv"
 
 "$here/fuzz-daily-publish.sh" --dry-run >"$work/stdout" 2>"$work/stderr" \
@@ -68,7 +70,7 @@ located="$(awk -F'\t' -v h="$held_seed" '$2 - 1 == h || $2 + $3 - 1 == h' "$rang
 
 firsts="$(cut -f2 "$ranges" | sort -n | tr '\n' ' ')"
 [ "$firsts" = "1000000 1000501 1001001 3000000 7776000 " ] \
-    || fail "published first seeds are '$firsts', want all of slot 1's and the ranges of slots 0 and 2 before their held windows"
+    || fail "published first seeds are '$firsts', want all of slot 1's and the ranges of slots 0 and 2 before their held windows, and none of slot 3 (held-budget-expired is held like the rest)"
 
 # The publish path refuses a missing or stale token by name, before any gh call. A stub gh on PATH
 # records each call; every refusal must exit non-zero, name its cause in one line, print no token,

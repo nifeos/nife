@@ -226,9 +226,9 @@ holds 59 binaries and 61 path dependencies, and 20 lines in `xtask`, `script/` a
 or its manifest. Those include `xtask`'s initrd builder, `script/names`, `script/audits` and lint's
 program list. What blocks it:
 
-- The homes. A package's programs leave as one repository, after their crates (§316 (a package's
-  programs leave as one repository, after their crates)), and a package's `home` stays provisional
-  until that repository exists.
+- The homes. A program package leaves as one repository with the crates only it uses (§316 (a
+  program package leaves as one repository, with the crates only it uses)), and a package's `home`
+  stays provisional until that repository exists.
 - The gates cannot yet build a package outside this tree; 691 names #1389's base image list as the
   missing piece.
 - Collision cost. Every lane adding a program edits `components/Cargo.toml`, so a split is a quiet-queue job.

@@ -35,13 +35,6 @@ line belongs there, not in a caption.
 
 - 2026W41: risk 4 went green on 2026-10-05 UTC (calef); milestones 761 and 766 cut the null syscall's growth to four tasks from 48 to 10 ticks.
 
-## Architecture decisions by status
-
-![Architecture decisions by status](project-metrics/decisions.svg)
-
-From `design/decisions/`. The gray band in the first three weeks is decisions that predate
-a status existing at all, counted as having none rather than as `DECIDED`.
-
 ## Names by what the tree records about them
 
 ![Names by what the tree records about them](project-metrics/names.svg)
@@ -301,3 +294,10 @@ The series' known limitations are in [project-metrics/limitations.md](project-me
   rather than wait for a lull; the four-week-zero reading is a reported interpretation that gates
   nothing). Its prose still frames stability as a state the tree reaches. Folding the wording waits
   for the next weekly metrics run or a small lane.
+
+## Architecture decisions by status
+
+![Architecture decisions by status](project-metrics/decisions.svg)
+
+From `design/decisions/`. The gray band in the first three weeks is decisions that predate
+a status existing at all, counted as having none rather than as `DECIDED`.
