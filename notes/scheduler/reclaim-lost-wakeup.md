@@ -81,8 +81,8 @@ hangs. Three of the twenty failed on something else, and all three are the
 bounded-yield-under-contention class this file already documents further down
 (`a_thread_that_never_yields_is_preempted_anyway`,
 `a_blocked_waiter_wakes_with_an_error_when_its_endpoint_is_revoked`, and the sibling
-`threads_round_robin`). That test's "thread {i} never ran" was `sched.rs:2709` then; 128d9492a made
-it a clock-bounded wait on 2026-08-03, and the assertion is `kernel/src/sched.rs:7686` as of
+`threads_round_robin`). That test's "thread {i} never ran" was in `kernel/src/sched.rs` then; 128d9492a made
+it a clock-bounded wait on 2026-08-03, and the assertion is in `threads_round_robin` in `kernel/src/sched/tests.rs` as of
 2026-10-11. They fail in 23 s with a named assertion, not at 60 s with a dump, so the two are never
 confusable once you look. A 15% rate for that class under four burners is worth someone's attention
 on its own; it is not this.

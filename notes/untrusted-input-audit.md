@@ -108,7 +108,7 @@ Both `c.sq_head` and `c.cid` come straight out of the dwords the device wrote
 one command in flight, hits an `assert!` and panics the kernel.
 
 (b) The source. A PCIe NVMe controller, confined behind the machine's IOMMU
-(`kernel/src/non_volatile_memory_express.rs:9` "confines the device to it," and the test at line 437 refuses to run without
+(the module comment of `kernel/src/non_volatile_memory_express.rs` "confines the device to it," and the test that refuses to run without
 the IOMMU "without it the confinement claim is untested"). Confined is not trusted: the IOMMU exists
 precisely because the device is not (DECISIONS §20, §23, §30). And the IOMMU confines *where* the
 device may write, not *what* it writes. The completion queue is memory the device legitimately owns

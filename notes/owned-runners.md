@@ -2,6 +2,8 @@
 
 *Name: provisional, minted 2026-11-03 (UTC) by lane/owned-runners-canary.*
 
+COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 3.
+
 The variable `NIFE_RUNNER_OWNED`, `helpers/owned_runner_check.py` and the canary workflow's job names are provisional too.
 
 The organization runs a small pool of its own CI runners next to GitHub's hosted ones. This page is

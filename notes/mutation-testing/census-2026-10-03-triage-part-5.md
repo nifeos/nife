@@ -87,7 +87,7 @@ Argued in earlier appendices, and still reported by this re-run (39):
 - `job_mix::order`'s `seed | 1` (1), the recorded `BUGS` entry on `order`.
 - `network_time_protocol::PROVED_NS` (1). A `const` inside the `cfg(kani)` module gets no module
   path in its mutant name, so the `verification::` exclusion misses it. This is the
-  `machine_discovery` `x86_64.rs:314` shape.
+  `machine_discovery` `x86_64.rs` `verification` module shape.
 
 ## Survivors this re-run saw that the census did not
 

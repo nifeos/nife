@@ -103,7 +103,7 @@ The probe was a `Disk` recorder in `redoxfs_server`'s `mod tests`, plus a driver
 per request and histograms block number against read count. It is not in the tree: it is a
 one-question instrument, and the tree already carries the two facts it produced. The whole of it is
 `read_tree_and_addr`'s five `read_block` calls. A reader who wants the result without the probe can
-read `vendor/redoxfs/src/transaction.rs:498` and count. `git log` for this section has the probe in
+read `read_tree_and_addr` in `vendor/redoxfs/src/transaction.rs` and count. `git log` for this section has the probe in
 its message.
 
 Conditions: host measurement only, no emulator, so no QEMU ran and nothing competed with another

@@ -215,7 +215,7 @@ macro_rules! say {
         println!(
             "storage-bench: slot {} ({}): {}",
             $slot.index,
-            $slot.board_role(),
+            $slot.role(),
             format_args!($($arg)*)
         )
     };
@@ -336,7 +336,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
             // overrun.
             let r = host.registers_mut();
             let (status, tcb, tbb) = (
-                r.read(registers::STATUS_REGISTER),
+                r.read(registers::STATUS),
                 r.read(registers::TRANSFERRED_CARD_BYTE_COUNT),
                 r.read(registers::TRANSFERRED_HOST_BYTE_COUNT),
             );
@@ -708,7 +708,7 @@ fn through_idmac(
                 w.read(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER),
                 w.read(registers::CURRENT_DESCRIPTOR_ADDRESS_REGISTER),
                 w.read(registers::CURRENT_BUFFER_ADDRESS_REGISTER),
-                w.read(registers::STATUS_REGISTER),
+                w.read(registers::STATUS),
                 w.read(registers::TRANSFERRED_CARD_BYTE_COUNT),
             );
             return Dma::Failed(e);
@@ -752,7 +752,7 @@ fn pages(count: usize) -> Option<&'static mut [u8]> {
 }
 
 /// The multi-block read diagnosis: the same `CMD18` at each card clock and length
-/// (`bench::read_matrix`), with the tree's FIFO depth and again trusting `STATUS_REGISTER` up to 128 words.
+/// (`bench::read_matrix`), with the tree's FIFO depth and again trusting `STATUS` up to 128 words.
 /// Each row says how full the FIFO got, to tell whether a full FIFO is what ends in a data CRC
 /// error. Read-only, after the probe, whose clock bring-up it relies on.
 #[cfg(feature = "storage_read_matrix")]
