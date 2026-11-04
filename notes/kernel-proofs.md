@@ -141,8 +141,8 @@ as more coverage than it is.
 
 | host | `arch/` subtree compiled | harnesses that run |
 |---|---|---|
-| aarch64 (dev Mac; `ubuntu-24.04-arm` runners) | `arch/aarch64/`, and `arch/riscv64/iommu.rs` | 7: two in `syscall.rs`, two in each `iommu.rs`, one in `fp.rs` |
-| x86_64 (cordoba; the `ubuntu-24.04` runner) | `arch/x86_64/` | 5: the same two in `syscall.rs`, two in `interrupt_controller.rs`, one in `fp.rs` |
+| aarch64 (dev Mac; `ubuntu-26.04-arm` runners) | `arch/aarch64/`, and `arch/riscv64/iommu.rs` | 7: two in `syscall.rs`, two in each `iommu.rs`, one in `fp.rs` |
+| x86_64 (cordoba; the `ubuntu-26.04` runner) | `arch/x86_64/` | 5: the same two in `syscall.rs`, two in `interrupt_controller.rs`, one in `fp.rs` |
 | either, via script/verify-riscv64 | `arch/riscv64/`, natively | 7: two in `syscall.rs`, two in `iommu.rs`, three in `mmu.rs` |
 
 Ten distinct harnesses, not twelve: `syscall.rs`'s two pass identically on both hosts.

@@ -12,7 +12,7 @@
 //! `internal_direct_memory_access`; the databook's `idmac` is kept as `doc(alias = "idmac")`.
 
 use crate::command::Command;
-use crate::host::{
+use crate::host_controller::{
     COMMAND_DEADLINE_MICROSECONDS, DATA_DEADLINE_MICROSECONDS, Error, HostController, Identity,
     RegisterWindowAndClock,
 };
@@ -633,6 +633,10 @@ mod tests {
     /// give-up test has to be a comparison past it. On a worker, so a wait that never gives up is
     /// a named failure rather than a hung run.
     #[test]
+    #[cfg_attr(
+        miri,
+        ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
+    )]
     fn a_stalled_transfer_gives_up_once_the_deadline_has_passed() {
         let (h, card, memory) = polled(3);
         let mut h = with_internal_direct_memory_access(h, &memory);
@@ -788,6 +792,9 @@ mod tests {
             timed_blocks: 0,
             timed_microseconds: 0,
         };
+        // The timed reads are the bench's own length natively; under Miri each 128-block command
+        // costs minutes, so the timed part reads two commands and one.
+        let (long, short) = if cfg!(miri) { (256, 128) } else { (1024, 256) };
         let mut h = with_internal_direct_memory_access(h, &memory);
         let mut buffer = vec![0u8; 128 * 512];
         let r = crate::bench::internal_direct_memory_access_read(
@@ -795,21 +802,21 @@ mod tests {
             &report,
             &reference,
             &mut buffer,
-            1024,
+            long,
         )
         .unwrap();
         assert!(r.matches);
-        assert_eq!(r.timed_blocks, 1024);
+        assert_eq!(r.timed_blocks, long);
         h.registers_mut().direct_memory_access_corrupts = true;
         let r = crate::bench::internal_direct_memory_access_read(
             &mut h,
             &report,
             &reference,
             &mut buffer,
-            256,
+            short,
         )
         .unwrap();
         assert!(!r.matches);
-        assert_eq!(r.timed_blocks, 256);
+        assert_eq!(r.timed_blocks, short);
     }
 }

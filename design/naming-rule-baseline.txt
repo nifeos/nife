@@ -4,186 +4,371 @@
 # `<path>::<name> <check>`, once per break. The list only shrinks: a fixed name's row goes in the
 # change that fixes it (`python3 helpers/name_checks.py --bank`). A row may be added only by the
 # change that bumps the rules line above, because it adds or revises the check.
+# Layout (helpers/baseline_layout.py): rows sorted, a blank line after every row. A change deletes a
+# cleared row's line and leaves the blank line, so two changes that clear adjacent rows merge in git.
 components/src/swish/witness.rs::removed question-shape
+
 crates/abi/src/futex.rs::admitted question-shape
+
 crates/abi/src/virtio.rs::DMA_PHYS_OFFSET spelled-out
+
 crates/address_space_identifier/src/lib.rs::ASIDS spelled-out
+
 crates/boot_slot/src/lib.rs::NVME spelled-out
+
 crates/boot_slot/src/lib.rs::encode_nvme spelled-out
+
 crates/boot_slot/src/lib.rs::is_nvme spelled-out
+
 crates/c_seam/src/lib.rs::GRANT_VA spelled-out
+
 crates/c_seam/src/lib.rs::WITNESS_FAR_VA spelled-out
+
 crates/c_seam/src/lib.rs::WITNESS_RO_VA spelled-out
+
 crates/confined_syscall_fuzzer_contract/src/lib.rs::ARGS spelled-out
+
 crates/confined_syscall_fuzzer_contract/src/lib.rs::PLAYGROUND_VA spelled-out
+
 crates/confined_syscall_fuzzer_contract/src/lib.rs::REPORT_VA spelled-out
+
 crates/current_cpu_contract/src/lib.rs::PAGE_VA spelled-out
+
 crates/current_cpu_contract/src/lib.rs::thread_page_va spelled-out
-crates/designware_ethernet/src/coherence.rs::delivered question-shape
+
+
+
 crates/documentation/src/index.rs::STORE_DIR spelled-out
+
 crates/e1000e/src/pch/flush.rs::required question-shape
+
 crates/e1000e/src/pch/ulp.rs::done question-shape
+
 crates/environment_contract/src/lib.rs::ConfigPage spelled-out
+
 crates/filesystem_contract/src/dir.rs::dir spelled-out
+
 crates/filesystem_contract/src/dirent.rs::IS_DIR spelled-out
+
 crates/filesystem_contract/src/grant.rs::spec spelled-out
+
 crates/filesystem_contract/src/grant.rs::spec_len spelled-out
+
 crates/filesystem_contract/src/grant.rs::spec_rights spelled-out
+
 crates/filesystem_contract/src/nameset.rs::IS_DIR spelled-out
+
 crates/filesystem_contract/src/xattr.rs::STORE_DIR spelled-out
+
 crates/filesystem_contract/src/xattr.rs::spec spelled-out
+
 crates/filesystem_contract/src/xattr.rs::spec_kind spelled-out
+
 crates/filesystem_contract/src/xattr.rs::spec_value_len spelled-out
+
 crates/filesystem_fixture/src/lib.rs::GLOB_DIR spelled-out
+
 crates/filesystem_fixture/src/lib.rs::MADE_A_DIR spelled-out
+
 crates/filesystem_fixture/src/lib.rs::MADE_DIR spelled-out
+
 crates/filesystem_fixture/src/lib.rs::MADE_DIR spelled-out
+
 crates/filesystem_fixture/src/lib.rs::NAV_DIR spelled-out
+
 crates/filesystem_fixture/src/lib.rs::TOUCH_MTIME_ADVANCED spelled-out
+
 crates/firmware_configuration/src/lib.rs::DmaCommand spelled-out
+
 crates/grant_plan/src/nav.rs::pos spelled-out
+
 crates/grant_plan/src/spawnproto.rs::prog_id spelled-out
+
 crates/grant_plan/src/word.rs::span question-shape
+
 crates/graphics_contract/src/lib.rs::rect_in_surface question-shape
+
 crates/hot_swap_contract/src/lib.rs::BROKER_WARN_VA spelled-out
+
 crates/hot_swap_contract/src/lib.rs::DEV_VA spelled-out
+
 crates/hot_swap_contract/src/lib.rs::IMAGE_VA spelled-out
+
 crates/hot_swap_contract/src/lib.rs::LOG_VA spelled-out
+
 crates/hot_swap_contract/src/lib.rs::STATE_VA spelled-out
+
 crates/inter_process_communication/src/rendezvous.rs::one_queue_invariant question-shape
+
 crates/line_editor/src/component.rs::ELF_VA spelled-out
+
 crates/line_editor/src/component.rs::HANDOFF_VA spelled-out
+
 crates/login_contract/src/lib.rs::CARETAKER_ELF_VA spelled-out
+
 crates/login_contract/src/lib.rs::PROGRAM_MEASUREMENTS_VA spelled-out
+
 crates/login_contract/src/lib.rs::TIMETABLE_ELF_VA spelled-out
+
 crates/login_contract/src/lib.rs::TIMETABLE_VA spelled-out
+
 crates/login_contract/src/lib.rs::USER_TIMETABLE_KEEPER_ELF_VA spelled-out
+
 crates/machine_discovery/src/aarch64.rs::pa_bits spelled-out
+
 crates/machine_discovery/src/acpi/ivrs.rs::device_may_write question-shape
+
 crates/machine_discovery/src/riscv64.rs::EID_IPI spelled-out
+
 crates/machine_discovery/src/riscv64.rs::SBI_IPI spelled-out
+
 crates/machine_statistics_contract/src/lib.rs::PAGE_VA spelled-out
+
 crates/memory_region_heap/src/lib.rs::commit_all question-shape
+
 crates/nifefs/src/lib.rs::DIR_BLOCKS spelled-out
+
 crates/nifefs/src/lib.rs::name_eq question-shape
+
 crates/paging/src/domain.rs::DmaRegion spelled-out
+
 crates/paging/src/mapper.rs::walk question-shape
+
 crates/paging/src/page_format.rs::is_user_page_va spelled-out
+
 crates/paging/src/x86_64.rs::MSR spelled-out
+
 crates/pci/src/lib.rs::CLASS_NVME spelled-out
+
 crates/pci/src/lib.rs::mem32_window spelled-out
+
 crates/program_argument_contract/src/lib.rs::ArgPage spelled-out
+
 crates/program_argument_contract/src/lib.rs::from_va spelled-out
+
 crates/screen_console/src/lib.rs::copy question-shape
+
 crates/screen_console/src/lib.rs::copy_wide question-shape
+
 crates/serial_console/src/exposure.rs::soaked question-shape
+
 crates/serial_console/src/progress.rs::userspace_ran question-shape
+
 crates/soak_page/src/lib.rs::VA spelled-out
+
 crates/std_runtime_contract/src/lib.rs::ARGS_PAGE spelled-out
+
 crates/std_runtime_contract/src/lib.rs::ARGS_SLOT spelled-out
+
 crates/std_runtime_contract/src/lib.rs::CONFIG_PAGE spelled-out
+
 crates/std_runtime_contract/src/lib.rs::CONFIG_SLOT spelled-out
+
 crates/std_runtime_contract/src/lib.rs::FS_DIR_SLOT spelled-out
+
 crates/supervision_contract/src/lib.rs::CHILD_STACK_VA spelled-out
+
 crates/system_log_contract/src/lib.rs::WINDOW_VA spelled-out
+
 crates/system_log_contract/src/lib.rs::at_line_start question-shape
+
 crates/timetable/src/admission.rs::schedulable question-shape
+
 crates/timetable/src/contract.rs::ARG_ARCHIVE_LEN spelled-out
+
 crates/timetable/src/contract.rs::ARG_FIRES spelled-out
+
 crates/timetable/src/contract.rs::ARG_REGISTRATION_PAGE spelled-out
+
 crates/timetable/src/contract.rs::CLOCK_VA spelled-out
+
 crates/timetable/src/contract.rs::E_CONFIG spelled-out
+
 crates/timetable/src/contract.rs::STORE_PAGE_VA spelled-out
+
 crates/user_mode_runtime/src/objects.rs::map_page_frame question-shape
+
 crates/video_terminal/src/cell.rs::reverse question-shape
+
 crates/video_terminal/src/keymap.rs::shift question-shape
+
 crates/work_steal_slot/src/lib.rs::claim question-shape
+
 fixtures/src/login_test_client.rs::F_DIR_WORKS spelled-out
+
 kernel/src/arch/aarch64/exceptions.rs::arg spelled-out
+
 kernel/src/arch/aarch64/exceptions.rs::set_arg spelled-out
+
 kernel/src/arch/aarch64/exceptions.rs::set_user_arg spelled-out
+
 kernel/src/arch/aarch64/mmu.rs::KERNEL_VA_BASE spelled-out
+
 kernel/src/arch/aarch64/mmu.rs::asid_of spelled-out
+
 kernel/src/arch/aarch64/mmu.rs::flush_asid spelled-out
+
 kernel/src/arch/riscv64/exceptions.rs::arg spelled-out
+
 kernel/src/arch/riscv64/exceptions.rs::set_arg spelled-out
+
 kernel/src/arch/riscv64/exceptions.rs::set_user_arg spelled-out
+
 kernel/src/arch/riscv64/mmu.rs::KERNEL_VA_BASE spelled-out
+
 kernel/src/arch/riscv64/mmu.rs::asid_of spelled-out
+
 kernel/src/arch/riscv64/mmu.rs::flush_asid spelled-out
+
 kernel/src/arch/x86_64/exceptions.rs::arg spelled-out
+
 kernel/src/arch/x86_64/exceptions.rs::set_arg spelled-out
+
 kernel/src/arch/x86_64/exceptions.rs::set_user_arg spelled-out
+
 kernel/src/arch/x86_64/interrupt_controller.rs::send_ipi spelled-out
+
 kernel/src/arch/x86_64/interrupt_controller.rs::send_nmi spelled-out
+
 kernel/src/arch/x86_64/ist.rs::an_nmi_finds_its_per_cpu_block_whatever_the_gs_base_held spelled-out
+
 kernel/src/arch/x86_64/ist.rs::an_nmi_leaves_the_gs_base_it_found spelled-out
+
 kernel/src/arch/x86_64/ist.rs::ist spelled-out
+
 kernel/src/arch/x86_64/ist.rs::the_nmi_double_fault_and_machine_check_gates_select_their_own_stacks spelled-out
+
 kernel/src/arch/x86_64/mmu/layout.rs::KERNEL_VA_BASE spelled-out
+
 kernel/src/arch/x86_64/mmu/shootdown.rs::serve_shootdown_nmi spelled-out
+
 kernel/src/arch/x86_64/mmu/user_space.rs::asid_of spelled-out
+
 kernel/src/arch/x86_64/mmu/user_space.rs::flush_asid spelled-out
+
 kernel/src/arch/x86_64/msr.rs::msr spelled-out
+
 kernel/src/arch/x86_64/msr.rs::read_msr spelled-out
+
 kernel/src/arch/x86_64/msr.rs::write_msr spelled-out
+
 kernel/src/bench/ipc.rs::ipc spelled-out
+
 kernel/src/boot.rs::DTB spelled-out
+
 kernel/src/ipc_stack_depth.rs::ipc_stack_depth spelled-out
+
 kernel/src/sched/ipc_outcome.rs::ipc_outcome spelled-out
+
 kernel/src/sched/ipc_outcome.rs::set_ipc_refused spelled-out
+
 kernel/src/sched/ipc_outcome.rs::take_ipc_aborted spelled-out
+
 kernel/src/sched/ipc_outcome.rs::take_ipc_refused spelled-out
+
 kernel/src/sched/ipc_tables.rs::ipc_tables spelled-out
+
 kernel/src/sched/rendezvous.rs::ipc_call spelled-out
+
 kernel/src/sched/rendezvous.rs::ipc_call_badged spelled-out
+
 kernel/src/sched/rendezvous.rs::ipc_receive spelled-out
+
 kernel/src/sched/rendezvous.rs::ipc_reply spelled-out
+
 kernel/src/sched/rendezvous.rs::ipc_send spelled-out
+
 kernel/src/sched/rendezvous.rs::ipc_send_badged spelled-out
+
 kernel/src/sync.rs::IPC_TABLES spelled-out
+
 kernel/src/sync.rs::STACK_VA spelled-out
+
 kernel/src/user.rs::USER_STACK_VA spelled-out
+
 kernel/src/user/address_space.rs::current_cpu_page_kernel_va spelled-out
+
 kernel/src/user/clock_service.rs::CLOCK_VA spelled-out
+
 kernel/src/user/compositor_service.rs::neighbour_probe_va spelled-out
+
 kernel/src/user/disk_service.rs::ROSTER_VA spelled-out
+
 kernel/src/user/fs_service/directory_grant.rs::DirGrant spelled-out
+
 kernel/src/user/fs_service/directory_grant.rs::narrow_dir spelled-out
+
 kernel/src/user/fs_service/directory_grant.rs::narrow_dir_held spelled-out
+
 kernel/src/user/fs_service/directory_grant.rs::start_granted_dir spelled-out
+
 kernel/src/user/fs_service/two_dirs.rs::TwoDirGrant spelled-out
+
 kernel/src/user/fs_service/two_dirs.rs::start_granted_two_dirs spelled-out
+
 kernel/src/user/fs_service/two_dirs.rs::two_dirs spelled-out
+
 kernel/src/user/login_service.rs::F_DIR_WORKS spelled-out
+
 kernel/src/user/non_volatile_memory_express_service.rs::DmaEscape spelled-out
+
 kernel/src/user/non_volatile_memory_express_service.rs::start_dma_escape spelled-out
+
 kernel/src/user/virtio_dma.rs::virtio_dma spelled-out
+
 notes/capabilities/ipc-endpoints.md::ipc-endpoints spelled-out
+
 notes/dir-capability.md::dir-capability spelled-out
+
 notes/dma.md::dma spelled-out
+
 notes/env-config.md::env-config spelled-out
+
 notes/ipc-naming.md::ipc-naming spelled-out
+
 notes/ipc-tables-lock-inventory.md::ipc-tables-lock-inventory spelled-out
+
 notes/mutation-testing/baseline-survivors-abi-to-ipc.md::baseline-survivors-abi-to-ipc spelled-out
+
 notes/pcie-transport-scope.md::pcie-transport-scope spelled-out
+
 notes/pcie.md::pcie spelled-out
+
 notes/scheduled-execution/mem-entries.md::mem-entries spelled-out
+
 redoxfs_server/src/crash.rs::MemIo spelled-out
+
 redoxfs_server/src/memo.rs::would_keep question-shape
+
 redoxfs_server/src/server.rs::make_dir spelled-out
+
 redoxfs_server/src/server.rs::mtime spelled-out
+
 redoxfs_server/src/server.rs::open_dir spelled-out
+
 redoxfs_server/src/server.rs::read_dir spelled-out
+
 redoxfs_server/src/server.rs::scoped question-shape
+
 redoxfs_server/src/server.rs::set_mtime_at spelled-out
+
 redoxfs_server/src/server.rs::set_mtime_now spelled-out
+
 system_tests/src/user/dir_capability_tests.rs::dir_capability_tests spelled-out
+
 system_tests/src/user/eighth_pass_dir_escape_tests.rs::eighth_pass_dir_escape_tests spelled-out
+
 system_tests/src/user/multi_dir_namespace_tests.rs::multi_dir_namespace_tests spelled-out
+
 uefi_loader/src/chooser.rs::booted_from_nvme question-shape
+
 uefi_loader/src/chooser.rs::booted_from_nvme spelled-out
+
 uefi_loader/src/device_path.rs::is_nvme spelled-out
+
 xtask/src/suite.rs::aarch64 question-shape
+
 xtask/src/suite.rs::riscv64 question-shape
+
 xtask/src/suite.rs::x86_64 question-shape
+

@@ -1,5 +1,7 @@
 //! The crate's host tests, kept apart from `lib.rs` so the crate root stays an index of its
 //! modules as the tests grow.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
 use std::vec;
 use std::vec::Vec;
@@ -35,7 +37,7 @@ fn frames_arrive_in_order_through_more_than_one_lap_of_the_ring() {
     nic.program_rings_and_start(PHYSICAL_ADDRESS);
     let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
     nic.with(|r, t| data_plane.start(r, t));
-    let mut out = vec![0u8; MAXIMUM_FRAME];
+    let mut out = vec![0u8; MAXIMUM_FRAME_BYTES];
     for k in 0..(3 * RECEIVE_ENTRIES as usize) {
         let f = frame(60 + k, k as u8);
         assert!(nic.wire_in(&f), "the device had a buffer for frame {k}");
@@ -58,7 +60,7 @@ fn a_ring_the_driver_does_not_drain_fills_to_one_short_and_then_refuses() {
         .count();
     assert_eq!(accepted, usize::from(RECEIVE_ENTRIES - 1));
     // Draining one makes room for exactly one more.
-    let mut out = vec![0u8; MAXIMUM_FRAME];
+    let mut out = vec![0u8; MAXIMUM_FRAME_BYTES];
     assert!(
         nic.with(|r, t| data_plane.receive(r, t, &mut out))
             .is_some()
@@ -77,7 +79,7 @@ fn a_bad_frame_is_dropped_and_counted_without_stalling_the_ring() {
     nic.wire_in_with_error(&frame(64, 1));
     let good = frame(80, 9);
     nic.wire_in(&good);
-    let mut out = vec![0u8; MAXIMUM_FRAME];
+    let mut out = vec![0u8; MAXIMUM_FRAME_BYTES];
     let n = nic.with(|r, t| data_plane.receive(r, t, &mut out)).unwrap();
     assert_eq!(&out[..n], &good[..]);
     assert_eq!(data_plane.dropped, 1);
@@ -131,7 +133,7 @@ fn a_frame_of_no_length_or_too_much_is_refused() {
         Err(TransmitError::BadLength)
     );
     assert_eq!(
-        nic.with(|r, t| data_plane.transmit(r, t, &[0; MAXIMUM_FRAME + 1])),
+        nic.with(|r, t| data_plane.transmit(r, t, &[0; MAXIMUM_FRAME_BYTES + 1])),
         Err(TransmitError::BadLength)
     );
 }
@@ -140,29 +142,32 @@ fn a_frame_of_no_length_or_too_much_is_refused() {
 fn the_verdict_strips_the_crc_and_refuses_what_the_device_could_not_mean() {
     let ok = RDES3_FD | RDES3_LD;
     assert_eq!(
-        receive_verdict(ok | 64, MAXIMUM_FRAME),
+        receive_verdict(ok | 64, MAXIMUM_FRAME_BYTES),
         ReceiveVerdict::Frame(60)
     );
     assert_eq!(
-        receive_verdict(ok | 1518, MAXIMUM_FRAME),
+        receive_verdict(ok | 1518, MAXIMUM_FRAME_BYTES),
         ReceiveVerdict::Frame(1514)
     );
     assert_eq!(
-        receive_verdict(ok | 1519, MAXIMUM_FRAME),
+        receive_verdict(ok | 1519, MAXIMUM_FRAME_BYTES),
         ReceiveVerdict::Drop
     );
-    assert_eq!(receive_verdict(ok | 3, MAXIMUM_FRAME), ReceiveVerdict::Drop);
+    assert_eq!(
+        receive_verdict(ok | 3, MAXIMUM_FRAME_BYTES),
+        ReceiveVerdict::Drop
+    );
     assert_eq!(receive_verdict(ok | 64, 59), ReceiveVerdict::Drop);
     assert_eq!(
-        receive_verdict(RDES3_FD | 64, MAXIMUM_FRAME),
+        receive_verdict(RDES3_FD | 64, MAXIMUM_FRAME_BYTES),
         ReceiveVerdict::Drop
     );
     assert_eq!(
-        receive_verdict(ok | RDES3_ES | 64, MAXIMUM_FRAME),
+        receive_verdict(ok | RDES3_ES | 64, MAXIMUM_FRAME_BYTES),
         ReceiveVerdict::Drop
     );
     assert_eq!(
-        receive_verdict(ok | RDES3_CTXT | 64, MAXIMUM_FRAME),
+        receive_verdict(ok | RDES3_CTXT | 64, MAXIMUM_FRAME_BYTES),
         ReceiveVerdict::Drop
     );
 }
@@ -182,13 +187,13 @@ fn descriptor_words_put_ownership_in_the_high_word_of_the_second_store() {
 }
 
 /// **The region's layout, in bytes**: two pages of rings, sixteen receive buffers, sixteen
-/// transmit buffers. The kernel allocates `layout::PAGES` from this, so a slip here maps a
+/// transmit buffers. The kernel allocates `layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` from this, so a slip here maps a
 /// region too small for the buffers the rings point at.
 #[test]
 fn the_region_is_two_ring_pages_then_the_buffers() {
     assert_eq!(layout::RECEIVE_BUFFERS, 0x2000);
     assert_eq!(layout::TRANSMIT_BUFFERS, 0xa000);
-    assert_eq!(layout::BYTES, 0x1_2000);
+    assert_eq!(layout::DIRECT_MEMORY_ACCESS_REGION_BYTES, 0x1_2000);
     assert_eq!(layout::receive_buffer(1), 0x2800);
     assert_eq!(
         layout::receive_buffer(RECEIVE_ENTRIES + 1),
@@ -273,7 +278,7 @@ fn the_receive_cursor_names_the_next_slot_and_wraps() {
     nic.program_rings_and_start(PHYSICAL_ADDRESS);
     let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
     nic.with(|r, t| data_plane.start(r, t));
-    let mut out = vec![0u8; MAXIMUM_FRAME];
+    let mut out = vec![0u8; MAXIMUM_FRAME_BYTES];
     for k in 1..=usize::from(RECEIVE_ENTRIES) + 2 {
         assert!(nic.wire_in(&frame(64, k as u8)));
         nic.with(|r, t| data_plane.receive(r, t, &mut out)).unwrap();
@@ -294,7 +299,7 @@ fn the_largest_frame_is_sent_and_a_full_ring_says_so_in_advance() {
     let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
     nic.with(|r, t| data_plane.start(r, t));
     assert!(nic.with(|r, _| data_plane.can_transmit(r)));
-    nic.with(|r, t| data_plane.transmit(r, t, &frame(MAXIMUM_FRAME, 1)))
+    nic.with(|r, t| data_plane.transmit(r, t, &frame(MAXIMUM_FRAME_BYTES, 1)))
         .unwrap();
     for k in 1..usize::from(TRANSMIT_ENTRIES - 1) {
         assert!(nic.with(|r, _| data_plane.can_transmit(r)), "{k}");
@@ -304,5 +309,5 @@ fn the_largest_frame_is_sent_and_a_full_ring_says_so_in_advance() {
     assert!(!nic.with(|r, _| data_plane.can_transmit(r)));
     nic.step();
     assert!(nic.with(|r, _| data_plane.can_transmit(r)));
-    assert_eq!(nic.wire_out()[0].len(), MAXIMUM_FRAME);
+    assert_eq!(nic.wire_out()[0].len(), MAXIMUM_FRAME_BYTES);
 }
