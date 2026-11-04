@@ -289,7 +289,10 @@ jobs:
       needs.scope.outputs.needed == 'true' &&
       needs.gate.outputs.run != 'false' &&
       (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false')
-    runs-on: ubuntu-26.04
+    # Stage 1 of the owned runners: with the repository variable NIFE_RUNNER_OWNED set to true this job runs
+    # on the owned x86_64 runners, on a merge group or a push to main only (the events their host admits).
+    # A pull request or a dispatch stays hosted, and so does an unset variable.
+    runs-on: ${{ vars.NIFE_RUNNER_OWNED == 'true' && (github.event_name == 'merge_group' || github.event_name == 'push') && 'nife-owned-x86_64' || 'ubuntu-26.04' }}
     # A shard ran a 12.7-minute median and an 18.4 maximum over 284 pull-request runs, and a 21.1
     # maximum once in about 600 merge-group runs, to 2026-10-19 (UTC).
     # 25 minutes is the 20-minute budget plus margin, from milestone 721 (each merge-group CI job

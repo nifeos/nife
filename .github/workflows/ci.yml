@@ -907,7 +907,10 @@ jobs:
   # had that property to lose. The aarch64 and riscv64 legs stay where they were.
   swish-check-x86_64:
     name: swish-check-x86_64 (the interactive shell, x86_64 under KVM)
-    runs-on: ubuntu-26.04
+    # Stage 1 of the owned runners: the repository variable NIFE_RUNNER_OWNED set to true moves this job to
+    # the owned x86_64 runners, but only on a merge group or a push to main, the two events their host
+    # admits. A pull request or a dispatch (the full-ci label) stays hosted. Unset, it is hosted.
+    runs-on: ${{ vars.NIFE_RUNNER_OWNED == 'true' && (github.event_name == 'merge_group' || github.event_name == 'push') && 'nife-owned-x86_64' || 'ubuntu-26.04' }}
     needs: gate
     if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # A hang detector, not a budget: setup and build are about ten minutes, a cold QEMU build can
@@ -2105,7 +2108,10 @@ jobs:
 
   crate-probes:
     name: crate probes (fifty crates.io crates build against nife std)
-    runs-on: ubuntu-26.04
+    # Stage 1 of the owned runners: with the repository variable NIFE_RUNNER_OWNED set to true this job runs
+    # on the owned x86_64 runners, on a merge group or a push to main only (the events their host admits).
+    # A pull request or a dispatch stays hosted, and so does an unset variable.
+    runs-on: ${{ vars.NIFE_RUNNER_OWNED == 'true' && (github.event_name == 'merge_group' || github.event_name == 'push') && 'nife-owned-x86_64' || 'ubuntu-26.04' }}
     needs: gate
     if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
@@ -2152,7 +2158,10 @@ jobs:
 
   bench:
     name: bench (icount regression tripwire)
-    runs-on: ubuntu-26.04
+    # Stage 1 of the owned runners: with the repository variable NIFE_RUNNER_OWNED set to true this job runs
+    # on the owned x86_64 runners, on a merge group or a push to main only (the events their host admits).
+    # A pull request or a dispatch stays hosted, and so does an unset variable.
+    runs-on: ${{ vars.NIFE_RUNNER_OWNED == 'true' && (github.event_name == 'merge_group' || github.event_name == 'push') && 'nife-owned-x86_64' || 'ubuntu-26.04' }}
     needs: gate
     if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
