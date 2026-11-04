@@ -102,7 +102,7 @@ and the model pins today's behavior, so the test is green and any change is seen
 `abi::rendezvous::RECEIVE`'s `BUGS`.
 
 It is exploitable today. A std program, including an unvouched one, is spawned holding its own
-memory region with `WRITE` in slot 0 (`crates/system_initializer/src/lib.rs:3756`, the `StdLayout`
+memory region with `WRITE` in slot 0 (`StdLayout::new` in `crates/system_initializer/src/std_layout.rs`, its
 caps). `MemoryRegion::RETYPE` checks only `WRITE` and returns a frame with `Rights::ALL`
 (`kernel/src/syscall.rs`, `memory_region_retype`), so the program holds a `GRANT` capability it can
 `SEND_CAP` again and again. Its stdout is a rendezvous that a plain-`RECEIVE` server drains. Every
@@ -112,11 +112,11 @@ native programs without it hold no `GRANT` capability.
 
 | server (plain `RECEIVE`) | endpoint | holders of `WRITE` | a holder with a `GRANT` capability? |
 |---|---|---|---|
-| swish, reading a child's output (`components/src/swish.rs:3220`, also 2594, 3195, 4522) | the child's `out` | every spawned child | yes: std children, `--mem` children |
-| swish, draining diagnostics (`swish.rs:3367`) | the diagnostics rendezvous | stages that declare diagnostics | yes, if the stage is std or `--mem` |
+| swish, reading a child's output (`drain_text`, `run_image` and `spawn` in `components/src/swish/running.rs`, and `drain_into` in `components/src/swish/pipeline.rs`) | the child's `out` | every spawned child | yes: std children, `--mem` children |
+| swish, draining diagnostics (`drain_diagnostics` in `swish/running.rs`) | the diagnostics rendezvous | stages that declare diagnostics | yes, if the stage is std or `--mem` |
 | `terminal_sink_caretaker` (`:80`) | the terminal sink | children given the default diagnostics or a screen tail | yes: a std child on that path |
-| `wc`, `mdr` (`wc.rs:117`, `mdr.rs:155`) | the pipe source | the upstream stage | yes if upstream is std or `--mem` (not traced end to end) |
-| console (`console.rs:199`) | requests | `line_editor` only | trusted |
+| `wc`, `mdr` (`count` in `wc.rs`, `_start` in `mdr.rs`) | the pipe source | the upstream stage | yes if upstream is std or `--mem` (not traced end to end) |
+| console (`start` in `console.rs`) | requests | `line_editor` only | trusted |
 | `system_log` (`:151`) | intake | no untrusted holder at boot | no |
 | supervisors, `job_undertaker`, `timetable`, `swapper`, report endpoints | fault, death, note, report | the kernel or trusted components | no |
 

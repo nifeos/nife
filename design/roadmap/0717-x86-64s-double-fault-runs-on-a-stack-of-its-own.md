@@ -26,18 +26,18 @@ Title and slug are drafts.
 The double-fault safety net is documented, selected by the IDT, and never installed.
 
 - The IDT gate for vector 8 selects IST slot 1: `let ist = if vector == 8 { IST_DOUBLE_FAULT } else
-  { 0 };` (`kernel/src/arch/x86_64/exceptions.rs:411`), with `IST_DOUBLE_FAULT = 1`
-  (`arch/x86_64/segments.rs:46`).
-- The TSS has the seven entries (`ist: [u64; 7]`, `segments.rs:94`) and zeroes them at init
-  (`segments.rs:117`).
-- `set_interrupt_stack` (`segments.rs:298`) is the only writer after init, and
+  { 0 };` (`kernel/src/arch/x86_64/exceptions.rs::initialize`), with `IST_DOUBLE_FAULT = 1`
+  (`arch/x86_64/segments.rs`).
+- The TSS has the seven entries (`ist: [u64; 7]`, a field of the task state segment in `segments.rs`)
+  and zeroes them at init (`new` in `segments.rs`).
+- `set_interrupt_stack` (in `segments.rs`) is the only writer after init, and
   `grep -rn set_interrupt_stack kernel xtask crates` finds no caller outside its own definition.
   The compiler agrees: `notes/ci.md` on #1472 records the `never used` warning as how this was found.
 
 So a double fault today loads `rsp` from `TSS.ist[0] == 0`. The CPU cannot push its frame there,
-and the result is a triple fault. The runner passes `-no-reboot` (`helpers/qemu-runner-x86_64.sh:289`),
+and the result is a triple fault. The runner passes `-no-reboot` (`NO_REBOOT` in `helpers/qemu-runner-x86_64.sh`),
 so under QEMU that is a silent exit with no report; on a real machine it is a reboot. The comment on
-`exceptions::initialize` (`exceptions.rs:388` to `392`) states the intent exactly: a handler pushing
+`exceptions::initialize` (its doc comment in `exceptions.rs`) states the intent exactly: a handler pushing
 onto the same broken stack "triple-faults". The code does not deliver it.
 
 The commonest trigger is the one the IST exists for: a kernel stack overflow whose exception frame
@@ -52,7 +52,7 @@ each is recorded:
   with `sp` another 272 bytes lower, repeatedly, until a frame fits in the slot below
   (`kernel/src/stack.rs`, doc on `warn_if_guard_page`, "aarch64 has no double fault").
 - riscv64: the entry stub does `addi sp, sp, -288` and then stores
-  (`kernel/src/arch/riscv64/trap.s:52` to `54`). I read that it can fault the same way; I did not run
+  (`trap_entry` in `kernel/src/arch/riscv64/trap.s`). I read that it can fault the same way; I did not run
   it, and `kernel/src/interrupt_stack.rs`'s BUGS entry says an overflow whose first fault is the
   vector's own frame store "still cascades" on the ports that have the interrupt stack.
 
@@ -63,7 +63,7 @@ Both ports eventually print. x86_64 resets. That is the parity gap this closes (
 
 1. Allocate one stack per core for the double fault, in its own region with an unmapped guard page
    below it. It must not be the interrupt stack (`interrupt_stack.rs`): `set_interrupt_stack`'s
-   Safety contract (`segments.rs:295` to `297`) forbids two vectors sharing an IST stack, and a
+   Safety contract (in `segments.rs`) forbids two vectors sharing an IST stack, and a
    double fault taken while the interrupt-stack handler runs is exactly that case.
 2. Call `set_interrupt_stack(IST_DOUBLE_FAULT, top)` on every core, after `segments::initialize` has
    loaded that core's TSS (`set_interrupt_stack` indexes by `cpu::id()`).
@@ -71,7 +71,7 @@ Both ports eventually print. x86_64 resets. That is the parity gap this closes (
    frame (`rip`, `rsp`, `cs`, `ss`, `rflags`; the error code is architecturally zero) and does not
    return. The report is deliberately minimal and takes no lock and no allocator.
 4. Exempt vector 8 from `x86_trap_dispatch`'s interrupt-stack move, the way NMI is exempted
-   (`exceptions.rs:668` to `686`): `top_for_trap` (`interrupt_stack.rs:171`) would otherwise find `rsp`
+   (`exceptions.rs::x86_trap_dispatch`): `interrupt_stack.rs::top_for_trap` would otherwise find `rsp`
    outside the interrupt-stack region and move the handler off the IST stack onto a different one.
    This is read from the code, not measured.
 

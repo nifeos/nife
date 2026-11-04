@@ -2,7 +2,7 @@
 
 *Milestone 152 (durable delegation), written 2026-09-27 (UTC) to the seven questions of CLAUDE.md's
 "A fork reaches an architect with its questions already answered". **Status: DECIDED**, option D,
-calef, 2026-09-27 (UTC), on #1377; built the same day (below). Line numbers are this branch's at the
+calef, 2026-09-27 (UTC), on #1377; built the same day (below). The code cited is as of the
 commit that added this file.*
 
 ## The question
@@ -14,16 +14,16 @@ that set?
 
 - `login` is handed one *schedule archive*: `user_timetable_keeper`, `timetable`, and a nested `jobs` archive.
   `vouched_schedule` checks every entry against the boot slot's measurement table
-  (`components/src/login.rs:1610`). `user_timetable_keeper` copies `jobs` into itself and again into
-  the timetable (`components/src/user_timetable_keeper.rs:57`, BUGS). The timetable resolves every entry's program
-  against that archive when a document arrives (`components/src/timetable.rs:324`) and loads it
-  itself at each fire (`components/src/timetable.rs:616`). No other process sees a job's bytes.
+  (`vouched_schedule` in `components/src/login.rs`). `user_timetable_keeper` copies `jobs` into itself and again into
+  the timetable (`components/src/user_timetable_keeper.rs`, its BUGS section). The timetable resolves every entry's program
+  against that archive when a document arrives (`resolve` in `components/src/timetable.rs`) and loads it
+  itself at each fire (`fire` in `components/src/timetable.rs`). No other process sees a job's bytes.
 - The real boot passes a zero length (`system_initializer::boot`, where it starts `login`), so
   `SCHEDULE` is a plain login there. The kernel harness passes one program, `least_authority_demo`
-  (`system_tests/src/user/login_tests.rs:103`).
+  (`wired` in `system_tests/src/user/login_tests.rs`).
 - The prompt, the analogous case. A bare name resolves through the live activation generation, one
   entry per name, and ignores owner-vouch rows. That is the bare-name ruling, B2, whose decision
-  file is on #1374's branch and not yet on `main` (`components/src/swish.rs:1337` and `:3233` there). The spawner then
+  file is on #1374's branch and not yet on `main` (`bare` and `live_generation_listing` in `components/src/swish/capabilities.rs` there). The spawner then
   checks the bytes' digest against the same generation (`system_initializer::vouched`). An
   unvouched image runs only for a holder of the run-unvouched capability (gate D2), which fork 3
   keeps from every job.
@@ -44,10 +44,10 @@ activation set. The note's fork 3 text is corrected in the same commit.
 
 | option | what a job may run | who decides | cost | reversible | verdict |
 |---|---|---|---|---|---|
-| A. The slot's whole measured catalog as `jobs` | every program in the boot archive | the image build | 8.8 MB (`target/initial-ramdisk-riscv.img`, 2026-09-21), copied twice per session, against a 640-page (2.5 MiB) durable budget (`login.rs:846`) | yes | Refused: does not fit, and after the threadbare base the slot holds only the floor |
-| B. A named list, in the image | e.g. the 12 command-line tools | the image build | 926 KB (#1421's table), larger alone than the session's region (192 pages, `login.rs:849`) or the timetable's (224 pages, `user_timetable_keeper.rs:91`) | yes | Refused: does not fit, and names bytes the threadbare base moves out of the slot |
+| A. The slot's whole measured catalog as `jobs` | every program in the boot archive | the image build | 8.8 MB (`target/initial-ramdisk-riscv.img`, 2026-09-21), copied twice per session, against a 640-page (2.5 MiB) durable budget (`DURABLE_BUDGET_PAGES` in `components/src/login.rs`) | yes | Refused: does not fit, and after the threadbare base the slot holds only the floor |
+| B. A named list, in the image | e.g. the 12 command-line tools | the image build | 926 KB (#1421's table), larger alone than the session's region (192 pages, `DURABLE_UT_PAGES` in `components/src/login.rs`) or the timetable's (224 pages, `TIMETABLE_REGION_PAGES` in `components/src/user_timetable_keeper.rs`) | yes | Refused: does not fit, and names bytes the threadbare base moves out of the slot |
 | C. Owner-vouched programs only | `vouch ./x` rows | the owner, per digest | a schedule line would have to name a digest or path, since the bare-name ruling says a vouch claims no name | yes | Refused: excludes every installed package, which after the threadbare base is the whole userland |
-| D. The live activation generation, resolved at registration and re-checked at each fire | what a bare word runs at the prompt, minus D2 | the owner by installing (§208 (installing a package is granting it)), the user by naming it | not built. The timetable gains read access to `activation/` and `packages/`, and the `jobs` archive and its two copies go. Each fire reads one image into its 48-page instance (`timetable.rs:220`), a limit every option already has | yes: `login_contract::user_timetable_keeper` is provisional and only this lane speaks it | **Recommended** |
+| D. The live activation generation, resolved at registration and re-checked at each fire | what a bare word runs at the prompt, minus D2 | the owner by installing (§208 (installing a package is granting it)), the user by naming it | not built. The timetable gains read access to `activation/` and `packages/`, and the `jobs` archive and its two copies go. Each fire reads one image into its 48-page instance (`INSTANCE_PAGES` in `components/src/timetable.rs`), a limit every option already has | yes: `login_contract::user_timetable_keeper` is provisional and only this lane speaks it | **Recommended** |
 | E. D's set, snapshotted by `login` at `SCHEDULE` and at boot | the programs the user's document names, as installed then | as D | copies stay, and a `REPLACE` naming a new program fails until the session is rebuilt, since the archive is fixed at spawn. A revoked key reaches a job at the next boot, not the next fire | yes | Refused, the runner-up: it keeps the timetable directory-free and pays for it with fork 3's property |
 | F. Status quo | nothing | nobody | zero | yes | What a no leaves |
 
@@ -87,7 +87,7 @@ nothing from it, since the timetable endows a job only with what its entry grant
   `login`, with fork 3's text saying revocation waits for a boot.
 - **Blocking now, whatever the answer:** `LOGIN_CONSTRUCTION_PAGES` (768, in
   `crates/system_initializer`) must rise past the 800 pages `login` splits once it has any
-  schedule archive (`login.rs:290`).
+  schedule archive (`DURABLE_UT_PAGES` in `components/src/login.rs`).
 - **Eventually calef's, not blocking:** the D build's contract change for the timetable (a grant in
   place of `a1`'s archive), and the names that come with it.
 - **Found on the way:** the three decision files #1361 minted (the line editor, the set of names,

@@ -200,24 +200,25 @@ AGENTS.md's own rule.
 
 **Keep 24 (80%), cut 4 (13%), move 2 (7%).**
 
-- Keep: `uefi_loader/src/arch/aarch64/mod.rs:53`, why `ALLOCATION_CEILING` is `0x7fff_ffff` (the
-  boot map's 1 GiB block). `components/src/virtio_net_transport.rs:281`, why a bounded wait guards
-  the transmit ring. `crates/coremark/src/lib.rs:215`, why no iteration can be hoisted.
-- Cut: `crates/serial_console/src/watch.rs:127`, "How far the boot got, and what it announced." on a
-  field named `progress`. `crates/inter_process_communication/src/lib.rs:823`, a test doc restating
-  `senders_queue_fifo`. `tools/redoxfs_host/tests/recovery.rs:192`, "The comparison." Two of the
-  four are on public items, where `missing_docs = "warn"` in the workspace `Cargo.toml` demands a
-  line, so they are lint-forced rather than chosen.
-- Move: `std_exerciser/src/main.rs:1016`, the history of `remove_dir_all` being `Unsupported` for
-  two milestones (a finding). `kernel/src/arch/x86_64/exceptions.rs:472`, a tutorial on x86's two
-  kernel entries whose last sentence is the only constraint.
+- Keep: `uefi_loader/src/arch/aarch64/mod.rs::ALLOCATION_CEILING`, why it is `0x7fff_ffff` (the
+  boot map's 1 GiB block). `components/src/virtio_net_transport.rs::transmit_frame`, why a
+  bounded wait guards the transmit ring. `crates/coremark/src/lib.rs::iteration`, why no
+  iteration can be hoisted.
+- Cut: `crates/serial_console/src/watch.rs::Session::progress`, "How far the boot got, and what it
+  announced." on a field named `progress`. `crates/inter_process_communication/src/tests.rs::senders_queue_in_arrival_order`,
+  a test doc restating `senders_queue_fifo`.
+  `tools/redoxfs_host/tests/recovery.rs::a_whole_tree_survives_the_trip_through_the_image`, "The
+  comparison." Two of the four are on public items, where `missing_docs = "warn"` in the workspace
+  `Cargo.toml` demands a line, so they are lint-forced rather than chosen.
+- Move: `std_exerciser/src/main.rs::TREE`, the history of `remove_dir_all` being `Unsupported`
+  for two milestones (a finding). `kernel/src/arch/x86_64/exceptions.rs`, a
+  tutorial on x86's two kernel entries whose last sentence is the only constraint.
 
 A uniform draw over blocks favors two-line comments, so 15 more were drawn weighted by length,
-which is where the bytes are. 12 keep, 3 move, 0 cut. The moves:
-`components/src/login.rs:1` (a 689-line design document that already has `notes/login.md` beside
-it), `components/src/rmle.rs:1` (the naming search, a record), and `components/src/uptime.rs:1`
-("the finding worth stating"). The keeps were long for a reason, such as
-`crates/memory_regions/src/table.rs:173`, whose doctests are a gate on a type's traits.
+which is where the bytes are. 12 keep, 3 move, 0 cut. The moves: `components/src/login.rs` (a 689-line design document that already has
+`notes/login.md` beside it), `components/src/rmle.rs` (the naming search, a record), and
+`components/src/uptime.rs` ("the finding worth stating"). The keeps were long for a reason, such as
+`crates/memory_regions/src/table.rs::DestroyClaim`, whose doctests are a gate on a type's traits.
 
 The finding: almost nothing in this tree's comments restates the code. The cost is volume of
 legitimate explanation plus history and findings that accumulate in place, which is what "correct

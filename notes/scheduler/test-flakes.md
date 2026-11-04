@@ -59,8 +59,8 @@ Another measurement came on 2026-08-03, because milestone 72 (a lost wakeup)'s c
 the recipe that provokes them. Four host burners ran riscv64 twenty times, with three failures, all
 from this list (`a_thread_that_never_yields_is_preempted_anyway`,
 `a_blocked_waiter_wakes_with_an_error_when_its_endpoint_is_revoked`, and the sibling
-`threads_round_robin`). That test's "thread {i} never ran" was `sched.rs:2709` then; 128d9492a made
-it a clock-bounded wait on 2026-08-03, and the assertion is `kernel/src/sched.rs:7686` as of
+`threads_round_robin`). That test's "thread {i} never ran" was in `kernel/src/sched.rs` then; 128d9492a made
+it a clock-bounded wait on 2026-08-03, and the assertion is in `threads_round_robin` in `kernel/src/sched/tests.rs` as of
 2026-10-11. 15% under load, 0% quiet. They are distinguishable from a real hang at a glance: these
 fail in about 23 s with a named assertion, a lost wakeup fails at 60 s with a thread dump.
 
