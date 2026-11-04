@@ -61,7 +61,7 @@ armed() { # reads a gh pr view JSON on stdin; exit 0 when queued or auto-merge i
 }
 
 if printf '%s' "$view" | armed; then
-	echo "$me: #$pr is already armed."
+	echo "$me: #$pr already armed."
 	exit 0
 fi
 
@@ -73,7 +73,7 @@ fi
 tries="${ARM_VERIFY_TRIES:-5}"
 while :; do
 	if after="$(gh pr view "$pr" --json isInMergeQueue,autoMergeRequest 2>/dev/null)" && printf '%s' "$after" | armed; then
-		echo "$me: #$pr is armed ($(printf '%s' "$after" | jq -r 'if .isInMergeQueue then "in the merge queue" else "auto-merge enabled" end'))."
+		echo "$me: #$pr armed ($(printf '%s' "$after" | jq -r 'if .isInMergeQueue then "in the merge queue" else "auto-merge enabled" end'))."
 		exit 0
 	fi
 	tries=$((tries - 1))

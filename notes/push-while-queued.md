@@ -52,7 +52,7 @@ per episode, and arms nothing.
     $ script/push --requeue
     push-requeue: dequeued #1617.
     push: origin/lane/x is at 0123456789ab, HEAD's commit.
-    arm: #1617 is armed (in the merge queue).
+    arm: #1617 armed (in the merge queue).
 
     $ script/push --requeue            # the pull request carries needs-architect
     push: origin/lane/x is at 0123456789ab, HEAD's commit.

@@ -91,7 +91,7 @@ unset STUB_REMOTE
 
 # 1. A queued pull request: dequeue, push, arm, in that order, and armed at the end.
 state true false "ci" false
-run "queued: --requeue re-arms" 0 "is armed" -- "$root/script/push" --requeue
+run "queued: --requeue re-arms" 0 "armed" -- "$root/script/push" --requeue
 check "queued: dequeue, then push, then merge" awk '/dequeuePullRequest/{d=NR} /git push/{p=NR} /pr merge/{m=NR} END{exit !(d && d<p && p<m)}' "$tmp/log"
 check "queued: pushed" logged "git push origin HEAD:refs/heads/lane/x"
 check "queued: armed again" logged "pr merge 42 --auto --merge"
