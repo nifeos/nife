@@ -32,8 +32,7 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 
 In order, easiest to rule on first:
 
-1. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
-2. The `no` groups of designware_mobile_storage (`DM2` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
+1. The `no` groups of designware_mobile_storage (`DM2` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
 The groups that need a real ruling are the register and bit constants: `DE7` to `DE9`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
