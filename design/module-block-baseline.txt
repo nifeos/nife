@@ -2193,17 +2193,11 @@ crates/domain_name_system/src/proofs.rs
 
 
 
-crates/e1000e/src/platform_controller_hub/simulator.rs::Sim
 
-crates/e1000e/src/platform_controller_hub/simulator.rs::Start
 
-crates/e1000e/src/platform_controller_hub/simulator.rs::new
 
-crates/e1000e/src/platform_controller_hub/ultra_low_power.rs::done
 
-crates/e1000e/src/platform_controller_hub/ultra_low_power.rs::release
 
-crates/e1000e/src/platform_controller_hub/ultra_low_power.rs::request
 
 
 
