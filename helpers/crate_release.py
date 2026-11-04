@@ -54,7 +54,7 @@ LICENSE_FILES = ('LICENSE-MIT', 'LICENSE-APACHE')
 NOTICE_LICENSES = ('ISC', 'BSD-2-Clause', 'BSD-3-Clause')
 
 
-def license_is_nifes(field):
+def license_is_accepted(field):
     """Is `field` nife's pair, alone or joined with the licenses of adapted files?"""
     if field == LICENSE:
         return True
@@ -120,7 +120,7 @@ def file_findings(root_names, license_field):
     if not any(n.upper().startswith('README') for n in root_names):
         found.append(('files', 'no README'))
     found += [('files', f'no {f}') for f in LICENSE_FILES if f not in root_names]
-    if not license_is_nifes(license_field):
+    if not license_is_accepted(license_field):
         found.append(('files', f'license field is {license_field!r}, not {LICENSE!r} or '
                                f'({LICENSE}) AND a notice license'))
     return found

@@ -113,6 +113,8 @@ Each item gives the recommendation first.
 
 ## What the lane left alone that a lane could fix after a ruling
 
+- `e1000e` and `designware_ethernet` adapt BSD- and ISC-licensed files, and their `license` fields
+  read `MIT OR Apache-2.0`. `designware_mobile_storage`'s reads `(MIT OR Apache-2.0) AND ISC`.
 - `designware_ethernet/src/tests.rs` says the descriptor bits are "as the databook places them",
   and the crate cites no databook edition; `descriptor.rs` says they come from `dwqereg.h`.
 - `extensible_host_controller_interface/README.md` describes QEMU's qemu-xhci as four ports in its
