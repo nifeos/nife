@@ -28,12 +28,12 @@ attempt. That was about 2,000 runs. Each failing job's log was classified by its
 
 | cause | failures | models | verdict |
 |---|---|---|---|
-| `documentation/tests/render.rs:382`, `:364` | 71 | all five | a break on `main` (`notes/rented-metal.md`), 09-21 to 09-24 02:00, gone since |
-| `user/current_cpu_tests.rs:134` | 7 | four of five | the global frame count; fixed by #1120 |
+| `every_character_survives` in `documentation/tests/render.rs` | 71 | all five | a break on `main` (`notes/rented-metal.md`), 09-21 to 09-24 02:00, gone since |
+| `the_page_is_returned_when_the_space_is_dropped` in `user/current_cpu_tests.rs` | 7 | four of five | the global frame count; fixed by #1120 |
 | `inbound check (riscv64)`, 2 of 4 served | 4, plus 1 in `build + test` | three | host-to-guest networking; none since 09-21 23:16 |
 | compile errors, two other panics | 6 | all five | a branch's own doing |
-| `preemption_window_tests.rs:91` | 1 | `rv64` | this appendix |
-| `arch/riscv64/timer.rs:935`, `holding_a_lock_masks_the_timer`, "interrupts did not resume" | 1 | `sifive-u54` | the same cause, this appendix |
+| `a_masked_window_takes_no_preemption` in `preemption_window_tests.rs` | 1 | `rv64` | this appendix |
+| `holding_a_lock_masks_the_timer` in `arch/riscv64/timer.rs`, "interrupts did not resume" | 1 | `sifive-u54` | the same cause, this appendix |
 
 The test landed on 2026-09-21. Since then the matrix actually ran 331 times, five models each. That
 is one failure in about 1,650 model boots, and none in `build + test`. At that rate, rerunning the

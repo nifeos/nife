@@ -29,10 +29,10 @@ Nothing found. The two highest-risk areas both check out, verified rather than t
    local failure (`verify_std_cmd`, undiagnosed) and `coverage` never produced a result. Fill the
    token honestly or drop it, and say which suites were clean.
 2. The two rejections and the missing-library error have no test. The pull request adds the
-   `--concrete-playback` conflict (`kani-driver/src/args/mod.rs:875-884`), the `verify-std`
-   rejection (`kani-driver/src/args/std_args.rs:43-50`), and the bail naming the build command
-   (`kani-driver/src/session.rs:316-331`). The new script test covers only the `-Z` gate
-   (`tests/script-based-pre/target_riscv64/target_riscv64.sh:13`). Each check is one more
+   `--concrete-playback` conflict (`validate` in `kani-driver/src/args/mod.rs`), the `verify-std`
+   rejection (`validate` in `kani-driver/src/args/std_args.rs`), and the bail naming the build command
+   (`lib_folder_for` in `kani-driver/src/session.rs`). The new script test covers only the `-Z` gate
+   (the `[TEST] --target needs -Z unstable-options` block of `tests/script-based-pre/target_riscv64/target_riscv64.sh`). Each check is one more
    `[TEST]` block in that script; Kani tests its other argument conflicts, and these are new
    surface.
 3. `docs/src/reference/experimental/target.md` omits the goto-cc arch-symbol overwrite from its
@@ -45,32 +45,32 @@ Nothing found. The two highest-risk areas both check out, verified rather than t
 
 4. The body says the flag "replaces `env!(\"TARGET\")` in ... the single-file `rustc` call". Nothing
    was replaced there: the old single-file path never read or passed a target, and the diff adds
-   `--target` only when the flag is given (`kani-driver/src/call_single_file.rs:67-70` at head).
+   `--target` only when the flag is given (`compile_single_rust_file` in `kani-driver/src/call_single_file.rs` at head).
    The next sentence in the body states the truth, so this is wording, not substance.
-5. `tests/script-based-pre/target_riscv64/riscv64.rs:16` asserts `size_of::<usize>() == 8`. Every
+5. `target_is_riscv64gc` in `tests/script-based-pre/target_riscv64/riscv64.rs` asserts `size_of::<usize>() == 8`. Every
    host Kani runs on is 64-bit, so this cannot discriminate. The doc comment above it (lines 10-11)
    says "not for every host", which the first two assertions satisfy and this one does not.
    Harmless as a sanity check; misleading as evidence of cross-compilation.
-6. `verify-std` rejects `--target` even when the triple is the host's (`std_args.rs:43`), while the
-   `--concrete-playback` gate allows the host triple (`args/mod.rs:877`). Both defensible; worth
+6. `verify-std` rejects `--target` even when the triple is the host's (`validate` in `std_args.rs`), while the
+   `--concrete-playback` gate allows the host triple (`validate` in `args/mod.rs`). Both defensible; worth
    one comment line each, or align them.
 7. `cargo build-dev --skip-libs --lib-target T` silently ignores the target
-   (`tools/build-kani/src/main.rs:29-33` at head). A warning would save a confusing missing-library
+   (the `skip_libs` branch of `main` in `tools/build-kani/src/main.rs` at head). A warning would save a confusing missing-library
    error later.
 
 ## Questions for maintainers
 
-8. CI cost. `scripts/kani-regression.sh:33-35` adds a riscv64 library build, and
-   `.github/workflows/kani.yml:22-24` runs that script on five runners, including `macos-15-intel`.
+8. CI cost. The `cargo build-dev --lib-target` step in `scripts/kani-regression.sh` adds a riscv64 library build, and
+   the `matrix` of `.github/workflows/kani.yml` runs that script on five runners, including `macos-15-intel`.
    The body pre-offers moving the build to one job. The maintainer call is whether five duplicated
    builds buy enough matrix coverage; the test does exercise x86_64 and aarch64 hosts either way.
 9. Coverage with `--target` is accepted but untested. `cov_session.rs` now threads the
    verification target into both metadata calls (diff lines 389-401), and nothing rejects the
    combination, but no test runs it. Intended, or worth a rejection until tested?
 10. Cross-target builds with proc-macro or build-script dependencies are untested. Reading the
-    mechanism: `cargo_config_args` sets `host.rustflags` (`call_cargo.rs:505-512`), which keeps host
+    mechanism: `cargo_config_args` sets `host.rustflags` (in `kani-driver/src/call_cargo.rs`), which keeps host
     crates native, and `pass_rustc_args(..., PassTo::AllCrates)` carries the target sysroot in
-    `CARGO_ENCODED_RUSTFLAGS` (`kani-driver/src/util.rs:215-237`). That says proc macros still
+    `CARGO_ENCODED_RUSTFLAGS` (`pass_rustc_args` in `kani-driver/src/util.rs`). That says proc macros still
     compile for the host, as they do today. The sample crate has no dependencies. A test with one
     proc-macro dependency would pin this.
 11. The `-Z unstable-options` gate and the `targets/<TRIPLE>/lib/` layout are already offered as
@@ -78,7 +78,7 @@ Nothing found. The two highest-risk areas both check out, verified rather than t
 
 ## What holds up
 
-The machine model (`compiler_interface.rs:929-971` at head) was checked field by field against two
+The machine model (`machine_model_for` in `kani-compiler/src/codegen_cprover_gotoc/compiler_interface.rs` at head) was checked field by field against two
 primary sources, both fetched for this review. CBMC 6.11.0's `set_arch_spec_riscv64`
 (`config.cpp:437-463` plus `set_LP64` at 47-61): LP64 widths, `char_is_unsigned=true`,
 `wchar_t` signed and 32 bits, `long_double_width` 16 bytes, little-endian, `NULL_is_zero`. The
@@ -88,13 +88,13 @@ new arm agrees with both. The code cites both sources at the arm, which is the p
 would actually praise.
 
 The threading: `cargo_build` uses the verification target for the cargo invocation, metadata
-(`--filter-platform`), and library folder (`call_cargo.rs:143-181` at head). `cargo_build_std` and
+(`--filter-platform`), and library folder (`cargo_build` in `kani-driver/src/call_cargo.rs` at head). `cargo_build_std` and
 playback stay on `HOST_TARGET`, correctly, since both are host activities. Both `cov_session` sites
 use it; single-file passes `--target` only when given. With no flag, every path passes the same
 string `env!("TARGET")` produced before.
 
-The layout: build and driver agree on `targets/<TRIPLE>/lib/` (`tools/build-kani/src/sysroot.rs:68-70`
-and `session.rs:316-331`); the host `lib/` path is unchanged; playback and `no_core` libraries stay
+The layout: build and driver agree on `targets/<TRIPLE>/lib/` (`tools/build-kani/src/sysroot.rs::kani_target_lib`
+and `kani-driver/src/session.rs::lib_folder_for`); the host `lib/` path is unchanged; playback and `no_core` libraries stay
 host-built; no packaging or setup file is touched, verified against the pull request's file list.
 The missing-library error names `cargo build-dev --lib-target <TRIPLE>`, which is the exact command.
 
