@@ -93,7 +93,7 @@ first cut.
    recommendation is the palette only, because the other two widen private items. That reason
    holds at equal cost, so it is not about effort.
 2. The palette's doc comment. It is one 54-line block, on the list in
-   `design/comment-block-baseline.tsv` at `lib.rs:209`. That ratchet admits no new row, and a new
+   `design/comment-block-baseline.tsv` at `lib.rs` (the doc of `PALETTE`). That ratchet admits no new row, and a new
    file's blocks meet the 40-line cap outright. So moving the block to `palette.rs` fails `script/lint`
    unless the block comes down to 40 lines in the same change. The recommendation is to shorten
    it, under §267 (a comment states the constraint as it is now). Its "The gate" paragraph narrates
@@ -117,12 +117,12 @@ Found with `grep` at `396187b0b`. A lane has to carry each one.
 - `helpers/cap_abbreviation.py` keys an allowance on this path for the test
   `scrolls_report_movement_and_cap_at_the_screen`. The key moves to `tests.rs` with the test.
 - `design/file-length-baseline.tsv` lists the file at 3,242. The row goes in the same change.
-- `design/comment-block-baseline.tsv` has two rows. `lib.rs:1` (130 lines, the crate docs) stays
-  and is unaffected. `lib.rs:209` (54 lines, the doc of `PALETTE`) lands in `palette.rs`, and the
+- `design/comment-block-baseline.tsv` has two rows. `lib.rs` (130 lines, the crate docs) stays
+  and is unaffected. `lib.rs` (54 lines, the doc of `PALETTE`) lands in `palette.rs`, and the
   ratchet fails it there, as ruling 2 says. Short of the cut ruling 2 recommends, the other way
   through is a fix to the ratchet, letting a row move with its block, ruled separately.
 - Milestone 705 (the graphical terminal runs full-screen programs), not started, cites
-  `lib.rs:1373-1478` and three other ranges for the parser. They had drifted already. Replacing
+  four line ranges in `lib.rs` for the parser. They had drifted already. Replacing
   each with a function name (`ground`, `csi_final`) is cheaper than renumbering it.
 - Four places say the PALETTE BUGS are in `lib.rs`: milestone 141 (a palette worth looking at),
   milestone 142 (a text display good enough that people use it instead of a GUI), twice, and
