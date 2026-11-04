@@ -37,15 +37,15 @@ cost.
 | Protocols carry version numbers | milestone 39 (repository structure for a loosely-coupled OS) | no | All 93 crates in the tree are `version = "0.1.0"`. Of 19 `*_protocol` crates, 5 carry a numbered magic on a shared-page layout (`TIMEBAS1`, `CURRCPU1`, `ENVCONF1`, `MACHSTA1`, `CLOCKv01`) and 2 an unnumbered one (`nifeargv`, `nifeklog`). None of the IPC operation sets (`filesystem_contract`, `socket_contract`, `login_contract`, `hot_swap_contract` and the rest) carries a version a peer could check. Formats do better: `capability_manifest_note` (`VERSION = 1`), `boot_slot` (`SLOT_VERSION = 1`), `package_archive` (`NIFEPKG1`), `nifefs` (`CRKR0002`). |
 | Protocols stopped churning weekly | milestone 39 | no | Milestone 610's own series, last four weeks (2026W37 to W40): 6, 44, 46 and 61 breaking changes to the contract crates, 157 in all against the proposed threshold of four. Co-change excluding mass commits: 66.7%, 51.9%, 74.4%, 74.4%, against the proposed 50% line. Syscall surface: 3 changed and 1 renamed in W40. |
 | A package format exists | milestone 198 (a package manager) | yes | §197 (a package is one archive file)'s archive (`crates/package_archive`), `cargo xtask package` from a reviewed recipe, and `package install`, `remove` and `rollback` at the prompt on all three architectures (milestone 198, rung 3a, built 2026-09-26). |
-| No package moves before a per-package co-change column exists | §235 Fork 3 amendment | no | Milestone 610 is BUILT and its own Follow-on records the column as owed and not built. Section 2 below is a one-off reading of it, which is not the column. |
+| A per-package co-change column, which informs how packages group and holds no move | §235 "How big a repository is" | yes | Milestone 610 carries it. Section 2 below is a one-off reading at one commit, not the column. |
 | The image is assembled from base packages by digest | §235 P1, milestone 607 (nife is built and updated from packages) item 1 | no | Not started. `xtask/src/archive.rs` packs ELFs out of `target/`, not packages by digest. This is the thing `basalt` would assemble from. |
 | An SDK archive (S2) | §235 Fork 4, milestone 607 item 4 | no | No `xtask` command builds one. A program outside the tree has no way to get `abi` and its protocols except a clone. |
 | A contract never links the runtime | §235 P3, milestone 607 item 3 | yes | No contract crate depends on `user_mode_runtime`. The two that did now split into `crates/process_builder` (the loader) and `crates/hot_swap_server` (the serving loop); `counter_frequency_contract` and `current_cpu_contract` only named it in prose. |
 | `components` split into one crate per package | milestone 691 (packages move out, one per pull request) | no | One crate, `components`, holds 56 binaries from 18 packages. A crate cannot live in two repositories, so no package with a program in it can move. |
 | A ratified home | milestone 611 (every program and crate belongs to a package), §235 Fork 3 | no | 0 of 29 packages ratified; 29 provisional, none undecided. |
 
-**Three of the nine hold no, structurally, for any code-carrying cut**: the components crate, the
-SDK archive, and the co-change column. Protocol churn is the
+**Two of the nine hold no, structurally, for any code-carrying cut**: the components crate and the
+SDK archive. Protocol churn is the
 furthest from met, and under §151's order it sizes the coordination cost rather than holding a move.
 
 ### The churn per protocol crate
