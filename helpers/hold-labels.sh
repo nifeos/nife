@@ -1,3 +1,4 @@
+# shellcheck shell=sh
 # helpers/hold-labels.sh: the labels that hold a pull request out of the merge queue. Sourced, not
 # run. POSIX sh. Provisional name (lane/push-requeue, 2026-11-04 UTC).
 #
