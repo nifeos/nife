@@ -6,8 +6,8 @@
 //! against the board-shaped fixtures and the tree every CI boot uses.
 
 use designware_mobile_storage::jh7110::{
-    COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, QUEUE_DEPTH, REGISTERS_SIZE_BYTES,
-    SLOT_0_REGISTERS_PHYSICAL_ADDRESS, SLOT_1_REGISTERS_PHYSICAL_ADDRESS, SLOT_INTERRUPT_NUMBERS,
+    COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, INTERRUPTS, QUEUE_DEPTH, SDIO0_BASE, SDIO1_BASE,
+    WINDOW_SIZE,
 };
 use device_tree_blob::DeviceTreeBlob;
 use machine_discovery::jh7110::designware_mobile_storage::discover;
@@ -19,10 +19,7 @@ const MAINLINE: &[u8] = include_bytes!("fixtures/jh7110-mmc-mainline.dtb");
 fn radons_vendor_tree_names_both_slots_with_the_generic_binding_and_no_interrupt() {
     let tree = DeviceTreeBlob::from_bytes(VENDOR).unwrap();
     let sd = discover(&tree, 1).unwrap().unwrap();
-    assert_eq!(
-        (sd.base, sd.size),
-        (SLOT_1_REGISTERS_PHYSICAL_ADDRESS, REGISTERS_SIZE_BYTES)
-    );
+    assert_eq!((sd.base, sd.size), (SDIO1_BASE, WINDOW_SIZE));
     assert_eq!(sd.compatible, COMPATIBLE_VENDOR);
     assert_eq!(sd.bus_width, 4);
     assert_eq!(sd.queue_depth, Some(QUEUE_DEPTH));
@@ -30,11 +27,8 @@ fn radons_vendor_tree_names_both_slots_with_the_generic_binding_and_no_interrupt
     assert_eq!(sd.interrupt, None);
     assert!(sd.status_okay);
     let emmc = discover(&tree, 0).unwrap().unwrap();
-    assert_eq!(
-        (emmc.base, emmc.bus_width),
-        (SLOT_0_REGISTERS_PHYSICAL_ADDRESS, 8)
-    );
-    assert_eq!(emmc.board_role(), "eMMC socket");
+    assert_eq!((emmc.base, emmc.bus_width), (SDIO0_BASE, 8));
+    assert_eq!(emmc.role(), "eMMC socket");
 }
 
 #[test]
@@ -42,10 +36,10 @@ fn mainline_names_the_jh7110_binding_and_the_interrupts() {
     let tree = DeviceTreeBlob::from_bytes(MAINLINE).unwrap();
     let sd = discover(&tree, 1).unwrap().unwrap();
     assert_eq!(sd.compatible, COMPATIBLE_MAINLINE);
-    assert_eq!(sd.interrupt, Some(SLOT_INTERRUPT_NUMBERS[1]));
+    assert_eq!(sd.interrupt, Some(INTERRUPTS[1]));
     assert_eq!(sd.bus_width, 4);
     let emmc = discover(&tree, 0).unwrap().unwrap();
-    assert_eq!(emmc.interrupt, Some(SLOT_INTERRUPT_NUMBERS[0]));
+    assert_eq!(emmc.interrupt, Some(INTERRUPTS[0]));
 }
 
 #[test]
