@@ -18,34 +18,16 @@
 //! Name: ratified 2026-11-03 (UTC), #3135. The part's own name, as the board's device trees spell it.
 
 /// Mainline's `compatible`.
-///
-/// Name: ratified 2026-11-03 (UTC), #3143. The same name as in `designware_ethernet`.
 pub const COMPATIBLE_MAINLINE: &[u8] = b"starfive,jh7110-mmc";
 /// The vendor tree's `compatible`, the generic binding.
-///
-/// Name: ratified 2026-11-03 (UTC), #3143. The same name as in `designware_ethernet`.
 pub const COMPATIBLE_VENDOR: &[u8] = b"snps,dw-mshc";
 
-/// Slot 0's controller registers: the eMMC socket on a VisionFive 2. The vendor tree labels the
-/// instance `sdio0`.
-///
-/// Name: ratified 2026-11-03 (UTC), #3143. Renamed from `SDIO0_BASE`. The name does not say eMMC,
-/// because that wiring belongs to the board. `sdio0` is the vendor's label for the controller
-/// instance and is kept as `doc(alias = "sdio0")`; `SDIO` is not an accepted acronym here, since no
-/// input/output cards are used.
-#[doc(alias = "sdio0")]
-pub const SLOT_0_REGISTERS_PHYSICAL_ADDRESS: u64 = 0x1601_0000;
-/// Slot 1's controller registers: the microSD slot on a VisionFive 2, the card radon boots from.
-/// The vendor tree labels the instance `sdio1`.
-///
-/// Name: ratified 2026-11-03 (UTC), #3143. Renamed from `SDIO1_BASE`, for the reasons given on
-/// [`SLOT_0_REGISTERS_PHYSICAL_ADDRESS`]. `sdio1` is kept as `doc(alias = "sdio1")`.
-#[doc(alias = "sdio1")]
-pub const SLOT_1_REGISTERS_PHYSICAL_ADDRESS: u64 = 0x1602_0000;
-/// Each controller's register window, `0x10000` bytes in both trees.
-///
-/// Name: ratified 2026-11-03 (UTC), #3143. Renamed from `WINDOW_SIZE`; `BYTES` is the unit suffix.
-pub const REGISTERS_SIZE_BYTES: u64 = 0x1_0000;
+/// Slot 0's controller: the eMMC socket on a VisionFive 2.
+pub const SDIO0_BASE: u64 = 0x1601_0000;
+/// Slot 1's controller: the microSD slot, the card radon boots from.
+pub const SDIO1_BASE: u64 = 0x1602_0000;
+/// Each controller's window, `0x10000` in both trees.
+pub const WINDOW_SIZE: u64 = 0x1_0000;
 /// The rate mainline and the vendor branch head assign the `ciu` clock (the module documentation
 /// gives the revisions; the vendor tag `VF2_v2.10.4` assigns none), which the controller divides
 /// for the card.
@@ -60,11 +42,8 @@ pub const CARD_INTERFACE_UNIT_HZ: u32 = 50_000_000;
 /// `doc(alias = "fifo")`.
 #[doc(alias = "fifo")]
 pub const QUEUE_DEPTH: u32 = 32;
-/// Mainline's interrupt numbers at the platform-level interrupt controller (PLIC), indexed by slot:
-/// slot 0 is 74 and slot 1 is 75.
-///
-/// Name: ratified 2026-11-03 (UTC), #3143. Renamed from `INTERRUPTS`.
-pub const SLOT_INTERRUPT_NUMBERS: [u32; 2] = [74, 75];
+/// Mainline's interrupt numbers at the PLIC, slot 0 and slot 1.
+pub const INTERRUPTS: [u32; 2] = [74, 75];
 
 /// The node names each slot goes by: mainline's first, then the vendor's.
 ///
@@ -75,8 +54,6 @@ pub const NODE_NAMES: [[&[u8]; 2]; 2] = [
 ];
 
 /// One controller, as the tree describes it.
-///
-/// Name: ratified 2026-11-03 (UTC), #3143. A slot is one of the two controllers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Slot {
     /// 0 or 1.
@@ -104,11 +81,8 @@ pub struct Slot {
 
 impl Slot {
     /// What the slot is for on a VisionFive 2, for a transcript.
-    ///
-    /// Name: ratified 2026-11-03 (UTC), #3143. Renamed from `role`: the role belongs to the board,
-    /// not to the controller.
     #[must_use]
-    pub const fn board_role(&self) -> &'static str {
+    pub const fn role(&self) -> &'static str {
         match self.index {
             0 => "eMMC socket",
             _ => "microSD slot",
@@ -193,20 +167,15 @@ mod tests {
             (b"status", b"okay\0"),
             (b"non-removable", b""),
         ];
-        let slot = Slot::from_node(
-            1,
-            SLOT_1_REGISTERS_PHYSICAL_ADDRESS,
-            REGISTERS_SIZE_BYTES,
-            node(table),
-        )
-        .unwrap()
-        .unwrap();
+        let slot = Slot::from_node(1, SDIO1_BASE, WINDOW_SIZE, node(table))
+            .unwrap()
+            .unwrap();
         assert_eq!(
             slot,
             Slot {
                 index: 1,
-                base: SLOT_1_REGISTERS_PHYSICAL_ADDRESS,
-                size: REGISTERS_SIZE_BYTES,
+                base: SDIO1_BASE,
+                size: WINDOW_SIZE,
                 interrupt: Some(75),
                 bus_width: 4,
                 queue_depth: Some(QUEUE_DEPTH),
@@ -216,27 +185,22 @@ mod tests {
                 non_removable: true,
             }
         );
-        assert_eq!(slot.board_role(), "microSD slot");
+        assert_eq!(slot.role(), "microSD slot");
     }
 
     #[test]
     fn a_vendor_node_with_nothing_but_its_binding_takes_the_defaults() {
         let table: &[(&[u8], &[u8])] = &[(b"compatible", b"snps,dw-mshc\0")];
-        let slot = Slot::from_node(
-            0,
-            SLOT_0_REGISTERS_PHYSICAL_ADDRESS,
-            REGISTERS_SIZE_BYTES,
-            node(table),
-        )
-        .unwrap()
-        .unwrap();
+        let slot = Slot::from_node(0, SDIO0_BASE, WINDOW_SIZE, node(table))
+            .unwrap()
+            .unwrap();
         assert_eq!(slot.compatible, COMPATIBLE_VENDOR);
         assert_eq!(
             (slot.bus_width, slot.card_interface_unit_hz, slot.interrupt),
             (1, CARD_INTERFACE_UNIT_HZ, None)
         );
         assert!(slot.status_okay && !slot.non_removable);
-        assert_eq!(slot.board_role(), "eMMC socket");
+        assert_eq!(slot.role(), "eMMC socket");
         let table: &[(&[u8], &[u8])] = &[
             (b"compatible", b"snps,dw-mshc\0"),
             (b"assigned-clock-rates", &[0, 0, 0, 0]),
