@@ -9,7 +9,7 @@ The supervisor (helpers/continuous-fuzz.sh) runs `look` at most every 5 minutes.
 commit, the supervisor lets every slot finish its current window, runs `apply`, and re-executes
 itself from the moved clone; the new supervisor moves each slot worktree to the clone's commit before
 any slot starts. An architect ruled the four limits on 2026-11-01 (UTC) in
-design/roadmap/proposals/fuzz-findings-without-a-person.md ("What is in force: the host follows
+design/roadmap/1015-fuzz-findings-without-a-person.md ("What is in force: the host follows
 main"), and each is enforced here:
 
   1. Fast-forward only. `look` and `apply` both refuse a commit whose history does not contain the

@@ -8,19 +8,21 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 `file_allocation_table`, `generational_table`, `jh7110_clock_and_reset` and `non_volatile_memory_express` have no unratified name left. `jh7110_entropy` has already left `crates/`.
 
-## Counts
+## How a naming pull request edits this note and the baselines
 
-| crate | unratified | no block | provisional | groups |
-|---|---|---|---|---|
-| `designware_ethernet` | 100 | 81 | 19 | 12 |
-| `designware_mobile_storage` | 74 | 74 | 0 | 10 |
-| `e1000e` | 132 | 94 | 38 | 13 |
-| `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
-| `file_allocation_table` | 0 | 0 | 0 | 0 |
-| `generational_table` | 0 | 0 | 0 | 0 |
-| `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| `non_volatile_memory_express` | 0 | 0 | 0 | 0 |
-| total | 315 | 249 | 66 | 36 |
+Two pull requests that change the same or adjacent lines conflict in git, so no line here or in
+the baselines is shared by two naming pull requests:
+
+- This note carries no total, count table or per-crate count; `python3 helpers/name_release.py --draft <crate>` lists a crate's rows, and their number is the count. A pull request edits only the group it
+  rules on: it deletes the group's section, or deletes the names it ratifies from the group's list,
+  and changes that group's number in its heading.
+- `design/module-block-baseline.txt` and `design/naming-rule-baseline.txt` hold one row per line,
+  sorted, with a blank line after every row (`helpers/baseline_layout.py`). A pull request deletes
+  the row lines it clears and nothing else: it keeps the blank lines, it does not re-sort, and it
+  writes no total. `--bank` does exactly that. A rename re-keys a row by deleting the old line and
+  writing the new row and a blank line after it at its sorted place.
+- The ratchets still compare the live count with the baseline and still refuse a row that is not
+  cleared or a row that is new. Both gates also fail a baseline whose rows touch or are out of order.
 
 ## How to read a group
 
@@ -31,14 +33,12 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 In order, easiest to rule on first:
 
 1. `X1`, the nine `extensible_host_controller_interface` assertions: the same rename the architect already ruled for two sister crates.
-2. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
-3. The `no` groups of designware_mobile_storage (`DM1` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
+1. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
+2. The `no` groups of designware_mobile_storage (`DM2` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
 The groups that need a real ruling are the register and bit constants: `DE7` to `DE9`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
-
-100 unratified names: 81 with no block, 19 provisional.
 
 ### DE1. Module names (10)
 
@@ -110,34 +110,12 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. The module name is already spelled out; these are ordinary names.
 
-### DE13. JH7110 node description (5)
-
-`jh7110::BUS`, `jh7110::Discovered`, `jh7110::GMAC0_BASE`, `jh7110::GMAC1_BASE`, `jh7110::interface`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. `GMAC0_BASE` and `GMAC1_BASE` keep `GMAC`, an accepted acronym since #3094, whose expansion is already in the doc comments.
-
-### DE14. Layout and simulator odds and ends (3)
-
-`layout::BYTES`, `layout::PAGES`, `simulator::with`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand: `BYTES` and `PAGES` are the layout sizes, `with` is the simulator builder.
-
 ## `designware_mobile_storage`
 
-74 unratified names: 74 with no block, 0 provisional.
-
-### DM1. Module names (9)
-
-`bench`, `card`, `command`, `host`, `jh7110`, `partition`, `proofs`, `sd`, `tests`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify all nine. `sd` passes the acronym test (Secure Digital is a spoken phrase, but nobody says it); the rest are plain.
 
 ### DM2. Host controller (13)
 
-`host::Error`, `host::Host`, `host::Identity`, `host::Registers`, `host::card_clock`, `host::clock_divider`, `host::command`, `host::into_registers`, `host::new`, `host::read`, `host::registers`, `host::reset`, `host::write`
+`host_controller::Error`, `host_controller::Host`, `host_controller::Identity`, `host_controller::Registers`, `host_controller::card_clock`, `host_controller::clock_divider`, `host_controller::command`, `host_controller::into_registers`, `host_controller::new`, `host_controller::read`, `host_controller::registers`, `host_controller::reset`, `host_controller::write`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. The register-level names inside this module were already ratified spelled out under #3092; these are the software surface around them.
@@ -200,7 +178,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `e1000e`
 
-132 unratified names: 94 with no block, 38 provisional.
 
 ### E1. Module names (14)
 
@@ -295,7 +272,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `extensible_host_controller_interface`
 
-9 unratified names: 0 with no block, 9 provisional.
 
 ### X1. The nine non-overlap assertions (9)
 

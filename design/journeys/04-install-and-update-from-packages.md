@@ -22,7 +22,7 @@ path.
 
 Ruled 2026-11-01 (UTC): journeys 4 and 5 run in parallel and are not ordered as wholes. Steps 1 to 3
 do not depend on journey 5. Step 4 waits on the journey 5 moves of the crates its packages link, in
-the bottom-up order proposed in `design/roadmap/proposals/the-contract-crates-leave-in-this-order.md`
+the bottom-up order proposed in `design/roadmap/1017-the-contract-crates-leave-in-this-order.md`
 (pull request #3026): `disk-tools` needs 12 of the 22 contract crates, not `grant_plan`, and leaves
 first, then `process-tools`, then `core-tools`. A package leaves when its whole linked set has left.
 The dependency is recorded here only, on the blocked side (§201 (one roadmap until a citation has to
