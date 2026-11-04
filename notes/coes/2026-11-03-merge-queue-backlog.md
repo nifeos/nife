@@ -1,19 +1,18 @@
 # A correction of error: the merge queue drained slowly, and 33 pull requests were left waiting
 
 *Recorded 2026-11-04 (UTC) by lane/coe-merge-queue-2026-11-03, commissioned the same day. Title
-provisional. The window is the Pacific day of 2026-11-03, 00:00 PST to 24:00 PST (08:00 UTC on 11-03
-to 08:00 UTC on 11-04); the data was read at 05:58 UTC on 11-04, so the last two hours are not in it.
-Every figure was measured by this lane; the commands are at the end.*
+provisional. The window is the Pacific day of 2026-11-03 (08:00 UTC on 11-03 to 08:00 UTC on 11-04).
+This lane read the data at 05:58 UTC, so it lacks the last two hours, and measured every figure.*
 
 ## Summary
 
 1. The tree merged 32 pull requests in the day, and 33 ready pull requests were still open at the end of it.
 2. From 15:30 UTC the hosted runner pool sat at its cap of about 60 jobs, with up to 670 jobs waiting,
    because each push to a pull request ran the full heavy gate set.
-3. So a pull request waited a median 100 minutes for its own checks, and a merge group took a median
-   74.5 minutes instead of 18, until #3176 moved the heavy gates into the queue at 23:56 UTC.
+3. So a pull request waited a median 100 minutes for its own checks, and a merge group took 74.5
+   minutes instead of 18. #3176 moved the heavy gates into the queue at 23:56 UTC.
 4. Meanwhile every naming pull request edited the same names note, so each merge made the others
-   conflict: 24 queue entries were removed for merge conflicts, 14 of them in one minute.
+   conflict: the queue removed 24 entries for merge conflicts, 14 of them in one minute.
 5. After #3176 the queue could take about 16 merges an hour, but 31 of the open pull requests were
    in conflict and the queue sat nearly empty.
 
@@ -32,7 +31,7 @@ Every figure was measured by this lane; the commands are at the end.*
 | job minutes in the heavy workflows | 45,793, of which `pull_request` 35,541 (78%) and `merge_group` 7,937 (17%) |
 | job minutes in cancelled jobs | 6,148, all `pull_request` |
 
-By hour. "Waiting" is hosted jobs created and not yet started, read at the top of the hour. From
+By hour. "Waiting" counts hosted jobs created and not yet started, at the top of the hour. From
 08:00 to 12:59 UTC (00:00 to 04:59 PT) nothing entered the queue.
 
 | UTC | PT | merged | entered queue | removed, not merged | depth at end | jobs waiting |
@@ -55,9 +54,8 @@ By hour. "Waiting" is hosted jobs created and not yet started, read at the top o
 | 04 | 20 | 2 | 3 | 1 | 0 | 0 |
 | 05 | 21 | 0 | 1 | 1 | 0 | 0 |
 
-Hosted jobs running held between 58 and 72 at most samples from 16:00 to 01:00. The runs with at
-least one waiting job numbered 82 to 124 from 16:00 to 21:00, 52 to 60 from 22:00 to 00:00, 2 at
-01:00, and none after.
+From 16:00 to 01:00, 58 to 72 hosted jobs ran at most samples. Runs with a waiting job numbered 82
+to 124 from 16:00 to 21:00, 52 to 60 until 00:00, and 2 at 01:00.
 
 Before and after #3176 (merged 23:56 UTC):
 
@@ -66,16 +64,14 @@ Before and after #3176 (merged 23:56 UTC):
 | `merge_group` CI run, wall time | median 74.5 min, p90 143.7 (16 runs) | median 18.2 min, p90 22.7 (14 runs) |
 | `merge_group` job, wait for a runner | median 26.0 min, p90 56.2 | median 0.1 min, p90 4.0 |
 | `pull_request` CI run, wall time | median 100 min, p90 136 | median 5 min |
-| `pull_request` verify run, wall time | median 115 min, p90 180 | under 2 min |
+| `pull_request` verify run, wall time | median 115 min | under 2 min |
 | arming to entering the queue | median 159 min, p90 365 (54 entries) | median 68 min (18 entries) |
 
 ## Timeline
 
 | UTC | PT | what | source |
 |---|---|---|---|
-| 11-03 13:13 | 05:13 | #3130 enters the queue; its group takes 15.3 min | queue events, run list |
-| 15:00 to 16:10 | 07:00 to 08:10 | 25 naming pull requests (#3133 to #3156) are opened and marked ready | pull requests |
-| 15:30 | 07:30 | 93 hosted jobs run and 90 wait; by 17:00, 670 wait | jobs |
+| 11-03 15:00 to 16:10 | 07:00 to 08:10 | 25 naming pull requests (#3133 to #3156) are opened and marked ready | pull requests |
 | 16:10:04 | 08:10 | #3132 merges; #3133, #3134, #3135 and #3137 are removed for conflicts within 68 s | queue events |
 | 16:10 to 18:21 | 08:10 to 10:21 | the queue is empty while armed pull requests wait for their own checks | queue events |
 | 18:10 to 18:21 | 10:10 to 10:21 | 14 more pull requests are opened (#3160 to #3173) | pull requests |
@@ -89,20 +85,16 @@ Before and after #3176 (merged 23:56 UTC):
 | 23:25 | 15:25 | #3181 (no totals in the names note, blank-line baselines) is opened | pull requests |
 | 23:56 | 15:56 | #3176 merges | pull requests |
 | 11-04 00:39 to 00:56 | 16:39 to 16:56 | #3175, now an empty diff, builds a group, fails `empty diff` (run 41748506618) and is closed | run list |
-| 01:00 to 01:16 | 17:00 to 17:16 | five merges, each group 15 to 20 min | run list |
 | 01:34 | 17:34 | #3181 merges | pull requests |
-| 02:27 | 18:27 | #3186 takes `needs-architect` | labels |
-| 03:04 to 05:55 | 19:04 to 21:55 | #3186 is enqueued three times by the session account and dequeued three times by the drain | queue events |
+| 03:04 to 05:55 | 19:04 to 21:55 | the session account enqueues #3186, held since 02:27, three times; the drain dequeues it each time | queue events |
 | 03:40 | 19:40 | #3117 merges with #3123 and #3124; #3118, #3120 and #3122 are removed for conflicts | queue events |
 | 04:54 | 20:54 | #3180 (stage 1 of the owned runners) merges; `NIFE_RUNNER_OWNED` stays unset | pull requests, jobs |
-| 05:56 to 06:06 | 21:56 to 22:06 | catch-up merges land on #3118, #3120, #3122 and #3125 | commits |
 
 ## The bound on throughput
 
-The ruleset (19596094) builds up to 5 entries at once (`max_entries_to_build: 5`), merges up to 5
-together, requires all of them green (`ALLGREEN`), and waits 1 minute for a group of one. Each entry
-runs its own group: 39 group CI runs for the entries that reached the build window. So the ceiling
-is about 5 merges per group wall time.
+Ruleset 19596094 builds up to 5 entries at once, merges up to 5 together, requires each green
+(`ALLGREEN`), and waits 1 minute for a group of one. Each entry ran its own group (39 group CI runs),
+so the ceiling is about 5 merges per group wall time.
 
 - Before #3176: 5 per 74.5 min is 4.0 merges an hour. From 18:00 to 23:56 the tree merged 15, or 2.5
   an hour, with 3 to 5 groups building. The rest of the gap is the removals, which discard a build.
@@ -112,8 +104,7 @@ is about 5 merges per group wall time.
   11 jobs at once. Five such groups need about 55 of the 60 hosted slots, so a larger build window
   buys nothing without more runners.
 
-Loss by cause, in pull-request hours spent armed or queued and not merging. The pool held 299 such
-hours before 23:56 and 41 after.
+Loss by cause, in PR-hours armed or queued and not merging: 299 before 23:56 and 41 after.
 
 | rank | cause | measured or estimated loss |
 |---|---|---|
@@ -135,7 +126,7 @@ hours before 23:56 and 41 after.
    two bursts (15:00 to 16:10 and 18:10 to 18:21) pushed 206 distinct heads, and every push ran the
    full CI and verify sets, kernel mutants and CodeQL.
 4. Why did every push run them? A pull request ran the same jobs as a merge group until #3176. The
-   change was ruled on 2026-11-03 and merged at 23:56, because #3176 itself waited behind the same pool.
+   ruling came on 2026-11-03, and #3176 merged at 23:56 because it too waited behind the same pool.
 5. Why was the pool still 60? Milestone 965 (gating CI rents more concurrency before it owns a runner)
    measured the same cap binding on 2026-10-24, and its decision is unwritten. The owned pool
    (#3180) merged at 04:54 behind a variable that is still unset.
@@ -150,12 +141,12 @@ hours before 23:56 and 41 after.
 3. Why did they share lines? The note carried totals and count tables that every group's pull request
    updated, and the two baselines were dense sorted lists. #3181 removed the totals and spaced the
    baselines at 01:34, after the cascade.
-4. Why did the fix come after the lanes? The rework was ruled on 2026-11-03 to wait for the queue to
-   drain, and the naming lanes were launched before it, about 25 at once.
+4. Why did the fix come after the lanes? The ruling of 2026-11-03 put the rework after the queue
+   drained, and the maintainer role launched about 25 naming lanes at once before it.
 5. Why did no check stop that? The rule that bounds lane count by the collision surface lives in the
    maintainer skill and in `briefs/run-a-milestone-wide.md` as prose. Nothing reads a planned set of
-   lanes for shared files, and nothing refuses an entry that already conflicts with the queue ahead
-   of it: GitHub held 13 UNMERGEABLE entries in the queue at 21:54 and removed them only at a merge.
+   lanes for shared files, and nothing refuses an entry that conflicts with the queue ahead of it.
+   GitHub held 13 UNMERGEABLE entries in the queue at 21:54 and removed them only at a merge.
 
 ### 3. A push to a queued pull request costs its place, and re-arming is by hand
 
@@ -164,54 +155,43 @@ hours before 23:56 and 41 after.
 2. Why did that cost 75 minutes each? A pushed head must pass its pull-request checks again, behind the
    same full pool, and enters the queue at the back.
 3. Why was the push needed? Cause 2: the entry already conflicted.
-4. Why does the push not re-arm? The hook prints the three steps for a person to run. Re-arming was
-   prompt in this window (all but one within 23 minutes), so an idle unarmed pull request is not a
-   measured loss here; but at 06:00 #3120 and #3122 were clean with auto-merge off.
-5. Why is it by hand? The re-arm was taken away from the drain on 2026-10-03, because it fought the
-   account's own dequeues (the earlier correction of that date), and nothing replaced it on the push side.
+4. Why does the push not re-arm? The hook prints three steps for a person to run. Re-arming came
+   within 23 minutes in all but one case, so idle unarmed time is not a measured loss; but at 06:00
+   #3120 and #3122 sat clean with auto-merge off.
+5. Why is it by hand? The rulings of 2026-10-03 took re-arming away from the drain, because it fought
+   the account's own dequeues, and nothing took its place on the push side.
 
 ### 4. The session enqueued what the drain was holding
 
 #3186 took `needs-architect` at 02:27. The drain dequeues a held pull request (`dequeue_held`), and
-the session account enqueued it again at 03:04, 04:52 and 05:54; each group build was discarded.
+the session account enqueued it again at 03:04, 04:52 and 05:54, and the drain discarded each build.
 Why: arming does not read the hold labels, and the session did not either. #3175 is the same shape:
-it stayed armed after #3176 absorbed its diff, and one group was spent proving it empty.
-
-### What the data does not show
-
-- The workflow-scope gap (lane tokens cannot arm a pull request that changes a workflow) left no
-  measurable mark: every ready-to-armed gap in the window was under 7 seconds.
-- Which `invalid_merge_commit` removals had a cause in the branch, and which in GitHub.
-- How long the host restart kept lanes from pushing. Unit-specific details of the restart are kept
-  off-tree by the maintainers.
+it stayed armed after #3176 absorbed its diff, and one group spent 23 minutes proving it empty.
 
 ## What went well
 
 - #3176 cut the merge-group wall time from 74.5 to 18.2 minutes and a pull request's own checks from
-  100 to 5, on the day the cause was found.
-- #3181 removed the shared lines; the catch-up merges after it apply cleanly.
+  100 to 5, on the day the cause surfaced.
+- #3181 removed the shared lines, so catch-up merges now apply cleanly.
 - The drain held `needs-architect` correctly every time, and no held pull request merged.
-- Stage 1 of the owned runners merged with its fork refusal guarded by lint.
 
 ## What went badly
 
 - The maintainer role launched about 25 lanes into one note within 70 minutes, and 14 more at 18:10,
   while the hosted pool was already full. It applied neither the collision-surface rule nor the
   runner ceiling the maintainer skill names.
-- The maintainer role sequenced the structural fix (#3181) after the queue would drain, when the
-  queue could not drain without it.
-- The fix to the pool came as two pull requests, #3175 and #3176 on top of it, and the first was left
-  armed after the second merged.
-- The session account re-enqueued a held pull request three times.
-- The maintainer's queue read at 21:54 listed queued pull requests as having auto-merge off, which
-  is GitHub's normal state for a queued entry, so its re-arm list was partly wrong.
+- The maintainer role put the structural fix (#3181) after the drain, which needed it.
+- The fix to the pool came as two pull requests, #3175 and #3176 on top of it, and #3175 stayed
+  armed after #3176 merged.
+- The maintainer's read at 21:54 took a queued entry's empty auto-merge field (GitHub's normal
+  state) for a disarmed one, so its re-arm list was partly wrong.
 
 ## Where we were lucky
 
 - The queue's check timeout is 240 minutes. Ten groups took more than 60 and the longest 157; at the
-  old 60-minute timeout every one of them would have been evicted.
-- `fuzz-guests` failed in 6 of the 39 group runs, and it is not a required check, so none of those
-  merges was lost.
+  old 60-minute timeout the queue would have evicted every one.
+- `fuzz-guests` failed in 6 of the 39 group runs, and it is not a required check, so the queue
+  merged those groups anyway.
 - The host restart stopped the lanes, not the queue: the 29 entries kept building through it.
 
 ## Action items
@@ -220,7 +200,7 @@ it stayed armed after #3176 absorbed its diff, and one group was spent proving i
   runs them on demand; a pull request's own checks went from a median 100 minutes to 5.
 - **Done.** #3181 (2026-11-04 01:34 UTC): the names note carries no totals and the baselines hold one
   row per line with a blank line after each, so two naming pull requests share no line.
-- **Done.** #3180 (2026-11-04 04:54 UTC): stage 1 of the owned runners is merged behind
+- **Done.** #3180 (2026-11-04 04:54 UTC): stage 1 of the owned runners sits behind
   `NIFE_RUNNER_OWNED`; setting the variable is the architect's.
 - **Milestone 965.** Milestone 965 (gating CI rents more concurrency before it owns a runner): the
   same 60-job cap bound again, and its decision is the first lever. Priority 1, owner the architect.
@@ -239,30 +219,25 @@ it stayed armed after #3176 absorbed its diff, and one group was spent proving i
 ## How the numbers were made
 
 ```
-# every pull request updated since 11-02 20:00, with queue, auto-merge, label and commit events
-gh api graphql -f query='{repository(owner:"nifeos",name:"nife"){pullRequests(first:25,
-  orderBy:{field:UPDATED_AT,direction:DESC}){nodes{number mergedAt mergeStateStatus files(first:100){nodes{path}}
-  timelineItems(first:200,itemTypes:[ADDED_TO_MERGE_QUEUE_EVENT,REMOVED_FROM_MERGE_QUEUE_EVENT,
-  AUTO_MERGE_ENABLED_EVENT,AUTO_MERGE_DISABLED_EVENT,READY_FOR_REVIEW_EVENT,PULL_REQUEST_COMMIT,
-  LABELED_EVENT]){nodes{__typename ...on RemovedFromMergeQueueEvent{createdAt reason actor{login}}}}}}}}'
-# runs, in windows of under 1,000 (the API's cap), then jobs for CI, verify, codeql, mutation gate,
-# kernel mutants and the canary: 1,337 runs, 15,927 jobs
+# pull requests updated since 11-02 20:00: queue, auto-merge, ready, label and commit events
+gh api graphql   # pullRequests(orderBy: UPDATED_AT) { timelineItems(itemTypes: [...]) }
+# runs in windows under the API's 1,000 cap, then jobs of the heavy workflows (1,337 runs)
 gh api --paginate "repos/nifeos/nife/actions/runs?created=<from>..<to>&per_page=100"
 gh api "repos/nifeos/nife/actions/runs/<id>/jobs?filter=all&per_page=100"
-# the conflicts, re-made against main at the moment of removal
-git merge-tree --write-tree --name-only --no-messages <main at removal> <pull request head then>
+git merge-tree --write-tree --name-only <main at removal> <head then>
 gh api repos/nifeos/nife/rulesets/19596094
 ```
 
-A job waits from its `created_at` to its `started_at`; a job cancelled before it started is not
-counted as waiting. A PR-hour is one pull request armed or queued for one hour, cut at 05:58 UTC.
+A job waits from `created_at` to `started_at`; one cancelled before it started never waited. A PR-hour is one pull request armed or queued for one hour, cut at 05:58 UTC.
 
 ## BUGS
 
-- The loss for cause 1 is an estimate: it charges every entry the median excess, and some entries
-  paid less.
-- GitHub keeps no history of a pull request's mergeable state, so the hours a pull request spent in
-  conflict while still armed are counted with the hours it spent waiting for checks.
-- Hosted samples above 60 running jobs (93 at 15:30, 91 at 19:00) may be jobs the API reports as
-  started and that ended within the sample; the cap itself is not readable from the API.
-- The last two hours of the Pacific day are not in the data.
+- Cause 1's loss charges every entry the median excess; some paid less.
+- The workflow-scope gap (lane tokens cannot arm a pull request that changes a workflow) left no
+  measurable mark: every ready-to-armed gap was under 7 seconds.
+- The cause of the `invalid_merge_commit` removals, and how long the host restart kept lanes from
+  pushing; the maintainers keep unit-specific details of the restart off-tree.
+- GitHub keeps no history of a pull request's mergeable state, so the PR-hours above mix time in
+  conflict while armed with time waiting for checks.
+- Samples above 60 running jobs (93 at 15:30, 91 at 19:00) may count jobs that ended within the
+  sample, and the API does not report the cap.

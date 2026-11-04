@@ -40,8 +40,8 @@ time, discarding three group builds.
 
 - Let the drain re-arm again. Refused: it fought the account's own dequeues before, which is why
   those rulings took arming away from it.
-- Allow a push to a queued branch and let GitHub drop the entry. Refused: the entry is lost silently
-  and auto-merge is cancelled with it.
+- Allow a push to a queued branch and let GitHub drop the entry. Refused: GitHub drops the entry
+  silently and cancels auto-merge with it.
 
 ## Done when
 

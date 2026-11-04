@@ -31,12 +31,12 @@ claim. Nothing reads a planned set of lanes, and nothing reads the queue before 
 ## What it builds
 
 1. A pre-arm check. Before `gh pr merge --auto`, merge the pull request's head with `git merge-tree`
-   against the tip a group would build on: `main` plus every entry ahead of it in the queue. On a
+   against the tip a group would build on. That tip is `main` plus every entry ahead in the queue. On a
    conflict, refuse to arm and name the files and the entries ahead that touch them. The same check
    runs in the drain, which comments once on a queued entry that has already gone UNMERGEABLE.
 2. A launch check for wide runs. Given the scope files of a planned set of lanes, list every file
-   two lanes would both write, including generated records (a names note, a baseline), and refuse
-   the launch until each shared file has one owner or a layout that gives each lane its own lines.
+   two lanes would both write, generated records included (a names note, a baseline). Refuse the
+   launch until each shared file has one owner or a layout that gives each lane its own lines.
 3. A cap on concurrent pushes from one wide run (recommended: 6), so that a burst of ready pull
    requests does not fill the hosted pool with their own checks.
 
