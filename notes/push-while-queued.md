@@ -28,17 +28,16 @@ warning line and the push goes. It runs before the empty-push skip, because an e
 queued branch dequeues it too.
 
 ### The way through: `script/push --requeue` For a pull request that is queued or has auto-merge
-on, `script/push --requeue` dequeues it (`dequeuePullRequest`, read back), pushes, waits for the
-read-back that origin holds HEAD, and then arms it again through `helpers/arm.sh`. A pull request
-that was not armed before stays unarmed. If the push does not land, nothing is re-armed and the
-output says so. Without the flag the hook keeps refusing, so a push that should not re-arm stays
-deliberate. `helpers/arm.sh <n>` is the one arming entry point: it refuses a draft and a pull request
-wearing `needs-architect`, `held-by-lane` or `held-for-red-trunk` (defined once, in
-`helpers/hold-labels.sh`, which the drain also reads), runs `gh pr merge --auto --merge`, and then
-reads GitHub back. Armed means `isInMergeQueue` is true or `autoMergeRequest` is not null (on a clean
-pull request the merge enqueues directly and `autoMergeRequest` stays null); neither is exit 1. The
-drain's `unarmed` cause already reports a ready, unheld pull request left unarmed for 30 minutes
-after a push, once per episode, and it arms nothing.
+on, `script/push --requeue` dequeues it, pushes, confirms origin holds HEAD, and arms it again
+through `helpers/arm.sh`. A pull request that was unarmed stays unarmed. If the push does not land,
+nothing re-arms and the output says so. Without the flag the hook keeps refusing.
+`helpers/arm.sh <n>` is the one arming entry point. It refuses a draft and a pull request wearing
+`needs-architect`, `held-by-lane` or `held-for-red-trunk` (`helpers/hold-labels.sh` defines them, and
+the drain reads the same file), runs `gh pr merge --auto --merge`, and reads GitHub back. On a clean
+pull request the merge enqueues directly and `autoMergeRequest` stays null, so armed means
+`isInMergeQueue` is true or `autoMergeRequest` is not null; neither is exit 1. The drain's
+`unarmed` cause already reports a ready, unheld pull request left unarmed for 30 minutes, once per
+episode, and arms nothing.
 
 ## EXAMPLES
 
