@@ -32,17 +32,13 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 
 In order, easiest to rule on first:
 
-1. The `no` groups of designware_mobile_storage (`DM7`, `DM8` and `DM10`): ratify as they stand, which clears the module apart from DM9.
+1. The `no` groups of designware_mobile_storage (`DM8` and `DM10`): ratify as they stand, which clears the module apart from DM9.
 
 The groups that need a real ruling are the register and bit constants: `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
 ## `designware_mobile_storage`
-
-### DM7. Read and write bench (7)
-
-`bench::ReadFailure`, `bench::ReadReport`, `bench::SCRATCH_SECTORS`, `bench::WriteVerdict`, `bench::pattern`, `bench::read_only`, `bench::scratch_write`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
@@ -69,13 +65,6 @@ The groups that need a real ruling are the register and bit constants: `E7` and 
 - Provisional recommendation: Ratify as they stand.
 
 ## `e1000e`
-
-### E6. Buffer layout (10)
-
-`layout::BYTES`, `layout::PAGES`, `layout::RECEIVE_BUFFERS`, `layout::RECEIVE_RING`, `layout::TRANSMIT_BUFFERS`, `layout::TRANSMIT_RING`, `layout::receive_buffer`, `layout::receive_descriptor`, `layout::transmit_buffer`, `layout::transmit_descriptor`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand; `rx` and `tx` already read `receive` and `transmit`.
 
 ### E7. Register offsets (24)
 
