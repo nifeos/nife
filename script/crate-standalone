@@ -25,9 +25,10 @@
 #    should ensure that we ratify the crate names before we break them out."). And every name a
 #    stranger meets in it is ratified too: every module and `pub` item must have a `Name:` block
 #    (ruled 2026-10-25 UTC: every name a stranger meets is ratified), and every block in the crate
-#    must read `ratified` (ruled 2026-10-26 UTC: a crate that leaves is a third-party crate and
-#    nife keeps no record of its names, so the blocks in its source are the only record until it
-#    breaks out). Ratification is a pull request whose body carries
+#    must read `ratified` (ruled 2026-10-26 UTC and 2026-11-04 UTC: a crate that leaves is a
+#    third-party crate, so nife keeps no record of its names; the move commit strips the blocks and
+#    nothing replaces them: no table in nife, no PROVENANCE.md in the crate, and git history with
+#    the ratifying pull requests is the only record). Ratification is a pull request whose body carries
 #    `python3 helpers/name_release.py --draft <crate>`. A crate's release milestone holds its open
 #    name flags (the names a stranger may misread).
 # 1. The manifest. Fails on a path dependency that leaves the copy, on a key inherited from the

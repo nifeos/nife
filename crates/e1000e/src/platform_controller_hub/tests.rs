@@ -35,8 +35,14 @@ fn the_flush_runs_only_when_asked_and_the_ring_has_length() {
     assert!(!flush::required(flush::FLUSH_DESC_REQUIRED, 0));
     assert!(!flush::required(0, 256));
     assert_eq!(flush::tail_after(15, 16), 0);
-    assert_eq!(flush::rxdctl(0xffff_ffff) & 0x3fff, 0x1f | 1 << 8);
-    assert_ne!(flush::rxdctl(0) & 0x0100_0000, 0);
+    assert_eq!(
+        flush::receive_descriptor_control_register_value_for_flush(0xffff_ffff) & 0x3fff,
+        0x1f | 1 << 8
+    );
+    assert_ne!(
+        flush::receive_descriptor_control_register_value_for_flush(0) & 0x0100_0000,
+        0
+    );
     // No end of packet, no report status: the dummy is never a frame anyone waits on.
     assert_eq!((flush::transmit_word() >> 24) as u8 & (0x01 | 0x08), 0);
 }
@@ -49,9 +55,18 @@ fn the_flush_values_are_freebsds() {
     assert_eq!(flush::transmit_word(), 0x0200_0200);
     assert_eq!(flush::tail_after(3, 16), 4);
     assert_eq!(flush::tail_after(15, 16), 0);
-    assert_eq!(flush::rxdctl(0xffff_ffff), 0xffff_c11f);
-    assert_eq!(flush::rxdctl(0x0100_0000), 0x0100_011f);
-    assert_eq!(flush::rxdctl(0), 0x0100_011f);
+    assert_eq!(
+        flush::receive_descriptor_control_register_value_for_flush(0xffff_ffff),
+        0xffff_c11f
+    );
+    assert_eq!(
+        flush::receive_descriptor_control_register_value_for_flush(0x0100_0000),
+        0x0100_011f
+    );
+    assert_eq!(
+        flush::receive_descriptor_control_register_value_for_flush(0),
+        0x0100_011f
+    );
 }
 
 /// The ME handshake touches only its own two bits: the request sets `ENFORCE_SETTINGS` even
@@ -78,7 +93,7 @@ fn a_delay_is_in_milliseconds_and_a_flush_reads_status() {
     delay_ms(&mut s, 3);
     assert_eq!(s.elapsed_microseconds, 3000);
     flush_writes(&mut s);
-    assert_eq!(s.reads, [crate::registers::STATUS]);
+    assert_eq!(s.reads, [crate::registers::DEVICE_STATUS_REGISTER]);
 }
 
 /// One step of the flush, as the recording fakes below saw it.
@@ -145,17 +160,31 @@ fn flush_steps(
     tail: u32,
     ring: u64,
 ) -> (flush::Outcome, std::vec::Vec<Step>) {
-    use crate::registers::{RCTL, TCTL, TDBAH, TDBAL, TDLEN, TDT};
+    use crate::registers::{
+        RECEIVE_CONTROL_REGISTER, TRANSMIT_CONTROL_REGISTER,
+        TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+        TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER, TRANSMIT_DESCRIPTOR_LENGTH_REGISTER,
+        TRANSMIT_DESCRIPTOR_TAIL_REGISTER,
+    };
     let log = Log::default();
     let values = [
-        (registers::FEXTNVM11, 0x1),
-        (TDLEN, 256),
-        (TDBAL, device_ring as u32),
-        (TDBAH, (device_ring >> 32) as u32),
-        (TCTL, 0x8),
-        (TDT, tail),
-        (RCTL, RECEIVE_CONTROL),
-        (registers::RXDCTL, 0x0001_0000),
+        (
+            registers::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER,
+            0x1,
+        ),
+        (TRANSMIT_DESCRIPTOR_LENGTH_REGISTER, 256),
+        (
+            TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
+            device_ring as u32,
+        ),
+        (
+            TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+            (device_ring >> 32) as u32,
+        ),
+        (TRANSMIT_CONTROL_REGISTER, 0x8),
+        (TRANSMIT_DESCRIPTOR_TAIL_REGISTER, tail),
+        (RECEIVE_CONTROL_REGISTER, RECEIVE_CONTROL),
+        (registers::RECEIVE_DESCRIPTOR_CONTROL_REGISTER, 0x0001_0000),
     ]
     .into_iter()
     .collect();
@@ -169,8 +198,8 @@ fn flush_steps(
 }
 
 const MULR_FIX_DISABLED: Step = Step::Write(
-    registers::FEXTNVM11,
-    0x1 | flush::FEXTNVM11_DISABLE_MULR_FIX,
+    registers::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER,
+    0x1 | flush::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_DISABLE_MULR_FIX,
 );
 
 /// Without the request bit, the flush only sets `DISABLE_MULR_FIX` and stops.
@@ -181,10 +210,10 @@ fn the_flush_without_a_request_only_disables_the_mulr_fix() {
     assert_eq!(
         steps,
         [
-            Step::Read(registers::FEXTNVM11),
+            Step::Read(registers::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER),
             MULR_FIX_DISABLED,
             Step::Status,
-            Step::Read(crate::registers::TDLEN),
+            Step::Read(crate::registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER),
         ]
     );
 }
@@ -211,7 +240,12 @@ fn the_flush_refuses_a_transmit_ring_that_is_not_the_callers() {
 /// 250 µs, then the receive ring disabled, rethresholded, pulsed on for 150 µs and disabled.
 #[test]
 fn the_flush_runs_both_rings_in_freebsds_order() {
-    use crate::registers::{RCTL, STATUS, TCTL, TDBAH, TDBAL, TDLEN, TDT};
+    use crate::registers::{
+        DEVICE_STATUS_REGISTER, RECEIVE_CONTROL_REGISTER, TRANSMIT_CONTROL_REGISTER,
+        TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+        TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER, TRANSMIT_DESCRIPTOR_LENGTH_REGISTER,
+        TRANSMIT_DESCRIPTOR_TAIL_REGISTER,
+    };
     let ring = 0x1_0000_1000;
     let required = flush::FLUSH_DESC_REQUIRED;
     let (outcome, steps) = flush_steps(&[required, required], ring, 15, ring);
@@ -219,29 +253,32 @@ fn the_flush_runs_both_rings_in_freebsds_order() {
     assert_eq!(
         steps,
         [
-            Step::Read(registers::FEXTNVM11),
+            Step::Read(registers::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER),
             MULR_FIX_DISABLED,
             Step::Status,
-            Step::Read(TDLEN),
-            Step::Read(TDBAL),
-            Step::Read(TDBAH),
-            Step::Read(TCTL),
-            Step::Write(TCTL, 0x8 | 0x2),
-            Step::Read(TDT),
+            Step::Read(TRANSMIT_DESCRIPTOR_LENGTH_REGISTER),
+            Step::Read(TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER),
+            Step::Read(TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER),
+            Step::Read(TRANSMIT_CONTROL_REGISTER),
+            Step::Write(TRANSMIT_CONTROL_REGISTER, 0x8 | 0x2),
+            Step::Read(TRANSMIT_DESCRIPTOR_TAIL_REGISTER),
             Step::Descriptor(15, [ring, flush::transmit_word()]),
-            Step::Write(TDT, 0),
+            Step::Write(TRANSMIT_DESCRIPTOR_TAIL_REGISTER, 0),
             Step::Delay(250),
             Step::Status,
-            Step::Read(RCTL),
-            Step::Write(RCTL, RECEIVE_CONTROL & !0x2),
-            Step::Read(STATUS),
+            Step::Read(RECEIVE_CONTROL_REGISTER),
+            Step::Write(RECEIVE_CONTROL_REGISTER, RECEIVE_CONTROL & !0x2),
+            Step::Read(DEVICE_STATUS_REGISTER),
             Step::Delay(150),
-            Step::Read(registers::RXDCTL),
-            Step::Write(registers::RXDCTL, flush::rxdctl(0x0001_0000)),
-            Step::Write(RCTL, RECEIVE_CONTROL | 0x2),
-            Step::Read(STATUS),
+            Step::Read(registers::RECEIVE_DESCRIPTOR_CONTROL_REGISTER),
+            Step::Write(
+                registers::RECEIVE_DESCRIPTOR_CONTROL_REGISTER,
+                flush::receive_descriptor_control_register_value_for_flush(0x0001_0000)
+            ),
+            Step::Write(RECEIVE_CONTROL_REGISTER, RECEIVE_CONTROL | 0x2),
+            Step::Read(DEVICE_STATUS_REGISTER),
             Step::Delay(150),
-            Step::Write(RCTL, RECEIVE_CONTROL & !0x2),
+            Step::Write(RECEIVE_CONTROL_REGISTER, RECEIVE_CONTROL & !0x2),
         ]
     );
 }
@@ -251,11 +288,12 @@ fn the_flush_runs_both_rings_in_freebsds_order() {
 fn the_flush_stops_after_the_transmit_ring_when_the_request_clears() {
     let (outcome, steps) = flush_steps(&[flush::FLUSH_DESC_REQUIRED, 0], 0x1000, 0, 0x1000);
     assert_eq!(outcome, flush::Outcome::TransmitFlushed);
-    assert!(
-        !steps
-            .iter()
-            .any(|s| matches!(s, Step::Write(o, _) if *o == crate::registers::RCTL))
-    );
+    assert!(!steps.iter().any(
+        |s| matches!(s, Step::Write(o, _) if *o == crate::registers::RECEIVE_CONTROL_REGISTER)
+    ));
     assert!(steps.contains(&Step::Descriptor(0, [0x1000, flush::transmit_word()])));
-    assert!(steps.contains(&Step::Write(crate::registers::TDT, 1)));
+    assert!(steps.contains(&Step::Write(
+        crate::registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER,
+        1
+    )));
 }

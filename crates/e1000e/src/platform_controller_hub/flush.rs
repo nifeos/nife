@@ -15,8 +15,20 @@ pub const PCICFG_DESC_RING_STATUS: u64 = 0xe4;
 /// from a cited source, strictly: FreeBSD's `FLUSH_DESC_REQUIRED` (`if_em.h`). Refused `REQUIRED`
 /// (a shortened copy).
 pub const FLUSH_DESC_REQUIRED: u16 = 0x100;
-/// `FEXTNVM11.DISABLE_MULR_FIX`, set before the flush.
-pub const FEXTNVM11_DISABLE_MULR_FIX: u32 = 0x0000_2000;
+/// Future Extended NVM 11 (`FEXTNVM11`), the "disable MULR fix" bit, set before the flush. `MULR` is
+/// the sources' own term and is left unexpanded: no source expands it for this bit. FreeBSD's
+/// `e1000_ich8lan.h` defines `E1000_FEXTNVM11_DISABLE_MULR_FIX` with no comment, and the
+/// similar-looking `E1000_TCTL_MULR` ("Multiple request support") is a different bit in the
+/// transmit control register; nothing connects them, and the architect chose not to guess. "Future
+/// Extended NVM 11" is the confirmed expansion of the register (FreeBSD's `e1000_regs.h` comment on
+/// `E1000_FEXTNVM11`, offset 0x5BBC). Sources: OpenBSD's `sys/dev/pci/if_em_hw.h`, then FreeBSD's
+/// `sys/dev/e1000/e1000_ich8lan.h`.
+///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `FEXTNVM11_DISABLE_MULR_FIX`: the register
+/// name is spelled out and `MULR` stays as the sources have it.
+#[doc(alias = "FEXTNVM11_DISABLE_MULR_FIX")]
+#[doc(alias = "E1000_FEXTNVM11_DISABLE_MULR_FIX")]
+pub const FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_DISABLE_MULR_FIX: u32 = 0x0000_2000;
 /// The dummy transmit's length: FreeBSD sends 512 bytes of the ring itself.
 pub(crate) const TRANSMIT_DUMMY_LENGTH: u16 = 512;
 
@@ -63,9 +75,13 @@ const _: () = assert!(
 /// prefetch threshold 31, host threshold 1, granularity in descriptors, the rest of the register
 /// kept.
 ///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `rxdctl`: the register mnemonic is spelled
+/// out and stays as an alias.
 #[doc(alias = "receive descriptor control")]
-pub const fn rxdctl(rxdctl: u32) -> u32 {
-    (rxdctl & 0xffff_c000) | 0x1f | 1 << 8 | 0x0100_0000
+#[doc(alias = "rxdctl")]
+#[doc(alias = "E1000_RXDCTL")]
+pub const fn receive_descriptor_control_register_value_for_flush(current: u32) -> u32 {
+    (current & 0xffff_c000) | 0x1f | 1 << 8 | 0x0100_0000
 }
 
 /// **What the flush needs beyond BAR0**: the configuration-space status word and the transmit
@@ -115,38 +131,51 @@ pub fn descriptor_rings(
     transmit_ring: u64,
 ) -> Outcome {
     use crate::control_registers::{RCTL_EN, TCTL_EN};
-    use crate::registers::{RCTL, TCTL, TDBAH, TDBAL, TDLEN, TDT};
-    let extended = hardware.read(super::registers::FEXTNVM11);
+    use crate::registers::{
+        RECEIVE_CONTROL_REGISTER, TRANSMIT_CONTROL_REGISTER,
+        TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+        TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER, TRANSMIT_DESCRIPTOR_LENGTH_REGISTER,
+        TRANSMIT_DESCRIPTOR_TAIL_REGISTER,
+    };
+    let extended = hardware.read(super::registers::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER);
     hardware.write(
-        super::registers::FEXTNVM11,
-        extended | FEXTNVM11_DISABLE_MULR_FIX,
+        super::registers::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER,
+        extended | FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_DISABLE_MULR_FIX,
     );
     let status = rings.descriptor_ring_status();
-    if !required(status, hardware.read(TDLEN)) {
+    if !required(status, hardware.read(TRANSMIT_DESCRIPTOR_LENGTH_REGISTER)) {
         return Outcome::NotRequired;
     }
-    let base = u64::from(hardware.read(TDBAL)) | u64::from(hardware.read(TDBAH)) << 32;
+    let base = u64::from(hardware.read(TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER))
+        | u64::from(hardware.read(TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER)) << 32;
     if base != transmit_ring {
         return Outcome::ForeignTransmitRing { base };
     }
-    let transmit_control = hardware.read(TCTL);
-    hardware.write(TCTL, transmit_control | TCTL_EN);
-    let tail = hardware.read(TDT) % u32::from(crate::TRANSMIT_ENTRIES);
+    let transmit_control = hardware.read(TRANSMIT_CONTROL_REGISTER);
+    hardware.write(TRANSMIT_CONTROL_REGISTER, transmit_control | TCTL_EN);
+    let tail =
+        hardware.read(TRANSMIT_DESCRIPTOR_TAIL_REGISTER) % u32::from(crate::TRANSMIT_ENTRIES);
     rings.write_transmit_descriptor(tail as u16, [transmit_ring, transmit_word()]);
-    hardware.write(TDT, tail_after(tail, crate::TRANSMIT_ENTRIES));
+    hardware.write(
+        TRANSMIT_DESCRIPTOR_TAIL_REGISTER,
+        tail_after(tail, crate::TRANSMIT_ENTRIES),
+    );
     hardware.delay_microseconds(250);
     if rings.descriptor_ring_status() & FLUSH_DESC_REQUIRED == 0 {
         return Outcome::TransmitFlushed;
     }
-    let receive_control = hardware.read(RCTL);
-    hardware.write(RCTL, receive_control & !RCTL_EN);
+    let receive_control = hardware.read(RECEIVE_CONTROL_REGISTER);
+    hardware.write(RECEIVE_CONTROL_REGISTER, receive_control & !RCTL_EN);
     super::flush_writes(hardware);
     hardware.delay_microseconds(150);
-    let current = hardware.read(super::registers::RXDCTL);
-    hardware.write(super::registers::RXDCTL, rxdctl(current));
-    hardware.write(RCTL, receive_control | RCTL_EN);
+    let current = hardware.read(super::registers::RECEIVE_DESCRIPTOR_CONTROL_REGISTER);
+    hardware.write(
+        super::registers::RECEIVE_DESCRIPTOR_CONTROL_REGISTER,
+        receive_descriptor_control_register_value_for_flush(current),
+    );
+    hardware.write(RECEIVE_CONTROL_REGISTER, receive_control | RCTL_EN);
     super::flush_writes(hardware);
     hardware.delay_microseconds(150);
-    hardware.write(RCTL, receive_control & !RCTL_EN);
+    hardware.write(RECEIVE_CONTROL_REGISTER, receive_control & !RCTL_EN);
     Outcome::BothFlushed
 }

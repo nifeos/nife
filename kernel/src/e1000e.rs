@@ -96,14 +96,15 @@ pub fn bring_up() -> Result<Found, Absent> {
     }
 
     // Reset re-enabled nothing we want; mask again and clear anything pending.
-    c.w(registers::IMC, u32::MAX);
-    let _ = c.r(registers::ICR);
+    c.w(registers::INTERRUPT_MASK_CLEAR_REGISTER, u32::MAX);
+    let _ = c.r(registers::INTERRUPT_CAUSE_READ_REGISTER);
     zero(region);
 
     // Tell management firmware a driver has the device, and bring the link up.
     c.w(
-        registers::CTRL_EXT,
-        c.r(registers::CTRL_EXT) | ::e1000e::CTRL_EXT_DRV_LOAD,
+        registers::EXTENDED_DEVICE_CONTROL_REGISTER,
+        c.r(registers::EXTENDED_DEVICE_CONTROL_REGISTER)
+            | ::e1000e::EXTENDED_DEVICE_CONTROL_DRIVER_LOAD,
     );
     if pch {
         // FreeBSD's `e1000_init_hw_ich8lan`, whose copper-link setup sets `CTRL.SLU` itself.
@@ -111,45 +112,47 @@ pub fn bring_up() -> Result<Found, Absent> {
             .map_err(|e| refused(Error::Pch(e)))?;
     } else {
         c.w(
-            registers::CTRL,
-            c.r(registers::CTRL) | ::e1000e::CTRL_SLU | ::e1000e::CTRL_ASDE,
+            registers::DEVICE_CONTROL_REGISTER,
+            c.r(registers::DEVICE_CONTROL_REGISTER)
+                | ::e1000e::DEVICE_CONTROL_SET_LINK_UP
+                | ::e1000e::DEVICE_CONTROL_AUTO_SPEED_DETECTION_ENABLE,
         );
     }
 
-    let station_address =
-        ::e1000e::station_address_from_receive_address(c.r(registers::RAL0), c.r(registers::RAH0))
-            .ok_or(refused(Error::NoStationAddress))?;
+    let station_address = ::e1000e::station_address_from_receive_address(
+        c.r(registers::RECEIVE_ADDRESS_0_LOW_REGISTER),
+        c.r(registers::RECEIVE_ADDRESS_0_HIGH_REGISTER),
+    )
+    .ok_or(refused(Error::NoStationAddress))?;
 
     // No multicast groups: the table is unspecified after reset.
     for k in 0..registers::MTA_ENTRIES {
-        c.w(registers::MTA + 4 * k, 0);
+        c.w(registers::MULTICAST_TABLE_ARRAY_REGISTER + 4 * k, 0);
     }
     // Legacy receive descriptors, the only format `crates/e1000e` reads.
     c.w(
-        registers::RFCTL,
-        c.r(registers::RFCTL) & !::e1000e::RFCTL_EXTEN,
+        registers::RECEIVE_FILTER_CONTROL_REGISTER,
+        c.r(registers::RECEIVE_FILTER_CONTROL_REGISTER)
+            & !::e1000e::RECEIVE_FILTER_CONTROL_EXTENDED_DESCRIPTORS_ENABLE,
     );
 
-    // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
-    let rx = region + layout::RECEIVE_RING_OFFSET_BYTES;
-    let tx = region + layout::TRANSMIT_RING_OFFSET_BYTES;
-    c.w(registers::RDBAL, rx as u32);
-    c.w(registers::RDBAH, (rx >> 32) as u32);
-    c.w(registers::RDLEN, u32::from(::e1000e::RECEIVE_ENTRIES) * 16);
-    c.w(registers::RDH, 0);
-    c.w(registers::RDT, 0);
-    c.w(registers::TDBAL, tx as u32);
-    c.w(registers::TDBAH, (tx >> 32) as u32);
-    c.w(registers::TDLEN, u32::from(::e1000e::TRANSMIT_ENTRIES) * 16);
-    c.w(registers::TDH, 0);
-    c.w(registers::TDT, 0);
+    program_rings(&c, region);
 
-    c.w(registers::TIPG, ::e1000e::tipg());
-    c.w(registers::TCTL, ::e1000e::tctl());
+    c.w(
+        registers::TRANSMIT_INTER_PACKET_GAP_REGISTER,
+        ::e1000e::transmit_inter_packet_gap_register_value(),
+    );
+    c.w(
+        registers::TRANSMIT_CONTROL_REGISTER,
+        ::e1000e::transmit_control_register_value(),
+    );
     if pch {
         ::e1000e::platform_controller_hub::sequence::transmit_errata(&mut hw);
     }
-    c.w(registers::RCTL, ::e1000e::rctl());
+    c.w(
+        registers::RECEIVE_CONTROL_REGISTER,
+        ::e1000e::receive_control_register_value(),
+    );
 
     // The 82574L's PHY answers at address 1 with no pages and no semaphore.
     let physical_layer_device_id = match physical_layer_device_id {
@@ -159,7 +162,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     };
 
     let link_up = wait_ms(LINK_WAIT_MS, || {
-        c.r(registers::STATUS) & ::e1000e::STATUS_LU != 0
+        c.r(registers::DEVICE_STATUS_REGISTER) & ::e1000e::DEVICE_STATUS_LINK_UP != 0
     });
 
     Ok(Found {
@@ -175,19 +178,57 @@ pub fn bring_up() -> Result<Found, Absent> {
     })
 }
 
+/// Point the device at both rings, with every head and tail at zero.
+fn program_rings(c: &Controller, region: u64) {
+    // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
+    let rx = region + layout::RECEIVE_RING_OFFSET_BYTES;
+    let tx = region + layout::TRANSMIT_RING_OFFSET_BYTES;
+    c.w(
+        registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
+        rx as u32,
+    );
+    c.w(
+        registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+        (rx >> 32) as u32,
+    );
+    c.w(
+        registers::RECEIVE_DESCRIPTOR_LENGTH_REGISTER,
+        u32::from(::e1000e::RECEIVE_ENTRIES) * 16,
+    );
+    c.w(registers::RECEIVE_DESCRIPTOR_HEAD_REGISTER, 0);
+    c.w(registers::RECEIVE_DESCRIPTOR_TAIL_REGISTER, 0);
+    c.w(
+        registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
+        tx as u32,
+    );
+    c.w(
+        registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+        (tx >> 32) as u32,
+    );
+    c.w(
+        registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER,
+        u32::from(::e1000e::TRANSMIT_ENTRIES) * 16,
+    );
+    c.w(registers::TRANSMIT_DESCRIPTOR_HEAD_REGISTER, 0);
+    c.w(registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER, 0);
+}
+
 /// **The 82574L's quiesce and global reset**, unchanged from before the I219 passes existed.
 fn reset_82574(c: &Controller) -> Result<(), Error> {
     // Quiesce: no interrupts, receiver and transmitter off, then a posted-write flush.
-    c.w(registers::IMC, u32::MAX);
-    c.w(registers::RCTL, 0);
-    c.w(registers::TCTL, 0);
-    let _ = c.r(registers::STATUS);
+    c.w(registers::INTERRUPT_MASK_CLEAR_REGISTER, u32::MAX);
+    c.w(registers::RECEIVE_CONTROL_REGISTER, 0);
+    c.w(registers::TRANSMIT_CONTROL_REGISTER, 0);
+    let _ = c.r(registers::DEVICE_STATUS_REGISTER);
     spin_ms(10);
     // Global reset. Self-clearing; the registers read garbage while it runs, so wait first.
-    c.w(registers::CTRL, c.r(registers::CTRL) | ::e1000e::CTRL_RST);
+    c.w(
+        registers::DEVICE_CONTROL_REGISTER,
+        c.r(registers::DEVICE_CONTROL_REGISTER) | ::e1000e::DEVICE_CONTROL_GLOBAL_RESET,
+    );
     spin_ms(20);
     if !wait_ms(RESET_WAIT_MS, || {
-        c.r(registers::CTRL) & ::e1000e::CTRL_RST == 0
+        c.r(registers::DEVICE_CONTROL_REGISTER) & ::e1000e::DEVICE_CONTROL_GLOBAL_RESET == 0
     }) {
         return Err(Error::ResetTimeout);
     }

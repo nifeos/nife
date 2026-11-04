@@ -22,11 +22,11 @@ everything in between)). Part 4 gives options A to G, and calef chose A ([Ruling
 ## Part 1: The gap, and the goal
 
 `crates/video_terminal` (milestone 29, the display terminal) implements printable text with UTF-8, CR,
-LF, BS, TAB, CSI `A B C D H f J K m` (SGR with 256-color and 24-bit) and RIS (`csi_final` and `esc`,
-`crates/video_terminal/src/vt.rs:725-831`). Its own header lists what it leaves out: no scrolling
+LF, BS, TAB, CSI `A B C D H f J K m` (SGR with 256-color and 24-bit) and RIS (`csi_final` and `esc`
+in `crates/video_terminal/src/vt.rs`). Its own header lists what it leaves out: no scrolling
 regions, no alternate screen, no origin mode, fixed tab stops, no mouse, no reporting sequences, no
-reflow (`lib.rs:26-28`, `notes/glyphs.md` "Honest limits"). Anything else is swallowed whole
-(`vt.rs:741`, `827-830`).
+reflow (the crate header of `crates/video_terminal/src/lib.rs`, `notes/glyphs.md` "Honest limits"). Anything else is swallowed whole
+(the last arms of `esc` and `csi_final` in `vt.rs`).
 
 Milestone 142 (a text display good enough that people use it instead of a GUI) is PARTIAL and is about
 glyph quality, scrollback, UTF-8 and grid size. None of its increments is about DEC-mode
@@ -73,13 +73,15 @@ The census, taken on the host with vim 9.1 and the OS `less`, is in [the census 
 ## Part 3: Keeping the engine a value when it has to reply
 
 Reports need the engine to produce bytes the program reads. `Vt` "never writes to its input"
-(`lib.rs:27`), and `csi_final` says so in a comment (`vt.rs:827-829`). The property worth keeping is
+(the crate header of `lib.rs`), and `csi_final` says so in a comment
+in `vt.rs`. The property worth keeping is
 that the engine holds no endpoint and makes no call, not that it never has output.
 
-Proposal, the shape `take_damage` already has (`vt.rs:398`). `Vt::feed` keeps its signature. A new
+Proposal, the shape `take_damage` already has (in `vt.rs`). `Vt::feed` keeps its signature. A new
 `take_reply` hands back a bounded buffer of reply bytes and clears it, "taken, not read", as damage
 is. The component forwards those bytes where a keystroke goes, into `display_terminal`'s
-`OPERATION_BYTES` path (`components/src/display_terminal.rs:522`). The line discipline in front of
+`OPERATION_BYTES` path (the `proto::OPERATION_BYTES` arm of `start` in
+`components/src/display_terminal.rs`). The line discipline in front of
 it, then `OPERATION_READRAW`, deliver them to the program. A flood of queries drops the newest reply
 and says so in `BUGS`, which fails towards a program that times out rather than a terminal that
 blocks. Replies do not change the grid, so the expected-picture check is untouched.
