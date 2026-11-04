@@ -6,7 +6,7 @@ milestone_dependencies: 969
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 1001. Price the global writable-and-executable rule before anyone rules on it
 
@@ -60,8 +60,23 @@ depends on each ISA's page-walk and lock costs.
   within them. It also adds a refusal to the thread-start method, which an architect rules on as
   a syscall-surface change.
 
-The bounds above are this proposal's suggestion. The architect sets the real ones before the
-numbers come back, so the result cannot pick its own threshold.
+## The bounds
+
+Provisional decision, made by the maintainer on 2026-11-04 (UTC), before any measurement comes
+back, so the result cannot pick its own threshold. On the aarch64 icount bench, against the 969
+baseline:
+
+- `spawn_reap` at most +1% over 225,337.
+- `map_el0` at most +5% over 299,956.
+- The worst case (the registry filled toward `revoke::MAXIMUM_SPACES` with spaces of a few hundred
+  mappings each, one writable map) takes less than one scheduler tick.
+
+The same bounds apply on riscv64 and x86_64, each against its own baseline.
+
+The nightly restamp bound (0.5% per row, 2% cumulative) is for compiler drift. It is not this
+feature budget, and neither replaces the other.
+
+The bounds change only by a new dated decision made after this one, never after seeing results.
 
 ## Index row
 
