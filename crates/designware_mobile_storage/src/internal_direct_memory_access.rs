@@ -12,7 +12,7 @@
 //! `internal_direct_memory_access`; the databook's `idmac` is kept as `doc(alias = "idmac")`.
 
 use crate::command::Command;
-use crate::host::{
+use crate::host_controller::{
     COMMAND_DEADLINE_MICROSECONDS, DATA_DEADLINE_MICROSECONDS, Error, Host, Identity, Registers,
 };
 use crate::registers;
