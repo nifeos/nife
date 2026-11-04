@@ -26,9 +26,10 @@ Reuse: `gh api` reads the advisory. No new transport.
     advisory is the only way a lane learns a finding.
   - A fix lane for a held finding works in the advisory's temporary private fork by default, as §90
     (the claim is a draft pull request) allows for this kind of lane. Its claim is a note on the
-    advisory. It runs the local gates, since the fork has no CI, and a person merges the fix from
-    the fork and publishes the advisory with it. A finding the architect judges low severity may
-    use a public draft pull request.
+    advisory. It runs the local gates, since the fork has no CI, while a person reviews the fix
+    there. The approved fix then lands as an ordinary pull request through the merge queue, and a
+    person publishes the advisory when it merges. A finding the architect judges low severity may
+    use a public draft pull request from the start.
   - The fix pull request carries the fix and a regression test of the broken invariant that names no
     seed, input or replay line. Its title, body, commit messages and comments name no seed or input
     either. The seed joins the fixed-seed regression list in a second pull request opened after
