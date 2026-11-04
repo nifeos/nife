@@ -44,7 +44,7 @@ I did not open these: `notes/confinement-claims.md` below its claims table, `des
 `design/fatal-risks/`, `design/roadmap/` (including `proposals/`), any `notes/*outsider*` or
 `notes/*falsif*` file, git log, blame, or GitHub. Source, code comments, `BUGS` sections,
 `design/decisions/` and how-to notes were fair game. Three encounters are worth recording, all in
-source. `kernel/src/cap.rs:609-619` carries a `BUGS` note from this milestone's second pass (claim
+source. `memory_region_capability` in `kernel/src/capability_object.rs` carries a `BUGS` note from this milestone's second pass (claim
 3). `system_tests/src/user/receive_cap_attack_tests.rs` records earlier passes' fixed escapes. Some
 source comments name forbidden files by path, and none of those files was opened.
 
@@ -72,7 +72,7 @@ green this pass. `read` means source review only.
 | 14 | A driver cannot send its device to unvalidated descriptors | held | host | `direct_memory_access_validator::an_accepted_descriptor_is_confined` |
 | 15 | A driver cannot make the validator walk out or forever | held | host | `direct_memory_access_validator` walk/batch suite |
 | 16 | One queue's validation cannot touch another's rings | held | host | `direct_memory_access_validator::distinct_queues_occupy_disjoint_blocks` |
-| 17 | A descriptor changed after validation cannot reach the device | near miss | host, read | device reads the shadow (`virtio.rs:956-959`); the test is vacuous, see below |
+| 17 | A descriptor changed after validation cannot reach the device | near miss | host, read | device reads the shadow (`setup_queue` in `kernel/src/virtio.rs`); the test is vacuous, see below |
 | 18 | A wiring plan grants no unasked right | held | host | `component_plan` suite (ran green, 31 tests) |
 | 19 | A directory capability reaches its subtree and nothing above | held | host, booted aarch64/riscv64 | `filesystem_protocol` (66) and `subtree_scope` (7) ran green; `dir_capability_tests` ran green on aarch64/riscv64 (x86 has no disk); cited proofs cover rights bits only, see below |
 | 20 | A memory-unsafe C component faults and changes nothing outside its grant | held | booted aarch64/riscv64 | `c_seam_tests::...` ran green; x86 skips (no C program for `x86_64-unknown-none`) |
@@ -126,7 +126,7 @@ the arm in `swap_protocol`, not a change.
 `memory_region_cap` hands a child a `WRITE`-only untyped, with no `GRANT`. `SPLIT` honors that:
 `Cap::mint_child` copies the parent's rights, so the child gets no `GRANT` either. That is claim 3 as
 stated, and `split_never_widens_rights` proves it. But `MemoryRegion::RETYPE` needs only `WRITE`. It
-returns the new `PageFrame` with `Rights::ALL`, `GRANT` included (`kernel/src/syscall.rs:829-845`).
+returns the new `PageFrame` with `Rights::ALL`, `GRANT` included (`memory_region_retype` in `kernel/src/syscall/memory_region.rs`).
 So a holder of a spend-only budget can retype a page and `SEND_CAP` it onward.
 `a_grant_less_budget_mints_a_grant_bearing_frame` asserts exactly this at boot on all three ISAs. It
 is not an escape, because the frame comes from the holder's own budget. Whether a spend-only budget
@@ -135,7 +135,7 @@ should withhold `GRANT` from its retypes is owed a claim or a ruling.
 ### Claim 17: the device reads the shadow, but the test proves only that two arrays are two arrays
 
 The property holds in its narrow form. A virtio queue's descriptor table and avail ring point at a
-kernel-private shadow (`kernel/src/virtio.rs:956-959`). The device never reads the driver's writable
+kernel-private shadow (`setup_queue` in `kernel/src/virtio.rs`). The device never reads the driver's writable
 copy, so changing a descriptor after validation cannot steer it. The regression test does not prove
 this. Both the Kani harness and the kernel twin write the driver's frame and read back the shadow
 frame. Those are separate allocations, so the final assertion cannot fail. Nothing checks the line

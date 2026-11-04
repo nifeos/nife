@@ -106,7 +106,7 @@ impl Sim {
             let mut f = vec![0; len];
             self.read_bytes(address - PHYS, &mut f);
             self.sent.push(f);
-            self.write_u64(d + 8, word | (TRANSMIT_STATUS_DD as u64) << 32);
+            self.write_u64(d + 8, word | (TRANSMIT_STATUS_DESCRIPTOR_DONE as u64) << 32);
             self.tdh = (self.tdh + 1) % TRANSMIT_ENTRIES;
         }
     }
@@ -123,7 +123,7 @@ fn frame(tag: u8, length: usize) -> Vec<u8> {
     (0..length).map(|k| tag ^ k as u8).collect()
 }
 
-const GOOD: u8 = RECEIVE_STATUS_DD | RECEIVE_STATUS_EOP;
+const GOOD: u8 = RECEIVE_STATUS_DESCRIPTOR_DONE | RECEIVE_STATUS_END_OF_PACKET;
 
 #[test]
 fn start_posts_every_receive_buffer_but_one_and_names_only_its_own_buffers() {
@@ -187,7 +187,7 @@ fn a_lying_or_bad_descriptor_is_dropped_and_the_ring_moves_on() {
     let (mut sim, mut dp) = started();
     let mut out = [0u8; MAXIMUM_FRAME_BYTES];
     assert!(sim.deliver(&frame(1, 64), 0xffff, GOOD, 0)); // longer than any buffer
-    assert!(sim.deliver(&frame(2, 64), 64, RECEIVE_STATUS_DD, 0)); // no end of packet
+    assert!(sim.deliver(&frame(2, 64), 64, RECEIVE_STATUS_DESCRIPTOR_DONE, 0)); // no end of packet
     assert!(sim.deliver(&frame(3, 64), 64, GOOD, 0x01)); // CRC error
     assert!(sim.deliver(&frame(4, 8), 8, GOOD, 0)); // shorter than a header
     let f = frame(5, 99);

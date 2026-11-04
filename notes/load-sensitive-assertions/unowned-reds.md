@@ -13,7 +13,7 @@ two-line version already knew. Neither line number had moved (checked directly a
 2026-08-27), and neither site was touched: the lane's brief was to record, not to chase. A third
 entry, `current_cpu_tests.rs`, was added on 2026-09-22.
 
-### `system_tests/src/user/live_swap_tests.rs:263`, `run_swap`: "reclaiming the operator's budget returned 277 of 224 pages" (FIXED 2026-09-22)
+### `run_swap` in `system_tests/src/user/live_swap_tests.rs`: "reclaiming the operator's budget returned 277 of 224 pages" (FIXED 2026-09-22)
 
 ```rust
 let recovered = memory::free_page_frames() - before_reclaim;
@@ -96,7 +96,7 @@ The open question above is answered by construction rather than by investigation
 longer worth a lane. A neighbor can no longer move the assertion at all. If it ever goes red, the
 answer is "a leak", with nothing else to rule out first.
 
-### `system_tests/src/user/current_cpu_tests.rs:134`, `the_page_is_returned_when_the_space_is_dropped` (FIXED 2026-09-23)
+### `the_page_is_returned_when_the_space_is_dropped` in `system_tests/src/user/current_cpu_tests.rs` (FIXED 2026-09-23)
 
 ```rust
 let before = crate::memory::free_page_frames();
@@ -173,7 +173,7 @@ The frame's address is in the message, which the old form could not print: a glo
 quantity, not an object. It was reverted. The same filtered run on the clean tree reports
 `test result: ok. 1 passed`, and the full aarch64 leg is green.
 
-### `kernel/src/arch/aarch64/timer.rs:680`, `holding_a_lock_masks_the_timer`: "the timer is not ticking at all"
+### `holding_a_lock_masks_the_timer` in `kernel/src/arch/aarch64/timer.rs`: "the timer is not ticking at all"
 
 *Fixed on 2026-09-24: the check now waits on the property under a one-second bound. See
 [the preemption window appendix](preemption-window-tick.md).*

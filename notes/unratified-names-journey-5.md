@@ -32,27 +32,13 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 
 In order, easiest to rule on first:
 
-1. The `no` groups of designware_mobile_storage (`DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
+1. The `no` groups of designware_mobile_storage (`DM7`, `DM8` and `DM10`): ratify as they stand, which clears the module apart from DM9.
 
 The groups that need a real ruling are the register and bit constants: `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
 ## `designware_mobile_storage`
-
-### DM5. Card access (9)
-
-`sd::BLOCK`, `sd::Card`, `sd::IoError`, `sd::Kind`, `sd::address`, `sd::identify`, `sd::in_range`, `sd::read_blocks`, `sd::write_blocks`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify all but `BLOCK`. `BLOCK` is the 512-byte size; recommend `BLOCK_BYTES` so it names its unit, as `TRANSFER_HZ` already does (ratified #3092).
-
-### DM6. Partition table (6)
-
-`partition::Entry`, `partition::SIGNATURE`, `partition::contains`, `partition::is_used`, `partition::parse`, `partition::scratch`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand.
 
 ### DM7. Read and write bench (7)
 
@@ -83,13 +69,6 @@ The groups that need a real ruling are the register and bit constants: `E7` and 
 - Provisional recommendation: Ratify as they stand.
 
 ## `e1000e`
-
-### E5. Descriptor status and command bits (7)
-
-`descriptor::RECEIVE_ERRORS_FRAME`, `descriptor::RECEIVE_STATUS_DD`, `descriptor::RECEIVE_STATUS_EOP`, `descriptor::TRANSMIT_COMMAND`, `descriptor::TRANSMIT_STATUS_DD`, `descriptor::receive_verdict`, `descriptor::transmit_word`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out `RECEIVE_STATUS_DD`, `RECEIVE_STATUS_EOP` and `TRANSMIT_STATUS_DD` (descriptor done, end of packet), keeping the Linux spelling as an alias; ratify the rest as they stand. These three are the only abbreviations in the module.
 
 ### E6. Buffer layout (10)
 

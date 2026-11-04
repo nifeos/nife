@@ -121,7 +121,7 @@ Found with `grep` at `396187b0b`. A lane has to carry each one.
   `handoff::LAYOUT`. As `//!` comments inside the new files they resolve from the module, so each
   needs a `crate::` path.
 - `design/file-length-baseline.tsv` lists the file at 2,290. The row goes in the same change.
-  `design/comment-block-baseline.tsv` lists only `lib.rs:1`, the crate docs (142 lines), which stay.
+  `design/comment-block-baseline.tsv` lists only `lib.rs`, the crate docs (142 lines), which stay.
 - Six tracked files name the path. §227 (how Tab reaches the shell) cites the crate docs. Milestone
   668 (scrollback from the keyboard) points at `csi_final`. `notes/terminal-contract.md` links
   `LineDisc`. All three point at code that stays in `lib.rs`. No

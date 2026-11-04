@@ -5,8 +5,8 @@ use crate::host_controller::queue_step;
 use crate::internal_direct_memory_access::{
     DESCRIPTOR_BYTES, MAXIMUM_DESCRIPTORS, PAGE, descriptor, descriptors_for,
 };
-use crate::partition::{Entry, MasterBootRecord};
-use crate::sd::in_range;
+use crate::partition::{MasterBootRecord, PartitionEntry};
+use crate::sd::can_address_blocks;
 
 /// No partition table makes the write test's range touch a partition or sector 0.
 ///
@@ -14,7 +14,7 @@ use crate::sd::in_range;
 #[kani::proof]
 #[kani::unwind(5)]
 fn the_scratch_range_never_touches_a_partition_or_sector_zero() {
-    let entry = || Entry {
+    let entry = || PartitionEntry {
         kind: kani::any(),
         start: kani::any(),
         sectors: kani::any(),
@@ -23,7 +23,7 @@ fn the_scratch_range_never_touches_a_partition_or_sector_zero() {
         entries: [entry(), entry(), entry(), entry()],
     };
     let want: u32 = kani::any();
-    if let Some((first, count)) = master_boot_record.scratch(want) {
+    if let Some((first, count)) = master_boot_record.scratch_sector_range(want) {
         assert!(first >= 1);
         assert!((1..=want).contains(&count));
         let k: u32 = kani::any();
@@ -65,7 +65,7 @@ fn an_admitted_range_is_inside_the_card_and_the_address() {
     let block_addressed: bool = kani::any();
     let logical_block_address: u64 = kani::any();
     let count: u64 = kani::any();
-    if in_range(blocks, block_addressed, logical_block_address, count) {
+    if can_address_blocks(blocks, block_addressed, logical_block_address, count) {
         assert!(count >= 1);
         assert!(logical_block_address + count <= blocks);
         let last = logical_block_address + count - 1;
