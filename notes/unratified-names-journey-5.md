@@ -84,27 +84,6 @@ The groups that need a real ruling are the register and bit constants: `E7` and 
 
 ## `e1000e`
 
-### E1. Module names (14)
-
-`control`, `data_plane`, `descriptor`, `device`, `layout`, `pch`, `pch/flush`, `pch/hardware`, `pch/reset`, `pch/sequence`, `pch/tests`, `pch/ulp`, `proofs`, `tests`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify all but two. `pch` and `ulp` abbreviate 'platform controller hub' and 'ultra low power'; recommend `platform_controller_hub` and `ultra_low_power` (the stricter reading, a close call since Intel and Linux write both as letters; the sibling modules `non_volatile_memory` and `physical_layer_device` already spell out their words). The other twelve are plain.
-
-### E2. Device identity (4)
-
-`device::DEVICE_IDS`, `device::VENDOR_INTEL`, `device::is_supported`, `device::model`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand.
-
-### E5. Descriptor status and command bits (7)
-
-`descriptor::RECEIVE_ERRORS_FRAME`, `descriptor::RECEIVE_STATUS_DD`, `descriptor::RECEIVE_STATUS_EOP`, `descriptor::TRANSMIT_COMMAND`, `descriptor::TRANSMIT_STATUS_DD`, `descriptor::receive_verdict`, `descriptor::transmit_word`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out `RECEIVE_STATUS_DD`, `RECEIVE_STATUS_EOP` and `TRANSMIT_STATUS_DD` (descriptor done, end of packet), keeping the Linux spelling as an alias; ratify the rest as they stand. These three are the only abbreviations in the module.
-
 ### E6. Buffer layout (10)
 
 `layout::BYTES`, `layout::PAGES`, `layout::RECEIVE_BUFFERS`, `layout::RECEIVE_RING`, `layout::TRANSMIT_BUFFERS`, `layout::TRANSMIT_RING`, `layout::receive_buffer`, `layout::receive_descriptor`, `layout::transmit_buffer`, `layout::transmit_descriptor`
