@@ -17,15 +17,16 @@
 
 set -u
 here="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
+. "$here/pr-queue-state.sh"
 
 case "${1:-}" in
 before)
 	branch="${2:?usage: push-requeue.sh before <branch>}"
-	if ! view="$(gh pr view "$branch" --json number,id,state,isInMergeQueue,autoMergeRequest 2>/dev/null)"; then
-		echo "none 0"
-		exit 0
+	if ! view="$(pr_state_by_branch "$branch")"; then
+		echo "push-requeue: could not read the pull request for $branch from GitHub; nothing was pushed." >&2
+		exit 1
 	fi
-	if [ "$(printf '%s' "$view" | jq -r '.state')" != OPEN ]; then
+	if [ -z "$view" ] || [ "$view" = null ]; then
 		echo "none 0"
 		exit 0
 	fi
@@ -38,7 +39,7 @@ before)
 			echo "push-requeue: could not dequeue #$number; nothing was pushed." >&2
 			exit 1
 		fi
-		if [ "$(gh pr view "$number" --json isInMergeQueue --jq .isInMergeQueue 2>/dev/null)" != false ]; then
+		if [ "$(pr_state_by_number "$number" | jq -r '.isInMergeQueue')" != false ]; then
 			echo "push-requeue: #$number is still in the merge queue after the dequeue; nothing was pushed." >&2
 			exit 1
 		fi

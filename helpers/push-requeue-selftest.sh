@@ -21,30 +21,24 @@ cat >"$tmp/bin/gh" <<'STUB'
 d="$STUB_DIR"
 echo "gh $*" >>"$d/log"
 get() { cat "$d/$1" 2>/dev/null; }
-json() {
-	[ -e "$d/noPR" ] && return 1
+pr() {
 	jq -n --arg q "$(get queued)" --arg a "$(get auto)" --arg dr "$(get draft)" --arg labels "$(get labels)" '
 		{number: 42, id: "PR_42", state: "OPEN", isDraft: ($dr == "true"),
-		 isInMergeQueue: ($q == "true"),
+		 mergeQueueEntry: (if $q == "true" then {state: "QUEUED"} else null end),
 		 autoMergeRequest: (if $a == "true" then {enabledAt: "x"} else null end),
-		 labels: ($labels | split(" ") | map(select(. != "") | {name: .}))}'
+		 labels: {nodes: ($labels | split(" ") | map(select(. != "") | {name: .}))}}'
 }
-case "$1 $2" in
-"pr view")
-	jq_expr=""
-	for a in "$@"; do
-		[ "$prev" = "--jq" ] && jq_expr="$a"
-		prev="$a"
-	done
-	out="$(json)" || exit 1
-	if [ -n "$jq_expr" ]; then printf '%s' "$out" | jq -r "$jq_expr"; else printf '%s' "$out"; fi
+case "$*" in
+*dequeuePullRequest*) echo false >"$d/queued" ;;
+"api graphql"*)
+	[ -z "$STUB_GRAPHQL_FAIL" ] || exit 1
+	if [ -e "$d/noPR" ]; then
+		echo '{"data":{"repository":{"pullRequest":null,"pullRequests":{"nodes":[]}}}}'
+	else
+		jq -n --argjson p "$(pr)" '{data:{repository:{pullRequest:$p,pullRequests:{nodes:[$p]}}}}'
+	fi
 	;;
-"pr merge")
-	[ -n "$STUB_MERGE_NOOP" ] || echo true >"$d/queued"
-	;;
-"api graphql")
-	echo false >"$d/queued"
-	;;
+"pr merge"*) [ -n "$STUB_MERGE_NOOP" ] || echo true >"$d/queued" ;;
 *) echo "stub gh: unexpected: $*" >&2; exit 1 ;;
 esac
 STUB
@@ -86,7 +80,8 @@ check() { # name command-that-must-succeed
 	name="$1"; shift
 	"$@" || { echo "$me: $name" >&2; fail=1; }
 }
-export STUB_MERGE_NOOP=
+STUB_MERGE_NOOP='' STUB_GRAPHQL_FAIL=''
+export STUB_MERGE_NOOP STUB_GRAPHQL_FAIL
 unset STUB_REMOTE
 
 # 1. A queued pull request: dequeue, push, arm, in that order, and armed at the end.
@@ -124,6 +119,11 @@ check "unlanded: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
 state true false "" false
 run "no flag, no dequeue" 0 "" -- "$root/script/push"
 check "no flag: gh never called" sh -c "! grep -q '^gh' '$tmp/log'"
+
+# 6b. GitHub cannot be asked: --requeue pushes nothing and says so.
+state true false "" false
+STUB_GRAPHQL_FAIL=1 run "unreadable state stops before the push" nonzero "nothing was pushed" -- "$root/script/push" --requeue
+check "unreadable: no push" sh -c "! grep -q 'git push' '$tmp/log'"
 
 # 7. No pull request for the branch.
 state false false "" false

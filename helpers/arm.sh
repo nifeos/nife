@@ -8,7 +8,7 @@
 # Refuses a draft, a pull request that is not open, and one wearing a hold label
 # (helpers/hold-labels.sh: `needs-architect`, `held-by-lane`, `held-for-red-trunk`), naming the label.
 # Otherwise it runs `gh pr merge <n> --auto --merge` and then reads GitHub back: armed means
-# `isInMergeQueue` is true or `autoMergeRequest` is not null. Neither is exit 1 and a line saying so.
+# a merge queue entry exists or `autoMergeRequest` is not null. Neither is exit 1 and a line saying so.
 #
 # # Why
 #
@@ -18,7 +18,8 @@
 # prints success whether or not anything was armed. This checks the label first and the result after.
 #
 # On a CLEAN pull request `gh pr merge --auto` enqueues directly, and `autoMergeRequest` reads null
-# while queued; that is why `isInMergeQueue` is read too. Arming a pull request by hand with
+# while queued; that is why the queue entry is read too (helpers/pr-queue-state.sh; `gh pr view
+# --json` has no queue field). Arming a pull request by hand with
 # `gh pr merge --auto` stays possible; it is only no longer what the briefs name.
 #
 # ARM_VERIFY_TRIES (default 5) and ARM_VERIFY_SLEEP (default 2 seconds) bound the read-back, because
@@ -27,6 +28,7 @@
 set -u
 here="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
 . "$here/hold-labels.sh"
+. "$here/pr-queue-state.sh"
 
 me="arm"
 case "${1:-}" in
@@ -37,8 +39,8 @@ case "${1:-}" in
 esac
 pr="$1"
 
-if ! view="$(gh pr view "$pr" --json state,isDraft,labels,isInMergeQueue,autoMergeRequest 2>&1)"; then
-	echo "$me: could not read #$pr: $view" >&2
+if ! view="$(pr_state_by_number "$pr")" || [ -z "$view" ] || [ "$view" = null ]; then
+	echo "$me: NOT ARMED. could not read #$pr from GitHub." >&2
 	exit 1
 fi
 
@@ -51,12 +53,12 @@ if [ "$(printf '%s' "$view" | jq -r '.isDraft')" = true ]; then
 	echo "$me: NOT ARMED. #$pr is a draft; mark it ready first (gh pr ready $pr)." >&2
 	exit 1
 fi
-if hold="$(printf '%s' "$view" | jq -r '.labels[].name' | hold_label_of)"; then
+if hold="$(printf '%s' "$view" | jq -r '.labels[]' | hold_label_of)"; then
 	echo "$me: NOT ARMED. #$pr carries \`$hold\`, which holds it out of the queue; the drain would dequeue it. Clear the hold first (script/record-ruling for an architect hold)." >&2
 	exit 1
 fi
 
-armed() { # reads a gh pr view JSON on stdin; exit 0 when queued or auto-merge is set
+armed() { # reads helpers/pr-queue-state.sh's JSON on stdin; exit 0 when queued or auto-merge is set
 	jq -e '(.isInMergeQueue == true) or (.autoMergeRequest != null)' >/dev/null
 }
 
@@ -72,7 +74,7 @@ fi
 
 tries="${ARM_VERIFY_TRIES:-5}"
 while :; do
-	if after="$(gh pr view "$pr" --json isInMergeQueue,autoMergeRequest 2>/dev/null)" && printf '%s' "$after" | armed; then
+	if after="$(pr_state_by_number "$pr")" && printf '%s' "$after" | armed; then
 		echo "$me: #$pr armed ($(printf '%s' "$after" | jq -r 'if .isInMergeQueue then "in the merge queue" else "auto-merge enabled" end'))."
 		exit 0
 	fi
