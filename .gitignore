@@ -38,3 +38,6 @@ __pycache__/
 # get counted as tree and trip script/lint on a machine whose CI is green. Deleted on sight
 # (2026-10-16, calef); this line keeps the next session's scratchpad from tripping them again.
 scratchpad/
+
+# npm's packages, should `npm ci` run in site/ by hand; script/site installs them under target/.
+site/node_modules/

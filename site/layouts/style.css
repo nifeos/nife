@@ -1,0 +1,12 @@
+body { max-width: 50rem; margin: 0 auto; padding: 0 1rem; font: 16px/1.5 system-ui, sans-serif; color: #1a1a1a; background: #fff; }
+nav { display: flex; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid #ddd; font-size: 0.875rem; }
+.meta span { display: inline-block; margin-right: 0.5rem; padding: 0 0.4rem; border: 1px solid #ccc; border-radius: 3px; font-size: 0.8rem; }
+pre { overflow-x: auto; padding: 0.5rem; background: #f4f4f4; }
+table { border-collapse: collapse; display: block; overflow-x: auto; }
+td, th { border: 1px solid #ddd; padding: 0.2rem 0.4rem; }
+.offsite { border-bottom: 1px dotted #888; }
+@media (prefers-color-scheme: dark) {
+  body { color: #e6e6e6; background: #141414; }
+  pre { background: #222; }
+  a { color: #8ab4f8; }
+}

@@ -95,3 +95,36 @@ them: the eight lint and prose baselines under `design/` (`lint-baseline.tsv`,
 `prose-baseline.tsv`, `passive-baseline.tsv`, `file-length-baseline.tsv`,
 `comment-block-baseline.tsv`, `parent-index-baseline.tsv`, `module-block-baseline.txt`,
 `naming-rule-baseline.txt`), and `design/removed.tsv`, which lists code paths.
+
+## The site build, step 3
+
+Measured 2026-11-04 (UTC) with `script/site --install` on a Linux host with 80 CPUs, at this
+branch over `origin/main` `d669bd9a9`. Eleventy 3.1.7, Pagefind 1.5.2, Node 24.22.1. Each run of
+`.github/workflows/record-site.yml` writes the same rows for a hosted runner to its step summary.
+
+| what | value |
+|---|---|
+| source | 2,895 Markdown files: `design/`, `notes/`, `briefs/`, `AGENTS.md`, `ARCHITECTS.md` |
+| words | 3,670,379 |
+| pages built | 2,896, with the index page |
+| `npm ci --ignore-scripts` | 125 packages in 3 s; the lockfile holds 131, six of them other platforms' Pagefind binaries |
+| Eleventy build | 8.5 s |
+| Pagefind index | 12.3 s |
+| the whole run | 26 s wall, 1.4 GB peak resident memory |
+| search index | 19.9 MB in 3,174 files |
+| bytes a reader's first search fetches | 178 KB |
+| whole site | 50.3 MB in 6,144 files, 73 of them repository files a page links to |
+| citations linked (`milestone N`, `§N`) | 21,475, none naming a missing record |
+| bare `#N` linked to `nifeos/nife` | 3,023 |
+| internal links checked in the built pages | 30,777 |
+| in-record breaks (no file, no page, no heading) | 0 |
+| off-record links, shown as plain text | 67 |
+
+Zero breaks is the expected reading, because `script/lint` already fails a broken relative link
+or an unresolved citation in the record. The counts fire: a planted link to a missing file, two
+fragments naming no heading and two citations of missing records gave 3 breaks and 2 unresolved
+citations, each with its example.
+
+The 67 off-record links point at paths the site does not carry: `bench/` (16), `system_tests/`
+(14), `crates/` (12), a note's data directory with no `README.md` (8), and the rest at `c_library/`,
+`xtask/`, `fuzz/`, `patches/`, `kernel/`, `components/` and `vendor/`. Step 4 sorts each.

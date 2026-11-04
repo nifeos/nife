@@ -191,7 +191,7 @@ pub const MTA_ENTRIES: u64 = 128;
 #[doc(alias = "RAL0")]
 pub const RECEIVE_ADDRESS_0_LOW_REGISTER: u64 = 0x0_5400;
 /// **Receive Address High** (OpenBSD's `E1000_RAH(0)`, `sys/dev/pci/if_em_hw.h`). Entry 0: the last two octets, and
-/// [`super::RAH_AV`].
+/// [`super::RECEIVE_ADDRESS_HIGH_ADDRESS_VALID`].
 ///
 /// Name: ratified 2026-11-03 (UTC), #3149. Renamed from `RAH0`; that and Intel's `E1000_RAH` stay
 /// as aliases.

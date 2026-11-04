@@ -79,7 +79,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     let region = region_for(dev.rid);
     let c = Controller(mmu::phys_to_virt(dev.bar0));
     let refused = |why| Absent::Refused { rid: dev.rid, why };
-    let pch = ::e1000e::platform_controller_hub::is_pch(dev.device);
+    let pch = ::e1000e::platform_controller_hub::is_platform_controller_hub_device(dev.device);
     let mut hw = Bar { c: &c, dev: &dev };
     let mut physical_layer_device_id = None;
     if pch {
@@ -103,7 +103,8 @@ pub fn bring_up() -> Result<Found, Absent> {
     // Tell management firmware a driver has the device, and bring the link up.
     c.w(
         registers::EXTENDED_DEVICE_CONTROL_REGISTER,
-        c.r(registers::EXTENDED_DEVICE_CONTROL_REGISTER) | ::e1000e::CTRL_EXT_DRV_LOAD,
+        c.r(registers::EXTENDED_DEVICE_CONTROL_REGISTER)
+            | ::e1000e::EXTENDED_DEVICE_CONTROL_DRIVER_LOAD,
     );
     if pch {
         // FreeBSD's `e1000_init_hw_ich8lan`, whose copper-link setup sets `CTRL.SLU` itself.
@@ -112,7 +113,9 @@ pub fn bring_up() -> Result<Found, Absent> {
     } else {
         c.w(
             registers::DEVICE_CONTROL_REGISTER,
-            c.r(registers::DEVICE_CONTROL_REGISTER) | ::e1000e::CTRL_SLU | ::e1000e::CTRL_ASDE,
+            c.r(registers::DEVICE_CONTROL_REGISTER)
+                | ::e1000e::DEVICE_CONTROL_SET_LINK_UP
+                | ::e1000e::DEVICE_CONTROL_AUTO_SPEED_DETECTION_ENABLE,
         );
     }
 
@@ -129,20 +132,27 @@ pub fn bring_up() -> Result<Found, Absent> {
     // Legacy receive descriptors, the only format `crates/e1000e` reads.
     c.w(
         registers::RECEIVE_FILTER_CONTROL_REGISTER,
-        c.r(registers::RECEIVE_FILTER_CONTROL_REGISTER) & !::e1000e::RFCTL_EXTEN,
+        c.r(registers::RECEIVE_FILTER_CONTROL_REGISTER)
+            & !::e1000e::RECEIVE_FILTER_CONTROL_EXTENDED_DESCRIPTORS_ENABLE,
     );
 
     program_rings(&c, region);
 
     c.w(
         registers::TRANSMIT_INTER_PACKET_GAP_REGISTER,
-        ::e1000e::tipg(),
+        ::e1000e::transmit_inter_packet_gap_register_value(),
     );
-    c.w(registers::TRANSMIT_CONTROL_REGISTER, ::e1000e::tctl());
+    c.w(
+        registers::TRANSMIT_CONTROL_REGISTER,
+        ::e1000e::transmit_control_register_value(),
+    );
     if pch {
         ::e1000e::platform_controller_hub::sequence::transmit_errata(&mut hw);
     }
-    c.w(registers::RECEIVE_CONTROL_REGISTER, ::e1000e::rctl());
+    c.w(
+        registers::RECEIVE_CONTROL_REGISTER,
+        ::e1000e::receive_control_register_value(),
+    );
 
     // The 82574L's PHY answers at address 1 with no pages and no semaphore.
     let physical_layer_device_id = match physical_layer_device_id {
@@ -152,7 +162,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     };
 
     let link_up = wait_ms(LINK_WAIT_MS, || {
-        c.r(registers::DEVICE_STATUS_REGISTER) & ::e1000e::STATUS_LU != 0
+        c.r(registers::DEVICE_STATUS_REGISTER) & ::e1000e::DEVICE_STATUS_LINK_UP != 0
     });
 
     Ok(Found {
@@ -214,11 +224,11 @@ fn reset_82574(c: &Controller) -> Result<(), Error> {
     // Global reset. Self-clearing; the registers read garbage while it runs, so wait first.
     c.w(
         registers::DEVICE_CONTROL_REGISTER,
-        c.r(registers::DEVICE_CONTROL_REGISTER) | ::e1000e::CTRL_RST,
+        c.r(registers::DEVICE_CONTROL_REGISTER) | ::e1000e::DEVICE_CONTROL_GLOBAL_RESET,
     );
     spin_ms(20);
     if !wait_ms(RESET_WAIT_MS, || {
-        c.r(registers::DEVICE_CONTROL_REGISTER) & ::e1000e::CTRL_RST == 0
+        c.r(registers::DEVICE_CONTROL_REGISTER) & ::e1000e::DEVICE_CONTROL_GLOBAL_RESET == 0
     }) {
         return Err(Error::ResetTimeout);
     }
@@ -288,10 +298,10 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
     c.w(
         pch::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER,
         c.r(pch::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER)
-            | flush::FEXTNVM11_DISABLE_MULR_FIX,
+            | flush::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_DISABLE_MULR_FIX,
     );
     let status = || dev.config_read32(flush::PCICFG_DESC_RING_STATUS) as u16;
-    if !flush::required(
+    if !flush::is_flush_required(
         status(),
         c.r(registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER),
     ) {
@@ -319,12 +329,12 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
     // only after the tail write below, which the barrier orders after these stores.
     unsafe {
         core::ptr::write_volatile(d, ring);
-        core::ptr::write_volatile(d.add(1), flush::transmit_word());
+        core::ptr::write_volatile(d.add(1), flush::dummy_transmit_descriptor_command_word());
     }
     crate::arch::direct_memory_access_write_barrier();
     c.w(
         registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER,
-        flush::tail_after(tdt, ::e1000e::TRANSMIT_ENTRIES),
+        flush::tail_after_dummy_transmit(tdt, ::e1000e::TRANSMIT_ENTRIES),
     );
     spin_microseconds(250);
     if status() & flush::FLUSH_DESC_REQUIRED == 0 {
@@ -336,7 +346,9 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
     spin_microseconds(150);
     c.w(
         pch::RECEIVE_DESCRIPTOR_CONTROL_REGISTER,
-        flush::rxdctl(c.r(pch::RECEIVE_DESCRIPTOR_CONTROL_REGISTER)),
+        flush::receive_descriptor_control_register_value_for_flush(
+            c.r(pch::RECEIVE_DESCRIPTOR_CONTROL_REGISTER),
+        ),
     );
     c.w(registers::RECEIVE_CONTROL_REGISTER, rctl | 0x2);
     let _ = c.r(registers::DEVICE_STATUS_REGISTER);

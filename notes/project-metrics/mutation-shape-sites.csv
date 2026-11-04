@@ -52,7 +52,7 @@ domain_name_system,decode_name_into,replace | with ^,crates/domain_name_system/s
 domain_name_system,Reader<'a>::record,replace | with ^,crates/domain_name_system/src/lib.rs,509,site,"ttl: (ttl_hi << 16) | ttl_lo,"
 driver_process_contract::designware_ethernet,Handoff::pack,replace | with ^,crates/driver_process_contract/src/designware_ethernet.rs,54,site,"ROLE_TAG | u64::from_le_bytes(station_address) << 16,"
 driver_process_contract::e1000e,Handoff::pack,replace | with ^,crates/driver_process_contract/src/e1000e.rs,87,site,"ROLE_TAG | u64::from_le_bytes(station_address) << 16,"
-e1000e,cycle,replace | with ^,crates/e1000e/src/pch/non_volatile_memory.rs,181,site,let ctl = (hardware.read(FLASH_BASE_ADDR + HSFSTS) >> 16) as u16 | control::GO;
+e1000e,cycle,replace | with ^,crates/e1000e/src/pch/non_volatile_memory.rs,181,site,let ctl = (hardware.read(FLASH_BASE_ADDR + HSFSTS) >> 16) as u16 | control::FLASH_CYCLE_GO;
 e1000e,read_u32_at_byte,replace >> with <<,crates/e1000e/src/pch/non_volatile_memory.rs,209,site,let mut ctl = (hardware.read(FLASH_BASE_ADDR + HSFSTS) >> 16) as u16;
 e1000e,read_mdic,replace | with ^,crates/e1000e/src/pch/physical_layer_device.rs,238,site,| physical_layer_device_address << mdic::PHY_SHIFT
 e1000e,read_mdic,replace | with ^,crates/e1000e/src/pch/physical_layer_device.rs,239,site,"| mdic::OP_READ,"

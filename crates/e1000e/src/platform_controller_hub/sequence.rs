@@ -3,7 +3,7 @@
 //! A driver calls three passes in this order: [`initialize_physical_layer_device_workarounds`] at
 //! attach, [`global_reset`] after its descriptor-ring flush, and [`initialize_hardware`] before the
 //! rings are programmed, with [`transmit_errata`] once transmit is on. Only FreeBSD's
-//! `e1000_pch_spt` branches are carried ([`super::is_pch`]), and each function names the FreeBSD
+//! `e1000_pch_spt` branches are carried ([`super::is_platform_controller_hub_device`]), and each function names the FreeBSD
 //! function it follows.
 //!
 //! Name: ratified 2026-11-03 (UTC), #3145. Ruled in the group E1 ruling on e1000e's module names;
@@ -616,7 +616,7 @@ fn config_done(hardware: &mut impl Hardware) -> Result<(), Error> {
     } else {
         hardware.note(Note::PhysicalLayerDeviceResetNotAsserted);
     }
-    let g = non_volatile_memory::Geometry::read(hardware);
+    let g = non_volatile_memory::Geometry::read_from_hardware(hardware);
     non_volatile_memory::valid_bank(hardware, g)?;
     Ok(())
 }
@@ -678,7 +678,10 @@ pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<
     // the read happens before the reset, and again before any MAC access after it.
     let v = hardware.pci_vendor_id();
     hardware.write(registers::STRAP, u32::from(v));
-    hardware.write(mac::DEVICE_CONTROL_REGISTER, ctrl | crate::CTRL_RST);
+    hardware.write(
+        mac::DEVICE_CONTROL_REGISTER,
+        ctrl | crate::DEVICE_CONTROL_GLOBAL_RESET,
+    );
     // "cannot issue a flush here because it hangs the hardware"
     delay_ms(hardware, 20);
     let v = hardware.pci_vendor_id();
@@ -686,7 +689,7 @@ pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<
 
     let mut cleared = false;
     for _ in 0..reset_wait_ms {
-        if hardware.read(mac::DEVICE_CONTROL_REGISTER) & crate::CTRL_RST == 0 {
+        if hardware.read(mac::DEVICE_CONTROL_REGISTER) & crate::DEVICE_CONTROL_GLOBAL_RESET == 0 {
             cleared = true;
             break;
         }
@@ -764,7 +767,7 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
             physical_layer_device::registers::HV_LED_CONFIG,
             led,
         )?;
-        let g = non_volatile_memory::Geometry::read(hardware);
+        let g = non_volatile_memory::Geometry::read_from_hardware(hardware);
         let word = base << 1;
         let mut page: u32 = 0;
         for i in 0..size {
@@ -1000,7 +1003,7 @@ const _: () = assert!(
 ///
 /// Name: recorded (FreeBSD's `e1000_setup_copper_link_pch_lpt`).
 pub fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Error> {
-    let c = (hardware.read(mac::DEVICE_CONTROL_REGISTER) | crate::CTRL_SLU)
+    let c = (hardware.read(mac::DEVICE_CONTROL_REGISTER) | crate::DEVICE_CONTROL_SET_LINK_UP)
         & !(CTRL_FRCSPD | CTRL_FRCDPX);
     hardware.write(mac::DEVICE_CONTROL_REGISTER, c);
     let f = Swflag::acquire(hardware)?;
@@ -1235,9 +1238,10 @@ mod tests {
             .registers
             .insert(mac::DEVICE_STATUS_REGISTER, reset::STATUS_GIO_MASTER_ENABLE);
         // The last reset never cleared.
-        hardware
-            .registers
-            .insert(mac::DEVICE_CONTROL_REGISTER, crate::CTRL_RST);
+        hardware.registers.insert(
+            mac::DEVICE_CONTROL_REGISTER,
+            crate::DEVICE_CONTROL_GLOBAL_RESET,
+        );
         assert_eq!(global_reset(&mut hardware, 0), Err(Error::ResetTimeout));
         assert_eq!(hardware.notes, [Note::MasterRequestsPending]);
         // 80 ms for the master requests, 10 ms after disabling receive and transmit, and 20 ms
@@ -1247,7 +1251,7 @@ mod tests {
             .written(mac::DEVICE_CONTROL_REGISTER)
             .last()
             .unwrap();
-        assert_ne!(last & crate::CTRL_RST, 0);
+        assert_ne!(last & crate::DEVICE_CONTROL_GLOBAL_RESET, 0);
         assert_ne!(last & CTRL_PHY_RST, 0, "the PHY is reset with the MAC");
     }
 
@@ -1394,7 +1398,7 @@ mod tests {
         s.mac.insert(mac::RECEIVE_FILTER_CONTROL_REGISTER, 0x00c0);
         s.mac.insert(
             mac::DEVICE_CONTROL_REGISTER,
-            crate::CTRL_SLU | CTRL_FRCSPD | CTRL_FRCDPX,
+            crate::DEVICE_CONTROL_SET_LINK_UP | CTRL_FRCSPD | CTRL_FRCDPX,
         );
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::I82577_CFG_REG, 0x8c01);

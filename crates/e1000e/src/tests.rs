@@ -325,18 +325,21 @@ fn the_queue_pages_hold_the_tails_and_not_the_control_registers() {
 fn the_station_address_reads_from_entry_zero_and_refuses_an_invalid_one() {
     // QEMU's default, 52:54:00:12:34:56, as RAL/RAH hold it.
     let ral = u32::from_le_bytes([0x52, 0x54, 0x00, 0x12]);
-    let rah = u32::from_le_bytes([0x34, 0x56, 0, 0]) | RAH_AV;
+    let rah = u32::from_le_bytes([0x34, 0x56, 0, 0]) | RECEIVE_ADDRESS_HIGH_ADDRESS_VALID;
     assert_eq!(
         station_address_from_receive_address(ral, rah),
         Some([0x52, 0x54, 0x00, 0x12, 0x34, 0x56])
     );
     assert_eq!(
-        station_address_from_receive_address(ral, rah & !RAH_AV),
+        station_address_from_receive_address(ral, rah & !RECEIVE_ADDRESS_HIGH_ADDRESS_VALID),
         None
     );
-    assert_eq!(station_address_from_receive_address(0, RAH_AV), None);
     assert_eq!(
-        station_address_from_receive_address(0x01, RAH_AV),
+        station_address_from_receive_address(0, RECEIVE_ADDRESS_HIGH_ADDRESS_VALID),
+        None
+    );
+    assert_eq!(
+        station_address_from_receive_address(0x01, RECEIVE_ADDRESS_HIGH_ADDRESS_VALID),
         None,
         "a group address"
     );
@@ -359,11 +362,23 @@ fn the_claimed_ids_are_intel_and_qemus_is_among_them() {
 
 #[test]
 fn the_control_words_carry_the_bits_the_device_needs() {
-    assert_ne!(rctl() & 0x2, 0, "RCTL.EN");
-    assert_ne!(rctl() & 0x8000, 0, "broadcast, for the DHCP offer");
-    assert_eq!(rctl() & 0x18, 0, "never promiscuous");
-    assert_eq!(rctl() & 0x0003_0000, 0, "2048-byte buffers");
-    assert_ne!(tctl() & 0x2, 0, "TCTL.EN");
+    assert_ne!(receive_control_register_value() & 0x2, 0, "RCTL.EN");
+    assert_ne!(
+        receive_control_register_value() & 0x8000,
+        0,
+        "broadcast, for the DHCP offer"
+    );
+    assert_eq!(
+        receive_control_register_value() & 0x18,
+        0,
+        "never promiscuous"
+    );
+    assert_eq!(
+        receive_control_register_value() & 0x0003_0000,
+        0,
+        "2048-byte buffers"
+    );
+    assert_ne!(transmit_control_register_value() & 0x2, 0, "TCTL.EN");
 }
 
 /// The three control words as whole values, so a field that lands at the wrong shift is caught
@@ -371,13 +386,25 @@ fn the_control_words_carry_the_bits_the_device_needs() {
 /// IPGT 8, IPGR1 8 at bit 10, IPGR2 6 at bit 20 (Linux's `DEFAULT_82543_TIPG_*`).
 #[test]
 fn the_control_words_are_linuxs_values_exactly() {
-    assert_eq!(rctl(), 0x0400_8002);
-    assert_eq!(tctl(), 0x0003_f0fa);
-    assert_eq!(tctl() >> 4 & 0xff, 15, "collision threshold");
-    assert_eq!(tctl() >> 12 & 0x3ff, 63, "collision distance");
-    assert_eq!(tipg(), 0x0060_2008);
+    assert_eq!(receive_control_register_value(), 0x0400_8002);
+    assert_eq!(transmit_control_register_value(), 0x0003_f0fa);
     assert_eq!(
-        (tipg() & 0x3ff, tipg() >> 10 & 0x3ff, tipg() >> 20 & 0x3ff),
+        transmit_control_register_value() >> 4 & 0xff,
+        15,
+        "collision threshold"
+    );
+    assert_eq!(
+        transmit_control_register_value() >> 12 & 0x3ff,
+        63,
+        "collision distance"
+    );
+    assert_eq!(transmit_inter_packet_gap_register_value(), 0x0060_2008);
+    assert_eq!(
+        (
+            transmit_inter_packet_gap_register_value() & 0x3ff,
+            transmit_inter_packet_gap_register_value() >> 10 & 0x3ff,
+            transmit_inter_packet_gap_register_value() >> 20 & 0x3ff
+        ),
         (8, 8, 6)
     );
 }

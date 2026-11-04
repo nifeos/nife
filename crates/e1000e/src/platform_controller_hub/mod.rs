@@ -89,7 +89,7 @@
 //! - **The link-up half is not ported** (`e1000_check_for_copper_link_ich8lan`). A link that comes
 //!   up and then loses frames points here first.
 //! - **Flow control is not configured, so it is not advertised** ([`sequence::setup_copper_link`]).
-//! - **The transmit flush diverges from FreeBSD in one place**, said at [`flush::tail_after`].
+//! - **The transmit flush diverges from FreeBSD in one place**, said at [`flush::tail_after_dummy_transmit`].
 //! - **A failed `CV_SMB_CTRL` read is not written back**, where FreeBSD writes a stale value.
 //! - **The licenses' second condition is not met by any binary this tree ships yet**.
 
@@ -123,4 +123,4 @@ mod tests;
 mod hardware_access;
 
 use hardware_access::*;
-pub use hardware_access::{Hardware, is_pch};
+pub use hardware_access::{Hardware, is_platform_controller_hub_device};

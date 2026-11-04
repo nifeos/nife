@@ -32,20 +32,13 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 
 In order, easiest to rule on first:
 
-1. The `no` groups of designware_mobile_storage (`DM8` and `DM10`): ratify as they stand, which clears the module apart from DM9.
+1. The `no` groups of designware_mobile_storage (`DM10`): ratify as they stand, which clears the module apart from DM9.
 
 The groups that need a real ruling are the register and bit constants: `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
 ## `designware_mobile_storage`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand.
-
-### DM8. Simulator (5)
-
-`simulator::Fault`, `simulator::Sim`, `simulator::depth`, `simulator::new`, `simulator::peek`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
@@ -65,27 +58,6 @@ The groups that need a real ruling are the register and bit constants: `E7` and 
 - Provisional recommendation: Ratify as they stand.
 
 ## `e1000e`
-
-### E8. Register bit constants and register-shaped helpers (12)
-
-`control::CTRL_ASDE`, `control::CTRL_EXT_DRV_LOAD`, `control::CTRL_RST`, `control::CTRL_SLU`, `control::RAH_AV`, `control::RFCTL_EXTEN`, `control::STATUS_LU`, `control::rctl`, `control::tctl`, `control::tipg`, `pch::flush::FEXTNVM11_DISABLE_MULR_FIX`, `pch::flush::rxdctl`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out with aliases, after the offsets: `CTRL_ASDE`, `CTRL_EXT_DRV_LOAD`, `CTRL_RST`, `CTRL_SLU`, `RAH_AV`, `RFCTL_EXTEN`, `STATUS_LU`, `FEXTNVM11_DISABLE_MULR_FIX`, and the functions `rctl`, `tctl`, `tipg`, `rxdctl` that build register values.
-
-### E9. PCH flush and hardware (4)
-
-`pch::flush::required`, `pch::flush::tail_after`, `pch::flush::transmit_word`, `pch::hardware::is_pch`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; `is_pch` follows the module-name decision (`is_platform_controller_hub` if `pch` is spelled out).
-
-### E10. Non-volatile memory words (6)
-
-`pch::non_volatile_memory::DONE`, `pch::non_volatile_memory::ERROR`, `pch::non_volatile_memory::Error`, `pch::non_volatile_memory::GO`, `pch::non_volatile_memory::WORDS`, `pch::non_volatile_memory::read`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand.
 
 ### E11. Physical layer device access (17)
 
