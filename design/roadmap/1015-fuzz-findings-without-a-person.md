@@ -88,7 +88,7 @@ installation token at launch; the milestone
 ## What is in force: how a fix lane claims
 
 Ruled 2026-11-04 (UTC), amending §90 (the claim is a draft pull request): a fix lane for a held
-finding develops its fix in the GitHub temporary private fork of its advisory by default, and the
+finding develops its fix in the GitHub temporary private fork of its advisory by default. The
 reviewed fix lands as an ordinary pull request through the merge queue.
 
 - The claim is a note on the advisory, not a public draft pull request. The advisory list is the

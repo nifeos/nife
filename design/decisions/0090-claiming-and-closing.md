@@ -147,5 +147,6 @@ commit, and a held finding stays private until its fix is on main. Development a
 private fork keep the public window to the time the approved fix spends in the merge queue.
 
 The cost is the property this section prefers, and that window. A stale claim shows on the
-advisory, not on the public board, and the bug is public while the fix is queued, about an hour. [`fuzz-findings-without-a-person`](../roadmap/1015-fuzz-findings-without-a-person.md)
+advisory, not on the public board, and anyone can read the fix while it waits in the queue, about
+an hour. [`fuzz-findings-without-a-person`](../roadmap/1015-fuzz-findings-without-a-person.md)
 records the rest of the findings path, with the prior art and an example.
