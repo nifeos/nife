@@ -9,11 +9,17 @@
 //!
 //! The command constants keep the specifications' names: the SD specification's section 4.7.4 and
 //! JESD84-B51's section 6.10.4. Each doc gives the command's number and what it does.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3135. A command is what the SD and eMMC specifications call it,
+//! and the word the controller's `CMD` register takes.
 
 use crate::registers;
 
 /// **CMD0, go idle state** (`GO_IDLE_STATE` in both specifications): every card back to idle. No
 /// response.
+///
+/// Name: ratified 2026-11-03 (UTC), #3137. The specifications' own command name, spelled in full;
+/// OpenBSD's `sdmmcreg.h` uses the same words.
 #[doc(alias = "reset to idle")]
 pub const GO_IDLE_STATE: u8 = 0;
 /// **CMD1, send operation conditions** (JESD84-B51's `SEND_OP_COND`, eMMC only): negotiate the
@@ -31,6 +37,9 @@ pub(crate) const ALL_SEND_CID: u8 = 2;
 pub(crate) const SEND_RELATIVE_ADDR: u8 = 3;
 /// **CMD6, switch** (JESD84-B51's `SWITCH`; the SD specification's `SWITCH_FUNC`, unused here):
 /// write one byte of `EXT_CSD` on an eMMC. The response is R1b.
+///
+/// Name: ratified 2026-11-03 (UTC), #3137. JESD84-B51's own command name, spelled in full;
+/// OpenBSD's `sdmmcreg.h` uses the same word.
 #[doc(alias = "switch mode")]
 pub const SWITCH: u8 = 6;
 /// **CMD7, select or deselect card** (the specifications' `SELECT/DESELECT_CARD`, as OpenBSD's
@@ -52,6 +61,9 @@ pub(crate) const SEND_CSD: u8 = 9;
 #[doc(alias = "stop transfer")]
 pub(crate) const STOP_TRANSMISSION: u8 = 12;
 /// **CMD13, send status** (`SEND_STATUS` in both specifications): the card status word, as R1.
+///
+/// Name: ratified 2026-11-03 (UTC), #3137. The specifications' own command name, spelled in full;
+/// OpenBSD's `sdmmcreg.h` uses the same words.
 #[doc(alias = "card status")]
 pub const SEND_STATUS: u8 = 13;
 /// **CMD16, set block length** (`SET_BLOCKLEN` in both specifications): 512, for a
@@ -88,6 +100,9 @@ pub(crate) const SET_BUS_WIDTH: u8 = 6;
 pub(crate) const SD_SEND_OP_COND: u8 = 41;
 
 /// What comes back from the card, and so how the controller must be told to listen.
+///
+/// Name: ratified 2026-11-03 (UTC), #3137. The SD specification's own term for the card's answer
+/// (section 4.9); OpenBSD's `sdmmcreg.h` uses the same word.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Response {
     /// No response (CMD0): nothing comes back.
@@ -136,6 +151,9 @@ impl Response {
 }
 
 /// A data phase: how many blocks of how many bytes, and which way.
+///
+/// Name: ratified 2026-11-03 (UTC), #3137. The specifications' own term for the part of a command
+/// that moves blocks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Data {
     /// Bytes per block. 512 for every block transfer this driver makes.
@@ -143,20 +161,29 @@ pub struct Data {
     /// How many blocks. Above one, the controller sends CMD12 by itself at the end.
     pub blocks: u32,
     /// True for a write to the card.
-    pub write: bool,
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3137. Whether the transfer is a write. Renamed from
+    /// `write`, which read as the action and not the yes-or-no answer.
+    pub is_write: bool,
 }
 
 impl Data {
     /// Total bytes, the `BYTCNT` value. Saturating, so a hostile count cannot wrap into a small
-    /// transfer; a caller asking for four gigabytes in one command is refused by [`crate::host`]'s
+    /// transfer; a caller asking for four gigabytes in one command is refused by [`crate::host_controller`]'s
     /// buffer check before this is ever written.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3137. The count of bytes in the whole data phase. Renamed
+    /// from `bytes`, which suggested a byte slice and not a count.
     #[must_use]
-    pub const fn bytes(&self) -> u32 {
+    pub const fn total_bytes(&self) -> u32 {
         self.block_size.saturating_mul(self.blocks)
     }
 }
 
 /// One command to the card.
+///
+/// Name: ratified 2026-11-03 (UTC), #3137. The SD specification's own term; OpenBSD's `sdmmcreg.h`
+/// uses the same word.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Command {
     /// The command index, 0 to 63.
@@ -171,6 +198,8 @@ pub struct Command {
 
 impl Command {
     /// A command with no data phase.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3137. The constructor, by the tree's usual spelling.
     #[must_use]
     pub const fn new(index: u8, argument: u32, response: Response) -> Self {
         Command {
@@ -199,18 +228,21 @@ impl Command {
 
     /// **The `CMD` register word that sends this command.**
     ///
+    /// Name: ratified 2026-11-03 (UTC), #3137. The word written to the controller's command
+    /// register. Renamed from `word`, which did not say which word.
+    ///
     /// ```
     /// use designware_mobile_storage::command::{Command, Response, GO_IDLE_STATE};
     /// use designware_mobile_storage::registers::*;
     ///
-    /// let w = Command::new(GO_IDLE_STATE, 0, Response::None).word();
+    /// let w = Command::new(GO_IDLE_STATE, 0, Response::None).register_word();
     /// assert_eq!(w & 0x3f, 0);
     /// assert_ne!(w & COMMAND_START, 0);
     /// assert_ne!(w & COMMAND_SEND_INITIALIZATION, 0);
     /// assert_eq!(w & COMMAND_RESPONSE_EXPECT, 0);
     /// ```
     #[must_use]
-    pub const fn word(&self) -> u32 {
+    pub const fn register_word(&self) -> u32 {
         let mut w = registers::COMMAND_START
             | registers::COMMAND_USE_HOLD_REGISTER
             | (self.index as u32 & 0x3f);
@@ -233,7 +265,7 @@ impl Command {
         }
         if let Some(d) = self.data {
             w |= registers::COMMAND_DATA_EXPECTED;
-            if d.write {
+            if d.is_write {
                 w |= registers::COMMAND_WRITE;
             }
             if d.blocks > 1 {
@@ -251,7 +283,7 @@ pub(crate) const UPDATE_CLOCK: u32 = registers::COMMAND_START
 
 /// The three fields a `CMD` word composes share no bit (start at bit 31, the hold register at bit
 /// 29, the command index in bits 5:0), which the compiler checks here; the mutation exclusion for
-/// `Command::word` names this constant. The constant-assertion lint is off on purpose: the
+/// `Command::register_word` names this constant. The constant-assertion lint is off on purpose: the
 /// assertion is constant by construction, and the compiler checking it is its job.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
@@ -267,7 +299,7 @@ mod tests {
 
     #[test]
     fn a_long_response_with_crc_and_no_data() {
-        let w = Command::new(ALL_SEND_CID, 0, Response::R2).word();
+        let w = Command::new(ALL_SEND_CID, 0, Response::R2).register_word();
         assert_eq!(
             w,
             COMMAND_START
@@ -282,16 +314,16 @@ mod tests {
 
     #[test]
     fn the_operation_conditions_are_not_crc_checked_because_they_have_none() {
-        let w = Command::new(SD_SEND_OP_COND, 0x4030_0000, Response::R3).word();
+        let w = Command::new(SD_SEND_OP_COND, 0x4030_0000, Response::R3).register_word();
         assert_ne!(w & COMMAND_RESPONSE_EXPECT, 0);
         assert_eq!(w & COMMAND_CHECK_RESPONSE_CRC, 0);
     }
 
     #[test]
     fn status_and_stop_do_not_wait_behind_the_data_they_report_on() {
-        let status = Command::new(SEND_STATUS, 1 << 16, Response::R1).word();
+        let status = Command::new(SEND_STATUS, 1 << 16, Response::R1).register_word();
         assert_eq!(status & COMMAND_WAIT_FOR_PREVIOUS_DATA_COMPLETE, 0);
-        let stop = Command::new(STOP_TRANSMISSION, 0, Response::R1b).word();
+        let stop = Command::new(STOP_TRANSMISSION, 0, Response::R1b).register_word();
         assert_eq!(stop & COMMAND_WAIT_FOR_PREVIOUS_DATA_COMPLETE, 0);
         assert_ne!(stop & COMMAND_STOP_OR_ABORT, 0);
     }
@@ -301,16 +333,24 @@ mod tests {
         let one = Data {
             block_size: 512,
             blocks: 1,
-            write: false,
+            is_write: false,
         };
         let many = Data { blocks: 8, ..one };
-        let r1 = Command::with_data(READ_SINGLE_BLOCK, 0, Response::R1, one).word();
-        let r8 = Command::with_data(READ_MULTIPLE_BLOCK, 0, Response::R1, many).word();
+        let r1 = Command::with_data(READ_SINGLE_BLOCK, 0, Response::R1, one).register_word();
+        let r8 = Command::with_data(READ_MULTIPLE_BLOCK, 0, Response::R1, many).register_word();
         assert_eq!(r1 & COMMAND_SEND_AUTOMATIC_STOP, 0);
         assert_ne!(r8 & COMMAND_SEND_AUTOMATIC_STOP, 0);
         assert_eq!(r8 & COMMAND_WRITE, 0);
-        let w =
-            Command::with_data(WRITE_BLOCK, 0, Response::R1, Data { write: true, ..one }).word();
+        let w = Command::with_data(
+            WRITE_BLOCK,
+            0,
+            Response::R1,
+            Data {
+                is_write: true,
+                ..one
+            },
+        )
+        .register_word();
         assert_ne!(w & (COMMAND_WRITE | COMMAND_DATA_EXPECTED), 0);
     }
 
@@ -326,7 +366,7 @@ mod tests {
         ] {
             assert!(!r.is_long(), "{r:?}");
             assert_eq!(
-                Command::new(SEND_STATUS, 0, r).word() & COMMAND_RESPONSE_LENGTH,
+                Command::new(SEND_STATUS, 0, r).register_word() & COMMAND_RESPONSE_LENGTH,
                 0
             );
         }

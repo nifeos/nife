@@ -12,10 +12,10 @@
 //! - It re-initializes the card U-Boot booted from, so it halts rather than hand the card back.
 //! - The eMMC socket is probed read-only, always.
 
-use designware_mobile_storage::bench::{
-    self, ReadOnlyProbeFailure, ReadOnlyProbeReport, ScratchWriteVerdict,
+use designware_mobile_storage::bench::{self, ReadFailure, ReadReport, WriteVerdict};
+use designware_mobile_storage::host_controller::{
+    Error, HostController, Identity, RegisterWindowAndClock,
 };
-use designware_mobile_storage::host::{Error, Host, Identity, Registers};
 use designware_mobile_storage::internal_direct_memory_access::{
     DirectMemoryAccessRegion, InternalDirectMemoryAccess, Refusal,
 };
@@ -111,7 +111,7 @@ enum Outcome {
     /// Read-only, and every polled read succeeded: the timed rate in KiB/s, and the IDMAC phase.
     ReadOk(u64, Dma),
     /// Read, then the scratch write test: the rate, the test's verdict, and the IDMAC phase.
-    Written(u64, ScratchWriteVerdict, Dma),
+    Written(u64, WriteVerdict, Dma),
     /// The kernel's own probe passed and the EL0 block server's did not.
     El0(El0),
 }
@@ -124,10 +124,10 @@ enum Dma {
     /// The region was refused before anything was written.
     Refused(Refusal),
     /// A read failed, polled (the reference) or through the IDMAC.
-    Failed(ReadOnlyProbeFailure),
+    Failed(ReadFailure),
     /// The timed read's rate in KiB/s, whether the first 64 KiB matched the polled read, and in a
     /// write build the scratch write test through the IDMAC.
-    Read(u64, bool, Option<ScratchWriteVerdict>),
+    Read(u64, bool, Option<WriteVerdict>),
 }
 
 impl Dma {
@@ -138,7 +138,7 @@ impl Dma {
             Dma::Read(
                 _,
                 true,
-                None | Some(ScratchWriteVerdict::Verified(..) | ScratchWriteVerdict::Refused)
+                None | Some(WriteVerdict::Verified(..) | WriteVerdict::Refused)
             )
         )
     }
@@ -148,10 +148,10 @@ impl core::fmt::Display for Dma {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Dma::Read(kib, true, None) => write!(f, "IDMAC READ-OK {kib} KiB/s"),
-            Dma::Read(kib, true, Some(ScratchWriteVerdict::Verified(..))) => {
+            Dma::Read(kib, true, Some(WriteVerdict::Verified(..))) => {
                 write!(f, "IDMAC READ-OK {kib} KiB/s, IDMAC WRITE-VERIFIED")
             }
-            Dma::Read(kib, true, Some(ScratchWriteVerdict::Refused)) => {
+            Dma::Read(kib, true, Some(WriteVerdict::Refused)) => {
                 write!(f, "IDMAC READ-OK {kib} KiB/s")
             }
             Dma::Read(kib, false, _) => {
@@ -179,7 +179,7 @@ fn print_verdict(o: &Outcome) {
             },
         ),
         Outcome::El0(e) => println!("storage-bench: verdict FAILED: EL0 block server {e:?}"),
-        Outcome::Written(kib, ScratchWriteVerdict::Verified(first, count, blank), dma) => println!(
+        Outcome::Written(kib, WriteVerdict::Verified(first, count, blank), dma) => println!(
             "storage-bench: verdict {} {kib} KiB/s, WRITE-VERIFIED sectors {first}..{} (were {}), restored, {dma}, EL0 block server served",
             if dma.passed() {
                 "READ-OK"
@@ -189,7 +189,7 @@ fn print_verdict(o: &Outcome) {
             first + count,
             if *blank { "zero" } else { "not zero" },
         ),
-        Outcome::Written(kib, ScratchWriteVerdict::Refused, dma) => println!(
+        Outcome::Written(kib, WriteVerdict::Refused, dma) => println!(
             "storage-bench: verdict READ-OK {kib} KiB/s, WRITE-REFUSED: no gap before the first partition, {dma}"
         ),
         Outcome::Written(_, v, _) => println!("storage-bench: verdict FAILED: write test {v:?}"),
@@ -211,7 +211,7 @@ macro_rules! say {
         println!(
             "storage-bench: slot {} ({}): {}",
             $slot.index,
-            $slot.board_role(),
+            $slot.role(),
             format_args!($($arg)*)
         )
     };
@@ -308,7 +308,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
     // SAFETY: step 10 of `mmu::initialize` mapped this slot's first page from the same
     // `memory::jh7110_storage` answer, and this boot thread is the only thing that drives it.
     let window = unsafe { Window::new(slot.base) };
-    let (mut host, id) = match Host::new(window, ciu_hz, slot.queue_depth) {
+    let (mut host, id) = match HostController::new(window, ciu_hz, slot.queue_depth) {
         Ok(h) => h,
         Err(e) => {
             say!(slot, "controller refused: {e:?}");
@@ -320,19 +320,19 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
     let Some(buf) = pages(READ_PAGES) else {
         return Outcome::NoMemory;
     };
-    let r = match bench::run_read_only_probe(&mut host, slot.bus_width, buf, TIMED_BLOCKS) {
-        Err(ReadOnlyProbeFailure::Initialization(e)) => {
+    let r = match bench::read_only(&mut host, slot.bus_width, buf, TIMED_BLOCKS) {
+        Err(ReadFailure::Initialization(e)) => {
             say!(slot, "identification stopped: {e:?}");
             return Outcome::NoCard(e);
         }
-        Err(ReadOnlyProbeFailure::Read(lba, e)) => {
+        Err(ReadFailure::Read(lba, e)) => {
             say!(slot, "read of block {lba} failed: {e:?}");
             // The card byte count counts bytes card to FIFO and the host byte count FIFO to CPU:
             // the CPU ahead of the card is an underrun, the card ahead with a full FIFO is an
             // overrun.
-            let r = host.registers();
+            let r = host.registers_mut();
             let (status, tcb, tbb) = (
-                r.read(registers::STATUS_REGISTER),
+                r.read(registers::STATUS),
                 r.read(registers::TRANSFERRED_CARD_BYTE_COUNT),
                 r.read(registers::TRANSFERRED_HOST_BYTE_COUNT),
             );
@@ -352,12 +352,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
     if slot.index == 1 {
         let el0 = through_el0(slot, &r, write);
         say!(slot, "EL0 block server: {el0:?}");
-        if el0 != El0::Served
-            && !matches!(
-                outcome,
-                Outcome::Written(_, ScratchWriteVerdict::Refused, _)
-            )
-        {
+        if el0 != El0::Served && !matches!(outcome, Outcome::Written(_, WriteVerdict::Refused, _)) {
             return Outcome::El0(el0);
         }
     }
@@ -368,17 +363,16 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
 /// IDMAC phase, which takes the host. The outcome carries both.
 fn write_and_idmac(
     slot: &Slot,
-    mut host: Host<Window>,
+    mut host: HostController<Window>,
     id: &Identity,
-    r: &ReadOnlyProbeReport,
+    r: &ReadReport,
     write: bool,
 ) -> Outcome {
     let verdict = if write {
         let (Some(a), Some(b)) = (pages(1), pages(1)) else {
             return Outcome::NoMemory;
         };
-        let v =
-            bench::run_scratch_write_test(&mut host, &r.card, r.master_boot_record.as_ref(), a, b);
+        let v = bench::scratch_write(&mut host, &r.card, r.master_boot_record.as_ref(), a, b);
         say!(slot, "scratch write test: {v:?}");
         Some(v)
     } else {
@@ -415,7 +409,7 @@ enum El0 {
 ///
 /// A read-only build serves the first partition and checks block 0, `EROFS` and `EINVAL`; a
 /// `write` build serves the scratch range and round-trips one block. See notes/bench-boots.md.
-fn through_el0(slot: &Slot, r: &ReadOnlyProbeReport, write: bool) -> El0 {
+fn through_el0(slot: &Slot, r: &ReadReport, write: bool) -> El0 {
     use filesystem_contract::blk;
 
     use crate::user::designware_mobile_storage_service as service;
@@ -477,7 +471,7 @@ fn el0_window(
     use driver_process_contract::designware_mobile_storage::Window;
 
     let window = if write {
-        match mbr.scratch(bench::MAXIMUM_SCRATCH_SECTORS) {
+        match mbr.scratch(bench::SCRATCH_SECTORS) {
             Some((first, 8)) => Window {
                 first: u64::from(first),
                 sectors: 8,
@@ -497,11 +491,7 @@ fn el0_window(
 }
 
 /// A read-only build's checks: block 0 is the boot sector the kernel read, and a WRITE is refused.
-fn read_only_checks(
-    call: &impl Fn(u64, u64) -> i64,
-    shared: &[u8],
-    r: &ReadOnlyProbeReport,
-) -> El0 {
+fn read_only_checks(call: &impl Fn(u64, u64) -> i64, shared: &[u8], r: &ReadReport) -> El0 {
     use filesystem_contract::blk;
 
     if shared[510..512] != [0x55, 0xaa] || shared[82..90] != r.file_system_type {
@@ -526,7 +516,7 @@ fn write_cycle_checks(
     let mut original = [0u8; blk::BLOCK_SIZE];
     original.copy_from_slice(shared);
     for (i, b) in shared.iter_mut().enumerate() {
-        *b = bench::scratch_pattern_byte(window.first + (i / BLOCK) as u64, i % BLOCK) ^ 0xff;
+        *b = bench::pattern(window.first + (i / BLOCK) as u64, i % BLOCK) ^ 0xff;
     }
     let got = call(blk::WRITE, 0);
     if got != 1 {
@@ -534,9 +524,10 @@ fn write_cycle_checks(
     }
     shared.fill(0);
     let got = call(blk::READ, 0);
-    let intact = shared.iter().enumerate().all(|(i, &b)| {
-        b == bench::scratch_pattern_byte(window.first + (i / BLOCK) as u64, i % BLOCK) ^ 0xff
-    });
+    let intact = shared
+        .iter()
+        .enumerate()
+        .all(|(i, &b)| b == bench::pattern(window.first + (i / BLOCK) as u64, i % BLOCK) ^ 0xff);
     shared.copy_from_slice(&original);
     let restored = call(blk::WRITE, 0);
     if got != 1 || !intact {
@@ -561,14 +552,14 @@ fn print_identity(slot: &Slot, id: &Identity, depth: u32) {
     say!(
         slot,
         "VERID {:#010x} HCON {:#010x} USRID {:#x} (FIFO at {:#x}, {:?} bytes wide, {} words deep, 64-bit DMA {}), CDETECT {:#x}",
-        id.verid,
-        id.hcon,
-        id.usrid,
-        registers::queue_offset(id.verid),
-        registers::queue_width(id.hcon),
+        id.version_identification,
+        id.hardware_configuration,
+        id.user_identification,
+        registers::queue_offset(id.version_identification),
+        registers::queue_width(id.hardware_configuration),
         depth,
-        registers::uses_64_bit_direct_memory_access(id.hcon),
-        id.cdetect,
+        registers::uses_64_bit_direct_memory_access(id.hardware_configuration),
+        id.card_detect,
     );
     say!(
         slot,
@@ -581,7 +572,7 @@ fn print_identity(slot: &Slot, id: &Identity, depth: u32) {
     );
 }
 
-fn print_read(slot: &Slot, r: &ReadOnlyProbeReport) {
+fn print_read(slot: &Slot, r: &ReadReport) {
     let c = &r.card;
     let name = c
         .card_identification
@@ -633,7 +624,7 @@ fn print_read(slot: &Slot, r: &ReadOnlyProbeReport) {
             say!(
                 slot,
                 "scratch range a write test would use: {:?}",
-                m.scratch(bench::MAXIMUM_SCRATCH_SECTORS)
+                m.scratch(bench::SCRATCH_SECTORS)
             );
         }
     }
@@ -660,9 +651,9 @@ fn kib_per_second(blocks: u64, microseconds: u64) -> u64 {
 /// pages, as the polled read.
 fn through_idmac(
     slot: &Slot,
-    mut host: Host<Window>,
+    mut host: HostController<Window>,
     id: &Identity,
-    r: &ReadOnlyProbeReport,
+    r: &ReadReport,
     write: bool,
 ) -> Dma {
     let first = r.timed_from;
@@ -670,7 +661,7 @@ fn through_idmac(
         return Dma::NoMemory;
     };
     if let Err(e) = sd::read_blocks(&mut host, &r.card, first, reference) {
-        return Dma::Failed(ReadOnlyProbeFailure::Read(first, e));
+        return Dma::Failed(ReadFailure::Read(first, e));
     }
     let Some(region) = Region::allocate(1 + READ_PAGES) else {
         return Dma::NoMemory;
@@ -695,14 +686,14 @@ fn through_idmac(
     ) {
         Ok(report) => report,
         Err(e) => {
-            let w = host.registers();
+            let w = host.registers_mut();
             say!(
                 slot,
                 "IDMAC read failed: {e:?}; IDSTS {:#x} DSCADDR {:#x} BUFADDR {:#x} STATUS {:#x} TCBCNT {}",
                 w.read(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER),
                 w.read(registers::CURRENT_DESCRIPTOR_ADDRESS_REGISTER),
                 w.read(registers::CURRENT_BUFFER_ADDRESS_REGISTER),
-                w.read(registers::STATUS_REGISTER),
+                w.read(registers::STATUS),
                 w.read(registers::TRANSFERRED_CARD_BYTE_COUNT),
             );
             return Dma::Failed(e);
@@ -726,8 +717,7 @@ fn through_idmac(
         let (Some(a), Some(b)) = (pages(1), pages(1)) else {
             return Dma::NoMemory;
         };
-        let v =
-            bench::run_scratch_write_test(&mut host, &r.card, r.master_boot_record.as_ref(), a, b);
+        let v = bench::scratch_write(&mut host, &r.card, r.master_boot_record.as_ref(), a, b);
         say!(slot, "scratch write test through the IDMAC: {v:?}");
         Some(v)
     } else {
@@ -746,7 +736,7 @@ fn pages(count: usize) -> Option<&'static mut [u8]> {
 }
 
 /// The multi-block read diagnosis: the same `CMD18` at each card clock and length
-/// (`bench::read_matrix`), with the tree's FIFO depth and again trusting `STATUS_REGISTER` up to 128 words.
+/// (`bench::read_matrix`), with the tree's FIFO depth and again trusting `STATUS` up to 128 words.
 /// Each row says how full the FIFO got, to tell whether a full FIFO is what ends in a data CRC
 /// error. Read-only, after the probe, whose clock bring-up it relies on.
 #[cfg(feature = "storage_read_matrix")]
@@ -764,7 +754,7 @@ fn read_matrix(slot: &Slot) {
     for depth in [slot.queue_depth, Some(128)] {
         // SAFETY: as `probe`'s window: the same mapped page, and this boot thread alone drives it.
         let window = unsafe { Window::new(slot.base) };
-        let Ok((mut host, _)) = Host::new(QueueWatch::new(window), ciu_hz, depth) else {
+        let Ok((mut host, _)) = HostController::new(QueueWatch::new(window), ciu_hz, depth) else {
             println!("storage-matrix: controller refused");
             return;
         };
