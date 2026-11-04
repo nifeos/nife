@@ -277,16 +277,6 @@ Each week is read from its own commit, so 2026W39 is the first correction, alrea
 §213 (writing standards) rule 6's count over the prose ratchet's documents, then per 1,000 words of prose. The line is
 the limit a new document meets ([definitions](register-of-measures/ratchet-debt.md#passive-voice)).
 
-## Comments by directory
-
-![Comment blocks over their directory's cap](project-metrics/comment-blocks-by-directory.svg)
-
-![Comment lines past their directory's cap](project-metrics/comment-blocks-excess-by-directory.svg)
-
-![Plain comment lines inside function bodies](project-metrics/comment-in-body.svg)
-
-Milestone 929 (comments in the Linux style across first-party Rust): its two counts, one series per directory, each week at the caps and in-body ceilings
-its own `design/comment-block-baseline.tsv` holds. A cap step reads as a jump in the first two.
 
 ## Line-number citations
 

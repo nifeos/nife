@@ -56,7 +56,7 @@ lint_root="$(git rev-parse --show-toplevel)"
 # runtime, inline `asm!` naming architecture registers) and everything that depends on it.
 #
 # **The old comment here said "on CI's x86_64 host those registers are unknown register errors", and
-# it was wrong in both directions by 2026-08-14.** CI runs on `ubuntu-24.04-arm`, where the asm
+# it was wrong in both directions by 2026-08-14.** CI runs on `ubuntu-26.04-arm`, where the asm
 # compiles; and excluding `user_mode_runtime` alone never removed it from the dependency graph, so four crates
 # that took unconditional `user_mode_runtime` dependencies dragged it into the host pass anyway. The result was
 # a workspace that did not build on x86_64, invisible to the one gate that would have caught it
@@ -3103,6 +3103,7 @@ echo "==> names meet the current naming rules"
 # A name a change adds or renames passes every mechanical naming check; the unratified names that
 # do not yet are a baseline that only shrinks, and ratified names are exempt. The manual is
 # helpers/name_checks.py's header.
+python3 helpers/baseline_layout.py --selftest
 python3 helpers/name_checks.py --selftest
 python3 helpers/name_checks.py --check
 

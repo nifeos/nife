@@ -250,12 +250,47 @@ jobs:
       - nife-owned-x86_64
 """
 
+GOOD_MATRIX_NEEDS = """\
+on:
+  merge_group:
+  push:
+jobs:
+  write:
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    runs-on: [nife-owned-x86_64]
+  check:
+    needs: write
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    runs-on: [nife-owned-x86_64]
+    strategy:
+      fail-fast: false
+      matrix:
+        instance: [1, 2, 3, 4, 5]
+"""
+
+BAD_MATRIX_NO_GUARD = """\
+on:
+  merge_group:
+jobs:
+  write:
+    if: github.event_name == 'merge_group'
+    runs-on: [nife-owned-x86_64]
+  check:
+    needs: write
+    runs-on: [nife-owned-x86_64]
+    strategy:
+      matrix:
+        instance: [1, 2]
+"""
+
 
 def selftest():
     cases = [
         ("good", GOOD, 0),
         ("comment only", GOOD_COMMENT_ONLY, 0),
         ("block scalar guard and list runs-on", GOOD_BLOCK_IF, 0),
+        ("writer and matrix checker, both guarded", GOOD_MATRIX_NEEDS, 0),
+        ("matrix checker with no guard", BAD_MATRIX_NO_GUARD, 1),
         ("owned label in a pull_request workflow", BAD_PULL_REQUEST, 1),
         ("switch expression in a pull_request_target workflow", BAD_SWITCH_ON_PULL_REQUEST, 1),
         ("event-aware switch in a pull_request workflow", GOOD_EVENT_AWARE, 0),

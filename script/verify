@@ -366,7 +366,7 @@ set -- -j "${VERIFY_JOBS:-4}" --output-format=terse "$@"
 # spreads inward from the capability core toward IPC and the MMU invariants.
 #
 # The seconds are a measurement, not an estimate: the median wall clock of each crate across CI
-# runs of this job (VERIFY_JOBS=2 on ubuntu-24.04, compile included), and they exist so `--shard`
+# runs of this job (VERIFY_JOBS=2 on ubuntu-26.04, compile included), and they exist so `--shard`
 # can balance by time rather than by crate count. Milestone 119 (the merge queue is the
 # bottleneck, and the long pole is one prover) asked for that explicitly, because the distribution
 # is extreme: **two crates are half the job**, and a split by crate count would put one shard on a
