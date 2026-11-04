@@ -38,7 +38,7 @@ architecture.
 |---|---|---|---|---|
 | `fs_service::root_directory` | `boot_progenitor` (`user/progenitor_boot.rs`) | `block_driver` (`spawn_block_server`, `fs_service/wiring.rs`), `redoxfs_server` (`spawn_fs_server`, `fs_service/wiring.rs`) | all | virtio: a `Virtio` cap, an `Interrupt`, DMA pages as spawn-time mappings; the FS server gets a `MemoryRegion` budget and the channel pages |
 | the NVMe arm of the above | `nvme_disk` (`fs_service/wiring.rs`), only when booted from NVMe | `non_volatile_memory_express` (§86's data plane) | all (exercised on `x86_64`) | BAR0's doorbell page and a DMA run, as mappings; the kernel keeps the admin plane |
-| `boot_clock_page` | `boot_progenitor`; starter in `user/device_starters.rs` | `clock` (`clock_service.rs:58`) | all | the clock page, and the RTC page as a mapping on aarch64 and riscv64; on `x86_64` a CMOS reading as an argument (§130) |
+| `boot_clock_page` | `boot_progenitor`; starter in `user/device_starters.rs` | `clock` (`start` in `clock_service.rs`) | all | the clock page, and the RTC page as a mapping on aarch64 and riscv64; on `x86_64` a CMOS reading as an argument (§130) |
 | `boot_instruction_entropy` | `boot_progenitor`; starter in `user/device_starters.rs` | `entropy` in instruction mode | `x86_64`, aarch64 with `FEAT_RNG`; riscv64 answers `None` | two endpoints; no device |
 | `boot_usb_keyboard` | `boot_progenitor`; starter in `user/device_starters.rs` | `usb_keyboard_driver` | all | an `Interrupt`, about a dozen xHCI register pages and eleven DMA pages as mappings |
 | `boot_screen_terminal` | `boot_progenitor`; starter in `user/device_starters.rs` | `framebuffer_driver`, `display_terminal` | all, UEFI boots only | the firmware screen's aperture |
@@ -50,14 +50,14 @@ architecture.
 
 | starter | call site | spawns | arch |
 |---|---|---|---|
-| `install_service::offer` | `kernel/src/lib.rs:1051` | `non_volatile_memory_express`, `entropy`, `system_installer`, `mkfs` | `x86_64`, a boot from a file only |
-| `x86_userspace_demo` | `lib.rs:943`; the demo is in `user/boot_demos.rs` | two hand-assembled children | `x86_64`, every boot |
-| tour: `console_service::start` | `lib.rs:2134` | `console` | aarch64 |
-| tour: `virtio_service::start`, `start_pci` | `lib.rs:2207`, `lib.rs:2244` | the virtio and PCIe block demos | aarch64 |
-| tour: `kernel_test_subject` | `lib.rs:2267`, `lib.rs:1328` | `kernel_test_subject` | aarch64, riscv64 |
-| tour: `memory_region_service::start` | `lib.rs:2304` | `memory_region_depleter` | aarch64 |
-| tour: `riscv_least_authority_demo`, `riscv_uart_driver_demo` | `lib.rs:1419`, `lib.rs:1520` | demo programs | riscv64 |
-| tour: `entropy_service::ensure` (MMIO, JH7110) | `lib.rs:1665`, `lib.rs:1721` | `entropy`, `jh7110_entropy` | riscv64 |
+| `install_service::offer` | `hand_over` in `kernel/src/boot.rs` | `non_volatile_memory_express`, `entropy`, `system_installer`, `mkfs` | `x86_64`, a boot from a file only |
+| `x86_userspace_demo` | the x86_64 boot path in `kernel/src/lib.rs`; the demo is in `user/boot_demos.rs` | two hand-assembled children | `x86_64`, every boot |
+| tour: `console_service::start` | the aarch64 tour in `kernel/src/lib.rs` | `console` | aarch64 |
+| tour: `virtio_service::start`, `start_pci` | `blockdev` in `kernel/src/self_test.rs` | the virtio and PCIe block demos | aarch64 |
+| tour: `kernel_test_subject` | `userspace` in `kernel/src/self_test.rs` | `kernel_test_subject` | aarch64, riscv64 |
+| tour: `memory_region_service::start` | `budget` in `kernel/src/self_test.rs` | `memory_region_depleter` | aarch64 |
+| tour: `riscv_least_authority_demo`, `riscv_uart_driver_demo` | the riscv64 tour in `kernel/src/lib.rs` | demo programs | riscv64 |
+| tour: `entropy_service::ensure` (MMIO, JH7110) | `entropy` and `jh7110_on_riscv64` in `kernel/src/self_test.rs` | `entropy`, `jh7110_entropy` | riscv64 |
 
 ### Already granted, not started
 
@@ -73,9 +73,9 @@ row above moves to.
 `login_service`, `ntp_service`, `raw_mode_service`, `keyboard_service::start`, the
 rest of `display_service` and `fs_service`, and `holding`. Their module declarations in
 `kernel/src/user.rs`, which is the index now, carry `allow(dead_code)` outside `system_tests`. The bench boots
-reach `e1000e_service` (`network_bench.rs:48`), `designware_ethernet_service`
-(`network_bench.rs:193`), `designware_mobile_storage_service` (`storage_bench.rs:296`),
-`non_volatile_memory_express_service` (`disk_throughput.rs:43`) and `fs_service` (`bench/filesystem.rs`). This milestone leaves them where they are: a harness that wires a driver by hand is measuring
+reach `e1000e_service` (the `use` in `network_bench.rs`), `designware_ethernet_service`
+(`mod radon` in `network_bench.rs`), `designware_mobile_storage_service` (`through_el0` in `storage_bench.rs`),
+`non_volatile_memory_express_service` (the `use` in `disk_throughput.rs`) and `fs_service` (`bench/filesystem.rs`). This milestone leaves them where they are: a harness that wires a driver by hand is measuring
 the driver, not the boot.
 
 ## Can the progenitor receive what each one needs?
@@ -87,7 +87,7 @@ the driver, not the boot.
 | one MMIO page | `DeviceFrame` | yes | RTC for `clock`, NVMe doorbell, e1000e's two queue pages |
 | a DMA run for a PCIe device | `PageFrame` run | yes (unverified that the IOMMU binding survives a grant rather than a kernel-built mapping) | NVMe, e1000e, xHCI |
 | several contiguous MMIO pages | `DeviceFrame` names one page | no | xHCI's register window |
-| a firmware aperture | `PageFrame` run (`display_service.rs:121`) | yes | `framebuffer_driver` |
+| a firmware aperture | `PageFrame` run (`grant_run` in `display_service.rs`) | yes | `framebuffer_driver` |
 | "the CPU has a seed instruction" | none; a fact, not an object | no slot for a fact (`boot_instruction_entropy`'s doc, in `user/device_starters.rs`) | `entropy` in instruction mode |
 | CMOS wall clock on `x86_64` | none; ports stay kernel-resident (§121 (what a device capability is when the device has no page: x86 port I/O)) | the reading can travel in the clock page | `clock` |
 
@@ -115,7 +115,7 @@ window into a restarted driver.
    `fs_service/crash.rs`) already prove a respawned server recovers the same disk. Slots 5 and 6 become the device
    trio.
 3. The NVMe arm, then `install_service::confirm`. Moving confirm into the progenitor retires the
-   foot gun its own header names (`install_service.rs:325`): the single-user window now holds
+   foot gun that the header of `offer` in `install_service.rs` names: the single-user window now holds
    because one process sequences both, not because the kernel is single-threaded.
 4. `clock`: the RTC page as a `DeviceFrame`; on `x86_64` the kernel writes its CMOS reading (§130
    (how the kernel-resident CMOS RTC reaches the userspace clock service)) into the clock page

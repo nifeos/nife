@@ -135,7 +135,8 @@ Found with `grep` at `396187b0b`. A lane has to carry each one.
   module's architectures from the `cfg` on its declaration. A `cfg` placed only inside the new file
   would hold that file to all three ports.
 - Doc comments in `xtask/src/swish_check.rs` (lines 1460 and 1465) say `x86_hand_over` is in this
-  file. `xtask/src/uefi.rs:803`, `helpers/qemu-runner-x86_64.sh:136` and `script/lint:243` describe
+  file. `uefi_test_command` in `xtask/src/uefi.rs`, the VT-d block of `helpers/qemu-runner-x86_64.sh` and
+  the build-mode feature comment in `script/lint` describe
   "`kernel_main`'s `x86_64` arm". Each goes stale and needs the new path.
 - 12 citations of the form `lib.rs:NNNN` mean this file, all in the block of milestone 811 (the boot
   services leave the kernel: the kernel starts only the progenitor), which dates them to one commit.
