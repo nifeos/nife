@@ -12,7 +12,7 @@ index 0fe377276..7d165ef99 100644
 --- a/crates/designware_mobile_storage/src/partition.rs
 +++ b/crates/designware_mobile_storage/src/partition.rs
 @@ -88,7 +88,7 @@ impl MasterBootRecord {
-             *e = Entry {
+             *e = PartitionEntry {
                  kind: sector[at + 4],
                  start: le(8),
 -                sectors: le(12),
