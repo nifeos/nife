@@ -48,7 +48,7 @@ jobs:
     name: mutant cost (${{ matrix.arch }})
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     # The x86_64 leg boots under TCG on the arm64 pool, as ci.yml's `test-shard` does.
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 25
     strategy:
       fail-fast: false
@@ -75,7 +75,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
-          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+          key: qemu-ubuntu-26.04-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
       - name: Build QEMU if the cache missed
         run: script/ci-qemu
       - name: Put it on PATH

@@ -14,12 +14,15 @@ use std::collections::BTreeMap;
 use std::vec;
 use std::vec::Vec;
 
-use crate::controller::{self, Identity};
 use crate::management_data_input_output::{self, ManagementDataInputOutput};
-use crate::motorcomm::{self, Link, Speed};
+use crate::motorcomm_physical_layer_device::{self, Link, Speed};
+use crate::network_interface_controller::{self as controller, Identity};
 use crate::{
-    DirectMemoryAccessRegion, Hardware, RDES3_ES, RDES3_FD, RDES3_LD, RDES3_OWN, TDES2_BUF1_LEN,
-    TDES2_IC, TDES3_OWN, Tails, layout, registers,
+    DirectMemoryAccessRegion, Hardware, RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY,
+    RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR,
+    RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE, TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK,
+    TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION, TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
+    Tails, layout, registers,
 };
 
 const LINE: u64 = 64;
@@ -193,21 +196,31 @@ impl PhysicalLayerDevice {
     pub(crate) fn yt8531_at_1v8() -> PhysicalLayerDevice {
         let mut registers = [0; 32];
         registers[management_data_input_output::PHYSID1 as usize] =
-            (motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID >> 16) as u16;
+            (motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID >> 16)
+                as u16;
         registers[management_data_input_output::PHYSID2 as usize] =
-            motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID as u16;
+            motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID as u16;
         let mut extended = BTreeMap::new();
-        extended.insert(motorcomm::EXT_CHIP_CONFIG, 0x2 << 4 | motorcomm::RXC_DLY_EN);
-        extended.insert(motorcomm::EXT_SYNCE_CFG, motorcomm::EN_SYNC_E);
         extended.insert(
-            motorcomm::MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER,
-            motorcomm::ESC1R_SLEEP_SW | 1 << 14,
+            motorcomm_physical_layer_device::EXT_CHIP_CONFIG,
+            0x2 << 4 | motorcomm_physical_layer_device::RXC_DLY_EN,
         );
         extended.insert(
-            motorcomm::MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER,
-            motorcomm::CGR_RX_CLK_EN,
+            motorcomm_physical_layer_device::EXT_SYNCE_CFG,
+            motorcomm_physical_layer_device::EN_SYNC_E,
         );
-        extended.insert(motorcomm::EXT_PAD_DRIVE_STRENGTH, 0xffff);
+        extended.insert(
+            motorcomm_physical_layer_device::MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER,
+            motorcomm_physical_layer_device::ESC1R_SLEEP_SW | 1 << 14,
+        );
+        extended.insert(
+            motorcomm_physical_layer_device::MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER,
+            motorcomm_physical_layer_device::CGR_RX_CLK_EN,
+        );
+        extended.insert(
+            motorcomm_physical_layer_device::EXT_PAD_DRIVE_STRENGTH,
+            0xffff,
+        );
         registers[management_data_input_output::BMCR as usize] =
             management_data_input_output::BMCR_ANENABLE;
         PhysicalLayerDevice {
@@ -242,7 +255,9 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
     ) -> Result<u16, management_data_input_output::Error> {
         let register = register & 0x1f;
         Ok(match register {
-            motorcomm::REG_DATA => self.extended(self.registers[motorcomm::REG_ADDR as usize]),
+            motorcomm_physical_layer_device::REG_DATA => {
+                self.extended(self.registers[motorcomm_physical_layer_device::REG_ADDR as usize])
+            }
             management_data_input_output::BMSR => {
                 if self.link.is_some() {
                     management_data_input_output::BMSR_LSTATUS
@@ -290,9 +305,11 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
     ) -> Result<(), management_data_input_output::Error> {
         let register = register & 0x1f;
         match register {
-            motorcomm::REG_DATA => {
-                self.extended
-                    .insert(self.registers[motorcomm::REG_ADDR as usize], v);
+            motorcomm_physical_layer_device::REG_DATA => {
+                self.extended.insert(
+                    self.registers[motorcomm_physical_layer_device::REG_ADDR as usize],
+                    v,
+                );
             }
             management_data_input_output::BMCR => {
                 self.registers[0] = v & !(management_data_input_output::BMCR_ANRESTART
@@ -352,9 +369,11 @@ impl NetworkInterfaceController {
         self.registers
             .insert(registers::CORE_VERSION_REGISTER, VERSION);
         self.registers
-            .insert(registers::mac_hw_feature(1), FEATURE1);
-        self.registers.insert(registers::MAC_ADDR0_HI, 0xffff);
-        self.registers.insert(registers::MAC_ADDR0_LO, 0xffff_ffff);
+            .insert(registers::mac_hardware_feature_register(1), FEATURE1);
+        self.registers
+            .insert(registers::MAC_ADDRESS_0_HIGH_REGISTER, 0xffff);
+        self.registers
+            .insert(registers::MAC_ADDRESS_0_LOW_REGISTER, 0xffff_ffff);
         self.receive_cursor = 0;
         self.transmit_cursor = 0;
     }
@@ -452,7 +471,10 @@ impl NetworkInterfaceController {
     }
 
     fn status(&mut self, bit: u32) {
-        *self.registers.entry(registers::CHAN_STATUS).or_insert(0) |= bit;
+        *self
+            .registers
+            .entry(registers::CHANNEL_STATUS_REGISTER)
+            .or_insert(0) |= bit;
     }
 
     /// How many receive descriptors the device could fill right now.
@@ -465,7 +487,11 @@ impl NetworkInterfaceController {
         let tail = self.index_of_tail(base, self.receive_tail(), n);
         let mut i = self.receive_cursor;
         let mut count = 0;
-        while i != tail && self.descriptor(base + u64::from(i) * 16)[3] & RDES3_OWN != 0 {
+        while i != tail
+            && self.descriptor(base + u64::from(i) * 16)[3]
+                & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
+                != 0
+        {
             count += 1;
             i = (i + 1) % n;
         }
@@ -489,15 +515,32 @@ impl NetworkInterfaceController {
         );
         let tail = self.index_of_tail(base, self.receive_tail(), n);
         let at = base + u64::from(self.receive_cursor) * 16;
-        if self.receive_cursor == tail || self.descriptor(at)[3] & RDES3_OWN == 0 {
+        if self.receive_cursor == tail
+            || self.descriptor(at)[3] & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0
+        {
             self.status(registers::CHAN_STATUS_RBU);
             return false;
         }
         let d = self.descriptor(at);
         let buffer = u64::from(d[1]) << 32 | u64::from(d[0]);
         self.memory.device_write(buffer, wire);
-        let es = if error { RDES3_ES } else { 0 };
-        self.set_descriptor(at, [0, 0, 0, RDES3_FD | RDES3_LD | es | wire.len() as u32]);
+        let es = if error {
+            RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY
+        } else {
+            0
+        };
+        self.set_descriptor(
+            at,
+            [
+                0,
+                0,
+                0,
+                RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR
+                    | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR
+                    | es
+                    | wire.len() as u32,
+            ],
+        );
         self.status(registers::CHAN_STATUS_RI);
         self.receive_cursor = (self.receive_cursor + 1) % n;
         true
@@ -538,15 +581,19 @@ impl NetworkInterfaceController {
             }
             let at = base + u64::from(self.transmit_cursor) * 16;
             let d = self.descriptor(at);
-            if d[3] & TDES3_OWN == 0 {
+            if d[3] & TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0 {
                 self.status(registers::CHAN_STATUS_TBU);
                 return;
             }
             let buffer = u64::from(d[1]) << 32 | u64::from(d[0]);
-            let mut frame = vec![0u8; (d[2] & TDES2_BUF1_LEN) as usize];
+            let mut frame =
+                vec![0u8; (d[2] & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK) as usize];
             self.memory.device_read(buffer, &mut frame);
-            self.set_descriptor(at, [0, 0, 0, d[3] & !TDES3_OWN]);
-            if d[2] & TDES2_IC != 0 {
+            self.set_descriptor(
+                at,
+                [0, 0, 0, d[3] & !TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE],
+            );
+            if d[2] & TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION != 0 {
                 self.status(registers::CHAN_STATUS_TI);
             }
             self.transmit_cursor = (self.transmit_cursor + 1) % n;
@@ -595,7 +642,9 @@ impl Hardware for NetworkInterfaceController {
                 self.registers.insert(offset, v);
                 self.reset_left = Some(self.reset_polls);
             }
-            registers::MAC_MDIO_ADDR if v & management_data_input_output::COMMAND_BUSY != 0 => {
+            registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER
+                if v & management_data_input_output::COMMAND_BUSY != 0 =>
+            {
                 let physical_layer_device = ((v
                     >> management_data_input_output::PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
                     & 0x1f) as u8;
@@ -606,10 +655,14 @@ impl Hardware for NetworkInterfaceController {
                         .physical_layer_device
                         .read(physical_layer_device, register)
                         .unwrap();
-                    self.registers
-                        .insert(registers::MAC_MDIO_DATA, u32::from(r));
+                    self.registers.insert(
+                        registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
+                        u32::from(r),
+                    );
                 } else {
-                    let data = self.register(registers::MAC_MDIO_DATA) as u16;
+                    let data = self
+                        .register(registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER)
+                        as u16;
                     self.physical_layer_device
                         .write(physical_layer_device, register, data)
                         .unwrap();
@@ -617,7 +670,7 @@ impl Hardware for NetworkInterfaceController {
                 self.registers
                     .insert(offset, v & !management_data_input_output::COMMAND_BUSY);
             }
-            registers::CHAN_STATUS => {
+            registers::CHANNEL_STATUS_REGISTER => {
                 let s = self.register(offset) & !v;
                 self.registers.insert(offset, s);
             }
@@ -644,7 +697,10 @@ mod tests {
             0,
         )
         .unwrap();
-        assert_eq!(id, motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID);
+        assert_eq!(
+            id,
+            motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID
+        );
     }
 
     #[test]

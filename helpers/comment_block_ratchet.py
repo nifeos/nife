@@ -1179,6 +1179,7 @@ def selftest():
 
     # The message names the file, the line, the sizes and the remedy.
     msg = problems(tree(a=[(10, 41)]), {})[0]
+    # line-citation: exception. Reason: the fixture's expected failure text, a file and line
     if not all(s in msg for s in ('a.rs:10', '41', '40', 'commit message', 'note', 'never to delete')):
         cases.append(('the failure message names the file, line, sizes and remedy', False))
 

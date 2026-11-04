@@ -48,7 +48,7 @@ concurrency:
 jobs:
   pr-text-replay-check:
     name: pr text carries no reproducer
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 5
     steps:
       # The base branch's copy of the helper, and only that file. No credentials are kept.
