@@ -1,0 +1,74 @@
+#!/bin/sh
+#
+# Build the design record as a static website, deploy nothing, and report what the build found.
+#
+# Milestone 1018 (the design record moves to `nifeos.org` and is published as a website), step 3.
+# The site renders every tracked Markdown file under design/, notes/ and briefs/, with AGENTS.md
+# and ARCHITECTS.md, through Eleventy. It gives each numbered record one stable address
+# (/roadmap/1018/, /decisions/201/), links each `milestone N`, `§N` and bare `#N` in prose, indexes
+# the result for search with Pagefind, and checks every internal link and fragment. The output is target/site/build/site/; the report is
+# target/site/build/summary.md, and report.json beside it holds the same numbers and examples.
+#
+# It is report-only. A broken link or a citation of a missing record is counted, never fatal: this
+# exits non-zero only when a step itself fails. .github/workflows/record-site.yml runs it and
+# uploads the site as an artifact.
+#
+#     script/site                  # build, index, check, report
+#     script/site --install        # reinstall the packages with `npm ci --ignore-scripts` first
+#
+# Node is pinned in site/.node-version, and npm's packages in site/package-lock.json at exact
+# versions. Eleventy and Pagefind are CI-only dependencies (2026-11-04 UTC): the lockfile is
+# committed, they install with `npm ci --ignore-scripts`, each version is at least two weeks old
+# when pinned, and a bump is an ordinary pull request. Run locally with any Node on PATH; a
+# version other than the pin gets a warning, not a refusal.
+#
+# EXAMPLES
+#
+#     script/site --install && open target/site/build/site/index.html
+#
+# The index page's search needs the site served over HTTP, since Pagefind fetches its index:
+# `python3 -m http.server -d target/site/build/site` and browse to http://localhost:8000/.
+#
+# BUGS
+#
+# - A link to a repository file the site does not carry (a crate, a script) is an off-record link,
+#   rendered as plain text. Milestone 1018 step 4 decides where each such target goes.
+# - The heading identifiers follow GitHub's rule for ASCII headings; a heading with other
+#   punctuation may get a different identifier here than on GitHub, which the fragment count shows.
+#
+# Name: provisional, minted 2026-11-04 (UTC) by lane/record-site-build-eleventy. A script that
+# builds a thing takes the noun it builds, as script/server and script/board-image do.
+
+set -eu
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+site="$root/site"
+
+case "${1:-}" in
+    --install) install=1 ;;
+    "") install=0 ;;
+    *) echo "usage: script/site [--install]" >&2; exit 2 ;;
+esac
+
+command -v node >/dev/null 2>&1 || { echo "script/site: node is not on PATH; install the version in site/.node-version" >&2; exit 1; }
+want="$(cat "$site/.node-version")"
+have="$(node --version | sed 's/^v//')"
+[ "$have" = "$want" ] || echo "script/site: warning: node $have on PATH, site/.node-version pins $want" >&2
+
+# The builder runs from a copy of site/ under target/, with its packages installed beside it, so
+# no node_modules directory lands in the source tree: the tree's Markdown and prose checks walk the
+# filesystem, and would read every package's README as the record's own.
+builder="$root/target/site/builder"
+mkdir -p "$builder"
+if [ "$install" -eq 1 ] || [ ! -d "$builder/node_modules" ] ||
+    ! cmp -s "$site/package-lock.json" "$builder/package-lock.json"; then
+    rm -rf "$builder"
+    mkdir -p "$builder"
+    cp -R "$site/." "$builder/"
+    (cd "$builder" && npm ci --ignore-scripts --no-audit --no-fund)
+else
+    # Refresh the sources and keep the installed packages.
+    cp -R "$site/." "$builder/"
+fi
+
+NIFE_SITE_REPOSITORY="$root" exec node "$builder/build.mjs"

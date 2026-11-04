@@ -93,10 +93,10 @@ claim had spread to five sites:
 
 | site | said |
 |---|---|
-| `crates/abi/src/lib.rs:7` | "# The surface is three calls, and that is deliberate", and a `text` block omitting `cap_delete` |
+| `crates/abi/src/lib.rs` (the module documentation's heading) | "# The surface is three calls, and that is deliberate", and a `text` block omitting `cap_delete` |
 | `crates/abi/src/lib.rs` (`Error::BadSyscall`) | "The syscall number is not one of the three" |
-| `kernel/src/syscall.rs:1` | "The syscall boundary. **Three calls.**", same omission in its block |
-| `kernel/src/arch/aarch64/exceptions.rs:370` | "It is three calls. See syscall.rs." |
+| `kernel/src/syscall.rs` (the module documentation's first line) | "The syscall boundary. **Three calls.**", same omission in its block |
+| `kernel/src/arch/aarch64/exceptions.rs` (`exception_body`, the `svc` arm) | "It is three calls. See syscall.rs." |
 | `notes/capabilities.md` | "## The surface is three calls" |
 
 **`Error::BadSyscall`'s is the one that is not arguable.** The others can be read as a slogan about
@@ -115,10 +115,11 @@ first sweep's finding 5). The heading was retitled to say so and a dated paragra
 surface is today, so the number stays true as history and a reader cannot leave with a wrong
 present-tense belief.
 
-**Left as history, deliberately:** `crates/abi/src/lib.rs:56` ("milestone 7d's first three
-syscalls", correct), `design/roadmap/0007-user-mode.md`'s `ec6f1b5` entry and `notes/README.md`'s "Rust" section, as
-it read then (both "**7d**:
-three syscalls", correct as changelog entries).
+**Left as history, deliberately:** `crates/abi/src/lib.rs` (the `Name:` paragraph of its module
+documentation, written for milestone 7d (User mode: EL0, capabilities, the ELF loader, and IPC):
+"milestone 7d's first three syscalls", correct), `design/roadmap/0007-user-mode.md`'s `ec6f1b5`
+entry and `notes/README.md`'s "Rust" section, as it read then (both "**7d**: three syscalls",
+correct as changelog entries).
 
 ### 2. FIXED: `abi::rights` had no documentation, and `objtype`'s claimed to be the rights bits
 
@@ -252,8 +253,8 @@ What landed in `script/lint`'s `==> counted claims` block:
   is recorded as a limitation because the fenced-block exemption is implemented for `.md` only.
 
 The gate went from 4 counts to 8 and from 12 markers to 20. **It was verified by breaking it**: with
-the ABI header put back to "three calls" it fails with `crates/abi/src/lib.rs:7: says 3, the tree
-says 4`, naming the file, the claim and the question the derivation answers.
+the ABI header put back to "three calls" it fails with `crates/abi/src/lib.rs` (the module documentation's heading): says 3,
+the tree says 4, naming the file, the claim and the question the derivation answers.
 
 Why this rather than a bespoke ABI check: the elegant option is the one with fewer moving parts, and
 one registry with a wider regex beats a second gate that counts the same kind of thing. It also
