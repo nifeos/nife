@@ -89,7 +89,7 @@ radon's microSD card holds the FAT32 partition U-Boot loads the boot script, ker
 from (notes/visionfive2.md). Three rules keep this driver from costing that card:
 
 - **The first bench step cannot write.** `storage_bench` without `NIFE_STORAGE_BENCH_WRITE=scratch`
-  compiles no write test at all, and `bench::read_only` sends no write command (a host test checks
+  compiles no write test at all, and `bench::run_read_only_probe` sends no write command (a host test checks
   the command log).
 - **A write test lands only before the first partition.**
   `partition::MasterBootRecord::scratch_sector_range` names at most eight sectors, ending just before the first partition and starting no lower than
@@ -214,9 +214,9 @@ Each row's log and how it ran are in `bench/radon-<date>/`: `53-storage-write.lo
 - U-Boot hands both controllers over running (`already up true`). It leaves the microSD
   controller with `CTRL 0x2000000` (its IDMAC selected), `CLKDIV 0x2`, `CLKENA 0x10001` and a
   4-bit bus; `HostController::reset` clears the DMA selection before this driver uses the FIFO.
-- **Identification works on silicon.** `bench::read_only` prints the `card` line only after the
+- **Identification works on silicon.** `bench::run_read_only_probe` prints the `card` line only after the
   whole probe returns, so the line's absence does not mean identification failed: the failure is
-  `ReadFailure::Read(0, ..)`, which `sd::identify` returning `Ok` precedes. Every command of
+  `ReadOnlyProbeFailure::Read(0, ..)`, which `sd::identify` returning `Ok` precedes. Every command of
   identification answered, through `ACMD6` to 4-bit, `CMD16` and the clock raised to 25 MHz.
 - **The first data phase failed.** `Host(Data(17, 2060))` is `Error::Data`: command 17
   (`READ_SINGLE_BLOCK`, block 0) and the `RINTSTS` word at the failure, `0x080c`. That is bits 2
