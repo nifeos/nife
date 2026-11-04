@@ -13,14 +13,29 @@ pub const PCICFG_DESC_RING_STATUS: u64 = 0xe4;
 /// from a cited source, strictly: FreeBSD's `FLUSH_DESC_REQUIRED` (`if_em.h`). Refused `REQUIRED`
 /// (a shortened copy).
 pub const FLUSH_DESC_REQUIRED: u16 = 0x100;
-/// `FEXTNVM11.DISABLE_MULR_FIX`, set before the flush.
-pub const FEXTNVM11_DISABLE_MULR_FIX: u32 = 0x0000_2000;
+/// Future Extended NVM 11 (`FEXTNVM11`), the "disable MULR fix" bit, set before the flush. `MULR` is
+/// the sources' own term and is left unexpanded: no source expands it for this bit. FreeBSD's
+/// `e1000_ich8lan.h` defines `E1000_FEXTNVM11_DISABLE_MULR_FIX` with no comment, and the
+/// similar-looking `E1000_TCTL_MULR` ("Multiple request support") is a different bit in the
+/// transmit control register; nothing connects them, and the architect chose not to guess. "Future
+/// Extended NVM 11" is the confirmed expansion of the register (FreeBSD's `e1000_regs.h` comment on
+/// `E1000_FEXTNVM11`, offset 0x5BBC). Sources: OpenBSD's `sys/dev/pci/if_em_hw.h`, then FreeBSD's
+/// `sys/dev/e1000/e1000_ich8lan.h`.
+///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `FEXTNVM11_DISABLE_MULR_FIX`: the register
+/// name is spelled out and `MULR` stays as the sources have it.
+#[doc(alias = "FEXTNVM11_DISABLE_MULR_FIX")]
+#[doc(alias = "E1000_FEXTNVM11_DISABLE_MULR_FIX")]
+pub const FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_DISABLE_MULR_FIX: u32 = 0x0000_2000;
 /// The dummy transmit's length: FreeBSD sends 512 bytes of the ring itself.
 pub(crate) const TRANSMIT_DUMMY_LENGTH: u16 = 512;
 
 /// Is a flush required, given the status word and `TDLEN`? FreeBSD flushes nothing when the
 /// transmit ring has no length.
-pub const fn required(status: u16, tdlen: u32) -> bool {
+///
+/// Name: ratified 2026-11-03 (UTC), #3151. Renamed from `required`, a bare adjective; the name now
+/// has the yes-or-no shape of a question.
+pub const fn is_flush_required(status: u16, tdlen: u32) -> bool {
     status & FLUSH_DESC_REQUIRED != 0 && tdlen != 0
 }
 // The 512-byte length and the flag byte at bit 24 share no bit, so | and ^ compose them
@@ -32,9 +47,10 @@ const _: () = assert!((TRANSMIT_DUMMY_LENGTH as u64) & (0x02u64 << 24) == 0);
 /// The dummy transmit descriptor's second word: insert FCS, 512 bytes, no end of packet and no
 /// status report, exactly FreeBSD's `txd_lower`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `tx_word` (tx abbreviates transmit).
-pub const fn transmit_word() -> u64 {
+/// Name: ratified 2026-11-03 (UTC), #3151. Renamed from `transmit_word`, which this function
+/// shared with the real descriptor's function; the word is the command word of the dummy
+/// descriptor, so the name says both.
+pub const fn dummy_transmit_descriptor_command_word() -> u64 {
     TRANSMIT_DUMMY_LENGTH as u64 | (0x02u64 << 24)
 }
 /// **The one divergence.** FreeBSD writes the dummy at its own completion cursor and then
@@ -42,7 +58,10 @@ pub const fn transmit_word() -> u64 {
 /// writes the dummy at the device's current tail and advances the tail by one, which hands the
 /// device exactly that descriptor: the effect the FreeBSD comment describes ("assign the ring
 /// itself as the data of the next descriptor").
-pub const fn tail_after(tdt: u32, entries: u16) -> u32 {
+///
+/// Name: ratified 2026-11-03 (UTC), #3151. Renamed from `tail_after`, which did not say after what;
+/// it is the tail after the dummy transmit.
+pub const fn tail_after_dummy_transmit(tdt: u32, entries: u16) -> u32 {
     (tdt + 1) % entries as u32
 }
 // The mask clears the register's low half, 0x1f and 1 << 8 land in that cleared half, and the two
@@ -61,7 +80,11 @@ const _: () = assert!(
 /// prefetch threshold 31, host threshold 1, granularity in descriptors, the rest of the register
 /// kept.
 ///
+/// Name: ratified 2026-11-03 (UTC), #3150. Renamed from `rxdctl`: the register mnemonic is spelled
+/// out and stays as an alias.
 #[doc(alias = "receive descriptor control")]
-pub const fn rxdctl(rxdctl: u32) -> u32 {
-    (rxdctl & 0xffff_c000) | 0x1f | 1 << 8 | 0x0100_0000
+#[doc(alias = "rxdctl")]
+#[doc(alias = "E1000_RXDCTL")]
+pub const fn receive_descriptor_control_register_value_for_flush(current: u32) -> u32 {
+    (current & 0xffff_c000) | 0x1f | 1 << 8 | 0x0100_0000
 }
