@@ -21,10 +21,11 @@ Title and slug are drafts.
 aarch64 and riscv64 say `*** KERNEL STACK OVERFLOW ***` and name the stack when a kernel fault lands
 in a guard page. x86_64 has the stacks and the guard pages and never asks the question.
 
-- The diagnostic is `stack::warn_if_guard_page(addr, interrupted_sp)` (`kernel/src/stack.rs:209`),
-  built on `stack::guard_page_at` (`stack.rs:109`), which names the boot, secondary, thread and
-  interrupt stacks (`enum GuardPage`, `stack.rs:75`).
-- Its callers are exactly two: `arch/aarch64/exceptions.rs:726` and `arch/riscv64/exceptions.rs:503`.
+- The diagnostic is `stack::warn_if_guard_page(addr, interrupted_sp)` (in `kernel/src/stack.rs`),
+  built on `stack::guard_page_at` (in `stack.rs`), which names the boot, secondary, thread and
+  interrupt stacks (`enum GuardPage`, in `stack.rs`).
+- Its callers are exactly two: `fatal` in `arch/aarch64/exceptions.rs` and `riscv_trap_body` in
+  `arch/riscv64/exceptions.rs`.
   `grep -rn warn_if_guard_page kernel/src` finds no x86_64 caller.
 - x86_64's fatal kernel-exception arm (`arch/x86_64/exceptions.rs`, the `vector =>` arm of
   `x86_trap_body`, near line 888) prints vector, error code, `rip`, `rsp`, `rflags` and, for vector 14,
@@ -47,7 +48,7 @@ tenet) a capability that works on two ISAs and silently not the third is the bug
 run:
 
 - A kernel-mode page fault pushes a 48-byte frame at `rsp` (no ring change, so no stack switch;
-  the vector has no IST, `exceptions.rs:411`). If `rsp` is within that distance of the guard page,
+  the vector has no IST, `initialize` in `exceptions.rs`). If `rsp` is within that distance of the guard page,
   the push itself faults and the CPU raises a double fault. An overflow caused by `call` or `push`
   leaves `rsp` at the bottom of the stack, so this is the common case.
 - With no double-fault stack (the sibling proposal) that case is a silent reset, and a diagnostic

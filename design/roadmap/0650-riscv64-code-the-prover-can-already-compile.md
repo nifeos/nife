@@ -77,8 +77,8 @@ The file compiled unchanged, and the one failure is the probe's. Then each other
 | `iommu.rs` | 379 | 0 | compiles, harness runs | nothing |
 | `context.rs` | 105 | 0 | compiles | nothing |
 | `interrupt_controller.rs` | 252 | 0 | 8 errors | **siblings**: `error[E0433]: could not find \`plic\` in \`drivers\`` (the PLIC driver is gated to riscv64 in `drivers/mod.rs`); `cannot find function \`boot_hartid\` in module \`super\`` |
-| `isa.rs` | 356 | 1 | 6 errors | **target**: `error: invalid register \`a7\`: unknown register` at `isa.rs:222` |
-| `pmu.rs` | 616 | 2 | 10 errors | **target**: the same, at `pmu.rs:417` |
+| `isa.rs` | 356 | 1 | 6 errors | **target**: `error: invalid register \`a7\`: unknown register` in `sbi_call` of `isa.rs` |
+| `pmu.rs` | 616 | 2 | 10 errors | **target**: the same, in `sbi_call` of `pmu.rs` |
 
 The classes, against the brief's list:
 
