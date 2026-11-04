@@ -43,6 +43,9 @@ Two lanes in one source file is a conflict resolved by hand. Prevent it before t
    uses its own unit of review, the thing a reviewer must read and decide on.
 2. Cut the list into scope files of about 1,000 judged lines each. A scope file names whole source
    files only, and no source file appears in two.
+   Then run `script/queue-conflicts shared <scope file>...` on the scope files, with each file
+   listing the generated records its lane would also write. It exits 1 and names any path two lanes
+   share; fix that before the first claim.
 3. Keep the leftovers (files too small to matter alone, files whose owner is unclear) for one
    residual lane, briefed last, after the others have landed.
 4. Hand each lane its scope file in its brief. A lane edits nothing outside it, and a file it finds

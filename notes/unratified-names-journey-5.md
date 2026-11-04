@@ -32,17 +32,13 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 
 In order, easiest to rule on first:
 
-1. The `no` groups of designware_mobile_storage (`DM7`, `DM8` and `DM10`): ratify as they stand, which clears the module apart from DM9.
+1. The `no` groups of designware_mobile_storage (`DM8` and `DM10`): ratify as they stand, which clears the module apart from DM9.
 
 The groups that need a real ruling are the register and bit constants: `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
 ## `designware_mobile_storage`
-
-### DM7. Read and write bench (7)
-
-`bench::ReadFailure`, `bench::ReadReport`, `bench::SCRATCH_SECTORS`, `bench::WriteVerdict`, `bench::pattern`, `bench::read_only`, `bench::scratch_write`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
@@ -70,33 +66,12 @@ The groups that need a real ruling are the register and bit constants: `E7` and 
 
 ## `e1000e`
 
-### E6. Buffer layout (10)
-
-`layout::BYTES`, `layout::PAGES`, `layout::RECEIVE_BUFFERS`, `layout::RECEIVE_RING`, `layout::TRANSMIT_BUFFERS`, `layout::TRANSMIT_RING`, `layout::receive_buffer`, `layout::receive_descriptor`, `layout::transmit_buffer`, `layout::transmit_descriptor`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand; `rx` and `tx` already read `receive` and `transmit`.
-
-### E7. Register offsets (24)
-
-`registers::CTRL`, `registers::CTRL_EXT`, `registers::ICR`, `registers::IMC`, `registers::MTA`, `registers::RAH0`, `registers::RAL0`, `registers::RCTL`, `registers::RDBAH`, `registers::RDBAL`, `registers::RDH`, `registers::RDLEN`, `registers::RDT`, `registers::RFCTL`, `registers::STATUS`, `registers::TCTL`, `registers::TDBAH`, `registers::TDBAL`, `registers::TDH`, `registers::TDLEN`, `registers::TDT`, `registers::TIPG`, `pch::registers::FEXTNVM11`, `pch::registers::RXDCTL`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out with the Linux `E1000_` spelling as alias (the docs already give each register's plain title, 'Device Control' and so on), and cite OpenBSD's em driver first if it names the register. One group because they share the pattern; the 2026-10-26 ruling for the `registers` module says the constants keep their sources' names, so the architect should say whether the 2026-11-02 rule overrides that for these.
-
-### E8. Register bit constants and register-shaped helpers (12)
-
-`control::CTRL_ASDE`, `control::CTRL_EXT_DRV_LOAD`, `control::CTRL_RST`, `control::CTRL_SLU`, `control::RAH_AV`, `control::RFCTL_EXTEN`, `control::STATUS_LU`, `control::rctl`, `control::tctl`, `control::tipg`, `pch::flush::FEXTNVM11_DISABLE_MULR_FIX`, `pch::flush::rxdctl`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out with aliases, after the offsets: `CTRL_ASDE`, `CTRL_EXT_DRV_LOAD`, `CTRL_RST`, `CTRL_SLU`, `RAH_AV`, `RFCTL_EXTEN`, `STATUS_LU`, `FEXTNVM11_DISABLE_MULR_FIX`, and the functions `rctl`, `tctl`, `tipg`, `rxdctl` that build register values.
-
 ### E9. PCH flush and hardware (4)
 
 `pch::flush::required`, `pch::flush::tail_after`, `pch::flush::transmit_word`, `pch::hardware::is_pch`
 
 - Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; `is_pch` follows the module-name decision (`is_platform_controller_hub` if `pch` is spelled out).
+- Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; `is_pch` follows the module-name decision (`is_platform_controller_hub` if the module name spells `pch` out).
 
 ### E10. Non-volatile memory words (6)
 

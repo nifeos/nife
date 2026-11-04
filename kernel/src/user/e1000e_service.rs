@@ -158,7 +158,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
     let stack_region = crate::memory_region::create(NET_SERVER_STACK_PAGES)
         .expect("no stack region for net_stack");
 
-    const PLANE: usize = ::e1000e::layout::PAGES as usize;
+    const PLANE: usize = ::e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as usize;
     const MAPS: usize = PLANE + 2 + NET_SERVER_STACK_PAGES as usize;
     let mut maps = [Mapping {
         va: 0,

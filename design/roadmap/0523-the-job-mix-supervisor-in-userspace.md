@@ -34,8 +34,8 @@ check that was dropped).
 **The supervisor does not need the cycle-counter grant of milestone 229 (build the cycle-counter grant DECISIONS 139 decided)**, and the question does not arise.
 
 `kernel/src/job_mix.rs` times a subrun with `arch::timer::now()`, which is `CNTVCT_EL0` on aarch64
-(`kernel/src/arch/aarch64/timer.rs:556`) and `rdtime` on riscv64
-(`kernel/src/arch/riscv64/timer.rs:136`). `user_mode_runtime::now()` reads **the same register with
+(`kernel/src/arch/aarch64/timer.rs::now`) and `rdtime` on riscv64
+(`kernel/src/arch/riscv64/timer.rs::now`). `user_mode_runtime::now()` reads **the same register with
 the same instruction** on each, and is ambient at EL0 because the kernel opens
 `CNTKCTL_EL1.EL0VCTEN` and `scounteren.TM` in its own timer init. `fixtures/src/job_mix_task.rs`
 already self-times with it today.
@@ -54,7 +54,7 @@ The kernel supervisor is 382 lines and every one of its privileged acts has a us
 list is short and it is what makes the blockers concrete:
 
 1. **Find `job_mix_task`'s ELF in the initrd archive.** `nifefs::Fs::parse(archive).read(..)` plus
-   `elf::Elf::parse`, the shape `components/src/root_supervisor.rs:63-67` already uses.
+   `elf::Elf::parse`, the shape `components/src/root_supervisor.rs::start` already uses.
 2. **Create 67 rendezvous objects** out of its own budget: one report, 32 go, 32 child-done, 2 echo.
    `retype_into_kernel_object(budget, abi::objtype::RENDEZVOUS)`, which
    `fixtures/src/rendezvous_minter.rs` proves works from EL0.
@@ -149,12 +149,12 @@ There is no userspace path to that fact, and it is not a gap in one place:
 
 - No syscall. `crates/abi` mentions a CPU only in prose.
 - `abi::rendezvous::SURVEY` returns exactly `(next_cursor, tid, state)`
-  (`kernel/src/syscall.rs:272-284`), and `state` is one of `READY`, `RUNNING`, `BLOCKED`, `DEAD`.
+  (`kernel/src/syscall/rendezvous.rs::rendezvous_survey`), and `state` is one of `READY`, `RUNNING`, `BLOCKED`, `DEAD`.
   `RUNNING` means *on a CPU right now*; it does not say which.
-- `crates/ps` has no CPU column, by construction (`crates/ps/src/lib.rs:306`).
+- `crates/ps` has no CPU column, by construction (`crates/ps/src/lib.rs::write_report`).
 - `crates/cpu_set` is kernel-internal mask arithmetic and exports nothing to EL0.
 - No mapped page carries it: the only pages a job can be endowed are the clock and config pages.
-- `abi::thread_control_block::START` returns `Ok(0)` (`kernel/src/syscall.rs:346-352`). Returning
+- `abi::thread_control_block::START` returns `Ok(0)` (`kernel/src/syscall/thread_control_block.rs::START`). Returning
   the placed core instead would be `spawn_reporting_placement` exactly, available to any builder,
   and it is one line of kernel -- and it changes a syscall's return contract, which existing
   callers test for equality with zero (`fixtures/src/os_primitives_benchmarker.rs`).
@@ -166,7 +166,7 @@ Three options, and all three are an architect's:
   `sched`'s and not `arch`'s. Costs: a syscall return contract that today means only "ok", and every
   caller that compares it to zero.
 - B. A fourth word from `SURVEY`. Fits an existing method and a supervision endpoint is already
-  the thing that names a domain's threads. `crates/grant_plan/src/lib.rs:350-352` already reserves
+  the thing that names a domain's threads. `crates/grant_plan/src/program/catalog.rs::Program` already reserves
   the idea of a fourth `SURVEY` word for scheduled CPU *time* (milestone 282 (a thread's CPU time, and the `top` it makes possible), DECISIONS §150 (how does a thread's CPU time reach userspace?)).
   This would want to be decided alongside that rather than ahead of it.
 - C. An EL0-readable core id, written by the context switch into a register the way milestone

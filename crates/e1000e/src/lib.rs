@@ -47,8 +47,11 @@ mod descriptor;
 mod supported_devices;
 
 pub use control_registers::{
-    CTRL_ASDE, CTRL_EXT_DRV_LOAD, CTRL_RST, CTRL_SLU, RAH_AV, RFCTL_EXTEN, STATUS_LU, rctl,
-    station_address_from_receive_address, tctl, tipg,
+    DEVICE_CONTROL_AUTO_SPEED_DETECTION_ENABLE, DEVICE_CONTROL_GLOBAL_RESET,
+    DEVICE_CONTROL_SET_LINK_UP, DEVICE_STATUS_LINK_UP, EXTENDED_DEVICE_CONTROL_DRIVER_LOAD,
+    RECEIVE_ADDRESS_HIGH_ADDRESS_VALID, RECEIVE_FILTER_CONTROL_EXTENDED_DESCRIPTORS_ENABLE,
+    receive_control_register_value, station_address_from_receive_address,
+    transmit_control_register_value, transmit_inter_packet_gap_register_value,
 };
 pub use data_plane::{DataPlane, DirectMemoryAccessRegion, Tails, TransmitError};
 use descriptor::*;

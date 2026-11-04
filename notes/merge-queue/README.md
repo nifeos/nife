@@ -15,6 +15,8 @@ mechanism or one record each, at a length the main page's prose budget cannot ho
 - [what-the-queue-bought.md](what-the-queue-bought.md): what the queue bought, measured.
 - [merge-methods-and-holds.md](merge-methods-and-holds.md): no squash at the repository, and
   `Blocked-by:`.
+- [conflict-precheck.md](conflict-precheck.md): `script/queue-conflicts`, the pre-arm check and the
+  wide-run launch check.
 - [limitations.md](limitations.md): the BUGS list in full.
 
 *Name: provisional. The directory follows the
