@@ -14,13 +14,16 @@ use std::collections::HashMap;
 use std::vec::Vec;
 
 use super::physical_layer_device::{self, mdic};
-use super::sequence::Note;
+use super::sequence::BringUpObservation;
 use super::{Hardware, non_volatile_memory, registers};
 use crate::registers as mac;
 
 /// How the PHY behaves when the bring-up starts.
+///
+/// Name: ratified 2026-11-03 (UTC), #3156. Renamed from `Start`: it is the state the physical layer
+/// device starts in.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Start {
+pub enum PhysicalLayerDeviceStartState {
     /// Answers over PCIe.
     Healthy,
     /// Left in `SMBus` mode by firmware: answers only while the MAC is forced to `SMBus` too.
@@ -29,14 +32,17 @@ pub enum Start {
     Dead,
 }
 
-pub struct Sim {
+/// A simulated device that implements the hub's [`Hardware`] trait for tests.
+///
+/// Name: ratified 2026-11-03 (UTC), #3156. Renamed from `Sim`.
+pub struct SimulatedHardware {
     pub mac: HashMap<u64, u32>,
     pub physical_layer_device_registers: HashMap<u32, u16>,
     /// Every PHY write that reached a register, as (paged offset, value), in order.
     pub physical_layer_device_writes: Vec<(u32, u16)>,
     /// Every MDIC write as issued, for checking page selects and addresses.
     pub mdic_log: Vec<u32>,
-    pub notes: Vec<Note>,
+    pub notes: Vec<BringUpObservation>,
     pub non_volatile_memory: Vec<u16>,
     pub firmware_holds_software_flag: bool,
     pub physical_layer_device_in_system_management_bus: bool,
@@ -74,9 +80,12 @@ pub(crate) const PHYSICAL_LAYER_DEVICE_ID: u32 = 0x0154_00a0;
 /// `SMBus` address 2, frequency field 3, NVM size field 0 (one 4 KiB NVM: two 1024-word banks).
 const STRAP_VALUE: u32 = 0x0004_3000;
 
-impl Sim {
-    pub fn new(start: Start, management_engine: bool) -> Self {
-        let mut s = Sim {
+impl SimulatedHardware {
+    /// Build a simulated device in the given start state, with or without a management engine.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3156.
+    pub fn new(start: PhysicalLayerDeviceStartState, management_engine: bool) -> Self {
+        let mut s = SimulatedHardware {
             mac: HashMap::new(),
             physical_layer_device_registers: HashMap::new(),
             physical_layer_device_writes: Vec::new(),
@@ -84,8 +93,9 @@ impl Sim {
             notes: Vec::new(),
             non_volatile_memory: std::vec![0xffff; 2048],
             firmware_holds_software_flag: false,
-            physical_layer_device_in_system_management_bus: start == Start::InSystemManagementBus,
-            physical_layer_device_dead: start == Start::Dead,
+            physical_layer_device_in_system_management_bus: start
+                == PhysicalLayerDeviceStartState::InSystemManagementBus,
+            physical_layer_device_dead: start == PhysicalLayerDeviceStartState::Dead,
             page: 0,
             lanphypc_toggles: 0,
             physical_layer_device_resets: 0,
@@ -143,8 +153,12 @@ impl Sim {
         let reg = (value & mdic::REG_MASK) >> mdic::REG_SHIFT;
         let address = value >> mdic::PHY_SHIFT & 0x1f;
         if !self.physical_layer_device_answers() {
-            self.mac
-                .insert(mac_mdic(), value | mdic::READY | mdic::ERROR);
+            self.mac.insert(
+                mac_mdic(),
+                value
+                    | mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY
+                    | mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_ERROR,
+            );
             return;
         }
         let offset = if address == 1 && reg == physical_layer_device::IGP01E1000_PHY_PAGE_SELECT {
@@ -171,14 +185,19 @@ impl Sim {
                     }
                 }
             }
-            self.mac.insert(mac_mdic(), value | mdic::READY);
+            self.mac.insert(
+                mac_mdic(),
+                value | mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY,
+            );
         } else {
             let data = offset.map_or(0, |o| {
                 *self.physical_layer_device_registers.get(&o).unwrap_or(&0)
             });
             self.mac.insert(
                 mac_mdic(),
-                (value & !0xffff) | u32::from(data) | mdic::READY,
+                (value & !0xffff)
+                    | u32::from(data)
+                    | mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY,
             );
         }
     }
@@ -222,16 +241,16 @@ impl Sim {
         let low = value as u16;
         // Write one to clear: done, error, direct access error.
         self.flash_status &= !(low
-            & (non_volatile_memory::status::DONE
-                | non_volatile_memory::status::ERROR
+            & (non_volatile_memory::status::FLASH_CYCLE_DONE
+                | non_volatile_memory::status::FLASH_CYCLE_ERROR
                 | non_volatile_memory::status::DIRECT_ACCESS_ERROR));
         self.flash_ctl = (value >> 16) as u16;
-        if self.flash_ctl & non_volatile_memory::control::GO != 0 {
+        if self.flash_ctl & non_volatile_memory::control::FLASH_CYCLE_GO != 0 {
             if self.flash_busy_reads > 0 || self.flash_pending > 0 {
                 self.flash_go_while_busy += 1;
             }
             self.flash_cycles.push(self.flash_ctl);
-            self.flash_ctl &= !non_volatile_memory::control::GO;
+            self.flash_ctl &= !non_volatile_memory::control::FLASH_CYCLE_GO;
             self.flash_pending = self.flash_slow_reads;
             if self.flash_pending == 0 {
                 self.flash_end_cycle();
@@ -251,10 +270,10 @@ impl Sim {
         );
         if self.flash_failing_cycles > 0 {
             self.flash_failing_cycles -= 1;
-            self.flash_status |=
-                non_volatile_memory::status::DONE | non_volatile_memory::status::ERROR;
+            self.flash_status |= non_volatile_memory::status::FLASH_CYCLE_DONE
+                | non_volatile_memory::status::FLASH_CYCLE_ERROR;
         } else {
-            self.flash_status |= non_volatile_memory::status::DONE;
+            self.flash_status |= non_volatile_memory::status::FLASH_CYCLE_DONE;
         }
     }
 }
@@ -263,7 +282,7 @@ fn mac_mdic() -> u64 {
     registers::MDIC
 }
 
-impl Hardware for Sim {
+impl Hardware for SimulatedHardware {
     fn read(&mut self, offset: u64) -> u32 {
         if offset == non_volatile_memory::FLASH_BASE_ADDR + non_volatile_memory::HSFSTS {
             if self.flash_pending > 0 {
@@ -320,7 +339,7 @@ impl Hardware for Sim {
     fn pci_vendor_id(&mut self) -> u16 {
         0x8086
     }
-    fn note(&mut self, note: Note) {
+    fn note(&mut self, note: BringUpObservation) {
         self.notes.push(note);
     }
 }
@@ -328,20 +347,20 @@ impl Hardware for Sim {
 #[cfg(test)]
 mod tests {
     use super::super::physical_layer_device::{
-        Error as PhysicalLayerDeviceError, Swflag, paged_offset, plan,
+        Error as PhysicalLayerDeviceError, SoftwareFlag, paged_offset, plan_paged_access,
     };
-    use super::super::sequence::{self, Error, Reached};
+    use super::super::sequence::{self, AccessPath, Error};
     use super::*;
 
-    fn swflag_free(sim: &Sim) -> bool {
+    fn swflag_free(sim: &SimulatedHardware) -> bool {
         sim.get(registers::EXTCNF_CTRL) & physical_layer_device::EXTCNF_CTRL_SWFLAG == 0
     }
 
     #[test]
     fn a_paged_register_is_reached_through_a_page_select_at_address_one() {
         assert_eq!(
-            plan(physical_layer_device::registers::CV_SMB_CTRL),
-            Ok(physical_layer_device::Plan {
+            plan_paged_access(physical_layer_device::registers::CV_SMB_CTRL),
+            Ok(physical_layer_device::PagedAccessPlan {
                 select: Some((769 << 5) as u16),
                 physical_layer_device_address: 1,
                 register: 23
@@ -349,30 +368,30 @@ mod tests {
         );
         // Page 768 is selected as page 0; page 0 lives at address 2 and needs no select.
         assert_eq!(
-            plan(physical_layer_device::registers::HV_SMB_ADDR)
+            plan_paged_access(physical_layer_device::registers::HV_SMB_ADDR)
                 .unwrap()
                 .select,
             Some(0)
         );
         assert_eq!(
-            plan(physical_layer_device::registers::PHY_ID1),
-            Ok(physical_layer_device::Plan {
+            plan_paged_access(physical_layer_device::registers::PHY_ID1),
+            Ok(physical_layer_device::PagedAccessPlan {
                 select: None,
                 physical_layer_device_address: 2,
                 register: 2
             })
         );
         assert_eq!(
-            plan(paged_offset(800, 1)),
+            plan_paged_access(paged_offset(800, 1)),
             Err(PhysicalLayerDeviceError::PageNotPorted)
         );
         assert_eq!(
-            plan(paged_offset(5, 17)),
+            plan_paged_access(paged_offset(5, 17)),
             Err(PhysicalLayerDeviceError::PageNotPorted)
         );
 
-        let mut s = Sim::new(Start::Healthy, true);
-        let f = Swflag::acquire(&mut s).unwrap();
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
+        let f = SoftwareFlag::acquire(&mut s).unwrap();
         physical_layer_device::write(
             &mut s,
             &f,
@@ -395,13 +414,13 @@ mod tests {
 
     #[test]
     fn mdic_failures_are_told_apart() {
-        let mut s = Sim::new(Start::Dead, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Dead, true);
         assert_eq!(
-            physical_layer_device::read_mdic(&mut s, 2, 2),
+            physical_layer_device::read_management_data_input_output(&mut s, 2, 2),
             Err(PhysicalLayerDeviceError::ManagementDataInterface)
         );
         assert_eq!(
-            physical_layer_device::read_mdic(&mut s, 2, 32),
+            physical_layer_device::read_management_data_input_output(&mut s, 2, 32),
             Err(PhysicalLayerDeviceError::OutOfRange)
         );
         // A device that never raises READY: the poll gives up after FreeBSD's 96 ms.
@@ -420,11 +439,11 @@ mod tests {
             fn pci_vendor_id(&mut self) -> u16 {
                 0
             }
-            fn note(&mut self, _: Note) {}
+            fn note(&mut self, _: BringUpObservation) {}
         }
         let mut m = Mute(0);
         assert_eq!(
-            physical_layer_device::read_mdic(&mut m, 1, 2),
+            physical_layer_device::read_management_data_input_output(&mut m, 1, 2),
             Err(PhysicalLayerDeviceError::NotReady)
         );
         assert_eq!(m.0, u64::from(mdic::POLLS) * mdic::POLL_MICROSECONDS);
@@ -436,18 +455,22 @@ mod tests {
     /// last one reached without a page select.
     #[test]
     fn the_last_register_and_the_last_page_are_reachable_and_one_past_is_not() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         assert!(
-            physical_layer_device::read_mdic(&mut s, 2, physical_layer_device::MAX_PHY_REG_ADDRESS)
-                .is_ok()
+            physical_layer_device::read_management_data_input_output(
+                &mut s,
+                2,
+                physical_layer_device::MAX_PHY_REG_ADDRESS
+            )
+            .is_ok()
         );
-        assert!(plan(paged_offset(physical_layer_device::MAXIMUM_PAGE, 1)).is_ok());
+        assert!(plan_paged_access(paged_offset(physical_layer_device::MAXIMUM_PAGE, 1)).is_ok());
         assert_eq!(
-            plan(paged_offset(physical_layer_device::MAXIMUM_PAGE + 1, 1)),
+            plan_paged_access(paged_offset(physical_layer_device::MAXIMUM_PAGE + 1, 1)),
             Err(PhysicalLayerDeviceError::PageNotPorted)
         );
         assert_eq!(
-            plan(paged_offset(
+            plan_paged_access(paged_offset(
                 769,
                 physical_layer_device::MAX_PHY_MULTI_PAGE_REG
             ))
@@ -456,7 +479,7 @@ mod tests {
             None
         );
         assert!(
-            plan(paged_offset(
+            plan_paged_access(paged_offset(
                 769,
                 physical_layer_device::MAX_PHY_MULTI_PAGE_REG + 1
             ))
@@ -470,14 +493,14 @@ mod tests {
     /// QEMU's 82574L takes and the one value the gates see from this module.
     #[test]
     fn the_physical_layer_device_id_is_both_words_without_the_revision() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         assert_eq!(
-            physical_layer_device::id_at(&mut s, 2),
+            physical_layer_device::read_identifier_at_address(&mut s, 2),
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
-        let mut dead = Sim::new(Start::Dead, true);
+        let mut dead = SimulatedHardware::new(PhysicalLayerDeviceStartState::Dead, true);
         assert_eq!(
-            physical_layer_device::id_at(&mut dead, 2),
+            physical_layer_device::read_identifier_at_address(&mut dead, 2),
             Err(PhysicalLayerDeviceError::ManagementDataInterface)
         );
     }
@@ -487,7 +510,7 @@ mod tests {
     /// read, 310 ms in all. An unblocked one answers at once.
     #[test]
     fn a_reset_block_is_polled_for_three_hundred_milliseconds() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         assert!(!physical_layer_device::reset_blocked(&mut s));
         assert_eq!(s.elapsed_microseconds, 0);
         s.mac.insert(registers::FWSM, 0);
@@ -499,14 +522,14 @@ mod tests {
     /// a flag that is already gone writes nothing.
     #[test]
     fn the_semaphore_touches_only_its_own_bit() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.firmware_holds_software_flag = true;
         s.mac.insert(registers::EXTCNF_CTRL, 0x80);
-        assert!(Swflag::acquire(&mut s).is_err());
+        assert!(SoftwareFlag::acquire(&mut s).is_err());
         assert_eq!(s.get(registers::EXTCNF_CTRL), 0x80);
 
-        let mut s = Sim::new(Start::Healthy, true);
-        let f = Swflag::acquire(&mut s).unwrap();
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
+        let f = SoftwareFlag::acquire(&mut s).unwrap();
         s.mac.insert(registers::EXTCNF_CTRL, 0x80);
         s.writes.clear();
         f.release(&mut s);
@@ -515,10 +538,10 @@ mod tests {
 
     #[test]
     fn the_semaphore_refused_by_firmware_is_left_clear_and_a_stuck_one_is_reported() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.firmware_holds_software_flag = true;
         assert_eq!(
-            Swflag::acquire(&mut s).unwrap_err(),
+            SoftwareFlag::acquire(&mut s).unwrap_err(),
             PhysicalLayerDeviceError::SwflagRefused
         );
         assert!(swflag_free(&s));
@@ -528,7 +551,7 @@ mod tests {
             physical_layer_device::EXTCNF_CTRL_SWFLAG,
         );
         assert_eq!(
-            Swflag::acquire(&mut s).unwrap_err(),
+            SoftwareFlag::acquire(&mut s).unwrap_err(),
             PhysicalLayerDeviceError::SwflagHeld
         );
     }
@@ -536,16 +559,22 @@ mod tests {
     #[test]
     fn with_a_management_engine_and_a_healthy_physical_layer_device_it_is_reached_at_once_and_reset()
      {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         assert_eq!(
             sequence::initialize_physical_layer_device_workarounds(&mut s),
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
-        assert!(s.notes.contains(&Note::UlpByMe { cleared: true }));
-        assert!(s.notes.contains(&Note::PhysicalLayerDeviceReached {
-            at: Reached::Directly,
-            id: PHYSICAL_LAYER_DEVICE_ID
-        }));
+        assert!(
+            s.notes
+                .contains(&BringUpObservation::UlpByMe { cleared: true })
+        );
+        assert!(
+            s.notes
+                .contains(&BringUpObservation::PhysicalLayerDeviceReached {
+                    at: AccessPath::Directly,
+                    id: PHYSICAL_LAYER_DEVICE_ID
+                })
+        );
         assert_eq!(s.physical_layer_device_resets, 1);
         assert_eq!(s.lanphypc_toggles, 0);
         assert_ne!(
@@ -558,15 +587,19 @@ mod tests {
 
     #[test]
     fn a_physical_layer_device_left_in_system_management_bus_mode_is_reached_by_forcing_the_mac() {
-        let mut s = Sim::new(Start::InSystemManagementBus, true);
+        let mut s =
+            SimulatedHardware::new(PhysicalLayerDeviceStartState::InSystemManagementBus, true);
         assert_eq!(
             sequence::initialize_physical_layer_device_workarounds(&mut s),
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
-        assert!(s.notes.contains(&Note::PhysicalLayerDeviceReached {
-            at: Reached::InSystemManagementBus,
-            id: PHYSICAL_LAYER_DEVICE_ID
-        }));
+        assert!(
+            s.notes
+                .contains(&BringUpObservation::PhysicalLayerDeviceReached {
+                    at: AccessPath::InSystemManagementBus,
+                    id: PHYSICAL_LAYER_DEVICE_ID
+                })
+        );
         assert_eq!(s.lanphypc_toggles, 0, "no power cycle was needed");
         // With an ME, FreeBSD leaves the unforce to the firmware ("Only unforce SMBus if ME is
         // not active"), and so does this.
@@ -575,18 +608,21 @@ mod tests {
 
     #[test]
     fn a_dead_physical_layer_device_is_power_cycled_unless_firmware_forbids_it() {
-        let mut s = Sim::new(Start::Dead, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Dead, true);
         assert_eq!(
             sequence::initialize_physical_layer_device_workarounds(&mut s),
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
         assert_eq!(s.lanphypc_toggles, 1);
-        assert!(s.notes.contains(&Note::PhysicalLayerDeviceReached {
-            at: Reached::AfterUnforce,
-            id: PHYSICAL_LAYER_DEVICE_ID
-        }));
+        assert!(
+            s.notes
+                .contains(&BringUpObservation::PhysicalLayerDeviceReached {
+                    at: AccessPath::AfterUnforce,
+                    id: PHYSICAL_LAYER_DEVICE_ID
+                })
+        );
 
-        let mut s = Sim::new(Start::Dead, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Dead, true);
         s.mac.insert(
             registers::FWSM,
             super::super::ultra_low_power::ICH_FWSM_FW_VALID,
@@ -601,7 +637,8 @@ mod tests {
 
     #[test]
     fn without_a_management_engine_ulp_is_left_by_physical_layer_device_registers() {
-        let mut s = Sim::new(Start::InSystemManagementBus, false);
+        let mut s =
+            SimulatedHardware::new(PhysicalLayerDeviceStartState::InSystemManagementBus, false);
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::I218_ULP_CONFIG1, 0x1ff4);
         s.physical_layer_device_registers
@@ -611,7 +648,7 @@ mod tests {
             sequence::initialize_physical_layer_device_workarounds(&mut s),
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
-        assert!(s.notes.contains(&Note::UlpBySoftware(Ok(()))));
+        assert!(s.notes.contains(&BringUpObservation::UlpBySoftware(Ok(()))));
         assert!(s.lanphypc_toggles >= 1);
         assert_eq!(
             s.physical_layer_device_registers[&physical_layer_device::registers::CV_SMB_CTRL] & 1,
@@ -637,7 +674,7 @@ mod tests {
 
     #[test]
     fn the_global_reset_takes_the_physical_layer_device_with_it_only_when_firmware_allows() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         sequence::global_reset(&mut s, 1000).unwrap();
         assert_eq!((s.global_resets, s.physical_layer_device_resets), (1, 1));
         assert_eq!(s.strap_writes, [0x8086, 0x8086]);
@@ -649,7 +686,7 @@ mod tests {
         );
         assert!(swflag_free(&s));
 
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.mac.insert(
             registers::FWSM,
             super::super::ultra_low_power::ICH_FWSM_FW_VALID,
@@ -660,7 +697,7 @@ mod tests {
 
     #[test]
     fn a_missing_non_volatile_memory_fails_the_physical_layer_device_reset_as_freebsd_does() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.non_volatile_memory[non_volatile_memory::SIGNATURE_WORD as usize] = 0xffff;
         assert_eq!(
             sequence::initialize_physical_layer_device_workarounds(&mut s),
@@ -673,8 +710,8 @@ mod tests {
     #[test]
     fn the_non_volatile_memory_configuration_region_is_replayed_into_the_physical_layer_device_from_the_valid_bank()
      {
-        let mut s = Sim::new(Start::Healthy, true);
-        let bank = non_volatile_memory::Geometry::read(&mut s).bank_words as usize;
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
+        let bank = non_volatile_memory::Geometry::read_from_hardware(&mut s).bank_words as usize;
         assert_eq!(bank, 1024);
         // Bank 0 invalid, bank 1 valid.
         s.non_volatile_memory[non_volatile_memory::SIGNATURE_WORD as usize] = 0;
@@ -693,7 +730,7 @@ mod tests {
         sequence::global_reset(&mut s, 1000).unwrap();
         assert!(
             s.notes
-                .contains(&Note::LanConnectedDeviceConfigured { pairs: 3 })
+                .contains(&BringUpObservation::LanConnectedDeviceConfigured { pairs: 3 })
         );
         assert_eq!(
             s.physical_layer_device_registers[&paged_offset(769, 17)],
@@ -717,7 +754,7 @@ mod tests {
 
     #[test]
     fn the_copper_link_advertises_every_speed_without_pause_and_restarts_autonegotiation() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::PHY_AUTONEG_ADV, 0x0c01);
         s.physical_layer_device_registers
@@ -745,10 +782,10 @@ mod tests {
 
     #[test]
     fn a_word_is_read_from_either_half_of_its_u32() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.non_volatile_memory[0x10] = 0xaaaa;
         s.non_volatile_memory[0x11] = 0xbbbb;
-        let g = non_volatile_memory::Geometry::read(&mut s);
+        let g = non_volatile_memory::Geometry::read_from_hardware(&mut s);
         assert_eq!(non_volatile_memory::read_word(&mut s, g, 0x10), Ok(0xaaaa));
         assert_eq!(non_volatile_memory::read_word(&mut s, g, 0x11), Ok(0xbbbb));
         assert_eq!(
@@ -764,9 +801,9 @@ mod tests {
 
     #[test]
     fn a_flash_cycle_already_running_is_waited_out_and_one_that_never_ends_is_busy() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.non_volatile_memory[0x20] = 0x1234;
-        let g = non_volatile_memory::Geometry::read(&mut s);
+        let g = non_volatile_memory::Geometry::read_from_hardware(&mut s);
         s.flash_busy_reads = 5;
         assert_eq!(non_volatile_memory::read_word(&mut s, g, 0x20), Ok(0x1234));
         // `read_word` falls back to bank 0 when the bank probe fails, so ask `read_u32` itself.
@@ -785,7 +822,7 @@ mod tests {
 
     #[test]
     fn a_failed_flash_cycle_is_retried_and_gives_up_after_freebsds_count() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.non_volatile_memory[0x30] = 0xbeef;
         s.flash_failing_cycles = 3;
         assert_eq!(
@@ -810,12 +847,12 @@ mod tests {
     /// `ich8_hws_flash_ctrl` unions put them.
     #[test]
     fn the_flash_register_bits_are_the_ich8_unions() {
-        assert_eq!(non_volatile_memory::status::DONE, 0x0001);
-        assert_eq!(non_volatile_memory::status::ERROR, 0x0002);
+        assert_eq!(non_volatile_memory::status::FLASH_CYCLE_DONE, 0x0001);
+        assert_eq!(non_volatile_memory::status::FLASH_CYCLE_ERROR, 0x0002);
         assert_eq!(non_volatile_memory::status::DIRECT_ACCESS_ERROR, 0x0004);
         assert_eq!(non_volatile_memory::status::IN_PROGRESS, 0x0020);
         assert_eq!(non_volatile_memory::status::DESCRIPTOR_VALID, 0x4000);
-        assert_eq!(non_volatile_memory::control::GO, 0x0001);
+        assert_eq!(non_volatile_memory::control::FLASH_CYCLE_GO, 0x0001);
         assert_eq!(non_volatile_memory::control::CYCLE_MASK, 0x0006);
         assert_eq!(non_volatile_memory::control::BYTE_COUNT_SHIFT, 8);
         assert_eq!(non_volatile_memory::control::BYTE_COUNT_MASK, 0x0300);
@@ -825,7 +862,7 @@ mod tests {
     /// zero) of four bytes (byte count three), which ends without a wait in this model.
     #[test]
     fn a_flash_read_is_one_four_byte_cycle_on_the_flash_registers_alone() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.non_volatile_memory[0x20] = 0x1234;
         s.non_volatile_memory[0x21] = 0x5678;
         assert_eq!(non_volatile_memory::read_u32(&mut s, 0x20), Ok(0x5678_1234));
@@ -855,7 +892,7 @@ mod tests {
     /// A cycle that takes a few status reads to finish is waited for, one microsecond a poll.
     #[test]
     fn a_slow_flash_cycle_is_waited_for() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.non_volatile_memory[0x20] = 0x1234;
         s.flash_slow_reads = 3;
         assert_eq!(
@@ -870,7 +907,7 @@ mod tests {
     /// write-one-to-clear), so the next read needs one cycle, not a failed one and a retry.
     #[test]
     fn stale_flash_errors_are_cleared_before_the_cycle() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.non_volatile_memory[0x20] = 0x1234;
         // FLCERR (bit 1) and the direct-access error bit (bit 2), as numbers so a wrong constant cannot agree.
         s.flash_status |= 0x0002 | 0x0004;
@@ -887,7 +924,7 @@ mod tests {
     /// `FDONE` set would end ours at the first poll and read the other cycle's data.
     #[test]
     fn a_running_cycle_is_waited_out_and_its_status_cleared() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.non_volatile_memory[0x30] = 0x2222;
         s.non_volatile_memory[0x31] = 0x3333;
         // A foreign cycle at FADDR 0 (erased, 0xffff) ends, with an error, two reads from now.
@@ -903,7 +940,7 @@ mod tests {
     /// retried**: only an error is worth a second cycle, and a hung flash would only hang again.
     #[test]
     fn a_flash_cycle_that_never_ends_fails_once_and_is_not_retried() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.flash_slow_reads = u32::MAX;
         assert_eq!(
             non_volatile_memory::read_u32(&mut s, 0x20),
@@ -936,10 +973,10 @@ mod tests {
 
     #[test]
     fn neither_bank_valid_is_reported_and_a_word_read_falls_back_to_bank_zero() {
-        let mut s = Sim::new(Start::Healthy, true);
+        let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.non_volatile_memory[non_volatile_memory::SIGNATURE_WORD as usize] = 0;
         s.non_volatile_memory[0x40] = 0x5555;
-        let g = non_volatile_memory::Geometry::read(&mut s);
+        let g = non_volatile_memory::Geometry::read_from_hardware(&mut s);
         assert_eq!(
             non_volatile_memory::valid_bank(&mut s, g),
             Err(non_volatile_memory::Error::NoValidBank)

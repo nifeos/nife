@@ -29,18 +29,18 @@ FreeBSD's, adapted, and each adapted file carries the license of the FreeBSD fil
 `transmit_errata` once `TCTL` is written. `platform_controller_hub::sequence`'s module doc gives that order. Each
 function's doc says what it does and names the FreeBSD function it follows. Only the branches for
 FreeBSD's `e1000_pch_spt` class are carried, because every I219 the crate claims is in it
-(`platform_controller_hub::is_pch`).
+(`platform_controller_hub::is_platform_controller_hub_device`).
 
 Every sequence is generic over `platform_controller_hub::Hardware`, so it runs on the host against a simulated I219
-(`platform_controller_hub/simulator.rs`) as well as in the kernel. QEMU's 82574L is not a PCH part and never reaches
-`sequence`. It does reach `physical_layer_device::id_at`, which shares
-`physical_layer_device::read_mdic` with everything here, so the MDIO primitive is the one piece the
+(`pch/simulator.rs`) as well as in the kernel. QEMU's 82574L is not a PCH part and never reaches
+`sequence`. It does reach `physical_layer_device::read_identifier_at_address`, which shares
+`physical_layer_device::read_management_data_input_output` with everything here, so the MDIO primitive is the one piece the
 QEMU gates prove.
 
 ## BUGS
 
 - The port has run on silicon once, with no cable ([the note's BUGS](../e1000e.md#bugs)). Under
-  the gates `sequence` is skipped, since `is_pch` is false for QEMU's 82574L. It is proved only
+  the gates `sequence` is skipped, since `is_platform_controller_hub_device` is false for QEMU's 82574L. It is proved only
   against `simulator`, which is this crate's reading of FreeBSD and not the device.
 - The link-up half is not ported. FreeBSD reconfigures the PHY each time link comes up, from a
   link-change interrupt this driver does not take (`e1000_check_for_copper_link_ich8lan`). That
@@ -51,7 +51,7 @@ QEMU gates prove.
 - Flow control is not configured, so it is not advertised. FreeBSD advertises symmetric pause and
   programs the watermarks to match (`e1000_set_fc_watermarks_generic`). This driver does neither
   (`sequence::setup_copper_link`).
-- The transmit flush diverges from FreeBSD in one place, said at `flush::tail_after`.
+- The transmit flush diverges from FreeBSD in one place, said at `flush::tail_after_dummy_transmit`.
 - One read in FreeBSD's `SMBus` unforce is not mirrored. In `e1000_phy_is_accessible_pchlan`, a
   failed read of `CV_SMB_CTRL` leaves the previous register's value in the variable. That value is
   then written back with one bit cleared. This port writes only when the read succeeded.

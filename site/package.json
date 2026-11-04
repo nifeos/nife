@@ -1,0 +1,14 @@
+{
+  "name": "nife-record-site",
+  "private": true,
+  "description": "Builds the design record as a static site. CI-only; see script/site.",
+  "type": "commonjs",
+  "engines": {
+    "node": "24.22.1"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "3.1.7",
+    "markdown-it-anchor": "10.0.0",
+    "pagefind": "1.5.2"
+  }
+}

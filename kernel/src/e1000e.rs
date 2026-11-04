@@ -63,7 +63,7 @@ pub struct Found {
     /// Whether `STATUS.LU` was set before [`LINK_WAIT_MS`] ran out.
     pub link_up: bool,
     /// The PHY's identifier, revision masked off, read over MDIO. On the 82574L this is the read
-    /// that proves [`::e1000e::platform_controller_hub::physical_layer_device::read_mdic`] under QEMU.
+    /// that proves [`::e1000e::platform_controller_hub::physical_layer_device::read_management_data_input_output`] under QEMU.
     pub physical_layer_device_id: u32,
 }
 
@@ -79,7 +79,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     let region = region_for(dev.rid);
     let c = Controller(mmu::phys_to_virt(dev.bar0));
     let refused = |why| Absent::Refused { rid: dev.rid, why };
-    let pch = ::e1000e::platform_controller_hub::is_pch(dev.device);
+    let pch = ::e1000e::platform_controller_hub::is_platform_controller_hub_device(dev.device);
     let mut hw = Bar { c: &c, dev: &dev };
     let mut physical_layer_device_id = None;
     if pch {
@@ -157,8 +157,12 @@ pub fn bring_up() -> Result<Found, Absent> {
     // The 82574L's PHY answers at address 1 with no pages and no semaphore.
     let physical_layer_device_id = match physical_layer_device_id {
         Some(id) => id,
-        None => ::e1000e::platform_controller_hub::physical_layer_device::id_at(&mut hw, 1)
-            .map_err(|e| refused(Error::PhysicalLayerDeviceId(e)))?,
+        None => {
+            ::e1000e::platform_controller_hub::physical_layer_device::read_identifier_at_address(
+                &mut hw, 1,
+            )
+            .map_err(|e| refused(Error::PhysicalLayerDeviceId(e)))?
+        }
     };
 
     let link_up = wait_ms(LINK_WAIT_MS, || {
@@ -301,7 +305,7 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
             | flush::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_DISABLE_MULR_FIX,
     );
     let status = || dev.config_read32(flush::PCICFG_DESC_RING_STATUS) as u16;
-    if !flush::required(
+    if !flush::is_flush_required(
         status(),
         c.r(registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER),
     ) {
@@ -329,12 +333,12 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
     // only after the tail write below, which the barrier orders after these stores.
     unsafe {
         core::ptr::write_volatile(d, ring);
-        core::ptr::write_volatile(d.add(1), flush::transmit_word());
+        core::ptr::write_volatile(d.add(1), flush::dummy_transmit_descriptor_command_word());
     }
     crate::arch::direct_memory_access_write_barrier();
     c.w(
         registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER,
-        flush::tail_after(tdt, ::e1000e::TRANSMIT_ENTRIES),
+        flush::tail_after_dummy_transmit(tdt, ::e1000e::TRANSMIT_ENTRIES),
     );
     spin_microseconds(250);
     if status() & flush::FLUSH_DESC_REQUIRED == 0 {
@@ -405,11 +409,11 @@ impl ::e1000e::platform_controller_hub::Hardware for Bar<'_> {
     fn pci_vendor_id(&mut self) -> u16 {
         self.dev.config_read32(0) as u16
     }
-    fn note(&mut self, n: ::e1000e::platform_controller_hub::sequence::Note) {
-        use ::e1000e::platform_controller_hub::sequence::Note;
+    fn note(&mut self, n: ::e1000e::platform_controller_hub::sequence::BringUpObservation) {
+        use ::e1000e::platform_controller_hub::sequence::BringUpObservation;
         match n {
             // The identifier in hex, as the bench card compares it.
-            Note::PhysicalLayerDeviceReached { at, id } => {
+            BringUpObservation::PhysicalLayerDeviceReached { at, id } => {
                 crate::println!(
                     "  e1000e: PhysicalLayerDeviceReached {{ at: {at:?}, id: {id:#010x} }}"
                 );
