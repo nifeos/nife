@@ -119,7 +119,7 @@ impl SimulatedHardware {
             registers::FWSM,
             physical_layer_device::ICH_FWSM_RSPCIPHY
                 | if management_engine {
-                    super::ulp::ICH_FWSM_FW_VALID
+                    super::ultra_low_power::ICH_FWSM_FW_VALID
                 } else {
                     0
                 },

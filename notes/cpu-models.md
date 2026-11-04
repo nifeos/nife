@@ -227,7 +227,9 @@ through SBI, so it works on both.
     measuring disk, not CPU). Re-run once the backup finished, the whole matrix went green.
   - Under eight spinning processes on an eight-core host, `rv64` failed too, at
     `arch/riscv64/timer.rs`'s missed-tick assertion, and `rva23s64` failed at two other wall-clock
-    assertions (`smp.rs:258`, `sched.rs:2611`).
+    assertions (`every_secondary_runs_scheduled_work` in `kernel/src/smp.rs`, and
+    `a_blocked_waiter_wakes_with_an_error_when_its_rendezvous_is_revoked` in
+    `kernel/src/sched/rendezvous/tests.rs`).
 
   **The control failing is what settles it**: `rv64` is the model every RISC-V result in this tree
   was taken on, so if it fails under load then load is the variable. Across the milestone, 28
