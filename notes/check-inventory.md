@@ -134,7 +134,7 @@ checks that gate a pull request)); the measurements are 2026-09-03's.*
 | `journeys --check` | `script/lint` | yes | green |
 | `apropos`, `catch-up` | **nothing** | no | tools, no verdict |
 
-`script/lint` is one required check carrying 134 sections (`helpers/lint-section-index.tsv` lists
+`script/lint` is one required check carrying 136 sections (`helpers/lint-section-index.tsv` lists
 them, and `grep -c '^echo "==>' script/lint` is the derivation, since a number written here goes
 stale). They all block: it runs every section and fails if any one failed, and its summary names
 each failed section. That
