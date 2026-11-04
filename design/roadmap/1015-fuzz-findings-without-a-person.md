@@ -106,8 +106,8 @@ public at the same moment.
 
 The cost is the gates. GitHub runs no status checks in a temporary private fork and enforces no
 protection rule on its merge, so the heavy gates (Kani, QEMU, fuzz, mutation) first run on the
-push to main, after the fix is already there. A fix that breaks one of them is found on main and
-repaired by an ordinary lane. The low-severity exception exists for the findings where that cost
+push to main, after the fix is already there. Main's push run finds a fix that breaks one of them,
+and an ordinary lane repairs it. The low-severity exception exists for the findings where that cost
 buys nothing.
 
 An example. The fuzz host files a held crash in a parser as a draft advisory. The maintainer
@@ -208,7 +208,7 @@ of the OSS-Fuzz documentation, not the live site. nife publishes at the verified
 days later, keeps the record in a GitHub advisory rather than an issue tracker, and gives the fix to
 an agent lane that never sees the fuzz host.
 
-How the fix is developed, read on 2026-11-04 (UTC):
+Where others develop the fix, read on 2026-11-04 (UTC):
 
 - Chromium keeps critical, high and medium severity bugs visible only to the security team and the
   engineers fixing them, lands the fix in the public repository, and opens the bug about 30 days
@@ -218,16 +218,16 @@ How the fix is developed, read on 2026-11-04 (UTC):
   calendar days (14 in exceptional cases) for the logistics of QA.
 - GitHub's temporary private fork is a private copy of a public repository, made from a draft
   advisory, where collaborators on the advisory fix a vulnerability before it is public. It runs no
-  CI and an administrator merges its pull requests together, after which the advisory is published.
+  CI and an administrator merges its pull requests together, then publishes the advisory.
 - The Rust security team holds fixes in private repositories, reviews them privately with the same
   process as public changes, and pushes them to the public repository on the embargo date with the
   announcement.
-- Go sorts reports into three tracks. PUBLIC issues (niche configurations, very limited impact, or
-  already widely known) are fixed in public. PRIVATE and URGENT issues are fixed in private and kept
-  private until the release. The Go security team chooses the track.
+- Go sorts reports into three tracks. The team fixes PUBLIC issues (niche configurations, very
+  limited impact, or already widely known) in public. It fixes PRIVATE and URGENT issues in private
+  and keeps them private until the release. The Go security team chooses the track.
 
-nife differs from Chromium and the kernel in where the fix lives before it is public: those land the
-fix in public and disclose later, while nife keeps the fix in the private fork and publishes the fix
+nife differs from Chromium and the kernel in where the fix lives before disclosure. Those two land
+the fix in public and disclose later. nife keeps the fix in the private fork and publishes the fix
 and the advisory together, as Rust does. Its default private path and low-severity public exception
 follow Go's tracks, with the architect choosing the track. Unlike Rust's private review, nothing in
 the private fork runs the project's CI, so the local gates stand in for it until main's push run.
