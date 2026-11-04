@@ -5,6 +5,9 @@
 //! rings are programmed, with [`transmit_errata`] once transmit is on. Only FreeBSD's
 //! `e1000_pch_spt` branches are carried ([`super::is_pch`]), and each function names the FreeBSD
 //! function it follows.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3145. Ruled in the group E1 ruling on e1000e's module names;
+//! kept as it stands.
 
 //! ```text
 //! SPDX-License-Identifier: BSD-3-Clause
@@ -40,7 +43,9 @@
 //! ```
 
 use super::physical_layer_device::{self, Swflag};
-use super::{Hardware, delay_ms, flush_writes, non_volatile_memory, registers, reset, ulp};
+use super::{
+    Hardware, delay_ms, flush_writes, non_volatile_memory, registers, reset, ultra_low_power,
+};
 use crate::registers as mac;
 
 /// Why the bring-up stopped. Each is a line on the bench boot.
@@ -119,7 +124,7 @@ pub enum AccessPath {
 pub enum BringUpObservation {
     /// The Management Engine was asked to leave ULP; `cleared` says whether it finished in time.
     UlpByMe {
-        /// `FWSM.ULP_CFG_DONE` cleared before [`ulp::WAIT_MS`].
+        /// `FWSM.ULP_CFG_DONE` cleared before [`ultra_low_power::WAIT_MS`].
         cleared: bool,
     },
     /// There is no ME; ULP was left by PHY registers, with this outcome.
@@ -279,7 +284,7 @@ fn clear(hardware: &mut impl Hardware, offset: u64, bits: u32) {
 }
 
 fn has_management_engine(hardware: &mut impl Hardware) -> bool {
-    ulp::has_management_engine(hardware.read(registers::FWSM))
+    ultra_low_power::has_management_engine(hardware.read(registers::FWSM))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -365,20 +370,20 @@ pub fn initialize_physical_layer_device_workarounds(
 fn leave_ulp(hardware: &mut impl Hardware) {
     if has_management_engine(hardware) {
         let h = hardware.read(registers::H2ME);
-        hardware.write(registers::H2ME, ulp::request(h));
+        hardware.write(registers::H2ME, ultra_low_power::request(h));
         let mut cleared = false;
-        for i in 0..=ulp::WAIT_MS / 10 {
-            if ulp::done(hardware.read(registers::FWSM)) {
+        for i in 0..=ultra_low_power::WAIT_MS / 10 {
+            if ultra_low_power::done(hardware.read(registers::FWSM)) {
                 cleared = true;
                 break;
             }
-            if i < ulp::WAIT_MS / 10 {
+            if i < ultra_low_power::WAIT_MS / 10 {
                 delay_ms(hardware, 10);
             }
         }
         if cleared {
             let h = hardware.read(registers::H2ME);
-            hardware.write(registers::H2ME, ulp::release(h));
+            hardware.write(registers::H2ME, ultra_low_power::release(h));
         }
         hardware.note(BringUpObservation::UlpByMe { cleared });
         return;
@@ -1108,7 +1113,7 @@ mod tests {
         let mut hardware = Inert::default();
         hardware.registers.insert(
             registers::FWSM,
-            ulp::ICH_FWSM_FW_VALID | ulp::FWSM_ULP_CFG_DONE,
+            ultra_low_power::ICH_FWSM_FW_VALID | ultra_low_power::FWSM_ULP_CFG_DONE,
         );
         leave_ulp(&mut hardware);
         assert_eq!(hardware.elapsed_microseconds, 2_500_000);
@@ -1127,13 +1132,13 @@ mod tests {
         );
         assert_eq!(
             hardware.registers[&registers::H2ME],
-            ulp::H2ME_ENFORCE_SETTINGS
+            ultra_low_power::H2ME_ENFORCE_SETTINGS
         );
 
         let mut hardware = Inert::default();
         hardware
             .registers
-            .insert(registers::FWSM, ulp::ICH_FWSM_FW_VALID);
+            .insert(registers::FWSM, ultra_low_power::ICH_FWSM_FW_VALID);
         leave_ulp(&mut hardware);
         assert_eq!(hardware.elapsed_microseconds, 0);
         assert_eq!(
@@ -1142,7 +1147,7 @@ mod tests {
         );
         assert_eq!(
             hardware.written(registers::H2ME),
-            [ulp::H2ME_ENFORCE_SETTINGS, 0]
+            [ultra_low_power::H2ME_ENFORCE_SETTINGS, 0]
         );
     }
 

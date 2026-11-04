@@ -37,13 +37,14 @@ crates/current_cpu_contract/src/lib.rs::PAGE_VA spelled-out
 crates/current_cpu_contract/src/lib.rs::thread_page_va spelled-out
 
 
-crates/designware_mobile_storage/src/sd.rs::in_range question-shape
 
 crates/documentation/src/index.rs::STORE_DIR spelled-out
 
-crates/e1000e/src/pch/flush.rs::required question-shape
 
-crates/e1000e/src/pch/ulp.rs::done question-shape
+
+crates/e1000e/src/platform_controller_hub/flush.rs::required question-shape
+
+crates/e1000e/src/platform_controller_hub/ultra_low_power.rs::done question-shape
 
 crates/environment_contract/src/lib.rs::ConfigPage spelled-out
 

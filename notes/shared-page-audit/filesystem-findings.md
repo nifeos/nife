@@ -96,7 +96,7 @@ let r = forward(fs::req(code, server_handle, n), second);  // the FS server read
 
 The caretaker copies the name into a stack buffer, decides on the copy, and then forwards a request
 carrying only the *length*. The FS server does its own read of the same page
-(`redoxfs_server.rs:254`, `unsafe { file_page(len) }`) and resolves whatever is there then. Two reads,
+(`file_page` in `redoxfs_server/src/bin/redoxfs_server.rs`) and resolves whatever is there then. Two reads,
 one check, and the checked bytes are never written back.
 
 `RENAME` has the same shape twice, and the destination half is the load-bearing one: the caretaker's

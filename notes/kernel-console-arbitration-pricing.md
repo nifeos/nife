@@ -25,16 +25,16 @@ print the same shape (`user thread N killed: ...`, a register line, `the kernel 
 But two more kernel `println!` sites fire in ordinary, non-fault operation, and they are the ones a
 swish-check run actually hits:
 
-- **`kernel/src/capability_object.rs:394-401`, `announce_peak`**: the kernel prints `capability slots: N of M at
+- **`announce_peak` in `kernel/src/capability_object.rs`**: the kernel prints `capability slots: N of M at
   peak` every time the process's capability-table high-water mark reaches a new peak and holds for
   a few scheduler passes. Its own doc comment calls this out directly, naming milestone 230
   (`script/shell-check` is red on `main`): *"That is the same two-writers-one-stream confusion
   milestone 230 spent a whole lane on."* This is gated off under `cfg(test)`/`system_tests`. It is
   on under the interactive boot swish-check uses.
-- `kernel/src/progenitor_stack.rs:166-177`, `announce`: prints `progenitor stack: N of M bytes at
+- `announce` in `kernel/src/progenitor_stack.rs`: prints `progenitor stack: N of M bytes at
   peak, K spare` on the same new-peak-and-hold pattern. It triggers from the idle loop on aarch64
   and riscv64, on every reschedule with nothing to run. On x86_64 it triggers from `on_yield`,
-  throttled to one look per 256 yields (`kernel/src/progenitor_stack.rs:150-160`), specifically
+  throttled to one look per 256 yields (the x86_64 yield trigger in `kernel/src/progenitor_stack.rs`), specifically
   because doing it every yield "would print more lines on a multi-core machine, where a kernel line
   and a userspace one can shuffle byte by byte". `on_yield` is gone since milestone 505 (an x86_64
   input driver that never lets the core idle). x86_64 reports from the idle loop too.
@@ -111,7 +111,7 @@ no story for xenon at all.
 ## 4. What each option costs in a panic
 
 The kernel's own policy for its internal re-entrant case is already settled, and instructive:
-`console::force_unlock` (`kernel/src/console.rs:677-690`) breaks its own lock on a fault, so the
+`console::force_unlock` (in `kernel/src/console.rs`) breaks its own lock on a fault, so the
 panic message is never lost behind a held lock, and says so: *"Output may be spliced. That is a fine
 price for getting the message out at all."* The cross-process case (kernel vs. the userspace
 `console` server) is the same trade, one level up, and the options differ in whether they can even
