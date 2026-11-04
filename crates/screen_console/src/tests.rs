@@ -379,6 +379,10 @@ fn awkward_text(lines: usize, cols: usize) -> std::string::String {
 /// copy-up left, compared over the entire buffer including the padding and the unpainted
 /// edges, after every one of several writes.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "repaints a reference buffer after every chunk; over an hour and a half under Miri"
+)]
 fn the_grid_scroll_paints_exactly_what_the_copy_up_painted() {
     let geometries = [
         (5 * 7 + 3, 3 * 8 + 5, 12, PixelOrder::Bgrx),
@@ -422,6 +426,10 @@ fn the_grid_scroll_paints_exactly_what_the_copy_up_painted() {
 /// of them on every scroll; this reads nothing, because it cannot, and writes the cells whose
 /// glyph changed. Run with `--nocapture` to see the numbers the assertion bounds.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "replays a recorded tour on a 1920x1080 framebuffer and counts every store; over four hours under Miri without finishing"
+)]
 fn a_scroll_writes_only_the_cells_that_changed() {
     let found = Framebuffer {
         base: 0,
@@ -939,6 +947,10 @@ fn to_words_two_halves_share_no_bit_so_or_and_xor_agree() {
 /// visible pixel, each surface pixel as a 2x2 block. The shell's terminal, at the atlas's 14-pixel
 /// cell, gets the same 137 columns at scale one: the rule gives both consoles the same width.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "paints and checks every pixel of a 1920x1080 screen; over an hour and a half under Miri"
+)]
 fn a_1920x1080_screen_is_covered_entirely_at_scale_two() {
     use super::Aperture;
     let found = Framebuffer {

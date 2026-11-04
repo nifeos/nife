@@ -84,10 +84,15 @@ only in prose proposes a milestone with a sketch of that code, and does not writ
 
 A held finding is a fuzz finding whose fix has not reached main, so it stays private. The fuzz host
 files one private security advisory per finding, and the advisory holds the finding class and the
-reproducer. §90 (the claim is a draft pull request) allows this kind of lane to claim differently,
-and the reason is exposure: a draft pull request and its pushed branch are public from the first
-commit. The record is
-[the proposal](../../../design/roadmap/proposals/fix-lanes-read-the-advisory.md).
+reproducer. By default this kind of lane works in the GitHub temporary private fork of its
+advisory, not in nifeos/nife, as §90 (the claim is a draft pull request) allows. The reason is
+exposure: a draft pull request and its pushed branch are public from the first commit, and nothing
+in the private fork is public until a person merges the fix and publishes the advisory with it.
+The rulings are in [the proposal](../../../design/roadmap/1015-fuzz-findings-without-a-person.md),
+and [fix lanes read the advisory](../../../design/roadmap/1014-fix-lanes-read-the-advisory.md)
+built the reading side. A finding the architect judges low severity is the exception: its brief
+says so, and the lane follows the regular workflow with a public draft pull request, keeping the
+rules below on reading the advisory and naming no reproducer.
 
 - **Read the advisory, and only the advisory.** No lane opens, copies, prints or moves anything under
   the fuzz host's held directory, and none looks for a credential. The advisory is the one way a lane
@@ -96,15 +101,23 @@ commit. The record is
   one. It prints to the terminal and writes nothing; it refuses a redirect into the repository. If a
   lane wants the text in a file, the file goes in the lane's own scratch space outside every
   repository, and is never committed.
-- **Claim with `script/claim <branch> --new-work --no-claim`.** The branch and worktree exist, and
-  nothing is pushed. Commit locally and often. A dead session leaves the commits in the worktree for
-  the next one to resume; the loss of the machine or the worktree before the push loses them, which
-  is the cost of keeping the fix off GitHub until it is ready. Push nothing, not a branch, not a
-  draft, until the fix is ready.
-- **Open the pull request once, ready for review.** Push with `script/push`, confirm the remote
-  head, open the pull request ready (not as a draft), and arm auto-merge. The title is neutral: it
-  names the area and says "fix", never the finding. The advisory records which lane holds the work,
-  since the advisory list is the board for this kind of lane.
+- **The claim is a note on the advisory.** The maintainer writes it when it launches the lane, and
+  the advisory list is the claim board for this kind of lane. Cut the branch and worktree with
+  `script/claim <branch> --new-work --no-claim`, which pushes nothing to nifeos/nife. Push nothing
+  to nifeos/nife at all, not a branch and not a draft.
+- **Work in the private fork.** The brief names the fork, `nifeos/nife-ghsa-xxxx-xxxx-xxxx`. Add it
+  as a remote, commit often, and push the branch there, since a pushed commit survives the loss of
+  the worktree. `script/push` reads back origin only, so push to the fork with `git push` and
+  confirm the head with `git ls-remote`. Open one pull request in the fork against `main`, with a
+  neutral title that names the area and says "fix", never the finding.
+- **Run the local gates, because the fork runs none.** GitHub runs no status checks in a temporary
+  private fork and enforces no protection rule on its merge, so nothing else gates the fix before
+  it reaches main. Run `script/fmt`, the full `script/lint` and the tests the change reaches, read
+  each exit, and put each gate and its exit in the report and the pull request body.
+- **A person merges and publishes.** The lane never merges, never arms auto-merge and never
+  publishes the advisory. A person reviews the fix, merges it from the private fork, and publishes
+  the advisory together with the fix. Main's push run then runs the heavy gates on the fix, and a
+  failure there goes to an ordinary lane.
 - **Name no reproducer in public text.** The fix carries the fix and a regression test of the
   invariant that broke. The test names no seed, input or replay line. The title, body, commit
   messages and comments name none either, and neither do logs or artifacts the lane makes. A seed is
@@ -117,9 +130,10 @@ commit. The record is
   reads its own text before pushing.
 - **The seed joins the fixed-seed regression list later.** A second pull request, opened after the
   advisory turns public, adds it. The lane that fixed the finding does not add it in the fix.
-- **The public window is the time the pull request spends in review and the merge queue.** If a hold
-  lengthens it (`needs-architect` on a fix that touches the syscall surface, or a red trunk), say so
-  in the report, with the push and merge times, so the window is measured.
+- **Under the low-severity exception, the public window is the time the pull request spends in
+  review and the merge queue.** If a hold lengthens it (`needs-architect` on a fix that touches the
+  syscall surface, or a red trunk), say so in the report, with the push and merge times, so the
+  window is measured.
 
 ## Identified work leaves the lane in a tracked form, or the merge waits
 
@@ -145,7 +159,7 @@ its driver, not a failure, because a program that waits for its users is not was
 field for it and no lint check. `helpers/consumer_census.py` counts delivered work nothing uses,
 report-only, and the maintainer runs it monthly; its counts cannot tell work not yet consumed from
 work built with no reason, so a person asks. The reasoning is in
-[the proposal](../../../design/roadmap/proposals/delivered-work-names-its-consumer.md).
+[the proposal](../../../design/roadmap/0996-delivered-work-names-its-consumer.md).
 
 ## Shared state: the tree's, and the machine's
 

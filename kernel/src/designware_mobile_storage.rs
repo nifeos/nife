@@ -6,7 +6,7 @@
 //! boards) needs only this file's twenty lines and a device-tree match. See
 //! notes/designware-mobile-storage.md.
 
-use designware_mobile_storage::host::RegisterWindowAndClock;
+use designware_mobile_storage::host_controller::RegisterWindowAndClock;
 use designware_mobile_storage::internal_direct_memory_access::DirectMemoryAccessRegion;
 
 /// A controller's register window in the direct map, and the counter as a microsecond clock.

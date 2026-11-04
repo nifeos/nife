@@ -22,6 +22,7 @@ that two indexes offer (milestone 809 (the package client becomes a program)). N
 | [convention-rulings.md](convention-rulings.md) | new, 2026-10-17: the rules calef ratified for a class of names, with his words |
 | [precedents-set-by-example.md](precedents-set-by-example.md) | new, 2026-10-18: the rules the tier 1 review's rulings imply |
 | [spelled-out-rulings.md](spelled-out-rulings.md) | `op` and `cap` (2026-10-04), then `rx`, `tx`, `phy`, `init`, `irq` and `fifo` (2026-10-26), spelled out |
+| [2026-11-03-rulings.md](2026-11-03-rulings.md) | units, `id`, std names, aliases, register suffixes, accepted acronyms |
 | [command-line-rulings.md](command-line-rulings.md) | `jig`'s |
 | [capability-spelling-worklist.md](capability-spelling-worklist.md) | the `cap` sweep's worklist |
 | [functions-that-answer-yes-or-no.md](functions-that-answer-yes-or-no.md) | new, 2026-09-24: the argument for functions that answer yes or no |

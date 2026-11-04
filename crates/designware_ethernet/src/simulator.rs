@@ -14,9 +14,9 @@ use std::collections::BTreeMap;
 use std::vec;
 use std::vec::Vec;
 
-use crate::controller::{self, Identity};
 use crate::management_data_input_output::{self, ManagementDataInputOutput};
-use crate::motorcomm::{self, Link, Speed};
+use crate::motorcomm_physical_layer_device::{self, Link, Speed};
+use crate::network_interface_controller::{self as controller, Identity};
 use crate::{
     DirectMemoryAccessRegion, Hardware, RDES3_ES, RDES3_FD, RDES3_LD, RDES3_OWN, TDES2_BUF1_LEN,
     TDES2_IC, TDES3_OWN, Tails, layout, registers,
@@ -49,7 +49,7 @@ impl Memory {
     fn new(base: u64, mode: Mode) -> Memory {
         Memory {
             base,
-            dram: RefCell::new(vec![0; layout::BYTES as usize]),
+            dram: RefCell::new(vec![0; layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize]),
             cache: RefCell::new(BTreeMap::new()),
             mode,
         }
@@ -101,7 +101,7 @@ impl Memory {
 
     fn offset(&self, physical_address: u64, length: usize) -> Option<u64> {
         let offset = physical_address.checked_sub(self.base)?;
-        (offset + length as u64 <= layout::BYTES).then_some(offset)
+        (offset + length as u64 <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES).then_some(offset)
     }
 
     /// The device reads `out.len()` bytes at `physical_address`, from memory, never from the CPU's
@@ -136,7 +136,7 @@ impl DirectMemoryAccessRegion for Cpu<'_> {
     }
     fn read_bytes(&self, offset: u64, out: &mut [u8]) {
         assert!(
-            offset + out.len() as u64 <= layout::BYTES,
+            offset + out.len() as u64 <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES,
             "read outside the region"
         );
         for (i, b) in out.iter_mut().enumerate() {
@@ -145,7 +145,7 @@ impl DirectMemoryAccessRegion for Cpu<'_> {
     }
     fn write_bytes(&mut self, offset: u64, source: &[u8]) {
         assert!(
-            offset + source.len() as u64 <= layout::BYTES,
+            offset + source.len() as u64 <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES,
             "write outside the region"
         );
         for (i, &b) in source.iter().enumerate() {
@@ -193,21 +193,31 @@ impl PhysicalLayerDevice {
     pub(crate) fn yt8531_at_1v8() -> PhysicalLayerDevice {
         let mut registers = [0; 32];
         registers[management_data_input_output::PHYSID1 as usize] =
-            (motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID >> 16) as u16;
+            (motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID >> 16)
+                as u16;
         registers[management_data_input_output::PHYSID2 as usize] =
-            motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID as u16;
+            motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID as u16;
         let mut extended = BTreeMap::new();
-        extended.insert(motorcomm::EXT_CHIP_CONFIG, 0x2 << 4 | motorcomm::RXC_DLY_EN);
-        extended.insert(motorcomm::EXT_SYNCE_CFG, motorcomm::EN_SYNC_E);
         extended.insert(
-            motorcomm::MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER,
-            motorcomm::ESC1R_SLEEP_SW | 1 << 14,
+            motorcomm_physical_layer_device::EXT_CHIP_CONFIG,
+            0x2 << 4 | motorcomm_physical_layer_device::RXC_DLY_EN,
         );
         extended.insert(
-            motorcomm::MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER,
-            motorcomm::CGR_RX_CLK_EN,
+            motorcomm_physical_layer_device::EXT_SYNCE_CFG,
+            motorcomm_physical_layer_device::EN_SYNC_E,
         );
-        extended.insert(motorcomm::EXT_PAD_DRIVE_STRENGTH, 0xffff);
+        extended.insert(
+            motorcomm_physical_layer_device::MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER,
+            motorcomm_physical_layer_device::ESC1R_SLEEP_SW | 1 << 14,
+        );
+        extended.insert(
+            motorcomm_physical_layer_device::MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER,
+            motorcomm_physical_layer_device::CGR_RX_CLK_EN,
+        );
+        extended.insert(
+            motorcomm_physical_layer_device::EXT_PAD_DRIVE_STRENGTH,
+            0xffff,
+        );
         registers[management_data_input_output::BMCR as usize] =
             management_data_input_output::BMCR_ANENABLE;
         PhysicalLayerDevice {
@@ -242,7 +252,9 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
     ) -> Result<u16, management_data_input_output::Error> {
         let register = register & 0x1f;
         Ok(match register {
-            motorcomm::REG_DATA => self.extended(self.registers[motorcomm::REG_ADDR as usize]),
+            motorcomm_physical_layer_device::REG_DATA => {
+                self.extended(self.registers[motorcomm_physical_layer_device::REG_ADDR as usize])
+            }
             management_data_input_output::BMSR => {
                 if self.link.is_some() {
                     management_data_input_output::BMSR_LSTATUS
@@ -290,9 +302,11 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
     ) -> Result<(), management_data_input_output::Error> {
         let register = register & 0x1f;
         match register {
-            motorcomm::REG_DATA => {
-                self.extended
-                    .insert(self.registers[motorcomm::REG_ADDR as usize], v);
+            motorcomm_physical_layer_device::REG_DATA => {
+                self.extended.insert(
+                    self.registers[motorcomm_physical_layer_device::REG_ADDR as usize],
+                    v,
+                );
             }
             management_data_input_output::BMCR => {
                 self.registers[0] = v & !(management_data_input_output::BMCR_ANRESTART
@@ -352,9 +366,11 @@ impl NetworkInterfaceController {
         self.registers
             .insert(registers::CORE_VERSION_REGISTER, VERSION);
         self.registers
-            .insert(registers::mac_hw_feature(1), FEATURE1);
-        self.registers.insert(registers::MAC_ADDR0_HI, 0xffff);
-        self.registers.insert(registers::MAC_ADDR0_LO, 0xffff_ffff);
+            .insert(registers::mac_hardware_feature_register(1), FEATURE1);
+        self.registers
+            .insert(registers::MAC_ADDRESS_0_HIGH_REGISTER, 0xffff);
+        self.registers
+            .insert(registers::MAC_ADDRESS_0_LOW_REGISTER, 0xffff_ffff);
         self.receive_cursor = 0;
         self.transmit_cursor = 0;
     }
@@ -393,6 +409,9 @@ impl NetworkInterfaceController {
     }
 
     /// Run `f` with the CPU's handle on the region and the tail registers.
+    ///
+    /// Name: ratified 2026-11-03 (UTC). `with` is the Rust idiom for borrowing a value for the
+    /// duration of a closure, as in `LocalKey::with`.
     pub fn with<R>(&mut self, f: impl FnOnce(&mut Cpu<'_>, &mut TailRegisters<'_>) -> R) -> R {
         let mut cpu = Cpu(&self.memory);
         let mut tails = TailRegisters {
@@ -409,7 +428,7 @@ impl NetworkInterfaceController {
         controller::configure(
             self,
             &id,
-            &crate::jh7110::BUS,
+            &crate::jh7110::BUS_CONFIGURATION,
             region,
             [0x6c, 0xcf, 0x39, 0, 0x47, 0x2c],
         )
@@ -449,7 +468,10 @@ impl NetworkInterfaceController {
     }
 
     fn status(&mut self, bit: u32) {
-        *self.registers.entry(registers::CHAN_STATUS).or_insert(0) |= bit;
+        *self
+            .registers
+            .entry(registers::CHANNEL_STATUS_REGISTER)
+            .or_insert(0) |= bit;
     }
 
     /// How many receive descriptors the device could fill right now.
@@ -592,7 +614,9 @@ impl Hardware for NetworkInterfaceController {
                 self.registers.insert(offset, v);
                 self.reset_left = Some(self.reset_polls);
             }
-            registers::MAC_MDIO_ADDR if v & management_data_input_output::COMMAND_BUSY != 0 => {
+            registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER
+                if v & management_data_input_output::COMMAND_BUSY != 0 =>
+            {
                 let physical_layer_device = ((v
                     >> management_data_input_output::PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
                     & 0x1f) as u8;
@@ -603,10 +627,14 @@ impl Hardware for NetworkInterfaceController {
                         .physical_layer_device
                         .read(physical_layer_device, register)
                         .unwrap();
-                    self.registers
-                        .insert(registers::MAC_MDIO_DATA, u32::from(r));
+                    self.registers.insert(
+                        registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
+                        u32::from(r),
+                    );
                 } else {
-                    let data = self.register(registers::MAC_MDIO_DATA) as u16;
+                    let data = self
+                        .register(registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER)
+                        as u16;
                     self.physical_layer_device
                         .write(physical_layer_device, register, data)
                         .unwrap();
@@ -614,7 +642,7 @@ impl Hardware for NetworkInterfaceController {
                 self.registers
                     .insert(offset, v & !management_data_input_output::COMMAND_BUSY);
             }
-            registers::CHAN_STATUS => {
+            registers::CHANNEL_STATUS_REGISTER => {
                 let s = self.register(offset) & !v;
                 self.registers.insert(offset, s);
             }
@@ -641,7 +669,10 @@ mod tests {
             0,
         )
         .unwrap();
-        assert_eq!(id, motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID);
+        assert_eq!(
+            id,
+            motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID
+        );
     }
 
     #[test]

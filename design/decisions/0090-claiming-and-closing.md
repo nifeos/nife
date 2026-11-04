@@ -128,20 +128,21 @@ Both 2026-09-05 lanes recovered on their own by opening a replacement pull reque
 lost. What was lost is the property the board is for: for part of that evening it showed no claim on
 two milestones that were actively being worked.
 
-## Amendment, 2026-11-01: a fix lane for a held fuzz finding claims without a draft
+## Amendment, 2026-11-04: a fix lane for a held fuzz finding works in the private fork
 
-Decided 2026-11-01 (UTC). A lane that fixes a held fuzz finding claims with `script/claim
---no-claim`. It works in a worktree, commits locally and often, and pushes nothing until the fix is
-ready. Its pull request opens only then, ready for review, with auto-merge armed, a neutral title
-and no reproducer. The advisory records who holds the work. The fuzz host files one advisory per
-finding, so the advisory list is the board for this kind of lane, as the draft list is for every
-other.
+Decided 2026-11-04 (UTC). A lane that fixes a held fuzz finding works in the GitHub temporary
+private fork of the finding's advisory by default. Its claim is a note on the advisory, not a public
+draft pull request. The fuzz host files one advisory per finding, so the advisory list is the board
+for this kind of lane, as the draft list is for every other. The private fork has no CI and no merge
+queue, so the lane runs the local gates (`script/fmt`, `script/lint` and the tests) itself. A person
+reviews the fix, merges it from the private fork, and publishes the advisory together with the fix.
+A finding the architect judges low severity may use a normal public draft pull request instead.
 
 The reason is exposure. A draft pull request and its pushed branch are public from the first
-commit, and a held finding stays private until its fix is on main. Opening the pull request only when
-the fix is ready limits the public window to review and the merge queue.
+commit, and a held finding stays private until its fix is on main. In the private fork the fix and
+the advisory become public at the same moment.
 
-The cost is the property this section prefers: a lane that dies leaves no public stale draft. Its
-local commits survive in the worktree, and a loss of the machine before the push loses them.
-[`fuzz-findings-without-a-person`](../roadmap/proposals/fuzz-findings-without-a-person.md) records
-the rest of the findings path.
+The cost is the property this section prefers, and the gates. A stale claim shows on the advisory,
+not on the public board, and the heavy gates first run on main's push run, after the fix has
+landed. [`fuzz-findings-without-a-person`](../roadmap/1015-fuzz-findings-without-a-person.md)
+records the rest of the findings path, with the prior art and an example.

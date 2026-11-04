@@ -13,7 +13,7 @@
 //! - The eMMC socket is probed read-only, always.
 
 use designware_mobile_storage::bench::{self, ReadFailure, ReadReport, WriteVerdict};
-use designware_mobile_storage::host::{Error, HostController, Identity, RegisterWindowAndClock};
+use designware_mobile_storage::host_controller::{Error, HostController, Identity, RegisterWindowAndClock};
 use designware_mobile_storage::internal_direct_memory_access::{
     DirectMemoryAccessRegion, InternalDirectMemoryAccess, Refusal,
 };

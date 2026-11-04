@@ -1,0 +1,26 @@
+Falsifies `interfaces_note::interface_verification::a_decoded_interface_list_encodes_back_to_its_bytes`.
+
+The defect: `decode_interfaces` rejects a decreasing id (`p > id`) but lets a
+repeated id through, where the contract is strictly ascending, each once. A list
+with a duplicate then decodes, and re-encoding it trips the encoder's own
+strictly-ascending assertion, so what the decoder accepted is not something the
+encoder can spell: the one-encoding claim is broken.
+
+Expected to fail: the `interface ids strictly ascend, each once` assertion inside
+`encode_interfaces`, reached from the harness's last line, on any two-entry list
+with equal ids.
+
+
+diff --git a/crates/interfaces_note/src/lib.rs b/crates/interfaces_note/src/lib.rs
+index 70afb0cb6..6aca6a410 100644
+--- a/crates/interfaces_note/src/lib.rs
++++ b/crates/interfaces_note/src/lib.rs
+@@ -219,7 +219,7 @@ pub fn decode_interfaces(d: &[u8]) -> Result<Interfaces<'_>, Error> {
+     for i in 0..count {
+         let at = 8 + i * INTERFACE_RECORD;
+         let id = record(&d[at..at + INTERFACE_RECORD]).id;
+-        if previous.is_some_and(|p| p >= id) {
++        if previous.is_some_and(|p| p > id) {
+             return Err(Error::BadField(at));
+         }
+         previous = Some(id);

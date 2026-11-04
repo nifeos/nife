@@ -7,7 +7,7 @@
 //! reading what is there: a pattern, read back, then the original, read back too. A card with no
 //! gap is refused, not written.
 
-use crate::host::{HostController, RegisterWindowAndClock};
+use crate::host_controller::{HostController, RegisterWindowAndClock};
 use crate::internal_direct_memory_access::DirectMemoryAccessRegion;
 use crate::partition::MasterBootRecord;
 use crate::sd::{self, BLOCK_BYTES, BlockTransferError, Card, InitializationError};
