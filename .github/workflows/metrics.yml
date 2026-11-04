@@ -91,7 +91,7 @@ jobs:
     # only (see trunk-health.yml's comment for why). Scheduled runs and dispatches from `main`
     # qualify. Only jobs that mint the App token name it.
     environment: automation
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 45
     steps:
       # The same identity argument `toolchain-bump.yml` makes at length: a PR opened with the

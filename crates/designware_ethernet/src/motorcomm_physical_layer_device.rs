@@ -111,7 +111,7 @@ pub(crate) const RGMII_RXD_DS_MASK: u16 = (1 << 12) | (0x3 << 4);
 /// exclusion of the mask's or-versus-xor mutant names this constant. The clippy lints fold the
 /// literals; that is what a gate is, allowed here for exactly that reason.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+/// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 pub const RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!((1 << 12) & (0x3 << 4) == 0);
 /// **Extended register, synchronous Ethernet configuration** (`YT8521_EXT_SYNCE_CFG`, `ytphy.c`).
@@ -218,7 +218,7 @@ pub(crate) const fn link_from_registers(
 /// `link_from_registers` is its `^`, which the compiler checks here; the mutation exclusion for
 /// `link_from_registers` names this constant.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+/// Name: ratified 2026-11-03 (UTC), #3120.
 pub const PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP: () =
     assert!(management_data_input_output::ANLPAR_T4 & management_data_input_output::ANLPAR_TX == 0);
 
@@ -489,8 +489,8 @@ pub fn configure(
 /// is zero: every `|` here is its `^`, and a shift by `TX_DELAY_SEL_SHIFT` is the identity; the
 /// compiler checks both here, and the mutation exclusions for `configure` name this constant.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
-pub const RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!(
+/// Name: ratified 2026-11-03 (UTC), #3120.
+pub const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!(
     (0xf << RX_DELAY_SEL_SHIFT) & (0xf << TX_DELAY_SEL_SHIFT) == 0
         && (0x7 << RGMII_RXC_DS_SHIFT) & RGMII_RXD_DS_MASK == 0
         && TX_DELAY_SEL_SHIFT == 0

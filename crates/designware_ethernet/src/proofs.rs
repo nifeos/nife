@@ -14,8 +14,8 @@ fn a_delivered_frame_always_fits_the_buffer_and_the_room() {
     let room: usize = kani::any();
     if let ReceiveVerdict::Frame(n) = receive_verdict(descriptor_word_3, room) {
         assert!(n <= room);
-        assert!(n <= MAXIMUM_FRAME);
-        assert!(n as u64 + CRC_BYTES as u64 <= BUFFER_SIZE);
+        assert!(n <= MAXIMUM_FRAME_BYTES);
+        assert!(n as u64 + CRC_BYTES as u64 <= BUFFER_BYTES);
     }
 }
 
@@ -27,8 +27,8 @@ fn every_ring_offset_is_inside_the_region() {
     let i: u16 = kani::any();
     assert!(layout::receive_descriptor(i) + DESCRIPTOR_BYTES <= layout::TRANSMIT_RING);
     assert!(layout::transmit_descriptor(i) + DESCRIPTOR_BYTES <= layout::RECEIVE_BUFFERS);
-    assert!(layout::receive_buffer(i) + BUFFER_SIZE <= layout::TRANSMIT_BUFFERS);
-    assert!(layout::transmit_buffer(i) + BUFFER_SIZE <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES);
+    assert!(layout::receive_buffer(i) + BUFFER_BYTES <= layout::TRANSMIT_BUFFERS);
+    assert!(layout::transmit_buffer(i) + BUFFER_BYTES <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES);
 }
 
 /// **Whatever the PHY answers, the link decode returns a link only the registers justify.** All

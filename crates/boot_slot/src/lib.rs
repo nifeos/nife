@@ -491,7 +491,7 @@ pub mod medium {
 /// Version 2 describes three files, the kernel, the composed archive and the system manifest, each
 /// by offset, length and SHA-256 digest, so an updater can write each from the package that
 /// produced it. The layout was ruled on 2026-11-01 (UTC); see
-/// `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md`, question 3. Pure
+/// `design/roadmap/1006-what-an-os-update-writes-into-a-slot.md`, question 3. Pure
 /// computation over byte slices, no allocation and no I/O.
 ///
 /// | offset | size | |

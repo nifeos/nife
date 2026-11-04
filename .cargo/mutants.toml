@@ -360,14 +360,14 @@ exclude_re = [
     # chain's first swap toggles `conf` itself and the_mac_word_from_zero_and_from_all_ones kills
     # it.
     "^crates/designware_ethernet/src/network_interface_controller\\.rs:\\d+:\\d+: replace \\| with \\^ in mac_configuration$",
-    # RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP, beside configure, asserts the delay and drive
-    # fields pairwise disjoint.
+    # REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP,
+    # beside configure, asserts the delay and drive fields pairwise disjoint.
     "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
     # ANLPAR_T4 and ANLPAR_TX are asserted disjoint by
     # PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP, beside link_from_registers.
     "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in link_from_registers$",
-    # The transmit delay select is zero (RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP asserts
-    # it), so those two shifts are the identity; the same entry covers the function's
+    # The transmit delay select is zero (REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP
+    # asserts it), so those two shifts are the identity; the same entry covers the function's
     # shift-by-nonzero sites, which
     # motorcomm_physical_layer_device::tests::configure_replaces_the_delay_and_drive_fields_and_nothing_else kills.
     "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace << with >> in configure$",
@@ -442,25 +442,25 @@ exclude_re = [
     "^crates/extensible_host_controller_interface/src/port\\.rs:\\d+:\\d+: replace << with >>$",
     "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace << with >>$",
     # The const-level `|` survivors: CHANGES and PRESERVE (port.rs), per
-    # THE_PORT_CHANGE_BITS_SHARE_NO_BIT and THE_PRESERVED_FIELDS_SHARE_NO_BIT, beside them.
+    # PORT_CHANGE_BITS_DO_NOT_OVERLAP and PRESERVED_FIELDS_DO_NOT_OVERLAP, beside them.
     "^crates/extensible_host_controller_interface/src/port\\.rs:\\d+:\\d+: replace \\| with \\^$",
     # LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES's three bits (0, 4, 13:15), per
-    # THE_LEGACY_ENABLE_BITS_SHARE_NO_BIT, beside the constant; the killed mutants the entry
+    # LEGACY_ENABLE_BITS_DO_NOT_OVERLAP, beside the constant; the killed mutants the entry
     # sweeps are pinned by the_register_bits_are_where_the_specification_puts_them, which stays.
     "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace \\| with \\^$",
     # The scratchpad count's two fields (5:9 against 0:4), per
-    # THE_SCRATCHPAD_FIELDS_SHARE_NO_BIT, beside the impl.
+    # SCRATCHPAD_FIELDS_DO_NOT_OVERLAP, beside the impl.
     "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace \\| with \\^ in Capabilities::decode$",
     # The event pointer's halves (dword 0 below, dword 1 above bit 32), per
-    # THE_EVENT_POINTER_HALVES_SHARE_NO_BIT, beside the impl.
+    # EVENT_POINTER_HALVES_DO_NOT_OVERLAP, beside the impl.
     "^crates/extensible_host_controller_interface/src/event\\.rs:\\d+:\\d+: replace \\| with \\^ in Event::decode$",
     # The context words: slot's two dword-0 fields (20:23 against 27:31), per
-    # THE_SLOT_CONTEXT_FIELDS_SHARE_NO_BIT, and endpoint's dword-1 fields and dword-4 halves, per
-    # THE_ENDPOINT_CONTEXT_FIELDS_SHARE_NO_BIT, beside their functions.
+    # SLOT_CONTEXT_FIELDS_DO_NOT_OVERLAP, and endpoint's dword-1 fields and dword-4 halves, per
+    # ENDPOINT_CONTEXT_FIELDS_DO_NOT_OVERLAP, beside their functions.
     "^crates/extensible_host_controller_interface/src/context\\.rs:\\d+:\\d+: replace \\| with \\^ in slot$",
     "^crates/extensible_host_controller_interface/src/context\\.rs:\\d+:\\d+: replace \\| with \\^ in endpoint$",
     # The transfer control words: the type field at 10:15 against the flag bits and the fields at
-    # 16 and above, per THE_TRANSFER_CONTROL_FIELDS_SHARE_NO_BIT, beside control().
+    # 16 and above, per TRANSFER_CONTROL_FIELDS_DO_NOT_OVERLAP, beside control().
     "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::link$",
     "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::disable_slot$",
     "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::address_device$",
@@ -473,7 +473,7 @@ exclude_re = [
     "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::status$",
     "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::normal$",
     # The cycle stamp, whose mask clears bit 0 and whose bool cannot hold more, per
-    # THE_CYCLE_BIT_AND_CLEARED_WORD_SHARE_NO_BIT, beside control().
+    # CYCLE_BIT_AND_CLEARED_WORD_DO_NOT_OVERLAP, beside control().
     "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::with_cycle$",
     # grant_plan: the rights bits (five single bits), per THE_RIGHTS_BITS_SHARE_NO_BIT, beside
     # WordGrant::rights, whose fn-local `1 << 0` constants are the shift survivor.

@@ -51,7 +51,7 @@ jobs:
     # The App's secrets live in the `automation` environment, whose deployment branches are `main`
     # only (see trunk-health.yml's comment for why). Only jobs that mint the App token name it.
     environment: automation
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     # The App is optional, as in toolchain-bump.yml: with its secrets absent the token step is
     # skipped and every `|| github.token` below falls through. Only the App ID is lifted, and only

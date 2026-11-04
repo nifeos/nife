@@ -206,7 +206,7 @@ pub const fn command_word(physical_layer_device_address: u8, register: u8, write
 /// bit; the compiler checks the pairwise disjointness here, and the mutation exclusion for
 /// `command_word` names this constant. Each operand enters through its own field mask.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+/// Name: ratified 2026-11-03 (UTC), #3120.
 pub const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () = assert!(
     (CLOCK_RANGE_500_TO_800_MEGAHERTZ << CLOCK_RANGE_SHIFT)
         | (0x1f << PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
@@ -317,7 +317,7 @@ pub fn physical_layer_device_id(
 /// bit for every value the bus can return; the compiler checks it here, and the mutation
 /// exclusion for `physical_layer_device_id` names this constant.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+/// Name: ratified 2026-11-03 (UTC), #3120.
 pub const PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP: () =
     assert!(((u16::MAX as u32) << 16) & (u16::MAX as u32) == 0);
 
@@ -353,7 +353,7 @@ pub fn restart_autonegotiation(
 /// disjoint bits; the compiler checks it here, and the mutation exclusion for
 /// `restart_autonegotiation` names this constant.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+/// Name: ratified 2026-11-03 (UTC), #3120.
 pub const AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP: () =
     assert!(BMCR_ANENABLE & BMCR_ANRESTART == 0);
 
