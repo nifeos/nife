@@ -336,7 +336,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
             // overrun.
             let r = host.registers_mut();
             let (status, tcb, tbb) = (
-                r.read(registers::STATUS),
+                r.read(registers::STATUS_REGISTER),
                 r.read(registers::TRANSFERRED_CARD_BYTE_COUNT),
                 r.read(registers::TRANSFERRED_HOST_BYTE_COUNT),
             );
@@ -708,7 +708,7 @@ fn through_idmac(
                 w.read(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER),
                 w.read(registers::CURRENT_DESCRIPTOR_ADDRESS_REGISTER),
                 w.read(registers::CURRENT_BUFFER_ADDRESS_REGISTER),
-                w.read(registers::STATUS),
+                w.read(registers::STATUS_REGISTER),
                 w.read(registers::TRANSFERRED_CARD_BYTE_COUNT),
             );
             return Dma::Failed(e);
