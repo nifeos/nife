@@ -18,18 +18,18 @@
 # slot's next window one seed past the held seed, so that window's first seed would locate it. The
 # table therefore leaves out every range of a slot from that slot's first held window onward, read
 # from windows.tsv alone; ranges of other slots, and of the same slot before it, are published
-# (design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md). A held window is
+# (design/roadmap/1016-the-clean-range-table-does-not-locate-a-held-seed.md). A held window is
 # any window whose status is neither `ok` nor `infrastructure`, so a status this script does not
 # know withholds its slot too. The seed totals in report.md still count every clean window.
 #
 # BUGS: nothing brings a withheld slot's ranges back. They should return once the held finding turns
 # public, and the milestone that publishes it
-# (design/roadmap/proposals/a-held-finding-turns-public-after-its-fix-reruns-clean.md) defines the
+# (design/roadmap/1010-a-held-finding-turns-public-after-its-fix-reruns-clean.md) defines the
 # signal; until it does, a slot that ever held a finding publishes no further ranges. That fails safe.
 #
 # **Where it goes.** Ruled 2026-11-01 (UTC): one GitHub release per day on nifeos/nife, tagged
 # `fuzz-YYYY-MM-DD`, with report.md and clean-ranges.tsv as assets
-# (design/roadmap/proposals/where-the-daily-fuzz-output-goes.md). Without a flag the script stops at
+# (design/roadmap/1026-where-the-daily-fuzz-output-goes.md). Without a flag the script stops at
 # the local files. `--dry-run` also prints the tag and the asset list. `--publish` runs
 # `gh release create` and refuses unless NIFE_FUZZ_PUBLISH=1 is set. It also refuses, by name and
 # before any `gh` call, a missing GH_TOKEN, a missing or unparseable GH_TOKEN_EXPIRES_AT (UTC,
@@ -40,7 +40,7 @@
 # Repository security advisories write on nifeos/nife alone; notes/fuzzing/the-fuzz-app.md). Main's
 # ruleset refuses a push without a pull request, and this script never calls `git push`. Findings
 # start as private security advisories, filed by a service on the host, not by this script
-# (design/roadmap/proposals/fuzz-findings-without-a-person.md).
+# (design/roadmap/1015-fuzz-findings-without-a-person.md).
 #
 # Name: provisional, minted 2026-11-01 (UTC) by lane/continuous-fuzzing-host. calef has not ruled on it.
 

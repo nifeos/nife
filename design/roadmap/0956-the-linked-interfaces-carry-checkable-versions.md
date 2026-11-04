@@ -137,7 +137,7 @@ moving them into a leaf crate belongs to pull request #3026, ruled 2026-11-01 (U
 
 The bind-time check in message contracts, the one-generation dual path, retiring the legacy
 generation and the swap-test invariants are a separate proposal,
-[the message contracts carry bind-time version checks](proposals/message-contracts-carry-bind-time-version-checks.md).
+[the message contracts carry bind-time version checks](1000-message-contracts-carry-bind-time-version-checks.md).
 The first cut links message contracts (`byte_sink_contract`, `entropy_contract`,
 `filesystem_contract`, `socket_contract`, the resolver's); condition 4 asks each for a checkable
 version, which a constant and an id give, and leaves the run-time check at bind to that proposal. The macro takes its interface list by hand. Deriving the list from the dependency graph at package
@@ -149,7 +149,7 @@ build waits for the first package that leaves the tree.
   by this block's own `Interface ids` table and the declaration check.
 - **Recorded.** The `INTERFACES` note type in a leaf crate of its own, so carrying the note
   links no planner (ruled 2026-11-01 (UTC) on pull request #3026; the order is in
-  `design/roadmap/proposals/the-contract-crates-leave-in-this-order.md`). The declaration check
+  `design/roadmap/1017-the-contract-crates-leave-in-this-order.md`). The declaration check
   names `capability_manifest_note::` as the macro's crate in two places and must classify the new
   crate; both move with the crate.
 
