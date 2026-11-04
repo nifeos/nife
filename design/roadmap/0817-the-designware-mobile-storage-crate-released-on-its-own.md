@@ -173,6 +173,10 @@ each name. The lines below list the names that read as something other than clea
 keeps no record of a release-track crate's names (ruled 2026-10-26 UTC), so this list is the open
 work, and the lane that renames a name drops its line.
 
+### Nife's own plan
+
+- `role` (`src/jh7110.rs`): nife: nife's own process plan
+
 ### Belongs to something else
 
 - `bench` (`src/bench.rs`): scope: a bench
@@ -181,8 +185,15 @@ work, and the lane that renames a name drops its line.
 - `MATRIX_BLOCKS` (`src/bench.rs`): scope: a bench
 - `MATRIX_HZ` (`src/bench.rs`): scope: a bench
 - `MatrixRow` (`src/bench.rs`): scope: a bench
+- `ReadFailure` (`src/bench.rs`): scope: a bench
+- `ReadReport` (`src/bench.rs`): scope: a bench
+- `SCRATCH_SECTORS` (`src/bench.rs`): scope: a bench
 - `Watch` (`src/bench.rs`): scope: a bench
+- `WriteVerdict` (`src/bench.rs`): scope: a bench
+- `pattern` (`src/bench.rs`): scope: a bench
 - `read_matrix` (`src/bench.rs`): scope: a bench
+- `read_only` (`src/bench.rs`): scope: a bench
+- `scratch_write` (`src/bench.rs`): scope: a bench
 - `Entry` (`src/partition.rs`): scope: partitions
 - `SIGNATURE` (`src/partition.rs`): scope: partitions
 - `is_used` (`src/partition.rs`): scope: partitions
