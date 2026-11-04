@@ -55,7 +55,7 @@ skipped.
 
 ## What bounds the work
 
-Milestone 238 **refused** excluding `compositor` from the Miri run to make it fit. The reason
+Milestone 238 (two scheduled checks have never once succeeded,) **refused** excluding `compositor` from the Miri run to make it fit. The reason
 bounds this work. The crate has no `unsafe` today but is central system logic under active
 development, and an excluded crate is one where a future `unsafe` block is silently uncovered. So
 the answer has to be striding, not exclusion.

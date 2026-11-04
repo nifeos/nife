@@ -54,7 +54,7 @@ patch, and that is where a lane stops and writes it up.
 `script/vendor-watch`'s first run found upstream RedoxFS 37 non-merge commits ahead of the pinned
 sha, including `fix: do not hardcode # of sectors per block`, with 0.9.1 still the newest published
 version. A correctness fix sits on upstream master that no published version will carry on any
-schedule anyone here controls, in the engine that holds backups. DECISIONS §46's argument for
+schedule anyone here controls, in the engine that holds backups. DECISIONS §46 (thin primitives or whole subsystems; we write)'s argument for
 vendoring is that upstream's exposure accrues to us, and it accrues only if somebody moves the pin.
 The cost grows on its own: the five divergences are re-applied by hand at every bump, three of them
 forever, and `vendor/README.md` admits they may stop being re-applicable. Nobody has performed the

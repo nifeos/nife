@@ -51,7 +51,7 @@ primitives currently omits the term.
 
 ## What a measurement means
 
-Two facts from milestone 15's block bound what a measurement means. The RISC-V half arrived separately in
+Two facts from milestone 15 (tagged address spaces (ASIDs))'s block bound what a measurement means. The RISC-V half arrived separately in
 milestone 58, because `sfence.vma` is local and discharging a tag machine-wide needs an IPI to
 every hart through SBI RFENCE, so radon's number is about a different mechanism from argon's.
 And `notes/address-space-identifiers.md` records that RISC-V permits `satp.ASID` to be zero bits wide, so a RISC-V

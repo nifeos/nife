@@ -57,7 +57,7 @@ code already takes.
 `script/verify --affected-since <base>` decides whether a pull request needs the Kani suite by
 attributing every changed file to a crate in a harness crate's dependency closure. What it cannot
 attribute runs the proofs. That is the right default, and it is the source of the false positives. Two of
-milestone 119's three blind spots remain: any `Cargo.lock` touch proves everything, and a binary
+milestone 119 (the merge queue is the bottleneck, and)'s three blind spots remain: any `Cargo.lock` touch proves everything, and a binary
 file falls through to "not attributable to a crate". The prover is the merge queue's long pole. Milestone 119 priced fixing these above adding shards,
 because `glob`'s proofs are atomic at 15.0 minutes. The
 two cases differ: the binary one is a classification beside the documentation one, while

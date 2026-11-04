@@ -24,7 +24,7 @@ Which board leg owns a RISC-V number is settled by practice. Board numbers live 
 `ctx_switch` arm is one more step in. Choosing where a log file goes is a lane's call and a
 reversible one.
 
-**The one open error is a miscitation, not a fork.** Milestone 58's block points this
+**The one open error is a miscitation, not a fork.** Milestone 58 (RISC-V TLB shootdown, and the flush that)'s block points this
 measurement at milestone 24, and milestone 24 is *A second aarch64 board: Virtualization.framework*,
 status `OPTIONAL`: an aarch64 target that cannot produce a RISC-V number under any ruling. Fixing
 the pointer is an edit to milestone 58's block, not a question for anybody, and it is named in the

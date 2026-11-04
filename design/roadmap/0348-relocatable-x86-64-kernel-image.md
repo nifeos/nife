@@ -44,7 +44,7 @@ is only known to be wrong after a boot fails.
 `PHYS_START` for the x86_64 kernel is 32 MiB rather than 1 MiB so the image clears the low memory
 OVMF reserves. That buys a larger gap from the firmware and does not make the image safe at any
 other address. Nothing verifies that 32 MiB is free on every machine that boots this kernel, and
-milestone 195's `BUGS` says none of the UEFI path is proved on a Dell. The failure mode is a
+milestone 195 (finish the UEFI boot path: the suite)'s `BUGS` says none of the UEFI path is proved on a Dell. The failure mode is a
 machine-specific boot failure found by a person at xenon, where debugging costs the most. A
 relocatable image turns "does this firmware happen to leave our address free" into "the loader read
 the memory map", and it ends the tuning of a constant per firmware. The blocker is `.boot`, whose

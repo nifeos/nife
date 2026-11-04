@@ -64,6 +64,6 @@ Two patches against RedoxFS are written, applied and documented, and neither has
 upstream. `redoxfs-no-std-vec-import.patch` fixes the `no_std` build across four `E0425` sites and
 adds a `--no-default-features` CI job. `redoxfs-no-std-create-uuid.patch` lets a `no_std` caller
 create a filesystem by supplying the disk id, as `create` already takes `ctime`. The cost recurs at
-every bump, since milestone 203 reports when upstream moves and each report re-applies both
+every bump, since milestone 203 (nothing will ever tell us RedoxFS moved) reports when upstream moves and each report re-applies both
 divergences by hand. The `no_std` build of RedoxFS is broken upstream for everyone. This milestone
 is refused, so the patches stay carried here.

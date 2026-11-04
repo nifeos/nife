@@ -68,6 +68,6 @@ resource so the name is implied and unforgeable."*
 A holder of a `credential_contract` verify endpoint names the identity it asks about, so the
 confinement claim is "it only asks about its own" rather than "it cannot ask about anything else",
 and only the second is checkable from outside. The endpoint should be the credential for one
-resource, with the name implied by the endpoint the caller holds (DECISIONS §27's argument). The consumer
-that motivated it is gone, since milestone 54's SMB adapter no longer exists, so nothing today is
+resource, with the name implied by the endpoint the caller holds (DECISIONS §27 (the filesystem service: a capability-shaped contract over)'s argument). The consumer
+that motivated it is gone, since milestone 54 (a network file service a Mac can)'s SMB adapter no longer exists, so nothing today is
 visibly harmed. The wire stays wider than the design. The next program that authenticates anything will use the current shape.

@@ -13,7 +13,7 @@ Premise re-checked 2026-09-19 and
 it holds, with one name corrected. None of `script/interleaving-check`, `script/crate-probes` or
 `script/rule-violations --check` appears in `script/ci-build`'s check table, in any workflow under
 `.github/workflows/`, or in `script/cadence-check`'s schedule, so all three still answer only when a
-person types them. **`script/gates` no longer exists**: milestone 286 retired it, and `script/ci-build`'s table is the
+person types them. **`script/gates` no longer exists**: milestone 286 (one enumeration of the checks that gate) retired it, and `script/ci-build`'s table is the
 single enumeration now. The placement question below is about which tier a row takes.
 
 Which of the three takes a `local` row in `script/ci-build`, which takes a `ci`
@@ -50,7 +50,7 @@ slowly.
 
 ## Index row
 
-Milestone 232's audit found three instruments that render a verdict and that nothing calls:
+Milestone 232 (audit every check against two questions: does)'s audit found three instruments that render a verdict and that nothing calls:
 `script/interleaving-check` (26 loom harnesses, 12.4 seconds, green), `script/crate-probes` (about
 three minutes, 43 of 50 passing) and `script/rule-violations --check`. Each answers a real question
 only when somebody remembers to type it. `design/fatal-risks/README.md`'s first risk stands GREEN

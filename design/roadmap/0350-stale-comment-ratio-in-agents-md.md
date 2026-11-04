@@ -47,7 +47,7 @@ rung four and has now demonstrated its failure mode.
 ## Index row
 
 `AGENTS.md` told a reader that `kernel/src` "measures 40% of them" for comments in the line count.
-Milestone 234's weekly series measures the ratio directly: 39.3% eight weeks before the proposal,
+Milestone 234 (the project's own numbers, one row per)'s weekly series measures the ratio directly: 39.3% eight weeks before the proposal,
 45.3% when it was written, 46.4% on 2026-09-14. The figure is drifting and not merely stale, so
 correcting it buys a few weeks. A pointer at `notes/project-metrics/weekly.csv` is rung one because
 the series recomputes itself, and a hand-copied percentage is rung four. `AGENTS.md` is calef's

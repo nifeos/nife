@@ -157,7 +157,7 @@ Once the `console` server owns the console, the kernel and the server write to o
 address spaces with no arbitration, and the streams interleave at byte granularity. The kernel
 writes directly, because a kernel that cannot print during a fault is a kernel nobody can debug. The
 interleaving corrupts every bench session on argon, radon and xenon, where the serial log is the
-only thing those machines can say. It breaks milestone 216's boot-sequence recognizer in the least
+only thing those machines can say. It breaks milestone 216 (nothing in this tree can read a)'s boot-sequence recognizer in the least
 visible way: the log looks like output, and a kernel message splits the line being matched. Deciding it means saying where kernel output goes: a second port, a buffer the server
 drains, a claim the server takes and the kernel respects except in a panic, or something else. The
 choice binds every architecture and every future console consumer. A lane can price the options

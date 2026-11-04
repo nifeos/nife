@@ -67,4 +67,4 @@ merge queue's list of required checks, so a red run merges anyway. As configured
 AGENTS.md's ladder, a note in a run log somebody has to read, and the defect it catches is the
 kind nobody reads a log for. The green check also tells a reader that W^X is enforced on the image.
 The whole item is an ask, because the ruleset is a repository setting and no pull request can
-carry it. If the answer is no, stop describing the check as a gate in milestone 208's block.
+carry it. If the answer is no, stop describing the check as a gate in milestone 208 (the x86_64 kernel image ships an RWX)'s block.

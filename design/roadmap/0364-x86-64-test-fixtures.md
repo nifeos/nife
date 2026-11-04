@@ -49,6 +49,6 @@ device for an interrupt. Every fixture still unattached is another arm of that s
 
 `helpers/qemu-runner-x86_64.sh` starts a much barer machine than the other two runners, so most
 x86_64 tests pass by taking an early-exit arm and the suite reports a green leg over an untested
-surface. Milestone 303 built the first piece (the transport-blind disk lookup and the RedoxFS
-image), and milestone 420 holds the rest. The measure worth keeping is the count of tests taking a
+surface. Milestone 303 (x86_64's FS service has a server and) built the first piece (the transport-blind disk lookup and the RedoxFS
+image), and milestone 420 (x86_64 has one fixture of five and) holds the rest. The measure worth keeping is the count of tests taking a
 "no RedoxFS disk attached" arm, which was 36 when proposed and is 50 on 2026-09-19.
