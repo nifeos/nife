@@ -32,11 +32,13 @@
 #
 # # The token channel
 #
-# The helper that mints the one-hour `nife-fuzz-reader` installation token is a separate milestone
-# (fix-lanes-get-a-one-hour-reader-token.md), and how it delivers the token is not final. The whole
-# channel is the one function below. To read the token from a command instead of a variable, change
-# its body to the command, e.g. `nife-fuzz-reader-token`; nothing else in this file knows where the
-# token came from.
+# The one-hour `nife-fuzz-reader` installation token comes from `fuzz-token issue reader` in
+# nifeos/fuzz-host, through a sudo rule, and a lane hands it to this script in the variable below:
+#
+#     NIFE_ADVISORY_READER_TOKEN="$(sudo -n /usr/local/sbin/fuzz-token issue reader)" script/read-advisory <id>
+#
+# (notes/fuzzing/finishing-the-setup.md, step P11). The whole channel is the one function below;
+# nothing else in this file knows where the token came from.
 token_channel() { printf '%s' "${NIFE_ADVISORY_READER_TOKEN-}"; }
 channel_name='NIFE_ADVISORY_READER_TOKEN'
 
