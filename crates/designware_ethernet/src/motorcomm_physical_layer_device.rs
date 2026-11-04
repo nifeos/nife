@@ -15,6 +15,8 @@
 //! mainline states physical quantities, and for `gmac0` they agree.
 //! [`Settings::FALLBACK_GMAC0`] applies only when a tree states neither, and [`Settings::source`]
 //! says which happened.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
 use crate::management_data_input_output::{self, ManagementDataInputOutput};
 

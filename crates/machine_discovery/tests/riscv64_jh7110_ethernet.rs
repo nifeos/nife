@@ -8,7 +8,7 @@
 use designware_ethernet::jh7110::{
     COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, GMAC0_REGISTERS_PHYSICAL_ADDRESS,
 };
-use designware_ethernet::motorcomm::{Settings, SettingsSource};
+use designware_ethernet::motorcomm_physical_layer_device::{Settings, SettingsSource};
 use machine_discovery::jh7110::designware_ethernet::{discover, discover_aon_syscon};
 
 const VENDOR: &[u8] = include_bytes!("fixtures/jh7110-gmac-vendor.dtb");

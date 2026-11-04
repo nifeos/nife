@@ -36,7 +36,6 @@ crates/current_cpu_contract/src/lib.rs::PAGE_VA spelled-out
 
 crates/current_cpu_contract/src/lib.rs::thread_page_va spelled-out
 
-crates/designware_ethernet/src/coherence.rs::delivered question-shape
 
 crates/designware_mobile_storage/src/sd.rs::in_range question-shape
 

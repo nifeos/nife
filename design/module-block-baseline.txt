@@ -1525,47 +1525,26 @@ crates/current_cpu_contract/src/lib.rs::publish
 
 crates/current_cpu_contract/src/lib.rs::thread_page_va
 
-crates/designware_ethernet/src/coherence.rs
 
-crates/designware_ethernet/src/coherence.rs::Observation
 
-crates/designware_ethernet/src/coherence.rs::POSTED
 
-crates/designware_ethernet/src/coherence.rs::Payload
 
-crates/designware_ethernet/src/coherence.rs::Verdict
 
-crates/designware_ethernet/src/coherence.rs::WAIT_MICROSECONDS
 
-crates/designware_ethernet/src/coherence.rs::classify
 
-crates/designware_ethernet/src/coherence.rs::delivered
 
-crates/designware_ethernet/src/coherence.rs::observe
 
-crates/designware_ethernet/src/coherence.rs::prepare
 
-crates/designware_ethernet/src/controller.rs
 
-crates/designware_ethernet/src/controller.rs::Bus
 
-crates/designware_ethernet/src/controller.rs::Error
 
-crates/designware_ethernet/src/controller.rs::Identity
 
-crates/designware_ethernet/src/controller.rs::configure
 
-crates/designware_ethernet/src/controller.rs::core_version
 
-crates/designware_ethernet/src/controller.rs::read
 
-crates/designware_ethernet/src/controller.rs::soft_reset
 
-crates/designware_ethernet/src/controller.rs::start
 
-crates/designware_ethernet/src/controller.rs::station_address
 
-crates/designware_ethernet/src/controller.rs::stop
 
 
 
@@ -1605,9 +1584,6 @@ crates/designware_ethernet/src/descriptor.rs::TDES3_LS
 
 crates/designware_ethernet/src/descriptor.rs::TDES3_OWN
 
-crates/designware_ethernet/src/jh7110.rs
-
-crates/designware_ethernet/src/layout.rs
 
 
 
@@ -1615,9 +1591,8 @@ crates/designware_ethernet/src/layout.rs
 
 
 
-crates/designware_ethernet/src/motorcomm.rs
 
-crates/designware_ethernet/src/proofs.rs
+
 
 crates/designware_ethernet/src/registers.rs::CHAN_CUR_RX_DESC
 
@@ -1653,7 +1628,6 @@ crates/designware_ethernet/src/registers.rs::WINDOW
 
 crates/designware_ethernet/src/registers.rs::mac_hw_feature
 
-crates/designware_ethernet/src/tests.rs
 
 
 crates/designware_mobile_storage/src/bench.rs::ReadFailure
