@@ -94,7 +94,7 @@ pub fn start_net_server(image: &'static [u8], listen_grant: u64) -> Result<Wirin
 pub(crate) enum NotAtBoot {
     /// What [`start_net_server`] would have said.
     Absent(Absent),
-    /// A part no gate has driven, an I219 or another PCH part ([`::e1000e::platform_controller_hub::is_pch`]), left
+    /// A part no gate has driven, an I219 or another PCH part ([`::e1000e::platform_controller_hub::is_platform_controller_hub_device`]), left
     /// untouched: its bring-up runs FreeBSD's I219 passes (`crates/e1000e/src/platform_controller_hub/sequence.rs`),
     /// unproven on silicon, and a hang there would take xenon's prompt. See
     /// [`PCH_PROVEN_ON_SILICON`].
@@ -112,7 +112,9 @@ pub(crate) enum NotAtBoot {
 /// `$`.
 pub(crate) fn start_for_boot(image: &'static [u8]) -> Result<Wiring, NotAtBoot> {
     let dev = crate::pci::find_e1000e_device().ok_or(NotAtBoot::Absent(Absent::NoController))?;
-    if ::e1000e::platform_controller_hub::is_pch(dev.device) && !PCH_PROVEN_ON_SILICON {
+    if ::e1000e::platform_controller_hub::is_platform_controller_hub_device(dev.device)
+        && !PCH_PROVEN_ON_SILICON
+    {
         return Err(NotAtBoot::Unproven { device: dev.device });
     }
     start_net_server(image, socket_contract::NO_LISTEN_GRANT).map_err(NotAtBoot::Absent)
@@ -158,7 +160,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
     let stack_region = crate::memory_region::create(NET_SERVER_STACK_PAGES)
         .expect("no stack region for net_stack");
 
-    const PLANE: usize = ::e1000e::layout::PAGES as usize;
+    const PLANE: usize = ::e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as usize;
     const MAPS: usize = PLANE + 2 + NET_SERVER_STACK_PAGES as usize;
     let mut maps = [Mapping {
         va: 0,

@@ -1,6 +1,7 @@
 //! Name: ratified 2026-10-26 (#2761). Ruled in the tree-wide ruling that turns every `regs` module
-//! into `registers`, which names e1000e's. The constants inside keep their sources' names. Refused
-//! `regs` (an abbreviation).
+//! into `registers`, which names e1000e's. Refused `regs` (an abbreviation). The constants inside
+//! are spelled out and end `_REGISTER`, each keeping its source spelling as a `#[doc(alias)]`
+//! (ruled 2026-11-03 (UTC), #3149).
 
 /// **Strap** (`E1000_STRAP`, FreeBSD's `e1000_ich8lan.h`). Read only; FreeBSD writes it to order a
 /// config-space read before reset. Bits 5:1 also give the NVM's size
@@ -45,9 +46,14 @@ pub(crate) const PBA: u64 = 0x0_1000;
 /// **Packet Buffer ECC Status** (`E1000_PBECCSTS`, FreeBSD's `e1000_regs.h`).
 #[doc(alias = "packet buffer ecc status")]
 pub(crate) const PBECCSTS: u64 = 0x0_100c;
-/// **Receive Descriptor Control** (`E1000_RXDCTL(0)`, FreeBSD's `e1000_regs.h`). Queue 0.
+/// **Receive Descriptor Control** (OpenBSD's `E1000_RXDCTL(0)`, `sys/dev/pci/if_em_hw.h`). Queue 0.
+///
+/// Name: ratified 2026-11-03 (UTC), #3149. Renamed from `RXDCTL`; that and Intel's `E1000_RXDCTL`
+/// stay as aliases.
 #[doc(alias = "receive descriptor control")]
-pub const RXDCTL: u64 = 0x0_2828;
+#[doc(alias = "E1000_RXDCTL")]
+#[doc(alias = "RXDCTL")]
+pub const RECEIVE_DESCRIPTOR_CONTROL_REGISTER: u64 = 0x0_2828;
 /// **Analog Front End Band Gap Transmit Reference Data** (`E1000_KABGTXD`, FreeBSD's
 /// `e1000_regs.h`).
 #[doc(alias = "analog front end band gap transmit reference data")]
@@ -72,6 +78,11 @@ pub(crate) const H2ME: u64 = 0x0_5b50;
 /// Management Engine's status.
 #[doc(alias = "firmware semaphore")]
 pub(crate) const FWSM: u64 = 0x0_5b54;
-/// **Future Extended NVM 11** (`E1000_FEXTNVM11`, FreeBSD's `e1000_regs.h`).
+/// **Future Extended NVM 11** (OpenBSD's `E1000_FEXTNVM11`, `sys/dev/pci/if_em_hw.h`).
+///
+/// Name: ratified 2026-11-03 (UTC), #3149. Renamed from `FEXTNVM11`; that and Intel's
+/// `E1000_FEXTNVM11` stay as aliases.
 #[doc(alias = "future extended non-volatile memory 11")]
-pub const FEXTNVM11: u64 = 0x0_5bbc;
+#[doc(alias = "E1000_FEXTNVM11")]
+#[doc(alias = "FEXTNVM11")]
+pub const FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER: u64 = 0x0_5bbc;

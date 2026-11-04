@@ -58,7 +58,7 @@ impl Tails for Regs<'_> {
 impl Sim {
     fn new() -> Sim {
         Sim {
-            mem: vec![0xa5; layout::BYTES as usize],
+            mem: vec![0xa5; layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize],
             rdt: 0,
             tdt: 0,
             rdh: 0,
@@ -267,7 +267,7 @@ fn transmit_refuses_empty_and_oversized_frames() {
 
 #[test]
 fn the_layout_fits_its_pages_and_the_rings_fit_theirs() {
-    assert_eq!(layout::PAGES, 18);
+    assert_eq!(layout::DIRECT_MEMORY_ACCESS_REGION_PAGES, 18);
     assert!(RECEIVE_ENTRIES as u64 * 16 <= PAGE && TRANSMIT_ENTRIES as u64 * 16 <= PAGE);
     assert_eq!(
         RECEIVE_ENTRIES as u64 * 16 % 128,
@@ -280,26 +280,38 @@ fn the_layout_fits_its_pages_and_the_rings_fit_theirs() {
         "TDLEN must be a multiple of 128"
     );
     assert!(MAXIMUM_FRAME_BYTES as u64 <= BUFFER_BYTES);
-    assert_eq!(layout::RECEIVE_BUFFERS % PAGE, 0);
-    assert_eq!(layout::TRANSMIT_BUFFERS % PAGE, 0);
+    assert_eq!(layout::RECEIVE_BUFFERS_OFFSET_BYTES % PAGE, 0);
+    assert_eq!(layout::TRANSMIT_BUFFERS_OFFSET_BYTES % PAGE, 0);
 }
 
 #[test]
 fn the_queue_pages_hold_the_tails_and_not_the_control_registers() {
-    assert_eq!(registers::RDT & !0xfff, RECEIVE_QUEUE_PAGE);
-    assert_eq!(registers::TDT & !0xfff, TRANSMIT_QUEUE_PAGE);
-    assert_eq!(registers::TDT - TRANSMIT_QUEUE_PAGE, TAIL_IN_PAGE);
+    assert_eq!(
+        registers::RECEIVE_DESCRIPTOR_TAIL_REGISTER & !0xfff,
+        RECEIVE_QUEUE_PAGE
+    );
+    assert_eq!(
+        registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER & !0xfff,
+        TRANSMIT_QUEUE_PAGE
+    );
+    assert_eq!(
+        registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER - TRANSMIT_QUEUE_PAGE,
+        TAIL_IN_PAGE
+    );
     // The finding: base and tail share a page, so the split cannot keep ring placement.
-    assert_eq!(registers::RDBAL & !0xfff, RECEIVE_QUEUE_PAGE);
+    assert_eq!(
+        registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER & !0xfff,
+        RECEIVE_QUEUE_PAGE
+    );
     for r in [
-        registers::CTRL,
-        registers::STATUS,
-        registers::RCTL,
-        registers::TCTL,
-        registers::IMC,
-        registers::RAL0,
-        registers::RAH0,
-        registers::RFCTL,
+        registers::DEVICE_CONTROL_REGISTER,
+        registers::DEVICE_STATUS_REGISTER,
+        registers::RECEIVE_CONTROL_REGISTER,
+        registers::TRANSMIT_CONTROL_REGISTER,
+        registers::INTERRUPT_MASK_CLEAR_REGISTER,
+        registers::RECEIVE_ADDRESS_0_LOW_REGISTER,
+        registers::RECEIVE_ADDRESS_0_HIGH_REGISTER,
+        registers::RECEIVE_FILTER_CONTROL_REGISTER,
     ] {
         let page = r & !0xfff;
         assert!(
@@ -313,18 +325,21 @@ fn the_queue_pages_hold_the_tails_and_not_the_control_registers() {
 fn the_station_address_reads_from_entry_zero_and_refuses_an_invalid_one() {
     // QEMU's default, 52:54:00:12:34:56, as RAL/RAH hold it.
     let ral = u32::from_le_bytes([0x52, 0x54, 0x00, 0x12]);
-    let rah = u32::from_le_bytes([0x34, 0x56, 0, 0]) | RAH_AV;
+    let rah = u32::from_le_bytes([0x34, 0x56, 0, 0]) | RECEIVE_ADDRESS_HIGH_ADDRESS_VALID;
     assert_eq!(
         station_address_from_receive_address(ral, rah),
         Some([0x52, 0x54, 0x00, 0x12, 0x34, 0x56])
     );
     assert_eq!(
-        station_address_from_receive_address(ral, rah & !RAH_AV),
+        station_address_from_receive_address(ral, rah & !RECEIVE_ADDRESS_HIGH_ADDRESS_VALID),
         None
     );
-    assert_eq!(station_address_from_receive_address(0, RAH_AV), None);
     assert_eq!(
-        station_address_from_receive_address(0x01, RAH_AV),
+        station_address_from_receive_address(0, RECEIVE_ADDRESS_HIGH_ADDRESS_VALID),
+        None
+    );
+    assert_eq!(
+        station_address_from_receive_address(0x01, RECEIVE_ADDRESS_HIGH_ADDRESS_VALID),
         None,
         "a group address"
     );
@@ -347,11 +362,23 @@ fn the_claimed_ids_are_intel_and_qemus_is_among_them() {
 
 #[test]
 fn the_control_words_carry_the_bits_the_device_needs() {
-    assert_ne!(rctl() & 0x2, 0, "RCTL.EN");
-    assert_ne!(rctl() & 0x8000, 0, "broadcast, for the DHCP offer");
-    assert_eq!(rctl() & 0x18, 0, "never promiscuous");
-    assert_eq!(rctl() & 0x0003_0000, 0, "2048-byte buffers");
-    assert_ne!(tctl() & 0x2, 0, "TCTL.EN");
+    assert_ne!(receive_control_register_value() & 0x2, 0, "RCTL.EN");
+    assert_ne!(
+        receive_control_register_value() & 0x8000,
+        0,
+        "broadcast, for the DHCP offer"
+    );
+    assert_eq!(
+        receive_control_register_value() & 0x18,
+        0,
+        "never promiscuous"
+    );
+    assert_eq!(
+        receive_control_register_value() & 0x0003_0000,
+        0,
+        "2048-byte buffers"
+    );
+    assert_ne!(transmit_control_register_value() & 0x2, 0, "TCTL.EN");
 }
 
 /// The three control words as whole values, so a field that lands at the wrong shift is caught
@@ -359,13 +386,25 @@ fn the_control_words_carry_the_bits_the_device_needs() {
 /// IPGT 8, IPGR1 8 at bit 10, IPGR2 6 at bit 20 (Linux's `DEFAULT_82543_TIPG_*`).
 #[test]
 fn the_control_words_are_linuxs_values_exactly() {
-    assert_eq!(rctl(), 0x0400_8002);
-    assert_eq!(tctl(), 0x0003_f0fa);
-    assert_eq!(tctl() >> 4 & 0xff, 15, "collision threshold");
-    assert_eq!(tctl() >> 12 & 0x3ff, 63, "collision distance");
-    assert_eq!(tipg(), 0x0060_2008);
+    assert_eq!(receive_control_register_value(), 0x0400_8002);
+    assert_eq!(transmit_control_register_value(), 0x0003_f0fa);
     assert_eq!(
-        (tipg() & 0x3ff, tipg() >> 10 & 0x3ff, tipg() >> 20 & 0x3ff),
+        transmit_control_register_value() >> 4 & 0xff,
+        15,
+        "collision threshold"
+    );
+    assert_eq!(
+        transmit_control_register_value() >> 12 & 0x3ff,
+        63,
+        "collision distance"
+    );
+    assert_eq!(transmit_inter_packet_gap_register_value(), 0x0060_2008);
+    assert_eq!(
+        (
+            transmit_inter_packet_gap_register_value() & 0x3ff,
+            transmit_inter_packet_gap_register_value() >> 10 & 0x3ff,
+            transmit_inter_packet_gap_register_value() >> 20 & 0x3ff
+        ),
         (8, 8, 6)
     );
 }
@@ -416,11 +455,12 @@ fn ring_slots_are_distinct_evenly_spaced_and_wrap() {
             layout::receive_descriptor(i % RECEIVE_ENTRIES)
         );
         assert!(
-            (layout::RECEIVE_BUFFERS..layout::TRANSMIT_BUFFERS)
+            (layout::RECEIVE_BUFFERS_OFFSET_BYTES..layout::TRANSMIT_BUFFERS_OFFSET_BYTES)
                 .contains(&layout::receive_buffer(i))
         );
         assert!(
-            (layout::RECEIVE_RING..layout::TRANSMIT_RING).contains(&layout::receive_descriptor(i))
+            (layout::RECEIVE_RING_OFFSET_BYTES..layout::TRANSMIT_RING_OFFSET_BYTES)
+                .contains(&layout::receive_descriptor(i))
         );
         if next != 0 {
             assert_eq!(
@@ -443,9 +483,12 @@ fn ring_slots_are_distinct_evenly_spaced_and_wrap() {
             layout::transmit_descriptor(i),
             layout::transmit_descriptor(i % TRANSMIT_ENTRIES)
         );
-        assert!((layout::TRANSMIT_BUFFERS..layout::BYTES).contains(&layout::transmit_buffer(i)));
         assert!(
-            (layout::TRANSMIT_RING..layout::RECEIVE_BUFFERS)
+            (layout::TRANSMIT_BUFFERS_OFFSET_BYTES..layout::DIRECT_MEMORY_ACCESS_REGION_BYTES)
+                .contains(&layout::transmit_buffer(i))
+        );
+        assert!(
+            (layout::TRANSMIT_RING_OFFSET_BYTES..layout::RECEIVE_BUFFERS_OFFSET_BYTES)
                 .contains(&layout::transmit_descriptor(i))
         );
         if next != 0 {
@@ -460,10 +503,22 @@ fn ring_slots_are_distinct_evenly_spaced_and_wrap() {
             );
         }
     }
-    assert_eq!(layout::receive_buffer(0), layout::RECEIVE_BUFFERS);
-    assert_eq!(layout::transmit_buffer(0), layout::TRANSMIT_BUFFERS);
-    assert_eq!(layout::receive_descriptor(0), layout::RECEIVE_RING);
-    assert_eq!(layout::transmit_descriptor(0), layout::TRANSMIT_RING);
+    assert_eq!(
+        layout::receive_buffer(0),
+        layout::RECEIVE_BUFFERS_OFFSET_BYTES
+    );
+    assert_eq!(
+        layout::transmit_buffer(0),
+        layout::TRANSMIT_BUFFERS_OFFSET_BYTES
+    );
+    assert_eq!(
+        layout::receive_descriptor(0),
+        layout::RECEIVE_RING_OFFSET_BYTES
+    );
+    assert_eq!(
+        layout::transmit_descriptor(0),
+        layout::TRANSMIT_RING_OFFSET_BYTES
+    );
 }
 
 /// `start` clears the whole transmit ring, so no descriptor holds the region's stale bytes

@@ -44,7 +44,7 @@ code.
 
 `sealed_pair` decides whether a kernel vouches for an archive by scanning the image for the
 archive's digest: `haystack.windows(needle.len()).any(|w| w == needle)`,
-`crates/sealed_pair/src/lib.rs:445`. That is a question about **bytes present**, and the question a
+`contains` in `crates/sealed_pair/src/lib.rs`. That is a question about **bytes present**, and the question a
 reader thinks they are asking is **will this kernel check**. The two agree on every default build
 and come apart on every diverted one.
 
