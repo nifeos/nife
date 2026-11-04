@@ -3796,6 +3796,11 @@ python3 helpers/mutation_inflow.py orphans
 python3 helpers/mutation_real_holes.py --selftest >/dev/null
 echo "==> the survivor classification is current"
 python3 helpers/mutation_real_holes.py check
+# The crate-to-file table in notes/mutation-testing/README.md is generated from the ledgers'
+# headings and the triage file, so it must equal a regeneration.
+python3 helpers/mutation_ledger_index.py --selftest >/dev/null
+echo "==> the mutation ledger crate table is current"
+python3 helpers/mutation_ledger_index.py check
 # Part 1 of the same proposal, the shape check: every noise-shape survivor's own line, at the
 # census's commit, either proves the no-test-can-kill argument from the literals and consts on it
 # or records that it cannot. The verdicts are fixtures-only here; the real run reads census
