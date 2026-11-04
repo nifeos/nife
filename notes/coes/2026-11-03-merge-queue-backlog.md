@@ -74,11 +74,7 @@ Before and after #3176 (merged 23:56 UTC):
 | 11-03 15:00 to 16:10 | 07:00 to 08:10 | 25 naming pull requests (#3133 to #3156) are opened and marked ready | pull requests |
 | 16:10:04 | 08:10 | #3132 merges; #3133, #3134, #3135 and #3137 are removed for conflicts within 68 s | queue events |
 | 16:10 to 18:21 | 08:10 to 10:21 | the queue is empty while armed pull requests wait for their own checks | queue events |
-| 18:10 to 18:21 | 10:10 to 10:21 | 14 more pull requests are opened (#3160 to #3173) | pull requests |
 | 18:31 to 18:55 | 10:31 to 10:55 | four groups start; they take 118, 144, 146 and 157 min | run list |
-| 19:16 to 19:34 | 11:16 to 11:34 | #3135 is removed three times as `invalid_merge_commit` | queue events |
-| 20:11 to 21:01 | 12:11 to 13:01 | nine entries are dequeued by the session account to push to them | queue events |
-| 21:37 | 13:37 | queue depth peaks at 28 | queue events |
 | about 21:54 | 13:54 | a local development host restarts and every in-process lane stops; 13 of 29 entries read UNMERGEABLE | maintainer handoff |
 | 22:05 | 14:05 | #3176 (the heavy gates only in the queue) is marked ready, built on #3175 | pull requests |
 | 22:57:52 to 22:58:45 | 14:57 | #3160 and #3168 merge; 14 entries are removed for conflicts | queue events |
@@ -192,29 +188,22 @@ it stayed armed after #3176 absorbed its diff, and one group spent 23 minutes pr
   old 60-minute timeout the queue would have evicted every one.
 - `fuzz-guests` failed in 6 of the 39 group runs, and it is not a required check, so the queue
   merged those groups anyway.
-- The host restart stopped the lanes, not the queue: the 29 entries kept building through it.
 
 ## Action items
 
-- **Done.** #3176 (2026-11-03): the heavy gates run only in the merge queue, and the `full-ci` label
-  runs them on demand; a pull request's own checks went from a median 100 minutes to 5.
-- **Done.** #3181 (2026-11-04 01:34 UTC): the names note carries no totals and the baselines hold one
-  row per line with a blank line after each, so two naming pull requests share no line.
-- **Done.** #3180 (2026-11-04 04:54 UTC): stage 1 of the owned runners sits behind
-  `NIFE_RUNNER_OWNED`; setting the variable is the architect's.
-- **Milestone 965.** Milestone 965 (gating CI rents more concurrency before it owns a runner): the
-  same 60-job cap bound again, and its decision is the first lever. Priority 1, owner the architect.
-- **Proposed.** `design/roadmap/proposals/the-merge-queue-is-sized-to-the-runner-pool.md`: the build
-  window, the group size and stage 1's switch, chosen together against measured capacity, with a
-  recommendation. Priority 1, owner the architect for the settings, a lane for the measurement.
-- **Proposed.** `design/roadmap/proposals/an-entry-that-conflicts-with-the-queue-is-caught-before-it.md`:
-  a check that merges a pull request against the queue's tip before arming, and a launch check that
-  names lanes sharing a file. Priority 2, owner the maintainer role and a lane.
-- **Proposed.** `design/roadmap/proposals/a-push-to-a-queued-pull-request-re-arms-it.md`: `script/push`
-  dequeues, pushes and re-arms in one step, and refuses to arm a held pull request. Priority 2, owner
-  a lane.
-- **Recorded.** The unexplained `invalid_merge_commit` removals and the non-required `fuzz-guests`
-  failures in group runs are BUGS entries in `notes/merge-queue/limitations.md`.
+Each proposal and milestone below names this file and its row, under its title.
+
+| # | what | status | record |
+|---|---|---|---|
+| 1 | The heavy gates run only in the merge queue, and the `full-ci` label runs them on demand. Priority 1. | delivered | **Done.** #3176, merged 2026-11-03 23:56 UTC |
+| 2 | The names note carries no totals, and each baseline row stands alone between blank lines. Priority 1. | delivered | **Done.** #3181, merged 2026-11-04 01:34 UTC |
+| 3 | Stage 1 of the owned runners, behind `NIFE_RUNNER_OWNED`; setting the variable is the architect's. Priority 1. | delivered | **Done.** #3180, merged 2026-11-04 04:54 UTC |
+| 4 | Rent more hosted concurrency, or not: the same cap bound again. Priority 1, owner the architect. | proposed | **Milestone 965.** Milestone 965 (gating CI rents more concurrency before it owns a runner) |
+| 5 | Choose the build window, the group size and stage 1's switch together, against measured capacity. Priority 1, owner the architect for the settings and a lane for the measurement. | proposed | **Proposed.** `design/roadmap/proposals/the-merge-queue-is-sized-to-the-runner-pool.md` |
+| 6 | Merge a pull request against the queue's tip before arming it, and name lanes that share a file before a wide run launches. Priority 2, owner the maintainer role and a lane. | proposed | **Proposed.** `design/roadmap/proposals/an-entry-that-conflicts-with-the-queue-is-caught-before-it.md` |
+| 7 | `script/push` dequeues, pushes and re-arms in one step, and arming refuses a held pull request. Priority 2, owner a lane. | proposed | **Proposed.** `design/roadmap/proposals/a-push-to-a-queued-pull-request-re-arms-it.md` |
+| 8 | The unexplained `invalid_merge_commit` removals and the `fuzz-guests` failures in group runs. Priority 3. | delivered | **Recorded.** BUGS entries in `notes/merge-queue/limitations.md`, "Removals the queue gives no reason for" |
+| 9 | A correction's action items name their records, and those records name the correction, checked by `script/roadmap --check`. Priority 2. | delivered | **Done.** #3188: the table form and the back-reference check in `helpers/coe_actions.py` |
 
 ## How the numbers were made
 

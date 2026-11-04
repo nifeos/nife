@@ -191,6 +191,8 @@ work for a lane of its own and needs a ruling.
 
 ## Removals the queue gives no reason for
 
+COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 8.
+
 - GitHub removed five entries as `invalid_merge_commit` on 2026-11-03 and 11-04 (UTC): #3135 three
   times within 18 minutes, then #3166 and #3128 once each. The event carries no detail, and nothing in
   the tree explains which ones the branch caused. A pull request that takes this removal goes back

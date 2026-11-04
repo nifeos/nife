@@ -9,6 +9,8 @@ needs_person: no
 ---
 # A push to a queued pull request re-arms it, and arming refuses a held one
 
+COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 7.
+
 Raised by lane/coe-merge-queue-2026-11-03 on 2026-11-04 (UTC), from the correction of error for the
 Pacific day of 2026-11-03 (`notes/coes/2026-11-03-merge-queue-backlog.md`). The integrator mints
 the number at promotion.

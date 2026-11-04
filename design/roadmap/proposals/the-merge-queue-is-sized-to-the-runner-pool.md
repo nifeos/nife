@@ -9,6 +9,8 @@ needs_person: yes
 ---
 # The merge queue is sized to the runner pool
 
+COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 5.
+
 Raised by lane/coe-merge-queue-2026-11-03 on 2026-11-04 (UTC), from the correction of error for the
 Pacific day of 2026-11-03 (`notes/coes/2026-11-03-merge-queue-backlog.md`). The integrator mints
 the number at promotion. This proposal changes no setting: the ruleset and the repository variable

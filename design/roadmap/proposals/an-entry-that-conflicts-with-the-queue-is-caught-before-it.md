@@ -9,6 +9,8 @@ needs_person: no
 ---
 # An entry that conflicts with the queue is caught before it
 
+COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 6.
+
 Raised by lane/coe-merge-queue-2026-11-03 on 2026-11-04 (UTC), from the correction of error for the
 Pacific day of 2026-11-03 (`notes/coes/2026-11-03-merge-queue-backlog.md`). The integrator mints
 the number at promotion.

@@ -39,6 +39,11 @@ Who raised it and what they were doing at the time.
 
 `notes/roadmap.md` says what each dependency field means.
 
+A proposal that is a correction's action item carries one more line, on its own directly under the
+title: `COE action item: notes/coes/<file>.md, action <N>.` The correction's action table links back
+to it, and `script/roadmap --check` fails either half without the other (`helpers/coe_actions.py`).
+The line moves with the file at promotion.
+
 A proposal is under the same limits as every other document: 3,000 words, and §213 (writing
 standards)'s sentence and bold rules, checked by `helpers/prose_ratchet.py` from the day it is
 written. calef ruled this on
