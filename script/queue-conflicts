@@ -22,11 +22,14 @@
 # skips its advisory run when NIFE_SKIP_QUEUE_CHECK=1. Say why in the pull request when you arm
 # over a reported conflict.
 #
-# See notes/merge-queue.md, helpers/queue_conflicts.py. Name: provisional.
+# See notes/merge-queue/conflict-precheck.md and helpers/queue_conflicts.py.
+#
+# Name: provisional, 2026-11-04 (UTC), lane/queue-conflict-precheck. Says what it checks; considered
+# `queue-precheck`. calef has not ruled on it.
 
 case "${1:-}" in
 -h | --help)
-    sed -n '3,22p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n "3,24p" "$0" | sed 's/^# \{0,1\}//'
     exit 0
     ;;
 shared)
