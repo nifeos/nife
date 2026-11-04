@@ -48,7 +48,8 @@ fn first_sector<R: RegisterWindowAndClock>(registers: R) -> Option<[u8; 512]> {
 }
 ```
 
-`partition::MasterBootRecord::parse` reads that sector, and `MasterBootRecord::scratch` names the
+`partition::MasterBootRecord::parse` reads that sector, and
+`MasterBootRecord::scratch_sector_range` names the
 sectors before the first partition that a write test may use.
 `HostController::with_internal_direct_memory_access` moves later transfers through a DMA region you supply
 (`internal_direct_memory_access::DirectMemoryAccessRegion`). The `jh7110` module holds that SoC's

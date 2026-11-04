@@ -24,7 +24,7 @@ measured on, and its error bar, is in its own section.
 | what | today | with a deadline | how it was measured |
 |---|---|---|---|
 | bytes per thread | `size_of::<Thread>()` = 744, in a 4096-byte page | 752, in the same page | compile-time probe, both ISAs |
-| bytes of BSS | 0 (the pool is gone; TCBs are page-resident) | 0 | `sched.rs:81`, milestone 19c (real).2 |
+| bytes of BSS | 0 (the pool is gone; TCBs are page-resident) | 0 | `kernel/src/sched/thread_table.rs`, milestone 19c (real).2 |
 | the idle tick, per core | ~491 instructions aarch64, ~400 riscv64 | +30 (aarch64), +31 (riscv64) | `llvm-objdump`, debug build, executed path |
 | the idle tick, as a fraction of a core | n/a | under 3 parts per million | 30 instructions x 100 Hz against a 1 GHz core; less on a faster one |
 | per-tick comparisons when nothing is due | n/a | 1, identically for all three data structures | host model, 100,000 ticks |
@@ -40,7 +40,7 @@ The two numbers that decide anything are the last two, and neither is a data str
 The brief for this lane said "`MAX_THREADS` is 128 and the thread pool is a static BSS array". That
 was true at milestone 14 (kernel) phase B.2 and stopped being true at 19c.2. The static pool is
 gone, and every `Thread` now lives at the start of one page drawn from `kmem` or from a user process's own
-memory region (`sched.rs:80-93`, notes/thread-control-block.md). The table is `generational_table::Table<ThreadControlBlockPointer, 256>`, about 2 KiB of
+memory region (`kernel/src/sched/thread_table.rs`, notes/thread-control-block.md). The table is `generational_table::Table<ThreadControlBlockPointer, 256>`, about 2 KiB of
 pointers.
 
 So the question "what does a per-thread deadline field cost in bytes" has an answer nobody has to

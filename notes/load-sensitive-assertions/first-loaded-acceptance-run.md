@@ -43,19 +43,19 @@ is the second round's rule, and it still holds.
 | run | result | seconds | 1-min load average (min/mean/peak) | QEMUs seen | what failed |
 |---|---|---|---|---|---|
 | 1 | pass | 171 | 28.9 / 39.7 / 50.8 | 2 |  |
-| 2 | **FAIL** | 47 | 31.5 / 34.9 / 39.2 | 1 | aarch64 `timer.rs:414`, the eight-attempt retry budget |
-| 3 | **FAIL** | 100 | 39.0 / 41.5 / 44.0 | 3 | riscv64 `timer.rs:509`, the miss taxonomy |
+| 2 | **FAIL** | 47 | 31.5 / 34.9 / 39.2 | 1 | aarch64 `timer.rs`, the eight-attempt retry budget |
+| 3 | **FAIL** | 100 | 39.0 / 41.5 / 44.0 | 3 | riscv64 `timer.rs`, the miss taxonomy |
 | 4 | pass | 160 | 40.4 / 45.4 / 49.0 | 3 |  |
-| 5 | **FAIL** | 104 | 38.6 / 42.3 / 45.4 | 3 | riscv64 `timer.rs:509`, the miss taxonomy |
+| 5 | **FAIL** | 104 | 38.6 / 42.3 / 45.4 | 3 | riscv64 `timer.rs`, the miss taxonomy |
 | 6 | pass | 151 | 33.4 / 38.6 / 42.4 | 2 |  |
 | 7 | pass | 151 | 35.7 / 38.4 / 43.2 | 4 |  |
-| 8 | **FAIL** | 113 | 32.5 / 36.7 / 39.8 | 3 | riscv64 `timer.rs:455`, the eight-attempt retry budget |
+| 8 | **FAIL** | 113 | 32.5 / 36.7 / 39.8 | 3 | riscv64 `timer.rs`, the eight-attempt retry budget |
 | 9 | pass | 157 | 37.1 / 39.5 / 44.6 | 3 |  |
 | 10 | pass | 152 | 31.8 / 36.1 / 43.2 | 4 |  |
-| 11 | **FAIL** | 51 | 31.8 / 32.7 / 33.8 | 2 | aarch64 `timer.rs:470`, the miss taxonomy |
+| 11 | **FAIL** | 51 | 31.8 / 32.7 / 33.8 | 2 | aarch64 `timer.rs`, the miss taxonomy |
 | 12 | pass | 158 | 34.3 / 39.3 / 41.8 | 4 |  |
-| 13 | **FAIL** | 51 | 36.7 / 40.3 / 43.9 | 3 | aarch64 `timer.rs:414`, the eight-attempt retry budget |
-| 14 | **FAIL** | 102 | 39.2 / 41.6 / 45.1 | 3 | riscv64 `timer.rs:455`, the eight-attempt retry budget |
+| 13 | **FAIL** | 51 | 36.7 / 40.3 / 43.9 | 3 | aarch64 `timer.rs`, the eight-attempt retry budget |
+| 14 | **FAIL** | 102 | 39.2 / 41.6 / 45.1 | 3 | riscv64 `timer.rs`, the eight-attempt retry budget |
 | 15 | pass | 167 | 38.2 / 42.4 / 48.3 | 3 |  |
 | 16 | pass | 164 | 48.0 / 51.1 / 56.5 | 3 |  |
 | 17 | pass | 175 | 31.4 / 40.4 / 46.9 | 2 |  |
@@ -70,9 +70,9 @@ is the second round's rule, and it still holds.
 | 26 | pass | 161 | 29.8 / 35.1 / 41.7 | 1 |  |
 | 27 | pass | 151 | 35.5 / 40.3 / 45.5 | 1 |  |
 | 28 | pass | 172 | 31.9 / 37.6 / 41.3 | 1 |  |
-| 29 | **FAIL** | 43 | 36.6 / 39.8 / 41.7 | 0 | aarch64 `timer.rs:470`, the miss taxonomy |
+| 29 | **FAIL** | 43 | 36.6 / 39.8 / 41.7 | 0 | aarch64 `timer.rs`, the miss taxonomy |
 | 30 | pass | 164 | 41.7 / 50.1 / 54.0 | 1 |  |
-| 31 | **FAIL** | 117 | 33.6 / 39.7 / 49.8 | 1 | riscv64 `frames/src/lib.rs:315`, **double free of a frame** |
+| 31 | **FAIL** | 117 | 33.6 / 39.7 / 49.8 | 1 | riscv64 `free` in `crates/page_frames/src/lib.rs`, **double free of a frame** |
 | 32 | pass | 161 | 34.6 / 39.7 / 42.3 | 1 |  |
 | 33 | pass | 162 | 33.6 / 37.8 / 40.6 | 1 |  |
 | 34 | pass | 170 | 31.1 / 39.6 / 47.5 | 2 |  |
@@ -94,8 +94,8 @@ The symmetry says this is a property of the assertions rather than of either arc
 
 | assertion | aarch64 | riscv64 | what it said |
 |---|---|---|---|
-| `ticks_arrive_at_the_configured_rate`, the eight-attempt retry budget | `timer.rs:414`, runs 2 and 13 | `timer.rs:455`, runs 8 and 14 | "no miss-free measurement window in eight tries" |
-| `the_handler_keeps_up_when_no_lock_is_held`, the taxonomy's cut | `timer.rs:470`, runs 11 and 29 | `timer.rs:509`, runs 3 and 5 | "the timer handler is taking longer than a whole tick period, with no lock held" |
+| `ticks_arrive_at_the_configured_rate`, the eight-attempt retry budget | `timer.rs`, runs 2 and 13 | `timer.rs`, runs 8 and 14 | "no miss-free measurement window in eight tries" |
+| `the_handler_keeps_up_when_no_lock_is_held`, the taxonomy's cut | `timer.rs`, runs 11 and 29 | `timer.rs`, runs 3 and 5 | "the timer handler is taking longer than a whole tick period, with no lock held" |
 
 Both were predicted in the old note, and neither had ever been observed. Its BUGS section said the
 drift test "can still go red on a pathological host, by design", and called that "rarer by orders".
