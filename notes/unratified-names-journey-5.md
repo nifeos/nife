@@ -71,7 +71,7 @@ The groups that need a real ruling are the register and bit constants: `E7` and 
 `pch::flush::required`, `pch::flush::tail_after`, `pch::flush::transmit_word`, `pch::hardware::is_pch`
 
 - Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; `is_pch` follows the module-name decision (`is_platform_controller_hub` if `pch` is spelled out).
+- Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; `is_pch` follows the module-name decision (`is_platform_controller_hub` if the module name spells `pch` out).
 
 ### E10. Non-volatile memory words (6)
 
