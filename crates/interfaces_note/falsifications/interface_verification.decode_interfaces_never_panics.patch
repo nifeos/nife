@@ -1,0 +1,24 @@
+Falsifies `interfaces_note::interface_verification::decode_interfaces_never_panics`.
+
+The defect: `decode_interfaces` reads the version word with a plain `d[..4]`
+instead of `d.get(..4).ok_or(Error::NoVersion)?`, the unchecked index a refactor
+for brevity produces. A note shorter than four bytes then panics inside a loader
+that is handed bytes from an untrusted binary rather than returning `NoVersion`.
+
+Expected to fail: an index-out-of-bounds check inside `decode_interfaces`, on any
+slice shorter than four bytes.
+
+
+diff --git a/crates/interfaces_note/src/lib.rs b/crates/interfaces_note/src/lib.rs
+index 70afb0cb6..6ee7b05d0 100644
+--- a/crates/interfaces_note/src/lib.rs
++++ b/crates/interfaces_note/src/lib.rs
+@@ -203,7 +203,7 @@ fn record(r: &[u8]) -> Declared {
+ ///
+ /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+ pub fn decode_interfaces(d: &[u8]) -> Result<Interfaces<'_>, Error> {
+-    let version = d.get(..4).ok_or(Error::NoVersion)?;
++    let version = &d[..4];
+     if u32::from_le_bytes([version[0], version[1], version[2], version[3]]) != INTERFACES_VERSION {
+         return Err(Error::UnknownVersion);
+     }

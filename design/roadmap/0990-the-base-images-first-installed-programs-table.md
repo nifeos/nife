@@ -184,7 +184,7 @@ the ruling changes where the records go and not how the composition checks them.
     every reader takes as many pages as the generation holds, up to a named bound of 64 KiB (16
     pages). A reader refuses a generation past the bound by name and never truncates. The installer
     writes within the same bound. Home: the proposal
-    [a-generation-grows-past-one-page](proposals/a-generation-grows-past-one-page.md).
+    [a-generation-grows-past-one-page](1009-a-generation-grows-past-one-page.md).
   - **A base row claims no name at the prompt.** Ruled 2026-11-01 (UTC) by calef, on #3023: a base
     row carries the program name and digest and no pointer. So the shell's `Bare::Both` refusal
     (§229 (how a bare name at the prompt reaches an installed program)) never meets a base name in
@@ -226,9 +226,9 @@ the ruling changes where the records go and not how the composition checks them.
 - **Outstanding.** Item 2, attaching the volume and reading generation 1 at boot. Checked
   2026-11-01 (UTC) against `xtask/src/boot_check.rs`, which attaches no disk; the `BUGS` above
   list what blocks it.
-- **Proposed.** A generation larger than a page, ruled 2026-11-01 (UTC) to read up to a 64 KiB
-  bound (16 pages) and refuse past it:
-  `design/roadmap/proposals/a-generation-grows-past-one-page.md`.
+- **Milestone 1009.** Milestone 1009 (a generation of the installed-programs table grows past one
+  page). A generation larger than a page, ruled 2026-11-01 (UTC) to read up to a 64 KiB bound (16
+  pages) and refuse past it.
 - **Recorded.** Item 3, the measurement, ruled 2026-11-01 (UTC): the progenitor checks each
   owner-shaped base row against `program_measurements` at read time. That check is outstanding
   work, listed under `BUGS`.

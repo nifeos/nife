@@ -90,7 +90,7 @@ jobs:
     # "What I need from you"). Keep it stable: renaming this job breaks the match the same way
     # verify.yml's header already warns about for a required check moved between workflows.
     name: architect hold (needs-architect label)
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     # Reads one PR's labels over the API. No checkout, no toolchain, no cache: nothing here needs
     # the repository's contents.
     timeout-minutes: 5

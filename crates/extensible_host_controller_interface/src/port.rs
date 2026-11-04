@@ -58,9 +58,10 @@ pub const CHANGES: u32 = CONNECT_CHANGE
 /// constant-assertion lint is off on purpose: the assertion is constant by construction, and the
 /// compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+/// Name: ratified 2026-11-03 (UTC), #3117. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_PORT_CHANGE_BITS_SHARE_NO_BIT: () = assert!(
+pub const PORT_CHANGE_BITS_DO_NOT_OVERLAP: () = assert!(
     CONNECT_CHANGE
         + ENABLE_CHANGE
         + WARM_RESET_CHANGE
@@ -82,9 +83,10 @@ pub(crate) const PRESERVE: u32 =
 /// constant. The constant-assertion lint is off on purpose: the assertion is constant by
 /// construction, and the compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+/// Name: ratified 2026-11-03 (UTC), #3117. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_PRESERVED_FIELDS_SHARE_NO_BIT: () = assert!(
+pub const PRESERVED_FIELDS_DO_NOT_OVERLAP: () = assert!(
     1 + (1 << 3) + (0xf << 10) + (1 << 30) + (0xf << 5) + (1 << 9) + (0x3 << 14) + (0x7 << 25)
         == PRESERVE
 );

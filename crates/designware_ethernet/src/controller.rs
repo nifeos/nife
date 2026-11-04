@@ -8,7 +8,7 @@
 //! against `simulator`'s controller.
 
 use crate::motorcomm::{Link, Speed};
-use crate::{BUFFER_SIZE, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, registers};
+use crate::{BUFFER_BYTES, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, registers};
 
 /// Why the controller was not brought up.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -192,7 +192,7 @@ pub(crate) fn receive_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u
 /// constant. Clippy's `eq_op` lint folds the second conjunct's literals to `0 == 0`; that is
 /// what a gate is, allowed here for exactly that reason.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+/// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(clippy::eq_op)]
 pub const RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () = assert!(
     registers::MTL_CHAN_RX_OP_MODE_RSF & registers::MTL_CHAN_RX_OP_MODE_RTC_MASK == 0
@@ -221,7 +221,7 @@ pub(crate) fn transmit_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> 
 /// the compiler checks here; the mutation exclusion for `transmit_queue_mode` names this
 /// constant.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+/// Name: ratified 2026-11-03 (UTC), #3120.
 pub const TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () =
     assert!(registers::MTL_CHAN_TX_OP_MODE_TSF & registers::MTL_CHAN_TX_OP_MODE_TTC_MASK == 0);
 
@@ -307,7 +307,7 @@ pub fn configure(
         receive
             | (bus.receive_channel_burst_length << registers::CHAN_RX_CONTROL_RPBL_SHIFT)
                 & registers::CHAN_RX_CONTROL_RPBL_MASK
-            | (BUFFER_SIZE as u32) << registers::DMA_CH0_RX_CONTROL_RBSZ_SHIFT,
+            | (BUFFER_BYTES as u32) << registers::DMA_CH0_RX_CONTROL_RBSZ_SHIFT,
     );
 
     let transmit_ring = region + layout::TRANSMIT_RING;
@@ -375,7 +375,7 @@ pub fn configure(
 /// above cleared takes a value only inside that field; where neither holds, the configure tests
 /// kill the swap.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+/// Name: ratified 2026-11-03 (UTC), #3120.
 pub const CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP: () = assert!(
     registers::SYS_BUS_MODE_RD_OSR_LMT_MASK & registers::SYS_BUS_MODE_WR_OSR_LMT_MASK == 0
         && registers::SYS_BUS_MODE_RD_OSR_LMT_MASK
@@ -437,7 +437,7 @@ pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 
 /// `|`-versus-`^` over disjoint bits; the chain's first swap toggles `conf` itself, and
 /// `the_mac_word_from_zero_and_from_all_ones` kills it.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+/// Name: ratified 2026-11-03 (UTC), #3120.
 pub const MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP: () = assert!(
     registers::MAC_CONF_PS
         | registers::MAC_CONF_FES

@@ -43,7 +43,7 @@ jobs:
     # The App's secrets live in the `automation` environment, deployable from `main` only; see the
     # comment on the same line of merge-drain.yml.
     environment: automation
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 10
     steps:
       - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3

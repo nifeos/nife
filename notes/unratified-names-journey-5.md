@@ -4,23 +4,26 @@
 
 This note lists, for every crate on [journey 5](../design/journeys/05-crates-released-on-their-own.md) that still sits under `crates/`, each module, type, function, constant and register whose `Name:` block is missing or still provisional, in groups an architect can rule on one at a time. It proposes and renames nothing. Names are an architect's call ([design/naming.md](../design/naming.md)); every recommendation below is provisional and leaves the current spelling in force until a ruling.
 
-`script/crate-standalone` step 0 passes a crate only when every `Name:` block in it is ratified, so each group here stands between a crate and its move. The lists come from `python3 helpers/name_release.py --draft <crate>`: a row whose status reads `no block` or starts with `provisional`. Rerun it for the live state; nothing regenerates this note, and a ruling removes its group.
+`script/crate-standalone` step 0 passes a crate only when it finds every `Name:` block in it ratified, so each group here stands between a crate and its move. The lists come from `python3 helpers/name_release.py --draft <crate>`: a row whose status reads `no block` or starts with `provisional`. Rerun it for the live state; nothing regenerates this note, and a ruling removes its group.
 
-`file_allocation_table`, `generational_table` and `jh7110_clock_and_reset` have no unratified name left. `jh7110_entropy` has already left `crates/`.
+`extensible_host_controller_interface`, `file_allocation_table`, `generational_table` and `jh7110_clock_and_reset` have no unratified name left. `jh7110_entropy` has already left `crates/`.
 
-## Counts
+## How a naming pull request edits this note and the baselines
 
-| crate | unratified | no block | provisional | groups |
-|---|---|---|---|---|
-| `designware_ethernet` | 86 | 67 | 19 | 9 |
-| `designware_mobile_storage` | 65 | 65 | 0 | 9 |
-| `e1000e` | 132 | 94 | 38 | 13 |
-| `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
-| `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
-| `generational_table` | 0 | 0 | 0 | 0 |
-| `file_allocation_table` | 0 | 0 | 0 | 0 |
-| `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 295 | 226 | 69 | 33 |
+Two pull requests that change the same or adjacent lines conflict in git, so no line here or in
+the baselines is shared by two naming pull requests:
+
+- This note carries no total, count table or per-crate count; `python3 helpers/name_release.py --draft <crate>` lists a crate's rows, and their number is the count. A pull request edits only the group it
+  rules on: it deletes the group's section, or deletes the names it ratifies from the group's list,
+  and changes that group's number in its heading.
+- `design/module-block-baseline.txt` and `design/naming-rule-baseline.txt` hold one row per line,
+  sorted, with a blank line after every row (`helpers/baseline_layout.py`). A pull request deletes
+  the row lines it clears and nothing else: it keeps the blank lines, it does not re-sort, and it
+  writes no total. `--bank` does exactly that. A rename re-keys a row by deleting the old line and
+  writing the new row and a blank line after it at its sorted place.
+- The ratchets still compare the live count with the baseline and still refuse a row that is not
+  cleared or a row that is new. Both gates also fail a baseline whose rows touch or are out of order.
+
 ## How to read a group
 
 Each group gives its items in their current spelling, as `path::name`, and a module by its own name. *Breaks the spelled-out rule* answers the 2026-11-02 rule in [design/naming.md](../design/naming.md): outside register modules, identifiers say what the thing is and not the specification's abbreviation. A hardware register, field or bit constant takes the spelled-out name with the source's spelling in `#[doc(alias)]`, OpenBSD's cited first. `yes` means the group has at least that kind of abbreviation; `one` means a few named items do; `no` means none. The recommendation is the stricter reading wherever a call was close, since loosening later is compatible and tightening is not.
@@ -29,29 +32,20 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 
 In order, easiest to rule on first:
 
-1. `X1`, the nine `extensible_host_controller_interface` assertions: the same rename the architect already ruled for two sister crates.
-2. `N1`, the three NVMe namespace names: a full proposal already exists ([ratify-the-nvme-namespace-names](../design/roadmap/proposals/ratify-the-nvme-namespace-names.md)).
-3. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
-4. The `no` groups of designware_mobile_storage (`DM2` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
+1. `N1`, the three NVMe namespace names: a full proposal already exists ([ratify-the-nvme-namespace-names](../design/roadmap/1002-ratify-the-nvme-namespace-names.md)).
+2. `DE2`, the sixteen designware_ethernet assertions: the maintainer already chose them, and reversing costs one pull request.
+3. The `no` groups of designware_mobile_storage (`DM2` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
 The groups that need a real ruling are the register and bit constants: `DE7` to `DE9`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
-86 unratified names: 67 with no block, 19 provisional.
 ### DE1. Module names (10)
 
 `coherence`, `controller`, `data_plane`, `descriptor`, `hardware`, `jh7110`, `layout`, `motorcomm`, `proofs`, `tests`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify all ten as they stand. `data_plane`, `descriptor` and `hardware` are private and already provisional; `proofs` and `tests` follow the tree's usual names for harness and test modules; the rest say what the module holds.
-
-### DE2. The sixteen non-overlap assertions (16)
-
-`coherence::PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP`, `controller::CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP`, `controller::MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP`, `controller::RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `controller::TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP`, `descriptor::FIRST_AND_LAST_BITS_DO_NOT_OVERLAP`, `descriptor::RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP`, `descriptor::TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP`, `jh7110::BURST_LENGTH_BITS_DO_NOT_OVERLAP`, `jh7110::INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP`, `management_data_input_output::AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP`, `management_data_input_output::COMMAND_WORD_FIELDS_DO_NOT_OVERLAP`, `management_data_input_output::PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP`, `motorcomm::PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP`, `motorcomm::RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP`, `motorcomm::RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. The maintainer chose the `..._DO_NOT_OVERLAP` form (the 2026-11-02 ruling that renamed the `THE_..._SHARE_NO_BIT` set) and reversing costs one pull request; each says which fields it checks. Each is a private compile-time assertion.
 
 ### DE3. Coherence probe (9)
 
@@ -67,19 +61,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. Plain verbs and nouns; `core_version` and `station_address` say what they return.
 
-### DE5. Data plane (7)
-
-`data_plane::DataPlane`, `data_plane::Tails`, `data_plane::can_transmit`, `data_plane::new`, `data_plane::receive`, `data_plane::start`, `data_plane::transmit`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand, and decide together with the e1000e data plane group, which uses the same seven words, so the two crates keep agreeing.
-
-### DE6. Descriptor sizes and the small constants (3)
-
-`descriptor::BUFFER_SIZE`, `descriptor::CRC_BYTES`, `descriptor::DESCRIPTOR_BYTES`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify `CRC_BYTES` and `DESCRIPTOR_BYTES`; recommend `BUFFER_SIZE` become `BUFFER_BYTES` so the three sizes share the unit word (the stricter reading; `BUFFER_SIZE` does not break the spelled-out rule, it only disagrees with its neighbors).
 
 ### DE7. Descriptor bit and field constants (RDES3_*, TDES2_*, TDES3_*) (14)
 
@@ -100,12 +81,11 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 `registers::WINDOW`, `registers::mac_hw_feature`
 
 - Breaks the spelled-out rule: yes (one name).
-- Provisional recommendation: `WINDOW` is a plain word and can be ratified; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
+- Provisional recommendation: `WINDOW` is a plain word and stays as it is; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
 
 
 ## `designware_mobile_storage`
 
-65 unratified names: 65 with no block, 0 provisional.
 
 ### DM2. Host controller (13)
 
@@ -172,7 +152,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `e1000e`
 
-132 unratified names: 94 with no block, 38 provisional.
 
 ### E1. Module names (14)
 
@@ -188,19 +167,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
 
-### E3. Data plane (11)
-
-`data_plane::DataPlane`, `data_plane::Region`, `data_plane::Tails`, `data_plane::can_transmit`, `data_plane::new`, `data_plane::receive`, `data_plane::receive_cursor`, `data_plane::set_receive_tail`, `data_plane::set_transmit_tail`, `data_plane::start`, `data_plane::transmit`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify as they stand, except `Region`: recommend `DirectMemoryAccessRegion` (alias `Region`), the name designware_ethernet already took in #3094, so both crates agree. Decide together with designware_ethernet's data plane group. `receive_cursor`, `set_receive_tail` and `set_transmit_tail` are provisional already, with `rx` and `tx` spelled out by the 2026-10-26 tree-wide ruling.
-
-### E4. Descriptor ring sizes and positions (6)
-
-`descriptor::BUFFER_SIZE`, `descriptor::RECEIVE_ENTRIES`, `descriptor::RECEIVE_QUEUE_PAGE`, `descriptor::TAIL_IN_PAGE`, `descriptor::TRANSMIT_ENTRIES`, `descriptor::TRANSMIT_QUEUE_PAGE`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. `RECEIVE_ENTRIES`, `TRANSMIT_ENTRIES`, `*_QUEUE_PAGE`, `TAIL_IN_PAGE` and `BUFFER_SIZE` carry no abbreviation (`BUFFER_SIZE` has the same unit-word question as in designware_ethernet).
 
 ### E5. Descriptor status and command bits (7)
 
@@ -265,27 +231,14 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify `done`, `release`, `request` and the simulator names; recommend `WAIT_MS` become `WAIT_MILLISECONDS`, matching `POLL_MICROSECONDS`.
 
-## `extensible_host_controller_interface`
-
-9 unratified names: 0 with no block, 9 provisional.
-
-### X1. The nine non-overlap assertions (9)
-
-`context::THE_ENDPOINT_CONTEXT_FIELDS_SHARE_NO_BIT`, `context::THE_SLOT_CONTEXT_FIELDS_SHARE_NO_BIT`, `event::THE_EVENT_POINTER_HALVES_SHARE_NO_BIT`, `port::THE_PORT_CHANGE_BITS_SHARE_NO_BIT`, `port::THE_PRESERVED_FIELDS_SHARE_NO_BIT`, `registers::THE_LEGACY_ENABLE_BITS_SHARE_NO_BIT`, `registers::THE_SCRATCHPAD_FIELDS_SHARE_NO_BIT`, `transfer_request_block::THE_CYCLE_BIT_AND_CLEARED_WORD_SHARE_NO_BIT`, `transfer_request_block::THE_TRANSFER_CONTROL_FIELDS_SHARE_NO_BIT`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Rename the nine from `THE_..._SHARE_NO_BIT` to `..._DO_NOT_OVERLAP` (dropping `THE_`), the form the maintainer chose and the architect's 2026-11-02 ruling applied in designware_ethernet and designware_mobile_storage, then ratify. Mechanical; same wording, so the least contentious group in this list.
-
 ## `non_volatile_memory_express`
-
-3 unratified names: 0 with no block, 3 provisional.
 
 ### N1. Namespace (3)
 
 `lib::Namespace`, `lib::holds_block`, `lib::transfer_command`
 
 - Breaks the spelled-out rule: no.
-- Provisional recommendation: Already proposed in full in design/roadmap/proposals/ratify-the-nvme-namespace-names.md (ratify as they stand, plus the `size_bytes` to `capacity_bytes` field loose end). Do not repeat it; bring that proposal.
+- Provisional recommendation: Already proposed in full in design/roadmap/1002-ratify-the-nvme-namespace-names.md (ratify as they stand, plus the `size_bytes` to `capacity_bytes` field loose end). Do not repeat it; bring that proposal.
 
 ## Not covered
 
