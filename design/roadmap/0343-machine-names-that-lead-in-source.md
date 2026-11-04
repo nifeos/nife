@@ -10,8 +10,8 @@ name is not a hardware fact, and source comments should say the hardware), decid
 numbered 2026-09-19 by milestone 433. **Premise re-checked 2026-09-19 and most of it has been done,
 by nobody in particular.** Ten of the twelve uses are now in §143's shape and two are not. Both
 comments the proposal singled out as carrying a machine name with no hardware at all have been
-fixed: `kernel/src/soak.rs:36` now reads "on JH7110 silicon (radon, the board it was seen on)" and
-`kernel/src/arch/riscv64/timer.rs:226` now reads "the VisionFive 2's OpenSBI build (radon)".
+fixed. The module documentation of `kernel/src/soak.rs` now reads "on JH7110 silicon (radon, the board it was seen on)".
+The documentation of `is_cycle_counter_grantable` in `kernel/src/arch/riscv64/timer.rs` now reads "the VisionFive 2's OpenSBI build (radon)".
 `notes/README.md`'s index line is fixed too, and it was the smallest and most valuable part:
 `target-hardware.md` is now indexed as "Where nife could actually run, **and what the three bench
 machines are named**", so a stranger who meets `radon` has a route. `crates/multicast_dns_protocol`
@@ -54,9 +54,9 @@ already on AGENTS.md's record.
 
 ## Follow-on
 
-- **Done.** The last two comments are in §143's shape. `kernel/src/arch/riscv64/iommu.rs:52`
+- **Done.** The last two comments are in §143's shape. The module documentation of `kernel/src/arch/riscv64/iommu.rs`
   now reads "the JH7110 (radon, the `VisionFive` 2) has no IOMMU at all", hardware first. The
-  `xtask/src/main.rs:2658` comment no longer exists. It went when `xtask` was split into modules
+  `xtask/src/main.rs` comment no longer exists. It went when `xtask` was split into modules
   and the cargo-feature pack (`5d210e035`). Grepping `kernel/`, `crates/`, `components/`,
   `fixtures/`, `xtask/`, `script/` and `helpers/` for a machine name followed by a parenthesized
   gloss finds no comment that leads with the name and omits the hardware.
@@ -74,8 +74,8 @@ trailing gloss where the instance is genuinely the point. The reason is that a m
 a hardware fact and a reader who meets `radon` in a comment about a SoC erratum learns nothing. Twelve uses in
 source needed bringing into line when this was filed, plus one index line in `notes/README.md` that
 did not advertise where the machine names are defined. Ten of the twelve and the index line have
-since been fixed incrementally by lanes touching the files for other reasons, and the last two
-(`kernel/src/arch/riscv64/iommu.rs:52`, and an `xtask` comment that has since been deleted) were
+since been fixed incrementally by lanes touching the files for other reasons. The last two
+(the module documentation of `kernel/src/arch/riscv64/iommu.rs`, and an `xtask` comment that has since been deleted) were
 closed 2026-10-03. `notes/` and `design/` keep their machine
 names, about a hundred uses, because a measurement series has to assert that the same physical
 machine was held constant. A sweep that treated this as a rename would destroy what makes

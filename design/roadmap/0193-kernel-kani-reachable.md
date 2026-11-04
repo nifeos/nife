@@ -74,9 +74,9 @@ Run on 2026-08-30, `cargo check -p kernel --target aarch64-apple-darwin`, which 
 development machine. Three errors, all shallow:
 
 1. `unwinding panics are not supported without std`, which is a profile setting (`panic = "abort"`).
-2. `invalid Mach-O section specifier` at `kernel/src/interrupt_stack.rs:96`, an
+2. `invalid Mach-O section specifier` at `STACKS` in `kernel/src/interrupt_stack.rs`, an
    `#[unsafe(link_section = ".interrupt_stacks")]` on a static.
-3. The same at `kernel/src/smp.rs:71`, `.secondary_stacks`.
+3. The same at `SECONDARY_STACKS` in `kernel/src/smp.rs`, `.secondary_stacks`.
 
 That is the whole list. The kernel very nearly compiles for a host target already, and the
 reason is DECISIONS §4 (kernel shape: monolithic, deferred) rule 1 working exactly as designed. `asm!` appears outside

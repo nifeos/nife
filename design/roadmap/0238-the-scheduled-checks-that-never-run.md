@@ -42,7 +42,7 @@ workflow's own comment already says so.
 
 ## The Miri check, which has been red for three weeks on nothing
 
-`crates/manual/tests/render.rs:279` reads `CARGO_MANIFEST_DIR` at run time and **Miri does not
+`every_character_survives` in `crates/documentation/tests/render.rs` reads `CARGO_MANIFEST_DIR` at run time and **Miri does not
 forward the environment**, so the test fails there and passes under `cargo test`. **It is not
 undefined behaviour and never was.** The fix is one flag. Milestone 232's lane did not apply it
 because an audit repairs nothing.

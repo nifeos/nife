@@ -92,7 +92,7 @@ one: the same posture `script/lint` check 5 keeps.
 
 ## What it found that nobody knew about
 
-A third instance, `crates/measured_boot/src/lib.rs:297`:
+A third instance, `PROGRAM_MEASUREMENTS` in `crates/measured_boot/src/lib.rs`:
 
 ```
 /// Name: **provisional**. Under `nifefs`'s `NAME_LEN = 32` with room to spare.

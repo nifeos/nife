@@ -18,7 +18,7 @@ blocked at once, and none of the blocks was about the code in them:
    that mints or finishes a milestone rewrites rows in it, so unrelated lanes conflict in one file.
    The stick-program lane and the layout-control lane each reported, independently and without
    being asked, that they deliberately did not regenerate it.
-2. `script/fatal-risks` reads that index (`script/fatal-risks:409`) rather than the milestone
+2. `script/fatal-risks` reads that index (`built_dates` in `script/fatal-risks`) rather than the milestone
    blocks. So a stale derived file made a truthful record look wrong: risk 9's citation of milestone
    177 "looked current only while 177's row was not BUILT", which is how a lane put it. This is the
    coupling that actually jammed the four.
