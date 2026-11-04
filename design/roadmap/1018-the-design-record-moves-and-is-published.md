@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: the-design-record-moves-and-is-published
 raised: 2026-11-01
 milestone_dependencies: none
@@ -65,25 +65,23 @@ crate or carries a tool's data stays with that code, as the Background states.
 Most of this can start before the move. Steps 1 to 5 below land in this repository today, and each
 makes the move smaller.
 
-Reuse: the site generator is the only new code, and it reuses an existing one (compared below)
-plus this tree's own parsers in `script/roadmap` and `script/citations`. The extraction reuses
-`git filter-repo`.
+Reuse: Eleventy builds the site and Pagefind indexes it. A small markdown-it plugin in `site/lib/`
+links citations with its own pattern, since `script/citations` is Python and Eleventy runs in Node.
+The extraction reuses `git filter-repo`.
 
 ## The measurements, in brief
 
-Taken 2026-11-01 at `origin/main` `295782808`. The appendix has the commands and their limits.
+Taken 2026-11-01 at `origin/main` `295782808`; the appendix has the commands, their limits and the
+site build's numbers.
 
-- 138 tracked files under `script/`, `helpers/`, `xtask/`, `tools/`, `jig/` and `.github/` name a
-  record path outside a comment. Of `script/lint`'s 128 sections, 56 name the record directly, 34
-  more call a helper that reads it, and 38 do neither.
+- 138 tracked tool files name a record path outside a comment. Of `script/lint`'s 128 sections, 56
+  name the record directly, 34 more call a helper that reads it, and 38 do neither.
 - Outside the record, 1,972 of 3,425 tracked files cite it: 7,774 `milestone N` and 3,525 `§N`
-  occurrences, and 1,062 record paths. In Rust alone, 4,813 and 2,641.
-- In the other direction, 812 of 952 top-level roadmap blocks name a code path, 7,845 times across
-  963 roadmap files. Decision files name one 1,119 times.
+  occurrences, and 1,062 record paths.
+- 812 of 952 top-level roadmap blocks name a code path, 7,845 times. Decision files name one 1,119
+  times.
 - Of 11,661 non-merge commits, 4,134 touch only the record, 2,729 touch both, and 3,299 touch only
   code.
-- The record holds 2,866 pull request references written as a bare `#N` and 36 links to
-  `github.com/nifeos/nife/blob/`.
 
 ## How the record cites, once it leaves
 
@@ -148,15 +146,15 @@ working.
   merge gate, since a remote outage should not block a merge.
 - A CI build on every pull request and a deploy on every merge to main.
 
-Generators considered, all recalled and not read: mdBook (Rust, client-side search, a
-preprocessor hook), Zola (one binary, built-in search), Sphinx with MyST, and Hugo. A small
-generator of our own over the existing parsers is the fifth option. The recommendation is mdBook
-with a preprocessor that generates the summary and links citations, measured in step 3 before
-anyone commits to it. Any of them is a new host-tool dependency, which needs the architect's
-approval.
+The generator is Eleventy, with Pagefind for search, approved on 2026-11-04 (UTC) as CI-only
+dependencies on four terms: a committed lockfile, installation with `npm ci --ignore-scripts`,
+exact versions at least two weeks old when pinned, and bumps through the ordinary pull request
+path. The architect knows Eleventy and would maintain it. Hugo and Zola, measured on the same
+record, also worked; Jekyll lost on build speed, and mdBook fits poorly with addresses made of a
+number alone.
 
 Hosting, ruled 2026-11-01 (UTC): GitHub Pages, deployed from Actions in the `nifeos.org`
-repository, with nifeos.org as the custom domain. The domain dates from 2026-10-03, sits with its registrar's name servers, expires 2027-10-03 and has no web address set. Milestone 565 once denied any domain, and its text now carries the date. The domain is ours, so the host
+repository, with nifeos.org as the custom domain. The domain dates from 2026-10-03, sits with its registrar's name servers, expires 2027-10-03 and has no web address set. The domain is ours, so the host
 stays reversible: a later move changes DNS only. Page addresses derive from the record's kind and
 number alone, and no address names the host. Enabling Pages, setting the custom domain and changing DNS each wait for the architect's approval.
 
@@ -192,14 +190,16 @@ change the dependent side in a separate pull request that cites the landed commi
 
 ## Order of steps
 
-Each step lands alone. Steps 1 to 5 can start now, needing only step 3's dependency approval.
+Each step lands alone. Steps 1 to 5 land in this repository.
 
 1. Tag each `script/lint` section as record or code, the way `lint-quick` tags sections. No
    behavior changes; the record repository's lint then becomes a selection.
 2. Teach `script/roadmap --check` to resolve `nifeos/<repo>:<path>` at basalt's pin, and fix
    milestone 159's `jh7110_entropy` bullet as the first user.
-3. Build the site in this repository's CI as an artifact, deployed nowhere. Measure build time,
-   search index size and broken citations.
+3. Built: `script/site` builds the site from `design/`, `notes/` and `briefs/`, and
+   `.github/workflows/record-site.yml` runs it on each pull request that touches them and uploads
+   the site as an artifact, deployed nowhere. Its step summary reports build time, index size and
+   broken citations and links, and it never blocks a merge.
 4. Sort each record into moves or stays in `packages/homes.toml`, which already gives every path a
    home and counts the notes left undecided. The sort follows the ruling on question 4: whole-project
    material moves, and crate documentation, `BUGS` sections, lint baselines, workflow data and
@@ -247,8 +247,7 @@ feed gates, which the PEPs do not, so the checks move with the text.
 
 - The lint section counts come from a text search of each section's body, and the reader counts
   from string matches outside comment lines. Both are approximations.
-- Whether mdBook's search scales to 3.6 million words, and how long a build takes. Step 3 measures
-  both.
+- How long a hosted runner takes; the appendix times a larger host, and each run's summary says.
 - That GitHub Pages redirects a project site from `github.io` to a custom domain once configured.
   Recalled.
 - Whether the registration renews automatically. The term is one year, and a lapse would break
@@ -269,21 +268,26 @@ One decision each, recommendation first. Ask them one at a time.
 
 1. Ruled 2026-11-01 (UTC): the repository is `nifeos.org`, one repository for the record and the
    whole site, as the Background states. Its condition is step 5's measurement.
-2. Ruled 2026-11-01 (UTC), as recommended: the number stays the identity and the namespace moves
-   with the record to `nifeos.org`. Bare code paths mean the anchor commit, and new ones use
-   `nifeos/<repo>:<path>` at basalt's pin. The site gives each number a stable address derived from
-   the number alone. §201 section 4 now says so, and its revisit condition stays armed.
-3. Ruled 2026-11-01 (UTC): GitHub Pages from Actions in `nifeos.org`, with the nifeos.org custom
-   domain. The Background states the limits, and
-   step 8 names the person-only tasks.
+2. Ruled 2026-11-01 (UTC), as recommended: the number stays the identity and its namespace moves
+   with the record, under the citation forms above. §201 section 4 says so, and its revisit
+   condition stays armed.
+3. Ruled 2026-11-01 (UTC): GitHub Pages, as the website section states; step 8 names the
+   person-only tasks.
 4. Ruled 2026-11-01 (UTC), as recommended: the division the Background states, with a crate's
    notes moving with the crate under §315 (a crate's documentation leaves with it).
 
-5. Raised and not yet put to the architect: where the tutorial's source lives. The planned
-   tutorial on building a RISC-V operating system publishes on the site. Its source could sit in
-   the `nifeos.org` repository or in a repository of its own.
+5. Provisional, recorded by the maintainer on 2026-11-04 (UTC), and the architect may reverse it:
+   the planned tutorial's source lives in a repository of its own, which the site pulls at build
+   time as it pulls a crate's page. The tutorial has code to build and test, and a stranger can
+   fork it.
 
 Steps 6 to 8 wait on step 5's measurement and the architect's approval of creation.
+
+## Follow-on
+
+- **Done.** Step 3, carried by `script/site`, `site/` and `.github/workflows/record-site.yml`.
+- **Outstanding.** Steps 1, 2 and 4 to 8 above. Checked 2026-11-04 against `script/lint`, which
+  tags no section as record or code, and `script/roadmap`, which resolves no `nifeos/<repo>:<path>`.
 
 ## Index row
 
