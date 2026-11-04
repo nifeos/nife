@@ -1,7 +1,8 @@
 ---
-status: NOT-STARTED
+status: REFUSED
 promoted_from: a-held-finding-turns-public-after-its-fix-reruns-clean
 raised: 2026-11-01
+refused_by: none
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -9,6 +10,10 @@ specific_machine: none
 needs_person: no
 ---
 # 1010. A held finding turns public after its fix reruns clean
+
+Refused by calef on 2026-11-04 (UTC). The continuous fuzzer ends at reporting: the host files one private
+advisory per held finding and does nothing after. A person works the advisories with the regular lane
+workflow and publishes each one. The host does not replay a fix, publish an advisory or move a held log.
 
 Raised by lane/fuzz-findings-without-a-person on 2026-11-01 (UTC), from step 4 of the ruling recorded
 in [fuzz-findings-without-a-person](1015-fuzz-findings-without-a-person.md), and from the 90-day outer cap
@@ -35,14 +40,12 @@ A selftest runs with a stub replay and a stub `curl`. A pass must send one publi
 send one comment and no publish, unless the advisory is past 90 days, when it publishes. No call may
 carry a seed in a public field.
 
-## Status
+## Revisit
 
-Not started. It reads the filer's ledger, which exists. Publishing needs only the advisory write permission, once the advisory carries a package and range.
-GitHub answers 422 without them, and the filer supplies them
-([the test](../../notes/fuzzing/finishing-the-setup.md#the-advisory-permission)). Unverified:
-whether a published advisory shows its comments to the public. Also unverified: whether the REST API
-can add a comment at all.
+- **Condition.** A person asks for the host to publish after a fix, for example because the 90-day
+  cap passes unnoticed on an open advisory. The service below then comes back as written, and it
+  reads the filer's ledger, which exists.
 
 ## Index row
 
-A held fuzz finding needs a daily replay that publishes its advisory once the fix reruns clean, with the 90-day cap as the outer bound. Without it, publication waits on a person noticing.
+Refused 2026-11-04: the fuzz host files held findings and stops, and a person publishes each advisory after its fix. The daily replay that would have published it is not built.
