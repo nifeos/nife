@@ -154,9 +154,11 @@ end state has to rebuild them wherever the base's gate goes.
 **A repository has one purpose**, and its purpose sets its size. A package is the unit of install:
 it is what releases together, and it may hold several programs. A repository is the unit of source:
 it may be finer than a package, and one package may be assembled from several single-purpose
-repositories. One repository per package is refused as the rule: it ties the grain of the source to
-the grain of the install. A repository and a package coincide only where the package's source has
-one purpose. One repository per division is refused too: a division comes from the dependency graph,
+repositories. A program package's own source, its programs and the crates only it uses, is one
+purpose and leaves as one repository; a crate published on its own or consumed by more than one
+repository is another purpose, with a repository of its own (§316 (a program package leaves as one
+repository, with the crates only it uses), ruled 2026-11-04 UTC). One repository per division is
+refused: a division comes from the dependency graph,
 not from a purpose ("The premise, checked" above measures 76% of contract commits crossing one).
 
 Milestone 610 (the interface's stability is measured weekly) carries a per-package co-change
