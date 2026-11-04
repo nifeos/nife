@@ -1,0 +1,36 @@
+#!/bin/sh
+#
+# Check a pull request against the merge queue before arming it, or check a planned set of lanes.
+#
+#     script/queue-conflicts                       check the current branch's pull request
+#     script/queue-conflicts --pr 3194             check pull request 3194
+#     script/queue-conflicts --advisory            print a conflict only, always exit 0 (script/push)
+#     script/queue-conflicts shared SCOPE...       list paths that two lanes' scope files both name
+#
+# `check` merges the pull request's head, with `git merge-tree` in a scratch repository, against
+# main plus every entry ahead of it in the merge queue (GraphQL `mergeQueue(branch: "main")`), and
+# names each conflicting file and the entries ahead that changed it. Exit 0 when clean, 1 on a
+# conflict, 2 when it could not tell. Run it before `gh pr merge --auto`; a conflict you arm costs
+# the pull request its place and a full run of checks (notes/coes/2026-11-03-merge-queue-backlog.md).
+# It reads your worktrees and branches and writes none of them.
+#
+# `shared` is the launch check of briefs/run-a-milestone-wide.md: one file per planned lane, one path
+# per line (a trailing `/` names a directory); the lane is the file's name. Exit 1 lists the paths
+# in more than one scope. Run it before the first claim.
+#
+# Escape hatch: nothing here blocks arming. `gh pr merge --auto` runs without it, and script/push
+# skips its advisory run when NIFE_SKIP_QUEUE_CHECK=1. Say why in the pull request when you arm
+# over a reported conflict.
+#
+# See notes/merge-queue.md, helpers/queue_conflicts.py. Name: provisional.
+
+case "${1:-}" in
+-h | --help)
+    sed -n '3,22p' "$0" | sed 's/^# \{0,1\}//'
+    exit 0
+    ;;
+shared)
+    exec python3 "$(dirname "$0")/../helpers/queue_conflicts.py" "$@"
+    ;;
+esac
+exec python3 "$(dirname "$0")/../helpers/queue_conflicts.py" check "$@"

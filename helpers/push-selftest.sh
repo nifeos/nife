@@ -21,6 +21,9 @@ fail() { echo "push-selftest: $1" >&2; exit 1; }
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_CONFIG_PARAMETERS
 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 export GIT_CONFIG_GLOBAL GIT_CONFIG_NOSYSTEM
+# The advisory queue check reads GitHub; this test has no network.
+NIFE_SKIP_QUEUE_CHECK=1
+export NIFE_SKIP_QUEUE_CHECK
 
 git init -q --bare "$work/origin.git"
 git init -q -b lane "$work/clone"
