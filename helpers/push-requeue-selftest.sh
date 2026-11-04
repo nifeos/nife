@@ -61,7 +61,7 @@ fail=0
 # run <name> <want: 0|nonzero> <fragment of output or ''> -- args...   state comes from the caller
 run() {
 	name="$1"; want="$2"; frag="$3"; shift 4
-	out="$(PATH="$tmp/bin:$PATH" STUB_DIR="$tmp" ARM_VERIFY_SLEEP=0 ARM_VERIFY_TRIES=2 "$@" 2>&1)"
+	out="$(PATH="$tmp/bin:$PATH" STUB_DIR="$tmp" ARM_VERIFY_SLEEP=0 ARM_VERIFY_TRIES=2 NIFE_SKIP_QUEUE_CHECK=1 "$@" 2>&1)"
 	got=$?
 	if { [ "$want" = 0 ] && [ "$got" != 0 ]; } || { [ "$want" != 0 ] && [ "$got" = 0 ]; }; then
 		echo "$me: $name: exit $got (want $want): $out" >&2; fail=1; return
