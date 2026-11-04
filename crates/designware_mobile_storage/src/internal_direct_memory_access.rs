@@ -405,15 +405,15 @@ mod tests {
 
     use super::*;
     use crate::sd::{self, BlockTransferError, Card};
-    use crate::simulator::{CardKind, Memory, Sim};
+    use crate::simulator::{CardKind, Memory, SimulatedHostController};
 
     /// A bus address with high bits set, so an offset taken as an address shows.
     const BASE: u64 = 0x8000_0000;
 
     /// An identified SDHC card behind a polled host, and memory of `pages` pages the sim's IDMAC
     /// reaches.
-    fn polled(pages: usize) -> (HostController<Sim>, Card, Memory) {
-        let mut sim = Sim::new(CardKind::SdHighCapacity, 4096, 32);
+    fn polled(pages: usize) -> (HostController<SimulatedHostController>, Card, Memory) {
+        let mut sim = SimulatedHostController::new(CardKind::SdHighCapacity, 4096, 32);
         let memory = Memory::new(BASE, pages);
         sim.memory = Some(memory.clone());
         let (mut h, _) = HostController::new(sim, 50_000_000, Some(32)).unwrap();
@@ -422,9 +422,9 @@ mod tests {
     }
 
     fn with_internal_direct_memory_access(
-        h: HostController<Sim>,
+        h: HostController<SimulatedHostController>,
         memory: &Memory,
-    ) -> HostController<Sim, Memory> {
+    ) -> HostController<SimulatedHostController, Memory> {
         let mut h = h;
         let hcon = h.registers_mut().peek(registers::HCON);
         let id = Identity {
@@ -440,7 +440,9 @@ mod tests {
         )
     }
 
-    fn polled_again(h: HostController<Sim, Memory>) -> HostController<Sim> {
+    fn polled_again(
+        h: HostController<SimulatedHostController, Memory>,
+    ) -> HostController<SimulatedHostController> {
         HostController::new(h.into_registers(), 50_000_000, Some(32))
             .unwrap()
             .0
@@ -581,7 +583,7 @@ mod tests {
     #[test]
     fn every_failed_transfer_stops_the_internal_direct_memory_access_engine_and_the_next_one_works()
     {
-        type Inject = fn(&mut Sim);
+        type Inject = fn(&mut SimulatedHostController);
         type Expect = fn(&Error) -> bool;
         let cases: [(Inject, Expect); 3] = [
             (
@@ -741,7 +743,7 @@ mod tests {
     /// `BUS_MODE` when arming, and when stopping `BUS_MODE` or `CONTROL`, whichever is held.
     #[test]
     fn an_internal_direct_memory_access_reset_that_never_clears_is_reported_with_its_register() {
-        type Hold = fn(&mut Sim);
+        type Hold = fn(&mut SimulatedHostController);
         type Word = fn(u32) -> bool;
         // Whether the read command reached the card: a stuck arming reset stops before it.
         let sent = [false, true, true];
