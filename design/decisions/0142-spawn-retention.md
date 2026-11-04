@@ -108,7 +108,7 @@ may say, not to thirty call sites and an unwritten habit. So the two ship togeth
   stops costing the one.
 
 Cost: zero capability-table slots, no new syscall, no ABI change, and nothing overturned. Not §32
-(a supervisor may collect a corpse)'s line at the corpse, not milestone 126's rule that a domain
+(a supervisor may collect a corpse)'s line at the corpse, not milestone 126 (the `procps` package)'s rule that a domain
 names its members and does not act on them, not §26.2's deferral of reattaching supervision. Both A
 and 254 need the reply-capability sweep, and it is the same sweep.
 

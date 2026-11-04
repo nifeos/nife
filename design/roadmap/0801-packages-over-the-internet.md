@@ -48,8 +48,8 @@ Item 2's five questions, ruled on #1884, add four items:
    the client; §250 clause 6 is its wording (question A below).
 7. Q4: the index at `/<channel>/metadata/`, packages at `/<channel>/targets/`, one channel per TUF
    repository, all three architectures in one index. Built; the channel name is provisional.
-8. Q5: the client holds the root zone. Built in the test's grant. Q3, a default owner trust line,
-   is milestone 894 (Follow-on).
+8. Q5: the client holds the root zone. Built in the test's grant. Q3 is milestone 894 (an image
+   carries its distribution's TUF root as a default owner trust line).
 
 ## Where the index and the bytes live
 
