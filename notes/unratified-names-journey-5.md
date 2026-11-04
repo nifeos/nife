@@ -6,7 +6,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 `script/crate-standalone` step 0 passes a crate only when it finds every `Name:` block in it ratified, so each group here stands between a crate and its move. The lists come from `python3 helpers/name_release.py --draft <crate>`: a row whose status reads `no block` or starts with `provisional`. Rerun it for the live state; nothing regenerates this note, and a ruling removes its group.
 
-`extensible_host_controller_interface`, `file_allocation_table`, `generational_table` and `jh7110_clock_and_reset` have no unratified name left. `jh7110_entropy` has already left `crates/`.
+`extensible_host_controller_interface`, `file_allocation_table`, `generational_table`, `jh7110_clock_and_reset` and `non_volatile_memory_express` have no unratified name left. `jh7110_entropy` has already left `crates/`.
 
 ## How a naming pull request edits this note and the baselines
 
@@ -32,8 +32,7 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 
 In order, easiest to rule on first:
 
-1. `N1`, the three NVMe namespace names: a full proposal already exists ([ratify-the-nvme-namespace-names](../design/roadmap/1002-ratify-the-nvme-namespace-names.md)).
-2. The `no` groups of designware_mobile_storage (`DM2` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
+1. The `no` groups of designware_mobile_storage (`DM2` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
 The groups that need a real ruling are the register and bit constants: `DE7`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
@@ -189,15 +188,6 @@ The groups that need a real ruling are the register and bit constants: `DE7`, `E
 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify `done`, `release`, `request` and the simulator names; recommend `WAIT_MS` become `WAIT_MILLISECONDS`, matching `POLL_MICROSECONDS`.
-
-## `non_volatile_memory_express`
-
-### N1. Namespace (3)
-
-`lib::Namespace`, `lib::holds_block`, `lib::transfer_command`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Already proposed in full in design/roadmap/1002-ratify-the-nvme-namespace-names.md (ratify as they stand, plus the `size_bytes` to `capacity_bytes` field loose end). Do not repeat it; bring that proposal.
 
 ## Not covered
 
