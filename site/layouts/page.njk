@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ title }} - nife design record</title>
+<link href="/style.css" rel="stylesheet">
+</head>
+<body>
+<nav><a href="/">nife design record</a> <span class="source">source: <a href="{{ sourceUrl }}">{{ sourcePath }}</a></span></nav>
+<main data-pagefind-body data-pagefind-meta="kind:{{ kind }}">
+<p class="meta"><span data-pagefind-filter="kind">{{ kind }}</span>{% if status %} <span data-pagefind-filter="status">{{ status }}</span>{% endif %}</p>
+{{ content | safe }}
+</main>
+</body>
+</html>

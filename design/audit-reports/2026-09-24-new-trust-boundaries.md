@@ -163,7 +163,7 @@ core, so a boot-endowed holder that took its range back lost its own bitmap unti
 switch-in and its next `out` faulted it to its supervisor. Fails closed, and latent: no program
 invokes the take-back. The sweep now passes `keeper.is_some()` through, and the local reset is
 skipped in that case. The test installs the grant, invokes the take-back, and asks the TSS; it went
-red at `x86_port_tests.rs:343` before the fix.
+red at `a_take_back_leaves_the_invokers_own_bitmap_installed` in x86_port_tests.rs before the fix.
 
 ### 5. FIXED: SVE, SME and V were neither saved nor disabled
 

@@ -373,7 +373,7 @@ and the test passed. Only the real-firmware boot went red. Milestone 323 (the fa
 incomplete in five ways)'s replay found the green,
 and lane `x86-port-falsification-split` instrumented the cause. The test now reads each child's core
 from the current-CPU page and runs the non-holder's `out` only on the holder's core. The record is
-red on both boots, at `x86_port_tests.rs:270`.
+red on both boots, at the non-holder assertion of `port_holder_transmits_then_a_non_holder_faults` in x86_port_tests.rs.
 
 ### Added 2026-10-03: rows 28 and 29 replayed on both `x86_64` boots
 

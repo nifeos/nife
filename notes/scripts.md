@@ -50,6 +50,7 @@ Full rows: [records-and-indexes.md](scripts/records-and-indexes.md).
 | `script/fatal-risks` | Does `design/fatal-risks/README.md` agree with the records it cites? |
 | `script/catch-up` | What changed since you last looked. |
 | `script/apropos <word>` | Search every document in the repository. |
+| `script/site` | Build the design record as a website and report its broken links. |
 | `script/names` | Who named this, when, and what was refused. |
 | `script/metrics` | The weekly measures behind `notes/project-metrics.md`. |
 
@@ -135,7 +136,7 @@ Full rows: the appendices above.
 | `script/lint-fleet` | The fleet tooling's checks, apart from `script/lint`; CI runs both. |
 | `script/read-advisory <id>` | A fix lane reads one held finding's private advisory. |
 | `script/claim <branch-name>` | Cut a lane's branch, worktree and draft pull request; sets `nife.fleet`. Push with `script/push`. `--debt-paydown` or `--new-work` ([debt-paydown.md](debt-paydown.md)). |
-| `script/preflight-queue` | Replay the merge queue locally before a group build does. |
+| `script/preflight-queue`, `script/queue-conflicts` | Replay the merge queue locally; check for conflicts. |
 | `script/architect-queue`, `script/record-ruling` | calef's queue; rulings. |
 | `script/nanny` | Work the merge queue by delegating the rebases. |
 | `script/redo-rate` | How often delegated work has to be done again. |
@@ -193,8 +194,7 @@ covers every worktree at once, the case that motivated the first hook.
 
 - `pre-push` runs `script/fmt --check` (~0.7 s) and refuses the push if rustfmt would change
   a file, because CI's `rustfmt` is a required check and a runner ten minutes later is the slowest
-  way to learn about a wrapped line. Every lane on 2026-08-15 and
-  -16 paid that tax at least once. `git push --no-verify` bypasses it, deliberately: pushing a
+  way to learn about a wrapped line. `git push --no-verify` bypasses it, deliberately: pushing a
   work-in-progress branch for safekeeping is a legitimate reason, and the hook is a courtesy to
   the queue rather than a rule about what may exist on a branch.
 - It then runs `script/lint --no-cargo` (every check that does not invoke cargo; clippy stays in
@@ -244,8 +244,7 @@ selects a module's worth and a full path selects exactly one.
 
 ### What it costs, measured
 
-The block that minted this guessed that "the boot is most of the four minutes". It is not. Timed
-on patagonia, aarch64,
+Timed on patagonia, aarch64,
 `cargo xtask test --arch aarch64`:
 
 | | |
@@ -255,7 +254,7 @@ on patagonia, aarch64,
 | the whole `--arch aarch64` run, host crates and builds included | **174 s** |
 | the same run with `--test <one test>`, warm | **8.6 s** |
 
-So the boot is about 1% of the QEMU leg, and the flag is worth more than the block expected. What
+So the boot is about 1% of the QEMU leg. What
 is left in the 8.6 s is the fixture work `test` does before
 any leg (the userspace archive, the `std` exerciser, and five disk images), not the boot.
 
