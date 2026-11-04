@@ -3539,7 +3539,7 @@ echo "==> the prose ratchet (§212 words, §213 sentences, bold and passives)"
 # word cap slipped twice in one day because nothing checked it: one lane moved facts into eight
 # notes already over the cap and every one of them grew. The measuring, the baseline and the orphan
 # check live in helpers/prose_ratchet.py, whose header is the manual. The document scope there is
-# shared with script/metrics' writing-standards chart, so the gate and the chart judge the same
+# shared with script/metrics' passive-voice chart, so the gate and the chart judge the same
 # files; the word count is `budget_words` (calef's ruling of 2026-10-13 UTC).
 #
 # A document over a limit passes only while it is no worse than design/prose-baseline.tsv and no
@@ -3856,6 +3856,12 @@ python3 helpers/mutation_kernel_census.py --selftest >/dev/null
 # that exact shape, cheap enough (one `git init`, five commits) to run on every invocation here.
 echo "==> the shared scope/architect-label merge-base resolution"
 helpers/scope-merge-base-selftest.sh >/dev/null
+
+# The heavy gates run only in the merge queue (provisional, ruled 2026-11-03 UTC): the draft gates of
+# ci.yml and verify.yml ask helpers/full_ci.py whether a run takes them. Its rules are fixtures here,
+# with no network, since only a real pull request exercises the label read.
+echo "==> a pull request skips the heavy gates unless it carries full-ci"
+python3 helpers/full_ci.py --selftest >/dev/null
 
 # A magic or a public ABI number that moves owes its version constant in the same change (milestone
 # 956 step 4, calef's ruling of 2026-10-29 UTC, PR #2852, question 5). The selftest drives the rules
