@@ -11,9 +11,7 @@ stops. A person works the advisories with the regular lane workflow on a separat
 and publishes each one. The host never replays a fix and never publishes. This page lists what exists, what is not built, and the order of the steps left
 to a person. Each step has commands to paste and the output to expect.
 
-Every step that needs root also works as a written spec handed to the agent that maintains the host,
-except the two key steps, which a person does by hand. No step needs an organization secret or
-variable.
+No step needs an organization secret or variable.
 
 ## What exists and what does not
 
@@ -96,10 +94,9 @@ unset, because no fix exists at filing; the person who publishes the advisory se
 
 Every piece below is built and merged, and none is installed. P5 and P10 place a key, and only a
 person does them. Every other step may go to the agent that maintains the host as a written spec:
-hand it the step, its commands and its verify lines, and have it report the output. It never holds a
-key.
+hand it the step and have it report the output. It never holds a key.
 
-The first step to take yourself is P5. P4 can run before it or in parallel.
+Take P5 yourself first. P4 can run in parallel.
 
 Two machines take part. The **fuzz host** holds only the `nife-fuzz` key (P5) and gets the publish
 and filer helpers (P6 to P8). The **fix-lane machine** is a separate machine where a person works the
@@ -222,8 +219,7 @@ sudo systemctl start nife-fuzz-publish.service
 Verify: `systemctl show -p Result nife-fuzz-publish.service` prints `Result=success`. A release
 `fuzz-<today>` appears at <https://github.com/nifeos/nife/releases> with `report.md` and
 `clean-ranges.tsv`, made by `nife-fuzz[bot]`. The watchdog stops passing quietly from that day. If the
-start fails, `journalctl -u nife-fuzz-publish.service -n 30` names the refusal: a missing
-`NIFE_FUZZ_PUBLISH`, a stale token or a `gh` error.
+start fails, `journalctl -u nife-fuzz-publish.service -n 30` names the refusal.
 
 ### P8. Turn on the filer (root on the fuzz host; may go to the agent)
 
@@ -390,9 +386,8 @@ still there for anything that runs as `lane` with a filer token, which is the ac
 [`the-fuzz-app.md`](the-fuzz-app.md) states what a leaked key can do. To revoke, suspend the
 installation at once, at <https://github.com/organizations/nifeos/settings/installations/177641059>
 (Suspend), which stops every token. Delete the key on the App's page, place a fresh one as in P5, and
-unsuspend. For the reader, suspend installation 177642435 and place a fresh key as in P10. The mint
-helper narrows each token, but both fuzz-host profiles default to the reader `lane`, so the split
-isolates nothing between them.
+unsuspend. For the reader, suspend installation 177642435 and place a fresh key as in P10. Both fuzz-host
+profiles default to the reader `lane`, so the split isolates nothing between them.
 
 ## Not yet verified
 
@@ -401,6 +396,5 @@ No one has run these against GitHub or a real host. Each is a check for the firs
 - GitHub accepting `<= <commit>` as a range for the ecosystem `other`.
 - The replay command and the seed count 1000000 that the filer writes. The author took both from the
   supervisor's build steps, and no fix lane has run one.
-- sudo-rs matching the rule's arguments as classic sudo does, and each sudo handing the helper a pipe
-  for standard output.
-- The hardening lines of the fuzz-token and fuzz-filer units under systemd.
+- sudo-rs matching the rule's arguments as classic sudo does, and sudo handing the helper a pipe.
+- The hardening lines of the fuzz-token and fuzz-filer units.
