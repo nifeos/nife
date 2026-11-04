@@ -265,7 +265,7 @@ HEAD = """name: x
 on: push
 jobs:
   j:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
 """
@@ -343,7 +343,7 @@ CASES = [
         continue-on-error: true  # outcome: re-raised
         run: script/x
   other:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: fail
         if: steps.sweep.outcome == 'failure'
@@ -383,7 +383,7 @@ CASES = [
 """, 0),
     ("a job-level swallow must be an exception", """
   other:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     continue-on-error: true  # outcome: re-raised
     steps:
       - run: true

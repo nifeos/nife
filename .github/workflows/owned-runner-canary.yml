@@ -97,7 +97,7 @@ jobs:
             else
               echo "fetch failures: none recorded"
             fi
-          } >> "$GITHUB_STEP_SUMMARY" 2>&1
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
 
   canary-hosted:
     if: github.event_name == 'merge_group' || github.event_name == 'push'
@@ -171,7 +171,7 @@ jobs:
             else
               echo "fetch failures: none recorded"
             fi
-          } >> "$GITHUB_STEP_SUMMARY" 2>&1
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
 
 
   # Isolation, part one: write a marker named for this run to three places an earlier job could
@@ -244,7 +244,7 @@ jobs:
             else
               echo "fetch failures: none recorded"
             fi
-          } >> "$GITHUB_STEP_SUMMARY" 2>&1
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
 
   # Isolation, part two: five parallel jobs after the writer. None may find a marker or a leftover
   # file; each prints its runner name so the summary shows whether one landed on the writer's slot.
@@ -277,8 +277,12 @@ jobs:
             echo '```'
             echo "runner: ${RUNNER_NAME:-unknown}"
             echo "writer runner: ${WRITER_RUNNER:-unknown}"
-            if test "$RUNNER_NAME" = "$WRITER_RUNNER"; then
-              echo "writer slot: SEEN AGAIN (same runner name)"
+            # Just-in-time runners get a fresh -<hex> suffix per job; the slot is the part before it.
+            my_slot=${RUNNER_NAME%-*}
+            writer_slot=${WRITER_RUNNER%-*}
+            echo "slot: $my_slot (writer slot: $writer_slot)"
+            if test -n "$my_slot" && test "$my_slot" = "$writer_slot"; then
+              echo "writer slot: SEEN AGAIN (same slot, new runner name)"
             else
               echo "writer slot: not this one"
             fi
@@ -325,10 +329,11 @@ jobs:
             else
               echo "fetch failures: none recorded"
             fi
-          } >> "$GITHUB_STEP_SUMMARY" 2>&1
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
 
   # Says in one place whether any check instance ran on the writer's slot, from the jobs API.
-  # Runner names end in -sNN-<hex>; equal names are one slot.
+  # Runner names end in -sNN-<hex>; the hex is fresh per job, so equal slots (the name without the
+  # hex) mean one slot.
   canary-owned-isolation:
     needs: [canary-owned-write, canary-owned-check]
     if: ${{ always() && (github.event_name == 'merge_group' || github.event_name == 'push') }}
@@ -352,10 +357,17 @@ jobs:
             echo '```'
             printf '%s\n' "$jobs" | grep '^canary-owned-'
             echo "writer runner: ${writer:-unknown}"
-            seen=$(printf '%s\n' "$jobs" | awk -F'\t' -v w="$writer" \
-              '$1 ~ /^canary-owned-check/ && $2 == w {n++} END {print n + 0}')
+            # A slot is the runner name without its per-job -<hex> suffix (nife-owned-x86_64-s01).
+            slot=$(printf '%s' "$writer" | sed 's/-[^-]*$//')
+            echo "writer slot: ${slot:-unknown}"
+            seen=$(printf '%s\n' "$jobs" | awk -F'\t' -v w="$slot" '
+              w != "" && w != "none" && $1 ~ /^canary-owned-check/ {
+                s = $2; sub(/-[^-]*$/, "", s); if (s == w) n++ }
+              END { print n + 0 }')
+            total=$(printf '%s\n' "$jobs" | grep -c '^canary-owned-check')
+            echo "check instances on the writer slot: $seen of $total"
             if test "$seen" -gt 0; then
-              echo "writer slot seen again: yes, in $seen of 5 check instances"
+              echo "writer slot seen again: yes, in $seen of $total check instances"
             else
               echo "writer slot seen again: no (the check proved nothing about slot reuse this run)"
             fi

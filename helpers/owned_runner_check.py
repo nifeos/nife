@@ -32,6 +32,14 @@ both.
    `runs-on` that nothing but the trigger keeps off a pull request, and the first edit to the
    trigger removes that.
 
+3. **One form is exempt from both rules: the event-aware switch.** A `runs-on:` that is exactly
+   `${{ vars.NIFE_RUNNER_OWNED == 'true' && (github.event_name == 'merge_group' || github.event_name == 'push') && 'nife-owned-x86_64' || 'ubuntu-NN.NN' }}`
+   (stage 1 of the owned runners, lane/owned-runners-stage-1) names the owned label only on a
+   merge group or a push, and resolves to the hosted label on every other event, a pull request
+   included. The event clause is inside `runs-on`, so the job needs no `if:` and its workflow may
+   take pull requests. Any other shape, a missing clause or a different clause, is judged by rules 1
+   and 2.
+
 The check reads text, not YAML, because a runner's Python and this Mac's both lack a YAML module.
 It finds a job as a two-space key under `jobs:` and its fields as four-space keys.
 
@@ -53,6 +61,10 @@ import sys
 WORKFLOW_DIR = ".github/workflows"
 OWNED = re.compile(r"nife-owned-x86_64|NIFE_RUNNER_OWNED")
 PULL_REQUEST = re.compile(r"\bpull_request(_target)?\b")
+EVENT_AWARE_SWITCH = re.compile(
+    r"\$\{\{ vars\.NIFE_RUNNER_OWNED == 'true' && "
+    r"\(github\.event_name == 'merge_group' \|\| github\.event_name == 'push'\) && "
+    r"'nife-owned-x86_64' \|\| 'ubuntu-[0-9]+\.[0-9]+' \}\}")
 JOB_KEY = re.compile(r"^  ([A-Za-z0-9_-]+):\s*(#.*)?$")
 FIELD_KEY = re.compile(r"^    ([A-Za-z0-9_-]+):(.*)$")
 
@@ -123,8 +135,10 @@ def check(path, text):
     lines = code_lines(text)
     problems = []
     for name, fields in jobs(lines):
-        owned = OWNED.search(fields.get("runs-on", ""))
-        if not owned:
+        runs_on = fields.get("runs-on", "")
+        if not OWNED.search(runs_on):
+            continue
+        if EVENT_AWARE_SWITCH.fullmatch(runs_on.strip()):
             continue
         if PULL_REQUEST.search(trigger_text(lines)):
             problems.append(
@@ -196,6 +210,36 @@ jobs:
     runs-on: ubuntu-26.04
 """
 
+EVENT_AWARE = ("${{ vars.NIFE_RUNNER_OWNED == 'true' && (github.event_name == 'merge_group' || "
+               "github.event_name == 'push') && 'nife-owned-x86_64' || 'ubuntu-26.04' }}")
+
+GOOD_EVENT_AWARE = f"""\
+on:
+  pull_request:
+  merge_group:
+  push:
+jobs:
+  bench:
+    runs-on: {EVENT_AWARE}
+"""
+
+BAD_EVENT_AWARE_NAMES_PULL_REQUEST = GOOD_EVENT_AWARE.replace(
+    "github.event_name == 'push'", "github.event_name == 'pull_request'")
+
+BAD_EVENT_AWARE_NO_CLAUSE = """\
+on:
+  pull_request:
+jobs:
+  bench:
+    runs-on: ${{ vars.NIFE_RUNNER_OWNED == 'true' && 'nife-owned-x86_64' || 'ubuntu-26.04' }}
+"""
+
+BAD_EVENT_AWARE_REGROUPED = GOOD_EVENT_AWARE.replace(
+    "&& (github.event_name == 'merge_group' || github.event_name == 'push') &&",
+    "&& github.event_name == 'merge_group' || github.event_name == 'push' &&")
+
+BAD_EVENT_AWARE_OWNED_FALLBACK = GOOD_EVENT_AWARE.replace("'ubuntu-26.04'", "'nife-owned-x86_64'")
+
 GOOD_BLOCK_IF = """\
 on: merge_group
 jobs:
@@ -249,6 +293,12 @@ def selftest():
         ("matrix checker with no guard", BAD_MATRIX_NO_GUARD, 1),
         ("owned label in a pull_request workflow", BAD_PULL_REQUEST, 1),
         ("switch expression in a pull_request_target workflow", BAD_SWITCH_ON_PULL_REQUEST, 1),
+        ("event-aware switch in a pull_request workflow", GOOD_EVENT_AWARE, 0),
+        ("event-aware switch whose clause names pull_request",
+         BAD_EVENT_AWARE_NAMES_PULL_REQUEST, 2),
+        ("switch with no event clause", BAD_EVENT_AWARE_NO_CLAUSE, 2),
+        ("event-aware switch with its parentheses removed", BAD_EVENT_AWARE_REGROUPED, 2),
+        ("event-aware switch with an owned fallback", BAD_EVENT_AWARE_OWNED_FALLBACK, 2),
         ("owned label with no guard", BAD_NO_GUARD, 1),
         ("guard that names pull_request", BAD_PULL_REQUEST_GUARD, 1),
     ]

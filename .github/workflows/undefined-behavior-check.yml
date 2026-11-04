@@ -80,7 +80,7 @@ concurrency:
 jobs:
   miri:
     name: undefined-behavior check (host crates, sampled paths)
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     # **The 27-minute figure this used to quote is from 2026-08-03 and stopped being true without
     # anyone able to notice** (milestone 238). The job had been red since 2026-08-10, dying inside
     # two minutes on an environment variable, so nothing reached the crates that had meanwhile grown

@@ -1546,25 +1546,15 @@ crates/current_cpu_contract/src/lib.rs::thread_page_va
 
 
 
-crates/designware_ethernet/src/data_plane.rs::DataPlane
 
-crates/designware_ethernet/src/data_plane.rs::Tails
 
-crates/designware_ethernet/src/data_plane.rs::can_transmit
 
-crates/designware_ethernet/src/data_plane.rs::new
 
-crates/designware_ethernet/src/data_plane.rs::receive
 
-crates/designware_ethernet/src/data_plane.rs::start
 
-crates/designware_ethernet/src/data_plane.rs::transmit
 
-crates/designware_ethernet/src/descriptor.rs::BUFFER_SIZE
 
-crates/designware_ethernet/src/descriptor.rs::CRC_BYTES
 
-crates/designware_ethernet/src/descriptor.rs::DESCRIPTOR_BYTES
 
 crates/designware_ethernet/src/descriptor.rs::RDES3_BUF1V
 
@@ -2193,25 +2183,15 @@ crates/e1000e/src/control.rs::tctl
 
 crates/e1000e/src/control.rs::tipg
 
-crates/e1000e/src/data_plane.rs::DataPlane
 
-crates/e1000e/src/data_plane.rs::Region
 
-crates/e1000e/src/data_plane.rs::Tails
 
-crates/e1000e/src/data_plane.rs::can_transmit
 
-crates/e1000e/src/data_plane.rs::new
 
-crates/e1000e/src/data_plane.rs::receive
 
-crates/e1000e/src/data_plane.rs::start
 
-crates/e1000e/src/data_plane.rs::transmit
 
-crates/e1000e/src/descriptor.rs::BUFFER_SIZE
 
-crates/e1000e/src/descriptor.rs::TAIL_IN_PAGE
 
 crates/e1000e/src/device.rs::DEVICE_IDS
 
