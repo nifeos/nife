@@ -15,6 +15,8 @@
 //! mainline states physical quantities, and for `gmac0` they agree.
 //! [`Settings::FALLBACK_GMAC0`] applies only when a tree states neither, and [`Settings::source`]
 //! says which happened.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
 use crate::management_data_input_output::{self, ManagementDataInputOutput};
 
@@ -730,14 +732,14 @@ mod tests {
     fn the_link_reads_none_until_a_cable_resolves_it() {
         let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
         assert_eq!(read_link(&mut physical_layer_device, 0).unwrap(), None);
-        assert!(!management_data_input_output::link_is_up(&mut physical_layer_device, 0).unwrap());
+        assert!(!management_data_input_output::is_link_up(&mut physical_layer_device, 0).unwrap());
         let gig = Link {
             speed: Speed::Thousand,
             full_duplex: true,
         };
         physical_layer_device.set_link(Some(gig));
         assert_eq!(read_link(&mut physical_layer_device, 0).unwrap(), Some(gig));
-        assert!(management_data_input_output::link_is_up(&mut physical_layer_device, 0).unwrap());
+        assert!(management_data_input_output::is_link_up(&mut physical_layer_device, 0).unwrap());
     }
 
     #[test]
