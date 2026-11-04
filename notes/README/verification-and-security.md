@@ -18,7 +18,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Overflow checks](../overflow-checks.md): which builds panic on integer overflow and which wrap, what checking the shipped build found and costs, and the options (provisional name).
 - [Dynamic undefined-behavior checking (Miri)](../undefined-behavior.md): Miri over the host crates, and what "clean" means.
 - [Interleavings, model-checked (loom)](../interleaving.md): loom over the hand-rolled concurrency protocols, and its finds.
-- [Mutation testing](../mutation-testing.md): the cargo-mutants triage rule, the current census, and per-crate triage in 17 appendices.
+- [Mutation testing](../mutation-testing.md): the cargo-mutants triage rule, the current census, and per-crate triage in 17 appendices. [The ledger index](../mutation-testing/README.md) says which appendix holds each crate.
 - [Untested error paths](../untested-error-paths.md): how many error paths no test executes, by crate and kind, and the twenty that release memory or authority.
 - [Kernel coverage under QEMU](../kernel-coverage.md): `script/coverage --kernel`, the instrumented kernel test image, the `minicov` audit and the first count of kernel error paths reached.
 - [The mutation census record](../mutation-census.md): per-crate mutation scores for every census, comparable. Names provisional.
