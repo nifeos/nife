@@ -112,9 +112,8 @@ pub(super) const MAXIMUM_KERNEL_EP_CHUNKS: usize =
 pub(super) static IPC_TABLES: InterruptSafeMutex<Option<IpcTables>> =
     InterruptSafeMutex::new(rank::IPC_TABLES, None);
 
-/// The scheduler before anything is in it, a `.rodata` aggregate [`initialize`] copies from instead
-/// of a value built on the boot stack, which keeps the boot frame under its gate at
-/// [`MAXIMUM_THREADS`].
+/// The scheduler before anything is in it, as a const aggregate. [`EMPTY_IPC_TABLES`] holds it in
+/// `.rodata` for [`initialize`] to copy from.
 pub(super) const EMPTY_TABLES: IpcTables = IpcTables {
     threads: Threads::new(),
     rendezvous_table: generational_table::Table::new(),
@@ -125,3 +124,16 @@ pub(super) const EMPTY_TABLES: IpcTables = IpcTables {
     futexes: inter_process_communication::futex::Futexes::new(),
     processes: generational_table::Table::new(),
 };
+
+/// [`EMPTY_TABLES`] as an installed scheduler, in `.rodata`. [`initialize`] copies its bytes into
+/// [`IPC_TABLES`] with `ptr::copy_nonoverlapping`, so an unoptimised build builds no
+/// [`IpcTables`] temporary on the boot stack. Nothing else reads it.
+///
+/// Name: provisional.
+pub(super) static EMPTY_IPC_TABLES: IpcTablesImage = IpcTablesImage(Some(EMPTY_TABLES));
+
+/// A `Sync` holder for [`EMPTY_IPC_TABLES`]: the tables are only ever copied from, as bytes.
+pub(super) struct IpcTablesImage(pub(super) Option<IpcTables>);
+
+// SAFETY: the value is const-built and immutable, and the only use is a bytewise copy.
+unsafe impl Sync for IpcTablesImage {}
