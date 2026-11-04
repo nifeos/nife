@@ -15,17 +15,19 @@ that the NVM port is read only.
 ## Why the I219 needs a port at all
 
 The I219 carries workarounds that only field exposure finds, so `platform_controller_hub` adapts FreeBSD's rather than
-writing its own. FreeBSD's Intel shared code (BSD-3-Clause) and `if_em.c` and `if_em.h` (BSD-2-Clause) are the only
-sources this tree reads for them. Linux's `e1000e` is GPL and was not consulted for any of it. This follows calef's amendment of
+writing its own. FreeBSD's Intel shared code (`e1000_ich8lan.c` and the files beside it, BSD-3-Clause, Intel) and its
+driver files `if_em.c` and `if_em.h` (BSD-2-Clause; Intel, Nicole Graziano and Kevin Bowling) are the
+only sources this tree reads for them. The descriptor-ring flush, the transmit errata and
+`em_reset`'s packet-buffer allocation come from `if_em.c`, not from the shared code. Linux's `e1000e` is GPL and was not consulted for any of it. This follows calef's amendment of
 2026-10-04 to §46 (thin primitives or whole subsystems): outside the kernel and the Kani-proved
 crates, take or adapt first. The constants are facts about the hardware. The sequences are
-FreeBSD's, adapted, and each adapted file carries the license of the FreeBSD file it follows, as the first condition requires.
+FreeBSD's, adapted, and `platform_controller_hub/mod.rs` carries the notice of each FreeBSD file they follow, as the first condition requires.
 
 ## The three passes
 
 `kernel/src/e1000e.rs`'s `bring_up` calls `platform_controller_hub::sequence`'s three passes in FreeBSD's order:
-`initialize_physical_layer_device_workarounds` at attach, `global_reset` after the kernel's
-`flush_descriptor_rings`, and `initialize_hardware` before the rings are programmed, with
+`initialize_physical_layer_device_workarounds` at attach, `global_reset` after
+`platform_controller_hub::flush::descriptor_rings`, and `initialize_hardware` before the rings are programmed, with
 `transmit_errata` once `TCTL` is written. `platform_controller_hub::sequence`'s module doc gives that order. Each
 function's doc says what it does and names the FreeBSD function it follows. Only the branches for
 FreeBSD's `e1000_pch_spt` class are carried, because every I219 the crate claims is in it

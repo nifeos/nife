@@ -4,7 +4,7 @@ The logic of a driver for Intel's e1000e network controllers, the 82574L that QE
 `-device e1000e` presents and the Sunrise Point I219, with no register access of its own. It holds
 the register offsets and bits, the descriptor formats, the DMA region's layout, the whole receive
 and transmit ring logic behind two small traits (`DirectMemoryAccessRegion` and `Tails`), and the I219 bring-up
-sequences ported from FreeBSD's Intel shared code. You supply the volatile register accesses and
+sequences ported from FreeBSD's Intel shared code and its `if_em.c` driver. You supply the volatile register accesses and
 the DMA memory; everything computed from them is here, `no_std`, and tested on the host against a
 simulated device. It was written for the nife kernel.
 
@@ -89,11 +89,12 @@ carries workarounds that only field exposure finds. FreeBSD's Intel shared code 
 `if_em.c` and `if_em.h` (BSD-2-Clause) are the only sources read for `platform_controller_hub`; Linux's `e1000e` is GPL and was not consulted for any of it. Each
 item in `platform_controller_hub` names the FreeBSD function it follows. Everything was read from `sys/dev/e1000/` on
 FreeBSD's `main`: `ultra_low_power`, `flush` and `reset` on 2026-10-04, the rest on 2026-10-05. The last
-commit touching `e1000_ich8lan.c` was then 46cf612d (2026-08-30).
+commit touching `e1000_ich8lan.c` was then 46cf612d (2026-08-30). The notice of `if_em.c` and
+`if_em.h` was copied from `freebsd/freebsd-src@9da2c05a748f` and checked against it on 2026-11-04.
 
 ## License
 
 Licensed under either of MIT (LICENSE-MIT) or Apache-2.0 (LICENSE-APACHE), at your option. The
-files under `src/platform_controller_hub/` adapt FreeBSD's Intel shared code and `if_em.c` and also carry Intel's BSD-3-Clause
+files under `src/platform_controller_hub/` adapt FreeBSD's Intel shared code and `if_em.c` and `if_em.h`, and also carry Intel's BSD-3-Clause
 notice and the BSD-2-Clause notice of `if_em.c` and `if_em.h` (Intel, Nicole Graziano, Kevin Bowling),
 which a binary redistribution must reproduce. Their SPDX expression is `BSD-2-Clause AND BSD-3-Clause`.

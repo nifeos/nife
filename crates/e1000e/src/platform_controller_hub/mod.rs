@@ -1,4 +1,4 @@
-//! **The I219's own bring-up, ported from FreeBSD's `e1000` shared code.**
+//! **The I219's own bring-up, ported from FreeBSD's `e1000` shared code and its `if_em.c` driver.**
 //!
 //! The I219 is a MAC inside the platform controller hub (PCH) talking to a separate PHY that the
 //! Management Engine shares. FreeBSD's Intel shared code (BSD-3-Clause, notice below) and its driver
@@ -49,9 +49,14 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 //! ```
 
-//! FreeBSD's `sys/dev/e1000/if_em.c` and `if_em.h`, which `flush` follows (`em_flush_tx_ring` and
-//! `em_flush_rx_ring`), as found at `freebsd/freebsd-src@9da2c05a748fd17757638e1a9e78215cdb8b80d0`,
-//! fetched 2026-11-01 (UTC). The two files carry the same notice:
+//! FreeBSD's driver files `sys/dev/e1000/if_em.c` and `if_em.h` are not Intel shared code, and
+//! their license is BSD-2-Clause, not BSD-3-Clause. [`flush`] follows `em_flush_desc_rings`,
+//! `em_flush_tx_ring` and `em_flush_rx_ring` with the constants `if_em.h` defines for them, and
+//! [`sequence`] takes `em_initialize_transmit_unit`'s transmit errata and `em_reset`'s
+//! packet-buffer allocation from `if_em.c`. The kernel runs the flush through
+//! [`flush::descriptor_rings`], so this notice covers it there too. The two files carry the same
+//! notice, copied as found at `freebsd/freebsd-src@9da2c05a748fd17757638e1a9e78215cdb8b80d0`,
+//! fetched 2026-11-04 (UTC):
 //!
 //! ```text
 //! SPDX-License-Identifier: BSD-2-Clause
