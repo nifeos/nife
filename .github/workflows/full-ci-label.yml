@@ -34,7 +34,7 @@ jobs:
   dispatch:
     name: full-ci (dispatch the heavy gates on this branch)
     if: ${{ github.event.label.name == 'full-ci' && github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # `actions: write` is what `gh workflow run` needs from the workflow's own token.
     permissions:
       actions: write

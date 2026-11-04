@@ -21,7 +21,7 @@ This check is the parse those regex gates never did.
 `ruby -ryaml`, Ruby's stdlib YAML (Psych), one process over the whole directory. The tree's other
 workflow checks parse by hand because, as helpers/workflow_swallows.py's header records, no YAML
 library was present on both the runner image and the developer machine. Ruby's stdlib YAML is
-present on both: macOS ships /usr/bin/ruby, and the ubuntu-24.04 runner images (amd64, and arm64,
+present on both: macOS ships /usr/bin/ruby, and the ubuntu-26.04 runner images (amd64, and arm64,
 which is what ci.yml's jobs run on) list Ruby 3.2.3, both read from actions/runner-images on
 2026-10-15. A real parser is the honest answer, so there is no structural fallback in this file
 and no weaker parse anywhere beside it.
@@ -113,7 +113,7 @@ name: x
 on: push
 jobs:
   gate:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
 """
 
