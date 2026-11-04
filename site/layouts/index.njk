@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>nife design record</title>
+<link href="/style.css" rel="stylesheet">
+<link href="/pagefind/pagefind-ui.css" rel="stylesheet">
+</head>
+<body>
+<h1>nife design record</h1>
+<div id="search"></div>
+<script src="/pagefind/pagefind-ui.js"></script>
+<script>new PagefindUI({ element: "#search", showSubResults: true });</script>
+{% for kind in collections.record | kinds %}{% set pages = collections.record | byKind(kind) %}
+<details{% if kind == "roadmap" or kind == "decisions" %} open{% endif %}>
+<summary>{{ kind }} ({{ pages.length }})</summary>
+<ul>
+{% for page in pages %}<li><a href="{{ page.url }}">{{ page.data.title }}</a>{% if page.data.status %} <small>{{ page.data.status }}</small>{% endif %}</li>
+{% endfor %}</ul>
+</details>
+{% endfor %}
+</body>
+</html>

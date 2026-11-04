@@ -50,6 +50,7 @@ Full rows: [records-and-indexes.md](scripts/records-and-indexes.md).
 | `script/fatal-risks` | Does `design/fatal-risks/README.md` agree with the records it cites? |
 | `script/catch-up` | What changed since you last looked. |
 | `script/apropos <word>` | Search every document in the repository. |
+| `script/site` | Build the design record as a website, deploy nothing, and report its broken links. Provisional name. |
 | `script/names` | Who named this, when, and what was refused. |
 | `script/metrics` | The weekly measures behind `notes/project-metrics.md`. |
 

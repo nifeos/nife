@@ -1,0 +1,90 @@
+name: record site
+
+# Observed failing: 2026-11-04, by script: a link to a missing file, a fragment naming no heading on
+#   its own page and on another, `milestone 99999` and `§9999` were appended to
+#   design/tenets/measure-first.md in a lane worktree, and `node site/build.mjs` (the step below
+#   without the install) reported 2 citations that name no record and 3 in-record breaks (1 relative
+#   link to no file, 2 fragments to no heading), each with its example; with the plant removed it
+#   reported 0 and 0. A real run cannot be staged without merging a broken record, which
+#   `script/lint` refuses. See notes/observed-failing.md.
+
+# **Builds the design record as a website and keeps it as this run's artifact, deploying nothing.**
+# Milestone 1018 (the design record moves to `nifeos.org` and is published as a website), step 3.
+# script/site holds what the build does; this workflow installs the pinned Node, runs it, writes its
+# report to the step summary and uploads the built site.
+#
+# Report-only by design: no branch protection names this job, and the build fails only when a step
+# itself fails, never on a count. It runs on a pull request that touches the record or the site's
+# own files, and on a push to main that does, so main always has a current artifact. It does not
+# run on merge_group: the queue runs required gates, this is not one, and a report in a merge group
+# has no reader. The build is about a minute of one hosted runner, which is why the pull request
+# carries it rather than only the queue (the heavy-gate ruling of 2026-11-03 UTC is about the
+# required gates that take tens of minutes).
+
+on:
+  pull_request:
+    paths:
+      - "design/**"
+      - "notes/**"
+      - "briefs/**"
+      - "site/**"
+      - "script/site"
+      - ".github/workflows/record-site.yml"
+  push:
+    branches: [main]
+    paths:
+      - "design/**"
+      - "notes/**"
+      - "briefs/**"
+      - "site/**"
+      - "script/site"
+      - ".github/workflows/record-site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: record-site-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # The Node build named by site/.node-version, checked against the digest in site/.node-sha256,
+      # whose comments carry the URL and provenance. A version bump without a new digest fails here.
+      - name: Install the pinned Node
+        run: |
+          version="$(cat site/.node-version)"
+          sum="$(sed -n '/^[0-9a-f]\{64\}$/p' site/.node-sha256)"
+          if [ "${#sum}" -ne 64 ]; then
+            echo "==> site/.node-sha256 must hold exactly one 64-hex digest line" >&2
+            exit 2
+          fi
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$RUNNER_TEMP/node.tar.xz" \
+            "https://nodejs.org/dist/v${version}/node-v${version}-linux-x64.tar.xz"
+          echo "${sum}  $RUNNER_TEMP/node.tar.xz" | sha256sum --check --strict -
+          mkdir -p "$RUNNER_TEMP/node"
+          tar -xJf "$RUNNER_TEMP/node.tar.xz" -C "$RUNNER_TEMP/node" --strip-components=1
+          echo "$RUNNER_TEMP/node/bin" >> "$GITHUB_PATH"
+
+      - name: Build, index and check the site
+        env:
+          NIFE_SITE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: script/site --install
+
+      - name: Upload the site
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: record-site
+          path: |
+            target/site/site
+            target/site/report.json
+            target/site/summary.md
+          if-no-files-found: error
+          retention-days: 14
