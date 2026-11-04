@@ -232,6 +232,11 @@ echo "==> script/push believes origin's ref, not git's exit status"
 # local-origin selftest is the only place the read-back is seen to refuse one.
 helpers/push-selftest.sh >/dev/null
 
+echo "==> script/push --requeue re-arms, and arming refuses a held pull request"
+# Stub gh and git. The re-arm is made a no-op inside the selftest and must fail loudly, so this is
+# where a --requeue that silently arms nothing is seen to be caught (COE action 7).
+helpers/push-requeue-selftest.sh >/dev/null
+
 echo "==> the rustup retry (a dropped CDN connection retries; a real error does not)"
 # A stub rustup, no network. The retry only runs during a CDN outage, which no green CI run
 # exercises, so this is the only place its classifier and its bound are ever seen to work.
@@ -3791,6 +3796,11 @@ python3 helpers/mutation_inflow.py orphans
 python3 helpers/mutation_real_holes.py --selftest >/dev/null
 echo "==> the survivor classification is current"
 python3 helpers/mutation_real_holes.py check
+# The crate-to-file table in notes/mutation-testing/README.md is generated from the ledgers'
+# headings and the triage file, so it must equal a regeneration.
+python3 helpers/mutation_ledger_index.py --selftest >/dev/null
+echo "==> the mutation ledger crate table is current"
+python3 helpers/mutation_ledger_index.py check
 # Part 1 of the same proposal, the shape check: every noise-shape survivor's own line, at the
 # census's commit, either proves the no-test-can-kill argument from the literals and consts on it
 # or records that it cannot. The verdicts are fixtures-only here; the real run reads census

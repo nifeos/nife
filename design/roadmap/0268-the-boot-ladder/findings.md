@@ -11,14 +11,14 @@ device tree and print them scattered inline through `main.rs`. So this is not mo
 architecture's output to the others. The other two have no machine module at all.
 
 2. aarch64 has no `exceptions::self_test`. riscv64 and x86_64 both have one, called from
-`main.rs:210` and `main.rs:686`, right after `arch::init()`: it fires a breakpoint, proves it was
+`kernel_main` in `kernel/src/main.rs` (once per arm), right after `arch::init()`: it fires a breakpoint, proves it was
 caught and stepped over, and returns the count. `notes/riscv-port.md` calls it "a boot self-test".
-There is a second, unnamed one at `main.rs:873`, a dynamic kernel mapping check that maps a fresh
+There is a second, unnamed one in `kernel_main` in `kernel/src/main.rs` (the "Dynamic kernel mapping self-test"), a dynamic kernel mapping check that maps a fresh
 frame at an unused high-half address and reads it back. The concept and the name are already in
 this tree, on two architectures, uncollected.
 
 3. `Stage::Tour` can never fire on two of three architectures. `board_console` matches the single
-string `"nife: the capability core runs on "`, printed at `kernel/src/main.rs:1401`, inside the
+string `"nife: the capability core runs on "`, printed by `kernel_main` in `kernel/src/main.rs`, inside the
 RISC-V arm. The aarch64 tour prints no marker at all. So `--until tour` is unreachable on aarch64
 and x86_64, and a missing marker looks exactly like a slow board. That is the checkpoint the bench
 tooling relies on to mean "paging, traps, the timer, the frame allocator, SMP and the scheduler all

@@ -32,7 +32,7 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 
 In order, easiest to rule on first:
 
-1. The `no` groups of designware_mobile_storage (`DM10`): ratify as they stand, which clears the module apart from DM9.
+1. The `no` groups of designware_mobile_storage (`DM10`): ratify as they stand, which clears the module.
 
 The groups that need a real ruling are the register and bit constants: `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
@@ -42,13 +42,6 @@ The groups that need a real ruling are the register and bit constants: `E7` and 
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
-
-### DM9. JH7110 node description (8)
-
-`jh7110::COMPATIBLE_MAINLINE`, `jh7110::COMPATIBLE_VENDOR`, `jh7110::INTERRUPTS`, `jh7110::SDIO0_BASE`, `jh7110::SDIO1_BASE`, `jh7110::Slot`, `jh7110::WINDOW_SIZE`, `jh7110::role`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify as they stand, with one question: `SDIO0_BASE` and `SDIO1_BASE` keep `SDIO` (Secure Digital Input Output). Recommend treating it as an accepted acronym with its expansion in the doc comment, the way #3094 handled `GMAC`. `COMPATIBLE_MAINLINE` and `COMPATIBLE_VENDOR` are the names already ratified in designware_ethernet.
 
 ### DM10. Register window (2)
 
@@ -78,7 +71,7 @@ The groups that need a real ruling are the register and bit constants: `E7` and 
 `pch::flush::required`, `pch::flush::tail_after`, `pch::flush::transmit_word`, `pch::hardware::is_pch`
 
 - Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; `is_pch` follows the module-name decision (`is_platform_controller_hub` if `pch` is spelled out).
+- Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; `is_pch` follows the module-name decision (`is_platform_controller_hub` if the module name spells `pch` out).
 
 ### E10. Non-volatile memory words (6)
 

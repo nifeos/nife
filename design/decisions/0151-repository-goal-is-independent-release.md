@@ -19,9 +19,11 @@ structure is for. This decides that:
 
 - Independent release. Each piece carries its own version and ships on its own cadence, behind an
   interface that does not change under its consumers' version requirement.
-- One purpose per repository. Every piece leaves this repository for a repository of its own with
-  one purpose: the kernel, the programs, the tooling and the crates. No piece has to pass a test to
-  leave. The order below decides only when it leaves.
+- One purpose per repository. Every piece leaves this repository for a repository with one
+  purpose: the kernel, the programs, the tooling and the crates. No piece has to pass a test to
+  leave. The order below decides only when it leaves. A program package leaves as one repository
+  that holds its programs and the crates only it uses. A crate gets a repository of its own only
+  when it would publish on its own merits or more than one repository consumes it (§316 (a program package's repository), ruled 2026-11-04 UTC).
 - Third-party programs. The structure is the one an outside author writes a program against
   without this project in the loop, which is milestone 39's option C described as *"what an ecosystem
   with third-party components looks like"* and milestone 198's *"no third party sees nife until there
@@ -36,10 +38,12 @@ surgery up front.
 ## The order: bottom-up
 
 Nothing that leaves this repository refers back into it. So the split goes bottom-up in the
-dependency graph: the crates a program links leave before it or with it, and nothing that has left
-depends on a path or a pin into this repository. This repository may depend on what has left. The
-leaf pilot `jh7110_entropy` (milestone 818 (proven JH7110 TRNG logic, released on its own)) leaves
-first, then the contract crates, then the programs and tooling once the crates they link have left.
+dependency graph, and nothing that has left depends on a path or a pin into this repository. This
+repository may depend on what has left. The crates that get repositories of their own leave first:
+the publishable crates and the crates more than one repository consumes. The packages follow, each
+once the shared crates it links have left, and each takes the crates only it uses with it in the
+same move. The leaf pilot `jh7110_entropy` (milestone 818 (proven JH7110 TRNG logic, released on
+its own)) leaves first, then the contract crates, then the program packages and tooling.
 The kernel leaves last among the code, to a repository named `nife-kernel` (ratified 2026-11-03, the
 name only). The name is distinct on disk from the `kernel/` directory inside this repository,
 matches the hyphenated repositories that are not crates (`crate-workflows` and `fuzz-host`), and

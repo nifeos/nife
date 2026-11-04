@@ -101,11 +101,11 @@ should. Either way the comment is false today, and false comments are expensive 
 because this codebase is commented far more heavily than production code on purpose. A suppression
 citing a milestone that landed weeks ago actively misleads a reader who is trusting the prose.
 
-- `kernel/src/cpu.rs:243`: "used by the tests now, and by the scheduler in step 3". Step 3 shipped as §28.
-- `kernel/src/smp.rs:64`: "used by the SMP tests now, and by spawn's placement policy when it...". Also §28.
-- `kernel/src/cap.rs:130`: "first used by the virtio driver setup in 9b".
-- `kernel/src/arch/aarch64/interrupts.rs:63`: "milestone 5's first non-test caller".
-- `kernel/src/arch/aarch64/mmu.rs:647` and `:660`: both point at milestone 8's *in-kernel* console, which §21 moved into userspace and retired.
+- `id` in `kernel/src/cpu.rs`: "used by the tests now, and by the scheduler in step 3". Step 3 shipped as §28.
+- `online_count` in `kernel/src/smp.rs`: "used by the SMP tests now, and by spawn's placement policy when it...". Also §28.
+- `interrupt_capability` in `kernel/src/capability_object.rs`: "first used by the virtio driver setup in 9b".
+- `enable` in `kernel/src/arch/aarch64/interrupts.rs`: "milestone 5's first non-test caller".
+- `user_can_read` and `user_can_write` in `kernel/src/arch/aarch64/mmu.rs`: both point at milestone 8's *in-kernel* console, which §21 moved into userspace and retired.
 
 **Third class: retired demo payloads** in `user.rs`, which admit it in place ("`allow(dead_code)`
 because 7c handed the demo over to the real ELF").

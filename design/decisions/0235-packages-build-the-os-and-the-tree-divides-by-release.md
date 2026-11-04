@@ -7,8 +7,6 @@ ratified_by: calef
 
 # 235. The OS is built and updated from packages, and its source divides by purpose
 
-*Amended 2026-10-07 (UTC): a slot holds only the kernel and what nothing can restart; see §159 (only a new kernel needs a reboot).*
-
 Raised 2026-09-26 (UTC) by calef, who asked for milestone 607 (provisional number): nothing ties
 together how packages build and update the OS and how the monorepo splits into divisions. The measurements and
 the prior art are in [notes/packages-and-divisions.md](../../notes/packages-and-divisions.md); this
@@ -41,8 +39,8 @@ pull request #1389. What is left open is a follow-on, not a fork.
   inside it by lint check."* And:
   *"I want to force decisions on homes versus there being a default of sticking around if we don't
   find a home for something."* So a package's in-tree definition carries a required `home` field
-  with no default, and lint fails when it is missing or undecided. The lane
-  `milestone/611-package-boundaries` (provisional number 611) is building the boundaries. And:
+  with no default, and lint fails when it is missing or undecided. Milestone 611 (every program
+  and crate belongs to a package) built the boundaries. And:
   *"Everything in the tree may not be in a package, but it may be in a repo."* Every tracked path
   has exactly one home repository. Only shippable things are packages: programs, crates, the `std`
   overlay, and the docs that ship with them. Project records get a home but are not packages.
@@ -109,6 +107,9 @@ booting system agree on.
 Every option keeps 525's slots. U1 and U3 need no new boot format; U2 and U4 each need one. The
 ruling takes packages as the unit and U4 as the slot layout, per the table above.
 
+A slot holds only the kernel and what nothing can restart, and every other program is a package
+that updates without a reboot (§159 (only a new kernel needs a reboot), 2026-10-07 UTC).
+
 The base image is the resolved lock of a dependency graph. Resolution happens at build time, not
 on the device, the way `Cargo.lock` and a Nix closure work and apt does not. Programs outside the
 base are resolved at install time and pinned by digest under §220. An installed package can fill a
@@ -154,9 +155,11 @@ end state has to rebuild them wherever the base's gate goes.
 **A repository has one purpose**, and its purpose sets its size. A package is the unit of install:
 it is what releases together, and it may hold several programs. A repository is the unit of source:
 it may be finer than a package, and one package may be assembled from several single-purpose
-repositories. One repository per package is refused as the rule: it ties the grain of the source to
-the grain of the install. A repository and a package coincide only where the package's source has
-one purpose. One repository per division is refused too: a division comes from the dependency graph,
+repositories. A program package's own source, its programs and the crates only it uses, is one
+purpose and leaves as one repository. A crate published on its own or consumed by more than one
+repository is another purpose, with a repository of its own (§316 (a program package leaves as one
+repository, with the crates only it uses), ruled 2026-11-04 UTC). One repository per division is
+refused: a division comes from the dependency graph,
 not from a purpose ("The premise, checked" above measures 76% of contract commits crossing one).
 
 Milestone 610 (the interface's stability is measured weekly) carries a per-package co-change
@@ -203,7 +206,7 @@ The proposals, none minted:
 | P4 | A third party builds `greeting` from the S2 archive, with no clone of this repository | nothing (S2 and the note field ruled) |
 | P5 | An OS update is a set of packages that lands through a slot | P1 (U4 ruled) |
 | P6 | The loader hands over two digests, and the progenitor checks the base set (T4 with T2) | P2 |
-| P7 | Package boundaries drawn in-tree, lint-checked, each with a required `home` | decided; in the lane `milestone/611-package-boundaries` |
+| P7 | Package boundaries drawn in-tree, lint-checked, each with a required `home` | built, milestone 611 |
 
 ## The seven questions
 
@@ -228,8 +231,8 @@ Open, and none of them a fork of this section:
 - How base services with no Linux counterpart (the progenitor, the file server, drivers) are
   grouped. nife needs its own grouping here.
 - Package names, calef's under the naming rule.
-- The format of a package's in-tree definition, and of the non-package home record, proposed by
-  `milestone/611-package-boundaries`.
+- The format of a package's in-tree definition, and of the non-package home record, which
+  milestone 611 (every program and crate belongs to a package) proposed and built.
 
 
 ## BUGS
