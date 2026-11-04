@@ -1,9 +1,7 @@
 # Naming: the appendices to design/naming.md
 
-[`design/naming.md`](../naming.md) is the page to read; it is written so a reader can act without
-opening anything here. These files hold the mechanisms, measurements and histories behind the
-naming rules, and the table below is their index. Every former section of naming.md kept its
-heading, so a citation by section name resolves in the file listed.
+[`design/naming.md`](../naming.md) is the front page. Each file here holds the rules for one topic,
+stated once, and the table below is their index.
 
 *Name: provisional, minted 2026-09-24 by the lane that split the file (`2ea02d231`), for the
 directory and every stem in it. Each appendix's own preamble says the same of its stem. Also
@@ -11,24 +9,22 @@ provisional, minted 2026-10-17: `--from <index>`, the spelling `jig install` use
 that two indexes offer (milestone 809 (the package client becomes a program)). Naming is calef's;
 `script/names --unratified` lists each stem.*
 
-| Appendix | Former sections |
+| Appendix | Holds |
 |---|---|
-| [programs-scripts-and-directories.md](programs-scripts-and-directories.md) | The rule everything else is a corollary of; Components; Shell builtins; Scripts; Directories |
-| [crates.md](crates.md) | Crates; What `crates/` holds |
-| [provenance.md](provenance.md) | Where a name's provenance lives; The three states; The three forms; EXAMPLES |
-| [provenance-limits.md](provenance-limits.md) | the provenance BUGS |
-| [documents-numbers-and-gates.md](documents-numbers-and-gates.md) | Where a document goes; `§N`; Branches; What is checked |
-| [vocabulary-rulings.md](vocabulary-rulings.md) | the rulings in naming.md's table, the received abbreviation, and the casing of `nife` |
-| [convention-rulings.md](convention-rulings.md) | new, 2026-10-17: the rules calef ratified for a class of names, with his words |
-| [precedents-set-by-example.md](precedents-set-by-example.md) | new, 2026-10-18: the rules the tier 1 review's rulings imply |
-| [spelled-out-rulings.md](spelled-out-rulings.md) | `op` and `cap` (2026-10-04), then `rx`, `tx`, `phy`, `init`, `irq` and `fifo` (2026-10-26), spelled out |
-| [2026-11-03-rulings.md](2026-11-03-rulings.md) | units, `id`, std names, aliases, register suffixes, accepted acronyms |
-| [command-line-rulings.md](command-line-rulings.md) | `jig`'s |
-| [capability-spelling-worklist.md](capability-spelling-worklist.md) | the `cap` sweep's worklist |
-| [functions-that-answer-yes-or-no.md](functions-that-answer-yes-or-no.md) | new, 2026-09-24: the argument for functions that answer yes or no |
-| [functions-that-answer-yes-or-no-worklist.md](functions-that-answer-yes-or-no-worklist.md) | new, 2026-09-24: every non-conforming predicate, and what became of it |
-| [rename-what-moves.md](rename-what-moves.md) | Performing a ratified rename, through A quotation never moves |
+| [acronyms-and-abbreviations.md](acronyms-and-abbreviations.md) | the acronym test, every short form spelled out or kept, names someone else owns, aliases |
+| [units.md](units.md) | how a name carries a unit |
+| [registers-and-constants.md](registers-and-constants.md) | hardware register, field and bit names, and the shapes constants share |
+| [vocabulary.md](vocabulary.md) | the words the tree gives one meaning, and how to choose a word |
+| [shapes.md](shapes.md) | nouns over verbs, std's method names, parameters, and other shapes |
+| [functions-that-answer-yes-or-no.md](functions-that-answer-yes-or-no.md) | the predicate rule and its prior art |
+| [command-line-names.md](command-line-names.md) | command verbs, options and shell builtins |
+| [crates.md](crates.md) | the crate rules and what `crates/` holds |
+| [programs-scripts-and-directories.md](programs-scripts-and-directories.md) | spelling per domain, programs, scripts and directories |
+| [documents-numbers-and-branches.md](documents-numbers-and-branches.md) | where a document goes, `§N`, branches, appendix file names |
+| [rules-a-script-can-check.md](rules-a-script-can-check.md) | the naming gates and the worklist of names that break one |
+| [provenance.md](provenance.md) | the `Name:` block, its states and forms, and `script/names` |
+| [provenance-limits.md](provenance-limits.md) | what the provenance record cannot see |
+| [convention-rulings.md](convention-rulings.md) | the rules that ratify a class of names, which `script/names` reads |
+| [rename-what-moves.md](rename-what-moves.md) | the rename checklist, and which occurrences move |
 | [rename-where-names-hide.md](rename-where-names-hide.md) | program strings, copied crates, crates outside the compiler, the census |
-| [rename-traps.md](rename-traps.md) | A sweep can turn a stale pointer into a fabricated one, and six other traps |
-| [what-milestone-63-left-alone.md](what-milestone-63-left-alone.md) | the former BUGS |
-| [rules-a-script-can-check.md](rules-a-script-can-check.md) | which naming rules a script can check, and the worklist of names that break one |
+| [rename-traps.md](rename-traps.md) | a sweep that fabricates a pointer, and six other traps |
