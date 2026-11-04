@@ -1,0 +1,52 @@
+name: full-ci label
+
+# Observed failing: 2026-11-03, run 41723250367: the `full-ci` label on this workflow's own pull
+#   request fired the dispatch arm, which started ci.yml (run 41726516300) and verify.yml (run
+#   41726520368) on the branch with full_ci=true. That dispatch is the thing this workflow exists to
+#   do; it is green by design, so the arm that fired is the evidence. helpers/full_ci.py --selftest
+#   covers the label rule it hands to the dispatched runs.
+
+# **Adding the `full-ci` label runs the heavy gates on the pull request's branch now** (lane
+# heavy-gates-only-in-queue, provisional; the heavy gates run only in the merge queue, ruled
+# 2026-11-03 UTC, and ci.yml's comment above `test-host` has the rule). The label alone changes
+# what the next run does: each workflow's draft gate reads the live labels (helpers/full_ci.py),
+# so every later push runs the heavy set. A label added between pushes starts nothing by itself,
+# so this workflow dispatches ci.yml and verify.yml on the branch with `full_ci` true. The
+# dispatched runs report on the same head commit as the pull request's own runs.
+#
+# Why a dispatch and not `labeled` in ci.yml's `types:`: every label event (`needs-architect`,
+# `debt-paydown`, the bots' own) would start a whole CI run, cancel the one in flight through the
+# concurrency group, and post a fresh set of conclusions on the same commit.
+#
+# Deliberately `pull_request`, never `pull_request_target`, for the fork-safety reason
+# architect-label.yml's header gives. A fork's branch is not in this repository, so the job skips
+# it; a lane works on a branch here. No checkout: the job needs no repository content. Name:
+# provisional, 2026-11-03.
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    name: full-ci (dispatch the heavy gates on this branch)
+    if: ${{ github.event.label.name == 'full-ci' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    # `actions: write` is what `gh workflow run` needs from the workflow's own token.
+    permissions:
+      actions: write
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch ci.yml and verify.yml with the heavy gates on
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          for workflow in ci.yml verify.yml; do
+            gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref "$HEAD_REF" -f full_ci=true
+            echo "==> dispatched $workflow on $HEAD_REF with full_ci=true"
+          done

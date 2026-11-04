@@ -143,5 +143,5 @@ the fix is ready limits the public window to review and the merge queue.
 
 The cost is the property this section prefers: a lane that dies leaves no public stale draft. Its
 local commits survive in the worktree, and a loss of the machine before the push loses them.
-[`fuzz-findings-without-a-person`](../roadmap/proposals/fuzz-findings-without-a-person.md) records
+[`fuzz-findings-without-a-person`](../roadmap/1015-fuzz-findings-without-a-person.md) records
 the rest of the findings path.
