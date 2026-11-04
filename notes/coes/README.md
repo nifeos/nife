@@ -19,6 +19,18 @@ open ones. `script/metrics` charts the open count each week so it can be driven 
 (helpers/coe_actions.py, calef's review of #1513). An item is open while the milestone, proposal or
 decision it names is not done.
 
+An action item and its correction name each other (2026-11-04 UTC). A correction writes its action
+items as one table, `| # | what | status | record |`, one row each. The status cell says
+`delivered` or `proposed`, and the record cell opens with the vocabulary above and links the
+proposal, milestone, pull request or note. Every proposal or milestone a row names carries, on a
+line of its own under its title, `COE action item: notes/coes/<file>.md, action <N>`. A note or a
+helper that a delivered item left behind carries the same line where it states the mechanism, and a
+merged pull request carries it in a comment. `script/roadmap --check` holds the table to its
+records in both directions for every file under `design/roadmap/`, and holds each status to what its
+record resolves to. A correction still in bullets keeps only the first direction, because its
+proposals predate the line. Notes, helpers and pull request comments have no check yet: a follow-up
+could extend the same check to every tracked file that carries the line.
+
 This index holds one line each; the detail lives in the files.
 
 Part of the [notes index](../README.md), which says how to add a line.
@@ -32,3 +44,6 @@ Part of the [notes index](../README.md), which says how to add a line.
 - [2026-10-03: the queue's automation fought itself, and calef watched the queue](2026-10-03-the-queue-judged-one-pull-request-at-a-time.md):
   the drain re-queued what the calef account dequeued, the pre-push hook outran the agents'
   timeouts, and 33 group builds failed on facts only the merged tree could make true.
+- [2026-11-03: the merge queue drained slowly](2026-11-03-merge-queue-backlog.md): every push ran the
+  heavy gates against a 60-job pool, and every naming pull request rewrote one note, which left 33
+  ready pull requests waiting at the end of the Pacific day.
