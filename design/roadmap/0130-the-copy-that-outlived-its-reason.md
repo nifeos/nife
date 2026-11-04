@@ -34,7 +34,7 @@ Forty-eight sites across `user/`, `crates/` and `fs_server/` inline the same two
 into seven variants of the same intent.
 
 The reason it is like this is written down, which is what makes it worth fixing rather than worth
-arguing about. `crates/user_rt/src/lib.rs:14` records a deliberate decision not to put the handler
+arguing about. The documentation of `panic_handler!` in `crates/user_mode_runtime/src/process.rs` records a deliberate decision not to put the handler
 in the runtime crate. A panic handler is per-final-binary, putting one in a library forces it on
 every program that links the crate and collides with any program wanting its own, and "each binary
 keeps its own one-line handler; it is trivial."
@@ -47,12 +47,12 @@ saying a SAFETY comment is an assertion and not a formality. And the same file's
 falsify.
 
 The drift is real, and one instance is semantically different.
-`components/src/terminal_sink_caretaker.rs:101` calls `exit()` and never traps. That is a different
+The panic handler of `components/src/terminal_sink_caretaker.rs` calls `exit()` and never traps. That is a different
 outcome, not a different spelling: `sched::exit` reports `EVENT_EXIT` where `sched::fault` reports
 `EVENT_FAULT` (`sched/departure.rs`), so a panic there would tell a supervisor the
 program finished cleanly. **It is latent, not a live bug**, and the block says so rather than
 inflating it: the adapter is built with `fault: None`
-(`crates/system_initializer/src/lib.rs:605-618`), so nothing observes the difference today. It
+(in `boot` in `crates/system_initializer/src/boot_sequence.rs`), so nothing observes the difference today. It
 becomes real the day someone endows that spawn site with a supervision endpoint, which is a
 one-line change.
 
@@ -84,7 +84,7 @@ forty-eight authors each remembered.
 
 ### Second: `mkinitrd` does one job three ways
 
-`xtask/src/main.rs:3249` builds the aarch64 archive with nineteen hand-rolled `let` bindings of
+`mkinitrd` in `xtask/src/main.rs` builds the aarch64 archive with nineteen hand-rolled `let` bindings of
 seven identical lines each. Then a loop over a thirty-three-name array doing exactly the same
 thing, then a hand-written `files` vector re-listing the first nineteen by the same string
 literals. Its riscv sibling `initrd_riscv` already does it correctly: one `(archive_name,
@@ -94,7 +94,7 @@ Folding the nineteen into the existing array deletes about a hundred and fifty l
 cost of adding a user program from four edits to two.
 
 **What this is not:** the two archives genuinely differ (aarch64 omits `system_initializer`, `blk`,
-`driver` and `hello`), and that is deliberate and already recorded at `xtask/src/main.rs:743`. The
+`driver` and `hello`), and that is deliberate and already recorded at `boot_programs` in `xtask/src/measure.rs`. The
 survey checked for drift between them and found none. The smell is the three mechanisms, not the
 contents.
 
@@ -103,8 +103,8 @@ contents.
 **Tried, measured, and deliberately not done.** This is the finding, rather than a thing left
 undone, and it is worth more written down than the refactor would have been.
 
-`kernel_main` is 908 lines (`kernel/src/main.rs:93`), of which 281 are comments.
-`syscall::invoke` is 581 (`kernel/src/syscall.rs:97`). The obvious seams in `kernel_main` are
+`kernel_main` is 908 lines (`kernel_main` in `kernel/src/boot.rs`), of which 281 are comments.
+`syscall::invoke` is 581 (`invoke` in `kernel/src/syscall.rs`). The obvious seams in `kernel_main` are
 already marked by `cfg` blocks: a 515-line `#[cfg(target_arch = "riscv64")]` boot report, and a
 285-line `#[cfg(not(any(test, feature = "bench")))]` banner and init handoff. Both capture nothing
 from the enclosing scope but `dtb`, so extracting them is mechanically trivial, and the lane did
@@ -117,8 +117,8 @@ warns on both. The cause is that these features park early: each is a `cfg`-gate
 `arch::halt()` or `bench::run()`, and everything after it is unreachable in that configuration.
 One divergent function absorbs that; two functions do not, and `-D warnings` is a gate.
 
-The code already said so, and nobody had connected it to the length. `kernel/src/main.rs:768`
-explains that `smb_serve` parks in place "instead of compiling the tour and the init handoff out,
+The code already said so, and nobody had connected it to the length. The comment on the `smb_serve` branch of `kernel_main` in `kernel/src/main.rs`
+explains that it parks in place "instead of compiling the tour and the init handoff out,
 so this feature manufactures no dead code for the lint to chase". That property holds **because**
 `kernel_main` is one function with one divergent tail. Both candidate splits were tried, and both
 signatures for the extracted function (`-> !` and `-> ()`); the unit return was worse. Extracting

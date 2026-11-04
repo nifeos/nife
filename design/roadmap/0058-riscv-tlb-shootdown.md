@@ -13,15 +13,15 @@ do not exist. §76's defect class again: the index row and this file agreed with
 disagreed with the tree, which is the one case `script/roadmap --check` cannot see.
 
 What landed, against the four items the deleted gate line sequenced. The per-ASID flush is
-`kernel/src/arch/riscv64/mmu.rs:638`, `sfence.vma zero, {asid}` for the local half. The IPI
+`flush_asid` in `kernel/src/arch/riscv64/mmu.rs`, `sfence.vma zero, {asid}` for the local half. The IPI
 shootdown with its acknowledgement is `super::sbi_remote_sfence_vma_asid`
-(`kernel/src/arch/riscv64/mod.rs:292`), the ack being the return of the `ecall` into OpenSBI's
-`sbi_tlb_sync`. The removal is gated on the probe: `write_satp` (`kernel/src/arch/riscv64/mmu.rs:80`)
+(in `kernel/src/arch/riscv64/remote_fence.rs`), the ack being the return of the `ecall` into OpenSBI's
+`sbi_tlb_sync`. The removal is gated on the probe: `write_satp` (in `kernel/src/arch/riscv64/mmu.rs`)
 now issues `sfence.vma` only when `!asid_tagging_is_trusted()`. And `bench/baseline-riscv64.txt` was
 re-saved. Two witnesses, both wired without an arch `cfg` so both run on both ISAs:
-`an_asid_flush_reaches_the_other_cores` (`kernel/src/user/tests.rs:611`), which was also the first
+`an_asid_flush_reaches_the_other_cpus` (in `system_tests/src/user/address_space_tests.rs`), which was also the first
 coverage aarch64's `tlbi aside1is` broadcast ever had. And
-`asid_tagging_keeps_address_spaces_apart_without_flushes` (`kernel/src/user/tests.rs:523`), which was
+`asid_tagging_keeps_address_spaces_apart_without_flushes` (in `system_tests/src/user/address_space_tests.rs`), which was
 aarch64-only and is now the milestone-15 witness meaning something on RISC-V. See
 notes/riscv-tlb-shootdown.md.
 

@@ -37,7 +37,7 @@ One record item that lane found and did not fix, because it is downstream of the
 code is two hops from the question rather than one. When this is answered the `expect` goes, and
 §179 is what its replacement should cite if anything survives it.
 
-In brief. On a tour boot (no `shell`, no `initboot`), `kernel/src/main.rs:1676` still runs
+In brief. On a tour boot (no `shell`, no `initboot`), `kernel_main` in `kernel/src/main.rs` still runs
 `user::initial_ramdisk().map(|_| user::console_service::start())`. That spawns `components/src/console.rs`, a real
 UART driver at EL0 holding the PL011's registers, which blocks on `receive(REQUEST)` forever because
 nothing in the boot holds a capability naming its endpoint. Its only client was the narrator.
@@ -71,10 +71,10 @@ the narrator.
 
 **Stop starting it on the tour boot.** Delete the `map` line and let `console_service::start` and
 its module go with it. `components/src/console.rs` stays, because it has consumers that have nothing
-to do with this path: `crates/system_initializer` loads it (`lib.rs:744`), `fixtures/src/hello.rs:571`
+to do with this path: `crates/system_initializer` loads it (`boot_steps.rs`), `fixtures/src/console_server_builder.rs`
 builds it as init's print server, `measured_boot_tests.rs` measures it, and `swapper.rs` names it in
 a dependency check. The interactive boot reaches it through `boot_via_progenitor`
-(`kernel/src/main.rs:1904`), never through `console_service`. So this option deletes a kernel module
+(`kernel_main` in `kernel/src/main.rs`), never through `console_service`. So this option deletes a kernel module
 and one boot line, and deletes no program.
 
 **Give it a client again.** Only if something is actually wanted on the tour boot that has to print

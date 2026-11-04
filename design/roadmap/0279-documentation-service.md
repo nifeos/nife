@@ -29,8 +29,8 @@ Three pieces, and only one of them is portable.
 | Piece | Where | Portable? |
 |---|---|---|
 | The ranking query | `manual::index::search` | Yes. Any consumer can call it |
-| The store walk | `components/src/swish.rs:937 fn apropos` | No. Opens `index::STORE_DIR` from the root through the shell's own directory capability and rights, copies the manifest, hands each shard to `search` |
-| The presentation | `crates/swish/src/lib.rs:606 write_apropos` | No |
+| The store walk | `fn apropos` in `components/src/swish/prompt.rs` | No. Opens `index::STORE_DIR` from the root through the shell's own directory capability and rights, copies the manifest, hands each shard to `search` |
+| The presentation | `write_apropos` in `crates/swish/src/lib.rs` | No |
 
 So a second shell reuses the ranking and rewrites the other two, and must itself hold a directory
 capability rooted where the store is installed. There is no `apropos` program to fall back on, by
@@ -82,7 +82,7 @@ lane ships a provisional one.
 
 If the search is built into swish, there is no documentation search with a different shell. `apropos` is a builtin in `crates/swish` and the capability argument for that is sound: searching
 reads the store, and a program holding that capability widens the contract `doc`'s two-slot table
-exists to demonstrate. The consequence nobody recorded is that the search is not a component. Only `manual::index::search` is portable; the store walk (`swish.rs:937`) and the presentation are not,
+exists to demonstrate. The consequence nobody recorded is that the search is not a component. Only `manual::index::search` is portable; the store walk (`apropos` in `components/src/swish/prompt.rs`) and the presentation are not,
 and the walk already exists three times. A server holding the store with `apropos` as a thin
 client applies the shape `fs_server` already has and keeps the capability argument intact. Wire
 format and the protocol crate's name are an architect's.

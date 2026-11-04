@@ -316,6 +316,41 @@ if [ "$1" = "--parallel" ]; then
 	fi
 fi
 
+# **The machine's Kani memory is bounded however many lanes run this** (helpers/heavy_slot.py, "The
+# Kani pool"). The heavy-job slot above is one equal share, and this script is not one share: it runs
+# VERIFY_JOBS harnesses at once, and one proof has been seen past 20 GiB resident, so a few runs at
+# once passed a 56 GiB host's memory. A run therefore also takes the Kani units of every harness it
+# runs at once (NIFE_KANI_HARNESS_GIB sets a harness's weight, 10 GiB by default), all together or
+# none, waiting until they are free. A pool that fits fewer harnesses than VERIFY_JOBS lowers
+# VERIFY_JOBS to what fits, out loud. The pool is off in
+# CI (GITHUB_ACTIONS) and under `script/lint --no-cargo`, which runs a stub cargo. A shard child of
+# --parallel runs inside its parent's units.
+#   python3 helpers/heavy_slot.py --status     # who holds the heavy slots and the Kani units
+kani_pool="off"
+kani_weight=1
+if [ -z "${LINT_NO_CARGO:-}" ]; then
+	kani_pool="$(python3 helpers/heavy_slot.py --pool kani --size)"
+	kani_weight="$(python3 helpers/heavy_slot.py --pool kani --weight)"
+fi
+# kani_pool_enter <units> [argument...]: re-run this script under <units> Kani units unless an
+# ancestor already holds them. <argument...> replaces the options already parsed away.
+kani_pool_enter() {
+	units="$1"
+	shift
+	python3 helpers/heavy_slot.py --pool kani --held && return 0
+	if [ -n "$shard" ]; then set -- --shard "$shard" "$@"; fi
+	if [ -n "$only" ]; then set -- --only "$only" "$@"; fi
+	exec python3 helpers/heavy_slot.py --pool kani --units "$units" "$(basename "$0")" -- "$self" "$@"
+}
+if [ "$kani_pool" != off ] && [ -z "$parallel" ] && [ "${VERIFY_JOBS:-4}" -gt "$kani_pool" ]; then
+	echo "script/verify: VERIFY_JOBS=${VERIFY_JOBS:-4} lowered to $kani_pool: this machine's Kani pool fits $kani_pool harnesses at once (physical memory less a reserve; python3 helpers/heavy_slot.py --status)" >&2
+	VERIFY_JOBS="$kani_pool"
+	export VERIFY_JOBS
+fi
+if [ "$kani_pool" != off ] && [ -z "$parallel" ]; then
+	kani_pool_enter $((${VERIFY_JOBS:-4} * kani_weight)) "$@"
+fi
+
 # **`VERIFY_CARGO_KANI` names a different `cargo kani`** (milestone 589; name provisional), and it
 # exists for exactly one caller: script/verify-riscv64, whose patched Kani cannot be reached as
 # `cargo kani` on a machine that also has the stock one, because cargo searches `$CARGO_HOME/bin`
@@ -497,6 +532,20 @@ if [ -n "$parallel" ]; then
 		children="$(python3 helpers/verify_parallel.py plan --shards "$shards" --slots "$slots" --jobs "$jobs" --memory "$mem")" || exit 2
 	else
 		children="$(python3 helpers/verify_parallel.py plan --shards "$shards" --slots "$slots" --jobs "$jobs" --wanted "$parallel" --memory "$mem")" || exit 2
+	fi
+	# The Kani pool bounds children x VERIFY_JOBS harnesses together, the same way memory does above.
+	if [ "$kani_pool" != off ]; then
+		if [ "$jobs" -gt "$kani_pool" ]; then
+			jobs="$kani_pool"
+			VERIFY_JOBS="$jobs"
+			export VERIFY_JOBS
+		fi
+		if [ $((children * jobs)) -gt "$kani_pool" ]; then
+			fit=$((kani_pool / jobs))
+			echo "parallel: lowered from $children to $fit children: $children x VERIFY_JOBS=$jobs harnesses exceed the machine's $kani_pool-harness Kani pool" >&2
+			children="$fit"
+		fi
+		kani_pool_enter $((children * jobs * kani_weight)) --parallel "$children"
 	fi
 	if [ "$children" -gt "$rows" ]; then
 		echo "script/verify: --parallel $children is more children than the $rows crates in the table, and the packer refuses a shard with no crates" >&2
