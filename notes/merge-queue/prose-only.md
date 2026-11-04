@@ -66,7 +66,7 @@ RUN   notes/x86-port.md: named by code (system_tests/src/user/compositor_tests.r
 prose-only: no (37 changed files)
 ```
 
-`xtask/src/manual.rs:34` is `DOC_BUNDLES`: that note ships in the image, so the full run was right.
+`DOC_BUNDLES` in `xtask/src/manual.rs` lists it: that note ships in the image, so the full run was right.
 
 ```console
 $ python3 helpers/prose_only.py --selftest | tail -1
