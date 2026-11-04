@@ -254,8 +254,8 @@ fn run(
     let mac = match e.port.station_address {
         Some(m) => (m, AddressSource::Tree),
         None => controller::station_address(
-            w.read(registers::MAC_ADDR0_HI),
-            w.read(registers::MAC_ADDR0_LO),
+            w.read(registers::MAC_ADDRESS_0_HIGH_REGISTER),
+            w.read(registers::MAC_ADDRESS_0_LOW_REGISTER),
         )
         .map(|m| (m, AddressSource::Registers))
         .ok_or(Error::NoStationAddress)?,
@@ -396,7 +396,7 @@ fn probe(
     while !cache_coherence::is_delivered(&plane) && crate::arch::timer::now() < deadline {
         core::hint::spin_loop();
     }
-    let status = w.read(registers::CHAN_STATUS);
+    let status = w.read(registers::CHANNEL_STATUS_REGISTER);
     let o = cache_coherence::observe(&plane, mac, status);
     let v = cache_coherence::classify(&o);
     r.coherence = Some((v, o));
@@ -437,13 +437,13 @@ struct Window(u64);
 
 impl Hardware for Window {
     fn read(&mut self, off: u32) -> u32 {
-        assert!(off + 4 <= registers::WINDOW);
+        assert!(off + 4 <= registers::REGISTER_WINDOW_BYTES);
         // SAFETY: the window is device-mapped (step 6d), and the assertion keeps `off` inside its
         // 64 KiB.
         unsafe { core::ptr::read_volatile((self.0 + u64::from(off)) as *const u32) }
     }
     fn write(&mut self, off: u32, v: u32) {
-        assert!(off + 4 <= registers::WINDOW);
+        assert!(off + 4 <= registers::REGISTER_WINDOW_BYTES);
         // SAFETY: as `read`.
         unsafe { core::ptr::write_volatile((self.0 + u64::from(off)) as *mut u32, v) }
     }

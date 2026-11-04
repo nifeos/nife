@@ -54,7 +54,7 @@ impl Identity {
     pub fn read(hardware: &mut impl Hardware) -> Identity {
         let mut features = [0; 4];
         for (i, f) in features.iter_mut().enumerate() {
-            *f = hardware.read(registers::mac_hw_feature(i as u32));
+            *f = hardware.read(registers::mac_hardware_feature_register(i as u32));
         }
         Identity {
             version: hardware.read(registers::CORE_VERSION_REGISTER),
@@ -371,8 +371,8 @@ pub fn configure(
     hardware.write(registers::RXQ_CTRL0, registers::RXQ_CTRL0_DCB_QUEUE_EN);
 
     let (high, low) = address_words(station_address);
-    hardware.write(registers::MAC_ADDR0_HI, high);
-    hardware.write(registers::MAC_ADDR0_LO, low);
+    hardware.write(registers::MAC_ADDRESS_0_HIGH_REGISTER, high);
+    hardware.write(registers::MAC_ADDRESS_0_LOW_REGISTER, low);
     // Own unicast address and broadcast; no multicast, no promiscuous receive.
     hardware.write(registers::MAC_PACKET_FILTER, 0);
 
@@ -380,7 +380,7 @@ pub fn configure(
     hardware.write(registers::CHAN_INTR_ENA, 0);
     hardware.write(registers::MMC_RX_INT_MASK, u32::MAX);
     hardware.write(registers::MMC_TX_INT_MASK, u32::MAX);
-    hardware.write(registers::CHAN_STATUS, u32::MAX);
+    hardware.write(registers::CHANNEL_STATUS_REGISTER, u32::MAX);
     Ok(())
 }
 
@@ -427,24 +427,27 @@ pub const CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP: () = assert!(
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 {
     let mut conf = current
-        & !(registers::MAC_CONF_PS
-            | registers::MAC_CONF_FES
-            | registers::MAC_CONF_DM
+        & !(registers::MAC_CONFIGURATION_PORT_SELECT
+            | registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED
+            | registers::MAC_CONFIGURATION_FULL_DUPLEX
             | registers::MAC_CONFIGURATION_LOOPBACK_MODE);
     conf |= match link.speed {
         Speed::Thousand => 0,
-        Speed::Hundred => registers::MAC_CONF_PS | registers::MAC_CONF_FES,
-        Speed::Ten => registers::MAC_CONF_PS,
+        Speed::Hundred => {
+            registers::MAC_CONFIGURATION_PORT_SELECT
+                | registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED
+        }
+        Speed::Ten => registers::MAC_CONFIGURATION_PORT_SELECT,
     };
     if link.full_duplex {
-        conf |= registers::MAC_CONF_DM;
+        conf |= registers::MAC_CONFIGURATION_FULL_DUPLEX;
     }
     if loopback {
         conf |= registers::MAC_CONFIGURATION_LOOPBACK_MODE;
     }
-    conf | registers::MAC_CONF_BE
-        | registers::MAC_CONF_JD
-        | registers::MAC_CONF_DCRS
+    conf | registers::MAC_CONFIGURATION_PACKET_BURST_ENABLE
+        | registers::MAC_CONFIGURATION_JABBER_DISABLE
+        | registers::MAC_CONFIGURATION_DISABLE_CARRIER_SENSE_DURING_TRANSMISSION
         | registers::MAC_CONF_TE
         | registers::MAC_CONF_RE
 }
@@ -457,22 +460,22 @@ pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 pub const MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP: () = assert!(
-    registers::MAC_CONF_PS
-        | registers::MAC_CONF_FES
-        | registers::MAC_CONF_DM
+    registers::MAC_CONFIGURATION_PORT_SELECT
+        | registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED
+        | registers::MAC_CONFIGURATION_FULL_DUPLEX
         | registers::MAC_CONFIGURATION_LOOPBACK_MODE
-        == registers::MAC_CONF_PS
-            ^ registers::MAC_CONF_FES
-            ^ registers::MAC_CONF_DM
+        == registers::MAC_CONFIGURATION_PORT_SELECT
+            ^ registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED
+            ^ registers::MAC_CONFIGURATION_FULL_DUPLEX
             ^ registers::MAC_CONFIGURATION_LOOPBACK_MODE
-        && (registers::MAC_CONF_BE
-            | registers::MAC_CONF_JD
-            | registers::MAC_CONF_DCRS
+        && (registers::MAC_CONFIGURATION_PACKET_BURST_ENABLE
+            | registers::MAC_CONFIGURATION_JABBER_DISABLE
+            | registers::MAC_CONFIGURATION_DISABLE_CARRIER_SENSE_DURING_TRANSMISSION
             | registers::MAC_CONF_TE
             | registers::MAC_CONF_RE)
-            == (registers::MAC_CONF_BE
-                ^ registers::MAC_CONF_JD
-                ^ registers::MAC_CONF_DCRS
+            == (registers::MAC_CONFIGURATION_PACKET_BURST_ENABLE
+                ^ registers::MAC_CONFIGURATION_JABBER_DISABLE
+                ^ registers::MAC_CONFIGURATION_DISABLE_CARRIER_SENSE_DURING_TRANSMISSION
                 ^ registers::MAC_CONF_TE
                 ^ registers::MAC_CONF_RE)
 );
@@ -645,8 +648,8 @@ mod tests {
         );
         assert_eq!(
             station_address(
-                nic.register(registers::MAC_ADDR0_HI),
-                nic.register(registers::MAC_ADDR0_LO)
+                nic.register(registers::MAC_ADDRESS_0_HIGH_REGISTER),
+                nic.register(registers::MAC_ADDRESS_0_LOW_REGISTER)
             ),
             Some(STATION_ADDRESS)
         );
@@ -689,12 +692,16 @@ mod tests {
             full_duplex: true,
         };
         let c = mac_configuration(
-            registers::MAC_CONF_PS | registers::MAC_CONFIGURATION_LOOPBACK_MODE,
+            registers::MAC_CONFIGURATION_PORT_SELECT | registers::MAC_CONFIGURATION_LOOPBACK_MODE,
             gig,
             false,
         );
-        assert_eq!(c & (registers::MAC_CONF_PS | registers::MAC_CONF_FES), 0);
-        assert_ne!(c & registers::MAC_CONF_DM, 0);
+        assert_eq!(
+            c & (registers::MAC_CONFIGURATION_PORT_SELECT
+                | registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED),
+            0
+        );
+        assert_ne!(c & registers::MAC_CONFIGURATION_FULL_DUPLEX, 0);
         assert_eq!(
             c & registers::MAC_CONFIGURATION_LOOPBACK_MODE,
             0,
@@ -710,8 +717,11 @@ mod tests {
             true,
         );
         assert_eq!(
-            c & (registers::MAC_CONF_PS | registers::MAC_CONF_FES | registers::MAC_CONF_DM),
-            registers::MAC_CONF_PS | registers::MAC_CONF_FES
+            c & (registers::MAC_CONFIGURATION_PORT_SELECT
+                | registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED
+                | registers::MAC_CONFIGURATION_FULL_DUPLEX),
+            registers::MAC_CONFIGURATION_PORT_SELECT
+                | registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED
         );
         assert_ne!(c & registers::MAC_CONFIGURATION_LOOPBACK_MODE, 0);
     }

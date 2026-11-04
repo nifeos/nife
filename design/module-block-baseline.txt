@@ -1594,39 +1594,22 @@ crates/designware_ethernet/src/descriptor.rs::TDES3_OWN
 
 
 
-crates/designware_ethernet/src/registers.rs::CHAN_CUR_RX_DESC
 
-crates/designware_ethernet/src/registers.rs::CHAN_CUR_TX_DESC
 
-crates/designware_ethernet/src/registers.rs::CHAN_STATUS
 
-crates/designware_ethernet/src/registers.rs::CHAN_STATUS_RPS
 
-crates/designware_ethernet/src/registers.rs::CHAN_STATUS_TPS
 
-crates/designware_ethernet/src/registers.rs::MAC_ADDR0_HI
 
-crates/designware_ethernet/src/registers.rs::MAC_ADDR0_LO
 
-crates/designware_ethernet/src/registers.rs::MAC_CONF_BE
 
-crates/designware_ethernet/src/registers.rs::MAC_CONF_DCRS
 
-crates/designware_ethernet/src/registers.rs::MAC_CONF_DM
 
-crates/designware_ethernet/src/registers.rs::MAC_CONF_FES
 
-crates/designware_ethernet/src/registers.rs::MAC_CONF_JD
 
-crates/designware_ethernet/src/registers.rs::MAC_CONF_PS
 
-crates/designware_ethernet/src/registers.rs::MAC_MDIO_ADDR
 
-crates/designware_ethernet/src/registers.rs::MAC_MDIO_DATA
 
-crates/designware_ethernet/src/registers.rs::WINDOW
 
-crates/designware_ethernet/src/registers.rs::mac_hw_feature
 
 
 
