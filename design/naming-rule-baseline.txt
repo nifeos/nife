@@ -41,9 +41,9 @@ crates/designware_mobile_storage/src/sd.rs::in_range question-shape
 
 crates/documentation/src/index.rs::STORE_DIR spelled-out
 
-crates/e1000e/src/pch/flush.rs::required question-shape
 
-crates/e1000e/src/pch/ulp.rs::done question-shape
+
+
 
 crates/environment_contract/src/lib.rs::ConfigPage spelled-out
 
