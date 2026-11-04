@@ -30,7 +30,10 @@ Read this first. It is the exposure you accept by placing the key.
   long as it runs.
 - With Contents write a token can also create, rewrite or delete any branch except main. Main's
   ruleset requires zero approving reviews, so a commit pushed to an open pull request's branch with
-  auto-merge armed reaches main through the merge queue when its checks pass.
+  auto-merge armed reaches main through the merge queue when its checks pass. A held finding's fix
+  is outside that reach by default: it lives in the advisory's temporary private fork, which GitHub
+  opens to no integration, and a person merges it from there. Only a finding the architect judges
+  low severity has its fix in a public pull request on nifeos/nife, within reach like any other.
 - With Contents write, a token can create, move or delete any `fuzz-*` tag and any release on
   nifeos/nife. The ruleset "tags: only fuzz-* tags may be made" refuses creating, updating or
   deleting any other tag, and it has no bypass actor. An architect accepted the remaining exposure on
