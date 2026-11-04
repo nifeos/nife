@@ -78,6 +78,9 @@ summary:
 - `df -h` for `$HOME`, `/tmp` and the volume that holds the workspace (the slot volume);
 - each fetch that did not return 200, by host.
 
+The same text goes to the job log as well, because the job summary is not in the log API and a script
+can read only the log.
+
 ### What the isolation test proves
 
 An owned job starts from a clean container, so it sees none of an earlier job's files. Three jobs
@@ -91,8 +94,9 @@ test that claim. All three are `continue-on-error`, and none is a required check
   the same label. Each prints its runner name, confirms that none of the three markers exists, and
   confirms that `$HOME` holds no `nife-canary-marker-*` file. A `LEAK` line fails that instance.
 - `canary-owned-isolation` runs on a hosted runner, reads the run's jobs from the API and states
-  whether any check instance ran on the writer's slot. Runner names end in `-sNN-<hex>`, and equal
-  names mean one slot.
+  whether any check instance ran on the writer's slot. Runner names end in `-sNN-<hex>`. The hex is new for every
+  job, so the slot is the name without it, and equal slots mean one slot. The job reports how many
+  of the check instances ran on the writer's slot.
 
 Reading the summary: no `LEAK` line in any instance is the pass. A leak can only show where the
 writer ran, so the test counts only when the isolation job says `writer slot seen again: yes`.
