@@ -13,7 +13,8 @@ USB keyboard ──► xHCI controller ──DMA, confined by the IOMMU──►
 ```
 
 The driver diffs each eight-byte boot report against the last, turns the difference into Linux
-evdev key codes (`crates/usb`'s `boot_keyboard`), and feeds those through `video_terminal::keymap`,
+evdev key codes (`crates/usb`'s `boot_keyboard`, whose documentation gives the table's sources and
+nife's own choices), and feeds those through `video_terminal::keymap`,
 the same layout table the virtio keyboard uses. The bytes go to the line discipline's endpoint in
 the framing `input` (the UART) already uses, so the shell cannot tell the two apart and both work at
 once.
