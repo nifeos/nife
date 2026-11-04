@@ -72,8 +72,9 @@ else
         brew install qemu
         ;;
     Linux)
-        # qemu-system-arm carries qemu-system-aarch64, qemu-system-misc carries
-        # qemu-system-riscv64, and qemu-system-x86 carries qemu-system-x86_64; ipxe-qemu
+        # qemu-system-arm carries qemu-system-aarch64, qemu-system-riscv (Ubuntu 26.04 and later;
+        # qemu-system-misc before that) carries qemu-system-riscv64, and qemu-system-x86 carries
+        # qemu-system-x86_64; ipxe-qemu
         # supplies efi-virtio.rom, the option ROM the -device virtio-blk-device (our disk)
         # loads at startup.
         #
@@ -84,7 +85,11 @@ else
         # firmware, so it installs on the arm64 runners this project's CI uses even though the
         # firmware it carries is x86_64's.
         $SUDO apt-get update
-        $SUDO apt-get install -y qemu-system-arm qemu-system-misc qemu-system-x86 ipxe-qemu ovmf
+        riscv_pkg=qemu-system-misc
+        if apt-cache show qemu-system-riscv >/dev/null 2>&1; then
+            riscv_pkg=qemu-system-riscv
+        fi
+        $SUDO apt-get install -y qemu-system-arm "$riscv_pkg" qemu-system-x86 ipxe-qemu ovmf
         ;;
     *)
         echo "bootstrap: unknown OS '$os'; install qemu-system-aarch64 by hand." >&2
@@ -178,7 +183,7 @@ fi
 # skip without it, which on Linux also blocks every push through the pre-push hook. It sits beside
 # ShellCheck and outside NIFE_SKIP_LINT_TOOLS for the same reason: one apt package, seconds to
 # install. On Debian and Ubuntu the `ruby` package brings Psych (psych.so, in libruby, linked to
-# libyaml). The ubuntu-24.04 runner images ship Ruby, so in CI this branch prints "present".
+# libyaml). The ubuntu-26.04 runner images ship Ruby, so in CI this branch prints "present".
 #
 # macOS has shipped /usr/bin/ruby (2.6, with Psych) on every release so far, which is what a Mac
 # normally finds here. Apple has called it deprecated since 10.15, so it is not guaranteed. When it
@@ -258,8 +263,8 @@ fi
 # Homebrew cannot install an arbitrary older QEMU and an unfollowable rule is worse than none.
 #
 # **On Linux this is where `script/setup` used to die with no way forward**, found by milestone 117's
-# second stranger run on a stock Ubuntu box. Every Ubuntu release ships a QEMU without
-# `riscv-iommu-pci`, so this check hard-fails by design; `set -e` then ended bootstrap here, before
+# second stranger run on a stock Ubuntu box. Ubuntu 24.04 ships a QEMU without
+# `riscv-iommu-pci`, so this check hard-fails there by design; `set -e` then ended bootstrap here, before
 # the clang step, and the remedy it named (`script/ci-qemu`) described itself as "CI only". So the
 # reader was told to run a script that told them not to. Nothing was wrong except that nobody had
 # started from cold on Linux in weeks.

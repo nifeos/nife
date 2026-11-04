@@ -118,25 +118,26 @@ One milestone's worth, by lane `milestone/860-comments-state-the-constraint-as-i
   24.5%, over 50 holds 17.3%. 40 is where the tail's bulk sits, and the number calef named.
   338 rows at `--init`; 337 after this worth's sweep.
 - **The sweep, the five blocks the note's samples judged "move" or tutorial:**
-  - `components/src/login.rs:1`, 689 lines to 178. The design argument and history moved to
+  - The module header of `components/src/login.rs`, 689 lines to 178. The design argument and history moved to
     `notes/login.md` and two new appendices, `notes/login/teardown-and-channels-history.md` and
     `notes/login/boot-wiring-history.md` (beside a new `notes/login/README.md`), marked with
     dated sections; the module doc keeps the constraints, the contract table, the Name block and
     the living BUGS. `notes/login.md` was also corrected: its subtree, example and name-status
     sections predated §117 (a principal's subtree is named by its identity string), channel-per-client and the 2026-09-15 ratification.
-  - `components/src/rmle.rs:1`: the naming search moved to
+  - The module header of `components/src/rmle.rs`: the naming search moved to
     `design/naming/rmle-name-search.md` (a new appendix, indexed from `design/naming.md`); the
     Name block keeps the ruling and a pointer.
-  - `components/src/uptime.rs:1`: the finding moved to `notes/process-view.md`; the doc keeps
+  - The module header of `components/src/uptime.rs`: the finding moved to `notes/process-view.md`; the doc keeps
     the constraint and a pointer.
-  - `kernel/src/arch/x86_64/exceptions.rs:472`: the "TWO ways into the kernel" banner cut to its
+  - The banner above the `syscall` instruction pair in `kernel/src/arch/x86_64/exceptions.rs`: the "TWO ways into the kernel" banner cut to its
     constraint; the sentences that carry it already live on the items below.
-  - `std_exerciser/src/main.rs:1016`: the `remove_dir_all` history dropped (it restates records
+  - The `TREE` walk comment in `std_exerciser/src/main.rs`: the `remove_dir_all` history dropped (it restates records
     in `design/roadmap/0122-a-directory-handle-std-can-hold.md` and
     `notes/std/fs-descent.md`, and the history is in the lane's commit message); the living
     constraint stays.
 
 What remains for later milestones' worth: 337 over-cap blocks the baseline holds, swept a
 milestone's worth at a time, worst first. The next worst after this worth:
-`kernel/src/testing.rs:240` (468), `crates/system_initializer/src/lib.rs:6` (406),
-`components/src/timetable.rs:1` (224), `crates/jh7110_entropy/src/lib.rs:2` (209).
+the frame-ledger block above `PAGE_FRAME_REPORT_MINIMUM` in `kernel/src/testing.rs` (468), the module header of
+`crates/system_initializer/src/lib.rs` (406), the module header of `components/src/timetable.rs` (224), the module
+header of `crates/jh7110_entropy/src/lib.rs` (209).

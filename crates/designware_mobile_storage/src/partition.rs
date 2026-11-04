@@ -6,16 +6,25 @@
 //! whose header and table live in that gap), no partitions, or a first partition at sector 1 gets
 //! no scratch range, and the bench probe refuses to write and says why. A Kani harness (`proofs` in
 //! the crate root) proves the range never touches a partition or sector 0, for every table.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3135. A partition is the word for a region of a card that an MBR
+//! describes.
 
 /// The MBR's last two bytes on a valid table.
-pub const SIGNATURE: [u8; 2] = [0x55, 0xaa];
+///
+/// Name: ratified 2026-11-03 (UTC), #3140. Renamed from `SIGNATURE`: the name says whose signature
+/// it is, since a constant at the crate's `partition` module could be read as any table's.
+pub const MASTER_BOOT_RECORD_SIGNATURE: [u8; 2] = [0x55, 0xaa];
 /// The partition type a GUID partition table (GPT) disk's protective MBR carries.
 #[doc(alias = "gpt")]
 pub(crate) const TYPE_PROTECTIVE_GLOBALLY_UNIQUE_IDENTIFIER_PARTITION_TABLE: u8 = 0xee;
 
 /// One of the four primary partition entries.
+///
+/// Name: ratified 2026-11-03 (UTC), #3140. Renamed from `Entry`: the name says what the entry
+/// describes, so it reads on its own where it is imported.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct Entry {
+pub struct PartitionEntry {
     /// The type byte; 0 is an unused entry.
     pub kind: u8,
     /// First sector.
@@ -24,8 +33,11 @@ pub struct Entry {
     pub sectors: u32,
 }
 
-impl Entry {
+impl PartitionEntry {
     /// Is this entry a partition at all? Unused entries are type 0 or zero length.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3140. It asks whether the entry is in use, which is the
+    /// question the type byte and the length answer.
     #[must_use]
     pub const fn is_used(&self) -> bool {
         self.kind != 0 && self.sectors != 0
@@ -33,6 +45,9 @@ impl Entry {
 
     /// Does this partition contain `sector`? Computed in 64 bits, so an entry whose end passes
     /// 2^32 still contains what it claims to.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3140. The standard library's word for a range holding a
+    /// value.
     #[must_use]
     pub const fn contains(&self, sector: u64) -> bool {
         self.is_used()
@@ -49,11 +64,14 @@ impl Entry {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MasterBootRecord {
     /// Entries 0 to 3, as on disk.
-    pub entries: [Entry; 4],
+    pub entries: [PartitionEntry; 4],
 }
 
 impl MasterBootRecord {
     /// **Parse sector 0**, or `None` without the signature.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3140. The standard library's word for reading a value from
+    /// bytes that may not hold one.
     ///
     /// ```
     /// use designware_mobile_storage::partition::MasterBootRecord;
@@ -67,14 +85,14 @@ impl MasterBootRecord {
     /// let mbr = MasterBootRecord::parse(&s).unwrap();
     /// assert_eq!(mbr.entries[0].start, 2048);
     /// // Eight sectors ending just before the partition.
-    /// assert_eq!(mbr.scratch(8), Some((2040, 8)));
+    /// assert_eq!(mbr.scratch_sector_range(8), Some((2040, 8)));
     /// ```
     #[must_use]
     pub fn parse(sector: &[u8; 512]) -> Option<MasterBootRecord> {
-        if sector[510..512] != SIGNATURE {
+        if sector[510..512] != MASTER_BOOT_RECORD_SIGNATURE {
             return None;
         }
-        let mut entries = [Entry::default(); 4];
+        let mut entries = [PartitionEntry::default(); 4];
         for (i, e) in entries.iter_mut().enumerate() {
             let at = 446 + 16 * i;
             let le = |o: usize| {
@@ -85,7 +103,7 @@ impl MasterBootRecord {
                     sector[at + o + 3],
                 ])
             };
-            *e = Entry {
+            *e = PartitionEntry {
                 kind: sector[at + 4],
                 start: le(8),
                 sectors: le(12),
@@ -109,21 +127,24 @@ impl MasterBootRecord {
     /// `None` for a protective MBR, a table with no partitions, a first partition at sector 0 or
     /// 1, or `want` of 0.
     ///
+    /// Name: ratified 2026-11-03 (UTC), #3140. Renamed from `scratch`: the name says it returns a
+    /// range of sectors, which the one word did not.
+    ///
     /// # Examples
     ///
     /// A write test on radon's boot card may only land before the first partition:
     ///
     /// ```
-    /// use designware_mobile_storage::partition::{Entry, MasterBootRecord};
+    /// use designware_mobile_storage::partition::{PartitionEntry, MasterBootRecord};
     ///
-    /// let fat = Entry { kind: 0x0b, start: 2048, sectors: 1 << 20 };
+    /// let fat = PartitionEntry { kind: 0x0b, start: 2048, sectors: 1 << 20 };
     /// let mbr = MasterBootRecord {
-    ///     entries: [fat, Entry::default(), Entry::default(), Entry::default()],
+    ///     entries: [fat, PartitionEntry::default(), PartitionEntry::default(), PartitionEntry::default()],
     /// };
-    /// assert_eq!(mbr.scratch(8), Some((2040, 8)));
+    /// assert_eq!(mbr.scratch_sector_range(8), Some((2040, 8)));
     /// ```
     #[must_use]
-    pub fn scratch(&self, want: u32) -> Option<(u32, u32)> {
+    pub fn scratch_sector_range(&self, want: u32) -> Option<(u32, u32)> {
         if want == 0
             || self
                 .entries
@@ -172,10 +193,10 @@ mod tests {
         let master_boot_record =
             MasterBootRecord::parse(&sector(&[(0x83, 1_000_000, 10), (0x0b, 2048, 900_000)]))
                 .unwrap();
-        assert_eq!(master_boot_record.scratch(8), Some((2040, 8)));
+        assert_eq!(master_boot_record.scratch_sector_range(8), Some((2040, 8)));
         // A gap smaller than the ask is used whole, and never reaches sector 0.
         let master_boot_record = MasterBootRecord::parse(&sector(&[(0x0b, 4, 100)])).unwrap();
-        assert_eq!(master_boot_record.scratch(8), Some((1, 3)));
+        assert_eq!(master_boot_record.scratch_sector_range(8), Some((1, 3)));
     }
 
     #[test]
@@ -186,13 +207,13 @@ mod tests {
             u32::MAX,
         )]))
         .unwrap();
-        assert_eq!(protective.scratch(1), None);
+        assert_eq!(protective.scratch_sector_range(1), None);
         let tight = MasterBootRecord::parse(&sector(&[(0x0b, 1, 100)])).unwrap();
-        assert_eq!(tight.scratch(1), None);
+        assert_eq!(tight.scratch_sector_range(1), None);
         let empty = MasterBootRecord::parse(&sector(&[])).unwrap();
-        assert_eq!(empty.scratch(1), None);
+        assert_eq!(empty.scratch_sector_range(1), None);
         let master_boot_record = MasterBootRecord::parse(&sector(&[(0x0b, 2048, 100)])).unwrap();
-        assert_eq!(master_boot_record.scratch(0), None);
+        assert_eq!(master_boot_record.scratch_sector_range(0), None);
     }
 
     #[test]
@@ -200,7 +221,7 @@ mod tests {
         // Type 0 with a start of 16 is an unused slot, not a partition at 16.
         let master_boot_record =
             MasterBootRecord::parse(&sector(&[(0, 16, 100), (0x0b, 2048, 100)])).unwrap();
-        assert_eq!(master_boot_record.scratch(4), Some((2044, 4)));
+        assert_eq!(master_boot_record.scratch_sector_range(4), Some((2044, 4)));
     }
 
     /// Every byte of the start and length words is read, little-endian, from its own entry: the
@@ -219,7 +240,7 @@ mod tests {
 
     #[test]
     fn a_partition_contains_its_own_sectors_and_no_others() {
-        let e = Entry {
+        let e = PartitionEntry {
             kind: 0x0b,
             start: 100,
             sectors: 50,
@@ -229,9 +250,9 @@ mod tests {
         assert!(e.contains(149));
         assert!(!e.contains(150));
         // An unused slot contains nothing, whatever its start says.
-        assert!(!Entry { kind: 0, ..e }.contains(120));
+        assert!(!PartitionEntry { kind: 0, ..e }.contains(120));
         // The end is computed in 64 bits, so an entry crossing 2^32 still contains its tail.
-        let high = Entry {
+        let high = PartitionEntry {
             kind: 0x83,
             start: u32::MAX - 1,
             sectors: 10,

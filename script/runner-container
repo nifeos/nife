@@ -13,18 +13,18 @@
 # **What it is for.** `inbound check (riscv64)` has gone red on CI three times with nothing anybody
 # could name, at roughly one boot in six, and fifteen boots across three developer lanes on macOS
 # have produced zero failures. notes/net/the-inbound-check.md draws the conclusion: this is an
-# emulator-timing failure, CI is `ubuntu-24.04-arm`, and **a reproduction attempt that is not on that
+# emulator-timing failure, CI is `ubuntu-26.04-arm`, and **a reproduction attempt that is not on that
 # runner class is not a reproduction attempt.** So the instrument is not another loop on the laptop.
 # It is the runner class, brought to the laptop.
 #
-# **Why podman and not a second machine.** `ubuntu-24.04-arm` is aarch64 and so is this laptop, so
+# **Why podman and not a second machine.** `ubuntu-26.04-arm` is aarch64 and so is this laptop, so
 # the container runs NATIVE: no second layer of emulation between the host and the QEMU under
 # examination, which for a timing measurement is the whole reason a container is admissible here at
 # all. On an x86 developer machine this script would be measuring qemu-user and would be worthless.
 #
 # **What it matches, and this list is the argument that the run means anything:**
 #
-#   - the distribution and release, ubuntu 24.04 aarch64, hence its libc, its libslirp and its
+#   - the distribution and release, ubuntu 26.04 aarch64, hence its libc, its libslirp and its
 #     scheduler tick;
 #   - the emulator, built from `.qemu-version`'s pin by `script/ci-qemu`, THE SAME SCRIPT the
 #     workflow runs, into the same `~/.cache/nife-qemu` prefix an actions/cache would restore;
@@ -54,10 +54,10 @@
 #   - **the host TCP stack.** The connections the prober makes are host-loopback, and they are
 #     terminated by the podman VM's Linux stack rather than by macOS's, which is a match; but the
 #     path from the `podman run` process to it is not the runner's.
-#   - **memory.** A GitHub `ubuntu-24.04-arm` runner has 16 GiB. The podman VM ships with 4 and this
+#   - **memory.** A GitHub `ubuntu-26.04-arm` runner has 16 GiB. The podman VM ships with 4 and this
 #     script does not change it, because a machine's shape is the operator's; `--build-only` will
 #     tell you if yours is too small to build QEMU.
-#   - **the image.** ubuntu:24.04, not a `runner-images` build. See the Containerfile.
+#   - **the image.** ubuntu:26.04, not a `runner-images` build. See the Containerfile.
 #
 # So a reproduction here is strong evidence and a clean run is weak evidence. That asymmetry is why
 # the failure to reproduce still has to be reported as a result: it says the failure depends on

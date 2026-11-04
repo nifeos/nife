@@ -46,7 +46,7 @@ shift
 # the fact that decided milestone 87's fork: nothing had to be installed for this to work.
 # **That is a Homebrew fact and not a universal one**, learned when this gate first ran in CI:
 # Debian packages the firmware separately, so `script/bootstrap` installs `ovmf` on Linux, and
-# Ubuntu 24.04 names the file `OVMF_CODE_4M.fd` rather than `OVMF_CODE.fd`, which is why both
+# Ubuntu 24.04 and 26.04 name the file `OVMF_CODE_4M.fd` rather than `OVMF_CODE.fd`, which is why both
 # spellings are searched. NIFE_OVMF_CODE names it explicitly on a machine that puts it elsewhere.
 #
 # **The variable store is `edk2-i386-vars.fd` even for x86_64**, which is QEMU's own naming and not

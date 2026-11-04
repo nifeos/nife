@@ -129,10 +129,10 @@ Found with `grep` at `396187b0b`.
 - Four manifests depend on the crate (`components`, `fixtures`, `line_editor`, `swap_protocol`), and
   seven Rust files use it. None changes.
 - Milestone 849 (a package declares what it needs at run time, apart from what it links) cites
-  `lib.rs:355`, `:216` and `:396`. They were right at 2,094 lines and have pointed 27 lines too low
+  three places in `lib.rs` by line number. They were right at 2,094 lines and have pointed 27 lines too low
   since milestone 863. This move does not shift them, since all three are above line 1662. They
   are stale already, and a function name would keep them true.
-- `design/comment-block-baseline.tsv` keys two rows on this file, at `lib.rs:1` and `lib.rs:849`:
+- `design/comment-block-baseline.tsv` keys two rows on this file, in `lib.rs`:
   the crate docs (158 lines) and the doc of `dependents` (46 lines). Both stay in `lib.rs`, so
   neither is affected.
 - The row in `design/file-length-baseline.tsv` goes in the same change.

@@ -27,10 +27,10 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use ::designware_ethernet::controller::{self, Identity};
-use ::designware_ethernet::motorcomm::{self, Link, Speed};
+use ::designware_ethernet::motorcomm_physical_layer_device::{self, Link, Speed};
+use ::designware_ethernet::network_interface_controller::{self as controller, Identity};
 use ::designware_ethernet::{
-    DataPlane, DirectMemoryAccessRegion, Hardware, Tails, coherence, jh7110, layout,
+    DataPlane, DirectMemoryAccessRegion, Hardware, Tails, cache_coherence, jh7110, layout,
     management_data_input_output, registers,
 };
 use driver_process_contract::designware_ethernet::Handoff;
@@ -71,7 +71,7 @@ pub enum Error {
     /// The DMA region could not be allocated.
     NoRegion,
     /// The coherence probe found device DMA not coherent with the caches.
-    NotCoherent(coherence::Verdict),
+    NotCoherent(cache_coherence::Verdict),
 }
 
 /// Where the station address came from.
@@ -108,13 +108,13 @@ pub(crate) struct Report {
     /// The PHY's identifier.
     pub physical_layer_device_id: u32,
     /// The PHY's I/O voltage and which tree spelling its settings came from.
-    pub physical_layer_device: Option<(u32, motorcomm::SettingsSource)>,
+    pub physical_layer_device: Option<(u32, motorcomm_physical_layer_device::SettingsSource)>,
     /// The station address and where it came from.
     pub mac: Option<([u8; 6], AddressSource)>,
     /// How long each software reset took, in microseconds (the probe's and the real one's).
     pub resets_microseconds: [u64; 2],
     /// The coherence probe's verdict and what it saw.
-    pub coherence: Option<(coherence::Verdict, coherence::Observation)>,
+    pub coherence: Option<(cache_coherence::Verdict, cache_coherence::Observation)>,
     /// The negotiated link, if one resolved.
     pub link: Option<Link>,
     /// How long the link took to resolve, or how long was waited for it.
@@ -124,7 +124,7 @@ pub(crate) struct Report {
 impl Report {
     fn new(e: &crate::memory::Jh7110Ethernet) -> Report {
         Report {
-            base: e.port.base,
+            base: e.port.registers_physical_address,
             compatible: e.port.compatible,
             windows_from_tree: e.aon.from_tree && e.sys.from_tree && e.syscon.from_tree,
             sys: crg::BringUpReport::default(),
@@ -187,7 +187,8 @@ pub fn bring_up() -> Result<Found, Absent> {
     let (handoff, link) = outcome.map_err(Absent::Refused)?;
     Ok(Found {
         handoff,
-        dma_page: e.port.base + u64::from(registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
+        dma_page: e.port.registers_physical_address
+            + u64::from(registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE),
         link,
     })
 }
@@ -239,7 +240,7 @@ fn run(
         r.syscon = (before, core::ptr::read_volatile(syscon));
     }
 
-    let mut w = Window(mmu::phys_to_virt(e.port.base));
+    let mut w = Window(mmu::phys_to_virt(e.port.registers_physical_address));
     let id = Identity::read(&mut w);
     r.version = id.version;
     r.direct_memory_access_address_bits = id.direct_memory_access_address_bits();
@@ -253,8 +254,8 @@ fn run(
     let mac = match e.port.station_address {
         Some(m) => (m, AddressSource::Tree),
         None => controller::station_address(
-            w.read(registers::MAC_ADDR0_HI),
-            w.read(registers::MAC_ADDR0_LO),
+            w.read(registers::MAC_ADDRESS_0_HIGH_REGISTER),
+            w.read(registers::MAC_ADDRESS_0_LOW_REGISTER),
         )
         .map(|m| (m, AddressSource::Registers))
         .ok_or(Error::NoStationAddress)?,
@@ -271,7 +272,7 @@ fn run(
     let verdict = probe(&mut w, &id, region, mac, r)?;
     if !matches!(
         verdict,
-        coherence::Verdict::Coherent | coherence::Verdict::Inconclusive
+        cache_coherence::Verdict::Coherent | cache_coherence::Verdict::Inconclusive
     ) {
         return Err(Error::NotCoherent(verdict));
     }
@@ -280,7 +281,8 @@ fn run(
     let _ = controller::stop(&mut w);
     r.resets_microseconds[1] = controller::soft_reset(&mut w).map_err(Error::Controller)?;
     zero(region);
-    controller::configure(&mut w, &id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
+    controller::configure(&mut w, &id, &jh7110::BUS_CONFIGURATION, region, mac)
+        .map_err(Error::Controller)?;
 
     let link = wait_for_link(&mut w, e, r)?;
     Ok((
@@ -304,12 +306,14 @@ fn bring_up_physical_layer_device(
         physical_layer_device_address,
     )
     .map_err(Error::Mdio)?;
-    if r.physical_layer_device_id != motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID {
+    if r.physical_layer_device_id
+        != motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID
+    {
         return Err(Error::UnknownPhysicalLayerDevice {
             id: r.physical_layer_device_id,
         });
     }
-    let applied = motorcomm::configure(
+    let applied = motorcomm_physical_layer_device::configure(
         &mut management_data_input_output::Bus(w),
         physical_layer_device_address,
         &e.port.physical_layer_device,
@@ -337,7 +341,8 @@ fn wait_for_link(
     let deadline = started + LINK_WAIT_MS * crate::arch::timer::frequency() / 1000;
     let link = loop {
         if let Some(l) =
-            motorcomm::read_link(&mut bus, physical_layer_device_address).map_err(Error::Mdio)?
+            motorcomm_physical_layer_device::read_link(&mut bus, physical_layer_device_address)
+                .map_err(Error::Mdio)?
         {
             break Some(l);
         }
@@ -350,7 +355,7 @@ fn wait_for_link(
         (crate::arch::timer::now() - started) * 1000 / crate::arch::timer::frequency().max(1);
     r.link = link;
     if let Some(l) = link {
-        motorcomm::apply_speed(
+        motorcomm_physical_layer_device::apply_speed(
             &mut bus,
             physical_layer_device_address,
             &e.port.physical_layer_device,
@@ -370,9 +375,10 @@ fn probe(
     region: u64,
     mac: [u8; 6],
     r: &mut Report,
-) -> Result<coherence::Verdict, Error> {
+) -> Result<cache_coherence::Verdict, Error> {
     zero(region);
-    controller::configure(w, id, &jh7110::BUS, region, mac).map_err(Error::Controller)?;
+    controller::configure(w, id, &jh7110::BUS_CONFIGURATION, region, mac)
+        .map_err(Error::Controller)?;
     let loopback = Link {
         speed: Speed::Thousand,
         full_duplex: true,
@@ -384,15 +390,15 @@ fn probe(
     // A probe frame is a fixed 128 bytes, so `transmit` cannot refuse it for its length, and the
     // ring was just emptied, so it cannot be full; an error here would leave nothing to observe,
     // which `classify` reports as inconclusive.
-    let _ = coherence::prepare(&mut dp, &mut plane, &mut tails, mac);
+    let _ = cache_coherence::prepare(&mut dp, &mut plane, &mut tails, mac);
     let deadline = crate::arch::timer::now()
-        + coherence::WAIT_MICROSECONDS * crate::arch::timer::frequency() / 1_000_000;
-    while !coherence::delivered(&plane) && crate::arch::timer::now() < deadline {
+        + cache_coherence::WAIT_MICROSECONDS * crate::arch::timer::frequency() / 1_000_000;
+    while !cache_coherence::is_delivered(&plane) && crate::arch::timer::now() < deadline {
         core::hint::spin_loop();
     }
-    let status = w.read(registers::CHAN_STATUS);
-    let o = coherence::observe(&plane, mac, status);
-    let v = coherence::classify(&o);
+    let status = w.read(registers::CHANNEL_STATUS_REGISTER);
+    let o = cache_coherence::observe(&plane, mac, status);
+    let v = cache_coherence::classify(&o);
     r.coherence = Some((v, o));
     Ok(v)
 }
@@ -403,9 +409,10 @@ fn region() -> Result<u64, Error> {
     if base != 0 {
         return Ok(base);
     }
-    let base = crate::memory::alloc_contiguous_zeroed(layout::PAGES as usize)
-        .ok_or(Error::NoRegion)?
-        .addr();
+    let base =
+        crate::memory::alloc_contiguous_zeroed(layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as usize)
+            .ok_or(Error::NoRegion)?
+            .addr();
     REGION.store(base, Ordering::Release);
     Ok(base)
 }
@@ -413,14 +420,14 @@ fn region() -> Result<u64, Error> {
 /// Zero the region. A stale descriptor from the probe, or a previous wiring, would otherwise read
 /// as a received frame.
 fn zero(region: u64) {
-    // SAFETY: `region` is the run `region` allocated, `layout::BYTES` long, in the direct map. The
+    // SAFETY: `region` is the run `region` allocated, `layout::DIRECT_MEMORY_ACCESS_REGION_BYTES` long, in the direct map. The
     // controller was reset (or is about to be configured with nothing available) so it is not
     // writing it, and the service refuses a new wiring while a previous process lives.
     unsafe {
         core::ptr::write_bytes(
             mmu::phys_to_virt(region) as *mut u8,
             0,
-            layout::BYTES as usize,
+            layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize,
         );
     }
 }
@@ -430,13 +437,13 @@ struct Window(u64);
 
 impl Hardware for Window {
     fn read(&mut self, off: u32) -> u32 {
-        assert!(off + 4 <= registers::WINDOW);
+        assert!(off + 4 <= registers::REGISTER_WINDOW_BYTES);
         // SAFETY: the window is device-mapped (step 6d), and the assertion keeps `off` inside its
         // 64 KiB.
         unsafe { core::ptr::read_volatile((self.0 + u64::from(off)) as *const u32) }
     }
     fn write(&mut self, off: u32, v: u32) {
-        assert!(off + 4 <= registers::WINDOW);
+        assert!(off + 4 <= registers::REGISTER_WINDOW_BYTES);
         // SAFETY: as `read`.
         unsafe { core::ptr::write_volatile((self.0 + u64::from(off)) as *mut u32, v) }
     }
@@ -471,7 +478,7 @@ struct Plane(u64);
 
 impl Plane {
     fn at(&self, off: u64, len: usize) -> u64 {
-        assert!(off + len as u64 <= layout::BYTES);
+        assert!(off + len as u64 <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES);
         self.0 + off
     }
 }

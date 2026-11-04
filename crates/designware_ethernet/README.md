@@ -17,7 +17,7 @@ Three Kani harnesses, in `src/proofs.rs`:
 
 - `a_delivered_frame_always_fits_the_buffer_and_the_room`: for every value a device can write
   into word 3 of a receive descriptor and every caller buffer size, a frame that `receive_verdict`
-  accepts fits the caller's buffer, is at most `MAXIMUM_FRAME` bytes, and with its CRC fits the
+  accepts fits the caller's buffer, is at most `MAXIMUM_FRAME_BYTES` bytes, and with its CRC fits the
   receive buffer.
 - `every_ring_offset_is_inside_the_region`: for every index, each descriptor and buffer offset
   lies inside its own part of the DMA region.
@@ -66,7 +66,7 @@ impl Tails for NoDevice {
     fn barrier(&mut self) {}
 }
 
-let mut region = Memory(vec![0; layout::BYTES as usize]);
+let mut region = Memory(vec![0; layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize]);
 let mut tails = NoDevice;
 let mut plane = DataPlane::new(0x4000_0000); // the region's physical address
 plane.start(&mut region, &mut tails); // posts the receive buffers
