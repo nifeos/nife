@@ -150,6 +150,7 @@ build-is-reproducible|local|script/build-is-reproducible
 test|local|script/test
 test-aarch64-riscv64|ci|script/test --arch aarch64,riscv64
 test-x86_64|ci|script/test --arch x86_64 --no-host
+test-host|ci|cargo xtask test --host-only
 swish-check|local|cargo xtask std-exerciser && cargo xtask basalt-fetch && script/swish-check && script/swish-check --arch aarch64 --input-race
 swish-check-aarch64-riscv64|ci|cargo xtask std-exerciser && cargo xtask basalt-fetch && script/swish-check --arch aarch64 && script/swish-check --arch riscv64 && script/swish-check --arch aarch64 --input-race
 swish-check-x86_64|ci|cargo xtask std-exerciser && cargo xtask basalt-fetch && script/swish-check --arch x86_64
@@ -189,6 +190,10 @@ TABLE
 #
 #   test-aarch64-riscv64 and test-x86_64  the `test` row cut in two for CI's 20-minute job budget;
 #                       a developer runs the whole row.
+#   test-host           the host pass alone, which a pull request runs in place of the two rows
+#                       above; they run in the merge queue, and their first row has the host pass.
+#                       It calls xtask directly because script/test refuses to start without QEMU,
+#                       and this row boots nothing.
 #   rg-threads-aarch64-riscv64 and rg-threads-x86_64  `rg` walking in parallel at four cores
 #                       (milestone 121, fatal risk 1's third gap; lane milestone/121-rg-threads,
 #                       2026-10-12 UTC). They rebuild every leg's test image with a filter and boot

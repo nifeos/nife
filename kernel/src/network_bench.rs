@@ -176,7 +176,7 @@ fn parse_peer(s: &str) -> Option<u64> {
 /// `e1000e` arm spells them.
 #[cfg(target_arch = "riscv64")]
 mod radon {
-    use ::designware_ethernet::coherence::Verdict;
+    use ::designware_ethernet::cache_coherence::Verdict;
     use ::designware_ethernet::jh7110;
 
     use crate::designware_ethernet::{Absent, Report, last_report};
@@ -297,8 +297,8 @@ mod radon {
             "network-bench: syscon    : {:#010x} -> {:#010x} (gmac0 interface {} before, {} after; 1 is RGMII)",
             r.syscon.0,
             r.syscon.1,
-            jh7110::interface(r.syscon.0),
-            jh7110::interface(r.syscon.1),
+            jh7110::gmac0_interface_select(r.syscon.0),
+            jh7110::gmac0_interface_select(r.syscon.1),
         );
         println!(
             "network-bench: mac core  : version {:#010x}, {}-bit DMA",

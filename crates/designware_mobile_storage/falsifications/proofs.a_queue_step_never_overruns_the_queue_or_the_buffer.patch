@@ -5,9 +5,9 @@ FIFO that still holds words overruns it (the controller raises FRUN and the bloc
 
 Expected to fail: `assert!(n <= (depth - filled) * 4)`, on any write with a nonzero fill.
 
-diff --git a/crates/designware_mobile_storage/src/host.rs b/crates/designware_mobile_storage/src/host.rs
---- a/crates/designware_mobile_storage/src/host.rs
-+++ b/crates/designware_mobile_storage/src/host.rs
+diff --git a/crates/designware_mobile_storage/src/host_controller.rs b/crates/designware_mobile_storage/src/host_controller.rs
+--- a/crates/designware_mobile_storage/src/host_controller.rs
++++ b/crates/designware_mobile_storage/src/host_controller.rs
 @@ -136,7 +136,7 @@
  pub const fn queue_step(status: u32, depth: u32, write: bool, remaining: u32) -> u32 {
      let filled = registers::queue_count(status);

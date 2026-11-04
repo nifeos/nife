@@ -40,7 +40,7 @@ aarch64, 684,536 on riscv64 and 877,528 on x86_64 (about 230 KB each under `gzip
   step), and `uefi_loader/build.rs` refuses a kernel and archive that `sealed_pair` finds unsealed.
 
 The proposal
-[`how-the-loader-hands-the-kernel-two-digests.md`](proposals/how-the-loader-hands-the-kernel-two-digests.md)
+[`how-the-loader-hands-the-kernel-two-digests.md`](0999-how-the-loader-hands-the-kernel-two-digests.md)
 has the table of what this costs an update under 976's option B.
 
 ## The consumer, and the condition the code waits on
