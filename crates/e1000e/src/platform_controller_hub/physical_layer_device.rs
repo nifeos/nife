@@ -1,9 +1,9 @@
 //! **Reaching the PHY: MDIO through `MDIC`, under the software/firmware semaphore.**
 //!
-//! [`read_mdic`] and [`write_mdic`] are the MDIO primitive the 82574L shares. Of the rest, only
-//! [`id_at`] applies to an 82574L, which has no pages and no semaphore. [`read()`] and [`write()`]
-//! are the paged access every PCH PHY register above page 0 needs, and each takes a [`Swflag`],
-//! which only [`Swflag::acquire`] makes. That type stands where FreeBSD writes "Assumes
+//! [`read_management_data_input_output`] and [`write_management_data_input_output`] are the MDIO primitive the 82574L shares. Of the rest, only
+//! [`read_identifier_at_address`] applies to an 82574L, which has no pages and no semaphore. [`read()`] and [`write()`]
+//! are the paged access every PCH PHY register above page 0 needs, and each takes a [`SoftwareFlag`],
+//! which only [`SoftwareFlag::acquire`] makes. That type stands where FreeBSD writes "Assumes
 //! semaphore already acquired" comments. The FreeBSD sources are `e1000_phy.c` (the MDIC and
 //! paged access) and `e1000_ich8lan.c` (the semaphore and the reset block).
 //!
@@ -57,6 +57,8 @@ use super::Hardware;
 
 /// Why a PHY access failed. FreeBSD collapses these into `-E1000_ERR_PHY`; they are kept apart
 /// here because the bench boot prints them, and each points somewhere different.
+///
+/// Name: ratified 2026-11-03 (UTC), #3153. An ordinary name, as in the sibling modules.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// `MDIC.READY` never rose: nothing answered on the management bus.
@@ -70,9 +72,9 @@ pub enum Error {
     WrongRegister,
     /// The register number is wider than MDIO's five bits.
     OutOfRange,
-    /// Someone else's `EXTCNF_CTRL.SWFLAG` stayed set for [`SWFLAG_FREE_MS`].
+    /// Someone else's `EXTCNF_CTRL.SWFLAG` stayed set for [`SOFTWARE_FLAG_FREE_MILLISECONDS`].
     SwflagHeld,
-    /// The flag would not stick for [`SWFLAG_TAKE_MS`]: firmware or hardware has the PHY.
+    /// The flag would not stick for [`SOFTWARE_FLAG_TAKE_MILLISECONDS`]: firmware or hardware has the PHY.
     SwflagRefused,
     /// A page this port refuses (the module header).
     PageNotPorted,
@@ -90,13 +92,28 @@ pub mod mdic {
     pub(crate) const OP_READ: u32 = 0x0800_0000;
     /// Write opcode.
     pub(crate) const OP_WRITE: u32 = 0x0400_0000;
-    /// The transaction completed.
-    pub const READY: u32 = 0x1000_0000;
-    /// The transaction failed.
-    pub const ERROR: u32 = 0x4000_0000;
+    /// **Management data input/output transaction ready** (`E1000_MDIC_READY`, OpenBSD's
+    /// `sys/dev/pci/if_em_hw.h` and FreeBSD's `e1000_defines.h`, both `0x10000000`). The transaction
+    /// completed.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3153. Renamed from `READY`, which did not say what was
+    /// ready; the spelled-out name follows the Ethernet crate's `management_data_input_output`
+    /// (#3094) and the source's `E1000_MDIC_READY` is kept as an alias.
+    #[doc(alias = "E1000_MDIC_READY")]
+    pub const MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY: u32 = 0x1000_0000;
+    /// **Management data input/output transaction error** (`E1000_MDIC_ERROR`, OpenBSD's
+    /// `sys/dev/pci/if_em_hw.h` and FreeBSD's `e1000_defines.h`, both `0x40000000`). The transaction
+    /// failed.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3153. Renamed from `ERROR`, which did not say what failed;
+    /// the source's `E1000_MDIC_ERROR` is kept as an alias.
+    #[doc(alias = "E1000_MDIC_ERROR")]
+    pub const MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_ERROR: u32 = 0x4000_0000;
     /// Polls before giving up: `E1000_GEN_POLL_TIMEOUT * 3`.
     pub(crate) const POLLS: u32 = 640 * 3;
     /// Between polls, in microseconds.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3153. The unit is already spelled out.
     pub const POLL_MICROSECONDS: u64 = 50;
 }
 
@@ -127,9 +144,9 @@ const _: () = assert!((u32::MAX << PHY_PAGE_SHIFT) & MAX_PHY_REG_ADDRESS == 0);
 /// A page and a register packed into the one offset [`read()`] and [`write()`] take: FreeBSD's
 /// `PHY_REG(page, reg)`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `regs` and `r` are spelled out
-/// `registers`; no ruling covers this function. Refused `reg` (an abbreviation, as in FreeBSD's
-/// `PHY_REG`).
+/// Name: ratified 2026-11-03 (UTC), #3153. The offset is a page and a register packed together;
+/// `register` is spelled out, and FreeBSD's `PHY_REG` stays as an alias. Refused `reg` (an
+/// abbreviation).
 #[doc(alias = "PHY_REG")]
 pub const fn paged_offset(page: u32, register: u32) -> u32 {
     page << PHY_PAGE_SHIFT | (register & MAX_PHY_REG_ADDRESS)
@@ -211,20 +228,29 @@ pub(crate) const PHY_REVISION_MASK: u32 = 0xffff_fff0;
 
 /// How long to wait for someone else's `SWFLAG` to clear, in ms (`PHY_CFG_TIMEOUT`).
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
-pub const SWFLAG_FREE_MS: u32 = 100;
+/// Name: ratified 2026-11-03 (UTC), #3153. Renamed from `SWFLAG_FREE_MS`: the unit is spelled out
+/// (a symbol such as `_MS` is not a valid suffix) and `SWFLAG` is spelled `SOFTWARE_FLAG`.
+pub const SOFTWARE_FLAG_FREE_MILLISECONDS: u32 = 100;
 /// How long to wait for ours to stick, in ms (`SW_FLAG_TIMEOUT`).
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
-pub const SWFLAG_TAKE_MS: u32 = 1000;
+/// Name: ratified 2026-11-03 (UTC), #3153. Renamed from `SWFLAG_TAKE_MS`, on the same grounds as
+/// [`SOFTWARE_FLAG_FREE_MILLISECONDS`].
+pub const SOFTWARE_FLAG_TAKE_MILLISECONDS: u32 = 1000;
 /// `EXTCNF_CTRL.SWFLAG`.
 pub(crate) const EXTCNF_CTRL_SWFLAG: u32 = 0x0000_0020;
 /// `FWSM.RSPCIPHY`: clear while firmware blocks a PHY reset.
 pub(crate) const ICH_FWSM_RSPCIPHY: u32 = 0x0000_0040;
 
 /// One MDIO read of `register` at PHY address `physical_layer_device_address`,
-/// `e1000_read_phy_reg_mdic`.
-pub fn read_mdic(
+/// `e1000_read_phy_reg_mdic`. It goes through the `MDIC` register (the management data
+/// input/output control register).
+///
+/// Name: ratified 2026-11-03 (UTC), #3153. Renamed from `read_mdic`, which abbreviated the
+/// register; the Ethernet crate spells MDIO as `management_data_input_output` (#3094). `mdic`
+/// stays as the source term.
+#[doc(alias = "mdic")]
+#[doc(alias = "e1000_read_phy_reg_mdic")]
+pub fn read_management_data_input_output(
     hardware: &mut impl Hardware,
     physical_layer_device_address: u32,
     register: u32,
@@ -241,10 +267,14 @@ pub fn read_mdic(
     complete(hardware, register).map(|v| v as u16)
 }
 
-/// One MDIO write, `e1000_write_phy_reg_mdic`.
+/// One MDIO write, `e1000_write_phy_reg_mdic`. It goes through the `MDIC` register (the
+/// management data input/output control register).
 ///
-/// Name: recorded (FreeBSD's `e1000_write_phy_reg_mdic`).
-pub fn write_mdic(
+/// Name: ratified 2026-11-03 (UTC), #3153. Renamed from `write_mdic`, on the same grounds as
+/// [`read_management_data_input_output`]. `mdic` stays as the source term.
+#[doc(alias = "mdic")]
+#[doc(alias = "e1000_write_phy_reg_mdic")]
+pub fn write_management_data_input_output(
     hardware: &mut impl Hardware,
     physical_layer_device_address: u32,
     register: u32,
@@ -269,13 +299,13 @@ fn complete(hardware: &mut impl Hardware, register: u32) -> Result<u32, Error> {
     for _ in 0..mdic::POLLS {
         hardware.delay_microseconds(mdic::POLL_MICROSECONDS);
         v = hardware.read(super::registers::MDIC);
-        if v & mdic::READY != 0 {
+        if v & mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY != 0 {
             break;
         }
     }
-    if v & mdic::READY == 0 {
+    if v & mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY == 0 {
         Err(Error::NotReady)
-    } else if v & mdic::ERROR != 0 {
+    } else if v & mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_ERROR != 0 {
         Err(Error::ManagementDataInterface)
     } else if (v & mdic::REG_MASK) >> mdic::REG_SHIFT != register {
         Err(Error::WrongRegister)
@@ -285,12 +315,16 @@ fn complete(hardware: &mut impl Hardware, register: u32) -> Result<u32, Error> {
 }
 
 /// **Proof of holding the software/firmware semaphore** over the PHY and some MAC registers.
-/// Deliberately not `Clone`: [`Swflag::release`] consumes it.
+/// Deliberately not `Clone`: [`SoftwareFlag::release`] consumes it.
+///
+/// Name: ratified 2026-11-03 (UTC), #3153. Renamed from `Swflag`, which abbreviated the name;
+/// `swflag` stays as the source term (FreeBSD's `acquire_swflag` and `E1000_EXTCNF_CTRL_SWFLAG`).
+#[doc(alias = "swflag")]
 #[derive(Debug)]
 #[must_use = "a held SWFLAG locks the Management Engine out of the PHY until it is released"]
-pub struct Swflag(());
+pub struct SoftwareFlag(());
 
-impl Swflag {
+impl SoftwareFlag {
     /// `e1000_acquire_swflag_ich8lan`: wait for the flag to be free, set it, and wait for it to
     /// read back set. On a refusal it clears the bit it wrote, as FreeBSD does.
     ///
@@ -298,7 +332,7 @@ impl Swflag {
     pub fn acquire(hardware: &mut impl Hardware) -> Result<Self, Error> {
         let mut ext = 0;
         let mut free = false;
-        for _ in 0..SWFLAG_FREE_MS {
+        for _ in 0..SOFTWARE_FLAG_FREE_MILLISECONDS {
             ext = hardware.read(super::registers::EXTCNF_CTRL);
             if ext & EXTCNF_CTRL_SWFLAG == 0 {
                 free = true;
@@ -311,10 +345,10 @@ impl Swflag {
         }
         ext |= EXTCNF_CTRL_SWFLAG;
         hardware.write(super::registers::EXTCNF_CTRL, ext);
-        for _ in 0..SWFLAG_TAKE_MS {
+        for _ in 0..SOFTWARE_FLAG_TAKE_MILLISECONDS {
             ext = hardware.read(super::registers::EXTCNF_CTRL);
             if ext & EXTCNF_CTRL_SWFLAG != 0 {
-                return Ok(Swflag(()));
+                return Ok(SoftwareFlag(()));
             }
             hardware.delay_microseconds(1000);
         }
@@ -324,6 +358,8 @@ impl Swflag {
 
     /// `e1000_release_swflag_ich8lan`. Clears the bit only if it is still set; FreeBSD logs the
     /// other case ("Semaphore unexpectedly released") and so does nothing here.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3153. It consumes the proof that `acquire` makes.
     pub fn release(self, hardware: &mut impl Hardware) {
         let ext = hardware.read(super::registers::EXTCNF_CTRL);
         if ext & EXTCNF_CTRL_SWFLAG != 0 {
@@ -342,15 +378,17 @@ pub(crate) const fn address_for(page: u32) -> u32 {
 }
 
 /// What one paged access does on the bus: the page-select write, if any, then the register.
+///
+/// Name: ratified 2026-11-03 (UTC), #3153. Renamed from `Plan`, which did not say what is planned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Plan {
+pub struct PagedAccessPlan {
     /// `Some(value)` when the page-select register is written first (at PHY address 1).
     pub select: Option<u16>,
     /// The PHY address of the access itself.
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
-    /// `physical_layer_device`; no ruling covers the rest of the name. Refused `phy` (an
-    /// abbreviation, and the field holds the PHY's address, not the PHY).
+    /// Name: ratified 2026-11-03 (UTC), #3153. `phy` (the chip) is spelled out
+    /// `physical_layer_device`, as in the tree-wide ruling. Refused `phy` (an abbreviation, and the
+    /// field holds the PHY's address, not the PHY).
     pub physical_layer_device_address: u32,
     /// The five-bit register.
     ///
@@ -361,7 +399,10 @@ pub struct Plan {
 
 /// The decomposition `__e1000_read_phy_reg_hv` and `__e1000_write_phy_reg_hv` share, for the pages
 /// this port carries. Pure, so it is host-tested and model-checked.
-pub const fn plan(offset: u32) -> Result<Plan, Error> {
+///
+/// Name: ratified 2026-11-03 (UTC), #3153. Renamed from `plan`, which did not say what is
+/// planned.
+pub const fn plan_paged_access(offset: u32) -> Result<PagedAccessPlan, Error> {
     let page = offset >> PHY_PAGE_SHIFT;
     let register = offset & MAX_PHY_REG_ADDRESS;
     if page == BM_WUC_PAGE || (page > 0 && page < HV_INTC_FC_PAGE_START) || page > MAXIMUM_PAGE {
@@ -379,7 +420,7 @@ pub const fn plan(offset: u32) -> Result<Plan, Error> {
     } else {
         None
     };
-    Ok(Plan {
+    Ok(PagedAccessPlan {
         select,
         physical_layer_device_address,
         register,
@@ -387,33 +428,39 @@ pub const fn plan(offset: u32) -> Result<Plan, Error> {
 }
 
 /// Read a PCH PHY register by its paged offset ([`paged_offset`]).
-pub fn read(hardware: &mut impl Hardware, _held: &Swflag, offset: u32) -> Result<u16, Error> {
-    let p = plan(offset)?;
+///
+/// Name: ratified 2026-11-03 (UTC), #3153. The standard library's spelling.
+pub fn read(hardware: &mut impl Hardware, _held: &SoftwareFlag, offset: u32) -> Result<u16, Error> {
+    let p = plan_paged_access(offset)?;
     if let Some(sel) = p.select {
-        write_mdic(hardware, 1, IGP01E1000_PHY_PAGE_SELECT, sel)?;
+        write_management_data_input_output(hardware, 1, IGP01E1000_PHY_PAGE_SELECT, sel)?;
     }
-    read_mdic(hardware, p.physical_layer_device_address, p.register)
+    read_management_data_input_output(hardware, p.physical_layer_device_address, p.register)
 }
 
 /// Write a PCH PHY register by its paged offset. FreeBSD's 82578 power-down workaround in the
 /// write path is not carried: no part this crate claims has that PHY.
+///
+/// Name: ratified 2026-11-03 (UTC), #3153. The standard library's spelling.
 pub fn write(
     hardware: &mut impl Hardware,
-    _held: &Swflag,
+    _held: &SoftwareFlag,
     offset: u32,
     data: u16,
 ) -> Result<(), Error> {
-    let p = plan(offset)?;
+    let p = plan_paged_access(offset)?;
     if let Some(sel) = p.select {
-        write_mdic(hardware, 1, IGP01E1000_PHY_PAGE_SELECT, sel)?;
+        write_management_data_input_output(hardware, 1, IGP01E1000_PHY_PAGE_SELECT, sel)?;
     }
-    write_mdic(hardware, p.physical_layer_device_address, p.register, data)
+    write_management_data_input_output(hardware, p.physical_layer_device_address, p.register, data)
 }
 
 /// Read-modify-write under a held flag.
+///
+/// Name: ratified 2026-11-03 (UTC), #3153. The standard library's spelling.
 pub fn update(
     hardware: &mut impl Hardware,
-    held: &Swflag,
+    held: &SoftwareFlag,
     offset: u32,
     change: impl FnOnce(u16) -> u16,
 ) -> Result<(), Error> {
@@ -443,12 +490,22 @@ const _: () = assert!(((u16::MAX as u32) << 16) & (u16::MAX as u32) == 0);
 
 /// Read the PHY identifier at the 82574L's address, the generic MDIO path with no pages and no
 /// semaphore (the 82574L has neither). What QEMU's gates prove of this module.
-pub fn id_at(
+///
+/// Name: ratified 2026-11-03 (UTC), #3153. Renamed from `id_at`, which abbreviated `identifier`.
+pub fn read_identifier_at_address(
     hardware: &mut impl Hardware,
     physical_layer_device_address: u32,
 ) -> Result<u32, Error> {
-    let hi = read_mdic(hardware, physical_layer_device_address, registers::PHY_ID1)?;
-    let lo = read_mdic(hardware, physical_layer_device_address, registers::PHY_ID2)?;
+    let hi = read_management_data_input_output(
+        hardware,
+        physical_layer_device_address,
+        registers::PHY_ID1,
+    )?;
+    let lo = read_management_data_input_output(
+        hardware,
+        physical_layer_device_address,
+        registers::PHY_ID2,
+    )?;
     Ok((u32::from(hi) << 16 | u32::from(lo)) & PHY_REVISION_MASK)
 }
 
@@ -464,7 +521,7 @@ mod proofs {
     #[kani::proof]
     fn a_paged_access_selects_the_offsets_own_page_and_register() {
         let off: u32 = kani::any();
-        if let Ok(p) = plan(off) {
+        if let Ok(p) = plan_paged_access(off) {
             let page = off >> PHY_PAGE_SHIFT;
             assert!(p.physical_layer_device_address == 1 || p.physical_layer_device_address == 2);
             assert!(p.register == off & MAX_PHY_REG_ADDRESS);
