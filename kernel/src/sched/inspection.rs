@@ -185,8 +185,8 @@ pub fn thread_space_root(tid: ThreadId) -> Option<u64> {
         .map(|s| s.root())
 }
 
-/// The physical page a page-resident kernel object (a rendezvous, a notification, a TCB or an
-/// address space's root) lives in, `None` for any other object or a stale name (test support,
+/// The physical page a page-resident kernel object (a rendezvous, a notification, a timer, a
+/// process, a TCB or an address space's root) lives in, `None` for any other object or a stale name (test support,
 /// milestone 779, provisional name). The confined fuzzer admits an object it was not granted only
 /// when this page lies in a region the fuzzers were given, the test `reap_region_objects` applies.
 #[cfg(feature = "system_tests")]
@@ -200,6 +200,8 @@ pub fn object_page(object: &Object) -> Option<u64> {
     match *object {
         Object::Rendezvous(id, _) => sched.rendezvous_table.get(id).copied(),
         Object::Notification(id) => sched.notification_table.get(id).copied(),
+        Object::Timer(id) => sched.timer_table.get(id).copied(),
+        Object::Process(pid) => sched.processes.get(pid).copied(),
         Object::ThreadControlBlock(tid) => sched
             .threads
             .get(tid)
