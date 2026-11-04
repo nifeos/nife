@@ -312,7 +312,7 @@ def selftest():
          [b.split(' was added')[0] for b in problems(files, tree, tree, base, (), was.get, retyped.get)]
          == [f'{BASELINE}: x/src/b.rs::f']),
     ]
-    # A unit-symbol respelling keeps its row (design/naming/spelled-out-rulings.md).
+    # A unit-symbol respelling keeps its row (design/naming/units.md).
     respelled_was = {'x/src/a.rs': 'pub fn delay_us() {}\npub fn other() {}\n'}
     respelled_now = {'x/src/a.rs': 'pub fn delay_microseconds() {}\npub fn other() {}\n'}
     respelled_base = i('delay_us', 'other')
@@ -353,8 +353,8 @@ def main(argv):
     if argv[0] == '--bank':
         return bank()
     # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
-    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
-    # abbreviates and the code behind it does not").
+    # The difference is deliberate (design/naming/command-line-names.md, "The command line
+    # abbreviates, and the code behind it does not").
     if argv[0] == '--init' and not os.path.exists(BASELINE):
         write_baseline(tree_modules()[1])
         print(f'module-block ratchet: wrote {BASELINE}')

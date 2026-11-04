@@ -15,7 +15,7 @@ use super::*;
 /// Context: takes `IPC_TABLES` twice. The idle thread is built in place under the second hold.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     // The FP unit is shut before any thread exists: a core that starts with it open never takes
     // the first-use trap that marks a thread `live`. Here, not in `arch::initialize`, because

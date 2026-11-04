@@ -54,9 +54,9 @@ import name_crossings  # noqa: E402
 import name_provenance  # noqa: E402
 
 # Components a ruling spells out: §154 (the acronym test is whether the phrase is spoken)'s table
-# and design/naming/spelled-out-rulings.md. A plural is the same abbreviation. A foreign identifier
-# keeps its owner's spelling, and telling one from ours is judgment, so it is listed too and the
-# lane that fixes it decides.
+# and design/naming/acronyms-and-abbreviations.md. A plural is the same abbreviation. A foreign
+# identifier keeps its owner's spelling, and telling one from ours is judgment, so it is listed too
+# and the lane that fixes it decides.
 SPELLED_OUT = {
     "cap", "caps", "op", "ops", "recv", "config", "configs", "spec", "specs", "arg", "args",
     "mem", "dir", "dirs", "va", "pa", "ipi", "ipis", "nmi", "nmis", "ist", "msr", "msrs", "ipc",
@@ -121,7 +121,7 @@ KEPT = {
 RULED = {
     "notes/stack-high-water/per-ipc-depth.md::per-ipc-depth":
         "calef ruled `IPC` a term of art, declining the expansion (2026-10-28 UTC, relayed by the "
-        "maintainer); design/naming/spelled-out-rulings.md holds the record",
+        "maintainer); design/naming/acronyms-and-abbreviations.md holds the record",
     "kernel/src/user/non_volatile_memory_express_service.rs::release_completed":
         "calef ruled the rename of `release` here on 2026-10-28 (UTC, relayed by the maintainer): "
         "the function performs the release, so the ruled `is_released` would misstate it, and "
@@ -681,8 +681,8 @@ def main(argv):
         return 0
     mode = argv[0] if argv and argv[0].startswith("-") else "--list"
     # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
-    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
-    # abbreviates and the code behind it does not").
+    # The difference is deliberate (design/naming/command-line-names.md, "The command line
+    # abbreviates, and the code behind it does not").
     prefixes = tuple(a for a in argv if not a.startswith("-"))
     if mode not in ("--list", "--check", "--bank", "--init"):
         sys.exit(__doc__.split("\n\n")[2])

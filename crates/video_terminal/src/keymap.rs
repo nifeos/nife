@@ -191,9 +191,9 @@ impl Keyboard {
     /// Is a shift key held?
     ///
     /// Name: provisional, flagged 2026-09-24 by the boolean-predicate pass
-    /// (design/naming/functions-that-answer-yes-or-no-worklist.md). It does not yet follow the Rust predicate
-    /// rule calef ratified 2026-09-24; recommended `is_shift_held`, because `is_shift` does not
-    /// parse.
+    /// (design/naming/functions-that-answer-yes-or-no.md). It does not yet follow the Rust
+    /// predicate rule calef ratified 2026-09-24; recommended `is_shift_held`, because `is_shift`
+    /// does not parse.
     pub const fn shift(&self) -> bool {
         self.left || self.right
     }

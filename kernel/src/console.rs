@@ -159,7 +159,7 @@ static CONSOLE: InterruptSafeMutex<KernelConsole> = InterruptSafeMutex::new(
 );
 
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     CONSOLE.lock().uart.initialize();
 }
@@ -445,8 +445,8 @@ pub fn is_byte_waiting() -> bool {
 /// `Ns16550::discard_waiting_bytes` for why U-Boot's leftovers are the thing being cleared.
 ///
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md; `discard_waiting_bytes` drops the bytes `is_byte_waiting`
-/// would have reported.
+/// design/naming/acronyms-and-abbreviations.md; `discard_waiting_bytes` drops the bytes
+/// `is_byte_waiting` would have reported.
 #[cfg(any(feature = "reboot_soak_test", soak_watchdog))]
 pub fn discard_waiting_bytes() {
     CONSOLE.lock().uart.discard_waiting_bytes();
@@ -597,7 +597,7 @@ static BYTES_WRITTEN: core::sync::atomic::AtomicU64 = core::sync::atomic::Atomic
 /// No reader; the counter is still kept true on every print, for the reason `sched::canary` is.
 ///
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md; `bytes_written` counts what the kernel wrote to the
+/// design/naming/acronyms-and-abbreviations.md; `bytes_written` counts what the kernel wrote to the
 /// console, and the static is `BYTES_WRITTEN` with it.
 #[allow(dead_code)]
 pub fn bytes_written() -> u64 {

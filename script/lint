@@ -3678,9 +3678,8 @@ python3 helpers/history_ratchet.py --selftest
 python3 helpers/history_ratchet.py --check
 echo "==> capability is not abbreviated cap (calef, 2026-10-06)"
 # lint-quick
-# calef ruled on 2026-10-06 (UTC): "I don't think we should abbreviate capability as cap." New
-# code spells it out; the existing identifiers are renamed in one sweep when the tree is quiet,
-# from design/naming/capability-worklist.md. Until then helpers/cap_abbreviation.py counts Rust
+# design/naming/acronyms-and-abbreviations.md: every name spells `capability` out. The sweep of
+# existing identifiers brought the count to zero, and helpers/cap_abbreviation.py counts Rust
 # identifiers with a `cap` or `caps` component (comments and strings skipped, so the English word
 # for a ceiling is never read) and fails a count over its ceiling or a branch that adds any net.
 # Fixtures first, so a green check is not a counter matching nothing.
@@ -3688,11 +3687,10 @@ python3 helpers/cap_abbreviation.py --selftest
 python3 helpers/cap_abbreviation.py --check
 echo "==> unit symbols are spelled out (2026-10-27)"
 # lint-quick
-# Ruled 2026-10-27 (UTC), design/naming/spelled-out-rulings.md ("Unit symbols in names"): a name uses
-# a unit symbol only from the allowed list (`ns`, `ms`, `kib`, `mib`, `gib`, `hz`, `khz`, `mhz`);
-# `us`, `s`, `sec`, `secs`, `nanos`, `millis`, `micros` and `mins` are spelled out or become `ns`
-# and `ms`. helpers/unit_symbols.py counts Rust identifiers that carry one (comments and strings
-# skipped) and fails a count over its ceiling or a branch that adds any net. Fixtures first.
+# design/naming/units.md: a name spells its unit out. helpers/unit_symbols.py counts Rust
+# identifiers that carry `us`, `s`, `sec`, `secs`, `nanos`, `millis`, `micros` or `mins` (comments
+# and strings skipped; it does not yet count `ns`, `ms` or `hz`, which its header records) and
+# fails a count over its ceiling or a branch that adds any net. Fixtures first.
 python3 helpers/unit_symbols.py --selftest
 python3 helpers/unit_symbols.py --check
 echo "==> no line-number citations (§277: cite a heading or a symbol)"
@@ -4504,10 +4502,10 @@ PY
 # whether a "half" far from its subject has two siblings, because that needs a reader, and a gate
 # that guesses at prose is how script/lint lost three checks. The word this tree uses for one branch
 # of a multi-way split is "arm" (components/src/console.rs: "its x86 arm"), and
-# design/naming/vocabulary-rulings.md says so under "A half implies two".
+# design/naming/vocabulary.md says so in its row for "half".
 #
-# `git grep` does not understand `\b` and silently matches nothing (design/naming.md records the
-# same trap costing two renames a count), so the boundaries here are POSIX classes.
+# `git grep` does not understand `\b` and silently matches nothing (design/naming/rename-traps.md
+# records the same trap costing two renames a count), so the boundaries here are POSIX classes.
 echo "==> every RETYPE outside the run wrapper passes 0"
 # `MemoryRegion::RETYPE`'s first argument became a page count on 2026-09-26 (calef, option A of
 # design/roadmap/0659-a-region-retypes-a-frame-run.md), with 0 meaning one page. Every caller

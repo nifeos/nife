@@ -31,7 +31,7 @@
 //!   deployment needs `LOGOUT` to carry a capability only the session holds.
 //! - A terminal holder that exits without logging out wedges it until `login` restarts.
 //!
-//! Name: ratified 2026-08-23 (calef); see `design/naming/vocabulary-rulings.md`.
+//! Name: ratified 2026-08-23 (calef); see `design/naming/vocabulary.md`.
 
 pub use credential_contract::{
     MAXIMUM_IDENTITY, MAXIMUM_SECRET, PAGE, operation, place, read, wipe,
