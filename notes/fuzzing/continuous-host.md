@@ -45,7 +45,7 @@ systemd that way instead of looping silently.
 
 The host updates itself from main with no person pulling, within four limits that an architect ruled
 on 2026-11-01 (UTC) in
-[`fuzz-findings-without-a-person`](../../design/roadmap/proposals/fuzz-findings-without-a-person.md).
+[`fuzz-findings-without-a-person`](../../design/roadmap/1015-fuzz-findings-without-a-person.md).
 At most every 5 minutes (`NIFE_FUZZ_FOLLOW_EVERY`, in seconds; 0 turns it off) the supervisor runs
 `helpers/fuzz-follow-main.py look`. It fetches main alone from `https://github.com/nifeos/nife.git`,
 with every other protocol refused and no credential helper. It refuses a commit that does not contain
@@ -83,17 +83,20 @@ private directory and stays there. The next window for that slot starts one seed
 clean seed ranges. It reports held findings by count and age only. It never opens a held log. After a
 held replay the slot's next window starts one seed past the held seed, so the table leaves out every
 range of a slot from that slot's first held window onward. A finding starts as a private security advisory and stays
-private until its fix is on main and a rerun of its input passes against that build, or until 90
-days after the report. A finding sorted as public at triage is the exception.
+private until a person publishes it after its fix is on main, or at the latest 90 days after the
+report. A finding sorted as public at triage is the exception.
 
 ## Who reads a held finding
 
-No lane opens, copies, prints or moves anything under the held directory. A plain service on the
-host, not an agent, files each held finding as a private security advisory on nifeos/nife, holding
-the finding class and the reproducer, and a fix lane reads that advisory and nothing else. Crash
+The host's duties end at filing. An architect ruled on 2026-11-04 (UTC) that the continuous fuzzer
+reports each problem and stops. No lane opens, copies, prints or moves anything under the held
+directory. A plain service on the host, not an agent, files each held finding as a private security
+advisory on nifeos/nife, holding the finding class and the reproducer. A person works the queue of
+advisories with the regular lane workflow on a separate fix-lane machine, where a lane reads an
+advisory and nothing else. The host never replays a fix and never publishes an advisory. Crash
 inputs, seeds and reproducers stay out of every public text until the fix is on main. An architect
 ruled this on 2026-11-01 (UTC) in
-[`fuzz-findings-without-a-person`](../../design/roadmap/proposals/fuzz-findings-without-a-person.md),
+[`fuzz-findings-without-a-person`](../../design/roadmap/1015-fuzz-findings-without-a-person.md),
 which also lists the milestones that build it. The filer is `fuzz-filer` in
 [nifeos/fuzz-host](https://github.com/nifeos/fuzz-host); it runs as the fuzz account and files from a
 one-hour token that a root timer mints. It is built and not yet installed, so until a person installs
@@ -104,7 +107,7 @@ UTC date), with `report.md` and `clean-ranges.tsv` as its assets: `gh release cr
 report.md clean-ranges.tsv`. The newest release's date is the heartbeat. A maintainer can delete an
 old release without touching history, and no clone carries it. An architect ruled this on 2026-11-01
 (UTC) in
-[`where-the-daily-fuzz-output-goes`](../../design/roadmap/proposals/where-the-daily-fuzz-output-goes.md),
+[`where-the-daily-fuzz-output-goes`](../../design/roadmap/1026-where-the-daily-fuzz-output-goes.md),
 which also records the rejected branch of artifacts.
 
 The publish path refuses unless the host's environment holds `NIFE_FUZZ_PUBLISH=1`, and the timer
@@ -130,7 +133,7 @@ no second one opens while one is open. It repairs nothing. A lane fixes anything
 of the host is a written spec the architect hands to the homelab agent. While no `fuzz-*` release has
 ever existed the workflow passes quietly, and it switches on by itself at the first release. The
 maintainer decides the bound, the label and the two-day window, provisionally; reversing costs
-one pull request. See [the proposal](../../design/roadmap/proposals/the-fuzz-loop-dead-mans-switch.md).
+one pull request. See [the proposal](../../design/roadmap/1023-the-fuzz-loop-dead-mans-switch.md).
 
 ## Install, for a person with root
 
@@ -139,8 +142,8 @@ The lane has no root. A person copies the three files in `helpers/systemd/` to
 `enable --now nife-fuzz-publish.timer`.
 
 That installs phase 1: the publish unit writes the day's report and clean ranges to local files and
-publishes nothing. Phase 2 publishes the release. It waits on the mint helper and on a host clone
-that carries the clean-range fix, and step P5 of [`finishing-the-setup.md`](finishing-the-setup.md)
+publishes nothing. Phase 2 publishes the release. It waits on the key and the installed mint helper
+(the host clone already carries the clean-range fix), and step P7 of [`finishing-the-setup.md`](finishing-the-setup.md)
 gives its drop-in. The unit as shipped has no `EnvironmentFile=`, sets no `NIFE_FUZZ_PUBLISH` and passes no flag. Without
 `NIFE_FUZZ_PUBLISH=1` the script refuses to publish. It also refuses, by name and before any `gh`
 call, a missing `GH_TOKEN`, a missing or unreadable `GH_TOKEN_EXPIRES_AT`, and a token that has expired
@@ -178,7 +181,6 @@ unit's user. It prints the tag and the assets and publishes nothing.
 - A person who sets `url.<base>.insteadOf` for GitHub in the fuzz account's git configuration to a
   non-https address stops the follower: the fetch refuses it, and the journal says so.
 - A slot that ever held a finding publishes no more clean ranges, even after the finding turns
-  public. The ranges return only once
-  [a held finding turns public after its fix reruns clean](../../design/roadmap/proposals/a-held-finding-turns-public-after-its-fix-reruns-clean.md)
-  defines the signal that a finding has turned public
-  ([the proposal](../../design/roadmap/proposals/the-clean-range-table-does-not-locate-a-held-seed.md)).
+  public, because nothing tells the host that a person published it
+  ([the milestone](../../design/roadmap/1016-the-clean-range-table-does-not-locate-a-held-seed.md)).
+  The held log also stays on the host.

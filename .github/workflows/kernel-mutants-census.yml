@@ -111,7 +111,7 @@ jobs:
     # The registration trigger above never reaches a job: schedule and dispatch are the only
     # events that run one.
     if: ${{ github.event_name != 'pull_request' }}
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 20
     outputs:
       matrix: ${{ steps.windows.outputs.matrix }}
@@ -215,7 +215,7 @@ jobs:
     name: "${{ matrix.noop && 'kernel census: nothing to run in this slot' || format('slice {0} ({1}, slot {2})', matrix.slice, matrix.arch, matrix.slot) }}"
     needs: plan
     if: ${{ !cancelled() && needs.plan.result == 'success' }}
-    runs-on: ${{ matrix.noop && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    runs-on: ${{ matrix.noop && 'ubuntu-26.04' || 'ubuntu-26.04-arm' }}
     # The window is five hours plus setup; the driver stops at the wall clock long before this. A
     # job that reaches the ceiling means the wall-clock stop failed, which is a broken mechanism
     # and must fail loudly rather than overrun into the working day.
@@ -256,7 +256,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
-          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+          key: qemu-ubuntu-26.04-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
       - name: Build QEMU if the cache missed
         if: ${{ !matrix.noop }}
         run: script/ci-qemu
@@ -338,7 +338,7 @@ jobs:
     # Only a fully green night writes state: a broken run is re-run from the previous state, which
     # is the honest recovery (the night's work is redone, never lost).
     if: ${{ success() && github.event_name != 'pull_request' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -380,7 +380,7 @@ jobs:
     needs: [plan, slice, state]
     if: ${{ success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
     environment: automation
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: write

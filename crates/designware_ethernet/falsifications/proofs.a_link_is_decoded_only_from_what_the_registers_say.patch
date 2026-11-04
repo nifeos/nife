@@ -6,10 +6,10 @@ A PHY with the isolate bit set and its link bit up then reads as a working link.
 Expected to fail: the harness's `assert!(bmcr & mdio::BMCR_ISO == 0)`, on any control word with the
 isolate bit set and a status word with the link bit set.
 
-diff --git a/crates/designware_ethernet/src/motorcomm.rs b/crates/designware_ethernet/src/motorcomm.rs
+diff --git a/crates/designware_ethernet/src/motorcomm_physical_layer_device.rs b/crates/designware_ethernet/src/motorcomm_physical_layer_device.rs
 index b4c52597b..a81323d53 100644
---- a/crates/designware_ethernet/src/motorcomm.rs
-+++ b/crates/designware_ethernet/src/motorcomm.rs
+--- a/crates/designware_ethernet/src/motorcomm_physical_layer_device.rs
++++ b/crates/designware_ethernet/src/motorcomm_physical_layer_device.rs
 @@ -169,7 +169,7 @@ pub(crate) const fn link_from_registers(
      gtsr: u16,
  ) -> Option<Link> {

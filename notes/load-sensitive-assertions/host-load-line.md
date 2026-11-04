@@ -36,7 +36,7 @@ Four things about it are deliberate.
 - It prints only on a red leg, since readers learn to skip a diagnostic that appears on every run.
 
 The parse is `script/repeat-under-load`'s `load_now` in Rust, with a host test pinning both formats.
-Development is macOS (`load averages: 4.14 4.86 4.29`) and CI is `ubuntu-24.04-arm`
+Development is macOS (`load averages: 4.14 4.86 4.29`) and CI is `ubuntu-26.04-arm`
 (`load average: 0.50, 0.40, 0.30`). The shape not in front of the author is the one that would
 break silently, reporting "unavailable" on every CI run.
 

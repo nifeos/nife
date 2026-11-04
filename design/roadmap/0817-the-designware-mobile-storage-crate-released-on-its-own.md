@@ -29,7 +29,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
 - `crates/designware_mobile_storage`: 2,645 code lines (3,736 with comments), written by milestone
   53 (the board's own peripherals: network and storage on real silicon), which is PARTIAL. It is
   the whole Synopsys Mobile Storage Host Controller driver (`snps,dw-mshc`) behind one small
-  `host::RegisterWindowAndClock` trait: card bring-up, SD and eMMC commands, the FIFO, partitions. It drives
+  `host_controller::RegisterWindowAndClock` trait: card bring-up, SD and eMMC commands, the FIFO, partitions. It drives
   radon's microSD slot and eMMC socket.
 - Eight Kani harnesses in the crate, each with a falsification patch. The scratch range never
   touches a partition or sector zero. A FIFO step never overruns the FIFO or the buffer, an admitted
@@ -231,7 +231,7 @@ names until the ratification pass, so this section keeps the links it carried.
   uses. Milestone 53 (the board's own peripherals: network and storage on real silicon) wrote the
   crate.
 - `src/lib.rs`, the crate doc: the design is in `notes/designware-mobile-storage.md`, and
-  `kernel/src/designware_mobile_storage.rs` implements `host::RegisterWindowAndClock` over the mapped window.
+  `kernel/src/designware_mobile_storage.rs` implements `host_controller::RegisterWindowAndClock` over the mapped window.
   That note also records why the lane did not take the crates.io candidate. The IDMAC bench step
   that the crate's BUGS waits on is the one that note describes.
 - `src/simulator.rs`, the module doc: `notes/designware-mobile-storage/driver.md` lists each behavior
