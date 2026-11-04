@@ -33,7 +33,7 @@ use crate::capability_object::{
     rendezvous_capability_badged,
 };
 use crate::sched::{self, RendezvousId, current_capability, delete_current_capability};
-use crate::testing::{EveryCoreTickBudget, wait_on_every_core};
+use crate::testing::{BUDGET_EXPIRED_MARKER, EveryCoreTickBudget, wait_on_every_core};
 use crate::thread::{State, ThreadId, Wait, WaitRole};
 
 /// [`wait_on_every_core`] for a site whose message has nothing to add to it. A fuzzer may run on
@@ -462,13 +462,15 @@ impl Conductor {
         }
     }
 
-    /// Judge every slot fuzzer `x`'s step filled. Returns the slot the step justified, if any, and
+    /// Judge every slot fuzzer `x`'s step filled, which includes a slot that was full and now
+    /// holds a different object: a `PROCESS` retype deletes the address space it consumes and may
+    /// then file the new process in that very slot. Returns the slot the step justified, if any, and
     /// whether that fill was a one-shot Reply. A delivery is deferred to the quiet point instead.
     fn judge_fills(&mut self, x: usize, call: &Call, now: &Snap) -> (Option<u64>, bool) {
         let mut fills = [0usize; 2];
         let mut fills_n = 0usize;
         for s in 0..SLOTS {
-            if self.fuzzers[x].table[s].is_none() && now[s].is_some() {
+            if now[s].is_some() && self.fuzzers[x].table[s] != now[s] {
                 if fills_n == fills.len() {
                     escape!(self, "one call filled more than {} slots", fills.len());
                 }
@@ -523,7 +525,7 @@ impl Conductor {
                 });
                 continue;
             }
-            let ok = self.justify_fill(x, call, obj, rights);
+            let ok = self.justify_fill(x, call, now, obj, rights);
             if !ok {
                 escape!(
                     self,
@@ -665,7 +667,15 @@ impl Conductor {
 
     /// May `call`, made by fuzzer `x`, have filled a slot with `obj` at these rights? (A
     /// `RECEIVE_CAPABILITY`'s fills are deliveries, judged at the quiet point, never here.)
-    fn justify_fill(&mut self, x: usize, call: &Call, obj: Object, rights: u32) -> bool {
+    /// `now` is the table after the call, for a fill that is lawful only if something else left it.
+    fn justify_fill(
+        &mut self,
+        x: usize,
+        call: &Call,
+        now: &Snap,
+        obj: Object,
+        rights: u32,
+    ) -> bool {
         if call.number != abi::SYS_INVOKE {
             return false;
         }
@@ -681,6 +691,13 @@ impl Conductor {
                     spent_from
                         .is_some_and(|(base, span)| page >= base && page + size <= base + span)
                 };
+                // A process takes its page from the region and consumes the address space it
+                // names, which is a rule about more than where its page lies.
+                if matches!(obj, Object::Process(_))
+                    && !self.process_retype_is_lawful(x, call, now, rights)
+                {
+                    return false;
+                }
                 let page = match &obj {
                     Object::PageFrame(phys, n) => Some((*phys, n.get() * PAGE)),
                     other => sched::object_page(other).map(|p| (p, PAGE)),
@@ -728,6 +745,31 @@ impl Conductor {
             }
             _ => false,
         }
+    }
+
+    /// The `PROCESS` arm of `MemoryRegion::RETYPE_OBJ` (`kernel/src/syscall/retype.rs`), as the
+    /// caller's tables must show it: the kind is `PROCESS`, the space slot (word 3) held an
+    /// address space with `WRITE`, that space is gone from the slot now (it is consumed), and the
+    /// process carries no right the invoked region capability lacks. Where the process's page
+    /// lies is the caller's check.
+    fn process_retype_is_lawful(&self, x: usize, call: &Call, now: &Snap, rights: u32) -> bool {
+        if call.words[1] != abi::memory_region::RETYPE_OBJ || call.words[2] != abi::objtype::PROCESS
+        {
+            return false;
+        }
+        let table = &self.fuzzers[x].table;
+        let space_slot = call.words[3] as usize;
+        let Some(Some((space @ Object::AddressSpace(_), space_rights))) =
+            table.get(space_slot).copied()
+        else {
+            return false;
+        };
+        let Some(Some((_, region_rights))) = table.get(call.words[0] as usize).copied() else {
+            return false;
+        };
+        space_rights & Rights::WRITE.bits() != 0
+            && rights & !region_rights == 0
+            && now.get(space_slot).copied().flatten().map(|(o, _)| o) != Some(space)
     }
 
     /// A delivery's object is a live delegation with these rights. Consumes it.
@@ -810,6 +852,9 @@ impl Conductor {
             match obj {
                 Object::Rendezvous(..)
                 | Object::Notification(_)
+                | Object::Timer(_)
+                | Object::Process(_)
+                | Object::AddressSpace(_)
                 | Object::ThreadControlBlock(_) => {
                     if let Some(page) = sched::object_page(obj)
                         && !self.in_any_bound(page)
@@ -947,7 +992,7 @@ impl Conductor {
                 let call = read_call(self, x);
                 escape!(
                     self,
-                    "fuzzer {x} never came back: syscall {} words {:?} rets {:?}, now {:?}, after {budget}",
+                    "{BUDGET_EXPIRED_MARKER} fuzzer {x} never came back: syscall {} words {:?} rets {:?}, now {:?}, after {budget}",
                     call.number,
                     call.words,
                     call.rets,
@@ -1261,7 +1306,9 @@ fn park_and_take_baselines(c: &mut Conductor) {
     // stack, report) is what the page oracle admits forever after.
     for x in 0..FUZZERS {
         if let Err(budget) = wait_on_every_core(|| parked_on_go(c, x)) {
-            panic!("fuzzer {x} never parked on its conductor channel: {budget}");
+            panic!(
+                "{BUDGET_EXPIRED_MARKER} fuzzer {x} never parked on its conductor channel: {budget}"
+            );
         }
         // A failure here is not yet understood; the `BUGS` of milestone 779 (fuzz the surface a
         // confined process can reach)'s block
@@ -1312,7 +1359,7 @@ fn wind_down(seed: u64, conductor_region: u64, own: [u64; 2]) {
             let tid = f.tid;
             assert!(
                 wait_for(|| !sched::is_thread_present(tid)),
-                "fuzzer {x} did not exit"
+                "{BUDGET_EXPIRED_MARKER} fuzzer {x} did not exit"
             );
         }
     }
@@ -1328,7 +1375,7 @@ fn wind_down(seed: u64, conductor_region: u64, own: [u64; 2]) {
         if crate::memory_region::region_bounds(r).is_some() {
             assert!(
                 wait_for(|| sched::reclaim_region(r).is_ok()),
-                "seed {seed:#x}: child region {r:#x} did not reclaim"
+                "{BUDGET_EXPIRED_MARKER} seed {seed:#x}: child region {r:#x} did not reclaim"
             );
         }
     }
@@ -1336,7 +1383,7 @@ fn wind_down(seed: u64, conductor_region: u64, own: [u64; 2]) {
         if crate::memory_region::region_bounds(r).is_some() {
             assert!(
                 wait_for(|| sched::reclaim_region(r).is_ok()),
-                "seed {seed:#x}: region {r:#x} did not reclaim"
+                "{BUDGET_EXPIRED_MARKER} seed {seed:#x}: region {r:#x} did not reclaim"
             );
         }
     }
@@ -1404,6 +1451,172 @@ fn a_caller_chosen_list_cursor_is_refused() {
     // trap `run_seed`'s teardown records): a destroy here would leak it on every suite run.
     // Reclaim tears the resident objects down with it, as `pmap_tests::tidy` does.
     sched::reclaim_region(region).expect("reclaim the cursor test's region");
+}
+
+/// The running thread's own table, as the conductor would see a fuzzer's.
+fn own_snapshot() -> Snap {
+    let mut s: Snap = [None; SLOTS];
+    for (k, slot) in s.iter_mut().enumerate() {
+        if let Ok(capability) = current_capability(k as u64) {
+            *slot = Some((capability.object, capability.rights.bits()));
+        }
+    }
+    s
+}
+
+/// One `MemoryRegion::RETYPE_OBJ` through the real syscall entry, as the test thread.
+fn retype_obj(region_slot: u64, kind: u64, space_slot: u64, floor: u64) -> u64 {
+    use crate::arch::exceptions::TrapFrame;
+    let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
+    let slot = crate::syscall::invoke(
+        &mut frame,
+        region_slot,
+        abi::memory_region::RETYPE_OBJ,
+        kind,
+        space_slot,
+        floor,
+    )
+    .expect("the retype was refused");
+    slot as u64
+}
+
+/// The `RETYPE_OBJ` call the conductor reads back from a fuzzer's report page.
+fn retype_call(region_slot: u64, kind: u64, space_slot: u64, floor: u64, slot: u64) -> Call {
+    Call {
+        number: abi::SYS_INVOKE,
+        words: [
+            region_slot,
+            abi::memory_region::RETYPE_OBJ,
+            kind,
+            space_slot,
+            floor,
+            0,
+        ],
+        rets: [slot, 0, 0, 0, 0, 0],
+    }
+}
+
+/// **The oracle accepts a process retyped from the caller's own region, and nothing else shaped
+/// like it.** A caller retypes an address space from its region, then retypes a process from the
+/// same region naming that space: the kernel takes a page from the region, consumes the space
+/// and files the process (`kernel/src/syscall/retype.rs`). The oracle once reported that fill as
+/// an escape, because it could not find a process's page. This builds both retypes by hand, with
+/// the process filed above the space's slot and then in the space's own freed slot (a replaced
+/// slot, which the oracle once never judged), and refuses a process whose page lies in another
+/// region, whose space was not consumed, was not an address space, lacked `WRITE`, or whose
+/// rights exceed the region capability's.
+///
+/// Falsification: replayable `system_tests/falsifications/user.confined_fuzzer_tests.the_oracle_accepts_a_process_retyped_from_the_callers_own_region.patch`
+#[test_case]
+fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
+    let region = crate::memory_region::create(32).expect("no region");
+    let other = crate::memory_region::create(32).expect("no second region");
+    let r = sched::grant(memory_region_capability_rights(region, Rights::ALL))
+        .expect("no free slot for the region");
+    let r2 = sched::grant(memory_region_capability_rights(other, Rights::ALL))
+        .expect("no free slot for the second region");
+    let reach = |c: &mut Conductor, before: &Snap| {
+        c.fuzzers[A].table = *before;
+    };
+
+    // The process is filed above the space's slot, which is deleted.
+    let space = retype_obj(r, abi::objtype::ADDRESS_SPACE, 0, 0);
+    let before = own_snapshot();
+    let floor = space + 4;
+    let high = retype_obj(r, abi::objtype::PROCESS, space, floor);
+    let after = own_snapshot();
+    let call = retype_call(r, abi::objtype::PROCESS, space, floor, high);
+    assert!(
+        after[space as usize].is_none(),
+        "the space was not consumed"
+    );
+    let (process, rights) = after[high as usize].expect("the process was not filed");
+    assert!(matches!(process, Object::Process(_)));
+    {
+        let mut c = CONDUCTOR.lock();
+        reach(&mut c, &before);
+        assert_eq!(c.judge_fills(A, &call, &after), (Some(high), false));
+
+        // Not a lawful process retype: each of these must be refused.
+        assert!(
+            !c.justify_fill(A, &call, &before, process, rights),
+            "a space that is still held was taken as consumed"
+        );
+        let mut region_slot_named = call;
+        region_slot_named.words[3] = r;
+        assert!(
+            !c.justify_fill(A, &region_slot_named, &after, process, rights),
+            "a slot that held no address space was taken as the space"
+        );
+        let mut wrong_kind = call;
+        wrong_kind.words[2] = abi::objtype::RENDEZVOUS;
+        assert!(
+            !c.justify_fill(A, &wrong_kind, &after, process, rights),
+            "a process was accepted from a retype of another kind"
+        );
+        assert!(
+            !c.justify_fill(A, &call, &after, process, u32::MAX),
+            "a process was accepted with rights the region capability lacks"
+        );
+        let mut narrow = before;
+        narrow[space as usize] = narrow[space as usize].map(|(o, _)| (o, Rights::READ.bits()));
+        reach(&mut c, &narrow);
+        assert!(
+            !c.justify_fill(A, &call, &after, process, rights),
+            "an address space without WRITE was taken as consumable"
+        );
+        let mut narrow_region = before;
+        narrow_region[r as usize] =
+            narrow_region[r as usize].map(|(o, _)| (o, Rights::WRITE.bits()));
+        reach(&mut c, &narrow_region);
+        assert!(
+            !c.justify_fill(A, &call, &after, process, Rights::ALL.bits()),
+            "a process was accepted with rights beyond its region capability's"
+        );
+        reach(&mut c, &before);
+    }
+
+    // The process is filed in the very slot the space was deleted from.
+    let space = retype_obj(r, abi::objtype::ADDRESS_SPACE, 0, 0);
+    let before = own_snapshot();
+    let same = retype_obj(r, abi::objtype::PROCESS, space, space);
+    let after = own_snapshot();
+    assert_eq!(same, space, "the process was not filed in the freed slot");
+    let call = retype_call(r, abi::objtype::PROCESS, space, space, same);
+    {
+        let mut c = CONDUCTOR.lock();
+        reach(&mut c, &before);
+        assert_eq!(c.judge_fills(A, &call, &after), (Some(same), false));
+    }
+
+    // A process whose page lies in another region than the one the call invoked.
+    let foreign_space = retype_obj(r2, abi::objtype::ADDRESS_SPACE, 0, 0);
+    let before = own_snapshot();
+    let foreign = retype_obj(r2, abi::objtype::PROCESS, foreign_space, foreign_space + 4);
+    let after = own_snapshot();
+    let call = retype_call(
+        r,
+        abi::objtype::PROCESS,
+        foreign_space,
+        foreign_space + 4,
+        foreign,
+    );
+    {
+        let mut c = CONDUCTOR.lock();
+        reach(&mut c, &before);
+        let (process, rights) = after[foreign as usize].expect("the process was not filed");
+        assert!(
+            !c.justify_fill(A, &call, &after, process, rights),
+            "a process whose page lies outside the invoked region was accepted"
+        );
+        c.fuzzers[A].table = [None; SLOTS];
+    }
+
+    for slot in 0..SLOTS as u64 {
+        let _ = delete_current_capability(slot);
+    }
+    sched::reclaim_region(region).expect("reclaim the first region");
+    sched::reclaim_region(other).expect("reclaim the second region");
 }
 
 /// **A confined fuzzer's random syscalls never move its reach outside its endowment** (milestone

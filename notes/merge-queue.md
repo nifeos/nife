@@ -282,7 +282,7 @@ Run `script/queue-conflicts`: [conflict-precheck.md](merge-queue/conflict-preche
 
 ## A push to a queued branch
 
-Re-arm after the last push: [push-while-queued.md](push-while-queued.md).
+Use `script/push --requeue`: [push-while-queued.md](push-while-queued.md).
 
 ## BUGS
 

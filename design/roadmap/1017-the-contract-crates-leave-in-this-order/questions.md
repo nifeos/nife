@@ -32,8 +32,8 @@ first, then `process-tools`, then `core-tools`. The note's type moves to a leaf 
 
 Ruled 2026-11-01 (UTC): (a). Milestone 756 (`process-tools`, `core-tools` and `disk-tools` are the
 first code to leave this repository)'s single cut gives way to package-by-package departure, each
-package leaving as soon as its own crates have left, in the order `disk-tools`, `process-tools`,
-`core-tools`. The `INTERFACES` note type moves into its own small leaf crate, and `block_roster`
+package leaving as soon as the shared crates it links have left, in the order `disk-tools`,
+`process-tools`, `core-tools`. A crate only one package uses leaves with it, in its repository. The `INTERFACES` note type moves into its own small leaf crate, and `block_roster`
 stays the first consumed crate. 
 
 This lane read `helpers/interface_declarations_check.py` against the move and did not run it.
@@ -45,8 +45,10 @@ program naming the macro by the new path would read as linking the old crate. Sl
 
 ## 2. One repository per contract crate, or a few grouped repositories?
 
-The split's rule for a program package is one repository per package (§316 (a package's programs leave as one repository, after their crates)). For a library crate released on its own it is one repository per crate,
-on a shared workflow template (milestone 857 (crates released on their own, and proofs offered to
+The split's rule for a program package is one repository per package, holding its programs and the
+crates only it uses (§316 (a program package leaves as one repository, with the crates only it
+uses)). A crate published on its own, or one that more than one repository consumes, gets one
+repository per crate. Each uses a shared workflow template (milestone 857 (crates released on their own, and proofs offered to
 the projects that already exist)). The 22 contract crates belong to four packages: `contracts`
 holds 17, `runtime` 2, `network` 2 and `fixtures` 1.
 

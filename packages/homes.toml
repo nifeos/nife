@@ -11,12 +11,13 @@
 # and every undecided home says in a few words what the decision is waiting on. Nothing here is a
 # default: a new top-level directory has no home until somebody writes one.
 #
-# How big a home is: amended 2026-09-27T15:06Z (§235 (the OS is built and updated from packages,
-# and its source divides by purpose), Fork 3's amendment). A home is sized by what
-# changes together, measured by a per-package co-change column milestone 610 (the interface's
-# stability is measured weekly) owes and does not yet carry. No package moves to a new home, and no
-# `.package.toml` file's `home = { status = "provisional" }` settles, before that measurement
-# exists.
+# How big a home is: a repository has one purpose (§235 (the OS is built and updated from packages,
+# and its source divides by purpose), "How big a repository is"). A program package's home holds
+# its programs and the crates only it uses; a crate published on its own, or consumed by more than
+# one repository, gets a home of its own (§316 (a program package leaves as one repository, with
+# the crates only it uses)). Milestone 610 (the interface's stability is measured weekly)'s
+# per-package co-change column informs how packages group and holds no move. A `.package.toml`
+# file's `home = { status = "provisional" }` settles when its repository exists.
 
 [[home]]
 status = "undecided"
@@ -41,6 +42,14 @@ paths = [
 status = "undecided"
 reason = "documentation; the site, a package or the records is an open question"
 paths = ["notes/", "vendor/README.md", "vendor/upstream-status.md"]
+
+[[home]]
+# The design record's site build, milestone 1018 (the design record moves to `nifeos.org` and is
+# published as a website) step 3. The ruling of 2026-11-01 (UTC) puts the whole site in that
+# repository; where its builder sits there is not yet ruled.
+status = "provisional"
+repo = "nifeos.org"
+paths = ["site/"]
 
 [[home]]
 status = "undecided"

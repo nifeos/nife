@@ -3,7 +3,7 @@
 //! A driver calls three passes in this order: [`initialize_physical_layer_device_workarounds`] at
 //! attach, [`global_reset`] after its descriptor-ring flush, and [`initialize_hardware`] before the
 //! rings are programmed, with [`transmit_errata`] once transmit is on. Only FreeBSD's
-//! `e1000_pch_spt` branches are carried ([`super::is_pch`]), and each function names the FreeBSD
+//! `e1000_pch_spt` branches are carried ([`super::is_platform_controller_hub_device`]), and each function names the FreeBSD
 //! function it follows.
 //!
 //! Name: ratified 2026-11-03 (UTC), #3145. Ruled in the group E1 ruling on e1000e's module names;
@@ -616,7 +616,7 @@ fn config_done(hardware: &mut impl Hardware) -> Result<(), Error> {
     } else {
         hardware.note(Note::PhysicalLayerDeviceResetNotAsserted);
     }
-    let g = non_volatile_memory::Geometry::read(hardware);
+    let g = non_volatile_memory::Geometry::read_from_hardware(hardware);
     non_volatile_memory::valid_bank(hardware, g)?;
     Ok(())
 }
@@ -767,7 +767,7 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
             physical_layer_device::registers::HV_LED_CONFIG,
             led,
         )?;
-        let g = non_volatile_memory::Geometry::read(hardware);
+        let g = non_volatile_memory::Geometry::read_from_hardware(hardware);
         let word = base << 1;
         let mut page: u32 = 0;
         for i in 0..size {

@@ -52,9 +52,9 @@ main page it names: "The inbound half" (`notes/net.md`), "What still ends a nife
 (`notes/x86-port.md`), "One wait point" and "Buffering: measured" (both `notes/pipes.md`). No anchored link anywhere points into the six. The split lanes swept their
 own inbound sides, which is what the 2026-09-24 sweep asked the next split to do.
 
-`notes/timer.md` checked out on every number: the tick is 100 Hz (`kernel/src/arch/aarch64/timer.rs:103`),
-`counter_ticks_for` rounds up (`crates/abi/src/lib.rs:634-643`), `CANCEL` answers a `bool`, and
-`SYS_EXIT` exists (`kernel/src/syscall.rs:76`). `notes/notification-objects.md` semantics matched
+`notes/timer.md` checked out on every number: the tick is 100 Hz (`TICK_HZ` in `kernel/src/arch/aarch64/timer.rs`),
+`counter_ticks_for` rounds up (in `crates/abi/src/timer.rs`), `CANCEL` answers a `bool`, and
+`SYS_EXIT` exists (`dispatch` in `kernel/src/syscall.rs`). `notes/notification-objects.md` semantics matched
 the kernel at every claim this sweep checked, which is also why the security audit of the same
 session accepted its recordings.
 
@@ -62,7 +62,7 @@ session accepted its recordings.
 
 ### 1. FIXED: `icount`'s x86_64 refusal named a reason that stopped being true
 
-`xtask/src/icount.rs:34` said the instrument's boot needs a userspace the port cannot build.
+The comment in `icount` in `xtask/src/icount.rs` said the instrument's boot needs a userspace the port cannot build.
 Milestone 161 (the x86-64 kernel port) built that userspace; the real reason, recorded at
 `bench_x86`'s doc, is the LAPIC timer's periodic reload. The sweep note
 (its row in `notes/architecture-list-sweep.md`, line 216) asked for this one-line correction on

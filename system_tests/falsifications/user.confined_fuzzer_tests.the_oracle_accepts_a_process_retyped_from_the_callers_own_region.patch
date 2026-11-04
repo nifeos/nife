@@ -1,0 +1,32 @@
+Falsifies `system_tests::user::confined_fuzzer_tests::the_oracle_accepts_a_process_retyped_from_the_callers_own_region`.
+
+Architecture: aarch64, riscv64, x86_64 (the hunk is portable test-support code).
+
+The defect it guards is the oracle's, not the kernel's: the check that decides whether a process may
+fill a slot after a region retype. This patch makes the check accept every process, which is what a
+careless fix for the original false positive would do. The test then fails at its first negative
+case ("a space that is still held was taken as consumed"), because it hands the oracle a process
+whose address space was never consumed.
+
+A second mutation, restoring the old fill test (`self.fuzzers[x].table[s].is_none() && now[s].is_some()`),
+fails the same test at the case where the process is filed in the freed space slot.
+
+Replayed red on x86_64 on 2026-11-04 (UTC) by lane/confined-fuzzer-process-oracle.
+
+diff --git a/system_tests/src/user/confined_fuzzer_tests.rs b/system_tests/src/user/confined_fuzzer_tests.rs
+index 613a93682..515987768 100644
+--- a/system_tests/src/user/confined_fuzzer_tests.rs
++++ b/system_tests/src/user/confined_fuzzer_tests.rs
+@@ -693,10 +693,8 @@ impl Conductor {
+                 };
+                 // A process takes its page from the region and consumes the address space it
+                 // names, which is a rule about more than where its page lies.
+-                if matches!(obj, Object::Process(_))
+-                    && !self.process_retype_is_lawful(x, call, now, rights)
+-                {
+-                    return false;
++                if matches!(obj, Object::Process(_)) {
++                    return true;
+                 }
+                 let page = match &obj {
+                     Object::PageFrame(phys, n) => Some((*phys, n.get() * PAGE)),
