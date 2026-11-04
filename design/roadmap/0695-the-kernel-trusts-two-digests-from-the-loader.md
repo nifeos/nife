@@ -54,7 +54,7 @@ userspace rather than in the kernel.
 ## What is calef's
 
 Both questions of
-[`how-the-loader-hands-the-kernel-two-digests.md`](proposals/how-the-loader-hands-the-kernel-two-digests.md)
+[`how-the-loader-hands-the-kernel-two-digests.md`](0999-how-the-loader-hands-the-kernel-two-digests.md)
 have answers from the architect, given 2026-11-01 (UTC). Question 1, the bytes of the handoff: the architect ruled option A, the two
 command-line words `nife.progenitor=` and `nife.base=`, which the code here builds. The maintainer made the spelling `nife.progenitor` provisional
 on the same date: only the tree reads the word, and reversing it costs one pull request. Question 2:

@@ -1463,9 +1463,22 @@ mod verb_tests {
     #[test]
     fn a_table_of_exactly_maximum_verbs_round_trips() {
         const N: usize = MAXIMUM_VERBS;
+        // `verb000` to `verb255`, spelled at compile time: a `VerbGrant` borrows its word for
+        // `'static`, and a static gives that without a leaked allocation, which Miri reports.
+        static WORDS: [[u8; 7]; N] = {
+            let mut words = [*b"verb000"; N];
+            let mut i = 0;
+            while i < N {
+                words[i][4] = b'0' + (i / 100) as u8;
+                words[i][5] = b'0' + (i / 10 % 10) as u8;
+                words[i][6] = b'0' + (i % 10) as u8;
+                i += 1;
+            }
+            words
+        };
         let table: std::vec::Vec<VerbGrant> = (0..N)
             .map(|i| VerbGrant {
-                verb: std::boxed::Box::leak(std::format!("verb{i:03}").into_boxed_str()),
+                verb: core::str::from_utf8(&WORDS[i]).unwrap(),
                 authorities: ManifestAuthorities::CATALOG,
             })
             .collect();

@@ -13,8 +13,8 @@ fn a_delivered_frame_always_fits_the_buffer_and_the_room() {
     let room: usize = kani::any();
     if let ReceiveVerdict::Frame(n) = receive_verdict(word, room) {
         assert!(n <= room);
-        assert!(n as u64 <= BUFFER_SIZE);
-        assert!(n <= MAXIMUM_FRAME);
+        assert!(n as u64 <= BUFFER_BYTES);
+        assert!(n <= MAXIMUM_FRAME_BYTES);
     }
 }
 
@@ -26,6 +26,6 @@ fn every_ring_offset_is_inside_the_region() {
     let i: u16 = kani::any();
     assert!(layout::receive_descriptor(i) + 16 <= layout::TRANSMIT_RING_OFFSET_BYTES);
     assert!(layout::transmit_descriptor(i) + 16 <= layout::RECEIVE_BUFFERS_OFFSET_BYTES);
-    assert!(layout::receive_buffer(i) + BUFFER_SIZE <= layout::TRANSMIT_BUFFERS_OFFSET_BYTES);
-    assert!(layout::transmit_buffer(i) + BUFFER_SIZE <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES);
+    assert!(layout::receive_buffer(i) + BUFFER_BYTES <= layout::TRANSMIT_BUFFERS_OFFSET_BYTES);
+    assert!(layout::transmit_buffer(i) + BUFFER_BYTES <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES);
 }

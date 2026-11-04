@@ -30,10 +30,10 @@ compositor,background_pixel,replace | with ^,crates/compositor/src/lib.rs,320,si
 coremark,fsm_work,replace >> with <<,crates/coremark/src/lib.rs,203,site,"c = crc16(c, (n >> 16) as u16);"
 credential_contract,req,replace | with ^,crates/credential_contract/src/lib.rs,115,site,(operation << OPERATION_SHIFT) | ((id_len as u64 & 0xffff) << 16) | (secret_len as u64 & 0xffff)
 credential_contract,req,replace | with ^,crates/credential_contract/src/lib.rs,115,site,(operation << OPERATION_SHIFT) | ((id_len as u64 & 0xffff) << 16) | (secret_len as u64 & 0xffff)
-designware_ethernet,modify_extended,replace | with ^,crates/designware_ethernet/src/motorcomm.rs,388,site,"let v = (read_extended(bus, physical_layer_device_address, extended)? & !clear) | set;"
+designware_ethernet,modify_extended,replace | with ^,crates/designware_ethernet/src/motorcomm_physical_layer_device.rs,388,site,"let v = (read_extended(bus, physical_layer_device_address, extended)? & !clear) | set;"
 designware_mobile_storage,pattern,replace ^ with |,crates/designware_mobile_storage/src/bench.rs,170,site,^ (i >> 8) as u8
-designware_mobile_storage,"Host<R, D>::issue",replace | with ^,crates/designware_mobile_storage/src/host.rs,385,site,".write(registers::CONTROL, ctrl | registers::CONTROL_FIFO_RESET);"
-designware_mobile_storage,"Host<R, D>::issue",replace | with ^,crates/designware_mobile_storage/src/host.rs,414,site,if status & (registers::RINTSTS_RCRC | registers::RINTSTS_RE) != 0 {
+designware_mobile_storage,"Host<R, D>::issue",replace | with ^,crates/designware_mobile_storage/src/host_controller.rs,385,site,".write(registers::CONTROL, ctrl | registers::CONTROL_FIFO_RESET);"
+designware_mobile_storage,"Host<R, D>::issue",replace | with ^,crates/designware_mobile_storage/src/host_controller.rs,414,site,if status & (registers::RINTSTS_RCRC | registers::RINTSTS_RE) != 0 {
 designware_mobile_storage,"Host<R, D>::internal_direct_memory_access_stop",replace | with ^,crates/designware_mobile_storage/src/internal_direct_memory_access.rs,361,site,& !(registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE);
 designware_mobile_storage,"Host<R, D>::internal_direct_memory_access_stop",replace | with ^,crates/designware_mobile_storage/src/internal_direct_memory_access.rs,364,site,"ctrl | registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET,"
 designware_mobile_storage,"Host<R, D>::internal_direct_memory_access_stop",replace | with ^,crates/designware_mobile_storage/src/internal_direct_memory_access.rs,364,site,"ctrl | registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET,"
