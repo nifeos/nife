@@ -2,7 +2,7 @@
 //! driver writes and reads, and what a receive descriptor says. The descriptor bits keep
 //! OpenBSD's `dwqereg.h` names, and each one's documentation opens with its full name.
 //!
-//! Name: provisional, decided by the maintainer; reversing costs one pull request.
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
 pub(crate) const PAGE: u64 = 4096;
 
@@ -17,19 +17,26 @@ pub const RECEIVE_ENTRIES: u16 = 16;
 pub const TRANSMIT_ENTRIES: u16 = 16;
 
 /// Bytes per descriptor: four little-endian words.
+///
+/// Name: ratified 2026-11-03 (UTC), #3124.
 pub const DESCRIPTOR_BYTES: u64 = 16;
 
 /// Bytes per buffer. Written into the receive control register's buffer size field, so the
 /// device never writes past it, and large enough that a 1518-byte frame never spans two.
-pub const BUFFER_SIZE: u64 = 2048;
-
-/// The largest frame either direction carries: 1500 bytes of payload and the 14-byte header, CRC
-/// excluded (the device appends it on transmit, and the driver strips it on receive).
 ///
-/// Name: ratified 2026-11-02 (UTC), #3094.
-pub const MAXIMUM_FRAME: usize = 1514;
+/// Name: ratified 2026-11-03 (UTC), #3124.
+pub const BUFFER_BYTES: u64 = 2048;
+
+/// The largest frame either direction carries, in bytes: 1500 bytes of payload and the 14-byte
+/// header, CRC excluded (the device appends it on transmit, and the driver strips it on receive).
+/// This is not the maximum transmission unit, which is the 1500 bytes of payload alone.
+///
+/// Name: ratified 2026-11-03 (UTC), #3124; renamed from `MAXIMUM_FRAME`, which #3094 had ratified.
+pub const MAXIMUM_FRAME_BYTES: usize = 1514;
 
 /// The frame check sequence the device leaves on every received frame.
+///
+/// Name: ratified 2026-11-03 (UTC), #3124.
 pub const CRC_BYTES: usize = 4;
 
 // Receive and transmit, read and write-back formats: descriptor word 3 is the one that carries
@@ -133,7 +140,7 @@ pub const fn receive_descriptor_words(buffer_physical_address: u64) -> [u64; 2] 
 /// this constant. The compiler is the gate's only reader, and it reads at const evaluation, so
 /// `dead_code` is allowed here for exactly that reason.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+/// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(dead_code)]
 pub const RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP: () = assert!(
     RDES3_OWN | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION | RDES3_BUF1V
@@ -162,7 +169,7 @@ pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16
 /// gate's only reader, and it reads at const evaluation, so `dead_code` is allowed here for
 /// exactly that reason.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+/// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(dead_code)]
 pub const TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP: () = assert!(
     TDES2_IC & TDES2_BUF1_LEN == 0
@@ -191,7 +198,7 @@ pub enum ReceiveVerdict {
 ///
 /// Every field is the device's statement and none is trusted, since a device that lies about a
 /// length would lead a trusting driver past its buffer: a `Frame(n)` always has `n <= room`,
-/// `n <= MAXIMUM_FRAME` and `n + CRC_BYTES <= BUFFER_SIZE`, which the Kani harness below proves for
+/// `n <= MAXIMUM_FRAME_BYTES` and `n + CRC_BYTES <= BUFFER_BYTES`, which the Kani harness below proves for
 /// every word.
 ///
 /// # Examples
@@ -218,8 +225,9 @@ pub fn receive_verdict(descriptor_word_3: u32, room: usize) -> ReceiveVerdict {
     let Some(length) = wire.checked_sub(CRC_BYTES) else {
         return ReceiveVerdict::Drop;
     };
-    let fits =
-        (14..=MAXIMUM_FRAME).contains(&length) && length <= room && wire as u64 <= BUFFER_SIZE;
+    let fits = (14..=MAXIMUM_FRAME_BYTES).contains(&length)
+        && length <= room
+        && wire as u64 <= BUFFER_BYTES;
     if !fits {
         return ReceiveVerdict::Drop;
     }
@@ -231,7 +239,7 @@ pub fn receive_verdict(descriptor_word_3: u32, room: usize) -> ReceiveVerdict {
 /// `receive_verdict` names this constant. The compiler is the gate's only reader, and it reads at
 /// const evaluation, so `dead_code` is allowed here for exactly that reason.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
+/// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(dead_code)]
 pub const FIRST_AND_LAST_BITS_DO_NOT_OVERLAP: () =
     assert!(RDES3_FD | RDES3_LD == RDES3_FD ^ RDES3_LD);

@@ -9,6 +9,9 @@
 //!
 //! The command constants keep the specifications' names: the SD specification's section 4.7.4 and
 //! JESD84-B51's section 6.10.4. Each doc gives the command's number and what it does.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3135. A command is what the SD and eMMC specifications call it,
+//! and the word the controller's `CMD` register takes.
 
 use crate::registers;
 
@@ -166,7 +169,7 @@ pub struct Data {
 
 impl Data {
     /// Total bytes, the `BYTCNT` value. Saturating, so a hostile count cannot wrap into a small
-    /// transfer; a caller asking for four gigabytes in one command is refused by [`crate::host`]'s
+    /// transfer; a caller asking for four gigabytes in one command is refused by [`crate::host_controller`]'s
     /// buffer check before this is ever written.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3137. The count of bytes in the whole data phase. Renamed

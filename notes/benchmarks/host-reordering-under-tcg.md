@@ -2,7 +2,7 @@
 
 *An appendix to [`notes/benchmarks.md`](../benchmarks.md), measured 2026-10-24 (UTC) by the lane
 maintainer/measure-arm64-host-reordering. Name: provisional (that lane). It tests the claim
-`.github/workflows/ci.yml` gives for keeping the SMP QEMU jobs on `ubuntu-24.04-arm`. Milestone
+`.github/workflows/ci.yml` gives for keeping the SMP QEMU jobs on `ubuntu-26.04-arm`. Milestone
 587 (most CI jobs do not need an arm64 host) records that claim as recalled from QEMU's
 documentation rather than measured.*
 
@@ -151,7 +151,7 @@ updates on the aarch64 host, so the run could have seen a broken lock.
 
 ## What it means for the arm64 jobs
 
-The SMP QEMU jobs on `ubuntu-24.04-arm` are the only CI jobs that put guest code where a missing
+The SMP QEMU jobs on `ubuntu-26.04-arm` are the only CI jobs that put guest code where a missing
 Release can show. The suite they run does not look: no kernel lock with no ordering at all
 failed a test on either host. On today's suite the placement buys nothing measurable for lock
 ordering, and it spends runner time in the queue that waits longest.
