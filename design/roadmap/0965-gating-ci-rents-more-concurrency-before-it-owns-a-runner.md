@@ -10,6 +10,8 @@ needs_person: yes
 ---
 # 965. Gating CI rents more concurrency before it owns a runner
 
+COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 4.
+
 *(Title and slug provisional.)*
 
 Reuse: GitHub's hosted runners, plan tiers and repository settings, unchanged. For the staged

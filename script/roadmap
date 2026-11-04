@@ -1558,7 +1558,7 @@ for mid, fname in sorted(ids.items()):
 import coe_actions                                                          # noqa: E402
 
 _coe_texts = {}
-for _dir in ("design/roadmap", "design/decisions", coe_actions.DIRECTORY,
+for _dir in ("design/roadmap", "design/roadmap/proposals", "design/decisions", coe_actions.DIRECTORY,
              *coe_actions.OLDER_DIRECTORIES, "notes"):
     _full = os.path.join(root, _dir)
     for _name in sorted(os.listdir(_full)) if os.path.isdir(_full) else []:
