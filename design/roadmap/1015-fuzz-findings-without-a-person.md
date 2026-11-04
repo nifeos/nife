@@ -212,7 +212,7 @@ Where others develop the fix, read on 2026-11-04 (UTC):
 
 - Chromium keeps critical, high and medium severity bugs visible only to the security team and the
   engineers fixing them, lands the fix in the public repository, and opens the bug about 30 days
-  after the fix lands. Its FAQ says attackers can still analyse public commits to find the bugs.
+  after the fix lands. Its FAQ says attackers can still analyze public commits to find the bugs.
 - The Linux kernel security team is a private list that helps the reporter and the area maintainers
   develop a fix. The fix then follows the normal patch process, and its release may wait up to 7
   calendar days (14 in exceptional cases) for the logistics of QA.
