@@ -56,6 +56,10 @@ mkdir -p "$NIFE_HEAVY_SLOT_DIR"
 # directory above and never waits on a real job, so the mode is cleared here and the single-slot
 # claim stays asserted on every path that runs this file.
 unset LINT_NO_CARGO
+# The Kani memory pool (helpers/kani-pool-selftest.sh proves it) would lower these fixtures' child
+# counts on a small pool; this file tests the shards, so the pool is off here.
+NIFE_KANI_POOL=off
+export NIFE_KANI_POOL
 
 log="$tmp/cargo.log"
 export NIFE_SELFTEST_LOG="$log"

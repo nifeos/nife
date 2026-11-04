@@ -215,6 +215,9 @@ helpers/fuzz-daily-publish-selftest.sh >/dev/null
 # inside the one slot their parent holds. helpers/verify-parallel-selftest.sh says what it proves,
 # over a stub cargo and a private slot directory, so it costs milliseconds and takes no real slot.
 helpers/verify-parallel-selftest.sh >/dev/null
+# The machine's Kani memory is one pool however many lanes prove at once (helpers/heavy_slot.py,
+# "The Kani pool"): the third run waits, a run weighs its harnesses, the width is clamped, CI is off.
+helpers/kani-pool-selftest.sh >/dev/null
 
 echo "==> script/verify --parallel forks the shards, joins their verdicts, and keeps to one slot"
 # The local parallel prove, milestone 957 (local parallel prove of the Kani verification suite): a stub
