@@ -24,11 +24,11 @@ Reuse: `gh api` reads the advisory. No new transport.
 - The rule text in the developer-lane and maintainer skills:
   - No lane opens, copies, prints or moves anything under the fuzz host's held directory. The
     advisory is the only way a lane learns a finding.
-  - A fix lane for a held finding claims with `script/claim --no-claim`, as §90 (the claim is a
-    draft pull request) allows for this kind of lane. It commits locally and often, pushes nothing
-    until the fix is ready, then opens the pull request ready for review with auto-merge armed and a
-    neutral title. Local commits survive a dead session in the worktree; the machine's loss before
-    the push loses them.
+  - A fix lane for a held finding works in the advisory's temporary private fork by default, as §90
+    (the claim is a draft pull request) allows for this kind of lane. Its claim is a note on the
+    advisory. It runs the local gates, since the fork has no CI, and a person merges the fix from
+    the fork and publishes the advisory with it. A finding the architect judges low severity may
+    use a public draft pull request.
   - The fix pull request carries the fix and a regression test of the broken invariant that names no
     seed, input or replay line. Its title, body, commit messages and comments name no seed or input
     either. The seed joins the fixed-seed regression list in a second pull request opened after

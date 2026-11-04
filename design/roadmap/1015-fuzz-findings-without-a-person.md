@@ -34,8 +34,8 @@ place where a reproducer can leak.
 Ruled 2026-11-01 (UTC), narrowed 2026-11-04 (UTC): the fuzzing loop runs with no person in it, after
 a person places one credential once, and it ends at reporting. The fuzz host files one private
 advisory per held finding on nifeos/nife and stops. A person works the queue of security reports
-with the regular lane workflow, on a separate fix-lane machine, and publishes each advisory after
-the fix. Four steps handle findings.
+on the fix-lane machine, in each advisory's private fork, and publishes each advisory together with
+its fix. Four steps handle findings.
 
 1. Filing. A plain service on the fuzz host files a private security advisory on nifeos/nife for
    each new held finding. The service is a program, not an agent and not a language model. The
@@ -44,8 +44,8 @@ the fix. Four steps handle findings.
    rule stays in force: no lane opens the held directory. The advisory is the one narrow exception.
    A lane reads it through a read-only credential that a person places, and no lane looks for
    tokens.
-3. Fixing. A person works the advisory with the regular lane workflow. The regression test does not
-   carry the reproducer before the fix is on main.
+3. Fixing. A fix lane works in the advisory's temporary private fork, as the section on how a fix
+   lane claims says. The regression test does not carry the reproducer before the fix is on main.
 4. Never in public text. Crash inputs, seeds and reproducers stay out of public text until the fix is
    on main: pull request titles, bodies and comments, logs and artifacts.
 
@@ -87,8 +87,35 @@ installation token at launch; the milestone
 
 ## What is in force: how a fix lane claims
 
-Ruled 2026-11-04 (UTC): a fix lane for a held finding follows the regular lane workflow of §90 (the claim is a draft pull request).
-The pull request carries a neutral title and no reproducer.
+Ruled 2026-11-04 (UTC), amending §90 (the claim is a draft pull request): a fix lane for a held
+finding works in the GitHub temporary private fork of its advisory by default.
+
+- The claim is a note on the advisory, not a public draft pull request. The advisory list is the
+  claim board for this kind of lane, and the host files one advisory per finding.
+- The private fork has no CI and no merge queue, so the lane runs the local gates itself:
+  `script/fmt`, `script/lint` and the tests its change reaches. The lane reports each gate's exit.
+- A person reviews the fix, merges it from the private fork, and publishes the advisory together
+  with the fix. No lane merges and no lane publishes.
+- Exception: a finding the architect judges low severity may use a normal public draft pull
+  request, with the regular lane workflow, a neutral title and no reproducer.
+
+The reason is exposure. A draft pull request and its pushed branch are public from the first
+commit, so a public fix shows the bug for the whole of review and the merge queue. In the private
+fork nothing is public until the person merges and publishes, and the fix and its advisory become
+public at the same moment.
+
+The cost is the gates. GitHub runs no status checks in a temporary private fork and enforces no
+protection rule on its merge, so the heavy gates (Kani, QEMU, fuzz, mutation) first run on the
+push to main, after the fix is already there. A fix that breaks one of them is found on main and
+repaired by an ordinary lane. The low-severity exception exists for the findings where that cost
+buys nothing.
+
+An example. The fuzz host files a held crash in a parser as a draft advisory. The maintainer
+launches a fix lane on the fix-lane machine, which adds a note to the advisory naming the lane and
+opens the advisory's private fork. The lane commits the fix and a regression test of the broken
+invariant there, runs `script/fmt`, `script/lint` and the parser's tests, and reports their exits.
+A person reads the diff, merges the fork's pull request into main from the advisory page, and
+publishes the advisory in the same sitting. Main's push run then runs the heavy gates on the fix.
 
 ## What is in force: the host follows main
 
@@ -130,9 +157,9 @@ request.
 - The reproducer stays out of the fix pull request. That pull request carries the fix and a
   regression test of the invariant that broke, and names no seed, replay line or input. The seed
   joins the fixed-seed regression list in a second pull request, opened after the advisory turns
-  public. The ruling would allow the seed in the fix's own commit. That form puts the seed in the
-  public diff and in public CI logs for the whole merge-queue window, so the stricter form comes
-  first.
+  public. The ruling would allow the seed in the fix's own commit. Under the low-severity exception
+  that form puts the seed in the public diff and in public CI logs for the whole merge-queue window,
+  and one rule for both paths is simpler to keep, so the stricter form comes first.
 
 ## What GitHub's documentation confirms
 
@@ -154,14 +181,19 @@ Read on 2026-11-01 (UTC):
   no token returned 200. The unauthenticated limit is 60 requests an hour per address. Main's commit
   carried 125 check runs, two pages, so one look every 5 minutes costs 24 requests an hour.
 - Pull requests in an advisory's temporary private fork get no status checks, no CI, and no branch
-  protection on their merge. A fix merged that way skips every gate and the merge queue, so the fix
-  path does not use them.
+  protection on their merge. Only an administrator merges, and every open pull request of the fork
+  merges at once from the advisory page. A fix merged that way skips
+  every gate and the merge queue, which is why a fix lane runs the local gates before a person
+  merges.
 
 ## What is not verified
 
-- How long a fix pull request stays public is unmeasured. The window runs from the push of the fix
-  branch to the merge. It grows whenever a hold applies: `needs-architect` on a fix that touches the
-  syscall surface, or a red trunk. The first fix measures it.
+- Whether a merge from a temporary private fork passes the main ruleset of nifeos/nife, which has no
+  bypass actor and requires a pull request. GitHub's page speaks of branch protection rules and does
+  not name rulesets. The first fix through a private fork finds out.
+- How long a low-severity fix pull request stays public is unmeasured. The window runs from the push
+  of the fix branch to the merge. It grows whenever a hold applies: `needs-architect` on a fix that
+  touches the syscall surface, or a red trunk. The first such fix measures it.
 - Whether a draft advisory needs private vulnerability reporting switched on (from memory: it does
   not).
 - Whether a published advisory shows the App's comments to the public.
@@ -175,6 +207,30 @@ the verified fix or 90 days after the report, whichever comes first. That accoun
 of the OSS-Fuzz documentation, not the live site. nife publishes at the verified fix rather than 30
 days later, keeps the record in a GitHub advisory rather than an issue tracker, and gives the fix to
 an agent lane that never sees the fuzz host.
+
+How the fix is developed, read on 2026-11-04 (UTC):
+
+- Chromium keeps critical, high and medium severity bugs visible only to the security team and the
+  engineers fixing them, lands the fix in the public repository, and opens the bug about 30 days
+  after the fix lands. Its FAQ says attackers can still analyse public commits to find the bugs.
+- The Linux kernel security team is a private list that helps the reporter and the area maintainers
+  develop a fix. The fix then follows the normal patch process, and its release may wait up to 7
+  calendar days (14 in exceptional cases) for the logistics of QA.
+- GitHub's temporary private fork is a private copy of a public repository, made from a draft
+  advisory, where collaborators on the advisory fix a vulnerability before it is public. It runs no
+  CI and an administrator merges its pull requests together, after which the advisory is published.
+- The Rust security team holds fixes in private repositories, reviews them privately with the same
+  process as public changes, and pushes them to the public repository on the embargo date with the
+  announcement.
+- Go sorts reports into three tracks. PUBLIC issues (niche configurations, very limited impact, or
+  already widely known) are fixed in public. PRIVATE and URGENT issues are fixed in private and kept
+  private until the release. The Go security team chooses the track.
+
+nife differs from Chromium and the kernel in where the fix lives before it is public: those land the
+fix in public and disclose later, while nife keeps the fix in the private fork and publishes the fix
+and the advisory together, as Rust does. Its default private path and low-severity public exception
+follow Go's tracks, with the architect choosing the track. Unlike Rust's private review, nothing in
+the private fork runs the project's CI, so the local gates stand in for it until main's push run.
 
 ## Milestones
 
@@ -190,4 +246,4 @@ Each is a proposal in this directory, unnumbered until an integrator promotes it
 
 ## Index row
 
-The path of a held fuzz finding runs with no person from the finding to a private advisory, after one credential is placed, and ends there. A person fixes and publishes each advisory with the regular lane workflow. Rulings fix the credentials, the host and the lane, and this file splits them into milestones.
+The path of a held fuzz finding runs with no person from the finding to a private advisory, after one credential is placed, and ends there. A fix lane works in the advisory's private fork, and a person merges the fix and publishes the advisory together. Rulings fix the credentials, the host and the lane, and this file splits them into milestones.
