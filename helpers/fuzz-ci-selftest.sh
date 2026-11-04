@@ -29,7 +29,7 @@ printf '%s\n' "$code" | grep -q "merge_group" || fail "fuzz-guests does not run 
 printf '%s\n' "$code" | grep -q "workflow_dispatch" || fail "fuzz-guests does not run on workflow_dispatch"
 printf '%s\n' "$code" | grep -q "pull_request" && fail "fuzz-guests names pull_request; a fork's log is public"
 printf '%s\n' "$code" | grep -qE "self-hosted|runs-on:.*(patagonia|galapagos|xenon|argon|radon)" && fail "fuzz-guests names a self-hosted runner"
-printf '%s\n' "$code" | grep -q "runs-on: ubuntu-24.04" || fail "fuzz-guests does not run on a hosted ubuntu-24.04 runner"
+printf '%s\n' "$code" | grep -q "runs-on: ubuntu-26.04" || fail "fuzz-guests does not run on a hosted ubuntu-26.04 runner"
 # The udev rule that opens /dev/kvm uses `tee` on a file that is not the guest's.
 printf '%s\n' "$code" | grep -v 'udev/rules.d' | grep -qE "upload-artifact|hang_evidence|ci-build|\btee\b|\bcat\b|guest\.log|GITHUB_STEP_SUMMARY" \
     && fail "fuzz-guests has a step that could carry the guest's output into a log or artifact"
