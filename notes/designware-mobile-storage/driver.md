@@ -38,7 +38,7 @@ names the release, and the bench step prints it.
 The identification sequence is the SD Physical Layer Simplified Specification's figure 4-2 (version
 9.10), with JEDEC JESD84's eMMC sequence beside it. The addressing commands (`CMD2`, `CMD3`, `CMD9`,
 `CMD7`) come in the order OpenBSD's `sdmmc_mem_scan` and `sdmmc_mem_init` send them
-(`sys/dev/sdmmc/sdmmc_mem.c`, ISC); no code is adapted from that file. Which kind of card is in the slot is
+(`sys/dev/sdmmc/sdmmc_mem.c`, ISC); the crate adapts no code from that file. Which kind of card is in the slot is
 decided by what answers.
 
 1. `CMD0`, everything to idle, at 400 kHz.

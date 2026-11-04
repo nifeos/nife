@@ -74,7 +74,7 @@ Each item gives the recommendation first.
    notice, and `src/lib.rs`, `src/sd.rs` and milestone 817 (a proven DesignWare SD and eMMC host)'s
    `Reuse:` line say that it follows only the order. The crate's `license` field reads
    `(MIT OR Apache-2.0) AND ISC`, for the `dwmmc.c` code. Milestone 817's BUGS entry names the
-   `machine_discovery` fixtures the decoder is tested with.
+   `machine_discovery` fixtures that test the decoder.
 7. Fixtures and doc comments that quote upstream device-tree source. Recommendation: apply the
    rule of commit e1edb20b5 (cite the upstream TRNG nodes, do not quote them). A comment becomes a
    citation (path, revision, fetch date) and one sentence, and each fixture body keeps only the
