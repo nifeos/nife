@@ -52,6 +52,14 @@ struct Region {
     /// line and `slabtop` per object type). Pure bookkeeping beside the watermark: no decision in
     /// this module reads it, so it cannot become the read half of a claim.
     spent: Spent,
+    /// **The most live objects of each [`Counted`] kind this region's subtree may hold at once.**
+    /// Fixed when the region is made: a root's comes from its creator, a split child's from its
+    /// parent ([`Ceilings::for_child_of`]), so nothing below a region can raise it.
+    ceilings: Ceilings,
+    /// **How many objects of each [`Counted`] kind are live in this region's subtree right now**:
+    /// those retyped from this region or from any live region split below it, and for
+    /// [`Counted::Region`] the live regions below it. Never above `ceilings`, kind by kind.
+    live: Ceilings,
 }
 
 /// The per-use counts behind [`RegionTable::spent`]. Bump-only like the watermark, except
@@ -90,6 +98,103 @@ pub enum ObjectKind {
 
 impl ObjectKind {
     const COUNT: usize = 7;
+}
+
+/// **What a subtree ceiling counts**: the live kernel objects of one kind, or the live regions
+/// split below a region. See notes/memory-regions.md, "Subtree ceilings".
+///
+/// Name: provisional.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Counted {
+    /// Kernel objects of one kind, each holding a slot in that kind's kernel table.
+    Object(ObjectKind),
+    /// Regions split below this one, each holding a slot in the region table.
+    Region,
+}
+
+/// How many kinds [`Ceilings`] holds a count for: every [`ObjectKind`] and [`Counted::Region`].
+const COUNTED_KINDS: usize = ObjectKind::COUNT + 1;
+
+impl Counted {
+    const fn index(self) -> usize {
+        match self {
+            Counted::Object(kind) => kind as usize,
+            Counted::Region => ObjectKind::COUNT,
+        }
+    }
+}
+
+/// **A split child may hold this fraction of its root's ceiling, kind by kind**: one sixteenth. A
+/// fraction of the root rather than of the parent, so a chain of splits does not shrink a deep job
+/// to nothing, and the nesting still bounds every subtree by its ancestors' live counts.
+const CHILD_SHARE_OF_ROOT: u32 = 16;
+
+/// **One count per [`Counted`] kind**: the ceilings a region's subtree lives under, or (inside the
+/// table) the live counts beside them.
+///
+/// Name: provisional.
+///
+/// # Examples
+///
+/// ```
+/// use memory_regions::{Ceilings, Counted, ObjectKind};
+///
+/// let ceilings = Ceilings::UNLIMITED.with(Counted::Object(ObjectKind::Thread), 32);
+/// assert_eq!(ceilings.get(Counted::Object(ObjectKind::Thread)), 32);
+/// assert_eq!(ceilings.get(Counted::Region), u32::MAX);
+/// ```
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Ceilings([u32; COUNTED_KINDS]);
+
+impl Ceilings {
+    /// No ceiling on any kind: what [`RegionTable::insert_root`] gives a root.
+    pub const UNLIMITED: Ceilings = Ceilings([u32::MAX; COUNTED_KINDS]);
+
+    const ZERO: Ceilings = Ceilings([0; COUNTED_KINDS]);
+
+    /// These ceilings with `counted`'s set to `most`.
+    #[must_use]
+    pub const fn with(self, counted: Counted, most: u32) -> Ceilings {
+        let mut counts = self.0;
+        counts[counted.index()] = most;
+        Ceilings(counts)
+    }
+
+    /// The count for `counted`.
+    #[must_use]
+    pub const fn get(self, counted: Counted) -> u32 {
+        self.0[counted.index()]
+    }
+
+    /// **The ceilings a region split from `parent` lives under**: the lower of the parent's own
+    /// and [`CHILD_SHARE_OF_ROOT`] of the root's, kind by kind. Every split region of one tree
+    /// therefore has the same ceilings, which is why a split reads only its parent's.
+    fn for_child_of(parent: &Region) -> Ceilings {
+        if parent.parent != NO_PARENT {
+            return parent.ceilings;
+        }
+        let mut counts = parent.ceilings.0;
+        for count in &mut counts {
+            *count /= CHILD_SHARE_OF_ROOT;
+        }
+        Ceilings(counts)
+    }
+}
+
+/// **The nearest region whose subtree is at its ceiling**, as
+/// [`RegionTable::ceiling_reached`] reports it after a refusal.
+///
+/// Name: provisional.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct CeilingReached {
+    /// The region at its ceiling: the refused one or an ancestor.
+    pub region: u64,
+    /// How many splits above the refused region it sits; `0` for the region itself.
+    pub levels_up: u32,
+    /// Its subtree's live count, equal to `ceiling`.
+    pub live: u32,
+    /// Its ceiling for the refused kind.
+    pub ceiling: u32,
 }
 
 /// **One line of a region's spending, as [`RegionTable::spent`] reports it.**
@@ -249,6 +354,20 @@ impl<const N: usize> RegionTable<N> {
     /// This is the table half of the kernel's `create`; the allocation itself is the kernel's,
     /// because a crate that can be model-checked cannot also own a physical allocator.
     pub fn insert_root(&mut self, base_page: u64, pages: u64) -> Option<u64> {
+        self.insert_root_with_ceilings(base_page, pages, Ceilings::UNLIMITED)
+    }
+
+    /// [`insert_root`](Self::insert_root) for a root whose subtree lives under `ceilings`: no more
+    /// than that many objects of each [`Counted`] kind live in it at once, and each region split
+    /// below it gets a sixteenth of them.
+    ///
+    /// Name: provisional.
+    pub fn insert_root_with_ceilings(
+        &mut self,
+        base_page: u64,
+        pages: u64,
+        ceilings: Ceilings,
+    ) -> Option<u64> {
         self.table.insert_with(|_| Region {
             base_page,
             pages,
@@ -258,6 +377,8 @@ impl<const N: usize> RegionTable<N> {
             parent: NO_PARENT,
             children: 0,
             spent: Spent::default(),
+            ceilings,
+            live: Ceilings::ZERO,
         })
     }
 
@@ -266,8 +387,10 @@ impl<const N: usize> RegionTable<N> {
     /// independently reclaimable region.
     ///
     /// `None` if the parent's name is dead, its budget cannot cover the carve (the proved
-    /// [`split_new_watermark`] decides), or the table is full. On a full table the run stays spent
-    /// on the parent and its child count stays raised: the bump-only rule.
+    /// [`split_new_watermark`] decides), the parent or an ancestor is at its [`Counted::Region`]
+    /// ceiling, or the table is full. The first three move nothing. On a full table the run stays
+    /// spent on the parent and its child count stays raised: the bump-only rule. The child's
+    /// ceilings are fixed here, from its parent's.
     ///
     /// # BUGS
     ///
@@ -292,16 +415,21 @@ impl<const N: usize> RegionTable<N> {
     /// assert_eq!(table.usage(parent), Some((4, 8)), "the refused carve stays spent");
     /// ```
     pub fn split(&mut self, parent: u64, pages: u64) -> Option<u64> {
-        let base_page = {
+        let r = self.table.get(parent)?;
+        split_new_watermark(r.pages, r.watermark, pages)?;
+        if !self.charge(parent, Counted::Region) {
+            return None;
+        }
+        let (base_page, ceilings) = {
             let r = self.table.get_mut(parent)?;
             let new_watermark = split_new_watermark(r.pages, r.watermark, pages)?;
             let base_page = r.base_page + r.watermark;
             r.watermark = new_watermark;
             r.children += 1;
             r.spent.children += pages;
-            base_page
+            (base_page, Ceilings::for_child_of(r))
         };
-        self.table.insert_with(|_| Region {
+        let child = self.table.insert_with(|_| Region {
             base_page,
             pages,
             watermark: 0,
@@ -310,7 +438,114 @@ impl<const N: usize> RegionTable<N> {
             parent,
             children: 0,
             spent: Spent::default(),
-        })
+            ceilings,
+            live: Ceilings::ZERO,
+        });
+        if child.is_none() {
+            self.release(parent, Counted::Region);
+        }
+        child
+    }
+
+    /// **Count one more live `counted` against `name` and every ancestor, or refuse and count
+    /// nothing** when any of them is at its ceiling. Two walks of the parent chain under one
+    /// borrow: the first decides, the second commits, so a refusal moves no count. `false` for a
+    /// dead name. Each walk is bounded by the capacity, since a chain longer than the table would
+    /// be a cycle, which the split protocol cannot build.
+    fn charge(&mut self, name: u64, counted: Counted) -> bool {
+        let k = counted.index();
+        let mut at = name;
+        for _ in 0..N {
+            let Some(r) = self.table.get(at) else {
+                return false;
+            };
+            if r.live.0[k] >= r.ceilings.0[k] {
+                return false;
+            }
+            at = r.parent;
+            if at == NO_PARENT {
+                break;
+            }
+        }
+        let mut at = name;
+        for _ in 0..N {
+            let Some(r) = self.table.get_mut(at) else {
+                break;
+            };
+            r.live.0[k] += 1;
+            at = r.parent;
+            if at == NO_PARENT {
+                break;
+            }
+        }
+        true
+    }
+
+    /// Count one fewer live `counted` against `name` and every ancestor. A no-op on a dead name,
+    /// whose counts left its ancestors when it was claimed.
+    fn release(&mut self, name: u64, counted: Counted) {
+        let k = counted.index();
+        let mut at = name;
+        for _ in 0..N {
+            let Some(r) = self.table.get_mut(at) else {
+                break;
+            };
+            r.live.0[k] = r.live.0[k].saturating_sub(1);
+            at = r.parent;
+            if at == NO_PARENT {
+                break;
+            }
+        }
+    }
+
+    /// **One object of `kind` retyped from `name` has left its kernel table**: a thread reaped, an
+    /// address space dropped, or an insert refused after its page was retyped. Its subtree and
+    /// every ancestor's count one fewer. A no-op on a dead name: a claimed region's counts left
+    /// its ancestors at the claim. The other kinds leave their tables only when their region is
+    /// reclaimed, and [`claim_for_destroy`](Self::claim_for_destroy) gives their counts back.
+    ///
+    /// Name: provisional.
+    pub fn release_object(&mut self, name: u64, kind: ObjectKind) {
+        self.release(name, Counted::Object(kind));
+    }
+
+    /// **The nearest region at or above `name` whose subtree is at its `counted` ceiling**, or
+    /// `None` when none is (the refusal was the region's own budget) or the name is dead. An
+    /// observer for the kernel's refusal line: it says nothing about whether a region is pinned,
+    /// childless or claimable, so it cannot be the read half of a reclaim.
+    ///
+    /// Name: provisional.
+    #[must_use]
+    pub fn ceiling_reached(&self, name: u64, counted: Counted) -> Option<CeilingReached> {
+        let k = counted.index();
+        let mut at = name;
+        for levels_up in 0..N as u32 {
+            let r = self.table.get(at)?;
+            if r.live.0[k] >= r.ceilings.0[k] {
+                return Some(CeilingReached {
+                    region: at,
+                    levels_up,
+                    live: r.live.0[k],
+                    ceiling: r.ceilings.0[k],
+                });
+            }
+            at = r.parent;
+            if at == NO_PARENT {
+                return None;
+            }
+        }
+        None
+    }
+
+    /// `name`'s subtree's live `counted` objects and its ceiling for them, as `(live, ceiling)`,
+    /// or `None` for a dead name. An observer, for [`ceiling_reached`](Self::ceiling_reached)'s
+    /// reason.
+    ///
+    /// Name: provisional.
+    #[must_use]
+    pub fn subtree_live(&self, name: u64, counted: Counted) -> Option<(u32, u32)> {
+        let k = counted.index();
+        self.table.get(name).map(|r| (r.live.0[k], r.ceilings.0[k]))
     }
 
     /// Whether this region has live children, so a claim on it will be refused. `false` for a dead
@@ -350,15 +585,21 @@ impl<const N: usize> RegionTable<N> {
     /// the carve happen in one borrow, so no claim can slip between them and reclaim a page that is
     /// about to hold an endpoint.
     ///
-    /// `None` on an exhausted or dead region, and **nothing is pinned** in that case: a caller that
-    /// got no page owes no unpin.
+    /// `None` on an exhausted or dead region, or when the region or an ancestor is at its `kind`
+    /// ceiling, and **nothing moves** in those cases: no page, no pin and no count, so a caller
+    /// that got no page owes no unpin and no [`release_object`](Self::release_object).
     ///
-    /// `kind` is recorded for [`spent`](Self::spent) and decides nothing here.
+    /// `kind` is recorded for [`spent`](Self::spent) and counted against every subtree the region
+    /// is in.
     pub fn retype_object_page(&mut self, name: u64, kind: ObjectKind) -> Option<u64> {
-        let r = self.table.get_mut(name)?;
+        let r = self.table.get(name)?;
         if r.watermark >= r.pages {
             return None;
         }
+        if !self.charge(name, Counted::Object(kind)) {
+            return None;
+        }
+        let r = self.table.get_mut(name)?;
         r.pinned = true;
         let page = r.base_page + r.watermark;
         r.watermark += 1;
@@ -470,6 +711,20 @@ impl<const N: usize> RegionTable<N> {
             parent: r.parent,
             is_root,
         };
+        // A claimable region has no children, so its subtree is itself: what it still counts, and
+        // the region itself, leave every ancestor in this borrow.
+        let mut gone = r.live;
+        gone.0[Counted::Region.index()] = 1;
+        let mut at = r.parent;
+        for _ in 0..N {
+            let Some(a) = self.table.get_mut(at) else {
+                break;
+            };
+            for (live, gone) in a.live.0.iter_mut().zip(gone.0) {
+                *live = live.saturating_sub(gone);
+            }
+            at = a.parent;
+        }
         // The generation bump. Every `MemoryRegion` capability for this region stops resolving here, and
         // that is what makes the claim single-winner rather than merely first.
         self.table.remove(name);
@@ -515,6 +770,31 @@ impl<const N: usize> RegionTable<N> {
         p.children = p.children.saturating_sub(1);
         p.spent.children = p.spent.children.saturating_sub(claim.pages);
         p.watermark = coalesced_watermark(p.watermark, p.retyped_to, live_to, p.children == live);
+    }
+}
+
+/// What the subtree-ceiling harnesses in `proofs.rs` compare before and after a refusal.
+#[cfg(kani)]
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) struct RegionSnapshot {
+    pub(crate) watermark: u64,
+    pub(crate) pinned: bool,
+    pub(crate) children: u32,
+    pub(crate) live: Ceilings,
+    pub(crate) ceilings: Ceilings,
+}
+
+#[cfg(kani)]
+impl<const N: usize> RegionTable<N> {
+    /// Every field a charge, a split or a carve could move, for a live name.
+    pub(crate) fn snapshot(&self, name: u64) -> Option<RegionSnapshot> {
+        self.table.get(name).map(|r| RegionSnapshot {
+            watermark: r.watermark,
+            pinned: r.pinned,
+            children: r.children,
+            live: r.live,
+            ceilings: r.ceilings,
+        })
     }
 }
 
@@ -909,6 +1189,153 @@ mod tests {
         assert!(!t.has_children(r));
         assert_eq!(t.usage(r), None);
         t.unpin(r); // must not panic
+    }
+
+    // --- Subtree ceilings ----------------------------------------------------------------------
+
+    const THREAD: Counted = Counted::Object(ObjectKind::Thread);
+    const RENDEZVOUS: Counted = Counted::Object(ObjectKind::Rendezvous);
+
+    fn every(most: u32) -> Ceilings {
+        Ceilings([most; COUNTED_KINDS])
+    }
+
+    #[test]
+    fn a_retype_refused_at_a_ceiling_moves_no_page_pin_or_count() {
+        let mut t = RegionTable::<4>::new();
+        let root = t.insert_root_with_ceilings(0, 100, every(3)).unwrap();
+        for _ in 0..3 {
+            t.retype_object_page(root, ObjectKind::Thread).unwrap();
+        }
+        t.unpin(root);
+        assert_eq!(t.retype_object_page(root, ObjectKind::Thread), None);
+        assert_eq!(t.usage(root), Some((3, 100)), "no page spent");
+        assert_eq!(t.subtree_live(root, THREAD), Some((3, 3)), "no count moved");
+        assert!(
+            t.claim_for_destroy(root).is_some(),
+            "and no pin: the refusal left the region claimable"
+        );
+    }
+
+    #[test]
+    fn each_kind_has_its_own_ceiling() {
+        let mut t = RegionTable::<4>::new();
+        let root = t
+            .insert_root_with_ceilings(0, 100, Ceilings::UNLIMITED.with(THREAD, 1))
+            .unwrap();
+        t.retype_object_page(root, ObjectKind::Thread).unwrap();
+        assert_eq!(t.retype_object_page(root, ObjectKind::Thread), None);
+        assert!(t.retype_object_page(root, ObjectKind::Rendezvous).is_some());
+        assert!(t.retype_object_page(root, ObjectKind::Timer).is_some());
+    }
+
+    #[test]
+    fn a_split_child_gets_a_sixteenth_of_its_roots_ceilings_at_every_depth() {
+        let mut t = RegionTable::<8>::new();
+        let root = t.insert_root_with_ceilings(0, 1000, every(160)).unwrap();
+        let child = t.split(root, 500).unwrap();
+        let grandchild = t.split(child, 10).unwrap();
+        let great = t.split(grandchild, 1).unwrap();
+        for r in [child, grandchild, great] {
+            assert_eq!(t.subtree_live(r, THREAD), Some((0, 10)));
+        }
+        let unlimited = t.insert_root(2000, 10).unwrap();
+        let below = t.split(unlimited, 1).unwrap();
+        assert_eq!(
+            t.subtree_live(below, THREAD),
+            Some((0, u32::MAX / CHILD_SHARE_OF_ROOT))
+        );
+    }
+
+    #[test]
+    fn sibling_subtrees_together_never_pass_their_parents_ceiling() {
+        let mut t = RegionTable::<64>::new();
+        let root = t.insert_root_with_ceilings(0, 10_000, every(48)).unwrap();
+        let mut made = 0;
+        for _ in 0..20 {
+            let Some(c) = t.split(root, 100) else { break };
+            while t.retype_object_page(c, ObjectKind::Thread).is_some() {
+                made += 1;
+            }
+        }
+        assert_eq!(made, 48, "three a child, until the root's 48");
+        assert_eq!(t.subtree_live(root, THREAD), Some((48, 48)));
+    }
+
+    #[test]
+    fn a_reclaimed_subtree_gives_back_every_count_it_held() {
+        let mut t = RegionTable::<8>::new();
+        let root = t.insert_root_with_ceilings(0, 1000, every(64)).unwrap();
+        let job = t.split(root, 500).unwrap();
+        let inner = t.split(job, 100).unwrap();
+        t.retype_object_page(inner, ObjectKind::Rendezvous).unwrap();
+        t.retype_object_page(inner, ObjectKind::Thread).unwrap();
+        t.retype_object_page(job, ObjectKind::Process).unwrap();
+        t.release_object(inner, ObjectKind::Thread); // reaped before the reclaim
+        assert_eq!(t.subtree_live(root, RENDEZVOUS), Some((1, 64)));
+        assert_eq!(t.subtree_live(root, Counted::Region), Some((2, 64)));
+        assert_eq!(t.subtree_live(job, Counted::Region), Some((1, 4)));
+
+        for r in [inner, job] {
+            t.unpin(r);
+            let claim = t.claim_for_destroy(r).unwrap();
+            t.return_to_parent(&claim);
+        }
+        for k in 0..COUNTED_KINDS {
+            assert_eq!(t.table.get(root).unwrap().live.0[k], 0, "kind {k}");
+        }
+        t.release_object(inner, ObjectKind::Rendezvous); // a dead name: inert
+        assert_eq!(t.subtree_live(root, RENDEZVOUS), Some((0, 64)));
+    }
+
+    #[test]
+    fn a_split_refused_at_the_region_ceiling_moves_nothing() {
+        let mut t = RegionTable::<64>::new();
+        let root = t
+            .insert_root_with_ceilings(0, 1000, Ceilings::UNLIMITED.with(Counted::Region, 32))
+            .unwrap();
+        let job = t.split(root, 100).unwrap();
+        for _ in 0..2 {
+            t.split(job, 1).unwrap();
+        }
+        assert_eq!(t.split(job, 1), None, "two below the job, its ceiling of 32 / 16");
+        assert_eq!(t.usage(job), Some((2, 100)), "no page carved");
+        assert_eq!(t.subtree_live(job, Counted::Region), Some((2, 2)));
+        assert_eq!(t.subtree_live(root, Counted::Region), Some((3, 32)));
+        assert!(t.split(root, 1).is_some(), "a sibling of the job still splits");
+    }
+
+    #[test]
+    fn a_split_refused_for_a_full_table_gives_its_region_count_back() {
+        let mut t = RegionTable::<2>::new();
+        let root = t.insert_root(0, 8).unwrap();
+        t.split(root, 2).unwrap();
+        assert_eq!(t.split(root, 2), None);
+        assert_eq!(t.subtree_live(root, Counted::Region).map(|(n, _)| n), Some(1));
+    }
+
+    #[test]
+    fn the_nearest_ancestor_at_its_ceiling_is_the_one_named() {
+        let mut t = RegionTable::<8>::new();
+        let root = t
+            .insert_root_with_ceilings(0, 1000, Ceilings::UNLIMITED.with(THREAD, 32))
+            .unwrap();
+        let job = t.split(root, 500).unwrap();
+        let inner = t.split(job, 100).unwrap();
+        assert_eq!(t.ceiling_reached(inner, THREAD), None);
+        t.retype_object_page(inner, ObjectKind::Thread).unwrap();
+        t.retype_object_page(job, ObjectKind::Thread).unwrap();
+        assert_eq!(
+            t.ceiling_reached(inner, THREAD),
+            Some(CeilingReached {
+                region: job,
+                levels_up: 1,
+                live: 2,
+                ceiling: 2
+            }),
+            "the inner region holds one of its two; the job, both of its"
+        );
+        assert_eq!(t.retype_object_page(inner, ObjectKind::Thread), None);
     }
 }
 
