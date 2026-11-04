@@ -26,7 +26,7 @@
 #
 # # What a scheduled run can and cannot see, stated plainly because it decides the design
 #
-# It cannot see any of this. `.github/workflows/metrics.yml` runs on `ubuntu-24.04-arm` with a fresh
+# It cannot see any of this. `.github/workflows/metrics.yml` runs on `ubuntu-26.04-arm` with a fresh
 # checkout: no `~/.claude`, no session records, nothing. **So machine effort cannot be captured
 # without a person on the machine that ran the lanes**, and no amount of workflow will change that.
 #

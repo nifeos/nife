@@ -35,9 +35,21 @@ will never take it and blocks whatever needs it. For that reason `script/lint` r
 
 ## What runs on them
 
-Stage 1 moves the twelve x86_64 jobs that run on `merge_group` or `push` and need `/dev/kvm`.
-Stage 2, later, moves the rest. Until a workflow switches its
-`runs-on`, nothing but the canary uses the pool.
+Stage 1 moves the x86_64 jobs that run only on `merge_group` or `push` and fit one slot (4 vCPU,
+16 GiB, 50 GB disk, 90 minutes): the longest took 15 minutes on recent queue runs. They take the
+switch below with the variable unset, so they stay hosted until a maintainer sets the variable to `true`.
+
+- ci.yml: `swish-check-x86_64`, `bench`, `crate-probes`.
+- verify.yml: the four `prove` shards.
+
+These stay hosted on purpose:
+
+- `fuzz-guests` (the rule in `helpers/fuzz-ci-selftest.sh`: a fuzz finding stays private) and the two
+  `fuzz-shard` jobs (the same disclosure rule may cover them; they wait for a ruling).
+- Every aarch64 and riscv64 guest job, and every job on an arm runner.
+- The required summary and gate jobs, which last seconds, and every job that runs on a pull request.
+
+Stage 2, later, moves the rest.
 
 ## The switch: `NIFE_RUNNER_OWNED`
 
@@ -48,9 +60,17 @@ owned; anything else, including unset, selects hosted. A job that takes part in 
 runs-on: ${{ vars.NIFE_RUNNER_OWNED == 'true' && 'nife-owned-x86_64' || 'ubuntu-26.04' }}
 ```
 
-GitHub accepts an expression for a `runs-on` string, and `vars` is available there. The job also
-carries `if: github.event_name == 'merge_group' || github.event_name == 'push'`, because the owned
-side of the expression can never serve a pull request.
+GitHub accepts an expression for a `runs-on` string, and `vars` is available there. The stage 1
+jobs also run on a pull request that carries `full-ci` and on the dispatch that label starts. The
+owned hosts refuse both. These jobs therefore use the event-aware form, which picks hosted on every
+event but a merge group and a push to `main`:
+
+```yaml
+runs-on: ${{ vars.NIFE_RUNNER_OWNED == 'true' && (github.event_name == 'merge_group' || github.event_name == 'push') && 'nife-owned-x86_64' || 'ubuntu-26.04' }}
+```
+
+A job that has no pull request path, such as the canary, may instead carry
+`if: github.event_name == 'merge_group' || github.event_name == 'push'` with the plain form.
 
 Set it with `gh variable set NIFE_RUNNER_OWNED --repo nifeos/nife --body true`.
 
@@ -78,6 +98,9 @@ summary:
 - `df -h` for `$HOME`, `/tmp` and the volume that holds the workspace (the slot volume);
 - each fetch that did not return 200, by host.
 
+The same text goes to the job log as well, because the job summary is not in the log API and a script
+can read only the log.
+
 ### What the isolation test proves
 
 An owned job starts from a clean container, so it sees none of an earlier job's files. Three jobs
@@ -91,8 +114,9 @@ test that claim. All three are `continue-on-error`, and none is a required check
   the same label. Each prints its runner name, confirms that none of the three markers exists, and
   confirms that `$HOME` holds no `nife-canary-marker-*` file. A `LEAK` line fails that instance.
 - `canary-owned-isolation` runs on a hosted runner, reads the run's jobs from the API and states
-  whether any check instance ran on the writer's slot. Runner names end in `-sNN-<hex>`, and equal
-  names mean one slot.
+  whether any check instance ran on the writer's slot. Runner names end in `-sNN-<hex>`. The hex is new for every
+  job, so the slot is the name without it, and equal slots mean one slot. The job reports how many
+  of the check instances ran on the writer's slot.
 
 Reading the summary: no `LEAK` line in any instance is the pass. A leak can only show where the
 writer ran, so the test counts only when the isolation job says `writer slot seen again: yes`.
@@ -143,8 +167,14 @@ review; say so in the pull request or issue that explains why.
 - any job with such a `runs-on` lacks a job-level `if:` that names only `github.event_name ==
   'merge_group'` or `'push'`.
 
+The event-aware `runs-on` above passes both rules, character for character, with a hosted label of
+the shape `ubuntu-NN.NN`. Its event clause sits inside `runs-on`, so the job needs no `if:` and its
+workflow may take pull requests. Any near miss fails: a clause that names `pull_request`, no clause,
+no parentheses, or an owned fallback.
+
 Its `--selftest` plants a pull request workflow, the switch under `pull_request_target`, a job with
-no guard and a guard that names `pull_request`, and requires each to fail. Pointing the helper at a
+no guard and a guard that names `pull_request`, and requires each to fail. It also plants the
+event-aware form under `pull_request` and requires it to pass. Four near misses of it must each fail. Pointing the helper at a
 copy of the canary workflow with `pull_request:` added to `on:`, or with the `if:` lines removed,
 exits 1 and names the job.
 
