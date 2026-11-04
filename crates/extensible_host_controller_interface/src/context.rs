@@ -80,9 +80,10 @@ pub const fn slot(speed: u8, port: u8, entries: u8) -> [u32; 8] {
 /// constant. The constant-assertion lint is off on purpose: the assertion is constant by
 /// construction, and the compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+/// Name: ratified 2026-11-03 (UTC), #3117. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_SLOT_CONTEXT_FIELDS_SHARE_NO_BIT: () = assert!(((0xfu32 << 20) & (0x1f << 27)) == 0);
+pub const SLOT_CONTEXT_FIELDS_DO_NOT_OVERLAP: () = assert!(((0xfu32 << 20) & (0x1f << 27)) == 0);
 
 /// The slot context's device address, assigned by Address Device: dword 3's low byte of a slot
 /// context the controller wrote.
@@ -129,9 +130,10 @@ pub const fn endpoint(
 /// exclusion for [`endpoint`] names this constant. The constant-assertion lint is off on
 /// purpose: the assertion is constant by construction, and the compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+/// Name: ratified 2026-11-03 (UTC), #3117. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const THE_ENDPOINT_CONTEXT_FIELDS_SHARE_NO_BIT: () = assert!(
+pub const ENDPOINT_CONTEXT_FIELDS_DO_NOT_OVERLAP: () = assert!(
     ((3u32 << 1) & (0xff << 3)) == 0
         && ((0xffu32 << 3) & (0xffff << 16)) == 0
         && ((0xffffu32 << 16) & 0xffff) == 0

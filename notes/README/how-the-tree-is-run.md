@@ -33,6 +33,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The lint census, 2026-10-09](../lint-census-2026-10-09.md): panics, casts, `static mut`, suppressions and function length in the non-test Rust that runs on nife, counted for five proposals. Name provisional.
 - [The Actions cache budget, 2026-10-07](../actions-cache-budget-2026-10-07.md): which caches earn their bytes against GitHub's 10 GB limit, why merge groups save nothing now, and the forks left. Name provisional.
 - [What script/lint costs a lane, 2026-10-18](../lint-cost-2026-10-18.md): per-section time locally and in CI, which sections stop the run, reruns per lane on one evening, the pre-push hook, and fixes ranked by time saved. Name provisional.
+- [Which script/lint sections a crate repository would inherit](../lint-sections-generic-or-nife-only.md): each of the 131 sections tagged generic, generic-with-config or nife-only, the couplings that tie portable checks to nife, what crate-workflows already copies, and when to extract a shared tool. Name provisional.
 - [A shared corpus index for the text gates](../lint-corpus-index.md): what twelve text gates cost, why reading is cheap and deriving is not, and a cache of derived facts keyed by blob hash. A design note for review. Name provisional.
 - [CI's toolchain download, 2026-10-19](../ci-toolchain-download.md): how often the rust-lang CDN failed CI, the retry that answers it, and what caching the toolchain would cost and buy. Name provisional.
 - [Counted claims](../counted-claims.md): numbers in prose that a gate re-derives. Name provisional.
@@ -64,3 +65,4 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The truncated echo, 2026W42](../swish-check-flake-2026w42.md): a typed line whose input stopped mid-echo on aarch64, a receive interrupt cleared while a byte waited in the PL011's FIFO, and the `--input-race` boot that proves the fix. Name provisional.
 - [Crates that could be released on their own, 2026-10-07](../releasable-crates-2026-10-07.md): which crates could leave, who else implements each, and whether to offer them our proofs. Name provisional.
 - [Names journey 5 has not ratified yet](../unratified-names-journey-5.md): every unratified name in the journey-5 crates still under `crates/`, in groups for an architect to rule on one at a time, with a provisional recommendation each. Name provisional.
+- [Owned runners](../owned-runners.md): the label, the admission rule, the `NIFE_RUNNER_OWNED` switch, the canary and the rollback. Name provisional.

@@ -131,7 +131,7 @@ concurrency:
 jobs:
   mutants:
     name: "mutants (shard ${{ matrix.shard }}/8)"
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     # A generous box around a run whose cost moves with the tree. Four shards of ~2,465 mutants
     # each as of 2026-09-03; the shard re-runs its own baseline build first, and a few mutants (dtb's walker, the
     # calendar parser) legitimately burn their whole auto-timeout, two minutes and change apiece.
@@ -244,7 +244,7 @@ jobs:
     # `always()`: three shards of survivors are still a report worth publishing when the fourth
     # died; the summary names the shards it aggregated.
     if: always()
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -297,7 +297,7 @@ jobs:
     name: inflow against the triage record
     needs: mutants
     if: always()
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 20
     permissions:
       contents: read
@@ -388,7 +388,7 @@ jobs:
     needs: inflow
     if: always() && needs.inflow.outputs.complete == 'true' && github.ref == 'refs/heads/main'
     environment: automation
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 15
     permissions:
       contents: write

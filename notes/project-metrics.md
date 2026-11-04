@@ -224,7 +224,7 @@ accounts for, read at each week's last merge. Above 5% is a lane (calef, 2026-10
 save and reason: [the drift report](project-metrics/baseline-drift.md).
 
 <!-- baseline-drift: script/metrics writes this -->
-2026W45, `main` at `4eedc6fc5`: nothing unexplained past 5%; the largest, aarch64 `ipc_rtt` +1.42%, riscv64 `map_el0` +4.27%, x86_64 `spawn_reap` +0.98%.
+2026W45, `main` at `dd8cfde00`: nothing unexplained past 5%; the largest, aarch64 `ipc_rtt` +1.24%, riscv64 `sink_throughput` +0.11%, x86_64 `spawn_reap` +2.85%.
 <!-- /baseline-drift -->
 
 ## Interface stability
@@ -268,13 +268,6 @@ code: unharnessed code is outside it ([what each ratio is of](denominators.md#th
 Open while what an item names is not done; the direction is down (`script/roadmap --coe-actions`).
 Each week is read from its own commit, so 2026W39 is the first correction, already in this form.
 
-## Writing standards
-
-![Documents over a writing-standards limit](project-metrics/writing-standards.svg)
-
-Documents over each writing-standards limit; exempted ones count
-([definitions](register-of-measures/ratchet-debt.md)).
-
 ## Passive voice
 
 ![Passive constructions in the prose](project-metrics/passive-voice.svg)
@@ -284,24 +277,6 @@ Documents over each writing-standards limit; exempted ones count
 §213 (writing standards) rule 6's count over the prose ratchet's documents, then per 1,000 words of prose. The line is
 the limit a new document meets ([definitions](register-of-measures/ratchet-debt.md#passive-voice)).
 
-## Comment blocks
-
-![Files with a long comment block](project-metrics/comment-blocks.svg)
-
-![Comment lines past the cap](project-metrics/comment-blocks-excess.svg)
-
-The 40-line comment-block cap: files holding a longer block, then the lines past it.
-
-## Comments by directory
-
-![Comment blocks over their directory's cap](project-metrics/comment-blocks-by-directory.svg)
-
-![Comment lines past their directory's cap](project-metrics/comment-blocks-excess-by-directory.svg)
-
-![Plain comment lines inside function bodies](project-metrics/comment-in-body.svg)
-
-Milestone 929 (comments in the Linux style across first-party Rust): its two counts, one series per directory, each week at the caps and in-body ceilings
-its own `design/comment-block-baseline.tsv` holds. A cap step reads as a jump in the first two.
 
 ## Line-number citations
 

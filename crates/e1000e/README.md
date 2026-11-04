@@ -3,7 +3,7 @@
 The logic of a driver for Intel's e1000e network controllers, the 82574L that QEMU's
 `-device e1000e` presents and the Sunrise Point I219, with no register access of its own. It holds
 the register offsets and bits, the descriptor formats, the DMA region's layout, the whole receive
-and transmit ring logic behind two small traits (`Region` and `Tails`), and the I219 bring-up
+and transmit ring logic behind two small traits (`DirectMemoryAccessRegion` and `Tails`), and the I219 bring-up
 sequences ported from FreeBSD's Intel shared code. You supply the volatile register accesses and
 the DMA memory; everything computed from them is here, `no_std`, and tested on the host against a
 simulated device. It was written for the nife kernel.
@@ -48,7 +48,7 @@ assert_eq!(receive_verdict(word(60, 0), 1514), ReceiveVerdict::NotYet);
 assert_eq!(receive_verdict(word(0xffff, done), 1514), ReceiveVerdict::Drop);
 ```
 
-For the rings, implement `Region` over the DMA memory and `Tails` over the queue registers, then
+For the rings, implement `DirectMemoryAccessRegion` over the DMA memory and `Tails` over the queue registers, then
 drive a `DataPlane` with `start`, `receive` and `transmit`.
 
 ## Limitations

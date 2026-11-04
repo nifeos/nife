@@ -1,7 +1,7 @@
 //! Name: ratified 2026-11-03 (UTC), #3145. Ruled in the group E1 ruling on e1000e's module names;
 //! kept as it stands.
 
-use super::{BUFFER_SIZE, PAGE, RECEIVE_ENTRIES, TRANSMIT_ENTRIES};
+use super::{BUFFER_BYTES, PAGE, RECEIVE_ENTRIES, TRANSMIT_ENTRIES};
 /// The receive descriptor ring.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
@@ -21,9 +21,9 @@ pub const RECEIVE_BUFFERS: u64 = 2 * PAGE;
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
 /// covers the rest of the name. Refused `TX_BUFFERS` (tx abbreviates transmit).
-pub const TRANSMIT_BUFFERS: u64 = RECEIVE_BUFFERS + RECEIVE_ENTRIES as u64 * BUFFER_SIZE;
+pub const TRANSMIT_BUFFERS: u64 = RECEIVE_BUFFERS + RECEIVE_ENTRIES as u64 * BUFFER_BYTES;
 /// The region's size in bytes.
-pub const BYTES: u64 = TRANSMIT_BUFFERS + TRANSMIT_ENTRIES as u64 * BUFFER_SIZE;
+pub const BYTES: u64 = TRANSMIT_BUFFERS + TRANSMIT_ENTRIES as u64 * BUFFER_BYTES;
 /// The region's size in pages.
 pub const PAGES: u64 = BYTES.div_ceil(PAGE);
 
@@ -33,14 +33,14 @@ pub const PAGES: u64 = BYTES.div_ceil(PAGE);
 /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
 /// covers the rest of the name. Refused `rx_buffer` (rx abbreviates receive).
 pub const fn receive_buffer(index: u16) -> u64 {
-    RECEIVE_BUFFERS + (index % RECEIVE_ENTRIES) as u64 * BUFFER_SIZE
+    RECEIVE_BUFFERS + (index % RECEIVE_ENTRIES) as u64 * BUFFER_BYTES
 }
 /// Transmit buffer `index`'s offset, reduced the same way.
 ///
 /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
 /// covers the rest of the name. Refused `tx_buffer` (tx abbreviates transmit).
 pub const fn transmit_buffer(index: u16) -> u64 {
-    TRANSMIT_BUFFERS + (index % TRANSMIT_ENTRIES) as u64 * BUFFER_SIZE
+    TRANSMIT_BUFFERS + (index % TRANSMIT_ENTRIES) as u64 * BUFFER_BYTES
 }
 /// Receive descriptor `index`'s offset.
 ///
