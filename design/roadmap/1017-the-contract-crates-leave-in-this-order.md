@@ -86,11 +86,7 @@ with no tag, so milestone 818 tags it first. A crate whose interface still break
 break a new tagged release.
 
 The rule: a crate leaves when every crate it links (normal, build and dev) has left or leaves with
-it, and no file in it names a nife path. Within a layer, the cheapest coordination goes first. The
-22 are in this order because more than one repository consumes each of them, so each gets a
-repository of its own; a crate only one package uses leaves inside that package's repository, in the same move
-(§316 (a program package leaves as one repository, with the crates only it uses), ruled 2026-11-04
-UTC). Ruled 2026-11-01 (UTC): each
+it, and no file in it names a nife path. Within a layer, the cheapest coordination goes first. Ruled 2026-11-01 (UTC): each
 package leaves as soon as the shared crates it links have left, in the order `disk-tools`, `process-tools`,
 `core-tools`, replacing milestone 756's single cut, and `block_roster` stays the first crate a
 consumer outside nife reads. Ruled the same day: one repository per contract crate, created when
@@ -108,8 +104,8 @@ order too (ruled 2026-11-01 UTC); only the offer waits.
 | 4, first package | `disk-tools` | leaves as soon as its 12 crates and `interfaces_note` have left; milestone 756's condition 4 has it carry the `INTERFACES` macro, and it never waits for `grant_plan` |
 | 5, leaves for `process-tools` | `byte_sink_contract`, `glob`, `program_argument_contract`, `domain_name_system` | leaves; `program_argument_contract` after the pair test moves to basalt (the proposal the cross-repository pair is tested where the pin is) |
 | 6 | `machine_statistics_contract`, `domain_name_resolution_contract`, `grant_plan`, then `capability_manifest_note` | `grant_plan` is the largest coordination cost of all 22 |
-| 7, second package | `process-tools` | leaves as soon as its shared crates have left, with `number_writer`, which only it links |
-| 8 | `calendar`, `environment_contract`, then `core-tools` | the last two crates `core-tools` reaches and the other two packages do not; the kernel links both, so each gets a repository of its own; the third package leaves as soon as they have |
+| 7, second package | `process-tools` | leaves once its shared crates have, taking `number_writer` |
+| 8 | `calendar`, `environment_contract`, then `core-tools` | the last two crates `core-tools` reaches; the kernel links both; the third package leaves as soon as they have |
 | 9, `redoxfs` | `subtree_scope`, `memory_region_heap`, then `redoxfs` as one repository | after the 10 contract crates it links; ruled 2026-11-01 (UTC) in the questions appendix; `talc` becomes a pinned upstream dependency (below) |
 
 `jh7110_entropy` stays the leaf pilot (milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic,

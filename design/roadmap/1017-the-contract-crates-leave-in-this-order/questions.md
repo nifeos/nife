@@ -47,9 +47,8 @@ program naming the macro by the new path would read as linking the old crate. Sl
 
 The split's rule for a program package is one repository per package, holding its programs and the
 crates only it uses (§316 (a program package leaves as one repository, with the crates only it
-uses)). For a crate published on its own, or one that more than one repository consumes, it is one
-repository per crate,
-on a shared workflow template (milestone 857 (crates released on their own, and proofs offered to
+uses)). A crate published on its own, or one that more than one repository consumes, gets one
+repository per crate. Each uses a shared workflow template (milestone 857 (crates released on their own, and proofs offered to
 the projects that already exist)). The 22 contract crates belong to four packages: `contracts`
 holds 17, `runtime` 2, `network` 2 and `fixtures` 1.
 

@@ -146,7 +146,7 @@ table generated at build time would still change for every program, and nife wou
 departed package to read its notes. A pinned table for `reboot` and `jig` no longer has a reason:
 the ruling binds no grant to a name. And while a row in nife holds `ps`'s manifest, a `ps` release
 that needs a new grant needs a nife commit, which is the coupling §316 (a program package leaves
-as one repository, with the crates only it uses) means to end.
+as one repository) means to end.
 
 The trade-offs, plainly. It adds a note type, a page format and a wire bit, all one-way. It
 moves the decision about what a base tool may hold from nife's code review to the image's approval

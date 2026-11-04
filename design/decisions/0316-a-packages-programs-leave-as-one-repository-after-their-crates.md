@@ -15,14 +15,14 @@ repository.
 
 A crate gets a repository of its own on one of two grounds, and on no other:
 
-- It would be published to crates.io on its own merits (milestone 857 (crates released on their
+- It would publish to crates.io on its own merits (milestone 857 (crates released on their
   own, and proofs offered to the projects that already exist)).
 - More than one repository consumes it. The contract crates of milestone 1017 (the contract crates
   leave in this order) are the case: the kernel and every package link them.
 
 Any other crate stays in its package's repository. `number_writer`, which only `process-tools`
-links, leaves inside `nifeos/process-tools`. A crate that later meets one of the two grounds is
-promoted to a repository of its own, and that promotion is a split like any other.
+links, leaves inside `nifeos/process-tools`. A crate that later meets one of the two grounds moves
+to a repository of its own, and that promotion is a split like any other.
 
 The order follows from the rule. A crate with a repository of its own leaves before every package
 that links it, bottom-up, and the package repository depends on it by version. A crate only one
@@ -35,9 +35,8 @@ The package is the unit of install: what releases together, and it may hold seve
 repository is the unit of source, with one purpose. A program package's own source, its programs
 and the crates only it uses, is one purpose and one repository. The crates it shares with other
 repositories, and the crates published on their own, are each another purpose, so the package
-draws on several repositories at install. §235 (the OS is built and updated from packages, and its
-source divides by purpose) says how big a repository is; this section says where a program
-package's crates go.
+draws on several repositories at install. §235 (its source divides by purpose) says how big a
+repository is; this section says where a program package's crates go.
 
 The first cut applies the rule to three packages. `process-tools` leaves as
 `nifeos/process-tools`, `core-tools` as `nifeos/core-tools`, and `disk-tools` as
@@ -54,9 +53,10 @@ repository exists; this section rules the destination and does not create one.
   question sits. The ruling refuses one repository holding all three first-cut packages, and it
   refuses the divisions with it. A division comes from the dependency graph, not from a purpose, so
   it does not size a repository.
-- A repository for every crate a program links. A crate that no stranger would take on its own and
-  that one package alone consumes gains nothing from a repository, a template and a release line of
-  its own, and it costs a second pull request for every change that spans it and its programs.
+- A repository for every crate a program links. Take a crate that no stranger would take on its
+  own and that one package alone consumes. It gains nothing from a repository, a template and a
+  release line of its own, and it costs a second pull request for every change that spans it and
+  its programs.
 
 ## The names
 

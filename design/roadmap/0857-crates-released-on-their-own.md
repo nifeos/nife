@@ -36,14 +36,11 @@ session, relayed in comments on pull request #1806. Each fork below keeps its op
 record of what was weighed, and its heading says how it was ruled.
 
 - Fork 1, replacing the recommendation: one repository per crate under `nifeos`, for a crate that
-  gets a repository of its own. Ruled 2026-11-04 (UTC): a crate gets one only when it would publish
-  on its own merits or more than one repository consumes it, and any other crate leaves inside its
-  package's repository (§316 (a program package leaves as one repository, with the crates only it
-  uses)). Ruled 2026-11-01 (UTC), replacing creation at first publication: a crate gets its
-  repository when it moves, and each creation still waits for calef's approval. Publication is a
-  later step that only some crates take. Until it moves, a crate stays in this tree. Milestone 610
-  (the interface's stability is measured weekly)'s co-change column informs how packages group and
-  decides no move (§235 (the OS is built and updated from packages)). Every crate repository uses one shared
+  would publish on its own or that several repositories consume. Any other crate leaves in its
+  package's repository (§316 (a package's own crates), 2026-11-04 UTC). Ruled 2026-11-01 (UTC),
+  replacing creation at first publication: a crate gets its repository when it moves, and each
+  creation still waits for calef's approval. Publication is a later step that only some crates
+  take. Until it moves, a crate stays in this tree. Every crate repository uses one shared
   CI template (Kani, lint, release) through reusable workflows. calef: *"I lean one repo per
   crate."* then *"Yes a"*.
 - Fork 2: a crate that has left is consumed as a crates.io release pinned with its checksum in
@@ -98,8 +95,7 @@ No per-crate milestone is minted by this block. They come from the reviews below
   journeys, naming, notes) moves to one repository, `nifeos.org`, which holds the site published
   at nifeos.org. The kernel, programs, tooling and crates all leave, and a crate consumable
   outside nife shows good crate boundaries. What leaves references nothing back here, so moves go
-  bottom-up: the crates a program links leave before it or with it, and a crate only one package
-  uses leaves with that package, in its repository (ruled 2026-11-04 UTC). The kernel leaves last among
+  bottom-up: the crates a program links leave before it or with it. The kernel leaves last among
   the code, to `nife-kernel` (provisional): like Linux, a named part of the system, while the
   project name stays with the whole. Publish-ours
   crates publish; contract crates move and carry versions whether or not they publish. Milestone

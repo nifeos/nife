@@ -156,7 +156,7 @@ end state has to rebuild them wherever the base's gate goes.
 it is what releases together, and it may hold several programs. A repository is the unit of source:
 it may be finer than a package, and one package may be assembled from several single-purpose
 repositories. A program package's own source, its programs and the crates only it uses, is one
-purpose and leaves as one repository; a crate published on its own or consumed by more than one
+purpose and leaves as one repository. A crate published on its own or consumed by more than one
 repository is another purpose, with a repository of its own (§316 (a program package leaves as one
 repository, with the crates only it uses), ruled 2026-11-04 UTC). One repository per division is
 refused: a division comes from the dependency graph,
