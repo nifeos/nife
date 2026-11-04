@@ -264,25 +264,25 @@ exclude_re = [
     # Where a function's survivor set also holds a site the disjointness claim does not cover, the
     # site's own row stays and says so; only the all-disjoint functions are excluded here.
     #
-    # Command::word composes the start bit (31), the hold register (29) and the index masked to
+    # Command::register_word composes the start bit (31), the hold register (29) and the index masked to
     # bits 5:0: COMMAND_WORD_FIELDS_DO_NOT_OVERLAP (command.rs).
-    '^crates/designware_mobile_storage/src/command\.rs:\d+:\d+: replace \| with \^ in Command::word$',
+    '^crates/designware_mobile_storage/src/command\.rs:\d+:\d+: replace \| with \^ in Command::register_word$',
     # reset clears the three enables, disjoint per
     # DIRECT_MEMORY_ACCESS_ENABLES_DO_NOT_OVERLAP (registers.rs); the excluded
     # `ctrl | CONTROL_ALL_RESET` write's mutant, which
     # reset_clears_the_enables_keeps_other_bits_and_asks_for_all_three_resets killed, is covered by
     # the same exclusion.
-    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::reset$',
+    '^crates/designware_mobile_storage/src/host_controller\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::reset$',
     # set_clock writes the card clock enable (0) and low power (16), disjoint per
     # CLOCK_ENABLES_DO_NOT_OVERLAP (registers.rs).
-    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::set_clock$',
+    '^crates/designware_mobile_storage/src/host_controller\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::set_clock$',
     # finish waits for DTO with ACD, and the data-error group with the data-timeout group, disjoint
     # per TRANSFER_OVER_BITS_DO_NOT_OVERLAP and
     # DATA_ERROR_AND_TIMEOUT_BITS_DO_NOT_OVERLAP (registers.rs).
-    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::finish$',
+    '^crates/designware_mobile_storage/src/host_controller\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::finish$',
     # wait_queue tests the data-error group against the data-timeout group, disjoint per
     # DATA_ERROR_AND_TIMEOUT_BITS_DO_NOT_OVERLAP (registers.rs).
-    '^crates/designware_mobile_storage/src/host\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::wait_queue$',
+    '^crates/designware_mobile_storage/src/host_controller\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::wait_queue$',
     # descriptor writes OWN (31) with CH (4), disjoint per
     # DESCRIPTOR_OWN_AND_CHAIN_BITS_DO_NOT_OVERLAP (internal_direct_memory_access.rs).
     '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in descriptor$',
@@ -291,11 +291,11 @@ exclude_re = [
     # BUS_MODE_BITS_DO_NOT_OVERLAP (registers.rs); the `ctrl | CONTROL_USE_INTERNAL_DMAC` write's
     # mutant, which one_transfer_arms_and_stops_the_internal_direct_memory_access_register_by_register
     # killed, is covered by the same exclusion.
-    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::internal_direct_memory_access_start$',
+    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::internal_direct_memory_access_start$',
     # internal_direct_memory_access_wait tests the same two disjoint pairs as finish, per
     # TRANSFER_OVER_BITS_DO_NOT_OVERLAP and DATA_ERROR_AND_TIMEOUT_BITS_DO_NOT_OVERLAP
     # (registers.rs).
-    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in Host<R, D>::internal_direct_memory_access_wait$',
+    '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::internal_direct_memory_access_wait$',
     # fifoth_for_pio composes the burst code (bit 29), the receive watermark (bits 27:16) and the
     # transmit watermark (bits 11:0), disjoint per
     # POLLED_QUEUE_THRESHOLD_FIELDS_DO_NOT_OVERLAP (registers.rs).
@@ -343,39 +343,39 @@ exclude_re = [
     "^crates/designware_ethernet/src/jh7110\\.rs:\\d+:\\d+: replace \\| with \\^$",
     # RGMII_RXD_DS_MASK's two fields are asserted disjoint by
     # RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP, beside the mask.
-    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^$",
+    "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^$",
     # RSF against the threshold field, and the two flow-control threshold fields against each
     # other, are asserted disjoint by RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP, beside
     # receive_queue_mode.
-    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_queue_mode$",
+    "^crates/designware_ethernet/src/network_interface_controller\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_queue_mode$",
     # TSF against the threshold field, asserted disjoint by
     # TRANSMIT_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP, beside transmit_queue_mode.
-    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_queue_mode$",
+    "^crates/designware_ethernet/src/network_interface_controller\\.rs:\\d+:\\d+: replace \\| with \\^ in transmit_queue_mode$",
     # CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP, beside configure, asserts its fields pairwise
     # disjoint; field values reach their `|` through their own mask or a word the line above
     # cleared, and the configure tests hold the rest (they kill the swaps at the two words read
     # unmasked).
-    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
+    "^crates/designware_ethernet/src/network_interface_controller\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
     # MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP, beside mac_configuration, asserts the cleared
     # speed, duplex and loopback bits and the final chain's five bits each pairwise disjoint; the
     # chain's first swap toggles `conf` itself and the_mac_word_from_zero_and_from_all_ones kills
     # it.
-    "^crates/designware_ethernet/src/controller\\.rs:\\d+:\\d+: replace \\| with \\^ in mac_configuration$",
-    # RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP, beside configure, asserts the delay and drive
-    # fields pairwise disjoint.
-    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
+    "^crates/designware_ethernet/src/network_interface_controller\\.rs:\\d+:\\d+: replace \\| with \\^ in mac_configuration$",
+    # REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP,
+    # beside configure, asserts the delay and drive fields pairwise disjoint.
+    "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in configure$",
     # ANLPAR_T4 and ANLPAR_TX are asserted disjoint by
     # PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP, beside link_from_registers.
-    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace \\| with \\^ in link_from_registers$",
-    # The transmit delay select is zero (RGMII_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP asserts
-    # it), so those two shifts are the identity; the same entry covers the function's
+    "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in link_from_registers$",
+    # The transmit delay select is zero (REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP
+    # asserts it), so those two shifts are the identity; the same entry covers the function's
     # shift-by-nonzero sites, which
-    # motorcomm::tests::configure_replaces_the_delay_and_drive_fields_and_nothing_else kills.
-    "^crates/designware_ethernet/src/motorcomm\\.rs:\\d+:\\d+: replace << with >> in configure$",
+    # motorcomm_physical_layer_device::tests::configure_replaces_the_delay_and_drive_fields_and_nothing_else kills.
+    "^crates/designware_ethernet/src/motorcomm_physical_layer_device\\.rs:\\d+:\\d+: replace << with >> in configure$",
     # The command word's five field masks are asserted pairwise disjoint by
-    # COMMAND_WORD_FIELDS_DO_NOT_OVERLAP, beside command; every operand enters through its own
+    # COMMAND_WORD_FIELDS_DO_NOT_OVERLAP, beside command_word; every operand enters through its own
     # field's mask.
-    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in command$",
+    "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in command_word$",
     # The high half is shifted above the low half's whole width;
     # PHYSICAL_LAYER_DEVICE_ID_HALVES_DO_NOT_OVERLAP, beside the function, asserts it for the
     # widest values either can hold.
@@ -387,7 +387,7 @@ exclude_re = [
     "^crates/designware_ethernet/src/management_data_input_output\\.rs:\\d+:\\d+: replace \\| with \\^ in restart_autonegotiation$",
     # The payload's set bit and its six-bit counter are asserted disjoint by
     # PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP, beside probe_frame.
-    "^crates/designware_ethernet/src/coherence\\.rs:\\d+:\\d+: replace \\| with \\^ in probe_frame$",
+    "^crates/designware_ethernet/src/cache_coherence\\.rs:\\d+:\\d+: replace \\| with \\^ in probe_frame$",
     # OWN, IC and BUF1V are asserted pairwise disjoint by
     # RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP, beside the function.
     "^crates/designware_ethernet/src/descriptor\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_descriptor_words$",
@@ -443,25 +443,25 @@ exclude_re = [
     "^crates/extensible_host_controller_interface/src/port\\.rs:\\d+:\\d+: replace << with >>$",
     "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace << with >>$",
     # The const-level `|` survivors: CHANGES and PRESERVE (port.rs), per
-    # THE_PORT_CHANGE_BITS_SHARE_NO_BIT and THE_PRESERVED_FIELDS_SHARE_NO_BIT, beside them.
+    # PORT_CHANGE_BITS_DO_NOT_OVERLAP and PRESERVED_FIELDS_DO_NOT_OVERLAP, beside them.
     "^crates/extensible_host_controller_interface/src/port\\.rs:\\d+:\\d+: replace \\| with \\^$",
     # LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES's three bits (0, 4, 13:15), per
-    # THE_LEGACY_ENABLE_BITS_SHARE_NO_BIT, beside the constant; the killed mutants the entry
+    # LEGACY_ENABLE_BITS_DO_NOT_OVERLAP, beside the constant; the killed mutants the entry
     # sweeps are pinned by the_register_bits_are_where_the_specification_puts_them, which stays.
     "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace \\| with \\^$",
     # The scratchpad count's two fields (5:9 against 0:4), per
-    # THE_SCRATCHPAD_FIELDS_SHARE_NO_BIT, beside the impl.
+    # SCRATCHPAD_FIELDS_DO_NOT_OVERLAP, beside the impl.
     "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace \\| with \\^ in Capabilities::decode$",
     # The event pointer's halves (dword 0 below, dword 1 above bit 32), per
-    # THE_EVENT_POINTER_HALVES_SHARE_NO_BIT, beside the impl.
+    # EVENT_POINTER_HALVES_DO_NOT_OVERLAP, beside the impl.
     "^crates/extensible_host_controller_interface/src/event\\.rs:\\d+:\\d+: replace \\| with \\^ in Event::decode$",
     # The context words: slot's two dword-0 fields (20:23 against 27:31), per
-    # THE_SLOT_CONTEXT_FIELDS_SHARE_NO_BIT, and endpoint's dword-1 fields and dword-4 halves, per
-    # THE_ENDPOINT_CONTEXT_FIELDS_SHARE_NO_BIT, beside their functions.
+    # SLOT_CONTEXT_FIELDS_DO_NOT_OVERLAP, and endpoint's dword-1 fields and dword-4 halves, per
+    # ENDPOINT_CONTEXT_FIELDS_DO_NOT_OVERLAP, beside their functions.
     "^crates/extensible_host_controller_interface/src/context\\.rs:\\d+:\\d+: replace \\| with \\^ in slot$",
     "^crates/extensible_host_controller_interface/src/context\\.rs:\\d+:\\d+: replace \\| with \\^ in endpoint$",
     # The transfer control words: the type field at 10:15 against the flag bits and the fields at
-    # 16 and above, per THE_TRANSFER_CONTROL_FIELDS_SHARE_NO_BIT, beside control().
+    # 16 and above, per TRANSFER_CONTROL_FIELDS_DO_NOT_OVERLAP, beside control().
     "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::link$",
     "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::disable_slot$",
     "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::address_device$",
@@ -474,7 +474,7 @@ exclude_re = [
     "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::status$",
     "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::normal$",
     # The cycle stamp, whose mask clears bit 0 and whose bool cannot hold more, per
-    # THE_CYCLE_BIT_AND_CLEARED_WORD_SHARE_NO_BIT, beside control().
+    # CYCLE_BIT_AND_CLEARED_WORD_DO_NOT_OVERLAP, beside control().
     "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::with_cycle$",
     # grant_plan: the rights bits (five single bits), per THE_RIGHTS_BITS_SHARE_NO_BIT, beside
     # WordGrant::rights, whose fn-local `1 << 0` constants are the shift survivor.

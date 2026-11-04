@@ -186,7 +186,7 @@ slot. Every new name here is provisional.
   from the loader) and 697 (the trust root leaves the kernel binary) are milestone 607 item 6,
   launched in parallel. They end the kernel's dependence on the base, and the package goes when
   they land. The reasoning and the prior art are in
-  `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md`.
+  `design/roadmap/1006-what-an-os-update-writes-into-a-slot.md`.
 - **Outstanding.** After part 4, part 5 is the device updater, steps 2 and 4 above, writing
   part 4's version 2 slot. Part 7 is the base-update grant under the approval file of milestone 911
   (scripted installs grant only what the owner's approval file allows), ruled 2026-11-01 UTC. The
@@ -215,8 +215,8 @@ slot. Every new name here is provisional.
   bits and prints a fixed reason phrase per check. The updater writes only version 2. When
   the chooser refuses both slots, it prints each slot's reason and then boots its own embedded
   image, as milestone 525 (a bad upgrade cannot brick the machine) rules for two bad slots. The
-  proposal has the full list.
-- **Proposed.** `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md` holds it (provisional milestone, ruled 2026-11-01 UTC): the updater replaces the chooser
+  milestone has the full list.
+- **Milestone 1006.** Milestone 1006 (what an OS update writes into a boot slot) holds it, ruled 2026-11-01 (UTC). The updater replaces the chooser
   file on the EFI system partition before it writes the first version 2 slot, and only if the new
   chooser reads version 2. It writes the new chooser under a second name, verifies it by digest,
   then renames it over the old name; the rename is the commit. The chooser is also the install-time

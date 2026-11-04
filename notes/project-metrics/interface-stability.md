@@ -11,7 +11,7 @@ Sorted by breaking changes in the last four weeks (2026W42 to 2026W45), then by 
 | `filesystem_contract` | 263 | 26 | 305 | 480 | 145 | 129 (89%) |
 | `grant_plan` | 164 | 231 | 312 | 1186 | 260 | 201 (77%) |
 | `installed_programs` | 72 | 117 | 78 | 175 | 44 | 34 (77%) |
-| `capability_manifest_note` | 51 | 74 | 51 | 132 | 50 | 34 (68%) |
+| `capability_manifest_note` | 51 | 74 | 51 | 132 | 51 | 35 (69%) |
 | `hot_swap_contract` | 26 | 2 | 38 | 126 | 73 | 66 (90%) |
 | `supervision_contract` | 21 | 1 | 21 | 1 | 10 | 10 (100%) |
 | `capability_plan` | 18 | 15 | 18 | 15 | 15 | 14 (93%) |
@@ -20,9 +20,9 @@ Sorted by breaking changes in the last four weeks (2026W42 to 2026W45), then by 
 | `abi` | 10 | 28 | 47 | 192 | 147 | 134 (91%) |
 | `login_contract` | 10 | 2 | 32 | 93 | 50 | 48 (96%) |
 | `line_editor` | 10 | 27 | 22 | 145 | 66 | 55 (83%) |
-| `compositor` | 10 | 3 | 21 | 101 | 47 | 39 (83%) |
+| `compositor` | 10 | 3 | 21 | 101 | 50 | 42 (84%) |
 | `credential_contract` | 9 | 6 | 39 | 73 | 49 | 41 (84%) |
-| `graphics_contract` | 8 | 0 | 19 | 33 | 36 | 35 (97%) |
+| `graphics_contract` | 8 | 0 | 19 | 33 | 38 | 37 (97%) |
 | `environment_contract` | 7 | 7 | 8 | 51 | 23 | 21 (91%) |
 | `package_archive` | 6 | 17 | 20 | 130 | 37 | 28 (76%) |
 | `clock_contract` | 6 | 8 | 11 | 62 | 46 | 42 (91%) |
@@ -31,17 +31,17 @@ Sorted by breaking changes in the last four weeks (2026W42 to 2026W45), then by 
 | `current_cpu_contract` | 4 | 3 | 6 | 20 | 26 | 14 (54%) |
 | `nifefs` | 3 | 1 | 10 | 42 | 57 | 44 (77%) |
 | `std_runtime_contract` | 3 | 6 | 4 | 29 | 28 | 25 (89%) |
-| `boot_slot` | 3 | 3 | 3 | 55 | 22 | 17 (77%) |
+| `boot_slot` | 3 | 3 | 3 | 55 | 25 | 19 (76%) |
 | `socket_contract` | 2 | 20 | 21 | 82 | 51 | 45 (88%) |
 | `byte_sink_contract` | 2 | 2 | 8 | 50 | 41 | 40 (98%) |
 | `entropy_contract` | 2 | 2 | 5 | 20 | 34 | 31 (91%) |
 | `address_space_map` | 1 | 3 | 1 | 45 | 0 | 0 |
-| `block_roster` | 1 | 2 | 1 | 2 | 6 | 4 (67%) |
+| `block_roster` | 1 | 2 | 1 | 2 | 7 | 5 (71%) |
 | `capability_witness_contract` | 1 | 4 | 1 | 14 | 23 | 19 (83%) |
 | `program_argument_contract` | 1 | 1 | 1 | 30 | 0 | 0 |
 | `supervision_protocol` | 0 | 0 | 22 | 70 | 65 | 56 (86%) |
 | `elf` | 0 | 0 | 3 | 82 | 53 | 42 (79%) |
-| `measured_boot` | 0 | 35 | 2 | 100 | 34 | 25 (74%) |
+| `measured_boot` | 0 | 35 | 2 | 100 | 35 | 26 (74%) |
 | `user_mode_heap` | 0 | 0 | 1 | 11 | 0 | 0 |
 | `allocation_cache` | 0 | 2 | 0 | 20 | 0 | 0 |
 | `glob` | 0 | 2 | 0 | 2 | 2 | 2 (100%) |
@@ -49,7 +49,7 @@ Sorted by breaking changes in the last four weeks (2026W42 to 2026W45), then by 
 
 ## What broke in 2026W45
 
-Read at `4eedc6fc5d1e` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
+Read at `dd8cfde00ad5` against the week before. Each line is one removed or changed public item, quoted as it stood that week; a crate rename is one line for the whole crate.
 
 > - `capability_manifest_note`: removed `Declared`
 > - `capability_manifest_note`: removed `Declared: impl Clone`
@@ -103,16 +103,16 @@ Every package in `packages/`, 2026W29 to 2026W45, by the method of the contracts
 
 | package | commits | crossing | touching another | crossing, mass excluded | most often with |
 |---|---:|---:|---:|---:|---|
-| `kernel` | 2038 | 1114 (55%) | 912 (45%) | 50% | `contracts` (348) |
-| `contracts` | 1330 | 861 (65%) | 790 (59%) | 59% | `kernel` (348) |
-| `host-tools` | 918 | 641 (70%) | 534 (58%) | 65% | `kernel` (248) |
-| `system-tests` | 536 | 315 (59%) | 305 (57%) | 52% | `kernel` (129) |
-| `init` | 500 | 424 (85%) | 417 (83%) | 80% | `contracts` (150) |
+| `kernel` | 2051 | 1122 (55%) | 920 (45%) | 50% | `contracts` (349) |
+| `contracts` | 1342 | 869 (65%) | 797 (59%) | 59% | `kernel` (349) |
+| `host-tools` | 922 | 644 (70%) | 534 (58%) | 65% | `kernel` (248) |
+| `system-tests` | 537 | 316 (59%) | 306 (57%) | 52% | `kernel` (129) |
+| `init` | 503 | 427 (85%) | 420 (83%) | 80% | `contracts` (151) |
 | `fixtures` | 423 | 339 (80%) | 326 (77%) | 71% | `contracts` (90) |
+| `drivers` | 322 | 224 (70%) | 204 (63%) | 62% | `kernel` (85) |
 | `runtime` | 312 | 258 (83%) | 235 (75%) | 75% | `kernel` (64) |
-| `drivers` | 298 | 207 (69%) | 189 (63%) | 62% | `kernel` (80) |
-| `boot` | 250 | 173 (69%) | 156 (62%) | 59% | `host-tools` (53) |
-| `display` | 235 | 164 (70%) | 153 (65%) | 59% | `kernel` (44) |
+| `boot` | 252 | 175 (69%) | 158 (63%) | 59% | `host-tools` (53) |
+| `display` | 240 | 169 (70%) | 157 (65%) | 60% | `kernel` (44) |
 | `swish` | 172 | 154 (90%) | 149 (87%) | 85% | `contracts` (66) |
 | `redoxfs` | 136 | 99 (73%) | 93 (68%) | 54% | `contracts` (20) |
 | `network` | 126 | 105 (83%) | 102 (81%) | 75% | `init` (28) |
@@ -138,11 +138,11 @@ Each crate a per-crate release milestone names (`helpers/crate_release.py`), on 
 
 | crate | commits | crossing | touching another | crossing, mass excluded |
 |---|---:|---:|---:|---:|
-| `file_allocation_table` | 104 | 34 (33%) | 29 (28%) | 23% |
-| `designware_mobile_storage` | 85 | 46 (54%) | 41 (48%) | 51% |
-| `e1000e` | 50 | 31 (62%) | 29 (58%) | 54% |
-| `designware_ethernet` | 50 | 33 (66%) | 28 (56%) | 59% |
-| `extensible_host_controller_interface` | 35 | 26 (74%) | 25 (71%) | 61% |
+| `file_allocation_table` | 106 | 35 (33%) | 30 (28%) | 24% |
+| `designware_mobile_storage` | 92 | 51 (55%) | 46 (50%) | 52% |
+| `e1000e` | 52 | 33 (63%) | 31 (60%) | 56% |
+| `extensible_host_controller_interface` | 36 | 27 (75%) | 25 (69%) | 61% |
+| `designware_ethernet` | 65 | 46 (71%) | 39 (60%) | 65% |
 | `jh7110_clock_and_reset` | 58 | 45 (78%) | 43 (74%) | 68% |
-| `non_volatile_memory_express` | 62 | 55 (89%) | 52 (84%) | 82% |
+| `non_volatile_memory_express` | 65 | 56 (86%) | 53 (82%) | 81% |
 | `jh7110_entropy` | 0 | 0 (0%) | 0 (0%) | none |
