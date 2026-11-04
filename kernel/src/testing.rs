@@ -782,6 +782,16 @@ pub fn wait_on_every_core(mut done: impl FnMut() -> bool) -> Result<(), EveryCor
     }
 }
 
+/// The word that opens the message of every fuzz-driver failure that is a wait running out its
+/// [`EveryCoreTickBudget`] and nothing else. `helpers/continuous-fuzz.sh` greps a window's log for
+/// it and files the window as `held-budget-expired`, apart from a mismatch or a crash; its selftest
+/// reads this line, so the two cannot drift. A driver puts it first in the message of a wait that
+/// ran out, and in no other message.
+///
+/// Name: provisional, minted 2026-11-04 (UTC) by lane/fuzz-budget-expired-class.
+#[cfg(any(test, feature = "system_tests"))]
+pub const BUDGET_EXPIRED_MARKER: &str = "budget-expired:";
+
 /// Seconds of ticks every online core must take before [`wait_on_every_core`] gives up.
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane/fuzz-deadlines-count-guest-progress.

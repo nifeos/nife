@@ -33,7 +33,7 @@ use crate::capability_object::{
     rendezvous_capability_badged,
 };
 use crate::sched::{self, RendezvousId, current_capability, delete_current_capability};
-use crate::testing::{EveryCoreTickBudget, wait_on_every_core};
+use crate::testing::{BUDGET_EXPIRED_MARKER, EveryCoreTickBudget, wait_on_every_core};
 use crate::thread::{State, ThreadId, Wait, WaitRole};
 
 /// [`wait_on_every_core`] for a site whose message has nothing to add to it. A fuzzer may run on
@@ -947,7 +947,7 @@ impl Conductor {
                 let call = read_call(self, x);
                 escape!(
                     self,
-                    "fuzzer {x} never came back: syscall {} words {:?} rets {:?}, now {:?}, after {budget}",
+                    "{BUDGET_EXPIRED_MARKER} fuzzer {x} never came back: syscall {} words {:?} rets {:?}, now {:?}, after {budget}",
                     call.number,
                     call.words,
                     call.rets,
@@ -1261,7 +1261,9 @@ fn park_and_take_baselines(c: &mut Conductor) {
     // stack, report) is what the page oracle admits forever after.
     for x in 0..FUZZERS {
         if let Err(budget) = wait_on_every_core(|| parked_on_go(c, x)) {
-            panic!("fuzzer {x} never parked on its conductor channel: {budget}");
+            panic!(
+                "{BUDGET_EXPIRED_MARKER} fuzzer {x} never parked on its conductor channel: {budget}"
+            );
         }
         // A failure here is not yet understood; the `BUGS` of milestone 779 (fuzz the surface a
         // confined process can reach)'s block
@@ -1312,7 +1314,7 @@ fn wind_down(seed: u64, conductor_region: u64, own: [u64; 2]) {
             let tid = f.tid;
             assert!(
                 wait_for(|| !sched::is_thread_present(tid)),
-                "fuzzer {x} did not exit"
+                "{BUDGET_EXPIRED_MARKER} fuzzer {x} did not exit"
             );
         }
     }
@@ -1328,7 +1330,7 @@ fn wind_down(seed: u64, conductor_region: u64, own: [u64; 2]) {
         if crate::memory_region::region_bounds(r).is_some() {
             assert!(
                 wait_for(|| sched::reclaim_region(r).is_ok()),
-                "seed {seed:#x}: child region {r:#x} did not reclaim"
+                "{BUDGET_EXPIRED_MARKER} seed {seed:#x}: child region {r:#x} did not reclaim"
             );
         }
     }
@@ -1336,7 +1338,7 @@ fn wind_down(seed: u64, conductor_region: u64, own: [u64; 2]) {
         if crate::memory_region::region_bounds(r).is_some() {
             assert!(
                 wait_for(|| sched::reclaim_region(r).is_ok()),
-                "seed {seed:#x}: region {r:#x} did not reclaim"
+                "{BUDGET_EXPIRED_MARKER} seed {seed:#x}: region {r:#x} did not reclaim"
             );
         }
     }
