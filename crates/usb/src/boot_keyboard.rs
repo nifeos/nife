@@ -21,29 +21,8 @@
 //!   Linux-syscall-note). That header is an ABI: its numbers are the interface itself, and the
 //!   crate takes the numbers and the names, no text.
 //!
-//! Most names match on their face (`F1` is `KEY_F1`, `Tab` is `KEY_TAB`). Where they do not, the
-//! Usage Tables settle the match:
-//!
-//! - 0x2a `DELETE (Backspace)` is `KEY_BACKSPACE` and 0x4c `Delete Forward` is `KEY_DELETE`,
-//!   because the Usage Tables' footnotes 4 and 8 say the first backs up the cursor and the second
-//!   deletes in place.
-//! - 0xe3 and 0xe7, `Left GUI` and `Right GUI`, are `KEY_LEFTMETA` and `KEY_RIGHTMETA`, because
-//!   footnotes 33 and 34 list the Sun Meta key among the GUI keys.
-//!
-//! # nife's own choices
-//!
-//! The sources leave three things open, and nife chose them:
-//!
-//! - **Usage 0x32 (`Non-US # and ~`) is `KEY_BACKSLASH`.** The header has no key for it. The
-//!   usage sits at AT-101 position 42, beside Return, and footnote 5 gives `\` and `|` as its US
-//!   legends, so a US layout reads it as the backslash key.
-//! - **Usage 0x46 (`PrintScreen`) is `KEY_SYSRQ`.** The header's `KEY_PRINT` carries the comment
-//!   `AC Print`, the Consumer page's print command, not a keyboard key. System Request is the
-//!   function a PC keyboard puts on the Print Screen keycap.
-//! - **A usage named for two legends takes the first.** `Keypad Num Lock and Clear` (0x53) is
-//!   `KEY_NUMLOCK`, and `Keypad 1 and End` (0x59) through `Keypad . and Delete` (0x63) are the
-//!   keypad keys `KEY_KP1` through `KEY_KPDOT`. The second legend is what the key does in another
-//!   mode, which the keymap decides, and the Usage Tables give Clear its own usages (0x9c, 0xd8).
+//! [`evdev_code`] states the matches the Usage Tables settle and the three that are nife's own
+//! choices.
 //!
 //! # Cross-check
 //!
@@ -60,7 +39,7 @@ pub const ERROR_ROLL_OVER: u8 = 0x01;
 
 /// The evdev codes of the eight modifier keys, usages 0xe0 to 0xe7, in the bit order of byte 0:
 /// left control, shift, alt, GUI, then the right-hand four. The module documentation says where
-/// the numbers come from.
+/// the numbers come from, and [`evdev_code`] why the GUI keys are Meta.
 pub const MODIFIER_CODES: [u16; 8] = [
     29,  // 0xe0 LeftControl: KEY_LEFTCTRL
     42,  // 0xe1 LeftShift: KEY_LEFTSHIFT
@@ -113,8 +92,32 @@ impl BootReport {
 
 /// **Usage id to evdev code**, for the keyboard page's usages 0x04 through 0x63: the letters,
 /// digits, the main block, the function keys, the navigation cluster, the arrows and the keypad.
-/// `None` for anything else, including 0 (no key). The module documentation says where the table
-/// comes from.
+/// `None` for anything else, including 0 (no key). The module documentation names the table's
+/// two sources.
+///
+/// Most names match on their face (`F1` is `KEY_F1`, `Tab` is `KEY_TAB`). Where they do not, the
+/// Usage Tables settle the match:
+///
+/// - 0x2a `DELETE (Backspace)` is `KEY_BACKSPACE` and 0x4c `Delete Forward` is `KEY_DELETE`,
+///   because the Usage Tables' footnotes 4 and 8 say the first backs up the cursor and the second
+///   deletes in place.
+/// - 0xe3 and 0xe7, `Left GUI` and `Right GUI`, are `KEY_LEFTMETA` and `KEY_RIGHTMETA`, because
+///   footnotes 33 and 34 list the Sun Meta key among the GUI keys.
+///
+/// # nife's own choices
+///
+/// The sources leave three things open, and nife chose them:
+///
+/// - **Usage 0x32 (`Non-US # and ~`) is `KEY_BACKSLASH`.** The header has no key for it. The
+///   usage sits at AT-101 position 42, beside Return, and footnote 5 gives `\` and `|` as its US
+///   legends, so a US layout reads it as the backslash key.
+/// - **Usage 0x46 (`PrintScreen`) is `KEY_SYSRQ`.** The header's `KEY_PRINT` carries the comment
+///   `AC Print`, the Consumer page's print command, not a keyboard key. System Request is the
+///   function a PC keyboard puts on the Print Screen keycap.
+/// - **A usage named for two legends takes the first.** `Keypad Num Lock and Clear` (0x53) is
+///   `KEY_NUMLOCK`, and `Keypad 1 and End` (0x59) through `Keypad . and Delete` (0x63) are the
+///   keypad keys `KEY_KP1` through `KEY_KPDOT`. The second legend is what the key does in another
+///   mode, which the keymap decides, and the Usage Tables give Clear its own usages (0x9c, 0xd8).
 pub fn evdev_code(usage: u8) -> Option<u16> {
     /// Indexed by usage id from 0x04. Every usage in the range has a code.
     const TABLE: [u16; 0x60] = [
@@ -164,7 +167,7 @@ pub fn evdev_code(usage: u8) -> Option<u16> {
         26,  // 0x2f [ and {: KEY_LEFTBRACE
         27,  // 0x30 ] and }: KEY_RIGHTBRACE
         43,  // 0x31 \ and |: KEY_BACKSLASH
-        43,  // 0x32 Non-US # and ~: KEY_BACKSLASH
+        43,  // 0x32 Non-US # and ~: KEY_BACKSLASH, nife's choice
         39,  // 0x33 ; and :: KEY_SEMICOLON
         40,  // 0x34 ' and ": KEY_APOSTROPHE
         41,  // 0x35 Grave Accent and Tilde: KEY_GRAVE
@@ -184,7 +187,7 @@ pub fn evdev_code(usage: u8) -> Option<u16> {
         68,  // 0x43 F10: KEY_F10
         87,  // 0x44 F11: KEY_F11
         88,  // 0x45 F12: KEY_F12
-        99,  // 0x46 PrintScreen: KEY_SYSRQ
+        99,  // 0x46 PrintScreen: KEY_SYSRQ, nife's choice
         70,  // 0x47 Scroll Lock: KEY_SCROLLLOCK
         119, // 0x48 Pause: KEY_PAUSE
         110, // 0x49 Insert: KEY_INSERT
@@ -197,7 +200,7 @@ pub fn evdev_code(usage: u8) -> Option<u16> {
         105, // 0x50 LeftArrow: KEY_LEFT
         108, // 0x51 DownArrow: KEY_DOWN
         103, // 0x52 UpArrow: KEY_UP
-        69,  // 0x53 Keypad Num Lock and Clear: KEY_NUMLOCK
+        69,  // 0x53 Keypad Num Lock and Clear: KEY_NUMLOCK, nife's choice
         98,  // 0x54 Keypad /: KEY_KPSLASH
         55,  // 0x55 Keypad *: KEY_KPASTERISK
         74,  // 0x56 Keypad -: KEY_KPMINUS
