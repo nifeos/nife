@@ -123,7 +123,7 @@ that as blocked merges. Commit `91564e9` on `main` failed twice on 2026-07-30 in
 places, both timing-shaped and both green on a developer machine:
 
 - `kernel::smp::tests::every_secondary_runs_scheduled_work`: "secondary cores did not run scheduled
-  work in time" (`kernel/src/smp.rs:239`).
+  work in time" (`every_secondary_runs_scheduled_work` in `kernel/src/smp.rs`).
 - `kernel::user::tests::the_hardware_says_el0_cannot_read_the_kernels_memory`: "EL0 cannot read its
   own .text, so the check refuses everything and proves nothing" (`system_tests/src/user/tests.rs`).
 
