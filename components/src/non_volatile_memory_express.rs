@@ -228,7 +228,7 @@ impl Plane {
         let data_phys = self.handoff.data_plane_physical_address + TRANSFER_OFF + page * PAGE;
         let cid = self.next_cid();
         let namespace = Namespace {
-            size_bytes: self.handoff.size_bytes,
+            capacity_bytes: self.handoff.size_bytes,
             blocks_per_transfer: self.handoff.blocks_per_transfer,
         };
         let cmd = namespace

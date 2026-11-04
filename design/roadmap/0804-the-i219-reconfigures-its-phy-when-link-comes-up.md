@@ -29,10 +29,10 @@ FreeBSD reconfigures an SPT-class I219's PHY each time link comes up, in
 
 That is about 250 lines.
 
-Milestone 494 ported FreeBSD's attach and reset path into `crates/e1000e/src/pch/` and not this,
+Milestone 494 ported FreeBSD's attach and reset path into `crates/e1000e/src/platform_controller_hub/` and not this,
 because it runs from a link-change interrupt and this driver takes none: the kernel waits for
 `STATUS.LU` once at bring-up and hands the device to `net_stack`. The limitation is recorded in
-`crates/e1000e/src/pch/mod.rs`'s `BUGS`.
+`crates/e1000e/src/platform_controller_hub/mod.rs`'s `BUGS`.
 
 ## When to build it
 

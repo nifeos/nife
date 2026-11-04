@@ -135,7 +135,7 @@ Found with `grep` at `396187b0b`.
 - Three manifests depend on the crate (`components`, `fixtures`, `system_tests`), and six Rust
   files use it. With re-exports none changes. The doc tests already spell `timetable::parse`,
   `timetable::write_plan` and `timetable::Audit`.
-- No `lib.rs:NNNN` citation names this file. The comment-block baseline's row for `lib.rs:1` keys
+- No `lib.rs:NNNN` citation names this file. The comment-block baseline's row for `lib.rs` keys
   the crate docs (82 lines), which do not move. Five design files name the path, each for an item
   that stays.
 - `design/file-length-baseline.tsv` carries a row at 2,468. It must go in the same change.

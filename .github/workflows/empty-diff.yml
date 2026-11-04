@@ -62,7 +62,7 @@ concurrency:
 jobs:
   empty-diff:
     name: empty diff (a merge must change at least one file)
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 5
     steps:
       # Full history, no blobs: the check compares tree ids and lists commit subjects, and needs no

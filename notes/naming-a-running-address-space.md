@@ -15,16 +15,16 @@ True, at `origin/main` e1f3ddf8c:
 - `RETYPE_OBJ(ADDRESS_SPACE)` is the only mint (`user::user_address_space_create`,
   `kernel/src/user/address_space_registry.rs`), and the name lives in that file's `USER_SPACES`.
 - `CONFIGURE` deletes the caller's capability (`thread_control_block_configure`,
-  `kernel/src/syscall.rs:1366`) after `sched::configure_thread_control_block`
+  `kernel/src/syscall/thread_control_block.rs`) after `sched::configure_thread_control_block`
   (`sched/configure.rs`) has called `user::take_user_address_space`. The space
-  moves into `Thread::space: Option<AddressSpace>` (`kernel/src/thread.rs:468`), owned outright.
-  The comment at `syscall.rs:1363` says why the delete is there: "a second bind must not find it".
+  moves into `Thread::space: Option<AddressSpace>` (`kernel/src/thread.rs`), owned outright.
+  The comment above that delete in `thread_control_block_configure` says why the delete is there: "a second bind must not find it".
 - The thread's death frees the space: `reap_switched_out` takes `t.space` (`sched/switch.rs`) and drops
   it. Init's space is kernel-built and adopted the same way (`adopt_address_space`, `sched/thread_control_block.rs`);
   it never enters `USER_SPACES`.
 - A region's `DESTROY` runs `reap_region_objects` (`sched/region_reaping.rs`), then
   `user::reap_address_spaces_in_region`, which sees only unbound spaces, then unpins
-  (`reclaim_region`, `sched/region_reaping.rs`). `revoke::revoke_region` (`kernel/src/revoke.rs:847`) carries
+  (`reclaim_region`, `sched/region_reaping.rs`). `revoke::revoke_region` (`kernel/src/revoke.rs`) carries
   the running-root `BUGS` entry that milestone 765 (a destroyed region cannot free the root a running
   thread walks) closes.
 
@@ -173,7 +173,7 @@ its region. That is seL4's rule written as a count, since nife has no derivation
 
 **(c) Init's capability.** "The kernel grants init one at boot" is a slot convention, which is a
 wire format. seL4 fixes it at slot 3. nife's precedent is `abi::fault::FAULT_EP_SLOT`
-(`crates/abi/src/lib.rs:967`), or a grant through `Spawn::grants` in `boot_progenitor`
+(`crates/abi/src/fault.rs`), or a grant through `Spawn::grants` in `boot_progenitor`
 at a slot the progenitor is told. That needs naming and an architect's ruling; it
 is B's mechanism, applied to one program.
 
@@ -215,7 +215,7 @@ milestone 765's lane as a question, below.
    per thread. B: a slot per thread and a capability minted at every `START`. C: nothing.
 6. Reversibility. All three touch the `CONFIGURE` contract or a slot convention, so all are on the
    irreversible list. Who has acted on today's "consumed, dies with it" wording
-   (`crates/abi/src/lib.rs:848`): §105 and `notes/thread-spawn-fork.md`, which A keeps true only with
+   (`crates/abi/src/thread_control_block.rs`): §105 and `notes/thread-spawn-fork.md`, which A keeps true only with
    (b)'s explicit refusal. No program depends on a stale name staying stale.
 7. Equal cost. Yes, A. B is likely less work, which is an effort argument and the only one for it.
 

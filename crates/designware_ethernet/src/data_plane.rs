@@ -1,12 +1,12 @@
 //! **The data plane**: the regions and tails a driver supplies, and the receive and transmit loop
 //! over them.
 //!
-//! Name: provisional, decided by the maintainer; reversing costs one pull request.
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
 use super::*;
 
 /// The DMA region, as the data plane reads and writes it. Offsets are bytes from the region's
-/// base; an implementation bounds them. `e1000e::Region`'s shape.
+/// base; an implementation bounds them. `e1000e::DirectMemoryAccessRegion`'s shape.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub trait DirectMemoryAccessRegion {
@@ -22,6 +22,8 @@ pub trait DirectMemoryAccessRegion {
 
 /// The two tail pointers, and the ordering between them and the region: the only register writes
 /// the data plane makes.
+///
+/// Name: ratified 2026-11-03 (UTC), #3123.
 pub trait Tails {
     /// Write the receive tail pointer's low 32 bits ([`registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER`]).
     fn set_receive_tail(&mut self, address: u32);
@@ -38,7 +40,7 @@ pub trait Tails {
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransmitError {
-    /// Empty, or longer than [`MAXIMUM_FRAME`].
+    /// Empty, or longer than [`MAXIMUM_FRAME_BYTES`].
     BadLength,
     /// Every descriptor is still the device's.
     Full,
@@ -51,6 +53,8 @@ pub enum TransmitError {
 /// the one just behind [`DataPlane::receive_cursor`], is always held back, so that "the device has
 /// every descriptor" and "the device has none" are never the same tail address; each received frame
 /// reposts it and holds back the slot just consumed.
+///
+/// Name: ratified 2026-11-03 (UTC), #3123.
 #[derive(Debug)]
 pub struct DataPlane {
     physical_address: u64,
@@ -64,6 +68,8 @@ pub struct DataPlane {
 impl DataPlane {
     /// A data plane over the region at `data_plane_physical_address`. Call [`DataPlane::start`]
     /// first.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3123.
     pub fn new(data_plane_physical_address: u64) -> DataPlane {
         DataPlane {
             physical_address: data_plane_physical_address,
@@ -95,6 +101,8 @@ impl DataPlane {
     /// programmed both ring bases and lengths and started the DMA with both tails at the ring
     /// bases (nothing available); the receive tail write here is what hands the device its
     /// buffers.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3123.
     pub fn start(&mut self, region: &mut impl DirectMemoryAccessRegion, tails: &mut impl Tails) {
         for i in 0..RECEIVE_ENTRIES {
             let d = layout::receive_descriptor(i);
@@ -118,6 +126,8 @@ impl DataPlane {
     /// Take the next received frame into `out`, returning its length, or `None` when the device has
     /// written nothing new. A descriptor judged [`ReceiveVerdict::Drop`] is consumed and counted
     /// and the next tried, so one bad frame cannot stall the ring.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3123.
     pub fn receive(
         &mut self,
         region: &mut impl DirectMemoryAccessRegion,
@@ -163,13 +173,15 @@ impl DataPlane {
     }
 
     /// Queue `frame` for transmission.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3123.
     pub fn transmit(
         &mut self,
         region: &mut impl DirectMemoryAccessRegion,
         tails: &mut impl Tails,
         frame: &[u8],
     ) -> Result<(), TransmitError> {
-        if frame.is_empty() || frame.len() > MAXIMUM_FRAME {
+        if frame.is_empty() || frame.len() > MAXIMUM_FRAME_BYTES {
             return Err(TransmitError::BadLength);
         }
         self.reclaim(region);
@@ -193,6 +205,8 @@ impl DataPlane {
     }
 
     /// Is there a free transmit descriptor right now? Reclaims first.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3123.
     pub fn can_transmit(&mut self, region: &mut impl DirectMemoryAccessRegion) -> bool {
         self.reclaim(region);
         (self.transmit_next + 1) % TRANSMIT_ENTRIES != self.transmit_clean
@@ -204,7 +218,7 @@ impl DataPlane {
             let descriptor_word_3 = (region
                 .read_u64(layout::transmit_descriptor(self.transmit_clean) + 8)
                 >> 32) as u32;
-            if descriptor_word_3 & TDES3_OWN != 0 {
+            if descriptor_word_3 & TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE != 0 {
                 break;
             }
             self.transmit_clean = (self.transmit_clean + 1) % TRANSMIT_ENTRIES;

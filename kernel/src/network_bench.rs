@@ -66,7 +66,7 @@ fn measure() -> &'static str {
         Err(Absent::NoLink { device }) => {
             println!(
                 "network-bench: nic       : 8086:{device:04x} {}, link NOT UP",
-                ::e1000e::model(device).unwrap_or("?"),
+                ::e1000e::model_name(device).unwrap_or("?"),
             );
             return "FAILED: no link (autonegotiation did not finish in the link wait; check the \
                     cable and the port's LEDs)";
@@ -76,7 +76,7 @@ fn measure() -> &'static str {
     println!(
         "network-bench: nic       : 8086:{:04x} {}, link up, mac {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
         w.device,
-        ::e1000e::model(w.device).unwrap_or("?"),
+        ::e1000e::model_name(w.device).unwrap_or("?"),
         m[0],
         m[1],
         m[2],
@@ -176,7 +176,7 @@ fn parse_peer(s: &str) -> Option<u64> {
 /// `e1000e` arm spells them.
 #[cfg(target_arch = "riscv64")]
 mod radon {
-    use ::designware_ethernet::coherence::Verdict;
+    use ::designware_ethernet::cache_coherence::Verdict;
     use ::designware_ethernet::jh7110;
 
     use crate::designware_ethernet::{Absent, Report, last_report};
