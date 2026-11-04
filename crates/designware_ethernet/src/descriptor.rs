@@ -44,82 +44,109 @@ pub const CRC_BYTES: usize = 4;
 
 /// **Receive descriptor word 3, owned by the device** (`RDES3_OWN`, `dwqereg.h`). Set by the
 /// driver to hand a descriptor over, cleared by the device's write-back.
-#[doc(alias = "owned by the device")]
-pub const RDES3_OWN: u32 = 1 << 31;
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "RDES3_OWN")]
+pub const RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE: u32 = 1 << 31;
 
 /// **Receive descriptor word 3, interrupt on completion** (`RDES3_IC`, `dwqereg.h`). Receive, read
 /// format: interrupt on completion. Interrupts are masked at the channel; set anyway so the channel
 /// status's receive bit reports completions, which the coherence probe reads.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
-#[doc(alias = "receive descriptor word 3, interrupt on completion")]
 #[doc(alias = "RDES3_IC")]
 pub const RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION: u32 = 1 << 30;
 
 /// **Receive descriptor word 3, buffer 1 address valid** (`RDES3_BUF1V`, `dwqereg.h`). Receive,
 /// read format: buffer 1's address is valid.
-#[doc(alias = "receive descriptor word 3, buffer 1 address valid")]
-pub const RDES3_BUF1V: u32 = 1 << 24;
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "RDES3_BUF1V")]
+pub const RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID: u32 = 1 << 24;
 
 /// **Receive descriptor word 3, context descriptor** (`RDES3_CTXT`, `dwqereg.h`). Receive,
 /// write-back: this is a context descriptor (a timestamp), not a frame.
-#[doc(alias = "receive descriptor word 3, context descriptor")]
-pub const RDES3_CTXT: u32 = 1 << 30;
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "RDES3_CTXT")]
+pub const RECEIVE_DESCRIPTOR_WORD_3_CONTEXT_DESCRIPTOR: u32 = 1 << 30;
 
 /// **Receive descriptor word 3, first descriptor** (`RDES3_FD`, `dwqereg.h`). Receive, write-back:
 /// first descriptor of a frame.
-#[doc(alias = "receive descriptor word 3, first descriptor")]
-pub const RDES3_FD: u32 = 1 << 29;
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "RDES3_FD")]
+pub const RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR: u32 = 1 << 29;
 
 /// **Receive descriptor word 3, last descriptor** (`RDES3_LD`, `dwqereg.h`). Receive, write-back:
 /// last descriptor of a frame.
-#[doc(alias = "receive descriptor word 3, last descriptor")]
-pub const RDES3_LD: u32 = 1 << 28;
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "RDES3_LD")]
+pub const RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR: u32 = 1 << 28;
 
 /// **Receive descriptor word 3, error summary** (`RDES3_ES`, `dwqereg.h`). Receive, write-back:
 /// error summary.
-#[doc(alias = "receive descriptor word 3, error summary")]
-pub const RDES3_ES: u32 = 1 << 15;
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "RDES3_ES")]
+pub const RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY: u32 = 1 << 15;
 
 /// **Receive descriptor word 3, packet length** (`RDES3_LENGTH`, `dwqereg.h`). Receive, write-back:
-/// the frame length including the CRC, valid when [`RDES3_LD`] is set.
-#[doc(alias = "receive descriptor word 3, packet length")]
-pub const RDES3_LENGTH: u32 = 0x7fff;
+/// the frame length including the CRC, valid when [`RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR`] is set.
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "RDES3_LENGTH")]
+pub const RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_MASK: u32 = 0x7fff;
 
 /// **Transmit descriptor word 2, interrupt on completion** (`TDES2_IC`, `dwqereg.h`). Transmit,
 /// read format: interrupt on completion (in word 2).
-#[doc(alias = "transmit descriptor word 2, interrupt on completion")]
-pub const TDES2_IC: u32 = 1 << 31;
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "TDES2_IC")]
+pub const TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION: u32 = 1 << 31;
 
 /// **Transmit descriptor word 2, buffer 1 length** (`TDES2_BUF1_LEN`, `dwqereg.h`). Transmit, read
 /// format: buffer 1's length (in word 2).
-#[doc(alias = "transmit descriptor word 2, buffer 1 length")]
-pub const TDES2_BUF1_LEN: u32 = 0x3fff;
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "TDES2_BUF1_LEN")]
+pub const TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK: u32 = 0x3fff;
 
 /// **Transmit descriptor word 3, first segment** (`TDES3_FS`, `dwqereg.h`). Transmit: first
 /// descriptor of a frame.
-#[doc(alias = "transmit descriptor word 3, first segment")]
-pub const TDES3_FS: u32 = 1 << 29;
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "TDES3_FS")]
+pub const TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT: u32 = 1 << 29;
 
 /// **Transmit descriptor word 3, last segment** (`TDES3_LS`, `dwqereg.h`). Transmit: last
 /// descriptor of a frame.
-#[doc(alias = "transmit descriptor word 3, last segment")]
-pub const TDES3_LS: u32 = 1 << 28;
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "TDES3_LS")]
+pub const TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT: u32 = 1 << 28;
 
 /// **Transmit descriptor word 3, owned by the device** (`TDES3_OWN`, `dwqereg.h`). Transmit: the
-/// device owns it ([`RDES3_OWN`]'s bit, in the transmit ring).
-#[doc(alias = "transmit descriptor word 3, owned by the device")]
-pub const TDES3_OWN: u32 = 1 << 31;
+/// device owns it ([`RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE`]'s bit, in the transmit ring).
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "TDES3_OWN")]
+pub const TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE: u32 = 1 << 31;
 
 /// **Transmit descriptor word 3, frame length** (`TDES3_FRAME_LEN`, `dwqereg.h`). Transmit, read
 /// format: the whole frame's length.
-#[doc(alias = "transmit descriptor word 3, frame length")]
-pub const TDES3_FRAME_LEN: u32 = 0x7fff;
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "TDES3_FRAME_LEN")]
+pub const TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK: u32 = 0x7fff;
 
 /// **Transmit descriptor word 3, error summary** (`TDES3_ES`, `dwqereg.h`). Transmit, write-back:
 /// error summary.
-#[doc(alias = "transmit descriptor word 3, error summary")]
-pub const TDES3_ES: u32 = 1 << 15;
+///
+/// Name: ratified 2026-11-03 (UTC), #3125.
+#[doc(alias = "TDES3_ES")]
+pub const TRANSMIT_DESCRIPTOR_WORD_3_ERROR_SUMMARY: u32 = 1 << 15;
 
 /// **A receive descriptor handed to the device**: the buffer's address in words 0 and 1 (low and
 /// high 32 bits, as OpenBSD and Linux's `dwmac4_set_addr` both write it), word 2 clear, and word 3
@@ -130,7 +157,9 @@ pub const TDES3_ES: u32 = 1 << 15;
 pub const fn receive_descriptor_words(buffer_physical_address: u64) -> [u64; 2] {
     [
         buffer_physical_address,
-        ((RDES3_OWN | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION | RDES3_BUF1V) as u64)
+        ((RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
+            | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION
+            | RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID) as u64)
             << 32,
     ]
 }
@@ -143,8 +172,12 @@ pub const fn receive_descriptor_words(buffer_physical_address: u64) -> [u64; 2] 
 /// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(dead_code)]
 pub const RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP: () = assert!(
-    RDES3_OWN | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION | RDES3_BUF1V
-        == RDES3_OWN ^ RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION ^ RDES3_BUF1V
+    RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
+        | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION
+        | RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID
+        == RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
+            ^ RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION
+            ^ RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID
 );
 
 /// **A transmit descriptor for one whole frame in one buffer**: the address, the length with
@@ -153,9 +186,13 @@ pub const RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP: () = assert!(
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16) -> [u64; 2] {
-    let length = length as u32 & TDES3_FRAME_LEN;
-    let des2 = (length & TDES2_BUF1_LEN) | TDES2_IC;
-    let descriptor_word_3 = TDES3_OWN | TDES3_FS | TDES3_LS | length;
+    let length = length as u32 & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK;
+    let des2 = (length & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK)
+        | TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION;
+    let descriptor_word_3 = TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
+        | TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
+        | TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT
+        | length;
     [
         buffer_physical_address,
         des2 as u64 | (descriptor_word_3 as u64) << 32,
@@ -172,11 +209,22 @@ pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16
 /// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(dead_code)]
 pub const TRANSMIT_DESCRIPTOR_BITS_DO_NOT_OVERLAP: () = assert!(
-    TDES2_IC & TDES2_BUF1_LEN == 0
-        && (TDES3_OWN | TDES3_FS | TDES3_LS == TDES3_OWN ^ TDES3_FS ^ TDES3_LS)
-        && TDES3_OWN & TDES3_FRAME_LEN == 0
-        && TDES3_FS & TDES3_FRAME_LEN == 0
-        && TDES3_LS & TDES3_FRAME_LEN == 0
+    TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION
+        & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK
+        == 0
+        && (TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
+            | TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
+            | TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT
+            == TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
+                ^ TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
+                ^ TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT)
+        && TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
+            & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK
+            == 0
+        && TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK
+            == 0
+        && TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK
+            == 0
         && ((u32::MAX as u64) << 32) & (u32::MAX as u64) == 0
 );
 
@@ -204,24 +252,29 @@ pub enum ReceiveVerdict {
 /// # Examples
 ///
 /// ```
-/// use designware_ethernet::{ReceiveVerdict, receive_verdict, RDES3_FD, RDES3_LD, RDES3_OWN};
+/// use designware_ethernet::{ReceiveVerdict, receive_verdict, RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE};
 ///
 /// // 64 bytes on the wire is 60 of frame and 4 of CRC, which the driver strips.
-/// assert_eq!(receive_verdict(RDES3_FD | RDES3_LD | 64, 1514), ReceiveVerdict::Frame(60));
-/// assert_eq!(receive_verdict(RDES3_OWN | RDES3_FD | RDES3_LD | 64, 1514), ReceiveVerdict::NotYet);
-/// assert_eq!(receive_verdict(RDES3_FD | RDES3_LD | 0x7fff, 1514), ReceiveVerdict::Drop);
+/// assert_eq!(receive_verdict(RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR | 64, 1514), ReceiveVerdict::Frame(60));
+/// assert_eq!(receive_verdict(RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE | RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR | 64, 1514), ReceiveVerdict::NotYet);
+/// assert_eq!(receive_verdict(RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR | 0x7fff, 1514), ReceiveVerdict::Drop);
 /// ```
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub fn receive_verdict(descriptor_word_3: u32, room: usize) -> ReceiveVerdict {
-    if descriptor_word_3 & RDES3_OWN != 0 {
+    if descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE != 0 {
         return ReceiveVerdict::NotYet;
     }
-    let whole = descriptor_word_3 & (RDES3_FD | RDES3_LD) == RDES3_FD | RDES3_LD;
-    if descriptor_word_3 & RDES3_CTXT != 0 || !whole || descriptor_word_3 & RDES3_ES != 0 {
+    let whole = descriptor_word_3
+        & (RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR)
+        == RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR;
+    if descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_CONTEXT_DESCRIPTOR != 0
+        || !whole
+        || descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY != 0
+    {
         return ReceiveVerdict::Drop;
     }
-    let wire = (descriptor_word_3 & RDES3_LENGTH) as usize;
+    let wire = (descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_MASK) as usize;
     let Some(length) = wire.checked_sub(CRC_BYTES) else {
         return ReceiveVerdict::Drop;
     };
@@ -241,5 +294,7 @@ pub fn receive_verdict(descriptor_word_3: u32, room: usize) -> ReceiveVerdict {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 #[allow(dead_code)]
-pub const FIRST_AND_LAST_BITS_DO_NOT_OVERLAP: () =
-    assert!(RDES3_FD | RDES3_LD == RDES3_FD ^ RDES3_LD);
+pub const FIRST_AND_LAST_BITS_DO_NOT_OVERLAP: () = assert!(
+    RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR
+        == RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR ^ RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR
+);
