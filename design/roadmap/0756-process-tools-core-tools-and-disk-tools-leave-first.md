@@ -29,19 +29,21 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   conditions below hold.** This block is that cut.
 - Ruled 2026-10-28 (UTC): the cut leaves as three repositories named after the packages,
   `nifeos/process-tools`, `nifeos/core-tools` and `nifeos/disk-tools`. Each holds that package's
-  programs, where those programs have one purpose. The crates behind them have already left, each
-  as its own repository, and the programs depend on them by version. One repository holding all
-  three packages came up; the ruling refuses it. The packages' `home` lines in
+  programs and every crate only that package uses, in a workspace beside the programs (ruled
+  2026-11-04 UTC). The crates the package shares with other repositories, and any crate published
+  on its own, have already left, each as its own repository, and the programs depend on them by
+  version. One repository holding all three packages came up; the ruling refuses it. The packages' `home` lines in
   `packages/*.package.toml` keep `status = "provisional"` until each repository exists; this rules
   the destination and does not flip that status. §201 (one roadmap until a citation has to cross),
-  amended the same day, rules the citation identity across repositories. Ruled 2026-10-28: the
-  home's grain, one repository for a package's programs (§316 (a package's programs leave as one
-  repository, after their crates)). The naming review ratified the names the same day,
+  amended the same day, rules the citation identity across repositories. The home's grain is one
+  repository for a package's programs and the crates only it uses (§316 (a program package leaves
+  as one repository, with the crates only it uses)). The naming review ratified the names the same day,
   now milestone 978 (the first cut's names),
   `design/roadmap/0978-first-cut-names.md` and pull request #2870. Still open, and not blocking
   until this block starts: the citation identity the first crossing writes (§201).
 - Ruled 2026-11-01 (UTC): code that leaves this repository references nothing back in it, so moves
-  go bottom-up in the dependency graph, and the crates a program links leave before it or with it.
+  go bottom-up in the dependency graph. A crate with a repository of its own leaves before the
+  programs that link it; a crate only one package uses leaves with that package (§316).
   That settles the SDK's place in milestone 691 (packages move out of this repository, one per pull
   request)'s order, and recommendation 3 below (programs first, the SDK last of the leaves) no
   longer holds. It also rules out the third condition's exception, a git dependency on `nife` at a
@@ -52,8 +54,8 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   packages), then milestone 607 item 5. This cut waits for its conditions.
 - calef ruled on 2026-11-01 (UTC) that this cut follows the bottom-up order: nothing that leaves nife
   may reference back into it. The tools no longer leave first. The leaf pilot `jh7110_entropy` goes
-  first, then the contract crates bottom-up, and this cut comes after the crates it links have moved
-  and carry versions. §247's other conditions and its destination stand. Its condition 4 (`abi`,
+  first, then the contract crates bottom-up, and this cut comes after the shared crates it links
+  have moved and carry versions. §247's other conditions and its destination stand. Its condition 4 (`abi`,
   `address_space_map`, `glob` and `machine_statistics_protocol` stable under 610's rule for four
   weeks) gives way to a new gate (ruled 2026-11-01 (UTC)). No time-based measure remains, and a crate
   whose interface still breaks may leave, each break a new version and a new tagged release. A
@@ -65,11 +67,11 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
   before it leaves, initially for every crate, the first in particular. Feedback from those reviews
   becomes automated gates over time. §247 states the gate in full.
 - Ruled 2026-11-01 (UTC) on pull request #3026's questions: departure package by package replaces
-  the single cut. Each package leaves as soon as its own crates have left, in the
-  order `disk-tools`, `process-tools`, `core-tools`. The `INTERFACES` note type moves into a leaf
+  the single cut. Each package leaves as soon as the shared crates it links have left, in the
+  order `disk-tools`, `process-tools`, `core-tools`, and takes the crates only it uses with it. The `INTERFACES` note type moves into a leaf
   crate of its own so `disk-tools` need not wait for `grant_plan`, and `block_roster` stays the
-  first crate a consumer outside nife reads. Each crate gets a repository of its own once the
-  architect approves that repository. The order is in
+  first crate a consumer outside nife reads. Each shared crate gets a repository of its own once
+  the architect approves that repository. The order is in
   [the proposal](1017-the-contract-crates-leave-in-this-order.md).
 
 Renamed 2026-10-06 (UTC). calef ruled that `util-linux` becomes `disk-tools` ("util-linux is a
@@ -82,21 +84,19 @@ above and the analysis below keep the names they were written with. The homes ar
 `nifeos/process-tools`, `nifeos/core-tools` and `nifeos/disk-tools` (ruled 2026-10-28); the
 packages' `home` lines keep `status = "provisional"` until each repository exists.
 
-What is below is the proposal's analysis, unedited apart from this heading block: the argument is
-its author's and promotion is not the moment to improve it.
+What is below is the proposal's analysis. The argument is its author's; it changes only where a
+ruling above makes it false.
 
 ## The finding that shapes the options
 
 Protocol churn is far from settled, and under §151's bottom-up order it does not hold a move. The
 contract crates took 157 breaking changes in the last four weeks, against milestone 610 (the
 interface's stability is measured weekly)'s proposed threshold of four. No IPC protocol carries a
-version a peer could check. Three more preconditions block any cut that moves code. One crate
-(`components`) holds 56 programs from 18 packages. There is no SDK archive. And §235 (the OS is built
-and updated from packages)'s own amendment says no package moves before 610's per-package co-change
-column exists. None of the nine is met but the package format.
+version a peer could check. Two more preconditions block any cut that moves code. One crate
+(`components`) holds 56 programs from 18 packages. There is no SDK archive.
 
-One first step needs none of them: basalt itself, holding one component. It moves nothing, so
-the amendment does not bind it. It builds the piece §151's BUGS calls the real cost of a split (the
+One first step needs none of them: basalt itself, holding one component. It moves nothing. It
+builds the piece §151's BUGS calls the real cost of a split (the
 whole-system gate living somewhere other than the monorepo) before any repository pays the price of
 a two-repo change.
 
@@ -106,7 +106,7 @@ a two-repo change.
 |---|---|---|---|
 | A. basalt v0 | nothing; basalt pins `nife` at a commit and runs its image build and system test | zero cross-repository changes; one scheduled basalt run per pin bump | recommended now |
 | B. `procps` with `coreutils` and `util-linux` | 8 crates and 15 programs | 32 commits in thirty days, 26 crossing; 21 of those were sweeps; 1 Cargo dependent; 0 path references | recommended as the first code cut, once its preconditions hold |
-| C. `redoxfs` | the vendored engine, server and host tool | 31 commits, 26 crossing, 12 of 17 focused ones crossing; 0 Cargo dependents; 254 path references; links the least settled interfaces (`filesystem_contract` 10 breaking in four weeks, the partition table 27) | second; cheapest to move today, which is an effort argument. Ruled 2026-11-01 (UTC): it leaves as one repository holding all three, after the crates it links, in step 9 of [the proposal](1017-the-contract-crates-leave-in-this-order.md) |
+| C. `redoxfs` | the vendored engine, server and host tool | 31 commits, 26 crossing, 12 of 17 focused ones crossing; 0 Cargo dependents; 254 path references; links the least settled interfaces (`filesystem_contract` 10 breaking in four weeks, the partition table 27) | second; cheapest to move today, which is an effort argument. Ruled 2026-11-01 (UTC): it leaves as one repository holding all three, after the shared crates it links, in step 9 of [the proposal](1017-the-contract-crates-leave-in-this-order.md) |
 | D. `contracts` and `runtime` (milestone 691 (packages move out of this repository, one per pull request)'s order) | 42 crates | 298 commits, 187 crossing; 35 dependents | refused for the first cut |
 | E. `host-tools` | `xtask` and friends | 227 commits, 139 crossing; 276 references in 152 files | refused |
 | F. Wait for every precondition before doing anything | nothing | the integration gate is still unbuilt when the first cut arrives | refused |
@@ -120,7 +120,8 @@ a two-repo change.
    component's commit carries. It cites no milestone and no section, so it does not trigger §201 (one roadmap until a citation has to cross)'s
    revisit. The file's name and format are provisional.
 2. **Next: the first code cut is option B**, when all of these hold, each checkable by a command:
-   - 610 carries the per-package co-change column (§235's amendment).
+   - 610 carries the per-package co-change column. Met; under §235 (the OS is built and updated
+     from packages) the column informs how packages group and holds no move.
    - `components` is split so the moving programs are in crates of their own (milestone 691).
    - The moving repository builds without a clone of this one: §235's S2 archive (milestone 607 (nife is built and updated from packages)
      item 4), or a dated, recorded exception for a git dependency on `nife` at a commit.
@@ -176,6 +177,6 @@ a two-repo change.
 ## Index row
 
 The first code to leave the monorepo: the programs of the `process-tools`, `core-tools` and
-`disk-tools` packages. They leave as three repositories named after the packages, after the crates
-they link, and reach the image through basalt, once six measured preconditions hold (ruled by calef
+`disk-tools` packages. They leave as three repositories named after the packages, each holding
+the crates only it uses, after the shared crates they link, and reach the image through basalt, once six measured preconditions hold (ruled by calef
 2026-10-04). The homes and the sequencing carry the 2026-10-28 ruling.

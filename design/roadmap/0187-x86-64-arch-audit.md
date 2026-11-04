@@ -99,8 +99,8 @@ measured against what it establishes.
 The bounding facts to re-establish here, which is the first hour's work and not the audit proper:
 
 - One way out, confirmed. `grep -E '^\s*(iretq|sysretq)'` over the tree finds exactly one
-  instruction, `trap.s:182`. The original note's "no second way out of the kernel to audit" transfers.
-- One frame-fabrication site, `TrapFrame::for_user_entry` at `exceptions.rs:134`, matching both
+  instruction, the `iretq` in `isr_restore` in `kernel/src/arch/x86_64/trap.s`. The original note's "no second way out of the kernel to audit" transfers.
+- One frame-fabrication site, `TrapFrame::for_user_entry` in `exceptions.rs`, matching both
   other ISAs. Transfers.
 - **Two ways *in*, and this one does not transfer.** `exceptions.rs` configures `IA32_LSTAR`,
   `IA32_STAR`, `IA32_FMASK` and `IA32_EFER.SCE`, so `syscall` is a second entry whose masking
@@ -108,7 +108,7 @@ The bounding facts to re-establish here, which is the first hour's work and not 
   "a path that enters the save/restore sequence with interrupts live", and what `IA32_FMASK` clears
   is exactly the question that archetype asks. Establish it before reading anything else.
 - `swapgs` is the x86_64 archetype of the class, and neither other ISA has one. Three
-  instructions, `trap.s:105`, `:178`, `:206`. The window is single-copy by construction: between the
+  instructions, in `isr_common`, `isr_restore` and `x86_syscall_entry` in `trap.s`. The window is single-copy by construction: between the
   exit `swapgs` and the `iretq` the CPU is in ring 0 holding the *user's* GS base, and the comment
   above `serve_shootdown_nmi` in `mmu/shootdown.rs` already documents that window. aarch64's per-CPU pointer is `TPIDR_EL1`, a
   system register no frame carries; riscv64's is `tp`, whose migration hazard the original audit

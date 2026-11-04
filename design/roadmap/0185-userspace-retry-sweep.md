@@ -45,11 +45,11 @@ happens when the count runs out:
 
 | site | function | constant | on exhaustion |
 |---|---|---|---|
-| `crates/system_initializer/src/lib.rs:1963` | `reclaim` | `RECLAIM_ATTEMPTS` (64) | returns; strands the region's pages until the machine stops |
-| `components/src/login.rs:1066` | `reclaim` | `RECLAIM_ATTEMPTS` (64) | returns; strands the region's pages |
-| `components/src/swish.rs:1956` | `await_screen` | `SCREEN_REAP_ATTEMPTS` (1024) | returns; leaks one job's worth of init's pool |
-| `components/src/job_undertaker.rs:99` | `collect` | `MAX_ATTEMPTS` (1024) | **`user_rt::trap()`**, taking the process down |
-| `components/src/timetable.rs:362` | `collect` | `REAP_ATTEMPTS` (1024) | **`user_rt::trap()`**, taking the process down |
+| `crates/system_initializer/src/children.rs` | `reclaim` | `RECLAIM_ATTEMPTS` (64) | returns; strands the region's pages until the machine stops |
+| `components/src/login.rs` | `reclaim` | `RECLAIM_ATTEMPTS` (64) | returns; strands the region's pages |
+| `components/src/swish/running.rs` | `await_screen` | `SCREEN_REAP_ATTEMPTS` (1024) | returns; leaks one job's worth of init's pool |
+| `components/src/job_undertaker.rs` | `collect` | `MAX_ATTEMPTS` (1024) | **`user_rt::trap()`**, taking the process down |
+| `components/src/timetable.rs` | `collect` | `REAP_ATTEMPTS` (1024) | **`user_rt::trap()`**, taking the process down |
 
 **The two that trap are why this is a milestone and not a tidy-up.** Under load, `job_undertaker`
 and `timetable` do not degrade, they kill the process reaping a corpse, which is a louder failure
