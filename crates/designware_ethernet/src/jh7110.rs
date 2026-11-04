@@ -16,9 +16,11 @@
 //! [`COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER`] node or the vendor's node named
 //! [`ALWAYS_ON_SYSTEM_CONTROLLER_NODE`], and [`SystemController::fallback`] answers for a tree that
 //! names neither.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
-use crate::controller::Bus;
-use crate::motorcomm::{PadDriveStrength, Settings, SettingsSource};
+use crate::motorcomm_physical_layer_device::{PadDriveStrength, Settings, SettingsSource};
+use crate::network_interface_controller::BusConfiguration;
 use crate::registers;
 
 /// Mainline's compatible for both ports.
@@ -34,17 +36,26 @@ pub const COMPATIBLE_VENDOR: &[u8] = b"starfive,jh7110-eqos-5.20";
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub const COMPATIBLES: [&[u8]; 2] = [COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR];
 
-/// The Gigabit media access control (Gigabit MAC, GMAC) `gmac0`'s window, in both trees and in OpenBSD's port table.
-pub const GMAC0_BASE: u64 = 0x1603_0000;
-/// The Gigabit MAC `gmac1`'s window.
-pub const GMAC1_BASE: u64 = 0x1604_0000;
+/// The physical address of the registers of the Gigabit media access control (Gigabit MAC, GMAC)
+/// `gmac0`, in both trees and in OpenBSD's port table.
+///
+/// Name: ratified 2026-11-03 (UTC), #3133, renamed from `GMAC0_BASE`. `GMAC` stays an accepted
+/// acronym (#3094).
+pub const GMAC0_REGISTERS_PHYSICAL_ADDRESS: u64 = 0x1603_0000;
+/// The physical address of the registers of the Gigabit MAC `gmac1`.
+///
+/// Name: ratified 2026-11-03 (UTC), #3133, renamed from `GMAC1_BASE`. `GMAC` stays an accepted
+/// acronym (#3094).
+pub const GMAC1_REGISTERS_PHYSICAL_ADDRESS: u64 = 0x1604_0000;
 
 /// **radon's bus configuration**, identical in both trees: `snps,fixed-burst`,
 /// `snps,no-pbl-x8`, `snps,force_thresh_dma_mode`, `snps,txpbl = <16>`, `snps,rxpbl = <16>`, and
 /// the `stmmac-axi-config` node's `snps,blen = <256 128 64 32 0 0 0>` with both outstanding-request
 /// limits `0xf`. Carried as a constant rather than read, because the tree's spelling of it is the
 /// one thing both trees share verbatim and parsing it would add a failure path for no new fact.
-pub const BUS: Bus = Bus {
+///
+/// Name: ratified 2026-11-03 (UTC), #3133, renamed from `BUS`.
+pub const BUS_CONFIGURATION: BusConfiguration = BusConfiguration {
     fixed_burst: true,
     channel_burst_length_times_8: false,
     transmit_channel_burst_length: 16,
@@ -62,8 +73,7 @@ pub const BUS: Bus = Bus {
 /// which the compiler checks here; the exclusion of the file's constant-item or-versus-xor
 /// mutants names this constant.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
-#[doc(alias = "THE_BURST_LENGTH_BITS_SHARE_NO_BIT")]
+/// Name: ratified 2026-11-03 (UTC), #3120.
 pub const BURST_LENGTH_BITS_DO_NOT_OVERLAP: () = assert!(
     registers::SYS_BUS_MODE_BLEN_256
         | registers::SYS_BUS_MODE_BLEN_128
@@ -121,23 +131,28 @@ pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u3
 /// `select_reduced_gigabit_media_independent_interface` is its `^` for every word, and the
 /// exclusion of those mutants names this constant.
 ///
-/// Name: provisional, decided by the maintainer; reversing costs one pull request.
-#[doc(alias = "THE_INTERFACE_SELECT_AND_CLEARED_WORD_SHARE_NO_BIT")]
+/// Name: ratified 2026-11-03 (UTC), #3120.
 pub const INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP: () =
     assert!(PHY_INTF_RGMII & SYSTEM_CONTROLLER_FIELD == PHY_INTF_RGMII);
 
 /// The interface select a syscon word holds for `gmac0`.
-pub const fn interface(word: u32) -> u32 {
+///
+/// Name: ratified 2026-11-03 (UTC), #3133, renamed from `interface`. `GMAC` stays an accepted
+/// acronym (#3094).
+pub const fn gmac0_interface_select(word: u32) -> u32 {
     (word >> GMAC0_SYSTEM_CONTROLLER_SHIFT) & SYSTEM_CONTROLLER_FIELD
 }
 
 /// What the tree says about the first port.
+///
+/// Name: ratified 2026-11-03 (UTC), #3133, as it stands. Its fields `registers_physical_address`
+/// and `registers_size_bytes` were renamed from `base` and `size`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Discovered {
-    /// The window's physical base.
-    pub base: u64,
-    /// Its size.
-    pub size: u64,
+    /// The physical address of the window holding the controller's registers.
+    pub registers_physical_address: u64,
+    /// The size of that window, in bytes.
+    pub registers_size_bytes: u64,
     /// The first `interrupts` cell, `macirq`.
     pub interrupt: Option<u32>,
     /// Which spelling matched.
@@ -184,7 +199,7 @@ pub fn first_cell(value: &[u8]) -> Option<u32> {
 }
 
 impl Discovered {
-    /// **The port, from its node.** `base` and `size` are its `reg`, `compatible` the
+    /// **The port, from its node.** `registers_physical_address` and `registers_size_bytes` are its `reg`, `compatible` the
     /// [`COMPATIBLES`] entry it matched, `property(name)` the port node's property `name`, and
     /// `physical_layer_device` what [`mainline_physical_layer_device`] or
     /// [`vendor_physical_layer_device`] read: mainline's when the node has a `phy-handle`, the
@@ -196,8 +211,8 @@ impl Discovered {
     ///
     /// Name: ratified 2026-11-02 (UTC), #3094.
     pub fn from_node<'t, E>(
-        base: u64,
-        size: u64,
+        registers_physical_address: u64,
+        registers_size_bytes: u64,
         compatible: &'static [u8],
         mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
         physical_layer_device: (u8, Settings),
@@ -211,8 +226,8 @@ impl Discovered {
             property(b"phy-mode")?.is_some_and(|v| v.starts_with(b"rgmii"));
         let (physical_layer_device_address, physical_layer_device) = physical_layer_device;
         Ok(Discovered {
-            base,
-            size,
+            registers_physical_address,
+            registers_size_bytes,
             interrupt: property(b"interrupts")?.and_then(first_cell),
             compatible,
             status_okay,
@@ -362,7 +377,7 @@ mod tests {
         ];
         let physical_layer_device = (0, Settings::FALLBACK_GMAC0);
         let d = Discovered::from_node(
-            GMAC0_BASE,
+            GMAC0_REGISTERS_PHYSICAL_ADDRESS,
             0x1_0000,
             COMPATIBLE_VENDOR,
             node(table),
@@ -370,8 +385,16 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            (d.base, d.size, d.compatible),
-            (GMAC0_BASE, 0x1_0000, COMPATIBLE_VENDOR)
+            (
+                d.registers_physical_address,
+                d.registers_size_bytes,
+                d.compatible
+            ),
+            (
+                GMAC0_REGISTERS_PHYSICAL_ADDRESS,
+                0x1_0000,
+                COMPATIBLE_VENDOR
+            )
         );
         assert!(d.status_okay && d.reduced_gigabit_media_independent_interface);
         assert_eq!(
@@ -561,7 +584,7 @@ mod tests {
             !0x0018_0000
         );
         assert_eq!(
-            interface(select_reduced_gigabit_media_independent_interface(
+            gmac0_interface_select(select_reduced_gigabit_media_independent_interface(
                 0x0010_0000
             )),
             PHY_INTF_RGMII
@@ -571,13 +594,13 @@ mod tests {
             SYSTEM_CONTROLLER_FIELD << GMAC0_SYSTEM_CONTROLLER_SHIFT,
             0x1c_0000
         );
-        assert_eq!(interface(0), 0);
-        assert_eq!(interface(0x0018_0000), 6);
+        assert_eq!(gmac0_interface_select(0), 0);
+        assert_eq!(gmac0_interface_select(0x0018_0000), 6);
     }
 
     /// `snps,blen = <256 128 64 32 0 0 0>` is bits 7 to 4 of the bus mode, all four.
     #[test]
     fn radons_bus_burst_lengths_are_all_four_bits() {
-        assert_eq!(BUS.bus_burst_lengths, 0xf0);
+        assert_eq!(BUS_CONFIGURATION.bus_burst_lengths, 0xf0);
     }
 }

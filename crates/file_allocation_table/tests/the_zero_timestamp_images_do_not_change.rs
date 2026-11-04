@@ -6,6 +6,10 @@
 //! The digest is FNV-1a over the sectors in order; it detects a change and is not a security
 //! claim.
 
+// Not under Miri: digesting every metadata sector of each volume took 25 minutes in the
+// interpreter, and the crate has no `unsafe`; the library's unit tests run the same formatter.
+#![cfg(not(miri))]
+
 use file_allocation_table::{FormatOptions, FormatPlan, NoClock, SectorSize, VolumeLayout};
 
 fn fnv(mut hash: u64, bytes: &[u8]) -> u64 {

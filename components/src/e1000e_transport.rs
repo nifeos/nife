@@ -32,7 +32,9 @@ use driver_process_contract::e1000e::{
     DATA_PLANE_VIRTUAL_ADDRESS, Handoff, RECEIVE_QUEUE_VIRTUAL_ADDRESS,
     TRANSMIT_QUEUE_VIRTUAL_ADDRESS,
 };
-use e1000e::{DataPlane, MAXIMUM_FRAME, Region, TAIL_IN_PAGE, Tails, layout};
+use e1000e::{
+    DataPlane, DirectMemoryAccessRegion, MAXIMUM_FRAME_BYTES, TAIL_IN_PAGE, Tails, layout,
+};
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 
 /// How long the poll loop asks to sleep between looks at an idle receive ring when smoltcp has
@@ -59,7 +61,7 @@ const TRANSMIT_QUEUE: MappedWindow =
 /// The region, through its window: every offset bounds-checked by `MappedWindow`.
 struct Plane;
 
-impl Region for Plane {
+impl DirectMemoryAccessRegion for Plane {
     fn read_u64(&self, off: u64) -> u64 {
         PLANE.r64(off)
     }
@@ -117,7 +119,7 @@ impl GigabitNic {
 
     /// The next received frame, if the device has written one.
     pub(crate) fn receive_frame(&mut self) -> Option<Vec<u8>> {
-        let mut buf = [0u8; MAXIMUM_FRAME];
+        let mut buf = [0u8; MAXIMUM_FRAME_BYTES];
         let n = self.plane.receive(&mut Plane, &mut Queues, &mut buf)?;
         Some(buf[..n].to_vec())
     }
@@ -138,6 +140,6 @@ impl GigabitNic {
     /// Whether a frame is waiting, without taking it, so the poll loop can skip a sleep.
     pub(crate) fn frame_waiting(&self) -> bool {
         let word = PLANE.r64(layout::receive_descriptor(self.plane.receive_cursor()) + 8);
-        e1000e::receive_verdict(word, MAXIMUM_FRAME) != e1000e::ReceiveVerdict::NotYet
+        e1000e::receive_verdict(word, MAXIMUM_FRAME_BYTES) != e1000e::ReceiveVerdict::NotYet
     }
 }

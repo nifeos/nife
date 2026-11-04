@@ -2,6 +2,8 @@
 """Is this diff prose that no build and no test reads? If so CI skips the heavy jobs.
 
     helpers/prose_only.py classify <base>   # the CI gate: <base>..HEAD, one line per changed file
+    helpers/prose_only.py merge-group <base> [--keep-for-comments]
+                                            # one heavy job's own gate in a merge group: adds skip=
     helpers/prose_only.py --selftest        # script/lint: fixtures, no git
 
 Host-only tools (lane/ci-scope-host-scripts, 2026-10-07 UTC): the output is still called `prose`
@@ -126,6 +128,16 @@ and then `cargo test` for each owed package that builds on the host. That covers
 since doc comments hold them, and `missing_docs`, which clippy reads. `kernel` and `system_tests`
 build only for bare metal, and their doc comments reach no host test, so for them clippy and
 rustdoc are the whole check.
+
+# MERGE GROUPS
+
+A merge group runs no draft gate job (ci.yml's `gate` comment has why: every job of the group
+waited about ten minutes for that one runner). So each heavy job asks for itself, in a step right
+after its checkout: `merge-group <base>` classifies `<base>..HEAD` exactly as `classify` does,
+fetching the base commit when the checkout is too shallow to hold it, and adds `skip=true` when the
+group is prose-only. Every later step of the job then skips, and the job reports Success the way a
+job skipped by its condition does. `--keep-for-comments` is the `rustfmt` job's own rule. Any error
+writes `skip=false`, so a broken classification runs the job rather than failing it.
 
 # BUGS
 
@@ -612,7 +624,8 @@ def git_show(rev, path):
     return r.stdout.decode("utf-8", errors="replace")
 
 
-def main_classify(base):
+def classify_head(base):
+    """Classify <base>..HEAD and print the report. Returns (prose, tests, comment_tests)."""
     changed = subprocess.run(["git", "diff", "--name-only", base, "HEAD"],
                              capture_output=True, text=True, check=True).stdout.splitlines()
     before = {f: git_show(base, f) for f in changed if f.endswith(".rs")}
@@ -623,13 +636,53 @@ def main_classify(base):
     print(f"prose-tests: {' '.join(tests)}")
     print(f"comment-only rust: {'yes' if comment_tests is not None else 'no'}")
     print(f"comment-tests: {' '.join(comment_tests or [])}")
+    return prose, tests, comment_tests
+
+
+def write_outputs(lines):
     out = os.environ.get("GITHUB_OUTPUT")
     if out:
         with open(out, "a") as fh:
-            fh.write(f"prose={'true' if prose else 'false'}\n")
-            fh.write(f"prose_tests={' '.join(tests)}\n")
-            fh.write(f"comments={'true' if comment_tests is not None else 'false'}\n")
-            fh.write(f"comment_tests={' '.join(comment_tests or [])}\n")
+            fh.write("".join(f"{line}\n" for line in lines))
+
+
+def output_lines(prose, tests, comment_tests):
+    return [f"prose={'true' if prose else 'false'}",
+            f"prose_tests={' '.join(tests)}",
+            f"comments={'true' if comment_tests is not None else 'false'}",
+            f"comment_tests={' '.join(comment_tests or [])}"]
+
+
+def main_classify(base):
+    write_outputs(output_lines(*classify_head(base)))
+    return 0
+
+
+def merge_group_skip(prose, comment_tests, keep_for_comments):
+    """Does a heavy job skip its remaining steps? `keep_for_comments` is the rustfmt job's rule:
+    a comment-only Rust change can still break formatting, so that job runs on one."""
+    return prose and not (keep_for_comments and comment_tests is not None)
+
+
+def main_merge_group(base, keep_for_comments):
+    """One heavy job's own gate in a merge group (see MERGE GROUPS). Fails toward running: any
+    error writes skip=false and exits 0, the way an empty gate output runs everything."""
+    try:
+        if not base:
+            raise RuntimeError("the event carries no merge_group.base_sha")
+        # The job's checkout is usually one commit deep; the diff and the comment-only rule need
+        # the base's tree, and one commit of it is enough for a two-tree diff.
+        if subprocess.run(["git", "cat-file", "-e", f"{base}^{{commit}}"],
+                          capture_output=True).returncode != 0:
+            subprocess.run(["git", "fetch", "--no-tags", "--depth=1", "origin", base], check=True)
+        prose, tests, comment_tests = classify_head(base)
+    except Exception as e:  # noqa: BLE001 -- every failure must run the job, never fail it
+        print(f"prose_only: no classification ({e}); this job runs in full", file=sys.stderr)
+        write_outputs(["skip=false"])
+        return 0
+    skip = merge_group_skip(prose, comment_tests, keep_for_comments)
+    print(f"merge-group skip: {'yes, every later step skips' if skip else 'no'}")
+    write_outputs(output_lines(prose, tests, comment_tests) + [f"skip={'true' if skip else 'false'}"])
     return 0
 
 
@@ -669,6 +722,7 @@ def selftest():
     cases.append(("script reader logged", any("script/lint" in x for x in r)))
     # A note named by code (DOC_BUNDLES): an input, runs everything.
     p, t, r = run(["notes/pipes.md"])
+    # line-citation: exception. Reason: the fixture expects the census's own path:line report form
     cases.append(("named .md", p is False and "xtask/src/manual.rs:1" in r[0]))
     # include_str! relative to the source file, added in the same diff.
     p, t, r = run(["notes/plain.md", "crates/abi/src/lib.rs"],
@@ -848,6 +902,15 @@ def selftest():
              ";", "let", "b", "=", 'b"/*"', ";", "}"]:
         cases.append(("the lexer keeps lifetimes, chars and byte strings whole", False))
 
+    # The merge-group skip: rustfmt keeps running on comment-only Rust, every other job skips.
+    cases.append(("a merge group skips on prose", merge_group_skip(True, None, False) is True))
+    cases.append(("a merge group runs on code", merge_group_skip(False, None, True) is False))
+    cases.append(("rustfmt runs on comment-only Rust in a merge group",
+                  merge_group_skip(True, ["kernel"], True) is False))
+    cases.append(("a heavy job skips comment-only Rust in a merge group",
+                  merge_group_skip(True, ["kernel"], False) is True))
+    cases.append(("rustfmt skips prose alone in a merge group", merge_group_skip(True, None, True) is True))
+
     bad = [name for name, ok in cases if not ok]
     for name, ok in cases:
         print(f"{'ok  ' if ok else 'FAIL'} {name}")
@@ -864,5 +927,7 @@ if __name__ == "__main__":
         sys.exit(selftest())
     if len(args) == 2 and args[0] == "classify":
         sys.exit(main_classify(*args[1:]))
+    if len(args) in (2, 3) and args[0] == "merge-group" and args[2:] in ([], ["--keep-for-comments"]):
+        sys.exit(main_merge_group(args[1], args[2:] == ["--keep-for-comments"]))
     print(__doc__.split("\n\n")[1], file=sys.stderr)
     sys.exit(2)
