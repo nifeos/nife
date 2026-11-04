@@ -39,8 +39,7 @@ record of what was weighed, and its heading says how it was ruled.
   would publish on its own or that several repositories consume. Any other crate leaves in its
   package's repository (§316 (a program package leaves as one repository), 2026-11-04 UTC). Ruled 2026-11-01 (UTC),
   replacing creation at first publication: a crate gets its repository when it moves, and each
-  creation still waits for calef's approval. Publication is a later step that only some crates
-  take. Until it moves, a crate stays in this tree. Every crate repository uses one shared
+  creation still waits for calef's approval. Until it moves, a crate stays in this tree. Every crate repository uses one shared
   CI template (Kani, lint, release) through reusable workflows. calef: *"I lean one repo per
   crate."* then *"Yes a"*.
 - Fork 2: a crate that has left is consumed as a crates.io release pinned with its checksum in
