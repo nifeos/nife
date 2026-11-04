@@ -3,11 +3,12 @@
 *Name: provisional, minted 2026-11-02 (UTC) by maintainer/fuzz-finish-setup-runbook. No architect
 has ruled on it.*
 
-An appendix to [`continuous-host.md`](continuous-host.md). The architect ruled the findings path on
-2026-11-01 (UTC) in
+An appendix to [`continuous-host.md`](continuous-host.md). The continuous fuzzer ends at reporting.
+An architect ruled on 2026-11-04 (UTC), narrowing the findings path of
 [`fuzz-findings-without-a-person`](../../design/roadmap/1015-fuzz-findings-without-a-person.md):
-after a person places one credential once, the host files, reruns and publishes held findings with no
-person in the loop. This page lists what exists, what is not built, and the order of the steps left
+after a person places one credential once, the host files one private advisory per held finding and
+stops. A person works the advisories with the regular lane workflow on a separate fix-lane machine,
+and publishes each one. The host never replays a fix and never publishes. This page lists what exists, what is not built, and the order of the steps left
 to a person. Each step has commands to paste and the output to expect.
 
 Every step that needs root also works as a written spec handed to the agent that maintains the host,
@@ -25,13 +26,12 @@ variable.
 | Daily release (phase 2) | built, waits on the key and on steps P5 to P7 | `--publish` in the same script |
 | Watchdog workflow and its label | built, scheduled, quiet until the first release; it creates the label `fuzz-loop-broken` at its first failure | `.github/workflows/fuzz-heartbeat.yml`, #3049 |
 | The host follows main | built, running on the host | `helpers/fuzz-follow-main.py`, [continuous-host.md](continuous-host.md#following-main) |
-| Clean-range fix | built, on the host; a slot that held a finding publishes no more ranges, because nothing yet signals that a finding turned public | `helpers/fuzz-daily-publish.sh`, [milestone](../../design/roadmap/1016-the-clean-range-table-does-not-locate-a-held-seed.md) |
+| Clean-range fix | built, on the host; a slot that held a finding publishes no more ranges, because nothing signals that a finding turned public | `helpers/fuzz-daily-publish.sh`, [milestone](../../design/roadmap/1016-the-clean-range-table-does-not-locate-a-held-seed.md) |
 | Mint helper | built and merged in nifeos/fuzz-host (pull requests 2 and 3), not installed | `fuzz-token` and [docs/fuzz-token.md](https://github.com/nifeos/fuzz-host/blob/main/docs/fuzz-token.md), [milestone](../../design/roadmap/1022-the-fuzz-host-mints-its-tokens-from-the-app-key.md) |
 | Advisory permission | verified: an App holding only Repository security advisories write, installed on one repository, creates, completes, publishes and publicly reads an advisory | [below](#the-advisory-permission) |
 | Finding filer | built and merged in nifeos/fuzz-host (pull request 5), not installed; it runs as `lane`; unverified against GitHub and systemd | `fuzz-filer` and [docs/fuzz-filer.md](https://github.com/nifeos/fuzz-host/blob/main/docs/fuzz-filer.md), [milestone](../../design/roadmap/1020-the-fuzz-host-files-held-findings-as-advisories.md) |
 | Fix lanes read the advisory: script, skill rule text, replay-line lint | built and merged | `script/read-advisory`, `helpers/replay-line-check.sh`, the developer-lane skill, [milestone](../../design/roadmap/1014-fix-lanes-read-the-advisory.md) |
 | Reader token helper | built and merged in nifeos/fuzz-host (pull request 4) as the `reader` profile of `fuzz-token`, with `issue reader` for the sudo rule; not installed; unverified under a real sudo rule | [docs/fuzz-token-reader.md](https://github.com/nifeos/fuzz-host/blob/main/docs/fuzz-token-reader.md), [milestone](../../design/roadmap/1013-fix-lanes-get-a-one-hour-reader-token.md) |
-| Publish after a clean rerun | not built; reads the filer's ledger | [milestone 1010](../../design/roadmap/1010-a-held-finding-turns-public-after-its-fix-reruns-clean.md) |
 | Host replays a red CI shard | not built | [proposal](../../design/roadmap/proposals/the-fuzz-host-replays-a-red-ci-shard.md) |
 | `nife-fuzz` App | created, installed, no key placed | App ID 5571801, installation 177641059 |
 | `nife-fuzz-reader` App | created, installed, no key placed | App ID 5571868, installation 177642435 |
@@ -90,8 +90,7 @@ as "a security manager or administrator", and the permission alone qualifies.
 
 A draft needs a vulnerability entry with a package and a `vulnerable_version_range`, or GitHub
 answers 422, "Advisory is not publishable". So the filer files both. It leaves `patched_versions`
-unset, because no fix exists at filing; milestone 1010 (a held finding turns public after its fix
-reruns clean) sets it.
+unset, because no fix exists at filing; the person who publishes the advisory sets it.
 
 ## The sequence for a person: P4 to P11
 
@@ -102,10 +101,11 @@ key.
 
 The first step to take yourself is P5. P4 can run before it or in parallel.
 
-Two machines take part. The **fuzz host** gets the `nife-fuzz` key (P5) and the publish and filer
-helpers (P6 to P8). The **fix-lane machine** is the one that launches fix lanes; it gets the
-`nife-fuzz-reader` key (P10) and the reader rule. The reader key never goes to the fuzz host, because
-code from main runs there unattended as `lane`. Pin one commit of nifeos/fuzz-host for the whole
+Two machines take part. The **fuzz host** holds only the `nife-fuzz` key (P5) and gets the publish
+and filer helpers (P6 to P8). The **fix-lane machine** is a separate machine where a person works the
+advisories with the regular lane workflow. It gets the `nife-fuzz-reader` key (P10) and the reader
+rule (P11), and nothing of P5 to P8. The reader key never goes to the fuzz host, because code from
+main runs there unattended as `lane`. The fuzz host needs no reader step. Pin one commit of nifeos/fuzz-host for the whole
 sequence:
 
 ```sh
@@ -325,7 +325,8 @@ helper cannot see a macOS ACL.
 ### P11. Write the sudo rule for fix lanes (root on the fix-lane machine; may go to the agent)
 
 An architect ruled on 2026-11-03 (UTC) that the rule names exactly `fuzz-token issue reader`. Name the
-account that lanes run as in place of `<lane account>`, and give it no other sudo rule.
+account that runs lanes on the fix-lane machine in place of `<lane account>`; the person fills it in.
+Give that account no other sudo rule.
 
 ```sh
 sudo visudo -f /etc/sudoers.d/fuzz-token-reader
@@ -371,12 +372,9 @@ repositories to `nifeos/nife` alone.
 
 ## What is not built
 
-- **Publish after a clean rerun.** Nothing replays a filed finding's seed after its fix lands, sets
-  `patched_versions` and publishes the advisory, and nothing moves its held log out of the held
-  directory. Until it exists, a filed advisory stays a draft, and the clean-range table keeps
-  withholding every range of a slot that held a finding. Milestone
-  [1010](../../design/roadmap/1010-a-held-finding-turns-public-after-its-fix-reruns-clean.md) is its
-  block. It reads the filer's ledger, which exists.
+- **Nothing after filing, by ruling.** The host does not replay a fix, publish an advisory or move a
+  held log. A person publishes each advisory after its fix. The clean-range table therefore keeps
+  withholding every range of a slot that held a finding, and the held log stays on the host.
 - **The host replays a red CI shard.** A red `fuzz-guests` job names a commit and a shard, and nobody
   replays it. The proposal is
   [the fuzz host replays a red CI shard](../../design/roadmap/proposals/the-fuzz-host-replays-a-red-ci-shard.md).
@@ -385,6 +383,10 @@ repositories to `nifeos/nife` alone.
 
 ## Risks
 
+The `nife-fuzz` App holds Repository security advisories write, and that permission can also publish
+an advisory, a held finding's included. The filer never does: it calls GET to list advisories and POST
+to create a draft, sends no state in the body, and has no PATCH or other call. The permission is
+still there for anything that runs as `lane` with a filer token, which is the accepted risk of P8.
 [`the-fuzz-app.md`](the-fuzz-app.md) states what a leaked key can do. To revoke, suspend the
 installation at once, at <https://github.com/organizations/nifeos/settings/installations/177641059>
 (Suspend), which stops every token. Delete the key on the App's page, place a fresh one as in P5, and
@@ -402,5 +404,3 @@ No one has run these against GitHub or a real host. Each is a check for the firs
 - sudo-rs matching the rule's arguments as classic sudo does, and each sudo handing the helper a pipe
   for standard output.
 - The hardening lines of the fuzz-token and fuzz-filer units under systemd.
-- A comment on a repository advisory, which the publish step wants for a failing replay. The REST API
-  may have no endpoint for it (from memory, not checked).

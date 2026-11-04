@@ -4,10 +4,11 @@
 `nife-fuzz` and `nife-fuzz-reader`, are also provisional. No architect has ruled on any of them.*
 
 An appendix to [`continuous-host.md`](continuous-host.md). The continuous fuzzing host publishes a
-daily release and files and publishes private security advisories with no person in the loop. It
-acts as one GitHub App, `nife-fuzz`, and holds that App's private key. An architect ruled this on
-2026-11-01 (UTC) in
-[`fuzz-findings-without-a-person`](../../design/roadmap/1015-fuzz-findings-without-a-person.md).
+daily release and files one private security advisory per held finding, and stops there. It acts as
+one GitHub App, `nife-fuzz`, and holds that App's private key, the only key on the fuzz host. An
+architect ruled this on 2026-11-01 (UTC) in
+[`fuzz-findings-without-a-person`](../../design/roadmap/1015-fuzz-findings-without-a-person.md) and
+narrowed it on 2026-11-04 (UTC): a person publishes each advisory, and the host does not.
 
 The App exists. A person created it on 2026-11-01 (UTC) and installed it on nifeos/nife only. Its
 App ID is 5571801 and its installation ID is 177641059; neither is secret. The steps below stay as
@@ -37,7 +38,9 @@ Read this first. It is the exposure you accept by placing the key.
 - It cannot push to main: main's ruleset requires a pull request and has no bypass actor.
 - With Repository security advisories write, a token can create, edit and publish any advisory on
   nifeos/nife, including a held finding before its fix. A throwaway App with that permission alone
-  did create, complete and publish an advisory, so the permission is enough for the filer.
+  did create, complete and publish an advisory, so the permission is enough for the filer. It is also
+enough to publish. The filer never does: it only lists and creates drafts. The residual is that
+anything running as the fuzz account with a filer token could.
 - Publishing needs a package and a vulnerable version range on the advisory; the filer supplies
   both ([`finishing-the-setup.md`](finishing-the-setup.md#the-advisory-permission)).
 - The App reaches no other repository. It holds no Workflows, Administration or other permission,
