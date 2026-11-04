@@ -23,7 +23,7 @@ An action item and its correction name each other (2026-11-04 UTC). A correction
 items as one table, `| # | what | status | record |`, one row each. The status cell says
 `delivered` or `proposed`, and the record cell opens with the vocabulary above and links the
 proposal, milestone, pull request or note. Every proposal or milestone a row names carries, on a
-line of its own under its title, `COE action item: notes/coes/<file>.md, action <N>.` A note or a
+line of its own under its title, `COE action item: notes/coes/<file>.md, action <N>`. A note or a
 helper that a delivered item left behind carries the same line where it states the mechanism, and a
 merged pull request carries it in a comment. `script/roadmap --check` holds the table to its
 records in both directions for every file under `design/roadmap/`, and holds each status to what its
