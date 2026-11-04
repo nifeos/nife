@@ -57,7 +57,7 @@ Set it with `gh variable set NIFE_RUNNER_OWNED --repo nifeos/nife --body true`.
 ## The canary
 
 `.github/workflows/owned-runner-canary.yml` runs on `merge_group` and on `push` to `main` only.
-It holds two jobs with identical steps:
+It holds two jobs with identical steps, then an isolation test:
 
 - `canary-owned` on `[nife-owned-x86_64]`, with `continue-on-error: true`, so a failure cannot
   block the queue.
@@ -68,6 +68,36 @@ Each prints the runner name, hostname and `id`, tests that `/dev/kvm` is writabl
 and `https://api.github.com` with the status code and time of each, and times the whole probe. The
 output goes to the job summary. The workflow holds no secrets and `permissions: contents: read`.
 Neither job name is a required check; do not add either to the ruleset.
+
+Every canary job ends with a `Resources` step that runs even after a failure and appends to the job
+summary:
+
+- wall time and `free -m`;
+- the cgroup's peak memory (`memory.peak`, or `memory.current` and `memory.max` when the peak file
+  is absent);
+- `df -h` for `$HOME`, `/tmp` and the volume that holds the workspace (the slot volume);
+- each fetch that did not return 200, by host.
+
+### What the isolation test proves
+
+An owned job starts from a clean container, so it sees none of an earlier job's files. Three jobs
+test that claim. All three are `continue-on-error`, and none is a required check.
+
+- `canary-owned-write` writes a marker file, `nife-canary-marker-<run_id>`, to `$HOME`, `/tmp` and
+  `/etc`. The container is rootless, so it tries `sudo -n` when plain writing fails. A path it
+  cannot write prints a `FINDING` line. That records a fact about the container and does not fail the
+  job.
+- `canary-owned-check` needs the writer and runs five instances in parallel (`fail-fast: false`) on
+  the same label. Each prints its runner name, confirms that none of the three markers exists, and
+  confirms that `$HOME` holds no `nife-canary-marker-*` file. A `LEAK` line fails that instance.
+- `canary-owned-isolation` runs on a hosted runner, reads the run's jobs from the API and states
+  whether any check instance ran on the writer's slot. Runner names end in `-sNN-<hex>`, and equal
+  names mean one slot.
+
+Reading the summary: no `LEAK` line in any instance is the pass. A leak can only show where the
+writer ran, so the test counts only when the isolation job says `writer slot seen again: yes`.
+A `no` means this run proved nothing about slot reuse; read the next run. A `FINDING` for `/etc`
+is the expected result of a rootless container.
 
 ### What counts as a pass
 
