@@ -14,9 +14,9 @@ use std::collections::BTreeMap;
 use std::vec;
 use std::vec::Vec;
 
-use crate::controller::{self, Identity};
 use crate::management_data_input_output::{self, ManagementDataInputOutput};
-use crate::motorcomm::{self, Link, Speed};
+use crate::motorcomm_physical_layer_device::{self, Link, Speed};
+use crate::network_interface_controller::{self as controller, Identity};
 use crate::{
     DirectMemoryAccessRegion, Hardware, RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY,
     RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR,
@@ -196,21 +196,31 @@ impl PhysicalLayerDevice {
     pub(crate) fn yt8531_at_1v8() -> PhysicalLayerDevice {
         let mut registers = [0; 32];
         registers[management_data_input_output::PHYSID1 as usize] =
-            (motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID >> 16) as u16;
+            (motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID >> 16)
+                as u16;
         registers[management_data_input_output::PHYSID2 as usize] =
-            motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID as u16;
+            motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID as u16;
         let mut extended = BTreeMap::new();
-        extended.insert(motorcomm::EXT_CHIP_CONFIG, 0x2 << 4 | motorcomm::RXC_DLY_EN);
-        extended.insert(motorcomm::EXT_SYNCE_CFG, motorcomm::EN_SYNC_E);
         extended.insert(
-            motorcomm::MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER,
-            motorcomm::ESC1R_SLEEP_SW | 1 << 14,
+            motorcomm_physical_layer_device::EXT_CHIP_CONFIG,
+            0x2 << 4 | motorcomm_physical_layer_device::RXC_DLY_EN,
         );
         extended.insert(
-            motorcomm::MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER,
-            motorcomm::CGR_RX_CLK_EN,
+            motorcomm_physical_layer_device::EXT_SYNCE_CFG,
+            motorcomm_physical_layer_device::EN_SYNC_E,
         );
-        extended.insert(motorcomm::EXT_PAD_DRIVE_STRENGTH, 0xffff);
+        extended.insert(
+            motorcomm_physical_layer_device::MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER,
+            motorcomm_physical_layer_device::ESC1R_SLEEP_SW | 1 << 14,
+        );
+        extended.insert(
+            motorcomm_physical_layer_device::MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER,
+            motorcomm_physical_layer_device::CGR_RX_CLK_EN,
+        );
+        extended.insert(
+            motorcomm_physical_layer_device::EXT_PAD_DRIVE_STRENGTH,
+            0xffff,
+        );
         registers[management_data_input_output::BMCR as usize] =
             management_data_input_output::BMCR_ANENABLE;
         PhysicalLayerDevice {
@@ -245,7 +255,9 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
     ) -> Result<u16, management_data_input_output::Error> {
         let register = register & 0x1f;
         Ok(match register {
-            motorcomm::REG_DATA => self.extended(self.registers[motorcomm::REG_ADDR as usize]),
+            motorcomm_physical_layer_device::REG_DATA => {
+                self.extended(self.registers[motorcomm_physical_layer_device::REG_ADDR as usize])
+            }
             management_data_input_output::BMSR => {
                 if self.link.is_some() {
                     management_data_input_output::BMSR_LSTATUS
@@ -293,9 +305,11 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
     ) -> Result<(), management_data_input_output::Error> {
         let register = register & 0x1f;
         match register {
-            motorcomm::REG_DATA => {
-                self.extended
-                    .insert(self.registers[motorcomm::REG_ADDR as usize], v);
+            motorcomm_physical_layer_device::REG_DATA => {
+                self.extended.insert(
+                    self.registers[motorcomm_physical_layer_device::REG_ADDR as usize],
+                    v,
+                );
             }
             management_data_input_output::BMCR => {
                 self.registers[0] = v & !(management_data_input_output::BMCR_ANRESTART
@@ -672,7 +686,10 @@ mod tests {
             0,
         )
         .unwrap();
-        assert_eq!(id, motorcomm::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID);
+        assert_eq!(
+            id,
+            motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID
+        );
     }
 
     #[test]
