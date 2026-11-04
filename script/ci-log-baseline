@@ -33,9 +33,11 @@
 #
 #     run_id,job_id,date,workflow,job_name,attributed_check,branch
 #
-# **Which job types, and why only these five.** `script/lint` runs 47 named checks inside one
-# `lint` job (named `clippy` before 2026-10-08 UTC; both names match below) and exits on the first
-# failure, so the log's last `==>` marker names the check that was running.
+# **Which job types, and why only these five.** `script/lint` runs its named checks (sections)
+# inside one `lint` job (named `clippy` before 2026-10-08 UTC; both names match below), runs every
+# section whatever fails, and ends a failing run with `lint: N of M sections failed` and the name of
+# each. The attribution is those names (`lint_failure_marker`); a log without the summary falls back
+# to its last `==>` marker, the section a hung run was in.
 # Three more scripts share that convention over their own sub-items: `script/supply-chain`
 # (one cargo-deny pass per manifest, then script/vendor-verify's per-package pass), `script/verify`
 # (one Kani harness per crate), and `script/cpu-matrix` mostly does NOT: its own last `==>` marker is
@@ -194,6 +196,23 @@ fetch_log() {
     echo "FAIL:$ef"
 }
 
+# Names a failed lint job. $1 = the log file. script/lint runs every section and ends a failing run
+# with `lint: N of M sections failed.` and one `  NAME (exit K)` line per failed section, so the
+# last `==>` line is always the final section and says nothing about the failure. This prints
+# `==> NAME` for each failed section, joined by `; `. A log with no such summary (a run killed or
+# hung mid-section, or one from before the summary existed) falls back to its last `==>` line,
+# which in a hung run is the section it hung in. Prints nothing when the log has neither.
+lint_failure_marker() {
+    sed -E 's/^[0-9TZ:.-]+Z//' "$1" | awk '
+        /^ *lint: [0-9]+ of [0-9]+ sections failed/ { on = 1; next }
+        on && /^   *.* \(exit [0-9]+\)$/ {
+            n = $0; sub(/^ +/, "", n); sub(/ \(exit [0-9]+\)$/, "", n)
+            out = out (out == "" ? "" : "; ") "==> " n; next }
+        on { on = 0 }
+        /==>/ { last = $0; sub(/^ */, "", last) }
+        END { print (out != "" ? out : last) }'
+}
+
 # Extracts the attribution for one job. $1 = job name (as GitHub prints it), $2 = job id,
 # $3 = run id (needed only for the run-archive fallback inside fetch_log).
 # Prints "STATUS<TAB>detail" on stdout. STATUS is one of MARKER / PREFLIGHT / MODELS / TRIPWIRE /
@@ -220,7 +239,7 @@ attribute_job() {
 
     case "$jname" in
         lint|clippy)
-            m=$(grep -a '==>' "$logf" | tail -1 | sed -E 's/^[0-9TZ:.-]+Z//; s/^ *//')
+            m=$(lint_failure_marker "$logf")
             [ -n "$m" ] && printf 'MARKER\t%s\n' "$m" || printf 'UNATTRIBUTABLE\tno ==> marker found\n'
             ;;
         "supply chain (advisories, licences, vendored integrity)"|"verify (Kani proofs)")
