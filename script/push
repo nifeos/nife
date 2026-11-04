@@ -105,6 +105,10 @@ if [ "$remote" = "$head" ]; then
             exit 1
         }
     fi
+    # Tell a lane, before it arms, that its ready pull request conflicts with the merge queue.
+    # Advisory: it never changes this script's exit. NIFE_SKIP_QUEUE_CHECK=1 skips it.
+    # script/queue-conflicts says more.
+    [ "${NIFE_SKIP_QUEUE_CHECK:-}" = 1 ] || "$(dirname "$0")/queue-conflicts" --advisory || true
     exit 0
 fi
 

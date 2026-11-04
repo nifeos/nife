@@ -133,7 +133,7 @@ impl Sim {
     }
 
     fn physical_layer_device_answers(&self) -> bool {
-        let forced = self.get(mac::CTRL_EXT) & 0x800 != 0;
+        let forced = self.get(mac::EXTENDED_DEVICE_CONTROL_REGISTER) & 0x800 != 0;
         !self.physical_layer_device_dead
             && self.physical_layer_device_in_system_management_bus == forced
     }
@@ -193,28 +193,29 @@ impl Sim {
             self.lanphypc_toggles += 1;
             self.physical_layer_device_dead = false;
             self.physical_layer_device_in_system_management_bus = false;
-            let e = self.get(mac::CTRL_EXT);
-            self.mac.insert(mac::CTRL_EXT, e | 0x4); // LPCD
+            let e = self.get(mac::EXTENDED_DEVICE_CONTROL_REGISTER);
+            self.mac
+                .insert(mac::EXTENDED_DEVICE_CONTROL_REGISTER, e | 0x4); // LPCD
         }
         let mut stored = value;
         if value & 0x8000_0000 != 0 {
             self.physical_layer_device_resets += 1;
-            let s = self.get(mac::STATUS);
-            self.mac.insert(mac::STATUS, s | 0x600); // PHYRA, LAN_INIT_DONE
+            let s = self.get(mac::DEVICE_STATUS_REGISTER);
+            self.mac.insert(mac::DEVICE_STATUS_REGISTER, s | 0x600); // PHYRA, LAN_INIT_DONE
         }
-        if value & crate::CTRL_RST != 0 {
+        if value & crate::DEVICE_CONTROL_GLOBAL_RESET != 0 {
             self.global_resets += 1;
-            stored &= !crate::CTRL_RST; // self-clears in the model at once
+            stored &= !crate::DEVICE_CONTROL_GLOBAL_RESET; // self-clears in the model at once
             // The reset drops the semaphore; the configuration pointer is reloaded from the NVM.
             let e = self.get(registers::EXTCNF_CTRL);
             self.mac.insert(
                 registers::EXTCNF_CTRL,
                 e & !physical_layer_device::EXTCNF_CTRL_SWFLAG,
             );
-            let s = self.get(mac::STATUS);
-            self.mac.insert(mac::STATUS, s | 0x200); // LAN_INIT_DONE
+            let s = self.get(mac::DEVICE_STATUS_REGISTER);
+            self.mac.insert(mac::DEVICE_STATUS_REGISTER, s | 0x200); // LAN_INIT_DONE
         }
-        self.mac.insert(mac::CTRL, stored);
+        self.mac.insert(mac::DEVICE_CONTROL_REGISTER, stored);
     }
 
     fn flash_write(&mut self, value: u32) {
@@ -292,7 +293,7 @@ impl Hardware for Sim {
         self.writes.push((offset, value));
         match offset {
             o if o == registers::MDIC => self.mdic(value),
-            o if o == mac::CTRL => self.ctrl(value),
+            o if o == mac::DEVICE_CONTROL_REGISTER => self.ctrl(value),
             o if o == registers::EXTCNF_CTRL => {
                 let keep = if self.firmware_holds_software_flag {
                     value & !physical_layer_device::EXTCNF_CTRL_SWFLAG
@@ -569,7 +570,7 @@ mod tests {
         assert_eq!(s.lanphypc_toggles, 0, "no power cycle was needed");
         // With an ME, FreeBSD leaves the unforce to the firmware ("Only unforce SMBus if ME is
         // not active"), and so does this.
-        assert_ne!(s.get(mac::CTRL_EXT) & 0x800, 0);
+        assert_ne!(s.get(mac::EXTENDED_DEVICE_CONTROL_REGISTER) & 0x800, 0);
     }
 
     #[test]
@@ -642,7 +643,7 @@ mod tests {
         assert_eq!(s.strap_writes, [0x8086, 0x8086]);
         assert_ne!(s.get(registers::KABGTXD) & 0x0005_0000, 0);
         assert_eq!(
-            s.get(mac::STATUS) & 0x600,
+            s.get(mac::DEVICE_STATUS_REGISTER) & 0x600,
             0,
             "LAN_INIT_DONE and PHYRA cleared"
         );
@@ -734,7 +735,10 @@ mod tests {
             s.physical_layer_device_registers[&physical_layer_device::registers::PHY_CONTROL],
             0x1200
         );
-        assert_ne!(s.get(mac::CTRL) & crate::CTRL_SLU, 0);
+        assert_ne!(
+            s.get(mac::DEVICE_CONTROL_REGISTER) & crate::DEVICE_CONTROL_SET_LINK_UP,
+            0
+        );
         assert_eq!(s.get(registers::TXDCTL0) & 0x013f_003f, 0x0101_001f);
         assert!(swflag_free(&s));
     }

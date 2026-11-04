@@ -143,11 +143,11 @@ None was in the proven crates.
 
 | rank | handler | who can send | ready for host? |
 |---|---|---|---|
-| 1 | `redoxfs_server` (`src/bin/redoxfs_server.rs:413-700`, 24 verbs) | any std program; bound badges are confined clients | the `Server` API is; the per-request dispatch is in the binary |
-| 2 | `net_stack` (`components/src/net_stack.rs:227-360`, 11 ops) | any program granted network | no; an EL0 binary with no sans-IO core |
-| 3 | `system_log::Log::handle` (`crates/system_log/src/lib.rs:163`) | every program's stdout | yes, pure |
+| 1 | `redoxfs_server` (`redoxfs_server/src/bin/redoxfs_server.rs::serve`, 24 verbs) | any std program; bound badges are confined clients | the `Server` API is; the per-request dispatch is in the binary |
+| 2 | `net_stack` (`components/src/socket_server.rs::server`, 11 ops) | any program granted network | no; an EL0 binary with no sans-IO core |
+| 3 | `system_log::Log::handle` (`crates/system_log/src/log.rs`) | every program's stdout | yes, pure |
 | 4 | `fs_file`, `fs_nameset`, `fs_subtree` caretakers | the clients a grant fronts | no; inline in `components/src/` |
-| 5 | `compositor::serve_frame` (`components/src/compositor.rs:253-306`) | any graphical client | the clip, `crates/compositor/src/lib.rs:516`, is |
+| 5 | `compositor::serve_frame` (`components/src/compositor.rs`) | any graphical client | the clip, `crates/compositor/src/lib.rs::damage_to_screen`, is |
 
 Lower: `login` (terminals only), `credentialer` (login and the provisioner only, and `read` is
 proven), `entropy`, `console`. The file server is first because it is a confinement boundary as
