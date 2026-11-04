@@ -147,9 +147,8 @@ working.
 - A CI build on every pull request and a deploy on every merge to main.
 
 The generator is Eleventy, with Pagefind for search, approved on 2026-11-04 (UTC) as CI-only
-dependencies on four terms: a committed lockfile, installation with `npm ci --ignore-scripts`,
-exact versions at least two weeks old when pinned, and bumps through the ordinary pull request
-path. The architect knows Eleventy and would maintain it. Hugo and Zola, measured on the same
+dependencies. The terms: a committed lockfile, installation with `npm ci --ignore-scripts`, exact
+versions at least two weeks old when pinned, and bumps through the ordinary pull request path. The architect knows Eleventy and would maintain it. Hugo and Zola, measured on the same
 record, also worked; Jekyll lost on build speed, and mdBook fits poorly with addresses made of a
 number alone.
 
