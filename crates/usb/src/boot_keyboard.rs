@@ -1,5 +1,5 @@
 //! **The boot keyboard report, and what changed between two of them** (HID 1.11 Appendix B.1,
-//! HID Usage Tables 1.12 section 10).
+//! HID Usage Tables 1.5 section 10).
 //!
 //! A boot keyboard does not send key events. It sends its **state**: eight bytes, the modifier
 //! keys as a bitmap in byte 0, a reserved byte, then up to six usage ids for the other keys held
@@ -9,19 +9,47 @@
 //!
 //! # Where the table comes from
 //!
-//! [`evdev_code`]'s table is read off two documents: each row's usage and name from the HID Usage
-//! Tables 1.12 keyboard page (section 10), and each code's number from the `KEY_*` names in
-//! `include/uapi/linux/input-event-codes.h`, whose name each row carries in a comment. Two rows are
-//! nife's own choices, since the Usage Tables name no evdev key for them: usage 0x32 (Non-US `#`
-//! and `~`) is reported as `KEY_BACKSLASH`, the key the usage sits beside, and usage 0x46 (Print
-//! Screen) is reported as `KEY_SYSRQ`, the key a terminal keyboard labels that way.
+//! [`evdev_code`]'s table and [`MODIFIER_CODES`] come from two public documents, and every row
+//! carries both in its comment:
 //!
-//! One comparison was run, once, against Linux's `hid_keyboard[]` in `drivers/hid/hid-input.c` at
-//! `torvalds/linux@cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a`, fetched 2026-11-01 (UTC). The two
-//! agree on every usage from 0x04 to 0x63, which is expected: both place one physical key at one
-//! number. The longest run of identical lower-case word tokens between this file and
-//! `hid-input.c` is 6, a row of test report bytes, and between this file and the header it is 4,
-//! the header's own path. No test carries the Linux table.
+//! - The usage id and its name come from the USB-IF *HID Usage Tables for USB*, version 1.5
+//!   (`hut1_5.pdf`, dated 2024-01-08), section 10, the Keyboard/Keypad page. A row's comment
+//!   gives the usage name without the page's `Keyboard` prefix.
+//! - Each number is the value of the `KEY_*` name that matches that usage name, read from
+//!   `include/uapi/linux/input-event-codes.h` at
+//!   `torvalds/linux@cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a` (GPL-2.0-only WITH
+//!   Linux-syscall-note). That header is an ABI: its numbers are the interface itself, and the
+//!   crate takes the numbers and the names, no text.
+//!
+//! Most names match on their face (`F1` is `KEY_F1`, `Tab` is `KEY_TAB`). Where they do not, the
+//! Usage Tables settle the match:
+//!
+//! - 0x2a `DELETE (Backspace)` is `KEY_BACKSPACE` and 0x4c `Delete Forward` is `KEY_DELETE`,
+//!   because the Usage Tables' footnotes 4 and 8 say the first backs up the cursor and the second
+//!   deletes in place.
+//! - 0xe3 and 0xe7, `Left GUI` and `Right GUI`, are `KEY_LEFTMETA` and `KEY_RIGHTMETA`, because
+//!   footnotes 33 and 34 list the Sun Meta key among the GUI keys.
+//!
+//! # nife's own choices
+//!
+//! The sources leave three things open, and nife chose them:
+//!
+//! - **Usage 0x32 (`Non-US # and ~`) is `KEY_BACKSLASH`.** The header has no key for it. The
+//!   usage sits at AT-101 position 42, beside Return, and footnote 5 gives `\` and `|` as its US
+//!   legends, so a US layout reads it as the backslash key.
+//! - **Usage 0x46 (`PrintScreen`) is `KEY_SYSRQ`.** The header's `KEY_PRINT` carries the comment
+//!   `AC Print`, the Consumer page's print command, not a keyboard key. System Request is the
+//!   function a PC keyboard puts on the Print Screen keycap.
+//! - **A usage named for two legends takes the first.** `Keypad Num Lock and Clear` (0x53) is
+//!   `KEY_NUMLOCK`, and `Keypad 1 and End` (0x59) through `Keypad . and Delete` (0x63) are the
+//!   keypad keys `KEY_KP1` through `KEY_KPDOT`. The second legend is what the key does in another
+//!   mode, which the keymap decides, and the Usage Tables give Clear its own usages (0x9c, 0xd8).
+//!
+//! # Cross-check
+//!
+//! A test, `the_table_matches_its_linux_cross_check`, records a comparison with Linux's
+//! `hid_keyboard[]` and fails when the table changes, so a changed row reruns it. The test's
+//! comment gives the revision and the result. The crate copies no Linux driver text.
 
 /// How long a boot report is.
 pub const REPORT_LEN: usize = 8;
@@ -30,17 +58,18 @@ pub const REPORT_LEN: usize = 8;
 /// (`ErrorRollOver`, Usage Tables section 10). A report carrying it describes no real state.
 pub const ERROR_ROLL_OVER: u8 = 0x01;
 
-/// The evdev codes of the eight modifier keys, in the bit order of byte 0: left control, shift,
-/// alt, GUI, then the right-hand four.
+/// The evdev codes of the eight modifier keys, usages 0xe0 to 0xe7, in the bit order of byte 0:
+/// left control, shift, alt, GUI, then the right-hand four. The module documentation says where
+/// the numbers come from.
 pub const MODIFIER_CODES: [u16; 8] = [
-    29,  // KEY_LEFTCTRL
-    42,  // KEY_LEFTSHIFT
-    56,  // KEY_LEFTALT
-    125, // KEY_LEFTMETA
-    97,  // KEY_RIGHTCTRL
-    54,  // KEY_RIGHTSHIFT
-    100, // KEY_RIGHTALT
-    126, // KEY_RIGHTMETA
+    29,  // 0xe0 LeftControl: KEY_LEFTCTRL
+    42,  // 0xe1 LeftShift: KEY_LEFTSHIFT
+    56,  // 0xe2 LeftAlt: KEY_LEFTALT
+    125, // 0xe3 Left GUI: KEY_LEFTMETA
+    97,  // 0xe4 RightControl: KEY_RIGHTCTRL
+    54,  // 0xe5 RightShift: KEY_RIGHTSHIFT
+    100, // 0xe6 RightAlt: KEY_RIGHTALT
+    126, // 0xe7 Right GUI: KEY_RIGHTMETA
 ];
 
 /// **One boot report**: the modifier bitmap and the six key slots.
@@ -115,19 +144,19 @@ pub fn evdev_code(usage: u8) -> Option<u16> {
         45,  // 0x1b x and X: KEY_X
         21,  // 0x1c y and Y: KEY_Y
         44,  // 0x1d z and Z: KEY_Z
-        2,   // 0x1e 1: KEY_1
-        3,   // 0x1f 2: KEY_2
-        4,   // 0x20 3: KEY_3
-        5,   // 0x21 4: KEY_4
-        6,   // 0x22 5: KEY_5
-        7,   // 0x23 6: KEY_6
-        8,   // 0x24 7: KEY_7
-        9,   // 0x25 8: KEY_8
-        10,  // 0x26 9: KEY_9
-        11,  // 0x27 0: KEY_0
-        28,  // 0x28 Return: KEY_ENTER
-        1,   // 0x29 Escape: KEY_ESC
-        14,  // 0x2a Delete (Backspace): KEY_BACKSPACE
+        2,   // 0x1e 1 and !: KEY_1
+        3,   // 0x1f 2 and @: KEY_2
+        4,   // 0x20 3 and #: KEY_3
+        5,   // 0x21 4 and $: KEY_4
+        6,   // 0x22 5 and %: KEY_5
+        7,   // 0x23 6 and ^: KEY_6
+        8,   // 0x24 7 and &: KEY_7
+        9,   // 0x25 8 and *: KEY_8
+        10,  // 0x26 9 and (: KEY_9
+        11,  // 0x27 0 and ): KEY_0
+        28,  // 0x28 Return (ENTER): KEY_ENTER
+        1,   // 0x29 ESCAPE: KEY_ESC
+        14,  // 0x2a DELETE (Backspace): KEY_BACKSPACE
         15,  // 0x2b Tab: KEY_TAB
         57,  // 0x2c Spacebar: KEY_SPACE
         12,  // 0x2d - and _: KEY_MINUS
@@ -155,36 +184,36 @@ pub fn evdev_code(usage: u8) -> Option<u16> {
         68,  // 0x43 F10: KEY_F10
         87,  // 0x44 F11: KEY_F11
         88,  // 0x45 F12: KEY_F12
-        99,  // 0x46 Print Screen: KEY_SYSRQ
+        99,  // 0x46 PrintScreen: KEY_SYSRQ
         70,  // 0x47 Scroll Lock: KEY_SCROLLLOCK
         119, // 0x48 Pause: KEY_PAUSE
         110, // 0x49 Insert: KEY_INSERT
         102, // 0x4a Home: KEY_HOME
-        104, // 0x4b Page Up: KEY_PAGEUP
+        104, // 0x4b PageUp: KEY_PAGEUP
         111, // 0x4c Delete Forward: KEY_DELETE
         107, // 0x4d End: KEY_END
-        109, // 0x4e Page Down: KEY_PAGEDOWN
-        106, // 0x4f Right Arrow: KEY_RIGHT
-        105, // 0x50 Left Arrow: KEY_LEFT
-        108, // 0x51 Down Arrow: KEY_DOWN
-        103, // 0x52 Up Arrow: KEY_UP
-        69,  // 0x53 Num Lock: KEY_NUMLOCK
+        109, // 0x4e PageDown: KEY_PAGEDOWN
+        106, // 0x4f RightArrow: KEY_RIGHT
+        105, // 0x50 LeftArrow: KEY_LEFT
+        108, // 0x51 DownArrow: KEY_DOWN
+        103, // 0x52 UpArrow: KEY_UP
+        69,  // 0x53 Keypad Num Lock and Clear: KEY_NUMLOCK
         98,  // 0x54 Keypad /: KEY_KPSLASH
         55,  // 0x55 Keypad *: KEY_KPASTERISK
         74,  // 0x56 Keypad -: KEY_KPMINUS
         78,  // 0x57 Keypad +: KEY_KPPLUS
-        96,  // 0x58 Keypad Enter: KEY_KPENTER
-        79,  // 0x59 Keypad 1: KEY_KP1
-        80,  // 0x5a Keypad 2: KEY_KP2
-        81,  // 0x5b Keypad 3: KEY_KP3
-        75,  // 0x5c Keypad 4: KEY_KP4
+        96,  // 0x58 Keypad ENTER: KEY_KPENTER
+        79,  // 0x59 Keypad 1 and End: KEY_KP1
+        80,  // 0x5a Keypad 2 and Down Arrow: KEY_KP2
+        81,  // 0x5b Keypad 3 and PageDn: KEY_KP3
+        75,  // 0x5c Keypad 4 and Left Arrow: KEY_KP4
         76,  // 0x5d Keypad 5: KEY_KP5
-        77,  // 0x5e Keypad 6: KEY_KP6
-        71,  // 0x5f Keypad 7: KEY_KP7
-        72,  // 0x60 Keypad 8: KEY_KP8
-        73,  // 0x61 Keypad 9: KEY_KP9
-        82,  // 0x62 Keypad 0: KEY_KP0
-        83,  // 0x63 Keypad .: KEY_KPDOT
+        77,  // 0x5e Keypad 6 and Right Arrow: KEY_KP6
+        71,  // 0x5f Keypad 7 and Home: KEY_KP7
+        72,  // 0x60 Keypad 8 and Up Arrow: KEY_KP8
+        73,  // 0x61 Keypad 9 and PageUp: KEY_KP9
+        82,  // 0x62 Keypad 0 and Insert: KEY_KP0
+        83,  // 0x63 Keypad . and Delete: KEY_KPDOT
     ];
     TABLE.get(usize::from(usage).checked_sub(4)?).copied()
 }
