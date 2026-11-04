@@ -6,15 +6,15 @@
 # The site renders every tracked Markdown file under design/, notes/ and briefs/ with Eleventy,
 # gives each numbered record one stable address (/roadmap/1018/, /decisions/201/), links each
 # `milestone N`, `§N` and bare `#N` in prose, indexes the result for search with Pagefind, and checks
-# every internal link and fragment. The output is target/site/site/; the report is
-# target/site/summary.md, and target/site/report.json holds the same numbers and examples.
+# every internal link and fragment. The output is target/site/build/site/; the report is
+# target/site/build/summary.md, and report.json beside it holds the same numbers and examples.
 #
 # It is report-only. A broken link or a citation of a missing record is counted, never fatal: this
 # exits non-zero only when a step itself fails. .github/workflows/record-site.yml runs it and
 # uploads the site as an artifact.
 #
 #     script/site                  # build, index, check, report
-#     script/site --install        # run `npm ci --ignore-scripts` in site/ first
+#     script/site --install        # reinstall the packages with `npm ci --ignore-scripts` first
 #
 # Node is pinned in site/.node-version, and npm's packages in site/package-lock.json at exact
 # versions. Eleventy and Pagefind are CI-only dependencies (2026-11-04 UTC): the lockfile is
@@ -24,10 +24,10 @@
 #
 # EXAMPLES
 #
-#     script/site --install && open target/site/site/index.html
+#     script/site --install && open target/site/build/site/index.html
 #
 # The index page's search needs the site served over HTTP, since Pagefind fetches its index:
-# `python3 -m http.server -d target/site/site` and browse to http://localhost:8000/.
+# `python3 -m http.server -d target/site/build/site` and browse to http://localhost:8000/.
 #
 # BUGS
 #
@@ -55,8 +55,20 @@ want="$(cat "$site/.node-version")"
 have="$(node --version | sed 's/^v//')"
 [ "$have" = "$want" ] || echo "script/site: warning: node $have on PATH, site/.node-version pins $want" >&2
 
-if [ "$install" -eq 1 ] || [ ! -d "$site/node_modules" ]; then
-    (cd "$site" && npm ci --ignore-scripts --no-audit --no-fund)
+# The builder runs from a copy of site/ under target/, with its packages installed beside it, so
+# no node_modules directory lands in the source tree: the tree's Markdown and prose checks walk the
+# filesystem, and would read every package's README as the record's own.
+builder="$root/target/site/builder"
+mkdir -p "$builder"
+if [ "$install" -eq 1 ] || [ ! -d "$builder/node_modules" ] ||
+    ! cmp -s "$site/package-lock.json" "$builder/package-lock.json"; then
+    rm -rf "$builder"
+    mkdir -p "$builder"
+    cp -R "$site/." "$builder/"
+    (cd "$builder" && npm ci --ignore-scripts --no-audit --no-fund)
+else
+    # Refresh the sources and keep the installed packages.
+    cp -R "$site/." "$builder/"
 fi
 
-exec node "$site/build.mjs"
+NIFE_SITE_REPOSITORY="$root" exec node "$builder/build.mjs"

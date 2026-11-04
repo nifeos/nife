@@ -39,5 +39,5 @@ __pycache__/
 # (2026-10-16, calef); this line keeps the next session's scratchpad from tripping them again.
 scratchpad/
 
-# The site build's npm packages (script/site). Its output goes to target/site.
+# npm's packages, should `npm ci` run in site/ by hand; script/site installs them under target/.
 site/node_modules/

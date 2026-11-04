@@ -1,11 +1,11 @@
 name: record site
 
 # Observed failing: 2026-11-04, by script: a link to a missing file, a fragment naming no heading on
-#   its own page and on another, `milestone 99999` and `§9999` were appended to
-#   design/tenets/measure-first.md in a lane worktree, and `node site/build.mjs` (the step below
-#   without the install) reported 2 citations that name no record and 3 in-record breaks (1 relative
-#   link to no file, 2 fragments to no heading), each with its example; with the plant removed it
-#   reported 0 and 0. A real run cannot be staged without merging a broken record, which
+#   its own page and on another, and a citation of a milestone number and a section number that
+#   have no record were appended to design/tenets/measure-first.md in a lane worktree, and the
+#   build step's `site/build.mjs` reported 2 citations that name no record and 3 in-record breaks
+#   (1 relative link to no file, 2 fragments to no heading), each with its example; with the plant
+#   removed it reported 0 and 0. A real run cannot be staged without merging a broken record, which
 #   `script/lint` refuses. See notes/observed-failing.md.
 
 # **Builds the design record as a website and keeps it as this run's artifact, deploying nothing.**
@@ -83,8 +83,8 @@ jobs:
         with:
           name: record-site
           path: |
-            target/site/site
-            target/site/report.json
-            target/site/summary.md
+            target/site/build/site
+            target/site/build/report.json
+            target/site/build/summary.md
           if-no-files-found: error
           retention-days: 14

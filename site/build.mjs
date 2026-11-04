@@ -18,9 +18,12 @@ import { searchCheck } from "./lib/search-check.mjs";
 const require = createRequire(import.meta.url);
 const { checkLinks } = require("./lib/link-check.js");
 
+// script/site copies site/ to target/site/builder and installs the packages there, so no
+// node_modules directory sits in the source tree for the tree's own checks to walk. So `here` is
+// that copy, and the repository comes from the environment.
 const here = path.dirname(fileURLToPath(import.meta.url));
-const repository = path.resolve(here, "..");
-const work = path.resolve(process.env.NIFE_SITE_WORK || path.join(repository, "target", "site"));
+const repository = path.resolve(process.env.NIFE_SITE_REPOSITORY || path.join(here, ".."));
+const work = path.resolve(process.env.NIFE_SITE_WORK || path.join(repository, "target", "site", "build"));
 const input = path.join(work, "input");
 const output = path.join(work, "site");
 const ROOTS = ["design", "notes", "briefs"];
