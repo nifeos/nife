@@ -8,18 +8,18 @@ use super::*;
 
 /// The page of BAR0 holding receive queue 0's registers, mapped into the process.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `RX_QUEUE_PAGE` (rx abbreviates receive).
+/// Name: ratified 2026-11-03 (UTC), #3124.
 pub const RECEIVE_QUEUE_PAGE: u64 = 0x2000;
 
 /// The page of BAR0 holding transmit queue 0's registers, mapped into the process.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `TX_QUEUE_PAGE` (tx abbreviates transmit).
+/// Name: ratified 2026-11-03 (UTC), #3124.
 pub const TRANSMIT_QUEUE_PAGE: u64 = 0x3000;
 
 /// Where `RDT` sits inside [`RECEIVE_QUEUE_PAGE`], and `TDT` inside [`TRANSMIT_QUEUE_PAGE`]: the
 /// same offset.
+///
+/// Name: ratified 2026-11-03 (UTC), #3124.
 pub const TAIL_IN_PAGE: u64 = registers::RDT - RECEIVE_QUEUE_PAGE;
 
 pub(crate) const PAGE: u64 = 4096;
@@ -27,27 +27,25 @@ pub(crate) const PAGE: u64 = 4096;
 /// Receive descriptors. Sixteen 16-byte descriptors are 256 bytes, which satisfies `RDLEN`'s
 /// multiple-of-128 rule and fits one page with room to grow.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `RX_ENTRIES` (rx abbreviates receive).
+/// Name: ratified 2026-11-03 (UTC), #3124.
 pub const RECEIVE_ENTRIES: u16 = 16;
 
 /// Transmit descriptors.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `TX_ENTRIES` (tx abbreviates transmit).
+/// Name: ratified 2026-11-03 (UTC), #3124.
 pub const TRANSMIT_ENTRIES: u16 = 16;
 
 /// Bytes per buffer, matching `RCTL`'s size field of zero.
-pub const BUFFER_SIZE: u64 = 2048;
-
-/// The largest frame either direction carries: 1500 bytes of payload and the 14-byte Ethernet
-/// header, no CRC (the device strips it on receive and appends it on transmit). smoltcp's
-/// `max_transmission_unit` means exactly this for an Ethernet device.
 ///
-/// Name: ratified 2026-10-26 (#2761). Ruled in the tree-wide ruling that spells out `max` as
-/// `maximum`, which names `MAXIMUM_FRAME` in `designware_ethernet`. Refused `MAX_FRAME` (an
-/// abbreviation).
-pub const MAXIMUM_FRAME: usize = 1514;
+/// Name: ratified 2026-11-03 (UTC), #3124.
+pub const BUFFER_BYTES: u64 = 2048;
+
+/// The largest frame either direction carries, in bytes: 1500 bytes of payload and the 14-byte
+/// Ethernet header, no CRC (the device strips it on receive and appends it on transmit). This is
+/// not the maximum transmission unit, which is the 1500 bytes of payload alone.
+///
+/// Name: ratified 2026-11-03 (UTC), #3124; renamed from `MAXIMUM_FRAME`, which #2761 had ratified.
+pub const MAXIMUM_FRAME_BYTES: usize = 1514;
 
 /// Receive status: descriptor done. OpenBSD's `E1000_RXD_STAT_DD` (`sys/dev/pci/if_em_hw.h`),
 /// which FreeBSD's `sys/dev/e1000/e1000_defines.h` and Linux spell the same.
@@ -121,7 +119,7 @@ pub enum ReceiveVerdict {
 /// **Judge a receive descriptor's status word**, where `word` is the descriptor's second
 /// little-endian `u64` (length, checksum, status, errors, special) and `room` is how many bytes the
 /// caller can take. No field is trusted, since the device writes them all: a `Frame(n)` always has
-/// `n <= room` and `n <= BUFFER_SIZE`, which the Kani harness below proves for every word.
+/// `n <= room` and `n <= BUFFER_BYTES`, which the Kani harness below proves for every word.
 ///
 /// # Examples
 ///
@@ -144,7 +142,7 @@ pub fn receive_verdict(word: u64, room: usize) -> ReceiveVerdict {
     }
     let errors = (word >> 40) as u8;
     let len = (word & 0xffff) as usize;
-    let fits = (14..=MAXIMUM_FRAME).contains(&len) && len <= room && len as u64 <= BUFFER_SIZE;
+    let fits = (14..=MAXIMUM_FRAME_BYTES).contains(&len) && len <= room && len as u64 <= BUFFER_BYTES;
     if status & RECEIVE_STATUS_END_OF_PACKET == 0 || errors & RECEIVE_FRAME_ERROR_MASK != 0 || !fits
     {
         return ReceiveVerdict::Drop;

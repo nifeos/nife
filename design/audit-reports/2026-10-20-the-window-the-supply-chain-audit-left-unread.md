@@ -54,7 +54,7 @@ path and milestone 578 (an ACPI discovery path for aarch64) boots QEMU's GICv3 w
 ## What was read, and what came back clean
 
 **The SD/MMC server.** It holds one register page, its transfer region and two endpoints, uses all
-of them, and holds no interrupt. `Host::new` clears the internal DMA controller's enables, the
+of them, and holds no interrupt. `HostController::new` clears the internal DMA controller's enables, the
 request count is clamped to the transfer window, `Window::translate` checks overflow and is
 Kani-proved, and the block number is bounded against the card. Its header says plainly that the
 page also holds `DBADDR` and `BMOD` and that a server which enabled the IDMAC could aim the

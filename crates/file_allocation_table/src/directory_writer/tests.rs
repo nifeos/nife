@@ -281,6 +281,10 @@ impl crate::sector::WritableSectorDevice for Blank {
 /// `grow_directory` says no and a run past the last slot is `DirectoryFull`. Cluster sizes of
 /// 512 and 1024 bytes put the limit at 4,096 and 2,048 clusters.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "grows a 70 MiB volume's root to 6,144 clusters; FAT32's cluster minimum leaves no smaller volume"
+)]
 fn a_directory_stops_growing_at_65536_entries() {
     use crate::{FileAllocationTableType, FormatOptions, FormatPlan, SectorSize};
     for sectors_per_cluster in [1u32, 2] {

@@ -56,7 +56,7 @@
 name: undefined-behavior check
 
 # Observed failing: 2026-09-28, run 36420045162: Miri reported Undefined Behavior (an unaligned
-#   `&AtomicU64` at crates/current_cpu_contract/src/lib.rs:273) and the job went red. See
+#   `&AtomicU64` in the word reader of crates/current_cpu_contract/src/lib.rs) and the job went red. See
 #   notes/observed-failing.md.
 
 on:
@@ -80,7 +80,7 @@ concurrency:
 jobs:
   miri:
     name: undefined-behavior check (host crates, sampled paths)
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     # **The 27-minute figure this used to quote is from 2026-08-03 and stopped being true without
     # anyone able to notice** (milestone 238). The job had been red since 2026-08-10, dying inside
     # two minutes on an environment variable, so nothing reached the crates that had meanwhile grown

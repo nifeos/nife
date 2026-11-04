@@ -283,6 +283,7 @@ section" resolves here.
 | [drift-since-the-2026-09-26-floors](benchmarks/drift-since-the-2026-09-26-floors.md) | drift on `main` on all three ISAs | 2026-10-02 |
 | [drift-since-the-2026-10-10-floor](benchmarks/drift-since-the-2026-10-10-floor.md) | four merges, and a tick that doubles one | 2026-10-19 |
 | [riscv64-spawn-reap-drift](benchmarks/riscv64-spawn-reap-drift.md) | the double copy | 2026-10-22 |
+| [riscv64-unexplained-drift](benchmarks/riscv64-unexplained-drift.md) | the riscv64 chart line, a false compiler term | 2026-11-03 |
 
 ## BUGS
 
@@ -296,12 +297,10 @@ section" resolves here.
   drift accumulates across baseline saves) charts it weekly, as drift on `main` that
   `bench/attributions.tsv` does not explain:
   [the drift report](project-metrics/baseline-drift.md).
-- `map_el0` has `map_new`'s preemption-in-the-window shape and is not masked, because a kernel cannot
-  mask a window it does not own. It has not been measured for this.
 - The x86_64 two-core counters are deterministic but not a function of the code, and are not gated.
   Proposed in `design/roadmap/proposals/two-core-bench-is-a-different-instrument.md`.
 - riscv64's `rfence_self` has oscillated between 5991 and 6476 across saves, and the cause (a hart
-  count or the compiler) is unsettled. It reads 5991 today.
+  count or the compiler) is unsettled. It reads 6073 today.
 - `bench/fastpath-*.txt` names its nightly only from its next `--save --why` (since 2026-09-24),
   and nothing checks that stamp against the pin. Until then a compiler bump can fail that gate with no
   commit responsible. riscv64's `syscall_entry` sat at +4.7% of a 5% band on 2026-09-21.

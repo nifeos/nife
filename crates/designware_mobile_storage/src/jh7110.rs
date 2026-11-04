@@ -14,6 +14,8 @@
 //!
 //! The crate reads no device tree. The caller finds the node named for a slot in [`NODE_NAMES`]
 //! and hands [`Slot::from_node`] its `reg` and its properties.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3135. The part's own name, as the board's device trees spell it.
 
 /// Mainline's `compatible`.
 ///
