@@ -32,3 +32,6 @@ Part of the [notes index](../README.md), which says how to add a line.
 - [2026-10-03: the queue's automation fought itself, and calef watched the queue](2026-10-03-the-queue-judged-one-pull-request-at-a-time.md):
   the drain re-queued what the calef account dequeued, the pre-push hook outran the agents'
   timeouts, and 33 group builds failed on facts only the merged tree could make true.
+- [2026-11-03: the merge queue drained slowly](2026-11-03-merge-queue-backlog.md): every push ran the
+  heavy gates against a 60-job pool, and every naming pull request rewrote one note, so 33 ready pull
+  requests were left waiting at the end of the Pacific day.

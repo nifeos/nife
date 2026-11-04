@@ -189,6 +189,16 @@ not admit `0.1.1`. So a patch bump of a dependency an architect already cleared 
 3061 (the `jh7110_entropy` pins) is the case. The rules file stays as it is. Narrowing the rule is
 work for a lane of its own and needs a ruling.
 
+## Removals the queue gives no reason for
+
+- GitHub removed five entries as `invalid_merge_commit` on 2026-11-03 and 11-04 (UTC): #3135 three
+  times within 18 minutes, then #3166 and #3128 once each. The event carries no detail, and nothing in
+  the tree explains which ones the branch caused. A pull request that takes this removal goes back
+  to the queue by hand, and the drain treats it like any other ejection.
+- `fuzz-guests` failed in 6 of the 39 group runs of the same day. It is not a required check, so the
+  queue merged those groups anyway, and nothing reads the failures. A required check that fails
+  this often would eject one group in six.
+
 ## The watchers
 
 - `lane-claim-check.sh` is only as alive as the drain is. It runs from the drain's pass and has no
