@@ -32,7 +32,7 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 
 In order, easiest to rule on first:
 
-1. The `no` groups of designware_mobile_storage (`DM10`): ratify as they stand, which clears the module apart from DM9.
+1. The `no` groups of designware_mobile_storage (`DM10`): ratify as they stand, which clears the module.
 
 The groups that need a real ruling are the register and bit constants: `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
@@ -43,13 +43,6 @@ The groups that need a real ruling are the register and bit constants: `E7` and 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
 
-### DM9. JH7110 node description (8)
-
-`jh7110::COMPATIBLE_MAINLINE`, `jh7110::COMPATIBLE_VENDOR`, `jh7110::INTERRUPTS`, `jh7110::SDIO0_BASE`, `jh7110::SDIO1_BASE`, `jh7110::Slot`, `jh7110::WINDOW_SIZE`, `jh7110::role`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify as they stand, with one question: `SDIO0_BASE` and `SDIO1_BASE` keep `SDIO` (Secure Digital Input Output). Recommend treating it as an accepted acronym with its expansion in the doc comment, the way #3094 handled `GMAC`. `COMPATIBLE_MAINLINE` and `COMPATIBLE_VENDOR` are the names already ratified in designware_ethernet.
-
 ### DM10. Register window (2)
 
 `registers::STATUS`, `registers::WINDOW_USED`
@@ -58,6 +51,34 @@ The groups that need a real ruling are the register and bit constants: `E7` and 
 - Provisional recommendation: Ratify as they stand.
 
 ## `e1000e`
+
+### E7. Register offsets (24)
+
+`registers::CTRL`, `registers::CTRL_EXT`, `registers::ICR`, `registers::IMC`, `registers::MTA`, `registers::RAH0`, `registers::RAL0`, `registers::RCTL`, `registers::RDBAH`, `registers::RDBAL`, `registers::RDH`, `registers::RDLEN`, `registers::RDT`, `registers::RFCTL`, `registers::STATUS`, `registers::TCTL`, `registers::TDBAH`, `registers::TDBAL`, `registers::TDH`, `registers::TDLEN`, `registers::TDT`, `registers::TIPG`, `pch::registers::FEXTNVM11`, `pch::registers::RXDCTL`
+
+- Breaks the spelled-out rule: yes.
+- Provisional recommendation: Spell out with the Linux `E1000_` spelling as alias (the docs already give each register's plain title, 'Device Control' and so on), and cite OpenBSD's em driver first if it names the register. One group because they share the pattern; the 2026-10-26 ruling for the `registers` module says the constants keep their sources' names, so the architect should say whether the 2026-11-02 rule overrides that for these.
+
+### E8. Register bit constants and register-shaped helpers (12)
+
+`control::CTRL_ASDE`, `control::CTRL_EXT_DRV_LOAD`, `control::CTRL_RST`, `control::CTRL_SLU`, `control::RAH_AV`, `control::RFCTL_EXTEN`, `control::STATUS_LU`, `control::rctl`, `control::tctl`, `control::tipg`, `pch::flush::FEXTNVM11_DISABLE_MULR_FIX`, `pch::flush::rxdctl`
+
+- Breaks the spelled-out rule: yes.
+- Provisional recommendation: Spell out with aliases, after the offsets: `CTRL_ASDE`, `CTRL_EXT_DRV_LOAD`, `CTRL_RST`, `CTRL_SLU`, `RAH_AV`, `RFCTL_EXTEN`, `STATUS_LU`, `FEXTNVM11_DISABLE_MULR_FIX`, and the functions `rctl`, `tctl`, `tipg`, `rxdctl` that build register values.
+
+### E9. PCH flush and hardware (4)
+
+`pch::flush::required`, `pch::flush::tail_after`, `pch::flush::transmit_word`, `pch::hardware::is_pch`
+
+- Breaks the spelled-out rule: one.
+- Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; `is_pch` follows the module-name decision (`is_platform_controller_hub` if the module name spells `pch` out).
+
+### E10. Non-volatile memory words (6)
+
+`pch::non_volatile_memory::DONE`, `pch::non_volatile_memory::ERROR`, `pch::non_volatile_memory::Error`, `pch::non_volatile_memory::GO`, `pch::non_volatile_memory::WORDS`, `pch::non_volatile_memory::read`
+
+- Breaks the spelled-out rule: no.
+- Provisional recommendation: Ratify as they stand.
 
 ### E11. Physical layer device access (17)
 
@@ -72,13 +93,6 @@ The groups that need a real ruling are the register and bit constants: `E7` and 
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand, including the five provisional `PhysicalLayerDevice*` and `BlockedAfterPhysicalLayerDeviceReset` variants; all spell out their words.
-
-### E13. Ultra low power and simulator (7)
-
-`pch::ulp::WAIT_MS`, `pch::ulp::done`, `pch::ulp::release`, `pch::ulp::request`, `pch::simulator::Sim`, `pch::simulator::Start`, `pch::simulator::new`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify `done`, `release`, `request` and the simulator names; recommend `WAIT_MS` become `WAIT_MILLISECONDS`, matching `POLL_MICROSECONDS`.
 
 ## Not covered
 
