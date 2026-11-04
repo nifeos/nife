@@ -199,7 +199,7 @@ renames them.
 
 ## Unit symbols in names
 
-Units are spelled out; the rule is in [2026-11-03-rulings.md](2026-11-03-rulings.md). Applied here:
+A name spells its unit. The rule is in [2026-11-03-rulings.md](2026-11-03-rulings.md). Applied here:
 
 - Rust standard-library names such as `as_nanos` keep their spelling.
 - `NANOS_PER_SEC` gets one definition, `clock_contract::NS_PER_SECOND`. `network_time_protocol`,
