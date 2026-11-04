@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::vec::Vec;
 
 use super::physical_layer_device::{self, mdic};
-use super::sequence::Note;
+use super::sequence::BringUpObservation;
 use super::{Hardware, non_volatile_memory, registers};
 use crate::registers as mac;
 
@@ -42,7 +42,7 @@ pub struct SimulatedHardware {
     pub physical_layer_device_writes: Vec<(u32, u16)>,
     /// Every MDIC write as issued, for checking page selects and addresses.
     pub mdic_log: Vec<u32>,
-    pub notes: Vec<Note>,
+    pub notes: Vec<BringUpObservation>,
     pub non_volatile_memory: Vec<u16>,
     pub firmware_holds_software_flag: bool,
     pub physical_layer_device_in_system_management_bus: bool,
@@ -329,7 +329,7 @@ impl Hardware for SimulatedHardware {
     fn pci_vendor_id(&mut self) -> u16 {
         0x8086
     }
-    fn note(&mut self, note: Note) {
+    fn note(&mut self, note: BringUpObservation) {
         self.notes.push(note);
     }
 }
@@ -339,7 +339,7 @@ mod tests {
     use super::super::physical_layer_device::{
         Error as PhysicalLayerDeviceError, Swflag, paged_offset, plan,
     };
-    use super::super::sequence::{self, Error, Reached};
+    use super::super::sequence::{self, AccessPath, Error};
     use super::*;
 
     fn swflag_free(sim: &SimulatedHardware) -> bool {
@@ -429,7 +429,7 @@ mod tests {
             fn pci_vendor_id(&mut self) -> u16 {
                 0
             }
-            fn note(&mut self, _: Note) {}
+            fn note(&mut self, _: BringUpObservation) {}
         }
         let mut m = Mute(0);
         assert_eq!(
@@ -550,11 +550,17 @@ mod tests {
             sequence::initialize_physical_layer_device_workarounds(&mut s),
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
-        assert!(s.notes.contains(&Note::UlpByMe { cleared: true }));
-        assert!(s.notes.contains(&Note::PhysicalLayerDeviceReached {
-            at: Reached::Directly,
-            id: PHYSICAL_LAYER_DEVICE_ID
-        }));
+        assert!(
+            s.notes
+                .contains(&BringUpObservation::UlpByMe { cleared: true })
+        );
+        assert!(
+            s.notes
+                .contains(&BringUpObservation::PhysicalLayerDeviceReached {
+                    at: AccessPath::Directly,
+                    id: PHYSICAL_LAYER_DEVICE_ID
+                })
+        );
         assert_eq!(s.physical_layer_device_resets, 1);
         assert_eq!(s.lanphypc_toggles, 0);
         assert_ne!(
@@ -573,10 +579,13 @@ mod tests {
             sequence::initialize_physical_layer_device_workarounds(&mut s),
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
-        assert!(s.notes.contains(&Note::PhysicalLayerDeviceReached {
-            at: Reached::InSystemManagementBus,
-            id: PHYSICAL_LAYER_DEVICE_ID
-        }));
+        assert!(
+            s.notes
+                .contains(&BringUpObservation::PhysicalLayerDeviceReached {
+                    at: AccessPath::InSystemManagementBus,
+                    id: PHYSICAL_LAYER_DEVICE_ID
+                })
+        );
         assert_eq!(s.lanphypc_toggles, 0, "no power cycle was needed");
         // With an ME, FreeBSD leaves the unforce to the firmware ("Only unforce SMBus if ME is
         // not active"), and so does this.
@@ -591,10 +600,13 @@ mod tests {
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
         assert_eq!(s.lanphypc_toggles, 1);
-        assert!(s.notes.contains(&Note::PhysicalLayerDeviceReached {
-            at: Reached::AfterUnforce,
-            id: PHYSICAL_LAYER_DEVICE_ID
-        }));
+        assert!(
+            s.notes
+                .contains(&BringUpObservation::PhysicalLayerDeviceReached {
+                    at: AccessPath::AfterUnforce,
+                    id: PHYSICAL_LAYER_DEVICE_ID
+                })
+        );
 
         let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Dead, true);
         s.mac.insert(
@@ -622,7 +634,7 @@ mod tests {
             sequence::initialize_physical_layer_device_workarounds(&mut s),
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
-        assert!(s.notes.contains(&Note::UlpBySoftware(Ok(()))));
+        assert!(s.notes.contains(&BringUpObservation::UlpBySoftware(Ok(()))));
         assert!(s.lanphypc_toggles >= 1);
         assert_eq!(
             s.physical_layer_device_registers[&physical_layer_device::registers::CV_SMB_CTRL] & 1,
@@ -704,7 +716,7 @@ mod tests {
         sequence::global_reset(&mut s, 1000).unwrap();
         assert!(
             s.notes
-                .contains(&Note::LanConnectedDeviceConfigured { pairs: 3 })
+                .contains(&BringUpObservation::LanConnectedDeviceConfigured { pairs: 3 })
         );
         assert_eq!(
             s.physical_layer_device_registers[&paged_offset(769, 17)],

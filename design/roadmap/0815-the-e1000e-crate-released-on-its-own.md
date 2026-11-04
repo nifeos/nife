@@ -159,8 +159,6 @@ work, and the lane that renames a name drops its line.
 ### Generic
 
 - `required` (`src/platform_controller_hub/flush.rs`): generic
-- `Note` (`src/platform_controller_hub/sequence.rs`): generic
-- `Reached` (`src/platform_controller_hub/sequence.rs`): generic
 
 ### Unclear
 

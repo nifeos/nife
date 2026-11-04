@@ -349,11 +349,11 @@ impl ::e1000e::platform_controller_hub::Hardware for Bar<'_> {
     fn pci_vendor_id(&mut self) -> u16 {
         self.dev.config_read32(0) as u16
     }
-    fn note(&mut self, n: ::e1000e::platform_controller_hub::sequence::Note) {
-        use ::e1000e::platform_controller_hub::sequence::Note;
+    fn note(&mut self, n: ::e1000e::platform_controller_hub::sequence::BringUpObservation) {
+        use ::e1000e::platform_controller_hub::sequence::BringUpObservation;
         match n {
             // The identifier in hex, as the bench card compares it.
-            Note::PhysicalLayerDeviceReached { at, id } => {
+            BringUpObservation::PhysicalLayerDeviceReached { at, id } => {
                 crate::println!(
                     "  e1000e: PhysicalLayerDeviceReached {{ at: {at:?}, id: {id:#010x} }}"
                 );

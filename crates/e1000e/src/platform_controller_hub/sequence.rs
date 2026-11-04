@@ -49,12 +49,15 @@ use super::{
 use crate::registers as mac;
 
 /// Why the bring-up stopped. Each is a line on the bench boot.
+///
+/// Name: ratified 2026-11-03 (UTC), #3154.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// A PHY access failed.
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
-    /// `physical_layer_device`; no ruling covers the rest of the name. Refused `Phy` (an
+    /// Name: ratified 2026-11-03 (UTC), #3154. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip)
+    /// is spelled out `physical_layer_device`; the rest of the name was ratified with its group.
+    /// Refused `Phy` (an
     /// abbreviation).
     PhysicalLayerDevice(physical_layer_device::Error),
     /// An NVM read failed, or no bank is valid ("EEPROM not present" in FreeBSD).
@@ -64,17 +67,18 @@ pub enum Error {
     NonVolatileMemory(non_volatile_memory::Error),
     /// The PHY did not answer after the `SMBus` force, the `LANPHYPC` power cycle and the unforce.
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
-    /// `physical_layer_device`; no ruling covers the rest of the name. Refused `PhyInaccessible`
+    /// Name: ratified 2026-11-03 (UTC), #3154. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip)
+    /// is spelled out `physical_layer_device`; the rest of the name was ratified with its group.
+    /// Refused `PhyInaccessible`
     /// (an abbreviation).
     PhysicalLayerDeviceInaccessible,
     /// The PHY did not answer and firmware blocks the `LANPHYPC` toggle that would have reset it.
     LanphypcBlocked,
     /// Firmware began blocking PHY access after the PHY reset.
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
-    /// `physical_layer_device`; no ruling covers the rest of the name. Refused
-    /// `BlockedAfterPhyReset` (an abbreviation).
+    /// Name: ratified 2026-11-03 (UTC), #3154. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip)
+    /// is spelled out `physical_layer_device`; the rest of the name was ratified with its group.
+    /// Refused `BlockedAfterPhyReset` (an abbreviation).
     BlockedAfterPhysicalLayerDeviceReset,
     /// `CTRL.RST` did not self-clear.
     ResetTimeout,
@@ -93,8 +97,11 @@ impl From<non_volatile_memory::Error> for Error {
 }
 
 /// Where the PHY was first seen to answer, in [`initialize_physical_layer_device_workarounds`].
+///
+/// Name: ratified 2026-11-03 (UTC), #3154. Renamed from `Reached`, which did not say what was
+/// reached or by what means; the variants name the paths the PHY was found by.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Reached {
+pub enum AccessPath {
     /// At once: the interconnect was already PCIe.
     Directly,
     /// After forcing the MAC into System Management Bus (`SMBus`) mode.
@@ -110,8 +117,11 @@ pub enum Reached {
 }
 
 /// What the bring-up observed that the bench boot should print. None of it changes what runs.
+///
+/// Name: ratified 2026-11-03 (UTC), #3154. Renamed from `Note`, which said nothing about what was
+/// noted or by whom; the bring-up observes, and the bench boot prints.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Note {
+pub enum BringUpObservation {
     /// The Management Engine was asked to leave ULP; `cleared` says whether it finished in time.
     UlpByMe {
         /// `FWSM.ULP_CFG_DONE` cleared before [`ultra_low_power::MANAGEMENT_ENGINE_WAIT_MILLISECONDS`].
@@ -121,12 +131,13 @@ pub enum Note {
     UlpBySoftware(Result<(), Error>),
     /// The PHY answered, with this identifier (revision masked off).
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
-    /// `physical_layer_device`; no ruling covers the rest of the name. Refused `PhyReached` (an
+    /// Name: ratified 2026-11-03 (UTC), #3154. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip)
+    /// is spelled out `physical_layer_device`; the rest of the name was ratified with its group.
+    /// Refused `PhyReached` (an
     /// abbreviation).
     PhysicalLayerDeviceReached {
         /// Where.
-        at: Reached,
+        at: AccessPath,
         /// `PHY_ID1:PHY_ID2`, revision nibble cleared.
         id: u32,
     },
@@ -140,9 +151,9 @@ pub enum Note {
     LanInitTimeout,
     /// `STATUS.PHYRA` was not set after a PHY reset (FreeBSD: "needs delay").
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip) is spelled out
-    /// `physical_layer_device`; no ruling covers the rest of the name. Refused
-    /// `PhyResetNotAsserted` (an abbreviation).
+    /// Name: ratified 2026-11-03 (UTC), #3154. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip)
+    /// is spelled out `physical_layer_device`; the rest of the name was ratified with its group.
+    /// Refused `PhyResetNotAsserted` (an abbreviation).
     PhysicalLayerDeviceResetNotAsserted,
     /// The semaphore could not be taken before the global reset; FreeBSD resets anyway.
     SwflagBeforeReset(physical_layer_device::Error),
@@ -287,7 +298,7 @@ fn has_management_engine(hardware: &mut impl Hardware) -> bool {
 /// MAC-PHY interconnect is PCIe rather than `SMBus`. If the PHY does not answer, it forces `SMBus`,
 /// and if the PHY still does not answer, it power-cycles the PHY with `LANPHYPC`. Then it resets
 /// the PHY so it starts from a known state, unless firmware blocks PHY resets: then it skips the
-/// reset, notes [`Note::PhysicalLayerDeviceResetBlocked`] and returns the identifier.
+/// reset, notes [`BringUpObservation::PhysicalLayerDeviceResetBlocked`] and returns the identifier.
 ///
 /// Refuses with [`Error::LanphypcBlocked`] when firmware blocks that power cycle,
 /// [`Error::PhysicalLayerDeviceInaccessible`] when the PHY never answers,
@@ -312,7 +323,7 @@ pub fn initialize_physical_layer_device_workarounds(
     let mut id = 0;
     let reached = (|| {
         if accessible(hardware, &f, &mut id) {
-            return Ok(Reached::Directly);
+            return Ok(AccessPath::Directly);
         }
         // Before toggling LANPHYPC, see whether forcing the MAC into SMBus mode is enough.
         set(hardware, mac::CTRL_EXT, CTRL_EXT_FORCE_SMBUS);
@@ -320,29 +331,29 @@ pub fn initialize_physical_layer_device_workarounds(
         // perform from previous attempts to acknowledge any phy read requests."
         delay_ms(hardware, 50);
         if accessible(hardware, &f, &mut id) {
-            return Ok(Reached::InSystemManagementBus);
+            return Ok(AccessPath::InSystemManagementBus);
         }
         if physical_layer_device::reset_blocked(hardware) {
             return Err(Error::LanphypcBlocked);
         }
         toggle_lanphypc(hardware);
         if accessible(hardware, &f, &mut id) {
-            return Ok(Reached::AfterLanphypc);
+            return Ok(AccessPath::AfterLanphypc);
         }
         // Toggling LANPHYPC brings the PHY out of SMBus mode, so take the MAC out too.
         clear(hardware, mac::CTRL_EXT, CTRL_EXT_FORCE_SMBUS);
         if accessible(hardware, &f, &mut id) {
-            return Ok(Reached::AfterUnforce);
+            return Ok(AccessPath::AfterUnforce);
         }
         Err(Error::PhysicalLayerDeviceInaccessible)
     })();
     f.release(hardware);
     let at = reached?;
-    hardware.note(Note::PhysicalLayerDeviceReached { at, id });
+    hardware.note(BringUpObservation::PhysicalLayerDeviceReached { at, id });
 
     if physical_layer_device::reset_blocked(hardware) {
         // FreeBSD: ERROR_REPORT("Reset blocked by ME") and success.
-        hardware.note(Note::PhysicalLayerDeviceResetBlocked);
+        hardware.note(BringUpObservation::PhysicalLayerDeviceResetBlocked);
         return Ok(id);
     }
     // "Reset the PHY before any access to it. Doing so, ensures that the PHY is in a known good
@@ -380,11 +391,11 @@ fn leave_ulp(hardware: &mut impl Hardware) {
                 ultra_low_power::register_value_releasing_request(h),
             );
         }
-        hardware.note(Note::UlpByMe { cleared });
+        hardware.note(BringUpObservation::UlpByMe { cleared });
         return;
     }
     let outcome = leave_ulp_by_physical_layer_device(hardware);
-    hardware.note(Note::UlpBySoftware(outcome));
+    hardware.note(BringUpObservation::UlpBySoftware(outcome));
 }
 
 /// The software branch of `e1000_disable_ulp_lpt_lp`.
@@ -592,14 +603,14 @@ fn config_done(hardware: &mut impl Hardware) -> Result<(), Error> {
         }
     }
     if !done {
-        hardware.note(Note::LanInitTimeout);
+        hardware.note(BringUpObservation::LanInitTimeout);
     }
     clear(hardware, mac::STATUS, STATUS_LAN_INIT_DONE);
     let s = hardware.read(mac::STATUS);
     if s & STATUS_PHYRA != 0 {
         hardware.write(mac::STATUS, s & !STATUS_PHYRA);
     } else {
-        hardware.note(Note::PhysicalLayerDeviceResetNotAsserted);
+        hardware.note(BringUpObservation::PhysicalLayerDeviceResetNotAsserted);
     }
     let g = non_volatile_memory::Geometry::read(hardware);
     non_volatile_memory::valid_bank(hardware, g)?;
@@ -619,9 +630,15 @@ fn config_done(hardware: &mut impl Hardware) -> Result<(), Error> {
 /// and the OEM bits.
 ///
 /// One addition: FreeBSD does not wait for `CTRL.RST` to self-clear (its configuration-done wait
-/// covers it); this waits up to `reset_wait_ms` first, so a reset that never completes is reported
+/// covers it); this waits up to `reset_wait_milliseconds` first, so a reset that never completes is reported
 /// as that rather than as a PHY timeout.
-pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<(), Error> {
+///
+/// Name: ratified 2026-11-03 (UTC), #3154. The parameter `reset_wait_milliseconds` was
+/// `reset_wait_ms`; units are spelled out.
+pub fn global_reset(
+    hardware: &mut impl Hardware,
+    reset_wait_milliseconds: u64,
+) -> Result<(), Error> {
     hardware.write(registers::PBA, PBA_26K);
 
     // `e1000_disable_pcie_master_generic`: stop new bus-master requests, wait for pending ones.
@@ -635,7 +652,7 @@ pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<
         hardware.delay_microseconds(100);
     }
     if !idle {
-        hardware.note(Note::MasterRequestsPending);
+        hardware.note(BringUpObservation::MasterRequestsPending);
     }
 
     hardware.write(mac::IMC, u32::MAX);
@@ -653,7 +670,7 @@ pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<
     }
     match Swflag::acquire(hardware) {
         Ok(f) => f.lost_to_reset(),
-        Err(e) => hardware.note(Note::SwflagBeforeReset(e)),
+        Err(e) => hardware.note(BringUpObservation::SwflagBeforeReset(e)),
     }
     // "Configuration space access creates the needed delay." Written to the read-only STRAP so
     // the read happens before the reset, and again before any MAC access after it.
@@ -666,7 +683,7 @@ pub fn global_reset(hardware: &mut impl Hardware, reset_wait_ms: u64) -> Result<
     hardware.write(registers::STRAP, u32::from(v));
 
     let mut cleared = false;
-    for _ in 0..reset_wait_ms {
+    for _ in 0..reset_wait_milliseconds {
         if hardware.read(mac::CTRL) & crate::CTRL_RST == 0 {
             cleared = true;
             break;
@@ -710,7 +727,7 @@ fn post_physical_layer_device_reset(hardware: &mut impl Hardware) -> Result<(), 
                     v & !BM_WUC_HOST_WU_BIT,
                 );
             }
-            Err(e) => hardware.note(Note::HostWakeupUnread(e)),
+            Err(e) => hardware.note(BringUpObservation::HostWakeupUnread(e)),
         }
         f.release(hardware);
     }
@@ -771,8 +788,10 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
     })();
     f.release(hardware);
     match out {
-        Ok(Some(pairs)) => hardware.note(Note::LanConnectedDeviceConfigured { pairs }),
-        Ok(None) => hardware.note(Note::LanConnectedDeviceNotConfigured),
+        Ok(Some(pairs)) => {
+            hardware.note(BringUpObservation::LanConnectedDeviceConfigured { pairs });
+        }
+        Ok(None) => hardware.note(BringUpObservation::LanConnectedDeviceNotConfigured),
         Err(e) => return Err(e),
     }
     Ok(())
@@ -813,7 +832,7 @@ fn write_system_management_bus_address(
         v |= (fq & 1) << HV_SMB_ADDR_FREQ_LOW_SHIFT;
         v |= (fq & 2) << (HV_SMB_ADDR_FREQ_HIGH_SHIFT - 1);
     } else {
-        hardware.note(Note::SystemManagementBusFrequencyUnsupported);
+        hardware.note(BringUpObservation::SystemManagementBusFrequencyUnsupported);
     }
     physical_layer_device::write(
         hardware,
@@ -1023,6 +1042,8 @@ const _: () = assert!(TARC0_CB_MULTIQ_2_REQ & !TARC0_CB_MULTIQ_3_REQ == 0);
 /// **`em_initialize_transmit_unit`'s "SPT and KBL errata workarounds"**, after `TCTL` is written:
 /// multiple outstanding requests on, `IOSFPC`'s receive threshold, and `TARC0`'s request count
 /// (Intel's "i218-i219 Specification Update 1.5.4.5", cited by FreeBSD, not read here).
+///
+/// Name: ratified 2026-11-03 (UTC), #3154.
 pub fn transmit_errata(hardware: &mut impl Hardware) {
     set(hardware, mac::TCTL, TCTL_MULR);
     set(hardware, registers::IOSFPC, RCTL_RDMTS_HEX);
@@ -1050,7 +1071,7 @@ mod tests {
         reads: Vec<u64>,
         writes: Vec<(u64, u32)>,
         elapsed_microseconds: u64,
-        notes: Vec<Note>,
+        notes: Vec<BringUpObservation>,
     }
 
     impl Hardware for Inert {
@@ -1071,7 +1092,7 @@ mod tests {
         fn pci_vendor_id(&mut self) -> u16 {
             0x8086
         }
-        fn note(&mut self, note: Note) {
+        fn note(&mut self, note: BringUpObservation) {
             self.notes.push(note);
         }
     }
@@ -1111,7 +1132,10 @@ mod tests {
                 .count(),
             1 + 251
         );
-        assert_eq!(hardware.notes, [Note::UlpByMe { cleared: false }]);
+        assert_eq!(
+            hardware.notes,
+            [BringUpObservation::UlpByMe { cleared: false }]
+        );
         assert_eq!(
             hardware.registers[&registers::H2ME],
             ultra_low_power::H2ME_ENFORCE_SETTINGS
@@ -1123,7 +1147,10 @@ mod tests {
             .insert(registers::FWSM, ultra_low_power::ICH_FWSM_FW_VALID);
         leave_ulp(&mut hardware);
         assert_eq!(hardware.elapsed_microseconds, 0);
-        assert_eq!(hardware.notes, [Note::UlpByMe { cleared: true }]);
+        assert_eq!(
+            hardware.notes,
+            [BringUpObservation::UlpByMe { cleared: true }]
+        );
         assert_eq!(
             hardware.written(registers::H2ME),
             [ultra_low_power::H2ME_ENFORCE_SETTINGS, 0]
@@ -1169,8 +1196,8 @@ mod tests {
         assert_eq!(
             hardware.notes,
             [
-                Note::LanInitTimeout,
-                Note::PhysicalLayerDeviceResetNotAsserted
+                BringUpObservation::LanInitTimeout,
+                BringUpObservation::PhysicalLayerDeviceResetNotAsserted
             ]
         );
         // 10 ms, 1500 polls of 100 us, and the bank probe's one microsecond before its flash
@@ -1180,9 +1207,12 @@ mod tests {
         // The simulated reset raises both, and nothing is reported.
         let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         global_reset(&mut s, 1000).unwrap();
-        assert!(!s.notes.contains(&Note::LanInitTimeout));
-        assert!(!s.notes.contains(&Note::PhysicalLayerDeviceResetNotAsserted));
-        assert!(!s.notes.contains(&Note::MasterRequestsPending));
+        assert!(!s.notes.contains(&BringUpObservation::LanInitTimeout));
+        assert!(
+            !s.notes
+                .contains(&BringUpObservation::PhysicalLayerDeviceResetNotAsserted)
+        );
+        assert!(!s.notes.contains(&BringUpObservation::MasterRequestsPending));
     }
 
     /// **Pending bus-master requests are waited for 80 ms, then reported, and the reset goes
@@ -1200,7 +1230,7 @@ mod tests {
         // The last reset never cleared.
         hardware.registers.insert(mac::CTRL, crate::CTRL_RST);
         assert_eq!(global_reset(&mut hardware, 0), Err(Error::ResetTimeout));
-        assert_eq!(hardware.notes, [Note::MasterRequestsPending]);
+        assert_eq!(hardware.notes, [BringUpObservation::MasterRequestsPending]);
         // 80 ms for the master requests, 10 ms after disabling receive and transmit, and 20 ms
         // after the reset.
         assert_eq!(hardware.elapsed_microseconds, 80_000 + 10_000 + 20_000);
@@ -1224,11 +1254,14 @@ mod tests {
             s.physical_layer_device_registers[&physical_layer_device::registers::BM_PORT_GEN_CFG],
             0x0001
         );
-        assert!(s.notes.contains(&Note::LanConnectedDeviceNotConfigured));
+        assert!(
+            s.notes
+                .contains(&BringUpObservation::LanConnectedDeviceNotConfigured)
+        );
         assert!(
             !s.notes
                 .iter()
-                .any(|n| matches!(n, Note::LanConnectedDeviceConfigured { .. }))
+                .any(|n| matches!(n, BringUpObservation::LanConnectedDeviceConfigured { .. }))
         );
     }
 
@@ -1258,7 +1291,7 @@ mod tests {
             );
             assert_eq!(
                 s.notes
-                    .contains(&Note::SystemManagementBusFrequencyUnsupported),
+                    .contains(&BringUpObservation::SystemManagementBusFrequencyUnsupported),
                 freq == 0
             );
         }
