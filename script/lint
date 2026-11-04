@@ -3103,6 +3103,7 @@ echo "==> names meet the current naming rules"
 # A name a change adds or renames passes every mechanical naming check; the unratified names that
 # do not yet are a baseline that only shrinks, and ratified names are exempt. The manual is
 # helpers/name_checks.py's header.
+python3 helpers/baseline_layout.py --selftest
 python3 helpers/name_checks.py --selftest
 python3 helpers/name_checks.py --check
 

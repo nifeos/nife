@@ -8,19 +8,22 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 `file_allocation_table`, `generational_table` and `jh7110_clock_and_reset` have no unratified name left. `jh7110_entropy` has already left `crates/`.
 
-## Counts
+## How a naming pull request edits this note and the baselines
 
-| crate | unratified | no block | provisional | groups |
-|---|---|---|---|---|
-| `designware_ethernet` | 92 | 73 | 19 | 10 |
-| `designware_mobile_storage` | 65 | 65 | 0 | 9 |
-| `e1000e` | 132 | 94 | 38 | 13 |
-| `extensible_host_controller_interface` | 9 | 0 | 9 | 1 |
-| `non_volatile_memory_express` | 3 | 0 | 3 | 1 |
-| `generational_table` | 0 | 0 | 0 | 0 |
-| `file_allocation_table` | 0 | 0 | 0 | 0 |
-| `jh7110_clock_and_reset` | 0 | 0 | 0 | 0 |
-| total | 301 | 232 | 69 | 34 |
+Two pull requests that change the same or adjacent lines conflict in git, so no line here or in
+the baselines is shared by two naming pull requests:
+
+- This note carries no total, count table or per-crate count; `python3 helpers/name_release.py --draft <crate>` lists a crate's rows, and their number is the count. A pull request edits only the group it
+  rules on: it deletes the group's section, or deletes the names it ratifies from the group's list,
+  and changes that group's number in its heading.
+- `design/module-block-baseline.txt` and `design/naming-rule-baseline.txt` hold one row per line,
+  sorted, with a blank line after every row (`helpers/baseline_layout.py`). A pull request deletes
+  the row lines it clears and nothing else: it keeps the blank lines, it does not re-sort, and it
+  writes no total. `--bank` does exactly that. A rename re-keys a row by deleting the old line and
+  writing the new row and a blank line after it at its sorted place.
+- The ratchets still compare the live count with the baseline and still refuse a row that is not
+  cleared or a row that is new. Both gates also fail a baseline whose rows touch or are out of order.
+
 ## How to read a group
 
 Each group gives its items in their current spelling, as `path::name`, and a module by its own name. *Breaks the spelled-out rule* answers the 2026-11-02 rule in [design/naming.md](../design/naming.md): outside register modules, identifiers say what the thing is and not the specification's abbreviation. A hardware register, field or bit constant takes the spelled-out name with the source's spelling in `#[doc(alias)]`, OpenBSD's cited first. `yes` means the group has at least that kind of abbreviation; `one` means a few named items do; `no` means none. The recommendation is the stricter reading wherever a call was close, since loosening later is compatible and tightening is not.
@@ -38,7 +41,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_ethernet`
 
-92 unratified names: 73 with no block, 19 provisional.
 ### DE1. Module names (10)
 
 `coherence`, `controller`, `data_plane`, `descriptor`, `hardware`, `jh7110`, `layout`, `motorcomm`, `proofs`, `tests`
@@ -111,7 +113,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_mobile_storage`
 
-65 unratified names: 65 with no block, 0 provisional.
 
 ### DM2. Host controller (13)
 
@@ -178,7 +179,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `e1000e`
 
-132 unratified names: 94 with no block, 38 provisional.
 
 ### E1. Module names (14)
 
@@ -273,7 +273,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `extensible_host_controller_interface`
 
-9 unratified names: 0 with no block, 9 provisional.
 
 ### X1. The nine non-overlap assertions (9)
 
@@ -284,7 +283,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `non_volatile_memory_express`
 
-3 unratified names: 0 with no block, 3 provisional.
 
 ### N1. Namespace (3)
 
