@@ -1746,9 +1746,11 @@ def line_citation_debt(tree):
 # `unexplained-drift.csv` (the largest unexplained drift, and rows past 5%), one generated line on
 # the page between DRIFT_BEGIN and DRIFT_END naming the rows past 5%, and the whole report, every
 # row and every save's `# why:` lines and what accounts for them, regenerated as the appendix
-# DRIFT_REPORT. The line and the appendix read HEAD; the CSV restates each week from that week's
-# reading of `main` (notes/project-metrics/bench-on-main.csv) and today's bench/attributions.tsv,
-# so a week falls once a lane explains it.
+# DRIFT_REPORT. The line and the appendix read HEAD; the CSV restates every week on every run
+# (`restate_drift`, called from `fill_derived`) from that week's reading of `main`
+# (notes/project-metrics/bench-on-main.csv) and today's bench/attributions.tsv, closed weeks
+# included, so a week falls once a lane explains it and a change to the attributions draws no step
+# between a closed week and the open one.
 DRIFT_BEGIN = '<!-- baseline-drift: script/metrics writes this -->'
 DRIFT_END = '<!-- /baseline-drift -->'
 DRIFT_REPORT = DATA_DIR / 'baseline-drift.md'
@@ -2029,7 +2031,6 @@ def row_for(rev, week, coverage='', person_weeks='', coverage_min=''):
                  passive_voice_counts(tree), line_citation_debt(tree),
                  homes(tree), crate_release_cells(tree)):
         row.update(part)
-    row.update(baseline_drift.series_cells(week))
     return row
 
 
@@ -3070,6 +3071,24 @@ def write_week_notes_bullets(notes=None, page=PAGE):
         path.write_text(new)
 
 
+def restate_drift(rows, cells=None):
+    """Set the unexplained-drift columns of every week from today's attributions.
+
+    A closed week's row is otherwise written once (`update_targets`), so its drift cells would keep
+    the attributions of the day it closed, and a change to them would draw as a step between the
+    last closed week and the open one with no reading moved. The cells are local (a week's reading
+    and the git history of `bench/baseline`), so every run recomputes all of them. A week with no
+    reading gets empty cells. `cells` is `baseline_drift.series_cells` unless a test supplies one.
+    """
+    cells = cells or baseline_drift.series_cells
+    columns = dict(MEASURES)['unexplained-drift']
+    for week, row in rows.items():
+        for column in columns:
+            row[column] = ''
+        row.update(cells(week))
+    return rows
+
+
 def fill_derived(rows, rev):
     """Set every column that is read once for all weeks rather than per revision.
 
@@ -3097,6 +3116,7 @@ def fill_derived(rows, rev):
     queue = queue_by_week()
     debt = debt_paydown_by_week()
     builds = builds_by_week()
+    restate_drift(rows)
     for week, row in rows.items():
         # Empty before the record starts, never zero, for the verify columns' reason.
         for column in ('ci_builds', 'ci_build_median_minutes', 'ci_build_p90_minutes'):
@@ -3521,6 +3541,30 @@ def _ratchet_debt_cases():
     ]
 
 
+def _drift_restate_cases():
+    """A closed week's drift cells follow the attributions of the day the run happens.
+
+    The failure this pins: `--update` wrote a closed week once and kept its cells, so a change to
+    bench/attributions.tsv drew a step (x86_64 0.98 to 2.85 percent between 2026W44 and 2026W45)
+    though no reading moved."""
+    col = 'unexplained_drift_max_pct_x86_64'
+    weeks = {'2026W44': 'a' * 40, '2026W45': 'b' * 40}
+    rows = {'2026W44': {'commit': 'a' * 12, col: '0.98'},
+            '2026W45': {'commit': 'b' * 12, col: '2.85'},
+            '2026W43': {'commit': 'c' * 12, col: '1.00'}}
+    # The closed week is not a recompute target, which is why it kept its cell before.
+    closed_is_target = '2026W44' in [w for w, _rev in update_targets(weeks, rows, '2026W45', 'b' * 40)]
+    attributions = {'2026W44': '2.85', '2026W45': '2.85'}      # today's record, after the change
+    cells = lambda week: {col: attributions[week]} if week in attributions else {}
+    restated = restate_drift(rows, cells)
+    return [
+        ('a closed week is not a target of update_targets', closed_is_target, False),
+        ('a closed week is restated from today\'s attributions', restated['2026W44'][col], '2.85'),
+        ('the open week is restated too', restated['2026W45'][col], '2.85'),
+        ('a week with no reading is emptied, never carried', restated['2026W43'][col], ''),
+    ]
+
+
 def selftest():
     rows = {}
     chain = [('2026W01', {'kernel_code_lines': '100'}),
@@ -3741,6 +3785,7 @@ def selftest():
         ('a chart with no notes left is back to its original bytes', gone, original_page),
     ]
     cases += _update_target_cases()
+    cases += _drift_restate_cases()
     cases += _chart_total_cases()
     cases += _fatal_risk_cases()
     cases += _decision_cases()

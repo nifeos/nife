@@ -62,12 +62,6 @@ BUGS
 - The readings for 2026W39 to 2026W43 came from the merge queue's job logs, before the bench job
   kept them as an artifact; 2026W39's is 2026-09-24's, the oldest the run listing reached. Weeks
   before it have no reading and chart as unmeasured.
-- `script/metrics --update` writes a closed week's cells once, with the bench/attributions.tsv of
-  the day the week closed, and recomputes only the open week. A change to the attributions
-  therefore draws as a step between the last closed week and the open one, though no reading
-  moved. Until `--update`
-  restates this measure every run, `script/metrics --backfill-measure unexplained-drift` after an
-  attributions change brings the closed weeks to today's record.
 - An attribution line applies to every step whose range holds its commit, by ancestry. A line for a
   commit that later reaches `main` a second way (a revert, a cherry-pick) would count twice.
 """
