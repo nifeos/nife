@@ -9,6 +9,11 @@
 //! - [`request`]: the four standard and class requests the driver sends, as setup packets.
 //! - [`boot_keyboard`]: the eight-byte boot report, and two reports' difference as evdev key
 //!   presses and releases for `video_terminal::keymap`, the virtio keyboard's layout table.
+//!
+//! Reuse: the usage to evdev table takes its usages and names from the USB-IF HID Usage Tables 1.5
+//! and its numbers from the `KEY_*` names of Linux's `input-event-codes.h`, an ABI header. It
+//! copies no driver. Three mappings the sources leave open (usages 0x32 and 0x46, and two-legend
+//! usage names) are nife's own choices, which [`boot_keyboard`]'s documentation states.
 
 //! # BUGS
 //!

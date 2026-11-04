@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: the-driver-crates-carry-facts-not-source-text
 raised: 2026-11-01
 milestone_dependencies: none
@@ -44,12 +44,12 @@ Each item gives the recommendation first.
    (JH7110 clock and reset logic, proven)'s BUGS section, because the fill branch runs at the
    board's input clock and the programmed counts change. It had translated GPL-2.0+ code from the
    vendor U-Boot `designware_i2c.c` functions `dw_i2c_calc_timing` and `calc_counts`.
-2. `usb::boot_keyboard::TABLE` and `MODIFIER_CODES` copy Linux's `hid_keyboard[]` (GPL-2.0 or
-   later). Recommendation: derive both from the HID Usage Tables names mapped to the `KEY_*` codes in
-   `include/uapi/linux/input-event-codes.h` (GPL-2.0 WITH Linux-syscall-note), and keep
-   `hid_keyboard[]` only as a cross-check in a test. Usages 0x32 and 0x46 then become nife's own
-   choices, stated as such. The alternative is to rule that the table is a list of facts. The table
-   holds 104 numbers in Linux's order, and it attributes them.
+2. Ruled 2026-11-04 UTC and done by #3198: `usb::boot_keyboard::TABLE` and `MODIFIER_CODES` take
+   their usages from the HID Usage Tables 1.5, mapped by name to the `KEY_*` codes in
+   `include/uapi/linux/input-event-codes.h` (GPL-2.0-only WITH Linux-syscall-note). Usages 0x32
+   and 0x46, and the reading of a two-legend usage name, are nife's own choices, which the module
+   documentation states. A test pins the result of a cross-check against Linux's `hid_keyboard[]`
+   (GPL-2.0 or later), which agrees on all 104 rows, and the crate holds none of that file's text.
 3. Ruled 2026-11-04 UTC and done by #3200: `e1000e::platform_controller_hub/mod.rs` carries the
    BSD-2-Clause notice of FreeBSD's `if_em.c` and `if_em.h` and its three copyright lines (Intel
    2001-2024, Nicole Graziano 2016, Kevin Bowling 2024), copied from
@@ -129,6 +129,11 @@ Each item gives the recommendation first.
 - The Intel 82574 datasheet, the Synopsys DW_mshc and DesignWare Ethernet databooks, JEDEC
   JESD84-B51 and the Arm DDI 0487 edition behind `aarch64.rs`'s D19.2 are not public, so the audit
   could not verify citations of them.
+
+## Follow-on
+
+- **Outstanding.** Items 3 to 11 above, each waiting for an architect's ruling; each item's text
+  above says what it is waiting for.
 
 ## Index row
 
