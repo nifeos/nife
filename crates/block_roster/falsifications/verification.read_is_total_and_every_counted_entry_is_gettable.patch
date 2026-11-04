@@ -1,0 +1,26 @@
+Falsifies `block_roster::read_is_total_and_every_counted_entry_is_gettable`.
+
+The defect: `Roster::get` bounds its index with `i > self.count` instead of
+`i >= self.count`, the off-by-one a reader writes when it thinks of `count` as a
+last index. The entry one past the last is then fetched: it reads a slot the
+writer never filled (or, on a page with no spare room, indexes past the entries
+slice), so the roster claims a device that is not there.
+
+Expected to fail: `assert!(roster.get(roster.len()).is_none())`, on any page the
+header accepts, or an out-of-bounds slice inside `get` when the accepted page has
+exactly `count` entries of room.
+
+
+diff --git a/crates/block_roster/src/lib.rs b/crates/block_roster/src/lib.rs
+index d4d5ebf89..6d10bdde4 100644
+--- a/crates/block_roster/src/lib.rs
++++ b/crates/block_roster/src/lib.rs
+@@ -200,7 +200,7 @@ impl<'a> Roster<'a> {
+ 
+     /// The `i`-th device, or `None` past the end.
+     pub fn get(&self, i: usize) -> Option<Device> {
+-        if i >= self.count {
++        if i > self.count {
+             return None;
+         }
+         let at = i * ENTRY_BYTES;

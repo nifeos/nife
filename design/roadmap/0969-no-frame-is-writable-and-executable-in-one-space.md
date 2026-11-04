@@ -49,7 +49,7 @@ space and code in another maps, and loading relies on that: `process_builder::fi
 segment through its own writable view and then maps the frame as code into the child. Row 11 of
 `notes/confinement-claims.md` states the claim per space with that limit beside it. The shared code
 covers all three ISAs. Each ruling's background, options, prior art and cost are in
-[`the-rulings-the-alias-refusal-waits-on`](proposals/the-rulings-the-alias-refusal-waits-on.md).
+[`the-rulings-the-alias-refusal-waits-on`](1005-the-rulings-the-alias-refusal-waits-on.md).
 
 The tests, in `system_tests/src/user/tenth_pass_map_gate_tests.rs`, run in the default suite on
 every architecture:
@@ -98,11 +98,11 @@ over every access word, with its own patch.
 
 ## Follow-on
 
-- **Proposed.** What a global rule would cost, measured, before an architect decides it.
-  `design/roadmap/proposals/price-the-global-writable-and-executable-rule.md` has it.
-- **Proposed.** Whether introducing code becomes a right of its own, which would also close the
-  first two `BUGS` entries. `design/roadmap/proposals/a-confined-component-holding-its-own-space-can-load-code.md`
-  has it.
+- **Milestone 1001.** Milestone 1001 (price the global writable-and-executable rule before anyone rules on it).
+  What a global rule would cost, measured, before an architect decides it.
+- **Milestone 995.** Milestone 995 (a confined component holding its own space can load code).
+  Whether introducing code becomes a right of its own, which would also close the first two `BUGS`
+  entries.
 - **Recorded.** The unmeasured cost on `spawn_el0`, in `BUGS`.
 
 ## Index row

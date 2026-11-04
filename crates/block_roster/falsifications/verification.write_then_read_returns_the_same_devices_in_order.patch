@@ -1,0 +1,25 @@
+Falsifies `block_roster::write_then_read_returns_the_same_devices_in_order`.
+
+The defect: `write` stores each device's ordinal in the transport half of its
+entry, so the transport is lost and read back as the ordinal. The page still has
+the right magic, count and capacity, so every header check and every test that
+compares only counts passes; the kernel would publish a roster whose drives all
+sit on the wrong bus.
+
+Expected to fail: `assert_eq!(roster.get(i), Some(devices[i]))`, on any list whose
+ordinal differs from its transport.
+
+
+diff --git a/crates/block_roster/src/lib.rs b/crates/block_roster/src/lib.rs
+index d4d5ebf89..7f0fac1c3 100644
+--- a/crates/block_roster/src/lib.rs
++++ b/crates/block_roster/src/lib.rs
+@@ -146,7 +146,7 @@ pub fn write(page: &mut [u8], devices: &[Device]) -> Result<(), Full> {
+     for (i, d) in devices.iter().enumerate() {
+         let at = HEADER_BYTES + i * ENTRY_BYTES;
+         page[at..at + 4].copy_from_slice(&d.ordinal.to_le_bytes());
+-        page[at + 4..at + 8].copy_from_slice(&d.transport.to_le_bytes());
++        page[at + 4..at + 8].copy_from_slice(&d.ordinal.to_le_bytes());
+     }
+     Ok(())
+ }

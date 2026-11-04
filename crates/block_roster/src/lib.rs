@@ -387,7 +387,7 @@ mod verification {
     /// **`Roster::read` is total on any bytes**: for any page of up to `PAGE` bytes, whatever its
     /// contents and length, `read` neither panics nor indexes out of bounds, and when it accepts the
     /// page every one of its `len()` entries can be fetched and the one after the last cannot.
-    /// Falsification: unfalsified
+    /// Falsification: replayable `crates/block_roster/falsifications/verification.read_is_total_and_every_counted_entry_is_gettable.patch`
     #[kani::proof]
     #[kani::unwind(6)]
     fn read_is_total_and_every_counted_entry_is_gettable() {
@@ -409,7 +409,7 @@ mod verification {
     /// **A written roster reads back as written**: for any list of up to three devices, `write`
     /// into a page that fits and then `read` returns the same devices in the same order, and no
     /// more.
-    /// Falsification: unfalsified
+    /// Falsification: replayable `crates/block_roster/falsifications/verification.write_then_read_returns_the_same_devices_in_order.patch`
     #[kani::proof]
     #[kani::unwind(6)]
     fn write_then_read_returns_the_same_devices_in_order() {
