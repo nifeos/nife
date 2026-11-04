@@ -38,27 +38,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `designware_ethernet`
 
-### DE1. Module names (10)
-
-`coherence`, `controller`, `data_plane`, `descriptor`, `hardware`, `jh7110`, `layout`, `motorcomm`, `proofs`, `tests`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify all ten as they stand. `data_plane`, `descriptor` and `hardware` are private and already provisional; `proofs` and `tests` follow the tree's usual names for harness and test modules; the rest say what the module holds.
-
-### DE3. Coherence probe (9)
-
-`coherence::Observation`, `coherence::POSTED`, `coherence::Payload`, `coherence::Verdict`, `coherence::WAIT_MICROSECONDS`, `coherence::classify`, `coherence::delivered`, `coherence::observe`, `coherence::prepare`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. Plain words, no abbreviation. `POSTED` is a count of posted descriptors, not the bus term, and its doc says so.
-
-### DE4. Controller bring-up (10)
-
-`controller::Bus`, `controller::Error`, `controller::Identity`, `controller::configure`, `controller::core_version`, `controller::read`, `controller::soft_reset`, `controller::start`, `controller::station_address`, `controller::stop`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. Plain verbs and nouns; `core_version` and `station_address` say what they return.
-
 ### DE7. Descriptor bit and field constants (RDES3_*, TDES2_*, TDES3_*) (14)
 
 `descriptor::RDES3_BUF1V`, `descriptor::RDES3_CTXT`, `descriptor::RDES3_ES`, `descriptor::RDES3_FD`, `descriptor::RDES3_LD`, `descriptor::RDES3_LENGTH`, `descriptor::RDES3_OWN`, `descriptor::TDES2_BUF1_LEN`, `descriptor::TDES2_IC`, `descriptor::TDES3_ES`, `descriptor::TDES3_FRAME_LEN`, `descriptor::TDES3_FS`, `descriptor::TDES3_LS`, `descriptor::TDES3_OWN`
@@ -79,13 +58,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: yes (one name).
 - Provisional recommendation: `WINDOW` is a plain word and stays as it is; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
-
-### DE11. MDIO software surface (6)
-
-`management_data_input_output::Bus`, `management_data_input_output::COMMAND_LIMIT_MICROSECONDS`, `management_data_input_output::Error`, `management_data_input_output::command`, `management_data_input_output::link_is_up`, `management_data_input_output::restart_autonegotiation`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. The module name is already spelled out; these are ordinary names.
 
 ## `designware_mobile_storage`
 

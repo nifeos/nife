@@ -61,7 +61,7 @@ Each item gives the recommendation first.
    Recommendation: rule the same way as item 3. Either the kernel function carries the notice, or it
    drives the sequence through a `pch` function that already carries it. It copies no text run longer
    than five tokens.
-5. `designware_ethernet::motorcomm::link_from_registers` adapts OpenBSD's `ukphy_status`
+5. `designware_ethernet::motorcomm_physical_layer_device::link_from_registers` adapts OpenBSD's `ukphy_status`
    (`sys/dev/mii/ukphy_subr.c`, NetBSD Foundation BSD-2-Clause). Recommendation: add that notice
    beside the ISC notice in `src/lib.rs`, and name the file in the README, in
    `notes/designware-ethernet.md` and in milestone 53 (the board's own peripherals)'s `Reuse:`
@@ -93,7 +93,7 @@ Each item gives the recommendation first.
    IOMMU and ACPI specifications under the five-word rule the `jh7110_entropy` audit used. The Xen
    `hvm_start_info` layout in `notes/machine-discovery.md` comes from an MIT header without its
    notice; it is an ABI layout, so a citation of the file and revision should be enough.
-9. The `designware_ethernet` YT8531 register names rest on a false claim. `motorcomm.rs` says
+9. The `designware_ethernet` YT8531 register names rest on a false claim. `motorcomm_physical_layer_device.rs` says
    Linux's `motorcomm.c` is the only source that names the clock-gating and sleep-control registers.
    OpenBSD's `ytphy.c` (`YT8511_EXT_CLK_GATE`, `YT8511_EXT_SLEEP_CTRL`) and FreeBSD's `mcommphy.c`
    name them too. Recommendation: correct the sentence, then decide whether those two constants keep
