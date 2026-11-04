@@ -82,16 +82,15 @@ The status column of `windows.tsv` says which kind of hold it is:
 | `held-finding` | printed a `replay:` line: a shadow-model mismatch or an escape |
 | `held-crash` | panicked with no replay line |
 | `held-hang` | ran out its bound (exit 143 or 137) |
-| `held-budget-expired` | had a wait run out its every-core tick budget (`wait_on_every_core`, `EveryCoreTickBudget`): the guest was not given the time it needed, which is a fact about the host's timing until a replay shows otherwise |
+| `held-budget-expired` | had a wait run out its every-core tick budget (`EveryCoreTickBudget`). The guest was short of time, probably the host's doing. |
 
 A budget expiry outranks the other classes: the drivers begin the message of every such failure with
 `budget-expired:` (`BUDGET_EXPIRED_MARKER` in `kernel/src/testing.rs`, which the supervisor's selftest
 checks), and the supervisor files the window as `held-budget-expired` whether or not the message
 also carries a `replay:` line. That line, when there is one, still sets where the slot resumes and is
-what the filer replays. A budget expiry is held, logged and replayed like any other class; the class
-only keeps a host that stalled apart from a model that disagreed. A real bug can also look like a
-budget expiry (a region that never reclaims, an actor that never wakes), so a replay that fails again
-at a quiet host is a finding.
+what the filer replays. A budget expiry is held, logged and replayed like any other class. The class only keeps a host that
+stalled apart from a model that disagreed. A real bug can also look like a budget expiry (a region
+that never reclaims, an actor that never wakes). A replay that fails again at a quiet host is a finding.
 
 ## What it publishes
 
