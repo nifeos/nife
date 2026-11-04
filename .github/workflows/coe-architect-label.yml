@@ -151,7 +151,7 @@ concurrency:
 jobs:
   label:
     name: label a new COE with needs-architect
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 5
     steps:
       # **Requirement 1 lives entirely in this step: it adds, and it must never re-add what a

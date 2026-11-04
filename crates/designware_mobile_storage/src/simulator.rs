@@ -14,7 +14,7 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::vec::Vec;
 
-use crate::host::Registers;
+use crate::host_controller::RegisterWindowAndClock;
 use crate::internal_direct_memory_access::{
     DES0_CH, DES0_DIC, DES0_LD, DES0_OWN, DES1_BS1_MASK, DirectMemoryAccessRegion,
 };
@@ -826,7 +826,7 @@ impl SimulatedHostController {
     }
 }
 
-impl Registers for SimulatedHostController {
+impl RegisterWindowAndClock for SimulatedHostController {
     fn read(&mut self, offset: u32) -> u32 {
         let queue_offset = registers::queue_offset(self.verid);
         if offset == queue_offset {
