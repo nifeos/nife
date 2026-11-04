@@ -276,10 +276,9 @@ hold label was refused, because a hold that outlives its reason is a false block
 blocker is believed. [`merge-queue/merge-methods-and-holds.md`](merge-queue/merge-methods-and-holds.md)
 has the cases that motivated it.
 
-## Before arming: does it conflict with the queue
+## Before arming
 
-`script/queue-conflicts` merges a pull request against `main` plus the entries ahead of it and names
-the conflicting files: [merge-queue/conflict-precheck.md](merge-queue/conflict-precheck.md).
+Run `script/queue-conflicts`: [conflict-precheck.md](merge-queue/conflict-precheck.md).
 
 ## A push to a queued branch
 
