@@ -10,7 +10,7 @@ needs_person: no
 ---
 # 328. A grant on the root of the shell's namespace
 
-Built 2026-10-27 (UTC). §173 (narrowing the root of the shell's namespace) ruled option A, and
+§173 (narrowing the root of the shell's namespace) ruled option A, and
 this milestone builds it. `filesystem_contract::fs::NARROW`, verb 23, takes a held directory handle
 and a rights mask, mints a second handle through `Rights::attenuate`, and resolves no name. The
 server's `narrow` calls `Rights::attenuate` and refuses a short intersection with `EPERM`, as
@@ -26,11 +26,6 @@ cannot look, open or widen), and `script/swish-check` on every architecture it c
 `caps rm gate.txt`, `rm -v gate.txt` and `wc gate.txt` replace the old refusal.
 
 The name `NARROW` is provisional (an architect's to ratify).
-
-In brief. A subtree caretaker attenuates by performing one `OPENDIR` *into* the directory it was
-granted. The root of the shell's namespace has no name to descend into, so a caretaker holding an
-empty name sends `NARROW` on the handle it already holds. `rm gate.txt` and `rm rmtree/rm-solo` are
-both get `REMOVE` alone, whatever the depth of the file.
 
 ## Why this matters
 

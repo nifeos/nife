@@ -143,11 +143,9 @@ separate QEMU processes with nothing between them but the disk.
 
 ## BUGS
 
-- ~~**The slot token's spelling is provisional.**~~ Ratified by calef on 2026-09-22, after he
-  asked what a slot is and why the number cannot be recomputed. The answer is what the ruling turned
-  on and it is now in `boot_slot`'s own docs. The chooser spends a try *before* handing off. So
-  inferring the slot from the table afterwards names the wrong one on exactly the trial boot a
-  confirmation exists for. `boot-slot=` is a value two programs agree on and is now committed to.
+- `boot-slot=` is a value two programs agree on and is committed to. The chooser spends a try
+  *before* handing off, so inferring the slot from the table afterwards names the wrong one on
+  exactly the trial boot a confirmation exists for; `boot_slot`'s docs say so.
 - **The criterion does not reach a shell**, which is the row the proposal recommended. See above:
   it is the disk-sharing ordering and not an effort argument.
 - Nothing serializes the confirming write against the filesystem server except where it sits.

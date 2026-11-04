@@ -9,15 +9,12 @@ needs_person: no
 ---
 # 341. Give the three instruments nothing runs a caller
 
-Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
-from milestone 232's block; numbered 2026-09-19 by milestone 433. Premise re-checked 2026-09-19 and
+Premise re-checked 2026-09-19 and
 it holds, with one name corrected. None of `script/interleaving-check`, `script/crate-probes` or
 `script/rule-violations --check` appears in `script/ci-build`'s check table, in any workflow under
 `.github/workflows/`, or in `script/cadence-check`'s schedule, so all three still answer only when a
-person types them. **`script/gates` no longer exists**: milestone 286 retired it on 2026-09-13 and
-`script/ci-build`'s table is the single enumeration now, so the placement question below is about
-which tier a row takes rather than which script it joins. Milestone 286's own follow-on handed that
-stale name to the integrator, and this is where it is corrected.
+person types them. **`script/gates` no longer exists**: milestone 286 retired it, and `script/ci-build`'s table is the
+single enumeration now. The placement question below is about which tier a row takes.
 
 Which of the three takes a `local` row in `script/ci-build`, which takes a `ci`
 row and which gets a cadence is an architect's call, because two of them are expensive enough that "run it
@@ -51,26 +48,13 @@ the answer and priced them instead. A cadence entry (the `script/cadence-check` 
 238 extended) is the third option and is the one that fits an expensive check whose answer changes
 slowly.
 
-## Where it came from
-
-Milestone 232's `## Follow-on` named it: *"Give the three instruments nothing runs a caller ...
-Deciding which joins `script/gates`, which joins CI and which gets a cadence is unowned, and fatal
-risk 1 stands GREEN on a hand-run instrument meanwhile."* The block's own `BUGS` section carries the
-sibling observation that two of the three are expensive, which is why that block priced them rather
-than prescribing CI.
-
 ## Index row
 
-Milestone 232's audit found three instruments in this tree that render a verdict and that nothing
-ever calls: `script/interleaving-check` (26 loom harnesses, 12.4 seconds, green), `script/crate-probes`
-(about three minutes, 43 of 50 passing) and `script/rule-violations --check`. Each answers a real
-question and each answers it only when somebody remembers to type it. `design/fatal-risks/README.md`'s first
-risk stands GREEN on a hand-run instrument, which is a claim about whether this project should
-continue resting on somebody having typed a command once; nothing re-runs it and nothing notices when
-it goes red. That is rung two of AGENTS.md's ladder going unclaimed while rung four holds a fatal
-risk. The cheap half is already priced, since `interleaving-check` is twelve seconds and belongs in
-the local tier on cost alone. The other two are the decision, because `crate-probes` builds fifty
-crates and `repeat-under-load` boots QEMU repeatedly. Milestone 232 (audit every check against two
-questions) refused to assume CI was the
-answer and priced them instead. A cadence entry is the third option and fits an expensive check whose
-answer changes slowly.
+Milestone 232's audit found three instruments that render a verdict and that nothing calls:
+`script/interleaving-check` (26 loom harnesses, 12.4 seconds, green), `script/crate-probes` (about
+three minutes, 43 of 50 passing) and `script/rule-violations --check`. Each answers a real question
+only when somebody remembers to type it. `design/fatal-risks/README.md`'s first risk stands GREEN
+on a hand-run instrument, and nothing re-runs it or notices when it goes red. The cheap half is
+priced: `interleaving-check` takes twelve seconds and belongs in the local tier on cost alone. The
+other two are the decision, because `crate-probes` builds fifty crates and `repeat-under-load` boots
+QEMU repeatedly. A cadence entry fits an expensive check whose answer changes slowly.
