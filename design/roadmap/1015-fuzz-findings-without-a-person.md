@@ -87,7 +87,7 @@ installation token at launch; the milestone
 
 ## What is in force: how a fix lane claims
 
-Ruled 2026-11-04 (UTC): a fix lane for a held finding follows the regular lane workflow of §90, with
+Ruled 2026-11-04 (UTC): a fix lane for a held finding follows the regular lane workflow of §90 (the claim is a draft pull request), with
 a draft pull request as its claim. The pull request carries a neutral title and no reproducer.
 
 ## What is in force: the host follows main
