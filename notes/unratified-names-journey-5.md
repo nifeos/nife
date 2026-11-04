@@ -60,7 +60,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand. Plain verbs and nouns; `core_version` and `station_address` say what they return.
 
-
 ### DE7. Descriptor bit and field constants (RDES3_*, TDES2_*, TDES3_*) (14)
 
 `descriptor::RDES3_BUF1V`, `descriptor::RDES3_CTXT`, `descriptor::RDES3_ES`, `descriptor::RDES3_FD`, `descriptor::RDES3_LD`, `descriptor::RDES3_LENGTH`, `descriptor::RDES3_OWN`, `descriptor::TDES2_BUF1_LEN`, `descriptor::TDES2_IC`, `descriptor::TDES3_ES`, `descriptor::TDES3_FRAME_LEN`, `descriptor::TDES3_FS`, `descriptor::TDES3_LS`, `descriptor::TDES3_OWN`
@@ -90,7 +89,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 - Provisional recommendation: Ratify as they stand. The module name is already spelled out; these are ordinary names.
 
 ## `designware_mobile_storage`
-
 
 ### DM2. Host controller (13)
 
@@ -157,7 +155,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 ## `e1000e`
 
-
 ### E1. Module names (14)
 
 `control`, `data_plane`, `descriptor`, `device`, `layout`, `pch`, `pch/flush`, `pch/hardware`, `pch/reset`, `pch/sequence`, `pch/tests`, `pch/ulp`, `proofs`, `tests`
@@ -171,7 +168,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
-
 
 ### E5. Descriptor status and command bits (7)
 
@@ -235,15 +231,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify `done`, `release`, `request` and the simulator names; recommend `WAIT_MS` become `WAIT_MILLISECONDS`, matching `POLL_MICROSECONDS`.
-
-## `non_volatile_memory_express`
-
-### N1. Namespace (3)
-
-`lib::Namespace`, `lib::holds_block`, `lib::transfer_command`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Already proposed in full in design/roadmap/1002-ratify-the-nvme-namespace-names.md (ratify as they stand, plus the `size_bytes` to `capacity_bytes` field loose end). Do not repeat it; bring that proposal.
 
 ## Not covered
 
