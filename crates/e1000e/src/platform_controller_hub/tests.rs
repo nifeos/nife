@@ -7,9 +7,13 @@ use super::*;
 
 #[test]
 fn the_pch_class_is_every_claimed_i219_and_not_qemus_part() {
-    assert!(!is_pch(0x10d3));
+    assert!(!is_platform_controller_hub_device(0x10d3));
     for &(id, model) in super::super::DEVICE_IDS {
-        assert_eq!(is_pch(id), model.starts_with("I219"), "{id:#06x} {model}");
+        assert_eq!(
+            is_platform_controller_hub_device(id),
+            model.starts_with("I219"),
+            "{id:#06x} {model}"
+        );
     }
 }
 
@@ -31,10 +35,10 @@ fn the_ulp_request_clears_the_indication_and_enforces() {
 
 #[test]
 fn the_flush_runs_only_when_asked_and_the_ring_has_length() {
-    assert!(flush::required(flush::FLUSH_DESC_REQUIRED, 256));
-    assert!(!flush::required(flush::FLUSH_DESC_REQUIRED, 0));
-    assert!(!flush::required(0, 256));
-    assert_eq!(flush::tail_after(15, 16), 0);
+    assert!(flush::is_flush_required(flush::FLUSH_DESC_REQUIRED, 256));
+    assert!(!flush::is_flush_required(flush::FLUSH_DESC_REQUIRED, 0));
+    assert!(!flush::is_flush_required(0, 256));
+    assert_eq!(flush::tail_after_dummy_transmit(15, 16), 0);
     assert_eq!(
         flush::receive_descriptor_control_register_value_for_flush(0xffff_ffff) & 0x3fff,
         0x1f | 1 << 8
@@ -44,7 +48,10 @@ fn the_flush_runs_only_when_asked_and_the_ring_has_length() {
         0
     );
     // No end of packet, no report status: the dummy is never a frame anyone waits on.
-    assert_eq!((flush::transmit_word() >> 24) as u8 & (0x01 | 0x08), 0);
+    assert_eq!(
+        (flush::dummy_transmit_descriptor_command_word() >> 24) as u8 & (0x01 | 0x08),
+        0
+    );
 }
 
 /// The flush's register values exactly as FreeBSD writes them: the dummy descriptor is 512
@@ -52,9 +59,9 @@ fn the_flush_runs_only_when_asked_and_the_ring_has_length() {
 /// every bit above the two thresholds, including the granularity bit when it was already set.
 #[test]
 fn the_flush_values_are_freebsds() {
-    assert_eq!(flush::transmit_word(), 0x0200_0200);
-    assert_eq!(flush::tail_after(3, 16), 4);
-    assert_eq!(flush::tail_after(15, 16), 0);
+    assert_eq!(flush::dummy_transmit_descriptor_command_word(), 0x0200_0200);
+    assert_eq!(flush::tail_after_dummy_transmit(3, 16), 4);
+    assert_eq!(flush::tail_after_dummy_transmit(15, 16), 0);
     assert_eq!(
         flush::receive_descriptor_control_register_value_for_flush(0xffff_ffff),
         0xffff_c11f
@@ -262,7 +269,7 @@ fn the_flush_runs_both_rings_in_freebsds_order() {
             Step::Read(TRANSMIT_CONTROL_REGISTER),
             Step::Write(TRANSMIT_CONTROL_REGISTER, 0x8 | 0x2),
             Step::Read(TRANSMIT_DESCRIPTOR_TAIL_REGISTER),
-            Step::Descriptor(15, [ring, flush::transmit_word()]),
+            Step::Descriptor(15, [ring, flush::dummy_transmit_descriptor_command_word()]),
             Step::Write(TRANSMIT_DESCRIPTOR_TAIL_REGISTER, 0),
             Step::Delay(250),
             Step::Status,
@@ -291,7 +298,10 @@ fn the_flush_stops_after_the_transmit_ring_when_the_request_clears() {
     assert!(!steps.iter().any(
         |s| matches!(s, Step::Write(o, _) if *o == crate::registers::RECEIVE_CONTROL_REGISTER)
     ));
-    assert!(steps.contains(&Step::Descriptor(0, [0x1000, flush::transmit_word()])));
+    assert!(steps.contains(&Step::Descriptor(
+        0,
+        [0x1000, flush::dummy_transmit_descriptor_command_word()]
+    )));
     assert!(steps.contains(&Step::Write(
         crate::registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER,
         1

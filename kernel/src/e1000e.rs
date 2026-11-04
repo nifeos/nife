@@ -79,7 +79,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     let region = region_for(dev.rid);
     let c = Controller(mmu::phys_to_virt(dev.bar0));
     let refused = |why| Absent::Refused { rid: dev.rid, why };
-    let pch = ::e1000e::platform_controller_hub::is_pch(dev.device);
+    let pch = ::e1000e::platform_controller_hub::is_platform_controller_hub_device(dev.device);
     let mut hw = Bar { c: &c, dev: &dev };
     let mut physical_layer_device_id = None;
     if pch {

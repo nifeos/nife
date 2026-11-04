@@ -222,16 +222,16 @@ impl Sim {
         let low = value as u16;
         // Write one to clear: done, error, direct access error.
         self.flash_status &= !(low
-            & (non_volatile_memory::status::DONE
-                | non_volatile_memory::status::ERROR
+            & (non_volatile_memory::status::FLASH_CYCLE_DONE
+                | non_volatile_memory::status::FLASH_CYCLE_ERROR
                 | non_volatile_memory::status::DIRECT_ACCESS_ERROR));
         self.flash_ctl = (value >> 16) as u16;
-        if self.flash_ctl & non_volatile_memory::control::GO != 0 {
+        if self.flash_ctl & non_volatile_memory::control::FLASH_CYCLE_GO != 0 {
             if self.flash_busy_reads > 0 || self.flash_pending > 0 {
                 self.flash_go_while_busy += 1;
             }
             self.flash_cycles.push(self.flash_ctl);
-            self.flash_ctl &= !non_volatile_memory::control::GO;
+            self.flash_ctl &= !non_volatile_memory::control::FLASH_CYCLE_GO;
             self.flash_pending = self.flash_slow_reads;
             if self.flash_pending == 0 {
                 self.flash_end_cycle();
@@ -251,10 +251,10 @@ impl Sim {
         );
         if self.flash_failing_cycles > 0 {
             self.flash_failing_cycles -= 1;
-            self.flash_status |=
-                non_volatile_memory::status::DONE | non_volatile_memory::status::ERROR;
+            self.flash_status |= non_volatile_memory::status::FLASH_CYCLE_DONE
+                | non_volatile_memory::status::FLASH_CYCLE_ERROR;
         } else {
-            self.flash_status |= non_volatile_memory::status::DONE;
+            self.flash_status |= non_volatile_memory::status::FLASH_CYCLE_DONE;
         }
     }
 }
@@ -674,7 +674,7 @@ mod tests {
     fn the_non_volatile_memory_configuration_region_is_replayed_into_the_physical_layer_device_from_the_valid_bank()
      {
         let mut s = Sim::new(Start::Healthy, true);
-        let bank = non_volatile_memory::Geometry::read(&mut s).bank_words as usize;
+        let bank = non_volatile_memory::Geometry::read_from_hardware(&mut s).bank_words as usize;
         assert_eq!(bank, 1024);
         // Bank 0 invalid, bank 1 valid.
         s.non_volatile_memory[non_volatile_memory::SIGNATURE_WORD as usize] = 0;
@@ -748,7 +748,7 @@ mod tests {
         let mut s = Sim::new(Start::Healthy, true);
         s.non_volatile_memory[0x10] = 0xaaaa;
         s.non_volatile_memory[0x11] = 0xbbbb;
-        let g = non_volatile_memory::Geometry::read(&mut s);
+        let g = non_volatile_memory::Geometry::read_from_hardware(&mut s);
         assert_eq!(non_volatile_memory::read_word(&mut s, g, 0x10), Ok(0xaaaa));
         assert_eq!(non_volatile_memory::read_word(&mut s, g, 0x11), Ok(0xbbbb));
         assert_eq!(
@@ -766,7 +766,7 @@ mod tests {
     fn a_flash_cycle_already_running_is_waited_out_and_one_that_never_ends_is_busy() {
         let mut s = Sim::new(Start::Healthy, true);
         s.non_volatile_memory[0x20] = 0x1234;
-        let g = non_volatile_memory::Geometry::read(&mut s);
+        let g = non_volatile_memory::Geometry::read_from_hardware(&mut s);
         s.flash_busy_reads = 5;
         assert_eq!(non_volatile_memory::read_word(&mut s, g, 0x20), Ok(0x1234));
         // `read_word` falls back to bank 0 when the bank probe fails, so ask `read_u32` itself.
@@ -810,12 +810,12 @@ mod tests {
     /// `ich8_hws_flash_ctrl` unions put them.
     #[test]
     fn the_flash_register_bits_are_the_ich8_unions() {
-        assert_eq!(non_volatile_memory::status::DONE, 0x0001);
-        assert_eq!(non_volatile_memory::status::ERROR, 0x0002);
+        assert_eq!(non_volatile_memory::status::FLASH_CYCLE_DONE, 0x0001);
+        assert_eq!(non_volatile_memory::status::FLASH_CYCLE_ERROR, 0x0002);
         assert_eq!(non_volatile_memory::status::DIRECT_ACCESS_ERROR, 0x0004);
         assert_eq!(non_volatile_memory::status::IN_PROGRESS, 0x0020);
         assert_eq!(non_volatile_memory::status::DESCRIPTOR_VALID, 0x4000);
-        assert_eq!(non_volatile_memory::control::GO, 0x0001);
+        assert_eq!(non_volatile_memory::control::FLASH_CYCLE_GO, 0x0001);
         assert_eq!(non_volatile_memory::control::CYCLE_MASK, 0x0006);
         assert_eq!(non_volatile_memory::control::BYTE_COUNT_SHIFT, 8);
         assert_eq!(non_volatile_memory::control::BYTE_COUNT_MASK, 0x0300);
@@ -939,7 +939,7 @@ mod tests {
         let mut s = Sim::new(Start::Healthy, true);
         s.non_volatile_memory[non_volatile_memory::SIGNATURE_WORD as usize] = 0;
         s.non_volatile_memory[0x40] = 0x5555;
-        let g = non_volatile_memory::Geometry::read(&mut s);
+        let g = non_volatile_memory::Geometry::read_from_hardware(&mut s);
         assert_eq!(
             non_volatile_memory::valid_bank(&mut s, g),
             Err(non_volatile_memory::Error::NoValidBank)

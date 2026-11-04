@@ -34,7 +34,10 @@ pub(crate) const TRANSMIT_DUMMY_LENGTH: u16 = 512;
 
 /// Is a flush required, given the status word and `TDLEN`? FreeBSD flushes nothing when the
 /// transmit ring has no length.
-pub const fn required(status: u16, tdlen: u32) -> bool {
+///
+/// Name: ratified 2026-11-03 (UTC), #3151. Renamed from `required`, a bare adjective; the name now
+/// has the yes-or-no shape of a question.
+pub const fn is_flush_required(status: u16, tdlen: u32) -> bool {
     status & FLUSH_DESC_REQUIRED != 0 && tdlen != 0
 }
 // The 512-byte length and the flag byte at bit 24 share no bit, so | and ^ compose them
@@ -46,9 +49,10 @@ const _: () = assert!((TRANSMIT_DUMMY_LENGTH as u64) & (0x02u64 << 24) == 0);
 /// The dummy transmit descriptor's second word: insert FCS, 512 bytes, no end of packet and no
 /// status report, exactly FreeBSD's `txd_lower`.
 ///
-/// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no ruling
-/// covers the rest of the name. Refused `tx_word` (tx abbreviates transmit).
-pub const fn transmit_word() -> u64 {
+/// Name: ratified 2026-11-03 (UTC), #3151. Renamed from `transmit_word`, which this function
+/// shared with the real descriptor's function; the word is the command word of the dummy
+/// descriptor, so the name says both.
+pub const fn dummy_transmit_descriptor_command_word() -> u64 {
     TRANSMIT_DUMMY_LENGTH as u64 | (0x02u64 << 24)
 }
 /// **The one divergence.** FreeBSD writes the dummy at its own completion cursor and then
@@ -56,7 +60,10 @@ pub const fn transmit_word() -> u64 {
 /// writes the dummy at the device's current tail and advances the tail by one, which hands the
 /// device exactly that descriptor: the effect the FreeBSD comment describes ("assign the ring
 /// itself as the data of the next descriptor").
-pub const fn tail_after(tdt: u32, entries: u16) -> u32 {
+///
+/// Name: ratified 2026-11-03 (UTC), #3151. Renamed from `tail_after`, which did not say after what;
+/// it is the tail after the dummy transmit.
+pub const fn tail_after_dummy_transmit(tdt: u32, entries: u16) -> u32 {
     (tdt + 1) % entries as u32
 }
 // The mask clears the register's low half, 0x1f and 1 << 8 land in that cleared half, and the two
@@ -143,7 +150,7 @@ pub fn descriptor_rings(
         extended | FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_DISABLE_MULR_FIX,
     );
     let status = rings.descriptor_ring_status();
-    if !required(status, hardware.read(TRANSMIT_DESCRIPTOR_LENGTH_REGISTER)) {
+    if !is_flush_required(status, hardware.read(TRANSMIT_DESCRIPTOR_LENGTH_REGISTER)) {
         return Outcome::NotRequired;
     }
     let base = u64::from(hardware.read(TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER))
@@ -155,10 +162,13 @@ pub fn descriptor_rings(
     hardware.write(TRANSMIT_CONTROL_REGISTER, transmit_control | TCTL_EN);
     let tail =
         hardware.read(TRANSMIT_DESCRIPTOR_TAIL_REGISTER) % u32::from(crate::TRANSMIT_ENTRIES);
-    rings.write_transmit_descriptor(tail as u16, [transmit_ring, transmit_word()]);
+    rings.write_transmit_descriptor(
+        tail as u16,
+        [transmit_ring, dummy_transmit_descriptor_command_word()],
+    );
     hardware.write(
         TRANSMIT_DESCRIPTOR_TAIL_REGISTER,
-        tail_after(tail, crate::TRANSMIT_ENTRIES),
+        tail_after_dummy_transmit(tail, crate::TRANSMIT_ENTRIES),
     );
     hardware.delay_microseconds(250);
     if rings.descriptor_ring_status() & FLUSH_DESC_REQUIRED == 0 {
