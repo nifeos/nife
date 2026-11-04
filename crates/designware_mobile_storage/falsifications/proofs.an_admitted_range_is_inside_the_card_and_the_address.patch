@@ -17,7 +17,7 @@ diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobi
 -    if block_addressed {
 -        end <= 1 << 32
 -    } else {
--        end <= (1 << 32) / BLOCK as u64
+-        end <= (1 << 32) / BLOCK_BYTES as u64
 -    }
 +    let _ = block_addressed;
 +    end <= 1 << 32

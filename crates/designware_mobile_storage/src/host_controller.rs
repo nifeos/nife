@@ -4,8 +4,8 @@
 //! notice), with deliberate differences: every wait is a deadline on a clock the caller supplies
 //! rather than a count of `delay(100)`s, nothing sleeps, the interrupt line stays masked, and a
 //! 64-bit FIFO is refused (radon's is measured by the bench step before anything depends on it).
-//! `Host<R>` moves every word through the FIFO by MMIO; `Host<R, D>`, from
-//! [`Host::with_internal_direct_memory_access`], hands each data phase to the controller's DMA
+//! `HostController<R>` moves every word through the FIFO by MMIO; `HostController<R, D>`, from
+//! [`HostController::with_internal_direct_memory_access`], hands each data phase to the controller's DMA
 //! engine ([`crate::internal_direct_memory_access`]). Commands and identification are the same on
 //! both.
 //!
@@ -24,7 +24,10 @@ use crate::registers;
 /// The kernel implements it over a mapped device window and the architecture's counter; the tests
 /// implement it over `simulator`. Rule 2 in one trait: the driver is handed a window and knows
 /// nothing about where it is.
-pub trait Registers {
+///
+/// Name: ratified 2026-11-03 (UTC), #3136. Renamed from `Registers`, which named only half of the
+/// trait (it is a register window and a clock) and clashed with the `registers` module.
+pub trait RegisterWindowAndClock {
     /// Read the 32-bit register at `offset` bytes from the base.
     fn read(&mut self, offset: u32) -> u32;
     /// Write the 32-bit register at `offset`.
@@ -34,6 +37,8 @@ pub trait Registers {
 }
 
 /// What went wrong, with enough to say where.
+///
+/// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// `HCON` names a FIFO width this driver does not move: the raw width field.
@@ -64,18 +69,27 @@ pub enum Error {
 }
 
 /// The controller's identity, read before anything is written: what a bench transcript prints.
+///
+/// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands. Its fields are spelled out; the
+/// databook's `verid`, `hcon`, `usrid`, `fifoth` and `cdetect` are kept as `doc(alias)` on each,
+/// and `fifo` becomes `queue` as in #3092.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Identity {
-    /// `VERID`.
-    pub verid: u32,
-    /// `HCON`.
-    pub hcon: u32,
-    /// `USRID`.
-    pub usrid: u32,
+    /// `VERID`, the version identification.
+    #[doc(alias = "verid")]
+    pub version_identification: u32,
+    /// `HCON`, the hardware configuration.
+    #[doc(alias = "hcon")]
+    pub hardware_configuration: u32,
+    /// `USRID`, the user identification.
+    #[doc(alias = "usrid")]
+    pub user_identification: u32,
     /// `FIFOTH` as found, whose receive watermark is `depth - 1` out of reset.
-    pub fifoth: u32,
+    #[doc(alias = "fifoth")]
+    pub queue_threshold: u32,
     /// `CDETECT` as found: bit 0 clear means a card is present.
-    pub cdetect: u32,
+    #[doc(alias = "cdetect")]
+    pub card_detect: u32,
     /// `CONTROL`, `PWREN`, `CLKDIV`, `CLKENA` and `CTYPE` as the firmware left them.
     pub firmware: [u32; 5],
 }
@@ -105,6 +119,8 @@ pub(crate) const DATA_DEADLINE_MICROSECONDS: u64 = 500_000;
 /// assert_eq!(clock_divider(50_000_000, 50_000_000), Some(0));
 /// assert_eq!(clock_divider(50_000_000, 25_000_000), Some(1));
 /// ```
+///
+/// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands.
 #[must_use]
 pub const fn clock_divider(base: u32, target: u32) -> Option<u8> {
     if target == 0 {
@@ -124,6 +140,8 @@ pub const fn clock_divider(base: u32, target: u32) -> Option<u8> {
 }
 
 /// The card clock a divider gives: `base` at 0, `base / (2 * divider)` otherwise.
+///
+/// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands.
 #[must_use]
 pub const fn card_clock(base: u32, divider: u8) -> u32 {
     if divider == 0 {
@@ -150,10 +168,16 @@ pub const fn queue_step(status: u32, depth: u32, write: bool, remaining: u32) ->
 }
 
 /// The driver: a window, the FIFO's place and depth, the card clock's source rate, and, when the
-/// data moves by DMA, the IDMAC's region. `Host<R>` is the polled driver;
-/// [`Host::with_internal_direct_memory_access`] makes a `Host<R, D>` whose every data phase goes
-/// through the IDMAC.
-pub struct Host<R: Registers, D: DirectMemoryAccessRegion = NoDirectMemoryAccess> {
+/// data moves by DMA, the IDMAC's region. `HostController<R>` is the polled driver;
+/// [`HostController::with_internal_direct_memory_access`] makes a `HostController<R, D>` whose
+/// every data phase goes through the IDMAC.
+///
+/// Name: ratified 2026-11-03 (UTC), #3136. Renamed from `Host`, which did not say that it drives a
+/// controller.
+pub struct HostController<
+    R: RegisterWindowAndClock,
+    D: DirectMemoryAccessRegion = NoDirectMemoryAccess,
+> {
     pub(crate) registers: R,
     queue_offset: u32,
     pub(crate) depth: u32,
@@ -161,7 +185,7 @@ pub struct Host<R: Registers, D: DirectMemoryAccessRegion = NoDirectMemoryAccess
     pub(crate) direct_memory_access: Option<InternalDirectMemoryAccess<D>>,
 }
 
-impl<R: Registers> Host<R> {
+impl<R: RegisterWindowAndClock> HostController<R> {
     /// **Take a controller**, reading its identity and touching nothing.
     ///
     /// `base_hz` is the rate of the clock the controller divides (the tree's `ciu`, 50 MHz on
@@ -171,17 +195,19 @@ impl<R: Registers> Host<R> {
     /// # Errors
     ///
     /// [`Error::QueueWidth`] for a 16- or 64-bit FIFO.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands.
     pub fn new(
         mut registers: R,
         base_hz: u32,
         queue_depth: Option<u32>,
     ) -> Result<(Self, Identity), Error> {
         let id = Identity {
-            verid: registers.read(registers::VERID),
-            hcon: registers.read(registers::HCON),
-            usrid: registers.read(registers::USRID),
-            fifoth: registers.read(registers::FIFOTH),
-            cdetect: registers.read(registers::CDETECT),
+            version_identification: registers.read(registers::VERID),
+            hardware_configuration: registers.read(registers::HCON),
+            user_identification: registers.read(registers::USRID),
+            queue_threshold: registers.read(registers::FIFOTH),
+            card_detect: registers.read(registers::CDETECT),
             firmware: [
                 registers.read(registers::CONTROL),
                 registers.read(registers::PWREN),
@@ -190,17 +216,17 @@ impl<R: Registers> Host<R> {
                 registers.read(registers::CTYPE),
             ],
         };
-        if registers::queue_width(id.hcon) != Some(4) {
-            return Err(Error::QueueWidth((id.hcon >> 7) & 7));
+        if registers::queue_width(id.hardware_configuration) != Some(4) {
+            return Err(Error::QueueWidth((id.hardware_configuration >> 7) & 7));
         }
         let depth = match queue_depth {
             Some(d) if d > 0 => d,
-            _ => registers::fifoth_receive_watermark(id.fifoth) + 1,
+            _ => registers::fifoth_receive_watermark(id.queue_threshold) + 1,
         };
         Ok((
-            Host {
+            HostController {
                 registers,
-                queue_offset: registers::queue_offset(id.verid),
+                queue_offset: registers::queue_offset(id.version_identification),
                 depth,
                 base_hz,
                 direct_memory_access: None,
@@ -220,8 +246,8 @@ impl<R: Registers> Host<R> {
     pub fn with_internal_direct_memory_access<D: DirectMemoryAccessRegion>(
         self,
         internal_direct_memory_access: InternalDirectMemoryAccess<D>,
-    ) -> Host<R, D> {
-        Host {
+    ) -> HostController<R, D> {
+        HostController {
             registers: self.registers,
             queue_offset: self.queue_offset,
             depth: self.depth,
@@ -231,8 +257,8 @@ impl<R: Registers> Host<R> {
     }
 }
 
-impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
-    /// The FIFO depth in words, as decided by [`Host::new`].
+impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D> {
+    /// The FIFO depth in words, as decided by [`HostController::new`].
     ///
     /// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree
     /// authors; the databook's `fifo` is kept as `doc(alias = "fifo")`.
@@ -243,11 +269,16 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     }
 
     /// The window, for a caller that needs a register this driver does not name.
-    pub fn registers(&mut self) -> &mut R {
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3136. Renamed from `registers`: it returns `&mut`, so it
+    /// takes the standard library's `_mut` suffix.
+    pub fn registers_mut(&mut self) -> &mut R {
         &mut self.registers
     }
 
     /// Give the window back.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands.
     pub fn into_registers(self) -> R {
         self.registers
     }
@@ -270,11 +301,13 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
 
     /// **Reset the controller, the FIFO and the DMA interface**, mask every interrupt, clear the
     /// raw status, and leave the bus 1-bit wide with the FIFO thresholds set for polling. The card
-    /// clock is off afterwards; [`Host::set_clock`] turns it on.
+    /// clock is off afterwards; [`HostController::set_clock`] turns it on.
     ///
     /// # Errors
     ///
     /// [`Error::ResetStuck`] if a reset bit does not clear.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands.
     pub fn reset(&mut self) -> Result<(), Error> {
         self.registers.write(registers::CLKENA, 0);
         let ctrl = self.registers.read(registers::CONTROL)
@@ -383,7 +416,7 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     ) -> Result<[u32; 4], Error> {
         self.wait_not_busy()?;
         if let Some(d) = command.data {
-            self.registers.write(registers::BYTCNT, d.bytes());
+            self.registers.write(registers::BYTCNT, d.total_bytes());
             self.registers.write(registers::BLKSIZ, d.block_size);
             let ctrl = self.registers.read(registers::CONTROL);
             self.registers
@@ -400,7 +433,8 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         self.registers
             .write(registers::RINTSTS, registers::RINTSTS_ALL);
         self.registers.write(registers::CMDARG, command.argument);
-        self.registers.write(registers::CMD, command.word());
+        self.registers
+            .write(registers::CMD, command.register_word());
         if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::CMD) & registers::COMMAND_START == 0
         }) {
@@ -436,7 +470,10 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// # Errors
     ///
     /// Any of the command-phase errors, and [`Error::BufferSize`] if `command` has a data phase.
-    pub fn command(&mut self, command: &Command) -> Result<[u32; 4], Error> {
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3136. Renamed from `command`: the method sends the
+    /// command, and the old name read as the thing sent.
+    pub fn send_command(&mut self, command: &Command) -> Result<[u32; 4], Error> {
         if command.data.is_some() {
             return Err(Error::BufferSize);
         }
@@ -452,11 +489,16 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
     /// [`Error::BufferSize`] on a size mismatch or a write command; any command-phase error;
     /// [`Error::Data`], [`Error::DirectMemoryAccess`] or [`Error::DataTimeout`] from the data
     /// phase.
-    pub fn read(&mut self, command: &Command, buffer: &mut [u8]) -> Result<[u32; 4], Error> {
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3136. Renamed from `read`: it moves a data block, while
+    /// the trait's `read` touches one register and keeps its name.
+    pub fn read_data(&mut self, command: &Command, buffer: &mut [u8]) -> Result<[u32; 4], Error> {
         let Some(d) = command.data else {
             return Err(Error::BufferSize);
         };
-        if d.write || buffer.len() as u64 != u64::from(d.bytes()) || !buffer.len().is_multiple_of(4)
+        if d.is_write
+            || buffer.len() as u64 != u64::from(d.total_bytes())
+            || !buffer.len().is_multiple_of(4)
         {
             return Err(Error::BufferSize);
         }
@@ -465,10 +507,10 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
             .as_ref()
             .map(InternalDirectMemoryAccess::capacity)
         {
-            if d.bytes() > capacity {
+            if d.total_bytes() > capacity {
                 return Err(Error::BufferSize);
             }
-            let resp = self.internal_direct_memory_access_transfer(command, d.bytes())?;
+            let resp = self.internal_direct_memory_access_transfer(command, d.total_bytes())?;
             if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
                 direct_memory_access.region().read_bytes(PAGE, buffer);
             }
@@ -494,27 +536,31 @@ impl<R: Registers, D: DirectMemoryAccessRegion> Host<R, D> {
         Ok(resp)
     }
 
-    /// **Send a command whose data phase writes `buffer`.** The same size rules as [`Host::read`].
+    /// **Send a command whose data phase writes `buffer`.** The same size rules as
+    /// [`HostController::read_data`].
     ///
     /// # Errors
     ///
-    /// As [`Host::read`].
-    pub fn write(&mut self, command: &Command, buffer: &[u8]) -> Result<[u32; 4], Error> {
+    /// As [`HostController::read_data`].
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3136. Renamed from `write`, for the same reason as
+    /// `read_data`.
+    pub fn write_data(&mut self, command: &Command, buffer: &[u8]) -> Result<[u32; 4], Error> {
         let Some(d) = command.data else {
             return Err(Error::BufferSize);
         };
-        if !d.write
-            || buffer.len() as u64 != u64::from(d.bytes())
+        if !d.is_write
+            || buffer.len() as u64 != u64::from(d.total_bytes())
             || !buffer.len().is_multiple_of(4)
         {
             return Err(Error::BufferSize);
         }
         if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
-            if d.bytes() > direct_memory_access.capacity() {
+            if d.total_bytes() > direct_memory_access.capacity() {
                 return Err(Error::BufferSize);
             }
             direct_memory_access.region().write_bytes(PAGE, buffer);
-            let resp = self.internal_direct_memory_access_transfer(command, d.bytes())?;
+            let resp = self.internal_direct_memory_access_transfer(command, d.total_bytes())?;
             self.wait_not_busy()?;
             return Ok(resp);
         }
@@ -650,12 +696,12 @@ mod tests {
     use std::vec::Vec;
 
     use crate::command::{Command, Data, Response, SEND_IF_COND, WRITE_BLOCK};
-    use crate::sd::{self, IoError};
+    use crate::sd::{self, BlockTransferError};
     use crate::simulator::{CardKind, Fault, Sim};
 
-    fn take(sim: Sim) -> Host<Sim> {
+    fn take(sim: Sim) -> HostController<Sim> {
         let depth = u32::try_from(sim.depth()).unwrap();
-        Host::new(sim, 50_000_000, Some(depth)).unwrap().0
+        HostController::new(sim, 50_000_000, Some(depth)).unwrap().0
     }
 
     /// Runs `f` on a worker and fails if it has not returned in ten seconds. A wait whose deadline
@@ -679,15 +725,15 @@ mod tests {
             | registers::CONTROL_DMA_ENABLE
             | registers::CONTROL_INT_ENABLE
             | 1 << 8;
-        h.registers().write(registers::CONTROL, firmware);
-        h.registers().write(
+        h.registers_mut().write(registers::CONTROL, firmware);
+        h.registers_mut().write(
             registers::CARDTHRCTL,
             512 << 16 | registers::CARDTHRCTL_RDTHREN,
         );
-        h.registers().writes.clear();
+        h.registers_mut().writes.clear();
         h.reset().unwrap();
         assert_eq!(
-            h.registers().writes,
+            h.registers_mut().writes,
             [
                 (registers::CLKENA, 0),
                 (registers::CONTROL, 1 << 8 | registers::CONTROL_ALL_RESET),
@@ -701,12 +747,12 @@ mod tests {
         );
         // A FIFO reset still in flight when the driver starts is asked for again, not toggled off.
         let mut h = take(Sim::new(CardKind::Empty, 1, 32));
-        h.registers()
+        h.registers_mut()
             .write(registers::CONTROL, registers::CONTROL_FIFO_RESET);
-        h.registers().writes.clear();
+        h.registers_mut().writes.clear();
         h.reset().unwrap();
         assert_eq!(
-            h.registers().writes[1],
+            h.registers_mut().writes[1],
             (registers::CONTROL, registers::CONTROL_ALL_RESET)
         );
     }
@@ -726,7 +772,7 @@ mod tests {
     fn power_and_bus_width_land_in_their_registers() {
         let mut h = take(Sim::new(CardKind::Empty, 1, 32));
         h.power_on();
-        assert_eq!(h.registers().peek(registers::PWREN), 1);
+        assert_eq!(h.registers_mut().peek(registers::PWREN), 1);
         for (width, ctype) in [
             (4, registers::CTYPE_4BIT),
             (8, registers::CTYPE_8BIT),
@@ -734,7 +780,11 @@ mod tests {
             (2, 0),
         ] {
             h.set_bus_width(width);
-            assert_eq!(h.registers().peek(registers::CTYPE), ctype, "width {width}");
+            assert_eq!(
+                h.registers_mut().peek(registers::CTYPE),
+                ctype,
+                "width {width}"
+            );
         }
     }
 
@@ -772,16 +822,16 @@ mod tests {
         let mut sim = Sim::new(CardKind::SdHighCapacity, 2048, 32);
         sim.late_answer = 3;
         let mut h = take(sim);
-        h.command(&Command::new(0, 0, Response::None)).unwrap();
+        h.send_command(&Command::new(0, 0, Response::None)).unwrap();
         let echo = h
-            .command(&Command::new(SEND_IF_COND, 0x1aa, Response::R7))
+            .send_command(&Command::new(SEND_IF_COND, 0x1aa, Response::R7))
             .unwrap();
         assert_eq!(echo[0] & 0xfff, 0x1aa);
         let mut sim = Sim::new(CardKind::Empty, 1, 32);
         sim.late_answer = 3;
         let mut h = take(sim);
         assert_eq!(
-            h.command(&Command::new(SEND_IF_COND, 0x1aa, Response::R7)),
+            h.send_command(&Command::new(SEND_IF_COND, 0x1aa, Response::R7)),
             Err(Error::NoResponse(SEND_IF_COND))
         );
     }
@@ -791,9 +841,9 @@ mod tests {
         let mut sim = Sim::new(CardKind::SdHighCapacity, 2048, 32);
         sim.faults = vec![(SEND_IF_COND, 0, Fault::BadCrc)];
         let mut h = take(sim);
-        h.command(&Command::new(0, 0, Response::None)).unwrap();
+        h.send_command(&Command::new(0, 0, Response::None)).unwrap();
         assert!(matches!(
-            h.command(&Command::new(SEND_IF_COND, 0x1aa, Response::R7)),
+            h.send_command(&Command::new(SEND_IF_COND, 0x1aa, Response::R7)),
             Err(Error::BadResponse(SEND_IF_COND, s)) if s & registers::RINTSTS_RCRC != 0
         ));
     }
@@ -805,23 +855,23 @@ mod tests {
     #[test]
     fn a_data_command_resets_the_queue_and_leaves_the_threshold_off() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
-        h.registers().write(registers::CONTROL, 1 << 8);
+        h.registers_mut().write(registers::CONTROL, 1 << 8);
         let card = sd::identify(&mut h, 4).unwrap();
-        h.registers().writes.clear();
+        h.registers_mut().writes.clear();
         let mut block = [0u8; 512];
         sd::read_blocks(&mut h, &card, 1, &mut block).unwrap();
-        let read = core::mem::take(&mut h.registers().writes);
+        let read = core::mem::take(&mut h.registers_mut().writes);
         assert!(!read.iter().any(|&(o, _)| o == registers::CARDTHRCTL));
         assert!(read.contains(&(registers::CONTROL, 1 << 8 | registers::CONTROL_FIFO_RESET)));
         sd::write_blocks(&mut h, &card, 1, &block).unwrap();
-        let write = &h.registers().writes;
+        let write = &h.registers_mut().writes;
         assert!(!write.iter().any(|&(o, _)| o == registers::CARDTHRCTL));
         assert!(write.contains(&(registers::CONTROL, 1 << 8 | registers::CONTROL_FIFO_RESET)));
         // A FIFO reset that never clears stops the command before it is sent.
-        h.registers().reset_stuck = true;
+        h.registers_mut().reset_stuck = true;
         assert!(matches!(
             sd::read_blocks(&mut h, &card, 1, &mut block),
-            Err(IoError::Host(Error::ResetStuck(_)))
+            Err(BlockTransferError::Host(Error::ResetStuck(_)))
         ));
     }
 
@@ -833,15 +883,18 @@ mod tests {
         let one = |write| Data {
             block_size: 512,
             blocks: 1,
-            write,
+            is_write: write,
         };
         let read = Command::with_data(17, 0, Response::R1, one(false));
         let write = Command::with_data(WRITE_BLOCK, 0, Response::R1, one(true));
         let mut buffer = [0u8; 1024];
-        assert_eq!(h.read(&write, &mut buffer[..512]), Err(Error::BufferSize));
-        assert_eq!(h.read(&read, &mut buffer), Err(Error::BufferSize));
-        assert_eq!(h.write(&read, &buffer[..512]), Err(Error::BufferSize));
-        assert_eq!(h.write(&write, &buffer), Err(Error::BufferSize));
+        assert_eq!(
+            h.read_data(&write, &mut buffer[..512]),
+            Err(Error::BufferSize)
+        );
+        assert_eq!(h.read_data(&read, &mut buffer), Err(Error::BufferSize));
+        assert_eq!(h.write_data(&read, &buffer[..512]), Err(Error::BufferSize));
+        assert_eq!(h.write_data(&write, &buffer), Err(Error::BufferSize));
         assert!(h.into_registers().commands.is_empty());
     }
 
@@ -855,18 +908,18 @@ mod tests {
     fn a_stalled_transfer_times_out_owing_what_did_not_move() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         let card = sd::identify(&mut h, 4).unwrap();
-        h.registers().stall_after = Some(128);
+        h.registers_mut().stall_after = Some(128);
         let mut block = [0u8; 512];
         assert!(matches!(
             sd::read_blocks(&mut h, &card, 1, &mut block),
-            Err(IoError::Host(Error::DataTimeout(17, _, 384)))
+            Err(BlockTransferError::Host(Error::DataTimeout(17, _, 384)))
         ));
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         let card = sd::identify(&mut h, 4).unwrap();
-        h.registers().stall_after = Some(128);
+        h.registers_mut().stall_after = Some(128);
         assert!(matches!(
             sd::write_blocks(&mut h, &card, 1, &block),
-            Err(IoError::Host(Error::DataTimeout(24, _, 256)))
+            Err(BlockTransferError::Host(Error::DataTimeout(24, _, 256)))
         ));
     }
 
@@ -880,15 +933,15 @@ mod tests {
     fn a_read_the_card_ends_early_times_out_rather_than_spinning() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         let card = sd::identify(&mut h, 4).unwrap();
-        h.registers().stall_after = Some(128);
-        h.registers().end_early = true;
+        h.registers_mut().stall_after = Some(128);
+        h.registers_mut().end_early = true;
         let r = within_ten_seconds(move || {
             let mut block = [0u8; 512];
             sd::read_blocks(&mut h, &card, 1, &mut block)
         });
         assert!(matches!(
             r,
-            Err(IoError::Host(Error::DataTimeout(17, _, 384)))
+            Err(BlockTransferError::Host(Error::DataTimeout(17, _, 384)))
         ));
     }
 
@@ -901,7 +954,7 @@ mod tests {
         let card = sd::identify(&mut h, 4).unwrap();
         let data: Vec<u8> = (0..512).map(|i| (i % 253) as u8).collect();
         sd::write_blocks(&mut h, &card, 5, &data).unwrap();
-        h.registers().overreport_fill = true;
+        h.registers_mut().overreport_fill = true;
         let mut back = [0u8; 512];
         sd::read_blocks(&mut h, &card, 5, &mut back).unwrap();
         assert_eq!(back[..], data[..]);
@@ -913,13 +966,13 @@ mod tests {
     fn a_data_error_at_the_end_of_a_write_is_reported_promptly() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         let card = sd::identify(&mut h, 4).unwrap();
-        h.registers().crc_error_at_end = true;
-        let start = h.registers().now_microseconds();
+        h.registers_mut().crc_error_at_end = true;
+        let start = h.registers_mut().now_microseconds();
         assert!(matches!(
             sd::write_blocks(&mut h, &card, 1, &[0u8; 512]),
-            Err(IoError::Host(Error::Data(24, rint))) if rint & registers::RINTSTS_DCRC != 0
+            Err(BlockTransferError::Host(Error::Data(24, rint))) if rint & registers::RINTSTS_DCRC != 0
         ));
-        assert!(h.registers().now_microseconds() - start < DATA_DEADLINE_MICROSECONDS);
+        assert!(h.registers_mut().now_microseconds() - start < DATA_DEADLINE_MICROSECONDS);
     }
 
     /// The same for a read whose data phase fails its CRC: the wait for the FIFO ends on the error.
@@ -927,14 +980,14 @@ mod tests {
     fn a_data_error_during_a_read_ends_the_wait_at_once() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         let card = sd::identify(&mut h, 4).unwrap();
-        h.registers().fail_next_read_crc = true;
-        let start = h.registers().now_microseconds();
+        h.registers_mut().fail_next_read_crc = true;
+        let start = h.registers_mut().now_microseconds();
         let mut block = [0u8; 512];
         assert!(matches!(
             sd::read_blocks(&mut h, &card, 1, &mut block),
-            Err(IoError::Host(Error::Data(17, _)))
+            Err(BlockTransferError::Host(Error::Data(17, _)))
         ));
-        assert!(h.registers().now_microseconds() - start < DATA_DEADLINE_MICROSECONDS);
+        assert!(h.registers_mut().now_microseconds() - start < DATA_DEADLINE_MICROSECONDS);
     }
 
     /// A multi-block transfer is over when the automatic CMD12 is, which can land after `DTO`.
@@ -942,11 +995,11 @@ mod tests {
     fn a_multi_block_transfer_waits_for_the_automatic_stop() {
         let mut h = take(Sim::new(CardKind::SdHighCapacity, 2048, 32));
         let card = sd::identify(&mut h, 4).unwrap();
-        h.registers().late_acd = 5;
+        h.registers_mut().late_acd = 5;
         let mut blocks = [0u8; 4 * 512];
         sd::read_blocks(&mut h, &card, 1, &mut blocks).unwrap();
         assert_ne!(
-            h.registers().peek(registers::RINTSTS) & registers::RINTSTS_ACD,
+            h.registers_mut().peek(registers::RINTSTS) & registers::RINTSTS_ACD,
             0
         );
     }

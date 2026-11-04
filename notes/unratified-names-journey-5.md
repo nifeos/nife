@@ -32,7 +32,7 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 
 In order, easiest to rule on first:
 
-1. The `no` groups of designware_mobile_storage (`DM2` to `DM4`, `DM6`, `DM8` and `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
+1. The `no` groups of designware_mobile_storage (`DM8` and `DM10`): ratify as they stand, which clears the module apart from DM9.
 
 The groups that need a real ruling are the register and bit constants: `DE7`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
@@ -46,38 +46,6 @@ The groups that need a real ruling are the register and bit constants: `DE7`, `E
 - Provisional recommendation: Spell out, with the databook spelling kept as `#[doc(alias)]` and cited in the doc comment, as the 2026-11-02 rule and the earlier `RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION` rename already do. The docs already carry the plain-words title of each (for example 'owned by the device'), so the candidate names come from the crate's own text. Decide as one group; the items share one pattern.
 
 ## `designware_mobile_storage`
-
-### DM2. Host controller (13)
-
-`host_controller::Error`, `host_controller::Host`, `host_controller::Identity`, `host_controller::Registers`, `host_controller::card_clock`, `host_controller::clock_divider`, `host_controller::command`, `host_controller::into_registers`, `host_controller::new`, `host_controller::read`, `host_controller::registers`, `host_controller::reset`, `host_controller::write`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. The register-level names inside this module were already ratified spelled out under #3092; these are the software surface around them.
-
-### DM3. Command words (9)
-
-`command::Command`, `command::Data`, `command::GO_IDLE_STATE`, `command::Response`, `command::SEND_STATUS`, `command::SWITCH`, `command::bytes`, `command::new`, `command::word`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. `GO_IDLE_STATE`, `SEND_STATUS` and `SWITCH` are the SD specification's own command names, spelled in full; OpenBSD's `sdmmcreg.h` uses the same words.
-
-### DM4. Card status (6)
-
-`card::R1_ERRORS`, `card::R1_READY_FOR_DATA`, `card::STATE_TRANSFER`, `card::bits`, `card::r1_state`, `card::sd`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. `R1` is the specification's own name for the response type, a noun with no spelled-out form.
-
-### DM5. Card access (9)
-
-`sd::BLOCK`, `sd::Card`, `sd::IoError`, `sd::Kind`, `sd::address`, `sd::identify`, `sd::in_range`, `sd::read_blocks`, `sd::write_blocks`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify all but `BLOCK`. `BLOCK` is the 512-byte size; recommend `BLOCK_BYTES` so it names its unit, as `TRANSFER_HZ` already does (ratified #3092).
-
-### DM6. Partition table (6)
-
-`partition::Entry`, `partition::SIGNATURE`, `partition::contains`, `partition::is_used`, `partition::parse`, `partition::scratch`
 
 - Breaks the spelled-out rule: no.
 - Provisional recommendation: Ratify as they stand.
