@@ -22,10 +22,9 @@
 # any window whose status is neither `ok` nor `infrastructure`, so a status this script does not
 # know withholds its slot too. The seed totals in report.md still count every clean window.
 #
-# BUGS: nothing brings a withheld slot's ranges back. They should return once the held finding turns
-# public, and the milestone that publishes it
-# (design/roadmap/1010-a-held-finding-turns-public-after-its-fix-reruns-clean.md) defines the
-# signal; until it does, a slot that ever held a finding publishes no further ranges. That fails safe.
+# BUGS: nothing brings a withheld slot's ranges back. A person publishes a finding's advisory and the
+# host is not told (design/roadmap/1010-a-held-finding-turns-public-after-its-fix-reruns-clean.md,
+# refused 2026-11-04), so a slot that ever held a finding publishes no further ranges. That fails safe.
 #
 # **Where it goes.** Ruled 2026-11-01 (UTC): one GitHub release per day on nifeos/nife, tagged
 # `fuzz-YYYY-MM-DD`, with report.md and clean-ranges.tsv as assets
