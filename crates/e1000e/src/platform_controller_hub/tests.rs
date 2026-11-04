@@ -148,7 +148,7 @@ impl Hardware for Registers<'_> {
     fn pci_vendor_id(&mut self) -> u16 {
         0x8086
     }
-    fn note(&mut self, _: sequence::Note) {}
+    fn note(&mut self, _: sequence::BringUpObservation) {}
 }
 
 impl flush::RingAccess for Ring<'_> {
