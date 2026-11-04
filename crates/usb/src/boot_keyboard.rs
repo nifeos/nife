@@ -310,6 +310,33 @@ mod tests {
         assert_eq!(evdev_code(0xff), None);
     }
 
+    /// **The table is the one the Linux cross-check compared.** The comparison ran on 2026-11-04
+    /// (UTC), after the table was written from the Usage Tables, against `hid_keyboard[]` in
+    /// `drivers/hid/hid-input.c` at `torvalds/linux@cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a`
+    /// (GPL-2.0-or-later). It read that array's entries for usages 0x04 to 0x63 and 0xe0 to 0xe7
+    /// as numbers and compared them with [`evdev_code`] and [`MODIFIER_CODES`]: all 104 agree,
+    /// including the three choices the module documentation names as nife's. The crate holds
+    /// none of that file's text, so this test pins the result instead: a fingerprint of the 104
+    /// numbers. A changed row fails it, and whoever changes the row reruns the comparison and
+    /// writes its result here. Where the two then differ, the Usage Tables decide, unless they
+    /// are shown wrong.
+    #[test]
+    fn the_table_matches_its_linux_cross_check() {
+        // The fingerprint of the table the comparison above agreed with.
+        const FINGERPRINT: u32 = 0x4a0e_e680;
+        // FNV-1a, 32-bit, over each code's two little-endian bytes in usage order.
+        let mut hash: u32 = 0x811c_9dc5;
+        let codes = (0x04..=0x63)
+            .map(|usage| evdev_code(usage).unwrap())
+            .chain(MODIFIER_CODES);
+        for code in codes {
+            for byte in code.to_le_bytes() {
+                hash = (hash ^ u32::from(byte)).wrapping_mul(0x0100_0193);
+            }
+        }
+        assert_eq!(hash, FINGERPRINT, "the table changed: rerun the cross-check");
+    }
+
     /// **`echo hello`, typed the way QEMU's `sendkey` presses it**: one key down, then up, eleven
     /// times. What the end-to-end gate types, decoded on the host.
     #[test]
