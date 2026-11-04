@@ -207,7 +207,8 @@ PAGE = 'notes/project-metrics.md'
 # writer below edits in place, anchored on a chart image or a marker. The rule it follows is
 # calef's (2026-10-06 UTC): a chart whose measure has reached its goal state moves below the charts
 # still being driven, so the top of the page is what still needs work. Harnesses moved first, when
-# `unfalsified` reached zero. `CHARTS` order decides nothing on the page.
+# `unfalsified` reached zero. The decisions chart is last, because every architecture decision is
+# made. `CHARTS` order decides nothing on the page.
 # The page carried a generated table of contents from 2026-09-24 until calef cut it on 2026-09-30:
 # the document no longer needs one, and a TOC that nobody needs is the one thing worse than a stale
 # one. The markers and the writer are gone; this note keeps the reason the absence is deliberate.
