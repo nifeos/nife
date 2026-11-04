@@ -1,7 +1,8 @@
 //! **What the driver writes to the controller's control registers**: the bits it sets, and the
 //! `RCTL`, `TCTL` and `TIPG` values it programs, and the MAC address read back.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: ratified 2026-11-03 (UTC), #3145. Renamed from `control`, which did not say that the
+//! module holds the controller's control registers.
 
 /// `CTRL`: set link up.
 pub const CTRL_SLU: u32 = 0x0000_0040;

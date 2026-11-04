@@ -100,7 +100,7 @@ KEPT = {
     'crates/non_volatile_memory_express/src/lib.rs':
         ({'CAP', 'Cap', 'cap', 'cap_fields_decode_from_their_spec_positions'}, _REGISTER),
     # IEEE 802.3 clause 28 ability bits, spelled as Linux's e1000e spells them.
-    'crates/e1000e/src/pch/sequence.rs': ({'NWAY_AR_10T_HD_CAPS', 'NWAY_AR_10T_FD_CAPS',
+    'crates/e1000e/src/platform_controller_hub/sequence.rs': ({'NWAY_AR_10T_HD_CAPS', 'NWAY_AR_10T_FD_CAPS',
                                            'NWAY_AR_100TX_HD_CAPS', 'NWAY_AR_100TX_FD_CAPS',
                                            'CR_1000T_HD_CAPS', 'CR_1000T_FD_CAPS'}, _REGISTER),
 }
