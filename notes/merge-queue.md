@@ -189,6 +189,8 @@ premise checked against history and the eviction timeline.
 
 ## The heavy gates run only in the queue (provisional, ruled 2026-11-03 UTC)
 
+COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 1.
+
 A pull request runs the cheap checks, and the merge group runs everything. The ruleset's 22
 required names are the same on both. A job skipped by its condition reports Success, so a pull
 request satisfies the heavy names without running them. The queue merges on the merge group's own

@@ -116,7 +116,7 @@ it, read it again to size the copy) by construction rather than by care.
 Three consequences fell out of the sweep and bound the search:
 
 - Every payload length is clamped to the page at the top of its serve loop and the clamp is a
-  local, not a re-read. `redoxfs_server.rs:246` `let len = fs::req_len(w0).min(BLOCK);` is the pattern,
+  local, not a re-read. `handle` in `redoxfs_server/src/dispatch.rs`, `let len = fs::req_len(w0).min(BLOCK);` is the pattern,
   and the three caretakers, `line_editor`, `display_terminal` and `sink` all repeat it.
 - The one contract whose decode lives in a host-testable crate is the one with a proof.
   `credential_contract::read` takes the page and the register word, checks both lengths against their

@@ -164,13 +164,13 @@ reads rather than in a report:
 | Site | The comment's claim |
 |---|---|
 | `components/src/virtio_net_transport.rs` `r8` `r16` `r32` `w8` `w16` `write_desc` | "callers pass offsets inside it" (the DMA frame) |
-| `fixtures/src/fs_test_client/extended_attributes.rs:21` `fill_page` | "the caller keeps within it" |
-| `components/src/fs_file_caretaker.rs:77` `get` | "callers clamp `out` to the page" |
-| `components/src/fs_nameset_caretaker.rs:107` `get_at` | "every caller clamps `out` and `off` to the page" |
-| `fixtures/src/file_source.rs:108` `get` | "callers clamp `i` to the page" |
-| `components/src/swish/main.rs:430` `put_page` | "every caller is behind a `dir.is_some()` check" |
-| `components/src/line_editor.rs:217` `copy_in` | "offset+len is bounded by PAGE by every caller" |
-| `patches/std-nife/overlay/std/src/sys/fs/nife.rs:161` `put` | "callers clamp to it" |
+| `fill_page` in `fixtures/src/fs_test_client/extended_attributes.rs` | "the caller keeps within it" |
+| `get` in `components/src/fs_file_caretaker.rs` | "callers clamp `out` to the page" |
+| `get_at` in `components/src/fs_nameset_caretaker.rs` | "every caller clamps `out` and `off` to the page" |
+| `get` in `fixtures/src/file_source.rs` | "callers clamp `i` to the page" |
+| `put_page` in `components/src/swish/directory.rs` | "every caller is behind a `dir.is_some()` check" |
+| `copy_in` in `components/src/line_editor.rs` | "offset+len is bounded by PAGE by every caller" |
+| `put` in `patches/std-nife/overlay/std/src/sys/fs/nife/page.rs` | "callers clamp to it" |
 
 All eight rows are the same clamp-to-a-page obligation, which suggests the answer there is one
 shared page-slice type rather than eight conversions. That is a design question and wants its own
