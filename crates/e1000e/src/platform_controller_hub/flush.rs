@@ -128,7 +128,7 @@ pub enum Outcome {
 /// **Empty the descriptor rings before the reset, if the device says it must**: FreeBSD's
 /// `em_flush_desc_rings`, `em_flush_tx_ring` and `em_flush_rx_ring` (`if_em.c`), in their order.
 /// `transmit_ring` is the bus address of the caller's transmit ring, which is also the dummy
-/// descriptor's buffer. The one divergence is said at [`tail_after`], and one check is added: the
+/// descriptor's buffer. The one divergence is said at [`tail_after_dummy_transmit`], and one check is added: the
 /// flush runs only when the device's transmit ring is `transmit_ring`.
 ///
 /// Name: provisional. No ruling covers it.
