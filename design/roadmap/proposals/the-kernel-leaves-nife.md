@@ -15,7 +15,7 @@ cadence on that day's ruling. The milestone has no number; an integrator mints o
 ## Background
 
 §151 (the repository's goal is independent release) sets the order of the split: bottom-up, so the
-crates a program links leave before it, and nothing that has left refers back into this
+crates a program links leave before it or with it, and nothing that has left refers back into this
 repository. The kernel leaves last among the code, to `nife-kernel`. Milestone
 857 (crates released on their own) carries the crates out one at a time, and each extracted crate
 runs the stranger test that milestone 887 (crate repositories share one CI template) adapts for a
