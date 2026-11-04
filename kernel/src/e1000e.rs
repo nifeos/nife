@@ -63,7 +63,7 @@ pub struct Found {
     /// Whether `STATUS.LU` was set before [`LINK_WAIT_MS`] ran out.
     pub link_up: bool,
     /// The PHY's identifier, revision masked off, read over MDIO. On the 82574L this is the read
-    /// that proves [`::e1000e::platform_controller_hub::physical_layer_device::read_mdic`] under QEMU.
+    /// that proves [`::e1000e::platform_controller_hub::physical_layer_device::read_management_data_input_output`] under QEMU.
     pub physical_layer_device_id: u32,
 }
 
@@ -157,8 +157,12 @@ pub fn bring_up() -> Result<Found, Absent> {
     // The 82574L's PHY answers at address 1 with no pages and no semaphore.
     let physical_layer_device_id = match physical_layer_device_id {
         Some(id) => id,
-        None => ::e1000e::platform_controller_hub::physical_layer_device::id_at(&mut hw, 1)
-            .map_err(|e| refused(Error::PhysicalLayerDeviceId(e)))?,
+        None => {
+            ::e1000e::platform_controller_hub::physical_layer_device::read_identifier_at_address(
+                &mut hw, 1,
+            )
+            .map_err(|e| refused(Error::PhysicalLayerDeviceId(e)))?
+        }
     };
 
     let link_up = wait_ms(LINK_WAIT_MS, || {
@@ -365,11 +369,11 @@ impl ::e1000e::platform_controller_hub::Hardware for Bar<'_> {
     fn pci_vendor_id(&mut self) -> u16 {
         self.dev.config_read32(0) as u16
     }
-    fn note(&mut self, n: ::e1000e::platform_controller_hub::sequence::Note) {
-        use ::e1000e::platform_controller_hub::sequence::Note;
+    fn note(&mut self, n: ::e1000e::platform_controller_hub::sequence::BringUpObservation) {
+        use ::e1000e::platform_controller_hub::sequence::BringUpObservation;
         match n {
             // The identifier in hex, as the bench card compares it.
-            Note::PhysicalLayerDeviceReached { at, id } => {
+            BringUpObservation::PhysicalLayerDeviceReached { at, id } => {
                 crate::println!(
                     "  e1000e: PhysicalLayerDeviceReached {{ at: {at:?}, id: {id:#010x} }}"
                 );

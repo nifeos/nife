@@ -66,19 +66,40 @@ The groups that need a real ruling are the register and bit constants: `E7` and 
 
 ## `e1000e`
 
+### E7. Register offsets (24)
+
+`registers::CTRL`, `registers::CTRL_EXT`, `registers::ICR`, `registers::IMC`, `registers::MTA`, `registers::RAH0`, `registers::RAL0`, `registers::RCTL`, `registers::RDBAH`, `registers::RDBAL`, `registers::RDH`, `registers::RDLEN`, `registers::RDT`, `registers::RFCTL`, `registers::STATUS`, `registers::TCTL`, `registers::TDBAH`, `registers::TDBAL`, `registers::TDH`, `registers::TDLEN`, `registers::TDT`, `registers::TIPG`, `pch::registers::FEXTNVM11`, `pch::registers::RXDCTL`
+
+- Breaks the spelled-out rule: yes.
+- Provisional recommendation: Spell out with the Linux `E1000_` spelling as alias (the docs already give each register's plain title, 'Device Control' and so on), and cite OpenBSD's em driver first if it names the register. One group because they share the pattern; the 2026-10-26 ruling for the `registers` module says the constants keep their sources' names, so the architect should say whether the 2026-11-02 rule overrides that for these.
+
+### E8. Register bit constants and register-shaped helpers (12)
+
+`control::CTRL_ASDE`, `control::CTRL_EXT_DRV_LOAD`, `control::CTRL_RST`, `control::CTRL_SLU`, `control::RAH_AV`, `control::RFCTL_EXTEN`, `control::STATUS_LU`, `control::rctl`, `control::tctl`, `control::tipg`, `pch::flush::FEXTNVM11_DISABLE_MULR_FIX`, `pch::flush::rxdctl`
+
+- Breaks the spelled-out rule: yes.
+- Provisional recommendation: Spell out with aliases, after the offsets: `CTRL_ASDE`, `CTRL_EXT_DRV_LOAD`, `CTRL_RST`, `CTRL_SLU`, `RAH_AV`, `RFCTL_EXTEN`, `STATUS_LU`, `FEXTNVM11_DISABLE_MULR_FIX`, and the functions `rctl`, `tctl`, `tipg`, `rxdctl` that build register values.
+
+### E9. PCH flush and hardware (4)
+
+`pch::flush::required`, `pch::flush::tail_after`, `pch::flush::transmit_word`, `pch::hardware::is_pch`
+
+- Breaks the spelled-out rule: one.
+- Provisional recommendation: Ratify `required`, `tail_after` and the provisional `transmit_word`; `is_pch` follows the module-name decision (`is_platform_controller_hub` if `pch` is spelled out).
+
+### E10. Non-volatile memory words (6)
+
+`pch::non_volatile_memory::DONE`, `pch::non_volatile_memory::ERROR`, `pch::non_volatile_memory::Error`, `pch::non_volatile_memory::GO`, `pch::non_volatile_memory::WORDS`, `pch::non_volatile_memory::read`
+
+- Breaks the spelled-out rule: no.
+- Provisional recommendation: Ratify as they stand.
+
 ### E11. Physical layer device access (17)
 
 `pch::physical_layer_device::ERROR`, `pch::physical_layer_device::Error`, `pch::physical_layer_device::POLL_MICROSECONDS`, `pch::physical_layer_device::Plan`, `pch::physical_layer_device::READY`, `pch::physical_layer_device::SWFLAG_FREE_MS`, `pch::physical_layer_device::SWFLAG_TAKE_MS`, `pch::physical_layer_device::Swflag`, `pch::physical_layer_device::id_at`, `pch::physical_layer_device::paged_offset`, `pch::physical_layer_device::physical_layer_device_address`, `pch::physical_layer_device::plan`, `pch::physical_layer_device::read`, `pch::physical_layer_device::read_mdic`, `pch::physical_layer_device::release`, `pch::physical_layer_device::update`, `pch::physical_layer_device::write`
 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify as they stand except `Swflag`, `SWFLAG_FREE_MS`, `SWFLAG_TAKE_MS` and `read_mdic`, which abbreviate 'software flag', 'milliseconds' and the register MDIC; recommend `SoftwareFlag`, `SOFTWARE_FLAG_FREE_MILLISECONDS`, `SOFTWARE_FLAG_TAKE_MILLISECONDS` and keeping `read_mdic` as a register-named function with its expansion in the doc. `physical_layer_device_address` and `paged_offset` are provisional and ratify as they stand.
-
-### E12. Reset sequence (10)
-
-`pch::sequence::BlockedAfterPhysicalLayerDeviceReset`, `pch::sequence::Error`, `pch::sequence::Note`, `pch::sequence::PhysicalLayerDevice`, `pch::sequence::PhysicalLayerDeviceInaccessible`, `pch::sequence::PhysicalLayerDeviceReached`, `pch::sequence::PhysicalLayerDeviceResetNotAsserted`, `pch::sequence::Reached`, `pch::sequence::global_reset`, `pch::sequence::transmit_errata`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand, including the five provisional `PhysicalLayerDevice*` and `BlockedAfterPhysicalLayerDeviceReset` variants; all spell out their words.
 
 ### E13. Ultra low power and simulator (7)
 
