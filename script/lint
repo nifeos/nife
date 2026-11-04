@@ -3538,7 +3538,7 @@ echo "==> the prose ratchet (§212 words, §213 sentences, bold and passives)"
 # word cap slipped twice in one day because nothing checked it: one lane moved facts into eight
 # notes already over the cap and every one of them grew. The measuring, the baseline and the orphan
 # check live in helpers/prose_ratchet.py, whose header is the manual. The document scope there is
-# shared with script/metrics' writing-standards chart, so the gate and the chart judge the same
+# shared with script/metrics' passive-voice chart, so the gate and the chart judge the same
 # files; the word count is `budget_words` (calef's ruling of 2026-10-13 UTC).
 #
 # A document over a limit passes only while it is no worse than design/prose-baseline.tsv and no
@@ -3750,6 +3750,15 @@ python3 helpers/hang_evidence.py lint
 echo "==> merge groups save no rust-cache entry; main-caches saves what jobs restore"
 python3 helpers/cache_save_scope.py --selftest >/dev/null
 python3 helpers/cache_save_scope.py
+# Owned runners (lane/owned-runners-canary): no job that can run for a pull request resolves
+# runs-on to the owned label or to the NIFE_RUNNER_OWNED switch, and every job that does carries a
+# merge_group/push-only `if:`. Fixtures first: the selftest plants a pull_request workflow, the
+# switch under pull_request_target, a missing guard and a guard that names pull_request, and
+# requires each to fail. notes/owned-runners.md; helpers/owned_runner_check.py says more.
+echo "==> no owned-runner job can run for a pull request, and each is guarded to the queue"
+# lint-quick
+python3 helpers/owned_runner_check.py --selftest >/dev/null
+python3 helpers/owned_runner_check.py
 # Milestone 640 (a gate is not evidence until somebody has watched it fail), provisional: every
 # workflow cites a run where it went red (or fired) for the reason it exists, or says `never`, and
 # only a workflow main already had when this landed (2026-10-04) may say `never`, which is read from

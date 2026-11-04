@@ -7,6 +7,9 @@
 //!
 //! Nothing here can fail on hostile input. A card is a device on the far side of a bus and its
 //! registers are data, so every decoder is total and every capacity is computed without overflow.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3135. The card is the thing on the far side of the bus; the
+//! module decodes what it says about itself.
 
 /// The operation conditions register's (OCR) power-up-complete bit: clear while the card is still
 /// busy initializing.
