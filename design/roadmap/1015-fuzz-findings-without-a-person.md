@@ -8,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# 1015. Fuzz findings filed, fixed and published with no person in the loop
+# 1015. Fuzz findings filed with no person in the loop
 
 Raised by lane/fuzz-findings-without-a-person on 2026-11-01 (UTC), to record four architect rulings
 of that date and split them into milestones. They amend the mechanics of the disclosure ruling of
@@ -31,8 +31,11 @@ place where a reproducer can leak.
 
 ## What is in force: the findings path
 
-Ruled 2026-11-01 (UTC): the fuzzing loop runs with no person in it, after a person places one
-credential once. Five steps handle findings automatically.
+Ruled 2026-11-01 (UTC), narrowed 2026-11-04 (UTC): the fuzzing loop runs with no person in it, after
+a person places one credential once, and it ends at reporting. The fuzz host files one private
+advisory per held finding on nifeos/nife and stops. A person works the queue of security reports
+with the regular lane workflow, on a separate fix-lane machine, and publishes each advisory after
+the fix. Four steps handle findings.
 
 1. Filing. A plain service on the fuzz host files a private security advisory on nifeos/nife for
    each new held finding. The service is a program, not an agent and not a language model. The
@@ -41,13 +44,9 @@ credential once. Five steps handle findings automatically.
    rule stays in force: no lane opens the held directory. The advisory is the one narrow exception.
    A lane reads it through a read-only credential that a person places, and no lane looks for
    tokens.
-3. Fixing. The fix pull request opens only when the fix is ready, with auto-merge armed. The window
-   of exposure is then the time the pull request spends in review and the merge queue. Its
-   regression test does not carry the reproducer before the fix is on main.
-4. Publishing. After the fix lands on main, the host reruns the finding's input against the fixed
-   build. A pass publishes the advisory automatically. A failure keeps it private and raises a new
-   lane.
-5. Never in public text. Crash inputs, seeds and reproducers stay out of public text until the fix is
+3. Fixing. A person works the advisory with the regular lane workflow. The regression test does not
+   carry the reproducer before the fix is on main.
+4. Never in public text. Crash inputs, seeds and reproducers stay out of public text until the fix is
    on main: pull request titles, bodies and comments, logs and artifacts.
 
 ## What is in force: the credential
@@ -88,15 +87,8 @@ installation token at launch; the milestone
 
 ## What is in force: how a fix lane claims
 
-Ruled 2026-11-01 (UTC), amending §90 (the claim is a draft pull request): a fix lane for a held
-finding claims with `script/claim --no-claim`. It works in a worktree, commits locally and often,
-and pushes nothing until the fix is ready. Its pull request then opens ready for review, with
-auto-merge armed, a neutral title and no reproducer. The advisory records who holds the work, and
-the host files one advisory per finding, so the advisory is the claim board for this kind of lane.
-
-Local commits survive a dead session in the worktree, so a lane resumes where it stopped. Nothing
-protects them against the loss of the machine or the worktree before the push, which is the cost of
-keeping the fix off GitHub until it is ready.
+Ruled 2026-11-04 (UTC): a fix lane for a held finding follows the regular lane workflow of §90 (the claim is a draft pull request).
+The pull request carries a neutral title and no reproducer.
 
 ## What is in force: the host follows main
 
@@ -141,9 +133,6 @@ request.
   public. The ruling would allow the seed in the fix's own commit. That form puts the seed in the
   public diff and in public CI logs for the whole merge-queue window, so the stricter form comes
   first.
-- The rerun replays every open advisory. Once a day the host replays each open advisory's seed
-  against the newest green main it runs, one seed per guest. No commit trailer links a fix to its
-  advisory, so no agreement between two programs needs keeping in step.
 
 ## What GitHub's documentation confirms
 
@@ -201,4 +190,4 @@ Each is a proposal in this directory, unnumbered until an integrator promotes it
 
 ## Index row
 
-The path of a held fuzz finding, from filing to a fix lane to publication, runs with no person after one credential is placed. Four rulings fix the credentials, the host, the lane and the publish step, and this file splits them into milestones.
+The path of a held fuzz finding runs with no person from the finding to a private advisory, after one credential is placed, and ends there. A person fixes and publishes each advisory with the regular lane workflow. Rulings fix the credentials, the host and the lane, and this file splits them into milestones.
