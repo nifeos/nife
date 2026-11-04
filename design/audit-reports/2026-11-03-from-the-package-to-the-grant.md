@@ -116,7 +116,7 @@ but the bytes are written or replaced in place first.
 
 No authority widens: no row and no grant is written, and spawn hashes the bytes. The bound the
 approval sets over the store does not hold. Severity medium. Proposed as
-[a delegated install is refused before it writes](../roadmap/proposals/a-delegated-install-is-refused-before-it-writes.md),
+[a delegated install is refused before it writes](../roadmap/1029-a-delegated-install-is-refused-before-it-writes.md),
 which also has the archive check refuse `.` and `..` as program names. The file server already
 refuses both, so that half is depth and not a hole.
 
@@ -127,7 +127,7 @@ when the manifest lists no digest for it, so a held list naming one stem twice, 
 digest and once at another, passes. Its doc says "nothing else". Unreachable today, because the one
 caller passes `render`'s own de-duplicated output; milestone 976 (an OS update through a slot) names
 the device updater as the next reader. Severity low. Proposed as
-[the system manifest check refuses a stem held twice](../roadmap/proposals/the-system-manifest-check-refuses-a-stem-held-twice.md).
+[the system manifest check refuses a stem held twice](../roadmap/1032-the-system-manifest-check-refuses-a-stem-held-twice.md).
 
 ### 3. MINTED: image composition checks one reading of the note and records another
 
@@ -137,7 +137,7 @@ through `elf::Elf::parse` and its build-host machine check. Composing an image f
 architecture than the host's checks the asks and records none. It only narrows, and the reading was
 not confirmed by a cross-architecture run. Severity low (availability). It touches the grant path,
 so it is not fixed in the report's lane. Proposed as
-[image composition records the grants it checked](../roadmap/proposals/image-composition-records-the-grants-it-checked.md).
+[image composition records the grants it checked](../roadmap/1030-image-composition-records-the-grants-it-checked.md).
 
 ### 4. MINTED: the device-tree patcher can panic on a node name
 
@@ -147,7 +147,7 @@ through it without checking the rounded end against the structure block or the b
 `Error::Truncated`. The reader confirmed it with a host-side probe outside the tree. The bytes
 come from firmware, which is already trusted below the loader, so the worst outcome is a boot that
 stops. The crate's fuzz target has not reached the case. Severity low. Proposed as
-[the device-tree patcher bounds a node name's padding](../roadmap/proposals/the-device-tree-patcher-bounds-a-node-name.md).
+[the device-tree patcher bounds a node name's padding](../roadmap/1031-the-device-tree-patcher-bounds-a-node-name.md).
 
 ### 5. FIXED: the `INTERFACES` note's doc said more than the spawn check does
 

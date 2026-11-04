@@ -25,6 +25,9 @@ Each flag defaults to a full run, so a plain `script/test` always means the whol
 - `--no-host` skips the host pass. CI's `test-x86_64` row passes it because the
   `test-aarch64-riscv64` row ran that pass on the same commit. Running it twice cost about two
   minutes of the shorter job.
+- `--host-only` runs the host pass and boots nothing, so it needs no QEMU and builds no kernel. A
+  pull request's `test` job runs it through CI's `test-host` row, since the kernel legs run only in
+  the merge queue (notes/merge-queue.md). It refuses every flag that names a leg or a boot.
 - `--cpu <model>` sets `NIFE_CPU`, which both QEMU runners read. Unset means `cortex-a72` on aarch64
   and `rv64` on riscv64. The model reaches the runners through the environment because cargo owns
   the QEMU command line. `script/cpu-matrix` drives `--arch` and `--cpu` (notes/cpu-models.md).

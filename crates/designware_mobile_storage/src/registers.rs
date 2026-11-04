@@ -49,7 +49,7 @@ pub(crate) const CONTROL_DMA_ENABLE: u32 = 1 << 5;
 #[doc(alias = "use internal direct memory access controller")]
 pub(crate) const CONTROL_USE_INTERNAL_DMAC: u32 = 1 << 25;
 /// The three enables `reset` clears and the IDMAC arms share no bit (25, 5 and 4), which the
-/// compiler checks here; the mutation exclusions for `Host::reset` and
+/// compiler checks here; the mutation exclusions for `HostController::reset` and
 /// `internal_direct_memory_access_start` name this constant. The constant-assertion lint is off on
 /// purpose: the assertion is constant by construction, and the compiler checking it is its job.
 ///
@@ -83,7 +83,7 @@ pub(crate) const CLKENA_CCLK_ENABLE: u32 = 1 << 0;
 #[doc(alias = "card clock low power")]
 pub(crate) const CLKENA_CCLK_LOW_POWER: u32 = 1 << 16;
 /// The two clock-enable bits `set_clock` writes share no bit (0 and 16), which the compiler checks
-/// here; the mutation exclusion for `Host::set_clock` names this constant. The constant-assertion
+/// here; the mutation exclusion for `HostController::set_clock` names this constant. The constant-assertion
 /// lint is off on purpose: the assertion is constant by construction, and the compiler checking it
 /// is its job.
 ///
@@ -257,7 +257,7 @@ pub(crate) const RINTSTS_SBE: u32 = 1 << 13;
 #[doc(alias = "automatic command done")]
 pub(crate) const RINTSTS_ACD: u32 = 1 << 14;
 /// The transfer-over bits `finish` and the IDMAC wait for share no bit (3 and 14), which the
-/// compiler checks here; the mutation exclusions for `Host::finish` and the IDMAC wait name this
+/// compiler checks here; the mutation exclusions for `HostController::finish` and the IDMAC wait name this
 /// constant. The constant-assertion lint is off on purpose: the assertion is constant by
 /// construction, and the compiler checking it is its job.
 ///

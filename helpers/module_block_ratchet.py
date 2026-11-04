@@ -44,6 +44,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import baseline_layout  # noqa: E402
 import moved_rows  # noqa: E402
 import name_census  # noqa: E402
 
@@ -62,6 +63,8 @@ HEADER = FORMAT + """
 # a `pub` item as path::name, once per item. The list only shrinks. Remove a row in the change that
 # writes its block or deletes it (`python3 helpers/module_block_ratchet.py --bank` does it); a row
 # may not be added (script/lint compares against the merge base), and a rename moves its rows.
+# Layout (helpers/baseline_layout.py): rows sorted, a blank line after every row. A change deletes a
+# cleared row's line and leaves the blank line, so two changes that clear adjacent rows merge in git.
 """
 
 def path_of(row):
@@ -87,8 +90,11 @@ def read_baseline(text):
 
 
 def write_baseline(rows):
+    old = open(BASELINE).read() if os.path.exists(BASELINE) else None
+    text = (baseline_layout.rewrite(old, HEADER, rows) if old is not None
+            else baseline_layout.spaced(HEADER, rows))
     with open(BASELINE, 'w') as f:
-        f.write(HEADER + ''.join(f'{row}\n' for row in sorted(rows.elements())))
+        f.write(text)
 
 
 def git(*args):
@@ -184,7 +190,8 @@ def run_check():
         old = git('show', f'{base}:{BASELINE}')
         if old is not None and FORMAT in old.splitlines():
             base_rows = read_baseline(old)
-    bad = problems(modules, unblocked, rows, base_rows, renames, before, read_now)
+    bad = baseline_layout.problems(open(BASELINE).read(), BASELINE)
+    bad += problems(modules, unblocked, rows, base_rows, renames, before, read_now)
     if bad:
         print('module-block ratchet: the tree breaks its baseline:', file=sys.stderr)
         for b in bad:
@@ -327,6 +334,9 @@ def selftest():
     failed = [name for name, ok in cases if not ok]
     for name in failed:
         print(f'module-block ratchet selftest: {name}', file=sys.stderr)
+    layout_bad = baseline_layout.problems('# h\na\nb\n\n', 'f')
+    if not layout_bad:
+        failed.append('rows on adjacent lines pass the layout check')
     if not failed:
         print(f'module-block ratchet selftest: {len(cases)} cases pass')
     return 1 if failed else 0

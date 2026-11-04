@@ -8,7 +8,9 @@ use super::*;
 /// The DMA region, as the data plane reads and writes it. Offsets are bytes from the region's
 /// base; an implementation bounds them (the EL0 one is a `MappedWindow`, which panics on an
 /// out-of-window offset rather than touching memory it was not given).
-pub trait Region {
+///
+/// Name: ratified 2026-11-03 (UTC), #3123.
+pub trait DirectMemoryAccessRegion {
     /// Read the little-endian `u64` at `offset`.
     fn read_u64(&self, offset: u64) -> u64;
     /// Write `value` at `offset`, little-endian.
@@ -21,16 +23,16 @@ pub trait Region {
 
 /// The two tail registers, and the ordering between them and the region. The only register writes
 /// the data plane makes.
+///
+/// Name: ratified 2026-11-03 (UTC), #3123.
 pub trait Tails {
     /// Write the receive tail (`RDT`).
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no
-    /// ruling covers the rest of the name. Refused `set_rx_tail` (rx abbreviates receive).
+    /// Name: ratified 2026-11-03 (UTC), #3123.
     fn set_receive_tail(&mut self, value: u32);
     /// Write the transmit tail (`TDT`).
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no
-    /// ruling covers the rest of the name. Refused `set_tx_tail` (tx abbreviates transmit).
+    /// Name: ratified 2026-11-03 (UTC), #3123.
     fn set_transmit_tail(&mut self, value: u32);
     /// Order every region access before this against every access after it, as seen by the device.
     /// Called between filling a descriptor and the tail write that announces it, and between
@@ -44,7 +46,7 @@ pub trait Tails {
 /// which names it. Refused `TxError` (tx abbreviates transmit).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransmitError {
-    /// Empty, or longer than [`MAXIMUM_FRAME`].
+    /// Empty, or longer than [`MAXIMUM_FRAME_BYTES`].
     BadLength,
     /// Every descriptor is still the device's.
     Full,
@@ -53,6 +55,8 @@ pub enum TransmitError {
 /// **The data plane**: two ring cursors and the region's physical base. Everything `net_stack`
 /// does to the device goes through this, so all of it runs on the host against a simulated
 /// device.
+///
+/// Name: ratified 2026-11-03 (UTC), #3123.
 #[derive(Debug)]
 pub struct DataPlane {
     physical_address: u64,
@@ -66,6 +70,8 @@ pub struct DataPlane {
 impl DataPlane {
     /// A data plane over the region at `data_plane_physical_address`. Call [`DataPlane::start`]
     /// before anything else.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3123.
     pub fn new(data_plane_physical_address: u64) -> DataPlane {
         DataPlane {
             physical_address: data_plane_physical_address,
@@ -79,8 +85,7 @@ impl DataPlane {
     /// The receive descriptor the next [`DataPlane::receive`] looks at, for a caller that wants to
     /// peek at its status without consuming it.
     ///
-    /// Name: provisional. Ruled 2026-10-26 (UTC), tree-wide: `rx` and `tx` are spelled out; no
-    /// ruling covers the rest of the name. Refused `rx_cursor` (rx abbreviates receive).
+    /// Name: ratified 2026-11-03 (UTC), #3123.
     pub fn receive_cursor(&self) -> u16 {
         self.receive_next
     }
@@ -89,7 +94,9 @@ impl DataPlane {
     /// tails at zero; the receive tail goes to the last slot, which gives the device every
     /// descriptor but one (a ring with head equal to tail is empty, so one slot always separates
     /// them).
-    pub fn start(&mut self, region: &mut impl Region, tails: &mut impl Tails) {
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3123.
+    pub fn start(&mut self, region: &mut impl DirectMemoryAccessRegion, tails: &mut impl Tails) {
         for i in 0..RECEIVE_ENTRIES {
             let d = layout::receive_descriptor(i);
             region.write_u64(d, self.physical_address + layout::receive_buffer(i));
@@ -107,9 +114,11 @@ impl DataPlane {
     /// Take the next received frame into `out`, returning its length, or `None` when the device has
     /// written nothing new. A descriptor judged [`ReceiveVerdict::Drop`] is consumed and counted
     /// and the next one is tried, so one bad frame cannot stall the ring.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3123.
     pub fn receive(
         &mut self,
-        region: &mut impl Region,
+        region: &mut impl DirectMemoryAccessRegion,
         tails: &mut impl Tails,
         out: &mut [u8],
     ) -> Option<usize> {
@@ -149,13 +158,15 @@ impl DataPlane {
     }
 
     /// Queue `frame` for transmission.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3123.
     pub fn transmit(
         &mut self,
-        region: &mut impl Region,
+        region: &mut impl DirectMemoryAccessRegion,
         tails: &mut impl Tails,
         frame: &[u8],
     ) -> Result<(), TransmitError> {
-        if frame.is_empty() || frame.len() > MAXIMUM_FRAME {
+        if frame.is_empty() || frame.len() > MAXIMUM_FRAME_BYTES {
             return Err(TransmitError::BadLength);
         }
         self.reclaim(region);
@@ -177,14 +188,16 @@ impl DataPlane {
     }
 
     /// Is there a free transmit descriptor right now? Reclaims first.
-    pub fn can_transmit(&mut self, region: &mut impl Region) -> bool {
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3123.
+    pub fn can_transmit(&mut self, region: &mut impl DirectMemoryAccessRegion) -> bool {
         self.reclaim(region);
         (self.transmit_next + 1) % TRANSMIT_ENTRIES != self.transmit_clean
     }
 
     /// Move the clean cursor past every descriptor the device has reported done. `RS` is set on
     /// every frame, so the device writes `DD` on each in order.
-    fn reclaim(&mut self, region: &impl Region) {
+    fn reclaim(&mut self, region: &impl DirectMemoryAccessRegion) {
         while self.transmit_clean != self.transmit_next {
             let word = region.read_u64(layout::transmit_descriptor(self.transmit_clean) + 8);
             if (word >> 32) as u8 & TRANSMIT_STATUS_DD == 0 {

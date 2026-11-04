@@ -48,12 +48,13 @@ pub enum Event {
 /// The constant-assertion lint is off on purpose: the assertion is constant by construction, and
 /// the compiler checking it is its job.
 ///
-/// Name: provisional, minted 2026-10-28 (UTC) by lane/954-remaining-crates.
+/// Name: ratified 2026-11-03 (UTC), #3117. The compile-time check that the named bit groups do
+/// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 // This module is private, so nothing outside can reach the constant; the mutation exclusion in
 // .cargo/mutants.toml is its reader, and helpers/mutation_exclusion_check.py fails if it is gone.
 #[allow(dead_code)]
-pub const THE_EVENT_POINTER_HALVES_SHARE_NO_BIT: () =
+pub const EVENT_POINTER_HALVES_DO_NOT_OVERLAP: () =
     assert!((((u32::MAX as u64) << 32) & u32::MAX as u64) == 0);
 
 impl Event {

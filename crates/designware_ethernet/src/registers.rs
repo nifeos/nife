@@ -25,8 +25,11 @@ pub(crate) const MAC_CONF_RE: u32 = 1 << 0;
 #[doc(alias = "transmitter enable")]
 pub(crate) const MAC_CONF_TE: u32 = 1 << 1;
 /// **Disable carrier sense during transmission** (`GMAC_MAC_CONF_DCRS`, `dwqereg.h`).
-#[doc(alias = "disable carrier sense during transmission")]
-pub const MAC_CONF_DCRS: u32 = 1 << 9;
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_MAC_CONF_DCRS")]
+#[doc(alias = "MAC_CONF_DCRS")]
+pub const MAC_CONFIGURATION_DISABLE_CARRIER_SENSE_DURING_TRANSMISSION: u32 = 1 << 9;
 /// **Loopback mode** (`GMAC_CONFIG_LM`, `dwmac4.h`): the MAC returns what it transmits to its own
 /// receive path. The coherence probe uses it so the measurement does not depend on a cable or a
 /// link partner. Linux calls it `CONFIG_LM` in `dwmac4.h`; the media access control (MAC)
@@ -37,23 +40,39 @@ pub const MAC_CONF_DCRS: u32 = 1 << 9;
 #[doc(alias = "CONFIG_LM")]
 #[doc(alias = "MAC_CONF_LM")]
 pub const MAC_CONFIGURATION_LOOPBACK_MODE: u32 = 1 << 12;
-/// **Duplex mode** (`GMAC_MAC_CONF_DM`, `dwqereg.h`). Full duplex.
-#[doc(alias = "duplex mode")]
-pub const MAC_CONF_DM: u32 = 1 << 13;
-/// **Fast Ethernet speed** (`GMAC_MAC_CONF_FES`, `dwqereg.h`). With [`MAC_CONF_PS`], 100
-/// Mbit/s when set and 10 when clear.
-#[doc(alias = "fast ethernet speed")]
-pub const MAC_CONF_FES: u32 = 1 << 14;
+/// **Full duplex** (`GMAC_MAC_CONF_DM`, `dwqereg.h`): the bit is set for full duplex and clear
+/// for half. The databook calls the bit Duplex Mode.
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_MAC_CONF_DM")]
+#[doc(alias = "MAC_CONF_DM")]
+pub const MAC_CONFIGURATION_FULL_DUPLEX: u32 = 1 << 13;
+/// **Fast Ethernet speed** (`GMAC_MAC_CONF_FES`, `dwqereg.h`). With
+/// [`MAC_CONFIGURATION_PORT_SELECT`], 100 Mbit/s when set and 10 when clear.
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_MAC_CONF_FES")]
+#[doc(alias = "MAC_CONF_FES")]
+pub const MAC_CONFIGURATION_FAST_ETHERNET_SPEED: u32 = 1 << 14;
 /// **Port select** (`GMAC_MAC_CONF_PS`, `dwqereg.h`). Set for 10 or 100 Mbit/s (MII),
 /// clear for 1000 (GMII/RGMII).
-#[doc(alias = "port select")]
-pub const MAC_CONF_PS: u32 = 1 << 15;
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_MAC_CONF_PS")]
+#[doc(alias = "MAC_CONF_PS")]
+pub const MAC_CONFIGURATION_PORT_SELECT: u32 = 1 << 15;
 /// **Jabber disable** (`GMAC_MAC_CONF_JD`, `dwqereg.h`).
-#[doc(alias = "jabber disable")]
-pub const MAC_CONF_JD: u32 = 1 << 17;
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_MAC_CONF_JD")]
+#[doc(alias = "MAC_CONF_JD")]
+pub const MAC_CONFIGURATION_JABBER_DISABLE: u32 = 1 << 17;
 /// **Packet burst enable** (`GMAC_MAC_CONF_BE`, `dwqereg.h`).
-#[doc(alias = "packet burst enable")]
-pub const MAC_CONF_BE: u32 = 1 << 18;
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_MAC_CONF_BE")]
+#[doc(alias = "MAC_CONF_BE")]
+pub const MAC_CONFIGURATION_PACKET_BURST_ENABLE: u32 = 1 << 18;
 
 /// **MAC packet filter register** (`GMAC_MAC_PACKET_FILTER`, `dwqereg.h`). The receive packet
 /// filter. Zero after reset: the station address and broadcast pass, multicast does not.
@@ -97,25 +116,39 @@ pub(crate) const INT_EN: u32 = 0x00b4;
 pub const CORE_VERSION_REGISTER: u32 = 0x0110;
 /// **MAC hardware feature register** (`GMAC_MAC_HW_FEATURE(x)`, `dwqereg.h`), register `i` for `i`
 /// in `0..4`.
-#[doc(alias = "mac hardware feature register")]
-pub const fn mac_hw_feature(i: u32) -> u32 {
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_MAC_HW_FEATURE")]
+pub const fn mac_hardware_feature_register(i: u32) -> u32 {
     0x011c + 4 * (i % 4)
 }
 /// **MDIO (management data input/output) address register** (`GMAC_MAC_MDIO_ADDR`, `dwqereg.h`),
 /// which carries the command.
-#[doc(alias = "mdio address register")]
-pub const MAC_MDIO_ADDR: u32 = 0x0200;
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_MAC_MDIO_ADDR")]
+#[doc(alias = "MAC_MDIO_ADDR")]
+pub const MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER: u32 = 0x0200;
 /// **MDIO (management data input/output) data register** (`GMAC_MAC_MDIO_DATA`, `dwqereg.h`).
-#[doc(alias = "mdio data register")]
-pub const MAC_MDIO_DATA: u32 = 0x0204;
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_MAC_MDIO_DATA")]
+#[doc(alias = "MAC_MDIO_DATA")]
+pub const MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER: u32 = 0x0204;
 /// **MAC address 0, high register** (`GMAC_MAC_ADDR0_HI`, `dwqereg.h`): the station address's high
 /// half (bytes 4 and 5).
-#[doc(alias = "mac address 0, high register")]
-pub const MAC_ADDR0_HI: u32 = 0x0300;
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_MAC_ADDR0_HI")]
+#[doc(alias = "MAC_ADDR0_HI")]
+pub const MAC_ADDRESS_0_HIGH_REGISTER: u32 = 0x0300;
 /// **MAC address 0, low register** (`GMAC_MAC_ADDR0_LO`, `dwqereg.h`): the station address's low
 /// half (bytes 0 to 3).
-#[doc(alias = "mac address 0, low register")]
-pub const MAC_ADDR0_LO: u32 = 0x0304;
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_MAC_ADDR0_LO")]
+#[doc(alias = "MAC_ADDR0_LO")]
+pub const MAC_ADDRESS_0_LOW_REGISTER: u32 = 0x0304;
 /// **MAC management counters, receive interrupt mask** (`GMAC_MMC_RX_INT_MASK`, `dwqereg.h`). All
 /// ones masks every counter interrupt.
 #[doc(alias = "mac management counters, receive interrupt mask")]
@@ -307,21 +340,33 @@ pub(crate) const CHAN_RX_RING_LEN: u32 = 0x1130;
 pub(crate) const CHAN_INTR_ENA: u32 = 0x1134;
 /// **Current transmit descriptor** (`GMAC_CHAN_CUR_TX_DESC(0)`, `dwqereg.h`). The descriptor the
 /// transmit DMA is on, as the device sees it.
-#[doc(alias = "current transmit descriptor")]
-pub const CHAN_CUR_TX_DESC: u32 = 0x1144;
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_CHAN_CUR_TX_DESC")]
+#[doc(alias = "CHAN_CUR_TX_DESC")]
+pub const CHANNEL_CURRENT_TRANSMIT_DESCRIPTOR_REGISTER: u32 = 0x1144;
 /// **Current receive descriptor** (`GMAC_CHAN_CUR_RX_DESC(0)`, `dwqereg.h`). The descriptor the
 /// receive DMA is on, as the device sees it.
-#[doc(alias = "current receive descriptor")]
-pub const CHAN_CUR_RX_DESC: u32 = 0x114c;
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_CHAN_CUR_RX_DESC")]
+#[doc(alias = "CHAN_CUR_RX_DESC")]
+pub const CHANNEL_CURRENT_RECEIVE_DESCRIPTOR_REGISTER: u32 = 0x114c;
 /// **DMA channel 0 status register** (`GMAC_CHAN_STATUS(0)`, `dwqereg.h`). Write one to clear.
-#[doc(alias = "dma channel 0 status register")]
-pub const CHAN_STATUS: u32 = 0x1160;
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_CHAN_STATUS")]
+#[doc(alias = "CHAN_STATUS")]
+pub const CHANNEL_STATUS_REGISTER: u32 = 0x1160;
 /// **Transmit interrupt** (`GMAC_CHAN_STATUS_TI`, `dwqereg.h`): transmit complete.
 #[doc(alias = "transmit interrupt")]
 pub(crate) const CHAN_STATUS_TI: u32 = 1 << 0;
 /// **Transmit process stopped** (`GMAC_CHAN_STATUS_TPS`, `dwqereg.h`).
-#[doc(alias = "transmit process stopped")]
-pub const CHAN_STATUS_TPS: u32 = 1 << 1;
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_CHAN_STATUS_TPS")]
+#[doc(alias = "CHAN_STATUS_TPS")]
+pub const CHANNEL_STATUS_TRANSMIT_PROCESS_STOPPED: u32 = 1 << 1;
 /// **Transmit buffer unavailable** (`GMAC_CHAN_STATUS_TBU`, `dwqereg.h`): the DMA fetched a
 /// descriptor it does not own and suspended.
 #[doc(alias = "transmit buffer unavailable")]
@@ -334,8 +379,11 @@ pub(crate) const CHAN_STATUS_RI: u32 = 1 << 6;
 #[doc(alias = "receive buffer unavailable")]
 pub(crate) const CHAN_STATUS_RBU: u32 = 1 << 7;
 /// **Receive process stopped** (`GMAC_CHAN_STATUS_RPS`, `dwqereg.h`).
-#[doc(alias = "receive process stopped")]
-pub const CHAN_STATUS_RPS: u32 = 1 << 8;
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+#[doc(alias = "GMAC_CHAN_STATUS_RPS")]
+#[doc(alias = "CHAN_STATUS_RPS")]
+pub const CHANNEL_STATUS_RECEIVE_PROCESS_STOPPED: u32 = 1 << 8;
 /// **Fatal bus error** (`GMAC_CHAN_STATUS_FBE`, `dwqereg.h`): the DMA's own access to memory
 /// failed.
 #[doc(alias = "fatal bus error")]
@@ -345,10 +393,11 @@ pub(crate) const CHAN_STATUS_FBE: u32 = 1 << 12;
 /// mapped. Every `CHAN_*` offset, `BUS_MODE` and `SYS_BUS_MODE` is inside it.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
-#[doc(alias = "dma_page")]
 pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE: u32 = 0x1000;
-/// The window's size, `reg`'s `0x10000` in both JH7110 trees.
-pub const WINDOW: u32 = 0x1_0000;
+/// The register window's size in bytes, `reg`'s `0x10000` in both JH7110 trees.
+///
+/// Name: ratified 2026-11-03 (UTC), #3126.
+pub const REGISTER_WINDOW_BYTES: u32 = 0x1_0000;
 
 #[cfg(test)]
 mod tests {
@@ -361,8 +410,8 @@ mod tests {
         for r in [
             CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER,
             CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER,
-            CHAN_STATUS,
-            CHAN_CUR_RX_DESC,
+            CHANNEL_STATUS_REGISTER,
+            CHANNEL_CURRENT_RECEIVE_DESCRIPTOR_REGISTER,
             BUS_MODE,
         ] {
             assert_eq!(r & !0xfff, DIRECT_MEMORY_ACCESS_REGISTER_PAGE, "{r:#x}");
@@ -374,9 +423,9 @@ mod tests {
     #[test]
     fn the_administrative_registers_are_off_the_direct_memory_access_register_page() {
         for r in [
-            MAC_MDIO_ADDR,
-            MAC_MDIO_DATA,
-            MAC_ADDR0_HI,
+            MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
+            MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
+            MAC_ADDRESS_0_HIGH_REGISTER,
             MAC_PACKET_FILTER,
             MAC_CONF,
         ] {
@@ -392,13 +441,13 @@ mod tests {
     fn the_bits_are_where_dwqereg_puts_them() {
         assert_eq!(
             [
-                MAC_CONF_DCRS,
+                MAC_CONFIGURATION_DISABLE_CARRIER_SENSE_DURING_TRANSMISSION,
                 MAC_CONFIGURATION_LOOPBACK_MODE,
-                MAC_CONF_DM,
-                MAC_CONF_FES,
-                MAC_CONF_PS,
-                MAC_CONF_JD,
-                MAC_CONF_BE,
+                MAC_CONFIGURATION_FULL_DUPLEX,
+                MAC_CONFIGURATION_FAST_ETHERNET_SPEED,
+                MAC_CONFIGURATION_PORT_SELECT,
+                MAC_CONFIGURATION_JABBER_DISABLE,
+                MAC_CONFIGURATION_PACKET_BURST_ENABLE,
             ],
             [0x200, 0x1000, 0x2000, 0x4000, 0x8000, 0x2_0000, 0x4_0000]
         );
@@ -435,11 +484,11 @@ mod tests {
         assert_eq!([CHAN_CONTROL_8XPBL, CHAN_TX_CONTROL_OSP], [0x1_0000, 0x10]);
         assert_eq!(
             [
-                CHAN_STATUS_TPS,
+                CHANNEL_STATUS_TRANSMIT_PROCESS_STOPPED,
                 CHAN_STATUS_TBU,
                 CHAN_STATUS_RI,
                 CHAN_STATUS_RBU,
-                CHAN_STATUS_RPS,
+                CHANNEL_STATUS_RECEIVE_PROCESS_STOPPED,
                 CHAN_STATUS_FBE,
             ],
             [0x2, 0x4, 0x40, 0x80, 0x100, 0x1000]
@@ -451,7 +500,7 @@ mod tests {
     #[test]
     fn the_feature_registers_are_four_words_from_0x11c() {
         assert_eq!(
-            [0, 1, 2, 3, 4, 5].map(mac_hw_feature),
+            [0, 1, 2, 3, 4, 5].map(mac_hardware_feature_register),
             [0x11c, 0x120, 0x124, 0x128, 0x11c, 0x120]
         );
     }

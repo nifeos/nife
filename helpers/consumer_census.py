@@ -1,6 +1,6 @@
 """Report what the tree delivered that nothing yet uses. Read-only, and it never fails.
 
-**Why this exists.** The proposal `design/roadmap/proposals/delivered-work-names-its-consumer.md`
+**Why this exists.** The proposal `design/roadmap/0996-delivered-work-names-its-consumer.md`
 records the architect's ruling of 2026-10-31 (UTC): a lane brief and a review ask what drives the
 work and what it saves, and this census runs report-only, by hand, monthly, to count how many
 blocks are BUILT, how many already name something a consumer could be read from, how many crates

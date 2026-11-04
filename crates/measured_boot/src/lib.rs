@@ -521,7 +521,7 @@ pub fn verdict<'a>(table: &str, name: &str, bytes: Option<&'a [u8]>) -> Verdict<
 ///
 /// The words, their keys and the choice of the command line over binary `/chosen` properties were
 /// ruled 2026-11-01 (UTC), question 1 of
-/// `design/roadmap/proposals/how-the-loader-hands-the-kernel-two-digests.md`.
+/// `design/roadmap/0999-how-the-loader-hands-the-kernel-two-digests.md`.
 ///
 /// # Examples
 ///
