@@ -79,7 +79,7 @@ capability (was I trusted to lend it?). Two rights, two objects, two questions.
 
 The frame path shows every piece confining the next:
 
-1. `MemoryRegion::RETYPE` mints the owner a `PageFrame` with `READ|WRITE|GRANT` (`syscall.rs:181`).
+1. `MemoryRegion::RETYPE` mints the owner a `PageFrame` with `READ|WRITE|GRANT` (`memory_region_retype` in `kernel/src/syscall/memory_region.rs`).
 2. The owner maps it writable (`PageFrame::MAP` with the writable flag needs `WRITE`).
 3. The owner delegates a `READ`-only, no-`GRANT` derivative with `SEND_CAPABILITY`.
 4. The consumer's `PageFrame::MAP` sees `READ` without `WRITE`, so it is confined to `user_rodata`: it

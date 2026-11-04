@@ -3,9 +3,9 @@
 //! safety argument, is tested on a host rather than first tried on the card radon boots from.
 //! [`read_only`] identifies the card, reads sector 0, parses the MBR, reads the first partition's
 //! boot sector and times a sequential read from its start; it sends no command that writes.
-//! [`scratch_write`] writes only inside [`MasterBootRecord::scratch`]'s range, after reading what
-//! is there: a pattern, read back, then the original, read back too. A card with no gap is refused,
-//! not written.
+//! [`scratch_write`] writes only inside [`MasterBootRecord::scratch_sector_range`]'s range, after
+//! reading what is there: a pattern, read back, then the original, read back too. A card with no
+//! gap is refused, not written.
 //!
 //! Name: ratified 2026-11-03 (UTC), #3135. `bench` is the project's word for the physical test bench
 //! (notes/bench-boots.md): the step run on the real board, not on a host.
@@ -204,7 +204,9 @@ pub fn scratch_write<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
     original: &mut [u8],
     scratch: &mut [u8],
 ) -> WriteVerdict {
-    let Some((first, count)) = master_boot_record.and_then(|m| m.scratch(SCRATCH_SECTORS)) else {
+    let Some((first, count)) =
+        master_boot_record.and_then(|m| m.scratch_sector_range(SCRATCH_SECTORS))
+    else {
         return WriteVerdict::Refused;
     };
     let bytes = count as usize * BLOCK_BYTES;

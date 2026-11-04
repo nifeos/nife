@@ -473,7 +473,7 @@ fn el0_window(
     use driver_process_contract::designware_mobile_storage::Window;
 
     let window = if write {
-        match mbr.scratch(bench::SCRATCH_SECTORS) {
+        match mbr.scratch_sector_range(bench::SCRATCH_SECTORS) {
             Some((first, 8)) => Window {
                 first: u64::from(first),
                 sectors: 8,
@@ -625,7 +625,7 @@ fn print_read(slot: &Slot, r: &ReadReport) {
             say!(
                 slot,
                 "scratch range a write test would use: {:?}",
-                m.scratch(bench::SCRATCH_SECTORS)
+                m.scratch_sector_range(bench::SCRATCH_SECTORS)
             );
         }
     }
