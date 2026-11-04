@@ -183,7 +183,7 @@ lines and tests.
 | Redox `e1000d` (`redox-os/drivers`, `net/e1000d`) | MIT | 8254x (`100e`, `100f`, `1004`), 82573L (`109a`), 82579V (`1503`). No 82574L, so not QEMU's `e1000e`; no I219 | a userspace daemon: `pcid` maps BAR0, `common::dma::Dma` allocates its own rings, an IRQ file, a `NetworkScheme` | 364 | register constants and the init order, which `crates/e1000e` already has. Nothing that allocates, maps or waits |
 | `eth-intel` 0.2.4 (crates.io; rcore-os `tgoskits`) | MIT | `100e`, `100f` only | `mmio-api`, `dma-api`, `rdif-eth` traits from the ArceOS stack; owns DMA and IRQ | 412 | the same constants; its four dependencies would be §46 additions for none of the I219 |
 | `e1000-driver` 0.1.0 (crates.io) | GPL-2.0 | 82540EP/EM | a kernel-module shape with its own allocator hooks | not counted | refused: it would be linked into `net_stack`, and §135 (running GPL software is aggregation) draws the GPL's line at the process boundary, where every linked GPL candidate before it was refused |
-| FreeBSD `sys/dev/e1000` (`if_em.c`, `e1000_ich8lan.c`, `e1000_mac.c`, `e1000_phy.c`) | BSD-2-Clause (`if_em.c` and `if_em.h`, the driver: Intel, Nicole Graziano, Kevin Bowling), BSD-3-Clause (`e1000_ich8lan.c`, `e1000_mac.c` and `e1000_phy.c`, the Intel shared code: Intel) | every I219 generation, with field-found workarounds | C over FreeBSD's `iflib` and OS shims | about 16,000 across the four files | the I219's bring-up knowledge, which no Rust candidate has. Ported in part, below |
+| FreeBSD `sys/dev/e1000` (`if_em.c`, `e1000_ich8lan.c`, `e1000_mac.c`, `e1000_phy.c`) | BSD-2-Clause (`if_em.c`, `if_em.h`: Intel, Nicole Graziano, Kevin Bowling), BSD-3-Clause (the Intel shared code: Intel) | every I219 generation, with field-found workarounds | C over FreeBSD's `iflib` and OS shims | about 16,000 across the four files | the I219's bring-up knowledge, which no Rust candidate has. Ported in part, below |
 
 No Rust crate covers the 82574L or any I219, and no crate on crates.io names `e1000e` at all
 (searched for `e1000`, `e1000e`, `i219`, `igb`, `intel-ethernet`).
@@ -205,12 +205,12 @@ block's own BUGS list:
 | I219 step | FreeBSD source | decision |
 |---|---|---|
 | leave ultra-low-power mode through the Management Engine | `e1000_disable_ulp_lpt_lp`, ME branch | ported, `crates/e1000e/src/platform_controller_hub/` (`ultra_low_power`, `sequence`) |
-| empty the descriptor rings before a reset (SPT unit hang) | `em_flush_desc_rings`, `em_flush_tx_ring`, `em_flush_rx_ring` (`if_em.c`, BSD-2-Clause) | ported as `platform_controller_hub::flush::descriptor_rings`, which the kernel calls; one recorded divergence (`platform_controller_hub::flush::tail_after`) |
+| empty the descriptor rings before a reset (SPT unit hang) | `em_flush_desc_rings`, `em_flush_tx_ring`, `em_flush_rx_ring` | ported as `platform_controller_hub::flush::descriptor_rings`, one recorded divergence (`platform_controller_hub::flush::tail_after`) |
 | stop bus mastering before reset; STRAP writes around it; `KABGTXD.BGSQLBIAS` after | `e1000_disable_pcie_master_generic`, `e1000_reset_hw_ich8lan` | ported |
 | leave ULP without an ME, the `SMBus` switch and `LANPHYPC`; the semaphore and MDIO; the PHY reset and its NVM-driven configuration; the SPT NVM read; hardware bits, copper link, transmit errata | `e1000_init_phy_workarounds_pchlan` and what it calls, `e1000_acquire_swflag_ich8lan`, `__e1000_read_phy_reg_hv`, `e1000_reset_hw_ich8lan`, `e1000_post_phy_reset_ich8lan`, `e1000_read_nvm_spt`, `e1000_init_hw_ich8lan`, `e1000_setup_copper_link_pch_lpt` | ported 2026-10-05, `platform_controller_hub/physical_layer_device.rs`, `platform_controller_hub/non_volatile_memory.rs`, `platform_controller_hub/sequence.rs`; each function's comment names its source, and the divergences are in `platform_controller_hub`'s `BUGS` |
 | reconfiguration each time link comes up | `e1000_check_for_copper_link_ich8lan` | not ported: it runs from a link-change interrupt this driver does not take (Follow-on) |
 
-`crates/e1000e/src/platform_controller_hub/mod.rs` carries the notice of each FreeBSD file the port follows: Intel's BSD-3-Clause notice of the shared code, and the BSD-2-Clause notice of `if_em.c` and `if_em.h` as found at `freebsd/freebsd-src@9da2c05a748f` (fetched 2026-11-04). FreeBSD read at `main`, last `e1000_ich8lan.c` change
+`crates/e1000e/src/platform_controller_hub/mod.rs` carries the notice of each FreeBSD file the port follows. FreeBSD read at `main`, last `e1000_ich8lan.c` change
 46cf612d (2026-08-30). Linux's GPL `e1000e` was not consulted for any I219 sequence; its headers
 gave register offsets and ids as facts on 2026-10-04, and the ids were checked against FreeBSD's.
 
