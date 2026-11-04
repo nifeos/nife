@@ -13,7 +13,9 @@
 //! - The eMMC socket is probed read-only, always.
 
 use designware_mobile_storage::bench::{self, ReadFailure, ReadReport, WriteVerdict};
-use designware_mobile_storage::host_controller::{Error, Host, Identity, Registers};
+use designware_mobile_storage::host_controller::{
+    Error, HostController, Identity, RegisterWindowAndClock,
+};
 use designware_mobile_storage::internal_direct_memory_access::{
     DirectMemoryAccessRegion, InternalDirectMemoryAccess, Refusal,
 };
@@ -306,7 +308,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
     // SAFETY: step 10 of `mmu::initialize` mapped this slot's first page from the same
     // `memory::jh7110_storage` answer, and this boot thread is the only thing that drives it.
     let window = unsafe { Window::new(slot.base) };
-    let (mut host, id) = match Host::new(window, ciu_hz, slot.queue_depth) {
+    let (mut host, id) = match HostController::new(window, ciu_hz, slot.queue_depth) {
         Ok(h) => h,
         Err(e) => {
             say!(slot, "controller refused: {e:?}");
@@ -328,7 +330,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
             // The card byte count counts bytes card to FIFO and the host byte count FIFO to CPU:
             // the CPU ahead of the card is an underrun, the card ahead with a full FIFO is an
             // overrun.
-            let r = host.registers();
+            let r = host.registers_mut();
             let (status, tcb, tbb) = (
                 r.read(registers::STATUS),
                 r.read(registers::TRANSFERRED_CARD_BYTE_COUNT),
@@ -361,7 +363,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
 /// IDMAC phase, which takes the host. The outcome carries both.
 fn write_and_idmac(
     slot: &Slot,
-    mut host: Host<Window>,
+    mut host: HostController<Window>,
     id: &Identity,
     r: &ReadReport,
     write: bool,
@@ -550,14 +552,14 @@ fn print_identity(slot: &Slot, id: &Identity, depth: u32) {
     say!(
         slot,
         "VERID {:#010x} HCON {:#010x} USRID {:#x} (FIFO at {:#x}, {:?} bytes wide, {} words deep, 64-bit DMA {}), CDETECT {:#x}",
-        id.verid,
-        id.hcon,
-        id.usrid,
-        registers::queue_offset(id.verid),
-        registers::queue_width(id.hcon),
+        id.version_identification,
+        id.hardware_configuration,
+        id.user_identification,
+        registers::queue_offset(id.version_identification),
+        registers::queue_width(id.hardware_configuration),
         depth,
-        registers::uses_64_bit_direct_memory_access(id.hcon),
-        id.cdetect,
+        registers::uses_64_bit_direct_memory_access(id.hardware_configuration),
+        id.card_detect,
     );
     say!(
         slot,
@@ -649,7 +651,7 @@ fn kib_per_second(blocks: u64, microseconds: u64) -> u64 {
 /// pages, as the polled read.
 fn through_idmac(
     slot: &Slot,
-    mut host: Host<Window>,
+    mut host: HostController<Window>,
     id: &Identity,
     r: &ReadReport,
     write: bool,
@@ -684,7 +686,7 @@ fn through_idmac(
     ) {
         Ok(report) => report,
         Err(e) => {
-            let w = host.registers();
+            let w = host.registers_mut();
             say!(
                 slot,
                 "IDMAC read failed: {e:?}; IDSTS {:#x} DSCADDR {:#x} BUFADDR {:#x} STATUS {:#x} TCBCNT {}",
@@ -752,7 +754,7 @@ fn read_matrix(slot: &Slot) {
     for depth in [slot.queue_depth, Some(128)] {
         // SAFETY: as `probe`'s window: the same mapped page, and this boot thread alone drives it.
         let window = unsafe { Window::new(slot.base) };
-        let Ok((mut host, _)) = Host::new(QueueWatch::new(window), ciu_hz, depth) else {
+        let Ok((mut host, _)) = HostController::new(QueueWatch::new(window), ciu_hz, depth) else {
             println!("storage-matrix: controller refused");
             return;
         };

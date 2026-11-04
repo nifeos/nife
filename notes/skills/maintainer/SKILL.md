@@ -66,11 +66,17 @@ the [developer lane](../developer-lane/SKILL.md) sets.
 ## A held finding gets one lane
 
 The fuzz host files each held fuzz finding as a private security advisory. The maintainer raises at
-most one lane per open advisory, and records on the advisory which lane holds it, because the
-advisory list is the claim board for this kind of lane: such a lane pushes nothing until its fix is
-ready, so `gh pr list --draft` shows nothing of it. Check the advisory for a holder before raising a
-lane. The brief names the advisory by its identifier, says the lane claims with `--no-claim`, and
-points at "A fix lane for a held finding" in the [developer lane](../developer-lane/SKILL.md) skill.
+most one lane per open advisory, and writes a note on the advisory naming the lane that holds it,
+because the advisory list is the claim board for this kind of lane: by default such a lane works in
+the advisory's temporary private fork and pushes nothing to nifeos/nife until its fix is approved,
+so `gh pr list --draft` shows nothing of it. Check the advisory for a holder before raising a lane. Open the private fork
+from the advisory before launching, and launch the lane on the fix-lane machine. The brief names
+the advisory by its identifier and the fork by its name, says the lane claims with `--no-claim`,
+and points at "A fix lane for a held finding" in the [developer lane](../developer-lane/SKILL.md)
+skill. A person, not the maintainer, reviews the fix in the fork. The lane then lands the approved
+fix as an ordinary pull request through the merge queue, and a person publishes the advisory when it
+merges. Nobody merges from the fork, because main's ruleset has no bypass actor. Only a finding the architect has judged low severity gets a brief for a public
+draft pull request instead.
 The brief and the record on the advisory name no seed or input, and the maintainer does not open the
 fuzz host's held directory either. The lane is launched with a one-hour reader token, which the
 maintainer's tooling supplies and never writes into a brief, a log or a pull request.

@@ -6,7 +6,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 `script/crate-standalone` step 0 passes a crate only when it finds every `Name:` block in it ratified, so each group here stands between a crate and its move. The lists come from `python3 helpers/name_release.py --draft <crate>`: a row whose status reads `no block` or starts with `provisional`. Rerun it for the live state; nothing regenerates this note, and a ruling removes its group.
 
-`extensible_host_controller_interface`, `file_allocation_table`, `generational_table` and `jh7110_clock_and_reset` have no unratified name left. `jh7110_entropy` has already left `crates/`.
+`extensible_host_controller_interface`, `file_allocation_table`, `generational_table`, `jh7110_clock_and_reset` and `non_volatile_memory_express` have no unratified name left. `jh7110_entropy` has already left `crates/`.
 
 ## How a naming pull request edits this note and the baselines
 
@@ -32,86 +32,13 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 
 In order, easiest to rule on first:
 
-1. `N1`, the three NVMe namespace names: a full proposal already exists ([ratify-the-nvme-namespace-names](../design/roadmap/1002-ratify-the-nvme-namespace-names.md)).
-2. The `no` groups of designware_mobile_storage (`DM2` to `DM4`, `DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
+1. The `no` groups of designware_mobile_storage (`DM6` to `DM8`, `DM10`): ratify as they stand, which clears the module apart from DM5 and DM9.
 
-The groups that need a real ruling are the register and bit constants: `DE7` to `DE9`, `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
+The groups that need a real ruling are the register and bit constants: `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
 
 ## `designware_ethernet`
 
-### DE1. Module names (10)
-
-`coherence`, `controller`, `data_plane`, `descriptor`, `hardware`, `jh7110`, `layout`, `motorcomm`, `proofs`, `tests`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify all ten as they stand. `data_plane`, `descriptor` and `hardware` are private and already provisional; `proofs` and `tests` follow the tree's usual names for harness and test modules; the rest say what the module holds.
-
-### DE3. Coherence probe (9)
-
-`coherence::Observation`, `coherence::POSTED`, `coherence::Payload`, `coherence::Verdict`, `coherence::WAIT_MICROSECONDS`, `coherence::classify`, `coherence::delivered`, `coherence::observe`, `coherence::prepare`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. Plain words, no abbreviation. `POSTED` is a count of posted descriptors, not the bus term, and its doc says so.
-
-### DE4. Controller bring-up (10)
-
-`controller::Bus`, `controller::Error`, `controller::Identity`, `controller::configure`, `controller::core_version`, `controller::read`, `controller::soft_reset`, `controller::start`, `controller::station_address`, `controller::stop`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. Plain verbs and nouns; `core_version` and `station_address` say what they return.
-
-
-### DE7. Descriptor bit and field constants (RDES3_*, TDES2_*, TDES3_*) (14)
-
-`descriptor::RDES3_BUF1V`, `descriptor::RDES3_CTXT`, `descriptor::RDES3_ES`, `descriptor::RDES3_FD`, `descriptor::RDES3_LD`, `descriptor::RDES3_LENGTH`, `descriptor::RDES3_OWN`, `descriptor::TDES2_BUF1_LEN`, `descriptor::TDES2_IC`, `descriptor::TDES3_ES`, `descriptor::TDES3_FRAME_LEN`, `descriptor::TDES3_FS`, `descriptor::TDES3_LS`, `descriptor::TDES3_OWN`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out, with the databook spelling kept as `#[doc(alias)]` and cited in the doc comment, as the 2026-11-02 rule and the earlier `RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION` rename already do. The docs already carry the plain-words title of each (for example 'owned by the device'), so the candidate names come from the crate's own text. Decide as one group; the items share one pattern.
-
-### DE8. MAC and channel register constants (CHAN_*, MAC_*) (15)
-
-`registers::CHAN_CUR_RX_DESC`, `registers::CHAN_CUR_TX_DESC`, `registers::CHAN_STATUS`, `registers::CHAN_STATUS_RPS`, `registers::CHAN_STATUS_TPS`, `registers::MAC_ADDR0_HI`, `registers::MAC_ADDR0_LO`, `registers::MAC_CONF_BE`, `registers::MAC_CONF_DCRS`, `registers::MAC_CONF_DM`, `registers::MAC_CONF_FES`, `registers::MAC_CONF_JD`, `registers::MAC_CONF_PS`, `registers::MAC_MDIO_ADDR`, `registers::MAC_MDIO_DATA`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out under the same rule, in the pattern of the nine renames in #3094 (for example `CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER`). Decide as one group; the `MAC_CONF_*` bits and the `CHAN_STATUS_*` fields can ride with their parent register.
-
-### DE9. Register window and the hardware-feature accessor (2)
-
-`registers::WINDOW`, `registers::mac_hw_feature`
-
-- Breaks the spelled-out rule: yes (one name).
-- Provisional recommendation: `WINDOW` is a plain word and stays as it is; `mac_hw_feature` abbreviates 'hardware', so recommend `mac_hardware_feature` (alias `mac_hw_feature`). `mac` stays an accepted acronym, as #3094 ruled.
-
-### DE11. MDIO software surface (6)
-
-`management_data_input_output::Bus`, `management_data_input_output::COMMAND_LIMIT_MICROSECONDS`, `management_data_input_output::Error`, `management_data_input_output::command`, `management_data_input_output::link_is_up`, `management_data_input_output::restart_autonegotiation`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. The module name is already spelled out; these are ordinary names.
-
 ## `designware_mobile_storage`
-
-
-### DM2. Host controller (13)
-
-`host_controller::Error`, `host_controller::Host`, `host_controller::Identity`, `host_controller::Registers`, `host_controller::card_clock`, `host_controller::clock_divider`, `host_controller::command`, `host_controller::into_registers`, `host_controller::new`, `host_controller::read`, `host_controller::registers`, `host_controller::reset`, `host_controller::write`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. The register-level names inside this module were already ratified spelled out under #3092; these are the software surface around them.
-
-### DM3. Command words (9)
-
-`command::Command`, `command::Data`, `command::GO_IDLE_STATE`, `command::Response`, `command::SEND_STATUS`, `command::SWITCH`, `command::bytes`, `command::new`, `command::word`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. `GO_IDLE_STATE`, `SEND_STATUS` and `SWITCH` are the SD specification's own command names, spelled in full; OpenBSD's `sdmmcreg.h` uses the same words.
-
-### DM4. Card status (6)
-
-`card::R1_ERRORS`, `card::R1_READY_FOR_DATA`, `card::STATE_TRANSFER`, `card::bits`, `card::r1_state`, `card::sd`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand. `R1` is the specification's own name for the response type, a noun with no spelled-out form.
 
 ### DM5. Card access (9)
 
@@ -156,29 +83,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 - Provisional recommendation: Ratify as they stand.
 
 ## `e1000e`
-
-
-### E1. Module names (14)
-
-`control`, `data_plane`, `descriptor`, `device`, `layout`, `pch`, `pch/flush`, `pch/hardware`, `pch/reset`, `pch/sequence`, `pch/tests`, `pch/ulp`, `proofs`, `tests`
-
-- Breaks the spelled-out rule: one.
-- Provisional recommendation: Ratify all but two. `pch` and `ulp` abbreviate 'platform controller hub' and 'ultra low power'; recommend `platform_controller_hub` and `ultra_low_power` (the stricter reading, a close call since Intel and Linux write both as letters; the sibling modules `non_volatile_memory` and `physical_layer_device` already spell out their words). The other twelve are plain.
-
-### E2. Device identity (4)
-
-`device::DEVICE_IDS`, `device::VENDOR_INTEL`, `device::is_supported`, `device::model`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand.
-
-
-### E5. Descriptor status and command bits (7)
-
-`descriptor::RECEIVE_ERRORS_FRAME`, `descriptor::RECEIVE_STATUS_DD`, `descriptor::RECEIVE_STATUS_EOP`, `descriptor::TRANSMIT_COMMAND`, `descriptor::TRANSMIT_STATUS_DD`, `descriptor::receive_verdict`, `descriptor::transmit_word`
-
-- Breaks the spelled-out rule: yes.
-- Provisional recommendation: Spell out `RECEIVE_STATUS_DD`, `RECEIVE_STATUS_EOP` and `TRANSMIT_STATUS_DD` (descriptor done, end of packet), keeping the Linux spelling as an alias; ratify the rest as they stand. These three are the only abbreviations in the module.
 
 ### E6. Buffer layout (10)
 
@@ -235,15 +139,6 @@ The groups that need a real ruling are the register and bit constants: `DE7` to 
 
 - Breaks the spelled-out rule: one.
 - Provisional recommendation: Ratify `done`, `release`, `request` and the simulator names; recommend `WAIT_MS` become `WAIT_MILLISECONDS`, matching `POLL_MICROSECONDS`.
-
-## `non_volatile_memory_express`
-
-### N1. Namespace (3)
-
-`lib::Namespace`, `lib::holds_block`, `lib::transfer_command`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Already proposed in full in design/roadmap/1002-ratify-the-nvme-namespace-names.md (ratify as they stand, plus the `size_bytes` to `capacity_bytes` field loose end). Do not repeat it; bring that proposal.
 
 ## Not covered
 

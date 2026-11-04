@@ -7,10 +7,13 @@
 //! [`WAIT_MICROSECONDS`], then read the channel status register. [`classify`] compares the two accounts; the
 //! status register is read over MMIO, which no cache stands in front of, so a non-coherent machine
 //! fails in a way that names the direction.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
 use crate::{
-    CRC_BYTES, DataPlane, DirectMemoryAccessRegion, RDES3_OWN, RECEIVE_ENTRIES, ReceiveVerdict,
-    TDES3_OWN, Tails, TransmitError, layout, receive_verdict, registers,
+    CRC_BYTES, DataPlane, DirectMemoryAccessRegion, RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
+    RECEIVE_ENTRIES, ReceiveVerdict, TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE, Tails,
+    TransmitError, layout, receive_verdict, registers,
 };
 
 /// The probe frame's `EtherType`: IEEE 802's first local experimental type, which no real
@@ -27,6 +30,8 @@ pub const POISON: u8 = 0xa5;
 /// How long the caller waits for receive descriptor 0 before reading the device's account. A
 /// 128-byte frame at any speed through a loopback is microseconds; a hundred milliseconds is
 /// slack for a slow first descriptor fetch, not a guess at the wire.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub const WAIT_MICROSECONDS: u64 = 100_000;
 
 /// **The probe frame**: addressed from and to `station_address` (so the packet filter passes it),
@@ -59,6 +64,8 @@ pub const PROBE_PAYLOAD_SET_BIT_AND_COUNTER_DO_NOT_OVERLAP: () = assert!(0x40 & 
 /// **Steps 1 to 3**: post the receive ring, poison and read back receive buffer 0, queue the
 /// probe frame. The controller must already be configured and started in loopback; the receive
 /// tail write in step 1 and the transmit tail write in step 3 are what set it moving.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn prepare(
     data_plane: &mut DataPlane,
     region: &mut impl DirectMemoryAccessRegion,
@@ -77,11 +84,17 @@ pub fn prepare(
 }
 
 /// **Step 4's poll**: has the CPU seen receive descriptor 0 handed back?
-pub fn delivered(region: &impl DirectMemoryAccessRegion) -> bool {
-    (region.read_u64(layout::receive_descriptor(0) + 8) >> 32) as u32 & RDES3_OWN == 0
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
+pub fn is_delivered(region: &impl DirectMemoryAccessRegion) -> bool {
+    (region.read_u64(layout::receive_descriptor(0) + 8) >> 32) as u32
+        & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
+        == 0
 }
 
 /// What receive buffer 0 held when it was read.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Payload {
     /// The probe frame, byte for byte.
@@ -94,19 +107,23 @@ pub enum Payload {
 
 /// Everything the probe saw: the CPU's view of the ring and buffer, and the device's view of
 /// itself.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Observation {
     /// Receive descriptor 0's word 3, read by the CPU.
     pub receive_descriptor_word_3: u32,
     /// Transmit descriptor 0's word 3, read by the CPU.
     pub transmit_descriptor_word_3: u32,
-    /// [`registers::CHAN_STATUS`], read through MMIO.
+    /// [`registers::CHANNEL_STATUS_REGISTER`], read through MMIO.
     pub status: u32,
     /// Receive buffer 0, judged.
     pub payload: Payload,
 }
 
 /// **Read the CPU's half of the observation** and pair it with the device's status word.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn observe(
     region: &impl DirectMemoryAccessRegion,
     station_address: [u8; 6],
@@ -134,6 +151,8 @@ pub fn observe(
 }
 
 /// The probe's answer.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Verdict {
     /// **Coherent in both directions.** The device read descriptors and a payload the CPU had
@@ -162,12 +181,14 @@ pub enum Verdict {
 }
 
 /// **Compare the two accounts.**
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn classify(o: &Observation) -> Verdict {
     let s = o.status;
     if s & registers::CHAN_STATUS_FBE != 0 {
         return Verdict::BusError;
     }
-    if o.receive_descriptor_word_3 & RDES3_OWN == 0 {
+    if o.receive_descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0 {
         return match (
             o.payload,
             receive_verdict(o.receive_descriptor_word_3, PROBE_LENGTH),
@@ -193,21 +214,26 @@ pub fn classify(o: &Observation) -> Verdict {
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub const fn is_transmit_complete(o: &Observation) -> bool {
-    o.transmit_descriptor_word_3 & TDES3_OWN == 0
+    o.transmit_descriptor_word_3 & TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0
 }
 
 /// How many receive descriptors the probe posts, for a report line: every one but the held-back
 /// slot, as [`DataPlane::start`] does.
-pub const POSTED: u16 = RECEIVE_ENTRIES - 1;
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
+pub const POSTED_RECEIVE_ENTRIES: u16 = RECEIVE_ENTRIES - 1;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::controller::{self, Identity};
     use crate::jh7110::BUS_CONFIGURATION;
-    use crate::motorcomm::{Link, Speed};
+    use crate::motorcomm_physical_layer_device::{Link, Speed};
+    use crate::network_interface_controller::{self as controller, Identity};
     use crate::simulator::{Memory, NetworkInterfaceController};
-    use crate::{Hardware, RDES3_FD, RDES3_LD};
+    use crate::{
+        Hardware, RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR,
+        RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR,
+    };
 
     const PHYSICAL_ADDRESS: u64 = 0x4800_0000;
     const STATION_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
@@ -237,11 +263,11 @@ mod tests {
         nic.with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
             .unwrap();
         let mut waited = 0;
-        while !nic.with(|r, _| delivered(r)) && waited < WAIT_MICROSECONDS {
+        while !nic.with(|r, _| is_delivered(r)) && waited < WAIT_MICROSECONDS {
             nic.delay_microseconds(1000);
             waited += 1000;
         }
-        let status = nic.read(registers::CHAN_STATUS);
+        let status = nic.read(registers::CHANNEL_STATUS_REGISTER);
         let o = nic.with(|r, _| observe(r, STATION_ADDRESS, status));
         classify(&o)
     }
@@ -289,7 +315,9 @@ mod tests {
     #[test]
     fn a_whole_frame_that_is_not_the_one_written_is_a_stale_transmit() {
         let o = Observation {
-            receive_descriptor_word_3: RDES3_FD | RDES3_LD | (PROBE_LENGTH + CRC_BYTES) as u32,
+            receive_descriptor_word_3: RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR
+                | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR
+                | (PROBE_LENGTH + CRC_BYTES) as u32,
             transmit_descriptor_word_3: 0,
             status: registers::CHAN_STATUS_RI | registers::CHAN_STATUS_TI,
             payload: Payload::Other,
@@ -312,7 +340,7 @@ mod tests {
         // A transmit DMA that sent its one frame then found the next slot empty sets TI and TBU
         // together; that is success, and only the receive side's silence makes it inconclusive.
         let o = Observation {
-            receive_descriptor_word_3: RDES3_OWN,
+            receive_descriptor_word_3: RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
             transmit_descriptor_word_3: 0,
             status: registers::CHAN_STATUS_TI | registers::CHAN_STATUS_TBU,
             payload: Payload::Poison,
@@ -357,10 +385,10 @@ mod tests {
             r.read_bytes(layout::receive_buffer(0), &mut b);
             assert!(b[..PROBE_LENGTH + CRC_BYTES].iter().all(|&x| x == POISON));
             assert_eq!(b[PROBE_LENGTH + CRC_BYTES], 0);
-            assert!(!delivered(r));
+            assert!(!is_delivered(r));
         });
-        assert_eq!(nic.receive_available(), usize::from(POSTED));
-        assert_eq!(POSTED, 15);
+        assert_eq!(nic.receive_available(), usize::from(POSTED_RECEIVE_ENTRIES));
+        assert_eq!(POSTED_RECEIVE_ENTRIES, 15);
     }
 
     /// After a coherent loopback, the CPU sees receive descriptor 0 handed back and transmit
@@ -384,17 +412,19 @@ mod tests {
             .unwrap();
         nic.step();
         let o = nic.with(|r, _| {
-            assert!(delivered(r));
+            assert!(is_delivered(r));
             observe(r, STATION_ADDRESS, 0)
         });
         assert_eq!(
             o.transmit_descriptor_word_3,
-            crate::TDES3_FS | crate::TDES3_LS | PROBE_LENGTH as u32
+            crate::TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
+                | crate::TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT
+                | PROBE_LENGTH as u32
         );
         assert!(is_transmit_complete(&o));
         assert_eq!(o.payload, Payload::Matches);
         assert!(!is_transmit_complete(&Observation {
-            transmit_descriptor_word_3: crate::TDES3_OWN,
+            transmit_descriptor_word_3: crate::TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
             ..o
         }));
     }
@@ -420,8 +450,8 @@ mod tests {
     #[test]
     fn a_status_of_nothing_is_inconclusive() {
         let o = Observation {
-            receive_descriptor_word_3: RDES3_OWN,
-            transmit_descriptor_word_3: TDES3_OWN,
+            receive_descriptor_word_3: RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
+            transmit_descriptor_word_3: TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
             status: 0,
             payload: Payload::Poison,
         };

@@ -6,11 +6,15 @@
 //! jumbo frames are not enabled, and nothing is allocated (the DMA region is the caller's, laid out
 //! by [`crate::layout`]). Every sequence runs against [`Hardware`], so the host tests run them
 //! against `simulator`'s controller.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
-use crate::motorcomm::{Link, Speed};
+use crate::motorcomm_physical_layer_device::{Link, Speed};
 use crate::{BUFFER_BYTES, Hardware, RECEIVE_ENTRIES, TRANSMIT_ENTRIES, layout, registers};
 
 /// Why the controller was not brought up.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// The software reset did not self-clear in [`RESET_LIMIT_MICROSECONDS`]. On this controller the usual
@@ -33,6 +37,8 @@ pub enum Error {
 pub const RESET_LIMIT_MICROSECONDS: u64 = 300_000;
 
 /// What the controller says it is.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Identity {
     /// [`registers::CORE_VERSION_REGISTER`].
@@ -43,10 +49,12 @@ pub struct Identity {
 
 impl Identity {
     /// Read the version and feature registers.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3122.
     pub fn read(hardware: &mut impl Hardware) -> Identity {
         let mut features = [0; 4];
         for (i, f) in features.iter_mut().enumerate() {
-            *f = hardware.read(registers::mac_hw_feature(i as u32));
+            *f = hardware.read(registers::mac_hardware_feature_register(i as u32));
         }
         Identity {
             version: hardware.read(registers::CORE_VERSION_REGISTER),
@@ -55,6 +63,8 @@ impl Identity {
     }
 
     /// The Synopsys core version, `0x52` for the 5.20 both trees name.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3122.
     pub const fn core_version(&self) -> u8 {
         self.version as u8
     }
@@ -92,6 +102,8 @@ const fn queue_bytes(field: u32) -> u32 {
 }
 
 /// **Reset the whole controller** and wait for the reset to finish. Returns how long it took.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn soft_reset(hardware: &mut impl Hardware) -> Result<u64, Error> {
     let mode = hardware.read(registers::BUS_MODE);
     hardware.write(registers::BUS_MODE, mode | registers::BUS_MODE_SWR);
@@ -111,6 +123,8 @@ pub fn soft_reset(hardware: &mut impl Hardware) -> Result<u64, Error> {
 /// **The station address in the two address registers**, OpenBSD's `dwqe_lladdr_read` byte order,
 /// or `None` when they hold nothing a station could own: all zero or all ones (the reset value),
 /// or a multicast address.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn station_address(high: u32, low: u32) -> Option<[u8; 6]> {
     let [a, b, c, d] = low.to_le_bytes();
     let [e, f, _, _] = high.to_le_bytes();
@@ -137,8 +151,10 @@ pub(crate) const fn address_words(station_address: [u8; 6]) -> (u32, u32) {
 
 /// **How the DMA meets the bus**: the `snps,*` properties of a board's node and its
 /// `snps,axi-config`. [`crate::jh7110::BUS_CONFIGURATION`] is radon's.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Bus {
+pub struct BusConfiguration {
     /// `snps,fixed-burst`.
     pub fixed_burst: bool,
     /// Multiply both channel burst lengths by eight (the databook's programmable burst length
@@ -165,7 +181,7 @@ pub struct Bus {
 /// The receive operation mode word for a queue of `queue_bytes` bytes, OpenBSD's arithmetic: the
 /// queue size in 256-byte units less one, threshold or store-and-forward, and hardware flow control
 /// with its thresholds once the queue is large enough for them to mean anything.
-pub(crate) fn receive_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
+pub(crate) fn receive_queue_mode(current: u32, bus: &BusConfiguration, queue_bytes: u32) -> u32 {
     let mut mode = current;
     if bus.threshold_mode {
         mode &= !(registers::MTL_CHAN_RX_OP_MODE_RSF | registers::MTL_CHAN_RX_OP_MODE_RTC_MASK);
@@ -200,7 +216,7 @@ pub const RECEIVE_QUEUE_MODE_FIELDS_DO_NOT_OVERLAP: () = assert!(
 );
 
 /// The transmit operation mode word for a queue of `queue_bytes` bytes, OpenBSD's arithmetic.
-pub(crate) fn transmit_queue_mode(current: u32, bus: &Bus, queue_bytes: u32) -> u32 {
+pub(crate) fn transmit_queue_mode(current: u32, bus: &BusConfiguration, queue_bytes: u32) -> u32 {
     let mut mode = current;
     if bus.threshold_mode {
         mode &= !(registers::MTL_CHAN_TX_OP_MODE_TSF | registers::MTL_CHAN_TX_OP_MODE_TTC_MASK);
@@ -248,10 +264,12 @@ pub(crate) const fn region_in_reach(
 /// says `rx-fifo-depth = <262144>` and mainline says `<2048>` for the same silicon, and a queue
 /// size computed from the first would overflow the field into the next. The hardware's statement
 /// is the one fact about the FIFO both trees are describing.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn configure(
     hardware: &mut impl Hardware,
     id: &Identity,
-    bus: &Bus,
+    bus: &BusConfiguration,
     region: u64,
     station_address: [u8; 6],
 ) -> Result<(), Error> {
@@ -353,8 +371,8 @@ pub fn configure(
     hardware.write(registers::RXQ_CTRL0, registers::RXQ_CTRL0_DCB_QUEUE_EN);
 
     let (high, low) = address_words(station_address);
-    hardware.write(registers::MAC_ADDR0_HI, high);
-    hardware.write(registers::MAC_ADDR0_LO, low);
+    hardware.write(registers::MAC_ADDRESS_0_HIGH_REGISTER, high);
+    hardware.write(registers::MAC_ADDRESS_0_LOW_REGISTER, low);
     // Own unicast address and broadcast; no multicast, no promiscuous receive.
     hardware.write(registers::MAC_PACKET_FILTER, 0);
 
@@ -362,7 +380,7 @@ pub fn configure(
     hardware.write(registers::CHAN_INTR_ENA, 0);
     hardware.write(registers::MMC_RX_INT_MASK, u32::MAX);
     hardware.write(registers::MMC_TX_INT_MASK, u32::MAX);
-    hardware.write(registers::CHAN_STATUS, u32::MAX);
+    hardware.write(registers::CHANNEL_STATUS_REGISTER, u32::MAX);
     Ok(())
 }
 
@@ -409,24 +427,27 @@ pub const CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP: () = assert!(
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 {
     let mut conf = current
-        & !(registers::MAC_CONF_PS
-            | registers::MAC_CONF_FES
-            | registers::MAC_CONF_DM
+        & !(registers::MAC_CONFIGURATION_PORT_SELECT
+            | registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED
+            | registers::MAC_CONFIGURATION_FULL_DUPLEX
             | registers::MAC_CONFIGURATION_LOOPBACK_MODE);
     conf |= match link.speed {
         Speed::Thousand => 0,
-        Speed::Hundred => registers::MAC_CONF_PS | registers::MAC_CONF_FES,
-        Speed::Ten => registers::MAC_CONF_PS,
+        Speed::Hundred => {
+            registers::MAC_CONFIGURATION_PORT_SELECT
+                | registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED
+        }
+        Speed::Ten => registers::MAC_CONFIGURATION_PORT_SELECT,
     };
     if link.full_duplex {
-        conf |= registers::MAC_CONF_DM;
+        conf |= registers::MAC_CONFIGURATION_FULL_DUPLEX;
     }
     if loopback {
         conf |= registers::MAC_CONFIGURATION_LOOPBACK_MODE;
     }
-    conf | registers::MAC_CONF_BE
-        | registers::MAC_CONF_JD
-        | registers::MAC_CONF_DCRS
+    conf | registers::MAC_CONFIGURATION_PACKET_BURST_ENABLE
+        | registers::MAC_CONFIGURATION_JABBER_DISABLE
+        | registers::MAC_CONFIGURATION_DISABLE_CARRIER_SENSE_DURING_TRANSMISSION
         | registers::MAC_CONF_TE
         | registers::MAC_CONF_RE
 }
@@ -439,28 +460,30 @@ pub const fn mac_configuration(current: u32, link: Link, loopback: bool) -> u32 
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 pub const MAC_CONFIGURATION_BITS_DO_NOT_OVERLAP: () = assert!(
-    registers::MAC_CONF_PS
-        | registers::MAC_CONF_FES
-        | registers::MAC_CONF_DM
+    registers::MAC_CONFIGURATION_PORT_SELECT
+        | registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED
+        | registers::MAC_CONFIGURATION_FULL_DUPLEX
         | registers::MAC_CONFIGURATION_LOOPBACK_MODE
-        == registers::MAC_CONF_PS
-            ^ registers::MAC_CONF_FES
-            ^ registers::MAC_CONF_DM
+        == registers::MAC_CONFIGURATION_PORT_SELECT
+            ^ registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED
+            ^ registers::MAC_CONFIGURATION_FULL_DUPLEX
             ^ registers::MAC_CONFIGURATION_LOOPBACK_MODE
-        && (registers::MAC_CONF_BE
-            | registers::MAC_CONF_JD
-            | registers::MAC_CONF_DCRS
+        && (registers::MAC_CONFIGURATION_PACKET_BURST_ENABLE
+            | registers::MAC_CONFIGURATION_JABBER_DISABLE
+            | registers::MAC_CONFIGURATION_DISABLE_CARRIER_SENSE_DURING_TRANSMISSION
             | registers::MAC_CONF_TE
             | registers::MAC_CONF_RE)
-            == (registers::MAC_CONF_BE
-                ^ registers::MAC_CONF_JD
-                ^ registers::MAC_CONF_DCRS
+            == (registers::MAC_CONFIGURATION_PACKET_BURST_ENABLE
+                ^ registers::MAC_CONFIGURATION_JABBER_DISABLE
+                ^ registers::MAC_CONFIGURATION_DISABLE_CARRIER_SENSE_DURING_TRANSMISSION
                 ^ registers::MAC_CONF_TE
                 ^ registers::MAC_CONF_RE)
 );
 
 /// **Start both DMA channels and the MAC** at `link`, OpenBSD's order: receive DMA, transmit DMA,
 /// then the MAC. Nothing moves until the data plane hands the device descriptors.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn start(hardware: &mut impl Hardware, link: Link, loopback: bool) {
     let receive = hardware.read(registers::CHAN_RX_CONTROL);
     hardware.write(
@@ -478,6 +501,8 @@ pub fn start(hardware: &mut impl Hardware, link: Link, loopback: bool) {
 
 /// **Stop the MAC and both DMA channels**, OpenBSD's `dwqe_down` order: receiver off, receive DMA
 /// off, transmit DMA off, flush the transmit queue, transmitter off.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn stop(hardware: &mut impl Hardware) -> Result<(), Error> {
     let conf = hardware.read(registers::MAC_CONF);
     hardware.write(registers::MAC_CONF, conf & !registers::MAC_CONF_RE);
@@ -623,8 +648,8 @@ mod tests {
         );
         assert_eq!(
             station_address(
-                nic.register(registers::MAC_ADDR0_HI),
-                nic.register(registers::MAC_ADDR0_LO)
+                nic.register(registers::MAC_ADDRESS_0_HIGH_REGISTER),
+                nic.register(registers::MAC_ADDRESS_0_LOW_REGISTER)
             ),
             Some(STATION_ADDRESS)
         );
@@ -667,12 +692,16 @@ mod tests {
             full_duplex: true,
         };
         let c = mac_configuration(
-            registers::MAC_CONF_PS | registers::MAC_CONFIGURATION_LOOPBACK_MODE,
+            registers::MAC_CONFIGURATION_PORT_SELECT | registers::MAC_CONFIGURATION_LOOPBACK_MODE,
             gig,
             false,
         );
-        assert_eq!(c & (registers::MAC_CONF_PS | registers::MAC_CONF_FES), 0);
-        assert_ne!(c & registers::MAC_CONF_DM, 0);
+        assert_eq!(
+            c & (registers::MAC_CONFIGURATION_PORT_SELECT
+                | registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED),
+            0
+        );
+        assert_ne!(c & registers::MAC_CONFIGURATION_FULL_DUPLEX, 0);
         assert_eq!(
             c & registers::MAC_CONFIGURATION_LOOPBACK_MODE,
             0,
@@ -688,8 +717,11 @@ mod tests {
             true,
         );
         assert_eq!(
-            c & (registers::MAC_CONF_PS | registers::MAC_CONF_FES | registers::MAC_CONF_DM),
-            registers::MAC_CONF_PS | registers::MAC_CONF_FES
+            c & (registers::MAC_CONFIGURATION_PORT_SELECT
+                | registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED
+                | registers::MAC_CONFIGURATION_FULL_DUPLEX),
+            registers::MAC_CONFIGURATION_PORT_SELECT
+                | registers::MAC_CONFIGURATION_FAST_ETHERNET_SPEED
         );
         assert_ne!(c & registers::MAC_CONFIGURATION_LOOPBACK_MODE, 0);
     }
@@ -771,7 +803,7 @@ mod tests {
     /// A bus unlike radon's in every field, with values wider than their fields, so each field's
     /// mask and shift is seen: `PBLx8` on, store and forward, one burst length, and 4 KiB FIFOs
     /// (big enough for flow control) at 32 bits.
-    const ODD: Bus = Bus {
+    const ODD: BusConfiguration = BusConfiguration {
         fixed_burst: false,
         channel_burst_length_times_8: true,
         transmit_channel_burst_length: 0x48,
@@ -786,7 +818,7 @@ mod tests {
         features: [0, 5 << 6 | 5, 0, 0],
     };
 
-    fn configured(fill: u32, id: &Identity, bus: &Bus, region: u64) -> Seeded {
+    fn configured(fill: u32, id: &Identity, bus: &BusConfiguration, region: u64) -> Seeded {
         let mut hardware = Seeded::new(fill);
         configure(&mut hardware, id, bus, region, STATION_ADDRESS).unwrap();
         hardware
@@ -866,7 +898,7 @@ mod tests {
     /// RFD 3 and RFA 1 in place of whatever was there.
     #[test]
     fn the_queue_modes_from_zero_and_from_all_ones() {
-        let sf = Bus {
+        let sf = BusConfiguration {
             threshold_mode: false,
             ..BUS_CONFIGURATION
         };

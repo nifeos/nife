@@ -1525,47 +1525,26 @@ crates/current_cpu_contract/src/lib.rs::publish
 
 crates/current_cpu_contract/src/lib.rs::thread_page_va
 
-crates/designware_ethernet/src/coherence.rs
 
-crates/designware_ethernet/src/coherence.rs::Observation
 
-crates/designware_ethernet/src/coherence.rs::POSTED
 
-crates/designware_ethernet/src/coherence.rs::Payload
 
-crates/designware_ethernet/src/coherence.rs::Verdict
 
-crates/designware_ethernet/src/coherence.rs::WAIT_MICROSECONDS
 
-crates/designware_ethernet/src/coherence.rs::classify
 
-crates/designware_ethernet/src/coherence.rs::delivered
 
-crates/designware_ethernet/src/coherence.rs::observe
 
-crates/designware_ethernet/src/coherence.rs::prepare
 
-crates/designware_ethernet/src/controller.rs
 
-crates/designware_ethernet/src/controller.rs::Bus
 
-crates/designware_ethernet/src/controller.rs::Error
 
-crates/designware_ethernet/src/controller.rs::Identity
 
-crates/designware_ethernet/src/controller.rs::configure
 
-crates/designware_ethernet/src/controller.rs::core_version
 
-crates/designware_ethernet/src/controller.rs::read
 
-crates/designware_ethernet/src/controller.rs::soft_reset
 
-crates/designware_ethernet/src/controller.rs::start
 
-crates/designware_ethernet/src/controller.rs::station_address
 
-crates/designware_ethernet/src/controller.rs::stop
 
 
 
@@ -1577,89 +1556,47 @@ crates/designware_ethernet/src/controller.rs::stop
 
 
 
-crates/designware_ethernet/src/descriptor.rs::RDES3_BUF1V
 
-crates/designware_ethernet/src/descriptor.rs::RDES3_CTXT
 
-crates/designware_ethernet/src/descriptor.rs::RDES3_ES
 
-crates/designware_ethernet/src/descriptor.rs::RDES3_FD
 
-crates/designware_ethernet/src/descriptor.rs::RDES3_LD
 
-crates/designware_ethernet/src/descriptor.rs::RDES3_LENGTH
 
-crates/designware_ethernet/src/descriptor.rs::RDES3_OWN
 
-crates/designware_ethernet/src/descriptor.rs::TDES2_BUF1_LEN
 
-crates/designware_ethernet/src/descriptor.rs::TDES2_IC
 
-crates/designware_ethernet/src/descriptor.rs::TDES3_ES
 
-crates/designware_ethernet/src/descriptor.rs::TDES3_FRAME_LEN
 
-crates/designware_ethernet/src/descriptor.rs::TDES3_FS
 
-crates/designware_ethernet/src/descriptor.rs::TDES3_LS
 
-crates/designware_ethernet/src/descriptor.rs::TDES3_OWN
 
-crates/designware_ethernet/src/jh7110.rs
 
-crates/designware_ethernet/src/layout.rs
 
-crates/designware_ethernet/src/management_data_input_output.rs::Bus
 
-crates/designware_ethernet/src/management_data_input_output.rs::COMMAND_LIMIT_MICROSECONDS
 
-crates/designware_ethernet/src/management_data_input_output.rs::Error
 
-crates/designware_ethernet/src/management_data_input_output.rs::command
 
-crates/designware_ethernet/src/management_data_input_output.rs::link_is_up
 
-crates/designware_ethernet/src/management_data_input_output.rs::restart_autonegotiation
 
-crates/designware_ethernet/src/motorcomm.rs
 
-crates/designware_ethernet/src/proofs.rs
 
-crates/designware_ethernet/src/registers.rs::CHAN_CUR_RX_DESC
 
-crates/designware_ethernet/src/registers.rs::CHAN_CUR_TX_DESC
 
-crates/designware_ethernet/src/registers.rs::CHAN_STATUS
 
-crates/designware_ethernet/src/registers.rs::CHAN_STATUS_RPS
 
-crates/designware_ethernet/src/registers.rs::CHAN_STATUS_TPS
 
-crates/designware_ethernet/src/registers.rs::MAC_ADDR0_HI
 
-crates/designware_ethernet/src/registers.rs::MAC_ADDR0_LO
 
-crates/designware_ethernet/src/registers.rs::MAC_CONF_BE
 
-crates/designware_ethernet/src/registers.rs::MAC_CONF_DCRS
 
-crates/designware_ethernet/src/registers.rs::MAC_CONF_DM
 
-crates/designware_ethernet/src/registers.rs::MAC_CONF_FES
 
-crates/designware_ethernet/src/registers.rs::MAC_CONF_JD
 
-crates/designware_ethernet/src/registers.rs::MAC_CONF_PS
 
-crates/designware_ethernet/src/registers.rs::MAC_MDIO_ADDR
 
-crates/designware_ethernet/src/registers.rs::MAC_MDIO_DATA
 
-crates/designware_ethernet/src/registers.rs::WINDOW
 
-crates/designware_ethernet/src/registers.rs::mac_hw_feature
 
-crates/designware_ethernet/src/tests.rs
 
 
 crates/designware_mobile_storage/src/bench.rs::ReadFailure
@@ -1677,38 +1614,6 @@ crates/designware_mobile_storage/src/bench.rs::read_only
 crates/designware_mobile_storage/src/bench.rs::scratch_write
 
 
-crates/designware_mobile_storage/src/card.rs::R1_ERRORS
-
-crates/designware_mobile_storage/src/card.rs::R1_READY_FOR_DATA
-
-crates/designware_mobile_storage/src/card.rs::STATE_TRANSFER
-
-crates/designware_mobile_storage/src/card.rs::bits
-
-crates/designware_mobile_storage/src/card.rs::r1_state
-
-crates/designware_mobile_storage/src/card.rs::sd
-
-crates/designware_mobile_storage/src/card.rs::sd
-
-
-crates/designware_mobile_storage/src/command.rs::Command
-
-crates/designware_mobile_storage/src/command.rs::Data
-
-crates/designware_mobile_storage/src/command.rs::GO_IDLE_STATE
-
-crates/designware_mobile_storage/src/command.rs::Response
-
-crates/designware_mobile_storage/src/command.rs::SEND_STATUS
-
-crates/designware_mobile_storage/src/command.rs::SWITCH
-
-crates/designware_mobile_storage/src/command.rs::bytes
-
-crates/designware_mobile_storage/src/command.rs::new
-
-crates/designware_mobile_storage/src/command.rs::word
 
 
 
@@ -1725,31 +1630,34 @@ crates/designware_mobile_storage/src/command.rs::word
 
 
 
-crates/designware_mobile_storage/src/host_controller.rs::Error
 
-crates/designware_mobile_storage/src/host_controller.rs::Host
 
-crates/designware_mobile_storage/src/host_controller.rs::Identity
 
-crates/designware_mobile_storage/src/host_controller.rs::Registers
 
-crates/designware_mobile_storage/src/host_controller.rs::card_clock
 
-crates/designware_mobile_storage/src/host_controller.rs::clock_divider
 
-crates/designware_mobile_storage/src/host_controller.rs::command
 
-crates/designware_mobile_storage/src/host_controller.rs::into_registers
 
-crates/designware_mobile_storage/src/host_controller.rs::new
 
-crates/designware_mobile_storage/src/host_controller.rs::read
 
-crates/designware_mobile_storage/src/host_controller.rs::registers
 
-crates/designware_mobile_storage/src/host_controller.rs::reset
 
-crates/designware_mobile_storage/src/host_controller.rs::write
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 crates/designware_mobile_storage/src/jh7110.rs::COMPATIBLE_MAINLINE
 
@@ -2195,25 +2103,6 @@ crates/domain_name_system/src/lib.rs::write
 
 crates/domain_name_system/src/proofs.rs
 
-crates/e1000e/src/control.rs::CTRL_ASDE
-
-crates/e1000e/src/control.rs::CTRL_EXT_DRV_LOAD
-
-crates/e1000e/src/control.rs::CTRL_RST
-
-crates/e1000e/src/control.rs::CTRL_SLU
-
-crates/e1000e/src/control.rs::RAH_AV
-
-crates/e1000e/src/control.rs::RFCTL_EXTEN
-
-crates/e1000e/src/control.rs::STATUS_LU
-
-crates/e1000e/src/control.rs::rctl
-
-crates/e1000e/src/control.rs::tctl
-
-crates/e1000e/src/control.rs::tipg
 
 
 
@@ -2225,107 +2114,161 @@ crates/e1000e/src/control.rs::tipg
 
 
 
-crates/e1000e/src/device.rs::DEVICE_IDS
 
-crates/e1000e/src/device.rs::VENDOR_INTEL
 
-crates/e1000e/src/device.rs::is_supported
 
-crates/e1000e/src/device.rs::model
 
-crates/e1000e/src/layout.rs
+
+
+
+
+
+
+
+
+
+
+crates/e1000e/src/control_registers.rs::CTRL_ASDE
+
+crates/e1000e/src/control_registers.rs::CTRL_EXT_DRV_LOAD
+
+crates/e1000e/src/control_registers.rs::CTRL_RST
+
+crates/e1000e/src/control_registers.rs::CTRL_SLU
+
+crates/e1000e/src/control_registers.rs::RAH_AV
+
+crates/e1000e/src/control_registers.rs::RFCTL_EXTEN
+
+crates/e1000e/src/control_registers.rs::STATUS_LU
+
+crates/e1000e/src/control_registers.rs::rctl
+
+crates/e1000e/src/control_registers.rs::tctl
+
+crates/e1000e/src/control_registers.rs::tipg
 
 crates/e1000e/src/layout.rs::BYTES
 
 crates/e1000e/src/layout.rs::PAGES
 
-crates/e1000e/src/pch/flush.rs
 
-crates/e1000e/src/pch/flush.rs::FEXTNVM11_DISABLE_MULR_FIX
 
-crates/e1000e/src/pch/flush.rs::required
 
-crates/e1000e/src/pch/flush.rs::rxdctl
 
-crates/e1000e/src/pch/flush.rs::tail_after
 
-crates/e1000e/src/pch/hardware.rs::is_pch
 
-crates/e1000e/src/pch/mod.rs
 
-crates/e1000e/src/pch/non_volatile_memory.rs::DONE
 
-crates/e1000e/src/pch/non_volatile_memory.rs::ERROR
 
-crates/e1000e/src/pch/non_volatile_memory.rs::Error
 
-crates/e1000e/src/pch/non_volatile_memory.rs::GO
 
-crates/e1000e/src/pch/non_volatile_memory.rs::WORDS
 
-crates/e1000e/src/pch/non_volatile_memory.rs::read
 
-crates/e1000e/src/pch/physical_layer_device.rs::ERROR
 
-crates/e1000e/src/pch/physical_layer_device.rs::Error
 
-crates/e1000e/src/pch/physical_layer_device.rs::POLL_MICROSECONDS
 
-crates/e1000e/src/pch/physical_layer_device.rs::Plan
 
-crates/e1000e/src/pch/physical_layer_device.rs::READY
 
-crates/e1000e/src/pch/physical_layer_device.rs::Swflag
 
-crates/e1000e/src/pch/physical_layer_device.rs::id_at
 
-crates/e1000e/src/pch/physical_layer_device.rs::plan
 
-crates/e1000e/src/pch/physical_layer_device.rs::read
 
-crates/e1000e/src/pch/physical_layer_device.rs::read_mdic
 
-crates/e1000e/src/pch/physical_layer_device.rs::release
 
-crates/e1000e/src/pch/physical_layer_device.rs::update
 
-crates/e1000e/src/pch/physical_layer_device.rs::write
 
-crates/e1000e/src/pch/registers.rs::FEXTNVM11
 
-crates/e1000e/src/pch/registers.rs::RXDCTL
 
-crates/e1000e/src/pch/reset.rs
 
-crates/e1000e/src/pch/sequence.rs
 
-crates/e1000e/src/pch/sequence.rs::Error
 
-crates/e1000e/src/pch/sequence.rs::Note
 
-crates/e1000e/src/pch/sequence.rs::Reached
 
-crates/e1000e/src/pch/sequence.rs::global_reset
 
-crates/e1000e/src/pch/sequence.rs::transmit_errata
 
-crates/e1000e/src/pch/simulator.rs::Sim
 
-crates/e1000e/src/pch/simulator.rs::Start
 
-crates/e1000e/src/pch/simulator.rs::new
 
-crates/e1000e/src/pch/tests.rs
 
-crates/e1000e/src/pch/ulp.rs
 
-crates/e1000e/src/pch/ulp.rs::done
 
-crates/e1000e/src/pch/ulp.rs::release
 
-crates/e1000e/src/pch/ulp.rs::request
 
-crates/e1000e/src/proofs.rs
+
+crates/e1000e/src/platform_controller_hub/flush.rs::FEXTNVM11_DISABLE_MULR_FIX
+
+crates/e1000e/src/platform_controller_hub/flush.rs::required
+
+crates/e1000e/src/platform_controller_hub/flush.rs::rxdctl
+
+crates/e1000e/src/platform_controller_hub/flush.rs::tail_after
+
+crates/e1000e/src/platform_controller_hub/hardware_access.rs::is_pch
+
+crates/e1000e/src/platform_controller_hub/non_volatile_memory.rs::DONE
+
+crates/e1000e/src/platform_controller_hub/non_volatile_memory.rs::ERROR
+
+crates/e1000e/src/platform_controller_hub/non_volatile_memory.rs::Error
+
+crates/e1000e/src/platform_controller_hub/non_volatile_memory.rs::GO
+
+crates/e1000e/src/platform_controller_hub/non_volatile_memory.rs::WORDS
+
+crates/e1000e/src/platform_controller_hub/non_volatile_memory.rs::read
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::ERROR
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::Error
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::POLL_MICROSECONDS
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::Plan
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::READY
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::Swflag
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::id_at
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::plan
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::read
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::read_mdic
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::release
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::update
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::write
+
+crates/e1000e/src/platform_controller_hub/registers.rs::FEXTNVM11
+
+crates/e1000e/src/platform_controller_hub/registers.rs::RXDCTL
+
+crates/e1000e/src/platform_controller_hub/sequence.rs::Error
+
+crates/e1000e/src/platform_controller_hub/sequence.rs::Note
+
+crates/e1000e/src/platform_controller_hub/sequence.rs::Reached
+
+crates/e1000e/src/platform_controller_hub/sequence.rs::global_reset
+
+crates/e1000e/src/platform_controller_hub/sequence.rs::transmit_errata
+
+crates/e1000e/src/platform_controller_hub/simulator.rs::Sim
+
+crates/e1000e/src/platform_controller_hub/simulator.rs::Start
+
+crates/e1000e/src/platform_controller_hub/simulator.rs::new
+
+crates/e1000e/src/platform_controller_hub/ultra_low_power.rs::done
+
+crates/e1000e/src/platform_controller_hub/ultra_low_power.rs::release
+
+crates/e1000e/src/platform_controller_hub/ultra_low_power.rs::request
 
 crates/e1000e/src/registers.rs::CTRL
 
@@ -2371,7 +2314,6 @@ crates/e1000e/src/registers.rs::TDT
 
 crates/e1000e/src/registers.rs::TIPG
 
-crates/e1000e/src/tests.rs
 
 crates/elf/src/error.rs::Error
 

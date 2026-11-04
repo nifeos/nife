@@ -56,7 +56,7 @@
 name: undefined-behavior check
 
 # Observed failing: 2026-09-28, run 36420045162: Miri reported Undefined Behavior (an unaligned
-#   `&AtomicU64` at crates/current_cpu_contract/src/lib.rs:273) and the job went red. See
+#   `&AtomicU64` in the word reader of crates/current_cpu_contract/src/lib.rs) and the job went red. See
 #   notes/observed-failing.md.
 
 on:

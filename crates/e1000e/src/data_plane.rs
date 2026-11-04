@@ -1,7 +1,8 @@
 //! **The data plane**: the regions and tails a driver supplies, and the receive and transmit loop
 //! over them.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: ratified 2026-11-03 (UTC), #3145. Ruled in the group E1 ruling on e1000e's module names;
+//! kept as it stands.
 
 use super::*;
 
@@ -180,7 +181,7 @@ impl DataPlane {
             d,
             self.physical_address + layout::transmit_buffer(self.transmit_next),
         );
-        region.write_u64(d + 8, transmit_word(frame.len() as u16));
+        region.write_u64(d + 8, transmit_descriptor_command_word(frame.len() as u16));
         tails.barrier();
         self.transmit_next = next;
         tails.set_transmit_tail(u32::from(next));
@@ -200,7 +201,7 @@ impl DataPlane {
     fn reclaim(&mut self, region: &impl DirectMemoryAccessRegion) {
         while self.transmit_clean != self.transmit_next {
             let word = region.read_u64(layout::transmit_descriptor(self.transmit_clean) + 8);
-            if (word >> 32) as u8 & TRANSMIT_STATUS_DD == 0 {
+            if (word >> 32) as u8 & TRANSMIT_STATUS_DESCRIPTOR_DONE == 0 {
                 break;
             }
             self.transmit_clean = (self.transmit_clean + 1) % TRANSMIT_ENTRIES;

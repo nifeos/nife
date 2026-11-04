@@ -1,7 +1,7 @@
 //! **The data plane**: the regions and tails a driver supplies, and the receive and transmit loop
 //! over them.
 //!
-//! Name: provisional, decided by the maintainer; reversing costs one pull request.
+//! Name: ratified 2026-11-03 (UTC), #3122.
 
 use super::*;
 
@@ -218,7 +218,7 @@ impl DataPlane {
             let descriptor_word_3 = (region
                 .read_u64(layout::transmit_descriptor(self.transmit_clean) + 8)
                 >> 32) as u32;
-            if descriptor_word_3 & TDES3_OWN != 0 {
+            if descriptor_word_3 & TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE != 0 {
                 break;
             }
             self.transmit_clean = (self.transmit_clean + 1) % TRANSMIT_ENTRIES;
