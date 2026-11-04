@@ -53,7 +53,7 @@ real `sched::delete_current_cap`.
 
 ### Escape 1: a server deletes its own capability (net_stack-shaped)
 
-`net_stack` (`components/src/net_stack.rs:227`) is reachable by any program whose manifest declares
+`net_stack` (`server` in `components/src/socket_server.rs`) is reachable by any program whose manifest declares
 network (the progenitor grants `WRITE` at `grant_plan::NETWORK_SLOT`). Its `OP_ATTACH_PAGE_FRAME`
 does `map_page_frame(N, ...)` then `cap_delete(N)`, `N` the received slot, with no guard. Its own
 capabilities sit at low fixed slots (report, NIC IRQ, virtio, budget, the STACK endpoint). The
@@ -77,7 +77,7 @@ and kills networking for every client.
 `SEND` syscall carries no badge: it calls `sched::ipc_send(ep, [a0,a1,a2])` with no badge argument
 and `wide` fills word 3 with 0. So a client that `SEND`s on its per-window badged `FILE` capability
 instead of `CALL`ing arrives as badge 0, and `subtree_scope::Bindings::of(0)` returns
-`Binding::Open` unconditionally (`crates/subtree_scope/src/lib.rs:243`). The server then admits any
+`Binding::Open` unconditionally (`Bindings::of` in `crates/subtree_scope/src/lib.rs`). The server then admits any
 handle with root authority. The attack confirmed the kernel half:
 
 ```

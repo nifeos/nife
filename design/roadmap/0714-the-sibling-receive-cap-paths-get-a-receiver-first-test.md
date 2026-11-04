@@ -58,8 +58,8 @@ Each patch under `system_tests/falsifications/` reverts milestone 634's `cap_del
 
 | test | exit | red at |
 |---|---|---|
-| interrupt | 1 | `recv_cap_attack_tests.rs:525`, `an interrupt signal handed the receiver x1 = 0 on the receiver-first order` |
-| death | 1 | `recv_cap_attack_tests.rs:593`, `a death message handed the supervisor x1 = 4294967302 on the receiver-first order` |
+| interrupt | 1 | `an_interrupt_signal_received_by_receive_capability_delivers_no_capability_whichever_side_parks_first` in `receive_capability_attack_tests.rs`, `an interrupt signal handed the receiver x1 = 0 on the receiver-first order` |
+| death | 1 | `a_death_message_received_by_receive_capability_delivers_no_capability_whichever_side_parks_first` in `receive_capability_attack_tests.rs`, `a death message handed the supervisor x1 = 4294967302 on the receiver-first order` |
 
 Unpatched, the filter `recv_cap_attack` ran 7 tests, 7 passed, exit 0. The controls (signal-first,
 corpse-first) are green under the patch, so the red is about the order and not the fixture. The first

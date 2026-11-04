@@ -2133,9 +2133,7 @@ crates/e1000e/src/control_registers.rs::tctl
 
 crates/e1000e/src/control_registers.rs::tipg
 
-crates/e1000e/src/layout.rs::BYTES
 
-crates/e1000e/src/layout.rs::PAGES
 
 
 

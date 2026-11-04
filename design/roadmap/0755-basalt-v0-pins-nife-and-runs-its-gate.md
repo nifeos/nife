@@ -53,8 +53,8 @@ with the gate run on it. A nife commit that fails the gate is a red pull request
 - **The red pin is deterministic.** `e7c4f0219` (624's block header carries its own number and
   branch) is on `main` through a merge commit. Its host test
   `xtask scanout::tests::the_scanout_check_rejects_text_that_is_one_letter_wrong` fails an assertion
-  on a fixed input (`xtask/src/scanout.rs:976`): in all six jobs of nife run 36808261077, three of
-  three times on a Mac, and in basalt's run above. `12890ddd9` fixed it.
+  on a fixed input (the same test, in `xtask/src/scanout.rs`): in all six jobs of nife run
+  36808261077, three of three times on a Mac, and in basalt's run above. `12890ddd9` fixed it.
 - **The first red pin was withdrawn.** `7f9bcb511` failed nife run 37212608311 on the frame ledger
   (26,670 frames kept against 26,668), but that count read 26,667 to 26,670 on the same base, so it
   need not fail every run. Its basalt run, 37224836786, was cancelled. The maintainer caught it.
