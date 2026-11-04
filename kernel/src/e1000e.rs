@@ -8,7 +8,7 @@
 //! # BUGS
 //! - Two bring-ups share this file (the 82574L's and the I219's), and QEMU proves only one.
 //! - Waiting for link is a spin of up to [`LINK_WAIT_MS`], holding a core once per wiring.
-//! - The DMA region is never returned: a wired boot keeps [`::e1000e::layout::PAGES`] pages.
+//! - The DMA region is never returned: a wired boot keeps [`::e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES`] pages.
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -131,8 +131,8 @@ pub fn bring_up() -> Result<Found, Absent> {
     );
 
     // Heads and tails at zero: the process's first act is to post receive buffers by the tail.
-    let rx = region + layout::RECEIVE_RING;
-    let tx = region + layout::TRANSMIT_RING;
+    let rx = region + layout::RECEIVE_RING_OFFSET_BYTES;
+    let tx = region + layout::TRANSMIT_RING_OFFSET_BYTES;
     c.w(registers::RDBAL, rx as u32);
     c.w(registers::RDBAH, (rx >> 32) as u32);
     c.w(registers::RDLEN, u32::from(::e1000e::RECEIVE_ENTRIES) * 16);
@@ -200,15 +200,16 @@ fn region_for(rid: u32) -> u64 {
     if base != 0 {
         return base;
     }
-    let base = crate::memory::alloc_contiguous_zeroed(layout::PAGES as usize)
-        .expect("no DMA region for the e1000e NIC")
-        .addr();
+    let base =
+        crate::memory::alloc_contiguous_zeroed(layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as usize)
+            .expect("no DMA region for the e1000e NIC")
+            .addr();
     if crate::iommu::is_active() {
         crate::iommu::confine(
             rid,
             &[paging::domain::DmaRegion {
                 base,
-                size: layout::PAGES * page_frames::FRAME_SIZE,
+                size: layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * page_frames::FRAME_SIZE,
                 writable: true,
             }],
         );
@@ -220,14 +221,14 @@ fn region_for(rid: u32) -> u64 {
 /// Zero the region, after the reset and before the rings are programmed. A stale descriptor status
 /// from a previous wiring would otherwise read as a received frame.
 fn zero(region: u64) {
-    // SAFETY: `region` is the run `region_for` allocated, `layout::BYTES` long, in the direct map.
+    // SAFETY: `region` is the run `region_for` allocated, `layout::DIRECT_MEMORY_ACCESS_REGION_BYTES` long, in the direct map.
     // The device was reset just before this, so it is not DMA-ing into it, and the service refuses
     // a new wiring while the previous process lives, so no process has it mapped.
     unsafe {
         core::ptr::write_bytes(
             mmu::phys_to_virt(region) as *mut u8,
             0,
-            layout::BYTES as usize,
+            layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize,
         );
     }
 }
@@ -261,7 +262,7 @@ fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, reg
     if !flush::required(status(), c.r(registers::TDLEN)) {
         return;
     }
-    let ring = region + layout::TRANSMIT_RING;
+    let ring = region + layout::TRANSMIT_RING_OFFSET_BYTES;
     let tdba = u64::from(c.r(registers::TDBAL)) | u64::from(c.r(registers::TDBAH)) << 32;
     if tdba != ring {
         crate::println!(

@@ -24,8 +24,8 @@ fn a_delivered_frame_always_fits_the_buffer_and_the_room() {
 #[kani::proof]
 fn every_ring_offset_is_inside_the_region() {
     let i: u16 = kani::any();
-    assert!(layout::receive_descriptor(i) + 16 <= layout::TRANSMIT_RING);
-    assert!(layout::transmit_descriptor(i) + 16 <= layout::RECEIVE_BUFFERS);
-    assert!(layout::receive_buffer(i) + BUFFER_BYTES <= layout::TRANSMIT_BUFFERS);
-    assert!(layout::transmit_buffer(i) + BUFFER_BYTES <= layout::BYTES);
+    assert!(layout::receive_descriptor(i) + 16 <= layout::TRANSMIT_RING_OFFSET_BYTES);
+    assert!(layout::transmit_descriptor(i) + 16 <= layout::RECEIVE_BUFFERS_OFFSET_BYTES);
+    assert!(layout::receive_buffer(i) + BUFFER_BYTES <= layout::TRANSMIT_BUFFERS_OFFSET_BYTES);
+    assert!(layout::transmit_buffer(i) + BUFFER_BYTES <= layout::DIRECT_MEMORY_ACCESS_REGION_BYTES);
 }
