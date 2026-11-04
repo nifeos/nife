@@ -14,7 +14,9 @@ made between calls, so a wrong answer cannot steer what the generator does next.
 ## The oracles
 
 - The table diff. A slot may empty freely. It may fill only four ways: `RETYPE_OBJ` (the object's
-  page in the fuzzer's own region), `BADGE` (the same object, restamped), `SLICE` (a sub-run of a
+  page in the fuzzer's own region; a process also consumes the address space it names, so its
+  space slot must have held one with `WRITE` and must no longer hold it, and its rights stay within
+  the region capability's), `BADGE` (the same object, restamped), `SLICE` (a sub-run of a
   held frame at its rights, from a capability holding `GRANT`), or `RECEIVE_CAPABILITY`. A `RECEIVE_CAPABILITY`
   fill must be a delegation the conductor watched leave a sender, no wider and with the same badge,
   or the `Reply` of a parked caller. Any other fill, a plain `RECEIVE` included, is an escape.
@@ -24,6 +26,10 @@ made between calls, so a wrong answer cannot steer what the generator does next.
   carries `REPLY_DELIVERED` exactly when the fill is a `Reply`.
 - The badge. Everything drained off the server endpoint carries a fuzzer's badge or one it minted
   under the conductor's eye. Badge 0 is the shape of #1494.
+- Replaced slots. A slot that was full and holds a different object after a call is judged as a
+  fill, since a process retype can file the process in the slot its address space was deleted from.
+- Held objects. Every endpoint, notification, timer, process, address space and thread the fuzzer
+  holds has its page inside a granted region.
 - The witness. It holds only slot 0, which is never named, so every `SYS_INVOKE` it makes must fail.
 - The page oracle. Every mapping lies in the spawned pages or the 32-page playground, and every
   frame behind them lies in a granted region or one of the two gift frames.
