@@ -3856,6 +3856,12 @@ python3 helpers/mutation_kernel_census.py --selftest >/dev/null
 echo "==> the shared scope/architect-label merge-base resolution"
 helpers/scope-merge-base-selftest.sh >/dev/null
 
+# The heavy gates run only in the merge queue (provisional, ruled 2026-11-03 UTC): the draft gates of
+# ci.yml and verify.yml ask helpers/full_ci.py whether a run takes them. Its rules are fixtures here,
+# with no network, since only a real pull request exercises the label read.
+echo "==> a pull request skips the heavy gates unless it carries full-ci"
+python3 helpers/full_ci.py --selftest >/dev/null
+
 # A magic or a public ABI number that moves owes its version constant in the same change (milestone
 # 956 step 4, calef's ruling of 2026-10-29 UTC, PR #2852, question 5). The selftest drives the rules
 # as fixtures and a scratch repository; the check reads this branch's diff against the merge base.

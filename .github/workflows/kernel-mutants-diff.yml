@@ -1,7 +1,7 @@
 name: kernel mutants (diff-scoped)
 
 # **Part 3 of roadmap 955 (the kernel and its programs are mutated under QEMU)**: every kernel and
-# `components` pull request gets a mutant report, the gap milestone 924 (a survivor on a pull
+# `components` change gets a mutant report when it lands on `main`, the gap milestone 924 (a survivor on a pull
 # request's own lines cannot merge untriaged) leaves when its gate passes a kernel diff with
 # "no mutants: outside the corpus". cargo-mutants lists the mutants on
 # the diff's own lines, helpers/mutation_kernel_diff.py filters them to the corpus, routes each
@@ -32,9 +32,8 @@ name: kernel mutants (diff-scoped)
 # runner, and the plan job refuses a pull request from a fork, so nothing here runs on owned
 # hardware (a fork's pull request never may) and no fork burns the pool.
 #
-# **No draft runs.** The same draft gate mutation-gate.yml argues for: lanes push to drafts all
-# day, and the check runs when the pull request is marked ready. Like every skip here it fails
-# toward running.
+# **The draft gate stays for a pull_request trigger brought back.** On a push or a dispatch it
+# answers "run"; on a pull request it would skip drafts, the gate mutation-gate.yml argues for.
 #
 # **Dispatch names both ends of the diff, and checks the branch head out.** A `workflow_dispatch`
 # carries `base` and `tip`; the diff is `base..tip` and nothing else, while the checkout is the
@@ -44,9 +43,8 @@ name: kernel mutants (diff-scoped)
 # directory`, because the tip predates the helper. The input range then has to match the head's
 # tree, and two already-standing checks hold that line honestly: cargo-mutants' `--in-diff` refuses
 # a diff whose content no longer matches the source (the plan job fails, never passes), and a patch
-# that drifts gets the driver's `stale` verdict. On a `pull_request` event the checkout is the
-# platform's merge commit, which carries whatever helper the merged tree would run, and its first
-# parent is the base, as in mutation-gate.yml. This is the deliberately
+# that drifts gets the driver's `stale` verdict. On a push the checkout is `main`'s new tip and
+# the base is the push's `before`. This is the deliberately
 # small proof path: a dispatch whose diff is one or two mutants, one architecture.
 #
 # Name: provisional. An architect names things.
@@ -69,9 +67,17 @@ name: kernel mutants (diff-scoped)
 #   is a failed run on this runner. A run with nothing to mutate now sends one sentinel entry, and
 #   the shard job turns it into an honest green "nothing to mutate".
 
+# **A push to `main`, not a pull request.** This check is advisory: it is not in ruleset
+# 19596094's required list (read 2026-11-03 UTC), and no required job reads its result. On a pull
+# request it took up to ten arm64 shards from the hosted pool the merge queue's required jobs wait
+# in, about 214 runner-minutes over its last 30 pull request runs on 2026-11-03 (UTC), for a
+# report nothing gated on. It now reports on what landed: the diff is the push's `before..after`,
+# so a merge-queue batch of several pull requests is mutated as one diff, under the same shard cap.
+# The report arrives after the merge rather than before it, which is the cost; promoting the check
+# to a required pull request gate would bring the pull_request trigger back with it.
 on:
-  pull_request:
-    types: [opened, reopened, synchronize, ready_for_review]
+  push:
+    branches: [main]
     paths:
       - kernel/**
       - components/**
@@ -93,9 +99,11 @@ on:
 permissions:
   contents: read
 
+# A dispatch on a branch supersedes its own earlier run; a push to `main` never cancels another,
+# for ci.yml's reason (its concurrency comment): the SHA makes each `main` group unique.
 concurrency:
-  group: kernel-mutants-diff-${{ github.ref }}
-  cancel-in-progress: true
+  group: kernel-mutants-diff-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.sha || 'tip' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/heads/gh-readonly-queue/') }}
 
 jobs:
   draft-gate:
@@ -152,8 +160,14 @@ jobs:
         id: ends
         run: |
           tip="${{ inputs.tip }}"
+          before="${{ github.event.before }}"
           if [ -n "$tip" ]; then
             base="${{ inputs.base }}"
+          elif [ "${{ github.event_name }}" = "push" ] && [ -n "$before" ] \
+              && [ "$before" != "0000000000000000000000000000000000000000" ]; then
+            # The whole push: a batch lands as one push, and HEAD^1 would be its last entry alone.
+            tip="HEAD"
+            base="$before"
           else
             tip="HEAD"
             parents="$(git rev-list --parents -n 1 HEAD | wc -w)"

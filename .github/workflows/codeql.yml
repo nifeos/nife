@@ -39,17 +39,19 @@ name: codeql
 # alerts and the 43 hand dismissals of 2026-10-07 carry forward instead of reopening under a new
 # category.
 
-# Triggers mirror ci.yml's pull_request activity types (see ci.yml's header for the full record):
-# `ready_for_review` is not a default activity type, and without it the draft guard below fails
-# open, the failure #567 sat mergeable on for five days. `merge_group` is deliberately absent:
-# these checks are not required (notes/repo-hardening.md again), so the queue waits on nothing
-# here, and four CodeQL runners per batch would buy no gate. A pull request is scanned by its own
-# runs and the merge lands into a `push` run on `main`.
+# **`main` is scanned on every push; a pull request is not scanned.** These checks are not
+# required (notes/repo-hardening.md again, and ruleset 19596094's required list, read 2026-11-03
+# UTC), no required job depends on them, and the ruleset has no code-scanning rule, so a pull
+# request's scan gated nothing. It cost the hosted pool four analysis jobs and four uploads per
+# ready push, about 215 runner-minutes over the last 30 pull request runs on 2026-11-03 (UTC),
+# while the merge queue's required jobs waited for runners in the same 60-job pool. Every change
+# still reaches a scan: the merge lands as a push to `main`, and the scan of that push diffs
+# against the push's own `before`, so a batch of several pull requests is classified whole. An
+# alert now opens after the merge rather than on the pull request, which is the cost.
+# `merge_group` stays absent: four CodeQL runners per batch would buy no gate either.
 on:
   push:
     branches: [main]
-  pull_request:
-    types: [opened, reopened, synchronize, ready_for_review]
   workflow_dispatch:
 
 # Least privilege: the workflow default is `contents: read`; the upload jobs add the one write
@@ -65,11 +67,10 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/heads/gh-readonly-queue/') }}
 
 jobs:
-  # The live draft state and the prose-only classification, decided once. This is ci.yml's `gate`
-  # job with the A′ half removed (this workflow never runs on merge-group refs, so there is no
-  # earlier run of it a push to `main` could cite); its header comment carries the full reasoning:
-  # the event payload's `draft` is a snapshot that has been wrong, so the API is asked what the
-  # pull request is right now, and the job fails toward running.
+  # The prose-only classification, decided once. This is ci.yml's `gate` job with the A′ half
+  # removed (this workflow never runs on merge-group refs, so there is no earlier run of it a push
+  # to `main` could cite). With no pull request trigger its draft half always answers "run"; it
+  # stays so that a pull_request trigger added back skips drafts as before.
   #
   # **The prose-only half is why this job exists here at all** (calef, 2026-10-08, on #1870:
   # `Analyze (rust)` spent eight minutes on a six-file roadmap-docs pull request). The classifier
@@ -118,7 +119,9 @@ jobs:
         if: steps.state.outputs.run != 'false'
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          # On a push, the commit `main` held before it: a merge-queue batch lands as one push whose
+          # tip is the last pull request's merge, so `HEAD~1` alone would classify that one only.
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
         run: |
           # The base, resolved exactly as ci.yml's gate resolves it, for the same reasons.
           base="$(helpers/scope-merge-base.sh \

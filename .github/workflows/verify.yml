@@ -51,7 +51,14 @@ on:
   # than `pull_request`. `verify (Kani proofs)` is a required check, so without this the queue waits
   # on a run that never starts. See the longer note in ci.yml.
   merge_group:
+  # `full_ci` false skips the proofs, as on a pull request; ci.yml's input says why it exists.
   workflow_dispatch:
+    inputs:
+      full_ci:
+        description: "run the proofs too (false: only the set a pull request runs)"
+        type: boolean
+        required: false
+        default: true
 
 permissions:
   contents: read
@@ -97,8 +104,13 @@ jobs:
   # this tree and the push cites that run instead of re-proving it for ~47 minutes on a starved
   # runner pool. ci.yml's `gate` carries the evidence (the SHA check against history, the #1213
   # eviction) and the fail-safe cases; they are identical here.
+  #
+  # A merge group runs no gate job, for ci.yml's reason (its gate comment): the scope job below
+  # starts at once and asks the prose question itself, so the group waits for a runner once for
+  # the scope, once for the shards and once for the aggregate.
   gate:
     name: draft gate
+    if: ${{ github.event_name != 'merge_group' }}
     runs-on: ubuntu-26.04
     # `actions: read` is for the push branch below: listing this workflow's merge_group runs. The
     # job-level block replaces the workflow's, so the reads the draft half already relied on are
@@ -110,6 +122,7 @@ jobs:
     outputs:
       run: ${{ steps.state.outputs.run }}
       prose: ${{ steps.prose.outputs.prose }}
+      heavy: ${{ steps.heavy.outputs.heavy }}
     timeout-minutes: 10
     steps:
       - name: Start the job wall-time clock
@@ -164,7 +177,8 @@ jobs:
         if: steps.state.outputs.run != 'false'
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          # On a push, `main` before it: a batch lands as one push, and `HEAD~1` is its last entry.
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
         run: |
           base="$(helpers/scope-merge-base.sh \
               "$BASE_REF" \
@@ -173,6 +187,19 @@ jobs:
           [ -n "$base" ] && [ "$base" != "$(git rev-parse HEAD)" ] || base="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)"
           echo "==> classifying $base..HEAD"
           python3 helpers/prose_only.py classify "$base"
+      # The proofs are heavy gates and run only in the merge queue (provisional, ruled 2026-11-03
+      # UTC; ci.yml's comment above `test-host` has the rule). On a pull request without the
+      # `full-ci` label every job below skips by condition, which reports Success, and the merge
+      # group runs them by event name whatever this step answers.
+      - name: Does this run take the heavy gates?
+        id: heavy
+        if: steps.state.outputs.run != 'false'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          FULL_CI_INPUT: ${{ inputs.full_ci }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 helpers/full_ci.py decide
       # A draft or an already-tested push skips the checkout, so there is no helper to run, and
       # those runs take seconds.
       - name: Check the job's wall time against its budget
@@ -186,7 +213,7 @@ jobs:
     name: verify scope
     runs-on: ubuntu-26.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     outputs:
       needed: ${{ steps.scope.outputs.needed }}
       base: ${{ steps.scope.outputs.base }}
@@ -199,12 +226,27 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+      # The gate's prose rule in a merge group, which runs no gate job (see the gate). A prose-only
+      # group needs no proof, so the step below answers "not needed" and every shard skips.
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
       - name: Does this change need the proofs?
         id: scope
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          # On a push, `main` before it, for the gate's reason: a batch lands as one push.
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+          PROSE_ONLY_MERGE_GROUP: ${{ steps.merge-group-gate.outputs.skip }}
         run: |
           base="$BASE_SHA"
+          if [ "$PROSE_ONLY_MERGE_GROUP" = "true" ]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo "==> a prose-only merge group: nothing in it can reach a proof"
+            exit 0
+          fi
           # A dispatched run has no event base, and `HEAD~1` alone scoped it to the newest commit:
           # a lane whose last commit was documentation skipped the build its earlier commits needed
           # (#1347, 2026-09-26). Off `main`, the merge base is the whole branch; on `main` it is
@@ -245,7 +287,8 @@ jobs:
     if: >-
       !cancelled() &&
       needs.scope.outputs.needed == 'true' &&
-      needs.gate.outputs.run != 'false'
+      needs.gate.outputs.run != 'false' &&
+      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false')
     runs-on: ubuntu-26.04
     # A shard ran a 12.7-minute median and an 18.4 maximum over 284 pull-request runs, and a 21.1
     # maximum once in about 600 merge-group runs, to 2026-10-19 (UTC).
@@ -342,7 +385,8 @@ jobs:
     if: >-
       always() &&
       needs.scope.outputs.needed == 'true' &&
-      needs.gate.outputs.run != 'false'
+      needs.gate.outputs.run != 'false' &&
+      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false')
     runs-on: ubuntu-26.04-arm
     # The whole job is about a minute (above).
     # 25 minutes is the 20-minute budget plus margin, from milestone 721 (each merge-group CI job
@@ -387,7 +431,8 @@ jobs:
     if: >-
       always() &&
       needs.scope.outputs.needed == 'true' &&
-      needs.gate.outputs.run != 'false'
+      needs.gate.outputs.run != 'false' &&
+      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false')
     runs-on: ubuntu-26.04-arm
     # Cold about 3 minutes, warm under 1 (above).
     # 25 minutes is the 20-minute budget plus margin, from milestone 721 (each merge-group CI job
@@ -474,7 +519,8 @@ jobs:
       needs.scope.outputs.needed == 'true' &&
       needs.scope.outputs.falsify-shards != '[]' &&
       needs.scope.outputs.falsify-shards != '' &&
-      needs.gate.outputs.run != 'false'
+      needs.gate.outputs.run != 'false' &&
+      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false')
     runs-on: ubuntu-26.04-arm
     # 30 against the 17-minute target (20 until calef's 2026-10-07 ruling on #1802): ample, for a stale weight, a cold Kani install, or one
     # record at its own 15-minute limit. A shard that needs more is a packing input to fix (the
@@ -532,7 +578,7 @@ jobs:
   falsify:
     name: re-falsify the harnesses this change can reach
     needs: [gate, scope, falsify-shard]
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     steps:
@@ -557,9 +603,12 @@ jobs:
             *) echo "==> a re-falsify shard reported '$result'" >&2; exit 1 ;;
           esac
 
+  # **It reads `falsify-shard` itself, not the `falsify` job**, so a merge group waits for one
+  # aggregate runner after the shards rather than two in a row. Its falsify case below is the
+  # `falsify` job's judgment, kept identical; that job still reports its own name beside this one.
   verify:
     name: verify (Kani proofs)
-    needs: [gate, scope, prove, prove-kernel-aarch64, prove-kernel-riscv64, falsify]
+    needs: [gate, scope, prove, prove-kernel-aarch64, prove-kernel-riscv64, falsify-shard]
     # **`!cancelled()` is load-bearing.** Without it this job is skipped whenever a shard fails or the
     # scope job says the proofs are not needed, and a required check that never reports blocks the
     # merge forever, which notes/repo-hardening.md names as the single most likely way to get this
@@ -572,7 +621,8 @@ jobs:
     if: >-
       !cancelled() &&
       needs.gate.outputs.run != 'false' &&
-      needs.gate.outputs.prose != 'true'
+      needs.gate.outputs.prose != 'true' &&
+      (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false')
     runs-on: ubuntu-26.04
     # Reads two strings. The proving is upstream; nothing here needs a toolchain, a checkout or a
     # cache.
@@ -628,10 +678,17 @@ jobs:
           # success means a recorded falsification no longer turns its harness red (a survivor), no
           # longer applies (stale), or gave no verdict. Each of those is a proof that may have
           # stopped being able to fail, which is what this check is for.
-          falsify="${{ needs.falsify.result }}"
-          echo "falsify: $falsify"
+          falsify="${{ needs['falsify-shard'].result }}"
+          shards='${{ needs.scope.outputs.falsify-shards }}'
+          echo "falsify-shard: $falsify"
+          echo "shards: $shards"
           case "$falsify" in
             success) echo "==> every reachable falsification still turns its harness red" ;;
-            skipped) echo "==> nothing in this change can reach a falsification" ;;
-            *)       echo "==> re-falsify reported '$falsify': script/falsifications --affected-since names the record" >&2; exit 1 ;;
+            skipped)
+              # Skipped is green only when the scope job decided it: no proofs needed, or no shard.
+              if [ "${{ needs.scope.outputs.needed }}" = "true" ] && [ "$shards" != "[]" ]; then
+                echo "==> the re-falsify shards were skipped although the plan named some" >&2; exit 1
+              fi
+              echo "==> nothing in this change can reach a falsification" ;;
+            *)       echo "==> a re-falsify shard reported '$falsify': script/falsifications --affected-since names the record" >&2; exit 1 ;;
           esac

@@ -87,7 +87,7 @@ files one private security advisory per finding, and the advisory holds the find
 reproducer. §90 (the claim is a draft pull request) allows this kind of lane to claim differently,
 and the reason is exposure: a draft pull request and its pushed branch are public from the first
 commit. The record is
-[the proposal](../../../design/roadmap/proposals/fix-lanes-read-the-advisory.md).
+[the proposal](../../../design/roadmap/1014-fix-lanes-read-the-advisory.md).
 
 - **Read the advisory, and only the advisory.** No lane opens, copies, prints or moves anything under
   the fuzz host's held directory, and none looks for a credential. The advisory is the one way a lane
@@ -145,7 +145,7 @@ its driver, not a failure, because a program that waits for its users is not was
 field for it and no lint check. `helpers/consumer_census.py` counts delivered work nothing uses,
 report-only, and the maintainer runs it monthly; its counts cannot tell work not yet consumed from
 work built with no reason, so a person asks. The reasoning is in
-[the proposal](../../../design/roadmap/proposals/delivered-work-names-its-consumer.md).
+[the proposal](../../../design/roadmap/0996-delivered-work-names-its-consumer.md).
 
 ## Shared state: the tree's, and the machine's
 
