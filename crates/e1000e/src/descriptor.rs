@@ -142,7 +142,8 @@ pub fn receive_verdict(word: u64, room: usize) -> ReceiveVerdict {
     }
     let errors = (word >> 40) as u8;
     let len = (word & 0xffff) as usize;
-    let fits = (14..=MAXIMUM_FRAME_BYTES).contains(&len) && len <= room && len as u64 <= BUFFER_BYTES;
+    let fits =
+        (14..=MAXIMUM_FRAME_BYTES).contains(&len) && len <= room && len as u64 <= BUFFER_BYTES;
     if status & RECEIVE_STATUS_END_OF_PACKET == 0 || errors & RECEIVE_FRAME_ERROR_MASK != 0 || !fits
     {
         return ReceiveVerdict::Drop;

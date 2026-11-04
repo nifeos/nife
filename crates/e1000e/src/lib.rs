@@ -53,10 +53,10 @@ pub use control_registers::{
 pub use data_plane::{DataPlane, DirectMemoryAccessRegion, Tails, TransmitError};
 use descriptor::*;
 pub use descriptor::{
-    BUFFER_BYTES, MAXIMUM_FRAME_BYTES, RECEIVE_ENTRIES, RECEIVE_FRAME_ERROR_MASK, RECEIVE_QUEUE_PAGE,
-    RECEIVE_STATUS_DESCRIPTOR_DONE, RECEIVE_STATUS_END_OF_PACKET, ReceiveVerdict, TAIL_IN_PAGE,
-    TRANSMIT_COMMAND, TRANSMIT_ENTRIES, TRANSMIT_QUEUE_PAGE, TRANSMIT_STATUS_DESCRIPTOR_DONE,
-    receive_verdict, transmit_descriptor_command_word,
+    BUFFER_BYTES, MAXIMUM_FRAME_BYTES, RECEIVE_ENTRIES, RECEIVE_FRAME_ERROR_MASK,
+    RECEIVE_QUEUE_PAGE, RECEIVE_STATUS_DESCRIPTOR_DONE, RECEIVE_STATUS_END_OF_PACKET,
+    ReceiveVerdict, TAIL_IN_PAGE, TRANSMIT_COMMAND, TRANSMIT_ENTRIES, TRANSMIT_QUEUE_PAGE,
+    TRANSMIT_STATUS_DESCRIPTOR_DONE, receive_verdict, transmit_descriptor_command_word,
 };
 pub use supported_devices::{DEVICE_IDS, VENDOR_INTEL, is_supported_device, model_name};
 
