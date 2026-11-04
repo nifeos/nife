@@ -1,9 +1,11 @@
 //! The crate's host tests, kept out of `lib.rs` so the crate root stays an index of its modules as
 //! the tests grow.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3135. The crate's host tests.
 
 use crate::bench::{self, WriteVerdict};
 use crate::card;
-use crate::host::{Error, Host};
+use crate::host_controller::{Error, Host};
 use crate::sd::{self, BLOCK, InitializationError, IoError, Kind};
 use crate::simulator::{CardKind, Sim};
 
@@ -211,7 +213,7 @@ fn the_read_matrix_reads_every_row_and_never_writes() {
 /// `STATUS` alone, count every full read, and start again at `clear`.
 #[test]
 fn the_watch_counts_status_fill_and_nothing_else() {
-    use crate::host::Registers;
+    use crate::host_controller::Registers;
     /// `STATUS` reads `status`; every other register reads all ones.
     struct Fixed {
         status: u32,
@@ -294,7 +296,7 @@ fn a_card_with_no_gap_is_refused_and_not_written() {
 fn a_sixteen_bit_queue_is_refused_at_the_door() {
     // A controller whose HCON says 16-bit, over the sim.
     struct Narrow(Sim);
-    impl crate::host::Registers for Narrow {
+    impl crate::host_controller::Registers for Narrow {
         fn read(&mut self, o: u32) -> u32 {
             if o == crate::registers::HCON {
                 0
