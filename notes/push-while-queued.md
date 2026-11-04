@@ -27,6 +27,19 @@ override. Anything else, including `gh` missing, unauthenticated, offline or Gra
 warning line and the push goes. It runs before the empty-push skip, because an empty push to a
 queued branch dequeues it too.
 
+### The way through: `script/push --requeue` For a pull request that is queued or has auto-merge
+on, `script/push --requeue` dequeues it (`dequeuePullRequest`, read back), pushes, waits for the
+read-back that origin holds HEAD, and then arms it again through `helpers/arm.sh`. A pull request
+that was not armed before stays unarmed. If the push does not land, nothing is re-armed and the
+output says so. Without the flag the hook keeps refusing, so a push that should not re-arm stays
+deliberate. `helpers/arm.sh <n>` is the one arming entry point: it refuses a draft and a pull request
+wearing `needs-architect`, `held-by-lane` or `held-for-red-trunk` (defined once, in
+`helpers/hold-labels.sh`, which the drain also reads), runs `gh pr merge --auto --merge`, and then
+reads GitHub back. Armed means `isInMergeQueue` is true or `autoMergeRequest` is not null (on a clean
+pull request the merge enqueues directly and `autoMergeRequest` stays null); neither is exit 1. The
+drain's `unarmed` cause already reports a ready, unheld pull request left unarmed for 30 minutes
+after a push, once per episode, and it arms nothing.
+
 ## EXAMPLES
 
     $ git push --force-with-lease
@@ -37,10 +50,22 @@ queued branch dequeues it too.
         gh pr merge 1617 --auto --merge
       If this push is intended: NIFE_PUSH_QUEUED=1 git push ...
 
+    $ script/push --requeue
+    push-requeue: dequeued #1617.
+    push: origin/lane/x is at 0123456789ab, HEAD's commit.
+    arm: #1617 is armed (in the merge queue).
+
+    $ script/push --requeue            # the pull request carries needs-architect
+    push: origin/lane/x is at 0123456789ab, HEAD's commit.
+    arm: NOT ARMED. #1617 carries `needs-architect`, which holds it out of the queue; ...
+
     $ NIFE_PUSH_QUEUED=1 git push      # you mean it; the queue entry is lost
 
 The self-test (`helpers/push-queued-selftest.sh`, run by `script/lint`) uses a fake `gh` on PATH for
-queued, not queued, `gh` failing, the override, no `gh` and a tag push.
+queued, not queued, `gh` failing, the override, no `gh` and a tag push. The `--requeue` self-test
+(`helpers/push-requeue-selftest.sh`) uses a stub `gh` and `git`: the order dequeue, push, arm; each
+hold refusing with its label named; an unlanded push arming nothing; and a re-arm that does nothing
+failing loudly.
 
 ## BUGS
 

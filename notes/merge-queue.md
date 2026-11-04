@@ -278,7 +278,9 @@ has the cases that motivated it.
 
 ## A push to a queued branch
 
-Re-arm after the last push: [push-while-queued.md](push-while-queued.md).
+Re-arm after the last push, or let `script/push --requeue` dequeue, push and arm in one step
+(`helpers/arm.sh` refuses a held pull request and fails unless GitHub shows it armed):
+[push-while-queued.md](push-while-queued.md).
 
 ## BUGS
 

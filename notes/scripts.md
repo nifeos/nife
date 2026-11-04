@@ -133,6 +133,7 @@ Full rows: the appendices above.
 | script | what it does |
 |---|---|
 | `script/lint-fleet` | The fleet tooling's checks, apart from `script/lint`; CI runs both. |
+| `script/push [--requeue]` | Push HEAD and confirm origin holds it. `--requeue` dequeues a queued pull request first and arms it again after (`helpers/arm.sh`, which refuses a held one). |
 | `script/read-advisory <id>` | A fix lane reads one held finding's private advisory. |
 | `script/claim <branch-name>` | Cut a lane's branch, worktree and draft pull request; sets `nife.fleet`. Push with `script/push`. `--debt-paydown` or `--new-work` ([debt-paydown.md](debt-paydown.md)). |
 | `script/preflight-queue` | Replay the merge queue locally before a group build does. |
