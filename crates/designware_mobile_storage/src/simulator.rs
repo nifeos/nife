@@ -14,7 +14,7 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::vec::Vec;
 
-use crate::host::Registers;
+use crate::host_controller::Registers;
 use crate::internal_direct_memory_access::{
     DES0_CH, DES0_DIC, DES0_LD, DES0_OWN, DES1_BS1_MASK, DirectMemoryAccessRegion,
 };

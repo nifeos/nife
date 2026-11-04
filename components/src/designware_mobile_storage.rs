@@ -30,7 +30,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use designware_mobile_storage::host::{Host, Registers};
+use designware_mobile_storage::host_controller::{Host, Registers};
 use designware_mobile_storage::sd::{self, Card};
 use designware_mobile_storage::{command as c, registers};
 use driver_process_contract::designware_mobile_storage::{
