@@ -18,8 +18,11 @@ use crate::management_data_input_output::{self, ManagementDataInputOutput};
 use crate::motorcomm_physical_layer_device::{self, Link, Speed};
 use crate::network_interface_controller::{self as controller, Identity};
 use crate::{
-    DirectMemoryAccessRegion, Hardware, RDES3_ES, RDES3_FD, RDES3_LD, RDES3_OWN, TDES2_BUF1_LEN,
-    TDES2_IC, TDES3_OWN, Tails, layout, registers,
+    DirectMemoryAccessRegion, Hardware, RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY,
+    RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR,
+    RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE, TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK,
+    TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION, TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
+    Tails, layout, registers,
 };
 
 const LINE: u64 = 64;
@@ -484,7 +487,11 @@ impl NetworkInterfaceController {
         let tail = self.index_of_tail(base, self.receive_tail(), n);
         let mut i = self.receive_cursor;
         let mut count = 0;
-        while i != tail && self.descriptor(base + u64::from(i) * 16)[3] & RDES3_OWN != 0 {
+        while i != tail
+            && self.descriptor(base + u64::from(i) * 16)[3]
+                & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
+                != 0
+        {
             count += 1;
             i = (i + 1) % n;
         }
@@ -508,15 +515,32 @@ impl NetworkInterfaceController {
         );
         let tail = self.index_of_tail(base, self.receive_tail(), n);
         let at = base + u64::from(self.receive_cursor) * 16;
-        if self.receive_cursor == tail || self.descriptor(at)[3] & RDES3_OWN == 0 {
+        if self.receive_cursor == tail
+            || self.descriptor(at)[3] & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0
+        {
             self.status(registers::CHAN_STATUS_RBU);
             return false;
         }
         let d = self.descriptor(at);
         let buffer = u64::from(d[1]) << 32 | u64::from(d[0]);
         self.memory.device_write(buffer, wire);
-        let es = if error { RDES3_ES } else { 0 };
-        self.set_descriptor(at, [0, 0, 0, RDES3_FD | RDES3_LD | es | wire.len() as u32]);
+        let es = if error {
+            RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY
+        } else {
+            0
+        };
+        self.set_descriptor(
+            at,
+            [
+                0,
+                0,
+                0,
+                RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR
+                    | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR
+                    | es
+                    | wire.len() as u32,
+            ],
+        );
         self.status(registers::CHAN_STATUS_RI);
         self.receive_cursor = (self.receive_cursor + 1) % n;
         true
@@ -557,15 +581,19 @@ impl NetworkInterfaceController {
             }
             let at = base + u64::from(self.transmit_cursor) * 16;
             let d = self.descriptor(at);
-            if d[3] & TDES3_OWN == 0 {
+            if d[3] & TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0 {
                 self.status(registers::CHAN_STATUS_TBU);
                 return;
             }
             let buffer = u64::from(d[1]) << 32 | u64::from(d[0]);
-            let mut frame = vec![0u8; (d[2] & TDES2_BUF1_LEN) as usize];
+            let mut frame =
+                vec![0u8; (d[2] & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK) as usize];
             self.memory.device_read(buffer, &mut frame);
-            self.set_descriptor(at, [0, 0, 0, d[3] & !TDES3_OWN]);
-            if d[2] & TDES2_IC != 0 {
+            self.set_descriptor(
+                at,
+                [0, 0, 0, d[3] & !TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE],
+            );
+            if d[2] & TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION != 0 {
                 self.status(registers::CHAN_STATUS_TI);
             }
             self.transmit_cursor = (self.transmit_cursor + 1) % n;

@@ -140,7 +140,7 @@ fn a_frame_of_no_length_or_too_much_is_refused() {
 
 #[test]
 fn the_verdict_strips_the_crc_and_refuses_what_the_device_could_not_mean() {
-    let ok = RDES3_FD | RDES3_LD;
+    let ok = RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR;
     assert_eq!(
         receive_verdict(ok | 64, MAXIMUM_FRAME_BYTES),
         ReceiveVerdict::Frame(60)
@@ -159,15 +159,24 @@ fn the_verdict_strips_the_crc_and_refuses_what_the_device_could_not_mean() {
     );
     assert_eq!(receive_verdict(ok | 64, 59), ReceiveVerdict::Drop);
     assert_eq!(
-        receive_verdict(RDES3_FD | 64, MAXIMUM_FRAME_BYTES),
+        receive_verdict(
+            RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR | 64,
+            MAXIMUM_FRAME_BYTES
+        ),
         ReceiveVerdict::Drop
     );
     assert_eq!(
-        receive_verdict(ok | RDES3_ES | 64, MAXIMUM_FRAME_BYTES),
+        receive_verdict(
+            ok | RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY | 64,
+            MAXIMUM_FRAME_BYTES
+        ),
         ReceiveVerdict::Drop
     );
     assert_eq!(
-        receive_verdict(ok | RDES3_CTXT | 64, MAXIMUM_FRAME_BYTES),
+        receive_verdict(
+            ok | RECEIVE_DESCRIPTOR_WORD_3_CONTEXT_DESCRIPTOR | 64,
+            MAXIMUM_FRAME_BYTES
+        ),
         ReceiveVerdict::Drop
     );
 }
@@ -178,12 +187,23 @@ fn descriptor_words_put_ownership_in_the_high_word_of_the_second_store() {
     assert_eq!(a, 0x1_2345_6000);
     assert_eq!(
         (b >> 32) as u32,
-        RDES3_OWN | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION | RDES3_BUF1V
+        RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
+            | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION
+            | RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID
     );
     let [a, b] = transmit_descriptor_words(0x4000_0800, 60);
     assert_eq!(a, 0x4000_0800);
-    assert_eq!(b as u32, 60 | TDES2_IC);
-    assert_eq!((b >> 32) as u32, TDES3_OWN | TDES3_FS | TDES3_LS | 60);
+    assert_eq!(
+        b as u32,
+        60 | TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION
+    );
+    assert_eq!(
+        (b >> 32) as u32,
+        TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
+            | TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
+            | TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT
+            | 60
+    );
 }
 
 /// **The region's layout, in bytes**: two pages of rings, sixteen receive buffers, sixteen
@@ -214,13 +234,13 @@ fn the_region_is_two_ring_pages_then_the_buffers() {
 fn the_descriptor_bits_are_where_the_databook_puts_them() {
     assert_eq!(
         [
-            RDES3_OWN,
+            RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
             RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION,
-            RDES3_BUF1V,
-            RDES3_CTXT,
-            RDES3_FD,
-            RDES3_LD,
-            RDES3_ES
+            RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID,
+            RECEIVE_DESCRIPTOR_WORD_3_CONTEXT_DESCRIPTOR,
+            RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR,
+            RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR,
+            RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY
         ],
         [
             1 << 31,
@@ -233,7 +253,13 @@ fn the_descriptor_bits_are_where_the_databook_puts_them() {
         ]
     );
     assert_eq!(
-        [TDES2_IC, TDES3_FS, TDES3_LS, TDES3_OWN, TDES3_ES],
+        [
+            TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION,
+            TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT,
+            TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT,
+            TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
+            TRANSMIT_DESCRIPTOR_WORD_3_ERROR_SUMMARY
+        ],
         [0x8000_0000, 0x2000_0000, 0x1000_0000, 0x8000_0000, 0x8000]
     );
 }
