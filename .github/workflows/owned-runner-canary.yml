@@ -4,7 +4,10 @@ name: owned runner canary
 #   an egress host that is blocked, which cannot be staged from a branch. helpers/owned_runner_check.py
 #   --selftest plants the two ways a workflow can send an owned job where it must not go (a
 #   pull_request trigger, and a missing merge_group/push guard) and requires both to fail; the real
-#   first run after merge is the first observation of the canary itself. notes/owned-runners.md.
+#   first run after merge is the first observation of the canary itself. The isolation jobs
+#   (canary-owned-write, -check, -isolation) follow the same rule: a leak needs a dirty owned slot,
+#   which a branch cannot stage, and the selftest also requires an unguarded matrix job to fail.
+#   notes/owned-runners.md.
 
 # **A week-long comparison of an owned runner against its hosted twin** (rulings,
 # 2026-11-03 UTC: owned runners in two stages, one week of canary, a repository variable to flip
@@ -27,6 +30,11 @@ jobs:
     continue-on-error: true  # outcome: exception, the canary measures the owned pool and must never block the queue
     timeout-minutes: 15
     steps:
+      - name: Start clock
+        shell: bash
+        run: |
+          date +%s > "$RUNNER_TEMP/canary-start"
+          : > "$RUNNER_TEMP/canary-fetch-failures"
       - name: Probe
         env:
           CANARY_KIND: owned
@@ -49,18 +57,58 @@ jobs:
               t=$(date +%s)
               code=$(curl -sS -o /dev/null -m 30 -w '%{http_code}' "$url" 2>&1)
               echo "curl $url: $code ($(( $(date +%s) - t )) s)"
+              if test "$code" != 200; then
+                host=${url#https://}; host=${host%%/*}
+                echo "$host: $code" >> "$RUNNER_TEMP/canary-fetch-failures"
+              fi
             done
             echo "total: $(( $(date +%s) - start )) s"
             echo '```'
           } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
           # The summary is the record; the verdict comes from the same facts.
           test -w /dev/kvm && command -v qemu-system-x86_64 >/dev/null
+      - name: Resources
+        if: always()
+        env:
+          CANARY_JOB: canary-owned
+        shell: bash
+        run: |
+          set +e
+          start=$(cat "$RUNNER_TEMP/canary-start" 2>/dev/null || date +%s)
+          {
+            echo "### resources: $CANARY_JOB"
+            echo '```'
+            echo "runner: ${RUNNER_NAME:-unknown}"
+            echo "wall: $(( $(date +%s) - start )) s"
+            free -m
+            if test -r /sys/fs/cgroup/memory.peak; then
+              echo "cgroup memory.peak: $(cat /sys/fs/cgroup/memory.peak) bytes"
+            else
+              echo "cgroup memory.peak: absent"
+              echo "cgroup memory.current: $(cat /sys/fs/cgroup/memory.current 2>/dev/null || echo absent)"
+              echo "cgroup memory.max: $(cat /sys/fs/cgroup/memory.max 2>/dev/null || echo absent)"
+            fi
+            echo "df: HOME=$HOME, /tmp, slot volume=${GITHUB_WORKSPACE:-.}"
+            df -h "$HOME" /tmp "${GITHUB_WORKSPACE:-.}"
+            echo '```'
+            if test -s "$RUNNER_TEMP/canary-fetch-failures"; then
+              echo "fetch failures (host: status):"
+              sed 's/^/- /' "$RUNNER_TEMP/canary-fetch-failures"
+            else
+              echo "fetch failures: none recorded"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY" 2>&1
 
   canary-hosted:
     if: github.event_name == 'merge_group' || github.event_name == 'push'
     runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
+      - name: Start clock
+        shell: bash
+        run: |
+          date +%s > "$RUNNER_TEMP/canary-start"
+          : > "$RUNNER_TEMP/canary-fetch-failures"
       - name: Probe
         env:
           CANARY_KIND: hosted
@@ -83,9 +131,233 @@ jobs:
               t=$(date +%s)
               code=$(curl -sS -o /dev/null -m 30 -w '%{http_code}' "$url" 2>&1)
               echo "curl $url: $code ($(( $(date +%s) - t )) s)"
+              if test "$code" != 200; then
+                host=${url#https://}; host=${host%%/*}
+                echo "$host: $code" >> "$RUNNER_TEMP/canary-fetch-failures"
+              fi
             done
             echo "total: $(( $(date +%s) - start )) s"
             echo '```'
           } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
           # The hosted twin reports the same facts but never fails: it is the reference.
           true
+      - name: Resources
+        if: always()
+        env:
+          CANARY_JOB: canary-hosted
+        shell: bash
+        run: |
+          set +e
+          start=$(cat "$RUNNER_TEMP/canary-start" 2>/dev/null || date +%s)
+          {
+            echo "### resources: $CANARY_JOB"
+            echo '```'
+            echo "runner: ${RUNNER_NAME:-unknown}"
+            echo "wall: $(( $(date +%s) - start )) s"
+            free -m
+            if test -r /sys/fs/cgroup/memory.peak; then
+              echo "cgroup memory.peak: $(cat /sys/fs/cgroup/memory.peak) bytes"
+            else
+              echo "cgroup memory.peak: absent"
+              echo "cgroup memory.current: $(cat /sys/fs/cgroup/memory.current 2>/dev/null || echo absent)"
+              echo "cgroup memory.max: $(cat /sys/fs/cgroup/memory.max 2>/dev/null || echo absent)"
+            fi
+            echo "df: HOME=$HOME, /tmp, slot volume=${GITHUB_WORKSPACE:-.}"
+            df -h "$HOME" /tmp "${GITHUB_WORKSPACE:-.}"
+            echo '```'
+            if test -s "$RUNNER_TEMP/canary-fetch-failures"; then
+              echo "fetch failures (host: status):"
+              sed 's/^/- /' "$RUNNER_TEMP/canary-fetch-failures"
+            else
+              echo "fetch failures: none recorded"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY" 2>&1
+
+
+  # Isolation, part one: write a marker named for this run to three places an earlier job could
+  # leave behind. The container is rootless; sudo is tried when present. A path that cannot be
+  # written is a finding in the summary, not a failure.
+  canary-owned-write:
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    runs-on: [nife-owned-x86_64]
+    continue-on-error: true  # outcome: exception, the canary measures the owned pool and must never block the queue
+    timeout-minutes: 10
+    outputs:
+      runner: ${{ steps.write.outputs.runner }}
+    steps:
+      - name: Start clock
+        shell: bash
+        run: |
+          date +%s > "$RUNNER_TEMP/canary-start"
+          : > "$RUNNER_TEMP/canary-fetch-failures"
+      - name: Write markers
+        id: write
+        shell: bash
+        run: |
+          set +e
+          echo "runner=${RUNNER_NAME:-unknown}" >> "$GITHUB_OUTPUT"
+          {
+            echo "## canary-owned-write"
+            echo '```'
+            echo "runner: ${RUNNER_NAME:-unknown}"
+            echo "id: $(id)"
+            for dir in "$HOME" /tmp /etc; do
+              f="$dir/nife-canary-marker-$GITHUB_RUN_ID"
+              if echo "$RUNNER_NAME" > "$f" 2>/dev/null; then
+                echo "$dir: written"
+              elif command -v sudo >/dev/null 2>&1 \
+                  && sudo -n sh -c "echo '$RUNNER_NAME' > '$f'" 2>/dev/null; then
+                echo "$dir: written with sudo"
+              else
+                echo "FINDING $dir: not writable (no sudo or no permission)"
+              fi
+            done
+            echo '```'
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Resources
+        if: always()
+        env:
+          CANARY_JOB: canary-owned-write
+        shell: bash
+        run: |
+          set +e
+          start=$(cat "$RUNNER_TEMP/canary-start" 2>/dev/null || date +%s)
+          {
+            echo "### resources: $CANARY_JOB"
+            echo '```'
+            echo "runner: ${RUNNER_NAME:-unknown}"
+            echo "wall: $(( $(date +%s) - start )) s"
+            free -m
+            if test -r /sys/fs/cgroup/memory.peak; then
+              echo "cgroup memory.peak: $(cat /sys/fs/cgroup/memory.peak) bytes"
+            else
+              echo "cgroup memory.peak: absent"
+              echo "cgroup memory.current: $(cat /sys/fs/cgroup/memory.current 2>/dev/null || echo absent)"
+              echo "cgroup memory.max: $(cat /sys/fs/cgroup/memory.max 2>/dev/null || echo absent)"
+            fi
+            echo "df: HOME=$HOME, /tmp, slot volume=${GITHUB_WORKSPACE:-.}"
+            df -h "$HOME" /tmp "${GITHUB_WORKSPACE:-.}"
+            echo '```'
+            if test -s "$RUNNER_TEMP/canary-fetch-failures"; then
+              echo "fetch failures (host: status):"
+              sed 's/^/- /' "$RUNNER_TEMP/canary-fetch-failures"
+            else
+              echo "fetch failures: none recorded"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY" 2>&1
+
+  # Isolation, part two: five parallel jobs after the writer. None may find a marker or a leftover
+  # file; each prints its runner name so the summary shows whether one landed on the writer's slot.
+  canary-owned-check:
+    needs: canary-owned-write
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    runs-on: [nife-owned-x86_64]
+    continue-on-error: true  # outcome: exception, the canary measures the owned pool and must never block the queue
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        instance: [1, 2, 3, 4, 5]
+    steps:
+      - name: Start clock
+        shell: bash
+        run: |
+          date +%s > "$RUNNER_TEMP/canary-start"
+          : > "$RUNNER_TEMP/canary-fetch-failures"
+      - name: Check markers
+        env:
+          WRITER_RUNNER: ${{ needs.canary-owned-write.outputs.runner }}
+          INSTANCE: ${{ matrix.instance }}
+        shell: bash
+        run: |
+          set +e
+          dirty=0
+          {
+            echo "## canary-owned-check $INSTANCE"
+            echo '```'
+            echo "runner: ${RUNNER_NAME:-unknown}"
+            echo "writer runner: ${WRITER_RUNNER:-unknown}"
+            if test "$RUNNER_NAME" = "$WRITER_RUNNER"; then
+              echo "writer slot: SEEN AGAIN (same runner name)"
+            else
+              echo "writer slot: not this one"
+            fi
+            for dir in "$HOME" /tmp /etc; do
+              f="$dir/nife-canary-marker-$GITHUB_RUN_ID"
+              if test -e "$f"; then echo "LEAK $f exists"; dirty=1; else echo "$f: absent"; fi
+            done
+            left=$(find "$HOME" -maxdepth 2 -name 'nife-canary-marker-*' 2>/dev/null)
+            if test -n "$left"; then echo "LEAK in HOME: $left"; dirty=1; else echo "HOME: clean"; fi
+            echo '```'
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          # tee ends the pipeline's own status, so re-derive the verdict from the disk.
+          test ! -e "$HOME/nife-canary-marker-$GITHUB_RUN_ID" \
+            && test ! -e "/tmp/nife-canary-marker-$GITHUB_RUN_ID" \
+            && test ! -e "/etc/nife-canary-marker-$GITHUB_RUN_ID" \
+            && test -z "$(find "$HOME" -maxdepth 2 -name 'nife-canary-marker-*' 2>/dev/null)"
+      - name: Resources
+        if: always()
+        env:
+          CANARY_JOB: canary-owned-check
+        shell: bash
+        run: |
+          set +e
+          start=$(cat "$RUNNER_TEMP/canary-start" 2>/dev/null || date +%s)
+          {
+            echo "### resources: $CANARY_JOB"
+            echo '```'
+            echo "runner: ${RUNNER_NAME:-unknown}"
+            echo "wall: $(( $(date +%s) - start )) s"
+            free -m
+            if test -r /sys/fs/cgroup/memory.peak; then
+              echo "cgroup memory.peak: $(cat /sys/fs/cgroup/memory.peak) bytes"
+            else
+              echo "cgroup memory.peak: absent"
+              echo "cgroup memory.current: $(cat /sys/fs/cgroup/memory.current 2>/dev/null || echo absent)"
+              echo "cgroup memory.max: $(cat /sys/fs/cgroup/memory.max 2>/dev/null || echo absent)"
+            fi
+            echo "df: HOME=$HOME, /tmp, slot volume=${GITHUB_WORKSPACE:-.}"
+            df -h "$HOME" /tmp "${GITHUB_WORKSPACE:-.}"
+            echo '```'
+            if test -s "$RUNNER_TEMP/canary-fetch-failures"; then
+              echo "fetch failures (host: status):"
+              sed 's/^/- /' "$RUNNER_TEMP/canary-fetch-failures"
+            else
+              echo "fetch failures: none recorded"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY" 2>&1
+
+  # Says in one place whether any check instance ran on the writer's slot, from the jobs API.
+  # Runner names end in -sNN-<hex>; equal names are one slot.
+  canary-owned-isolation:
+    needs: [canary-owned-write, canary-owned-check]
+    if: ${{ always() && (github.event_name == 'merge_group' || github.event_name == 'push') }}
+    runs-on: ubuntu-26.04
+    continue-on-error: true  # outcome: exception, a reading aid and never a verdict on the queue
+    timeout-minutes: 10
+    permissions:
+      actions: read
+    steps:
+      - name: Compare runner names
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set +e
+          jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs" --paginate \
+            --jq '.jobs[] | [.name, (.runner_name // "none"), .conclusion] | @tsv')
+          writer=$(printf '%s\n' "$jobs" | awk -F'\t' '$1 == "canary-owned-write" {print $2}')
+          {
+            echo "## canary-owned-isolation"
+            echo '```'
+            printf '%s\n' "$jobs" | grep '^canary-owned-'
+            echo "writer runner: ${writer:-unknown}"
+            seen=$(printf '%s\n' "$jobs" | awk -F'\t' -v w="$writer" \
+              '$1 ~ /^canary-owned-check/ && $2 == w {n++} END {print n + 0}')
+            if test "$seen" -gt 0; then
+              echo "writer slot seen again: yes, in $seen of 5 check instances"
+            else
+              echo "writer slot seen again: no (the check proved nothing about slot reuse this run)"
+            fi
+            echo '```'
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
