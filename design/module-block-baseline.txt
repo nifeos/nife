@@ -1694,23 +1694,14 @@ crates/designware_mobile_storage/src/registers.rs::STATUS
 crates/designware_mobile_storage/src/registers.rs::WINDOW_USED
 
 
-crates/designware_mobile_storage/src/sd.rs::BLOCK
 
-crates/designware_mobile_storage/src/sd.rs::Card
 
-crates/designware_mobile_storage/src/sd.rs::IoError
 
-crates/designware_mobile_storage/src/sd.rs::Kind
 
-crates/designware_mobile_storage/src/sd.rs::address
 
-crates/designware_mobile_storage/src/sd.rs::identify
 
-crates/designware_mobile_storage/src/sd.rs::in_range
 
-crates/designware_mobile_storage/src/sd.rs::read_blocks
 
-crates/designware_mobile_storage/src/sd.rs::write_blocks
 
 crates/designware_mobile_storage/src/simulator.rs::Fault
 
@@ -2314,14 +2305,6 @@ crates/e1000e/src/registers.rs::TDT
 
 crates/e1000e/src/registers.rs::TIPG
 
-
-crates/e1000e/src/supported_devices.rs::DEVICE_IDS
-
-crates/e1000e/src/supported_devices.rs::VENDOR_INTEL
-
-crates/e1000e/src/supported_devices.rs::is_supported
-
-crates/e1000e/src/supported_devices.rs::model
 
 crates/elf/src/error.rs::Error
 
