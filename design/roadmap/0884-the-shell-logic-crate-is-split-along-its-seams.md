@@ -127,9 +127,9 @@ Found with `grep` at `396187b0b`.
   It matches rows to blocks file by file in line order, by position, and never compares the line
   number. So a block that moves within `lib.rs` passes. A block that moves to a new path does
   not, and git's rename detection will not pair a new module with a `lib.rs` that still exists.
-- `lib.rs:1`, 84 lines, is the crate doc. It stays in `lib.rs` and keeps its row. Any update to
+- The first block of `lib.rs`, 84 lines, is the crate doc. It stays in `lib.rs` and keeps its row. Any update to
   its "What is in here" list must not take it past 84 lines.
-- `lib.rs:598`, 45 lines, is `write_sweep`'s doc and doctest, and lands in `batching`. The new file
+- The block of `lib.rs` at `write_sweep`, 45 lines, is `write_sweep`'s doc and doctest, and lands in `batching`. The new file
   has no row, and adding one fails as a gained row. Its `lib.rs` row then has no block behind it.
   So the same change removes that row and cuts the block to 40 lines, or a fix is ruled
   separately. The cut can take the paragraph comparing Unix `xargs` to a note, which is §267's
@@ -160,7 +160,7 @@ Found with `grep` at `396187b0b`.
 3. The crate's 83 host tests and 6 doctests pass with no assertion changed. `script/test` passes on
    aarch64, riscv64 and x86_64, and so does `script/swish-check`.
 4. `helpers/comment_block_ratchet.py --check` and `helpers/cap_abbreviation.py --check` pass, with
-   the `lib.rs:598` row and the file-length row removed.
+   the row for `write_sweep`'s doc and the file-length row removed.
 5. `cargo doc` for the crate reports no broken intra-doc link.
 6. Each new module carries a `//! Name:` block marked provisional.
 

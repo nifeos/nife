@@ -57,7 +57,7 @@ An appendix to [notes/riscv-port.md](../riscv-port.md), moved there on 2026-10-1
    stack. That is what presented as the mystery "store fault at the frame page" (the nested-fault
    cascade of the overflow, unrelated to the frame's mapping, which was fine all along). QEMU's
    `-d int` exception log pinned it: the recursion was in `rust_begin_unwind`, and a raw-UART dump of
-   the panic location (bypassing `core::fmt`) named `cpu.rs:160`. Fix: `for_user_entry` carries the
+   the panic location (bypassing `core::fmt`) named `current` in `kernel/src/cpu.rs`. Fix: `for_user_entry` carries the
    kernel `tp` in the frame, so it survives the round trip. Follow-up (noted, not yet done): that
    leaks the kernel per-CPU address into U-mode's `tp`; the leak-free fix restores `tp` in `trap.s`
    from a per-hart source (the standard sscratch-trapframe approach), needed for SMP.

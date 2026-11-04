@@ -28,7 +28,7 @@ the diagnosis `toolchain-bump.yml`'s own comments already wrote down about `tool
 
 ## 2. The Miri check has been red for three weeks on a missing environment variable, not on undefined behavior
 
-`crates/documentation/tests/render.rs:279` reads `CARGO_MANIFEST_DIR` at run time, deliberately, with a
+`every_character_survives` in `crates/documentation/tests/render.rs` reads `CARGO_MANIFEST_DIR` at run time, deliberately, with a
 comment explaining that the compile-time form bakes a stale absolute path. Miri does not forward the
 environment by default, so `every_character_survives` panics with `cargo sets this for tests:
 NotPresent` and the job exits 1. The same test passes under `cargo test`.
