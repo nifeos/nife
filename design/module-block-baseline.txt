@@ -1599,19 +1599,12 @@ crates/current_cpu_contract/src/lib.rs::thread_page_va
 
 
 
-crates/designware_mobile_storage/src/bench.rs::ReadFailure
 
-crates/designware_mobile_storage/src/bench.rs::ReadReport
 
-crates/designware_mobile_storage/src/bench.rs::SCRATCH_SECTORS
 
-crates/designware_mobile_storage/src/bench.rs::WriteVerdict
 
-crates/designware_mobile_storage/src/bench.rs::pattern
 
-crates/designware_mobile_storage/src/bench.rs::read_only
 
-crates/designware_mobile_storage/src/bench.rs::scratch_write
 
 
 

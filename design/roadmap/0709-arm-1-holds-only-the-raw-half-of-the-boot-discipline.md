@@ -98,8 +98,9 @@ holder an **allowlist** (`OP_RAWMODE`, `OP_READRAW`) rather than refusing a list
 ### Measured first, 2026-10-03 (UTC), aarch64
 
 The test went in before the fix. A badged `CALL` (`ipc_call_badged`, the kernel's own delivery of a
-badged capability) of `OP_BYTES "ls\r"` was served: red at `raw_mode_tests.rs:445`, "a badged
-holder's OP_BYTES was served (r0 = 0)", exit 1. This shows the discipline ignored the badge. It is
+badged capability) of `OP_BYTES "ls\r"` was served: red in
+`a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them` of `raw_mode_tests.rs`, "a
+badged holder's OP_BYTES was served (r0 = 0)", exit 1. This shows the discipline ignored the badge. It is
 not a full hostile session under QEMU: that would need arm 1's GPU launch plus a modified
 `graphical_terminal`, and the grant itself was read from the spawn service, not observed.
 
@@ -112,9 +113,9 @@ five other requests are refused, and `OP_RAWMODE` and `OP_READRAW` work through 
 
 | run | tree | result |
 |---|---|---|
-| before the fix | test only | exit 1, red at `raw_mode_tests.rs:445` |
+| before the fix | test only | exit 1, red in `a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them` |
 | after the fix | filter `raw_mode_tests` | 8 of 8 pass, exit 0 |
-| replay | fix with the record applied | exit 1, red at `raw_mode_tests.rs:445` |
+| replay | fix with the record applied | exit 1, red in `a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them` |
 
 The record is `system_tests/falsifications/user.raw_mode_tests.a_badged_copy_of_the_terminal_reads_keystrokes_and_cannot_type_them.patch`.
 
