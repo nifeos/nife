@@ -18,6 +18,8 @@ pub const TRANSMIT_QUEUE_PAGE: u64 = 0x3000;
 
 /// Where `RDT` sits inside [`RECEIVE_QUEUE_PAGE`], and `TDT` inside [`TRANSMIT_QUEUE_PAGE`]: the
 /// same offset.
+///
+/// Name: ratified 2026-11-03 (UTC), #3124.
 pub const TAIL_IN_PAGE: u64 = registers::RECEIVE_DESCRIPTOR_TAIL_REGISTER - RECEIVE_QUEUE_PAGE;
 
 pub(crate) const PAGE: u64 = 4096;
