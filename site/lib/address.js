@@ -6,13 +6,16 @@
 // /roadmap/1018/, and a file in that block's appendix directory sits under it, as
 // /roadmap/1018/measurements/. Every other file keeps its path: design/ drops its prefix, so
 // design/naming.md is /naming/, and notes/ and briefs/ keep theirs. A README is the leaf `readme`.
+// The two repository-root documents the record links to most take their lowercased stem:
+// AGENTS.md is /agents/ and ARCHITECTS.md is /architects/.
 //
 // Name: provisional, minted 2026-11-04 (UTC) by lane/record-site-build-eleventy.
 
 "use strict";
 
-// The repository directories the site is built from.
+// The repository directories the site is built from, and the root documents it carries.
 const ROOTS = ["design/", "notes/", "briefs/"];
+const ROOT_DOCUMENTS = ["AGENTS.md", "ARCHITECTS.md"];
 
 // Record directories whose files carry a number, and the first address segment each takes.
 const NUMBERED = [
@@ -39,6 +42,7 @@ function join(segments) {
 // The address of a Markdown file given as a repository-relative path, or null when the file is
 // not on the site.
 function addressFor(repositoryPath) {
+  if (ROOT_DOCUMENTS.includes(repositoryPath)) return join([repositoryPath.slice(0, -".md".length).toLowerCase()]);
   if (!repositoryPath.endsWith(".md")) return null;
   if (!ROOTS.some((root) => repositoryPath.startsWith(root))) return null;
   const stem = repositoryPath.slice(0, -".md".length);
@@ -66,4 +70,4 @@ function numbersIn(repositoryPaths, directory) {
   return numbers;
 }
 
-module.exports = { ROOTS, addressFor, numbersIn, recordNumber };
+module.exports = { ROOTS, ROOT_DOCUMENTS, addressFor, numbersIn, recordNumber };

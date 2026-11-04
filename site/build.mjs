@@ -26,7 +26,7 @@ const repository = path.resolve(process.env.NIFE_SITE_REPOSITORY || path.join(he
 const work = path.resolve(process.env.NIFE_SITE_WORK || path.join(repository, "target", "site", "build"));
 const input = path.join(work, "input");
 const output = path.join(work, "site");
-const ROOTS = ["design", "notes", "briefs"];
+const ROOTS = ["design", "notes", "briefs", "AGENTS.md", "ARCHITECTS.md"];
 
 function seconds(start) {
   return Number(process.hrtime.bigint() - start) / 1e9;
@@ -131,7 +131,7 @@ function summary(report) {
   const lines = [
     "## Design record site (report only)",
     "",
-    "Built from `design/`, `notes/` and `briefs/` at `" + report.commit.slice(0, 12) + "`. Nothing is deployed; the site is this run's artifact.",
+    "Built from `design/`, `notes/`, `briefs/`, `AGENTS.md` and `ARCHITECTS.md` at `" + report.commit.slice(0, 12) + "`. Nothing is deployed; the site is this run's artifact.",
     "",
     "| measure | value |",
     "|---|---|",

@@ -3,10 +3,10 @@
 # Build the design record as a static website, deploy nothing, and report what the build found.
 #
 # Milestone 1018 (the design record moves to `nifeos.org` and is published as a website), step 3.
-# The site renders every tracked Markdown file under design/, notes/ and briefs/ with Eleventy,
-# gives each numbered record one stable address (/roadmap/1018/, /decisions/201/), links each
-# `milestone N`, `§N` and bare `#N` in prose, indexes the result for search with Pagefind, and checks
-# every internal link and fragment. The output is target/site/build/site/; the report is
+# The site renders every tracked Markdown file under design/, notes/ and briefs/, with AGENTS.md
+# and ARCHITECTS.md, through Eleventy. It gives each numbered record one stable address
+# (/roadmap/1018/, /decisions/201/), links each `milestone N`, `§N` and bare `#N` in prose, indexes
+# the result for search with Pagefind, and checks every internal link and fragment. The output is target/site/build/site/; the report is
 # target/site/build/summary.md, and report.json beside it holds the same numbers and examples.
 #
 # It is report-only. A broken link or a citation of a missing record is counted, never fatal: this
