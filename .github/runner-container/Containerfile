@@ -2,7 +2,7 @@
 #
 # **Why this exists.** `inbound check (riscv64)` fails about one boot in six on CI and has never
 # failed once on a developer machine: fifteen local boots across three lanes, zero failures. The
-# difference that matters is not the tree, it is the host. CI is `ubuntu-24.04-arm`; the developer
+# difference that matters is not the tree, it is the host. CI is `ubuntu-26.04-arm`; the developer
 # machine is macOS on Apple Silicon, with a different QEMU build, a different libslirp, a different
 # host TCP stack and twice the cores. notes/net/the-inbound-check.md states the consequence
 # outright: a reproduction attempt that is not on that runner class is not a reproduction attempt.
@@ -19,12 +19,12 @@
 # their build dependencies, and `sudo`, because both call `sudo apt-get` and a container that is
 # already root still has to have the word on its PATH.
 #
-# Base: ubuntu:24.04 rather than a GitHub runner image, and the gap is recorded rather than papered
+# Base: ubuntu:26.04 rather than a GitHub runner image, and the gap is recorded rather than papered
 # over. `ghcr.io/actions/actions-runner` and the `runner-images` recipes are large, x86-biased, and
 # carry a hundred toolchains this project never touches. What matters for a TCG timing failure is the
 # kernel, the scheduler, the core count and libslirp, and those come from the distribution release,
 # which is the same one.
-FROM docker.io/library/ubuntu:24.04
+FROM docker.io/library/ubuntu:26.04
 
 # One layer, and `--no-install-recommends` throughout, because every package that is not here is one
 # fewer difference from the runner to reason about later.

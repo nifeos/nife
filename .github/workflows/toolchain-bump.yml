@@ -88,7 +88,7 @@ jobs:
   # summary carries the table a person starts from. `propose` runs either way.
   restamp:
     name: restamp the icount floors (old vs new nightly, one runner)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     permissions:
       contents: read
@@ -155,7 +155,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
-          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+          key: qemu-ubuntu-26.04-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
       - name: Build QEMU if the cache missed
         if: steps.install.outcome == 'success'
         run: script/ci-qemu
@@ -225,7 +225,7 @@ jobs:
     # org secret would have been visible to every job whatever its environment. Only jobs that mint the App token name it,
     # because each run of a job that does records a deployment.
     environment: automation
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 45
     env:
       # Lifted to job level so the App step below can test it in an `if`. The `secrets` context is
@@ -627,7 +627,7 @@ jobs:
     name: propose a Kani pin bump
     if: ${{ github.ref == 'refs/heads/main' }}
     environment: automation
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     env:
       AUTOMATION_APP_ID: ${{ secrets.AUTOMATION_APP_ID }}

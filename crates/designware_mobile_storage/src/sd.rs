@@ -6,6 +6,9 @@
 //! tells it from an SD 1.x card and brings it up with `CMD1`. The clock then goes from 400 kHz to
 //! 25 MHz, default speed; high speed and UHS are not attempted, and an eMMC's bus stays 1-bit.
 //! Every step's failure names the step, so a bench transcript that stops says where.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3135. `sd` is an accepted acronym, like `MAC` and `GMAC`
+//! (#3094): Secure Digital, the card family this module brings up.
 
 use crate::card::{
     self, CardIdentification, CardSpecificData, INTERFACE_CONDITION_ARGUMENT,
@@ -13,7 +16,7 @@ use crate::card::{
     OPERATION_CONDITIONS_HIGH_CAPACITY, R1_ERRORS, SD_OPERATION_CONDITIONS_ARGUMENT,
 };
 use crate::command::{self as c, Command, Data, Response};
-use crate::host::{Error, Host, Registers};
+use crate::host_controller::{Error, Host, Registers};
 use crate::internal_direct_memory_access::DirectMemoryAccessRegion;
 
 /// The identification clock, the spec's ceiling for it.
@@ -88,10 +91,8 @@ pub struct Card {
     #[doc(alias = "ocr")]
     pub operation_conditions: u32,
     /// The raw card identification register (CID).
-    #[doc(alias = "cid_raw")]
     pub card_identification_raw: [u32; 4],
     /// The raw card-specific data register (CSD).
-    #[doc(alias = "csd_raw")]
     pub card_specific_data_raw: [u32; 4],
     /// The CID, decoded.
     #[doc(alias = "cid")]
