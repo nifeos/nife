@@ -2068,25 +2068,15 @@ crates/domain_name_system/src/lib.rs::write
 
 crates/domain_name_system/src/proofs.rs
 
-crates/e1000e/src/control.rs::CTRL_ASDE
 
-crates/e1000e/src/control.rs::CTRL_EXT_DRV_LOAD
 
-crates/e1000e/src/control.rs::CTRL_RST
 
-crates/e1000e/src/control.rs::CTRL_SLU
 
-crates/e1000e/src/control.rs::RAH_AV
 
-crates/e1000e/src/control.rs::RFCTL_EXTEN
 
-crates/e1000e/src/control.rs::STATUS_LU
 
-crates/e1000e/src/control.rs::rctl
 
-crates/e1000e/src/control.rs::tctl
 
-crates/e1000e/src/control.rs::tipg
 
 
 
@@ -2098,153 +2088,159 @@ crates/e1000e/src/control.rs::tipg
 
 
 
-crates/e1000e/src/device.rs::DEVICE_IDS
 
-crates/e1000e/src/device.rs::VENDOR_INTEL
 
-crates/e1000e/src/device.rs::is_supported
 
-crates/e1000e/src/device.rs::model
 
-crates/e1000e/src/layout.rs
 
-crates/e1000e/src/layout.rs::BYTES
 
-crates/e1000e/src/layout.rs::PAGES
 
-crates/e1000e/src/pch/flush.rs
 
-crates/e1000e/src/pch/flush.rs::FEXTNVM11_DISABLE_MULR_FIX
 
-crates/e1000e/src/pch/flush.rs::required
 
-crates/e1000e/src/pch/flush.rs::rxdctl
 
-crates/e1000e/src/pch/flush.rs::tail_after
 
-crates/e1000e/src/pch/hardware.rs::is_pch
 
-crates/e1000e/src/pch/mod.rs
 
-crates/e1000e/src/pch/non_volatile_memory.rs::DONE
 
-crates/e1000e/src/pch/non_volatile_memory.rs::ERROR
 
-crates/e1000e/src/pch/non_volatile_memory.rs::Error
 
-crates/e1000e/src/pch/non_volatile_memory.rs::GO
 
-crates/e1000e/src/pch/non_volatile_memory.rs::WORDS
 
-crates/e1000e/src/pch/non_volatile_memory.rs::read
 
-crates/e1000e/src/pch/physical_layer_device.rs::ERROR
 
-crates/e1000e/src/pch/physical_layer_device.rs::Error
 
-crates/e1000e/src/pch/physical_layer_device.rs::POLL_MICROSECONDS
 
-crates/e1000e/src/pch/physical_layer_device.rs::Plan
 
-crates/e1000e/src/pch/physical_layer_device.rs::READY
 
-crates/e1000e/src/pch/physical_layer_device.rs::Swflag
 
-crates/e1000e/src/pch/physical_layer_device.rs::id_at
 
-crates/e1000e/src/pch/physical_layer_device.rs::plan
 
-crates/e1000e/src/pch/physical_layer_device.rs::read
 
-crates/e1000e/src/pch/physical_layer_device.rs::read_mdic
 
-crates/e1000e/src/pch/physical_layer_device.rs::release
 
-crates/e1000e/src/pch/physical_layer_device.rs::update
 
-crates/e1000e/src/pch/physical_layer_device.rs::write
 
-crates/e1000e/src/pch/registers.rs::FEXTNVM11
 
-crates/e1000e/src/pch/registers.rs::RXDCTL
 
-crates/e1000e/src/pch/reset.rs
 
-crates/e1000e/src/pch/sequence.rs
 
-crates/e1000e/src/pch/sequence.rs::Error
 
-crates/e1000e/src/pch/sequence.rs::Note
 
-crates/e1000e/src/pch/sequence.rs::Reached
 
-crates/e1000e/src/pch/sequence.rs::global_reset
 
-crates/e1000e/src/pch/sequence.rs::transmit_errata
 
-crates/e1000e/src/pch/simulator.rs::Sim
 
-crates/e1000e/src/pch/simulator.rs::Start
 
-crates/e1000e/src/pch/simulator.rs::new
 
-crates/e1000e/src/pch/tests.rs
 
-crates/e1000e/src/pch/ulp.rs
 
-crates/e1000e/src/pch/ulp.rs::done
 
-crates/e1000e/src/pch/ulp.rs::release
 
-crates/e1000e/src/pch/ulp.rs::request
 
-crates/e1000e/src/proofs.rs
 
-crates/e1000e/src/registers.rs::CTRL
 
-crates/e1000e/src/registers.rs::CTRL_EXT
 
-crates/e1000e/src/registers.rs::ICR
 
-crates/e1000e/src/registers.rs::IMC
 
-crates/e1000e/src/registers.rs::MTA
 
-crates/e1000e/src/registers.rs::RAH0
 
-crates/e1000e/src/registers.rs::RAL0
 
-crates/e1000e/src/registers.rs::RCTL
 
-crates/e1000e/src/registers.rs::RDBAH
 
-crates/e1000e/src/registers.rs::RDBAL
 
-crates/e1000e/src/registers.rs::RDH
 
-crates/e1000e/src/registers.rs::RDLEN
+crates/e1000e/src/platform_controller_hub/flush.rs::required
 
-crates/e1000e/src/registers.rs::RDT
 
-crates/e1000e/src/registers.rs::RFCTL
+crates/e1000e/src/platform_controller_hub/flush.rs::tail_after
 
-crates/e1000e/src/registers.rs::STATUS
+crates/e1000e/src/platform_controller_hub/hardware_access.rs::is_pch
 
-crates/e1000e/src/registers.rs::TCTL
+crates/e1000e/src/platform_controller_hub/non_volatile_memory.rs::DONE
 
-crates/e1000e/src/registers.rs::TDBAH
+crates/e1000e/src/platform_controller_hub/non_volatile_memory.rs::ERROR
 
-crates/e1000e/src/registers.rs::TDBAL
+crates/e1000e/src/platform_controller_hub/non_volatile_memory.rs::Error
 
-crates/e1000e/src/registers.rs::TDH
+crates/e1000e/src/platform_controller_hub/non_volatile_memory.rs::GO
 
-crates/e1000e/src/registers.rs::TDLEN
+crates/e1000e/src/platform_controller_hub/non_volatile_memory.rs::WORDS
 
-crates/e1000e/src/registers.rs::TDT
+crates/e1000e/src/platform_controller_hub/non_volatile_memory.rs::read
 
-crates/e1000e/src/registers.rs::TIPG
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::ERROR
 
-crates/e1000e/src/tests.rs
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::Error
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::POLL_MICROSECONDS
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::Plan
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::READY
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::Swflag
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::id_at
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::plan
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::read
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::read_mdic
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::release
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::update
+
+crates/e1000e/src/platform_controller_hub/physical_layer_device.rs::write
+
+
+
+crates/e1000e/src/platform_controller_hub/sequence.rs::Error
+
+crates/e1000e/src/platform_controller_hub/sequence.rs::Note
+
+crates/e1000e/src/platform_controller_hub/sequence.rs::Reached
+
+crates/e1000e/src/platform_controller_hub/sequence.rs::global_reset
+
+crates/e1000e/src/platform_controller_hub/sequence.rs::transmit_errata
+
+crates/e1000e/src/platform_controller_hub/simulator.rs::Sim
+
+crates/e1000e/src/platform_controller_hub/simulator.rs::Start
+
+crates/e1000e/src/platform_controller_hub/simulator.rs::new
+
+crates/e1000e/src/platform_controller_hub/ultra_low_power.rs::done
+
+crates/e1000e/src/platform_controller_hub/ultra_low_power.rs::release
+
+crates/e1000e/src/platform_controller_hub/ultra_low_power.rs::request
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 crates/elf/src/error.rs::Error
 

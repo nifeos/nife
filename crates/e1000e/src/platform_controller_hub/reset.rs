@@ -1,3 +1,6 @@
+//! Name: ratified 2026-11-03 (UTC), #3145. Ruled in the group E1 ruling on e1000e's module names;
+//! kept as it stands.
+
 /// `CTRL.GIO_MASTER_DISABLE`: stop new bus-master requests before the reset.
 pub(crate) const CTRL_GIO_MASTER_DISABLE: u32 = 0x0000_0004;
 /// `STATUS.GIO_MASTER_ENABLE`: set while master requests are still pending.

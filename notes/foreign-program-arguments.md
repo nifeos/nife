@@ -67,7 +67,7 @@ arrive there with no slot at all.
 ### `ripgrep` 14.1.1
 
 `ripgrep` parses with its own `lexopt`-based code and reads `std::env::args_os().skip(1)`
-(`crates/core/flags/parse.rs:72` and `:103`). Counted from `crates/core/flags/defs.rs`:
+(`parse_low` in `crates/core/flags/parse.rs`). Counted from `crates/core/flags/defs.rs`:
 
 | | count |
 |---|---|
@@ -91,14 +91,14 @@ attached values, `--flag=value`, `--`). `lexopt` 0.3.0 is 571 lines of code for 
 
 Milestone 99 (`git` on nife) chose gitoxide. Its `gix` binary parses with `clap` derive and reads
 `gix::env::args_os()`, which is `std::env::args_os()` with optional Unicode precomposition
-(`gix-0.74.1/src/env.rs:25`). So the same transport serves it with no program-specific work.
+(`args_os` in `gix-0.74.1/src/env.rs`). So the same transport serves it with no program-specific work.
 
 Its designation table is larger. `src/plumbing/options/` and `src/porcelain/options.rs` declare 260
 argument fields across nested subcommands. Of these, 32 are `PathBuf` and 57 are `BString`, which
 carry pathspecs and ref names. A binder would need that tree, per release.
 
 `clap` can report part of it. `Arg::get_value_hint` answers `AnyPath` for any `PathBuf` argument
-(`clap_builder-4.6.7/src/builder/arg.rs:4372`), so a build step could derive the path flags of a
+(`get_value_hint` in `clap_builder-4.6.7/src/builder/arg.rs`), so a build step could derive the path flags of a
 `clap` program. That covers neither `ripgrep`, which does not use `clap`, nor gitoxide's pathspecs.
 
 ### The result for §170's test
@@ -110,7 +110,7 @@ derivable in general.
 ## Option C cannot say `rg pattern`
 
 `grant_plan::Endowment` carries `arg: u64` and `flags: u64`. The shell parses the argument with
-`parse_u64` (`crates/grant_plan/src/lib.rs:2383`) and refuses anything else as `ProgramArgumentRequired`. A
+`parse_u64` (`crates/grant_plan/src/lexing.rs`) and refuses anything else as `ProgramArgumentRequired`. A
 regex is not a `u64`, and `ripgrep`'s 104 flags do not fit a 64-bit mask. C as written needs a
 string channel first, which is the transport above.
 

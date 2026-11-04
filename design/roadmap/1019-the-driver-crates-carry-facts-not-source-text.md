@@ -50,16 +50,16 @@ Each item gives the recommendation first.
    `hid_keyboard[]` only as a cross-check in a test. Usages 0x32 and 0x46 then become nife's own
    choices, stated as such. The alternative is to rule that the table is a list of facts. The table
    holds 104 numbers in Linux's order, and it attributes them.
-3. `e1000e::pch` adapts FreeBSD's `if_em.c` and `if_em.h` without their notice. Recommendation:
+3. `e1000e::platform_controller_hub` adapts FreeBSD's `if_em.c` and `if_em.h` without their notice. Recommendation:
    add their BSD-2-Clause notice and its three copyright lines (Intel 2001-2024, Nicole Graziano
-   2016, Kevin Bowling 2024) beside the Intel shared-code notice in `pch/mod.rs`. Then name the file
-   correctly where the crate README, `pch/mod.rs`, `notes/e1000e/the-i219-port.md` and the license
+   2016, Kevin Bowling 2024) beside the Intel shared-code notice in `platform_controller_hub/mod.rs`. Then name the file
+   correctly where the crate README, `platform_controller_hub/mod.rs`, `notes/e1000e/the-i219-port.md` and the license
    column of milestone 494 (the I219 driver)'s Reuse table describe it as BSD-3-Clause shared code.
    The module takes the descriptor-ring flush, the transmit errata and `em_reset`'s buffer split from
    those files, and it quotes a 25-token comment and an 11-token comment.
 4. `kernel/src/e1000e.rs` follows FreeBSD's `em_flush_tx_ring` and `em_flush_rx_ring`.
    Recommendation: rule the same way as item 3. Either the kernel function carries the notice, or it
-   drives the sequence through a `pch` function that already carries it. It copies no text run longer
+   drives the sequence through a `platform_controller_hub` function that already carries it. It copies no text run longer
    than five tokens.
 5. `designware_ethernet::motorcomm_physical_layer_device::link_from_registers` adapts OpenBSD's `ukphy_status`
    (`sys/dev/mii/ukphy_subr.c`, NetBSD Foundation BSD-2-Clause). Recommendation: add that notice

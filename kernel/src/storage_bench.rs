@@ -215,7 +215,7 @@ macro_rules! say {
         println!(
             "storage-bench: slot {} ({}): {}",
             $slot.index,
-            $slot.board_role(),
+            $slot.role(),
             format_args!($($arg)*)
         )
     };
