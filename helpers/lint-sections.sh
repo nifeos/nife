@@ -3,7 +3,8 @@
 # helpers/lint-sections.sh: run script/lint's sections one at a time, keep going past a failure,
 # and fail at the end if any section failed.
 #
-#     helpers/lint-sections.sh <lint script> all|no-cargo|clippy
+#     helpers/lint-sections.sh <lint script> all|no-cargo|clippy|quick
+#     helpers/lint-sections.sh <lint script> --section <id|name>
 #
 # `script/lint` calls this; you do not. Each section is the preamble plus the text from its
 # `echo "==> ` header to the next one, as helpers/lint-no-cargo.awk splits them, run in a fresh `sh`
@@ -25,6 +26,12 @@
 #
 # `no-cargo` runs only the sections `--no-cargo` keeps, with LINT_NO_CARGO=1. `clippy` stops after
 # the section that carries the `--clippy` cut, which is where `script/lint --clippy` stopped.
+#
+# `--section <id|name>` runs the one section whose `# lint-id: SLUG` marker or exact name (the text
+# after `==> `) matches, with the preamble and the environment `all` gives it, and the same summary,
+# time line and CSV row (mode `section`). No match, or a name two sections share, is an error and
+# runs nothing. `script/lint --section` passes through to it. The verdict is that section's alone,
+# so it never stands in for a full run, and it leaves no pre-push marker.
 #
 # `quick` runs only the sections that carry a `# lint-quick` comment line, with LINT_NO_CARGO=1 (so
 # none of them may run cargo). It is the pre-flight `script/lint --quick` names: the cheap checks a
@@ -105,6 +112,16 @@
 set -u
 lint_self=$1
 mode=$2
+if [ "$mode" = --section ]; then
+    mode=section
+    want=${3:-}
+    case $want in
+    '' | -)
+        echo "lint-sections: --section needs a section id (its # lint-id: slug) or exact name" >&2
+        exit 2
+        ;;
+    esac
+fi
 root="$(cd "$(dirname "$0")/.." && pwd)"
 dir="$(mktemp -d "${TMPDIR:-/tmp}/lint-sections.XXXXXX")" || exit 1
 lane_pids=""
@@ -145,6 +162,26 @@ fi
 
 tab="$(printf '\t')"
 
+# --section: find the one section to run, before the plan is built.
+match=""
+if [ "$mode" = section ]; then
+    match=$(awk -F"$tab" -v want="$want" '
+        NR == FNR { slug[$1] = $2; next }
+        slug[$1] == want || $7 == want { print $1 }' "$dir/ids" "$dir/index")
+    case $match in
+    '')
+        echo "lint-sections: no section has the id or exact name \"$want\"; script/lint --quick --list and helpers/lint-section-index.tsv name them" >&2
+        exit 2
+        ;;
+    *"
+"*)
+        echo "lint-sections: more than one section matches \"$want\":" >&2
+        echo "$match" >&2
+        exit 2
+        ;;
+    esac
+fi
+
 # The plan: the sections this run covers, in order, one `id lane waits name` line each. `no-cargo`
 # drops the cargo sections, `quick` keeps the sections that carry a lint-quick marker, and `clippy`
 # stops after the section that carries the `--clippy` cut, which is where `script/lint --clippy`
@@ -155,6 +192,9 @@ while IFS="$tab" read -r id keep lane waits quick tdir name <&3; do
         continue
     fi
     if [ "$mode" = quick ] && [ "$quick" != 1 ]; then
+        continue
+    fi
+    if [ "$mode" = section ] && [ "$id" != "$match" ]; then
         continue
     fi
     printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$lane" "$waits" "$tdir" "$name" >>"$dir/plan"
