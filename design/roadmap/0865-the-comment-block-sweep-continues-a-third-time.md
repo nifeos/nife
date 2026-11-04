@@ -17,9 +17,9 @@ again, worth four); minted from the proposal of the same name. §267 (a comment 
 commit message and git, and no narrative is transplanted into a document.
 
 The baseline holds 336 rows. The worst after worth four:
-`components/src/timetable.rs:1` (191), `components/src/login.rs:1` (177),
-`crates/current_cpu_contract/src/lib.rs:1` (176), `components/src/system_installer.rs:1` (175)
-and `crates/serial_console/src/lib.rs:1` (173). A worth
+`components/src/timetable.rs` (module header) (191), `components/src/login.rs` (module header) (177),
+`crates/current_cpu_contract/src/lib.rs` (module header) (176), `components/src/system_installer.rs` (module header) (175)
+and `crates/serial_console/src/lib.rs` (module header) (173). A worth
 takes the worst handful that is not a gated example, and every shrink is banked. The method, the
 refused alternatives and the evidence are milestone 860 (comments state the constraint as it
 is now)'s block and `notes/comment-cost-2026-10-07.md`.
@@ -29,27 +29,27 @@ worth only runs the sweep and banks, and takes no new code.
 
 ## The worth, 2026-10-10 (UTC): built, and the sweep has converged
 
-- `components/src/timetable.rs:1` 191 to 190. The Name paragraph's milestone-129 anecdote went
+- `components/src/timetable.rs` (module header) 191 to 190. The Name paragraph's milestone-129 anecdote went
   to git. The BUGS consumer list kept all four consumers in fewer words.
-- `components/src/login.rs:1` held at 177, floor. The milestone 246 (measured boot's refusal path
+- `components/src/login.rs` (module header) held at 177, floor. The milestone 246 (measured boot's refusal path
   is tested by nothing) sentence is now a plain citation; no line was saved. All that remains is
   constraint with dated rulings.
-- `crates/current_cpu_contract/src/lib.rs:1` held at 176, floor. Worth four already took its
+- `crates/current_cpu_contract/src/lib.rs` (module header) held at 176, floor. Worth four already took its
   history. What remains is §204 (how userspace asks where a thread runs)'s argument.
-- `components/src/system_installer.rs:1` held at 175, floor, untouched by earlier worths. The
+- `components/src/system_installer.rs` (module header) held at 175, floor, untouched by earlier worths. The
   two-slot ruling, the GPT attribute-bit ownership and the RedoxFS origin scan are constraint.
-- `crates/serial_console/src/lib.rs:1` held at 173, floor. Worth four took the narration.
+- `crates/serial_console/src/lib.rs` (module header) held at 173, floor. Worth four took the narration.
 
 The finding this worth adds: the worst rows are now constraint floors. The one remaining gated
-example, `crates/system_initializer/src/lib.rs:6` (300), is a `no_run` doctest a gate holds open.
+example, `crates/system_initializer/src/lib.rs` (module header) (300), is a `no_run` doctest a gate holds open.
 Shrinkage from here is wording. Wording is not what §267 (a comment states the constraint as it
 is now) asked the sweep to remove.
 
 ## Follow-on
 
 - **Milestone 866.** Milestone 866 (the comment-block sweep closes, worth six). It took the next
-  three (`crates/login_contract/src/lib.rs:2` 169, `crates/jh7110_entropy/src/lib.rs:2` 169,
-  `kernel/src/arch/x86_64/iommu.rs:1` 164), found floors, and milestone 866 closed the sweep. The ratchet and
+  three (`crates/login_contract/src/lib.rs` (module header) 169, `crates/jh7110_entropy/src/lib.rs` (module header) 169,
+  `kernel/src/arch/x86_64/iommu.rs` (module header) 164), found floors, and milestone 866 closed the sweep. The ratchet and
   the baseline remain as the standing tripwire against new over-cap blocks; the rows that stay
   over cap are the recorded cost of the constraints they carry.
 

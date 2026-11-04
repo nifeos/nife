@@ -66,7 +66,7 @@ designware_mobile_storage,"Host<R, D>::wait_queue",replace & with |,2,bitwise,eq
 designware_mobile_storage,"Host<R, D>::write",replace & with ^,1,bitwise,equivalent,algebraic,algebraic,
 designware_mobile_storage,"Host<R, D>::write",replace & with |,1,bitwise,equivalent,algebraic,algebraic,
 designware_mobile_storage,MasterBootRecord::scratch,replace < with <=,1,comparison,equivalent,algebraic,algebraic,
-designware_mobile_storage,bits,replace > with >=,2,comparison,equivalent,algebraic,algebraic,
+designware_mobile_storage,bits,replace > with >=,2,comparison,none,,unrowed,
 designware_mobile_storage,multimedia_card_power_up,replace > with >=,1,comparison,equivalent,algebraic,algebraic,
 designware_mobile_storage,pattern,replace ^ with |,1,or_xor,equivalent,caller,caller,
 designware_mobile_storage,queue_step,replace < with <=,1,comparison,equivalent,algebraic,algebraic,

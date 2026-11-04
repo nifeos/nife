@@ -1130,6 +1130,10 @@ fn put_and_damage_cell_reject_a_partly_out_of_range_coordinate() {
 /// surface, then render `rect`), fed the firmware-screen test's own script one write at a
 /// time, on a surface taller than the grid the way a real scanout leaves a strip below it.
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "compares whole pictures after every step; nineteen minutes under Miri"
+)]
 fn moving_pixels_and_rendering_the_damage_reproduces_the_whole_picture() {
     // One write per present, and several.
     moving_pixels_with_k::<1>();
@@ -1202,6 +1206,10 @@ fn moving_pixels_with_k<const K: usize>() {
 /// in one move (its tail must not stay on the screen), and a change made above the bottom row and
 /// then scrolled in the same take (its box must go where the change went).
 #[test]
+#[cfg_attr(
+    miri,
+    ignore = "compares whole pictures after every step; sixteen minutes under Miri"
+)]
 fn a_painter_that_moves_and_renders_what_damage_says_ends_with_the_engines_picture() {
     for cursor in [true, false] {
         let mut t = vt(20, 6);

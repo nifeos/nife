@@ -60,7 +60,7 @@ jobs:
   # The shard list, computed once so every shard reads the same plan. arm64 because the sweep is.
   plan:
     name: plan the replay shards
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 10
     outputs:
       shards: ${{ steps.plan.outputs.shards }}
@@ -80,7 +80,7 @@ jobs:
   sweep:
     name: replay the recorded falsifications (shard ${{ matrix.shard }})
     needs: plan
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     # Three times the 40-minute shard target, so a shard that outgrows its weights by a lot still
     # finishes and writes the times that fix them, and a hang still fails loudly.
     timeout-minutes: 120
@@ -102,7 +102,7 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
 
       # **QEMU, and the bootstrap that provisions the kernel build**, the same four steps ci.yml's
-      # test job takes and for its reasons (the runner's packaged QEMU is 8.2; the pinned build is
+      # test job takes and for its reasons (the runner's packaged QEMU is 10.2 on 26.04; the pinned build is
       # cached by `.qemu-version`). Added 2026-09-25: a kernel-test record boots under QEMU, and
       # this job had never installed one, so every kernel record since milestone 305 (the six
       # kernel confinement rows get a falsification a machine can replay) reported `ERROR the
@@ -112,7 +112,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
-          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+          key: qemu-ubuntu-26.04-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
       - name: Build QEMU if the cache missed
         run: script/ci-qemu
       - name: Put it on PATH
@@ -195,7 +195,7 @@ jobs:
       always() && needs.sweep.result != 'cancelled' && needs.sweep-swish-x86_64.result != 'cancelled'
       && github.ref == 'refs/heads/main'
     environment: automation
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: write
@@ -279,7 +279,7 @@ jobs:
   # so `sweep` above (arm64) and verify.yml's `falsify` job (arm64) cannot make an x86_64 harness
   # red, and the only x86_64 Kani leg in CI is the proving shards, which prove and never mutate.
   # Such a record is `attested`, names its patch in backticks, and is replayed here. This job runs
-  # on `ubuntu-24.04` (x86_64) and goes red on a survivor, a stale patch or an empty selection.
+  # on `ubuntu-26.04` (x86_64) and goes red on a survivor, a stale patch or an empty selection.
   # Dispatchable on its own, so a lane can get a record replayed without waiting for the cron.
   # **The swish-check records with an x86_64 leg, under KVM**, where ci.yml's swish-check-x86_64
   # job runs that leg and whose per-line bound they were written against. Under TCG on arm64 the
@@ -288,7 +288,7 @@ jobs:
   # case. `--plan-sweep` leaves these out of the shards, and this job replays them.
   sweep-swish-x86_64:
     name: replay the swish-check records with an x86_64 leg, under KVM
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # ci.yml's swish-check-x86_64 bound, for its reason: setup and build are about ten minutes, a
     # cold QEMU build adds 10 to 20, and each record is one boot.
     timeout-minutes: 60
@@ -304,7 +304,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
-          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+          key: qemu-ubuntu-26.04-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
       - name: Build QEMU if the cache missed
         run: script/ci-qemu
       - name: Put it on PATH
@@ -350,7 +350,7 @@ jobs:
 
   sweep-x86_64:
     name: replay the attested records an arm64 host cannot
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -398,7 +398,7 @@ jobs:
   # all three ISAs on every merge, and the weekly breadth is about the seed space, not the ISA.
   syscall-fuzz:
     name: seeded syscall driver, long sweep
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -412,7 +412,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
-          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+          key: qemu-ubuntu-26.04-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
       - name: Build QEMU if the cache missed
         run: script/ci-qemu
       - name: Put it on PATH
@@ -450,7 +450,7 @@ jobs:
   # (`NIFE_CONFINED_FUZZ_SEEDS=<seed>:1 cargo xtask test --arch aarch64 --test a_confined_fuzzer`).
   confined-fuzz:
     name: confined fuzzer, long sweep
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -464,7 +464,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
-          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+          key: qemu-ubuntu-26.04-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
       - name: Build QEMU if the cache missed
         run: script/ci-qemu
       - name: Put it on PATH

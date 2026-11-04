@@ -142,8 +142,8 @@ Found with `grep` at `396187b0b`.
   module path `user::tests::`, mostly in roadmap history.
 - `design/file-length-baseline.tsv` lists the file at 3,533; that row goes in the same change.
   `design/comment-block-baseline.tsv` keys two rows on this path, and both blocks move.
-  `tests.rs:649` (43 lines, the doc of `an_asid_flush_reaches_the_other_cpus`) lands in
-  `user/address_space_tests.rs`. `tests.rs:2767` (42 lines, the doc of
+  `tests.rs` (43 lines, the doc of `an_asid_flush_reaches_the_other_cpus`) lands in
+  `user/address_space_tests.rs`. `tests.rs` (42 lines, the doc of
   `a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults`) lands in
   `user/cycle_counter_tests.rs`. The ratchet admits no row on a path the merge base gave none, and
   a block in a new file meets the 40-line cap outright. So it fails both unless each is cut to 40

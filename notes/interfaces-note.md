@@ -61,7 +61,7 @@ today. The check at load compares by equality: the syscall ABI is never served i
 once, so a system serving `ABI_VERSION` 2 refuses a program that declares 1, and a system
 serving 1 refuses one that declares 2. For every other interface, a bump today changes the
 recorded bytes and nothing refuses on it; a check at bind time for message contracts is a separate
-proposal, [the message contracts carry bind-time version checks](../design/roadmap/proposals/message-contracts-carry-bind-time-version-checks.md).
+proposal, [the message contracts carry bind-time version checks](../design/roadmap/1000-message-contracts-carry-bind-time-version-checks.md).
 
 ## What the loader checks, and where
 
