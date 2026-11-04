@@ -134,15 +134,19 @@ Decided 2026-11-04 (UTC). A lane that fixes a held fuzz finding works in the Git
 private fork of the finding's advisory by default. Its claim is a note on the advisory, not a public
 draft pull request. The fuzz host files one advisory per finding, so the advisory list is the board
 for this kind of lane, as the draft list is for every other. The private fork has no CI and no merge
-queue, so the lane runs the local gates (`script/fmt`, `script/lint` and the tests) itself. A person
-reviews the fix, merges it from the private fork, and publishes the advisory together with the fix.
-A finding the architect judges low severity may use a normal public draft pull request instead.
+queue, so the lane runs the local gates (`script/fmt`, `script/lint` and the tests) itself while a
+person reviews the fix there. Once the person approves it, the lane lands the same commits as an
+ordinary pull request on nifeos/nife, opened ready with auto-merge armed, through the merge queue.
+A person publishes the advisory when it merges. Nobody merges from the private fork: main's ruleset
+has no bypass actor, and a bypass actor would let any lane holding the admin token skip the queue
+and every required check. A finding the architect judges low severity may use a normal public
+draft pull request from the start.
 
 The reason is exposure. A draft pull request and its pushed branch are public from the first
-commit, and a held finding stays private until its fix is on main. In the private fork the fix and
-the advisory become public at the same moment.
+commit, and a held finding stays private until its fix is on main. Development and review in the
+private fork keep the public window to the time the approved fix spends in the merge queue.
 
-The cost is the property this section prefers, and the gates. A stale claim shows on the advisory,
-not on the public board, and the heavy gates first run on main's push run, after the fix has
-landed. [`fuzz-findings-without-a-person`](../roadmap/1015-fuzz-findings-without-a-person.md)
+The cost is the property this section prefers, and that window. A stale claim shows on the
+advisory, not on the public board, and anyone can read the fix while it waits in the queue, about
+an hour. [`fuzz-findings-without-a-person`](../roadmap/1015-fuzz-findings-without-a-person.md)
 records the rest of the findings path, with the prior art and an example.
