@@ -157,36 +157,24 @@ fn the_verdict_strips_the_crc_and_refuses_what_the_device_could_not_mean() {
     );
     assert_eq!(receive_verdict(ok | 64, 59), ReceiveVerdict::Drop);
     assert_eq!(
-<<<<<<< HEAD
         receive_verdict(
             RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR | 64,
-            MAXIMUM_FRAME
+            MAXIMUM_FRAME_BYTES
         ),
         ReceiveVerdict::Drop
     );
     assert_eq!(
         receive_verdict(
             ok | RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY | 64,
-            MAXIMUM_FRAME
+            MAXIMUM_FRAME_BYTES
         ),
         ReceiveVerdict::Drop
     );
     assert_eq!(
         receive_verdict(
             ok | RECEIVE_DESCRIPTOR_WORD_3_CONTEXT_DESCRIPTOR | 64,
-            MAXIMUM_FRAME
+            MAXIMUM_FRAME_BYTES
         ),
-=======
-        receive_verdict(RDES3_FD | 64, MAXIMUM_FRAME_BYTES),
-        ReceiveVerdict::Drop
-    );
-    assert_eq!(
-        receive_verdict(ok | RDES3_ES | 64, MAXIMUM_FRAME_BYTES),
-        ReceiveVerdict::Drop
-    );
-    assert_eq!(
-        receive_verdict(ok | RDES3_CTXT | 64, MAXIMUM_FRAME_BYTES),
->>>>>>> origin/main
         ReceiveVerdict::Drop
     );
 }
