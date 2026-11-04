@@ -491,7 +491,7 @@ pub mod medium {
 /// Version 2 describes three files, the kernel, the composed archive and the system manifest, each
 /// by offset, length and SHA-256 digest, so an updater can write each from the package that
 /// produced it. The layout was ruled on 2026-11-01 (UTC); see
-/// `design/roadmap/proposals/what-an-os-update-writes-into-a-slot.md`, question 3. Pure
+/// `design/roadmap/1006-what-an-os-update-writes-into-a-slot.md`, question 3. Pure
 /// computation over byte slices, no allocation and no I/O.
 ///
 /// | offset | size | |
@@ -1104,8 +1104,21 @@ pub mod members {
         fn flipping_any_byte_of_the_188_is_refused_or_changes_the_content_legally() {
             let original = sample();
             let block = block_of(&original);
+            // All 255 masks at every byte take sixteen minutes under Miri, which flips each byte
+            // with its eight single bits and with all of them; native runs every mask.
+            const MIRI_MASKS: [u8; 9] = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0xff];
+            const EVERY_MASK: [u8; 255] = {
+                let mut masks = [0u8; 255];
+                let mut i = 0;
+                while i < 255 {
+                    masks[i] = i as u8 + 1;
+                    i += 1;
+                }
+                masks
+            };
+            let masks: &[u8] = if cfg!(miri) { &MIRI_MASKS } else { &EVERY_MASK };
             for at in 0..MEMBERS_HEADER_BYTES {
-                for mask in 1..=255u8 {
+                for &mask in masks {
                     let mut flipped = block;
                     flipped[at] ^= mask;
                     match parse(&flipped, PARTITION) {
@@ -1127,7 +1140,13 @@ pub mod members {
         #[test]
         fn flipping_any_padding_byte_is_refused() {
             let block = block_of(&sample());
-            for at in MEMBERS_HEADER_BYTES..BLOCK {
+            // Each flip scans the padding up to `at`, so all 3,908 bytes take 38 minutes under
+            // Miri. Miri samples every 61st byte (prime) plus the last; native runs every byte.
+            let stride = if cfg!(miri) { 61 } else { 1 };
+            let sites = (MEMBERS_HEADER_BYTES..BLOCK)
+                .step_by(stride)
+                .chain([BLOCK - 1]);
+            for at in sites {
                 let mut flipped = block;
                 flipped[at] ^= 0x01;
                 assert_eq!(

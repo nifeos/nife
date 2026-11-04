@@ -6,6 +6,9 @@
 //! whose header and table live in that gap), no partitions, or a first partition at sector 1 gets
 //! no scratch range, and the bench probe refuses to write and says why. A Kani harness (`proofs` in
 //! the crate root) proves the range never touches a partition or sector 0, for every table.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3135. A partition is the word for a region of a card that an MBR
+//! describes.
 
 /// The MBR's last two bytes on a valid table.
 pub const SIGNATURE: [u8; 2] = [0x55, 0xaa];

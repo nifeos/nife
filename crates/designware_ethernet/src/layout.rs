@@ -1,4 +1,8 @@
-use super::{BUFFER_SIZE, DESCRIPTOR_BYTES, PAGE, RECEIVE_ENTRIES, TRANSMIT_ENTRIES};
+//! **Where each region of the DMA block sits**: the rings and buffers, as offsets from its start.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3122.
+
+use super::{BUFFER_BYTES, DESCRIPTOR_BYTES, PAGE, RECEIVE_ENTRIES, TRANSMIT_ENTRIES};
 /// The receive descriptor ring.
 pub(crate) const RECEIVE_RING: u64 = 0;
 // Zero is load-bearing: `configure` writes the receive ring's base as `region + RECEIVE_RING`,
@@ -9,19 +13,24 @@ pub(crate) const TRANSMIT_RING: u64 = PAGE;
 /// The first receive buffer.
 pub(crate) const RECEIVE_BUFFERS: u64 = 2 * PAGE;
 /// The first transmit buffer.
-pub(crate) const TRANSMIT_BUFFERS: u64 = RECEIVE_BUFFERS + RECEIVE_ENTRIES as u64 * BUFFER_SIZE;
-/// The region's size in bytes.
-pub const BYTES: u64 = TRANSMIT_BUFFERS + TRANSMIT_ENTRIES as u64 * BUFFER_SIZE;
-/// The region's size in pages.
-pub const PAGES: u64 = BYTES.div_ceil(PAGE);
+pub(crate) const TRANSMIT_BUFFERS: u64 = RECEIVE_BUFFERS + RECEIVE_ENTRIES as u64 * BUFFER_BYTES;
+/// The size in bytes of the `DirectMemoryAccessRegion` the controller reads and writes.
+///
+/// Name: ratified 2026-11-03 (UTC), renamed from `BYTES`.
+pub const DIRECT_MEMORY_ACCESS_REGION_BYTES: u64 =
+    TRANSMIT_BUFFERS + TRANSMIT_ENTRIES as u64 * BUFFER_BYTES;
+/// The size in pages of the `DirectMemoryAccessRegion`.
+///
+/// Name: ratified 2026-11-03 (UTC), renamed from `PAGES`.
+pub const DIRECT_MEMORY_ACCESS_REGION_PAGES: u64 = DIRECT_MEMORY_ACCESS_REGION_BYTES.div_ceil(PAGE);
 
 /// Receive buffer `i`'s offset. `i` is reduced modulo the ring so no input leaves the region.
 pub(crate) const fn receive_buffer(i: u16) -> u64 {
-    RECEIVE_BUFFERS + (i % RECEIVE_ENTRIES) as u64 * BUFFER_SIZE
+    RECEIVE_BUFFERS + (i % RECEIVE_ENTRIES) as u64 * BUFFER_BYTES
 }
 /// Transmit buffer `i`'s offset, reduced the same way.
 pub(crate) const fn transmit_buffer(i: u16) -> u64 {
-    TRANSMIT_BUFFERS + (i % TRANSMIT_ENTRIES) as u64 * BUFFER_SIZE
+    TRANSMIT_BUFFERS + (i % TRANSMIT_ENTRIES) as u64 * BUFFER_BYTES
 }
 /// Receive descriptor `i`'s offset.
 ///

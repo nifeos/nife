@@ -7,6 +7,9 @@
 //!
 //! Nothing here can fail on hostile input. A card is a device on the far side of a bus and its
 //! registers are data, so every decoder is total and every capacity is computed without overflow.
+//!
+//! Name: ratified 2026-11-03 (UTC), #3135. The card is the thing on the far side of the bus; the
+//! module decodes what it says about itself.
 
 /// The operation conditions register's (OCR) power-up-complete bit: clear while the card is still
 /// busy initializing.
@@ -38,27 +41,41 @@ pub(crate) const INTERFACE_CONDITION_ARGUMENT: u32 = 0x1aa;
 /// violation, lock failure, CRC, illegal command, ECC, controller error, unknown error, CSD
 /// overwrite, write-protect erase skip, and the authentication sequence error. `CARD_IS_LOCKED`
 /// (bit 25) is a state, not an error, and is not in the mask.
+///
+/// Name: ratified 2026-11-03 (UTC), #3138. A multi-bit mask takes `_MASK`. Renamed from `R1_ERRORS`; `R1` is the
+/// specification's own name for the response type and has no spelled-out form.
 #[doc(alias = "card status errors")]
-pub const R1_ERRORS: u32 = 0xfdf9_8008;
+pub const R1_ERROR_MASK: u32 = 0xfdf9_8008;
 /// **Ready for data, card status bit 8** (Linux's `R1_READY_FOR_DATA`, SD section 4.10.1): the R1
 /// bit saying the card is ready for data.
+///
+/// Name: ratified 2026-11-03 (UTC), #3138. `R1` is the specification's own name for the response type and has no
+/// spelled-out form, so the name stands as it was.
 #[doc(alias = "ready for data")]
 pub const R1_READY_FOR_DATA: u32 = 1 << 8;
 
 /// The R1 word's current state, bits 12:9: 4 is transfer, 5 sending data, 6 receive data, 7
 /// programming.
+///
+/// Name: ratified 2026-11-03 (UTC), #3138. `R1` is the specification's own name for the response type and has no
+/// spelled-out form, so the name stands as it was.
 #[must_use]
 pub const fn r1_state(r1: u32) -> u32 {
     (r1 >> 9) & 0xf
 }
 
 /// The transfer state, the one a selected card idles in.
-pub const STATE_TRANSFER: u32 = 4;
+///
+/// Name: ratified 2026-11-03 (UTC), #3138. The `R1_` prefix ties it to [`r1_state`], whose result it is compared
+/// with. Renamed from `STATE_TRANSFER`.
+pub const R1_STATE_TRANSFER: u32 = 4;
 
 /// **Bits `[start, start + len)` of a 128-bit register** held as four words, low word first.
 /// `len` above 32 is clamped to 32; positions past bit 127 read as zero.
+///
+/// Name: ratified 2026-11-03 (UTC), #3138. The name says what the function does. Renamed from `bits`.
 #[must_use]
-pub const fn bits(register: &[u32; 4], start: u32, len: u32) -> u32 {
+pub const fn extract_bits(register: &[u32; 4], start: u32, len: u32) -> u32 {
     let len = if len > 32 { 32 } else { len };
     if len == 0 || start >= 128 {
         return 0;
@@ -87,7 +104,7 @@ pub const fn bits(register: &[u32; 4], start: u32, len: u32) -> u32 {
 pub struct CardSpecificData {
     /// The structure version, bits 127:126: 0 standard capacity, 1 high or extended capacity
     /// (SDHC and SDXC), 2 ultra capacity (SDUC). For eMMC it is a different field with different
-    /// meaning; see [`CardSpecificData::sd`]'s caller.
+    /// meaning; see [`CardSpecificData::from_sd_register`]'s caller.
     pub structure: u32,
     /// Capacity in 512-byte blocks, or 0 when the structure is one this driver does not decode.
     pub blocks: u64,
@@ -96,24 +113,27 @@ pub struct CardSpecificData {
 impl CardSpecificData {
     /// **Decode an SD card's CSD.**
     ///
+    /// Name: ratified 2026-11-03 (UTC), #3138. `SD` is an accepted acronym, and the name marks this decoder as distinct from the
+    /// eMMC one. Renamed from `sd`.
+    ///
     /// ```
     /// use designware_mobile_storage::card::CardSpecificData;
     ///
     /// // A 32 GB SDHC card: structure 1, C_SIZE 60_947 (bits 69:48).
     /// let csd = [0, 60_947u32 << 16, 0, 1 << 30];
-    /// assert_eq!(CardSpecificData::sd(&csd).blocks, 60_948 * 1024);
+    /// assert_eq!(CardSpecificData::from_sd_register(&csd).blocks, 60_948 * 1024);
     /// ```
     #[must_use]
-    pub const fn sd(register: &[u32; 4]) -> CardSpecificData {
-        let structure = bits(register, 126, 2);
+    pub const fn from_sd_register(register: &[u32; 4]) -> CardSpecificData {
+        let structure = extract_bits(register, 126, 2);
         let blocks = match structure {
             // (C_SIZE + 1) * 2^(C_SIZE_MULT + 2) blocks of 2^READ_BL_LEN bytes. READ_BL_LEN is 9,
             // 10 or 11 on every card made; anything from 9 to 15 is decoded and a smaller one
             // refused rather than divided.
             0 => {
-                let c_size = bits(register, 62, 12) as u64;
-                let mult = bits(register, 47, 3);
-                let read_bl_len = bits(register, 80, 4);
+                let c_size = extract_bits(register, 62, 12) as u64;
+                let mult = extract_bits(register, 47, 3);
+                let read_bl_len = extract_bits(register, 80, 4);
                 if read_bl_len < 9 {
                     0
                 } else {
@@ -121,9 +141,9 @@ impl CardSpecificData {
                 }
             }
             // (C_SIZE + 1) * 512 KiB, C_SIZE 22 bits.
-            1 => (bits(register, 48, 22) as u64 + 1) * 1024,
+            1 => (extract_bits(register, 48, 22) as u64 + 1) * 1024,
             // SDUC: the same, C_SIZE 28 bits.
-            2 => (bits(register, 48, 28) as u64 + 1) * 1024,
+            2 => (extract_bits(register, 48, 28) as u64 + 1) * 1024,
             _ => 0,
         };
         CardSpecificData { structure, blocks }
@@ -134,10 +154,10 @@ impl CardSpecificData {
     /// layout of the size fields is the same as SD's version 1.
     #[must_use]
     pub(crate) const fn multimedia_card(register: &[u32; 4]) -> CardSpecificData {
-        let mut card_specific_data = CardSpecificData::sd(register);
-        let c_size = bits(register, 62, 12) as u64;
-        let mult = bits(register, 47, 3);
-        let read_bl_len = bits(register, 80, 4);
+        let mut card_specific_data = CardSpecificData::from_sd_register(register);
+        let c_size = extract_bits(register, 62, 12) as u64;
+        let mult = extract_bits(register, 47, 3);
+        let read_bl_len = extract_bits(register, 80, 4);
         card_specific_data.blocks = if read_bl_len < 9 {
             0
         } else {
@@ -166,18 +186,21 @@ pub struct CardIdentification {
 
 impl CardIdentification {
     /// Decode an SD card's CID.
+    ///
+    /// Name: ratified 2026-11-03 (UTC), #3138. `SD` is an accepted acronym, and the name marks this decoder as distinct from the
+    /// eMMC one. Renamed from `sd`.
     #[must_use]
-    pub const fn sd(register: &[u32; 4]) -> CardIdentification {
+    pub const fn from_sd_register(register: &[u32; 4]) -> CardIdentification {
         let mut name = [0u8; 6];
         let mut i = 0;
         while i < 5 {
-            name[i] = bits(register, 96 - 8 * i as u32, 8) as u8;
+            name[i] = extract_bits(register, 96 - 8 * i as u32, 8) as u8;
             i += 1;
         }
         CardIdentification {
-            manufacturer: bits(register, 120, 8) as u8,
+            manufacturer: extract_bits(register, 120, 8) as u8,
             name,
-            serial: bits(register, 24, 32),
+            serial: extract_bits(register, 24, 32),
         }
     }
 
@@ -187,13 +210,13 @@ impl CardIdentification {
         let mut name = [0u8; 6];
         let mut i = 0;
         while i < 6 {
-            name[i] = bits(register, 96 - 8 * i as u32, 8) as u8;
+            name[i] = extract_bits(register, 96 - 8 * i as u32, 8) as u8;
             i += 1;
         }
         CardIdentification {
-            manufacturer: bits(register, 120, 8) as u8,
+            manufacturer: extract_bits(register, 120, 8) as u8,
             name,
-            serial: bits(register, 16, 32),
+            serial: extract_bits(register, 16, 32),
         }
     }
 }
@@ -230,11 +253,11 @@ mod tests {
     fn a_field_that_straddles_two_words_is_read_whole() {
         let mut r = [0u32; 4];
         put(&mut r, 62, 12, 0xabc);
-        assert_eq!(bits(&r, 62, 12), 0xabc);
+        assert_eq!(extract_bits(&r, 62, 12), 0xabc);
         put(&mut r, 120, 8, 0x1b);
-        assert_eq!(bits(&r, 120, 8), 0x1b);
-        assert_eq!(bits(&r, 128, 8), 0);
-        assert_eq!(bits(&r, 0, 0), 0);
+        assert_eq!(extract_bits(&r, 120, 8), 0x1b);
+        assert_eq!(extract_bits(&r, 128, 8), 0);
+        assert_eq!(extract_bits(&r, 0, 0), 0);
     }
 
     #[test]
@@ -246,7 +269,7 @@ mod tests {
         put(&mut r, 47, 3, 7);
         put(&mut r, 80, 4, 10);
         assert_eq!(
-            CardSpecificData::sd(&r).blocks * 512,
+            CardSpecificData::from_sd_register(&r).blocks * 512,
             2 * 1024 * 1024 * 1024
         );
     }
@@ -255,7 +278,7 @@ mod tests {
     fn a_read_block_length_below_512_is_refused_rather_than_shifted_negative() {
         let mut r = [0u32; 4];
         put(&mut r, 80, 4, 3);
-        assert_eq!(CardSpecificData::sd(&r).blocks, 0);
+        assert_eq!(CardSpecificData::from_sd_register(&r).blocks, 0);
         assert_eq!(CardSpecificData::multimedia_card(&r).blocks, 0);
     }
 
@@ -264,7 +287,10 @@ mod tests {
         let mut r = [0u32; 4];
         put(&mut r, 126, 2, 1);
         put(&mut r, 48, 22, 0x3f_ffff);
-        assert_eq!(CardSpecificData::sd(&r).blocks, 0x40_0000 * 1024);
+        assert_eq!(
+            CardSpecificData::from_sd_register(&r).blocks,
+            0x40_0000 * 1024
+        );
     }
 
     #[test]
@@ -275,7 +301,7 @@ mod tests {
             put(&mut r, 96 - 8 * i as u32, 8, u32::from(*b));
         }
         put(&mut r, 24, 32, 0xdead_beef);
-        let card_identification = CardIdentification::sd(&r);
+        let card_identification = CardIdentification::from_sd_register(&r);
         assert_eq!(card_identification.manufacturer, 3);
         assert_eq!(&card_identification.name[..5], b"SN32G");
         assert_eq!(card_identification.serial, 0xdead_beef);
@@ -291,12 +317,12 @@ mod tests {
 
     #[test]
     fn r1_state_and_errors() {
-        let ready_in_transfer = (STATE_TRANSFER << 9) | R1_READY_FOR_DATA;
-        assert_eq!(r1_state(ready_in_transfer), STATE_TRANSFER);
-        assert_eq!(ready_in_transfer & R1_ERRORS, 0);
+        let ready_in_transfer = (R1_STATE_TRANSFER << 9) | R1_READY_FOR_DATA;
+        assert_eq!(r1_state(ready_in_transfer), R1_STATE_TRANSFER);
+        assert_eq!(ready_in_transfer & R1_ERROR_MASK, 0);
         // CARD_IS_LOCKED is not an error; ILLEGAL_COMMAND is.
-        assert_eq!((1 << 25) & R1_ERRORS, 0);
-        assert_ne!((1 << 22) & R1_ERRORS, 0);
+        assert_eq!((1 << 25) & R1_ERROR_MASK, 0);
+        assert_ne!((1 << 22) & R1_ERROR_MASK, 0);
         assert_eq!(R1_READY_FOR_DATA, 0x100);
     }
 
@@ -313,11 +339,14 @@ mod tests {
         put(&mut r, 0, 32, 0x8765_4321);
         put(&mut r, 32, 32, 0x0fed_cba9);
         put(&mut r, 96, 32, 0xa5c3_0f1e);
-        assert_eq!(bits(&r, 0, 64), 0x8765_4321);
+        assert_eq!(extract_bits(&r, 0, 64), 0x8765_4321);
         // Shift 1, length 32: the field's top bit is the next word's bit 0.
-        assert_eq!(bits(&r, 1, 32), 0x8765_4321 >> 1 | 0x0fed_cba9 << 31);
+        assert_eq!(
+            extract_bits(&r, 1, 32),
+            0x8765_4321 >> 1 | 0x0fed_cba9 << 31
+        );
         // Bits 120 to 135: the eight that exist, and nothing read past the last word.
-        assert_eq!(bits(&r, 120, 16), 0xa5);
+        assert_eq!(extract_bits(&r, 120, 16), 0xa5);
     }
 
     /// `READ_BL_LEN` 9 (512-byte blocks) is the case where the shift's `- 9` is zero, and
@@ -328,7 +357,7 @@ mod tests {
         put(&mut r, 62, 12, 100);
         put(&mut r, 47, 3, 3);
         put(&mut r, 80, 4, 9);
-        assert_eq!(CardSpecificData::sd(&r).blocks, 101 << 5);
+        assert_eq!(CardSpecificData::from_sd_register(&r).blocks, 101 << 5);
         assert_eq!(CardSpecificData::multimedia_card(&r).blocks, 101 << 5);
     }
 
@@ -337,7 +366,7 @@ mod tests {
         let mut r = [0u32; 4];
         put(&mut r, 126, 2, 2);
         put(&mut r, 48, 28, 0x0abc_def0);
-        let card_specific_data = CardSpecificData::sd(&r);
+        let card_specific_data = CardSpecificData::from_sd_register(&r);
         assert_eq!(card_specific_data.structure, 2);
         assert_eq!(card_specific_data.blocks, (0x0abc_def0 + 1) * 1024);
     }
@@ -351,7 +380,7 @@ mod tests {
             put(&mut r, 96 - 8 * i as u32, 8, u32::from(*b));
         }
         put(&mut r, 120, 8, 0x15);
-        assert_eq!(CardIdentification::sd(&r).name, *b"NIFEM\0");
+        assert_eq!(CardIdentification::from_sd_register(&r).name, *b"NIFEM\0");
         let mut multimedia_card = r;
         put(&mut multimedia_card, 16, 32, 0x1357_9bdf);
         let card_identification = CardIdentification::multimedia_card(&multimedia_card);
