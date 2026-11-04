@@ -40,6 +40,17 @@ corrections lived before that directory: `notes/corrections/` (the first, 2026-0
 `## Action items` section. The older places are read so that `script/metrics` can count past weeks
 from the tree as it stood, and so that a correction still filed there is gated like the rest.
 
+**A table, and both directions.** A correction may write its action items as one table instead of
+bullets, with the columns `#`, `what`, `status` and `record`. The record cell opens with the same
+opener a bullet does, and the row resolves exactly as that bullet would. The status cell says
+`delivered` or `proposed`, and the gate holds it to the resolution: a delivered row resolves closed
+and a proposed row open. A table-form correction is also held to the other direction. Each
+`Proposed.` row names a file that carries `COE action item: <correction>, action <N>`, and each
+`Milestone N.` row a block that carries it. Every file under `design/roadmap/` that carries such a
+line names a correction that exists, with a row of that number pointing back at it. A promoted
+proposal still matches, through its `promoted_from`. Bullet-form corrections keep only the first
+direction: their proposals predate the line, and the gate does not reach back for them.
+
 Name: provisional, minted by the lane revising #1513 on 2026-10-03 (UTC). A shared python module
 under `helpers/`, which `script/names` puts out of its own scope, so this paragraph is the record.
 `coe` is the directory's own provisional abbreviation (`notes/coes/README.md`).
@@ -77,6 +88,10 @@ PROSE_FLOOR = 40
 _BLOCK = re.compile(r"^design/roadmap/(\d+)-[a-z0-9][a-z0-9-]*\.md$")
 _DECISION = re.compile(r"^design/decisions/\d+[a-z]?-[a-z0-9-]+\.md$")
 _TICKED = re.compile(r"`([^`]+)`")
+# The back reference a proposal or a milestone block carries, one line of its own (2026-11-04 UTC).
+BACK_REFERENCE = re.compile(r"^COE action item: `?(notes/coes/[a-z0-9-]+\.md)`?, action (\d+)\.?[ \t]*$",
+                            re.M)
+DELIVERED, PROPOSED_STATUS = "delivered", "proposed"
 
 
 def is_record(path):
@@ -128,13 +143,122 @@ def bullets(text):
     for n, l in enumerate(lines[heads[0]:], start=heads[0] + 1):
         if l.startswith("#"):
             break
-        if l.startswith("- "):
+        row = _row(l)
+        if row:
+            out.append([n, row[3]])
+        elif l.startswith("- "):
             out.append([n, l])
         elif out and l.startswith(("  ", "\t")) and l.strip():
             out[-1][1] += " " + l.strip()
     if not out:
         return [], [f"'{ACTIONS_HEADING}' has no bullets"]
     return [(n, l) for n, l in out], []
+
+
+def _row(line):
+    """(number, what, status, the row as a bullet) for one action-table row, or None for any other
+    line, the header and the separator included. The bullet is the record cell, then the what cell,
+    so `resolve` reads the opener first and counts both cells toward the prose floor."""
+    if not line.startswith("|"):
+        return None
+    cells = [c.strip() for c in line.strip().strip("|").split("|")]
+    if len(cells) != 4 or not cells[0].isdigit():
+        return None
+    number, what, status, record = cells
+    return int(number), what, status.lower(), f"- {record} {what}"
+
+
+def rows(text):
+    """[(line number, action number, status, bullet)] for a table-form `## Action items`, or [] for
+    a bullet-form one."""
+    lines = text.split("\n")
+    heads = [n for n, l in enumerate(lines, start=1) if l.rstrip() == ACTIONS_HEADING]
+    out = []
+    for n, l in enumerate(lines[heads[0]:] if len(heads) == 1 else [], start=(heads or [0])[0] + 1):
+        if l.startswith("#"):
+            break
+        row = _row(l)
+        if row:
+            out.append((n, row[0], row[2], row[3]))
+    return out
+
+
+def _target(bullet, ctx):
+    """What a row points at that can carry a back reference: ('proposal', path), ('milestone', N)
+    or None. A promoted proposal points at its milestone."""
+    dm = roadmap_block.DISPOSITION.match(bullet.rstrip())
+    if not dm:
+        return None
+    kind = dm.group(1).split(" ")[0]
+    if kind == "Milestone":
+        return ("milestone", int(dm.group(2)))
+    if kind == "Proposed":
+        for path in _TICKED.findall(dm.group(3)):
+            if path.startswith(PROPOSALS):
+                slug = path[len(PROPOSALS):].removesuffix(".md")
+                if slug in ctx["promoted"]:
+                    return ("milestone", ctx["promoted"][slug])
+                return ("proposal", path)
+    return None
+
+
+def _carriers(texts):
+    """{(correction, action number): [the design/roadmap/ files carrying that back reference]}."""
+    out = {}
+    for path, text in texts.items():
+        if path.startswith("design/roadmap/") and not path.endswith("README.md"):
+            for m in BACK_REFERENCE.finditer(text):
+                out.setdefault((m.group(1), int(m.group(2))), []).append(path)
+    return out
+
+
+def _milestone_path(number, texts):
+    for path in texts:
+        m = _BLOCK.match(path)
+        if m and int(m.group(1)) == number:
+            return path
+    return None
+
+
+def back_references(texts, ctx):
+    """[(path, line, problem)] for both directions between table-form corrections and the files
+    their rows name. See the docstring's "A table, and both directions"."""
+    problems = []
+    carriers = _carriers(texts)
+    pointed = {}
+    for path in sorted(p for p in texts if is_record(p)):
+        for n, number, status, bullet in rows(texts[path]):
+            target = _target(bullet, ctx)
+            if target is None:
+                continue
+            want = (path, number)
+            pointed[want] = target
+            if target[0] == "proposal":
+                carrier = target[1]
+            else:
+                carrier = _milestone_path(target[1], texts)
+            if carrier is None or carrier not in texts:
+                continue
+            if carrier not in carriers.get(want, []):
+                problems.append((path, n, f"action {number} names {carrier}, which does not carry "
+                                          f"'COE action item: {path}, action {number}' on a line of "
+                                          f"its own"))
+    for (coe, number), files in sorted(carriers.items()):
+        for f in files:
+            if coe not in texts:
+                problems.append((f, 0, f"'COE action item: {coe}, action {number}' names a "
+                                       f"correction that does not exist"))
+                continue
+            target = pointed.get((coe, number))
+            mine = ("proposal", f) if f.startswith(PROPOSALS) else None
+            m = _BLOCK.match(f)
+            if m:
+                mine = ("milestone", int(m.group(1)))
+            if target != mine:
+                problems.append((f, 0, f"'COE action item: {coe}, action {number}': that "
+                                       f"correction's action {number} does not point back at this "
+                                       f"file"))
+    return problems
 
 
 def resolve(line, ctx, exists):
@@ -194,8 +318,16 @@ def evaluate(texts, exists):
         items, section_problems = bullets(texts[path])
         problems.extend((path, 0, p) for p in section_problems)
         opened = closed = 0
+        statuses = {n: status for n, _number, status, _bullet in rows(texts[path])}
         for n, line in items:
             state, problem = resolve(line, ctx, exists)
+            status = statuses.get(n)
+            if not problem and status is not None:
+                if status not in (DELIVERED, PROPOSED_STATUS):
+                    problem = (f"status {status!r} is not '{DELIVERED}' or '{PROPOSED_STATUS}'")
+                elif (status == DELIVERED) != (state == "closed"):
+                    problem = (f"status says {status}, but the record resolves "
+                               f"{'closed' if state == 'closed' else 'open'}")
             if problem:
                 problems.append((path, n, problem))
             elif state == "open":
@@ -203,4 +335,5 @@ def evaluate(texts, exists):
             else:
                 closed += 1
         counts[path] = (opened, closed)
+    problems.extend(back_references(texts, ctx))
     return counts, problems
