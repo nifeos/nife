@@ -19,7 +19,9 @@ product line. Three things have moved since:
   crates. That rule cuts both ways here. Where a maintained crate exists, it argues
   for offering our proofs to it rather than publishing a rival.
 
-And one thing has not moved. §235 (the OS is built and updated from packages, and its source divides
-by purpose) was amended to size a home by what changes together. Under it, no package
-moves to a new repository before milestone 610 (the interface's stability is measured weekly)
-carries its per-package co-change column. Fork 1 has to respect that.
+And two records bound Fork 1. Under §235 (the OS is built and updated from packages, and its
+source divides by purpose), milestone 610 (the interface's stability is measured weekly)'s
+per-package co-change column informs how packages group and holds no move. Under §316 (a program
+package leaves as one repository, with the crates only it uses), a crate gets a repository of its
+own only when it would publish on its own merits or more than one repository consumes it; any
+other crate leaves inside its package's repository.

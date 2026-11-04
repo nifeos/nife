@@ -35,7 +35,7 @@ use abi::Error;
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Capability, Object, Rights};
 use crate::sched::{self, RendezvousId};
-use crate::testing::wait_on_every_core;
+use crate::testing::{BUDGET_EXPIRED_MARKER, wait_on_every_core};
 use crate::thread::{State, ThreadId, Wait, WaitRole};
 
 /// [`wait_on_every_core`] for a site whose message has nothing to add to it. An actor's work may sit
@@ -932,7 +932,9 @@ impl Stage {
     fn run(&mut self, a: usize, cmd: Cmd) -> Option<Answer> {
         let seq = self.post(a, cmd);
         if let Err(budget) = wait_on_every_core(|| Self::finished(a, seq) || self.parked(a)) {
-            panic!("actor {a} neither finished nor parked within the budget: {budget}");
+            panic!(
+                "{BUDGET_EXPIRED_MARKER} actor {a} neither finished nor parked within the budget: {budget}"
+            );
         }
         Self::finished(a, seq).then(|| Self::answer(a))
     }
@@ -1031,7 +1033,7 @@ impl Run<'_> {
             if let Err(budget) = wait_on_every_core(|| Stage::finished(b, seq)) {
                 mismatch!(
                     self,
-                    "{what:?} should have woken actor {b} with {want:?}; it stayed parked ({budget})"
+                    "{BUDGET_EXPIRED_MARKER} {what:?} should have woken actor {b} with {want:?}; it stayed parked ({budget})"
                 );
             }
             let got = Stage::answer(b);
@@ -1134,7 +1136,7 @@ impl Run<'_> {
         let region = self.world.region;
         assert!(
             wait_for(|| sched::reclaim_region(region).is_ok()),
-            "seed {:#x}: the fuzz region could not be reclaimed",
+            "{BUDGET_EXPIRED_MARKER} seed {:#x}: the fuzz region could not be reclaimed",
             self.seed
         );
         // Frames go with their region; the model forgets them so the comparison is about the rest.
@@ -1161,7 +1163,7 @@ impl Run<'_> {
             if let Err(budget) = wait_on_every_core(|| Stage::finished(b, seq)) {
                 mismatch!(
                     self,
-                    "teardown should have woken actor {b} with {want:?} ({budget})"
+                    "{BUDGET_EXPIRED_MARKER} teardown should have woken actor {b} with {want:?} ({budget})"
                 );
             }
             let got = Stage::answer(b);
@@ -1480,15 +1482,15 @@ fn seeded_syscalls_agree_with_the_shadow_model() {
         let seq = stage.post(a, Cmd::Exit);
         assert!(
             wait_for(|| Stage::finished(a, seq)),
-            "actor {a} did not exit"
+            "{BUDGET_EXPIRED_MARKER} actor {a} did not exit"
         );
     }
     assert!(
         wait_for(|| tids.iter().all(|&t| !sched::is_thread_present(t))),
-        "an actor thread outlived the run"
+        "{BUDGET_EXPIRED_MARKER} an actor thread outlived the run"
     );
     assert!(
         wait_for(|| sched::reclaim_region(cmd_region).is_ok()),
-        "the doorbell region could not be reclaimed"
+        "{BUDGET_EXPIRED_MARKER} the doorbell region could not be reclaimed"
     );
 }

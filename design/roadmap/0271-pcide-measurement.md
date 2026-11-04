@@ -34,7 +34,7 @@ measured rather than asserted"*).
 
 ## What is skipping, and why it is not a bug
 
-`kernel/src/user/tests.rs:508` skips its ASID-tagging assertion on x86_64, because the kernel runs
+`asid_tagging_keeps_address_spaces_apart_without_flushes` in `system_tests/src/user/address_space_tests.rs` skips its ASID-tagging assertion on x86_64, because the kernel runs
 with `CR4.PCIDE` clear. PCID is `CR3[11:0]`, and with `PCIDE` clear those bits are reserved-zero,
 so `arch::x86_64::mmu::ttbr0_value` drops the tag and every `mov cr3` flushes the whole TLB. The test
 would pass, but for the wrong reason (nothing was cached, not because tagging works), so it skips

@@ -89,7 +89,7 @@ a name had been refused. Read before sweeping.
   through a server would add syscalls to code that has none, and a `GlobalAlloc` that performs IPC
   per allocation is its own disaster. In a capability system the program already holds its budget;
   there is nothing for a server to arbitrate.
-- Move `heap` as well. It calls `memory_region::MAP` (`heap.rs:163`). It belongs with the runtime.
+- Move `heap` as well. It calls `memory_region::MAP` (`grow` in `crates/memory_region_heap/src/lib.rs`). It belongs with the runtime.
 - Move `virtio` as well. Five syscall sites, device-specific, and already opt-in and scoped for
   the reason `mapped_window`'s own header gives.
 - Split `user_rt` further, by concern. Refused as gold-plating. The line this milestone draws is

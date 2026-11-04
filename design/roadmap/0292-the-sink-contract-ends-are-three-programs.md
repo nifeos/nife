@@ -35,9 +35,9 @@ because none of them was a `#[path]` module:
 
 | file | what it declared |
 |---|---|
-| `fixtures/src/sink.rs:86-88` | `ROLE_WRITER = 0`, `ROLE_FILE = 1`, `ROLE_VERIFY = 2` |
-| `kernel/src/user/sink_tests.rs:9` | `ROLE_WRITER = 0` |
-| `kernel/src/user/fs_service.rs:1272-1273` | `SINK_ROLE_FILE = 1`, `SINK_ROLE_VERIFY = 2` |
+| `fixtures/src/sink.rs` | `ROLE_WRITER = 0`, `ROLE_FILE = 1`, `ROLE_VERIFY = 2` |
+| `system_tests/src/user/sink_tests.rs` | `ROLE_WRITER = 0` |
+| `kernel/src/user/fs_service.rs` | `SINK_ROLE_FILE = 1`, `SINK_ROLE_VERIFY = 2` |
 
 Three sites, six constant definitions, and the split deleted every one. Counted by grepping the
 values and not only the names, because a bare `arg0: 1` would not have shown up in a search for

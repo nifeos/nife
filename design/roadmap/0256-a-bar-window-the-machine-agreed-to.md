@@ -89,7 +89,7 @@ this milestone or in a second one is the lane's call to make and to say out loud
 agreed to. Under QEMU the census is the same instrument and is already wired to the boot line, so
 the work is testable on patagonia and only *confirmed* at the bench.
 
-It is also one line further into the tour. The boot stopped at `mmu.rs:349` on 2026-09-04 and
+It is also one line further into the tour. The boot stopped at the `panic!` in `initialize` in `kernel/src/arch/x86_64/mmu/kernel_map.rs` on 2026-09-04 and
 everything past it is unseen on real firmware, so the honest expectation is that this milestone buys
 the next stop rather than the end of the tour.
 
@@ -178,7 +178,7 @@ and the disagreement message names both numbers. `script/test` passes on all thr
   camera, because patagonia cannot be moved to it and there is no serial. What is checkable here has
   been checked; what is not, is not.
 - The honest expectation is still the next stop rather than the end of the tour. The boot
-  stopped at `mmu.rs:349` on 2026-09-04 and everything past it is unseen on real firmware. This
+  stopped at the `panic!` in `initialize` in `kernel/src/arch/x86_64/mmu/kernel_map.rs` on 2026-09-04 and everything past it is unseen on real firmware. This
   block predicts the panic is gone and predicts nothing about what the boot finds after it.
 - **`TOLUD` is Intel's register, not the architecture's.** A non-Intel host bridge answers `None`
   and the firmware map is then the only source, silently. That is correct behavior and it is also

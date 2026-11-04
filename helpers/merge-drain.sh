@@ -55,10 +55,9 @@ set -e
 cd "$(dirname "$0")/.."
 
 REPO="nifeos/nife"
-HELD_LABEL="needs-architect"
-# A send-back: calef has ruled and the lane owes a change. Its own label, so `needs-architect` stays
-# calef's worklist; architect-hold.yml fails on it ahead of the `architect-ruled` release.
-LANE_HELD_LABEL="held-by-lane"
+# The three hold labels (HELD_LABEL, LANE_HELD_LABEL, RED_TRUNK_LABEL) are defined once, in
+# helpers/hold-labels.sh, which helpers/arm.sh also reads to refuse arming a held pull request.
+. "$(dirname "$0")/hold-labels.sh"
 
 # **Which drain spoke.** A GitHub App installation token carries the App and not the caller, so
 # GitHub cannot tell a reader whether the workflow or a laptop acted; the tag lives in the content.
@@ -69,9 +68,6 @@ LANE_HELD_LABEL="held-by-lane"
 INSTANCE="${MERGE_DRAIN_INSTANCE:-$(hostname -s 2>/dev/null || echo unknown)}"
 ME="merge-drain[$INSTANCE]"
 
-# A hold on the whole queue rather than on one pull request: `helpers/queue-hold.sh` places it
-# while `main` is broken, so that one fix lands alone. See notes/main-is-red.md.
-RED_TRUNK_LABEL="held-for-red-trunk"
 
 dry=""
 case "$1" in

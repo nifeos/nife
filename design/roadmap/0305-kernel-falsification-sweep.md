@@ -73,7 +73,8 @@ address ... `translate_user` alone would say 'not mapped' for it and turn the mo
 into the wrong answer."* `user_can_read` went on calling `translate_user`.
 
 Fixed here (`translate_in_either_half`, `kernel/src/arch/riscv64/mmu.rs`), measured both ways on
-riscv64: green with the fix, and red under the patch at `riscv_virtio_tests.rs:142` with the test's
+riscv64: green with the fix, and red under the patch in `the_page_tables_say_u_mode_cannot_read_the_kernels_memory` in
+`system_tests/src/user/riscv_virtio_tests.rs` with the test's
 own sentence, *"the page tables say U-mode could read the kernel's own memory."*
 
 Two things follow and both are larger than this row. A green confinement test is consistent with
@@ -104,7 +105,7 @@ states its property twice, the readable statement is usually the unreachable one
 found the same way, neither visible without breaking the claim.
 
 Row 24's own record is weaker than the row looks, and the patch says so. The recorded defect
-turns the test red through `assert_report`'s *second* direction at `shell_navigation_tests.rs:99`,
+turns the test red through `assert_report`'s *second* direction at `system_tests/src/user/shell_navigation_tests.rs`,
 the vacuity guard: with the caretaker serving the filesystem root, the shell could no longer reach
 its own files, so *"every refusal it reported proves nothing"*. Nothing crossed. It proves the test
 is wired to the real root handle; it does not demonstrate a crossing.
@@ -136,13 +137,14 @@ evidence that the test can fail.
 
 Row 23's first patch was the faithful one: the claim is the kernel's, so break
 `CapabilityTable::delete` and watch the progenitor rebuild. It turns the test red, and it turns it
-red at `authority_tests.rs:112`, inside the `run_tree` helper, on *"the supervision tree could not be
+red in `system_tests/src/user/authority_tests.rs`, inside the `run_tree` helper, on *"the supervision tree could not be
 built: stage 3"*, because a `delete` that deletes nothing breaks the tree's construction long before
 the progenitor gets to the part where it drops anything. Right answer, useless diagnostic; milestone
 202's hazard exactly.
 
 The recorded patch is the fixture edit instead (`root_supervisor` keeps the untyped it is supposed to
-give away), which fails at `authority_tests.rs:165` on the test's own sentence. The refused patch
+give away), which fails in `the_root_supervisor_drops_its_construction_authority_and_cannot_build_again` in
+`system_tests/src/user/authority_tests.rs` on the test's own sentence. The refused patch
 is in the record with its measurement, so the better-looking defect is not rediscovered.
 
 ### A defect is not always expressible on every ISA, and row 21 is where that bites
@@ -239,8 +241,8 @@ keeps comparing two derivations of one fact; that check fired on the first run h
   is not a Kani harness; nothing sweeps it". Something sweeps it.
 - **Done.** `user_can_read` and `user_can_write` on riscv64, which answered by refusing to look at a
   high-half address, so `the_page_tables_say_u_mode_cannot_read_the_kernels_memory` could not fail.
-  Fixed by `translate_in_either_half`; checked both ways on riscv64 (green with the fix, red at
-  `riscv_virtio_tests.rs:142` under the patch).
+  Fixed by `translate_in_either_half`; checked both ways on riscv64 (green with the fix, red in
+  `the_page_tables_say_u_mode_cannot_read_the_kernels_memory` in `system_tests/src/user/riscv_virtio_tests.rs` under the patch).
 - **Recorded.** In this block's own `BUGS`, because there is nowhere nearer a reader:
   `design/fatal-risks/README.md` risk 7 says "Six kernel confinement rows still have no mechanism at all",
   which is now false. A lane may not edit `design/` outside its own block and nothing gates that

@@ -11,7 +11,7 @@ The same `* KERNEL STACK OVERFLOW *` banner, the same one-page guard, the same t
 architectures:
 
 - aarch64, in a merge-queue run at 01:48Z: slot 87's guard page, `sp` 4096 bytes past the
-  bottom of a 16384-byte stack, panicking at `arch/aarch64/exceptions.rs:630`.
+  bottom of a 16384-byte stack, panicking in `fatal` in `kernel/src/arch/aarch64/exceptions.rs`.
 - riscv64, in pull request #213's `cpu matrix` job at 22:29Z: slot 102's guard page, 4088 bytes
   past, on the `rv64` model only, with the other four models green.
 
