@@ -43,7 +43,15 @@ on:
   # The failure looks like the queue hanging rather than like a missing trigger, which is why this
   # is here before the queue is switched on rather than after.
   merge_group:
+  # `full_ci` false runs only the pull-request set; the default runs everything, heavy gates
+  # included, which is how a lane runs them on its branch (helpers/full_ci.py).
   workflow_dispatch:
+    inputs:
+      full_ci:
+        description: "run the heavy gates too (false: only the set a pull request runs)"
+        type: boolean
+        required: false
+        default: true
 
 # Least privilege for GITHUB_TOKEN, set once for every job below. CodeQL flagged its absence
 # (actions/missing-workflow-permissions, 7 alerts) and it is the right call for this repo in
@@ -303,8 +311,20 @@ jobs:
   # keeps `rustfmt` running, and `comment_tests`, which `lint` tests on the host.
   #
   # **Fails toward running.** A classifier error leaves `prose` empty and `!= 'true'` admits it.
+  #
+  # **A merge group runs no gate job.** There its draft half always answers "run" (a merge group is
+  # not a pull request) and A′ is a push rule, so the job asked only the prose question, and every
+  # job below waited for a runner to start it: in the runs measured on 2026-11-03 (UTC), about ten
+  # minutes of waiting for 30 seconds of work, before the shards waited again for their own. So in
+  # a merge group this job is skipped by its condition, every job below starts at once (its
+  # `!cancelled()` reaches the condition with the gate skipped, and the empty outputs read as
+  # "run"), and each heavy job asks the prose question itself in a `merge-group-gate` step right
+  # after its checkout, which skips every later step on a prose-only group
+  # (helpers/prose_only.py, MERGE GROUPS). A pull request keeps this job, because there the draft
+  # answer is what lets a draft skip every job without taking a runner at all.
   gate:
     name: draft gate
+    if: ${{ github.event_name != 'merge_group' }}
     runs-on: ubuntu-24.04
     # `actions: read` is for the push branch below: listing this workflow's merge_group runs. The
     # job-level block replaces the workflow's, so the reads the draft half already relied on are
@@ -319,6 +339,7 @@ jobs:
       prose_tests: ${{ steps.prose.outputs.prose_tests }}
       comments: ${{ steps.prose.outputs.comments }}
       comment_tests: ${{ steps.prose.outputs.comment_tests }}
+      heavy: ${{ steps.heavy.outputs.heavy }}
     timeout-minutes: 25
     steps:
       - name: Start the job wall-time clock
@@ -369,7 +390,9 @@ jobs:
         if: steps.state.outputs.run != 'false'
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          # On a push, the commit `main` held before it: a merge-queue batch lands as one push whose
+          # tip is the last pull request's merge, so `HEAD~1` alone would classify that one only.
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
         run: |
           # The base, resolved exactly as the scope checks this replaced resolved it.
           # `helpers/scope-merge-base.sh` (its header has #1416) takes the merge base against the
@@ -389,6 +412,16 @@ jobs:
           echo "==> classifying $base..HEAD"
           # A classifier that fails writes no `prose`, and every heavy job reads empty as "run".
           python3 helpers/prose_only.py classify "$base"
+      # The heavy gates run only in the merge queue: see the comment above `test-host`.
+      - name: Does this run take the heavy gates?
+        id: heavy
+        if: steps.state.outputs.run != 'false'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          FULL_CI_INPUT: ${{ inputs.full_ci }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 helpers/full_ci.py decide
       - name: Check the job's wall time against its budget
         if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
@@ -500,7 +533,7 @@ jobs:
     name: test shard (${{ matrix.legs }})
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     strategy:
       # Both shards finish, so a red one says which architectures failed and the other still
       # reports.
@@ -530,6 +563,14 @@ jobs:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
           fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
@@ -542,14 +583,17 @@ jobs:
       # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored BEFORE
       # script/bootstrap on purpose, because bootstrap skips its apt install when QEMU is already on
       # PATH, which is how the built one wins.
-      - name: Cache QEMU
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
           key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
-      - name: Build QEMU if the cache missed
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Build QEMU if the cache missed
         run: script/ci-qemu
-      - name: Put it on PATH
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Put it on PATH
         run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
 
       # **The provisioning step is explicit** (milestone 286), the same shape the `bench` and `cpu
@@ -560,7 +604,8 @@ jobs:
       # No lint in this job, so no cargo-machete or typos: NIFE_SKIP_LINT_TOOLS=1 skips the two
       # source builds (about 85 s on the arm64 runners, #1778). Only the `lint` job lints, and it
       # installs them itself.
-      - run: script/bootstrap
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
 
@@ -569,7 +614,8 @@ jobs:
       # `script/ci-build --list` prints it. Until 2026-09-30 this step chained three more checks
       # behind it in one runner; the three jobs below carry them, each for its own recorded reasons.
       # Since 2026-10-12 each shard runs one of the two `ci` rows that together are the `test` row.
-      - run: helpers/hang_evidence.py run -- script/ci-build ${{ matrix.check }}
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build ${{ matrix.check }}
       # Where the suite's time went (milestone 807 (the kernel suite reports what each test cost),
       # §254 (a gate prints what each item cost), Fork 3): every leg's phases and every test's
       # time, written by `cargo xtask test` as it ran. The step summary costs nothing unless someone
@@ -594,23 +640,103 @@ jobs:
         if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
 
+  # **The heavy gates run only in the merge queue** (provisional, ruled 2026-11-03 UTC;
+  # notes/merge-queue.md lists both sides). A pull request runs the cheap set: rustfmt, `lint`
+  # (script/lint, whose clippy builds every target), this job's host pass, the mutation gate and
+  # the short build checks (fastpath footprint, boot file size, stack frames, image permissions,
+  # reproducible build, interleavings, coverage, supply chain). The jobs that boot kernels under
+  # QEMU, fuzz, bench and probe crates, and verify.yml's proofs, run in the merge group, on a push
+  # to `main` that no merge group tested, and on a pull request carrying the `full-ci` label. Each
+  # of those jobs ends its `if:` with the same clause: a merge group or a push runs it by event
+  # name alone, and only a gate that answered `heavy=false` (helpers/full_ci.py) skips it. A job
+  # skipped by its condition reports Success, so the required names hold on a pull request
+  # unchanged, and the merge group, whose results the queue merges on, runs every one of them.
+  #
+  # So on a pull request the `test` name means this job: the host crates and no kernel. In a merge
+  # group it means the two shards above, whose first one runs the same host pass. `test-host` runs
+  # on the x86_64 pool, where the host tests reproduced arm64's results (the header's 2026-09-24
+  # paragraph), and restores QEMU only so that script/bootstrap skips its apt install.
+  test-host:
+    name: test-host (the host crates, on a pull request)
+    runs-on: ubuntu-24.04
+    needs: gate
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && github.event_name != 'merge_group' && github.event_name != 'push' && needs.gate.outputs.heavy == 'false' }}
+    timeout-minutes: 25
+    steps:
+      - name: Start the job wall-time clock
+        run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Cache QEMU
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/nife-qemu
+          key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+      - name: Build QEMU if the cache missed
+        run: script/ci-qemu
+      - name: Put it on PATH
+        run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
+      - run: script/bootstrap
+        env:
+          NIFE_SKIP_LINT_TOOLS: "1"
+      - run: helpers/hang_evidence.py run -- script/ci-build test-host
+      - name: Summarize where the time went
+        if: always() && hashFiles('target/time-record.tsv') != ''
+        run: cargo xtask time-summary target/time-record.tsv >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload the time record
+        if: always() && hashFiles('target/time-record.tsv') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: time-record-test-host
+          path: target/time-record.tsv
+      # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
+      - name: Upload the hang evidence
+        if: always() && hashFiles('target/hang-evidence/**') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: hang-evidence-${{ github.job }}
+          path: target/hang-evidence/
+      - name: Check the job's wall time against its budget
+        if: always()
+        run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
+
   # The name the ruleset requires, kept stable over the shards. It reads one result and boots
   # nothing, so it runs on the x86_64 pool and has no checkout (helpers/job-budget.py exempts a job
   # without one from the clock steps; the timeout still binds).
+  #
+  # BUGS: this job, `cpu-matrix` and `fuzz` each wait for a runner of their own once the shards
+  # finish, 25 to 38 minutes in the merge-group runs of 2026-11-03 (UTC) for three seconds of work,
+  # because a hosted job queues in the same 60-job pool whatever it does. The required name has to
+  # be reported by something that waits, and no option that keeps it is free: an aggregate started
+  # beside the shards that polls them holds a runner for the whole run; a shard that posts the name
+  # itself through the checks API races its sibling and outlives a rerun. The pull request that
+  # added this paragraph (lane/ci-fewer-runner-waits) weighs them.
   test:
     name: test (host crates and the kernel suite under QEMU)
     runs-on: ubuntu-24.04
-    needs: [gate, test-shard]
+    needs: [gate, test-shard, test-host]
     # The shards' own condition, so a draft or a prose-only change skips this by condition (which
     # reports Success) rather than leaving the required check unreported. `!cancelled()` reaches the
     # condition when a shard failed, which is the case this job exists to report.
     if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
     timeout-minutes: 5
     steps:
+      # Which side ran is the heavy clause's own answer, never the results', so a merge group
+      # whose shards were skipped fails here rather than passing on the host job.
       - name: Report the shards' combined result
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAVY: ${{ needs.gate.outputs.heavy }}
+          HOST_RESULT: ${{ needs['test-host'].result }}
         run: |
           result="${{ needs['test-shard'].result }}"
-          if [ "$result" = success ]; then
+          if [ "$EVENT_NAME" != merge_group ] && [ "$EVENT_NAME" != push ] && [ "$HEAVY" = false ]; then
+            if [ "$HOST_RESULT" = success ]; then
+              echo "==> test-host: the host crates passed; the kernel legs run in the merge queue"
+            else
+              echo "==> test-host: $HOST_RESULT (the kernel legs run in the merge queue)"
+              exit 1
+            fi
+          elif [ "$result" = success ]; then
             echo "==> test shards: the host crates and every kernel leg passed"
           else
             # script/ci-log-baseline attributes this job by its last `==>` line; the failing
@@ -628,7 +754,7 @@ jobs:
     name: swish-check (the interactive shell, three architectures)
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # A hung kernel means QEMU never exits and the runner would block until the 6-hour default.
     # Fail loudly instead. The bound is a hang detector, not a budget, so it sits well above an
     # honest run. Derivation, from when this job carried x86_64's leg: that leg alone was about 17
@@ -659,6 +785,14 @@ jobs:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
           fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
@@ -672,14 +806,17 @@ jobs:
       # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored BEFORE
       # script/bootstrap on purpose, because bootstrap skips its apt install when QEMU is already on
       # PATH, which is how the built one wins.
-      - name: Cache QEMU
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
           key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
-      - name: Build QEMU if the cache missed
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Build QEMU if the cache missed
         run: script/ci-qemu
-      - name: Put it on PATH
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Put it on PATH
         run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
 
       # **The provisioning step is explicit** (milestone 286 (one enumeration of the checks that
@@ -691,7 +828,8 @@ jobs:
       # No lint in this job, so no cargo-machete or typos: NIFE_SKIP_LINT_TOOLS=1 skips the two
       # source builds (about 85 s on the arm64 runners, #1778). Only the `lint` job lints, and it
       # installs them itself.
-      - run: script/bootstrap
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
 
@@ -730,7 +868,8 @@ jobs:
       # basalt's delivery too, and run the package's `rg` by path over the walk. About 9 MB.
       # Each item's time into the job's record (milestone 808 (every gate accounts for its time)):
       # writers other than the kernel suite append only when NIFE_TIME_RECORD names a file.
-      - run: helpers/hang_evidence.py run -- script/ci-build swish-check-aarch64-riscv64
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build swish-check-aarch64-riscv64
         env:
           NIFE_TIME_RECORD: ${{ github.workspace }}/target/time-record.tsv
       - name: Summarize where the time went
@@ -770,7 +909,7 @@ jobs:
     name: swish-check-x86_64 (the interactive shell, x86_64 under KVM)
     runs-on: ubuntu-24.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # A hang detector, not a budget: setup and build are about ten minutes, a cold QEMU build can
     # add 10-20, and the leg itself is measured in the note above. Kept at the arm64 job's 60 so a
     # run that falls back to TCG (no /dev/kvm on some future image) still finishes and says so
@@ -787,6 +926,14 @@ jobs:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
           fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
@@ -800,14 +947,17 @@ jobs:
       # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored BEFORE
       # script/bootstrap on purpose, because bootstrap skips its apt install when QEMU is already on
       # PATH, which is how the built one wins.
-      - name: Cache QEMU
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
           key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
-      - name: Build QEMU if the cache missed
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Build QEMU if the cache missed
         run: script/ci-qemu
-      - name: Put it on PATH
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Put it on PATH
         run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
 
       # **The provisioning step is explicit** (milestone 286 (one enumeration of the checks that
@@ -819,14 +969,16 @@ jobs:
       # No lint in this job, so no cargo-machete or typos: NIFE_SKIP_LINT_TOOLS=1 skips the two
       # source builds (about 85 s on the arm64 runners, #1778). Only the `lint` job lints, and it
       # installs them itself.
-      - run: script/bootstrap
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
 
       # GitHub's documented recipe for KVM on its hosted Linux runners: the device exists and is
       # root's, and this hands it to every user. The leg prints "on KVM" in its header when it took
       # it, and the per-line bound it then holds is the other legs' 30 s, not TCG's 45 s.
-      - name: Open /dev/kvm to the runner user
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Open /dev/kvm to the runner user
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
@@ -836,7 +988,8 @@ jobs:
       # The row fetches `rg` from basalt first; the `swish-check` job above says why.
       # Each item's time into the job's record (milestone 808 (every gate accounts for its time)):
       # writers other than the kernel suite append only when NIFE_TIME_RECORD names a file.
-      - run: helpers/hang_evidence.py run -- script/ci-build swish-check-x86_64
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build swish-check-x86_64
         env:
           NIFE_TIME_RECORD: ${{ github.workspace }}/target/time-record.tsv
       - name: Summarize where the time went
@@ -880,7 +1033,7 @@ jobs:
     name: rg-threads (aarch64 and riscv64)
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
@@ -889,20 +1042,33 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
       # QEMU, built from source and cached, for the `swish-check` job's reasons above.
-      - name: Cache QEMU
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
           key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
-      - name: Build QEMU if the cache missed
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Build QEMU if the cache missed
         run: script/ci-qemu
-      - name: Put it on PATH
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Put it on PATH
         run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
-      - run: script/bootstrap
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
-      - run: helpers/hang_evidence.py run -- script/ci-build rg-threads-aarch64-riscv64
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build rg-threads-aarch64-riscv64
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''
@@ -918,7 +1084,7 @@ jobs:
     name: rg-threads-x86_64 (x86_64 under TCG)
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
@@ -927,20 +1093,33 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
       # QEMU, built from source and cached, for the `swish-check` job's reasons above.
-      - name: Cache QEMU
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
           key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
-      - name: Build QEMU if the cache missed
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Build QEMU if the cache missed
         run: script/ci-qemu
-      - name: Put it on PATH
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Put it on PATH
         run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
-      - run: script/bootstrap
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
-      - run: helpers/hang_evidence.py run -- script/ci-build rg-threads-x86_64
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build rg-threads-x86_64
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''
@@ -956,7 +1135,7 @@ jobs:
     name: boot-check (the default kernels' interactive boot)
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # A hung kernel means QEMU never exits and the runner would block until the 6-hour default.
     # Fail loudly instead. The bound is a hang detector, not a budget, so it sits well above an
     # honest run. Derivation: three debug boots are about a minute against a warm target, so the
@@ -974,6 +1153,14 @@ jobs:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
           fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
@@ -986,14 +1173,17 @@ jobs:
       # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored BEFORE
       # script/bootstrap on purpose, because bootstrap skips its apt install when QEMU is already on
       # PATH, which is how the built one wins.
-      - name: Cache QEMU
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
           key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
-      - name: Build QEMU if the cache missed
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Build QEMU if the cache missed
         run: script/ci-qemu
-      - name: Put it on PATH
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Put it on PATH
         run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
 
       # **The provisioning step is explicit** (milestone 286), the same shape the `bench` and `cpu
@@ -1004,7 +1194,8 @@ jobs:
       # No lint in this job, so no cargo-machete or typos: NIFE_SKIP_LINT_TOOLS=1 skips the two
       # source builds (about 85 s on the arm64 runners, #1778). Only the `lint` job lints, and it
       # installs them itself.
-      - run: script/bootstrap
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
 
@@ -1016,7 +1207,8 @@ jobs:
       # theoretical: milestone 268's finding 3 is a checkpoint that could never fire on two of
       # three architectures, and it hid for months because nothing read the channel it was
       # supposed to appear on.
-      - run: helpers/hang_evidence.py run -- script/ci-build boot-check
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build boot-check
       # The job log carries only the verdict line, which names a failed check but not what it
       # measured; each check's own line is in the boot log.
       - name: Upload the boot logs
@@ -1030,22 +1222,26 @@ jobs:
       # for one: an `asm!` operand sharing a register with a live input is harmless at debug and
       # fatal at release. In this job because it is a required check and already has QEMU and OVMF;
       # the row's comment in script/ci-build has its price.
-      - run: helpers/hang_evidence.py run -- script/ci-build release-uefi-boot
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build release-uefi-boot
       # **And the same release image booted over a network, with no disk attached** (milestone 260
       # (boot xenon over the network)): OVMF PXE-boots it from the real `script/board-netboot`,
       # with the DHCP offer parsed out of `bench/xenon-netboot/dnsmasq.conf`, and a client the
       # config does not name must get no boot file. It is the half of xenon's network boot a
       # stranger can check; the other half is a bench session.
-      - run: helpers/hang_evidence.py run -- script/ci-build netboot-rehearsal
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build netboot-rehearsal
       # **And the release aarch64 stick under EDK2 with `acpi=on`** (milestone 578 (an ACPI
       # discovery path for aarch64)): no device tree, only the tables, which is what every aarch64
       # cloud machine hands a kernel. The loader writes the tree from them (§278 (an ACPI machine
       # reaches the aarch64 kernel as a device tree the loader writes)), and nothing else on a pull
       # request boots that path.
-      - run: helpers/hang_evidence.py run -- script/ci-build acpi-boot
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build acpi-boot
       # The disk that boot just booted, for a person importing it into a cloud
       # (notes/rented-metal/oracle-a1.md). Sparse 302 MiB; about 2.5 MB compressed.
-      - name: Upload the cloud boot disk
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Upload the cloud boot disk
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: nife-aarch64-cloud-image
@@ -1082,7 +1278,7 @@ jobs:
     name: base-image (an image composed from packages boots to the shell)
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # A hung kernel means QEMU never exits and the runner would block until the 6-hour default.
     # Fail loudly instead. This is the 20-minute budget plus `helpers/job-budget.py`'s margin, with
     # no measured run behind it yet: the row is new in this lane, so the first green run is what
@@ -1097,29 +1293,42 @@ jobs:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
           fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
       # growing. See notes/actions-cache-budget-2026-10-07.md.
       # QEMU, built from source and cached, for the reason `boot-check` above spells out.
-      - name: Cache QEMU
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
           key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
-      - name: Build QEMU if the cache missed
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Build QEMU if the cache missed
         run: script/ci-qemu
-      - name: Put it on PATH
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Put it on PATH
         run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
 
       # The provisioning step is explicit, as in every job that names checks (milestone 286).
-      - run: script/bootstrap
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
 
       # One row of `script/ci-build`'s table: build the base packages from this tree's own
       # definitions, compose the image from them, and boot it to the swish prompt.
-      - run: helpers/hang_evidence.py run -- script/ci-build base-image
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build base-image
         env:
           NIFE_TIME_RECORD: ${{ github.workspace }}/target/time-record.tsv
       - name: Summarize where the time went
@@ -1185,7 +1394,7 @@ jobs:
     name: cpu matrix shard (${{ matrix.models }})
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     strategy:
       # Every shard finishes, for the reason script/cpu-matrix does not stop at the first model:
       # which models failed is the diagnosis.
@@ -1210,20 +1419,31 @@ jobs:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
           fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
       # growing. See notes/actions-cache-budget-2026-10-07.md.
       # The same cached QEMU the test and bench jobs use, restored before script/bootstrap for the
       # same reason (bootstrap skips its apt install when QEMU is already on PATH).
-      - name: Cache QEMU
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
           key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
-      - name: Build QEMU if the cache missed
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Build QEMU if the cache missed
         run: script/ci-qemu
-      - name: Put it on PATH
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Put it on PATH
         run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
 
       # A JOB OF ITS OWN, not extra work inside `test`, and the reason is wall clock: the matrix is
@@ -1239,10 +1459,12 @@ jobs:
       # No lint in this job, so no cargo-machete or typos: NIFE_SKIP_LINT_TOOLS=1 skips the two
       # source builds (about 85 s on the arm64 runners, #1778). Only the `lint` job lints, and it
       # installs them itself.
-      - run: script/bootstrap
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
-      - run: helpers/hang_evidence.py run -- script/ci-build cpu-matrix
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build cpu-matrix
         env:
           CRICKER_CPU_MODELS: ${{ matrix.models }}
       # The per-model logs, kept only when something failed. `script/cpu-matrix` now prints an
@@ -1289,7 +1511,7 @@ jobs:
     # The shards' own condition, so a draft or a prose-only change skips this by condition (which
     # reports Success) rather than leaving the required check unreported. `!cancelled()` reaches the
     # condition when a shard failed, which is the case this job exists to report.
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     timeout-minutes: 5
     steps:
       - name: Report the shards' combined result
@@ -1308,7 +1530,7 @@ jobs:
     name: watchdog (x86_64 TCO reset under q35)
     runs-on: ubuntu-24.04-arm
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # Two soaks that wait on the wall clock (about six minutes together) plus two kernel builds.
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
@@ -1320,6 +1542,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
 
       # **Milestone 593 (a wedged kernel resets itself), provisional number, and a NARROWER predicate
       # than the other QEMU jobs, deliberately.** The other jobs skip only on the gate's prose-only
@@ -1329,7 +1559,8 @@ jobs:
       # that judges it, the runner that starts QEMU, and the kernel's features. Not a required check,
       # so a skipped run posts nothing that blocks a merge. A push to `main` always runs it, so a
       # predicate that was wrong about a path shows up one merge later rather than never.
-      - name: Does this change touch the watchdog?
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Does this change touch the watchdog?
         id: scope
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
@@ -1357,22 +1588,22 @@ jobs:
       # and without it the time the step spent moves into the first cargo build rather than
       # growing. See notes/actions-cache-budget-2026-10-07.md.
       - name: Cache QEMU
-        if: steps.scope.outputs.needed == 'true'
+        if: steps.merge-group-gate.outputs.skip != 'true' && (steps.scope.outputs.needed == 'true')
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
           key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
       - name: Build QEMU if the cache missed
-        if: steps.scope.outputs.needed == 'true'
+        if: steps.merge-group-gate.outputs.skip != 'true' && (steps.scope.outputs.needed == 'true')
         run: script/ci-qemu
       - name: Put it on PATH
-        if: steps.scope.outputs.needed == 'true'
+        if: steps.merge-group-gate.outputs.skip != 'true' && (steps.scope.outputs.needed == 'true')
         run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
       - run: script/bootstrap
-        if: steps.scope.outputs.needed == 'true'
+        if: steps.merge-group-gate.outputs.skip != 'true' && (steps.scope.outputs.needed == 'true')
       # The wedge first: it is the claim, and the healthy run is its control.
       - run: helpers/hang_evidence.py run -- script/ci-build watchdog-check
-        if: steps.scope.outputs.needed == 'true'
+        if: steps.merge-group-gate.outputs.skip != 'true' && (steps.scope.outputs.needed == 'true')
       - name: Upload the soak logs
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -1405,15 +1636,25 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA" --keep-for-comments
       # Every job that installs a toolchain itself does it with this one line. `toolchain install`
       # with no name installs rust-toolchain.toml's pin with every component and target it lists,
       # which is what cargo would fetch on first use anyway, but here inside the retry. Naming
       # `nightly` instead would install the floating channel beside the pin: a second download and a
       # second chance at the CDN, for a toolchain no step uses. helpers/rustup-retry.sh says why the
       # retry exists.
-      - name: Install the pinned toolchain
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
-      - run: helpers/hang_evidence.py run -- script/ci-build fmt
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build fmt
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''
@@ -1449,6 +1690,14 @@ jobs:
           # and no pull request went red. The check now refuses an empty history too, so this and
           # that refusal are belt and braces.
           fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
       - name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
       # `script/lint` clippies the `user` package, whose build.rs compiles the C component with a
@@ -1527,11 +1776,12 @@ jobs:
       # host pass of `script/ci-build test-aarch64-riscv64`, so between the two the corpus is
       # checked on every pull request.
       - name: The tests of the code that reads the prose this change touched
-        if: needs.gate.outputs.prose == 'true' && needs.gate.outputs.prose_tests != ''
+        # The gate job's outputs, or in a merge group this job's own merge-group-gate step's.
+        if: (needs.gate.outputs.prose || steps.merge-group-gate.outputs.prose) == 'true' && (needs.gate.outputs.prose_tests || steps.merge-group-gate.outputs.prose_tests) != ''
         # Through the environment, never spliced into the script: the names come from the tree
         # under test. The classifier also refuses any name that is not `[A-Za-z0-9_-]+`.
         env:
-          PROSE_TESTS: ${{ needs.gate.outputs.prose_tests }}
+          PROSE_TESTS: ${{ needs.gate.outputs.prose_tests || steps.merge-group-gate.outputs.prose_tests }}
         run: |
           set -eu
           args=""
@@ -1545,11 +1795,11 @@ jobs:
       # package that builds only for bare metal (`kernel`, `system_tests`, and what
       # helpers/host-excluded-crates.sh derives) has no host test to run, and is named and skipped.
       - name: The host tests of the packages whose comments this change touched
-        if: needs.gate.outputs.prose == 'true' && needs.gate.outputs.comments == 'true' && needs.gate.outputs.comment_tests != ''
+        if: (needs.gate.outputs.prose || steps.merge-group-gate.outputs.prose) == 'true' && (needs.gate.outputs.comments || steps.merge-group-gate.outputs.comments) == 'true' && (needs.gate.outputs.comment_tests || steps.merge-group-gate.outputs.comment_tests) != ''
         # Through the environment, as above; the classifier refuses any name that is not
         # `[A-Za-z0-9_-]+`.
         env:
-          COMMENT_TESTS: ${{ needs.gate.outputs.comment_tests }}
+          COMMENT_TESTS: ${{ needs.gate.outputs.comment_tests || steps.merge-group-gate.outputs.comment_tests }}
         run: |
           set -eu
           bare=" kernel system_tests $(helpers/host-excluded-crates.sh | tr '\n' ' ') "
@@ -1588,16 +1838,26 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
       # The pin's `targets` array is every bare-metal target, and this gates every one of them
       # (§19 (architectural parity is a tenet): a fastpath that fits on one ISA and not another is
       # exactly the asymmetry that rule exists to catch). llvm-tools carries the objdump the
       # call-graph walk reads.
-      - name: Install the pinned toolchain
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
       # Its own job rather than a step in an existing one, for stack-frame-check's reason: it needs a
       # RELEASE kernel, and no other job builds one, so there is nothing to share. Jobs run in
       # parallel, so it costs no wall clock against the 30-minute Kani job.
-      - run: helpers/hang_evidence.py run -- script/ci-build fastpath-footprint
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build fastpath-footprint
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''
@@ -1619,14 +1879,24 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
       # A release x86_64 kernel and archive, and the UEFI loader, which is the image an install
       # writes into a 64 MiB boot slot (calef, 2026-10-03 UTC). Measured 28 seconds warm on the dev
       # machine; the 20-minute cap is for a cold runner. Its own job because no other job builds a
       # release image, so there is nothing to share, and jobs run in parallel. llvm-tools carries
       # the objcopy that strips the kernel and the objdump that proves it stripped.
-      - name: Install the pinned toolchain
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
-      - run: helpers/hang_evidence.py run -- script/ci-build boot-file-size-check
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build boot-file-size-check
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''
@@ -1653,12 +1923,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
       # growing. See notes/actions-cache-budget-2026-10-07.md.
       # `memory_regions` carries the falsification witness: that harness passes only when loom finds
       # the pre-#316 double free, so a green run also proves the search can still see a bug.
-      - run: script/interleaving-check
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: script/interleaving-check
       - name: Check the job's wall time against its budget
         if: always()
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
@@ -1678,7 +1957,16 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Install the pinned toolchain
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
       # Its own job for fastpath-footprint's reason one step further: this needs TWO release builds
       # that share nothing, so there is not only nothing to reuse from another job, there is nothing
@@ -1687,7 +1975,8 @@ jobs:
       #
       # It builds `git archive HEAD` twice at two different paths rather than reusing the checkout,
       # which is why it does not need `fetch-depth: 0`: one commit is all it reads.
-      - run: helpers/hang_evidence.py run -- script/ci-build build-is-reproducible
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build build-is-reproducible
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''
@@ -1712,11 +2001,20 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
       # The pin's `targets` array is every bare-metal target, and this gates all of them (§19
       # (architectural parity is a tenet): an image that obeys W^X on one ISA and not another is
       # exactly the asymmetry that rule exists to catch, and on 2026-08-31 x86_64 was the one that
       # did not).
-      - name: Install the pinned toolchain
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
@@ -1728,7 +2026,8 @@ jobs:
       # BUGS: this is not a REQUIRED check in the merge queue's ruleset, because that is a repository
       # setting rather than a file in this tree, so today a red run here is visible and does not block
       # a merge. Making it required is calef's, and is one checkbox.
-      - run: helpers/hang_evidence.py run -- script/ci-build image-permissions
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build image-permissions
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''
@@ -1753,6 +2052,14 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
       # Every bare-metal target is installed, because `script/stack-depth-check` gates all of them.
       # `script/stack-frame-check` defaults to two: it holds x86_64 out of its DEFAULT set, reachable
       # through `--arch`, because widening it found `kernel::arch::x86_64::iommu::initialize` at 12,504
@@ -1760,7 +2067,8 @@ jobs:
       # script's own BUGS. §19 parity still applies to the two gated here: a frame that fits on one
       # ISA and not the other is exactly the asymmetry that rule exists to catch. llvm-tools
       # carries the objcopy and nm that read the `.stack_sizes` section the measurement lives in.
-      - name: Install the pinned toolchain
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
       # No rust-cache here (calef, #1814, 2026-10-07 UTC). This job was measured without it first:
       # 115.7 s against a median 112.8 s with it (range 79.9 to 120.0, 20 runs), because the first
@@ -1771,7 +2079,8 @@ jobs:
       # not in the tier a developer runs before pushing is recorded beside its row** in
       # `script/ci-build`'s table, not here: this file used to carry three such explanations and one
       # of them had been false for a month.
-      - run: helpers/hang_evidence.py run -- script/ci-build stack-frame-check
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build stack-frame-check
       # The chain, in the same job as the frame, because they need the identical build: same
       # targets, same `-Z emit-stack-sizes`, so the second reuses the first's artifacts and costs
       # near nothing. They answer different halves of one question and a tree that gated only the
@@ -1781,7 +2090,8 @@ jobs:
       # already stale before this step existed (milestone 124 moved the ceiling to the guard page)
       # and understates it further now. Left alone on purpose: the name is what branch protection
       # matches on, so renaming it is a merge-queue change rather than a wording one.
-      - run: helpers/hang_evidence.py run -- script/ci-build stack-depth-check
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build stack-depth-check
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''
@@ -1797,7 +2107,7 @@ jobs:
     name: crate probes (fifty crates.io crates build against nife std)
     runs-on: ubuntu-24.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
@@ -1806,7 +2116,16 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Install the pinned toolchain
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
       # Its own job rather than a step in an existing one: it rebuilds the patched `std` and then
       # builds fifty crates, and no other job shares that target directory. It runs on a hosted
@@ -1818,7 +2137,8 @@ jobs:
       #
       # BUGS: this is a required check only once the repository ruleset lists it, and that is a
       # repository setting rather than a file in this tree.
-      - run: helpers/hang_evidence.py run -- script/ci-build crate-probes
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build crate-probes
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''
@@ -1834,7 +2154,7 @@ jobs:
     name: bench (icount regression tripwire)
     runs-on: ubuntu-24.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
@@ -1847,6 +2167,14 @@ jobs:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
           fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
@@ -1870,23 +2198,28 @@ jobs:
       # counts. Cold builds take ~10-20 min; every run after that is a cache hit. Restored BEFORE
       # script/bootstrap on purpose, because bootstrap skips its apt install when QEMU is already on
       # PATH, which is how the built one wins.
-      - name: Cache QEMU
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
           key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
-      - name: Build QEMU if the cache missed
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Build QEMU if the cache missed
         run: script/ci-qemu
-      - name: Put it on PATH
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Put it on PATH
         run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
 
       # No lint in this job, so no cargo-machete or typos: NIFE_SKIP_LINT_TOOLS=1 skips the two
       # source builds (about 85 s on the arm64 runners, #1778). Only the `lint` job lints, and it
       # installs them itself.
-      - run: script/bootstrap
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
-      - run: helpers/hang_evidence.py run -- script/ci-build bench
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build bench
         env:
           NIFE_BENCH_READINGS: ${{ runner.temp }}/bench-readings.tsv
       # Three legs, three architectures, since 2026-09-15: `script/ci-build`'s `bench` row is
@@ -1906,7 +2239,7 @@ jobs:
       # for a SHA the queue already passed (the `gate` job). Pull requests keep none: their head is
       # not `main`. Ninety days is GitHub's ceiling, and the weekly fetch commits what it reads.
       - name: Keep the readings
-        if: success() && github.event_name != 'pull_request'
+        if: steps.merge-group-gate.outputs.skip != 'true' && (success() && github.event_name != 'pull_request')
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: bench-readings
@@ -1925,7 +2258,8 @@ jobs:
       # runs before pushing; `script/ci-build`'s table is where that membership lives. **This comment
       # asserted the opposite for a month**, having been written before milestone 62 put the
       # instrument in the local set, and nothing compared the claim against the script.
-      - run: helpers/hang_evidence.py run -- script/ci-build icount
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build icount
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''
@@ -1951,20 +2285,31 @@ jobs:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
       # A prebuilt binary rather than `cargo install`, the same trade the coverage job makes: this
       # job compiles nothing of ours, so it has no business compiling a tool either. The version
       # comes from .cargo-deny-version so this and script/supply-chain cannot disagree, which they
       # did on the first run: the laptop had 0.19.1 and `@latest` here got 0.20.2, and the two spell
       # `--config` differently and default it to different directories.
-      - name: Read the pinned cargo-deny version
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Read the pinned cargo-deny version
         id: deny
         run: echo "version=$(cat .cargo-deny-version)" >> "$GITHUB_OUTPUT"
-      - uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68 # v2.88.1
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68 # v2.88.1
         with:
           tool: cargo-deny@${{ steps.deny.outputs.version }}
       # The published .crate tarballs script/vendor-verify hashes. Keyed on the pin files, so
       # changing a pin correctly misses the cache and refetches. A miss costs one HTTP request.
-      - name: Cache the vendored tarballs
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Cache the vendored tarballs
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-vendor
@@ -1972,7 +2317,8 @@ jobs:
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
       # growing. See notes/actions-cache-budget-2026-10-07.md.
-      - run: helpers/hang_evidence.py run -- script/ci-build supply-chain
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build supply-chain
       # A hung step leaves this before timeout-minutes discards the job's log (helpers/hang_evidence.py).
       - name: Upload the hang evidence
         if: always() && hashFiles('target/hang-evidence/**') != ''
@@ -2003,7 +2349,7 @@ jobs:
     name: fuzz shard (${{ matrix.check }})
     runs-on: ubuntu-24.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     strategy:
       # Both shards finish, so a red one names its own targets and the other still reports.
       fail-fast: false
@@ -2026,6 +2372,14 @@ jobs:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
           fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
 
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
       # and without it the time the step spent moves into the first cargo build rather than
@@ -2072,7 +2426,8 @@ jobs:
       # directories, which is the same starting point a developer gets.
       # Each item's time into the job's record (milestone 808 (every gate accounts for its time)):
       # writers other than the kernel suite append only when NIFE_TIME_RECORD names a file.
-      - run: helpers/hang_evidence.py run -- script/ci-build ${{ matrix.check }}
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build ${{ matrix.check }}
         env:
           NIFE_TIME_RECORD: ${{ github.workspace }}/target/time-record.tsv
       - name: Upload the time record
@@ -2102,7 +2457,7 @@ jobs:
     # The shards' own condition, so a draft or a prose-only change skips this by condition (which
     # reports Success) rather than leaving the required check unreported. `!cancelled()` reaches the
     # condition when a shard failed, which is the case this job exists to report.
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     timeout-minutes: 5
     steps:
       - name: Report the shards' combined result
@@ -2141,7 +2496,7 @@ jobs:
     name: fuzz-guests (shard ${{ matrix.shard }}, the in-guest drivers under KVM)
     runs-on: ubuntu-24.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch') }}
+    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' && needs.gate.outputs.prose != 'true' && (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch') && (github.event_name == 'merge_group' || github.event_name == 'push' || needs.gate.outputs.heavy != 'false') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
@@ -2156,27 +2511,41 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
       # QEMU, built from source and cached: the `swish-check-x86_64` job above says why.
-      - name: Cache QEMU
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Cache QEMU
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/nife-qemu
           key: qemu-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
-      - name: Build QEMU if the cache missed
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Build QEMU if the cache missed
         run: script/ci-qemu
-      - name: Put it on PATH
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Put it on PATH
         run: echo "$HOME/.cache/nife-qemu/bin" >> "$GITHUB_PATH"
-      - run: script/bootstrap
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: script/bootstrap
         env:
           NIFE_SKIP_LINT_TOOLS: "1"
-      - name: Open /dev/kvm to the runner user
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Open /dev/kvm to the runner user
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
           ls -l /dev/kvm
       # Two builds of at most 10 minutes each and a guest of at most 5 minutes stay inside the budget.
-      - name: Sweep the shard
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Sweep the shard
         run: helpers/continuous-fuzz.sh --ci "${{ matrix.shard }}"
         env:
           NIFE_FUZZ_BUILD_BOUND: "600"
@@ -2202,10 +2571,20 @@ jobs:
           # Full history: it was for a scope check here that the gate's prose classifier replaced
           # (lane/docs-only-ci, 2026-10-05). Kept rather than dropped untested.
           fetch-depth: 0
+      # A merge group runs no draft gate job, so this job asks the gate's prose question
+      # itself; a prose-only group skips every step below (helpers/prose_only.py, MERGE GROUPS).
+      - name: In a merge group, is this change prose that no build or test reads?
+        id: merge-group-gate
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
 
-      - name: Install the pinned toolchain
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
-      - uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68 # v2.88.1
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68 # v2.88.1
         with:
           tool: cargo-llvm-cov
       # No rust-cache in this job (calef, #1814, 2026-10-07 UTC): a hit gained under half a minute,
@@ -2214,8 +2593,10 @@ jobs:
       # Measures the pure-logic host crates only; the kernel/user crates run under QEMU, out of
       # reach of host instrumentation. Gates on the 80%-per-file line-coverage floor (the floor
       # lives in script/coverage, next to the check itself); the report is still published below.
-      - run: helpers/hang_evidence.py run -- script/ci-build coverage
-      - name: Publish the summary to the run
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        run: helpers/hang_evidence.py run -- script/ci-build coverage
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Publish the summary to the run
         run: |
           {
             echo '### Coverage: host-logic crates'
@@ -2223,7 +2604,8 @@ jobs:
             cargo llvm-cov report --summary-only
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload the lcov + HTML report
+      - if: steps.merge-group-gate.outputs.skip != 'true'
+        name: Upload the lcov + HTML report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: coverage-report
