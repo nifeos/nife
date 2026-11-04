@@ -114,7 +114,7 @@ pub enum Reached {
 pub enum Note {
     /// The Management Engine was asked to leave ULP; `cleared` says whether it finished in time.
     UlpByMe {
-        /// `FWSM.ULP_CFG_DONE` cleared before [`ulp::MANAGEMENT_ENGINE_WAIT_MILLISECONDS`].
+        /// `FWSM.ULP_CFG_DONE` cleared before [`ultra_low_power::MANAGEMENT_ENGINE_WAIT_MILLISECONDS`].
         cleared: bool,
     },
     /// There is no ME; ULP was left by PHY registers, with this outcome.
@@ -359,20 +359,20 @@ pub fn initialize_physical_layer_device_workarounds(
 fn leave_ulp(hardware: &mut impl Hardware) {
     if has_management_engine(hardware) {
         let h = hardware.read(registers::H2ME);
-        hardware.write(registers::H2ME, ulp::register_value_requesting_exit(h));
+        hardware.write(registers::H2ME, ultra_low_power::register_value_requesting_exit(h));
         let mut cleared = false;
-        for i in 0..=ulp::MANAGEMENT_ENGINE_WAIT_MILLISECONDS / 10 {
-            if ulp::is_configuration_done(hardware.read(registers::FWSM)) {
+        for i in 0..=ultra_low_power::MANAGEMENT_ENGINE_WAIT_MILLISECONDS / 10 {
+            if ultra_low_power::is_configuration_done(hardware.read(registers::FWSM)) {
                 cleared = true;
                 break;
             }
-            if i < ulp::MANAGEMENT_ENGINE_WAIT_MILLISECONDS / 10 {
+            if i < ultra_low_power::MANAGEMENT_ENGINE_WAIT_MILLISECONDS / 10 {
                 delay_ms(hardware, 10);
             }
         }
         if cleared {
             let h = hardware.read(registers::H2ME);
-            hardware.write(registers::H2ME, ulp::register_value_releasing_request(h));
+            hardware.write(registers::H2ME, ultra_low_power::register_value_releasing_request(h));
         }
         hardware.note(Note::UlpByMe { cleared });
         return;

@@ -598,7 +598,7 @@ mod tests {
 
         let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Dead, true);
         s.mac
-            .insert(registers::FWSM, super::super::ulp::ICH_FWSM_FW_VALID); // RSPCIPHY clear
+            .insert(registers::FWSM, super::super::ultra_low_power::ICH_FWSM_FW_VALID); // RSPCIPHY clear
         assert_eq!(
             sequence::initialize_physical_layer_device_workarounds(&mut s),
             Err(Error::LanphypcBlocked)
@@ -660,7 +660,7 @@ mod tests {
 
         let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.mac
-            .insert(registers::FWSM, super::super::ulp::ICH_FWSM_FW_VALID);
+            .insert(registers::FWSM, super::super::ultra_low_power::ICH_FWSM_FW_VALID);
         sequence::global_reset(&mut s, 1000).unwrap();
         assert_eq!((s.global_resets, s.physical_layer_device_resets), (1, 0));
     }

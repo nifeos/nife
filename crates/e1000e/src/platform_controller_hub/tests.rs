@@ -15,16 +15,16 @@ fn the_pch_class_is_every_claimed_i219_and_not_qemus_part() {
 
 #[test]
 fn the_ulp_request_clears_the_indication_and_enforces() {
-    let h = ulp::register_value_requesting_exit(ulp::H2ME_ULP | 0x1);
-    assert_eq!(h & ulp::H2ME_ULP, 0);
-    assert_ne!(h & ulp::H2ME_ENFORCE_SETTINGS, 0);
+    let h = ultra_low_power::register_value_requesting_exit(ultra_low_power::H2ME_ULP | 0x1);
+    assert_eq!(h & ultra_low_power::H2ME_ULP, 0);
+    assert_ne!(h & ultra_low_power::H2ME_ENFORCE_SETTINGS, 0);
     assert_eq!(h & 1, 1, "other bits survive");
     assert_eq!(
-        ulp::register_value_releasing_request(h) & ulp::H2ME_ENFORCE_SETTINGS,
+        ultra_low_power::register_value_releasing_request(h) & ultra_low_power::H2ME_ENFORCE_SETTINGS,
         0
     );
-    assert!(!ulp::is_configuration_done(ulp::FWSM_ULP_CFG_DONE));
-    assert!(ulp::has_management_engine(ulp::ICH_FWSM_FW_VALID));
+    assert!(!ultra_low_power::is_configuration_done(ultra_low_power::FWSM_ULP_CFG_DONE));
+    assert!(ultra_low_power::has_management_engine(ultra_low_power::ICH_FWSM_FW_VALID));
 }
 
 #[test]
@@ -57,15 +57,15 @@ fn the_flush_values_are_freebsds() {
 #[test]
 fn the_ulp_handshake_changes_only_its_own_bits() {
     assert_eq!(
-        ulp::register_value_requesting_exit(ulp::H2ME_ENFORCE_SETTINGS)
-            & ulp::H2ME_ENFORCE_SETTINGS,
-        ulp::H2ME_ENFORCE_SETTINGS
+        ultra_low_power::register_value_requesting_exit(ultra_low_power::H2ME_ENFORCE_SETTINGS)
+            & ultra_low_power::H2ME_ENFORCE_SETTINGS,
+        ultra_low_power::H2ME_ENFORCE_SETTINGS
     );
     assert_eq!(
-        ulp::register_value_releasing_request(u32::MAX),
-        !ulp::H2ME_ENFORCE_SETTINGS
+        ultra_low_power::register_value_releasing_request(u32::MAX),
+        !ultra_low_power::H2ME_ENFORCE_SETTINGS
     );
-    assert_eq!(ulp::register_value_releasing_request(0x1), 0x1);
+    assert_eq!(ultra_low_power::register_value_releasing_request(0x1), 0x1);
 }
 
 /// A millisecond is a thousand microseconds of the device's clock, and a posted-write flush is
