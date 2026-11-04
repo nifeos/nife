@@ -11,7 +11,7 @@ lane, so the wall-clock a CI round costs is free and the memory it saves is not.
 
     git push -u origin HEAD
     gh pr ready <N>
-    gh pr merge <N> --auto --merge     # Step 4: armed while CI runs
+    helpers/arm.sh <N>                 # Step 4: armed while CI runs
     gh run list --branch "$(git branch --show-current)" --limit 5
     # WAITING <ci-run-id> <verify-run-id> on ci.yml + verify.yml for <branch>
 
@@ -84,7 +84,7 @@ rounds are cheap because no person is waiting, and the laptop's memory is not sp
 
 ## Step 4: arm after the last push, without waiting for green
 
-    gh pr merge <N> --auto --merge
+    helpers/arm.sh <N>
 
 The merge strategy is the merge queue's; `--auto` hands the pull request to it and the group
 build arbitrates. Arm as soon as the pull request is ready and its last push is made, while CI is
@@ -141,7 +141,7 @@ dispatch twice: a second dispatch cancels the first. When these runs come back g
 pushed since they started, so the lane's one `gh pr ready` call has nothing to race against and
 ready and arm land in the same command:
 
-    gh pr ready <N> && gh pr merge <N> --auto --merge
+    gh pr ready <N> && helpers/arm.sh <N>
 
 ## Pausing on another pull request, rather than on CI
 
