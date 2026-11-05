@@ -6,7 +6,7 @@ VisionFive 2. It holds the register offsets and bit fields of the STG (System-To
 SD/MMC controllers and the PMIC's I2C bus need, the I2C input-clock arithmetic, and what each of the
 chip's two device trees calls the controllers. It never touches a register: you map the window and
 do the volatile stores, and this crate says which word, which bit and in what order. It is `no_std`,
-depends on nothing, and is tested on the host. It was written for the nife kernel.
+depends on nothing, and is tested on the host.
 
 ## What is proven
 
