@@ -90,10 +90,9 @@ How fast a loop can refill one slot, from the fastest create-and-destroy loops m
 | threads, 256 | `spawn_reap`, radon (JH7110, release kernel) | 19.8 us (79.3 ticks of the 4 MHz timer) | ~23.6 hours |
 | memory regions, 256 | `SPLIT` then `DESTROY` from EL0 | not measured; two traps cost at least 54 ns at the 27 ns null syscall | at least ~3.9 minutes |
 
-The rendezvous (512), notification, timer and process tables (256 each) free a slot only through a
-region teardown, so their loops carry the region's cycle and more. The address-space registry
-(288) and the virtio table (12) sit behind `spawn_el0` (~4.4 us) and a driver's death. More harts
-do not speed up one slot: first-fit puts concurrent inserts in different slots.
+The table above times only the thread and region tables, and none of the others. The address-space
+registry (288) and the virtio table (12) sit behind `spawn_el0` (~4.4 us) and a driver's death.
+More harts do not speed up one slot: first-fit puts concurrent inserts in different slots.
 
 So a wrapping generation is reachable. A user program with a region could resurrect a dead region name in
 minutes of tight looping, and a kernel spawn loop could do it to a thread id inside two hours.
@@ -141,8 +140,7 @@ asserts that the successor reuses the released slot. And it does not delay exhau
 slots retiring at once.
 
 Saturation is visible to no kernel caller before a slot's 2^32 - 1th occupant. Names, slot order,
-`top` and every walk stay the same. A retired slot reads to the caller as a full table, which every
-kernel caller already handles (spawn fails as it does on running out of memory).
+`top` and every walk stay the same. A retired slot reads to the caller as a full table.
 
 A fourth design removes retirement from reach rather than making it safe. A name needs only as
 many slot bits as `N` takes, eight for 256, which leaves 56 for the generation. Then 2^56 cycles at
@@ -160,8 +158,8 @@ hole, its proof needs no precondition, and nothing a kernel caller sees changes 
 slower on sparse tables, undoes the occupancy bound, changes which slot a name lands in after a
 removal, and retires no later. The wider generation waits until a measured capacity cost asks for
 it. That cost is a program that creates and destroys objects without pause and so retires slots,
-soonest in the region table, at a floor of about four minutes a slot. `MAXIMUM_REGIONS` and
-`MAXIMUM_THREADS` carry it in their `BUGS`.
+of the tables timed soonest in the region table, at a floor of about four minutes a slot.
+`MAXIMUM_REGIONS` and `MAXIMUM_THREADS` carry it in their `BUGS`.
 
 ### The one-slot `Option` tag
 
