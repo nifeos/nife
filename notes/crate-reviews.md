@@ -151,7 +151,7 @@ Outstanding before the move.
 | item | owner |
 |---|---|
 | Ratify the 27 provisional names with `python3 helpers/name_release.py --draft non_volatile_memory_express`. | architect |
-| `design/decisions/0086-el0-nvme-driver/prior-art.md` and milestone 569 still cite `prp_pair`, `CNS_CONTROLLER` and `CNS_NAMESPACE`. | maintainer |
+| `design/decisions/0086-el0-nvme-driver/prior-art.md` and milestone 569 (the disk an installer names has no model, only a size) still cite `prp_pair`, `CNS_CONTROLLER` and `CNS_NAMESPACE`. | maintainer |
 
 Recommendation. Blocked by the unratified names; ready for review once they are ratified.
 
