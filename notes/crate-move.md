@@ -1,7 +1,6 @@
 # Moving a crate out of nife: the runbook
 
-*Name: provisional, minted 2026-11-05 (UTC) by milestone/1034-a-crate-move-runbook. The file name
-says what the page holds: the steps of one move.*
+*Name: provisional. The file name says what the page holds: the steps of one move.*
 
 This page takes one crate from `crates/<crate>` to a repository of its own, `nifeos/<crate>`, and
 back into nife as a pinned dependency, then through its soak to publication. Every step names its
@@ -10,9 +9,9 @@ milestone; calef marks a step only the architect takes, because it creates somet
 credential, or publishes. [Journey 5](../design/journeys/05-crates-released-on-their-own.md) says
 why crates leave and in what order, and
 [milestone 857 (crates released on their own)](../design/roadmap/0857-crates-released-on-their-own.md)
-holds the rulings. The pilot, `jh7110_entropy` of
-[milestone 818 (proven JH7110 TRNG logic, released on its own)](../design/roadmap/0818-the-jh7110-entropy-crate-released-on-its-own.md),
-took these steps by hand; `script/crate-move` now does the mechanical part.
+holds the rulings. The pilot is `jh7110_entropy` of
+[milestone 818 (proven JH7110 TRNG logic, released on its own)](../design/roadmap/0818-the-jh7110-entropy-crate-released-on-its-own.md).
+`script/crate-move` does the mechanical part of a move.
 
 The rules every step keeps:
 
@@ -39,21 +38,11 @@ and tests the copy at its `rust-version` and runs the template's cheap checks fr
 with the nife-side follow-up: each consumer manifest's new line and every other file that names
 the crate. The script's header lists what it does not check.
 
-Run for `file_allocation_table` from `main` into a scratch directory, it staged 116 files. The copy
-passed its host tests at `rust-version` 1.88 and built for the three bare-metal targets. It
-reported these findings, each one a change to make before the move:
-
-| finding | where it comes from | owner |
-|---|---|---|
-| README lacks `## EXAMPLES` and `## BUGS`; one sentence of 67 words; 17.5 bold spans per 1,000 words against a cap of 4 | the crate's README | a lane, in nife |
-| four lines say "In nife"; the label bytes `NIFE` in `volume.rs` | the crate's text | a lane, in nife |
-| 35 test and proof modules reported as orphans | the template's orphan check | the template (see BUGS) |
-| the scaffold names nife and the architect | the template's scaffold | the template (see BUGS) |
-| passive voice, history phrases, function length and both naming gates "not at template v7" | the template's release | the template (see BUGS) |
-
-The falsification records pass `falsify.py --check` once the dry run has rewritten their paths and
-moved each `Falsification:` line to the head of its harness's comment, where the template reads it;
-all 31 patches apply with `-p1`.
+A finding is a change to make before the move. A lane fixes a finding against the crate itself, in
+nife: a README section or a sentence over the prose limits, a mention of nife in the crate's text.
+The template takes a finding against the template (see BUGS). The dry run rewrites each
+falsification patch for `git apply -p1` and moves each `Falsification:` line to the head of its
+harness's comment, where the template reads it, so those records pass `falsify.py --check`.
 
 ## Before the move, in nife
 
@@ -253,30 +242,17 @@ publishes.
 - The template's scaffold mentions nife. The commit hook, `rustfmt.toml`, `deny.toml` and
   `docs/stranger-test.md` name it, and the pull request template names the architect. Every crate
   repository inherits those lines.
-- No lint fails a `[patch]` that reaches nife's `main`. Milestone 857's fork 2 rules one.
 - The dry run does not stage fuzz targets. They move to the crate repository's `fuzz/`, with
-  `fuzz: true` in its weekly caller, and
-  [the proposal](../design/roadmap/proposals/a-moved-crate-is-fuzzed-in-its-own-repository.md) builds
-  the staging; until then the move lane copies them by hand.
-- The mutation baseline does not travel. nife's row for the crate stays in
-  `.cargo/mutants-baseline.txt`, and the crate repository's `weekly / mutation` fails on any
-  survivor until `.github/mutants-exempts` accounts for it; the pilot needed one pull request for it.
-  The dry run does not run cargo-mutants.
-- [What nife does at each extraction](../design/roadmap/0857-crates-released-on-their-own/what-nife-does-at-each-extraction.md)
-  disagrees with the ruled form. It replaces the path dependency by a crates.io release in the
-  move's pull request; the ruled form is a `git` and `rev` pin with its version until the first
-  publication, as step 14 does. Its maintainer owns that appendix.
-- Fuzz targets have no ruled home after a move. `file_allocation_table` has two in nife's
-  `fuzz/`. They either stay here against the pinned crate, or move to the crate repository, whose
-  `weekly / fuzz` runs when its caller passes `fuzz: true`.
+  `fuzz: true` in its weekly caller, as
+  [the proposal](../design/roadmap/proposals/a-moved-crate-is-fuzzed-in-its-own-repository.md)
+  provisionally rules; until the staging is built the move lane copies them by hand.
 - The mutation baseline travels as counts only. The dry run copies the crate's row from
   `.cargo/mutants-baseline.txt` into the staged `.github/mutants-exempts` as a comment, and the
   follow-up list says to delete the row here. The template's gate wants one `<file>:<line> # <reason>`
   line per surviving mutant, and the census records four counts (caught, missed, timeout, unviable)
   and no locations, so the lines cannot be written mechanically. The crate repository's first
-  `weekly / mutation` run fails on each survivor and names it; the move lane lists them. The dry run
-  does not run cargo-mutants.
-- Nobody has set condition 5's period, so no soak can end yet.
+  `weekly / mutation` run fails on each survivor and names it; the move lane lists them in one pull
+  request there. The dry run does not run cargo-mutants.
 - Condition 3 is unmeasured on the pilot. Its release runs were the two that made its tags, and
   none ran with `dry-run=true`, so whether a dry run of an already tagged version passes the gate is
   unknown.
