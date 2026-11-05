@@ -43,8 +43,7 @@ use driver_process_contract::non_volatile_memory_express::{
 };
 use filesystem_contract::blk;
 use non_volatile_memory_express::{
-    Command, Completion, CompletionQueue, Doorbell, Namespace, PhysicalRegionPagePair,
-    SubmissionQueue,
+    Command, Completion, CompletionQueue, Doorbell, Namespace, SubmissionQueue,
 };
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{exit, receive_request, reply, send};
@@ -360,7 +359,7 @@ fn serve(mut plane: Plane) -> ! {
 #[cfg(feature = "confinement_attackers")]
 fn run_dma_escape(plane: &mut Plane, victim: u64) -> ! {
     let blocks = plane.handoff.blocks_per_transfer;
-    let pages = PhysicalRegionPagePair {
+    let pages = non_volatile_memory_express::PhysicalRegionPagePair {
         first_entry: victim,
         second_entry: 0,
     };
