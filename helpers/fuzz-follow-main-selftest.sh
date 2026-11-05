@@ -205,4 +205,13 @@ done
 [ "$(grep -c 'the unit files changed (helpers/systemd/nife-fuzz.service); nothing was installed' "$sup_out")" -eq 1 ] \
     || fail "end to end: wanted one unit-file line: $(grep -i unit "$sup_out")"
 
+# Structural, not behavioral: the race between two `git worktree add` runs in one clone did not
+# reproduce locally in 20 tries, so this pins the order that removes it. The supervisor makes every
+# slot's worktree in its own loop before the line that starts the first worker.
+cf="$(dirname "$0")/continuous-fuzz.sh"
+prep_line="$(grep -n '^    prepare_slot "\$slot" || exit 1$' "$cf" | head -1 | cut -d: -f1)"
+start_line="$(grep -n '^    worker "\$slot" &$' "$cf" | head -1 | cut -d: -f1)"
+[ -n "$prep_line" ] && [ -n "$start_line" ] && [ "$prep_line" -lt "$start_line" ] \
+    || fail "the supervisor does not make the slot worktrees before it starts the workers"
+
 echo "fuzz-follow-main-selftest: ok"
