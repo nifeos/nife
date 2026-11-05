@@ -6,7 +6,7 @@
 //! it: [`ultra_low_power`], [`flush`], [`reset`], [`physical_layer_device`],
 //! [`non_volatile_memory`] and [`sequence`] each name the FreeBSD functions they follow. Every
 //! sequence is generic over [`Hardware`], so it runs on the host against a simulated I219 (`simulator`)
-//! as well as in the kernel. The constants are facts about the hardware; the sequences are
+//! as well as in a kernel. The constants are facts about the hardware; the sequences are
 //! FreeBSD's, adapted, and carry the licenses below as their first conditions require.
 //!
 //! Name: ratified 2026-11-03 (UTC), #3145. Renamed from `pch`, Intel's abbreviation, which spells
@@ -91,7 +91,8 @@
 //! - **Flow control is not configured, so it is not advertised** ([`sequence::setup_copper_link`]).
 //! - **The transmit flush diverges from FreeBSD in one place**, said at [`flush::tail_after_dummy_transmit`].
 //! - **A failed `CV_SMB_CTRL` read is not written back**, where FreeBSD writes a stale value.
-//! - **The licenses' second condition is not met by any binary this tree ships yet**.
+//! - **The licenses' second condition is the distributor's**: a binary built from this crate must
+//!   reproduce the notices below in its documentation or other materials.
 
 pub mod non_volatile_memory;
 pub mod physical_layer_device;

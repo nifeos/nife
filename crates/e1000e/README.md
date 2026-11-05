@@ -6,7 +6,7 @@ the register offsets and bits, the descriptor formats, the DMA region's layout, 
 and transmit ring logic behind two small traits (`DirectMemoryAccessRegion` and `Tails`), and the I219 bring-up
 sequences ported from FreeBSD's Intel shared code. You supply the volatile register accesses and
 the DMA memory; everything computed from them is here, `no_std`, and tested on the host against a
-simulated device. It was written for the nife kernel.
+simulated device.
 
 ## What is proven
 
