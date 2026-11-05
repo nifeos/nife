@@ -116,10 +116,10 @@ lands.
    once (`-runs=0`), so a target that no longer compiles outside nife fails before anyone creates
    the repository.
 3. The nife-side pull request (the runbook's step 14) deletes the two targets from
-   `fuzz/Cargo.toml` with the crate's dependency line, their names and the fixtures case from
-   `script/fuzz`, `fuzz/seeds/file_allocation_table_*`, `fuzz/seeds/make-fat12-tree.py` with its
-   paragraph in `fuzz/seeds/README.md`, and both sections of `notes/fuzzing/targets.md`. The dry run's
-   follow-up list names each.
+   `fuzz/Cargo.toml` with the crate's dependency line, and their names and the fixtures case from
+   `script/fuzz`. It also deletes `fuzz/seeds/file_allocation_table_*`,
+   `fuzz/seeds/make-fat12-tree.py` with its paragraph in `fuzz/seeds/README.md`, and both sections
+   of `notes/fuzzing/targets.md`. The dry run's follow-up list names each.
 4. The runbook's step 14 says the targets moved, and its `BUGS` entry on the fuzz targets goes.
 
 ## Exit
