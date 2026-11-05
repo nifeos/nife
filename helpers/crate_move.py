@@ -180,6 +180,40 @@ class Staged:
         self.docs = [f for f in files if f.startswith('docs/') and f.endswith('.md')]
 
 
+BASELINE = '.cargo/mutants-baseline.txt'
+
+
+def baseline_row(root, crate):
+    """The crate's census row as (caught, missed, timeout, unviable), or None when it has none."""
+    try:
+        text = open(os.path.join(root, BASELINE)).read()
+    except OSError:
+        return None
+    for line in text.splitlines():
+        fields = line.split()
+        if len(fields) == 5 and fields[0] == crate and all(f.isdigit() for f in fields[1:]):
+            return tuple(int(f) for f in fields[1:])
+    return None
+
+
+def exempts_note(row):
+    """Comment lines for the crate repository's `.github/mutants-exempts`.
+
+    The source tree's baseline holds four counts per crate. The template's gate reads one line per
+    surviving mutant, `<file>:<line> # <reason>`, and the counts do not say which mutants survive,
+    so the row cannot become exempt lines mechanically. It travels as a comment, and the first
+    weekly run names each survivor to list.
+    """
+    caught, missed, timeout, unviable = row
+    todo = (f'The {missed} missed mutant(s) are not listed here because the census did not record '
+            'which; the first weekly mutation run names each, and each goes below as '
+            '`<file>:<line> # <reason>`.' if missed else
+            'No mutant was missed, so no line is expected below.')
+    return ('# Mutation census row carried from the source tree, as counts: '
+            f'caught {caught}, missed {missed}, timeout {timeout}, unviable {unviable}.\n'
+            f'# {todo}\n')
+
+
 def run(argv, cwd, env=None):
     p = subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True)
     return p.returncode, (p.stdout + p.stderr).strip()
@@ -250,6 +284,17 @@ def stage(root, crate, into, tree, sha, report):
             open(to, 'w').write(text)
             shutil.copymode(os.path.join(dirpath, name), to)
             added += 1
+    row = baseline_row(root, crate)
+    exempts = os.path.join(into, '.github', 'mutants-exempts')
+    if row is None:
+        report('note', 'mutation baseline', f'no row for {crate} in {BASELINE}')
+    elif not os.path.exists(exempts):
+        report('FAIL', 'mutation baseline', 'the template staged no .github/mutants-exempts to carry the row')
+    else:
+        with open(exempts, 'a') as f:
+            f.write('\n' + exempts_note(row))
+        report('ok', 'mutation baseline', f'row carried into .github/mutants-exempts as a comment '
+                                          f'(missed {row[1]}); survivors are listed after the first weekly run')
     readme = os.path.join(into, 'README.md')
     if not os.path.exists(readme):
         shutil.copy(os.path.join(scaffold, 'README-crate.md'), readme)
@@ -357,7 +402,10 @@ def follow_up(root, crate, version):
             extra = {k: v for k, v in spec.items() if k not in ('path', 'version')}
             note = f'  (keep {extra})' if extra else ''
             print(f'  {manifest} [{table}]: {line}{note}')
-    rest = [f for f in mentions(root, crate) if not f.endswith(('Cargo.toml', 'Cargo.lock'))]
+    if baseline_row(root, crate) is not None:
+        print(f'  {BASELINE}: delete the row for {crate}')
+    rest = [f for f in mentions(root, crate)
+            if not f.endswith(('Cargo.toml', 'Cargo.lock')) and f != BASELINE]
     if rest:
         print('crate-move: other files that name the crate, each read in the same pull request:')
         for f in rest:
@@ -393,6 +441,15 @@ def selftest():
     out = caller_workflow(wf, 'abc', ['t1', 't2'])
     assert '@abc' in out and 'targets: t1 t2' in out and 'allow-unpublished: true' in out, out
     assert NIFE_WORD.search('used by nife') and not NIFE_WORD.search('github.com/nifeos/x')
+    with tempfile.TemporaryDirectory() as tmp:
+        os.makedirs(os.path.join(tmp, '.cargo'))
+        open(os.path.join(tmp, BASELINE), 'w').write('# c\nxy 5 1 0 2\nx 54 3 1 4\nx_y 1 1 1 1\n')
+        assert baseline_row(tmp, 'x') == (54, 3, 1, 4), 'the whole name matches'
+        assert baseline_row(tmp, 'z') is None and baseline_row('/nonexistent', 'x') is None
+    note = exempts_note((54, 3, 1, 4))
+    assert 'caught 54, missed 3, timeout 1, unviable 4' in note and '3 missed' in note, note
+    assert all(l.startswith('#') for l in note.splitlines()) and not NIFE_WORD.search(note), note
+    assert 'no line is expected' in exempts_note((9, 0, 0, 0))
     print('crate_move selftest: ok')
 
 

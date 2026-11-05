@@ -34,7 +34,7 @@ The rules every step keeps:
 `script/crate-move --dry-run --into <empty dir> <crate>` builds the crate repository's first tree
 locally and creates nothing. It copies the crate's tracked files and adds the template's scaffold,
 with every caller pinned at the newest template release. It deletes the `Name:` blocks, rewrites
-each falsification patch for `git apply -p1` and sets `repository` in the manifest. Then it builds
+each falsification patch for `git apply -p1`, sets `repository` in the manifest and carries the crate's mutation baseline row into `.github/mutants-exempts` as a comment. Then it builds
 and tests the copy at its `rust-version` and runs the template's cheap checks from that release. It ends
 with the nife-side follow-up: each consumer manifest's new line and every other file that names
 the crate. The script's header lists what it does not check.
@@ -249,7 +249,6 @@ publishes.
 - The template's scaffold mentions nife. The commit hook, `rustfmt.toml`, `deny.toml` and
   `docs/stranger-test.md` name it, and the pull request template names the architect. Every crate
   repository inherits those lines.
-- No lint fails a `[patch]` that reaches nife's `main`. Milestone 857's fork 2 rules one.
 - [What nife does at each extraction](../design/roadmap/0857-crates-released-on-their-own/what-nife-does-at-each-extraction.md)
   disagrees with the ruled form. It replaces the path dependency by a crates.io release in the
   move's pull request; the ruled form is a `git` and `rev` pin with its version until the first
@@ -257,10 +256,13 @@ publishes.
 - Fuzz targets have no ruled home after a move. `file_allocation_table` has two in nife's
   `fuzz/`. They either stay here against the pinned crate, or move to the crate repository, whose
   `weekly / fuzz` runs when its caller passes `fuzz: true`.
-- The mutation baseline does not travel. nife's row for the crate stays in
-  `.cargo/mutants-baseline.txt`, and the crate repository's `weekly / mutation` fails on any
-  survivor until `.github/mutants-exempts` accounts for it; the pilot needed one pull request for it.
-  The dry run does not run cargo-mutants.
+- The mutation baseline travels as counts only. The dry run copies the crate's row from
+  `.cargo/mutants-baseline.txt` into the staged `.github/mutants-exempts` as a comment, and the
+  follow-up list says to delete the row here. The template's gate wants one `<file>:<line> # <reason>`
+  line per surviving mutant, and the census records four counts (caught, missed, timeout, unviable)
+  and no locations, so the lines cannot be written mechanically. The crate repository's first
+  `weekly / mutation` run fails on each survivor and names it; the move lane lists them. The dry run
+  does not run cargo-mutants.
 - Nobody has set condition 5's period, so no soak can end yet.
 - Condition 3 is unmeasured on the pilot. Its release runs were the two that made its tags, and
   none ran with `dry-run=true`, so whether a dry run of an already tagged version passes the gate is

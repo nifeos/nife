@@ -1225,6 +1225,16 @@ if git grep -nE '^(<{7}|={7}|>{7})( |$)' -- \
 fi
 rm -f "/tmp/nife-conflict-markers.$$"
 
+echo "==> no [patch] section reaches main"
+# lint-quick
+# A crate that has moved to its own repository is pinned as { version, git, rev } at its tag's commit
+# (milestone 857 (crates released on their own), fork 2; notes/crate-move.md). A [patch] redirects a dependency for the whole build
+# and is a local development aid, so none lands, in any manifest or .cargo/config.toml. The one entry
+# allowed is a path into vendor/, code this tree carries. helpers/patch-section-check-selftest.sh
+# plants each form and a clean tree.
+helpers/patch-section-check-selftest.sh >/dev/null
+helpers/patch-section-check.sh
+
 # Every `uses:` in .github/ is pinned to a full 40-hex commit SHA, with the tag in a trailing
 # comment. A tag is a mutable pointer: whoever controls the action's repository can move `v2` to new
 # code, and that code then runs in a job that holds a token. metrics.yml and toolchain-bump.yml mint
