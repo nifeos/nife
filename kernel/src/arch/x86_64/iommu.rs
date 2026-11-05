@@ -483,11 +483,21 @@ pub fn initialize(dmar: &DmarUnits) {
     }
 }
 
+/// Copy the recorded DMAR into `out` under the lock, so the caller reads configuration space with
+/// the lock released. The caller borrows the one copy it owns; returning the table by value would
+/// make an unoptimised build keep a whole-table temporary at each step of the hand-off.
+#[inline(never)]
+fn copy_recorded_dmar(out: &mut Option<DmarUnits>) {
+    *out = *DMAR.lock();
+}
+
 /// The index of the unit that owns `rid`, when that unit is one this kernel could ask. `None` is
 /// a device no unit owns, or a DMAR recorded only in part. Resolving a scope path reads
 /// configuration space, so this runs with neither lock held across it.
 fn owner_index(rid: u32) -> Option<usize> {
-    let units = (*DMAR.lock())?;
+    let mut recorded = None;
+    copy_recorded_dmar(&mut recorded);
+    let units = recorded.as_ref()?;
     let (bus, dev, func) = ((rid >> 8) as u8, ((rid >> 3) & 0x1f) as u8, (rid & 7) as u8);
     match units.owner_index(0, bus, dev, func, &mut crate::pci::bridge_bus_range) {
         Ok(Some((i, _))) => Some(i),
