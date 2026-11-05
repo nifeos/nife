@@ -328,7 +328,9 @@ pub(crate) fn usage_record(region: u64, record: u64) -> Option<u64> {
 
 /// `region`'s subtree's live `counted` objects and its ceiling for them, `(live, ceiling)`, or
 /// `None` for a dead name. For the tests.
-#[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // the ceiling tests are the only callers
+///
+/// Name: provisional, minted 2026-11-05 (UTC) by the table-ceilings lane.
+#[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // only the system tests call it
 pub fn subtree_live(region: u64, counted: Counted) -> Option<(u32, u32)> {
     REGIONS.lock().subtree_live(region, counted)
 }

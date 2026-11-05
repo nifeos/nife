@@ -148,11 +148,15 @@ pub struct Ceilings([u32; COUNTED_KINDS]);
 
 impl Ceilings {
     /// No ceiling on any kind: what [`RegionTable::insert_root`] gives a root.
+    ///
+    /// Name: provisional, minted 2026-11-05 (UTC) by the table-ceilings lane.
     pub const UNLIMITED: Ceilings = Ceilings([u32::MAX; COUNTED_KINDS]);
 
     const ZERO: Ceilings = Ceilings([0; COUNTED_KINDS]);
 
     /// These ceilings with `counted`'s set to `most`.
+    ///
+    /// Name: provisional, minted 2026-11-05 (UTC) by the table-ceilings lane.
     #[must_use]
     pub const fn with(self, counted: Counted, most: u32) -> Ceilings {
         let mut counts = self.0;
@@ -161,6 +165,8 @@ impl Ceilings {
     }
 
     /// The count for `counted`.
+    ///
+    /// Name: provisional, minted 2026-11-05 (UTC) by the table-ceilings lane.
     #[must_use]
     pub const fn get(self, counted: Counted) -> u32 {
         self.0[counted.index()]
