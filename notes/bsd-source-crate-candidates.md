@@ -60,7 +60,7 @@ figures are 90-day downloads and the date of its newest release, measured 2026-1
 Ties break on D, then F, then T, then fewer lines. One line each:
 
 1. A FAT-shaped opportunity, with the transitive-download caveat above.
-2. Milestone 515 (the installer a stick runs) records in its BUGS that SATA disks need an AHCI
+2. Milestone 515 (the installer: a stick that puts itself on the machine's disk) records in its BUGS that SATA disks need an AHCI
    driver nothing owns. QEMU's `q35` machine has `ich9-ahci`. The two Rust crates have under 800
    downloads each.
 3. nife's kernel already holds a 241-line polled master in `kernel/src/reboot/designware_i2c.rs`
@@ -72,7 +72,7 @@ Ties break on D, then F, then T, then fewer lines. One line each:
 5. No crate exists. Microsoft's RSS specification publishes verification vectors. Nothing in nife
    spreads receive queues yet.
 6. The `libsa` file is already freestanding. QEMU's user network serves TFTP. nife boots over TFTP
-   through firmware (milestone 260), so it has no consumer for a client of its own.
+   through firmware (milestone 260, boot xenon over the network), so it has no consumer for a client of its own.
 7. GitHub code search finds `pvclock_vcpu_time_info` reimplemented in at least six Rust kernels and
    VMMs. The test needs a KVM host, so TCG and HVF cannot check it.
 8. nife's frame allocator is its own design, so the fit is weak.
@@ -80,8 +80,8 @@ Ties break on D, then F, then T, then fewer lines. One line each:
 10. Small and clean, and nothing in nife or crates.io asks for it.
 
 The human-interface report descriptor parser (NetBSD Foundation `sys/dev/hid/hid.c`, BSD-2) also
-scored 14 and placed eleventh on D. Its fit is the strongest in the table: milestone 242 expects
-keyboards that speak only report protocol, and milestone 179 needs a mouse. But `hidreport` is
+scored 14 and placed eleventh on D. Its fit is the strongest in the table: milestone 242 (USB host and HID) expects
+keyboards that speak only report protocol, and milestone 179 (pointer input: a mouse in text mode) needs one. But `hidreport` is
 maintained, `no_std` and MIT, with 38,649 downloads, so the gap is nife's and not the ecosystem's.
 nife should take `hidreport` as a dependency rather than publish a rival.
 
@@ -90,18 +90,18 @@ nife should take `hidreport` as a dependency rather than publish a rival.
 Each criterion runs 0 to 3. The score is 2D + L + S + T + Z + F, out of 21. Change the weights and
 the order moves; the per-row grades are what a reader should argue with.
 
-- **D, demand or evidence of a gap.** 3: an incumbent with six-figure 90-day downloads that is
+- D, demand or evidence of a gap. 3: an incumbent with six-figure 90-day downloads that is
   dormant or lacks a `no_std` form. 2: only small incumbents, or repeated reimplementation inside
   kernels found by code search. 1: no crate and no sign anyone wants one. 0: a maintained,
   `no_std` incumbent.
-- **L, license.** 3: ISC, BSD-2-Clause or BSD-3-Clause, all on `deny.toml`'s allow-list. 0: an
+- L, license. 3: ISC, BSD-2-Clause or BSD-3-Clause, all on `deny.toml`'s allow-list. 0: an
   advertising clause, a notice the allow-list does not name, or no header. A 0 rejects the row.
-- **S, separability.** The fraction of code left after removing kernel glue, by reading: 3 from
+- S, separability. The fraction of code left after removing kernel glue, by reading: 3 from
   85%, 2 from 60%, 1 from 40%, 0 below.
-- **T, testable without hardware.** 3: published vectors or a fuzzable format, plus a QEMU model.
+- T, testable without hardware. 3: published vectors or a fuzzable format, plus a QEMU model.
   2: a QEMU model. 1: needs KVM or captured traces. 0: needs the board.
-- **Z, size.** Lines in the source files: 3 under 800, 2 under 2,000, 1 under 4,000, 0 above.
-- **F, fit with nife.** 3: code in the tree or a recorded BUGS entry needs it. 2: a board or
+- Z, size. Lines in the source files: 3 under 800, 2 under 2,000, 1 under 4,000, 0 above.
+- F, fit with nife. 3: code in the tree or a recorded BUGS entry needs it. 2: a board or
   milestone nife already plans. 1: plausible. 0: none.
 
 ## What nife already has from BSD source
@@ -118,38 +118,38 @@ generational table and NVMe crates cite no BSD source.
 None of risk 8's three ruled picks is BSD-derived, and no BSD-derived crate sits in
 [the releasable-crates survey](releasable-crates-2026-10-07.md)'s publish order. Row 1 extends
 `designware_mobile_storage`, and row 3 would replace a kernel module. Neither duplicates a crate the
-tree ships. §316 (a package's programs leave as one repository after their crates) puts a crate in
-a repository of its own when it is publishable or more than one repository uses it; rows 1 to 4
-would each qualify as publishable.
+tree ships. Under §316 (a program package leaves as one repository, with the crates only it uses),
+a crate gets a repository of its own when it is publishable or more than one repository uses it.
+Rows 1 to 4 would each qualify as publishable.
 
 ## Rejected rows, and why
 
 The appendix lists all 77. These are the ones a reader might expect higher.
 
-- **Realtek RTL8111/8168, the most common PC Ethernet chip.** OpenBSD's `re.c`, NetBSD's
+- Realtek RTL8111/8168, the most common PC Ethernet chip. OpenBSD's `re.c`, NetBSD's
   `rtl8169.c` and FreeBSD's `if_re.c` all carry Bill Paul's four-clause license with its
   advertising clause, and FreeBSD's SPDX line says `BSD-4-Clause`. `deny.toml` does not allow it.
   The gap is real, since code search finds four Rust kernels with their own RTL8168 driver,
   but BSD code cannot be the source. `rgephy.c`, the Realtek PHY, has the same clause.
-- **HFSC.** Carnegie Mellon's notice is permissive but not on the allow-list.
-- **ISO 9660, PF_KEY, BOOTP.** Advertising clauses, and `iso9660-rs` (`no_std`, 5,846) and
+- HFSC. Carnegie Mellon's notice is permissive but not on the allow-list.
+- ISO 9660, PF_KEY, BOOTP. Advertising clauses, and `iso9660-rs` (`no_std`, 5,846) and
   `dhcproto` cover two of them.
-- **Prefix tables and trees** (ART, NPF's `lpm.c`, `ptree.c`, `radixtree.c`, `rbtree.c`):
+- Prefix tables and trees (ART, NPF's `lpm.c`, `ptree.c`, `radixtree.c`, `rbtree.c`):
   `prefix-trie` (19.4M), `patricia_tree` (348k) and `intrusive-collections` (8.6M) are maintained.
-- **NetBSD's `thmap`.** `papaya`, `scc` and `dashmap` fill the concurrent-map space.
-- **Cryptography** (key wrap, Blowfish, `bcrypt_pbkdf`, SipHash, Michael): RustCrypto and
+- NetBSD's `thmap`. `papaya`, `scc` and `dashmap` fill the concurrent-map space.
+- Cryptography (key wrap, Blowfish, `bcrypt_pbkdf`, SipHash, Michael): RustCrypto and
   `siphasher` cover them, all `no_std`.
-- **BER, `imsg`, DHCP client, WireGuard.** `rasn`, `der` and `bcder`; an OpenBSD-only IPC framing;
+- BER, `imsg`, DHCP client, WireGuard. `rasn`, `der` and `bcder`; an OpenBSD-only IPC framing;
   `edge-dhcp` and smoltcp's DHCPv4; `boringtun` and `gotatun`.
-- **SLAAC with stable addresses** (OpenBSD `slaacd`'s engine, score 12). smoltcp's main branch
+- SLAAC with stable addresses (OpenBSD `slaacd`'s engine, score 12). smoltcp's main branch
   carries `src/iface/slaac.rs`; RFC 7217 stable-privacy addresses are the gap left, and small.
-- **UARTs, RTC, GPIO, virtio, MII PHYs, range allocators.** Maintained crates exist for each:
+- UARTs, RTC, GPIO, virtio, MII PHYs, range allocators. Maintained crates exist for each:
   `uart_16550`, `arm-pl011-uart`, `arm_pl031`, `arm-pl061`, `virtio-drivers` (91 dependents),
   `ieee802_3_miim`, `range-alloc` and `vm-allocator`.
-- **Obsolete hardware and protocols.** NE2000, Intel 8255x, Sun GEM, RTL8139, Van Jacobson
+- Obsolete hardware and protocols. NE2000, Intel 8255x, Sun GEM, RTL8139, Van Jacobson
   compression, PPPoE (score 8), spanning tree, BFD.
-- **UFS2 boot reader.** §34 (RedoxFS is the primary filesystem, on three conditions) refused UFS2.
-- **LLDP.** OpenBSD's `pdu.c` holds 125 lines of helpers; a crate would come from IEEE 802.1AB.
+- UFS2 boot reader. §34 (RedoxFS is the primary filesystem, on three conditions) refused UFS2.
+- LLDP. OpenBSD's `pdu.c` holds 125 lines of helpers; a crate would come from IEEE 802.1AB.
 
 ## Method
 
@@ -197,9 +197,10 @@ which would raise row 4's fit for argon.
   inherits both the fixes and the gaps.
 - BSD code is a reference, not a proof. It shows one working order of operations; the datasheet or
   the standard still decides what is correct, and a Kani harness decides what nife claims.
-- A port is derived work. Under the rule ruled 2026-11-04 (UTC) for milestone 1019 items 3 to 6, a
-  crate that follows a permissive file closely carries that file's copyright and permission notice
-  and names the file; a file read only for facts needs a citation. The notice travels with the crate
+- A port is derived work. Milestone 1019 (the driver crates carry facts from their sources, not
+  their text) holds the rule, ruled 2026-11-04 (UTC) on its items 3 to 6. A crate that follows a
+  permissive file closely carries that file's copyright and permission notice and names the file.
+  A file read only for facts needs a citation. The notice travels with the crate
   to its own repository and to crates.io. `helpers/crate_release.py` on `main` accepts only
   `MIT OR Apache-2.0` as a manifest license; pull request #3200, open, widens it to that pair joined
   with ISC, BSD-2-Clause or BSD-3-Clause. A four-clause or Carnegie Mellon source passes neither.
