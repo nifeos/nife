@@ -9,7 +9,7 @@ Every worktree on the machine shares them, so however many lanes run, at most N 
 one per 8 GiB of physical memory, at least 1. Two settings override it: `NIFE_HEAVY_SLOTS=<n>` for
 one process tree, and a per-machine file, `~/.nife/heavy-slot-count` (one integer, beside the slot
 directory and outside every worktree, so every lane reads it with no setup). The environment wins
-over the file, and the file is read on every poll, so raising it reaches waiting jobs within seconds.
+over the file. Every poll rereads the file, so raising it reaches waiting jobs within seconds.
 A job that has to wait says once which jobs hold the slots, and hints when one looks stuck (under 1
 percent CPU for over an hour), then waits. `--status` marks a slot whose worktree is gone as orphaned. A nested job (`ci-build`'s tests) runs in
 its parent's slot. `python3 helpers/heavy_slot.py --status` lists the holders.
