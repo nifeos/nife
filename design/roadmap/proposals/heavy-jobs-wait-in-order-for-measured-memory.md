@@ -5,7 +5,7 @@ milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # Heavy jobs wait in order for the memory they measured
 
@@ -19,11 +19,11 @@ and did not take it, for reasons (b) gives. No existing tool admits by measured 
 processes without a server; the [prior art appendix](heavy-jobs-wait-in-order-for-measured-memory/prior-art.md)
 lists what this lane searched.
 
-This is an architect's call. It changes a tool every lane on a machine shares, and its ledger is a
-format that checkouts of different ages read and write at once, which makes it the one part that
-behaves like a wire format. The rest is local code and easy to undo.
+The architect chose option A on 2026-11-05 (UTC); the last section lists that ruling and three
+provisional ones. The ledger is a format that checkouts of different ages read and write at once,
+which makes it the one part that behaves like a wire format. The rest is local code.
 
-## Recommendation
+## The design in brief
 
 Replace the slot count and the Kani pool with one ledger of reservations. A heavy job declares its
 whole need before it starts (memory from a measured per-class weight, and cores), takes all of it in
@@ -172,11 +172,10 @@ A dead holder frees its reservation through `flock`, as now. Two leaks remain.
 - A holder whose worktree is gone, like the orphan lint that kept a slot after its worktree went.
   The ledger records the worktree. `--reap` ends such a holder by writing to the scope's
   `cgroup.kill` on Linux, which kills the whole tree at once, or by signaling the process group on
-  macOS. The recommendation is to reap these automatically at each admission, because a missing
-  worktree is unambiguous.
+  macOS, when a person runs it. `--status` and every waiter report such a holder, and the ledger
+  does not end one on its own.
 - A holder that runs but does nothing, as the eight lints did. #3244's idle hint names it. With (c)
-  the main cause has no code path, so this lane recommends reporting it and leaving the kill to a
-  person.
+  the main cause has no code path, so the ledger reports it and leaves the kill to a person.
 
 ### (h) Observability
 
@@ -199,7 +198,7 @@ door.
 
 ## Options
 
-A, recommended: the ledger above, with memory and cores in one request, tickets, cgroup scopes on
+A, chosen: the ledger above, with memory and cores in one request, tickets, cgroup scopes on
 Linux and the weaker wrapper on macOS. It removes the hold-and-wait, the starvation, the
 job-not-resource cap and the per-process disagreement on N.
 
@@ -267,19 +266,18 @@ Each step fits one pull request, in order.
    report. On macOS the sampling wrapper and its kill.
 7. Cores in the request, exported as `CARGO_BUILD_JOBS` and `VERIFY_JOBS`.
 8. Capacity file and reaping: `~/.nife/heavy/capacity` replaces #3244's count file, and `--reap`
-   ends orphans, automatically or by hand as ruled.
+   ends an orphan when a person runs it.
 9. Retire `NIFE_HEAVY_SLOTS` and the slot files.
 
 Steps 1 and 2 alone remove the hold-and-wait and the starvation. Step 5 brings the throughput
 gain.
 
-## Questions for the architect
+## Rulings
 
-1. The direction: A, the ledger, or B, the count with its symptoms fixed.
-2. A weight that is too low kills its own job at twice the weight. Is that acceptable in place of
-   today's risk of the global killer taking a random large process?
-3. Should the ledger end a holder whose worktree no longer exists, or only report it?
-4. The macOS capacity default: half of physical memory, or something else for a 16 GiB machine?
-
-Question 1 decides whether any step exists; 2 decides step 6; 3 decides step 8; 4 sets one constant
-in step 6.
+1. Option A, the ledger, ruled by the architect on 2026-11-05 (UTC).
+2. On Linux a job that reaches twice its weight is ended, and its overrun raises the class weight.
+   Provisional, ruled by the maintainer on 2026-11-05 (UTC).
+3. The ledger reports a holder whose worktree no longer exists and does not end it; `--reap` ends it
+   when a person runs it. Provisional, ruled by the maintainer on 2026-11-05 (UTC).
+4. The default capacity on macOS is half of physical memory. Provisional, ruled by the maintainer
+   on 2026-11-05 (UTC).
