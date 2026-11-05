@@ -11,7 +11,9 @@ whole reason this table is generational rather than an array of `Option`.
 diff --git a/crates/generational_table/src/lib.rs b/crates/generational_table/src/lib.rs
 --- a/crates/generational_table/src/lib.rs
 +++ b/crates/generational_table/src/lib.rs
-@@ -176,3 +176,2 @@ impl<T, const N: usize> Table<T, N> {
+@@ -165,5 +165,4 @@ impl<T, const N: usize> Table<T, N> {
+         let slot = self.slot_of(name)?;
          let value = self.slots[slot].take()?;
--        self.gens[slot] = self.gens[slot].wrapping_add(1);
+-        self.gens[slot] = self.gens[slot].saturating_add(1);
          self.live -= 1;
+         // Removing anything below the top leaves a hole, which costs a walk nothing to skip.
