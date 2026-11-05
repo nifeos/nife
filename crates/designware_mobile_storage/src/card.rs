@@ -376,11 +376,11 @@ mod tests {
     #[test]
     fn an_sd_name_is_five_bytes_and_an_emmc_name_six() {
         let mut r = [0u32; 4];
-        for (i, b) in b"NIFEMC".iter().enumerate() {
+        for (i, b) in b"TESTMC".iter().enumerate() {
             put(&mut r, 96 - 8 * i as u32, 8, u32::from(*b));
         }
         put(&mut r, 120, 8, 0x15);
-        assert_eq!(CardIdentification::from_sd_register(&r).name, *b"NIFEM\0");
+        assert_eq!(CardIdentification::from_sd_register(&r).name, *b"TESTM\0");
         let mut multimedia_card = r;
         put(&mut multimedia_card, 16, 32, 0x1357_9bdf);
         let card_identification = CardIdentification::multimedia_card(&multimedia_card);
@@ -390,7 +390,7 @@ mod tests {
                 card_identification.name,
                 card_identification.serial
             ),
-            (0x15, *b"NIFEMC", 0x1357_9bdf)
+            (0x15, *b"TESTMC", 0x1357_9bdf)
         );
     }
 }
