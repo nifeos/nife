@@ -533,7 +533,7 @@ x86_64	9bda691ce	ipc_rtt	+0.17	#2025: schedule split along its decision
 x86_64	9bda691ce	relay_rtt	+0.17	#2025: schedule split along its decision
 x86_64	9bda691ce	call_reply	+0.16	#2025: schedule split along its decision
 x86_64	9bda691ce	broker_rtt	+0.16	#2025: schedule split along its decision
-x86_64	49c7dbe41	spawn_reap	+0.56	#2057: an x86_64 shootdown round masks interrupts
+x86_64	49c7dbe413fb	spawn_reap	+0.56	#2057: an x86_64 shootdown round masks interrupts
 x86_64	8d6f3964f	yield_switch	-1.07	#2188: the running thread's name read in one step
 x86_64	8d6f3964f	tss_iomap_switch	-0.85	#2188: the running thread's name read in one step
 x86_64	8d6f3964f	tss_iomap_lazy_switch	-0.86	#2188: the running thread's name read in one step
@@ -551,10 +551,10 @@ x86_64	cec04e4a9	ipc_rtt	+0.22	#2331: SUSPEND and RESUME
 x86_64	cec04e4a9	relay_rtt	+0.23	#2331: SUSPEND and RESUME
 x86_64	cec04e4a9	call_reply	+0.21	#2331: SUSPEND and RESUME
 x86_64	cec04e4a9	broker_rtt	+0.21	#2331: SUSPEND and RESUME
-x86_64	34caf2a4c	yield_switch	-0.13	#2378: the block roster names an NVMe disk
-x86_64	34caf2a4c	tss_iomap_switch	-0.10	#2378: the block roster names an NVMe disk
-x86_64	34caf2a4c	tss_iomap_lazy_switch	-0.10	#2378: the block roster names an NVMe disk
-x86_64	34caf2a4c	tss_iomap_lazy_nop	-0.13	#2378: the block roster names an NVMe disk
+x86_64	34caf2a4c873	yield_switch	-0.13	#2378: the block roster names an NVMe disk
+x86_64	34caf2a4c873	tss_iomap_switch	-0.10	#2378: the block roster names an NVMe disk
+x86_64	34caf2a4c873	tss_iomap_lazy_switch	-0.10	#2378: the block roster names an NVMe disk
+x86_64	34caf2a4c873	tss_iomap_lazy_nop	-0.13	#2378: the block roster names an NVMe disk
 x86_64	c301bef61	yield_switch	-0.17	#2446: IrqSafeGuard::drop inlined
 x86_64	c301bef61	tss_iomap_switch	-0.14	#2446: IrqSafeGuard::drop inlined
 x86_64	c301bef61	tss_iomap_lazy_switch	-0.14	#2446: IrqSafeGuard::drop inlined
