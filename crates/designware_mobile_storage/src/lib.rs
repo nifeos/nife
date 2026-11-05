@@ -46,11 +46,9 @@
 //! - The polled path has read radon's card; the IDMAC path has run only against `simulator`, until a
 //!   bench step on silicon measures it.
 //! - The IDMAC moves at most its region's data pages per command and copies once each way
-//!   through them; the EL0 server moves its data through the FIFO.
+//!   through them.
 //! - Default speed only (25 MHz, 4-bit SD, 1-bit eMMC); no tuning, no 8-bit bus. Polled, with
 //!   `INTMASK` zero. A 64-bit FIFO is refused. No card-detect or write-protect handling.
-//! - Which part of radon's card the EL0 server serves is an architect's call; the window and its
-//!   spawn words are nife's, outside this crate.
 
 pub mod bench;
 pub mod card;
