@@ -107,14 +107,12 @@ fn a_device_context_index_is_one_to_thirty_one_and_distinct() {
     }
     let context_bytes: u64 = if kani::any() { 32 } else { 64 };
     assert!(context::device_offset(index, context_bytes) + context_bytes <= 32 * context_bytes);
-    assert!(
-        context::input_offset(index + 1, context_bytes) + context_bytes <= 33 * context_bytes
-    );
+    assert!(context::input_offset(index + 1, context_bytes) + context_bytes <= 33 * context_bytes);
 }
 
 /// **A slot context and an endpoint context hold each field in its own bits, for every input.**
 /// What goes in comes back out of exactly the field the specification gives it (xHCI 1.2 sections
-/// 6.2.2 and 6.2.3), and no field spills into a neighbour: the speed and the context count are
+/// 6.2.2 and 6.2.3), and no field spills into a neighbor: the speed and the context count are
 /// masked to their widths, the endpoint's dequeue pointer is reassembled from its two dwords, and
 /// the reserved dwords stay zero.
 /// Falsification: replayable `crates/extensible_host_controller_interface/falsifications/verification.the_slot_and_endpoint_contexts_keep_each_field_in_its_own_bits.patch`
@@ -190,7 +188,11 @@ fn the_interrupt_interval_is_the_exponent_the_specification_asks_for() {
         assert!(interval == 10 || interval == 3 || (1u32 << (interval + 1)) > microframes);
     } else {
         assert!(interval <= 15);
-        let wanted = if b_interval == 0 { 1 } else { b_interval.min(16) };
+        let wanted = if b_interval == 0 {
+            1
+        } else {
+            b_interval.min(16)
+        };
         assert_eq!(interval + 1, wanted);
     }
     assert_eq!(

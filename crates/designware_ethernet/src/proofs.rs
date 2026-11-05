@@ -116,7 +116,7 @@ fn a_transmit_descriptor_keeps_its_length_inside_its_fields() {
 }
 
 /// **An MDIO command word holds its two addresses in their own five-bit fields, whatever address
-/// the caller passes.** An address above 31 is reduced and never spills into the neighbouring
+/// the caller passes.** An address above 31 is reduced and never spills into the neighboring
 /// field, the operation bits say read or write as asked, and the busy bit that starts the command
 /// is set.
 ///
@@ -149,7 +149,7 @@ fn an_mdio_command_word_keeps_each_address_in_its_own_field() {
 /// Falsification: replayable `crates/designware_ethernet/falsifications/proofs.a_coherent_verdict_needs_every_account_to_agree.patch`
 #[kani::proof]
 fn a_coherent_verdict_needs_every_account_to_agree() {
-    use cache_coherence::{classify, Observation, Payload, Verdict};
+    use cache_coherence::{Observation, Payload, Verdict, classify};
     let payload = match kani::any::<u8>() % 3 {
         0 => Payload::Matches,
         1 => Payload::Poison,
