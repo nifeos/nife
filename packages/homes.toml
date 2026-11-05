@@ -54,7 +54,8 @@ paths = ["site/"]
 [[home]]
 status = "undecided"
 reason = "the build and gates follow the integrating repository, not yet named"
-paths = ["script/", "helpers/", ".github/", ".githooks/", ".claude/", ".agents/"]
+# vendor/crate-workflows is the template's naming gates, which helpers/ runs.
+paths = ["script/", "helpers/", ".github/", ".githooks/", ".claude/", ".agents/", "vendor/crate-workflows"]
 
 [[home]]
 status = "undecided"
