@@ -39,8 +39,9 @@ and tests the copy at its `rust-version` and runs the template's cheap checks fr
 with the nife-side follow-up: each consumer manifest's new line and every other file that names
 the crate. The script's header lists what it does not check.
 
-Run for `file_allocation_table` from `main` into a scratch directory, it staged 116 files and
-reported these findings, each one a change to make in nife before the move:
+Run for `file_allocation_table` from `main` into a scratch directory, it staged 116 files. The copy
+passed its host tests at `rust-version` 1.88 and built for the three bare-metal targets. It
+reported these findings, each one a change to make before the move:
 
 | finding | where it comes from | owner |
 |---|---|---|
@@ -102,7 +103,7 @@ all 31 patches apply with `-p1`.
    script/crate-move --dry-run --into "$TMPDIR/<crate>-move" <crate>
    ```
 
-   Expected: exit 0 and `<crate>: clean`. The staged tree has git initialised, every file added and
+   Expected: exit 0 and `<crate>: clean`. The staged tree has git initialized, every file added and
    nothing committed.
 9. Commit and push (lane). The message names the template release and nothing of nife:
 

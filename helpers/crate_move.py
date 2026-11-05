@@ -434,7 +434,7 @@ def main(argv):
     checks(into, tree, rev, report)
     shutil.rmtree(work, ignore_errors=True)
     follow_up(root, args.crate, manifest.get('package', {}).get('version', '0.1.0'))
-    print(f'crate-move: staged in {into}, with git initialised and every file added, nothing committed;'
+    print(f'crate-move: staged in {into}, with git initialized and every file added, nothing committed;'
           ' no repository was created and nothing was pushed')
     print(f'crate-move: {args.crate}: ' + ('clean' if not failures else
                                          f'{len(failures)} finding(s) for the move lane'))
