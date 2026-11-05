@@ -72,8 +72,7 @@ pub(super) struct IpcTables {
 /// with the machine full. Twenty-four bytes each.
 pub(super) const FUTEX_BUCKETS: usize = 64;
 
-/// The most endpoints that can exist at once: the registry's bound. Region teardown frees a
-/// rendezvous's slot, so this bounds concurrency, not creations.
+/// The most endpoints that can exist at once: the registry's bound.
 pub(crate) const MAXIMUM_RENDEZVOUS: usize = 512;
 
 /// The most rendezvous that were ever live at once on this boot, and how many of those sat on the
