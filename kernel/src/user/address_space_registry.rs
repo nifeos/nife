@@ -8,9 +8,10 @@ use super::*;
 /// **How many address spaces the registry can name at once: every one the machine can hold.**
 ///
 /// [`crate::revoke::MAXIMUM_SPACES`], because every [`AddressSpace`] is in the revocation registry
-/// from build to drop and holds one entry here, so this table cannot fill while a space wanting an
-/// entry exists. That lets [`register_bound_address_space`] treat a full table as a broken
-/// invariant; the `const` assert keeps the two together. Its size in `.bss` is
+/// from build to drop and holds one entry here, so live spaces alone never fill this table; the
+/// `const` assert keeps the two together. A full table is still possible, so every insert answers a
+/// refusal: [`user_address_space_create`] returns `None`, and [`register_bound_address_space`]
+/// panics. Its size in `.bss` is
 /// `registry_footprint`; see notes/user-address-spaces.md.
 const MAXIMUM_USER_SPACES: usize = crate::revoke::MAXIMUM_SPACES;
 const _: () = assert!(MAXIMUM_USER_SPACES >= crate::revoke::MAXIMUM_SPACES);
@@ -332,10 +333,10 @@ pub(crate) fn give_back_thread_page(name: u64, slot: u8) {
 /// **Put a space the kernel built into the registry, already bound to `tid`** (`sched::adopt_address_space`'s
 /// half, §249; name provisional), and return the copy the thread keeps.
 ///
-/// Infallible because it cannot fail: [`MAXIMUM_USER_SPACES`] covers every space the revocation
-/// registry can hold, and this one is registered there. A full table here is a broken invariant,
-/// not a resource limit, so it panics with that sentence rather than handing every kernel spawn
-/// path an error it could never act on.
+/// Panics if the table refuses the entry. [`MAXIMUM_USER_SPACES`] covers every space the revocation
+/// registry can hold, so live spaces alone never fill it, but a full table is not impossible. The
+/// callers are kernel spawn paths, which could not act on an error, so it panics rather than return
+/// one.
 pub(crate) fn register_bound_address_space(
     space: AddressSpace,
     tid: crate::thread::ThreadId,
@@ -354,7 +355,7 @@ pub(crate) fn register_bound_address_space(
                 bound: Some(Holder::Thread(tid)),
             }
         })
-        .expect("the address-space registry is full, which MAXIMUM_USER_SPACES says cannot happen");
+        .expect("the address-space registry refused a space the kernel built");
     copy.expect("insert_with names the entry before it stores it")
 }
 

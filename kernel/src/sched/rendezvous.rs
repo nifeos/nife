@@ -26,7 +26,7 @@ pub(super) fn try_create_rendezvous_from(region: u64) -> Result<RendezvousId, Re
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().ok_or(RendezvousFailure::RegistryFull)?;
 
-    // Checked before the retype, so a full registry spends no page.
+    // Checked before the retype, so a registry full of live entries spends no page.
     if sched.rendezvous_table.len() >= MAXIMUM_RENDEZVOUS {
         return Err(RendezvousFailure::RegistryFull);
     }
@@ -44,7 +44,8 @@ pub(super) fn try_create_rendezvous_from(region: u64) -> Result<RendezvousId, Re
     // SAFETY: fresh page, exclusively ours, direct-mapped.
     unsafe { (crate::arch::mmu::phys_to_virt(phys) as *mut Rendezvous).write(Rendezvous::new()) };
 
-    // Cannot fail: capacity was checked above under this same lock hold.
+    // The check above counts live entries, so a table with no free slot can still refuse the
+    // insert; the page stays spent.
     let name = sched
         .rendezvous_table
         .insert_with(|_| RendezvousPageAddress::new(phys))

@@ -64,7 +64,8 @@ pub fn create_notification_from(region: u64) -> Option<NotificationId> {
             bound: None,
         });
     }
-    // Cannot fail: capacity was checked above under this same lock hold.
+    // The check above counts live entries, so a table with no free slot can still refuse the
+    // insert; the page stays spent.
     sched
         .notification_table
         .insert_with(|_| NotificationPageAddress::new(phys))
