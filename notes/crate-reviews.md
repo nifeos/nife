@@ -98,6 +98,10 @@ three prove and all three patches fail.
 
 Dependencies. None.
 
+Companion crate. `usb` is released with it under the published name `universal_serial_bus`, because the
+name `usb` is taken on crates.io. The directory and the in-tree dependency name stay `usb` until the
+move, and the crate carries `#[doc(alias = "usb")]` so a search for `usb` still finds it.
+
 Provenance. Nothing outstanding in milestone 1019 for this crate.
 
 Result of `script/crate-standalone`. One failure: `citations`, 3 lines naming nife's
