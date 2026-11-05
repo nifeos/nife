@@ -84,11 +84,19 @@ pub(crate) fn initialize() {
     }
 
     let ecam = acpi.ecam;
-    *ACPI.lock() = Some(acpi);
+    keep_acpi(&acpi);
     bring_up_pci(ecam);
 
     let regions = machine::bring_up_memory(&info);
     println!("  frames      : allocator up over {regions} ram region(s)");
+}
+
+/// Store the walk in [`ACPI`]. A function of its own so the copy into the static is built in this
+/// frame and not in [`initialize`]'s, which already holds the walk once.
+#[inline(never)]
+fn keep_acpi(acpi: &Acpi) {
+    // `insert` and not `*slot = Some(*acpi)`: that builds two whole copies in this frame.
+    ACPI.lock().insert(*acpi);
 }
 
 /// **The PCIe configuration window, its BAR window, and the topology**, from the MCFG's `ecam`
@@ -168,12 +176,14 @@ fn bring_up_pci(ecam: Option<(u64, u8, u8)>) {
 /// attaches a device. Each unit's line is read back from its own status register, so a unit
 /// reported up is the hardware's answer rather than an assumption that a write took.
 pub(crate) fn bring_up_iommus() {
-    let (dmar, ivrs) = with_acpi(|a| (a.dmar, a.ivrs));
-    if !dmar.units().is_empty() {
-        super::iommu::initialize(&dmar);
-    } else if !ivrs.units().is_empty() {
+    // Each branch copies out only the table it hands to its driver (the lock rule on [`with_acpi`]),
+    // in a frame of its own: copying both tables out together, as one tuple, cost a frame over the
+    // guard page.
+    if with_acpi(|a| !a.dmar.units().is_empty()) {
+        bring_up_vt_d();
+    } else if with_acpi(|a| !a.ivrs.units().is_empty()) {
         println!("  vt-d        : skipped, no DMAR (this machine's IOMMU is AMD-Vi)");
-        super::amd_vi::initialize(&ivrs);
+        bring_up_amd_vi();
     } else {
         // Loud, because the alternative is a boot that reads like every other one while nothing
         // stands between a device and all of memory.
@@ -183,4 +193,18 @@ pub(crate) fn bring_up_iommus() {
              (AMD-Vi), so no device's DMA is confined; every driver below runs unconfined"
         );
     }
+}
+
+/// VT-d's units, copied out of the ACPI walk and brought up.
+#[inline(never)]
+fn bring_up_vt_d() {
+    let dmar = with_acpi(|a| a.dmar);
+    super::iommu::initialize(&dmar);
+}
+
+/// AMD-Vi's units, copied out of the ACPI walk and brought up.
+#[inline(never)]
+fn bring_up_amd_vi() {
+    let ivrs = with_acpi(|a| a.ivrs);
+    super::amd_vi::initialize(&ivrs);
 }
