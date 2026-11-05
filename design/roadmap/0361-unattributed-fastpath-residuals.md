@@ -11,9 +11,7 @@ needs_person: no
 # 361. The riscv64 and x86_64 fastpath residuals are unattributed, so their baselines cannot be re-saved
 
 Phases 1 to 3 of milestone 188 (the IPC fastpath) cover this block: they re-measured and
-re-recorded all three baselines on 2026-09-04 (pull request #732). Filed as a proposal on
-2026-09-03 by the milestone 247 sweep, from milestone 237's block, and re-measured by the pull
-request #716 lane on 2026-09-04. Checked on 2026-09-19: the numbers this file is written against no
+re-recorded all three baselines on 2026-09-04 (pull request #732). Checked on 2026-09-19: the numbers this file is written against no
 longer exist. Milestone 188 phase 1 split the single `ipc_fastpath` figure into `ipc_send_recv` and
 `ipc_call_reply`, because the shape the system runs is `CALL` and the gate was measuring
 `SEND`/`RECV`; `ipc_fastpath` survives as the worse of the two, derived and unchecked. All three
@@ -79,22 +77,11 @@ baselines under that build (3304, 1870, 1637). The drift is entirely in the clos
 worth knowing before bisecting: whatever is accumulating is in the IPC and switch closure, not in
 the trap entry path.
 
-## Where it came from
-
-Milestone 237's `## Follow-on`: *"Attribute the riscv64 and x86_64 fastpath residuals, then
-re-record those baselines in the commit that does it. riscv64 sits at 5132 against a 5106 baseline
-and x86_64 at 6687 against 6639, and neither gap is bisected to a milestone, so re-saving them
-today would be the absorb-the-growth move this block exists to refuse. Only aarch64 was
-re-recorded here."*
-
 ## Index row
 
 Two of three fastpath footprint baselines had drifted with nobody able to say why, and milestone 237
-exists to refuse exactly the move of re-saving a baseline because the number moved. Milestone 188
-overtook it: phases 1 to 3 changed what the gate measures (two IPC shapes rather than one merged
-figure) and cut 6% to 10% off every shape by reading `#[cold]` out of the workspace's own source.
-All three baselines were re-recorded against the smaller numbers on 2026-09-04. The residuals named
-here cannot be bisected against baselines that no longer exist. Promoted and disposed of in one act
-by milestone 433 (drain the proposal pile to zero), with the measurement it carried left in the body
-as the record of what was true on 2026-09-04. All three ISAs were drifting, x86_64 the fastest at
-1.9% against a 5% bound.
+refuses to re-save a baseline because the number moved. Milestone 188 overtook the question: phases
+1 to 3 changed what the gate measures (two IPC shapes rather than one merged figure) and cut 6% to
+10% off every shape by reading `#[cold]` out of the workspace's own source. The lane re-recorded all three baselines against the smaller numbers on 2026-09-04, so nobody can
+bisect the residuals named here. When the proposal was measured, all three ISAs were drifting, x86_64 the fastest at 1.9%
+against a 5% bound.

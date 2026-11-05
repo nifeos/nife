@@ -62,23 +62,10 @@ exception in
 exists to violate on purpose. The exception has to be narrow: excepting the assertion generally
 would retire the check that found this defect in the first place.
 
-## Where it came from
-
-Milestone 235's `## Follow-on`: *"A regression gate for the fault path. It needs a program that
-faults on purpose, which is a new name and therefore calef's, and milestone 233's no-thread-killed
-assertion in `script/swish-check` has to learn to except it. The scaffold that proved this milestone
-was a patch to `components/src/least_authority_demo.rs` and was removed afterwards, so nothing stops the lost prompt
-returning."*
-
 ## Index row
 
-Milestone 235 fixed a shell that hangs forever when a spawned command traps, and the evidence it
-was fixed was a scaffold: milestone 233's lane patched `components/src/least_authority_demo.rs` to
-trap, watched the prompt hang, and the patch was removed afterwards. So the defect is fixed and the
-proof is gone. A faulting command reaching the prompt is a property of three couplings any one of
-which a future change can break quietly. The symptom is a hang rather than an error, which under
-a shell test looks like a slow test and is the failure most likely to be waited out and rerun. The
-work is a program whose job is to fault (a new name, so calef's). It needs an entry in the shell test that
-spawns it and asserts the prompt comes back with a fault reported, and a narrow exception in the
-killed-thread assertion this program exists to violate on purpose. It protects the shell's answer to
-every program in the tree that can fault, not one binary.
+Milestone 235 fixed a shell that hangs forever when a spawned command traps, and the only proof was
+a scaffold that was removed afterwards, so nothing stops the lost prompt returning. The work has three pieces. One is a
+program whose job is to fault (a new name, so calef's). One is an entry in the shell test that asserts
+the prompt comes back with a fault reported. One is a narrow exception in the killed-thread
+assertion the program exists to violate. The gate protects the shell's answer to every program that can fault.

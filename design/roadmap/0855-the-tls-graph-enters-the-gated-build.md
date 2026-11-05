@@ -121,14 +121,6 @@ archive. Nothing here is per-ISA code.
 
 ## BUGS
 
-- ~~A `.qemu-version` change leaves main with no QEMU cache.~~ Fixed 2026-10-10 (UTC) by milestone
-  870 (`main` keeps its CI caches warm, #1906): a `main-caches` job saves the key on every push to
-  main, whatever the gate decides. As found, every pull request and merge-group run rebuilt QEMU
-  (about 270 s in `test`) until somebody dispatched CI on main. A run can read only its own ref's
-  caches and main's, and a push to main skipped the suite, and with it the cache save, when a merge
-  group had already tested the commit (the `gate` job). Found 2026-10-10 (UTC) by the maintainer
-  after #1899.
-
 - `package_index_tests`' falsification is attested, not replayable. When it was attested no sweep
   built the TLS graph; the suite now does, so a patch (`package_index::public_address` admitting
   every address) can be written and replayed. Owed by whoever next touches that test.
