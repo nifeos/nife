@@ -11,7 +11,7 @@ trap 'rm -rf "$work"' EXIT
 make() {
     name=$1 kib=$2
     shift 2
-    mkfs.fat --invariant -i 1234ABCD -n NIFETEST "$@" -C "$work/$name.img" "$kib" >/dev/null 2>&1
+    mkfs.fat --invariant -i 1234ABCD -n FATTEST "$@" -C "$work/$name.img" "$kib" >/dev/null 2>&1
     head -c 512 "$work/$name.img" >"$name.boot"
 }
 make fat12-floppy 1440 -F 12

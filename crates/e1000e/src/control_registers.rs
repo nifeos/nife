@@ -54,7 +54,7 @@ pub const RECEIVE_FILTER_CONTROL_EXTENDED_DESCRIPTORS_ENABLE: u32 = 0x0000_8000;
 pub const RECEIVE_ADDRESS_HIGH_ADDRESS_VALID: u32 = 0x8000_0000;
 
 /// `RCTL`: receive enable (Linux's `regs.h`).
-const RCTL_EN: u32 = 0x0000_0002;
+pub(crate) const RCTL_EN: u32 = 0x0000_0002;
 
 /// `RCTL`: accept broadcast, which DHCP's offer needs (`E1000_RCTL_BAM`).
 const RCTL_BAM: u32 = 0x0000_8000;
@@ -63,11 +63,11 @@ const RCTL_BAM: u32 = 0x0000_8000;
 const RCTL_SECRC: u32 = 0x0400_0000;
 
 // The three share no bit, so | and ^ compose the word identically; the compiler checks that here,
-// and .cargo/mutants.toml excludes receive_control_register_value's OR-to-XOR swaps on this assertion.
+// so receive_control_register_value's OR-to-XOR swaps are equivalent mutants.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(RCTL_EN ^ RCTL_BAM ^ RCTL_SECRC == RCTL_EN | RCTL_BAM | RCTL_SECRC);
 
-/// **Receive Control** (`E1000_RCTL`, Linux's `regs.h`) as the kernel programs it: enabled,
+/// **Receive Control** (`E1000_RCTL`, Linux's `regs.h`) as the kernel half programs it: enabled,
 /// broadcast accepted (DHCP's offer is broadcast), 2048-byte buffers (size field zero), the CRC
 /// stripped. **Not** promiscuous: unicast is filtered to receive-address entry 0, which the process
 /// cannot write.
@@ -81,19 +81,19 @@ pub const fn receive_control_register_value() -> u32 {
 }
 
 /// `TCTL`: transmit enable (Linux's `regs.h`).
-const TCTL_EN: u32 = 0x0000_0002;
+pub(crate) const TCTL_EN: u32 = 0x0000_0002;
 
 /// `TCTL`: pad short frames (`E1000_TCTL_PSP`).
 const TCTL_PSP: u32 = 0x0000_0008;
 
 // The four operands share no bit, so | and ^ compose the word identically; the compiler checks
-// that here, and .cargo/mutants.toml excludes transmit_control_register_value's OR-to-XOR swaps on this assertion.
+// that here, so transmit_control_register_value's OR-to-XOR swaps are equivalent mutants.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(
     TCTL_EN ^ TCTL_PSP ^ (15 << 4) ^ (63 << 12) == TCTL_EN | TCTL_PSP | (15 << 4) | (63 << 12)
 );
 
-/// **Transmit Control** (`E1000_TCTL`, Linux's `regs.h`) as the kernel programs it: enabled, short
+/// **Transmit Control** (`E1000_TCTL`, Linux's `regs.h`) as the kernel half programs it: enabled, short
 /// frames padded, collision threshold 15 and distance 63 (Linux's `E1000_COLLISION_THRESHOLD` and
 /// `E1000_COLLISION_DISTANCE`, `defines.h`).
 ///
@@ -106,7 +106,7 @@ pub const fn transmit_control_register_value() -> u32 {
 }
 
 // The three field values share no bit, so | and ^ compose the word identically; the compiler
-// checks that here, and .cargo/mutants.toml excludes transmit_inter_packet_gap_register_value's OR-to-XOR swaps on this assertion.
+// checks that here, so transmit_inter_packet_gap_register_value's OR-to-XOR swaps are equivalent mutants.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(8 ^ (8 << 10) ^ (6 << 20) == 8 | (8 << 10) | (6 << 20));
 

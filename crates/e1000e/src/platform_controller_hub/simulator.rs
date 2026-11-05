@@ -6,7 +6,7 @@
 //! read words out of an NVM image. What it can catch is a sequence that disagrees with itself or
 //! with FreeBSD's order: a semaphore left held, a page select to the wrong address, a PHY reset
 //! issued when firmware forbids it. What it cannot catch is FreeBSD being wrong about silicon, or
-//! this model being wrong the same way the port is. xenon is the test of that.
+//! this model being wrong the same way the port is. Silicon is the test of that.
 //!
 //! Name: ratified 2026-11-03 (UTC), #3121.
 

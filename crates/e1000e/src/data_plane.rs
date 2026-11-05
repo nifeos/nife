@@ -7,7 +7,7 @@
 use super::*;
 
 /// The DMA region, as the data plane reads and writes it. Offsets are bytes from the region's
-/// base; an implementation bounds them (the EL0 one is a `MappedWindow`, which panics on an
+/// base; an implementation bounds them (a mapped window, for example, that panics on an
 /// out-of-window offset rather than touching memory it was not given).
 ///
 /// Name: ratified 2026-11-03 (UTC), #3123.
@@ -53,7 +53,7 @@ pub enum TransmitError {
     Full,
 }
 
-/// **The data plane**: two ring cursors and the region's physical base. Everything `net_stack`
+/// **The data plane**: two ring cursors and the region's physical base. Everything a network stack
 /// does to the device goes through this, so all of it runs on the host against a simulated
 /// device.
 ///
@@ -91,7 +91,7 @@ impl DataPlane {
         self.receive_next
     }
 
-    /// Post every receive buffer and clear the transmit ring. The kernel left both heads and both
+    /// Post every receive buffer and clear the transmit ring. The kernel half left both heads and both
     /// tails at zero; the receive tail goes to the last slot, which gives the device every
     /// descriptor but one (a ring with head equal to tail is empty, so one slot always separates
     /// them).

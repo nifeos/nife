@@ -89,7 +89,7 @@ pub fn bring_up() -> Result<Found, Absent> {
         let id = sequence::initialize_physical_layer_device_workarounds(&mut hw)
             .map_err(|e| refused(Error::Pch(e)))?;
         physical_layer_device_id = Some(id);
-        flush_descriptor_rings(&c, &dev, region);
+        flush_descriptor_rings(&mut hw, &dev, region);
         sequence::global_reset(&mut hw, RESET_WAIT_MS).map_err(|e| refused(Error::Pch(e)))?;
     } else {
         reset_82574(&c).map_err(refused)?;
@@ -278,86 +278,46 @@ fn zero(region: u64) {
     }
 }
 
-/// Empty the descriptor rings before the reset if the hardware says it must: FreeBSD's
-/// `em_flush_tx_ring` and `em_flush_rx_ring` (`freebsd/freebsd-src@9da2c05a748f`,
-/// `sys/dev/e1000/if_em.c`, fetched 2026-11-01 UTC). Skipped when the transmit ring is not in
-/// `region`, since the dummy descriptor must go where the device reads and this kernel owns.
-/// Notice of `if_em.c`: Copyright (c) 2001-2024, Intel Corporation; (c) 2016 Nicole Graziano
-/// <nicole@nextbsd.org>; (c) 2024 Kevin Bowling <kbowling@FreeBSD.org>. BSD-2-Clause. Redistribution
-/// and use in source and binary forms, with or without modification, are permitted provided that
-/// the following conditions are met: 1. Redistributions of source code must retain the above
-/// copyright notice, this list of conditions and the following disclaimer. 2. Redistributions in
-/// binary form must reproduce the above copyright notice, this list of conditions and the following
-/// disclaimer in the documentation and/or other materials provided with the distribution. THIS
-/// SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS \`\`AS IS'' AND ANY EXPRESS OR IMPLIED
-/// WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-/// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
-/// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-/// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-/// OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-/// STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-/// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-fn flush_descriptor_rings(c: &Controller, dev: &crate::pci::PciE1000eDevice, region: u64) {
-    use ::e1000e::platform_controller_hub::{flush, registers as pch};
-    c.w(
-        pch::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER,
-        c.r(pch::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER)
-            | flush::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_DISABLE_MULR_FIX,
-    );
-    let status = || dev.config_read32(flush::PCICFG_DESC_RING_STATUS) as u16;
-    if !flush::is_flush_required(
-        status(),
-        c.r(registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER),
-    ) {
-        return;
-    }
+/// Empty the descriptor rings before the reset if the hardware says it must. The sequence, its
+/// source and its notice are `crates/e1000e`'s (`platform_controller_hub::flush::descriptor_rings`);
+/// this supplies the configuration space and the ring memory it runs against.
+fn flush_descriptor_rings(hw: &mut Bar<'_>, dev: &crate::pci::PciE1000eDevice, region: u64) {
+    use ::e1000e::platform_controller_hub::flush;
+    let mut rings = Rings { dev, region };
     let ring = region + layout::TRANSMIT_RING_OFFSET_BYTES;
-    let tdba = u64::from(c.r(registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER))
-        | u64::from(c.r(registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER)) << 32;
-    if tdba != ring {
+    if let flush::Outcome::ForeignTransmitRing { base } =
+        flush::descriptor_rings(hw, &mut rings, ring)
+    {
         crate::println!(
-            "  e1000e: the rings need flushing and the transmit ring at {tdba:#x} is not this \
+            "  e1000e: the rings need flushing and the transmit ring at {base:#x} is not this \
              driver's; skipped, so the reset may hang the device"
         );
-        return;
     }
-    c.w(
-        registers::TRANSMIT_CONTROL_REGISTER,
-        c.r(registers::TRANSMIT_CONTROL_REGISTER) | 0x2,
-    );
-    let tdt =
-        c.r(registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER) % u32::from(::e1000e::TRANSMIT_ENTRIES);
-    let d = mmu::phys_to_virt(region + layout::transmit_descriptor(tdt as u16)) as *mut u64;
-    // SAFETY: `d` is a 16-byte descriptor inside the transmit ring page of this driver's region
-    // (`layout::transmit_descriptor` reduces its index), in the direct map. The device reads it
-    // only after the tail write below, which the barrier orders after these stores.
-    unsafe {
-        core::ptr::write_volatile(d, ring);
-        core::ptr::write_volatile(d.add(1), flush::dummy_transmit_descriptor_command_word());
+}
+
+/// What the descriptor-ring flush reaches beyond BAR0: the function's configuration space and this
+/// driver's transmit ring in `region`.
+struct Rings<'a> {
+    dev: &'a crate::pci::PciE1000eDevice,
+    region: u64,
+}
+
+impl ::e1000e::platform_controller_hub::flush::RingAccess for Rings<'_> {
+    fn descriptor_ring_status(&mut self) -> u16 {
+        use ::e1000e::platform_controller_hub::flush::PCICFG_DESC_RING_STATUS;
+        self.dev.config_read32(PCICFG_DESC_RING_STATUS) as u16
     }
-    crate::arch::direct_memory_access_write_barrier();
-    c.w(
-        registers::TRANSMIT_DESCRIPTOR_TAIL_REGISTER,
-        flush::tail_after_dummy_transmit(tdt, ::e1000e::TRANSMIT_ENTRIES),
-    );
-    spin_microseconds(250);
-    if status() & flush::FLUSH_DESC_REQUIRED == 0 {
-        return;
+    fn write_transmit_descriptor(&mut self, index: u16, words: [u64; 2]) {
+        let d = mmu::phys_to_virt(self.region + layout::transmit_descriptor(index)) as *mut u64;
+        // SAFETY: `d` is a 16-byte descriptor inside the transmit ring page of this driver's region
+        // (`layout::transmit_descriptor` reduces its index), in the direct map. The device reads it
+        // only after the tail write that follows, which the barrier orders after these stores.
+        unsafe {
+            core::ptr::write_volatile(d, words[0]);
+            core::ptr::write_volatile(d.add(1), words[1]);
+        }
+        crate::arch::direct_memory_access_write_barrier();
     }
-    let rctl = c.r(registers::RECEIVE_CONTROL_REGISTER);
-    c.w(registers::RECEIVE_CONTROL_REGISTER, rctl & !0x2);
-    let _ = c.r(registers::DEVICE_STATUS_REGISTER);
-    spin_microseconds(150);
-    c.w(
-        pch::RECEIVE_DESCRIPTOR_CONTROL_REGISTER,
-        flush::receive_descriptor_control_register_value_for_flush(
-            c.r(pch::RECEIVE_DESCRIPTOR_CONTROL_REGISTER),
-        ),
-    );
-    c.w(registers::RECEIVE_CONTROL_REGISTER, rctl | 0x2);
-    let _ = c.r(registers::DEVICE_STATUS_REGISTER);
-    spin_microseconds(150);
-    c.w(registers::RECEIVE_CONTROL_REGISTER, rctl & !0x2);
 }
 
 /// BAR0, through the direct map.

@@ -53,6 +53,11 @@ import name_crossings  # noqa: E402
 import name_provenance  # noqa: E402
 import vendored_name_gates  # noqa: E402
 
+sys.path.insert(0, vendored_name_gates.TEMPLATE_HELPERS)
+import question_shape  # noqa: E402  (vendored)
+import rust_names  # noqa: E402  (vendored)
+import service_model  # noqa: E402  (vendored)
+
 # The words a name spells out are the template's: `[spelled_out]` in
 # vendor/crate-workflows/helpers/naming_words.toml, read through helpers/vendored_name_gates.py
 # (the pin and the reason are in vendor/README.md). A plural is its own row. A foreign identifier
@@ -60,14 +65,11 @@ import vendored_name_gates  # noqa: E402
 # lane that fixes it decides: a register, bit or specification name copied from a datasheet is
 # excused through `KEPT`, and a renamed item carries `#[doc(alias = "...")]` but an attribute is not
 # a name, so an alias never counts.
-# Packages two programs agree through: `abi`, the wire-contract crates (`script/lint` check 3 holds
-# their spelling, `network_time_protocol` its one exception), and the
-# on-disk formats §307 (how long a name may be) lists. Something else another program parses is
+# Packages two programs agree through: `abi`, the wire-contract crates (`helpers/vendored_name_gates.py`
+# `service` holds their spelling, `network_time_protocol` its one exception), and the on-disk formats §307 (how long a name may be) lists. Something else another program parses is
 # missed; the BUGS below say so.
 WIRE = {"abi", "network_time_protocol", "nifefs", "package_archive",
         "documentation"}
-# Spelled in two halves because script/lint's naming check refuses the word outside design/.
-_SERVICE_WORD = "dae" + "mon"
 _CAP = set(vendored_name_gates.CAP_WORDS)
 # Names a check refuses and a rule of design/naming.md exempts, keyed by `path::name`, each with the
 # checks it is excused from and why. Two kinds, the rule each one applies named in its reason: a
@@ -125,12 +127,14 @@ RULED = {
         "`release_completed` acts and reports whether it worked, which design/naming.md exempts "
         "from the question shape",
 }
-# design/naming.md's question shapes. A finite verb first (`contains`, `starts_with`) is read as a
-# first word ending in `s`, which also passes a plural noun: the check's known false pass.
-_QUESTION_FIRST = {"is", "has", "can", "was", "will", "all", "any"}
-_QUESTION_INNER = {"is", "has", "can", "was"}
-# A `take_` clears a flag and reports it, which design/naming.md exempts by name.
-_ACTS_FIRST = {"take"}
+# design/naming.md's question shapes and service model are the template's checks
+# (vendor/crate-workflows/helpers/question_shape.py and service_model.py), run on the name alone.
+_TEMPLATE_CHECKS = (
+    ("service-model", service_model.hits_of_words(vendored_name_gates.WORDS),
+     service_model.phrase),
+    ("question-shape", question_shape.hits_of_words(vendored_name_gates.WORDS),
+     question_shape.phrase),
+)
 # The casing each Rust kind takes. A file name's casing is `script/lint`'s naming check 6, and a
 # name declared in an `extern` block is its owner's, so neither is checked here.
 _CASING = {
@@ -163,19 +167,15 @@ def failures(name, kind, returns_bool, british):
         out.append("cap: `cap` is ruled to expand (helpers/vendored_name_gates.py holds it)")
     if name in british:
         out.append(f"spelling: `{british[name]}` is British (helpers/house_style.py holds it)")
-    if _SERVICE_WORD in words or (len(words) > 1 and words[-1] == "d"):
-        out.append("service-model: claims a Unix service")
-    if kind == "fn" and returns_bool and words:
-        first = words[0]
-        # A finite verb anywhere passes (design/naming.md: `machine_has_no_rtc`), read as an inner
-        # `is`/`has`/`can`/`was` or a last word ending in `s` (`grant_allows`, `day_matches`).
-        last = words[-1]
-        if not (first in _QUESTION_FIRST or first in _ACTS_FIRST
-                or (first.endswith("s") and not first.endswith("ss"))
-                or (len(words) > 1 and last.endswith("s") and not last.endswith("ss"))
-                or any(w in _QUESTION_INNER for w in words[1:])):
-            out.append("question-shape: returns `bool` and is not `is_`, `has_`, `can_` or a "
-                       "finite verb")
+    # The template's service-model and question-shape checks, on the name alone: a package or
+    # program is not judged here (script/lint's -d check holds those), so the kind is `name` for
+    # anything but a function.
+    definition = rust_names.Definition(name, "fn" if kind == "fn" else "name", 1,
+                                       returns_bool=returns_bool)
+    for check, hits_of, phrase in _TEMPLATE_CHECKS:
+        hits = hits_of(definition)
+        if hits:
+            out.append(f"{check}: " + "; ".join(phrase(word, why) for word, why in hits))
     return out
 
 

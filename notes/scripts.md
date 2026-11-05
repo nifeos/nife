@@ -117,6 +117,7 @@ Full rows: [analysis-and-supply-chain.md](scripts/analysis-and-supply-chain.md).
 | `script/falsifications` | Can each Kani harness be made to fail? |
 | `script/crate-standalone <crate>` | Would this crate stand alone? Provisional name. |
 | `script/crate-review-packet <crate>` | The architect's review packet. Provisional name. |
+| `script/crate-move --dry-run --into <dir> <crate>` | Stage a crate's move to its own repository, and check it, creating nothing. Provisional name. |
 
 `fmt`, `lint`, `coverage`, `supply-chain`, `fuzz`, `miri`, and `mutants` are not part of the canonical
 set; they exist so the CI format, clippy, coverage, supply-chain, fuzz, miri, and weekly mutation

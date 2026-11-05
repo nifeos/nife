@@ -1,4 +1,4 @@
-//! **The I219's own bring-up, ported from FreeBSD's `e1000` shared code.**
+//! **The I219's own bring-up, ported from FreeBSD's `e1000` shared code and its `if_em.c` driver.**
 //!
 //! The I219 is a MAC inside the platform controller hub (PCH) talking to a separate PHY that the
 //! Management Engine shares. FreeBSD's Intel shared code (BSD-3-Clause, notice below) and its driver
@@ -6,7 +6,7 @@
 //! it: [`ultra_low_power`], [`flush`], [`reset`], [`physical_layer_device`],
 //! [`non_volatile_memory`] and [`sequence`] each name the FreeBSD functions they follow. Every
 //! sequence is generic over [`Hardware`], so it runs on the host against a simulated I219 (`simulator`)
-//! as well as in the kernel. The constants are facts about the hardware; the sequences are
+//! as well as in a kernel. The constants are facts about the hardware; the sequences are
 //! FreeBSD's, adapted, and carry the licenses below as their first conditions require.
 //!
 //! Name: ratified 2026-11-03 (UTC), #3145. Renamed from `pch`, Intel's abbreviation, which spells
@@ -49,9 +49,14 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 //! ```
 
-//! FreeBSD's `sys/dev/e1000/if_em.c` and `if_em.h`, which `flush` follows (`em_flush_tx_ring` and
-//! `em_flush_rx_ring`), as found at `freebsd/freebsd-src@9da2c05a748fd17757638e1a9e78215cdb8b80d0`,
-//! fetched 2026-11-01 (UTC). The two files carry the same notice:
+//! FreeBSD's driver files `sys/dev/e1000/if_em.c` and `if_em.h` are not Intel shared code, and
+//! their license is BSD-2-Clause, not BSD-3-Clause. [`flush`] follows `em_flush_desc_rings`,
+//! `em_flush_tx_ring` and `em_flush_rx_ring` with the constants `if_em.h` defines for them, and
+//! [`sequence`] takes `em_initialize_transmit_unit`'s transmit errata and `em_reset`'s
+//! packet-buffer allocation from `if_em.c`. The kernel runs the flush through
+//! [`flush::descriptor_rings`], so this notice covers it there too. The two files carry the same
+//! notice, copied as found at `freebsd/freebsd-src@9da2c05a748fd17757638e1a9e78215cdb8b80d0`,
+//! fetched 2026-11-04 (UTC):
 //!
 //! ```text
 //! SPDX-License-Identifier: BSD-2-Clause
@@ -91,7 +96,8 @@
 //! - **Flow control is not configured, so it is not advertised** ([`sequence::setup_copper_link`]).
 //! - **The transmit flush diverges from FreeBSD in one place**, said at [`flush::tail_after_dummy_transmit`].
 //! - **A failed `CV_SMB_CTRL` read is not written back**, where FreeBSD writes a stale value.
-//! - **The licenses' second condition is not met by any binary this tree ships yet**.
+//! - **The licenses' second condition is the distributor's**: a binary built from this crate must
+//!   reproduce the notices below in its documentation or other materials.
 
 pub mod non_volatile_memory;
 pub mod physical_layer_device;

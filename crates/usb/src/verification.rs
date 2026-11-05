@@ -9,7 +9,7 @@ use super::descriptor::{ConfigurationHeader, DeviceDescriptor, find_boot_keyboar
 /// a keyboard endpoint is a 9-byte header, a 9-byte interface and a 7-byte endpoint, which is
 /// 25 bytes. At 24 the walk could never reach an endpoint descriptor, so the three assertions
 /// below were never evaluated and the harness proved only totality. Found by trying to
-/// falsify it (milestone 323 (the falsification record is incomplete in five ways, and each was found by a different lane), batch 2): a walk that accepted an OUT endpoint stayed green.
+/// falsify it: a walk that accepted an OUT endpoint stayed green.
 /// Falsification: replayable `crates/usb/falsifications/verification.the_configuration_walk_is_total_and_accepts_only_an_interrupt_in.patch`
 #[kani::proof]
 #[kani::unwind(27)]

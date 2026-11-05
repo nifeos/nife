@@ -92,6 +92,8 @@ pub(super) fn write(arch: &str, boot_file: &Path) -> Result<PathBuf, String> {
         ALIGN,
         file.len() as u64,
         volume_id,
+        // The volume label a firmware menu or another operating system shows for the partition.
+        "NIFE",
         name,
         &mut fat::NoClock,
     )

@@ -51,7 +51,7 @@ pub const CLOCK_ENABLE: u32 = 1 << 31;
 /// part (\[mainline-trng\] enables both clocks *before* deasserting, and
 /// \[mainline-rst-common\]'s comment says why: *"if the associated clock is gated, deasserting
 /// might otherwise hang forever"*), and a plan is the only shape that lets a host test assert on
-/// the order without a device. The kernel driver walks this slice; it does not know which device
+/// the order without a device. A driver walks this slice; it does not know which device
 /// it is bringing up.
 ///
 /// Name: ratified 2026-10-26 (UTC).
@@ -287,7 +287,7 @@ pub struct ResetBit {
 ///
 /// The JH7110 has five ([vendor-dts]'s `reg-names = "syscrg", "stgcrg", "aoncrg", "ispcrg",
 /// "voutcrg"`); [`SYSTEM_TOP_GROUP`], [`ALWAYS_ON`] and [`SYSTEM`] are described here, each only
-/// as far as a device in this tree needs it. The arithmetic is general, so another domain is a
+/// as far as the devices this crate plans for need it. The arithmetic is general, so another domain is a
 /// table entry rather than a rewrite.
 ///
 /// [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/dts/jh7110.dtsi
@@ -507,7 +507,7 @@ pub struct PowerManagementChipBus {
     pub truncated: bool,
     /// **The I2C controller's register window**, the `reg` of the PMIC's parent bus node, when the
     /// tree states it. The direct reset write needs it; a plan without one (the constant fallback,
-    /// or a tree that names no `reg`) leaves it `None` and the kernel does not attempt the write.
+    /// or a tree that names no `reg`) leaves it `None` and the caller does not attempt the write.
     pub controller: Option<(u64, u64)>,
     /// **The PMIC's 7-bit I2C address**, the PMIC node's own `reg`: `0x36` in both of radon's
     /// trees. `None` when the tree names no known PMIC at all.
@@ -738,8 +738,8 @@ impl DevicePlan {
 // ===== The direct reset write, and the numbers it needs =====
 //
 // On a VisionFive 2 whose firmware cannot reset the board, the bus can be provably up (clocks
-// running, reset released) while OpenSBI's read of the PMIC still fails. The remedy is the kernel
-// writing the AXP15060 itself over a DesignWare I2C master, which needs three numbers the tree and
+// running, reset released) while OpenSBI's read of the PMIC still fails. The remedy is for the caller
+// to write the AXP15060 itself over a DesignWare I2C master, which needs three numbers the tree and
 // the CRG hold: the controller's base, the PMIC's address, and the I2C input clock that scales
 // every timing count. Everything here is host-testable arithmetic over words the caller reads; the
 // sources are the vendor trees cited in the crate's header.
@@ -791,7 +791,7 @@ pub(crate) const OSC_HZ: u64 = 24_000_000;
 /// rather than guessed from fields that are not in integer mode.
 pub(crate) const PLL2_DEFAULT_HZ: u64 = 1_188_000_000;
 
-/// **The words the I2C input-clock chain reads**, one struct so the kernel can read them in one
+/// **The words the I2C input-clock chain reads**, one struct so the caller can read them in one
 /// place and the arithmetic can be tested without a device. The CRG
 /// words come from [`SYSTEM`]'s window at the offsets the ids above give; the PLL2 words from
 /// [`SYS_SYSCON_BASE`]'s window at `0x2c` (DACPD bit 15, DSMPD bit 16, FBDIV bits 28:17), `0x30`
@@ -980,7 +980,7 @@ const fn counts(clock_frequency: u64, period_ns: u128) -> u32 {
 ///
 /// Each phase is rounded up to a whole count, so it never falls short of its specification
 /// minimum: the high count covers 4000 ns and the low count covers 4700 ns. Those two alone make a
-/// bus faster than 100 kHz, so the fill is nife's own and as simple as it can be: when the two
+/// bus faster than 100 kHz, so the fill is this crate's choice and as simple as it can be: when the two
 /// minimums add to fewer counts than one 10 microsecond period, the whole shortfall goes to the
 /// low count. A longer low time is always legal (standard mode has no maximum, and a slave may
 /// hold SCL low for longer anyway), and the high count stays at the specification minimum. The
@@ -1151,8 +1151,8 @@ pub const MAXIMUM_RECORDED_CLOCKS: usize = 4;
 /// second trip to the machine.
 ///
 /// **The `before` words are the load-bearing ones.** If the clocks read back already enabled and
-/// the reset already released, then this milestone's premise was wrong for radon and the TRNG's
-/// all-zero register window on 2026-09-04 has some other cause. That is the outcome a bench
+/// the reset already released, then a gated clock or a held reset was not the cause, and an
+/// all-zero TRNG register window has some other one. That is the outcome a bench
 /// session most needs to be able to tell apart, and only a before-and-after can tell it.
 ///
 /// Name: ratified 2026-10-26 (UTC). Refused `Report` (a word that could name almost anything; it

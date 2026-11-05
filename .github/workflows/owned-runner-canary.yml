@@ -14,8 +14,8 @@ name: owned runner canary
 # green on the pool first, and a maintainer reads these summaries after the flip too. Both jobs run the
 # same steps on the merge queue and on `main`, never on a pull request: the owned host admits
 # nothing else. `canary-owned` also checks the container's walls (no direct egress past the proxy,
-# no container-engine socket) and prints a FINDING for each one that is open. No canary job can
-# fail the queue (continue-on-error), and none is a required check. Names are provisional.
+# no container-engine socket) and prints a FINDING for each one that is open. `canary-owned` is strict and
+# fails on any FINDING; none of the canary jobs is a required check, so none can fail the queue. Names are provisional.
 # notes/owned-runners.md is the runbook.
 
 on:
@@ -30,7 +30,6 @@ jobs:
   canary-owned:
     if: github.event_name == 'merge_group' || github.event_name == 'push'
     runs-on: [nife-owned-x86_64]
-    continue-on-error: true  # outcome: exception, the canary measures the owned pool and must never block the queue
     timeout-minutes: 15
     steps:
       - name: Start clock
@@ -86,18 +85,8 @@ jobs:
         if: always()
         shell: bash
         run: |
-          set +e
-          bad=0
-          {
-            echo "### image: canary-owned"
-            echo '```'
-            for check in tools toolchain apt-proxy pip; do
-              echo "-- $check"
-              helpers/owned-image-probe.sh "$check" || bad=1
-            done
-            echo '```'
-          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-          test "$bad" = 0
+          # The wrapper exits 1 for a non-zero probe or any FINDING line, and keeps the verdict out of a pipe.
+          helpers/owned-canary-image.sh tools toolchain apt-proxy pip
       # The container's walls, from inside: egress must go through the proxy, and no socket may
       # hand the job a container engine (which is the host). Each open wall is a FINDING and fails
       # this job, which cannot fail the queue.
@@ -121,7 +110,9 @@ jobs:
             done
             test "$open" = 1 || echo "engine sockets: none"
             echo '```'
-          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          } >"$RUNNER_TEMP/canary-walls" 2>&1
+          # No pipe: open=1 above lives in this shell, so the verdict below sees it.
+          tee -a "$GITHUB_STEP_SUMMARY" <"$RUNNER_TEMP/canary-walls"
           test "$open" = 0
       - name: Resources
         if: always()
