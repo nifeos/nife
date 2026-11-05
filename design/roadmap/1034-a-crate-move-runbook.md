@@ -42,14 +42,14 @@ runs in `script/lint`.
 
 Condition 5 of the runbook's soak runs four weeks: 28 days from the tag nife pins, with at least
 four scheduled `weekly` runs green, and a major break restarts it at the tag that carries it.
-Decided by the maintainer, provisional. Lengthening or shortening it is one pull request, and no
+The maintainer decides it, provisionally. Lengthening or shortening it is one pull request, and no
 publication follows from it alone, since each still waits for the architect.
 
 The grounds, measured on the pilot and the template:
 
-- Every other condition is quick. The pilot, `jh7110_entropy`, was tagged `v0.1.0` on 2026-10-31
+- Every other condition is quick. The pilot, `jh7110_entropy`, took its tag `v0.1.0` on 2026-10-31
   (UTC) and recorded its stranger run that day. Its first scheduled `weekly` run went green on
-  2026-11-02, after five red runs by hand while its settings and secrets were wired. Its one later
+  2026-11-02, after five red runs by hand while a lane wired its settings and secrets. Its one later
   tag, `v0.1.1` a day after the first, changed text and no API. So condition 5 sets the soak's length.
 - The weekly run is the sampling rate. It runs once a week and its jobs finish in about 70 seconds,
   so the soak costs calendar time and no compute. Fewer than four runs is one or two samples.
@@ -75,7 +75,8 @@ The gaps found in the move machinery are in the runbook's `BUGS` section, where 
   the template's: its unreleased naming gates, its orphan check and its scaffold's mentions of nife.
   The rest are nife's: the missing `[patch]` lint, the fuzz targets the dry run does not stage, the
   mutation baseline and the unmeasured release dry run.
-- **Proposed.** [A moved crate is fuzzed in its own repository](proposals/a-moved-crate-is-fuzzed-in-its-own-repository.md).
+- **Proposed.** A moved crate is fuzzed in its own repository:
+  `design/roadmap/proposals/a-moved-crate-is-fuzzed-in-its-own-repository.md`.
 
 ## Index row
 

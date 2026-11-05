@@ -65,7 +65,7 @@ first release; no crate turns it on, since the pilot `jh7110_entropy` parses no 
   finds lands with the consumer first, which forwards it upstream.
 - nife's own flow files a fuzz finding where the fix lands: one private advisory on the repository
   that holds the code, worked by a fix lane in that advisory's private fork
-  ([milestone 1015 (fuzz findings without a person)](../1015-fuzz-findings-without-a-person.md)).
+  ([milestone 1015 (fuzz findings filed with no person in the loop)](../1015-fuzz-findings-without-a-person.md)).
 
 ## The options
 
@@ -74,7 +74,7 @@ queue keeps fuzzing the crate, nearly 90 times as long each week as option C. It
 reasons. A crash turns a required check red for every nife pull request, yet nife cannot fix the code: the
 fix takes a crate pull request, a tag and a pin bump, in two repositories. nife fuzzes the pinned
 commit while the crate's `main` moves ahead unfuzzed. And nife leaves this repository bottom-up
-(milestone 857's ruling), so the targets would move a second time. The extra fuzz time found
+(milestone 857 (crates released on their own) rules it), so the targets would move a second time. The extra fuzz time found
 nothing in the measured window.
 
 B. A short fuzz job on every pull request in the template's `check`. It would match nife's shard

@@ -194,7 +194,7 @@ tagged commit.
 The soak ends on evidence; condition 5 also sets the shortest soak. Each condition below has its check; all five hold before
 a publication can come to calef. Condition 5 does not read `weekly / semver`, which reports a break
 in its run's summary and succeeds whatever it finds; it reads the labeler's finding on each merged
-pull request and a direct run. [Milestone 1034](../design/roadmap/1034-a-crate-move-runbook.md)
+pull request and a direct run. [Milestone 1034 (a runbook for moving a crate out of nife)](../design/roadmap/1034-a-crate-move-runbook.md)
 holds the grounds for four weeks.
 
 | condition | check | who |
