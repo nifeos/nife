@@ -114,15 +114,16 @@ def file_findings(root_names, license_field):
 _NAME_LINE = re.compile(r'^\s*(//[!/]|#) ?Name:')
 
 
-def strip_name_blocks(text):
+def strip_name_blocks(text, remove=False):
     """`text` with its `Name:` blocks blanked, as the change that breaks a crate out will leave it.
 
     A block is a `Name:` line behind `//!`, `///` or `#`, with the continuation lines that carry the
     same marker, and the bare marker line that set it off. Each such line becomes an empty line, so
-    a line number in the result is a line number in the file. A ruling of 2026-10-26 (UTC): a crate
-    that leaves is a third-party crate and nife keeps no record of its names.
+    a line number in the result is a line number in the file. With `remove`, the lines are deleted
+    instead, which is what the move commit does (`script/crate-move`). A ruling of 2026-10-26 (UTC):
+    a crate that leaves is a third-party crate and nife keeps no record of its names.
     """
-    lines, i = text.split('\n'), 0
+    lines, i, gone = text.split('\n'), 0, set()
     while i < len(lines):
         m = _NAME_LINE.match(lines[i])
         if not m:
@@ -130,14 +131,16 @@ def strip_name_blocks(text):
             continue
         marker = m.group(1)
         if i and lines[i - 1].strip() == marker:
-            lines[i - 1] = ''
-        lines[i] = ''
+            gone.add(i - 1)
+        gone.add(i)
         i += 1
         while i < len(lines) and lines[i].lstrip().startswith(marker) \
                 and lines[i].lstrip()[len(marker):].strip():
-            lines[i] = ''
+            gone.add(i)
             i += 1
-    return '\n'.join(lines)
+    if remove:
+        return '\n'.join(line for n, line in enumerate(lines) if n not in gone)
+    return '\n'.join('' if n in gone else line for n, line in enumerate(lines))
 
 
 def citation_findings(files):
