@@ -23,7 +23,7 @@ new tool.
 `kernel/Cargo.toml`, `components/Cargo.toml` and `crates/machine_discovery/Cargo.toml`.
 
 The crate's README has a hardware section. It says a driver built on this logic produced real TRNG
-output on a VisionFive 2 in 256-bit mode, and it carries a limitation: this exact source tree has
+output on a VisionFive 2 in 256-bit mode. It also carries a limitation: this exact source tree has
 not run on hardware, and an earlier version under a different crate name is the one that ran. That
 earlier version is the code milestone 159 drove on radon, with its two boots recorded in that block.
 
@@ -125,10 +125,10 @@ CI run later fill the same sentence without changing it.
 ## The rule for every crate with a hardware claim
 
 The rule generalizes. A crate README states a hardware run only by naming a version that has one, by
-the definition above adapted to the device: nife built at the pin that names the version, booted on
-the board by its public procedure, and the device's own success line read. It is a gate on that
-sentence alone, never on publication: a crate publishes on proofs and a stable API, as milestone 818
-says, and a release with no run simply makes no hardware claim.
+the definition above adapted to the device. That means nife built at the pin that names the version,
+booted on the board by its public procedure, with the device's own success line read. It is a gate
+on that sentence alone, never on publication: a crate publishes on proofs and a stable API, as
+milestone 818 says, and a release with no run simply makes no hardware claim.
 
 Today's claims under it:
 
