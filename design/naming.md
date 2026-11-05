@@ -42,7 +42,9 @@ against three failure modes:
   `tx`, `phy`, `init`, `irq`, `fifo`, `min`, `max`, `os`, `config`, `spec`, `arg`, `mem`, `dir`,
   `prog`, `pos`, `opt` and `mtime`. The same holds for `va`, `pa`, `ipi`, `nmi`, `ist`, `msr`,
   `dtb`, `ipc`, `asid`, `gpt`, `nvme`, `pcie`, `dma`, `pr`, `initrd`, `proto`, `rgmii` and `mdio`.
-  The appendix gives each spelling and the cases that decide it.
+  The appendix gives each spelling and the cases that decide it. The words are the
+  `[spelled_out]` list in `vendor/crate-workflows/helpers/naming_words.toml`, the template's, and
+  `script/lint` fails when this paragraph and that list disagree.
 - These stay: `pci`, `elf`, `usb`, `syscall`, `cpu`, `xor`, `io`, `bios`, `id`, QEMU, `MAC`,
   `GMAC` and `SD`. Spell `identifier` only where ID is one letter of a compound specification
   acronym (`address_space_identifier`). `SDIO` is not accepted.
@@ -65,8 +67,8 @@ Lists, exceptions and reasons:
 A name that holds a quantity ends with its unit, spelled out: `_HERTZ`, `_MILLISECONDS`,
 `_NANOSECONDS`, `_SECONDS`, `_BYTES`, `megabits_per_second`. No SI symbol is valid in a name (`_HZ`,
 `_MS`, `_NS`, `_US`, `mbps`), because uppercase erases the case SI symbols depend on: `MHZ` could be
-megahertz or millihertz. The IEC binary prefixes (`kib`, `mib`, `gib`) read one way in every casing
-and stay.
+megahertz or millihertz. The IEC binary prefixes (`kib`, `mib`, `gib`) are symbols too: a name says
+`kibibytes`, `mebibytes` or `gibibytes`. The symbols are the `[units]` list in the same file.
 
 - A length or a limit carries its unit (`MAXIMUM_NAME_BYTES`, never `MAXIMUM_NAME_LEN`). A count of
   things names the things (`MAXIMUM_COLUMNS`).
@@ -238,8 +240,8 @@ a closed record keep their names, and a path is fixed everywhere. The checklist 
 - `helpers/` helpers are outside the worklist on purpose, per milestone 446 (the naming worklist
   says what it covers).
 - A `ratified` is never checked against an architect, and a `recorded` citation is never followed.
-- `helpers/unit_symbols.py` does not count `ns`, `ms`, `hz`, `khz` or `mhz`, and still respells
-  `nanos` as `ns`; `helpers/name_checks.py` does not hold `rx`, `tx`, `phy`, `init`, `irq`, `fifo`,
-  `min`, `max`, `os`, `rgmii` or `mdio`. The gates pass a new name that breaks those rows.
+- `helpers/vendored_name_gates.py` does not count `ns`, `ms`, `hz`, the byte and bit-rate symbols
+  (`kib`, `mib` and `gib` among them) or the other `[units]` rows beyond `UNIT_COUNTED`, and still
+  respells `nanos` as `ns`. The gate passes a new name that breaks those rows.
 - `design/capsicum-and-the-retrofit-question.md` still names `worker`, `heeder` and `spinner` in a
   present-tense claim.

@@ -1,0 +1,34 @@
+# Pin metadata for vendor/crate-workflows, read by script/vendor-verify and script/vendor-watch.
+#
+# The files in vendor/crate-workflows are the `include` list below, byte for byte from the commit
+# below, with no divergence (the patch is empty). They are the naming gates the template owns once
+# for every repository: the spelled-out words, the unit symbols, the Rust lexer both read and the
+# word list both hold. vendor/README.md says what nife adds beside them and why nothing here is
+# edited in nife; a change goes to nifeos/crate-workflows and the pin moves to it. Format as
+# vendor/redoxfs.pin, plus the two fields marked below.
+
+name = crate-workflows
+# The template publishes no version. Its release tags (v7 and so on) mark the workflows callers
+# pin, not these files, so the abbreviated commit stands in.
+version = 8ee86d3
+
+source = git
+
+url = https://github.com/nifeos/crate-workflows/archive/8ee86d3b37d81d30a2b81720d64fa7b1044c302d.tar.gz
+sha256 = 5daad8974d4abd7b0306d8d84efb61c53196ccc8a95cbd6286c6f15658ea307e
+
+vcs = 8ee86d3b37d81d30a2b81720d64fa7b1044c302d
+
+divergence = vendor/crate-workflows.divergence.patch
+
+# Where script/vendor-watch asks what has landed since `vcs`.
+vcs_url = https://github.com/nifeos/crate-workflows
+vcs_branch = main
+
+# Only these files are vendored (script/vendor-verify): the rest of the template is workflows and
+# helpers nife does not run. A path ending in `/` takes the directory.
+include = helpers/naming_words.toml helpers/rust_names.py helpers/spelled_out.py helpers/unit_symbols.py LICENSE-APACHE LICENSE-MIT
+
+# The template is not a registry package, so there is no release list for script/vendor-watch to
+# read: its commits on `vcs_branch` are the releases it reports.
+registry = none
