@@ -137,7 +137,7 @@ own driver read an image (`cargo test -- --ignored`, on macOS).
   crash leaks a cluster and never shares one, and a write has no barrier: the device decides when a
   write reaches the medium.
 - Time. The clock is required of every writer. FAT stores a date and a time of day with no time
-  zone. In nife the clock supplies UTC (ruled 2026-11-01 UTC). The crate stores exactly the fields
+  zone. The clock is expected to supply UTC. The crate stores exactly the fields
   the clock reports and converts nothing, so it cannot check that a clock gives UTC, and a reader
   that treats FAT times as local time, such as Windows, shows a UTC value as local time. A read
   takes no clock and never writes. A time outside 1980 to 2107, or a field outside its range,
