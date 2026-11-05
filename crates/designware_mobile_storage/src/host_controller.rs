@@ -196,9 +196,8 @@ impl<R: RegisterWindowAndClock> HostController<R> {
     ///
     /// [`Error::QueueWidth`] for a 16- or 64-bit FIFO.
     ///
-    /// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands.
-    ///
-    /// Name: ratified 2026-11-05 (UTC), #3276. The parameter `base_hertz` spells the unit out.
+    /// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands; the parameter `base_hertz`
+    /// spells the unit out (ratified 2026-11-05 (UTC), #3276).
     pub fn new(
         mut registers: R,
         base_hertz: u32,
@@ -369,9 +368,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     /// returned. A target no divider reaches runs at the slowest the controller has.
     ///
     /// Name: ratified 2026-11-02 (UTC), #3092. The clock is set in hertz and the method is spelled
-    /// out.
-    ///
-    /// Name: ratified 2026-11-05 (UTC), #3276. The parameter `hertz` spells the unit out.
+    /// out; the parameter `hertz` spells the unit out (ratified 2026-11-05 (UTC), #3276).
     pub fn set_clock(&mut self, hertz: u32) -> Result<u32, Error> {
         let divider = clock_divider(self.base_hertz, hertz).unwrap_or(255);
         self.registers.write(registers::CLKENA, 0);

@@ -39,3 +39,7 @@ ptr_as_ptr = "warn"
 semicolon_if_nothing_returned = "warn"
 manual_let_else = "warn"
 doc_markdown = "warn"
+
+# The tests build the board-testing steps the crate leaves off by default.
+[dev-dependencies]
+designware_mobile_storage = { version = "0.1.0", path = ".", features = ["bench"] }
