@@ -162,7 +162,7 @@ been shown the whole name.
 
 `login_proto` became `login_protocol`, suffix only. calef ruled that the `login` stem stays for the
 whole family (2026-09-15), so `login_protocol` is final. The argument for keeping the stem is in
-`design/naming/vocabulary-rulings.md`, "The `login` stem stays".
+`design/naming/vocabulary.md`, "Stems the tree keeps".
 
 ## How it was performed, and what the sweep took
 
@@ -228,4 +228,4 @@ the sweep took and restored, and why `script/lint`'s `crates/*proto` glob had to
 calef ruled on 2026-10-18 (UTC) that nife's wire-contract crates end in `_contract`; the crates this
 block renamed to `_protocol` took the new suffix in one pass, except `network_time_protocol` (the
 NTPv4 standard's own name) and `supervision_protocol` (waiting for its split).
-design/naming/convention-rulings.md has his words and the reason.
+design/naming/crates.md ("Suffixes") has the reason.

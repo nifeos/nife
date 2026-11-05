@@ -12,18 +12,18 @@
 /// on the JH7110 UART0 is PLIC line 32 (notes/visionfive2.md, BUGS).
 ///
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md; `INTID` is the GIC's own term and stays.
+/// design/naming/acronyms-and-abbreviations.md; `INTID` is the GIC's own term and stays.
 #[cfg(target_arch = "aarch64")]
 pub const UART_RECEIVE_INTID: u32 = 33;
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md; `INTID` is the GIC's own term and stays.
+/// design/naming/acronyms-and-abbreviations.md; `INTID` is the GIC's own term and stays.
 #[cfg(target_arch = "riscv64")]
 pub const UART_RECEIVE_INTID: u32 = 10;
 /// `x86_64`: COM1 is ISA interrupt 4, the legacy line. It is neither the IO APIC input it may be
 /// remapped to (the ACPI MADT's overrides say, unread here) nor the IDT vector that input raises.
 ///
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md; `INTID` is the GIC's own term and stays.
+/// design/naming/acronyms-and-abbreviations.md; `INTID` is the GIC's own term and stays.
 #[cfg(target_arch = "x86_64")]
 pub const UART_RECEIVE_INTID: u32 = 4;
 

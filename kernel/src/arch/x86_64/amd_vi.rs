@@ -532,7 +532,7 @@ fn enable(u: &mut Unit) {
 /// One `amd-vi` line per unit.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(ivrs: &IvrsUnits) {
     *IVRS.lock() = Some(*ivrs);
     {

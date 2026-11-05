@@ -160,7 +160,7 @@ pub(crate) struct DescriptorTablePointer {
 /// `boot.s` installed, and the old one goes away.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub unsafe fn initialize() {
     let id = crate::cpu::id();
 

@@ -1204,8 +1204,8 @@ def main(argv):
     if not argv or argv[0] == '--check':
         return run_check()
     # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
-    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
-    # abbreviates and the code behind it does not").
+    # The difference is deliberate (design/naming/command-line-names.md, "The command line
+    # abbreviates, and the code behind it does not").
     if argv[0] in ('--bank', '--init'):
         return bank(initialize=argv[0] == '--init')
     if argv[0] == '--step' and len(argv) == 3 and argv[2].isdigit():

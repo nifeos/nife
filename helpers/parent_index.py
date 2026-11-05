@@ -834,8 +834,8 @@ def main(argv):
     if argv[0] == '--list':
         return run_list()
     # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
-    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
-    # abbreviates and the code behind it does not").
+    # The difference is deliberate (design/naming/command-line-names.md, "The command line
+    # abbreviates, and the code behind it does not").
     if argv[0] in ('--bank', '--init'):
         return bank(initialize=argv[0] == '--init')
     print(__doc__.split('\n\n')[2], file=sys.stderr)

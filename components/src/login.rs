@@ -14,7 +14,7 @@
 //! - One session holds the terminal ([`TERM_EP`]): another login is refused `NO_TERMINAL` before
 //!   its secret is relayed; `LOGOUT` releases it and authenticates nothing.
 //!
-//! Name: ratified 2026-09-15 (calef, the `login` family; `design/naming/vocabulary-rulings.md`).
+//! Name: ratified 2026-09-15 (calef, the `login` family; `design/naming/vocabulary.md`).
 
 //! # BUGS
 //! - One durable session at a time ([`DURABLE_SESSIONS`]); a second identity gets an ordinary one.

@@ -46,7 +46,7 @@ static PSCI_ID_FROM_PROPERTY: AtomicU8 = AtomicU8::new(0);
 /// does not stop the boot: it runs on one core, and bring-up says so.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(dtb_ptr: usize) {
     // SAFETY: the pointer firmware handed us, whose magic `memory::initialize` has already checked
     // (it runs first and panics otherwise), named through the boot map's direct region.

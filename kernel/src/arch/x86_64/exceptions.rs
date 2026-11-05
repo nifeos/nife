@@ -388,7 +388,7 @@ static IDT_BUILT: AtomicBool = AtomicBool::new(false);
 /// stays enabled across `bring_up_secondaries`. See notes/x86-port/traps.md.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     if !IDT_BUILT.swap(true, Ordering::AcqRel) {
         // SAFETY: guarded by the swap above, so at most one core ever runs this loop, and it runs

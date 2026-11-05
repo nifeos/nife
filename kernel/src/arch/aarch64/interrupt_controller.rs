@@ -184,7 +184,7 @@ pub(crate) fn device_line_interrupts() -> Option<u64> {
 /// With no GIC in the tree, or with one the hardware contradicts.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     let found = crate::memory::gic_regions().expect("no interrupt controller in the DTB");
     let gicd = crate::arch::mmu::phys_to_virt(found.distributor().start);

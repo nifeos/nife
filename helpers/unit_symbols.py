@@ -1,11 +1,11 @@
-"""The unit-symbol ratchet: Rust identifiers with a unit symbol the naming ruling does not allow.
+"""The unit-symbol ratchet: Rust identifiers that carry a unit symbol in place of the unit's name.
 
-Ruled 2026-10-27 (UTC), recorded in design/naming/spelled-out-rulings.md under "Unit symbols in
-names". A name uses a unit symbol only from the allowed list: `ns` and `ms`; `kib`, `mib` and
-`gib`; `hz`, `khz` and `mhz`. A symbol that reads two ways is spelled out (`microseconds`, not
-`us`; `seconds`, not `s` or `sec`; `minutes`; `meters`), and `bytes` stays a word. `nanos` becomes
-`ns` and `millis` becomes `ms`. New code spells the unit out; this gate makes sure nothing new
-arrives. It is rung 2 of the AGENTS.md ladder.
+The rule is in design/naming.md ("Units"): a name spells its unit out (`_NANOSECONDS`,
+`_MILLISECONDS`, `_HERTZ`, `_BYTES`), and no SI symbol is valid in a name. This gate counts only
+the families below, an older and narrower list than the rule: it does not yet count `ns`, `ms`,
+`hz`, `khz` or `mhz`, and `SPELLED` still respells `nanos` and `millis` as `ns` and `ms`.
+design/naming.md's BUGS records that mismatch; moving the check to the rule and banking the
+new count is a lane of its own. It is rung 2 of the AGENTS.md ladder.
 
     python3 helpers/unit_symbols.py --check     # what script/lint runs
     python3 helpers/unit_symbols.py --count     # the hits by family
@@ -51,8 +51,8 @@ ruling does not settle them, so the sweep left them and reported them.
 is also held to its merge base: summed over the `.rs` files it changed, the count may not grow.
 
 BUGS:
-- `ns` is allowed by the ruling, and a `nanos` renamed to `ns` can collide with an existing `ns` in
-  the same scope; the compiler catches a duplicate binding but not a silent shadow.
+- A `nanos` respelled by `SPELLED` to `ns` breaks design/naming.md ("Units"), and can collide
+  with an existing `ns` in the same scope; the compiler catches a duplicate binding but not a silent shadow.
 - The lexer is a lexer, not a parser. A macro that builds an identifier from a string is not read.
 """
 
@@ -364,9 +364,9 @@ def main(argv):
                   '(2026-10-27 UTC):', file=sys.stderr)
             for b in bad:
                 print(f'  {b}', file=sys.stderr)
-            print(f'\nSpell it out (`seconds`, `microseconds`, `minutes`) or use `ns`, `ms`; '
+            print(f'\nSpell the unit out (`nanoseconds`, `milliseconds`, `seconds`, `minutes`); '
                   f'`python3 {SELF} --list PATH` shows each hit. See '
-                  f'design/naming/spelled-out-rulings.md and the header of {SELF}.',
+                  f'design/naming.md ("Units") and the header of {SELF}.',
                   file=sys.stderr)
             return 1
         print(f'unit: {now:,} identifiers use a disallowed unit symbol (ceiling held)')

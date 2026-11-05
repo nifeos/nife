@@ -21,7 +21,7 @@ const CANARY: [u64; 4] = [
 /// Paint the canary. Call this before anything can use much stack.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     // SAFETY: `__stack_bottom` is inside our own image, and by definition nothing has
     // pushed a frame that deep, or we would already be dead.

@@ -1,16 +1,48 @@
 # Performing a rename: what moves
 
-*An appendix to [`design/naming.md`](../naming.md), which is the rule. This file holds which
+*An appendix to [`design/naming.md`](../naming.md). It holds the rename checklist, which
 occurrences of a ratified name move and which stay, the refusal-count gate, and the habits that keep
-a sweep from rewriting a record. It exists to verify or challenge the main page. A reader who only
-needs to name, ratify or rename something should not have to open it. The directory
-`design/naming/` and this file's stem are provisional names; naming is an architect's.*
+a sweep from rewriting a record. The directory `design/naming/` and this file's stem are provisional
+names; naming is an architect's.*
 
 ## Performing a ratified rename
 
-[`design/naming.md`](../naming.md#performing-a-ratified-rename) carries the three rules, by §155
-(the naming conventions move out of the constitution). This is the argument, the worked example and
-what is not gateable.
+A rename is cheap to type and expensive in every other way. A sweep edits a record as cheaply as
+code, and a revert cannot restore a refusal it rewrote. The checklist, then the argument behind each
+step:
+
+1. Enumerate before sweeping. Renaming `crates/manual` matched 89 files, and 37 were the crate. List
+   the true positives, read them, then edit.
+2. Take `script/names | tail -3` before and after. The refusal count must not move.
+3. Status decides what moves, not directory, and status belongs to the passage, not the file
+   ([below](#status-decides-what-moves-not-directory)).
+4. A quotation never moves. Put a note beside it instead. A `Name:` block's `replacing` clause is a
+   quotation, and so is a citation of another project: its file name, URL, version string and
+   symbols.
+5. The ownership test: if the thing keeps its name after someone deletes our crate, the name is not
+   ours.
+   That keeps `satp.ASID`, PCI's `CLASS_NVME` and QEMU's `-device nvme`.
+6. A crate drags its directory, package, dependency entries, fuzz targets, public types named for
+   the acronym (`Gpt`, though `Guid` stays) and a note named for it. Notes named for a concept stay,
+   as do roadmap slugs.
+7. A path is navigation, so fix a broken one even in a `BUILT` block. Grep links and prose paths.
+8. A program's name is a string literal nothing type-checks. Grep the quoted name too: shell tables,
+   `xtask` archive tuples, gate rows, `.conf` files, tests and derived identifiers
+   ([rename-where-names-hide.md](rename-where-names-hide.md)).
+9. A crate's name also lives outside Rust: `build.rs` paths, `--exclude` lists, mutation globs,
+   baselines, gate globs and each workspace's `Cargo.lock`. Build every workspace (each tracked
+   `Cargo.toml` with a `[workspace]` table, outside `vendor/`). A rename can reach a vendored
+   file's divergence comment: edit the file and its `vendor/<name>.divergence.patch` in the same
+   commit, or `script/vendor-verify` fails.
+10. Run a gate whose subject you renamed against a deliberately wrong name once. It may have stopped
+    looking.
+11. Resolve a pointer before rewriting it, or the sweep fabricates one
+    ([rename-traps.md](rename-traps.md)).
+12. Take the census twice and classify every line of the second, in the crate's provenance block.
+13. Tells: `git status` shows `R`, not `A`. Backtick `crates/<name>` in doc comments. Grep
+    `](<name>)`. macOS `git grep` ignores `\b`, so re-check a zero. Width-check a rewrap.
+
+This is rung three of the ladder: no gate can tell an account from an intention in prose.
 
 The asymmetry is what makes this worth writing down. A rename is trivial mechanically and expensive
 in every other way, which the *move fast on what can be undone* tenet already says. What it does not

@@ -250,7 +250,7 @@ const VECTOR_NAMES: [&str; 16] = [
 /// Until it returns, it doesn't.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     unsafe extern "C" {
         static exception_vectors: core::ffi::c_void;
