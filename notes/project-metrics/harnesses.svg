@@ -26,47 +26,56 @@
 <text class="mut" x="56" y="105.3" font-size="10" text-anchor="end">250</text>
 <line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
 <text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">300</text>
-<rect class="seg s0" x="74.0" y="289.4" width="38.7" height="34.6"><title>2026W36, falsification on record: 39</title></rect>
-<path class="seg s2" d="M74.0,289.4 V194.1 Q74.0,190.1 78.0,190.1 H108.6 Q112.6,190.1 112.6,194.1 V289.4 Z"><title>2026W36, unfalsified: 112</title></path>
-<text class="mut" x="93.3" y="342" font-size="10" text-anchor="middle">2026W36</text>
-<text class="fg val" x="93.3" y="185.1" font-size="10" text-anchor="middle">151</text>
-<rect class="seg s0" x="132.6" y="289.4" width="38.7" height="34.6"><title>2026W37, falsification on record: 39</title></rect>
-<path class="seg s2" d="M132.6,289.4 V194.1 Q132.6,190.1 136.6,190.1 H167.2 Q171.2,190.1 171.2,194.1 V289.4 Z"><title>2026W37, unfalsified: 112</title></path>
-<text class="mut" x="151.9" y="342" font-size="10" text-anchor="middle">2026W37</text>
-<text class="fg val" x="151.9" y="185.1" font-size="10" text-anchor="middle">151</text>
-<rect class="seg s0" x="191.2" y="269.9" width="38.7" height="54.1"><title>2026W38, falsification on record: 61</title></rect>
-<path class="seg s2" d="M191.2,269.9 V170.2 Q191.2,166.2 195.2,166.2 H225.8 Q229.8,166.2 229.8,170.2 V269.9 Z"><title>2026W38, unfalsified: 117</title></path>
-<text class="mut" x="210.5" y="342" font-size="10" text-anchor="middle">2026W38</text>
-<text class="fg val" x="210.5" y="161.2" font-size="10" text-anchor="middle">178</text>
-<rect class="seg s0" x="249.8" y="186.6" width="38.7" height="137.4"><title>2026W39, falsification on record: 155</title></rect>
-<path class="seg s2" d="M249.8,186.6 V145.3 Q249.8,141.3 253.8,141.3 H284.4 Q288.4,141.3 288.4,145.3 V186.6 Z"><title>2026W39, unfalsified: 51</title></path>
-<text class="mut" x="269.1" y="342" font-size="10" text-anchor="middle">2026W39</text>
-<text class="fg val" x="269.1" y="136.3" font-size="10" text-anchor="middle">206</text>
-<rect class="seg s0" x="308.4" y="174.2" width="38.7" height="149.8"><title>2026W40, falsification on record: 169</title></rect>
-<path class="seg s2" d="M308.4,174.2 V128.5 Q308.4,124.5 312.4,124.5 H343.0 Q347.0,124.5 347.0,128.5 V174.2 Z"><title>2026W40, unfalsified: 56</title></path>
-<text class="mut" x="327.7" y="342" font-size="10" text-anchor="middle">2026W40</text>
-<text class="fg val" x="327.7" y="119.5" font-size="10" text-anchor="middle">225</text>
-<rect class="seg s0" x="367.0" y="112.1" width="38.7" height="211.9"><title>2026W41, falsification on record: 239</title></rect>
-<path class="seg s1" d="M367.0,112.1 V111.6 Q367.0,111.2 367.4,111.2 H405.2 Q405.6,111.2 405.6,111.6 V112.1 Z"><title>2026W41, unfalsifiable, with the reason written: 1</title></path>
-<text class="mut" x="386.3" y="342" font-size="10" text-anchor="middle">2026W41</text>
-<text class="fg val" x="386.3" y="106.2" font-size="10" text-anchor="middle">240</text>
-<rect class="seg s0" x="425.6" y="112.1" width="38.7" height="211.9"><title>2026W42, falsification on record: 239</title></rect>
-<path class="seg s1" d="M425.6,112.1 V111.6 Q425.6,111.2 426.0,111.2 H463.8 Q464.2,111.2 464.2,111.6 V112.1 Z"><title>2026W42, unfalsifiable, with the reason written: 1</title></path>
-<text class="mut" x="444.9" y="342" font-size="10" text-anchor="middle">2026W42</text>
-<text class="fg val" x="444.9" y="106.2" font-size="10" text-anchor="middle">240</text>
-<rect class="seg s0" x="484.2" y="98.8" width="38.7" height="225.2"><title>2026W43, falsification on record: 254</title></rect>
-<path class="seg s1" d="M484.2,98.8 V98.3 Q484.2,97.9 484.6,97.9 H522.4 Q522.8,97.9 522.8,98.3 V98.8 Z"><title>2026W43, unfalsifiable, with the reason written: 1</title></path>
-<text class="mut" x="503.5" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="fg val" x="503.5" y="92.9" font-size="10" text-anchor="middle">255</text>
-<rect class="seg s0" x="542.8" y="78.4" width="38.7" height="245.6"><title>2026W44, falsification on record: 277</title></rect>
-<rect class="seg s1" x="542.8" y="77.5" width="38.7" height="0.9"><title>2026W44, unfalsifiable, with the reason written: 1</title></rect>
-<path class="seg s2" d="M542.8,77.5 V76.6 Q542.8,75.7 543.6,75.7 H580.6 Q581.4,75.7 581.4,76.6 V77.5 Z"><title>2026W44, unfalsified: 2</title></path>
-<text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<text class="fg val" x="562.1" y="70.7" font-size="10" text-anchor="middle">280</text>
-<rect class="seg s0" x="601.4" y="60.7" width="38.7" height="263.3"><title>2026W45, falsification on record: 297</title></rect>
-<path class="seg s1" d="M601.4,60.7 V60.2 Q601.4,59.8 601.8,59.8 H639.6 Q640.0,59.8 640.0,60.2 V60.7 Z"><title>2026W45, unfalsifiable, with the reason written: 1</title></path>
-<text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W45</text>
-<text class="fg val" x="620.7" y="54.8" font-size="10" text-anchor="middle">298</text>
+<path class="seg s2" d="M71.7,324.0 V222.5 Q71.7,218.5 75.7,218.5 H97.4 Q101.4,218.5 101.4,222.5 V324.0 Z"><title>2026W33, unfalsified: 119</title></path>
+<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W33</text>
+<text class="fg val" x="86.5" y="213.5" font-size="10" text-anchor="middle">119</text>
+<path class="seg s2" d="M116.7,324.0 V211.8 Q116.7,207.8 120.7,207.8 H142.5 Q146.5,207.8 146.5,211.8 V324.0 Z"><title>2026W34, unfalsified: 131</title></path>
+<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W34</text>
+<text class="fg val" x="131.6" y="202.8" font-size="10" text-anchor="middle">131</text>
+<path class="seg s2" d="M161.8,324.0 V201.2 Q161.8,197.2 165.8,197.2 H187.6 Q191.6,197.2 191.6,201.2 V324.0 Z"><title>2026W35, unfalsified: 143</title></path>
+<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W35</text>
+<text class="fg val" x="176.7" y="192.2" font-size="10" text-anchor="middle">143</text>
+<rect class="seg s0" x="206.9" y="289.4" width="29.8" height="34.6"><title>2026W36, falsification on record: 39</title></rect>
+<path class="seg s2" d="M206.9,289.4 V194.1 Q206.9,190.1 210.9,190.1 H232.6 Q236.6,190.1 236.6,194.1 V289.4 Z"><title>2026W36, unfalsified: 112</title></path>
+<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="fg val" x="221.8" y="185.1" font-size="10" text-anchor="middle">151</text>
+<rect class="seg s0" x="252.0" y="289.4" width="29.8" height="34.6"><title>2026W37, falsification on record: 39</title></rect>
+<path class="seg s2" d="M252.0,289.4 V194.1 Q252.0,190.1 256.0,190.1 H277.7 Q281.7,190.1 281.7,194.1 V289.4 Z"><title>2026W37, unfalsified: 112</title></path>
+<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W37</text>
+<text class="fg val" x="266.8" y="185.1" font-size="10" text-anchor="middle">151</text>
+<rect class="seg s0" x="297.0" y="269.9" width="29.8" height="54.1"><title>2026W38, falsification on record: 61</title></rect>
+<path class="seg s2" d="M297.0,269.9 V170.2 Q297.0,166.2 301.0,166.2 H322.8 Q326.8,166.2 326.8,170.2 V269.9 Z"><title>2026W38, unfalsified: 117</title></path>
+<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W38</text>
+<text class="fg val" x="311.9" y="161.2" font-size="10" text-anchor="middle">178</text>
+<rect class="seg s0" x="342.1" y="186.6" width="29.8" height="137.4"><title>2026W39, falsification on record: 155</title></rect>
+<path class="seg s2" d="M342.1,186.6 V145.3 Q342.1,141.3 346.1,141.3 H367.9 Q371.9,141.3 371.9,145.3 V186.6 Z"><title>2026W39, unfalsified: 51</title></path>
+<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W39</text>
+<text class="fg val" x="357.0" y="136.3" font-size="10" text-anchor="middle">206</text>
+<rect class="seg s0" x="387.2" y="174.2" width="29.8" height="149.8"><title>2026W40, falsification on record: 169</title></rect>
+<path class="seg s2" d="M387.2,174.2 V128.5 Q387.2,124.5 391.2,124.5 H413.0 Q417.0,124.5 417.0,128.5 V174.2 Z"><title>2026W40, unfalsified: 56</title></path>
+<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W40</text>
+<text class="fg val" x="402.1" y="119.5" font-size="10" text-anchor="middle">225</text>
+<rect class="seg s0" x="432.3" y="112.1" width="29.8" height="211.9"><title>2026W41, falsification on record: 239</title></rect>
+<path class="seg s1" d="M432.3,112.1 V111.6 Q432.3,111.2 432.7,111.2 H461.6 Q462.0,111.2 462.0,111.6 V112.1 Z"><title>2026W41, unfalsifiable, with the reason written: 1</title></path>
+<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W41</text>
+<text class="fg val" x="447.2" y="106.2" font-size="10" text-anchor="middle">240</text>
+<rect class="seg s0" x="477.4" y="112.1" width="29.8" height="211.9"><title>2026W42, falsification on record: 239</title></rect>
+<path class="seg s1" d="M477.4,112.1 V111.6 Q477.4,111.2 477.8,111.2 H506.7 Q507.1,111.2 507.1,111.6 V112.1 Z"><title>2026W42, unfalsifiable, with the reason written: 1</title></path>
+<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W42</text>
+<text class="fg val" x="492.2" y="106.2" font-size="10" text-anchor="middle">240</text>
+<rect class="seg s0" x="522.4" y="98.8" width="29.8" height="225.2"><title>2026W43, falsification on record: 254</title></rect>
+<path class="seg s1" d="M522.4,98.8 V98.3 Q522.4,97.9 522.9,97.9 H551.7 Q552.2,97.9 552.2,98.3 V98.8 Z"><title>2026W43, unfalsifiable, with the reason written: 1</title></path>
+<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W43</text>
+<text class="fg val" x="537.3" y="92.9" font-size="10" text-anchor="middle">255</text>
+<rect class="seg s0" x="567.5" y="78.4" width="29.8" height="245.6"><title>2026W44, falsification on record: 277</title></rect>
+<rect class="seg s1" x="567.5" y="77.5" width="29.8" height="0.9"><title>2026W44, unfalsifiable, with the reason written: 1</title></rect>
+<path class="seg s2" d="M567.5,77.5 V76.6 Q567.5,75.7 568.4,75.7 H596.4 Q597.3,75.7 597.3,76.6 V77.5 Z"><title>2026W44, unfalsified: 2</title></path>
+<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W44</text>
+<text class="fg val" x="582.4" y="70.7" font-size="10" text-anchor="middle">280</text>
+<rect class="seg s0" x="612.6" y="60.7" width="29.8" height="263.3"><title>2026W45, falsification on record: 297</title></rect>
+<path class="seg s1" d="M612.6,60.7 V60.2 Q612.6,59.8 613.0,59.8 H641.9 Q642.3,59.8 642.3,60.2 V60.7 Z"><title>2026W45, unfalsifiable, with the reason written: 1</title></path>
+<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W45</text>
+<text class="fg val" x="627.5" y="54.8" font-size="10" text-anchor="middle">298</text>
 <rect class="s2" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">unfalsified</tspan></text>
 <rect class="s1" x="672" y="83" width="11" height="11" rx="2"/>
