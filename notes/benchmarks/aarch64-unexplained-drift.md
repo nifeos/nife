@@ -96,8 +96,8 @@ Beyond the lines the file carried, the bisect finds four merges:
 - #1663, the user-mode runtime's yield is one trap per architecture: `ctx_switch` +0.94%.
 - #1692, milestone 95 (an unmap primitive, and the mappings init never lets go): `ctx_switch`
   -0.36%.
-- #1659, milestone 105 (the two forks milestone 22 named and left), the death message's label:
-  `ipc_rtt_el0` +0.28%, `sink_throughput` +0.34%.
+- #1659, the death message carries the builder's label: `ipc_rtt_el0` +0.28%, `sink_throughput`
+  +0.34%.
 - #1676, AMD-Vi, through the shared IOMMU and memory code: `map_new` +0.15%.
 
 The line for #1617 reproduces to the hundredth.

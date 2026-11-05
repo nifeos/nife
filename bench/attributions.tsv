@@ -618,8 +618,8 @@ aarch64	a91d41934	yield_switch	-0.13	nightly-2026-09-25, the compiler term measu
 aarch64	a91d41934	ipc_rtt	-0.12	nightly-2026-09-25, the compiler term measured alone
 aarch64	a91d41934	relay_rtt	-0.10	nightly-2026-09-25, the compiler term measured alone
 aarch64	a91d41934	ctx_switch	-0.12	nightly-2026-09-25, the compiler term measured alone
-aarch64	aee3b5ee9	ipc_rtt_el0	+0.28	#1659, milestone 105: the death message carries the builder's label
-aarch64	aee3b5ee9	sink_throughput	+0.34	#1659, milestone 105: the death message carries the builder's label
+aarch64	aee3b5ee9	ipc_rtt_el0	+0.28	#1659: the death message carries the builder's label
+aarch64	aee3b5ee9	sink_throughput	+0.34	#1659: the death message carries the builder's label
 aarch64	65ee81831	ctx_switch	+0.94	#1663: the user-mode runtime's yield is one trap per architecture
 aarch64	65ee81831	ipc_rtt_el0	+0.43	#1663: the user-mode runtime's yield is one trap per architecture
 aarch64	65ee81831	sink_throughput	+0.23	#1663: the user-mode runtime's yield is one trap per architecture
