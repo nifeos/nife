@@ -87,7 +87,7 @@ pub mod registers;
 #[cfg(test)]
 mod simulator;
 
-/// Offsets inside the DMA region, which the kernel allocates contiguous: `e1000e`'s layout,
+/// Offsets inside the DMA region, which the kernel half allocates contiguous: `e1000e`'s layout,
 /// because the two NICs' data planes have the same shape.
 pub mod layout;
 
