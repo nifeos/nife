@@ -290,8 +290,8 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
-- **Outstanding.** The architect's clearance of
-  [the review package](../../notes/crate-reviews/file-allocation-table.md), then the move.
+- **Outstanding.** [The review package](../../notes/crate-reviews/file-allocation-table.md) awaits
+  clearance.
 
 ## BUGS
 
