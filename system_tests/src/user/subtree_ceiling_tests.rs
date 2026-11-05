@@ -97,8 +97,12 @@ fn a_region_filled_to_its_subtree_ceilings_leaves_its_siblings_able_to_build() {
     // the scarcer refuses, then bare spaces fill whatever the space ceiling has left.
     let mut processes = 0;
     for _ in 0..ATTEMPTS {
-        let Ok(space) = call(budget, abi::memory_region::RETYPE_OBJ, abi::objtype::ADDRESS_SPACE, 0)
-        else {
+        let Ok(space) = call(
+            budget,
+            abi::memory_region::RETYPE_OBJ,
+            abi::objtype::ADDRESS_SPACE,
+            0,
+        ) else {
             break;
         };
         match call(

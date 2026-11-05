@@ -139,7 +139,10 @@ pub fn user_address_space_create(region: u64) -> Option<u64> {
     // Every refusal below gives back the count the retype took: the page stays spent, but no
     // space holds a tag or a registry slot.
     let release = || {
-        crate::memory_region::release_object(region, crate::memory_region::ObjectKind::AddressSpace);
+        crate::memory_region::release_object(
+            region,
+            crate::memory_region::ObjectKind::AddressSpace,
+        );
     };
     let Some(asid) = ASIDS.lock().alloc() else {
         release();

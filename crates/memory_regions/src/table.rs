@@ -1298,11 +1298,18 @@ mod tests {
         for _ in 0..2 {
             t.split(job, 1).unwrap();
         }
-        assert_eq!(t.split(job, 1), None, "two below the job, its ceiling of 32 / 16");
+        assert_eq!(
+            t.split(job, 1),
+            None,
+            "two below the job, its ceiling of 32 / 16"
+        );
         assert_eq!(t.usage(job), Some((2, 100)), "no page carved");
         assert_eq!(t.subtree_live(job, Counted::Region), Some((2, 2)));
         assert_eq!(t.subtree_live(root, Counted::Region), Some((3, 32)));
-        assert!(t.split(root, 1).is_some(), "a sibling of the job still splits");
+        assert!(
+            t.split(root, 1).is_some(),
+            "a sibling of the job still splits"
+        );
     }
 
     #[test]
@@ -1311,7 +1318,10 @@ mod tests {
         let root = t.insert_root(0, 8).unwrap();
         t.split(root, 2).unwrap();
         assert_eq!(t.split(root, 2), None);
-        assert_eq!(t.subtree_live(root, Counted::Region).map(|(n, _)| n), Some(1));
+        assert_eq!(
+            t.subtree_live(root, Counted::Region).map(|(n, _)| n),
+            Some(1)
+        );
     }
 
     #[test]

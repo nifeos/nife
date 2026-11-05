@@ -8,8 +8,8 @@
 //! `Error::OutOfMemory` collapses three causes into one code (DECISIONS §119 (splitting
 //! `OutOfMemory`'s three causes is declined for want of a customer)); see the note.
 
-pub use memory_regions::{Ceilings, Counted, ObjectKind};
 use memory_regions::{CeilingReached, PageUse, RegionTable};
+pub use memory_regions::{Ceilings, Counted, ObjectKind};
 use page_frames::{FRAME_SIZE, PageFrame};
 
 use crate::memory;
@@ -143,12 +143,27 @@ pub fn progenitor_ceilings() -> Ceilings {
     );
     let object = |kind| Counted::Object(kind);
     Ceilings::UNLIMITED
-        .with(object(ObjectKind::Rendezvous), leave_reserve(crate::sched::MAXIMUM_RENDEZVOUS))
+        .with(
+            object(ObjectKind::Rendezvous),
+            leave_reserve(crate::sched::MAXIMUM_RENDEZVOUS),
+        )
         .with(object(ObjectKind::AddressSpace), leave_reserve(spaces))
-        .with(object(ObjectKind::Thread), leave_reserve(crate::sched::MAXIMUM_THREADS))
-        .with(object(ObjectKind::Notification), leave_reserve(crate::sched::MAXIMUM_NOTIFICATIONS))
-        .with(object(ObjectKind::Timer), leave_reserve(crate::sched::MAXIMUM_TIMERS))
-        .with(object(ObjectKind::Process), leave_reserve(crate::sched::MAXIMUM_PROCESSES))
+        .with(
+            object(ObjectKind::Thread),
+            leave_reserve(crate::sched::MAXIMUM_THREADS),
+        )
+        .with(
+            object(ObjectKind::Notification),
+            leave_reserve(crate::sched::MAXIMUM_NOTIFICATIONS),
+        )
+        .with(
+            object(ObjectKind::Timer),
+            leave_reserve(crate::sched::MAXIMUM_TIMERS),
+        )
+        .with(
+            object(ObjectKind::Process),
+            leave_reserve(crate::sched::MAXIMUM_PROCESSES),
+        )
         .with(Counted::Region, leave_reserve(MAXIMUM_REGIONS))
 }
 
