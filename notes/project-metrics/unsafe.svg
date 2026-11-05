@@ -14,72 +14,83 @@
 <text class="mut" x="20" y="44" font-size="11">script/lint's own census; the direction is down, and the line is the week's own ceiling</text>
 <line class="grid" x1="64" y1="324.0" x2="650.0" y2="324.0" stroke-width="1"/>
 <text class="mut" x="56" y="327.0" font-size="10" text-anchor="end">0</text>
-<line class="grid" x1="64" y1="279.7" x2="650.0" y2="279.7" stroke-width="1"/>
-<text class="mut" x="56" y="282.7" font-size="10" text-anchor="end">25</text>
-<line class="grid" x1="64" y1="235.3" x2="650.0" y2="235.3" stroke-width="1"/>
-<text class="mut" x="56" y="238.3" font-size="10" text-anchor="end">50</text>
+<line class="grid" x1="64" y1="257.5" x2="650.0" y2="257.5" stroke-width="1"/>
+<text class="mut" x="56" y="260.5" font-size="10" text-anchor="end">50</text>
 <line class="grid" x1="64" y1="191.0" x2="650.0" y2="191.0" stroke-width="1"/>
-<text class="mut" x="56" y="194.0" font-size="10" text-anchor="end">75</text>
-<line class="grid" x1="64" y1="146.7" x2="650.0" y2="146.7" stroke-width="1"/>
-<text class="mut" x="56" y="149.7" font-size="10" text-anchor="end">100</text>
-<line class="grid" x1="64" y1="102.3" x2="650.0" y2="102.3" stroke-width="1"/>
-<text class="mut" x="56" y="105.3" font-size="10" text-anchor="end">125</text>
+<text class="mut" x="56" y="194.0" font-size="10" text-anchor="end">100</text>
+<line class="grid" x1="64" y1="124.5" x2="650.0" y2="124.5" stroke-width="1"/>
+<text class="mut" x="56" y="127.5" font-size="10" text-anchor="end">150</text>
 <line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
-<text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">150</text>
-<path d="M64.0,167.9 H122.6 V167.9 H181.2 V167.9 H239.8 V167.9 H298.4 V167.9 H357.0 V207.0 H415.6 V217.6 H474.2 V231.8 H532.8 V231.8 H591.4 V231.8 H650.0" fill="none" stroke="#D55E00" stroke-width="1.5" stroke-dasharray="5 4"/>
-<path class="seg s0" d="M74.0,324.0 V191.5 Q74.0,187.5 78.0,187.5 H108.6 Q112.6,187.5 112.6,191.5 V324.0 Z"><title>2026W36, blocks per 10,000 lines: 77</title></path>
-<text class="mut" x="93.3" y="342" font-size="10" text-anchor="middle">2026W36</text>
-<text class="fg val" x="93.3" y="182.5" font-size="10" text-anchor="middle">77</text>
-<path class="seg s0" d="M132.6,324.0 V191.5 Q132.6,187.5 136.6,187.5 H167.2 Q171.2,187.5 171.2,191.5 V324.0 Z"><title>2026W37, blocks per 10,000 lines: 77</title></path>
-<text class="mut" x="151.9" y="342" font-size="10" text-anchor="middle">2026W37</text>
-<text class="fg val" x="151.9" y="182.5" font-size="10" text-anchor="middle">77</text>
-<path class="seg s0" d="M191.2,324.0 V195.0 Q191.2,191.0 195.2,191.0 H225.8 Q229.8,191.0 229.8,195.0 V324.0 Z"><title>2026W38, blocks per 10,000 lines: 75</title></path>
-<text class="mut" x="210.5" y="342" font-size="10" text-anchor="middle">2026W38</text>
-<text class="fg val" x="210.5" y="186.0" font-size="10" text-anchor="middle">75</text>
-<path class="seg s0" d="M249.8,324.0 V191.5 Q249.8,187.5 253.8,187.5 H284.4 Q288.4,187.5 288.4,191.5 V324.0 Z"><title>2026W39, blocks per 10,000 lines: 77</title></path>
-<text class="mut" x="269.1" y="342" font-size="10" text-anchor="middle">2026W39</text>
-<text class="fg val" x="269.1" y="182.5" font-size="10" text-anchor="middle">77</text>
-<path class="seg s0" d="M308.4,324.0 V203.9 Q308.4,199.9 312.4,199.9 H343.0 Q347.0,199.9 347.0,203.9 V324.0 Z"><title>2026W40, blocks per 10,000 lines: 70</title></path>
-<text class="mut" x="327.7" y="342" font-size="10" text-anchor="middle">2026W40</text>
-<text class="fg val" x="327.7" y="194.9" font-size="10" text-anchor="middle">70</text>
-<path class="seg s0" d="M367.0,324.0 V219.8 Q367.0,215.8 371.0,215.8 H401.6 Q405.6,215.8 405.6,219.8 V324.0 Z"><title>2026W41, blocks per 10,000 lines: 61</title></path>
-<text class="mut" x="386.3" y="342" font-size="10" text-anchor="middle">2026W41</text>
-<text class="fg val" x="386.3" y="210.8" font-size="10" text-anchor="middle">61</text>
-<path class="seg s0" d="M425.6,324.0 V226.9 Q425.6,222.9 429.6,222.9 H460.2 Q464.2,222.9 464.2,226.9 V324.0 Z"><title>2026W42, blocks per 10,000 lines: 57</title></path>
-<text class="mut" x="444.9" y="342" font-size="10" text-anchor="middle">2026W42</text>
-<text class="fg val" x="444.9" y="217.9" font-size="10" text-anchor="middle">57</text>
-<path class="seg s0" d="M484.2,324.0 V239.3 Q484.2,235.3 488.2,235.3 H518.8 Q522.8,235.3 522.8,239.3 V324.0 Z"><title>2026W43, blocks per 10,000 lines: 50</title></path>
-<text class="mut" x="503.5" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="fg val" x="503.5" y="230.3" font-size="10" text-anchor="middle">50</text>
-<path class="seg s0" d="M542.8,324.0 V248.2 Q542.8,244.2 546.8,244.2 H577.4 Q581.4,244.2 581.4,248.2 V324.0 Z"><title>2026W44, blocks per 10,000 lines: 45</title></path>
-<text class="mut" x="562.1" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<text class="fg val" x="562.1" y="239.2" font-size="10" text-anchor="middle">45</text>
-<path class="seg s0" d="M601.4,324.0 V248.2 Q601.4,244.2 605.4,244.2 H636.0 Q640.0,244.2 640.0,248.2 V324.0 Z"><title>2026W45, blocks per 10,000 lines: 45</title></path>
-<text class="mut" x="620.7" y="342" font-size="10" text-anchor="middle">2026W45</text>
-<text class="fg val" x="620.7" y="239.2" font-size="10" text-anchor="middle">45</text>
-<line class="tr" x1="93.3" y1="83.0" x2="151.9" y2="94.6" stroke-width="2" stroke-dasharray="4 3"/>
-<line class="tr" x1="151.9" y1="94.6" x2="210.5" y2="104.3" stroke-width="2"/>
-<line class="tr" x1="210.5" y1="104.3" x2="269.1" y2="130.9" stroke-width="2"/>
-<line class="tr" x1="269.1" y1="130.9" x2="327.7" y2="161.6" stroke-width="2"/>
-<line class="tr" x1="327.7" y1="161.6" x2="386.3" y2="175.2" stroke-width="2"/>
-<line class="tr" x1="386.3" y1="175.2" x2="444.9" y2="186.6" stroke-width="2"/>
-<line class="tr" x1="444.9" y1="186.6" x2="503.5" y2="197.4" stroke-width="2"/>
-<line class="tr" x1="503.5" y1="197.4" x2="562.1" y2="205.9" stroke-width="2"/>
-<line class="tr" x1="562.1" y1="205.9" x2="620.7" y2="211.6" stroke-width="2"/>
-<circle class="trd" cx="93.3" cy="83.0" r="3"><title>2026W36, trailing mean, fewer than 10 weeks: 135.9</title></circle>
-<circle class="trd" cx="151.9" cy="94.6" r="3"><title>2026W37, trailing mean, fewer than 10 weeks: 129.3</title></circle>
-<circle class="trd" cx="210.5" cy="104.3" r="3"><title>2026W38, trailing 10-week mean: 123.9</title></circle>
-<circle class="trd" cx="269.1" cy="130.9" r="3"><title>2026W39, trailing 10-week mean: 108.9</title></circle>
-<circle class="trd" cx="327.7" cy="161.6" r="3"><title>2026W40, trailing 10-week mean: 91.6</title></circle>
-<circle class="trd" cx="386.3" cy="175.2" r="3"><title>2026W41, trailing 10-week mean: 83.9</title></circle>
-<circle class="trd" cx="444.9" cy="186.6" r="3"><title>2026W42, trailing 10-week mean: 77.5</title></circle>
-<circle class="trd" cx="503.5" cy="197.4" r="3"><title>2026W43, trailing 10-week mean: 71.4</title></circle>
-<circle class="trd" cx="562.1" cy="205.9" r="3"><title>2026W44, trailing 10-week mean: 66.6</title></circle>
-<circle class="trd" cx="620.7" cy="211.6" r="3"><title>2026W45, trailing 10-week mean: 63.4</title></circle>
+<text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">200</text>
+<path d="M109.1,191.0 H154.2 V199.0 H199.2 V207.0 H244.3 V207.0 H289.4 V207.0 H334.5 V207.0 H379.5 V207.0 H424.6 V236.2 H469.7 V244.2 H514.8 V254.8 H559.8 V254.8 H604.9 V254.8 H650.0" fill="none" stroke="#D55E00" stroke-width="1.5" stroke-dasharray="5 4"/>
+<path class="seg s0" d="M71.7,324.0 V180.4 Q71.7,176.4 75.7,176.4 H97.4 Q101.4,176.4 101.4,180.4 V324.0 Z"><title>2026W33, blocks per 10,000 lines: 111</title></path>
+<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W33</text>
+<text class="fg val" x="86.5" y="171.4" font-size="10" text-anchor="middle">111</text>
+<path class="seg s0" d="M116.7,324.0 V204.3 Q116.7,200.3 120.7,200.3 H142.5 Q146.5,200.3 146.5,204.3 V324.0 Z"><title>2026W34, blocks per 10,000 lines: 93</title></path>
+<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W34</text>
+<text class="fg val" x="131.6" y="195.3" font-size="10" text-anchor="middle">93</text>
+<path class="seg s0" d="M161.8,324.0 V225.6 Q161.8,221.6 165.8,221.6 H187.6 Q191.6,221.6 191.6,225.6 V324.0 Z"><title>2026W35, blocks per 10,000 lines: 77</title></path>
+<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W35</text>
+<text class="fg val" x="176.7" y="216.6" font-size="10" text-anchor="middle">77</text>
+<path class="seg s0" d="M206.9,324.0 V225.6 Q206.9,221.6 210.9,221.6 H232.6 Q236.6,221.6 236.6,225.6 V324.0 Z"><title>2026W36, blocks per 10,000 lines: 77</title></path>
+<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="fg val" x="221.8" y="216.6" font-size="10" text-anchor="middle">77</text>
+<path class="seg s0" d="M252.0,324.0 V225.6 Q252.0,221.6 256.0,221.6 H277.7 Q281.7,221.6 281.7,225.6 V324.0 Z"><title>2026W37, blocks per 10,000 lines: 77</title></path>
+<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W37</text>
+<text class="fg val" x="266.8" y="216.6" font-size="10" text-anchor="middle">77</text>
+<path class="seg s0" d="M297.0,324.0 V228.2 Q297.0,224.2 301.0,224.2 H322.8 Q326.8,224.2 326.8,228.2 V324.0 Z"><title>2026W38, blocks per 10,000 lines: 75</title></path>
+<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W38</text>
+<text class="fg val" x="311.9" y="219.2" font-size="10" text-anchor="middle">75</text>
+<path class="seg s0" d="M342.1,324.0 V225.6 Q342.1,221.6 346.1,221.6 H367.9 Q371.9,221.6 371.9,225.6 V324.0 Z"><title>2026W39, blocks per 10,000 lines: 77</title></path>
+<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W39</text>
+<text class="fg val" x="357.0" y="216.6" font-size="10" text-anchor="middle">77</text>
+<path class="seg s0" d="M387.2,324.0 V234.9 Q387.2,230.9 391.2,230.9 H413.0 Q417.0,230.9 417.0,234.9 V324.0 Z"><title>2026W40, blocks per 10,000 lines: 70</title></path>
+<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W40</text>
+<text class="fg val" x="402.1" y="225.9" font-size="10" text-anchor="middle">70</text>
+<path class="seg s0" d="M432.3,324.0 V246.9 Q432.3,242.9 436.3,242.9 H458.0 Q462.0,242.9 462.0,246.9 V324.0 Z"><title>2026W41, blocks per 10,000 lines: 61</title></path>
+<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W41</text>
+<text class="fg val" x="447.2" y="237.9" font-size="10" text-anchor="middle">61</text>
+<path class="seg s0" d="M477.4,324.0 V252.2 Q477.4,248.2 481.4,248.2 H503.1 Q507.1,248.2 507.1,252.2 V324.0 Z"><title>2026W42, blocks per 10,000 lines: 57</title></path>
+<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W42</text>
+<text class="fg val" x="492.2" y="243.2" font-size="10" text-anchor="middle">57</text>
+<path class="seg s0" d="M522.4,324.0 V261.5 Q522.4,257.5 526.4,257.5 H548.2 Q552.2,257.5 552.2,261.5 V324.0 Z"><title>2026W43, blocks per 10,000 lines: 50</title></path>
+<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W43</text>
+<text class="fg val" x="537.3" y="252.5" font-size="10" text-anchor="middle">50</text>
+<path class="seg s0" d="M567.5,324.0 V268.1 Q567.5,264.1 571.5,264.1 H593.3 Q597.3,264.1 597.3,268.1 V324.0 Z"><title>2026W44, blocks per 10,000 lines: 45</title></path>
+<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W44</text>
+<text class="fg val" x="582.4" y="259.1" font-size="10" text-anchor="middle">45</text>
+<path class="seg s0" d="M612.6,324.0 V268.1 Q612.6,264.1 616.6,264.1 H638.3 Q642.3,264.1 642.3,268.1 V324.0 Z"><title>2026W45, blocks per 10,000 lines: 45</title></path>
+<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W45</text>
+<text class="fg val" x="627.5" y="259.1" font-size="10" text-anchor="middle">45</text>
+<line class="tr" x1="86.5" y1="100.6" x2="131.6" y2="117.2" stroke-width="2" stroke-dasharray="4 3"/>
+<line class="tr" x1="131.6" y1="117.2" x2="176.7" y2="132.1" stroke-width="2" stroke-dasharray="4 3"/>
+<line class="tr" x1="176.7" y1="132.1" x2="221.8" y2="143.3" stroke-width="2" stroke-dasharray="4 3"/>
+<line class="tr" x1="221.8" y1="143.3" x2="266.8" y2="152.0" stroke-width="2" stroke-dasharray="4 3"/>
+<line class="tr" x1="266.8" y1="152.0" x2="311.9" y2="159.2" stroke-width="2" stroke-dasharray="4 3"/>
+<line class="tr" x1="311.9" y1="159.2" x2="357.0" y2="164.9" stroke-width="2" stroke-dasharray="4 3"/>
+<line class="tr" x1="357.0" y1="164.9" x2="402.1" y2="170.4" stroke-width="2" stroke-dasharray="4 3"/>
+<line class="tr" x1="402.1" y1="170.4" x2="447.2" y2="176.0" stroke-width="2"/>
+<line class="tr" x1="447.2" y1="176.0" x2="492.2" y2="193.4" stroke-width="2"/>
+<line class="tr" x1="492.2" y1="193.4" x2="537.3" y2="213.1" stroke-width="2"/>
+<line class="tr" x1="537.3" y1="213.1" x2="582.4" y2="222.6" stroke-width="2"/>
+<line class="tr" x1="582.4" y1="222.6" x2="627.5" y2="230.4" stroke-width="2"/>
+<circle class="trd" cx="86.5" cy="100.6" r="3"><title>2026W33, trailing mean, fewer than 13 weeks: 168.0</title></circle>
+<circle class="trd" cx="131.6" cy="117.2" r="3"><title>2026W34, trailing mean, fewer than 13 weeks: 155.5</title></circle>
+<circle class="trd" cx="176.7" cy="132.1" r="3"><title>2026W35, trailing mean, fewer than 13 weeks: 144.3</title></circle>
+<circle class="trd" cx="221.8" cy="143.3" r="3"><title>2026W36, trailing mean, fewer than 13 weeks: 135.9</title></circle>
+<circle class="trd" cx="266.8" cy="152.0" r="3"><title>2026W37, trailing mean, fewer than 13 weeks: 129.3</title></circle>
+<circle class="trd" cx="311.9" cy="159.2" r="3"><title>2026W38, trailing mean, fewer than 13 weeks: 123.9</title></circle>
+<circle class="trd" cx="357.0" cy="164.9" r="3"><title>2026W39, trailing mean, fewer than 13 weeks: 119.6</title></circle>
+<circle class="trd" cx="402.1" cy="170.4" r="3"><title>2026W40, trailing mean, fewer than 13 weeks: 115.5</title></circle>
+<circle class="trd" cx="447.2" cy="176.0" r="3"><title>2026W41, trailing 13-week mean: 111.3</title></circle>
+<circle class="trd" cx="492.2" cy="193.4" r="3"><title>2026W42, trailing 13-week mean: 98.2</title></circle>
+<circle class="trd" cx="537.3" cy="213.1" r="3"><title>2026W43, trailing 13-week mean: 83.4</title></circle>
+<circle class="trd" cx="582.4" cy="222.6" r="3"><title>2026W44, trailing 13-week mean: 76.2</title></circle>
+<circle class="trd" cx="627.5" cy="230.4" r="3"><title>2026W45, trailing 13-week mean: 70.4</title></circle>
 <line class="tr" x1="672" y1="69" x2="683" y2="69" stroke-width="2"/>
-<text class="fg" y="74" font-size="11"><tspan x="689" dy="0">trailing 10-week mean</tspan></text>
+<text class="fg" y="74" font-size="11"><tspan x="689" dy="0">trailing 13-week mean</tspan></text>
 <line class="tr" x1="672" y1="88" x2="683" y2="88" stroke-width="2" stroke-dasharray="4 3"/>
-<text class="fg" y="93" font-size="11"><tspan x="689" dy="0">trailing mean, fewer</tspan><tspan x="689" dy="13">than 10 weeks</tspan></text>
+<text class="fg" y="93" font-size="11"><tspan x="689" dy="0">trailing mean, fewer</tspan><tspan x="689" dy="13">than 13 weeks</tspan></text>
 <rect class="s0" x="672" y="115" width="11" height="11" rx="2"/>
 <text class="fg" y="125" font-size="11"><tspan x="689" dy="0">blocks per 10,000</tspan><tspan x="689" dy="13">lines</tspan></text>
 <line x1="672" y1="152" x2="683" y2="152" stroke="#D55E00" stroke-width="1.5" stroke-dasharray="5 4"/>
