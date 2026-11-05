@@ -51,13 +51,15 @@
 <path class="seg s0" d="M477.4,324.0 V184.4 Q477.4,180.4 481.4,180.4 H503.1 Q507.1,180.4 507.1,184.4 V324.0 Z"><title>2026W42, thousand tokens of context per turn: 215.9</title></path>
 <text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W42</text>
 <text class="fg val" x="492.2" y="175.4" font-size="10" text-anchor="middle">215.9</text>
-<path class="seg s0" d="M522.4,324.0 V166.6 Q522.4,162.6 526.4,162.6 H548.2 Q552.2,162.6 552.2,166.6 V324.0 Z"><title>2026W43, thousand tokens of context per turn: 242.6</title></path>
+<path class="seg s0" d="M522.4,324.0 V192.6 Q522.4,188.6 526.4,188.6 H548.2 Q552.2,188.6 552.2,192.6 V324.0 Z"><title>2026W43, thousand tokens of context per turn: 203.7</title></path>
 <text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="fg val" x="537.3" y="157.6" font-size="10" text-anchor="middle">242.6</text>
+<text class="fg val" x="537.3" y="183.6" font-size="10" text-anchor="middle">203.7</text>
+<path class="seg s0" d="M567.5,324.0 V218.7 Q567.5,214.7 571.5,214.7 H593.3 Q597.3,214.7 597.3,218.7 V324.0 Z"><title>2026W44, thousand tokens of context per turn: 164.3</title></path>
 <text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<text class="mut" x="582.4" y="308.0" font-size="9" text-anchor="middle">not<tspan x="582.4" dy="10">measured</tspan><title>2026W44: not measured</title></text>
+<text class="fg val" x="582.4" y="209.7" font-size="10" text-anchor="middle">164.3</text>
+<path class="seg s0" d="M612.6,324.0 V241.6 Q612.6,237.6 616.6,237.6 H638.3 Q642.3,237.6 642.3,241.6 V324.0 Z"><title>2026W45, thousand tokens of context per turn: 129.9</title></path>
 <text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W45</text>
-<text class="mut" x="627.5" y="308.0" font-size="9" text-anchor="middle">not<tspan x="627.5" dy="10">measured</tspan><title>2026W45: not measured</title></text>
+<text class="fg val" x="627.5" y="232.6" font-size="10" text-anchor="middle">129.9</text>
 <rect class="s0" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">thousand tokens of</tspan><tspan x="689" dy="13">context per turn</tspan></text>
 </svg>
