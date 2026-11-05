@@ -284,7 +284,7 @@ comment, which the five-word rule refuses.
 Result of `script/crate-standalone`. Clean.
 
 Recommendation. Blocked by the unrun bench check and by one architect question: whether a release
-review re-opens about thirty names ratified before the rules that spell out register names and
+review re-opens 24 names ratified before the rules that spell out register names and
 units.
 
 ## `block_roster`, the first contract crate

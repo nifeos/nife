@@ -13,8 +13,7 @@ standard-mode I2C timing. It also holds the strings by which the chip's two devi
 Linux and the vendor U-Boot) name each controller. It never touches a register; the caller maps the window and stores.
 It is `no_std` with no `unsafe` and no dependency, and nine Kani harnesses prove its decoders and
 the order of every plan. Every name has a ratified block, one of them by the maintainer pending the
-architect, and about thirty were ratified before the rules that now spell out register names and
-units.
+architect, and 24 of them date from before the rules that now spell out register names and units.
 
 ## Identity
 
