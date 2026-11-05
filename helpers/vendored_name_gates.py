@@ -10,7 +10,10 @@ tree with a history needs, so these stay here:
 - `CAP_CEILING` and `UNIT_CEILING`, and the net-growth half that holds a branch to its merge base;
 - `CAP_KEPT`, `UNIT_KEPT`, `UNIT_KEPT_SHAPES` and `UNIT_STD`, the identifiers a rule does not reach;
 - `UNIT_COUNTED`, the units the unit ratchet counts so far, a narrowing of the template's table;
-- the check that design/naming.md and the template's word list say the same thing.
+- the check that design/naming.md and the template's word list say the same thing;
+- `PROGRAM_KEPT`, `PROTOCOL_KEPT` and `PROSE_EXEMPT`, what the template's service-model and
+  contract-name checks do not reach in this tree: the program and crate names, and the files, that
+  keep a spelling on purpose, and the glob that proves the contract-crate check judged something.
 
     python3 helpers/vendored_name_gates.py cap --check      # what script/lint runs
     python3 helpers/vendored_name_gates.py cap --list [PATH..]  # every counted hit, path:line: identifier
@@ -24,6 +27,8 @@ tree with a history needs, so these stay here:
     python3 helpers/vendored_name_gates.py unit --selftest  # the traps, as fixtures
     python3 helpers/vendored_name_gates.py words --check    # design/naming.md and the word list agree
     python3 helpers/vendored_name_gates.py words --selftest # that check, as fixtures
+    python3 helpers/vendored_name_gates.py service --check  # program and crate names, and the prose
+    python3 helpers/vendored_name_gates.py service --selftest # that check, as fixtures
 
 **The cap ratchet** counts Rust identifiers with a `cap` or `caps` component, in any casing, as a
 whole component: `cap`, `SEND_CAP`, `CapKind`, `MCap`. Components split at `_`, at digits and at
@@ -87,7 +92,9 @@ TEMPLATE_HELPERS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
                                 'vendor', 'crate-workflows', 'helpers')
 sys.path.insert(0, TEMPLATE_HELPERS)
 
+import contract_names  # noqa: E402  (vendored; a contract crate is spelled `_contract`)
 import rust_names  # noqa: E402  (vendored; the lexer and the word loader)
+import service_model  # noqa: E402  (vendored; no Unix service model in a name or in prose)
 import spelled_out  # noqa: E402  (vendored; the spelled-out check)
 import unit_symbols as template_units  # noqa: E402  (vendored; the unit-symbol check)
 
@@ -765,12 +772,120 @@ def words_main(argv):
     return 0
 
 
+# --- the service model and the contract names, over this tree's programs and crates -----------
+
+# Program and crate names the template's service-model check refuses and this tree keeps, each with
+# why. An entry is removed by renaming what it names.
+PROGRAM_KEPT = {
+    "uuid": "RFC 9562's own term for the object; the d is the last letter of identifier, and the "
+            "program draws sixteen bytes, prints one line and exits (milestone 111 (a shell that can endow a child with entropy))",
+    "report_child": "ends in the word child, which calef ruled for it on 2026-10-18 (UTC); built "
+                    "by its builder, reports once and exits",
+    "device_child": "as report_child",
+    "interrupt_child": "as report_child",
+}
+# The one crate that keeps `_protocol`: the NTPv4 standard's own name (calef, 2026-10-18 UTC).
+PROTOCOL_KEPT = {"network_time_protocol": "the NTPv4 standard's own name"}
+# Files the prose check does not read. `design/` holds the argument about the word and the naming
+# conventions, and script/lint names it to explain the rule; the CI log baseline records branch
+# names as they were on their dates.
+PROSE_EXEMPT = ('vendor/', 'design/', 'script/lint', 'notes/project-metrics/ci-log-baseline.csv')
+
+
+def program_names(root):
+    """Every program and crate name the tree defines, as the lint check read them: a source file
+    or directory under components/src and fixtures/src, a `[[bin]]` name in either manifest, and a
+    directory under crates/."""
+    names = set()
+    for src in ('components/src', 'fixtures/src'):
+        names |= {re.sub(r'\.rs$', '', n) for n in os.listdir(os.path.join(root, src))}
+    for crate in ('components', 'fixtures'):
+        text = read(os.path.join(root, crate, 'Cargo.toml')) or ''
+        names |= set(re.findall(r'^\[\[bin\]\]\nname = "(.*)"$', text, re.M))
+    names |= set(os.listdir(os.path.join(root, 'crates')))
+    return sorted(names)
+
+
+def name_problems(names, words=WORDS):
+    """Failure lines for the names the template's service-model and contract-name checks refuse and
+    the kept tables do not excuse."""
+    service = service_model.hits_of_words(words)
+    contract = contract_names.hits_of_words(words)
+    out = []
+    for name in names:
+        definition = rust_names.Definition(name, 'program', 1)
+        if name not in PROGRAM_KEPT:
+            out += [service_model.phrase(w, why) + f' ({name})' for w, why in service(definition)]
+        if name not in PROTOCOL_KEPT:
+            out += [contract_names.phrase(w, why) + f' ({name})'
+                    for w, why in contract(definition)]
+    return out
+
+
+def prose_files():
+    files = git('ls-files', '-z') or ''
+    return [f for f in files.split('\0')
+            if f and not f.startswith(PROSE_EXEMPT) and os.path.isfile(f) and not os.path.islink(f)]
+
+
+def service_selftest():
+    failed = 0
+    bad = name_problems(['netd', 'uuid', 'kbd', 'storage_proto', 'network_time_protocol',
+                         'fscontract', 'storage_contract', 'report_child', 'keyboard_driver'])
+    names = sorted(line.rsplit('(', 1)[1].rstrip(')') for line in bad)
+    if names != ['fscontract', 'netd', 'storage_proto']:
+        failed += 1
+        print(f'service selftest: refused {names}', file=sys.stderr)
+    for kept in list(PROGRAM_KEPT) + list(PROTOCOL_KEPT):
+        if not os.path.exists(os.path.join(REPO, 'crates', kept)) and \
+                kept not in program_names(REPO):
+            failed += 1
+            print(f'service selftest: {kept} is kept but no program or crate has the name',
+                  file=sys.stderr)
+    if failed:
+        return 1
+    print('service selftest: ok')
+    return 0
+
+
+def service_main(argv):
+    if argv and argv[0] == '--selftest':
+        return service_selftest()
+    if argv != ['--check']:
+        print(__doc__.split('\n\n')[2], file=sys.stderr)
+        return 2
+    names = program_names(REPO)
+    contracts = [n for n in os.listdir(os.path.join(REPO, 'crates')) if n.endswith('contract')]
+    if not contracts:
+        print('service: crates/ holds no crate ending in contract, so the contract-crate spelling '
+              'check judged nothing. The suffix moved again; move the check with it '
+              '(design/naming.md).', file=sys.stderr)
+        return 1
+    bad = name_problems(names)
+    files = prose_files()
+    for path in files:
+        data = read(path)
+        if data is not None:
+            bad += service_model.prose_problems(path, data)
+    if bad:
+        for line in bad:
+            print(f'service: {line}', file=sys.stderr)
+        print('\nName it for what it is (DECISIONS §39 (a component is named for what it is), '
+              'design/naming.md). A name that keeps its '
+              'spelling on purpose goes in PROGRAM_KEPT or PROTOCOL_KEPT in '
+              'helpers/vendored_name_gates.py, with the reason.', file=sys.stderr)
+        return 1
+    print(f'service: {len(names)} program and crate names ({len(contracts)} contract crates) and '
+          f'{len(files)} files read, none claims a Unix service model')
+    return 0
+
+
 def main(argv):
     global REPO
     REPO = (subprocess.run(['git', 'rev-parse', '--show-toplevel'], capture_output=True,
                            text=True).stdout.strip() or os.getcwd())
     os.chdir(REPO)
-    gates = {'cap': cap_main, 'unit': unit_main, 'words': words_main}
+    gates = {'cap': cap_main, 'unit': unit_main, 'words': words_main, 'service': service_main}
     if not argv or argv[0] not in gates:
         print(__doc__.split('\n\n')[2], file=sys.stderr)
         return 2

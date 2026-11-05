@@ -26,7 +26,7 @@ line belongs there, not in a caption.
 - A missing bar means the record did not exist, not that the number was zero.
 - Weeks are ISO weeks in UTC, spelled `2026W36` everywhere, and the series starts at 2026W29
   because that is where the first commit falls. There is no 2026W28.
-- The charts show the last ten weeks; the CSV keeps every one.
+- The charts show the last 13 weeks; the CSV keeps every one.
 - A milestone is not a fixed unit and a pull request is not a unit of value: read the shape.
 
 ## The nine things that would kill nife
@@ -58,7 +58,7 @@ band without changing the bar's height. The current week's total is checked agai
 ![unsafe density](project-metrics/unsafe.svg)
 
 Blocks per 10,000 code lines outside `kernel/src/arch/`, `script/lint`'s gated census; the orange
-line is the ceiling its marker held that week, the other the trailing ten-week mean. Only the ratio
+line is the ceiling its marker held that week, the other the trailing 13-week mean. Only the ratio
 is about soundness.
 
 ## The same unsafe blocks, by trust boundary
@@ -88,7 +88,7 @@ became a repair is missed.
 
 A flow: milestones whose `Built:` date falls in that week, read from today's tree for every week.
 It does not reconcile with the `Built` stock (BUGS).
-The line is the trailing ten-week mean, drawn rather than stored; it is dashed where fewer than ten
+The line is the trailing 13-week mean, drawn rather than stored; it is dashed where fewer than 13
 weeks exist behind it.
 
 ## Pull requests merged each week
