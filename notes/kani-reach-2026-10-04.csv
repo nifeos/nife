@@ -119,7 +119,7 @@ non_volatile_memory_express,verification::an_accepted_handoff_keeps_its_doorbell
 non_volatile_memory_express,verification::cq_pop_stays_in_bounds_and_flips_only_at_the_wrap,6,6,6,6
 non_volatile_memory_express,verification::distinct_doorbells_never_collide,11,13,11,13
 non_volatile_memory_express,verification::identify_parse_is_total_and_bounds_the_shift,15,25,15,25
-non_volatile_memory_express,verification::prp_pair_is_total_and_page_disciplined,13,19,13,19
+non_volatile_memory_express,verification::physical_region_page_pair_is_total_and_page_disciplined,13,19,13,19
 non_volatile_memory_express,verification::sq_push_stays_in_bounds,4,8,4,8
 non_volatile_memory_express,verification::the_spawn_handoff_round_trips,16,20,16,20
 package_archive,verification::a_parsed_package_reads_only_inside_itself,10,32,17,69

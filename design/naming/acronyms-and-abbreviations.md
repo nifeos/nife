@@ -80,7 +80,7 @@ carries `#[doc(alias = "<plain-English name>")]`.
 
 A specification's term of art inside a name this tree authors follows the same split. A term a
 reader searches for keeps its spelling and takes the expansion and the alias: FAT's `Fat12` and
-`Fat32`, `efi_system_partition`, `fs_info_sector`, NVMe's `prp_pair`, the JH7110's
+`Fat32`, `efi_system_partition`, `fs_info_sector`, the JH7110's
 `COMPATIBLE_*CRG`. Any other term expands: NVMe's `NVM_READ` is `NON_VOLATILE_MEMORY_READ`.
 
 Hardware register, field and bit names follow

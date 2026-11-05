@@ -120,7 +120,7 @@ Name and version. `non_volatile_memory_express` `0.1.0`, ratified with NVMe spel
 blocks, all ratified.
 
 API. One `lib.rs` of 1,205 lines: a `registers` module, `Capabilities`, `Command`, `Completion`,
-`SubmissionQueue`, `CompletionQueue`, `Doorbell`, `doorbell`, `prp_pair` and the identify parse with
+`SubmissionQueue`, `CompletionQueue`, `Doorbell`, `doorbell`, `physical_region_page_pair` and the identify parse with
 `Namespace`. The caller supplies MMIO and DMA memory. The process plan lives in
 `non_volatile_memory_express_contract`, not here.
 

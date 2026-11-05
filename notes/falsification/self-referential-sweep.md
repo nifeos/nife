@@ -96,7 +96,7 @@ risk wants the pattern rather than 135 rows:
 - The property is totality or termination, where there is no predicate to be blind to:
   `glob::matching_is_total`, `pci::the_capability_walk_terminates_on_any_device`, `elf`'s four.
 - The assertion is a constant.
-  `non_volatile_memory_express::prp_pair_is_total_and_page_disciplined`,
+  `non_volatile_memory_express::physical_region_page_pair_is_total_and_page_disciplined`,
   `paging::x86_64::no_vtd_entry_ever_sets_a_reserved_bit`.
 
 ### A second shape, found along the way and not this milestone's
