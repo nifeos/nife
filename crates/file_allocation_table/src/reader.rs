@@ -57,7 +57,7 @@ pub enum ChainError<E> {
 /// use file_allocation_table::{SECTOR_BYTES, SectorDevice, SectorSize, Volume, VolumeLayout, NoClock};
 ///
 /// // A volume this crate's writer lays out, held in memory.
-/// let layout = VolumeLayout::new(70_000 * 8 + 2_000, 0, 5_000, 1, "BOOTX64.EFI", &mut NoClock).unwrap();
+/// let layout = VolumeLayout::new(70_000 * 8 + 2_000, 0, 5_000, 1, "EFI SYSTEM", "BOOTX64.EFI", &mut NoClock).unwrap();
 /// struct Image(VolumeLayout);
 /// impl SectorDevice for Image {
 ///     type Error = ();

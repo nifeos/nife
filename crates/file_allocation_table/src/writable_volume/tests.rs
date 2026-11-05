@@ -481,7 +481,16 @@ fn the_format_and_the_efi_volume_refuse_a_time_fat_cannot_store() {
         Some(FormatError::TimeOutOfRange)
     );
     assert_eq!(
-        VolumeLayout::new(1024 * 1024, 0, 4096, 1, "BOOTX64.EFI", &mut clock).err(),
+        VolumeLayout::new(
+            1024 * 1024,
+            0,
+            4096,
+            1,
+            "EFI SYSTEM",
+            "BOOTX64.EFI",
+            &mut clock
+        )
+        .err(),
         Some(LayoutError::TimeOutOfRange)
     );
     time.set(at(2107, 12, 31, 23, 59, 58));

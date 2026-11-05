@@ -49,7 +49,7 @@
 //!   name is stored as a long name, since the crate writes no lower-case flag.
 //! - A directory slot is found by walking from the directory's first cluster each time, so creating
 //!   in a directory of n clusters costs n chain steps per slot read.
-//! - FAT stores no time zone. In nife the clock supplies UTC (ruled 2026-11-01 UTC); the crate stores
+//! - FAT stores no time zone. A clock is expected to supply UTC; the crate stores
 //!   what its clock reports, cannot check that it is UTC, and refuses a time outside 1980 to 2107.
 //!   A reader that treats FAT times as local time, such as Windows, shows UTC values as local.
 //! - A file's bytes are read by cluster chain only; there is no cache above the sector and a

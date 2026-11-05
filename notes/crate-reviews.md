@@ -38,8 +38,7 @@ record lives in the crate repository, in `docs/stranger-test.md`.
   publication. Nothing here publishes.
 - Dependencies in nife today. Every consumer reaches these crates by a path dependency with a
   `version` key (the packet's dependents tables list the manifests). None is a `git` and `rev`
-  dependency yet, so each move converts every consumer's line to the ruled form. The one exception
-  that lacks even the `version` is `fuzz/Cargo.toml`'s line for `file_allocation_table`.
+  dependency yet, so each move converts every consumer's line to the ruled form.
 - Unsafe. No crate has an `unsafe` site. Each is pure computation behind a caller's volatile
   accesses.
 - Template status. [Milestone 887 (crate repositories share one CI template)](../design/roadmap/0887-crate-repositories-share-one-ci-template.md)
@@ -87,11 +86,9 @@ Outstanding before the move.
 
 | item | owner |
 |---|---|
-| Public docs say "In nife the clock supplies UTC" in `lib.rs`, `time.rs` and the README's limitations. State the rule without naming nife. | move lane |
-| `fuzz/Cargo.toml` names the crate by path with no `version`. | move lane |
-| The ignored test `a_third_party_driver_reads_it` writes to `../../target/...`, outside the crate. | move lane |
 | `deny.toml`'s `lamfat` wrapper rule and the template's `deny.toml` need the same exception in the new repository. | move lane |
-| The architect decides whether the first release carries the EFI-system-partition writer (`VolumeLayout`), whose volume label is the fixed text `NIFE` (`volume.rs`). | architect |
+| `LayoutError::LabelRefused` reads `Name: provisional`, so step 0 of `script/crate-standalone` fails until it is ratified. | architect |
+| The architect decides whether the first release carries the EFI-system-partition writer (`VolumeLayout`), whose volume label the caller supplies. | architect |
 
 Recommendation. Ready for review. The items above are edits and one API judgment, not blockers.
 

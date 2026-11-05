@@ -4,9 +4,9 @@
 //! compressed (see its README for provenance). The bare volume opens as a volume. The other image
 //! opens through its partition table, the way a whole-disk image does. Every file is then found by
 //! walking the directories with this crate, read through `open_file_reader`, and hashed with a SHA-256
-//! written here, so the hashes come from nothing this crate computed. Each expected hash is the
-//! line of the probe's `expected.sha256` for that file. Path lookup finds
-//! each file too, by its long name and its short name.
+//! written here, so the hashes come from nothing this crate computed. Each expected hash is of the
+//! bytes `fixtures/macos/make-images.sh` writes into that file. Path lookup finds each file too, by
+//! its long name and its short name.
 
 // Not under Miri: reading both recorded images whole took over an hour in the interpreter, and
 // the crate has no `unsafe`; the library's unit tests walk the same reader.
