@@ -4621,23 +4621,10 @@ echo "sh -n: every #!/bin/sh script parses under this machine's own /bin/sh"
 # Run it against a stub `cargo` that records its arguments; no Kani is involved, so this costs a
 # second. script/verify-riscv64 adds no argument handling of its own: it forwards "$@" here.
 echo "==> script/verify passes extra arguments through to cargo kani"
-vstub="$(mktemp -d)"
-cat >"$vstub/cargo" <<'STUB'
-#!/bin/sh
-# Stub: `cargo kani --version` succeeds; any other call is recorded.
-[ "$1" = kani ] && [ "$2" = "--version" ] && { echo "cargo-kani $(cat .kani-version)"; exit 0; }
-printf '%s\n' "$*" >>"$VERIFY_STUB_LOG"
-STUB
-chmod +x "$vstub/cargo"
-VERIFY_STUB_LOG="$vstub/log" PATH="$vstub:$PATH" script/verify --only capability --harness lint_probe_harness >/dev/null 2>&1 || true
-if ! grep -q '^kani -p capability .*--harness lint_probe_harness' "$vstub/log" 2>/dev/null; then
-    echo "lint: script/verify --only capability --harness X did not hand --harness X to cargo kani:" >&2
-    sed 's/^/  /' "$vstub/log" >&2 2>/dev/null || echo "  (stub cargo was never called)" >&2
-    rm -rf "$vstub"
-    exit 1
-fi
-rm -rf "$vstub"
-echo "script/verify: extra arguments reach cargo kani"
+# The run is stubbed, so it takes no Kani unit: a run behind another lane's real proof once idled here
+# for 30 minutes at 0 percent CPU. helpers/verify-stub-selftest.sh holds the whole pool with a fake
+# holder and proves the stubbed run finishes anyway, over a scratch slot directory.
+helpers/verify-stub-selftest.sh
 
 # Every stock Kani install goes through script/kani-install, which reads .kani-version (milestone
 # 795). An unpinned `cargo install ... kani-verifier` anywhere else would let the prover move
