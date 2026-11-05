@@ -22,17 +22,18 @@ use crate::command::{self as c, Command, Data, Response};
 use crate::host_controller::{Error, HostController, RegisterWindowAndClock};
 use crate::internal_direct_memory_access::DirectMemoryAccessRegion;
 
-/// The identification clock, the spec's ceiling for it.
-pub(crate) const IDENTIFY_HZ: u32 = 400_000;
+/// The identification clock, the spec's ceiling for it, in hertz.
+pub(crate) const IDENTIFY_HERTZ: u32 = 400_000;
 /// The transfer clock: default speed, the spec's ceiling for it on SD and the legacy eMMC ceiling
 /// (26 MHz) rounded down.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3092. `HZ` is the unit suffix.
-pub const TRANSFER_HZ: u32 = 25_000_000;
+/// Name: ratified 2026-11-05 (UTC), #3276. `HERTZ` spells the unit out; the symbol is not a valid
+/// suffix.
+pub const TRANSFER_HERTZ: u32 = 25_000_000;
 /// One block, in bytes.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3139. Renamed from `BLOCK`, which
-/// did not say its unit; the suffix is the one `TRANSFER_HZ` uses.
+/// did not say its unit; the suffix is the one `TRANSFER_HERTZ` uses.
 pub const BLOCK_BYTES: usize = 512;
 /// How long `ACMD41` or `CMD1` may report busy before the card is declared dead: the SD spec gives
 /// a card one second from the first `ACMD41`.
@@ -114,8 +115,10 @@ pub struct Card {
     pub block_addressed: bool,
     /// The bus width in use.
     pub bus_width: u8,
-    /// The card clock in use, in Hz.
-    pub clock_hz: u32,
+    /// The card clock in use, in hertz.
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3276. The unit is spelled out.
+    pub clock_hertz: u32,
 }
 
 impl Card {
@@ -146,7 +149,7 @@ fn r1_ok(index: u8, r1: u32) -> Result<(), InitializationError> {
 }
 
 /// **Bring up whatever card is in the slot** and leave it selected, in the transfer state, at
-/// [`TRANSFER_HZ`]. `maximum_bus_width` is the tree's `bus-width` for the slot (4 on radon's SD
+/// [`TRANSFER_HERTZ`]. `maximum_bus_width` is the tree's `bus-width` for the slot (4 on radon's SD
 /// slot, 8 on its eMMC slot).
 ///
 /// Name: ratified 2026-11-03 (UTC), #3139.
@@ -183,7 +186,7 @@ pub fn identify<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
             _ => false,
         },
         bus_width: 1,
-        clock_hz: 0,
+        clock_hertz: 0,
     };
 
     if kind == CardKind::MultimediaCard {
@@ -206,7 +209,7 @@ fn go_idle_and_check_interface<R: RegisterWindowAndClock, D: DirectMemoryAccessR
 ) -> Result<bool, InitializationError> {
     host.reset().map_err(InitializationError::Controller)?;
     host.power_on();
-    host.set_clock(IDENTIFY_HZ)
+    host.set_clock(IDENTIFY_HERTZ)
         .map_err(InitializationError::Controller)?;
     host.set_bus_width(1);
 
@@ -316,8 +319,8 @@ fn configure_multimedia_card<R: RegisterWindowAndClock, D: DirectMemoryAccessReg
     let card_specific_data = CardSpecificData::multimedia_card(card_specific_data_raw);
     card.blocks = card_specific_data.blocks;
     // The clock first: EXT_CSD is 512 bytes, and at 400 kHz on one line that is 10 ms.
-    card.clock_hz = host
-        .set_clock(TRANSFER_HZ)
+    card.clock_hertz = host
+        .set_clock(TRANSFER_HERTZ)
         .map_err(|e| InitializationError::Configure(c::SEND_IF_COND, e))?;
     let mut ext = [0u8; BLOCK_BYTES];
     let command = Command::with_data(
@@ -372,8 +375,8 @@ fn configure_sd<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
         ))
         .map_err(|e| InitializationError::Configure(c::SET_BLOCKLEN, e))?;
     r1_ok(c::SET_BLOCKLEN, r1[0])?;
-    card.clock_hz = host
-        .set_clock(TRANSFER_HZ)
+    card.clock_hertz = host
+        .set_clock(TRANSFER_HERTZ)
         .map_err(|e| InitializationError::Configure(c::SET_BLOCKLEN, e))?;
     Ok(())
 }
@@ -602,7 +605,7 @@ mod tests {
             blocks,
             block_addressed,
             bus_width: 4,
-            clock_hz: TRANSFER_HZ,
+            clock_hertz: TRANSFER_HERTZ,
         }
     }
 

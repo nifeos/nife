@@ -341,10 +341,14 @@ impl<R: RegisterWindowAndClock> RegisterWindowAndClock for QueueWatch<R> {
 /// Name: ratified 2026-11-02 (UTC), #3092. One row of the matrix of multi-block reads.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MatrixRow {
-    /// The card clock asked for, in Hz.
-    pub asked_hz: u32,
-    /// The card clock the divider gave.
-    pub card_hz: u32,
+    /// The card clock asked for, in hertz.
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3276. The unit is spelled out.
+    pub asked_hertz: u32,
+    /// The card clock the divider gave, in hertz.
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3276. The unit is spelled out.
+    pub card_hertz: u32,
     /// Blocks in the one `CMD18`.
     pub blocks: u32,
     /// What the read returned.
@@ -361,8 +365,13 @@ pub struct MatrixRow {
 
 /// The card clocks the matrix reads at: the transfer rate and two halvings of it.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3092. The card clocks of the matrix; `HZ` is the unit suffix.
-pub const MATRIX_HZ: [u32; 3] = [sd::TRANSFER_HZ, sd::TRANSFER_HZ / 2, sd::TRANSFER_HZ / 4];
+/// Name: ratified 2026-11-05 (UTC), #3276. The card clocks of the matrix; the unit is spelled out as
+/// `HERTZ`.
+pub const MATRIX_HERTZ: [u32; 3] = [
+    sd::TRANSFER_HERTZ,
+    sd::TRANSFER_HERTZ / 2,
+    sd::TRANSFER_HERTZ / 4,
+];
 /// The `CMD18` lengths the matrix reads, in blocks.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. The `CMD18` lengths of the matrix, in blocks.
@@ -385,11 +394,11 @@ pub fn read_matrix<R: RegisterWindowAndClock>(
     buffer: &mut [u8],
     mut row: impl FnMut(MatrixRow),
 ) -> Result<(), InitializationError> {
-    for &hz in &MATRIX_HZ {
+    for &hertz in &MATRIX_HERTZ {
         for &blocks in &MATRIX_BLOCKS {
             let card = sd::identify(host, bus_width)?;
-            let card_hz = host
-                .set_clock(hz)
+            let card_hertz = host
+                .set_clock(hertz)
                 .map_err(InitializationError::Controller)?;
             let len = blocks as usize * BLOCK_BYTES;
             let Some(dst) = buffer.get_mut(..len) else {
@@ -411,8 +420,8 @@ pub fn read_matrix<R: RegisterWindowAndClock>(
                     .read(crate::registers::TRANSFERRED_HOST_BYTE_COUNT),
             ];
             row(MatrixRow {
-                asked_hz: hz,
-                card_hz,
+                asked_hertz: hertz,
+                card_hertz,
                 blocks,
                 result,
                 microseconds,
