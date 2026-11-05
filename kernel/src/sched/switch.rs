@@ -30,9 +30,22 @@ pub fn initialize() {
     let mut sched = IPC_TABLES.lock();
 
     // Install the empty tables first, then insert the boot thread into them: built as a local and
-    // moved in, an unoptimised build carries the thread table twice on the boot stack, which caps
-    // [`MAXIMUM_THREADS`]. Assigning the `const` [`EMPTY_TABLES`] copies from `.rodata`.
-    *sched = Some(EMPTY_TABLES);
+    // moved in, an unoptimised build carries the whole of [`IpcTables`] on the boot stack, which
+    // caps [`MAXIMUM_THREADS`]. A `*sched = Some(EMPTY_TABLES)` does that, because the compiler
+    // builds the value in a frame temporary before it stores it. So the bytes are copied from a
+    // `static` straight into the lock's slot, and no temporary exists.
+    assert!(sched.is_none(), "the scheduler tables were installed twice");
+    // SAFETY: `EMPTY_INSTALLED_TABLES` is a valid `Some(IpcTables)` and `sched` is a valid, aligned
+    // `Option<IpcTables>` that does not overlap it. The old value is `None` (asserted above), which
+    // owns nothing, so overwriting it without a drop leaks nothing. The copy is a move of a
+    // const-built value, and the static is never read as a live table.
+    unsafe {
+        core::ptr::copy_nonoverlapping(
+            core::ptr::addr_of!(EMPTY_INSTALLED_TABLES.0),
+            core::ptr::addr_of_mut!(*sched),
+            1,
+        );
+    }
     let tables = sched
         .as_mut()
         .expect("the tables were just installed on this line");
