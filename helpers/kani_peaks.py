@@ -106,12 +106,14 @@ def kani_pin(root):
 
 
 def trees(root, paths):
-    """{path: tree id at HEAD} for each of `paths` that names a directory there."""
-    out = git(root, "ls-tree", "-d", "HEAD", "--", *paths).stdout
-    found = {}
-    for line in out.splitlines():
-        meta, _, path = line.partition("\t")
-        found[path] = meta.split()[2]
+    """{path: object id at HEAD} for each of `paths` that names a directory (or a file) there."""
+    wanted, found = set(paths), {}
+    # `-d` lists a directory as itself rather than its children; a file needs the plain listing.
+    for flags in (["-d"], []):
+        for line in git(root, "ls-tree", *flags, "HEAD", "--", *paths).stdout.splitlines():
+            meta, _, path = line.partition("\t")
+            if path in wanted:
+                found[path] = meta.split()[2]
     return found
 
 
