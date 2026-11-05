@@ -21,7 +21,7 @@ Milestone 188 phases 1 to 3 (pull request #732) moved both terms, on the same da
 
 - `ipc_fastpath` measured the SEND/RECV shape, which essentially no service in this tree runs.
   The gate now reports `ipc_send_recv` and `ipc_call_reply` separately and keeps `ipc_fastpath` as
-  the **worse of the two**, since one round trip is one shape or the other.
+  the worse of the two, since one round trip is one shape or the other.
 - **aarch64's `syscall_entry` counted all sixteen exception vector entries** where an `svc` fetches
   one, so 1,892 of its 3,304 bytes were never fetched.
 - Phase 3 then took 6 to 10% off both closures by outlining cold arms.

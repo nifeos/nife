@@ -94,9 +94,9 @@ gate fired on a fifth, `measured_boot`'s `PROGRAM_MEASUREMENTS`, an archive entr
 has ever listed. It is a string two programs agree on, which AGENTS.md puts in the expensive,
 hard-to-reverse category beside a wire format and an opcode number. Its name is provisional and
 `--unratified` has never listed it. The names with the least reversibility are the ones with no
-record. Three things must be decided first: whether a wire string is a name for this purpose or
-data; where its block lives, which is not the file header 283 reserved; and how the set is
-enumerated, since a `const` in an arbitrary file is neither a directory listing nor a manifest walk.
+record. Three things must be decided first. Is a wire string a name for this purpose, or data? Where does
+its block live, given that the file header is the one 283 reserved? How is the set enumerated, since
+a `const` in an arbitrary file is neither a directory listing nor a manifest walk?
 Counting is the cheap half and comes first. If it is a dozen names, a list in `design/naming.md`
 answers it. If it is two hundred, wire strings are probably out of scope, and the record says so on
 purpose, the way `unrecorded` is an answer.

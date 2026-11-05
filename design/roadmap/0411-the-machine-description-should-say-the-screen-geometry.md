@@ -10,11 +10,6 @@ needs_person: no
 ---
 # 411. The machine description should say the screen's geometry, not just its address
 
-Promoted from the proposal
-`the-machine-description-should-say-the-screen-geometry`, filed 2026-09-14 by milestone 268's lane
-while writing `kernel/src/console.rs`'s `print_summary`. *(Number provisional until the merge queue
-lands it.)*
-
 It reads the tree and touches one function.
 
 **Premise re-checked 2026-09-19 and still true, to the line.** `console::print_summary` still prints
@@ -66,11 +61,9 @@ milestone 409 (design/roadmap/0409-one-machine-description-not-two.md) is about.
 
 ## Index row
 
-The machine description answers what console a machine has on all three architectures and, where
-there is a framebuffer, says where it is and how many bytes it is. It cannot say the width, the
-height or the pixel order, which are the three numbers that decide whether a picture will be legible
-or scrambled. Those arrive in the boot handoff and are printed by the x86_64 arm alone. So the fact
-exists on one architecture, in the wrong instrument. A board with a monitor and no serial port is
-exactly the machine this description was written for. Xenon's first light was photographed off the
-screen, and a photograph is ambiguous about the one thing the description does not carry. The other
-two architectures grow a display path at milestone 157, so this wants doing once rather than twice.
+The machine description says whether a machine has a framebuffer and where it is, but not the
+width, the height or the pixel order, the three numbers that decide whether a picture is legible or
+scrambled. Those arrive in the boot handoff and only the x86_64 arm prints them. A board with a
+monitor and no serial port is the machine this description was written for, and xenon's first light
+was photographed off the screen. The other two architectures grow a display path at milestone 157,
+so this wants doing once.

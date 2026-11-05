@@ -24,7 +24,7 @@ design.
 
 ## In brief
 
-Every row a bench card prints is a `rdtime` tick count. On the JH7110 the timebase is **4 MHz**, so
+Every row a bench card prints is a `rdtime` tick count. On the JH7110 the timebase is 4 MHz, so
 one tick is **250 ns**. An IPC round trip on this class of core is single-digit microseconds, and
 E3's whole question is whether a 1.86x footprint change moves it by a few percent. That is a handful
 of ticks, measured with a ruler whose smallest mark is a large fraction of the effect.
