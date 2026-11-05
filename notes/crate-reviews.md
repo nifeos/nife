@@ -50,8 +50,8 @@ against itself.
   package. No further check can run before a repository exists.
 - README readiness. Every README has the sections a stranger looks for: what the crate does, the
   proofs with their harness names, usage, limitations and license. Only
-  `file_allocation_table`'s README tells a newcomer to install Kani; the other six say `cargo kani`
-  and no more, which is the gap the pilot's stranger run found and fixed. No crate has run a
+  `file_allocation_table`'s and `non_volatile_memory_express`'s READMEs tell a newcomer to install
+  Kani; the other five say `cargo kani` and no more, which is the gap the pilot's stranger run found and fixed. No crate has run a
   stranger test, and none can until it has a repository.
 - References to nife in shipped text. Crate repositories stand alone and do not mention nife.
   Each package lists the mentions that remain, each a small edit for the move lane.
@@ -121,27 +121,39 @@ Recommendation. Blocked by the three nife citations, a small lane edit; ready fo
 
 ## `non_volatile_memory_express`, step 5
 
-Name and version. `non_volatile_memory_express` `0.1.0`, ratified with NVMe spelled out. 55 `Name:`
-blocks, all ratified.
+Name and version. `non_volatile_memory_express` `0.1.0`, ratified with NVMe spelled out. 27 `Name:`
+blocks are provisional: the new modules, the eleven constants spelled out (the register offsets, the
+two Controller Status bits, the two queue-creation opcodes and the two Identify selectors), the two
+assertion constants, `PhysicalRegionPagePair` and its fields, `Namespace::new`. The rest are
+ratified.
 
-API. One `lib.rs` of 1,205 lines: a `registers` module, `Capabilities`, `Command`, `Completion`,
-`SubmissionQueue`, `CompletionQueue`, `Doorbell`, `doorbell`, `physical_region_page_pair` and the identify parse with
-`Namespace`. The caller supplies MMIO and DMA memory. The process plan lives in
+API. Ten modules behind a flat public surface: `registers`, `Capabilities`, `Command` with the
+opcodes, `Completion`, `SubmissionQueue` and `CompletionQueue`, `Doorbell`, `doorbell`,
+`PhysicalRegionPagePair` with `physical_region_page_pair`, `Namespace` and the identify parse. The
+caller supplies MMIO and DMA memory. `SubmissionQueue::push` returns `None` on a full ring.
+`Completion`, `IdentifyNamespace` and `Namespace` are `#[non_exhaustive]`. The README is the crate
+documentation, so its usage example runs as a doctest. The process plan lives in
 `non_volatile_memory_express_contract`, not here.
 
-Proofs. Six harnesses (submission push, completion pop and phase, doorbell collisions, PRP pair,
-transfer command, identify parse). All six prove and all six patches fail.
+Proofs. Eight harnesses (submission push, completion pop and phase, doorbell collisions, PRP pair,
+transfer command, identify parse, capabilities decode, completion decode). All eight prove and all
+eight patches fail.
 
 Dependencies. None.
 
 Provenance. Nothing outstanding.
 
-Result of `script/crate-standalone`. Clean.
+Result of `script/crate-standalone`. One failure: `names`, the 27 provisional names above. Build,
+proofs and patches pass, and no citation names this tree.
 
-Outstanding before the move. The README does not say how to install Kani (see the shared section);
-move lane. Nothing else.
+Outstanding before the move.
 
-Recommendation. Ready for review.
+| item | owner |
+|---|---|
+| Ratify the 27 provisional names with `python3 helpers/name_release.py --draft non_volatile_memory_express`. | architect |
+| `design/decisions/0086-el0-nvme-driver/prior-art.md` and milestone 569 still cite `prp_pair`, `CNS_CONTROLLER` and `CNS_NAMESPACE`. | maintainer |
+
+Recommendation. Blocked by the unratified names; ready for review once they are ratified.
 
 ## `e1000e`, step 6
 
@@ -285,7 +297,7 @@ Recommendation. Blocked by one unratified name and the unrun bench check.
 |---|---|---|
 | `file_allocation_table` | 2 | ready for review |
 | `extensible_host_controller_interface` | 3 | blocked by three nife citations (lane edit) |
-| `non_volatile_memory_express` | 5 | ready for review |
+| `non_volatile_memory_express` | 5 | blocked by 27 unratified names |
 | `e1000e` | 6 | blocked by three unratified names and #3200 |
 | `designware_ethernet` | 7 | blocked by #3200 and item 9 of milestone 1019 |
 | `designware_mobile_storage` | 8 | blocked by #3200 |
