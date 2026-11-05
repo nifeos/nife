@@ -2,7 +2,8 @@
 
 *An appendix to [`design/naming.md`](../naming.md#acronyms-and-abbreviations), which states the
 rules. It holds each short form's spelling and the cases that decide it, the names the test does not
-reach, and why.*
+reach, and why. [§154 (the acronym test is whether the phrase is spoken, applied recursively)](../decisions/0154-the-acronym-test-is-whether-the-phrase-is-spoken.md)
+holds the argument for its acronym rows.*
 
 ## The test
 

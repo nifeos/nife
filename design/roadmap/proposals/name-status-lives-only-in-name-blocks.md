@@ -9,8 +9,8 @@ needs_person: no
 ---
 # A name's status lives only in its own Name: block
 
-Raised by lane/naming-rules-by-topic on 2026-11-05 (UTC), from a feasibility study the naming
-re-cut was asked to make. The integrator mints the number at promotion.
+Raised by lane/naming-rules-by-topic on 2026-11-05 (UTC), from the feasibility study its brief
+asked for. The integrator mints the number at promotion.
 
 Reuse: `helpers/name_provenance.py`'s block parse, `helpers/name_rules.py`'s Rule 1 computation,
 and `helpers/name_release.py --draft`, which already derives a crate's worklist from the blocks.
@@ -37,7 +37,7 @@ edits, which is the conflict shape the block exists to avoid, and each can drift
 1. Rules 2 and 3: write the block into each covered fixture and document, make each directory
    README block agree, then drop the two lists and the `fixture-roles` and `listed-stems` paths
    from `name_rules.py` with their selftests. `script/names | tail -3` must print the same ratified
-   count before and after. Rule 1 stays a rule: it is computed, and it ratifies future stems.
+   count before and after. Rule 1 stays a rule: `name_rules.py` computes it, and it ratifies future stems.
 2. The journey note: delete it once its in-flight pull requests land, and point
    `script/crate-standalone`'s step 0 message at `name_release.py --draft`.
 3. The `KEPT` and `RULED` tables: move each entry with a block into its item's block as a clause
