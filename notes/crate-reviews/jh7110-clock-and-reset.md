@@ -6,11 +6,11 @@ together outgrow the page.*
 
 ## In one paragraph
 
-The StarFive JH7110's clock and reset generator as pure logic: the register offsets and bits of its
-three domains (system, always-on, system top group), the bring-up plans that ungate clocks before
-releasing resets, the arithmetic of the I2C input clock and the SD card clock, the standard-mode
-I2C timing, and the strings by which the chip's two device trees (mainline Linux and the vendor
-U-Boot) name each controller. It never touches a register; the caller maps the window and stores.
+The StarFive JH7110's clock and reset generator as pure logic. It holds the register offsets and
+bits of three domains (system, always-on, system top group) and the bring-up plans that ungate
+clocks before releasing resets. It computes the I2C input clock, the SD card clock and the
+standard-mode I2C timing. It also holds the strings by which the chip's two device trees (mainline
+Linux and the vendor U-Boot) name each controller. It never touches a register; the caller maps the window and stores.
 It is `no_std` with no `unsafe` and no dependency, and nine Kani harnesses prove its decoders and
 the order of every plan. Every name has a ratified block, one of them by the maintainer pending the
 architect, and about thirty were ratified before the rules that now spell out register names and

@@ -11,7 +11,7 @@ on the architectures with no register that says so: the magic `TIMEBAS1`, then t
 little-endian `u64`. The crate also holds the page's fixed virtual address per architecture and the
 band of rates worth believing (100 kHz to 100 GHz), which the kernel's three boot paths share. It is
 `no_std` with no dependency. Unlike the other crates in this note, it has `unsafe`, because the
-reader names a raw address, and it has no Kani harness. Every name is ratified, but three carry the
+reader names a raw address, and it has no Kani harness. Every name has a ratified block, but three carry the
 unit symbol `HZ`, which the later rule on units refuses.
 
 ## Identity
@@ -56,7 +56,7 @@ covers it, since Kani cannot prove a caller's promise about a mapping.
 
 ## Names
 
-All 13 names are ratified (2026-11-01, #3059). Three of them, and two parameters, use the unit
+#3059 ratified all 13 names on 2026-11-01. Three of them, and two parameters, use the unit
 symbol `HZ`. The rule of 2026-11-03 spells every unit out (`_HERTZ`) and accepts no SI symbol,
 because uppercase erases the case that tells `MHz` from `mHz`. The rule leaves a ratified name
 alone until its own review, and a crate's release review is that review.
@@ -99,7 +99,7 @@ alone until its own review, and a crate's release review is that review.
 
 1. The unit spelling of the three ratified names in the table above, before the crate leaves.
    Recommendation: rename all three. Each name is a published identifier of the kind the units rule
-   was made for, and the crate has five consumers in one tree today, so the rename costs one lane.
+   exists for, and the crate has five consumers in one tree today, so the rename costs one lane.
    **architect** (renaming a ratified name). The same question stands for
    `designware_mobile_storage` and `jh7110_clock_and_reset`, and one ruling can cover all three.
 2. Whether `PAGE_VIRTUAL_ADDRESS` should exist on aarch64. Recommendation: leave it, because the

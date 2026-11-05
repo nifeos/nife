@@ -7,9 +7,9 @@ together outgrow the page.*
 ## In one paragraph
 
 The whole SD and eMMC driver for the Synopsys DesignWare Mobile Storage Host Controller (`DW_mshc`,
-Linux's `dw_mmc`) as pure logic: the register map, the command word, the polled controller
-sequences, the internal DMA controller's descriptor chains, card identification, block reads and
-writes, and the decoding of the card's identification and specific-data registers. The caller
+Linux's `dw_mmc`) as pure logic. It holds the register map, the command word, the polled controller
+sequences and the internal DMA controller's descriptor chains. It identifies the card, reads and
+writes blocks, and decodes the card's identification and specific-data registers. The caller
 implements one trait, `RegisterWindowAndClock` (read a register, write one, read a microsecond
 clock), and every sequence runs on a host against a simulated controller and card. It is `no_std`,
 with no allocator, no `unsafe` and no dependency. Eight Kani harnesses prove its parsers and bounds.
@@ -84,8 +84,8 @@ identification decode. 99 host tests drive those against the simulator.
 `python3 helpers/name_release.py --draft designware_mobile_storage` lists 135 names, all ratified:
 the crate on #1806 and the items on pull requests #3092 to #3144. Nothing is provisional.
 
-Eight of them, and two parameters, use a unit symbol that the units rule of 2026-11-03 refuses. They were ratified on
-2026-11-02 and 2026-11-03 under #3092, before or beside that rule. The rule leaves a ratified name
+Eight of them, and two parameters, use a unit symbol that the units rule of 2026-11-03 refuses. #3092 ratified them on
+2026-11-02 and 2026-11-03, before or beside that rule. The rule leaves a ratified name
 alone until its own review, and a release review is that review.
 
 | name | kind | recommendation |
@@ -101,9 +101,9 @@ alone until its own review, and a release review is that review.
 
 ## License
 
-`license = "(MIT OR Apache-2.0) AND ISC"`: the crate's own pair, and ISC for the code adapted from
-OpenBSD's `sys/dev/fdt/dwmmc.c` revision 1.33 (register map, reset, clock, bus width, command flags,
-the polled transfer). `src/lib.rs` carries that file's copyright line and ISC notice. The card
+`license = "(MIT OR Apache-2.0) AND ISC"`: the crate's own pair, then ISC. The crate adapts
+OpenBSD's `sys/dev/fdt/dwmmc.c` revision 1.33 for the register map, reset, clock, bus width,
+command flags and the polled transfer. `src/lib.rs` carries that file's copyright line and ISC notice. The card
 identification follows only the order of OpenBSD's `sdmmc_mem.c` addressing commands and copies
 none of its code, so its notice is not carried, as milestone 1019 (the driver crates carry facts
 from their sources, not their text) item 6 ruled. Linux, U-Boot and the device trees are read for
