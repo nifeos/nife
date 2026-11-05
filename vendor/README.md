@@ -182,18 +182,19 @@ and priced it is notes/redoxfs-audit.md).
   `script/vendor-verify` asks the different question those cannot: not "does it still build" but
   "is this tree what we say it is".
 
-## crate-workflows, at upstream commit 8ee86d3b37d8
+## crate-workflows, at upstream commit d3c634f520af
 
 The naming gates every repository shares, from `nifeos/crate-workflows`, the template that crate
 and package repositories call. A gate that is not specific to nife lives once, there; nife carries
 a pinned copy so it runs the same words as the crates do, and the two cannot drift.
 
-- **Source:** GitHub's archive of upstream commit `8ee86d3b37d81d30a2b81720d64fa7b1044c302d` (main,
-  after pull request 20). The pin's sha256 is of the archive's uncompressed tar stream,
-  `5daad8974d4abd7b0306d8d84efb61c53196ccc8a95cbd6286c6f15658ea307e`.
+- **Source:** GitHub's archive of upstream commit `d3c634f520af28152aa29f2ee84122ee4975f77c` (main). The
+  pin's sha256 is of the archive's uncompressed tar stream,
+  `bf168f64c71aef0e2940373f4432f41f4e1e4aa9b02fa2f42fed6ae1b5baa938`.
 - **What is vendored:** only the pin's `include` list: `helpers/naming_words.toml` (the words),
-  `helpers/rust_names.py` (the Rust lexer), `helpers/spelled_out.py`, `helpers/unit_symbols.py` and
-  the two licences. `script/vendor-verify` fails a file under `vendor/crate-workflows/` that the
+  `helpers/rust_names.py` (the Rust lexer), the checks `helpers/spelled_out.py`,
+  `helpers/unit_symbols.py`, `helpers/british_spelling.py`, `helpers/service_model.py`,
+  `helpers/contract_names.py` and `helpers/question_shape.py`, and the two licences. `script/vendor-verify` fails a file under `vendor/crate-workflows/` that the
   list does not name, as it fails any unrecorded edit. No registry carries the template, so the pin
   says `registry = none` and `script/vendor-watch` reports its commits as the releases.
 - **Divergence from upstream, exhaustively:** none. The patch is empty. A change to a word or a
@@ -203,8 +204,14 @@ a pinned copy so it runs the same words as the crates do, and the two cannot dri
   counterpart: the ceilings and the net-growth half of the `cap` and unit ratchets, the tables of
   names a rule does not reach (`CAP_KEPT`, `UNIT_KEPT`, `UNIT_STD`), the units the unit ratchet
   counts so far, and the check that `design/naming.md` and the word list agree.
-  `helpers/name_checks.py` keeps its baseline, `KEPT` and `RULED` and takes the words from the list.
-- **Taking a bump:** raise `url`, `sha256` and `vcs` to the new commit, copy the `include` files from
+  `helpers/name_checks.py` keeps its baseline, `KEPT` and `RULED`, takes the words from the list, and
+  runs the template's service-model and question-shape checks on the names it surveys. The wrapper
+  also holds the program and crate names that keep a spelling on purpose (`PROGRAM_KEPT`,
+  `PROTOCOL_KEPT`) and the files the prose check skips, and runs the template's service-model and
+  contract-name checks over this tree's names for `script/lint`. The name-level British check stays
+  in `helpers/name_checks.py` (`typos` en-us over en), because it catches names the template's word
+  list does not (`unrecognised`, `pluralises`) and `helpers/house_style.py` holds it for prose.
+- **Taking a bump:** raise `url`, `sha256` and `vcs` to the new commit (and `include`, when nife runs a new file), copy the `include` files from
   its archive, and run `script/vendor-verify` and `script/lint`. A new word in the list can fail
   names nife has; the fix is a rename or a `KEPT` entry beside the wrapper, never an edit here.
 
