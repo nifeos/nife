@@ -32,6 +32,7 @@ pub const PARTITION_COUNT: usize = ENTRIES;
 ///
 /// Name: ratified 2026-11-01 (UTC), why a parse refused, beside `ParseError`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum MasterBootRecordError {
     /// The sector is shorter than 512 bytes.
     ///
@@ -228,6 +229,7 @@ impl MasterBootRecord {
 ///
 /// Name: ratified 2026-11-01 (UTC), beside `ReadError`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum MasterBootRecordReadError<E> {
     /// The device refused to read sector 0; its own error, unchanged.
     ///
@@ -243,6 +245,7 @@ pub enum MasterBootRecordReadError<E> {
 ///
 /// Name: ratified 2026-11-01 (UTC), beside `ChainError`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum PartitionError<E> {
     /// The device refused the read; its own error, unchanged.
     ///

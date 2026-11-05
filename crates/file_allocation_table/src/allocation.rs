@@ -28,7 +28,7 @@ use crate::table::{self, TableEntry};
 ///
 /// Name: ratified 2026-11-01 (UTC), beside `ChainError`, which it wraps.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum AllocationError<E> {
+pub(crate) enum AllocationError<E> {
     /// The table or a sector could not be read or written; the chain error, unchanged.
     ///
     /// Name: ratified 2026-11-01 (UTC), the same variant `FileReadError` has.

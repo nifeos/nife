@@ -22,6 +22,7 @@ use crate::sector::SectorDevice;
 ///
 /// Name: ratified 2026-11-01 (UTC), beside `ChainError`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum LookupError<E> {
     /// A directory could not be read; its own error, unchanged.
     ///
