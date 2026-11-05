@@ -161,8 +161,8 @@ Dependencies. None.
 
 Provenance. The `platform_controller_hub` module adapts FreeBSD's Intel shared code
 (BSD-3-Clause) and `if_em.c` and `if_em.h` (BSD-2-Clause), with notices in the module. Milestone 1019
-items 3 and 4 are open on `main`; pull request #3200 resolves them and also adds new provisional names
-(`flush::descriptor_rings`, `flush::RingAccess`, `flush::Outcome`) that need ratifying. The manifest
+items 3 and 4 are open on `main`; pull request #3200 resolves them. The three flush names
+(`flush::empty_descriptor_rings`, `flush::FlushSupport`, `flush::EmptiedRings`) are ratified. The manifest
 license field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`, naming the license of
 each adapted source.
 
