@@ -13,7 +13,7 @@ older 3.x GMAC.
 
 ## What is proven
 
-Three Kani harnesses, in `src/proofs.rs`:
+Six Kani harnesses, in `src/proofs.rs`:
 
 - `a_delivered_frame_always_fits_the_buffer_and_the_room`: for every value a device can write
   into word 3 of a receive descriptor and every caller buffer size, a frame that `receive_verdict`
@@ -25,6 +25,15 @@ Three Kani harnesses, in `src/proofs.rs`:
   registers the decode reads, it returns a link only when the status bit is up and the PHY is not
   isolated; with autonegotiation on, only when it is complete, at a speed and duplex both ends
   advertise; with it off, at the forced duplex.
+- `a_transmit_descriptor_keeps_its_length_inside_its_fields`: for every buffer address and length,
+  the transmit descriptor carries the address untouched, the device owns it, it is the first and
+  last segment, and the length fits its two fields without reaching a flag bit.
+- `an_mdio_command_word_keeps_each_address_in_its_own_field`: for every PHY and register address,
+  the command word holds each in its own five-bit field, says read or write as asked and sets the
+  busy bit.
+- `a_coherent_verdict_needs_every_account_to_agree`: for every observation, a fatal bus error gives
+  the bus error verdict, and the coherent verdict needs the receive descriptor handed back, the
+  payload to match the probe frame and the delivered length to be the probe's.
 
 The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
 kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
@@ -35,8 +44,7 @@ Rerun them with `cargo kani`. Each harness has a falsification record at
 `falsifications/<module.path>.<harness>.patch`; applying it with `patch -p3` from the crate root
 makes that harness fail at its own assertion, which shows the proof checks something.
 
-MDIO sequencing, the PHY configuration writes, the coherence verdict and
-controller bring-up have unit tests against the simulator but no proof.
+MDIO sequencing, the PHY configuration writes and controller bring-up have unit tests against the simulator but no proof.
 
 ## Usage
 
