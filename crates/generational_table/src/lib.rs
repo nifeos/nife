@@ -5,7 +5,9 @@
 //! # Limits
 //!
 //! - Capacity is fixed: `insert_with` returns `None` when all `N` slots are live.
-//! - Generations are 32-bit: a slot reused 2^32 times resolves an ancient name again.
+//! - Generations are 32-bit and never wrap. A slot whose generation reaches `u32::MAX` retires:
+//!   it is never filled again, so the table's capacity shrinks by one. A slot retires only after
+//!   2^32 - 1 occupants, and notes/generational-names.md has what that takes on the kernel's tables.
 //! - Insert scans for a free slot in O(N); `get` and `get_mut` are O(1).
 //!
 //! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review). Renamed from
@@ -13,6 +15,7 @@
 //! crate's own opening line ("a fixed-capacity generational table").
 
 #![cfg_attr(not(test), no_std)]
+#![forbid(unsafe_code)]
 
 /// A fixed-capacity table whose entries are named by `(generation, slot)` packed in a `u64`,
 /// generation in the high 32 bits and slot in the low 32. A fresh table's first insert is named
@@ -46,7 +49,9 @@
 pub struct Table<T, const N: usize> {
     slots: [Option<T>; N],
     /// The current generation of each slot: the one a live occupant's name carries, and the one
-    /// the *next* occupant's name will carry after a bump. Survives the occupant on purpose.
+    /// the *next* occupant's name will carry after a bump. Survives the occupant on purpose. It
+    /// only rises, and [`RETIRED`](Self::RETIRED) marks a slot that is never filled again, so no
+    /// live name ever carries it.
     gens: [u32; N],
     /// Live-entry count, maintained so `len` is O(1).
     live: usize,
@@ -72,6 +77,10 @@ impl<T, const N: usize> Table<T, N> {
         }
     }
 
+    /// The generation a slot saturates at. A slot there is retired: insert passes over it, so no
+    /// name is ever minted with this generation and a removed name can never come back.
+    const RETIRED: u32 = u32::MAX;
+
     const fn name(slot: usize, generation: u32) -> u64 {
         ((generation as u64) << 32) | slot as u64
     }
@@ -81,7 +90,8 @@ impl<T, const N: usize> Table<T, N> {
     }
 
     /// Insert, minting the entry's name first so the entry can carry it: `f` receives the name
-    /// and returns the value to store. `None` (and `f` never called) if every slot is live.
+    /// and returns the value to store. `None` (and `f` never called) if every slot is live or
+    /// retired.
     ///
     /// # Examples
     ///
@@ -98,7 +108,11 @@ impl<T, const N: usize> Table<T, N> {
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn insert_with(&mut self, f: impl FnOnce(u64) -> T) -> Option<u64> {
-        let slot = self.slots.iter().position(|s| s.is_none())?;
+        let slot = self
+            .slots
+            .iter()
+            .zip(&self.gens)
+            .position(|(s, &g)| s.is_none() && g != Self::RETIRED)?;
         let name = Self::name(slot, self.gens[slot]);
         self.slots[slot] = Some(f(name));
         self.live += 1;
@@ -143,13 +157,14 @@ impl<T, const N: usize> Table<T, N> {
     }
 
     /// Remove and return the entry, bumping the slot's generation: from this moment `name` (and
-    /// every copy of it, wherever it is held) resolves to `None`, forever.
+    /// every copy of it, wherever it is held) resolves to `None`, forever. The bump saturates, so
+    /// the occupant at `RETIRED - 1` leaves its slot retired rather than wrapping it to 0.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn remove(&mut self, name: u64) -> Option<T> {
         let slot = self.slot_of(name)?;
         let value = self.slots[slot].take()?;
-        self.gens[slot] = self.gens[slot].wrapping_add(1);
+        self.gens[slot] = self.gens[slot].saturating_add(1);
         self.live -= 1;
         // Removing anything below the top leaves a hole, which costs a walk nothing to skip.
         // Removing the top one means the bound can come down, past however many holes are under it.
@@ -281,12 +296,18 @@ mod verification {
     /// A removed name never resolves again, even after its slot is reused. This is the
     /// stale-`ThreadId` safety the kernel currently gets from map-lookup-fails, kept under reuse: the
     /// old name and the new occupant's name differ (the generation moved), so `get`, `get_mut`,
-    /// and `remove` all refuse the old one. The one stated precondition: the slot's generation
-    /// has not wrapped all the way around (see the crate doc on 2^32).
+    /// and `remove` all refuse the old one. The table starts at any generations at all, the last
+    /// one before retirement and a retired slot included, so this holds for the 2^32nd reuse as
+    /// for the first; [`a_removed_name_stays_dead_whatever_comes_after`] carries it forward.
     /// Falsification: replayable `crates/generational_table/falsifications/verification.a_removed_name_never_resolves_again.patch`
     #[kani::proof]
     fn a_removed_name_never_resolves_again() {
         let mut t: Table<u8, 2> = Table::new();
+        t.gens = [kani::any(), kani::any()];
+        kani::cover!(
+            t.gens[0] == Table::<u8, 2>::RETIRED - 1,
+            "the last occupant a slot takes"
+        );
         let Some(name) = t.insert_with(|_| kani::any()) else {
             return;
         };
@@ -300,6 +321,66 @@ mod verification {
         assert!(t.get(name).is_none());
         assert!(t.get_mut(name).is_none());
         assert!(t.remove(name).is_none());
+    }
+
+    /// A table in any state the operations can reach, for N = 2: each slot free or live, with
+    /// any generation, except that a live slot is never at `RETIRED`. `live` and `top` follow
+    /// from the slots, as insert and remove keep them.
+    fn any_reachable_table() -> Table<u8, 2> {
+        let mut t: Table<u8, 2> = Table::new();
+        for slot in 0..2 {
+            t.gens[slot] = kani::any();
+            if kani::any() {
+                kani::assume(t.gens[slot] != Table::<u8, 2>::RETIRED);
+                t.slots[slot] = Some(kani::any());
+                t.live += 1;
+                t.top = slot + 1;
+            }
+        }
+        t
+    }
+
+    /// One insert or one remove of any name, the two operations that change generations.
+    fn any_operation(t: &mut Table<u8, 2>) {
+        if kani::any() {
+            let _ = t.insert_with(|_| kani::any());
+        } else {
+            let _ = t.remove(kani::any());
+        }
+    }
+
+    /// A dead name stays dead whatever operations follow, with no bound on how many. The
+    /// induction step: from any reachable table and any name whose generation is below its slot's,
+    /// which is what a removal leaves behind, two arbitrary operations keep the slot's generation
+    /// above the name's and every live slot below `RETIRED`, and the name resolves nowhere. Both
+    /// facts are what the step assumes, so they hold after any number of operations, and a slot
+    /// reused 2^32 times cannot bring an old name back. Two operations, not one, because a
+    /// wrapping table needs an insert and a remove to come round.
+    /// Falsification: replayable `crates/generational_table/falsifications/verification.a_removed_name_stays_dead_whatever_comes_after.patch`
+    #[kani::proof]
+    fn a_removed_name_stays_dead_whatever_comes_after() {
+        let mut t = any_reachable_table();
+        let slot: usize = kani::any();
+        kani::assume(slot < 2);
+        let generation: u32 = kani::any();
+        kani::assume(generation < t.gens[slot]);
+        let dead = Table::<u8, 2>::name(slot, generation);
+        kani::cover!(
+            t.gens[slot] == Table::<u8, 2>::RETIRED && t.slots[slot].is_none(),
+            "a retired slot"
+        );
+
+        for _ in 0..2 {
+            any_operation(&mut t);
+            assert!(
+                generation < t.gens[slot],
+                "a slot's generation came back down"
+            );
+            for s in 0..2 {
+                assert!(t.slots[s].is_none() || t.gens[s] != Table::<u8, 2>::RETIRED);
+            }
+            assert!(t.get(dead).is_none());
+        }
     }
 
     /// Two live entries never share a name, and each name resolves to its own entry: the
@@ -535,6 +616,45 @@ mod tests {
         assert_eq!(t.values().count(), 0);
         assert_eq!(t.iter_from(0).count(), 0);
         assert_eq!(t.top, 0, "an emptied table's walks visit no slot at all");
+    }
+
+    /// The last occupant a slot takes leaves it retired: the slot is passed over from then on,
+    /// the name it carried stays dead, and the next insert lands in the slot after it. Without
+    /// the saturation the bump wraps to 0 and the slot's 2^32nd successor is named like its first.
+    #[test]
+    fn a_slot_at_its_last_generation_retires_on_removal() {
+        let mut t: Table<u32, 2> = Table::new();
+        t.gens[0] = Table::<u32, 2>::RETIRED - 1;
+        let last = t.insert_with(|_| 1).unwrap();
+        assert_eq!(
+            last,
+            (u64::from(u32::MAX - 1) << 32),
+            "slot 0 is still filled first"
+        );
+        assert_eq!(t.remove(last), Some(1));
+
+        let next = t.insert_with(|_| 2).unwrap();
+        assert_eq!(next & 0xffff_ffff, 1, "a retired slot was filled again");
+        assert_eq!(t.get(last), None);
+        assert_eq!(
+            t.get(u64::from(u32::MAX) << 32),
+            None,
+            "no name carries the retired generation"
+        );
+        assert_eq!(t.len(), 1);
+    }
+
+    /// A table whose every free slot has retired refuses an insert, as a full one does, and
+    /// without calling the closure.
+    #[test]
+    fn a_table_of_retired_slots_refuses() {
+        let mut t: Table<u32, 2> = Table::new();
+        t.gens = [Table::<u32, 2>::RETIRED; 2];
+        assert_eq!(
+            t.insert_with(|_| unreachable!("closure ran on a retired table")),
+            None
+        );
+        assert!(t.is_empty());
     }
 
     /// Out-of-range slots and wrong generations are both just `None`.
