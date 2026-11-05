@@ -48,9 +48,9 @@ pub(crate) fn is_reachable() -> bool {
 /// The fix is a tag or an offset in the reply word, a contract change (notes/std/fs.md).
 ///
 /// Name: provisional, flagged 2026-09-24 by the boolean-predicate pass
-/// (design/naming/functions-that-answer-yes-or-no-worklist.md). It does not yet follow the Rust predicate rule
-/// calef ratified 2026-09-24; recommended `is_missing_capability`, because `is_no_capability` does
-/// not parse.
+/// (design/naming/functions-that-answer-yes-or-no.md). It does not yet follow the Rust predicate
+/// rule calef ratified 2026-09-24; recommended `is_missing_capability`, because `is_no_capability`
+/// does not parse.
 pub(super) fn no_capability(r0: u64) -> bool {
     matches!(r0 as i64, -3)
 }

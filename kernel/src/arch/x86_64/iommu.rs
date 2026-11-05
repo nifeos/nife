@@ -399,7 +399,7 @@ fn root_up(d: &Drhd) -> Result<Unit, &'static str> {
 /// an RMRR device, anywhere outside its reserved regions).
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(dmar: &DmarUnits) {
     *DMAR.lock() = Some(*dmar);
     {

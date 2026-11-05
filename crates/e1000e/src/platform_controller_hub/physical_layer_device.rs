@@ -328,7 +328,9 @@ impl SoftwareFlag {
     /// `e1000_acquire_swflag_ich8lan`: wait for the flag to be free, set it, and wait for it to
     /// read back set. On a refusal it clears the bit it wrote, as FreeBSD does.
     ///
-    /// Name: recorded (FreeBSD's `e1000_acquire_swflag_ich8lan`).
+    /// Name: ratified 2026-11-05 (UTC). A verb that pairs with `release` and returns the held proof
+    /// (FreeBSD's `e1000_acquire_swflag_ich8lan`). Refused `lock` (it suggests release on drop, which
+    /// this type does not do) and `take`.
     pub fn acquire(hardware: &mut impl Hardware) -> Result<Self, Error> {
         let mut ext = 0;
         let mut free = false;

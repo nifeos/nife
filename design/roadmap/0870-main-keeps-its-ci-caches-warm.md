@@ -79,12 +79,10 @@ on `main` itself.
 
 ## BUGS
 
-- ~~A key that drifts from its restoring job's saves an entry nobody reads, and nothing gates
-  that.~~ Closed 2026-10-10 (UTC) by #1908 (an owed correction: this entry was true when merged).
-  `helpers/cache_save_scope.py`, run by `script/lint`, now fails when a path, key or pinned
-  `actions/cache` SHA in `main-caches` differs from any restoring step's in any workflow, or when
-  no step restores it at all. What it still does not compare is runners: a restoring job moved to
-  a pool `main-caches` has no leg for reads a key `main` never saves.
+- `helpers/cache_save_scope.py`, run by `script/lint`, fails when a path, key or pinned
+  `actions/cache` SHA in `main-caches` differs from any restoring step's in any workflow, or when no
+  step restores it at all. It does not compare runners: a restoring job moved to a pool
+  `main-caches` has no leg for reads a key `main` never saves.
 - When the suite also runs on a push to `main` with a cold key (a commit landed outside the queue),
   this job and the suite's QEMU jobs all build, and one save wins. That costs runner minutes, never
   a result.

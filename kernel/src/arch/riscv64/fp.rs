@@ -91,7 +91,7 @@ const SSTATUS_XTHEADVECTOR_VS: u64 = 0b11 << 23;
 /// The call site says why.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     disable();
     instructions::clear_sstatus(SSTATUS_VS);

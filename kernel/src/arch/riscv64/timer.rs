@@ -134,7 +134,7 @@ pub fn interval() -> u64 {
 /// take them.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     // Anchor this hart's grid before arming it: `rearm` adds whole intervals to this value.
     let first = now() + interval();

@@ -75,7 +75,7 @@ The ruling makes the terminal a declaration. A program's manifest (`grant_plan::
 `notes/program-manifest.md`) gains a `terminal` declaration beside `clock`, `config` and `entropy`.
 The manifest note's encoding (`crates/capability_manifest_note`) carries it in a new version word,
 since that crate takes no tolerated extensions. The naming precedent is
-`design/naming/precedents-set-by-example.md`: a manifest says Declaration for what a program asks
+`design/naming/vocabulary.md`: a manifest says Declaration for what a program asks
 and Grant for what it gets.
 
 `crates/std_runtime_contract` reserves a slot number, `TERMINAL_SLOT`, for the terminal endpoint.

@@ -5,13 +5,10 @@ built: 2026-09-04
 ---
 # 375. Run the footprint-perturbation experiment on radon, where a cycle counter can see it
 
-Filed as a proposal that morning by the milestone 188 lane (phases 1
-to 3), and answered the same evening by the `maintainer/e3-on-radon` session, before anybody read
-the file. Promoted by milestone 433 (drain the proposal pile to zero) on 2026-09-19, when the record was checked: six boots on radon,
-interleaved unpadded and padded, one card written six times, every boot printing
-`bench: cntfrq 4000000` and `bench: cycles_per_tick 250.00`. That is milestone 74 (cycle counters)'s riscv64 PMU
-reading real cycles on the machine this asked for. The capture, the procedure and the result are
-notes/footprint-perturbation.md.
+Checked on 2026-09-19, the record shows six boots on radon, interleaved unpadded and padded, one card
+written six times, every boot printing `bench: cntfrq 4000000` and `bench: cycles_per_tick 250.00`.
+That is milestone 74 (cycle counters)'s riscv64 PMU reading real cycles on the machine this asked
+for. The capture, the procedure and the result are notes/footprint-perturbation.md.
 
 **The result is not the one this file was written to expect, and that is the finding.** E3 separated
 cleanly in all three rows and one of them has the wrong sign: the padded build is 3.01% *faster* on
@@ -20,10 +17,6 @@ rather than its hypothesis being false, and no E3 number should be quoted as a f
 until a layout control exists. That control is milestone 370. The other half this file handed off,
 a cycle column on the rows themselves rather than one conversion probe beside them, is milestone
 374 and is not built: the rows are still tick counts at a 250 ns quantum.
-
-The body below is left as it was written on 2026-09-04, including the sentence saying no number
-has come off radon and there was no bench session. That was true when it was typed and was overtaken
-within the day, which is the whole of what this block records.
 
 **Half of it is built, 2026-09-04** (the maintainer/e3-on-radon lane). E1, E3 and E4 now compile and
 run on a riscv64 board build: `script/board-image --bench` writes a `board,bench,single_hart` card,
@@ -83,11 +76,6 @@ proposal is the cheap half that can run today, and it should say so wherever it 
   BUGS.)
 - The board rig: radon's UART into cordoba, smart plug 2. See notes/target-hardware.md.
 
-## Where it came from
-
-`design/roadmap/0188-ipc-fastpath.md`'s Follow-on. `design/roadmap/0134-the-measurements-that-decide.md`
-owns E3; `design/roadmap/0132-the-fastpath-footprint.md` owns the gate.
-
 ## Follow-on
 
 - **Milestone 370.** A layout control, because E3's separation cannot be attributed. The 3.01%
@@ -108,13 +96,10 @@ owns E3; `design/roadmap/0132-the-fastpath-footprint.md` owns the gate.
 
 ## Index row
 
-Filed and answered on the same day, before anyone read the file. Milestone 134 (the register of
-measures)'s E3 pads the IPC
-fastpath to roughly 1.85x and asks what that costs. Until this session it had only ever run
-under icount, which models no cache, on a development host whose L1i is several times a board's.
-The `maintainer/e3-on-radon` session ran it on a SiFive U74 with the 32 KB L1i that DECISIONS §144's
-ceiling was derived from, six interleaved boots, one card written six times, with milestone 74's SBI
-PMU counter reading real cycles. E3 separated cleanly in all three rows and one has the wrong sign,
-the padded build being 3.01% faster on a padding that never executes. The experiment is
-confounded by code layout, and milestone 370 (a layout control) is what it now needs. The two experiments riding along,
-E1 and E4, produced the more decisive results of the evening.
+Milestone 134 (the register of measures)'s E3 pads the IPC fastpath to roughly 1.85x and asks what
+that costs. It had only run under icount, which models no cache, on a host whose L1i is several
+times a board's. The `maintainer/e3-on-radon` session ran it on a SiFive U74. Its L1i is the 32 KB that DECISIONS §144 (the fastpath footprint gate gets a delta)'s ceiling was derived from: six interleaved boots, one card written six times, with
+milestone 74's SBI PMU reading real cycles. E3 separated cleanly in all three rows and one has the
+wrong sign, the padded build being 3.01% faster on a padding that never executes. Code layout
+confounds the experiment, and it needs milestone 370 (a layout control). E1 and E4, riding along,
+produced the more decisive results.

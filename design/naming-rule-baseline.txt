@@ -1,4 +1,4 @@
-# rules 1
+# rules 2
 # The naming-rule ratchet's baseline: helpers/name_checks.py, whose header is the manual. One row per
 # unratified name that broke a checked naming rule when this list was written, as
 # `<path>::<name> <check>`, once per break. The list only shrinks: a fixed name's row goes in the
@@ -76,6 +76,8 @@ crates/filesystem_fixture/src/lib.rs::MADE_DIR spelled-out
 
 crates/filesystem_fixture/src/lib.rs::NAV_DIR spelled-out
 
+crates/filesystem_fixture/src/lib.rs::SCRATCH_INIT spelled-out
+
 crates/filesystem_fixture/src/lib.rs::TOUCH_MTIME_ADVANCED spelled-out
 
 crates/firmware_configuration/src/lib.rs::DmaCommand spelled-out
@@ -99,6 +101,8 @@ crates/hot_swap_contract/src/lib.rs::LOG_VA spelled-out
 crates/hot_swap_contract/src/lib.rs::STATE_VA spelled-out
 
 crates/inter_process_communication/src/rendezvous.rs::one_queue_invariant question-shape
+
+crates/jh7110_watchdog/src/lib.rs::max_reset_after_seconds spelled-out
 
 crates/line_editor/src/component.rs::ELF_VA spelled-out
 
@@ -186,6 +190,8 @@ crates/timetable/src/contract.rs::E_CONFIG spelled-out
 
 crates/timetable/src/contract.rs::STORE_PAGE_VA spelled-out
 
+crates/usb/src/descriptor.rs::control_max_packet spelled-out
+
 crates/user_mode_runtime/src/objects.rs::map_page_frame question-shape
 
 crates/video_terminal/src/cell.rs::reverse question-shape
@@ -193,6 +199,8 @@ crates/video_terminal/src/cell.rs::reverse question-shape
 crates/video_terminal/src/keymap.rs::shift question-shape
 
 crates/work_steal_slot/src/lib.rs::claim question-shape
+
+design/init-and-granular-spawn.md::init-and-granular-spawn spelled-out
 
 fixtures/src/login_test_client.rs::F_DIR_WORKS spelled-out
 
@@ -318,6 +326,8 @@ kernel/src/user/virtio_dma.rs::virtio_dma spelled-out
 
 notes/capabilities/ipc-endpoints.md::ipc-endpoints spelled-out
 
+notes/cross-os-reference-columns.md::cross-os-reference-columns spelled-out
+
 notes/dir-capability.md::dir-capability spelled-out
 
 notes/dma.md::dma spelled-out
@@ -335,6 +345,8 @@ notes/pcie-transport-scope.md::pcie-transport-scope spelled-out
 notes/pcie.md::pcie spelled-out
 
 notes/scheduled-execution/mem-entries.md::mem-entries spelled-out
+
+notes/trusted-init.md::trusted-init spelled-out
 
 redoxfs_server/src/crash.rs::MemIo spelled-out
 

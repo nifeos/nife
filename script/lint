@@ -3130,6 +3130,10 @@ echo "==> names meet the current naming rules"
 python3 helpers/baseline_layout.py --selftest
 python3 helpers/name_checks.py --selftest
 python3 helpers/name_checks.py --check
+# The prose of design/naming.md and the template's word list say the same thing
+# (helpers/vendored_name_gates.py's header). Fixtures first.
+python3 helpers/vendored_name_gates.py words --selftest
+python3 helpers/vendored_name_gates.py words --check
 
 echo "naming: no -d names, no daemons, contract crates spelled one way,"
 echo "        no #[path] module shared by two binaries, docs lowercase and hyphenated,"
@@ -3697,23 +3701,21 @@ python3 helpers/history_ratchet.py --selftest
 python3 helpers/history_ratchet.py --check
 echo "==> capability is not abbreviated cap (calef, 2026-10-06)"
 # lint-quick
-# calef ruled on 2026-10-06 (UTC): "I don't think we should abbreviate capability as cap." New
-# code spells it out; the existing identifiers are renamed in one sweep when the tree is quiet,
-# from design/naming/capability-worklist.md. Until then helpers/cap_abbreviation.py counts Rust
+# design/naming/acronyms-and-abbreviations.md: every name spells `capability` out. The sweep of
+# existing identifiers brought the count to zero, and helpers/vendored_name_gates.py counts Rust
 # identifiers with a `cap` or `caps` component (comments and strings skipped, so the English word
 # for a ceiling is never read) and fails a count over its ceiling or a branch that adds any net.
 # Fixtures first, so a green check is not a counter matching nothing.
-python3 helpers/cap_abbreviation.py --selftest
-python3 helpers/cap_abbreviation.py --check
+python3 helpers/vendored_name_gates.py cap --selftest
+python3 helpers/vendored_name_gates.py cap --check
 echo "==> unit symbols are spelled out (2026-10-27)"
 # lint-quick
-# Ruled 2026-10-27 (UTC), design/naming/spelled-out-rulings.md ("Unit symbols in names"): a name uses
-# a unit symbol only from the allowed list (`ns`, `ms`, `kib`, `mib`, `gib`, `hz`, `khz`, `mhz`);
-# `us`, `s`, `sec`, `secs`, `nanos`, `millis`, `micros` and `mins` are spelled out or become `ns`
-# and `ms`. helpers/unit_symbols.py counts Rust identifiers that carry one (comments and strings
-# skipped) and fails a count over its ceiling or a branch that adds any net. Fixtures first.
-python3 helpers/unit_symbols.py --selftest
-python3 helpers/unit_symbols.py --check
+# design/naming.md ("Units"): a name spells its unit out. helpers/vendored_name_gates.py counts Rust
+# identifiers that carry `us`, `s`, `sec`, `secs`, `nanos`, `millis`, `micros` or `mins` (comments
+# and strings skipped; it does not yet count `ns`, `ms` or `hz`, which its header records) and
+# fails a count over its ceiling or a branch that adds any net. Fixtures first.
+python3 helpers/vendored_name_gates.py unit --selftest
+python3 helpers/vendored_name_gates.py unit --check
 echo "==> no line-number citations (§277: cite a heading or a symbol)"
 # lint-quick
 # §277 (cite a heading or a symbol, never a line number), calef, 2026-10-11 (UTC): a document is
@@ -3775,12 +3777,15 @@ python3 helpers/hang_evidence.py lint
 echo "==> merge groups save no rust-cache entry; main-caches saves what jobs restore"
 python3 helpers/cache_save_scope.py --selftest >/dev/null
 python3 helpers/cache_save_scope.py
-# Owned runners (lane/owned-runners-canary): no job that can run for a pull request resolves
-# runs-on to the owned label or to the NIFE_RUNNER_OWNED switch, and every job that does carries a
-# merge_group/push-only `if:`. Fixtures first: the selftest plants a pull_request workflow, the
-# switch under pull_request_target, a missing guard and a guard that names pull_request, and
-# requires each to fail. notes/owned-runners.md; helpers/owned_runner_check.py says more.
-echo "==> no owned-runner job can run for a pull request, and each is guarded to the queue"
+# Owned runners: a job that can resolve runs-on to the owned label or the NIFE_RUNNER_OWNED switch
+# sits in a workflow whose only triggers are merge_group and a push to main, carries a
+# merge_group/push-only `if:` (or the event-aware switch), and sets timeout-minutes; and no
+# pull_request_target or workflow_run job names the pull request's head. Fixtures first: the
+# selftest plants each trigger an outsider can reach, a bare push, a push that takes tags, a missing
+# timeout, an owned label in a matrix and in a reusable workflow's input, and a head checkout under
+# pull_request_target and workflow_run, and requires each to fail. notes/owned-runners.md;
+# helpers/owned_runner_check.py says more.
+echo "==> owned-runner jobs run only for the queue and main, and no base-token job checks out a head"
 # lint-quick
 python3 helpers/owned_runner_check.py --selftest >/dev/null
 python3 helpers/owned_runner_check.py
@@ -4541,10 +4546,10 @@ PY
 # whether a "half" far from its subject has two siblings, because that needs a reader, and a gate
 # that guesses at prose is how script/lint lost three checks. The word this tree uses for one branch
 # of a multi-way split is "arm" (components/src/console.rs: "its x86 arm"), and
-# design/naming/vocabulary-rulings.md says so under "A half implies two".
+# design/naming/vocabulary.md says so in its row for "half".
 #
-# `git grep` does not understand `\b` and silently matches nothing (design/naming.md records the
-# same trap costing two renames a count), so the boundaries here are POSIX classes.
+# `git grep` does not understand `\b` and silently matches nothing (design/naming/rename-traps.md
+# records the same trap costing two renames a count), so the boundaries here are POSIX classes.
 echo "==> every RETYPE outside the run wrapper passes 0"
 # `MemoryRegion::RETYPE`'s first argument became a page count on 2026-09-26 (calef, option A of
 # design/roadmap/0659-a-region-retypes-a-frame-run.md), with 0 meaning one page. Every caller

@@ -44,7 +44,7 @@ const MAXIMUM_REGIONS: usize = 16;
 /// from.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     #[cfg(target_arch = "x86_64")]
     crate::arch::discovery::initialize();

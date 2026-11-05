@@ -51,13 +51,6 @@ inflates.
 
 This project writes its failures down, so the defect history is real rather than reconstructed:
 
-- ~~**The VisionFive 2's undelivered wake**: a receiver woken with nothing delivered, found on three
-  harts on real silicon, invisible in QEMU.~~ **Retracted 2026-08-15**, the day before this milestone
-  was minted. `notes/visionfive2.md`'s fifth bench stop re-read the same dumps and found the state
-  was the terminal state of a completed boot tour, not a stranded receiver. It never happened, and
-  this entry should not have named it "the single most important" item in the corpus. Found still
-  standing here 2026-09-23, by the lane sweeping the retraction's propagation; see
-  `notes/scheduler.md`, "The undelivered-wake gate (boot 8, VisionFive 2)".
 - The load-sensitive assertions (notes/load-sensitive-assertions.md), including the run that
   went red on a clean kernel.
 - The arch audit's own bug class (notes/arch-audit.md): state staged in single-copy hardware

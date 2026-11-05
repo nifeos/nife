@@ -230,7 +230,7 @@ impl<S: RegisterSpace> Ns16550<S> {
     /// written, since the part ignores LCR writes while busy.
     ///
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-    /// design/naming/spelled-out-rulings.md.
+    /// design/naming/acronyms-and-abbreviations.md.
     pub fn initialize(&self) {
         self.write(IER, 0x00); // interrupts off: the console polls LSR
 
@@ -306,7 +306,7 @@ impl<S: RegisterSpace> Ns16550<S> {
     /// Bounded at 64 reads, four times the FIFO depth, so a busy wire cannot hold it forever.
     ///
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/spelled-out-rulings.md; `discard_waiting_bytes` drops the bytes
+    /// design/naming/acronyms-and-abbreviations.md; `discard_waiting_bytes` drops the bytes
     /// `is_byte_waiting` would have reported.
     pub fn discard_waiting_bytes(&self) {
         let mut bound = 64u32;
@@ -325,8 +325,8 @@ impl<S: RegisterSpace> Ns16550<S> {
     /// has no transmit latency and never shows it. See notes/uart.md, "The NS16550 driver".
     ///
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/spelled-out-rulings.md; `enable_transmit_interrupt` names the interrupt it
-    /// raises.
+    /// design/naming/acronyms-and-abbreviations.md; `enable_transmit_interrupt` names the interrupt
+    /// it raises.
     #[cfg(any(test, feature = "system_tests"))]
     pub fn enable_transmit_interrupt(&self) {
         let mut spins = 1_000_000u32;

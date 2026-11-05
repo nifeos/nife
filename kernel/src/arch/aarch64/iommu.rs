@@ -139,7 +139,7 @@ fn cr0_set(base: u64, bits: u32) {
 /// `base` is the register page from the device tree. Everything aborts until `attach`.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(base: u64) {
     let mut g = SMMU.lock();
     assert!(g.is_none(), "SMMU initialized twice");

@@ -38,7 +38,7 @@
 //!
 //! Name: recorded (design/roadmap/0292-the-sink-contract-ends-are-three-programs.md and
 //! notes/sink-protocol.md). **Provisional: calef has not ratified it.** Named for the contract it
-//! speaks (`byte_sink_contract`, which design/naming/vocabulary-rulings.md keeps) and the pinned
+//! speaks (`byte_sink_contract`, which design/naming/vocabulary.md keeps) and the pinned
 //! transcript it writes. Refused `writer` (generic). Refused `indifferent_writer` (names the
 //! property being proved, not the program). Refused `sink_writer` (reads as the thing that writes
 //! a sink, and says nothing about what it writes).

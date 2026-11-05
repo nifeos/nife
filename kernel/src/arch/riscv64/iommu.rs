@@ -195,7 +195,7 @@ fn queue_enable(base: u64, csr: u64, what: &str) {
 /// device faults until `attach` writes its context.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(base: u64) {
     let mut g = IOMMU.lock();
     assert!(g.is_none(), "IOMMU initialized twice");

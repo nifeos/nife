@@ -6,14 +6,8 @@ promoted_from: refusals-written-where-the-tool-cannot-read-them
 ---
 # 430. Refusals written where `script/names` cannot read them
 
-Promoted from the proposal
-`refusals-written-where-the-tool-cannot-read-them`, filed 2026-09-18 by the maintainer, who noticed
-the refusal count go down by three after a commit that added one. Closed the same day by commit
-`c1a177c`, before this file was read again. *(Number provisional until the merge queue lands it.)*
-
-Premise re-checked 2026-09-19 and it had already been answered, which is why this block is
-`BUILT` rather than `NOT-STARTED`. The file was filed and closed inside one day, and this pass found
-the two exhibits it opens with, `screen_console`'s four refusals and `board_console`'s three,
+Premise re-checked 2026-09-19: it had already been answered, which is why this block is `BUILT`.
+The pass found the two exhibits it opens with, `screen_console`'s four refusals and `board_console`'s three,
 visible to `script/names --refused` without either file's `Name:` block having moved. What closed it
 is recorded below, under "What closed it, and it was the same day", and the text above is kept as
 the account of the defect rather than rewritten.
@@ -143,12 +137,10 @@ file's block being touched.
 
 `script/names`' `Name:` block parser stopped at the first blank `//!` line, so a block written one
 argument per paragraph, which is how this tree's best ones are written, put every refusal after the
-first break out of reach. `crates/screen_console` recorded four and the tool could see none of
-them. That defeats the one query milestone 115 exists to serve, has this name been refused before,
-whose worked example is milestone 63 having already refused `system_builder` for a reason nobody
-could find. The failure is silent in the direction that hurts, because the block still looks
-complete to a reader. It surfaced only by arithmetic, when a maintainer edit moved the tree-wide
-count **down** by exactly three. Commit `c1a177c` widened the parse to the end of the comment run
-after measuring that no status, date or well-formedness verdict moves across all 165 surfaces, since
-`script/metrics` shares the parser. It added the gate that lasts: `script/names --check` reports a
-refusal written where the parse cannot read it. 182 refusals visible before, 273 after.
+first break out of reach. `crates/screen_console` recorded four and the tool saw none. That defeats the query that milestone 115 (the names that were ratified, and the) exists to serve: has this name been refused before? Its worked example is
+milestone 63 (directory and package names: one spelling per) having refused `system_builder` for a reason nobody could find. The failure is silent
+in the direction that hurts, because the block still looks complete. Commit `c1a177c` widened the
+parse to the end of the comment run, after measuring that no status, date or well-formedness verdict
+moves across all 165 surfaces, since `script/metrics` shares the parser. It added the gate that
+lasts: `script/names --check` reports a refusal written where the parse cannot read it. 182 refusals
+were visible before and 273 after.

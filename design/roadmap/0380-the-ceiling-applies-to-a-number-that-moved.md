@@ -5,19 +5,11 @@ built: 2026-09-04
 ---
 # 380. DECISIONS §144's ceiling names two terms and milestone 188 changed both
 
-Filed as a proposal that day by the milestone 188 (the IPC fastpath) lane, and folded
-into the decision the same day by whoever held §144. That is exactly what it asked for and is why
-it was written as a proposal rather than as an edit. Promoted by milestone 433 (drain the proposal
-pile to zero) on 2026-09-19, when
-`design/decisions/0144-fastpath-footprint-ceiling.md` was read against it. That section now states
-the ceiling as *"an absolute ceiling of 16 KiB, per architecture, on `script/fastpath-footprint`'s
-`total`"*, carries a paragraph headed "Amended 2026-09-04, the same day, because milestone 188
-moved both terms this sentence named", gives both reasons this file gives, concludes that *"the
-ceiling's subject is `max(ipc_send_recv, ipc_call_reply) + syscall_entry`"*, and prints the same
-three-row table, 52%, 47% and 60% of 16 KiB. Nothing in this file is unfinished work.
-
-The body below is left as it was written. It is the case that was made, and the decision it
-asked to amend now carries the same argument in its own voice.
+`design/decisions/0144-fastpath-footprint-ceiling.md` already carries this correction, so nothing in
+this file is unfinished work. It states the ceiling as *"an absolute ceiling of 16 KiB, per
+architecture, on `script/fastpath-footprint`'s `total`"*, gives both reasons below, concludes that
+*"the ceiling's subject is `max(ipc_send_recv, ipc_call_reply) + syscall_entry`"*, and prints the
+same three-row table, 52%, 47% and 60% of 16 KiB. The body below is the case that was made.
 
 ## In brief
 
@@ -29,7 +21,7 @@ Milestone 188 phases 1 to 3 (pull request #732) moved both terms, on the same da
 
 - `ipc_fastpath` measured the SEND/RECV shape, which essentially no service in this tree runs.
   The gate now reports `ipc_send_recv` and `ipc_call_reply` separately and keeps `ipc_fastpath` as
-  the **worse of the two**, since one round trip is one shape or the other.
+  the worse of the two, since one round trip is one shape or the other.
 - **aarch64's `syscall_entry` counted all sixteen exception vector entries** where an `svc` fetches
   one, so 1,892 of its 3,304 bytes were never fetched.
 - Phase 3 then took 6 to 10% off both closures by outlining cold arms.
@@ -60,10 +52,6 @@ measured amount on one architecture and widened what is counted on all three. A 
 recorded headroom is 9 points optimistic on x86_64 is the kind of stale record this tree keeps
 finding by accident.
 
-## Where it came from
-
-`design/roadmap/0188-ipc-fastpath.md`'s Follow-on.
-
 ## Follow-on
 
 - **Recorded.** x86_64 is the one to watch and the decision says so: its total rose to 60% of the
@@ -82,11 +70,9 @@ finding by accident.
 ## Index row
 
 DECISIONS §144 (the fastpath footprint gate gets a delta and a ceiling, and the ceiling is 16 KiB)
-set a 16 KiB ceiling "on the sum of `ipc_fastpath` and `syscall_entry`" and milestone
-188 changed both terms the same day. The gate now reports two IPC shapes and keeps the worse of
-them, and aarch64's entry figure stopped counting fifteen exception-vector entries an `svc` never
-fetches. A lane may not amend `design/decisions/`, so the correction was written as a proposal and
-folded in by whoever held the section, on the day it was filed. The ceiling's subject is
-`max(ipc_send_recv, ipc_call_reply) + syscall_entry`, which is what the script prints as `total`,
-and the headroom §144 recorded was 9 points optimistic on x86_64, which is now 60% of the ceiling
-rather than 51%.
+set a 16 KiB ceiling "on the sum of `ipc_fastpath` and `syscall_entry`", and milestone 188 (the IPC
+fastpath) changed both terms. The gate now reports two IPC shapes and keeps the worse, and aarch64's
+entry figure stopped counting fifteen exception-vector entries an `svc` never fetches. The ceiling's
+subject is `max(ipc_send_recv, ipc_call_reply) + syscall_entry`, which the script prints as `total`.
+The headroom §144 recorded was 9 points optimistic on x86_64, which is now 60% of the ceiling and
+not 51%.

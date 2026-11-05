@@ -9,11 +9,14 @@ name: owned runner canary
 #   which a branch cannot stage, and the selftest also requires an unguarded matrix job to fail.
 #   notes/owned-runners.md.
 
-# **A week-long comparison of an owned runner against its hosted twin** (rulings,
-# 2026-11-03 UTC: owned runners in two stages, one week of canary, a repository variable to flip
-# back). Both jobs run the same steps on the merge queue and on `main`, never on a pull request: the
-# owned host admits nothing else. `canary-owned` cannot fail the queue (continue-on-error), and
-# neither job is a required check. Names are provisional. notes/owned-runners.md is the runbook.
+# **Monitoring of the owned runners beside their hosted twin.** It gates nothing, but the flip to
+# owned runners waits for it: canary-owned (strict image checks) and canary-owned-dry-run must be
+# green on the pool first, and a maintainer reads these summaries after the flip too. Both jobs run the
+# same steps on the merge queue and on `main`, never on a pull request: the owned host admits
+# nothing else. `canary-owned` also checks the container's walls (no direct egress past the proxy,
+# no container-engine socket) and prints a FINDING for each one that is open. No canary job can
+# fail the queue (continue-on-error), and none is a required check. Names are provisional.
+# notes/owned-runners.md is the runbook.
 
 on:
   merge_group:
@@ -67,6 +70,59 @@ jobs:
           } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
           # The summary is the record; the verdict comes from the same facts.
           test -w /dev/kvm && command -v qemu-system-x86_64 >/dev/null
+      # The image, from inside: the stage 1 jobs need a Rust toolchain, an apt that uses the proxy
+      # and a pip that reaches its index. A FINDING here fails this job, which cannot fail the
+      # queue; it is what a maintainer reads before flipping NIFE_RUNNER_OWNED (notes/owned-runners.md).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install the pinned toolchain
+        shell: bash
+        run: |
+          if command -v rustup >/dev/null 2>&1; then
+            helpers/rustup-retry.sh toolchain install
+          else
+            echo "rustup is not installed; the image check below names it"
+          fi
+      - name: Image
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          bad=0
+          {
+            echo "### image: canary-owned"
+            echo '```'
+            for check in tools toolchain apt-proxy pip; do
+              echo "-- $check"
+              helpers/owned-image-probe.sh "$check" || bad=1
+            done
+            echo '```'
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          test "$bad" = 0
+      # The container's walls, from inside: egress must go through the proxy, and no socket may
+      # hand the job a container engine (which is the host). Each open wall is a FINDING and fails
+      # this job, which cannot fail the queue.
+      - name: Walls
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          open=0
+          {
+            echo "### walls: canary-owned"
+            echo '```'
+            if curl -sS -o /dev/null -m 10 --noproxy '*' https://api.github.com 2>/dev/null; then
+              echo "FINDING direct egress: api.github.com answered with the proxy bypassed"; open=1
+            else
+              echo "direct egress: refused (traffic must use the proxy)"
+            fi
+            for s in /var/run/docker.sock /run/docker.sock /run/podman/podman.sock \
+                     "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock" /run/containerd/containerd.sock; do
+              if test -S "$s"; then echo "FINDING engine socket: $s"; open=1; fi
+            done
+            test "$open" = 1 || echo "engine sockets: none"
+            echo '```'
+          } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          test "$open" = 0
       - name: Resources
         if: always()
         env:
@@ -98,6 +154,56 @@ jobs:
               echo "fetch failures: none recorded"
             fi
           } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+
+  # The dry run: the setup steps of every job the runs-on expression can place on the pool, run on
+  # the owned label without their real work, so the image can be proven before NIFE_RUNNER_OWNED
+  # is set. crate-probes: the pinned toolchain. prove: Kani. swish-check-x86_64 and bench: the QEMU
+  # cache and the build-or-skip decision, and what a cold build fetches (apt, the source tarball,
+  # pip). Every step runs even after an earlier one fails, so one run names everything missing. It
+  # reports and never blocks.
+  canary-owned-dry-run:
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    runs-on: [nife-owned-x86_64]
+    continue-on-error: true  # outcome: exception, the dry run reports on the image and must never block the queue
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install the pinned toolchain (crate-probes)
+        shell: bash
+        run: helpers/rustup-retry.sh toolchain install
+      - name: Toolchain
+        if: always()
+        shell: bash
+        run: |
+          bad=0
+          helpers/owned-image-probe.sh tools || bad=1
+          helpers/owned-image-probe.sh toolchain || bad=1
+          test "$bad" = 0
+      - name: Install Kani (prove)
+        if: always()
+        shell: bash
+        run: script/kani-install
+      - name: Cache QEMU (swish-check-x86_64, bench)
+        if: always()
+        id: qemu-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/nife-qemu
+          key: qemu-ubuntu-26.04-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.qemu-version') }}
+      - name: The QEMU build-or-skip decision
+        if: always()
+        shell: bash
+        env:
+          QEMU_CACHE_HIT: ${{ steps.qemu-cache.outputs.cache-hit }}
+        run: helpers/owned-image-probe.sh qemu
+      - name: What a cold QEMU build fetches (apt, source tarball, pip)
+        if: always()
+        shell: bash
+        run: |
+          bad=0
+          helpers/owned-image-probe.sh apt-proxy || bad=1
+          helpers/owned-image-probe.sh qemu-fetch || bad=1
+          test "$bad" = 0
 
   canary-hosted:
     if: github.event_name == 'merge_group' || github.event_name == 'push'
