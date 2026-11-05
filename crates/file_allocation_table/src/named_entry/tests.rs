@@ -131,7 +131,7 @@ fn the_dot_entries_and_the_label_are_flagged() {
         &[
             short(b".          ", 0x10, 20, 0),
             short(b"..         ", 0x10, 0, 0),
-            short(b"NIFETEST   ", 0x08, 0, 0),
+            short(b"FATTEST    ", 0x08, 0, 0),
             short(b".GITKEEP   ", 0x20, 0, 0),
         ],
     );

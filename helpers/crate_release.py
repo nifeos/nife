@@ -48,6 +48,20 @@ STAGES = ('in_tree', 'standalone_static', 'proven', 'allowlisted', 'published')
 # files, because GitHub's license detection reads nife itself as Apache-2.0 alone.
 LICENSE = 'MIT OR Apache-2.0'
 LICENSE_FILES = ('LICENSE-MIT', 'LICENSE-APACHE')
+# A crate that adapts a permissively licensed file carries that file's notice (ruled 2026-11-04
+# UTC), and its manifest says so by joining the file's license to nife's pair:
+# `(MIT OR Apache-2.0) AND ISC`. These are the licenses such a join may name.
+NOTICE_LICENSES = ('ISC', 'BSD-2-Clause', 'BSD-3-Clause')
+
+
+def license_is_accepted(field):
+    """Is `field` nife's pair, alone or joined with the licenses of adapted files?"""
+    if field == LICENSE:
+        return True
+    head, sep, rest = (field or '').partition(f'({LICENSE}) AND ')
+    if head or not sep:
+        return False
+    return all(part in NOTICE_LICENSES for part in rest.split(' AND '))
 
 CITATIONS = [
     ('section citation', re.compile(r'§\s?\d+')),
@@ -106,23 +120,25 @@ def file_findings(root_names, license_field):
     if not any(n.upper().startswith('README') for n in root_names):
         found.append(('files', 'no README'))
     found += [('files', f'no {f}') for f in LICENSE_FILES if f not in root_names]
-    if license_field != LICENSE:
-        found.append(('files', f'license field is {license_field!r}, not {LICENSE!r}'))
+    if not license_is_accepted(license_field):
+        found.append(('files', f'license field is {license_field!r}, not {LICENSE!r} or '
+                               f'({LICENSE}) AND a notice license'))
     return found
 
 
 _NAME_LINE = re.compile(r'^\s*(//[!/]|#) ?Name:')
 
 
-def strip_name_blocks(text):
+def strip_name_blocks(text, remove=False):
     """`text` with its `Name:` blocks blanked, as the change that breaks a crate out will leave it.
 
     A block is a `Name:` line behind `//!`, `///` or `#`, with the continuation lines that carry the
     same marker, and the bare marker line that set it off. Each such line becomes an empty line, so
-    a line number in the result is a line number in the file. A ruling of 2026-10-26 (UTC): a crate
-    that leaves is a third-party crate and nife keeps no record of its names.
+    a line number in the result is a line number in the file. With `remove`, the lines are deleted
+    instead, which is what the move commit does (`script/crate-move`). A ruling of 2026-10-26 (UTC):
+    a crate that leaves is a third-party crate and nife keeps no record of its names.
     """
-    lines, i = text.split('\n'), 0
+    lines, i, gone = text.split('\n'), 0, set()
     while i < len(lines):
         m = _NAME_LINE.match(lines[i])
         if not m:
@@ -130,14 +146,16 @@ def strip_name_blocks(text):
             continue
         marker = m.group(1)
         if i and lines[i - 1].strip() == marker:
-            lines[i - 1] = ''
-        lines[i] = ''
+            gone.add(i - 1)
+        gone.add(i)
         i += 1
         while i < len(lines) and lines[i].lstrip().startswith(marker) \
                 and lines[i].lstrip()[len(marker):].strip():
-            lines[i] = ''
+            gone.add(i)
             i += 1
-    return '\n'.join(lines)
+    if remove:
+        return '\n'.join(line for n, line in enumerate(lines) if n not in gone)
+    return '\n'.join('' if n in gone else line for n, line in enumerate(lines))
 
 
 def citation_findings(files):

@@ -1,8 +1,8 @@
-//! **An image made with `NoClock` is the image the crate made before it had a clock.**
+//! **An image made with `NoClock` is byte for byte the image it was.**
 //!
-//! The digests below were taken from the crate at the commit before the clock became required, over
-//! every metadata sector of a set of volumes. A volume formatted with `NoClock` must still match
-//! them, so a reproducible image (the installer's, the cloud image's) stays byte for byte the same.
+//! The digests below cover every metadata sector of a set of volumes formatted with `NoClock`, the
+//! zero timestamp a format with no clock writes. A volume formatted the same way must still match
+//! them, so a caller that builds a reproducible image gets the same bytes from every release.
 //! The digest is FNV-1a over the sectors in order; it detects a change and is not a security
 //! claim.
 
@@ -23,8 +23,16 @@ fn fnv(mut hash: u64, bytes: &[u8]) -> u64 {
 const START: u64 = 0xcbf2_9ce4_8422_2325;
 
 fn efi(sectors: u64, file: &str) -> u64 {
-    let volume =
-        VolumeLayout::new(sectors, 2048, 9_000_000, 0x1234_5678, file, &mut NoClock).unwrap();
+    let volume = VolumeLayout::new(
+        sectors,
+        2048,
+        9_000_000,
+        0x1234_5678,
+        "EFI SYSTEM",
+        file,
+        &mut NoClock,
+    )
+    .unwrap();
     let mut sector = [0u8; 512];
     let mut hash = START;
     for index in 0..volume.metadata_sectors() {
@@ -51,11 +59,11 @@ fn formatted(sectors: u32, label: Option<&str>) -> u64 {
 
 #[test]
 fn the_efi_volumes_are_the_bytes_they_were() {
-    assert_eq!(efi(1024 * 1024, "BOOTX64.EFI"), 0xe66f_a0b2_dc40_4618);
-    assert_eq!(efi(1024 * 1024, "BOOTRISCV64.EFI"), 0xec9e_2585_479f_201a);
+    assert_eq!(efi(1024 * 1024, "BOOTX64.EFI"), 0x946e_5b25_5ff2_7043);
+    assert_eq!(efi(1024 * 1024, "BOOTRISCV64.EFI"), 0x17d9_784e_9012_5b21);
     assert_eq!(
         efi(140_000 * 8 + 4096, "BOOTAA64.EFI"),
-        0xf12a_2995_e7b9_b5f6
+        0x3e9c_be3b_c484_0b9d
     );
 }
 

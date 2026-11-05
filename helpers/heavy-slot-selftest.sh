@@ -20,6 +20,9 @@
 #      walk that never reached pid 1 left the script waiting for its own lock for ever (found
 #      collecting the tenth pass). Hermetic: a real pid 1 needs a pid namespace, which an
 #      unprivileged host cannot make, so the process table is the one thing stood in for.
+#   7. waiters start in the order they began waiting, and a waiter killed while it waits holds
+#      nobody up: fails if a freed slot goes to whichever waiter polls first (the ledger's order,
+#      helpers/heavy_ledger.py) or if a dead waiter's ticket blocks the queue.
 #
 # Name: provisional, minted 2026-10-19 (UTC) by lane/heavy-job-slots.
 set -eu
@@ -37,7 +40,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 mkdir -p "$work/helpers" "$work/script" "$work/slots"
-cp "$here/heavy-slot.sh" "$work/helpers/"
+cp "$here/heavy-slot.sh" "$here/heavy_ledger.py" "$work/helpers/"
 # The scratch copy polls five times faster than the real one (POLL_SECONDS is 2), so the stages that
 # wait for a poll to notice something take a fraction of a second. Nothing but the interval differs;
 # a source that no longer spells the constant this way fails here rather than testing at 2 s.
@@ -147,7 +150,45 @@ write(4194000)
 assert not heavy_slot.held_by_ancestor(1, directory), "a holder outside the family passed"
 PY
 
-# Stage 7. The per-machine count file sets the slots; the environment beats it; the file sits beside
+# Stage 7. With the one slot held, a first waiter dies in line, then a second (which holds the slot
+# once it has it) and a third (which runs and exits) join. When the holder dies, the second must
+# start and the third must not: polling alone hands the slot to whichever asks first.
+waiting_in() {
+    i=0
+    until grep -q 'is waiting' "$1" 2>/dev/null; do
+        i=$((i + 1))
+        [ "$i" -le 100 ] || fail "$2 never said it was waiting"
+        sleep 0.1
+    done
+}
+"$work/script/hold" "$work/order-holder" 60 &
+holder=$!
+appears "$work/order-holder" 10 || fail "the order stage's holder never started"
+"$work/script/hold" "$work/order-dead" 60 2>"$work/order-dead.err" &
+dead=$!
+waiting_in "$work/order-dead.err" "the waiter that dies in line"
+"$work/script/hold" "$work/order-first" 60 2>"$work/order-first.err" &
+first=$!
+waiting_in "$work/order-first.err" "the first live waiter"
+kill -9 "$dead"
+wait "$dead" 2>/dev/null || true
+"$work/script/run" "$work/order-second" 2>"$work/order-second.err" &
+second=$!
+waiting_in "$work/order-second.err" "the second live waiter"
+kill -9 "$holder"
+wait "$holder" 2>/dev/null || true
+holder=
+appears "$work/order-first" 10 \
+    || fail "the oldest live waiter did not start when the slot freed: $(cat "$work/order-first.err")"
+sleep 0.8
+[ ! -e "$work/order-second" ] || fail "a later waiter started while the slot was held"
+kill -9 "$first"
+wait "$first" 2>/dev/null || true
+appears "$work/order-second" 10 || fail "the last waiter never started: $(cat "$work/order-second.err")"
+wait "$second" || fail "the last waiter failed after taking the slot"
+python3 "$work/helpers/heavy_ledger.py" --selftest >/dev/null || fail "the ledger's decision selftest failed"
+
+# Stage 8. The per-machine count file sets the slots; the environment beats it; the file sits beside
 # the slot directory (so a private slot directory reads a private file); a bad value is refused. A
 # stuck-holder hint names a quiet old holder and not a busy or young one, and a slot whose worktree
 # is gone is marked orphaned.

@@ -7,8 +7,8 @@
 //! is there: a pattern, read back, then the original, read back too. A card with no gap is refused,
 //! not written.
 //!
-//! Name: ratified 2026-11-03 (UTC), #3135. `bench` is the project's word for the physical test bench
-//! (notes/bench-boots.md): the step run on the real board, not on a host.
+//! Name: ratified 2026-11-03 (UTC), #3135. `bench` is the word for the physical test bench: the
+//! step run on the real board, not on a host.
 
 use crate::host_controller::{HostController, RegisterWindowAndClock};
 use crate::internal_direct_memory_access::DirectMemoryAccessRegion;

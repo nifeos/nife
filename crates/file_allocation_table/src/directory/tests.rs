@@ -81,7 +81,7 @@ fn a_short_entry_reads_its_fields() {
     ));
     assert!(dir.is_directory());
     let label = short_of(Slot::parse(
-        &short(b"NIFETEST   ", 0x08, 0, 0, 0),
+        &short(b"FATTEST    ", 0x08, 0, 0, 0),
         FileAllocationTableType::Fat12,
     ));
     assert!(label.is_volume_label());

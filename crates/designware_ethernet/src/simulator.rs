@@ -425,7 +425,7 @@ impl NetworkInterfaceController {
     }
 
     /// Configure the controller over rings at `region` and start it at 1000 Mbit/s, as the
-    /// kernel does before handing the data plane over.
+    /// kernel half does before handing the data plane over.
     pub(crate) fn program_rings_and_start(&mut self, region: u64) {
         let id = Identity::read(self);
         controller::configure(
