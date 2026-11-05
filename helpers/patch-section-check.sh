@@ -9,7 +9,7 @@
 # outside vendor/. A `[patch.crates-io]` or `[patch."<git url>"]` table is a local development aid
 # that redirects a dependency for the whole build; on main it hides which source a crate really
 # builds from. A crate that has moved to its own repository is pinned as
-# `{ version, git, rev }` at the tag's commit, never patched (milestone 857, fork 2;
+# `{ version, git, rev }` at the tag's commit, never patched (milestone 857 (crates released on their own), fork 2;
 # notes/crate-move.md). The one allowed entry is a `path` into vendor/, which is code this tree
 # carries and owns (talc, with an upstream fix). Any other patch entry, a `git` or `registry`
 # source or a `path` outside vendor/, fails and names the file and line.
