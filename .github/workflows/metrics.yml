@@ -301,7 +301,7 @@ jobs:
           # Both land in the body so an annotator starts from data rather than from a hunch. A
           # flag never blocks and never edits; the digest digests only the current week's biggest
           # mover, because the threshold fires on most weeks (see 623's BUGS) and a body carrying
-          # ten weeks of digests would be noise no annotator reads.
+          # thirteen weeks of digests would be noise no annotator reads.
           flags="$(script/metrics --flags)"
           week="$(date -u +%GW%V)"
           digest=""
