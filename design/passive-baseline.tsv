@@ -174,7 +174,7 @@ design/decisions/0139-cycle-counter-authority/trap-and-emulate.md	17
 design/decisions/0139-cycle-counter-authority/x86-clock-sources.md	25
 design/decisions/0140-follow-on-disposition-vocabulary.md	14
 design/decisions/0141-application-is-grant.md	11
-design/decisions/0142-spawn-retention.md	27
+design/decisions/0142-spawn-retention.md	12
 design/decisions/0142-spawn-retention/README.md	2
 design/decisions/0142-spawn-retention/precedent.md	12
 design/decisions/0142-spawn-retention/prior-art.md	3
@@ -1246,8 +1246,7 @@ design/roadmap/0797-release-userspace-in-board-images.md	2
 design/roadmap/0798-report-qemu-plic-enable-recheck-upstream.md	8
 design/roadmap/0799-the-shadow-descriptor-is-published-in-two-stores.md	5
 design/roadmap/0800-a-non-anthropic-model-attacks-the-confinement-claim.md	19
-design/roadmap/0801-packages-over-the-internet.md	32
-design/roadmap/0801-packages-over-the-internet/rulings-of-2026-10-12.md	9
+design/roadmap/0801-packages-over-the-internet.md	27
 design/roadmap/0802-the-trivial-install.md	6
 design/roadmap/0803-argon-boots-the-aarch64-kernel.md	10
 design/roadmap/0804-the-i219-reconfigures-its-phy-when-link-comes-up.md	2
