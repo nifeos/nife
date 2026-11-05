@@ -43,7 +43,8 @@ use driver_process_contract::non_volatile_memory_express::{
 };
 use filesystem_contract::blk;
 use non_volatile_memory_express::{
-    Command, Completion, CompletionQueue, Doorbell, Namespace, SubmissionQueue,
+    Command, Completion, CompletionQueue, Doorbell, Namespace, PhysicalRegionPagePair,
+    SubmissionQueue,
 };
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{exit, receive_request, reply, send};
@@ -359,15 +360,19 @@ fn serve(mut plane: Plane) -> ! {
 #[cfg(feature = "confinement_attackers")]
 fn run_dma_escape(plane: &mut Plane, victim: u64) -> ! {
     let blocks = plane.handoff.blocks_per_transfer;
+    let pages = PhysicalRegionPagePair {
+        first_entry: victim,
+        second_entry: 0,
+    };
     // disk -> victim: the controller would overwrite a frame outside the region.
     let rd = {
         let cid = plane.next_cid();
-        plane.transact(Command::read(cid, NSID, 0, blocks, victim, 0))
+        plane.transact(Command::read(cid, NSID, 0, blocks, pages))
     };
     // victim -> disk: the controller would read a frame outside the region.
     let wr = {
         let cid = plane.next_cid();
-        plane.transact(Command::write(cid, NSID, 0, blocks, victim, 0))
+        plane.transact(Command::write(cid, NSID, 0, blocks, pages))
     };
     // Word 1 the read-escape status, word 2 the write-escape status: each an Err from a confined
     // controller (its status, or u16::MAX for no completion), and for the transcript only. The
