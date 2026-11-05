@@ -13,6 +13,12 @@ The lane `lane/heavy-job-admission` wrote this on 2026-11-05 (UTC). The architec
 that manages heavy local jobs better than a fixed count of slots. The milestones have no numbers; an
 integrator mints them at promotion. Every file, command and variable name here is provisional.
 
+Reuse: `flock(2)` liveness and the ancestor walk from `helpers/heavy_slot.py`, #3214's measured Kani
+rows, and systemd's user scopes for measuring and capping. This lane considered the GNU make jobserver
+and did not take it, for reasons (b) gives. No existing tool admits by measured memory across independent
+processes without a server; the [prior art appendix](heavy-jobs-wait-in-order-for-measured-memory/prior-art.md)
+lists what this lane searched.
+
 This is an architect's call. It changes a tool every lane on a machine shares, and its ledger is a
 format that checkouts of different ages read and write at once, which makes it the one part that
 behaves like a wire format. The rest is local code and easy to undo.
@@ -81,10 +87,12 @@ run keeps #3214's per-row weights and asks for its harness count times its large
 plus its compile.
 
 Linux measures the peak from the job's own cgroup. Each admitted job runs as
-`systemd-run --user --scope`, and when it ends the wrapper reads `memory.peak` and
-`memory.events`. This host allows that without root: the user manager delegates the `cpu`,
-`memory` and `pids` controllers, and a probe scope showed every `memory.*` file. `memory.peak`
-counts page cache too, so it errs high, which is the safe direction for a reservation.
+`systemd-run --user --scope`. This host allows that without root: the user manager delegates the
+`cpu`, `memory` and `pids` controllers. The kernel's `memory.peak` counts page cache, which the
+kernel can drop, so it overstates what a job reading many files needs. This lane's full lint
+peaked at LINT_PEAK_GIB GiB by `memory.peak` and at LINT_ANON_GIB GiB of memory the kernel cannot
+drop. So the wrapper samples `memory.stat` each second and weighs a job by its peak of anonymous,
+shared and kernel memory, and the log keeps `memory.peak` beside it.
 
 The weight corrects itself. A machine-local file under `~/.nife/heavy/` keeps the last ten peaks of
 each class. The weight is the largest of them plus 10%, so a bigger peak raises it at once and a run
@@ -259,7 +267,7 @@ Each fits one pull request, in order.
 3. The Kani pool folded into the ledger, and `--pool` retired once no open lane predates milestone
    2.
 4. Observability: the per-class `--status`, `log.tsv` and `--report`.
-5. Linux scopes: a scope per job, `memory.peak` read on exit, the machine-local peaks file, and
+5. Linux scopes: a scope per job, the `memory.stat` sampler, the machine-local peaks file, and
    self-correcting weights.
 6. The safety net: `MemoryMax`, `memory.oom.group`, the parent slice at capacity, and the overrun
    report. On macOS the sampling wrapper and its kill.
@@ -281,7 +289,3 @@ throughput gain arrives.
 
 What each answer unblocks: question 1 decides whether milestones 1 to 9 exist at all; 2 decides
 milestone 6; 3 decides milestone 8; 4 decides one constant in milestone 6.
-
-The [prior art appendix](heavy-jobs-wait-in-order-for-measured-memory/prior-art.md) compares this
-with the GNU make jobserver, Bazel, Nix and Hydra, Slurm, `systemd-oomd`, ninja pools and GitHub
-Actions concurrency groups, and says where nife differs.
