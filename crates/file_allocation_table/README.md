@@ -95,9 +95,10 @@ fn main() {
 
 `tests/the_readme_example.rs` compiles and runs this example. Every write goes through a
 `WritableVolume`, which needs a `Clock`; `NoClock` is the explicit "no time", and the entries it
-stamps carry the zero timestamp. For an EFI system partition:
-`VolumeLayout::new(total_sectors, hidden_sectors, file_len, volume_id, "BOOTX64.EFI")` tells you what
-every metadata sector holds, and you write those sectors and then the file's bytes.
+stamps carry the zero timestamp. For an EFI system partition,
+`VolumeLayout::new(total_sectors, hidden_sectors, file_len, volume_id, label, "BOOTX64.EFI",
+&mut NoClock)` tells you what every metadata sector holds, and you write those sectors and then the
+file's bytes. The label is yours to choose, such as `"EFI SYSTEM"`.
 
 ## What is proven
 

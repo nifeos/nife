@@ -52,8 +52,16 @@ fn the_hosts_own_fat_driver_reads_the_long_name_back() {
 
 /// Write the volume to `path`, returning the file's bytes.
 fn write_image(path: &Path) -> Vec<u8> {
-    let volume = VolumeLayout::new(TOTAL_SECTORS, 0, FILE_LEN, 0x1234_5678, NAME, &mut NoClock)
-        .expect("700 MiB is a FAT32 volume");
+    let volume = VolumeLayout::new(
+        TOTAL_SECTORS,
+        0,
+        FILE_LEN,
+        0x1234_5678,
+        "EFI SYSTEM",
+        NAME,
+        &mut NoClock,
+    )
+    .expect("700 MiB is a FAT32 volume");
     let mut image = std::fs::File::create(path).expect("create the image");
     let mut sector = [0u8; SECTOR_BYTES];
     for index in 0..volume.metadata_sectors() {

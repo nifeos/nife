@@ -461,6 +461,7 @@ fn rust_fatfs_reads_what_this_crate_wrote() {
         0,
         FILE_LEN as u64,
         0x1234_5678,
+        "EFI SYSTEM",
         "BOOTRISCV64.EFI",
         &mut NoClock,
     )
