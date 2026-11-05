@@ -13,8 +13,8 @@ needs_person: yes
 (`extensible_host_controller_interface`: proven xHCI logic, released on its own) is the shape this
 follows.)*
 
-`generational_table` is the third crate in the ruled publication order (see the release order of milestone 857 (crates released on their own, and proofs offered to the projects that already use them)).
-The architect's review is done, and the disposition is publish. The crate is the fixed-capacity,
+`generational_table` is the third crate in the ruled publication order (see the release order of milestone 857 (crates released on their own)).
+The architect reviewed it and ruled publish. The crate is the fixed-capacity,
 allocation-free, proved member of the slotmap family. Its README states how it differs and lists its
 costs under `BUGS`. It points users who need growth to `slotmap` and `thunderdome`.
 
@@ -31,12 +31,12 @@ costs under `BUGS`. It points users who need growth to `slotmap` and `thunderdom
   table. None does: `slotmap` needs an allocator and lets two `u64` names reach one entry, and
   `coca` is dormant and `unsafe`-heavy.
 
-Reuse: none exists that fits; searched crates.io, the nine candidates in the release record above (`slotmap`, `thunderdome`, `coca` and six more), each read from its source.
+Reuse: none exists that fits. Searched crates.io and read nine candidates from source (`slotmap`, `thunderdome`, `coca` and six more); the release record gives each verdict.
 
 ## What remains
 
 1. The move: the crate leaves this tree for `nifeos/generational_table` on the shared CI template of milestone 887 (crate repositories share one CI template).
-   It is moved, not copied. Its README opens on what the crate is for and what it is not for.
+   The crate moves and nife keeps no copy. Its README opens on what the crate is for and what it is not for.
 2. The soak, which ends on evidence and not a duration, as in milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic, released on its own).
 3. The publication of 0.1.0 by trusted publishing, which waits for the architect's approval.
 4. nife consuming the release by semantic version, with `Cargo.lock` recording its checksum, the
