@@ -170,52 +170,84 @@ riscv64	0d90e750c	ctx_switch	+2.66	#1360, milestone 126: the switch counter (+13
 riscv64	0d90e750c	ipc_rtt	+1.41	#1360, milestone 126: the switch counter (+2404 ticks)
 riscv64	0d90e750c	spawn_reap	+2.95	#1360, milestone 126: the counter and the 32-slot table (+1016 ticks)
 
-# #2426 (notes/benchmarks/drift-since-the-2026-10-10-floor.md): aarch64, each merge against its
-# parent, with the preemption tick, which is what the bench measures.
+# #2426 (notes/benchmarks/drift-since-the-2026-10-10-floor.md) and
+# lane/bench/aarch64-unexplained-drift (notes/benchmarks/aarch64-unexplained-drift.md): aarch64,
+# each merge inside the 2026-10-22 save's step against its first parent, measured with no
+# preemption tick in a window (`TICK_HZ` 1) and nightly-2026-10-22 held. Every row a merge moved
+# by 0.1% or more.
 aarch64	ddd38f0b0	yield_switch	+1.22	#1892, milestone 812: threads in one address space
-aarch64	ddd38f0b0	ipc_rtt	+2.04	#1892, milestone 812: threads in one address space
-aarch64	ddd38f0b0	relay_rtt	+0.71	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	ipc_rtt	+0.68	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	relay_rtt	+0.70	#1892, milestone 812: threads in one address space
 aarch64	ddd38f0b0	call_reply	+0.71	#1892, milestone 812: threads in one address space
 aarch64	ddd38f0b0	broker_rtt	+0.71	#1892, milestone 812: threads in one address space
-aarch64	ddd38f0b0	null_syscall	+1.49	#1892, milestone 812: threads in one address space
-aarch64	ddd38f0b0	ctx_switch	+1.19	#1892, milestone 812: threads in one address space
-aarch64	ddd38f0b0	ipc_rtt_el0	+1.53	#1892, milestone 812: threads in one address space
-aarch64	ddd38f0b0	spawn_el0	+3.51	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	spawn_reap	+1.63	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	null_syscall	+1.40	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	ctx_switch	+1.21	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	ipc_rtt_el0	+0.69	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	sink_throughput	+0.47	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	map_el0	+0.52	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	spawn_el0	+3.49	#1892, milestone 812: threads in one address space
 aarch64	9bda691ce	yield_switch	+0.45	#2025: schedule split along its decision
-aarch64	9bda691ce	ipc_rtt	-3.24	#2025: schedule split along its decision
+aarch64	9bda691ce	ipc_rtt	+0.22	#2025: schedule split along its decision
 aarch64	9bda691ce	relay_rtt	+0.23	#2025: schedule split along its decision
 aarch64	9bda691ce	call_reply	+0.22	#2025: schedule split along its decision
 aarch64	9bda691ce	broker_rtt	+0.22	#2025: schedule split along its decision
-aarch64	9bda691ce	null_syscall	-0.09	#2025: schedule split along its decision
-aarch64	9bda691ce	ctx_switch	+0.41	#2025: schedule split along its decision
-aarch64	9bda691ce	ipc_rtt_el0	-0.47	#2025: schedule split along its decision
-aarch64	9bda691ce	spawn_el0	+0.12	#2025: schedule split along its decision
+aarch64	9bda691ce	ctx_switch	+0.45	#2025: schedule split along its decision
+aarch64	9bda691ce	ipc_rtt_el0	+0.24	#2025: schedule split along its decision
+aarch64	9bda691ce	sink_throughput	+0.15	#2025: schedule split along its decision
 aarch64	8d6f3964f	yield_switch	+0.82	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	ipc_rtt	+4.87	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	relay_rtt	+1.71	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	ipc_rtt	+1.24	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	relay_rtt	+1.72	#2188: read_current_thread masks IRQs
 aarch64	8d6f3964f	call_reply	+1.23	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	broker_rtt	+1.26	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	null_syscall	+0.09	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	ctx_switch	+0.70	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	ipc_rtt_el0	+2.54	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	spawn_el0	+0.24	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	broker_rtt	+1.24	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	spawn_reap	+0.15	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	ctx_switch	+0.76	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	ipc_rtt_el0	+1.45	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	sink_throughput	+1.41	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	spawn_el0	+0.16	#2188: read_current_thread masks IRQs
 aarch64	cec04e4a9	yield_switch	+0.29	#2331: SUSPEND and RESUME
 aarch64	cec04e4a9	ipc_rtt	+0.18	#2331: SUSPEND and RESUME
 aarch64	cec04e4a9	relay_rtt	+0.18	#2331: SUSPEND and RESUME
-aarch64	cec04e4a9	call_reply	+0.14	#2331: SUSPEND and RESUME
-aarch64	cec04e4a9	broker_rtt	+0.14	#2331: SUSPEND and RESUME
-aarch64	cec04e4a9	ctx_switch	+0.24	#2331: SUSPEND and RESUME
-aarch64	cec04e4a9	ipc_rtt_el0	-0.57	#2331: SUSPEND and RESUME
-aarch64	cec04e4a9	spawn_el0	-0.09	#2331: SUSPEND and RESUME
-aarch64	84232e8c9	ipc_rtt	-6.81	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	relay_rtt	-4.00	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	call_reply	-2.91	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	broker_rtt	-2.91	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	yield_switch	-1.98	#2426: read_current_thread in one asm block
+aarch64	cec04e4a9	call_reply	+0.15	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	broker_rtt	+0.15	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	ctx_switch	+0.26	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	ipc_rtt_el0	+0.15	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	sink_throughput	+0.11	#2331: SUSPEND and RESUME
+aarch64	84232e8c9	yield_switch	-1.93	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	ipc_rtt	-2.91	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	relay_rtt	-4.01	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	call_reply	-2.90	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	broker_rtt	-2.90	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	spawn_reap	-0.35	#2426: read_current_thread in one asm block
 aarch64	84232e8c9	ctx_switch	-1.79	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	ipc_rtt_el0	-2.99	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	sink_throughput	-3.31	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	spawn_el0	-0.50	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	ipc_rtt_el0	-3.40	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	sink_throughput	-3.30	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	spawn_el0	-0.38	#2426: read_current_thread in one asm block
+aarch64	c301bef61	yield_switch	-0.27	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	ipc_rtt	-0.27	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	relay_rtt	-0.36	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	call_reply	-0.41	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	broker_rtt	-0.41	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	spawn_reap	-0.37	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	map_new	-0.15	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	ctx_switch	-0.25	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	ipc_rtt_el0	-0.38	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	sink_throughput	-0.36	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	map_el0	-0.25	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	spawn_el0	-0.28	#2446: IrqSafeGuard::drop inlined
+aarch64	d5b79700e	spawn_el0	+0.65	#2454: run TLB maintenance batched
+aarch64	b6233a3b8	yield_switch	-0.49	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	ipc_rtt	-0.50	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	relay_rtt	-0.66	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	call_reply	-0.74	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	broker_rtt	-0.74	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	spawn_reap	-2.26	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	map_new	-0.27	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	ctx_switch	-0.46	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	ipc_rtt_el0	-0.68	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	sink_throughput	-0.65	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	map_el0	-0.44	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	spawn_el0	-0.89	#2565, the save's own change: a capability table copied once, lock_masked inlined
 
 # #2565 (bench/riscv64-spawn-reap-drift): riscv64, each merge against its parent, measured with
 # `TICK_HZ` 1 so no preemption tick lands in a window. Only measured costs: by calef's ruling B on
@@ -575,3 +607,29 @@ x86_64	b6233a3b8	call_reply	-0.80	#2565, the save's own change: a capability tab
 x86_64	b6233a3b8	broker_rtt	-0.80	#2565, the save's own change: a capability table copied once, lock_masked inlined
 x86_64	b6233a3b8	spawn_reap	-1.11	#2565, the save's own change: a capability table copied once, lock_masked inlined
 x86_64	b6233a3b8	map_new	-0.41	#2565, the save's own change: a capability table copied once, lock_masked inlined
+
+# lane/bench/aarch64-unexplained-drift (notes/benchmarks/aarch64-unexplained-drift.md): aarch64,
+# each first-parent merge against its parent, measured with no preemption tick in a window
+# (`TICK_HZ` 1), on the merge's own pinned nightly unless the note names one held for its window.
+# Every row a merge moved by 0.1% or more, unless a line above names it or a `*` line takes its
+# step whole. The lines cite milestone 707 (aarch64 registers spelled the way riscv64 and x86_64
+# spell them).
+aarch64	a91d41934	yield_switch	-0.13	nightly-2026-09-25, the compiler term measured alone
+aarch64	a91d41934	ipc_rtt	-0.12	nightly-2026-09-25, the compiler term measured alone
+aarch64	a91d41934	relay_rtt	-0.10	nightly-2026-09-25, the compiler term measured alone
+aarch64	a91d41934	ctx_switch	-0.12	nightly-2026-09-25, the compiler term measured alone
+aarch64	cc2f22923	ipc_rtt	+0.42	#1852, milestone 139 round 10: the scheduler queue ownership token
+aarch64	cc2f22923	ipc_rtt_el0	-1.05	#1852, milestone 139 round 10: the scheduler queue ownership token
+aarch64	c4d491b81	yield_switch	-2.35	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	ipc_rtt	-1.77	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	relay_rtt	-1.77	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	call_reply	-1.94	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	broker_rtt	-1.94	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	spawn_reap	-2.88	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	map_new	-0.36	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	null_syscall	-2.41	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	ctx_switch	-2.76	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	ipc_rtt_el0	-2.20	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	sink_throughput	-1.76	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	map_el0	-0.81	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	spawn_el0	-1.38	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
