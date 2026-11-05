@@ -1,0 +1,10 @@
+name: owned-hook-refusal-test
+on: pull_request
+permissions:
+  contents: read
+jobs:
+  refusal-test:
+    runs-on: [nife-owned-x86_64]
+    timeout-minutes: 5
+    steps:
+      - run: echo hello
