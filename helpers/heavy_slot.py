@@ -5,7 +5,7 @@
     python3 helpers/heavy_slot.py --held      # exit 0 when an ancestor of the caller holds a slot
     python3 helpers/heavy_slot.py --status
     python3 helpers/heavy_slot.py --pool kani --units <n> <job> -- <command> [args...]
-    python3 helpers/heavy_slot.py --pool kani --size | --weight | --held
+    python3 helpers/heavy_slot.py --pool kani --size | --weight [<row>... | --table] | --held
 
 A script does not call this directly. It sources helpers/heavy-slot.sh, which re-executes the script
 under this. <job> names the job in what a waiter prints (`lint`, `test`, `mutation`).
@@ -54,7 +54,15 @@ the rest and two big runs cannot deadlock. The units are flock files in `kani/` 
 directory, taken as the slots are, so a killed run frees them with no cleanup. A request above the
 pool is clamped to it, and the caller runs only as many harnesses at once as fit (`--size`).
 
-  NIFE_KANI_HARNESS_GIB   the weight of one harness; lower it for a group of small proofs
+A run that names its rows (`--weight <row>...`) weighs a harness by measurement instead:
+helpers/kani_peaks.py reads each row's measured peak from helpers/kani-peaks.tsv, rounded up to whole
+units, and the run takes the largest of its rows. A row that was never measured, or whose crate or
+Kani version changed since, weighs HARNESS_GIB, so an edited harness is reserved conservatively.
+`--table` names every row of script/verify's crate table. notes/verification/kani-memory.md has the
+measurements.
+
+  NIFE_KANI_HARNESS_GIB   the weight of one harness, over any measurement
+  NIFE_KANI_PEAKS         the measured table to read (a selftest points it at a fixture)
   NIFE_KANI_UNITS         the pool size outright
   NIFE_VERIFY_MEMORY_BYTES  replaces physical memory in the sizing (a selftest picks a small machine)
   NIFE_KANI_POOL=off      no pool. It is also off under GITHUB_ACTIONS, where a runner is one job on
@@ -70,6 +78,9 @@ BUGS: the ancestor walk includes pid 1, which `script/test` is when it is a cont
 process. Two containers that share one slot directory and each run a heavy script as pid 1 cannot
 tell their pid 1s apart, so one can run inside the other's slot. Give each container its own
 NIFE_HEAVY_SLOT_DIR.
+
+BUGS: script/verify takes its heavy slot before its Kani units, so a run that waits for units holds
+a heavy slot it does nothing with, and a build or a lint that needs only the slot waits behind it.
 
 Order. A job waits for a slot in ticket order, through helpers/heavy_ledger.py: the job that began
 waiting first starts first, and a slot freed while several wait goes to the oldest. The ledger counts
@@ -132,17 +143,28 @@ def pool_size(pool):
     return max(1, int(usable // UNIT_GIB))
 
 
-def harness_units():
-    """Units one harness weighs: HARNESS_GIB, or NIFE_KANI_HARNESS_GIB, rounded up."""
+def default_harness_units():
+    """Units one harness weighs with no measurement: HARNESS_GIB, or NIFE_KANI_HARNESS_GIB, rounded up."""
     gib = float(os.environ.get("NIFE_KANI_HARNESS_GIB") or HARNESS_GIB)
     if gib <= 0:
         sys.exit("heavy-slot: NIFE_KANI_HARNESS_GIB must be positive")
     return max(1, -(-int(gib * 1024) // int(UNIT_GIB * 1024)))
 
 
-def kani_capacity(n):
-    """Harnesses that fit in a pool of `n` units at once; at least one."""
-    return max(1, n // harness_units())
+def harness_units(rows=()):
+    """Units one harness of a run over `rows` (script/verify rows) weighs: the largest measured
+    weight among them (helpers/kani_peaks.py), the default for a row with none, and the default
+    outright when no rows are named or NIFE_KANI_HARNESS_GIB is set."""
+    if not rows or os.environ.get("NIFE_KANI_HARNESS_GIB"):
+        return default_harness_units()
+    import kani_peaks
+    weighed = kani_peaks.weights(list(rows), UNIT_GIB, default_harness_units())
+    return max(units for units, _ in weighed.values())
+
+
+def kani_capacity(n, rows=()):
+    """Harnesses of a run over `rows` that fit in a pool of `n` units at once; at least one."""
+    return max(1, n // harness_units(rows))
 
 
 def parent_table():
@@ -359,7 +381,7 @@ def status():
     mine, kheld = try_slots(k, kdir)
     for fd in mine.values():
         os.close(fd)
-    print(f"{k} Kani units of {UNIT_GIB} GiB in {kdir}, {len(kheld)} held; a harness weighs "
+    print(f"{k} Kani units of {UNIT_GIB} GiB in {kdir}, {len(kheld)} held; an unmeasured harness weighs "
           f"{harness_units()} units, so {kani_capacity(k)} fit at once ({k * UNIT_GIB:.0f} GiB in all)")
     if kheld:
         print(describe(kheld))
@@ -368,11 +390,15 @@ def status():
 def pool_main(argv):
     """`--pool kani` forms; argv is what follows the flag's value."""
     n = pool_size("kani")
-    if argv == ["--size"]:
-        print(kani_capacity(n) if n else "off")
-        return
-    if argv == ["--weight"]:
-        print(harness_units())
+    if argv[:1] in (["--size"], ["--weight"]):
+        rows = argv[1:]
+        if rows == ["--table"]:
+            import kani_peaks
+            rows = kani_peaks.verify_rows()
+        if argv[0] == "--size":
+            print(kani_capacity(n, rows) if n else "off")
+        else:
+            print(harness_units(rows))
         return
     if argv == ["--held"]:
         sys.exit(0 if n == 0 or held_by_ancestor(n, slot_dir("kani")) else 1)
@@ -384,7 +410,8 @@ def pool_main(argv):
             for fd in acquire_units(job, n, slot_dir("kani"), units):
                 os.set_inheritable(fd, True)
         os.execvp(command[0], command)
-    sys.exit("usage: heavy_slot.py --pool kani (--size | --held | --units <n> <job> -- <command>...)")
+    sys.exit("usage: heavy_slot.py --pool kani (--size [<row>...] | --weight [<row>... | --table] | "
+             "--held | --units <n> <job> -- <command>...)")
 
 
 def main(argv):
