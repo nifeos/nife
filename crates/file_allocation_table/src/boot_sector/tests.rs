@@ -205,6 +205,7 @@ fn what_this_crates_mkfs_writes_parses_to_the_same_geometry() {
         2048,
         9_000_000,
         0x1234_5678,
+        "EFI SYSTEM",
         "BOOTX64.EFI",
         &mut NoClock,
     )
