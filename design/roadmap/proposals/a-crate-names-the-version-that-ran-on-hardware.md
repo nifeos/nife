@@ -25,27 +25,27 @@ new tool.
 The crate's README has a hardware section. It says a driver built on this logic produced real TRNG
 output on a VisionFive 2 in 256-bit mode, and it carries a limitation: this exact source tree has
 not run on hardware, and an earlier version under a different crate name is the one that ran. That
-earlier version is the code milestone 159 drove on radon, with its two boots recorded in that
-block.
+earlier version is the code milestone 159 drove on radon, with its two boots recorded in that block.
 
-No milestone runs the crate again. Milestone 159 is BUILT. Milestone 818 (proven JH7110 TRNG logic,
-released on its own) is the release and names no bench step. Milestone 225 (run the soak on the
-boards) soaks the scheduler, not this driver. Milestone 239 (radon's tree describes less than the
-chip has) is about the device tree. Milestone 224 (nothing can power-cycle radon) is REFUSED by
-milestone 257: manual power was accepted, because network boot removed the card and left remote
-power buying only the hung-board case. So a run of a crate version is a bench session with a
-person present, as milestone 192 (a keyboard on real silicon) is.
+No milestone runs the crate again. Milestone 159 has the status BUILT. Milestone 818 (proven JH7110
+TRNG logic, released on its own) is the release and names no bench step. Milestone 225 (run the soak
+on radon, argon and xenon) soaks the scheduler, not this driver. Milestone 239 (radon's device tree
+does not describe the TRNG, so a working driver never runs) concerns the device tree. Milestone 224
+(nothing can power-cycle radon) has the status REFUSED, and milestone 257 holds the reason: the
+maintainers chose manual power, because network boot removed the card and left remote power buying
+only the hung-board case. So a run of a crate version is a bench session with a person present, as
+milestone 192 (a keyboard on real silicon) is.
 
-The question: how does the crate earn the right to say that its current version ran on a
-VisionFive 2, and how does every crate with a hardware claim do the same?
+The question: how does the crate earn the right to say that its current version ran on a VisionFive
+2, and how does every crate with a hardware claim do the same?
 
 ## What a hardware run of a crate version is
 
 A hardware run of `jh7110_entropy` version V is all of these:
 
-1. nife is built at a commit whose three manifests pin the crate at the commit of tag `vV` and state
-   `version = "V"`. A pin is bumped by its own pull request citing `nifeos/jh7110_entropy@<sha>`, so
-   the commit exists on `main` before the run.
+1. A build of nife comes from a commit whose three manifests pin the crate at the commit of tag `vV`
+   and state `version = "V"`. Its own pull request bumps a pin and cites
+   `nifeos/jh7110_entropy@<sha>`, so the commit exists on `main` before the run.
 2. That build boots on a VisionFive 2 by the procedure in `bench-procedure.md`, twice.
 3. On each boot the tour's `hw entropy` line is the success line: the entropy service served both
    draws to a client, and the second draw differs from the first.
@@ -60,12 +60,12 @@ other board, or any version but V.
 
 ## Who runs it
 
-A person, so `needs_person: yes`. The board needs its serial console attached and its power
-switched by hand, and a hung board needs a person because remote power was refused. Network boot
-spares the card. The bench rules for the board itself (wiring, outlets) are kept off-tree by the
-maintainers; the public procedure is `bench-procedure.md`. An agent prepares the build at the pin
-and reads the transcript against the six conditions above. Neither the run nor the reading runs in
-CI, since no runner reaches the board.
+A person, so `needs_person: yes`. The board needs its serial console attached and its power switched
+by hand, and a hung board needs a person because the maintainers refused remote power. Network boot
+spares the card. The maintainers keep the bench rules for the board itself (wiring, outlets)
+off-tree; the public procedure is `bench-procedure.md`. An agent prepares the build at the pin and
+reads the transcript against the six conditions above. Neither the run nor the reading runs in CI,
+since no runner reaches the board.
 
 ## Where the evidence lives
 
@@ -86,44 +86,47 @@ In the hardware section, the first paragraph becomes:
 > chip in 256-bit mode, the draws differing within each boot and across the boots. The clock and
 > reset must be ungated and released first, as the first item under BUGS says.
 
-The limitation bullet on running this exact source tree is removed. The bullet on randomness quality
-stays.
+The edit removes the limitation bullet on running this exact source tree. The bullet on randomness
+quality stays.
 
 ## Options
 
 Recommended: **A.** The others lost for the reasons given.
 
-- **A. The README names the newest version that ran, by board class; nife keeps the log.** As
-  above. A stranger reads one sentence that is true for as long as the README exists. Rejected
-  claims cost nothing: a version that never ran is simply not named.
-- **B. A "tested on" table in the crate repository, one row per run with date and transcript.**
-  A row carries history, which a document here does not hold (§298 (a document states what is in
-  force now)), and a transcript from nife's tour pulls nife into a repository that stands alone.
+- **A. The README names the newest version that ran, by board class; nife keeps the log.** As above.
+  A stranger reads one sentence that is true for as long as the README exists. Rejected claims cost
+  nothing: a version that never ran is simply not named.
+- **B. A "tested on" table in the crate repository, one row per run.** Each row holds a date and a
+  transcript. A row carries history, which a document here does not hold (§298 (a document states
+  what is in force now)), and a transcript from nife's tour pulls nife into a repository that stands
+  alone.
 - **C. No hardware sentence; host tests and proofs only.** The board is the one thing a driver user
   wants to know about, and the evidence exists.
 - **D. A runner on the board, so CI attests each version.** The best evidence, and not buildable
-  now: remote power is refused and a hung board needs a person. It waits on milestone 224's revisit.
+  now: the maintainers refused remote power, and a hung board needs a person. It waits on milestone
+  224's revisit.
 
-Would A still win if all four cost the same? Over B and C, yes. D would win, which is why A is
-written so that a CI run later fills the same sentence without changing it.
+Would A still win if all four cost the same? Over B and C, yes. D would win, which is why A lets a
+CI run later fill the same sentence without changing it.
 
 ### Prior art
 
 - Linux's `Tested-by:` tag (`Documentation/process/submitting-patches.rst`) records that a person
-  tested a patch "in some environment", and tags are removed when the patch changes substantially.
-  This is A's rule at a finer grain: the claim binds to one version and does not carry forward.
+  tested a patch "in some environment", and a new version drops the tags when the patch changes
+  substantially. This is A's rule at a finer grain: the claim binds to one version and does not
+  carry forward.
 - KernelCI runs the kernel on boards in contributed labs; that is D at scale.
 - Zephyr's board porting guide asks that each new board target pass a minimum test suite with
   Twister before upstreaming, and keeps per-board Twister metadata. The claim binds to the board,
   not to a release.
-- The `ssd1306` driver crate's README names no board; its example imports an STM32F1 HAL, so the
-  tested target is implied rather than stated. That is the failure A prevents.
+- The `ssd1306` driver crate's README names no board; its example imports an STM32F1 HAL, so a
+  reader infers the tested target rather than reading it. That is the failure A prevents.
 
 ## The rule for every crate with a hardware claim
 
-The rule generalizes. A crate README states a hardware run only by naming a version that has one,
-by the definition above adapted to the device: nife built at the pin that names the version, booted
-on the board by its public procedure, and the device's own success line read. It is a gate on that
+The rule generalizes. A crate README states a hardware run only by naming a version that has one, by
+the definition above adapted to the device: nife built at the pin that names the version, booted on
+the board by its public procedure, and the device's own success line read. It is a gate on that
 sentence alone, never on publication: a crate publishes on proofs and a stable API, as milestone 818
 says, and a release with no run simply makes no hardware claim.
 
@@ -138,9 +141,9 @@ Today's claims under it:
 
 ## The work
 
-1. Once 0.2.0 is tagged and nife's pins name it, run the bench procedure twice on a VisionFive 2,
-   commit the transcript under `bench/`, and record each boot's `hw entropy` line, the nife commit
-   and the crate version in this block.
+1. Once the crate tags 0.2.0 and nife's pins name it, run the bench procedure twice on a VisionFive
+   2, commit the transcript under `bench/`, and record each boot's `hw entropy` line, the nife
+   commit and the crate version in this block.
 2. In `nifeos/jh7110_entropy`, make the README edit above.
 3. Write the rule into milestone 857 (crates released on their own), beside the release rules, so
    every crate's review reads it.
@@ -157,5 +160,5 @@ Today's claims under it:
 ## Cost and what cannot be undone
 
 One bench session with a person, about two boots over the network, plus two small edits. Nothing
-here is one-way: a README sentence can be reworded, and the rule only narrows what a README may
+here is one-way: anyone can reword a README sentence, and the rule only narrows what a README may
 claim, so loosening it later breaks nobody.
