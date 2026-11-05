@@ -64,7 +64,7 @@ first release; no crate turns it on, since the pilot `jh7110_entropy` parses no 
   keeps a target that decodes PNG through its dependency, `fuzzer_script_png.rs`, so a PNG bug it
   finds lands with the consumer first, which forwards it upstream.
 - nife's own flow files a fuzz finding where the fix lands: one private advisory on the repository
-  that holds the code, worked by a fix lane in that advisory's private fork
+  that holds the code. A fix lane works it in that advisory's private fork
   ([milestone 1015 (fuzz findings filed with no person in the loop)](../1015-fuzz-findings-without-a-person.md)).
 
 ## The options
