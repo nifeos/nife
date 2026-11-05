@@ -6,13 +6,14 @@ it.*
 
 `script/crate-review-packet file_allocation_table` generated the item list from rustdoc JSON
 (`cargo public-api` is not installed here), and this page fills in generic parameters and trait
-items from the source. The crate root re-exports every item except the three
-`efi_system_partition` constants. Unless the list says otherwise, every type derives `Debug`,
+items from the source. The crate root re-exports every item except the ten constants of the public
+`efi_system_partition` module. Unless the list says otherwise, every type derives `Debug`,
 `Clone`, `Copy`, `PartialEq`, `Eq` and `Hash`. `FormatOptions`, `FormatPlan`, `VolumeLayout`,
 `LayoutError` and `NamedEntry` lack `Hash`; the types that hold a device (`Volume`,
 `WritableVolume`, `Directory`, `NamedEntries`, `Chain`, `FileReader`, `FileWriter`) derive `Debug`
-alone. No error type implements `Display` or `core::error::Error`, and no enum is
-`#[non_exhaustive]`.
+alone. No error type implements `Display` or `core::error::Error`. Every error enum is
+`#[non_exhaustive]`; the data enums (`SectorSize`, `FileAllocationTableType`, `RootDirectory`,
+`TableEntry`, `Slot`, `DirectoryEntry`) are not.
 
 ## The caller's side
 
@@ -212,11 +213,6 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
     pub fn open_file_writer(&mut self, entry: &NamedEntry)
         -> Result<FileWriter<'_, D, C>, FileOpenError>;
     pub fn mark_clean(&mut self) -> Result<(), ChainError<D::Error>>;
-    pub fn allocate_cluster(&mut self, extending: Option<u32>)
-        -> Result<u32, AllocationError<D::Error>>;
-    pub fn deallocate_chain(&mut self, first: u32) -> Result<u32, AllocationError<D::Error>>;
-    pub fn truncate_chain(&mut self, first: u32, keep: u32)
-        -> Result<u32, AllocationError<D::Error>>;
 }
 pub struct FileWriter<'v, D, C>;
 impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
@@ -267,23 +263,19 @@ impl VolumeLayout {
     pub fn new(total_sectors: u64, hidden_sectors: u64, file_len: u64, volume_id: u32,
                label: &str, file_name: &str, clock: &mut impl Clock)
         -> Result<VolumeLayout, LayoutError>;
-    pub const fn clusters(&self) -> u32;
-    pub const fn table_sectors(&self) -> u32;
-    pub const fn first_data_sector(&self) -> u64;
-    pub const fn cluster_first_sector(&self, cluster: u32) -> u64;
     pub const fn metadata_sectors(&self) -> u64;
     pub const fn file_first_sector(&self) -> u64;
     pub const fn file_sectors(&self) -> u64;
     pub fn fill_sector(&self, index: u64, out: &mut [u8]) -> bool;
 }
-pub const SECTOR_BYTES: usize;              // 512
-pub const CLUSTER_SECTORS: u32;             // 8
-pub const CLUSTER_BYTES: usize;             // 4096
-pub const RESERVED_SECTORS: u32;            // 32
-pub const TABLE_COUNT: u32;                 // 2
-pub const ROOT_CLUSTER: u32;                // 2
-pub const FAT32_MINIMUM_CLUSTERS: u32;      // 65525
 pub mod efi_system_partition {
+    pub const SECTOR_BYTES: usize;          // 512
+    pub const CLUSTER_SECTORS: u32;         // 8
+    pub const CLUSTER_BYTES: usize;         // 4096
+    pub const RESERVED_SECTORS: u32;        // 32
+    pub const TABLE_COUNT: u32;             // 2
+    pub const ROOT_CLUSTER: u32;            // 2
+    pub const FAT32_MINIMUM_CLUSTERS: u32;  // 65525
     pub const EFI_CLUSTER: u32;             // 3
     pub const BOOT_CLUSTER: u32;            // 4
     pub const FILE_CLUSTER: u32;            // 5
@@ -305,11 +297,10 @@ pub mod efi_system_partition {
 | `MasterBootRecordError` | `TooShort`, `NoSignature`, `BadStatus { index }`, `EmptyPartition { index }`, `PartitionOverflows { index }` |
 | `MasterBootRecordReadError<E>` | `Device(E)`, `Parse(MasterBootRecordError)` |
 | `PartitionError<E>` | `Device(E)`, `OutsidePartition(u64)` |
-| `AllocationError<E>` | `Chain(ChainError<E>)`, `VolumeFull`, `NotTheEndOfAChain(u32)` |
 | `WriteError<E>` | `Chain(ChainError<E>)`, `VolumeFull`, `FileTooLarge`, `ShorterThanItsSize`, `EntryChanged`, `Failed`, `DirectoryFull`, `NameRefused`, `LabelRefused`, `AlreadyExists`, `NotAFile`, `NotADirectory`, `ReadOnly`, `TimeOutOfRange`, `DirectoryNotEmpty`, `MovedIntoItself` |
 | `FormatError` | `TooSmall`, `NoSuchGeometry`, `LabelRefused`, `TimeOutOfRange`, `ClusterSizeRefused` |
 | `LayoutError` | `NotFat32`, `TooLarge`, `NameRefused`, `LabelRefused`, `TimeOutOfRange`, `FileTooBig` |
 
-Three `From` conversions let `?` carry an error up: `ChainError<E>` into `AllocationError<E>` and
-into `WriteError<E>`, and `LookupError<E>` into `WriteError<E>`.
+Two `From` conversions let `?` carry an error up: `ChainError<E>` and `LookupError<E>`, each into
+`WriteError<E>`. Each enum in the table is `#[non_exhaustive]`.
 

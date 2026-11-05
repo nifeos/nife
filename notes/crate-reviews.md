@@ -60,28 +60,29 @@ against itself.
 
 ## `file_allocation_table`, step 2
 
-The whole package, with the signature list, the stranger run and seven open questions, is
+The whole package, with the signature list, the stranger run and seven questions, is
 [crate-reviews/file-allocation-table.md](crate-reviews/file-allocation-table.md). It covers the
-crate as #3233 leaves it, with no reference to nife.
+crate as #3267 leaves it, with no reference to nife. The maintainer ruled six of the questions
+provisionally, and #3267 applied them; the seventh, the version, tag and repository, is open.
 
 Name and version. `file_allocation_table` `0.1.0`, ratified with FAT spelled out. Every `Name:`
-block reads ratified except `LayoutError::LabelRefused`, which is provisional.
+block reads ratified.
 
 API. FAT12, FAT16 and FAT32 with no I/O: `Volume` reads, `WritableVolume` writes with a `Clock`,
 `FormatPlan` formats any size, and `VolumeLayout` lays out a FAT32 EFI system partition holding one
-boot file under a label the caller supplies. The caller implements `SectorDevice` and
-`WritableSectorDevice`.
+boot file under a label the caller supplies, through five public methods. Every error enum is
+`#[non_exhaustive]`. The caller implements `SectorDevice` and `WritableSectorDevice`.
 
-Proofs. 31 harnesses, each with a falsification patch. 300 tests; the integration tests check
-against the `lamfat` oracle and `fsck.fat`.
+Proofs. 31 harnesses, each with a falsification patch. 300 tests check against the `lamfat` oracle
+and `fsck.fat`.
 
 Dependencies. None at run time. Dev only: `lamfat =0.4.3` and `ruzstd =0.9.1`, both MIT.
 
 Result of `script/crate-standalone`. One failure, in names: `LayoutError::LabelRefused` is
 provisional.
 
-Recommendation. Ready for review. The open questions are about how much API the first release
-publishes, not about whether the code is right.
+Recommendation. Ready for review. What remains is the architect's clearance of the API the
+provisional rulings leave, and the answer to the seventh question.
 
 ## `extensible_host_controller_interface`, step 3
 
