@@ -50,7 +50,7 @@ Versions read are the newest on crates.io on 2026-11-05 (UTC). Sources came from
 `.crate` files; downloads and reverse dependencies come from the crates.io API on the same day, and
 repository state from the GitHub API.
 
-| crate | version, release | licence | 90 days / all time | reverse deps | repository |
+| crate | version, release | license | 90 days / all time | reverse deps | repository |
 |---|---|---|---|---|---|
 | `slab` | 0.4.12, 2026-01-31 | MIT | 282M / 1.10G | (not counted) | tokio-rs/slab, active |
 | `slotmap` | 1.1.1, 2025-12-06 | Zlib | 35.8M / 128M | 571 | orlp/slotmap, active |
