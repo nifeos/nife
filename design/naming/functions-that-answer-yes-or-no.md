@@ -2,8 +2,8 @@
 
 *Name: ratified 2026-10-18 (calef, "Yes"). Refused `boolean-predicates`.*
 
-*An appendix to [`design/naming.md`](../naming.md). It holds the rule for a function that answers a
-question, and the prior art it follows.*
+*An appendix to [`design/naming.md`](../naming.md#functions-that-answer-yes-or-no), which states the
+rules. It holds the shapes in full, the prior art they follow, and the cases that need a judgment.*
 
 ## The rule
 
@@ -22,7 +22,7 @@ Exempt:
 - A function that acts and reports whether it worked: `insert`, `push`, `claim`, a `take_` that
   clears a flag. A `bool` return does not make a function a question.
 - Test functions, which read as sentences here, and fields (a field that is an array of booleans
-  takes the predicate form: [shapes.md](shapes.md)).
+  takes the predicate form: [design/naming.md](../naming.md#shapes)).
 - A trait method or a name another project owns: `eq`, std's `Permissions::readonly` in the `std`
   overlay, C-GETTER's `get`.
 - An `extern` symbol that assembly calls by name.

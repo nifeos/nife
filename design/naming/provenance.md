@@ -1,8 +1,9 @@
 # Where a name's provenance lives
 
-*An appendix to [`design/naming.md`](../naming.md). It holds the `Name:` block: where it lives,
-its states and forms, and the commands that read it. The directory `design/naming/` and this file's
-stem are provisional names; naming is an architect's.*
+*An appendix to [`design/naming.md`](../naming.md#where-a-names-provenance-lives), which states the
+rules. It holds the `Name:` block in full: where it lives, its states and forms, and the commands
+that read it. The directory `design/naming/` and this file's stem are provisional names; naming is
+an architect's.*
 
 ## At the name, and nowhere else
 
@@ -20,8 +21,8 @@ Four more kinds carry a block by marker, in the same grammar:
 
 - `item`: a `/// Name:` paragraph in the doc of a function, constant, type, field or variant.
 - `module`: a `//! Name:` block in a Rust file that is not a crate root or a program.
-- `directory`: the `Name:` paragraph of a documentation directory's `README.md`, per §75 (directories carry
-  provenance in their own README).
+- `directory`: the `Name:` paragraph of a documentation directory's `README.md`, per §75
+  (directories carry provenance in their own README).
 - `document`: the document's own `Name:` paragraph, else its directory's block.
 
 A lane minting any of these writes the marker, so the name joins `--unratified`. An unmarked item
@@ -30,7 +31,8 @@ never fails.
 The refusals are the valuable half. A ratified name is visible in the tree, because it is the name.
 A refused one is visible nowhere unless its block records it, and the person who most needs it is
 the one about to propose it again. `system_builder` is the case: proposed, endorsed and overruled to
-`system_initializer`, after milestone 63 (directory and package names) had already refused it in one table cell nobody found.
+`system_initializer`, after milestone 63 (directory and package names) had already refused it in one
+table cell nobody found.
 
 ### A document's block is a paragraph, not frontmatter
 

@@ -1,10 +1,8 @@
 # Acronyms and abbreviations
 
-*An appendix to [`design/naming.md`](../naming.md). It holds the acronym test, every short form the
-tree spells out or keeps, and the names the test does not reach.
-[§154 (the acronym test is whether the phrase is
-spoken)](../decisions/0154-the-acronym-test-is-whether-the-phrase-is-spoken.md) holds the argument
-for its acronym rows.*
+*An appendix to [`design/naming.md`](../naming.md#acronyms-and-abbreviations), which states the
+rules. It holds each short form's spelling and the cases that decide it, the names the test does not
+reach, and why.*
 
 ## The test
 
@@ -85,7 +83,7 @@ reader searches for keeps its spelling and takes the expansion and the alias: FA
 `COMPATIBLE_*CRG`. Any other term expands: NVMe's `NVM_READ` is `NON_VOLATILE_MEMORY_READ`.
 
 Hardware register, field and bit names follow
-[registers-and-constants.md](registers-and-constants.md).
+[design/naming.md](../naming.md#registers-and-constants).
 
 ## Aliases
 

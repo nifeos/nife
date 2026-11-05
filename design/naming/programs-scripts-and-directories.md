@@ -1,8 +1,9 @@
 # Naming programs, scripts and directories
 
-*An appendix to [`design/naming.md`](../naming.md). It holds the program conventions, the
-category suffixes, `script/` against `helpers/`, script names and directories. The directory
-`design/naming/` and this file's stem are provisional names; naming is an architect's.*
+*An appendix to [`design/naming.md`](../naming.md#programs-scripts-and-directories), which states
+the rules. It holds the reasons behind the spelling per domain, the program conventions, `script/`
+against `helpers/`, and directories. The directory `design/naming/` and this file's stem are
+provisional names; naming is an architect's.*
 
 ## Spelling, per domain
 

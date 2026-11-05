@@ -1,7 +1,7 @@
 # Command-line names
 
-*An appendix to [`design/naming.md`](../naming.md). It holds the names a person types at a prompt:
-command verbs, options and shell builtins.*
+*An appendix to [`design/naming.md`](../naming.md#command-line-names), which states the rules. It
+holds `jig`'s verbs and their prior art, and the reasons behind the builtin rules.*
 
 ## The command line abbreviates, and the code behind it does not
 

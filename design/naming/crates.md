@@ -1,8 +1,8 @@
 # Naming crates
 
-*An appendix to [`design/naming.md`](../naming.md). It holds the crate rules: the one spelling,
-the suffixes, the crate that shares a program's name, and what `crates/` holds. The directory
-`design/naming/` and this file's stem are provisional names; naming is an architect's.*
+*An appendix to [`design/naming.md`](../naming.md#crates), which states the rules. It holds the
+reasons behind the crate rules, and what `crates/` holds. The directory `design/naming/` and this
+file's stem are provisional names; naming is an architect's.*
 
 ## One rule, with no second tier
 

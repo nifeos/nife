@@ -1,7 +1,7 @@
 # Naming: the appendices to design/naming.md
 
-[`design/naming.md`](../naming.md) is the front page. Each file here holds the rules for one topic,
-stated once, and the table below is their index.
+[`design/naming.md`](../naming.md) states every naming rule in force. Each file here holds the
+reasons, the full lists and the prior art for one of its topics, and the table below is their index.
 
 *Name: provisional, minted 2026-09-24 by the lane that split the file (`2ea02d231`), for the
 directory and every stem in it. Each appendix's own preamble says the same of its stem. Also
@@ -12,10 +12,7 @@ that two indexes offer (milestone 809 (the package client becomes a program)). N
 | Appendix | Holds |
 |---|---|
 | [acronyms-and-abbreviations.md](acronyms-and-abbreviations.md) | the acronym test, every short form spelled out or kept, names someone else owns, aliases |
-| [units.md](units.md) | how a name carries a unit |
-| [registers-and-constants.md](registers-and-constants.md) | hardware register, field and bit names, and the shapes constants share |
 | [vocabulary.md](vocabulary.md) | the words the tree gives one meaning, and how to choose a word |
-| [shapes.md](shapes.md) | nouns over verbs, std's method names, parameters, and other shapes |
 | [functions-that-answer-yes-or-no.md](functions-that-answer-yes-or-no.md) | the predicate rule and its prior art |
 | [command-line-names.md](command-line-names.md) | command verbs, options and shell builtins |
 | [crates.md](crates.md) | the crate rules and what `crates/` holds |

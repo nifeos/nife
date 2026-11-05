@@ -1,8 +1,9 @@
 # Rules a script can check
 
-*An appendix to [`design/naming.md`](../naming.md). It says which naming rules a script applies,
-the gates that hold them, and how a lane works the list of names that break one. The file and its
-stem are provisional names; naming is an architect's.*
+*An appendix to [`design/naming.md`](../naming.md#rules-a-script-can-check), which states the rules.
+It holds which naming rules a script applies, the gates that hold them, and how a lane works the
+list of names that break one. The directory `design/naming/` and this file's stem are provisional
+names; naming is an architect's.*
 
 ## The cycle
 
@@ -79,7 +80,7 @@ ranks by the same one.
 |---|---|---|
 | Rust's casing for the item's kind | mechanical | `name_checks.py` |
 | Short forms a ruling spells out ([acronyms-and-abbreviations.md](acronyms-and-abbreviations.md)) | mechanical, for the forms `SPELLED_OUT` lists | `name_checks.py`; `cap` also by `cap_abbreviation.py`, as a ratchet |
-| Units spelled out ([units.md](units.md)) | mechanical, for the symbols the helper counts | `unit_symbols.py`, as a ratchet |
+| Units spelled out ([design/naming.md](../naming.md#units)) | mechanical, for the symbols the helper counts | `unit_symbols.py`, as a ratchet |
 | American spelling | mechanical | `typos --locale en-us` and `house_style.py`'s list |
 | No `-d`, no Unix service word | mechanical | the naming block for programs; `name_checks.py` for a trailing `d` component |
 | Lowercase, hyphenated file names | mechanical | the naming block's check 6 |

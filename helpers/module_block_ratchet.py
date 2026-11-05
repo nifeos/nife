@@ -312,7 +312,7 @@ def selftest():
          [b.split(' was added')[0] for b in problems(files, tree, tree, base, (), was.get, retyped.get)]
          == [f'{BASELINE}: x/src/b.rs::f']),
     ]
-    # A unit-symbol respelling keeps its row (design/naming/units.md).
+    # A unit-symbol respelling keeps its row (design/naming.md ("Units")).
     respelled_was = {'x/src/a.rs': 'pub fn delay_us() {}\npub fn other() {}\n'}
     respelled_now = {'x/src/a.rs': 'pub fn delay_microseconds() {}\npub fn other() {}\n'}
     respelled_base = i('delay_us', 'other')

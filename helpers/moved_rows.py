@@ -97,7 +97,7 @@ def moves(added, removed, before, after):
             old_name = old_rest.split(' ', 1)[0]
             if (wanted and source == to and old_rest.partition(' ')[2] == tail and old_name != name
                     and unit_symbols.respell(old_name) == name):
-                # A unit-symbol respelling inside one file (design/naming/units.md): the item
+                # A unit-symbol respelling inside one file (design/naming.md ("Units")): the item
                 # keeps its place on the list under its new name.
                 for kind, declared_name in sorted(declared(before, source)):
                     if declared_name != old_name:

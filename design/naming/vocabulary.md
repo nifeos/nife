@@ -1,7 +1,7 @@
 # Vocabulary
 
-*An appendix to [`design/naming.md`](../naming.md). It holds the words the tree gives one meaning,
-and the test each one sets for words beyond it.*
+*An appendix to [`design/naming.md`](../naming.md#vocabulary), which states the rules. It holds the
+test each word sets, the stems the tree keeps, and examples of choosing a word.*
 
 ## Words with one meaning here
 

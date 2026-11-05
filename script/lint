@@ -3706,7 +3706,7 @@ python3 helpers/cap_abbreviation.py --selftest
 python3 helpers/cap_abbreviation.py --check
 echo "==> unit symbols are spelled out (2026-10-27)"
 # lint-quick
-# design/naming/units.md: a name spells its unit out. helpers/unit_symbols.py counts Rust
+# design/naming.md ("Units"): a name spells its unit out. helpers/unit_symbols.py counts Rust
 # identifiers that carry `us`, `s`, `sec`, `secs`, `nanos`, `millis`, `micros` or `mins` (comments
 # and strings skipped; it does not yet count `ns`, `ms` or `hz`, which its header records) and
 # fails a count over its ceiling or a branch that adds any net. Fixtures first.
