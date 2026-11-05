@@ -144,7 +144,7 @@ has users who ask for them upstream.
 
 1. `file_allocation_table` (milestone 813 (`file_allocation_table`: a proven FAT crate, released on
    its own)).
-2. `extensible_host_controller_interface`, released with `usb` (published as `universal_serial_bus`), once it gains Kani proofs
+2. `extensible_host_controller_interface`, released with `usb` (published as `universal_serial_bus`), after Kani proofs
    (milestone 820 (`extensible_host_controller_interface`: proven xHCI logic, released on its own)).
 3. `generational_table`, on its own, once the release record says whether `slotmap` already covers
    allocation-free fixed capacity.
