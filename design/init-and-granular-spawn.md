@@ -62,7 +62,7 @@ names the space through the same registry revocation uses.
   saves immaterial memory, forks the memory rule per object type, and buys back occupancy machinery
   exactly when endpoint revocation arrives. It remains a placement optimization behind the registry.
   All endpoints, the kernel's included, now live at the start of a page
-  retyped from some untyped region, named generationally (`crates/slots`, the Tid machinery). Their
+  retyped from some untyped region, named generationally (`crates/generational_table`, the Tid machinery). Their
   host regions are pinned: `destroy` refuses them, the recorded debt that
   endpoint revocation will one day retire. Witnessed at both levels. A kernel test does a rendezvous
   over a retyped endpoint and shows a pinned region's destroy provably frees nothing. In an EL0 test
