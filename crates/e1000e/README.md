@@ -98,3 +98,4 @@ Licensed under either of MIT (LICENSE-MIT) or Apache-2.0 (LICENSE-APACHE), at yo
 files under `src/platform_controller_hub/` adapt FreeBSD's Intel shared code and `if_em.c` and `if_em.h`, and also carry Intel's BSD-3-Clause
 notice and the BSD-2-Clause notice of `if_em.c` and `if_em.h` (Intel, Nicole Graziano, Kevin Bowling),
 which a binary redistribution must reproduce. Their SPDX expression is `BSD-2-Clause AND BSD-3-Clause`.
+The manifest's `license` field names all three: `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.

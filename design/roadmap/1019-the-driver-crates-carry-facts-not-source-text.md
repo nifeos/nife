@@ -57,6 +57,7 @@ Each item gives the recommendation first.
    module takes the descriptor-ring flush, the transmit errata and `em_reset`'s buffer split from
    those files. The crate README, `notes/e1000e/the-i219-port.md` and the license column of
    milestone 494 (the I219 driver)'s Reuse table name them apart from the BSD-3-Clause shared code.
+   The crate's `license` field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.
 4. Ruled 2026-11-04 UTC and done by #3200: `kernel/src/e1000e.rs` runs the flush through
    `platform_controller_hub::flush::descriptor_rings`, which the module's notice covers, so the
    notice lives once. The kernel supplies only configuration space and its ring memory.
@@ -65,7 +66,8 @@ Each item gives the recommendation first.
    Foundation BSD-2-Clause notice beside the ISC notice, as found at `openbsd/src@21ea132db7ea`. The
    README, `notes/designware-ethernet.md` and milestone 53 (the board's own peripherals)'s `Reuse:`
    line name the file, and milestone 53 names `motorcomm.c`, `include/uapi/linux/mii.h` and
-   `include/linux/stmmac.h` as fact sources.
+   `include/linux/stmmac.h` as fact sources. The crate's `license` field reads
+   `(MIT OR Apache-2.0) AND ISC AND BSD-2-Clause`.
 6. Ruled 2026-11-04 UTC and done by #3200: `designware_mobile_storage` follows only the order of
    OpenBSD's `sdmmc_mem.c` (ISC, Uwe Stuehler 2006) for its addressing commands (`CMD2`, `CMD3`,
    `CMD9`, `CMD7`), and adapts none of its code. Its power-up sends `CMD8` before `ACMD41`, as the
@@ -113,8 +115,6 @@ Each item gives the recommendation first.
 
 ## What the lane left alone that a lane could fix after a ruling
 
-- `e1000e` and `designware_ethernet` adapt BSD- and ISC-licensed files, and their `license` fields
-  read `MIT OR Apache-2.0`. `designware_mobile_storage`'s reads `(MIT OR Apache-2.0) AND ISC`.
 - `designware_ethernet/src/tests.rs` says the descriptor bits are "as the databook places them",
   and the crate cites no databook edition; `descriptor.rs` says they come from `dwqereg.h`.
 - `extensible_host_controller_interface/README.md` describes QEMU's qemu-xhci as four ports in its
@@ -132,8 +132,11 @@ Each item gives the recommendation first.
 
 ## Follow-on
 
-- **Outstanding.** Items 3 to 11 above, each waiting for an architect's ruling; each item's text
+- **Outstanding.** Items 7 to 11 above, each waiting for an architect's ruling; each item's text
   above says what it is waiting for.
+- **Proposed.** A check that a crate's `license` field names exactly the licenses of the notices it
+  carries:
+  [a crate's license field matches the notices it carries](proposals/a-crates-license-field-matches-the-notices-it-carries.md).
 
 ## Index row
 
