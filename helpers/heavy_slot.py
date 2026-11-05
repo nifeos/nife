@@ -78,6 +78,9 @@ process. Two containers that share one slot directory and each run a heavy scrip
 tell their pid 1s apart, so one can run inside the other's slot. Give each container its own
 NIFE_HEAVY_SLOT_DIR.
 
+BUGS: script/verify takes its heavy slot before its Kani units, so a run that waits for units holds
+a heavy slot it does nothing with, and a build or a lint that needs only the slot waits behind it.
+
 BUGS: waiters are not served in order. Each polls every POLL_SECONDS and the first to find a free
 slot takes it, so a run can be overtaken by one that started later.
 """
