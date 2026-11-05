@@ -778,7 +778,7 @@ def words_main(argv):
 # why. An entry is removed by renaming what it names.
 PROGRAM_KEPT = {
     "uuid": "RFC 9562's own term for the object; the d is the last letter of identifier, and the "
-            "program draws sixteen bytes, prints one line and exits (milestone 111)",
+            "program draws sixteen bytes, prints one line and exits (milestone 111 (a shell that can endow a child with entropy))",
     "report_child": "ends in the word child, which calef ruled for it on 2026-10-18 (UTC); built "
                     "by its builder, reports once and exits",
     "device_child": "as report_child",
