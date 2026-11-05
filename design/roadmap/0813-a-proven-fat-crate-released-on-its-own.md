@@ -229,10 +229,7 @@ falsification patch fails its harness.
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn
   handoff or nife error enum in a public signature. A reviewer judges this; no script can.
-- The architect's review starts from
-  [the review package](../../notes/crate-reviews/file-allocation-table.md): the public API with
-  its signatures, the names, the proofs and tests and their gaps, the stranger run, and the open
-  questions the first release needs answered.
+- The review starts from [its package](../../notes/crate-reviews/file-allocation-table.md).
  
 
 ## Exit
@@ -293,7 +290,7 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
-- **Outstanding.** The crate's names. Checked 2026-11-01 (UTC): the stages have landed.
+- **Outstanding.** The provisional name `LayoutError::LabelRefused`.
 
 ## BUGS
 

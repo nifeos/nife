@@ -72,8 +72,8 @@ API. FAT12, FAT16 and FAT32 with no I/O: `Volume` reads, `WritableVolume` writes
 boot file under a label the caller supplies. The caller implements `SectorDevice` and
 `WritableSectorDevice`.
 
-Proofs. 31 harnesses, each with a falsification patch. 300 tests, most against the `lamfat` oracle
-and `fsck.fat`.
+Proofs. 31 harnesses, each with a falsification patch. 300 tests; the integration tests check
+against the `lamfat` oracle and `fsck.fat`.
 
 Dependencies. None at run time. Dev only: `lamfat =0.4.3` and `ruzstd =0.9.1`, both MIT.
 
