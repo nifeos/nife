@@ -96,7 +96,7 @@ pub(crate) fn initialize() {
 #[inline(never)]
 fn keep_acpi(acpi: &Acpi) {
     // `insert` and not `*slot = Some(*acpi)`: that builds two whole copies in this frame.
-    ACPI.lock().insert(*acpi);
+    let _ = ACPI.lock().insert(*acpi);
 }
 
 /// **The PCIe configuration window, its BAR window, and the topology**, from the MCFG's `ecam`
