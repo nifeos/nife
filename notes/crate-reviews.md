@@ -218,7 +218,7 @@ Outstanding before the move.
 | item | owner |
 |---|---|
 | Merge #3200 (item 5). | #3200's lane |
-| Item 9 of milestone 1019 (the false claim about which sources name the YT8531 registers). | maintainer, with an architect ruling on the names |
+| Item 9 of milestone 1019: the false claim about which sources name the YT8531 registers. | maintainer, with an architect ruling on the names |
 | Rule on the manifest `license` field. | architect |
 | Milestone 816 (proven DesignWare Ethernet QoS logic, released on its own) asks whether three harnesses are enough for a published driver. | architect |
 
