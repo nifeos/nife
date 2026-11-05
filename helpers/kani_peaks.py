@@ -227,7 +227,7 @@ def measure(names, cap_gib):
             text = open(peak_file.name).read().strip()
         if r.returncode != 0 or not text:
             print("kani_peaks: %s exited %d after %.0f s; nothing recorded (a run at the %d GiB cap "
-                  "ends this way too)" % (n, r.returncode, wall, cap_gib), file=sys.stderr)
+                  "ends this way too)" % (n, r.returncode, wall, cap_gib), file=sys.stderr, flush=True)
             failed.append(n)
             continue
         peak_mib = math.ceil(int(text) / MEBIBYTE)
@@ -235,7 +235,7 @@ def measure(names, cap_gib):
         table[n] = {"row": n, "path": paths[n], "tree": head[paths[n]], "kani": pin,
                     "peak_mib": peak_mib}
         save(table)
-        print("kani_peaks: %s peaked at %.2f GiB in %.0f s" % (n, peak_mib / 1024, wall))
+        print("kani_peaks: %s peaked at %.2f GiB in %.0f s" % (n, peak_mib / 1024, wall), flush=True)
     if failed:
         sys.exit("kani_peaks: no record for " + " ".join(failed))
 
