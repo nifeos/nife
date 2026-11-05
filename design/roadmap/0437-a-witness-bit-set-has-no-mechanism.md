@@ -11,7 +11,7 @@ needs_person: no
 
 Everything it needs is in `crates/filesystem_contract` and a `macro_rules!`.
 
-Milestone 326 (nobody has been assigned to turn a) repaired the two lists it found stale, which is rung four again.
+The mutation triage that raised this repaired the two lists it found stale, which is rung four again.
 
 ## In brief
 
