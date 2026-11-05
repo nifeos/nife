@@ -870,7 +870,8 @@ def service_main(argv):
     if bad:
         for line in bad:
             print(f'service: {line}', file=sys.stderr)
-        print('\nName it for what it is (DECISIONS §39, design/naming.md). A name that keeps its '
+        print('\nName it for what it is (DECISIONS §39 (a component is named for what it is), '
+              'design/naming.md). A name that keeps its '
               'spelling on purpose goes in PROGRAM_KEPT or PROTOCOL_KEPT in '
               'helpers/vendored_name_gates.py, with the reason.', file=sys.stderr)
         return 1

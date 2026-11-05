@@ -2804,8 +2804,8 @@ echo "==> naming conventions"
 #    contract_names.py), run over this tree's names by helpers/vendored_name_gates.py, whose
 #    `service` header is the manual: no `-d` name of four characters or more, no `daemon` in a
 #    name or in prose, and a contract crate spelled `_contract`, not `_proto` or `_protocol`. The
-#    argument is §39: a name is a claim made before a reader sees a line of code, and `netd` claimed
-#    a Unix service model this OS does not have. Only what is nife's stays in the wrapper: the names
+#    argument is §39 (a component is named for what it is): a name is a claim made before a reader
+#    sees a line of code, and `netd` claimed a Unix service model this OS does not have. Only what is nife's stays in the wrapper: the names
 #    that keep a spelling on purpose with the reason (`uuid`, the `_child` programs, the NTPv4
 #    crate), the files the prose check does not read, and the glob that proves the contract-crate
 #    check judged something. Fixtures first, so a green check is not a loop matching nothing.
