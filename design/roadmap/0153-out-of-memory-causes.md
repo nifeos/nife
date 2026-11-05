@@ -28,7 +28,7 @@ failures look like.
 by its own documentation: *"`OutOfMemory` when the budget or region table is exhausted or the
 cspace is full"* (`crates/abi/src/lib.rs`, the `SPLIT` doc comment). `RETYPE_OBJ` collapses a
 different pair the same way: *"when the untyped is exhausted, the object registry is full, or the
-cspace is."* At the syscall layer (`kernel/src/syscall.rs:523`), the kernel-side `Option` from
+cspace is."* At the syscall layer (`memory_region_split` in `kernel/src/syscall/memory_region.rs`), the kernel-side `Option` from
 `untyped::split()` becomes `.ok_or(Error::OutOfMemory)?` with no cause attached; the caller sees one
 error code, full stop.
 

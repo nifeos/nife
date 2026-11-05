@@ -38,7 +38,7 @@ Established by instrumentation rather than by reading, in four boots:
 1. The kernel's fault line names `user_rt::trap`, which is one address shared by every failure in a
    program, so it identifies nothing. Making `system_initializer::fail` take a *data* abort at
    `return address + 0x1_0000_0000` put the caller in `far`, which is printed. That named
-   `crates/system_initializer/src/lib.rs:1430`.
+   the `credentialer` construction in `crates/system_initializer/src/boot_steps.rs`.
 2. `MemoryRegion::RETYPE` answers `OutOfMemory` both when the region is out of pages and when the
    capability table is full. Splitting the two with a temporary `println!` said capability table
    full.

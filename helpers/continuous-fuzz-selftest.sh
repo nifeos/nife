@@ -52,4 +52,27 @@ printf '%s' "$out" | grep -q 'could not install the toolchain' || fail "install 
 printf '%s' "$out" | grep -q 'KVM is not usable' && fail "install fails: went on to the KVM check ($out)"
 [ ! -e "$work/fuzz/state/windows.tsv" ] || fail "install fails: a window row was written"
 
+# The class of a window. A wait that ran out its tick budget is held-budget-expired whether or not
+# its message carries a replay line; a mismatch, a crash and a hang keep their own classes; a clean
+# window stays ok. The marker is the one the guest prints (kernel/src/testing.rs).
+marker=$(sed -n 's/^pub const BUDGET_EXPIRED_MARKER: &str = "\(.*\)";$/\1/p' "$here/../kernel/src/testing.rs")
+[ "$marker" = "budget-expired:" ] || fail "the guest's budget marker is '$marker', the supervisor greps 'budget-expired:'"
+
+verdict() { # LOG-TEXT RC FIRST
+    printf '%s\n' "$1" > "$work/log"
+    "$sup" --classify "$work/log" "$2" "$3"
+}
+want() { # NAME GOT WANT
+    [ "$2" = "$3" ] || fail "$1: got '$2', wanted '$3'"
+}
+
+want "clean" "$(verdict 'syscall fuzzer: 50 seeds, 900 ms (x)' 0 100)" "ok 50 150"
+want "mismatch" "$(verdict 'syscall fuzzer: seed 0x6f step 3: a slot differs (replay: NIFE_SYSCALL_FUZZ_SEEDS=111:1)' 1 100)" "held-finding 11 112"
+want "teardown budget" "$(verdict "syscall fuzzer: seed 0x6f step 3: $marker teardown should have woken actor 1 (replay: NIFE_SYSCALL_FUZZ_SEEDS=111:1)" 1 100)" "held-budget-expired 11 112"
+want "confined budget" "$(verdict "confined fuzzer: seed 0x6f step 3: $marker fuzzer 0 never came back (replay: NIFE_CONFINED_FUZZ_SEEDS=111:1)" 1 100)" "held-budget-expired 11 112"
+want "budget panic" "$(verdict "panicked at x: $marker actor 2 neither finished nor parked" 1 100)" "held-budget-expired 0 101"
+want "crash" "$(verdict 'panicked at x: index out of bounds' 1 100)" "held-crash 0 101"
+want "hang" "$(verdict 'booting' 143 100)" "held-hang 0 101"
+want "infrastructure" "$(verdict 'booting' 125 100)" "infrastructure 0 101"
+
 echo "continuous-fuzz-selftest: ok"

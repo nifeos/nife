@@ -61,7 +61,7 @@ struct Page;
 
 impl RegisterWindowAndClock for Page {
     fn read(&mut self, offset: u32) -> u32 {
-        debug_assert!(offset < registers::WINDOW_USED);
+        debug_assert!(offset < registers::USED_REGISTER_WINDOW_BYTES);
         // SAFETY: the spawner maps one device-typed page of the controller at
         // REGISTER_VIRTUAL_ADDRESS before `_start` runs, and every offset the crate passes is a
         // word-aligned register in it.
@@ -71,7 +71,7 @@ impl RegisterWindowAndClock for Page {
     }
 
     fn write(&mut self, offset: u32, value: u32) {
-        debug_assert!(offset < registers::WINDOW_USED);
+        debug_assert!(offset < registers::USED_REGISTER_WINDOW_BYTES);
         // SAFETY: as `read`.
         unsafe {
             core::ptr::write_volatile(

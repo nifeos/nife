@@ -16,7 +16,7 @@ device tree.
 
 ## What is skipping
 
-`kernel/src/smp.rs:749` skips its core-roster cross-check on x86_64:
+`the_roster_is_the_machines_own_core_list` in `kernel/src/smp.rs` skips its core-roster cross-check on x86_64:
 
 > nothing has read this machine's core roster from a device tree (either `described_count()` is 0,
 > or this is x86_64, whose roster is ACPI-based and has no independent device-tree re-read to check

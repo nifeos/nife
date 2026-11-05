@@ -6,7 +6,8 @@ built: 2026-08-04
 # 100. Read the machine's PSCI and its CPU list, not QEMU `virt`'s
 
 Built 2026-08-04 (PR #107). Raised 2026-08-04 from two limitations recorded in the code the same day,
-in `kernel/src/arch/aarch64/mod.rs:88` and `kernel/src/smp.rs:170`. Both were written by a lane that
+in `psci_cpu_on` in `kernel/src/arch/aarch64/mod.rs` and in `bring_up_secondaries` in
+`kernel/src/smp.rs`. Both were written by a lane that
 found them while working on something else, and both name the other.
 
 The finding. SMP bring-up is the one subsystem that assumes a board instead of asking it. Three
@@ -16,7 +17,7 @@ facts are compiled in:
 |---|---|---|
 | The PSCI conduit is `hvc` | `psci_cpu_on`'s `hvc #0` | `/psci`'s `method` property |
 | The function id is `0xC400_0003` | `const PSCI_CPU_ON` | `/psci`'s `compatible` (the id set moved between PSCI 0.1 and 0.2) |
-| The core list is `0..MAX_CPUS`, and `MAX_CPUS` is 4 | `kernel/src/cpu.rs:30`, iterated in `bring_up_secondaries` | `/cpus` |
+| The core list is `0..MAX_CPUS`, and `MAX_CPUS` is 4 | `MAXIMUM_CPUS` in `kernel/src/cpu.rs`, iterated in `bring_up_secondaries` | `/cpus` |
 
 Everywhere else the machine describes itself. `crates/device_tree_blob` already parses the tree, and
 milestone 60 (ISA discovery) reads the ISA out of it on both architectures. `crates/pci` holds its
@@ -33,9 +34,9 @@ code from an `hvc` it never agreed to serve. Calling both "silent" is close enou
 too loose for a plan, so the plan should treat them separately.
 
 A third site of the same class, which corrects the code comment that raised this.
-`kernel/src/arch/riscv64/timer.rs:35` hardcodes `TIMEBASE_HZ` at 10 MHz with the comment "hardcoded
+`TIMEBASE_HZ` in `kernel/src/arch/riscv64/timer.rs` hardcodes it at 10 MHz with the comment "hardcoded
 until the DTB parse lands", and the DTB parse landed. aarch64's twin computes the same interval from
-`CNTFRQ_EL0` and asserts the value is nonzero (`arch/aarch64/timer.rs:120`), so the two ISAs
+`CNTFRQ_EL0` and asserts the value is nonzero (`initialize` in `kernel/src/arch/aarch64/timer.rs`), so the two ISAs
 currently disagree about whether the machine gets to say how fast its clock runs. That is a parity
 gap under rule 5, it is in this milestone's family, and it means the `psci_cpu_on` comment's claim to
 be "the one place the kernel assumes a board" is one site short. Fix the claim here rather than

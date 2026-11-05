@@ -12,8 +12,9 @@
 #
 # Modes, and how long they take. `script/lint` runs every section; `script/lint --quick` runs the
 # cheap ones that fail a lane's first run most often (`--quick --list` names them), so run it
-# first; `script/lint --no-cargo` is the pre-push hook's set; `script/lint --clippy` stops after
-# the last clippy section. Sections run side by side, up to NIFE_LINT_JOBS at once (a quarter of
+# first; `script/lint --section <id|name>` runs one section by its `# lint-id:` slug or exact name;
+# `script/lint --no-cargo` is the pre-push hook's set; `script/lint --clippy` stops after the last
+# clippy section. Sections run side by side, up to NIFE_LINT_JOBS at once (a quarter of
 # the cores, at most 8; 1 gives the old one-at-a-time loop). A section opts into the scheduler
 # with comment lines (`# lint-lane:`, `# lint-waits-for:`, `# lint-target-dir:`, `# lint-quick`)
 # that helpers/lint-no-cargo.awk reads and helpers/lint-sections.sh's header explains. Every
@@ -115,6 +116,10 @@ if [ -z "${LINT_SECTION:-}" ]; then
     if [ "${1:-}" = "--clippy" ]; then
         exec sh helpers/lint-sections.sh "$lint_self" clippy
     fi
+    # `--section <id|name>`: one section, by its `# lint-id:` slug or exact name, with this preamble.
+    if [ "${1:-}" = "--section" ]; then
+        exec sh helpers/lint-sections.sh "$lint_self" --section "${2:-}"
+    fi
     # `--quick`: the pre-flight. The cheap sections that fail most often on a lane's first run (a missing
     # gloss on a citation, a stale roadmap status, a block the ratchets want), each marked `# lint-quick`
     # in its own section. Run it before the first commit and again before every push; it is not a
@@ -129,6 +134,17 @@ if [ -z "${LINT_SECTION:-}" ]; then
     fi
     exec sh helpers/lint-sections.sh "$lint_self" all
 fi
+
+echo "==> the section list (script/lint's sections are a reviewed interface)"
+# lint-quick
+# lint-id: section-list
+# The sections' names, order, lanes, waits, target dirs and quick flags are read by the scheduler, the
+# section-times CSV and script/ci-log-baseline, so a change to any of them shows up as a diff of
+# helpers/lint-section-index.tsv. After an intended change, run helpers/lint-section-index.sh write
+# and commit the file. This section stays first, so that a new section appended elsewhere does not
+# touch its lines.
+helpers/lint-section-index-selftest.sh
+helpers/lint-section-index.sh check
 
 echo "==> the pre-push hook's contract with this script"
 # The pre-push hook's contract with this script, checked (2026-09-29). `.githooks/pre-push` runs
@@ -215,6 +231,9 @@ helpers/fuzz-daily-publish-selftest.sh >/dev/null
 # inside the one slot their parent holds. helpers/verify-parallel-selftest.sh says what it proves,
 # over a stub cargo and a private slot directory, so it costs milliseconds and takes no real slot.
 helpers/verify-parallel-selftest.sh >/dev/null
+# The machine's Kani memory is one pool however many lanes prove at once (helpers/heavy_slot.py,
+# "The Kani pool"): the third run waits, a run weighs its harnesses, the width is clamped, CI is off.
+helpers/kani-pool-selftest.sh >/dev/null
 
 echo "==> script/verify --parallel forks the shards, joins their verdicts, and keeps to one slot"
 # The local parallel prove, milestone 957 (local parallel prove of the Kani verification suite): a stub
@@ -3794,6 +3813,11 @@ python3 helpers/mutation_inflow.py orphans
 python3 helpers/mutation_real_holes.py --selftest >/dev/null
 echo "==> the survivor classification is current"
 python3 helpers/mutation_real_holes.py check
+# The crate-to-file table in notes/mutation-testing/README.md is generated from the ledgers'
+# headings and the triage file, so it must equal a regeneration.
+python3 helpers/mutation_ledger_index.py --selftest >/dev/null
+echo "==> the mutation ledger crate table is current"
+python3 helpers/mutation_ledger_index.py check
 # Part 1 of the same proposal, the shape check: every noise-shape survivor's own line, at the
 # census's commit, either proves the no-test-can-kill argument from the literals and consts on it
 # or records that it cannot. The verdicts are fixtures-only here; the real run reads census
@@ -3963,6 +3987,7 @@ python3 helpers/lint_externalized_crates.py --selftest
 python3 helpers/lint_externalized_crates.py
 
 echo "==> shellcheck"
+# lint-id: shellcheck
 # The 37 `#!/bin/sh` scripts, gated at warning severity. Two reasons this earns a dependency here
 # rather than being generic hygiene:
 #
@@ -3982,6 +4007,18 @@ echo "==> shellcheck"
 # argument and break the emulator. Raising to note level means restructuring that assembly with `set
 # --` (the pattern script/fmt uses) rather than blanket-disabling the rule, and that is a change to
 # the script every test run depends on, so it is not worth bundling here.
+if ! command -v shellcheck >/dev/null 2>&1; then
+    echo "lint: shellcheck not found; run script/bootstrap (it installs it)." >&2
+    exit 1
+fi
+cd "$(dirname "$0")/.."
+shellcheck --severity=warning script/* helpers/*.sh
+# Counted, not remembered. This line read "23 sh scripts" as a literal, so it kept saying 23 after a
+# 24th was added -- harmless here because the glob above is what actually checks them, but it is the
+# same defect as script/fmt's: a gate reporting a number it did not measure. Anything that looks like
+# evidence has to be derived from the thing it describes.
+echo "shellcheck: $(ls script/* helpers/*.sh | wc -l | tr -d ' ') sh scripts, no errors or warnings"
+
 # Dependency direction: nothing under crates/ may depend on a BINARY (kernel, user, xtask).
 #
 # This is the method, not a tidiness rule. The whole approach is "pure logic in crates that compile
@@ -4541,18 +4578,6 @@ if ! command -v typos >/dev/null 2>&1; then
 fi
 typos
 echo "spelling: clean"
-
-if ! command -v shellcheck >/dev/null 2>&1; then
-    echo "lint: shellcheck not found; run script/bootstrap (it installs it)." >&2
-    exit 1
-fi
-cd "$(dirname "$0")/.."
-shellcheck --severity=warning script/* helpers/*.sh
-# Counted, not remembered. This line read "23 sh scripts" as a literal, so it kept saying 23 after a
-# 24th was added -- harmless here because the glob above is what actually checks them, but it is the
-# same defect as script/fmt's: a gate reporting a number it did not measure. Anything that looks like
-# evidence has to be derived from the thing it describes.
-echo "shellcheck: $(ls script/* helpers/*.sh | wc -l | tr -d ' ') sh scripts, no errors or warnings"
 
 # ShellCheck is a static analyzer and knows POSIX from bashisms, but it does not *run* a shell, so it
 # cannot catch a shell's own parser being wrong about syntax that is valid. `/bin/sh` on the dev Mac

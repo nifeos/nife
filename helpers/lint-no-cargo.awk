@@ -24,6 +24,10 @@
 #        awk -v mode=split -v dir=<empty dir> -f helpers/lint-no-cargo.awk script/lint
 #   emit  prints the script to run (preamble plus the kept sections).
 #   list  prints one `run`/`skip` line per section, for a person asking what the mode covers.
+#   index prints one `slug<tab>keep<tab>lane<tab>waits<tab>quick<tab>target<tab>name` line per
+#         section, in file order, with lane as the section resolves it (`main` for an ordinary cargo
+#         section). helpers/lint-section-index.sh snapshots it into helpers/lint-section-index.tsv,
+#         and the section named "the section list" fails when the live index differs.
 #   split writes the preamble to <dir>/preamble, each section to <dir>/<NNN>, and one
 #         `NNN<tab>keep<tab>lane<tab>waits<tab>quick<tab>target<tab>name` line per section to <dir>/index, keep being
 #         1 where `emit` would keep it. helpers/lint-sections.sh runs them. `lane`, `waits`, `quick`
@@ -41,6 +45,9 @@
 #                                    would queue on cargo's one build directory lock run side by
 #                                    side. A section that names a path under target/ must read
 #                                    ${CARGO_TARGET_DIR:-$PWD/target}.
+#         # lint-id: SLUG          a stable name for `script/lint --section SLUG` (lowercase letters,
+#                                  digits, hyphens; unique across the file). Optional: `-` when absent.
+#                                  helpers/lint-sections.sh also takes a section's exact name.
 #         Only the scheduler reads them; a wrong lane costs time, never a verdict, because every
 #         section still runs and a section that reads another's output must name it with
 #         lint-waits-for.
@@ -63,15 +70,20 @@ function close_block(   keep, file) {
     }
     if (lane == "") lane = (cargo && !okmark) ? "main" : "-"
     if (waits == "") waits = "-"
+    if (slug == "") slug = "-"
+    else if (slug in seen_slug) { print "lint: two sections carry `# lint-id: " slug "`" > "/dev/stderr"; bad = 1 }
+    seen_slug[slug] = 1
     if (tdir == "") tdir = "-"
     if (okmark && !cargo) { print "lint --no-cargo: \"" name "\" carries a no-cargo-ok marker but runs no cargo; delete the marker" > "/dev/stderr"; bad = 1 }
     if (okmark && !guarded) { print "lint --no-cargo: \"" name "\" carries a no-cargo-ok marker but never reads LINT_NO_CARGO, so it would run cargo in the mode that forbids it" > "/dev/stderr"; bad = 1 }
     keep = (!cargo || okmark)
     if (mode == "list") print (keep ? "run   " : "skip  ") name
+    else if (mode == "index") printf "%s\t%d\t%s\t%s\t%d\t%s\t%s\n", slug, keep, lane, waits, quick, tdir, substr(name, 5)
     else if (mode == "quicklist") { if (quick && keep) print name }
     else if (mode == "split") {
         file = sprintf("%03d", ++sections)
         printf "%s", body > (dir "/" file); close(dir "/" file)
+        printf "%s\t%s\n", file, slug > (dir "/ids")
         printf "%s\t%d\t%s\t%s\t%d\t%s\t%s\n", file, keep, lane, waits, quick, tdir, substr(name, 5) > (dir "/index")
     }
     else if (keep) out = out body
@@ -80,7 +92,7 @@ function close_block(   keep, file) {
 /^echo "==> / {
     close_block()
     name = substr($0, 7, length($0) - 7); body = $0 "\n"
-    cargo = 0; okmark = 0; guarded = 0; lane = ""; waits = ""; quick = 0; tdir = ""
+    cargo = 0; okmark = 0; guarded = 0; lane = ""; waits = ""; quick = 0; tdir = ""; slug = ""
     next
 }
 {
@@ -90,6 +102,7 @@ function close_block(   keep, file) {
     if ($0 ~ /^[ \t]*#[ \t]*needs-cargo-output:/) cargo = 1
     if ($0 ~ /^[ \t]*#[ \t]*lint-lane:[ \t]*[A-Za-z0-9_-]+[ \t]*$/) { lane = $0; sub(/^[ \t]*#[ \t]*lint-lane:[ \t]*/, "", lane); sub(/[ \t]*$/, "", lane) }
     if ($0 ~ /^[ \t]*#[ \t]*lint-waits-for:[ \t]*[A-Za-z0-9_,-]+[ \t]*$/) { waits = $0; sub(/^[ \t]*#[ \t]*lint-waits-for:[ \t]*/, "", waits); sub(/[ \t]*$/, "", waits) }
+    if ($0 ~ /^[ \t]*#[ \t]*lint-id:[ \t]*[a-z0-9-]+[ \t]*$/) { slug = $0; sub(/^[ \t]*#[ \t]*lint-id:[ \t]*/, "", slug); sub(/[ \t]*$/, "", slug) }
     if ($0 ~ /^[ \t]*#[ \t]*lint-quick[ \t]*$/) quick = 1
     if ($0 ~ /^[ \t]*#[ \t]*lint-target-dir:[ \t]*[A-Za-z0-9_-]+[ \t]*$/) { tdir = $0; sub(/^[ \t]*#[ \t]*lint-target-dir:[ \t]*/, "", tdir); sub(/[ \t]*$/, "", tdir) }
     if ($0 !~ /^[ \t]*#/ && $0 ~ /LINT_NO_CARGO/) guarded = 1
@@ -97,6 +110,6 @@ function close_block(   keep, file) {
 END {
     close_block()
     if (bad) exit 1
-    if (mode == "split") close(dir "/index")
-    else if (mode != "list" && mode != "quicklist") printf "%s", out
+    if (mode == "split") { close(dir "/index"); close(dir "/ids") }
+    else if (mode != "list" && mode != "quicklist" && mode != "index") printf "%s", out
 }
