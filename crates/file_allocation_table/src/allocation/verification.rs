@@ -7,7 +7,7 @@
 //! hold. That each write lands in every live copy of the table, and that a FAT12 entry keeps its
 //! neighbor, are `table::verification`'s proof and the unit tests'. The bound is the unrolling
 //! Kani needs: the operations' own loops are bounded by the cluster count whatever it is, and the
-//! oracle tests run them over volumes of tens of thousands.
+//! rust-fatfs tests run them over volumes of tens of thousands.
 //!
 //! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 

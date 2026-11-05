@@ -73,7 +73,7 @@ API. FAT12, FAT16 and FAT32 with no I/O: `Volume` reads, `WritableVolume` writes
 boot file under a label the caller supplies. `VolumeLayout` publishes five methods, and every error
 enum is `#[non_exhaustive]`. The caller implements `SectorDevice` and `WritableSectorDevice`.
 
-Proofs. 31 harnesses, each with a falsification patch. 300 tests check against the `lamfat` oracle
+Proofs. 31 harnesses, each with a falsification patch. 300 tests check against `lamfat` (rust-fatfs, an independent FAT library)
 and `fsck.fat`.
 
 Dependencies. None at run time. Dev only: `lamfat =0.4.3` and `ruzstd =0.9.1`, both MIT.

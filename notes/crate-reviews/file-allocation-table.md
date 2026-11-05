@@ -79,14 +79,14 @@ proved them all with stock Kani 0.68.0, the version the shared template pins.
 | file read | 1 | a read stays inside the file's size and clusters |
 | allocation | 3 | allocation takes one free cluster and nothing else; a release frees only its own chain and never a bad cluster; a cut keeps exactly the head |
 | write cursor | 2 | a partial sector write keeps the head and zeroes the slack; a write extends the chain to the size and stays inside it |
-| `FSInfo` | 2 | any sector parses to hints inside the volume; a store changes only the two hints |
+| file system information sector | 2 | any sector parses to hints inside the volume; a store changes only the two hints |
 | format | 1 | a computed geometry parses back as itself (clusters of 1 to 8 sectors) |
 | partition table | 2 | any sector parses to a sound table or an error; a partition device reads only its partition |
 | attributes, label, time | 3 | setting attributes changes the four user bits only; an accepted label is legal bytes then spaces; any time packs to legal fields |
 
 What the proofs leave out, and what covers it:
 
-- Whole images. Kani proves per sector and over model volumes of a few clusters. The oracle tests
+- Whole images. Kani proves per sector and over model volumes of a few clusters. The tests against `lamfat`
   and two fuzz targets in nife's `fuzz/` (`file_allocation_table_boot_sector` and
   `file_allocation_table_writer`) cover whole images. Question 6.
 - The operations built from the proven steps: create, rename, remove, path lookup, name
@@ -98,12 +98,13 @@ What the proofs leave out, and what covers it:
 
 ## Tests
 
-On Rust 1.88 and on stable, 300 pass and one stays ignored: 244 unit tests, 47 integration tests in
-12 files, and 9 doctests. `cargo clippy --all-targets` and `cargo doc` print no warning.
+On Rust 1.88 and on stable, 300 pass and one stays ignored: 244 unit tests, 46 integration tests in
+11 files, and 10 doctests (one of them the README example). `cargo clippy --all-targets` and `cargo doc` print no warning.
 
-- The oracle. `lamfat` (rust-fatfs's main line) reads every tree this crate writes on FAT12, FAT16
-  and FAT32, and this crate reads every tree `lamfat` writes, name for name and byte for byte. The
-  allocation oracle checks, which drive the crate-private primitives, run as unit tests in
+- Tests against rust-fatfs. `lamfat` (rust-fatfs's main line, an independent FAT library) reads
+  every tree this crate writes on FAT12, FAT16 and FAT32, and this crate reads every tree `lamfat`
+  writes, name for name and byte for byte. The
+  allocation checks against `lamfat`, which drive the crate-private primitives, run as unit tests in
   `src/allocation/tests.rs`.
 - Other implementations. Where the host has `fsck.fat` or `fsck_msdos`, every image must pass
   `fsck -n`; where it has `mkfs.fat`, the crate's writer works on that tool's FAT12 and FAT16
@@ -120,7 +121,7 @@ On Rust 1.88 and on stable, 300 pass and one stays ignored: 244 unit tests, 47 i
 ## Dependencies, `unsafe`, `no_std`
 
 - Run time: none. `[dependencies]` is empty.
-- Development only, from crates.io and pinned with `=`: `lamfat 0.4.3` (MIT), the oracle, and
+- Development only, from crates.io and pinned with `=`: `lamfat 0.4.3` (MIT), the independent FAT library the tests compare against, and
   `ruzstd 0.9.1` (MIT), which decompresses the macOS images. nife's `deny.toml` allows `lamfat` to
   this crate alone, and the new repository's `deny.toml` needs the same exception.
 - `unsafe`: no site.
@@ -258,7 +259,7 @@ open.
    Background: `allocate_cluster`, `deallocate_chain` and `truncate_chain` edit the table directly.
    Kani proves each correct alone, but a caller who uses one outside a file operation can leak
    clusters or free a live file's chain.
-   Recommendation: make the three crate-private before 0.1.0 and move their oracle checks into the
+   Recommendation: make the three crate-private before 0.1.0 and move their checks against `lamfat` into the
    crate's unit tests. Keep the read-side primitives public.
    Ruling: as recommended. The three were forwarders to `Volume`'s crate-private methods, so they
    are gone, and `AllocationError`, which only they returned, is crate-private.

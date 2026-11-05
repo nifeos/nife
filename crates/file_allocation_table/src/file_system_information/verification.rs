@@ -1,16 +1,18 @@
-//! **Machine-checked proofs (Kani) of the `FSInfo` parse and store**, over every 512-byte sector.
-//! Behind `#[cfg(kani)]`, so only `cargo kani` compiles them.
+//! **Machine-checked proofs (Kani) of the file system information sector parse and store**, over
+//! every 512-byte sector. Behind `#[cfg(kani)]`, so only `cargo kani` compiles them.
 //!
 //! Both are straight-line code over fixed offsets, so each harness covers every sector and every
 //! cluster count, not a bounded family.
 //!
-//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of
+//! this crate.
 
 use super::*;
 
-/// **A parsed `FSInfo` is sound for its volume.** For every 512-byte sector and cluster count:
-/// the parse succeeds only when the three signatures are the specification's, a free count it
-/// reports is at most the cluster count, and a next-free cluster it reports is a data cluster.
+/// **A parsed file system information sector is sound for its volume.** For every 512-byte sector
+/// and cluster count: the parse succeeds only when the three signatures are the specification's, a
+/// free count it reports is at most the cluster count, and a next-free cluster it reports is a data
+/// cluster.
 /// Falsification: replayable `crates/file_allocation_table/falsifications/file_system_information.verification.every_sector_parses_to_hints_inside_the_volume.patch`
 #[kani::proof]
 fn every_sector_parses_to_hints_inside_the_volume() {
@@ -32,9 +34,10 @@ fn every_sector_parses_to_hints_inside_the_volume() {
     }
 }
 
-/// **A store changes the two hints and nothing else, and only in an `FSInfo` sector.** For every
-/// sector and both hints: a sector with wrong signatures is refused and left as it was; otherwise
-/// every byte outside 488 to 495 is as it was and the hints read back (or read as unknown).
+/// **A store changes the two hints and nothing else, and only in a file system information
+/// sector.** For every sector and both hints: a sector with wrong signatures is refused and left as
+/// it was; otherwise every byte outside 488 to 495 is as it was and the hints read back (or read as
+/// unknown).
 /// Falsification: replayable `crates/file_allocation_table/falsifications/file_system_information.verification.a_store_changes_only_the_two_hints.patch`
 #[kani::proof]
 fn a_store_changes_only_the_two_hints() {

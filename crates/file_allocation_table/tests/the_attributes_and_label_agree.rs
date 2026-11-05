@@ -214,14 +214,14 @@ fn labels_agree(label: &str, mebibytes: usize, fat_type: FatType) {
         None,
         "{label}: rust-fatfs formats with no label entry"
     );
-    volume.set_volume_label("ORACLE LBL").unwrap();
+    volume.set_volume_label("LAMFAT LBL").unwrap();
     assert_eq!(
         volume.volume_label().unwrap().unwrap().trimmed(),
-        b"ORACLE LBL"
+        b"LAMFAT LBL"
     );
     volume.mark_clean().unwrap();
     let image = volume.into_device();
-    assert_eq!(lamfat_label(&image.bytes), "ORACLE LBL", "{label}");
+    assert_eq!(lamfat_label(&image.bytes), "LAMFAT LBL", "{label}");
     check_with_fsck(&image.bytes, &format!("{label}-label"));
     // Change it: still one entry, and rust-fatfs and fsck agree.
     let mut volume = WritableVolume::open(image, NoClock).unwrap();

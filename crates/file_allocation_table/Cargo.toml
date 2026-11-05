@@ -17,14 +17,14 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 
 [dependencies]
 
-# The test oracle and nothing else: rust-fatfs's main line, republished on crates.io as `lamfat`
-# (MIT). Pinned to one version, and its checksum is in Cargo.lock. It never builds into anything
-# that ships; deny.toml refuses it to every other crate.
+# The independent FAT library the tests compare against, and nothing else: rust-fatfs's main line,
+# republished on crates.io as `lamfat` (MIT). Pinned to one version, and its checksum is in
+# Cargo.lock. It never builds into anything that ships; deny.toml refuses it to every other crate.
 [dev-dependencies]
 lamfat = "=0.4.3"
 
 # Decompresses tests/fixtures/macos/*.zst, the two images a macOS host wrote. Pure Rust, MIT, and
-# a dev-dependency only, like the oracle.
+# a dev-dependency only, like `lamfat`.
 ruzstd = "=0.9.1"
 
 [lints.rust]
