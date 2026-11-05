@@ -15,6 +15,7 @@ and the reasoning behind it, at a length the main page's prose budget cannot hol
 - [`elf-parser-wall.md`](elf-parser-wall.md): where BMC hit a wall.
 - [`glob-proofs.md`](glob-proofs.md): the glob matcher.
 - [`ci-timings.md`](ci-timings.md): suite timings, sharding and `--affected-since`.
+- [`kani-memory.md`](kani-memory.md): each row's measured peak memory, and the Kani pool weight it earns.
 
 Name: provisional, for the directory and every stem in it. The directory follows the `notes/<stem>/`
 appendix convention §212 (a prose budget) set, so its name is the parent's stem. Each file is named

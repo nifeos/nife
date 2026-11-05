@@ -180,7 +180,7 @@ state. The proofs landed on code the kernel was running all along.
 
 ## `crates/generational_table`
 
-Four in `crates/generational_table/src/lib.rs` <!--count:generational-table-harnesses-->, the
+Five in `crates/generational_table/src/lib.rs` <!--count:generational-table-harnesses-->, the
 generational thread table (milestone 14 phase
 A; see notes/generational-names.md); the table names the three this appendix adjudicated:
 

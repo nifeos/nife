@@ -102,6 +102,11 @@ difference. A setting changed by hand in the web interface is then a red run, no
 Both license files, because GitHub's license detection reads nife itself as Apache-2.0 although the
 tree carries both. `script/crate-standalone` checks the pair and the field.
 
+A crate adapting permissive source joins the pair with `AND` to each adapted source's SPDX
+license, as in `(MIT OR Apache-2.0) AND ISC`. Facts read add nothing; notices stay. Tools
+read a published field and nobody can withdraw it, so it names every term: dropping one later stays
+compatible, adding one does not.
+
 ## The names: ruled
 
 calef ruled the names on 2026-10-17 (UTC):

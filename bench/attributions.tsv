@@ -643,3 +643,8 @@ aarch64	c4d491b81	ipc_rtt_el0	-2.20	#2735, milestone 707: aarch64 registers read
 aarch64	c4d491b81	sink_throughput	-1.76	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
 aarch64	c4d491b81	map_el0	-0.81	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
 aarch64	c4d491b81	spawn_el0	-1.38	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	f47530910	spawn_reap	+1.07	#3225: generational_table saturates a slot's generation and skips retired slots on insert
+riscv64	f47530910	spawn_reap	+1.16	#3225: generational_table saturates a slot's generation and skips retired slots on insert
+x86_64	f47530910	spawn_reap	+1.20	#3225: generational_table saturates a slot's generation and skips retired slots on insert
+aarch64	f47530910	spawn_el0	+0.96	#3225: generational_table saturates a slot's generation and skips retired slots on insert
+riscv64	f47530910	spawn_el0	+1.04	#3225: generational_table saturates a slot's generation and skips retired slots on insert
