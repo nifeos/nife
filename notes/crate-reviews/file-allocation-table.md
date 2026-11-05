@@ -218,7 +218,9 @@ then measures a period with no change the tool calls breaking; nobody has set th
 
 ## Result of `script/crate-standalone`
 
-STANDALONE_RESULT
+One failure, in names: `LayoutError::LabelRefused` is provisional. The manifest, the files, the
+citations and the build (host and the three bare-metal targets on 1.88) pass. In the stranger
+copy, stock Kani proved all 31 harnesses, and each of the 31 patches made its own harness fail.
 
 ## Open questions
 
