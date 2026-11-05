@@ -11,7 +11,7 @@
 //!
 //! ```console
 //! $ cargo test -p file_allocation_table -- --ignored --nocapture
-//! wrote target/file-allocation-table-check.img
+//! wrote target/tmp/file-allocation-table-check.img
 //! fsck_msdos: ** Phase 1 - Preparing FAT ... ** Phase 4 - Checking Directories ...
 //! the host's driver lists ["BOOTRISCV64.EFI"] in /private/tmp/dmg.XXXXXX/EFI/BOOT
 //! ```
@@ -38,9 +38,11 @@ const NAME: &str = "BOOTRISCV64.EFI";
 #[test]
 #[ignore = "attaches an image for the host's FAT driver to read; see this file's header"]
 fn the_hosts_own_fat_driver_reads_the_long_name_back() {
+    // Cargo's scratch directory for integration tests, inside whichever target directory the
+    // build uses, so the image never lands outside the build's own output.
     let path = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../target/file-allocation-table-check.img"
+        env!("CARGO_TARGET_TMPDIR"),
+        "/file-allocation-table-check.img"
     );
     let body = write_image(Path::new(path));
     eprintln!("wrote {path}");
