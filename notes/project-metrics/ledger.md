@@ -121,6 +121,7 @@ Rates are list prices on the date recorded, in USD per million tokens.
 | 2026-09-21 | `claude-haiku-4-5-20251001` | 1.00 | 1.25 | 2.00 | 0.10 | 5.00 | a |
 | 2026-10-04 | `claude-opus-5-5` | 4.00 | 5.00 | 8.00 | 0.20 | 20.00 | d |
 | 2026-10-04 | `claude-sonnet-5-5` | 2.00 | 2.50 | 4.00 | 0.20 | 10.00 | d |
+| 2026-11-05 | `claude-haiku-5-5` | 0.10 | 0.125 | 0.20 | 0.01 | 0.50 | e |
 | 2026-10-04 | `glm-5.3` | 0.1121 | 0.1121 | 0.1121 | 0.1121 | 0.1121 | c |
 | 2026-10-04 | `glm-5.3-flash` | 0.1121 | 0.1121 | 0.1121 | 0.1121 | 0.1121 | c |
 
@@ -141,6 +142,15 @@ Source d: the `claude-api` skill bundled with the harness (version 2.1.287), mod
 multipliers (1.25x and 2x input) applied to those inputs. This skill version states no write price
 for either model, so those four cells are derived, not read. The rows exist because 2026W39 and
 2026W40 had tokens on these models with no row, which left both blended rates blank.
+
+Source e: Anthropic's pricing page, platform.claude.com/docs/en/about-claude/pricing, which I read
+on 2026-11-05. The page states all five cells, so none needs deriving. It sets the Haiku 5.5 rate
+by prompt length, and the row above holds the rate for a request with a prompt up to 100,000
+tokens. A longer request pays 0.50 input, 0.625 five-minute write, 1.00 one-hour write, 0.05 read
+and 2.50 output. `effort.csv` aggregates by week and keeps no per-request prompt size, so this table
+cannot apply the higher tier. The largest prompt on any `claude-haiku-5-5` row so far (the
+`peak_context_tokens` column) stays under 66,000 tokens, so the lower tier fits every week on
+record. A week with a larger peak on this model would come out underpriced.
 
 Source a: the `claude-api` skill bundled with the agent harness (version 2.1.277), whose model table
 carries input and output prices and is itself dated 2026-06-24. Its `shared/prompt-caching.md` gives

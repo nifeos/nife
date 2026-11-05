@@ -118,7 +118,7 @@ that an agent's pull request says so. The rest are in the last section.
 | sdmmc | SD/MMC | drivercraft | 0.1.0, 2026-01-28 | GPL-3.0+ OR Apache-2.0 OR MIT | 11k / 2 | none found |
 | jh71xx-pac, jh71xx-hal | JH7110 | weathered-steel (Codeberg) | 0.11.1 and 0.7.2, 2025-03 | GPL-3.0-only | 27k and 15k | not checked |
 
-Redox's `nvmed`, `xhcid` and `e1000d` are daemons, not libraries, and their GitHub mirror is
+Redox's `nvmed`, `xhcid` and `e1000d` are long-running services, not libraries, and their GitHub mirror is
 archived. SPDK (C) is the NVMe reference and Linux's `stmmac` and `dw_mmc` (GPL-2.0) are the
 DesignWare references. No Rust crate for the JH7110's TRNG or clock and reset logic was found.
 `tgoskits` merged 1,606 pull requests in six months, 35 from outside authors.
