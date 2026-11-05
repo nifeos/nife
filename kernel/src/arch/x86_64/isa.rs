@@ -69,7 +69,7 @@ fn words(r: CpuidResult) -> [u32; 4] {
 /// used for and where `CPUID` says so.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(boot_info_pointer: usize) {
     let _ = boot_info_pointer;
 

@@ -235,7 +235,7 @@ anything is staged.
   §193 (what a block-roster entry calls an NVMe disk)), so `disk_surveyor` sees the disk, but no
   program is handed its endpoint and the FS server's default remains virtio-blk.
 - A transfer is one command per filesystem block, so a sixteen-block blk request is sixteen
-  round trips where the virtio block server issues one. `prp_pair` refuses anything needing a PRP
+  round trips where the virtio block server issues one. `physical_region_page_pair` refuses anything needing a PRP
   list, and a multi-page transfer needs one.
 - The EL0 server cannot read `CSTS`, so a hung controller presents to it as a bounded-out poll
   answered `EIO` rather than as `CSTS.CFS`. The direct price of not mapping the controller register

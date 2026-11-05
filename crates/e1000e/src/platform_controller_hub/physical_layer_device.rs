@@ -137,7 +137,7 @@ pub(crate) const MAXIMUM_PAGE: u32 = 0x7ff;
 
 // A value shifted left by five has no bits in the low five, where the register field is masked,
 // so | and ^ compose the word identically; the compiler checks that here for the widest page
-// there is, and .cargo/mutants.toml excludes the function's OR-to-XOR swap on this assertion.
+// there is, so the function's OR-to-XOR swap is an equivalent mutant.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!((u32::MAX << PHY_PAGE_SHIFT) & MAX_PHY_REG_ADDRESS == 0);
 
@@ -328,7 +328,9 @@ impl SoftwareFlag {
     /// `e1000_acquire_swflag_ich8lan`: wait for the flag to be free, set it, and wait for it to
     /// read back set. On a refusal it clears the bit it wrote, as FreeBSD does.
     ///
-    /// Name: recorded (FreeBSD's `e1000_acquire_swflag_ich8lan`).
+    /// Name: ratified 2026-11-05 (UTC). A verb that pairs with `release` and returns the held proof
+    /// (FreeBSD's `e1000_acquire_swflag_ich8lan`). Refused `lock` (it suggests release on drop, which
+    /// this type does not do) and `take`.
     pub fn acquire(hardware: &mut impl Hardware) -> Result<Self, Error> {
         let mut ext = 0;
         let mut free = false;
@@ -483,8 +485,8 @@ pub(crate) fn reset_blocked(hardware: &mut impl Hardware) -> bool {
 }
 
 // The high word sits at bit 16 and the low one is a u16, so | and ^ compose the identifier
-// identically; the compiler checks that here, and .cargo/mutants.toml excludes the function's
-// OR-to-XOR swap on this assertion.
+// identically; the compiler checks that here, so the function's
+// OR-to-XOR swap is an equivalent mutant.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(((u16::MAX as u32) << 16) & (u16::MAX as u32) == 0);
 

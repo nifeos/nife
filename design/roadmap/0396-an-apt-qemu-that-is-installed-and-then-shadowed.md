@@ -9,16 +9,11 @@ needs_person: no
 ---
 # 396. An apt QEMU that is installed and then shadowed
 
-Filed 2026-09-13 as an unnumbered proposal by milestone 287, which found it
-while making `script/bootstrap` finish on a stock Linux box and did not take it because the evidence
-stops short of the claim. Milestone 433 (drain the proposal pile to zero) numbered it 2026-09-19.
-**`script/bootstrap` was re-read on 2026-09-19 and the premise is intact.** Its Linux branch still
-runs `sudo apt-get install -y qemu-system-arm qemu-system-misc qemu-system-x86 ipxe-qemu ovmf`
-(line 78). It still sources `helpers/qemu-path.sh` at line 18 before any `command -v` probe and
-again at line 198 after `script/ci-qemu` builds the pinned QEMU. The three emulator packages are
-still shadowed for the life of the checkout. The only change to the file since this was written is a
-documentation path, in `9dc04b0` on 2026-09-18. *(Number provisional until the merge queue lands
-it.)*
+`script/bootstrap` was re-read on 2026-09-19 and the premise is intact. Its Linux branch still runs
+`sudo apt-get install -y qemu-system-arm qemu-system-misc qemu-system-x86 ipxe-qemu ovmf` (line 78).
+It still sources `helpers/qemu-path.sh` at line 18 before any `command -v` probe and again at line
+198 after `script/ci-qemu` builds the pinned QEMU. The three emulator packages are still shadowed
+for the life of the checkout.
 
 Nothing here needs calef. It needs four gate runs on a Linux box with the packages
 absent, listed below, and a lane can do all four.
@@ -92,20 +87,15 @@ does not. Priced accordingly.
 
 ## Index row
 
-On a cold Linux clone `script/bootstrap` installs five apt packages and then, minutes later on the
-same run, builds QEMU 11.0.2 from source because no Ubuntu release ships one with
-`riscv-iommu-pci`. From that moment `helpers/qemu-path.sh` puts the built prefix ahead of `/usr/bin`
-on `PATH`, so the three emulator packages are a few hundred megabytes downloaded to be overridden
-for the life of the checkout. The two firmware packages were the reason to be careful and are
-probably redundant too: the prefix QEMU's own `make install` lays down `efi-virtio.rom` and thirteen
-`edk2-*` firmware images, and `helpers/qemu-uefi-x86_64.sh` already searches the prefix ahead of
-`/usr/share/OVMF`. Milestone 287 (`script/bootstrap` installs a working QEMU on Linux, instead of
-printing how to) did not act on that, and the restraint is the point. The prefix
-containing the files is not the same claim as the gates passing without the packages, and removing
-one on that evidence would be the shape 287 exists to correct. So the work is four runs on a Linux
-box with `ipxe-qemu` and `ovmf` purged: `cargo xtask uefi-image` and `uefi-boot`,
-`script/netboot-rehearsal`, and `script/test` on all three ISAs. If all four pass, the five packages
-leave the Linux branch and the comment that currently explains at length why the firmware packages
-are needed is the thing being falsified. If any fail, the finding is worth as much: name in that
-comment which file comes from apt and which from the prefix. It is worth a few hundred megabytes and
-one less confusing step on a first clone, and it is not correctness.
+On a cold Linux clone `script/bootstrap` installs five apt packages and then builds QEMU 11.0.2 from
+source, because no Ubuntu release ships one with `riscv-iommu-pci`. `helpers/qemu-path.sh` then puts
+the built prefix ahead of `/usr/bin`, so the three emulator packages are a few hundred megabytes
+downloaded to be overridden. The two firmware packages are probably redundant too: the prefix's
+`make install` lays down `efi-virtio.rom` and thirteen `edk2-*` images, and
+`helpers/qemu-uefi-x86_64.sh` searches the prefix ahead of `/usr/share/OVMF`. Milestone 287
+(`script/bootstrap` installs a working QEMU on Linux, instead of printing how to) did not act on
+that, because files in the prefix do not prove the gates pass without the packages. The work is four
+runs on a Linux box with `ipxe-qemu` and `ovmf` purged: `cargo xtask uefi-image` and `uefi-boot`,
+`script/netboot-rehearsal`, and `script/test` on all three ISAs. If all pass, the five packages leave
+the Linux branch. If any fail, name in the comment which file comes from apt and which from the
+prefix. It saves a few hundred megabytes and one confusing step, and it is not correctness.

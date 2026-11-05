@@ -64,7 +64,7 @@ def boot():
     out[36] = 0x80
     out[38] = 0x29
     struct.pack_into('<I', out, 39, 0x1234ABCD)
-    out[43:54] = b'NIFETEST   '
+    out[43:54] = b'FATTEST    '
     out[54:62] = b'FAT12   '
     out[510:512] = b'\x55\xAA'
     return bytes(out)
@@ -81,7 +81,7 @@ def main():
     gone = bytearray(short(b'GONE    TXT', 0x20, 0, 0))
     gone[0] = 0xE5
     root = sector(
-        short(b'NIFETEST   ', 0x08, 0, 0),
+        short(b'FATTEST    ', 0x08, 0, 0),
         long_piece('A Long Name', alias),
         short(alias, 0x10, 2, 0),
         bytes(gone),

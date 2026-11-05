@@ -404,6 +404,14 @@ refuse_without_kvm || exit 1
 mkdir -p "$state"
 sync_slots || exit 1
 rm -f "$drain"
+# Make every slot's worktree one at a time, before any worker starts. Two workers each running
+# `git worktree add` in the one clone race on its shared `.git/worktrees` metadata (one can read a
+# `commondir` the other has not finished writing), so the first window of a fresh host must not do it.
+slot=0
+while [ "$slot" -lt "$guests" ]; do
+    prepare_slot "$slot" || exit 1
+    slot=$((slot + 1))
+done
 pids=""
 trap 'kill $pids 2>/dev/null; wait; exit 143' TERM INT
 slot=0

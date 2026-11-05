@@ -260,10 +260,13 @@ Each job on an owned runner writes its runner kind and image digest into its sum
    Done when a busy hour's median job wait is under a minute. Rollback is a plan downgrade.
 2. If calef rules for (e), flip the policy, then open one App pull request to prove the bots still
    can. Rollback is one setting.
-3. If the cap still binds, or after #2668 reports: land the lint and the first-step guard, then run
-   a canary that gates nothing, dispatched runs of `main` on the owned runner compared with their
-   hosted twins for a week.
-4. Then the merge-group and `main` jobs, behind the variable. Rollback is unsetting it.
+3. If the cap still binds, or after #2668 reports: land the lint and the first-step guard, then
+   set the variable to move the merge-group and `main` jobs to owned runners. The flip needs no
+   canary: it is reversible, and real queue runs are the evidence. Its condition is that no code
+   an outsider controls can run on owned hardware and that rollback works with the pool down. The
+   canary jobs run beside the queue as monitoring that a maintainer reads after the flip, and gate
+   nothing.
+4. Rollback is setting the variable to `false`, with no pull request.
 
 The irreversible part is not the code. A compromised host is a fact that has left the machine: its
 credentials are spent, and it is reinstalled, not cleaned.

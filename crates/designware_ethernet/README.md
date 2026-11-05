@@ -90,5 +90,6 @@ assert_eq!(plane.receive(&mut region, &mut tails, &mut buf), None);
 
 You may use this crate under the MIT license (LICENSE-MIT) or the Apache License, version 2.0
 (LICENSE-APACHE), at your option. Parts are adapted from OpenBSD's `dwqe` and `ytphy` drivers under
-the ISC license, and from `ukphy_subr.c` under the NetBSD Foundation's BSD-2-Clause license. Both
+the ISC license, and the PHY's link decoding (`motorcomm_physical_layer_device`) from `ukphy_status` (OpenBSD's `sys/dev/mii/ukphy_subr.c`)
+under the NetBSD Foundation's BSD-2-Clause license. Both
 notices are in `src/lib.rs`.

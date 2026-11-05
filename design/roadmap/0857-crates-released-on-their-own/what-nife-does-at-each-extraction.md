@@ -26,15 +26,20 @@ released on its own), and every later extraction runs the same list.
   creates a crate repository only after the architect clears that crate.
 - A person grants the crate's repository the organization secrets `NIFE_SMELTER_APP_ID` and
   the smelter App's private key beside it, using an `admin:org` token. A lane never takes this step.
-- The path dependency becomes a crates.io release, pinned with its checksum in `Cargo.lock`
-  (Fork 2), and `crates/<name>` is deleted in the same pull request.
-- The proofs, the falsification sweep, the fuzz targets and the coverage floor stop covering that
-  code in nife. From then on Fork 4's release gate in the crate repository is relied on, and nife
-  checks only that the version it pins was published by that gate.
+- The path dependency becomes a git dependency, `{ version, git, rev }`, where `rev` is the commit
+  of the crate's first tag and `version` is the version that tag's manifest carries, as the main
+  page rules. `crates/<name>` is deleted in the same pull request. The line becomes a plain
+  version requirement, with its checksum in `Cargo.lock` (Fork 2), only in a later pull request,
+  after the crate's first publication.
+- The proofs, the falsification sweep and the coverage floor stop covering that code in nife. From
+  then on Fork 4's release gate in the crate repository is relied on, and nife checks only that the
+  commit it pins carries a tag that gate made. Where the fuzz targets go is a
+  [proposal](../proposals/a-moved-crate-is-fuzzed-in-its-own-repository.md).
 - Falsification records that patch the crate move with it, rewritten from `-p3` to `-p1`.
 - Citations into `crates/<name>/src` repoint to the crate repository at the pinned tag, by symbol.
-- The dependency rule of the architect-label workflow fires once, on the first crates.io adoption,
-  and is left to fire; that pull request is the ruling that nife depends on its own release.
+- The dependency rule of the architect-label workflow fires on the pull request that adds the git
+  dependency, and is left to fire; that pull request is the ruling that nife depends on the crate
+  repository.
 - `cargo-deny` applies to the crate as to any dependency.
 - A person holding an `admin:org` token adds the new repository to the selected-repositories list
   of both organization secrets the release workflow's tag job reads, `NIFE_SMELTER_APP_ID` and
@@ -55,6 +60,6 @@ reading as one:
 
 - `script/metrics` adds the milestone 623 (a bullet under the chart explains a cliff) week-note
   bullet itself when a `crates/<name>` directory
-  disappears and `Cargo.lock` gains that name from crates.io in the same week.
+  disappears and `Cargo.lock` gains that name from a `nifeos` git source in the same week.
 - Prose that quotes tree totals says the figure counts the nife tree: `notes/how-this-is-built.md`,
   and the agent instructions' "two hundred thousand lines".

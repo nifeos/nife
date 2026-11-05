@@ -1,5 +1,6 @@
 #![no_std]
-//! **A FAT12, FAT16 and FAT32 filesystem, sans I/O, growing in stages.** Three parts exist today.
+//! **A FAT12, FAT16 and FAT32 filesystem, sans I/O**, in three parts: a reader, a writer and a
+//! format.
 //!
 //! The reader opens a volume through [`SectorDevice`], a trait the caller implements over any
 //! device that reads whole sectors. [`BootSector::read`] reads and checks the boot sector and its
@@ -33,14 +34,16 @@
 //!
 //! [`FormatPlan`] lays out an empty volume of any size, as sectors a caller writes. [`VolumeLayout`]
 //! lays out one shape through the same sizing and boot sector: a FAT32 EFI system partition holding
-//! one boot file at `\EFI\BOOT\<name>`. A volume below [`FAT32_MINIMUM_CLUSTERS`] is refused.
+//! one boot file at `\EFI\BOOT\<name>`. [`efi_system_partition`] holds that shape's constants, and
+//! a volume below [`efi_system_partition::FAT32_MINIMUM_CLUSTERS`] is refused.
 
 //! # BUGS
 //!
-//! - The `mkfs` numbers its alias `~1`, right only while the volume holds one file.
-//! - The `mkfs` writes the `FSInfo` free-cluster count once. After that only [`WritableVolume::mark_clean`] keeps
-//!   it; a volume dropped without `mark_clean` leaves a stale hint, which the specification lets a driver
-//!   tolerate and `fsck.fat` reports.
+//! - [`VolumeLayout`] numbers its boot file's alias `~1`, right only while `EFI\BOOT` holds that one
+//!   file.
+//! - [`FormatPlan`] and [`VolumeLayout`] write the `FSInfo` free-cluster count once. After that
+//!   only [`WritableVolume::mark_clean`] keeps it; a volume dropped without `mark_clean` leaves a
+//!   stale hint, which the specification lets a driver tolerate and `fsck.fat` reports.
 //! - The backup `FSInfo` copy in the backup boot area is never updated, as with Linux's driver.
 //! - A newly allocated cluster holds whatever the device held; a caller that needs zeros writes them.
 //! - A write has no barrier: the crate orders its writes and the device decides when each reaches the
@@ -49,7 +52,7 @@
 //!   name is stored as a long name, since the crate writes no lower-case flag.
 //! - A directory slot is found by walking from the directory's first cluster each time, so creating
 //!   in a directory of n clusters costs n chain steps per slot read.
-//! - FAT stores no time zone. In nife the clock supplies UTC (ruled 2026-11-01 UTC); the crate stores
+//! - FAT stores no time zone. A clock is expected to supply UTC; the crate stores
 //!   what its clock reports, cannot check that it is UTC, and refuses a time outside 1980 to 2107.
 //!   A reader that treats FAT times as local time, such as Windows, shows UTC values as local.
 //! - A file's bytes are read by cluster chain only; there is no cache above the sector and a
@@ -98,7 +101,6 @@ mod volume;
 mod writable_volume;
 mod write_cursor;
 
-pub use allocation::AllocationError;
 pub use attributes::Attributes;
 pub use boot_sector::{BootSector, FileAllocationTableType, ParseError, ReadError, RootDirectory};
 pub use directory::{Directory, DirectoryEntry, LongNameEntry, SLOT_BYTES, ShortEntry, Slot};
@@ -118,9 +120,6 @@ pub use reader::{Chain, ChainError, Volume};
 pub use sector::{SectorDevice, SectorSize, WritableSectorDevice};
 pub use table::TableEntry;
 pub use time::{CivilDateTime, Clock, NoClock};
-pub use volume::{
-    CLUSTER_BYTES, CLUSTER_SECTORS, FAT32_MINIMUM_CLUSTERS, LayoutError, RESERVED_SECTORS,
-    ROOT_CLUSTER, SECTOR_BYTES, TABLE_COUNT, VolumeLayout,
-};
+pub use volume::{LayoutError, VolumeLayout};
 pub use writable_volume::WritableVolume;
 pub use write_cursor::WriteError;

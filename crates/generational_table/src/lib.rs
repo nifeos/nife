@@ -1,11 +1,15 @@
 //! A fixed-capacity generational table: names that die with what they named. A name packs
 //! `(generation, slot)` into one `u64`; a removal bumps the slot's generation, so a stale name is
-//! `None` forever, slot reused or not (proved below). See notes/generational-names.md.
+//! `None` forever, slot reused or not (proved below). Slots are reused, so the table stays a fixed
+//! array, while names behave as if they never were: a stale name is not a dangling reference and
+//! not somebody else's entry; it is `None`. Game engines call the same shape a slotmap.
 //!
 //! # Limits
 //!
 //! - Capacity is fixed: `insert_with` returns `None` when all `N` slots are live.
-//! - Generations are 32-bit: a slot reused 2^32 times resolves an ancient name again.
+//! - Generations are 32-bit and never wrap. A slot whose generation reaches `u32::MAX` retires:
+//!   it is never filled again, so the table's capacity shrinks by one. A slot retires only after
+//!   2^32 - 1 occupants, and notes/generational-names.md has what that takes on the kernel's tables.
 //! - Insert scans for a free slot in O(N); `get` and `get_mut` are O(1).
 //!
 //! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review). Renamed from
@@ -13,11 +17,12 @@
 //! crate's own opening line ("a fixed-capacity generational table").
 
 #![cfg_attr(not(test), no_std)]
+#![forbid(unsafe_code)]
 
 /// A fixed-capacity table whose entries are named by `(generation, slot)` packed in a `u64`,
 /// generation in the high 32 bits and slot in the low 32. A fresh table's first insert is named
-/// `0`, the boot thread's tid, and with any sane `N` no name equals `u64::MAX`, the kernel's
-/// `cpu::NO_TID` sentinel.
+/// `0`, and with any `N` below 2^32 no name equals `u64::MAX`, so a caller may use `u64::MAX` as a
+/// "no entry" sentinel.
 ///
 /// # Examples
 ///
@@ -46,14 +51,16 @@
 pub struct Table<T, const N: usize> {
     slots: [Option<T>; N],
     /// The current generation of each slot: the one a live occupant's name carries, and the one
-    /// the *next* occupant's name will carry after a bump. Survives the occupant on purpose.
+    /// the *next* occupant's name will carry after a bump. Survives the occupant on purpose. It
+    /// only rises, and [`RETIRED`](Self::RETIRED) marks a slot that is never filled again, so no
+    /// live name ever carries it.
     gens: [u32; N],
     /// Live-entry count, maintained so `len` is O(1).
     live: usize,
     /// One past the highest live slot. Every slot at or above it is `None`, so a walk bounded by
     /// it sees every live entry and costs what the table holds rather than `N`. First-fit insert
     /// keeps it near [`len`](Self::len), and [`remove`](Self::remove) brings it down in amortised
-    /// O(1). See notes/generational-names.md.
+    /// O(1): a step down happens at most once per slot that was filled and freed.
     top: usize,
 }
 
@@ -72,6 +79,10 @@ impl<T, const N: usize> Table<T, N> {
         }
     }
 
+    /// The generation a slot saturates at. A slot there is retired: insert passes over it, so no
+    /// name is ever minted with this generation and a removed name can never come back.
+    const RETIRED: u32 = u32::MAX;
+
     const fn name(slot: usize, generation: u32) -> u64 {
         ((generation as u64) << 32) | slot as u64
     }
@@ -81,7 +92,8 @@ impl<T, const N: usize> Table<T, N> {
     }
 
     /// Insert, minting the entry's name first so the entry can carry it: `f` receives the name
-    /// and returns the value to store. `None` (and `f` never called) if every slot is live.
+    /// and returns the value to store. `None` (and `f` never called) if every slot is live or
+    /// retired.
     ///
     /// # Examples
     ///
@@ -98,7 +110,11 @@ impl<T, const N: usize> Table<T, N> {
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn insert_with(&mut self, f: impl FnOnce(u64) -> T) -> Option<u64> {
-        let slot = self.slots.iter().position(|s| s.is_none())?;
+        let slot = self
+            .slots
+            .iter()
+            .zip(&self.gens)
+            .position(|(s, &g)| s.is_none() && g != Self::RETIRED)?;
         let name = Self::name(slot, self.gens[slot]);
         self.slots[slot] = Some(f(name));
         self.live += 1;
@@ -110,9 +126,9 @@ impl<T, const N: usize> Table<T, N> {
     }
 
     /// The validated slot index behind a name, or `None` exactly when the name is dead or
-    /// garbage. This is the first half of every lookup, exposed (milestone 14 phase B.2) because
-    /// the kernel stores TCBs in a parallel pool with pool slot i = table slot i, so the index
-    /// *is* the storage address. `get`/`get_mut`/`remove` are built on this, so every harness
+    /// garbage. This is the first half of every lookup, exposed because a caller may keep its
+    /// entries in a parallel pool with pool slot i = table slot i, so the index *is* the storage
+    /// address. `get`/`get_mut`/`remove` are built on this, so every harness
     /// that proves a stale name never resolves proves it for `slot_of` too.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
@@ -136,20 +152,21 @@ impl<T, const N: usize> Table<T, N> {
 
     /// [`get`](Self::get), mutably.
     ///
-    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because nife uses the standard library's name where it has one.
+    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because the standard library's name is the one a reader already knows.
     pub fn get_mut(&mut self, name: u64) -> Option<&mut T> {
         let slot = self.slot_of(name)?;
         self.slots[slot].as_mut()
     }
 
     /// Remove and return the entry, bumping the slot's generation: from this moment `name` (and
-    /// every copy of it, wherever it is held) resolves to `None`, forever.
+    /// every copy of it, wherever it is held) resolves to `None`, forever. The bump saturates, so
+    /// the occupant at `RETIRED - 1` leaves its slot retired rather than wrapping it to 0.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn remove(&mut self, name: u64) -> Option<T> {
         let slot = self.slot_of(name)?;
         let value = self.slots[slot].take()?;
-        self.gens[slot] = self.gens[slot].wrapping_add(1);
+        self.gens[slot] = self.gens[slot].saturating_add(1);
         self.live -= 1;
         // Removing anything below the top leaves a hole, which costs a walk nothing to skip.
         // Removing the top one means the bound can come down, past however many holes are under it.
@@ -172,7 +189,7 @@ impl<T, const N: usize> Table<T, N> {
     /// The number of live entries. O(1): maintained on every insert and remove rather than
     /// counted by walking `slots`.
     ///
-    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because nife uses the standard library's name where it has one.
+    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because the standard library's name is the one a reader already knows.
     pub fn len(&self) -> usize {
         self.live
     }
@@ -194,7 +211,7 @@ impl<T, const N: usize> Table<T, N> {
     }
 
     /// The slot index of every live entry, in slot order; each index appears at most once. The
-    /// pool-backed kernel table iterates its parallel storage with this.
+    /// caller with a parallel pool iterates its storage with this.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn live_slots(&self) -> impl Iterator<Item = usize> + '_ {
@@ -205,7 +222,7 @@ impl<T, const N: usize> Table<T, N> {
     }
 
     /// Every live entry by shared reference, in slot order. For a table whose values *are* the
-    /// storage (the kernel's page-resident TCB table stores a `*mut Thread` per name), this is
+    /// storage (a table of raw pointers to entries that live elsewhere, for example), this is
     /// how the caller reaches each without a second lookup.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
@@ -216,9 +233,9 @@ impl<T, const N: usize> Table<T, N> {
     /// Every live entry with its current name, in slot order. For sweeps that must *remove* what
     /// they find and so need the name, not just the value (object revocation: find every object
     /// backed by a region, then remove it by name). `values`/`values_mut` suffice when the caller
-    /// only needs the entry, as a TCB carries its own name and does not need this.
+    /// only needs the entry, as when each entry carries its own name.
     ///
-    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because nife uses the standard library's name where it has one.
+    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because the standard library's name is the one a reader already knows.
     pub fn iter(&self) -> impl Iterator<Item = (u64, &T)> + '_ {
         self.iter_from(0).map(|(_, name, t)| (name, t))
     }
@@ -226,10 +243,10 @@ impl<T, const N: usize> Table<T, N> {
     /// Every live entry from slot `from` onward, as `(slot, name, &T)`, in slot order.
     ///
     /// The slot index makes a sweep resumable across calls that give the lock back, which
-    /// [`iter`](Self::iter) cannot be: removals below a slot do not move it. `rendezvous::SURVEY`
-    /// (milestone 126 (the `procps` package, now `process-tools`)) hands it to userspace as a
-    /// cursor, so a resumed sweep is a sequence of snapshots. `from >= N` yields nothing. See
-    /// notes/generational-names.md.
+    /// [`iter`](Self::iter) cannot be: removals below a slot do not move it, and if the entry at
+    /// slot `k` died, `k` is empty rather than somebody else's. A caller can hand the slot out as a
+    /// cursor, so a resumed sweep is a sequence of snapshots: it never reports an entry twice and
+    /// never resolves a cursor to the wrong entry. `from >= N` yields nothing.
     ///
     /// ```
     /// use generational_table::Table;
@@ -271,22 +288,28 @@ impl<T, const N: usize> Default for Table<T, N> {
     }
 }
 
-/// Machine-checked proofs (DECISIONS §14). These are the properties the design doc says
-/// capability payloads will one day lean on, proved before anything leans on them. A two-slot
+/// Machine-checked proofs, with Kani. These are the properties a caller that stores names in
+/// capabilities or other long-lived records leans on, proved before anything leans on them. A two-slot
 /// table exhibits every case that matters: the slot in question, a different slot, and reuse.
 #[cfg(kani)]
 mod verification {
     use super::*;
 
     /// A removed name never resolves again, even after its slot is reused. This is the
-    /// stale-`ThreadId` safety the kernel currently gets from map-lookup-fails, kept under reuse: the
+    /// safety a never-reused counter would give, kept under reuse: the
     /// old name and the new occupant's name differ (the generation moved), so `get`, `get_mut`,
-    /// and `remove` all refuse the old one. The one stated precondition: the slot's generation
-    /// has not wrapped all the way around (see the crate doc on 2^32).
+    /// and `remove` all refuse the old one. The table starts at any generations at all, the last
+    /// one before retirement and a retired slot included, so this holds for the 2^32nd reuse as
+    /// for the first; [`a_removed_name_stays_dead_whatever_comes_after`] carries it forward.
     /// Falsification: replayable `crates/generational_table/falsifications/verification.a_removed_name_never_resolves_again.patch`
     #[kani::proof]
     fn a_removed_name_never_resolves_again() {
         let mut t: Table<u8, 2> = Table::new();
+        t.gens = [kani::any(), kani::any()];
+        kani::cover!(
+            t.gens[0] == Table::<u8, 2>::RETIRED - 1,
+            "the last occupant a slot takes"
+        );
         let Some(name) = t.insert_with(|_| kani::any()) else {
             return;
         };
@@ -300,6 +323,66 @@ mod verification {
         assert!(t.get(name).is_none());
         assert!(t.get_mut(name).is_none());
         assert!(t.remove(name).is_none());
+    }
+
+    /// A table in any state the operations can reach, for N = 2: each slot free or live, with
+    /// any generation, except that a live slot is never at `RETIRED`. `live` and `top` follow
+    /// from the slots, as insert and remove keep them.
+    fn any_reachable_table() -> Table<u8, 2> {
+        let mut t: Table<u8, 2> = Table::new();
+        for slot in 0..2 {
+            t.gens[slot] = kani::any();
+            if kani::any() {
+                kani::assume(t.gens[slot] != Table::<u8, 2>::RETIRED);
+                t.slots[slot] = Some(kani::any());
+                t.live += 1;
+                t.top = slot + 1;
+            }
+        }
+        t
+    }
+
+    /// One insert or one remove of any name, the two operations that change generations.
+    fn any_operation(t: &mut Table<u8, 2>) {
+        if kani::any() {
+            let _ = t.insert_with(|_| kani::any());
+        } else {
+            let _ = t.remove(kani::any());
+        }
+    }
+
+    /// A dead name stays dead whatever operations follow, with no bound on how many. The
+    /// induction step: from any reachable table and any name whose generation is below its slot's,
+    /// which is what a removal leaves behind, two arbitrary operations keep the slot's generation
+    /// above the name's and every live slot below `RETIRED`, and the name resolves nowhere. Both
+    /// facts are what the step assumes, so they hold after any number of operations, and a slot
+    /// reused 2^32 times cannot bring an old name back. Two operations, not one, because a
+    /// wrapping table needs an insert and a remove to come round.
+    /// Falsification: replayable `crates/generational_table/falsifications/verification.a_removed_name_stays_dead_whatever_comes_after.patch`
+    #[kani::proof]
+    fn a_removed_name_stays_dead_whatever_comes_after() {
+        let mut t = any_reachable_table();
+        let slot: usize = kani::any();
+        kani::assume(slot < 2);
+        let generation: u32 = kani::any();
+        kani::assume(generation < t.gens[slot]);
+        let dead = Table::<u8, 2>::name(slot, generation);
+        kani::cover!(
+            t.gens[slot] == Table::<u8, 2>::RETIRED && t.slots[slot].is_none(),
+            "a retired slot"
+        );
+
+        for _ in 0..2 {
+            any_operation(&mut t);
+            assert!(
+                generation < t.gens[slot],
+                "a slot's generation came back down"
+            );
+            for s in 0..2 {
+                assert!(t.slots[s].is_none() || t.gens[s] != Table::<u8, 2>::RETIRED);
+            }
+            assert!(t.get(dead).is_none());
+        }
     }
 
     /// Two live entries never share a name, and each name resolves to its own entry: the
@@ -319,8 +402,8 @@ mod verification {
 
     /// A garbage name resolves to nothing. For any u64 whatsoever, resolution either fails
     /// or lands on an entry whose minted name is exactly that u64: there is no input that
-    /// reaches an entry through a name the table never issued. (The u64 arrives in syscall
-    /// registers by way of capability bookkeeping; this is the "cannot forge" claim for names.)
+    /// reaches an entry through a name the table never issued. (A name may arrive from an untrusted
+    /// caller; this is the "cannot forge" claim for names.)
     /// Falsification: replayable `crates/generational_table/falsifications/verification.a_name_the_table_never_minted_resolves_to_nothing.patch`
     #[kani::proof]
     fn a_name_the_table_never_minted_resolves_to_nothing() {
@@ -335,7 +418,7 @@ mod verification {
     /// The occupancy bound never hides a live entry. Fill three slots, remove an arbitrary subset
     /// (all eight, holes under a live entry and the empty table included), and every walk must
     /// report exactly as many entries as `len` claims. A subset rather than an operation sequence,
-    /// which did not finish; see notes/generational-names.md.
+    /// which did not finish in a practical time under Kani.
     /// Falsification: replayable `crates/generational_table/falsifications/verification.a_bounded_walk_yields_every_live_entry.patch`
     #[kani::proof]
     fn a_bounded_walk_yields_every_live_entry() {
@@ -454,9 +537,8 @@ mod tests {
     }
 
     /// `get_mut` hands back the entry itself, and a write through it lands in that slot and no
-    /// other. The kernel reaches every thread this way and `unwrap()`s the result on the switch
-    /// path (`sched.rs`), so a `get_mut` that refused a live name would be a panic in the
-    /// scheduler rather than a lookup that missed.
+    /// other. A caller that reaches every entry this way and `unwrap()`s the result on a hot path
+    /// would panic, rather than miss a lookup, if `get_mut` refused a live name.
     #[test]
     fn get_mut_reaches_the_live_entry_and_writes_through_it() {
         let mut t: Table<u32, 4> = Table::new();
@@ -471,8 +553,8 @@ mod tests {
         assert_eq!(t.get_mut(a), None, "a dead name resolved through get_mut");
     }
 
-    /// Empty in both directions. Nothing in the tree calls `is_empty` yet (it exists because a
-    /// type with `len` owes one), which makes it exactly the kind of accessor that can rot into a
+    /// Empty in both directions. `is_empty` exists because a
+    /// type with `len` owes one, which makes it exactly the kind of accessor that can rot into a
     /// constant with no caller to notice.
     #[test]
     fn a_table_is_empty_only_while_it_holds_nothing() {
@@ -535,6 +617,45 @@ mod tests {
         assert_eq!(t.values().count(), 0);
         assert_eq!(t.iter_from(0).count(), 0);
         assert_eq!(t.top, 0, "an emptied table's walks visit no slot at all");
+    }
+
+    /// The last occupant a slot takes leaves it retired: the slot is passed over from then on,
+    /// the name it carried stays dead, and the next insert lands in the slot after it. Without
+    /// the saturation the bump wraps to 0 and the slot's 2^32nd successor is named like its first.
+    #[test]
+    fn a_slot_at_its_last_generation_retires_on_removal() {
+        let mut t: Table<u32, 2> = Table::new();
+        t.gens[0] = Table::<u32, 2>::RETIRED - 1;
+        let last = t.insert_with(|_| 1).unwrap();
+        assert_eq!(
+            last,
+            (u64::from(u32::MAX - 1) << 32),
+            "slot 0 is still filled first"
+        );
+        assert_eq!(t.remove(last), Some(1));
+
+        let next = t.insert_with(|_| 2).unwrap();
+        assert_eq!(next & 0xffff_ffff, 1, "a retired slot was filled again");
+        assert_eq!(t.get(last), None);
+        assert_eq!(
+            t.get(u64::from(u32::MAX) << 32),
+            None,
+            "no name carries the retired generation"
+        );
+        assert_eq!(t.len(), 1);
+    }
+
+    /// A table whose every free slot has retired refuses an insert, as a full one does, and
+    /// without calling the closure.
+    #[test]
+    fn a_table_of_retired_slots_refuses() {
+        let mut t: Table<u32, 2> = Table::new();
+        t.gens = [Table::<u32, 2>::RETIRED; 2];
+        assert_eq!(
+            t.insert_with(|_| unreachable!("closure ran on a retired table")),
+            None
+        );
+        assert!(t.is_empty());
     }
 
     /// Out-of-range slots and wrong generations are both just `None`.

@@ -26,6 +26,7 @@ pub struct FileOpenError;
 ///
 /// Name: ratified 2026-11-01 (UTC), beside `ChainError`, which it wraps.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum FileReadError<E> {
     /// The chain could not be followed, or a sector could not be read.
     ///

@@ -64,6 +64,7 @@ impl LongFileName {
 /// Name: ratified 2026-11-01 (UTC), renamed from `LongNameError`: the error of a long file name,
 /// beside `LongFileName`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum LongFileNameError {
     /// A piece other than the first arrived with no first piece before it, or the first piece's
     /// ordinal is 0 or above 20.

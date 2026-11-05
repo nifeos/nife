@@ -103,7 +103,7 @@ static CHECK_TSC: AtomicU64 = AtomicU64::new(0);
 /// printed by [`print_summary`].
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     OUTCOME.store(CycleCounter::Unknown as u8, Ordering::Relaxed);
     COUNTER_BITS.store(0, Ordering::Relaxed);

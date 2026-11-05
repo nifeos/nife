@@ -32,6 +32,11 @@ pub(super) type Rendezvous = inter_process_communication::Rendezvous<Thread>;
 /// - Revocation still scans every live thread; milestone 183 (a physical-range index for
 ///   capability holders) is the structural fix.
 /// - The peak is a whole-boot high-water and cannot name the test that pushed it.
+/// - A thread slot retires after 2^32 - 1 occupants (`generational_table` saturates rather than
+///   wrap), and a spawn loop at the fastest measured rate retires one about every 93 minutes, all
+///   256 in about 16.5 days, after which spawn fails until the next boot. Nothing sizes this
+///   table, or the other generational tables, against that time; notes/generational-names.md has
+///   the measurements.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_THREADS: usize = 256;
@@ -67,8 +72,7 @@ pub(super) struct IpcTables {
 /// with the machine full. Twenty-four bytes each.
 pub(super) const FUTEX_BUCKETS: usize = 64;
 
-/// The most endpoints that can exist at once: the registry's bound. Region teardown frees a
-/// rendezvous's slot, so this bounds concurrency, not creations.
+/// The most endpoints that can exist at once: the registry's bound.
 pub(crate) const MAXIMUM_RENDEZVOUS: usize = 512;
 
 /// The most rendezvous that were ever live at once on this boot, and how many of those sat on the
@@ -112,9 +116,8 @@ pub(super) const MAXIMUM_KERNEL_EP_CHUNKS: usize =
 pub(super) static IPC_TABLES: InterruptSafeMutex<Option<IpcTables>> =
     InterruptSafeMutex::new(rank::IPC_TABLES, None);
 
-/// The scheduler before anything is in it, a `.rodata` aggregate [`initialize`] copies from instead
-/// of a value built on the boot stack, which keeps the boot frame under its gate at
-/// [`MAXIMUM_THREADS`].
+/// The scheduler before anything is in it, as a const aggregate. [`EMPTY_INSTALLED_TABLES`] holds
+/// it in `.rodata` for [`initialize`] to copy from.
 pub(super) const EMPTY_TABLES: IpcTables = IpcTables {
     threads: Threads::new(),
     rendezvous_table: generational_table::Table::new(),
@@ -125,3 +128,16 @@ pub(super) const EMPTY_TABLES: IpcTables = IpcTables {
     futexes: inter_process_communication::futex::Futexes::new(),
     processes: generational_table::Table::new(),
 };
+
+/// [`EMPTY_TABLES`] as an installed scheduler, in `.rodata`. [`initialize`] copies its bytes into
+/// [`IPC_TABLES`] with `ptr::copy_nonoverlapping`, so an unoptimised build builds no
+/// [`IpcTables`] temporary on the boot stack. Nothing else reads it.
+///
+/// Name: provisional, minted 2026-11-05 (UTC) by sched-boot-stack-and-asid-comments.
+pub(super) static EMPTY_INSTALLED_TABLES: IpcTablesImage = IpcTablesImage(Some(EMPTY_TABLES));
+
+/// A `Sync` holder for [`EMPTY_INSTALLED_TABLES`]: the tables are only copied from, as bytes.
+pub(super) struct IpcTablesImage(pub(super) Option<IpcTables>);
+
+// SAFETY: the value is const-built and immutable, and the only use is a bytewise copy.
+unsafe impl Sync for IpcTablesImage {}

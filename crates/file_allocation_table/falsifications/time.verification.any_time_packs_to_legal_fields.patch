@@ -7,7 +7,7 @@ Expected to fail: the harness's `assert!(in_range)` after a successful pack.
 diff --git a/crates/file_allocation_table/src/time.rs b/crates/file_allocation_table/src/time.rs
 --- a/crates/file_allocation_table/src/time.rs
 +++ b/crates/file_allocation_table/src/time.rs
-@@ -140,7 +140,7 @@ impl Stamp {
+@@ -152,7 +152,7 @@ impl Stamp {
          };
          let legal = now.year >= FIRST_YEAR
              && now.year <= LAST_YEAR

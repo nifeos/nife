@@ -50,29 +50,33 @@ Each item gives the recommendation first.
    and 0x46, and the reading of a two-legend usage name, are nife's own choices, which the module
    documentation states. A test pins the result of a cross-check against Linux's `hid_keyboard[]`
    (GPL-2.0 or later), which agrees on all 104 rows, and the crate holds none of that file's text.
-3. `e1000e::platform_controller_hub` adapts FreeBSD's `if_em.c` and `if_em.h` without their notice. Recommendation:
-   add their BSD-2-Clause notice and its three copyright lines (Intel 2001-2024, Nicole Graziano
-   2016, Kevin Bowling 2024) beside the Intel shared-code notice in `platform_controller_hub/mod.rs`. Then name the file
-   correctly where the crate README, `platform_controller_hub/mod.rs`, `notes/e1000e/the-i219-port.md` and the license
-   column of milestone 494 (the I219 driver)'s Reuse table describe it as BSD-3-Clause shared code.
-   The module takes the descriptor-ring flush, the transmit errata and `em_reset`'s buffer split from
-   those files, and it quotes a 25-token comment and an 11-token comment.
-4. `kernel/src/e1000e.rs` follows FreeBSD's `em_flush_tx_ring` and `em_flush_rx_ring`.
-   Recommendation: rule the same way as item 3. Either the kernel function carries the notice, or it
-   drives the sequence through a `platform_controller_hub` function that already carries it. It copies no text run longer
-   than five tokens.
-5. `designware_ethernet::motorcomm_physical_layer_device::link_from_registers` adapts OpenBSD's `ukphy_status`
-   (`sys/dev/mii/ukphy_subr.c`, NetBSD Foundation BSD-2-Clause). Recommendation: add that notice
-   beside the ISC notice in `src/lib.rs`, and name the file in the README, in
-   `notes/designware-ethernet.md` and in milestone 53 (the board's own peripherals)'s `Reuse:`
-   line. It reads the same registers in the same priority order.
-6. `designware_mobile_storage` follows OpenBSD's `sdmmc_mem.c` (ISC, Uwe Stuehler 2006), and the
-   crate root carries only Mark Kettenis's `dwmmc.c` notice. Recommendation: add Stuehler's notice if
-   the crate adapts the identification sequence; otherwise say in `src/lib.rs` and `src/sd.rs` that
-   the crate follows only the order. Milestone 817 (a proven DesignWare SD and eMMC host)'s `Reuse:` line says that the milestone
-   takes nothing and that Linux is the reference. That contradicts the crate's own OpenBSD
-   attribution, and its BUGS entry names `tests/fixtures` files that do not exist. Separately: should
-   the crate's `license` field read `(MIT OR Apache-2.0) AND ISC`?
+3. Ruled 2026-11-04 UTC and done by #3200: `e1000e::platform_controller_hub/mod.rs` carries the
+   BSD-2-Clause notice of FreeBSD's `if_em.c` and `if_em.h` and its three copyright lines (Intel
+   2001-2024, Nicole Graziano 2016, Kevin Bowling 2024), copied from
+   `freebsd/freebsd-src@9da2c05a748f` (fetched 2026-11-04), beside the Intel shared-code notice. The
+   module takes the descriptor-ring flush, the transmit errata and `em_reset`'s buffer split from
+   those files. The crate README, `notes/e1000e/the-i219-port.md` and the license column of
+   milestone 494 (the I219 driver)'s Reuse table name them apart from the BSD-3-Clause shared code.
+   The crate's `license` field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.
+4. Ruled 2026-11-04 UTC and done by #3200: `kernel/src/e1000e.rs` runs the flush through
+   `platform_controller_hub::flush::descriptor_rings`, which the module's notice covers, so the
+   notice lives once. The kernel supplies only configuration space and its ring memory.
+5. Ruled 2026-11-04 UTC and done by #3200: `designware_ethernet::motorcomm_physical_layer_device::link_from_registers`
+   adapts OpenBSD's `ukphy_status` (`sys/dev/mii/ukphy_subr.c`), and `src/lib.rs` carries its NetBSD
+   Foundation BSD-2-Clause notice beside the ISC notice, as found at `openbsd/src@21ea132db7ea`. The
+   README, `notes/designware-ethernet.md` and milestone 53 (the board's own peripherals)'s `Reuse:`
+   line name the file, and milestone 53 names `motorcomm.c`, `include/uapi/linux/mii.h` and
+   `include/linux/stmmac.h` as fact sources. The crate's `license` field reads
+   `(MIT OR Apache-2.0) AND ISC AND BSD-2-Clause`.
+6. Ruled 2026-11-04 UTC and done by #3200: `designware_mobile_storage` follows only the order of
+   OpenBSD's `sdmmc_mem.c` (ISC, Uwe Stuehler 2006) for its addressing commands (`CMD2`, `CMD3`,
+   `CMD9`, `CMD7`), and adapts none of its code. Its power-up sends `CMD8` before `ACMD41`, as the
+   SD specification's figure 4-2 does, where OpenBSD asks the OCR first, and it shares no text run
+   longer than four tokens with the file. So the crate carries only Mark Kettenis's `dwmmc.c`
+   notice, and `src/lib.rs`, `src/sd.rs` and milestone 817 (a proven DesignWare SD and eMMC host)'s
+   `Reuse:` line say that it follows only the order. The crate's `license` field reads
+   `(MIT OR Apache-2.0) AND ISC`, for the `dwmmc.c` code. Milestone 817's BUGS entry names the
+   `machine_discovery` fixtures that test the decoder.
 7. Fixtures and doc comments that quote upstream device-tree source. Recommendation: apply the
    rule of commit e1edb20b5 (cite the upstream TRNG nodes, do not quote them). A comment becomes a
    citation (path, revision, fetch date) and one sentence, and each fixture body keeps only the
@@ -128,8 +132,10 @@ Each item gives the recommendation first.
 
 ## Follow-on
 
-- **Outstanding.** Items 3 to 11 above, each waiting for an architect's ruling; each item's text
+- **Outstanding.** Items 7 to 11 above, each waiting for an architect's ruling; each item's text
   above says what it is waiting for.
+- **Proposed.** A check that a crate's `license` field names exactly the licenses of the notices it
+  carries, in `design/roadmap/proposals/a-crates-license-field-matches-the-notices-it-carries.md`.
 
 ## Index row
 

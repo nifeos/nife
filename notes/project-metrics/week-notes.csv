@@ -10,7 +10,7 @@
 # helpers/history_ratchet.py's phrases (supersede, renamed from, was .. until a date) are refused
 # when the file is read; say "replaced by a later milestone", not the history word.
 #
-# Prune rule: script/metrics --update drops any row whose week has aged out of the ten-week chart
+# Prune rule: script/metrics --update drops any row whose week has aged out of the 13-week chart
 # window, without touching any other row. Nothing else may delete a row; the aging-out drop is
 # the whole point, because a bullet that outlives its graph explains nothing to anybody.
 week,chart,note

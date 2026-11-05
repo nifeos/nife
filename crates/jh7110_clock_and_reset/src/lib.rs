@@ -51,7 +51,7 @@ pub const CLOCK_ENABLE: u32 = 1 << 31;
 /// part (\[mainline-trng\] enables both clocks *before* deasserting, and
 /// \[mainline-rst-common\]'s comment says why: *"if the associated clock is gated, deasserting
 /// might otherwise hang forever"*), and a plan is the only shape that lets a host test assert on
-/// the order without a device. The kernel driver walks this slice; it does not know which device
+/// the order without a device. A driver walks this slice; it does not know which device
 /// it is bringing up.
 ///
 /// Name: ratified 2026-10-26 (UTC).
@@ -62,7 +62,7 @@ pub enum Step {
     /// Clear this reset's bit in the domain's assert word, then wait for its status bit to read
     /// as [`is_deasserted`].
     DeassertReset(u32),
-    /// **Choose a multiplexed clock's parent**: replace the [`CLOCK_MUX_MASK`] field of this
+    /// **Choose a multiplexed clock's parent**: replace the [`CLOCK_PARENT_MASK`] field of this
     /// clock's word with `parent`, as \[mainline-clk\]'s `jh71x0_clk_set_parent` writes
     /// `index << JH71X0_CLK_MUX_SHIFT` under `JH71X0_CLK_MUX_MASK`. Taken before the same clock's
     /// `EnableClock`, so the switch happens while the clock is gated rather than glitching a
@@ -75,13 +75,29 @@ pub enum Step {
     },
 }
 
-/// A multiplexed clock's parent field, bits 27:24 of its word (\[mainline-clk-header\]'s
-/// `JH71X0_CLK_MUX_MASK`, `GENMASK(27, 24)`).
+/// **The clock multiplexer mask**: a multiplexed clock's parent field, bits 27:24 of its word,
+/// which holds the parent's position in that clock's parent list. OpenBSD spells it `CLKMUX_MASK`
+/// (\[openbsd-stfclock\]), FreeBSD `JH7110_MUX_MASK` (\[freebsd-jh7110-clk\]) and Linux
+/// `JH71X0_CLK_MUX_MASK`, `GENMASK(27, 24)` (\[mainline-clk-header\]). The three disagree on its
+/// width: OpenBSD masks bits 25:24 and FreeBSD bits 29:24. This crate takes Linux's four bits, as it
+/// takes every other number from mainline.
 ///
-/// Name: recorded (mainline's `JH71X0_CLK_MUX_MASK`).
-pub const CLOCK_MUX_MASK: u32 = 0xf << CLOCK_MUX_SHIFT;
+/// [openbsd-stfclock]: https://github.com/openbsd/src/blob/bc5d5205881e579d8da936d6039dee52c2284971/sys/arch/riscv64/dev/stfclock.c
+/// [freebsd-jh7110-clk]: https://github.com/freebsd/freebsd-src/blob/7806832f23fb31d28386d42692b221776c9f4ee4/sys/dev/clk/starfive/jh7110_clk.c
+///
+/// Name: ratified 2026-11-05 (UTC), the maintainer's ruling, provisional until an architect
+/// reviews it. Named for what the field holds, the parent, as [`with_parent`] and
+/// [`Step::SelectParent`] already say. Refused `CLOCK_MUX_MASK` (`mux` abbreviates multiplexer),
+/// `CLOCK_MULTIPLEXER_MASK` (it names the mechanism, not what the field selects) and
+/// `CLOCK_PARENT_SELECT_MASK` (`select` adds a word and no meaning).
+#[doc(
+    alias = "CLKMUX_MASK",
+    alias = "JH7110_MUX_MASK",
+    alias = "JH71X0_CLK_MUX_MASK"
+)]
+pub const CLOCK_PARENT_MASK: u32 = 0xf << CLOCK_MUX_SHIFT;
 
-/// Where [`CLOCK_MUX_MASK`]'s field starts (`JH71X0_CLK_MUX_SHIFT`).
+/// Where [`CLOCK_PARENT_MASK`]'s field starts (`JH71X0_CLK_MUX_SHIFT`).
 pub(crate) const CLOCK_MUX_SHIFT: u32 = 24;
 
 /// **A clock word with its parent replaced**, leaving the enable bit, the divider and every other
@@ -91,7 +107,7 @@ pub(crate) const CLOCK_MUX_SHIFT: u32 = 24;
 /// Name: ratified 2026-10-26 (UTC).
 #[must_use]
 pub const fn with_parent(word: u32, parent: u32) -> u32 {
-    (word & !CLOCK_MUX_MASK) | ((parent << CLOCK_MUX_SHIFT) & CLOCK_MUX_MASK)
+    (word & !CLOCK_PARENT_MASK) | ((parent << CLOCK_MUX_SHIFT) & CLOCK_PARENT_MASK)
 }
 
 /// **What the JH7110's TRNG needs before its registers answer**, transcribed from
@@ -271,7 +287,7 @@ pub struct ResetBit {
 ///
 /// The JH7110 has five ([vendor-dts]'s `reg-names = "syscrg", "stgcrg", "aoncrg", "ispcrg",
 /// "voutcrg"`); [`SYSTEM_TOP_GROUP`], [`ALWAYS_ON`] and [`SYSTEM`] are described here, each only
-/// as far as a device in this tree needs it. The arithmetic is general, so another domain is a
+/// as far as the devices this crate plans for need it. The arithmetic is general, so another domain is a
 /// table entry rather than a rewrite.
 ///
 /// [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/dts/jh7110.dtsi
@@ -491,7 +507,7 @@ pub struct PowerManagementChipBus {
     pub truncated: bool,
     /// **The I2C controller's register window**, the `reg` of the PMIC's parent bus node, when the
     /// tree states it. The direct reset write needs it; a plan without one (the constant fallback,
-    /// or a tree that names no `reg`) leaves it `None` and the kernel does not attempt the write.
+    /// or a tree that names no `reg`) leaves it `None` and the caller does not attempt the write.
     pub controller: Option<(u64, u64)>,
     /// **The PMIC's 7-bit I2C address**, the PMIC node's own `reg`: `0x36` in both of radon's
     /// trees. `None` when the tree names no known PMIC at all.
@@ -722,8 +738,8 @@ impl DevicePlan {
 // ===== The direct reset write, and the numbers it needs =====
 //
 // On a VisionFive 2 whose firmware cannot reset the board, the bus can be provably up (clocks
-// running, reset released) while OpenSBI's read of the PMIC still fails. The remedy is the kernel
-// writing the AXP15060 itself over a DesignWare I2C master, which needs three numbers the tree and
+// running, reset released) while OpenSBI's read of the PMIC still fails. The remedy is for the caller
+// to write the AXP15060 itself over a DesignWare I2C master, which needs three numbers the tree and
 // the CRG hold: the controller's base, the PMIC's address, and the I2C input clock that scales
 // every timing count. Everything here is host-testable arithmetic over words the caller reads; the
 // sources are the vendor trees cited in the crate's header.
@@ -775,7 +791,7 @@ pub(crate) const OSC_HZ: u64 = 24_000_000;
 /// rather than guessed from fields that are not in integer mode.
 pub(crate) const PLL2_DEFAULT_HZ: u64 = 1_188_000_000;
 
-/// **The words the I2C input-clock chain reads**, one struct so the kernel can read them in one
+/// **The words the I2C input-clock chain reads**, one struct so the caller can read them in one
 /// place and the arithmetic can be tested without a device. The CRG
 /// words come from [`SYSTEM`]'s window at the offsets the ids above give; the PLL2 words from
 /// [`SYS_SYSCON_BASE`]'s window at `0x2c` (DACPD bit 15, DSMPD bit 16, FBDIV bits 28:17), `0x30`
@@ -964,7 +980,7 @@ const fn counts(clock_frequency: u64, period_ns: u128) -> u32 {
 ///
 /// Each phase is rounded up to a whole count, so it never falls short of its specification
 /// minimum: the high count covers 4000 ns and the low count covers 4700 ns. Those two alone make a
-/// bus faster than 100 kHz, so the fill is nife's own and as simple as it can be: when the two
+/// bus faster than 100 kHz, so the fill is this crate's choice and as simple as it can be: when the two
 /// minimums add to fewer counts than one 10 microsecond period, the whole shortfall goes to the
 /// low count. A longer low time is always legal (standard mode has no maximum, and a slave may
 /// hold SCL low for longer anyway), and the high count stays at the specification minimum. The
@@ -1135,8 +1151,8 @@ pub const MAXIMUM_RECORDED_CLOCKS: usize = 4;
 /// second trip to the machine.
 ///
 /// **The `before` words are the load-bearing ones.** If the clocks read back already enabled and
-/// the reset already released, then this milestone's premise was wrong for radon and the TRNG's
-/// all-zero register window on 2026-09-04 has some other cause. That is the outcome a bench
+/// the reset already released, then a gated clock or a held reset was not the cause, and an
+/// all-zero TRNG register window has some other one. That is the outcome a bench
 /// session most needs to be able to tell apart, and only a before-and-after can tell it.
 ///
 /// Name: ratified 2026-10-26 (UTC). Refused `Report` (a word that could name almost anything; it
@@ -1534,7 +1550,7 @@ mod verification {
     }
 
     /// **`with_parent` changes only the mux field**: for every word and every parent, each bit
-    /// outside [`CLOCK_MUX_MASK`] is as it was (the enable bit and the divider among them), and
+    /// outside [`CLOCK_PARENT_MASK`] is as it was (the enable bit and the divider among them), and
     /// the field holds the parent's low four bits, so an over-wide parent never spills.
     /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.with_parent_changes_only_the_mux_field.patch`
     #[kani::proof]
@@ -1542,7 +1558,7 @@ mod verification {
         let word: u32 = kani::any();
         let parent: u32 = kani::any();
         let result = with_parent(word, parent);
-        assert_eq!(result & !CLOCK_MUX_MASK, word & !CLOCK_MUX_MASK);
+        assert_eq!(result & !CLOCK_PARENT_MASK, word & !CLOCK_PARENT_MASK);
         assert_eq!(result & CLOCK_ENABLE, word & CLOCK_ENABLE);
         assert_eq!((result >> 24) & 0xf, parent & 0xf);
     }

@@ -9,9 +9,7 @@ needs_person: no
 ---
 # 337. Nobody has drawn the capability-shaped way past one IPC round trip per file request
 
-Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
-from milestone 138's block; numbered 2026-09-19 by milestone 433. **Premise re-checked 2026-09-19 and
-it holds.** No `design/decisions/` entry draws this design: the only sections naming a page cache or
+Premise re-checked 2026-09-19 and it holds. No `design/decisions/` entry draws this design: the only sections naming a page cache or
 `mmap` are §34 (RedoxFS primary) and §86 (whether an NVMe driver can leave the kernel), neither of which is about granting a
 client readable frames. Milestone 138's block still describes the ~13 us residual in prose at four
 sites, which is what "a frontier described in prose" means.
@@ -49,15 +47,9 @@ the file changes underneath it, and what revocation means mid-read. The metadata
 those because it lives inside one server's address space. This has all of them, which is why it is
 a design and not an optimization.
 
-## Where it came from
+## Constraints this design inherits
 
-Milestone 138's Follow-on: *"Design the capability-shaped way past the ~13 us per-request residual:
-grant the client frames it can read directly instead of one IPC round trip per request, which is
-what `mmap` over a page cache buys Linux. Frames are already capabilities here, so the primitive
-exists and nobody has drawn the design. Until someone does, the residual stays a frontier described
-in prose."*
-
-The same block's refusals are the constraints this design inherits. Replacing RedoxFS was ruled out
+Milestone 138 refused these. Replacing RedoxFS was ruled out
 on measurement: 94% of the old fixed term was the absence of a cache, not a property of the store,
 and any replacement arrives needing the identical cache. A `READV`-shaped scatter list and a
 negotiated channel size were both declined because every existing agreement between a client and
@@ -67,14 +59,10 @@ its way past that.
 ## Index row
 
 After milestone 138's three steps, a file request costs about 13 microseconds of residual that no
-cache removes, because the shape of the contract is one IPC round trip per request. It is the last
-term: 138 removed the 208 microsecond fixed cost with a metadata cache and raised the transfer size
-to 64 KiB. What remains is not a slow implementation of the current contract, it is the current
-contract. The capability-shaped answer is to grant the client frames it can read directly, which is
-what `mmap` over a page cache buys Linux. The primitive exists here already, since frames are
-capabilities, they are shared rather than moved, and rights narrow at send. Nobody has drawn the
-design. It is also the interesting half for a demonstrator: Linux buys that performance with ambient
-authority over a global page cache, and the same performance here would come from a capability
-naming exactly which bytes with exactly which rights, revocably. The questions it inherits are the
-ones milestone 138 refused a data cache over: coherency, what a client observes when the file changes
-underneath it, and what revocation means mid-read.
+cache removes, because the contract is one IPC round trip per request. The capability-shaped answer
+is to grant the client frames it can read directly, as `mmap` over a page cache does for Linux. The
+primitive exists, since frames are capabilities, shared rather than moved, with rights narrowed at
+send. Nobody has drawn the design. Linux buys that speed with ambient authority over a global page
+cache. Here a capability would name exactly which bytes with which rights, revocably. The design
+inherits the questions 138 refused a data cache over: coherency, what a client sees when the file
+changes underneath it, and what revocation means mid-read.

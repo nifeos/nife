@@ -78,7 +78,7 @@ carries a machine-replayable falsification record) and `script/falsifications` r
 
 | property | harnesses |
 |---|---|
-| `with_parent` changes only the mux field: for every word and every parent, every bit outside `CLOCK_MUX_MASK` stays as it was and an over-wide parent never spills into the enable bit | `with_parent_changes_only_the_mux_field` |
+| `with_parent` changes only the mux field: for every word and every parent, every bit outside `CLOCK_PARENT_MASK` stays as it was and an over-wide parent never spills into the enable bit | `with_parent_changes_only_the_mux_field` |
 | Every offset a domain answers is one of its own words: `Domain::clock_offset` and `Domain::reset_bit` return none past the domain's `clocks` or `resets` count, and otherwise a word-aligned offset inside its range and a one-bit mask, for all three domains | `a_clock_offset_is_one_of_the_domains_own_words`, `a_reset_line_is_one_bit_of_one_of_the_domains_own_words` |
 | Every plan ungates its clocks before it releases its reset: the six fixed plans, and plans the crate builds from caller-supplied specifiers, hold only in-bounds ids, never more than `MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS` (or `MAXIMUM_DEVICE_STEPS`), with every `EnableClock` ahead of every `DeassertReset` | `every_fixed_plan_ungates_its_clocks_before_releasing_a_reset`, `a_device_plan_from_specifiers_ungates_before_it_releases`, `the_pmic_bus_plan_is_never_empty_and_ungates_before_it_releases` |
 | The status decoders (`is_deasserted`, `is_clock_enabled`, `clock_divider`) are total and match their definitions for every word | `is_deasserted_reads_the_bit_the_mask_names`, `is_clock_enabled_reads_bit_31_and_nothing_else`, `clock_divider_is_the_low_24_bits_and_nothing_else` |
@@ -130,8 +130,7 @@ and the device-tree queries, which the cut moves out of the crate.
    2. The shared template's weekly run (milestone 887) is green on the crate.
    3. A release dry run is green.
    4. The stranger test builds and proves the crate from its README alone.
-   5. The API has gone a set period with no change `cargo-semver-checks` calls breaking. The period
-      is not yet set.
+   5. The API has gone four weeks with no change `cargo-semver-checks` calls breaking.
 7. crates.io trusted publishing from that workflow, owned by a `nifeos` team, with no stored token.
 8. calef approves this publication, as he does every one.
 9. nife consumes the crates.io release by semantic version, and `Cargo.lock` records its checksum. A `[patch]` to
@@ -150,7 +149,7 @@ is not.
 `script/crate-standalone jh7110_clock_and_reset` builds the crate in a copy on 1.88 for the host and
 the three bare-metal targets, proves all nine harnesses with stock Kani, and replays all nine
 falsification patches red. It fails on one check: names. Nine names in the crate carry the state `recorded`
-and not `ratified`, the first being `CLOCK_MUX_MASK`; `python3 helpers/name_release.py --draft
+and not `ratified`, the first being `CLOCK_PARENT_MASK`; `python3 helpers/name_release.py --draft
 jh7110_clock_and_reset` prints the table for the pull request that ratifies them. An
 architect decides that, and the crate stays unmoved until then. The only citations of this tree
 that remain sit in `Name:` blocks, which stay until the ratification pass.

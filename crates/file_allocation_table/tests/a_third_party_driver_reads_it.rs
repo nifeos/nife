@@ -11,7 +11,7 @@
 //!
 //! ```console
 //! $ cargo test -p file_allocation_table -- --ignored --nocapture
-//! wrote target/file-allocation-table-check.img
+//! wrote target/tmp/file-allocation-table-check.img
 //! fsck_msdos: ** Phase 1 - Preparing FAT ... ** Phase 4 - Checking Directories ...
 //! the host's driver lists ["BOOTRISCV64.EFI"] in /private/tmp/dmg.XXXXXX/EFI/BOOT
 //! ```
@@ -22,7 +22,8 @@ use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 
-use file_allocation_table::{NoClock, SECTOR_BYTES, VolumeLayout};
+use file_allocation_table::efi_system_partition::SECTOR_BYTES;
+use file_allocation_table::{NoClock, VolumeLayout};
 
 /// The file the volume carries. Not a round number, so a length the writer got wrong by a cluster
 /// cannot pass by accident.
@@ -38,9 +39,11 @@ const NAME: &str = "BOOTRISCV64.EFI";
 #[test]
 #[ignore = "attaches an image for the host's FAT driver to read; see this file's header"]
 fn the_hosts_own_fat_driver_reads_the_long_name_back() {
+    // Cargo's scratch directory for integration tests, inside whichever target directory the
+    // build uses, so the image never lands outside the build's own output.
     let path = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../target/file-allocation-table-check.img"
+        env!("CARGO_TARGET_TMPDIR"),
+        "/file-allocation-table-check.img"
     );
     let body = write_image(Path::new(path));
     eprintln!("wrote {path}");
@@ -52,8 +55,16 @@ fn the_hosts_own_fat_driver_reads_the_long_name_back() {
 
 /// Write the volume to `path`, returning the file's bytes.
 fn write_image(path: &Path) -> Vec<u8> {
-    let volume = VolumeLayout::new(TOTAL_SECTORS, 0, FILE_LEN, 0x1234_5678, NAME, &mut NoClock)
-        .expect("700 MiB is a FAT32 volume");
+    let volume = VolumeLayout::new(
+        TOTAL_SECTORS,
+        0,
+        FILE_LEN,
+        0x1234_5678,
+        "EFI SYSTEM",
+        NAME,
+        &mut NoClock,
+    )
+    .expect("700 MiB is a FAT32 volume");
     let mut image = std::fs::File::create(path).expect("create the image");
     let mut sector = [0u8; SECTOR_BYTES];
     for index in 0..volume.metadata_sectors() {

@@ -24,7 +24,7 @@
 //! - A hung controller is `EIO` after [`SPIN_BOUND`] polls: `CSTS.CFS` is on the unmapped page.
 //! - A PRP aimed backwards from [`Handoff::data_plane_physical_address`] could overwrite the admin
 //!   ring; not an escape, and §86 option 4's doorbell validator would close it.
-//! - One command per filesystem block (`prp_pair` builds no PRP list); bulk trails virtio.
+//! - One command per filesystem block (`physical_region_page_pair` builds no PRP list); bulk trails virtio.
 //!
 //! Name: ratified 2026-09-17 (calef, §154 (the acronym test is whether the phrase is spoken)), the
 //! program's half 2026-09-18: it shares the crate's name, as `compositor` does. Refused
@@ -378,7 +378,7 @@ fn run_dma_escape(plane: &mut Plane, victim: u64) -> ! {
 }
 
 /// `count` contiguous blocks, one command each. See this module's `BUGS` for why it is not one
-/// command: `non_volatile_memory_express::prp_pair` refuses a transfer needing a PRP list, and a multi-page one does.
+/// command: `non_volatile_memory_express::physical_region_page_pair` refuses a transfer needing a PRP list, and a multi-page one does.
 fn transfer_range(plane: &mut Plane, block: u64, window: usize, count: usize, write: bool) -> i64 {
     for i in 0..count {
         if plane

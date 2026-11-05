@@ -62,7 +62,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
 `dwmmc-host` 0.4.2 (Apache-2.0, 1.7k downloads) and `starfive-jh7110-dwmmc` 0.1.8 (911) live in the
 `tgoskits` monorepo with no proofs found. drivercraft's `sdmmc` 0.1.0 (11k) is a general SD/MMC
 crate with no proofs found. `embedded-sdmmc` is SD over SPI plus FAT, another scope, and its project
-bans AI-generated contributions. The crate adapts OpenBSD's `dwmmc.c` and `sdmmc_mem.c` (ISC; it keeps both notices). It reads
+bans AI-generated contributions. The crate adapts OpenBSD's `dwmmc.c` (ISC; it keeps the notice) and takes only the order of its addressing commands from `sdmmc_mem.c`. It reads
 Linux's `dw_mmc` (GPL-2.0) and never copies it. No upstream offer goes anywhere: calef ruled on #1806 that nife contributes
 only to projects nife depends on.
 
@@ -123,8 +123,7 @@ row left with `serve` on 2026-10-25: its harness is `designware_mobile_storage::
    2. The shared template's weekly run (milestone 887) is green on the crate.
    3. A release dry run is green.
    4. The stranger test builds and proves the crate from its README alone.
-   5. The API has gone a set period with no change `cargo-semver-checks` calls breaking. The period
-      is not yet set.
+   5. The API has gone four weeks with no change `cargo-semver-checks` calls breaking.
 7. crates.io trusted publishing from that workflow, owned by a `nifeos` team, with no stored token.
 8. calef approves this publication, as he does every one.
 9. nife consumes the crates.io release by semantic version, and `Cargo.lock` records its checksum. A `[patch]` to

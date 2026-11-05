@@ -7,7 +7,7 @@ Expected to fail: the harness's `assert_eq!(result & USER_BITS, set.bits())`.
 diff --git a/crates/file_allocation_table/src/attributes.rs b/crates/file_allocation_table/src/attributes.rs
 --- a/crates/file_allocation_table/src/attributes.rs
 +++ b/crates/file_allocation_table/src/attributes.rs
-@@ -94,7 +94,7 @@ impl Attributes {
+@@ -96,7 +96,7 @@ impl Attributes {
  /// **`DIR_Attr` after the user bits become `new`**: the directory and label bits and the two bits
  /// the specification reserves keep their value.
  pub(crate) const fn apply(stored: u8, new: Attributes) -> u8 {

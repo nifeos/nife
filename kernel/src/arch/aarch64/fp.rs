@@ -100,7 +100,7 @@ const ZEN_AND_SMEN: u64 = (0b11 << 16) | (0b11 << 24);
 /// a part that reset it open; see notes/aarch64-port.md, "Floating point and SIMD".
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     instructions::write_cpacr_synchronized(instructions::read_cpacr() & !(FPEN | ZEN_AND_SMEN));
 }

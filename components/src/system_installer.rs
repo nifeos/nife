@@ -417,6 +417,8 @@ fn install(boot_file_len: u64) -> ! {
         layout.esp_first,
         boot_file_len,
         volume_id,
+        // The volume label a firmware menu or another operating system shows for the partition.
+        "NIFE",
         BOOT_FILE_NAME,
         // The installer has no wall clock, so the volume carries the zero timestamp.
         &mut fat::NoClock,

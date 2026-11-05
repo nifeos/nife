@@ -9,9 +9,7 @@ needs_person: no
 ---
 # 345. Five crates whose doctests the host gate never runs
 
-Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
-from milestone 68's block; numbered 2026-09-19 by milestone 433. **Premise re-checked 2026-09-19 and
-it holds.** `xtask/src/main.rs`'s host test invocation still excludes `user_mode_runtime`,
+Premise re-checked 2026-09-19 and it holds. `xtask/src/main.rs`'s host test invocation still excludes `user_mode_runtime`,
 `hot_swap_contract`, `virtio`, `supervision_contract` and `system_initializer` by name (alongside
 `kernel`, `components` and `fixtures`). The comment above it still carries the whole account. The
 exclusions are `user_mode_runtime` and everything that depends on it, because `--exclude` removes a
@@ -56,30 +54,15 @@ the `CALL`, which is the cleanest shape. `virtio` and `system_initializer` carry
 of success is mechanical and already automated: a crate leaves the `--exclude` list in
 `xtask/src/main.rs`, `script/lint`'s derived-set check agrees, and the host pass runs its doctests.
 
-## Where it came from
-
-Milestone 68 (code-quality gates: one lint policy, and the lints that lost)'s block: *"Split the pure half from the syscall half in `user_rt`, `hot_swap_contract`,
-`virtio`, `supervision_contract` and `system_initializer`. Each takes an unconditional `user_rt`
-dependency, so the host test selection excludes it and nothing in CI ever runs its doctests. That is
-five crates whose examples can rot unnoticed inside the gate milestone 68 exists to be."*
-
-`user_rt` is `user_mode_runtime` since 2026-09-13 (milestone 285). The quotation keeps the name
-milestone 68 wrote; everywhere else on this page the crate is spelled the way it is spelled today.
-
-The exclusion and its history are commented at the host-test invocation in `xtask/src/main.rs`.
-
 ## Index row
 
-`hot_swap_contract`, `virtio`, `supervision_contract` and `system_initializer` each take an
-unconditional dependency on `user_mode_runtime`, which is EL0 syscall `asm!` and cannot compile for
-the host, so all four are excluded from the host pass by name along with `user_mode_runtime` itself.
-Splitting each so the pure logic lives where the host can build it and the syscall half is what
-depends on `user_mode_runtime` lets the host pass run their tests and their doctests instead of
-skipping them. Milestone 68 exists to be the gate that keeps documented examples honest, and inside
-that gate sit five crates whose examples nothing ever compiles, which is the milestone's own failure
-living in its own blind spot. The tree has paid for this class once already. When five crates went
-missing from the host selection by milestone 51 they carried 82 host tests the gate never ran, and
-all 82 passed when finally run. That is the point: nothing failed and nobody noticed. The
-same unconditional dependencies broke the x86_64 host build on 2026-08-03 and a stranger found it
-eleven days later. Success is mechanical: a crate leaves the `--exclude` list, `script/lint`'s
-derived-set check agrees, and the host pass runs its doctests.
+`hot_swap_contract`, `virtio`, `supervision_contract` and `system_initializer` each depend
+unconditionally on `user_mode_runtime`, which is EL0 syscall `asm!` and cannot compile for the host.
+So the host pass excludes all four by name, along with `user_mode_runtime` itself. Nothing runs their
+tests or doctests. Splitting each ends the skipping. The pure logic builds on the host, and only the
+syscall half depends on `user_mode_runtime`. Milestone 68 (code-quality gates:
+one lint policy, and the lints that lost) is the gate that keeps documented examples honest, and
+five crates sit in its blind spot. The class has cost before: five crates once missing from the host
+selection carried 82 tests the gate never ran, and all passed when run. Success is mechanical: a
+crate leaves the `--exclude` list, `script/lint`'s derived-set check agrees, and the host pass runs
+its doctests. The exclusion is commented at the host-test invocation in `xtask/src/main.rs`.

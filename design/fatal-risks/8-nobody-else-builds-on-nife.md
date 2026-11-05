@@ -62,7 +62,7 @@ The first attempts, ruled 2026-10-27 (UTC):
   and measure the counterpart's attention instead of the value of the mechanism.
 - First: `file_allocation_table`. The incumbent `fatfs` has 422k downloads over 90 days and 58
   dependents, and no release since 2023-01.
-- Second: `extensible_host_controller_interface`, released with `usb`, after it gains Kani proofs.
+- Second: `extensible_host_controller_interface`, released with `usb` (published as `universal_serial_bus`), after it gains Kani proofs.
   The incumbent `xhci` has 39k downloads over 90 days and no release since 2023-07.
 - Third: `generational_table`, released on its own. Before release, confirm whether `slotmap`
   (maintained) already covers allocation-free fixed capacity, and say what was found in the release

@@ -243,6 +243,11 @@ echo "==> script/verify --parallel forks the shards, joins their verdicts, and k
 # waiting for the slot its parent holds) is proved against a one-slot fixture under a deadline,
 # because a deadlock never returns on its own.
 python3 helpers/verify_parallel.py --selftest >/dev/null
+echo "==> script/crate-move stages a move as the runbook says"
+# notes/crate-move.md: the dry run deletes Name: blocks, rewrites falsification patches for -p1 and
+# fills the template pins. The selftest drives those transforms on fixtures, with no tree and no
+# network.
+python3 helpers/crate_move.py --selftest >/dev/null
 # helpers/verify-parallel-selftest.sh proves the shards, the join and the one slot; the heavy-job
 # slots section above runs it, so it is not run twice.
 
@@ -1219,6 +1224,16 @@ if git grep -nE '^(<{7}|={7}|>{7})( |$)' -- \
     exit 1
 fi
 rm -f "/tmp/nife-conflict-markers.$$"
+
+echo "==> no [patch] section reaches main"
+# lint-quick
+# A crate that has moved to its own repository is pinned as { version, git, rev } at its tag's commit
+# (milestone 857 (crates released on their own), fork 2; notes/crate-move.md). A [patch] redirects a dependency for the whole build
+# and is a local development aid, so none lands, in any manifest or .cargo/config.toml. The one entry
+# allowed is a path into vendor/, code this tree carries. helpers/patch-section-check-selftest.sh
+# plants each form and a clean tree.
+helpers/patch-section-check-selftest.sh >/dev/null
+helpers/patch-section-check.sh
 
 # Every `uses:` in .github/ is pinned to a full 40-hex commit SHA, with the tag in a trailing
 # comment. A tag is a mutable pointer: whoever controls the action's repository can move `v2` to new
@@ -2792,7 +2807,7 @@ PYEOF
 
 # The naming conventions, for the ones a machine can check (milestone 46, DECISIONS §39). The rest of
 # them -- "name a component for what it is", "prefer a word a reader can parse without prior Unix
-# exposure" -- need judgement and stay prose, in design/naming.md. These four do not.
+# exposure" -- need judgement and stay prose, in design/naming.md. The service-model and contract-name checks do not.
 #
 # Every check below is a ratchet, and the argument is §39's: a name is a claim, made before a reader
 # sees a line of code. `netd`, `compd`, `gpud` and `termd` each claimed a Unix daemon model this OS
@@ -2800,67 +2815,20 @@ PYEOF
 # because lint runs constantly.
 echo "==> naming conventions"
 
-# 1. No `-d` suffix on a component or a crate. §39 made this a rule; without a check it lasts until
-#    the first inconvenient moment. Three characters or fewer is not enough room to claim a Unix
-#    daemon model (`kbd`, before its 2026-08-27 rename to `keyboard_driver`, was the worked
-#    example: an ordinary abbreviation that happened to end in `d`, not a `-d` claim), so the rule
-#    starts at four. Names that genuinely end in `d` go in the allow-list WITH a reason, the same
-#    shape as a per-item `#[allow]`.
-#
-#    Allowed: `uuid` is RFC 9562's own term for the object (milestone 111); the trailing d is the
-# last letter of "identifier", not a daemon suffix, and there is no long-running process here at all:
-# the program draws sixteen bytes, prints one line and exits.
-#
-#    `asid` was the other entry until 2026-09-18, and it left by being renamed rather than by being
-# re-argued: DECISIONS §154 made it `address_space_identifier`, which ends in `r`. An entry that
-# exists only because a name is an acronym the rule cannot read is one the expansion deletes.
-#
-#    Allowed: `report_child`, `device_child` and `interrupt_child` end in the word "child", which
-# calef ruled for them on 2026-10-18 (UTC). Each is built by its builder, reports once and exits.
-naming_allow=" uuid report_child device_child interrupt_child "
-named_for_a_daemon=""
-for name in \
-    $(ls "$(dirname "$0")/../components/src" | sed 's/\.rs$//') \
-    $(ls "$(dirname "$0")/../fixtures/src" | sed 's/\.rs$//') \
-    $(grep -A1 '^\[\[bin\]\]' "$(dirname "$0")/../components/Cargo.toml" | sed -n 's/^name = "\(.*\)"$/\1/p') \
-    $(grep -A1 '^\[\[bin\]\]' "$(dirname "$0")/../fixtures/Cargo.toml" | sed -n 's/^name = "\(.*\)"$/\1/p') \
-    $(ls "$(dirname "$0")/../crates")
-do
-    case "$name" in
-        ???*d)
-            case "$naming_allow" in
-                *" $name "*) ;;
-                *) named_for_a_daemon="$named_for_a_daemon $name" ;;
-            esac
-            ;;
-    esac
-done
-if [ -n "$named_for_a_daemon" ]; then
-    echo "lint: names ending in -d, which claims a daemon this OS does not have:$named_for_a_daemon" >&2
-    echo "Name it for what it is (DECISIONS §39, design/naming.md). If the word simply ends in d," >&2
-    echo "add it to naming_allow in this script with the reason." >&2
-    exit 1
-fi
-
-# 2. "Daemon" appears nowhere. §39's vocabulary is component / service / contract, and the word is
-#    excluded from code, comments and notes. Two places are exempt because they are where the
-#    ARGUMENT about the word lives: design/, which holds the decisions and (since §155) the naming
-#    conventions, and this script. A rule's rationale has to be able to name the thing it rejects.
-# $$, not a fixed name: see the note on the rule-1 check above (a shared /tmp path races two
-# worktrees' lint runs against each other).
-if git -C "$(dirname "$0")/.." grep -Iilnw daemon -- \
-    ':!vendor' ':!design' ':!script/lint' \
-    > "/tmp/nife-daemon.$$" 2>/dev/null; then
-    echo "lint: \"daemon\" outside the two places the argument about the word lives:" >&2
-    cat "/tmp/nife-daemon.$$" >&2
-    echo "The vocabulary is component / service / contract (DECISIONS §39)." >&2
-    rm -f "/tmp/nife-daemon.$$"
-    exit 1
-fi
-rm -f "/tmp/nife-daemon.$$"
+# 1 to 3 are the template's checks (vendor/crate-workflows/helpers/service_model.py and
+#    contract_names.py), run over this tree's names by helpers/vendored_name_gates.py, whose
+#    `service` header is the manual: no `-d` name of four characters or more, no `daemon` in a
+#    name or in prose, and a contract crate spelled `_contract`, not `_proto` or `_protocol`. The
+#    argument is §39 (a component is named for what it is): a name is a claim made before a reader
+#    sees a line of code, and `netd` claimed a Unix service model this OS does not have. Only what is nife's stays in the wrapper: the names
+#    that keep a spelling on purpose with the reason (`uuid`, the `_child` programs, the NTPv4
+#    crate), the files the prose check does not read, and the glob that proves the contract-crate
+#    check judged something. Fixtures first, so a green check is not a loop matching nothing.
+python3 helpers/vendored_name_gates.py service --selftest
+python3 helpers/vendored_name_gates.py service --check
 
 # A fixed /tmp path in a script this tree ships, made mechanical (milestone lint-worktree-leak,
-# 2026-09-27, closing the gap the three checks above just fixed). `/tmp` is one filesystem shared by
+# 2026-09-27). `/tmp` is one filesystem shared by
 # every worktree on the machine, and lanes gate concurrently (CLAUDE.md, "lane count"), so a script
 # that redirects into `/tmp/some-fixed-name` races every other worktree doing the same: whichever
 # process's write lands last between another process's write and its own read wins, and the loser
@@ -2870,10 +2838,10 @@ rm -f "/tmp/nife-daemon.$$"
 #
 # The check is a name test, not a behavior test, because a behavior test would mean racing every
 # script on every run. A path is exempt when it contains a `$`: `$$` (this shell's pid, what the
-# three checks above now use), `$(mktemp ...)`, or `$RANDOM` all make the path unique to the running
+# the other temporary files here use), `$(mktemp ...)`, or `$RANDOM` all make the path unique to the running
 # process, which is what makes the race impossible rather than merely unlikely. A fixed literal has
 # none, so `grep -v '\$'` is the whole test once comments are stripped. Comments are excluded because
-# this paragraph and the three above it correctly say `/tmp/nife-daemon.txt` in prose, and
+# this paragraph correctly says `/tmp/nife-daemon.txt` in prose, and
 # `script/stranger-test`'s own usage note names literal example paths for a human to paste.
 echo "==> fixed /tmp paths in scripts (they race across worktrees; see the note above)"
 if git grep -nE '[<>]>?[[:space:]]*"?/tmp/[A-Za-z0-9_.-]+"?' -- 'script/*' 'helpers/*.sh' \
@@ -2883,52 +2851,12 @@ if git grep -nE '[<>]>?[[:space:]]*"?/tmp/[A-Za-z0-9_.-]+"?' -- 'script/*' 'help
     echo "the machine doing the same (see the comment above this check):" >&2
     cat "/tmp/nife-fixed-tmp-paths.$$" >&2
     echo "" >&2
-    echo "Make the path unique to this process: append \".\$\$\" (see the rule-1 check above for" >&2
-    echo "the pattern) or use \$(mktemp)." >&2
+    echo "Make the path unique to this process: append \".\$\$\" or" >&2
+    echo "use \$(mktemp)." >&2
     rm -f "/tmp/nife-fixed-tmp-paths.$$"
     exit 1
 fi
 rm -f "/tmp/nife-fixed-tmp-paths.$$"
-
-# 3. One spelling for contract crates: `*_contract`. The tree had four spellings of "the wire
-#    contract" when this was written (`fs_proto`, `gfx_proto`, `netproto`, `line_editor::proto`);
-#    `*_proto` won because both existing habits already were it, and a second habit is how the first
-#    one rots. Milestone 265 (`_proto` is a truncation, and it collides with the other word it could be short for) made the suffix `_protocol` (`_proto` is a truncation). calef ruled on
-#    2026-10-18 (UTC) that nife's own wire-contract crates take `_contract`, because his 2026-09-13
-#    rule spells out network standards, so external standards keep producing `*_protocol` names that
-#    collided with the suffix. The tree already said "wire contract" and "service contract".
-#
-#    **One crate keeps `_protocol`, by name, and the list is the exception.** `network_time_protocol`
-#    is the NTPv4 standard's own name (calef, 2026-10-18). `supervision_protocol` took the suffix as
-#    `supervision_contract` on 2026-10-28 (calef, relayed by the maintainer): supervision is nife's
-#    own protocol, so the standard's exception never held. A new `*_protocol` crate fails.
-#
-#    **The glob is the whole hazard here**: this loop selects the crates it judges, so a glob that
-#    matches nothing passes by checking nothing. The counter makes an empty glob say so, and it
-#    does not depend on a `case` arm somebody could reorder.
-contract_crates=0
-for dir in "$(dirname "$0")"/../crates/*contract; do
-    [ -d "$dir" ] || continue
-    contract_crates=$((contract_crates + 1))
-    name="$(basename "$dir")"
-    case "$name" in
-        *_contract) ;;
-        *) echo "lint: contract crate $name should be spelled *_contract (design/naming.md)" >&2; exit 1 ;;
-    esac
-done
-if [ "$contract_crates" -eq 0 ]; then
-    echo "lint: crates/*contract matched no directory, so the contract-crate spelling check" >&2
-    echo "judged nothing. The suffix moved again; move the glob with it (design/naming.md)." >&2
-    exit 1
-fi
-for dir in "$(dirname "$0")"/../crates/*protocol; do
-    [ -d "$dir" ] || continue
-    name="$(basename "$dir")"
-    case "$name" in
-        network_time_protocol) ;;
-        *) echo "lint: crate $name ends in _protocol; nife's wire-contract crates end in _contract (design/naming.md)" >&2; exit 1 ;;
-    esac
-done
 
 # 4 and 4b (the branch-name shape, and a `milestone/N-*` branch touches its block) are in
 # script/lint-fleet since milestone 889 (the tree's gates stop depending on the fleet tooling),
@@ -3130,8 +3058,12 @@ echo "==> names meet the current naming rules"
 python3 helpers/baseline_layout.py --selftest
 python3 helpers/name_checks.py --selftest
 python3 helpers/name_checks.py --check
+# The prose of design/naming.md and the template's word list say the same thing
+# (helpers/vendored_name_gates.py's header). Fixtures first.
+python3 helpers/vendored_name_gates.py words --selftest
+python3 helpers/vendored_name_gates.py words --check
 
-echo "naming: no -d names, no daemons, contract crates spelled one way,"
+echo "naming: no -d names, no service-model words, contract crates spelled one way,"
 echo "        no #[path] module shared by two binaries, docs lowercase and hyphenated,"
 echo "        every name carries its provenance, and exactly one block per file"
 
@@ -3697,23 +3629,21 @@ python3 helpers/history_ratchet.py --selftest
 python3 helpers/history_ratchet.py --check
 echo "==> capability is not abbreviated cap (calef, 2026-10-06)"
 # lint-quick
-# calef ruled on 2026-10-06 (UTC): "I don't think we should abbreviate capability as cap." New
-# code spells it out; the existing identifiers are renamed in one sweep when the tree is quiet,
-# from design/naming/capability-worklist.md. Until then helpers/cap_abbreviation.py counts Rust
+# design/naming/acronyms-and-abbreviations.md: every name spells `capability` out. The sweep of
+# existing identifiers brought the count to zero, and helpers/vendored_name_gates.py counts Rust
 # identifiers with a `cap` or `caps` component (comments and strings skipped, so the English word
 # for a ceiling is never read) and fails a count over its ceiling or a branch that adds any net.
 # Fixtures first, so a green check is not a counter matching nothing.
-python3 helpers/cap_abbreviation.py --selftest
-python3 helpers/cap_abbreviation.py --check
+python3 helpers/vendored_name_gates.py cap --selftest
+python3 helpers/vendored_name_gates.py cap --check
 echo "==> unit symbols are spelled out (2026-10-27)"
 # lint-quick
-# Ruled 2026-10-27 (UTC), design/naming/spelled-out-rulings.md ("Unit symbols in names"): a name uses
-# a unit symbol only from the allowed list (`ns`, `ms`, `kib`, `mib`, `gib`, `hz`, `khz`, `mhz`);
-# `us`, `s`, `sec`, `secs`, `nanos`, `millis`, `micros` and `mins` are spelled out or become `ns`
-# and `ms`. helpers/unit_symbols.py counts Rust identifiers that carry one (comments and strings
-# skipped) and fails a count over its ceiling or a branch that adds any net. Fixtures first.
-python3 helpers/unit_symbols.py --selftest
-python3 helpers/unit_symbols.py --check
+# design/naming.md ("Units"): a name spells its unit out. helpers/vendored_name_gates.py counts Rust
+# identifiers that carry `us`, `s`, `sec`, `secs`, `nanos`, `millis`, `micros` or `mins` (comments
+# and strings skipped; it does not yet count `ns`, `ms` or `hz`, which its header records) and
+# fails a count over its ceiling or a branch that adds any net. Fixtures first.
+python3 helpers/vendored_name_gates.py unit --selftest
+python3 helpers/vendored_name_gates.py unit --check
 echo "==> no line-number citations (§277: cite a heading or a symbol)"
 # lint-quick
 # §277 (cite a heading or a symbol, never a line number), calef, 2026-10-11 (UTC): a document is
@@ -3775,15 +3705,19 @@ python3 helpers/hang_evidence.py lint
 echo "==> merge groups save no rust-cache entry; main-caches saves what jobs restore"
 python3 helpers/cache_save_scope.py --selftest >/dev/null
 python3 helpers/cache_save_scope.py
-# Owned runners (lane/owned-runners-canary): no job that can run for a pull request resolves
-# runs-on to the owned label or to the NIFE_RUNNER_OWNED switch, and every job that does carries a
-# merge_group/push-only `if:`. Fixtures first: the selftest plants a pull_request workflow, the
-# switch under pull_request_target, a missing guard and a guard that names pull_request, and
-# requires each to fail. notes/owned-runners.md; helpers/owned_runner_check.py says more.
-echo "==> no owned-runner job can run for a pull request, and each is guarded to the queue"
+# Owned runners: a job that can resolve runs-on to the owned label or the NIFE_RUNNER_OWNED switch
+# sits in a workflow whose only triggers are merge_group and a push to main, carries a
+# merge_group/push-only `if:` (or the event-aware switch), and sets timeout-minutes; and no
+# pull_request_target or workflow_run job names the pull request's head. Fixtures first: the
+# selftest plants each trigger an outsider can reach, a bare push, a push that takes tags, a missing
+# timeout, an owned label in a matrix and in a reusable workflow's input, and a head checkout under
+# pull_request_target and workflow_run, and requires each to fail. notes/owned-runners.md;
+# helpers/owned_runner_check.py says more.
+echo "==> owned-runner jobs run only for the queue and main, and no base-token job checks out a head"
 # lint-quick
 python3 helpers/owned_runner_check.py --selftest >/dev/null
 python3 helpers/owned_runner_check.py
+helpers/owned-canary-image-selftest.sh
 # Milestone 640 (a gate is not evidence until somebody has watched it fail), provisional: every
 # workflow cites a run where it went red (or fired) for the reason it exists, or says `never`, and
 # only a workflow main already had when this landed (2026-10-04) may say `never`, which is read from
@@ -4557,10 +4491,10 @@ PY
 # whether a "half" far from its subject has two siblings, because that needs a reader, and a gate
 # that guesses at prose is how script/lint lost three checks. The word this tree uses for one branch
 # of a multi-way split is "arm" (components/src/console.rs: "its x86 arm"), and
-# design/naming/vocabulary-rulings.md says so under "A half implies two".
+# design/naming/vocabulary.md says so in its row for "half".
 #
-# `git grep` does not understand `\b` and silently matches nothing (design/naming.md records the
-# same trap costing two renames a count), so the boundaries here are POSIX classes.
+# `git grep` does not understand `\b` and silently matches nothing (design/naming/rename-traps.md
+# records the same trap costing two renames a count), so the boundaries here are POSIX classes.
 echo "==> every RETYPE outside the run wrapper passes 0"
 # `MemoryRegion::RETYPE`'s first argument became a page count on 2026-09-26 (calef, option A of
 # design/roadmap/0659-a-region-retypes-a-frame-run.md), with 0 meaning one page. Every caller
@@ -4631,23 +4565,10 @@ echo "sh -n: every #!/bin/sh script parses under this machine's own /bin/sh"
 # Run it against a stub `cargo` that records its arguments; no Kani is involved, so this costs a
 # second. script/verify-riscv64 adds no argument handling of its own: it forwards "$@" here.
 echo "==> script/verify passes extra arguments through to cargo kani"
-vstub="$(mktemp -d)"
-cat >"$vstub/cargo" <<'STUB'
-#!/bin/sh
-# Stub: `cargo kani --version` succeeds; any other call is recorded.
-[ "$1" = kani ] && [ "$2" = "--version" ] && { echo "cargo-kani $(cat .kani-version)"; exit 0; }
-printf '%s\n' "$*" >>"$VERIFY_STUB_LOG"
-STUB
-chmod +x "$vstub/cargo"
-VERIFY_STUB_LOG="$vstub/log" PATH="$vstub:$PATH" script/verify --only capability --harness lint_probe_harness >/dev/null 2>&1 || true
-if ! grep -q '^kani -p capability .*--harness lint_probe_harness' "$vstub/log" 2>/dev/null; then
-    echo "lint: script/verify --only capability --harness X did not hand --harness X to cargo kani:" >&2
-    sed 's/^/  /' "$vstub/log" >&2 2>/dev/null || echo "  (stub cargo was never called)" >&2
-    rm -rf "$vstub"
-    exit 1
-fi
-rm -rf "$vstub"
-echo "script/verify: extra arguments reach cargo kani"
+# The run is stubbed, so it takes no Kani unit: a run behind another lane's real proof once idled here
+# for 30 minutes at 0 percent CPU. helpers/verify-stub-selftest.sh holds the whole pool with a fake
+# holder and proves the stubbed run finishes anyway, over a scratch slot directory.
+helpers/verify-stub-selftest.sh
 
 # Every stock Kani install goes through script/kani-install, which reads .kani-version (milestone
 # 795). An unpinned `cargo install ... kani-verifier` anywhere else would let the prover move

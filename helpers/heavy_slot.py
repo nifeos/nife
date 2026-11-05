@@ -5,7 +5,7 @@
     python3 helpers/heavy_slot.py --held      # exit 0 when an ancestor of the caller holds a slot
     python3 helpers/heavy_slot.py --status
     python3 helpers/heavy_slot.py --pool kani --units <n> <job> -- <command> [args...]
-    python3 helpers/heavy_slot.py --pool kani --size | --weight | --held
+    python3 helpers/heavy_slot.py --pool kani --size | --weight [<row>... | --table] | --held
 
 A script does not call this directly. It sources helpers/heavy-slot.sh, which re-executes the script
 under this. <job> names the job in what a waiter prints (`lint`, `test`, `mutation`).
@@ -39,7 +39,24 @@ caller then runs inside that slot. That survives an environment the parent scrub
 environment-variable marker would not.
 
 The default N is one slot per 8 GiB of physical memory, at least 1, so a 16 GiB machine runs two.
-NIFE_HEAVY_SLOTS overrides it. Two processes given different N each count only the slots they know.
+Two settings override it, the environment first. NIFE_HEAVY_SLOTS=<n> sets it for one process tree.
+A per-machine setting is the file `heavy-slot-count` beside the slot directory (default
+~/.nife/heavy-slot-count), holding one integer: `echo 10 > ~/.nife/heavy-slot-count`. It lives
+outside every worktree, so every new lane and script reads it with no setup, and a host that does
+not write it keeps the memory-based default. Remove the file to go back.
+
+Two processes given different N each count only the slots they know. The file is read on every
+call, and a waiter reads it again on every poll, so a change reaches a waiting job within
+POLL_SECONDS and every job started later at once. A job that already holds a slot keeps it and is
+unaffected. A process with NIFE_HEAVY_SLOTS exported keeps that value (the environment wins), so a
+running lane that exported it must unset it, or the shell that started it must be restarted. Raise
+N, not lower it, while jobs run: slots above a lowered N still count as held for the processes that
+know them, and as free for the ones that do not.
+
+A waiter prints a hint when a holder looks stuck: its process tree has used under 1 percent of the
+time it has run in CPU (ps counts only live processes, so a job that ran many short children can
+read low; the hint says "may"). `--status` marks a slot whose worktree path no longer exists as
+orphaned, the shape a lint left by a pruned worktree takes.
 
 The Kani pool. A heavy slot is one equal share, and a Kani run is not one share: `script/verify`
 runs VERIFY_JOBS harnesses at once, and a harness is large and uneven. The 2026-11 host out-of-memory
@@ -54,7 +71,15 @@ the rest and two big runs cannot deadlock. The units are flock files in `kani/` 
 directory, taken as the slots are, so a killed run frees them with no cleanup. A request above the
 pool is clamped to it, and the caller runs only as many harnesses at once as fit (`--size`).
 
-  NIFE_KANI_HARNESS_GIB   the weight of one harness; lower it for a group of small proofs
+A run that names its rows (`--weight <row>...`) weighs a harness by measurement instead:
+helpers/kani_peaks.py reads each row's measured peak from helpers/kani-peaks.tsv, rounded up to whole
+units, and the run takes the largest of its rows. A row that was never measured, or whose crate or
+Kani version changed since, weighs HARNESS_GIB, so an edited harness is reserved conservatively.
+`--table` names every row of script/verify's crate table. notes/verification/kani-memory.md has the
+measurements.
+
+  NIFE_KANI_HARNESS_GIB   the weight of one harness, over any measurement
+  NIFE_KANI_PEAKS         the measured table to read (a selftest points it at a fixture)
   NIFE_KANI_UNITS         the pool size outright
   NIFE_VERIFY_MEMORY_BYTES  replaces physical memory in the sizing (a selftest picks a small machine)
   NIFE_KANI_POOL=off      no pool. It is also off under GITHUB_ACTIONS, where a runner is one job on
@@ -63,15 +88,22 @@ pool is clamped to it, and the caller runs only as many harnesses at once as fit
 Python callers use `take_kani`, which holds the units until the process exits. `--status` lists every
 holder with its lane, worktree and command line.
 
-BUGS: a request for many units can be overtaken by smaller ones that fit sooner, as with the slots.
+BUGS: a request for many units can be overtaken by smaller ones that fit sooner. The slots wait in
+ticket order (below); the Kani units do not yet.
 
 BUGS: the ancestor walk includes pid 1, which `script/test` is when it is a container's first
 process. Two containers that share one slot directory and each run a heavy script as pid 1 cannot
 tell their pid 1s apart, so one can run inside the other's slot. Give each container its own
 NIFE_HEAVY_SLOT_DIR.
 
-BUGS: waiters are not served in order. Each polls every POLL_SECONDS and the first to find a free
-slot takes it, so a run can be overtaken by one that started later.
+BUGS: script/verify takes its heavy slot before its Kani units, so a run that waits for units holds
+a heavy slot it does nothing with, and a build or a lint that needs only the slot waits behind it.
+
+Order. A job waits for a slot in ticket order, through helpers/heavy_ledger.py: the job that began
+waiting first starts first, and a slot freed while several wait goes to the oldest. The ledger counts
+memory in bytes, every job asks for 8 GiB, and the capacity is the slot count times 8 GiB, so it
+admits exactly as many jobs as there are slots. An admitted job still locks a slot file, so a helper
+from before the ledger counts it, and a slot held without a ledger entry counts as one job.
 """
 
 import errno
@@ -81,20 +113,34 @@ import subprocess
 import sys
 import time
 
+import heavy_ledger
+
 GIB = 1 << 30
 GIB_PER_SLOT = 8
 POLL_SECONDS = 2
+STUCK_SECONDS = 3600
 UNIT_GIB = 2
 KANI_RESERVE_GIB = 12
 HARNESS_GIB = 10
 
 
+def count_file():
+    """The per-machine slot count file: `heavy-slot-count` beside the slot directory."""
+    base = os.environ.get("NIFE_HEAVY_SLOT_DIR") or os.path.expanduser("~/.nife/heavy-slots")
+    return os.path.join(os.path.dirname(os.path.abspath(base)), "heavy-slot-count")
+
+
 def slot_count():
-    override = os.environ.get("NIFE_HEAVY_SLOTS", "")
+    override, source = os.environ.get("NIFE_HEAVY_SLOTS", ""), "NIFE_HEAVY_SLOTS"
+    if not override and os.path.exists(count_file()):
+        override, source = open(count_file()).read().strip(), count_file()
     if override:
-        n = int(override)
+        try:
+            n = int(override)
+        except ValueError:
+            n = 0
         if n < 1:
-            sys.exit(f"heavy-slot: NIFE_HEAVY_SLOTS={override} must be at least 1")
+            sys.exit(f"heavy-slot: {source}={override!r} must be an integer of at least 1")
         return n
     memory = os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE")
     return max(1, memory // (GIB_PER_SLOT * GIB))
@@ -126,17 +172,28 @@ def pool_size(pool):
     return max(1, int(usable // UNIT_GIB))
 
 
-def harness_units():
-    """Units one harness weighs: HARNESS_GIB, or NIFE_KANI_HARNESS_GIB, rounded up."""
+def default_harness_units():
+    """Units one harness weighs with no measurement: HARNESS_GIB, or NIFE_KANI_HARNESS_GIB, rounded up."""
     gib = float(os.environ.get("NIFE_KANI_HARNESS_GIB") or HARNESS_GIB)
     if gib <= 0:
         sys.exit("heavy-slot: NIFE_KANI_HARNESS_GIB must be positive")
     return max(1, -(-int(gib * 1024) // int(UNIT_GIB * 1024)))
 
 
-def kani_capacity(n):
-    """Harnesses that fit in a pool of `n` units at once; at least one."""
-    return max(1, n // harness_units())
+def harness_units(rows=()):
+    """Units one harness of a run over `rows` (script/verify rows) weighs: the largest measured
+    weight among them (helpers/kani_peaks.py), the default for a row with none, and the default
+    outright when no rows are named or NIFE_KANI_HARNESS_GIB is set."""
+    if not rows or os.environ.get("NIFE_KANI_HARNESS_GIB"):
+        return default_harness_units()
+    import kani_peaks
+    weighed = kani_peaks.weights(list(rows), UNIT_GIB, default_harness_units())
+    return max(units for units, _ in weighed.values())
+
+
+def kani_capacity(n, rows=()):
+    """Harnesses of a run over `rows` that fit in a pool of `n` units at once; at least one."""
+    return max(1, n // harness_units(rows))
 
 
 def parent_table():
@@ -240,12 +297,59 @@ def describe(held):
         lines.append(f"  slot {i}: {record.split(' cmd=')[0] or 'no record yet'}{note}")
         worktree = field(record, "worktree")
         lane = lane_of(worktree)
-        if lane or worktree:
+        if worktree and not os.path.isdir(worktree):
+            lines.append(f"    ORPHANED: worktree {worktree} no longer exists")
+        elif lane or worktree:
             lines.append(f"    lane {lane or '(unknown)'}  worktree {worktree}")
         cmd = (live_command(pid) if alive else "") or field(record, "cmd")
         if cmd:
             lines.append(f"    command {cmd}")
     return "\n".join(lines)
+
+
+def to_seconds(text):
+    """Seconds in a ps time such as `[[dd-]hh:]mm:ss[.ss]`; 0 when it does not parse."""
+    try:
+        days, _, rest = text.rpartition("-")
+        total = 0.0
+        for part in rest.split(":"):
+            total = total * 60 + float(part)
+        return total + 86400 * int(days or 0)
+    except ValueError:
+        return 0.0
+
+
+def stuck_hint(held, table=None):
+    """A line naming holders that may be stuck, or ''. A holder is flagged when its process tree has
+    used under 1 percent CPU over more than STUCK_SECONDS of running. `table` is test input:
+    {pid: (ppid, cpu_seconds, elapsed_seconds)}."""
+    if table is None:
+        table = {}
+        out = subprocess.run(["ps", "-A", "-o", "pid=,ppid=,time=,etime="],
+                             capture_output=True, text=True).stdout
+        for line in out.split("\n"):
+            f = line.split()
+            if len(f) == 4 and f[0].isdigit() and f[1].isdigit():
+                table[int(f[0])] = (int(f[1]), to_seconds(f[2]), to_seconds(f[3]))
+    names = []
+    for i, record in sorted(held.items()):
+        pid = holder_pid(record)
+        if pid not in table:
+            continue
+        tree, grew = {pid}, True
+        while grew:
+            grew = False
+            for p, (parent, _, _) in table.items():
+                if parent in tree and p not in tree:
+                    tree.add(p)
+                    grew = True
+        elapsed = table[pid][2]
+        if elapsed > STUCK_SECONDS and sum(table[p][1] for p in tree) < 0.01 * elapsed:
+            names.append(f"slot {i} (pid {pid})")
+    if not names:
+        return ""
+    return ("heavy-slot: " + ", ".join(names) + " may be stuck: under 1% CPU for over "
+            f"{STUCK_SECONDS // 3600} hour. Check `--status`; kill the process if it is an orphan.")
 
 
 def pid_alive(pid):
@@ -308,22 +412,22 @@ def take_kani(harnesses, job):
 
 
 def acquire(job, n, directory):
-    """Block until a slot is ours, and return its fd."""
-    announced = False
-    while True:
-        mine, held = try_slots(n, directory)
-        if mine:
-            slot, fd = min(mine.items())
-            for other in mine.values():
-                if other != fd:
-                    os.close(other)
-            record(fd, slot, job)
-            return fd
-        if not announced:
-            print(f"heavy-slot: {job} is waiting for one of {n} heavy-job slots "
-                  f"({directory}); they are held by:\n{describe(held)}", file=sys.stderr, flush=True)
-            announced = True
-        time.sleep(POLL_SECONDS)
+    """Block until the ledger admits this job to one of `n` slots, and return the fds it holds: the
+    slot's and its ledger entry's (helpers/heavy_ledger.py). The slot count is read again on every
+    poll."""
+    def waiting(held, ahead):
+        line = f"heavy-slot: {job} is waiting for one of {n} heavy-job slots ({directory})"
+        if ahead:
+            line += f", behind {ahead} earlier in line"
+        if held:
+            line += f"; they are held by:\n{describe(held)}"
+        print(line, file=sys.stderr, flush=True)
+        hint = stuck_hint(held)
+        if hint:
+            print(hint, file=sys.stderr, flush=True)
+    worktree = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return heavy_ledger.acquire(job, heavy_ledger.SLOT_BYTES, slot_count, directory, try_slots,
+                                record, waiting, POLL_SECONDS, worktree, sys.argv)
 
 
 def record(fd, slot, job, units=1, command=None):
@@ -344,6 +448,10 @@ def status():
     print(f"{n} heavy-job slots in {directory}, {len(held)} held")
     if held:
         print(describe(held))
+    waiting = heavy_ledger.queue_lines(directory)
+    if waiting:
+        print(f"{len(waiting)} waiting, in the order they start:")
+        print("\n".join(waiting))
     k = pool_size("kani")
     if k == 0:
         print("Kani pool: off")
@@ -352,7 +460,7 @@ def status():
     mine, kheld = try_slots(k, kdir)
     for fd in mine.values():
         os.close(fd)
-    print(f"{k} Kani units of {UNIT_GIB} GiB in {kdir}, {len(kheld)} held; a harness weighs "
+    print(f"{k} Kani units of {UNIT_GIB} GiB in {kdir}, {len(kheld)} held; an unmeasured harness weighs "
           f"{harness_units()} units, so {kani_capacity(k)} fit at once ({k * UNIT_GIB:.0f} GiB in all)")
     if kheld:
         print(describe(kheld))
@@ -361,11 +469,15 @@ def status():
 def pool_main(argv):
     """`--pool kani` forms; argv is what follows the flag's value."""
     n = pool_size("kani")
-    if argv == ["--size"]:
-        print(kani_capacity(n) if n else "off")
-        return
-    if argv == ["--weight"]:
-        print(harness_units())
+    if argv[:1] in (["--size"], ["--weight"]):
+        rows = argv[1:]
+        if rows == ["--table"]:
+            import kani_peaks
+            rows = kani_peaks.verify_rows()
+        if argv[0] == "--size":
+            print(kani_capacity(n, rows) if n else "off")
+        else:
+            print(harness_units(rows))
         return
     if argv == ["--held"]:
         sys.exit(0 if n == 0 or held_by_ancestor(n, slot_dir("kani")) else 1)
@@ -377,7 +489,8 @@ def pool_main(argv):
             for fd in acquire_units(job, n, slot_dir("kani"), units):
                 os.set_inheritable(fd, True)
         os.execvp(command[0], command)
-    sys.exit("usage: heavy_slot.py --pool kani (--size | --held | --units <n> <job> -- <command>...)")
+    sys.exit("usage: heavy_slot.py --pool kani (--size [<row>...] | --weight [<row>... | --table] | "
+             "--held | --units <n> <job> -- <command>...)")
 
 
 def main(argv):
@@ -392,7 +505,8 @@ def main(argv):
     if len(argv) < 3 or argv[1] != "--":
         sys.exit("usage: heavy_slot.py <job> -- <command> [args...] | --held | --status")
     job, command = argv[0], argv[2:]
-    os.set_inheritable(acquire(job, slot_count(), slot_dir()), True)
+    for fd in acquire(job, slot_count(), slot_dir()):
+        os.set_inheritable(fd, True)
     os.execvp(command[0], command)
 
 

@@ -6,7 +6,7 @@
 //! read words out of an NVM image. What it can catch is a sequence that disagrees with itself or
 //! with FreeBSD's order: a semaphore left held, a page select to the wrong address, a PHY reset
 //! issued when firmware forbids it. What it cannot catch is FreeBSD being wrong about silicon, or
-//! this model being wrong the same way the port is. xenon is the test of that.
+//! this model being wrong the same way the port is. Silicon is the test of that.
 //!
 //! Name: ratified 2026-11-03 (UTC), #3121.
 
@@ -284,7 +284,10 @@ fn mac_mdic() -> u64 {
 
 impl Hardware for SimulatedHardware {
     fn read(&mut self, offset: u64) -> u32 {
-        if offset == non_volatile_memory::FLASH_BASE_ADDR + non_volatile_memory::HSFSTS {
+        if offset
+            == non_volatile_memory::FLASH_BASE_ADDR
+                + non_volatile_memory::HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER
+        {
             if self.flash_pending > 0 {
                 if self.flash_pending != u32::MAX {
                     self.flash_pending -= 1;
@@ -321,7 +324,10 @@ impl Hardware for SimulatedHardware {
                 };
                 self.mac.insert(offset, keep);
             }
-            o if o == non_volatile_memory::FLASH_BASE_ADDR + non_volatile_memory::HSFSTS => {
+            o if o
+                == non_volatile_memory::FLASH_BASE_ADDR
+                    + non_volatile_memory::HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER =>
+            {
                 self.flash_write(value);
             }
             o if o == registers::STRAP => self.strap_writes.push(value),

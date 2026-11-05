@@ -72,7 +72,7 @@ makes it fail at its own assertion. Each patch is at
 | Submission queue pushes stay in bounds | `verification::sq_push_stays_in_bounds` |
 | Completion pops stay in bounds, and the phase flips only at the wrap | `verification::cq_pop_stays_in_bounds_and_flips_only_at_the_wrap` |
 | Distinct doorbells never collide | `verification::distinct_doorbells_never_collide` |
-| The PRP pair is total and page-disciplined | `verification::prp_pair_is_total_and_page_disciplined` |
+| The PRP pair is total and page-disciplined | `verification::physical_region_page_pair_is_total_and_page_disciplined` |
 | The identify-namespace parse is total and bounds its shift | `verification::identify_parse_is_total_and_bounds_the_shift` |
 | A transfer command is built only for a block the namespace has | `verification::a_transfer_command_is_only_built_for_a_block_the_namespace_has` |
 
@@ -111,8 +111,7 @@ they left with `Handoff` on 2026-10-26 (#2736).
    2. The shared template's weekly run (milestone 887) is green on the crate.
    3. A release dry run is green.
    4. The stranger test builds and proves the crate from its README alone.
-   5. The API has gone a set period with no change `cargo-semver-checks` calls breaking. The period
-      is not yet set.
+   5. The API has gone four weeks with no change `cargo-semver-checks` calls breaking.
 6. crates.io trusted publishing from that workflow, owned by a `nifeos` team, with no stored token.
 7. calef approves this publication, as he does every one.
 8. nife consumes the crates.io release by semantic version, and `Cargo.lock` records its checksum. A `[patch]` to

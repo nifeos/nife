@@ -377,10 +377,16 @@ fn table_at<'a>(region: &DirectMapRegion<'a>, at: u64) -> Option<Table<'a>> {
 /// table was being read.
 pub(crate) fn read_acpi(region: &DirectMapRegion<'_>, hint: u64) -> Acpi {
     let mut found = Acpi::default();
+    walk_acpi(region, hint, &mut found);
+    found
+}
 
+/// [`read_acpi`]'s walk, filling the caller's [`Acpi`] in place. Its own function so the walk's
+/// early returns and table temporaries do not each carry a whole `Acpi` in the caller's frame.
+fn walk_acpi(region: &DirectMapRegion<'_>, hint: u64, found: &mut Acpi) {
     let Some((at, rsdp)) = region.find_rsdp(hint) else {
         crate::println!("  acpi        : no RSDP found (loader said {hint:#x}, and no scan hit)");
-        return found;
+        return;
     };
     let (root, wide) = rsdp.root_table();
     crate::println!(
@@ -395,7 +401,7 @@ pub(crate) fn read_acpi(region: &DirectMapRegion<'_>, hint: u64) -> Acpi {
     }) = table_at(region, root)
     else {
         crate::println!("                root table unreadable or failed its checksum");
-        return found;
+        return;
     };
     let count = root_entry_count(root_header.length, wide).min(MAXIMUM_TABLES);
 
@@ -413,10 +419,10 @@ pub(crate) fn read_acpi(region: &DirectMapRegion<'_>, hint: u64) -> Acpi {
             header.length
         );
         match &header.signature {
-            b"APIC" => read_madt(body, &mut found),
-            b"MCFG" => read_mcfg(body, &mut found),
-            b"DMAR" => read_dmar(body, &mut found),
-            b"IVRS" => found.ivrs = IvrsUnits::parse(body),
+            b"APIC" => read_madt(body, found),
+            b"MCFG" => read_mcfg(body, found),
+            b"DMAR" => read_dmar(body, found),
+            b"IVRS" => read_ivrs(body, found),
             b"FACP" => {
                 found.reset = parse_fadt_reset(body);
                 super::reset::record(found.reset);
@@ -424,8 +430,12 @@ pub(crate) fn read_acpi(region: &DirectMapRegion<'_>, hint: u64) -> Acpi {
             _ => {}
         }
     }
+}
 
-    found
+/// Decode the IVRS into `into`. Its own frame, since the decoded table is over a kilobyte.
+#[inline(never)]
+fn read_ivrs(body: &[u8], into: &mut Acpi) {
+    into.ivrs = IvrsUnits::parse(body);
 }
 
 fn read_madt(body: &[u8], into: &mut Acpi) {

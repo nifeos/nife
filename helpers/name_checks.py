@@ -17,7 +17,7 @@ ratified by rule.
 adds or revises a check, so new debt arrives with its cause. Ratified names are exempt, since a
 later rule never silently overrules calef's ruling, and the worklist reports each one that fails a
 current check so he can reopen it. Spelling and `cap` have ratchets of their own
-(`helpers/house_style.py`, `helpers/cap_abbreviation.py`) and are reported here, not held twice.
+(`helpers/house_style.py`, `helpers/vendored_name_gates.py`) and are reported here, not held twice.
 
 **Reach**, in the order a fix lane works the list:
 
@@ -47,31 +47,30 @@ import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import baseline_layout  # noqa: E402
-import cap_abbreviation  # noqa: E402
 import moved_rows  # noqa: E402
 import name_census  # noqa: E402
 import name_crossings  # noqa: E402
 import name_provenance  # noqa: E402
+import vendored_name_gates  # noqa: E402
 
-# Components a ruling spells out: §154 (the acronym test is whether the phrase is spoken)'s table
-# and design/naming/spelled-out-rulings.md. A plural is the same abbreviation. A foreign identifier
-# keeps its owner's spelling, and telling one from ours is judgment, so it is listed too and the
-# lane that fixes it decides.
-SPELLED_OUT = {
-    "cap", "caps", "op", "ops", "recv", "config", "configs", "spec", "specs", "arg", "args",
-    "mem", "dir", "dirs", "va", "pa", "ipi", "ipis", "nmi", "nmis", "ist", "msr", "msrs", "ipc",
-    "dtb", "asid", "asids", "gpt", "nvme", "pcie", "dma", "pr", "prs", "initrd", "prog", "progs",
-    "pos", "opt", "opts", "mtime",
-}
-# Packages two programs agree through: `abi`, the wire-contract crates (`script/lint` check 3 holds
-# their spelling, `network_time_protocol` its one exception), and the
-# on-disk formats §307 (how long a name may be) lists. Something else another program parses is
+sys.path.insert(0, vendored_name_gates.TEMPLATE_HELPERS)
+import question_shape  # noqa: E402  (vendored)
+import rust_names  # noqa: E402  (vendored)
+import service_model  # noqa: E402  (vendored)
+
+# The words a name spells out are the template's: `[spelled_out]` in
+# vendor/crate-workflows/helpers/naming_words.toml, read through helpers/vendored_name_gates.py
+# (the pin and the reason are in vendor/README.md). A plural is its own row. A foreign identifier
+# keeps its owner's spelling, and telling one from ours is judgment, so the check refuses it and the
+# lane that fixes it decides: a register, bit or specification name copied from a datasheet is
+# excused through `KEPT`, and a renamed item carries `#[doc(alias = "...")]` but an attribute is not
+# a name, so an alias never counts.
+# Packages two programs agree through: `abi`, the wire-contract crates (`helpers/vendored_name_gates.py`
+# `service` holds their spelling, `network_time_protocol` its one exception), and the on-disk formats §307 (how long a name may be) lists. Something else another program parses is
 # missed; the BUGS below say so.
 WIRE = {"abi", "network_time_protocol", "nifefs", "package_archive",
         "documentation"}
-# Spelled in two halves because script/lint's naming check refuses the word outside design/.
-_SERVICE_WORD = "dae" + "mon"
-_CAP = {"cap", "caps"}
+_CAP = set(vendored_name_gates.CAP_WORDS)
 # Names a check refuses and a rule of design/naming.md exempts, keyed by `path::name`, each with the
 # checks it is excused from and why. Two kinds, the rule each one applies named in its reason: a
 # foreign identifier keeps its owner's spelling, and a function that acts and reports whether it
@@ -121,19 +120,21 @@ KEPT = {
 RULED = {
     "notes/stack-high-water/per-ipc-depth.md::per-ipc-depth":
         "calef ruled `IPC` a term of art, declining the expansion (2026-10-28 UTC, relayed by the "
-        "maintainer); design/naming/spelled-out-rulings.md holds the record",
+        "maintainer); design/naming/acronyms-and-abbreviations.md holds the record",
     "kernel/src/user/non_volatile_memory_express_service.rs::release_completed":
         "calef ruled the rename of `release` here on 2026-10-28 (UTC, relayed by the maintainer): "
         "the function performs the release, so the ruled `is_released` would misstate it, and "
         "`release_completed` acts and reports whether it worked, which design/naming.md exempts "
         "from the question shape",
 }
-# design/naming.md's question shapes. A finite verb first (`contains`, `starts_with`) is read as a
-# first word ending in `s`, which also passes a plural noun: the check's known false pass.
-_QUESTION_FIRST = {"is", "has", "can", "was", "will", "all", "any"}
-_QUESTION_INNER = {"is", "has", "can", "was"}
-# A `take_` clears a flag and reports it, which design/naming.md exempts by name.
-_ACTS_FIRST = {"take"}
+# design/naming.md's question shapes and service model are the template's checks
+# (vendor/crate-workflows/helpers/question_shape.py and service_model.py), run on the name alone.
+_TEMPLATE_CHECKS = (
+    ("service-model", service_model.hits_of_words(vendored_name_gates.WORDS),
+     service_model.phrase),
+    ("question-shape", question_shape.hits_of_words(vendored_name_gates.WORDS),
+     question_shape.phrase),
+)
 # The casing each Rust kind takes. A file name's casing is `script/lint`'s naming check 6, and a
 # name declared in an `extern` block is its owner's, so neither is checked here.
 _CASING = {
@@ -147,7 +148,7 @@ _KEYWORD = {"fn": "fn", "const": "const", "static": "static", "struct": "type", 
 
 
 def components(name):
-    return [c.lower() for c in cap_abbreviation.components(name) if c != "-"]
+    return vendored_name_gates.components(name)
 
 
 def failures(name, kind, returns_bool, british):
@@ -157,28 +158,24 @@ def failures(name, kind, returns_bool, british):
     if shape and not re.fullmatch(shape, name):
         out.append(f"casing: not this tree's casing for a {kind}")
     words = components(name)
-    # "opt in" and "opt out" are English verbs, not `option` abbreviated.
-    ruled = [w for i, w in enumerate(words) if w in SPELLED_OUT and w not in _CAP
-             and not (w == "opt" and words[i + 1:i + 2] in (["in"], ["out"]))]
+    # The template's check: "opt in" and "opt out" are English verbs, not `option` abbreviated.
+    hits = vendored_name_gates.spelled_out_hits(name)
+    ruled = [(w, into) for w, into in hits if w not in _CAP]
     if ruled:
-        out.append(f"spelled-out: `{ruled[0]}` is ruled to expand")
-    elif any(w in _CAP for w in words):
-        out.append("cap: `cap` is ruled to expand (helpers/cap_abbreviation.py holds it)")
+        out.append(f"spelled-out: `{ruled[0][0]}` is ruled to expand to {ruled[0][1]}")
+    elif any(w in _CAP for w, _ in hits):
+        out.append("cap: `cap` is ruled to expand (helpers/vendored_name_gates.py holds it)")
     if name in british:
         out.append(f"spelling: `{british[name]}` is British (helpers/house_style.py holds it)")
-    if _SERVICE_WORD in words or (len(words) > 1 and words[-1] == "d"):
-        out.append("service-model: claims a Unix service")
-    if kind == "fn" and returns_bool and words:
-        first = words[0]
-        # A finite verb anywhere passes (design/naming.md: `machine_has_no_rtc`), read as an inner
-        # `is`/`has`/`can`/`was` or a last word ending in `s` (`grant_allows`, `day_matches`).
-        last = words[-1]
-        if not (first in _QUESTION_FIRST or first in _ACTS_FIRST
-                or (first.endswith("s") and not first.endswith("ss"))
-                or (len(words) > 1 and last.endswith("s") and not last.endswith("ss"))
-                or any(w in _QUESTION_INNER for w in words[1:])):
-            out.append("question-shape: returns `bool` and is not `is_`, `has_`, `can_` or a "
-                       "finite verb")
+    # The template's service-model and question-shape checks, on the name alone: a package or
+    # program is not judged here (script/lint's -d check holds those), so the kind is `name` for
+    # anything but a function.
+    definition = rust_names.Definition(name, "fn" if kind == "fn" else "name", 1,
+                                       returns_bool=returns_bool)
+    for check, hits_of, phrase in _TEMPLATE_CHECKS:
+        hits = hits_of(definition)
+        if hits:
+            out.append(f"{check}: " + "; ".join(phrase(word, why) for word, why in hits))
     return out
 
 
@@ -338,9 +335,9 @@ BASELINE = "design/naming-rule-baseline.txt"
 # the one change whose new rows the merge-base comparison admits, so new debt arrives with its cause.
 # This is an exception and a foot gun on purpose, the module-block ratchet's FORMAT line one door
 # over: a bump with no revised check behind it would admit any violation, and nothing else stops it.
-RULES = 1
+RULES = 2
 # The checks the gate holds. `spelling` and `cap` have ratchets of their own
-# (helpers/house_style.py, helpers/cap_abbreviation.py), so they are listed but not held twice.
+# (helpers/house_style.py, helpers/vendored_name_gates.py), so they are listed but not held twice.
 GATED = ("casing", "spelled-out", "service-model", "question-shape")
 _RULES_LINE = "# rules {}"
 HEADER = """# rules {rules}
@@ -550,6 +547,24 @@ def _selftest():
     assert failures("grant_allows", "fn", True, {}) == [], "a finite verb last is a question"
     assert failures("frame_waiting", "fn", True, {})[0].startswith("question-shape")
     assert failures("why-opt-in", "document", False, {}) == [], "opt in is a verb"
+    for word in ("rx", "tx", "phy", "init", "irq", "fifo", "min", "max", "os", "rgmii", "mdio"):
+        bad = failures(f"{word}_count", "fn", False, {})
+        assert len(bad) == 1 and bad[0].startswith(f"spelled-out: `{word}` is ruled to expand to "), \
+            (word, bad)
+    assert failures("receive_count", "fn", False, {}) == [], "receive is the ruled spelling"
+    assert failures("secs_per_min", "fn", False, {}) == [], "a unit after `per` is the unit check's"
+    assert failures("FIFOTH", "const", False, {}) == [], "a datasheet register name is one word"
+    fixture = ("#[doc(alias = \"fifo\")]\npub fn intrusive_queue() {}\n"
+               "pub fn fifo_depth() {}\npub const FIFO_RAW: u32 = 1;\n")
+    assert [r["name"] for r in survey(
+        [("fn", "intrusive_queue", "lib_a/src/q.rs", 2), ("fn", "fifo_depth", "lib_a/src/q.rs", 3),
+         ("const", "FIFO_RAW", "lib_a/src/q.rs", 4)], dict(sources, **{"lib_a/src/q.rs": fixture}),
+        manifests, {})] == ["fifo_depth", "FIFO_RAW"], "an alias does not count"
+    KEPT["lib_a/src/q.rs::FIFO_RAW"] = ({"spelled-out"}, "fixture: a datasheet name")
+    assert [r["name"] for r in survey(
+        [("const", "FIFO_RAW", "lib_a/src/q.rs", 4)], dict(sources, **{"lib_a/src/q.rs": fixture}),
+        manifests, {})] == [], "KEPT excuses a datasheet name"
+    del KEPT["lib_a/src/q.rs::FIFO_RAW"]
     extern = 'extern "system" {\n    pub fn GetLogicalDrives() -> u32;\n}\n'
     assert survey([("fn", "GetLogicalDrives", "lib_a/src/ffi.rs", 2)],
                   dict(sources, **{"lib_a/src/ffi.rs": extern}), manifests, {}) == [], \
@@ -681,8 +696,8 @@ def main(argv):
         return 0
     mode = argv[0] if argv and argv[0].startswith("-") else "--list"
     # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
-    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
-    # abbreviates and the code behind it does not").
+    # The difference is deliberate (design/naming/command-line-names.md, "The command line
+    # abbreviates, and the code behind it does not").
     prefixes = tuple(a for a in argv if not a.startswith("-"))
     if mode not in ("--list", "--check", "--bank", "--init"):
         sys.exit(__doc__.split("\n\n")[2])

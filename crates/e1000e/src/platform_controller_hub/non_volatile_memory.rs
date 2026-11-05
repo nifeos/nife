@@ -62,10 +62,15 @@ pub enum Error {
 
 /// Where the flash registers sit in BAR0 on SPT (`E1000_FLASH_BASE_ADDR`).
 pub(crate) const FLASH_BASE_ADDR: u64 = 0xe000;
-/// Hardware sequencing flash status, low half; control, high half (`ICH_FLASH_HSFSTS`).
+/// Hardware Sequencing Flash Status (`HSFSTS`), low half; Hardware Sequencing Flash Control, high half
+/// (OpenBSD's `ICH_FLASH_HSFSTS`).
 ///
-/// Name: recorded (`ICH_FLASH_HSFSTS`).
-pub const HSFSTS: u64 = 0x04;
+/// Name: ratified 2026-11-05 (UTC). Renamed from `HSFSTS`: a register name copied from a source is
+/// spelled out, and the source's spelling stays as a `doc(alias)`.
+#[doc(alias = "HSFSTS")]
+#[doc(alias = "E1000_HSFSTS")]
+#[doc(alias = "ICH_FLASH_HSFSTS")]
+pub const HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER: u64 = 0x04;
 /// Flash linear address (`ICH_FLASH_FADDR`).
 pub(crate) const FADDR: u64 = 0x08;
 /// Flash data 0 (`ICH_FLASH_FDATA0`).
@@ -95,7 +100,7 @@ pub mod status {
     pub(crate) const DESCRIPTOR_VALID: u16 = 1 << 14;
 }
 
-/// `HSFCTL` bits (`union ich8_hws_flash_ctrl`), in the high half of the `u32` at [`HSFSTS`].
+/// `HSFCTL` bits (`union ich8_hws_flash_ctrl`), in the high half of the `u32` at [`HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER`].
 pub mod control {
     /// Start the cycle: the `flcgo` field of `union ich8_hws_flash_ctrl` in OpenBSD's
     /// `if_em_hw.h` and FreeBSD's `e1000_ich8lan.c`.
@@ -112,17 +117,17 @@ pub mod control {
 }
 
 // `initialize_cycle` ORs the two write-one-to-clear error bits into the status it just read, and
-// they share no bit, so | and ^ compose them identically; the compiler checks that here, and
-// .cargo/mutants.toml excludes the function's OR-to-XOR swaps on this assertion (the `FLASH_CYCLE_DONE` write's
-// swap is excluded on the write-back beside it, which has already carried the bit).
+// they share no bit, so | and ^ compose them identically; the compiler checks that here, so
+// the function's OR-to-XOR swaps are equivalent mutants (the `FLASH_CYCLE_DONE` write's
+// swap is equivalent on the write-back beside it, which has already carried the bit).
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(
     status::FLASH_CYCLE_ERROR ^ status::DIRECT_ACCESS_ERROR
         == status::FLASH_CYCLE_ERROR | status::DIRECT_ACCESS_ERROR
 );
 // The byte count `read_u32_at_byte` ORs in sits inside the field it just masked out, so | and ^
-// compose them identically; the compiler checks that here, and .cargo/mutants.toml excludes the
-// function's OR-to-XOR swap on this assertion.
+// compose them identically; the compiler checks that here, so the
+// function's OR-to-XOR swap is an equivalent mutant.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!((3u16 << control::BYTE_COUNT_SHIFT) & !control::BYTE_COUNT_MASK == 0);
 
@@ -173,7 +178,7 @@ impl Geometry {
 }
 
 fn status_16_bit(hardware: &mut impl Hardware) -> u16 {
-    hardware.read16(FLASH_BASE_ADDR + HSFSTS)
+    hardware.read16(FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER)
 }
 
 /// `e1000_flash_cycle_init_ich8lan`, SPT's 32-bit writes.
@@ -184,10 +189,13 @@ fn initialize_cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
     }
     // Clear the cycle and direct-access errors by writing them as one.
     let s = s | status::FLASH_CYCLE_ERROR | status::DIRECT_ACCESS_ERROR;
-    hardware.write(FLASH_BASE_ADDR + HSFSTS, u32::from(s));
+    hardware.write(
+        FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
+        u32::from(s),
+    );
     if s & status::IN_PROGRESS == 0 {
         hardware.write(
-            FLASH_BASE_ADDR + HSFSTS,
+            FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
             u32::from(s | status::FLASH_CYCLE_DONE),
         );
         return Ok(());
@@ -196,7 +204,7 @@ fn initialize_cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
         let now = status_16_bit(hardware);
         if now & status::IN_PROGRESS == 0 {
             hardware.write(
-                FLASH_BASE_ADDR + HSFSTS,
+                FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
                 u32::from(now | status::FLASH_CYCLE_DONE),
             );
             return Ok(());
@@ -208,8 +216,13 @@ fn initialize_cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
 
 /// `e1000_flash_cycle_ich8lan`: set `FLASH_CYCLE_GO` and wait for `FLASH_CYCLE_DONE`.
 fn cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
-    let ctl = (hardware.read(FLASH_BASE_ADDR + HSFSTS) >> 16) as u16 | control::FLASH_CYCLE_GO;
-    hardware.write(FLASH_BASE_ADDR + HSFSTS, u32::from(ctl) << 16);
+    let ctl = (hardware.read(FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER) >> 16)
+        as u16
+        | control::FLASH_CYCLE_GO;
+    hardware.write(
+        FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
+        u32::from(ctl) << 16,
+    );
     let mut s = 0;
     for _ in 0..=READ_COMMAND_TIMEOUT {
         s = status_16_bit(hardware);
@@ -236,10 +249,14 @@ pub(crate) fn read_u32_at_byte(hardware: &mut impl Hardware, byte: u32) -> Resul
     for _ in 0..=CYCLE_REPEAT_COUNT {
         hardware.delay_microseconds(1);
         initialize_cycle(hardware)?;
-        let mut ctl = (hardware.read(FLASH_BASE_ADDR + HSFSTS) >> 16) as u16;
+        let mut ctl = (hardware.read(FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER)
+            >> 16) as u16;
         ctl = (ctl & !control::BYTE_COUNT_MASK) | (3 << control::BYTE_COUNT_SHIFT);
         ctl &= !control::CYCLE_MASK;
-        hardware.write(FLASH_BASE_ADDR + HSFSTS, u32::from(ctl) << 16);
+        hardware.write(
+            FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
+            u32::from(ctl) << 16,
+        );
         hardware.write(FLASH_BASE_ADDR + FADDR, byte & LINEAR_ADDRESS_MASK);
         last = cycle(hardware);
         if last.is_ok() {

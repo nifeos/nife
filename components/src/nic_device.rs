@@ -86,7 +86,8 @@ impl smoltcp::phy::Device for Nic {
 /// The frame a receive handed smoltcp, as its `phy::RxToken`.
 ///
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md; smoltcp owns the trait's name, and this tree the type's.
+/// design/naming/acronyms-and-abbreviations.md; smoltcp owns the trait's name, and this tree the
+/// type's.
 pub(crate) struct NicReceiveToken {
     frame: alloc::vec::Vec<u8>,
 }
@@ -103,7 +104,8 @@ impl smoltcp::phy::RxToken for NicReceiveToken {
 /// The right to transmit one frame, as smoltcp's `phy::TxToken`.
 ///
 /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md; smoltcp owns the trait's name, and this tree the type's.
+/// design/naming/acronyms-and-abbreviations.md; smoltcp owns the trait's name, and this tree the
+/// type's.
 pub(crate) struct NicTransmitToken {
     dev: *mut Nic,
 }

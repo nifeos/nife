@@ -20,9 +20,7 @@ documentation records the limitation. The text below is the block as filed.
   ask about any other. §172 names the answer for that day: a per-identity endpoint kind beside the
   general one, not a change to the general wire.
 
-Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
-from milestone 54's block; numbered 2026-09-19 by milestone 433. Premise re-checked 2026-09-19 and
-it holds. `crates/credential_contract`'s `verify::VERIFY` is still one opcode whose request carries
+Premise re-checked 2026-09-19 and it holds. `crates/credential_contract`'s `verify::VERIFY` is still one opcode whose request carries
 the identity in the shared page (`place(&mut page, b"bob", b"hunter2", verify::VERIFY)`), so a
 holder of a verify endpoint still chooses which record to test. Nothing has narrowed the wire since;
 the only change in that crate was the 2026-08-30 removal of `NTLM_PROOF` with the SMB
@@ -31,12 +29,6 @@ implementation, which reduced the store to one kind of secret and left the addre
 It changes `credential_contract`, a contract two programs agree on, so it is
 calef's the same way every wire decision in this tree is. The request currently carries the identity
 it asks about; removing that word from the wire is not something a lane can decide.
-
-**In brief.** A `VERIFY` request names the resource it is asking about, so the caller chooses which
-record to test. That is one authority more than a caller needs. The endpoint should *be* the
-credential for one resource, with the name implied by which endpoint you hold and therefore
-unforgeable. This is DECISIONS §27's argument, which the tree already accepted elsewhere, applied to
-`credential_contract`.
 
 ## Why this matters
 
@@ -74,11 +66,8 @@ resource so the name is implied and unforgeable."*
 ## Index row
 
 A holder of a `credential_contract` verify endpoint names the identity it asks about, so the
-confinement claim for a program that verifies credentials is "it only asks about its own" rather than
-"it cannot ask about anything else", and only the second is checkable from outside. This applies
-DECISIONS §27 (the filesystem service: a capability-shaped contract over a component we did not write)'s argument, from milestone 32 (a real filesystem: RedoxFS behind a capability FS server) phase 2, carries over to `credential_contract`. The endpoint should be the credential for one
-resource, with the name implied by which endpoint you hold and therefore unforgeable. The consumer
-that motivated it is gone, since milestone 54's SMB adapter was deleted on 2026-08-30, so nothing
-today is visibly harmed by the extra authority. What makes it worth doing is the direction of the
-cost. The next thing that authenticates anything gets written against the current shape, and
-fixing a wire with four callers is a morning.
+confinement claim is "it only asks about its own" rather than "it cannot ask about anything else",
+and only the second is checkable from outside. The endpoint should be the credential for one
+resource, with the name implied by the endpoint the caller holds (DECISIONS §27 (the filesystem service: a capability-shaped contract over)'s argument). The consumer
+that motivated it is gone, since milestone 54 (a network file service a Mac can)'s SMB adapter no longer exists, so nothing today is
+visibly harmed. The wire stays wider than the design. The next program that authenticates anything will use the current shape.

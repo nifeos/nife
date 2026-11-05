@@ -607,7 +607,7 @@ pub(crate) const fn direct_memory_access_interface(hcon: u32) -> u32 {
 }
 
 /// **Used register window bytes**: the highest offset this driver reads or writes, plus one word,
-/// as a size in bytes. The kernel maps at least this.
+/// as a size in bytes. A caller maps at least this.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3144. A size in bytes, spelled out. Renamed from
 /// `WINDOW_USED`.

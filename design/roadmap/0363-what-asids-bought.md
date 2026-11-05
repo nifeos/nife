@@ -9,11 +9,10 @@ needs_person: yes
 ---
 # 363. ASIDs ship with their payoff asserted rather than measured
 
-Filed as a proposal on 2026-09-03 by the milestone 247 sweep, from
-milestone 15's block; promoted by milestone 433 on 2026-09-19. Checked that day: nothing in `bench/`
+Checked on 2026-09-19: nothing in `bench/`
 or in notes/address-space-identifiers.md carries a switch-cost number with tagging on against
 tagging off, so the payoff is still asserted rather than measured. **The board list in the gate below
-has narrowed to one, and the narrowing was measured rather than argued.** radon's own boot tour
+has narrowed to one, and the narrowing was measured.** radon's own boot tour
 reports `satp.ASID 0 bits measured` (`bench/radon-2026-09-16/bench-134300.log`), which is precisely
 the case this file warned would measure no change at all. Xenon cannot show it either:
 `kernel/src/arch/x86_64/mmu.rs` records that `CR4.PCIDE` is clear, so an x86_64 address space has
@@ -50,14 +49,9 @@ It also feeds work that is already tracked. Address-space-switch cost is an inpu
 to IPC pricing, and every comparison this project makes against Linux, macOS or seL4 on those
 primitives currently omits the term.
 
-## Where it came from
+## What a measurement means
 
-Milestone 15's Follow-on: *"Put a number on what ASIDs bought. The switch stopped flushing the TLB
-in July and no machine has measured what that changed, nor the address-space-switch cost this block
-calls ASIDs the prerequisite for reasoning about. QEMU cannot show it; argon, radon or xenon can.
-The mechanism ships with its payoff asserted rather than measured."*
-
-Two facts from the same block bound what a measurement means. The RISC-V half arrived separately in
+Two facts from milestone 15 (tagged address spaces (ASIDs))'s block bound what a measurement means. The RISC-V half arrived separately in
 milestone 58, because `sfence.vma` is local and discharging a tag machine-wide needs an IPI to
 every hart through SBI RFENCE, so radon's number is about a different mechanism from argon's.
 And `notes/address-space-identifiers.md` records that RISC-V permits `satp.ASID` to be zero bits wide, so a RISC-V
@@ -68,11 +62,9 @@ all. Whichever board is used, the report has to say which of these it was.
 
 Address space identifiers landed in July, the context switch stopped flushing the TLB, and no
 machine has measured what that changed. QEMU cannot show it, since it does not model TLB refill
-cost. The number needs silicon and somebody at a serial console. The gate has narrowed since the
-proposal was written: radon measures `satp.ASID` at zero bits wide and so keeps flushing on every
-switch. x86_64 runs with `CR4.PCIDE` clear and has nowhere to put a tag, which leaves argon as
-the only board of the three that can answer it. The number could surprise rather than confirm, which
-is what makes it worth a board's time. This kernel bounds concurrent address spaces at 160 and never
-recycles a tag, so its TLB pressure profile is not Linux's, and the win could be larger or smaller
-than the textbook figure. Either outcome is a result, and every comparison this project makes
-against Linux, macOS or seL4 on switch cost currently omits the term.
+cost, so the number needs silicon and somebody at a serial console. The gate has narrowed: radon
+measures `satp.ASID` at zero bits and keeps flushing on every switch, and x86_64 runs with
+`CR4.PCIDE` clear and has nowhere to put a tag. That leaves argon as the only board that can
+answer. The number could surprise rather than confirm. This kernel bounds concurrent address spaces
+at 160 and never recycles a tag, so its TLB pressure is not Linux's, and every comparison against
+Linux, macOS or seL4 on switch cost currently omits the term.

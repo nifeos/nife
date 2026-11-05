@@ -209,8 +209,8 @@ the status and quoting name the module now.
   `design/decisions/0290-the-shell-logic-crate-root-splits-into-private-modules-by-feature.md`,
   asks nothing; it is the maintainer's to record as decided by precedent. Every module name is
   calef's in his naming pass.
-- **Recorded.** `design/naming/capability-spelling-worklist.md` still lists `write_caps` and
-  `write_image_caps`. A developer lane edits no record under `design/` but its own block, so the
+- **Recorded.** The capability worklist (its last commit is in `design/removed.tsv`) listed
+  `write_caps` and `write_image_caps`. A developer lane edits no record under `design/` but its own block, so the
   row is the maintainer's to mark done.
 - **Refused.** Repointing the line-number citation of `write_apropos` in
   `design/roadmap/0279-documentation-service.md` here, for the same reason. The function is now in

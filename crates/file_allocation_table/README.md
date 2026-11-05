@@ -14,10 +14,12 @@ checked by a model checker.
   takes none). Create, write, extend, truncate, rename and remove files; make and remove directories;
   set attributes (read-only, hidden, system, archive); read and change the volume label. A name that
   is not 8.3 gets long-name slots and an alias numbered against its directory. The first change clears
-  the clean-shutdown bit and `Volume::mark_clean` sets it again, with the FAT32 `FSInfo` hints.
+  the clean-shutdown bit and `WritableVolume::mark_clean` sets it again, with the FAT32 `FSInfo`
+  hints.
 - **Format.** `FormatPlan` lays out an empty volume of any size and sector size (512 to 4096 bytes),
   with the cluster size, serial number and label of your choice. `VolumeLayout` lays out the one
-  shape a bootloader needs: a FAT32 EFI system partition holding one boot file.
+  shape a bootloader needs: a FAT32 EFI system partition holding one boot file, with 512-byte
+  sectors and 4096-byte clusters. The `efi_system_partition` module holds that shape's constants.
 
 ## Example
 
@@ -95,13 +97,21 @@ fn main() {
 
 `tests/the_readme_example.rs` compiles and runs this example. Every write goes through a
 `WritableVolume`, which needs a `Clock`; `NoClock` is the explicit "no time", and the entries it
-stamps carry the zero timestamp. For an EFI system partition:
-`VolumeLayout::new(total_sectors, hidden_sectors, file_len, volume_id, "BOOTX64.EFI")` tells you what
-every metadata sector holds, and you write those sectors and then the file's bytes.
+stamps carry the zero timestamp. For an EFI system partition,
+`VolumeLayout::new(total_sectors, hidden_sectors, file_len, volume_id, label, "BOOTX64.EFI",
+&mut NoClock)` tells you what every metadata sector holds: write sectors `0..metadata_sectors()`
+from `fill_sector`, then the file's bytes from `file_first_sector()` on, `file_sectors()` long. The
+label is yours to choose, such as `"EFI SYSTEM"`.
+
+Every error enum is `#[non_exhaustive]`, so a match on one needs a wildcard arm, and a later
+release can add a variant without breaking your code.
 
 ## What is proven
 
-Kani harnesses (`cargo kani`) prove, over every input they can unroll:
+Kani harnesses (`cargo kani`) prove, over every input they can unroll. To run them, install Kani
+as its [installation guide](https://model-checking.github.io/kani/install-guide.html) says (the
+`kani-verifier` crate, then `cargo kani setup` once), and run `cargo kani` from the crate's
+directory. The harnesses pass on Kani 0.68.0.
 
 - **Hostile input.** No parse step panics or reads outside the volume: the boot sector and BPB (every
   512-byte sector), FAT entries, directory slots, long-name runs, the partition table and `FSInfo`.
@@ -137,7 +147,7 @@ own driver read an image (`cargo test -- --ignored`, on macOS).
   crash leaks a cluster and never shares one, and a write has no barrier: the device decides when a
   write reaches the medium.
 - Time. The clock is required of every writer. FAT stores a date and a time of day with no time
-  zone. In nife the clock supplies UTC (ruled 2026-11-01 UTC). The crate stores exactly the fields
+  zone. The clock is expected to supply UTC. The crate stores exactly the fields
   the clock reports and converts nothing, so it cannot check that a clock gives UTC, and a reader
   that treats FAT times as local time, such as Windows, shows a UTC value as local time. A read
   takes no clock and never writes. A time outside 1980 to 2107, or a field outside its range,

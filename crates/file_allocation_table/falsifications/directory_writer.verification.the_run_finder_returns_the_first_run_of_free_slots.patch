@@ -7,7 +7,7 @@ Expected to fail: the harness's `assert_ne!(kinds[i], SlotKind::Used)`.
 diff --git a/crates/file_allocation_table/src/directory_writer.rs b/crates/file_allocation_table/src/directory_writer.rs
 --- a/crates/file_allocation_table/src/directory_writer.rs
 +++ b/crates/file_allocation_table/src/directory_writer.rs
-@@ -61,10 +61,7 @@ impl RunFinder {
+@@ -62,10 +62,7 @@ impl RunFinder {
          let index = self.at;
          self.at += 1;
          match kind {

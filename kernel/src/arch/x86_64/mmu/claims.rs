@@ -49,6 +49,22 @@ pub(super) struct Claim {
 /// Split out from the mapping loop so that the failure path can ask the same question the mapping
 /// asked. See [`Claim`].
 pub(super) fn direct_map_claims(each: &mut dyn FnMut(Claim)) {
+    ram_claims(each);
+    device_claims(each);
+
+    // 2. Memory the loader did not call usable RAM but which is still memory: the first megabyte
+    //    (IVT, BDA, EBDA, the RSDP scan area, the AP trampoline page) and the reserved entries
+    //    carved out of DRAM (ACPI tables, NVS, firmware scratch), all read through `phys_to_virt`.
+    //    Guarded, since nothing promises the firmware's list is disjoint; `AlreadyMapped` is never
+    //    treated as success.
+    firmware_claims(each);
+}
+
+/// Steps 1 and 1b of [`direct_map_claims`]: the RAM regions around the kernel image, and the AP
+/// trampoline's LMA. Split out, with [`device_claims`], so each step's `Claim` temporaries live in
+/// a frame of their own: an unoptimised build keeps one per `each` call, and together they pass the
+/// guard page.
+fn ram_claims(each: &mut dyn FnMut(Claim)) {
     // 1. Every RAM region, except the kernel image's own frames: the image lives at a different
     //    base, so a direct-map entry for them would be a second, writable alias of `.text`. The
     //    image is on the allocator's forbidden list, so nothing needs them by physical address.
@@ -82,7 +98,10 @@ pub(super) fn direct_map_claims(each: &mut dyn FnMut(Claim)) {
         flags: Flags::kernel_data(),
         guarded: false,
     });
+}
 
+/// Step 5 of [`direct_map_claims`] and the screen: the device windows, then the framebuffer.
+fn device_claims(each: &mut dyn FnMut(Claim)) {
     // 5. The device registers, device-typed, one window each, before the firmware reservations:
     //    the reservation fill is guarded and these are not, so whichever runs first decides a
     //    shared page's memory type, and a cacheable device window loses writes. The local APIC's
@@ -128,6 +147,27 @@ pub(super) fn direct_map_claims(each: &mut dyn FnMut(Claim)) {
         });
     }
 
+    iommu_register_claims(each);
+
+    // The screen, when the handoff described one: the console writes to it through the boot map
+    // from the first line, so an unmapped framebuffer would fault inside `println!`. Mapped
+    // write-combining, which is still device memory to every rule here and selects the PAT entry
+    // `cpu_initialization` made WC on every core; the console only writes it, and WC reads are as
+    // slow as UC ones. An aperture inside a RAM region is a different problem; see
+    // notes/x86-port/kernel-page-tables.md.
+    if let Some((base, size)) = memory::framebuffer() {
+        each(Claim {
+            what: "framebuffer",
+            lo: base,
+            hi: base + size,
+            flags: Flags::write_combining(),
+            guarded: false,
+        });
+    }
+}
+
+/// The IOMMU register windows of [`device_claims`], device-typed, in a frame of their own.
+fn iommu_register_claims(each: &mut dyn FnMut(Claim)) {
     // VT-d's register files, one per unit, device-typed, each as large as its DRHD's `Size` byte
     // says, at the addresses the DMAR named. Without this a DRHD read faults the instant the fine
     // map replaces the boot map.
@@ -150,29 +190,6 @@ pub(super) fn direct_map_claims(each: &mut dyn FnMut(Claim)) {
             guarded: false,
         });
     }
-
-    // The screen, when the handoff described one: the console writes to it through the boot map
-    // from the first line, so an unmapped framebuffer would fault inside `println!`. Mapped
-    // write-combining, which is still device memory to every rule here and selects the PAT entry
-    // `cpu_initialization` made WC on every core; the console only writes it, and WC reads are as
-    // slow as UC ones. An aperture inside a RAM region is a different problem; see
-    // notes/x86-port/kernel-page-tables.md.
-    if let Some((base, size)) = memory::framebuffer() {
-        each(Claim {
-            what: "framebuffer",
-            lo: base,
-            hi: base + size,
-            flags: Flags::write_combining(),
-            guarded: false,
-        });
-    }
-
-    // 2. Memory the loader did not call usable RAM but which is still memory: the first megabyte
-    //    (IVT, BDA, EBDA, the RSDP scan area, the AP trampoline page) and the reserved entries
-    //    carved out of DRAM (ACPI tables, NVS, firmware scratch), all read through `phys_to_virt`.
-    //    Guarded, since nothing promises the firmware's list is disjoint; `AlreadyMapped` is never
-    //    treated as success.
-    firmware_claims(each);
 }
 
 /// The loader-reserved half of [`direct_map_claims`]: the low megabyte, every reserved entry below

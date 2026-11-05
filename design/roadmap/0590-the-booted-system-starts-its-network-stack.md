@@ -98,11 +98,6 @@ move is milestone 198's, and needs no new mechanism from this one.
   blocking send, so the progenitor takes it before building anything else. Immediate under QEMU's
   user-mode network; a boot with a NIC and no DHCP server would hang with no console. No real board
   is granted a NIC today. `crates/system_initializer`'s BUGS.
-- ~~Every declaring program shares the stack's socket numbers.~~ Fixed 2026-10-07 (UTC) by
-  milestone 649 (every client of a network stack shares its socket numbers). Each socket is its own
-  capability (§255 (each socket is its own capability)), so two network programs cannot reach each
-  other's sockets, and `caps` now says that. Milestone 800 (a non-Anthropic model
-  attacks the confinement claim)'s fourth pass had booted the escape on all three ISAs first.
 - The progenitor keeps a writable view of the NIC's DMA page, the rng's cost exactly: there is
   no unmap.
 - x86_64's network is the kernel's to build, not the progenitor's. Since 2026-10-05 the kernel

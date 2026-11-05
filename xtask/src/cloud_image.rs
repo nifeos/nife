@@ -51,17 +51,18 @@ use uuid::Builder;
 use crate::host::workspace_root;
 
 /// The logical block this disk is written in. Every cloud boot volume this lane has read about
-/// reports 512, and `file_allocation_table` writes nothing else.
-const LBA: u64 = fat::SECTOR_BYTES as u64;
+/// reports 512, and `file_allocation_table`'s EFI system partition writer writes nothing else.
+const LBA: u64 = fat::efi_system_partition::SECTOR_BYTES as u64;
 
 /// Where the partition starts and how much the end keeps free: 1 MiB, the installer's alignment,
 /// which also leaves the backup table's 33 blocks room at the far end.
 const ALIGN: u64 = 2048;
 
 /// **The EFI system partition, 300 MiB.** FAT32 needs 65525 data clusters, a little over 256 MiB at
-/// 4096-byte clusters (`file_allocation_table::FAT32_MINIMUM_CLUSTERS`), and below that the
-/// firmware reads the volume as FAT16 whatever its boot sector says. The image is sparse, so the
-/// size costs no disk; a cloud grows the boot volume to its own minimum on import regardless.
+/// 4096-byte clusters (`file_allocation_table::efi_system_partition::FAT32_MINIMUM_CLUSTERS`), and
+/// below that the firmware reads the volume as FAT16 whatever its boot sector says. The image is
+/// sparse, so the size costs no disk; a cloud grows the boot volume to its own minimum on import
+/// regardless.
 const ESP_SECTORS: u64 = 300 * 1024 * 1024 / LBA;
 
 /// Where `arch`'s disk is written.
@@ -92,6 +93,8 @@ pub(super) fn write(arch: &str, boot_file: &Path) -> Result<PathBuf, String> {
         ALIGN,
         file.len() as u64,
         volume_id,
+        // The volume label a firmware menu or another operating system shows for the partition.
+        "NIFE",
         name,
         &mut fat::NoClock,
     )

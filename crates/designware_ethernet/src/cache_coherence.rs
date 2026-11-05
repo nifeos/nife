@@ -242,7 +242,7 @@ mod tests {
         full_duplex: true,
     };
 
-    /// The whole probe, as the kernel runs it, against a controller whose memory behaves as
+    /// The whole probe, as the kernel half runs it, against a controller whose memory behaves as
     /// `memory` says and whose loopback works when `loops` is true.
     fn run(memory: Memory, loops: bool) -> Verdict {
         let mut nic = NetworkInterfaceController::new(PHYSICAL_ADDRESS, memory);

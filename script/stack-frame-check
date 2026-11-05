@@ -33,9 +33,8 @@
 #
 # EXAMPLES
 #
-#     script/stack-frame-check                 # gate the default architectures (aarch64, riscv64)
+#     script/stack-frame-check                 # gate every architecture (aarch64, riscv64, x86_64)
 #     script/stack-frame-check --arch aarch64  # one architecture
-#     script/stack-frame-check --arch x86_64   # reachable but not in the default set; see BUGS
 #     script/stack-frame-check --report        # print the deepest 40 frames, gate nothing
 #
 # BUGS
@@ -61,24 +60,16 @@
 #     boot-only; a reader who changes that has to change the entry.
 #   - It builds the kernel test binary itself rather than reusing CI's, because the measurement needs
 #     `-Z emit-stack-sizes` and that flag changes the build. Costs one extra kernel build per arch.
-#   - **x86_64 is reachable (`--arch x86_64`) but not in the default set.** It found a real offender
-#     the first time it ran: `kernel::arch::x86_64::iommu::initialize` at 12504 bytes, over 3x the ceiling,
-#     from `Iommu { ctx: [Option<u64>; 256], .. }`, one context-table root per PCI bus, the same
-#     `[T; MAX]`-sized-to-a-table-maximum shape this file's first BUGS entry describes. Whether to
-#     fix that offender, except it, or something else is not this gate's call; until it is decided,
-#     `main` stays green by leaving x86_64 out of the default `arches` list rather than by lying
-#     about what was found. x86_64 became a `script/test` target on 2026-08-24 (milestone 161 item
-#     4) and this gate's arch list stayed hardcoded to `aarch64 riscv64` for the next three days,
-#     found only because a report was missing x86_64 numbers a reader expected to see; that gap is
-#     the rung-2 failure AGENTS.md describes (a gate wrong about the tree, silently), recorded here
-#     so the next architecture does not repeat it.
+#   - **A test body is reported and never gated, on every architecture.** `is_test_body` below
+#     exempts them by name, because `test_main` runs them on the 64 KiB boot stack. A reader who
+#     wants the x86_64 test bodies' sizes runs `--report`.
 
 set -e
 # A heavy job: wait for one of the machine's heavy-job slots first (helpers/heavy_slot.py).
 . "$(dirname "$0")/../helpers/heavy-slot.sh"
 cd "$(dirname "$0")/.."
 
-arches="aarch64 riscv64"
+arches="aarch64 riscv64 x86_64"
 report_only=""
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -173,10 +164,6 @@ def is_test_body(name):
 # Functions over the ceiling that provably do not run on a kernel thread stack. Each states why, and
 # a reader who makes one of these reachable from a thread has to come here and say so.
 EXCEPT = {
-    "kernel::sched::switch::initialize":
-        "boot only: brings the scheduler up before any thread stack exists",
-    "<generational_table::Table<u64, 512>>::new":
-        "boot only: constructs the endpoint table, called from sched::switch::initialize",
     "kernel::user::disk_service::devices":
         "boot stack: called by roster_page below, before its sched::spawn",
     "kernel::user::disk_service::roster_page":

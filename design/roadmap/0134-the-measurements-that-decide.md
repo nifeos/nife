@@ -160,12 +160,11 @@ measure this register carries and nobody ever needs is a cheap thing to have bee
   cost exists and how it scales; it cannot show what a continuation-based kernel would actually
   recover, because that requires building one. A knee makes the case worth taking seriously rather
   than proving the alternative wins.
-- ~~The 1 to 2 KiB per-IPC stack figure in E1's prediction is an estimate, not a
-  measurement.~~ Measured 2026-09-19 on all three ISAs, debug and release. It is about 600 bytes
-  per kernel thread per round trip in the release build E1 runs, 0.5 to 1 KiB for an EL0 thread,
-  and 2 to 4 KiB in the debug build (notes/stack-high-water.md, "Per-IPC depth"). Redone with the
-  measured figure, the prediction puts a pure capacity knee near 54 threads. The observed knee is
-  at 8 to 16, and milestone 506 is the test of why.
+- The per-IPC stack figure, taken on all three ISAs in debug and release (2026-09-19), is about 600
+  bytes per kernel thread per round trip in the release build E1 runs. It is 0.5 to 1 KiB for an
+  EL0 thread and 2 to 4 KiB in the debug build (notes/stack-high-water.md, "Per-IPC depth"). With
+  it, the prediction puts a pure capacity knee near 54 threads. The observed knee is at 8 to 16, and
+  milestone 506 tests why.
 - The per-IPC depth table is QEMU's, for a build radon boots with two features QEMU cannot
   (`board`, `single_hart`). One of them moves the trap path: `single_hart` saves three more
   registers in `riscv_trap_body`, so every EL0 series reads 16 bytes deeper on radon than in QEMU

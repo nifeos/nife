@@ -174,9 +174,9 @@ impl<T: Node> Rendezvous<T> {
     /// **At most one wait queue is ever non-empty.** The load-bearing invariant.
     ///
     /// Name: provisional, flagged 2026-09-24 by the boolean-predicate pass
-    /// (design/naming/functions-that-answer-yes-or-no-worklist.md). It does not yet follow the Rust predicate
-    /// rule calef ratified 2026-09-24; recommended `one_queue_invariant_holds`, because a noun
-    /// phrase; the verb form keeps the invariant's name visible.
+    /// (design/naming/functions-that-answer-yes-or-no.md). It does not yet follow the Rust
+    /// predicate rule calef ratified 2026-09-24; recommended `one_queue_invariant_holds`, because a
+    /// noun phrase; the verb form keeps the invariant's name visible.
     pub fn one_queue_invariant(&self) -> bool {
         self.senders.is_empty() || self.receivers.is_empty()
     }

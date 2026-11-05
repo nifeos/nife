@@ -7,7 +7,7 @@ Expected to fail: the harness's `assert_eq!(buffer[probe], 0)` for the probe jus
 diff --git a/crates/file_allocation_table/src/write_cursor.rs b/crates/file_allocation_table/src/write_cursor.rs
 --- a/crates/file_allocation_table/src/write_cursor.rs
 +++ b/crates/file_allocation_table/src/write_cursor.rs
-@@ -89,7 +89,8 @@ pub(crate) trait Medium: LinksMut {
+@@ -128,7 +128,8 @@ pub(crate) trait Medium: LinksMut {
  /// past the end of the file, so `offset <= kept`.
  pub(crate) fn merge_partial(buffer: &mut [u8], kept: usize, offset: usize, bytes: &[u8]) {
      let kept = kept.min(buffer.len());

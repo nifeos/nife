@@ -174,7 +174,7 @@ design/decisions/0139-cycle-counter-authority/trap-and-emulate.md	17
 design/decisions/0139-cycle-counter-authority/x86-clock-sources.md	25
 design/decisions/0140-follow-on-disposition-vocabulary.md	14
 design/decisions/0141-application-is-grant.md	11
-design/decisions/0142-spawn-retention.md	27
+design/decisions/0142-spawn-retention.md	12
 design/decisions/0142-spawn-retention/README.md	2
 design/decisions/0142-spawn-retention/precedent.md	12
 design/decisions/0142-spawn-retention/prior-art.md	3
@@ -353,13 +353,8 @@ design/interrupt-routing.md	11
 design/kernel-objects-from-untyped.md	14
 design/naming.md	18
 design/naming/README.md	1
-design/naming/capability-spelling-worklist.md	4
-design/naming/command-line-rulings.md	3
 design/naming/convention-rulings.md	16
 design/naming/crates.md	30
-design/naming/documents-numbers-and-gates.md	32
-design/naming/functions-that-answer-yes-or-no-worklist.md	11
-design/naming/precedents-set-by-example.md	11
 design/naming/programs-scripts-and-directories.md	26
 design/naming/provenance-limits.md	30
 design/naming/provenance.md	42
@@ -367,8 +362,6 @@ design/naming/rename-traps.md	13
 design/naming/rename-what-moves.md	13
 design/naming/rename-where-names-hide.md	19
 design/naming/rules-a-script-can-check.md	8
-design/naming/spelled-out-rulings.md	2
-design/naming/vocabulary-rulings.md	30
 design/open-design-ideas.md	10
 design/roadmap/0001-first-boot.md	2
 design/roadmap/0003-frame-allocator.md	4
@@ -1246,8 +1239,7 @@ design/roadmap/0797-release-userspace-in-board-images.md	2
 design/roadmap/0798-report-qemu-plic-enable-recheck-upstream.md	8
 design/roadmap/0799-the-shadow-descriptor-is-published-in-two-stores.md	5
 design/roadmap/0800-a-non-anthropic-model-attacks-the-confinement-claim.md	19
-design/roadmap/0801-packages-over-the-internet.md	32
-design/roadmap/0801-packages-over-the-internet/rulings-of-2026-10-12.md	9
+design/roadmap/0801-packages-over-the-internet.md	27
 design/roadmap/0802-the-trivial-install.md	6
 design/roadmap/0803-argon-boots-the-aarch64-kernel.md	10
 design/roadmap/0804-the-i219-reconfigures-its-phy-when-link-comes-up.md	2

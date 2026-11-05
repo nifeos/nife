@@ -8,7 +8,7 @@ Expected to fail: the harness's assertion that the position never passes the siz
 diff --git a/crates/file_allocation_table/src/file.rs b/crates/file_allocation_table/src/file.rs
 --- a/crates/file_allocation_table/src/file.rs
 +++ b/crates/file_allocation_table/src/file.rs
-@@ -152,7 +152,7 @@ impl FileCursor {
+@@ -155,7 +155,7 @@ impl FileCursor {
              .ok_or(wrong_cluster)?;
          let offset = within % sector_bytes;
          let len = (sector_bytes - offset)

@@ -17,6 +17,14 @@
 #   5. the default weight (10 GiB a harness): on a 34 GiB machine two runs fit and the third waits,
 #      so the pool is sized for proofs far past the 3.5 GiB glob figure.
 #   6. --status names the holder's lane, worktree and command line.
+#   7. a measured row (helpers/kani_peaks.py) weighs its peak rounded up to whole units, in a scratch
+#      git repository: a row never measured, a crate edited and not committed, a crate committed
+#      since, an untracked file in it and a new Kani version each weigh the default instead. Fails if
+#      a weight outlives the code it measured.
+#   8. script/verify --only weighs its own row: a fixture table gives `glob` one unit, so
+#      VERIFY_JOBS=2 on a four-unit pool admits two runs and the third waits for two units. The
+#      row's path is .kani-version, a file no lane edits in passing. Fails if the measurement does
+#      not reach the run.
 #
 # Run by script/lint.
 set -eu
@@ -33,7 +41,9 @@ case "$1 $2" in
 esac
 printf '%s\n' "$*" >>"${NIFE_SELFTEST_ARGS:?}"
 printf 'start %s\n' "$$" >>"${NIFE_SELFTEST_EVENTS:?}"
-sleep 1
+# Long enough that the third run, started 0.6 s after the first, reaches the pool while both earlier
+# proofs still hold their units even when a loaded host delays its startup by a second or two.
+sleep 3
 printf 'end %s\n' "$$" >>"${NIFE_SELFTEST_EVENTS:?}"
 exit 0
 STUB
@@ -108,4 +118,68 @@ printf '%s\n' "$st" | grep -q "lane " || fail "stage 6: --status names no lane: 
 printf '%s\n' "$st" | grep -q "worktree $root" || fail "stage 6: --status names no worktree: $st"
 printf '%s\n' "$st" | grep -q "command .*verify" || fail "stage 6: --status names no command: $st"
 
-echo "kani-pool selftest: the third run waits, a run weighs its harnesses, the width is clamped, CI is untouched, the holder is named"
+# 7.
+python3 - "$root/helpers" "$tmp/repo" <<'PY' || fail "stage 7: a measured weight did not follow its code"
+import os, subprocess, sys
+sys.path.insert(0, sys.argv[1])
+import kani_peaks
+repo = sys.argv[2]
+os.makedirs(os.path.join(repo, "crates/a/src"))
+
+
+def sh(*args):
+    subprocess.run(["git", "-C", repo, "-c", "user.name=t", "-c", "user.email=t@t", *args],
+                   check=True, capture_output=True)
+
+
+def write(path, text):
+    with open(os.path.join(repo, path), "w") as f:
+        f.write(text)
+
+
+def record():
+    tree = kani_peaks.trees(repo, ["crates/a"])["crates/a"]
+    kani_peaks.save({"a": {"row": "a", "path": "crates/a", "tree": tree, "kani": "0.68.0",
+                           "peak_mib": 3000}})
+
+
+def check(stage, want, why):
+    got = kani_peaks.weights(["a", "b"], 2, 5, repo)
+    assert got["b"] == (5, "not measured"), (stage, got)
+    assert got["a"][0] == want and why in got["a"][1], (stage, got["a"])
+
+
+write("crates/a/src/lib.rs", "pub fn a() {}\n")
+write(".kani-version", "0.68.0\n")
+sh("init", "-q")
+sh("add", "-A")
+sh("commit", "-q", "-m", "a")
+os.environ["NIFE_KANI_PEAKS"] = os.path.join(repo, "peaks.tsv")
+record()
+check("fresh", 2, "measured")
+write("crates/a/src/lib.rs", "pub fn a() { loop {} }\n")
+check("edited", 5, "local changes")
+sh("commit", "-qam", "edit")
+check("committed", 5, "changed since")
+record()
+check("measured again", 2, "measured")
+write("crates/a/src/new.rs", "\n")
+check("untracked", 5, "local changes")
+os.remove(os.path.join(repo, "crates/a/src/new.rs"))
+write(".kani-version", "0.69.0\n")
+check("new Kani", 5, "Kani 0.68.0")
+PY
+
+# 8.
+[ -z "$(git -C "$root" status --porcelain -- .kani-version)" ] ||
+	fail "stage 8: .kani-version has local changes, so the fixture row cannot be fresh; commit it first"
+printf 'row\tpath\ttree\tkani\tpeak_mib\nglob\t.kani-version\t%s\t%s\t1500\n' \
+	"$(git -C "$root" rev-parse HEAD:.kani-version)" "$(tr -d '[:space:]' <"$root/.kani-version")" >"$tmp/peaks.tsv"
+pids=""
+unset NIFE_KANI_HARNESS_GIB
+NIFE_KANI_PEAKS="$tmp/peaks.tsv" NIFE_VERIFY_MEMORY_BYTES=$POOL4 VERIFY_JOBS=2 three
+[ "$(peak "$tmp/events")" -eq 2 ] || fail "stage 8: peak $(peak "$tmp/events"), want 2 runs of two one-unit harnesses on four units"
+grep -q "waiting for 2 of 4 Kani units" "$tmp/run3.out" ||
+	fail "stage 8: the third run did not wait for its measured two units: $(cat "$tmp/run3.out")"
+
+echo "kani-pool selftest: the third run waits, a run weighs its harnesses, the width is clamped, CI is untouched, the holder is named, a measured row weighs its peak while its code is unchanged"

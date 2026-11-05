@@ -20,6 +20,9 @@
 #      walk that never reached pid 1 left the script waiting for its own lock for ever (found
 #      collecting the tenth pass). Hermetic: a real pid 1 needs a pid namespace, which an
 #      unprivileged host cannot make, so the process table is the one thing stood in for.
+#   7. waiters start in the order they began waiting, and a waiter killed while it waits holds
+#      nobody up: fails if a freed slot goes to whichever waiter polls first (the ledger's order,
+#      helpers/heavy_ledger.py) or if a dead waiter's ticket blocks the queue.
 #
 # Name: provisional, minted 2026-10-19 (UTC) by lane/heavy-job-slots.
 set -eu
@@ -37,7 +40,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 mkdir -p "$work/helpers" "$work/script" "$work/slots"
-cp "$here/heavy-slot.sh" "$work/helpers/"
+cp "$here/heavy-slot.sh" "$here/heavy_ledger.py" "$work/helpers/"
 # The scratch copy polls five times faster than the real one (POLL_SECONDS is 2), so the stages that
 # wait for a poll to notice something take a fraction of a second. Nothing but the interval differs;
 # a source that no longer spells the constant this way fails here rather than testing at 2 s.
@@ -145,6 +148,78 @@ assert 1 in heavy_slot.ancestors(), "the ancestor walk stopped before pid 1"
 assert heavy_slot.held_by_ancestor(1, directory), "a pid 1 holder was not found in the family"
 write(4194000)
 assert not heavy_slot.held_by_ancestor(1, directory), "a holder outside the family passed"
+PY
+
+# Stage 7. With the one slot held, a first waiter dies in line, then a second (which holds the slot
+# once it has it) and a third (which runs and exits) join. When the holder dies, the second must
+# start and the third must not: polling alone hands the slot to whichever asks first.
+waiting_in() {
+    i=0
+    until grep -q 'is waiting' "$1" 2>/dev/null; do
+        i=$((i + 1))
+        [ "$i" -le 100 ] || fail "$2 never said it was waiting"
+        sleep 0.1
+    done
+}
+"$work/script/hold" "$work/order-holder" 60 &
+holder=$!
+appears "$work/order-holder" 10 || fail "the order stage's holder never started"
+"$work/script/hold" "$work/order-dead" 60 2>"$work/order-dead.err" &
+dead=$!
+waiting_in "$work/order-dead.err" "the waiter that dies in line"
+"$work/script/hold" "$work/order-first" 60 2>"$work/order-first.err" &
+first=$!
+waiting_in "$work/order-first.err" "the first live waiter"
+kill -9 "$dead"
+wait "$dead" 2>/dev/null || true
+"$work/script/run" "$work/order-second" 2>"$work/order-second.err" &
+second=$!
+waiting_in "$work/order-second.err" "the second live waiter"
+kill -9 "$holder"
+wait "$holder" 2>/dev/null || true
+holder=
+appears "$work/order-first" 10 \
+    || fail "the oldest live waiter did not start when the slot freed: $(cat "$work/order-first.err")"
+sleep 0.8
+[ ! -e "$work/order-second" ] || fail "a later waiter started while the slot was held"
+kill -9 "$first"
+wait "$first" 2>/dev/null || true
+appears "$work/order-second" 10 || fail "the last waiter never started: $(cat "$work/order-second.err")"
+wait "$second" || fail "the last waiter failed after taking the slot"
+python3 "$work/helpers/heavy_ledger.py" --selftest >/dev/null || fail "the ledger's decision selftest failed"
+
+# Stage 8. The per-machine count file sets the slots; the environment beats it; the file sits beside
+# the slot directory (so a private slot directory reads a private file); a bad value is refused. A
+# stuck-holder hint names a quiet old holder and not a busy or young one, and a slot whose worktree
+# is gone is marked orphaned.
+mkdir -p "$work/count/slots"
+env -u NIFE_HEAVY_SLOTS NIFE_HEAVY_SLOT_DIR="$work/count/slots" python3 - "$work/helpers" "$work/count" <<'PY' || fail "the count file stage failed"
+import os, sys
+sys.path.insert(0, sys.argv[1])
+import heavy_slot
+beside = sys.argv[2]
+assert heavy_slot.count_file() == os.path.join(beside, "heavy-slot-count"), heavy_slot.count_file()
+default = heavy_slot.slot_count()
+open(heavy_slot.count_file(), "w").write("10\n")
+assert heavy_slot.slot_count() == 10, "the count file was not honored"
+os.environ["NIFE_HEAVY_SLOTS"] = "3"
+assert heavy_slot.slot_count() == 3, "the environment did not win over the file"
+del os.environ["NIFE_HEAVY_SLOTS"]
+os.remove(heavy_slot.count_file())
+assert heavy_slot.slot_count() == default, "removing the file did not restore the default"
+open(heavy_slot.count_file(), "w").write("many\n")
+try:
+    heavy_slot.slot_count()
+    raise AssertionError("a bad count file was accepted")
+except SystemExit:
+    pass
+quiet = {10: (1, 5.0, 7200.0), 11: (10, 0.0, 7000.0), 20: (1, 3000.0, 7200.0), 30: (1, 0.0, 60.0)}
+rec = lambda pid: "pid=%d job=lint units=1 worktree=/x started=now" % pid
+hint = heavy_slot.stuck_hint({0: rec(10), 1: rec(20), 2: rec(30)}, quiet)
+assert "slot 0 (pid 10)" in hint and "slot 1" not in hint and "slot 2" not in hint, hint
+assert heavy_slot.to_seconds("1-02:03:04") == 86400 + 7384 and heavy_slot.to_seconds("0:05.50") == 5.5
+text = heavy_slot.describe({0: "pid=%d job=lint units=1 worktree=%s/gone started=now cmd=x" % (os.getpid(), beside)})
+assert "ORPHANED" in text, text
 PY
 
 echo "heavy-slot-selftest: ok"

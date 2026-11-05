@@ -7,7 +7,7 @@ Expected to fail: the harness's `assert_eq!(state.size as usize, size)`.
 diff --git a/crates/file_allocation_table/src/write_cursor.rs b/crates/file_allocation_table/src/write_cursor.rs
 --- a/crates/file_allocation_table/src/write_cursor.rs
 +++ b/crates/file_allocation_table/src/write_cursor.rs
-@@ -234,7 +234,7 @@ impl WriteState {
+@@ -280,7 +280,7 @@ impl WriteState {
              }
              self.position += len as u32;
              done += len;

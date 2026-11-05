@@ -207,7 +207,7 @@ fn descriptor_words_put_ownership_in_the_high_word_of_the_second_store() {
 }
 
 /// **The region's layout, in bytes**: two pages of rings, sixteen receive buffers, sixteen
-/// transmit buffers. The kernel allocates `layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` from this, so a slip here maps a
+/// transmit buffers. The kernel half allocates `layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` from this, so a slip here maps a
 /// region too small for the buffers the rings point at.
 #[test]
 fn the_region_is_two_ring_pages_then_the_buffers() {

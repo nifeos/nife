@@ -106,6 +106,7 @@ pub enum RootDirectory {
 ///
 /// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ParseError {
     /// The buffer holds fewer than 512 bytes.
     ///
@@ -188,6 +189,7 @@ pub enum ParseError {
 ///
 /// Name: ratified 2026-10-25 (#2720).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ReadError<E> {
     /// The device refused the read; its own error, unchanged.
     ///
@@ -218,15 +220,16 @@ pub enum ReadError<E> {
 /// # Examples
 ///
 /// ```
-/// use file_allocation_table::{BootSector, FileAllocationTableType, SECTOR_BYTES, VolumeLayout, NoClock};
+/// use file_allocation_table::efi_system_partition::{FAT32_MINIMUM_CLUSTERS, SECTOR_BYTES};
+/// use file_allocation_table::{BootSector, FileAllocationTableType, NoClock, VolumeLayout};
 ///
-/// let volume = VolumeLayout::new(1024 * 1024, 0, 4096, 1, "BOOTX64.EFI", &mut NoClock).unwrap();
+/// let volume = VolumeLayout::new(1024 * 1024, 0, 4096, 1, "EFI SYSTEM", "BOOTX64.EFI", &mut NoClock).unwrap();
 /// let mut sector = [0u8; SECTOR_BYTES];
 /// volume.fill_sector(0, &mut sector);
 ///
 /// let boot = BootSector::parse(&sector).unwrap();
 /// assert_eq!(boot.file_allocation_table_type(), FileAllocationTableType::Fat32);
-/// assert_eq!(boot.clusters(), volume.clusters());
+/// assert!(boot.clusters() >= FAT32_MINIMUM_CLUSTERS);
 /// ```
 ///
 /// Name: ratified 2026-10-25 (#2720).

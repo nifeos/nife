@@ -1,63 +1,18 @@
-//! **The volume**: its layout constants, the arithmetic that sizes the table and places each
-//! cluster, and the sectors a caller writes. The crate root re-exports what is public here.
+//! **The volume**: the arithmetic that sizes the table of the one EFI system partition shape and
+//! places each cluster, and the sectors a caller writes. The shape's constants are in
+//! [`crate::efi_system_partition`]; the crate root re-exports what is public here.
 //!
 //! Name: ratified 2026-10-25 (#2720).
 
 use crate::boot_sector::FileAllocationTableType;
-use crate::efi_system_partition::{BOOT_CLUSTER, EFI_CLUSTER, FILE_CLUSTER};
-use crate::format::{Geometry, GeometryError, put16, put32, write_fs_info};
+use crate::efi_system_partition::{
+    BOOT_CLUSTER, CLUSTER_BYTES, CLUSTER_SECTORS, EFI_CLUSTER, FILE_CLUSTER, RESERVED_SECTORS,
+    ROOT_CLUSTER, SECTOR_BYTES, TABLE_COUNT,
+};
+use crate::format::{Geometry, GeometryError, label_bytes, put16, put32, write_fs_info};
 use crate::long_name::{self, LongName};
 use crate::sector::SectorSize;
 use crate::time::{Clock, Stamp};
-
-/// A FAT sector, and the unit every one of this crate's outputs is measured in.
-///
-/// FAT32 permits 512, 1024, 2048 and 4096; this crate writes 512, which is what every disk this
-/// project has met reports and what `globally_unique_identifier_partition_table` counts in.
-///
-/// Name: ratified 2026-10-25 (#2720). Refused `SECTOR` (it reads as a sector and holds a size).
-pub const SECTOR_BYTES: usize = 512;
-
-/// Sectors per cluster, so 4096-byte clusters.
-///
-/// The same number as `filesystem_contract::blk`'s transfer unit, which is not a coincidence: a
-/// caller moving one blk block per request moves exactly one cluster.
-///
-/// Name: ratified 2026-10-25 (#2720).
-pub const CLUSTER_SECTORS: u32 = 8;
-
-/// Bytes per cluster.
-///
-/// Name: ratified 2026-10-25 (#2720). Refused `CLUSTER` (it reads as a cluster and holds a size).
-pub const CLUSTER_BYTES: usize = CLUSTER_SECTORS as usize * SECTOR_BYTES;
-
-/// Reserved sectors ahead of the first FAT: the boot sector, `FSInfo`, and the backup pair the
-/// specification puts at sectors 6 and 7, with room left over as every tool leaves it.
-///
-/// Name: ratified 2026-10-25 (#2720).
-pub const RESERVED_SECTORS: u32 = 32;
-
-/// How many copies of the table are written: two, because every tool writes two and a firmware that
-/// reads the second finds it.
-///
-/// Name: ratified 2026-10-25 (#2720). Refused `FATS` (the acronym in a crate that spells it out).
-pub const TABLE_COUNT: u32 = 2;
-
-/// The first cluster of the root directory. FAT32 fixes nothing here, but 2 is the first data
-/// cluster and every tool uses it.
-///
-/// Name: ratified 2026-10-25 (#2720).
-pub const ROOT_CLUSTER: u32 = 2;
-
-/// **The count of data clusters below which a volume is not FAT32 at all.**
-///
-/// Microsoft's specification defines the FAT type by this number and nothing else, and drivers in
-/// the field follow it. A "FAT32" volume with fewer clusters than this is read as FAT16 by the code
-/// that matters, which is the firmware's, so this crate refuses to build one.
-///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `FAT32_MIN_CLUSTERS` (min spelled out, as the
-/// tree-wide ruling asks). Refused `MIN_CLUSTERS` (it is FAT32's floor alone).
-pub const FAT32_MINIMUM_CLUSTERS: u32 = 65_525;
 
 /// The largest cluster number FAT32 addresses. The top four bits of a 32-bit entry are reserved.
 const MAXIMUM_CLUSTER: u32 = 0x0FFF_FFF5;
@@ -81,11 +36,13 @@ const DIR_ENTRY: usize = 32;
 /// Name: ratified 2026-10-25 (#2720). Refused `Error` (the writer's refusal, beside the reader's
 /// errors).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum LayoutError {
     /// **Not FAT32** (the 32-bit file allocation table, "FAT: General Overview of On-Disk Format"
     /// version 1.03, section 3, Boot Sector and BPB, which types a volume by its clusters): the
-    /// partition holds fewer than [`FAT32_MINIMUM_CLUSTERS`] data clusters, so it is not a FAT32
-    /// volume however its boot sector is filled in. With 4096-byte clusters that is about 256 MiB.
+    /// partition holds fewer than
+    /// [`FAT32_MINIMUM_CLUSTERS`](crate::efi_system_partition::FAT32_MINIMUM_CLUSTERS) data
+    /// clusters, so it is not a FAT32 volume however its boot sector is filled in. With 4096-byte clusters that is about 256 MiB.
     ///
     /// Name: ratified 2026-10-25 (#2720).
     #[doc(alias = "not a 32-bit file allocation table")]
@@ -100,6 +57,12 @@ pub enum LayoutError {
     ///
     /// Name: ratified 2026-10-25 (#2720).
     NameRefused,
+    /// The volume label is empty, longer than eleven bytes, or holds a byte a short name refuses
+    /// (see [`crate::FormatOptions::with_label`]).
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3267, the maintainer's ruling: a refused label told apart
+    /// from a refused file name, as `FormatError::LabelRefused` and `WriteError::LabelRefused`.
+    LabelRefused,
     /// The clock reported a time FAT cannot store (see [`crate::Clock`]).
     ///
     /// Name: ratified 2026-11-01 (UTC), as `WriteError::TimeOutOfRange`.
@@ -121,10 +84,19 @@ pub enum LayoutError {
 /// that can put 512 bytes at an LBA:
 ///
 /// ```
-/// use file_allocation_table::{SECTOR_BYTES, VolumeLayout, NoClock};
+/// use file_allocation_table::efi_system_partition::SECTOR_BYTES;
+/// use file_allocation_table::{NoClock, VolumeLayout};
 ///
-/// let volume = VolumeLayout::new(1024 * 1024, 2048, 9_000_000, 0x1234_5678, "BOOTX64.EFI", &mut NoClock)
-///     .expect("512 MiB is a FAT32 volume");
+/// let volume = VolumeLayout::new(
+///     1024 * 1024,
+///     2048,
+///     9_000_000,
+///     0x1234_5678,
+///     "EFI SYSTEM",
+///     "BOOTX64.EFI",
+///     &mut NoClock,
+/// )
+/// .expect("512 MiB is a FAT32 volume");
 ///
 /// let mut sector = [0u8; SECTOR_BYTES];
 /// for index in 0..volume.metadata_sectors() {
@@ -147,6 +119,7 @@ pub struct VolumeLayout {
     geometry: Geometry,
     stamp: Stamp,
     volume_id: u32,
+    label: [u8; 11],
     name: [u8; 11],
     /// The long name written ahead of `name`, which is then its alias; `None` for an 8.3 name.
     long_name: Option<LongName>,
@@ -161,8 +134,12 @@ impl VolumeLayout {
     /// value does not move a single byte this crate places, because every other offset is
     /// partition-relative.
     ///
-    /// `volume_id` is the serial number, and a caller with an entropy capability should draw it;
-    /// nothing depends on it being unique and this crate will not invent one.
+    /// `volume_id` is the serial number, which a caller should draw from a random source; nothing
+    /// depends on it being unique and this crate will not invent one.
+    ///
+    /// `label` is the volume label, written to the boot sector's `BS_VolLab` and as the root
+    /// directory's volume-label entry: up to eleven upper-case letters, digits, spaces and the
+    /// punctuation a short name admits, as [`crate::FormatOptions::with_label`] takes.
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub fn new(
@@ -170,12 +147,14 @@ impl VolumeLayout {
         hidden_sectors: u64,
         file_len: u64,
         volume_id: u32,
+        label: &str,
         file_name: &str,
         clock: &mut impl Clock,
     ) -> Result<VolumeLayout, LayoutError> {
         if total_sectors > u32::MAX as u64 || hidden_sectors > u32::MAX as u64 {
             return Err(LayoutError::TooLarge);
         }
+        let label = label_bytes(label).ok_or(LayoutError::LabelRefused)?;
         let (name, long_name) = match short_name(file_name) {
             Some(name) => (name, None),
             None => {
@@ -220,16 +199,19 @@ impl VolumeLayout {
             geometry,
             stamp,
             volume_id,
+            label,
             name,
             long_name,
         })
     }
 
-    /// How many data clusters the volume has. Below [`FAT32_MINIMUM_CLUSTERS`]
+    /// How many data clusters the volume has. Below
+    /// [`FAT32_MINIMUM_CLUSTERS`](crate::efi_system_partition::FAT32_MINIMUM_CLUSTERS)
     /// [`VolumeLayout::new`] refuses.
     ///
     /// Name: ratified 2026-10-25 (#2720).
-    pub const fn clusters(&self) -> u32 {
+    #[cfg(test)]
+    pub(crate) const fn clusters(&self) -> u32 {
         self.clusters
     }
 
@@ -237,14 +219,15 @@ impl VolumeLayout {
     ///
     /// Name: ratified 2026-10-25 (#2720). Refused `fat_sectors` (the reader's spelling for the same
     /// quantity).
-    pub const fn table_sectors(&self) -> u32 {
+    #[cfg(test)]
+    pub(crate) const fn table_sectors(&self) -> u32 {
         self.fat_sectors
     }
 
     /// The partition-relative sector where cluster 2 begins.
     ///
     /// Name: ratified 2026-10-25 (#2720). Refused `data_first_sector` (the specification's order).
-    pub const fn first_data_sector(&self) -> u64 {
+    pub(crate) const fn first_data_sector(&self) -> u64 {
         (RESERVED_SECTORS + TABLE_COUNT * self.fat_sectors) as u64
     }
 
@@ -252,13 +235,13 @@ impl VolumeLayout {
     ///
     /// `cluster` must be at least [`ROOT_CLUSTER`] (2); clusters 0 and 1 are the FAT's own
     /// reserved entries and have no sectors, and the subtraction below underflows on them (a panic
-    /// in a debug build, a wrap in release). Every caller in this tree passes a constant from 2
-    /// up; noted by the 2026-09-24 security audit rather than made checked, because a `const fn`
-    /// returning an `Option` would push a `?` into a writer whose inputs are all its own.
+    /// in a debug build, a wrap in release). Every caller in this crate passes a constant from 2
+    /// up. It is not made checked, because a `const fn` returning an `Option` would push a `?` into
+    /// a writer whose inputs are all its own.
     ///
     /// Name: ratified 2026-10-25 (#2720). Refused `cluster_sector` (the reader's spelling for the
     /// same quantity).
-    pub const fn cluster_first_sector(&self, cluster: u32) -> u64 {
+    pub(crate) const fn cluster_first_sector(&self, cluster: u32) -> u64 {
         self.first_data_sector() + (cluster - ROOT_CLUSTER) as u64 * CLUSTER_SECTORS as u64
     }
 
@@ -335,7 +318,7 @@ impl VolumeLayout {
     /// The BPB and the boot signature, written by the general format's builder.
     fn boot_sector(&self, out: &mut [u8]) {
         self.geometry
-            .write_boot_sector(self.volume_id, b"NIFE       ", self.hidden_sectors, out);
+            .write_boot_sector(self.volume_id, &self.label, self.hidden_sectors, out);
     }
 
     /// `FSInfo`, whose two counts are hints a driver is allowed to ignore or disbelieve.
@@ -378,7 +361,7 @@ impl VolumeLayout {
 
     /// The root directory: the volume label, then `EFI`.
     fn root_cluster(&self, out: &mut [u8]) {
-        dir_entry(out, 0, b"NIFE       ", ATTR_VOLUME_ID, 0, 0, &self.stamp);
+        dir_entry(out, 0, &self.label, ATTR_VOLUME_ID, 0, 0, &self.stamp);
         dir_entry(
             out,
             1,
@@ -517,8 +500,9 @@ fn short_name(name: &str) -> Option<[u8; 11]> {
 mod tests {
     use super::*;
     use crate::NoClock;
+    use crate::efi_system_partition::FAT32_MINIMUM_CLUSTERS;
 
-    /// 512 MiB in 512-byte sectors, the size the installer lays out.
+    /// 512 MiB in 512-byte sectors, a common size for an EFI system partition.
     const ESP_SECTORS: u64 = 1024 * 1024;
 
     fn volume() -> VolumeLayout {
@@ -527,6 +511,7 @@ mod tests {
             2048,
             9_000_000,
             0xDEAD_BEEF,
+            "EFI SYSTEM",
             "BOOTX64.EFI",
             &mut NoClock,
         )
@@ -552,17 +537,32 @@ mod tests {
     }
 
     /// The smallest volume this crate will build, and the boundary it refuses below. With 4096-byte
-    /// clusters, 65525 of them is a little over 256 MiB, which is why the EFI system partition the
-    /// installer lays out is not the 100 MiB a reader might expect.
+    /// clusters, 65525 of them is a little over 256 MiB, which is why an EFI system partition this
+    /// writer lays out is not the 100 MiB a reader might expect.
     #[test]
     fn a_volume_too_small_to_be_fat32_is_refused_rather_than_mislabelled() {
         assert_eq!(
-            VolumeLayout::new(200 * 1024 * 2, 2048, 1024, 1, "BOOTX64.EFI", &mut NoClock),
+            VolumeLayout::new(
+                200 * 1024 * 2,
+                2048,
+                1024,
+                1,
+                "EFI SYSTEM",
+                "BOOTX64.EFI",
+                &mut NoClock
+            ),
             Err(LayoutError::NotFat32)
         );
-        let just_enough =
-            VolumeLayout::new(600 * 1024 * 2, 2048, 1024, 1, "BOOTX64.EFI", &mut NoClock)
-                .expect("300 MiB clears the cluster floor");
+        let just_enough = VolumeLayout::new(
+            600 * 1024 * 2,
+            2048,
+            1024,
+            1,
+            "EFI SYSTEM",
+            "BOOTX64.EFI",
+            &mut NoClock,
+        )
+        .expect("300 MiB clears the cluster floor");
         assert!(just_enough.clusters() >= FAT32_MINIMUM_CLUSTERS);
     }
 
@@ -681,7 +681,7 @@ mod tests {
         };
 
         let (label, attr, _, _) = entry_at(ROOT_CLUSTER, 0);
-        assert_eq!(&label, b"NIFE       ");
+        assert_eq!(&label, b"EFI SYSTEM ");
         assert_eq!(attr, ATTR_VOLUME_ID);
 
         let (name, attr, cluster, _) = entry_at(ROOT_CLUSTER, 1);
@@ -707,7 +707,7 @@ mod tests {
     }
 
     /// **Every cluster begins on a 4096-byte boundary of the partition**, which is what lets a
-    /// caller moving one `filesystem_contract::blk` block per request write the volume at all. It
+    /// caller moving one 4096-byte block per request write the volume at all. It
     /// is not free: FAT32's own sizing arithmetic leaves the data area wherever it falls, and the
     /// first installed disk this crate produced had its boot file six sectors early because of it.
     #[test]
@@ -716,8 +716,16 @@ mod tests {
         // length depends on the size.
         for mib in [300u64, 301, 400, 512, 700, 1024, 4096] {
             let sectors = mib * 1024 * 2;
-            let v = VolumeLayout::new(sectors, 2048, 9_000_000, 1, "BOOTX64.EFI", &mut NoClock)
-                .unwrap_or_else(|e| panic!("{mib} MiB: {e:?}"));
+            let v = VolumeLayout::new(
+                sectors,
+                2048,
+                9_000_000,
+                1,
+                "EFI SYSTEM",
+                "BOOTX64.EFI",
+                &mut NoClock,
+            )
+            .unwrap_or_else(|e| panic!("{mib} MiB: {e:?}"));
             assert_eq!(
                 v.first_data_sector() % u64::from(CLUSTER_SECTORS),
                 0,
@@ -756,13 +764,54 @@ mod tests {
             assert_eq!(short_name(long), None, "{long}");
         }
         assert_eq!(
-            VolumeLayout::new(ESP_SECTORS, 2048, 1024, 1, "a:b", &mut NoClock),
+            VolumeLayout::new(
+                ESP_SECTORS,
+                2048,
+                1024,
+                1,
+                "EFI SYSTEM",
+                "a:b",
+                &mut NoClock
+            ),
             Err(LayoutError::NameRefused)
         );
         assert_eq!(
-            VolumeLayout::new(ESP_SECTORS, 2048, 1024, 1, "", &mut NoClock),
+            VolumeLayout::new(ESP_SECTORS, 2048, 1024, 1, "EFI SYSTEM", "", &mut NoClock),
             Err(LayoutError::NameRefused)
         );
+    }
+
+    #[test]
+    fn the_label_is_the_callers_and_a_label_a_short_name_refuses_is_refused() {
+        let v = VolumeLayout::new(
+            ESP_SECTORS,
+            2048,
+            1024,
+            1,
+            "BOOT DISK",
+            "BOOTX64.EFI",
+            &mut NoClock,
+        )
+        .expect("a volume");
+        let boot = sector(&v, 0);
+        assert_eq!(&boot[71..82], b"BOOT DISK  ");
+        let root = sector(&v, v.cluster_first_sector(ROOT_CLUSTER));
+        assert_eq!(&root[..11], b"BOOT DISK  ");
+        for refused in ["", "TWELVE BYTES", "lower", "A*B"] {
+            assert_eq!(
+                VolumeLayout::new(
+                    ESP_SECTORS,
+                    2048,
+                    1024,
+                    1,
+                    refused,
+                    "BOOTX64.EFI",
+                    &mut NoClock
+                ),
+                Err(LayoutError::LabelRefused),
+                "{refused:?}"
+            );
+        }
     }
 
     /// The slots of `EFI\BOOT`, as 32-byte entries read out of its first two sectors.
@@ -787,6 +836,7 @@ mod tests {
             2048,
             9_000_000,
             1,
+            "EFI SYSTEM",
             "BOOTRISCV64.EFI",
             &mut NoClock,
         )
@@ -818,8 +868,16 @@ mod tests {
     #[test]
     fn the_longest_name_reaches_the_second_sector_of_the_boot_directory() {
         let name = "n".repeat(251) + ".efi";
-        let v =
-            VolumeLayout::new(ESP_SECTORS, 2048, 1024, 1, &name, &mut NoClock).expect("a volume");
+        let v = VolumeLayout::new(
+            ESP_SECTORS,
+            2048,
+            1024,
+            1,
+            "EFI SYSTEM",
+            &name,
+            &mut NoClock,
+        )
+        .expect("a volume");
         let slots = boot_dir_slots(&v);
         assert_eq!(slots[2][0], 0x40 | 20);
         assert_eq!(slots[21][0], 1);
@@ -837,6 +895,7 @@ mod tests {
                 2048,
                 600 * 1024 * 1024,
                 1,
+                "EFI SYSTEM",
                 "BOOTX64.EFI",
                 &mut NoClock
             ),
