@@ -2063,13 +2063,9 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.merge_group.base_sha }}
         run: python3 helpers/prose_only.py merge-group "$BASE_SHA"
-      # Every bare-metal target is installed, because `script/stack-depth-check` gates all of them.
-      # `script/stack-frame-check` defaults to two: it holds x86_64 out of its DEFAULT set, reachable
-      # through `--arch`, because widening it found `kernel::arch::x86_64::iommu::initialize` at 12,504
-      # bytes against a 4,096-byte guard page. That finding and its disposition are in that
-      # script's own BUGS. §19 parity still applies to the two gated here: a frame that fits on one
-      # ISA and not the other is exactly the asymmetry that rule exists to catch. llvm-tools
-      # carries the objcopy and nm that read the `.stack_sizes` section the measurement lives in.
+      # Every bare-metal target is installed, because `script/stack-frame-check` and
+      # `script/stack-depth-check` gate all three. llvm-tools carries the objcopy and nm that read
+      # the `.stack_sizes` section the measurement lives in.
       - if: steps.merge-group-gate.outputs.skip != 'true'
         name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
