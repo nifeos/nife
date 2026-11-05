@@ -82,7 +82,7 @@ Before saturation, the 2^32nd occupant of a slot wrapped its generation to 0, an
 that a removed name never resolves again carried "the generation has not wrapped" as a stated
 precondition. These are the measurements behind the choice.
 
-How fast one slot can be reused, from the fastest measured create-and-destroy loop:
+How fast a loop can refill one slot, from the fastest create-and-destroy loops measured:
 
 | table, `N` | loop | one cycle | 2^32 cycles |
 |---|---|---|---|
@@ -98,8 +98,8 @@ do not speed up one slot: first-fit puts concurrent inserts in different slots.
 So wrapping was reachable. A user program with a region could resurrect a dead region name in
 minutes of tight looping, and a kernel spawn loop could do it to a thread id inside two hours.
 Under saturation the same loops retire a slot instead. Retiring all 256 thread slots takes about
-16.6 days of nonstop spawning on HVF, and all 256 region slots at least 17 hours at the region
-floor, after which those creates fail as a full table does until the next boot.
+16.5 days of nonstop spawning on HVF, and all 256 region slots at least 16 hours at the region
+floor. After that, those creates fail as a full table does until the next boot.
 
 Three designs, built in the crate and measured on the host (`Table<u64, N>`, one core of a
 2.1 GHz Xeon Platinum 8160, best of five runs of five million insert-and-remove pairs, after a
@@ -118,7 +118,7 @@ settling churn; the walk is `values().count()`):
 Saturation costs nothing measurable: one more compare per scanned slot. Next-fit loses wherever the
 table is sparse, which is where the kernel's tables live. The scan itself gets cheaper, but each
 insert lands above every live entry, raising the occupancy bound, and the removal then walks the
-bound back down over the gap. That walk is amortized O(1) only under first-fit. Next-fit also
+bound back down over the gap. Only first-fit keeps that walk's cost at O(1) on average. Next-fit also
 leaves live entries spread across the table, so every walk costs up to `N` again, the cost the
 bound exists to remove. Next-fit wins only near full (200 of 256), where first-fit scans past every
 live slot.
@@ -131,8 +131,8 @@ asserts that the successor reuses the released slot. And it does not delay exhau
 slots retiring at once.
 
 Saturation is visible to no kernel caller before a slot's 2^32 - 1th occupant. Names, slot order,
-`top` and every walk are unchanged, and a retired slot reads to the caller as a full table, which
-every kernel caller already handles (spawn fails as it does on running out of memory).
+`top` and every walk stay the same. A retired slot reads to the caller as a full table, which every
+kernel caller already handles (spawn fails as it does on running out of memory).
 
 A fourth design removes retirement from reach rather than making it safe. A name needs only as
 many slot bits as `N` takes, eight for 256, which leaves 56 for the generation. Then 2^56 cycles at
@@ -154,9 +154,9 @@ generation above does it, as a separate change to the name format.
 
 ### The one-slot `Option` tag
 
-`[Option<T>; N]` spends a tag on each slot when `T` has no niche. In the kernel that is the four
+`[Option<T>; N]` spends a tag on each slot when `T` has no niche. In the kernel that means the four
 `u64` tables (rendezvous 512, notifications, timers and processes 256 each) and the thread table's
-raw pointer (256): 16 bytes a slot instead of 8, or 12 KiB of the kernel's static data in all.
+raw pointer (256). Each slot takes 16 bytes instead of 8, 12 KiB of the kernel's static data in all.
 `Region` holds a `bool`, and the virtio `Device` and the address-space `Registered` entry hold
 enums, so each has a niche, and Rust folds the tag into it at no cost. Taking the tag out means
 storing an uninitialized `T` in a free slot, `MaybeUninit` and `unsafe`, in a crate that forbids
