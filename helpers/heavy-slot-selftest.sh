@@ -147,4 +147,38 @@ write(4194000)
 assert not heavy_slot.held_by_ancestor(1, directory), "a holder outside the family passed"
 PY
 
+# Stage 7. The per-machine count file sets the slots; the environment beats it; the file sits beside
+# the slot directory (so a private slot directory reads a private file); a bad value is refused. A
+# stuck-holder hint names a quiet old holder and not a busy or young one, and a slot whose worktree
+# is gone is marked orphaned.
+mkdir -p "$work/count/slots"
+env -u NIFE_HEAVY_SLOTS NIFE_HEAVY_SLOT_DIR="$work/count/slots" python3 - "$work/helpers" "$work/count" <<'PY' || fail "the count file stage failed"
+import os, sys
+sys.path.insert(0, sys.argv[1])
+import heavy_slot
+beside = sys.argv[2]
+assert heavy_slot.count_file() == os.path.join(beside, "heavy-slot-count"), heavy_slot.count_file()
+default = heavy_slot.slot_count()
+open(heavy_slot.count_file(), "w").write("10\n")
+assert heavy_slot.slot_count() == 10, "the count file was not honored"
+os.environ["NIFE_HEAVY_SLOTS"] = "3"
+assert heavy_slot.slot_count() == 3, "the environment did not win over the file"
+del os.environ["NIFE_HEAVY_SLOTS"]
+os.remove(heavy_slot.count_file())
+assert heavy_slot.slot_count() == default, "removing the file did not restore the default"
+open(heavy_slot.count_file(), "w").write("many\n")
+try:
+    heavy_slot.slot_count()
+    raise AssertionError("a bad count file was accepted")
+except SystemExit:
+    pass
+quiet = {10: (1, 5.0, 7200.0), 11: (10, 0.0, 7000.0), 20: (1, 3000.0, 7200.0), 30: (1, 0.0, 60.0)}
+rec = lambda pid: "pid=%d job=lint units=1 worktree=/x started=now" % pid
+hint = heavy_slot.stuck_hint({0: rec(10), 1: rec(20), 2: rec(30)}, quiet)
+assert "slot 0 (pid 10)" in hint and "slot 1" not in hint and "slot 2" not in hint, hint
+assert heavy_slot.to_seconds("1-02:03:04") == 86400 + 7384 and heavy_slot.to_seconds("0:05.50") == 5.5
+text = heavy_slot.describe({0: "pid=%d job=lint units=1 worktree=%s/gone started=now cmd=x" % (os.getpid(), beside)})
+assert "ORPHANED" in text, text
+PY
+
 echo "heavy-slot-selftest: ok"

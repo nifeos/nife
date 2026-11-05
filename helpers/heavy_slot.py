@@ -39,7 +39,24 @@ caller then runs inside that slot. That survives an environment the parent scrub
 environment-variable marker would not.
 
 The default N is one slot per 8 GiB of physical memory, at least 1, so a 16 GiB machine runs two.
-NIFE_HEAVY_SLOTS overrides it. Two processes given different N each count only the slots they know.
+Two settings override it, the environment first. NIFE_HEAVY_SLOTS=<n> sets it for one process tree.
+A per-machine setting is the file `heavy-slot-count` beside the slot directory (default
+~/.nife/heavy-slot-count), holding one integer: `echo 10 > ~/.nife/heavy-slot-count`. It lives
+outside every worktree, so every new lane and script reads it with no setup, and a host that does
+not write it keeps the memory-based default. Remove the file to go back.
+
+Two processes given different N each count only the slots they know. The file is read on every
+call, and a waiter reads it again on every poll, so a change reaches a waiting job within
+POLL_SECONDS and every job started later at once. A job that already holds a slot keeps it and is
+unaffected. A process with NIFE_HEAVY_SLOTS exported keeps that value (the environment wins), so a
+running lane that exported it must unset it, or the shell that started it must be restarted. Raise
+N, not lower it, while jobs run: slots above a lowered N still count as held for the processes that
+know them, and as free for the ones that do not.
+
+A waiter prints a hint when a holder looks stuck: its process tree has used under 1 percent of the
+time it has run in CPU (ps counts only live processes, so a job that ran many short children can
+read low; the hint says "may"). `--status` marks a slot whose worktree path no longer exists as
+orphaned, the shape a lint left by a pruned worktree takes.
 
 The Kani pool. A heavy slot is one equal share, and a Kani run is not one share: `script/verify`
 runs VERIFY_JOBS harnesses at once, and a harness is large and uneven. The 2026-11 host out-of-memory
@@ -84,17 +101,29 @@ import time
 GIB = 1 << 30
 GIB_PER_SLOT = 8
 POLL_SECONDS = 2
+STUCK_SECONDS = 3600
 UNIT_GIB = 2
 KANI_RESERVE_GIB = 12
 HARNESS_GIB = 10
 
 
+def count_file():
+    """The per-machine slot count file: `heavy-slot-count` beside the slot directory."""
+    base = os.environ.get("NIFE_HEAVY_SLOT_DIR") or os.path.expanduser("~/.nife/heavy-slots")
+    return os.path.join(os.path.dirname(os.path.abspath(base)), "heavy-slot-count")
+
+
 def slot_count():
-    override = os.environ.get("NIFE_HEAVY_SLOTS", "")
+    override, source = os.environ.get("NIFE_HEAVY_SLOTS", ""), "NIFE_HEAVY_SLOTS"
+    if not override and os.path.exists(count_file()):
+        override, source = open(count_file()).read().strip(), count_file()
     if override:
-        n = int(override)
+        try:
+            n = int(override)
+        except ValueError:
+            n = 0
         if n < 1:
-            sys.exit(f"heavy-slot: NIFE_HEAVY_SLOTS={override} must be at least 1")
+            sys.exit(f"heavy-slot: {source}={override!r} must be an integer of at least 1")
         return n
     memory = os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE")
     return max(1, memory // (GIB_PER_SLOT * GIB))
@@ -240,12 +269,59 @@ def describe(held):
         lines.append(f"  slot {i}: {record.split(' cmd=')[0] or 'no record yet'}{note}")
         worktree = field(record, "worktree")
         lane = lane_of(worktree)
-        if lane or worktree:
+        if worktree and not os.path.isdir(worktree):
+            lines.append(f"    ORPHANED: worktree {worktree} no longer exists")
+        elif lane or worktree:
             lines.append(f"    lane {lane or '(unknown)'}  worktree {worktree}")
         cmd = (live_command(pid) if alive else "") or field(record, "cmd")
         if cmd:
             lines.append(f"    command {cmd}")
     return "\n".join(lines)
+
+
+def to_seconds(text):
+    """Seconds in a ps time such as `[[dd-]hh:]mm:ss[.ss]`; 0 when it does not parse."""
+    try:
+        days, _, rest = text.rpartition("-")
+        total = 0.0
+        for part in rest.split(":"):
+            total = total * 60 + float(part)
+        return total + 86400 * int(days or 0)
+    except ValueError:
+        return 0.0
+
+
+def stuck_hint(held, table=None):
+    """A line naming holders that may be stuck, or ''. A holder is flagged when its process tree has
+    used under 1 percent CPU over more than STUCK_SECONDS of running. `table` is test input:
+    {pid: (ppid, cpu_seconds, elapsed_seconds)}."""
+    if table is None:
+        table = {}
+        out = subprocess.run(["ps", "-A", "-o", "pid=,ppid=,time=,etime="],
+                             capture_output=True, text=True).stdout
+        for line in out.split("\n"):
+            f = line.split()
+            if len(f) == 4 and f[0].isdigit() and f[1].isdigit():
+                table[int(f[0])] = (int(f[1]), to_seconds(f[2]), to_seconds(f[3]))
+    names = []
+    for i, record in sorted(held.items()):
+        pid = holder_pid(record)
+        if pid not in table:
+            continue
+        tree, grew = {pid}, True
+        while grew:
+            grew = False
+            for p, (parent, _, _) in table.items():
+                if parent in tree and p not in tree:
+                    tree.add(p)
+                    grew = True
+        elapsed = table[pid][2]
+        if elapsed > STUCK_SECONDS and sum(table[p][1] for p in tree) < 0.01 * elapsed:
+            names.append(f"slot {i} (pid {pid})")
+    if not names:
+        return ""
+    return ("heavy-slot: " + ", ".join(names) + " may be stuck: under 1% CPU for over "
+            f"{STUCK_SECONDS // 3600} hour. Check `--status`; kill the process if it is an orphan.")
 
 
 def pid_alive(pid):
@@ -308,9 +384,10 @@ def take_kani(harnesses, job):
 
 
 def acquire(job, n, directory):
-    """Block until a slot is ours, and return its fd."""
+    """Block until a slot is ours, and return its fd. The count is read again on every poll."""
     announced = False
     while True:
+        n = slot_count()
         mine, held = try_slots(n, directory)
         if mine:
             slot, fd = min(mine.items())
@@ -322,6 +399,9 @@ def acquire(job, n, directory):
         if not announced:
             print(f"heavy-slot: {job} is waiting for one of {n} heavy-job slots "
                   f"({directory}); they are held by:\n{describe(held)}", file=sys.stderr, flush=True)
+            hint = stuck_hint(held)
+            if hint:
+                print(hint, file=sys.stderr, flush=True)
             announced = True
         time.sleep(POLL_SECONDS)
 
