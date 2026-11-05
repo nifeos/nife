@@ -137,9 +137,8 @@ file's block being touched.
 
 `script/names`' `Name:` block parser stopped at the first blank `//!` line, so a block written one
 argument per paragraph, which is how this tree's best ones are written, put every refusal after the
-first break out of reach. `crates/screen_console` recorded four and the tool saw none. That defeats
-the query milestone 115 exists to serve, has this name been refused before, whose worked example is
-milestone 63 having refused `system_builder` for a reason nobody could find. The failure is silent
+first break out of reach. `crates/screen_console` recorded four and the tool saw none. That defeats the query that milestone 115 (the names that were ratified, and the) exists to serve: has this name been refused before? Its worked example is
+milestone 63 (directory and package names: one spelling per) having refused `system_builder` for a reason nobody could find. The failure is silent
 in the direction that hurts, because the block still looks complete. Commit `c1a177c` widened the
 parse to the end of the comment run, after measuring that no status, date or well-formedness verdict
 moves across all 165 surfaces, since `script/metrics` shares the parser. It added the gate that

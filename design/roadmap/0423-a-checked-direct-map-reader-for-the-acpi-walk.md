@@ -22,7 +22,7 @@ firmware-supplied hint and each table body is still a raw pointer plus a length 
 supplied. `crates/machine_discovery` is proved (21 harnesses, its own `script/verify` row), so the
 narrowing this block is built on holds.
 
-Milestone 431 is `SUPERSEDED` by this block and by milestone 319, because its surviving claim is
+Milestone 431 is `SUPERSEDED` by this block and by milestone 319 (the crate that parses firmware had no), because its surviving claim is
 this block's.
 
 ## In brief
@@ -75,7 +75,7 @@ place left where a firmware number reaches a dereference with no proved step bet
 
 ## Index row
 
-Milestone 304 named the ACPI walk in `kernel/src/arch/x86_64/machine.rs` as its strongest remaining
+Milestone 304 (`cargo kani -p kernel` only ever compiled) named the ACPI walk in `kernel/src/arch/x86_64/machine.rs` as its strongest remaining
 target and declined it: 836 lines over firmware-supplied lengths, checksums and counts, whose
 volatile half reads raw pointers into the direct map. Milestone 319 shrank the question by proving
 `crates/machine_discovery`, so what is left on the kernel side is one operation repeated: read N

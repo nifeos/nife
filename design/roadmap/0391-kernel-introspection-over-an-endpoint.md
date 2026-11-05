@@ -85,7 +85,7 @@ when that milestone is taken rather than before.
 ## Index row
 
 Some facts exist only in the kernel (preemption counts, scheduler state, the machine description
-milestone 268 prints at boot) and no program can ask for them. The obvious route is a syscall per
+milestone 268 (every architecture boots the same way: describe) prints at boot) and no program can ask for them. The obvious route is a syscall per
 fact, which grows the surface DECISIONS §10 (process model) and §16 (object revocation) keep narrow.
 The alternative is a kernel thread parked on a rendezvous, answering questions, with no new object
 type and no new syscall number, because `ipc::Rendezvous` is generic over `T: Node`. The argument is

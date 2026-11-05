@@ -98,8 +98,7 @@ proposal is the cheap half that can run today, and it should say so wherever it 
 
 Milestone 134 (the register of measures)'s E3 pads the IPC fastpath to roughly 1.85x and asks what
 that costs. It had only run under icount, which models no cache, on a host whose L1i is several
-times a board's. The `maintainer/e3-on-radon` session ran it on a SiFive U74 with the 32 KB L1i that
-DECISIONS §144's ceiling was derived from: six interleaved boots, one card written six times, with
+times a board's. The `maintainer/e3-on-radon` session ran it on a SiFive U74. Its L1i is the 32 KB that DECISIONS §144 (the fastpath footprint gate gets a delta)'s ceiling was derived from: six interleaved boots, one card written six times, with
 milestone 74's SBI PMU reading real cycles. E3 separated cleanly in all three rows and one has the
 wrong sign, the padded build being 3.01% faster on a padding that never executes. Code layout
 confounds the experiment, and it needs milestone 370 (a layout control). E1 and E4, riding along,

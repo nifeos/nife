@@ -12,7 +12,7 @@ needs_person: no
 
 It reads the tree and touches one function.
 
-**Premise re-checked 2026-09-19 and still true, to the line.** `console::print_summary` still prints
+Premise re-checked 2026-09-19 and still true, to the line. `console::print_summary` still prints
 `and a screen, {len} bytes of framebuffer at {pixels}` out of the two fields `KernelConsole::screen`
 keeps. The width, height and pixel order still appear only in the x86_64 arm's own `screen`
 line.
@@ -65,5 +65,5 @@ The machine description says whether a machine has a framebuffer and where it is
 width, the height or the pixel order, the three numbers that decide whether a picture is legible or
 scrambled. Those arrive in the boot handoff and only the x86_64 arm prints them. A board with a
 monitor and no serial port is the machine this description was written for, and xenon's first light
-was photographed off the screen. The other two architectures grow a display path at milestone 157,
+was photographed off the screen. The other two architectures grow a display path at milestone 157 (real display output on the board: U-Boot's),
 so this wants doing once.

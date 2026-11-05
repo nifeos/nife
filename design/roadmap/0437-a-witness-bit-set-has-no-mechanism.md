@@ -11,7 +11,7 @@ needs_person: no
 
 Everything it needs is in `crates/filesystem_contract` and a `macro_rules!`.
 
-Milestone 326 fixed the two lists it found broken, which is rung four again.
+Milestone 326 (nobody has been assigned to turn a) repaired the two lists it found stale, which is rung four again.
 
 ## In brief
 

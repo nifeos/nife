@@ -67,10 +67,10 @@ and that block's own BUGS warns that real PMUs do not implement every architecte
 Every row a bench card prints is a `rdtime` tick count, and on the JH7110 one tick is 250 ns. An
 IPC round trip is single-digit microseconds, and E3 asks whether a 1.86x footprint change moves it
 by a few percent: a handful of ticks, measured with a ruler whose smallest mark is a large fraction
-of the effect. The SBI PMU counter exists, and milestone 229's per-thread grant is the authority
-DECISIONS §139 decided; neither is wired into a bench row. The proposal is additive. Keep the tick
+of the effect. The SBI PMU counter exists, and milestone 229 (build the cycle-counter grant DECISIONS 139 decided)'s per-thread grant is the authority
+DECISIONS §139 (who may read the cycle counter, and) decided; neither is wired into a bench row. The proposal is additive. Keep the tick
 column so every recorded baseline stays comparable, and print a cycle column beside it when the
 counter is available. That changes a published format that `script/bench --check` compares against
 `bench/baseline-*.txt`, so it is a decision about a recorded artifact. Do it after a bench session,
 which says whether the quantum or the boot-to-boot spread was the binding problem. Cycles show that
-a round trip got slower and not that the instruction cache is why, which is milestone 134's tier B.
+a round trip got slower and not that the instruction cache is why, which is milestone 134 (the register of measures: every number this)'s tier B.

@@ -73,7 +73,7 @@ single lane owns.
 Hardware specifications routinely store a count or a width as one less than the number meant, so
 zero is a legal encoding. Undoing that needs one more value than the field's own type holds, and
 whether the widening happens before or after the `+ 1` decides whether the top of the range
-panics. Milestone 319 found both spellings in one crate: `parse_dmar` read `body[0] + 1` into a `u8`,
+panics. Milestone 319 (the crate that parses firmware had no) found both spellings in one crate. `parse_dmar` read `body[0] + 1` into a `u8`,
 so a DMAR with `HostAddressWidth` of `0xff` overflowed on the x86 boot path, and a RISC-V counter
 width widened first and was correct. `cargo mutants` cannot find this family, because the mutation
 is in the type rather than the expression, and clippy has no lint for it. What finds it is a grep
