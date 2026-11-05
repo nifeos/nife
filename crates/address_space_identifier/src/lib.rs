@@ -66,10 +66,16 @@ impl Allocator {
     }
 
     /// Return an ASID. The caller has already invalidated the TLB by this ASID on every core
-    /// (see the crate doc); after this, the number may tag a different address space.
+    /// (see the crate doc); after this, the number may tag a different address space. Free each
+    /// ASID once per allocation: a debug build panics on one that is not allocated.
     pub fn free(&mut self, asid: u16) {
         debug_assert!(asid != 0, "ASID 0 is the kernel's and is never freed");
         debug_assert!((asid as usize) < ASIDS, "ASID out of range");
+        debug_assert!(
+            (asid as usize) >= ASIDS
+                || self.bitmap[asid as usize / 64] & (1 << (asid as usize % 64)) != 0,
+            "ASID freed while not allocated: a second free could take it from its next owner"
+        );
         if asid != 0 && (asid as usize) < ASIDS {
             self.bitmap[asid as usize / 64] &= !(1 << (asid as usize % 64));
         }
@@ -130,6 +136,7 @@ mod verification {
         };
         let asid: u16 = kani::any();
         kani::assume(asid != 0 && (asid as usize) < ASIDS);
+        kani::assume(a.bitmap[asid as usize / 64] & (1 << (asid as usize % 64)) != 0);
 
         let before = a.bitmap;
         a.free(asid);
@@ -180,5 +187,16 @@ mod tests {
         assert_eq!(a.alloc(), Some(x), "the freed ASID was not reused");
         a.free(y);
         assert_eq!(a.alloc(), Some(y));
+    }
+
+    /// A second free of the same ASID is caught in a debug build: between the two, the number may
+    /// have gone to another address space, which the second would then strip of its tag.
+    #[test]
+    #[should_panic(expected = "ASID freed while not allocated")]
+    fn a_second_free_of_one_identifier_is_caught() {
+        let mut a = Allocator::new();
+        let x = a.alloc().unwrap();
+        a.free(x);
+        a.free(x);
     }
 }
