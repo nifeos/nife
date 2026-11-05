@@ -1026,7 +1026,11 @@ const _: () = assert!(
 /// which writes `PHY_1000T_CTRL` back unchanged. FreeBSD's short wait for link afterwards is the
 /// kernel's own `STATUS.LU` wait.
 ///
-/// Name: recorded (FreeBSD's `e1000_setup_copper_link_pch_lpt`).
+/// Name: ratified 2026-11-05 (UTC), by the maintainer's ruling, provisional until an architect
+/// reviews it. A verb phrase; "copper link" is the Ethernet term of art (FreeBSD's
+/// `e1000_setup_copper_link_pch_lpt`). Refused `bring_up_copper_link` (departs from the source for
+/// no gain) and `setup_copper_link_pch_lpt` (repeats the module context and adds the abbreviations
+/// pch and lpt).
 pub fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Error> {
     let c = (hardware.read(mac::DEVICE_CONTROL_REGISTER) | crate::DEVICE_CONTROL_SET_LINK_UP)
         & !(CTRL_FRCSPD | CTRL_FRCDPX);
