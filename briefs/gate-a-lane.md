@@ -137,7 +137,7 @@ lines):
 
     $ script/lint
     ...
-    naming: no -d names, no daemons, contract crates spelled one way, branch prefix recognised,
+    naming: no -d names, no service-model words, contract crates spelled one way, branch prefix recognised,
             no #[path] module shared by two binaries, docs lowercase and hyphenated,
             every name carries its provenance, and exactly one block per file
     ...

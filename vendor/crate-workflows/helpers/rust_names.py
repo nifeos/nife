@@ -4,8 +4,9 @@
     python3 rust_names.py FILE...      # every definition, path:line: kind name
     python3 rust_names.py --selftest
 
-helpers/spelled_out.py and helpers/unit_symbols.py import this. It needs only the files it is
-given and helpers/naming_words.toml beside it, so it runs in any repository.
+helpers/spelled_out.py, unit_symbols.py, service_model.py, contract_names.py, question_shape.py and
+british_spelling.py import this. It needs only the files it is given and helpers/naming_words.toml
+beside it, so it runs in any repository.
 
 **What a definition is.** A name the crate itself chooses: an item (`fn`, `const`, `static`,
 `struct`, `enum`, `union`, `trait`, `type`, an inline `mod`, `macro_rules!`), a struct or variant
@@ -30,7 +31,9 @@ The doc comment's first paragraph names the identifier and its source as `(<name
 `#[doc(alias)]` carries the plain-English expansion, so a search for either lands on the item. A
 name with the alias and no stated source fails, and so does a stated source with no alias: an
 exemption is checkable or it is not one. A parameter or a local binding has no doc comment, so it
-cannot be kept and takes the spelled-out word. The rule follows the naming rules page of the
+cannot be kept and takes the spelled-out word. A package or a `[[bin]]` has no item to carry an
+attribute, so it keeps its name by opening the crate root's `//!` docs with `(<name>, <source>)`;
+no alias is needed. The rule follows the naming rules page of the
 operating system project this template serves (design/naming.md there, "A kept foreign name
 carries its expansion").
 
@@ -163,9 +166,11 @@ class Definition:
     """One name the crate chose: `name`, `kind`, `line`, the doc comment lines above it (`docs`)
     and the `#[doc(alias)]` strings it carries (`aliases`)."""
 
-    def __init__(self, name, kind, line, docs=(), aliases=()):
+    def __init__(self, name, kind, line, docs=(), aliases=(), returns_bool=False, takes_mut=False):
         self.name, self.kind, self.line = name, kind, line
         self.docs, self.aliases = list(docs), list(aliases)
+        # For a `fn`: whether it returns `bool`, and whether it takes any `&mut`.
+        self.returns_bool, self.takes_mut = returns_bool, takes_mut
 
     def __repr__(self):
         return f'{self.kind} {self.name}@{self.line}'
@@ -220,6 +225,26 @@ class _Reader:
     def add(self, t, kind, docs=(), aliases=()):
         if t is not None and t.kind == 'ident' and t.text != '_' and t.text not in KEYWORDS:
             self.out.append(Definition(t.text, kind, t.line, docs, aliases))
+            return self.out[-1]
+        return None
+
+    def signature(self, definition, start, end, header_end):
+        """Record on `definition` whether the signature in toks[start:header_end] returns `bool`
+        and whether the parameters in toks[start:end] take a `&mut`."""
+        if definition is None:
+            return
+        for k in range(start, end - 1):
+            if _is(self.toks[k], 'punct', '&'):
+                for t in self.toks[k + 1:k + 4]:
+                    if _is(t, 'ident', 'mut'):
+                        definition.takes_mut = True
+                    if t.kind != 'lifetime' and not _is(t, 'ident', 'mut'):
+                        break
+        for k in range(end, header_end - 2):
+            if (_is(self.toks[k], 'punct', '-') and _is(self.toks[k + 1], 'punct', '>')
+                    and _is(self.toks[k + 2], 'ident', 'bool')):
+                after = self.at(k + 3)
+                definition.returns_bool = not (_is(after, 'punct', '::') or _is(after, 'punct', '<'))
 
     def preamble(self, i, end):
         """Skip docs, attributes and visibility from `i`; (index, docs, aliases)."""
@@ -358,14 +383,16 @@ class _Reader:
             word = t.text
             owned = context != 'trait_impl'
             if word == 'fn':
-                if owned:
-                    self.add(nxt, 'fn', docs, aliases)
+                made = self.add(nxt, 'fn', docs, aliases) if owned else None
                 j = i + 2
                 if _is(self.at(j), 'punct', '<'):
                     j = self.angle(j)
+                params_start = j
                 if _is(self.at(j), 'punct', '('):
                     j = self.parameters(j)
+                params_end = j
                 j = self.skip_to_brace(j)
+                self.signature(made, params_start, params_end, j)
                 i = self.block_group(j, 'fn') if _is(self.at(j), 'punct', '{') else j + 1
                 docs, aliases = [], []
             elif word in ('const', 'static') and nxt is not None and nxt.kind == 'ident' \
@@ -464,11 +491,14 @@ SOURCE = '\\(\\s*`?{name}`?\\s*,\\s*([^)]*[A-Za-z][^)]*)\\)'
 def kept(definition):
     """(kept, why) for a name a check refuses: whether it states its source in the kept form, and
     what it lacks when it claims the form and falls short."""
-    if definition.kind in ('parameter', 'binding', 'package', 'file'):
+    if definition.kind in ('parameter', 'binding', 'file'):
         return False, ''
     paragraph = '\n'.join(definition.docs).split('\n\n')[0].replace('\n', ' ')
     source = re.search(SOURCE.format(name=re.escape(definition.name)), paragraph)
     alias = [a for a in definition.aliases if a.strip() and a != definition.name]
+    if definition.kind in ('package', 'program'):
+        # A package has no item to carry an attribute: its crate root's docs state the source.
+        return bool(source), ''
     if source and alias:
         return True, ''
     if alias:
@@ -507,20 +537,60 @@ def load_words(path=WORDS):
         return tomllib.load(f)
 
 
-def package_definition(manifest):
-    """The package name in a Cargo.toml, as a definition at its line, or None."""
+def inner_docs(path):
+    """The `//!` lines at the head of a Rust file, as doc lines; empty when the file is missing."""
+    try:
+        text = Path(path).read_text(encoding='utf-8', errors='replace')
+    except OSError:
+        return []
+    return [t.text.removeprefix(' ') for t in tokens(text) if t.kind == 'inner_doc']
+
+
+def manifest_definitions(manifest):
+    """The package name and each `[[bin]]` name in a Cargo.toml, as definitions at their lines.
+
+    A package or a program cannot carry an attribute, so its doc lines are the crate root's
+    `//!` lines (`src/lib.rs` or `src/main.rs` for the package, the bin's own file for a bin), and
+    `kept` reads the stated source there."""
     import tomllib
     text = Path(manifest).read_text(encoding='utf-8')
-    name = tomllib.loads(text).get('package', {}).get('name')
-    if not name:
-        return None
-    line = next((k for k, row in enumerate(text.splitlines(), 1)
-                 if re.match(r'\s*name\s*=', row)), 1)
-    return Definition(name, 'package', line)
+    data = tomllib.loads(text)
+    here = Path(manifest).parent
+    rows = text.splitlines()
+
+    def line_of(name):
+        return next((k for k, row in enumerate(rows, 1)
+                     if re.match(r'\s*name\s*=\s*["\']' + re.escape(name), row)), 1)
+    out = []
+    name = data.get('package', {}).get('name')
+    if name:
+        root = data.get('lib', {}).get('path') or 'src/lib.rs'
+        docs = inner_docs(here / root) or inner_docs(here / 'src/main.rs')
+        out.append(Definition(name, 'package', line_of(name), docs))
+    for table in data.get('bin', []):
+        bin_name = table.get('name')
+        if bin_name:
+            path = table.get('path') or f'src/bin/{bin_name}.rs'
+            docs = inner_docs(here / path)
+            if not docs and bin_name == name:
+                docs = inner_docs(here / 'src/main.rs')
+            out.append(Definition(bin_name, 'program', line_of(bin_name), docs))
+    return out
 
 
-def judge(path, found, hits_of):
-    """Failure lines for the definitions in `found` that `hits_of` refuses and that are not kept."""
+def package_definition(manifest):
+    """The package name in a Cargo.toml, as a definition at its line, or None."""
+    return next((d for d in manifest_definitions(manifest) if d.kind == 'package'), None)
+
+
+def spelled_phrase(word, instead):
+    return f'`{word}` is spelled out: write `{instead}`'
+
+
+def judge(path, found, hits_of, phrase=spelled_phrase):
+    """Failure lines for the definitions in `found` that `hits_of` refuses and that are not kept.
+
+    `phrase(word, instead)` words one hit; the default is the spelled-out message."""
     out = []
     for d in found:
         hits = hits_of(d)
@@ -529,11 +599,14 @@ def judge(path, found, hits_of):
         is_kept, why = kept(d)
         if is_kept:
             continue
-        said = '; '.join(f'`{word}` is spelled out: write `{instead}`' for word, instead in hits)
+        said = '; '.join(phrase(word, instead) for word, instead in hits)
         if why:
             tail = f' It claims to keep its source spelling, but {why}.'
-        elif d.kind in ('parameter', 'binding', 'package', 'file'):
+        elif d.kind in ('parameter', 'binding', 'file'):
             tail = ''
+        elif d.kind in ('package', 'program'):
+            tail = (f' If it mirrors a specification or a standard, keep it and say so in the crate'
+                    f' root docs: open them with `({d.name}, <source>)`.')
         else:
             tail = (f' If it mirrors a datasheet, a specification or the standard library, keep it'
                     f' and say so at the item: open its doc comment with `({d.name}, <source>)` and'
@@ -542,9 +615,10 @@ def judge(path, found, hits_of):
     return out
 
 
-def run(argv, label, rule, hits_of_words, own_selftest):
+def run(argv, label, rule, hits_of_words, own_selftest, phrase=spelled_phrase):
     """The command line of a naming check: `label` names it, `rule` says what it holds, and
-    `hits_of_words(words)` returns the function that lists a definition's refused words."""
+    `hits_of_words(words)` returns the function that lists a definition's refused words, and
+    `phrase(word, instead)` words each one."""
     import argparse
     parser = argparse.ArgumentParser(prog=f'{label}.py')
     parser.add_argument('files', nargs='*')
@@ -558,16 +632,14 @@ def run(argv, label, rule, hits_of_words, own_selftest):
     hits_of = hits_of_words(load_words(args.words))
     bad = []
     if args.manifest:
-        package = package_definition(args.manifest)
-        if package:
-            bad += judge(args.manifest, [package], hits_of)
+        bad += judge(args.manifest, manifest_definitions(args.manifest), hits_of, phrase)
     judged = 0
     for path in args.files:
         if not path.endswith('.rs'):
             continue
         found = file_definitions(path, Path(path).read_text(encoding='utf-8', errors='replace'))
         judged += len(found)
-        bad += judge(path, found, hits_of)
+        bad += judge(path, found, hits_of, phrase)
     for line in bad:
         print(line, file=sys.stdout if args.report else sys.stderr)
     if args.report or len(bad) <= CEILING:
@@ -646,6 +718,18 @@ mod outer;
         if have != want_v:
             failed += 1
             print(f'rust_names selftest: kept case {k}: {have!r}, wanted {want_v!r}', file=sys.stderr)
+    sig = {d.name: (d.returns_bool, d.takes_mut) for d in definitions(
+        "fn a(&self) -> bool {} fn b(&mut self) -> bool {} fn c<'x>(&'x mut self) -> bool {}"
+        " fn d() -> Option<bool> {} fn e(x: &u8) -> u8 {}") if d.kind == 'fn'}
+    if sig != {'a': (True, False), 'b': (True, True), 'c': (True, True), 'd': (False, False),
+               'e': (False, False)}:
+        failed += 1
+        print(f'rust_names selftest: signatures {sig}', file=sys.stderr)
+    root = Definition('uuid', 'package', 1, ['The identifier (uuid, RFC 9562).'])
+    if kept(root) != (True, '') or kept(Definition('uuid', 'package', 1))[0]:
+        failed += 1
+        print('rust_names selftest: a package keeps a name through its crate root docs',
+              file=sys.stderr)
     lines = [d.line for d in definitions('/* a\nb */\nlet s = "x\ny";\nlet rx = 1;')]
     if lines != [3, 5]:
         failed += 1

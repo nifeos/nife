@@ -116,3 +116,128 @@ min = "minute"
 
 [units_after_number]
 s = "seconds"
+
+# British spellings, refused in a name: the house spelling is American. Read by
+# helpers/british_spelling.py. A key is one component of a name, in lowercase; the value is the
+# American form. The tables below hold stems and endings so one line covers a family.
+[british]
+analyse = "analyze"
+analysed = "analyzed"
+analyses = "analyzes"
+analyser = "analyzer"
+analysing = "analyzing"
+paralyse = "paralyze"
+catalyse = "catalyze"
+catalogue = "catalog"
+catalogues = "catalogs"
+catalogued = "cataloged"
+cataloguing = "cataloging"
+grey = "gray"
+greys = "grays"
+greyed = "grayed"
+greying = "graying"
+programme = "program"
+programmes = "programs"
+whilst = "while"
+amongst = "among"
+practise = "practice"
+practises = "practices"
+practised = "practiced"
+practising = "practicing"
+spelt = "spelled"
+learnt = "learned"
+burnt = "burned"
+licence = "license"
+licences = "licenses"
+defence = "defense"
+defences = "defenses"
+offence = "offense"
+offences = "offenses"
+pretence = "pretense"
+artefact = "artifact"
+artefacts = "artifacts"
+aluminium = "aluminum"
+ageing = "aging"
+cheque = "check"
+draught = "draft"
+kerb = "curb"
+mould = "mold"
+moulded = "molded"
+moulding = "molding"
+plough = "plow"
+sceptic = "skeptic"
+sceptical = "skeptical"
+storey = "story"
+storeys = "stories"
+tyre = "tire"
+tyres = "tires"
+sulphur = "sulfur"
+speciality = "specialty"
+maths = "math"
+manoeuvre = "maneuver"
+acknowledgement = "acknowledgment"
+enquire = "inquire"
+enquiry = "inquiry"
+enquiries = "inquiries"
+fulfil = "fulfill"
+enrol = "enroll"
+instalment = "installment"
+skilful = "skillful"
+wilful = "willful"
+jewellery = "jewelry"
+pyjamas = "pajamas"
+cancelled = "canceled"
+cancelling = "canceling"
+labelled = "labeled"
+labelling = "labeling"
+modelled = "modeled"
+modelling = "modeling"
+travelled = "traveled"
+travelling = "traveling"
+traveller = "traveler"
+signalled = "signaled"
+signalling = "signaling"
+fuelled = "fueled"
+fuelling = "fueling"
+levelled = "leveled"
+levelling = "leveling"
+channelled = "channeled"
+channelling = "channeling"
+totalled = "totaled"
+totalling = "totaling"
+tunnelled = "tunneled"
+tunnelling = "tunneling"
+marshalled = "marshaled"
+marshalling = "marshaling"
+counselled = "counseled"
+quarrelled = "quarreled"
+centring = "centering"
+centred = "centered"
+
+# A stem that takes `ise` where American takes `ize`: `initialise`, `initialisation`, `initialised`.
+# Only stems listed here count, so `rise`, `promise` and `exercise` are never read.
+[british_ise]
+stems = [
+    "initial", "serial", "optim", "normal", "final", "synchron", "custom", "minim", "maxim",
+    "util", "summar", "author", "categor", "character", "emphas", "general", "special", "standard",
+    "visual", "capital", "material", "priorit", "random", "sanit", "token", "virtual", "central",
+    "local", "modern", "memor", "apolog", "critic", "real", "recogn", "organ", "legal", "mobil",
+    "stabil", "crystal", "equal", "item", "pressur", "harmon", "hospital", "sympath", "digit",
+    "colon", "penal", "fertil", "jeopard", "subsid", "unit", "formal", "social", "factor",
+    "canon",
+]
+endings = ["e", "ed", "ing", "es", "er", "ers", "ation", "ations"]
+
+# A stem that takes `our` where American takes `or`: `colour`, `behavioural`.
+[british_our]
+stems = [
+    "col", "behavi", "fav", "hon", "neighb", "flav", "lab", "hum", "rum", "vap", "harb", "arm",
+    "od", "rig", "vig", "savi", "parl", "tum", "val", "endeav", "sav",
+]
+endings = ["our", "ours", "oured", "ouring", "ourful", "ourless", "ourable", "ourite", "ourites",
+           "oural", "ourally"]
+
+# A stem that takes `re` where American takes `er`: `centre`, `metres`.
+[british_re]
+stems = ["cent", "met", "lit", "fib", "theat", "calib", "somb", "lust", "meag"]
+endings = ["re", "res"]
