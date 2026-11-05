@@ -73,6 +73,11 @@ Eight Kani harnesses, in `src/verification.rs`, each with a falsification patch 
 - `overlap_is_exactly_sharing_a_block`
 - `create_never_lays_out_a_table_parse_would_reject`
 
+The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+checker, so it needs network access. CI uses version 0.68.0, and another version may verify
+differently.
+
 Where a domain is small enough to count, the tests count it: every single-byte corruption of a real
 header block and of a small table. Run the proofs with `cargo kani`. Applying a patch with `patch -p3`
 from the crate root makes its harness fail at its own assertion.

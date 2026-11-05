@@ -21,6 +21,11 @@ Three [Kani](https://github.com/model-checking/kani) harnesses, in `src/verifica
   offset whose whole dword is inside `limit` and past the previous read, and returns only an offset
   it read whose id matched.
 
+The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+checker, so it needs network access. CI uses version 0.68.0, and another version may verify
+differently.
+
 Rerun them with `cargo kani` from the crate's directory. Each harness has a falsification patch at
 `falsifications/<module.path>.<harness>.patch`; apply it with `patch -p3` and the harness fails at
 its own assertion, which shows the proof checks something real. Revert the patch afterward.

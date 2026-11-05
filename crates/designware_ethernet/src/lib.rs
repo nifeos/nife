@@ -18,6 +18,8 @@
 //! The ISC license requires this notice:
 //!
 //! ```text
+//! SPDX-License-Identifier: ISC
+//!
 //! Copyright (c) 2008, 2019 Mark Kettenis <kettenis@openbsd.org>
 //! Copyright (c) 2017, 2022 Patrick Wildt <patrick@blueri.se>
 //! Copyright (c) 2001 Theo de Raadt
@@ -40,6 +42,8 @@
 //! adds the NetBSD Foundation's BSD-2-Clause notice, which the ISC notice does not cover:
 //!
 //! ```text
+//! SPDX-License-Identifier: BSD-2-Clause
+//!
 //! Copyright (c) 1998 The NetBSD Foundation, Inc.
 //! All rights reserved.
 //!

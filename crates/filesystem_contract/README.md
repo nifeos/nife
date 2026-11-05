@@ -63,6 +63,11 @@ assert_ne!(fs::OPEN, 0, "0 is not a verb: a zeroed word must not decode as one")
 
 ## What is proven
 
+The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+checker, so it needs network access. CI uses version 0.68.0, and another version may verify
+differently.
+
 Three Kani harnesses in `src/dir.rs`, each with a falsification patch in `falsifications/`:
 `attenuate_never_widens`, `a_grandchild_is_bounded_by_the_root` and
 `a_root_carries_nothing_undefined`. Rerun them with `cargo kani`; applying a patch with

@@ -33,6 +33,7 @@ Full rows: [build-test-and-gate.md](scripts/build-test-and-gate.md).
 | `script/drift` | Does a toolchain still build us? |
 | `script/toolchain-bump` | Raise the pinned nightly, with every gate as evidence. |
 | `script/kani-install` | Install the stock Kani that `.kani-version` pins. The only place that does. |
+| `script/license-match` | Check each crate's `license` against its SPDX notices. |
 | `script/kani-bump` | Raise `.kani-version` to the newest stable Kani, and nothing else. |
 | `script/server` | Boot the OS in QEMU: the milestone tour, then the shell. |
 | `script/console` | Boot straight to the interactive shell at EL0. |
@@ -149,9 +150,8 @@ Full rows: the appendices above.
 
 The scripts do almost nothing themselves. `script/test` is `cargo xtask test`; `script/server`
 is `cargo xtask run`; `script/console` is `cargo xtask shell`. `cargo xtask` is still the
-engine and still the place the real build logic lives (and it exposes more than the scripts do:
-`gdb`, `objdump`, `image`, `std-aborts`). The scripts add a normalized interface on top, duplicating
-nothing, and `cargo xtask …` still works.
+engine, where the real build logic lives (it also exposes `gdb`, `objdump`, `image`, `std-aborts`).
+The scripts add a normalized interface on top, and `cargo xtask …` still works.
 
 ## `script/` and `helpers/`
 

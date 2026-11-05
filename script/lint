@@ -3922,6 +3922,17 @@ echo "==> externalized crates name no nife program"
 python3 helpers/lint_externalized_crates.py --selftest
 python3 helpers/lint_externalized_crates.py
 
+echo "==> each crate's license field matches the licenses its sources adapt"
+# lint-quick
+# Milestone 887 (crate repositories share one CI template, adapted from nife's gates), ruled
+# 2026-11-05 (UTC): the manifest's `license` is the crate's own `MIT OR Apache-2.0` joined with AND
+# to the SPDX identifier of every license of source it adapts, and each adapted notice opens with an
+# `SPDX-License-Identifier:` line. A published manifest cannot be withdrawn, so a notice the field
+# omits and a term no notice backs both fail. The selftest plants each bad fixture.
+# helpers/license_match.py has the rules; script/license-match runs them alone.
+python3 helpers/license_match.py --selftest
+script/license-match
+
 echo "==> shellcheck"
 # lint-id: shellcheck
 # The 37 `#!/bin/sh` scripts, gated at warning severity. Two reasons this earns a dependency here
