@@ -1036,7 +1036,7 @@ fn touch_mtime_without_settime(nav: &Nav, name: &[u8], v: &mut u64) {
 /// own address space, holding its own attenuated grant.
 ///
 /// Name: provisional, flagged 2026-09-24 by the boolean-predicate pass
-/// (design/naming/functions-that-answer-yes-or-no-worklist.md). It acts, so the Rust predicate rule calef
+/// (design/naming/functions-that-answer-yes-or-no.md). It acts, so the Rust predicate rule calef
 /// ratified 2026-09-24 exempts it, but it is a participle that reads as a question, on a function
 /// that sends the unlink; recommended `remove`.
 fn removed(nav: &Nav, verb: u64, name: &[u8]) -> bool {

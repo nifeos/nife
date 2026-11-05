@@ -236,7 +236,7 @@ impl ClockPage {
     /// a recognised page with garbage in it.
     ///
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-    /// design/naming/spelled-out-rulings.md.
+    /// design/naming/acronyms-and-abbreviations.md.
     pub fn initialize(&self) {
         self.word(W_SEQ).store(0, Ordering::Relaxed);
         self.word(W_STATE).store(state::UNKNOWN, Ordering::Relaxed);

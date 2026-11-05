@@ -2,7 +2,7 @@
 //! and PAT settings that close ring 3 off from what it must not reach.
 //!
 //! Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-//! design/naming/spelled-out-rulings.md; a module is a thing, so it takes the noun
+//! design/naming/acronyms-and-abbreviations.md; a module is a thing, so it takes the noun
 //! `cpu_initialization` rather than the verb.
 
 use super::*;
@@ -12,7 +12,7 @@ use super::*;
 /// trap can be delivered through it.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     // First, before this core prints anything or adopts the fine map: the fine map's framebuffer
     // pages select PAT entry 1, and on a core that has not run this, entry 1 is write-through.

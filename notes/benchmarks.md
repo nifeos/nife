@@ -284,6 +284,7 @@ section" resolves here.
 | [drift-since-the-2026-10-10-floor](benchmarks/drift-since-the-2026-10-10-floor.md) | four merges, and a tick that doubles one | 2026-10-19 |
 | [riscv64-spawn-reap-drift](benchmarks/riscv64-spawn-reap-drift.md) | the double copy | 2026-10-22 |
 | [riscv64-unexplained-drift](benchmarks/riscv64-unexplained-drift.md) | the riscv64 chart line, a false compiler term | 2026-11-03 |
+| [x86_64-unexplained-drift](benchmarks/x86_64-unexplained-drift.md) | the x86_64 chart line, the tick's phase | 2026-11-04 |
 
 ## BUGS
 

@@ -14,9 +14,7 @@ Overtaken by commit `f549607d1` (2026-10-07, milestone 139's round 8): `revoke::
 walk, `kernel/src/revoke.rs` calls `log_page` inside one `unsafe` block, and types hold the lock and
 membership. The text below is the block as filed.
 
-Filed as a proposal on 2026-09-03 by the milestone 252 sweep, from
-milestone 139's block; promoted by milestone 433 on 2026-09-19. Counted against the tree that day
-and the number is still six: `kernel/src/revoke.rs` calls `log_page` inside `unsafe` blocks at lines
+Counted against the tree on 2026-09-19, the number is six: `kernel/src/revoke.rs` calls `log_page` inside `unsafe` blocks at lines
 312, 333, 360, 418, 493 and 670, each with its own `SAFETY:` comment. Four of the six say the
 same two things in four spellings ("pages in the chain are the log's own; SPACES is held", "chain
 pages under the held SPACES lock"). The helper itself is at line 258. Nothing has collapsed them
@@ -61,12 +59,11 @@ anything.
 
 ## Index row
 
-`kernel/src/revoke.rs` walks its per-space log-page chain inside six separate `unsafe` blocks. Each
-restates in a comment what `log_page`'s own safety section already says. Milestone 139's whole
-argument is that an `unsafe` block is a proof obligation and that six copies of one obligation is
-six chances to get it wrong while the ratchet counts it as six facts. This is the largest remaining
-cluster in the kernel outside `arch/` and `sched.rs`, and `sched.rs` is blocked on a typestate
-decision that is an architect's while this is blocked on nothing. The honest outcome may be that the
-obligation is genuinely six arguments rather than one, in which case saying so in
-notes/unsafe-obligations.md closes the item. A wrapper whose own safety argument is weaker than the
-six it replaced improves the count and not the kernel.
+`kernel/src/revoke.rs` walks its per-space log-page chain inside six separate `unsafe` blocks.
+Each restates in a comment what `log_page`'s own safety section already says. Milestone 139's
+argument is that an `unsafe` block is a proof obligation, and six copies of one obligation are six
+chances to get it wrong while the ratchet counts six facts. This is the largest remaining cluster
+in the kernel outside `arch/` and `sched.rs`, and `sched.rs` waits on an architect's typestate
+decision while this waits on nothing. The outcome may be that the obligation is six arguments and
+not one, and saying so in notes/unsafe-obligations.md closes the item. A wrapper whose safety
+argument is weaker than the six it replaced improves the count and not the kernel.

@@ -2134,9 +2134,9 @@ jobs:
         name: Install the pinned toolchain
         run: helpers/rustup-retry.sh toolchain install
       # Its own job rather than a step in an existing one: it rebuilds the patched `std` and then
-      # builds fifty crates, and no other job shares that target directory. It runs on a hosted
-      # runner like every other `ci` row, so a fork's pull request never reaches owned hardware. It
-      # needs the network to resolve the crates, which a hosted runner has. **Why it is a `ci` row
+      # builds fifty crates, and no other job shares that target directory. A pull request runs it
+      # on a hosted runner, so a fork's pull request run never reaches owned hardware. It needs the
+      # network to resolve the crates, which both pools have (the owned one through its proxy). **Why it is a `ci` row
       # and not `local`** is beside its row in `script/ci-build`'s table (milestone 341 (give the
       # three instruments nothing runs a caller), §174 (a caller for each of the three uncalled
       # instruments)).

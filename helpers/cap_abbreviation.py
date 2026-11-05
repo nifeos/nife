@@ -6,9 +6,8 @@ calef, 2026-10-06 (UTC):
 
 and, on how to apply it: "Record the ruling. We've almost got a quiet tree so we can run that
 shortly." Every identifier spells `capability` out, and this gate makes sure none abbreviates it
-again. It is rung 2 of the AGENTS.md ladder, and the ruling's record is in
-design/naming/spelled-out-rulings.md (the sweep that brought the count to zero is
-design/naming/capability-spelling-worklist.md).
+again. It is rung 2 of the AGENTS.md ladder, and the rule is in
+design/naming/acronyms-and-abbreviations.md.
 
     python3 helpers/cap_abbreviation.py --check     # what script/lint runs
     python3 helpers/cap_abbreviation.py --list [PATH..]  # every counted hit, path:line: identifier
@@ -355,7 +354,7 @@ def main(argv):
             for b in bad:
                 print(f'  {b}', file=sys.stderr)
             print(f'\nSpell it `capability` (`python3 {SELF} --list PATH` shows each hit). See '
-                  f'design/naming/spelled-out-rulings.md and the header of {SELF}.',
+                  f'design/naming/acronyms-and-abbreviations.md and the header of {SELF}.',
                   file=sys.stderr)
             return 1
         print(f'cap: {now:,} identifiers abbreviate capability as cap (ceiling held)')

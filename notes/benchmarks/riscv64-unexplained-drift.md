@@ -215,7 +215,9 @@ longer cancels an unexplained cost. x86_64 reads 2.85 in 2026W45 against 0.98 be
   has no line here.
 - riscv64 `spawn_el0` keeps +0.74% inside the 2026-10-03 save's step, in window C steps under 0.2%
   each, and `sink_throughput` at most +0.80%.
-- x86_64 `spawn_reap` (+5.80% in 2026W41) and `ipc_rtt` were not bisected.
+- [x86_64-unexplained-drift](x86_64-unexplained-drift.md) bisects x86_64's `spawn_reap` and
+  `ipc_rtt`. Deleting #1525's one line there takes x86_64 `ipc_rtt` down 3.0% at three commits;
+  the same test on riscv64 would settle whether its step costs instructions or only flips the mode.
 
 ## BUGS
 

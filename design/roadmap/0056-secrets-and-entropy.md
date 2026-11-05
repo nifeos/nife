@@ -152,11 +152,10 @@ than "the service checks". See notes/credentials.md.
   unsolved, and scoped exactly that small 2026-07-31: the store is memory only and dies with the
   process. `credentialer::Record` has a versioned encoding with a round-trip test so the question has a
   starting point, and nothing writes one to a disk.
-- ~~Entropy is a capability, and the service that holds it should be the only thing that can read
-  the device. Whether `std::random` transparently improves or programs must ask for a real RNG is a
-  design fork.~~ Settled and built 2026-07-30, DECISIONS §44: transparent, split on std's own
-  `fill_bytes` / `hashmap_random_keys` seam. The caller that promises cryptographic strength
-  refuses rather than degrading. The service passes bytes through and does not pool or whiten.
+- Entropy is a capability, and the service that holds it is the only thing that reads the device.
+  `std::random` is transparent (DECISIONS §44), split on std's own `fill_bytes` /
+  `hashmap_random_keys` seam. The caller that promises cryptographic strength refuses rather than
+  degrading. The service passes bytes through and does not pool or whiten.
 
 Sequencing. Before milestone 55 (Time Machine). Both halves are done: entropy, and the credential store and its
 service. Each was worth doing on its own, and each was testable in QEMU with no board.
