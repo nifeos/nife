@@ -414,12 +414,12 @@ exclude_re = [
     #
     # non_volatile_memory_express: the controller configuration word's three fields (the enable
     # at bit 0, IOSQES at 16:18, IOCQES at 20:21), per
-    # THE_CONTROLLER_CONFIGURATION_FIELDS_SHARE_NO_BIT, beside the function.
-    "^crates/non_volatile_memory_express/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in enabled_controller_configuration$",
-    # The queue dwords' u16 halves, per THE_QUEUE_DWORD_FIELDS_SHARE_NO_BIT, beside the Command
+    # CONTROLLER_CONFIGURATION_FIELDS_DO_NOT_OVERLAP, beside the function.
+    "^crates/non_volatile_memory_express/src/configuration\\.rs:\\d+:\\d+: replace \\| with \\^ in enabled_controller_configuration$",
+    # The queue dwords' u16 halves, per QUEUE_DWORD_FIELDS_DO_NOT_OVERLAP, beside the Command
     # impl.
-    "^crates/non_volatile_memory_express/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in Command::create_io_completion_queue$",
-    "^crates/non_volatile_memory_express/src/lib\\.rs:\\d+:\\d+: replace \\| with \\^ in Command::create_io_submission_queue$",
+    "^crates/non_volatile_memory_express/src/command\\.rs:\\d+:\\d+: replace \\| with \\^ in Command::create_io_completion_queue$",
+    "^crates/non_volatile_memory_express/src/command\\.rs:\\d+:\\d+: replace \\| with \\^ in Command::create_io_submission_queue$",
     # The handoff word's three fields (dstrd above bit 32, blocks_per_transfer at 16:31, entries
     # below), per THE_HANDOFF_WORD_FIELDS_SHARE_NO_BIT, beside Handoff.
     "^crates/driver_process_contract/src/non_volatile_memory_express\\.rs:\\d+:\\d+: replace \\| with \\^ in Handoff::pack$",

@@ -162,7 +162,10 @@ impl Plane {
     fn transact(&mut self, cmd: Command) -> Result<(), u16> {
         let expect_cid = (cmd.0[0] >> 16) as u16;
 
-        let slot = self.sq.push();
+        let slot = self
+            .sq
+            .push()
+            .expect("one command in flight per queue, so the ring cannot be full");
         DATA.write(IO_SQ_OFF + slot as u64 * 64, cmd.0);
         // Publish the command before the doorbell: the controller is another observer.
         barrier();
@@ -227,10 +230,7 @@ impl Plane {
         let page = (window * TRANSFER_BLOCKS + slot_index) as u64;
         let data_phys = self.handoff.data_plane_physical_address + TRANSFER_OFF + page * PAGE;
         let cid = self.next_cid();
-        let namespace = Namespace {
-            capacity_bytes: self.handoff.size_bytes,
-            blocks_per_transfer: self.handoff.blocks_per_transfer,
-        };
+        let namespace = Namespace::new(self.handoff.size_bytes, self.handoff.blocks_per_transfer);
         let cmd = namespace
             .transfer_command(cid, NSID, block, PAGE, data_phys, PAGE, write)
             // `None` means the block is outside the namespace or the arithmetic would not close;
