@@ -91,8 +91,8 @@ The proposals, none minted, in the recommended order. §235 has the reasoning.
    installed-programs table)). Candidates are a MAC the progenitor makes with a key the volume
    cannot supply, and a digest of the live generation in a measured or sealed place. Milestone
    917 (basalt's packages build reproducibly) holds it with this item.
-7. Package boundaries drawn in-tree and checked by lint, each with a required `home` (decided; in
-   the lane `milestone/611-package-boundaries`).
+7. Package boundaries drawn in-tree and checked by lint, each with a required `home` (built by
+   milestone 611 (every program and crate belongs to a package)).
 
 ## BUGS
 

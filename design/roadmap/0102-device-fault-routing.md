@@ -61,8 +61,8 @@ signal from a cause two tests away. The fix was to make the escape four bytes, s
 translation and one fault, and to drain the queue afterwards. That leaves the queue's overflow flag
 set by nobody's arrangement but the test's restraint. Today's correctness rests on no test ever
 overflowing the queue, rather than on a drain that clears the condition. The flag exists on both
-sides (the SMMUv3 event queue, and the RISC-V IOMMU's `fqcsr`, whose error bits `kernel/src/arch/riscv64/iommu.rs:48`
-already names), so clearing it is a two-driver change under rule 5.
+sides (the SMMUv3 event queue, and the RISC-V IOMMU's `fqcsr`, whose error bits the comment above `QUEUE_EN` in
+`kernel/src/arch/riscv64/iommu.rs` already names), so clearing it is a two-driver change under rule 5.
 
 The large half is a design fork, and it should be stated as one. "What does a production kernel
 do when a confined device faults" has at least three answers with different politics:

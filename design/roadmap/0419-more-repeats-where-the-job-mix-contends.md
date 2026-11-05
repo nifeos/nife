@@ -32,7 +32,7 @@ between those two is not a lane's to erase.
 closed, and it was closed by the person whose call it was.
 
 Premise re-checked 2026-09-19 and still true. *(That check predates commit `ab6ff0fa0` the
-same day; `REPEATS` has been 21 since, at `crates/job_mix/src/lib.rs:465`.)* `job_mix::REPEATS` is still `3`, one constant for
+same day; `REPEATS` has been 21 since, in `crates/job_mix/src/lib.rs`.)* `job_mix::REPEATS` is still `3`, one constant for
 the whole sweep, and milestone 168 is still `PARTIAL` for the reason this block names. Its status
 line says it does not turn `BUILT` until `tasks=4` has a number, and it still does not have one. The
 interim this block recommends, option 4, is what 168's block now does.

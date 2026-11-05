@@ -14,7 +14,7 @@ Each property below has a Kani harness in `src/proofs.rs`:
 
 - No partition table makes the write test's scratch range touch a partition or sector 0.
 - A FIFO step never moves more than the transfer still owes, and a write step never more than the
-  FIFO has room for, whatever `STATUS` says.
+  FIFO has room for, whatever `STATUS_REGISTER` says.
 - A block range the driver admits lies inside the card and inside what the command's 32-bit
   address can name.
 - An IDMAC descriptor chain describes exactly the transfer's bytes, keeps each buffer inside the

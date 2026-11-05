@@ -9,21 +9,30 @@ pub(crate) const FWSM_ULP_CFG_DONE: u32 = 0x0000_0400;
 pub(crate) const H2ME_ULP: u32 = 0x0000_0800;
 /// `H2ME.ENFORCE_SETTINGS`: ask the ME to apply the host's request.
 pub(crate) const H2ME_ENFORCE_SETTINGS: u32 = 0x0000_1000;
-/// How long to wait for the ME, in milliseconds: FreeBSD's 250 polls of 10 ms.
+/// How long to wait for the management engine, in milliseconds: FreeBSD's 250 polls of 10 ms.
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
-pub const WAIT_MS: u64 = 2500;
+/// Name: ratified 2026-11-03 (UTC), #3156. Renamed from `WAIT_MS`: the unit is spelled out and the
+/// name says who is waited for.
+pub const MANAGEMENT_ENGINE_WAIT_MILLISECONDS: u64 = 2500;
 
 /// The `H2ME` value that asks the ME to take the PHY out of ULP (the forced path).
-pub const fn request(h2me: u32) -> u32 {
+///
+/// Name: ratified 2026-11-03 (UTC), #3156. Renamed from `request`: it returns a register value, and
+/// the module path carries the topic.
+pub const fn register_value_requesting_exit(h2me: u32) -> u32 {
     (h2me & !H2ME_ULP) | H2ME_ENFORCE_SETTINGS
 }
 /// The `H2ME` value once the ME has answered.
-pub const fn release(h2me: u32) -> u32 {
+///
+/// Name: ratified 2026-11-03 (UTC), #3156. Renamed from `release`: it returns a register value, and
+/// the module path carries the topic.
+pub const fn register_value_releasing_request(h2me: u32) -> u32 {
     h2me & !H2ME_ENFORCE_SETTINGS
 }
 /// Is the ME's ULP configuration finished?
-pub const fn done(fwsm: u32) -> bool {
+///
+/// Name: ratified 2026-11-03 (UTC), #3156. Renamed from `done`: a yes or no question.
+pub const fn is_configuration_done(fwsm: u32) -> bool {
     fwsm & FWSM_ULP_CFG_DONE == 0
 }
 /// Does this machine have an ME to ask? When it does not, ULP exit is the PHY-register

@@ -14,13 +14,13 @@ after that merge; found 2026-08-17 by the status-accuracy sweep. §76's defect c
 
 Three of the four converted, and the fourth was decided rather than skipped, which is what the
 deleted gate line asked for when it said the answer may not be four conversions. `write_satp` is now
-`unsafe fn` (`kernel/src/arch/riscv64/mmu.rs:80`), and its `# Safety` section says out loud that it
+`unsafe fn` (in `kernel/src/arch/riscv64/mmu.rs`), and its `# Safety` section says out loud that it
 is unsafe because aarch64's `set_ttbr0` is. That closes the ISA asymmetry in the direction of the
 stricter ISA. `switch_user_root` is `unsafe fn` on both ISAs
-(`kernel/src/arch/aarch64/mmu.rs:913`, `kernel/src/arch/riscv64/mmu.rs:796`). `stack::paint` is
-`unsafe fn` (`kernel/src/stack.rs:436`), and its sibling `high_water` went with it. `virtio::pread`
+(in `kernel/src/arch/aarch64/mmu.rs` and `kernel/src/arch/riscv64/mmu.rs`). `stack::paint` is
+`unsafe fn` (in `kernel/src/stack.rs`), and its sibling `high_water` went with it. `virtio::pread`
 stayed a safe fn on purpose, with the argument written where a reader meets it
-(`kernel/src/virtio.rs:233`, "Why these two stay safe fns"). It is private, all twenty call sites
+(`pread` in `kernel/src/virtio.rs`, "Safe fns over a module invariant"). It is private, all twenty call sites
 are one `impl Transport` block, and the compiler closes the caller set. So the obligation really is
 discharged by the module rather than onto nobody.
 
@@ -44,10 +44,10 @@ no undocumented block for either to fire on.
 
 | Site | The comment's claim |
 |---|---|
-| `kernel/src/virtio.rs:233` `pread` | "the caller passes addresses inside a device-mapped BAR or mmio window" |
-| `kernel/src/stack.rs:121` `paint` | "the caller hands us a mapped, unused stack region" (`#[cfg(test)]`, so test builds only) |
-| `kernel/src/arch/aarch64/mmu.rs:843` `switch_user_root` | "the caller passes either a live `AddressSpace`'s composed value or ..." |
-| `kernel/src/arch/riscv64/mmu.rs:48` `write_satp` | "the caller guarantees `satp` names a well-formed Sv39 root" |
+| `pread` in `kernel/src/virtio.rs` | "the caller passes addresses inside a device-mapped BAR or mmio window" |
+| `paint` in `kernel/src/stack.rs` | "the caller hands us a mapped, unused stack region" (`#[cfg(test)]`, so test builds only) |
+| `switch_user_root` in `kernel/src/arch/aarch64/mmu.rs` | "the caller passes either a live `AddressSpace`'s composed value or ..." |
+| `write_satp` in `kernel/src/arch/riscv64/mmu.rs` | "the caller guarantees `satp` names a well-formed Sv39 root" |
 
 The last one is an ISA asymmetry, and it is the sharpest argument in the set. aarch64's
 equivalent, `set_ttbr0`, is an `unsafe fn`. The same register write, the write that installs a
@@ -95,7 +95,7 @@ tree), not an assumption to start from.
 ## Follow-on
 
 - **Refused.** Converting `virtio::pread` to an `unsafe fn`, the fourth of the four sites. The
-  argument is written where a reader meets it, at `kernel/src/virtio.rs:233` under "Why these two
+  argument is written where a reader meets it, at `pread` in `kernel/src/virtio.rs` under "Why these two
   stay safe fns". It is private, all twenty call sites sit in one `impl Transport` block, and the
   compiler closes the caller set. So the obligation is discharged by the module rather than onto
   nobody. That is the case the other three could not make.

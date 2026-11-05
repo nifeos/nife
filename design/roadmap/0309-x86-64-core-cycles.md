@@ -67,9 +67,9 @@ cycle counter are different hardware. Verified in this tree rather than assumed:
 
 | | `arch::timer::now()` | the cycle counter | independent? |
 |---|---|---|---|
-| aarch64 | `CNTVCT_EL0` (`timer.rs:537`) | `PMCCNTR_EL0` | yes |
-| riscv64 | `rdtime` (`timer.rs:131`) | `mcycle`/`hpmcounterN` via SBI PMU | yes |
-| x86_64 | `rdtsc` (`timer.rs:252`) | `IA32_PERF_FIXED_CTR1` | **only with this milestone** |
+| aarch64 | `CNTVCT_EL0` (`now` in `kernel/src/arch/aarch64/timer.rs`) | `PMCCNTR_EL0` | yes |
+| riscv64 | `rdtime` (`now` in `kernel/src/arch/riscv64/timer.rs`) | `mcycle`/`hpmcounterN` via SBI PMU | yes |
+| x86_64 | `rdtsc` (`now` in `kernel/src/arch/x86_64/timer.rs`) | `IA32_PERF_FIXED_CTR1` | **only with this milestone** |
 
 **The proposal's own caveat was right and its conclusion did not follow from it.** It says plainly
 that the TSC "is not a cycle counter in the sense riscv64's is" and that the difference "has to be

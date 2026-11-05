@@ -2149,6 +2149,17 @@ def sweep(hs, only=None, empty_is_clean=False, attested=False):
         print("FALSIFICATIONS_JOBS asks for %d, but this sweep holds a record that boots QEMU; "
               "replaying one at a time (see PARALLEL_KINDS)" % jobs)
         jobs = 1
+    if any(h.kind == "kani" for h in todo):
+        # Each worker runs one CBMC at a time, so the sweep weighs `jobs` harnesses against the
+        # machine's Kani pool (helpers/heavy_slot.py): it waits for the units, and runs no more
+        # workers than the pool fits. Off in CI, where the runner is one job on one machine.
+        sys.path.insert(0, os.path.join(root, "helpers"))
+        import heavy_slot
+        size = heavy_slot.pool_size("kani")
+        if size and jobs > heavy_slot.kani_capacity(size):
+            jobs = heavy_slot.kani_capacity(size)
+            print("FALSIFICATIONS_JOBS lowered to %d: the machine's Kani pool fits that many harnesses" % jobs)
+        heavy_slot.take_kani(jobs, "falsifications")
     if not (replay_in_parallel(todo, jobs, tally) if jobs > 1 else replay_serially(todo, tally)):
         return 3
     survivors, broken, hung = tally["survivor"], tally["broken"], tally["hung"]
