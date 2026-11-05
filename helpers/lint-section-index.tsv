@@ -5,6 +5,7 @@ section-list	1	-	-	1	-	the section list (script/lint's sections are a reviewed i
 -	1	-	-	0	-	the heavy-job slots (a full machine holds a job back; a killed holder frees its slot)
 -	1	-	-	0	-	the CI fuzz job keeps a finding private
 -	1	-	-	0	-	script/verify --parallel forks the shards, joins their verdicts, and keeps to one slot
+-	1	-	-	0	-	script/crate-move stages a move as the runbook says
 -	1	-	-	0	-	script/push believes origin's ref, not git's exit status
 -	1	-	-	0	-	script/push --requeue re-arms, and arming refuses a held pull request
 -	1	-	-	0	-	the rustup retry (a dropped CDN connection retries; a real error does not)

@@ -21,7 +21,7 @@ milestone 813 (a proven FAT crate, released on its own), drives it.
 
 Reuse: the template `nifeos/crate-workflows` (milestone 887 (crate repositories share one CI
 template)) supplies the scaffold and the checks the dry run runs; `helpers/crate_release.py`
-supplies the `Name:` block reader and the citation rules. Nothing here is written twice.
+supplies the `Name:` block reader and the citation rules. This milestone writes neither twice.
 
 ## What this builds
 
@@ -42,7 +42,14 @@ runs in `script/lint`.
 
 The gaps found in the move machinery are in the runbook's `BUGS` section, where a mover meets them.
 
+## Follow-on
+
+- **Recorded.** Nine gaps in the move machinery, each in `notes/crate-move.md`'s `BUGS`. Three are
+  the template's: its unreleased naming gates, its orphan check and its scaffold's mentions of nife.
+  The rest are nife's: the missing `[patch]` lint, the extraction checklist's pin form, the fuzz
+  targets' home, the mutation baseline, the unset soak period and the unmeasured release dry run.
+
 ## Index row
 
 The runbook for moving a crate out of nife, step by step with owners, and a dry run that stages the
-crate repository and checks it before anything is created.
+crate repository and checks it before anyone creates anything.
