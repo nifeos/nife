@@ -3789,6 +3789,7 @@ echo "==> owned-runner jobs run only for the queue and main, and no base-token j
 # lint-quick
 python3 helpers/owned_runner_check.py --selftest >/dev/null
 python3 helpers/owned_runner_check.py
+helpers/owned-canary-image-selftest.sh
 # Milestone 640 (a gate is not evidence until somebody has watched it fail), provisional: every
 # workflow cites a run where it went red (or fired) for the reason it exists, or says `never`, and
 # only a workflow main already had when this landed (2026-10-04) may say `never`, which is read from
