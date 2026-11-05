@@ -15,7 +15,7 @@ needs_person: yes
 Raised by lane/hardware-claim-names-a-crate-version.
 
 Reuse: the bench procedure of milestone 159 (a real hardware entropy source: the JH7110's TRNG),
-[`bench-procedure.md`](../0159-jh7110-trng-driver/bench-procedure.md), the boot tour's `hw entropy`
+[`bench-procedure.md`](0159-jh7110-trng-driver/bench-procedure.md), the boot tour's `hw entropy`
 line, `script/board-image` and the network boot of milestone 257 (boot radon over the network). No
 new tool.
 
@@ -144,7 +144,8 @@ Today's claims under it:
 
 ## The work
 
-1. **Needs a person; nobody is assigned.** Once the crate tags 0.2.0 and nife's pins name it, run the bench procedure twice on a VisionFive
+1. **Needs a person; nobody is assigned.** The crate must tag 0.2.0 and nife's pins must name it first.
+   Then run the bench procedure twice on a VisionFive
    2, commit the transcript under `bench/`, and record each boot's `hw entropy` line, the nife
    commit and the crate version in this block.
 2. In `nifeos/jh7110_entropy`, after step 1, make the README edit above.
@@ -173,4 +174,4 @@ claim, so loosening it later breaks nobody.
 
 ## Index row
 
-A crate's README states a hardware run only for a version that has one, shown by nife built at the pin that names it and booted on the board by its public procedure; the first case is `jh7110_entropy` 0.2.0 on a VisionFive 2.
+A crate's README states a hardware run only for a version that has one. Nife built at the pin that names the version must boot on the board by its public procedure. The first case is `jh7110_entropy` 0.2.0 on a VisionFive 2.
