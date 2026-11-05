@@ -67,7 +67,10 @@ fn a_foreign_binding_is_skipped_and_a_stated_rate_is_kept() {
     let tree = DeviceTreeBlob::from_bytes(include_bytes!("fixtures/jh7110-mmc-odd.dtb")).unwrap();
     assert_eq!(discover(&tree, 0).unwrap(), None);
     assert_eq!(
-        discover(&tree, 1).unwrap().unwrap().card_interface_unit_hertz,
+        discover(&tree, 1)
+            .unwrap()
+            .unwrap()
+            .card_interface_unit_hertz,
         100_000_000
     );
 }
