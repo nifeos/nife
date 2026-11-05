@@ -135,8 +135,7 @@ Each item gives the recommendation first.
 - **Outstanding.** Items 7 to 11 above, each waiting for an architect's ruling; each item's text
   above says what it is waiting for.
 - **Proposed.** A check that a crate's `license` field names exactly the licenses of the notices it
-  carries:
-  [a crate's license field matches the notices it carries](proposals/a-crates-license-field-matches-the-notices-it-carries.md).
+  carries, in `design/roadmap/proposals/a-crates-license-field-matches-the-notices-it-carries.md`.
 
 ## Index row
 
