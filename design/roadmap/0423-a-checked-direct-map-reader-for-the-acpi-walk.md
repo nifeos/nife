@@ -10,14 +10,9 @@ needs_person: no
 ---
 # 423. A checked direct-map reader for the x86 ACPI walk
 
-Promoted from the proposal `a-checked-direct-map-reader-for-the-acpi-walk`,
-filed 2026-09-17 by milestone 319, which proved the parsing half and so narrowed what the volatile
-half is actually for.
-
 The decision is
 §192 (does the ACPI walk's direct-map read take a bound, and is the bound per-read or a region it holds?).
-A lane wrote it up on 2026-09-19 because this gate named no section. The architect ruled on 2026-10-27 (UTC):
-shape 2. The walk holds one region, an extent the boot path gives it once, and checks every read
+The architect ruled on 2026-10-27 (UTC): shape 2. The walk holds one region, an extent the boot path gives it once, and checks every read
 against that extent. The accessor is a new item at a trust boundary. Its name ships provisional and
 goes through `script/names`.
 
@@ -27,9 +22,8 @@ firmware-supplied hint and each table body is still a raw pointer plus a length 
 supplied. `crates/machine_discovery` is proved (21 harnesses, its own `script/verify` row), so the
 narrowing this block is built on holds.
 
-**Milestone 431 was filed a day later restating the pre-319 framing** (that the parsing half carries
-no harnesses and appears in no `script/verify` row, which stopped being true on 2026-09-17), and its
-surviving claim is this block's. It is `SUPERSEDED` by this one and by milestone 319.
+Milestone 431 is `SUPERSEDED` by this block and by milestone 319 (the crate that parses firmware had no), because its surviving claim is
+this block's.
 
 ## In brief
 
@@ -81,15 +75,11 @@ place left where a firmware number reaches a dereference with no proved step bet
 
 ## Index row
 
-Milestone 304 named `kernel/src/arch/x86_64/machine.rs`'s ACPI walk as its strongest remaining
-target and declined it. 836 lines over firmware-supplied lengths, checksums and counts, whose
-volatile half reads raw pointers into the direct map. Milestone 319 changed the size of that
-question rather than answering it, by proving `crates/machine_discovery`. Every decision about
-what the bytes mean now lives where Kani reaches and what is left on the kernel side is one
-operation repeated. Read N bytes at a physical address through the direct map and hand them to a
-parser. The question is whether that accessor takes a bound and what it does when the bound is
-exceeded. An RSDT whose `length` field says 64 KiB is a 64 KiB read at whatever the RSDP
-pointed at. The other two architectures answer it: `dtb::Dtb::from_ptr` takes the blob's own length
-and validates the header before anything is read. Whether the bound is per-read or a region
-capability the walk holds is the part that could go either way, and the accessor's name is an
-architect's.
+Milestone 304 (`cargo kani -p kernel` only ever compiled) named the ACPI walk in `kernel/src/arch/x86_64/machine.rs` as its strongest remaining
+target and declined it: 836 lines over firmware-supplied lengths, checksums and counts, whose
+volatile half reads raw pointers into the direct map. Milestone 319 shrank the question by proving
+`crates/machine_discovery`, so what is left on the kernel side is one operation repeated: read N
+bytes at a physical address through the direct map and hand them to a parser. An RSDT whose `length`
+field says 64 KiB is a 64 KiB read at whatever the RSDP pointed at. The other two architectures
+answer it: `dtb::Dtb::from_ptr` takes the blob's own length and validates the header first. The
+ruling is shape 2, a region the walk holds, and the accessor's name is an architect's.
