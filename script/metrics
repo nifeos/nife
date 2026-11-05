@@ -2196,11 +2196,11 @@ RISK_COLOUR_HUES = [('#1baf7a', '#199e70'),   # green
                     ('#6e7781', '#8c959f')]   # unclassified
 
 CHART_W, CHART_H = 860, 380
-# The charts show the most recent CHART_WEEKS weeks; the measure files keep every week, and a
-# still restates all of them. calef, 2026-09-19: ten weeks, so W29 leaves the charts when W39
-# arrives. Old weeks are not deleted, only no longer drawn, because the CSV is the table view
-# the charts' relief rule leans on and a table that forgets is not one.
-CHART_WEEKS = 10
+# The charts show the most recent CHART_WEEKS weeks, thirteen: a quarter. The measure files keep
+# every week, and a still restates all of them. Old weeks are not deleted, only no longer drawn,
+# because the CSV is the table view the charts' relief rule leans on and a table that forgets is
+# not one.
+CHART_WEEKS = 13
 PAD_L, PAD_R, PAD_T, PAD_B = 64, 210, 58, 56
 LEGEND_WRAP = 22   # characters per legend line before a label wraps to a second
 
@@ -2775,7 +2775,7 @@ CHARTS = [
     ('pull-requests.svg', 'Pull requests merged each week',
      'first-parent merge commits on main; a milestone is one of these, and most of these are not',
      [('merged that week', 'merged_pull_requests')], 1.0, None, None),
-    # The weekly share as bars and the pooled ten-week share as the line (TRENDS). Chart name
+    # The weekly share as bars and the pooled thirteen-week share as the line (TRENDS). Chart name
     # provisional (lane maintainer/debt-paydown-share-chart, 2026-10-11 UTC).
     ('debt-paydown.svg', 'Merged pull requests that pay down debt, per cent',
      'labeled debt-paydown: repairs, cleanups, record fixes, compliance; over every pull request '
@@ -3186,10 +3186,10 @@ def github_anchor(heading):
     return kept.replace(' ', '-')
 
 
-# Trend lines, keyed by chart. calef asked on 2026-09-24 for a trailing ten-week mean on the
-# velocity chart and then the pull-request chart, one helper for both, because a flow that swings
-# from 8 to 49 to 13 in three weeks cannot be read for direction by eye. It is drawn and never stored, like the fatal-risks chart's unclassified band:
-# it is arithmetic over a column already in the CSV, and a stored copy could disagree with it.
+# Trend lines, keyed by chart: a trailing thirteen-week mean on the velocity, pull-request, unsafe
+# and debt-paydown charts, one helper for all, because a flow that swings from 8 to 49 to 13 in
+# three weeks cannot be read for direction by eye. It is drawn and never stored, like the
+# fatal-risks chart's unclassified band: it is arithmetic over a column already in the CSV, and a stored copy could disagree with it.
 # Charts whose series stand side by side rather than stacked, and charts that carry stored columns
 # as lines over the bars: [(legend label, column)]. The build chart's jobs run side by side, and
 # §213's limits overlap (one document can be over two), so neither may be summed.
@@ -3203,21 +3203,21 @@ LINES = {'ci-jobs.svg': [('median build', 'ci_build_median_minutes'),
 # chart -> function(weeks) returning (series, note), the note printed under the plot.
 SERIES_FROM = {'ci-jobs.svg': build_job_series}
 
-TRENDS = {'velocity.svg': ('milestones_built_this_week', 10),
+TRENDS = {'velocity.svg': ('milestones_built_this_week', 13),
           'interface-stability.svg': ('interface_breaking', 4),
-          'pull-requests.svg': ('merged_pull_requests', 10),
-          'unsafe.svg': ('unsafe_density', 10),
-          # A share's trend is pooled, not a mean of shares: the line is ten weeks' labeled pull
-          # requests over ten weeks' merged ones, so a quiet week weighs what it merged, for
+          'pull-requests.svg': ('merged_pull_requests', 13),
+          'unsafe.svg': ('unsafe_density', 13),
+          # A share's trend is pooled, not a mean of shares: the line is thirteen weeks' labeled
+          # pull requests over thirteen weeks' merged ones, so a quiet week weighs what it merged, for
           # `queue_by_week`'s reason. A (numerator, denominator) pair asks `trailing_mean` for that.
-          'debt-paydown.svg': (('debt_paydown_merged', 'debt_paydown_merged_total'), 10)}
+          'debt-paydown.svg': (('debt_paydown_merged', 'debt_paydown_merged_total'), 13)}
 
 
 def trailing_mean(rows, weeks, field, span):
     """(mean, full) per charted week, over the `span` weeks ending there, reaching back past the
     chart's left edge into the CSV. Where the series is younger than `span` the mean is over the
     weeks that exist and `full` is False, which the chart draws dashed rather than hiding: the line
-    would otherwise start two bars from the right edge until 2026W47."""
+    would otherwise start part way across the chart, at the first week with a full window."""
     every = sorted(rows)
     out = []
     for week in weeks:
