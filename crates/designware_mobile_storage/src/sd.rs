@@ -1,7 +1,10 @@
 //! Bringing a card up, and reading and writing its blocks. Identification is the SD Physical Layer
 //! Simplified Specification's figure 4-2 (version 9.10), with JEDEC JESD84's eMMC sequence beside
-//! it, in the order OpenBSD's `sdmmc_mem_enable` and `sdmmc_mem_init` take them
-//! (`sys/dev/sdmmc/sdmmc_mem.c`, ISC; the crate root carries the notice). What answers decides the
+//! it. Only the order of the addressing commands (`CMD2`, `CMD3`, `CMD9`, then `CMD7`) follows
+//! OpenBSD's `sdmmc_mem_scan` and `sdmmc_mem_init` (`sys/dev/sdmmc/sdmmc_mem.c`, ISC); no code is
+//! adapted from it. The power-up differs: OpenBSD asks the OCR first with an empty `ACMD41` and
+//! sends `CMD8` after a second `CMD0`, and this module sends `CMD8` first, as figure 4-2 does. What
+//! answers decides the
 //! card: an SD 2.0 card echoes `CMD8`'s check pattern, and an eMMC does not answer `CMD55`, which
 //! tells it from an SD 1.x card and brings it up with `CMD1`. The clock then goes from 400 kHz to
 //! 25 MHz, default speed; high speed and UHS are not attempted, and an eMMC's bus stays 1-bit.

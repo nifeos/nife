@@ -48,6 +48,20 @@ STAGES = ('in_tree', 'standalone_static', 'proven', 'allowlisted', 'published')
 # files, because GitHub's license detection reads nife itself as Apache-2.0 alone.
 LICENSE = 'MIT OR Apache-2.0'
 LICENSE_FILES = ('LICENSE-MIT', 'LICENSE-APACHE')
+# A crate that adapts a permissively licensed file carries that file's notice (ruled 2026-11-04
+# UTC), and its manifest says so by joining the file's license to nife's pair:
+# `(MIT OR Apache-2.0) AND ISC`. These are the licenses such a join may name.
+NOTICE_LICENSES = ('ISC', 'BSD-2-Clause', 'BSD-3-Clause')
+
+
+def license_is_accepted(field):
+    """Is `field` nife's pair, alone or joined with the licenses of adapted files?"""
+    if field == LICENSE:
+        return True
+    head, sep, rest = (field or '').partition(f'({LICENSE}) AND ')
+    if head or not sep:
+        return False
+    return all(part in NOTICE_LICENSES for part in rest.split(' AND '))
 
 CITATIONS = [
     ('section citation', re.compile(r'§\s?\d+')),
@@ -106,8 +120,9 @@ def file_findings(root_names, license_field):
     if not any(n.upper().startswith('README') for n in root_names):
         found.append(('files', 'no README'))
     found += [('files', f'no {f}') for f in LICENSE_FILES if f not in root_names]
-    if license_field != LICENSE:
-        found.append(('files', f'license field is {license_field!r}, not {LICENSE!r}'))
+    if not license_is_accepted(license_field):
+        found.append(('files', f'license field is {license_field!r}, not {LICENSE!r} or '
+                               f'({LICENSE}) AND a notice license'))
     return found
 
 
