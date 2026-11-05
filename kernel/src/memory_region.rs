@@ -26,7 +26,7 @@ use crate::sync::{InterruptSafeMutex, rank};
 /// - A region slot retires after 2^32 - 1 occupants (`generational_table` saturates rather than
 ///   wrap). A program that splits and destroys a region without pause is the fastest loop that
 ///   reaches it, and nobody has measured that loop: two traps put its floor near four minutes a
-///   slot, so the whole table in at least 68 hours. notes/generational-names.md has the arithmetic.
+///   slot, so the whole table in at least 64 hours. notes/generational-names.md has the arithmetic.
 pub(crate) const MAXIMUM_REGIONS: usize = 1024;
 
 /// **The most regions that were ever live at once on this boot**, the instrument that makes
