@@ -3,7 +3,7 @@
 //! compiles it.
 //!
 //! The finder is a small state machine, so the sequence length is the bound Kani needs to unroll;
-//! the writer feeds it one slot per directory slot and the oracle tests cross real directories.
+//! the writer feeds it one slot per directory slot and the rust-fatfs tests cross real directories.
 //!
 //! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 

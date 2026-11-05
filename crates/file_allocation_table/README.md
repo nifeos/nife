@@ -1,9 +1,9 @@
 # file_allocation_table
 
 FAT12, FAT16 and FAT32 as pure computation: read, write and format volumes through a sector
-interface you implement. It does no I/O, needs no allocator (`no_std`), and names no device. Long
-file names (VFAT) work both ways, and every parser that meets bytes off a stranger's stick is
-checked by a model checker.
+interface you implement. It does no I/O, needs no allocator (`no_std`), and names no device. It
+reads and writes long file names (VFAT). Every function that parses bytes read from a disk is
+checked with Kani, a model checker that proves properties for all inputs up to a stated size.
 
 ## What it does
 
@@ -11,21 +11,22 @@ checked by a model checker.
   specification does, and reads directories, long names, paths and file bytes. `MasterBootRecord`
   opens the volume inside a partitioned disk.
 - **Write.** Open a `WritableVolume` with a `Clock` (a read-only `Volume` has no write methods and
-  takes none). Create, write, extend, truncate, rename and remove files; make and remove directories;
-  set attributes (read-only, hidden, system, archive); read and change the volume label. A name that
-  is not 8.3 gets long-name slots and an alias numbered against its directory. The first change clears
-  the clean-shutdown bit and `WritableVolume::mark_clean` sets it again, with the FAT32 `FSInfo`
-  hints.
+  takes none). Create, write, extend, truncate, rename and remove files; make and remove
+  directories; set attributes (read-only, hidden, system, archive); read and change the volume
+  label. A name that is not 8.3 gets long-name slots and an alias numbered against its directory.
+  The first change clears the clean-shutdown bit and `WritableVolume::mark_clean` sets it again,
+  with the hints in the FAT32 file system information sector.
 - **Format.** `FormatPlan` lays out an empty volume of any size and sector size (512 to 4096 bytes),
   with the cluster size, serial number and label of your choice. `VolumeLayout` lays out the one
-  shape a bootloader needs: a FAT32 EFI system partition holding one boot file, with 512-byte
-  sectors and 4096-byte clusters. The `efi_system_partition` module holds that shape's constants.
+  shape a bootloader needs: a FAT32 EFI (Extensible Firmware Interface) system partition holding one
+  boot file, with 512-byte sectors and 4096-byte clusters. The `efi_system_partition` module holds
+  that shape's constants.
 
 ## Example
 
 ```rust
 use file_allocation_table::{
-    Attributes, FormatPlan, FormatOptions, NoClock, SectorDevice, SectorSize, WritableSectorDevice,
+    Attributes, FormatOptions, FormatPlan, NoClock, SectorDevice, SectorSize, WritableSectorDevice,
     WritableVolume,
 };
 
@@ -86,7 +87,11 @@ fn main() {
     // Read it back by path, as another program would.
     let entry = volume.lookup("documents/A LONG FILE NAME.TXT").unwrap();
     let mut bytes = [0u8; 32];
-    let read = volume.open_file_reader(&entry).unwrap().read(&mut bytes).unwrap();
+    let read = volume
+        .open_file_reader(&entry)
+        .unwrap()
+        .read(&mut bytes)
+        .unwrap();
     assert_eq!(&bytes[..read], b"hello, volume");
     assert_eq!(
         volume.volume_label().unwrap().unwrap().trimmed(),
@@ -113,9 +118,10 @@ as its [installation guide](https://model-checking.github.io/kani/install-guide.
 `kani-verifier` crate, then `cargo kani setup` once), and run `cargo kani` from the crate's
 directory. The harnesses pass on Kani 0.68.0.
 
-- **Hostile input.** No parse step panics or reads outside the volume: the boot sector and BPB (every
-  512-byte sector), FAT entries, directory slots, long-name runs, the partition table and `FSInfo`.
-  A cluster chain walk cannot loop: it ends within the volume's cluster count.
+- **Hostile input.** No parse step panics or reads outside the volume: the boot sector and BPB
+  (every 512-byte sector), FAT entries, directory slots, long-name runs, the partition table and the
+  file system information sector. A cluster chain walk cannot loop: it ends within the volume's
+  cluster count.
 - **Writes.** A stored table entry reads back and disturbs nothing else; allocation takes one free
   cluster and changes nothing else; a release frees only the chain it was given and never a bad
   cluster; a cut keeps exactly the head of the chain; a partial sector write keeps the head, zeroes
@@ -131,11 +137,12 @@ directory. The harnesses pass on Kani 0.68.0.
 Each harness has a falsification record at `falsifications/<module.path>.<harness>.patch`. Applying
 it with `patch -p3` from the crate root makes that harness fail at its own assertion, which shows
 the proof checks something. Kani bounds what it unrolls (the model volumes are a few clusters, the
-format proof covers clusters of 1 to 8 sectors), so the fuzz targets and the oracle tests cover
-whole images.
+format proof covers clusters of 1 to 8 sectors), so the fuzz targets and the tests against
+rust-fatfs cover whole images.
 
-The oracle is rust-fatfs (the `lamfat` dev-dependency): the tests write trees on FAT12, FAT16 and
-FAT32 volumes with each, and each must read what the other wrote, name for name and byte for byte.
+The tests compare against rust-fatfs (the `lamfat` dev-dependency), an independent FAT library: they
+write trees on FAT12, FAT16 and FAT32 volumes with each library, and each must read what the other
+wrote, name for name and byte for byte.
 Where `fsck.fat` or `fsck_msdos` is installed every image must pass `fsck -n`, and where
 `mkfs.fat` is installed its FAT12 and FAT16 volumes take this crate's writer. Two FAT32 images a
 macOS host formatted and wrote are read to their recorded hashes. An ignored test has the host's

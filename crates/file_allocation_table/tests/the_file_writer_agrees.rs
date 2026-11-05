@@ -107,7 +107,7 @@ fn check_with_fsck(image: &[u8], label: &str) {
 }
 
 /// What rust-fatfs counts as free clusters on `image`.
-fn oracle_free_clusters(image: &[u8]) -> u32 {
+fn lamfat_free_clusters(image: &[u8]) -> u32 {
     let fs = lamfat::FileSystem::new(
         lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
         lamfat::FsOptions::new(),
@@ -124,7 +124,7 @@ fn pattern(seed: u8, length: usize) -> Vec<u8> {
 }
 
 /// Every file in the root of `image` according to rust-fatfs, as (name, bytes).
-fn oracle_files(image: &[u8]) -> Vec<(String, Vec<u8>)> {
+fn lamfat_files(image: &[u8]) -> Vec<(String, Vec<u8>)> {
     let fs = lamfat::FileSystem::new(
         lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
         lamfat::FsOptions::new(),
@@ -174,7 +174,7 @@ impl Plan {
     fn check(&mut self, image: &Memory, stage: &str) {
         self.expected.sort();
         assert_eq!(
-            oracle_files(&image.bytes),
+            lamfat_files(&image.bytes),
             self.expected,
             "{}: {stage}",
             self.label
@@ -186,7 +186,7 @@ impl Plan {
             .map(|(_, b)| b.len().div_ceil(self.cluster_bytes))
             .sum();
         assert_eq!(
-            oracle_free_clusters(&image.bytes) as usize,
+            lamfat_free_clusters(&image.bytes) as usize,
             self.total as usize - used,
             "{}: {stage}",
             self.label
@@ -328,7 +328,7 @@ fn a_fat32_root_grows_past_one_cluster_and_a_fat16_root_refuses() {
     }
     volume.mark_clean().unwrap();
     let image = volume.into_device();
-    assert_eq!(oracle_files(&image.bytes).len(), per_cluster + 3);
+    assert_eq!(lamfat_files(&image.bytes).len(), per_cluster + 3);
     check_with_fsck(&image.bytes, "root-grown");
 
     let mut volume = WritableVolume::open(formatted(32, FatType::Fat16, 512), NoClock).unwrap();
@@ -494,7 +494,7 @@ fn a_full_fixed_root_reads_back_every_entry() {
     }
     volume.mark_clean().unwrap();
     let image = volume.into_device();
-    let files = oracle_files(&image.bytes);
+    let files = lamfat_files(&image.bytes);
     assert_eq!(files.len(), 512);
     assert!(files.iter().all(|(name, bytes)| {
         name.strip_prefix('R')
@@ -541,7 +541,7 @@ fn a_directory_that_grows_into_a_multi_sector_cluster_zeroes_all_of_it() {
     }
     volume.mark_clean().unwrap();
     let image = volume.into_device();
-    assert_eq!(oracle_files(&image.bytes).len(), slots + 40);
+    assert_eq!(lamfat_files(&image.bytes).len(), slots + 40);
     check_with_fsck(&image.bytes, "multi-sector-cluster");
 }
 
@@ -574,7 +574,7 @@ fn a_fat32_file_beyond_cluster_65535_keeps_its_high_cluster_bits() {
     assert!(volume.lookup("LATE.TXT").unwrap().first_cluster() > 65_535);
     volume.mark_clean().unwrap();
     let image = volume.into_device();
-    let files = oracle_files(&image.bytes);
+    let files = lamfat_files(&image.bytes);
     assert_eq!(
         files.iter().find(|(n, _)| n == "LATE.TXT").unwrap().1,
         b"late"

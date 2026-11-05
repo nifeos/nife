@@ -13,38 +13,41 @@
 //! and reads a directory slot by slot ([`Volume::root_directory`], [`Volume::directory`]). A chain
 //! walk yields at most as many clusters as the volume holds, so no table contents can make it
 //! loop, and every read it makes lies inside the volume the boot sector describes.
-//! [`Volume::root_named_entries`] and [`Volume::named_entries`] read a directory as files: each short entry
-//! comes with its long name ([`LongFileName`]), assembled from the pieces ahead of it and accepted
-//! only when their ordinals, padding and checksum are the specification's.
+//! [`Volume::root_named_entries`] and [`Volume::named_entries`] read a directory as files: each
+//! short entry comes with its long name ([`LongFileName`]), assembled from the pieces ahead of it
+//! and accepted only when their ordinals, padding and checksum are the specification's.
 //!
 //! [`Volume::lookup`] finds an entry by path, without regard to case, by long name or short name.
-//! [`Volume::open_file_reader`] opens one for reading as a [`FileReader`], which reads through the chain
-//! and never returns a byte past the entry's size. A whole-disk image opens through
-//! [`MasterBootRecord`]: [`Partition::restrict_device`] shows one partition as a device of its own, and
-//! [`Volume::open`] opens the volume inside it.
+//! [`Volume::open_file_reader`] opens one for reading as a [`FileReader`], which reads through the
+//! chain and never returns a byte past the entry's size. A whole-disk image opens through
+//! [`MasterBootRecord`]: [`Partition::restrict_device`] shows one partition as a device of its own,
+//! and [`Volume::open`] opens the volume inside it.
 //!
 //! Writes go through [`WritableVolume`], a [`Volume`] with the [`Clock`] its writes stamp with;
 //! [`NoClock`] is the explicit "no time". A clock supplies UTC, since FAT stores no time zone (see
-//! [`Clock`]). A read stamps nothing and takes no clock. It orders every
-//! write so a crash leaks a cluster and never shares one ([`WritableVolume::mark_clean`] writes the FAT32
-//! `FSInfo` hints and sets the clean-shutdown bit again, [`Volume::is_clean`]). It makes and
-//! writes files and directories (a name that is not 8.3 gets long-name slots and a numbered alias),
-//! renames, sets attributes and the label, and grows a full directory except FAT12's and FAT16's
-//! fixed root. Each returns a [`WriteError`].
+//! [`Clock`]). A read stamps nothing and takes no clock. It orders every write so a crash leaks a
+//! cluster and never shares one ([`WritableVolume::mark_clean`] writes the hints in the FAT32 file
+//! system information sector and sets the clean-shutdown bit again,
+//! [`Volume::is_clean`]). It makes and writes files and directories (a name that is not 8.3 gets
+//! long-name slots and a numbered alias), renames, sets attributes and the label, and grows a full
+//! directory except FAT12's and FAT16's fixed root. Each returns a [`WriteError`].
 //!
-//! [`FormatPlan`] lays out an empty volume of any size, as sectors a caller writes. [`VolumeLayout`]
-//! lays out one shape through the same sizing and boot sector: a FAT32 EFI system partition holding
-//! one boot file at `\EFI\BOOT\<name>`. [`efi_system_partition`] holds that shape's constants, and
-//! a volume below [`efi_system_partition::FAT32_MINIMUM_CLUSTERS`] is refused.
+//! [`FormatPlan`] lays out an empty volume of any size, as sectors a caller writes.
+//! [`VolumeLayout`] lays out one shape through the same sizing and boot sector: a FAT32 EFI
+//! (Extensible Firmware Interface) system partition holding one boot file at `\EFI\BOOT\<name>`.
+//! [`efi_system_partition`] holds that shape's constants, and a volume below
+//! [`efi_system_partition::FAT32_MINIMUM_CLUSTERS`] is refused.
 
 //! # BUGS
 //!
 //! - [`VolumeLayout`] numbers its boot file's alias `~1`, right only while `EFI\BOOT` holds that one
 //!   file.
-//! - [`FormatPlan`] and [`VolumeLayout`] write the `FSInfo` free-cluster count once. After that
-//!   only [`WritableVolume::mark_clean`] keeps it; a volume dropped without `mark_clean` leaves a
-//!   stale hint, which the specification lets a driver tolerate and `fsck.fat` reports.
-//! - The backup `FSInfo` copy in the backup boot area is never updated, as with Linux's driver.
+//! - [`FormatPlan`] and [`VolumeLayout`] write the free-cluster count of the file system
+//!   information sector once. After that only [`WritableVolume::mark_clean`] keeps it; a volume
+//!   dropped without `mark_clean` leaves a stale hint, which the specification lets a driver
+//!   tolerate and `fsck.fat` reports.
+//! - The backup copy of the file system information sector in the backup boot area is never
+//!   updated, as with Linux's driver.
 //! - A newly allocated cluster holds whatever the device held; a caller that needs zeros writes them.
 //! - A write has no barrier: the crate orders its writes and the device decides when each reaches the
 //!   medium. A failure between the writes of one table entry's copies leaves the copies unequal.
