@@ -14,6 +14,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Bringing up the other cores](../smp.md): the core roster seated by hardware id, secondary start and stacks, and how the SMP tests wait.
 - [The thread control block](../thread-control-block.md): the Thread Control Block, and where it lives.
 - [Generational names](../generational-names.md): thread ids that fail safely after slot reuse.
+- [generational_table and the existing crates](../generational-table-and-existing-crates.md): whether `slotmap` and its relatives already cover the fixed-capacity table, and the release question. Name provisional.
 - [Intrusive queues](../intrusive-queues.md): run queues whose link lives inside the thread.
 - [The per-CPU block](../per-cpu.md): each core's private state, and what holds its size and alignment. Name provisional.
 - [Locking](../locking.md): spinlocks with interrupts, and the orderings that avoid deadlock.

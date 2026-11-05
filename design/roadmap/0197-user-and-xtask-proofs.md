@@ -104,17 +104,6 @@ half of the same observation and is untouched.
   input can cost far more" was right in a way this block did not predict. The expensive shapes are
   not parsers but sums, symbolic indices into large structs, and values downstream of division.
   Three such properties were abandoned with the measurements recorded.
-- ~~**`script/falsifications` walks `crates/` only.** This milestone's falsification record and
-  patch live under `user/`, and `kernel`'s two harnesses from milestone 193 (put kernel/src
-  within reach of the prover) carry no record at all. So the ratio that script prints is over
-  `crates/` rather than over the tree, and it does not know it. Closing it needs the walk derived
-  from `cargo metadata` and `--sweep` taught that a package can have binaries; proposed as its own
-  milestone in this lane's report.~~ **Closed.** Milestone 212 (script/falsifications walks
-  crates/ only, so the ratio it prints is not the tree's) fixed it; see `## Follow-on` below, and
-  `notes/falsification.md`'s "Milestone 212: the ratio was a fraction of one directory". This
-  entry was never struck for it. Found still standing as live prose 2026-09-23, part 5 of
-  milestone 323 (the falsification record is incomplete in five ways), whose whole subject is
-  exactly this shape: a `BUGS` entry nobody struck when the work it describes landed.
 - **Two harnesses is not coverage of 68 programs.** The editor's editing operations are the richest
   untrusted-input surface left in `user/` and are out of reach as the document is laid out today.
   Moving a row's length out of the row would fix that and is a data-layout question, not a lane's.

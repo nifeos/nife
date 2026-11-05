@@ -54,15 +54,26 @@ import name_crossings  # noqa: E402
 import name_provenance  # noqa: E402
 
 # Components a ruling spells out: §154 (the acronym test is whether the phrase is spoken)'s table
-# and design/naming/spelled-out-rulings.md. A plural is the same abbreviation. A foreign identifier
-# keeps its owner's spelling, and telling one from ours is judgment, so it is listed too and the
-# lane that fixes it decides.
+# and design/naming/acronyms-and-abbreviations.md. A plural is the same abbreviation. A foreign
+# identifier keeps its owner's spelling, and telling one from ours is judgment, so it is listed too
+# and the lane that fixes it decides.
 SPELLED_OUT = {
     "cap", "caps", "op", "ops", "recv", "config", "configs", "spec", "specs", "arg", "args",
     "mem", "dir", "dirs", "va", "pa", "ipi", "ipis", "nmi", "nmis", "ist", "msr", "msrs", "ipc",
     "dtb", "asid", "asids", "gpt", "nvme", "pcie", "dma", "pr", "prs", "initrd", "prog", "progs",
     "pos", "opt", "opts", "mtime",
 }
+# The words design/naming/spelled-out-rulings.md and 2026-11-03-rulings.md spell out, each with the
+# spelling the ruling names. The check says it in its message. A register, bit or specification name
+# copied from a datasheet keeps its spelling and is excused through `KEPT`; a renamed item carries
+# `#[doc(alias = "...")]` and an attribute is not a name, so an alias never counts.
+SPELLED_OUT_AS = {
+    "fifo": "queue", "rx": "receive", "tx": "transmit", "phy": "physical_layer_device",
+    "init": "initialize", "irq": "interrupt", "min": "minimum", "max": "maximum",
+    "os": "operating_system", "rgmii": "reduced_gigabit_media_independent_interface",
+    "mdio": "management_data_input_output",
+}
+SPELLED_OUT |= set(SPELLED_OUT_AS)
 # Packages two programs agree through: `abi`, the wire-contract crates (`script/lint` check 3 holds
 # their spelling, `network_time_protocol` its one exception), and the
 # on-disk formats §307 (how long a name may be) lists. Something else another program parses is
@@ -121,7 +132,7 @@ KEPT = {
 RULED = {
     "notes/stack-high-water/per-ipc-depth.md::per-ipc-depth":
         "calef ruled `IPC` a term of art, declining the expansion (2026-10-28 UTC, relayed by the "
-        "maintainer); design/naming/spelled-out-rulings.md holds the record",
+        "maintainer); design/naming/acronyms-and-abbreviations.md holds the record",
     "kernel/src/user/non_volatile_memory_express_service.rs::release_completed":
         "calef ruled the rename of `release` here on 2026-10-28 (UTC, relayed by the maintainer): "
         "the function performs the release, so the ruled `is_released` would misstate it, and "
@@ -161,7 +172,9 @@ def failures(name, kind, returns_bool, british):
     ruled = [w for i, w in enumerate(words) if w in SPELLED_OUT and w not in _CAP
              and not (w == "opt" and words[i + 1:i + 2] in (["in"], ["out"]))]
     if ruled:
-        out.append(f"spelled-out: `{ruled[0]}` is ruled to expand")
+        into = SPELLED_OUT_AS.get(ruled[0])
+        out.append(f"spelled-out: `{ruled[0]}` is ruled to expand"
+                   + (f" to `{into}`" if into else ""))
     elif any(w in _CAP for w in words):
         out.append("cap: `cap` is ruled to expand (helpers/cap_abbreviation.py holds it)")
     if name in british:
@@ -338,7 +351,7 @@ BASELINE = "design/naming-rule-baseline.txt"
 # the one change whose new rows the merge-base comparison admits, so new debt arrives with its cause.
 # This is an exception and a foot gun on purpose, the module-block ratchet's FORMAT line one door
 # over: a bump with no revised check behind it would admit any violation, and nothing else stops it.
-RULES = 1
+RULES = 2
 # The checks the gate holds. `spelling` and `cap` have ratchets of their own
 # (helpers/house_style.py, helpers/cap_abbreviation.py), so they are listed but not held twice.
 GATED = ("casing", "spelled-out", "service-model", "question-shape")
@@ -550,6 +563,22 @@ def _selftest():
     assert failures("grant_allows", "fn", True, {}) == [], "a finite verb last is a question"
     assert failures("frame_waiting", "fn", True, {})[0].startswith("question-shape")
     assert failures("why-opt-in", "document", False, {}) == [], "opt in is a verb"
+    for word, into in SPELLED_OUT_AS.items():
+        bad = failures(f"{word}_count", "fn", False, {})
+        assert bad == [f"spelled-out: `{word}` is ruled to expand to `{into}`"], (word, bad)
+        assert failures(f"{into}_count", "fn", False, {}) == [], f"{into} is the ruled spelling"
+    assert failures("FIFOTH", "const", False, {}) == [], "a datasheet register name is one word"
+    fixture = ("#[doc(alias = \"fifo\")]\npub fn intrusive_queue() {}\n"
+               "pub fn fifo_depth() {}\npub const FIFO_RAW: u32 = 1;\n")
+    assert [r["name"] for r in survey(
+        [("fn", "intrusive_queue", "lib_a/src/q.rs", 2), ("fn", "fifo_depth", "lib_a/src/q.rs", 3),
+         ("const", "FIFO_RAW", "lib_a/src/q.rs", 4)], dict(sources, **{"lib_a/src/q.rs": fixture}),
+        manifests, {})] == ["fifo_depth", "FIFO_RAW"], "an alias does not count"
+    KEPT["lib_a/src/q.rs::FIFO_RAW"] = ({"spelled-out"}, "fixture: a datasheet name")
+    assert [r["name"] for r in survey(
+        [("const", "FIFO_RAW", "lib_a/src/q.rs", 4)], dict(sources, **{"lib_a/src/q.rs": fixture}),
+        manifests, {})] == [], "KEPT excuses a datasheet name"
+    del KEPT["lib_a/src/q.rs::FIFO_RAW"]
     extern = 'extern "system" {\n    pub fn GetLogicalDrives() -> u32;\n}\n'
     assert survey([("fn", "GetLogicalDrives", "lib_a/src/ffi.rs", 2)],
                   dict(sources, **{"lib_a/src/ffi.rs": extern}), manifests, {}) == [], \
@@ -681,8 +710,8 @@ def main(argv):
         return 0
     mode = argv[0] if argv and argv[0].startswith("-") else "--list"
     # The option keeps its command-line abbreviation, `--init`; the code behind it spells `initialize`.
-    # The difference is deliberate (design/naming/precedents-set-by-example.md, "The command line
-    # abbreviates and the code behind it does not").
+    # The difference is deliberate (design/naming/command-line-names.md, "The command line
+    # abbreviates, and the code behind it does not").
     prefixes = tuple(a for a in argv if not a.startswith("-"))
     if mode not in ("--list", "--check", "--bank", "--init"):
         sys.exit(__doc__.split("\n\n")[2])

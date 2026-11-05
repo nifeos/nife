@@ -164,9 +164,9 @@ impl Attr {
     /// the actual paint colours.
     ///
     /// Name: provisional, flagged 2026-09-24 by the boolean-predicate pass
-    /// (design/naming/functions-that-answer-yes-or-no-worklist.md). It does not yet follow the Rust predicate
-    /// rule calef ratified 2026-09-24; recommended `is_reverse_video`, because `is_reverse` reads
-    /// as a direction.
+    /// (design/naming/functions-that-answer-yes-or-no.md). It does not yet follow the Rust
+    /// predicate rule calef ratified 2026-09-24; recommended `is_reverse_video`, because
+    /// `is_reverse` reads as a direction.
     pub const fn reverse(self) -> bool {
         self.has(REVERSE)
     }

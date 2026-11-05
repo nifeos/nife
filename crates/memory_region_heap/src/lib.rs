@@ -96,7 +96,7 @@ impl MemoryRegionHeap {
     /// `_start`. `base` must be page-aligned and inside the user half.
     ///
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-    /// design/naming/spelled-out-rulings.md.
+    /// design/naming/acronyms-and-abbreviations.md.
     pub fn initialize(&self, memory_region_slot: u64, base: u64, maximum_bytes: u64) {
         let mut g = self.lock();
         let inner = g.inner();

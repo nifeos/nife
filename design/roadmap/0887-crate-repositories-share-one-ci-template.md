@@ -233,6 +233,12 @@ being on the list, and `helpers/ci_job_times.py` reads a crate repository by arg
   since is not in it, and nothing makes adding one ask "and the template?".
 - The template's release cadence is provisional. The check names are measured against what GitHub
   shows for cross-repository reusable workflow calls.
+- The semver rule runs `cargo-semver-checks` with `--baseline-rev` against the newest release tag
+  before the commit (`helpers/semver_baseline.py` in the template), and falls back to the last
+  published version when no tag exists. A crate with neither has no baseline, and the rule reads
+  that as nothing major. The tool has no JSON output, so `semver_major.py` reads its text summary
+  (nifeos/crate-workflows#19). `helpers/publish-rehearsal.sh` runs the first-publish dry run by
+  hand with no credential; the real first publish stays behind the `crates-io` environment.
 - `needs_person` is `yes`: the stranger cadence's first run is a person's.
 - The settings-drift check's security rows and ruleset read want an administration-scoped token;
   with `GITHUB_TOKEN` they report what was unreadable.

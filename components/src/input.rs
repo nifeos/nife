@@ -96,13 +96,14 @@ mod uart {
         !regs().FR.is_set(FR::RXFE)
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/spelled-out-rulings.md; `read_byte` reads the byte `is_byte_waiting` reports.
+    /// design/naming/acronyms-and-abbreviations.md; `read_byte` reads the byte `is_byte_waiting`
+    /// reports.
     pub fn read_byte() -> u8 {
         regs().DR.get() as u8
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/spelled-out-rulings.md; `arm_receive_interrupt` is the word the NS16550 and
-    /// PL011 manuals spell out.
+    /// design/naming/acronyms-and-abbreviations.md; `arm_receive_interrupt` is the word the NS16550
+    /// and PL011 manuals spell out.
     pub fn arm_receive_interrupt() {
         regs().IMSC.modify(IMSC::RXIM::SET);
     }
@@ -172,13 +173,14 @@ mod uart {
         rd(LSR) & LSR_DR != 0
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/spelled-out-rulings.md; `read_byte` reads the byte `is_byte_waiting` reports.
+    /// design/naming/acronyms-and-abbreviations.md; `read_byte` reads the byte `is_byte_waiting`
+    /// reports.
     pub fn read_byte() -> u8 {
         rd(RBR) // reading clears the receive interrupt; that is why clear_interrupt is a no-op
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/spelled-out-rulings.md; `arm_receive_interrupt` is the word the NS16550 and
-    /// PL011 manuals spell out.
+    /// design/naming/acronyms-and-abbreviations.md; `arm_receive_interrupt` is the word the NS16550
+    /// and PL011 manuals spell out.
     pub fn arm_receive_interrupt() {
         wr(IER, IER_ERBFI);
     }
@@ -216,13 +218,14 @@ mod uart {
         inb(LSR) & LSR_DR != 0
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/spelled-out-rulings.md; `read_byte` reads the byte `is_byte_waiting` reports.
+    /// design/naming/acronyms-and-abbreviations.md; `read_byte` reads the byte `is_byte_waiting`
+    /// reports.
     pub fn read_byte() -> u8 {
         inb(RBR) // reading clears the receive condition, as on the NS16550
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/spelled-out-rulings.md; `arm_receive_interrupt` is the word the NS16550 and
-    /// PL011 manuals spell out.
+    /// design/naming/acronyms-and-abbreviations.md; `arm_receive_interrupt` is the word the NS16550
+    /// and PL011 manuals spell out.
     ///
     /// **`OUT2` as well as the receive enable**, which is the one PC-specific fact here: on a PC
     /// the 16550's interrupt output reaches the ISA line only through a gate the modem control

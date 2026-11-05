@@ -9,23 +9,18 @@ needs_person: no
 ---
 # 332. A card written by any means but ours cannot be checked without booting it
 
-Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
-from milestone 217's block; numbered 2026-09-19 by milestone 433. **Premise re-checked 2026-09-19 and
-it holds, with one correction.** No tool in `script/`, `helpers/` or `xtask` reads a mounted card and
-compares the two artifacts. The only way to find a mismatch is still to power the board and read
-`MEASURED BOOT REFUSED`. The `--card` option that writes a matched pair is in `script/board-image`
-rather than in `xtask` as the proposal implies. It still copies the set as a set rather than
-verifying one somebody else wrote.
+Premise re-checked 2026-09-19 and it holds, with one correction. No tool in `script/`, `helpers/` or
+`xtask` reads a mounted card and compares the two artifacts. The only way to find a mismatch is to
+power the board and read `MEASURED BOOT REFUSED`. The `--card` option lives in `script/board-image`.
+It writes a matched pair and does not verify one somebody else wrote.
 
 A lane can start today. Both artifacts are files on disk, the expected digest is the
 one the kernel image was built against, and the check runs on a mounted directory without any
 board.
 
-**In brief.** A tool that reads a mounted card and reports whether the kernel on it and the archive
-beside it come from the same build. Milestone 217 added a `--card` option that writes a matched
-pair, which narrows who needs this rather than removing the need. A card written by `dd`, by a
-graphical imager, by a colleague, or by an earlier version of this tree carries no guarantee at all.
-Today the only way to find out is to power the board and read the refusal.
+The need is a tool that reads a mounted card and reports whether the kernel on it and the archive
+beside it come from the same build. Milestone 217 added `--card`. That narrows who needs this and does not remove the need. A card written by `dd`, by a graphical imager, by a colleague, or by
+an earlier version of this tree carries no guarantee at all.
 
 ## Why this matters
 
@@ -60,13 +55,8 @@ without booting it, so a mismatch is found after a power cycle at the bench inst
 
 ## Index row
 
-A card written by `dd`, by a graphical imager, by a colleague, or by an earlier version of this
-tree carries no guarantee that the kernel on it and the archive beside it come from the same build.
-Today the only way to find out is to power the board and read the refusal. The record of that
-cost is what minted milestone 217. The VisionFive 2 booted, reached U-mode, halted with
-`MEASURED BOOT REFUSED` and two sha256 digests, and there was nothing to do about it except walk back
-to the Mac. The runtime refusal is correct and is the last possible moment to learn it. That is the point
-where the person is furthest from the tools that can fix it. The work is to read the kernel image and
-the archive from a mounted path, compute the archive's sha256, and make the same comparison
-`measured_boot` makes at boot, reporting both digests the way the board does. Milestone 217's own
-honest limit carries over: nothing in this tree has touched a real microSD card.
+A card written by any means but `--card` carries no guarantee that the kernel on it and the archive
+beside it come from the same build. The only way to find out is to power the board and read the
+refusal. The work is to read both from a mounted path and compute the archive's sha256. Then make the
+comparison `measured_boot` makes at boot, and report both digests the way the board does. Nothing in
+this tree has touched a real microSD card.
