@@ -1,0 +1,136 @@
+section-list	1	-	-	1	-	the section list (script/lint's sections are a reviewed interface)
+-	1	-	-	0	-	the pre-push hook's contract with this script
+-	1	-	-	0	-	the commit-msg hook (an agent's commit carries a Co-Authored-By trailer)
+-	1	-	-	1	-	no reproducer in this branch's commit messages (a replay line, a seed assignment)
+-	1	-	-	0	-	the heavy-job slots (a full machine holds a job back; a killed holder frees its slot)
+-	1	-	-	0	-	the CI fuzz job keeps a finding private
+-	1	-	-	0	-	script/verify --parallel forks the shards, joins their verdicts, and keeps to one slot
+-	1	-	-	0	-	script/push believes origin's ref, not git's exit status
+-	1	-	-	0	-	script/push --requeue re-arms, and arming refuses a held pull request
+-	1	-	-	0	-	the rustup retry (a dropped CDN connection retries; a real error does not)
+-	1	-	-	0	-	the continuous fuzz supervisor installs the pinned toolchain once, before any slot
+-	1	-	-	0	-	the fuzz host follows only a green, fast-forward main and installs no unit file
+-	0	host	-	0	host	clippy: host crates + xtask
+-	0	redoxfs_host	-	0	-	clippy: redoxfs_host (its own workspace)
+-	0	glyph_atlas_generator	-	0	-	clippy: glyph_atlas_generator (its own workspace)
+-	0	redoxfs_server	-	0	-	clippy: redoxfs_server (its own workspace)
+-	0	fuzz	-	0	-	clippy: fuzz targets (its own workspace)
+-	0	host	-	0	host	clippy: the Kani proof harnesses (--cfg kani)
+-	0	aarch64	-	0	aarch64	clippy: kernel + user + user_mode_runtime (aarch64)
+-	0	aarch64	-	0	aarch64	clippy: system_tests (aarch64)
+-	0	aarch64	-	0	aarch64	clippy: components --features confinement_attackers (aarch64)
+-	0	x86_64	-	0	x86_64	clippy: kernel (x86_64, the binary only; see the note above)
+-	0	riscv64	-	0	riscv64	clippy: kernel (riscv64)
+-	0	x86_64	-	0	x86_64	clippy: kernel --features bench (x86_64, the binary only; see the note above)
+-	0	x86_64	-	0	x86_64	clippy: kernel --features cycle_counter_grant (x86_64, the binary only; see the note above)
+-	0	x86_64	-	0	x86_64	clippy: kernel --features network_bench (x86_64, the binary only; see the note above)
+-	0	x86_64_user	-	0	x86_64_user	clippy: user + user_mode_runtime (x86_64)
+-	0	x86_64	-	0	x86_64	clippy: kernel --features watchdog_probe (x86_64)
+-	0	uefi	-	0	uefi	uefi_loader: build the three kernels the boot files embed (see the note above)
+-	0	uefi	-	0	uefi	clippy: uefi_loader --features uefi (x86_64-unknown-uefi)
+-	0	uefi	-	0	uefi	clippy: uefi_loader --features uefi (aarch64-unknown-uefi)
+-	0	uefi	-	0	uefi	clippy: uefi_loader --features uefi (riscv64imac-unknown-none-elf, the stick's PE payload)
+-	0	uefi	-	0	uefi	clippy: uefi_loader --features uefi,screen_hold (x86_64-unknown-uefi, uefi-boot's build)
+-	1	-	-	0	-	unsafe fn contracts
+-	1	-	-	0	-	rule 1 (arch code stays under kernel/src/arch/)
+-	1	-	-	0	-	programs enter through program_entry!
+-	1	-	-	0	-	rule 5 (every arch:: path portable code names exists in every port)
+-	1	-	-	0	-	hand-written asm carries CFI
+-	1	-	-	0	-	the custom-section link_section names are gated to the bare-metal target
+-	1	-	-	0	-	every committed .dtb matches its .dts
+-	1	-	-	0	-	the machine description is not gated on a boot mode
+-	1	-	-	0	-	every fence names its counterpart
+-	1	-	-	0	-	module-wide dead-code suppression
+-	1	-	-	0	-	the shell allocates only where it can fail
+-	1	-	-	1	-	conflict markers
+-	1	-	-	0	-	actions are pinned to a commit SHA
+-	1	-	-	1	-	TODO markers cite a milestone
+-	1	-	-	1	-	roadmap status
+-	0	doc	-	0	doc	rustdoc (broken intra-doc links)
+-	1	-	-	1	-	decisions
+-	1	-	-	0	-	journeys
+-	1	-	-	0	-	numbered record files carry four digits
+-	1	-	-	0	-	dependency upgrades stay reachable
+-	0	main	-	0	-	every committed Cargo.lock has an update watcher
+-	1	-	-	0	-	the publish allowlist
+-	1	-	-	1	-	citations
+-	1	-	-	1	-	new citations say what they cite
+-	1	-	-	1	-	notes citing a milestone this branch moved
+-	1	-	-	0	-	fatal risks
+-	0	main	-	0	-	the host pass excludes exactly the bare-metal crates
+-	1	-	-	0	-	every crates/ member has a row in the trust-boundary table
+-	0	main	-	0	-	the trust-boundary table matches cargo metadata
+-	0	main	-	0	-	the unsafe listing of the crates the kernel links matches Cargo.lock
+-	0	main	-	0	-	mutation excludes every target the host build never selects
+-	0	main	-	0	-	mutation compiles every feature of the crates it scores
+-	1	-	-	0	-	script docs
+-	1	-	-	0	-	the project's QEMU is on PATH
+-	1	-	-	0	-	the icount baselines name the pinned nightly
+-	1	-	-	0	-	counted claims
+-	1	-	-	0	-	naming conventions
+-	1	-	-	0	-	fixed /tmp paths in scripts (they race across worktrees; see the note above)
+-	1	-	-	0	-	proof-only modules: crate::arch is the host's
+-	1	-	-	0	-	names meet the current naming rules
+-	1	-	-	0	-	every Kani harness carries a falsification record
+-	1	-	-	0	-	the audit index
+-	1	-	-	0	-	the stranger test's run record
+-	1	-	-	0	-	environment names in prose
+-	1	-	-	0	-	tracked files the tree ignores
+-	1	-	-	0	-	the empty-diff check
+-	1	-	-	0	-	workflow steps that swallow a failure
+-	1	-	-	0	-	every workflow file parses
+-	1	-	-	0	-	the fuzz heartbeat (selftest, and the workflow keeps to its limits)
+-	1	-	-	0	-	every issue form renders
+-	0	main	-	0	-	the kernel's dependencies: nothing only its tests use
+-	0	main	-	0	-	test oracles stay dev-dependencies of the crate they judge
+-	1	-	-	0	-	every .rs file under a crate is declared by a module tree
+-	1	-	-	0	-	every userspace trap declares the registers the kernel writes
+-	1	-	-	1	-	markdown links and the notes index
+-	1	-	-	1	-	the prose ratchet (§212 words, §213 sentences, bold and passives)
+-	1	-	-	1	-	the removed-files index (design/removed.tsv: each path absent, each sha real, no retired number returns)
+-	1	-	-	0	-	the file-length ratchet (§266's 2,000-line ceiling on Rust files)
+-	1	-	-	1	-	the module-block ratchet (every module, document and pub item carries a Name: block; the unblocked list only shrinks)
+-	1	-	-	0	-	the lint ratchet's selftest (clippy lints counted against a baseline that only falls)
+-	0	main	host,aarch64,x86_64,x86_64_user,riscv64,redoxfs_host,glyph_atlas_generator,redoxfs_server,fuzz	0	-	the lint ratchet (the clippy sections' saved diagnostics, judged; no clippy of its own)
+-	1	-	-	0	-	the comment-block ratchet (calef's 40-line cap on a comment block, 2026-10-07; per-directory caps and in-body ceilings, milestone 929)
+-	1	-	-	1	-	the parent-index check (§282: when a file is split, the parent becomes an index)
+-	1	-	-	0	-	American spelling and metric units (calef, 2026-10-06)
+-	1	-	-	1	-	§298 (a document states what is in force now), calef 2026-10-13
+-	1	-	-	1	-	capability is not abbreviated cap (calef, 2026-10-06)
+-	1	-	-	1	-	unit symbols are spelled out (2026-10-27)
+-	1	-	-	1	-	no line-number citations (§277: cite a heading or a symbol)
+-	1	-	-	0	-	the outsider-pass floor checker and launcher selftests
+-	1	-	-	0	-	exception markers the ratchets honor (a warning, never a failure)
+-	1	-	-	0	-	the prose-only classifier
+-	1	-	-	0	-	CI job wall-time budgets
+-	1	-	-	0	-	CI steps leave evidence when they hang
+-	1	-	-	0	-	merge groups save no rust-cache entry; main-caches saves what jobs restore
+-	1	-	-	1	-	no owned-runner job can run for a pull request, and each is guarded to the queue
+-	1	-	-	0	-	every workflow records the run it was watched failing in
+-	1	-	-	0	-	every mutation triage row names a package, through the rename table
+-	1	-	-	0	-	the survivor classification is current
+-	1	-	-	0	-	the mutation ledger crate table is current
+-	1	-	-	0	-	the shape-sites file is at most one census behind
+-	1	-	-	0	-	the mutation triage rows are classified and housed (a baseline that only falls)
+-	1	-	-	0	-	the mutation baseline is the recorded census it names
+-	1	-	-	0	-	every mutation exclusion names code that exists
+-	1	-	-	0	-	the shared scope/architect-label merge-base resolution
+-	1	-	-	0	-	a pull request skips the heavy gates unless it carries full-ci
+-	1	-	-	0	-	format values move with their version constants
+-	1	-	-	0	-	the first cut's programs declare what they link
+-	1	-	-	1	-	em-dashes
+-	1	-	-	1	-	externalized crates name no nife program
+shellcheck	1	-	-	0	-	shellcheck
+-	1	-	-	1	-	dependency direction
+-	1	-	-	1	-	package boundaries
+-	1	-	-	0	-	the region claim protocol has one decision path
+-	0	main	-	0	-	unused dependencies
+-	1	-	-	1	-	tests the suite cannot see
+-	0	main	-	0	-	every crate with proof harnesses is in the verify table
+-	1	-	-	0	-	every RETYPE outside the run wrapper passes 0
+-	1	-	-	1	-	halves that are not halves
+-	1	-	-	0	-	spelling
+-	1	-	-	0	-	sh -n (does the dev machine's own /bin/sh parse every script)
+-	1	-	-	0	-	script/verify passes extra arguments through to cargo kani
+-	1	-	-	0	-	every kani-verifier install reads .kani-version
+-	1	-	-	0	-	script/kani-install: an installed pin is not reinstalled

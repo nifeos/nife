@@ -221,17 +221,17 @@ fn the_read_matrix_reads_every_row_and_never_writes() {
 }
 
 /// `QueueWatch` is what says whether radon's queue filled: its peak and full count must come from
-/// `STATUS` alone, count every full read, and start again at `clear`.
+/// `STATUS_REGISTER` alone, count every full read, and start again at `clear`.
 #[test]
 fn the_watch_counts_status_fill_and_nothing_else() {
     use crate::host_controller::RegisterWindowAndClock;
-    /// `STATUS` reads `status`; every other register reads all ones.
+    /// `STATUS_REGISTER` reads `status`; every other register reads all ones.
     struct Fixed {
         status: u32,
     }
     impl RegisterWindowAndClock for Fixed {
         fn read(&mut self, o: u32) -> u32 {
-            if o == crate::registers::STATUS {
+            if o == crate::registers::STATUS_REGISTER {
                 self.status
             } else {
                 u32::MAX
@@ -246,13 +246,13 @@ fn the_watch_counts_status_fill_and_nothing_else() {
     let mut w = bench::QueueWatch::new(Fixed { status: 5 << 17 });
     w.read(crate::registers::RINTSTS);
     assert_eq!((w.maximum_fill, w.full_reads), (0, 0));
-    w.read(crate::registers::STATUS);
+    w.read(crate::registers::STATUS_REGISTER);
     assert_eq!((w.maximum_fill, w.full_reads), (5, 0));
     let mut w = bench::QueueWatch::new(Fixed {
         status: (128 << 17) | (1 << 3),
     });
-    w.read(crate::registers::STATUS);
-    w.read(crate::registers::STATUS);
+    w.read(crate::registers::STATUS_REGISTER);
+    w.read(crate::registers::STATUS_REGISTER);
     assert_eq!((w.maximum_fill, w.full_reads), (128, 2));
     w.clear();
     assert_eq!((w.maximum_fill, w.full_reads), (0, 0));

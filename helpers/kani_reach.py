@@ -407,6 +407,8 @@ def run_kani(package, kani_args, harnesses, timeout):
 
 
 def run(args):
+    import heavy_slot
+    heavy_slot.take_kani(1, "kani_reach")  # one proof at a time; off in CI (GITHUB_ACTIONS)
     pl = json.load(open(args.plan))
     pkg, kargs = pl["package"], pl["kani_args"]
     all_h = [h["path"] for h in pl["harnesses"]]

@@ -1668,9 +1668,7 @@ crates/current_cpu_contract/src/lib.rs::thread_page_va
 
 
 
-crates/designware_mobile_storage/src/registers.rs::STATUS
 
-crates/designware_mobile_storage/src/registers.rs::WINDOW_USED
 
 
 

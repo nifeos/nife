@@ -6,7 +6,7 @@ This note lists, for every crate on [journey 5](../design/journeys/05-crates-rel
 
 `script/crate-standalone` step 0 passes a crate only when it finds every `Name:` block in it ratified, so each group here stands between a crate and its move. The lists come from `python3 helpers/name_release.py --draft <crate>`: a row whose status reads `no block` or starts with `provisional`. Rerun it for the live state; nothing regenerates this note, and a ruling removes its group.
 
-`extensible_host_controller_interface`, `file_allocation_table`, `generational_table`, `jh7110_clock_and_reset` and `non_volatile_memory_express` have no unratified name left. `jh7110_entropy` has already left `crates/`.
+`designware_ethernet`, `designware_mobile_storage`, `extensible_host_controller_interface`, `file_allocation_table`, `generational_table`, `jh7110_clock_and_reset` and `non_volatile_memory_express` have no unratified name left. `jh7110_entropy` has already left `crates/`.
 
 ## How a naming pull request edits this note and the baselines
 
@@ -30,25 +30,7 @@ Each group gives its items in their current spelling, as `path::name`, and a mod
 
 ## Smallest first decisions
 
-In order, easiest to rule on first:
-
-1. The `no` groups of designware_mobile_storage (`DM10`): ratify as they stand, which clears the module.
-
-The groups that need a real ruling are the register and bit constants: `E7` and `E8`. Decide the designware_ethernet ones first, since #3094 set the pattern, then reuse it for e1000e.
-
-## `designware_ethernet`
-
-## `designware_mobile_storage`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand.
-
-### DM10. Register window (2)
-
-`registers::STATUS`, `registers::WINDOW_USED`
-
-- Breaks the spelled-out rule: no.
-- Provisional recommendation: Ratify as they stand.
+The groups that need a real ruling are the register and bit constants: `E7` and `E8`. #3094 set the pattern for them in designware_ethernet.
 
 ## `e1000e`
 
