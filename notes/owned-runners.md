@@ -78,9 +78,9 @@ Stage 2, later, moves the rest.
 ## The switch: `NIFE_RUNNER_OWNED`
 
 The variable stays `false` until the strict canary (`canary-owned`) and the dry run
-(`canary-owned-dry-run`) are both green on the pool, in the same merge group or push run, with no
-`FINDING` line in either summary and the proxy's refusal log empty for that run. Both are described
-under "The canary" below. Flipping needs no review beyond that evidence. It is a reversible decision;
+(`canary-owned-dry-run`) are both green on the pool. They must be green in one merge group or push
+run, with no `FINDING` line in either summary and the proxy's refusal log empty for that run. "The canary" below
+describes both. Flipping needs no review beyond that evidence. It is a reversible decision;
 Rollback below undoes it.
 
 The repository variable `NIFE_RUNNER_OWNED` chooses between the two pools. The value `true` selects
@@ -116,8 +116,8 @@ and the dry run on the owned side, then an isolation test:
 - `canary-hosted` on `ubuntu-26.04`, the reference.
 
 Both probe jobs print the runner name, hostname and `id`, tests that `/dev/kvm` is writable, prints the
-`qemu-system-x86_64` and `cargo` versions when present, fetches `https://index.crates.io/config.json`
-and `https://api.github.com` with the status code and time of each, and times the whole probe. The owned job
+`qemu-system-x86_64` and `cargo` versions when present, and fetches `https://index.crates.io/config.json`
+and `https://api.github.com` with the status code and time of each. It times the whole probe. The owned job
 then checks the container's walls: a fetch with the proxy bypassed must fail, and no Docker, Podman
 or containerd socket may exist. Each open wall prints a `FINDING` line and fails the job. The output
 goes to the job summary. The workflow holds no secrets and `permissions: contents: read`.
@@ -134,7 +134,7 @@ shows red where an earlier canary showed green. The checks are:
 - `toolchain`: the channel `rust-toolchain.toml` pins appears in `rustup toolchain list`, and
   `rustc -vV` and `cargo --version` run in the repository.
 - `apt-proxy`: apt has an `Acquire::http::Proxy` or `Acquire::https::Proxy` setting that is not
-  `DIRECT`, and `sudo` keeps the runner's proxy variables when they are set.
+  `DIRECT`, and `sudo` keeps the runner's proxy variables when the runner sets them.
 - `pip`: a virtual environment's pip downloads `wheel` and `qemu.qmp` (the two packages QEMU's
   `configure` fetches) through the proxy.
 
@@ -146,10 +146,11 @@ without the real work, and keeps going after a failed step so one run names ever
 
 - `crate-probes`: the pinned toolchain install.
 - the `prove` shards: `script/kani-install`.
-- `swish-check-x86_64` and `bench`: the QEMU cache restore, a check that the workspace is
-  `/home/runner/work/nife/nife` (the layout where a cache saved by a hosted runner restores under
-  `$HOME`), the decision `script/ci-qemu` would take (skip on a hit, build on a miss), and what a
-  cold build fetches: `apt-get update`, the QEMU source tarball and pip's build dependencies.
+- `swish-check-x86_64` and `bench`: the QEMU cache restore and the decision `script/ci-qemu` would
+  take, which is to skip on a hit and build on a miss. The workspace must be
+  `/home/runner/work/nife/nife`, the layout where a cache saved by a hosted runner restores under
+  `$HOME`. The dry run also fetches what a cold build fetches: `apt-get update`, the QEMU source
+  tarball and pip's build dependencies.
 
 It does not build QEMU or run a proof. A pass says the image can start each job's setup; the first
 real queue runs after the flip are the evidence for the rest. When a job's setup steps change, the
