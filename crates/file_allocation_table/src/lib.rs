@@ -76,6 +76,10 @@
 //! Name: ratified 2026-10-07 (#1806). FAT spelled out, as the acronym test asks; permanent once
 //! published.
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 mod allocation;
 mod attributes;
 mod boot_sector;
