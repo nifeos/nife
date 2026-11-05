@@ -29,9 +29,9 @@ pub(crate) const IDT: u32 = 1 << 6;
 /// Name: ratified 2026-11-03 (UTC), #3117. The compile-time check that the named bit groups do
 /// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-// This module is private, so nothing outside can reach the constants; the mutation exclusions in
-// .cargo/mutants.toml are their readers, and helpers/mutation_exclusion_check.py fails if they
-// are gone.
+// This module is private, so nothing in the crate's code reads the constants; the mutation-testing
+// exclusions for the TRB builders refer to them by name, which is why they stay despite the
+// dead-code allowance. Removing them leaves those exclusions without their justification.
 #[allow(dead_code)]
 pub const TRANSFER_CONTROL_FIELDS_DO_NOT_OVERLAP: () = assert!(
     ((0x3fu32 << 10) & (1 << 1 | 1 << 2 | 1 << 5 | 1 << 6)) == 0
@@ -48,9 +48,9 @@ pub const TRANSFER_CONTROL_FIELDS_DO_NOT_OVERLAP: () = assert!(
 /// Name: ratified 2026-11-03 (UTC), #3117. The compile-time check that the named bit groups do
 /// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-// This module is private, so nothing outside can reach the constant; the mutation exclusions in
-// .cargo/mutants.toml are its readers, and helpers/mutation_exclusion_check.py fails if it is
-// gone.
+// This module is private, so nothing in the crate's code reads the constant; the mutation-testing
+// exclusion for `with_cycle` refers to it by name, which is why it stays despite the dead-code
+// allowance. Removing it leaves that exclusion without its justification.
 #[allow(dead_code)]
 pub const CYCLE_BIT_AND_CLEARED_WORD_DO_NOT_OVERLAP: () = assert!(((!1u32) & 1) == 0);
 
