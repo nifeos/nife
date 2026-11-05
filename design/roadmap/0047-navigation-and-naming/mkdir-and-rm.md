@@ -19,7 +19,7 @@ like ours). The two operations are separate:
 
 `rm` is `UNLINK`. Revocation is not exotic here: §13 (capability revocation and untyped
 reclamation) revokes frames, §16 (object revocation) revokes objects, and generational names
-(`crates/slots`) make a stale capability fail safely rather than point somewhere wrong. It is not
+(`crates/generational_table`) make a stale capability fail safely rather than point somewhere wrong. It is not
 offered for files, because the FS server validates handles against a table that is per session, and
 the server does not track all outstanding sessions.
 
