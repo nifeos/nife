@@ -47,7 +47,7 @@ pub struct CivilDateTime {
 
 /// **Where a writer gets the time.** A volume that writes holds one.
 ///
-/// The time a clock supplies must be UTC (ruled 2026-11-01 UTC). FAT stores a date and a time of
+/// The time a clock supplies is expected to be UTC. FAT stores a date and a time of
 /// day with no time zone, the crate writes the fields it is given and converts nothing, and it
 /// cannot check that a clock gives UTC. A reader that treats FAT times as local time, such as
 /// Windows, shows a UTC value as local time. A read takes no clock and never writes.

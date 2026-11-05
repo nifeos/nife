@@ -32,7 +32,7 @@ fn the_type_follows_the_cluster_count_from_the_smallest_cluster_that_works() {
 
 #[test]
 fn the_fat32_numbers_are_the_efi_volumes_numbers() {
-    // 512 MiB in 512-byte sectors with 4096-byte clusters is the installer's volume.
+    // 512 MiB in 512-byte sectors with 4096-byte clusters, a common EFI system partition.
     let format = FormatPlan::new(
         options(1024 * 1024)
             .with_file_allocation_table_type(FileAllocationTableType::Fat32)

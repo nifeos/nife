@@ -12,8 +12,8 @@ use crate::time::{Clock, Stamp};
 
 /// A FAT sector, and the unit every one of this crate's outputs is measured in.
 ///
-/// FAT32 permits 512, 1024, 2048 and 4096; this crate writes 512, which is what every disk this
-/// project has met reports and what `globally_unique_identifier_partition_table` counts in.
+/// FAT32 permits 512, 1024, 2048 and 4096; this writer writes 512, which is what nearly every disk
+/// reports and the unit a GUID partition table on such a disk counts in.
 ///
 /// Name: ratified 2026-10-25 (#2720). Refused `SECTOR` (it reads as a sector and holds a size).
 pub const SECTOR_BYTES: usize = 512;
@@ -274,9 +274,9 @@ impl VolumeLayout {
     ///
     /// `cluster` must be at least [`ROOT_CLUSTER`] (2); clusters 0 and 1 are the FAT's own
     /// reserved entries and have no sectors, and the subtraction below underflows on them (a panic
-    /// in a debug build, a wrap in release). Every caller in this tree passes a constant from 2
-    /// up; noted by the 2026-09-24 security audit rather than made checked, because a `const fn`
-    /// returning an `Option` would push a `?` into a writer whose inputs are all its own.
+    /// in a debug build, a wrap in release). Every caller in this crate passes a constant from 2
+    /// up. It is not made checked, because a `const fn` returning an `Option` would push a `?` into
+    /// a writer whose inputs are all its own.
     ///
     /// Name: ratified 2026-10-25 (#2720). Refused `cluster_sector` (the reader's spelling for the
     /// same quantity).
@@ -540,7 +540,7 @@ mod tests {
     use super::*;
     use crate::NoClock;
 
-    /// 512 MiB in 512-byte sectors, the size the installer lays out.
+    /// 512 MiB in 512-byte sectors, a common size for an EFI system partition.
     const ESP_SECTORS: u64 = 1024 * 1024;
 
     fn volume() -> VolumeLayout {
@@ -575,8 +575,8 @@ mod tests {
     }
 
     /// The smallest volume this crate will build, and the boundary it refuses below. With 4096-byte
-    /// clusters, 65525 of them is a little over 256 MiB, which is why the EFI system partition the
-    /// installer lays out is not the 100 MiB a reader might expect.
+    /// clusters, 65525 of them is a little over 256 MiB, which is why an EFI system partition this
+    /// writer lays out is not the 100 MiB a reader might expect.
     #[test]
     fn a_volume_too_small_to_be_fat32_is_refused_rather_than_mislabelled() {
         assert_eq!(
