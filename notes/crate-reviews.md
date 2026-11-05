@@ -58,8 +58,8 @@ record lives in the crate repository, in `docs/stranger-test.md`.
 
 ## `file_allocation_table`, step 2
 
-Name and version. `file_allocation_table` `0.1.0`. The architect ratified the name, with FAT spelled out. All
-389 `Name:` blocks read ratified.
+Name and version. `file_allocation_table` `0.1.0`. The architect ratified the name, with FAT spelled out. Every
+`Name:` block reads ratified except `LayoutError::LabelRefused`, which is provisional.
 
 API. FAT12, FAT16 and FAT32 with no I/O. Reading: `BootSector`, `Volume`, `Directory` with short
 and long names, `FileReader`, `MasterBootRecord` with a partition-restricted device, lookup by path.
@@ -79,8 +79,8 @@ with it.
 Provenance. Nothing outstanding. The crate follows Microsoft's FAT specification, and
 milestone 1019 does not list it.
 
-Result of `script/crate-standalone`. Clean: no failure in manifest, files, citations, names, build,
-tests, proofs or patches.
+Result of `script/crate-standalone`. One failure, in names: `LayoutError::LabelRefused` is
+provisional. Manifest, files, citations, build, tests, proofs and patches are clean.
 
 Outstanding before the move.
 
@@ -90,7 +90,7 @@ Outstanding before the move.
 | `LayoutError::LabelRefused` reads `Name: provisional`, so step 0 of `script/crate-standalone` fails until it is ratified. | architect |
 | The architect decides whether the first release carries the EFI-system-partition writer (`VolumeLayout`), whose volume label the caller supplies. | architect |
 
-Recommendation. Ready for review. The items above are edits and one API judgment, not blockers.
+Recommendation. Ready for review. The items above are one edit, one ratification and one API judgment, not blockers.
 
 ## `extensible_host_controller_interface`, step 3
 
