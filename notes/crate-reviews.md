@@ -208,9 +208,7 @@ and `ukphy_status` (NetBSD Foundation BSD-2-Clause). Both notices are in the tre
 5 and 9 are open on `main`; #3200 settles item 5's Reuse text. Item 9 (a source claim in
 `motorcomm_physical_layer_device.rs` that OpenBSD's `ytphy.c` and FreeBSD's `mcommphy.c` also name the
 registers) is not done as far as this review could read. The manifest license field reads
-`MIT OR Apache-2.0`, and the crate adapts ISC and BSD-2-Clause code, so the license rule of
-milestone 887 (crate repositories share one CI template) asks for
-`(MIT OR Apache-2.0) AND ISC AND BSD-2-Clause`.
+`(MIT OR Apache-2.0) AND ISC AND BSD-2-Clause`, naming the license of each adapted source.
 
 Result of `script/crate-standalone`. Clean.
 
@@ -220,10 +218,9 @@ Outstanding before the move.
 |---|---|
 | Merge #3200 (item 5). | #3200's lane |
 | Item 9 of milestone 1019: the false claim about which sources name the YT8531 registers. | maintainer, with an architect ruling on the names |
-| Set the manifest `license` field to `(MIT OR Apache-2.0) AND ISC AND BSD-2-Clause`. | lane |
 | Milestone 816 (proven DesignWare Ethernet QoS logic, released on its own) asks whether three harnesses are enough for a published driver. | architect |
 
-Recommendation. Blocked by #3200 and the license field; item 9 needs a home before the review.
+Recommendation. Blocked by #3200; item 9 needs a home before the review.
 
 ## `designware_mobile_storage`, step 8
 
@@ -297,6 +294,6 @@ Recommendation. Blocked by one unratified name and the unrun bench check.
 | `extensible_host_controller_interface` | 3 | blocked by three nife citations (lane edit) |
 | `non_volatile_memory_express` | 5 | ready for review |
 | `e1000e` | 6 | blocked by three unratified names and #3200 |
-| `designware_ethernet` | 7 | blocked by #3200, the license field and item 9 of milestone 1019 |
+| `designware_ethernet` | 7 | blocked by #3200 and item 9 of milestone 1019 |
 | `designware_mobile_storage` | 8 | blocked by #3200 |
 | `jh7110_clock_and_reset` | 10 | blocked by one unratified name and the unrun bench check |
