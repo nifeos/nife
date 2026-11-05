@@ -156,8 +156,8 @@ def check_loop_issues(o):
     issues = gh_json("issue", "list", "--repo", o.repo, "--label", LOOP_LABEL, "--state", "open",
                      "--json", "number", "--limit", "100")
     if issues:
-        return FAIL, "%d open issue(s) labelled %s" % (len(issues), LOOP_LABEL)
-    return PASS, "no open issue labelled %s" % LOOP_LABEL
+        return FAIL, "%d open issue(s) labeled %s" % (len(issues), LOOP_LABEL)
+    return PASS, "no open issue labeled %s" % LOOP_LABEL
 
 
 def check_advisories(o):
@@ -273,8 +273,8 @@ def check_follow(o):
     h, t = head.stdout.strip(), tip.stdout.strip()
     if h == t:
         return PASS, "the clone is at the followed main tip %s" % h[:12]
-    anc = git("merge-base", "--is-ancestor", h, t)
-    if anc.returncode != 0:
+    ancestry = git("merge-base", "--is-ancestor", h, t)
+    if ancestry.returncode != 0:
         return FAIL, "the clone's %s is not an ancestor of the followed main %s" % (h[:12], t[:12])
     n = int(git("rev-list", "--count", "%s..%s" % (h, t)).stdout.strip() or 0)
     if n <= o.max_behind:

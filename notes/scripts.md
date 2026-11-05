@@ -126,7 +126,7 @@ set; they make the CI format, clippy, coverage, supply-chain, fuzz, miri, and we
 jobs one-liners. `coverage` measures only the pure-logic host crates (`abi`, `capability`,
 `nifefs`, `device_tree_blob`, `elf`, `frames`, `paging`, `pci`, ...). The kernel and user crates run
 under QEMU, out of reach of host instrumentation, which is why DECISIONS
-§7 keeps the testable logic in host crates. It installs its own tool rather than
+§7 (Testing: QEMU harness + host-testable crates) keeps the testable logic in host crates. It installs its own tool rather than
 leaning on `bootstrap`, so the CI test job compiles no coverage tool.
 
 ### Running the agent fleet
