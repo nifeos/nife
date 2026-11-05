@@ -7,7 +7,7 @@ Expected to fail: the harness's `.expect("the reader accepts what the format wro
 diff --git a/crates/file_allocation_table/src/format.rs b/crates/file_allocation_table/src/format.rs
 --- a/crates/file_allocation_table/src/format.rs
 +++ b/crates/file_allocation_table/src/format.rs
-@@ -210,7 +210,7 @@ impl Geometry {
+@@ -240,7 +240,7 @@ impl Geometry {
                  .ok_or(GeometryError::TooSmall)?;
              clusters = data_sectors / cluster_sectors;
              let capacity = u64::from(table_sectors) * u64::from(bytes) * 8 / bits;

@@ -9,7 +9,7 @@ Expected to fail: the harness's `assert!(sector >= first_data && sector < first_
 diff --git a/crates/file_allocation_table/src/directory.rs b/crates/file_allocation_table/src/directory.rs
 --- a/crates/file_allocation_table/src/directory.rs
 +++ b/crates/file_allocation_table/src/directory.rs
-@@ -242,7 +242,7 @@
+@@ -327,7 +327,7 @@ impl Source {
                      };
                      // The walk yields only data clusters, which always have sectors.
                      *next = boot.cluster_first_sector(cluster)?;

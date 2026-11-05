@@ -9,7 +9,7 @@ Expected to fail: the harness's `assert!((u64::from(boot.clusters()) + 2) * bits
 diff --git a/crates/file_allocation_table/src/boot_sector.rs b/crates/file_allocation_table/src/boot_sector.rs
 --- a/crates/file_allocation_table/src/boot_sector.rs
 +++ b/crates/file_allocation_table/src/boot_sector.rs
-@@ -272,7 +272,7 @@
+@@ -357,7 +357,7 @@ impl BootSector {
          }
          // Clusters 0 and 1 have table entries too, which is why the table needs `clusters + 2`.
          let needed_bits =

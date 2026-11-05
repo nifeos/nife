@@ -8,7 +8,7 @@ Expected to fail: the harness's assertion that the sector asked for is below the
 diff --git a/crates/file_allocation_table/src/master_boot_record.rs b/crates/file_allocation_table/src/master_boot_record.rs
 --- a/crates/file_allocation_table/src/master_boot_record.rs
 +++ b/crates/file_allocation_table/src/master_boot_record.rs
-@@ -302,7 +302,7 @@ impl<D: SectorDevice> SectorDevice for PartitionDevice<D> {
+@@ -310,7 +310,7 @@ impl<D: SectorDevice> SectorDevice for PartitionDevice<D> {
      }
  
      fn read_sector(&mut self, index: u64, buffer: &mut [u8]) -> Result<(), Self::Error> {

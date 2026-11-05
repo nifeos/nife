@@ -9,7 +9,7 @@ Expected to fail: the harness's `assert!(long)`.
 diff --git a/crates/file_allocation_table/src/directory.rs b/crates/file_allocation_table/src/directory.rs
 --- a/crates/file_allocation_table/src/directory.rs
 +++ b/crates/file_allocation_table/src/directory.rs
-@@ -26,7 +26,7 @@
+@@ -31,7 +31,7 @@ const DIRECTORY: u8 = 0x10;
  /// The low four attribute bits together, which mark a long-name slot.
  const LONG_NAME: u8 = READ_ONLY | HIDDEN | SYSTEM | VOLUME_ID;
  /// The attribute bits a long-name test looks at: the six the specification defines.

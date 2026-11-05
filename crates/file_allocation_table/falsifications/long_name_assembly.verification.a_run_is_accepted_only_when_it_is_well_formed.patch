@@ -8,7 +8,7 @@ Expected to fail: the harness's `assert_eq!(piece.checksum(), checksum(&short))`
 diff --git a/crates/file_allocation_table/src/long_name_assembly.rs b/crates/file_allocation_table/src/long_name_assembly.rs
 --- a/crates/file_allocation_table/src/long_name_assembly.rs
 +++ b/crates/file_allocation_table/src/long_name_assembly.rs
-@@ -196,7 +196,7 @@ impl<const UNITS: usize> Assembler<UNITS> {
+@@ -201,7 +201,7 @@ impl<const UNITS: usize> Assembler<UNITS> {
          if next != 0 {
              return Err(LongFileNameError::Incomplete);
          }

@@ -9,7 +9,7 @@ Expected to fail: the harness's assertion that a partition ends within 2^32.
 diff --git a/crates/file_allocation_table/src/master_boot_record.rs b/crates/file_allocation_table/src/master_boot_record.rs
 --- a/crates/file_allocation_table/src/master_boot_record.rs
 +++ b/crates/file_allocation_table/src/master_boot_record.rs
-@@ -171,7 +171,7 @@ impl MasterBootRecord {
+@@ -177,7 +177,7 @@ impl MasterBootRecord {
              if sectors == 0 {
                  return Err(MasterBootRecordError::EmptyPartition { index });
              }
