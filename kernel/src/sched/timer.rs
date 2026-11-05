@@ -55,7 +55,12 @@ pub fn create_timer_from(region: u64) -> Option<TimerId> {
             state: inter_process_communication::timer::Timer::new(),
         });
     }
-    sched.timer_table.insert_with(|_| phys)
+    let name = sched.timer_table.insert_with(|_| phys);
+    if name.is_none() {
+        // Unreachable after the capacity check; the count the retype took goes back.
+        crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Timer);
+    }
+    name
 }
 
 /// **`Timer::ARM`**: arm `id` to signal `bits` into `notification` at `deadline` (counter ticks),

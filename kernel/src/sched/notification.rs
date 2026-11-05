@@ -61,8 +61,13 @@ pub fn create_notification_from(region: u64) -> Option<NotificationId> {
             bound: None,
         });
     }
-    // Cannot fail: capacity was checked above under this same lock hold.
-    sched.notification_table.insert_with(|_| phys)
+    // Cannot fail: capacity was checked above under this same lock hold. Were it to, the count
+    // the retype took goes back.
+    let name = sched.notification_table.insert_with(|_| phys);
+    if name.is_none() {
+        crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Notification);
+    }
+    name
 }
 
 /// The mailbox of a receive the bound notification ended, `(BOUND, word, 0, 0, BOUND)`: §101's

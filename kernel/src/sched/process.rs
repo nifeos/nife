@@ -98,11 +98,12 @@ pub fn create_process_from(region: u64, space: u64) -> Result<ProcessId, abi::Er
             });
             crate::thread::write_empty_capability_table(table_at(phys).cast_mut());
         }
-        // Cannot fail: capacity was checked above under this same hold.
-        let pid = sched
-            .processes
-            .insert_with(|_| phys)
-            .ok_or(abi::Error::OutOfMemory)?;
+        // Cannot fail: capacity was checked above under this same hold. Were it to, the count
+        // the retype took goes back.
+        let Some(pid) = sched.processes.insert_with(|_| phys) else {
+            crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Process);
+            return Err(abi::Error::OutOfMemory);
+        };
         created = Some(pid);
         Ok(Holder::Process(pid))
     })?;
