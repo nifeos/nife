@@ -121,8 +121,8 @@ pub fn split(parent: u64, pages: u64) -> Option<u64> {
 
 /// **The kernel keeps this fraction of every table for itself**: one eighth, so the progenitor's
 /// subtree may hold the other seven. What the kernel holds outside that subtree (its own threads
-/// and rendezvous, the roots and spaces of the services it starts, the grants it makes on request)
-/// is measured against this in notes/memory-regions.md, "Subtree ceilings".
+/// and rendezvous, the roots and spaces of the services it starts) is measured against this in
+/// notes/memory-regions.md, "Subtree ceilings".
 const KERNEL_RESERVE_OF_EACH_TABLE: usize = 8;
 
 /// **The ceilings the progenitor's subtree lives under**: every kernel table less the kernel's
@@ -131,7 +131,7 @@ const KERNEL_RESERVE_OF_EACH_TABLE: usize = 8;
 /// kernel's own and has no ceiling.
 ///
 /// Name: provisional.
-pub(crate) fn progenitor_ceilings() -> Ceilings {
+pub fn progenitor_ceilings() -> Ceilings {
     let leave_reserve = |capacity: usize| {
         u32::try_from(capacity - capacity / KERNEL_RESERVE_OF_EACH_TABLE).unwrap_or(u32::MAX)
     };
@@ -302,6 +302,13 @@ pub(crate) fn usage_record(region: u64, record: u64) -> Option<u64> {
         _ => PageUse::Children,
     };
     table.spent(region, on)
+}
+
+/// `region`'s subtree's live `counted` objects and its ceiling for them, `(live, ceiling)`, or
+/// `None` for a dead name. For the tests.
+#[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // the ceiling tests are the only callers
+pub fn subtree_live(region: u64, counted: Counted) -> Option<(u32, u32)> {
+    REGIONS.lock().subtree_live(region, counted)
 }
 
 /// How many pages the region has retyped, and its size. For the demo and tests.
