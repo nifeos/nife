@@ -1,7 +1,7 @@
 # The public API of `file_allocation_table`
 
 *Name: provisional, minted by lane milestone/813-review-package. An appendix of
-[the review package](../file-allocation-table.md), which judges this list; this page only states
+[the review package](file-allocation-table.md), which judges this list; this page only states
 it.*
 
 `script/crate-review-packet file_allocation_table` generated the item list from rustdoc JSON

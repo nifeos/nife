@@ -8,7 +8,7 @@ The architect reads this to clear `crates/file_allocation_table` for its move to
 and its first publication ([journey 5](../../design/journeys/05-crates-released-on-their-own.md),
 step 2; [milestone 813 (a proven FAT crate, released on its own)](../../design/roadmap/0813-a-proven-fat-crate-released-on-its-own.md)).
 It describes the crate as #3233 leaves it, with no reference to nife. Every public item and its
-signature is in [the public API appendix](file-allocation-table/public-api.md). The open questions
+signature is in [the public API appendix](file-allocation-table-public-api.md). The open questions
 close this page, each with its background and a recommendation.
 
 ## In one paragraph
