@@ -2,7 +2,7 @@
 
 *Name: provisional, minted 2026-11-05 (UTC) by lane/generational-table-vs-slotmap.*
 
-The release record for `crates/generational_table` owes one answer before the crate is published:
+The release record for `crates/generational_table` owes one answer before publication:
 whether `slotmap`, or a crate like it, already covers an allocation-free, fixed-capacity generational
 table with what nife needs from one. This note gives that answer from the source of each candidate,
 a host experiment and five Kani harnesses, and ends with the question an architect rules on. The
@@ -25,18 +25,18 @@ processes, address spaces, virtio devices) and `crates/memory_regions` holds one
 
 Each of these is a requirement some kernel code depends on today:
 
-1. **No allocation, capacity fixed at compile time.** The kernel has no global allocator. `N` is a
+1. No allocation, capacity fixed at compile time. The kernel has no global allocator. `N` is a
    const generic and a full table refuses an insert rather than growing.
-2. **A `const fn new`.** Every kernel table lives in a `static` behind a lock
+2. A `const fn new`. Every kernel table lives in a `static` behind a lock
    (`kernel/src/sched/ipc_tables.rs`), so the constructor must run at compile time.
-3. **The first name in a fresh table is `0`.** That is the boot thread's id. No name equals
+3. The first name in a fresh table is `0`. That is the boot thread's id. No name equals
    `u64::MAX`, which is `cpu::NO_TID`.
-4. **The slot index is reachable.** `slot_of` returns it, because the thread table keeps control
+4. The slot index is reachable. `slot_of` returns it, because the thread table keeps control
    blocks in a parallel pool where pool slot *i* is table slot *i*.
-5. **A resumable walk.** `iter_from(slot)` yields `(slot, name, &T)` from a slot onward, and
+5. A resumable walk. `iter_from(slot)` yields `(slot, name, &T)` from a slot onward, and
    `rendezvous::SURVEY` hands that slot to userspace as a cursor. Every walk stops at `top`, one past
    the highest live slot, so it costs what the table holds and not `N`.
-6. **A name the table never minted resolves to nothing.** Names arrive in syscall registers, so any
+6. A name the table never minted resolves to nothing. Names arrive in syscall registers, so any
    `u64` at all must either fail or land on the entry whose minted name is exactly that `u64`. Kani
    proves this, together with three other properties (a removed name never resolves again, live
    names are distinct, a bounded walk sees every live entry), each with a falsification patch.
@@ -66,7 +66,7 @@ A crates.io search for fixed-capacity, `no_std` and const-generic slot maps foun
 `dense-slotmap-mem`, and nothing else with generations. `heapless` 0.9.3, the usual home for
 fixed-capacity collections, has no generational map.
 
-### How each one is built
+### How each one stores its entries
 
 | crate | storage | fixed `N` | `const new` | handle | generation and overflow | free slots |
 |---|---|---|---|---|---|---|
@@ -103,9 +103,9 @@ and a leak in `Slot::clone_from` (#110, open from 2023-10 to 2025-12).
 
 ## The experiment
 
-A host crate depending on `slotmap` 1.1.1 (default features off), `thunderdome` 0.6.1 (default
-features off), `coca` 0.3.0 and `generational_table` printed the first names and sizes, and five
-Kani 0.68.0 harnesses checked two of nife's proved properties against the two maintained growable
+A host crate depending on `slotmap` 1.1.1 and `thunderdome` 0.6.1 (both with default features
+off), `coca` 0.3.0 and `generational_table` printed the first names and sizes. Five Kani 0.68.0
+harnesses checked two of nife's proved properties against the two maintained growable
 crates.
 
 What the host run printed:
@@ -130,7 +130,7 @@ The Kani results, each harness at unwind 4 and each under five seconds:
 | property | nife | `slotmap` | `thunderdome` |
 |---|---|---|---|
 | a removed name never resolves again, slot reused | proved | proved | proved |
-| a `u64` the table never minted resolves to nothing | proved (in the crate) | **fails** | proved, through `from_bits` |
+| a `u64` the table never minted resolves to nothing | proved (in the crate) | fails | proved, through `from_bits` |
 
 The failure is the concrete example of what separates the two. `KeyData::from_ffi` forces the
 version odd (`(value >> 32) | 1`), so two different `u64`s decode to the same key. In the host run, a
@@ -138,8 +138,8 @@ map holding one live entry named `0x3_0000_0001` resolves `from_ffi(0x2_0000_000
 though the map never minted `0x2_0000_0001`. Its documentation allows this ("the behavior is safe but
 unspecified" for a value that did not come from `as_ffi`), and for a game it does not matter. For a
 kernel that takes names from syscall registers, it means two names reach one object, and nife's
-claim that names cannot be forged would have to become "cannot be forged, up to the low bit of the
-generation". The harness that finds it:
+claim that nobody can forge a name would weaken to "nobody can forge one, except in the low bit of
+the generation". The harness that finds it:
 
 ```rust
 #[kani::proof]
@@ -161,20 +161,20 @@ fail, and no candidate ships any.
 
 ## Could the kernel adopt one instead
 
-- **`slotmap`**: no. It needs an allocator the kernel does not have, it cannot construct in a
+- `slotmap`: no. It needs an allocator the kernel does not have, it cannot construct in a
   `static`, its names start at `0x1_0000_0001`, it hides the slot index, and it fails the forgery
   property above. Working around all of that means a wrapper larger than the table.
-- **`thunderdome`**: the closest in API. It exposes slots, has `get_by_slot`, keeps the same packing
+- `thunderdome`: the closest in API. It exposes slots, has `get_by_slot`, keeps the same packing
   and passes both harnesses. It still needs an allocator and grows rather than refusing, its first
   name is not `0`, and its last release was 2023-06-25.
-- **`generational-arena`** and **`typed-generational-arena`**: both need an allocator, both carry an
-  arena-wide counter rather than one per slot, and the first is archived.
-- **`coca`**: the only true match on storage. It has no release or commit since March 2022, no
+- `generational-arena` and `typed-generational-arena`: both need an allocator, both carry an
+  arena-wide counter rather than one per slot, and its author archived the first.
+- `coca`: the only true match on storage. It has no release or commit since March 2022, no
   reverse dependencies, 18 downloads in 90 days, a non-`const` constructor, a first name of
   `0x1_0000_0000`, no slot cursor and 382 `unsafe` lines. Taking it would put a dormant crate
   with heavy `unsafe` into the kernel's shipping graph, which §46 (thin primitives or whole
   subsystems) exists to prevent.
-- **`slab`**, **`sparseset`**, **`slots`**: no generations, so a stale index reaches the next
+- `slab`, `sparseset`, `slots`: no generations, so a stale index reaches the next
   occupant. That is the bug the table exists to remove.
 
 The answer holds if both options were the same amount of work. Adopting `slotmap` would cost the
@@ -192,16 +192,16 @@ orphaned users, because those users grow their arenas.
 The users a fixed-capacity table can serve are kernels, firmware and embedded code with no heap,
 which today either write their own or accept `coca`. That audience is small and does not show up in
 download counts, because it writes its own. The crate name `generational_table` is free on
-crates.io. The cost of publishing is the release machinery milestone 887 already built, and the
+crates.io. The cost of publishing is the release machinery that milestone 887 (crate repositories share one CI template) already built, and the
 risk is a crate few people find.
 
 ## Recommendation
 
-**Publish, with the difference stated.** No existing crate covers what the kernel needs, and the
-kernel cannot adopt one without an allocator or a dormant `unsafe`-heavy dependency. The README
-should say in its first paragraph what the crate is for and what it is not: fixed capacity, no
-allocation, a `const` constructor usable in a `static`, names as a `u64` the table proves cannot be
-forged, and a resumable walk; and for growable tables, use `slotmap` or `thunderdome`. It should name
+Publish, with the difference stated. No existing crate covers what the kernel needs, and the
+kernel cannot adopt one without an allocator or a dormant `unsafe`-heavy dependency. The README's
+first paragraph should say what the crate is for: fixed capacity, no allocation, a `const`
+constructor usable in a `static`, unforgeable `u64` names with a proof, and a resumable walk. It
+should also say what it is not for, and send growable tables to `slotmap` or `thunderdome`. It should name
 the costs in its `BUGS` section: O(N) first-fit insert, one `Option` tag per slot, and the 2^32
 wrap.
 
@@ -213,7 +213,7 @@ whether the README states expected demand as low, in the words of the measuremen
 ## The question for the architect
 
 `generational_table` is the kernel's table of named slots: each entry gets a 64-bit name that stops
-working the moment the entry is removed, even after the slot is reused. It is next in the ruled
+working the moment its entry leaves, even after another entry takes the slot. It is next in the ruled
 publication order, and the order asked first whether `slotmap` already does this job.
 
 It does not. `slotmap` and its relatives keep their entries on the heap and grow, which the kernel
@@ -226,12 +226,12 @@ The demand that exists is for growable tables. Few people download fixed-capacit
 crate may find few users, and publishing costs only a run through the release machinery already
 built.
 
-Should `generational_table` be published as its own crate, presented as the fixed-capacity,
+Should nife publish `generational_table` as its own crate, presenting it as the fixed-capacity,
 allocation-free, proved member of the slotmap family, with its README pointing growable users to
 `slotmap` and `thunderdome`?
 
-- **A (recommended):** publish, with that difference stated in the README and its costs in `BUGS`.
-- **B:** keep it in nife unpublished, because measured demand for fixed-capacity tables is near zero.
-- **C:** replace it in the kernel with `coca`, or with `thunderdome` behind an allocator, and drop
+- A (recommended): publish, with that difference stated in the README and its costs in `BUGS`.
+- B: keep it in nife unpublished, because measured demand for fixed-capacity tables is near zero.
+- C: replace it in the kernel with `coca`, or with `thunderdome` behind an allocator, and drop
   ours. This loses the `const` constructor, the first name `0` and the slot cursor, and puts either
   a dormant `unsafe`-heavy crate or a heap allocator into the kernel.
