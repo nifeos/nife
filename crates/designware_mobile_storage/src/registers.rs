@@ -293,8 +293,13 @@ pub const DATA_ERROR_AND_TIMEOUT_BITS_DO_NOT_OVERLAP: () =
 pub(crate) const RINTSTS_ALL: u32 = 0xffff;
 
 /// **Status Register** (OpenBSD's `SDMMC_STATUS`): FIFO count, busy, command state.
+///
+/// Name: ratified 2026-11-03 (UTC), #3144. The spelled-out form, which ends in `_REGISTER` like
+/// every other register offset here; OpenBSD's `SDMMC_STATUS` spelling `STATUS` is kept as an
+/// alias. Renamed from `STATUS`.
 #[doc(alias = "status register")]
-pub const STATUS: u32 = 0x048;
+#[doc(alias = "STATUS")]
+pub const STATUS_REGISTER: u32 = 0x048;
 /// **FIFO full** (the databook's `fifo_full`, which `dwmmc-host` keeps): the FIFO is full.
 #[doc(alias = "queue full")]
 pub(crate) const STATUS_FIFO_FULL: u32 = 1 << 3;
@@ -304,7 +309,7 @@ pub(crate) const STATUS_FIFO_FULL: u32 = 1 << 3;
 pub(crate) const STATUS_DATA_BUSY: u32 = 1 << 9;
 
 /// **FIFO count** (OpenBSD's `SDMMC_STATUS_FIFO_COUNT`, the databook's `fifo_count`): how many FIFO
-/// words are filled, bits 29:17 of `STATUS`.
+/// words are filled, bits 29:17 of `STATUS_REGISTER`.
 #[doc(alias = "fifo")]
 #[must_use]
 pub(crate) const fn queue_count(status: u32) -> u32 {
@@ -601,8 +606,12 @@ pub(crate) const fn direct_memory_access_interface(hcon: u32) -> u32 {
     (hcon >> 16) & 0x3
 }
 
-/// The highest offset this driver reads or writes, plus one word. The kernel maps at least this.
-pub const WINDOW_USED: u32 = 0x204;
+/// **Used register window bytes**: the highest offset this driver reads or writes, plus one word,
+/// as a size in bytes. The kernel maps at least this.
+///
+/// Name: ratified 2026-11-03 (UTC), #3144. A size in bytes, spelled out. Renamed from
+/// `WINDOW_USED`.
+pub const USED_REGISTER_WINDOW_BYTES: u32 = 0x204;
 
 #[cfg(test)]
 mod tests {

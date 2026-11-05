@@ -33,12 +33,15 @@ All three negative-discrepancy assertions were fixed. The line numbers in this t
 `notes/load-sensitive-assertions/miss-taxonomy-and-clockless-loops.md`, "The fourth round,
 2026-08-16", had already
 named this exact defect, that a reader coming to the block first is sent to three finished sites). The
-reaper count is now at `kernel/src/sched.rs:3978`, rescoped to per-`Tid` waits and `used() <= before`.
-The address-space frame check is `kernel/src/user/tests.rs:2221`, where the old "-19" survives as a
+reaper count is now `a_finished_thread_is_reaped_and_its_memory_returned`
+(`kernel/src/sched/tests.rs`), rescoped to per-`Tid` waits and `used() <= before`.
+The address-space frame check is `a_dead_user_thread_frees_its_whole_address_space`
+(`system_tests/src/user/address_space_tests.rs`), where the old "-19" survives as a
 comment recording the past failure rather than as a live baseline. The frame-hygiene check was
-removed rather than rescoped. `threads_round_robin` is at `kernel/src/sched.rs:3809` and waits on
+removed rather than rescoped. `threads_round_robin` (`kernel/src/sched/tests.rs`) waits on
 the clock. The timer twins were rebuilt against the re-arm law on both ISAs
-(`kernel/src/arch/aarch64/timer.rs:382`, `kernel/src/arch/riscv64/timer.rs:423`).
+(`ticks_arrive_at_the_configured_rate` in `kernel/src/arch/aarch64/timer.rs` and
+`kernel/src/arch/riscv64/timer.rs`).
 
 The line numbers are 2026-08-03's. Find an assertion by its message
 text. The disposition column was added 2026-08-17 after this table briefed a lane at three finished
@@ -48,13 +51,13 @@ exists to catch, sitting in the paragraph a reader meets first.
 
 | assertion | site | what it reported | disposition |
 |---|---|---|---|
-| reaper count | `sched.rs:2819` | `left: 5, right: 6`, message "finished threads were never reaped" | **rescoped** 2026-08-03, per-`Tid` `thread_present` waits |
-| frame hygiene | `user/live_swap_tests.rs:230` | `before >= free_frames()`, margin measured at 2 frames | **removed** 2026-08-03 (#46), the narrower claim was already beside it |
-| address-space frames | `user/tests.rs:1746` | "**-52** frames did not come back", and separately "-19" | **rescoped** 2026-08-03, same two changes |
-| timer drift | `arch/riscv64/timer.rs:254` | ticks within one period either way | **re-aimed** at the re-arm grid law, both ISAs |
-| placement probe | `smp.rs:343` | 60 s wait for work to run where it was placed | **rescoped** 2026-08-04 after the first verdict ("leave it alone") was refuted |
-| handler latency | `arch/aarch64/timer.rs:323` | `left: 3, right: 2`, missed ticks rose during a quiet window | **taxonomy**, aarch64 2026-08-15 and riscv64 2026-08-16; the instruction-count claim still wants icount |
-| round-robin fairness | `sched.rs:2709` | `thread {i} never ran`, one thread of several had not been scheduled | **rescoped** 2026-08-03, waits on the property |
+| reaper count | `kernel/src/sched/tests.rs` (`a_finished_thread_is_reaped_and_its_memory_returned`) | `left: 5, right: 6`, message "finished threads were never reaped" | **rescoped** 2026-08-03, per-`Tid` `thread_present` waits |
+| frame hygiene | `system_tests/src/user/live_swap_tests.rs` (`run_swap`) | `before >= free_frames()`, margin measured at 2 frames | **removed** 2026-08-03 (#46), the narrower claim was already beside it |
+| address-space frames | `system_tests/src/user/address_space_tests.rs` (`a_dead_user_thread_frees_its_whole_address_space`) | "**-52** frames did not come back", and separately "-19" | **rescoped** 2026-08-03, same two changes |
+| timer drift | `kernel/src/arch/riscv64/timer.rs` (`ticks_arrive_at_the_configured_rate`) | ticks within one period either way | **re-aimed** at the re-arm grid law, both ISAs |
+| placement probe | `kernel/src/smp.rs` (`work_can_be_placed_on_every_cpu`) | 60 s wait for work to run where it was placed | **rescoped** 2026-08-04 after the first verdict ("leave it alone") was refuted |
+| handler latency | `kernel/src/arch/aarch64/timer.rs` (`missed_ticks`) | `left: 3, right: 2`, missed ticks rose during a quiet window | **taxonomy**, aarch64 2026-08-15 and riscv64 2026-08-16; the instruction-count claim still wants icount |
+| round-robin fairness | `kernel/src/sched/tests.rs` (`threads_round_robin`) | `thread {i} never ran`, one thread of several had not been scheduled | **rescoped** 2026-08-03, waits on the property |
 
 Every argument is in notes/load-sensitive-assertions.md, one section per assertion, plus the
 four rounds of sites found by reading rather than by waiting for a red run. That note is the record;
@@ -64,15 +67,15 @@ this block is the spec and the day's evidence.
 it, including the case where the control model `rv64` failed too, which is what proves the failures
 are not model-specific.
 
-A seventh, found by a lane on 2026-08-03 and reported rather than absorbed. `sched.rs:2709`,
-`threads_round_robin`, asserting every spawned thread ran at least once. It failed on one
+A seventh, found by a lane on 2026-08-03 and reported rather than absorbed. `threads_round_robin`
+(`kernel/src/sched/tests.rs`), asserting every spawned thread ran at least once. It failed on one
 `script/gates` run and passed on the immediate re-run, with two full `script/test` runs either side of
 it green. The lane judged it pre-existing on grounds worth repeating, because they are the right
 shape for this call. Its own code runs before the scheduler exists, does three register reads and an
 `ecall`, and holds a leaf lock nothing else takes. It could not have starved a thread.
 
 One of them reproduces off CI. On 2026-08-03 a local `script/test` on an aarch64 dev machine hit
-`user/tests.rs:1746` with "**-19** frames did not come back", the same value the milestone-71 lane saw.
+`a_dead_user_thread_frees_its_whole_address_space` with "**-19** frames did not come back", the same value the milestone-71 lane saw.
 That matters because it removes the easy explanation: this family is not an artifact of GitHub's
 runners, and a quiet machine is not a defense against it.
 
@@ -125,7 +128,7 @@ records three lints dropped because they were measuring the wrong thing. The sam
 assertion.
 
 **Not deleting the assertion**, either. Milestone 72's lane declined to delete
-`live_swap_tests.rs:230` precisely because it could not make it fire and would not remove a check it
+`system_tests/src/user/live_swap_tests.rs` (`run_swap`) precisely because it could not make it fire and would not remove a check it
 did not understand. That was the right call and it is the standard here.
 
 ## What the fix probably is

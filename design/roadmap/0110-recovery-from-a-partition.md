@@ -19,7 +19,7 @@ The tool has the recovery verbs. What is missing is the arithmetic between them:
 read the table, and start the engine at the partition's first LBA.
 
 The gap has a witness, which is the argument for closing it. Milestone 57's post-run check
-(`blank_check_after_run`, `xtask/src/main.rs:2015`) needs to read a filesystem the guest created
+(`blank_check_after_run`, `xtask/src/disk_check.rs`) needs to read a filesystem the guest created
 *inside a partition*. So it parses the table with `crates/globally_unique_identifier_partition_table` and slices the partition out into
 its own file before handing that file to the tool. The note's verdict: "Twenty lines, on the host,
 in a build script: that is the join, written in the wrong place."

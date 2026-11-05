@@ -227,11 +227,11 @@ exclude_re = [
     "^crates/e1000e/src/platform_controller_hub/non_volatile_memory\\.rs:\\d+:\\d+: replace \\| with \\^ in read_u32_at_byte$",
     # The PHY (platform_controller_hub/physical_layer_device.rs): a value shifted left by five never reaches the
     # five-bit register field beside it (assertion beside paged_offset), and the identifier's high
-    # word sits at bit 16 while the low one is a u16 (assertion beside id_at).
+    # word sits at bit 16 while the low one is a u16 (assertion beside read_identifier_at_address).
     "^crates/e1000e/src/platform_controller_hub/physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in paged_offset$",
-    "^crates/e1000e/src/platform_controller_hub/physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in id_at$",
+    "^crates/e1000e/src/platform_controller_hub/physical_layer_device\\.rs:\\d+:\\d+: replace \\| with \\^ in read_identifier_at_address$",
     # The I219 bring-up (platform_controller_hub/sequence.rs): the ULP word's eight single-bit operands (assertion
-    # beside the constant), the identifier composition accessible shares with id_at (assertion
+    # beside the constant), the identifier composition accessible shares with read_identifier_at_address (assertion
     # beside it), the two OEM bits (beside oem_bits), the LANPHYPC counter value inside the field
     # its word masks out (beside toggle_lanphypc), the SMBus address and flags (beside
     # write_system_management_bus_address), initialize_hardware's unnamed Intel bits and the

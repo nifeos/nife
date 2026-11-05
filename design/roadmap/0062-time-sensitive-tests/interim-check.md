@@ -16,8 +16,8 @@ tree `01474c8e`, full table in notes/load-sensitive-assertions.md):
 | re-arm law reported `UNMEASURED` | n/a | 9 of 36 legs, 25% |
 
 The load was harsher than the run that produced the finding. That is the direction that makes a
-green result mean something. Both reds are a different assertion, `smp.rs:1010`'s
-`a_migrated_kernel_thread_keeps_its_hart_pointer`. It is a new member of the family this block is
+green result mean something. Both reds are a different assertion, the one in
+`a_migrated_kernel_thread_keeps_its_hart_pointer` in `kernel/src/smp.rs`. It is a new member of the family this block is
 about: it gives 60 migration workers two seconds of counter time to drain, and 59 arrived. Its fix
 is this block's own prescription, a budget in delivered guest ticks rather than in counter time
 (`sched::within_ticks` exists), and it wants a lane.

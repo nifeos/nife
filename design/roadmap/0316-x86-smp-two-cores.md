@@ -95,8 +95,8 @@ Measured with `NIFE_SMP=2 script/repeat-under-load -n 12 -s 0 -- --arch x86_64` 
 `script/test --arch x86_64`, which is three boots: SeaBIOS plus two OVMF.
 
 5 of 12 runs green, load average 2.0 to 8.9, one QEMU at every sample (no neighboring lane).
-The interesting number is not that one. It is that all seven failures are the same assertion at
-the same line, `user/x86_port_tests.rs:255`, and none of them is #3 or #1:
+The interesting number is not that one. It is that all seven failures are the same assertion in
+`a_revoked_holder_faults_on_its_next_port_write` in `system_tests/src/user/x86_port_tests.rs`, and none of them is #3 or #1:
 
 | what was measured | across the 12 runs |
 |---|---|
