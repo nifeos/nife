@@ -78,8 +78,8 @@ and `fsck.fat`.
 
 Dependencies. None at run time. Dev only: `lamfat =0.4.3` and `ruzstd =0.9.1`, both MIT.
 
-Result of `script/crate-standalone`. One failure, in names: `LayoutError::LabelRefused` is
-provisional.
+Result of `script/crate-standalone`. Clean: every step passes, Kani and the 31 falsifications
+included.
 
 Recommendation. Ready for review. What remains is the architect's clearance of the API the
 provisional rulings leave, and the answer to the seventh question.
