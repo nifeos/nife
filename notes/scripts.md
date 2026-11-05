@@ -104,6 +104,7 @@ Full rows: [analysis-and-supply-chain.md](scripts/analysis-and-supply-chain.md).
 | `script/vendor-watch` | What upstream has done since each pin. |
 | `script/supply-chain` | cargo-deny over each workspace, then `vendor-verify`. |
 | `script/fuzz` | Coverage-guided fuzzing of the byte parsers. |
+| `script/fuzz-status [--host]` | Is the continuous fuzz working? |
 | `script/undefined-behavior-check` | The host-logic tests under Miri. |
 | `script/stack-frame-check` | One kernel function's frame, gated at the 4096-byte guard page. |
 | `script/stack-depth-check` | How deep a kernel thread stack can get, by walking the call graph. |
@@ -121,13 +122,12 @@ Full rows: [analysis-and-supply-chain.md](scripts/analysis-and-supply-chain.md).
 | `script/crate-move --dry-run --into <dir> <crate>` | Stage a crate's move to its own repository, and check it, creating nothing. Provisional name. |
 
 `fmt`, `lint`, `coverage`, `supply-chain`, `fuzz`, `miri`, and `mutants` are not part of the canonical
-set; they exist so the CI format, clippy, coverage, supply-chain, fuzz, miri, and weekly mutation
-jobs are one-liners. `coverage` measures only the pure-logic host crates(`abi`, `capability`,
+set; they make the CI format, clippy, coverage, supply-chain, fuzz, miri, and weekly mutation
+jobs one-liners. `coverage` measures only the pure-logic host crates (`abi`, `capability`,
 `nifefs`, `device_tree_blob`, `elf`, `frames`, `paging`, `pci`, ...). The kernel and user crates run
-under QEMU, out of reach of host instrumentation, which is the same reason DECISIONS
-§7 keeps the testable logic in host crates in the first place. It installs its own tool rather than
-leaning on `bootstrap`, so the CI test job (which runs `bootstrap`) never compiles a coverage tool
-it does not use.
+under QEMU, out of reach of host instrumentation, which is why DECISIONS
+§7 (Testing: QEMU harness + host-testable crates) keeps the testable logic in host crates. It installs its own tool rather than
+leaning on `bootstrap`, so the CI test job compiles no coverage tool.
 
 ### Running the agent fleet
 
