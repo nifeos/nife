@@ -4137,10 +4137,10 @@ PINNED = {
 # `crates/memory_regions` at all, which is also why the surface pin above could not have saved it. Both
 # halves were needed and neither is sufficient.
 FREE_SITES = {
-    "create": (
-        "insert_root",
-        "the rollback taken when no region slot was free. `insert_root` returned None, so no name "
-        "was ever minted for this run and nobody else can be holding one.",
+    "create_with_ceilings": (
+        "insert_root_with_ceilings",
+        "the rollback taken when no region slot was free. `insert_root_with_ceilings` returned "
+        "None, so no name was ever minted for this run and nobody else can be holding one.",
     ),
     "destroy": (
         "claim_for_destroy",
