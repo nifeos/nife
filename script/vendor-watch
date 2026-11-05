@@ -16,6 +16,10 @@
 # before anybody publishes it, and the narrow case this whole mechanism exists for is a correctness
 # fix in the engine holding backups. Watching only the published version misses exactly that case.
 #
+# **A pin with `registry = none`** (vendor/crate-workflows.pin: the template is a git repository no
+# registry carries) skips the release half. Its commits are the whole report, and the files its
+# `include` list names are the overlap a bump can break.
+#
 # **It reports what changed, not that it changed.** A version number tells nobody whether to act.
 # The report carries the release dates and the upstream commit subjects, with merge commits dropped,
 # because "fix: do not hardcode # of sectors per block" and "misc: update dependencies" want
@@ -138,7 +142,12 @@ def is_prerelease(text):
 def releases_since(pin):
     """Published versions newer than the pin, newest first, as (version, date). Yanked and
     prerelease versions are excluded: a yank is upstream saying do not use it, and a prerelease is
-    not something this tree would pin to without being asked."""
+    not something this tree would pin to without being asked.
+
+    A pin with `registry = none` (the template, which no registry carries) has no release list;
+    its commits are what the git half reports."""
+    if pin.get("registry") == "none":
+        return []
     data = get_json(f"https://crates.io/api/v1/crates/{pin['name']}", f"crates.io/{pin['name']}")
     pinned = version_key(pin["version"])
     out = []
@@ -266,7 +275,11 @@ def patched_files(pin):
     path = os.path.join(root, pin.get("divergence", ""))
     if not pin.get("divergence") or not os.path.exists(path):
         return []
-    return sorted({m.group(1) for m in re.finditer(r"^\+\+\+ b/(.+)$", open(path).read(), re.M)})
+    touched = {m.group(1) for m in re.finditer(r"^\+\+\+ b/(.+)$", open(path).read(), re.M)}
+    # A pin that vendors a few files (`include`) has no patch to conflict with; what a bump can
+    # break is a change to one of the files themselves, so those are the overlap.
+    touched |= {n for n in pin.get("include", "").split() if not n.endswith("/")}
+    return sorted(touched)
 
 
 def requirement_allows(requirement, version):
@@ -361,13 +374,17 @@ def render(pin, releases, git, overlap, fix=None, held=None):
     """
     out = [f"## {pin['name']}\n"]
 
-    if pin.get("source") == "git":
+    if pin.get("registry") == "none":
+        out.append(f"Pinned at upstream git commit `{pin['vcs'][:12]}`; no registry carries it.\n")
+    elif pin.get("source") == "git":
         out.append(f"Pinned at upstream git commit `{pin['vcs'][:12]}`, which no release carries; "
                    f"its manifest says **{pin['version']}**.\n")
     else:
         out.append(f"Pinned at **{pin['version']}**, upstream git sha `{pin['vcs'][:12]}`.\n")
 
-    if releases is None:
+    if pin.get("registry") == "none":
+        pass  # no registry carries it: the git half below is the whole report
+    elif releases is None:
         out.append("**Releases: could not be checked.** See the run log.\n")
     elif not releases:
         out.append(f"**Releases: current.** {pin['version']} is still the newest published "
@@ -404,14 +421,20 @@ def render(pin, releases, git, overlap, fix=None, held=None):
         if overlap:
             hit = [f for f in overlap if f in git["files"]]
             if hit:
-                out.append("**Upstream has edited files our divergence patch also touches**, so a "
-                           "bump is likely to conflict there:")
+                if pin.get("include"):
+                    out.append("**Upstream has edited files our `include` list names**, so a bump "
+                               "changes what we run there:")
+                else:
+                    out.append("**Upstream has edited files our divergence patch also touches**, "
+                               "so a bump is likely to conflict there:")
                 out.append("")
                 for f in hit:
                     out.append(f"- `{f}`")
                 out.append("")
             else:
-                out.append("Upstream has not touched any file our divergence patch touches.\n")
+                out.append("Upstream has not touched any file our "
+                           + ("`include` list names" if pin.get("include")
+                              else "divergence patch touches") + ".\n")
 
     if fix is not None:
         if fix == "unchecked":
