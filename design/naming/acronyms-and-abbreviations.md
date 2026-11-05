@@ -57,7 +57,7 @@ Every name this tree authors spells these out, function parameters included.
   [§307 (how long a name may be)](../decisions/0307-how-long-a-name-may-be.md) renames it.
 - `OPERATION_SENDTO` keeps POSIX's `SENDTO` in its suffix until a ruling settles `SEND_TO`.
 - `cap` that means a ceiling (`heap_cap`, `PRINT_CAP`) is the English word and abbreviates nothing.
-  `helpers/cap_abbreviation.py` lists each such identifier in `KEPT`.
+  `helpers/vendored_name_gates.py` lists each such identifier in `CAP_KEPT`.
 
 ## A name someone else owns
 
@@ -107,7 +107,6 @@ The command line abbreviates where the code behind it does not:
 
 ## BUGS
 
-- `helpers/name_checks.py`'s `SPELLED_OUT` set does not hold `rx`, `tx`, `phy`, `init`, `irq`,
-  `fifo`, `min`, `max`, `os`, `phys`, `rgmii` or `mdio`, so the gate passes a new name that uses
-  one. A reviewer catches it, or nobody does.
+- The word list holds no `phys`, so the gate passes a new name that uses it. A reviewer catches it,
+  or nobody does.
 - The test needs a reader. No script can judge an abbreviation nobody has ruled on.

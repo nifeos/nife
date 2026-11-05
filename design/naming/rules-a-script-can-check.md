@@ -24,7 +24,7 @@ names; naming is an architect's.*
 - A ratified name is exempt, since a later rule never silently overrules a ruling. The worklist ends
   with each ratified name that fails a current check, so an architect can reopen it.
 - Spelling and `cap` are reported here and held by `helpers/house_style.py` and
-  `helpers/cap_abbreviation.py`, not twice.
+  `helpers/vendored_name_gates.py`, not twice.
 
 ## The worklist
 
@@ -79,8 +79,8 @@ ranks by the same one.
 | Rule | Kind | Checked by |
 |---|---|---|
 | Rust's casing for the item's kind | mechanical | `name_checks.py` |
-| Short forms a ruling spells out ([acronyms-and-abbreviations.md](acronyms-and-abbreviations.md)) | mechanical, for the forms `SPELLED_OUT` lists | `name_checks.py`; `cap` also by `cap_abbreviation.py`, as a ratchet |
-| Units spelled out ([design/naming.md](../naming.md#units)) | mechanical, for the symbols the helper counts | `unit_symbols.py`, as a ratchet |
+| Short forms a ruling spells out ([acronyms-and-abbreviations.md](acronyms-and-abbreviations.md)) | mechanical, for the forms the template's `[spelled_out]` list holds | `name_checks.py`; `cap` also by `vendored_name_gates.py`, as a ratchet |
+| Units spelled out ([design/naming.md](../naming.md#units)) | mechanical, for the symbols the helper counts | `vendored_name_gates.py`, as a ratchet |
 | American spelling | mechanical | `typos --locale en-us` and `house_style.py`'s list |
 | No `-d`, no Unix service word | mechanical | the naming block for programs; `name_checks.py` for a trailing `d` component |
 | Lowercase, hyphenated file names | mechanical | the naming block's check 6 |
