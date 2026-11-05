@@ -42,7 +42,7 @@ record of what was weighed, and its heading says how it was ruled.
   creation still waits for calef's approval. Until it moves, a crate stays in this tree. Every crate repository uses one shared
   CI template (Kani, lint, release) through reusable workflows. calef: *"I lean one repo per
   crate."* then *"Yes a"*.
-- Fork 2: a crate that has left is consumed as a crates.io release pinned with its checksum in
+- Fork 2: a published crate is consumed as a crates.io release pinned with its checksum in
   `Cargo.lock`. A `[patch]` to a local checkout or branch is allowed only during development, and a
   lint fails if one reaches `main`. calef: *"Ratify fork two"*.
 - Fork 3: its own semantic version from 0.1, a stated minimum Rust version, and its Kani harnesses

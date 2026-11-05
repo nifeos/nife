@@ -38,16 +38,45 @@ supplies the `Name:` block reader and the citation rules. This milestone writes 
 its findings, and the runbook's table records them. `python3 helpers/crate_move.py --selftest`
 runs in `script/lint`.
 
+## The soak's period
+
+Condition 5 of the runbook's soak runs four weeks: 28 days from the tag nife pins, with at least
+four scheduled `weekly` runs green, and a major break restarts it at the tag that carries it.
+The maintainer decides it, provisionally. Lengthening or shortening it is one pull request, and no
+publication follows from it alone, since each still waits for the architect.
+
+The grounds, measured on the pilot and the template:
+
+- Every other condition is quick. The pilot, `jh7110_entropy`, took its tag `v0.1.0` on 2026-10-31
+  (UTC) and recorded its stranger run that day. Its first scheduled `weekly` run went green on
+  2026-11-02, after five red runs by hand while a lane wired its settings and secrets. Its one later
+  tag, `v0.1.1` a day after the first, changed text and no API. So condition 5 sets the soak's length.
+- The weekly run is the sampling rate. It runs once a week and its jobs finish in about 70 seconds,
+  so the soak costs calendar time and no compute. Fewer than four runs is one or two samples.
+- The template's stranger check fails a record older than 28 days. A four-week soak therefore ends
+  when the stranger test falls due again, and the run that keeps condition 4 green reads the code
+  the soak just held still.
+- Fuzz findings set no lower bound. nife's cargo-fuzz shards failed in none of 300 merge-group runs
+  from 2026-11-01 to 2026-11-05 (UTC); the bugs on record came from writing a target or a long run
+  by hand; and the continuous host has filed no advisory. A longer soak adds five minutes per target per week
+  of `weekly / fuzz`, and nife's queue spent about seven hours a week on each target in that window
+  and found nothing.
+- Longer than four weeks holds each waiting crate's publication for no measured gain, and shortening later
+  is compatible while lengthening is not, so four weeks is the stricter of the lengths the data
+  supports.
+
 ## BUGS
 
 The gaps found in the move machinery are in the runbook's `BUGS` section, where a mover meets them.
 
 ## Follow-on
 
-- **Recorded.** Nine gaps in the move machinery, each in `notes/crate-move.md`'s `BUGS`. Three are
+- **Recorded.** The gaps in the move machinery, each in `notes/crate-move.md`'s `BUGS`. Three are
   the template's: its unreleased naming gates, its orphan check and its scaffold's mentions of nife.
-  The rest are nife's: the missing `[patch]` lint, the extraction checklist's pin form, the fuzz
-  targets' home, the mutation baseline, the unset soak period and the unmeasured release dry run.
+  The rest are nife's: the missing `[patch]` lint, the fuzz targets the dry run does not stage, the
+  mutation baseline and the unmeasured release dry run.
+- **Proposed.** A moved crate is fuzzed in its own repository:
+  `design/roadmap/proposals/a-moved-crate-is-fuzzed-in-its-own-repository.md`.
 
 ## Index row
 

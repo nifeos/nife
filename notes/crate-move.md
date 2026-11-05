@@ -176,7 +176,8 @@ all 31 patches apply with `-p1`.
     - the `script/verify` table and the Kani reach list in `.github/workflows/kani-reach.yml`;
     - `helpers/trust_boundary_crates.tsv` and `packages/*.package.toml`;
     - the mutation baseline, the `deny.toml` wrappers and `_typos.toml`;
-    - fuzz targets and their seeds;
+    - fuzz targets and their seeds, which move to the crate repository's `fuzz/`
+      ([the proposal](../design/roadmap/proposals/a-moved-crate-is-fuzzed-in-its-own-repository.md));
     - citations into `crates/<crate>/src`, which repoint to the repository at the tag, by symbol.
 
     The crate's milestone block states the soak's state. Expected: `cargo tree --locked -i <crate>`
@@ -190,8 +191,11 @@ tagged commit.
 
 ## The soak's five end conditions
 
-The soak ends on evidence, not on a date. Each condition below has its check; all five hold before
-a publication can come to calef.
+The soak ends on evidence; condition 5 also sets the shortest soak. Each condition below has its check; all five hold before
+a publication can come to calef. Condition 5 does not read `weekly / semver`, which reports a break
+in its run's summary and succeeds whatever it finds; it reads the labeler's finding on each merged
+pull request and a direct run. [Milestone 1034 (a runbook for moving a crate out of nife)](../design/roadmap/1034-a-crate-move-runbook.md)
+holds the grounds for four weeks.
 
 | condition | check | who |
 |---|---|---|
@@ -199,7 +203,7 @@ a publication can come to calef.
 | 2. the template's weekly run is green | `gh run list -R nifeos/<crate> --workflow weekly.yml --limit 1 --json conclusion` prints `success`; `gh workflow run weekly.yml -R nifeos/<crate>` starts one early | lane |
 | 3. a release dry run is green | `gh workflow run release.yml -R nifeos/<crate> -f version=<manifest version> -f dry-run=true`, then that run's `gate` succeeds and it creates no tag | lane |
 | 4. the stranger test builds and proves the crate from its README alone | `grep '^Last run:' docs/stranger-test.md` in the crate repository prints a date, with that run's appendix beside it | step 12 |
-| 5. the API goes a set period with no change `cargo-semver-checks` calls breaking | `weekly / semver` succeeds on every weekly run across the period, read with `gh run view <id> -R nifeos/<crate> --json jobs` | lane |
+| 5. the API goes four weeks with no change `cargo-semver-checks` calls breaking | 28 days have passed since the tag nife pins, with at least four scheduled `weekly` runs green; `gh search prs --repo nifeos/<crate> --merged-at '>=<tag date>' '"major break"'` prints nothing; and `cargo semver-checks --baseline-rev v<pinned version>` on the crate's `main` reports no major change. A break restarts the period at the tag that carries it. | lane |
 
 ## Publication and consumption by version
 
@@ -249,6 +253,15 @@ publishes.
 - The template's scaffold mentions nife. The commit hook, `rustfmt.toml`, `deny.toml` and
   `docs/stranger-test.md` name it, and the pull request template names the architect. Every crate
   repository inherits those lines.
+- No lint fails a `[patch]` that reaches nife's `main`. Milestone 857's fork 2 rules one.
+- The dry run does not stage fuzz targets. They move to the crate repository's `fuzz/`, with
+  `fuzz: true` in its weekly caller, and
+  [the proposal](../design/roadmap/proposals/a-moved-crate-is-fuzzed-in-its-own-repository.md) builds
+  the staging; until then the move lane copies them by hand.
+- The mutation baseline does not travel. nife's row for the crate stays in
+  `.cargo/mutants-baseline.txt`, and the crate repository's `weekly / mutation` fails on any
+  survivor until `.github/mutants-exempts` accounts for it; the pilot needed one pull request for it.
+  The dry run does not run cargo-mutants.
 - [What nife does at each extraction](../design/roadmap/0857-crates-released-on-their-own/what-nife-does-at-each-extraction.md)
   disagrees with the ruled form. It replaces the path dependency by a crates.io release in the
   move's pull request; the ruled form is a `git` and `rev` pin with its version until the first
