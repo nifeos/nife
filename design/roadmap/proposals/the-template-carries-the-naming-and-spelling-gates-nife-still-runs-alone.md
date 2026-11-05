@@ -14,7 +14,7 @@ Raised by lane/record-follow-on-items. The integrator mints the number at promot
 Reuse: the template's Rust lexer and word list (`helpers/rust_names.py` and
 `helpers/naming_words.toml` in `nifeos/crate-workflows`), and nife's vendoring of them at a pinned
 revision (`helpers/vendored_name_gates.py`, `vendor/crate-workflows.pin`). The checks themselves
-exist in nife and move; nothing is written from scratch.
+exist in nife and move; the lane writes none from scratch.
 
 ## Background
 
@@ -31,7 +31,7 @@ The template already holds the spelled-out words and the unit symbols. nife stil
 - `script/lint`'s naming checks 1 to 3: no `-d` suffix on a component or a crate, no "daemon", and
   one spelling for contract crates, `*_contract`.
 
-So a crate that leaves nife stops being held to them, and a package repository never is.
+So no gate holds a crate to them once it leaves nife, and none ever holds a package repository to them.
 
 ## The work
 

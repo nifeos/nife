@@ -23,7 +23,7 @@ strict canary and the dry run are both green on the pool in one run, with no `FI
 empty proxy refusal log for that run. The push run 41959340528 on `main` printed these findings in
 `canary-owned` and `canary-owned-dry-run`:
 
-- `rustup` and `cargo` are not on `PATH`, so the pinned toolchain cannot be checked.
+- `rustup` and `cargo` are not on `PATH`, so the probe cannot check the pinned toolchain.
 - The workspace is `/home/runner/actions-runner/_work/nife/nife`, not
   `/home/runner/work/nife/nife`, so a QEMU cache saved on a hosted runner restores outside `$HOME`
   and the cache step reports a hit with no QEMU behind it.

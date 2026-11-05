@@ -7,7 +7,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# Names that carry a unit symbol are swept, and the unit ratchet counts every unit
+# A sweep spells out the unit symbols in names, and the unit ratchet counts every unit
 
 Raised by lane/record-follow-on-items. The integrator mints the number at promotion.
 
@@ -38,4 +38,4 @@ lists 162 distinct identifiers that carry one, uses included.
 - `vendored_name_gates.py unit --unclear` lists only ratified names and the kept identifiers, each
   with its reason.
 - `UNIT_COUNTED` holds every unit of the template's table, at a count of 0.
-- design/naming.md no longer says a sweep is owed.
+- design/naming.md no longer says a sweep remains.

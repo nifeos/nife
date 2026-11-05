@@ -26,13 +26,13 @@ does not do. The mechanical batches stop here.
 ## The question
 
 Is a judged rewrite worth its cost, and where does it start? Recommendation: measure first. Count
-words per block by status, and rewrite only BUILT blocks whose text a reader still meets (the
-blocks cited from code, notes and decisions), one block per change, keeping §298's list: refused
-options with their reasons, prior-art tables, measurements with their dates and methods, caveats,
-counted-claim markers and index rows. The alternative, leaving the roadmap as it is, costs nothing
+words per block by status. Then rewrite only the BUILT blocks a reader still meets, those that code,
+notes and decisions cite, one block per change. Each rewrite keeps §298's list: refused options with
+their reasons, prior-art tables, measurements with their dates and methods, caveats, counted-claim
+markers and index rows. The alternative, leaving the roadmap as it is, costs nothing
 now and keeps every block a reader may need.
 
 ## Done when
 
-- The per-block word count by status is recorded here, and an architect has chosen whether a judged
+- This block records the per-block word count by status, and an architect has chosen whether a judged
   rewrite proceeds and in what order.
