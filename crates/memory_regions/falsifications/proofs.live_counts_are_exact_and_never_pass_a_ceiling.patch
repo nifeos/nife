@@ -1,0 +1,24 @@
+Falsifies `memory_regions::proofs::live_counts_are_exact_and_never_pass_a_ceiling`.
+
+The defect: the deciding walk of `charge` stops at the region itself and never asks its ancestors.
+It reads as a shortcut, since the commit walk still counts every ancestor and a lone region behaves
+exactly as before, but a root can then be pushed past its own ceiling through the regions below it.
+
+Expected to fail: the harness's `assert!(live <= s.ceilings.get(counted), "past a ceiling")`, on
+a run that fills a child to its ceiling and then carves from the grandchild.
+
+diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
+--- a/crates/memory_regions/src/table.rs
++++ b/crates/memory_regions/src/table.rs
+@@ -468,10 +468,7 @@ impl<const N: usize> RegionTable<N> {
+             if r.live.0[k] >= r.ceilings.0[k] {
+                 return false;
+             }
+-            at = r.parent;
+-            if at == NO_PARENT {
+-                break;
+-            }
++            break;
+         }
+         let mut at = name;
+         for _ in 0..N {
