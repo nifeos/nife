@@ -66,3 +66,4 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Crates that could be released on their own, 2026-10-07](../releasable-crates-2026-10-07.md): which crates could leave, who else implements each, and whether to offer them our proofs. Name provisional.
 - [Names journey 5 has not ratified yet](../unratified-names-journey-5.md): every unratified name in the journey-5 crates still under `crates/`, in groups for an architect to rule on one at a time, with a provisional recommendation each. Name provisional.
 - [Owned runners](../owned-runners.md): the label, the admission rule, the `NIFE_RUNNER_OWNED` switch, the canary and the rollback. Name provisional.
+- [Moving a crate out of nife](../crate-move.md): the runbook for one move, step by step, with each command, its expected result and who takes it. Name provisional.
