@@ -249,7 +249,6 @@ publishes.
 - The template's scaffold mentions nife. The commit hook, `rustfmt.toml`, `deny.toml` and
   `docs/stranger-test.md` name it, and the pull request template names the architect. Every crate
   repository inherits those lines.
-- No lint fails a `[patch]` that reaches nife's `main`. Milestone 857's fork 2 rules one.
 - [What nife does at each extraction](../design/roadmap/0857-crates-released-on-their-own/what-nife-does-at-each-extraction.md)
   disagrees with the ruled form. It replaces the path dependency by a crates.io release in the
   move's pull request; the ruled form is a `git` and `rev` pin with its version until the first
