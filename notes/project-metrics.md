@@ -217,7 +217,7 @@ accounts for, read at each week's last merge. Above 5% is a lane (calef, 2026-10
 save and reason: [the drift report](project-metrics/baseline-drift.md).
 
 <!-- baseline-drift: script/metrics writes this -->
-2026W45, `main` at `dd8cfde00`: nothing unexplained past 5%; the largest, aarch64 `ipc_rtt` +1.24%, riscv64 `sink_throughput` +0.11%, x86_64 `spawn_reap` +2.85%.
+2026W45, `main` at `a2e19c2e0`: nothing unexplained past 5%; the largest, aarch64 `ipc_rtt` +0.74%, riscv64 `sink_throughput` +0.11%, x86_64 `spawn_reap` +0.22%.
 <!-- /baseline-drift -->
 
 ## Interface stability
