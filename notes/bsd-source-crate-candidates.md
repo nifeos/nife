@@ -158,7 +158,7 @@ The appendix lists all 77. These are the ones a reader might expect higher.
    2026-11-04T15:43:31Z) and of `github.com/NetBSD/src` at
    `36eddebcc36cb0775aa2962005b9c05419a6ff01` (committed 2026-11-04T18:41:11Z). OpenBSD's paths were
    `sys/dev/ic`, `sys/dev/pci` for contrast, `sys/dev/{sdmmc,hid,mii,pv,ata}`, `sys/net`,
-   `sys/lib/libsa`, `sys/crypto`, `sys/kern`, `lib/libc`, `lib/libutil` and five daemons in `sbin/`
+   `sys/lib/libsa`, `sys/crypto`, `sys/kern`, `lib/libc`, `lib/libutil` and five service programs in `sbin/`
    and `usr.sbin/`. NetBSD's were `sys/dev/ic`, `sys/net/npf` and `common/lib/libc`, plus
    `sys/kern/subr_thmap.c`. FreeBSD supplied four file headers at
    `7806832f23fb31d28386d42692b221776c9f4ee4`, to check whether its copies of the Realtek, SDHCI,
