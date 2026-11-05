@@ -70,8 +70,8 @@ block reads ratified.
 
 API. FAT12, FAT16 and FAT32 with no I/O: `Volume` reads, `WritableVolume` writes with a `Clock`,
 `FormatPlan` formats any size, and `VolumeLayout` lays out a FAT32 EFI system partition holding one
-boot file under a label the caller supplies, through five public methods. Every error enum is
-`#[non_exhaustive]`. The caller implements `SectorDevice` and `WritableSectorDevice`.
+boot file under a label the caller supplies. `VolumeLayout` publishes five methods, and every error
+enum is `#[non_exhaustive]`. The caller implements `SectorDevice` and `WritableSectorDevice`.
 
 Proofs. 31 harnesses, each with a falsification patch. 300 tests check against the `lamfat` oracle
 and `fsck.fat`.
