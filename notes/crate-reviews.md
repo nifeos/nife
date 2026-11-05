@@ -26,7 +26,7 @@ packages of three crates name its effects.
 
 Not run, and so not claimed: the stranger test, coverage, mutation, `cargo-semver-checks` (a first
 release has no baseline) and the publish rehearsal. The template's `check`, `proofs` and `weekly`
-workflows did not run either, because no repository exists for any of these seven. The stranger
+workflows did not run either, because no repository exists for any of these crates. The stranger
 record lives in the crate repository, in `docs/stranger-test.md`. The `file_allocation_table`
 package is the exception: it ran the README's commands in a scratch copy and `cargo-semver-checks`
 against itself.
@@ -302,7 +302,8 @@ prove and both patches fail.
 
 License. `MIT OR Apache-2.0`; nothing adapted.
 
-Result of `script/crate-standalone`. RESULT_BR
+Result of `script/crate-standalone`. One failure: `names`, the 17 names. Build, proofs and
+patches pass.
 
 Defect. `write` panics on a page shorter than its 16-byte header when the device list is empty.
 The package proposes the fix and a harness.
@@ -326,7 +327,8 @@ Proofs. None; five host tests.
 
 License. `MIT OR Apache-2.0`; nothing adapted.
 
-Result of `script/crate-standalone`. RESULT_CF
+Result of `script/crate-standalone`. One failure: `proofs`, because the crate has no harness.
+The build passes on 1.88 for the host and the three bare-metal targets.
 
 Recommendation. Blocked by the unit spelling (the architect's), the identity value
 `INTERFACE_ID = 9`, and three text edits naming nife.

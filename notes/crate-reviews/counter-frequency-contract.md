@@ -108,7 +108,10 @@ alone until its own review, and a crate's release review is that review.
 
 ## Result of `script/crate-standalone`
 
-See the summary on [crate-reviews.md](../crate-reviews.md).
+One failure: `proofs`, because the crate has no Kani harness. Manifest, files, citations, names and
+the build on 1.88 for the host and the three bare-metal targets pass. Whether a contract crate this
+small needs a harness is open; the reader's one decision is the magic compare, and a harness that
+`hz` answers `None` unless the magic matches would cost little. The maintainer can decide it.
 
 ## Recommendation
 
