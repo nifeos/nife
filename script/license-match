@@ -2,7 +2,7 @@
 # script/license-match: does each crate's manifest `license` match the licenses its sources adapt?
 #
 # The field is the crate's own `MIT OR Apache-2.0` joined with AND to the SPDX identifier of every
-# license of source the crate adapts (milestone 887, crate repositories share one CI template;
+# license of source the crate adapts (milestone 887 (crate repositories share one CI template, adapted from nife's gates);
 # ruled 2026-11-05 UTC). A published manifest cannot be withdrawn, so a mismatch fails in both
 # directions: a notice the field omits, and a term in the field no notice backs. The rules and the
 # selftest, which plants each kind of bad fixture, are in helpers/license_match.py. script/lint runs

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A crate's manifest `license` field matches the licenses its sources adapt.
 
-The rule is milestone 887's (crate repositories share one CI template, adapted from nife's gates)
+The rule is in milestone 887 (crate repositories share one CI template, adapted from nife's gates)
 and was ruled 2026-11-05 (UTC): the field is the crate's own `MIT OR Apache-2.0` joined with `AND`
 to the SPDX identifier of every license of source the crate adapts, as in
 `(MIT OR Apache-2.0) AND ISC`. Each adapted file's notice opens with an `SPDX-License-Identifier:`

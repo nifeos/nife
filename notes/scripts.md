@@ -33,6 +33,7 @@ Full rows: [build-test-and-gate.md](scripts/build-test-and-gate.md).
 | `script/drift` | Does a toolchain still build us? |
 | `script/toolchain-bump` | Raise the pinned nightly, with every gate as evidence. |
 | `script/kani-install` | Install the stock Kani that `.kani-version` pins. The only place that does. |
+| `script/license-match` | Check that each crate manifest's `license` equals its own `MIT OR Apache-2.0` joined with `AND` to every adapted source license its `SPDX-License-Identifier:` notices carry. `script/lint` runs it. |
 | `script/kani-bump` | Raise `.kani-version` to the newest stable Kani, and nothing else. |
 | `script/server` | Boot the OS in QEMU: the milestone tour, then the shell. |
 | `script/console` | Boot straight to the interactive shell at EL0. |
