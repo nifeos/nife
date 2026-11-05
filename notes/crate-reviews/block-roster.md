@@ -11,10 +11,10 @@ capacity, then one eight-byte entry per device (an ordinal and a transport numbe
 it once; any program granted the mapping reads it. The crate is the one definition both sides
 compile, so a reader built from another commit refuses a page it does not recognize rather than
 misreading it. It is `no_std`, has no dependency and no `unsafe`, and two Kani harnesses prove the
-reader. Under milestone 1028 (records that equate a package with a repository) it leaves as a shared crate, since the kernel and the programs that
-read the page will live in different repositories, and milestone 1017 makes it the first contract
-crate to leave. What stands between it and a review is 17
-unratified names and one panic in `write`.
+reader. It leaves as a shared crate, because the kernel and the programs that read the page will
+live in different repositories, and milestone 1017 (the contract crates leave in this order) makes
+it the first contract crate to leave. What stands between it and a review is 17 unratified names
+and one panic in `write`.
 
 ## Identity
 

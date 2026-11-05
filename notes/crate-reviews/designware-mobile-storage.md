@@ -105,9 +105,9 @@ alone until its own review, and a release review is that review.
 OpenBSD's `sys/dev/fdt/dwmmc.c` revision 1.33 for the register map, reset, clock, bus width,
 command flags and the polled transfer. `src/lib.rs` carries that file's copyright line and ISC notice. The card
 identification follows only the order of OpenBSD's `sdmmc_mem.c` addressing commands and copies
-none of its code, so its notice is not carried, as milestone 1019 (the driver crates carry facts
-from their sources, not their text) item 6 ruled. Linux, U-Boot and the device trees are read for
-hardware facts only. The notice opens with prose, not an `SPDX-License-Identifier:` line, which the
+none of its code. So the crate carries no notice for it, as milestone 1019 (the driver crates carry
+facts from their sources, not their text) item 6 ruled. The authors read Linux, U-Boot and the
+device trees for hardware facts only. The notice opens with prose, not an `SPDX-License-Identifier:` line, which the
 proposal for a license check would add.
 
 ## What the move still needs
