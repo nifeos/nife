@@ -96,7 +96,7 @@ error type appears in a public signature. The spawn handoff lives in `driver_pro
 
 Proofs. Seven harnesses: the producer ring, the event ring's wrap, the capability walk, the device
 context index, the slot and endpoint contexts, the port status write and the interrupt interval. All
-seven prove and all seven patches fail. The context and port decoders are proven before the move.
+seven prove and all seven patches fail. The proofs cover the context and port decoders.
 
 Dependencies. None.
 
@@ -140,7 +140,7 @@ Recommendation. Ready for review.
 ## `e1000e`, step 6
 
 Name and version. `e1000e` `0.1.0`. The architect ratified the crate name as the family name QEMU and Linux
-both use, permanent on first publication. Every `Name:` block is ratified except the three in `flush`.
+both use, permanent on first publication. The three `flush` names are the only provisional ones.
 
 API. Registers and descriptors for the 82574L and the I219 behind two small traits. The public items are `DataPlane`,
 `DirectMemoryAccessRegion`, `Tails`, `TransmitError`, the `layout` and `registers` modules, the device
@@ -155,12 +155,12 @@ Dependencies. None.
 
 Provenance. The `platform_controller_hub` module adapts FreeBSD's Intel shared code
 (BSD-3-Clause) and `if_em.c` and `if_em.h` (BSD-2-Clause), with notices in the module. Milestone 1019
-items 3 and 4 are done. The `flush` module adds three provisional names
+items 3 and 4 hold. The `flush` module adds three provisional names
 (`flush::descriptor_rings`, `flush::RingAccess`, `flush::Outcome`) that need ratifying. The manifest
 license field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`, naming the license of
 each adapted source.
 
-Names. Three names are ratified provisionally, pending the architect's review: the register
+Names. The maintainer ratified three names provisionally, pending the architect's review: the register
 `HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER` (`non_volatile_memory.rs`, with `HSFSTS` as a
 `#[doc(alias)]`), `acquire` (`physical_layer_device.rs`) and `setup_copper_link` (`sequence.rs`).
 The maintainer's ruling stands unless the architect changes it at the crate's name review.
@@ -187,15 +187,14 @@ signature.
 
 Proofs. Six harnesses: the delivered frame, the ring offsets, the PHY link decode, the transmit
 descriptor's length fields, the MDIO command word's address fields and the coherence verdict. All
-six prove and all six patches fail. Three are not enough for a published driver, so these three
-were added; MDIO sequencing, the PHY configuration writes and controller bring-up keep unit tests
+six prove and all six patches fail. A published driver needs more than three, so the review added three; MDIO sequencing, the PHY configuration writes and controller bring-up keep unit tests
 against the simulator and no proof.
 
 Dependencies. None.
 
 Provenance. The crate adapts OpenBSD's `dwqe` and `ytphy` (ISC, with copyright lines in `lib.rs`)
 and `ukphy_status` (NetBSD Foundation BSD-2-Clause). Both notices are in the tree. Milestone 1019 item 5
-is done and item 9 is open. Item 9 (a source claim in
+holds and item 9 stays open. Item 9 (a source claim in
 `motorcomm_physical_layer_device.rs` that OpenBSD's `ytphy.c` and FreeBSD's `mcommphy.c` also name the
 registers) is not done as far as this review could read. The manifest license field reads
 `(MIT OR Apache-2.0) AND ISC AND BSD-2-Clause`, naming the license of each adapted source.
@@ -260,10 +259,10 @@ Provenance. Milestone 1019 item 1 (`standard_mode_100k` rewritten from a permiss
 done. Items 7 and 11 remain open on `main`. Item 7: the doc comments quote two PMIC nodes, 9 and 7 tokens. Item 11: pin the vendor links to the revision each claim holds at. The crate cites the vendor tag
 `VF2_v2.10.4` and a mainline commit by hash.
 
-Names. The clock parent field mask is `CLOCK_PARENT_MASK`, ratified provisionally, pending the
-architect's review. It is named for what the field holds, as `with_parent` and `Step::SelectParent`
-already say, and `CLKMUX_MASK`, `JH7110_MUX_MASK` and `JH71X0_CLK_MUX_MASK` are `#[doc(alias)]`es.
-`CLOCK_MUX_MASK`, `CLOCK_MULTIPLEXER_MASK` and `CLOCK_PARENT_SELECT_MASK` are refused.
+Names. The maintainer ratified `CLOCK_PARENT_MASK` for the clock parent field mask provisionally,
+pending the architect's review. It says what the field holds, as `with_parent` and `Step::SelectParent`
+already do, and `CLKMUX_MASK`, `JH7110_MUX_MASK` and `JH71X0_CLK_MUX_MASK` are `#[doc(alias)]`es.
+The ruling refused `CLOCK_MUX_MASK`, `CLOCK_MULTIPLEXER_MASK` and `CLOCK_PARENT_SELECT_MASK`.
 
 Outstanding before the move.
 
