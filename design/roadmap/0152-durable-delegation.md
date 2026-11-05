@@ -5,14 +5,12 @@ built: 2026-10-03
 ---
 # 152. Durable delegation: authority that outlives the session that requested it
 
-Updated 2026-10-03 (UTC). Minted 2026-08-22, from a milestone 129 (scheduled execution) discussion: calef
-wants nife to support multiple users, and wants the jobs a user schedules to carry capabilities that
-reflect that user's own authority. Working through what that requires surfaced a gap this tree had
-not needed to close before, and #387 (milestone 129's `--mem` grant, held pending this) is where it
-was found. All four design pieces (the durable session, the on-disk schedule store, boot-time
-re-derivation in `login`, and the real registrar) are built and tested. Flipped to `BUILT` on 2026-10-03 after a re-check against the tree. The two residues it
-carried, a real-boot gate that types `SCHEDULE` and a place for a durable job to write, are
-routed in `## Follow-on` (a proposal and milestone 687) rather than held open here.
+calef wants nife to support multiple users, and wants the jobs a user schedules to carry capabilities
+that reflect that user's own authority. Working through what that requires surfaced a gap in milestone
+129 (scheduled execution): #387 (its `--mem` grant) was held on it. All four design pieces (the
+durable session, the on-disk schedule store, boot-time re-derivation in `login`, and the real
+registrar) are built and tested. The two residues, a real-boot gate that types `SCHEDULE` and a place
+for a durable job to write, are routed in `## Follow-on` (a proposal and milestone 687).
 
 ## In brief
 
@@ -225,18 +223,6 @@ Options and reasoning are in [notes/durable-delegation.md](../../notes/durable-d
    live activation generation), calef, 2026-09-27, on #1377; built the same day.
 6. Where a scheduled job's report goes once nobody is attached. **Status: DECIDED**, option C (no
    report endpoint; output through the entry's grants), calef, 2026-09-27, on #1377; built.
-
-## BUGS
-
-- ~~`smb_server` has no session/connection separation to build this against.~~ Built 2026-08-24,
-  then removed with the SMB code on 2026-08-30; the proof is re-homed (2026-09-26).
-- ~~The on-disk, per-user schedule store has no format, no write path, and no read-at-boot path.~~
-  Built 2026-08-24; see `crates/schedule_store`'s module doc, §122 (the on-disk schedule store) and §125 (which identities have pending work).
-- ~~Boot-time re-derivation's own mechanism was asserted, not designed.~~ Built 2026-08-24 as
-  `session_reviver`, and moved into `login` on 2026-09-27 (Fork 7); see `components/src/login.rs`'s
-  `rederive` and BUGS, and §123 as amended.
-- ~~#387 (milestone 129's `--mem` grant): no scheduled job is registered against a real session.~~
-  Built 2026-09-26: a user's session registers through `SCHEDULE` and the registration page.
 
 ## Follow-on
 

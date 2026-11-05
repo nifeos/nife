@@ -9,19 +9,14 @@ needs_person: no
 ---
 # 391. Kernel introspection over an endpoint, rather than one syscall per fact
 
-Filed 2026-09-09 as an unnumbered proposal, raised by calef in conversation
-while deciding how `swish` reaches a console on x86_64; numbered 2026-09-19 by milestone 433's drain
-of the proposal pile. **Premise re-read against the tree on 2026-09-19 and still true**: nothing has
-answered the fork. `design/decisions/0149-kernel-served-console-endpoint.md` still refuses to settle
-it on the console's momentum, and milestone 269, which that refusal named as the consumer to decide
-it against, is still `NOT-STARTED`. So this block keeps the sequencing it was written with: it
-becomes a `design/decisions/` section when 269 is taken, not before.
-*(Number provisional until the merge queue lands it.)*
+Premise re-read against the tree on 2026-09-19 and still true: nothing has answered the fork.
+`design/decisions/0149-kernel-served-console-endpoint.md` still refuses to settle it on the
+console's momentum, and milestone 269, which that refusal named as the consumer to decide it
+against, is still `NOT-STARTED`. So this block becomes a `design/decisions/` section when 269 is
+taken, not before.
 
 This is a design fork about the kernel's shape, not work to schedule.
-The decision it waits on is [§149](../decisions/0149-kernel-served-console-endpoint.md), cited
-here on 2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote
-down)'s slice-c lane, which found this gate naming no section. §149
+The decision it waits on is [§149](../decisions/0149-kernel-served-console-endpoint.md). §149
 (may the kernel answer on an endpoint) is
 `DECIDED` and what it decided about *this* question is to refuse it. It separated the console case
 from kernel introspection in a six-row table, on the ground that the console is **forced** by
@@ -90,18 +85,13 @@ when that milestone is taken rather than before.
 ## Index row
 
 Some facts exist only in the kernel (preemption counts, scheduler state, the machine description
-milestone 268 prints at boot) and no program can ask for any of them today. The obvious route is a
-syscall per fact, which grows the surface DECISIONS §10 (process model) and §16 (object
-revocation) exist to keep narrow. The
-alternative is a kernel thread parked on a rendezvous, answering questions, which needs no new
-object type and no new syscall number, because `ipc::Rendezvous` is generic over `T: Node` and has
-no privilege level in it. The argument that makes it more than tidiness is easy to get backwards. A
-syscall is reachable by every thread in the system, so restricting who may read the scheduler's
-state means a check inside the kernel and a rule about who should call it. An endpoint is
-reachable only by a program handed the capability and the right can be revoked, which is rung one
-against rung four wearing a syscall's clothes. Against it: the kernel becomes a parser of untrusted
-input inside the trusted computing base, read-only introspection is the cheapest possible violation
-of §14's minimal-core claim, and "only the kernel knows it" is sometimes a sign the data wants a
-userspace owner instead. It is gated on calef deliberately and sequenced deliberately: decision 149
-refused to settle a chosen thing on a forced thing's momentum and said to answer it when a real
-consumer exists, and milestone 269 is that consumer.
+milestone 268 (every architecture boots the same way: describe) prints at boot) and no program can ask for them. The obvious route is a syscall per
+fact, which grows the surface DECISIONS §10 (process model) and §16 (object revocation) keep narrow.
+The alternative is a kernel thread parked on a rendezvous, answering questions, with no new object
+type and no new syscall number, because `ipc::Rendezvous` is generic over `T: Node`. The argument is
+easy to get backwards. A syscall is reachable by every thread, so restricting who may read
+scheduler state means a check inside the kernel. An endpoint is reachable only by a program handed
+the capability, and the right can be revoked. Against it: the kernel becomes a parser of untrusted
+input inside the trusted computing base, and "only the kernel knows it" sometimes means the data
+wants a userspace owner. §149 refused to settle a chosen thing on a forced thing's momentum, and
+milestone 269 is the consumer that decides it.

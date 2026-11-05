@@ -51,8 +51,9 @@ pub enum Event {
 /// Name: ratified 2026-11-03 (UTC), #3117. The compile-time check that the named bit groups do
 /// not overlap.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-// This module is private, so nothing outside can reach the constant; the mutation exclusion in
-// .cargo/mutants.toml is its reader, and helpers/mutation_exclusion_check.py fails if it is gone.
+// This module is private, so nothing in the crate's code reads the constant; the mutation-testing
+// exclusion for `Event::decode` refers to it by name, which is why it stays despite the dead-code
+// allowance. Removing it leaves that exclusion without its justification.
 #[allow(dead_code)]
 pub const EVENT_POINTER_HALVES_DO_NOT_OVERLAP: () =
     assert!((((u32::MAX as u64) << 32) & u32::MAX as u64) == 0);

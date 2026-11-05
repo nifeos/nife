@@ -24,7 +24,7 @@ pub const CLOCK_RANGE_SHIFT: u32 = 8;
 /// `dwqereg.h`), the range this driver always programs: `0b0111`, which divides the CSR clock by
 /// 324 (Linux's `include/linux/stmmac.h`, `STMMAC_CSR_500_800M`).
 ///
-/// OpenBSD reads the `stmmaceth` clock's rate and picks the matching range. This kernel has no
+/// OpenBSD reads the `stmmaceth` clock's rate and picks the matching range. This driver assumes no
 /// clock framework to ask, and the choice only has to keep MDC at or under the standard's 2.5 MHz:
 /// the largest divider does that for every CSR clock up to 810 MHz and merely runs MDC slower
 /// below, which MDIO tolerates. So the driver needs no rate at all, at the cost of slower PHY

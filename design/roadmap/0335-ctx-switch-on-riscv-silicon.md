@@ -9,9 +9,7 @@ needs_person: yes
 ---
 # 335. The ctx_switch number on real RISC-V silicon
 
-Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
-from milestone 58 (RISC-V TLB shootdown)'s block; numbered 2026-09-19 by milestone 433 (drain the
-proposal pile to zero). Premise re-checked 2026-09-19 and
+Premise re-checked 2026-09-19 and
 it holds. `bench/baseline-riscv64.txt` still carries `ctx_switch 495050 5000` from QEMU and no
 radon run exists: none of `bench/radon-2026-09-04`, `bench/radon-2026-09-05` or
 `bench/radon-2026-09-16` has a `ctx_switch` row. `notes/riscv-tlb-shootdown.md` line 189 also still
@@ -21,17 +19,12 @@ Only a core with a genuinely ASID-tagged TLB can charge the right price, which
 means radon, the VisionFive 2, with a person at the bench rig. That has been the whole of it since
 2026-09-16 at the latest, and the second token came off on 2026-09-19.
 
-**The `DECISION` half was `DECISION` from 2026-09-03 to 2026-09-19 and there was no decision behind
-it**, which is recorded rather than quietly dropped because it is the shape milestone 435 was minted
-to find. It stood for *"nobody has said which board leg owns a RISC-V number"*, and the tree had
-answered that by practice before this block was filed: board numbers live in `bench/<board>-<date>/`
-(`bench/radon-2026-09-04`, `bench/radon-2026-09-05`, `bench/radon-2026-09-16`,
-`bench/xenon-2026-09-17`), and `notes/bench-runbook.md` carries a *"radon, in order"* procedure that
-a `ctx_switch` arm is one more step in. Choosing where a log file goes when the convention already
-exists is a lane's call and a reversible one, which is the category AGENTS.md says to decide quickly
-rather than route to calef.
+Which board leg owns a RISC-V number is settled by practice. Board numbers live in
+`bench/<board>-<date>/`, and `notes/bench-runbook.md` carries a *"radon, in order"* procedure that a
+`ctx_switch` arm is one more step in. Choosing where a log file goes is a lane's call and a
+reversible one.
 
-**What is left of that half is a miscitation rather than a fork.** Milestone 58's block points this
+**The one open error is a miscitation, not a fork.** Milestone 58 (RISC-V TLB shootdown, and the flush that)'s block points this
 measurement at milestone 24, and milestone 24 is *A second aarch64 board: Virtualization.framework*,
 status `OPTIONAL`: an aarch64 target that cannot produce a RISC-V number under any ruling. Fixing
 the pointer is an edit to milestone 58's block, not a question for anybody, and it is named in the
@@ -69,26 +62,12 @@ comparison are already reachable from one build. What is missing is a run on rad
 rig (UART into cordoba, smart plug 2), a `ctx_switch` number from each arm, and a home for the
 result beside the existing baselines.
 
-## Where it came from
-
-Milestone 58's block: *"Take the `ctx_switch` number on real RISC-V silicon, where the TLB is
-genuinely ASID-tagged. QEMU charges the added gate and credits nothing for the removed flush, so the
-win this milestone exists for has never been measured, and the block's citation of milestone 24 is
-wrong (that is an aarch64 board). Somebody still has to say which board leg owns the measurement."*
-
-`notes/riscv-tlb-shootdown.md`'s BUGS section states the constraint: *"QEMU cannot exercise the case
-the probe measures for the reason a real core would."*
-
 ## Index row
 
 Milestone 58 removed the unconditional `sfence.vma` from `write_satp` behind a probe, which is the
 whole reason ASIDs exist on RISC-V, and the number that would show the win has never been taken.
-QEMU's softmmu TLB is not ASID-tagged and flushes wholesale whenever `satp.ASID` changes, so it
-charges for the added probe gate and credits nothing for the removed flush; icount came back +1.2% on
-`ctx_switch`, which is the measurement reading backwards. So a milestone exists whose entire
-justification is a performance claim that has never been measured, against this project's own
-standard of measuring rather than arguing. The second cost is the record: milestone 58's block sends
-a future reader to milestone 24 for this number and milestone 24 is an aarch64 board that can never
-produce it, so the one pointer that exists is wrong. Both arms are reachable from one build through
-`asid_tagging_is_trusted()`; what is missing is a run on radon over the bench rig, and a ruling on
-which board leg owns a RISC-V number.
+QEMU's TLB is not ASID-tagged, so it charges for the added probe gate and credits nothing for the
+removed flush; icount came back +1.2% on `ctx_switch`, the measurement reading backwards. Both arms
+are reachable from one build through `asid_tagging_is_trusted()`. What is missing is a run on radon
+over the bench rig. Milestone 58's block also sends a reader to milestone 24 for this number, and
+that is an aarch64 board that can never produce it.

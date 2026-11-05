@@ -143,7 +143,6 @@ riscv64	bc06c6a23	yield_switch	*	QEMU 11.1.2 alone, and #1852 for the switch row
 x86_64	bc06c6a23	coremark	*	QEMU 11.1.2 alone, and #1852 for the switch rows
 x86_64	bc06c6a23	map_new	*	QEMU 11.1.2 alone, and #1852 for the switch rows
 x86_64	bc06c6a23	relay_rtt	*	QEMU 11.1.2 alone, and #1852 for the switch rows
-x86_64	bc06c6a23	spawn_reap	*	QEMU 11.1.2 alone, and #1852 for the switch rows
 x86_64	bc06c6a23	tss_iomap_lazy_nop	*	QEMU 11.1.2 alone, and #1852 for the switch rows
 x86_64	bc06c6a23	tss_iomap_lazy_switch	*	QEMU 11.1.2 alone, and #1852 for the switch rows
 x86_64	bc06c6a23	tss_iomap_switch	*	QEMU 11.1.2 alone, and #1852 for the switch rows
@@ -171,52 +170,84 @@ riscv64	0d90e750c	ctx_switch	+2.66	#1360, milestone 126: the switch counter (+13
 riscv64	0d90e750c	ipc_rtt	+1.41	#1360, milestone 126: the switch counter (+2404 ticks)
 riscv64	0d90e750c	spawn_reap	+2.95	#1360, milestone 126: the counter and the 32-slot table (+1016 ticks)
 
-# #2426 (notes/benchmarks/drift-since-the-2026-10-10-floor.md): aarch64, each merge against its
-# parent, with the preemption tick, which is what the bench measures.
+# #2426 (notes/benchmarks/drift-since-the-2026-10-10-floor.md) and
+# lane/bench/aarch64-unexplained-drift (notes/benchmarks/aarch64-unexplained-drift.md): aarch64,
+# each merge inside the 2026-10-22 save's step against its first parent, measured with no
+# preemption tick in a window (`TICK_HZ` 1) and nightly-2026-10-22 held. Every row a merge moved
+# by 0.1% or more.
 aarch64	ddd38f0b0	yield_switch	+1.22	#1892, milestone 812: threads in one address space
-aarch64	ddd38f0b0	ipc_rtt	+2.04	#1892, milestone 812: threads in one address space
-aarch64	ddd38f0b0	relay_rtt	+0.71	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	ipc_rtt	+0.68	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	relay_rtt	+0.70	#1892, milestone 812: threads in one address space
 aarch64	ddd38f0b0	call_reply	+0.71	#1892, milestone 812: threads in one address space
 aarch64	ddd38f0b0	broker_rtt	+0.71	#1892, milestone 812: threads in one address space
-aarch64	ddd38f0b0	null_syscall	+1.49	#1892, milestone 812: threads in one address space
-aarch64	ddd38f0b0	ctx_switch	+1.19	#1892, milestone 812: threads in one address space
-aarch64	ddd38f0b0	ipc_rtt_el0	+1.53	#1892, milestone 812: threads in one address space
-aarch64	ddd38f0b0	spawn_el0	+3.51	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	spawn_reap	+1.63	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	null_syscall	+1.40	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	ctx_switch	+1.21	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	ipc_rtt_el0	+0.69	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	sink_throughput	+0.47	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	map_el0	+0.52	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	spawn_el0	+3.49	#1892, milestone 812: threads in one address space
 aarch64	9bda691ce	yield_switch	+0.45	#2025: schedule split along its decision
-aarch64	9bda691ce	ipc_rtt	-3.24	#2025: schedule split along its decision
+aarch64	9bda691ce	ipc_rtt	+0.22	#2025: schedule split along its decision
 aarch64	9bda691ce	relay_rtt	+0.23	#2025: schedule split along its decision
 aarch64	9bda691ce	call_reply	+0.22	#2025: schedule split along its decision
 aarch64	9bda691ce	broker_rtt	+0.22	#2025: schedule split along its decision
-aarch64	9bda691ce	null_syscall	-0.09	#2025: schedule split along its decision
-aarch64	9bda691ce	ctx_switch	+0.41	#2025: schedule split along its decision
-aarch64	9bda691ce	ipc_rtt_el0	-0.47	#2025: schedule split along its decision
-aarch64	9bda691ce	spawn_el0	+0.12	#2025: schedule split along its decision
+aarch64	9bda691ce	ctx_switch	+0.45	#2025: schedule split along its decision
+aarch64	9bda691ce	ipc_rtt_el0	+0.24	#2025: schedule split along its decision
+aarch64	9bda691ce	sink_throughput	+0.15	#2025: schedule split along its decision
 aarch64	8d6f3964f	yield_switch	+0.82	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	ipc_rtt	+4.87	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	relay_rtt	+1.71	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	ipc_rtt	+1.24	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	relay_rtt	+1.72	#2188: read_current_thread masks IRQs
 aarch64	8d6f3964f	call_reply	+1.23	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	broker_rtt	+1.26	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	null_syscall	+0.09	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	ctx_switch	+0.70	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	ipc_rtt_el0	+2.54	#2188: read_current_thread masks IRQs
-aarch64	8d6f3964f	spawn_el0	+0.24	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	broker_rtt	+1.24	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	spawn_reap	+0.15	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	ctx_switch	+0.76	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	ipc_rtt_el0	+1.45	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	sink_throughput	+1.41	#2188: read_current_thread masks IRQs
+aarch64	8d6f3964f	spawn_el0	+0.16	#2188: read_current_thread masks IRQs
 aarch64	cec04e4a9	yield_switch	+0.29	#2331: SUSPEND and RESUME
 aarch64	cec04e4a9	ipc_rtt	+0.18	#2331: SUSPEND and RESUME
 aarch64	cec04e4a9	relay_rtt	+0.18	#2331: SUSPEND and RESUME
-aarch64	cec04e4a9	call_reply	+0.14	#2331: SUSPEND and RESUME
-aarch64	cec04e4a9	broker_rtt	+0.14	#2331: SUSPEND and RESUME
-aarch64	cec04e4a9	ctx_switch	+0.24	#2331: SUSPEND and RESUME
-aarch64	cec04e4a9	ipc_rtt_el0	-0.57	#2331: SUSPEND and RESUME
-aarch64	cec04e4a9	spawn_el0	-0.09	#2331: SUSPEND and RESUME
-aarch64	84232e8c9	ipc_rtt	-6.81	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	relay_rtt	-4.00	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	call_reply	-2.91	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	broker_rtt	-2.91	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	yield_switch	-1.98	#2426: read_current_thread in one asm block
+aarch64	cec04e4a9	call_reply	+0.15	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	broker_rtt	+0.15	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	ctx_switch	+0.26	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	ipc_rtt_el0	+0.15	#2331: SUSPEND and RESUME
+aarch64	cec04e4a9	sink_throughput	+0.11	#2331: SUSPEND and RESUME
+aarch64	84232e8c9	yield_switch	-1.93	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	ipc_rtt	-2.91	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	relay_rtt	-4.01	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	call_reply	-2.90	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	broker_rtt	-2.90	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	spawn_reap	-0.35	#2426: read_current_thread in one asm block
 aarch64	84232e8c9	ctx_switch	-1.79	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	ipc_rtt_el0	-2.99	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	sink_throughput	-3.31	#2426: read_current_thread in one asm block
-aarch64	84232e8c9	spawn_el0	-0.50	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	ipc_rtt_el0	-3.40	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	sink_throughput	-3.30	#2426: read_current_thread in one asm block
+aarch64	84232e8c9	spawn_el0	-0.38	#2426: read_current_thread in one asm block
+aarch64	c301bef61	yield_switch	-0.27	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	ipc_rtt	-0.27	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	relay_rtt	-0.36	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	call_reply	-0.41	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	broker_rtt	-0.41	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	spawn_reap	-0.37	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	map_new	-0.15	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	ctx_switch	-0.25	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	ipc_rtt_el0	-0.38	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	sink_throughput	-0.36	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	map_el0	-0.25	#2446: IrqSafeGuard::drop inlined
+aarch64	c301bef61	spawn_el0	-0.28	#2446: IrqSafeGuard::drop inlined
+aarch64	d5b79700e	spawn_el0	+0.65	#2454: run TLB maintenance batched
+aarch64	b6233a3b8	yield_switch	-0.49	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	ipc_rtt	-0.50	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	relay_rtt	-0.66	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	call_reply	-0.74	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	broker_rtt	-0.74	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	spawn_reap	-2.26	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	map_new	-0.27	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	ctx_switch	-0.46	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	ipc_rtt_el0	-0.68	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	sink_throughput	-0.65	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	map_el0	-0.44	#2565, the save's own change: a capability table copied once, lock_masked inlined
+aarch64	b6233a3b8	spawn_el0	-0.89	#2565, the save's own change: a capability table copied once, lock_masked inlined
 
 # #2565 (bench/riscv64-spawn-reap-drift): riscv64, each merge against its parent, measured with
 # `TICK_HZ` 1 so no preemption tick lands in a window. Only measured costs: by calef's ruling B on
@@ -466,3 +497,149 @@ x86_64	2a3cc0dbd	call_reply	-1.72	#2734: the kernel lock is the in-tree spin_loc
 x86_64	2a3cc0dbd	broker_rtt	-1.72	#2734: the kernel lock is the in-tree spin_lock crate
 x86_64	2a3cc0dbd	spawn_reap	-2.73	#2734: the kernel lock is the in-tree spin_lock crate
 x86_64	2a3cc0dbd	map_new	-0.86	#2734: the kernel lock is the in-tree spin_lock crate
+
+# lane/x86_64-benchmark-drift (notes/benchmarks/x86_64-unexplained-drift.md): x86_64, each
+# first-parent merge against its parent in five windows (the 2026-09-23 floor to the 2026-10-22
+# save), with no preemption tick in a window (`TICK_HZ` 1), one nightly held per window. Every row
+# a merge moved by 0.1% or more, unless a line above names it or a `*` line takes its step whole.
+# The lines cite milestone 95 (an unmap primitive, and the mappings init never lets go),
+# milestone 139 (drive the unsafe count down), milestone 282 (a thread's CPU time, and the `top`
+# it makes possible), milestone 315 (a port revoke that reaches every core), milestone 613 (a
+# system log service), milestone 629 (the context-switch statistic stops costing the switch
+# path), milestone 633 (an outside agent attacks the confinement claim), milestone 812
+# (`std::thread::spawn` runs real threads in one address space), milestone 891 (a mutable static
+# becomes an atomic, a lock or a recorded cell), fatal risk 4 (the per-crossing cost).
+x86_64	cb93ec66f	spawn_reap	+0.20	#1087, milestone 282: a thread's CPU time
+x86_64	7af3a528e	yield_switch	+0.71	#1133, milestone 315: the switch installs the port grant under IPC_TABLES
+x86_64	7af3a528e	tss_iomap_switch	+0.57	#1133, milestone 315: the switch installs the port grant under IPC_TABLES
+x86_64	7af3a528e	tss_iomap_lazy_switch	+0.97	#1133, milestone 315: the switch installs the port grant under IPC_TABLES
+x86_64	7af3a528e	tss_iomap_lazy_nop	+1.16	#1133, milestone 315: the switch installs the port grant under IPC_TABLES
+x86_64	7af3a528e	ipc_rtt	+0.40	#1133, milestone 315: the switch installs the port grant under IPC_TABLES
+x86_64	7af3a528e	relay_rtt	+0.40	#1133, milestone 315: the switch installs the port grant under IPC_TABLES
+x86_64	7af3a528e	call_reply	+0.38	#1133, milestone 315: the switch installs the port grant under IPC_TABLES
+x86_64	7af3a528e	broker_rtt	+0.38	#1133, milestone 315: the switch installs the port grant under IPC_TABLES
+x86_64	7af3a528e	spawn_reap	+0.25	#1133, milestone 315: the switch installs the port grant under IPC_TABLES
+x86_64	a91d41934	yield_switch	-0.12	nightly-2026-09-25, the compiler term measured alone
+x86_64	a91d41934	tss_iomap_switch	-0.10	nightly-2026-09-25, the compiler term measured alone
+x86_64	a91d41934	tss_iomap_lazy_switch	-0.10	nightly-2026-09-25, the compiler term measured alone
+x86_64	a91d41934	tss_iomap_lazy_nop	-0.12	nightly-2026-09-25, the compiler term measured alone
+x86_64	a91d41934	ipc_rtt	-0.12	nightly-2026-09-25, the compiler term measured alone
+x86_64	a91d41934	relay_rtt	-0.09	nightly-2026-09-25, the compiler term measured alone
+x86_64	a91d41934	call_reply	-0.09	nightly-2026-09-25, the compiler term measured alone
+x86_64	a91d41934	broker_rtt	-0.09	nightly-2026-09-25, the compiler term measured alone
+x86_64	228e8024a	spawn_reap	-0.32	#1489, the save's own change: milestone 629
+x86_64	65a5fe12f	ipc_rtt	+0.16	#1494, milestone 613: the system log service
+x86_64	350c1da1f	ipc_rtt	+3.09	#1525, milestone 633: a plain RECV clears the collected sender's outgoing_cap
+x86_64	c715cfa7b	ipc_rtt	-0.22	#1600: overflow checks in the shipped build
+x86_64	c715cfa7b	call_reply	-0.20	#1600: overflow checks in the shipped build
+x86_64	c715cfa7b	broker_rtt	-0.20	#1600: overflow checks in the shipped build
+x86_64	62619d7ff	spawn_reap	+1.38	#1614, fatal risk 4: the reaper frees a thread's stack outside IPC_TABLES
+x86_64	5d80724c5	spawn_reap	+0.18	#1645: the screen console scrolls without reading the framebuffer
+x86_64	270f84396	spawn_reap	-0.13	#1692, milestone 95: the progenitor gives every window back
+x86_64	cc2f22923	ipc_rtt	+0.49	#1852, milestone 139 round 10: the scheduler queue ownership token
+x86_64	cc2f22923	call_reply	+0.34	#1852, milestone 139 round 10: the scheduler queue ownership token
+x86_64	cc2f22923	broker_rtt	+0.34	#1852, milestone 139 round 10: the scheduler queue ownership token
+x86_64	cc2f22923	spawn_reap	+0.43	#1852, milestone 139 round 10: the scheduler queue ownership token
+x86_64	ddd38f0b0	yield_switch	+0.89	#1892, milestone 812: threads in one address space
+x86_64	ddd38f0b0	tss_iomap_switch	+0.71	#1892, milestone 812: threads in one address space
+x86_64	ddd38f0b0	tss_iomap_lazy_switch	+0.72	#1892, milestone 812: threads in one address space
+x86_64	ddd38f0b0	tss_iomap_lazy_nop	+0.87	#1892, milestone 812: threads in one address space
+x86_64	ddd38f0b0	ipc_rtt	+0.52	#1892, milestone 812: threads in one address space
+x86_64	ddd38f0b0	relay_rtt	+0.54	#1892, milestone 812: threads in one address space
+x86_64	ddd38f0b0	call_reply	+0.55	#1892, milestone 812: threads in one address space
+x86_64	ddd38f0b0	broker_rtt	+0.55	#1892, milestone 812: threads in one address space
+x86_64	ddd38f0b0	spawn_reap	+1.90	#1892, milestone 812: threads in one address space
+x86_64	db95f6ad5	yield_switch	+0.30	#1997, milestone 891: the TSS and port-grant statics become SyncUnsafeCell
+x86_64	db95f6ad5	tss_iomap_switch	+0.46	#1997, milestone 891: the TSS and port-grant statics become SyncUnsafeCell
+x86_64	db95f6ad5	tss_iomap_lazy_switch	+1.10	#1997, milestone 891: the TSS and port-grant statics become SyncUnsafeCell
+x86_64	db95f6ad5	tss_iomap_lazy_nop	+0.59	#1997, milestone 891: the TSS and port-grant statics become SyncUnsafeCell
+x86_64	db95f6ad5	ipc_rtt	+0.15	#1997, milestone 891: the TSS and port-grant statics become SyncUnsafeCell
+x86_64	db95f6ad5	relay_rtt	+0.16	#1997, milestone 891: the TSS and port-grant statics become SyncUnsafeCell
+x86_64	db95f6ad5	call_reply	+0.15	#1997, milestone 891: the TSS and port-grant statics become SyncUnsafeCell
+x86_64	db95f6ad5	broker_rtt	+0.15	#1997, milestone 891: the TSS and port-grant statics become SyncUnsafeCell
+x86_64	9bda691ce	yield_switch	+0.32	#2025: schedule split along its decision
+x86_64	9bda691ce	tss_iomap_switch	+0.26	#2025: schedule split along its decision
+x86_64	9bda691ce	tss_iomap_lazy_switch	+0.26	#2025: schedule split along its decision
+x86_64	9bda691ce	tss_iomap_lazy_nop	+0.31	#2025: schedule split along its decision
+x86_64	9bda691ce	ipc_rtt	+0.17	#2025: schedule split along its decision
+x86_64	9bda691ce	relay_rtt	+0.17	#2025: schedule split along its decision
+x86_64	9bda691ce	call_reply	+0.16	#2025: schedule split along its decision
+x86_64	9bda691ce	broker_rtt	+0.16	#2025: schedule split along its decision
+x86_64	49c7dbe413fb	spawn_reap	+0.56	#2057: an x86_64 shootdown round masks interrupts
+x86_64	8d6f3964f	yield_switch	-1.07	#2188: the running thread's name read in one step
+x86_64	8d6f3964f	tss_iomap_switch	-0.85	#2188: the running thread's name read in one step
+x86_64	8d6f3964f	tss_iomap_lazy_switch	-0.86	#2188: the running thread's name read in one step
+x86_64	8d6f3964f	tss_iomap_lazy_nop	-1.04	#2188: the running thread's name read in one step
+x86_64	8d6f3964f	ipc_rtt	-1.66	#2188: the running thread's name read in one step
+x86_64	8d6f3964f	relay_rtt	-2.28	#2188: the running thread's name read in one step
+x86_64	8d6f3964f	call_reply	-1.64	#2188: the running thread's name read in one step
+x86_64	8d6f3964f	broker_rtt	-1.64	#2188: the running thread's name read in one step
+x86_64	8d6f3964f	spawn_reap	-0.24	#2188: the running thread's name read in one step
+x86_64	cec04e4a9	yield_switch	+0.37	#2331: SUSPEND and RESUME
+x86_64	cec04e4a9	tss_iomap_switch	+0.29	#2331: SUSPEND and RESUME
+x86_64	cec04e4a9	tss_iomap_lazy_switch	+0.29	#2331: SUSPEND and RESUME
+x86_64	cec04e4a9	tss_iomap_lazy_nop	+0.36	#2331: SUSPEND and RESUME
+x86_64	cec04e4a9	ipc_rtt	+0.22	#2331: SUSPEND and RESUME
+x86_64	cec04e4a9	relay_rtt	+0.23	#2331: SUSPEND and RESUME
+x86_64	cec04e4a9	call_reply	+0.21	#2331: SUSPEND and RESUME
+x86_64	cec04e4a9	broker_rtt	+0.21	#2331: SUSPEND and RESUME
+x86_64	34caf2a4c873	yield_switch	-0.13	#2378: the block roster names an NVMe disk
+x86_64	34caf2a4c873	tss_iomap_switch	-0.10	#2378: the block roster names an NVMe disk
+x86_64	34caf2a4c873	tss_iomap_lazy_switch	-0.10	#2378: the block roster names an NVMe disk
+x86_64	34caf2a4c873	tss_iomap_lazy_nop	-0.13	#2378: the block roster names an NVMe disk
+x86_64	c301bef61	yield_switch	-0.17	#2446: IrqSafeGuard::drop inlined
+x86_64	c301bef61	tss_iomap_switch	-0.14	#2446: IrqSafeGuard::drop inlined
+x86_64	c301bef61	tss_iomap_lazy_switch	-0.14	#2446: IrqSafeGuard::drop inlined
+x86_64	c301bef61	tss_iomap_lazy_nop	-0.17	#2446: IrqSafeGuard::drop inlined
+x86_64	c301bef61	ipc_rtt	-0.18	#2446: IrqSafeGuard::drop inlined
+x86_64	c301bef61	relay_rtt	-0.23	#2446: IrqSafeGuard::drop inlined
+x86_64	c301bef61	call_reply	-0.27	#2446: IrqSafeGuard::drop inlined
+x86_64	c301bef61	broker_rtt	-0.27	#2446: IrqSafeGuard::drop inlined
+x86_64	c301bef61	spawn_reap	-0.30	#2446: IrqSafeGuard::drop inlined
+x86_64	c301bef61	map_new	-0.14	#2446: IrqSafeGuard::drop inlined
+x86_64	b6233a3b8	yield_switch	-0.52	#2565, the save's own change: a capability table copied once, lock_masked inlined
+x86_64	b6233a3b8	tss_iomap_switch	-0.41	#2565, the save's own change: a capability table copied once, lock_masked inlined
+x86_64	b6233a3b8	tss_iomap_lazy_switch	-0.42	#2565, the save's own change: a capability table copied once, lock_masked inlined
+x86_64	b6233a3b8	tss_iomap_lazy_nop	-0.51	#2565, the save's own change: a capability table copied once, lock_masked inlined
+x86_64	b6233a3b8	ipc_rtt	-0.54	#2565, the save's own change: a capability table copied once, lock_masked inlined
+x86_64	b6233a3b8	relay_rtt	-0.70	#2565, the save's own change: a capability table copied once, lock_masked inlined
+x86_64	b6233a3b8	call_reply	-0.80	#2565, the save's own change: a capability table copied once, lock_masked inlined
+x86_64	b6233a3b8	broker_rtt	-0.80	#2565, the save's own change: a capability table copied once, lock_masked inlined
+x86_64	b6233a3b8	spawn_reap	-1.11	#2565, the save's own change: a capability table copied once, lock_masked inlined
+x86_64	b6233a3b8	map_new	-0.41	#2565, the save's own change: a capability table copied once, lock_masked inlined
+
+# lane/bench/aarch64-unexplained-drift (notes/benchmarks/aarch64-unexplained-drift.md): aarch64,
+# each first-parent merge against its parent, measured with no preemption tick in a window
+# (`TICK_HZ` 1), on the merge's own pinned nightly unless the note names one held for its window.
+# Every row a merge moved by 0.1% or more, unless a line above names it or a `*` line takes its
+# step whole. The lines cite milestone 707 (aarch64 registers spelled the way riscv64 and x86_64
+# spell them).
+aarch64	a91d41934	yield_switch	-0.13	nightly-2026-09-25, the compiler term measured alone
+aarch64	a91d41934	ipc_rtt	-0.12	nightly-2026-09-25, the compiler term measured alone
+aarch64	a91d41934	relay_rtt	-0.10	nightly-2026-09-25, the compiler term measured alone
+aarch64	a91d41934	ctx_switch	-0.12	nightly-2026-09-25, the compiler term measured alone
+aarch64	aee3b5ee9	ipc_rtt_el0	+0.28	#1659: the death message carries the builder's label
+aarch64	aee3b5ee9	sink_throughput	+0.34	#1659: the death message carries the builder's label
+aarch64	65ee81831	ctx_switch	+0.94	#1663: the user-mode runtime's yield is one trap per architecture
+aarch64	65ee81831	ipc_rtt_el0	+0.43	#1663: the user-mode runtime's yield is one trap per architecture
+aarch64	65ee81831	sink_throughput	+0.23	#1663: the user-mode runtime's yield is one trap per architecture
+aarch64	b0f7d26eb	map_new	+0.15	#1676: AMD-Vi, through the shared iommu and memory code
+aarch64	270f84396	spawn_reap	-0.23	#1692, milestone 95: the progenitor gives every window back
+aarch64	270f84396	ctx_switch	-0.36	#1692, milestone 95: the progenitor gives every window back
+aarch64	270f84396	ipc_rtt_el0	-0.19	#1692, milestone 95: the progenitor gives every window back
+aarch64	270f84396	sink_throughput	-0.13	#1692, milestone 95: the progenitor gives every window back
+aarch64	cc2f22923	ipc_rtt	+0.42	#1852, milestone 139 round 10: the scheduler queue ownership token
+aarch64	cc2f22923	ipc_rtt_el0	-1.05	#1852, milestone 139 round 10: the scheduler queue ownership token
+aarch64	c4d491b81	yield_switch	-2.35	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	ipc_rtt	-1.77	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	relay_rtt	-1.77	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	call_reply	-1.94	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	broker_rtt	-1.94	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	spawn_reap	-2.88	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	map_new	-0.36	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	null_syscall	-2.41	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	ctx_switch	-2.76	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	ipc_rtt_el0	-2.20	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	sink_throughput	-1.76	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	map_el0	-0.81	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	spawn_el0	-1.38	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors

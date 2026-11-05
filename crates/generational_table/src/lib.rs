@@ -1,6 +1,8 @@
 //! A fixed-capacity generational table: names that die with what they named. A name packs
 //! `(generation, slot)` into one `u64`; a removal bumps the slot's generation, so a stale name is
-//! `None` forever, slot reused or not (proved below). See notes/generational-names.md.
+//! `None` forever, slot reused or not (proved below). Slots are reused, so the table stays a fixed
+//! array, while names behave as if they never were: a stale name is not a dangling reference and
+//! not somebody else's entry; it is `None`. Game engines call the same shape a slotmap.
 //!
 //! # Limits
 //!
@@ -19,8 +21,8 @@
 
 /// A fixed-capacity table whose entries are named by `(generation, slot)` packed in a `u64`,
 /// generation in the high 32 bits and slot in the low 32. A fresh table's first insert is named
-/// `0`, the boot thread's tid, and with any sane `N` no name equals `u64::MAX`, the kernel's
-/// `cpu::NO_TID` sentinel.
+/// `0`, and with any `N` below 2^32 no name equals `u64::MAX`, so a caller may use `u64::MAX` as a
+/// "no entry" sentinel.
 ///
 /// # Examples
 ///
@@ -58,7 +60,7 @@ pub struct Table<T, const N: usize> {
     /// One past the highest live slot. Every slot at or above it is `None`, so a walk bounded by
     /// it sees every live entry and costs what the table holds rather than `N`. First-fit insert
     /// keeps it near [`len`](Self::len), and [`remove`](Self::remove) brings it down in amortised
-    /// O(1). See notes/generational-names.md.
+    /// O(1): a step down happens at most once per slot that was filled and freed.
     top: usize,
 }
 
@@ -124,9 +126,9 @@ impl<T, const N: usize> Table<T, N> {
     }
 
     /// The validated slot index behind a name, or `None` exactly when the name is dead or
-    /// garbage. This is the first half of every lookup, exposed (milestone 14 phase B.2) because
-    /// the kernel stores TCBs in a parallel pool with pool slot i = table slot i, so the index
-    /// *is* the storage address. `get`/`get_mut`/`remove` are built on this, so every harness
+    /// garbage. This is the first half of every lookup, exposed because a caller may keep its
+    /// entries in a parallel pool with pool slot i = table slot i, so the index *is* the storage
+    /// address. `get`/`get_mut`/`remove` are built on this, so every harness
     /// that proves a stale name never resolves proves it for `slot_of` too.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
@@ -150,7 +152,7 @@ impl<T, const N: usize> Table<T, N> {
 
     /// [`get`](Self::get), mutably.
     ///
-    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because nife uses the standard library's name where it has one.
+    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because the standard library's name is the one a reader already knows.
     pub fn get_mut(&mut self, name: u64) -> Option<&mut T> {
         let slot = self.slot_of(name)?;
         self.slots[slot].as_mut()
@@ -187,7 +189,7 @@ impl<T, const N: usize> Table<T, N> {
     /// The number of live entries. O(1): maintained on every insert and remove rather than
     /// counted by walking `slots`.
     ///
-    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because nife uses the standard library's name where it has one.
+    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because the standard library's name is the one a reader already knows.
     pub fn len(&self) -> usize {
         self.live
     }
@@ -209,7 +211,7 @@ impl<T, const N: usize> Table<T, N> {
     }
 
     /// The slot index of every live entry, in slot order; each index appears at most once. The
-    /// pool-backed kernel table iterates its parallel storage with this.
+    /// caller with a parallel pool iterates its storage with this.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn live_slots(&self) -> impl Iterator<Item = usize> + '_ {
@@ -220,7 +222,7 @@ impl<T, const N: usize> Table<T, N> {
     }
 
     /// Every live entry by shared reference, in slot order. For a table whose values *are* the
-    /// storage (the kernel's page-resident TCB table stores a `*mut Thread` per name), this is
+    /// storage (a table of raw pointers to entries that live elsewhere, for example), this is
     /// how the caller reaches each without a second lookup.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
@@ -231,9 +233,9 @@ impl<T, const N: usize> Table<T, N> {
     /// Every live entry with its current name, in slot order. For sweeps that must *remove* what
     /// they find and so need the name, not just the value (object revocation: find every object
     /// backed by a region, then remove it by name). `values`/`values_mut` suffice when the caller
-    /// only needs the entry, as a TCB carries its own name and does not need this.
+    /// only needs the entry, as when each entry carries its own name.
     ///
-    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because nife uses the standard library's name where it has one.
+    /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because the standard library's name is the one a reader already knows.
     pub fn iter(&self) -> impl Iterator<Item = (u64, &T)> + '_ {
         self.iter_from(0).map(|(_, name, t)| (name, t))
     }
@@ -241,10 +243,10 @@ impl<T, const N: usize> Table<T, N> {
     /// Every live entry from slot `from` onward, as `(slot, name, &T)`, in slot order.
     ///
     /// The slot index makes a sweep resumable across calls that give the lock back, which
-    /// [`iter`](Self::iter) cannot be: removals below a slot do not move it. `rendezvous::SURVEY`
-    /// (milestone 126 (the `procps` package, now `process-tools`)) hands it to userspace as a
-    /// cursor, so a resumed sweep is a sequence of snapshots. `from >= N` yields nothing. See
-    /// notes/generational-names.md.
+    /// [`iter`](Self::iter) cannot be: removals below a slot do not move it, and if the entry at
+    /// slot `k` died, `k` is empty rather than somebody else's. A caller can hand the slot out as a
+    /// cursor, so a resumed sweep is a sequence of snapshots: it never reports an entry twice and
+    /// never resolves a cursor to the wrong entry. `from >= N` yields nothing.
     ///
     /// ```
     /// use generational_table::Table;
@@ -286,15 +288,15 @@ impl<T, const N: usize> Default for Table<T, N> {
     }
 }
 
-/// Machine-checked proofs (DECISIONS §14). These are the properties the design doc says
-/// capability payloads will one day lean on, proved before anything leans on them. A two-slot
+/// Machine-checked proofs, with Kani. These are the properties a caller that stores names in
+/// capabilities or other long-lived records leans on, proved before anything leans on them. A two-slot
 /// table exhibits every case that matters: the slot in question, a different slot, and reuse.
 #[cfg(kani)]
 mod verification {
     use super::*;
 
     /// A removed name never resolves again, even after its slot is reused. This is the
-    /// stale-`ThreadId` safety the kernel currently gets from map-lookup-fails, kept under reuse: the
+    /// safety a never-reused counter would give, kept under reuse: the
     /// old name and the new occupant's name differ (the generation moved), so `get`, `get_mut`,
     /// and `remove` all refuse the old one. The table starts at any generations at all, the last
     /// one before retirement and a retired slot included, so this holds for the 2^32nd reuse as
@@ -400,8 +402,8 @@ mod verification {
 
     /// A garbage name resolves to nothing. For any u64 whatsoever, resolution either fails
     /// or lands on an entry whose minted name is exactly that u64: there is no input that
-    /// reaches an entry through a name the table never issued. (The u64 arrives in syscall
-    /// registers by way of capability bookkeeping; this is the "cannot forge" claim for names.)
+    /// reaches an entry through a name the table never issued. (A name may arrive from an untrusted
+    /// caller; this is the "cannot forge" claim for names.)
     /// Falsification: replayable `crates/generational_table/falsifications/verification.a_name_the_table_never_minted_resolves_to_nothing.patch`
     #[kani::proof]
     fn a_name_the_table_never_minted_resolves_to_nothing() {
@@ -416,7 +418,7 @@ mod verification {
     /// The occupancy bound never hides a live entry. Fill three slots, remove an arbitrary subset
     /// (all eight, holes under a live entry and the empty table included), and every walk must
     /// report exactly as many entries as `len` claims. A subset rather than an operation sequence,
-    /// which did not finish; see notes/generational-names.md.
+    /// which did not finish in a practical time under Kani.
     /// Falsification: replayable `crates/generational_table/falsifications/verification.a_bounded_walk_yields_every_live_entry.patch`
     #[kani::proof]
     fn a_bounded_walk_yields_every_live_entry() {
@@ -535,9 +537,8 @@ mod tests {
     }
 
     /// `get_mut` hands back the entry itself, and a write through it lands in that slot and no
-    /// other. The kernel reaches every thread this way and `unwrap()`s the result on the switch
-    /// path (`sched.rs`), so a `get_mut` that refused a live name would be a panic in the
-    /// scheduler rather than a lookup that missed.
+    /// other. A caller that reaches every entry this way and `unwrap()`s the result on a hot path
+    /// would panic, rather than miss a lookup, if `get_mut` refused a live name.
     #[test]
     fn get_mut_reaches_the_live_entry_and_writes_through_it() {
         let mut t: Table<u32, 4> = Table::new();
@@ -552,8 +553,8 @@ mod tests {
         assert_eq!(t.get_mut(a), None, "a dead name resolved through get_mut");
     }
 
-    /// Empty in both directions. Nothing in the tree calls `is_empty` yet (it exists because a
-    /// type with `len` owes one), which makes it exactly the kind of accessor that can rot into a
+    /// Empty in both directions. `is_empty` exists because a
+    /// type with `len` owes one, which makes it exactly the kind of accessor that can rot into a
     /// constant with no caller to notice.
     #[test]
     fn a_table_is_empty_only_while_it_holds_nothing() {

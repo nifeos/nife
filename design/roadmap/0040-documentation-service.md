@@ -82,8 +82,8 @@ That split is the reuse judgment, and it is the same one milestone 32 made about
 - A doc bundle is part of a package: rendered-source markdown plus a small index shard, installed
   into a documentation store when the component is installed. This is where milestone 39's packaging
   observation pays: manifest, hash, version, and now a doc bundle.
-- ~~The viewer holds a directory capability to the doc store and nothing else.~~ It should not, and
-  does not (phase 1's finding, now in notes/documentation.md). `doc`'s manifest is byte-identical to
+- The viewer holds no directory capability to the doc store (phase 1's finding, now in
+  notes/documentation.md). `doc`'s manifest is byte-identical to
   `wc`'s, its cspace holds two endpoints, and the shell is what resolves a page name. A viewer that
   could open the page it renders could open any page. Phase 2 kept that true by making search a
   builtin rather than a program, for the same reason `ls` is one.

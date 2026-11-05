@@ -9,7 +9,7 @@
 //! names the same two registers too, and each constant's documentation gives Linux's spelling.
 //! The bits inside them, and [`MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID`] (OpenBSD and FreeBSD match the OUI and model, not
 //! the whole identifier), come from Linux's `drivers/net/phy/motorcomm.c`, read as facts about the
-//! part (#2762 Decision 52's source order); why this driver writes them is at each. Each constant keeps its source's
+//! part (OpenBSD first, then FreeBSD, then Linux only for what neither names); why this driver writes them is at each. Each constant keeps its source's
 //! name without the part prefix (`YT8511_`, `YT8521_` or `YT8531_`), and its documentation opens
 //! with its full name and its source's spelling. The vendor tree states register values and
 //! mainline states physical quantities, and for `gmac0` they agree.

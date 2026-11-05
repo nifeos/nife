@@ -74,5 +74,7 @@ The minimum supported Rust version is 1.88.
 ## License
 
 Licensed under either of the MIT license (`LICENSE-MIT`) or the Apache License, Version 2.0
-(`LICENSE-APACHE`), at your option. Parts are adapted from OpenBSD's `dwmmc.c` and `sdmmc_mem.c`
-under the ISC license; `src/lib.rs` carries both notices.
+(`LICENSE-APACHE`), at your option. Parts are adapted from OpenBSD's `dwmmc.c` under the
+ISC license; `src/lib.rs` carries its notice. The manifest's SPDX expression is
+`(MIT OR Apache-2.0) AND ISC`. Card identification follows the SD specification and takes only the
+order of its addressing commands from OpenBSD's `sdmmc_mem.c`, whose code is not adapted.

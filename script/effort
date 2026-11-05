@@ -160,6 +160,12 @@
 # working directory is this project's (the main checkout, any directory under a `nife-worktrees`
 # directory, and the pre-rename names) are counted; the same database holds sessions for other repositories.
 #
+# **Two layouts are read.** The older one is the `message`, `session` and `part` tables above. The
+# newer one has `session_message` (a `type` column; an `assistant` row holds `model.id` as
+# `provider/model`, the same `tokens` and `time` blocks, and its tool calls in `content`, where a
+# `shell` call carries `state.input.command` and its output in `state.content`) and `session_v2`.
+# A database with neither prints one `skipping opencode database` warning and reads as empty.
+#
 #   - **The model column is opencode's `modelID`**, unprefixed (`glm-5.3`). The provider is not in
 #     the key: `zai` and `zai-coding-plan` are two doors to one model, and a row per door would
 #     split a model's week for no reason a reader cares about.
@@ -509,34 +515,77 @@ def _connect_opencode(path=None):
     return sqlite3.connect('file:%s?mode=ro' % path, uri=True)
 
 
+_WARNED_SCHEMAS = set()
+
+
+def _opencode_schema(db, label):
+    """Which of opencode's two layouts `db` has: 'v1', 'v2', or None for one neither reader knows.
+
+    v1 keeps one `message` row per response beside `session` and `part`. v2 keeps `session_message`
+    (typed rows, the tool calls inside an assistant row's `content`) beside `session_v2`. An unknown
+    layout prints one warning line per database and reads as empty, so a tool that renames its tables
+    costs one skipped source and never a traceback.
+    """
+    tables = {name for (name,) in db.execute("select name from sqlite_master where type = 'table'")}
+    if {'message', 'session', 'part'} <= tables:
+        return 'v1'
+    if {'session_message', 'session_v2'} <= tables:
+        return 'v2'
+    if label not in _WARNED_SCHEMAS:
+        _WARNED_SCHEMAS.add(label)
+        print('effort: skipping opencode database %s: unknown schema (tables: %s)'
+              % (label, ', '.join(sorted(tables)) or 'none'), file=sys.stderr)
+    return None
+
+
+def _opencode_responses(db, label):
+    """[(session id, directory, model, tokens block, time block)] for each assistant response."""
+    schema = _opencode_schema(db, label)
+    if schema is None:
+        return []
+    out = []
+    if schema == 'v1':
+        query = ("select m.session_id, m.data, s.directory from message m "
+                 "join session s on s.id = m.session_id "
+                 "where json_extract(m.data, '$.role') = 'assistant'")
+    else:
+        query = ("select m.session_id, m.data, s.directory from session_message m "
+                 "join session_v2 s on s.id = m.session_id where m.type = 'assistant'")
+    for session_id, data, directory in db.execute(query):
+        try:
+            message = json.loads(data)
+        except ValueError:
+            continue
+        if schema == 'v1':
+            model = message.get('modelID')
+        else:
+            # v2 names the model `provider/model` (`z-ai/glm-5.3-flash`); the key is the model alone.
+            model = ((message.get('model') or {}).get('id') or '').rsplit('/', 1)[-1]
+        out.append((session_id, directory, model, message.get('tokens') or {},
+                    message.get('time') or {}))
+    return out
+
+
 def read_opencode(rows, path=None):
     """Add opencode's responses for this project to `rows`; returns (sessions read, db or None).
 
-    See "Every vendor" in the header for what is counted and why. A response is the `message` row
-    with role `assistant`; a session is the stream, so the idle-gap rule applies per session.
+    See "Every vendor" in the header for what is counted and why. A response is an assistant message
+    (either layout, see `_opencode_schema`); a session is the stream, so the idle-gap rule applies
+    per session.
     """
     db = _connect_opencode(path)
     if db is None:
         return 0, None
     try:
-        query = ("select m.session_id, m.data, s.directory from message m "
-                 "join session s on s.id = m.session_id "
-                 "where json_extract(m.data, '$.role') = 'assistant'")
         streams = {}
-        for session_id, data, directory in db.execute(query):
+        for session_id, directory, model, tokens, when in _opencode_responses(
+                db, str(path or OPENCODE_DB)):
             if not is_project_dir(directory or ''):
                 continue
-            try:
-                message = json.loads(data)
-            except ValueError:
-                continue
-            tokens = message.get('tokens') or {}
             cache = tokens.get('cache') or {}
             counted = (tokens.get('input', 0) or 0, tokens.get('output', 0) or 0,
                        tokens.get('reasoning', 0) or 0, cache.get('read', 0) or 0,
                        cache.get('write', 0) or 0)
-            model = message.get('modelID')
-            when = (message.get('time') or {})
             millis = when.get('completed') or when.get('created')
             if not any(counted) or not model or not millis:
                 continue
@@ -761,6 +810,56 @@ def commit_subjects(command):
     return out
 
 
+def _opencode_commit_calls(db, label):
+    """[(directory, model, command, output, start in seconds)] for each completed shell call that
+    ran `git commit`, in either layout. The model is the one on the response that held the call."""
+    schema = _opencode_schema(db, label)
+    out = []
+    if schema == 'v1':
+        query = ("select p.data, m.data, s.directory from part p "
+                 "join message m on m.id = p.message_id "
+                 "join session s on s.id = p.session_id "
+                 "where json_extract(p.data, '$.type') = 'tool' "
+                 "and json_extract(p.data, '$.tool') = 'bash' "
+                 "and json_extract(p.data, '$.state.status') = 'completed' "
+                 "and json_extract(p.data, '$.state.input.command') like '%git commit%'")
+        for part_data, message_data, directory in db.execute(query):
+            try:
+                part, message = json.loads(part_data), json.loads(message_data)
+            except ValueError:
+                continue
+            state = part.get('state') or {}
+            out.append((directory, message.get('modelID'),
+                        (state.get('input') or {}).get('command') or '',
+                        state.get('output') or '',
+                        ((state.get('time') or {}).get('start') or 0) / 1000.0))
+    elif schema == 'v2':
+        query = ("select m.data, s.directory from session_message m "
+                 "join session_v2 s on s.id = m.session_id "
+                 "where m.type = 'assistant' and m.data like '%git commit%'")
+        for message_data, directory in db.execute(query):
+            try:
+                message = json.loads(message_data)
+            except ValueError:
+                continue
+            model = ((message.get('model') or {}).get('id') or '').rsplit('/', 1)[-1]
+            for call in message.get('content') or []:
+                state = call.get('state') or {}
+                if (call.get('type') != 'tool' or call.get('name') not in ('shell', 'bash')
+                        or state.get('status') != 'completed'
+                        or not isinstance(state.get('input'), dict)):
+                    continue
+                command = state['input'].get('command') or ''
+                if 'git commit' not in command:
+                    continue
+                output = '\n'.join(piece.get('text') or '' for piece in state.get('content') or []
+                                   if isinstance(piece, dict))
+                when = call.get('time') or {}
+                out.append((directory, model, command, output,
+                            (when.get('ran') or when.get('created') or 0) / 1000.0))
+    return out
+
+
 def read_opencode_commits(path=None):
     """[(sha prefix or None, subject, model, call time in seconds)] for every `git commit` an
     opencode session in this project ran and that completed.
@@ -774,31 +873,15 @@ def read_opencode_commits(path=None):
         return []
     out = []
     try:
-        query = ("select p.data, m.data, s.directory from part p "
-                 "join message m on m.id = p.message_id "
-                 "join session s on s.id = p.session_id "
-                 "where json_extract(p.data, '$.type') = 'tool' "
-                 "and json_extract(p.data, '$.tool') = 'bash' "
-                 "and json_extract(p.data, '$.state.status') = 'completed' "
-                 "and json_extract(p.data, '$.state.input.command') like '%git commit%'")
-        for part_data, message_data, directory in db.execute(query):
-            if not is_project_dir(directory or ''):
-                continue
-            try:
-                part, message = json.loads(part_data), json.loads(message_data)
-            except ValueError:
-                continue
-            model = message.get('modelID')
-            state = part.get('state') or {}
-            output = state.get('output') or ''
-            started = ((state.get('time') or {}).get('start') or 0) / 1000.0
-            if not model:
+        for directory, model, command, output, started in _opencode_commit_calls(
+                db, str(path or OPENCODE_DB)):
+            if not is_project_dir(directory or '') or not model:
                 continue
             printed = _COMMIT_LINE.findall(output)
             for sha, subject in printed:
                 out.append((sha, subject.strip(), model, started))
             if not printed:
-                for subject in commit_subjects((state.get('input') or {}).get('command') or ''):
+                for subject in commit_subjects(command):
                     out.append((None, subject, model, started))
     finally:
         db.close()
@@ -929,6 +1012,8 @@ def attribute_main():
 
 def selftest():
     """Fixtures for the opencode reader and the commit matcher. No real database, no real tree."""
+    import contextlib
+    import io
     import tempfile
 
     def message(session, mid, model, millis, tokens, directory_ok=True):
@@ -986,6 +1071,50 @@ def selftest():
         sessions, _db = read_opencode(rows, path)
         evidence = read_opencode_commits(path)
 
+        # The newer layout, with the same fixture facts, and a layout neither reader knows.
+        def v2_message(session, mid, model, millis, tokens, calls=()):
+            body = {'time': {'created': millis - 5, 'completed': millis}, 'agent': 'build',
+                    'model': {'id': 'openrouter-lab/' + model, 'providerID': 'x'},
+                    'content': [{'type': 'tool', 'name': 'shell', 'state': {
+                        'status': 'completed', 'input': {'command': command},
+                        'content': [{'type': 'text', 'text': output}]},
+                        'time': {'created': millis, 'ran': millis}} for command, output in calls],
+                    'tokens': tokens}
+            return (mid, session, 'assistant', 1, millis, millis, json.dumps(body))
+
+        path2 = pathlib.Path(tmp) / 'opencode-v2.db'
+        db = sqlite3.connect(str(path2))
+        db.executescript(
+            'create table session_v2 (id text primary key, directory text);'
+            'create table session_message (id text primary key, session_id text, type text,'
+            ' seq int, time_created int, time_updated int, data text);')
+        db.executemany('insert into session_v2 values (?, ?)', [
+            ('s1', '/home/x/nife-worktrees/lane'), ('s2', '/home/x/fmrepo')])
+        db.executemany('insert into session_message values (?, ?, ?, ?, ?, ?, ?)', [
+            v2_message('s1', 'm1', 'glm-5.3', day, full(100, 10, 5, 1000, 7),
+                       [('git commit -m "printed one"',
+                         '[milestone/x %s] printed one\n 1 file changed' % sha[:9])]),
+            v2_message('s1', 'm2', 'glm-5.3', day + 600000, full(200, 20, 0, 3000, 0)),
+            v2_message('s1', 'm3', 'glm-5.3', day + 700000, full(0, 0, 0, 0, 0)),
+            v2_message('s2', 'm4', 'glm-5.3', day, full(999, 999, 0, 0, 0)),
+            ('m5', 's1', 'user', 1, day, day, json.dumps({'text': 'hello'}))])
+        db.commit()
+        db.close()
+        rows2 = {}
+        sessions2, _db = read_opencode(rows2, path2)
+        evidence2 = read_opencode_commits(path2)
+
+        path3 = pathlib.Path(tmp) / 'opencode-unknown.db'
+        db = sqlite3.connect(str(path3))
+        db.executescript('create table something_else (id text primary key);')
+        db.commit()
+        db.close()
+        rows3 = {}
+        with contextlib.redirect_stderr(io.StringIO()) as warned:
+            sessions3, _db = read_opencode(rows3, path3)
+            evidence3 = read_opencode_commits(path3)
+        warned = warned.getvalue()
+
     glm = rows[('2026W40', 'glm-5.3')]
     flash = rows[('2026W40', 'glm-5.3-flash')]
     commits = [('a' * 40, 'printed one', float(day / 1000)),
@@ -1024,7 +1153,21 @@ def selftest():
                    pruned, monday)
     pruned = pruned[key]
 
+    glm2 = rows2[('2026W40', 'glm-5.3')]
     cases = [
+        ('the newer layout reads this project\'s session only', sessions2, 1),
+        ('the newer layout counts responses, skipping an empty one', glm2['requests'], 2),
+        ('the newer layout strips the provider from the model', list(rows2), [('2026W40', 'glm-5.3')]),
+        ('the newer layout adds tokens as the older does',
+         (glm2['input_tokens'], glm2['output_tokens'], glm2['cache_read_tokens'],
+          glm2['cache_write_5m_tokens']), (300, 35, 4000, 7)),
+        ('the newer layout finds a commit in a shell call',
+         [e[:3] for e in evidence2], [('a' * 9, 'printed one', 'glm-5.3')]),
+        ('an unknown layout reads as empty, not a traceback',
+         (sessions3, rows3, evidence3), (0, {}, [])),
+        ('an unknown layout warns once, on one line',
+         (warned.count('unknown schema'), warned.count('\n')), (1, 1)),
+    ] + [
         ('only this project\'s sessions are read', sessions, 2),
         ('requests skip an error with nothing spent and a user row', glm['requests'], 3),
         ('input tokens add', glm['input_tokens'], 350),

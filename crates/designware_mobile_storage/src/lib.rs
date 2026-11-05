@@ -15,9 +15,12 @@
 //! rather than whose IP it is.
 
 //! Adapted from OpenBSD's `sys/dev/fdt/dwmmc.c` revision 1.33 (register map, reset, clock, bus
-//! width, command flags and the polled FIFO transfer) and from OpenBSD's `sys/dev/sdmmc/sdmmc_mem.c`
-//! (card identification), both under the ISC license, whose notices must be kept. GPL sources (Linux, U-Boot, the device trees)
-//! were read only for hardware facts; no GPL code was copied.
+//! width, command flags and the polled FIFO transfer), under the ISC license, whose notice must be
+//! kept. Card identification ([`sd`]) follows the SD specification's sequence and takes only the
+//! order of its addressing commands from OpenBSD's `sys/dev/sdmmc/sdmmc_mem.c`
+//! (`openbsd/src@21ea132db7ea`, read 2026-11-04 UTC); none of that file's code or text is adapted,
+//! so its notice is not carried. GPL sources (Linux, U-Boot, the device trees) were read only for
+//! hardware facts; no GPL code was copied.
 //!
 //! ```text
 //! Copyright (c) 2017 Mark Kettenis
@@ -34,23 +37,14 @@
 //! ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //! OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //! ```
-//!
-//! The notice of `sdmmc_mem.c` (`openbsd/src@21ea132db7eac1d478645cd6150c5787dc366ebc`, fetched
-//! 2026-11-01 UTC) differs in its copyright line and otherwise matches:
-//!
-//! ```text
-//! Copyright (c) 2006 Uwe Stuehler <uwe@openbsd.org>
-//! ```
 
 //! # BUGS
 //! - The polled path has read radon's card; the IDMAC path has run only against `simulator`, until a
 //!   bench step on silicon measures it.
 //! - The IDMAC moves at most its region's data pages per command and copies once each way
-//!   through them; the EL0 server moves its data through the FIFO.
+//!   through them.
 //! - Default speed only (25 MHz, 4-bit SD, 1-bit eMMC); no tuning, no 8-bit bus. Polled, with
 //!   `INTMASK` zero. A 64-bit FIFO is refused. No card-detect or write-protect handling.
-//! - Which part of radon's card the EL0 server serves is an architect's call; the window and its
-//!   spawn words are nife's, outside this crate.
 
 pub mod bench;
 pub mod card;

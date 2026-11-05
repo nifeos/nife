@@ -14,8 +14,7 @@ Milestones 303 and 420 cover this block, in two parts. The first piece this file
 server's disk lookup transport-blind and attaching the RedoxFS image, was built by milestone 303 on
 2026-09-16. The rest was restated by the milestone 303 lane the same day as the proposal
 `the-rest-of-the-x86-64-fixture-set`, which milestone 433 numbers 420, with the device list
-itemised and the structural obstacle recorded as gone. Filed here on 2026-09-03 by the milestone 247
-sweep, from milestone 215's block. Checked on 2026-09-19: `helpers/qemu-runner-x86_64.sh` now
+itemised and the structural obstacle recorded as gone. Checked on 2026-09-19: `helpers/qemu-runner-x86_64.sh` now
 attaches two `virtio-blk-pci` functions and an NVMe controller and still no NIC, GPU, keyboard or
 RNG. The tree carries 50 `skip!("no RedoxFS disk attached")` sites rather than the 36 this file
 counted. That is the measure growing rather than the gap closing. The work is real and it lives in
@@ -46,21 +45,10 @@ The specific risk is a defect that only x86_64 has and that only the fixtures wo
 could run there, and the suite was green the entire time because nothing on that leg ever asked a
 device for an interrupt. Every fixture still unattached is another arm of that same blind spot.
 
-## Where it came from
-
-Milestone 215 (a PCI function's interrupt reaches nothing on x86_64) named it as the natural next
-step from what it built: *"Attach the rest of the x86_64 test fixtures now that a function's
-interrupt works: the RedoxFS image, the GPT and blank disks, the NIC, the GPU, the keyboard and the
-RNG, each a line in `helpers/qemu-runner-x86_64.sh` plus its wiring, starting with making the FS
-server's disk lookup transport-blind. The measure is the 36 tests taking a 'no RedoxFS disk
-attached' arm."*
-
 ## Index row
 
-`helpers/qemu-runner-x86_64.sh` started a much barer machine than the other two runners, so most
-x86_64 tests passed by taking an early-exit arm and the suite reported a green leg over an untested
-surface. Milestone 303 took the first piece named here on 2026-09-16 (the transport-blind disk
-lookup and the RedoxFS image) and the milestone 303 lane restated the remainder the same day with
-the device list itemized. This block is the older half of a pair. Promoted and disposed of in one
-act by milestone 433. The measure it proposed is worth keeping: the count of tests taking a "no
-RedoxFS disk attached" arm, which was 36 when this was written and is 50 now.
+`helpers/qemu-runner-x86_64.sh` starts a much barer machine than the other two runners, so most
+x86_64 tests pass by taking an early-exit arm and the suite reports a green leg over an untested
+surface. Milestone 303 (x86_64's FS service has a server and) built the first piece (the transport-blind disk lookup and the RedoxFS
+image), and milestone 420 (x86_64 has one fixture of five and) holds the rest. The measure worth keeping is the count of tests taking a
+"no RedoxFS disk attached" arm, which was 36 when proposed and is 50 on 2026-09-19.

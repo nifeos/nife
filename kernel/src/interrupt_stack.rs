@@ -87,7 +87,7 @@ pub fn region() -> (u64, u64) {
 /// secondary is up and no trap has run with the switch armed.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     #[cfg(any(test, feature = "system_tests"))]
     {

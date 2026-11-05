@@ -9,9 +9,7 @@ needs_person: no
 ---
 # 351. Every `std` test grants the mount root, so a walk that over-asks for rights still passes
 
-Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
-from milestone 122's block; numbered 2026-09-19 by milestone 433. **Premise re-checked 2026-09-19 and
-it holds.** `kernel/src/user/std_tests.rs` names no caretaker: every std program it spawns is handed
+Premise re-checked 2026-09-19 and it holds. `kernel/src/user/std_tests.rs` names no caretaker: every std program it spawns is handed
 the mount root, and the one rights-shaped assertion in the file is about `/../motd` asking for the
 level above the only root it has. `fs_subtree_caretaker` is built and packed
 (`components/Cargo.toml`), so both halves of the fixture exist and nothing has joined them.
@@ -46,24 +44,12 @@ so it reaches the child in one message under any grant. No test under a narrowed
 that path, for the same reason, and this fixture shows that a held directory gets exactly the
 parent's rights.
 
-## Where it came from
-
-Milestone 122's Follow-on: *"Spawn a `std` program on an `fs_subtree_caretaker` endpoint and run
-the PAL against it, so the rights discipline is exercised under a narrowed grant. Every std test
-today grants the mount root, which means a walk that over-asks for rights passes all of them. The
-PAL has already come close once: `readdir` nearly shipped asking for `dir::ALL`."*
-
 ## Index row
 
-Every `std` test today is handed the mount root, so a path operation that asks for more rights than
-it needs is indistinguishable from one that asks for exactly what it needs, because both succeed. A
-test suite that cannot tell a confined program from an unconfined one is not testing the property
-this system claims. Spawning a `std` program on an `fs_subtree_caretaker` endpoint instead and
-running the existing platform abstraction layer tests against it exercises the rights discipline
-under a narrowed grant. It is a test that would have caught a real defect. `readdir` nearly shipped
-asking for `dir::ALL`, which passes every test in the tree under the root grant and fails the first
-time a program is confined. That is the case the whole capability model exists to serve. It also
-compounds, because the PAL is extended a piece at a time and each new operation picks its rights by
-whatever the author thought was needed. A held directory asks for `dir::PARENT_RIGHTS` (§98), so it
-reaches the child under a narrowed grant in one message. Nothing under a narrowed grant exercises
-that path in the `std` fixtures either, and this fixture is what runs it.
+Every `std` test is handed the mount root, so a path operation that asks for more rights than it
+needs is indistinguishable from one that asks for exactly what it needs. Both succeed. The fix is to spawn a
+`std` program on an `fs_subtree_caretaker` endpoint. Running the platform abstraction layer tests
+against it exercises the rights discipline under a narrowed grant. It would have caught a real
+defect. `readdir` nearly shipped asking for `dir::ALL`. That passes every test under the root grant and
+fails the first time a program is confined. A held directory asks for `dir::PARENT_RIGHTS`
+(§98), and no `std` fixture exercises that path under a narrowed grant either.

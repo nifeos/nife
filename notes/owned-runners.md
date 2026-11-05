@@ -1,4 +1,4 @@
-# Owned runners: what they are, how to flip them, and how the canary judges them
+# Owned runners: what they are, who can reach them, and how to flip them
 
 *Name: provisional, minted 2026-11-03 (UTC) by lane/owned-runners-canary.*
 
@@ -7,8 +7,8 @@ COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 3.
 The variable `NIFE_RUNNER_OWNED`, `helpers/owned_runner_check.py` and the canary workflow's job names are provisional too.
 
 The organization runs a small pool of its own CI runners next to GitHub's hosted ones. This page is
-the runbook: what the pool is, what may run on it, how a repository maintainer switches work between
-owned and hosted, how the pool earns its place, and what to do when it misbehaves. The maintainers keep
+the runbook: what the pool is, what may run on it, who can put code on it, how a repository
+maintainer switches work between owned and hosted, and what to do when it misbehaves. The maintainers keep
 machine-local facts (which hosts, where they sit) off-tree, and this page does not need them.
 
 ## What the owned runners are
@@ -16,7 +16,8 @@ machine-local facts (which hosts, where they sit) off-tree, and this page does n
 - Five runners in the runner group `nife-owned` of the `nifeos` organization, all carrying the label
   `nife-owned-x86_64`.
 - Each job gets a fresh rootless container on an owned host, then the runner exits: just-in-time and
-  ephemeral, so no job sees another's files.
+  ephemeral, so no job sees another's files. Inside it the job runs as `runner` with passwordless
+  `sudo`, so it is root in the container and nowhere else.
 - Each container has 4 vCPUs, 16 GiB of memory, `/dev/kvm`, a 50 GB volume and a 90-minute limit.
 - The image is Ubuntu 26.04 with runner 2.338.2 and `qemu-system-x86` installed.
 - Egress goes through an allowlist proxy. The proxy refuses a host not on the list and reports it to the
@@ -29,11 +30,32 @@ A host-side hook admits exactly two kinds of job and turns the rest away:
 - `merge_group` on a ref under `gh-readonly-queue/main/`
 - `push` to `main`
 
-The hook turns away a `pull_request` job at the door, and a `workflow_dispatch` job too. A fork's
-pull request therefore never runs on owned hardware: its code belongs to the author, and the hook
-says no before a container starts. A turned-away job does not fail; it waits for a runner that
+The hook turns away a `pull_request` job at the door, and a `workflow_dispatch` job too, so a
+fork's pull request run never reaches owned hardware. A merge group that holds a fork's pull
+request is another matter: "Who can reach the pool" below. A turned-away job does not fail; it waits for a runner that
 will never take it and blocks whatever needs it. For that reason `script/lint` rejects the tree that would send one there
 (see "The lint" below).
+
+## Who can reach the pool
+
+Code reaches an owned runner only through a merge group or a push to `main`, and both need write
+access to nifeos/nife:
+
+- A merge group holds pull requests that an account with write access armed or enqueued. It runs
+  each pull request's own code, its workflow files included, so a pull request that edits a
+  workflow runs its edit on the pool before any check on it can fail.
+- A push to `main` comes only from the merge queue: the `main` ruleset refuses a direct push, and
+  has no bypass actor.
+- A push to any other branch runs no owned job, because every owned job's workflow limits `push`
+  to `main` (the lint below), and the host refuses one that arrives anyway.
+
+So the pool runs code from the people and Apps with write access, and from any pull request they
+put in the queue. A pull request from a fork is code its author controls, and it reaches the pool
+the moment it enters the queue, whatever `NIFE_RUNNER_OWNED` says. **Do not arm or enqueue a
+pull request from a fork** (GitHub shows it as from another repository). Re-push its reviewed
+commits to a branch here and queue that, which pins what was read, as
+[milestone 965 (gating CI rents more concurrency before it owns a runner)](../design/roadmap/0965-gating-ci-rents-more-concurrency-before-it-owns-a-runner.md)
+describes.
 
 ## What runs on them
 
@@ -54,6 +76,12 @@ These stay hosted on purpose:
 Stage 2, later, moves the rest.
 
 ## The switch: `NIFE_RUNNER_OWNED`
+
+The variable stays `false` until the strict canary (`canary-owned`) and the dry run
+(`canary-owned-dry-run`) are both green on the pool. They must be green in one merge group or push
+run, with no `FINDING` line in either summary and the proxy's refusal log empty for that run. "The canary" below
+describes both. Flipping needs no review beyond that evidence. It is a reversible decision;
+Rollback below undoes it.
 
 The repository variable `NIFE_RUNNER_OWNED` chooses between the two pools. The value `true` selects
 owned; anything else, including unset, selects hosted. A job that takes part in the switch writes:
@@ -78,18 +106,56 @@ Set it with `gh variable set NIFE_RUNNER_OWNED --repo nifeos/nife --body true`.
 
 ## The canary
 
-`.github/workflows/owned-runner-canary.yml` runs on `merge_group` and on `push` to `main` only.
-It holds two jobs with identical steps, then an isolation test:
+The canary is monitoring, not a gate: nothing waits for it. A maintainer reads its summaries before
+the flip to see whether the image is ready, and after it to see the pool's health. `.github/workflows/owned-runner-canary.yml` runs on
+`merge_group` and on `push` to `main` only. It holds two probe jobs, the strict image checks
+and the dry run on the owned side, then an isolation test:
 
-- `canary-owned` on `[nife-owned-x86_64]`, with `continue-on-error: true`, so a failure cannot
-  block the queue.
+- `canary-owned` on `[nife-owned-x86_64]`, with no `continue-on-error`, so a FINDING shows the job
+  red. It is not a required check, so a failure cannot block the queue.
 - `canary-hosted` on `ubuntu-26.04`, the reference.
 
-Each prints the runner name, hostname and `id`, tests that `/dev/kvm` is writable, prints the
-`qemu-system-x86_64` and `cargo` versions when present, fetches `https://index.crates.io/config.json`
-and `https://api.github.com` with the status code and time of each, and times the whole probe. The
-output goes to the job summary. The workflow holds no secrets and `permissions: contents: read`.
+Both probe jobs print the runner name, hostname and `id`, tests that `/dev/kvm` is writable, prints the
+`qemu-system-x86_64` and `cargo` versions when present, and fetches `https://index.crates.io/config.json`
+and `https://api.github.com` with the status code and time of each. It times the whole probe. The owned job
+then checks the container's walls: a fetch with the proxy bypassed must fail, and no Docker, Podman
+or containerd socket may exist. Each open wall prints a `FINDING` line and fails the job. The output
+goes to the job summary. The workflow holds no secrets and `permissions: contents: read`.
 Neither job name is a required check; do not add either to the ruleset.
+
+### The strict image checks
+
+`canary-owned` also checks out the repository, installs the pinned toolchain with
+`helpers/rustup-retry.sh toolchain install`, and then runs `helpers/owned-image-probe.sh` for each
+of four checks, through `helpers/owned-canary-image.sh`, which exits 1 for a failing probe or any
+`FINDING` line (`helpers/owned-canary-image-selftest.sh` proves both ways). Any `FINDING` line fails the job, so a job image that the stage 1 jobs cannot use
+shows red where an earlier canary showed green. The checks are:
+
+- `tools`: `rustup` and `cargo` are on `PATH`.
+- `toolchain`: the channel `rust-toolchain.toml` pins appears in `rustup toolchain list`, and
+  `rustc -vV` and `cargo --version` run in the repository.
+- `apt-proxy`: apt has an `Acquire::http::Proxy` or `Acquire::https::Proxy` setting that is not
+  `DIRECT`, and `sudo` keeps the runner's proxy variables when the runner sets them.
+- `pip`: a virtual environment's pip downloads `wheel` and `qemu.qmp` (the two packages QEMU's
+  `configure` fetches) through the proxy.
+
+### The dry run
+
+`canary-owned-dry-run` runs on the owned label, `continue-on-error`, on the same two events as the
+canary. It runs the setup steps of each job that the event-aware `runs-on` can place on the pool,
+without the real work, and keeps going after a failed step so one run names everything missing:
+
+- `crate-probes`: the pinned toolchain install.
+- the `prove` shards: `script/kani-install`.
+- `swish-check-x86_64` and `bench`: the QEMU cache restore and the decision `script/ci-qemu` would
+  take, which is to skip on a hit and build on a miss. The workspace must be
+  `/home/runner/work/nife/nife`, the layout where a cache saved by a hosted runner restores under
+  `$HOME`. The dry run also fetches what a cold build fetches: `apt-get update`, the QEMU source
+  tarball and pip's build dependencies.
+
+It does not build QEMU or run a proof. A pass says the image can start each job's setup; the first
+real queue runs after the flip are the evidence for the rest. When a job's setup steps change, the
+dry run changes with them.
 
 Every canary job ends with a `Resources` step that runs even after a failure and appends to the job
 summary:
@@ -120,30 +186,9 @@ test that claim. All three are `continue-on-error`, and none is a required check
   job, so the slot is the name without it, and equal slots mean one slot. The job reports how many
   of the check instances ran on the writer's slot.
 
-Reading the summary: no `LEAK` line in any instance is the pass. A leak can only show where the
-writer ran, so the test counts only when the isolation job says `writer slot seen again: yes`.
-A `no` means this run proved nothing about slot reuse; read the next run. A `FINDING` for `/etc`
-is the expected result of a rootless container.
-
-### What counts as a pass
-
-A canary week passes when all of these hold across every queue run in seven days (UTC):
-
-1. `canary-owned` concludes the same as `canary-hosted` on every run. A run where the owned job
-   fails and the hosted one passes is a miss, whatever the cause.
-2. The two curl lines return a success status on both sides on every run.
-3. `/dev/kvm` is writable on the owned side on every run.
-4. The owned job's total time is no more than the hosted job's on the median run. The comparison is
-   a reading of the summaries; queue time before the job starts is a separate number and does not
-   count against the pool.
-
-Fewer than twenty runs in the week extends the week; a week with no run proves nothing.
-
-### The first run
-
-After the workflow lands, its first `merge_group` or `push` run is the evidence the pool was
-configured as described. Open the run, read the "Set up job" step of `canary-owned`, and record its
-runner name and machine name lines with the run's URL for the maintainers who operate the pool.
+Reading the summary: a `LEAK` line in any instance means a slot kept a file between jobs. A leak
+can only show where the writer ran, so a clean run says something only when the isolation job says
+`writer slot seen again: yes`; a `no` says nothing about slot reuse.
 
 ## A blocked host
 
@@ -153,36 +198,62 @@ issue labeled `ci`. The maintainers who operate the pool add the host to the all
 around the proxy and do not route a pull request job to a hosted runner to avoid it. The hosted
 twin is unaffected, so the rollback below keeps the queue moving until the maintainers add the host.
 
+## A pool that is down
+
+A job sent to the owned label waits for a runner, and `timeout-minutes` does not start until one
+takes it. Two required checks, `bench` and `swish-check-x86_64`, and the `prove` shards behind
+`verify (Kani proofs)`, sit on the switch, so with the pool down and the variable `true` every
+merge group waits. The merge queue's 240-minute check timeout then removes the entry, and GitHub
+cancels the waiting job after 24 hours. Nothing alarms sooner (see BUGS). A queue with entries
+in `AWAITING_CHECKS` and owned jobs in `queued` is the sign; roll back.
+
+The canary's owned jobs and the dry run name the label directly, so they wait on a down pool even with the
+variable `false`. They are not required checks and do not hold the queue.
+
 ## Rollback
 
 Set the variable to `false` (`gh variable set NIFE_RUNNER_OWNED --repo nifeos/nife --body false`).
-The next queue run uses `ubuntu-26.04` for every job on the switch. Nothing else changes, and
-re-running a queued job picks up the new value. A repository maintainer may do this without a
-review; say so in the pull request or issue that explains why.
+It needs no pull request and no review, and works with the pool down. Jobs that start after it use
+`ubuntu-26.04` for every job on the switch. A job already waiting on the owned label keeps
+waiting: dequeue the pull request and enqueue it again, which builds a new merge group whose run
+reads the new value. Say why in the pull
+request or issue that explains the rollback.
 
 ## The lint
 
-`helpers/owned_runner_check.py`, run by `script/lint`, fails the tree when:
+`helpers/owned_runner_check.py`, run by `script/lint`, judges every job whose `runs-on`, matrix
+or reusable-workflow input names `nife-owned-x86_64` or reads `NIFE_RUNNER_OWNED`, and fails the
+tree when:
 
-- a workflow whose `on:` lists `pull_request` or `pull_request_target` has any job whose `runs-on`
-  names `nife-owned-x86_64` or reads `NIFE_RUNNER_OWNED`; or
-- any job with such a `runs-on` lacks a job-level `if:` that names only `github.event_name ==
-  'merge_group'` or `'push'`.
+- the job's workflow lists any trigger but `merge_group` and `push` (a pull request, a
+  `pull_request_target`, `workflow_run`, `workflow_dispatch`, `workflow_call`, `issue_comment`,
+  `schedule` or any other);
+- the job lacks a job-level `if:` that names only `github.event_name == 'merge_group'` or
+  `'push'`;
+- the workflow's `push` is not limited to `branches: [main]`, or takes tags; or
+- the job sets no `timeout-minutes`.
 
-The event-aware `runs-on` above passes both rules, character for character, with a hosted label of
-the shape `ubuntu-NN.NN`. Its event clause sits inside `runs-on`, so the job needs no `if:` and its
-workflow may take pull requests. Any near miss fails: a clause that names `pull_request`, no clause,
-no parentheses, or an owned fallback.
+The event-aware `runs-on` above, character for character with a hosted label of the shape
+`ubuntu-NN.NN`, is exempt from the first two, since it resolves hosted on every other event. Any
+near miss is judged by all four: a clause that names `pull_request`, no clause, no parentheses, or
+an owned fallback.
 
-Its `--selftest` plants a pull request workflow, the switch under `pull_request_target`, a job with
-no guard and a guard that names `pull_request`, and requires each to fail. It also plants the
-event-aware form under `pull_request` and requires it to pass. Four near misses of it must each fail. Pointing the helper at a
-copy of the canary workflow with `pull_request:` added to `on:`, or with the `if:` lines removed,
-exits 1 and names the job.
+The same helper fails any job in a `pull_request_target` or `workflow_run` workflow that names the
+pull request's head (`github.event.pull_request.head.sha`, `github.head_ref`,
+`github.event.workflow_run.head_sha`, `refs/pull/`, `gh pr checkout`), on any runner: those events
+hold the base repository's token while the head is the fork's code. No workflow here uses
+`pull_request_target` today.
+
+Its `--selftest` plants each of those failures and each near miss, requires each to fail, and
+requires the good shapes to pass.
 
 ## BUGS
 
 - The lint reads the `if:` text and does not evaluate it; `merge_group || true` passes.
-- A `runs-on` that comes from a matrix value or a reusable workflow's input is not resolved.
-- The canary compares conclusions and times by a person's reading of the summaries. Nothing totals a
-  week automatically.
+- A `runs-on` built from a matrix or an input is read as text, not resolved.
+- The lint cannot bind a merge group, which runs the pull request's own workflow files. Keeping a
+  fork's pull request out of the queue is a rule for whoever arms it, in "Who can reach the pool".
+- Nothing alarms on a down pool before the queue's 240-minute timeout. `helpers/merge-drain.sh`'s
+  stuck-head check waits for every run of the group to finish, and a run with a job waiting on a
+  runner never finishes.
+- The canary's totals are a person's reading of the summaries; nothing totals them.

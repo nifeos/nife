@@ -35,7 +35,7 @@ pub mod platform_controller_hub;
 /// Register offsets in BAR0. Read from Linux's `regs.h`; queue 0 only.
 pub mod registers;
 
-/// Offsets inside the DMA region, which the kernel allocates contiguous and confines whole.
+/// Offsets inside the DMA region, which the kernel half allocates contiguous and confines whole.
 pub mod layout;
 
 #[cfg(test)]

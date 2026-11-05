@@ -63,15 +63,19 @@ pool is clamped to it, and the caller runs only as many harnesses at once as fit
 Python callers use `take_kani`, which holds the units until the process exits. `--status` lists every
 holder with its lane, worktree and command line.
 
-BUGS: a request for many units can be overtaken by smaller ones that fit sooner, as with the slots.
+BUGS: a request for many units can be overtaken by smaller ones that fit sooner. The slots wait in
+ticket order (below); the Kani units do not yet.
 
 BUGS: the ancestor walk includes pid 1, which `script/test` is when it is a container's first
 process. Two containers that share one slot directory and each run a heavy script as pid 1 cannot
 tell their pid 1s apart, so one can run inside the other's slot. Give each container its own
 NIFE_HEAVY_SLOT_DIR.
 
-BUGS: waiters are not served in order. Each polls every POLL_SECONDS and the first to find a free
-slot takes it, so a run can be overtaken by one that started later.
+Order. A job waits for a slot in ticket order, through helpers/heavy_ledger.py: the job that began
+waiting first starts first, and a slot freed while several wait goes to the oldest. The ledger counts
+memory in bytes, every job asks for 8 GiB, and the capacity is the slot count times 8 GiB, so it
+admits exactly as many jobs as there are slots. An admitted job still locks a slot file, so a helper
+from before the ledger counts it, and a slot held without a ledger entry counts as one job.
 """
 
 import errno
@@ -80,6 +84,8 @@ import os
 import subprocess
 import sys
 import time
+
+import heavy_ledger
 
 GIB = 1 << 30
 GIB_PER_SLOT = 8
@@ -308,22 +314,19 @@ def take_kani(harnesses, job):
 
 
 def acquire(job, n, directory):
-    """Block until a slot is ours, and return its fd."""
-    announced = False
-    while True:
-        mine, held = try_slots(n, directory)
-        if mine:
-            slot, fd = min(mine.items())
-            for other in mine.values():
-                if other != fd:
-                    os.close(other)
-            record(fd, slot, job)
-            return fd
-        if not announced:
-            print(f"heavy-slot: {job} is waiting for one of {n} heavy-job slots "
-                  f"({directory}); they are held by:\n{describe(held)}", file=sys.stderr, flush=True)
-            announced = True
-        time.sleep(POLL_SECONDS)
+    """Block until the ledger admits this job to one of `n` slots, and return the fds it holds: the
+    slot's and its ledger entry's (helpers/heavy_ledger.py). The slot count is read again on every
+    poll."""
+    def waiting(held, ahead):
+        line = f"heavy-slot: {job} is waiting for one of {n} heavy-job slots ({directory})"
+        if ahead:
+            line += f", behind {ahead} earlier in line"
+        if held:
+            line += f"; they are held by:\n{describe(held)}"
+        print(line, file=sys.stderr, flush=True)
+    worktree = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return heavy_ledger.acquire(job, heavy_ledger.SLOT_BYTES, slot_count, directory, try_slots,
+                                record, waiting, POLL_SECONDS, worktree, sys.argv)
 
 
 def record(fd, slot, job, units=1, command=None):
@@ -344,6 +347,10 @@ def status():
     print(f"{n} heavy-job slots in {directory}, {len(held)} held")
     if held:
         print(describe(held))
+    waiting = heavy_ledger.queue_lines(directory)
+    if waiting:
+        print(f"{len(waiting)} waiting, in the order they start:")
+        print("\n".join(waiting))
     k = pool_size("kani")
     if k == 0:
         print("Kani pool: off")
@@ -392,7 +399,8 @@ def main(argv):
     if len(argv) < 3 or argv[1] != "--":
         sys.exit("usage: heavy_slot.py <job> -- <command> [args...] | --held | --status")
     job, command = argv[0], argv[2:]
-    os.set_inheritable(acquire(job, slot_count(), slot_dir()), True)
+    for fd in acquire(job, slot_count(), slot_dir()):
+        os.set_inheritable(fd, True)
     os.execvp(command[0], command)
 
 

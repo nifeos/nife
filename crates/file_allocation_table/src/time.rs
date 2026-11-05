@@ -7,7 +7,7 @@
 //!
 //! FAT stores a date as 16 bits (year from 1980, month, day), a time as 16 bits (hour, minute and
 //! seconds in units of two), and a creation time's odd second as a tenths-of-a-second byte of 0 or
-//! 100. It stores no time zone. In nife the time a clock supplies is UTC (ruled 2026-11-01 UTC). The
+//! 100. It stores no time zone. A clock is expected to supply UTC. The
 //! crate stores exactly the fields its clock reports and converts nothing, so it cannot check that a
 //! clock gives UTC; that is the caller's duty. A reader that treats FAT times as local time, such as
 //! Windows, shows a stored UTC value as local time. A read takes no clock and never writes.
@@ -20,15 +20,14 @@
 
 /// **A calendar date and time of day**, as plain numbers with no time zone.
 ///
-/// FAT stores a date and a time of day with no time zone. In nife the value is UTC (ruled 2026-11-01
-/// UTC). The crate stores these fields as given and converts nothing, so it cannot check that they
+/// FAT stores a date and a time of day with no time zone. The value is expected to be UTC. The crate stores these fields as given and converts nothing, so it cannot check that they
 /// are UTC. A reader that treats FAT times as local time, such as Windows, shows a UTC value as
 /// local time.
 ///
 /// The fields need not be valid. A writer refuses a time FAT cannot store (see [`Clock`]) with
 /// `TimeOutOfRange`, and writes nothing.
 ///
-/// Name: ratified 2026-11-01 (UTC), year, month, day, hour, minute and second, with no nife type.
+/// Name: ratified 2026-11-01 (UTC), year, month, day, hour, minute and second, with no platform's time type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct CivilDateTime {
     /// The year, for example 2026. FAT stores 1980 to 2107.
@@ -48,7 +47,7 @@ pub struct CivilDateTime {
 
 /// **Where a writer gets the time.** A volume that writes holds one.
 ///
-/// The time a clock supplies must be UTC (ruled 2026-11-01 UTC). FAT stores a date and a time of
+/// The time a clock supplies is expected to be UTC. FAT stores a date and a time of
 /// day with no time zone, the crate writes the fields it is given and converts nothing, and it
 /// cannot check that a clock gives UTC. A reader that treats FAT times as local time, such as
 /// Windows, shows a UTC value as local time. A read takes no clock and never writes.

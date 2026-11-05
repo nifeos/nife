@@ -43,7 +43,7 @@ fn an_sdhc_card_is_identified_selected_and_widened_in_the_spec_order() {
     assert!(card.block_addressed);
     assert_eq!(card.blocks, 8192);
     assert_eq!((card.bus_width, card.clock_hz), (4, 25_000_000));
-    assert_eq!(&card.card_identification.name[..5], b"NIFE1");
+    assert_eq!(&card.card_identification.name[..5], b"TEST1");
     let sim = h.into_registers();
     let order: Vec<u8> = sim.commands.iter().map(|c| c.0).collect();
     // CMD0, CMD8, then ACMD41 until ready (three busy polls), CID, RCA, CSD, select, ACMD6,
@@ -789,7 +789,7 @@ fn an_sd_card_is_addressed_by_the_relative_card_address_it_chose_and_decoded_as_
         card.card_identification,
         card::CardIdentification {
             manufacturer: 0x1b,
-            name: *b"NIFE1\0",
+            name: *b"TEST1\0",
             serial: 0x1234_5678,
         }
     );

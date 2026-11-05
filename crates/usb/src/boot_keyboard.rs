@@ -4,8 +4,8 @@
 //! A boot keyboard does not send key events. It sends its **state**: eight bytes, the modifier
 //! keys as a bitmap in byte 0, a reserved byte, then up to six usage ids for the other keys held
 //! down, in no promised order. So a keystroke is a *difference* between two reports, and
-//! [`changes`] computes it, in the evdev numbering so that `video_terminal::keymap` (which already
-//! turns the virtio keyboard's evdev codes into terminal bytes) does the rest.
+//! [`changes`] computes it, in the evdev numbering so that a keymap which already turns evdev
+//! codes (a virtio keyboard's, say) into terminal bytes does the rest.
 //!
 //! # Where the table comes from
 //!
@@ -21,7 +21,7 @@
 //!   Linux-syscall-note). That header is an ABI: its numbers are the interface itself, and the
 //!   crate takes the numbers and the names, no text.
 //!
-//! [`evdev_code`] states the matches the Usage Tables settle and the three that are nife's own
+//! [`evdev_code`] states the matches the Usage Tables settle and the three that are this crate's
 //! choices.
 //!
 //! # Cross-check
@@ -104,9 +104,9 @@ impl BootReport {
 /// - 0xe3 and 0xe7, `Left GUI` and `Right GUI`, are `KEY_LEFTMETA` and `KEY_RIGHTMETA`, because
 ///   footnotes 33 and 34 list the Sun Meta key among the GUI keys.
 ///
-/// # nife's own choices
+/// # This crate's choices
 ///
-/// The sources leave three things open, and nife chose them:
+/// The sources leave three things open, and this crate chose them:
 ///
 /// - **Usage 0x32 (`Non-US # and ~`) is `KEY_BACKSLASH`.** The header has no key for it. The
 ///   usage sits at AT-101 position 42, beside Return, and footnote 5 gives `\` and `|` as its US
@@ -167,7 +167,7 @@ pub fn evdev_code(usage: u8) -> Option<u16> {
         26,  // 0x2f [ and {: KEY_LEFTBRACE
         27,  // 0x30 ] and }: KEY_RIGHTBRACE
         43,  // 0x31 \ and |: KEY_BACKSLASH
-        43,  // 0x32 Non-US # and ~: KEY_BACKSLASH, nife's choice
+        43,  // 0x32 Non-US # and ~: KEY_BACKSLASH, this crate's choice
         39,  // 0x33 ; and :: KEY_SEMICOLON
         40,  // 0x34 ' and ": KEY_APOSTROPHE
         41,  // 0x35 Grave Accent and Tilde: KEY_GRAVE
@@ -187,7 +187,7 @@ pub fn evdev_code(usage: u8) -> Option<u16> {
         68,  // 0x43 F10: KEY_F10
         87,  // 0x44 F11: KEY_F11
         88,  // 0x45 F12: KEY_F12
-        99,  // 0x46 PrintScreen: KEY_SYSRQ, nife's choice
+        99,  // 0x46 PrintScreen: KEY_SYSRQ, this crate's choice
         70,  // 0x47 Scroll Lock: KEY_SCROLLLOCK
         119, // 0x48 Pause: KEY_PAUSE
         110, // 0x49 Insert: KEY_INSERT
@@ -200,7 +200,7 @@ pub fn evdev_code(usage: u8) -> Option<u16> {
         105, // 0x50 LeftArrow: KEY_LEFT
         108, // 0x51 DownArrow: KEY_DOWN
         103, // 0x52 UpArrow: KEY_UP
-        69,  // 0x53 Keypad Num Lock and Clear: KEY_NUMLOCK, nife's choice
+        69,  // 0x53 Keypad Num Lock and Clear: KEY_NUMLOCK, this crate's choice
         98,  // 0x54 Keypad /: KEY_KPSLASH
         55,  // 0x55 Keypad *: KEY_KPASTERISK
         74,  // 0x56 Keypad -: KEY_KPMINUS
@@ -318,7 +318,7 @@ mod tests {
     /// `drivers/hid/hid-input.c` at `torvalds/linux@cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a`
     /// (GPL-2.0-or-later). It read that array's entries for usages 0x04 to 0x63 and 0xe0 to 0xe7
     /// as numbers and compared them with [`evdev_code`] and [`MODIFIER_CODES`]: all 104 agree,
-    /// including the three choices the module documentation names as nife's. The crate holds
+    /// including the three choices the module documentation names as this crate's. The crate holds
     /// none of that file's text, so this test pins the result instead: a fingerprint of the 104
     /// numbers. A changed row fails it, and whoever changes the row reruns the comparison and
     /// writes its result here. Where the two then differ, the Usage Tables decide, unless they

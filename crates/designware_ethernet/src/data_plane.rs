@@ -46,7 +46,7 @@ pub enum TransmitError {
     Full,
 }
 
-/// **The data plane**: ring cursors and the region's physical base. Everything `net_stack` does
+/// **The data plane**: ring cursors and the region's physical base. Everything a network stack does
 /// to the device goes through this, so all of it runs on the host against a simulated device.
 ///
 /// A tail pointer is one past the last descriptor the device may use. On receive one descriptor,
@@ -98,7 +98,7 @@ impl DataPlane {
     }
 
     /// **Post every receive descriptor but the last and clear the transmit ring.** The kernel
-    /// programmed both ring bases and lengths and started the DMA with both tails at the ring
+    /// half programmed both ring bases and lengths and started the DMA with both tails at the ring
     /// bases (nothing available); the receive tail write here is what hands the device its
     /// buffers.
     ///

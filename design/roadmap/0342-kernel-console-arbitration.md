@@ -10,9 +10,7 @@ needs_person: no
 ---
 # 342. The kernel and the `console` server drive one UART from two address spaces, and nothing arbitrates
 
-Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
-from milestone 230's block; numbered 2026-09-19 by milestone 433. **Premise re-checked 2026-09-19 and
-it holds.** §149 (may the kernel answer on an endpoint) decided how a program *reaches* a console
+Premise re-checked 2026-09-19 and it holds. §149 (may the kernel answer on an endpoint) decided how a program *reaches* a console
 server and was itself dissolved by §121 (what a device capability is when the device has no page)'s
 reopening, which is a different question. `script/swish-check`'s
 own `BUGS` still describes the interleaving as a live defect in the system rather than in the script.
@@ -139,14 +137,6 @@ rather than an opinion. Whether the boards have a second usable port is a hardwa
 What a buffered path would cost during a panic, which is the case that matters most and the case a
 buffer serves worst, is the constraint that probably decides it.
 
-## Where it came from
-
-Milestone 230 (`script/shell-check` is red on `main`) named it while fixing something else: *"Decide
-where the kernel's own output goes once userspace owns the console. Today the kernel and the
-`console` server drive the same UART from two address spaces with nothing arbitrating, so the
-streams interleave at byte granularity. It corrupts every bench session on argon, radon and xenon,
-and 243's BUGS points at a home that does not exist."*
-
 ## Follow-on
 
 - **Recorded.** `kernel/src/kernel_log.rs`: a line held just before the drainer dies waits for the
@@ -163,17 +153,12 @@ and 243's BUGS points at a home that does not exist."*
 
 ## Index row
 
-Once the `console` server owns the console, two address spaces write to the same UART with no
-arbitration between them. The kernel writes directly, because a kernel that cannot print during a
-fault is a kernel nobody can debug. The server writes on behalf of userspace. The streams
-interleave at byte granularity. It corrupts every bench session on argon, radon and xenon, where a
-serial log is the only thing those machines can say and milestone 216 built a tool whose whole
-contract is recognizing a boot sequence in that stream. Interleaved bytes break that contract in the
-least visible way available, because the log is present, it looks like output, and the line being
-matched has a kernel message spliced through the middle of it. Deciding it means saying where kernel
-output goes: a second port, a buffer the server drains, a claim the server takes and the kernel
-respects except in a panic, or something else. Those are genuinely different systems, and the choice
-binds every architecture and every future console consumer. A lane can price the options before the
-ruling. What the kernel writes after userspace takes the console is a measurable list. Whether each
-board has a second usable port is a hardware fact. What a buffered path costs during a panic is
-the constraint that probably decides it.
+Once the `console` server owns the console, the kernel and the server write to one UART from two
+address spaces with no arbitration, and the streams interleave at byte granularity. The kernel
+writes directly, because a kernel that cannot print during a fault is a kernel nobody can debug. The
+interleaving corrupts every bench session on argon, radon and xenon, where the serial log is the
+only thing those machines can say. It breaks milestone 216 (nothing in this tree can read a)'s boot-sequence recognizer in the least
+visible way: the log looks like output, and a kernel message splits the line being matched. Deciding it means saying where kernel output goes: a second port, a buffer the server
+drains, a claim the server takes and the kernel respects except in a panic, or something else. The
+choice binds every architecture and every future console consumer. A lane can price the options
+first. What a buffered path costs during a panic probably decides it.
