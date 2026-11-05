@@ -57,6 +57,4 @@ The crate takes the third slot, after `file_allocation_table` (milestone
 
 ## Index row
 
-nife's generational table of named slots, its four Kani proofs and their falsification patches,
-published on crates.io as `generational_table` 0.1 from its own `nifeos` repository as the
-fixed-capacity, allocation-free member of the slotmap family, then consumed back by nife from that release.
+nife's generational table of named slots, with its four Kani proofs and their falsification patches, moves to its own `nifeos` repository. It publishes on crates.io as `generational_table` 0.1, the fixed-capacity, allocation-free member of the slotmap family. nife then consumes the release.
