@@ -98,7 +98,7 @@ impl DataPlane {
     }
 
     /// **Post every receive descriptor but the last and clear the transmit ring.** The kernel
-    /// programmed both ring bases and lengths and started the DMA with both tails at the ring
+    /// half programmed both ring bases and lengths and started the DMA with both tails at the ring
     /// bases (nothing available); the receive tail write here is what hands the device its
     /// buffers.
     ///
