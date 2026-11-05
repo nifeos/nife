@@ -230,9 +230,9 @@ fn card_clock(slot: &Slot, crg_phys: u64) -> u32 {
         say!(
             slot,
             "card clock: no SYS syscon mapped, so its rate is the tree's {} Hz, unchecked",
-            slot.card_interface_unit_hz
+            slot.card_interface_unit_hertz
         );
-        return slot.card_interface_unit_hz;
+        return slot.card_interface_unit_hertz;
     }
     // SAFETY: `mmu::initialize` mapped the SYS CRG (step 6c) and, because the tree names the PMIC's
     // bus, the SYS syscon (step 6c-prime); the slot index is 0 or 1 by `jh7110_storage`.
@@ -241,7 +241,7 @@ fn card_clock(slot: &Slot, crg_phys: u64) -> u32 {
             crate::arch::mmu::phys_to_virt(crg_phys) as usize,
             crate::arch::mmu::phys_to_virt(jh7110_clock_and_reset::SYS_SYSCON_BASE) as usize,
             usize::from(slot.index),
-            slot.card_interface_unit_hz,
+            slot.card_interface_unit_hertz,
         )
     };
     say!(
@@ -251,7 +251,7 @@ fn card_clock(slot: &Slot, crg_phys: u64) -> u32 {
         c.after,
         c.hz,
         c.parent_hz,
-        slot.card_interface_unit_hz
+        slot.card_interface_unit_hertz
     );
     c.hz
 }
@@ -266,7 +266,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         if slot.status_okay { "okay" } else { "disabled" },
         slot.bus_width,
         slot.queue_depth,
-        slot.card_interface_unit_hz,
+        slot.card_interface_unit_hertz,
         slot.interrupt,
     );
 
@@ -604,7 +604,7 @@ fn print_read(slot: &Slot, r: &ReadOnlyProbeReport) {
         c.blocks * BLOCK_BYTES as u64 / (1 << 20),
         if c.block_addressed { "block" } else { "byte" },
         c.bus_width,
-        c.clock_hz,
+        c.clock_hertz,
         c.operation_conditions,
     );
     if c.kind == CardKind::MultimediaCard {
@@ -780,8 +780,8 @@ fn read_matrix(slot: &Slot) {
                 "storage-matrix: depth {used} card {} Hz (asked {}) blocks {}: {:?} in {} us, \
                  FIFO peak {} words, full on {} STATUS reads; after: STATUS {:#x} RINTSTS {:#x} \
                  TCBCNT {} TBBCNT {}",
-                r.card_hz,
-                r.asked_hz,
+                r.card_hertz,
+                r.asked_hertz,
                 r.blocks,
                 r.result,
                 r.microseconds,

@@ -181,14 +181,14 @@ pub struct HostController<
     pub(crate) registers: R,
     queue_offset: u32,
     pub(crate) depth: u32,
-    base_hz: u32,
+    base_hertz: u32,
     pub(crate) direct_memory_access: Option<InternalDirectMemoryAccess<D>>,
 }
 
 impl<R: RegisterWindowAndClock> HostController<R> {
     /// **Take a controller**, reading its identity and touching nothing.
     ///
-    /// `base_hz` is the rate of the clock the controller divides (the tree's `ciu`, 50 MHz on
+    /// `base_hertz` is the rate of the clock the controller divides (the tree's `ciu`, 50 MHz on
     /// radon), and `queue_depth` the tree's `fifo-depth` if it has one; without it the depth is
     /// read from `FIFOTH`'s reset value, as OpenBSD does. Refuses a FIFO that is not 32 bits wide.
     ///
@@ -197,9 +197,11 @@ impl<R: RegisterWindowAndClock> HostController<R> {
     /// [`Error::QueueWidth`] for a 16- or 64-bit FIFO.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands.
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3276. The parameter `base_hertz` spells the unit out.
     pub fn new(
         mut registers: R,
-        base_hz: u32,
+        base_hertz: u32,
         queue_depth: Option<u32>,
     ) -> Result<(Self, Identity), Error> {
         let id = Identity {
@@ -228,7 +230,7 @@ impl<R: RegisterWindowAndClock> HostController<R> {
                 registers,
                 queue_offset: registers::queue_offset(id.version_identification),
                 depth,
-                base_hz,
+                base_hertz,
                 direct_memory_access: None,
             },
             id,
@@ -251,7 +253,7 @@ impl<R: RegisterWindowAndClock> HostController<R> {
             registers: self.registers,
             queue_offset: self.queue_offset,
             depth: self.depth,
-            base_hz: self.base_hz,
+            base_hertz: self.base_hertz,
             direct_memory_access: Some(internal_direct_memory_access),
         }
     }
@@ -357,7 +359,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         }
     }
 
-    /// **Run the card clock at no more than `hz`**, returning the rate it actually runs at.
+    /// **Run the card clock at no more than `hertz`**, returning the rate it actually runs at.
     /// OpenBSD's sequence: clock off, divider, update; clock on, update. Low-power gating is on,
     /// since nothing here is an SDIO card.
     ///
@@ -368,8 +370,10 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     ///
     /// Name: ratified 2026-11-02 (UTC), #3092. The clock is set in hertz and the method is spelled
     /// out.
-    pub fn set_clock(&mut self, hz: u32) -> Result<u32, Error> {
-        let divider = clock_divider(self.base_hz, hz).unwrap_or(255);
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3276. The parameter `hertz` spells the unit out.
+    pub fn set_clock(&mut self, hertz: u32) -> Result<u32, Error> {
+        let divider = clock_divider(self.base_hertz, hertz).unwrap_or(255);
         self.registers.write(registers::CLKENA, 0);
         self.registers.write(registers::CLKSRC, 0);
         self.registers.write(registers::CLKDIV, u32::from(divider));
@@ -379,7 +383,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             registers::CLKENA_CCLK_ENABLE | registers::CLKENA_CCLK_LOW_POWER,
         );
         self.update_clock()?;
-        Ok(card_clock(self.base_hz, divider))
+        Ok(card_clock(self.base_hertz, divider))
     }
 
     /// Set the bus width the controller drives: 1, 4 or 8. Anything else is 1.

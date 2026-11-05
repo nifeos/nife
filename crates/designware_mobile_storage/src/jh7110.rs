@@ -50,9 +50,9 @@ pub const REGISTERS_SIZE_BYTES: u64 = 0x1_0000;
 /// gives the revisions; the vendor tag `VF2_v2.10.4` assigns none), which the controller divides
 /// for the card.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3092. `ciu` is spelled out as the card interface unit; `HZ` is
-/// the unit suffix.
-pub const CARD_INTERFACE_UNIT_HZ: u32 = 50_000_000;
+/// Name: ratified 2026-11-05 (UTC), #3276. `ciu` is spelled out as the card interface unit and the
+/// unit as `HERTZ`.
+pub const CARD_INTERFACE_UNIT_HERTZ: u32 = 50_000_000;
 /// Both trees' `fifo-depth`.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors,
@@ -92,8 +92,10 @@ pub struct Slot {
     /// The tree's `fifo-depth`, if it has one.
     #[doc(alias = "fifo")]
     pub queue_depth: Option<u32>,
-    /// The tree's first `assigned-clock-rates` cell, or [`CARD_INTERFACE_UNIT_HZ`] when absent.
-    pub card_interface_unit_hz: u32,
+    /// The tree's first `assigned-clock-rates` cell, or [`CARD_INTERFACE_UNIT_HERTZ`] when absent.
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3276. The unit is spelled out.
+    pub card_interface_unit_hertz: u32,
     /// Which `compatible` matched.
     pub compatible: &'static [u8],
     /// `status` is `okay` or absent.
@@ -160,10 +162,10 @@ impl Slot {
             interrupt: prop(b"interrupts")?.and_then(big_endian_u32),
             bus_width,
             queue_depth: prop(b"fifo-depth")?.and_then(big_endian_u32),
-            card_interface_unit_hz: prop(b"assigned-clock-rates")?
+            card_interface_unit_hertz: prop(b"assigned-clock-rates")?
                 .and_then(big_endian_u32)
-                .filter(|&hz| hz != 0)
-                .unwrap_or(CARD_INTERFACE_UNIT_HZ),
+                .filter(|&hertz| hertz != 0)
+                .unwrap_or(CARD_INTERFACE_UNIT_HERTZ),
             compatible,
             status_okay,
             non_removable: prop(b"non-removable")?.is_some(),
@@ -210,7 +212,7 @@ mod tests {
                 interrupt: Some(75),
                 bus_width: 4,
                 queue_depth: Some(QUEUE_DEPTH),
-                card_interface_unit_hz: 100_000_000,
+                card_interface_unit_hertz: 100_000_000,
                 compatible: COMPATIBLE_MAINLINE,
                 status_okay: true,
                 non_removable: true,
@@ -232,8 +234,12 @@ mod tests {
         .unwrap();
         assert_eq!(slot.compatible, COMPATIBLE_VENDOR);
         assert_eq!(
-            (slot.bus_width, slot.card_interface_unit_hz, slot.interrupt),
-            (1, CARD_INTERFACE_UNIT_HZ, None)
+            (
+                slot.bus_width,
+                slot.card_interface_unit_hertz,
+                slot.interrupt
+            ),
+            (1, CARD_INTERFACE_UNIT_HERTZ, None)
         );
         assert!(slot.status_okay && !slot.non_removable);
         assert_eq!(slot.board_role(), "eMMC socket");
@@ -245,8 +251,8 @@ mod tests {
         ];
         let slot = Slot::from_node(0, 0, 0, node(table)).unwrap().unwrap();
         assert_eq!(
-            (slot.card_interface_unit_hz, slot.bus_width),
-            (CARD_INTERFACE_UNIT_HZ, 1)
+            (slot.card_interface_unit_hertz, slot.bus_width),
+            (CARD_INTERFACE_UNIT_HERTZ, 1)
         );
         assert!(!slot.status_okay);
     }
