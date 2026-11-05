@@ -20,7 +20,7 @@ use crate::sync::{InterruptSafeMutex, rank};
 ///
 /// Read the ledger of what holds regions at the peak, in notes/memory-regions.md, before raising or
 /// lowering it. A full table refuses quietly, and there is no gate.
-pub(crate) const MAXIMUM_REGIONS: usize = 256;
+pub(crate) const MAXIMUM_REGIONS: usize = 1024;
 
 /// **The most regions that were ever live at once on this boot**, the instrument that makes
 /// [`MAXIMUM_REGIONS`] a measured number: a full table is refused in whichever test asks next, and
