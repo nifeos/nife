@@ -618,6 +618,16 @@ aarch64	a91d41934	yield_switch	-0.13	nightly-2026-09-25, the compiler term measu
 aarch64	a91d41934	ipc_rtt	-0.12	nightly-2026-09-25, the compiler term measured alone
 aarch64	a91d41934	relay_rtt	-0.10	nightly-2026-09-25, the compiler term measured alone
 aarch64	a91d41934	ctx_switch	-0.12	nightly-2026-09-25, the compiler term measured alone
+aarch64	aee3b5ee9	ipc_rtt_el0	+0.28	#1659, milestone 105: the death message carries the builder's label
+aarch64	aee3b5ee9	sink_throughput	+0.34	#1659, milestone 105: the death message carries the builder's label
+aarch64	65ee81831	ctx_switch	+0.94	#1663: the user-mode runtime's yield is one trap per architecture
+aarch64	65ee81831	ipc_rtt_el0	+0.43	#1663: the user-mode runtime's yield is one trap per architecture
+aarch64	65ee81831	sink_throughput	+0.23	#1663: the user-mode runtime's yield is one trap per architecture
+aarch64	b0f7d26eb	map_new	+0.15	#1676: AMD-Vi, through the shared iommu and memory code
+aarch64	270f84396	spawn_reap	-0.23	#1692, milestone 95: the progenitor gives every window back
+aarch64	270f84396	ctx_switch	-0.36	#1692, milestone 95: the progenitor gives every window back
+aarch64	270f84396	ipc_rtt_el0	-0.19	#1692, milestone 95: the progenitor gives every window back
+aarch64	270f84396	sink_throughput	-0.13	#1692, milestone 95: the progenitor gives every window back
 aarch64	cc2f22923	ipc_rtt	+0.42	#1852, milestone 139 round 10: the scheduler queue ownership token
 aarch64	cc2f22923	ipc_rtt_el0	-1.05	#1852, milestone 139 round 10: the scheduler queue ownership token
 aarch64	c4d491b81	yield_switch	-2.35	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
