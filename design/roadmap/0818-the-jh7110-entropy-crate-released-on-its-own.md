@@ -104,8 +104,8 @@ out.
    2. The shared template's weekly run (milestone 887) is green on the crate.
    3. A release dry run is green.
    4. The stranger test builds and proves the crate from its README alone.
-   5. The API has gone a set period with no change `cargo-semver-checks` calls breaking. The period
-      is not yet set.
+   5. The API has gone four weeks with no change `cargo-semver-checks` calls breaking (milestone
+      1034 (a runbook for moving a crate out of nife) sets the period).
 7. crates.io trusted publishing from that workflow, owned by a `nifeos` team, with no stored token.
 8. calef approves this publication, as he does every one.
 9. nife consumes the crates.io release by semantic version, and `Cargo.lock` records its checksum. A `[patch]` to
@@ -146,9 +146,10 @@ harness.
   depend on `nifeos/jh7110_entropy` by `rev` `53b022b` (§305), the commit of its tag `v0.1.1`. The
   verify table, the Kani reach list and the trust-boundary table no longer list it; the repository's
   own `proofs / kani` and `proofs / falsify` jobs prove the four harnesses.
-- End condition 1 holds once this pull request merges and the repository's `main` is green. The
-  other four wait: 2 on the first weekly run, 3 on a release dry run, 4 on a recorded stranger run
-  (`docs/stranger-test.md` there says `Last run: none`), 5 on a period that is not yet set.
+- End condition 1 holds once this pull request merges and the repository's `main` is green.
+  Condition 2 holds: the first scheduled weekly run, on 2026-11-02 (UTC), is green. Condition 4
+  holds: `docs/stranger-test.md` there records a run on 2026-10-31. Condition 3 waits on a release
+  dry run. Condition 5 counts four weeks from `v0.1.1`, so it ends no earlier than 2026-11-29.
 - A bump of the pin is a separate pull request citing the landed commit as
   `nifeos/jh7110_entropy@<sha>`.
 

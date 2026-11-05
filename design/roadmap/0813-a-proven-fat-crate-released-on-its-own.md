@@ -207,8 +207,8 @@ tree's build, so nothing about it can work on one target and not another.
    2. The shared template's weekly run (milestone 887) is green on the crate.
    3. A release dry run is green.
    4. The stranger test builds and proves the crate from its README alone.
-   5. The API has gone a set period with no change `cargo-semver-checks` calls breaking. The period
-      is not yet set.
+   5. The API has gone four weeks with no change `cargo-semver-checks` calls breaking (milestone
+      1034 (a runbook for moving a crate out of nife) sets the period).
 6. crates.io trusted publishing from that workflow, owned by a `nifeos` team, with no stored token.
 7. calef approves this publication, as he does every one.
 8. nife then consumes the crates.io release by semantic version, and `Cargo.lock` records its checksum, and the
