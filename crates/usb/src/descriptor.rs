@@ -158,7 +158,7 @@ pub struct BootKeyboard {
     /// The endpoint's packet size in bytes; at least 8, or the walk refused it.
     pub max_packet: u16,
     /// `bInterval` as the device sent it. What it means depends on the speed, which is the host
-    /// controller's business (`extensible_host_controller_interface::interrupt_interval`).
+    /// controller driver's business.
     pub interval: u8,
 }
 
