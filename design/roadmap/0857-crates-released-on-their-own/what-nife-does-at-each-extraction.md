@@ -27,8 +27,8 @@ released on its own), and every later extraction runs the same list.
 - A person grants the crate's repository the organization secrets `NIFE_SMELTER_APP_ID` and
   the smelter App's private key beside it, using an `admin:org` token. A lane never takes this step.
 - The path dependency becomes a git dependency, `{ version, git, rev }`, where `rev` is the commit
-  of the crate's first tag and `version` is the version that tag's manifest carries (ruled
-  2026-11-01 UTC). `crates/<name>` is deleted in the same pull request. The line becomes a plain
+  of the crate's first tag and `version` is the version that tag's manifest carries, as the main
+  page rules. `crates/<name>` is deleted in the same pull request. The line becomes a plain
   version requirement, with its checksum in `Cargo.lock` (Fork 2), only in a later pull request,
   after the crate's first publication.
 - The proofs, the falsification sweep and the coverage floor stop covering that code in nife. From
