@@ -123,6 +123,16 @@ leaves live entries spread across the table, so every walk costs up to `N` again
 bound exists to remove. Next-fit wins only near full (200 of 256), where first-fit scans past every
 live slot.
 
+The kernel's icount bench measures the -O0 build the gate uses, here against the same tree without
+saturation on the same host. There, the insert scan that tests the generation inside the scan costs
+`spawn_reap` +1.07% on aarch64, +1.16% on riscv64 and +1.20% on x86_64, and `spawn_el0` +0.96% and
++1.04%. Every other row is unchanged. That is the form in the crate, and all five harnesses prove in
+18 seconds. A second form keeps the plain scan for a free slot and tests the generation only on the
+slot it finds, restarting past a retired one. It reads every row of all three architectures exactly
+as the tree without saturation does, and matches first-fit in a release build at `N` = 256, but CBMC
+did not finish the two harnesses that start from arbitrary generations within 300 seconds each. So
+the scan's form still trades a 1% `spawn_reap` cost against a proof that finishes.
+
 Next-fit is also visible to the kernel. Fresh-table names are the same (0, 1, 2 and on), but after
 a removal the next name lands at the cursor and not in the hole, and
 `a_name_to_a_released_device_is_refused_and_never_names_its_successor` in `kernel/src/virtio/tests.rs`
