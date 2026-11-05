@@ -21,6 +21,10 @@
 #   2. The pin's divergence patch applies to that tarball with ZERO fuzz.
 #   3. The patched tree is then byte-for-byte the tracked contents of the vendored directory.
 #
+# A pin may carry two optional fields. `include` (space-separated paths) vendors only those files
+# of the archive, for a repository nife takes a few files from (vendor/crate-workflows.pin).
+# `registry = none` is read by script/vendor-watch alone.
+#
 # Step 3 is what makes step 2 airtight: a patch applied at the wrong offset still exits 0, and the
 # comparison catches it anyway. Together they leave no room for an unrecorded byte.
 #
@@ -90,6 +94,22 @@ def read_pin(path):
     if source == "git" and (not fields.get("vcs") or fields["vcs"] not in fields["url"]):
         sys.exit(f"{path}: a git source needs a vcs sha, and the url must contain it in full")
     return fields
+
+
+def included(pin, files):
+    """`files` (path -> bytes) narrowed to the pin's `include`, when it names any.
+
+    **A pin vendors a whole tree unless it says otherwise.** A repository we depend on for a few
+    files (the naming gates in nifeos/crate-workflows) names those files in `include`, a
+    space-separated list of paths, and a path ending in `/` takes the directory. Upstream's other
+    files are then neither expected nor allowed under vendor/<name>/, so a file added there that the
+    pin does not name fails exactly as an unrecorded edit does.
+    """
+    names = pin.get("include", "").split()
+    if not names:
+        return files
+    return {path: body for path, body in files.items()
+            if any(path == n or (n.endswith("/") and path.startswith(n)) for n in names)}
 
 
 def fetch(pin):
@@ -184,7 +204,7 @@ for pin_path in pins:
     print(f"==> {pin['name']} {pin['version']}")
 
     tarball = fetch(pin)
-    upstream = upstream_files(tarball)
+    upstream = included(pin, upstream_files(tarball))
     ours = our_files(vendor_dir)
 
     if write:
@@ -227,6 +247,7 @@ for pin_path in pins:
                 full = os.path.join(dirpath, name)
                 with open(full, "rb") as f:
                     expected[os.path.relpath(full, tree)] = f.read()
+        expected = included(pin, expected)
 
         problems = []
         for name in sorted(set(expected) - set(ours)):

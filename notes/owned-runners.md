@@ -77,8 +77,11 @@ Stage 2, later, moves the rest.
 
 ## The switch: `NIFE_RUNNER_OWNED`
 
-Setting the variable to `true` needs no canary run, no waiting period and no review. It is a
-reversible decision, and real queue runs on the pool are the evidence; Rollback below undoes it.
+The variable stays `false` until the strict canary (`canary-owned`) and the dry run
+(`canary-owned-dry-run`) are both green on the pool. They must be green in one merge group or push
+run, with no `FINDING` line in either summary and the proxy's refusal log empty for that run. "The canary" below
+describes both. Flipping needs no review beyond that evidence. It is a reversible decision;
+Rollback below undoes it.
 
 The repository variable `NIFE_RUNNER_OWNED` chooses between the two pools. The value `true` selects
 owned; anything else, including unset, selects hosted. A job that takes part in the switch writes:
@@ -103,22 +106,55 @@ Set it with `gh variable set NIFE_RUNNER_OWNED --repo nifeos/nife --body true`.
 
 ## The canary
 
-The canary is monitoring, not a gate: nothing waits for it, and a maintainer reads its summaries
-after the flip to see the pool's health. `.github/workflows/owned-runner-canary.yml` runs on
-`merge_group` and on `push` to `main` only. It holds two jobs with identical steps, then an
-isolation test:
+The canary is monitoring, not a gate: nothing waits for it. A maintainer reads its summaries before
+the flip to see whether the image is ready, and after it to see the pool's health. `.github/workflows/owned-runner-canary.yml` runs on
+`merge_group` and on `push` to `main` only. It holds two probe jobs, the strict image checks
+and the dry run on the owned side, then an isolation test:
 
 - `canary-owned` on `[nife-owned-x86_64]`, with `continue-on-error: true`, so a failure cannot
   block the queue.
 - `canary-hosted` on `ubuntu-26.04`, the reference.
 
-Each prints the runner name, hostname and `id`, tests that `/dev/kvm` is writable, prints the
-`qemu-system-x86_64` and `cargo` versions when present, fetches `https://index.crates.io/config.json`
-and `https://api.github.com` with the status code and time of each, and times the whole probe. The owned job
+Both probe jobs print the runner name, hostname and `id`, tests that `/dev/kvm` is writable, prints the
+`qemu-system-x86_64` and `cargo` versions when present, and fetches `https://index.crates.io/config.json`
+and `https://api.github.com` with the status code and time of each. It times the whole probe. The owned job
 then checks the container's walls: a fetch with the proxy bypassed must fail, and no Docker, Podman
 or containerd socket may exist. Each open wall prints a `FINDING` line and fails the job. The output
 goes to the job summary. The workflow holds no secrets and `permissions: contents: read`.
 Neither job name is a required check; do not add either to the ruleset.
+
+### The strict image checks
+
+`canary-owned` also checks out the repository, installs the pinned toolchain with
+`helpers/rustup-retry.sh toolchain install`, and then runs `helpers/owned-image-probe.sh` for each
+of four checks. Any `FINDING` line fails the job, so a job image that the stage 1 jobs cannot use
+shows red where an earlier canary showed green. The checks are:
+
+- `tools`: `rustup` and `cargo` are on `PATH`.
+- `toolchain`: the channel `rust-toolchain.toml` pins appears in `rustup toolchain list`, and
+  `rustc -vV` and `cargo --version` run in the repository.
+- `apt-proxy`: apt has an `Acquire::http::Proxy` or `Acquire::https::Proxy` setting that is not
+  `DIRECT`, and `sudo` keeps the runner's proxy variables when the runner sets them.
+- `pip`: a virtual environment's pip downloads `wheel` and `qemu.qmp` (the two packages QEMU's
+  `configure` fetches) through the proxy.
+
+### The dry run
+
+`canary-owned-dry-run` runs on the owned label, `continue-on-error`, on the same two events as the
+canary. It runs the setup steps of each job that the event-aware `runs-on` can place on the pool,
+without the real work, and keeps going after a failed step so one run names everything missing:
+
+- `crate-probes`: the pinned toolchain install.
+- the `prove` shards: `script/kani-install`.
+- `swish-check-x86_64` and `bench`: the QEMU cache restore and the decision `script/ci-qemu` would
+  take, which is to skip on a hit and build on a miss. The workspace must be
+  `/home/runner/work/nife/nife`, the layout where a cache saved by a hosted runner restores under
+  `$HOME`. The dry run also fetches what a cold build fetches: `apt-get update`, the QEMU source
+  tarball and pip's build dependencies.
+
+It does not build QEMU or run a proof. A pass says the image can start each job's setup; the first
+real queue runs after the flip are the evidence for the rest. When a job's setup steps change, the
+dry run changes with them.
 
 Every canary job ends with a `Resources` step that runs even after a failure and appends to the job
 summary:
@@ -170,7 +206,7 @@ merge group waits. The merge queue's 240-minute check timeout then removes the e
 cancels the waiting job after 24 hours. Nothing alarms sooner (see BUGS). A queue with entries
 in `AWAITING_CHECKS` and owned jobs in `queued` is the sign; roll back.
 
-The canary's owned jobs name the label directly, so they wait on a down pool even with the
+The canary's owned jobs and the dry run name the label directly, so they wait on a down pool even with the
 variable `false`. They are not required checks and do not hold the queue.
 
 ## Rollback
