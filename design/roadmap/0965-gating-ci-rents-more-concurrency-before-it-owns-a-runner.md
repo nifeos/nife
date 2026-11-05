@@ -262,7 +262,7 @@ Each job on an owned runner writes its runner kind and image digest into its sum
    can. Rollback is one setting.
 3. If the cap still binds, or after #2668 reports: land the lint and the first-step guard, then run
    a canary that gates nothing, dispatched runs of `main` on the owned runner compared with their
-   hosted twins for a week.
+   hosted twins. The canary ends on evidence (notes/owned-runners.md, what counts as a pass).
 4. Then the merge-group and `main` jobs, behind the variable. Rollback is unsetting it.
 
 The irreversible part is not the code. A compromised host is a fact that has left the machine: its

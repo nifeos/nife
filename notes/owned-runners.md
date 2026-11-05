@@ -127,17 +127,30 @@ is the expected result of a rootless container.
 
 ### What counts as a pass
 
-A canary week passes when all of these hold across every queue run in seven days (UTC):
+The canary passes on evidence, not on elapsed time. A queue run (`merge_group` or `push`) is
+counted when it has all four of these:
 
-1. `canary-owned` concludes the same as `canary-hosted` on every run. A run where the owned job
-   fails and the hosted one passes is a miss, whatever the cause.
-2. The two curl lines return a success status on both sides on every run.
-3. `/dev/kvm` is writable on the owned side on every run.
-4. The owned job's total time is no more than the hosted job's on the median run. The comparison is
-   a reading of the summaries; queue time before the job starts is a separate number and does not
-   count against the pool.
+1. `canary-owned` concludes the same as `canary-hosted`. A run where the owned job fails and the
+   hosted one passes is a miss, whatever the cause.
+2. The two curl lines return a success status on both sides.
+3. `/dev/kvm` is writable on the owned side.
+4. The owned job's total time is no more than the hosted job's. Across the counted runs the owned
+   median must be no more than the hosted median. The comparison is a reading of the summaries;
+   queue time before the job starts is a separate number and does not count against the pool.
 
-Fewer than twenty runs in the week extends the week; a week with no run proves nothing.
+All four hold on every counted run. The canary has enough evidence when all of these are true:
+
+- at least twenty counted queue runs;
+- the counted runs span at least three separate UTC days;
+- at least one burst of five or more counted runs started within one hour;
+- the isolation job reports `writer slot seen again: yes` on at least two counted runs, and no
+  instance on any counted run printed a `LEAK` line.
+
+With fewer than that the canary has not finished, however many days have passed. A run that fails a
+criterion is a miss: the fix lands, and the count restarts from zero. A maintainer reads four
+numbers: counted runs, distinct UTC days, the largest number of runs started within one hour, and
+runs with slot reuse. They come from the run list of the canary workflow and from each run's job
+summaries, and the maintainer totals them by hand.
 
 ### The first run
 
@@ -184,5 +197,6 @@ exits 1 and names the job.
 
 - The lint reads the `if:` text and does not evaluate it; `merge_group || true` passes.
 - A `runs-on` that comes from a matrix value or a reusable workflow's input is not resolved.
-- The canary compares conclusions and times by a person's reading of the summaries. Nothing totals a
-  week automatically.
+- The canary compares conclusions and times by a person's reading of the summaries. Nothing totals the
+  four evidence numbers (counted runs, distinct days, largest hourly burst, slot-reuse runs)
+  automatically; a maintainer counts them by hand.
