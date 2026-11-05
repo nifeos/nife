@@ -189,7 +189,8 @@ roadmap or merge queue; each row applies that test.
 | architect label (`helpers/architect-label-rules.py`, `architect-label.yml`) | adapt | Keeps the new-dependency rule and adds a semver rule (below); drops the abi-surface, spawnproto, syscall-error and decisions rules |
 | architect hold (`architect-hold.yml`) | keep | Red while `needs-architect` is on, and a required check |
 | `script/record-ruling` | adapt | The same label swap, from a template script |
-| name provenance blocks (`script/names`) | drop | A crate's name is ratified before first publish; `crate-standalone` refuses a `Name:` block |
+| name provenance blocks (`script/names`) | drop | A published crate carries no `Name:` block; git holds a name's history, and `crate-standalone` refuses a block |
+| naming rules: the spelled-out words of `helpers/name_checks.py` (`cap` included) and `helpers/unit_symbols.py` | adapt | `check / standalone` holds every name a crate defines to the same words and units, at a ceiling of 0 with no baseline; a name kept from a datasheet, a specification or the standard library states its source in its doc comment and carries a `doc(alias)` |
 | citations, decisions, roadmap, fatal risks, audits index, TODO cites a milestone | drop | Records that live in nife; a TODO cites an issue in the crate repository |
 | naming checks 1 to 3, branch names, ready-status, script docs, env names in prose, agent instructions | drop | nife's own vocabulary and lane process |
 | merge drain, trunk health, ci-failing, verify shard refresh | drop | No merge queue at one crate's traffic |
@@ -233,6 +234,12 @@ being on the list, and `helpers/ci_job_times.py` reads a crate repository by arg
   since is not in it, and nothing makes adding one ask "and the template?".
 - The template's release cadence is provisional. The check names are measured against what GitHub
   shows for cross-repository reusable workflow calls.
+- The semver rule runs `cargo-semver-checks` with `--baseline-rev` against the newest release tag
+  before the commit (`helpers/semver_baseline.py` in the template), and falls back to the last
+  published version when no tag exists. A crate with neither has no baseline, and the rule reads
+  that as nothing major. The tool has no JSON output, so `semver_major.py` reads its text summary
+  (nifeos/crate-workflows#19). `helpers/publish-rehearsal.sh` runs the first-publish dry run by
+  hand with no credential; the real first publish stays behind the `crates-io` environment.
 - `needs_person` is `yes`: the stranger cadence's first run is a person's.
 - The settings-drift check's security rows and ruleset read want an administration-scoped token;
   with `GITHUB_TOKEN` they report what was unreadable.

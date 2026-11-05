@@ -85,7 +85,7 @@ static CYCLE_BITS: AtomicU32 = AtomicU32::new(0);
 /// notes/riscv-cycle-counters.md.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     OUTCOME.store(CycleCounter::Unknown as u8, Ordering::Relaxed);
     CYCLE_CSR.store(NO_CSR, Ordering::Relaxed);

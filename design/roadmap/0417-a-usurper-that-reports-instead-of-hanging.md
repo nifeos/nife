@@ -10,17 +10,11 @@ needs_person: no
 ---
 # 417. A usurper that reports instead of hanging, so row 26 can be falsified
 
-Promoted from the proposal `a-usurper-that-reports-instead-of-hanging`,
-filed 2026-09-16 by milestone 305, which wrote the honest defect for
-`notes/confinement-claims.md`'s row 26 and could not use the result. *(Number provisional until the
-merge queue lands it.)*
-
 [milestone 106 (a wait that ends on either the interrupt or the deadline)](0106-deadline-wait.md)
 built `Timer::ARM`, and [§101 (notification objects)](../decisions/0101-notification-objects.md)'s
 binding ends a blocked `RECEIVE_CAP` at the deadline it signals.
 `kernel/src/sched/notification.rs` records that the binding wakes `RECEIVE`, `RECEIVE_CAP` and
-`Interrupt::WAIT` alike. The reporting
-usurper is therefore buildable on surface that exists: arm a timer, bind the notification, and the
+`Interrupt::WAIT` alike. The reporting usurper is therefore buildable on surface that exists: arm a timer, bind the notification, and the
 receive returns either a capability it should not have or the deadline. The first-class
 non-blocking receive this block priced stays unwritten until a consumer that cannot arm a timer
 asks for it, which is the same discipline
@@ -90,15 +84,13 @@ keeps one claim whose test has never been shown able to fail. Nothing else waits
 
 ## Index row
 
-Row 26 of `notes/confinement-claims.md` is that a client of a rendezvous cannot become its server,
-and **deleting the three lines of `kernel/src/syscall.rs` that enforce it does not fail the test
-that states it**. Measured 2026-09-16, the run came back as a 60-second watchdog reading "a
-lost-wakeup hang" with nothing in it about impersonation. The cause is structural rather than a flaw
-in the patch. `RECEIVE_CAP` blocks, so an attacker the kernel fails to refuse never returns to report
-the escape, and the assertion is reachable only in the world where the kernel does refuse. The
-attempt returns on surface that exists.
-[Milestone 106 (a wait that ends on either the interrupt or the deadline)](0106-deadline-wait.md)
+Row 26 of `notes/confinement-claims.md` says a client of a rendezvous cannot become its server,
+and deleting the three lines of `kernel/src/syscall.rs` that enforce it does not fail the test that
+states it. Measured 2026-09-16, the run came back as a 60-second watchdog reading "a lost-wakeup
+hang" with nothing about impersonation. The cause is structural: `RECEIVE_CAP` blocks, so an
+attacker the kernel fails to refuse never returns to report the escape. The attempt can return on
+existing surface. [Milestone 106 (a wait that ends on either the interrupt or the deadline)](0106-deadline-wait.md)
 built the timer, and [§101 (notification objects)](../decisions/0101-notification-objects.md)'s
 binding ends a blocked `RECEIVE_CAP` at its deadline. So the falsification is a lane's work. The
-first-class non-blocking receive stays unwritten until a second consumer that cannot arm a timer
-asks for it, and the `try_receive_cap` naming below is still calef's.
+first-class non-blocking receive stays unwritten until a consumer that cannot arm a timer asks for
+it, and the `try_receive_cap` naming below is calef's.

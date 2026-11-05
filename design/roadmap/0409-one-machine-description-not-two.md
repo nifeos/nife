@@ -10,10 +10,8 @@ needs_person: no
 ---
 # 409. One machine description, not a description and a narrative saying the same thing
 
-Promoted from the proposal `one-machine-description-not-two`, filed
-2026-09-14 by milestone 268 (every architecture boots the same way)'s lane, which caused it. The machine description now prints on all three
-architectures, and on two of them the arm above it had already said most of the same things in its
-own words. *(Number provisional until the merge queue lands it.)*
+The machine description prints on all three architectures, and on two of them the arm above it had
+already said most of the same things in its own words.
 
 It reads the tree and moves lines within one function.
 
@@ -69,9 +67,8 @@ second, and a missing one costs a bench session.
 
 `kernel/src/main.rs`'s riscv64 and x86_64 arms narrate their own bring-up a line at a time, and
 `print_machine_description` then answers the same eight questions in one block, so a riscv64 boot
-prints its `isa` and `firmware` lines twice. The duplication is the honest cost of getting the
-description onto all three architectures first, and it is not simply deletable. The arms print each
-fact at the moment that piece comes up, so a boot that dies halfway still says how far it got.
-They are also what a `test` or `bench` boot reports at all, since the description is excluded from both.
-The work is to decide, per duplicated line, which of the two instruments it belongs to, say so where
-it sits, and show a boot transcript per architecture before and after.
+prints its `isa` and `firmware` lines twice. The duplication is not simply deletable. The arms print
+each fact as that piece comes up, so a boot that dies halfway still says how far it got, and they
+are all a `test` or `bench` boot reports, since the description is excluded from both. The work is
+to decide, per duplicated line, which instrument it belongs to, say so where it sits, and show a
+boot transcript per architecture before and after.

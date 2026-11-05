@@ -173,10 +173,6 @@ def is_test_body(name):
 # Functions over the ceiling that provably do not run on a kernel thread stack. Each states why, and
 # a reader who makes one of these reachable from a thread has to come here and say so.
 EXCEPT = {
-    "kernel::sched::switch::initialize":
-        "boot only: brings the scheduler up before any thread stack exists",
-    "<generational_table::Table<u64, 512>>::new":
-        "boot only: constructs the endpoint table, called from sched::switch::initialize",
     "kernel::user::disk_service::devices":
         "boot stack: called by roster_page below, before its sched::spawn",
     "kernel::user::disk_service::roster_page":

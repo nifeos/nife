@@ -23,3 +23,4 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Glyphs, the VT engine, and input](../glyphs.md): the font, VT engine and keyboard behind on-screen text.
 - [The VT engine](../video-terminal.md): `crates/video_terminal`'s parser, grid, damage report, handoff blob, keymap and test script.
 - [Bold under Solarized](../solarized-and-bold-is-bright.md): why bold goes gray on four colors, and the options.
+- [Review packages for the journey 5 crates](../crate-reviews.md): the evidence each architect crate review starts from, per crate, with its blockers and owners.

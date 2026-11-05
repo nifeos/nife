@@ -137,8 +137,9 @@ pub(super) const fn all_distinct_names(names: &[&str]) -> bool {
 }
 
 /// Name: provisional, flagged 2026-09-24 by the boolean-predicate pass
-/// (design/naming/functions-that-answer-yes-or-no-worklist.md). It does not yet follow the Rust predicate rule
-/// calef ratified 2026-09-24; recommended `bytes_eq`, because std's `ptr_eq` and `addr_eq` shape.
+/// (design/naming/functions-that-answer-yes-or-no.md). It does not yet follow the Rust predicate
+/// rule calef ratified 2026-09-24; recommended `bytes_eq`, because std's `ptr_eq` and `addr_eq`
+/// shape.
 pub(super) const fn same_bytes(a: &[u8], b: &[u8]) -> bool {
     if a.len() != b.len() {
         return false;
@@ -386,7 +387,7 @@ programs! {
         /// Name: ratified 2026-10-06 (calef): the guide that makes flat-pack assembly come out the
         /// same every time. Refused `package`, `pkg`, `bpm`, `knap` and `flatpak`; `kit` and `cam`
         /// collide with shipped commands. Its verbs are apt's where apt has one
-        /// (design/naming/command-line-rulings.md, 2026-10-10).
+        /// (design/naming/command-line-names.md, 2026-10-10).
         Jig { id: 22, name: "jig" },
         /// **Wait a given number of milliseconds, or for ever, and say so** (milestone 933 (every
         /// job is built the way a supervised job is), `fixtures/src/job_sleeper.rs`).

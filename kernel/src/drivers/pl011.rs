@@ -87,7 +87,7 @@ impl Pl011 {
     /// Configure the UART: 8 data bits, no parity, one stop bit, FIFOs on.
     ///
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-    /// design/naming/spelled-out-rulings.md.
+    /// design/naming/acronyms-and-abbreviations.md.
     pub fn initialize(&self) {
         // Turn the UART off while we reconfigure it.
         self.write(CR, 0);
@@ -132,7 +132,7 @@ impl Pl011 {
     /// `Ns16550::discard_waiting_bytes`, deliberately.
     ///
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
-    /// design/naming/spelled-out-rulings.md; `discard_waiting_bytes` drops the bytes
+    /// design/naming/acronyms-and-abbreviations.md; `discard_waiting_bytes` drops the bytes
     /// `is_byte_waiting` would have reported.
     pub fn discard_waiting_bytes(&self) {
         let mut bound = 64u32;

@@ -15,6 +15,12 @@ watcher stays silent; a diff here means upstream moved.
 the pins in this directory were taken deliberately. What to do about a gap is in
 `vendor/README.md`'s "Bumping a pin" section.
 
+## crate-workflows
+
+Pinned at upstream git commit `8ee86d3b37d8`; no registry carries it.
+
+**Upstream git: current.** No commits on the tracked branch since the pinned sha.
+
 ## redoxfs
 
 Pinned at upstream git commit `db847d87c680`, which no release carries; its manifest says **0.9.1**.

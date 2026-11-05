@@ -203,18 +203,10 @@ milestone 433 (drain the proposal pile to zero, and keep it there) at 108 citing
   claim is in milestone 99 (`git` on nife: the tool this project is built with), both in `design/roadmap/`. A `milestone N` in a Rust comment is usually
   provenance for the code beneath it rather than a present-tense claim, so `*.rs` is out. Untested
   rather than proved: nobody has measured how often a code comment makes such a claim.
-- ~~A status can move without a pull request touching the index.~~ Closed by the tree rather
-  than by this milestone, and it is left here struck through because the reasoning is still worth
-  a reader's time. There is no longer an index: `design/roadmap/README.md` was generated from the
-  blocks by milestone 294 and retired on 2026-09-21, so the block's own `Status:` line is the
-  single record and §76's two-places disagreement cannot recur.
 - **A block deleted or renumbered is reported by nothing here. `--moved` reads the status at the
   tip and skips a file that is gone, so a number retired out from under its citers prints nothing.
   That case is a hard failure elsewhere: `script/roadmap --check` fails a `milestone N` that
   resolves to no block at all.
-- ~~Nobody has built it, so "cheap" is a judgment rather than a measurement.~~ Built
-  2026-09-23. The judgment held: the mode is one `Status:` regex and a `git show` on top of
-  machinery `--ratchet` and `--census` had already written, and no third script was needed.
 - **The gate that should have caught this file's absence covers only half the places a proposal is
   cited. `script/roadmap` refuses a `**Proposed.**` entry under `## Follow-on` whose file does not
   exist. Milestone 259 cites this file in its status line instead, so that check never ran, and a

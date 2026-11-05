@@ -17,7 +17,7 @@ pub trait Hardware {
     /// Write it.
     fn write(&mut self, offset: u64, value: u32);
     /// Read the 16-bit register at `offset`. Only the flash status word
-    /// ([`non_volatile_memory::HSFSTS`]) is read this way, as FreeBSD reads it.
+    /// ([`non_volatile_memory::HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER`]) is read this way, as FreeBSD reads it.
     fn read16(&mut self, offset: u64) -> u16;
     /// Wait at least `microseconds` microseconds.
     fn delay_microseconds(&mut self, microseconds: u64);

@@ -11,10 +11,6 @@ needs_person: no
 ---
 # 422. A cadence job whose healthy state is red, and nothing that notices it repeating
 
-Promoted from the proposal `a-cadence-job-whose-healthy-state-is-red`,
-filed 2026-09-17 by milestone 311, which was minted to fix a path and found that the path was the
-smaller half. *(Number provisional until the merge queue lands it.)*
-
 It reads GitHub's run history, the same source `script/cadence-check` already reads.
 
 Premise re-checked 2026-09-19 and still true, and the overdue run is now five weeks long.
@@ -132,17 +128,15 @@ first one.
 
 ## Index row
 
-`.github/workflows/audit-cadence.yml` reports that an audit is due by failing, which is deliberate
-and correct, and the consequence nobody priced is that red is ambiguous. A firing tripwire and a
-`FileNotFoundError` are the same row in the Actions tab, and so are four consecutive weeks of the
-same true report. An audit was overdue every week for a month, the mechanism said so on schedule
-every time, and no audit ran. That is milestone 92 (security audits as a mechanism)'s tripwire
-firing four times into a process that
-still depended on somebody remembering. `script/cadence-check` cannot cover it, because a job whose
-healthy state is red has no green to be stale against and a job that never succeeded is reported for
-ever. `helpers/trunk-health.sh` now reports a repeat rather than a color: each scheduled workflow's
-last six runs grouped by the failing step's final line. A REPEAT row fires when one line took three
-or more, a CHURN row when the failures disagree; an offline selftest proves both against the real
-audit-cadence history. The repeat's home is an issue per workflow, deduped by workflow name, whose
-body updates as the line drifts. Its close is the audit lane's report pull request saying
-`Closes #N`, routed by the audit-cadence step summary that hands the lane out.
+`.github/workflows/audit-cadence.yml` reports that an audit is due by failing, which is deliberate,
+and red is therefore ambiguous. A firing tripwire and a `FileNotFoundError` are the same row in the
+Actions tab, and so are four consecutive weeks of the same true report. An audit was overdue every
+week for a month, the mechanism said so on schedule, and no audit ran. That is milestone 92
+(security audits as a mechanism)'s tripwire firing four times into a process that still depended on
+somebody remembering. `script/cadence-check` cannot cover it, because a job whose healthy state is
+red has no green to be stale against. `helpers/trunk-health.sh` reports a repeat rather than a
+color: each scheduled workflow's last six runs, grouped by the failing step's final line. A REPEAT
+row fires when one line took three or more, and a CHURN row when the failures disagree. An offline
+selftest proves both against the real audit-cadence history. The repeat's home is an issue per
+workflow, deduped by workflow name, whose body updates as the line drifts. The audit lane's report
+pull request closes it by saying `Closes #N`.

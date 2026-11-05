@@ -2,8 +2,9 @@
 //!
 //! Milestone 15 (design/roadmap/0015-asids.md). The hardware tags every TLB entry from a
 //! non-global mapping with the ASID in `TTBR0_EL1` (or `satp`), so a context switch flushes
-//! nothing. Each address space keeps one ASID for life and allocation is a bitmap scan, because
-//! `MAXIMUM_SPACES` (160) is below the smallest ASID space (256); past 255 the fix is 16-bit ASIDs.
+//! nothing. Each address space keeps one ASID for life and allocation is a bitmap scan.
+//! The kernel's `MAXIMUM_SPACES` is 288, above the 255 numbers handed out, so a full bitmap is
+//! reachable; past 255 live spaces the fix is 16-bit ASIDs.
 //! A number may be reused only once no core's TLB holds it: the kernel invalidates by ASID in
 //! `AddressSpace::drop` before [`free`](Allocator::free), one `tlbi aside1is` on aarch64 and an
 //! SBI RFENCE shootdown on RISC-V, whose `satp.ASID` may be narrower than these numbers. See
@@ -17,7 +18,7 @@
 #![cfg_attr(not(test), no_std)]
 
 /// One more than the largest ASID we hand out. 8-bit ASIDs: every aarch64 implementation has at
-/// least these, and 255 usable numbers exceed `MAXIMUM_SPACES` (160) with room.
+/// least these, which leaves 255 usable numbers.
 pub const ASIDS: usize = 256;
 
 /// The allocator: one bit per ASID, set = in use. ASID 0 is born allocated and is never freed:
@@ -51,8 +52,8 @@ impl Allocator {
         Self { bitmap }
     }
 
-    /// Claim a free ASID. `None` only if all 255 are live, which `MAXIMUM_SPACES` makes unreachable
-    /// in the kernel; the type is honest anyway.
+    /// Claim a free ASID. `None` once all 255 are live. The kernel can reach that, because its
+    /// `MAXIMUM_SPACES` is 288, so a caller handles `None`.
     pub fn alloc(&mut self) -> Option<u16> {
         for (i, word) in self.bitmap.iter_mut().enumerate() {
             if *word != u64::MAX {

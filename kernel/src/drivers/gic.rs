@@ -128,7 +128,7 @@ pub(crate) unsafe fn identification(gicc: u64) -> u32 {
 /// The two addresses must name a real GICv2, mapped and exclusively ours.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub unsafe fn initialize(gicd: u64, gicc: u64) {
     let gic = Gic { gicd, gicc };
 

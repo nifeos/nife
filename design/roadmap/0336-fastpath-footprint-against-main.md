@@ -9,24 +9,15 @@ needs_person: no
 ---
 # 336. Should the fastpath footprint gate compare against `main` instead of a stored baseline
 
-Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
-from milestone 237 (the cycle-counter grant costs 136 bytes of IPC)'s block; numbered 2026-09-19 by milestone 433 (drain the proposal pile to zero, and keep). Premise re-checked 2026-09-19 and
-the build is still owed. DECISIONS §144 (the fastpath footprint gate gets a delta and) answered the question on 2026-09-04 (both shapes, with the
-ceiling at 16 KiB on `max(ipc_send_receive, ipc_call_reply) + syscall_entry`). Nothing has been built
-against it. `script/fastpath-footprint` still compares against `bench/fastpath-aarch64.txt`,
+Premise re-checked 2026-09-19: the build is still owed. DECISIONS §144 (the fastpath footprint gate
+gets a delta and a ceiling) ruled both shapes, with the ceiling at 16 KiB on
+`max(ipc_send_receive, ipc_call_reply) + syscall_entry`. Nothing has been built against it.
+`script/fastpath-footprint` still compares against `bench/fastpath-aarch64.txt`,
 `bench/fastpath-riscv64.txt` and `bench/fastpath-x86_64.txt` at a 5% tolerance, with no delta against
-`main` and no absolute ceiling anywhere in the script. The reasoning below is kept as the record of
-what §144 was deciding between.
+`main` and no absolute ceiling. The two designs share little code, because the delta half replaces
+the baseline files and the ceiling half is new.
 
-Answered by DECISIONS §144 on 2026-09-04: both, with the ceiling at 16 KiB. What
-remains is building it, and the two designs no longer share no code, because the delta half replaces
-the baseline files and the ceiling half is new. The question below is kept for its reasoning.
-
-Was: Gate: DECISION. It was calef's call, and it was the shape of the gate rather than a bug in it.
-Both options have real costs and the tree has evidence for each. Nothing should be built until the
-question is answered, because the two designs share almost no code.
-
-**In brief.** `script/fastpath-footprint` measures the IPC fastpath's code size against a stored
+In brief. `script/fastpath-footprint` measures the IPC fastpath's code size against a stored
 baseline file, which somebody has to remember to re-record when growth is understood and accepted.
 The alternative is to measure against `main` at the time the pull request runs, so the comparison
 has no stored state and cannot go stale. Milestone 237 fixed one instance of the stored baseline
@@ -82,23 +73,12 @@ proposal, which milestone 433 numbers 361. All
 three `ipc_fastpath` baselines are now stale, aarch64 having gone stale again within a week of
 milestone 237 re-recording it. That is this proposal's own failure mode recurring on schedule.
 
-## Where it came from
-
-Milestone 237's `## Follow-on`: *"Whether the fastpath footprint gate should compare against `main`
-rather than a stored baseline file. It is an architect's call and has costs on both sides. Two lanes
-each measured 'within bound' against the same stale baseline and neither re-saved it, so aarch64
-headroom fell from 3.9 points to 1.5 with nothing firing. This milestone fixed the instance, not the
-mechanism."*
-
 ## Index row
 
-`script/fastpath-footprint` measures the IPC fastpath's code size against a stored baseline file,
-which somebody has to remember to re-record when growth is understood and accepted. It has
-already failed the way that fails. Two lanes each measured "within bound" against the same stale
-baseline and neither re-saved it. aarch64 headroom fell from 3.9 points to 1.5 with nothing
-firing. Milestone 237 fixed that instance and explicitly not the mechanism. DECISIONS §144 ruled on
-2026-09-04 that the gate gets both shapes, a delta check against `main` that cannot go stale and
-replaces the baseline files, plus an absolute ceiling of 16 KiB per architecture that only calef
-raises. They catch different failures: a delta alone lets absolute size grow without limit,
-and the gate is named for an absolute property. This is the building, which nobody has done; all
-three baselines were stale again within a week of 237 re-recording one.
+`script/fastpath-footprint` measures the IPC fastpath's code size against a stored baseline file that
+somebody must remember to re-record. It has failed that way: two lanes each measured "within bound"
+against the same stale baseline, and aarch64 headroom fell from 3.9 points to 1.5 with nothing
+firing. DECISIONS §144 ruled on 2026-09-04 that the gate gets both shapes: a delta check against
+`main` that cannot go stale and replaces the baseline files, and an absolute ceiling of 16 KiB per
+architecture that only calef raises. They catch different failures, because a delta alone lets
+absolute size grow without limit. Nobody has built it.

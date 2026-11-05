@@ -29,7 +29,7 @@ extension (`TARGET_EXTENSIONS`), or an extensionless file under `script/`, `help
 - A citation into a Markdown document is held at zero. The tree had 38 when the gate landed: 35
   were repointed to a heading in the same change, two carry the marker below, and one was quoted
   output in an indented code block. There is nothing to ratchet.
-- A citation into code is held by a ratchet, the shape of helpers/cap_abbreviation.py: the tree
+- A citation into code is held by a ratchet, the shape of helpers/vendored_name_gates.py: the tree
   total may not exceed `CODE_CEILING`, which guards `main`, and a branch may not add any net over
   the files it changed against its merge base. `--bank` lowers the ceiling as a sweep repoints
   them; nothing raises it.

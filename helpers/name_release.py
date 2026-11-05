@@ -93,10 +93,10 @@ def rows(crate, paths, read):
     return out
 
 
-# The page contract crates' family names, from design/naming.md ("Page contract crates"). A row
-# for one of these names in one of these crates reads as pre-ruled, so a reviewer sees the rename
-# the family rule already settles. `program_argument_contract` is absent from the content-length
-# set: its `PAGE_BYTES` is a real page size and keeps the name.
+# The page contract crates' family names, from design/naming/crates.md ("Page contract crates"). A
+# row for one of these names in one of these crates reads as pre-ruled, so a reviewer sees the
+# rename the family rule already settles. `program_argument_contract` is absent from the
+# content-length set: its `PAGE_BYTES` is a real page size and keeps the name.
 PRE_RULED = {
     "current_cpu_contract": {"PAGE_BYTES": "PAGE_CONTENT_BYTES", "PAGE_VA": "PAGE_VIRTUAL_ADDRESS"},
     "environment_contract": {"PAGE_BYTES": "PAGE_CONTENT_BYTES"},

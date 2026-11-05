@@ -215,7 +215,7 @@ pub enum Refusal {
 /// enum exists so milestone 32 (files) and later device/endpoint grants slot in without changing
 /// the refusal's shape.
 ///
-/// Name: recorded (design/naming/capability-spelling-worklist.md). `CapKind` until 2026-10-11 (UTC),
+/// Name: recorded (design/naming/acronyms-and-abbreviations.md). `CapKind` until 2026-10-11 (UTC),
 /// renamed by #1913 under calef's ruling of 2026-10-06 that capability is not abbreviated as cap.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CapabilityKind {
