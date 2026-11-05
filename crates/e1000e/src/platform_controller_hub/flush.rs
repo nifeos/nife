@@ -153,8 +153,10 @@ pub fn descriptor_rings(
     if !is_flush_required(status, hardware.read(TRANSMIT_DESCRIPTOR_LENGTH_REGISTER)) {
         return Outcome::NotRequired;
     }
+    // The halves share no bit, so their sum is the joined address, and unlike an OR no mutation of
+    // the sum survives a test that gives both halves a value.
     let base = u64::from(hardware.read(TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER))
-        | u64::from(hardware.read(TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER)) << 32;
+        + (u64::from(hardware.read(TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER)) << 32);
     if base != transmit_ring {
         return Outcome::ForeignTransmitRing { base };
     }

@@ -181,7 +181,8 @@ fn flush_steps(
     let values = [
         (
             registers::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_REGISTER,
-            0x1,
+            // The bit the flush sets is already on, so an XOR in place of the OR would clear it.
+            0x1 | flush::FUTURE_EXTENDED_NON_VOLATILE_MEMORY_11_DISABLE_MULR_FIX,
         ),
         (TRANSMIT_DESCRIPTOR_LENGTH_REGISTER, 256),
         (
@@ -192,7 +193,8 @@ fn flush_steps(
             TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
             (device_ring >> 32) as u32,
         ),
-        (TRANSMIT_CONTROL_REGISTER, 0x8),
+        // TCTL_EN (0x2) is already on, so an XOR in place of the OR would clear it.
+        (TRANSMIT_CONTROL_REGISTER, 0x8 | 0x2),
         (TRANSMIT_DESCRIPTOR_TAIL_REGISTER, tail),
         (RECEIVE_CONTROL_REGISTER, RECEIVE_CONTROL),
         (registers::RECEIVE_DESCRIPTOR_CONTROL_REGISTER, 0x0001_0000),
