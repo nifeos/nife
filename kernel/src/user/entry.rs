@@ -128,8 +128,11 @@ pub fn spawn_elf_child_builder(
 
     // Carved here rather than inside the thread, so the caller can name it and reclaim it
     // (notes/frames.md).
-    let build_region =
-        crate::memory_region::create(12288).expect("no building budget for the builder");
+    let build_region = crate::memory_region::create_with_ceilings(
+        12288,
+        crate::memory_region::progenitor_ceilings(),
+    )
+    .expect("no building budget for the builder");
 
     let tid = crate::sched::spawn(move || {
         let elf = match Elf::parse(builder_bytes) {

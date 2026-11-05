@@ -119,6 +119,39 @@ pub fn split(parent: u64, pages: u64) -> Option<u64> {
     child
 }
 
+/// **The kernel keeps this fraction of every table for itself**: one eighth, so the progenitor's
+/// subtree may hold the other seven. What the kernel holds outside that subtree (its own threads
+/// and rendezvous, the roots and spaces of the services it starts, the grants it makes on request)
+/// is measured against this in notes/memory-regions.md, "Subtree ceilings".
+const KERNEL_RESERVE_OF_EACH_TABLE: usize = 8;
+
+/// **The ceilings the progenitor's subtree lives under**: every kernel table less the kernel's
+/// reserve, written in the tables' own capacities so they follow a resize. Each region the
+/// progenitor splits gets a sixteenth of these (`RegionTable::split`). The kernel pool is the
+/// kernel's own and has no ceiling.
+///
+/// Name: provisional.
+pub(crate) fn progenitor_ceilings() -> Ceilings {
+    let leave_reserve = |capacity: usize| {
+        u32::try_from(capacity - capacity / KERNEL_RESERVE_OF_EACH_TABLE).unwrap_or(u32::MAX)
+    };
+    // A space holds a tag and a revocation-registry entry; the scarcer bounds it. ASID 0 is never
+    // handed out.
+    let spaces = core::cmp::min(
+        address_space_identifier::ASIDS - 1,
+        crate::revoke::MAXIMUM_SPACES,
+    );
+    let object = |kind| Counted::Object(kind);
+    Ceilings::UNLIMITED
+        .with(object(ObjectKind::Rendezvous), leave_reserve(crate::sched::MAXIMUM_RENDEZVOUS))
+        .with(object(ObjectKind::AddressSpace), leave_reserve(spaces))
+        .with(object(ObjectKind::Thread), leave_reserve(crate::sched::MAXIMUM_THREADS))
+        .with(object(ObjectKind::Notification), leave_reserve(crate::sched::MAXIMUM_NOTIFICATIONS))
+        .with(object(ObjectKind::Timer), leave_reserve(crate::sched::MAXIMUM_TIMERS))
+        .with(object(ObjectKind::Process), leave_reserve(crate::sched::MAXIMUM_PROCESSES))
+        .with(Counted::Region, leave_reserve(MAXIMUM_REGIONS))
+}
+
 /// **One object of `kind` retyped from `region` has left its kernel table**: a thread reaped, a
 /// lent address space dropped, or an insert refused after the page was retyped. Its subtree's
 /// count falls by one. A no-op on a dead name. See notes/memory-regions.md, "Subtree ceilings".
