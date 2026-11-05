@@ -117,17 +117,17 @@ pub mod control {
 }
 
 // `initialize_cycle` ORs the two write-one-to-clear error bits into the status it just read, and
-// they share no bit, so | and ^ compose them identically; the compiler checks that here, and
-// .cargo/mutants.toml excludes the function's OR-to-XOR swaps on this assertion (the `FLASH_CYCLE_DONE` write's
-// swap is excluded on the write-back beside it, which has already carried the bit).
+// they share no bit, so | and ^ compose them identically; the compiler checks that here, so
+// the function's OR-to-XOR swaps are equivalent mutants (the `FLASH_CYCLE_DONE` write's
+// swap is equivalent on the write-back beside it, which has already carried the bit).
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(
     status::FLASH_CYCLE_ERROR ^ status::DIRECT_ACCESS_ERROR
         == status::FLASH_CYCLE_ERROR | status::DIRECT_ACCESS_ERROR
 );
 // The byte count `read_u32_at_byte` ORs in sits inside the field it just masked out, so | and ^
-// compose them identically; the compiler checks that here, and .cargo/mutants.toml excludes the
-// function's OR-to-XOR swap on this assertion.
+// compose them identically; the compiler checks that here, so the
+// function's OR-to-XOR swap is an equivalent mutant.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!((3u16 << control::BYTE_COUNT_SHIFT) & !control::BYTE_COUNT_MASK == 0);
 

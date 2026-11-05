@@ -41,8 +41,8 @@ pub const fn is_flush_required(status: u16, tdlen: u32) -> bool {
     status & FLUSH_DESC_REQUIRED != 0 && tdlen != 0
 }
 // The 512-byte length and the flag byte at bit 24 share no bit, so | and ^ compose them
-// identically; the compiler checks that here, and .cargo/mutants.toml excludes the word's
-// OR-to-XOR swap on this assertion.
+// identically; the compiler checks that here, so the word's
+// OR-to-XOR swap is an equivalent mutant.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!((TRANSMIT_DUMMY_LENGTH as u64) & (0x02u64 << 24) == 0);
 
@@ -68,8 +68,8 @@ pub const fn tail_after_dummy_transmit(tdt: u32, entries: u16) -> u32 {
 }
 // The mask clears the register's low half, 0x1f and 1 << 8 land in that cleared half, and the two
 // small constants and 0x0100_0000 share no bits with each other, so in the OR chain every swapped
-// XOR meets two operands that share no bit. The compiler checks that here, and
-// .cargo/mutants.toml excludes the word's OR-to-XOR swaps on this assertion.
+// XOR meets two operands that share no bit. The compiler checks that here, so
+// the word's OR-to-XOR swaps are equivalent mutants.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(
     0x1f_u32 & 0xffff_c000 == 0
