@@ -24,7 +24,7 @@ static ISA: InterruptSafeMutex<Option<Isa>> = InterruptSafeMutex::new(rank::ISA,
 /// describe its ISA, or firmware too old to answer, is reported as unknown and the boot continues.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize(dtb_ptr: usize) {
     // SAFETY: the same pointer `memory::initialize` has already validated the magic of, named
     // through the boot table's direct map because we are running virtual.

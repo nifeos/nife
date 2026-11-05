@@ -110,7 +110,7 @@ const CR4_OSXMMEXCPT: u64 = 1 << 10;
 /// one architecture's boot path does not pass through `arch::initialize` at all.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     let mut cr4 = read_cr4();
     cr4 |= CR4_OSFXSR | CR4_OSXMMEXCPT;

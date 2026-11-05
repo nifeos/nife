@@ -151,9 +151,9 @@ What each outcome means, decided before it runs:
 
 ## BUGS
 
-- ~~Nothing here has run on radon.~~ Run on radon three ways now: the firmware route worked once
-  (2026-10-09) and hung once (2026-10-10, row 4), and the direct route reset the board four
-  consecutive times. Every register word in the transcripts is observed silicon, not source.
+- Every register word in the transcripts is observed silicon, not source: the firmware route worked
+  once (2026-10-09) and hung once (2026-10-10, row 4), and the direct route reset the board four
+  consecutive times.
 - The SBI SRST fallback still sets the PMIC's power-off bit (bit 7) before the reset bit, per
   radon's OpenSBI. The direct route is why that quirk no longer decides anything: its write sets
   bit 6 alone, read-modify-write, and runs first.

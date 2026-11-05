@@ -1,0 +1,118 @@
+# The words the naming checks refuse in a Rust name, each with the word that replaces it.
+#
+# Read by helpers/spelled_out.py and helpers/unit_symbols.py, whose headers are the manual. A key is
+# one component of a name: names split at `_`, at digits and at CamelCase boundaries, and compare
+# in lowercase, so `rx` here refuses `rx_ring`, `RxRing` and `RX_RING` alike. A value is what the
+# failure message tells the author to write instead.
+#
+# The rule behind both tables: a name spells out what it holds, and an abbreviation stays only
+# where nobody says its expansion (`pci`, `elf`, `usb`, `cpu`, `id`, `io`). A name that mirrors a
+# datasheet, a specification or the standard library keeps its owner's spelling, and says so where
+# the reader meets it (spelled_out.py's header gives the form). This file holds no exemption.
+#
+# The file's name and its table names are provisional.
+
+[spelled_out]
+op = "operation"
+ops = "operations"
+recv = "receive"
+rx = "receive"
+tx = "transmit"
+config = "configuration"
+configs = "configurations"
+spec = "specification"
+specs = "specifications"
+arg = "argument (say whose: a program argument)"
+args = "arguments (or operands, for the non-option words of a command)"
+mem = "memory"
+dir = "directory"
+dirs = "directories"
+va = "virtual_address"
+pa = "physical_address"
+ipi = "inter_processor_interrupt"
+ipis = "inter_processor_interrupts"
+nmi = "non_maskable_interrupt"
+nmis = "non_maskable_interrupts"
+ist = "interrupt_stack_table"
+msr = "model_specific_register"
+msrs = "model_specific_registers"
+ipc = "inter_process_communication"
+dtb = "device_tree_blob"
+asid = "address_space_identifier"
+asids = "address_space_identifiers"
+gpt = "globally_unique_identifier_partition_table"
+nvme = "non_volatile_memory_express"
+pcie = "pci_express"
+dma = "direct_memory_access"
+pr = "pull_request"
+prs = "pull_requests"
+initrd = "initial_ramdisk"
+prog = "program"
+progs = "programs"
+pos = "position"
+opt = "option"
+opts = "options"
+mtime = "modification_time"
+cap = "capability"
+caps = "capabilities"
+phy = "physical_layer_device"
+init = "initialize"
+irq = "interrupt, interrupt_number or interrupt_line, by what it holds"
+irqs = "interrupts, interrupt_numbers or interrupt_lines, by what it holds"
+fifo = "queue"
+fifos = "queues"
+min = "minimum"
+max = "maximum"
+os = "operating_system"
+rgmii = "reduced_gigabit_media_independent_interface"
+mdio = "management_data_input_output"
+sdio = "a name for what the controller is (the vendor's instance label is not a name)"
+
+# A refused component that is an English word in front of these: "opt in" and "opt out" are verbs,
+# not `option` abbreviated.
+[spelled_out_before]
+opt = ["in", "out"]
+
+# Unit symbols. A name spells its unit: an uppercase constant erases the case an SI symbol depends
+# on (`MHZ` is `mHz` too, and `_MS` could be megasiemens), and the micro sign has no ASCII form.
+[units]
+ns = "nanoseconds"
+nsec = "nanoseconds"
+nsecs = "nanoseconds"
+nanos = "nanoseconds"
+us = "microseconds"
+usec = "microseconds"
+usecs = "microseconds"
+micros = "microseconds"
+ms = "milliseconds"
+msec = "milliseconds"
+msecs = "milliseconds"
+millis = "milliseconds"
+sec = "seconds"
+secs = "seconds"
+mins = "minutes"
+hz = "hertz"
+khz = "kilohertz"
+mhz = "megahertz"
+ghz = "gigahertz"
+kb = "kilobytes"
+mb = "megabytes"
+gb = "gigabytes"
+tb = "terabytes"
+kib = "kibibytes"
+mib = "mebibytes"
+gib = "gibibytes"
+bps = "bits_per_second"
+kbps = "kilobits_per_second"
+mbps = "megabits_per_second"
+gbps = "gigabits_per_second"
+
+# Symbols that are a unit only in one place: straight after `per` (`SECS_PER_MIN`, `kib_per_s`) or,
+# for `s`, straight after a number (`within_30_s`). Anywhere else `s` is a variable or a mode-bit
+# prefix and `min` is a minimum, which the spelled-out table holds.
+[units_after_per]
+s = "second"
+min = "minute"
+
+[units_after_number]
+s = "seconds"

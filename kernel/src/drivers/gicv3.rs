@@ -209,7 +209,7 @@ pub(crate) unsafe fn identification(gicd: u64) -> u32 {
 /// `redistributors_size` its mapped redistributor region, both device memory, both exclusively ours.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub unsafe fn initialize(distributor: u64, redistributors: u64, redistributors_size: u64) {
     DISTRIBUTOR.store(distributor, Ordering::Relaxed);
     REDISTRIBUTOR_REGION[0].store(redistributors, Ordering::Relaxed);

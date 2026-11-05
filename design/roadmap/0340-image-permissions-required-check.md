@@ -9,8 +9,7 @@ needs_person: yes
 ---
 # 340. `script/image-permissions` reports and does not gate, because it is not in the ruleset
 
-Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
-from milestone 208's block; numbered 2026-09-19 by milestone 433. Premise re-checked 2026-09-19 and
+Premise re-checked 2026-09-19 and
 it holds. `script/image-permissions` is a `local` row in `script/ci-build`'s table and has a job of
 its own in `.github/workflows/ci.yml`, and `notes/check-inventory.md`'s row for it still answers
 no under required. So it still reports and does not gate, and the one checkbox is still
@@ -22,7 +21,7 @@ request can carry the change. There is nothing to build and nothing to review; t
 ask, and the ask is a person at the settings page, which is what the frontmatter's `needs_person`
 carries. No decision waits: §97 ruled, and the checkbox is its unperformed half.
 
-**§97 is `DECIDED` and its ruleset edit is not performed**, which is what makes this a citation
+§97 is `DECIDED` and its ruleset edit is not performed, which is what makes this a citation
 rather than a new fork. calef ratified it on 2026-08-25 (*"Ratify as written"*), it holds that four
 advisory checks become required, and its own *Not yet built* section names the ruleset edit first,
 wanting a quiet queue. That is the same checkbox page this block asks for, so `image-permissions`
@@ -60,24 +59,12 @@ Add `image-permissions` to the required checks in the merge queue ruleset for th
 the same list the rest of the gates are in. If the answer is no, the honest follow-up is to say so
 in `design/roadmap/0208-boot-section-wx.md` and stop describing it as a gate.
 
-## Where it came from
-
-Milestone 208 (the x86_64 kernel image ships an RWX segment) named it on the way out: *"Make
-`script/image-permissions` a required check in the merge queue's ruleset. It is one checkbox and it
-is calef's, because it is a repository setting rather than a file in this tree. Until it is flipped,
-a red run is visible and merges anyway, so the gate reports rather than gates."*
-
 ## Index row
 
 Milestone 208 built `script/image-permissions`, which refuses a kernel image carrying a
-writable-and-executable `PT_LOAD`. It runs in CI and its result is visible, and it is not on the
-merge queue's list of required checks, so a red run merges anyway. A check that reports and does not
-gate is rung two of AGENTS.md's ladder only if it fails loudly enough to stop something. As
-configured it is rung four, a note in a run log somebody has to read. The defect it exists to
-catch is exactly the kind nobody reads a log for. `kernel/link-x86_64.ld` shipped a single
-`RWX` segment through every other gate in the tree, and a lane deleting a duplicate ELF parser
-tripped over `Error::WritableAndExecutable`. There is a second cost, which is what the green check
-now means to a reader who reasonably concludes W^X is enforced on the image. The whole item is an
-ask: it is a repository setting rather than a file, so no lane and no pull request can carry it. If
-the answer is no, the honest follow-up is to stop describing it as a gate in milestone 208's
-block.
+writable-and-executable `PT_LOAD`. It runs in CI and its result is visible, but it is not on the
+merge queue's list of required checks, so a red run merges anyway. As configured it is rung four of
+AGENTS.md's ladder, a note in a run log somebody has to read, and the defect it catches is the
+kind nobody reads a log for. The green check also tells a reader that W^X is enforced on the image.
+The whole item is an ask, because the ruleset is a repository setting and no pull request can
+carry it. If the answer is no, stop describing the check as a gate in milestone 208 (the x86_64 kernel image ships an RWX)'s block.

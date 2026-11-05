@@ -678,7 +678,7 @@ pub(crate) fn initialize_contexts(boot_info_pointer: usize) {
 /// `cargo xtask uefi-boot` reads the `device interrupt` line it prints.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     let (io_apic, isa_interrupts) = super::discovery::with_acpi(|a| (a.io_apic, a.isa_interrupts));
     let Some((io_id, io_addr, gsi_base)) = io_apic.filter(|_| is_local_apic_ready()) else {

@@ -47,17 +47,15 @@ cheap, which is worth knowing before anybody promises a fast inner loop.
 
 ## BUGS
 
-- ~~**This block does not price the boot.**~~ Priced: 0.50 s of boot against 53.1 s of tests, so
-  the feared outcome did not happen. What bounds a filtered run instead is fixture building, which
-  nothing here filters and nothing records which test needs.
+- The boot costs 0.50 s against 53.1 s of tests. What bounds a filtered run instead is fixture
+  building, which nothing here filters and nothing records which test needs.
 - A filtered run cannot fail the whole-suite instruments: the frame ledger's kept-frames
   ceiling, the thread peak and the stack high-water are totals over 312 tests. And tests are not
   independent, so one that only passes after an earlier test wired a service fails alone. Both are
   in notes/scripts.md's BUGS beside the flag.
-- ~~It says nothing about the three architectures.~~ Settled: `--test` selects tests and never
-  architectures, so all three legs still run and `--arch` remains the explicit narrowing. The cost
-  is that filtering an architecture-specific test without `--arch` fails on the other two legs,
-  which the failure message names.
+- `--test` selects tests and never architectures, so all three legs still run and `--arch` remains
+  the explicit narrowing. The cost is that filtering an architecture-specific test without `--arch`
+  fails on the other two legs, which the failure message names.
 - **`kernel/falsifications/` is a provisional path** that milestone 202 created and nothing reads.
   Whoever builds the sweep decides whether it stays there or moves. **Not built here**, on purpose:
   the runner filter is the missing capability and it now exists, but a kernel sweep still needs

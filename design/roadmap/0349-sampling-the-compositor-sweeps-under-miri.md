@@ -9,9 +9,7 @@ needs_person: no
 ---
 # 349. Sample `compositor`'s five remaining full-screen sweeps under Miri
 
-Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
-from milestone 238's block; numbered 2026-09-19 by milestone 433. **Premise re-checked 2026-09-19 and
-it holds exactly.** `crates/compositor/src/lib.rs` still has six `for y in 0..SCREEN_H` full-screen
+Premise re-checked 2026-09-19 and it holds exactly. `crates/compositor/src/lib.rs` still has six `for y in 0..SCREEN_H` full-screen
 sweeps (lines 888, 949, 1029, 1076, 1122 and 1141) and exactly one of them strides:
 `let stride = if cfg!(miri) { 37 } else { 1 };` at line 1074, with the completeness pin at line 1099.
 The other five are untouched, and `.github/workflows/undefined-behavior-check.yml` still carries
@@ -55,31 +53,20 @@ exhaustive loop was covering, since Miri finds bugs at the boundaries as often a
 Afterwards, run the check end to end and record the real number, which is the part the budget raise
 skipped.
 
-## Where it came from
+## What bounds the work
 
-Milestone 238's `## Follow-on`: *"Sample `compositor`'s six full-screen per-pixel sweeps under
-`cfg(miri)`, the way `glob`, `network_time_protocol`, `calendar` and `globally_unique_identifier_partition_table` already sample theirs. One was
-strided and fell from 44+ minutes to 57 seconds; the other five are untouched and are now the whole
-remaining cost of `script/undefined-behavior-check`. The budget was raised to 240 minutes instead of
-tuned, so the true end-to-end cost has never been measured."*
-
-The same block **refused** excluding `compositor` from the Miri run to make it fit. The reason
+Milestone 238 (two scheduled checks have never once succeeded,) **refused** excluding `compositor` from the Miri run to make it fit. The reason
 bounds this work. The crate has no `unsafe` today but is central system logic under active
 development, and an excluded crate is one where a future `unsafe` block is silently uncovered. So
 the answer has to be striding, not exclusion.
 
 ## Index row
 
-`script/undefined-behavior-check` runs the test suite under Miri, which is roughly three orders of
-magnitude slower than native, and `glob`, `network_time_protocol`, `calendar` and `gpt` already
-handle that by sampling their exhaustive loops under `cfg(miri)`. `compositor` has six full-screen
-per-pixel sweeps and one of them has been strided; it fell from over 44 minutes to 57 seconds. The
-other five are untouched and are now the whole remaining cost of the check. That check is currently
-affordable only because its budget was raised to 240 minutes rather than because its cost was
-reduced, so the true end-to-end cost has never been measured. A four-hour budget also decides how the
-check can ever be used, since at that price it is a scheduled job and can be nothing else, and the
-one data point says the available reduction is large. There is a second cost that bites a lane: a red
-Miri run takes up to four hours to say anything, and milestone 232's audit already recorded what
-happens to a slow check that cries wolf. The judgment is in choosing the stride, which must not skip
-an edge case the exhaustive loop was covering. Excluding `compositor` was refused and the reason
-bounds this: an excluded crate is one where a future `unsafe` block is silently uncovered.
+`script/undefined-behavior-check` runs the test suite under Miri, roughly three orders of
+magnitude slower than native. `glob`, `network_time_protocol`, `calendar` and `gpt` sample their
+exhaustive loops under `cfg(miri)`. `compositor` has six full-screen per-pixel sweeps and one is
+strided; it fell from over 44 minutes to 57 seconds. The other five are the whole remaining cost.
+The check is affordable only because its budget was raised to 240 minutes, so the true end-to-end
+cost is unmeasured, and a red run takes up to four hours to say anything. The judgment is the
+stride, which must not skip an edge case the exhaustive loop covered. Excluding `compositor` was
+refused: an excluded crate silently leaves a future `unsafe` block uncovered.

@@ -6,25 +6,14 @@ promoted_from: sub-tripwire-drift-accumulates-across-baseline-saves
 ---
 # 415. Sub-tripwire drift accumulates across baseline saves, and one architecture has no gate at all
 
-Items 1, 2 and 3 are built and item 4 is refused. Item 1 landed 2026-09-15 as
-commit `ba99c83`, item 2 on 2026-09-23 in PR #1126 under milestone 302 (a baseline records what it was saved against, and a stale one
-fails loudly). Item 3 landed on 2026-09-26 in
-PR #1375, as the report calef ruled for in §190 (must an icount baseline save record why it moved). Promoted from the proposal
-`sub-tripwire-drift-accumulates-across-baseline-saves`, filed 2026-09-15 by the baseline-audit lane,
-which calef asked for after PR #886 found a regression that had hidden under the 10% threshold.
-*(Number provisional until the merge queue lands it.)*
+Items 1, 2 and 3 are built and item 4 is refused. Item 1 landed as commit `ba99c83`. Item 2 landed in
+PR #1126 under milestone 302 (a baseline records what it was saved against, and a stale one fails
+loudly). Item 3 landed in PR #1375, as the report calef ruled for in §190 (must an icount baseline
+save record why it moved).
 
 calef ruled item 3 on 2026-09-26 as "3b", a weekly report of cumulative drift since a fixed
 anchor, not a gate; the ruling is quoted at the top of §190. Item 2 had been ruled under milestone
 302 on 2026-09-16, before this block's gate was written.
-
-The gate's history, kept because it explains the old token. It was `DECISION §190`, written up
-2026-09-19 by milestone 435 (forty-five milestones are gated on a decision nobody wrote down)'s slice-c
-lane because it named no section. An earlier clause read
-*"the first item is a one-line CI change that is owed already and needs nobody's permission"*, and
-item 1 landed on 2026-09-15 as `ba99c83`, which left the token more purely `DECISION`, not less.
-The live argument that it was still too strong for item 2 turned out to be moot: milestone 302's
-ruling already covered item 2, and the lane that raised §190 had not found it.
 
 Premise re-checked 2026-09-26. Item 1: `script/ci-build`'s bench entry still reads
 `script/bench --check && script/bench --riscv --check && script/bench --x86 --check`. Item 2:

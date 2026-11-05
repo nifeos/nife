@@ -284,7 +284,10 @@ fn mac_mdic() -> u64 {
 
 impl Hardware for SimulatedHardware {
     fn read(&mut self, offset: u64) -> u32 {
-        if offset == non_volatile_memory::FLASH_BASE_ADDR + non_volatile_memory::HSFSTS {
+        if offset
+            == non_volatile_memory::FLASH_BASE_ADDR
+                + non_volatile_memory::HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER
+        {
             if self.flash_pending > 0 {
                 if self.flash_pending != u32::MAX {
                     self.flash_pending -= 1;
@@ -321,7 +324,10 @@ impl Hardware for SimulatedHardware {
                 };
                 self.mac.insert(offset, keep);
             }
-            o if o == non_volatile_memory::FLASH_BASE_ADDR + non_volatile_memory::HSFSTS => {
+            o if o
+                == non_volatile_memory::FLASH_BASE_ADDR
+                    + non_volatile_memory::HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER =>
+            {
                 self.flash_write(value);
             }
             o if o == registers::STRAP => self.strap_writes.push(value),

@@ -9,9 +9,7 @@ needs_person: no
 ---
 # 334. Color and the pager: the spawn protocol's other two thirds
 
-Filed 2026-09-03 as an unnumbered proposal by the milestone 247 sweep,
-from milestone 40's block; numbered 2026-09-19 by milestone 433. **Premise re-checked 2026-09-19 and
-it holds.** DECISIONS §106 is still the only narrowing that shipped, `components/src/mdr.rs`'s
+Premise re-checked 2026-09-19 and it holds. DECISIONS §106 is still the only narrowing that shipped, `components/src/mdr.rs`'s
 module doc still says "No pager" for want of one line of input without the keyboard, and nothing
 in the spawn wiring tells a stage it ends at a real screen. No program in this tree colors its
 output.
@@ -53,31 +51,12 @@ contract.
 Left alone, this is a decision nobody meets until they try to write the sixth program that wants a
 screen, and by then there will be a habit rather than a protocol.
 
-## Where it came from
-
-Milestone 40's block: *"The other two thirds of §106's spawn-protocol narrowing: a bit telling a
-tail stage it ends at a real screen (color, the honest `isatty` replacement), and a way to grant
-one line of input without granting the keyboard (the pager). Both widen a protocol two programs
-agree on, so both are an architect's call."*
-
-`notes/documentation.md`'s "Where this goes next" is the only other record, and it heads its list with
-these two: *"DECISIONS §106 took the narrowing for a tail stage's primary output; it did not extend
-the same bit to 'tell this stage it ends at a real screen' ... or to granting one line of input
-without granting the keyboard. Both still want the wiring bit this entry originally scoped for all
-three."*
-
 ## Index row
 
-DECISIONS §106 narrowed the spawn protocol for a tail stage's primary output, which is what lets
-`doc <page>` render at the prompt with no `| wc` in front of it. It built the narrowest slice that
-unblocked that one command. The two untaken thirds of the original scope are decided, in
+DECISIONS §106 narrowed the spawn protocol for a tail stage's primary output, the narrowest slice
+that let `doc <page>` render at the prompt. The two untaken thirds are decided by
 [§302 (the screen fact, and one line of input)](../decisions/0302-the-screen-fact-and-one-line-of-input.md).
-The screen fact is the presence of a `WRITE`-only terminal capability: the honest
-capability-shaped replacement for `isatty`, and what color needs. One line of input without
-granting the keyboard is a one-shot badge served `OPERATION_READLINE` exactly once, which is what
-a pager needs. The first is what stops this system growing a dishonest `isatty`. Unix decides
-about color by asking the kernel what a file descriptor is attached to; a capability system
-says it properly as a capability the spawner grants. The second unblocks the pager outright.
-Holding the keyboard is exactly the authority a confined viewer should not have, the one-shot
-badge expresses the narrower thing, and `mdr` can stop rendering and start paging. Both widen a
-protocol two programs agree on, so both are an architect's, and both were ruled by one.
+The screen fact is the presence of a `WRITE`-only terminal capability, the capability-shaped
+replacement for `isatty`, and it is what color needs. One line of input without the keyboard is a
+one-shot badge served `OPERATION_READLINE` exactly once, and it is what a pager needs. Both widen a
+protocol two programs agree on, so an architect ruled both.

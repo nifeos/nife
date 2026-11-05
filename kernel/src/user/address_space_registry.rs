@@ -10,8 +10,8 @@ use super::*;
 /// [`crate::revoke::MAXIMUM_SPACES`], because every [`AddressSpace`] is in the revocation registry
 /// from build to drop and holds one entry here, so this table cannot fill while a space wanting an
 /// entry exists. That lets [`register_bound_address_space`] treat a full table as a broken
-/// invariant; the `const` assert keeps the two together. It is 21,904 bytes of `.bss` at 288 slots
-/// (`registry_footprint`); see notes/user-address-spaces.md.
+/// invariant; the `const` assert keeps the two together. Its size in `.bss` is
+/// `registry_footprint`; see notes/user-address-spaces.md.
 const MAXIMUM_USER_SPACES: usize = crate::revoke::MAXIMUM_SPACES;
 const _: () = assert!(MAXIMUM_USER_SPACES >= crate::revoke::MAXIMUM_SPACES);
 
@@ -127,7 +127,8 @@ pub const fn registry_footprint() -> usize {
 /// Create an address space **in and backed by** `region` (the `RETYPE_OBJ(ADDRESS_SPACE)` engine): the
 /// root page is retyped from it (pinning it, atomically with the carve), and the region becomes
 /// the space's table-and-record budget, exactly as for an exec-built space. `None` on an
-/// exhausted region, a full registry, or ASID exhaustion (unreachable; the type is honest).
+/// exhausted region, a full registry, or all 255 ASIDs live (reachable, since `MAXIMUM_SPACES` is
+/// 288).
 pub fn user_address_space_create(region: u64) -> Option<u64> {
     let root = crate::memory_region::retype_object_page(
         region,

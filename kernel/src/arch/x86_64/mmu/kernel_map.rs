@@ -94,7 +94,7 @@ static KERNEL_MMU: crate::sync::InterruptSafeMutex<()> =
 /// nothing here can silence the console.
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-/// design/naming/spelled-out-rulings.md.
+/// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
     let free_before = memory::free_page_frames();
     let root = memory::alloc()

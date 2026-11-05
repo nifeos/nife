@@ -34,7 +34,7 @@ quotation lines:
   `The history`, `Its history`.
 - A file in an appendix directory whose name ends in `history`, `timeline` or `changelog`.
 
-**Two halves, the shape of house_style.py and cap_abbreviation.py.** A count over `CEILING` fails,
+**Two halves, the shape of house_style.py and vendored_name_gates.py.** A count over `CEILING` fails,
 which guards `main`, where there is no merge base. A branch is also held to its merge base: summed
 over the files it changed, the count may not grow. That second half is the ratchet. Deleting a
 history sentence leaves slack, and the next change may not spend it. `--bank` lowers the ceiling.
