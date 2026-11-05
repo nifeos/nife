@@ -77,6 +77,9 @@ against the `lamfat` oracle and `fsck.fat`.
 
 Dependencies. None at run time. Dev only: `lamfat =0.4.3` and `ruzstd =0.9.1`, both MIT.
 
+Result of `script/crate-standalone`. One failure, in names: `LayoutError::LabelRefused` is
+provisional.
+
 Recommendation. Ready for review. The open questions are about how much API the first release
 publishes, not about whether the code is right.
 
