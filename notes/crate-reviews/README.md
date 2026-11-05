@@ -7,6 +7,10 @@ outgrows its section lives here, and the section links it.
   its open questions.
 - [`file-allocation-table-public-api.md`](file-allocation-table-public-api.md): every public item
   of `file_allocation_table` and its signature.
+- [`generational-table.md`](generational-table.md), [`designware-mobile-storage.md`](designware-mobile-storage.md),
+  [`jh7110-clock-and-reset.md`](jh7110-clock-and-reset.md), [`block-roster.md`](block-roster.md) and
+  [`counter-frequency-contract.md`](counter-frequency-contract.md): one package each, with its
+  names, proposed items and open questions.
 
 *Name: provisional, minted by lane milestone/813-review-package. The directory follows §212 (a
 prose budget)'s siting default, `notes/X/` beside `notes/X.md`.*
