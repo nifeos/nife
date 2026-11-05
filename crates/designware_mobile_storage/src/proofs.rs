@@ -36,7 +36,7 @@ fn the_scratch_range_never_touches_a_partition_or_sector_zero() {
 }
 
 /// A FIFO step never moves more than is owed, and a write step never more than the FIFO has
-/// room for, whatever `STATUS` says.
+/// room for, whatever `STATUS_REGISTER` says.
 ///
 /// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.a_queue_step_never_overruns_the_queue_or_the_buffer.patch`
 #[kani::proof]
