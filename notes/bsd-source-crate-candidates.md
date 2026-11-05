@@ -71,8 +71,8 @@ Ties break on D, then F, then T, then fewer lines. One line each:
    machines. GitHub code search finds SDHCI drivers inside at least six Rust kernels.
 5. No crate exists. Microsoft's RSS specification publishes verification vectors. Nothing in nife
    spreads receive queues yet.
-6. The `libsa` file is already freestanding. QEMU's user network serves TFTP. nife boots over TFTP
-   through firmware (milestone 260, boot xenon over the network), so it has no consumer for a client of its own.
+6. The `libsa` file is already freestanding. QEMU's user network serves TFTP. Milestone 260 (boot
+   xenon over the network) uses the firmware's TFTP, so nife has no consumer for a client of its own.
 7. GitHub code search finds `pvclock_vcpu_time_info` reimplemented in at least six Rust kernels and
    VMMs. The test needs a KVM host, so TCG and HVF cannot check it.
 8. nife's frame allocator is its own design, so the fit is weak.
