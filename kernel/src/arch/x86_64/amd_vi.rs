@@ -609,8 +609,10 @@ pub fn is_active() -> bool {
 
 /// The unit that serves `rid`, when it is one this kernel brought up.
 fn owner_index(rid: u32) -> Option<usize> {
-    let ivrs = (*IVRS.lock())?;
-    match ivrs.owner_index(rid as u16) {
+    // Asked under the lock, through a reference: `owner_index` only reads the recorded table, and
+    // copying the whole table out for one lookup costs several copies of it in an unoptimised frame.
+    let guard = IVRS.lock();
+    match guard.as_ref()?.owner_index(rid as u16) {
         Ok(Some((i, _))) => Some(i),
         _ => None,
     }
