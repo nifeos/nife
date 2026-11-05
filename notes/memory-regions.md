@@ -210,6 +210,63 @@ almost all carved into job regions, and the objects live in those, so a count of
 would say its threads cost nothing. `Children` is the region's alone, since it is exactly the pages
 the subtree counts are drawn from.
 
+## Subtree ceilings
+
+Every kind of kernel object lives in a fixed-size table the whole machine shares: threads,
+processes, address spaces, rendezvous, notifications, timers, and the region table itself. A
+region's page count alone bounds how many objects one program can make, and a page is cheap, so the
+region tree also bounds each table by subtree.
+
+Each region carries two counts per kind, for the seven object kinds and for regions split below it:
+
+- `live`: the objects of that kind in its subtree right now, retyped from it or from any live
+  region below it, and for regions, the live regions below it.
+- `ceilings`: the most that subtree may hold at once. A root's comes from its creator. A split
+  child's is a sixteenth of its root's, so every split region in one tree has the same ceilings,
+  and none can raise what it inherited. Each live count is bounded by every ancestor's ceiling, so
+  sixteen full children fill their root and no more.
+
+A creation is refused when the region or any ancestor is at its ceiling for that kind. The check is
+two walks of the parent chain under the one `REGIONS` hold that also carves the page: the first
+decides, the second commits, so a refusal moves no page, no pin and no count. The caller sees
+`OutOfMemory`, the same answer as an empty region, and the kernel prints one line at most once a
+second naming the kind, the region asked and the region whose ceiling refused it, which is how a
+person tells the two apart.
+
+The counts follow table occupancy, not creations:
+
+- A thread's slot frees at its reap, so `Threads::remove` releases a thread retyped from a region.
+- A lent address space's slot frees at its drop, so `AddressSpace::drop` releases it.
+- Rendezvous, notifications, timers and processes leave their tables only when their region is
+  reclaimed. `claim_for_destroy` gives their counts back: a claimable region has no children, so
+  its own counts and its one region slot leave every ancestor in the same borrow. A release on a
+  dead name afterwards does nothing.
+- An insert refused after its page was retyped releases the count it took.
+
+The progenitor's construction budget is made with `memory_region::progenitor_ceilings`: every
+table's capacity less an eighth the kernel keeps, written in the `MAXIMUM_*` constants so the
+ceilings follow a resize.
+
+Kani proves the counting in `crates/memory_regions` (`proofs.rs`): a refused carve or split moves
+nothing, every live count equals what its subtree holds and never passes a ceiling, and reclaiming a
+subtree gives every count back. `subtree_ceiling_tests` fills a region to every ceiling through the
+real `RETYPE_OBJ` and `SPLIT`, then builds a child in a sibling.
+
+Prior art. Linux bounds threads per cgroup with the `pids` controller and per user with
+`RLIMIT_NPROC`; both are per-group counters checked at creation, which is the shape here. seL4 has no
+global object tables: every object is memory retyped from an untyped capability, so memory is the
+only budget. nife sits between them: its tables are fixed, so a subtree needs a count beside its
+pages until the tables become memory a region pays for.
+
+Limits that remain:
+
+- Regions that share one budget share its sixteenth. Every job a session starts is a region split
+  from one job pool, so one job can use the whole pool's share until it ends.
+- A service that creates kernel objects on a client's behalf, out of its own region, spends its own
+  ceiling rather than the client's.
+- Regions the kernel creates as roots (its services' budgets, grant endpoints made on request) have
+  no ceiling and draw on the kernel's reserve.
+
 ## BUGS
 
 - **`Error::OutOfMemory` collapses three causes into one code.** `SPLIT` returns it when the
