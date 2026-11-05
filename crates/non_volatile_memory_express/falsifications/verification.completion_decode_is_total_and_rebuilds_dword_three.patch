@@ -1,0 +1,20 @@
+Falsifies `non_volatile_memory_express::verification::completion_decode_is_total_and_rebuilds_dword_three`.
+
+The defect: `Completion::from_dwords` reads the status field from bit 16, one bit low, so the phase tag
+becomes the status's lowest bit and every fresh completion on the first lap looks like an error.
+
+Expected to fail: the harness's `assert!(completion.status < 1 << 15)`.
+
+diff --git a/crates/non_volatile_memory_express/src/completion.rs b/crates/non_volatile_memory_express/src/completion.rs
+index f5750f02c..337d95bb7 100644
+--- a/crates/non_volatile_memory_express/src/completion.rs
++++ b/crates/non_volatile_memory_express/src/completion.rs
+@@ -35,7 +35,7 @@ impl Completion {
+             submission_queue_id: (dw[2] >> 16) as u16,
+             cid: dw[3] as u16,
+             phase: dw[3] & (1 << 16) != 0,
+-            status: (dw[3] >> 17) as u16,
++            status: (dw[3] >> 16) as u16,
+         }
+     }
+ }
