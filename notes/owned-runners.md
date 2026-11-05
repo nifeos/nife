@@ -111,8 +111,8 @@ the flip to see whether the image is ready, and after it to see the pool's healt
 `merge_group` and on `push` to `main` only. It holds two probe jobs, the strict image checks
 and the dry run on the owned side, then an isolation test:
 
-- `canary-owned` on `[nife-owned-x86_64]`, with `continue-on-error: true`, so a failure cannot
-  block the queue.
+- `canary-owned` on `[nife-owned-x86_64]`, with no `continue-on-error`, so a FINDING shows the job
+  red. It is not a required check, so a failure cannot block the queue.
 - `canary-hosted` on `ubuntu-26.04`, the reference.
 
 Both probe jobs print the runner name, hostname and `id`, tests that `/dev/kvm` is writable, prints the
@@ -127,7 +127,8 @@ Neither job name is a required check; do not add either to the ruleset.
 
 `canary-owned` also checks out the repository, installs the pinned toolchain with
 `helpers/rustup-retry.sh toolchain install`, and then runs `helpers/owned-image-probe.sh` for each
-of four checks. Any `FINDING` line fails the job, so a job image that the stage 1 jobs cannot use
+of four checks, through `helpers/owned-canary-image.sh`, which exits 1 for a failing probe or any
+`FINDING` line (`helpers/owned-canary-image-selftest.sh` proves both ways). Any `FINDING` line fails the job, so a job image that the stage 1 jobs cannot use
 shows red where an earlier canary showed green. The checks are:
 
 - `tools`: `rustup` and `cargo` are on `PATH`.
