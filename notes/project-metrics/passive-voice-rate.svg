@@ -59,9 +59,9 @@
 <path class="seg s0" d="M567.5,324.0 V120.5 Q567.5,116.5 571.5,116.5 H593.3 Q597.3,116.5 597.3,120.5 V324.0 Z"><title>2026W44, per 1,000 words: 7.8</title></path>
 <text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W44</text>
 <text class="fg val" x="582.4" y="111.5" font-size="10" text-anchor="middle">7.8</text>
-<path class="seg s0" d="M612.6,324.0 V122.9 Q612.6,118.9 616.6,118.9 H638.3 Q642.3,118.9 642.3,122.9 V324.0 Z"><title>2026W45, per 1,000 words: 7.7</title></path>
+<path class="seg s0" d="M612.6,324.0 V126.1 Q612.6,122.1 616.6,122.1 H638.3 Q642.3,122.1 642.3,126.1 V324.0 Z"><title>2026W45, per 1,000 words: 7.6</title></path>
 <text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W45</text>
-<text class="fg val" x="627.5" y="113.9" font-size="10" text-anchor="middle">7.7</text>
+<text class="fg val" x="627.5" y="117.1" font-size="10" text-anchor="middle">7.6</text>
 <rect class="s0" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">per 1,000 words</tspan></text>
 <line x1="672" y1="88" x2="683" y2="88" stroke="#D55E00" stroke-width="1.5" stroke-dasharray="5 4"/>

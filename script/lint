@@ -243,6 +243,11 @@ echo "==> script/verify --parallel forks the shards, joins their verdicts, and k
 # waiting for the slot its parent holds) is proved against a one-slot fixture under a deadline,
 # because a deadlock never returns on its own.
 python3 helpers/verify_parallel.py --selftest >/dev/null
+echo "==> script/crate-move stages a move as the runbook says"
+# notes/crate-move.md: the dry run deletes Name: blocks, rewrites falsification patches for -p1 and
+# fills the template pins. The selftest drives those transforms on fixtures, with no tree and no
+# network.
+python3 helpers/crate_move.py --selftest >/dev/null
 # helpers/verify-parallel-selftest.sh proves the shards, the join and the one slot; the heavy-job
 # slots section above runs it, so it is not run twice.
 
@@ -1219,6 +1224,16 @@ if git grep -nE '^(<{7}|={7}|>{7})( |$)' -- \
     exit 1
 fi
 rm -f "/tmp/nife-conflict-markers.$$"
+
+echo "==> no [patch] section reaches main"
+# lint-quick
+# A crate that has moved to its own repository is pinned as { version, git, rev } at its tag's commit
+# (milestone 857 (crates released on their own), fork 2; notes/crate-move.md). A [patch] redirects a dependency for the whole build
+# and is a local development aid, so none lands, in any manifest or .cargo/config.toml. The one entry
+# allowed is a path into vendor/, code this tree carries. helpers/patch-section-check-selftest.sh
+# plants each form and a clean tree.
+helpers/patch-section-check-selftest.sh >/dev/null
+helpers/patch-section-check.sh
 
 # Every `uses:` in .github/ is pinned to a full 40-hex commit SHA, with the tag in a trailing
 # comment. A tag is a mutable pointer: whoever controls the action's repository can move `v2` to new
@@ -3702,6 +3717,7 @@ echo "==> owned-runner jobs run only for the queue and main, and no base-token j
 # lint-quick
 python3 helpers/owned_runner_check.py --selftest >/dev/null
 python3 helpers/owned_runner_check.py
+helpers/owned-canary-image-selftest.sh
 # Milestone 640 (a gate is not evidence until somebody has watched it fail), provisional: every
 # workflow cites a run where it went red (or fired) for the reason it exists, or says `never`, and
 # only a workflow main already had when this landed (2026-10-04) may say `never`, which is read from

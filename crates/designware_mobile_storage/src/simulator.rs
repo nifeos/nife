@@ -1,6 +1,6 @@
 //! A simulated controller with a card behind it, for the host tests. QEMU has no `DW_mshc` model
 //! for any RISC-V machine (its one `dw_mmc`-shaped device, on some Arm boards, is unreachable from
-//! the machines this tree boots), so the tests run the real driver against this and the bench step
+//! a RISC-V guest), so the tests run the real driver against this and the bench step
 //! checks this against silicon. It models only the contract the driver relies on, as the databook
 //! and OpenBSD describe it: self-clearing `CONTROL` resets, the `CMD` start bit, a FIFO raising
 //! `RXDR`, `TXDR`, `DTO` and `ACD`, `STATUS_REGISTER` fill and busy, `CARDTHRCTL` above the FIFO ending in
@@ -414,9 +414,9 @@ impl SimulatedHostController {
     }
 
     fn card_identification(&self) -> [u32; 4] {
-        // Manufacturer 0x1b, product "NIFE1", serial 0x1234_5678.
+        // Manufacturer 0x1b, product "TEST1", serial 0x1234_5678.
         let mut r = [0x1234_5678u32 << 24, 0x1234_5678 >> 8, 0, 0x1b00_0000];
-        for (i, b) in b"NIFE1".iter().enumerate() {
+        for (i, b) in b"TEST1".iter().enumerate() {
             let bit = 96 - 8 * i as u32;
             r[(bit / 32) as usize] |= u32::from(*b) << (bit % 32);
         }

@@ -26,7 +26,9 @@ packages of three crates name its effects.
 Not run, and so not claimed: the stranger test, coverage, mutation, `cargo-semver-checks` (a first
 release has no baseline) and the publish rehearsal. The template's `check`, `proofs` and `weekly`
 workflows did not run either, because no repository exists for any of these seven. The stranger
-record lives in the crate repository, in `docs/stranger-test.md`.
+record lives in the crate repository, in `docs/stranger-test.md`. The `file_allocation_table`
+package is the exception: it ran the README's commands in a scratch copy and `cargo-semver-checks`
+against itself.
 
 ## What is the same for all seven
 
@@ -38,8 +40,7 @@ record lives in the crate repository, in `docs/stranger-test.md`.
   publication. Nothing here publishes.
 - Dependencies in nife today. Every consumer reaches these crates by a path dependency with a
   `version` key (the packet's dependents tables list the manifests). None is a `git` and `rev`
-  dependency yet, so each move converts every consumer's line to the ruled form. The one exception
-  that lacks even the `version` is `fuzz/Cargo.toml`'s line for `file_allocation_table`.
+  dependency yet, so each move converts every consumer's line to the ruled form.
 - Unsafe. No crate has an `unsafe` site. Each is pure computation behind a caller's volatile
   accesses.
 - Template status. [Milestone 887 (crate repositories share one CI template)](../design/roadmap/0887-crate-repositories-share-one-ci-template.md)
@@ -59,41 +60,28 @@ record lives in the crate repository, in `docs/stranger-test.md`.
 
 ## `file_allocation_table`, step 2
 
-Name and version. `file_allocation_table` `0.1.0`. The architect ratified the name, with FAT spelled out. All
-389 `Name:` blocks read ratified.
+The whole package, with the signature list, the stranger run and seven open questions, is
+[crate-reviews/file-allocation-table.md](crate-reviews/file-allocation-table.md). It covers the
+crate as #3233 leaves it, with no reference to nife.
 
-API. FAT12, FAT16 and FAT32 with no I/O. Reading: `BootSector`, `Volume`, `Directory` with short
-and long names, `FileReader`, `MasterBootRecord` with a partition-restricted device, lookup by path.
-Writing: `WritableVolume`, `FileWriter`, `FormatOptions` and `FormatPlan` (the general format), a
-`Clock` trait and `VolumeLabel`. The caller supplies `SectorDevice` and `WritableSectorDevice`. A
-second, fixed-shape writer, `VolumeLayout` with the `efi_system_partition` constants, lays out an EFI
-system partition holding one boot file.
+Name and version. `file_allocation_table` `0.1.0`, ratified with FAT spelled out. Every `Name:`
+block reads ratified except `LayoutError::LabelRefused`, which is provisional.
 
-Proofs. 31 harnesses over the table codec, boot sector, directories, long names, file reads, the
-write cursor, allocation, labels, times and the partition table. All 31 prove, and all 31 patches fail
-their harness. Twelve integration tests compare against the `lamfat` oracle and two macOS images.
+API. FAT12, FAT16 and FAT32 with no I/O: `Volume` reads, `WritableVolume` writes with a `Clock`,
+`FormatPlan` formats any size, and `VolumeLayout` lays out a FAT32 EFI system partition holding one
+boot file under a label the caller supplies. The caller implements `SectorDevice` and
+`WritableSectorDevice`.
 
-Dependencies. None at run time. Dev only: `lamfat =0.4.3` (MIT) and `ruzstd =0.9.1` (MIT), both
-from the registry and pinned. Nife's `deny.toml` allows `lamfat` to this crate alone, so the rule moves
-with it.
+Proofs. 31 harnesses, each with a falsification patch. 300 tests; the integration tests check
+against the `lamfat` oracle and `fsck.fat`.
 
-Provenance. Nothing outstanding. The crate follows Microsoft's FAT specification, and
-milestone 1019 does not list it.
+Dependencies. None at run time. Dev only: `lamfat =0.4.3` and `ruzstd =0.9.1`, both MIT.
 
-Result of `script/crate-standalone`. Clean: no failure in manifest, files, citations, names, build,
-tests, proofs or patches.
+Result of `script/crate-standalone`. One failure, in names: `LayoutError::LabelRefused` is
+provisional.
 
-Outstanding before the move.
-
-| item | owner |
-|---|---|
-| Public docs say "In nife the clock supplies UTC" in `lib.rs`, `time.rs` and the README's limitations. State the rule without naming nife. | move lane |
-| `fuzz/Cargo.toml` names the crate by path with no `version`. | move lane |
-| The ignored test `a_third_party_driver_reads_it` writes to `../../target/...`, outside the crate. | move lane |
-| `deny.toml`'s `lamfat` wrapper rule and the template's `deny.toml` need the same exception in the new repository. | move lane |
-| The architect decides whether the first release carries the EFI-system-partition writer (`VolumeLayout`), whose volume label is the fixed text `NIFE` (`volume.rs`). | architect |
-
-Recommendation. Ready for review. The items above are edits and one API judgment, not blockers.
+Recommendation. Ready for review. The open questions are about how much API the first release
+publishes, not about whether the code is right.
 
 ## `extensible_host_controller_interface`, step 3
 

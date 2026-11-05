@@ -62,9 +62,9 @@
 <path class="seg s0" d="M567.5,324.0 V179.9 Q567.5,175.9 571.5,175.9 H593.3 Q597.3,175.9 597.3,179.9 V324.0 Z"><title>2026W44, debt-paydown share: 33.4</title></path>
 <text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W44</text>
 <text class="fg val" x="582.4" y="170.9" font-size="10" text-anchor="middle">33.4</text>
-<path class="seg s0" d="M612.6,324.0 V133.4 Q612.6,129.4 616.6,129.4 H638.3 Q642.3,129.4 642.3,133.4 V324.0 Z"><title>2026W45, debt-paydown share: 43.9</title></path>
+<path class="seg s0" d="M612.6,324.0 V82.8 Q612.6,78.8 616.6,78.8 H638.3 Q642.3,78.8 642.3,82.8 V324.0 Z"><title>2026W45, debt-paydown share: 55.3</title></path>
 <text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W45</text>
-<text class="fg val" x="627.5" y="124.4" font-size="10" text-anchor="middle">43.9</text>
+<text class="fg val" x="627.5" y="73.8" font-size="10" text-anchor="middle">55.3</text>
 <line class="tr" x1="86.5" y1="175.6" x2="131.6" y2="187.6" stroke-width="2" stroke-dasharray="4 3"/>
 <line class="tr" x1="131.6" y1="187.6" x2="176.7" y2="186.4" stroke-width="2" stroke-dasharray="4 3"/>
 <line class="tr" x1="176.7" y1="186.4" x2="221.8" y2="190.6" stroke-width="2" stroke-dasharray="4 3"/>
@@ -76,7 +76,7 @@
 <line class="tr" x1="447.2" y1="166.4" x2="492.2" y2="152.6" stroke-width="2"/>
 <line class="tr" x1="492.2" y1="152.6" x2="537.3" y2="144.4" stroke-width="2"/>
 <line class="tr" x1="537.3" y1="144.4" x2="582.4" y2="147.9" stroke-width="2"/>
-<line class="tr" x1="582.4" y1="147.9" x2="627.5" y2="144.4" stroke-width="2"/>
+<line class="tr" x1="582.4" y1="147.9" x2="627.5" y2="140.7" stroke-width="2"/>
 <circle class="trd" cx="86.5" cy="175.6" r="3"><title>2026W33, trailing share, fewer than 13 weeks: 33.5</title></circle>
 <circle class="trd" cx="131.6" cy="187.6" r="3"><title>2026W34, trailing share, fewer than 13 weeks: 30.8</title></circle>
 <circle class="trd" cx="176.7" cy="186.4" r="3"><title>2026W35, trailing share, fewer than 13 weeks: 31.0</title></circle>
@@ -89,7 +89,7 @@
 <circle class="trd" cx="492.2" cy="152.6" r="3"><title>2026W42, trailing 13-week share: 38.7</title></circle>
 <circle class="trd" cx="537.3" cy="144.4" r="3"><title>2026W43, trailing 13-week share: 40.5</title></circle>
 <circle class="trd" cx="582.4" cy="147.9" r="3"><title>2026W44, trailing 13-week share: 39.7</title></circle>
-<circle class="trd" cx="627.5" cy="144.4" r="3"><title>2026W45, trailing 13-week share: 40.5</title></circle>
+<circle class="trd" cx="627.5" cy="140.7" r="3"><title>2026W45, trailing 13-week share: 41.3</title></circle>
 <line class="tr" x1="672" y1="69" x2="683" y2="69" stroke-width="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">trailing 13-week share</tspan></text>
 <line class="tr" x1="672" y1="88" x2="683" y2="88" stroke-width="2" stroke-dasharray="4 3"/>

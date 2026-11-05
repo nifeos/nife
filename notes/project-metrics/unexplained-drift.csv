@@ -1,8 +1,8 @@
 week,unexplained_drift_max_pct_aarch64,unexplained_drift_rows_over_5pct_aarch64,unexplained_drift_max_pct_riscv64,unexplained_drift_rows_over_5pct_riscv64,unexplained_drift_max_pct_x86_64,unexplained_drift_rows_over_5pct_x86_64
 2026W39,0.16,0,0.38,0,1.86,0
 2026W40,0.06,0,0.87,0,0.26,0
-2026W41,1.93,0,1.43,0,1.97,0
+2026W41,2.39,0,1.43,0,1.97,0
 2026W42,2.39,0,0.80,0,0.25,0
-2026W43,3.07,0,0.12,0,0.20,0
-2026W44,1.23,0,0.11,0,0.22,0
-2026W45,1.24,0,0.11,0,0.22,0
+2026W43,0.75,0,0.12,0,0.20,0
+2026W44,0.74,0,0.11,0,0.22,0
+2026W45,0.74,0,0.11,0,0.22,0

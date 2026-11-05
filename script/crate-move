@@ -1,0 +1,71 @@
+#!/bin/sh
+# script/crate-move: stage a crate's move to a repository of its own, as a dry run.
+#
+#     script/crate-move --dry-run --into <empty dir> <crate>
+#     script/crate-move --dry-run --into <dir> --no-build <crate>        # the static half, seconds
+#     script/crate-move --dry-run --into <dir> --template <checkout> --template-rev v7 <crate>
+#
+# Name: provisional, minted 2026-11-05 (UTC) for milestone 1034 (a runbook for moving a crate out
+# of nife), a maintainer decision. Named for the step of notes/crate-move.md it stands in for.
+#
+# **Why this exists.** `script/crate-standalone` asks whether a crate would stand alone and builds
+# a throwaway copy. A move needs more than that answer: the crate repository's first tree, with the
+# shared template's scaffold and its callers pinned, the `Name:` blocks deleted (git history in this
+# tree is their only record), and the falsification patches rewritten for `-p1`. The pilot's move
+# did those by hand and spent its first CI runs finding what it missed. This builds that tree
+# locally and runs the template's own cheap checks on it, so the findings arrive before a repository
+# exists.
+#
+# **What it does**, in order:
+#
+# 1. Fetches the template, `nifeos/crate-workflows`, at its newest `v*` release (or
+#    `--template-rev`), by a fresh clone into a temporary directory, or from `--template`, a local
+#    checkout it only reads (`git archive`).
+# 2. Copies the crate's tracked files into `--into`, which must be empty or absent.
+# 3. Adds the template's `scaffold/`: the callers go to `.github/workflows/` with `@PINS@` replaced
+#    by the release's commit, `ci.yml` gets the crate's targets (docs.rs `targets`, else the three
+#    bare-metal ones) and `allow-unpublished: true` for the soak. A file the crate already carries
+#    wins over the scaffold's, and says so.
+# 4. Deletes every `Name:` block (`crate_release.strip_name_blocks`), rewrites each falsification
+#    patch from `a/crates/<crate>/` to `a/` and drops the block lines from its hunks, and sets
+#    `repository` in `Cargo.toml`.
+# 5. Unless `--no-build`: writes `Cargo.lock`, runs the host tests and builds each target at the
+#    manifest's `rust-version`.
+# 6. `git init` and `git add --all` in the staged tree, so the checks that read `git ls-files` see
+#    what a push would carry. Nothing is committed.
+# 7. Runs the template's cheap checks from the pinned revision (standalone, prose, ratchets,
+#    naming, orphan modules, links, falsification records) plus two it lacks: citations of this
+#    tree, and the word `nife` anywhere in the staged files.
+# 8. Prints the nife-side follow-up: each consumer manifest's replacement line, and every other
+#    tracked file outside `design/` and `notes/` that names the crate.
+#
+# It never creates a repository, pushes, tags, publishes or edits this tree. Exit 0 when every check
+# passed, 1 when the staged tree has findings (the tree is kept either way), 2 on a usage error.
+#
+# # EXAMPLES
+#
+#     $ script/crate-move --dry-run --into "$TMPDIR/fat" --no-build file_allocation_table
+#     crate-move: file_allocation_table, a dry run into /tmp/fat
+#       ok   template: https://github.com/nifeos/crate-workflows at v7 (ce603f5...)
+#       ok   copy: 116 tracked files of crates/file_allocation_table
+#       ...
+#
+# # BUGS
+#
+# - Kani does not run. `script/crate-standalone` proves the harnesses and replays each patch on
+#   this tree's copy; the staged tree's `-p1` patches are checked for form and for applying
+#   (`falsify.py --check`), not replayed.
+# - The template's heavy jobs (coverage, clippy, rustdoc, supply chain, Miri, mutation) do not run;
+#   the repository's first CI run is their first run.
+# - The `Name:` block reader drops a block's continuation lines only when the block starts inside a
+#   patch hunk; a hunk that opens mid-block keeps the tail and fails `falsify.py --check`.
+# - There is no live mode. Creating the repository, pushing and tagging are the runbook's steps,
+#   taken by hand, because each is a person's or needs one's approval.
+set -eu
+case " $* " in
+*" --selftest "*) exec python3 "$(dirname "$0")/../helpers/crate_move.py" --selftest ;;
+*" --no-build "*) ;;
+*) . "$(dirname "$0")/../helpers/heavy-slot.sh" ;;
+esac
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+exec python3 "$ROOT/helpers/crate_move.py" "$ROOT" "$@"
