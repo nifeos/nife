@@ -209,7 +209,7 @@ Parts 1 and 2 only. Each of these was checked against the tree on 2026-09-19, on
   `riscv64.rs` and `x86_64.rs`, which the `verification::` exclusion does match. Two mutants are an
   exception the check did not predict. The finding is the concurrent census-delta lane's rather
   than this one's: a `const` inside such a block gets no module path in its mutant name. So a
-  module-path regex cannot reach it. `x86_64.rs:314` is the one in this crate, recorded as a gap;
+  module-path regex cannot reach it. `N` in `crates/machine_discovery/src/x86_64.rs` is the one in this crate, recorded as a gap;
   that lane measured three tree-wide and filed a proposal for the general fix, whose number is
   minted at merge like every other.
 

@@ -34,4 +34,29 @@ for status in MARKER PREFLIGHT MODELS TRIPWIRE UNATTRIBUTABLE OTHER; do
 	esac
 	[ "$(printf '%s\n' "$got" | wc -l)" -eq 1 ] || { echo "$me: $status produced more than one line" >&2; exit 1; }
 done
+
+# A failing lint job is named by the sections the run's summary lists, not by the last `==>` line,
+# which is always the final section. Timestamps prefix every line of a GitHub log.
+fn="$(awk '/^lint_failure_marker\(\) \{/ {on=1} on {print} on && /^\}/ {exit}' "$script")"
+[ -n "$fn" ] || { echo "$me: lint_failure_marker is gone from script/ci-log-baseline; update this test" >&2; exit 1; }
+eval "$fn"
+work="$(mktemp -d "${TMPDIR:-/tmp}/ci-log-baseline-selftest.XXXXXX")"
+trap 'rm -rf "$work"' EXIT
+ts=2026-11-04T01:02:03.4567890Z
+{
+	printf '%s ==> spelling\n%s spelling: clean\n' "$ts" "$ts"
+	printf '%s ==> sh -n (does the dev machine'"'"'s own /bin/sh parse every script)\n' "$ts"
+	printf '%s lint: 2 of 134 sections failed. Each one'"'"'s own output is above its name'"'"'s ==> line:\n' "$ts"
+	printf '%s   the section list (script/lint'"'"'s sections are a reviewed interface) (exit 1)\n' "$ts"
+	printf '%s   spelling (exit 1)\n' "$ts"
+	printf '%s ==> script/kani-install: an installed pin is not reinstalled\n' "$ts"
+} >"$work/failed.log"
+got="$(lint_failure_marker "$work/failed.log")"
+want="==> the section list (script/lint's sections are a reviewed interface); ==> spelling"
+[ "$got" = "$want" ] || { echo "$me: a failed lint log was named '$got', want '$want'" >&2; exit 1; }
+printf '%s ==> first\n%s ==> hung here\n' "$ts" "$ts" >"$work/hung.log"
+got="$(lint_failure_marker "$work/hung.log")"
+[ "$got" = "==> hung here" ] || { echo "$me: a log with no summary was named '$got', want the last ==> line" >&2; exit 1; }
+printf '%s nothing\n' "$ts" >"$work/none.log"
+[ -z "$(lint_failure_marker "$work/none.log")" ] || { echo "$me: a log with no marker was named" >&2; exit 1; }
 echo "$me: ok"

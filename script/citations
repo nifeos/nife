@@ -654,6 +654,9 @@ if mode == "--ratchet":
     EXCLUDE = (":!vendor/", ":!patches/", ":!*.lock", ":!*.log", ":!script/citations",
                ":!design/roadmap/README.md", ":!notes/project-metrics/baseline-drift.md",
                ":!notes/dependency-census/dependencies.tsv",
+               # helpers/lint-section-index.tsv copies each script/lint section's name exactly, and
+               # a name may cite a section or milestone; a gloss there would break the copy.
+               ":!helpers/lint-section-index.tsv",
                # The terminal replay harness's expected screens (milestone 705 (the graphical
                # terminal runs full-screen programs)'s step 0a) join the captured log for the same
                # reason: a verbatim capture of what a program painted, not prose anybody wrote.

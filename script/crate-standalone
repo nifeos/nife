@@ -87,6 +87,11 @@ root, args = sys.argv[1], sys.argv[2:]
 kani = "--no-kani" not in args
 keep = "--keep" in args
 crates = [a for a in args if not a.startswith("--")]
+if kani:
+    # One cargo kani at a time, but one proof can reach 20 GiB: weigh it against the machine's pool.
+    sys.path.insert(0, os.path.join(root, "helpers"))
+    import heavy_slot
+    heavy_slot.take_kani(1, "crate-standalone")
 if not crates or any(a not in ("--no-kani", "--keep") for a in args if a.startswith("--")):
     sys.exit("usage: script/crate-standalone [--no-kani] [--keep] <crate>...")
 

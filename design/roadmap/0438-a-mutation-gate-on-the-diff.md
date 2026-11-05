@@ -65,7 +65,7 @@ glob and wearing different clothes again. The line is `const N: usize = V1_LEN +
 `#[cfg(kani)]` module that `cargo test` never compiles, so both mutants survive by construction.
 `.cargo/mutants.toml`'s `exclude_re = ["verification::"]` matches the mutant name, and a `const`
 gets no module path in its name, so the regex cannot see it. Three such mutants exist tree-wide
-today; the third is `network_time_protocol/src/lib.rs:1323`. This has no home yet and is proposed
+today; the third is `PROVED_NS` in `crates/network_time_protocol/src/lib.rs`. This has no home yet and is proposed
 in `design/roadmap/0492-a-const-in-a-proof-module-escapes-its-exclusion.md`.
 
 ## Measurement 2: what it costs, which is not the objection

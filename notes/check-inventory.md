@@ -134,10 +134,10 @@ checks that gate a pull request)); the measurements are 2026-09-03's.*
 | `journeys --check` | `script/lint` | yes | green |
 | `apropos`, `catch-up` | **nothing** | no | tools, no verdict |
 
-`script/lint` is one required check carrying 42 sub-checks (ten clippy passes and 32 others;
-the list is its own `==>` lines, and `grep -c '^echo "==>' script/lint` is the derivation, since the
-number written here has already been stale once). They all block, because it exits on the first
-failure. That
+`script/lint` is one required check carrying 136 sections (`helpers/lint-section-index.tsv` lists
+them, and `grep -c '^echo "==>' script/lint` is the derivation, since a number written here goes
+stale). They all block: it runs every section and fails if any one failed, and its summary names
+each failed section. That
 concentration is worth knowing: a slow or wrong sub-check there stalls every lane at once, which is
 why three have been deleted rather than fixed.
 
