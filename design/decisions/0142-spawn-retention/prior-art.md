@@ -2,9 +2,8 @@
 
 An appendix to [§142 (what a spawner retains over a child after
 `START`)](../0142-spawn-retention.md): what seL4, Genode, Zircon, L4Re and QNX let a spawner keep,
-quoted from their own documentation, and the survey table. Moved out of that page on 2026-10-12
-(UTC) under [§212 (a prose budget)](../0212-a-prose-budget-for-every-document.md). The main page is
-complete without it; this file exists to verify or challenge it.
+quoted from their own documentation. The main page carries the survey table and is complete
+without this file, which exists to verify or challenge it.
 
 ## Prior art, fetched rather than recalled
 
@@ -95,19 +94,3 @@ process or the job. Zircon retains a handle and refuses to point it at a thread.
 > Source: [`kill()`, QNX Neutrino Library
 > Reference](https://www.qnx.com/developers/docs/8.0/com.qnx.doc.neutrino.lib_ref/topic/k/kill.html)
 > (fetched 2026-09-03)
-
-
-### The survey in one line each
-
-| System | What the spawner retains | Granularity | Ends a running child? |
-|---|---|---|---|
-| seL4 | whatever caps it did not delete, the TCB cap among them | thread | yes, `Suspend` |
-| Genode | the child's PD-session capability, for life | component | yes, destruct |
-| Zircon | a process or job handle with `ZX_RIGHT_DESTROY` | process/job, **never thread** | yes, and refuses at the thread |
-| L4Re | the thread/task capability, plus the delete right | thread or task | yes, `ex_regs` or delete |
-| QNX | nothing; the right is ambient and the name is a pid | process | yes, by pid |
-| **nife today** | the region capability, the supervision endpoint, and an **inert** TCB cap that 25 of 30 sites delete | region, or corpse | **no** |
-
-Nobody else's spawner retains nothing. nife is not unusual in refusing a kill verb; Zircon does
-too. It is unusual in having no per-child object that outlives construction, and the region
-capability is the thing standing in for one.
