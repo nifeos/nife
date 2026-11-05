@@ -23,6 +23,8 @@
 //! hardware facts; no GPL code was copied.
 //!
 //! ```text
+//! SPDX-License-Identifier: ISC
+//!
 //! Copyright (c) 2017 Mark Kettenis
 //!
 //! Permission to use, copy, modify, and distribute this software for any

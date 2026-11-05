@@ -108,10 +108,12 @@ release can add a variant without breaking your code.
 
 ## What is proven
 
-Kani harnesses (`cargo kani`) prove, over every input they can unroll. To run them, install Kani
-as its [installation guide](https://model-checking.github.io/kani/install-guide.html) says (the
-`kani-verifier` crate, then `cargo kani setup` once), and run `cargo kani` from the crate's
-directory. The harnesses pass on Kani 0.68.0.
+Kani harnesses prove, over every input they can unroll, the properties below.
+
+The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+checker, so it needs network access. CI uses version 0.68.0, and another version may verify
+differently. After that, `cargo kani` from the crate's directory runs every harness.
 
 - **Hostile input.** No parse step panics or reads outside the volume: the boot sector and BPB (every
   512-byte sector), FAT entries, directory slots, long-name runs, the partition table and `FSInfo`.

@@ -58,6 +58,11 @@ cargo test
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
 ```
 
+The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+checker, so it needs network access. CI uses version 0.68.0, and another version may verify
+differently.
+
 The minimum supported Rust version is 1.88. Two Kani harnesses in `src/lib.rs` prove that `Roster::read` is total on any bytes
 and that `write` then `read` returns the same devices in order; run them with `cargo kani`.
 
