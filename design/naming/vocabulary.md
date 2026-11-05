@@ -9,7 +9,7 @@ and the test each one sets for words beyond it.*
 |---|---|---|
 | half | one side of a two-way split | a branch of a split with three or more is an arm, part, piece or leg; `script/lint` refuses a count above two before "halves" |
 | `cpu` | the unit the scheduler runs a thread on, one hardware thread as Linux and POSIX count them | `core` means the physical core and never a cpu; a GPU or other device processor takes its own name (`gpu`); a devicetree `cpus` node and RISC-V `hart` in RISC-V-only code keep their owners' words |
-| identity | the string a client presents (`alice`) | the identity string names a principal's subtree, per §117 |
+| identity | the string a client presents (`alice`) | the identity string names a principal's subtree, per §117 (a principal\'s subtree is named by its identity string) |
 | `principal` | the authenticated actor that results, holding a fresh capability set | `login` turns an identity into a principal; one word for both would lose the difference `login` performs |
 | `user` | a person | user mode is `user_mode_` (`user_mode_runtime`) |
 | `keeper` | holds something alive and restarts nothing | `supervisor` restarts what faults; `caretaker` serves narrowed access |

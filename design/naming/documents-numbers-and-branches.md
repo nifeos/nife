@@ -23,8 +23,7 @@ is part of the deliverable.
 ## `§N` is not milestone N
 
 Decision numbers and milestone numbers are separate schemes over the same integers, and both run
-into the hundreds, so almost every decision number is also a milestone number. A citation of "§31's
-FileSpec" once pointed at the C seam when it meant milestone 31's shell.
+into the hundreds, so almost every decision number is also a milestone number. A citation of "§31\'s FileSpec" once pointed at §31 (the foreign-language seam) when it meant milestone 31's shell.
 
 - Write `§N` only for a decision, and "milestone N" in full, never a bare `N`.
 - Name it on first mention: "milestone 31 (the capability shell)". `script/citations` checks the
@@ -51,7 +50,7 @@ and nothing reads a prefix except the check itself.
 One prefix carries a mechanism. A branch that looks like a milestone claim must parse as
 `milestone/<N>-<slug>`, because `script/lint` check 4b reads it to require that the branch touch
 milestone N's block. `helpers/branch-name-check.sh` refuses a near miss such as
-`milestone-126-pgrep`, per §77 (branch prefixes). The claim lives in the branch name and not a
+`milestone-126-pgrep`, per §77 (the branch-prefix list now describes the tree). The claim lives in the branch name and not a
 label because the check runs offline from `symbolic-ref`, and because a branch name cannot change
 once the lane cuts it.
 

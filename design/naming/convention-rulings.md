@@ -17,8 +17,8 @@ Applies: appendix-stems
 Ratified: 2026-10-17 (UTC)
 
 What it covers. A directory under `design/`, `notes/` or `briefs/` beside a document of its own
-stem (`notes/stack/` beside `notes/stack.md`, the siting default of §212 (a prose budget)), and each
-document inside it whose stem is made of the words of one heading of that parent. When the parent
+stem (`notes/stack/` beside `notes/stack.md`, the siting default of §212 (a prose budget)). Also
+each document inside it whose stem is made of the words of one heading of that parent. When the parent
 takes a new name, the directory follows its stem and each file follows its heading, so no second
 ruling is needed.
 

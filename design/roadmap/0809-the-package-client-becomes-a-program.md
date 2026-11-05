@@ -31,7 +31,7 @@ flat-pack assembly come out the same every time. Refused: `package`, `pkg`, `bpm
 
 calef also ruled, the same day: *"We abbreviate on the command line."* Under it he ruled the verbs
 on 2026-10-10 (UTC): *"Lets use apt's verbs."*, and the same day *"Change add-index to
-add-repository."* [The record](../naming/command-line-rulings.md#jig-takes-apts-verbs)
+add-repository."* [The record](../naming/command-line-names.md#jig-takes-apts-verbs)
 has each spelling, whose it is, and the manuals read.
 
 ## What calef asked for
@@ -198,7 +198,7 @@ Reuse: all inside the tree (`package_archive`, `http_response`, `socket_contract
 `installed_programs`, `spawnproto`'s activation request, swish's frame sender, milestone 205's argv and
 designation). Writing the program was forced: no existing client speaks this capability ABI. The
 apt, pkg and Homebrew manuals §46 (thin primitives or whole subsystems) owed were read 2026-10-10;
-[the vocabulary record](../naming/command-line-rulings.md#jig-takes-apts-verbs) cites them.
+[the vocabulary record](../naming/command-line-names.md#jig-takes-apts-verbs) cites them.
 
 ## What was built
 

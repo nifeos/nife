@@ -20,8 +20,8 @@ Four more kinds carry a block by marker, in the same grammar:
 
 - `item`: a `/// Name:` paragraph in the doc of a function, constant, type, field or variant.
 - `module`: a `//! Name:` block in a Rust file that is not a crate root or a program.
-- `directory`: the `Name:` paragraph of a documentation directory's `README.md`, per §75 (naming
-  covers directories).
+- `directory`: the `Name:` paragraph of a documentation directory's `README.md`, per §75 (directories carry
+  provenance in their own README).
 - `document`: the document's own `Name:` paragraph, else its directory's block.
 
 A lane minting any of these writes the marker, so the name joins `--unratified`. An unmarked item
@@ -30,7 +30,7 @@ never fails.
 The refusals are the valuable half. A ratified name is visible in the tree, because it is the name.
 A refused one is visible nowhere unless its block records it, and the person who most needs it is
 the one about to propose it again. `system_builder` is the case: proposed, endorsed and overruled to
-`system_initializer`, after milestone 63 had already refused it in one table cell nobody found.
+`system_initializer`, after milestone 63 (directory and package names) had already refused it in one table cell nobody found.
 
 ### A document's block is a paragraph, not frontmatter
 
@@ -48,7 +48,7 @@ and fails statuses that disagree. A README `` `stem` Name: `` paragraph counts u
 
 | State | Means | What clears it |
 |---|---|---|
-| `provisional` | whoever chose it expects it to change, per §89 (provisional versus unrecorded) | a ruling |
+| `provisional` | whoever chose it expects it to change, per §89 (`provisional` becomes the fourth provenance state) | a ruling |
 | `unrecorded` | nothing in the tree or its history says why | research, then a ruling |
 | `recorded` | something outside the block argues the name, and no architect ruled | a ruling |
 | `ratified` | an architect ruled, with the date and what was refused | done |

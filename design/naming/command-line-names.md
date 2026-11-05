@@ -22,7 +22,7 @@ nife's own and says so.
 |---|---|---|
 | `list` | the packages the local copy of the index offers | apt's |
 | `install <name>` | fetch a package by name and install it | apt's |
-| `install <path>` | install a package file already on the system; a word with a `/` is a path, by the prompt's own rule ([§219](../decisions/0219-naming-an-installed-program-to-the-spawner.md)) | apt's verb |
+| `install <path>` | install a package file already on the system; a word with a `/` is a path, by the prompt's own rule ([§219 (how the shell names an installed program to the spawner)](../decisions/0219-naming-an-installed-program-to-the-spawner.md)) | apt's verb |
 | `remove <package>` | a new generation without every row the package installed; the object is a package, never a program | apt's |
 | `update` | refresh the local copy of the index, installing nothing | apt's |
 | `list -u` | what is outdated, against the index copy; `--upgradable` and `--upgradeable` fail with a message naming `-u` | apt's short option |
