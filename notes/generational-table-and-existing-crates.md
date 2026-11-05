@@ -195,7 +195,7 @@ download counts, because it writes its own. The crate name `generational_table` 
 crates.io. The cost of publishing is the release machinery that milestone 887 (crate repositories share one CI template) already built, and the
 risk is a crate few people find.
 
-## Recommendation
+## Recommendation, as ruled
 
 Publish, with the difference stated. No existing crate covers what the kernel needs, and the
 kernel cannot adopt one without an allocator or a dormant `unsafe`-heavy dependency. The README's
@@ -210,28 +210,11 @@ public name type stays a bare `u64` or becomes a typed key (every growable candi
 and a newtype is the stricter choice, since widening later is compatible and narrowing is not). And
 whether the README states expected demand as low, in the words of the measurement above.
 
-## The question for the architect
+## The ruling
 
-`generational_table` is the kernel's table of named slots: each entry gets a 64-bit name that stops
-working the moment its entry leaves, even after another entry takes the slot. It is next in the ruled
-publication order, and the order asked first whether `slotmap` already does this job.
-
-It does not. `slotmap` and its relatives keep their entries on the heap and grow, which the kernel
-cannot do, since it has no heap allocator and builds these tables at compile time. One of them,
-`slotmap`, also lets two different 64-bit names reach the same entry, which nife's proofs forbid
-because names come from user programs. The only crate built the way nife's is, `coca`, has had no
-release since 2022, no dependents and heavy `unsafe` code.
-
-The demand that exists is for growable tables. Few people download fixed-capacity ones, so the
-crate may find few users, and publishing costs only a run through the release machinery already
-built.
-
-Should nife publish `generational_table` as its own crate, presenting it as the fixed-capacity,
-allocation-free, proved member of the slotmap family, with its README pointing growable users to
-`slotmap` and `thunderdome`?
-
-- A (recommended): publish, with that difference stated in the README and its costs in `BUGS`.
-- B: keep it in nife unpublished, because measured demand for fixed-capacity tables is near zero.
-- C: replace it in the kernel with `coca`, or with `thunderdome` behind an allocator, and drop
-  ours. This loses the `const` constructor, the first name `0` and the slot cursor, and puts either
-  a dormant `unsafe`-heavy crate or a heap allocator into the kernel.
+nife publishes `generational_table` as its own crate, as the fixed-capacity, allocation-free,
+proved member of the slotmap family (ruled 2026-11-05 UTC). Its README states how it differs from
+the growable crates and lists its costs in `BUGS`. Users who need growth are pointed to `slotmap`
+and `thunderdome`. The kernel keeps the table; it does not adopt `coca`, or `thunderdome` behind an
+allocator. Milestone 1033 (`generational_table`: the fixed-capacity, proved slotmap, released on its
+own) owns the move, the soak, the publication and nife consuming the release.

@@ -26,7 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import name_provenance  # noqa: E402
-import unit_symbols  # noqa: E402
+import vendored_name_gates  # noqa: E402
 
 
 def crate_of(path):
@@ -96,7 +96,7 @@ def moves(added, removed, before, after):
             source, _, old_rest = old.partition('::')
             old_name = old_rest.split(' ', 1)[0]
             if (wanted and source == to and old_rest.partition(' ')[2] == tail and old_name != name
-                    and unit_symbols.respell(old_name) == name):
+                    and vendored_name_gates.respell(old_name) == name):
                 # A unit-symbol respelling inside one file (design/naming.md ("Units")): the item
                 # keeps its place on the list under its new name.
                 for kind, declared_name in sorted(declared(before, source)):

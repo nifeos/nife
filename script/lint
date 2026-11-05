@@ -3130,6 +3130,10 @@ echo "==> names meet the current naming rules"
 python3 helpers/baseline_layout.py --selftest
 python3 helpers/name_checks.py --selftest
 python3 helpers/name_checks.py --check
+# The prose of design/naming.md and the template's word list say the same thing
+# (helpers/vendored_name_gates.py's header). Fixtures first.
+python3 helpers/vendored_name_gates.py words --selftest
+python3 helpers/vendored_name_gates.py words --check
 
 echo "naming: no -d names, no daemons, contract crates spelled one way,"
 echo "        no #[path] module shared by two binaries, docs lowercase and hyphenated,"
@@ -3698,20 +3702,20 @@ python3 helpers/history_ratchet.py --check
 echo "==> capability is not abbreviated cap (calef, 2026-10-06)"
 # lint-quick
 # design/naming/acronyms-and-abbreviations.md: every name spells `capability` out. The sweep of
-# existing identifiers brought the count to zero, and helpers/cap_abbreviation.py counts Rust
+# existing identifiers brought the count to zero, and helpers/vendored_name_gates.py counts Rust
 # identifiers with a `cap` or `caps` component (comments and strings skipped, so the English word
 # for a ceiling is never read) and fails a count over its ceiling or a branch that adds any net.
 # Fixtures first, so a green check is not a counter matching nothing.
-python3 helpers/cap_abbreviation.py --selftest
-python3 helpers/cap_abbreviation.py --check
+python3 helpers/vendored_name_gates.py cap --selftest
+python3 helpers/vendored_name_gates.py cap --check
 echo "==> unit symbols are spelled out (2026-10-27)"
 # lint-quick
-# design/naming.md ("Units"): a name spells its unit out. helpers/unit_symbols.py counts Rust
+# design/naming.md ("Units"): a name spells its unit out. helpers/vendored_name_gates.py counts Rust
 # identifiers that carry `us`, `s`, `sec`, `secs`, `nanos`, `millis`, `micros` or `mins` (comments
 # and strings skipped; it does not yet count `ns`, `ms` or `hz`, which its header records) and
 # fails a count over its ceiling or a branch that adds any net. Fixtures first.
-python3 helpers/unit_symbols.py --selftest
-python3 helpers/unit_symbols.py --check
+python3 helpers/vendored_name_gates.py unit --selftest
+python3 helpers/vendored_name_gates.py unit --check
 echo "==> no line-number citations (§277: cite a heading or a symbol)"
 # lint-quick
 # §277 (cite a heading or a symbol, never a line number), calef, 2026-10-11 (UTC): a document is
@@ -4616,23 +4620,10 @@ echo "sh -n: every #!/bin/sh script parses under this machine's own /bin/sh"
 # Run it against a stub `cargo` that records its arguments; no Kani is involved, so this costs a
 # second. script/verify-riscv64 adds no argument handling of its own: it forwards "$@" here.
 echo "==> script/verify passes extra arguments through to cargo kani"
-vstub="$(mktemp -d)"
-cat >"$vstub/cargo" <<'STUB'
-#!/bin/sh
-# Stub: `cargo kani --version` succeeds; any other call is recorded.
-[ "$1" = kani ] && [ "$2" = "--version" ] && { echo "cargo-kani $(cat .kani-version)"; exit 0; }
-printf '%s\n' "$*" >>"$VERIFY_STUB_LOG"
-STUB
-chmod +x "$vstub/cargo"
-VERIFY_STUB_LOG="$vstub/log" PATH="$vstub:$PATH" script/verify --only capability --harness lint_probe_harness >/dev/null 2>&1 || true
-if ! grep -q '^kani -p capability .*--harness lint_probe_harness' "$vstub/log" 2>/dev/null; then
-    echo "lint: script/verify --only capability --harness X did not hand --harness X to cargo kani:" >&2
-    sed 's/^/  /' "$vstub/log" >&2 2>/dev/null || echo "  (stub cargo was never called)" >&2
-    rm -rf "$vstub"
-    exit 1
-fi
-rm -rf "$vstub"
-echo "script/verify: extra arguments reach cargo kani"
+# The run is stubbed, so it takes no Kani unit: a run behind another lane's real proof once idled here
+# for 30 minutes at 0 percent CPU. helpers/verify-stub-selftest.sh holds the whole pool with a fake
+# holder and proves the stubbed run finishes anyway, over a scratch slot directory.
+helpers/verify-stub-selftest.sh
 
 # Every stock Kani install goes through script/kani-install, which reads .kani-version (milestone
 # 795). An unpinned `cargo install ... kani-verifier` anywhere else would let the prover move
