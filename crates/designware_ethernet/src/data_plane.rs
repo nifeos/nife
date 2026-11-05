@@ -46,7 +46,7 @@ pub enum TransmitError {
     Full,
 }
 
-/// **The data plane**: ring cursors and the region's physical base. Everything `net_stack` does
+/// **The data plane**: ring cursors and the region's physical base. Everything a network stack does
 /// to the device goes through this, so all of it runs on the host against a simulated device.
 ///
 /// A tail pointer is one past the last descriptor the device may use. On receive one descriptor,

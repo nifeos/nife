@@ -12,7 +12,7 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 
 # no_std for a kernel and a network stack, std for host tests. It owns what the halves of a
 # DesignWare Ethernet QoS driver agree on and everything either computes: the controller's
-# register map, its descriptor formats, the DMA region's layout, the spawn handoff, the receive and
+# register map, its descriptor formats, the DMA region's layout, the receive and
 # transmit ring logic, the controller and PHY bring-up sequences behind small traits, the
 # DMA-coherence probe's verdict, and the JH7110 glue (the syscon interface select and what each
 # device tree says). Host-tested against a simulated controller; nothing here dereferences a
