@@ -26,7 +26,7 @@ review nobody can hurry; `unrecorded` is a truthful answer and passes. Draining 
 calef's, on his own clock, and was explicitly out of this milestone's scope.
 
 Extended since, which is what a live mechanism looks like: `design/decisions/89` added
-`provisional` as a fourth state on 2026-08-16, implemented at `script/names:252`.
+`provisional` as a fourth state on 2026-08-16, implemented at `provisional` in `script/names`.
 
 The incident. A lane proposed `system_builder` for the crate milestone 96 (init) extracted; the
 maintainer endorsed it; calef overruled it to `system_initializer`. Only afterwards did the
@@ -136,7 +136,7 @@ citations, and milestone 97 is the neighbouring case.
   still true.
 - **Decision.** `design/decisions/0089-provisional-versus-unrecorded.md` settled whether a name a lane
   minted and nobody has ruled on is the same thing as a name whose history says nothing. It is not,
-  and `provisional` became a fourth state on 2026-08-16, implemented at `script/names:252`.
+  and `provisional` became a fourth state on 2026-08-16, implemented at `provisional` in `script/names`.
 - **Milestone 97.** The neighbouring case this block's scope note names: the same blind spot in the
   decisions check, where a citation can be verified for naming something that exists and never for
   naming the right thing.

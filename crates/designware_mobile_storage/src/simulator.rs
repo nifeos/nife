@@ -3,7 +3,7 @@
 //! the machines this tree boots), so the tests run the real driver against this and the bench step
 //! checks this against silicon. It models only the contract the driver relies on, as the databook
 //! and OpenBSD describe it: self-clearing `CONTROL` resets, the `CMD` start bit, a FIFO raising
-//! `RXDR`, `TXDR`, `DTO` and `ACD`, `STATUS` fill and busy, `CARDTHRCTL` above the FIFO ending in
+//! `RXDR`, `TXDR`, `DTO` and `ACD`, `STATUS_REGISTER` fill and busy, `CARDTHRCTL` above the FIFO ending in
 //! `FRUN` and `DTO` as on radon, and the IDMAC walk, whose last read words reach memory after
 //! `DTO`. Time is one microsecond per `now_microseconds` call, so a test that would hang on silicon fails
 //! here.
@@ -225,7 +225,7 @@ pub struct SimulatedHostController {
     pub stall_after: Option<usize>,
     /// When the card stalls, it also raises `DTO`: a transfer the card ended early.
     pub end_early: bool,
-    /// `STATUS` reports a full FIFO whatever it holds: a confused controller.
+    /// `STATUS_REGISTER` reports a full FIFO whatever it holds: a confused controller.
     pub overreport_fill: bool,
     /// A write's data phase ends with a data CRC error and no `DTO`.
     pub crc_error_at_end: bool,
@@ -851,7 +851,7 @@ impl RegisterWindowAndClock for SimulatedHostController {
                 }
                 v
             }
-            registers::STATUS => {
+            registers::STATUS_REGISTER => {
                 self.pump();
                 let filled = if self.overreport_fill {
                     self.depth
@@ -957,7 +957,7 @@ impl RegisterWindowAndClock for SimulatedHostController {
                     value & !registers::COMMAND_START
                 };
             }
-            registers::VERID | registers::HCON | registers::STATUS => {}
+            registers::VERID | registers::HCON | registers::STATUS_REGISTER => {}
             _ => *self.register(offset) = value,
         }
     }

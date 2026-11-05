@@ -221,6 +221,6 @@ contract-crate order. The ruling adds no edge: the grant kinds live in `installe
 | §229 (a bare name reaches an installed program) | unchanged: a bare word the image carries runs the image's program (decision 6, ruled); the image's names are the measured archive's (decision 7, ruled) |
 | §251 (restarting the machine is a kernel object) | met: clause 2 endows any job whose declaration the archive or an owner's line vouches for |
 | §270 (a package manager holds an installer endpoint) | met, with the restriction in [the security appendix](security.md) that an installed holder is always bounded by an approval |
-| §316 (a package's programs leave as one repository) | required: no manifest stays behind in nife |
+| §316 (a program package leaves as one repository) | required: no manifest stays behind in nife |
 | milestone 892 (a std program at the prompt holds the network and a resolver) | met: the root zone is already a grant line; `Program::resolver_zone` goes |
 | milestone 990 (the base image's first installed-programs table) | gives each base program a row; the end state vouches base programs by the measurement, which test images also have |

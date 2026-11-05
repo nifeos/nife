@@ -100,8 +100,9 @@ or does not cover every crate in the interface.
 
 ## Co-change per package
 
-§235 (the OS is built and updated from packages, and its source divides by purpose)
-sizes a home by what changes together, and no package moves before this measurement exists. A package is
+Under §235 (the OS is built and updated from packages, and its source divides by purpose), what
+changes together is a candidate to release together, so this column informs how packages group. It
+holds no move. A package is
 what §235 and `packages/` mean by one: a `packages/*.package.toml` file, which claims crate
 directories, program sources and paths. Each Cargo package has a row too, because a crate
 released on its own (milestone 857 (crates released on their own)) leaves as one.

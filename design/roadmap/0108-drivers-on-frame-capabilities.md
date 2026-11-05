@@ -24,8 +24,8 @@ able to fail. Stub the `WRITE` check in `Frame::MAP` and the read-only view beco
 
 The **spawn-time static mapping** is the older one. The kernel places a page into both address
 spaces when it starts the program, through the `maps:` field of `user::Spawn`.
-`kernel/src/user/console_service.rs:60` does it for the console, `kernel/src/user/disk_service.rs:201`
-for the virtio path, and the display and date services do the same. The page is wired at
+`start` in `kernel/src/user/console_service.rs` does it for the console, `start_probe` in
+`kernel/src/user/disk_service.rs` for the virtio path, and the display and date services do the same. The page is wired at
 construction and there is no capability anywhere in the arrangement.
 
 Why two mechanisms for one thing is the cost. The spawn-time mapping is not attenuable: the kernel

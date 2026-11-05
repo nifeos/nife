@@ -22,7 +22,7 @@ Premise re-checked 2026-09-19, and the title's own question is answerable by rea
 changes the shape of the work rather than removing it. Three findings, none of which needed a
 sweep:
 
-- `VTD_ADDR_MASK` is a `const` initialized from a literal (`crates/paging/src/x86_64.rs:197`),
+- `VTD_ADDR_MASK` is a `const` initialized from a literal (in `crates/paging/src/x86_64.rs`),
   so there is no function body to replace and no operator to flip. `cargo mutants` rewrites one
   function at a time, which `notes/mutation-testing.md` states in its own opening lines. So this
   block's central sentence, that a mutation of `VTD_ADDR_MASK` is precisely what `script/mutation`

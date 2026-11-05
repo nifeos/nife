@@ -31,8 +31,8 @@ immediately by giving every workflow an explicit least-privilege `permissions: c
 is the right call for this repo specifically. A project whose thesis is that a component holds the
 authority its job needs and nothing more has no business letting its CI token default to write
 access it never uses. **The two that remain are high severity and need judgment, not
-configuration**: `rust/access-invalid-pointer` at `crates/intrusive/src/lib.rs:93` and `:109`, the
-raw-pointer dereferences in the intrusive wait-queue's `push_back` and `pop_front`. Both already
+configuration**: `rust/access-invalid-pointer` in `push_back` and `pop_front` in
+`crates/intrusive_queue/src/lib.rs`, the raw-pointer dereferences in the intrusive wait-queue. Both already
 carry `SAFETY` comments citing the queue's caller contract, and `intrusive` is one of the 13
 Kani-proved crates. So the question is precisely what CodeQL sees that Kani does not. Kani proves
 the pure logic under chosen bounds, while the pointer validity here rests on a *caller* contract

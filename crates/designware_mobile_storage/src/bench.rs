@@ -281,7 +281,7 @@ pub fn run_scratch_write_test<R: RegisterWindowAndClock, D: DirectMemoryAccessRe
     verdict.unwrap_or(ScratchWriteVerdict::Verified(first, count, blank))
 }
 
-/// **A register window that remembers how full the queue got**: every `STATUS` read updates the
+/// **A register window that remembers how full the queue got**: every `STATUS_REGISTER` read updates the
 /// highest fill seen and counts the reads that found the queue full. It answers the multi-block
 /// read diagnosis: whether the polled CPU falls behind the card.
 ///
@@ -290,9 +290,9 @@ pub fn run_scratch_write_test<R: RegisterWindowAndClock, D: DirectMemoryAccessRe
 #[doc(alias = "fifo")]
 pub struct QueueWatch<R: RegisterWindowAndClock> {
     inner: R,
-    /// The highest `STATUS` queue count seen since the last [`QueueWatch::clear`].
+    /// The highest `STATUS_REGISTER` queue count seen since the last [`QueueWatch::clear`].
     pub maximum_fill: u32,
-    /// `STATUS` reads that found the FIFO-full flag set since the last [`QueueWatch::clear`].
+    /// `STATUS_REGISTER` reads that found the FIFO-full flag set since the last [`QueueWatch::clear`].
     pub full_reads: u32,
 }
 
@@ -320,7 +320,7 @@ impl<R: RegisterWindowAndClock> QueueWatch<R> {
 impl<R: RegisterWindowAndClock> RegisterWindowAndClock for QueueWatch<R> {
     fn read(&mut self, offset: u32) -> u32 {
         let v = self.inner.read(offset);
-        if offset == crate::registers::STATUS {
+        if offset == crate::registers::STATUS_REGISTER {
             self.maximum_fill = self.maximum_fill.max(crate::registers::queue_count(v));
             if v & crate::registers::STATUS_FIFO_FULL != 0 {
                 self.full_reads += 1;
@@ -353,9 +353,9 @@ pub struct MatrixRow {
     pub microseconds: u64,
     /// The highest queue fill seen during it, in words.
     pub maximum_fill: u32,
-    /// `STATUS` reads that found the queue full.
+    /// `STATUS_REGISTER` reads that found the queue full.
     pub full_reads: u32,
-    /// `STATUS`, `RINTSTS`, `TRANSFERRED_CARD_BYTE_COUNT` and `TRANSFERRED_HOST_BYTE_COUNT` read straight after it.
+    /// `STATUS_REGISTER`, `RINTSTS`, `TRANSFERRED_CARD_BYTE_COUNT` and `TRANSFERRED_HOST_BYTE_COUNT` read straight after it.
     pub after: [u32; 4],
 }
 
@@ -401,7 +401,7 @@ pub fn read_matrix<R: RegisterWindowAndClock>(
             let microseconds = host.registers_mut().now_microseconds().wrapping_sub(start);
             let watch = host.registers_mut();
             let after = [
-                watch.inner.read(crate::registers::STATUS),
+                watch.inner.read(crate::registers::STATUS_REGISTER),
                 watch.inner.read(crate::registers::RINTSTS),
                 watch
                     .inner

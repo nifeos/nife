@@ -27,6 +27,18 @@ override. Anything else, including `gh` missing, unauthenticated, offline or Gra
 warning line and the push goes. It runs before the empty-push skip, because an empty push to a
 queued branch dequeues it too.
 
+### The way through: `script/push --requeue` For a pull request in the queue or with auto-merge
+on, `script/push --requeue` dequeues it, pushes, confirms origin holds HEAD, and arms it again
+through `helpers/arm.sh`. An unarmed pull request stays unarmed. If the push does not land,
+nothing re-arms and the output says so. Without the flag the hook keeps refusing.
+`helpers/arm.sh <n>` is the one arming entry point. It refuses a draft and a pull request wearing
+`needs-architect`, `held-by-lane` or `held-for-red-trunk` (`helpers/hold-labels.sh` defines them, and
+the drain reads the same file), runs `gh pr merge --auto --merge`, and reads GitHub back. On a clean
+pull request the merge enqueues directly and `autoMergeRequest` stays null, so GitHub shows armed as
+`isInMergeQueue` true or a non-null `autoMergeRequest`; neither is exit 1. The drain's
+`unarmed` cause already reports a ready, unheld pull request that stays unarmed for 30 minutes, once
+per episode, and arms nothing.
+
 ## EXAMPLES
 
     $ git push --force-with-lease
@@ -37,10 +49,22 @@ queued branch dequeues it too.
         gh pr merge 1617 --auto --merge
       If this push is intended: NIFE_PUSH_QUEUED=1 git push ...
 
+    $ script/push --requeue
+    push-requeue: dequeued #1617.
+    push: origin/lane/x is at 0123456789ab, HEAD's commit.
+    arm: #1617 armed (in the merge queue).
+
+    $ script/push --requeue            # the pull request carries needs-architect
+    push: origin/lane/x is at 0123456789ab, HEAD's commit.
+    arm: NOT ARMED. #1617 carries `needs-architect`, which holds it out of the queue; ...
+
     $ NIFE_PUSH_QUEUED=1 git push      # you mean it; the queue entry is lost
 
 The self-test (`helpers/push-queued-selftest.sh`, run by `script/lint`) uses a fake `gh` on PATH for
-queued, not queued, `gh` failing, the override, no `gh` and a tag push.
+queued, not queued, `gh` failing, the override, no `gh` and a tag push. The `--requeue` self-test
+(`helpers/push-requeue-selftest.sh`) uses a stub `gh` and `git`: the order dequeue, push, arm; each
+hold refusing with its label named; an unlanded push arming nothing; and a re-arm that does nothing
+failing loudly.
 
 ## BUGS
 

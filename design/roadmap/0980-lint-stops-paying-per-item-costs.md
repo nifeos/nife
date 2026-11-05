@@ -148,18 +148,10 @@ fits.
 
 ## Follow-on
 
-- **Outstanding.** Part 2, the duplicate `verify-parallel-selftest.sh` call and the fixed `sleep 4.5`;
-  checked against `script/lint` and `helpers/heavy-slot-selftest.sh`, where both remain.
-- **Outstanding.** Part 3, one lexer pass in `helpers/name_crossings.py`; its `strip` still scans a
-  character at a time.
-- **Outstanding.** Part 4, one interpreter in the dead-code section; it still spawns one `awk` per
-  file.
-- **Outstanding.** Part 5, the shared corpus index (its design note is in review), and part 6's
-  rustdoc half, whether its four invocations collapse into one, which is measure-first.
-- **Recorded.** `helpers/trust_boundary.py --check` fails in a checkout whose `fs_server/` holds only
-  a stale `target/` directory: it looks for `fs_server/Cargo.toml`, and the crate is `redoxfs_server`
-  since `0c0ef2367`. A leftover local directory turns a gate red and says nothing true. This is a
-  separate fix to that helper.
+- **Outstanding.** Part 5, the shared corpus index. Its design note is
+  [notes/lint-corpus-index.md](../../notes/lint-corpus-index.md); no helper exists yet.
+- **Outstanding.** Part 6's rustdoc half: whether its four `cargo doc` invocations collapse into one,
+  which is measure-first.
 
 ## Index row
 

@@ -66,7 +66,10 @@
 # State, all under `$NIFE_FUZZ_HOME` (default `$HOME/fuzz`):
 #   work/<slot>/            the slot's worktree
 #   state/next-<slot>       the next first seed for the slot
-#   state/windows.tsv       one row per window: utc, driver, slot, first, ran, ms, status, commit
+#   state/windows.tsv       one row per window: utc, driver, slot, first, ran, ms, status, commit.
+#                           status is ok, infrastructure, or one of the held classes: held-finding (a
+#                           replay line), held-crash (a panic), held-hang (the bound), held-budget-expired
+#                           (a wait ran out its tick budget, with or without a replay line).
 #   state/held/             held logs (private)
 #   logs/<slot>/            the last logs of clean windows (the newest 20)
 #
@@ -199,8 +202,13 @@ classify() {
     # The driver's own end line: `<n> seeds, <ms> ms (...)`.
     line="$(grep -E '(syscall|confined) fuzzer: [0-9]+ seeds, ' "$log" | tail -1 || true)"
     replay="$(sed -n 's/.*replay: NIFE_[A-Z_]*=\([0-9][0-9]*\):1.*/\1/p' "$log" | head -1)"
+    # A wait that ran out its tick budget says so first (`BUDGET_EXPIRED_MARKER` in kernel/src/testing.rs,
+    # which the selftest checks against this word). It is held like a finding, but apart from one: it
+    # is a guest that was not given its time, not a disagreement with the model. It may carry a
+    # replay line, which still sets where the slot resumes.
     if [ -n "$replay" ]; then
         status=held-finding
+        if grep -q 'budget-expired:' "$log"; then status=held-budget-expired; fi
         next=$((replay + 1))
         ran=$((replay - first))
     elif [ "$rc" -eq 0 ] && [ -n "$line" ]; then
@@ -213,6 +221,7 @@ classify() {
         status=held-hang
     elif grep -q -E 'panicked|PANIC' "$log"; then
         status=held-crash
+        if grep -q 'budget-expired:' "$log"; then status=held-budget-expired; fi
     else
         status=infrastructure
     fi
@@ -357,6 +366,14 @@ ci_shard() {
 if [ "${1:-}" = --check-kvm ]; then
     require_kvm && echo "continuous-fuzz: KVM is usable"
     exit
+fi
+
+if [ "${1:-}" = --classify ]; then
+    # The verdict of a log the selftest wrote: status, seeds run, next first seed. Starts no guest.
+    [ $# -eq 4 ] || { echo "usage: $0 --classify LOG EXIT_CODE FIRST_SEED" >&2; exit 2; }
+    classify "$2" "$3" "$4"
+    echo "$status $ran $next"
+    exit 0
 fi
 
 if [ "${1:-}" = --ci-range ]; then

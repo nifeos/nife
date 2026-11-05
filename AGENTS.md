@@ -271,6 +271,10 @@ These rules bind every note, which is prose an architect rereads for months:
   request body, where git keeps it (calef, 2026-10-13 UTC).
   [§298 (a document states what is in force now)](design/decisions/0298-a-document-states-what-is-in-force-now.md) lists what stays, and
   `helpers/history_ratchet.py` holds the phrases to a ratchet.
+- A ruling in force goes on the main page, never only in an appendix. Name an appendix for its
+  topic, not by a date, "part N" or an alphabet range, and a split by size alone states its reason.
+  When a page reaches its cap, cut or move background out to make room instead of adding a file for
+  the new ruling (calef, 2026-11-04 UTC).
 - Write in the active voice. The prose ratchet counts passives and holds new prose to 2 per 1,000
   words ([§213 (writing standards)](design/decisions/0213-writing-standards.md) rule 6).
 - Plain, direct language. Vary sentence length. Write like a person. The numbers are [§213 (writing standards)](design/decisions/0213-writing-standards.md), and length is [§212 (a prose budget)](design/decisions/0212-a-prose-budget-for-every-document.md). Spelling is American and measurements metric (calef, 2026-10-06).

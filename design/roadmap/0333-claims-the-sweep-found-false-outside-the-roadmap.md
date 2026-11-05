@@ -12,12 +12,12 @@ needs_person: no
 Filed 2026-09-03 as an unnumbered proposal by the milestone 252 sweep;
 numbered 2026-09-19 by milestone 433. **Premise re-checked item by item on 2026-09-19: eight of the
 ten still stand, one is closed, and one could not be confirmed.** Still wrong today:
-`crates/capability/src/lib.rs:98` (the `ENUMERATE` rustdoc's "when `pmap` is built", and `crates/pmap`
+`crates/capability/src/lib.rs` (the `ENUMERATE` rustdoc's "when `pmap` is built", and `crates/pmap`
 and `components/src/pmap.rs` both exist). `notes/crates-io-on-nife.md` rows 19 and 28 (against
 `filesystem_contract`'s `GETMTIME`, `SETMTIME` and `SETMTIME_AT`, opcodes 20 to 22).
 `design/decisions/0102-frame-names-a-run.md` line 7 ("this decision is still unbuilt").
 `notes/live-replacement.md` line 261. `notes/register-of-measures.md` line 253.
-`kernel/src/arch/aarch64/timer.rs:185`. `components/src/session_reviver.rs` (eight surviving mentions
+`close_cycle_counter_to_el0` in `kernel/src/arch/aarch64/timer.rs`. `components/src/session_reviver.rs` (eight surviving mentions
 of the deleted durable-session type). And milestone 142 (a text display good enough that people use
 it)'s duplicated paragraphs. Closed: the
 `crates/abi` start invocation, whose doc now says `START` spends all three argument registers rather

@@ -38,7 +38,7 @@ CRITICAL 1's reclamation sweep added +29,302 ticks to the `spawn_el0` benchmark 
 `cargo xtask bench --riscv --check`). It was a real, deterministic instruction-count regression from a real
 correctness fix (a use-after-free: a reclaimed region's pages could still be named by a surviving
 run capability). A follow-up fix, `CapabilityTable::delete_matching`
-(`crates/capability/src/lib.rs:371`, doing the sweep in place instead of `get`-then-`delete` per
+(in `crates/capability/src/lib.rs`, doing the sweep in place instead of `get`-then-`delete` per
 slot), roughly halved it, to about +13,895 ticks (~4.4% of baseline). That remainder was
 re-recorded as the honest, accepted baseline (`bench/baseline-riscv64.txt`, `bench/baseline-aarch64.txt`).
 
