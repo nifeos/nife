@@ -13,11 +13,11 @@ needs_person: yes
 (`extensible_host_controller_interface`: proven xHCI logic, released on its own) is the shape this
 follows.)*
 
-`generational_table` is the third crate in the ruled publication order of milestone 857 (crates
-released on their own, "The release order"). Its review with the architect is done: the disposition
-is publish. The crate is presented as the fixed-capacity, allocation-free, proved member of the
-slotmap family. Its README states how it differs and lists its costs under `BUGS`, and it points
-users who need growth to `slotmap` and `thunderdome`.
+`generational_table` is the third crate in the ruled publication order (see the release order of
+milestone 857, crates released on their own, and proofs offered to the projects that already use them).
+The architect's review is done, and the disposition is publish. The crate is the fixed-capacity,
+allocation-free, proved member of the slotmap family. Its README states how it differs and lists its
+costs under `BUGS`. It points users who need growth to `slotmap` and `thunderdome`.
 
 ## What exists
 
@@ -32,19 +32,19 @@ users who need growth to `slotmap` and `thunderdome`.
   table. None does: `slotmap` needs an allocator and lets two `u64` names reach one entry, and
   `coca` is dormant and `unsafe`-heavy.
 
-**Reuse:** none taken; the survey above lists nine candidates and why each loses.
+Reuse: none exists that fits; searched crates.io, the nine candidates in the release record above (`slotmap`, `thunderdome`, `coca` and six more), each read from its source.
 
 ## What remains
 
 1. The move: the crate leaves this tree for `nifeos/generational_table` on the shared CI template
-   (milestone 887), moved and not copied, with a README that opens on what the crate is for and what
+   (milestone 887, crate repositories share one CI template), moved, not copied, with a README that opens on what the crate is for and what
    it is not for.
-2. The soak, ending on the evidence of milestone 818's pilot criteria.
+2. The soak, ending on the evidence of the pilot's criteria (milestone 818, `jh7110_entropy`: proven JH7110 TRNG logic, released on its own).
 3. The publication of 0.1.0 by trusted publishing, which waits for the architect's approval.
 4. nife consuming the release by semantic version, with `Cargo.lock` recording its checksum, the
    kernel's seven tables and `crates/memory_regions` among the consumers.
 
-The crate takes the third slot in the publication order, after `file_allocation_table` (milestone
+The crate takes the third slot, after `file_allocation_table` (milestone
 813) and `extensible_host_controller_interface` (milestone 820).
 
 ## BUGS
