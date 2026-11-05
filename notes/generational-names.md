@@ -90,9 +90,9 @@ How fast a loop can refill one slot, from the fastest create-and-destroy loops m
 | threads, 256 | `spawn_reap`, radon (JH7110, release kernel) | 19.8 us (79.3 ticks of the 4 MHz timer) | ~23.6 hours |
 | memory regions, 256 | `SPLIT` then `DESTROY` from EL0 | not measured; two traps cost at least 54 ns at the 27 ns null syscall | at least ~3.9 minutes |
 
-Only the thread and region tables were timed; the other tables were not. The address-space registry
-(288) and the virtio table (12) sit behind `spawn_el0` (~4.4 us) and a driver's death. More harts
-do not speed up one slot: first-fit puts concurrent inserts in different slots.
+The table above times only the thread and region tables, and none of the others. The address-space
+registry (288) and the virtio table (12) sit behind `spawn_el0` (~4.4 us) and a driver's death.
+More harts do not speed up one slot: first-fit puts concurrent inserts in different slots.
 
 So a wrapping generation is reachable. A user program with a region could resurrect a dead region name in
 minutes of tight looping, and a kernel spawn loop could do it to a thread id inside two hours.
