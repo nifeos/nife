@@ -4,7 +4,8 @@
 //! Name: ratified 2026-10-25 (#2720).
 
 use super::*;
-use crate::{NoClock, SECTOR_BYTES, VolumeLayout};
+use crate::efi_system_partition::SECTOR_BYTES;
+use crate::{NoClock, VolumeLayout};
 
 const FAT12_FLOPPY: &[u8; 512] = include_bytes!("../../tests/fixtures/fat12-floppy.boot");
 const FAT16_32M: &[u8; 512] = include_bytes!("../../tests/fixtures/fat16-32m.boot");

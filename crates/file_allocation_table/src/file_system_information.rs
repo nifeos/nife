@@ -49,6 +49,7 @@ fn check_signatures(sector: &[u8]) -> Result<(), FileSystemInformationError> {
 /// Name: ratified 2026-11-01 (UTC), renamed from `FsInfoError`, beside `ParseError`, which says the
 /// same of a boot sector.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum FileSystemInformationError {
     /// The sector is shorter than the 512 bytes the structure spans.
     ///

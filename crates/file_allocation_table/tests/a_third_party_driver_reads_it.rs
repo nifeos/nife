@@ -22,7 +22,8 @@ use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 
-use file_allocation_table::{NoClock, SECTOR_BYTES, VolumeLayout};
+use file_allocation_table::efi_system_partition::SECTOR_BYTES;
+use file_allocation_table::{NoClock, VolumeLayout};
 
 /// The file the volume carries. Not a round number, so a length the writer got wrong by a cluster
 /// cannot pass by accident.

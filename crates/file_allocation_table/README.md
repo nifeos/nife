@@ -14,10 +14,12 @@ checked by a model checker.
   takes none). Create, write, extend, truncate, rename and remove files; make and remove directories;
   set attributes (read-only, hidden, system, archive); read and change the volume label. A name that
   is not 8.3 gets long-name slots and an alias numbered against its directory. The first change clears
-  the clean-shutdown bit and `Volume::mark_clean` sets it again, with the FAT32 `FSInfo` hints.
+  the clean-shutdown bit and `WritableVolume::mark_clean` sets it again, with the FAT32 `FSInfo`
+  hints.
 - **Format.** `FormatPlan` lays out an empty volume of any size and sector size (512 to 4096 bytes),
   with the cluster size, serial number and label of your choice. `VolumeLayout` lays out the one
-  shape a bootloader needs: a FAT32 EFI system partition holding one boot file.
+  shape a bootloader needs: a FAT32 EFI system partition holding one boot file, with 512-byte
+  sectors and 4096-byte clusters. The `efi_system_partition` module holds that shape's constants.
 
 ## Example
 
@@ -97,8 +99,12 @@ fn main() {
 `WritableVolume`, which needs a `Clock`; `NoClock` is the explicit "no time", and the entries it
 stamps carry the zero timestamp. For an EFI system partition,
 `VolumeLayout::new(total_sectors, hidden_sectors, file_len, volume_id, label, "BOOTX64.EFI",
-&mut NoClock)` tells you what every metadata sector holds, and you write those sectors and then the
-file's bytes. The label is yours to choose, such as `"EFI SYSTEM"`.
+&mut NoClock)` tells you what every metadata sector holds: write sectors `0..metadata_sectors()`
+from `fill_sector`, then the file's bytes from `file_first_sector()` on, `file_sectors()` long. The
+label is yours to choose, such as `"EFI SYSTEM"`.
+
+Every error enum is `#[non_exhaustive]`, so a match on one needs a wildcard arm, and a later
+release can add a variant without breaking your code.
 
 ## What is proven
 

@@ -289,7 +289,8 @@ names until the ratification pass, so this section keeps the links it carried.
 
 ## Follow-on
 
-- **Outstanding.** The provisional name `LayoutError::LabelRefused`.
+- **Outstanding.** [The review package](../../notes/crate-reviews/file-allocation-table.md) awaits
+  clearance.
 
 ## BUGS
 

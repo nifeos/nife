@@ -7,7 +7,7 @@ Expected to fail: the harness's `assert!(legal)`.
 diff --git a/crates/file_allocation_table/src/format.rs b/crates/file_allocation_table/src/format.rs
 --- a/crates/file_allocation_table/src/format.rs
 +++ b/crates/file_allocation_table/src/format.rs
-@@ -142,7 +142,7 @@ pub(crate) fn label_bytes(label: &str) -> Option<[u8; 11]> {
+@@ -161,7 +161,7 @@ pub(crate) fn label_bytes(label: &str) -> Option<[u8; 11]> {
  
  /// [`label_bytes`] over the text's bytes, which the proof reaches without a text to validate.
  pub(crate) fn label_from_bytes(bytes: &[u8]) -> Option<[u8; 11]> {

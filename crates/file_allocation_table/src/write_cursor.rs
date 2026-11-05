@@ -21,6 +21,7 @@ use crate::table::TableEntry;
 /// Name: ratified 2026-11-01 (UTC), the one error of every operation that changes a volume above
 /// the table, beside `AllocationError` and `FileReadError`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum WriteError<E> {
     /// The chain could not be followed, or a sector could not be read or written.
     ///

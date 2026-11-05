@@ -20,9 +20,10 @@ use std::io::Cursor;
 use std::path::Path;
 use std::process::Command;
 
+use file_allocation_table::efi_system_partition::SECTOR_BYTES;
 use file_allocation_table::{
-    LookupError, MasterBootRecord, NamedEntry, NoClock, SECTOR_BYTES, SectorDevice, SectorSize,
-    ShortEntry, TableEntry, Volume, VolumeLayout,
+    LookupError, MasterBootRecord, NamedEntry, NoClock, SectorDevice, SectorSize, ShortEntry,
+    TableEntry, Volume, VolumeLayout,
 };
 use lamfat::{Read, Write};
 

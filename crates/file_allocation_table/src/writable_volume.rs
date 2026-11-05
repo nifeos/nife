@@ -17,7 +17,6 @@
 
 use core::ops::{Deref, DerefMut};
 
-use crate::allocation::AllocationError;
 use crate::attributes::Attributes;
 use crate::file::FileOpenError;
 use crate::file_writer::FileWriter;
@@ -103,35 +102,6 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
         self.volume.stamp =
             Stamp::pack(self.clock.now()).map_err(|_| WriteError::TimeOutOfRange)?;
         Ok(())
-    }
-
-    /// **Take one free cluster** for the end of a chain: linked after `extending` when given.
-    ///
-    /// Name: ratified 2026-11-01 (UTC), as the former `Volume::allocate_cluster`.
-    pub fn allocate_cluster(
-        &mut self,
-        extending: Option<u32>,
-    ) -> Result<u32, AllocationError<D::Error>> {
-        self.volume.allocate_cluster(extending)
-    }
-
-    /// **Free every cluster of the chain that starts at `first`**, and return how many.
-    ///
-    /// Name: ratified 2026-11-01 (UTC), renamed from `free_chain`, as `Volume::deallocate_chain`.
-    pub fn deallocate_chain(&mut self, first: u32) -> Result<u32, AllocationError<D::Error>> {
-        self.volume.deallocate_chain(first)
-    }
-
-    /// **Cut the chain that starts at `first` to its first `keep` clusters**, and return how many
-    /// clusters it freed.
-    ///
-    /// Name: ratified 2026-11-01 (UTC), as the former `Volume::truncate_chain`.
-    pub fn truncate_chain(
-        &mut self,
-        first: u32,
-        keep: u32,
-    ) -> Result<u32, AllocationError<D::Error>> {
-        self.volume.truncate_chain(first, keep)
     }
 
     /// **Write the `FSInfo` hints and set the clean-shutdown bit again.**

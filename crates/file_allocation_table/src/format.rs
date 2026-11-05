@@ -33,6 +33,7 @@ const ATTR_VOLUME_ID: u8 = 0x08;
 /// Name: ratified 2026-11-01 (UTC), beside `LayoutError`, which says the same of the one-file
 /// volume.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum FormatError {
     /// The device is too small for the reserved sectors, a table and one cluster.
     ///
