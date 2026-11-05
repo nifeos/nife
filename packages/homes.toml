@@ -43,7 +43,12 @@ paths = [
 # provisional home, and whether the briefs stay with this repository is open.
 status = "provisional"
 repo = "nifeos.org"
-paths = ["design/", "briefs/", "notes/", "vendor/README.md", "vendor/upstream-status.md"]
+paths = ["design/", "briefs/", "notes/"]
+
+[[home]]
+status = "undecided"
+reason = "documentation; the site, a package or the records is an open question"
+paths = ["vendor/README.md", "vendor/upstream-status.md"]
 
 [[home]]
 # The design record's site build, milestone 1018 (the design record moves to `nifeos.org` and is
