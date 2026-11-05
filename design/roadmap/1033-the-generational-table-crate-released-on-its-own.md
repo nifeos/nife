@@ -23,9 +23,9 @@ costs under `BUGS`. It points users who need growth to `slotmap` and `thunderdom
 - `crates/generational_table`: `Table<T, N>`, about 550 lines with tests and harnesses, no
   dependencies and no `unsafe`. Its mechanism is in [Generational names](../../notes/generational-names.md).
 - Four Kani harnesses, each with a falsification patch under
-  `crates/generational_table/falsifications/`: a removed name never resolves again, a name the table
-  never minted resolves to nothing, live names are distinct and resolve to their own entry, and a
-  bounded walk yields every live entry.
+  `crates/generational_table/falsifications/`. They prove four things. A removed name never resolves
+  again. A name the table never minted resolves to nothing. Live names are distinct and resolve to
+  their own entry. A bounded walk yields every live entry.
 - The release record, [generational_table and the existing crates](../../notes/generational-table-and-existing-crates.md),
   answers whether a published crate already covers an allocation-free, fixed-capacity generational
   table. None does: `slotmap` needs an allocator and lets two `u64` names reach one entry, and
