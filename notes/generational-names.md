@@ -129,7 +129,7 @@ saturation on the same host. There, the insert scan that tests the generation in
 +1.04%. Every other row is unchanged. That is the form in the crate, and all five harnesses prove in
 18 seconds. A second form keeps the plain scan for a free slot and tests the generation only on the
 slot it finds, restarting past a retired one. It reads every row of all three architectures exactly
-as the tree without saturation does, and matches first-fit in a release build at `N` = 256, but CBMC
+as the tree without saturation does, and matches first-fit in a release build at `N` = 256. But CBMC
 did not finish the two harnesses that start from arbitrary generations within 300 seconds each. So
 the scan's form still trades a 1% `spawn_reap` cost against a proof that finishes.
 
