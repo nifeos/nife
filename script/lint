@@ -3773,12 +3773,15 @@ python3 helpers/hang_evidence.py lint
 echo "==> merge groups save no rust-cache entry; main-caches saves what jobs restore"
 python3 helpers/cache_save_scope.py --selftest >/dev/null
 python3 helpers/cache_save_scope.py
-# Owned runners (lane/owned-runners-canary): no job that can run for a pull request resolves
-# runs-on to the owned label or to the NIFE_RUNNER_OWNED switch, and every job that does carries a
-# merge_group/push-only `if:`. Fixtures first: the selftest plants a pull_request workflow, the
-# switch under pull_request_target, a missing guard and a guard that names pull_request, and
-# requires each to fail. notes/owned-runners.md; helpers/owned_runner_check.py says more.
-echo "==> no owned-runner job can run for a pull request, and each is guarded to the queue"
+# Owned runners: a job that can resolve runs-on to the owned label or the NIFE_RUNNER_OWNED switch
+# sits in a workflow whose only triggers are merge_group and a push to main, carries a
+# merge_group/push-only `if:` (or the event-aware switch), and sets timeout-minutes; and no
+# pull_request_target or workflow_run job names the pull request's head. Fixtures first: the
+# selftest plants each trigger an outsider can reach, a bare push, a push that takes tags, a missing
+# timeout, an owned label in a matrix and in a reusable workflow's input, and a head checkout under
+# pull_request_target and workflow_run, and requires each to fail. notes/owned-runners.md;
+# helpers/owned_runner_check.py says more.
+echo "==> owned-runner jobs run only for the queue and main, and no base-token job checks out a head"
 # lint-quick
 python3 helpers/owned_runner_check.py --selftest >/dev/null
 python3 helpers/owned_runner_check.py
