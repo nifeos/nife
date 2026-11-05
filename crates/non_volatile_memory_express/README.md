@@ -17,7 +17,7 @@ Six Kani harnesses, in the `verification` module:
   ring, and the expected phase flips exactly once per lap.
 - `distinct_doorbells_never_collide`: two different (queue, role) pairs never share a doorbell
   offset, for every stride a controller may report.
-- `prp_pair_is_total_and_page_disciplined`: for any base, length and page size, the PRP pair
+- `physical_region_page_pair_is_total_and_page_disciplined`: for any base, length and page size, the PRP pair
   either refuses or covers the transfer; the second pointer is zero when one page suffices, and
   otherwise the page boundary right after the base.
 - `a_transfer_command_is_only_built_for_a_block_the_namespace_has`: `Namespace::transfer_command` builds a
@@ -35,14 +35,14 @@ makes that harness fail at its own assertion, which shows the proof checks somet
 
 ```rust
 use non_volatile_memory_express::{
-    doorbell, prp_pair, Command, Completion, CompletionQueue, Doorbell, SubmissionQueue,
+    doorbell, physical_region_page_pair, Command, Completion, CompletionQueue, Doorbell, SubmissionQueue,
 };
 
 let mut sq = SubmissionQueue::new(64);
 let mut cq = CompletionQueue::new(64);
 
 // Read eight 512-byte blocks from LBA 0 of namespace 1 into a buffer that straddles a page.
-let (prp1, prp2) = prp_pair(0x4000_0800, 4096, 4096).unwrap();
+let (prp1, prp2) = physical_region_page_pair(0x4000_0800, 4096, 4096).unwrap();
 let read = Command::read(1, 1, 0, 8, prp1, prp2);
 let slot = sq.push(); // write `read.0` into submission slot `slot`, then ring the tail:
 assert_eq!(doorbell(1, Doorbell::SubmissionTail, 0), 0x1008); // write sq.tail() here
@@ -60,7 +60,7 @@ assert_eq!(head, 1);
 
 - `SubmissionQueue` assumes one command in flight per queue and panics when the ring would fill; it keeps
   no free-slot count.
-- `prp_pair` covers at most two pages. A transfer that needs a PRP list returns `None`.
+- `physical_region_page_pair` covers at most two pages. A transfer that needs a PRP list returns `None`.
 - `parse_identify_namespace` refuses LBA formats outside 512 bytes to 4 KiB per block.
   `logical_block_address_format_shift` reports the shift it refused.
 - Not proven: the `Capabilities` decode beyond the doorbell stride, the status fields of

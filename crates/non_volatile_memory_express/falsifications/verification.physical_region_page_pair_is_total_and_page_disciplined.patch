@@ -1,6 +1,6 @@
-Falsifies `non_volatile_memory_express::verification::prp_pair_is_total_and_page_disciplined`.
+Falsifies `non_volatile_memory_express::verification::physical_region_page_pair_is_total_and_page_disciplined`.
 
-The defect: `prp_pair` uses `end < page_size` where the spec's boundary is `<=`. A transfer that ends
+The defect: `physical_region_page_pair` uses `end < page_size` where the spec's boundary is `<=`. A transfer that ends
 exactly on the page boundary then gets a second pointer it does not need, the next page, which
 the controller is told it may read or write.
 
@@ -10,7 +10,7 @@ diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile
 index 7827ea4e1..b2decd0fd 100644
 --- a/crates/non_volatile_memory_express/src/lib.rs
 +++ b/crates/non_volatile_memory_express/src/lib.rs
-@@ -383,3 +383,3 @@ pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
+@@ -383,3 +383,3 @@ pub fn physical_region_page_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
      let end = offset.checked_add(len)?;
 -    if end <= page_size {
 +    if end < page_size {

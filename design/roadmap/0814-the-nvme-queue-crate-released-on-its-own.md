@@ -72,7 +72,7 @@ makes it fail at its own assertion. Each patch is at
 | Submission queue pushes stay in bounds | `verification::sq_push_stays_in_bounds` |
 | Completion pops stay in bounds, and the phase flips only at the wrap | `verification::cq_pop_stays_in_bounds_and_flips_only_at_the_wrap` |
 | Distinct doorbells never collide | `verification::distinct_doorbells_never_collide` |
-| The PRP pair is total and page-disciplined | `verification::prp_pair_is_total_and_page_disciplined` |
+| The PRP pair is total and page-disciplined | `verification::physical_region_page_pair_is_total_and_page_disciplined` |
 | The identify-namespace parse is total and bounds its shift | `verification::identify_parse_is_total_and_bounds_the_shift` |
 | A transfer command is built only for a block the namespace has | `verification::a_transfer_command_is_only_built_for_a_block_the_namespace_has` |
 

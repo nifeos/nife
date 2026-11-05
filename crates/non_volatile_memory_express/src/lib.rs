@@ -327,22 +327,25 @@ const THE_QUEUE_DWORD_FIELDS_SHARE_NO_BIT: () = assert!(0xffffu32 + (0xffff << 1
 /// # Examples
 ///
 /// ```
-/// use non_volatile_memory_express::prp_pair;
+/// use non_volatile_memory_express::physical_region_page_pair;
 ///
 /// // A page-aligned block: one pointer is enough.
-/// assert_eq!(prp_pair(0x4000_0000, 4096, 4096), Some((0x4000_0000, 0)));
+/// assert_eq!(physical_region_page_pair(0x4000_0000, 4096, 4096), Some((0x4000_0000, 0)));
 ///
 /// // The same block, offset half a page: it spills, so PRP2 carries the next page boundary, with
 /// // no offset of its own. That "offset-free by construction" is the spec's rule for PRP2.
-/// assert_eq!(prp_pair(0x4000_0800, 4096, 4096), Some((0x4000_0800, 0x4000_1000)));
+/// assert_eq!(physical_region_page_pair(0x4000_0800, 4096, 4096), Some((0x4000_0800, 0x4000_1000)));
 ///
 /// // Three pages would need a list. Not expressible, and said so.
-/// assert_eq!(prp_pair(0x4000_0000, 3 * 4096, 4096), None);
+/// assert_eq!(physical_region_page_pair(0x4000_0000, 3 * 4096, 4096), None);
 /// ```
 ///
-/// Name: ratified 2026-10-25 (#2720).
+/// Name: ratified 2026-11-05 (UTC), on #3266, renamed from `prp_pair` (the acronym spelled out, as
+/// the acronym test asks). The specification's terms stay searchable through the aliases
+/// `physical region page` and `PRP`.
 #[doc(alias = "physical region page")]
-pub fn prp_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
+#[doc(alias = "PRP")]
+pub fn physical_region_page_pair(base: u64, len: u64, page_size: u64) -> Option<(u64, u64)> {
     assert!(page_size.is_power_of_two() && page_size >= 512);
     if len == 0 {
         return None;
@@ -415,7 +418,7 @@ impl Namespace {
     /// **The NVM command for one whole-block transfer**, or `None` when the arithmetic will not
     /// close: a block outside the namespace ([`Namespace::holds_whole_block`]), an LBA that overflows,
     /// or a buffer that is not expressible as a PRP pair (which for a page-aligned `unit`-byte
-    /// buffer with `unit <= 2 * page_size` it always is; see [`prp_pair`]).
+    /// buffer with `unit <= 2 * page_size` it always is; see [`physical_region_page_pair`]).
     ///
     /// `cid` and `nsid` go to the command as they are, `data_physical_address` is the buffer's bus
     /// address, and `write` picks [`Command::write`] over [`Command::read`].
@@ -437,7 +440,7 @@ impl Namespace {
             return None;
         }
         let slba = block.checked_mul(self.blocks_per_transfer as u64)?;
-        let (prp1, prp2) = prp_pair(data_physical_address, unit, page_size)?;
+        let (prp1, prp2) = physical_region_page_pair(data_physical_address, unit, page_size)?;
         let blocks = self.blocks_per_transfer;
         Some(if write {
             Command::write(cid, nsid, slba, blocks, prp1, prp2)
@@ -897,16 +900,29 @@ mod tests {
     }
 
     #[test]
-    fn prp_pairs_cover_one_and_two_pages_and_refuse_more() {
+    fn physical_region_page_pairs_cover_one_and_two_pages_and_refuse_more() {
         // A page-aligned single page: PRP1 only.
-        assert_eq!(prp_pair(0x5000, 4096, 4096), Some((0x5000, 0)));
+        assert_eq!(
+            physical_region_page_pair(0x5000, 4096, 4096),
+            Some((0x5000, 0))
+        );
         // An offset transfer spilling into the next page: PRP2 is that page's boundary.
-        assert_eq!(prp_pair(0x5800, 4096, 4096), Some((0x5800, 0x6000)));
+        assert_eq!(
+            physical_region_page_pair(0x5800, 4096, 4096),
+            Some((0x5800, 0x6000))
+        );
         // Exactly two aligned pages: still expressible.
-        assert_eq!(prp_pair(0x5000, 8192, 4096), Some((0x5000, 0x6000)));
+        assert_eq!(
+            physical_region_page_pair(0x5000, 8192, 4096),
+            Some((0x5000, 0x6000))
+        );
         // More needs a PRP list, which this driver does not build.
-        assert_eq!(prp_pair(0x5800, 8192, 4096), None);
-        assert_eq!(prp_pair(0x5000, 0, 4096), None, "empty transfers refused");
+        assert_eq!(physical_region_page_pair(0x5800, 8192, 4096), None);
+        assert_eq!(
+            physical_region_page_pair(0x5000, 0, 4096),
+            None,
+            "empty transfers refused"
+        );
     }
 
     /// The last block of the namespace is servable and the one after it is not, which is the
@@ -1138,18 +1154,18 @@ mod verification {
     }
 
     /// **PRP construction is total and never spans more pages than it names.** For any base,
-    /// length and power-of-two page size, `prp_pair` either refuses or returns a pair whose two
+    /// length and power-of-two page size, `physical_region_page_pair` either refuses or returns a pair whose two
     /// pointers cover the whole transfer: PRP2 is zero exactly when one page suffices, and is
     /// page-aligned whenever it is used (the spec's requirement on every pointer after the first).
-    /// Falsification: replayable `crates/non_volatile_memory_express/falsifications/verification.prp_pair_is_total_and_page_disciplined.patch`
+    /// Falsification: replayable `crates/non_volatile_memory_express/falsifications/verification.physical_region_page_pair_is_total_and_page_disciplined.patch`
     #[kani::proof]
-    fn prp_pair_is_total_and_page_disciplined() {
+    fn physical_region_page_pair_is_total_and_page_disciplined() {
         let base: u64 = kani::any();
         let len: u64 = kani::any();
         let shift: u32 = kani::any();
         kani::assume((9..=16).contains(&shift));
         let page = 1u64 << shift;
-        if let Some((prp1, prp2)) = prp_pair(base, len, page) {
+        if let Some((prp1, prp2)) = physical_region_page_pair(base, len, page) {
             assert_eq!(prp1, base);
             let offset = base & (page - 1);
             if offset + len <= page {

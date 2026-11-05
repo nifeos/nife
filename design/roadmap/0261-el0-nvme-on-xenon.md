@@ -243,7 +243,7 @@ about a real device at real speed.
   only under `components/confinement_attackers`, which only `cargo xtask test` turns on, so a
   shipped server does not carry it.
 - **Recorded.** A transfer is one NVMe command per filesystem block, even for a sixteen-block
-  request, because `non_volatile_memory_express::prp_pair` refuses anything needing a PRP list. The virtio block server
+  request, because `non_volatile_memory_express::physical_region_page_pair` refuses anything needing a PRP list. The virtio block server
   issues one request for the same range, so this server is slower on bulk by construction. In
   `components/src/non_volatile_memory_express.rs`'s `BUGS`.
 - **Recorded.** The server cannot read `CSTS`, so a hung controller presents as a timeout rather
