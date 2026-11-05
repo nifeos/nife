@@ -35,13 +35,13 @@ pub fn initialize() {
     // builds the value in a frame temporary before it stores it. So the bytes are copied from a
     // `static` straight into the lock's slot, and no temporary exists.
     assert!(sched.is_none(), "the scheduler tables were installed twice");
-    // SAFETY: `EMPTY_IPC_TABLES` is a valid `Some(IpcTables)` and `sched` is a valid, aligned
+    // SAFETY: `EMPTY_INSTALLED_TABLES` is a valid `Some(IpcTables)` and `sched` is a valid, aligned
     // `Option<IpcTables>` that does not overlap it. The old value is `None` (asserted above), which
     // owns nothing, so overwriting it without a drop leaks nothing. The copy is a move of a
     // const-built value, and the static is never read as a live table.
     unsafe {
         core::ptr::copy_nonoverlapping(
-            core::ptr::addr_of!(EMPTY_IPC_TABLES.0),
+            core::ptr::addr_of!(EMPTY_INSTALLED_TABLES.0),
             core::ptr::addr_of_mut!(*sched),
             1,
         );
