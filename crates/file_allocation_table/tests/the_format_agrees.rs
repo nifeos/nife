@@ -90,7 +90,7 @@ fn check_with_fsck(image: &[u8], label: &str) {
 }
 
 /// What rust-fatfs counts as free clusters on `image`.
-fn oracle_free_clusters(image: &[u8]) -> u32 {
+fn lamfat_free_clusters(image: &[u8]) -> u32 {
     let fs = lamfat::FileSystem::new(
         lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
         lamfat::FsOptions::new(),
@@ -132,7 +132,7 @@ fn check(label: &str, format: &FormatPlan, image: Memory) {
         "{label}"
     );
     assert_eq!(
-        oracle_free_clusters(&image.bytes),
+        lamfat_free_clusters(&image.bytes),
         format.clusters()
             - u32::from(format.file_allocation_table_type() == FileAllocationTableType::Fat32),
         "{label}"
@@ -290,7 +290,7 @@ fn mkfs_fat() -> Option<&'static str> {
 #[test]
 fn volumes_mkfs_fat_made_take_this_crates_writer() {
     let Some(tool) = mkfs_fat() else {
-        eprintln!("no mkfs.fat on this host; the mkfs.fat oracle images are skipped");
+        eprintln!("no mkfs.fat on this host; the mkfs.fat images are skipped");
         return;
     };
     for (label, fat, mebibytes, cluster) in [
@@ -303,7 +303,7 @@ fn volumes_mkfs_fat_made_take_this_crates_writer() {
         file.set_len(mebibytes << 20).unwrap();
         drop(file);
         let status = Command::new(tool)
-            .args(["-F", fat, "-s", cluster, "-n", "ORACLE", "-i", "DEADBEEF"])
+            .args(["-F", fat, "-s", cluster, "-n", "LAMFAT", "-i", "DEADBEEF"])
             .arg(&path)
             .output()
             .unwrap();

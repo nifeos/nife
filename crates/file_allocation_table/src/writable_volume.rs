@@ -12,8 +12,8 @@
 //! resize sets the write time, the write date and the access date. A rename keeps the entry's
 //! times. Attribute and label changes stamp nothing except a label's first entry.
 //!
-//! Name: ratified 2026-11-01 (UTC), the writing half of `Volume`, whose clock the ruling of 2026-11-01 (UTC)
-//! makes required.
+//! Name: ratified 2026-11-01 (UTC), the writing half of `Volume`, whose clock the ruling of
+//! 2026-11-01 (UTC) makes required.
 
 use core::ops::{Deref, DerefMut};
 
@@ -104,7 +104,7 @@ impl<D: WritableSectorDevice, C: Clock> WritableVolume<D, C> {
         Ok(())
     }
 
-    /// **Write the `FSInfo` hints and set the clean-shutdown bit again.**
+    /// **Write the file system information hints and set the clean-shutdown bit again.**
     ///
     /// Name: ratified 2026-11-01 (UTC), renamed from `sync`, as `Volume::mark_clean`.
     pub fn mark_clean(&mut self) -> Result<(), ChainError<D::Error>> {

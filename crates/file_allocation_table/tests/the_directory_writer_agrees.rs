@@ -135,7 +135,7 @@ fn walk(
     }
 }
 
-fn oracle_tree(image: &[u8]) -> Vec<(String, bool, Vec<u8>)> {
+fn lamfat_tree(image: &[u8]) -> Vec<(String, bool, Vec<u8>)> {
     let fs = lamfat::FileSystem::new(
         lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
         lamfat::FsOptions::new(),
@@ -193,7 +193,7 @@ fn long_names(label: &str, mebibytes: usize, fat_type: FatType) -> Memory {
     );
     volume.mark_clean().unwrap();
     let image = volume.into_device();
-    let tree = oracle_tree(&image.bytes);
+    let tree = lamfat_tree(&image.bytes);
     for (i, name) in names.iter().enumerate() {
         let found = tree
             .iter()
@@ -246,7 +246,7 @@ fn directories_and_moves(label: &str, image: Memory) -> Memory {
     );
     volume.mark_clean().unwrap();
     let image = volume.into_device();
-    let tree = oracle_tree(&image.bytes);
+    let tree = lamfat_tree(&image.bytes);
     for (path, directory, bytes) in tree_of(&[
         ("/Documents And Settings", true, b""),
         ("/Sub Moved", true, b""),
@@ -289,7 +289,7 @@ fn remove_all(label: &str, image: Memory) {
     volume.mark_clean().unwrap();
     let image = volume.into_device();
     check_with_fsck(&image.bytes, &format!("{label}-removed"));
-    assert_eq!(oracle_tree(&image.bytes).len(), ROOT_FILES, "{label}");
+    assert_eq!(lamfat_tree(&image.bytes).len(), ROOT_FILES, "{label}");
 }
 
 fn scenario(label: &str, mebibytes: usize, fat_type: FatType) {
@@ -373,7 +373,7 @@ fn directories_above_cluster_65535_keep_their_high_bits_through_a_move() {
     let _ = c_moved;
     volume.mark_clean().unwrap();
     let image = volume.into_device();
-    let tree = oracle_tree(&image.bytes);
+    let tree = lamfat_tree(&image.bytes);
     for (path, directory) in [
         ("/High A", true),
         ("/High A/High C Moved", true),
@@ -419,7 +419,7 @@ fn a_new_directory_in_a_multi_sector_cluster_is_zeroed_past_its_dots() {
     volume.create_directory(0, "Fresh").unwrap();
     volume.mark_clean().unwrap();
     let image = volume.into_device();
-    let tree = oracle_tree(&image.bytes);
+    let tree = lamfat_tree(&image.bytes);
     assert_eq!(tree, tree_of(&[("/Fresh", true, b"")]));
     check_with_fsck(&image.bytes, "fresh-dir");
 }

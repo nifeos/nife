@@ -1,6 +1,7 @@
-//! **The volume**: the arithmetic that sizes the table of the one EFI system partition shape and
-//! places each cluster, and the sectors a caller writes. The shape's constants are in
-//! [`crate::efi_system_partition`]; the crate root re-exports what is public here.
+//! **The volume**: the arithmetic that sizes the table of the one EFI (Extensible Firmware
+//! Interface) system partition shape and places each cluster, and the sectors a caller writes. The
+//! shape's constants are in [`crate::efi_system_partition`]; the crate root re-exports what is
+//! public here.
 //!
 //! Name: ratified 2026-10-25 (#2720).
 
@@ -42,7 +43,8 @@ pub enum LayoutError {
     /// version 1.03, section 3, Boot Sector and BPB, which types a volume by its clusters): the
     /// partition holds fewer than
     /// [`FAT32_MINIMUM_CLUSTERS`](crate::efi_system_partition::FAT32_MINIMUM_CLUSTERS) data
-    /// clusters, so it is not a FAT32 volume however its boot sector is filled in. With 4096-byte clusters that is about 256 MiB.
+    /// clusters, so it is not a FAT32 volume however its boot sector is filled in. With 4096-byte
+    /// clusters that is about 256 MiB.
     ///
     /// Name: ratified 2026-10-25 (#2720).
     #[doc(alias = "not a 32-bit file allocation table")]
@@ -245,9 +247,9 @@ impl VolumeLayout {
         self.first_data_sector() + (cluster - ROOT_CLUSTER) as u64 * CLUSTER_SECTORS as u64
     }
 
-    /// **How many leading sectors the caller must write from [`VolumeLayout::fill_sector`]**: everything from
-    /// the boot sector through the last directory cluster. The boot file's own bytes go at
-    /// [`VolumeLayout::file_first_sector`], which is the next sector after these.
+    /// **How many leading sectors the caller must write from [`VolumeLayout::fill_sector`]**:
+    /// everything from the boot sector through the last directory cluster. The boot file's own
+    /// bytes go at [`VolumeLayout::file_first_sector`], which is the next sector after these.
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub const fn metadata_sectors(&self) -> u64 {
@@ -272,8 +274,9 @@ impl VolumeLayout {
 
     /// **Fill `out` with partition-relative sector `index`.**
     ///
-    /// `false` when `index` is at or past [`VolumeLayout::metadata_sectors`] (the caller's own file bytes
-    /// begin there) or when `out` is not [`SECTOR_BYTES`] bytes; in neither case is `out` touched.
+    /// `false` when `index` is at or past [`VolumeLayout::metadata_sectors`] (the caller's own file
+    /// bytes begin there) or when `out` is not [`SECTOR_BYTES`] bytes; in neither case is `out`
+    /// touched.
     ///
     /// Every sector this answers for is written whole, zeros included, so that a volume laid over a
     /// disk that held something before does not inherit a single stale directory entry or table
@@ -296,7 +299,8 @@ impl VolumeLayout {
             6 => self.boot_sector(out),
             7 => self.file_system_information(out),
             i if (fat_start..fat_end).contains(&i) => {
-                // Both copies are the same bytes, so the offset inside one copy is all that matters.
+                // Both copies are the same bytes, so the offset inside one copy is all that
+                // matters.
                 let within = (i - fat_start) % self.fat_sectors as u64;
                 self.fat_sector(within as u32, out);
             }
@@ -321,7 +325,8 @@ impl VolumeLayout {
             .write_boot_sector(self.volume_id, &self.label, self.hidden_sectors, out);
     }
 
-    /// `FSInfo`, whose two counts are hints a driver is allowed to ignore or disbelieve.
+    /// the file system information sector, whose two counts are hints a driver is allowed to ignore
+    /// or disbelieve.
     fn file_system_information(&self, out: &mut [u8]) {
         // Three directories and the file. Written once; see this crate's BUGS.
         let used = (FILE_CLUSTER - ROOT_CLUSTER) + self.file_clusters;
@@ -330,9 +335,9 @@ impl VolumeLayout {
 
     /// One sector of the table, `within` sectors into a copy of it.
     ///
-    /// The whole table is written, so the free clusters are explicitly zero rather than whatever the
-    /// disk held. On a 512 MiB volume that is a megabyte of writes and it is not optional: a stale
-    /// word in a table the firmware reads is a chain into somebody's old data.
+    /// The whole table is written, so the free clusters are explicitly zero rather than whatever
+    /// the disk held. On a 512 MiB volume that is a megabyte of writes and it is not optional: a
+    /// stale word in a table the firmware reads is a chain into somebody's old data.
     fn fat_sector(&self, within: u32, out: &mut [u8]) {
         let per_sector = (SECTOR_BYTES / 4) as u32;
         let first = within * per_sector;
@@ -588,7 +593,8 @@ mod tests {
             v.table_sectors()
         ); // BPB_FATSz32
         assert_eq!(u32::from_le_bytes([s[44], s[45], s[46], s[47]]), 2); // BPB_RootClus
-        assert_eq!(u16::from_le_bytes([s[48], s[49]]), 1); // BPB_FSInfo
+        // The file system information sector's number:
+        assert_eq!(u16::from_le_bytes([s[48], s[49]]), 1);
         assert_eq!(u16::from_le_bytes([s[50], s[51]]), 6); // BPB_BkBootSec
         assert_eq!(s[66], 0x29); // BS_BootSig
         assert_eq!(&s[82..90], b"FAT32   ");
@@ -919,8 +925,8 @@ mod tests {
         assert_eq!(v.file_sectors(), 2198 * 8);
     }
 
-    /// `FSInfo`'s two hints count the three directories and the file: free is what is left, and the
-    /// next free cluster is the one after the file.
+    /// the file system information sector's two hints count the three directories and the file:
+    /// free is what is left, and the next free cluster is the one after the file.
     #[test]
     fn fs_info_counts_the_directories_and_the_file() {
         let v = volume();

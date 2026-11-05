@@ -552,9 +552,10 @@ impl BootSector {
         self.hidden_sectors
     }
 
-    /// **FAT32 `FSInfo` sector** (`BPB_FSInfo`, "FAT: General Overview of On-Disk Format" version
-    /// 1.03, section 5, FAT32 `FSInfo` Sector Structure and Backup Boot Sector): the sector holding
-    /// the free-cluster hints, or `None` when the BPB names none inside the reserved region.
+    /// **FAT32 file system information sector** ("FAT: General Overview of On-Disk Format" version
+    /// 1.03, section 5, "FAT32 `FSInfo` Sector Structure and Backup Boot Sector"): the sector
+    /// holding the free-cluster hints, or `None` when the BPB names none inside the reserved
+    /// region.
     ///
     /// Name: ratified 2026-10-25 (#2720), reopened and ratified again 2026-11-01 (UTC): renamed
     /// from `fs_info_sector`, so the term of art is spelled out as `FileSystemInformation` is.
