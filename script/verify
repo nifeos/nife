@@ -320,8 +320,10 @@ fi
 # Kani pool"). The heavy-job slot above is one equal share, and this script is not one share: it runs
 # VERIFY_JOBS harnesses at once, and one proof has been seen past 20 GiB resident, so a few runs at
 # once passed a 56 GiB host's memory. A run therefore also takes the Kani units of every harness it
-# runs at once (NIFE_KANI_HARNESS_GIB sets a harness's weight, 10 GiB by default), all together or
-# none, waiting until they are free. A pool that fits fewer harnesses than VERIFY_JOBS lowers
+# runs at once, all together or none, waiting until they are free. A harness weighs the measured peak
+# of its row (helpers/kani-peaks.tsv; notes/verification/kani-memory.md), and 10 GiB for a row never
+# measured or changed since, so `--only` weighs that row and every other run the largest row of the
+# table. NIFE_KANI_HARNESS_GIB sets the weight outright. A pool that fits fewer harnesses than VERIFY_JOBS lowers
 # VERIFY_JOBS to what fits, out loud. The pool is off in
 # CI (GITHUB_ACTIONS) and under `script/lint --no-cargo`, which runs a stub cargo. A shard child of
 # --parallel runs inside its parent's units.
@@ -329,8 +331,9 @@ fi
 kani_pool="off"
 kani_weight=1
 if [ -z "${LINT_NO_CARGO:-}" ]; then
-	kani_pool="$(python3 helpers/heavy_slot.py --pool kani --size)"
-	kani_weight="$(python3 helpers/heavy_slot.py --pool kani --weight)"
+	kani_rows="${only:---table}"
+	kani_pool="$(python3 helpers/heavy_slot.py --pool kani --size "$kani_rows")"
+	kani_weight="$(python3 helpers/heavy_slot.py --pool kani --weight "$kani_rows")"
 fi
 # kani_pool_enter <units> [argument...]: re-run this script under <units> Kani units unless an
 # ancestor already holds them. <argument...> replaces the options already parsed away.
