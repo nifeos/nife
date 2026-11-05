@@ -285,6 +285,7 @@ section" resolves here.
 | [riscv64-spawn-reap-drift](benchmarks/riscv64-spawn-reap-drift.md) | the double copy | 2026-10-22 |
 | [riscv64-unexplained-drift](benchmarks/riscv64-unexplained-drift.md) | the riscv64 chart line, a false compiler term | 2026-11-03 |
 | [x86_64-unexplained-drift](benchmarks/x86_64-unexplained-drift.md) | the x86_64 chart line, the tick's phase | 2026-11-04 |
+| [aarch64-unexplained-drift](benchmarks/aarch64-unexplained-drift.md) | the aarch64 chart line, #2735's unclaimed gain | 2026-11-05 |
 
 ## BUGS
 
