@@ -11,7 +11,9 @@ one process tree, and a per-machine file, `~/.nife/heavy-slot-count` (one intege
 directory and outside every worktree, so every lane reads it with no setup). The environment wins
 over the file. Every poll rereads the file, so raising it reaches waiting jobs within seconds.
 A job that has to wait says once which jobs hold the slots, and hints when one looks stuck (under 1
-percent CPU for over an hour), then waits. `--status` marks a slot whose worktree is gone as orphaned. A nested job (`ci-build`'s tests) runs in
+percent CPU for over an hour), then waits. `--status` marks a slot whose worktree is gone as orphaned. An export of
+`NIFE_HEAVY_SLOTS` in a shell profile overrides the file, so remove the export for the file to take
+effect. A nested job (`ci-build`'s tests) runs in
 its parent's slot. `python3 helpers/heavy_slot.py --status` lists the holders.
 `helpers/heavy_slot.py` has the mechanism and why a killed job cannot leave a slot stuck.
 

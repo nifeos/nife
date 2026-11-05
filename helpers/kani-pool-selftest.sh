@@ -33,7 +33,9 @@ case "$1 $2" in
 esac
 printf '%s\n' "$*" >>"${NIFE_SELFTEST_ARGS:?}"
 printf 'start %s\n' "$$" >>"${NIFE_SELFTEST_EVENTS:?}"
-sleep 1
+# Long enough that the third run, started 0.6 s after the first, reaches the pool while both earlier
+# proofs still hold their units even when a loaded host delays its startup by a second or two.
+sleep 3
 printf 'end %s\n' "$$" >>"${NIFE_SELFTEST_EVENTS:?}"
 exit 0
 STUB
