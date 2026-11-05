@@ -21,10 +21,8 @@
 
 [[home]]
 status = "undecided"
-reason = "project records; whether this repository keeps them is calef's call"
+reason = "each repository carries its own copy of these, or they follow the integrating repository, not yet named"
 paths = [
-    "design/",
-    "briefs/",
     "AGENTS.md",
     "CLAUDE.md",
     "ARCHITECTS.md",
@@ -39,9 +37,18 @@ paths = [
 ]
 
 [[home]]
+# The design records and the notes go with the rest of the documentation to the website repository,
+# milestone 1018 (the design record moves to `nifeos.org` and is published as a website). `briefs/`
+# are project records, treated as documentation for now; that part is provisional within a
+# provisional home, and whether the briefs stay with this repository is open.
+status = "provisional"
+repo = "nifeos.org"
+paths = ["design/", "briefs/", "notes/"]
+
+[[home]]
 status = "undecided"
 reason = "documentation; the site, a package or the records is an open question"
-paths = ["notes/", "vendor/README.md", "vendor/upstream-status.md"]
+paths = ["vendor/README.md", "vendor/upstream-status.md"]
 
 [[home]]
 # The design record's site build, milestone 1018 (the design record moves to `nifeos.org` and is
