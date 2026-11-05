@@ -59,8 +59,19 @@ waiting included, so about 29 minutes of it was a wait. The journal does not say
 
 ## Lint's own peak
 
-This lane ran its full `script/lint` once inside a user scope with no memory cap and read the scope
-at the end. LINT_MEASUREMENT
+This lane ran its full `script/lint` twice, each inside a user scope with no memory cap, and read
+the scope at the end.
+
+| run | when (UTC) | `memory.peak` | sampled peak the kernel cannot drop | CPU |
+|---|---|---:|---:|---:|
+| first, cold worktree | 04:59:43 to 05:06:12 | 6.63 GiB | not sampled | 1,734 s |
+| second, warm | 05:07:54 to 05:09:37 | 1.70 GiB | 1.33 GiB | 1,076 s |
+
+The first run's wall time includes a wait for a heavy slot, and its file cache at the end was 1.12
+GiB; its split at the peak is unknown. For the second, a loop outside the scope read `memory.stat`
+once a second and kept the largest sum of `anon`, `shmem` and `kernel` (1.33 GiB) and of `file`
+(0.31 GiB). Lint's own summary read 103 s of wall time, 1,042 s of CPU and up to eight sections at
+once. A one-second sampler can miss a shorter spike, so 1.33 GiB is a lower bound.
 
 ## The jobserver probe
 

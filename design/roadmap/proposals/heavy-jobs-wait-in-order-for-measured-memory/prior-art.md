@@ -77,7 +77,7 @@ Read. At most one running and one pending run per group; a new pending run cance
 older pending one (`queue: max` raises pending to 100).
 
 Where nife differs. A concurrency group serializes and discards, which suits a deployment where
-only the newest run matters. A lane's lint is never superseded by another lane's, so nife must
+only the newest run matters. One lane's lint never makes another lane's pointless, so nife must
 queue, not cancel.
 
 ## What nife takes from each

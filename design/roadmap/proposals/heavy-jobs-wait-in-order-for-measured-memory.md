@@ -31,9 +31,8 @@ one step or waits, and waits in ticket order. On Linux each admitted job runs in
 cgroup, which measures its peak to correct the weight and caps it so a wrong weight kills that job
 and never the host.
 
-Four properties follow. No process waits while an ancestor holds a grant, so hold-and-wait has no
-code path. No two processes need to agree on a count. A big request cannot starve. And the kernel's
-`flock(2)` still frees a dead job's reservation, with no daemon and no cleanup step.
+No process then waits while it holds a grant, no two processes need to agree on a count, and a dead
+job still frees its reservation through `flock(2)`, with no daemon.
 
 ## Background
 
@@ -74,8 +73,7 @@ command and its output. In short, from the 80-core, 53.9 GiB Linux host with no 
   constraint. The user manager's cgroup reached a peak of 52.4 GiB. The pool admitted those runs
   and nothing stopped them.
 
-The maintainer also reported a pool charge of 40 GiB for a run that used 12 to 13 GiB, and a cap
-raised by hand from 6 to 10 to 15. This lane did not observe those two; they are the maintainer's.
+The maintainer also reported a run charged 40 GiB that used 12 to 13 GiB; this lane did not see it.
 
 ## The design
 
@@ -89,9 +87,9 @@ plus its compile.
 Linux measures the peak from the job's own cgroup. Each admitted job runs as
 `systemd-run --user --scope`. This host allows that without root: the user manager delegates the
 `cpu`, `memory` and `pids` controllers. The kernel's `memory.peak` counts page cache, which the
-kernel can drop, so it overstates what a job reading many files needs. This lane's full lint
-peaked at LINT_PEAK_GIB GiB by `memory.peak` and at LINT_ANON_GIB GiB of memory the kernel cannot
-drop. So the wrapper samples `memory.stat` each second and weighs a job by its peak of anonymous,
+kernel can drop, so it overstates what a job reading many files needs. This lane's first full lint, a
+cold build, peaked at 6.63 GiB by `memory.peak`. A warm one peaked at 1.70 GiB, of which 1.33 GiB
+was memory the kernel cannot drop. So the wrapper samples `memory.stat` each second and weighs a job by its peak of anonymous,
 shared and kernel memory, and the log keeps `memory.peak` beside it.
 
 The weight corrects itself. A machine-local file under `~/.nife/heavy/` keeps the last ten peaks of
@@ -118,13 +116,12 @@ cargo runs on a two-token fifo ran four build scripts at once: the bound is toke
 cargo killed with `SIGKILL` mid-build returned none of its two tokens, so a leaked token stays
 leaked until something refills the fifo. Kani's harness parallelism (`-j`) is a thread pool in
 `kani-driver`, whose binary has no jobserver strings, so it would not take part (inferred, not
-run). A load gate lags by a minute and lets a burst of waiters through together.
+run).
 
 ### (c) No hold-and-wait
 
 A job's request is its whole need, decided before it starts. A script states its class at the top;
-`script/verify` computes its Kani request from the rows it will prove and `VERIFY_JOBS`, which it
-does today for the pool. When `script/lint` reaches a section that would start a heavier class, that
+`script/verify` computes its Kani request from the rows it will prove and `VERIFY_JOBS`. When `script/lint` reaches a section that would start a heavier class, that
 section runs inside lint's grant: it lowers its parallelism to fit, or it fails and says what it
 needed. The waiting function asserts that no ancestor holds a grant, so a regression fails loudly
 instead of hanging.
@@ -140,18 +137,16 @@ oldest waiter that fits may start; a younger waiter may start if it fits and the
 under ten minutes. After ten minutes nothing younger starts until the oldest has. The ledger clamps a
 request above capacity to capacity, as today, so every request can start eventually.
 
-This is the aging form of backfill. Slurm backfills by estimated end time, and nife has no
-estimates. The wait log in (h) could supply them later.
+This is backfill by age. Slurm backfills by estimated end time, which nife does not have.
 
 ### (e) A safety net
 
 On Linux the scope carries `MemoryMax` at twice the job's weight, `MemorySwapMax=0`, and
 `memory.oom.group=1`, so an overrun kills that whole job and nothing else. A probe scope at 64 MiB
 killed a 200 MiB allocation and only that process. The wrapper reads `memory.events`, reports the
-kill with the class and the cap, and records a peak of twice the old weight. The next run of that
-class therefore reserves more. Every heavy scope lives under one slice whose `MemoryMax` is the
-machine's capacity, so the sum of heavy jobs cannot reach the memory the desktop, the agents and the
-shells need.
+kill with the class and the cap, and records a peak of twice the old weight. Every heavy scope lives under one slice whose `MemoryMax` is the
+machine's capacity, so heavy jobs together cannot take the memory the desktop, the agents and the
+shells need. If that slice fills, the kernel kills its largest job, usually the one that overran.
 
 `systemd-oomd` is inactive on this host, and it needs root to enable. The slice cap gives the same
 protection for heavy jobs without it.
@@ -160,8 +155,7 @@ macOS has no equivalent. The wrapper there kills a job's process group when the 
 twice its weight, best effort at one-second resolution. The capacity default on macOS is half of
 physical memory, against Linux's physical memory less 12 GiB. Admission there also refuses to start
 anything while `kern.memorystatus_vm_pressure_level` reads warning or worse (recalled from Apple's
-documentation, not tested here). A 16 GiB Mac hung twice on 2026-10-19 with several lanes running,
-and it remains the host with no hard backstop.
+documentation, not tested here). A 16 GiB Mac remains the host with no hard backstop.
 
 ### (f) Per-machine configuration
 
@@ -177,7 +171,7 @@ A dead holder frees its reservation through `flock`, as now. Two leaks remain.
 
 - A holder whose worktree is gone, like the orphan lint that kept a slot after its worktree went.
   The ledger records the worktree. `--reap` ends such a holder by writing to the scope's
-  `cgroup.kill` on Linux, which kills the whole tree at once, or by signalling the process group on
+  `cgroup.kill` on Linux, which kills the whole tree at once, or by signaling the process group on
   macOS. The recommendation is to reap these automatically at each admission, because a missing
   worktree is unambiguous.
 - A holder that runs but does nothing, as the eight lints did. #3244's idle hint names it. With (c)
@@ -187,8 +181,7 @@ A dead holder frees its reservation through `flock`, as now. Two leaks remain.
 ### (h) Observability
 
 `--status` prints one table per class: weight and its source (measured, default or stale), running
-count, waiting count, memory reserved, and memory in use from each scope's `memory.current`. The gap
-between reserved and in use is the over-reservation this proposal exists to shrink. Below it, the
+count, waiting count, memory reserved, and memory in use from each scope's `memory.current`. Below it, the
 queue in ticket order with each waiter's age and request. Each job appends one line to
 `~/.nife/heavy/log.tsv`: ticket, class, lane, request, seconds waited, seconds run, peak and how it
 ended. `--report` totals waits by class and day, so a slow queue becomes a number.
@@ -228,26 +221,28 @@ measurements above, not on effort; B is the cheaper option.
 
 ## Worked example: the 04:52 UTC state under the ledger
 
-Capacity: 53.9 GiB less 12 GiB, so 41.9 GiB, and 120 cores. Lint's measured peak from this lane's
-own full run is LINT_PEAK. The other classes have no measurement yet and weigh 8 GiB, today's slot.
+Capacity: 53.9 GiB less 12 GiB, so 41.9 GiB, and 120 cores. Lint weighs 2 GiB, from the warm
+run's 1.33 GiB. The classes with no measurement weigh 8 GiB, today's slot.
 
 | holder | today | under the ledger |
 |---|---|---|
-| eight lint runs | 8 slots, all idle, waiting for 20 Kani units | LINT_ROW |
+| eight lint runs | 8 slots, all idle, waiting for 20 Kani units | 16 GiB, 2 GiB each, all running |
 | `file_allocation_table` proof | 1 slot and 10 GiB of pool | 6 GiB (5,140 MiB rounded up) |
 | one `generational_table` harness | 1 slot and 10 GiB of pool | 2 GiB (410 MiB) |
 | `script/test`, a crate move | 2 slots | 16 GiB, at the default |
 
-WORKED_EXAMPLE_TOTAL
+The twelve jobs reserve 40 GiB of 41.9, so all of them run, and the eight lints make progress
+instead of idling. A thirteenth job at the default waits. A full `glob` proof at four harnesses asks
+for 40 GiB; it waits for the lints to finish, and after ten minutes nothing younger starts ahead of
+it. Today the same moment admits three more jobs of any size, and nothing caps what each grows to.
 
-The example shows the cost too. Until a class has a measurement, its default reserves as much as a
-slot does today, so on the first day the ledger admits no more than a slot count of the same size.
-The gain arrives with the peaks.
+Until a class has a measurement, its default reserves what a slot does today, so the gain arrives
+with the peaks. A cold lint may well need more than 2 GiB; its first run raises the weight.
 
 ## The cost, and when a slot count is better
 
 The machinery is perhaps 800 lines of Python and a selftest of the same order, against today's 400.
-It adds a scope per job on Linux (a `systemd-run` call costs milliseconds), a machine-local state
+It adds a scope per job on Linux, a machine-local state
 directory, and a ledger format that must stay readable across checkouts of different ages. Weights
 can be wrong in both directions, and the safety net turns a weight that is too low into a job killed
 at its cap. That failure is loud and local, but a lane still loses a run.
@@ -256,16 +251,15 @@ A slot count stays the better answer on a host with one or two lanes. It also wi
 uses most of memory, since a 16 GiB Mac fits two jobs either way. And without cgroups, the macOS
 wrapper adds little over a count. Option B is cheap insurance for those hosts.
 
-## Milestones
+## Steps
 
-Each fits one pull request, in order.
+Each step fits one pull request, in order.
 
 1. The ledger. Holders and waiters as `flock` files, tickets, aging, memory in bytes, every class
    at 8 GiB, and the old slots honored both ways. Behavior otherwise matches today's.
 2. Requests declared up front. Each heavy script states its class; a waiter with a granted ancestor
    is an error; `script/verify` sizes its request from #3214's rows.
-3. The Kani pool folded into the ledger, and `--pool` retired once no open lane predates milestone
-   2.
+3. The Kani pool folded into the ledger, and `--pool` retired once no open lane predates step 2.
 4. Observability: the per-class `--status`, `log.tsv` and `--report`.
 5. Linux scopes: a scope per job, the `memory.stat` sampler, the machine-local peaks file, and
    self-correcting weights.
@@ -276,8 +270,8 @@ Each fits one pull request, in order.
    ends orphans, automatically or by hand as ruled.
 9. Retire `NIFE_HEAVY_SLOTS` and the slot files.
 
-Milestones 1 and 2 alone remove the hold-and-wait and the starvation. Milestone 5 is where the
-throughput gain arrives.
+Steps 1 and 2 alone remove the hold-and-wait and the starvation. Step 5 brings the throughput
+gain.
 
 ## Questions for the architect
 
@@ -287,5 +281,5 @@ throughput gain arrives.
 3. Should the ledger end a holder whose worktree no longer exists, or only report it?
 4. The macOS capacity default: half of physical memory, or something else for a 16 GiB machine?
 
-What each answer unblocks: question 1 decides whether milestones 1 to 9 exist at all; 2 decides
-milestone 6; 3 decides milestone 8; 4 decides one constant in milestone 6.
+Question 1 decides whether any step exists; 2 decides step 6; 3 decides step 8; 4 sets one constant
+in step 6.
