@@ -62,7 +62,7 @@ pub enum Step {
     /// Clear this reset's bit in the domain's assert word, then wait for its status bit to read
     /// as [`is_deasserted`].
     DeassertReset(u32),
-    /// **Choose a multiplexed clock's parent**: replace the [`CLOCK_MUX_MASK`] field of this
+    /// **Choose a multiplexed clock's parent**: replace the [`CLOCK_PARENT_MASK`] field of this
     /// clock's word with `parent`, as \[mainline-clk\]'s `jh71x0_clk_set_parent` writes
     /// `index << JH71X0_CLK_MUX_SHIFT` under `JH71X0_CLK_MUX_MASK`. Taken before the same clock's
     /// `EnableClock`, so the switch happens while the clock is gated rather than glitching a
@@ -75,13 +75,29 @@ pub enum Step {
     },
 }
 
-/// A multiplexed clock's parent field, bits 27:24 of its word (\[mainline-clk-header\]'s
-/// `JH71X0_CLK_MUX_MASK`, `GENMASK(27, 24)`).
+/// **The clock multiplexer mask**: a multiplexed clock's parent field, bits 27:24 of its word,
+/// which holds the parent's position in that clock's parent list. OpenBSD spells it `CLKMUX_MASK`
+/// (\[openbsd-stfclock\]), FreeBSD `JH7110_MUX_MASK` (\[freebsd-jh7110-clk\]) and Linux
+/// `JH71X0_CLK_MUX_MASK`, `GENMASK(27, 24)` (\[mainline-clk-header\]). The three disagree on its
+/// width: OpenBSD masks bits 25:24 and FreeBSD bits 29:24. This crate takes Linux's four bits, as it
+/// takes every other number from mainline.
 ///
-/// Name: recorded (mainline's `JH71X0_CLK_MUX_MASK`).
-pub const CLOCK_MUX_MASK: u32 = 0xf << CLOCK_MUX_SHIFT;
+/// [openbsd-stfclock]: https://github.com/openbsd/src/blob/bc5d5205881e579d8da936d6039dee52c2284971/sys/arch/riscv64/dev/stfclock.c
+/// [freebsd-jh7110-clk]: https://github.com/freebsd/freebsd-src/blob/7806832f23fb31d28386d42692b221776c9f4ee4/sys/dev/clk/starfive/jh7110_clk.c
+///
+/// Name: ratified 2026-11-05 (UTC), the maintainer's ruling, provisional until an architect
+/// reviews it. Named for what the field holds, the parent, as [`with_parent`] and
+/// [`Step::SelectParent`] already say. Refused `CLOCK_MUX_MASK` (`mux` abbreviates multiplexer),
+/// `CLOCK_MULTIPLEXER_MASK` (it names the mechanism, not what the field selects) and
+/// `CLOCK_PARENT_SELECT_MASK` (`select` adds a word and no meaning).
+#[doc(
+    alias = "CLKMUX_MASK",
+    alias = "JH7110_MUX_MASK",
+    alias = "JH71X0_CLK_MUX_MASK"
+)]
+pub const CLOCK_PARENT_MASK: u32 = 0xf << CLOCK_MUX_SHIFT;
 
-/// Where [`CLOCK_MUX_MASK`]'s field starts (`JH71X0_CLK_MUX_SHIFT`).
+/// Where [`CLOCK_PARENT_MASK`]'s field starts (`JH71X0_CLK_MUX_SHIFT`).
 pub(crate) const CLOCK_MUX_SHIFT: u32 = 24;
 
 /// **A clock word with its parent replaced**, leaving the enable bit, the divider and every other
@@ -91,7 +107,7 @@ pub(crate) const CLOCK_MUX_SHIFT: u32 = 24;
 /// Name: ratified 2026-10-26 (UTC).
 #[must_use]
 pub const fn with_parent(word: u32, parent: u32) -> u32 {
-    (word & !CLOCK_MUX_MASK) | ((parent << CLOCK_MUX_SHIFT) & CLOCK_MUX_MASK)
+    (word & !CLOCK_PARENT_MASK) | ((parent << CLOCK_MUX_SHIFT) & CLOCK_PARENT_MASK)
 }
 
 /// **What the JH7110's TRNG needs before its registers answer**, transcribed from
@@ -1534,7 +1550,7 @@ mod verification {
     }
 
     /// **`with_parent` changes only the mux field**: for every word and every parent, each bit
-    /// outside [`CLOCK_MUX_MASK`] is as it was (the enable bit and the divider among them), and
+    /// outside [`CLOCK_PARENT_MASK`] is as it was (the enable bit and the divider among them), and
     /// the field holds the parent's low four bits, so an over-wide parent never spills.
     /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.with_parent_changes_only_the_mux_field.patch`
     #[kani::proof]
@@ -1542,7 +1558,7 @@ mod verification {
         let word: u32 = kani::any();
         let parent: u32 = kani::any();
         let result = with_parent(word, parent);
-        assert_eq!(result & !CLOCK_MUX_MASK, word & !CLOCK_MUX_MASK);
+        assert_eq!(result & !CLOCK_PARENT_MASK, word & !CLOCK_PARENT_MASK);
         assert_eq!(result & CLOCK_ENABLE, word & CLOCK_ENABLE);
         assert_eq!((result >> 24) & 0xf, parent & 0xf);
     }
