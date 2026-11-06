@@ -377,9 +377,9 @@ impl NonVolatileMemoryExpress {
         // The one-at-a-time discipline makes any other cid a protocol violation worth dying on
         // legibly rather than misattributing a completion.
         assert!(
-            c.cid == expect_cid,
+            c.command_id == expect_cid,
             "NVMe completion for cid {} while {} was in flight",
-            c.cid,
+            c.command_id,
             expect_cid
         );
         if c.status != 0 {

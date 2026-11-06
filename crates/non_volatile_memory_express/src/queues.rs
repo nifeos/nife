@@ -90,7 +90,7 @@ impl SubmissionQueue {
 /// // The controller's first completion, phase bit set, for command id 7.
 /// let fresh = Completion::from_dwords([0, 0, 0, 7 | (1 << 16)]);
 /// assert!(queue.is_owned(&fresh));
-/// assert_eq!(fresh.cid, 7);
+/// assert_eq!(fresh.command_id, 7);
 /// assert_eq!(fresh.status, 0); // 0 is success
 /// assert_eq!(queue.pop(), 1); // the value the driver writes to the completion head doorbell
 ///
@@ -136,8 +136,8 @@ impl CompletionQueue {
     /// this lap expects; a stale entry (last lap's, or the initial zeros) fails the match.
     ///
     /// Name: ratified 2026-10-25 (#2720).
-    pub fn is_owned(&self, c: &Completion) -> bool {
-        c.phase == self.phase
+    pub fn is_owned(&self, completion: &Completion) -> bool {
+        completion.phase == self.phase
     }
 
     /// Consume the entry at the head: advance, flipping the expected phase on wrap. Returns the

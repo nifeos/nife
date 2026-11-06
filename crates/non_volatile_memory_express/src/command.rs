@@ -73,15 +73,21 @@ pub struct Command(pub [u32; 16]);
 impl Command {
     /// The common prefix every builder shares: opcode and command identifier in dword 0 (no fused
     /// operation, PRP data transfers), namespace id in dword 1, PRP1 and PRP2 in dwords 6 to 9.
-    fn new(opcode: u8, cid: u16, nsid: u32, first_entry: u64, second_entry: u64) -> Self {
-        let mut dw = [0u32; 16];
-        dw[0] = opcode as u32 | (cid as u32) << 16;
-        dw[1] = nsid;
-        dw[6] = first_entry as u32;
-        dw[7] = (first_entry >> 32) as u32;
-        dw[8] = second_entry as u32;
-        dw[9] = (second_entry >> 32) as u32;
-        Command(dw)
+    fn new(
+        opcode: u8,
+        command_id: u16,
+        namespace_id: u32,
+        first_entry: u64,
+        second_entry: u64,
+    ) -> Self {
+        let mut dwords = [0u32; 16];
+        dwords[0] = opcode as u32 | (command_id as u32) << 16;
+        dwords[1] = namespace_id;
+        dwords[6] = first_entry as u32;
+        dwords[7] = (first_entry >> 32) as u32;
+        dwords[8] = second_entry as u32;
+        dwords[9] = (second_entry >> 32) as u32;
+        Command(dwords)
     }
 
     /// IDENTIFY (admin): the 4096-byte data structure named by `controller_or_namespace_structure`
@@ -89,63 +95,69 @@ impl Command {
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub fn identify(
-        cid: u16,
+        command_id: u16,
         controller_or_namespace_structure: u32,
-        nsid: u32,
+        namespace_id: u32,
         physical_region_page: u64,
     ) -> Self {
-        let mut c = Self::new(ADMIN_IDENTIFY, cid, nsid, physical_region_page, 0);
-        c.0[10] = controller_or_namespace_structure;
-        c
+        let mut command = Self::new(
+            ADMIN_IDENTIFY,
+            command_id,
+            namespace_id,
+            physical_region_page,
+            0,
+        );
+        command.0[10] = controller_or_namespace_structure;
+        command
     }
 
-    /// CREATE I/O COMPLETION QUEUE (admin): queue `qid`, `entries` deep, physically contiguous
+    /// CREATE I/O COMPLETION QUEUE (admin): queue `queue_id`, `entries` deep, physically contiguous
     /// (PC=1) at `physical_region_page`. Interrupts stay off (IEN=0): the driver completes by
     /// polling the phase tag, so no vector is named and none is needed.
     ///
     /// Name: ratified 2026-10-25 (#2720). Refused `create_io_cq` (spelled out, as the acronym test
     /// asks).
     pub fn create_io_completion_queue(
-        cid: u16,
-        qid: u16,
+        command_id: u16,
+        queue_id: u16,
         entries: u16,
         physical_region_page: u64,
     ) -> Self {
-        let mut c = Self::new(
+        let mut command = Self::new(
             ADMIN_CREATE_IO_COMPLETION_QUEUE,
-            cid,
+            command_id,
             0,
             physical_region_page,
             0,
         );
-        c.0[10] = qid as u32 | ((entries as u32 - 1) << 16);
-        c.0[11] = 1; // PC only; IEN=0
-        c
+        command.0[10] = queue_id as u32 | ((entries as u32 - 1) << 16);
+        command.0[11] = 1; // PC only; IEN=0
+        command
     }
 
-    /// CREATE I/O SUBMISSION QUEUE (admin): queue `qid`, `entries` deep, physically contiguous at
-    /// `physical_region_page`, completing into completion queue `cqid` (which must already exist,
+    /// CREATE I/O SUBMISSION QUEUE (admin): queue `queue_id`, `entries` deep, physically contiguous at
+    /// `physical_region_page`, completing into completion queue `completion_queue_id` (which must already exist,
     /// so the pair is created completion queue first).
     ///
     /// Name: ratified 2026-10-25 (#2720). Refused `create_io_sq` (spelled out, as the acronym test
     /// asks).
     pub fn create_io_submission_queue(
-        cid: u16,
-        qid: u16,
+        command_id: u16,
+        queue_id: u16,
         entries: u16,
-        cqid: u16,
+        completion_queue_id: u16,
         physical_region_page: u64,
     ) -> Self {
-        let mut c = Self::new(
+        let mut command = Self::new(
             ADMIN_CREATE_IO_SUBMISSION_QUEUE,
-            cid,
+            command_id,
             0,
             physical_region_page,
             0,
         );
-        c.0[10] = qid as u32 | ((entries as u32 - 1) << 16);
-        c.0[11] = 1 | (cqid as u32) << 16; // PC, and the paired CQ
-        c
+        command.0[10] = queue_id as u32 | ((entries as u32 - 1) << 16);
+        command.0[11] = 1 | (completion_queue_id as u32) << 16; // physically contiguous, and the paired completion queue
+        command
     }
 
     /// READ (I/O): `blocks` logical blocks starting at `starting_logical_block_address`, into the
@@ -155,23 +167,23 @@ impl Command {
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub fn read(
-        cid: u16,
-        nsid: u32,
+        command_id: u16,
+        namespace_id: u32,
         starting_logical_block_address: u64,
         blocks: u16,
         pages: PhysicalRegionPagePair,
     ) -> Self {
         Self::transfer(
             NON_VOLATILE_MEMORY_READ,
-            cid,
-            nsid,
+            command_id,
+            namespace_id,
             starting_logical_block_address,
             blocks,
             pages,
         )
     }
 
-    /// FLUSH (I/O): make everything the controller has already acknowledged for `nsid` durable
+    /// FLUSH (I/O): make everything the controller has already acknowledged for `namespace_id` durable
     /// (section 6.8). No data transfer, so no PRPs and no LBA range; the command completes when
     /// the volatile write cache, if the controller has one, has been committed.
     ///
@@ -180,24 +192,24 @@ impl Command {
     /// truthful yes rather than a silent one: the data really is durable.
     ///
     /// Name: ratified 2026-10-25 (#2720).
-    pub fn flush(cid: u16, nsid: u32) -> Self {
-        Self::new(NON_VOLATILE_MEMORY_FLUSH, cid, nsid, 0, 0)
+    pub fn flush(command_id: u16, namespace_id: u32) -> Self {
+        Self::new(NON_VOLATILE_MEMORY_FLUSH, command_id, namespace_id, 0, 0)
     }
 
     /// WRITE (I/O): the same addressing as [`Command::read`], the other direction.
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub fn write(
-        cid: u16,
-        nsid: u32,
+        command_id: u16,
+        namespace_id: u32,
         starting_logical_block_address: u64,
         blocks: u16,
         pages: PhysicalRegionPagePair,
     ) -> Self {
         Self::transfer(
             NON_VOLATILE_MEMORY_WRITE,
-            cid,
-            nsid,
+            command_id,
+            namespace_id,
             starting_logical_block_address,
             blocks,
             pages,
@@ -207,18 +219,24 @@ impl Command {
     /// The body `read` and `write` share, which differ only in their opcode.
     fn transfer(
         opcode: u8,
-        cid: u16,
-        nsid: u32,
+        command_id: u16,
+        namespace_id: u32,
         starting_logical_block_address: u64,
         blocks: u16,
         pages: PhysicalRegionPagePair,
     ) -> Self {
         assert!(blocks != 0, "a zero-block transfer has no wire encoding");
-        let mut c = Self::new(opcode, cid, nsid, pages.first_entry, pages.second_entry);
-        c.0[10] = starting_logical_block_address as u32;
-        c.0[11] = (starting_logical_block_address >> 32) as u32;
-        c.0[12] = (blocks - 1) as u32;
-        c
+        let mut command = Self::new(
+            opcode,
+            command_id,
+            namespace_id,
+            pages.first_entry,
+            pages.second_entry,
+        );
+        command.0[10] = starting_logical_block_address as u32;
+        command.0[11] = (starting_logical_block_address >> 32) as u32;
+        command.0[12] = (blocks - 1) as u32;
+        command
     }
 }
 
@@ -246,58 +264,103 @@ mod tests {
 
     #[test]
     fn a_read_command_encodes_the_spec_dwords() {
-        let c = Command::read(7, 1, 0x1_0000_0008, 8, pages(0xdead_b000, 0));
-        assert_eq!(c.0[0], 0x02 | 7 << 16, "opcode and cid share dword 0");
-        assert_eq!(c.0[1], 1, "nsid");
-        assert_eq!((c.0[6], c.0[7]), (0xdead_b000, 0), "PRP1 split across 6/7");
-        assert_eq!((c.0[10], c.0[11]), (8, 1), "slba split across 10/11");
-        assert_eq!(c.0[12], 7, "the block count is 0-based on the wire");
+        let command = Command::read(7, 1, 0x1_0000_0008, 8, pages(0xdead_b000, 0));
+        assert_eq!(
+            command.0[0],
+            0x02 | 7 << 16,
+            "opcode and command id share dword 0"
+        );
+        assert_eq!(command.0[1], 1, "namespace id");
+        assert_eq!(
+            (command.0[6], command.0[7]),
+            (0xdead_b000, 0),
+            "PRP1 split across 6/7"
+        );
+        assert_eq!(
+            (command.0[10], command.0[11]),
+            (8, 1),
+            "starting logical block address split across 10/11"
+        );
+        assert_eq!(command.0[12], 7, "the block count is 0-based on the wire");
     }
 
     #[test]
     fn a_write_command_encodes_the_spec_dwords() {
         // The mirror of the read test: `write` differs from `read` only in its opcode.
-        let c = Command::write(7, 1, 0x1_0000_0008, 8, pages(0xdead_b000, 0));
-        assert_eq!(c.0[0], 0x01 | 7 << 16, "opcode and cid share dword 0");
-        assert_eq!(c.0[1], 1, "nsid");
-        assert_eq!((c.0[6], c.0[7]), (0xdead_b000, 0), "PRP1 split across 6/7");
-        assert_eq!((c.0[10], c.0[11]), (8, 1), "slba split across 10/11");
-        assert_eq!(c.0[12], 7, "the block count is 0-based on the wire");
+        let command = Command::write(7, 1, 0x1_0000_0008, 8, pages(0xdead_b000, 0));
+        assert_eq!(
+            command.0[0],
+            0x01 | 7 << 16,
+            "opcode and command id share dword 0"
+        );
+        assert_eq!(command.0[1], 1, "namespace id");
+        assert_eq!(
+            (command.0[6], command.0[7]),
+            (0xdead_b000, 0),
+            "PRP1 split across 6/7"
+        );
+        assert_eq!(
+            (command.0[10], command.0[11]),
+            (8, 1),
+            "starting logical block address split across 10/11"
+        );
+        assert_eq!(command.0[12], 7, "the block count is 0-based on the wire");
     }
 
     #[test]
     fn the_second_entry_lands_in_dwords_eight_and_nine() {
-        let c = Command::read(1, 1, 0, 1, pages(0x1000, 0x2_0000_3000));
-        assert_eq!((c.0[8], c.0[9]), (0x3000, 2), "PRP2 split across 8/9");
+        let command = Command::read(1, 1, 0, 1, pages(0x1000, 0x2_0000_3000));
+        assert_eq!(
+            (command.0[8], command.0[9]),
+            (0x3000, 2),
+            "PRP2 split across 8/9"
+        );
     }
 
     #[test]
     fn a_flush_command_carries_only_the_opcode_identifier_and_namespace() {
-        let c = Command::flush(9, 4);
+        let command = Command::flush(9, 4);
         let mut expected = [0u32; 16];
         expected[0] = NON_VOLATILE_MEMORY_FLUSH as u32 | 9 << 16;
         expected[1] = 4;
-        assert_eq!(c.0, expected);
+        assert_eq!(command.0, expected);
     }
 
     #[test]
     fn an_identify_command_names_its_structure_in_dword_ten() {
-        let c = Command::identify(3, CONTROLLER_OR_NAMESPACE_STRUCTURE_CONTROLLER, 0, 0x8000);
-        assert_eq!(c.0[0], ADMIN_IDENTIFY as u32 | 3 << 16);
-        assert_eq!(c.0[6], 0x8000);
-        assert_eq!(c.0[10], 1);
+        let command = Command::identify(3, CONTROLLER_OR_NAMESPACE_STRUCTURE_CONTROLLER, 0, 0x8000);
+        assert_eq!(command.0[0], ADMIN_IDENTIFY as u32 | 3 << 16);
+        assert_eq!(command.0[6], 0x8000);
+        assert_eq!(command.0[10], 1);
     }
 
     #[test]
     fn queue_creation_packs_size_and_pairing() {
-        let cq = Command::create_io_completion_queue(1, 3, 16, 0x2000);
-        assert_eq!(cq.0[0] & 0xff, ADMIN_CREATE_IO_COMPLETION_QUEUE as u32);
-        assert_eq!(cq.0[10], 3 | 15 << 16, "qid, and the 0-based size");
-        assert_eq!(cq.0[11], 1, "physically contiguous, interrupts off");
-        let sq = Command::create_io_submission_queue(2, 3, 16, 3, 0x3000);
-        assert_eq!(sq.0[0] & 0xff, ADMIN_CREATE_IO_SUBMISSION_QUEUE as u32);
-        assert_eq!(sq.0[10], 3 | 15 << 16);
-        assert_eq!(sq.0[11], 1 | 3 << 16, "PC, and the paired cqid");
+        let completion_queue_command = Command::create_io_completion_queue(1, 3, 16, 0x2000);
+        assert_eq!(
+            completion_queue_command.0[0] & 0xff,
+            ADMIN_CREATE_IO_COMPLETION_QUEUE as u32
+        );
+        assert_eq!(
+            completion_queue_command.0[10],
+            3 | 15 << 16,
+            "queue id, and the 0-based size"
+        );
+        assert_eq!(
+            completion_queue_command.0[11], 1,
+            "physically contiguous, interrupts off"
+        );
+        let submission_queue_command = Command::create_io_submission_queue(2, 3, 16, 3, 0x3000);
+        assert_eq!(
+            submission_queue_command.0[0] & 0xff,
+            ADMIN_CREATE_IO_SUBMISSION_QUEUE as u32
+        );
+        assert_eq!(submission_queue_command.0[10], 3 | 15 << 16);
+        assert_eq!(
+            submission_queue_command.0[11],
+            1 | 3 << 16,
+            "physically contiguous, and the paired completion queue id"
+        );
     }
 
     #[test]
@@ -310,7 +373,7 @@ mod tests {
         assert_eq!(
             0xffffu32 & (0xffffu32 << 16),
             0,
-            "qid/1 against the shifted half"
+            "queue id and 1 against the shifted half"
         );
     }
 }

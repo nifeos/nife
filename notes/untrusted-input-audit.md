@@ -89,8 +89,8 @@ wrote and then consumes two of its fields:
 self.admin_sq.note_head(c.sq_head);          // c.sq_head is the controller's
 
 assert!(
-    c.cid == expect_cid,                     // c.cid is the controller's, echoed back
-    "NVMe completion for cid {} while {} was in flight", c.cid, expect_cid
+    c.command_id == expect_cid,                     // c.command_id is the controller's, echoed back
+    "NVMe completion for cid {} while {} was in flight", c.command_id, expect_cid
 );
 ```
 
@@ -103,7 +103,7 @@ pub fn note_head(&mut self, head: u16) {
 }
 ```
 
-Both `c.sq_head` and `c.cid` come straight out of the dwords the device wrote
+Both `c.sq_head` and `c.command_id` come straight out of the dwords the device wrote
 (`Completion::from_dwords`). A device that writes `sq_head >= entries`, or any `cid` other than the
 one command in flight, hits an `assert!` and panics the kernel.
 
