@@ -11,10 +11,10 @@ Expected to fail: the `WrongObject` assertion, which gets `Ok(0)`.
 diff --git a/kernel/src/user/address_space_registry.rs b/kernel/src/user/address_space_registry.rs
 --- a/kernel/src/user/address_space_registry.rs
 +++ b/kernel/src/user/address_space_registry.rs
-@@ -310,9 +310,6 @@ pub fn bind_user_address_space(
- ) -> Result<(), abi::Error> {
-     let mut spaces = USER_SPACES.lock();
-     let entry = spaces.get_mut(name).ok_or(abi::Error::NoSuchSlot)?;
+@@ -260,9 +260,6 @@ pub(crate) fn bind_user_address_space(
+     let entry = spaces
+         .get_mut(space_entry(name))
+         .ok_or(abi::Error::NoSuchSlot)?;
 -    if entry.bound.is_some() {
 -        return Err(abi::Error::WrongObject);
 -    }

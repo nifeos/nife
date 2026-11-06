@@ -48,7 +48,8 @@ pub(super) fn try_create_rendezvous_from(region: u64) -> Result<RendezvousId, Re
     let name = sched
         .rendezvous_table
         .insert_with(|_| phys)
-        .ok_or(RendezvousFailure::RegistryFull)?;
+        .ok_or(RendezvousFailure::RegistryFull)?
+        .to_bits();
     PEAK_RENDEZVOUS.fetch_max(sched.rendezvous_table.len(), Ordering::Relaxed);
     if sched.kernel_ep_region == Some(region) {
         KERNEL_CHUNK_RENDEZVOUS.fetch_add(1, Ordering::Relaxed);

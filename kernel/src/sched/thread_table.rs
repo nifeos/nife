@@ -75,6 +75,13 @@ pub(super) struct Threads {
     pub(super) table: generational_table::Table<ThreadControlBlockPointer, MAXIMUM_THREADS>,
 }
 
+/// The table's typed name for a thread id. A temporary adapter: `ThreadId` is still a `u64`
+/// across the kernel, and [`Threads`] is the one edge where it becomes the table's
+/// `EntryName`. It goes when `ThreadId` is that `EntryName` itself.
+const fn thread_entry(tid: ThreadId) -> EntryName<ThreadControlBlockPointer> {
+    EntryName::from_bits(tid)
+}
+
 impl Threads {
     pub(super) const fn new() -> Self {
         Self {
@@ -83,14 +90,14 @@ impl Threads {
     }
 
     pub(super) fn get(&self, tid: ThreadId) -> Option<&Thread> {
-        let p = self.table.get(tid)?.0;
+        let p = self.table.get(thread_entry(tid))?.0;
         // SAFETY: a pointer we stored at insert, into a live kmem page not yet recycled (remove
         // kills the name before recycling); IPC_TABLES serializes access.
         Some(unsafe { &*p })
     }
 
     pub(super) fn get_mut(&mut self, tid: ThreadId) -> Option<&mut Thread> {
-        let p = self.table.get(tid)?.0;
+        let p = self.table.get(thread_entry(tid))?.0;
         // SAFETY: as `get`, and `&mut self` carries IPC_TABLES's exclusivity.
         Some(unsafe { &mut *p })
     }
@@ -99,7 +106,7 @@ impl Threads {
     /// of the thread. The table is past the `Thread` in its page (`thread::capability_table_of`), so
     /// the reference is derived from the page pointer, never from a `&Thread`.
     pub(super) fn capabilities(&self, tid: ThreadId) -> Option<&CapabilityTableLock> {
-        let p = self.table.get(tid)?.0;
+        let p = self.table.get(thread_entry(tid))?.0;
         // SAFETY: the stored page pointer of a live thread; the page outlives `&self`, because
         // only `remove` (which takes `&mut self`) recycles it.
         Some(unsafe { &*crate::thread::capability_table_of(p) })
@@ -112,7 +119,7 @@ impl Threads {
         &mut self,
         tid: ThreadId,
     ) -> Option<(&mut Thread, &CapabilityTableLock)> {
-        let p = self.table.get(tid)?.0;
+        let p = self.table.get(thread_entry(tid))?.0;
         // SAFETY: as `get_mut` for the `Thread` and `capabilities` for the table; the two do not
         // overlap.
         Some(unsafe { (&mut *p, &*crate::thread::capability_table_of(p)) })
@@ -123,7 +130,7 @@ impl Threads {
     /// The FP register file lives past the struct's end in the same page, so a pointer derived
     /// from a `&Thread` would reach outside its provenance (`thread::fp_state_of`'s safety note).
     pub(super) fn pointer(&self, tid: ThreadId) -> Option<*mut Thread> {
-        Some(self.table.get(tid)?.0)
+        Some(self.table.get(thread_entry(tid))?.0)
     }
 
     /// Insert: claim a page from the kernel budget, build the `Thread` (carrying its own minted
@@ -177,7 +184,7 @@ impl Threads {
         let ptr = crate::arch::mmu::phys_to_virt(page) as *mut Thread;
         let mut built = false;
         let name = self.table.insert_with(|tid| {
-            built = build(tid, ptr);
+            built = build(tid.to_bits(), ptr);
             if built {
                 // In place, not in a constructor: this is a fact about the page, and the register
                 // file's `live` flag must be written before anything reads it
@@ -199,6 +206,7 @@ impl Threads {
             self.table.remove(name);
             return None;
         }
+        let name = name.to_bits();
         self.note_peak();
         self.mint_token(name);
         // A reused slot starts its CPU accounting at zero; see `CPU_TICKS`.
@@ -213,7 +221,7 @@ impl Threads {
         let name = self.table.insert_with(|tid| {
             // SAFETY: a fresh, exclusively-ours page; `write` moves the Thread in, no drop of
             // uninitialized bytes.
-            unsafe { ptr.write(f(tid)) };
+            unsafe { ptr.write(f(tid.to_bits())) };
             // And its register file beside it; see `insert_at_in_place` for why here.
             //
             // SAFETY: as above, with the `Thread` now live at `ptr`.
@@ -224,6 +232,7 @@ impl Threads {
             unsafe { crate::thread::initialize_capability_table(ptr) };
             ThreadControlBlockPointer(ptr)
         });
+        let name = name.map(EntryName::to_bits);
         if let Some(name) = name {
             self.note_peak();
             self.mint_token(name);
@@ -251,7 +260,7 @@ impl Threads {
     /// Remove and destroy: drop the TCB in place (its stack, address space, and quota token go
     /// with it), kill the name so no copy of the `ThreadId` ever resolves again, then recycle the page.
     pub(super) fn remove(&mut self, tid: ThreadId) {
-        let Some(&ThreadControlBlockPointer(ptr)) = self.table.get(tid) else {
+        let Some(&ThreadControlBlockPointer(ptr)) = self.table.get(thread_entry(tid)) else {
             return;
         };
         // Read the page's origin before the drop consumes the Thread: a kernel TCB's page goes
@@ -262,7 +271,7 @@ impl Threads {
         // the QuotaToken), then kill the name, then the page goes home: nothing can reach the
         // dropped Thread afterward.
         unsafe { core::ptr::drop_in_place(ptr) };
-        self.table.remove(tid);
+        self.table.remove(thread_entry(tid));
         // A driver's death gives its virtio slot back (§16 (object revocation), amendment of 2026-10-27).
         crate::virtio::release_owned_by(tid);
         if from_kmem {

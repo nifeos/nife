@@ -12,7 +12,7 @@ reports an empty table while `len` still counts the survivors.
 diff --git a/crates/generational_table/src/lib.rs b/crates/generational_table/src/lib.rs
 --- a/crates/generational_table/src/lib.rs
 +++ b/crates/generational_table/src/lib.rs
-@@ -189,3 +189,3 @@ impl<T, const N: usize> Table<T, N> {
+@@ -286,3 +286,3 @@ impl<T, const N: usize> Table<T, N> {
              for _ in 0..N {
 -                if top == 0 || self.slots[top - 1].is_some() {
 +                if top == 0 {

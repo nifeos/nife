@@ -12,7 +12,7 @@ caller, so this is the forging case: the table would resolve a number nobody was
 diff --git a/crates/generational_table/src/lib.rs b/crates/generational_table/src/lib.rs
 --- a/crates/generational_table/src/lib.rs
 +++ b/crates/generational_table/src/lib.rs
-@@ -151,5 +151,3 @@ impl<T, const N: usize> Table<T, N> {
+@@ -244,5 +244,3 @@ impl<T, const N: usize> Table<T, N> {
          let (slot, generation) = Self::unpack(name);
 -        if *self.gens.get(slot)? != generation {
 -            return None;
