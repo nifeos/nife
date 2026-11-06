@@ -45,8 +45,8 @@ against three failure modes:
   The appendix gives each spelling and the cases that decide it. The words are the
   `[spelled_out]` list in `vendor/crate-workflows/helpers/naming_words.toml`, the template's, and
   `script/lint` fails when this paragraph and that list disagree.
-- These stay: `pci`, `elf`, `usb`, `syscall`, `cpu`, `xor`, `io`, `bios`, `id`, QEMU, `MAC`,
-  `GMAC` and `SD`. Spell `identifier` only where ID is one letter of a compound specification
+- These stay: `pci`, `elf`, `usb`, `syscall`, `cpu`, `xor`, `io`, `bios`, `id`, `efi`, QEMU,
+  `MAC`, `GMAC` and `SD`. Spell `identifier` only where ID is one letter of a compound specification
   acronym (`address_space_identifier`). `SDIO` is not accepted.
 - A name that arrives across another project's interface keeps its owner's spelling, and only the
   identifier the owner wrote keeps it. A concept nife names in its own code takes nife's spelling.
