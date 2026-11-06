@@ -17,4 +17,4 @@ index 7cc680a83..0e74ddbcc 100644
 +    word & 0x01ff_ffff
  }
  
- /// The PMIC (power management integrated circuit) as radon's vendor tree spells it: the
+ /// The PMIC (power management integrated circuit) as the vendor tree spells it: the

@@ -267,35 +267,37 @@ rule provisionally) and the spelling of `Refusal::Above4GiB` (the architect's).
 
 The whole package is [crate-reviews/jh7110-clock-and-reset.md](crate-reviews/jh7110-clock-and-reset.md).
 
-Name and version. `jh7110_clock_and_reset` `0.1.0`, ratified. 71 `Name:` blocks, all ratified;
+Name and version. `jh7110_clock_and_reset` `0.1.0`, ratified. 80 names, all with ratified blocks;
 `CLOCK_PARENT_MASK` by the maintainer, pending the architect.
 
 API. One `lib.rs`, 69 public items: offsets and bits of three domains, the bring-up plans, the I2C
-and SD clock arithmetic, and both device trees' strings. No nife type appears in a signature.
+and SD clock arithmetic, and both device trees' strings. No other project's type appears in a
+signature. The maintainer marked five types `#[non_exhaustive]` provisionally.
 
 Proofs. Nine harnesses. All nine prove and all nine patches fail.
 
-License. `MIT OR Apache-2.0`; nothing adapted. One doc comment quotes eleven words of a GPL
-comment, which the five-word rule refuses.
+License. `MIT OR Apache-2.0`; nothing adapted. No quotation of a GPL source remains.
 
-Result of `script/crate-standalone`. Clean.
+Result of `script/crate-standalone`. Clean, before and after this lane's edits.
 
-Provenance. Milestone 1019 item 1 (`standard_mode_100_kilohertz` rewritten from a permissive source) stands
-done. Items 7 and 11 remain open on `main`. Item 7: the doc comments quote two PMIC nodes, 9 and 7 tokens. Item 11: pin the vendor links to the revision each claim holds at. The crate cites the vendor tag
-`VF2_v2.10.4` and a mainline commit by hash.
+Provenance. Milestone 1019 items 1, 7 and 11 are done for this crate: no node text is quoted and
+every vendor claim links the revision it holds at, checked against the fetched files.
 
-Names. The maintainer ratified `CLOCK_PARENT_MASK` for the clock parent field mask provisionally,
-pending the architect's review. It says what the field holds, as `with_parent` and `Step::SelectParent`
-already do, and `CLKMUX_MASK`, `JH7110_MUX_MASK` and `JH71X0_CLK_MUX_MASK` are `#[doc(alias)]`es.
-The ruling refused `CLOCK_MUX_MASK`, `CLOCK_MULTIPLEXER_MASK` and `CLOCK_PARENT_SELECT_MASK`.
+Names. Seven ratified names fail a later rule and wait for the architect (`SDIO_BRING_UP`, the
+three `mux` report fields, `SYSTEM_BASE` and the `base` fields, `controller`, the `w` parameters
+and `sdcard_divider_for`). The package lists each with its rename.
+
+Outstanding before the move.
 
 | item | owner |
 |---|---|
-| The PMIC reset path with the rewritten `standard_mode_100_kilohertz` (counts 198 high, 297 low at 49.5 MHz) has not run on the board, so milestone 819 (JH7110 clock and reset logic, proven, then released on its own) does not call it proven. | maintainers (bench) |
-| Items 7 and 11 of milestone 1019. | maintainer |
-| The README describes the crate as built for the nife kernel; `lib.rs` says "the fill is nife's own". | move lane |
+| Four decisions, listed in the package. | architect |
+| The PMIC reset path (198 high and 297 low counts at 49.5 MHz) has not run on a board; the README says so. | maintainers (bench) |
+| Mark milestone 1019 items 7 and 11 done for this crate. | maintainer |
+| 13 private names the unit gate reports. | unit-suffix sweep lane |
+| `repository` in the manifest, the tag, the `Name:` blocks, the stranger test. | move lane |
 
-Recommendation. Blocked by the unrun bench check.
+Recommendation. Ready for review.
 
 ## `block_roster`, the first contract crate
 
