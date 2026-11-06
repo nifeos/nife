@@ -306,12 +306,14 @@ week,crate,breaking,additions,commits,commits_crossing
 2026W44,socket_contract,1,2,10,9
 2026W44,std_runtime_contract,1,1,7,6
 2026W44,supervision_contract,21,1,9,9
-2026W45,block_roster,0,0,4,2
+2026W45,block_roster,10,9,7,5
 2026W45,boot_slot,0,0,3,2
 2026W45,capability_manifest_note,43,0,1,1
 2026W45,clock_contract,0,0,1,1
 2026W45,compositor,0,0,3,3
-2026W45,counter_frequency_contract,2,2,2,1
+2026W45,counter_frequency_contract,5,5,3,2
+2026W45,filesystem_contract,0,0,1,1
+2026W45,globally_unique_identifier_partition_table,0,0,1,1
 2026W45,grant_plan,0,0,1,1
 2026W45,graphics_contract,0,0,2,2
 2026W45,login_contract,0,0,1,1
