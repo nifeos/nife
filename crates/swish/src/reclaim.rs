@@ -44,7 +44,7 @@ pub fn write_budget_left(job: &[u8], pages: u64, out: &mut dyn FnMut(&[u8])) {
 /// shell asks `USAGE`. A `children_pages` answer below zero (the record could not be read) counts
 /// as no children, so the retry runs as before.
 pub fn reclaim_budget_within(
-    patience_ns: u64,
+    patience_nanoseconds: u64,
     mut destroy: impl FnMut() -> i64,
     mut children_pages: impl FnMut() -> i64,
     mut now: impl FnMut() -> u64,
@@ -58,14 +58,14 @@ pub fn reclaim_budget_within(
         if children_pages() > 0 {
             return BudgetReturn::LeftChildren;
         }
-        if now().wrapping_sub(start) > patience_ns {
+        if now().wrapping_sub(start) > patience_nanoseconds {
             return BudgetReturn::Refused;
         }
         wait();
     }
 }
 
-/// Ask `destroy` until it answers zero or `patience_ns` of `now` has passed, calling `wait`
+/// Ask `destroy` until it answers zero or `patience_nanoseconds` of `now` has passed, calling `wait`
 /// between asks. Returns whether it answered zero. Always asks at least once.
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane/mem-budget-retry.
@@ -73,7 +73,7 @@ pub fn reclaim_budget_within(
 /// The bound is in time and not in attempts, because a wait that returns at once when nothing else
 /// can run would spend every attempt inside the one timeslice the kill still needs.
 pub fn is_reclaimed_within(
-    patience_ns: u64,
+    patience_nanoseconds: u64,
     mut destroy: impl FnMut() -> i64,
     mut now: impl FnMut() -> u64,
     mut wait: impl FnMut(),
@@ -83,7 +83,7 @@ pub fn is_reclaimed_within(
         if destroy() == 0 {
             return true;
         }
-        if now().wrapping_sub(start) > patience_ns {
+        if now().wrapping_sub(start) > patience_nanoseconds {
             return false;
         }
         wait();
