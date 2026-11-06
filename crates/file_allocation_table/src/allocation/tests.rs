@@ -2,7 +2,8 @@
 //! cluster from a hint, a wrap, a full volume, a chain freed and cut, every way a chain can break,
 //! entries that straddle a table sector, both table copies, and a device that refuses a write.
 //!
-//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
+//! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of
+//! this crate.
 
 use super::*;
 use crate::reader::tests::{CLUSTERS, Image};
@@ -246,7 +247,8 @@ fn the_hints_follow_allocation_and_release() {
     assert_eq!(volume.writer.next_free, 4);
     volume.deallocate_chain(2).unwrap();
     assert_eq!(volume.writer.free_clusters, Some(CLUSTERS - 1));
-    // A volume with no FSInfo has nowhere to write them, and a `mark_clean` is still clean.
+    // A volume with no file system information has nowhere to write them, and a `mark_clean` is
+    // still clean.
     assert_eq!(volume.mark_clean(), Ok(()));
 }
 
@@ -296,11 +298,12 @@ fn a_volume_over_a_borrowed_device_writes_through_it() {
     assert_eq!(raw(&image, 0, 2), 0xFFF);
 }
 
-// The oracle checks of allocation, release and cuts on volumes rust-fatfs formatted: after each
+// The rust-fatfs checks of allocation, release and cuts on volumes rust-fatfs formatted: after each
 // step rust-fatfs's count of free clusters must equal this crate's, the table must be byte for
 // byte what it was once every chain is freed, and the host's `fsck -n` must accept the volume. On
-// FAT32, the `FSInfo` hints this crate writes must be the true ones. Not under Miri: they check
-// volumes against the host's `fsck` through temporary files, which Miri's isolation refuses.
+// FAT32, the file system information hints this crate writes must be the true ones. Not under Miri:
+// they check volumes against the host's `fsck` through temporary files, which Miri's isolation
+// refuses.
 
 extern crate std;
 #[cfg(not(miri))]
@@ -422,7 +425,7 @@ fn check_with_fsck(image: &[u8], label: &str) {
 
 #[cfg(not(miri))]
 /// What rust-fatfs counts as free clusters on `image`.
-fn oracle_free_clusters(image: &[u8]) -> u32 {
+fn lamfat_free_clusters(image: &[u8]) -> u32 {
     let fs = lamfat::FileSystem::new(
         lamfat::StdIoWrapper::from(Cursor::new(image.to_vec())),
         lamfat::FsOptions::new(),
@@ -432,8 +435,8 @@ fn oracle_free_clusters(image: &[u8]) -> u32 {
 }
 
 #[cfg(not(miri))]
-/// The bytes of `image` that hold the boot sectors and the tables, with the `FSInfo` sector
-/// blanked: what freeing every chain must put back.
+/// The bytes of `image` that hold the boot sectors and the tables, with the file system information
+/// sector blanked: what freeing every chain must put back.
 fn metadata(image: &Memory) -> Vec<u8> {
     let volume = WritableVolume::open(
         Memory {
@@ -477,7 +480,7 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
     check_with_fsck(&image.bytes, &format!("{label}-empty"));
     let mut volume = WritableVolume::open(image, NoClock).unwrap();
     let total = volume.count_free_clusters().unwrap();
-    assert_eq!(total, oracle_free_clusters(&volume.into_device().bytes));
+    assert_eq!(total, lamfat_free_clusters(&volume.into_device().bytes));
     let image = formatted(mebibytes, fat_type, sector);
     let mut volume = WritableVolume::open(image, NoClock).unwrap();
 
@@ -496,7 +499,7 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
     }
     volume.mark_clean().unwrap();
     let image = volume.into_device();
-    assert_eq!(oracle_free_clusters(&image.bytes), total - 47, "{label}");
+    assert_eq!(lamfat_free_clusters(&image.bytes), total - 47, "{label}");
 
     let mut volume = WritableVolume::open(image, NoClock).unwrap();
     assert_eq!(volume.count_free_clusters().unwrap(), total - 47);
@@ -507,7 +510,7 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
     assert_eq!(volume.chain(first[1]).count() as u32, lengths[1]);
     volume.mark_clean().unwrap();
     let image = volume.into_device();
-    assert_eq!(oracle_free_clusters(&image.bytes), total - 19, "{label}");
+    assert_eq!(lamfat_free_clusters(&image.bytes), total - 19, "{label}");
     let hints = WritableVolume::open(
         Memory {
             bytes: image.bytes.clone(),
@@ -519,7 +522,7 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
     .unwrap()
     .file_system_information()
     .unwrap();
-    // Only FAT32 has an FSInfo sector, and the count it holds is the true one.
+    // Only FAT32 has a file system information sector, and the count it holds is the true one.
     assert_eq!(
         hints.is_some(),
         matches!(fat_type, FatType::Fat32),
@@ -529,7 +532,7 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
         assert_eq!(
             hints.free_cluster_count(),
             Some(total - 19),
-            "{label}: FSInfo count"
+            "{label}: file system information count"
         );
     }
 
@@ -538,7 +541,7 @@ fn allocate_extend_cut_and_free(label: &str, mebibytes: usize, fat_type: FatType
     assert_eq!(volume.deallocate_chain(first[1]).unwrap(), 7);
     volume.mark_clean().unwrap();
     let image = volume.into_device();
-    assert_eq!(oracle_free_clusters(&image.bytes), total, "{label}");
+    assert_eq!(lamfat_free_clusters(&image.bytes), total, "{label}");
     assert_eq!(
         metadata(&image),
         original,
@@ -632,7 +635,7 @@ fn scrambled(label: &str, mebibytes: usize, fat_type: FatType) {
     volume.mark_clean().unwrap();
     assert_eq!(volume.count_free_clusters().unwrap(), total - used);
     let image = volume.into_device();
-    assert_eq!(oracle_free_clusters(&image.bytes), total - used, "{label}");
+    assert_eq!(lamfat_free_clusters(&image.bytes), total - used, "{label}");
     let mut volume = WritableVolume::open(image, NoClock).unwrap();
     for (first, _) in chains {
         volume.deallocate_chain(first).unwrap();

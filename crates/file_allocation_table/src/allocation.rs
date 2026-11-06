@@ -11,9 +11,9 @@
 //! - A chain is cut by marking its new last cluster end-of-chain first, then freeing the tail.
 //! - A chain is freed from its first cluster on, one entry at a time.
 //!
-//! The FAT32 `FSInfo` hints are kept in memory as the operations change them and written by
-//! [`crate::WritableVolume::mark_clean`]. A volume that is dropped without `mark_clean` leaves hints the specification
-//! already calls untrustworthy.
+//! The FAT32 file system information hints are kept in memory as the operations change them and
+//! written by [`crate::WritableVolume::mark_clean`]. A volume that is dropped without `mark_clean`
+//! leaves hints the specification already calls untrustworthy.
 //!
 //! Name: ratified 2026-11-01 (UTC), the module that finds free clusters and owns the table's
 //! writes.
@@ -152,12 +152,12 @@ pub(crate) fn truncate_chain<L: LinksMut>(
 }
 
 /// **What the writer remembers between calls**: where to start looking for a free cluster, the
-/// free count if it is known, and whether the `FSInfo` sector is out of date.
+/// free count if it is known, and whether the file system information sector is out of date.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct WriterState {
     /// Where the next search for a free cluster starts.
     pub(crate) next_free: u32,
-    /// The free-cluster count, when `FSInfo` or an earlier scan gave one.
+    /// The free-cluster count, when the file system information sector or an earlier scan gave one.
     pub(crate) free_clusters: Option<u32>,
     /// Whether the hints were read from the device yet.
     loaded: bool,
@@ -272,8 +272,8 @@ impl<D: WritableSectorDevice> Volume<D> {
     }
 
     /// Clear the clean-shutdown bit before the first change after open or after `mark_clean`, and
-    /// remember whether it was set. A volume found dirty stays dirty at the next `mark_clean`, since this
-    /// crate cannot know the earlier writer left it consistent.
+    /// remember whether it was set. A volume found dirty stays dirty at the next `mark_clean`,
+    /// since this crate cannot know the earlier writer left it consistent.
     pub(crate) fn begin_change(&mut self) -> Result<(), ChainError<D::Error>> {
         if self.writer.marked_dirty {
             return Ok(());
@@ -289,7 +289,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         Ok(())
     }
 
-    /// Read the `FSInfo` hints from the device the first time a change needs them.
+    /// Read the file system information hints from the device the first time a change needs them.
     fn load_hints(&mut self) -> Result<(), ChainError<D::Error>> {
         if self.writer.loaded {
             return Ok(());
@@ -314,8 +314,8 @@ impl<D: WritableSectorDevice> Volume<D> {
     /// them.
     ///
     /// The search starts at the cluster after the last one this volume handed out, or at
-    /// `FSInfo`'s hint when the volume has not allocated yet. Refuses an `extending` cluster whose
-    /// entry is not end-of-chain, and a full volume.
+    /// the file system information sector's hint when the volume has not allocated yet. Refuses an
+    /// `extending` cluster whose entry is not end-of-chain, and a full volume.
     ///
     /// Name: ratified 2026-11-01 (UTC), what a caller asks of a volume that has to grow a file or a
     /// directory.
@@ -400,13 +400,14 @@ impl<D: WritableSectorDevice> Volume<D> {
     }
 
     /// **Mark the volume clean**: set the clean-shutdown bit again if this volume was clean when
-    /// it was opened, and write the `FSInfo` hints to the device when an operation changed them.
-    /// FAT12 and FAT16 volumes have no `FSInfo`, and a FAT32 volume whose `FSInfo` sector is
-    /// missing, or whose three signatures are not all right, is left alone: the crate never makes
-    /// a sector into `FSInfo`.
+    /// it was opened, and write the file system information hints to the device when an operation
+    /// changed them. FAT12 and FAT16 volumes have no file system information sector, and a FAT32
+    /// volume whose file system information sector is missing, or whose three signatures are not
+    /// all right, is left alone: the crate never makes a sector into a file system information
+    /// sector.
     ///
     /// Name: ratified 2026-11-01 (UTC), renamed from `sync`: it sets the clean-shutdown bit and
-    /// writes the `FSInfo` hints, which `sync` did not say.
+    /// writes the file system information hints, which `sync` did not say.
     pub(crate) fn mark_clean(&mut self) -> Result<(), ChainError<D::Error>> {
         if self.writer.hints_changed {
             self.write_hints()?;
@@ -421,7 +422,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         Ok(())
     }
 
-    /// Write the `FSInfo` hints.
+    /// Write the file system information hints.
     fn write_hints(&mut self) -> Result<(), ChainError<D::Error>> {
         if let Some(sector) = self.boot.file_system_information_sector() {
             self.read_into_buffer(u32::from(sector))?;
@@ -459,7 +460,8 @@ impl<D: crate::sector::SectorDevice> Volume<D> {
         Ok(Some(self.read_raw_entry(1)? & bit != 0))
     }
 
-    /// **Count the free clusters** by reading the whole table: exact where `FSInfo` is a hint.
+    /// **Count the free clusters** by reading the whole table: exact where the file system
+    /// information sector is a hint.
     ///
     /// Name: ratified 2026-11-01 (UTC), what `FSI_Free_Count` claims, counted.
     pub fn count_free_clusters(&mut self) -> Result<u32, ChainError<D::Error>> {
@@ -473,8 +475,8 @@ impl<D: crate::sector::SectorDevice> Volume<D> {
         Ok(free)
     }
 
-    /// **The `FSInfo` hints the device holds**, or `Ok(None)` for a volume with no `FSInfo` sector
-    /// or one whose signatures are wrong.
+    /// **The file system information hints the device holds**, or `Ok(None)` for a volume with no
+    /// file system information sector or one whose signatures are wrong.
     ///
     /// Name: ratified 2026-11-01 (UTC), renamed from `fs_info`: reads what `Volume::mark_clean`
     /// writes.
