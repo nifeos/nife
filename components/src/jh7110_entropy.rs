@@ -30,8 +30,9 @@
 
 use entropy_contract as proto;
 use jh7110_entropy::{
-    CTRL_COMMAND_GENERATE, CTRL_COMMAND_RESEED, GenerationOutcome, ISTAT_ALL, ISTAT_RAND_RDY,
-    ISTAT_SEED_DONE, MODE_R256, Pool, generation_outcome,
+    CONTROL_COMMAND_GENERATE, CONTROL_COMMAND_RESEED, GenerationOutcome,
+    INTERRUPT_STATUS_DOCUMENTED_BITS_MASK, INTERRUPT_STATUS_RANDOM_NUMBER_READY,
+    INTERRUPT_STATUS_SEED_DONE, MODE_256_BIT_OUTPUT, Pool, generation_outcome,
 };
 use tock_registers::interfaces::{Readable, Writeable};
 use tock_registers::register_structs;
@@ -56,7 +57,7 @@ register_structs! {
         (0x08 => MODE: ReadWrite<u32>),
         (0x0c => _reserved_smode),
         (0x10 => IE: ReadWrite<u32>),
-        // Write-1-to-clear, per the TRM's register map (`jh7110_entropy::registers::ISTAT`). `RAND_RDY`
+        // Write-1-to-clear, per the TRM's register map (`jh7110_entropy::registers::INTERRUPT_STATUS_REGISTER`). `RAND_RDY`
         // latches, so a driver that never writes this register sees every generation after the
         // first complete instantly.
         (0x14 => ISTAT: ReadWrite<u32>),
@@ -126,7 +127,7 @@ fn rand_words() -> [u32; 8] {
     ]
 }
 
-/// **Acknowledge `ISTAT` bits.** The register is write-1-to-clear (`jh7110_entropy::registers::ISTAT`),
+/// **Acknowledge `ISTAT` bits.** The register is write-1-to-clear (`jh7110_entropy::registers::INTERRUPT_STATUS_REGISTER`),
 /// so writing a mask back clears exactly the bits in it and leaves the rest standing.
 fn ack(bits: u32) {
     regs().ISTAT.set(bits);
@@ -144,8 +145,8 @@ fn initialize() -> u32 {
     let r = regs();
     r.AUTO_AGE.set(0);
     r.AUTO_RQSTS.set(0);
-    ack(ISTAT_ALL);
-    r.MODE.set(r.MODE.get() | MODE_R256);
+    ack(INTERRUPT_STATUS_DOCUMENTED_BITS_MASK);
+    r.MODE.set(r.MODE.get() | MODE_256_BIT_OUTPUT);
     r.IE.set(0);
     r.STAT.get()
 }
@@ -156,11 +157,11 @@ fn initialize() -> u32 {
 /// `false` on a bound-out: the caller decides what that means. `SEED_DONE` is latched, so it is
 /// acknowledged on both sides; an unacked one makes every later reseed appear to complete at once.
 fn reseed_and_wait() -> bool {
-    ack(ISTAT_SEED_DONE);
-    regs().CTRL.set(CTRL_COMMAND_RESEED);
+    ack(INTERRUPT_STATUS_SEED_DONE);
+    regs().CTRL.set(CONTROL_COMMAND_RESEED);
     for _ in 0..POLL_TRIES {
-        if regs().ISTAT.get() & ISTAT_SEED_DONE != 0 {
-            ack(ISTAT_SEED_DONE);
+        if regs().ISTAT.get() & INTERRUPT_STATUS_SEED_DONE != 0 {
+            ack(INTERRUPT_STATUS_SEED_DONE);
             return true;
         }
     }
@@ -177,12 +178,12 @@ fn reseed_and_wait() -> bool {
 /// answer, and after the words are read, so the next call starts from a clean register.
 fn generate() -> Option<[u8; 32]> {
     for _ in 0..=LOCKUP_RETRIES {
-        ack(ISTAT_RAND_RDY);
-        regs().CTRL.set(CTRL_COMMAND_GENERATE);
+        ack(INTERRUPT_STATUS_RANDOM_NUMBER_READY);
+        regs().CTRL.set(CONTROL_COMMAND_GENERATE);
         for _ in 0..POLL_TRIES {
             match generation_outcome(regs().STAT.get(), regs().ISTAT.get(), rand_words()) {
                 GenerationOutcome::Ready(bytes) => {
-                    ack(ISTAT_RAND_RDY);
+                    ack(INTERRUPT_STATUS_RANDOM_NUMBER_READY);
                     return Some(bytes);
                 }
                 // Both of these mean "the core is not in a state to answer, seed it and ask
