@@ -87,8 +87,8 @@ A leftover of that ruling. The ruling refused `mux` as an abbreviation of multip
 `select_parent_before`, `select_parent_after` and `had_select_parent`, which reuse the step's name
 the way `had_reset` reuses `DeassertReset`.
 
-Every other name follows the rules that a register or field takes its spelled-out name, with the
-source's spelling in `doc(alias)`, and that units are spelled out.
+Every other name follows two rules: a register or field takes its spelled-out name, with the
+source's spelling in `doc(alias)`, and a unit takes its full word.
 
 | names | what they are |
 |---|---|
