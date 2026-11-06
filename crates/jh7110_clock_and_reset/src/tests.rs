@@ -28,7 +28,11 @@ fn the_sys_domains_last_clock_word_does_not_reach_its_reset_words() {
     assert_eq!(last, 0x2f4);
     assert!(last + 4 <= SYSTEM.reset_assert);
     assert_eq!(SYSTEM.clock_offset(SYSTEM.clocks), None);
-    assert_eq!(SYSTEM.clock_offset(298), None, "the vendor tree's virtual core clock");
+    assert_eq!(
+        SYSTEM.clock_offset(298),
+        None,
+        "the vendor tree's virtual core clock"
+    );
     assert_eq!(SYSTEM.reset_bit(125).unwrap().assert_offset, 0x2f8 + 12);
     assert_eq!(SYSTEM.reset_bit(126), None);
 }
