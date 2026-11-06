@@ -5,7 +5,7 @@
 *A child of [`notes/designware-ethernet.md`](../designware-ethernet.md) (milestone 53 (the board's
 own peripherals: network and storage on real silicon)), whose Results row is the 2.3 Mbit/s this
 page explains. Its names are provisional: `socket_contract::polled_wait`, `TCP_RECEIVE_BUF`,
-`CurrentCpuPage::tick_hz`, `user_mode_runtime::tick_hz`, `MappedWindow::copy_to_slice` and
+`CurrentCpuPage::tick_hertz`, `user_mode_runtime::tick_hertz`, `MappedWindow::copy_to_slice` and
 `copy_from_slice`, the rehearsal's `--debug-userspace`, the bench boot's `receive` line, and this
 page's stem.*
 

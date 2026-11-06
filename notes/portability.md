@@ -131,7 +131,7 @@ Traps and interrupts:
   uses INTx.
 
 Time:
-- `timer::{initialize, frequency, interval, TICK_HZ}`: the periodic tick and its rate.
+- `timer::{initialize, frequency, interval, TICK_HERTZ}`: the periodic tick and its rate.
 - `timer::now()`: the raw counter, which keeps counting with interrupts masked.
 - `timer::{ticks, ticks_on(cpu), is_tick_pending}`: per-core tick counts and the pending bit.
 - `timer::spin_for(ticks)`: a busy-wait that works with interrupts masked.

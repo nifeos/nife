@@ -176,7 +176,7 @@ This says x86_64 was not special. It is arithmetic over one measurement of each:
 | riscv64 | 2,410 ticks | 10 MHz | 241 us | ~112 ticks | **4.6%** |
 | x86_64 | 180,537 ticks | TSC | ~181 us | 6,670 to 47,752 | **3.7% to 26.4%** |
 
-`TICK_HZ` is 100 on all three, so the scheduler tick period is 10 ms and the window covers about 2.5%
+`TICK_HERTZ` is 100 on all three, so the scheduler tick period is 10 ms and the window covers about 2.5%
 of one. Whether a tick lands inside it is a one-in-forty coin flip on the phase the boot left the
 timer in, and unrelated code-size changes move that phase. On aarch64 the row would fail the 10% tripwire on a
 single preemption; the coin had not come up heads there yet. The per-preemption prices for aarch64

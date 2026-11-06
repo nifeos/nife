@@ -28,7 +28,7 @@ executing. Under contention the budget is spent in wall clock the guest never re
 is about 40 ms of it. One worker short of sixty is exactly what that deficit looks like at the
 margin.
 
-The budget is now 200 delivered timer ticks (`2 * TICK_HZ`, the same two seconds on a quiet
+The budget is now 200 delivered timer ticks (`2 * TICK_HERTZ`, the same two seconds on a quiet
 machine). A descheduled emulator misses deadlines rather than gaining them. So fewer ticks arrive per
 second of wall clock, and the budget stretches under precisely the condition that made the old one
 wrong. This is the drift twins' move (assert the law, not the rate) spent on a wait. The mechanism

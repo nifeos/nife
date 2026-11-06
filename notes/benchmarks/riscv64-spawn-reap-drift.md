@@ -20,7 +20,7 @@ Each step was found by recursive bisection, so every step is found, not only the
 100 instructions on riscv64 ([icount-tick-scales](icount-tick-scales.md)), and a `spawn_reap`
 reading is 64 iterations. The kernel is the -O0 build the gate measures.
 
-Every point was measured twice: as the bench runs, and rebuilt with `TICK_HZ` 1 so no preemption
+Every point was measured twice: as the bench runs, and rebuilt with `TICK_HERTZ` 1 so no preemption
 tick lands in a window. The second is the cost. Commits from 2026-09-26 to 2026-10-03 that predate
 `964bd5a88` ran with that commit's one-line fix applied, since their bench refuses to start without a
 disk image it never reads.
