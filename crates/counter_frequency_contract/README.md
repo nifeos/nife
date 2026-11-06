@@ -14,14 +14,14 @@ a page of zeroes, which reads as `None`; a page never carries a fabricated defau
 - The page is `PAGE_CONTENT_BYTES` (16) bytes: `MAGIC` (the ASCII text `TIMEBAS1`) and then the rate in
   hertz as one little-endian `u64`. A frame without the magic reads as unknown. `VERSION` (1) is the
   digit the magic carries; a layout break bumps both in one change.
-- `build_page(hz)` makes the bytes. `CounterFrequencyPage::new(va)` is `unsafe` and names a mapped page;
-  `hz()` returns `Some(rate)` or `None`.
+- `build_page(hertz)` makes the bytes. `CounterFrequencyPage::new(va)` is `unsafe` and names a mapped page;
+  `hertz()` returns `Some(rate)` or `None`.
 - The fixed address is `PAGE_VIRTUAL_ADDRESS`: `0x0000_7000_0000_0000` on `x86_64`, and `0x0000_0038_0000_0000`
   on `riscv64`, where the low half of the address space ends at `0x40_0000_0000`. Each sits at
   seven-eighths of its low half, far above every other address a program is handed.
-- A rate is believable only between `MINIMUM_PLAUSIBLE_HZ` (100 kHz, above the 32.768 kHz watch
-  crystal and far below the slowest real counter) and `MAXIMUM_PLAUSIBLE_HZ` (100 GHz). The band
-  exists to catch nonsense, not to police hardware, and `is_plausible(hz)` is its one definition, so
+- A rate is believable only between `MINIMUM_PLAUSIBLE_HERTZ` (100 kHz, above the 32.768 kHz watch
+  crystal and far below the slowest real counter) and `MAXIMUM_PLAUSIBLE_HERTZ` (100 GHz). The band
+  exists to catch nonsense, not to police hardware, and `is_plausible(hertz)` is its one definition, so
   each architecture's boot path calls the same check.
 - Not handled: the TSC is assumed invariant, so a part that changes its rate leaves every process
   reading a stale number. A process spawned without the page faults when it reads it, on purpose.
@@ -38,7 +38,7 @@ assert!(!is_plausible(1)); // firmware wrote nonsense, and `> 0` would have beli
 let bytes = build_page(1_000_000_000);
 // SAFETY: `bytes` is a live buffer of `PAGE_CONTENT_BYTES` for the whole of this block.
 let page = unsafe { CounterFrequencyPage::new(bytes.as_ptr() as u64) };
-assert_eq!(page.hz(), Some(1_000_000_000));
+assert_eq!(page.hertz(), Some(1_000_000_000));
 ```
 
 ## Building and testing

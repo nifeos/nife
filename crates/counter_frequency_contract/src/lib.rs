@@ -45,20 +45,20 @@ pub const INTERFACE_ID: u64 = 9;
 /// boot: radon's 4 MHz `time` CSR is the slowest counter here, and 100 kHz sits above the 32.768
 /// kHz watch crystal on purpose. Anything under it is a failed measurement, not a slow part.
 ///
-/// Name: ratified 2026-11-01 (#3059).
-pub const MINIMUM_PLAUSIBLE_HZ: u64 = 100_000;
+/// Name: ratified 2026-11-06, renamed from `MINIMUM_PLAUSIBLE_HZ`. The unit is spelled out.
+pub const MINIMUM_PLAUSIBLE_HERTZ: u64 = 100_000;
 
 /// **The fastest counter this tree will believe**, 100 GHz, and the same reasoning as
-/// [`MINIMUM_PLAUSIBLE_HZ`] read from the other end. No part ticks a counter at 100 GHz and none
+/// [`MINIMUM_PLAUSIBLE_HERTZ`] read from the other end. No part ticks a counter at 100 GHz and none
 /// will for a long time (the fastest here is a few GHz of TSC), so a number above this came from a
 /// division that went the wrong way or a register that was never written. Generous by two orders of
 /// magnitude on purpose: this band exists to catch nonsense, not to police hardware.
 ///
-/// Name: ratified 2026-11-01 (#3059).
-pub const MAXIMUM_PLAUSIBLE_HZ: u64 = 100_000_000_000;
+/// Name: ratified 2026-11-06, renamed from `MAXIMUM_PLAUSIBLE_HZ`. The unit is spelled out.
+pub const MAXIMUM_PLAUSIBLE_HERTZ: u64 = 100_000_000_000;
 
-/// Is `hz` a rate a real machine could plausibly have? See [`MINIMUM_PLAUSIBLE_HZ`] and
-/// [`MAXIMUM_PLAUSIBLE_HZ`] for where the bounds come from and why they are so wide.
+/// Is `hertz` a rate a real machine could plausibly have? See [`MINIMUM_PLAUSIBLE_HERTZ`] and
+/// [`MAXIMUM_PLAUSIBLE_HERTZ`] for where the bounds come from and why they are so wide.
 ///
 /// One definition rather than three: a band copied into each architecture's timer drifts, so the
 /// kernel's aarch64, riscv64 and `x86_64` boot paths all call this where each first learns its
@@ -76,19 +76,19 @@ pub const MAXIMUM_PLAUSIBLE_HZ: u64 = 100_000_000_000;
 /// ```
 ///
 /// Name: ratified 2026-11-01 (#3059). Kept.
-pub fn is_plausible(hz: u64) -> bool {
-    (MINIMUM_PLAUSIBLE_HZ..=MAXIMUM_PLAUSIBLE_HZ).contains(&hz)
+pub fn is_plausible(hertz: u64) -> bool {
+    (MINIMUM_PLAUSIBLE_HERTZ..=MAXIMUM_PLAUSIBLE_HERTZ).contains(&hertz)
 }
 
 const OFF_MAGIC: usize = 0;
-const OFF_HZ: usize = OFF_MAGIC + 8;
+const OFF_HERTZ: usize = OFF_MAGIC + 8;
 
 /// **The size of the page's content** in bytes: the magic, then one little-endian `u64`. This is
 /// not a page size. The mapped page is one whole frame (4096 bytes), and this is how much of it
 /// carries data; the rest is zeroes.
 ///
 /// Name: ratified 2026-11-01 (#3059), renamed from `PAGE_BYTES`.
-pub const PAGE_CONTENT_BYTES: usize = OFF_HZ + 8;
+pub const PAGE_CONTENT_BYTES: usize = OFF_HERTZ + 8;
 
 /// **The fixed virtual address the kernel maps this page at**, in every `x86_64` and every
 /// `riscv64` process, shared by the kernel's writer and the reader through this crate. `riscv64` has its own, because Sv39's low half ends at
@@ -116,7 +116,7 @@ pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_7000_0000_0000;
 #[cfg(target_arch = "riscv64")]
 pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_0038_0000_0000;
 
-/// Build a counter frequency page's bytes for `hz`, the calibrated (or `CPUID`-reported) TSC rate in
+/// Build a counter frequency page's bytes for `hertz`, the calibrated (or `CPUID`-reported) TSC rate in
 /// hertz. The kernel writes the result into a fresh frame before mapping it read-only into any
 /// process; nothing else ever constructs one of these.
 ///
@@ -128,14 +128,14 @@ pub const PAGE_VIRTUAL_ADDRESS: u64 = 0x0000_0038_0000_0000;
 /// let bytes = build_page(1_000_000_000);
 /// // SAFETY: `bytes` is a live, aligned buffer of exactly `PAGE_CONTENT_BYTES` for this block.
 /// let page = unsafe { CounterFrequencyPage::new(bytes.as_ptr() as u64) };
-/// assert_eq!(page.hz(), Some(1_000_000_000));
+/// assert_eq!(page.hertz(), Some(1_000_000_000));
 /// ```
 ///
 /// Name: ratified 2026-11-01 (#3059). Kept.
-pub fn build_page(hz: u64) -> [u8; PAGE_CONTENT_BYTES] {
+pub fn build_page(hertz: u64) -> [u8; PAGE_CONTENT_BYTES] {
     let mut page = [0u8; PAGE_CONTENT_BYTES];
     page[OFF_MAGIC..OFF_MAGIC + 8].copy_from_slice(&MAGIC);
-    page[OFF_HZ..OFF_HZ + 8].copy_from_slice(&hz.to_le_bytes());
+    page[OFF_HERTZ..OFF_HERTZ + 8].copy_from_slice(&hertz.to_le_bytes());
     page
 }
 
@@ -196,17 +196,17 @@ impl CounterFrequencyPage {
     /// let zeroed = [0u8; counter_frequency_contract::PAGE_CONTENT_BYTES];
     /// // SAFETY: as above.
     /// let page = unsafe { CounterFrequencyPage::new(zeroed.as_ptr() as u64) };
-    /// assert_eq!(page.hz(), None);
+    /// assert_eq!(page.hertz(), None);
     /// ```
     ///
-    /// Name: ratified 2026-11-01 (#3059). Kept.
-    pub fn hz(&self) -> Option<u64> {
+    /// Name: ratified 2026-11-06, renamed from `hz`. The unit is spelled out.
+    pub fn hertz(&self) -> Option<u64> {
         let bytes = self.bytes();
         if bytes[OFF_MAGIC..OFF_MAGIC + 8] != MAGIC {
             return None;
         }
         let mut raw = [0u8; 8];
-        raw.copy_from_slice(&bytes[OFF_HZ..OFF_HZ + 8]);
+        raw.copy_from_slice(&bytes[OFF_HERTZ..OFF_HERTZ + 8]);
         Some(u64::from_le_bytes(raw))
     }
 }
@@ -233,17 +233,17 @@ mod tests {
     fn a_built_page_round_trips_its_rate() {
         let bytes = build_page(2_400_000_000);
         with_page(&bytes, |page| {
-            assert_eq!(page.hz(), Some(2_400_000_000));
+            assert_eq!(page.hertz(), Some(2_400_000_000));
         });
     }
 
     /// A zeroed frame (nothing has ever written a page into it, or calibration has not run) reads
-    /// as "unknown", not as a fabricated 0 Hz or a stale value.
+    /// as "unknown", not as a fabricated 0 hertz or a stale value.
     #[test]
     fn a_zeroed_frame_reads_as_unknown() {
         let zeroed = [0u8; PAGE_CONTENT_BYTES];
         with_page(&zeroed, |page| {
-            assert_eq!(page.hz(), None);
+            assert_eq!(page.hertz(), None);
         });
     }
 
@@ -254,7 +254,7 @@ mod tests {
         let mut bytes = build_page(1_000_000_000);
         bytes[OFF_MAGIC] ^= 0xff;
         with_page(&bytes, |page| {
-            assert_eq!(page.hz(), None);
+            assert_eq!(page.hertz(), None);
         });
     }
 
@@ -264,17 +264,23 @@ mod tests {
     /// for tidiness fails here rather than on somebody's board.
     #[test]
     fn the_band_accepts_real_rates_and_refuses_nonsense() {
-        for hz in [
+        for hertz in [
             4_000_000,     // radon, the VisionFive 2's `time` CSR
             10_000_000,    // QEMU virt, riscv64
             62_500_000,    // QEMU virt, aarch64 under TCG
             24_000_000,    // a common ARM board crystal
             3_000_000_000, // a TSC
         ] {
-            assert!(is_plausible(hz), "{hz} Hz is a rate a real machine has");
+            assert!(
+                is_plausible(hertz),
+                "{hertz} hertz is a rate a real machine has"
+            );
         }
-        for hz in [0, 1, 1_000, u64::MAX] {
-            assert!(!is_plausible(hz), "{hz} Hz is a measurement that failed");
+        for hertz in [0, 1, 1_000, u64::MAX] {
+            assert!(
+                !is_plausible(hertz),
+                "{hertz} hertz is a measurement that failed"
+            );
         }
     }
 
@@ -285,7 +291,7 @@ mod tests {
     #[test]
     #[allow(clippy::assertions_on_constants)]
     fn the_layout_offsets_do_not_overlap() {
-        assert_eq!(OFF_HZ, 8);
+        assert_eq!(OFF_HERTZ, 8);
         assert_eq!(PAGE_CONTENT_BYTES, 16);
         assert!(PAGE_CONTENT_BYTES < 4096, "the page must fit in one frame");
     }

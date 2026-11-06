@@ -90,7 +90,7 @@ pub fn cntfrq_checked() -> Option<u64> {
             counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
         )
     };
-    page.hz()
+    page.hertz()
 }
 
 /// The monotonic tick count (`x86_64`): `rdtsc`, readable from ring 3 because `CR4.TSD` is clear
@@ -143,7 +143,7 @@ pub fn cntfrq_checked() -> Option<u64> {
             counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
         )
     };
-    page.hz()
+    page.hertz()
 }
 
 /// **A cycle-counter read and what it counts**, returned together by [`cycle_reading`].
