@@ -65,7 +65,7 @@ Nine harnesses, each with one patch.
 
 | harness | what it proves |
 |---|---|
-| `with_parent_changes_only_the_mux_field` | every bit outside the parent field is unchanged, and an over-wide parent never reaches the enable bit |
+| `with_parent_changes_only_the_mux_field` | every bit outside the parent field stays as it was, and an over-wide parent never reaches the enable bit |
 | `a_clock_offset_is_one_of_the_domains_own_words` | for every domain and index, an offset is word-aligned and inside the domain, or `None` past its count |
 | `a_reset_line_is_one_bit_of_one_of_the_domains_own_words` | a reset is exactly one bit, in assert and status words of the domain |
 | `every_fixed_plan_ungates_its_clocks_before_releasing_a_reset` | each fixed plan holds only its domain's ids, enables every clock before releasing any reset, and picks a parent before enabling that clock |
@@ -84,13 +84,13 @@ both numberings. The README's usage example runs as a doctest.
 `python3 helpers/name_release.py --draft jh7110_clock_and_reset` lists 80 names (the crate, the
 test module and 78 items and fields), each with a ratified block.
 
-Provisional. `CLOCK_PARENT_MASK` is ratified by the maintainer, pending the architect. It says what
+Provisional. The maintainer ratified `CLOCK_PARENT_MASK`, pending the architect. It says what
 the field holds, as `with_parent` and `Step::SelectParent` already do. The ruling refused
 `CLOCK_MUX_MASK`, `CLOCK_MULTIPLEXER_MASK` and `CLOCK_PARENT_SELECT_MASK`. Recommendation: ratify.
 
 Ratified earlier, failing a later rule. The architect's ruling keeps each until a name review, and
-a release is that review, because names become permanent on first publication. None is renamed
-here. `helpers/name_checks.py` finds the first only.
+a release is that review, because names become permanent on first publication. This lane renames
+none. `helpers/name_checks.py` finds the first only.
 
 | name | rule | recommended rename |
 |---|---|---|
@@ -124,15 +124,15 @@ U-Boot (tag `VF2_v2.10.4`, commit `1ae835c25e3d`). OpenSBI's `jh7110.c` (BSD-2-C
 same PMIC reset register and bit, which the crate takes from a board reading; its doc comment now
 cites that file.
 
-Milestone 1019 items, as far as this crate goes:
+Milestone 1019 (the driver crates carry facts from their sources, not their text), as far as this crate goes:
 
 - Item 1 (`standard_mode_100_kilohertz` from the I2C specification alone) stands done.
 - Item 7. The two PMIC doc comments cite the node, the file and the revision and give the string
   and address as facts. Neither reproduces a run of node text.
 - Item 11. Every vendor claim now links the revision it holds at. The 50 MHz card clock holds in
   mainline and at the vendor branch head, and not at `VF2_v2.10.4`; `u5_dw_i2c_clk_core` is a gate
-  on `osc` at `VF2_v2.10.4` and absent at the branch head. The links were added to the crate
-  documentation.
+  on `osc` at `VF2_v2.10.4` and absent at the branch head. The crate documentation carries the
+  links.
 - The doc comment on `Step` and a test comment quoted eleven words of a GPL comment in Linux's
   `reset-starfive-jh71x0.c`; both now describe the warning in the crate's own words and cite the
   file. A third doc quoted four words of it and is rewritten too.
@@ -183,8 +183,8 @@ not run on a board.
 2. Ratify `CLOCK_PARENT_MASK`. Recommendation: ratify. Background: the maintainer chose it over
    three alternatives on 2026-11-05 and left it provisional for you.
 3. Reopen the seven names in the table above. Recommendation: rename all before `0.1.0` in one
-   pull request. Background: each was ratified before a later rule, and names become permanent when
-   the crate first publishes.
+   pull request. Background: a later rule overtook each ruling, and names become permanent when the
+   crate first publishes.
 4. Keep the VisionFive 2 board items (the PMIC reset, the PMIC bus plan, the I2C5 clock chain) in
    this chip crate. Recommendation: keep them, as the README says they are board facts. Background:
    moving them to a board crate later would break every caller.
