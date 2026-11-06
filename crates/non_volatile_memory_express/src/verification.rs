@@ -8,7 +8,7 @@
 //! outside its namespace, and the two decoders of words the controller writes (the capabilities
 //! register and the completion status) read exactly the bits the specification gives them.
 //!
-//! Name: provisional. The module holding the Kani harnesses.
+//! Name: ratified 2026-11-06 (UTC). The module holding the Kani harnesses.
 
 use crate::*;
 

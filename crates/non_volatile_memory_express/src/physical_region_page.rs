@@ -1,13 +1,13 @@
 //! **Physical Region Page pointers** (section 4.3, Physical Region Page Entry and List): the two
 //! pointer words a data transfer carries.
 //!
-//! Name: provisional. The module holding [`PhysicalRegionPagePair`] and
+//! Name: ratified 2026-11-06 (UTC). The module holding [`PhysicalRegionPagePair`] and
 //! [`physical_region_page_pair`].
 
 /// **The two Physical Region Page pointers of one transfer**: PRP1 and PRP2, as a command carries
 /// them. `second_entry` is zero when one page holds the whole transfer.
 ///
-/// Name: provisional. The pair [`physical_region_page_pair`] returned as an unnamed tuple, now a
+/// Name: ratified 2026-11-06 (UTC). The pair [`physical_region_page_pair`] returned as an unnamed tuple, now a
 /// struct so a caller cannot swap the two entries. The specification's terms stay searchable
 /// through the aliases `PRP` and `physical region page`.
 #[doc(alias = "PRP")]
@@ -16,11 +16,11 @@
 pub struct PhysicalRegionPagePair {
     /// PRP1: the transfer's first byte, which may carry an offset into its page.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-06 (UTC).
     pub first_entry: u64,
     /// PRP2: the next page boundary when the transfer spills into a second page, otherwise zero.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-06 (UTC).
     pub second_entry: u64,
 }
 

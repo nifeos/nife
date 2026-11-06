@@ -13,7 +13,7 @@ pub const CAPABILITIES: u64 = 0x00;
 /// Controller Configuration (the register the specification calls `CC`), 32-bit. See
 /// [`crate::enabled_controller_configuration`].
 ///
-/// Name: provisional. Renamed from `CC`, spelled out under the register-constant naming rule, and
+/// Name: ratified 2026-11-06 (UTC). Renamed from `CC`, spelled out under the register-constant naming rule, and
 /// given the `_REGISTER` ending the naming rule asks of an offset. The specification's name stays
 /// searchable through the alias `CC`.
 #[doc(alias = "CC")]
@@ -21,28 +21,28 @@ pub const CONTROLLER_CONFIGURATION_REGISTER: u64 = 0x14;
 /// Controller Status (the register the specification calls `CSTS`), 32-bit read-only. See
 /// [`crate::CONTROLLER_STATUS_READY`].
 ///
-/// Name: provisional. Renamed from `CSTS`, spelled out and given the `_REGISTER` ending as
+/// Name: ratified 2026-11-06 (UTC). Renamed from `CSTS`, spelled out and given the `_REGISTER` ending as
 /// [`CONTROLLER_CONFIGURATION_REGISTER`] was. The alias `CSTS` keeps the specification's name.
 #[doc(alias = "CSTS")]
 pub const CONTROLLER_STATUS_REGISTER: u64 = 0x1c;
 /// Admin Queue Attributes (the register the specification calls `AQA`):
 /// (ACQ entries - 1) << 16 | (ASQ entries - 1).
 ///
-/// Name: provisional. Renamed from `AQA`, spelled out and given the `_REGISTER` ending as
+/// Name: ratified 2026-11-06 (UTC). Renamed from `AQA`, spelled out and given the `_REGISTER` ending as
 /// [`CONTROLLER_CONFIGURATION_REGISTER`] was. The alias `AQA` keeps the specification's name.
 #[doc(alias = "AQA")]
 pub const ADMIN_QUEUE_ATTRIBUTES_REGISTER: u64 = 0x24;
 /// Admin Submission Queue Base Address (the register the specification calls `ASQ`), 64-bit,
 /// page-aligned physical.
 ///
-/// Name: provisional. Renamed from `ASQ`, spelled out and given the `_REGISTER` ending as
+/// Name: ratified 2026-11-06 (UTC). Renamed from `ASQ`, spelled out and given the `_REGISTER` ending as
 /// [`CONTROLLER_CONFIGURATION_REGISTER`] was. The alias `ASQ` keeps the specification's name.
 #[doc(alias = "ASQ")]
 pub const ADMIN_SUBMISSION_QUEUE_BASE_ADDRESS_REGISTER: u64 = 0x28;
 /// Admin Completion Queue Base Address (the register the specification calls `ACQ`), 64-bit,
 /// page-aligned physical.
 ///
-/// Name: provisional. Renamed from `ACQ`, spelled out and given the `_REGISTER` ending as
+/// Name: ratified 2026-11-06 (UTC). Renamed from `ACQ`, spelled out and given the `_REGISTER` ending as
 /// [`CONTROLLER_CONFIGURATION_REGISTER`] was. The alias `ACQ` keeps the specification's name.
 #[doc(alias = "ACQ")]
 pub const ADMIN_COMPLETION_QUEUE_BASE_ADDRESS_REGISTER: u64 = 0x30;
@@ -55,7 +55,7 @@ pub const DOORBELL_BASE: u64 = 0x1000;
 /// Controller Status bit 0 (`CSTS.RDY`): the controller has come up (after the enable bit of
 /// Controller Configuration is set) or gone down (after it is cleared).
 ///
-/// Name: provisional. Renamed from `CSTS_RDY`, spelled out. The alias `CSTS.RDY` keeps the
+/// Name: ratified 2026-11-06 (UTC). Renamed from `CSTS_RDY`, spelled out. The alias `CSTS.RDY` keeps the
 /// specification's name.
 #[doc(alias = "CSTS.RDY")]
 #[doc(alias = "RDY")]
@@ -63,7 +63,7 @@ pub const CONTROLLER_STATUS_READY: u32 = 1;
 /// Controller Status bit 1 (`CSTS.CFS`, Controller Fatal Status): the controller gave up, and no
 /// doorbell will help.
 ///
-/// Name: provisional. Renamed from `CSTS_CFS`, spelled out. The aliases `CSTS.CFS` and `CFS` keep
+/// Name: ratified 2026-11-06 (UTC). Renamed from `CSTS_CFS`, spelled out. The aliases `CSTS.CFS` and `CFS` keep
 /// the specification's name.
 #[doc(alias = "CSTS.CFS")]
 #[doc(alias = "CFS")]

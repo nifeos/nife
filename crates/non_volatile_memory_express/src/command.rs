@@ -1,19 +1,19 @@
 //! **Submission queue entries**: the opcodes, the Identify selectors and the builders that fill
 //! the sixteen dwords of a command.
 //!
-//! Name: provisional. The module holding [`Command`] and the opcodes.
+//! Name: ratified 2026-11-06 (UTC). The module holding [`Command`] and the opcodes.
 
 use crate::physical_region_page::PhysicalRegionPagePair;
 
 /// Create an I/O submission queue (admin opcode, section 5).
 ///
-/// Name: provisional. Renamed from `ADMIN_CREATE_IO_SQ`, spelled out. The alias keeps the
+/// Name: ratified 2026-11-06 (UTC). Renamed from `ADMIN_CREATE_IO_SQ`, spelled out. The alias keeps the
 /// specification's name.
 #[doc(alias = "Create I/O Submission Queue")]
 pub const ADMIN_CREATE_IO_SUBMISSION_QUEUE: u8 = 0x01;
 /// Create an I/O completion queue (admin opcode, section 5).
 ///
-/// Name: provisional. Renamed from `ADMIN_CREATE_IO_CQ`, spelled out. The alias keeps the
+/// Name: ratified 2026-11-06 (UTC). Renamed from `ADMIN_CREATE_IO_CQ`, spelled out. The alias keeps the
 /// specification's name.
 #[doc(alias = "Create I/O Completion Queue")]
 pub const ADMIN_CREATE_IO_COMPLETION_QUEUE: u8 = 0x05;
@@ -48,14 +48,14 @@ pub const NON_VOLATILE_MEMORY_READ: u8 = 0x02;
 /// The Identify selector (`CNS`, Controller or Namespace Structure) for a namespace's data
 /// structure.
 ///
-/// Name: provisional. Renamed from `CNS_NAMESPACE`: `CNS` is ruled to be spelled out as Controller
+/// Name: ratified 2026-11-06 (UTC). Renamed from `CNS_NAMESPACE`: `CNS` is ruled to be spelled out as Controller
 /// or Namespace Structure (2026-11-05 UTC). The alias `CNS` keeps the specification's name.
 #[doc(alias = "CNS")]
 pub const CONTROLLER_OR_NAMESPACE_STRUCTURE_NAMESPACE: u32 = 0x00;
 /// The Identify selector (`CNS`, Controller or Namespace Structure) for the controller's own data
 /// structure, rather than a namespace's.
 ///
-/// Name: provisional. Renamed from `CNS_CONTROLLER` as
+/// Name: ratified 2026-11-06 (UTC). Renamed from `CNS_CONTROLLER` as
 /// [`CONTROLLER_OR_NAMESPACE_STRUCTURE_NAMESPACE`] was. The alias `CNS` keeps the specification's
 /// name.
 #[doc(alias = "CNS")]
@@ -228,7 +228,7 @@ impl Command {
 /// constant. The constant-assertion lint is off on purpose: the assertion is constant by
 /// construction, and the compiler checking it is its job.
 ///
-/// Name: provisional. Renamed from `THE_QUEUE_DWORD_FIELDS_SHARE_NO_BIT`: no `THE_` prefix (ruled
+/// Name: ratified 2026-11-06 (UTC). Renamed from `THE_QUEUE_DWORD_FIELDS_SHARE_NO_BIT`: no `THE_` prefix (ruled
 /// 2026-11-05 UTC), and the `_DO_NOT_OVERLAP` ending the naming rule gives an assertion constant.
 #[allow(clippy::assertions_on_constants, clippy::eq_op, dead_code)]
 const QUEUE_DWORD_FIELDS_DO_NOT_OVERLAP: () = assert!(0xffffu32 + (0xffff << 16) == u32::MAX);

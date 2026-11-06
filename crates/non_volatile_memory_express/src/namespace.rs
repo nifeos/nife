@@ -1,6 +1,6 @@
 //! **The bounds check and transfer builder** for one namespace.
 //!
-//! Name: provisional. The module holding [`Namespace`].
+//! Name: ratified 2026-11-06 (UTC). The module holding [`Namespace`].
 
 use crate::command::Command;
 use crate::physical_region_page::physical_region_page_pair;
@@ -44,7 +44,7 @@ impl Namespace {
     /// A namespace of `capacity_bytes`, whose transfer unit covers `blocks_per_transfer` logical
     /// blocks. The struct is `#[non_exhaustive]`, so this is how code outside the crate builds one.
     ///
-    /// Name: provisional. The constructor of a `#[non_exhaustive]` struct.
+    /// Name: ratified 2026-11-06 (UTC). The constructor of a `#[non_exhaustive]` struct.
     pub fn new(capacity_bytes: u64, blocks_per_transfer: u16) -> Self {
         Namespace {
             capacity_bytes,

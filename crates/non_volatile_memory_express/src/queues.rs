@@ -1,7 +1,7 @@
 //! **Ring arithmetic**: where the next command lands, where the next completion appears and which
 //! phase marks it fresh.
 //!
-//! Name: provisional. The module holding [`SubmissionQueue`] and [`CompletionQueue`].
+//! Name: ratified 2026-11-06 (UTC). The module holding [`SubmissionQueue`] and [`CompletionQueue`].
 
 use crate::completion::Completion;
 

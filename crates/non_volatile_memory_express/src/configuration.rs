@@ -1,6 +1,6 @@
 //! **The Controller Configuration value** that enables the controller for this driver.
 //!
-//! Name: provisional. The module holding [`enabled_controller_configuration`].
+//! Name: ratified 2026-11-06 (UTC). The module holding [`enabled_controller_configuration`].
 
 /// The `CC` value that enables the controller for this driver's configuration: EN=1, CSS=0 (the
 /// NVM command set), MPS=0 (4 KiB memory pages, matching the caller's frames), AMS=0
@@ -19,7 +19,7 @@ pub fn enabled_controller_configuration() -> u32 {
 /// [`enabled_controller_configuration`] names this constant. The constant-assertion lint is off
 /// on purpose: the assertion is constant by construction, and the compiler checking it is its job.
 ///
-/// Name: provisional. Renamed from `THE_CONTROLLER_CONFIGURATION_FIELDS_SHARE_NO_BIT`: no `THE_`
+/// Name: ratified 2026-11-06 (UTC). Renamed from `THE_CONTROLLER_CONFIGURATION_FIELDS_SHARE_NO_BIT`: no `THE_`
 /// prefix (ruled 2026-11-05 UTC), and the `_DO_NOT_OVERLAP` ending the naming rule gives an
 /// assertion constant.
 #[allow(clippy::assertions_on_constants, clippy::eq_op, dead_code)]

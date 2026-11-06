@@ -1,6 +1,6 @@
 //! **Doorbell addressing**: which BAR0 offset rings which queue.
 //!
-//! Name: provisional. The module holding [`Doorbell`] and [`doorbell`].
+//! Name: ratified 2026-11-06 (UTC). The module holding [`Doorbell`] and [`doorbell`].
 
 use crate::registers;
 

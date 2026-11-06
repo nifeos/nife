@@ -1,6 +1,6 @@
 //! **The decoded Controller Capabilities register**: the fields of `CAP` a driver acts on.
 //!
-//! Name: provisional. The module holding [`Capabilities`].
+//! Name: ratified 2026-11-06 (UTC). The module holding [`Capabilities`].
 
 /// The decoded fields of `CAP` this driver acts on. A newtype over the raw register value so the
 /// bit positions live in exactly one place.

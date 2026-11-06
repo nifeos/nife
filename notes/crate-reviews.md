@@ -3,7 +3,8 @@
 *Name: provisional, minted 2026-11-05 (UTC) by lane/journey-5-review-packages. The file name says what the page holds: the evidence an architect's crate review starts from.*
 
 The architect reads every crate by hand before it leaves this tree
-([journey 5](../design/journeys/05-crates-released-on-their-own.md), steps 2, 3, 5, 6, 7, 8 and 10).
+([journey 5](../design/journeys/05-crates-released-on-their-own.md), steps 2 to 8 and 10, and the
+first contract crates of milestone 1017 (the contract crates leave in this order)).
 This note holds one package per crate, so a review starts from evidence and not from a search. Each
 package follows the review of `jh7110_entropy` in
 [milestone 818 (proven JH7110 TRNG logic, released on its own)](../design/roadmap/0818-the-jh7110-entropy-crate-released-on-its-own.md).
@@ -25,12 +26,12 @@ packages of three crates name its effects.
 
 Not run, and so not claimed: the stranger test, coverage, mutation, `cargo-semver-checks` (a first
 release has no baseline) and the publish rehearsal. The template's `check`, `proofs` and `weekly`
-workflows did not run either, because no repository exists for any of these seven. The stranger
+workflows did not run either, because no repository exists for any of these crates. The stranger
 record lives in the crate repository, in `docs/stranger-test.md`. The `file_allocation_table`
 package is the exception: it ran the README's commands in a scratch copy and `cargo-semver-checks`
 against itself.
 
-## What is the same for all seven
+## What is the same for all of them
 
 - Version. Every manifest says `0.1.0`, edition 2024, `rust-version = "1.88"`, license
   `MIT OR Apache-2.0` unless a package says otherwise. The proposed first version is `0.1.0`: the move commit carries the tag `v0.1.0`, and nife depends on it the way it depends on the pilot, by `git` and `rev`
@@ -41,22 +42,25 @@ against itself.
 - Dependencies in nife today. Every consumer reaches these crates by a path dependency with a
   `version` key (the packet's dependents tables list the manifests). None is a `git` and `rev`
   dependency yet, so each move converts every consumer's line to the ruled form.
-- Unsafe. No crate has an `unsafe` site. Each is pure computation behind a caller's volatile
-  accesses.
+- Unsafe. No crate has an `unsafe` site except `counter_frequency_contract`, whose reader names a
+  raw address. Each other crate is pure computation behind a caller's volatile accesses.
 - Template status. [Milestone 887 (crate repositories share one CI template)](../design/roadmap/0887-crate-repositories-share-one-ci-template.md)
   stands built: the template's workflows, the allowlist lint and the `crates-io` environment exist and a
   canary repository adopts each release. What a crate gets at its move is that template. The local
   stand-in for the template's `standalone` job is `script/crate-standalone`, whose result is in each
   package. No further check can run before a repository exists.
 - README readiness. Every README has the sections a stranger looks for: what the crate does, the
-  proofs with their harness names, usage, limitations and license. Only
-  `file_allocation_table`'s and `non_volatile_memory_express`'s READMEs tell a newcomer to install
-  Kani; the other five say `cargo kani` and no more, which is the gap the pilot's stranger run found and fixed. No crate has run a
-  stranger test, and none can until it has a repository.
+  proofs with their harness names, usage, limitations and license. `generational_table` has no
+  README yet. Every other README that names harnesses tells a newcomer how to install Kani. No crate
+  has run a stranger test, and none can until it has a repository.
 - References to nife in shipped text. Crate repositories stand alone and do not mention nife.
   Each package lists the mentions that remain, each a small edit for the move lane.
 - Harnesses and patches. In every crate, each Kani harness has exactly one falsification patch
   (the packet pairs them), and `script/crate-standalone` ran each patch and saw its harness fail.
+  `counter_frequency_contract` has no harness.
+- Units in names. The rule of 2026-11-03 spells every unit out (`_HERTZ`, not `_HZ`). A release
+  review re-opens a name ratified before a later rule. One name still carries a unit symbol,
+  `Refusal::Above4GiB` in `designware_mobile_storage`.
 
 ## `file_allocation_table`, step 2
 
@@ -113,13 +117,32 @@ address), as milestone 820 (proven xHCI logic, released on its own) asks.
 
 Recommendation. Ready for review.
 
+## `generational_table`, step 4
+
+The whole package is [crate-reviews/generational-table.md](crate-reviews/generational-table.md).
+
+Name and version. `generational_table` `0.1.0`, ratified, with all 14 item names (#3119) and `EntryName<T>`. The
+architect ruled that it publishes, as milestone 1033 (`generational_table`: the fixed-capacity,
+proved slotmap, released on its own) records.
+
+API. One type, `Table<T, N>`, whose names are `EntryName<T>` values over a `u64`: generation high, slot low. Removal raises
+the generation, and a slot whose generation reaches `u32::MAX` retires.
+
+Proofs. Five harnesses, among them an induction step showing that a dead name stays dead after any
+number of operations. All five prove and all five patches fail.
+
+License. `MIT OR Apache-2.0`, inherited from the workspace; nothing adapted.
+
+Result of `script/crate-standalone`. Eight failures: the three provisional names and seven of
+release shape (no README, no license files, no `rust-version`, two inherited manifest keys and one
+citation of this tree). The build passes; a run without Kani skipped the proofs.
+
+Recommendation. Blocked by the release shape and the ratification of three provisional names.
+
 ## `non_volatile_memory_express`, step 5
 
-Name and version. `non_volatile_memory_express` `0.1.0`, ratified with NVMe spelled out. 27 `Name:`
-blocks are provisional: the new modules, the eleven constants spelled out (the register offsets, the
-two Controller Status bits, the two queue-creation opcodes and the two Identify selectors), the two
-assertion constants, `PhysicalRegionPagePair` and its fields, `Namespace::new`. The architect
-ratified the rest.
+Name and version. `non_volatile_memory_express` `0.1.0`, ratified with NVMe spelled out. Every
+`Name:` block reads ratified.
 
 API. Ten modules behind a flat public surface: `registers`, `Capabilities`, `Command` with the
 opcodes, `Completion`, `SubmissionQueue` and `CompletionQueue`, `Doorbell`, `doorbell`,
@@ -137,17 +160,16 @@ Dependencies. None.
 
 Provenance. Nothing outstanding.
 
-Result of `script/crate-standalone`. One failure: `names`, the 27 provisional names above. Build,
+Result of `script/crate-standalone`. No failure. Build, names,
 proofs and patches pass, and no citation names this tree.
 
 Outstanding before the move.
 
 | item | owner |
 |---|---|
-| Ratify the 27 provisional names with `python3 helpers/name_release.py --draft non_volatile_memory_express`. | architect |
 | `design/decisions/0086-el0-nvme-driver/prior-art.md` and milestone 569 (the disk an installer names has no model, only a size) still cite `prp_pair`, `CNS_CONTROLLER` and `CNS_NAMESPACE`. | maintainer |
 
-Recommendation. Blocked by the unratified names; ready for review once the architect ratifies them.
+Recommendation. Ready for review.
 
 ## `e1000e`, step 6
 
@@ -222,68 +244,97 @@ Recommendation. Item 9 needs a home before the review.
 
 ## `designware_mobile_storage`, step 8
 
+The whole package is
+[crate-reviews/designware-mobile-storage.md](crate-reviews/designware-mobile-storage.md).
+
 Name and version. `designware_mobile_storage` `0.1.0`, ratified. 135 `Name:` blocks, all ratified.
 
-API. The whole SD and eMMC driver for the Synopsys dw-mshc, behind one `Registers` trait. The modules are `registers`, `command`, `host_controller`, `internal_direct_memory_access`, `card` (identification and
-the card-specific data decode), `sd` (the sequences), `partition` (the master boot record rule for where
-a write test may land), `bench` and `jh7110`. No nife type appears in a public signature.
+API. The whole SD and eMMC driver for the Synopsys dw-mshc behind one trait,
+`RegisterWindowAndClock`, in eight public modules and about 115 items. The ninth, `bench`, serves
+this tree's bring-up and sits behind the `bench` feature.
 
-Proofs. Eight harnesses, including the MBR parse and the capacity decoders. All eight prove and all
-eight patches fail.
+Proofs. Eight harnesses. All eight prove and all eight patches fail.
 
-Dependencies. None.
+License. `(MIT OR Apache-2.0) AND ISC`, for the code adapted from OpenBSD's `dwmmc.c`, whose notice
+`src/lib.rs` carries. #3200 settled the second notice.
 
-Provenance. `dwmmc.c` (OpenBSD, ISC, Kettenis) provides adapted code, with its notice in `lib.rs`. On `main`
-`lib.rs` also carries a second notice (Stuehler) for `sdmmc_mem.c`; #3200 removes it, after finding the
-crate follows only that file's order, and changes `license` to `(MIT OR Apache-2.0) AND ISC`. Until
-#3200 merges, the tree and the evidence disagree. Milestone 1019 item 11 (pin the 50 MHz clock claim to
-the revision it holds at) is open.
+Result of `script/crate-standalone`. Clean.
 
-Result of `script/crate-standalone`. Clean, on the `main` form.
-
-Outstanding before the move.
-
-| item | owner |
-|---|---|
-| Merge #3200 (item 6 and the license expression). | #3200's lane |
-| Item 11: the "50 MHz" claim in `jh7110.rs` and `host_controller.rs` names the vendor tag and the branch head separately; confirm each pin. | maintainer |
-| Test fixtures use the manufacturer text `NIFE1`; harmless, rename with the move. | move lane |
-| `lib.rs` says "spawn words are nife's". | move lane |
-
-Recommendation. Blocked by #3200; ready for review after it merges.
+Recommendation. Ready for review after two questions: `#[non_exhaustive]` (the maintainer's to
+rule provisionally) and the spelling of `Refusal::Above4GiB` (the architect's).
 
 ## `jh7110_clock_and_reset`, step 10
 
-Name and version. `jh7110_clock_and_reset` `0.1.0`, ratified (the CRG spelled out, no alias). 71
-`Name:` blocks; 70 ratified, 1 recorded only.
+The whole package is [crate-reviews/jh7110-clock-and-reset.md](crate-reviews/jh7110-clock-and-reset.md).
 
-API. One `lib.rs`, 69 public items: register offsets and bit positions, `Domain`, `DevicePlan`,
-`BringUpReport`, the fixed bring-up plans (entropy, ethernet, the PMIC bus), `with_parent`, the
-divider and enable decoders, and the compatible strings of both device trees. It reads no device tree
-and has no nife type in a signature.
+Name and version. `jh7110_clock_and_reset` `0.1.0`, ratified. 71 `Name:` blocks, all ratified;
+`CLOCK_PARENT_MASK` by the maintainer, pending the architect.
+
+API. One `lib.rs`, 69 public items: offsets and bits of three domains, the bring-up plans, the I2C
+and SD clock arithmetic, and both device trees' strings. No nife type appears in a signature.
 
 Proofs. Nine harnesses. All nine prove and all nine patches fail.
 
-Dependencies. None.
+License. `MIT OR Apache-2.0`; nothing adapted. One doc comment quotes eleven words of a GPL
+comment, which the five-word rule refuses.
 
-Provenance. Milestone 1019 item 1 (`standard_mode_100k` rewritten from a permissive source) stands
-done. Items 7 and 11 remain open on `main`. Item 7: the doc comments quote two PMIC nodes, 9 and 7 tokens. Item 11: pin the vendor links to the revision each claim holds at. The crate cites the vendor tag
-`VF2_v2.10.4` and a mainline commit by hash.
+Result of `script/crate-standalone`. Clean.
 
 Names. The maintainer ratified `CLOCK_PARENT_MASK` for the clock parent field mask provisionally,
 pending the architect's review. It says what the field holds, as `with_parent` and `Step::SelectParent`
 already do, and `CLKMUX_MASK`, `JH7110_MUX_MASK` and `JH71X0_CLK_MUX_MASK` are `#[doc(alias)]`es.
 The ruling refused `CLOCK_MUX_MASK`, `CLOCK_MULTIPLEXER_MASK` and `CLOCK_PARENT_SELECT_MASK`.
 
-Outstanding before the move.
-
 | item | owner |
 |---|---|
-| The PMIC reset path with the rewritten `standard_mode_100k` (counts 198 high, 297 low at 49.5 MHz) has not run on the board, so milestone 819 (JH7110 clock and reset logic, proven, then released on its own) does not call it proven. | maintainers (bench) |
+| The PMIC reset path with the rewritten `standard_mode_100_kilohertz` (counts 198 high, 297 low at 49.5 MHz) has not run on the board, so milestone 819 (JH7110 clock and reset logic, proven, then released on its own) does not call it proven. | maintainers (bench) |
 | Items 7 and 11 of milestone 1019. | maintainer |
 | The README describes the crate as built for the nife kernel; `lib.rs` says "the fill is nife's own". | move lane |
 
 Recommendation. Blocked by the unrun bench check.
+
+## `block_roster`, the first contract crate
+
+The whole package is [crate-reviews/block-roster.md](crate-reviews/block-roster.md).
+
+Name and version. `block_roster` `0.1.0`, ratified, with all 17 public names (#3282).
+
+API. The read-only page that lists attached block devices: `write`, `Roster::read` and its readers,
+`Device`, and the transport numbers. Milestone 1017 keeps it unpublished, pinned by `rev`.
+
+Proofs. Two harnesses: `read` is total on any bytes, and `write` then `read` round-trips. Both
+prove and both patches fail.
+
+License. `MIT OR Apache-2.0`; nothing adapted.
+
+Result of `script/crate-standalone`. Clean on `main` without Kani; the proofs ran before the renames
+and passed.
+
+Defect. `write` panics on a page shorter than its 16-byte header when the device list is empty.
+The package proposes the fix and a harness.
+
+Recommendation. Blocked by the identity value `INTERFACE_ID = 5` and the `write` defect.
+
+## `counter_frequency_contract`, a contract crate
+
+The whole package is
+[crate-reviews/counter-frequency-contract.md](crate-reviews/counter-frequency-contract.md).
+
+Name and version. `counter_frequency_contract` `0.1.0`, ratified, with all 13 names (#3059); the units are
+spelled out (#3283).
+
+API. The 16-byte page that carries a counter's rate on the architectures with no register for it,
+its fixed address, and the band of believable rates. The reader is `unsafe`, since it names a raw
+address.
+
+Proofs. None; five host tests.
+
+License. `MIT OR Apache-2.0`; nothing adapted.
+
+Result of `script/crate-standalone`. One failure: `proofs`, because the crate has no harness.
+The build passes on 1.88 for the host and the three bare-metal targets.
+
+Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text edits naming nife.
 
 ## Summary
 
@@ -291,8 +342,11 @@ Recommendation. Blocked by the unrun bench check.
 |---|---|---|
 | `file_allocation_table` | 2 | ready for review |
 | `extensible_host_controller_interface` | 3 | ready for review |
-| `non_volatile_memory_express` | 5 | blocked by 27 unratified names |
+| `generational_table` | 4 | blocked by the release shape and three provisional names |
+| `non_volatile_memory_express` | 5 | ready for review |
 | `e1000e` | 6 | ready for review |
 | `designware_ethernet` | 7 | item 9 of milestone 1019 needs a home |
-| `designware_mobile_storage` | 8 | blocked by #3200 |
+| `designware_mobile_storage` | 8 | ready for review after two questions, one the architect's |
 | `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
+| `block_roster` | contract | blocked by its identity value and one defect |
+| `counter_frequency_contract` | contract | blocked by its identity value and three text edits |

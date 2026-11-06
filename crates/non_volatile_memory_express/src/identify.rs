@@ -1,7 +1,7 @@
 //! **IDENTIFY namespace parsing**: the two facts a block driver needs from the controller's
 //! answer, read defensively.
 //!
-//! Name: provisional. The module holding [`parse_identify_namespace`] and [`IdentifyNamespace`].
+//! Name: ratified 2026-11-06 (UTC). The module holding [`parse_identify_namespace`] and [`IdentifyNamespace`].
 
 /// The two facts the driver needs from the 4096-byte IDENTIFY namespace structure (section 5.15.2,
 /// figure 245): the namespace size in logical blocks (NSZE, bytes 0..8) and the

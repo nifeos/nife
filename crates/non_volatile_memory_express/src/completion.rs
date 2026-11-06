@@ -1,6 +1,6 @@
 //! **Completion queue entries**: the four dwords the controller writes, decoded.
 //!
-//! Name: provisional. The module holding [`Completion`].
+//! Name: ratified 2026-11-06 (UTC). The module holding [`Completion`].
 
 /// One 16-byte completion queue entry, decoded from the four dwords the controller wrote.
 ///
