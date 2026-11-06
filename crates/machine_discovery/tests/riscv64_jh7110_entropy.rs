@@ -21,9 +21,9 @@ fn discover_finds_the_device_on_a_tree_shaped_like_the_real_board() {
     let found = discover(&tree(JH7110_TRNG_PRESENT))
         .expect("no parse error")
         .expect("the node is there");
-    assert_eq!(found.reg_base, 0x1600_C000);
-    assert_eq!(found.reg_size, 0x4000);
-    assert_eq!(found.interrupt, Some(30));
+    assert_eq!(found.registers_physical_address, 0x1600_C000);
+    assert_eq!(found.registers_bytes, 0x4000);
+    assert_eq!(found.interrupt_line, Some(30));
     assert_eq!(found.compatible, COMPATIBLE_MAINLINE);
     // Mainline's binding example states no `status`, and the device-tree specification's default
     // for an absent `status` is "okay".
@@ -42,9 +42,9 @@ fn discover_finds_the_device_under_the_vendor_uboots_own_spelling() {
     let found = discover(&tree(JH7110_TRNG_VENDOR_UBOOT))
         .expect("no parse error")
         .expect("the vendor tree describes the device under its own compatible");
-    assert_eq!(found.reg_base, 0x1600_C000);
-    assert_eq!(found.reg_size, 0x4000);
-    assert_eq!(found.interrupt, Some(30));
+    assert_eq!(found.registers_physical_address, 0x1600_C000);
+    assert_eq!(found.registers_bytes, 0x4000);
+    assert_eq!(found.interrupt_line, Some(30));
     assert_eq!(found.compatible, COMPATIBLE_VENDOR);
     // The one property a caller must not lose: the firmware calls its own TRNG disabled.
     assert!(!found.status_okay);

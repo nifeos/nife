@@ -977,7 +977,7 @@ fn jh7110_on_riscv64(tally: &mut Tally) {
                 false,
                 format_args!(
                     "JH7110 TRNG at {:#x}, but the archive has no jh7110_entropy program",
-                    device.reg_base
+                    device.registers_physical_address
                 ),
             );
         }
@@ -991,7 +991,7 @@ fn jh7110_on_riscv64(tally: &mut Tally) {
                 false,
                 format_args!(
                     "JH7110 TRNG at {:#x}, but its service would not wire",
-                    device.reg_base
+                    device.registers_physical_address
                 ),
             );
         }
@@ -1005,14 +1005,14 @@ fn jh7110_on_riscv64(tally: &mut Tally) {
         None => tally.record(
             "trng",
             false,
-            format_args!("JH7110 TRNG at {:#x}: its driver did not answer within 5s", device.reg_base),
+            format_args!("JH7110 TRNG at {:#x}: its driver did not answer within 5s", device.registers_physical_address),
         ),
         Some(d) => tally.record(
             "trng",
             ok,
             format_args!(
                 "JH7110 TRNG at {:#x} (tree says {}): report {:#x}, STAT {:#010x} ({}), draws {}/{} bytes, first {:02x}{:02x}{:02x}{:02x}.., differ {}; bring-up {} us, {} bytes in {} us ({} bytes/s)",
-                device.reg_base,
+                device.registers_physical_address,
                 if device.status_okay { "okay" } else { "disabled" },
                 d.report[0],
                 (d.report[1] >> 32) as u32,
@@ -1273,7 +1273,7 @@ fn bytes_per_second(bytes: u64, ticks: u64) -> u64 {
 fn mode_note(stat: u32) -> &'static str {
     if stat == 0 {
         "the whole status register read zero, so this says nothing about the mode"
-    } else if stat & jh7110_entropy::STAT_R256 != 0 {
+    } else if stat & jh7110_entropy::STATUS_256_BIT_OUTPUT != 0 {
         "256-bit: all eight RAND words are the answer"
     } else {
         "128-BIT: only RAND0..3 are the answer, so 16 of every 32 bytes are not device output"
