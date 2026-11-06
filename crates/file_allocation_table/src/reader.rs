@@ -195,18 +195,19 @@ impl<D: SectorDevice> Volume<D> {
         Ok(table::assemble(file_allocation_table_type, index, bytes))
     }
 
-    /// **The chain that starts at `first`**, cluster by cluster.
+    /// **The chain that starts at `first_cluster`**, cluster by cluster.
     ///
-    /// The walk yields `first`, then each cluster the table names, and ends at an end-of-chain
+    /// The walk yields `first_cluster`, then each cluster the table names, and ends at an end-of-chain
     /// entry. It ends with an error at an entry that cannot continue a chain, at a cluster the
     /// volume does not have, or once it would yield more clusters than the volume holds, which
     /// only a loop can make. After an error it yields nothing more.
     ///
-    /// Name: ratified 2026-10-26 (UTC), on #2760. The specification's "cluster chain".
-    pub fn chain(&mut self, first: u32) -> Chain<'_, D> {
+    /// Name: ratified 2026-10-26 (UTC), on #2760. The specification's "cluster chain". The
+    /// parameter `first` was renamed `first_cluster` on 2026-11-06 (UTC), the cluster spelled out.
+    pub fn chain(&mut self, first_cluster: u32) -> Chain<'_, D> {
         Chain {
             volume: self,
-            walk: Walk::new(first),
+            walk: Walk::new(first_cluster),
         }
     }
 
@@ -226,24 +227,25 @@ impl<D: SectorDevice> Volume<D> {
         NamedEntries::new(self.root_directory())
     }
 
-    /// **The directory whose first cluster is `first`, as named entries.** Cluster 0 is the root.
+    /// **The directory whose first cluster is `first_cluster`, as named entries.** Cluster 0 is the root.
     ///
     /// Name: ratified 2026-11-01 (UTC), renamed from `entries`: `Volume::directory` with the names
-    /// joined.
-    pub fn named_entries(&mut self, first: u32) -> NamedEntries<'_, D> {
-        NamedEntries::new(self.directory(first))
+    /// joined. The parameter `first` was renamed `first_cluster` on 2026-11-06 (UTC), the cluster
+    /// spelled out.
+    pub fn named_entries(&mut self, first_cluster: u32) -> NamedEntries<'_, D> {
+        NamedEntries::new(self.directory(first_cluster))
     }
 
-    /// **The directory whose first cluster is `first`**, as a short entry's
+    /// **The directory whose first cluster is `first_cluster`**, as a short entry's
     /// `first_cluster` names it. Cluster 0 is the root, the value a `..` entry holds in a
     /// directory whose parent is the root.
     ///
     /// Name: ratified 2026-10-26 (UTC), on #2760. A directory by its first cluster.
-    pub fn directory(&mut self, first: u32) -> Directory<'_, D> {
-        if first == 0 {
+    pub fn directory(&mut self, first_cluster: u32) -> Directory<'_, D> {
+        if first_cluster == 0 {
             Directory::root(self)
         } else {
-            Directory::chain(self, first)
+            Directory::chain(self, first_cluster)
         }
     }
 }

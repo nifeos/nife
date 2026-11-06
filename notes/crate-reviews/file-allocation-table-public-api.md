@@ -53,11 +53,11 @@ impl<D: SectorDevice> Volume<D> {
     pub const fn boot_sector(&self) -> &BootSector;
     pub fn into_device(self) -> D;
     pub fn table_entry(&mut self, cluster: u32) -> Result<TableEntry, ChainError<D::Error>>;
-    pub fn chain(&mut self, first: u32) -> Chain<'_, D>;
+    pub fn chain(&mut self, first_cluster: u32) -> Chain<'_, D>;
     pub fn root_directory(&mut self) -> Directory<'_, D>;
-    pub fn directory(&mut self, first: u32) -> Directory<'_, D>;
+    pub fn directory(&mut self, first_cluster: u32) -> Directory<'_, D>;
     pub fn root_named_entries(&mut self) -> NamedEntries<'_, D>;
-    pub fn named_entries(&mut self, first: u32) -> NamedEntries<'_, D>;
+    pub fn named_entries(&mut self, first_cluster: u32) -> NamedEntries<'_, D>;
     pub fn find_in_directory(&mut self, directory: u32, name: &str)
         -> Result<Option<NamedEntry>, ChainError<D::Error>>;
     pub fn lookup(&mut self, path: &str) -> Result<NamedEntry, LookupError<D::Error>>;
