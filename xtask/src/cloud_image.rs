@@ -59,7 +59,7 @@ const LBA: u64 = fat::efi_system_partition::SECTOR_BYTES as u64;
 const ALIGN: u64 = 2048;
 
 /// **The EFI system partition, 300 MiB.** FAT32 needs 65525 data clusters, a little over 256 MiB at
-/// 4096-byte clusters (`file_allocation_table::efi_system_partition::FAT32_MINIMUM_CLUSTERS`), and
+/// 4096-byte clusters (`file_allocation_table::efi_system_partition::MINIMUM_FAT32_CLUSTERS`), and
 /// below that the firmware reads the volume as FAT16 whatever its boot sector says. The image is
 /// sparse, so the size costs no disk; a cloud grows the boot volume to its own minimum on import
 /// regardless.

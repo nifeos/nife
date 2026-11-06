@@ -35,8 +35,8 @@ pub enum SectorSize {
 impl SectorSize {
     /// The largest size, and so the largest buffer this crate ever passes to a device.
     ///
-    /// Name: ratified 2026-10-25 (#2720).
-    pub const MAX: usize = 4096;
+    /// Name: ratified 2026-11-05 (UTC), renamed from `MAX`: the unit spelled out.
+    pub const MAXIMUM_BYTES: usize = 4096;
 
     /// The size for `bytes`, or `None` when the specification does not permit it.
     ///
@@ -175,7 +175,7 @@ mod tests {
         ] {
             assert_eq!(SectorSize::from_bytes(size.bytes() as u16), Some(size));
             assert_eq!(1usize << size.shift(), size.bytes());
-            assert!(size.bytes() <= SectorSize::MAX);
+            assert!(size.bytes() <= SectorSize::MAXIMUM_BYTES);
         }
         for bytes in [0u16, 256, 511, 513, 768, 8192, u16::MAX] {
             assert_eq!(SectorSize::from_bytes(bytes), None);

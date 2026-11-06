@@ -123,7 +123,7 @@ impl<D: WritableSectorDevice> Volume<D> {
             return Ok(None);
         };
         let size = self.boot.sector_size().bytes();
-        let mut buffer = [0u8; SectorSize::MAX];
+        let mut buffer = [0u8; SectorSize::MAXIMUM_BYTES];
         self.read_sector(sector, &mut buffer[..size])?;
         let mut slot = [0u8; SLOT_BYTES];
         slot.copy_from_slice(&buffer[offset..offset + SLOT_BYTES]);
@@ -143,7 +143,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         };
         self.begin_change()?;
         let size = self.boot.sector_size().bytes();
-        let mut buffer = [0u8; SectorSize::MAX];
+        let mut buffer = [0u8; SectorSize::MAXIMUM_BYTES];
         self.read_sector(sector, &mut buffer[..size])?;
         buffer[offset..offset + SLOT_BYTES].copy_from_slice(slot);
         self.write_data(sector, &buffer[..size])?;
@@ -176,7 +176,7 @@ impl<D: WritableSectorDevice> Volume<D> {
         let start = boot
             .cluster_first_sector(new)
             .ok_or(ChainError::NotADataCluster(new))?;
-        let zeros = [0u8; SectorSize::MAX];
+        let zeros = [0u8; SectorSize::MAXIMUM_BYTES];
         for sector in 0..boot.sectors_per_cluster() {
             self.write_data(start + sector, &zeros[..boot.sector_size().bytes()])?;
         }
@@ -365,7 +365,7 @@ impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
         self.tick()?;
         let before = (self.state.first_cluster, self.state.size);
         let boot = self.volume.boot;
-        let mut scratch = [0u8; SectorSize::MAX];
+        let mut scratch = [0u8; SectorSize::MAXIMUM_BYTES];
         self.volume.begin_change()?;
         let written = self
             .state
@@ -382,13 +382,12 @@ impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
     /// a shorter one frees the clusters past it. The position moves to the new end if it was
     /// past it.
     ///
-    /// Name: ratified 2026-11-01 (UTC), renamed from `set_len`: the length spelled out, with
-    /// `set_len` kept as the alias a reader of `File::set_len` searches for.
-    #[doc(alias = "set_len")]
-    pub fn set_length(&mut self, length: u32) -> Result<(), WriteError<D::Error>> {
+    /// Name: ratified 2026-11-05 (UTC), renamed from `set_length`: the standard library's spelling
+    /// and meaning, with the parameter `length` renamed `size_bytes`, which says the unit.
+    pub fn set_len(&mut self, size_bytes: u32) -> Result<(), WriteError<D::Error>> {
         self.check()?;
         self.tick()?;
-        let result = self.resize(length);
+        let result = self.resize(size_bytes);
         if result.is_err() {
             self.failed = true;
         }
@@ -400,8 +399,8 @@ impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
         let resume = self.state.position;
         if length > self.state.size {
             let boot = self.volume.boot;
-            let zeros = [0u8; SectorSize::MAX];
-            let mut scratch = [0u8; SectorSize::MAX];
+            let zeros = [0u8; SectorSize::MAXIMUM_BYTES];
+            let mut scratch = [0u8; SectorSize::MAXIMUM_BYTES];
             self.volume.begin_change()?;
             self.state.seek(u32::MAX);
             let passes = (length - self.state.size) as usize / zeros.len() + 2;

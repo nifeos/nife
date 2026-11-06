@@ -87,7 +87,7 @@ pub struct Volume<D> {
     pub(crate) device: D,
     pub(crate) boot: BootSector,
     pub(crate) cached: Option<u32>,
-    pub(crate) buffer: [u8; SectorSize::MAX],
+    pub(crate) buffer: [u8; SectorSize::MAXIMUM_BYTES],
     /// What the writer keeps between calls; a reader never touches it.
     pub(crate) writer: WriterState,
     /// The time the operation under way stamps: packed from the clock once per operation.
@@ -107,7 +107,7 @@ impl<D: SectorDevice> Volume<D> {
             device,
             boot,
             cached: None,
-            buffer: [0; SectorSize::MAX],
+            buffer: [0; SectorSize::MAXIMUM_BYTES],
             writer: WriterState::new(),
             stamp: Stamp::ZERO,
         })

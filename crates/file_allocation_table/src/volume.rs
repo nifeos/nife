@@ -42,7 +42,7 @@ pub enum LayoutError {
     /// **Not FAT32** (the 32-bit file allocation table, "FAT: General Overview of On-Disk Format"
     /// version 1.03, section 3, Boot Sector and BPB, which types a volume by its clusters): the
     /// partition holds fewer than
-    /// [`FAT32_MINIMUM_CLUSTERS`](crate::efi_system_partition::FAT32_MINIMUM_CLUSTERS) data
+    /// [`MINIMUM_FAT32_CLUSTERS`](crate::efi_system_partition::MINIMUM_FAT32_CLUSTERS) data
     /// clusters, so it is not a FAT32 volume however its boot sector is filled in. With 4096-byte
     /// clusters that is about 256 MiB.
     ///
@@ -116,7 +116,7 @@ pub struct VolumeLayout {
     hidden_sectors: u32,
     fat_sectors: u32,
     clusters: u32,
-    file_len: u32,
+    file_size_bytes: u32,
     file_clusters: u32,
     geometry: Geometry,
     stamp: Stamp,
@@ -128,7 +128,7 @@ pub struct VolumeLayout {
 }
 
 impl VolumeLayout {
-    /// **Lay out a FAT32 volume of `total_sectors` holding one file of `file_len` bytes** at
+    /// **Lay out a FAT32 volume of `total_sectors` holding one file of `file_size_bytes` bytes** at
     /// `EFI\BOOT\<file_name>`.
     ///
     /// `hidden_sectors` is the partition's own first LBA on the disk, which goes into
@@ -143,11 +143,12 @@ impl VolumeLayout {
     /// directory's volume-label entry: up to eleven upper-case letters, digits, spaces and the
     /// punctuation a short name admits, as [`crate::FormatOptions::with_label`] takes.
     ///
-    /// Name: ratified 2026-10-25 (#2720).
+    /// Name: ratified 2026-10-25 (#2720); the parameter `file_len` was renamed `file_size_bytes`
+    /// on 2026-11-05 (UTC), the unit spelled out.
     pub fn new(
         total_sectors: u64,
         hidden_sectors: u64,
-        file_len: u64,
+        file_size_bytes: u64,
         volume_id: u32,
         label: &str,
         file_name: &str,
@@ -181,11 +182,11 @@ impl VolumeLayout {
         })?;
         let (fat_sectors, clusters) = (geometry.table_sectors, geometry.clusters);
 
-        if file_len > u32::MAX as u64 {
+        if file_size_bytes > u32::MAX as u64 {
             return Err(LayoutError::FileTooBig);
         }
-        let file_len = file_len as u32;
-        let file_clusters = (file_len as u64).div_ceil(CLUSTER_BYTES as u64) as u32;
+        let file_size_bytes = file_size_bytes as u32;
+        let file_clusters = (file_size_bytes as u64).div_ceil(CLUSTER_BYTES as u64) as u32;
         // Clusters are numbered 2..clusters+2, and 2, 3 and 4 are the three directories.
         if file_clusters > clusters.saturating_sub(FILE_CLUSTER - ROOT_CLUSTER) {
             return Err(LayoutError::FileTooBig);
@@ -196,7 +197,7 @@ impl VolumeLayout {
             hidden_sectors: hidden_sectors as u32,
             fat_sectors,
             clusters,
-            file_len,
+            file_size_bytes,
             file_clusters,
             geometry,
             stamp,
@@ -208,7 +209,7 @@ impl VolumeLayout {
     }
 
     /// How many data clusters the volume has. Below
-    /// [`FAT32_MINIMUM_CLUSTERS`](crate::efi_system_partition::FAT32_MINIMUM_CLUSTERS)
+    /// [`MINIMUM_FAT32_CLUSTERS`](crate::efi_system_partition::MINIMUM_FAT32_CLUSTERS)
     /// [`VolumeLayout::new`] refuses.
     ///
     /// Name: ratified 2026-10-25 (#2720).
@@ -446,7 +447,7 @@ impl VolumeLayout {
                     &self.name,
                     ATTR_ARCHIVE,
                     FILE_CLUSTER,
-                    self.file_len,
+                    self.file_size_bytes,
                     &self.stamp,
                 ),
                 _ => {}
@@ -505,7 +506,7 @@ fn short_name(name: &str) -> Option<[u8; 11]> {
 mod tests {
     use super::*;
     use crate::NoClock;
-    use crate::efi_system_partition::FAT32_MINIMUM_CLUSTERS;
+    use crate::efi_system_partition::MINIMUM_FAT32_CLUSTERS;
 
     /// 512 MiB in 512-byte sectors, a common size for an EFI system partition.
     const ESP_SECTORS: u64 = 1024 * 1024;
@@ -533,7 +534,7 @@ mod tests {
     fn a_512_mib_volume_has_enough_clusters_to_be_fat32() {
         let v = volume();
         assert!(
-            v.clusters() >= FAT32_MINIMUM_CLUSTERS,
+            v.clusters() >= MINIMUM_FAT32_CLUSTERS,
             "{} clusters",
             v.clusters()
         );
@@ -568,7 +569,7 @@ mod tests {
             &mut NoClock,
         )
         .expect("300 MiB clears the cluster floor");
-        assert!(just_enough.clusters() >= FAT32_MINIMUM_CLUSTERS);
+        assert!(just_enough.clusters() >= MINIMUM_FAT32_CLUSTERS);
     }
 
     #[test]

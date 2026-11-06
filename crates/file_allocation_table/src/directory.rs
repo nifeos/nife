@@ -350,7 +350,7 @@ impl Source {
 pub struct Directory<'v, D> {
     volume: &'v mut Volume<D>,
     source: Source,
-    buffer: [u8; SectorSize::MAX],
+    buffer: [u8; SectorSize::MAXIMUM_BYTES],
     /// The byte offset of the next slot in `buffer`; one sector or more means a sector is due.
     at: usize,
     done: bool,
@@ -376,8 +376,8 @@ impl<'v, D: SectorDevice> Directory<'v, D> {
         Directory {
             volume,
             source,
-            buffer: [0; SectorSize::MAX],
-            at: SectorSize::MAX,
+            buffer: [0; SectorSize::MAXIMUM_BYTES],
+            at: SectorSize::MAXIMUM_BYTES,
             done: false,
             first,
             index: 0,

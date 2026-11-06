@@ -220,7 +220,7 @@ pub enum ReadError<E> {
 /// # Examples
 ///
 /// ```
-/// use file_allocation_table::efi_system_partition::{FAT32_MINIMUM_CLUSTERS, SECTOR_BYTES};
+/// use file_allocation_table::efi_system_partition::{MINIMUM_FAT32_CLUSTERS, SECTOR_BYTES};
 /// use file_allocation_table::{BootSector, FileAllocationTableType, NoClock, VolumeLayout};
 ///
 /// let volume = VolumeLayout::new(1024 * 1024, 0, 4096, 1, "EFI SYSTEM", "BOOTX64.EFI", &mut NoClock).unwrap();
@@ -229,7 +229,7 @@ pub enum ReadError<E> {
 ///
 /// let boot = BootSector::parse(&sector).unwrap();
 /// assert_eq!(boot.file_allocation_table_type(), FileAllocationTableType::Fat32);
-/// assert!(boot.clusters() >= FAT32_MINIMUM_CLUSTERS);
+/// assert!(boot.clusters() >= MINIMUM_FAT32_CLUSTERS);
 /// ```
 ///
 /// Name: ratified 2026-10-25 (#2720).
@@ -426,7 +426,7 @@ impl BootSector {
     /// Name: ratified 2026-10-25 (#2720).
     pub fn read<D: SectorDevice>(device: &mut D) -> Result<BootSector, ReadError<D::Error>> {
         let size = device.sector_size();
-        let mut buffer = [0u8; SectorSize::MAX];
+        let mut buffer = [0u8; SectorSize::MAXIMUM_BYTES];
         let buffer = &mut buffer[..size.bytes()];
         device.read_sector(0, buffer).map_err(ReadError::Device)?;
         let boot = BootSector::parse(buffer).map_err(ReadError::Refused)?;

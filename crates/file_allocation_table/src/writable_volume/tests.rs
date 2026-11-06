@@ -101,7 +101,7 @@ fn a_write_and_a_resize_set_the_write_and_access_times_and_keep_the_creation_tim
     time.set(at(2028, 3, 4, 5, 6, 8));
     let entry = volume.lookup("W.TXT").unwrap();
     let mut writer = volume.open_file_writer(&entry).unwrap();
-    writer.set_length(0).unwrap();
+    writer.set_len(0).unwrap();
     let image = volume.into_device();
     let (tenths, created_time, created_date, access, write_time, write_date) =
         fields(&image.bytes, ROOT);
@@ -140,7 +140,7 @@ fn a_write_of_no_bytes_and_a_resize_to_the_same_length_stamp_nothing() {
     time.set(at(2030, 1, 1, 1, 1, 2));
     let mut writer = volume.open_file_writer(&entry2).unwrap();
     writer.write(b"").unwrap();
-    writer.set_length(0).unwrap();
+    writer.set_len(0).unwrap();
     assert_eq!(fields(&volume.into_device().bytes, ROOT), before);
 }
 
@@ -414,11 +414,11 @@ fn writing_at_a_time_fat_cannot_store_is_refused_and_writes_nothing() {
 fn resizing_at_a_time_fat_cannot_store_is_refused_and_writes_nothing() {
     refused_and_untouched(|volume| {
         let entry = volume.lookup("KEEP.TXT").unwrap();
-        volume.open_file_writer(&entry).unwrap().set_length(2000)
+        volume.open_file_writer(&entry).unwrap().set_len(2000)
     });
     refused_and_untouched(|volume| {
         let entry = volume.lookup("KEEP.TXT").unwrap();
-        volume.open_file_writer(&entry).unwrap().set_length(0)
+        volume.open_file_writer(&entry).unwrap().set_len(0)
     });
 }
 
@@ -437,7 +437,7 @@ fn a_refused_writer_stays_usable_once_the_clock_is_right() {
     let mut writer = volume.open_file_writer(&file).unwrap();
     time.set(at(2108, 1, 1, 0, 0, 0));
     assert_eq!(writer.write(b"x"), Err(WriteError::TimeOutOfRange));
-    assert_eq!(writer.set_length(5), Err(WriteError::TimeOutOfRange));
+    assert_eq!(writer.set_len(5), Err(WriteError::TimeOutOfRange));
     time.set(at(2026, 11, 2, 0, 0, 0));
     assert_eq!(writer.write(b"x"), Ok(1));
 }

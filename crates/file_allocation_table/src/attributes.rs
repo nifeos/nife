@@ -43,18 +43,22 @@ impl Attributes {
     /// `ATTR_READ_ONLY`: the file may not be written or removed.
     ///
     /// Name: ratified 2026-11-01 (UTC), the specification's bit.
+    #[doc(alias = "ATTR_READ_ONLY")]
     pub const READ_ONLY: Attributes = Attributes(0x01);
     /// `ATTR_HIDDEN`: a listing leaves the file out unless asked.
     ///
     /// Name: ratified 2026-11-01 (UTC), the specification's bit.
+    #[doc(alias = "ATTR_HIDDEN")]
     pub const HIDDEN: Attributes = Attributes(0x02);
     /// `ATTR_SYSTEM`: the file belongs to the operating system.
     ///
     /// Name: ratified 2026-11-01 (UTC), the specification's bit.
+    #[doc(alias = "ATTR_SYSTEM")]
     pub const SYSTEM: Attributes = Attributes(0x04);
     /// `ATTR_ARCHIVE`: the file changed since a backup last cleared the bit.
     ///
     /// Name: ratified 2026-11-01 (UTC), the specification's bit.
+    #[doc(alias = "ATTR_ARCHIVE")]
     pub const ARCHIVE: Attributes = Attributes(0x20);
 
     /// The set with every bit of `self` and of `other`.

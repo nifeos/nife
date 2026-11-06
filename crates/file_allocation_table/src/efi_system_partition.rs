@@ -57,9 +57,10 @@ pub const ROOT_CLUSTER: u32 = 2;
 /// that matters, which is the firmware's, so this crate refuses to build one. With this shape's
 /// 4096-byte clusters it is about 256 MiB.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `FAT32_MIN_CLUSTERS` (min spelled out, as the
-/// tree-wide ruling asks). Refused `MIN_CLUSTERS` (it is FAT32's floor alone).
-pub const FAT32_MINIMUM_CLUSTERS: u32 = 65_525;
+/// Name: ratified 2026-11-05 (UTC), renamed from `FAT32_MINIMUM_CLUSTERS`: minimum first, then what
+/// it is the minimum of. Refused `MIN_CLUSTERS` (it is
+/// FAT32's floor alone) and any abbreviated `MIN`.
+pub const MINIMUM_FAT32_CLUSTERS: u32 = 65_525;
 
 /// **The `EFI` directory's cluster** (`\EFI`, the directory UEFI 2.10 section 13.3.1.3, Directory
 /// Structure, roots every boot path at).

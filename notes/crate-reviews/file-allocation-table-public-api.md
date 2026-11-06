@@ -31,7 +31,7 @@ impl<D: WritableSectorDevice + ?Sized> WritableSectorDevice for &mut D;
 
 pub enum SectorSize { Bytes512, Bytes1024, Bytes2048, Bytes4096 }
 impl SectorSize {
-    pub const MAX: usize;                                   // 4096
+    pub const MAXIMUM_BYTES: usize;                         // 4096
     pub const fn from_bytes(bytes: u16) -> Option<SectorSize>;
     pub const fn bytes(self) -> usize;
     pub const fn shift(self) -> u32;
@@ -220,7 +220,7 @@ impl<'v, D: WritableSectorDevice, C: Clock> FileWriter<'v, D, C> {
     pub const fn position(&self) -> u32;
     pub fn set_position(&mut self, position: u32);
     pub fn write(&mut self, data: &[u8]) -> Result<usize, WriteError<D::Error>>;
-    pub fn set_length(&mut self, length: u32) -> Result<(), WriteError<D::Error>>;
+    pub fn set_len(&mut self, size_bytes: u32) -> Result<(), WriteError<D::Error>>;
 }
 pub struct Attributes(u8);                                  // private field; also Default
 impl Attributes {
@@ -260,7 +260,7 @@ impl FormatPlan {
 // The EFI system partition writer: one FAT32 shape, 512-byte sectors, 4 KiB clusters.
 pub struct VolumeLayout;                                    // Debug, Clone, Copy, PartialEq, Eq
 impl VolumeLayout {
-    pub fn new(total_sectors: u64, hidden_sectors: u64, file_len: u64, volume_id: u32,
+    pub fn new(total_sectors: u64, hidden_sectors: u64, file_size_bytes: u64, volume_id: u32,
                label: &str, file_name: &str, clock: &mut impl Clock)
         -> Result<VolumeLayout, LayoutError>;
     pub const fn metadata_sectors(&self) -> u64;
@@ -275,7 +275,7 @@ pub mod efi_system_partition {
     pub const RESERVED_SECTORS: u32;        // 32
     pub const TABLE_COUNT: u32;             // 2
     pub const ROOT_CLUSTER: u32;            // 2
-    pub const FAT32_MINIMUM_CLUSTERS: u32;  // 65525
+    pub const MINIMUM_FAT32_CLUSTERS: u32;  // 65525
     pub const EFI_CLUSTER: u32;             // 3
     pub const BOOT_CLUSTER: u32;            // 4
     pub const FILE_CLUSTER: u32;            // 5
