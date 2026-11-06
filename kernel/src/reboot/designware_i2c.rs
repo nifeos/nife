@@ -2,7 +2,7 @@
 //! (radon's cold reboot dies in OpenSBI's PMIC write): write bytes to a 7-bit address, optionally
 //! read bytes back, one transfer.
 //!
-//! It programs the timing itself (`jh7110_clock_and_reset::standard_mode_100k`). Every register
+//! It programs the timing itself (`jh7110_clock_and_reset::standard_mode_100_kilohertz`). Every register
 //! offset and bit is vendor U-Boot's `drivers/i2c/designware_i2c.{c,h}` at `starfive-tech/u-boot`
 //! `1539c1fb5a49`, and the sequence mirrors its `__dw_i2c_init`, `i2c_xfer_init`, `__dw_i2c_write`,
 //! `__dw_i2c_read` and `i2c_xfer_finish`. Every wait is bounded, since on the way to a reset the
@@ -166,12 +166,12 @@ impl DesignWareI2c {
             return Err(Failure::NotADesignWare(self.component_type()));
         }
         self.set_enable(false)?;
-        self.wr(CON, mode.con);
+        self.wr(CON, mode.control);
         self.wr(RX_TL, 0);
         self.wr(TX_TL, 0);
-        self.wr(SS_SCL_HCNT, mode.hcnt);
-        self.wr(SS_SCL_LCNT, mode.lcnt);
-        self.wr(SDA_HOLD, mode.sda_hold);
+        self.wr(SS_SCL_HCNT, mode.high_count);
+        self.wr(SS_SCL_LCNT, mode.low_count);
+        self.wr(SDA_HOLD, mode.data_hold);
         self.wr(TAR, u32::from(target & 0x7f));
         self.set_enable(true)?;
         self.wait_bus_free()?;

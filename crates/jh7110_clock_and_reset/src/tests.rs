@@ -80,7 +80,7 @@ fn clocks_running_does_not_imply_already_up_while_the_reset_is_still_asserted() 
         clock_after: [CLOCK_ENABLE, CLOCK_ENABLE, 0, 0],
         clocks: 2,
         had_reset: true,
-        reset_assert_before: 1 << STGRST_SEC_AHB,
+        reset_assert_before: 1 << SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS,
         reset_assert_after: 0,
         ..BringUpReport::default()
     };
@@ -102,10 +102,14 @@ fn an_unrelated_bit_in_the_before_word_does_not_defeat_the_release_check() {
         clocks: 2,
         had_reset: true,
         reset_assert_before: 0x8000,
-        reset_assert_after: 0x8000 ^ (1 << STGRST_SEC_AHB),
+        reset_assert_after: 0x8000
+            ^ (1 << SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS),
         ..BringUpReport::default()
     };
-    assert_eq!(released_with_noise.reset_mask(), 1 << STGRST_SEC_AHB);
+    assert_eq!(
+        released_with_noise.reset_mask(),
+        1 << SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS
+    );
     assert!(
         released_with_noise.was_already_up(),
         "the target bit was already clear; the noise bit must not matter"
@@ -157,7 +161,7 @@ fn the_firmware_having_already_done_it_is_a_distinguishable_outcome() {
         had_reset: true,
         reset_assert_before: 0,
         reset_assert_after: 0,
-        reset_status_after: 1 << STGRST_SEC_AHB,
+        reset_status_after: 1 << SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS,
         released: true,
         polls: 1,
         ..BringUpReport::default()
@@ -173,9 +177,9 @@ fn a_device_this_run_actually_started_is_not_reported_as_already_up() {
         clock_after: [CLOCK_ENABLE, CLOCK_ENABLE, 0, 0],
         clocks: 2,
         had_reset: true,
-        reset_assert_before: 1 << STGRST_SEC_AHB,
+        reset_assert_before: 1 << SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS,
         reset_assert_after: 0,
-        reset_status_after: 1 << STGRST_SEC_AHB,
+        reset_status_after: 1 << SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS,
         released: true,
         polls: 3,
         ..BringUpReport::default()
@@ -222,7 +226,7 @@ fn the_two_trees_agree_on_the_identifiers() {
     );
     assert_eq!(
         VENDOR_SEC_TOP_HRESETN - VENDOR_SYSTEM_TOP_GROUP_RESET_BASE,
-        STGRST_SEC_AHB
+        SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS
     );
 }
 
@@ -254,7 +258,9 @@ fn the_last_clock_word_does_not_reach_the_reset_words() {
 
 #[test]
 fn resets_are_thirty_two_to_a_word_and_bounded() {
-    let r = SYSTEM_TOP_GROUP.reset_bit(STGRST_SEC_AHB).unwrap();
+    let r = SYSTEM_TOP_GROUP
+        .reset_bit(SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS)
+        .unwrap();
     assert_eq!(r.assert_offset, 0x74);
     assert_eq!(r.status_offset, 0x78);
     assert_eq!(r.mask, 1 << 3);
@@ -265,7 +271,10 @@ fn resets_are_thirty_two_to_a_word_and_bounded() {
 
 #[test]
 fn a_set_status_bit_means_out_of_reset() {
-    let mask = SYSTEM_TOP_GROUP.reset_bit(STGRST_SEC_AHB).unwrap().mask;
+    let mask = SYSTEM_TOP_GROUP
+        .reset_bit(SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS)
+        .unwrap()
+        .mask;
     assert!(is_deasserted(u32::MAX, mask));
     assert!(!is_deasserted(0, mask));
     assert!(
@@ -372,16 +381,16 @@ fn a_one_based_divider_field_reading_zero_divides_by_one() {
 #[test]
 fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
     // bus_root on osc, every divider at 1: the chain is transparent.
-    let osc = I2cClockWords {
+    let osc = InterIntegratedCircuitClockWords {
         bus_root: 0,
-        axi_cfg0: 1,
-        stg_axiahb: 1,
-        apb_bus_func: 1,
-        pll2_dacpd_dsmpd_fbdiv: 0,
-        pll2_postdiv1: 0,
-        pll2_prediv: 0,
+        advanced_extensible_interface_configuration_0: 1,
+        system_top_group_advanced_extensible_interface_advanced_high_performance_bus: 1,
+        advanced_peripheral_bus_function: 1,
+        phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: 0,
+        phase_locked_loop_2_post_divider_1_word: 0,
+        phase_locked_loop_2_pre_divider_word: 0,
     };
-    assert_eq!(i2c5_clock_frequency(&osc), OSC_HZ);
+    assert_eq!(inter_integrated_circuit_5_clock_frequency(&osc), OSC_HZ);
 
     // bus_root on pll2 in integer mode. The fields are the vendor PLL2 table's 1228.8 MHz row
     // (fbdiv 768, prediv 15, postdiv1 1, dacpd 1, dsmpd 1, from the pll.c this crate cites),
@@ -389,42 +398,50 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
     // fbdiv<<17, 0x30 carries postdiv1<<28, 0x34 carries prediv. The dividers are field
     // values, not words: the 2-bit fields hold 2 and 2, the 4-bit field 12, so the chain is
     // 1_228_800_000 / 2 / 2 / 12.
-    let pll2 = I2cClockWords {
+    let pll2 = InterIntegratedCircuitClockWords {
         bus_root: 1 << 24,
-        axi_cfg0: 2,
-        stg_axiahb: 2,
-        apb_bus_func: 12,
-        pll2_dacpd_dsmpd_fbdiv: (1 << 15) | (1 << 16) | (768 << 17),
-        pll2_postdiv1: 0,
-        pll2_prediv: 15,
+        advanced_extensible_interface_configuration_0: 2,
+        system_top_group_advanced_extensible_interface_advanced_high_performance_bus: 2,
+        advanced_peripheral_bus_function: 12,
+        phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: (1 << 15)
+            | (1 << 16)
+            | (768 << 17),
+        phase_locked_loop_2_post_divider_1_word: 0,
+        phase_locked_loop_2_pre_divider_word: 15,
     };
-    assert_eq!(i2c5_clock_frequency(&pll2), 1_228_800_000 / 2 / 2 / 12);
+    assert_eq!(
+        inter_integrated_circuit_5_clock_frequency(&pll2),
+        1_228_800_000 / 2 / 2 / 12
+    );
 
     // A zero divider field is treated as divide-by-one rather than a panic, because the words
     // belong to firmware and a print of the computed rate is the transcript's fact.
-    let zeros = I2cClockWords {
+    let zeros = InterIntegratedCircuitClockWords {
         bus_root: 0,
-        axi_cfg0: 0,
-        stg_axiahb: 0,
-        apb_bus_func: 0,
-        pll2_dacpd_dsmpd_fbdiv: 0,
-        pll2_postdiv1: 0,
-        pll2_prediv: 0,
+        advanced_extensible_interface_configuration_0: 0,
+        system_top_group_advanced_extensible_interface_advanced_high_performance_bus: 0,
+        advanced_peripheral_bus_function: 0,
+        phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: 0,
+        phase_locked_loop_2_post_divider_1_word: 0,
+        phase_locked_loop_2_pre_divider_word: 0,
     };
-    assert_eq!(i2c5_clock_frequency(&zeros), OSC_HZ);
+    assert_eq!(inter_integrated_circuit_5_clock_frequency(&zeros), OSC_HZ);
 
     // Fractional mode (dacpd 0, dsmpd 0) is the vendor's default rate, not a guess from the
     // fields: 1_188_000_000 divided by the chain.
-    let frac = I2cClockWords {
+    let frac = InterIntegratedCircuitClockWords {
         bus_root: 1 << 24,
-        axi_cfg0: 1,
-        stg_axiahb: 1,
-        apb_bus_func: 1,
-        pll2_dacpd_dsmpd_fbdiv: 768 << 17,
-        pll2_postdiv1: 0,
-        pll2_prediv: 15,
+        advanced_extensible_interface_configuration_0: 1,
+        system_top_group_advanced_extensible_interface_advanced_high_performance_bus: 1,
+        advanced_peripheral_bus_function: 1,
+        phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: 768 << 17,
+        phase_locked_loop_2_post_divider_1_word: 0,
+        phase_locked_loop_2_pre_divider_word: 15,
     };
-    assert_eq!(i2c5_clock_frequency(&frac), PLL2_DEFAULT_HZ);
+    assert_eq!(
+        inter_integrated_circuit_5_clock_frequency(&frac),
+        PLL2_DEFAULT_HZ
+    );
 }
 
 /// Whether `count` input-clock periods at `clock_frequency` last at least `minimum_ns`.
@@ -448,16 +465,16 @@ fn the_standard_mode_timing_meets_the_specification_minimums_at_every_clock() {
         1_000_001,
         1_000_000,
     ] {
-        let t = standard_mode_100k(clock);
-        assert!(covers(clock, t.hcnt, 4_000), "high time at {clock}");
-        assert!(covers(clock, t.lcnt, 4_700), "low time at {clock}");
-        assert!(covers(clock, t.sda_hold, 300), "SDA hold at {clock}");
+        let t = standard_mode_100_kilohertz(clock);
+        assert!(covers(clock, t.high_count, 4_000), "high time at {clock}");
+        assert!(covers(clock, t.low_count, 4_700), "low time at {clock}");
+        assert!(covers(clock, t.data_hold, 300), "SDA hold at {clock}");
         // Never faster than 100 kHz: the two counts alone span at least 10 microseconds.
         assert!(
-            (u128::from(t.hcnt) + u128::from(t.lcnt)) * 100_000 >= u128::from(clock),
+            (u128::from(t.high_count) + u128::from(t.low_count)) * 100_000 >= u128::from(clock),
             "period at {clock}"
         );
-        assert_eq!(t.con, 0b0110_0011);
+        assert_eq!(t.control, 0b0110_0011);
     }
 }
 
@@ -465,30 +482,30 @@ fn the_standard_mode_timing_meets_the_specification_minimums_at_every_clock() {
 fn the_standard_mode_fill_is_one_stretched_low_count() {
     // 24 MHz: high ceil(96) = 96, low ceil(112.8) = 113, hold ceil(7.2) = 8, period 240, so the
     // low count takes the shortfall 240 - 96 = 144.
-    let t = standard_mode_100k(24_000_000);
-    assert_eq!((t.hcnt, t.lcnt, t.sda_hold), (96, 144, 8));
+    let t = standard_mode_100_kilohertz(24_000_000);
+    assert_eq!((t.high_count, t.low_count, t.data_hold), (96, 144, 8));
     // 49.5 MHz, the board: high 198, low minimum 233 (232.65), hold 15 (14.85), period 495, so
     // the low count is 495 - 198 = 297.
-    let t = standard_mode_100k(49_500_000);
-    assert_eq!((t.hcnt, t.lcnt, t.sda_hold), (198, 297, 15));
+    let t = standard_mode_100_kilohertz(49_500_000);
+    assert_eq!((t.high_count, t.low_count, t.data_hold), (198, 297, 15));
     // 48 MHz: high 192, low minimum 226 (225.6), period 480, so low 480 - 192 = 288; hold 15 (14.4).
-    let t = standard_mode_100k(48_000_000);
-    assert_eq!((t.hcnt, t.lcnt, t.sda_hold), (192, 288, 15));
+    let t = standard_mode_100_kilohertz(48_000_000);
+    assert_eq!((t.high_count, t.low_count, t.data_hold), (192, 288, 15));
 }
 
 #[test]
 fn a_slow_input_clock_still_produces_legal_counts() {
     // 1 MHz: high 4, low minimum 5, period 10, so low 6; the counts are all nonzero.
-    let t = standard_mode_100k(1_000_000);
-    assert_eq!((t.hcnt, t.lcnt, t.sda_hold), (4, 6, 1));
+    let t = standard_mode_100_kilohertz(1_000_000);
+    assert_eq!((t.high_count, t.low_count, t.data_hold), (4, 6, 1));
     // Below 100 kHz of input every count is the floor of 1; nothing divides by zero or wraps.
     for clock in [0u64, 1, 1_000, 99_999] {
-        let t = standard_mode_100k(clock);
-        assert!(t.hcnt > 0 && t.lcnt > 0 && t.sda_hold > 0);
+        let t = standard_mode_100_kilohertz(clock);
+        assert!(t.high_count > 0 && t.low_count > 0 && t.data_hold > 0);
     }
     // The widest input saturates instead of wrapping.
-    let t = standard_mode_100k(u64::MAX);
-    assert_eq!(t.hcnt, u32::MAX);
+    let t = standard_mode_100_kilohertz(u64::MAX);
+    assert_eq!(t.high_count, u32::MAX);
 }
 
 #[test]
@@ -527,28 +544,39 @@ fn reg_cells_parse_in_both_spellings() {
 /// and integer mode needs both of dacpd and dsmpd and a nonzero fbdiv, not any one of them.
 #[test]
 fn the_pll2_chain_needs_both_mode_bits_and_honors_its_post_divider() {
-    let integer = I2cClockWords {
+    let integer = InterIntegratedCircuitClockWords {
         bus_root: 1 << 24,
-        axi_cfg0: 1,
-        stg_axiahb: 1,
-        apb_bus_func: 1,
-        pll2_dacpd_dsmpd_fbdiv: (1 << 15) | (1 << 16) | (768 << 17),
-        pll2_postdiv1: 1 << 28,
-        pll2_prediv: 15,
+        advanced_extensible_interface_configuration_0: 1,
+        system_top_group_advanced_extensible_interface_advanced_high_performance_bus: 1,
+        advanced_peripheral_bus_function: 1,
+        phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: (1 << 15)
+            | (1 << 16)
+            | (768 << 17),
+        phase_locked_loop_2_post_divider_1_word: 1 << 28,
+        phase_locked_loop_2_pre_divider_word: 15,
     };
-    assert_eq!(i2c5_clock_frequency(&integer), 1_228_800_000 / 2);
+    assert_eq!(
+        inter_integrated_circuit_5_clock_frequency(&integer),
+        1_228_800_000 / 2
+    );
     // dacpd alone is fractional mode, which is the vendor's default rate.
-    let dacpd_only = I2cClockWords {
-        pll2_dacpd_dsmpd_fbdiv: (1 << 15) | (768 << 17),
+    let dacpd_only = InterIntegratedCircuitClockWords {
+        phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: (1 << 15) | (768 << 17),
         ..integer
     };
-    assert_eq!(i2c5_clock_frequency(&dacpd_only), PLL2_DEFAULT_HZ);
+    assert_eq!(
+        inter_integrated_circuit_5_clock_frequency(&dacpd_only),
+        PLL2_DEFAULT_HZ
+    );
     // Integer mode with fbdiv 0 would be a zero rate; it is the default instead.
-    let no_fbdiv = I2cClockWords {
-        pll2_dacpd_dsmpd_fbdiv: (1 << 15) | (1 << 16),
+    let no_fbdiv = InterIntegratedCircuitClockWords {
+        phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: (1 << 15) | (1 << 16),
         ..integer
     };
-    assert_eq!(i2c5_clock_frequency(&no_fbdiv), PLL2_DEFAULT_HZ);
+    assert_eq!(
+        inter_integrated_circuit_5_clock_frequency(&no_fbdiv),
+        PLL2_DEFAULT_HZ
+    );
 }
 
 /// `all_resets_are_released` compares the two counts, so a plan with one reset that read back still
@@ -599,22 +627,27 @@ fn each_sdio_plan_ungates_both_clocks_before_its_reset_and_stays_in_the_sys_doma
 /// 2 gives 198 MHz. The storage bench's measured transfer rates matched 198, not 50.
 #[test]
 fn radon_card_clock_comes_to_the_trees_rate_from_below() {
-    let words = I2cClockWords {
+    let words = InterIntegratedCircuitClockWords {
         bus_root: 1 << 24,
-        axi_cfg0: 3,
-        stg_axiahb: 2,
-        apb_bus_func: 4,
-        pll2_dacpd_dsmpd_fbdiv: (1 << 15) | (1 << 16) | (99 << 17),
-        pll2_postdiv1: 0,
-        pll2_prediv: 2,
+        advanced_extensible_interface_configuration_0: 3,
+        system_top_group_advanced_extensible_interface_advanced_high_performance_bus: 2,
+        advanced_peripheral_bus_function: 4,
+        phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: (1 << 15)
+            | (1 << 16)
+            | (99 << 17),
+        phase_locked_loop_2_post_divider_1_word: 0,
+        phase_locked_loop_2_pre_divider_word: 2,
     };
-    let parent = axi_cfg0_hz(&words);
+    let parent = advanced_extensible_interface_configuration_0_hertz(&words);
     assert_eq!(parent, 396_000_000);
-    assert_eq!(i2c5_clock_frequency(&words), 49_500_000);
+    assert_eq!(
+        inter_integrated_circuit_5_clock_frequency(&words),
+        49_500_000
+    );
     let div = sdcard_divider_for(parent, 50_000_000);
     assert_eq!(div, 8);
     assert!(parent / u64::from(div) <= 50_000_000);
-    assert_eq!(sdcard_divider_for(parent, 1), SDCARD_DIVIDER_MAXIMUM);
+    assert_eq!(sdcard_divider_for(parent, 1), MAXIMUM_SD_CARD_DIVIDER);
     assert_eq!(sdcard_divider_for(parent, 1_000_000_000), 1);
     // A parent read as zero (a gated or unreadable chain) still gives a divider the field allows.
     assert_eq!(sdcard_divider_for(0, 50_000_000), 1);
@@ -917,7 +950,10 @@ fn a_vendor_node_window_is_found_by_name_not_position() {
             .unwrap();
     assert_eq!(
         (stg.base, stg.compatible),
-        (SYSTEM_TOP_GROUP_BASE, Some(COMPATIBLE_VENDOR_CLKGEN))
+        (
+            SYSTEM_TOP_GROUP_BASE,
+            Some(COMPATIBLE_VENDOR_CLOCK_GENERATOR)
+        )
     );
     let aon = WindowLocation::from_regions(&ALWAYS_ON_WINDOW.spellings[1], &regions, Some(names))
         .unwrap();
@@ -933,7 +969,10 @@ fn a_vendor_node_window_is_found_by_name_not_position() {
     .unwrap();
     assert_eq!(
         (rst.base, rst.compatible),
-        (SYSTEM_TOP_GROUP_BASE, Some(COMPATIBLE_VENDOR_RSTGEN))
+        (
+            SYSTEM_TOP_GROUP_BASE,
+            Some(COMPATIBLE_VENDOR_RESET_GENERATOR)
+        )
     );
 }
 
@@ -978,8 +1017,14 @@ fn each_window_tries_mainline_first_and_falls_back_to_the_published_constant() {
     ] {
         assert_eq!(window.spellings[0].compatible, mainline);
         assert_eq!(window.spellings[0].window, None);
-        assert_eq!(window.spellings[1].compatible, COMPATIBLE_VENDOR_CLKGEN);
-        assert_eq!(window.spellings[2].compatible, COMPATIBLE_VENDOR_RSTGEN);
+        assert_eq!(
+            window.spellings[1].compatible,
+            COMPATIBLE_VENDOR_CLOCK_GENERATOR
+        );
+        assert_eq!(
+            window.spellings[2].compatible,
+            COMPATIBLE_VENDOR_RESET_GENERATOR
+        );
         assert_eq!(
             window.fallback(),
             WindowLocation {

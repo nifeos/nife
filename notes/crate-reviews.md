@@ -272,6 +272,10 @@ comment, which the five-word rule refuses.
 
 Result of `script/crate-standalone`. Clean.
 
+Provenance. Milestone 1019 item 1 (`standard_mode_100_kilohertz` rewritten from a permissive source) stands
+done. Items 7 and 11 remain open on `main`. Item 7: the doc comments quote two PMIC nodes, 9 and 7 tokens. Item 11: pin the vendor links to the revision each claim holds at. The crate cites the vendor tag
+`VF2_v2.10.4` and a mainline commit by hash.
+
 Names. The maintainer ratified `CLOCK_PARENT_MASK` for the clock parent field mask provisionally,
 pending the architect's review. It says what the field holds, as `with_parent` and `Step::SelectParent`
 already do, and `CLKMUX_MASK`, `JH7110_MUX_MASK` and `JH71X0_CLK_MUX_MASK` are `#[doc(alias)]`es.

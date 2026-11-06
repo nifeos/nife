@@ -18,8 +18,12 @@ fn pmic_bus(
     u8,
 )> {
     use jh7110_clock_and_reset::{
-        I2cClockWords, SYS_SYSCON_BASE, SYSCLK_APB_BUS_FUNC, SYSCLK_AXI_CFG0, SYSCLK_BUS_ROOT,
-        SYSCLK_STG_AXIAHB, i2c5_clock_frequency, one_based_divider, standard_mode_100k,
+        InterIntegratedCircuitClockWords,
+        SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0,
+        SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION, SYSTEM_CLOCK_BUS_ROOT,
+        SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_HIGH_PERFORMANCE_BUS,
+        SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS, inter_integrated_circuit_5_clock_frequency,
+        one_based_divider, standard_mode_100_kilohertz,
     };
 
     let (sys, bus) = crate::memory::jh7110_pmic_bus()?;
@@ -34,32 +38,35 @@ fn pmic_bus(
         core::ptr::read_volatile((base + offset) as *const u32)
     };
     let crg = crate::arch::mmu::phys_to_virt(sys.base) as usize;
-    let syscon = crate::arch::mmu::phys_to_virt(SYS_SYSCON_BASE) as usize;
-    let words = I2cClockWords {
-        bus_root: word(crg, SYSCLK_BUS_ROOT as usize * 4),
-        axi_cfg0: word(crg, SYSCLK_AXI_CFG0 as usize * 4),
-        stg_axiahb: word(crg, SYSCLK_STG_AXIAHB as usize * 4),
-        apb_bus_func: word(crg, SYSCLK_APB_BUS_FUNC as usize * 4),
-        pll2_dacpd_dsmpd_fbdiv: word(syscon, 0x2c),
-        pll2_postdiv1: word(syscon, 0x30),
-        pll2_prediv: word(syscon, 0x34),
+    let syscon = crate::arch::mmu::phys_to_virt(SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS) as usize;
+    let words = InterIntegratedCircuitClockWords {
+        bus_root: word(crg, SYSTEM_CLOCK_BUS_ROOT as usize * 4),
+        advanced_extensible_interface_configuration_0: word(crg, SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0 as usize * 4),
+        system_top_group_advanced_extensible_interface_advanced_high_performance_bus: word(crg, SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_HIGH_PERFORMANCE_BUS as usize * 4),
+        advanced_peripheral_bus_function: word(crg, SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION as usize * 4),
+        phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: word(syscon, 0x2c),
+        phase_locked_loop_2_post_divider_1_word: word(syscon, 0x30),
+        phase_locked_loop_2_pre_divider_word: word(syscon, 0x34),
     };
-    let ic = i2c5_clock_frequency(&words);
-    let mode = standard_mode_100k(ic);
-    let fbdiv = (words.pll2_dacpd_dsmpd_fbdiv >> 17) & 0xfff;
+    let ic = inter_integrated_circuit_5_clock_frequency(&words);
+    let mode = standard_mode_100_kilohertz(ic);
+    let fbdiv = (words.phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word >> 17) & 0xfff;
     println!(
         "{marker} AXP15060: direct route, controller {controller:#x}, PMIC {address:#04x}, IC \
          clock {ic} Hz (bus_root {}, divs {}/{}/{}, pll2 fbdiv {fbdiv} prediv {} postdiv1 {}), \
          standard mode hcnt {} lcnt {} sda_hold {}",
         (words.bus_root >> 24) & 1,
-        one_based_divider(words.axi_cfg0, 2),
-        one_based_divider(words.stg_axiahb, 2),
-        one_based_divider(words.apb_bus_func, 4),
-        words.pll2_prediv & 0x3f,
-        1u32 << ((words.pll2_postdiv1 >> 28) & 3),
-        mode.hcnt,
-        mode.lcnt,
-        mode.sda_hold,
+        one_based_divider(words.advanced_extensible_interface_configuration_0, 2),
+        one_based_divider(
+            words.system_top_group_advanced_extensible_interface_advanced_high_performance_bus,
+            2
+        ),
+        one_based_divider(words.advanced_peripheral_bus_function, 4),
+        words.phase_locked_loop_2_pre_divider_word & 0x3f,
+        1u32 << ((words.phase_locked_loop_2_post_divider_1_word >> 28) & 3),
+        mode.high_count,
+        mode.low_count,
+        mode.data_hold,
     );
 
     Some((
