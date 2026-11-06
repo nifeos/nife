@@ -201,7 +201,7 @@ impl<'a> Roster<'a> {
     /// Both refusals matter for the same reason: this page arrives from outside the program, and a
     /// reader that trusted a count it did not check would index past its own mapping.
     ///
-    /// Name: ratified 2026-11-06 (UTC): `read` pairs with [`write`], and the reader is the party
+    /// Name: ratified 2026-11-06 (UTC): `read` pairs with [`write()`], and the reader is the party
     /// that borrows the page.
     pub fn read(page: &'a [u8]) -> Option<Roster<'a>> {
         if page.len() < HEADER_BYTES {
