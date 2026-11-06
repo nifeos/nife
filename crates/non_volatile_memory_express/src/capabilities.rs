@@ -26,10 +26,14 @@ impl Capabilities {
     pub fn doorbell_stride(self) -> u32 {
         (self.0 >> 32) as u32 & 0xf
     }
-    /// Timeout for the ready bit to follow the enable bit, in 500 ms units.
+    /// Timeout for the ready bit to follow the enable bit, in units of 500 milliseconds.
     ///
-    /// Name: ratified 2026-10-25 (#2720).
-    pub fn timeout_500ms(self) -> u32 {
+    /// Name: ratified 2026-11-06 (UTC), renamed from `timeout_500ms` (units spelled out, as the
+    /// tree-wide ruling asks). The specification's term stays searchable through the aliases `CAP.TO`
+    /// and `TO`.
+    #[doc(alias = "CAP.TO")]
+    #[doc(alias = "TO")]
+    pub fn timeout_in_500_millisecond_units(self) -> u32 {
         (self.0 >> 24) as u32 & 0xff
     }
     /// Memory Page Size Minimum, as a byte count (the field is `2^(12+MPSMIN)`). This driver runs
@@ -52,7 +56,7 @@ mod tests {
         // MPSMIN=0. Build one by hand and read every field back.
         let capabilities = Capabilities(0x7ffu64 | (0xf << 24) | (2 << 32) | (1 << 48));
         assert_eq!(capabilities.maximum_queue_entries(), 0x800);
-        assert_eq!(capabilities.timeout_500ms(), 0xf);
+        assert_eq!(capabilities.timeout_in_500_millisecond_units(), 0xf);
         assert_eq!(capabilities.doorbell_stride(), 2);
         assert_eq!(capabilities.minimum_page_size(), 8192);
     }

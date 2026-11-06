@@ -179,9 +179,9 @@ fn capabilities_decode_is_total_and_reads_the_specified_bits() {
         (register >> 32) & 0xf
     );
 
-    assert!(capabilities.timeout_500ms() <= 255);
+    assert!(capabilities.timeout_in_500_millisecond_units() <= 255);
     assert_eq!(
-        u64::from(capabilities.timeout_500ms()),
+        u64::from(capabilities.timeout_in_500_millisecond_units()),
         (register >> 24) & 0xff
     );
 
