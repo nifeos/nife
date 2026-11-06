@@ -537,35 +537,20 @@ crates/bitmap_font/src/render.rs::is_ink
 
 crates/bitmap_font/src/tests.rs
 
-crates/block_roster/src/lib.rs::Device
 
-crates/block_roster/src/lib.rs::ENTRY_BYTES
 
-crates/block_roster/src/lib.rs::Full
 
-crates/block_roster/src/lib.rs::HEADER_BYTES
 
-crates/block_roster/src/lib.rs::MAGIC
 
-crates/block_roster/src/lib.rs::Roster
 
-crates/block_roster/src/lib.rs::capacity_of
 
-crates/block_roster/src/lib.rs::count_on
 
-crates/block_roster/src/lib.rs::get
 
-crates/block_roster/src/lib.rs::is_empty
 
-crates/block_roster/src/lib.rs::iter
 
-crates/block_roster/src/lib.rs::len
 
-crates/block_roster/src/lib.rs::read
 
-crates/block_roster/src/lib.rs::transport_name
 
-crates/block_roster/src/lib.rs::write
 
 crates/boot_ladder/src/lib.rs::BANNER
 
