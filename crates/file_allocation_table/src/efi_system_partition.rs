@@ -16,8 +16,10 @@
 /// FAT32 permits 512, 1024, 2048 and 4096; this writer writes 512, which is what nearly every disk
 /// reports and the unit a GUID partition table on such a disk counts in.
 ///
-/// Name: ratified 2026-10-25 (#2720). Refused `SECTOR` (it reads as a sector and holds a size).
-pub const SECTOR_BYTES: usize = 512;
+/// Name: ratified 2026-10-25 (#2720); renamed from `SECTOR_BYTES` on 2026-11-06 (UTC), so that it
+/// reads with `SECTORS_PER_CLUSTER` and `BYTES_PER_CLUSTER` as one family, the specification's
+/// field names (`BPB_BytsPerSec`). Refused `SECTOR` (it reads as a sector and holds a size).
+pub const BYTES_PER_SECTOR: usize = 512;
 
 /// Sectors per cluster, so 4096-byte clusters: a caller moving one 4096-byte block per request
 /// moves exactly one cluster.
@@ -28,8 +30,10 @@ pub const SECTORS_PER_CLUSTER: u32 = 8;
 
 /// Bytes per cluster.
 ///
-/// Name: ratified 2026-10-25 (#2720). Refused `CLUSTER` (it reads as a cluster and holds a size).
-pub const CLUSTER_BYTES: usize = SECTORS_PER_CLUSTER as usize * SECTOR_BYTES;
+/// Name: ratified 2026-10-25 (#2720); renamed from `CLUSTER_BYTES` on 2026-11-06 (UTC), one family
+/// with `BYTES_PER_SECTOR` and `SECTORS_PER_CLUSTER`. Refused `CLUSTER` (it reads as a cluster and
+/// holds a size).
+pub const BYTES_PER_CLUSTER: usize = SECTORS_PER_CLUSTER as usize * BYTES_PER_SECTOR;
 
 /// Reserved sectors ahead of the first FAT: the boot sector, the file system information sector,
 /// and the backup pair the specification puts at sectors 6 and 7, with room left over as every tool

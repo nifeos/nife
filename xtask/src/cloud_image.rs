@@ -52,7 +52,7 @@ use crate::host::workspace_root;
 
 /// The logical block this disk is written in. Every cloud boot volume this lane has read about
 /// reports 512, and `file_allocation_table`'s EFI system partition writer writes nothing else.
-const LBA: u64 = fat::efi_system_partition::SECTOR_BYTES as u64;
+const LBA: u64 = fat::efi_system_partition::BYTES_PER_SECTOR as u64;
 
 /// Where the partition starts and how much the end keeps free: 1 MiB, the installer's alignment,
 /// which also leaves the backup table's 33 blocks room at the far end.

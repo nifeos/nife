@@ -269,9 +269,9 @@ impl VolumeLayout {
     pub fn fill_sector(&self, index: u64, out: &mut [u8]) -> bool;
 }
 pub mod efi_system_partition {
-    pub const SECTOR_BYTES: usize;          // 512
+    pub const BYTES_PER_SECTOR: usize;      // 512
     pub const SECTORS_PER_CLUSTER: u32;     // 8
-    pub const CLUSTER_BYTES: usize;         // 4096
+    pub const BYTES_PER_CLUSTER: usize;     // 4096
     pub const RESERVED_SECTORS: u32;        // 32
     pub const TABLE_COUNT: u32;             // 2
     pub const ROOT_CLUSTER: u32;            // 2

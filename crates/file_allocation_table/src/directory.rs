@@ -15,7 +15,7 @@ use crate::sector::{SectorDevice, SectorSize};
 
 /// The bytes of one directory slot.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. The size of one slot, spelled like `SECTOR_BYTES`.
+/// Name: ratified 2026-10-26 (UTC), on #2760. The size of one slot, a byte count as `BYTES_PER_SECTOR` is.
 pub const SLOT_BYTES: usize = 32;
 
 /// `DIR_Attr`'s read-only bit.
@@ -209,7 +209,7 @@ impl ShortEntry {
     /// The file's length in bytes; 0 for a directory.
     ///
     /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `size` (the unit goes in the name, as in
-    /// `SECTOR_BYTES` and `SLOT_BYTES`). `DIR_FileSize`.
+    /// `BYTES_PER_SECTOR` and `SLOT_BYTES`). `DIR_FileSize`.
     pub const fn size_bytes(&self) -> u32 {
         self.size
     }

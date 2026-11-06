@@ -4,7 +4,7 @@
 //! Name: ratified 2026-10-25 (#2720).
 
 use super::*;
-use crate::efi_system_partition::SECTOR_BYTES;
+use crate::efi_system_partition::BYTES_PER_SECTOR;
 use crate::{NoClock, VolumeLayout};
 
 const FAT12_FLOPPY: &[u8; 512] = include_bytes!("../../tests/fixtures/fat12-floppy.boot");
@@ -211,7 +211,7 @@ fn what_this_crates_mkfs_writes_parses_to_the_same_geometry() {
         &mut NoClock,
     )
     .unwrap();
-    let mut sector = [0u8; SECTOR_BYTES];
+    let mut sector = [0u8; BYTES_PER_SECTOR];
     for index in [0, 6] {
         assert!(volume.fill_sector(index, &mut sector));
         let boot = parse(&sector).unwrap();

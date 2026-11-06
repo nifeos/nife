@@ -55,7 +55,7 @@ pub enum ChainError<E> {
 /// # Examples
 ///
 /// ```
-/// use file_allocation_table::efi_system_partition::SECTOR_BYTES;
+/// use file_allocation_table::efi_system_partition::BYTES_PER_SECTOR;
 /// use file_allocation_table::{NoClock, SectorDevice, SectorSize, Volume, VolumeLayout};
 ///
 /// // A volume this crate's writer lays out, held in memory.

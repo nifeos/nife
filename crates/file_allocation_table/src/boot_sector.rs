@@ -220,11 +220,11 @@ pub enum ReadError<E> {
 /// # Examples
 ///
 /// ```
-/// use file_allocation_table::efi_system_partition::{MINIMUM_FAT32_CLUSTERS, SECTOR_BYTES};
+/// use file_allocation_table::efi_system_partition::{MINIMUM_FAT32_CLUSTERS, BYTES_PER_SECTOR};
 /// use file_allocation_table::{BootSector, FileAllocationTableType, NoClock, VolumeLayout};
 ///
 /// let volume = VolumeLayout::new(1024 * 1024, 0, 4096, 1, "EFI SYSTEM", "BOOTX64.EFI", &mut NoClock).unwrap();
-/// let mut sector = [0u8; SECTOR_BYTES];
+/// let mut sector = [0u8; BYTES_PER_SECTOR];
 /// volume.fill_sector(0, &mut sector);
 ///
 /// let boot = BootSector::parse(&sector).unwrap();
