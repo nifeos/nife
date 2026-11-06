@@ -65,7 +65,7 @@ fn a_read_only_file_refuses_a_write_a_resize_and_a_remove_until_the_bit_clears()
     let locked = volume.set_attributes(&file, Attributes::READ_ONLY).unwrap();
     let mut writer = volume.open_file_writer(&locked).unwrap();
     assert_eq!(writer.write(b"x"), Err(WriteError::ReadOnly));
-    assert_eq!(writer.set_length(0), Err(WriteError::ReadOnly));
+    assert_eq!(writer.set_len(0), Err(WriteError::ReadOnly));
     assert_eq!(volume.remove_file(&locked), Err(WriteError::ReadOnly));
     let open = volume.set_attributes(&locked, Attributes::ARCHIVE).unwrap();
     volume.open_file_writer(&open).unwrap().write(b"!").unwrap();

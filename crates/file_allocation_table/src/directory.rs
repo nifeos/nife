@@ -15,7 +15,7 @@ use crate::sector::{SectorDevice, SectorSize};
 
 /// The bytes of one directory slot.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. The size of one slot, spelled like `SECTOR_BYTES`.
+/// Name: ratified 2026-10-26 (UTC), on #2760. The size of one slot, a byte count as `BYTES_PER_SECTOR` is.
 pub const SLOT_BYTES: usize = 32;
 
 /// `DIR_Attr`'s read-only bit.
@@ -209,7 +209,7 @@ impl ShortEntry {
     /// The file's length in bytes; 0 for a directory.
     ///
     /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `size` (the unit goes in the name, as in
-    /// `SECTOR_BYTES` and `SLOT_BYTES`). `DIR_FileSize`.
+    /// `BYTES_PER_SECTOR` and `SLOT_BYTES`). `DIR_FileSize`.
     pub const fn size_bytes(&self) -> u32 {
         self.size
     }
@@ -350,7 +350,7 @@ impl Source {
 pub struct Directory<'v, D> {
     volume: &'v mut Volume<D>,
     source: Source,
-    buffer: [u8; SectorSize::MAX],
+    buffer: [u8; SectorSize::MAXIMUM_BYTES],
     /// The byte offset of the next slot in `buffer`; one sector or more means a sector is due.
     at: usize,
     done: bool,
@@ -376,8 +376,8 @@ impl<'v, D: SectorDevice> Directory<'v, D> {
         Directory {
             volume,
             source,
-            buffer: [0; SectorSize::MAX],
-            at: SectorSize::MAX,
+            buffer: [0; SectorSize::MAXIMUM_BYTES],
+            at: SectorSize::MAXIMUM_BYTES,
             done: false,
             first,
             index: 0,

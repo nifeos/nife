@@ -527,7 +527,7 @@ impl FormatPlan {
     ///
     /// Name: ratified 2026-11-01 (UTC), the verb of `Volume::mark_clean`, for a whole volume.
     pub fn write_to<D: WritableSectorDevice>(&self, device: &mut D) -> Result<(), D::Error> {
-        let mut sector = [0u8; SectorSize::MAX];
+        let mut sector = [0u8; SectorSize::MAXIMUM_BYTES];
         let size = self.geometry.sector_size.bytes();
         for index in 0..self.metadata_sectors() {
             if self.fill_sector(index, &mut sector[..size]) {

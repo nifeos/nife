@@ -354,7 +354,7 @@ impl<D: WritableSectorDevice> Volume<D> {
             .cluster_first_sector(cluster)
             .ok_or(ChainError::NotADataCluster(cluster))?;
         let size = boot.sector_size().bytes();
-        let mut sector = [0u8; SectorSize::MAX];
+        let mut sector = [0u8; SectorSize::MAXIMUM_BYTES];
         for (at, (name, target)) in [(b".          ", cluster), (b"..         ", parent)]
             .iter()
             .enumerate()
@@ -369,7 +369,7 @@ impl<D: WritableSectorDevice> Volume<D> {
             self.stamp.write_new(slot);
         }
         crate::write_cursor::Medium::write_data(self, first, &sector[..size])?;
-        let zeros = [0u8; SectorSize::MAX];
+        let zeros = [0u8; SectorSize::MAXIMUM_BYTES];
         for later in 1..boot.sectors_per_cluster() {
             crate::write_cursor::Medium::write_data(self, first + later, &zeros[..size])?;
         }

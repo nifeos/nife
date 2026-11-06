@@ -178,7 +178,7 @@ impl FileCursor {
 pub struct FileReader<'v, D> {
     volume: &'v mut Volume<D>,
     cursor: FileCursor,
-    buffer: [u8; SectorSize::MAX],
+    buffer: [u8; SectorSize::MAXIMUM_BYTES],
 }
 
 impl<'v, D: SectorDevice> FileReader<'v, D> {
@@ -190,7 +190,7 @@ impl<'v, D: SectorDevice> FileReader<'v, D> {
         FileReader {
             volume,
             cursor: FileCursor::new(first_cluster, size),
-            buffer: [0; SectorSize::MAX],
+            buffer: [0; SectorSize::MAXIMUM_BYTES],
         }
     }
 
