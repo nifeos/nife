@@ -2,11 +2,11 @@
 //! size, as the sectors a caller writes, with no I/O.
 //!
 //! One piece of arithmetic sizes every volume, [`Geometry`], and one pair of builders writes its
-//! boot sector and `FSInfo`; the one-file EFI volume of [`crate::VolumeLayout`] uses both, so the
-//! BPB is written in one place. Sizing is Microsoft's own (`fatgen103`, "Determining FAT type"),
-//! which over-sizes the table slightly rather than solve the circular dependency, so the number it
-//! gives is the number every other tool gives; the data area is then rounded up to start on a
-//! cluster boundary.
+//! boot sector and file system information sector; the one-file EFI volume of
+//! [`crate::VolumeLayout`] uses both, so the BPB is written in one place. Sizing is Microsoft's own
+//! (`fatgen103`, "Determining FAT type"), which over-sizes the table slightly rather than solve the
+//! circular dependency, so the number it gives is the number every other tool gives; the data area
+//! is then rounded up to start on a cluster boundary.
 //!
 //! Name: ratified 2026-11-01 (UTC), the `mkfs` of the crate, beside `volume`, which keeps the EFI
 //! volume's shape.
@@ -16,8 +16,8 @@ use crate::long_name::is_short_byte;
 use crate::sector::{SectorSize, WritableSectorDevice};
 use crate::time::{Clock, Stamp};
 
-/// Reserved sectors of a FAT32 volume: the boot sector, `FSInfo`, their backups at 6 and 7, and
-/// room left over as every tool leaves it.
+/// Reserved sectors of a FAT32 volume: the boot sector, the file system information sector, their
+/// backups at 6 and 7, and room left over as every tool leaves it.
 const FAT32_RESERVED: u32 = 32;
 /// Root directory entries of a FAT12 or FAT16 volume, the count most tools write.
 const ROOT_ENTRIES: u32 = 512;
@@ -121,7 +121,8 @@ impl FormatOptions {
         self
     }
 
-    /// The serial number; a caller with an entropy capability draws it, and nothing here invents one.
+    /// The serial number; a caller with an entropy capability draws it, and nothing here invents
+    /// one.
     ///
     /// Name: ratified 2026-11-01 (UTC), as `with_file_allocation_table_type`: the ecosystem builder
     /// pattern for options.
@@ -310,7 +311,7 @@ impl Geometry {
             put16(out, 40, 0); // BPB_ExtFlags: both tables live, mirrored
             put16(out, 42, 0); // BPB_FSVer
             put32(out, 44, ROOT_CLUSTER); // BPB_RootClus
-            put16(out, 48, 1); // BPB_FSInfo
+            put16(out, 48, 1); // the file system information sector's number
             put16(out, 50, 6); // BPB_BkBootSec
             out[64] = 0x80; // BS_DrvNum
             out[66] = 0x29; // BS_BootSig, which makes the three fields below meaningful
@@ -329,7 +330,8 @@ impl Geometry {
     }
 }
 
-/// Write `FSInfo`'s signatures and its two hints into `out`, which is one zeroed sector.
+/// Write the file system information sector's signatures and its two hints into `out`, which is one
+/// zeroed sector.
 pub(crate) fn write_fs_info(free_clusters: u32, next_free: u32, out: &mut [u8]) {
     put32(out, 0, 0x4161_5252); // FSI_LeadSig, "RRaA"
     put32(out, 484, 0x6141_7272); // FSI_StrucSig, "rrAa"

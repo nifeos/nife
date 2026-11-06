@@ -13,8 +13,9 @@ writes blocks, and decodes the card's identification and specific-data registers
 implements one trait, `RegisterWindowAndClock` (read a register, write one, read a microsecond
 clock), and every sequence runs on a host against a simulated controller and card. It is `no_std`,
 with no allocator, no `unsafe` and no dependency. Eight Kani harnesses prove its parsers and bounds.
-Every name is ratified. What the architect decides is how much of it to publish: it carries a
-board's bench test and nine compile-time checks as public items.
+Every name is ratified. The board's bench test sits behind the non-default `bench` feature, and the
+compile-time checks have no public name. What the architect decides is the spelling of one unit in a
+variant name.
 
 ## Identity
 
@@ -25,12 +26,12 @@ board's bench test and nine compile-time checks as public items.
 | edition, `rust-version` | 2024, 1.88 |
 | license | `(MIT OR Apache-2.0) AND ISC`; `LICENSE-MIT` and `LICENSE-APACHE` at the crate root, the ISC notice in `src/lib.rs` |
 | `publish` | `false` |
-| size | 7,107 lines in 13 files: 5,039 of library, 879 of shared tests, 969 of simulator, 220 of Kani harnesses |
+| size | 7,098 lines in 13 files: about 5,030 of library, 879 of shared tests, 969 of simulator, 220 of Kani harnesses |
 | consumers in nife | `kernel`, `components` and `machine_discovery`, by path |
 
 ## Public API
 
-Nine public modules and about 125 public items.
+Eight public modules, a ninth (`bench`) behind the `bench` feature, and about 115 public items.
 
 | module | what it holds |
 |---|---|
@@ -41,19 +42,17 @@ Nine public modules and about 125 public items.
 | `card` | `CardIdentification`, `CardSpecificData`, `extract_bits`, `r1_state` |
 | `sd` | `identify`, `read_blocks`, `write_blocks`, `Card`, `CardKind`, `can_address_blocks`, the two error enums |
 | `partition` | `MasterBootRecord::parse`, `PartitionEntry`, and `scratch_sector_range`, the rule for where a write test may land |
-| `bench` | the read-only probe, the scratch write test, the read matrix and `QueueWatch`, which a board bring-up runs |
+| `bench` (feature `bench`) | the read-only probe, the scratch write test, the read matrix and `QueueWatch`, which a board bring-up runs |
 | `jh7110` | the two controllers' addresses, interrupts and queue depth on that chip, both device trees' compatible strings, and `Slot::from_node` |
 
 No public signature names another crate's type.
 
 What a stranger may find surprising:
 
-- Nine public constants of type `()`, such as `registers::CLOCK_ENABLES_DO_NOT_OVERLAP`, exist only
-  to run a `const` assertion. They appear in the documentation as API, and removing one later breaks
-  any caller that named it. `const _: () = ...` gives the same check with no public name.
-- `bench` is board bring-up code. `run_scratch_write_test` writes to the card (inside the gap before
-  the first partition, which a harness proves), and `MATRIX_HZ` and `MatrixRow` serve one
-  diagnosis on one board. A stranger driving a controller needs none of it.
+- `bench` is board bring-up code, built only with the `bench` feature (or for the crate's own
+  tests). `run_scratch_write_test` writes to the card (inside the gap before the first partition,
+  which a harness proves), and `MATRIX_HERTZ` and `MatrixRow` serve one diagnosis on one board. A
+  stranger driving a controller needs none of it, and with the feature off none of it is public.
 - No error enum is `#[non_exhaustive]` (`host_controller::Error`, `Refusal`, `InitializationError`,
   `BlockTransferError`, `ReadOnlyProbeFailure`), and none implements `Display` or
   `core::error::Error`. A new variant after publication breaks every exhaustive `match`.
@@ -84,20 +83,13 @@ identification decode. 99 host tests drive those against the simulator.
 `python3 helpers/name_release.py --draft designware_mobile_storage` lists 135 names, all ratified:
 the crate on #1806 and the items on pull requests #3092 to #3144. Nothing is provisional.
 
-Eight of them, and two parameters, use a unit symbol that the units rule of 2026-11-03 refuses. #3092 ratified them on
-2026-11-02 and 2026-11-03, before or beside that rule. The rule leaves a ratified name
-alone until its own review, and a release review is that review.
+The units are spelled out: `jh7110::CARD_INTERFACE_UNIT_HERTZ`, `sd::TRANSFER_HERTZ`,
+`bench::MATRIX_HERTZ`, `jh7110::Slot::card_interface_unit_hertz`, `sd::Card::clock_hertz`,
+`bench::MatrixRow::asked_hertz` and `card_hertz`.
 
-| name | kind | recommendation |
-|---|---|---|
-| `jh7110::CARD_INTERFACE_UNIT_HZ` | constant | `CARD_INTERFACE_UNIT_HERTZ` |
-| `sd::TRANSFER_HZ` | constant | `TRANSFER_HERTZ` |
-| `bench::MATRIX_HZ` | constant | `MATRIX_HERTZ`, or private if `bench` leaves the API (question 1) |
-| `jh7110::Slot::card_interface_unit_hz` | field | `card_interface_unit_hertz` |
-| `sd::Card::clock_hz` | field | `clock_hertz` |
-| `bench::MatrixRow::asked_hz`, `card_hz` | fields | `asked_hertz`, `card_hertz` |
-| `internal_direct_memory_access::Refusal::Above4GiB` | variant | `AboveFourGibibytes`; an alternative names the cause, `BeyondThirtyTwoBitAddress` |
-| `base_hz` (`HostController::new`) and `hz` (`set_clock`) | parameters | `base_hertz`, `hertz`; a parameter name breaks no caller |
+One name still carries a unit symbol, and the units rule refuses symbols: the variant
+`internal_direct_memory_access::Refusal::Above4GiB`. Recommendation: `AboveFourGibibytes`; an
+alternative names the cause, `BeyondThirtyTwoBitAddress`.
 
 ## License
 
@@ -116,7 +108,6 @@ proposal for a license check would add.
 |---|---|
 | Shipped text names radon 29 times (`src/*.rs`); a stranger does not know the board's nickname. Say "a VisionFive 2". | move lane |
 | The manifest comment speaks of "one small `Registers` trait"; the trait is `RegisterWindowAndClock`. | move lane |
-| The README does not say how to install Kani. | move lane |
 | `repository` in the manifest. | move lane |
 
 Milestone 1019 item 11 (pin each vendor link to the revision its claim holds at) reads as done in
@@ -131,20 +122,11 @@ inaccuracies this review read.
 
 ## Open questions
 
-1. How much of the crate to publish. Background: `bench` and the nine `()` check constants serve
-   this tree's bench and its own build, not a caller. Options: (a) publish as it stands; (b) make
-   the nine checks anonymous (`const _: () = ...`) and put `bench` behind a non-default `bench`
-   feature; (c) as (b), but move `bench` out of the crate and into the caller. Recommendation: (b).
-   It keeps the bench sequence beside the driver it tests, publishes nothing a stranger could
-   misread, and a later release can make a hidden item public without breaking anyone. The
-   maintainer can rule it provisionally, as for the FAT package's question 2; the architect's
-   clearance confirms it.
-2. `#[non_exhaustive]` on the five error enums and `ScratchWriteVerdict`. Recommendation: add it
+1. `#[non_exhaustive]` on the five error enums and `ScratchWriteVerdict`. Recommendation: add it
    before 0.1.0, the stricter choice, which a later release can relax (the FAT package's question
    3). The maintainer can rule it provisionally.
-3. The unit spelling of the eight names in the table above. Recommendation: rename them all before
-   the crate leaves. **architect** (renaming ratified names). One ruling can cover this crate,
-   `counter_frequency_contract` and `jh7110_clock_and_reset`.
+2. The spelling of `Refusal::Above4GiB`, in the recommendation above. **architect** (renaming a
+   ratified name).
 
 ## Result of `script/crate-standalone`
 
@@ -153,5 +135,5 @@ targets, all eight harnesses and all eight falsifications.
 
 ## Recommendation
 
-Ready for review once the maintainer rules questions 1 and 2 provisionally and the architect rules
-question 3. The move lane's text edits do not hold the review.
+Ready for review once the maintainer rules question 1 provisionally and the architect rules
+question 2. The move lane's text edits do not hold the review.

@@ -27,6 +27,11 @@ Six Kani harnesses, in the `verification` module:
   namespace parse, and every accepted LBA shift lies between 9 and 12, so a 4 KiB transfer covers
   1 to 8 logical blocks.
 
+The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+checker, so it needs network access. CI uses version 0.68.0, and another version may verify
+differently.
+
 Rerun them with `cargo kani`. Each harness has a falsification record at
 `falsifications/<module.path>.<harness>.patch`; applying it with `patch -p3` from the crate root
 makes that harness fail at its own assertion, which shows the proof checks something.

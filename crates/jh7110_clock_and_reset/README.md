@@ -27,6 +27,11 @@ Nine Kani harnesses (`cargo kani`, stock Kani) prove, each with a falsification 
 - `is_deasserted`, `is_clock_enabled` and `clock_divider` read exactly the bit or field their
   definition names, for every word.
 
+The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+checker, so it needs network access. CI uses version 0.68.0, and another version may verify
+differently.
+
 Not proved: that a plan's order is the one the silicon needs, which only a board shows; the
 specifier decoders when the lookup answers differently (another provider, another cell count, an
 error), or for property lengths that are not a whole number of specifiers; plans of more than three

@@ -227,6 +227,8 @@ echo "==> the CI fuzz job keeps a finding private"
 helpers/fuzz-ci-selftest.sh >/dev/null
 # The daily fuzz report must run before the supervisor's first window: a dry run on an empty home.
 helpers/fuzz-daily-publish-selftest.sh >/dev/null
+# script/fuzz-status over stub gh, systemctl and journalctl: each check reports PASS, FAIL and UNKNOWN.
+helpers/fuzz-status-selftest.sh >/dev/null
 # The local parallel prove (milestone 957): the whole table forked into shard children that run
 # inside the one slot their parent holds. helpers/verify-parallel-selftest.sh says what it proves,
 # over a stub cargo and a private slot directory, so it costs milliseconds and takes no real slot.
@@ -3921,6 +3923,17 @@ echo "==> externalized crates name no nife program"
 # helpers/lint_externalized_crates.py.
 python3 helpers/lint_externalized_crates.py --selftest
 python3 helpers/lint_externalized_crates.py
+
+echo "==> each crate's license field matches the licenses its sources adapt"
+# lint-quick
+# Milestone 887 (crate repositories share one CI template, adapted from nife's gates), ruled
+# 2026-11-05 (UTC): the manifest's `license` is the crate's own `MIT OR Apache-2.0` joined with AND
+# to the SPDX identifier of every license of source it adapts, and each adapted notice opens with an
+# `SPDX-License-Identifier:` line. A published manifest cannot be withdrawn, so a notice the field
+# omits and a term no notice backs both fail. The selftest plants each bad fixture.
+# helpers/license_match.py has the rules; script/license-match runs them alone.
+python3 helpers/license_match.py --selftest
+script/license-match
 
 echo "==> shellcheck"
 # lint-id: shellcheck

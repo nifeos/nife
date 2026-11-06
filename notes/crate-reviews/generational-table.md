@@ -6,21 +6,21 @@ together outgrow the page.*
 
 ## In one paragraph
 
-A fixed-capacity table that names each entry with one `u64`: the slot index in the low 32 bits and
-the slot's generation in the high 32. Removing an entry raises its slot's generation, so every copy
+A fixed-capacity table that names each entry with an `EntryName<T>`, typed by the entry it names and
+holding one `u64`: the slot index in the low 32 bits and the slot's generation in the high 32. Removing an entry raises its slot's generation, so every copy
 of the old name resolves to `None` for good, while the slot itself is reused. The kernel keeps its
-thread table and its object tables in it. It is `no_std` with no allocator, no `unsafe` and no
+thread table and its object tables in it, each with its own entry name type. It is `no_std` with no allocator, no `unsafe` and no
 dependency, and five Kani harnesses prove the safety claims. The architect ruled that it publishes,
 third in the order of milestone 857 (crates released on their own), as milestone 1033
 (`generational_table`: the fixed-capacity, proved slotmap, released on its own) records. It is not
 yet shaped for release: it has no README, no license files and no `rust-version`, and it inherits
-two keys from nife's workspace. The open decision is the type of a name.
+two keys from nife's workspace.
 
 ## Identity
 
 | item | value |
 |---|---|
-| crate | `generational_table`, ratified (the crate name and all 14 item names) |
+| crate | `generational_table`, ratified (the crate name, all 14 item names and `EntryName<T>`) |
 | version | `0.1.0`; no tag in this clone |
 | edition, `rust-version` | 2024; no `rust-version` |
 | license | `MIT OR Apache-2.0`, inherited from the nife workspace; no license files in the crate |
@@ -36,17 +36,18 @@ One type, `Table<T, const N: usize>`, and its methods.
 |---|---|
 | build | `new` (a `const fn`; a `const` assertion refuses `N == 0` and `N > u32::MAX`), `Default` |
 | change | `insert_with(f)`, which mints the name, hands it to `f` and stores what `f` returns; `remove(name)` |
-| resolve | `slot_of(name)`, `get(name)`, `get_mut(name)` |
+| resolve | `slot_of(name)`, `get(name)`, `get_mut(name)`, each taking an `EntryName<T>` |
 | count | `len`, `is_empty` |
-| walk | `values`, `values_mut`, `live_slots`, `iter` (name and value), `iter_from(slot)` (slot, name and value) |
+| walk | `values`, `values_mut`, `live_slots`, `iter` (`EntryName<T>` and value), `iter_from(slot)` (slot, name and value) |
 
 What a stranger may find surprising:
 
-- A name is a bare `u64`, not a type. A name from one table resolves in another table of the same
-  shape, and the compiler cannot tell a name from any other number. Every growable candidate in
-  [the release record](../generational-table-and-existing-crates.md) uses a newtype (`slotmap`'s
-  `KeyData`, `thunderdome`'s `Index`). The kernel stores names in system-call words, which is why the
-  crate chose `u64`. Changing this after publication breaks every caller. Question 1.
+- A name is an `EntryName<T>`, a newtype over the `u64`, so the compiler tells it from any other
+  number and a name of one entry type does not resolve in a table of another. Every growable
+  candidate in [the release record](../generational-table-and-existing-crates.md) uses a newtype
+  (`slotmap`'s `KeyData`, `thunderdome`'s `Index`). The kernel stores names in system-call words
+  and converts at that boundary. Each of its four tables keyed by a bare `u64` gets its own entry
+  newtype, so two kernel tables do not accept each other's names.
 - A slot whose generation reaches `u32::MAX` retires and is never filled again, so capacity can
   shrink. The release record's table shows `slotmap` and `thunderdome` wrapping instead.
 - `Table` implements neither `Debug` nor `Clone`. Adding either later breaks nobody.
@@ -71,9 +72,9 @@ walk bound and a refused insert that never runs its closure.
 
 ## Names
 
-All 15 names in the crate are ratified: the crate on its naming review, the 14 items on #3119
-under the ruling that the standard library's spellings win (`len`, `iter`, `get_mut`). Nothing to
-ratify.
+All 16 names in the crate are ratified: the crate on its naming review, the 14 items on #3119
+under the ruling that the standard library's spellings win (`len`, `iter`, `get_mut`), and
+`EntryName<T>` by the architect. Nothing to ratify.
 
 ## License
 
@@ -97,7 +98,8 @@ No defect found in the code. Three records disagree with it:
    resolves an ancient name again. The crate now saturates a slot's generation and retires it, and
    a fifth harness proves a dead name stays dead after any number of operations. The block and the
    release record's comparison table (`wraps after 2^32 reuses`) and recommended `BUGS` line
-   ("the 2^32 wrap") need the same correction. Owner: a lane, after the maintainer confirms.
+   ("the 2^32 wrap") need the same correction, and the block's open item on the name type is
+   settled (`EntryName<T>`). Owner: a lane, after the maintainer confirms.
 2. The crate's limits do not say that a table whose every slot has retired refuses every insert
    for good. A test shows it (`a_table_of_retired_slots_refuses`), and the README's `BUGS` section
    is where a stranger looks.
@@ -106,13 +108,7 @@ No defect found in the code. Three records disagree with it:
 
 ## Open questions
 
-1. A typed name or a bare `u64`. Background: a newtype (`Name`, with `to_bits` and `from_bits`)
-   stops a caller from mixing names of two tables or passing a size as a name; the kernel converts
-   at the system-call boundary, where `to_bits` gives the same `u64` it stores today. Every growable
-   crate in the release record uses one. Milestone 1033 lists the question as open. Recommendation:
-   a newtype before 0.1.0, because the typed form is the stricter one, and a later release can add
-   conversions where the reverse change breaks every caller. **architect** (a published signature).
-2. Whether the README states expected demand as low. The crates.io API, read for this package,
+1. Whether the README states expected demand as low. The crates.io API, read for this package,
    shows `slotmap` at 36.2 million downloads in 90 days and the two fixed-capacity crates its search
    finds, `slots` and `coca`, at 18 and 19. Recommendation: say it plainly in one sentence of the
    README, as the release record suggests. The maintainer can decide it.
@@ -126,5 +122,5 @@ patches fail.
 
 ## Recommendation
 
-Blocked by question 1 and the release shape: the README, the license files and the manifest keys.
-After those, ready for review.
+Blocked by the release shape: the README, the license files and the manifest keys. After those,
+ready for review.

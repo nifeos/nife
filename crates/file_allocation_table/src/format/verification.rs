@@ -4,7 +4,7 @@
 //! it.
 //!
 //! The sector size is 512 bytes, the one the boot-sector parse proofs also fix; the format's
-//! arithmetic takes the sector size as a number, and the oracle tests cross 1024 and 4096.
+//! arithmetic takes the sector size as a number, and the rust-fatfs tests cross 1024 and 4096.
 //!
 //! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
@@ -13,7 +13,7 @@ use crate::boot_sector::BootSector;
 
 /// **A computed geometry parses back to itself.** For every device size, type and cluster size
 /// of 1, 2, 4 and 8 sectors (the sizing loop is bounded by the cluster size, and the unit sweep and
-/// the oracle tests cover 16 to 128): when [`Geometry::new`] accepts, the boot sector it writes parses, and the
+/// the rust-fatfs tests cover 16 to 128): when [`Geometry::new`] accepts, the boot sector it writes parses, and the
 /// parse reports the same type, cluster count, table size, cluster size and data start, with the
 /// data area on a cluster boundary and every cluster inside the device.
 /// Falsification: replayable `crates/file_allocation_table/falsifications/format.verification.a_geometry_parses_back_to_itself.patch`
