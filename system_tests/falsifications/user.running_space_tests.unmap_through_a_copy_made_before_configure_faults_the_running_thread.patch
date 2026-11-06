@@ -12,13 +12,13 @@ Expected to fail: the first assertion after the reader starts, which gets `Err(B
 diff --git a/kernel/src/user/address_space_registry.rs b/kernel/src/user/address_space_registry.rs
 --- a/kernel/src/user/address_space_registry.rs
 +++ b/kernel/src/user/address_space_registry.rs
-@@ -703,7 +703,10 @@
+@@ -240,7 +240,10 @@ pub fn user_address_space_root(name: u64) -> Option<u64> {
  /// whose TLB obligation reaches every core.
  pub fn with_user_address_space<R>(name: u64, f: impl FnOnce(Option<&mut AddressSpace>) -> R) -> R {
      let mut spaces = USER_SPACES.lock();
--    f(spaces.get_mut(name).map(|e| &mut e.space))
+-    f(spaces.get_mut(space_entry(name)).map(|e| &mut e.space))
 +    f(spaces
-+        .get_mut(name)
++        .get_mut(space_entry(name))
 +        .filter(|e| e.bound.is_none())
 +        .map(|e| &mut e.space))
  }
