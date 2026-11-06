@@ -45,8 +45,6 @@ use core::marker::PhantomData;
 /// A fresh table's first insert is named `from_bits(0)`. No table ever mints
 /// [`NEVER_MINTED`](Self::NEVER_MINTED), so a caller may store it as "no entry".
 ///
-/// See notes/generational-names.md.
-///
 /// ```compile_fail,E0308
 /// use generational_table::Table;
 ///
