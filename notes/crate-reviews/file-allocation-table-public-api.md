@@ -270,7 +270,7 @@ impl VolumeLayout {
 }
 pub mod efi_system_partition {
     pub const SECTOR_BYTES: usize;          // 512
-    pub const CLUSTER_SECTORS: u32;         // 8
+    pub const SECTORS_PER_CLUSTER: u32;     // 8
     pub const CLUSTER_BYTES: usize;         // 4096
     pub const RESERVED_SECTORS: u32;        // 32
     pub const TABLE_COUNT: u32;             // 2

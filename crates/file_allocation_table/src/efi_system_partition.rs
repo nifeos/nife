@@ -22,13 +22,14 @@ pub const SECTOR_BYTES: usize = 512;
 /// Sectors per cluster, so 4096-byte clusters: a caller moving one 4096-byte block per request
 /// moves exactly one cluster.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const CLUSTER_SECTORS: u32 = 8;
+/// Name: ratified 2026-10-25 (#2720); renamed from `CLUSTER_SECTORS` on 2026-11-06 (UTC), the
+/// count named by what it counts per what.
+pub const SECTORS_PER_CLUSTER: u32 = 8;
 
 /// Bytes per cluster.
 ///
 /// Name: ratified 2026-10-25 (#2720). Refused `CLUSTER` (it reads as a cluster and holds a size).
-pub const CLUSTER_BYTES: usize = CLUSTER_SECTORS as usize * SECTOR_BYTES;
+pub const CLUSTER_BYTES: usize = SECTORS_PER_CLUSTER as usize * SECTOR_BYTES;
 
 /// Reserved sectors ahead of the first FAT: the boot sector, the file system information sector,
 /// and the backup pair the specification puts at sectors 6 and 7, with room left over as every tool

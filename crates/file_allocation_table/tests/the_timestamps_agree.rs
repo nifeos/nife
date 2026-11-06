@@ -15,7 +15,9 @@ use std::io::Cursor;
 use std::path::Path;
 use std::process::Command;
 
-use file_allocation_table::efi_system_partition::{CLUSTER_SECTORS, FILE_CLUSTER, ROOT_CLUSTER};
+use file_allocation_table::efi_system_partition::{
+    FILE_CLUSTER, ROOT_CLUSTER, SECTORS_PER_CLUSTER,
+};
 use file_allocation_table::{
     CivilDateTime, Clock, FormatOptions, FormatPlan, NoClock, SectorDevice, SectorSize,
     VolumeLayout, WritableSectorDevice, WritableVolume, WriteError,
@@ -346,7 +348,7 @@ fn the_formats_label_and_the_efi_volumes_directories_carry_the_clocks_time() {
     .unwrap();
     // The root directory's cluster, three clusters ahead of the file's first.
     let root = |layout: &VolumeLayout| {
-        layout.file_first_sector() - u64::from((FILE_CLUSTER - ROOT_CLUSTER) * CLUSTER_SECTORS)
+        layout.file_first_sector() - u64::from((FILE_CLUSTER - ROOT_CLUSTER) * SECTORS_PER_CLUSTER)
     };
     let mut sector = [0u8; 512];
     assert!(efi.fill_sector(root(&efi), &mut sector));

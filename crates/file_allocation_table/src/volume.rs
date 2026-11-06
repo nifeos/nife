@@ -7,8 +7,8 @@
 
 use crate::boot_sector::FileAllocationTableType;
 use crate::efi_system_partition::{
-    BOOT_CLUSTER, CLUSTER_BYTES, CLUSTER_SECTORS, EFI_CLUSTER, FILE_CLUSTER, RESERVED_SECTORS,
-    ROOT_CLUSTER, SECTOR_BYTES, TABLE_COUNT,
+    BOOT_CLUSTER, CLUSTER_BYTES, EFI_CLUSTER, FILE_CLUSTER, RESERVED_SECTORS, ROOT_CLUSTER,
+    SECTOR_BYTES, SECTORS_PER_CLUSTER, TABLE_COUNT,
 };
 use crate::format::{Geometry, GeometryError, label_bytes, put16, put32, write_fs_info};
 use crate::long_name::{self, LongName};
@@ -171,7 +171,7 @@ impl VolumeLayout {
         let geometry = Geometry::new(
             FileAllocationTableType::Fat32,
             SectorSize::Bytes512,
-            CLUSTER_SECTORS,
+            SECTORS_PER_CLUSTER,
             total_sectors,
         )
         .map_err(|error| match error {
@@ -245,7 +245,7 @@ impl VolumeLayout {
     /// Name: ratified 2026-10-25 (#2720). Refused `cluster_sector` (the reader's spelling for the
     /// same quantity).
     pub(crate) const fn cluster_first_sector(&self, cluster: u32) -> u64 {
-        self.first_data_sector() + (cluster - ROOT_CLUSTER) as u64 * CLUSTER_SECTORS as u64
+        self.first_data_sector() + (cluster - ROOT_CLUSTER) as u64 * SECTORS_PER_CLUSTER as u64
     }
 
     /// **How many leading sectors the caller must write from [`VolumeLayout::fill_sector`]**:
@@ -270,7 +270,7 @@ impl VolumeLayout {
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub const fn file_sectors(&self) -> u64 {
-        self.file_clusters as u64 * CLUSTER_SECTORS as u64
+        self.file_clusters as u64 * SECTORS_PER_CLUSTER as u64
     }
 
     /// **Fill `out` with partition-relative sector `index`.**
@@ -734,12 +734,12 @@ mod tests {
             )
             .unwrap_or_else(|e| panic!("{mib} MiB: {e:?}"));
             assert_eq!(
-                v.first_data_sector() % u64::from(CLUSTER_SECTORS),
+                v.first_data_sector() % u64::from(SECTORS_PER_CLUSTER),
                 0,
                 "{mib} MiB: data area at sector {}",
                 v.first_data_sector()
             );
-            assert_eq!(v.file_first_sector() % u64::from(CLUSTER_SECTORS), 0);
+            assert_eq!(v.file_first_sector() % u64::from(SECTORS_PER_CLUSTER), 0);
             // And the table still covers every cluster the volume has.
             assert!(
                 v.table_sectors() as u64 * (SECTOR_BYTES as u64 / 4) >= v.clusters() as u64 + 2
