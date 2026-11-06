@@ -28,8 +28,8 @@ pub trait Hardware {
     fn note(&mut self, note: sequence::BringUpObservation);
 }
 
-pub(super) fn delay_ms(hardware: &mut impl Hardware, ms: u64) {
-    hardware.delay_microseconds(ms * 1000);
+pub(super) fn delay_milliseconds(hardware: &mut impl Hardware, milliseconds: u64) {
+    hardware.delay_microseconds(milliseconds * 1000);
 }
 
 /// A posted-write flush (`E1000_WRITE_FLUSH`): any read of BAR0 will do; FreeBSD reads `STATUS`.

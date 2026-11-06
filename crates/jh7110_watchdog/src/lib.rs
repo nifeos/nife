@@ -80,7 +80,7 @@ pub const WINDOW_USED: u64 = 0x1000;
 /// "wdt_core", 0, JH7110_SYSCLK_OSC)`).
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
-pub const CORE_CLOCK_HZ: u64 = 24_000_000;
+pub const CORE_CLOCK_HERTZ: u64 = 24_000_000;
 
 /// Mainline's binding, `watchdog@13070000`.
 ///
@@ -196,13 +196,13 @@ pub const fn disarm_sequence() -> [Access; 3] {
     ]
 }
 
-/// **The count that resets `reset_after_seconds` after the last pet**, at `hz`: half the ticks,
+/// **The count that resets `reset_after_seconds` after the last pet**, at `hertz`: half the ticks,
 /// because the block counts twice. `None` when that is zero or does not fit the 32-bit register.
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 #[must_use]
-pub const fn load_for(reset_after_seconds: u64, hz: u64) -> Option<u32> {
-    let Some(ticks) = reset_after_seconds.checked_mul(hz) else {
+pub const fn load_for(reset_after_seconds: u64, hertz: u64) -> Option<u32> {
+    let Some(ticks) = reset_after_seconds.checked_mul(hertz) else {
         return None;
     };
     let load = ticks / 2;
@@ -213,39 +213,39 @@ pub const fn load_for(reset_after_seconds: u64, hz: u64) -> Option<u32> {
     }
 }
 
-/// The time from a pet to the reset for `load` at `hz`, in tenths of a second, for the banner.
+/// The time from a pet to the reset for `load` at `hertz`, in tenths of a second, for the banner.
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 #[must_use]
-pub const fn reset_after_tenths(load: u32, hz: u64) -> u64 {
-    if hz == 0 {
+pub const fn reset_after_tenths(load: u32, hertz: u64) -> u64 {
+    if hertz == 0 {
         return 0;
     }
-    2 * load as u64 * 10 / hz
+    2 * load as u64 * 10 / hertz
 }
 
-/// The longest reset this block can arm at `hz`, in whole seconds.
+/// The longest reset this block can arm at `hertz`, in whole seconds.
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 #[must_use]
-pub const fn max_reset_after_seconds(hz: u64) -> u64 {
-    if hz == 0 {
+pub const fn max_reset_after_seconds(hertz: u64) -> u64 {
+    if hertz == 0 {
         return 0;
     }
-    2 * u32::MAX as u64 / hz
+    2 * u32::MAX as u64 / hertz
 }
 
 /// **The counter's rate as measured**: it fell from `before` to `after` while the kernel's own
-/// timer advanced `elapsed` ticks of `timer_hz`. A counter that did not move, or moved up (it
+/// timer advanced `elapsed` ticks of `timer_hertz`. A counter that did not move, or moved up (it
 /// reloaded), measures zero.
 ///
 /// Name: provisional, minted 2026-10-20 (UTC) by milestone/593-radon-watchdog.
 #[must_use]
-pub const fn measured_hz(before: u32, after: u32, elapsed: u64, timer_hz: u64) -> u64 {
+pub const fn measured_hertz(before: u32, after: u32, elapsed: u64, timer_hertz: u64) -> u64 {
     if elapsed == 0 || after >= before {
         return 0;
     }
-    (before - after) as u64 * timer_hz / elapsed
+    (before - after) as u64 * timer_hertz / elapsed
 }
 
 /// **Does the measured rate agree with the rate the count was computed for?** Within 5 %: wide

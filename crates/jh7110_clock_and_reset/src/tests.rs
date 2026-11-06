@@ -215,21 +215,21 @@ fn the_two_trees_agree_on_the_identifiers() {
     // than take the module header's word for it. If StarFive ever renumbers a group, this is
     // the test that fails.
     const VENDOR_SYSTEM_TOP_GROUP_CLOCK_BASE: u32 = 190; // JH7110_HIFI4_CLK_CORE
-    const VENDOR_SEC_HCLK: u32 = 205;
-    const VENDOR_SEC_MISCAHB_CLK: u32 = 206;
+    const VENDOR_SECURITY_HCLK: u32 = 205;
+    const VENDOR_SECURITY_MISCAHB_CLK: u32 = 206;
     const VENDOR_SYSTEM_TOP_GROUP_RESET_BASE: u32 = 128; // RSTN_U0_STG_SYSCON_PRESETN
-    const VENDOR_SEC_TOP_HRESETN: u32 = 131;
+    const VENDOR_SECURITY_TOP_HRESETN: u32 = 131;
 
     assert_eq!(
-        VENDOR_SEC_HCLK - VENDOR_SYSTEM_TOP_GROUP_CLOCK_BASE,
-        STGCLK_SEC_AHB
+        VENDOR_SECURITY_HCLK - VENDOR_SYSTEM_TOP_GROUP_CLOCK_BASE,
+        STGCLK_SECURITY_AHB
     );
     assert_eq!(
-        VENDOR_SEC_MISCAHB_CLK - VENDOR_SYSTEM_TOP_GROUP_CLOCK_BASE,
-        STGCLK_SEC_MISC_AHB
+        VENDOR_SECURITY_MISCAHB_CLK - VENDOR_SYSTEM_TOP_GROUP_CLOCK_BASE,
+        STGCLK_SECURITY_MISC_AHB
     );
     assert_eq!(
-        VENDOR_SEC_TOP_HRESETN - VENDOR_SYSTEM_TOP_GROUP_RESET_BASE,
+        VENDOR_SECURITY_TOP_HRESETN - VENDOR_SYSTEM_TOP_GROUP_RESET_BASE,
         SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS
     );
 }
@@ -237,9 +237,12 @@ fn the_two_trees_agree_on_the_identifiers() {
 #[test]
 fn clock_words_are_one_per_index_and_bounded() {
     assert_eq!(SYSTEM_TOP_GROUP.clock_offset(0), Some(0x00));
-    assert_eq!(SYSTEM_TOP_GROUP.clock_offset(STGCLK_SEC_AHB), Some(0x3c));
     assert_eq!(
-        SYSTEM_TOP_GROUP.clock_offset(STGCLK_SEC_MISC_AHB),
+        SYSTEM_TOP_GROUP.clock_offset(STGCLK_SECURITY_AHB),
+        Some(0x3c)
+    );
+    assert_eq!(
+        SYSTEM_TOP_GROUP.clock_offset(STGCLK_SECURITY_MISC_AHB),
         Some(0x40)
     );
     // 29 clocks, so 28 is the last. An identifier from another domain gets nothing rather
@@ -393,7 +396,7 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
         phase_locked_loop_2_post_divider_1_word: 0,
         phase_locked_loop_2_pre_divider_word: 0,
     };
-    assert_eq!(inter_integrated_circuit_5_clock_frequency(&osc), OSC_HZ);
+    assert_eq!(inter_integrated_circuit_5_clock_frequency(&osc), OSC_HERTZ);
 
     // bus_root on pll2 in integer mode. The fields are the vendor PLL2 table's 1228.8 MHz row
     // (fbdiv 768, prediv 15, postdiv1 1, dacpd 1, dsmpd 1, from the pll.c this crate cites),
@@ -428,7 +431,10 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
         phase_locked_loop_2_post_divider_1_word: 0,
         phase_locked_loop_2_pre_divider_word: 0,
     };
-    assert_eq!(inter_integrated_circuit_5_clock_frequency(&zeros), OSC_HZ);
+    assert_eq!(
+        inter_integrated_circuit_5_clock_frequency(&zeros),
+        OSC_HERTZ
+    );
 
     // Fractional mode (dacpd 0, dsmpd 0) is the vendor's default rate, not a guess from the
     // fields: 1_188_000_000 divided by the chain.
@@ -443,13 +449,13 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
     };
     assert_eq!(
         inter_integrated_circuit_5_clock_frequency(&frac),
-        PLL2_DEFAULT_HZ
+        PLL2_DEFAULT_HERTZ
     );
 }
 
-/// Whether `count` input-clock periods at `clock_frequency` last at least `minimum_ns`.
-fn covers(clock_frequency: u64, count: u32, minimum_ns: u128) -> bool {
-    u128::from(count) * 1_000_000_000 >= u128::from(clock_frequency) * minimum_ns
+/// Whether `count` input-clock periods at `clock_frequency` last at least `minimum_nanoseconds`.
+fn covers(clock_frequency: u64, count: u32, minimum_nanoseconds: u128) -> bool {
+    u128::from(count) * 1_000_000_000 >= u128::from(clock_frequency) * minimum_nanoseconds
 }
 
 #[test]
@@ -569,7 +575,7 @@ fn the_pll2_chain_needs_both_mode_bits_and_honors_its_post_divider() {
     };
     assert_eq!(
         inter_integrated_circuit_5_clock_frequency(&dacpd_only),
-        PLL2_DEFAULT_HZ
+        PLL2_DEFAULT_HERTZ
     );
     // Integer mode with fbdiv 0 would be a zero rate; it is the default instead.
     let no_fbdiv = InterIntegratedCircuitClockWords {
@@ -578,7 +584,7 @@ fn the_pll2_chain_needs_both_mode_bits_and_honors_its_post_divider() {
     };
     assert_eq!(
         inter_integrated_circuit_5_clock_frequency(&no_fbdiv),
-        PLL2_DEFAULT_HZ
+        PLL2_DEFAULT_HERTZ
     );
 }
 
