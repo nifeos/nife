@@ -44,7 +44,8 @@
 
 use super::physical_layer_device::{self, SoftwareFlag};
 use super::{
-    Hardware, delay_ms, flush_writes, non_volatile_memory, registers, reset, ultra_low_power,
+    Hardware, delay_milliseconds, flush_writes, non_volatile_memory, registers, reset,
+    ultra_low_power,
 };
 use crate::registers as mac;
 
@@ -208,7 +209,7 @@ const EXTCNF_CTRL_EXT_CNF_POINTER_MASK: u32 = 0x0fff_0000;
 const EXTCNF_SIZE_EXT_PCIE_LENGTH_MASK: u32 = 0x00ff_0000;
 const FEXTNVM_SW_CONFIG_ICH8M: u32 = 1 << 27;
 const FEXTNVM3_PHY_CFG_COUNTER_MASK: u32 = 0x0c00_0000;
-const FEXTNVM3_PHY_CFG_COUNTER_50MSEC: u32 = 0x0800_0000;
+const FEXTNVM3_PHY_CFG_COUNTER_50_MILLISECONDS: u32 = 0x0800_0000;
 const FEXTNVM7_DISABLE_SMB_PERST: u32 = 0x0000_0020;
 const PHY_CTRL_GBE_DISABLE: u32 = 0x0000_0040;
 const PHY_CTRL_D0A_LPLU: u32 = 0x0000_0002;
@@ -332,7 +333,7 @@ pub fn initialize_physical_layer_device_workarounds(
         );
         // "Wait 50 milliseconds for MAC to finish any retries that it might be trying to
         // perform from previous attempts to acknowledge any phy read requests."
-        delay_ms(hardware, 50);
+        delay_milliseconds(hardware, 50);
         if accessible(hardware, &f, &mut id) {
             return Ok(AccessPath::InSystemManagementBus);
         }
@@ -388,7 +389,7 @@ fn leave_ulp(hardware: &mut impl Hardware) {
                 break;
             }
             if i < ultra_low_power::MANAGEMENT_ENGINE_WAIT_MILLISECONDS / 10 {
-                delay_ms(hardware, 10);
+                delay_milliseconds(hardware, 10);
             }
         }
         if cleared {
@@ -424,7 +425,7 @@ fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<()
                     mac::EXTENDED_DEVICE_CONTROL_REGISTER,
                     CTRL_EXT_FORCE_SMBUS,
                 );
-                delay_ms(hardware, 50);
+                delay_milliseconds(hardware, 50);
                 physical_layer_device::read(
                     hardware,
                     &f,
@@ -481,7 +482,7 @@ fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<()
     f.release(hardware);
     // With `force`, FreeBSD resets the PHY whatever happened above, and waits 50 ms.
     let reset = physical_layer_device_reset_ich8lan(hardware);
-    delay_ms(hardware, 50);
+    delay_milliseconds(hardware, 50);
     done?;
     reset
 }
@@ -552,7 +553,8 @@ fn accessible(hardware: &mut impl Hardware, flag: &SoftwareFlag, id: &mut u32) -
 // is an equivalent mutant (the read join's swap is killed by
 // the_lanphypc_toggle_moves_only_its_own_bits_and_waits_for_lpcd and stays mutated).
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
-const _: () = assert!(FEXTNVM3_PHY_CFG_COUNTER_50MSEC & !FEXTNVM3_PHY_CFG_COUNTER_MASK == 0);
+const _: () =
+    assert!(FEXTNVM3_PHY_CFG_COUNTER_50_MILLISECONDS & !FEXTNVM3_PHY_CFG_COUNTER_MASK == 0);
 
 /// **`e1000_toggle_lanphypc_pch_lpt`**: fully power-cycle the PHY by driving the `LANPHYPC` pin
 /// low for a millisecond, then wait for the hardware's "LCD power cycle done".
@@ -560,23 +562,23 @@ fn toggle_lanphypc(hardware: &mut impl Hardware) {
     let n3 = hardware.read(registers::FEXTNVM3);
     hardware.write(
         registers::FEXTNVM3,
-        (n3 & !FEXTNVM3_PHY_CFG_COUNTER_MASK) | FEXTNVM3_PHY_CFG_COUNTER_50MSEC,
+        (n3 & !FEXTNVM3_PHY_CFG_COUNTER_MASK) | FEXTNVM3_PHY_CFG_COUNTER_50_MILLISECONDS,
     );
     let ctrl = (hardware.read(mac::DEVICE_CONTROL_REGISTER) | CTRL_LANPHYPC_OVERRIDE)
         & !CTRL_LANPHYPC_VALUE;
     hardware.write(mac::DEVICE_CONTROL_REGISTER, ctrl);
     flush_writes(hardware);
-    delay_ms(hardware, 1);
+    delay_milliseconds(hardware, 1);
     hardware.write(mac::DEVICE_CONTROL_REGISTER, ctrl & !CTRL_LANPHYPC_OVERRIDE);
     flush_writes(hardware);
     // FreeBSD: up to 21 polls of 5 ms for CTRL_EXT.LPCD, then 30 ms whatever it said.
     for _ in 0..=20 {
-        delay_ms(hardware, 5);
+        delay_milliseconds(hardware, 5);
         if hardware.read(mac::EXTENDED_DEVICE_CONTROL_REGISTER) & CTRL_EXT_LPCD != 0 {
             break;
         }
     }
-    delay_ms(hardware, 30);
+    delay_milliseconds(hardware, 30);
 }
 
 /// **`e1000_phy_hw_reset_generic`**: pulse `CTRL.PHY_RST` under the semaphore, then wait for the
@@ -611,7 +613,7 @@ fn physical_layer_device_reset_ich8lan(hardware: &mut impl Hardware) -> Result<(
 /// **`e1000_get_cfg_done_ich8lan`**: 10 ms, then `LAN_INIT_DONE`, then clear `PHYRA`, then check
 /// that an NVM bank is valid.
 fn config_done(hardware: &mut impl Hardware) -> Result<(), Error> {
-    delay_ms(hardware, 10);
+    delay_milliseconds(hardware, 10);
     // `e1000_lan_init_done_ich8lan`: up to 1500 polls of 100 µs.
     let mut done = false;
     for _ in 0..1500 {
@@ -683,7 +685,7 @@ pub fn global_reset(
     hardware.write(mac::RECEIVE_CONTROL_REGISTER, 0);
     hardware.write(mac::TRANSMIT_CONTROL_REGISTER, TCTL_PSP);
     flush_writes(hardware);
-    delay_ms(hardware, 10);
+    delay_milliseconds(hardware, 10);
 
     // "Full-chip reset requires MAC and PHY reset at the same time to make sure the interface
     // between MAC and the external PHY is reset."
@@ -705,7 +707,7 @@ pub fn global_reset(
         ctrl | crate::DEVICE_CONTROL_GLOBAL_RESET,
     );
     // "cannot issue a flush here because it hangs the hardware"
-    delay_ms(hardware, 20);
+    delay_milliseconds(hardware, 20);
     let v = hardware.pci_vendor_id();
     hardware.write(registers::STRAP, u32::from(v));
 
@@ -715,7 +717,7 @@ pub fn global_reset(
             cleared = true;
             break;
         }
-        delay_ms(hardware, 1);
+        delay_milliseconds(hardware, 1);
     }
     if !cleared {
         return Err(Error::ResetTimeout);
@@ -738,7 +740,7 @@ fn post_physical_layer_device_reset(hardware: &mut impl Hardware) -> Result<(), 
         return Ok(());
     }
     // "Allow time for h/w to get to quiescent state after reset"
-    delay_ms(hardware, 10);
+    delay_milliseconds(hardware, 10);
     {
         let f = SoftwareFlag::acquire(hardware)?;
         match physical_layer_device::read(
