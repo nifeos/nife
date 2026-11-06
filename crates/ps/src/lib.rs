@@ -184,7 +184,7 @@ impl Survey<'_> {
     /// the cost and the bargain.
     pub fn join_cpu_time(&mut self, read: &mut dyn FnMut(u64) -> (i64, u64, u64)) {
         self.join(read, |row, milliseconds| {
-            row.cpu_milliseconds = Some(milliseconds)
+            row.cpu_milliseconds = Some(milliseconds);
         });
     }
 
