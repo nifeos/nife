@@ -188,7 +188,7 @@ A; see notes/generational-names.md); the table names the three this appendix adj
 |---|---|
 | `a_removed_name_never_resolves_again` | once removed, a name fails `get`/`get_mut`/`remove` forever, even after its slot is reused (the stale-ThreadId safety that capability payloads will lean on) |
 | `live_names_are_distinct_and_resolve_to_their_own_entry` | the `(generation, slot)` packing cannot alias two live entries |
-| `a_name_the_table_never_minted_resolves_to_nothing` | for any u64, resolution succeeds only on exactly a name the table issued |
+| `a_name_the_table_never_minted_resolves_to_nothing` | for `from_bits` of any u64, resolution succeeds only on exactly a name the table issued |
 
 ## `crates/intrusive_queue`
 
