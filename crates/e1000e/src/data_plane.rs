@@ -46,12 +46,24 @@ pub trait Tails {
 /// Name: ratified 2026-10-26 (#2761). Ruled in the tree-wide ruling that spells out rx and tx,
 /// which names it. Refused `TxError` (tx abbreviates transmit).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TransmitError {
     /// Empty, or longer than [`MAXIMUM_FRAME_BYTES`].
     BadLength,
     /// Every descriptor is still the device's.
     Full,
 }
+
+impl core::fmt::Display for TransmitError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            TransmitError::BadLength => "the frame is empty or longer than the maximum frame size",
+            TransmitError::Full => "every transmit descriptor still belongs to the device",
+        })
+    }
+}
+
+impl core::error::Error for TransmitError {}
 
 /// **The data plane**: two ring cursors and the region's physical base. Everything a network stack
 /// does to the device goes through this, so all of it runs on the host against a simulated

@@ -52,6 +52,7 @@ use crate::registers as mac;
 ///
 /// Name: ratified 2026-11-03 (UTC), #3154.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Error {
     /// A PHY access failed.
     ///
@@ -73,7 +74,8 @@ pub enum Error {
     /// (an abbreviation).
     PhysicalLayerDeviceInaccessible,
     /// The PHY did not answer and firmware blocks the `LANPHYPC` toggle that would have reset it.
-    LanphypcBlocked,
+    #[doc(alias = "lanphypc")]
+    PhysicalLayerDevicePowerCycleBlocked,
     /// Firmware began blocking PHY access after the PHY reset.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3154. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip)
@@ -82,6 +84,39 @@ pub enum Error {
     BlockedAfterPhysicalLayerDeviceReset,
     /// `CTRL.RST` did not self-clear.
     ResetTimeout,
+}
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Error::PhysicalLayerDevice(error) => {
+                write!(f, "physical layer device access failed: {error}")
+            }
+            Error::NonVolatileMemory(error) => {
+                write!(f, "non-volatile memory read failed: {error}")
+            }
+            Error::PhysicalLayerDeviceInaccessible => {
+                f.write_str("the physical layer device did not answer after the power cycle")
+            }
+            Error::PhysicalLayerDevicePowerCycleBlocked => f.write_str(
+                "the physical layer device did not answer and firmware blocks the power cycle",
+            ),
+            Error::BlockedAfterPhysicalLayerDeviceReset => {
+                f.write_str("firmware began blocking physical layer device access after its reset")
+            }
+            Error::ResetTimeout => f.write_str("the global reset did not self-clear"),
+        }
+    }
+}
+
+impl core::error::Error for Error {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+        match self {
+            Error::PhysicalLayerDevice(error) => Some(error),
+            Error::NonVolatileMemory(error) => Some(error),
+            _ => None,
+        }
+    }
 }
 
 impl From<physical_layer_device::Error> for Error {
@@ -101,6 +136,7 @@ impl From<non_volatile_memory::Error> for Error {
 /// Name: ratified 2026-11-03 (UTC), #3154. Renamed from `Reached`, which did not say what was
 /// reached or by what means; the variants name the paths the PHY was found by.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum AccessPath {
     /// At once: the interconnect was already PCIe.
     Directly,
@@ -111,7 +147,8 @@ pub enum AccessPath {
     #[doc(alias = "smbus")]
     InSystemManagementBus,
     /// After the `LANPHYPC` power cycle.
-    AfterLanphypc,
+    #[doc(alias = "lanphypc")]
+    AfterPhysicalLayerDevicePowerCycle,
     /// After the power cycle and unforcing `SMBus` in the MAC.
     AfterUnforce,
 }
@@ -121,14 +158,17 @@ pub enum AccessPath {
 /// Name: ratified 2026-11-03 (UTC), #3154. Renamed from `Note`, which said nothing about what was
 /// noted or by whom; the bring-up observes, and the bench boot prints.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum BringUpObservation {
     /// The Management Engine was asked to leave ULP; `cleared` says whether it finished in time.
-    UlpByMe {
+    #[doc(alias = "ulp")]
+    ManagementEngineUltraLowPowerExit {
         /// `FWSM.ULP_CFG_DONE` cleared before [`ultra_low_power::MANAGEMENT_ENGINE_WAIT_MILLISECONDS`].
         cleared: bool,
     },
     /// There is no ME; ULP was left by PHY registers, with this outcome.
-    UlpBySoftware(Result<(), Error>),
+    #[doc(alias = "ulp")]
+    SoftwareUltraLowPowerExit(Result<(), Error>),
     /// The PHY answered, with this identifier (revision masked off).
     ///
     /// Name: ratified 2026-11-03 (UTC), #3154. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip)
@@ -156,7 +196,8 @@ pub enum BringUpObservation {
     /// Refused `PhyResetNotAsserted` (an abbreviation).
     PhysicalLayerDeviceResetNotAsserted,
     /// The semaphore could not be taken before the global reset; FreeBSD resets anyway.
-    SwflagBeforeReset(physical_layer_device::Error),
+    #[doc(alias = "swflag")]
+    SoftwareFlagBeforeReset(physical_layer_device::Error),
     /// Master requests were still pending when the reset went ahead.
     MasterRequestsPending,
     /// The NVM's extended configuration region was replayed into the LAN connected device (LCD,
@@ -299,7 +340,7 @@ fn has_management_engine(hardware: &mut impl Hardware) -> bool {
 /// the PHY so it starts from a known state, unless firmware blocks PHY resets: then it skips the
 /// reset, notes [`BringUpObservation::PhysicalLayerDeviceResetBlocked`] and returns the identifier.
 ///
-/// Refuses with [`Error::LanphypcBlocked`] when firmware blocks that power cycle,
+/// Refuses with [`Error::PhysicalLayerDevicePowerCycleBlocked`] when firmware blocks that power cycle,
 /// [`Error::PhysicalLayerDeviceInaccessible`] when the PHY never answers,
 /// [`Error::BlockedAfterPhysicalLayerDeviceReset`] when firmware takes the PHY after its reset,
 /// [`Error::PhysicalLayerDevice`] when the semaphore cannot be taken, and
@@ -337,11 +378,11 @@ pub fn initialize_physical_layer_device_workarounds(
             return Ok(AccessPath::InSystemManagementBus);
         }
         if physical_layer_device::reset_blocked(hardware) {
-            return Err(Error::LanphypcBlocked);
+            return Err(Error::PhysicalLayerDevicePowerCycleBlocked);
         }
         toggle_lanphypc(hardware);
         if accessible(hardware, &f, &mut id) {
-            return Ok(AccessPath::AfterLanphypc);
+            return Ok(AccessPath::AfterPhysicalLayerDevicePowerCycle);
         }
         // Toggling LANPHYPC brings the PHY out of SMBus mode, so take the MAC out too.
         clear(
@@ -398,11 +439,11 @@ fn leave_ulp(hardware: &mut impl Hardware) {
                 ultra_low_power::register_value_releasing_request(h),
             );
         }
-        hardware.note(BringUpObservation::UlpByMe { cleared });
+        hardware.note(BringUpObservation::ManagementEngineUltraLowPowerExit { cleared });
         return;
     }
     let outcome = leave_ulp_by_physical_layer_device(hardware);
-    hardware.note(BringUpObservation::UlpBySoftware(outcome));
+    hardware.note(BringUpObservation::SoftwareUltraLowPowerExit(outcome));
 }
 
 /// The software branch of `e1000_disable_ulp_lpt_lp`.
@@ -694,7 +735,7 @@ pub fn global_reset(
     }
     match SoftwareFlag::acquire(hardware) {
         Ok(f) => f.lost_to_reset(),
-        Err(e) => hardware.note(BringUpObservation::SwflagBeforeReset(e)),
+        Err(e) => hardware.note(BringUpObservation::SoftwareFlagBeforeReset(e)),
     }
     // "Configuration space access creates the needed delay." Written to the read-only STRAP so
     // the read happens before the reset, and again before any MAC access after it.
@@ -1175,7 +1216,7 @@ mod tests {
         );
         assert_eq!(
             hardware.notes,
-            [BringUpObservation::UlpByMe { cleared: false }]
+            [BringUpObservation::ManagementEngineUltraLowPowerExit { cleared: false }]
         );
         assert_eq!(
             hardware.registers[&registers::H2ME],
@@ -1190,7 +1231,7 @@ mod tests {
         assert_eq!(hardware.elapsed_microseconds, 0);
         assert_eq!(
             hardware.notes,
-            [BringUpObservation::UlpByMe { cleared: true }]
+            [BringUpObservation::ManagementEngineUltraLowPowerExit { cleared: true }]
         );
         assert_eq!(
             hardware.written(registers::H2ME),

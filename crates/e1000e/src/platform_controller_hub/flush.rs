@@ -37,8 +37,8 @@ pub(crate) const TRANSMIT_DUMMY_LENGTH: u16 = 512;
 ///
 /// Name: ratified 2026-11-03 (UTC), #3151. Renamed from `required`, a bare adjective; the name now
 /// has the yes-or-no shape of a question.
-pub const fn is_flush_required(status: u16, tdlen: u32) -> bool {
-    status & FLUSH_DESC_REQUIRED != 0 && tdlen != 0
+pub const fn is_flush_required(status: u16, transmit_descriptor_length: u32) -> bool {
+    status & FLUSH_DESC_REQUIRED != 0 && transmit_descriptor_length != 0
 }
 // The 512-byte length and the flag byte at bit 24 share no bit, so | and ^ compose them
 // identically; the compiler checks that here, so the word's
@@ -63,8 +63,8 @@ pub const fn dummy_transmit_descriptor_command_word() -> u64 {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3151. Renamed from `tail_after`, which did not say after what;
 /// it is the tail after the dummy transmit.
-pub const fn tail_after_dummy_transmit(tdt: u32, entries: u16) -> u32 {
-    (tdt + 1) % entries as u32
+pub const fn tail_after_dummy_transmit(transmit_descriptor_tail: u32, entries: u16) -> u32 {
+    (transmit_descriptor_tail + 1) % entries as u32
 }
 // The mask clears the register's low half, 0x1f and 1 << 8 land in that cleared half, and the two
 // small constants and 0x0100_0000 share no bits with each other, so in the OR chain every swapped
@@ -111,6 +111,7 @@ pub trait FlushSupport {
 /// Name: ratified 2026-11-05 (UTC). Renamed from `Outcome`: the name says what the function
 /// reports, which rings it emptied. The variants keep their names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum EmptiedRings {
     /// The device did not ask for a flush, or the transmit ring has no length.
     NotRequired,

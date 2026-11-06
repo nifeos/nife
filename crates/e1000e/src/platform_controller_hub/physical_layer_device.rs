@@ -60,6 +60,7 @@ use super::Hardware;
 ///
 /// Name: ratified 2026-11-03 (UTC), #3153. An ordinary name, as in the sibling modules.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Error {
     /// `MDIC.READY` never rose: nothing answered on the management bus.
     NotReady,
@@ -73,15 +74,36 @@ pub enum Error {
     /// The register number is wider than MDIO's five bits.
     OutOfRange,
     /// Someone else's `EXTCNF_CTRL.SWFLAG` stayed set for [`SOFTWARE_FLAG_FREE_MILLISECONDS`].
-    SwflagHeld,
+    #[doc(alias = "swflag")]
+    SoftwareFlagHeld,
     /// The flag would not stick for [`SOFTWARE_FLAG_TAKE_MILLISECONDS`]: firmware or hardware has the PHY.
-    SwflagRefused,
+    #[doc(alias = "swflag")]
+    SoftwareFlagRefused,
     /// A page this port refuses (the module header).
     PageNotPorted,
 }
 
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            Error::NotReady => "nothing answered on the management data input output bus",
+            Error::ManagementDataInterface => {
+                "the management data interface refused the transaction"
+            }
+            Error::WrongRegister => "the transaction completed for a different register",
+            Error::OutOfRange => "the register number is wider than five bits",
+            Error::SoftwareFlagHeld => "another agent holds the software flag",
+            Error::SoftwareFlagRefused => "the software flag would not stick",
+            Error::PageNotPorted => "the page is not ported",
+        })
+    }
+}
+
+impl core::error::Error for Error {}
+
 /// `MDIC` register bits, from FreeBSD's `e1000_defines.h`.
-pub mod mdic {
+#[doc(alias = "mdic")]
+pub mod management_data_interface_control {
     /// The register field's shift.
     pub(crate) const REG_SHIFT: u32 = 16;
     /// The register field.
@@ -260,9 +282,9 @@ pub fn read_management_data_input_output(
     }
     hardware.write(
         super::registers::MDIC,
-        register << mdic::REG_SHIFT
-            | physical_layer_device_address << mdic::PHY_SHIFT
-            | mdic::OP_READ,
+        register << management_data_interface_control::REG_SHIFT
+            | physical_layer_device_address << management_data_interface_control::PHY_SHIFT
+            | management_data_interface_control::OP_READ,
     );
     complete(hardware, register).map(|v| v as u16)
 }
@@ -286,9 +308,9 @@ pub fn write_management_data_input_output(
     hardware.write(
         super::registers::MDIC,
         u32::from(data)
-            | register << mdic::REG_SHIFT
-            | physical_layer_device_address << mdic::PHY_SHIFT
-            | mdic::OP_WRITE,
+            | register << management_data_interface_control::REG_SHIFT
+            | physical_layer_device_address << management_data_interface_control::PHY_SHIFT
+            | management_data_interface_control::OP_WRITE,
     );
     complete(hardware, register).map(|_| ())
 }
@@ -296,18 +318,25 @@ pub fn write_management_data_input_output(
 /// Poll `MDIC` for the transaction's end and judge it, the half both FreeBSD functions share.
 fn complete(hardware: &mut impl Hardware, register: u32) -> Result<u32, Error> {
     let mut v = 0;
-    for _ in 0..mdic::POLLS {
-        hardware.delay_microseconds(mdic::POLL_MICROSECONDS);
+    for _ in 0..management_data_interface_control::POLLS {
+        hardware.delay_microseconds(management_data_interface_control::POLL_MICROSECONDS);
         v = hardware.read(super::registers::MDIC);
-        if v & mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY != 0 {
+        if v & management_data_interface_control::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY
+            != 0
+        {
             break;
         }
     }
-    if v & mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY == 0 {
+    if v & management_data_interface_control::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY == 0 {
         Err(Error::NotReady)
-    } else if v & mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_ERROR != 0 {
+    } else if v & management_data_interface_control::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_ERROR
+        != 0
+    {
         Err(Error::ManagementDataInterface)
-    } else if (v & mdic::REG_MASK) >> mdic::REG_SHIFT != register {
+    } else if (v & management_data_interface_control::REG_MASK)
+        >> management_data_interface_control::REG_SHIFT
+        != register
+    {
         Err(Error::WrongRegister)
     } else {
         Ok(v)
@@ -343,7 +372,7 @@ impl SoftwareFlag {
             hardware.delay_microseconds(1000);
         }
         if !free {
-            return Err(Error::SwflagHeld);
+            return Err(Error::SoftwareFlagHeld);
         }
         ext |= EXTCNF_CTRL_SWFLAG;
         hardware.write(super::registers::EXTCNF_CTRL, ext);
@@ -355,7 +384,7 @@ impl SoftwareFlag {
             hardware.delay_microseconds(1000);
         }
         hardware.write(super::registers::EXTCNF_CTRL, ext & !EXTCNF_CTRL_SWFLAG);
-        Err(Error::SwflagRefused)
+        Err(Error::SoftwareFlagRefused)
     }
 
     /// `e1000_release_swflag_ich8lan`. Clears the bit only if it is still set; FreeBSD logs the
@@ -383,6 +412,7 @@ pub(crate) const fn address_for(page: u32) -> u32 {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3153. Renamed from `Plan`, which did not say what is planned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct PagedAccessPlan {
     /// `Some(value)` when the page-select register is written first (at PHY address 1).
     pub select: Option<u16>,

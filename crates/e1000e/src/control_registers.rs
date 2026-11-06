@@ -130,12 +130,15 @@ pub const fn transmit_inter_packet_gap_register_value() -> u32 {
 /// `mac_from_receive_address` (`mac` names the controller, not the address).
 #[doc(alias = "mac")]
 #[doc(alias = "mac_address")]
-pub fn station_address_from_receive_address(ral: u32, rah: u32) -> Option<[u8; 6]> {
-    if rah & RECEIVE_ADDRESS_HIGH_ADDRESS_VALID == 0 {
+pub fn station_address_from_receive_address(
+    receive_address_low: u32,
+    receive_address_high: u32,
+) -> Option<[u8; 6]> {
+    if receive_address_high & RECEIVE_ADDRESS_HIGH_ADDRESS_VALID == 0 {
         return None;
     }
-    let l = ral.to_le_bytes();
-    let h = rah.to_le_bytes();
+    let l = receive_address_low.to_le_bytes();
+    let h = receive_address_high.to_le_bytes();
     let station_address = [l[0], l[1], l[2], l[3], h[0], h[1]];
     // All zeros, or a group address, is not an address a station can own.
     (station_address != [0; 6] && station_address[0] & 1 == 0).then_some(station_address)
