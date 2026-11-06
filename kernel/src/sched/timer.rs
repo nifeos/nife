@@ -33,7 +33,7 @@ pub(super) static EARLIEST_DEADLINE: AtomicU64 =
 /// The timer behind a name, or `None` if it no longer resolves. Caller holds `IPC_TABLES`; the
 /// `'static` is [`notification_of`]'s.
 pub(super) fn timer_of(sched: &IpcTables, id: TimerId) -> Option<&'static mut TimerPage> {
-    let phys = *sched.timer_table.get(id)?;
+    let phys = *sched.timer_table.get(timer_entry(id))?;
     // SAFETY: retyped exclusively for this timer, its region pinned while the name resolves,
     // direct-mapped, and serialized by IPC_TABLES, which every caller holds.
     Some(unsafe { &mut *(crate::arch::mmu::phys_to_virt(phys) as *mut TimerPage) })
@@ -55,7 +55,10 @@ pub fn create_timer_from(region: u64) -> Option<TimerId> {
             state: inter_process_communication::timer::Timer::new(),
         });
     }
-    sched.timer_table.insert_with(|_| phys)
+    sched
+        .timer_table
+        .insert_with(|_| phys)
+        .map(EntryName::to_bits)
 }
 
 /// **`Timer::ARM`**: arm `id` to signal `bits` into `notification` at `deadline` (counter ticks),

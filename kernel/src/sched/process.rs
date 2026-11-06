@@ -12,7 +12,7 @@
 
 use super::{
     Binder, IPC_TABLES, IpcTables, RendezvousId, State, Thread, ThreadId, deliver_death,
-    finish_blocked_resident,
+    finish_blocked_resident, process_entry,
 };
 use crate::thread::CapabilityTableLock;
 use crate::user::{BoundSpace, Holder};
@@ -63,7 +63,7 @@ fn table_at(phys: u64) -> *const CapabilityTableLock {
 }
 
 fn process_of(sched: &IpcTables, pid: ProcessId) -> Option<&'static mut ProcessPage> {
-    let phys = *sched.processes.get(pid)?;
+    let phys = *sched.processes.get(process_entry(pid))?;
     // SAFETY: retyped exclusively for this process, its region pinned while the name resolves,
     // direct-mapped, and serialized by IPC_TABLES, which every caller holds.
     Some(unsafe { &mut *page_at(phys) })
@@ -102,7 +102,8 @@ pub fn create_process_from(region: u64, space: u64) -> Result<ProcessId, abi::Er
         let pid = sched
             .processes
             .insert_with(|_| phys)
-            .ok_or(abi::Error::OutOfMemory)?;
+            .ok_or(abi::Error::OutOfMemory)?
+            .to_bits();
         created = Some(pid);
         Ok(Holder::Process(pid))
     })?;
@@ -123,7 +124,10 @@ pub(super) fn join(
     tid: ThreadId,
     pid: ProcessId,
 ) -> Result<BoundSpace, abi::Error> {
-    let phys = *sched.processes.get(pid).ok_or(abi::Error::Gone)?;
+    let phys = *sched
+        .processes
+        .get(process_entry(pid))
+        .ok_or(abi::Error::Gone)?;
     let process = process_of(sched, pid).ok_or(abi::Error::Gone)?;
     let (false, Some(space)) = (process.ended, process.space) else {
         return Err(abi::Error::Gone);
@@ -474,7 +478,8 @@ pub(super) fn reap_region(sched: &mut IpcTables, base: u64, end_: u64) {
     // End each one still live. `end` marks it ended, so each is found once.
     loop {
         let live = sched.processes.iter().find_map(|(pid, &phys)| {
-            (doomed(phys) && process_of(sched, pid).is_some_and(|p| !p.ended)).then_some(pid)
+            (doomed(phys) && process_of(sched, pid.to_bits()).is_some_and(|p| !p.ended))
+                .then_some(pid.to_bits())
         });
         let Some(pid) = live else { break };
         end(
@@ -494,7 +499,7 @@ pub(super) fn reap_region(sched: &mut IpcTables, base: u64, end_: u64) {
             .find(|t| {
                 t.handshake.state == State::Embryo
                     && t.process
-                        .and_then(|pid| processes.get(pid))
+                        .and_then(|pid| processes.get(process_entry(pid)))
                         .is_some_and(|&phys| doomed(phys))
             })
             .map(|t| t.id);
@@ -519,7 +524,8 @@ pub(super) fn forget_empty(sched: &mut IpcTables, base: u64, end_: u64) -> Resul
     let doomed = |phys: u64| base <= phys && phys < end_;
     loop {
         let empty = sched.processes.iter().find_map(|(pid, &phys)| {
-            (doomed(phys) && process_of(sched, pid).is_some_and(|p| p.members == 0)).then_some(pid)
+            (doomed(phys) && process_of(sched, pid.to_bits()).is_some_and(|p| p.members == 0))
+                .then_some(pid)
         });
         let Some(pid) = empty else { break };
         sched.processes.remove(pid);

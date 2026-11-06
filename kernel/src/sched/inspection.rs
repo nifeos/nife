@@ -198,10 +198,13 @@ pub fn object_page(object: &Object) -> Option<u64> {
     let guard = IPC_TABLES.lock();
     let sched = guard.as_ref()?;
     match *object {
-        Object::Rendezvous(id, _) => sched.rendezvous_table.get(id).copied(),
-        Object::Notification(id) => sched.notification_table.get(id).copied(),
-        Object::Timer(id) => sched.timer_table.get(id).copied(),
-        Object::Process(pid) => sched.processes.get(pid).copied(),
+        Object::Rendezvous(id, _) => sched.rendezvous_table.get(rendezvous_entry(id)).copied(),
+        Object::Notification(id) => sched
+            .notification_table
+            .get(notification_entry(id))
+            .copied(),
+        Object::Timer(id) => sched.timer_table.get(timer_entry(id)).copied(),
+        Object::Process(pid) => sched.processes.get(process_entry(pid)).copied(),
         Object::ThreadControlBlock(tid) => sched
             .threads
             .get(tid)
@@ -454,7 +457,10 @@ pub fn dump_threads() {
         let ep = unsafe { &*(crate::arch::mmu::phys_to_virt(phys) as *const Rendezvous) };
         let (ns, nr, np) = ep.debug_counts();
         if ns != 0 || nr != 0 || np != 0 {
-            crate::println!("  ep={name:#06x} senders={ns} receivers={nr} pending={np}");
+            crate::println!(
+                "  ep={:#06x} senders={ns} receivers={nr} pending={np}",
+                name.to_bits()
+            );
         }
     }
     // Notifications with a waiter or a pending word.
@@ -464,7 +470,8 @@ pub fn dump_threads() {
         let (waiters, word) = n.state.debug_counts();
         if waiters != 0 || word != 0 {
             crate::println!(
-                "  notification={name:#06x} waiters={waiters} word={word:#x} bound={:?}",
+                "  notification={:#06x} waiters={waiters} word={word:#x} bound={:?}",
+                name.to_bits(),
                 n.bound
             );
         }

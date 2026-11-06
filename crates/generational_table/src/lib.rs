@@ -1,6 +1,8 @@
-//! A fixed-capacity generational table: names that die with what they named. A name packs
-//! `(generation, slot)` into one `u64`; a removal bumps the slot's generation, so a stale name is
-//! `None` forever, slot reused or not (proved below). Slots are reused, so the table stays a fixed
+//! A fixed-capacity generational table: names that die with what they named. A name is an
+//! [`EntryName<T>`], which packs `(generation, slot)` into one `u64` and carries the table's entry
+//! type, so a name minted by a table of one entry type cannot be handed to a table of another. A
+//! removal bumps the slot's generation, so a stale name is `None` forever, slot reused or not
+//! (proved below). Slots are reused, so the table stays a fixed
 //! array, while names behave as if they never were: a stale name is not a dangling reference and
 //! not somebody else's entry; it is `None`. Game engines call the same shape a slotmap.
 //!
@@ -19,10 +21,115 @@
 #![cfg_attr(not(test), no_std)]
 #![forbid(unsafe_code)]
 
-/// A fixed-capacity table whose entries are named by `(generation, slot)` packed in a `u64`,
-/// generation in the high 32 bits and slot in the low 32. A fresh table's first insert is named
-/// `0`, and with any `N` below 2^32 no name equals `u64::MAX`, so a caller may use `u64::MAX` as a
-/// "no entry" sentinel.
+use core::fmt;
+use core::marker::PhantomData;
+
+/// The name of an entry in a [`Table`] whose entries are of type `T`: `(generation, slot)` packed
+/// in one `u64`, generation in the high 32 bits and slot in the low 32.
+///
+/// The type parameter is the whole point. Two tables of different entry types mint names of
+/// different types, so the compiler refuses a name from one where the other's is expected. Two
+/// tables of the *same* entry type share a name type; a caller that keeps two such tables apart
+/// gives each its own entry type (a one-field wrapper is enough).
+///
+/// `T` is only a tag. The name holds no `T` and needs nothing of it: `Copy`, `Clone`, `PartialEq`,
+/// `Eq` and `Debug` hold for every `T`, implemented by hand because a derive would demand them of
+/// `T`, and `Send` and `Sync` hold for every `T` because the marker is `PhantomData<fn() -> T>`.
+///
+/// [`from_bits`](Self::from_bits) and [`to_bits`](Self::to_bits) cross a boundary that carries a
+/// plain word, such as a syscall register. `from_bits` is total: any `u64` makes a name, and a
+/// name the table never minted resolves to nothing, which
+/// `a_name_the_table_never_minted_resolves_to_nothing` proves. So a name is a claim the table
+/// checks at every use, never a reference it trusts.
+///
+/// A fresh table's first insert is named `from_bits(0)`. No table ever mints
+/// [`NEVER_MINTED`](Self::NEVER_MINTED), so a caller may store it as "no entry".
+///
+/// See notes/generational-names.md.
+///
+/// ```compile_fail,E0308
+/// use generational_table::Table;
+///
+/// let mut threads: Table<&str, 4> = Table::new();
+/// let mut counts: Table<u32, 4> = Table::new();
+/// let thread = threads.insert_with(|_| "boot").unwrap();
+/// // A thread's name is not a count's name: this does not compile.
+/// counts.get(thread);
+/// ```
+///
+/// Name: ratified 2026-11-06 (UTC). Considered: `Name`, which collides with every other meaning
+/// of "name" in a reader's head; `Key`, which slotmap uses and which says nothing about the entry.
+#[doc(alias = "generational index")]
+#[doc(alias = "slotmap key")]
+pub struct EntryName<T> {
+    bits: u64,
+    entry: PhantomData<fn() -> T>,
+}
+
+impl<T> EntryName<T> {
+    /// The name no table mints, for a caller that stores "no entry" in a name-sized field.
+    ///
+    /// It is `u64::MAX`, so its generation is `u32::MAX`. A slot at that generation is retired
+    /// and never filled again, so no live entry carries it; and its slot is `u32::MAX`, which no
+    /// table has, because [`Table::new`] refuses `N` above `u32::MAX`. Either fact alone keeps it
+    /// unminted.
+    ///
+    /// Name: provisional. Considered: `NONE`, which reads as `Option::None` and invites a match
+    /// on it; `INVALID`, which it is not, since resolving it is well defined and answers `None`.
+    pub const NEVER_MINTED: Self = Self::from_bits(u64::MAX);
+
+    /// The packed word, for a boundary that carries a plain `u64`: a syscall register, an atomic.
+    /// [`from_bits`](Self::from_bits) of the result is this name again.
+    ///
+    /// Name: provisional. The standard library's spelling for a lossless conversion to a word
+    /// (`f64::to_bits`), kept because the standard library's name is the one a reader already
+    /// knows.
+    pub const fn to_bits(self) -> u64 {
+        self.bits
+    }
+
+    /// The name a packed word spells. Total: every `u64` is a name, and one the table never
+    /// minted resolves to nothing.
+    ///
+    /// Name: provisional. The standard library's spelling (`f64::from_bits`), kept because the
+    /// standard library's name is the one a reader already knows.
+    pub const fn from_bits(bits: u64) -> Self {
+        Self {
+            bits,
+            entry: PhantomData,
+        }
+    }
+}
+
+impl<T> Clone for EntryName<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T> Copy for EntryName<T> {}
+
+impl<T> PartialEq for EntryName<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.bits == other.bits
+    }
+}
+
+impl<T> Eq for EntryName<T> {}
+
+/// Prints the generation and the slot, the two things a reader of a name wants.
+impl<T> fmt::Debug for EntryName<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "EntryName {{ generation: {}, slot: {} }}",
+            self.bits >> 32,
+            self.bits & 0xffff_ffff
+        )
+    }
+}
+
+/// A fixed-capacity table whose entries are named by [`EntryName<T>`].
 ///
 /// # Examples
 ///
@@ -83,12 +190,13 @@ impl<T, const N: usize> Table<T, N> {
     /// name is ever minted with this generation and a removed name can never come back.
     const RETIRED: u32 = u32::MAX;
 
-    const fn name(slot: usize, generation: u32) -> u64 {
-        ((generation as u64) << 32) | slot as u64
+    const fn name(slot: usize, generation: u32) -> EntryName<T> {
+        EntryName::from_bits(((generation as u64) << 32) | slot as u64)
     }
 
-    const fn unpack(name: u64) -> (usize, u32) {
-        ((name & 0xffff_ffff) as usize, (name >> 32) as u32)
+    const fn unpack(name: EntryName<T>) -> (usize, u32) {
+        let bits = name.to_bits();
+        ((bits & 0xffff_ffff) as usize, (bits >> 32) as u32)
     }
 
     /// Insert, minting the entry's name first so the entry can carry it: `f` receives the name
@@ -109,7 +217,7 @@ impl<T, const N: usize> Table<T, N> {
     /// ```
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
-    pub fn insert_with(&mut self, f: impl FnOnce(u64) -> T) -> Option<u64> {
+    pub fn insert_with(&mut self, f: impl FnOnce(EntryName<T>) -> T) -> Option<EntryName<T>> {
         let slot = self
             .slots
             .iter()
@@ -132,7 +240,7 @@ impl<T, const N: usize> Table<T, N> {
     /// that proves a stale name never resolves proves it for `slot_of` too.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
-    pub fn slot_of(&self, name: u64) -> Option<usize> {
+    pub fn slot_of(&self, name: EntryName<T>) -> Option<usize> {
         let (slot, generation) = Self::unpack(name);
         if *self.gens.get(slot)? != generation {
             return None;
@@ -145,7 +253,7 @@ impl<T, const N: usize> Table<T, N> {
     /// a previous occupant of the slot, or garbage. Never the wrong entry.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
-    pub fn get(&self, name: u64) -> Option<&T> {
+    pub fn get(&self, name: EntryName<T>) -> Option<&T> {
         let slot = self.slot_of(name)?;
         self.slots[slot].as_ref()
     }
@@ -153,7 +261,7 @@ impl<T, const N: usize> Table<T, N> {
     /// [`get`](Self::get), mutably.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because the standard library's name is the one a reader already knows.
-    pub fn get_mut(&mut self, name: u64) -> Option<&mut T> {
+    pub fn get_mut(&mut self, name: EntryName<T>) -> Option<&mut T> {
         let slot = self.slot_of(name)?;
         self.slots[slot].as_mut()
     }
@@ -163,7 +271,7 @@ impl<T, const N: usize> Table<T, N> {
     /// the occupant at `RETIRED - 1` leaves its slot retired rather than wrapping it to 0.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
-    pub fn remove(&mut self, name: u64) -> Option<T> {
+    pub fn remove(&mut self, name: EntryName<T>) -> Option<T> {
         let slot = self.slot_of(name)?;
         let value = self.slots[slot].take()?;
         self.gens[slot] = self.gens[slot].saturating_add(1);
@@ -236,7 +344,7 @@ impl<T, const N: usize> Table<T, N> {
     /// only needs the entry, as when each entry carries its own name.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because the standard library's name is the one a reader already knows.
-    pub fn iter(&self) -> impl Iterator<Item = (u64, &T)> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = (EntryName<T>, &T)> + '_ {
         self.iter_from(0).map(|(_, name, t)| (name, t))
     }
 
@@ -270,7 +378,7 @@ impl<T, const N: usize> Table<T, N> {
     /// ```
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119.
-    pub fn iter_from(&self, from: usize) -> impl Iterator<Item = (usize, u64, &T)> + '_ {
+    pub fn iter_from(&self, from: usize) -> impl Iterator<Item = (usize, EntryName<T>, &T)> + '_ {
         self.slots[..self.top]
             .iter()
             .enumerate()
@@ -347,7 +455,7 @@ mod verification {
         if kani::any() {
             let _ = t.insert_with(|_| kani::any());
         } else {
-            let _ = t.remove(kani::any());
+            let _ = t.remove(EntryName::from_bits(kani::any()));
         }
     }
 
@@ -400,8 +508,8 @@ mod verification {
         assert_eq!(t.get(b).copied(), Some(b_val));
     }
 
-    /// A garbage name resolves to nothing. For any u64 whatsoever, resolution either fails
-    /// or lands on an entry whose minted name is exactly that u64: there is no input that
+    /// A garbage name resolves to nothing. For any u64 whatsoever, the name `from_bits` makes of it
+    /// either fails to resolve or is exactly the name the table minted: there is no input that
     /// reaches an entry through a name the table never issued. (A name may arrive from an untrusted
     /// caller; this is the "cannot forge" claim for names.)
     /// Falsification: replayable `crates/generational_table/falsifications/verification.a_name_the_table_never_minted_resolves_to_nothing.patch`
@@ -409,7 +517,7 @@ mod verification {
     fn a_name_the_table_never_minted_resolves_to_nothing() {
         let mut t: Table<u8, 2> = Table::new();
         let minted = t.insert_with(|_| kani::any());
-        let probe: u64 = kani::any();
+        let probe = EntryName::from_bits(kani::any());
         if t.get(probe).is_some() {
             assert_eq!(Some(probe), minted);
         }
@@ -455,16 +563,16 @@ mod tests {
     #[test]
     fn the_first_name_is_zero() {
         let mut t: Table<&str, 8> = Table::new();
-        assert_eq!(t.insert_with(|_| "boot"), Some(0));
-        assert_eq!(t.get(0), Some(&"boot"));
+        assert_eq!(t.insert_with(|_| "boot"), Some(EntryName::from_bits(0)));
+        assert_eq!(t.get(EntryName::from_bits(0)), Some(&"boot"));
     }
 
     /// The entry can carry its own name, which is how a Thread learns its `ThreadId`.
     #[test]
     fn the_entry_is_handed_its_name() {
         let mut t: Table<u64, 8> = Table::new();
-        let name = t.insert_with(|n| n).unwrap();
-        assert_eq!(t.get(name), Some(&name));
+        let name = t.insert_with(|n| n.to_bits()).unwrap();
+        assert_eq!(t.get(name), Some(&name.to_bits()));
     }
 
     /// `iter` yields each live entry paired with the very name that resolves to it, and skips the
@@ -628,17 +736,21 @@ mod tests {
         t.gens[0] = Table::<u32, 2>::RETIRED - 1;
         let last = t.insert_with(|_| 1).unwrap();
         assert_eq!(
-            last,
+            last.to_bits(),
             (u64::from(u32::MAX - 1) << 32),
             "slot 0 is still filled first"
         );
         assert_eq!(t.remove(last), Some(1));
 
         let next = t.insert_with(|_| 2).unwrap();
-        assert_eq!(next & 0xffff_ffff, 1, "a retired slot was filled again");
+        assert_eq!(
+            next.to_bits() & 0xffff_ffff,
+            1,
+            "a retired slot was filled again"
+        );
         assert_eq!(t.get(last), None);
         assert_eq!(
-            t.get(u64::from(u32::MAX) << 32),
+            t.get(EntryName::from_bits(u64::from(u32::MAX) << 32)),
             None,
             "no name carries the retired generation"
         );
@@ -663,9 +775,44 @@ mod tests {
     fn garbage_names_are_none() {
         let mut t: Table<u32, 2> = Table::new();
         t.insert_with(|_| 7).unwrap();
-        assert_eq!(t.get(1), None); // valid slot, nothing there
-        assert_eq!(t.get(99), None); // no such slot
-        assert_eq!(t.get(1 << 32), None); // slot 0, wrong generation
-        assert_eq!(t.get(u64::MAX), None); // the NO_TID sentinel never resolves
+        assert_eq!(t.get(EntryName::from_bits(1)), None); // valid slot, nothing there
+        assert_eq!(t.get(EntryName::from_bits(99)), None); // no such slot
+        assert_eq!(t.get(EntryName::from_bits(1 << 32)), None); // slot 0, wrong generation
+        assert_eq!(t.get(EntryName::NEVER_MINTED), None);
+    }
+
+    /// A word survives the trip through a name unchanged, so a boundary that carries plain words
+    /// (a syscall register, an atomic) loses nothing by converting at its edge.
+    #[test]
+    fn a_name_round_trips_through_its_bits() {
+        let mut t: Table<u32, 4> = Table::new();
+        t.insert_with(|_| 1).unwrap();
+        let name = t.insert_with(|_| 2).unwrap();
+        assert_eq!(EntryName::<u32>::from_bits(name.to_bits()), name);
+        assert_eq!(t.get(EntryName::from_bits(name.to_bits())), Some(&2));
+        assert_eq!(EntryName::<u32>::NEVER_MINTED.to_bits(), u64::MAX);
+    }
+
+    /// The sentinel stays unminted even when every slot is driven to its last generation: the slot
+    /// a name would need is past any table, and the generation it carries is the retired one.
+    #[test]
+    fn no_table_mints_the_never_minted_name() {
+        let mut t: Table<u32, 2> = Table::new();
+        t.gens = [Table::<u32, 2>::RETIRED - 1; 2];
+        let a = t.insert_with(|_| 1).unwrap();
+        let b = t.insert_with(|_| 2).unwrap();
+        assert_ne!(a, EntryName::NEVER_MINTED);
+        assert_ne!(b, EntryName::NEVER_MINTED);
+        t.remove(a);
+        t.remove(b);
+        assert_eq!(t.insert_with(|_| 3), None, "both slots retired");
+    }
+
+    /// A name prints as its generation and slot, and needs nothing of the entry type to do so.
+    #[test]
+    fn a_name_prints_its_generation_and_slot() {
+        struct NotDebug;
+        let name = EntryName::<NotDebug>::from_bits((3 << 32) | 5);
+        assert_eq!(format!("{name:?}"), "EntryName { generation: 3, slot: 5 }");
     }
 }

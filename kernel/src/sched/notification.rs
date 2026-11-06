@@ -34,7 +34,7 @@ pub(super) fn notification_of(
     sched: &IpcTables,
     id: NotificationId,
 ) -> Option<&'static mut NotificationPage> {
-    let phys = *sched.notification_table.get(id)?;
+    let phys = *sched.notification_table.get(notification_entry(id))?;
     // SAFETY: retyped exclusively for this notification, its region pinned while the name
     // resolves, direct-mapped, and serialized by IPC_TABLES, which every caller holds.
     Some(unsafe { &mut *(crate::arch::mmu::phys_to_virt(phys) as *mut NotificationPage) })
@@ -62,7 +62,10 @@ pub fn create_notification_from(region: u64) -> Option<NotificationId> {
         });
     }
     // Cannot fail: capacity was checked above under this same lock hold.
-    sched.notification_table.insert_with(|_| phys)
+    sched
+        .notification_table
+        .insert_with(|_| phys)
+        .map(EntryName::to_bits)
 }
 
 /// The mailbox of a receive the bound notification ended, `(BOUND, word, 0, 0, BOUND)`: §101's
@@ -337,7 +340,7 @@ pub(super) fn reap_region_notifications(sched: &mut IpcTables, base: u64, end: u
             .find(|&(_, &phys)| base <= phys && phys < end)
             .map(|(name, _)| name);
         let Some(name) = doomed else { break };
-        if let Some(page) = notification_of(sched, name) {
+        if let Some(page) = notification_of(sched, name.to_bits()) {
             page.state.drain_waiters(|w| {
                 let tid = hold_token(w);
                 set_ipc_aborted(sched, tid);
