@@ -232,10 +232,9 @@ The counts follow table occupancy, not creations:
 
 - `Threads::remove` releases a thread when its slot frees at the reap.
 - `AddressSpace::drop` releases a lent address space.
-- Rendezvous, notifications, timers and processes leave their tables only when their region is
-  reclaimed, so `claim_for_destroy` gives their counts back in the same borrow that removes the
-  region.
-- An insert refused after its page was retyped releases the count it took.
+- Rendezvous, notifications, timers and processes leave their tables only when `claim_for_destroy`
+  reclaims their region, and it gives their counts back in the same borrow that removes the region.
+- An insert that fails after the region gave up its page releases the count it took.
 
 `memory_region::progenitor_ceilings` builds the progenitor's budget: every table's capacity less
 an eighth the kernel keeps, written in the `MAXIMUM_*` constants so the ceilings follow a resize.
@@ -247,8 +246,8 @@ gives every count back. `subtree_ceiling_tests` fills a region to every ceiling 
 
 Prior art. Linux bounds threads per cgroup with the `pids` controller and per user with
 `RLIMIT_NPROC`; both are per-group counters checked at creation, the shape used here. seL4 has no
-global object tables, so memory is its only budget. nife sits between them: its tables are fixed,
-so a subtree needs a count beside its pages.
+global object tables, so memory is its only budget. nife sits between them: its tables have fixed
+sizes, so a subtree needs a count beside its pages.
 
 Limits that remain:
 
