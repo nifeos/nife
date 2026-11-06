@@ -13,10 +13,10 @@ index 7cc680a83..58d9fa9ad 100644
  /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `TRNG_BRING_UP` (it names the block for its
  /// abbreviation; the sequence brings up the entropy source).
  pub const ENTROPY_BRING_UP: &[Step] = &[
-+    Step::DeassertReset(STGRST_SEC_AHB),
++    Step::DeassertReset(SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS),
      Step::EnableClock(STGCLK_SEC_AHB),
      Step::EnableClock(STGCLK_SEC_MISC_AHB),
--    Step::DeassertReset(STGRST_SEC_AHB),
+-    Step::DeassertReset(SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS),
  ];
  
  /// `JH7110_STGCLK_SEC_AHB` \[mainline-ids\]; the vendor tree's `JH7110_SEC_HCLK` (205) rebased on

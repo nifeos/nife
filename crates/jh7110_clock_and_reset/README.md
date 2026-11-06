@@ -89,7 +89,7 @@ it".
 ## Limitations
 
 - None of the bring-up has been confirmed on silicon end to end.
-- The reset `STGRST_SEC_AHB` is shared with the DMA engine, so the crate offers no assert.
+- The reset `SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS` is shared with the DMA engine, so the crate offers no assert.
 - Only the STG, AON and SYS domains are described, each only as far as a device needed it.
 
 Minimum Rust version: 1.88.

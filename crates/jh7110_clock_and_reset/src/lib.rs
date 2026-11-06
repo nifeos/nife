@@ -145,7 +145,7 @@ pub const fn with_parent(word: u32, parent: u32) -> u32 {
 pub const ENTROPY_BRING_UP: &[Step] = &[
     Step::EnableClock(STGCLK_SEC_AHB),
     Step::EnableClock(STGCLK_SEC_MISC_AHB),
-    Step::DeassertReset(STGRST_SEC_AHB),
+    Step::DeassertReset(SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS),
 ];
 
 /// `JH7110_STGCLK_SEC_AHB` \[mainline-ids\]; the vendor tree's `JH7110_SEC_HCLK` (205) rebased on
@@ -165,8 +165,10 @@ pub(crate) const STGCLK_SEC_MISC_AHB: u32 = 16;
 /// security top block, the PL080 DMA at `0x1600_8000` included. Deasserting it is safe; asserting
 /// it would reset a neighbour, which is why nothing in this crate offers an assert.
 ///
-/// Name: ratified 2026-10-26 (UTC).
-pub const STGRST_SEC_AHB: u32 = 3;
+/// Name: ratified 2026-11-05 (UTC), #3279.
+#[doc(alias = "STGRST_SEC_AHB")]
+#[doc(alias = "JH7110_STGRST_SEC_AHB")]
+pub const SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 3;
 
 /// **The AON (always-on) domain**, where `gmac0`'s bus clocks, its transmit clock mux and both
 /// of its resets live.
@@ -746,43 +748,52 @@ impl DevicePlan {
 
 /// The SYS **syscon** window, `0x1303_0000`: where the PLL control words live, distinct from
 /// [`SYSTEM_BASE`]'s CRG window the clock words live in. Vendor `jh7110-regs.h` of the pinned tree
-/// (`SYS_SYSCON_BASE 0x13030000`, `SYS_CRG_BASE 0x13020000`, fetched 2026-10-10), which resolves
+/// (`SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS 0x13030000`, `SYS_CRG_BASE 0x13020000`, fetched 2026-10-10), which resolves
 /// what looked like an overlap between the PLL words at `0x2c..0x34` and the early clock words:
 /// different windows, same offsets. The name is that header's macro, kept as copied; SYS is the
 /// chip's abbreviation for [`SYSTEM`], and syscon is its system-controller block.
 ///
-/// Name: ratified 2026-10-26 (UTC).
+/// Name: ratified 2026-11-05 (UTC), #3279.
 #[doc(alias = "system syscon")]
-pub const SYS_SYSCON_BASE: u64 = 0x1303_0000;
+#[doc(alias = "syscon")]
+pub const SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS: u64 = 0x1303_0000;
 
 /// The SYS syscon window's size, matching the CRG window's. The name follows
-/// [`SYS_SYSCON_BASE`]'s.
+/// [`SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS`]'s.
 ///
-/// Name: ratified 2026-10-26 (UTC).
-pub const SYS_SYSCON_SIZE: u64 = 0x1_0000;
+/// Name: ratified 2026-11-05 (UTC), #3279.
+pub const SYSTEM_CONTROLLER_SIZE_BYTES: u64 = 0x1_0000;
 
 /// `JH7110_BUS_ROOT` in the vendor header radon's U-Boot builds from, **5**. Word `0x14`: a mux
 /// whose bit 24 picks `osc` (0) or `pll2_out` (1), per the vendor clock driver's registration
 /// (`bus_root_sels`, `starfive_clk_mux(..., SYS_OFFSET(JH7110_BUS_ROOT), 1, ...)`).
 ///
-/// Name: ratified 2026-10-26 (UTC).
-pub const SYSCLK_BUS_ROOT: u32 = 5;
+/// Name: ratified 2026-11-05 (UTC), #3279.
+#[doc(alias = "SYSCLK_BUS_ROOT")]
+#[doc(alias = "JH7110_SYSCLK_BUS_ROOT")]
+pub const SYSTEM_CLOCK_BUS_ROOT: u32 = 5;
 
 /// `JH7110_AXI_CFG0`, **7**. Word `0x1c`: a one-based 2-bit divider off `bus_root`.
 ///
-/// Name: ratified 2026-10-26 (UTC).
-pub const SYSCLK_AXI_CFG0: u32 = 7;
+/// Name: ratified 2026-11-05 (UTC), #3279.
+#[doc(alias = "SYSCLK_AXI_CFG0")]
+#[doc(alias = "JH7110_SYSCLK_AXI_CFG0")]
+pub const SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0: u32 = 7;
 
 /// `JH7110_STG_AXIAHB`, **8**. Word `0x20`: a one-based 2-bit divider off `axi_cfg0`.
 ///
-/// Name: ratified 2026-10-26 (UTC).
-pub const SYSCLK_STG_AXIAHB: u32 = 8;
+/// Name: ratified 2026-11-05 (UTC), #3279.
+#[doc(alias = "SYSCLK_STG_AXIAHB")]
+#[doc(alias = "JH7110_SYSCLK_STG_AXIAHB")]
+pub const SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 8;
 
 /// `JH7110_APB_BUS_FUNC`, **11**. Word `0x2c`: a one-based 4-bit divider off `stg_axiahb`, the
 /// last divider before the APB tree that `u5_dw_i2c_clk_apb` (gate id 143, bit 31 only) sits on.
 ///
-/// Name: ratified 2026-10-26 (UTC).
-pub const SYSCLK_APB_BUS_FUNC: u32 = 11;
+/// Name: ratified 2026-11-05 (UTC), #3279.
+#[doc(alias = "SYSCLK_APB_BUS_FUNC")]
+#[doc(alias = "JH7110_SYSCLK_APB_BUS_FUNC")]
+pub const SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION: u32 = 11;
 
 /// The oscillator every JH7110 rate chain is rooted in, 24 MHz, `refclk` in the vendor PLL code.
 pub(crate) const OSC_HZ: u64 = 24_000_000;
@@ -794,27 +805,40 @@ pub(crate) const PLL2_DEFAULT_HZ: u64 = 1_188_000_000;
 /// **The words the I2C input-clock chain reads**, one struct so the caller can read them in one
 /// place and the arithmetic can be tested without a device. The CRG
 /// words come from [`SYSTEM`]'s window at the offsets the ids above give; the PLL2 words from
-/// [`SYS_SYSCON_BASE`]'s window at `0x2c` (DACPD bit 15, DSMPD bit 16, FBDIV bits 28:17), `0x30`
+/// [`SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS`]'s window at `0x2c` (DACPD bit 15, DSMPD bit 16, FBDIV bits 28:17), `0x30`
 /// (POSTDIV1 bits 29:28) and `0x34` (PREDIV bits 5:0), exactly the vendor `pll.c` masks.
 ///
-/// Name: ratified 2026-10-26 (UTC). Refused `IcClkWords` (three abbreviations; these are the I2C
-/// controller's clock words).
+/// Name: ratified 2026-11-05 (UTC), #3279. Refused `IcClkWords` (three abbreviations; these are the
+/// inter-integrated circuit controller's clock words).
+#[doc(alias = "i2c")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct I2cClockWords {
+pub struct InterIntegratedCircuitClockWords {
     /// Word `0x14` of the CRG: `bus_root`'s mux, bit 24.
     pub bus_root: u32,
     /// Word `0x1c`: `axi_cfg0`'s divider, bits 1:0, one-based.
-    pub axi_cfg0: u32,
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3279.
+    pub advanced_extensible_interface_configuration_0: u32,
     /// Word `0x20`: `stg_axiahb`'s divider, bits 1:0, one-based.
-    pub stg_axiahb: u32,
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3279.
+    pub system_top_group_advanced_extensible_interface_advanced_high_performance_bus: u32,
     /// Word `0x2c` of the CRG: `apb_bus_func`'s divider, bits 3:0, one-based.
-    pub apb_bus_func: u32,
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3279.
+    pub advanced_peripheral_bus_function: u32,
     /// SYS syscon word `0x2c`: PLL2's DACPD, DSMPD and FBDIV.
-    pub pll2_dacpd_dsmpd_fbdiv: u32,
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3279.
+    pub phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: u32,
     /// SYS syscon word `0x30`: PLL2's POSTDIV1, bits 29:28.
-    pub pll2_postdiv1: u32,
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3279.
+    pub phase_locked_loop_2_post_divider_1_word: u32,
     /// SYS syscon word `0x34`: PLL2's PREDIV, bits 5:0.
-    pub pll2_prediv: u32,
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3279.
+    pub phase_locked_loop_2_pre_divider_word: u32,
 }
 
 /// A one-based divider field of `width` bits: the value when nonzero, 1 when the field reads zero
@@ -841,30 +865,42 @@ pub const fn one_based_divider(word: u32, width: u32) -> u64 {
 /// `24 MHz * fbdiv / (prediv * postdiv1)`, anything else is the vendor's own default rather than a
 /// guess. The u64 divisions truncate, as the vendor's do.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `i2c5_ic_clk` (`ic_clk` is the `DesignWare`
+/// Name: ratified 2026-11-05 (UTC), #3279. Refused `i2c5_ic_clk` (`ic_clk` is the `DesignWare`
 /// databook's signal name, which the doc and `doc(alias)` carry; the function returns the clock's
-/// frequency), as `IcClkWords` was refused for `I2cClockWords`.
+/// frequency), as `IcClkWords` was refused for `InterIntegratedCircuitClockWords`.
 #[must_use]
 #[doc(alias = "ic_clk")]
-pub const fn i2c5_clock_frequency(w: &I2cClockWords) -> u64 {
-    axi_cfg0_hz(w) / one_based_divider(w.stg_axiahb, 2) / one_based_divider(w.apb_bus_func, 4)
+#[doc(alias = "i2c")]
+pub const fn inter_integrated_circuit_5_clock_frequency(
+    w: &InterIntegratedCircuitClockWords,
+) -> u64 {
+    advanced_extensible_interface_configuration_0_hertz(w)
+        / one_based_divider(
+            w.system_top_group_advanced_extensible_interface_advanced_high_performance_bus,
+            2,
+        )
+        / one_based_divider(w.advanced_peripheral_bus_function, 4)
 }
 
 /// **`axi_cfg0`'s rate**: `bus_root` (PLL2 or the oscillator, by its mux) over `axi_cfg0`'s own
-/// divider. The parent of both the PMIC bus's clock chain ([`i2c5_clock_frequency`]) and the SD/MMC
-/// controllers' card clocks ([`SYSCLK_SDIO_SDCARD`]), each a registration in the vendor clock driver.
+/// divider. The parent of both the PMIC bus's clock chain ([`inter_integrated_circuit_5_clock_frequency`]) and the SD/MMC
+/// controllers' card clocks ([`SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD`]), each a registration in the vendor clock driver.
 ///
 ///
-/// Name: ratified 2026-10-26 (UTC).
+/// Name: ratified 2026-11-05 (UTC), #3279.
 #[must_use]
-pub const fn axi_cfg0_hz(w: &I2cClockWords) -> u64 {
+#[doc(alias = "axi_cfg0")]
+pub const fn advanced_extensible_interface_configuration_0_hertz(
+    w: &InterIntegratedCircuitClockWords,
+) -> u64 {
     let parent = if (w.bus_root >> 24) & 1 == 1 {
-        let dacpd = (w.pll2_dacpd_dsmpd_fbdiv >> 15) & 1;
-        let dsmpd = (w.pll2_dacpd_dsmpd_fbdiv >> 16) & 1;
-        let fbdiv = ((w.pll2_dacpd_dsmpd_fbdiv >> 17) & 0xfff) as u64;
-        let prediv_raw = (w.pll2_prediv & 0x3f) as u64;
+        let dacpd = (w.phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word >> 15) & 1;
+        let dsmpd = (w.phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word >> 16) & 1;
+        let fbdiv =
+            ((w.phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word >> 17) & 0xfff) as u64;
+        let prediv_raw = (w.phase_locked_loop_2_pre_divider_word & 0x3f) as u64;
         let prediv = if prediv_raw == 0 { 1 } else { prediv_raw };
-        let postdiv1 = 1u64 << ((w.pll2_postdiv1 >> 28) & 3);
+        let postdiv1 = 1u64 << ((w.phase_locked_loop_2_post_divider_1_word >> 28) & 3);
         if dacpd == 1 && dsmpd == 1 && fbdiv > 0 {
             OSC_HZ * fbdiv / (prediv * postdiv1)
         } else {
@@ -873,37 +909,39 @@ pub const fn axi_cfg0_hz(w: &I2cClockWords) -> u64 {
     } else {
         OSC_HZ
     };
-    parent / one_based_divider(w.axi_cfg0, 2)
+    parent / one_based_divider(w.advanced_extensible_interface_configuration_0, 2)
 }
 
 /// **Each SD/MMC controller's card clock** (`ciu` in the tree), by controller index: the eMMC
-/// socket's, then the microSD slot's. Each divides [`axi_cfg0_hz`] by its own one-based divider.
+/// socket's, then the microSD slot's. Each divides [`advanced_extensible_interface_configuration_0_hertz`] by its own one-based divider.
 ///
-/// Name: ratified 2026-10-26 (UTC).
-pub const SYSCLK_SDIO_SDCARD: [u32; 2] = [SYSCLK_SDIO0_SDCARD, SYSCLK_SDIO1_SDCARD];
+/// Name: ratified 2026-11-05 (UTC), #3279.
+#[doc(alias = "SYSCLK_SDIO_SDCARD")]
+pub const SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD: [u32; 2] =
+    [SYSCLK_SDIO0_SDCARD, SYSCLK_SDIO1_SDCARD];
 
 /// The card clocks' largest divider (the vendor driver registers them with a maximum of 15).
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `SDCARD_DIVIDER_MAX` (max spelled out, as the
+/// Name: ratified 2026-11-05 (UTC), #3279. Refused `SDCARD_DIVIDER_MAX` (max spelled out, as the
 /// tree-wide ruling asks).
-pub const SDCARD_DIVIDER_MAXIMUM: u32 = 15;
+pub const MAXIMUM_SD_CARD_DIVIDER: u32 = 15;
 
-/// **The divider that brings a card clock to at most `want_hz`** from `parent_hz`: the smallest
+/// **The divider that brings a card clock to at most `want_hertz`** from `parent_hertz`: the smallest
 /// that does, so the rate is as close below the ask as the divider allows, clamped to
-/// `1..=`[`SDCARD_DIVIDER_MAXIMUM`]. The tree's `assigned-clock-rates` is a rate the OS is asked to
+/// `1..=`[`MAXIMUM_SD_CARD_DIVIDER`]. The tree's `assigned-clock-rates` is a rate the OS is asked to
 /// program, and radon's firmware leaves this divider at 2, four times the tree's 50 MHz.
 ///
-/// Name: ratified 2026-10-26 (UTC).
+/// Name: ratified 2026-11-05 (UTC), #3279.
 #[must_use]
-pub const fn sdcard_divider_for(parent_hz: u64, want_hz: u64) -> u32 {
-    if want_hz == 0 {
-        return SDCARD_DIVIDER_MAXIMUM;
+pub const fn sdcard_divider_for(parent_hertz: u64, want_hertz: u64) -> u32 {
+    if want_hertz == 0 {
+        return MAXIMUM_SD_CARD_DIVIDER;
     }
-    let div = parent_hz.div_ceil(want_hz);
+    let div = parent_hertz.div_ceil(want_hertz);
     if div < 1 {
         1
-    } else if div > SDCARD_DIVIDER_MAXIMUM as u64 {
-        SDCARD_DIVIDER_MAXIMUM
+    } else if div > MAXIMUM_SD_CARD_DIVIDER as u64 {
+        MAXIMUM_SD_CARD_DIVIDER
     } else {
         div as u32
     }
@@ -941,13 +979,25 @@ pub const fn with_divider(word: u32, divider: u32) -> u32 {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StandardMode {
     /// The `IC_CON` word: master mode, restart enable, slave disable and standard speed set.
-    pub con: u32,
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3279.
+    #[doc(alias = "IC_CON")]
+    pub control: u32,
     /// `IC_SS_SCL_HCNT`.
-    pub hcnt: u32,
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3279.
+    #[doc(alias = "IC_SS_SCL_HCNT")]
+    pub high_count: u32,
     /// `IC_SS_SCL_LCNT`.
-    pub lcnt: u32,
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3279.
+    #[doc(alias = "IC_SS_SCL_LCNT")]
+    pub low_count: u32,
     /// `IC_SDA_HOLD`, the 300 ns hold in input-clock counts.
-    pub sda_hold: u32,
+    ///
+    /// Name: ratified 2026-11-05 (UTC), #3279.
+    #[doc(alias = "IC_SDA_HOLD")]
+    pub data_hold: u32,
 }
 
 /// The `IC_CON` word for a standard-speed master, written as one literal so no operator is left
@@ -984,15 +1034,15 @@ const fn counts(clock_frequency: u64, period_ns: u128) -> u32 {
 /// minimums add to fewer counts than one 10 microsecond period, the whole shortfall goes to the
 /// low count. A longer low time is always legal (standard mode has no maximum, and a slave may
 /// hold SCL low for longer anyway), and the high count stays at the specification minimum. The
-/// result guarantees that `hcnt + lcnt` counts never span less than 10 microseconds, so the bus
+/// result guarantees that `high_count + low_count` counts never span less than 10 microseconds, so the bus
 /// never runs faster than 100 kHz, and that each phase meets its minimum. Rise and fall times on
 /// the wire only add to the period. An input clock below 100 kHz still yields counts of at least 1
 /// and cannot reach 100 kHz; a bench transcript carries the computed input clock, so that case is
 /// visible as one.
 ///
-/// Name: ratified 2026-10-26 (UTC).
+/// Name: ratified 2026-11-05 (UTC), #3279.
 #[must_use]
-pub const fn standard_mode_100k(clock_frequency: u64) -> StandardMode {
+pub const fn standard_mode_100_kilohertz(clock_frequency: u64) -> StandardMode {
     let hcnt = counts(clock_frequency, STANDARD_HIGH_NS);
     let minimum_lcnt = counts(clock_frequency, STANDARD_LOW_NS);
     let period = counts(clock_frequency, 1_000_000_000 / STANDARD_BUS_HZ);
@@ -1000,10 +1050,10 @@ pub const fn standard_mode_100k(clock_frequency: u64) -> StandardMode {
     // The larger of the two, written as the minimum plus whatever the shortfall exceeds it by.
     let lcnt = minimum_lcnt + shortfall.saturating_sub(minimum_lcnt);
     StandardMode {
-        con: STANDARD_MODE_CON,
-        hcnt,
-        lcnt,
-        sda_hold: counts(clock_frequency, STANDARD_SDA_HOLD_NS),
+        control: STANDARD_MODE_CON,
+        high_count: hcnt,
+        low_count: lcnt,
+        data_hold: counts(clock_frequency, STANDARD_SDA_HOLD_NS),
     }
 }
 
@@ -1062,9 +1112,9 @@ fn system_step<'t, E>(
     let known = [
         COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR,
         if is_clock {
-            COMPATIBLE_VENDOR_CLKGEN
+            COMPATIBLE_VENDOR_CLOCK_GENERATOR
         } else {
-            COMPATIBLE_VENDOR_RSTGEN
+            COMPATIBLE_VENDOR_RESET_GENERATOR
         },
     ];
     if !compatible.split(|&b| b == 0).any(|c| known.contains(&c)) {
@@ -1281,17 +1331,17 @@ pub const COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR: &[u8] = b"starf
 /// clock controller covering sys, stg and aon. This is the one radon's firmware actually serves,
 /// if it serves either.
 ///
-/// Name: ratified 2026-10-26 (UTC).
+/// Name: ratified 2026-11-05 (UTC), #3279.
 #[doc(alias = "clock generator")]
-pub const COMPATIBLE_VENDOR_CLKGEN: &[u8] = b"starfive,jh7110-clkgen";
+pub const COMPATIBLE_VENDOR_CLOCK_GENERATOR: &[u8] = b"starfive,jh7110-clkgen";
 
 /// **Vendor reset generator** (the `rstgen` node, \[vendor-dts\]): the vendor U-Boot's separate
 /// reset controller, whose `reg` list covers the same windows. Tried last: it names the same
 /// address as the clkgen node, so it is only reached by a tree that carries one and not the other.
 ///
-/// Name: ratified 2026-10-26 (UTC).
+/// Name: ratified 2026-11-05 (UTC), #3279.
 #[doc(alias = "reset generator")]
-pub const COMPATIBLE_VENDOR_RSTGEN: &[u8] = b"starfive,jh7110-reset";
+pub const COMPATIBLE_VENDOR_RESET_GENERATOR: &[u8] = b"starfive,jh7110-reset";
 
 /// The `reg-names` entry naming the STG window, in each vendor node's own spelling
 /// (`"stg"` in `clkgen`, `"stgcrg"` in `rstgen`; \[vendor-dts\]).
@@ -1330,9 +1380,9 @@ pub struct WindowSpelling {
 /// How many `reg` entries a matched node may carry. Five, because the vendor `rstgen` node names
 /// five windows and a short buffer would silently truncate the list `reg-names` is indexing into.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `MAX_REG_ENTRIES` (max spelled out, as the
+/// Name: ratified 2026-11-05 (UTC), #3279. Refused `MAX_REG_ENTRIES` (max spelled out, as the
 /// tree-wide ruling asks). Refused `MAX_WINDOWS` (it bounds a node's `reg` entries, not windows).
-pub const MAXIMUM_REG_ENTRIES: usize = 5;
+pub const MAXIMUM_REGISTER_ENTRIES: usize = 5;
 
 /// **Where one domain's registers are, in every spelling the two trees use.**
 ///
@@ -1380,11 +1430,11 @@ pub const SYSTEM_TOP_GROUP_WINDOW: RegisterWindow = RegisterWindow {
             window: None,
         },
         WindowSpelling {
-            compatible: COMPATIBLE_VENDOR_CLKGEN,
+            compatible: COMPATIBLE_VENDOR_CLOCK_GENERATOR,
             window: Some(VENDOR_CLKGEN_SYSTEM_TOP_GROUP_NAME),
         },
         WindowSpelling {
-            compatible: COMPATIBLE_VENDOR_RSTGEN,
+            compatible: COMPATIBLE_VENDOR_RESET_GENERATOR,
             window: Some(VENDOR_RSTGEN_SYSTEM_TOP_GROUP_NAME),
         },
     ],
@@ -1403,11 +1453,11 @@ pub const ALWAYS_ON_WINDOW: RegisterWindow = RegisterWindow {
             window: None,
         },
         WindowSpelling {
-            compatible: COMPATIBLE_VENDOR_CLKGEN,
+            compatible: COMPATIBLE_VENDOR_CLOCK_GENERATOR,
             window: Some(VENDOR_CLKGEN_ALWAYS_ON_NAME),
         },
         WindowSpelling {
-            compatible: COMPATIBLE_VENDOR_RSTGEN,
+            compatible: COMPATIBLE_VENDOR_RESET_GENERATOR,
             window: Some(VENDOR_RSTGEN_ALWAYS_ON_NAME),
         },
     ],
@@ -1426,11 +1476,11 @@ pub const SYSTEM_WINDOW: RegisterWindow = RegisterWindow {
             window: None,
         },
         WindowSpelling {
-            compatible: COMPATIBLE_VENDOR_CLKGEN,
+            compatible: COMPATIBLE_VENDOR_CLOCK_GENERATOR,
             window: Some(VENDOR_CLKGEN_SYSTEM_NAME),
         },
         WindowSpelling {
-            compatible: COMPATIBLE_VENDOR_RSTGEN,
+            compatible: COMPATIBLE_VENDOR_RESET_GENERATOR,
             window: Some(VENDOR_RSTGEN_SYSTEM_NAME),
         },
     ],

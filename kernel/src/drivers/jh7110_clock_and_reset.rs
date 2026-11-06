@@ -151,24 +151,28 @@ pub(crate) unsafe fn set_card_clock(
     want_hz: u32,
 ) -> CardClock {
     use jh7110_clock_and_reset::{
-        SYSCLK_APB_BUS_FUNC, SYSCLK_AXI_CFG0, SYSCLK_BUS_ROOT, SYSCLK_SDIO_SDCARD,
-        SYSCLK_STG_AXIAHB, axi_cfg0_hz, clock_divider, sdcard_divider_for, with_divider,
+        SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0,
+        SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION, SYSTEM_CLOCK_BUS_ROOT,
+        SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD,
+        SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_HIGH_PERFORMANCE_BUS,
+        advanced_extensible_interface_configuration_0_hertz, clock_divider, sdcard_divider_for,
+        with_divider,
     };
-    let reg = (crg + SYSCLK_SDIO_SDCARD[controller] as usize * 4) as *mut u32;
+    let reg = (crg + SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD[controller] as usize * 4) as *mut u32;
     // SAFETY: the two windows are this function's contract. The clock chain's words are read-only
     // status words at aligned offsets inside them; then the card clock's own word in the CRG: a
     // read, two stores that keep every field but the enable and the divider, and a read back.
     let (parent_hz, before, after) = unsafe {
         let word =
             |base: usize, offset: usize| core::ptr::read_volatile((base + offset) as *const u32);
-        let parent_hz = axi_cfg0_hz(&jh7110_clock_and_reset::I2cClockWords {
-            bus_root: word(crg, SYSCLK_BUS_ROOT as usize * 4),
-            axi_cfg0: word(crg, SYSCLK_AXI_CFG0 as usize * 4),
-            stg_axiahb: word(crg, SYSCLK_STG_AXIAHB as usize * 4),
-            apb_bus_func: word(crg, SYSCLK_APB_BUS_FUNC as usize * 4),
-            pll2_dacpd_dsmpd_fbdiv: word(syscon, 0x2c),
-            pll2_postdiv1: word(syscon, 0x30),
-            pll2_prediv: word(syscon, 0x34),
+        let parent_hz = advanced_extensible_interface_configuration_0_hertz(&jh7110_clock_and_reset::InterIntegratedCircuitClockWords {
+            bus_root: word(crg, SYSTEM_CLOCK_BUS_ROOT as usize * 4),
+            advanced_extensible_interface_configuration_0: word(crg, SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0 as usize * 4),
+            system_top_group_advanced_extensible_interface_advanced_high_performance_bus: word(crg, SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_HIGH_PERFORMANCE_BUS as usize * 4),
+            advanced_peripheral_bus_function: word(crg, SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION as usize * 4),
+            phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: word(syscon, 0x2c),
+            phase_locked_loop_2_post_divider_1_word: word(syscon, 0x30),
+            phase_locked_loop_2_pre_divider_word: word(syscon, 0x34),
         });
         let before = core::ptr::read_volatile(reg);
         let div = sdcard_divider_for(parent_hz, u64::from(want_hz));

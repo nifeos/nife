@@ -255,7 +255,7 @@ Proofs. Nine harnesses. All nine prove and all nine patches fail.
 
 Dependencies. None.
 
-Provenance. Milestone 1019 item 1 (`standard_mode_100k` rewritten from a permissive source) stands
+Provenance. Milestone 1019 item 1 (`standard_mode_100_kilohertz` rewritten from a permissive source) stands
 done. Items 7 and 11 remain open on `main`. Item 7: the doc comments quote two PMIC nodes, 9 and 7 tokens. Item 11: pin the vendor links to the revision each claim holds at. The crate cites the vendor tag
 `VF2_v2.10.4` and a mainline commit by hash.
 
@@ -268,7 +268,7 @@ Outstanding before the move.
 
 | item | owner |
 |---|---|
-| The PMIC reset path with the rewritten `standard_mode_100k` (counts 198 high, 297 low at 49.5 MHz) has not run on the board, so milestone 819 (JH7110 clock and reset logic, proven, then released on its own) does not call it proven. | maintainers (bench) |
+| The PMIC reset path with the rewritten `standard_mode_100_kilohertz` (counts 198 high, 297 low at 49.5 MHz) has not run on the board, so milestone 819 (JH7110 clock and reset logic, proven, then released on its own) does not call it proven. | maintainers (bench) |
 | Items 7 and 11 of milestone 1019. | maintainer |
 | The README describes the crate as built for the nife kernel; `lib.rs` says "the fill is nife's own". | move lane |
 

@@ -464,8 +464,9 @@ where
     if let Some((_sys, bus)) = memory::jh7110_pmic_bus() {
         direct_map(
             m,
-            jh7110_clock_and_reset::SYS_SYSCON_BASE,
-            jh7110_clock_and_reset::SYS_SYSCON_BASE + jh7110_clock_and_reset::SYS_SYSCON_SIZE,
+            jh7110_clock_and_reset::SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS,
+            jh7110_clock_and_reset::SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS
+                + jh7110_clock_and_reset::SYSTEM_CONTROLLER_SIZE_BYTES,
             Flags::device(),
         )?;
         if let Some((base, size)) = bus.controller {

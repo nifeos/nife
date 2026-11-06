@@ -239,7 +239,9 @@ fn card_clock(slot: &Slot, crg_phys: u64) -> u32 {
     let c = unsafe {
         crate::drivers::jh7110_clock_and_reset::set_card_clock(
             crate::arch::mmu::phys_to_virt(crg_phys) as usize,
-            crate::arch::mmu::phys_to_virt(jh7110_clock_and_reset::SYS_SYSCON_BASE) as usize,
+            crate::arch::mmu::phys_to_virt(
+                jh7110_clock_and_reset::SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS,
+            ) as usize,
             usize::from(slot.index),
             slot.card_interface_unit_hertz,
         )

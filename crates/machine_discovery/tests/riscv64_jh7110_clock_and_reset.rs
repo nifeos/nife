@@ -8,7 +8,7 @@
 use jh7110_clock_and_reset::{
     ALWAYS_ON_WINDOW, COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
     COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR, COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR,
-    COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR, COMPATIBLE_VENDOR_CLKGEN,
+    COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR, COMPATIBLE_VENDOR_CLOCK_GENERATOR,
     SYSTEM_TOP_GROUP_WINDOW, SYSTEM_WINDOW, Step,
 };
 use machine_discovery::jh7110::clock_and_reset::{discover, discover_aon, discover_sys, pmic_bus};
@@ -65,7 +65,7 @@ fn radons_sys_window_is_the_vendor_nodes_first_entry_found_by_name() {
         (SYSTEM_WINDOW.base, SYSTEM_WINDOW.size)
     );
     assert!(found.from_tree);
-    assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLKGEN));
+    assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLOCK_GENERATOR));
     // And STG, from the same node, is still its second window.
     assert_eq!(discover(&tree).unwrap().base, SYSTEM_TOP_GROUP_WINDOW.base);
 }
@@ -163,7 +163,7 @@ fn the_vendor_clkgens_stg_window_is_found_by_name() {
     );
     assert_eq!(found.size, 0x1_0000);
     assert!(found.from_tree);
-    assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLKGEN));
+    assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLOCK_GENERATOR));
 }
 
 #[test]
@@ -216,7 +216,7 @@ fn radons_aon_window_is_the_vendor_nodes_third_entry_found_by_name() {
         (ALWAYS_ON_WINDOW.base, ALWAYS_ON_WINDOW.size)
     );
     assert!(found.from_tree);
-    assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLKGEN));
+    assert_eq!(found.compatible, Some(COMPATIBLE_VENDOR_CLOCK_GENERATOR));
 }
 
 #[test]
