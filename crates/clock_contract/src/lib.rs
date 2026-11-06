@@ -11,7 +11,7 @@
 //! # BUGS
 //!
 //! - `NANOS_PER_SEC` and `wall_nanos` are older spellings of `NS_PER_SECOND` and `wall_nanoseconds`, kept for
-//!   nife's standard-library overlay, which reads them by those names. Use the newer spellings.
+//!   a standard-library overlay, which reads them by those names. Use the newer spellings.
 //!
 //! Name: ratified 2026-08-23 (calef): the service's own word, `clock`, with the contract suffix
 //! `_contract` (calef's 2026-10-18 ruling).
@@ -86,7 +86,7 @@ pub const fn wall_nanoseconds(offset_nanoseconds: u64, monotonic_nanoseconds: u6
     offset_nanoseconds.saturating_add(monotonic_nanoseconds)
 }
 
-/// (NANOS_PER_SEC, nife's standard-library overlay, which reads this name from its generated copy
+/// (NANOS_PER_SEC, a standard-library overlay, which reads this name from its generated copy
 /// of this file.)
 /// The spelling of [`NS_PER_SECOND`] that the overlay reads.
 ///
@@ -95,7 +95,7 @@ pub const fn wall_nanoseconds(offset_nanoseconds: u64, monotonic_nanoseconds: u6
 #[doc(alias = "nanoseconds per second, overlay spelling")]
 pub const NANOS_PER_SEC: u64 = NS_PER_SECOND;
 
-/// (wall_nanos, nife's standard-library overlay, which reads this name from its generated copy of
+/// (wall_nanos, a standard-library overlay, which reads this name from its generated copy of
 /// this file.)
 /// The spelling of [`wall_nanoseconds`] that the overlay reads; see [`NANOS_PER_SEC`].
 ///
@@ -183,7 +183,7 @@ const W_OFFSET: usize = 3;
 pub struct Reading {
     /// One of [`state`]'s values.
     pub state: u64,
-    /// (offset_nanos, nife's standard-library overlay, which reads this field from its generated
+    /// (offset_nanos, a standard-library overlay, which reads this field from its generated
     /// copy of this file.)
     /// Wall-clock nanoseconds at monotonic zero. Meaningless unless [`state::is_known`].
     #[doc(alias = "offset in nanoseconds")]

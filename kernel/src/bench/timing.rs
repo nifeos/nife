@@ -84,7 +84,7 @@ impl<'a> TickWindow<'a> {
         assert!(
             landed == 0,
             "{landed} preemption tick(s) landed in {}'s timed window, so the row would read the \
-             tick's phase as its cost (milestone 939); the window outgrew a tick period at TICK_HERTZ {}",
+             tick's phase as its cost (milestone 939, IPC rows run without a preemption tick); the window outgrew a tick period at TICK_HERTZ {}",
             self.name,
             crate::arch::timer::TICK_HERTZ,
         );
