@@ -119,9 +119,9 @@ specification and common use, not copied text.
 
 ## Result of `script/crate-standalone`
 
-Run on the crate as it stood on `main`, the `names` step failed and the rest passed: the build on
-1.88 for the host and the three bare-metal targets, both harnesses and both patches. No run covers the crate with
-its ratified names (#3282).
+Clean on `main` with the ratified names: manifest, files, citations, names, and the build on 1.88
+for the host and the three bare-metal targets. That run skipped Kani (`--no-kani`); an earlier
+full run proved both harnesses and saw both patches fail, before the renames.
 
 ## Recommendation
 

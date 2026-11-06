@@ -9,7 +9,7 @@ together outgrow the page.*
 A fixed-capacity table that names each entry with an `EntryName<T>`, typed by the entry it names and
 holding one `u64`: the slot index in the low 32 bits and the slot's generation in the high 32. Removing an entry raises its slot's generation, so every copy
 of the old name resolves to `None` for good, while the slot itself is reused. The kernel keeps its
-thread table and its object tables in it, each with its own entry name type. It is `no_std` with no allocator, no `unsafe` and no
+thread table and its object tables in it. It is `no_std` with no allocator, no `unsafe` and no
 dependency, and five Kani harnesses prove the safety claims. The architect ruled that it publishes,
 third in the order of milestone 857 (crates released on their own), as milestone 1033
 (`generational_table`: the fixed-capacity, proved slotmap, released on its own) records. It is not
@@ -20,12 +20,12 @@ two keys from nife's workspace.
 
 | item | value |
 |---|---|
-| crate | `generational_table`, ratified (the crate name, all 14 item names and `EntryName<T>`) |
+| crate | `generational_table`, ratified (the crate name, the 14 item names and `EntryName<T>`); three names on `EntryName<T>` are provisional |
 | version | `0.1.0`; no tag in this clone |
 | edition, `rust-version` | 2024; no `rust-version` |
 | license | `MIT OR Apache-2.0`, inherited from the nife workspace; no license files in the crate |
 | `publish` | `false`; publication ruled, waiting on the move, the soak and the architect's approval of 0.1.0 |
-| size | one `src/lib.rs` of 671 lines: about 290 of library, 155 of Kani harnesses, 220 of tests |
+| size | one `src/lib.rs` of 816 lines: about 400 of library, 155 of Kani harnesses, 260 of tests |
 | consumers in nife | `kernel` and `memory_regions`, both by path |
 
 ## Public API
@@ -45,9 +45,12 @@ What a stranger may find surprising:
 - A name is an `EntryName<T>`, a newtype over the `u64`, so the compiler tells it from any other
   number and a name of one entry type does not resolve in a table of another. Every growable
   candidate in [the release record](../generational-table-and-existing-crates.md) uses a newtype
-  (`slotmap`'s `KeyData`, `thunderdome`'s `Index`). The kernel stores names in system-call words
-  and converts at that boundary. Each of its four tables keyed by a bare `u64` gets its own entry
-  newtype, so two kernel tables do not accept each other's names.
+  (`slotmap`'s `KeyData`, `thunderdome`'s `Index`). `EntryName<T>` has `to_bits`, `from_bits`
+  and `NEVER_MINTED` (the name no table mints), and the kernel converts at its system-call
+  boundary with them. Four kernel tables (`rendezvous_table`, `notification_table`, `timer_table`
+  and `processes` in `sched/ipc_tables.rs`) hold bare `u64` entries, so each of their names is an
+  `EntryName<u64>` and one table accepts another's names. The ruling is that each gets its own
+  entry newtype; that work has not landed on `main`.
 - A slot whose generation reaches `u32::MAX` retires and is never filled again, so capacity can
   shrink. The release record's table shows `slotmap` and `thunderdome` wrapping instead.
 - `Table` implements neither `Debug` nor `Clone`. Adding either later breaks nobody.
@@ -72,9 +75,13 @@ walk bound and a refused insert that never runs its closure.
 
 ## Names
 
-The crate has 16 names, all with a ratified block: the crate on its naming review, the 14 items on #3119
+The crate has 16 names with a block: the crate on its naming review, the 14 items on #3119
 under the ruling that the standard library's spellings win (`len`, `iter`, `get_mut`), and
-`EntryName<T>` by the architect. Nothing to ratify.
+`EntryName<T>`, ratified on 2026-11-06. Three more names are provisional: the associated items
+`EntryName::to_bits`, `EntryName::from_bits` and `EntryName::NEVER_MINTED`. `to_bits` and
+`from_bits` take the standard library's spelling (`f64::to_bits`); `NEVER_MINTED` was chosen over
+`NONE` (which reads as `Option::None`) and `INVALID` (which it is not, since resolving it answers
+`None`). Recommendation: ratify all three. **architect** (names).
 
 ## License
 
@@ -115,12 +122,12 @@ No defect found in the code. Three records disagree with it:
 
 ## Result of `script/crate-standalone`
 
-Seven failures, all release shape: the manifest inherits `license` and `lints` and has no
-`rust-version`; the crate has no README and no license files; one line cites this tree. Build on
-the host and the three bare-metal targets passes on stable, all five harnesses prove and all five
-patches fail.
+Eight failures: the three provisional names, and seven of release shape (the manifest inherits
+`license` and `lints` and has no `rust-version`; the crate has no README and no license files; one
+line cites this tree). The build on the host and the three bare-metal targets passes on stable.
+That run skipped Kani (`--no-kani`); an earlier full run, before `EntryName<T>`, proved all five
+harnesses and saw all five patches fail.
 
 ## Recommendation
 
-Blocked by the release shape: the README, the license files and the manifest keys. After those,
-ready for review.
+Blocked by the release shape (the README, the license files and the manifest keys) and the three provisional names. After those, ready for review.
