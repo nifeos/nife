@@ -79,9 +79,19 @@ Stage 2, later, moves the rest.
 
 The variable stays `false` until the strict canary (`canary-owned`) and the dry run
 (`canary-owned-dry-run`) are both green on the pool. They must be green in one merge group or push
-run, with no `FINDING` line in either summary and the proxy's refusal log empty for that run. "The canary" below
-describes both. Flipping needs no review beyond that evidence. It is a reversible decision;
+run, with no `FINDING` line in either summary. The proxy's refusal log for that run must show no
+refusal except the runner's own background requests to two named hosts (below). "The canary"
+below describes both. Flipping needs no review beyond that evidence. It is a reversible decision;
 Rollback below undoes it.
+
+The two named hosts are `pkg.github.com` and `copilot-proxy.githubusercontent.com`. The runner's
+worker asks for both together, a fraction of a second apart, during the "Set up job" step of some
+jobs. When GitHub's job message carries a list of connectivity-check URLs, the worker sends a
+`GET` to each through the proxy and reports the result to GitHub as telemetry. The code is
+`InitializeJob` in the runner's `src/Runner.Worker/JobExtension.cs`. A refusal costs the job
+nothing, since the worker records the error and goes on. No runner setting turns the check off, and
+no job needs either host, so both stay off the allowlist and their refusals are expected. Any other
+refusal is "A blocked host" below.
 
 The repository variable `NIFE_RUNNER_OWNED` chooses between the two pools. The value `true` selects
 owned; anything else, including unset, selects hosted. A job that takes part in the switch writes:

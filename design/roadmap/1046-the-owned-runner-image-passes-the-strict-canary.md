@@ -20,8 +20,8 @@ Reuse: the canary's strict image checks and dry run (`.github/workflows/owned-ru
 ## Background
 
 [notes/owned-runners.md](../../notes/owned-runners.md) keeps `NIFE_RUNNER_OWNED` false until the
-strict canary and the dry run are both green on the pool in one run, with no `FINDING` line and an
-empty proxy refusal log for that run. The push run 41959340528 on `main` printed these findings in
+strict canary and the dry run are both green on the pool in one run, with no `FINDING` line. The
+proxy may refuse nothing in that run but the runner's own background requests to two named hosts. The push run 41959340528 on `main` printed these findings in
 `canary-owned` and `canary-owned-dry-run`:
 
 - `rustup` and `cargo` are not on `PATH`, so the probe cannot check the pinned toolchain.
@@ -49,7 +49,8 @@ empty proxy refusal log for that run. The push run 41959340528 on `main` printed
 ## Done when
 
 - A canary run on the pool shows both owned probe jobs green, with no `FINDING` line, and the proxy
-  refusal log is empty for that run.
+  refusal log shows no refusal for that run except the runner's own background requests to the two
+  hosts notes/owned-runners.md names.
 - notes/owned-runners.md's description of the image states the work folder, the toolchain and the
   preinstalled packages.
 
