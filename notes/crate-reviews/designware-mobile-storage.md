@@ -13,7 +13,7 @@ reads and writes blocks, and decodes the card's identification and specific-data
 caller implements one trait, `RegisterWindowAndClock` (read a register, write one, read a
 microsecond clock), and every sequence runs on a host against a simulated controller and card. It
 is `no_std`, with no allocator, no `unsafe` and no dependency. Eight Kani harnesses prove its
-parsers and bounds. Every public name is ratified. The board's bench test sits behind the
+parsers and bounds. Every public name has a ratified `Name:` block. The board's bench test sits behind the
 non-default `bench` feature, and the compile-time checks have no public name. What the architect
 decides is one unit spelled inside a variant name, whether `bench` ships in 0.1.0, and the
 ratified names that a later rule reaches.
@@ -132,7 +132,7 @@ proposal for a license check would add.
 
 ## Provisional rulings by the maintainer
 
-`#[non_exhaustive]` is applied to the five error enums, `ScratchWriteVerdict` and `CardKind`. It is
+`#[non_exhaustive]` marks the five error enums, `ScratchWriteVerdict` and `CardKind`. It is
 the restrictive option: relaxing it in a later release breaks nobody, and adding it after
 publication breaks every exhaustive `match`. `CardKind` joins the list because its own comment
 already names SDUC as a future kind. `Response` stays exhaustive, since the specification fixes
@@ -179,4 +179,4 @@ Ready for the architect's review. Five decisions below remain, and none of them 
 4. Spell out the parameters `verid`, `hcon` and `prop`: recommend yes. Background: a later rule
    forbids databook abbreviations in parameters, and a parameter rename breaks no caller.
 5. Confirm the maintainer's `#[non_exhaustive]` set, `CardKind` included: recommend confirm.
-   Background: the restrictive option can be relaxed later and cannot be added later.
+   Background: a later release can relax the restrictive option but cannot add it.
