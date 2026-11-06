@@ -302,7 +302,10 @@ fn live_counts_are_exact_and_never_pass_a_ceiling() {
                 let live = s.live.get(counted);
                 assert!(live <= s.ceilings.get(counted), "past a ceiling");
                 // A child split by a step is not driven, so it holds no objects of its own.
-                assert!(live == run.ghost_subtree(r, k), "a count drifted from the subtree");
+                assert!(
+                    live == run.ghost_subtree(r, k),
+                    "a count drifted from the subtree"
+                );
             }
         }
     }
