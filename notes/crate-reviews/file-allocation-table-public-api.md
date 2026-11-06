@@ -148,7 +148,7 @@ impl NamedEntry {
 pub struct LongFileName;
 impl LongFileName {
     pub fn code_units(&self) -> &[u16];
-    pub fn characters(&self) -> impl Iterator<Item = Result<char, DecodeUtf16Error>>;
+    pub fn chars(&self) -> impl Iterator<Item = char> + '_;
 }
 
 pub struct FileReader<'v, D>;
