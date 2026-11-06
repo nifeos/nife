@@ -166,7 +166,6 @@ pub(crate) const STGCLK_SEC_MISC_AHB: u32 = 16;
 /// it would reset a neighbour, which is why nothing in this crate offers an assert.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
-#[doc(alias = "STGRST_SEC_AHB")]
 #[doc(alias = "JH7110_STGRST_SEC_AHB")]
 pub const SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 3;
 
@@ -769,21 +768,18 @@ pub const SYSTEM_CONTROLLER_SIZE_BYTES: u64 = 0x1_0000;
 /// (`bus_root_sels`, `starfive_clk_mux(..., SYS_OFFSET(JH7110_BUS_ROOT), 1, ...)`).
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
-#[doc(alias = "SYSCLK_BUS_ROOT")]
 #[doc(alias = "JH7110_SYSCLK_BUS_ROOT")]
 pub const SYSTEM_CLOCK_BUS_ROOT: u32 = 5;
 
 /// `JH7110_AXI_CFG0`, **7**. Word `0x1c`: a one-based 2-bit divider off `bus_root`.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
-#[doc(alias = "SYSCLK_AXI_CFG0")]
 #[doc(alias = "JH7110_SYSCLK_AXI_CFG0")]
 pub const SYSTEM_CLOCK_ADVANCED_EXTENSIBLE_INTERFACE_CONFIGURATION_0: u32 = 7;
 
 /// `JH7110_STG_AXIAHB`, **8**. Word `0x20`: a one-based 2-bit divider off `axi_cfg0`.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
-#[doc(alias = "SYSCLK_STG_AXIAHB")]
 #[doc(alias = "JH7110_SYSCLK_STG_AXIAHB")]
 pub const SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_HIGH_PERFORMANCE_BUS: u32 = 8;
 
@@ -791,7 +787,6 @@ pub const SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_H
 /// last divider before the APB tree that `u5_dw_i2c_clk_apb` (gate id 143, bit 31 only) sits on.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
-#[doc(alias = "SYSCLK_APB_BUS_FUNC")]
 #[doc(alias = "JH7110_SYSCLK_APB_BUS_FUNC")]
 pub const SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION: u32 = 11;
 
@@ -916,7 +911,7 @@ pub const fn advanced_extensible_interface_configuration_0_hertz(
 /// socket's, then the microSD slot's. Each divides [`advanced_extensible_interface_configuration_0_hertz`] by its own one-based divider.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
-#[doc(alias = "SYSCLK_SDIO_SDCARD")]
+#[doc(alias = "JH7110_SYSCLK_SDIO0_SDCARD")]
 pub const SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD: [u32; 2] =
     [SYSCLK_SDIO0_SDCARD, SYSCLK_SDIO1_SDCARD];
 
