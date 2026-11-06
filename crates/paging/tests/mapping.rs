@@ -543,11 +543,12 @@ fn unlinking_a_table_cuts_its_whole_span_and_nothing_else() {
         )
     };
 
-    const GIB: u64 = 1 << 30;
+    const ONE_GIBIBYTE: u64 = 1 << 30;
     m.map(0x1000, 0x4000_0000, Flags::user_data()).unwrap();
     let first_chain = taken.borrow().len();
-    m.map(2 * GIB, 0x4000_1000, Flags::user_data()).unwrap();
-    m.map(2 * GIB + 0x1000, 0x4000_2000, Flags::user_data())
+    m.map(2 * ONE_GIBIBYTE, 0x4000_1000, Flags::user_data())
+        .unwrap();
+    m.map(2 * ONE_GIBIBYTE + 0x1000, 0x4000_2000, Flags::user_data())
         .unwrap();
     // The second map reused L1 and took a fresh L2 and L3.
     let (l2, l3) = {
@@ -557,25 +558,26 @@ fn unlinking_a_table_cuts_its_whole_span_and_nothing_else() {
     };
 
     let (base, span, flush) = m
-        .unlink_table(2 * GIB + 0x1000, l2)
+        .unlink_table(2 * ONE_GIBIBYTE + 0x1000, l2)
         .expect("the walk to that page passes through its L2");
     never_installed(flush);
-    assert_eq!((base, span), (2 * GIB, GIB));
+    assert_eq!((base, span), (2 * ONE_GIBIBYTE, ONE_GIBIBYTE));
 
-    assert!(m.translate(2 * GIB).is_none());
-    assert!(m.translate(2 * GIB + 0x1000).is_none());
+    assert!(m.translate(2 * ONE_GIBIBYTE).is_none());
+    assert!(m.translate(2 * ONE_GIBIBYTE + 0x1000).is_none());
     assert_eq!(m.translate(0x1000).map(|(pa, _)| pa), Some(0x4000_0000));
     assert!(
-        m.unlink_table(2 * GIB, l3).is_none(),
+        m.unlink_table(2 * ONE_GIBIBYTE, l3).is_none(),
         "a table below the cut is no longer on any walk"
     );
     assert!(
-        m.unlink_table(2 * GIB, l2).is_none(),
+        m.unlink_table(2 * ONE_GIBIBYTE, l2).is_none(),
         "a table is cut once; the second ask finds nothing"
     );
 
     let before = taken.borrow().len();
-    m.map(2 * GIB, 0x4000_3000, Flags::user_data()).unwrap();
+    m.map(2 * ONE_GIBIBYTE, 0x4000_3000, Flags::user_data())
+        .unwrap();
     assert_eq!(
         taken.borrow().len(),
         before + 2,

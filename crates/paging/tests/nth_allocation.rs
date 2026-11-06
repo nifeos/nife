@@ -17,8 +17,8 @@ use paging::{
     PageTable, Sv39, Vtd,
 };
 
-const MIB2: u64 = 2 << 20;
-const GIB1: u64 = 1 << 30;
+const TWO_MEBIBYTES: u64 = 2 << 20;
+const ONE_GIBIBYTE: u64 = 1 << 30;
 
 /// The pretend frame allocator, failing on call `fail_at` (counted from 0) and on no other.
 ///
@@ -240,10 +240,10 @@ fn sweep<F: PageFormat>(
 /// failing run per level above the leaf, none for an Sv39 gigapage, which sits in the root.
 fn a_failed_map_block_leaves_nothing<F: PageFormat>(sizes: &[PageSize]) {
     for &size in sizes {
-        let va = 4 * GIB1 - size.bytes();
+        let va = 4 * ONE_GIBIBYTE - size.bytes();
         let (failures, _) = sweep::<F>(&format!("map_block({size:?})"), |root, pool| {
             pool.mapper::<F>(root)
-                .map_block(va, 7 * GIB1, size, Flags::user_data())
+                .map_block(va, 7 * ONE_GIBIBYTE, size, Flags::user_data())
         });
         let above = F::LEVELS - 1 - size.levels_above_bottom();
         assert_eq!(
@@ -265,10 +265,10 @@ fn a_failed_map_block_leaks_no_table() {
 /// **`map_range` straddling a 1 GiB boundary**, so the second page needs two new tables after the
 /// first page is mapped: the case where something is already taken when the allocator fails.
 fn a_failed_map_range_leaves_a_prefix<F: PageFormat>() {
-    let va = GIB1 - 2 * PAGE_SIZE;
+    let va = ONE_GIBIBYTE - 2 * PAGE_SIZE;
     let (failures, _) = sweep::<F>("map_range", |root, pool| {
         pool.mapper::<F>(root)
-            .map_range(va, 9 * GIB1, 4, Flags::user_data())
+            .map_range(va, 9 * ONE_GIBIBYTE, 4, Flags::user_data())
     });
     assert!(
         failures > F::LEVELS - 1,
@@ -288,12 +288,12 @@ fn a_failed_map_range_leaks_no_table() {
 /// **`map_span` with every leaf size in play**: a 4 KiB head, a 2 MiB block, a 1 GiB block, a 2 MiB
 /// block and a 4 KiB tail, in that order, so a failure can land after any number of them.
 fn a_failed_map_span_leaves_a_prefix<F: PageFormat>() {
-    let va = 2 * GIB1 - MIB2 - PAGE_SIZE;
-    let len = PAGE_SIZE + MIB2 + GIB1 + MIB2 + PAGE_SIZE;
+    let va = 2 * ONE_GIBIBYTE - TWO_MEBIBYTES - PAGE_SIZE;
+    let len = PAGE_SIZE + TWO_MEBIBYTES + ONE_GIBIBYTE + TWO_MEBIBYTES + PAGE_SIZE;
     let (failures, _) = sweep::<F>("map_span", |root, pool| {
         pool.mapper::<F>(root).map_span(
             va,
-            va + 4 * GIB1,
+            va + 4 * ONE_GIBIBYTE,
             len,
             Flags::user_data(),
             PageSize::Size1GiB,
@@ -319,12 +319,12 @@ fn a_failed_map_span_maps_a_prefix() {
 fn a_failed_domain_build_leaves_a_prefix<F: PageFormat>() {
     let regions = [
         DmaRegion {
-            base: GIB1 - 2 * PAGE_SIZE,
+            base: ONE_GIBIBYTE - 2 * PAGE_SIZE,
             size: 3 * PAGE_SIZE,
             writable: true,
         },
         DmaRegion {
-            base: 3 * GIB1,
+            base: 3 * ONE_GIBIBYTE,
             size: 2 * PAGE_SIZE,
             writable: true,
         },

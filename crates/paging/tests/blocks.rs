@@ -84,14 +84,14 @@ impl Drop for Pool {
     }
 }
 
-const MIB2: u64 = 2 << 20;
-const GIB1: u64 = 1 << 30;
+const TWO_MEBIBYTES: u64 = 2 << 20;
+const ONE_GIBIBYTE: u64 = 1 << 30;
 
 /// A low-half address every format can name: 1 GiB aligned, well under Sv39's 256 GiB half.
-const VA: u64 = 4 * GIB1;
+const VA: u64 = 4 * ONE_GIBIBYTE;
 /// A physical address different from `VA`, so a translation that forgot the offset or used the
 /// virtual address shows up.
-const PA: u64 = 7 * GIB1;
+const PA: u64 = 7 * ONE_GIBIBYTE;
 
 fn a_block_translates_with_its_offset<F: PageFormat>() {
     let pool = Pool::new(8);
@@ -100,7 +100,12 @@ fn a_block_translates_with_its_offset<F: PageFormat>() {
         (PageSize::Size2MiB, Flags::user_data()),
         (PageSize::Size1GiB, Flags::user_rodata()),
     ] {
-        let va = VA + if size == PageSize::Size2MiB { 0 } else { GIB1 };
+        let va = VA
+            + if size == PageSize::Size2MiB {
+                0
+            } else {
+                ONE_GIBIBYTE
+            };
         m.map_block(va, PA, size, flags).unwrap();
         for off in [0, PAGE_SIZE, size.bytes() / 2 + 0x123, size.bytes() - 1] {
             assert_eq!(
@@ -128,12 +133,15 @@ fn a_leaf_or_a_block_is_never_cut_as_a_table<F: PageFormat>() {
     let mut m = pool.mapper::<F>(Half::Low);
     let flags = Flags::user_data();
     m.map(VA, PA, flags).unwrap();
-    m.map_block(VA + GIB1, PA, PageSize::Size1GiB, flags)
+    m.map_block(VA + ONE_GIBIBYTE, PA, PageSize::Size1GiB, flags)
         .unwrap();
     assert!(m.unlink_table(VA, PA).is_none(), "a 4 KiB leaf");
-    assert!(m.unlink_table(VA + GIB1, PA).is_none(), "a 1 GiB block");
+    assert!(
+        m.unlink_table(VA + ONE_GIBIBYTE, PA).is_none(),
+        "a 1 GiB block"
+    );
     assert_eq!(m.translate(VA), Some((PA, flags)));
-    assert_eq!(m.translate(VA + GIB1), Some((PA, flags)));
+    assert_eq!(m.translate(VA + ONE_GIBIBYTE), Some((PA, flags)));
 }
 
 #[test]
@@ -167,10 +175,20 @@ fn a_page_inside_a_block_is_refused<F: PageFormat>() {
         m.map_block(VA, PA, PageSize::Size2MiB, Flags::user_data()),
         Err(MapError::AlreadyMapped)
     );
-    m.map_block(VA + GIB1, PA, PageSize::Size1GiB, Flags::user_data())
-        .unwrap();
+    m.map_block(
+        VA + ONE_GIBIBYTE,
+        PA,
+        PageSize::Size1GiB,
+        Flags::user_data(),
+    )
+    .unwrap();
     assert_eq!(
-        m.map_block(VA + GIB1 + MIB2, PA, PageSize::Size2MiB, Flags::user_data()),
+        m.map_block(
+            VA + ONE_GIBIBYTE + TWO_MEBIBYTES,
+            PA,
+            PageSize::Size2MiB,
+            Flags::user_data()
+        ),
         Err(MapError::AlreadyMapped)
     );
 }
@@ -233,7 +251,12 @@ fn a_misaligned_block_is_refused() {
         Err(MapError::Misaligned)
     );
     assert_eq!(
-        m.map_block(VA, PA + MIB2, PageSize::Size1GiB, Flags::user_data()),
+        m.map_block(
+            VA,
+            PA + TWO_MEBIBYTES,
+            PageSize::Size1GiB,
+            Flags::user_data()
+        ),
         Err(MapError::Misaligned)
     );
     assert_eq!(pool.used(), 1, "a refused block allocated a table");
@@ -261,9 +284,9 @@ fn vtd_declines_blocks() {
 fn a_span_maps_exactly_its_pages<F: PageFormat>() {
     // Starts one page below a 2 MiB boundary and ends three pages past the second one after it, so
     // there is a one-page head, two blocks, and a three-page tail.
-    let va = VA + MIB2 - PAGE_SIZE;
-    let pa = PA + MIB2 - PAGE_SIZE;
-    let len = PAGE_SIZE + 2 * MIB2 + 3 * PAGE_SIZE;
+    let va = VA + TWO_MEBIBYTES - PAGE_SIZE;
+    let pa = PA + TWO_MEBIBYTES - PAGE_SIZE;
+    let len = PAGE_SIZE + 2 * TWO_MEBIBYTES + 3 * PAGE_SIZE;
 
     let blocks = Pool::new(16);
     let mut m = blocks.mapper::<F>(Half::Low);
@@ -315,7 +338,7 @@ fn a_span_maps_exactly_its_pages_on_every_format() {
 /// the same offset cannot tell `map_span` computing either address at the wrong offset.
 fn skewed_spans_are_mapped_in_pages<F: PageFormat>() {
     for (va, pa) in [(VA + PAGE_SIZE, PA), (VA, PA + PAGE_SIZE)] {
-        let len = 2 * MIB2;
+        let len = 2 * TWO_MEBIBYTES;
         let pool = Pool::new(16);
         let mut m = pool.mapper::<F>(Half::Low);
         m.map_span(va, pa, len, Flags::kernel_data(), PageSize::Size1GiB)
@@ -328,7 +351,7 @@ fn skewed_spans_are_mapped_in_pages<F: PageFormat>() {
             );
         }
         // A page, not a block, at the one place a block could have started on either side.
-        for off in [0, MIB2 - PAGE_SIZE] {
+        for off in [0, TWO_MEBIBYTES - PAGE_SIZE] {
             let (_, flush) = m.unmap(va + off).unwrap();
             never_installed(flush);
         }
@@ -349,19 +372,31 @@ fn skewed_spans_are_mapped_in_pages_on_every_format() {
 fn the_largest_size_is_a_ceiling() {
     let two = Pool::new(8);
     let mut m = two.mapper::<Ia32e>(Half::Low);
-    m.map_span(VA, PA, GIB1, Flags::kernel_data(), PageSize::Size2MiB)
-        .unwrap();
+    m.map_span(
+        VA,
+        PA,
+        ONE_GIBIBYTE,
+        Flags::kernel_data(),
+        PageSize::Size2MiB,
+    )
+    .unwrap();
     // Root, PDPT, one PD holding 512 blocks.
     assert_eq!(two.used(), 3);
     assert_eq!(
-        m.translate(VA + GIB1 - 1),
-        Some((PA + GIB1 - 1, Flags::kernel_data()))
+        m.translate(VA + ONE_GIBIBYTE - 1),
+        Some((PA + ONE_GIBIBYTE - 1, Flags::kernel_data()))
     );
 
     let one = Pool::new(8);
     let mut g = one.mapper::<Ia32e>(Half::Low);
-    g.map_span(VA, PA, GIB1, Flags::kernel_data(), PageSize::Size1GiB)
-        .unwrap();
+    g.map_span(
+        VA,
+        PA,
+        ONE_GIBIBYTE,
+        Flags::kernel_data(),
+        PageSize::Size1GiB,
+    )
+    .unwrap();
     // Root and a PDPT holding the one leaf.
     assert_eq!(one.used(), 2);
 }
