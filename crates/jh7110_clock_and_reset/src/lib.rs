@@ -23,10 +23,9 @@
 //!
 //! Mainline links are pinned to `torvalds/linux` commit `cbbddb6b08cc`; vendor links to
 //! `starfive-tech/u-boot` tag `VF2_v2.10.4`, commit `1ae835c25e3d`, the release a VisionFive 2
-//! ships with. All were fetched 2026-11-01 (UTC) and the claims that name a revision were checked
-//! again against these commits on 2026-11-06 (UTC). The vendor branch `JH7110_VisionFive2_devel`
-//! was also read at commit `c4c67bb66ae6` ([vendor-board-dts-head] and [vendor-clk-driver-head]),
-//! and where the tag and the branch differ the item says which one holds the claim.
+//! ships with. All were fetched 2026-11-01 (UTC), and every claim that names a revision was checked
+//! against these commits on 2026-11-06. The vendor branch `JH7110_VisionFive2_devel` was also read
+//! at commit `c4c67bb66ae6`, and where the tag and the branch differ the item says which holds it.
 //!
 //! [mainline-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110.dtsi
 //! [mainline-trng]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/drivers/char/hw_random/jh7110-trng.c
@@ -38,14 +37,6 @@
 //! [mainline-rst-common]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/drivers/reset/starfive/reset-starfive-jh71x0.c
 //! [vendor-dts]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/dts/jh7110.dtsi
 //! [vendor-ids]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/include/dt-bindings/clock/starfive-jh7110-clkgen.h
-//! [vendor-board-dts]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/dts/starfive_visionfive2.dts
-//! [vendor-board-dts-head]: https://github.com/starfive-tech/u-boot/blob/c4c67bb66ae6f41c98537d18cf5c3abc8b97b8e4/arch/riscv/dts/starfive_visionfive2.dts
-//! [vendor-clk-driver]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/drivers/clk/starfive/clk-jh7110.c
-//! [vendor-clk-driver-head]: https://github.com/starfive-tech/u-boot/blob/c4c67bb66ae6f41c98537d18cf5c3abc8b97b8e4/drivers/clk/starfive/clk-jh7110.c
-//! [vendor-regs]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/include/asm/arch-jh7110/jh7110-regs.h
-//! [vendor-i2c]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/drivers/i2c/designware_i2c.c
-//! [vendor-board]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/board/starfive/visionfive2/starfive_visionfive2.c
-//! [mainline-common-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110-common.dtsi
 //!
 //! Name: ratified 2026-09-13, replacing `jh7110_crg`; kept as the crates.io name (#1806).
 
@@ -233,6 +224,8 @@ pub(crate) const AONCLK_GMAC0_AXI: u32 = 3;
 /// `JH7110_AONCLK_GMAC0_TX`: a gate with a two-way mux, `gmac0_gtxclk` (0) or
 /// `gmac0_rmii_rtx` (1). Word `0x14`, which the vendor U-Boot calls `GMAC5_0_CLK_TX_SHIFT`
 /// and sets bit 24 of (`jh7110_gmac_sel_tx_to_rgmii` in \[vendor-board\]).
+///
+/// [vendor-board]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/board/starfive/visionfive2/starfive_visionfive2.c
 pub(crate) const AONCLK_GMAC0_TX: u32 = 5;
 /// `gmac0_tx`'s parent on a VisionFive 2 v1.3B: `gmac0_rmii_rtx`, mainline's
 /// `assigned-clock-parents` for `&gmac0` in `jh7110-starfive-visionfive-2-v1.3b.dts` beside
@@ -391,6 +384,9 @@ pub(crate) const SYSTEM_SIZE: u64 = 0x1_0000;
 /// vendor branch head (\[vendor-clk-driver-head\]) that driver registers no clock by this name.
 /// Mainline's `DesignWare` node names this clock alone. So there is no second gate to turn on, and
 /// 298 is not a word to write.
+///
+/// [vendor-clk-driver]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/drivers/clk/starfive/clk-jh7110.c
+/// [vendor-clk-driver-head]: https://github.com/starfive-tech/u-boot/blob/c4c67bb66ae6f41c98537d18cf5c3abc8b97b8e4/drivers/clk/starfive/clk-jh7110.c
 pub(crate) const SYSCLK_I2C5_APB: u32 = 143;
 
 /// `JH7110_SYSRST_I2C5_APB` \[mainline-ids\], and `RSTN_U5_DW_I2C_APB` in the vendor header, both
@@ -403,6 +399,8 @@ pub(crate) const SYSCLK_I2C5_APB: u32 = 143;
 /// A controller held in reset reads `IC_STATUS` as zero, so its transmit-FIFO-empty poll can never
 /// succeed. That stall is the likely reason a PMIC transfer fails after the hand-over; a board run
 /// of the plan below is what would confirm it.
+///
+/// [vendor-i2c]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/drivers/i2c/designware_i2c.c
 pub(crate) const SYSRST_I2C5_APB: u32 = 81;
 
 /// **What I2C5 needs before OpenSBI can reach the PMIC**, when the tree does not say. Clock first,
@@ -423,6 +421,10 @@ pub(crate) const SYSCLK_SDIO1_AHB: u32 = 92;
 /// controller's card clock source, `ciu`, a gated divider that mainline (\[mainline-common-dts\]) and
 /// the vendor branch head (\[vendor-board-dts-head\]) assign 50 MHz; the board file at
 /// `VF2_v2.10.4` (\[vendor-board-dts\]) assigns none. Word `0x174`.
+///
+/// [mainline-common-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110-common.dtsi
+/// [vendor-board-dts]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/dts/starfive_visionfive2.dts
+/// [vendor-board-dts-head]: https://github.com/starfive-tech/u-boot/blob/c4c67bb66ae6f41c98537d18cf5c3abc8b97b8e4/arch/riscv/dts/starfive_visionfive2.dts
 pub(crate) const SYSCLK_SDIO0_SDCARD: u32 = 93;
 /// `JH7110_SYSCLK_SDIO1_SDCARD`, vendor `JH7110_SDIO1_CLK_SDCARD`, both **94**: the microSD
 /// controller's `ciu`. Word `0x178`.
@@ -471,12 +473,16 @@ pub const fn clock_divider(word: u32) -> u32 {
 /// is this string and its `reg` is `0x36`. A VisionFive 2's OpenSBI matches the same string to find
 /// its reset device.
 ///
+/// [vendor-board-dts]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/dts/starfive_visionfive2.dts
+///
 /// Name: ratified 2026-11-02 (UTC), #3090.
 #[doc(alias = "pmic")]
 pub const COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR: &[u8] = b"stf,axp15060-regulator";
 
 /// The same PMIC in mainline: the `pmic@36` node under `&i2c5` in \[mainline-common-dts\]
 /// (`torvalds/linux` at commit `cbbddb6b08cc`), whose `compatible` is this string.
+///
+/// [mainline-common-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110-common.dtsi
 ///
 /// Name: ratified 2026-11-02 (UTC), #3090.
 #[doc(alias = "pmic")]
@@ -769,6 +775,8 @@ impl DevicePlan {
 /// what looked like an overlap between the PLL words at `0x2c..0x34` and the early clock words:
 /// different windows, same offsets. SYS is the chip's abbreviation for [`SYSTEM`], and syscon is
 /// its system-controller block.
+///
+/// [vendor-regs]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/include/asm/arch-jh7110/jh7110-regs.h
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
 #[doc(alias = "system syscon")]
