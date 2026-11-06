@@ -24,10 +24,12 @@ pub const CONTROL: u32 = 0x000;
 /// machines. Self-clearing.
 #[doc(alias = "controller reset")]
 pub(crate) const CONTROL_CONTROLLER_RESET: u32 = 1 << 0;
-/// **FIFO reset** (OpenBSD's `SDMMC_CTRL_FIFO_RESET`): reset the data FIFO. Self-clearing.
+/// **FIFO reset** (`CONTROL_FIFO_RESET`, OpenBSD's `SDMMC_CTRL_FIFO_RESET`): reset the data
+/// FIFO. Self-clearing.
 #[doc(alias = "queue reset")]
 pub(crate) const CONTROL_FIFO_RESET: u32 = 1 << 1;
-/// **DMA reset** (OpenBSD's `SDMMC_CTRL_DMA_RESET`): reset the DMA interface. Self-clearing.
+/// **DMA reset** (`CONTROL_DMA_RESET`, OpenBSD's `SDMMC_CTRL_DMA_RESET`): reset the DMA interface.
+/// Self-clearing.
 #[doc(alias = "direct memory access reset")]
 pub(crate) const CONTROL_DMA_RESET: u32 = 1 << 2;
 /// **All resets** (OpenBSD's `SDMMC_CTRL_ALL_RESET`): all three resets, which is how bring-up uses
@@ -40,8 +42,8 @@ pub(crate) const CONTROL_ALL_RESET: u32 =
 /// for no reader.
 #[doc(alias = "interrupt enable")]
 pub(crate) const CONTROL_INT_ENABLE: u32 = 1 << 4;
-/// **DMA enable** (OpenBSD's `SDMMC_CTRL_DMA_ENABLE`): hand the FIFO to a DMA engine instead of the
-/// CPU.
+/// **DMA enable** (`CONTROL_DMA_ENABLE`, OpenBSD's `SDMMC_CTRL_DMA_ENABLE`): hand the FIFO to a DMA engine
+/// instead of the CPU.
 #[doc(alias = "direct memory access enable")]
 pub(crate) const CONTROL_DMA_ENABLE: u32 = 1 << 5;
 /// **Use internal DMAC** (OpenBSD's `SDMMC_CTRL_USE_INTERNAL_DMAC`): use the controller's own
@@ -286,7 +288,8 @@ pub(crate) const RINTSTS_ALL: u32 = 0xffff;
 #[doc(alias = "status register")]
 #[doc(alias = "STATUS")]
 pub const STATUS_REGISTER: u32 = 0x048;
-/// **FIFO full** (the databook's `fifo_full`, which `dwmmc-host` keeps): the FIFO is full.
+/// **FIFO full** (`STATUS_FIFO_FULL`, the databook's `fifo_full`, which `dwmmc-host` keeps): the
+/// FIFO is full.
 #[doc(alias = "queue full")]
 #[cfg(any(test, feature = "bench"))]
 pub(crate) const STATUS_FIFO_FULL: u32 = 1 << 3;
@@ -565,7 +568,7 @@ pub const fn queue_width(hcon: u32) -> Option<u32> {
 }
 
 /// **Does the IDMAC use 64-bit addresses?** `HCON` bit 27. Changes the layout of every register
-/// from `0x88` up and doubles the descriptor, so the IDMAC path refuses it; radon's is clear.
+/// from `0x88` up and doubles the descriptor, so the IDMAC path refuses it; the VisionFive 2's is clear.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. `dma` is spelled out wherever this tree authors it.
 #[must_use]
@@ -575,7 +578,7 @@ pub const fn uses_64_bit_direct_memory_access(hcon: u32) -> bool {
 
 /// **The controller's external DMA interface**, `HCON` bits 17:16: 0 is none, 1 Synopsys' own
 /// `DW_DMA`, 2 a generic DMA handshake, 3 a non-Synopsys one. An IDMAC is built only into a
-/// controller that reads 0 here, which is how Linux's `dw_mci_probe` decides to use it. radon
+/// controller that reads 0 here, which is how Linux's `dw_mci_probe` decides to use it. The VisionFive 2
 /// reads 0, and its firmware reads the card through the IDMAC (`CONTROL` bit 25 as it hands over).
 #[must_use]
 pub(crate) const fn direct_memory_access_interface(hcon: u32) -> u32 {
@@ -605,7 +608,7 @@ mod tests {
         assert_eq!(queue_width(!(7 << 7) | (1 << 7)), Some(4));
         assert!(uses_64_bit_direct_memory_access(1 << 27));
         assert!(!uses_64_bit_direct_memory_access(!(1 << 27)));
-        // radon's word, read on both slots: no external DMA interface, so an IDMAC, and 32-bit
+        // the VisionFive 2's word, read on both slots: no external DMA interface, so an IDMAC, and 32-bit
         // descriptor addresses.
         assert_eq!(direct_memory_access_interface(0x00c4_3cc1), 0);
         assert!(!uses_64_bit_direct_memory_access(0x00c4_3cc1));
@@ -613,7 +616,7 @@ mod tests {
     }
 
     /// The burst field is an encoding, not a count, and the IDMAC moves a burst at a time: a burst
-    /// that does not divide the FIFO's free half would overrun it. Depth 32 is radon's tree; 48
+    /// that does not divide the FIFO's free half would overrun it. Depth 32 is the VisionFive 2's tree; 48
     /// leaves a free half of 24, which 16 does not divide.
     #[test]
     fn the_direct_memory_access_burst_divides_a_block_and_the_free_half_of_the_queue() {

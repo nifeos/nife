@@ -1,7 +1,7 @@
 Falsifies `designware_mobile_storage::proofs::the_scratch_range_never_touches_a_partition_or_sector_zero`.
 
 The defect: the scratch range is computed one sector too late, so it ends ON the first partition's
-first sector instead of just before it. On radon's card that sector is the FAT32 boot sector, and
+first sector instead of just before it. On the VisionFive 2's card that sector is the FAT32 boot sector, and
 the write test would overwrite it with a pattern before restoring it.
 
 Expected to fail: the harness's `assert!(!e.contains(sector))`, on any table with a used entry

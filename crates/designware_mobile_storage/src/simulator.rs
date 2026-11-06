@@ -4,7 +4,7 @@
 //! checks this against silicon. It models only the contract the driver relies on, as the databook
 //! and OpenBSD describe it: self-clearing `CONTROL` resets, the `CMD` start bit, a FIFO raising
 //! `RXDR`, `TXDR`, `DTO` and `ACD`, `STATUS_REGISTER` fill and busy, `CARDTHRCTL` above the FIFO ending in
-//! `FRUN` and `DTO` as on radon, and the IDMAC walk, whose last read words reach memory after
+//! `FRUN` and `DTO` as on the VisionFive 2, and the IDMAC walk, whose last read words reach memory after
 //! `DTO`. Time is one microsecond per `now_microseconds` call, so a test that would hang on silicon fails
 //! here.
 //!
@@ -367,7 +367,7 @@ impl SimulatedHostController {
         &mut self.registers[(offset / 4) as usize]
     }
 
-    fn high_capacity(&self) -> bool {
+    fn is_high_capacity(&self) -> bool {
         !matches!(self.kind, CardKind::SdV1 | CardKind::SdV2)
             && !(self.kind == CardKind::MultimediaCard && self.multimedia_card_byte_addressed)
     }
@@ -424,7 +424,7 @@ impl SimulatedHostController {
     }
 
     fn logical_block_address(&self, argument: u32) -> u64 {
-        if self.high_capacity() {
+        if self.is_high_capacity() {
             u64::from(argument)
         } else {
             u64::from(argument) / 512
@@ -457,7 +457,7 @@ impl SimulatedHostController {
                 let mut operation_conditions = 0x00ff_8000;
                 if self.power_up_polls > self.busy_polls {
                     operation_conditions |= 1 << 31;
-                    if self.high_capacity() && (index == 1 || argument & (1 << 30) != 0) {
+                    if self.is_high_capacity() && (index == 1 || argument & (1 << 30) != 0) {
                         operation_conditions |= 1 << 30;
                     }
                     self.state = State::Ready;
@@ -546,7 +546,7 @@ impl SimulatedHostController {
             let bytes = *self.register(registers::BYTCNT) as usize;
             let write = word & registers::COMMAND_WRITE != 0;
             self.direct_memory_access_write = write;
-            if self.internal_direct_memory_access_active()
+            if self.is_internal_direct_memory_access_active()
                 && let Some(m) = &self.memory
                 && m.bus().cpu_unfenced
             {
@@ -641,8 +641,8 @@ impl SimulatedHostController {
             }
             *self.register(registers::RINTSTS) |= registers::RINTSTS_TXDR;
         } else {
-            if self.threshold_beyond_queue() {
-                // What radon answered (`RINTSTS 0x080c` with `CD`): the block ends, overrun.
+            if self.is_threshold_beyond_queue() {
+                // What the VisionFive 2 answered (`RINTSTS 0x080c` with `CD`): the block ends, overrun.
                 *self.register(registers::RINTSTS) |=
                     registers::RINTSTS_FRUN | registers::RINTSTS_DTO;
                 return;
@@ -676,7 +676,7 @@ impl SimulatedHostController {
         self.transfer = Some(t);
     }
 
-    fn internal_direct_memory_access_active(&self) -> bool {
+    fn is_internal_direct_memory_access_active(&self) -> bool {
         let both = registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE;
         self.peek(registers::CONTROL) & both == both
             && self.peek(registers::BUS_MODE) & registers::BUS_MODE_DE != 0
@@ -686,7 +686,7 @@ impl SimulatedHostController {
     /// **One stretch of the IDMAC's walk**: move words between the FIFO and memory until the FIFO
     /// is empty (a read) or full (a write), or the walk stops.
     fn internal_direct_memory_access_step(&mut self) {
-        if !self.internal_direct_memory_access_active() {
+        if !self.is_internal_direct_memory_access_active() {
             return;
         }
         let Some(memory) = self.memory.clone() else {
@@ -800,7 +800,7 @@ impl SimulatedHostController {
 
     /// A card read threshold enabled above the FIFO's size in bytes, which the databook does not
     /// allow and Linux's `dw_mci_ctrl_thld` refuses to program.
-    fn threshold_beyond_queue(&self) -> bool {
+    fn is_threshold_beyond_queue(&self) -> bool {
         if registers::queue_offset(self.verid) == registers::CARDTHRCTL {
             return false;
         }
