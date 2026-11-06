@@ -555,10 +555,10 @@ def unit_selftest():
             failed += 1
             print(f'unit selftest: the template word list lost a `{unit}` row it counts after `per` '
                   f'or a number', file=sys.stderr)
-    for old, new in (('NANOS_PER_SEC', 'NS_PER_SECOND'), ('SECS_PER_MIN', 'SECONDS_PER_MINUTE'),
+    for old, new in (('NANOS_PER_SEC', 'NANOSECONDS_PER_SECOND'), ('TICK_HZ', 'TICK_HERTZ'), ('SECS_PER_MIN', 'SECONDS_PER_MINUTE'),
                      ('unix_nanos', 'unix_nanoseconds'), ('delay_us', 'delay_microseconds'),
                      ('within_30_s', 'within_30_seconds'), ('cpu_millis', 'cpu_milliseconds'),
-                     ('hz', 'hz')):
+                     ('hz', 'hertz'), ('fine', 'fine')):
         if respell(old) != new:
             failed += 1
             print(f'unit selftest: respell({old!r}) is {respell(old)!r}, wanted {new!r}', file=sys.stderr)
