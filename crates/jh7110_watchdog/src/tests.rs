@@ -116,36 +116,36 @@ fn a_pet_clears_the_interrupt_so_a_first_expiry_does_not_carry_into_a_reset() {
 
 #[test]
 fn sixty_seconds_is_two_counts_of_thirty_at_the_oscillator() {
-    let load = load_for(60, CORE_CLOCK_HZ).unwrap();
+    let load = load_for(60, CORE_CLOCK_HERTZ).unwrap();
     assert_eq!(load, 720_000_000);
-    assert_eq!(reset_after_tenths(load, CORE_CLOCK_HZ), 600);
+    assert_eq!(reset_after_tenths(load, CORE_CLOCK_HERTZ), 600);
 }
 
 #[test]
 fn the_longest_reset_is_about_357_seconds_and_longer_is_refused() {
-    assert_eq!(max_reset_after_seconds(CORE_CLOCK_HZ), 357);
-    assert!(load_for(357, CORE_CLOCK_HZ).is_some());
-    assert_eq!(load_for(358, CORE_CLOCK_HZ), None);
-    assert_eq!(load_for(0, CORE_CLOCK_HZ), None);
+    assert_eq!(max_reset_after_seconds(CORE_CLOCK_HERTZ), 357);
+    assert!(load_for(357, CORE_CLOCK_HERTZ).is_some());
+    assert_eq!(load_for(358, CORE_CLOCK_HERTZ), None);
+    assert_eq!(load_for(0, CORE_CLOCK_HERTZ), None);
 }
 
 /// The failure the measurement exists for: a gated core clock reads a frozen count, and arming
 /// it would print ARMED over a timer that can never fire.
 #[test]
 fn a_halted_or_reloaded_counter_measures_zero_and_is_refused() {
-    assert_eq!(measured_hz(5_000, 5_000, 400_000, 4_000_000), 0);
-    assert_eq!(measured_hz(5_000, 6_000, 400_000, 4_000_000), 0);
-    assert!(!rate_agrees(0, CORE_CLOCK_HZ));
+    assert_eq!(measured_hertz(5_000, 5_000, 400_000, 4_000_000), 0);
+    assert_eq!(measured_hertz(5_000, 6_000, 400_000, 4_000_000), 0);
+    assert!(!rate_agrees(0, CORE_CLOCK_HERTZ));
 }
 
 #[test]
 fn a_counter_on_the_oscillator_agrees_and_one_on_half_of_it_does_not() {
     // 100 ms of radon's 4 MHz timer.
-    let at = |ticks: u32| measured_hz(720_000_000, 720_000_000 - ticks, 400_000, 4_000_000);
+    let at = |ticks: u32| measured_hertz(720_000_000, 720_000_000 - ticks, 400_000, 4_000_000);
     assert_eq!(at(2_400_000), 24_000_000);
-    assert!(rate_agrees(at(2_400_000), CORE_CLOCK_HZ));
-    assert!(rate_agrees(at(2_350_000), CORE_CLOCK_HZ));
-    assert!(!rate_agrees(at(1_200_000), CORE_CLOCK_HZ));
+    assert!(rate_agrees(at(2_400_000), CORE_CLOCK_HERTZ));
+    assert!(rate_agrees(at(2_350_000), CORE_CLOCK_HERTZ));
+    assert!(!rate_agrees(at(1_200_000), CORE_CLOCK_HERTZ));
 }
 
 /// Comparing a sequence against `RELOCK` cannot catch a `RELOCK` that writes the key itself,
@@ -177,9 +177,9 @@ fn the_largest_count_the_register_holds_is_accepted() {
 /// A counter on a faster clock than the count assumes resets early, before the soak has stalled.
 #[test]
 fn a_counter_running_fast_is_refused_too() {
-    assert!(!rate_agrees(2 * CORE_CLOCK_HZ, CORE_CLOCK_HZ));
+    assert!(!rate_agrees(2 * CORE_CLOCK_HERTZ, CORE_CLOCK_HERTZ));
     assert!(!rate_agrees(
-        CORE_CLOCK_HZ + CORE_CLOCK_HZ / 10,
-        CORE_CLOCK_HZ
+        CORE_CLOCK_HERTZ + CORE_CLOCK_HERTZ / 10,
+        CORE_CLOCK_HERTZ
     ));
 }

@@ -538,10 +538,10 @@ fn print_watchdog_escape() {
 ///
 /// Returns the armed driver, or `None` with the reason on the console. Refuses a tree that does not
 /// name the watchdog and its clocks, and a counter whose measured rate disagrees with
-/// `CORE_CLOCK_HZ`. See notes/soak/supervisor.md.
+/// `CORE_CLOCK_HERTZ`. See notes/soak/supervisor.md.
 #[cfg(all(soak_watchdog, target_arch = "riscv64"))]
 fn arm_watchdog() -> Option<Watchdog> {
-    use jh7110_watchdog::CORE_CLOCK_HZ;
+    use jh7110_watchdog::CORE_CLOCK_HERTZ;
     discard_stale_bytes();
     let Some((found, sys)) = crate::memory::jh7110_watchdog() else {
         println!(
@@ -566,19 +566,19 @@ fn arm_watchdog() -> Option<Watchdog> {
     if !start_watchdog_clocks(&found, &sys) {
         return None;
     }
-    let load = jh7110_watchdog::load_for(WATCHDOG_RESET_AFTER_SECONDS, CORE_CLOCK_HZ)?;
+    let load = jh7110_watchdog::load_for(WATCHDOG_RESET_AFTER_SECONDS, CORE_CLOCK_HERTZ)?;
     // SAFETY: `memory::initialize` recorded this window only for a tree that names the watchdog,
     // and `mmu::map_everything` mapped its first page device-typed in the direct map.
     // `start_watchdog_clocks` has just read both clocks running and both resets released.
     let mut dog = unsafe { Watchdog::new(arch::mmu::phys_to_virt(found.base) as usize) };
     dog.arm(load);
     let hz = measure_watchdog_rate(&dog);
-    if !jh7110_watchdog::rate_agrees(hz, CORE_CLOCK_HZ) {
+    if !jh7110_watchdog::rate_agrees(hz, CORE_CLOCK_HERTZ) {
         dog.disarm();
         let halted = !dog.is_counting();
         println!(
             "{WATCHDOG_MARKER} NOT ARMED: the counter ran at {hz} Hz against this kernel's timer, \
-             not the {CORE_CLOCK_HZ} Hz its count was computed for, so it would reset at the wrong \
+             not the {CORE_CLOCK_HERTZ} Hz its count was computed for, so it would reset at the wrong \
              time or never. It is {}.",
             if halted {
                 "halted"
@@ -588,7 +588,7 @@ fn arm_watchdog() -> Option<Watchdog> {
         );
         return None;
     }
-    let tenths = jh7110_watchdog::reset_after_tenths(load, CORE_CLOCK_HZ);
+    let tenths = jh7110_watchdog::reset_after_tenths(load, CORE_CLOCK_HERTZ);
     println!(
         "{WATCHDOG_MARKER} the counter runs at {hz} Hz, measured against this kernel's timer. The \
          JH7110 keeps no record this kernel knows of how its previous boot ended, so a watchdog \
@@ -596,7 +596,7 @@ fn arm_watchdog() -> Option<Watchdog> {
     );
     println!(
         "{WATCHDOG_MARKER} ARMED. THIS BUILD RESETS THE MACHINE IF THE SOAK STOPS BEATING: \
-         {load} ticks of the {CORE_CLOCK_HZ} Hz core clock counted twice, so a reset {}.{}s after \
+         {load} ticks of the {CORE_CLOCK_HERTZ} Hz core clock counted twice, so a reset {}.{}s after \
          the last pet, which comes every {BEAT_SECONDS}s from the beat.",
         tenths / 10,
         tenths % 10,
@@ -682,7 +682,7 @@ fn measure_watchdog_rate(dog: &Watchdog) -> u64 {
     }
     let after = dog.ticks_left();
     let elapsed = arch::timer::now().wrapping_sub(start);
-    jh7110_watchdog::measured_hz(before, after, elapsed, hz)
+    jh7110_watchdog::measured_hertz(before, after, elapsed, hz)
 }
 
 /// Stop beating, on purpose, for `--features wedge_soak_test`.
