@@ -54,7 +54,7 @@ fn a_short_entry_carries_the_long_name_ahead_of_it() {
     let first = entries.next().unwrap().unwrap();
     assert_eq!(&first.short_name(), b"ALONGF~1TXT");
     let name = first.long_name().unwrap();
-    assert!(name.characters().eq("A Long File Name.txt".chars()));
+    assert!(name.chars().eq("A Long File Name.txt".chars()));
     assert_eq!(first.long_name_refusal(), None);
     assert_eq!((first.first_cluster(), first.size_bytes()), (9, 77));
     assert_eq!(first.attributes(), 0x20);

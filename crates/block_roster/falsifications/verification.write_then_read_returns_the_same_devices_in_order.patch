@@ -11,10 +11,9 @@ ordinal differs from its transport.
 
 
 diff --git a/crates/block_roster/src/lib.rs b/crates/block_roster/src/lib.rs
-index d4d5ebf89..7f0fac1c3 100644
 --- a/crates/block_roster/src/lib.rs
 +++ b/crates/block_roster/src/lib.rs
-@@ -146,7 +146,7 @@ pub fn write(page: &mut [u8], devices: &[Device]) -> Result<(), Full> {
+@@ -169,7 +169,7 @@
      for (i, d) in devices.iter().enumerate() {
          let at = HEADER_BYTES + i * ENTRY_BYTES;
          page[at..at + 4].copy_from_slice(&d.ordinal.to_le_bytes());

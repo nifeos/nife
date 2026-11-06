@@ -58,10 +58,9 @@ by offset since milestone 812 (`std::thread::spawn` runs real threads in one add
 it. The one difference from the fixed tree is unchanged.
 
 diff --git a/kernel/src/revoke.rs b/kernel/src/revoke.rs
-index cfbbee0b7..f3a7b8f9b 100644
 --- a/kernel/src/revoke.rs
 +++ b/kernel/src/revoke.rs
-@@ -1106,6 +1106,10 @@ mod tests {
+@@ -847,6 +847,10 @@ mod tests {
                  PageMapSource::Capability(run[0]),
              )
              .expect("map A");
@@ -72,7 +71,7 @@ index cfbbee0b7..f3a7b8f9b 100644
          }
          b.map_physical(
              va_b,
-@@ -1114,6 +1118,10 @@ mod tests {
+@@ -855,6 +859,10 @@ mod tests {
              PageMapSource::Capability(run[0]),
          )
          .expect("map B");
@@ -83,7 +82,7 @@ index cfbbee0b7..f3a7b8f9b 100644
  
          let slot = crate::sched::grant(page_frame_run_capability(
              run[0],
-@@ -1188,6 +1196,15 @@ mod tests {
+@@ -919,6 +927,15 @@ mod tests {
                  PageMapSource::Capability(run[0]),
              )
              .expect("map driver");
@@ -99,7 +98,7 @@ index cfbbee0b7..f3a7b8f9b 100644
          client
              .map_physical(
                  va_client,
-@@ -1196,6 +1213,15 @@ mod tests {
+@@ -927,6 +944,15 @@ mod tests {
                  PageMapSource::Capability(run[1]),
              )
              .expect("map client");
@@ -115,7 +114,7 @@ index cfbbee0b7..f3a7b8f9b 100644
  
          // The client hands its surface back.
          revoke_page_frame_run(run[1], 3);
-@@ -1254,6 +1280,15 @@ mod tests {
+@@ -974,6 +1000,15 @@ mod tests {
                  PageMapSource::Capability(run[0]),
              )
              .expect("map keeper");
@@ -131,7 +130,7 @@ index cfbbee0b7..f3a7b8f9b 100644
          loser
              .map_physical(
                  va_loser,
-@@ -1262,6 +1297,15 @@ mod tests {
+@@ -982,6 +1017,15 @@ mod tests {
                  PageMapSource::Capability(shared),
              )
              .expect("map loser");
@@ -147,7 +146,7 @@ index cfbbee0b7..f3a7b8f9b 100644
  
          unmap_everywhere(shared, keeper.root());
  
-@@ -1308,6 +1352,10 @@ mod tests {
+@@ -1017,6 +1061,10 @@ mod tests {
                  PageMapSource::Capability(run[0]),
              )
              .expect("map");
@@ -158,7 +157,7 @@ index cfbbee0b7..f3a7b8f9b 100644
  
          let run_slot = crate::sched::grant(page_frame_run_capability(
              run[0],
-@@ -1359,6 +1407,14 @@ mod tests {
+@@ -1069,6 +1117,14 @@ mod tests {
              PageMapSource::NoCapability,
          )
          .expect("map B");
@@ -173,7 +172,7 @@ index cfbbee0b7..f3a7b8f9b 100644
  
          assert!(
              mmu::translate_at(a.root(), va_a).is_some(),
-@@ -1397,6 +1453,10 @@ mod tests {
+@@ -1104,6 +1160,10 @@ mod tests {
          space
              .map_physical(va, phys, Flags::user_data(), PageMapSource::NoCapability)
              .expect("map");
@@ -184,7 +183,7 @@ index cfbbee0b7..f3a7b8f9b 100644
          assert!(
              mmu::translate_at(space.root(), va).is_some(),
              "the page was not mapped"
-@@ -1448,6 +1508,10 @@ mod tests {
+@@ -1150,6 +1210,10 @@ mod tests {
                  refused = true;
                  break;
              }
@@ -196,10 +195,9 @@ index cfbbee0b7..f3a7b8f9b 100644
          assert!(
              refused,
 diff --git a/kernel/src/user/address_space.rs b/kernel/src/user/address_space.rs
-index 47ae19b8c..609cf7266 100644
 --- a/kernel/src/user/address_space.rs
 +++ b/kernel/src/user/address_space.rs
-@@ -357,7 +357,8 @@ impl AddressSpace {
+@@ -261,7 +261,8 @@ impl AddressSpace {
          flags: Flags,
          under: crate::revoke::PageMapSource,
      ) -> Result<(), MapError> {
@@ -210,11 +208,10 @@ index 47ae19b8c..609cf7266 100644
  
      /// [`Self::map_physical`] under a [`MappingHold`](crate::revoke::MappingHold) the caller already
 diff --git a/kernel/src/user/address_space_registry.rs b/kernel/src/user/address_space_registry.rs
-index bf11208b4..df7726509 100644
 --- a/kernel/src/user/address_space_registry.rs
 +++ b/kernel/src/user/address_space_registry.rs
-@@ -192,6 +192,10 @@ pub fn user_address_space_map(
-     let space = &mut spaces.get_mut(name).ok_or(MapError::NotMapped)?.space;
+@@ -205,6 +205,10 @@ pub fn user_address_space_map(
+         .space;
  
      space.map_physical(va, phys, flags, under)?;
 +    if !crate::revoke::hold().record_mapping(phys, space.root(), va, under) {

@@ -48,7 +48,7 @@ block_roster::write(&mut page, &[Device { ordinal: 0, transport: TRANSPORT_VIRTI
 let roster = Roster::read(&page).unwrap();
 assert_eq!(roster.len(), 1);
 assert_eq!(roster.get(0).unwrap().transport_name(), Some("virtio-pci"));
-assert_eq!(roster.count_on(TRANSPORT_VIRTIO_PCI), 1);
+assert_eq!(roster.count_by_transport(TRANSPORT_VIRTIO_PCI), 1);
 ```
 
 ## Building and testing

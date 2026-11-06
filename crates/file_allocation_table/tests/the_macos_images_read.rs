@@ -93,7 +93,7 @@ fn files<D: SectorDevice>(
             format!("{}.{}", base.trim_end(), extension.trim_end())
         };
         let name = match entry.long_name() {
-            Some(name) => name.characters().collect::<String>(),
+            Some(name) => name.chars().collect::<String>(),
             None => short,
         };
         let path = format!("{prefix}{name}");

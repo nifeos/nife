@@ -20,7 +20,7 @@ use std::io::Cursor;
 use std::path::Path;
 use std::process::Command;
 
-use file_allocation_table::efi_system_partition::SECTOR_BYTES;
+use file_allocation_table::efi_system_partition::BYTES_PER_SECTOR;
 use file_allocation_table::{
     LookupError, MasterBootRecord, NamedEntry, NoClock, SectorDevice, SectorSize, ShortEntry,
     TableEntry, Volume, VolumeLayout,
@@ -467,13 +467,13 @@ fn rust_fatfs_reads_what_this_crate_wrote() {
         &mut NoClock,
     )
     .expect("a FAT32 volume");
-    let mut image = vec![0u8; total as usize * SECTOR_BYTES];
+    let mut image = vec![0u8; total as usize * BYTES_PER_SECTOR];
     for index in 0..layout.metadata_sectors() {
-        let at = index as usize * SECTOR_BYTES;
-        assert!(layout.fill_sector(index, &mut image[at..at + SECTOR_BYTES]));
+        let at = index as usize * BYTES_PER_SECTOR;
+        assert!(layout.fill_sector(index, &mut image[at..at + BYTES_PER_SECTOR]));
     }
     let body: Vec<u8> = (0..FILE_LEN).map(|i| (i % 251) as u8).collect();
-    let at = layout.file_first_sector() as usize * SECTOR_BYTES;
+    let at = layout.file_first_sector() as usize * BYTES_PER_SECTOR;
     image[at..at + FILE_LEN].copy_from_slice(&body);
     check_with_fsck(&image, "writer");
 

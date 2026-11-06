@@ -299,7 +299,7 @@ fn start_jh7110(image: &'static [u8]) -> Option<Wiring> {
 
     let maps = [Mapping {
         va: TRNG_VA,
-        phys: device.reg_base,
+        phys: device.registers_physical_address,
         flags: Flags::user_device(),
     }];
     crate::sched::spawn(move || {

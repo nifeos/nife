@@ -12,12 +12,11 @@ exactly `count` entries of room.
 
 
 diff --git a/crates/block_roster/src/lib.rs b/crates/block_roster/src/lib.rs
-index d4d5ebf89..6d10bdde4 100644
 --- a/crates/block_roster/src/lib.rs
 +++ b/crates/block_roster/src/lib.rs
-@@ -200,7 +200,7 @@ impl<'a> Roster<'a> {
- 
-     /// The `i`-th device, or `None` past the end.
+@@ -240,7 +240,7 @@
+     /// Name: ratified 2026-11-06 (UTC): the standard library's spelling for indexed access that
+     /// returns an `Option`.
      pub fn get(&self, i: usize) -> Option<Device> {
 -        if i >= self.count {
 +        if i > self.count {

@@ -30,12 +30,16 @@
 ///
 /// - 2026-10-29: the magic gained the version digits, `"blkrostr"` to `"blkrosv1"`, version 1;
 ///   layout unchanged. No migration: every reader and writer was rebuilt together.
+///
+/// Name: ratified 2026-11-06 (UTC): `MAGIC` is the word for the bytes at offset 0 that identify a
+/// format.
 pub const MAGIC: u64 = u64::from_le_bytes(*b"blkrosv1");
 
 /// The page layout's version, the digits [`MAGIC`] carries. A break bumps this and re-mints the
 /// magic in the same change, with a dated amendment above.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-06 (UTC): `VERSION` says what it is, the layout's version, and the page
+/// has no other version for it to be confused with.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity: 5, naming the block roster page. The number is the crate's to keep
@@ -43,13 +47,20 @@ pub const VERSION: u32 = 1;
 /// must all differ. A program that links this interface declares the pair of this id and
 /// [`VERSION`].
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-06 (UTC): `INTERFACE_ID` says that it identifies an interface, which is
+/// the term every linking program's declaration uses.
 pub const INTERFACE_ID: u64 = 5;
 
 /// Bytes per entry. Two `u32`s, and the fixed width is what lets a reader index without parsing.
+///
+/// Name: ratified 2026-11-06 (UTC): the unit is in the name, so no reader has to guess whether the
+/// number counts bytes or words.
 pub const ENTRY_BYTES: usize = 8;
 
 /// Where the first entry starts: magic, count, capacity.
+///
+/// Name: ratified 2026-11-06 (UTC): the header's length in bytes, with the unit in the name, as
+/// [`ENTRY_BYTES`] has it.
 pub const HEADER_BYTES: usize = 16;
 
 /// A virtio-mmio device: the ordinal is its position among block devices on the mmio bus, counted
@@ -78,6 +89,10 @@ pub const TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS: u32 = 2;
 /// and there is no method here that turns one into the other. The kernel decides which program gets
 /// which device's endpoint, at wiring time, and nothing a program computes from a roster can change
 /// that.
+///
+/// Name: ratified 2026-11-06 (UTC): `Device` is the entry's subject, one attached block device, and
+/// the crate name already says block. Its fields `ordinal` (the position among devices of one
+/// transport) and `transport` (the bus the device came off) are ratified with it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Device {
     /// Which block device of this transport, 0-based, in the order the kernel's scan finds them.
@@ -94,6 +109,8 @@ impl Device {
     /// The printed names are the ones the outside world already uses rather than the identifiers:
     /// the virtio specification's two transports, and `nvme`, which is QEMU's device model, Linux's
     /// driver and device prefix, and what diagnostics for that hardware print.
+    ///
+    /// Name: ratified 2026-11-06 (UTC): it returns the transport's name, as it reads.
     pub const fn transport_name(&self) -> Option<&'static str> {
         match self.transport {
             TRANSPORT_VIRTIO_MEMORY_MAPPED_IO => Some("virtio-mmio"),
@@ -105,6 +122,9 @@ impl Device {
 }
 
 /// How many entries a page of `len` bytes can hold.
+///
+/// Name: ratified 2026-11-06 (UTC): `capacity_of` reads as a question about a length, and
+/// `capacity` is the header's field name.
 pub const fn capacity_of(len: usize) -> usize {
     if len < HEADER_BYTES {
         0
@@ -114,6 +134,9 @@ pub const fn capacity_of(len: usize) -> usize {
 }
 
 /// Lay a roster into `page`. Fails if the page cannot hold `devices`.
+///
+/// Name: ratified 2026-11-06 (UTC): the pair `write` and [`Roster::read`] names the two parties,
+/// the one writer and the readers.
 ///
 /// The kernel is the only caller, and it writes the page before any program can see it. See the
 /// crate header for what that buys the reader.
@@ -135,10 +158,10 @@ pub const fn capacity_of(len: usize) -> usize {
 /// assert_eq!(roster.len(), 3);
 /// assert_eq!(roster.get(2).unwrap().transport_name(), Some("nvme"));
 /// ```
-pub fn write(page: &mut [u8], devices: &[Device]) -> Result<(), Full> {
+pub fn write(page: &mut [u8], devices: &[Device]) -> Result<(), TooManyDevices> {
     let capacity = capacity_of(page.len());
     if devices.len() > capacity {
-        return Err(Full);
+        return Err(TooManyDevices);
     }
     page[..8].copy_from_slice(&MAGIC.to_le_bytes());
     page[8..12].copy_from_slice(&(devices.len() as u32).to_le_bytes());
@@ -154,10 +177,17 @@ pub fn write(page: &mut [u8], devices: &[Device]) -> Result<(), Full> {
 /// More devices than the page has room for. The kernel treats this as a wiring bug rather than a
 /// runtime condition: a machine with more disks than a page can name is a machine this design has
 /// to be told about.
+///
+/// Name: ratified 2026-11-06 (UTC): the name states the refusal. It replaced `Full`, which said
+/// the page's state and not what was refused, and which read as the same word as the many other
+/// full errors in the tree.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Full;
+pub struct TooManyDevices;
 
 /// A roster page a program holds, borrowed rather than copied.
+///
+/// Name: ratified 2026-11-06 (UTC): the type is the list of attached devices, and a roster is a
+/// list of who is present.
 #[derive(Debug, Clone, Copy)]
 pub struct Roster<'a> {
     entries: &'a [u8],
@@ -170,6 +200,9 @@ impl<'a> Roster<'a> {
     ///
     /// Both refusals matter for the same reason: this page arrives from outside the program, and a
     /// reader that trusted a count it did not check would index past its own mapping.
+    ///
+    /// Name: ratified 2026-11-06 (UTC): `read` pairs with [`write()`], and the reader is the party
+    /// that borrows the page.
     pub fn read(page: &'a [u8]) -> Option<Roster<'a>> {
         if page.len() < HEADER_BYTES {
             return None;
@@ -188,17 +221,24 @@ impl<'a> Roster<'a> {
     }
 
     /// How many devices are attached.
+    ///
+    /// Name: ratified 2026-11-06 (UTC): the standard library's spelling, with the standard meaning.
     pub const fn len(&self) -> usize {
         self.count
     }
 
     /// Whether the machine has no block devices at all. A real answer, not an error: a diskless
     /// boot is a thing a machine can do.
+    ///
+    /// Name: ratified 2026-11-06 (UTC): the standard library's spelling, with the standard meaning.
     pub const fn is_empty(&self) -> bool {
         self.count == 0
     }
 
     /// The `i`-th device, or `None` past the end.
+    ///
+    /// Name: ratified 2026-11-06 (UTC): the standard library's spelling for indexed access that
+    /// returns an `Option`.
     pub fn get(&self, i: usize) -> Option<Device> {
         if i >= self.count {
             return None;
@@ -211,13 +251,20 @@ impl<'a> Roster<'a> {
     }
 
     /// Every device, in the order the kernel found them.
-    pub fn iter(&self) -> impl Iterator<Item = Device> + '_ {
+    ///
+    /// Name: ratified 2026-11-06 (UTC): the name says what is yielded. It replaced `iter`, because
+    /// the standard library's `iter` yields references and this yields `Device` values.
+    pub fn devices(&self) -> impl Iterator<Item = Device> + '_ {
         (0..self.count).filter_map(|i| self.get(i))
     }
 
     /// How many of the devices came off `transport`.
-    pub fn count_on(&self, transport: u32) -> usize {
-        self.iter().filter(|d| d.transport == transport).count()
+    ///
+    /// Name: ratified 2026-11-06 (UTC): the name says the count is grouped by transport. It
+    /// replaced `count_on`, which read as the English idiom of counting on someone, to rely on
+    /// them.
+    pub fn count_by_transport(&self, transport: u32) -> usize {
+        self.devices().filter(|d| d.transport == transport).count()
     }
 }
 
@@ -257,9 +304,9 @@ mod tests {
             assert_eq!(r.get(i).unwrap(), *want);
         }
         assert_eq!(r.get(4), None, "past the end is None, not the next entry");
-        assert_eq!(r.count_on(TRANSPORT_VIRTIO_MEMORY_MAPPED_IO), 3);
-        assert_eq!(r.count_on(TRANSPORT_VIRTIO_PCI), 1);
-        assert_eq!(r.iter().count(), 4);
+        assert_eq!(r.count_by_transport(TRANSPORT_VIRTIO_MEMORY_MAPPED_IO), 3);
+        assert_eq!(r.count_by_transport(TRANSPORT_VIRTIO_PCI), 1);
+        assert_eq!(r.devices().count(), 4);
     }
 
     /// The refusal that costs nothing and buys the most: a frame nobody wrote is not a machine
@@ -295,7 +342,7 @@ mod tests {
     #[test]
     fn a_page_too_small_for_its_devices_is_refused_at_write() {
         let mut page = [0u8; HEADER_BYTES + ENTRY_BYTES]; // room for one
-        assert_eq!(write(&mut page, &sample()), Err(Full));
+        assert_eq!(write(&mut page, &sample()), Err(TooManyDevices));
         assert_eq!(write(&mut page, &sample()[..1]), Ok(()));
         assert_eq!(capacity_of(0), 0, "a page with no header holds nothing");
         assert_eq!(capacity_of(HEADER_BYTES), 0);
@@ -366,7 +413,7 @@ mod tests {
         let mut page = [0u8; HEADER_BYTES];
         write(&mut page, &[]).unwrap();
         let roster = Roster::read(&page).expect("header-only is a valid roster");
-        assert_eq!(roster.iter().count(), 0);
+        assert_eq!(roster.devices().count(), 0);
         assert_eq!(capacity_of(HEADER_BYTES), 0);
         // One byte shorter really is short.
         assert_eq!(Roster::read(&page[..HEADER_BYTES - 1]).map(|_| ()), None);

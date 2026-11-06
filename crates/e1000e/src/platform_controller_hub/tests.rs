@@ -151,7 +151,7 @@ impl Hardware for Registers<'_> {
     fn note(&mut self, _: sequence::BringUpObservation) {}
 }
 
-impl flush::RingAccess for Ring<'_> {
+impl flush::FlushSupport for Ring<'_> {
     fn descriptor_ring_status(&mut self) -> u16 {
         self.log.borrow_mut().push(Step::Status);
         self.statuses.remove(0)
@@ -170,7 +170,7 @@ fn flush_steps(
     device_ring: u64,
     tail: u32,
     ring: u64,
-) -> (flush::Outcome, std::vec::Vec<Step>) {
+) -> (flush::EmptiedRings, std::vec::Vec<Step>) {
     use crate::registers::{
         RECEIVE_CONTROL_REGISTER, TRANSMIT_CONTROL_REGISTER,
         TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
@@ -206,7 +206,7 @@ fn flush_steps(
         statuses: statuses.to_vec(),
         log: &log,
     };
-    let outcome = flush::descriptor_rings(&mut hardware, &mut rings, ring);
+    let outcome = flush::empty_descriptor_rings(&mut hardware, &mut rings, ring);
     (outcome, log.into_inner())
 }
 
@@ -219,7 +219,7 @@ const MULR_FIX_DISABLED: Step = Step::Write(
 #[test]
 fn the_flush_without_a_request_only_disables_the_mulr_fix() {
     let (outcome, steps) = flush_steps(&[0], 0x1000, 3, 0x1000);
-    assert_eq!(outcome, flush::Outcome::NotRequired);
+    assert_eq!(outcome, flush::EmptiedRings::NotRequired);
     assert_eq!(
         steps,
         [
@@ -238,7 +238,7 @@ fn the_flush_refuses_a_transmit_ring_that_is_not_the_callers() {
     let (outcome, steps) = flush_steps(&[flush::FLUSH_DESC_REQUIRED], 0x2_0000_1000, 3, 0x1000);
     assert_eq!(
         outcome,
-        flush::Outcome::ForeignTransmitRing {
+        flush::EmptiedRings::ForeignTransmitRing {
             base: 0x2_0000_1000
         }
     );
@@ -262,7 +262,7 @@ fn the_flush_runs_both_rings_in_freebsds_order() {
     let ring = 0x1_0000_1000;
     let required = flush::FLUSH_DESC_REQUIRED;
     let (outcome, steps) = flush_steps(&[required, required], ring, 15, ring);
-    assert_eq!(outcome, flush::Outcome::BothFlushed);
+    assert_eq!(outcome, flush::EmptiedRings::BothFlushed);
     assert_eq!(
         steps,
         [
@@ -300,7 +300,7 @@ fn the_flush_runs_both_rings_in_freebsds_order() {
 #[test]
 fn the_flush_stops_after_the_transmit_ring_when_the_request_clears() {
     let (outcome, steps) = flush_steps(&[flush::FLUSH_DESC_REQUIRED, 0], 0x1000, 0, 0x1000);
-    assert_eq!(outcome, flush::Outcome::TransmitFlushed);
+    assert_eq!(outcome, flush::EmptiedRings::TransmitFlushed);
     assert!(!steps.iter().any(
         |s| matches!(s, Step::Write(o, _) if *o == crate::registers::RECEIVE_CONTROL_REGISTER)
     ));

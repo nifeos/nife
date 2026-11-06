@@ -279,14 +279,14 @@ fn zero(region: u64) {
 }
 
 /// Empty the descriptor rings before the reset if the hardware says it must. The sequence, its
-/// source and its notice are `crates/e1000e`'s (`platform_controller_hub::flush::descriptor_rings`);
+/// source and its notice are `crates/e1000e`'s (`platform_controller_hub::flush::empty_descriptor_rings`);
 /// this supplies the configuration space and the ring memory it runs against.
 fn flush_descriptor_rings(hw: &mut Bar<'_>, dev: &crate::pci::PciE1000eDevice, region: u64) {
     use ::e1000e::platform_controller_hub::flush;
     let mut rings = Rings { dev, region };
     let ring = region + layout::TRANSMIT_RING_OFFSET_BYTES;
-    if let flush::Outcome::ForeignTransmitRing { base } =
-        flush::descriptor_rings(hw, &mut rings, ring)
+    if let flush::EmptiedRings::ForeignTransmitRing { base } =
+        flush::empty_descriptor_rings(hw, &mut rings, ring)
     {
         crate::println!(
             "  e1000e: the rings need flushing and the transmit ring at {base:#x} is not this \
@@ -302,7 +302,7 @@ struct Rings<'a> {
     region: u64,
 }
 
-impl ::e1000e::platform_controller_hub::flush::RingAccess for Rings<'_> {
+impl ::e1000e::platform_controller_hub::flush::FlushSupport for Rings<'_> {
     fn descriptor_ring_status(&mut self) -> u16 {
         use ::e1000e::platform_controller_hub::flush::PCICFG_DESC_RING_STATUS;
         self.dev.config_read32(PCICFG_DESC_RING_STATUS) as u16

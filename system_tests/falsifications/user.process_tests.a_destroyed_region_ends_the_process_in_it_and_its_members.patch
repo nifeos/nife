@@ -10,9 +10,9 @@ Expected to fail: "the retry never reclaimed the process's region".
 diff --git a/kernel/src/sched/process.rs b/kernel/src/sched/process.rs
 --- a/kernel/src/sched/process.rs
 +++ b/kernel/src/sched/process.rs
-@@ -333,13 +333,8 @@ pub(super) fn reap_region(sched: &mut IpcTables, base: u64, end_: u64) {
-         let live = sched.processes.iter().find_map(|(pid, &phys)| {
-             (doomed(phys) && process_of(sched, pid).is_some_and(|p| !p.ended)).then_some(pid)
+@@ -481,13 +481,8 @@ pub(super) fn reap_region(sched: &mut IpcTables, base: u64, end_: u64) {
+             (doomed(phys) && process_of(sched, pid.to_bits()).is_some_and(|p| !p.ended))
+                 .then_some(pid.to_bits())
          });
 -        let Some(pid) = live else { break };
 -        end(
