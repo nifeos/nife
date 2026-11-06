@@ -220,5 +220,5 @@ adds it itself on a machine bootstrapped before milestone 79.
   interpreted shows itself only when the weekly run passes its 240-minute limit, and because
   `cargo miri test` stops at the first failing binary, a red run hides every cost behind it. Each
   row in the table above came to light that way. The proposal
-  [the Miri run keeps its budget](../design/roadmap/proposals/the-miri-run-keeps-its-budget.md)
+  [the Miri run keeps its budget](../design/roadmap/1040-the-miri-run-keeps-its-budget.md)
   turns the budget into a gate that names the test.

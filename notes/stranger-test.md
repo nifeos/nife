@@ -138,7 +138,7 @@ calef ruled on 2026-11-03 that a stranger test is not useful while code moves ou
 repository. Each move changes the tree a stranger would meet, and every crate that has left runs its
 own stranger test. The test here restarts as an acceptance item of
 the milestone that moves the kernel to `nife-kernel` (provisional), which
-[the-kernel-leaves-nife.md](../design/roadmap/proposals/the-kernel-leaves-nife.md) proposes. That
+[the-kernel-leaves-nife.md](../design/roadmap/1039-the-kernel-leaves-nife.md) proposes. That
 milestone deletes the line above to restore the cadence. Until then the tree owes no run.
 
 Beneath the pause stands the monthly cadence calef decided on 2026-08-18.

@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-new-kani-harness-must-arrive-falsified
 raised: 2026-11-03
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A new Kani harness must arrive falsified
+# 1037. A new Kani harness must arrive falsified
 
 Raised by the lane that drove the unfalsified harness count back to 0 on 2026-11-03 (UTC). The
 count had climbed from 0 to 2 to 4 over two weeks (2026W43 to 2026W45).
@@ -53,3 +54,7 @@ The milestone needs to settle two things:
 
 Restrictive first, relax later: a lane can loosen a stricter floor if it proves too costly, and
 nobody can tighten a loose floor without first clearing a backlog.
+
+## Index row
+
+A new Kani harness may carry `unfalsified` and pass every gate, and the count of such harnesses has risen. Proposed: a harness new by name must record a replayable, attested or unfalsifiable falsification.

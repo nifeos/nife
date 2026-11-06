@@ -1,6 +1,6 @@
 # What this lane measured, and what it inferred
 
-An appendix to [the proposal](../heavy-jobs-wait-in-order-for-measured-memory.md). Everything here
+An appendix to [the milestone](../1044-heavy-jobs-wait-in-order-for-measured-memory.md). Everything here
 ran on 2026-11-05 (UTC) on the 80-core x86_64 Linux host, while other lanes ran. This lane started
 no proof. Its probes read `/proc` and cgroups, ran a few small user scopes, and built a throwaway
 eight-crate workspace in a scratch directory.

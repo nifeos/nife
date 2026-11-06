@@ -34,7 +34,7 @@ released on its own), and every later extraction runs the same list.
 - The proofs, the falsification sweep and the coverage floor stop covering that code in nife. From
   then on Fork 4's release gate in the crate repository is relied on, and nife checks only that the
   commit it pins carries a tag that gate made. Where the fuzz targets go is a
-  [proposal](../proposals/a-moved-crate-is-fuzzed-in-its-own-repository.md).
+  [milestone 1043](../1043-a-moved-crate-is-fuzzed-in-its-own-repository.md).
 - Falsification records that patch the crate move with it, rewritten from `-p3` to `-p1`.
 - Citations into `crates/<name>/src` repoint to the crate repository at the pinned tag, by symbol.
 - The dependency rule of the architect-label workflow fires on the pull request that adds the git

@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-merge-queue-is-sized-to-the-runner-pool
 raised: 2026-11-04
 milestone_dependencies: 965
 decision_dependencies: none
@@ -7,13 +8,12 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# The merge queue is sized to the runner pool
+# 1042. The merge queue is sized to the runner pool
 
 COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 5.
 
 Raised by lane/coe-merge-queue-2026-11-03 on 2026-11-04 (UTC), from the correction of error for the
-Pacific day of 2026-11-03 (`notes/coes/2026-11-03-merge-queue-backlog.md`). The integrator mints
-the number at promotion. This proposal changes no setting: the ruleset and the repository variable
+Pacific day of 2026-11-03 (`notes/coes/2026-11-03-merge-queue-backlog.md`). This milestone changes no setting: the ruleset and the repository variable
 are the architect's.
 
 Reuse: the ruleset's merge queue parameters, the `NIFE_RUNNER_OWNED` switch of `notes/owned-runners.md`,
@@ -55,3 +55,7 @@ Which settings, in which order? Recommendation first.
   measurement that justified them.
 - A week of queue data shows the median group wall time and the share of hosted jobs that waited
   over 5 minutes, before and after.
+
+## Index row
+
+The merge queue builds up to five groups on a pool that fits about five. Proposed: choose the build window, the group size and the owned-runner switch together, against a measured day.

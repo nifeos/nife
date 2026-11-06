@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-mapping-record-is-filed-without-a-scan
 raised: 2026-11-03
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A mapping record is filed without scanning its log page for a tombstone
+# 1036. A mapping record is filed without scanning its log page for a tombstone
 
 Raised 2026-11-03 (UTC) by lane `lane/riscv64-benchmark-drift`, while finding what raised riscv64
-`map_el0` on `main` ([the note](../../../notes/benchmarks/riscv64-unexplained-drift.md)). Every
+`map_el0` on `main` ([the note](../../notes/benchmarks/riscv64-unexplained-drift.md)). Every
 name below is provisional.
 
 Reuse: the log page's own layout. `LogPage` already carries a 64-bit `used` word, and a
@@ -21,7 +22,7 @@ tombstone count fits in half of it without taking an entry.
 `MappingHold::file` in `kernel/src/revoke.rs` records every user mapping. Before it appends to the
 head log page, it scans that page's used slots for a tombstone (a record whose `phys` is 0) to
 reuse. The scan runs on every map, whether or not the page holds a tombstone, and a fresh space's
-pages hold none until something unmaps. [notes/mapping-log.md](../../../notes/mapping-log.md)
+pages hold none until something unmaps. [notes/mapping-log.md](../../notes/mapping-log.md)
 states the cost's shape: half of `LOG_ENTRIES` per record on average, linear in that constant.
 
 Measured on riscv64 icount, the -O0 bench kernel, `main` at `7f54880c4` with `nightly-2026-11-02`
@@ -64,3 +65,7 @@ its own region.
 holds within one tick, the baseline saves on all three architectures carry the step with a
 `# why:` line, and `bench/attributions.tsv` names the save. A map into a space whose log holds a
 tombstone still reuses it (a test).
+
+## Index row
+
+Every user mapping scans its log page for a tombstone, about a third of a mapping call on riscv64. Proposed: each log page counts its tombstones and the scan runs only above zero.
