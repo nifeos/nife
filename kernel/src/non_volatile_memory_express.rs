@@ -145,10 +145,7 @@ impl NonVolatileMemoryExpress {
             direct_memory_access_va,
             admin_sq: SubmissionQueue::new(ENTRIES),
             admin_cq: CompletionQueue::new(ENTRIES),
-            ns: IdentifyNamespace {
-                blocks: 0,
-                logical_block_address_shift: 9,
-            },
+            ns: IdentifyNamespace::default(),
             cid: 0,
         };
         let cap = Capabilities(c.reg64(registers::CAPABILITIES));
@@ -166,8 +163,11 @@ impl NonVolatileMemoryExpress {
 
         // A controller that was already enabled (a warm reboot, or a previous test) must be taken
         // down before the admin queue registers may change; RDY follows EN in both directions.
-        if c.reg32(registers::CSTS) & non_volatile_memory_express::CSTS_RDY != 0 {
-            c.wr32(registers::CC, 0);
+        if c.reg32(registers::CONTROLLER_STATUS_REGISTER)
+            & non_volatile_memory_express::CONTROLLER_STATUS_READY
+            != 0
+        {
+            c.wr32(registers::CONTROLLER_CONFIGURATION_REGISTER, 0);
             c.wait_rdy(false)?;
         }
 
@@ -175,21 +175,21 @@ impl NonVolatileMemoryExpress {
         // page-aligned ring bases. The rings are zeroed pages, which is what makes the phase
         // discipline sound: the controller's first lap writes phase 1 into memory that reads 0.
         c.wr32(
-            registers::AQA,
+            registers::ADMIN_QUEUE_ATTRIBUTES_REGISTER,
             (ENTRIES as u32 - 1) << 16 | (ENTRIES as u32 - 1),
         );
         c.wr64(
-            registers::ASQ,
+            registers::ADMIN_SUBMISSION_QUEUE_BASE_ADDRESS_REGISTER,
             direct_memory_access_phys + ADMIN_SQ_PAGE * page_frames::FRAME_SIZE,
         );
         c.wr64(
-            registers::ACQ,
+            registers::ADMIN_COMPLETION_QUEUE_BASE_ADDRESS_REGISTER,
             direct_memory_access_phys + ADMIN_CQ_PAGE * page_frames::FRAME_SIZE,
         );
         #[cfg(feature = "disk_throughput")]
         c.print_registers("pre ");
         c.wr32(
-            registers::CC,
+            registers::CONTROLLER_CONFIGURATION_REGISTER,
             non_volatile_memory_express::enabled_controller_configuration(),
         );
         let ready = c.wait_rdy(true);
@@ -202,7 +202,7 @@ impl NonVolatileMemoryExpress {
         let prp = direct_memory_access_phys + IDENTIFY_PAGE * page_frames::FRAME_SIZE;
         let cmd = Command::identify(
             c.next_cid(),
-            non_volatile_memory_express::CNS_NAMESPACE,
+            non_volatile_memory_express::CONTROLLER_OR_NAMESPACE_STRUCTURE_NAMESPACE,
             NSID,
             prp,
         );
@@ -257,7 +257,7 @@ impl NonVolatileMemoryExpress {
     /// Name: ratified 2026-10-05 (calef, #1647).
     #[cfg(feature = "system_tests")]
     pub fn retire(self) -> Result<(), Error> {
-        self.wr32(registers::CC, 0);
+        self.wr32(registers::CONTROLLER_CONFIGURATION_REGISTER, 0);
         self.wait_rdy(false)?;
         for page in 0..DMA_PAGES {
             crate::memory::free(page_frames::PageFrame::from_addr(
@@ -291,7 +291,10 @@ impl NonVolatileMemoryExpress {
     fn transact(&mut self, cmd: Command) -> Result<(), Error> {
         let expect_cid = (cmd.0[0] >> 16) as u16;
 
-        let slot = self.admin_sq.push();
+        let slot = self
+            .admin_sq
+            .push()
+            .expect("one command in flight per queue, so the admin ring cannot be full");
         // SAFETY: slot < ENTRIES and ENTRIES 64-byte entries fit one frame, so the write stays
         // inside the admin submission ring's page of our own DMA region.
         unsafe {
@@ -323,7 +326,10 @@ impl NonVolatileMemoryExpress {
                 done = Some(c);
                 break;
             }
-            if self.reg32(registers::CSTS) & non_volatile_memory_express::CSTS_CFS != 0 {
+            if self.reg32(registers::CONTROLLER_STATUS_REGISTER)
+                & non_volatile_memory_express::CONTROLLER_STATUS_FATAL
+                != 0
+            {
                 return Err(Error::ControllerFatal);
             }
             core::hint::spin_loop();
@@ -342,7 +348,7 @@ impl NonVolatileMemoryExpress {
             crate::println!(
                 "diag nvme cid {expect_cid} opcode {:#04x} never completed; csts {:#x}; sq tail {} cq head {head}",
                 cmd.0[0] & 0xff,
-                self.reg32(registers::CSTS),
+                self.reg32(registers::CONTROLLER_STATUS_REGISTER),
                 self.admin_sq.tail(),
             );
             crate::println!(
@@ -397,11 +403,11 @@ impl NonVolatileMemoryExpress {
         }
         crate::println!(
             "diag nvme {when} cc {:#x} csts {:#x} aqa {:#x} asq {:#x} acq {:#x}",
-            self.reg32(registers::CC),
-            self.reg32(registers::CSTS),
-            self.reg32(registers::AQA),
-            self.reg64(registers::ASQ),
-            self.reg64(registers::ACQ),
+            self.reg32(registers::CONTROLLER_CONFIGURATION_REGISTER),
+            self.reg32(registers::CONTROLLER_STATUS_REGISTER),
+            self.reg32(registers::ADMIN_QUEUE_ATTRIBUTES_REGISTER),
+            self.reg64(registers::ADMIN_SUBMISSION_QUEUE_BASE_ADDRESS_REGISTER),
+            self.reg64(registers::ADMIN_COMPLETION_QUEUE_BASE_ADDRESS_REGISTER),
         );
     }
 
@@ -414,11 +420,11 @@ impl NonVolatileMemoryExpress {
     /// declared a fatal error will never become ready and the caller should hear which happened.
     fn wait_rdy(&self, want: bool) -> Result<(), Error> {
         for _ in 0..SPIN_BOUND {
-            let csts = self.reg32(registers::CSTS);
-            if csts & non_volatile_memory_express::CSTS_CFS != 0 {
+            let csts = self.reg32(registers::CONTROLLER_STATUS_REGISTER);
+            if csts & non_volatile_memory_express::CONTROLLER_STATUS_FATAL != 0 {
                 return Err(Error::ControllerFatal);
             }
-            if (csts & non_volatile_memory_express::CSTS_RDY != 0) == want {
+            if (csts & non_volatile_memory_express::CONTROLLER_STATUS_READY != 0) == want {
                 return Ok(());
             }
             core::hint::spin_loop();

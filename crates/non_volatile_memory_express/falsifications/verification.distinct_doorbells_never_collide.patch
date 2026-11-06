@@ -6,12 +6,16 @@ head write then lands on a tail.
 
 Expected to fail: the harness's `assert!(doorbell(qa, ra, dstrd) != doorbell(qb, rb, dstrd))`.
 
-diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile_memory_express/src/lib.rs
-index 7827ea4e1..8d2456fac 100644
---- a/crates/non_volatile_memory_express/src/lib.rs
-+++ b/crates/non_volatile_memory_express/src/lib.rs
-@@ -256,3 +256,3 @@ pub enum Doorbell {
+diff --git a/crates/non_volatile_memory_express/src/doorbell.rs b/crates/non_volatile_memory_express/src/doorbell.rs
+index 7fb2db308..8c07ec708 100644
+--- a/crates/non_volatile_memory_express/src/doorbell.rs
++++ b/crates/non_volatile_memory_express/src/doorbell.rs
+@@ -41,7 +41,7 @@ pub enum Doorbell {
+ ///
+ /// Name: ratified 2026-10-25 (#2720).
  pub fn doorbell(qid: u16, which: Doorbell, dstrd: u32) -> u64 {
 -    let index = 2 * qid as u64
 +    let index = qid as u64
          + match which {
+             Doorbell::SubmissionTail => 0,
+             Doorbell::CompletionHead => 1,

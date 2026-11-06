@@ -3,18 +3,19 @@ name = "non_volatile_memory_express"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
-description = "NVMe queue mechanics as pure logic: command building, ring arithmetic, doorbells, PRP lists and identify parsing, proven with Kani"
+description = "NVMe queue mechanics as pure logic: command building, ring arithmetic, doorbells, PRP pairs and identify parsing, proven with Kani"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 keywords = ["no-std", "kani", "driver"]
 categories = ["no-std", "embedded", "hardware-support"]
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
 
-# no_std for a kernel, std for host tests. The crate owns the NVMe queue mechanics only (register
-# field decode, command building, submission and completion ring arithmetic with the phase tag,
-# doorbell addressing, PRP construction, identify parsing); the caller supplies the volatile MMIO
-# accessors and the DMA memory, so all of this tests on the host in milliseconds and is reachable
-# by the model checker.
+# no_std for an operating system kernel, std for host tests. The crate owns the NVMe queue
+# mechanics only (register field decode, command building, submission and completion ring
+# arithmetic with the phase tag, doorbell addressing, Physical Region Page construction, identify
+# parsing); the caller supplies the volatile memory-mapped input/output accessors and the direct
+# memory access memory, so all of this tests on the host in milliseconds and is reachable by the
+# model checker.
 
 [lints.rust]
 # `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.

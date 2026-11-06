@@ -162,7 +162,10 @@ impl Plane {
     fn transact(&mut self, cmd: Command) -> Result<(), u16> {
         let expect_cid = (cmd.0[0] >> 16) as u16;
 
-        let slot = self.sq.push();
+        let slot = self
+            .sq
+            .push()
+            .expect("one command in flight per queue, so the ring cannot be full");
         DATA.write(IO_SQ_OFF + slot as u64 * 64, cmd.0);
         // Publish the command before the doorbell: the controller is another observer.
         barrier();
@@ -227,10 +230,7 @@ impl Plane {
         let page = (window * TRANSFER_BLOCKS + slot_index) as u64;
         let data_phys = self.handoff.data_plane_physical_address + TRANSFER_OFF + page * PAGE;
         let cid = self.next_cid();
-        let namespace = Namespace {
-            capacity_bytes: self.handoff.size_bytes,
-            blocks_per_transfer: self.handoff.blocks_per_transfer,
-        };
+        let namespace = Namespace::new(self.handoff.size_bytes, self.handoff.blocks_per_transfer);
         let cmd = namespace
             .transfer_command(cid, NSID, block, PAGE, data_phys, PAGE, write)
             // `None` means the block is outside the namespace or the arithmetic would not close;
@@ -359,15 +359,19 @@ fn serve(mut plane: Plane) -> ! {
 #[cfg(feature = "confinement_attackers")]
 fn run_dma_escape(plane: &mut Plane, victim: u64) -> ! {
     let blocks = plane.handoff.blocks_per_transfer;
+    let pages = non_volatile_memory_express::PhysicalRegionPagePair {
+        first_entry: victim,
+        second_entry: 0,
+    };
     // disk -> victim: the controller would overwrite a frame outside the region.
     let rd = {
         let cid = plane.next_cid();
-        plane.transact(Command::read(cid, NSID, 0, blocks, victim, 0))
+        plane.transact(Command::read(cid, NSID, 0, blocks, pages))
     };
     // victim -> disk: the controller would read a frame outside the region.
     let wr = {
         let cid = plane.next_cid();
-        plane.transact(Command::write(cid, NSID, 0, blocks, victim, 0))
+        plane.transact(Command::write(cid, NSID, 0, blocks, pages))
     };
     // Word 1 the read-escape status, word 2 the write-escape status: each an Err from a confined
     // controller (its status, or u16::MAX for no completion), and for the transcript only. The

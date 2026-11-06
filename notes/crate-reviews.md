@@ -141,25 +141,33 @@ Recommendation. Blocked by the release shape and the ratification of three provi
 
 ## `non_volatile_memory_express`, step 5
 
-Name and version. `non_volatile_memory_express` `0.1.0`, ratified with NVMe spelled out. 55 `Name:`
-blocks, all ratified.
+Name and version. `non_volatile_memory_express` `0.1.0`, ratified with NVMe spelled out. Every
+`Name:` block reads ratified.
 
-API. One `lib.rs` of 1,205 lines: a `registers` module, `Capabilities`, `Command`, `Completion`,
-`SubmissionQueue`, `CompletionQueue`, `Doorbell`, `doorbell`, `physical_region_page_pair` and the identify parse with
-`Namespace`. The caller supplies MMIO and DMA memory. The process plan lives in
+API. Ten modules behind a flat public surface: `registers`, `Capabilities`, `Command` with the
+opcodes, `Completion`, `SubmissionQueue` and `CompletionQueue`, `Doorbell`, `doorbell`,
+`PhysicalRegionPagePair` with `physical_region_page_pair`, `Namespace` and the identify parse. The
+caller supplies MMIO and DMA memory. `SubmissionQueue::push` returns `None` on a full ring.
+`Completion`, `IdentifyNamespace` and `Namespace` are `#[non_exhaustive]`. The README is the crate
+documentation, so its usage example runs as a doctest. The process plan lives in
 `non_volatile_memory_express_contract`, not here.
 
-Proofs. Six harnesses (submission push, completion pop and phase, doorbell collisions, PRP pair,
-transfer command, identify parse). All six prove and all six patches fail.
+Proofs. Eight harnesses (submission push, completion pop and phase, doorbell collisions, PRP pair,
+transfer command, identify parse, capabilities decode, completion decode). All eight prove and all
+eight patches fail.
 
 Dependencies. None.
 
 Provenance. Nothing outstanding.
 
-Result of `script/crate-standalone`. Clean.
+Result of `script/crate-standalone`. No failure. Build, names,
+proofs and patches pass, and no citation names this tree.
 
-Outstanding before the move. The README does not say how to install Kani (see the shared section);
-move lane. Nothing else.
+Outstanding before the move.
+
+| item | owner |
+|---|---|
+| `design/decisions/0086-el0-nvme-driver/prior-art.md` and milestone 569 (the disk an installer names has no model, only a size) still cite `prp_pair`, `CNS_CONTROLLER` and `CNS_NAMESPACE`. | maintainer |
 
 Recommendation. Ready for review.
 

@@ -8,11 +8,16 @@ Expected to fail: the harness's `assert!((block + 1) * 4096 <= namespace.capacit
 4096` also overflows for a huge `block` under this patch, so Kani reports that check too; both
 are the same escape seen from the harness's side.
 
-diff --git a/crates/non_volatile_memory_express/src/lib.rs b/crates/non_volatile_memory_express/src/lib.rs
---- a/crates/non_volatile_memory_express/src/lib.rs
-+++ b/crates/non_volatile_memory_express/src/lib.rs
-@@ -298,3 +298,3 @@
+diff --git a/crates/non_volatile_memory_express/src/namespace.rs b/crates/non_volatile_memory_express/src/namespace.rs
+index 808babc19..e036d665b 100644
+--- a/crates/non_volatile_memory_express/src/namespace.rs
++++ b/crates/non_volatile_memory_express/src/namespace.rs
+@@ -63,7 +63,7 @@ impl Namespace {
+     /// Name: ratified 2026-11-03 (#3118). The check is that the entire block fits (`end <= capacity`),
+     /// not only that its start lies inside, hence `holds_whole_block`.
      pub fn holds_whole_block(&self, block: u64, unit: u64) -> bool {
 -        match block.checked_add(1).and_then(|n| n.checked_mul(unit)) {
 +        match Some(block).and_then(|n| n.checked_mul(unit)) {
              Some(end) => end <= self.capacity_bytes,
+             None => false,
+         }
