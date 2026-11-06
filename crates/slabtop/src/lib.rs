@@ -146,7 +146,7 @@ mod tests {
                         .map(|l| {
                             let mut f = l.split_whitespace();
                             let pages = f.next().unwrap().parse().unwrap();
-                            let _kib = f.next().unwrap();
+                            let _kibibytes = f.next().unwrap();
                             (pages, f.collect::<Vec<_>>().join(" "))
                         })
                         .collect();
