@@ -310,9 +310,9 @@ fn a_hung_terminal_is_noticed_within_the_bound_and_replaced_without_its_state() 
     let waited = swapped[1];
     crate::println!("terminal_swap: a hung line_editor was convicted after {waited} ms");
     assert!(
-        (s::QUIESCE_BOUND_MS..4 * s::QUIESCE_BOUND_MS).contains(&waited),
+        (s::QUIESCE_BOUND_MILLISECONDS..4 * s::QUIESCE_BOUND_MILLISECONDS).contains(&waited),
         "the supervisor waited {waited} ms, against a bound of {} ms",
-        s::QUIESCE_BOUND_MS,
+        s::QUIESCE_BOUND_MILLISECONDS,
     );
 
     // Both callers the hung instance held were answered `Gone` when its region was destroyed.

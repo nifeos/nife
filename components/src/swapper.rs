@@ -946,7 +946,7 @@ fn plan_queued(w: &Wiring, front: u64) -> QueuedPlans {
 /// real wait is 250 to 260 ms. Wall time under TCG, and this fixture's bound only: too short
 /// destroys a healthy component mid-work, too long costs only a longer down window. The
 /// measurement is in notes/hung-component/what-counts-as-hung.md.
-const QUIESCE_BOUND_MS: u64 = 250;
+const QUIESCE_BOUND_MILLISECONDS: u64 = 250;
 
 /// What a bounded quiesce found.
 enum Quiesce {
@@ -1029,7 +1029,7 @@ fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
     // asked as on the direct channel with a deadline (milestone 106 (a wait that ends on either the
     // interrupt or the deadline)). No answer within the bound means hung.
 
-    let bound = cntfrq() * QUIESCE_BOUND_MS / 1000;
+    let bound = cntfrq() * QUIESCE_BOUND_MILLISECONDS / 1000;
     let (waited, stand_in) = match quiesce_within(w, stand_in, &client_img, bound, 112) {
         Quiesce::Unanswered { waited, stand_in } => (waited, stand_in),
         // This role exists to run against a hung incumbent, so an answer means the fixture did not
@@ -1125,7 +1125,7 @@ fn quiesce_within(
         {
             // A deadline that passed between the answer and this cancel has already signaled, and
             // its word waits on the notification for the next bound receive. At this bound against
-            // a healthy answer's latency (see `QUIESCE_BOUND_MS`) that window is never reached.
+            // a healthy answer's latency (see `QUIESCE_BOUND_MILLISECONDS`) that window is never reached.
             let _ = user_mode_runtime::timer_cancel(TIMER);
             if answer != hot_swap_contract::QUIESCED {
                 bail(stage + 3)
