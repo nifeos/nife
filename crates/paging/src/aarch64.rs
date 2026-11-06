@@ -424,8 +424,8 @@ mod verification {
     #[kani::proof]
     fn a_block_keeps_address_and_permissions_apart() {
         let pa: u64 = kani::any();
-        let two_mib: bool = kani::any();
-        let (size, address_bits) = if two_mib {
+        let two_mebibytes: bool = kani::any();
+        let (size, address_bits) = if two_mebibytes {
             (PageSize::Size2MiB, 0x0000_ffff_ffe0_0000u64)
         } else {
             (PageSize::Size1GiB, 0x0000_ffff_c000_0000u64)

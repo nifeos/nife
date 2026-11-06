@@ -4,12 +4,12 @@
 content, and calef names files.*
 
 An appendix to [`notes/hung-component.md`](../hung-component.md), which states the bound. This
-holds the measurement behind `terminal_supervisor`'s `QUIESCE_BOUND_MS` and why its instances and
+holds the measurement behind `terminal_supervisor`'s `QUIESCE_BOUND_MILLISECONDS` and why its instances and
 stand-ins are built in bays.
 
 ## The bound
 
-`QUIESCE_BOUND_MS` is 250 ms, about thirty times the slowest healthy answer measured. The answer was
+`QUIESCE_BOUND_MILLISECONDS` is 250 ms, about thirty times the slowest healthy answer measured. The answer was
 timed from the stand-in's start to its answer on 2026-10-19 (UTC). Each run did eleven swaps under
 `script/test`, on a 16 GB Apple Silicon host with a load average of 5 to 6 from other lanes' builds.
 

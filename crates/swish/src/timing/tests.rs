@@ -11,25 +11,25 @@ use crate::test_support::shown;
 /// for the same reason: `4.13 ms` looks like a number and is a different one from `4.013 ms`.
 #[test]
 fn a_duration_reads_in_the_largest_unit_that_keeps_it_readable() {
-    let shown_ns = |ns| shown(|o| write_duration(ns, o));
+    let shown_nanoseconds = |nanoseconds| shown(|o| write_duration(nanoseconds, o));
 
-    assert_eq!(shown_ns(0), "0.000 us");
-    assert_eq!(shown_ns(999_999), "999.999 us");
-    assert_eq!(shown_ns(1_000_000), "1.000 ms");
-    assert_eq!(shown_ns(999_999_999), "999.999 ms");
-    assert_eq!(shown_ns(1_000_000_000), "1.000 s");
+    assert_eq!(shown_nanoseconds(0), "0.000 us");
+    assert_eq!(shown_nanoseconds(999_999), "999.999 us");
+    assert_eq!(shown_nanoseconds(1_000_000), "1.000 ms");
+    assert_eq!(shown_nanoseconds(999_999_999), "999.999 ms");
+    assert_eq!(shown_nanoseconds(1_000_000_000), "1.000 s");
     // The padding, at each width, because the digits come from a writer that omits leading zeros.
-    assert_eq!(shown_ns(1_001_000), "1.001 ms");
-    assert_eq!(shown_ns(1_010_000), "1.010 ms");
-    assert_eq!(shown_ns(1_100_000), "1.100 ms");
+    assert_eq!(shown_nanoseconds(1_001_000), "1.001 ms");
+    assert_eq!(shown_nanoseconds(1_010_000), "1.010 ms");
+    assert_eq!(shown_nanoseconds(1_100_000), "1.100 ms");
     // Sub-tick values still render: the counter's resolution is a fact about the input, and a
     // renderer that refused small numbers would be lying about a different thing.
-    assert_eq!(shown_ns(7), "0.007 us");
+    assert_eq!(shown_nanoseconds(7), "0.007 us");
 
     // **And it is total on every `u64`.** The shell hands this `end - start` off a counter it
     // does not own, so a clock that went backwards produces a number nobody chose. Rendering
     // it is the right answer; panicking on the boot path is not.
-    assert_eq!(shown_ns(u64::MAX), "18446744073.709 s");
+    assert_eq!(shown_nanoseconds(u64::MAX), "18446744073.709 s");
 }
 
 /// **A timing line is one line and says `real`**, and after §72 there is no second line it can

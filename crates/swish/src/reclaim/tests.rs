@@ -8,11 +8,11 @@ use super::*;
 
 /// A region that refuses `refusals` times, as one holding a running process does until its kill
 /// lands, and then answers zero. The clock advances 10 ms per wait, one kernel timeslice.
-fn run(refusals: u32, patience_ns: u64) -> (bool, u32) {
+fn run(refusals: u32, patience_nanoseconds: u64) -> (bool, u32) {
     let asks = Cell::new(0u32);
     let clock = Cell::new(0u64);
     let ok = is_reclaimed_within(
-        patience_ns,
+        patience_nanoseconds,
         || {
             asks.set(asks.get() + 1);
             // A retry that ignores its bound fails here instead of hanging the run.
@@ -53,12 +53,12 @@ fn a_region_is_asked_once_even_with_no_patience() {
 
 /// A budget whose `destroy` refuses `refusals` times, with `children` pages of child regions live
 /// throughout. Returns the verdict, the asks of `destroy` and the waits.
-fn budget_run(refusals: u32, children: i64, patience_ns: u64) -> (BudgetReturn, u32, u32) {
+fn budget_run(refusals: u32, children: i64, patience_nanoseconds: u64) -> (BudgetReturn, u32, u32) {
     let asks = Cell::new(0u32);
     let waits = Cell::new(0u32);
     let clock = Cell::new(0u64);
     let verdict = reclaim_budget_within(
-        patience_ns,
+        patience_nanoseconds,
         || {
             asks.set(asks.get() + 1);
             assert!(asks.get() < 1_000, "the retry never stopped asking");

@@ -95,12 +95,12 @@ fn main() {
             }
             continue;
         }
-        let Some(ns) = rg_seconds(&text) else {
+        let Some(nanoseconds) = rg_seconds(&text) else {
             println!("rg printed no stats");
             continue;
         };
         println!(
-            "rg search {ns} ns (rg's own figure), spawn to exit {} ns",
+            "rg search {nanoseconds} ns (rg's own figure), spawn to exit {} ns",
             wall.as_nanos()
         );
     }

@@ -59,7 +59,7 @@ pub const MAXIMUM_SECRET: usize = 256;
 ///
 /// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "m")]
-const MINIMUM_MEMORY_KIB: u32 = 8;
+const MINIMUM_MEMORY_KIBIBYTES: u32 = 8;
 
 /// Argon2's own upper bound on `p_cost`, `2^24 - 1`. Same reason.
 const MAXIMUM_P_COST: u32 = (1 << 24) - 1;
@@ -107,7 +107,7 @@ pub struct Cost {
     ///
     /// Name: ratified 2026-10-27 (#2797).
     #[doc(alias = "m")]
-    memory_kib: u32,
+    memory_kibibytes: u32,
     /// Passes over the memory: RFC 9106's number of passes `t`.
     ///
     /// Name: ratified 2026-10-27 (#2797).
@@ -130,7 +130,7 @@ impl Cost {
     /// **Raise it on real hardware.** The parameters travel in the record ([`Record::cost`]) rather
     /// than being compiled in, so raising them is a provisioning change.
     pub const DEFAULT: Cost = Cost {
-        memory_kib: 4096,
+        memory_kibibytes: 4096,
         passes: 3,
         lanes: 1,
     };
@@ -143,7 +143,7 @@ impl Cost {
     ///
     /// Name: ratified 2026-10-27 (#2797).
     #[doc(alias = "m")]
-    pub const MAXIMUM_MEMORY_KIB: u32 = 1024 * 1024;
+    pub const MAXIMUM_MEMORY_KIBIBYTES: u32 = 1024 * 1024;
 
     /// The most passes one derivation may be asked for: 10. Time grows linearly with passes, and a
     /// record carries its own count, so without a maximum a stored or corrupted record can make
@@ -179,23 +179,24 @@ impl Cost {
     /// assert!(Cost::new(4096, 3, 1).is_some());
     /// assert!(Cost::new(0, 3, 1).is_none()); // no memory is not a memory-hard KDF
     /// // Past a gibibyte is a typo, not a policy.
-    /// assert!(Cost::new(Cost::MAXIMUM_MEMORY_KIB + 1, 3, 1).is_none());
+    /// assert!(Cost::new(Cost::MAXIMUM_MEMORY_KIBIBYTES + 1, 3, 1).is_none());
     /// // Nor a count of passes that would keep a login busy for hours.
     /// assert!(Cost::new(4096, Cost::MAXIMUM_PASSES + 1, 1).is_none());
     /// ```
-    pub fn new(memory_kib: u32, passes: u32, lanes: u32) -> Option<Self> {
+    pub fn new(memory_kibibytes: u32, passes: u32, lanes: u32) -> Option<Self> {
         if lanes == 0 || lanes > MAXIMUM_P_COST || passes == 0 || passes > Self::MAXIMUM_PASSES {
             return None;
         }
-        if !(MINIMUM_MEMORY_KIB..=Self::MAXIMUM_MEMORY_KIB).contains(&memory_kib) {
+        if !(MINIMUM_MEMORY_KIBIBYTES..=Self::MAXIMUM_MEMORY_KIBIBYTES).contains(&memory_kibibytes)
+        {
             return None;
         }
         // Safe now: `lanes <= 2^24 - 1`, so `lanes * 8` cannot overflow a u32.
-        if memory_kib < lanes * 8 {
+        if memory_kibibytes < lanes * 8 {
             return None;
         }
         let c = Cost {
-            memory_kib,
+            memory_kibibytes,
             passes,
             lanes,
         };
@@ -205,8 +206,8 @@ impl Cost {
     /// Memory size in KiB. RFC 9106 calls this the memory size `m`.
     #[doc(alias = "m")]
     #[doc(alias = "m_kib")]
-    pub const fn memory_kib(&self) -> u32 {
-        self.memory_kib
+    pub const fn memory_kibibytes(&self) -> u32 {
+        self.memory_kibibytes
     }
     /// Number of passes over the memory. RFC 9106 calls this the number of passes `t`.
     #[doc(alias = "t")]
@@ -220,15 +221,20 @@ impl Cost {
     }
 
     /// How many [`Block`]s of scratch a derivation at this cost needs. Argon2 rounds `m_cost` down
-    /// to a multiple of `4 * lanes`, so this is not always `memory_kib`; asking the library rather than
+    /// to a multiple of `4 * lanes`, so this is not always `memory_kibibytes`; asking the library rather than
     /// computing it is what keeps a `MemoryTooLittle` out of the serve loop.
     pub fn blocks(&self) -> usize {
         self.params().map(|p| p.block_count()).unwrap_or(0)
     }
 
     fn params(&self) -> Result<Params, Error> {
-        Params::new(self.memory_kib, self.passes, self.lanes, Some(TAG_LEN))
-            .map_err(|_| Error::Cost)
+        Params::new(
+            self.memory_kibibytes,
+            self.passes,
+            self.lanes,
+            Some(TAG_LEN),
+        )
+        .map_err(|_| Error::Cost)
     }
 }
 
@@ -345,7 +351,7 @@ impl Record {
         o += MAXIMUM_IDENTITY;
         out[o..o + SALT_LEN].copy_from_slice(&self.salt);
         o += SALT_LEN;
-        out[o..o + 4].copy_from_slice(&self.cost.memory_kib.to_le_bytes());
+        out[o..o + 4].copy_from_slice(&self.cost.memory_kibibytes.to_le_bytes());
         out[o + 4..o + 8].copy_from_slice(&self.cost.passes.to_le_bytes());
         out[o + 8..o + 12].copy_from_slice(&self.cost.lanes.to_le_bytes());
         o += 12;
@@ -380,10 +386,10 @@ impl Record {
         let mut salt = [0u8; SALT_LEN];
         salt.copy_from_slice(&b[o..o + SALT_LEN]);
         o += SALT_LEN;
-        let memory_kib = u32::from_le_bytes([b[o], b[o + 1], b[o + 2], b[o + 3]]);
+        let memory_kibibytes = u32::from_le_bytes([b[o], b[o + 1], b[o + 2], b[o + 3]]);
         let passes = u32::from_le_bytes([b[o + 4], b[o + 5], b[o + 6], b[o + 7]]);
         let lanes = u32::from_le_bytes([b[o + 8], b[o + 9], b[o + 10], b[o + 11]]);
-        let cost = Cost::new(memory_kib, passes, lanes).ok_or(Error::Encoding)?;
+        let cost = Cost::new(memory_kibibytes, passes, lanes).ok_or(Error::Encoding)?;
         o += 12;
         let mut tag = [0u8; TAG_LEN];
         tag.copy_from_slice(&b[o..o + TAG_LEN]);
@@ -611,8 +617,8 @@ impl<const N: usize> Store<N> {
                 sel.tag[i].conditional_assign(&r.tag[i], hit);
             }
             sel.cost
-                .memory_kib
-                .conditional_assign(&r.cost.memory_kib, hit);
+                .memory_kibibytes
+                .conditional_assign(&r.cost.memory_kibibytes, hit);
             sel.cost.passes.conditional_assign(&r.cost.passes, hit);
             sel.cost.lanes.conditional_assign(&r.cost.lanes, hit);
             sel.found |= hit;
@@ -935,7 +941,7 @@ mod tests {
             "m_cost below 8 * p_cost"
         );
         assert!(Cost::new(1024, 1, 1).is_some());
-        assert!(Cost::DEFAULT.blocks() >= Cost::DEFAULT.memory_kib() as usize - 4);
+        assert!(Cost::DEFAULT.blocks() >= Cost::DEFAULT.memory_kibibytes() as usize - 4);
     }
 
     /// **The overflow `argon2` 0.5.3 does not check before it multiplies.** `Params::new`
@@ -946,12 +952,12 @@ mod tests {
     /// failure is arithmetic and the interesting values are the ones next to a power of two.
     /// **The restated bounds are the library's bounds.** They exist so [`Cost::new`] can refuse
     /// first, which is only right while they equal what `argon2` itself enforces; the sweep below
-    /// pairs a hostile `p_cost` with an oversized `memory_kib`, so it cannot see the `p` bound move
+    /// pairs a hostile `p_cost` with an oversized `memory_kibibytes`, so it cannot see the `p` bound move
     /// (2026-10-07 census triage: `(1 << 24) - 1` as `/` or `+` survived it).
     #[test]
     fn the_restated_bounds_are_argon2s_own() {
         assert_eq!(MAXIMUM_P_COST, argon2::Params::MAX_P_COST);
-        assert_eq!(MINIMUM_MEMORY_KIB, argon2::Params::MIN_M_COST);
+        assert_eq!(MINIMUM_MEMORY_KIBIBYTES, argon2::Params::MIN_M_COST);
     }
 
     #[test]
@@ -971,10 +977,10 @@ mod tests {
             );
         }
         assert!(
-            Cost::new(Cost::MAXIMUM_MEMORY_KIB + 1, 1, 1).is_none(),
+            Cost::new(Cost::MAXIMUM_MEMORY_KIBIBYTES + 1, 1, 1).is_none(),
             "more memory than the ceiling is a corrupt record, not a policy",
         );
-        assert!(Cost::new(Cost::MAXIMUM_MEMORY_KIB, 1, 1).is_some());
+        assert!(Cost::new(Cost::MAXIMUM_MEMORY_KIBIBYTES, 1, 1).is_some());
     }
 
     /// **Passes have a ceiling**, so a record cannot ask `verify` for hours of Argon2. The value is
@@ -1195,21 +1201,21 @@ mod tests {
         );
     }
 
-    /// The cost accessors and the memory ceiling. `MAXIMUM_MEMORY_KIB` is `1024 * 1024`, and a mutant
+    /// The cost accessors and the memory ceiling. `MAXIMUM_MEMORY_KIBIBYTES` is `1024 * 1024`, and a mutant
     /// that turned the multiply into a divide (ceiling: one KiB) refused every real cost with
     /// nothing failing; the accessors are how the service echoes a store's policy and returned what
     /// they liked.
     #[test]
     fn the_cost_is_what_it_says_up_to_the_real_ceiling() {
         let c = Cost::new(256, 3, 2).unwrap();
-        assert_eq!((c.memory_kib(), c.passes(), c.lanes()), (256, 3, 2));
+        assert_eq!((c.memory_kibibytes(), c.passes(), c.lanes()), (256, 3, 2));
         // 1 GiB in KiB, hand-computed. The two assertions below name the ceiling by its own symbol,
         // so both sides move together when the constant does: `1024 + 1024` is 2048, still above
-        // MINIMUM_MEMORY_KIB, and every symbolic check still passes while every real policy is refused.
-        assert_eq!(Cost::MAXIMUM_MEMORY_KIB, 1_048_576);
+        // MINIMUM_MEMORY_KIBIBYTES, and every symbolic check still passes while every real policy is refused.
+        assert_eq!(Cost::MAXIMUM_MEMORY_KIBIBYTES, 1_048_576);
         // The ceiling itself is a legal cost (validation only; nothing allocates a gibibyte here).
-        assert!(Cost::new(Cost::MAXIMUM_MEMORY_KIB, 1, 1).is_some());
-        assert!(Cost::new(Cost::MAXIMUM_MEMORY_KIB + 1, 1, 1).is_none());
+        assert!(Cost::new(Cost::MAXIMUM_MEMORY_KIBIBYTES, 1, 1).is_some());
+        assert!(Cost::new(Cost::MAXIMUM_MEMORY_KIBIBYTES + 1, 1, 1).is_none());
         // blocks() answers from the real params, not some default: 256 KiB at p=1 is 256 blocks
         // (Argon2 rounds m down to a multiple of 4p, which 256 already is).
         assert_eq!(Cost::new(256, 1, 1).unwrap().blocks(), 256);

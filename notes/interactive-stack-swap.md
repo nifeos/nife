@@ -62,7 +62,7 @@ What is built:
   before it is recalled after it. `script/swish-check`, plain and graphical, boots through it.
 - The quiesce is bounded. A stand-in built from the supervisor's own image makes the `CALL` and
   signals the answer on a notification the supervisor's timer also signals. A `line_editor` that does not answer within
-  `QUIESCE_BOUND_MS` is replaced without its state and its region destroyed, which answers its
+  `QUIESCE_BOUND_MILLISECONDS` is replaced without its state and its region destroyed, which answers its
   callers `Gone`. The second test in `terminal_swap_tests` hangs one behind a console that stops
   acknowledging. A spawner that passes a swap endpoint copies the supervisor's image and grants a
   stand-in's budget; one that passes none, which is every boot today, grants nothing extra.

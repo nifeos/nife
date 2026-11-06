@@ -123,7 +123,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         READY,
         RPT_READY,
         store.len() as u64,
-        cost.memory_kib() as u64,
+        cost.memory_kibibytes() as u64,
     );
     serve(&store, &mut scratch)
 }

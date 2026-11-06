@@ -171,7 +171,7 @@ pub mod supervisor {
     /// measurement behind it is beside the bounded quiesce in `components/src/terminal_supervisor.rs`.
     ///
     /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
-    pub const QUIESCE_BOUND_MS: u64 = 250;
+    pub const QUIESCE_BOUND_MILLISECONDS: u64 = 250;
     /// How many pages of budget the supervisor needs: two instances at once (the incumbent
     /// and its replacement) and its own handful of objects and page tables.
     pub const BUDGET_PAGES: u64 = 2 * super::INSTANCE_PAGES + 16;
@@ -266,7 +266,7 @@ pub mod supervisor {
     /// word: the refusal `NOTE_NOT_ABSORBED` carried.
     pub const ROLLED_BACK: u64 = 0x524f_4c4c;
     /// Supervisor → requester: the incumbent did not answer the quiesce within
-    /// [`QUIESCE_BOUND_MS`], so a replacement was started **without its state** and the incumbent's
+    /// [`QUIESCE_BOUND_MILLISECONDS`], so a replacement was started **without its state** and the incumbent's
     /// region destroyed. Every caller it was holding is answered `abi::Error::Gone`. Second word:
     /// how long the supervisor waited, in milliseconds.
     ///

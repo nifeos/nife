@@ -346,31 +346,31 @@ mod tests {
     /// two different bytes, and the shift key itself sends none.
     #[test]
     fn shift_is_remembered_between_events() {
-        let mut kb = Keyboard::new();
-        assert_eq!(kb.event(EV_KEY, 30, 1), Some(Bytes::one(b'a')));
-        assert_eq!(kb.event(EV_KEY, KEY_LEFTSHIFT, 1), None);
-        assert!(kb.shift());
-        assert_eq!(kb.event(EV_KEY, 30, 1), Some(Bytes::one(b'A')));
-        assert_eq!(kb.event(EV_KEY, KEY_LEFTSHIFT, 0), None);
-        assert!(!kb.shift());
-        assert_eq!(kb.event(EV_KEY, 30, 1), Some(Bytes::one(b'a')));
+        let mut keyboard = Keyboard::new();
+        assert_eq!(keyboard.event(EV_KEY, 30, 1), Some(Bytes::one(b'a')));
+        assert_eq!(keyboard.event(EV_KEY, KEY_LEFTSHIFT, 1), None);
+        assert!(keyboard.shift());
+        assert_eq!(keyboard.event(EV_KEY, 30, 1), Some(Bytes::one(b'A')));
+        assert_eq!(keyboard.event(EV_KEY, KEY_LEFTSHIFT, 0), None);
+        assert!(!keyboard.shift());
+        assert_eq!(keyboard.event(EV_KEY, 30, 1), Some(Bytes::one(b'a')));
 
         // Two shifts, released independently: releasing one while the other is held stays shifted.
-        kb.event(EV_KEY, KEY_LEFTSHIFT, 1);
-        kb.event(EV_KEY, KEY_RIGHTSHIFT, 1);
-        kb.event(EV_KEY, KEY_LEFTSHIFT, 0);
+        keyboard.event(EV_KEY, KEY_LEFTSHIFT, 1);
+        keyboard.event(EV_KEY, KEY_RIGHTSHIFT, 1);
+        keyboard.event(EV_KEY, KEY_LEFTSHIFT, 0);
         assert_eq!(
-            kb.event(EV_KEY, 30, 1),
+            keyboard.event(EV_KEY, 30, 1),
             Some(Bytes::one(b'A')),
             "right shift is still down"
         );
-        kb.event(EV_KEY, KEY_RIGHTSHIFT, 0);
-        assert_eq!(kb.event(EV_KEY, 30, 1), Some(Bytes::one(b'a')));
+        keyboard.event(EV_KEY, KEY_RIGHTSHIFT, 0);
+        assert_eq!(keyboard.event(EV_KEY, 30, 1), Some(Bytes::one(b'a')));
 
         // Only the state dump can tell the hands apart: typing reads the OR of the two.
-        kb.event(EV_KEY, KEY_LEFTSHIFT, 1);
+        keyboard.event(EV_KEY, KEY_LEFTSHIFT, 1);
         assert!(
-            std::format!("{kb:?}").contains("left: true, right: false"),
+            std::format!("{keyboard:?}").contains("left: true, right: false"),
             "the left shift key must be recorded as the left one",
         );
     }
@@ -380,16 +380,20 @@ mod tests {
     /// twice, which is the first bug an evdev driver has.
     #[test]
     fn releases_type_nothing_and_repeats_type_again() {
-        let mut kb = Keyboard::new();
-        assert_eq!(kb.event(EV_KEY, 30, 1), Some(Bytes::one(b'a')), "press");
-        assert_eq!(kb.event(EV_KEY, 30, 0), None, "release");
+        let mut keyboard = Keyboard::new();
         assert_eq!(
-            kb.event(EV_KEY, 30, 2),
+            keyboard.event(EV_KEY, 30, 1),
+            Some(Bytes::one(b'a')),
+            "press"
+        );
+        assert_eq!(keyboard.event(EV_KEY, 30, 0), None, "release");
+        assert_eq!(
+            keyboard.event(EV_KEY, 30, 2),
             Some(Bytes::one(b'a')),
             "auto-repeat"
         );
-        assert_eq!(kb.event(EV_SYN, 0, 0), None, "a batch separator");
-        assert_eq!(kb.event(7, 30, 1), None, "some other event type");
+        assert_eq!(keyboard.event(EV_SYN, 0, 0), None, "a batch separator");
+        assert_eq!(keyboard.event(7, 30, 1), None, "some other event type");
     }
 
     /// **Each arrow sends the standard `CSI` cursor-key sequence**, which is `crates/line_editor`'s
@@ -397,25 +401,25 @@ mod tests {
     /// test rather than surfacing three components away as a cursor that moves the wrong direction.
     #[test]
     fn arrow_keys_send_the_csi_sequence_line_editor_understands() {
-        let mut kb = Keyboard::new();
+        let mut keyboard = Keyboard::new();
         for (code, want) in [
             (KEY_UP, &b"\x1b[A"[..]),
             (KEY_DOWN, b"\x1b[B"),
             (KEY_RIGHT, b"\x1b[C"),
             (KEY_LEFT, b"\x1b[D"),
         ] {
-            let got = kb
+            let got = keyboard
                 .event(EV_KEY, code, 1)
                 .unwrap_or_else(|| panic!("arrow code {code} produced nothing"));
             assert_eq!(got.as_slice(), want, "arrow code {code}");
             // A release of the same key types nothing, same as every other key.
             assert_eq!(
-                kb.event(EV_KEY, code, 0),
+                keyboard.event(EV_KEY, code, 0),
                 None,
                 "arrow release, code {code}"
             );
             // Auto-repeat resends the same sequence, the same as a held letter key.
-            assert_eq!(kb.event(EV_KEY, code, 2).unwrap().as_slice(), want);
+            assert_eq!(keyboard.event(EV_KEY, code, 2).unwrap().as_slice(), want);
         }
     }
 
@@ -424,7 +428,7 @@ mod tests {
     /// there is a failure here rather than two copies of the same mistake agreeing.
     #[test]
     fn the_navigation_cluster_sends_xterms_sequences_with_and_without_shift() {
-        let mut kb = Keyboard::new();
+        let mut keyboard = Keyboard::new();
         let cases: [(u16, &[u8], &[u8]); 10] = [
             (KEY_HOME, b"\x1b[H", b"\x1b[1;2H"),
             (KEY_END, b"\x1b[F", b"\x1b[1;2F"),
@@ -439,18 +443,22 @@ mod tests {
         ];
         for (code, plain, shifted) in cases {
             assert_eq!(
-                kb.event(EV_KEY, code, 1).unwrap().as_slice(),
+                keyboard.event(EV_KEY, code, 1).unwrap().as_slice(),
                 plain,
                 "code {code}"
             );
-            kb.event(EV_KEY, KEY_RIGHTSHIFT, 1);
+            keyboard.event(EV_KEY, KEY_RIGHTSHIFT, 1);
             assert_eq!(
-                kb.event(EV_KEY, code, 1).unwrap().as_slice(),
+                keyboard.event(EV_KEY, code, 1).unwrap().as_slice(),
                 shifted,
                 "shift and code {code}"
             );
-            kb.event(EV_KEY, KEY_RIGHTSHIFT, 0);
-            assert_eq!(kb.event(EV_KEY, code, 0), None, "release, code {code}");
+            keyboard.event(EV_KEY, KEY_RIGHTSHIFT, 0);
+            assert_eq!(
+                keyboard.event(EV_KEY, code, 0),
+                None,
+                "release, code {code}"
+            );
         }
     }
 
@@ -464,7 +472,7 @@ mod tests {
         impl line_editor::Sink for Discard {
             fn put(&mut self, _: &[u8]) {}
         }
-        let mut kb = Keyboard::new();
+        let mut keyboard = Keyboard::new();
         let mut ld = line_editor::LineDisc::new();
         // "xy", Home, "w", End, "z", Left, Left, Delete, Enter: "wxyz" with the "y" deleted.
         let keys = [
@@ -472,7 +480,7 @@ mod tests {
         ];
         let mut event = line_editor::Event::None;
         for code in keys {
-            for &b in kb.event(EV_KEY, code, 1).unwrap().as_slice() {
+            for &b in keyboard.event(EV_KEY, code, 1).unwrap().as_slice() {
                 event = ld.feed(b, &mut Discard);
             }
         }
@@ -483,7 +491,7 @@ mod tests {
         // use for must not type its parameter and final byte into the line as `5~`.
         let mut ld = line_editor::LineDisc::new();
         for code in [30u16, KEY_PAGEUP, KEY_PAGEDOWN, 28] {
-            for &b in kb.event(EV_KEY, code, 1).unwrap().as_slice() {
+            for &b in keyboard.event(EV_KEY, code, 1).unwrap().as_slice() {
                 event = ld.feed(b, &mut Discard);
             }
         }
@@ -518,7 +526,7 @@ mod tests {
     /// capital. The byte stream is what a terminal would have received from a UART.
     #[test]
     fn typing_a_word_produces_the_bytes_a_terminal_would_have_seen() {
-        let mut kb = Keyboard::new();
+        let mut keyboard = Keyboard::new();
         let mut out = Vec::new();
         // Shift+h, e, l, l, o, Enter.
         for (code, value) in [
@@ -537,7 +545,7 @@ mod tests {
             (28, 1),
             (28, 0),
         ] {
-            if let Some(bytes) = kb.event(EV_KEY, code, value) {
+            if let Some(bytes) = keyboard.event(EV_KEY, code, value) {
                 out.extend_from_slice(bytes.as_slice());
             }
         }
