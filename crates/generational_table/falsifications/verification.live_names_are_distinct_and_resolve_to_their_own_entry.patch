@@ -13,8 +13,8 @@ and resolves to nothing.
 diff --git a/crates/generational_table/src/lib.rs b/crates/generational_table/src/lib.rs
 --- a/crates/generational_table/src/lib.rs
 +++ b/crates/generational_table/src/lib.rs
-@@ -123,3 +123,3 @@ impl<T, const N: usize> Table<T, N> {
-     const fn name(slot: usize, generation: u32) -> u64 {
--        ((generation as u64) << 32) | slot as u64
-+        ((slot as u64) << 32) | generation as u64
+@@ -193,3 +193,3 @@ impl<T, const N: usize> Table<T, N> {
+     const fn name(slot: usize, generation: u32) -> EntryName<T> {
+-        EntryName::from_bits(((generation as u64) << 32) | slot as u64)
++        EntryName::from_bits(((slot as u64) << 32) | generation as u64)
      }
