@@ -72,7 +72,7 @@ walk bound and a refused insert that never runs its closure.
 
 ## Names
 
-All 16 names in the crate are ratified: the crate on its naming review, the 14 items on #3119
+The crate has 16 names, all with a ratified block: the crate on its naming review, the 14 items on #3119
 under the ruling that the standard library's spellings win (`len`, `iter`, `get_mut`), and
 `EntryName<T>` by the architect. Nothing to ratify.
 
@@ -98,8 +98,8 @@ No defect found in the code. Three records disagree with it:
    resolves an ancient name again. The crate now saturates a slot's generation and retires it, and
    a fifth harness proves a dead name stays dead after any number of operations. The block and the
    release record's comparison table (`wraps after 2^32 reuses`) and recommended `BUGS` line
-   ("the 2^32 wrap") need the same correction, and the block's open item on the name type is
-   settled (`EntryName<T>`). Owner: a lane, after the maintainer confirms.
+   ("the 2^32 wrap") need the same correction, and the block's open item on the name type has
+   its answer, `EntryName<T>`. Owner: a lane, after the maintainer confirms.
 2. The crate's limits do not say that a table whose every slot has retired refuses every insert
    for good. A test shows it (`a_table_of_retired_slots_refuses`), and the README's `BUGS` section
    is where a stranger looks.
