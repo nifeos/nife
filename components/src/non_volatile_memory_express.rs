@@ -209,7 +209,7 @@ impl Plane {
         // The one-at-a-time discipline makes any other cid a protocol violation. Answering EIO
         // rather than panicking, because this is a server and a client is waiting on it: a
         // process that traps here takes the disk down for everyone holding the endpoint.
-        if c.cid != expect_cid {
+        if c.command_id != expect_cid {
             return Err(u16::MAX);
         }
         if c.status != 0 {
