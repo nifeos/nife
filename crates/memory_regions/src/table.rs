@@ -10,6 +10,8 @@
 //! `return_to_parent`, minted 2026-08-18 by milestone 135 (the region claim, under loom)'s lane.
 //! Nouns per the naming tenet; `RegionTable` takes its shape from the crate's name, `memory_regions`.
 
+use generational_table::EntryName;
+
 use crate::{DestroyOutcome, coalesced_watermark, destroy_outcome, split_new_watermark};
 
 /// A region's parent field naming no parent: this region came from the frame allocator rather than from
@@ -204,6 +206,13 @@ pub struct RegionTable<const N: usize> {
     table: generational_table::Table<Region, N>,
 }
 
+/// The table's name for a region's word. A temporary adapter: this crate's public methods still
+/// take and return a region's name as a `u64`, and this is the one place that word becomes the
+/// table's typed name. It goes when those methods take `EntryName<Region>` themselves.
+const fn entry(name: u64) -> EntryName<Region> {
+    EntryName::from_bits(name)
+}
+
 impl<const N: usize> Default for RegionTable<N> {
     fn default() -> Self {
         Self::new()
@@ -249,16 +258,18 @@ impl<const N: usize> RegionTable<N> {
     /// This is the table half of the kernel's `create`; the allocation itself is the kernel's,
     /// because a crate that can be model-checked cannot also own a physical allocator.
     pub fn insert_root(&mut self, base_page: u64, pages: u64) -> Option<u64> {
-        self.table.insert_with(|_| Region {
-            base_page,
-            pages,
-            watermark: 0,
-            retyped_to: 0,
-            pinned: false,
-            parent: NO_PARENT,
-            children: 0,
-            spent: Spent::default(),
-        })
+        self.table
+            .insert_with(|_| Region {
+                base_page,
+                pages,
+                watermark: 0,
+                retyped_to: 0,
+                pinned: false,
+                parent: NO_PARENT,
+                children: 0,
+                spent: Spent::default(),
+            })
+            .map(EntryName::to_bits)
     }
 
     /// Carve `pages` off `parent`'s unspent budget into a new child region and return the child's
@@ -293,7 +304,7 @@ impl<const N: usize> RegionTable<N> {
     /// ```
     pub fn split(&mut self, parent: u64, pages: u64) -> Option<u64> {
         let base_page = {
-            let r = self.table.get_mut(parent)?;
+            let r = self.table.get_mut(entry(parent))?;
             let new_watermark = split_new_watermark(r.pages, r.watermark, pages)?;
             let base_page = r.base_page + r.watermark;
             r.watermark = new_watermark;
@@ -301,23 +312,25 @@ impl<const N: usize> RegionTable<N> {
             r.spent.children += pages;
             base_page
         };
-        self.table.insert_with(|_| Region {
-            base_page,
-            pages,
-            watermark: 0,
-            retyped_to: 0,
-            pinned: false,
-            parent,
-            children: 0,
-            spent: Spent::default(),
-        })
+        self.table
+            .insert_with(|_| Region {
+                base_page,
+                pages,
+                watermark: 0,
+                retyped_to: 0,
+                pinned: false,
+                parent,
+                children: 0,
+                spent: Spent::default(),
+            })
+            .map(EntryName::to_bits)
     }
 
     /// Whether this region has live children, so a claim on it will be refused. `false` for a dead
     /// name.
     #[must_use]
     pub fn has_children(&self, name: u64) -> bool {
-        self.table.get(name).is_some_and(|r| r.children > 0)
+        self.table.get(entry(name)).is_some_and(|r| r.children > 0)
     }
 
     /// **Retype one page out of the region**, returning its physical page number. `None` when the
@@ -336,7 +349,7 @@ impl<const N: usize> RegionTable<N> {
     ///
     /// The caller zeroes the run, for [`retype_page`](RegionTable::retype_page)'s reason.
     pub fn retype_run(&mut self, name: u64, requested: u64) -> Option<u64> {
-        let r = self.table.get_mut(name)?;
+        let r = self.table.get_mut(entry(name))?;
         let new = crate::retype_new_watermark(r.pages, r.watermark, requested)?;
         let page = r.base_page + r.watermark;
         let spent = new - r.watermark;
@@ -355,7 +368,7 @@ impl<const N: usize> RegionTable<N> {
     ///
     /// `kind` is recorded for [`spent`](Self::spent) and decides nothing here.
     pub fn retype_object_page(&mut self, name: u64, kind: ObjectKind) -> Option<u64> {
-        let r = self.table.get_mut(name)?;
+        let r = self.table.get_mut(entry(name))?;
         if r.watermark >= r.pages {
             return None;
         }
@@ -374,7 +387,7 @@ impl<const N: usize> RegionTable<N> {
     /// the scheduler lock, and the claim must never take it, because reclamation is reachable from
     /// an address space's `Drop`.
     pub fn unpin(&mut self, name: u64) {
-        if let Some(r) = self.table.get_mut(name) {
+        if let Some(r) = self.table.get_mut(entry(name)) {
             r.pinned = false;
         }
     }
@@ -382,7 +395,7 @@ impl<const N: usize> RegionTable<N> {
     /// How many pages the region has retyped, and how many it holds. `None` for a dead name.
     #[must_use]
     pub fn usage(&self, name: u64) -> Option<(u64, u64)> {
-        self.table.get(name).map(|r| (r.watermark, r.pages))
+        self.table.get(entry(name)).map(|r| (r.watermark, r.pages))
     }
 
     /// How many of the region's pages went to `on` (milestone 126, DECISIONS §225 part 1), or
@@ -394,7 +407,7 @@ impl<const N: usize> RegionTable<N> {
     /// [`return_to_parent`](Self::return_to_parent) describes.
     #[must_use]
     pub fn spent(&self, name: u64, on: PageUse) -> Option<u64> {
-        let own = self.table.get(name)?;
+        let own = self.table.get(entry(name))?;
         let count = |r: &Region| match on {
             PageUse::Frames => r.spent.frames,
             PageUse::Object(kind) => r.spent.objects[kind as usize],
@@ -406,7 +419,7 @@ impl<const N: usize> RegionTable<N> {
         Some(
             self.table
                 .iter()
-                .filter(|&(n, _)| n == name || self.descends_from(n, name))
+                .filter(|&(n, _)| n == entry(name) || self.descends_from(n.to_bits(), name))
                 .map(|(_, r)| count(r))
                 .sum(),
         )
@@ -416,7 +429,7 @@ impl<const N: usize> RegionTable<N> {
     /// Bounded by the capacity, because a parent chain longer than the table would be a cycle,
     /// which the split protocol cannot build.
     fn descends_from(&self, n: u64, ancestor: u64) -> bool {
-        let mut at = self.table.get(n).map_or(NO_PARENT, |r| r.parent);
+        let mut at = self.table.get(entry(n)).map_or(NO_PARENT, |r| r.parent);
         for _ in 0..N {
             if at == NO_PARENT {
                 return false;
@@ -424,7 +437,7 @@ impl<const N: usize> RegionTable<N> {
             if at == ancestor {
                 return true;
             }
-            at = self.table.get(at).map_or(NO_PARENT, |r| r.parent);
+            at = self.table.get(entry(at)).map_or(NO_PARENT, |r| r.parent);
         }
         false
     }
@@ -433,7 +446,7 @@ impl<const N: usize> RegionTable<N> {
     /// revocation needs it to find which kernel objects live inside the region.
     #[must_use]
     pub fn bounds(&self, name: u64) -> Option<(u64, u64)> {
-        self.table.get(name).map(|r| (r.base_page, r.pages))
+        self.table.get(entry(name)).map(|r| (r.base_page, r.pages))
     }
 
     /// Decide whether this region may be reclaimed, and claim it in the same borrow.
@@ -455,7 +468,7 @@ impl<const N: usize> RegionTable<N> {
     /// assert!(table.claim_for_destroy(r).is_none(), "the name stopped resolving at the first claim");
     /// ```
     pub fn claim_for_destroy(&mut self, name: u64) -> Option<DestroyClaim> {
-        let r = self.table.get(name)?;
+        let r = self.table.get(entry(name))?;
         let is_root = r.parent == NO_PARENT;
         // The refuse/root/child decision is the Kani-proved arithmetic in the crate root. The LIFO
         // input is irrelevant to a refusal and to the root case, so a placeholder is honest here;
@@ -472,7 +485,7 @@ impl<const N: usize> RegionTable<N> {
         };
         // The generation bump. Every `MemoryRegion` capability for this region stops resolving here, and
         // that is what makes the claim single-winner rather than merely first.
-        self.table.remove(name);
+        self.table.remove(entry(name));
         Some(claim)
     }
 
@@ -490,7 +503,7 @@ impl<const N: usize> RegionTable<N> {
         if claim.is_root {
             return;
         }
-        let Some(parent_base) = self.table.get(claim.parent).map(|p| p.base_page) else {
+        let Some(parent_base) = self.table.get(entry(claim.parent)).map(|p| p.base_page) else {
             return;
         };
         // What the parent still has out: how many of its children are live, and where the highest
@@ -503,7 +516,7 @@ impl<const N: usize> RegionTable<N> {
             .fold((0u32, 0u64), |(n, to), (_, r)| {
                 (n + 1, to.max(r.base_page + r.pages - parent_base))
             });
-        let Some(p) = self.table.get_mut(claim.parent) else {
+        let Some(p) = self.table.get_mut(entry(claim.parent)) else {
             return;
         };
         let is_lifo_top = claim.base_page + claim.pages == p.base_page + p.watermark;
@@ -1069,7 +1082,7 @@ mod interleavings {
             // 1. Decide under the lock.
             let captured = {
                 let guard = table.lock().unwrap();
-                let Some(r) = guard.table.get(name) else {
+                let Some(r) = guard.table.get(entry(name)) else {
                     return;
                 };
                 let is_root = r.parent == NO_PARENT;
@@ -1086,7 +1099,7 @@ mod interleavings {
             let _ = captured;
             *freed.lock().unwrap() += 1;
             // 4. And only now remove the slot, far too late to have decided anything.
-            table.lock().unwrap().table.remove(name);
+            table.lock().unwrap().table.remove(entry(name));
         }
 
         loom::model(|| {

@@ -264,7 +264,7 @@ pub fn cntfrq() -> u64 {
         let page = unsafe {
             super::counterfreqproto::CounterFrequencyPage::new(super::counterfreqproto::PAGE_VIRTUAL_ADDRESS)
         };
-        page.hz().expect(
+        page.hertz().expect(
             "the counter frequency is unknown: this process's timebase page is zeroed or \
              unrecognized",
         )

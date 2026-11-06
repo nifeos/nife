@@ -508,13 +508,20 @@ struct Devices {
     table: generational_table::Table<Device, MAXIMUM_DEVICES>,
 }
 
+/// The device table's typed name for a device id. A temporary adapter: a device is still named
+/// by a `u64` across the kernel, and this is the one edge where that word becomes the table's
+/// `EntryName`. It goes when the device id is that `EntryName` itself.
+const fn device_entry(id: u64) -> generational_table::EntryName<Device> {
+    generational_table::EntryName::from_bits(id)
+}
+
 impl Devices {
     fn get(&self, id: u64) -> Option<&Device> {
-        self.table.get(id)
+        self.table.get(device_entry(id))
     }
 
     fn get_mut(&mut self, id: u64) -> Option<&mut Device> {
-        self.table.get_mut(id)
+        self.table.get_mut(device_entry(id))
     }
 }
 
@@ -564,7 +571,7 @@ pub(crate) fn register(
     let mut devs = DEVICES.lock();
     devs.table
         .insert_with(|name| Device {
-            name,
+            name: name.to_bits(),
             owner: None,
             transport,
             direct_memory_access_base,
@@ -574,6 +581,7 @@ pub(crate) fn register(
             shadow_base,
         })
         .expect("more virtio devices live at once than MAXIMUM_DEVICES")
+        .to_bits()
 }
 
 /// Make the calling thread the owner of device `id`: when that thread is removed from the thread
@@ -629,7 +637,7 @@ pub(crate) fn release_owned_by(tid: crate::thread::ThreadId) {
 pub(crate) fn unregister(id: u64) -> bool {
     let removed = {
         let mut devs = DEVICES.lock();
-        let Some(mut dev) = devs.table.remove(id) else {
+        let Some(mut dev) = devs.table.remove(device_entry(id)) else {
             return false;
         };
         dev.transport.write_reg(REG_STATUS, 0);

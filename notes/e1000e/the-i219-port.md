@@ -27,7 +27,7 @@ FreeBSD's, adapted, and `platform_controller_hub/mod.rs` carries the notice of e
 
 `kernel/src/e1000e.rs`'s `bring_up` calls `platform_controller_hub::sequence`'s three passes in FreeBSD's order:
 `initialize_physical_layer_device_workarounds` at attach, `global_reset` after
-`platform_controller_hub::flush::descriptor_rings`, and `initialize_hardware` before the rings are programmed, with
+`platform_controller_hub::flush::empty_descriptor_rings`, and `initialize_hardware` before the rings are programmed, with
 `transmit_errata` once `TCTL` is written. `platform_controller_hub::sequence`'s module doc gives that order. Each
 function's doc says what it does and names the FreeBSD function it follows. Only the branches for
 FreeBSD's `e1000_pch_spt` class are carried, because every I219 the crate claims is in it

@@ -59,7 +59,7 @@ Each item gives the recommendation first.
    milestone 494 (the I219 driver)'s Reuse table name them apart from the BSD-3-Clause shared code.
    The crate's `license` field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.
 4. Ruled 2026-11-04 UTC and done by #3200: `kernel/src/e1000e.rs` runs the flush through
-   `platform_controller_hub::flush::descriptor_rings`, which the module's notice covers, so the
+   `platform_controller_hub::flush::empty_descriptor_rings`, which the module's notice covers, so the
    notice lives once. The kernel supplies only configuration space and its ring memory.
 5. Ruled 2026-11-04 UTC and done by #3200: `designware_ethernet::motorcomm_physical_layer_device::link_from_registers`
    adapts OpenBSD's `ukphy_status` (`sys/dev/mii/ukphy_subr.c`), and `src/lib.rs` carries its NetBSD

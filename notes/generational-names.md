@@ -20,7 +20,8 @@ too, which milestone 14 forbids.
 ## The mechanism
 
 A name is `(generation, slot)` packed in one u64: slot in the low 32 bits, generation in the
-high 32.
+high 32. The crate hands it out as an `EntryName<T>`, where `T` is the table's entry type (the next
+section).
 
 - Lookup indexes the slot and compares the generation. O(1), two loads.
 - Remove bumps the slot's generation. Every outstanding name for the old occupant now fails
@@ -34,6 +35,36 @@ reference and not somebody else's thread; it is `None`.
 Game engines rediscovered this shape independently. They call it a slotmap, and entity ids in ECS
 engines are exactly generational indices. The reason is the one kernels have: many
 short-lived objects, and stored references that must fail safely rather than dangle.
+
+## Typed names
+
+`Table<T, N>` mints `EntryName<T>`, and every lookup takes one. Two tables of different entry types
+therefore mint names of different types. Handing a thread's name to the region table does not
+compile, where a bare word would have made a lookup that fails at run time or, worse, succeeds on
+the wrong entry. This is the top rung of the mechanisms ladder: nobody can write the wrong state
+down.
+
+- `T` is a tag and nothing more. The name holds no `T`, and the crate writes `Copy`, `Clone`,
+  `PartialEq`, `Eq` and `Debug` by hand so that none of them asks anything of `T`. The marker is
+  `PhantomData<fn() -> T>`, which keeps the name `Send` and `Sync` for every `T`; a plain
+  `PhantomData<T>` would make a name of a raw-pointer entry neither.
+- Two tables with the same entry type share a name type. The tag separates tables only as far as
+  their entry types differ, so a caller with two tables of the same `T` gives each a one-field
+  wrapper as its entry type.
+- `to_bits` and `from_bits` cross a boundary that carries a plain word: a syscall register, an
+  atomic, a field of a packed record. `from_bits` is total and infallible, because the table already
+  refuses any name it never minted. `a_name_the_table_never_minted_resolves_to_nothing` quantifies
+  over `from_bits` of every u64. The type keeps an honest caller from mixing tables up; it is not
+  the defense against a forged word, and does not need to be.
+- `EntryName::NEVER_MINTED` is the name no table mints, for a caller that stores "no entry" in a
+  name-sized field. It is `u64::MAX`: its generation is the retired one, which no live entry
+  carries, and its slot is `u32::MAX`, which no table has because the constructor refuses
+  `N > u32::MAX`. Either fact alone keeps it unminted.
+
+Prior art: the Rust `slotmap` crate's `new_key_type!` macro declares a distinct key type per map,
+and an ECS engine's entity id (Bevy's `Entity`) is one type for every entity, so it separates
+nothing. nife derives the tag from the entry type instead of declaring it beside the table, so no
+table needs a second name, at the cost of the shared-`T` case above.
 
 ## What it buys the capability model
 
@@ -56,9 +87,9 @@ audit may pass over it; §71 says what would promote it. See notes/untracked-wor
 
 - **The boot thread is tid 0 by construction**: a fresh table's first insert mints slot 0,
   generation 0, which packs to 0. That is a property, not a hardcoded key.
-- **`u64::MAX` can never be minted** (slot would have to be 2^32-1 with 128 slots), so
-  `cpu::NO_TID` keeps working as the "no thread" sentinel, and it is also the `UNNAMED`
-  placeholder a `Thread` carries between construction and insertion.
+- **`u64::MAX` can never be minted**: it is `EntryName::NEVER_MINTED`, above. The kernel's
+  `cpu::NO_TID` is that word, the "no thread" sentinel, and it is also the `UNNAMED` placeholder a
+  `Thread` carries between construction and insertion.
 - Generations are 32-bit and saturate. A slot whose generation reaches `u32::MAX` retires: insert
   passes over it, so no name carries that generation and a removed name never comes back. The
   table loses one slot of capacity each time, and only after 2^32 - 1 occupants of that slot.
@@ -227,5 +258,5 @@ Five Kani harnesses in `crates/generational_table` (`script/verify`):
 | `a_removed_name_never_resolves_again` | from any starting generations, after remove the name fails `get`/`get_mut`/`remove` even once the slot is reused, and the reuser's name differs |
 | `a_removed_name_stays_dead_whatever_comes_after` | from any reachable table, any operations keep a dead name's slot generation above the name's and every live slot below `u32::MAX`, so by induction a removed name never resolves, however many reuses follow |
 | `live_names_are_distinct_and_resolve_to_their_own_entry` | the packing cannot alias two live entries |
-| `a_name_the_table_never_minted_resolves_to_nothing` | for any u64, resolution succeeds only on exactly the name the table issued: names cannot be forged |
+| `a_name_the_table_never_minted_resolves_to_nothing` | for `from_bits` of any u64, resolution succeeds only on exactly the name the table issued: names cannot be forged |
 | `a_bounded_walk_yields_every_live_entry` | after removing any subset of three filled slots, every walk bounded by `top` reports exactly `len` entries |

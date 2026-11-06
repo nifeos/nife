@@ -14,7 +14,7 @@ pub(super) fn rendezvous_of(
     sched: &IpcTables,
     ep: RendezvousId,
 ) -> Option<&'static mut Rendezvous> {
-    let phys = *sched.rendezvous_table.get(ep)?;
+    let phys = *sched.rendezvous_table.get(rendezvous_entry(ep))?;
     // SAFETY: retyped exclusively for this rendezvous, its region pinned while the name resolves,
     // direct-mapped, and serialized by IPC_TABLES, which every caller holds.
     Some(unsafe { &mut *(crate::arch::mmu::phys_to_virt(phys) as *mut Rendezvous) })

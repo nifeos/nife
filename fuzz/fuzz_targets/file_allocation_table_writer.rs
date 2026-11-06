@@ -161,7 +161,7 @@ fuzz_target!(|data: &[u8]| {
                 if let Some(entry) = found(&mut volume, &picked)
                     && let Ok(mut writer) = volume.open_file_writer(&entry)
                 {
-                    let _ = writer.set_length(u32::from(op.get(1).copied().unwrap_or(0)) * 600);
+                    let _ = writer.set_len(u32::from(op.get(1).copied().unwrap_or(0)) * 600);
                 }
             }
             3 => {

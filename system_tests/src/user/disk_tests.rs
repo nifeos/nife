@@ -106,7 +106,7 @@ fn roster_message_names_every_disk(w: &disk_service::Wiring) {
     let here = Roster::read(w.roster()).expect("the kernel wrote a roster it cannot read");
     assert_eq!(here.len(), w.devices);
     if X86_FIXTURES_REQUIRED {
-        for (i, d) in here.iter().take(5).enumerate() {
+        for (i, d) in here.devices().take(5).enumerate() {
             assert_eq!(
                 (d.transport, d.ordinal as usize),
                 (TRANSPORT_VIRTIO_PCI, i),
@@ -115,12 +115,12 @@ fn roster_message_names_every_disk(w: &disk_service::Wiring) {
         }
     }
     assert_eq!(
-        here.count_on(TRANSPORT_VIRTIO_MEMORY_MAPPED_IO) as u64,
+        here.count_by_transport(TRANSPORT_VIRTIO_MEMORY_MAPPED_IO) as u64,
         mmio
     );
-    assert_eq!(here.count_on(TRANSPORT_VIRTIO_PCI) as u64, pci);
+    assert_eq!(here.count_by_transport(TRANSPORT_VIRTIO_PCI) as u64, pci);
     assert_eq!(
-        here.count_on(TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS) as u64,
+        here.count_by_transport(TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS) as u64,
         nvme
     );
     // The NVMe entry comes after every virtio one and is ordinal 0, the controller

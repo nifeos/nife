@@ -197,7 +197,7 @@ impl MasterBootRecord {
         device: &mut D,
     ) -> Result<MasterBootRecord, MasterBootRecordReadError<D::Error>> {
         let size = device.sector_size();
-        let mut sector = [0u8; SectorSize::MAX];
+        let mut sector = [0u8; SectorSize::MAXIMUM_BYTES];
         let sector = &mut sector[..size.bytes()];
         device
             .read_sector(0, sector)

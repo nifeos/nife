@@ -45,7 +45,7 @@ Every name this tree authors spells these out, function parameters included.
 ## Short forms that stay
 
 - Earned, because nobody says the expansion: `pci`, `elf`, `usb`, `syscall`, `cpu`, `xor`, `io`,
-  `bios`, QEMU, and the hardware acronyms `MAC`, `GMAC` and `SD`. `glob` and `paging` are words.
+  `bios`, `efi`, QEMU, and the hardware acronyms `MAC`, `GMAC` and `SD`. `glob` and `paging` are words.
 - `id` and `Id` stay, as std writes `ThreadId`, `TypeId` and `process::id`: `device_id`,
   `DEVICE_IDS`. Spell `identifier` out only where ID is one letter of a compound specification
   acronym: `address_space_identifier`, `CardIdentification`, `version_identification`.

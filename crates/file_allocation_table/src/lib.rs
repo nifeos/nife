@@ -36,7 +36,7 @@
 //! [`VolumeLayout`] lays out one shape through the same sizing and boot sector: a FAT32 EFI
 //! (Extensible Firmware Interface) system partition holding one boot file at `\EFI\BOOT\<name>`.
 //! [`efi_system_partition`] holds that shape's constants, and a volume below
-//! [`efi_system_partition::FAT32_MINIMUM_CLUSTERS`] is refused.
+//! [`efi_system_partition::MINIMUM_FAT32_CLUSTERS`] is refused.
 
 //! # BUGS
 //!
