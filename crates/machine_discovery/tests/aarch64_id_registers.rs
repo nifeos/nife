@@ -58,7 +58,7 @@ fn a_cortex_a72_decodes_to_a_cortex_a72() {
 /// fields are zero, so 4 KiB and 64 KiB come out right and only 16 KiB is wrong). This is the case
 /// that catches it in the other.
 #[test]
-fn the_sixteen_kib_granule_field_is_inverted() {
+fn the_sixteen_kibibyte_granule_field_is_inverted() {
     // 4 KiB yes, 64 KiB no, 16 KiB yes, 16-bit ASIDs, 48-bit PA.
     let cpu = Isa::decode(0, mmfr0(0b0000, 0b1111, 0b0001, 0b0010, 0b0101), 0, 0);
 
@@ -100,7 +100,7 @@ fn a_machine_without_the_4k_granule_is_refused() {
 /// The other two rows hold the edges: `0b1111` is Arm's "not supported", and `0b0010` is one Arm
 /// has not defined, read as absent rather than trusted (the same default `ASIDBits` uses).
 #[test]
-fn every_four_kib_granule_encoding_decodes() {
+fn every_four_kibibyte_granule_encoding_decodes() {
     for (tgran4, supported) in [
         (0b0000, true),
         (0b0001, true),
@@ -126,7 +126,7 @@ fn every_four_kib_granule_encoding_decodes() {
 /// the encoding above. It was already decoded correctly; this is its witness, so the two LPA2
 /// values are tested side by side and a uniform rewrite cannot pass one and break the other.
 #[test]
-fn the_sixteen_kib_lpa2_encoding_is_supported() {
+fn the_sixteen_kibibyte_lpa2_encoding_is_supported() {
     let cpu = Isa::decode(0, mmfr0(0b0000, 0b0000, 0b0010, 0b0010, 0b0101), 0, 0);
     assert!(cpu.granules.k16, "0b0010 is 16 KiB with FEAT_LPA2");
     assert!(
