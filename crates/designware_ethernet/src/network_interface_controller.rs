@@ -594,7 +594,7 @@ mod tests {
     }
 
     #[test]
-    fn a_region_past_the_address_width_or_across_4_gib_is_refused() {
+    fn a_region_past_the_address_width_or_across_4_gibibytes_is_refused() {
         let bytes = layout::DIRECT_MEMORY_ACCESS_REGION_BYTES;
         assert!(region_in_reach(0x4000_0000, bytes, 32));
         assert!(!region_in_reach(0x1_0000_0000, bytes, 32));
@@ -1013,7 +1013,7 @@ mod tests {
 
     /// A region that ends exactly at a 4 GiB boundary is in reach: its last byte is below it.
     #[test]
-    fn a_region_ending_at_4_gib_is_in_reach() {
+    fn a_region_ending_at_4_gibibytes_is_in_reach() {
         let bytes = layout::DIRECT_MEMORY_ACCESS_REGION_BYTES;
         assert!(region_in_reach(0x1_0000_0000 - bytes, bytes, 32));
     }
