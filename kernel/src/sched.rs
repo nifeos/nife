@@ -9,6 +9,7 @@
 
 use core::sync::atomic::{AtomicPtr, AtomicU32, AtomicU64, Ordering};
 
+use generational_table::EntryName;
 use intrusive_queue::Unqueued;
 use thread_wake_handshake::{SwitchOutVerdict, WakeVerdict};
 

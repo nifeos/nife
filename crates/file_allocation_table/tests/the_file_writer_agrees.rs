@@ -250,7 +250,7 @@ fn change_files(volume: &mut WritableVolume<Memory, NoClock>, plan: &mut Plan) {
         volume
             .open_file_writer(&entry)
             .unwrap()
-            .set_length(length as u32)
+            .set_len(length as u32)
             .unwrap();
         plan.bytes_of(name).resize(length, 0);
     }
@@ -443,11 +443,7 @@ fn files_in_a_subdirectory_write_and_the_subdirectory_grows() {
         }
         // Entries found by path carry their directory: shrink one, delete another.
         let found = volume.lookup("Sub Directory/F3.DAT").unwrap();
-        volume
-            .open_file_writer(&found)
-            .unwrap()
-            .set_length(4)
-            .unwrap();
+        volume.open_file_writer(&found).unwrap().set_len(4).unwrap();
         let doomed = volume.lookup("Sub Directory/F4.DAT").unwrap();
         volume.remove_file(&doomed).unwrap();
         volume.mark_clean().unwrap();

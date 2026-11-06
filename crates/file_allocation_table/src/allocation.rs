@@ -487,7 +487,7 @@ impl<D: crate::sector::SectorDevice> Volume<D> {
             return Ok(None);
         };
         let size = self.boot.sector_size().bytes();
-        let mut buffer = [0u8; crate::sector::SectorSize::MAX];
+        let mut buffer = [0u8; crate::sector::SectorSize::MAXIMUM_BYTES];
         self.device
             .read_sector(u64::from(sector), &mut buffer[..size])
             .map_err(ChainError::Device)?;

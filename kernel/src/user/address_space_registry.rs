@@ -116,6 +116,14 @@ static USER_SPACES: crate::sync::InterruptSafeMutex<
     generational_table::Table::new(),
 );
 
+/// The registry's typed name for an address space's name. A temporary adapter: an address space
+/// is still named by a `u64` across the kernel, and this module is the one edge where that word
+/// becomes the registry's `EntryName`. It goes when `Object::AddressSpace` carries the
+/// `EntryName` itself.
+const fn space_entry(name: u64) -> generational_table::EntryName<Registered> {
+    generational_table::EntryName::from_bits(name)
+}
+
 /// **The registry's static footprint in bytes**, for the boot that reports it (§249's
 /// `MAXIMUM_USER_SPACES` raise; name provisional).
 #[cfg(any(test, feature = "system_tests"))]
@@ -160,7 +168,8 @@ pub fn user_address_space_create(region: u64) -> Option<u64> {
     // maps one from its parent's rate, and most callers build nothing like an ELF process.
     let name = USER_SPACES
         .lock()
-        .insert_with(|_| Registered { space, bound: None });
+        .insert_with(|_| Registered { space, bound: None })
+        .map(generational_table::EntryName::to_bits);
     if name.is_none() {
         // Undo the bookkeeping; the page stays spent on the caller's budget. Unreachable while
         // `MAXIMUM_USER_SPACES` covers the revocation registry.
@@ -190,7 +199,10 @@ pub fn user_address_space_map(
     under: crate::revoke::PageMapSource,
 ) -> Result<(), MapError> {
     let mut spaces = USER_SPACES.lock();
-    let space = &mut spaces.get_mut(name).ok_or(MapError::NotMapped)?.space;
+    let space = &mut spaces
+        .get_mut(space_entry(name))
+        .ok_or(MapError::NotMapped)?
+        .space;
 
     space.map_physical(va, phys, flags, under)?;
     // The I-cache is not coherent with the D-cache on aarch64, so a code page a loader filled with
@@ -212,7 +224,10 @@ pub fn user_address_space_map(
 /// report," the same as an empty space, because the capability itself was never refused and the
 /// kernel has nothing left to say about where it used to point.
 pub fn user_address_space_root(name: u64) -> Option<u64> {
-    USER_SPACES.lock().get(name).map(|e| e.space.root())
+    USER_SPACES
+        .lock()
+        .get(space_entry(name))
+        .map(|e| e.space.root())
 }
 
 /// **Run `f` with the space `name` under the registry lock**, `None` if the name does not resolve:
@@ -225,7 +240,7 @@ pub fn user_address_space_root(name: u64) -> Option<u64> {
 /// whose TLB obligation reaches every core.
 pub fn with_user_address_space<R>(name: u64, f: impl FnOnce(Option<&mut AddressSpace>) -> R) -> R {
     let mut spaces = USER_SPACES.lock();
-    f(spaces.get_mut(name).map(|e| &mut e.space))
+    f(spaces.get_mut(space_entry(name)).map(|e| &mut e.space))
 }
 
 /// **Bind the space `name` to the embryo `tid`** (`ThreadControlBlock::CONFIGURE`'s engine since
@@ -242,7 +257,9 @@ pub(crate) fn bind_user_address_space(
     bind: impl FnOnce(BoundSpace) -> Result<Holder, abi::Error>,
 ) -> Result<(), abi::Error> {
     let mut spaces = USER_SPACES.lock();
-    let entry = spaces.get_mut(name).ok_or(abi::Error::NoSuchSlot)?;
+    let entry = spaces
+        .get_mut(space_entry(name))
+        .ok_or(abi::Error::NoSuchSlot)?;
     if entry.bound.is_some() {
         return Err(abi::Error::WrongObject);
     }
@@ -266,7 +283,7 @@ pub(crate) fn bind_user_address_space(
 /// be had.
 pub(crate) fn take_thread_page(name: u64) -> Option<(u8, u64, u64)> {
     let mut spaces = USER_SPACES.lock();
-    let space = &mut spaces.get_mut(name)?.space;
+    let space = &mut spaces.get_mut(space_entry(name))?.space;
     let k = (!space.thread_pages_in_use).trailing_zeros() as usize;
     let va = current_cpu_contract::thread_page_va(k)?;
     let bytes = current_cpu_contract::build_page_allowing(
@@ -310,7 +327,7 @@ pub(crate) fn take_thread_page(name: u64) -> Option<(u8, u64, u64)> {
 /// frame stays mapped, read-only and unread, for the next thread to take the slot. Nothing if the
 /// space is gone.
 pub(crate) fn give_back_thread_page(name: u64, slot: u8) {
-    if let Some(entry) = USER_SPACES.lock().get_mut(name) {
+    if let Some(entry) = USER_SPACES.lock().get_mut(space_entry(name)) {
         entry.space.thread_pages_in_use &= !(1u16 << slot);
     }
 }
@@ -330,7 +347,7 @@ pub(crate) fn register_bound_address_space(
     let mut copy = None;
     spaces
         .insert_with(|name| {
-            copy = Some(BoundSpace::of(name, &space));
+            copy = Some(BoundSpace::of(name.to_bits(), &space));
             Registered {
                 space: {
                     let mut space = space;
@@ -349,7 +366,10 @@ pub(crate) fn register_bound_address_space(
 /// for the reaper means the region sweep took it first. The space drops in the caller, outside this
 /// registry's lock, because its `Drop` takes the revocation, region and ASID locks.
 pub fn take_user_address_space(name: u64) -> Option<AddressSpace> {
-    USER_SPACES.lock().remove(name).map(|e| e.space)
+    USER_SPACES
+        .lock()
+        .remove(space_entry(name))
+        .map(|e| e.space)
 }
 
 /// **Tear down every space a region's destruction ends** (object revocation, the address-space
@@ -397,4 +417,5 @@ pub fn readopt_user_address_space(space: AddressSpace) -> Option<u64> {
     USER_SPACES
         .lock()
         .insert_with(|_| Registered { space, bound: None })
+        .map(generational_table::EntryName::to_bits)
 }

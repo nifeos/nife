@@ -207,7 +207,7 @@ fn directory(volume: &mut Volume<Image<'_>>, first: u32, depth: u32, budget: &mu
                     // An accepted name is at most 255 units and never holds the terminator.
                     let units = name.code_units();
                     assert!(!units.is_empty() && units.len() <= 255 && !units.contains(&0));
-                    let _ = name.characters().count();
+                    let _ = name.chars().count();
                     assert_eq!(entry.long_name_refusal(), None);
                 }
                 entries.push(entry);

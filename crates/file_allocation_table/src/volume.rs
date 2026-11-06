@@ -7,8 +7,8 @@
 
 use crate::boot_sector::FileAllocationTableType;
 use crate::efi_system_partition::{
-    BOOT_CLUSTER, CLUSTER_BYTES, CLUSTER_SECTORS, EFI_CLUSTER, FILE_CLUSTER, RESERVED_SECTORS,
-    ROOT_CLUSTER, SECTOR_BYTES, TABLE_COUNT,
+    BOOT_CLUSTER, BYTES_PER_CLUSTER, BYTES_PER_SECTOR, EFI_CLUSTER, FILE_CLUSTER, RESERVED_SECTORS,
+    ROOT_CLUSTER, SECTORS_PER_CLUSTER, TABLE_COUNT,
 };
 use crate::format::{Geometry, GeometryError, label_bytes, put16, put32, write_fs_info};
 use crate::long_name::{self, LongName};
@@ -42,7 +42,7 @@ pub enum LayoutError {
     /// **Not FAT32** (the 32-bit file allocation table, "FAT: General Overview of On-Disk Format"
     /// version 1.03, section 3, Boot Sector and BPB, which types a volume by its clusters): the
     /// partition holds fewer than
-    /// [`FAT32_MINIMUM_CLUSTERS`](crate::efi_system_partition::FAT32_MINIMUM_CLUSTERS) data
+    /// [`MINIMUM_FAT32_CLUSTERS`](crate::efi_system_partition::MINIMUM_FAT32_CLUSTERS) data
     /// clusters, so it is not a FAT32 volume however its boot sector is filled in. With 4096-byte
     /// clusters that is about 256 MiB.
     ///
@@ -86,7 +86,7 @@ pub enum LayoutError {
 /// that can put 512 bytes at an LBA:
 ///
 /// ```
-/// use file_allocation_table::efi_system_partition::SECTOR_BYTES;
+/// use file_allocation_table::efi_system_partition::BYTES_PER_SECTOR;
 /// use file_allocation_table::{NoClock, VolumeLayout};
 ///
 /// let volume = VolumeLayout::new(
@@ -100,7 +100,7 @@ pub enum LayoutError {
 /// )
 /// .expect("512 MiB is a FAT32 volume");
 ///
-/// let mut sector = [0u8; SECTOR_BYTES];
+/// let mut sector = [0u8; BYTES_PER_SECTOR];
 /// for index in 0..volume.metadata_sectors() {
 ///     assert!(volume.fill_sector(index, &mut sector));
 ///     // write `sector` at partition-relative LBA `index`
@@ -116,7 +116,7 @@ pub struct VolumeLayout {
     hidden_sectors: u32,
     fat_sectors: u32,
     clusters: u32,
-    file_len: u32,
+    file_size_bytes: u32,
     file_clusters: u32,
     geometry: Geometry,
     stamp: Stamp,
@@ -128,7 +128,7 @@ pub struct VolumeLayout {
 }
 
 impl VolumeLayout {
-    /// **Lay out a FAT32 volume of `total_sectors` holding one file of `file_len` bytes** at
+    /// **Lay out a FAT32 volume of `total_sectors` holding one file of `file_size_bytes` bytes** at
     /// `EFI\BOOT\<file_name>`.
     ///
     /// `hidden_sectors` is the partition's own first LBA on the disk, which goes into
@@ -143,11 +143,12 @@ impl VolumeLayout {
     /// directory's volume-label entry: up to eleven upper-case letters, digits, spaces and the
     /// punctuation a short name admits, as [`crate::FormatOptions::with_label`] takes.
     ///
-    /// Name: ratified 2026-10-25 (#2720).
+    /// Name: ratified 2026-10-25 (#2720); the parameter `file_len` was renamed `file_size_bytes`
+    /// on 2026-11-05 (UTC), the unit spelled out.
     pub fn new(
         total_sectors: u64,
         hidden_sectors: u64,
-        file_len: u64,
+        file_size_bytes: u64,
         volume_id: u32,
         label: &str,
         file_name: &str,
@@ -170,7 +171,7 @@ impl VolumeLayout {
         let geometry = Geometry::new(
             FileAllocationTableType::Fat32,
             SectorSize::Bytes512,
-            CLUSTER_SECTORS,
+            SECTORS_PER_CLUSTER,
             total_sectors,
         )
         .map_err(|error| match error {
@@ -181,11 +182,11 @@ impl VolumeLayout {
         })?;
         let (fat_sectors, clusters) = (geometry.table_sectors, geometry.clusters);
 
-        if file_len > u32::MAX as u64 {
+        if file_size_bytes > u32::MAX as u64 {
             return Err(LayoutError::FileTooBig);
         }
-        let file_len = file_len as u32;
-        let file_clusters = (file_len as u64).div_ceil(CLUSTER_BYTES as u64) as u32;
+        let file_size_bytes = file_size_bytes as u32;
+        let file_clusters = (file_size_bytes as u64).div_ceil(BYTES_PER_CLUSTER as u64) as u32;
         // Clusters are numbered 2..clusters+2, and 2, 3 and 4 are the three directories.
         if file_clusters > clusters.saturating_sub(FILE_CLUSTER - ROOT_CLUSTER) {
             return Err(LayoutError::FileTooBig);
@@ -196,7 +197,7 @@ impl VolumeLayout {
             hidden_sectors: hidden_sectors as u32,
             fat_sectors,
             clusters,
-            file_len,
+            file_size_bytes,
             file_clusters,
             geometry,
             stamp,
@@ -208,7 +209,7 @@ impl VolumeLayout {
     }
 
     /// How many data clusters the volume has. Below
-    /// [`FAT32_MINIMUM_CLUSTERS`](crate::efi_system_partition::FAT32_MINIMUM_CLUSTERS)
+    /// [`MINIMUM_FAT32_CLUSTERS`](crate::efi_system_partition::MINIMUM_FAT32_CLUSTERS)
     /// [`VolumeLayout::new`] refuses.
     ///
     /// Name: ratified 2026-10-25 (#2720).
@@ -244,7 +245,7 @@ impl VolumeLayout {
     /// Name: ratified 2026-10-25 (#2720). Refused `cluster_sector` (the reader's spelling for the
     /// same quantity).
     pub(crate) const fn cluster_first_sector(&self, cluster: u32) -> u64 {
-        self.first_data_sector() + (cluster - ROOT_CLUSTER) as u64 * CLUSTER_SECTORS as u64
+        self.first_data_sector() + (cluster - ROOT_CLUSTER) as u64 * SECTORS_PER_CLUSTER as u64
     }
 
     /// **How many leading sectors the caller must write from [`VolumeLayout::fill_sector`]**:
@@ -269,13 +270,13 @@ impl VolumeLayout {
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub const fn file_sectors(&self) -> u64 {
-        self.file_clusters as u64 * CLUSTER_SECTORS as u64
+        self.file_clusters as u64 * SECTORS_PER_CLUSTER as u64
     }
 
     /// **Fill `out` with partition-relative sector `index`.**
     ///
     /// `false` when `index` is at or past [`VolumeLayout::metadata_sectors`] (the caller's own file
-    /// bytes begin there) or when `out` is not [`SECTOR_BYTES`] bytes; in neither case is `out`
+    /// bytes begin there) or when `out` is not [`BYTES_PER_SECTOR`] bytes; in neither case is `out`
     /// touched.
     ///
     /// Every sector this answers for is written whole, zeros included, so that a volume laid over a
@@ -285,7 +286,7 @@ impl VolumeLayout {
     /// Name: ratified 2026-10-25 (#2720). Refused `sector` (it fills a buffer and reads as a
     /// getter).
     pub fn fill_sector(&self, index: u64, out: &mut [u8]) -> bool {
-        if out.len() != SECTOR_BYTES || index >= self.metadata_sectors() {
+        if out.len() != BYTES_PER_SECTOR || index >= self.metadata_sectors() {
             return false;
         }
         out.fill(0);
@@ -339,7 +340,7 @@ impl VolumeLayout {
     /// the disk held. On a 512 MiB volume that is a megabyte of writes and it is not optional: a
     /// stale word in a table the firmware reads is a chain into somebody's old data.
     fn fat_sector(&self, within: u32, out: &mut [u8]) {
-        let per_sector = (SECTOR_BYTES / 4) as u32;
+        let per_sector = (BYTES_PER_SECTOR / 4) as u32;
         let first = within * per_sector;
         for slot in 0..per_sector {
             let cluster = first + slot;
@@ -411,7 +412,7 @@ impl VolumeLayout {
     /// the directory is 23 slots and reaches into its second sector. Every slot past those is
     /// zero, which a driver reads as the end of the directory.
     fn boot_dir_sector(&self, within: u64, out: &mut [u8]) {
-        let per_sector = SECTOR_BYTES / DIR_ENTRY;
+        let per_sector = BYTES_PER_SECTOR / DIR_ENTRY;
         let first = within as usize * per_sector;
         let run = self.long_name.map_or(0, |n| n.entries());
         for at in 0..per_sector {
@@ -446,7 +447,7 @@ impl VolumeLayout {
                     &self.name,
                     ATTR_ARCHIVE,
                     FILE_CLUSTER,
-                    self.file_len,
+                    self.file_size_bytes,
                     &self.stamp,
                 ),
                 _ => {}
@@ -505,7 +506,7 @@ fn short_name(name: &str) -> Option<[u8; 11]> {
 mod tests {
     use super::*;
     use crate::NoClock;
-    use crate::efi_system_partition::FAT32_MINIMUM_CLUSTERS;
+    use crate::efi_system_partition::MINIMUM_FAT32_CLUSTERS;
 
     /// 512 MiB in 512-byte sectors, a common size for an EFI system partition.
     const ESP_SECTORS: u64 = 1024 * 1024;
@@ -523,8 +524,8 @@ mod tests {
         .expect("a FAT32 volume")
     }
 
-    fn sector(v: &VolumeLayout, index: u64) -> [u8; SECTOR_BYTES] {
-        let mut out = [0u8; SECTOR_BYTES];
+    fn sector(v: &VolumeLayout, index: u64) -> [u8; BYTES_PER_SECTOR] {
+        let mut out = [0u8; BYTES_PER_SECTOR];
         assert!(v.fill_sector(index, &mut out), "sector {index} is metadata");
         out
     }
@@ -533,12 +534,14 @@ mod tests {
     fn a_512_mib_volume_has_enough_clusters_to_be_fat32() {
         let v = volume();
         assert!(
-            v.clusters() >= FAT32_MINIMUM_CLUSTERS,
+            v.clusters() >= MINIMUM_FAT32_CLUSTERS,
             "{} clusters",
             v.clusters()
         );
         // The table has to hold an entry for every cluster plus the two reserved ones.
-        assert!(v.table_sectors() as u64 * (SECTOR_BYTES as u64 / 4) >= v.clusters() as u64 + 2);
+        assert!(
+            v.table_sectors() as u64 * (BYTES_PER_SECTOR as u64 / 4) >= v.clusters() as u64 + 2
+        );
     }
 
     /// The smallest volume this crate will build, and the boundary it refuses below. With 4096-byte
@@ -568,7 +571,7 @@ mod tests {
             &mut NoClock,
         )
         .expect("300 MiB clears the cluster floor");
-        assert!(just_enough.clusters() >= FAT32_MINIMUM_CLUSTERS);
+        assert!(just_enough.clusters() >= MINIMUM_FAT32_CLUSTERS);
     }
 
     #[test]
@@ -645,7 +648,7 @@ mod tests {
     fn the_files_chain_walks_from_its_first_cluster_to_the_end_of_chain() {
         let v = volume();
         let entry = |cluster: u32| -> u32 {
-            let per_sector = (SECTOR_BYTES / 4) as u32;
+            let per_sector = (BYTES_PER_SECTOR / 4) as u32;
             let s = sector(&v, RESERVED_SECTORS as u64 + (cluster / per_sector) as u64);
             let at = (cluster % per_sector) as usize * 4;
             u32::from_le_bytes([s[at], s[at + 1], s[at + 2], s[at + 3]])
@@ -664,7 +667,7 @@ mod tests {
             walked += 1;
             assert!(walked <= 10_000, "the chain does not terminate");
         }
-        assert_eq!(walked, 9_000_000u64.div_ceil(CLUSTER_BYTES as u64));
+        assert_eq!(walked, 9_000_000u64.div_ceil(BYTES_PER_CLUSTER as u64));
         // And the cluster after the chain is free, so nothing reads past the file.
         assert_eq!(entry(cluster + 1), 0);
     }
@@ -733,15 +736,15 @@ mod tests {
             )
             .unwrap_or_else(|e| panic!("{mib} MiB: {e:?}"));
             assert_eq!(
-                v.first_data_sector() % u64::from(CLUSTER_SECTORS),
+                v.first_data_sector() % u64::from(SECTORS_PER_CLUSTER),
                 0,
                 "{mib} MiB: data area at sector {}",
                 v.first_data_sector()
             );
-            assert_eq!(v.file_first_sector() % u64::from(CLUSTER_SECTORS), 0);
+            assert_eq!(v.file_first_sector() % u64::from(SECTORS_PER_CLUSTER), 0);
             // And the table still covers every cluster the volume has.
             assert!(
-                v.table_sectors() as u64 * (SECTOR_BYTES as u64 / 4) >= v.clusters() as u64 + 2
+                v.table_sectors() as u64 * (BYTES_PER_SECTOR as u64 / 4) >= v.clusters() as u64 + 2
             );
         }
     }
@@ -751,7 +754,7 @@ mod tests {
         let v = volume();
         assert_eq!(v.file_first_sector(), v.metadata_sectors());
         assert_eq!(v.file_first_sector(), v.cluster_first_sector(FILE_CLUSTER));
-        let mut out = [0u8; SECTOR_BYTES];
+        let mut out = [0u8; BYTES_PER_SECTOR];
         assert!(
             !v.fill_sector(v.file_first_sector(), &mut out),
             "not metadata"
@@ -821,9 +824,9 @@ mod tests {
     }
 
     /// The slots of `EFI\BOOT`, as 32-byte entries read out of its first two sectors.
-    fn boot_dir_slots(v: &VolumeLayout) -> [[u8; DIR_ENTRY]; 2 * SECTOR_BYTES / DIR_ENTRY] {
+    fn boot_dir_slots(v: &VolumeLayout) -> [[u8; DIR_ENTRY]; 2 * BYTES_PER_SECTOR / DIR_ENTRY] {
         let first = v.cluster_first_sector(BOOT_CLUSTER);
-        let mut slots = [[0; DIR_ENTRY]; 2 * SECTOR_BYTES / DIR_ENTRY];
+        let mut slots = [[0; DIR_ENTRY]; 2 * BYTES_PER_SECTOR / DIR_ENTRY];
         let both = [sector(v, first), sector(v, first + 1)];
         let entries = both.iter().flat_map(|s| s.as_chunks::<DIR_ENTRY>().0);
         for (slot, entry) in slots.iter_mut().zip(entries) {
@@ -890,7 +893,7 @@ mod tests {
         assert_eq!(&slots[22][..11], b"NNNNNN~1EFI");
         assert_eq!(slots[23], [0; DIR_ENTRY]);
         let third = v.cluster_first_sector(BOOT_CLUSTER) + 2;
-        assert_eq!(sector(&v, third), [0; SECTOR_BYTES]);
+        assert_eq!(sector(&v, third), [0; BYTES_PER_SECTOR]);
     }
 
     #[test]
@@ -943,12 +946,12 @@ mod tests {
         let v = volume();
         let at = |c| v.cluster_first_sector(c);
         for c in [2, 3, 4] {
-            assert_ne!(sector(&v, at(c)), [0; SECTOR_BYTES], "cluster {c}");
-            assert_eq!(sector(&v, at(c) + 1), [0; SECTOR_BYTES], "cluster {c}");
+            assert_ne!(sector(&v, at(c)), [0; BYTES_PER_SECTOR], "cluster {c}");
+            assert_eq!(sector(&v, at(c) + 1), [0; BYTES_PER_SECTOR], "cluster {c}");
         }
         // The reserved sectors between the backup pair and the table.
         for i in [2, 3, 4, 5, 8, 31] {
-            assert_eq!(sector(&v, i), [0; SECTOR_BYTES], "sector {i}");
+            assert_eq!(sector(&v, i), [0; BYTES_PER_SECTOR], "sector {i}");
         }
         // The table is not a directory: its second sector is table words, not the boot directory.
         assert_ne!(sector(&v, 33), sector(&v, at(4)));
@@ -957,7 +960,7 @@ mod tests {
     /// A directory entry's first cluster is split into high and low halves.
     #[test]
     fn a_directory_entry_splits_its_first_cluster_into_halves() {
-        let mut out = [0u8; SECTOR_BYTES];
+        let mut out = [0u8; BYTES_PER_SECTOR];
         dir_entry(
             &mut out,
             1,

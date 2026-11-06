@@ -153,7 +153,7 @@ pub(super) fn reap_region_objects(base: u64, end: u64) -> Result<(), ()> {
         // Wake inside the drain, not from a list. `drain_waiters` pops each entry before calling
         // back, so its intrusive link is free for `wake`, and `rendezvous_of` returns a `'static`
         // reference that does not hold the `sched` borrow.
-        if let Some(rendezvous) = rendezvous_of(sched, name) {
+        if let Some(rendezvous) = rendezvous_of(sched, name.to_bits()) {
             rendezvous.drain_waiters(|w| {
                 let tid = hold_token(w);
                 set_ipc_aborted(sched, tid);
@@ -163,7 +163,7 @@ pub(super) fn reap_region_objects(base: u64, end: u64) -> Result<(), ()> {
         sched.rendezvous_table.remove(name);
         // A `CALL` whose request was taken has left the sender queue, so the drain misses it;
         // only its `wait_on` names this rendezvous.
-        strand_callers_awaiting(sched, name);
+        strand_callers_awaiting(sched, name.to_bits());
     }
 
     // Notification phase, before the finish phase for the rendezvous phase's reason: a waiter

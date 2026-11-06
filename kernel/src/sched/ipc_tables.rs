@@ -99,6 +99,31 @@ pub fn rendezvous_pressure() -> (usize, usize) {
 /// `Object::Rendezvous` capability carries. `u64` like a `ThreadId`, and stale-safe the same way.
 pub type RendezvousId = u64;
 
+/// The rendezvous table's typed name for a [`RendezvousId`]. A temporary adapter, like the three
+/// below it: the four registries store a bare `u64` page address, so their names share one type,
+/// and each id is still a `u64` across the kernel. Each adapter goes when its registry gets an
+/// entry type of its own and its id becomes that table's `EntryName`.
+pub(super) const fn rendezvous_entry(id: RendezvousId) -> EntryName<u64> {
+    EntryName::from_bits(id)
+}
+
+/// The notification table's typed name for a notification's id. A temporary adapter; see
+/// [`rendezvous_entry`].
+pub(super) const fn notification_entry(id: u64) -> EntryName<u64> {
+    EntryName::from_bits(id)
+}
+
+/// The timer table's typed name for a timer's id. A temporary adapter; see [`rendezvous_entry`].
+pub(super) const fn timer_entry(id: u64) -> EntryName<u64> {
+    EntryName::from_bits(id)
+}
+
+/// The process table's typed name for a process id. A temporary adapter; see
+/// [`rendezvous_entry`].
+pub(super) const fn process_entry(pid: u64) -> EntryName<u64> {
+    EntryName::from_bits(pid)
+}
+
 /// The pages in one of the kernel's rendezvous chunks: a batch size, not a ceiling, since
 /// [`create_rendezvous`] carves another when one fills. A normal boot carves one chunk of 128 KiB.
 pub(super) const KERNEL_EP_CHUNK_PAGES: u64 = 32;

@@ -14,9 +14,8 @@ bump wraps it to 0.
 diff --git a/crates/generational_table/src/lib.rs b/crates/generational_table/src/lib.rs
 --- a/crates/generational_table/src/lib.rs
 +++ b/crates/generational_table/src/lib.rs
-@@ -109,9 +109,5 @@ impl<T, const N: usize> Table<T, N> {
-     /// Name: ratified 2026-11-03 (UTC), #3119.
-     pub fn insert_with(&mut self, f: impl FnOnce(u64) -> T) -> Option<u64> {
+@@ -220,7 +220,3 @@ impl<T, const N: usize> Table<T, N> {
+     pub fn insert_with(&mut self, f: impl FnOnce(EntryName<T>) -> T) -> Option<EntryName<T>> {
 -        let slot = self
 -            .slots
 -            .iter()
@@ -24,11 +23,8 @@ diff --git a/crates/generational_table/src/lib.rs b/crates/generational_table/sr
 -            .position(|(s, &g)| s.is_none() && g != Self::RETIRED)?;
 +        let slot = self.slots.iter().position(|s| s.is_none())?;
          let name = Self::name(slot, self.gens[slot]);
-         self.slots[slot] = Some(f(name));
-@@ -165,5 +161,5 @@ impl<T, const N: usize> Table<T, N> {
-         let slot = self.slot_of(name)?;
+@@ -276,3 +272,3 @@ impl<T, const N: usize> Table<T, N> {
          let value = self.slots[slot].take()?;
 -        self.gens[slot] = self.gens[slot].saturating_add(1);
 +        self.gens[slot] = self.gens[slot].wrapping_add(1);
          self.live -= 1;
-         // Removing anything below the top leaves a hole, which costs a walk nothing to skip.

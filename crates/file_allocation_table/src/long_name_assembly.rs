@@ -32,7 +32,7 @@ pub(crate) type LongNameAssembler = Assembler<MAXIMUM_UNITS>;
 /// Only the crate's long-name assembler makes one, so a value of this type came from a run whose
 /// ordinals, checksum and padding were all as the specification says. The units are as stored;
 /// the specification says UCS-2, and a writer such as Windows stores surrogate pairs, so
-/// [`LongFileName::characters`] decodes them and replaces a lone surrogate.
+/// [`LongFileName::chars`] decodes them and replaces a lone surrogate.
 ///
 /// Name: ratified 2026-11-01 (UTC), the specification's "long file name"; a file name, so not
 /// `LongName`, which is the writer's checked-name type inside the crate.
@@ -52,8 +52,9 @@ impl LongFileName {
 
     /// The name's characters, with U+FFFD for a surrogate that has no partner.
     ///
-    /// Name: ratified 2026-11-01 (UTC), the UTF-16 decode of `code_units`.
-    pub fn characters(&self) -> impl Iterator<Item = char> + '_ {
+    /// Name: ratified 2026-11-01 (UTC), the UTF-16 decode of `code_units`; renamed from `characters`
+    /// on 2026-11-06 (UTC) to the standard library's `chars`, which also yields `char` values.
+    pub fn chars(&self) -> impl Iterator<Item = char> + '_ {
         char::decode_utf16(self.code_units().iter().copied())
             .map(|unit| unit.unwrap_or(char::REPLACEMENT_CHARACTER))
     }

@@ -241,7 +241,7 @@ open.
    Recommendation: (b). It keeps the writer #3233 chose to keep, takes away nothing nife uses, and
    publishes nothing a stranger could misread or call into a panic. A later minor release can make
    a hidden item public without breaking anyone; the reverse breaks.
-   Ruling: (b). All seven constants moved, `FAT32_MINIMUM_CLUSTERS` included, since the writer is
+   Ruling: (b). All seven constants moved, `MINIMUM_FAT32_CLUSTERS` included, since the writer is
    the one part of the crate that refuses by it; the reader keeps its own private copy.
 
 3. `#[non_exhaustive]` on the error enums.

@@ -45,7 +45,7 @@ fn name_of(result: Result<Option<LongFileName>, LongFileNameError>) -> [char; 40
     let name = result
         .expect("the run is accepted")
         .expect("there is a name");
-    for (slot, c) in out.iter_mut().zip(name.characters()) {
+    for (slot, c) in out.iter_mut().zip(name.chars()) {
         *slot = c;
     }
     out
@@ -262,7 +262,7 @@ fn surrogate_pairs_decode_and_a_lone_surrogate_is_replaced() {
     let name = assemble(&[LongNameEntry::from_parts(0x41, sum, units)], short)
         .unwrap()
         .unwrap();
-    let mut chars = name.characters();
+    let mut chars = name.chars();
     assert_eq!(chars.next(), Some('a'));
     assert_eq!(chars.next(), Some('\u{1F980}'));
     assert_eq!(chars.next(), Some(char::REPLACEMENT_CHARACTER));

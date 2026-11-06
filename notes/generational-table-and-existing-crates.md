@@ -17,8 +17,9 @@ already relies on, and proofs, one of which `slotmap` fails.
 ## What nife needs from the table
 
 `generational_table::Table<T, N>` (550 lines with its tests and harnesses, no dependencies, no
-`unsafe`) stores `[Option<T>; N]` beside `[u32; N]` generations. It names an entry with a `u64`:
-the slot's generation in the high 32 bits and the slot index in the low 32. Remove bumps the slot's
+`unsafe`) stores `[Option<T>; N]` beside `[u32; N]` generations. It names an entry with an
+`EntryName<T>`, a `u64` tagged with the entry type: the slot's generation in the high 32 bits and
+the slot index in the low 32. Remove bumps the slot's
 generation with a wrapping add, so every copy of the old name fails the compare from then on, slot
 reused or not. The kernel holds seven tables of it (threads, rendezvous, notifications, timers,
 processes, address spaces, virtio devices) and `crates/memory_regions` holds one more.
@@ -200,15 +201,15 @@ risk is a crate few people find.
 Publish, with the difference stated. No existing crate covers what the kernel needs, and the
 kernel cannot adopt one without an allocator or a dormant `unsafe`-heavy dependency. The README's
 first paragraph should say what the crate is for: fixed capacity, no allocation, a `const`
-constructor usable in a `static`, unforgeable `u64` names with a proof, and a resumable walk. It
+constructor usable in a `static`, unforgeable typed names with a proof, and a resumable walk. It
 should also say what it is not for, and send growable tables to `slotmap` or `thunderdome`. It should name
 the costs in its `BUGS` section: O(N) first-fit insert, one `Option` tag per slot, and the 2^32
 wrap.
 
-Two things stay open after this ruling and are not asked here, one decision at a time. Whether the
-public name type stays a bare `u64` or becomes a typed key (every growable candidate uses a newtype,
-and a newtype is the stricter choice, since widening later is compatible and narrowing is not). And
-whether the README states expected demand as low, in the words of the measurement above.
+The public name type is a typed key, `EntryName<T>`, as every growable candidate's is
+(notes/generational-names.md, "Typed names"). One thing stays open after this ruling and is not
+asked here: whether the README states expected demand as low, in the words of the measurement
+above.
 
 ## The ruling
 
