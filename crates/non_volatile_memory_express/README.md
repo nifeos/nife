@@ -70,7 +70,7 @@ assert_eq!(read.0[1], 1);
 // Poll completion slot `completion_queue.head()` until the controller's entry carries the
 // expected phase.
 let done = Completion::from_dwords([0, 1 | (1 << 16), 0, 1 | (1 << 16)]);
-assert!(completion_queue.is_owned(&done) && done.cid == 1 && done.status == 0);
+assert!(completion_queue.is_owned(&done) && done.command_id == 1 && done.status == 0);
 submission_queue.record_head(done.submission_queue_head);
 // Write the new head to doorbell(1, Doorbell::CompletionHead, stride).
 assert_eq!(completion_queue.pop(), 1);

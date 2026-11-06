@@ -16,7 +16,7 @@ pub struct Completion {
     /// Which submission queue the completed command came from.
     pub submission_queue_id: u16,
     /// The command identifier the driver assigned, echoed back.
-    pub cid: u16,
+    pub command_id: u16,
     /// The phase tag: dword 3, bit 16. See [`crate::CompletionQueue::is_owned`].
     pub phase: bool,
     /// The 15-bit status field, dword 3 bits 17 to 31; 0 is success. Status code type in bits 8
@@ -28,14 +28,14 @@ impl Completion {
     /// Decode the four dwords the controller wrote into a completion queue slot.
     ///
     /// Name: ratified 2026-10-25 (#2720).
-    pub fn from_dwords(dw: [u32; 4]) -> Self {
+    pub fn from_dwords(dwords: [u32; 4]) -> Self {
         Completion {
-            result: dw[0],
-            submission_queue_head: dw[2] as u16,
-            submission_queue_id: (dw[2] >> 16) as u16,
-            cid: dw[3] as u16,
-            phase: dw[3] & (1 << 16) != 0,
-            status: (dw[3] >> 17) as u16,
+            result: dwords[0],
+            submission_queue_head: dwords[2] as u16,
+            submission_queue_id: (dwords[2] >> 16) as u16,
+            command_id: dwords[3] as u16,
+            phase: dwords[3] & (1 << 16) != 0,
+            status: (dwords[3] >> 17) as u16,
         }
     }
 }
@@ -54,7 +54,7 @@ mod tests {
             (
                 fresh.submission_queue_head,
                 fresh.submission_queue_id,
-                fresh.cid
+                fresh.command_id
             ),
             (5, 1, 42)
         );

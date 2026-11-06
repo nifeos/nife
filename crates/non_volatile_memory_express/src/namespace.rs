@@ -63,7 +63,10 @@ impl Namespace {
     /// Name: ratified 2026-11-03 (#3118). The check is that the entire block fits (`end <= capacity`),
     /// not only that its start lies inside, hence `holds_whole_block`.
     pub fn holds_whole_block(&self, block: u64, unit: u64) -> bool {
-        match block.checked_add(1).and_then(|n| n.checked_mul(unit)) {
+        match block
+            .checked_add(1)
+            .and_then(|end_block| end_block.checked_mul(unit))
+        {
             Some(end) => end <= self.capacity_bytes,
             None => false,
         }
@@ -75,7 +78,7 @@ impl Namespace {
     /// buffer with `unit <= 2 * page_size` it always is; see
     /// [`physical_region_page_pair`]).
     ///
-    /// `cid` and `nsid` go to the command as they are, `data_physical_address` is the buffer's bus
+    /// `command_id` and `namespace_id` go to the command as they are, `data_physical_address` is the buffer's bus
     /// address, and `write` picks [`Command::write`] over [`Command::read`].
     ///
     /// Name: ratified 2026-11-03 (#3118). Ratified 2026-10-26 (UTC), on #2749, as a free function;
@@ -83,8 +86,8 @@ impl Namespace {
     #[allow(clippy::too_many_arguments)]
     pub fn transfer_command(
         &self,
-        cid: u16,
-        nsid: u32,
+        command_id: u16,
+        namespace_id: u32,
         block: u64,
         unit: u64,
         data_physical_address: u64,
@@ -98,9 +101,21 @@ impl Namespace {
         let pages = physical_region_page_pair(data_physical_address, unit, page_size)?;
         let blocks = self.blocks_per_transfer;
         Some(if write {
-            Command::write(cid, nsid, starting_logical_block_address, blocks, pages)
+            Command::write(
+                command_id,
+                namespace_id,
+                starting_logical_block_address,
+                blocks,
+                pages,
+            )
         } else {
-            Command::read(cid, nsid, starting_logical_block_address, blocks, pages)
+            Command::read(
+                command_id,
+                namespace_id,
+                starting_logical_block_address,
+                blocks,
+                pages,
+            )
         })
     }
 }

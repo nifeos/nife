@@ -1,10 +1,10 @@
 Falsifies `non_volatile_memory_express::verification::distinct_doorbells_never_collide`.
 
-The defect: `doorbell` drops the factor of two in `index = 2 * qid + role`, so queue `q`'s
+The defect: `doorbell` drops the factor of two in `index = 2 * queue_id + role`, so queue `q`'s
 completion-head doorbell and queue `q + 1`'s submission-tail doorbell are the same register. A
 head write then lands on a tail.
 
-Expected to fail: the harness's `assert!(doorbell(qa, ra, dstrd) != doorbell(qb, rb, dstrd))`.
+Expected to fail: the harness's `assert!(doorbell(first_queue_id, first_role, doorbell_stride) != doorbell(second_queue_id, second_role, doorbell_stride))`.
 
 diff --git a/crates/non_volatile_memory_express/src/doorbell.rs b/crates/non_volatile_memory_express/src/doorbell.rs
 index 7fb2db308..8c07ec708 100644
@@ -13,9 +13,9 @@ index 7fb2db308..8c07ec708 100644
 @@ -41,7 +41,7 @@ pub enum Doorbell {
  ///
  /// Name: ratified 2026-10-25 (#2720).
- pub fn doorbell(qid: u16, which: Doorbell, dstrd: u32) -> u64 {
--    let index = 2 * qid as u64
-+    let index = qid as u64
+ pub fn doorbell(queue_id: u16, which: Doorbell, doorbell_stride: u32) -> u64 {
+-    let index = 2 * queue_id as u64
++    let index = queue_id as u64
          + match which {
              Doorbell::SubmissionTail => 0,
              Doorbell::CompletionHead => 1,

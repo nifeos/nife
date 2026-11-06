@@ -10,11 +10,11 @@ index f5750f02c..337d95bb7 100644
 --- a/crates/non_volatile_memory_express/src/completion.rs
 +++ b/crates/non_volatile_memory_express/src/completion.rs
 @@ -35,7 +35,7 @@ impl Completion {
-             submission_queue_id: (dw[2] >> 16) as u16,
-             cid: dw[3] as u16,
-             phase: dw[3] & (1 << 16) != 0,
--            status: (dw[3] >> 17) as u16,
-+            status: (dw[3] >> 16) as u16,
+             submission_queue_id: (dwords[2] >> 16) as u16,
+             command_id: dwords[3] as u16,
+             phase: dwords[3] & (1 << 16) != 0,
+-            status: (dwords[3] >> 17) as u16,
++            status: (dwords[3] >> 16) as u16,
          }
      }
  }

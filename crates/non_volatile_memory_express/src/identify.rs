@@ -15,16 +15,16 @@ pub fn parse_identify_namespace(data: &[u8]) -> Option<IdentifyNamespace> {
     if data.len() < 384 {
         return None; // NSZE..the LBA format table must be present
     }
-    let nsze = u64::from_le_bytes(data[0..8].try_into().ok()?);
-    let flbas = data[26] & 0xf;
-    // LBA format `flbas` is 4 bytes at 128 + 4*flbas; LBADS is its third byte.
-    let lbads = data[128 + 4 * flbas as usize + 2];
-    if !(9..=12).contains(&lbads) {
+    let namespace_size = u64::from_le_bytes(data[0..8].try_into().ok()?);
+    let format_index = data[26] & 0xf;
+    // LBA format `format_index` is 4 bytes at 128 + 4*format_index; LBADS is its third byte.
+    let data_shift = data[128 + 4 * format_index as usize + 2];
+    if !(9..=12).contains(&data_shift) {
         return None;
     }
     Some(IdentifyNamespace {
-        blocks: nsze,
-        logical_block_address_shift: lbads as u32,
+        blocks: namespace_size,
+        logical_block_address_shift: data_shift as u32,
     })
 }
 
@@ -42,8 +42,8 @@ pub fn logical_block_address_format_shift(data: &[u8]) -> Option<u8> {
     if data.len() < 384 {
         return None;
     }
-    let flbas = data[26] & 0xf;
-    Some(data[128 + 4 * flbas as usize + 2])
+    let format_index = data[26] & 0xf;
+    Some(data[128 + 4 * format_index as usize + 2])
 }
 
 /// See [`parse_identify_namespace`]. The struct is `#[non_exhaustive]`: a later release may read
@@ -131,17 +131,17 @@ mod tests {
     /// structure exactly 384 bytes long, with a different shift planted in every slot so a wrong
     /// stride lands on another format's value.
     #[test]
-    fn the_reported_shift_is_the_one_in_the_flbas_slot_for_every_format() {
-        for flbas in 0..16u8 {
+    fn the_reported_shift_is_the_one_in_the_format_index_slot_for_every_format() {
+        for format_index in 0..16u8 {
             let mut data = [0u8; 384];
             for format in 0..16usize {
                 data[128 + 4 * format + 2] = 20 + format as u8;
             }
-            data[26] = flbas | 0x70; // the bits above the format number are not part of it
+            data[26] = format_index | 0x70; // the bits above the format number are not part of it
             assert_eq!(
                 logical_block_address_format_shift(&data),
-                Some(20 + flbas),
-                "flbas {flbas}"
+                Some(20 + format_index),
+                "format_index {format_index}"
             );
         }
         assert_eq!(
@@ -170,9 +170,10 @@ mod tests {
     }
 
     #[test]
-    fn identify_namespace_reads_the_lba_format_table_at_flbas_not_format_zero() {
-        // The test above uses FLBAS=0, where the table offset `128 + 4*flbas` happens to equal
-        // `128 - 4*flbas`: both are 128. Use FLBAS=1 so the two diverge, and plant a different,
+    fn identify_namespace_reads_the_logical_block_address_format_table_at_the_format_index_not_format_zero()
+     {
+        // The test above uses FLBAS=0, where the table offset `128 + 4*format_index` happens to equal
+        // `128 - 4*format_index`: both are 128. Use FLBAS=1 so the two diverge, and plant a different,
         // still-valid LBADS at format 0's slot so a lane reading the wrong slot gets caught by
         // value rather than by accidentally landing on unset (and therefore refused) bytes.
         let mut data = [0u8; 384];

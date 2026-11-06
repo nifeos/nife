@@ -26,9 +26,9 @@ fn cq_pop_stays_in_bounds_and_flips_only_at_the_wrap() {
         head,
         phase,
     };
-    let ret = queue.pop();
+    let popped = queue.pop();
     assert!(queue.head < entries);
-    assert_eq!(ret, queue.head);
+    assert_eq!(popped, queue.head);
     // The head advanced by exactly one, modulo the ring. Without this the two assertions above
     // hold for a pop that wraps one slot early (or late by a lap), which a device writing
     // completions into every slot would then never be read from.
@@ -76,21 +76,24 @@ fn sq_push_stays_in_bounds() {
 /// Falsification: replayable `crates/non_volatile_memory_express/falsifications/verification.distinct_doorbells_never_collide.patch`
 #[kani::proof]
 fn distinct_doorbells_never_collide() {
-    let qa: u16 = kani::any();
-    let qb: u16 = kani::any();
-    let ra = if kani::any() {
+    let first_queue_id: u16 = kani::any();
+    let second_queue_id: u16 = kani::any();
+    let first_role = if kani::any() {
         Doorbell::SubmissionTail
     } else {
         Doorbell::CompletionHead
     };
-    let rb = if kani::any() {
+    let second_role = if kani::any() {
         Doorbell::SubmissionTail
     } else {
         Doorbell::CompletionHead
     };
-    let dstrd: u32 = kani::any();
-    if (qa, ra) != (qb, rb) {
-        assert!(doorbell(qa, ra, dstrd) != doorbell(qb, rb, dstrd));
+    let doorbell_stride: u32 = kani::any();
+    if (first_queue_id, first_role) != (second_queue_id, second_role) {
+        assert!(
+            doorbell(first_queue_id, first_role, doorbell_stride)
+                != doorbell(second_queue_id, second_role, doorbell_stride)
+        );
     }
 }
 
@@ -203,7 +206,7 @@ fn completion_decode_is_total_and_rebuilds_dword_three() {
     let completion = Completion::from_dwords(dwords);
 
     assert!(completion.status < 1 << 15);
-    let rebuilt = u32::from(completion.cid)
+    let rebuilt = u32::from(completion.command_id)
         | u32::from(completion.phase) << 16
         | u32::from(completion.status) << 17;
     assert_eq!(rebuilt, dwords[3]);
