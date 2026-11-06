@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-drain-names-a-conflicting-entry-and-a-wide-run-stops-at-six-pushes
 raised: 2026-11-04
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The drain names a conflicting entry and a wide run stops at six pushes
+# 1041. The drain names a conflicting entry and a wide run stops at six pushes
 
 Raised by lane/queue-conflict-precheck on 2026-11-04 (UTC), while it built the pre-arm check for
-[the pre-arm check proposal](an-entry-that-conflicts-with-the-queue-is-caught-before-it.md)
+[the pre-arm check proposal](proposals/an-entry-that-conflicts-with-the-queue-is-caught-before-it.md)
 (COE action 6, `notes/coes/2026-11-03-merge-queue-backlog.md`). That lane built
 `script/queue-conflicts` and the launch check for shared scope files. Two parts of the original
 proposal remain, and each needs a design the first two did not.
@@ -42,3 +43,7 @@ queue, and `helpers/heavy_slot.py` as the model for a counted slot.
   none.
 - A fixture run with six ready pull requests refuses a seventh, and allows it once one has entered
   the queue.
+
+## Index row
+
+The merge drain does not use the pre-arm conflict check, and nothing caps how many pull requests one wide run readies at once. Proposed: a drain pass that comments once on a conflicting entry, and a counted limit of six.

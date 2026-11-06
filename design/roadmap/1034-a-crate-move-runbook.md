@@ -75,8 +75,8 @@ The gaps found in the move machinery are in the runbook's `BUGS` section, where 
   the template's: its unreleased naming gates, its orphan check and its scaffold's mentions of nife.
   The rest are nife's: the missing `[patch]` lint, the fuzz targets the dry run does not stage, the
   mutation baseline and the unmeasured release dry run.
-- **Proposed.** A moved crate is fuzzed in its own repository:
-  `design/roadmap/proposals/a-moved-crate-is-fuzzed-in-its-own-repository.md`.
+- **Milestone 1043.** Milestone 1043 (a moved crate fuzzed in its own repository) records it:
+  `design/roadmap/1043-a-moved-crate-is-fuzzed-in-its-own-repository.md`.
 
 ## Index row
 

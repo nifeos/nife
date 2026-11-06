@@ -166,7 +166,7 @@ harness's comment, where the template reads it, so those records pass `falsify.p
     - `helpers/trust_boundary_crates.tsv` and `packages/*.package.toml`;
     - the mutation baseline, the `deny.toml` wrappers and `_typos.toml`;
     - fuzz targets and their seeds, which move to the crate repository's `fuzz/`
-      ([the proposal](../design/roadmap/proposals/a-moved-crate-is-fuzzed-in-its-own-repository.md));
+      ([the proposal](../design/roadmap/1043-a-moved-crate-is-fuzzed-in-its-own-repository.md));
     - citations into `crates/<crate>/src`, which repoint to the repository at the tag, by symbol.
 
     The crate's milestone block states the soak's state. Expected: `cargo tree --locked -i <crate>`
@@ -244,7 +244,7 @@ publishes.
   repository inherits those lines.
 - The dry run does not stage fuzz targets. They move to the crate repository's `fuzz/`, with
   `fuzz: true` in its weekly caller, as
-  [the proposal](../design/roadmap/proposals/a-moved-crate-is-fuzzed-in-its-own-repository.md)
+  [the proposal](../design/roadmap/1043-a-moved-crate-is-fuzzed-in-its-own-repository.md)
   provisionally rules; until the staging is built the move lane copies them by hand.
 - The mutation baseline travels as counts only. The dry run copies the crate's row from
   `.cargo/mutants-baseline.txt` into the staged `.github/mutants-exempts` as a comment, and the

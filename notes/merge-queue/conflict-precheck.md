@@ -58,7 +58,7 @@ reports no conflict and requires the conflict case to fail under it.
 
 - The drain does not run it yet, so nothing comments on a queued entry that has gone UNMERGEABLE,
   and nothing caps concurrent pushes from one wide run. The proposal
-  [the drain names a conflicting entry and a wide run stops at six pushes](../../design/roadmap/proposals/the-drain-names-a-conflicting-entry-and-a-wide-run-stops-at-six-pushes.md)
+  [the drain names a conflicting entry and a wide run stops at six pushes](../../design/roadmap/1041-the-drain-names-a-conflicting-entry-and-a-wide-run-stops-at-six-pushes.md)
   holds both.
 - It judges the entries' heads as they are now. A push to an entry after the check changes the
   answer, although the queue discards a push after enqueue, so the window is small.

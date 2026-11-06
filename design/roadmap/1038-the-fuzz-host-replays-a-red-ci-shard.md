@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-fuzz-host-replays-a-red-ci-shard
 raised: 2026-11-03
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,12 +8,11 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The fuzz host replays a red CI shard
+# 1038. The fuzz host replays a red CI shard
 
 Raised by lane/fuzz-setup-reconcile on 2026-11-03 (UTC), while it reconciled the fuzz setup page with
-what is built. [Milestone 1012 (a short sharded in-guest fuzz pass in CI)](../1012-a-short-sharded-fuzz-pass-in-ci.md) names this work as a
-follow-on, and no file held it. The integrator mints the number at
-promotion.
+what is built. [Milestone 1012 (a short sharded in-guest fuzz pass in CI)](1012-a-short-sharded-fuzz-pass-in-ci.md) names this work as a
+follow-on, and no file held it.
 
 Reuse: the window logic of `helpers/continuous-fuzz.sh`, whose `--ci-range SHARD` gives a shard's
 driver and first seed; the held-findings store; and the filer in nifeos/fuzz-host, which files every
@@ -59,4 +59,8 @@ on an unrelated job each start no replay.
 ## Status
 
 Not started. The filer it feeds exists, and no one has installed it yet
-([`finishing-the-setup.md`](../../../notes/fuzzing/finishing-the-setup.md)).
+([`finishing-the-setup.md`](../../notes/fuzzing/finishing-the-setup.md)).
+
+## Index row
+
+A red sharded fuzz job prints a pointer to a replay that nothing performs. Proposed: the fuzz host learns of the red shard, replays it deterministically and holds any reproduction as a finding.

@@ -8,7 +8,7 @@ helpers/heavy_slot.py calls `acquire` to take a heavy-job slot; nothing else cal
 Name: provisional, minted 2026-11-05 (UTC) by lane/heavy-ledger-in-ticket-order; calef has not
 ruled on it. So are the `ledger/` directory under the slot directory and NIFE_HEAVY_AGING_SECONDS.
 
-What it is. Step 1 of design/roadmap/proposals/heavy-jobs-wait-in-order-for-measured-memory.md: the
+What it is. Step 1 of design/roadmap/1044-heavy-jobs-wait-in-order-for-measured-memory.md: the
 ledger that later steps fill with measured weights. A job asks for a number of bytes and waits in
 ticket order until the bytes fit. The machine's capacity is its slot count times SLOT_BYTES, and
 every job asks for SLOT_BYTES, so the ledger admits as many jobs as the slots do. What it adds is
