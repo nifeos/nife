@@ -716,7 +716,7 @@ fn prove_a_device_line() {
     // after.
     mask_timer();
     let pit = isa_routing(timer::PIT_INTERRUPT_NUMBER);
-    let hz = timer::start_pit_ticking(timer::TICK_HZ);
+    let hz = timer::start_pit_ticking(timer::TICK_HERTZ);
     enable(timer::PIT_INTERRUPT_NUMBER);
     // Read after `enable` rather than before, which is what makes the `expect` honest: `enable`
     // has just routed this GSI and panics with a named reason if the IO APIC does not own it. It

@@ -114,7 +114,7 @@ fn client(server_ip: u64, server_port: u64) -> ! {
     let (_state, wall0) = call(PROPOSE, propose::req(propose::STATE), 0);
     let local = LocalClock {
         wall0,
-        mono0: monotonic_ns(),
+        mono0: monotonic_nanoseconds(),
     };
 
     // **The nonce before the network**: a client with no unguessable bits has nothing to send,
@@ -181,7 +181,7 @@ fn client(server_ip: u64, server_port: u64) -> ! {
             Ok(sample) => {
                 // Applied to the local clock as it is now, not as it was at T4: the proposal is a
                 // claim about the present, and the service compares it against the present.
-                let corrected = local.now() as i128 + sample.offset.ns();
+                let corrected = local.now() as i128 + sample.offset.nanoseconds();
                 let proposed = corrected.clamp(0, u64::MAX as i128) as u64;
                 let (status, _wall_after) = call(PROPOSE, propose::req(propose::PROPOSE), proposed);
                 let _ = call(socket, OPERATION_CLOSE, 0);
@@ -239,7 +239,7 @@ struct LocalClock {
 impl LocalClock {
     fn now(&self) -> u64 {
         self.wall0
-            .saturating_add(monotonic_ns().saturating_sub(self.mono0))
+            .saturating_add(monotonic_nanoseconds().saturating_sub(self.mono0))
     }
 }
 
@@ -248,7 +248,7 @@ impl LocalClock {
 /// Whole seconds and a remainder, not `ticks * 1e9`: at 62.5 MHz the naive product overflows a
 /// `u64` about five minutes into a boot, and the clock built on it jumps backwards by six centuries.
 /// The clock service's copy of this arithmetic carries the same note.
-fn monotonic_ns() -> u64 {
+fn monotonic_nanoseconds() -> u64 {
     let freq = cntfrq();
     let ticks = now();
     let seconds = ticks / freq;
@@ -259,10 +259,10 @@ fn monotonic_ns() -> u64 {
 /// Unix nanoseconds to an NTP timestamp. `None` outside the crate's representable window, which the
 /// clock service's 2100 ceiling keeps us well inside; it is checked rather than assumed because the
 /// alternative to checking is a timestamp 136 years out.
-fn stamp(unix_ns: u64) -> Option<Timestamp> {
+fn stamp(unix_nanoseconds: u64) -> Option<Timestamp> {
     Timestamp::from_unix(
-        unix_ns / clock_contract::NS_PER_SECOND,
-        (unix_ns % clock_contract::NS_PER_SECOND) as u32,
+        unix_nanoseconds / clock_contract::NS_PER_SECOND,
+        (unix_nanoseconds % clock_contract::NS_PER_SECOND) as u32,
     )
 }
 
@@ -296,8 +296,8 @@ fn poll_gap() {
             return;
         }
     }
-    let deadline = monotonic_ns() + RETRY_GAP_NS;
-    while monotonic_ns() < deadline {
+    let deadline = monotonic_nanoseconds() + RETRY_GAP_NS;
+    while monotonic_nanoseconds() < deadline {
         yield_now();
     }
 }

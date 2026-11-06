@@ -19,9 +19,13 @@ use number_writer::write_right;
 /// The two header lines and the one report line, or nothing if `machine` is `None`, since a
 /// `vmstat` that cannot see the machine has nothing to tabulate. The caller says why on its
 /// second stream.
-pub fn write_report(machine: Option<&Snapshot>, uptime_ns: u64, out: &mut dyn FnMut(&[u8])) {
+pub fn write_report(
+    machine: Option<&Snapshot>,
+    uptime_nanoseconds: u64,
+    out: &mut dyn FnMut(&[u8]),
+) {
     let Some(s) = machine else { return };
-    let seconds = (uptime_ns / 1_000_000_000).max(1);
+    let seconds = (uptime_nanoseconds / 1_000_000_000).max(1);
     let (busy, idle) = (s.busy_ticks(), s.idle_ticks());
     let ticks = busy + idle;
     let busy_pct = (busy * 100).checked_div(ticks).unwrap_or(0);
@@ -78,9 +82,9 @@ mod tests {
         Snapshot::from_words(&w).unwrap()
     }
 
-    fn shown(m: Option<&Snapshot>, ns: u64) -> String {
+    fn shown(m: Option<&Snapshot>, nanoseconds: u64) -> String {
         let mut v = Vec::new();
-        write_report(m, ns, &mut |b| v.extend_from_slice(b));
+        write_report(m, nanoseconds, &mut |b| v.extend_from_slice(b));
         String::from_utf8(v).unwrap()
     }
 

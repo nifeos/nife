@@ -75,9 +75,9 @@ fn write_schedule(s: Schedule, out: &mut dyn FnMut(&[u8])) {
             buf[..7].copy_from_slice(b"at-boot");
             7
         }
-        Schedule::Every(ns) => {
+        Schedule::Every(nanoseconds) => {
             buf[..6].copy_from_slice(b"every ");
-            6 + write_interval(ns, &mut buf[6..])
+            6 + write_interval(nanoseconds, &mut buf[6..])
         }
         // The rule as the RRULE it is, which is longer than the column and says exactly what the
         // line means, including the UTC the line leaves implicit.
@@ -91,13 +91,13 @@ fn write_schedule(s: Schedule, out: &mut dyn FnMut(&[u8])) {
 }
 
 /// An interval back in the document's own units, so what is printed is what a person typed.
-fn write_interval(ns: u64, out: &mut [u8]) -> usize {
-    let (value, unit): (u64, &[u8]) = if ns.is_multiple_of(60 * NS_PER_SECOND) {
-        (ns / (60 * NS_PER_SECOND), b"m")
-    } else if ns.is_multiple_of(NS_PER_SECOND) {
-        (ns / NS_PER_SECOND, b"s")
+fn write_interval(nanoseconds: u64, out: &mut [u8]) -> usize {
+    let (value, unit): (u64, &[u8]) = if nanoseconds.is_multiple_of(60 * NS_PER_SECOND) {
+        (nanoseconds / (60 * NS_PER_SECOND), b"m")
+    } else if nanoseconds.is_multiple_of(NS_PER_SECOND) {
+        (nanoseconds / NS_PER_SECOND, b"s")
     } else {
-        (ns / (NS_PER_SECOND / 1000), b"ms")
+        (nanoseconds / (NS_PER_SECOND / 1000), b"ms")
     };
     let mut n = write_u64(value, out);
     out[n..n + unit.len()].copy_from_slice(unit);

@@ -55,7 +55,7 @@ pub fn publish() -> u64 {
     let frame = crate::memory::alloc_zeroed().expect("no frame for the machine statistics page");
     let phys = frame.addr();
     let base = crate::arch::mmu::phys_to_virt(phys) as *mut AtomicU64;
-    let header = build_header(page_frames::FRAME_SIZE, crate::arch::timer::TICK_HZ);
+    let header = build_header(page_frames::FRAME_SIZE, crate::arch::timer::TICK_HERTZ);
     for (i, w) in header.iter().enumerate() {
         // SAFETY: a frame just allocated and zeroed for us alone, reached through the direct map,
         // and the header is one line, far under a frame.

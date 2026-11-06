@@ -895,7 +895,7 @@ mod tests {
             // budget is delivered ticks, not counter time or a spin count, so a descheduled
             // emulator stretches it; the workers' `life` stays counter time on purpose. See
             // `testing::TickBudget` and notes/smp.md.
-            let mut budget = crate::testing::TickBudget::new(2 * crate::arch::timer::TICK_HZ);
+            let mut budget = crate::testing::TickBudget::new(2 * crate::arch::timer::TICK_HERTZ);
             while DONE.load(Ordering::Relaxed) < total {
                 assert!(
                     !BAD.load(Ordering::Relaxed),
@@ -907,7 +907,7 @@ mod tests {
                     "migration workers never drained ({}/{} done) within {} delivered ticks",
                     DONE.load(Ordering::Relaxed),
                     total,
-                    2 * crate::arch::timer::TICK_HZ,
+                    2 * crate::arch::timer::TICK_HERTZ,
                 );
                 crate::sched::yield_now();
             }
@@ -964,14 +964,14 @@ mod tests {
                     break; // the table is full of the last wave; let it drain
                 }
             }
-            let mut budget = crate::testing::TickBudget::new(2 * crate::arch::timer::TICK_HZ);
+            let mut budget = crate::testing::TickBudget::new(2 * crate::arch::timer::TICK_HERTZ);
             while DONE.load(Ordering::Relaxed) < total {
                 assert!(
                     !budget.is_expired(),
                     "name-reading workers never drained ({}/{} done) within {} delivered ticks",
                     DONE.load(Ordering::Relaxed),
                     total,
-                    2 * crate::arch::timer::TICK_HZ,
+                    2 * crate::arch::timer::TICK_HERTZ,
                 );
                 crate::sched::yield_now();
             }

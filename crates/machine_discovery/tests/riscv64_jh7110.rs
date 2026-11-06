@@ -87,7 +87,7 @@ fn the_cpu_list_knows_the_s7_is_unusable() {
         [1, 2, 3, 4],
         "the four U74s, and no one else, may be started"
     );
-    assert_eq!(list.timebase_hz, Some(4_000_000));
+    assert_eq!(list.timebase_hertz, Some(4_000_000));
 }
 
 /// **The DW-8250's shape, straight off the serial node.** These are exactly the reads

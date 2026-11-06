@@ -432,14 +432,14 @@ pub fn survey_supervised(
 /// The CPU time a survey reports for the thread in `slot`, as an
 /// `abi::survey::record::CPU_TIME` word in milliseconds.
 ///
-/// The slot is the walk's own and equals the tid's low word. Milliseconds keep `TICK_HZ` out of
+/// The slot is the walk's own and equals the tid's low word. Milliseconds keep `TICK_HERTZ` out of
 /// the ABI; at 100 Hz the value moves in steps of ten.
 ///
 /// Context: called under `IPC_TABLES` with the thread in hand, so the slot is live.
 pub(super) fn survey_cpu_time(slot: usize) -> u64 {
     let ticks = CPU_TICKS.get(slot).map_or(0, |c| c.load(Ordering::Relaxed));
     // Multiplied first; overflows only past 1.8e16 ticks, 5.8 million years of CPU at 100 Hz.
-    ticks * 1000 / crate::arch::timer::TICK_HZ
+    ticks * 1000 / crate::arch::timer::TICK_HERTZ
 }
 
 /// What makes two threads one process: the process they joined, or themselves when they joined none.

@@ -86,7 +86,7 @@ pub mod word {
     /// Bytes per frame, so a reader can print bytes without assuming a page size.
     pub const FRAME_BYTES: usize = 1;
     /// How many ticks make a second, so a reader can turn tick counts into time.
-    pub const TICK_HZ: usize = 2;
+    pub const TICK_HERTZ: usize = 2;
     /// Frames the allocator tracks in total.
     pub const TOTAL_FRAMES: usize = 3;
     /// Frames free right now.
@@ -122,12 +122,12 @@ pub mod word {
 /// Build a fresh page's header: the magic, the version, the frame size and the tick rate. The
 /// kernel writes this into a zeroed frame once, at boot, before any counter moves.
 #[must_use]
-pub fn build_header(frame_bytes: u64, tick_hz: u64) -> [u64; word::LINE] {
+pub fn build_header(frame_bytes: u64, tick_hertz: u64) -> [u64; word::LINE] {
     let mut line = [0u64; word::LINE];
     line[word::MAGIC] = u64::from_le_bytes(MAGIC);
     line[word::VERSION] = u64::from(VERSION);
     line[word::FRAME_BYTES] = frame_bytes;
-    line[word::TICK_HZ] = tick_hz;
+    line[word::TICK_HERTZ] = tick_hertz;
     line
 }
 
@@ -168,7 +168,7 @@ pub struct Snapshot {
     /// Bytes per frame.
     pub frame_bytes: u64,
     /// Ticks per second.
-    pub tick_hz: u64,
+    pub tick_hertz: u64,
     /// Frames the allocator tracks.
     pub total_frames: u64,
     /// Frames free.
@@ -192,7 +192,7 @@ impl Snapshot {
     /// words[word::MAGIC] = u64::from_le_bytes(*b"MACHSTA1");
     /// words[word::VERSION] = u64::from(VERSION);
     /// words[word::FRAME_BYTES] = 4096;
-    /// words[word::TICK_HZ] = 100;
+    /// words[word::TICK_HERTZ] = 100;
     /// words[word::TOTAL_FRAMES] = 32768;
     /// words[word::FREE_FRAMES] = 30000;
     /// words[word::cpu(0) + word::ONLINE] = 1;
@@ -232,7 +232,7 @@ impl Snapshot {
         }
         Some(Snapshot {
             frame_bytes: words[word::FRAME_BYTES],
-            tick_hz: words[word::TICK_HZ],
+            tick_hertz: words[word::TICK_HERTZ],
             total_frames: words[word::TOTAL_FRAMES],
             free_frames: words[word::FREE_FRAMES],
             cpus,
@@ -338,7 +338,7 @@ mod tests {
     #[test]
     fn the_header_carries_what_a_reader_needs_to_print_units() {
         let s = Snapshot::from_words(&prepared()).unwrap();
-        assert_eq!((s.frame_bytes, s.tick_hz), (4096, 100));
+        assert_eq!((s.frame_bytes, s.tick_hertz), (4096, 100));
     }
 
     #[test]

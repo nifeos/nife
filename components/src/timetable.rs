@@ -32,7 +32,7 @@
 use grant_plan::spawnproto;
 use timetable::{Registry, contract, registration};
 use user_mode_runtime::{
-    capability_delete, exit, monotonic_ns, reap, receive_fault, send, yield_now,
+    capability_delete, exit, monotonic_nanoseconds, reap, receive_fault, send, yield_now,
 };
 
 /// The document. Compiled in; see `BUGS`.
@@ -176,7 +176,7 @@ fn start(fires_wanted: u64, initial_ramdisk_len: u64, registration_page: u64) ->
     // reads to exactly this line.
     say(b"timetable: armed\n");
 
-    reg.arm(monotonic_ns());
+    reg.arm(monotonic_nanoseconds());
 
     let mut tally = Tally {
         held,
@@ -298,7 +298,7 @@ impl Tally {
             } else {
                 None
             });
-            let now = monotonic_ns();
+            let now = monotonic_nanoseconds();
             let mut any = false;
             while let Some(i) = reg.due(now) {
                 any = true;
@@ -725,7 +725,7 @@ fn replace_if_asked(
     };
 
     // Committed from here: nothing below can refuse.
-    let kept = next.arm_after(reg, monotonic_ns());
+    let kept = next.arm_after(reg, monotonic_nanoseconds());
     *reg = next;
     *images = next_images;
     *current = spare;
@@ -887,7 +887,7 @@ fn wall_reading() -> Option<timetable::WallReading> {
     if !clock_contract::state::is_known(r.state) {
         return None;
     }
-    let wall = clock_contract::wall_ns(r.offset_nanos, monotonic_ns());
+    let wall = clock_contract::wall_nanoseconds(r.offset_nanos, monotonic_nanoseconds());
     Some(timetable::WallReading {
         minute: (wall / (60 * clock_contract::NS_PER_SECOND)) as i64,
         generation: r.generation,

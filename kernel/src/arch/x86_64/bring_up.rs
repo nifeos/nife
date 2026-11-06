@@ -50,7 +50,7 @@ pub fn cpu_start(target_cpu: u64, entry: u64, context: u64) -> i64 {
 
     // Bounded, so a core the firmware declines to start cannot hang bring-up. Ten seconds, because
     // under TCG a loaded host may not schedule the target's vCPU thread for that long. `hlt`
-    // between checks (this core's `TICK_HZ` timer wakes it) rather than a spin, which would starve
+    // between checks (this core's `TICK_HERTZ` timer wakes it) rather than a spin, which would starve
     // the very vCPU thread this waits on. See notes/x86-port/smp-bring-up.md.
     let budget = 10 * crate::arch::timer::frequency();
     let start = crate::arch::timer::now();

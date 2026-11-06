@@ -2,7 +2,7 @@ use clock_contract::{policy, propose, state, status};
 
 use super::*;
 
-/// Start the service and take its startup report. `[RPT_READY, state, wall_ns]`.
+/// Start the service and take its startup report. `[RPT_READY, state, wall_nanoseconds]`.
 fn start() -> (clock_service::Wiring, [u64; 5]) {
     let image = program("clock").expect("no clock program in the initial ramdisk");
     let w = clock_service::start(image);
@@ -49,7 +49,8 @@ fn the_clock_service_reads_a_plausible_wall_clock_from_the_rtc() {
     let r = w.page().read();
     assert_eq!(r.state, state::RTC);
     assert_eq!(r.generation, 1, "one publish: the RTC reading");
-    let by_hand = clock_contract::wall_ns(r.offset_nanos, clock_service::monotonic_ns());
+    let by_hand =
+        clock_contract::wall_nanoseconds(r.offset_nanos, clock_service::monotonic_nanoseconds());
     assert!(
         by_hand >= report[2] && by_hand - report[2] < 10 * clock_contract::NS_PER_SECOND,
         "a reader's own arithmetic ({by_hand}) should agree with the service's ({})",
@@ -78,21 +79,21 @@ fn a_proposer_can_ask_and_cannot_tell() {
         "needs a running clock to step"
     );
 
-    let now = w.wall_ns();
+    let now = w.wall_nanoseconds();
     for (proposed, want, what) in [
         (0, status::REFUSED_IMPLAUSIBLE, "1970, the old lie itself"),
         (
-            policy::NOT_AFTER_NS,
+            policy::NOT_AFTER_NANOSECONDS,
             status::REFUSED_IMPLAUSIBLE,
             "the far future, past every certificate expiry",
         ),
         (
-            now + 2 * policy::MAXIMUM_STEP_FORWARD_NS,
+            now + 2 * policy::MAXIMUM_STEP_FORWARD_NANOSECONDS,
             status::REFUSED_TOO_FAR_FORWARD,
             "plausible in the absolute, too big a step",
         ),
         (
-            now - 2 * policy::MAXIMUM_STEP_BACKWARD_NS,
+            now - 2 * policy::MAXIMUM_STEP_BACKWARD_NANOSECONDS,
             status::REFUSED_TOO_FAR_BACKWARD,
             "backwards, where instants would happen twice",
         ),
@@ -132,11 +133,11 @@ fn adjusting_the_wall_clock_leaves_the_monotonic_counter_alone() {
     let (w, _) = start();
     let step = clock_contract::NS_PER_SECOND / 2;
 
-    let mono_before = clock_service::monotonic_ns();
-    let wall_before = w.wall_ns();
+    let mono_before = clock_service::monotonic_nanoseconds();
+    let wall_before = w.wall_nanoseconds();
     let (got, wall_after) = w.propose_ns(wall_before + step);
     assert_eq!(got, status::ACCEPTED);
-    let mono_after = clock_service::monotonic_ns();
+    let mono_after = clock_service::monotonic_nanoseconds();
 
     assert!(
         wall_after >= wall_before + step / 2,

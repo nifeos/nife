@@ -95,9 +95,9 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
     }
     // `cntfrq`'s discipline: a process that cannot know the tick dies saying so, rather than
     // guessing one and silently paying a tick per round trip again.
-    let tick_hz = user_mode_runtime::tick_hz()
+    let tick_hertz = user_mode_runtime::tick_hertz()
         .expect("the scheduler tick is unknown: this thread's current-CPU page carries none");
-    let tick = cntfrq() / tick_hz;
+    let tick = cntfrq() / tick_hertz;
     let due = iface
         .poll_delay(instant(), sockets)
         .map(|d| d.total_micros());

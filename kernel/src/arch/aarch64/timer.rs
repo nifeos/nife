@@ -29,7 +29,7 @@ const CNTV_CTL_ISTATUS: u64 = 1 << 2;
 /// **1 Hz in the bench build**, so a timed window opened just after a tick has a second of virtual
 /// time before the next; `kernel/src/bench/timing.rs`'s `TickWindow` fails a run if a tick lands
 /// inside a window.
-pub const TICK_HZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
+pub const TICK_HERTZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
 
 /// Ticks delivered, per core: each core has its own timer, and a lock masks only the holding core's
 /// interrupts. See §11 (SMP: per-CPU run queues).
@@ -73,7 +73,7 @@ pub fn initialize() {
     close_cycle_counter_to_el0();
     super::pmu::initialize_this_cpu();
 
-    let interval = freq / TICK_HZ;
+    let interval = freq / TICK_HERTZ;
     INTERVAL.store(interval, Ordering::Relaxed);
 
     super::interrupt_controller::enable(TIMER_INTID); // PPI: enabled on this core, no target

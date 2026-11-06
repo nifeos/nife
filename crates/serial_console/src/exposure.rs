@@ -11,7 +11,7 @@
 //! - **The id is `E?`.** Ids are assigned in the note, where the next free one is visible.
 //! - **"Rising" is judged on the first and last beats only**, so a soak that crossed for a minute
 //!   and then froze for seven hours would pass.
-//! - **The wakerate threshold is 80% of `TICK_HZ * cores`**, a judgment, not a measurement; a
+//! - **The wakerate threshold is 80% of `TICK_HERTZ * cores`**, a judgment, not a measurement; a
 //!   board below it is printed as a question rather than failing the row.
 //! - **A boot is split at the banner (`nife on `)**, so a capture that lost the banner to line
 //!   noise merges two boots; [`Boot::starts`] counts the `soak-test: started` lines so it shows.
@@ -71,7 +71,7 @@ pub struct Boot {
     /// From `smp: N core(s) online`, or the machine line's processor count without one.
     pub cores: Option<u64>,
     /// From the machine line's `N Hz`, which is the tick route's rate per core.
-    pub tick_hz: Option<u64>,
+    pub tick_hertz: Option<u64>,
     /// How many `soak-test: started` lines this boot printed. One is a boot that soaked; more is
     /// two boots merged by a lost banner (see this module's `BUGS`).
     pub starts: usize,
@@ -186,8 +186,8 @@ fn observe_machine(boot: &mut Boot, rest: &str) {
             if boot.cores.is_none() {
                 boot.cores = n.trim().parse().ok();
             }
-        } else if let Some(hz) = part.trim().strip_suffix(" Hz") {
-            boot.tick_hz = hz.trim().parse().ok();
+        } else if let Some(hertz) = part.trim().strip_suffix(" Hz") {
+            boot.tick_hertz = hertz.trim().parse().ok();
         }
     }
 }
@@ -287,7 +287,7 @@ impl Boot {
     /// The bench checks and the verdict, one line each, worded for the person reading them.
     ///
     /// The checks are the note's two, made after the fact: `crossings` must rise between the
-    /// first and last beat, and `wakerate` must be near `TICK_HZ * cores`.
+    /// first and last beat, and `wakerate` must be near `TICK_HERTZ * cores`.
     #[must_use]
     pub fn checks(&self) -> Vec<String> {
         let mut out = Vec::new();
@@ -304,8 +304,8 @@ impl Boot {
             ),
             None => out.push("one heartbeat only: whether it crossed cannot be judged".into()),
         }
-        if let (Some(hz), Some(cores), Some(last)) = (self.tick_hz, self.cores, self.last) {
-            let expected = hz * cores;
+        if let (Some(hertz), Some(cores), Some(last)) = (self.tick_hertz, self.cores, self.last) {
+            let expected = hertz * cores;
             if last.wakerate * 10 >= expected * 8 {
                 out.push(format!(
                     "wakerate {}/s against {expected}/s expected: the tick route kept up",
@@ -398,7 +398,7 @@ mod tests {
         let boot = &boots[0];
         assert_eq!(boot.arch.as_deref(), Some("aarch64"));
         assert_eq!(boot.cores, Some(4));
-        assert_eq!(boot.tick_hz, Some(100));
+        assert_eq!(boot.tick_hertz, Some(100));
         assert_eq!(boot.crossed(), Some(true));
         assert!(boot.is_clean());
         assert!(boot.checks().iter().any(|c| c.contains("kept up")));
@@ -485,7 +485,7 @@ mod tests {
         assert_eq!(boot.cores, Some(4));
     }
 
-    /// The wake-rate check's line is 80% of `hz * cores`: 320/s keeps up with 400/s expected and
+    /// The wake-rate check's line is 80% of `hertz * cores`: 320/s keeps up with 400/s expected and
     /// 319/s does not.
     #[test]
     fn the_tick_route_keeps_up_at_exactly_eighty_percent() {
