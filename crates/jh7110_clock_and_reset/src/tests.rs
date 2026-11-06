@@ -7,7 +7,7 @@ use super::*;
 
 #[test]
 fn i2c5s_clock_and_reset_land_where_linux_puts_them() {
-    // [mainline-clk] `base + 4 * idx`, and radon's OpenSBI's own `0x13020228 + 5 * 4` for the
+    // [mainline-clk] `base + 4 * idx`, and the OpenSBI of a VisionFive 2, `0x13020228 + 5 * 4`, for the
     // same gate: two derivations of 0x23c.
     assert_eq!(SYSTEM.clock_offset(SYSCLK_I2C5_APB), Some(0x23c));
     assert_eq!(0x228 + 5 * 4, 0x23c);
@@ -16,7 +16,7 @@ fn i2c5s_clock_and_reset_land_where_linux_puts_them() {
         (r.assert_offset, r.status_offset, r.mask),
         (0x300, 0x310, 1 << 17)
     );
-    // Radon's OpenSBI reads the index from the node name; `i2c@...` gives '@' - '0' = 16,
+    // That OpenSBI reads the index from the node name; `i2c@...` gives '@' - '0' = 16,
     // which is clock 138 + 16 = 154, JH7110_SYSCLK_UART4_CORE. Written down because it is
     // why the firmware's own re-enable cannot be relied on.
     assert_eq!(0x228 + (u64::from(b'@' - b'0')) * 4, 4 * 154);
@@ -28,7 +28,11 @@ fn the_sys_domains_last_clock_word_does_not_reach_its_reset_words() {
     assert_eq!(last, 0x2f4);
     assert!(last + 4 <= SYSTEM.reset_assert);
     assert_eq!(SYSTEM.clock_offset(SYSTEM.clocks), None);
-    assert_eq!(SYSTEM.clock_offset(298), None, "radon's virtual core clock");
+    assert_eq!(
+        SYSTEM.clock_offset(298),
+        None,
+        "the vendor tree's virtual core clock"
+    );
     assert_eq!(SYSTEM.reset_bit(125).unwrap().assert_offset, 0x2f8 + 12);
     assert_eq!(SYSTEM.reset_bit(126), None);
 }
@@ -47,7 +51,7 @@ fn the_pmic_plan_ungates_before_it_releases() {
 
 #[test]
 fn a_report_of_zeros_is_not_a_report_of_success() {
-    // This is radon's 2026-09-04 shape, one level up: a window with nothing behind it accepts
+    // This is the shape of a first bring-up on a VisionFive 2, one level up: a window with nothing behind it accepts
     // every store and reads back zero, so `has_clocks_running` must be false on the *after*
     // words rather than on the fact that the writes returned.
     let dead = BringUpReport {
@@ -152,7 +156,7 @@ fn a_reset_word_past_the_first_multiplies_the_word_index_by_four() {
 fn the_firmware_having_already_done_it_is_a_distinguishable_outcome() {
     // The one result that would refute the premise that the clocks were gated: the clocks were
     // already on and the reset already released before anything here ran, so the TRNG's zeros have
-    // some other cause. A bench transcript has to be able to say this, which is why the report
+    // some other cause. A log of a bring-up has to be able to say this, which is why the report
     // keeps `before` words at all.
     let up = BringUpReport {
         clock_before: [CLOCK_ENABLE | 4, CLOCK_ENABLE | 4, 0, 0],
@@ -190,8 +194,8 @@ fn a_device_this_run_actually_started_is_not_reported_as_already_up() {
 
 #[test]
 fn the_trng_plan_enables_both_clocks_before_it_touches_the_reset() {
-    // [mainline-rst-common]'s comment is the reason this order is a test rather than a comment:
-    // "if the associated clock is gated, deasserting might otherwise hang forever". A plan
+    // [mainline-rst-common] warns that a deassert against a gated clock can hang, which is the
+    // reason this order is a test rather than a comment. A plan
     // that deasserted first would wedge the boot on hardware and pass every host test.
     let reset_at = ENTROPY_BRING_UP
         .iter()
@@ -288,9 +292,8 @@ fn an_enabled_clock_reads_its_top_bit_back() {
     assert!(is_clock_enabled(CLOCK_ENABLE));
     assert!(is_clock_enabled(CLOCK_ENABLE | 0x1234));
     assert!(!is_clock_enabled(0x7fff_ffff));
-    // Zero is what radon's TRNG window read on 2026-09-04, and it is what a gated clock
-    // reads: the same value a window with nothing behind it reads, which is why the tour
-    // reports `from_tree` and the before/after words rather than a verdict.
+    // Zero is what a gated clock reads: the same value a window with nothing behind it reads,
+    // which is why a caller reports `from_tree` and the before/after words rather than a verdict.
     assert!(!is_clock_enabled(0));
 }
 
@@ -350,7 +353,7 @@ fn gmac0s_plans_ungate_every_clock_before_either_reset_and_pick_the_parent_while
 
 #[test]
 fn the_word_offsets_match_the_vendor_u_boots_own_constants() {
-    // radon's U-Boot writes `AON_CRG_BASE + 0x14` for gmac0's transmit clock and `0x1c` for
+    // The vendor U-Boot writes `AON_CRG_BASE + 0x14` for gmac0's transmit clock and `0x1c` for
     // its receive clock (`jh7110-regs.h`): indices 5 and 7, one word each.
     assert_eq!(ALWAYS_ON.clock_offset(AONCLK_GMAC0_TX), Some(0x14));
     assert_eq!(ALWAYS_ON.clock_offset(7), Some(0x1c));
@@ -622,11 +625,11 @@ fn each_sdio_plan_ungates_both_clocks_before_its_reset_and_stays_in_the_sys_doma
     assert_eq!(clock_divider(CLOCK_ENABLE | 8), 8);
 }
 
-/// radon's 2026-10-21 words (PLL2 `fbdiv 99 prediv 2 postdiv1 1`, `axi_cfg0` divider 3): 396 MHz
+/// Words read from a VisionFive 2 (PLL2 `fbdiv 99 prediv 2 postdiv1 1`, `axi_cfg0` divider 3): 396 MHz
 /// into the card clock, so the tree's 50 MHz needs a divider of 8 (49.5 MHz), where the firmware's
-/// 2 gives 198 MHz. The storage bench's measured transfer rates matched 198, not 50.
+/// 2 gives 198 MHz. A card driver that measured its transfer rates saw the 198 MHz clock, not 50.
 #[test]
-fn radon_card_clock_comes_to_the_trees_rate_from_below() {
+fn the_card_clock_of_a_visionfive_2_comes_to_the_trees_rate_from_below() {
     let words = InterIntegratedCircuitClockWords {
         bus_root: 1 << 24,
         advanced_extensible_interface_configuration_0: 3,

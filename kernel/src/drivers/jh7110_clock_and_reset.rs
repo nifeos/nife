@@ -117,6 +117,8 @@ pub unsafe fn bring_up(base: usize, domain: &Domain, plan: &[Step]) -> BringUpRe
                 report.resets += 1;
                 report.resets_released += u32::from(report.released);
             }
+            // A step this driver predates is never stored through; the report says it was refused.
+            _ => report.rejected += 1,
         }
     }
 

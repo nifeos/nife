@@ -13,7 +13,7 @@ depends on nothing, and is tested on the host.
 Nine Kani harnesses (`cargo kani`, stock Kani) prove, each with a falsification patch under
 `falsifications/` that makes it fail at its own assertion:
 
-- `with_parent` changes only the mux field: every other bit of the word is unchanged, and an
+- `with_parent` changes only the clock parent field: every other bit of the word is unchanged, and an
   over-wide parent never reaches the enable bit.
 - For every domain and every index, `clock_offset` and `reset_bit` answer `None` past the domain's
   counts, and otherwise a word-aligned offset inside the domain, a reset mask of exactly one bit,
@@ -88,8 +88,18 @@ it".
 
 ## Limitations
 
-- None of the bring-up has been confirmed on silicon end to end.
+- None of the bring-up has been confirmed on silicon end to end. In particular, the PMIC reset path
+  (`standard_mode_100_kilohertz` at the input clock `inter_integrated_circuit_5_clock_frequency`
+  computes, and `POWER_MANAGEMENT_CHIP_RESET_REGISTER` with its reset bit) has been checked on the
+  host only; no board has run the timing this release computes, which is 198 high counts and 297 low
+  counts at 49.5 MHz. The crate does not claim it is proven on a board.
+- `Step`, `BringUpReport`, `PowerManagementChipBus`, `DevicePlan` and `WindowLocation` are
+  `#[non_exhaustive]`, so a later release can add a step kind or a field without a breaking change.
+  Build a `BringUpReport` with `BringUpReport::default()` and assign its fields, and match a `Step`
+  with a wildcard arm.
 - The reset `SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS` is shared with the DMA engine, so the crate offers no assert.
+- Some items describe one board and not the chip: the PMIC reset register and bit, the PMIC bus
+  plan and the I2C5 clock chain follow the VisionFive 2's AXP15060 wiring.
 - Only the STG, AON and SYS domains are described, each only as far as a device needed it.
 
 Minimum Rust version: 1.88.

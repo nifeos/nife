@@ -638,7 +638,7 @@ fn start_watchdog_clocks(
     };
     let clocks = plan.plan().iter().filter_map(|s| match s {
         Step::EnableClock(i) => Some(*i),
-        Step::DeassertReset(_) | Step::SelectParent { .. } => None,
+        _ => None,
     });
     for (n, index) in clocks.enumerate().take(report.clocks) {
         println!(
