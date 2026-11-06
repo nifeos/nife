@@ -70,7 +70,7 @@ const SW_DEVICE: u64 = 1 << 10;
 /// and bit 63 is XD, so the mask must not be widened without checking both ends.
 const ADDR_MASK: u64 = 0x000f_ffff_ffff_f000;
 
-/// **An IA-32e entry's fields share no bit**: the address field, P, RW, USER_SUPERVISOR, PWT, PCD, A, D, PS, G,
+/// **An IA-32e entry's fields share no bit**: the address field, P, RW, `USER_SUPERVISOR`, PWT, PCD, A, D, PS, G,
 /// the two software bits and XD. Every `|` in `Ia32e::attrs`, `table_entry`, `leaf_entry` and
 /// `block_entry` joins words from this list, so each is its own `^`, and the mutation exclusions
 /// for them name this constant: the compiler checks what no test can.
