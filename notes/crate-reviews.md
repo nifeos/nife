@@ -118,8 +118,8 @@ Recommendation. Ready for review.
 Name and version. `non_volatile_memory_express` `0.1.0`, ratified with NVMe spelled out. 27 `Name:`
 blocks are provisional: the new modules, the eleven constants spelled out (the register offsets, the
 two Controller Status bits, the two queue-creation opcodes and the two Identify selectors), the two
-assertion constants, `PhysicalRegionPagePair` and its fields, `Namespace::new`. The rest are
-ratified.
+assertion constants, `PhysicalRegionPagePair` and its fields, `Namespace::new`. The architect
+ratified the rest.
 
 API. Ten modules behind a flat public surface: `registers`, `Capabilities`, `Command` with the
 opcodes, `Completion`, `SubmissionQueue` and `CompletionQueue`, `Doorbell`, `doorbell`,
@@ -147,7 +147,7 @@ Outstanding before the move.
 | Ratify the 27 provisional names with `python3 helpers/name_release.py --draft non_volatile_memory_express`. | architect |
 | `design/decisions/0086-el0-nvme-driver/prior-art.md` and milestone 569 (the disk an installer names has no model, only a size) still cite `prp_pair`, `CNS_CONTROLLER` and `CNS_NAMESPACE`. | maintainer |
 
-Recommendation. Blocked by the unratified names; ready for review once they are ratified.
+Recommendation. Blocked by the unratified names; ready for review once the architect ratifies them.
 
 ## `e1000e`, step 6
 
