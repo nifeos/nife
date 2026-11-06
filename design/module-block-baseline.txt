@@ -7742,7 +7742,8 @@ crates/walk_pricing/src/lib.rs::WHOLE_REPS
 
 crates/walk_pricing/src/lib.rs::per_entry
 
-crates/walk_pricing/src/lib.rs::per_kib
+
+crates/walk_pricing/src/lib.rs::per_kibibytes
 
 crates/walk_pricing/src/lib.rs::price
 
