@@ -10,12 +10,10 @@ needs_person: no
 ---
 # 1044. Heavy jobs wait in order for the memory they measured
 
-The lane `lane/heavy-job-admission` wrote this on 2026-11-05 (UTC). The architect asked for a design
-that manages heavy local jobs better than a fixed count of slots. Every file, command and variable name here is provisional.
+The lane `lane/heavy-job-admission` wrote this on 2026-11-05 (UTC). Every file, command and variable name here is provisional.
 
 Reuse: `flock(2)` liveness and the ancestor walk from `helpers/heavy_slot.py`, #3214's measured Kani
-rows, and systemd's user scopes for measuring and capping. This lane considered the GNU make jobserver
-and did not take it, for reasons (b) gives. No existing tool admits by measured memory across independent
+rows, and systemd's user scopes for measuring and capping.  No existing tool admits by measured memory across independent
 processes without a server; the [prior art appendix](1044-heavy-jobs-wait-in-order-for-measured-memory/prior-art.md)
 lists what this lane searched.
 
