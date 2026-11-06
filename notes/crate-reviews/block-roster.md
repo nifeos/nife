@@ -67,7 +67,7 @@ Not proved: `write` on a page shorter than the header. That is where the defect 
 
 ## Names
 
-All 17 public names are ratified. `VERSION` and `INTERFACE_ID` are the names every contract crate
+Every one of the 17 public names has a ratified block. `VERSION` and `INTERFACE_ID` are the names every contract crate
 uses, by the 2026-11-01 ruling on `counter_frequency_contract`. The fields `ordinal` and `transport`
 have no block; the draft tool does not list fields.
 
@@ -120,8 +120,8 @@ specification and common use, not copied text.
 ## Result of `script/crate-standalone`
 
 Run on the crate as it stood on `main`, the `names` step failed and the rest passed: the build on
-1.88 for the host and the three bare-metal targets, both harnesses and both patches. The crate with
-its ratified names applied (#3282) has not been run through `script/crate-standalone`.
+1.88 for the host and the three bare-metal targets, both harnesses and both patches. No run covers the crate with
+its ratified names (#3282).
 
 ## Recommendation
 

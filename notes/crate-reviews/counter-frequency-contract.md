@@ -11,7 +11,7 @@ on the architectures with no register that says so: the magic `TIMEBAS1`, then t
 little-endian `u64`. The crate also holds the page's fixed virtual address per architecture and the
 band of rates worth believing (100 kHz to 100 GHz), which the kernel's three boot paths share. It is
 `no_std` with no dependency. Unlike the other crates in this note, it has `unsafe`, because the
-reader names a raw address, and it has no Kani harness. Every name has a ratified block, and the units are spelled out.
+reader names a raw address, and it has no Kani harness. Every name has a ratified block, and each unit is spelled out.
 
 ## Identity
 
@@ -55,7 +55,7 @@ covers it, since Kani cannot prove a caller's promise about a mapping.
 
 ## Names
 
-#3059 ratified all 13 names on 2026-11-01. Units are spelled out (`_HERTZ`), with no SI symbol,
+#3059 ratified all 13 names on 2026-11-01. Names spell each unit out (`_HERTZ`) and use no SI symbol,
 because uppercase erases the case that tells `MHz` from `mHz`.
 
 | name | kind |
