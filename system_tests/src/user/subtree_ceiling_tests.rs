@@ -65,6 +65,64 @@ fn fill(budget: u64, objtype: u64) -> u32 {
     made
 }
 
+/// Make processes, each from a fresh space, until a ceiling refuses, then bare spaces until the
+/// space ceiling does: `(processes, spaces)` made. A process consumes a space, so both ceilings
+/// meet here. Each capability is deleted as it is made.
+fn fill_processes_and_spaces(budget: u64) -> (u32, u32) {
+    let mut processes = 0;
+    for _ in 0..ATTEMPTS {
+        let Ok(space) = call(
+            budget,
+            abi::memory_region::RETYPE_OBJ,
+            abi::objtype::ADDRESS_SPACE,
+            0,
+        ) else {
+            break;
+        };
+        match call(
+            budget,
+            abi::memory_region::RETYPE_OBJ,
+            abi::objtype::PROCESS,
+            space as u64,
+        ) {
+            Ok(slot) => {
+                let _ = sched::delete_current_capability(slot as u64);
+                processes += 1;
+            }
+            Err(e) => {
+                assert_eq!(e, Error::OutOfMemory);
+                let _ = sched::delete_current_capability(space as u64);
+                break;
+            }
+        }
+    }
+    (
+        processes,
+        processes + fill(budget, abi::objtype::ADDRESS_SPACE),
+    )
+}
+
+/// `SPLIT` one page from the region in `budget` until it refuses, deleting each new capability and
+/// writing the names into `below`: how many it made.
+fn split_until_refused(budget: u64, below: &mut [u64; ATTEMPTS]) -> usize {
+    let mut splits = 0;
+    for _ in 0..ATTEMPTS {
+        let Ok(slot) = call(budget, abi::memory_region::SPLIT, 1, 0) else {
+            break;
+        };
+        let Object::MemoryRegion(name) = sched::current_capability(slot as u64)
+            .expect("the split's slot")
+            .object
+        else {
+            panic!("SPLIT filed something other than a region");
+        };
+        below[splits] = name;
+        splits += 1;
+        let _ = sched::delete_current_capability(slot as u64);
+    }
+    splits
+}
+
 /// **A filled subtree stops at its ceilings with pages to spare, a sibling still builds, and the
 /// reclaim returns every count.**
 ///
@@ -93,36 +151,7 @@ fn a_region_filled_to_its_subtree_ceilings_leaves_its_siblings_able_to_build() {
         );
     }
 
-    // A process consumes a space, so both ceilings meet here: each round makes one of each until
-    // the scarcer refuses, then bare spaces fill whatever the space ceiling has left.
-    let mut processes = 0;
-    for _ in 0..ATTEMPTS {
-        let Ok(space) = call(
-            budget,
-            abi::memory_region::RETYPE_OBJ,
-            abi::objtype::ADDRESS_SPACE,
-            0,
-        ) else {
-            break;
-        };
-        match call(
-            budget,
-            abi::memory_region::RETYPE_OBJ,
-            abi::objtype::PROCESS,
-            space as u64,
-        ) {
-            Ok(slot) => {
-                let _ = sched::delete_current_capability(slot as u64);
-                processes += 1;
-            }
-            Err(e) => {
-                assert_eq!(e, Error::OutOfMemory);
-                let _ = sched::delete_current_capability(space as u64);
-                break;
-            }
-        }
-    }
-    let spaces = processes + fill(budget, abi::objtype::ADDRESS_SPACE);
+    let (processes, spaces) = fill_processes_and_spaces(budget);
     assert_eq!(spaces, share(Counted::Object(ObjectKind::AddressSpace)));
     assert_eq!(
         processes,
@@ -130,21 +159,7 @@ fn a_region_filled_to_its_subtree_ceilings_leaves_its_siblings_able_to_build() {
     );
 
     let mut below = [0u64; ATTEMPTS];
-    let mut splits = 0;
-    for _ in 0..ATTEMPTS {
-        let Ok(slot) = call(budget, abi::memory_region::SPLIT, 1, 0) else {
-            break;
-        };
-        let Object::MemoryRegion(name) = sched::current_capability(slot as u64)
-            .expect("the split's slot")
-            .object
-        else {
-            panic!("SPLIT filed something other than a region");
-        };
-        below[splits] = name;
-        splits += 1;
-        let _ = sched::delete_current_capability(slot as u64);
-    }
+    let splits = split_until_refused(budget, &mut below);
     assert_eq!(splits as u32, share(Counted::Region));
 
     let (spent, pages) = crate::memory_region::usage(filled).expect("the filled region");
