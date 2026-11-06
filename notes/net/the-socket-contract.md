@@ -51,7 +51,7 @@ call for opposite responses: ask for authority, or pick another port.
 `polled_wait` decides whether `net_stack` may sleep while it waits on a NIC that raises no
 interrupt: the `e1000e`, and radon's `DesignWare` port. A timed wait ends at the first scheduler
 tick at or after its deadline. The tick is 100 Hz, as the kernel publishes it on the current-CPU
-page (`user_mode_runtime::tick_hz`). So the 1 ms poll sleep the polled NICs ask for lasts up to 10
+page (`user_mode_runtime::tick_hertz`). So the 1 ms poll sleep the polled NICs ask for lasts up to 10
 ms.
 
 On a stream, the next segment arrives one round trip after the stack's acknowledgment, and on a LAN

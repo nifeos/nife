@@ -50,7 +50,7 @@ RUSTUP_TOOLCHAIN=nightly-2026-10-22 helpers/qemu-bounded.sh 1500 cargo xtask ben
 ```
 
 in a detached worktree at the commit. Commits before milestone 939 (the icount bench runs without
-a preemption tick in its windows) ran with `TICK_HZ` set to 1 in
+a preemption tick in its windows) ran with `TICK_HERTZ` set to 1 in
 `kernel/src/arch/riscv64/timer.rs`, so the numbers are costs and not the tick's phase.
 Commits before `964bd5a88` ran with its one-line `NIFE_DISK` fix applied. Every window was
 sampled at 15 to 30 points, then each interval whose ends differed was split again until one merge

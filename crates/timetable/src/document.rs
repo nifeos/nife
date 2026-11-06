@@ -20,7 +20,7 @@ pub enum Schedule {
     AtBoot,
     /// Every interval, in **nanoseconds**, from the moment the scheduler is armed.
     ///
-    /// Nanoseconds because that is what `user_mode_runtime::monotonic_ns` reports and what the arithmetic
+    /// Nanoseconds because that is what `user_mode_runtime::monotonic_nanoseconds` reports and what the arithmetic
     /// in [`next_after`](crate::next_after) runs in; the document is written in `ms`, `s` and `m`, and [`parse`]
     /// converts once, where the conversion can be tested.
     Every(u64),
@@ -156,11 +156,12 @@ pub fn parse(doc: &str) -> Result<Document<'_>, Error> {
                 recurrence::Parsed::Calendar(rule, command) => (Schedule::Calendar(rule), command),
                 recurrence::Parsed::NotCalendar => {
                     let (interval, command) = split_word(rest).ok_or(Error::MissingInterval(no))?;
-                    let ns = interval_ns(interval).ok_or(Error::BadInterval(no))?;
-                    if ns == 0 {
+                    let nanoseconds =
+                        interval_nanoseconds(interval).ok_or(Error::BadInterval(no))?;
+                    if nanoseconds == 0 {
                         return Err(Error::ZeroInterval(no));
                     }
-                    (Schedule::Every(ns), command)
+                    (Schedule::Every(nanoseconds), command)
                 }
             },
             _ => return Err(Error::UnknownSchedule(no)),
@@ -216,7 +217,7 @@ fn split_word(s: &str) -> Option<(&str, &str)> {
 /// yield-polled scheduler can honour (see `components/src/timetable.rs`'s `BUGS`), and anything longer
 /// than a minute is better said as a calendar line: `every 86400s` is a daily job counted from
 /// arming, where `every day at 02:00` is one at a time of day.
-fn interval_ns(s: &str) -> Option<u64> {
+fn interval_nanoseconds(s: &str) -> Option<u64> {
     let digits = s.len() - s.trim_start_matches(|c: char| c.is_ascii_digit()).len();
     if digits == 0 {
         return None;

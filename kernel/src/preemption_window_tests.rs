@@ -11,10 +11,10 @@
 use crate::sched;
 
 /// How long to spin, in counter ticks: three scheduler tick periods, so a tick is unambiguously
-/// due rather than marginally due. `frequency()` is counter ticks per second and `TICK_HZ` is
+/// due rather than marginally due. `frequency()` is counter ticks per second and `TICK_HERTZ` is
 /// scheduler ticks per second, so their ratio is counter ticks per scheduler tick.
 fn three_tick_periods() -> u64 {
-    3 * crate::arch::timer::frequency() / crate::arch::timer::TICK_HZ
+    3 * crate::arch::timer::frequency() / crate::arch::timer::TICK_HERTZ
 }
 
 /// How long a masked window waits for the host to raise a tick that is already due, in scheduler
@@ -35,7 +35,8 @@ const RAISE_BOUND_PERIODS: u64 = 100;
 ///
 /// Name: provisional, minted 2026-09-24 (`cda66d656`, waiting for the tick to be raised).
 fn until_the_tick_is_raised() -> bool {
-    let bound = RAISE_BOUND_PERIODS * crate::arch::timer::frequency() / crate::arch::timer::TICK_HZ;
+    let bound =
+        RAISE_BOUND_PERIODS * crate::arch::timer::frequency() / crate::arch::timer::TICK_HERTZ;
     let start = crate::arch::timer::now();
     while !crate::arch::timer::is_tick_pending() {
         if crate::arch::timer::now().wrapping_sub(start) >= bound {

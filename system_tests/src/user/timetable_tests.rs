@@ -171,7 +171,7 @@ fn report_until(t: &Spawned, deadline: u64) -> Option<u64> {
         if crate::sched::rendezvous_waiting_senders(t.reports) > 0 {
             return Some(crate::sched::ipc_receive(t.reports)[0]);
         }
-        if super::clock_service::monotonic_ns() > deadline {
+        if super::clock_service::monotonic_nanoseconds() > deadline {
             return None;
         }
         if let Some(code) = exited(t) {
@@ -863,7 +863,7 @@ fn publish_at(t: &Spawned, set: bool, wall: u64) -> u64 {
     };
     // SAFETY: the frame `spawn_timetable_with` allocated for this test, through the direct map.
     let page = unsafe { clock_contract::ClockPage::new(mmu::phys_to_virt(phys)) };
-    let offset = clock_contract::offset_for(wall, super::clock_service::monotonic_ns());
+    let offset = clock_contract::offset_for(wall, super::clock_service::monotonic_nanoseconds());
     page.publish(state, offset);
     offset
 }
@@ -883,7 +883,7 @@ fn fires_at_two(t: &Spawned, set: bool) -> u64 {
     let mut retry_at = due + MISSED;
     for _ in 0..ATTEMPTS {
         if let Some(r) = report_until(t, retry_at) {
-            let now = super::clock_service::monotonic_ns();
+            let now = super::clock_service::monotonic_nanoseconds();
             assert!(
                 now >= due,
                 "the 02:00 line reported {} ms before 02:00 on the page's clock",

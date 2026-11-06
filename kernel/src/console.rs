@@ -307,8 +307,8 @@ pub fn hold_screen_at_handover() {
 /// interrupts off, and the `println!` here would deadlock on it. See notes/kernel-console.md, "The
 /// screen hold".
 fn hold_screen_for_host() {
-    /// Ten seconds, in scheduler ticks at whatever `TICK_HZ` the build has.
-    const HOLD_TICKS: u64 = 10 * crate::arch::timer::TICK_HZ;
+    /// Ten seconds, in scheduler ticks at whatever `TICK_HERTZ` the build has.
+    const HOLD_TICKS: u64 = 10 * crate::arch::timer::TICK_HERTZ;
     /// The flat backstop, paid down only while the tick counter has not yet moved: about a second
     /// of spinning under TCG on the dev Mac.
     const HOLD_POLLS: u32 = 1_000_000;

@@ -241,12 +241,12 @@ fn a_corpse_keeps_what_it_earned() {
 /// **The figure is milliseconds, and the granularity is the tick.**
 ///
 /// Every answer is a whole number of tick periods, which is 10 ms everywhere today. Asserted
-/// because the unit is a wire contract: a lane that later changed `TICK_HZ` without touching the
+/// because the unit is a wire contract: a lane that later changed `TICK_HERTZ` without touching the
 /// conversion, or that started reporting raw ticks, would be shipping a number whose meaning
 /// changed under every reader, and nothing else in the tree would notice.
 #[test_case]
 fn the_figure_is_whole_tick_periods_of_milliseconds() {
-    let per_tick = 1000 / crate::arch::timer::TICK_HZ;
+    let per_tick = 1000 / crate::arch::timer::TICK_HERTZ;
     assert_eq!(
         per_tick, 10,
         "a tick is no longer 10 ms; check the record's unit"

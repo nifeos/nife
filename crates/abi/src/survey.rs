@@ -54,7 +54,7 @@ pub mod record {
     /// **How long the thread has been scheduled on a CPU, in milliseconds**, as Linux's `utime`/
     /// `stime` and Zircon's `total_runtime` report it.
     ///
-    /// - Milliseconds are the wire contract, so no reader learns this kernel's `TICK_HZ`; the
+    /// - Milliseconds are the wire contract, so no reader learns this kernel's `TICK_HERTZ`; the
     ///   granularity is still the tick, 10 ms on all three architectures.
     /// - **Sampled at the timer tick**, `jiffies`-style: a thread that runs entirely between two
     ///   ticks is charged nothing, so two figures that should match may not.

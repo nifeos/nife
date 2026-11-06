@@ -41,7 +41,7 @@ entry as it was written, sentence-split for the prose limits.
 - The crossings are the waiters, never the pairs. This is repeated here because it is the claim a
   reader most wants this tool to be making, and it is not making it.
 - `wakerate` is a property of the machine, not of the workload. So it is not a throughput number,
-  and a run cannot be tuned to raise it. It is `TICK_HZ` times the online cores, and its use is as a
+  and a run cannot be tuned to raise it. It is `TICK_HERTZ` times the online cores, and its use is as a
   liveness check on the timer and the wake path.
 - The crossing count varies by more than a factor of two between otherwise identical runs: 1,452
   and 3,779 on the same aarch64 build, same command, same host. Whether a wake goes remote is

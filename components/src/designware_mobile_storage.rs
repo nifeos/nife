@@ -82,7 +82,7 @@ impl RegisterWindowAndClock for Page {
     }
 
     fn now_microseconds(&mut self) -> u64 {
-        user_mode_runtime::monotonic_ns() / 1000
+        user_mode_runtime::monotonic_nanoseconds() / 1000
     }
 }
 
@@ -104,7 +104,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     };
     let Ok((mut host, _)) = HostController::new(
         Page,
-        h.card_interface_unit_hz,
+        h.card_interface_unit_hertz,
         Some(u32::from(h.queue_depth)),
     ) else {
         send(READY, STEP_CONTROLLER, 0, 0);

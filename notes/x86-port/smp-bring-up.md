@@ -66,7 +66,7 @@ contention, one level later.
 Between checks the boot core halts rather than spins. TCG runs each vCPU as one host thread, and
 `pause` does nothing for host scheduling, so a spinning boot core only makes it harder for the
 thread it waits on to run. `wait_for_interrupt` parks the core on `hlt` until its own local APIC
-timer wakes it. The timer is armed at `TICK_HZ` and already ticking, because interrupts are enabled
+timer wakes it. The timer is armed at `TICK_HERTZ` and already ticking, because interrupts are enabled
 before `bring_up_secondaries` runs. That costs at most one tick per check, and it yields host CPU
 time. It was measured to turn an occasional full hang, waiting past even a sixty-second budget,
 into a clean give-up within the budget when a core does not come up.

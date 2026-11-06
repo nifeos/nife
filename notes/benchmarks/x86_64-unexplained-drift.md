@@ -20,7 +20,7 @@ x86_64 icount, the -O0 bench kernel, the pinned QEMU 11.1.2, one hart. Each poin
 RUSTUP_TOOLCHAIN=<held nightly> helpers/qemu-bounded.sh 2400 cargo xtask bench --x86
 ```
 
-in a detached worktree at the commit, with `TICK_HZ` set to 1 in
+in a detached worktree at the commit, with `TICK_HERTZ` set to 1 in
 `kernel/src/arch/x86_64/timer.rs` on trees before milestone 939 (the icount bench runs without a
 preemption tick in its windows). The bisect measured every first-parent merge, 1,342 points in all:
 

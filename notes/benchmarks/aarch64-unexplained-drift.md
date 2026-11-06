@@ -19,7 +19,7 @@ one run of
 RUSTUP_TOOLCHAIN=<held nightly> script/bench
 ```
 
-in a detached worktree at the commit, with `TICK_HZ` set to 1 in
+in a detached worktree at the commit, with `TICK_HERTZ` set to 1 in
 `kernel/src/arch/aarch64/timer.rs` on trees before milestone 939 (the icount bench runs without a
 preemption tick in its windows). I sampled each window and split every interval whose ends differed
 until one merge held the step:
@@ -151,7 +151,7 @@ None is a regression to take back. #2735, #2426, #2446 and #2565 are gains.
 ## BUGS
 
 - The tick's phase holds `ipc_rtt` at +0.74% for good. Only a ruling that a measured phase earns a
-  line, now that `TICK_HZ` 1 can measure it at any old floor, would move it.
+  line, now that `TICK_HERTZ` 1 can measure it at any old floor, would move it.
 - In the 2026-10-22 window `ipc_rtt_el0` (+0.16%), `sink_throughput` (+0.20%) and `spawn_el0`
   (+0.26%) keep remainders no named merge accounts for. The window was not bisected end to end.
 - Steps under 0.1% were not chased: `spawn_reap` +0.09% in `main`'s gap, for one.

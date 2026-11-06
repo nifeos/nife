@@ -604,7 +604,7 @@ const fn printenv_manifest() -> Manifest {
     }
 }
 
-// **`least_authority_demo`'s manifest, not `date`'s.** `uptime` reads `user_mode_runtime::monotonic_ns`,
+// **`least_authority_demo`'s manifest, not `date`'s.** `uptime` reads `user_mode_runtime::monotonic_nanoseconds`,
 // which is granted to every process unconditionally, so there is no capability here to
 // declare: no clock, no domain, no memory, no file. `OutputDeclaration::Bytes` rather than
 // `BytesAndDiagnostics` because the program cannot fail (the counter is always there to

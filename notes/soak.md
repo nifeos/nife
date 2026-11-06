@@ -54,7 +54,7 @@ a run can be compared, and it has three honest uses:
 
 `wakes` is not part of `rounds` and never will be: a tick-route wake is not a round trip, and
 folding the two together would make the one comparable figure mean something different depending on
-which build produced it. Its own rate is pinned to the machine: `TICK_HZ` times the online cores, so
+which build produced it. Its own rate is pinned to the machine: `TICK_HERTZ` times the online cores, so
 about 400 a second on a four-core QEMU. That makes it a useful liveness check in its own right. A
 `wakerate` well under that is the timer or the wake path falling behind, not the workload.
 
@@ -209,7 +209,7 @@ and the U-Boot commands, and changes only two things about it.
    milestone 221's bench procedure. Two fields decide whether the cross-core experiment is actually
    running:
 
-   - `wakerate` should be about `100 * harts`, so roughly 400 on radon. `TICK_HZ` is 100 and
+   - `wakerate` should be about `100 * harts`, so roughly 400 on radon. `TICK_HERTZ` is 100 and
      every online hart signals the tick route on its own timer, so a rate well under that means the
      timer or the wake path is falling behind and the run is measuring something else.
    - `crossings` must be *rising* between beats. Frozen is the pre-221 state and means the tick

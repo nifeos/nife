@@ -100,12 +100,12 @@ pub const CPU_ID_BOUND: usize = 8;
 const OFF_MAGIC: usize = 0;
 const OFF_CPU: usize = OFF_MAGIC + 8;
 const OFF_ALLOWANCE: usize = OFF_CPU + 8;
-const OFF_TICK_HZ: usize = OFF_ALLOWANCE + 8;
+const OFF_TICK_HERTZ: usize = OFF_ALLOWANCE + 8;
 
 /// The whole page's size in bytes: the magic, then three little-endian `u64`s, the CPU, the
 /// allowance and the scheduler tick. Under one frame, the unit it is mapped as, and inside one
 /// cache line, so the reader is a single load on a line nobody else writes.
-pub const PAGE_BYTES: usize = OFF_TICK_HZ + 8;
+pub const PAGE_BYTES: usize = OFF_TICK_HERTZ + 8;
 
 /// The CPU word's offset in the page, for a reader that cannot call [`CurrentCpuPage::cpu`]:
 /// hand-assembled machine code loading the word by absolute address.
@@ -153,15 +153,15 @@ pub fn build_page() -> [u8; PAGE_BYTES] {
 /// [`build_page`], carrying the thread's **allowance**: how many cores its process may use
 /// (milestone 812 (`std::thread::spawn` runs real threads in one address space), §269 (how threads
 /// share a process) fork 7). Not how many the machine has: it holds the online count today, and a
-/// later spawner grant or affinity budget lowers it without changing what it means. `tick_hz` is
-/// the scheduler tick ([`CurrentCpuPage::tick_hz`]). Zero reads as unknown for either, which is
+/// later spawner grant or affinity budget lowers it without changing what it means. `tick_hertz` is
+/// the scheduler tick ([`CurrentCpuPage::tick_hertz`]). Zero reads as unknown for either, which is
 /// what [`build_page`] writes.
-pub fn build_page_allowing(allowance: u64, tick_hz: u64) -> [u8; PAGE_BYTES] {
+pub fn build_page_allowing(allowance: u64, tick_hertz: u64) -> [u8; PAGE_BYTES] {
     let mut page = [0u8; PAGE_BYTES];
     page[OFF_MAGIC..OFF_MAGIC + 8].copy_from_slice(&MAGIC);
     page[OFF_CPU..OFF_CPU + 8].copy_from_slice(&UNSCHEDULED.to_le_bytes());
     page[OFF_ALLOWANCE..OFF_ALLOWANCE + 8].copy_from_slice(&allowance.to_le_bytes());
-    page[OFF_TICK_HZ..OFF_TICK_HZ + 8].copy_from_slice(&tick_hz.to_le_bytes());
+    page[OFF_TICK_HERTZ..OFF_TICK_HERTZ + 8].copy_from_slice(&tick_hertz.to_le_bytes());
     page
 }
 
@@ -260,14 +260,14 @@ impl CurrentCpuPage {
     /// `None` for an unrecognized page or one built without it. The kernel checks deadlines only
     /// from the tick (DECISIONS §147 (a timer a userspace service cannot hold)), so a `Timer::ARM`
     /// fires at the first tick at or after its deadline: a wait asked for 1 ms lasts up to
-    /// `1 / tick_hz` s. The rate is the kernel's to choose and it publishes it here, the one page
+    /// `1 / tick_hertz` s. The rate is the kernel's to choose and it publishes it here, the one page
     /// every process on every architecture has (calef, 2026-10-21 UTC, ruling C on #2489). One
     /// load, never written after the page is built.
     ///
     /// Name: provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
     /// receive-rate lane.
-    pub fn tick_hz(&self) -> Option<core::num::NonZeroU64> {
-        core::num::NonZeroU64::new(self.word(OFF_TICK_HZ)?)
+    pub fn tick_hertz(&self) -> Option<core::num::NonZeroU64> {
+        core::num::NonZeroU64::new(self.word(OFF_TICK_HERTZ)?)
     }
 
     /// Which CPU this thread is running on, or `None` if this page is unrecognized (a frame
@@ -318,10 +318,10 @@ mod tests {
             unsafe { CurrentCpuPage::new(self.va()) }.allowance()
         }
 
-        /// [`CurrentCpuPage::tick_hz`] over this buffer, under `cpu`'s argument.
-        fn tick_hz(&mut self) -> Option<core::num::NonZeroU64> {
+        /// [`CurrentCpuPage::tick_hertz`] over this buffer, under `cpu`'s argument.
+        fn tick_hertz(&mut self) -> Option<core::num::NonZeroU64> {
             // SAFETY: as `cpu`.
-            unsafe { CurrentCpuPage::new(self.va()) }.tick_hz()
+            unsafe { CurrentCpuPage::new(self.va()) }.tick_hertz()
         }
     }
 
@@ -413,10 +413,10 @@ mod tests {
     fn the_tick_reads_back_and_none_is_unknown() {
         let mut with = Aligned(build_page_allowing(4, 100));
         let mut without = Aligned(build_page_allowing(4, 0));
-        assert_eq!(with.tick_hz().map(|n| n.get()), Some(100));
-        assert_eq!(without.tick_hz(), None);
+        assert_eq!(with.tick_hertz().map(|n| n.get()), Some(100));
+        assert_eq!(without.tick_hertz(), None);
         let mut zeroed = aligned_page();
-        assert_eq!(zeroed.tick_hz(), None);
+        assert_eq!(zeroed.tick_hertz(), None);
     }
 
     /// Every thread page slot is inside `PROCESS_PAGES`, slot 0 is the page every thread read
@@ -450,7 +450,7 @@ mod tests {
     fn the_layout_offsets_do_not_overlap() {
         assert_eq!(OFF_CPU, 8);
         assert_eq!(OFF_ALLOWANCE, 16);
-        assert_eq!(OFF_TICK_HZ, 24);
+        assert_eq!(OFF_TICK_HERTZ, 24);
         assert_eq!(CPU_WORD_OFFSET, 8);
         assert_eq!(PAGE_BYTES, 32);
         assert!(PAGE_BYTES <= 64, "the page must fit in one cache line");

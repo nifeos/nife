@@ -40,7 +40,7 @@ pub const fn ranks_by_process(argument: u64) -> bool {
 /// **The line above the table**: how long the machine has been counting, how many threads the
 /// domain holds, and what they are doing, ending in a newline, for the output stream.
 ///
-/// `uptime_ns` is `user_mode_runtime::monotonic_ns()`, passed in so this stays a pure
+/// `uptime_nanoseconds` is `user_mode_runtime::monotonic_nanoseconds()`, passed in so this stays a pure
 /// function a host test can assert on. A refused caller prints neither this nor the table. See
 /// notes/process-view/top.md, "The summary line".
 ///
@@ -50,8 +50,8 @@ pub const fn ranks_by_process(argument: u64) -> bool {
 /// use ps::Row;
 ///
 /// let rows = [
-///     Row { tid: 5, state: abi::survey::RUNNING, cpu_ms: Some(310), process: None },
-///     Row { tid: 9, state: abi::survey::DEAD, cpu_ms: Some(10), process: None },
+///     Row { tid: 5, state: abi::survey::RUNNING, cpu_milliseconds: Some(310), process: None },
+///     Row { tid: 9, state: abi::survey::DEAD, cpu_milliseconds: Some(10), process: None },
 /// ];
 /// let mut text = Vec::new();
 /// top::write_summary(&rows, 72_000_000_000, &mut |b| text.extend_from_slice(b));
@@ -59,11 +59,11 @@ pub const fn ranks_by_process(argument: u64) -> bool {
 /// assert!(line.starts_with("up 00:01:12, 2 threads: "), "{line}");
 /// assert!(line.contains("1 running"), "{line}");
 /// ```
-pub fn write_summary(rows: &[ps::Row], uptime_ns: u64, out: &mut dyn FnMut(&[u8])) {
+pub fn write_summary(rows: &[ps::Row], uptime_nanoseconds: u64, out: &mut dyn FnMut(&[u8])) {
     // `uptime::format` is the same formatter `uptime` prints, reused rather than restated so the
     // two programs cannot come to disagree about what "up" means. It ends in a newline and this
     // line does not end here, so the newline is dropped.
-    let up = uptime::format(uptime_ns);
+    let up = uptime::format(uptime_nanoseconds);
     let up = up.as_bytes();
     out(up.strip_suffix(b"\n").unwrap_or(up));
     out(b", ");
@@ -132,18 +132,18 @@ fn write_u64(v: u64, out: &mut dyn FnMut(&[u8])) {
 mod tests {
     use ps::Row;
 
-    fn row(tid: u64, state: u64, ms: u64) -> Row {
+    fn row(tid: u64, state: u64, milliseconds: u64) -> Row {
         Row {
             tid,
             state,
-            cpu_ms: Some(ms),
+            cpu_milliseconds: Some(milliseconds),
             process: None,
         }
     }
 
-    fn shown(rows: &[Row], ns: u64) -> String {
+    fn shown(rows: &[Row], nanoseconds: u64) -> String {
         let mut v = Vec::new();
-        super::write_summary(rows, ns, &mut |b| v.extend_from_slice(b));
+        super::write_summary(rows, nanoseconds, &mut |b| v.extend_from_slice(b));
         String::from_utf8(v).unwrap()
     }
 

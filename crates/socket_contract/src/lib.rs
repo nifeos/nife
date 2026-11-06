@@ -318,11 +318,11 @@ pub mod ephemeral {
             Self { next: 0 }
         }
 
-        /// The next port at `ms` on the boot clock that `held` does not say a live socket
+        /// The next port at `milliseconds` on the boot clock that `held` does not say a live socket
         /// holds. Bounded by the range, so it always returns; a stack holds far fewer sockets than
         /// the range has ports, so in practice the first or second candidate is free.
-        pub fn next(&mut self, ms: u64, held: impl Fn(u16) -> bool) -> u16 {
-            self.next = self.next.max(clock(ms));
+        pub fn next(&mut self, milliseconds: u64, held: impl Fn(u16) -> bool) -> u16 {
+            self.next = self.next.max(clock(milliseconds));
             for _ in 0..SPAN {
                 let port = port_at(self.next);
                 self.next += 1;
@@ -340,9 +340,9 @@ pub mod ephemeral {
         }
     }
 
-    /// The clock's position at `ms`.
-    fn clock(ms: u64) -> u64 {
-        ms.saturating_mul(PER_SECOND) / 1000
+    /// The clock's position at `milliseconds`.
+    fn clock(milliseconds: u64) -> u64 {
+        milliseconds.saturating_mul(PER_SECOND) / 1000
     }
 
     fn port_at(position: u64) -> u16 {
@@ -353,17 +353,21 @@ pub mod ephemeral {
     mod tests {
         use super::*;
 
-        /// Hand out `n` ports from a fresh cursor, `gap_ms` apart, starting at `start_ms`. Returns
+        /// Hand out `n` ports from a fresh cursor, `gap_milliseconds` apart, starting at `start_milliseconds`. Returns
         /// the ports and the time of the last open.
-        fn run(start_ms: u64, n: u64, gap_ms: u64) -> (std::vec::Vec<u16>, u64) {
+        fn run(
+            start_milliseconds: u64,
+            n: u64,
+            gap_milliseconds: u64,
+        ) -> (std::vec::Vec<u16>, u64) {
             let mut ports = Ports::new();
-            let mut at = start_ms;
+            let mut at = start_milliseconds;
             let mut got = std::vec::Vec::new();
             for _ in 0..n {
                 got.push(ports.next(at, |_| false));
-                at += gap_ms;
+                at += gap_milliseconds;
             }
-            (got, at - gap_ms)
+            (got, at - gap_milliseconds)
         }
 
         /// A stack started after another hands out none of its ports. The shapes are the name

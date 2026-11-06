@@ -29,7 +29,7 @@
 
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use user_mode_runtime::{exit, is_granted, monotonic_ns, send, survey, survey_record};
+use user_mode_runtime::{exit, is_granted, monotonic_nanoseconds, send, survey, survey_record};
 
 /// The output sink: where the summary and the table go. Slot 0 is where every spawned program's
 /// output lands.
@@ -137,7 +137,7 @@ fn start(_a0: u64, a1: u64, _a2: u64) -> ! {
     // The summary goes out only when the table does: above a refusal it would count rows about to
     // be declined, the "plausible listing of nothing" `ps::Survey::write_report` refuses.
     if found.is_complete() && !found.rows().is_empty() {
-        top::write_summary(found.rows(), monotonic_ns(), &mut |bytes| {
+        top::write_summary(found.rows(), monotonic_nanoseconds(), &mut |bytes| {
             write_on(REPORT, bytes);
         });
         // What became of `tload` (milestone 126, DECISIONS §225): the machine's run queue and busy

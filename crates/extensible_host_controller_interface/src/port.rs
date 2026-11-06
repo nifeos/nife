@@ -154,16 +154,16 @@ pub const fn speed_name(speed: u8) -> &'static str {
 /// **When the root ports are believed after a controller reset.** The reset disconnects every
 /// device, powered or not, and silicon reports each one again only after some milliseconds; QEMU
 /// does it at once. A boot-time scan therefore waits until no port's `CCS` has changed for
-/// [`DEBOUNCE_STABLE_MS`], read every [`DEBOUNCE_STEP_MS`], giving up at [`DEBOUNCE_TIMEOUT_MS`].
+/// [`DEBOUNCE_STABLE_MILLISECONDS`], read every [`DEBOUNCE_STEP_MILLISECONDS`], giving up at [`DEBOUNCE_TIMEOUT_MILLISECONDS`].
 /// The clock starts when the ports are powered, so nothing is believed before
-/// [`DEBOUNCE_STABLE_MS`] after power either. The numbers are Linux's (`drivers/usb/core/hub.c`).
+/// [`DEBOUNCE_STABLE_MILLISECONDS`] after power either. The numbers are Linux's (`drivers/usb/core/hub.c`).
 ///
 /// Name: ratified 2026-10-25 (#2720). Refused `Settle` (the debounce is what it does; `Settle`
 /// named the outcome).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PortDebounce {
-    start_ms: u64,
-    changed_ms: u64,
+    start_milliseconds: u64,
+    changed_milliseconds: u64,
     last: Connections,
 }
 
@@ -178,41 +178,45 @@ pub type Connections = [u32; 8];
 /// none).
 ///
 /// Name: ratified 2026-10-25 (#2720).
-pub const DEBOUNCE_STABLE_MS: u64 = 100;
+pub const DEBOUNCE_STABLE_MILLISECONDS: u64 = 100;
 /// Linux's `HUB_DEBOUNCE_STEP`.
 ///
 /// Name: ratified 2026-10-25 (#2720).
-pub const DEBOUNCE_STEP_MS: u64 = 25;
+pub const DEBOUNCE_STEP_MILLISECONDS: u64 = 25;
 /// Linux's `HUB_DEBOUNCE_TIMEOUT`.
 ///
 /// Name: ratified 2026-10-25 (#2720).
-pub const DEBOUNCE_TIMEOUT_MS: u64 = 2000;
+pub const DEBOUNCE_TIMEOUT_MILLISECONDS: u64 = 2000;
 
 impl PortDebounce {
-    /// Start at `now_ms`, when the ports were powered, having read `first`.
+    /// Start at `now_milliseconds`, when the ports were powered, having read `first`.
     ///
     /// Name: ratified 2026-10-25 (#2720).
-    pub const fn new(now_ms: u64, first: Connections) -> PortDebounce {
+    pub const fn new(now_milliseconds: u64, first: Connections) -> PortDebounce {
         PortDebounce {
-            start_ms: now_ms,
-            changed_ms: now_ms,
+            start_milliseconds: now_milliseconds,
+            changed_milliseconds: now_milliseconds,
             last: first,
         }
     }
 
-    /// The ports read `seen` at `now_ms`: `None` to keep reading, `Some(true)` once nothing has
-    /// changed for [`DEBOUNCE_STABLE_MS`], `Some(false)` at [`DEBOUNCE_TIMEOUT_MS`].
+    /// The ports read `seen` at `now_milliseconds`: `None` to keep reading, `Some(true)` once nothing has
+    /// changed for [`DEBOUNCE_STABLE_MILLISECONDS`], `Some(false)` at [`DEBOUNCE_TIMEOUT_MILLISECONDS`].
     ///
     /// Name: ratified 2026-10-25 (#2720). Refused `observe` (each call is one sample of the ports'
     /// connections).
-    pub fn sample(&mut self, now_ms: u64, seen: Connections) -> Option<bool> {
+    pub fn sample(&mut self, now_milliseconds: u64, seen: Connections) -> Option<bool> {
         if seen != self.last {
             self.last = seen;
-            self.changed_ms = now_ms;
+            self.changed_milliseconds = now_milliseconds;
         }
-        if now_ms.saturating_sub(self.changed_ms) >= DEBOUNCE_STABLE_MS {
+        if now_milliseconds.saturating_sub(self.changed_milliseconds)
+            >= DEBOUNCE_STABLE_MILLISECONDS
+        {
             Some(true)
-        } else if now_ms.saturating_sub(self.start_ms) >= DEBOUNCE_TIMEOUT_MS {
+        } else if now_milliseconds.saturating_sub(self.start_milliseconds)
+            >= DEBOUNCE_TIMEOUT_MILLISECONDS
+        {
             Some(false)
         } else {
             None
@@ -324,8 +328,8 @@ mod tests {
         let mut s = PortDebounce::new(0, at(0));
         let mut t = 0;
         // Bounded, so a broken `sample` fails here rather than hanging the test run.
-        while t < DEBOUNCE_TIMEOUT_MS {
-            t += DEBOUNCE_STEP_MS;
+        while t < DEBOUNCE_TIMEOUT_MILLISECONDS {
+            t += DEBOUNCE_STEP_MILLISECONDS;
             if let Some(settled) = s.sample(t, at(t)) {
                 return (t, Some(settled), at(t));
             }
@@ -369,9 +373,9 @@ mod tests {
         let mut s = PortDebounce::new(0, ports(&[]));
         let mut t = 0;
         let end = loop {
-            assert!(t < DEBOUNCE_TIMEOUT_MS, "the wait never ended");
-            t += DEBOUNCE_STEP_MS;
-            let bouncing = if (t / DEBOUNCE_STEP_MS) % 2 == 0 {
+            assert!(t < DEBOUNCE_TIMEOUT_MILLISECONDS, "the wait never ended");
+            t += DEBOUNCE_STEP_MILLISECONDS;
+            let bouncing = if (t / DEBOUNCE_STEP_MILLISECONDS) % 2 == 0 {
                 ports(&[3])
             } else {
                 ports(&[])
@@ -381,6 +385,6 @@ mod tests {
             }
         };
         assert!(!end);
-        assert_eq!(t, DEBOUNCE_TIMEOUT_MS);
+        assert_eq!(t, DEBOUNCE_TIMEOUT_MILLISECONDS);
     }
 }
