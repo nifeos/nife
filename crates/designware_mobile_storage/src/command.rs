@@ -281,15 +281,12 @@ pub(crate) const UPDATE_CLOCK: u32 = registers::COMMAND_START
     | registers::COMMAND_WAIT_FOR_PREVIOUS_DATA_COMPLETE
     | registers::COMMAND_UPDATE_CLOCK_REGISTERS_ONLY;
 
-/// The three fields a `CMD` word composes share no bit (start at bit 31, the hold register at bit
-/// 29, the command index in bits 5:0), which the compiler checks here; the mutation exclusion for
-/// `Command::register_word` names this constant. The constant-assertion lint is off on purpose: the
-/// assertion is constant by construction, and the compiler checking it is its job.
-///
-/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
-/// not overlap.
+// The three fields a `CMD` word composes share no bit (start at bit 31, the hold register at bit
+// 29, the command index in bits 5:0), which the compiler checks here; the mutation exclusion for
+// `Command::register_word` names this check. The constant-assertion lint is off on purpose: the
+// assertion is constant by construction, and the compiler checking it is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () =
+const _: () =
     assert!(registers::COMMAND_START + registers::COMMAND_USE_HOLD_REGISTER + 0x3f == 0xa000_003f);
 
 #[cfg(test)]

@@ -26,6 +26,11 @@ Each property below has a Kani harness in `src/proofs.rs`:
   length under 512 bytes. The `EXT_CSD` sector count is read from bytes 212 to 215 of any buffer,
   and a buffer too short for it gives zero.
 
+The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+checker, so it needs network access. CI uses version 0.68.0, and another version may verify
+differently.
+
 Rerun them with `cargo kani`. Each harness has a patch at
 `falsifications/<module.path>.<harness>.patch` that plants the defect it rules out; apply one with
 `patch -p3` from the crate directory and its harness fails at its own assertion.

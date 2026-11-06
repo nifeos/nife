@@ -1,6 +1,7 @@
-//! **The one volume shape [`crate::VolumeLayout`] lays out**: an EFI system partition (ESP, the FAT
-//! volume UEFI 2.10 section 13.3.1, System Partition, boots from) of 512-byte sectors and 4096-byte
-//! clusters, whose root holds `EFI`, which holds `BOOT`, which holds one boot file.
+//! **The one volume shape [`crate::VolumeLayout`] lays out**: an EFI (Extensible Firmware
+//! Interface) system partition (ESP, the FAT volume UEFI 2.10 section 13.3.1, System Partition,
+//! boots from) of 512-byte sectors and 4096-byte clusters, whose root holds `EFI`, which holds
+//! `BOOT`, which holds one boot file.
 //!
 //! The constants here describe that shape alone. The reader, [`crate::FormatPlan`] and
 //! [`crate::WritableVolume`] take any sector size from 512 to 4096 bytes and any cluster size the
@@ -29,8 +30,9 @@ pub const CLUSTER_SECTORS: u32 = 8;
 /// Name: ratified 2026-10-25 (#2720). Refused `CLUSTER` (it reads as a cluster and holds a size).
 pub const CLUSTER_BYTES: usize = CLUSTER_SECTORS as usize * SECTOR_BYTES;
 
-/// Reserved sectors ahead of the first FAT: the boot sector, `FSInfo`, and the backup pair the
-/// specification puts at sectors 6 and 7, with room left over as every tool leaves it.
+/// Reserved sectors ahead of the first FAT: the boot sector, the file system information sector,
+/// and the backup pair the specification puts at sectors 6 and 7, with room left over as every tool
+/// leaves it.
 ///
 /// Name: ratified 2026-10-25 (#2720).
 pub const RESERVED_SECTORS: u32 = 32;

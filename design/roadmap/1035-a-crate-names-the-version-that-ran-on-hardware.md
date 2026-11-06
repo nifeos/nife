@@ -1,18 +1,21 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-crate-names-the-version-that-ran-on-hardware
 raised: 2026-11-05
-milestone_dependencies: none
+milestone_dependencies: 159, 818, 857
 decision_dependencies: none
 machine_requirements: riscv64 silicon, a StarFive VisionFive 2 (JH7110)
 specific_machine: none
 needs_person: yes
 ---
-# A crate names the version that ran on hardware
+# 1035. A crate names the version that ran on hardware
 
-Raised by lane/hardware-claim-names-a-crate-version. The integrator mints the number at promotion.
+*(Number provisional until the integrator mints it. The title and slug are drafts.)*
+
+Raised by lane/hardware-claim-names-a-crate-version.
 
 Reuse: the bench procedure of milestone 159 (a real hardware entropy source: the JH7110's TRNG),
-[`bench-procedure.md`](../0159-jh7110-trng-driver/bench-procedure.md), the boot tour's `hw entropy`
+[`bench-procedure.md`](0159-jh7110-trng-driver/bench-procedure.md), the boot tour's `hw entropy`
 line, `script/board-image` and the network boot of milestone 257 (boot radon over the network). No
 new tool.
 
@@ -91,7 +94,7 @@ quality stays.
 
 ## Options
 
-Recommended: **A.** The others lost for the reasons given.
+Ruled: **A.** The others lost for the reasons given.
 
 - **A. The README names the newest version that ran, by board class; nife keeps the log.** As above.
   A stranger reads one sentence that is true for as long as the README exists. Rejected claims cost
@@ -141,13 +144,19 @@ Today's claims under it:
 
 ## The work
 
-1. Once the crate tags 0.2.0 and nife's pins name it, run the bench procedure twice on a VisionFive
+1. **Needs a person; nobody is assigned.** The crate must tag 0.2.0 and nife's pins must name it first.
+   Then run the bench procedure twice on a VisionFive
    2, commit the transcript under `bench/`, and record each boot's `hw entropy` line, the nife
    commit and the crate version in this block.
-2. In `nifeos/jh7110_entropy`, make the README edit above.
+2. In `nifeos/jh7110_entropy`, after step 1, make the README edit above.
 3. Write the rule into milestone 857 (crates released on their own), beside the release rules, so
    every crate's review reads it.
-4. Bring the `e1000e` sentence under the rule before that crate moves.
+4. Bring the `e1000e` sentence under the rule before that crate moves: it names the version that
+   ran, or it becomes a limitation.
+
+Steps 2 to 4 need no board. Step 2 waits for step 1, because the README names a version only once
+that version has run. Steps 3 and 4 state the rule and do not wait. Step 1 is the only step with
+`needs_person: yes`, and the milestone stays NOT-STARTED until a person runs the board.
 
 ## Done when
 
@@ -162,3 +171,7 @@ Today's claims under it:
 One bench session with a person, about two boots over the network, plus two small edits. Nothing
 here is one-way: anyone can reword a README sentence, and the rule only narrows what a README may
 claim, so loosening it later breaks nobody.
+
+## Index row
+
+A crate's README states a hardware run only for a version that has one. Nife built at the pin that names the version must boot on the board by its public procedure. The first case is `jh7110_entropy` 0.2.0 on a VisionFive 2.

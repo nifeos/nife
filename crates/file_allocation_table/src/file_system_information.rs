@@ -1,6 +1,5 @@
-//! **The FAT32 file system information sector** (the specification's `FSInfo` sector): two hints a
-//! driver keeps about the table, parsed from hostile bytes and written back without touching
-//! anything else in the sector.
+//! **The FAT32 file system information sector**: two hints a driver keeps about the
+//! table, parsed from hostile bytes and written back without touching anything else in the sector.
 //!
 //! The sector holds a free-cluster count and the cluster to start looking for a free one at. The
 //! specification says a driver must treat both as hints: they can be stale, unknown (all ones) or
@@ -44,7 +43,7 @@ fn check_signatures(sector: &[u8]) -> Result<(), FileSystemInformationError> {
     Ok(())
 }
 
-/// **Why a sector is not a file system information sector** (the specification's `FSInfo` sector).
+/// **Why a sector is not a file system information sector**.
 ///
 /// Name: ratified 2026-11-01 (UTC), renamed from `FsInfoError`, beside `ParseError`, which says the
 /// same of a boot sector.
@@ -69,7 +68,7 @@ pub enum FileSystemInformationError {
 /// the volume.
 ///
 /// Name: ratified 2026-11-01 (UTC), renamed from `FsInfo`: the term of art is spelled out, with
-/// `FSInfo` kept as the alias a reader searches for.
+/// the specification's abbreviation kept as the alias a reader searches for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[doc(alias = "FSInfo")]
 #[doc(alias = "file system information")]
@@ -79,7 +78,7 @@ pub struct FileSystemInformation {
 }
 
 impl FileSystemInformation {
-    /// **Parse an `FSInfo` sector of a volume with `clusters` data clusters.**
+    /// **Parse a file system information sector of a volume with `clusters` data clusters.**
     ///
     /// Checks the three signatures. A free count above `clusters`, or all ones, is `None`, and so
     /// is a next-free cluster that is not a data cluster. Never panics, whatever `sector` holds.
@@ -114,10 +113,10 @@ impl FileSystemInformation {
         self.next_free
     }
 
-    /// **Write the two hints into `sector`**, which already holds a valid `FSInfo` sector, and
-    /// leave every other byte as it is. `None` stores the "not known" value. Returns `false`
-    /// and writes nothing when the sector's signatures are wrong, so a writer never turns a
-    /// sector that is not `FSInfo` into one.
+    /// **Write the two hints into `sector`**, which already holds a valid file system information
+    /// sector, and leave every other byte as it is. `None` stores the "not known" value. Returns
+    /// `false` and writes nothing when the sector's signatures are wrong, so a writer never turns a
+    /// sector that is not a file system information sector into one.
     pub(crate) fn store(
         sector: &mut [u8],
         free_clusters: Option<u32>,

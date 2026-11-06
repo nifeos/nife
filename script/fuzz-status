@@ -1,0 +1,10 @@
+#!/bin/sh
+# script/fuzz-status: is the continuous fuzz working? One PASS, FAIL or UNKNOWN line per check, and
+# exit 1 when any check FAILS. Read-only. The checks and their options are in helpers/fuzz-status.py
+# (`script/fuzz-status --help`).
+#
+#     script/fuzz-status          needs only `gh` and the repository; runnable anywhere
+#     script/fuzz-status --host   on the fuzz host: systemd units, journal, state directory, disk
+#
+# Name: provisional, minted 2026-11-05 (UTC) by maintainer/fuzz-status.
+exec python3 -I "$(dirname "$0")/../helpers/fuzz-status.py" "$@"

@@ -6,7 +6,7 @@
 //! over a model of three one-sector clusters behind the same [`Medium`] the device-backed volume
 //! implements. A single harness over both did not close in 20 minutes: symbolic 512-byte copies
 //! under symbolic offsets are what Kani cannot afford. What neither shows is the device's sector
-//! reads and writes, which the oracle tests check on real volumes of every FAT type.
+//! reads and writes, which the rust-fatfs tests check on real volumes of every FAT type.
 //!
 //! Name: ratified 2026-11-01 (UTC), by the class rule on the `tests` and `verification` modules of this crate.
 
@@ -99,7 +99,7 @@ fn a_partial_sector_write_keeps_the_head_and_zeroes_the_slack() {
 /// write, the position is that end, every sector the write touched is a sector of the file's own
 /// chain, the chain has one cluster per 512 bytes of size and ends there, and no other cluster is
 /// in use. The bytes themselves are `a_partial_sector_write_keeps_the_head_and_zeroes_the_slack`'s
-/// and the oracle tests'.
+/// and the rust-fatfs tests'.
 /// Falsification: replayable `crates/file_allocation_table/falsifications/write_cursor.verification.a_write_extends_the_chain_to_the_size_and_stays_inside_it.patch`
 #[kani::proof]
 #[kani::unwind(8)]

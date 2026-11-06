@@ -34,20 +34,19 @@ No step needs an organization secret or variable.
 | `nife-fuzz` App | created, installed, no key placed | App ID 5571801, installation 177641059 |
 | `nife-fuzz-reader` App | created, installed, no key placed | App ID 5571868, installation 177642435 |
 
-Neither ID is secret. The installations hold exactly the ruled permissions: `nife-fuzz` holds
+The IDs are not secret. The installations hold exactly the ruled permissions: `nife-fuzz` holds
 Contents write, Repository security advisories write and Metadata read; `nife-fuzz-reader` holds
 Repository security advisories read and Metadata read.
 
 ## P1 to P3: done on the host
 
-Each stays here as the procedure to repeat after a rebuild of the host.
+Repeat them after a rebuild of the host.
 
 ### P1. Bring the host to main (person, root)
 
 The follower ([`continuous-host.md`](continuous-host.md#following-main)) cannot move a host that
 predates it, so this step moves the host by hand once. From then on the supervisor follows main by
-itself. Installing a changed unit stays this step's `diff` and copy. The follower needs `python3` and
-`curl`.
+itself. Installing a changed unit stays this step's `diff` and copy.
 
 ```sh
 sudo systemctl stop nife-fuzz.service
@@ -63,7 +62,7 @@ If the diff prints a difference, copy the new unit to `/etc/systemd/system/` and
 reenable nife-fuzz.service` before the start. Verify: `systemctl is-active nife-fuzz.service` prints
 `active`; within about 5 minutes `journalctl -u nife-fuzz.service -g fuzz-follow-main -n 5` shows a
 look; and after the next window `tail -1 /home/lane/fuzz/state/windows.tsv | cut -f7,8` shows the
-new short commit. If the service fails, `journalctl -u nife-fuzz.service -n 50` names the cause.
+new short commit.
 
 ### P2. Install the local daily report (person, root)
 
@@ -78,6 +77,13 @@ sudo systemctl enable --now nife-fuzz-publish.timer
 
 Verify: `systemctl list-timers nife-fuzz-publish.timer` shows the next run at 14:00 UTC, and `sudo
 systemctl start nife-fuzz-publish.service` followed by `ls /home/lane/fuzz/out/` shows today's date.
+
+## Checking that it works
+
+`script/fuzz-status` prints a PASS, FAIL or UNKNOWN line per check and exits 1 on any FAIL. It writes
+nothing and prints counts, never a finding. Anywhere with `gh`, it reads the heartbeat runs, the
+releases, the issue and advisory counts and main's tip. On the host, add `--host`, as a user in the
+`systemd-journal` or `adm` group (no sudo); `--wait 300` reads the clean-window total twice.
 
 ## The advisory permission
 
@@ -95,8 +101,6 @@ unset, because no fix exists at filing; the person who publishes the advisory se
 Every piece below is built and merged, and none is installed. P5 and P10 place a key, and only a
 person does them. Every other step may go to the agent that maintains the host as a written spec:
 hand it the step and have it report the output. It never holds a key.
-
-Take P5 yourself first. P4 can run in parallel.
 
 Two machines take part. The **fuzz host** holds only the `nife-fuzz` key (P5) and gets the publish
 and filer helpers (P6 to P8). The **fix-lane machine** is a separate machine where a person works the
@@ -187,8 +191,7 @@ sudo systemctl start fuzz-token@publish.service
 
 If `check` lists any repository besides `nifeos/nife`, open
 <https://github.com/organizations/nifeos/settings/installations/177641059> and set Only select
-repositories to `nifeos/nife` alone. If a mint fails, `journalctl -u fuzz-token@publish.service -n 20`
-names the refusal.
+repositories to `nifeos/nife` alone.
 
 ### P7. Turn on the daily release (root on the fuzz host; may go to the agent)
 
@@ -218,8 +221,7 @@ sudo systemctl start nife-fuzz-publish.service
 
 Verify: `systemctl show -p Result nife-fuzz-publish.service` prints `Result=success`. A release
 `fuzz-<today>` appears at <https://github.com/nifeos/nife/releases> with `report.md` and
-`clean-ranges.tsv`, made by `nife-fuzz[bot]`. The watchdog stops passing quietly from that day. If the
-start fails, `journalctl -u nife-fuzz-publish.service -n 30` names the refusal.
+`clean-ranges.tsv`, made by `nife-fuzz[bot]`. The watchdog stops passing quietly from that day.
 
 ### P8. Turn on the filer (root on the fuzz host; may go to the agent)
 
@@ -277,8 +279,7 @@ Verify:
 - Start the service again: the journal says `none to file`.
 - `systemctl list-timers fuzz-filer.timer`: the next run within 30 minutes.
 
-If a run fails, the journal names the refusal. A 422 that names the range field means GitHub refused
-the range, and the finding stays pending.
+If a run fails, the journal names the refusal.
 
 ### P9. Install the reader helper (root on the fix-lane machine; may go to the agent)
 

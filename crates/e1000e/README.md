@@ -21,6 +21,11 @@ Three Kani harnesses cover the input a device or a caller controls:
   every paged PHY access names a PHY address that exists, the offset's own register and the offset's
   own page.
 
+The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+checker, so it needs network access. CI uses version 0.68.0, and another version may verify
+differently.
+
 Rerun them with `cargo kani`. Each harness has a falsification record at
 `falsifications/<module.path>.<harness>.patch`; applying it with `patch -p3` from the crate root
 makes that harness fail at its own assertion, which shows the proof checks something.

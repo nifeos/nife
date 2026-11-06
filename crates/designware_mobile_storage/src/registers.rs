@@ -48,15 +48,12 @@ pub(crate) const CONTROL_DMA_ENABLE: u32 = 1 << 5;
 /// descriptor-walking DMA (IDMAC) rather than an external one.
 #[doc(alias = "use internal direct memory access controller")]
 pub(crate) const CONTROL_USE_INTERNAL_DMAC: u32 = 1 << 25;
-/// The three enables `reset` clears and the IDMAC arms share no bit (25, 5 and 4), which the
-/// compiler checks here; the mutation exclusions for `HostController::reset` and
-/// `internal_direct_memory_access_start` name this constant. The constant-assertion lint is off on
-/// purpose: the assertion is constant by construction, and the compiler checking it is its job.
-///
-/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
-/// not overlap.
+// The three enables `reset` clears and the IDMAC arms share no bit (25, 5 and 4), which the
+// compiler checks here; the mutation exclusions for `HostController::reset` and
+// `internal_direct_memory_access_start` name this check. The constant-assertion lint is off on
+// purpose: the assertion is constant by construction, and the compiler checking it is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const DIRECT_MEMORY_ACCESS_ENABLES_DO_NOT_OVERLAP: () =
+const _: () =
     assert!(CONTROL_USE_INTERNAL_DMAC + CONTROL_DMA_ENABLE + CONTROL_INT_ENABLE == 0x0200_0030);
 
 /// **Power Enable Register** (OpenBSD's `SDMMC_PWREN`): one bit per card slot. Slot 0 is the only
@@ -82,16 +79,12 @@ pub(crate) const CLKENA_CCLK_ENABLE: u32 = 1 << 0;
 /// while the bus is idle. Memory cards only; an SDIO card needs the clock to signal its interrupt.
 #[doc(alias = "card clock low power")]
 pub(crate) const CLKENA_CCLK_LOW_POWER: u32 = 1 << 16;
-/// The two clock-enable bits `set_clock` writes share no bit (0 and 16), which the compiler checks
-/// here; the mutation exclusion for `HostController::set_clock` names this constant. The constant-assertion
-/// lint is off on purpose: the assertion is constant by construction, and the compiler checking it
-/// is its job.
-///
-/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
-/// not overlap.
+// The two clock-enable bits `set_clock` writes share no bit (0 and 16), which the compiler checks
+// here; the mutation exclusion for `HostController::set_clock` names this check. The constant-assertion
+// lint is off on purpose: the assertion is constant by construction, and the compiler checking it
+// is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const CLOCK_ENABLES_DO_NOT_OVERLAP: () =
-    assert!(CLKENA_CCLK_ENABLE + CLKENA_CCLK_LOW_POWER == 0x0001_0001);
+const _: () = assert!(CLKENA_CCLK_ENABLE + CLKENA_CCLK_LOW_POWER == 0x0001_0001);
 /// **Timeout Register** (OpenBSD's `SDMMC_TMOUT`): response timeout in bits 7:0 (card clocks), data
 /// read timeout in bits 31:8.
 #[doc(alias = "timeout register")]
@@ -256,15 +249,12 @@ pub(crate) const RINTSTS_SBE: u32 = 1 << 13;
 /// finished.
 #[doc(alias = "automatic command done")]
 pub(crate) const RINTSTS_ACD: u32 = 1 << 14;
-/// The transfer-over bits `finish` and the IDMAC wait for share no bit (3 and 14), which the
-/// compiler checks here; the mutation exclusions for `HostController::finish` and the IDMAC wait name this
-/// constant. The constant-assertion lint is off on purpose: the assertion is constant by
-/// construction, and the compiler checking it is its job.
-///
-/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
-/// not overlap.
+// The transfer-over bits `finish` and the IDMAC wait for share no bit (3 and 14), which the
+// compiler checks here; the mutation exclusions for `HostController::finish` and the IDMAC wait name this
+// check. The constant-assertion lint is off on purpose: the assertion is constant by
+// construction, and the compiler checking it is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const TRANSFER_OVER_BITS_DO_NOT_OVERLAP: () = assert!(RINTSTS_DTO + RINTSTS_ACD == 0x0000_4008);
+const _: () = assert!(RINTSTS_DTO + RINTSTS_ACD == 0x0000_4008);
 /// **End-bit error** (OpenBSD's `SDMMC_RINTSTS_EBE`): end bit error (read) or no CRC status
 /// (write).
 #[doc(alias = "end bit error")]
@@ -278,17 +268,13 @@ pub(crate) const RINTSTS_DATA_ERR: u32 =
 /// out.
 #[doc(alias = "data timeouts")]
 pub(crate) const RINTSTS_DATA_TO: u32 = RINTSTS_HTO | RINTSTS_DRTO;
-/// The data-error group and the data-timeout group share no bit with each other ({15, 13, 12, 11,
-/// 7} against {10, 9}), which the compiler checks here; every masked test that composes them, and
-/// the mutation exclusions that cover those tests, name this constant. The constant-assertion lint
-/// is off on purpose: the assertion is constant by construction, and the compiler checking it is
-/// its job.
-///
-/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
-/// not overlap.
+// The data-error group and the data-timeout group share no bit with each other ({15, 13, 12, 11,
+// 7} against {10, 9}), which the compiler checks here; every masked test that composes them, and
+// the mutation exclusions that cover those tests, name this check. The constant-assertion lint
+// is off on purpose: the assertion is constant by construction, and the compiler checking it is
+// its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const DATA_ERROR_AND_TIMEOUT_BITS_DO_NOT_OVERLAP: () =
-    assert!(RINTSTS_DATA_ERR + RINTSTS_DATA_TO == 0x0000_be80);
+const _: () = assert!(RINTSTS_DATA_ERR + RINTSTS_DATA_TO == 0x0000_be80);
 /// Every bit below the SDIO interrupts, which is what a clear writes.
 pub(crate) const RINTSTS_ALL: u32 = 0xffff;
 
@@ -302,6 +288,7 @@ pub(crate) const RINTSTS_ALL: u32 = 0xffff;
 pub const STATUS_REGISTER: u32 = 0x048;
 /// **FIFO full** (the databook's `fifo_full`, which `dwmmc-host` keeps): the FIFO is full.
 #[doc(alias = "queue full")]
+#[cfg(any(test, feature = "bench"))]
 pub(crate) const STATUS_FIFO_FULL: u32 = 1 << 3;
 /// **Data busy** (OpenBSD's `SDMMC_STATUS_DATA_BUSY`): the card is holding DAT0 low (busy after a
 /// write or an R1b command).
@@ -321,17 +308,13 @@ pub(crate) const fn queue_count(status: u32) -> u32 {
 #[doc(alias = "queue threshold register")]
 pub(crate) const FIFOTH: u32 = 0x04c;
 
-/// The three fields the polled `FIFOTH` word composes share no bit (the burst code at bit 29, the
-/// receive watermark in bits 27:16, the transmit watermark in bits 11:0), which the compiler checks
-/// here; the mutation exclusion for `fifoth_for_pio` names this constant. The constant-assertion
-/// lint is off on purpose: the assertion is constant by construction, and the compiler checking it
-/// is its job.
-///
-/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
-/// not overlap.
+// The three fields the polled `FIFOTH` word composes share no bit (the burst code at bit 29, the
+// receive watermark in bits 27:16, the transmit watermark in bits 11:0), which the compiler checks
+// here; the mutation exclusion for `fifoth_for_pio` names this check. The constant-assertion
+// lint is off on purpose: the assertion is constant by construction, and the compiler checking it
+// is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const POLLED_QUEUE_THRESHOLD_FIELDS_DO_NOT_OVERLAP: () =
-    assert!((2 << 28) + 0x0fff_0000 + 0x0000_0fff == 0x2fff_0fff);
+const _: () = assert!((2 << 28) + 0x0fff_0000 + 0x0000_0fff == 0x2fff_0fff);
 
 /// **The `FIFOTH` word for polled transfers** with a FIFO of `depth` words: a receive watermark one
 /// below half and a transmit watermark at half, OpenBSD's `dwmmc_pio_mode`. The burst field is
@@ -343,17 +326,13 @@ pub(crate) const fn fifoth_for_pio(depth: u32) -> u32 {
     (2 << 28) | ((receive_watermark & 0xfff) << 16) | (half & 0xfff)
 }
 
-/// The three fields the IDMAC `FIFOTH` word composes share no bit (the burst encoding in bits
-/// 31:29, whose largest code is 7, the receive watermark in bits 27:16, the transmit watermark in
-/// bits 11:0), which the compiler checks here; the mutation exclusion for
-/// `fifoth_for_direct_memory_access` names this constant. The constant-assertion lint is off on
-/// purpose: the assertion is constant by construction, and the compiler checking it is its job.
-///
-/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
-/// not overlap.
+// The three fields the IDMAC `FIFOTH` word composes share no bit (the burst encoding in bits
+// 31:29, whose largest code is 7, the receive watermark in bits 27:16, the transmit watermark in
+// bits 11:0), which the compiler checks here; the mutation exclusion for
+// `fifoth_for_direct_memory_access` names this check. The constant-assertion lint is off on
+// purpose: the assertion is constant by construction, and the compiler checking it is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const DIRECT_MEMORY_ACCESS_QUEUE_THRESHOLD_FIELDS_DO_NOT_OVERLAP: () =
-    assert!((7 << 28) + 0x0fff_0000 + 0x0000_0fff == 0x7fff_0fff);
+const _: () = assert!((7 << 28) + 0x0fff_0000 + 0x0000_0fff == 0x7fff_0fff);
 
 /// **The `FIFOTH` word for IDMAC transfers** with a FIFO of `depth` words. The transmit watermark
 /// stays at half. The burst is the largest the databook's encoding has (1, 4, 8, ... 256 words)
@@ -452,15 +431,12 @@ pub(crate) const BUS_MODE_SWR: u32 = 1 << 0;
 /// `FIFOTH`'s burst field names.
 #[doc(alias = "fixed burst")]
 pub(crate) const BUS_MODE_FB: u32 = 1 << 1;
-/// The two bus-mode bits the IDMAC arm writes share no bit (7 and 1), which the compiler checks
-/// here; the mutation exclusion for `internal_direct_memory_access_start` names this constant. The
-/// constant-assertion lint is off on purpose: the assertion is constant by construction, and the
-/// compiler checking it is its job.
-///
-/// Name: ratified 2026-11-02 (UTC), #3092. The compile-time check that the named bit groups do
-/// not overlap.
+// The two bus-mode bits the IDMAC arm writes share no bit (7 and 1), which the compiler checks
+// here; the mutation exclusion for `internal_direct_memory_access_start` names this check. The
+// constant-assertion lint is off on purpose: the assertion is constant by construction, and the
+// compiler checking it is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-pub const BUS_MODE_BITS_DO_NOT_OVERLAP: () = assert!(BUS_MODE_DE + BUS_MODE_FB == 0x82);
+const _: () = assert!(BUS_MODE_DE + BUS_MODE_FB == 0x82);
 /// **IDMAC enable** (OpenBSD's `SDMMC_BMOD_DE`): the IDMAC walks descriptors.
 #[doc(alias = "internal direct memory access enable")]
 pub(crate) const BUS_MODE_DE: u32 = 1 << 7;

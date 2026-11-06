@@ -356,7 +356,7 @@ network_bench = []
 # `NIFE_STORAGE_BENCH_WRITE=scratch`, which adds a write test confined to the sectors before the
 # card's first partition and restores what it found there. Off by default and in no gate. See
 # kernel/src/storage_bench.rs and notes/designware-mobile-storage.md. Name provisional.
-storage_bench = []
+storage_bench = ["designware_mobile_storage/bench"]
 # Milestone 53 (the board's own peripherals)'s multi-block read diagnosis: after the storage bench,
 # read the same blocks at three card clocks, four lengths and two FIFO depths, print how full the
 # FIFO got on each, then cold-reset the board so a netbooted bench can fetch its next image.

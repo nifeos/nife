@@ -42,7 +42,7 @@ fn an_sdhc_card_is_identified_selected_and_widened_in_the_spec_order() {
     assert_eq!(card.kind, sd::CardKind::SdHighCapacity);
     assert!(card.block_addressed);
     assert_eq!(card.blocks, 8192);
-    assert_eq!((card.bus_width, card.clock_hz), (4, 25_000_000));
+    assert_eq!((card.bus_width, card.clock_hertz), (4, 25_000_000));
     assert_eq!(&card.card_identification.name[..5], b"TEST1");
     let sim = h.into_registers();
     let order: Vec<u8> = sim.commands.iter().map(|c| c.0).collect();
@@ -211,10 +211,10 @@ fn the_read_matrix_reads_every_row_and_never_writes() {
             r.microseconds > 0,
             "the read took no time on a clock that advances: {r:?}"
         );
-        asked.push(r.asked_hz);
+        asked.push(r.asked_hertz);
     })
     .unwrap();
-    assert_eq!(rows, bench::MATRIX_HZ.len() * bench::MATRIX_BLOCKS.len());
+    assert_eq!(rows, bench::MATRIX_HERTZ.len() * bench::MATRIX_BLOCKS.len());
     asked.dedup();
     assert_eq!(asked, [25_000_000, 12_500_000, 6_250_000]);
     assert_eq!(buffer, want);

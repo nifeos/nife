@@ -120,7 +120,7 @@ fn write_tree(image: &mut Vec<u8>, fat_type: lamfat::FatType, sector: u16) {
 }
 
 /// Everything rust-fatfs lists under `dir`, recursively, `.` and `..` left out.
-fn oracle_records<
+fn lamfat_records<
     IO: lamfat::ReadWriteSeek,
     TP: lamfat::TimeProvider,
     OCC: lamfat::OemCpConverter,
@@ -143,7 +143,7 @@ fn oracle_records<
             children: Vec::new(),
         };
         if entry.is_dir() {
-            record.children = oracle_records(&entry.to_dir());
+            record.children = lamfat_records(&entry.to_dir());
         } else {
             entry
                 .to_file()
@@ -354,7 +354,7 @@ fn agree(label: &str, mebibytes: usize, fat_type: lamfat::FatType, sector: u16) 
         lamfat::FsOptions::new(),
     )
     .unwrap();
-    let expected = oracle_records(&fs.root_dir());
+    let expected = lamfat_records(&fs.root_dir());
     let free = fs.stats().unwrap().free_clusters();
 
     let size = SectorSize::from_bytes(sector).unwrap();

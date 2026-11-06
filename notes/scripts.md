@@ -33,6 +33,7 @@ Full rows: [build-test-and-gate.md](scripts/build-test-and-gate.md).
 | `script/drift` | Does a toolchain still build us? |
 | `script/toolchain-bump` | Raise the pinned nightly, with every gate as evidence. |
 | `script/kani-install` | Install the stock Kani that `.kani-version` pins. The only place that does. |
+| `script/license-match` | Check each crate's `license` against its SPDX notices. |
 | `script/kani-bump` | Raise `.kani-version` to the newest stable Kani, and nothing else. |
 | `script/server` | Boot the OS in QEMU: the milestone tour, then the shell. |
 | `script/console` | Boot straight to the interactive shell at EL0. |
@@ -103,6 +104,7 @@ Full rows: [analysis-and-supply-chain.md](scripts/analysis-and-supply-chain.md).
 | `script/vendor-watch` | What upstream has done since each pin. |
 | `script/supply-chain` | cargo-deny over each workspace, then `vendor-verify`. |
 | `script/fuzz` | Coverage-guided fuzzing of the byte parsers. |
+| `script/fuzz-status [--host]` | Is the continuous fuzz working? |
 | `script/undefined-behavior-check` | The host-logic tests under Miri. |
 | `script/stack-frame-check` | One kernel function's frame, gated at the 4096-byte guard page. |
 | `script/stack-depth-check` | How deep a kernel thread stack can get, by walking the call graph. |
@@ -120,13 +122,12 @@ Full rows: [analysis-and-supply-chain.md](scripts/analysis-and-supply-chain.md).
 | `script/crate-move --dry-run --into <dir> <crate>` | Stage a crate's move to its own repository, and check it, creating nothing. Provisional name. |
 
 `fmt`, `lint`, `coverage`, `supply-chain`, `fuzz`, `miri`, and `mutants` are not part of the canonical
-set; they exist so the CI format, clippy, coverage, supply-chain, fuzz, miri, and weekly mutation
-jobs are one-liners. `coverage` measures only the pure-logic host crates(`abi`, `capability`,
+set; they make the CI format, clippy, coverage, supply-chain, fuzz, miri, and weekly mutation
+jobs one-liners. `coverage` measures only the pure-logic host crates (`abi`, `capability`,
 `nifefs`, `device_tree_blob`, `elf`, `frames`, `paging`, `pci`, ...). The kernel and user crates run
-under QEMU, out of reach of host instrumentation, which is the same reason DECISIONS
-§7 keeps the testable logic in host crates in the first place. It installs its own tool rather than
-leaning on `bootstrap`, so the CI test job (which runs `bootstrap`) never compiles a coverage tool
-it does not use.
+under QEMU, out of reach of host instrumentation, which is why DECISIONS
+§7 (Testing: QEMU harness + host-testable crates) keeps the testable logic in host crates. It installs its own tool rather than
+leaning on `bootstrap`, so the CI test job compiles no coverage tool.
 
 ### Running the agent fleet
 
@@ -149,9 +150,8 @@ Full rows: the appendices above.
 
 The scripts do almost nothing themselves. `script/test` is `cargo xtask test`; `script/server`
 is `cargo xtask run`; `script/console` is `cargo xtask shell`. `cargo xtask` is still the
-engine and still the place the real build logic lives (and it exposes more than the scripts do:
-`gdb`, `objdump`, `image`, `std-aborts`). The scripts add a normalized interface on top, duplicating
-nothing, and `cargo xtask …` still works.
+engine, where the real build logic lives (it also exposes `gdb`, `objdump`, `image`, `std-aborts`).
+The scripts add a normalized interface on top, and `cargo xtask …` still works.
 
 ## `script/` and `helpers/`
 
