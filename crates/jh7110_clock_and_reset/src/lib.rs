@@ -143,19 +143,21 @@ pub const fn with_parent(word: u32, parent: u32) -> u32 {
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `TRNG_BRING_UP` (it names the block for its
 /// abbreviation; the sequence brings up the entropy source).
 pub const ENTROPY_BRING_UP: &[Step] = &[
-    Step::EnableClock(STGCLK_SEC_AHB),
-    Step::EnableClock(STGCLK_SEC_MISC_AHB),
+    Step::EnableClock(STGCLK_SECURITY_AHB),
+    Step::EnableClock(STGCLK_SECURITY_MISC_AHB),
     Step::DeassertReset(SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS),
 ];
 
 /// `JH7110_STGCLK_SEC_AHB` \[mainline-ids\]; the vendor tree's `JH7110_SEC_HCLK` (205) rebased on
 /// its stg group's start (190). The TRNG's `hclk`.
-pub(crate) const STGCLK_SEC_AHB: u32 = 15;
+#[doc(alias = "JH7110_STGCLK_SEC_AHB")]
+pub(crate) const STGCLK_SECURITY_AHB: u32 = 15;
 
 /// `JH7110_STGCLK_SEC_MISC_AHB` \[mainline-ids\]; the vendor tree's `JH7110_SEC_MISCAHB_CLK` (206)
 /// rebased the same way. The TRNG's second clock, `ahb` to mainline and `miscahb_clk` to the
 /// vendor, which is the same wire under two names.
-pub(crate) const STGCLK_SEC_MISC_AHB: u32 = 16;
+#[doc(alias = "JH7110_STGCLK_SEC_MISC_AHB")]
+pub(crate) const STGCLK_SECURITY_MISC_AHB: u32 = 16;
 
 /// `JH7110_STGRST_SEC_AHB` \[mainline-ids\]; the vendor tree's `RSTN_U0_SEC_TOP_HRESETN` (131)
 /// rebased on its stg group's start (128).
@@ -791,11 +793,11 @@ pub const SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_H
 pub const SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION: u32 = 11;
 
 /// The oscillator every JH7110 rate chain is rooted in, 24 MHz, `refclk` in the vendor PLL code.
-pub(crate) const OSC_HZ: u64 = 24_000_000;
+pub(crate) const OSC_HERTZ: u64 = 24_000_000;
 
 /// The vendor PLL code's default for a PLL it cannot interpret (`deffreq` for PLL2), returned
 /// rather than guessed from fields that are not in integer mode.
-pub(crate) const PLL2_DEFAULT_HZ: u64 = 1_188_000_000;
+pub(crate) const PLL2_DEFAULT_HERTZ: u64 = 1_188_000_000;
 
 /// **The words the I2C input-clock chain reads**, one struct so the caller can read them in one
 /// place and the arithmetic can be tested without a device. The CRG
@@ -897,12 +899,12 @@ pub const fn advanced_extensible_interface_configuration_0_hertz(
         let prediv = if prediv_raw == 0 { 1 } else { prediv_raw };
         let postdiv1 = 1u64 << ((w.phase_locked_loop_2_post_divider_1_word >> 28) & 3);
         if dacpd == 1 && dsmpd == 1 && fbdiv > 0 {
-            OSC_HZ * fbdiv / (prediv * postdiv1)
+            OSC_HERTZ * fbdiv / (prediv * postdiv1)
         } else {
-            PLL2_DEFAULT_HZ
+            PLL2_DEFAULT_HERTZ
         }
     } else {
-        OSC_HZ
+        OSC_HERTZ
     };
     parent / one_based_divider(w.advanced_extensible_interface_configuration_0, 2)
 }
@@ -1002,18 +1004,18 @@ pub struct StandardMode {
 /// (`IC_CON_SD`).
 const STANDARD_MODE_CON: u32 = 0b0110_0011;
 /// Standard mode's minimum SCL high time, in nanoseconds.
-const STANDARD_HIGH_NS: u128 = 4_000;
+const STANDARD_HIGH_NANOSECONDS: u128 = 4_000;
 /// Standard mode's minimum SCL low time, in nanoseconds.
-const STANDARD_LOW_NS: u128 = 4_700;
+const STANDARD_LOW_NANOSECONDS: u128 = 4_700;
 /// The SDA hold a device provides to bridge SCL's undefined falling edge, in nanoseconds.
-const STANDARD_SDA_HOLD_NS: u128 = 300;
+const STANDARD_SDA_HOLD_NANOSECONDS: u128 = 300;
 /// The bus rate this module programs, in hertz.
-const STANDARD_BUS_HZ: u128 = 100_000;
+const STANDARD_BUS_HERTZ: u128 = 100_000;
 
-/// The smallest count of input-clock periods lasting at least `period_ns`, never below 1 (zero is
+/// The smallest count of input-clock periods lasting at least `period_nanoseconds`, never below 1 (zero is
 /// not a count a controller can be programmed with) and never above `u32::MAX`.
-const fn counts(clock_frequency: u64, period_ns: u128) -> u32 {
-    let ticks = (clock_frequency as u128 * period_ns).div_ceil(1_000_000_000);
+const fn counts(clock_frequency: u64, period_nanoseconds: u128) -> u32 {
+    let ticks = (clock_frequency as u128 * period_nanoseconds).div_ceil(1_000_000_000);
     // The saturation subtracts the excess instead of comparing, so no boundary is left to
     // mutate: `ticks` minus whatever lies above `u32::MAX` is `min(ticks, u32::MAX)`.
     let ticks = ticks - ticks.saturating_sub(u32::MAX as u128);
@@ -1038,9 +1040,9 @@ const fn counts(clock_frequency: u64, period_ns: u128) -> u32 {
 /// Name: ratified 2026-11-05 (UTC), #3279.
 #[must_use]
 pub const fn standard_mode_100_kilohertz(clock_frequency: u64) -> StandardMode {
-    let hcnt = counts(clock_frequency, STANDARD_HIGH_NS);
-    let minimum_lcnt = counts(clock_frequency, STANDARD_LOW_NS);
-    let period = counts(clock_frequency, 1_000_000_000 / STANDARD_BUS_HZ);
+    let hcnt = counts(clock_frequency, STANDARD_HIGH_NANOSECONDS);
+    let minimum_lcnt = counts(clock_frequency, STANDARD_LOW_NANOSECONDS);
+    let period = counts(clock_frequency, 1_000_000_000 / STANDARD_BUS_HERTZ);
     let shortfall = period.saturating_sub(hcnt);
     // The larger of the two, written as the minimum plus whatever the shortfall exceeds it by.
     let lcnt = minimum_lcnt + shortfall.saturating_sub(minimum_lcnt);
@@ -1048,7 +1050,7 @@ pub const fn standard_mode_100_kilohertz(clock_frequency: u64) -> StandardMode {
         control: STANDARD_MODE_CON,
         high_count: hcnt,
         low_count: lcnt,
-        data_hold: counts(clock_frequency, STANDARD_SDA_HOLD_NS),
+        data_hold: counts(clock_frequency, STANDARD_SDA_HOLD_NANOSECONDS),
     }
 }
 
