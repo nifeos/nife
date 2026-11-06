@@ -280,7 +280,7 @@ License. `MIT OR Apache-2.0`; nothing adapted. No quotation of a GPL source rema
 
 Result of `script/crate-standalone`. Clean, before and after this lane's edits.
 
-Provenance. Milestone 1019 items 1, 7 and 11 stand done for this crate: no node text is quoted and
+Provenance. Milestone 1019 items 1, 7 and 11 stand done for this crate: no comment reproduces node text and
 every vendor claim links the revision it holds at, checked against the fetched files.
 
 Names. Seven ratified names fail a later rule and wait for the architect (`SDIO_BRING_UP`, the
