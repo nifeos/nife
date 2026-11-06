@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-miri-run-keeps-its-budget
 raised: 2026-11-03
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The Miri run keeps its budget, and a slow test names itself
+# 1040. The Miri run keeps its budget, and a slow test names itself
 
 Raised by lane/ub-check-3100 on 2026-11-03 (UTC), while it cleared issue #3100, the scheduled
-undefined-behavior check's repeated red. The integrator mints the number at promotion.
+undefined-behavior check's repeated red.
 
 Reuse: `xtask/src/suite.rs`'s `undefined_behavior_check`, milestone 663 (bound the host pass)'s
 process-group deadline, and libtest's own time options. It takes no new tool.

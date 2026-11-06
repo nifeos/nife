@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-kernel-leaves-nife
 raised: 2026-11-03
 milestone_dependencies: 857
 decision_dependencies: 151, 201
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# The kernel leaves nife
+# 1039. The kernel leaves nife
 
 The lane `lane/stranger-3099` wrote this on 2026-11-03 (UTC), while it paused the stranger-test
-cadence on that day's ruling. The milestone has no number; an integrator mints one at promotion.
+cadence on that day's ruling.
 
 ## Background
 
@@ -40,7 +41,7 @@ states.
 - Nothing that has left references nife: no path, no pin, no `#[path]` module, no script that
   reads a nife file.
 - The design record has moved to `nifeos.org`, or its move has a date. [The proposal for that
-  move](../1018-the-design-record-moves-and-is-published.md) holds the plan.
+  move](1018-the-design-record-moves-and-is-published.md) holds the plan.
 - basalt pins `nife-kernel` beside the other components, so the whole-system test runs from basalt
   and not from nife.
 - The instrument has its own repository (see Rulings, item 2), so the stranger test of the
@@ -73,7 +74,7 @@ states.
 The extraction itself is a filter and a push. The cost sits in items 2, 3 and 5. Scoring a run is a person's work, so the number of subjects
 (basalt, `nife-kernel` and every crate repository) is the real cost of the 28-day cadence. Item 2 moves the
 build and the QEMU gates the kernel needs, a subset of `script/lint` and `script/test` that section 4 of
-[the first split](../../../notes/the-first-split.md) leaves unmeasured. Item 3 is a pin bump
+[the first split](../../notes/the-first-split.md) leaves unmeasured. Item 3 is a pin bump
 through basalt's queue. Item 5 is one stranger session plus one lane to brief and score it, about
 200k lane tokens and half an hour of wall clock by the stranger note's own figures. Before that, a
 lane moves the instrument to its new repository and writes the new rubric.
@@ -156,3 +157,7 @@ The architect ruled on all five questions on 2026-11-03 (UTC).
 5. **The name.** The repository takes the name `nife-kernel` (the name only; creating it needs the
    architect's separate go). It stays distinct on disk from the `kernel/` directory inside nife
    and from generic names, and it matches the hyphenated non-crate repositories.
+
+## Index row
+
+The kernel is the last code to leave the repository. Proposed: it moves to its own repository with its history, basalt pins it, and the stranger test restarts against the whole system.

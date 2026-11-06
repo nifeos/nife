@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: name-status-lives-only-in-name-blocks
 raised: 2026-11-05
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A name's status lives only in its own Name: block
+# 1045. A name's status lives only in its own Name: block
 
 Raised by lane/naming-rules-by-topic on 2026-11-05 (UTC), from the feasibility study its brief
-asked for. The integrator mints the number at promotion.
+asked for.
 
 Reuse: `helpers/name_provenance.py`'s block parse, `helpers/name_rules.py`'s Rule 1 computation,
 and `helpers/name_release.py --draft`, which already derives a crate's worklist from the blocks.
@@ -18,7 +19,7 @@ and `helpers/name_release.py --draft`, which already derives a crate's worklist 
 ## Background
 
 A name records its status in its own `Name:` block, and `script/names` computes the table from the
-blocks on demand ([design/naming/provenance.md](../../naming/provenance.md)). Several files still
+blocks on demand ([design/naming/provenance.md](../naming/provenance.md)). Several files still
 hold names centrally, beside or instead of the blocks. Each one is a file every naming pull request
 edits, which is the conflict shape the block exists to avoid, and each can drift from the blocks.
 
@@ -56,3 +57,7 @@ to 3144, 3149, 3153, 3154, 3156, 3200).
 
 The direction that a name's status lives in the documents with the name, and the merge conflicts
 every naming pull request meets on the shared lists. Nothing blocks on it.
+
+## Index row
+
+Several files hold a name's status beside the blocks that already carry it, and every naming pull request edits them. Proposed: derive each from the blocks and keep only the two baselines.

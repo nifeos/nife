@@ -163,7 +163,7 @@ That scan is the larger story. Deleting it on `main` at `7f54880c4`, and nothing
 `map_el0` from 47,891 to 30,785 (-35.7%), about 3,400 of a map's 9,600 instructions; every other
 row holds within a tick except `spawn_el0` (-0.24%). The scan runs on every map, whether or not
 the page holds a tombstone.
-[a-mapping-record-is-filed-without-a-scan](../../design/roadmap/proposals/a-mapping-record-is-filed-without-a-scan.md)
+[a-mapping-record-is-filed-without-a-scan](../../design/roadmap/1036-a-mapping-record-is-filed-without-a-scan.md)
 proposes a tombstone count per log page.
 
 Of the 4.27 points: the false term +3.02, #2965 +2.88, #1892 +0.50, #1360 +0.18, #2148 -0.29,
