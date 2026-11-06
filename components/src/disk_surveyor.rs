@@ -243,9 +243,9 @@ fn survey() -> ! {
     let (roster_ok, mmio, pci, nvme) = match Roster::read(roster_page()) {
         Some(r) => (
             F_ROSTER,
-            r.count_on(TRANSPORT_VIRTIO_MEMORY_MAPPED_IO) as u64,
-            r.count_on(TRANSPORT_VIRTIO_PCI) as u64,
-            r.count_on(TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS) as u64,
+            r.count_by_transport(TRANSPORT_VIRTIO_MEMORY_MAPPED_IO) as u64,
+            r.count_by_transport(TRANSPORT_VIRTIO_PCI) as u64,
+            r.count_by_transport(TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS) as u64,
         ),
         None => (0, 0, 0, 0),
     };
