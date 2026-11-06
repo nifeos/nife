@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-roadmap-shrinks-by-judgment-not-by-a-mechanical-pass
 raised: 2026-11-05
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,9 +8,9 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# The roadmap shrinks by judgment, not by a mechanical pass
+# 1047. The roadmap shrinks by judgment, not by a mechanical pass
 
-Raised by lane/record-follow-on-items. The integrator mints the number at promotion.
+Raised by lane/record-follow-on-items.
 
 Reuse: §298 (a document states what is in force now)'s list of what stays, the prose ratchet and
 `script/roadmap --check`. No new tool.
@@ -36,3 +37,7 @@ now and keeps every block a reader may need.
 
 - This block records the per-block word count by status, and an architect has chosen whether a judged
   rewrite proceeds and in what order.
+
+## Index row
+
+Two mechanical passes cut under one percent of the roadmap. Proposed: measure words per block by status, then rewrite by judgment only the built blocks a reader still meets.

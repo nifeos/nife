@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: PARTIAL
+promoted_from: heavy-jobs-wait-in-order-for-measured-memory
 raised: 2026-11-05
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,16 +8,13 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# Heavy jobs wait in order for the memory they measured
+# 1044. Heavy jobs wait in order for the memory they measured
 
-The lane `lane/heavy-job-admission` wrote this on 2026-11-05 (UTC). The architect asked for a design
-that manages heavy local jobs better than a fixed count of slots. The milestones have no numbers; an
-integrator mints them at promotion. Every file, command and variable name here is provisional.
+The lane `lane/heavy-job-admission` wrote this on 2026-11-05 (UTC). Every file, command and variable name here is provisional.
 
 Reuse: `flock(2)` liveness and the ancestor walk from `helpers/heavy_slot.py`, #3214's measured Kani
-rows, and systemd's user scopes for measuring and capping. This lane considered the GNU make jobserver
-and did not take it, for reasons (b) gives. No existing tool admits by measured memory across independent
-processes without a server; the [prior art appendix](heavy-jobs-wait-in-order-for-measured-memory/prior-art.md)
+rows, and systemd's user scopes for measuring and capping.  No existing tool admits by measured memory across independent
+processes without a server; the [prior art appendix](1044-heavy-jobs-wait-in-order-for-measured-memory/prior-art.md)
 lists what this lane searched.
 
 The architect chose option A on 2026-11-05 (UTC); the last section lists that ruling and three
@@ -55,7 +53,7 @@ sequence are the hold-and-wait. The guess is why the cap measures jobs and not r
 
 ## What went wrong, measured
 
-The [measurements appendix](heavy-jobs-wait-in-order-for-measured-memory/measurements.md) has each
+The [measurements appendix](1044-heavy-jobs-wait-in-order-for-measured-memory/measurements.md) has each
 command and its output. In short, from the 80-core, 53.9 GiB Linux host with no swap:
 
 - At 04:52 UTC on 2026-11-05, holders had taken 12 of 15 slots. Eight of the 12 were full lint
@@ -281,3 +279,12 @@ gain.
    when a person runs it. Provisional, ruled by the maintainer on 2026-11-05 (UTC).
 4. The default capacity on macOS is half of physical memory. Provisional, ruled by the maintainer
    on 2026-11-05 (UTC).
+
+## Follow-on
+
+- **Outstanding.** Steps 2 to 9. Step 1 is `helpers/heavy_ledger.py`; the classes, cgroups
+  and cores are absent from `helpers/heavy_slot.py`.
+
+## Index row
+
+A fixed count of heavy-job slots lets a job hold one resource while it waits for another. Proposed: one ledger of reservations in ticket order, sized by measured memory and capped by a memory cgroup.

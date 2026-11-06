@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-owned-runner-image-passes-the-strict-canary
 raised: 2026-11-05
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,10 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# The owned runner image passes the strict canary
+# 1046. The owned runner image passes the strict canary
 
 Raised by lane/record-follow-on-items, which gathered the follow-on work of the owned-runner lanes.
-The integrator mints the number at promotion. The work is on the owned hosts, which the maintainers
+The work is on the owned hosts, which the maintainers
 who operate the pool change off-tree; nothing in this repository changes until the last item.
 
 Reuse: the canary's strict image checks and dry run (`.github/workflows/owned-runner-canary.yml`,
@@ -18,7 +19,7 @@ Reuse: the canary's strict image checks and dry run (`.github/workflows/owned-ru
 
 ## Background
 
-[notes/owned-runners.md](../../../notes/owned-runners.md) keeps `NIFE_RUNNER_OWNED` false until the
+[notes/owned-runners.md](../../notes/owned-runners.md) keeps `NIFE_RUNNER_OWNED` false until the
 strict canary and the dry run are both green on the pool in one run, with no `FINDING` line and an
 empty proxy refusal log for that run. The push run 41959340528 on `main` printed these findings in
 `canary-owned` and `canary-owned-dry-run`:
@@ -51,3 +52,7 @@ empty proxy refusal log for that run. The push run 41959340528 on `main` printed
   refusal log is empty for that run.
 - notes/owned-runners.md's description of the image states the work folder, the toolchain and the
   preinstalled packages.
+
+## Index row
+
+The owned runner image fails the strict canary, so the owned-runner switch stays off. Proposed: fix the work folder, the apt and sudo proxy, the pip allowlist and the toolchain path, then set the switch.
