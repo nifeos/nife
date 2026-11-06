@@ -94,8 +94,9 @@ pub const fn receive_descriptor_control_register_value_for_flush(current: u32) -
 /// **What the flush needs beyond BAR0**: the configuration-space status word and the transmit
 /// ring's memory, which [`Hardware`] does not reach.
 ///
-/// Name: provisional. No ruling covers it.
-pub trait RingAccess {
+/// Name: ratified 2026-11-05 (UTC). Renamed from `RingAccess`: the trait is what the flush needs
+/// from its caller, so the name says flush support.
+pub trait FlushSupport {
     /// Read the 16-bit descriptor ring status word at [`PCICFG_DESC_RING_STATUS`] in the
     /// function's configuration space.
     fn descriptor_ring_status(&mut self) -> u16;
@@ -105,11 +106,12 @@ pub trait RingAccess {
     fn write_transmit_descriptor(&mut self, index: u16, words: [u64; 2]);
 }
 
-/// What [`descriptor_rings`] did.
+/// What [`empty_descriptor_rings`] did.
 ///
-/// Name: provisional. No ruling covers it.
+/// Name: ratified 2026-11-05 (UTC). Renamed from `Outcome`: the name says what the function
+/// reports, which rings it emptied. The variants keep their names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Outcome {
+pub enum EmptiedRings {
     /// The device did not ask for a flush, or the transmit ring has no length.
     NotRequired,
     /// The device asked, and its transmit ring is at `base`, not where the caller's ring is. Nothing
@@ -131,12 +133,16 @@ pub enum Outcome {
 /// descriptor's buffer. The one divergence is said at [`tail_after_dummy_transmit`], and one check is added: the
 /// flush runs only when the device's transmit ring is `transmit_ring`.
 ///
-/// Name: provisional. No ruling covers it.
-pub fn descriptor_rings(
+/// Name: ratified 2026-11-05 (UTC). Renamed from `descriptor_rings`, a noun phrase that did not say
+/// what the function does; the name is now a verb phrase after FreeBSD's `em_flush_desc_rings`.
+#[doc(alias = "em_flush_desc_rings")]
+#[doc(alias = "em_flush_tx_ring")]
+#[doc(alias = "em_flush_rx_ring")]
+pub fn empty_descriptor_rings(
     hardware: &mut impl Hardware,
-    rings: &mut impl RingAccess,
+    rings: &mut impl FlushSupport,
     transmit_ring: u64,
-) -> Outcome {
+) -> EmptiedRings {
     use crate::control_registers::{RCTL_EN, TCTL_EN};
     use crate::registers::{
         RECEIVE_CONTROL_REGISTER, TRANSMIT_CONTROL_REGISTER,
@@ -151,14 +157,14 @@ pub fn descriptor_rings(
     );
     let status = rings.descriptor_ring_status();
     if !is_flush_required(status, hardware.read(TRANSMIT_DESCRIPTOR_LENGTH_REGISTER)) {
-        return Outcome::NotRequired;
+        return EmptiedRings::NotRequired;
     }
     // The halves share no bit, so their sum is the joined address, and unlike an OR no mutation of
     // the sum survives a test that gives both halves a value.
     let base = u64::from(hardware.read(TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER))
         + (u64::from(hardware.read(TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER)) << 32);
     if base != transmit_ring {
-        return Outcome::ForeignTransmitRing { base };
+        return EmptiedRings::ForeignTransmitRing { base };
     }
     let transmit_control = hardware.read(TRANSMIT_CONTROL_REGISTER);
     hardware.write(TRANSMIT_CONTROL_REGISTER, transmit_control | TCTL_EN);
@@ -174,7 +180,7 @@ pub fn descriptor_rings(
     );
     hardware.delay_microseconds(250);
     if rings.descriptor_ring_status() & FLUSH_DESC_REQUIRED == 0 {
-        return Outcome::TransmitFlushed;
+        return EmptiedRings::TransmitFlushed;
     }
     let receive_control = hardware.read(RECEIVE_CONTROL_REGISTER);
     hardware.write(RECEIVE_CONTROL_REGISTER, receive_control & !RCTL_EN);
@@ -189,5 +195,5 @@ pub fn descriptor_rings(
     super::flush_writes(hardware);
     hardware.delay_microseconds(150);
     hardware.write(RECEIVE_CONTROL_REGISTER, receive_control & !RCTL_EN);
-    Outcome::BothFlushed
+    EmptiedRings::BothFlushed
 }

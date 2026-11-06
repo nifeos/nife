@@ -140,7 +140,7 @@ Recommendation. Ready for review.
 ## `e1000e`, step 6
 
 Name and version. `e1000e` `0.1.0`. The architect ratified the crate name as the family name QEMU and Linux
-both use, permanent on first publication. The three `flush` names are the only provisional ones.
+both use, permanent on first publication. The three `flush` names are ratified.
 
 API. Registers and descriptors for the 82574L and the I219 behind two small traits. The public items are `DataPlane`,
 `DirectMemoryAccessRegion`, `Tails`, `TransmitError`, the `layout` and `registers` modules, the device
@@ -155,8 +155,8 @@ Dependencies. None.
 
 Provenance. The `platform_controller_hub` module adapts FreeBSD's Intel shared code
 (BSD-3-Clause) and `if_em.c` and `if_em.h` (BSD-2-Clause), with notices in the module. Milestone 1019
-items 3 and 4 hold. The `flush` module adds three provisional names
-(`flush::descriptor_rings`, `flush::RingAccess`, `flush::Outcome`) that need ratifying. The manifest
+items 3 and 4 hold. The three flush names
+(`flush::empty_descriptor_rings`, `flush::FlushSupport`, `flush::EmptiedRings`) are ratified. The manifest
 license field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`, naming the license of
 each adapted source.
 
@@ -169,10 +169,9 @@ Outstanding before the move.
 
 | item | owner |
 |---|---|
-| Ratify the `flush` names (`descriptor_rings`, `RingAccess`, `Outcome`) with `python3 helpers/name_release.py --draft e1000e`. | architect |
 | The README describes the crate as built for the nife kernel; reword it. | move lane |
 
-Recommendation. Blocked by the three provisional `flush` names.
+Recommendation. Ready for review.
 
 ## `designware_ethernet`, step 7
 
@@ -281,7 +280,7 @@ Recommendation. Blocked by the unrun bench check.
 | `file_allocation_table` | 2 | ready for review |
 | `extensible_host_controller_interface` | 3 | ready for review |
 | `non_volatile_memory_express` | 5 | ready for review |
-| `e1000e` | 6 | blocked by three provisional `flush` names |
+| `e1000e` | 6 | ready for review |
 | `designware_ethernet` | 7 | item 9 of milestone 1019 needs a home |
 | `designware_mobile_storage` | 8 | blocked by #3200 |
 | `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
