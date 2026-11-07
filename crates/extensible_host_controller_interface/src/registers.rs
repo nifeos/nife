@@ -61,7 +61,7 @@ pub const DCBAAP: u64 = 0x30;
 /// `config` is ruled to expand; the specification's name for the register does not keep it.
 pub const CONFIGURATION: u64 = 0x38;
 /// Operational register: port 1's `PORTSC`; port `n`'s is `0x10 * (n - 1)` further.
-pub(crate) const PORTSC_BASE: u64 = 0x400;
+pub(crate) const PORT_STATUS_AND_CONTROL_BASE: u64 = 0x400;
 
 /// `USBCMD` Run/Stop.
 ///
@@ -252,7 +252,7 @@ impl Capabilities {
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub const fn portsc(&self, n: u8) -> u64 {
-        self.operational + PORTSC_BASE + 0x10 * (n as u64).saturating_sub(1)
+        self.operational + PORT_STATUS_AND_CONTROL_BASE + 0x10 * (n as u64).saturating_sub(1)
     }
 
     /// Interrupter 0's register `reg` ([`IMAN`], [`ERDP`], ...), as an offset into the file.
@@ -332,9 +332,9 @@ mod tests {
     /// bits first in meaning: getting the order wrong gives a controller 32 times too few pages.
     #[test]
     fn the_scratchpad_count_joins_its_two_fields() {
-        let hi = 0b00001 << 21; // one 32
-        let lo = 0b00011 << 27; // plus three
-        let capabilities = Capabilities::decode(0x40, 0, hi | lo, 1 << 2, 0, 0);
+        let high = 0b00001 << 21; // one 32
+        let low = 0b00011 << 27; // plus three
+        let capabilities = Capabilities::decode(0x40, 0, high | low, 1 << 2, 0, 0);
         assert_eq!(capabilities.scratchpads, 35);
         assert_eq!(capabilities.context_bytes, 64);
     }

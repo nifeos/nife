@@ -11,13 +11,13 @@ use super::*;
 pub struct TransferRequestBlock(pub [u32; 4]);
 
 /// Interrupt On Completion: ask for an event when this TRB completes.
-pub(crate) const IOC: u32 = 1 << 5;
+pub(crate) const INTERRUPT_ON_COMPLETION: u32 = 1 << 5;
 
 /// Interrupt on Short Packet.
-pub(crate) const ISP: u32 = 1 << 2;
+pub(crate) const INTERRUPT_ON_SHORT_PACKET: u32 = 1 << 2;
 
 /// Immediate Data: the TRB's first two dwords are the data itself (the setup packet).
-pub(crate) const IDT: u32 = 1 << 6;
+pub(crate) const IMMEDIATE_DATA: u32 = 1 << 6;
 
 /// The transfer control word's fields share no bit: the type at 10:15 against the toggle, short
 /// packet, completion and immediate-data bits at 1, 2, 5 and 6, all of them against dword 1's
@@ -76,9 +76,9 @@ impl TransferRequestBlock {
 
     /// The same TRB stamped with `cycle`.
     pub(crate) const fn with_cycle(self, cycle: bool) -> TransferRequestBlock {
-        let mut d = self.0;
-        d[3] = (d[3] & !1) | cycle as u32;
-        TransferRequestBlock(d)
+        let mut words = self.0;
+        words[3] = (words[3] & !1) | cycle as u32;
+        TransferRequestBlock(words)
     }
 
     const fn pointer(address: u64, rest: [u32; 2]) -> TransferRequestBlock {
@@ -180,7 +180,7 @@ impl TransferRequestBlock {
             pointer,
             [
                 0,
-                control(transfer_request_block_type::SET_TR_DEQUEUE)
+                control(transfer_request_block_type::SET_TRANSFER_RING_DEQUEUE_POINTER)
                     | (dci as u32) << 16
                     | (slot as u32) << 24,
             ],
@@ -193,7 +193,7 @@ impl TransferRequestBlock {
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub const fn setup(packet: u64, data_in: Option<bool>) -> TransferRequestBlock {
-        let trt = match data_in {
+        let transfer_type = match data_in {
             None => 0,
             Some(false) => 2,
             Some(true) => 3,
@@ -202,7 +202,7 @@ impl TransferRequestBlock {
             packet as u32,
             (packet >> 32) as u32,
             8,
-            control(transfer_request_block_type::SETUP) | IDT | trt << 16,
+            control(transfer_request_block_type::SETUP) | IMMEDIATE_DATA | transfer_type << 16,
         ])
     }
 
@@ -214,7 +214,9 @@ impl TransferRequestBlock {
             buffer,
             [
                 len as u32,
-                control(transfer_request_block_type::DATA) | (inbound as u32) << 16 | ISP,
+                control(transfer_request_block_type::DATA)
+                    | (inbound as u32) << 16
+                    | INTERRUPT_ON_SHORT_PACKET,
             ],
         )
     }
@@ -228,7 +230,9 @@ impl TransferRequestBlock {
             0,
             0,
             0,
-            control(transfer_request_block_type::STATUS) | (!data_was_inbound as u32) << 16 | IOC,
+            control(transfer_request_block_type::STATUS)
+                | (!data_was_inbound as u32) << 16
+                | INTERRUPT_ON_COMPLETION,
         ])
     }
 
@@ -241,7 +245,9 @@ impl TransferRequestBlock {
             buffer,
             [
                 len as u32,
-                control(transfer_request_block_type::NORMAL) | IOC | ISP,
+                control(transfer_request_block_type::NORMAL)
+                    | INTERRUPT_ON_COMPLETION
+                    | INTERRUPT_ON_SHORT_PACKET,
             ],
         )
     }

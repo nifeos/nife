@@ -35,7 +35,8 @@ pub(crate) const EXTCNF_SIZE: u64 = 0x0_0f08;
 /// **PHY Control Register in CSR** (`E1000_PHY_CTRL`, FreeBSD's `e1000_regs.h`). The PHY control
 /// the MAC holds: LPLU and gigabit disable.
 #[doc(alias = "physical layer device control register in control and status registers")]
-pub(crate) const PHY_CTRL: u64 = 0x0_0f10;
+#[doc(alias = "E1000_PHY_CTRL")]
+pub(crate) const PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER: u64 = 0x0_0f10;
 /// **IOSF Power Control** (`E1000_IOSFPC`, FreeBSD's `e1000_regs.h`). The I/O side-band fabric's
 /// power control, which SPT's transmit errata write. FreeBSD's comment reads "TX corrupted data".
 #[doc(alias = "iosf power control")]
