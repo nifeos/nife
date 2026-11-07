@@ -867,11 +867,12 @@ pub fn dump_threads_for_budget_expired(message: &str) {
 /// [`dump_threads_for_budget_expired`] for a panic. The message is formatted and searched in
 /// [`panic_is_budget_expiry`], whose buffer is gone from the stack before the dump runs: the panic
 /// handler can run at a thread stack's deepest point, and `script/stack-depth-check` counts the
-/// dump there (notes/stack.md).
+/// dump there (notes/stack.md). The marker stands in for the message it was found in, so the
+/// panic takes the same path the test of the dump checks.
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn dump_threads_after_panic(info: &core::panic::PanicInfo<'_>) {
     if panic_is_budget_expiry(info) {
-        crate::sched::dump_threads();
+        dump_threads_for_budget_expired(BUDGET_EXPIRED_MARKER);
     }
 }
 

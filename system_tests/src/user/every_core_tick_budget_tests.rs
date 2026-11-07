@@ -103,8 +103,8 @@ fn the_backstop_bounds_a_wait_on_a_core_that_never_ticks() {
 }
 
 /// **A budget expiry's message is followed by a thread dump, and the message is unchanged.** The
-/// panic handler calls `dump_threads_for_budget_expired` with the panic's message after printing
-/// it. This prints a message in the drivers' form and then makes that call, and checks that the
+/// panic handler calls `dump_threads_for_budget_expired` after printing a message that holds the
+/// marker. This prints a message in the drivers' form and then makes that call, and checks that the
 /// message line opens with the marker and keeps its `{ms} ms of the counter[ (the backstop)];
 /// ticks taken of {n} on each core:` form, that the dump follows it with thread states and each
 /// core's `inbox_len`, and that the dump repeats no marker and carries no replay line, so the
