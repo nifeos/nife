@@ -3,9 +3,9 @@
 //!
 //! Name: ratified 2026-11-03 (UTC), #3135. The crate's host tests.
 
-use crate::bench::{self, ScratchWriteVerdict};
 use crate::card;
 use crate::host_controller::{Error, HostController};
+use crate::partition::MasterBootRecord;
 use crate::sd::{self, BLOCK_BYTES, BlockTransferError, InitializationError};
 use crate::simulator::{CardKind, SimulatedHostController};
 
@@ -173,135 +173,93 @@ fn a_data_crc_error_is_reported_with_its_command() {
     ));
 }
 
+/// Identification, sector 0 and the first partition's boot sector are read, a long sequential read
+/// follows, and no write command is sent: the order a read-only look at a card takes.
 #[test]
-fn the_read_only_probe_reads_and_never_writes() {
+fn a_card_is_identified_and_read_through_its_partition_table_without_a_write() {
     let (mut h, _) =
         HostController::new(master_boot_record_card(8192, 2048), 50_000_000, Some(32)).unwrap();
+    let card = sd::identify(&mut h, 4).unwrap();
+    let mut sector = [0u8; BLOCK_BYTES];
+    sd::read_blocks(&mut h, &card, 0, &mut sector).unwrap();
+    let table = MasterBootRecord::parse(&sector).unwrap();
+    assert_eq!(table.entries[0].start, 2048);
+    sd::read_blocks(&mut h, &card, 2048, &mut sector).unwrap();
+    assert_eq!(sector[510..512], [0x55, 0xaa]);
+    assert_eq!(&sector[82..90], b"FAT32   ");
     let mut buffer = vec![0u8; 128 * BLOCK_BYTES];
-    let r = bench::run_read_only_probe(&mut h, 4, &mut buffer, 1024).unwrap();
-    assert_eq!(r.master_boot_record.unwrap().first_start(), Some(2048));
-    assert!(r.partition_boot_signature);
-    assert_eq!(&r.file_system_type, b"FAT32   ");
-    assert_eq!(r.timed_blocks, 1024);
+    for k in 0..8u64 {
+        sd::read_blocks(&mut h, &card, 2048 + 128 * k, &mut buffer).unwrap();
+    }
     let sim = h.into_registers();
     assert!(sim.written.is_empty());
     assert!(
         !sim.commands.iter().any(|c| matches!(c.0, 24 | 25)),
-        "the read-only probe sent a write command"
+        "a read-only sequence sent a write command"
     );
 }
 
-/// The read matrix is the VisionFive 2's diagnosis for its failing `CMD18`, and a bench boot that wedged on
-/// its second row would waste a power cycle: every row must read the right bytes, write nothing,
-/// and see the FIFO fill.
+/// Reading the same blocks at each card clock and multi-block length, identifying the card again
+/// before every read, returns the right bytes every time and writes nothing.
 #[test]
-fn the_read_matrix_reads_every_row_and_never_writes() {
+fn the_same_blocks_read_back_at_every_clock_and_length_after_a_fresh_identification() {
     let sim = master_boot_record_card(8192, 2048);
     let want = sim.storage[2048..2048 + 128].concat();
-    let (mut h, _) =
-        HostController::new(bench::QueueWatch::new(sim), 50_000_000, Some(32)).unwrap();
+    let (mut h, _) = HostController::new(sim, 50_000_000, Some(32)).unwrap();
     let mut buffer = vec![0u8; 128 * BLOCK_BYTES];
-    let mut rows = 0;
-    let mut asked = Vec::new();
-    bench::read_matrix(&mut h, 4, 2048, &mut buffer, |r| {
-        rows += 1;
-        assert_eq!(r.result, Ok(()), "{r:?}");
-        assert!(r.maximum_fill > 0, "{r:?}");
-        assert!(
-            r.microseconds > 0,
-            "the read took no time on a clock that advances: {r:?}"
-        );
-        asked.push(r.asked_hertz);
-    })
-    .unwrap();
-    assert_eq!(rows, bench::MATRIX_HERTZ.len() * bench::MATRIX_BLOCKS.len());
-    asked.dedup();
-    assert_eq!(asked, [25_000_000, 12_500_000, 6_250_000]);
-    assert_eq!(buffer, want);
-}
-
-/// `QueueWatch` is what says whether the VisionFive 2's queue filled: its peak and full count must come from
-/// `STATUS_REGISTER` alone, count every full read, and start again at `clear`.
-#[test]
-fn the_watch_counts_status_fill_and_nothing_else() {
-    use crate::host_controller::RegisterWindowAndClock;
-    /// `STATUS_REGISTER` reads `status`; every other register reads all ones.
-    struct Fixed {
-        status: u32,
-    }
-    impl RegisterWindowAndClock for Fixed {
-        fn read(&mut self, o: u32) -> u32 {
-            if o == crate::registers::STATUS_REGISTER {
-                self.status
-            } else {
-                u32::MAX
-            }
-        }
-        fn write(&mut self, _: u32, _: u32) {}
-        fn now_microseconds(&mut self) -> u64 {
-            0
+    let mut reads = 0;
+    for hertz in [
+        sd::TRANSFER_HERTZ,
+        sd::TRANSFER_HERTZ / 2,
+        sd::TRANSFER_HERTZ / 4,
+    ] {
+        for blocks in [2usize, 8, 32, 128] {
+            let card = sd::identify(&mut h, 4).unwrap();
+            let card_hertz = h.set_clock(hertz).unwrap();
+            assert!(card_hertz <= hertz, "{card_hertz} Hz for {hertz} Hz");
+            let dst = &mut buffer[..blocks * BLOCK_BYTES];
+            sd::read_blocks(&mut h, &card, 2048, dst).unwrap();
+            assert_eq!(dst, &want[..blocks * BLOCK_BYTES]);
+            reads += 1;
         }
     }
-    // FIFO count in bits 29:17, the full flag in bit 3.
-    let mut w = bench::QueueWatch::new(Fixed { status: 5 << 17 });
-    w.read(crate::registers::RINTSTS);
-    assert_eq!((w.maximum_fill, w.full_reads), (0, 0));
-    w.read(crate::registers::STATUS_REGISTER);
-    assert_eq!((w.maximum_fill, w.full_reads), (5, 0));
-    let mut w = bench::QueueWatch::new(Fixed {
-        status: (128 << 17) | (1 << 3),
-    });
-    w.read(crate::registers::STATUS_REGISTER);
-    w.read(crate::registers::STATUS_REGISTER);
-    assert_eq!((w.maximum_fill, w.full_reads), (128, 2));
-    w.clear();
-    assert_eq!((w.maximum_fill, w.full_reads), (0, 0));
+    assert_eq!(reads, 12);
+    assert!(h.into_registers().written.is_empty());
 }
 
+/// A multi-block write confined to the sectors before the first partition, read back, then
+/// restored: the gap ends as it began and no sector outside it is written.
 #[test]
-fn the_write_test_touches_only_the_gap_and_puts_back_what_was_there() {
+fn a_write_confined_to_the_gap_is_read_back_and_restored_exactly() {
     let mut sim = master_boot_record_card(8192, 2048);
-    // Something already in the gap: the test must restore it, not zero it.
+    // Something already in the gap: the restore must put it back, not zero it.
     sim.storage[2043][0] = 0x42;
     let before = sim.storage.clone();
     let (mut h, _) = HostController::new(sim, 50_000_000, Some(32)).unwrap();
-    let mut buffer = vec![0u8; 8 * BLOCK_BYTES];
-    let r = bench::run_read_only_probe(&mut h, 4, &mut buffer, 0).unwrap();
-    let (mut a, mut b) = (vec![0u8; 8 * BLOCK_BYTES], vec![0u8; 8 * BLOCK_BYTES]);
-    let v = bench::run_scratch_write_test(
-        &mut h,
-        &r.card,
-        r.master_boot_record.as_ref(),
-        &mut a,
-        &mut b,
-    );
-    assert_eq!(v, ScratchWriteVerdict::Verified(2040, 8, false));
+    let card = sd::identify(&mut h, 4).unwrap();
+    let mut sector = [0u8; BLOCK_BYTES];
+    sd::read_blocks(&mut h, &card, 0, &mut sector).unwrap();
+    let table = MasterBootRecord::parse(&sector).unwrap();
+    let (first, count) = table.scratch_sector_range(8).unwrap();
+    assert_eq!((first, count), (2040, 8));
+    let bytes = count as usize * BLOCK_BYTES;
+    let first = u64::from(first);
+    let (mut original, mut pattern, mut back) =
+        (vec![0u8; bytes], vec![0u8; bytes], vec![0u8; bytes]);
+    sd::read_blocks(&mut h, &card, first, &mut original).unwrap();
+    for (i, b) in pattern.iter_mut().enumerate() {
+        *b = (i as u8).wrapping_mul(31) ^ 0x5a;
+    }
+    sd::write_blocks(&mut h, &card, first, &pattern).unwrap();
+    sd::read_blocks(&mut h, &card, first, &mut back).unwrap();
+    assert_eq!(back, pattern);
+    sd::write_blocks(&mut h, &card, first, &original).unwrap();
+    sd::read_blocks(&mut h, &card, first, &mut back).unwrap();
+    assert_eq!(back, original);
     let sim = h.into_registers();
-    assert!(
-        sim.written
-            .iter()
-            .all(|&logical_block_address| (2040..2048).contains(&logical_block_address))
-    );
+    assert!(sim.written.iter().all(|&lba| (2040..2048).contains(&lba)));
     assert_eq!(sim.written.len(), 16);
     assert_eq!(sim.storage, before);
-}
-
-#[test]
-fn a_card_with_no_gap_is_refused_and_not_written() {
-    let (mut h, _) =
-        HostController::new(master_boot_record_card(8192, 1), 50_000_000, Some(32)).unwrap();
-    let mut buffer = vec![0u8; 8 * BLOCK_BYTES];
-    let r = bench::run_read_only_probe(&mut h, 4, &mut buffer, 0).unwrap();
-    let (mut a, mut b) = (vec![0u8; 8 * BLOCK_BYTES], vec![0u8; 8 * BLOCK_BYTES]);
-    let v = bench::run_scratch_write_test(
-        &mut h,
-        &r.card,
-        r.master_boot_record.as_ref(),
-        &mut a,
-        &mut b,
-    );
-    assert_eq!(v, ScratchWriteVerdict::Refused);
-    assert!(h.into_registers().written.is_empty());
 }
 
 #[test]
@@ -346,7 +304,7 @@ fn without_a_tree_depth_the_queue_depth_is_read_from_its_reset_watermark() {
 }
 
 // **The error paths.** Each test below injects one fault the sim can produce and checks that
-// the driver names the step it happened at, because a bench transcript that stops is only as
+// the driver names the step it happened at, because a board transcript that stops is only as
 // useful as what its last line says.
 
 use crate::simulator::Fault;
@@ -579,191 +537,20 @@ fn a_byte_addressed_card_stops_where_a_32_bit_byte_address_does() {
     assert!(sd::can_address_blocks(1 << 40, true, last, 1));
 }
 
+/// Sequential reads in whole 256-block commands walk up from a partition's start, one command
+/// per step, and stop where the next would pass the card's end.
 #[test]
-fn the_read_only_probe_says_which_block_it_could_not_read() {
-    // The second CMD17 is partition 1's boot sector; the first CMD18 is the timed read.
-    let mut sim = master_boot_record_card(8192, 2048);
-    sim.faults = vec![(17, 1, Fault::ErrorStatus)];
-    let mut h = HostController::new(sim, 50_000_000, Some(32)).unwrap().0;
-    let mut buffer = vec![0u8; 8 * BLOCK_BYTES];
-    assert!(matches!(
-        bench::run_read_only_probe(&mut h, 4, &mut buffer, 64),
-        Err(bench::ReadOnlyProbeFailure::Read(
-            2048,
-            BlockTransferError::Status(_)
-        ))
-    ));
-    let mut sim = master_boot_record_card(8192, 2048);
-    sim.faults = vec![(18, 1, Fault::ErrorStatus)];
-    let mut h = HostController::new(sim, 50_000_000, Some(32)).unwrap().0;
-    assert!(matches!(
-        bench::run_read_only_probe(&mut h, 4, &mut buffer, 64),
-        Err(bench::ReadOnlyProbeFailure::Read(
-            2056,
-            BlockTransferError::Status(_)
-        ))
-    ));
-}
-
-/// Run the write test on a card prepared by `setup`, after a read-only probe that times
-/// nothing, and return its verdict and the card.
-fn write_test(
-    setup: impl FnOnce(&mut SimulatedHostController),
-    len: usize,
-) -> (ScratchWriteVerdict, SimulatedHostController) {
-    let mut sim = master_boot_record_card(8192, 2048);
-    setup(&mut sim);
-    let mut h = HostController::new(sim, 50_000_000, Some(32)).unwrap().0;
-    let mut buffer = vec![0u8; 8 * BLOCK_BYTES];
-    let r = bench::run_read_only_probe(&mut h, 4, &mut buffer, 0).unwrap();
-    let (mut a, mut b) = (vec![0u8; len], vec![0u8; len]);
-    let v = bench::run_scratch_write_test(
-        &mut h,
-        &r.card,
-        r.master_boot_record.as_ref(),
-        &mut a,
-        &mut b,
-    );
-    (v, h.into_registers())
-}
-
-#[test]
-fn the_write_test_refuses_buffers_too_small_for_its_range_before_touching_the_card() {
-    let (v, sim) = write_test(|_| {}, 7 * BLOCK_BYTES);
-    assert_eq!(
-        v,
-        ScratchWriteVerdict::Failed(0, BlockTransferError::Length)
-    );
-    assert!(sim.written.is_empty());
-}
-
-#[test]
-fn the_write_test_names_the_phase_that_failed() {
-    // Phase 0 reads with CMD18, 1 writes with CMD25, 2 reads back block by block with CMD17
-    // (the probe already sent two), 3 writes the original back, 4 reads it back.
-    for (index, nth, phase) in [
-        (18u8, 0usize, 0u8),
-        (25, 0, 1),
-        (17, 2, 2),
-        (25, 1, 3),
-        (18, 1, 4),
-    ] {
-        let (v, _) = write_test(
-            |s| s.faults = vec![(index, nth, Fault::ErrorStatus)],
-            8 * BLOCK_BYTES,
-        );
-        assert!(
-            matches!(v, ScratchWriteVerdict::Failed(p, BlockTransferError::Status(_)) if p == phase),
-            "CMD{index}#{nth}: {v:?}"
-        );
-    }
-}
-
-#[test]
-fn a_card_that_drops_writes_is_a_pattern_mismatch_and_one_that_drops_the_restore_says_so() {
-    let (v, sim) = write_test(|s| s.writes_stored = Some(0), 8 * BLOCK_BYTES);
-    assert_eq!(v, ScratchWriteVerdict::PatternMismatch(2040));
-    assert!(sim.storage[2040].iter().all(|&b| b == 0));
-    let (v, sim) = write_test(|s| s.writes_stored = Some(1), 8 * BLOCK_BYTES);
-    assert_eq!(v, ScratchWriteVerdict::RestoreMismatch(2040));
-    // The pattern stayed, inside the gap, and partition 1 was never touched.
-    assert!(sim.storage[2040].iter().any(|&b| b != 0));
-    assert!(
-        sim.written
-            .iter()
-            .all(|&logical_block_address| logical_block_address < 2048)
-    );
-}
-
-/// What the write test put on the card is the pattern for each sector's own address: seen when
-/// a card drops the restore and the pattern stays.
-#[test]
-fn the_pattern_left_behind_is_each_sectors_own() {
-    let (v, sim) = write_test(|s| s.writes_stored = Some(1), 8 * BLOCK_BYTES);
-    assert_eq!(v, ScratchWriteVerdict::RestoreMismatch(2040));
-    for logical_block_address in 2040..2048u64 {
-        for (i, &b) in sim.storage[logical_block_address as usize]
-            .iter()
-            .enumerate()
-        {
-            assert_eq!(
-                b,
-                bench::scratch_pattern_byte(logical_block_address, i),
-                "sector {logical_block_address} byte {i}"
-            );
-        }
-    }
-}
-
-/// A mismatch is named by the sector it is in, not the first of the range: here the second.
-#[test]
-fn a_mismatch_names_its_own_sector() {
-    let (v, _) = write_test(|s| s.mangle_write = Some((0, 2041)), 8 * BLOCK_BYTES);
-    assert_eq!(v, ScratchWriteVerdict::PatternMismatch(2041));
-    let (v, _) = write_test(|s| s.mangle_write = Some((1, 2041)), 8 * BLOCK_BYTES);
-    assert_eq!(v, ScratchWriteVerdict::RestoreMismatch(2041));
-}
-
-/// Buffers longer than the range are fine (only their first eight sectors are used), either
-/// one too short is refused, and the verdict says whether the gap was blank.
-#[test]
-fn the_write_test_takes_long_buffers_refuses_either_short_one_and_reports_a_blank_gap() {
-    let (v, _) = write_test(|_| {}, 9 * BLOCK_BYTES);
-    assert_eq!(v, ScratchWriteVerdict::Verified(2040, 8, true));
-    let (v, _) = write_test(|s| s.storage[2047][511] = 1, 8 * BLOCK_BYTES);
-    assert_eq!(v, ScratchWriteVerdict::Verified(2040, 8, false));
-    for (a, b) in [(7, 8), (8, 7)] {
-        let mut h = HostController::new(master_boot_record_card(8192, 2048), 50_000_000, Some(32))
-            .unwrap()
-            .0;
-        let mut buffer = vec![0u8; 8 * BLOCK_BYTES];
-        let r = bench::run_read_only_probe(&mut h, 4, &mut buffer, 0).unwrap();
-        let (mut a, mut b) = (vec![0u8; a * BLOCK_BYTES], vec![0u8; b * BLOCK_BYTES]);
-        let v = bench::run_scratch_write_test(
-            &mut h,
-            &r.card,
-            r.master_boot_record.as_ref(),
-            &mut a,
-            &mut b,
-        );
-        assert_eq!(
-            v,
-            ScratchWriteVerdict::Failed(0, BlockTransferError::Length)
-        );
-    }
-}
-
-/// The pattern, worked by hand for a few bytes:
-/// `i * 31 ^ logical_block_address * 7 ^ 0x5a ^ i >> 8`, each in eight bits. The `i >> 8` term is
-/// what makes a sector's two halves differ.
-#[test]
-fn the_write_pattern_is_the_formula_and_its_halves_differ() {
-    assert_eq!(bench::scratch_pattern_byte(0, 0), 0x5a);
-    assert_eq!(bench::scratch_pattern_byte(0, 1), 31 ^ 0x5a);
-    assert_eq!(bench::scratch_pattern_byte(1, 0), 7 ^ 0x5a);
-    assert_eq!(bench::scratch_pattern_byte(3, 5), 155 ^ 21 ^ 0x5a);
-    assert_eq!(bench::scratch_pattern_byte(0, 256), 0x5a ^ 1);
-    assert_ne!(
-        (0..256)
-            .map(|i| bench::scratch_pattern_byte(9, i))
-            .collect::<Vec<_>>(),
-        (256..512)
-            .map(|i| bench::scratch_pattern_byte(9, i))
-            .collect::<Vec<_>>()
-    );
-}
-
-/// The timed reads stop at the card's end, in whole buffers, and a buffer under one block
-/// times nothing rather than reading nothing forever.
-#[test]
-fn the_timed_reads_stop_at_the_end_of_the_card() {
+fn sequential_long_reads_walk_up_from_the_partition_and_stop_at_the_card_end() {
     let (mut h, _) =
         HostController::new(master_boot_record_card(2048, 16), 50_000_000, Some(32)).unwrap();
+    let card = sd::identify(&mut h, 4).unwrap();
     let mut buffer = vec![0u8; 256 * BLOCK_BYTES];
-    let r = bench::run_read_only_probe(&mut h, 4, &mut buffer, 100_000).unwrap();
-    // Partition 1 starts at 16, so blocks 16 to 2047 fit seven 256-block reads and not eight.
-    assert_eq!(r.timed_blocks, 7 * 256);
-    // Each read was of the next 256 blocks up from the partition, not below it.
+    let mut at = 16u64;
+    while at + 256 <= card.blocks {
+        sd::read_blocks(&mut h, &card, at, &mut buffer).unwrap();
+        at += 256;
+    }
+    // Blocks 16 to 2047 fit seven 256-block reads and not eight.
     let reads: Vec<u32> = h
         .into_registers()
         .commands
@@ -772,10 +559,6 @@ fn the_timed_reads_stop_at_the_end_of_the_card() {
         .map(|c| c.1)
         .collect();
     assert_eq!(reads, (0..7).map(|k| 16 + 256 * k).collect::<Vec<u32>>());
-    let (mut h, _) =
-        HostController::new(master_boot_record_card(2048, 1024), 50_000_000, Some(32)).unwrap();
-    let r = bench::run_read_only_probe(&mut h, 4, &mut [], 8).unwrap();
-    assert_eq!(r.timed_blocks, 0);
 }
 
 /// An SD card's relative address goes in the high half of every addressed command's argument,
@@ -900,12 +683,5 @@ fn the_error_enums_display_and_implement_the_error_trait() {
     assert_eq!(
         text(BlockTransferError::Host(Error::ClockUpdate)),
         "the transfer failed: the controller did not take a clock update"
-    );
-    assert_eq!(
-        text(bench::ReadOnlyProbeFailure::Read(
-            7,
-            BlockTransferError::Length
-        )),
-        "reading block 7 failed: the buffer is empty or not a whole number of blocks"
     );
 }

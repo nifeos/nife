@@ -809,50 +809,26 @@ mod tests {
         }
     }
 
-    /// The bench compares the same blocks both ways: the IDMAC's read of the partition's first
-    /// 64 KiB against the polled read of it, not whatever the timed read leaves in the buffer. A
-    /// bus that corrupts is a mismatch, and the timed read still runs.
+    /// The same blocks read through the IDMAC and by polling are the same bytes, a read of a long
+    /// run keeps them so, and a bus that corrupts is seen as a difference.
     #[test]
-    fn the_bench_compares_the_internal_direct_memory_access_read_with_the_polled_one() {
+    fn the_internal_direct_memory_access_read_matches_the_polled_one_until_the_bus_corrupts() {
         let (mut h, card, memory) = polled(17);
         let data = pattern(0x11, 128 * 512);
         sd::write_blocks(&mut h, &card, 2048, &data).unwrap();
         let mut reference = vec![0u8; 128 * 512];
         sd::read_blocks(&mut h, &card, 2048, &mut reference).unwrap();
-        let report = crate::bench::ReadOnlyProbeReport {
-            card,
-            master_boot_record: None,
-            partition_boot_signature: false,
-            file_system_type: [0; 8],
-            timed_from: 2048,
-            timed_blocks: 0,
-            timed_microseconds: 0,
-        };
-        // The timed reads are the bench's own length natively; under Miri each 128-block command
-        // costs minutes, so the timed part reads two commands and one.
-        let (long, short) = if cfg!(miri) { (256, 128) } else { (1024, 256) };
+        // Under Miri each 128-block command costs minutes, so a run reads fewer commands.
+        let commands: u64 = if cfg!(miri) { 2 } else { 8 };
         let mut h = with_internal_direct_memory_access(h, &memory);
         let mut buffer = vec![0u8; 128 * 512];
-        let r = crate::bench::internal_direct_memory_access_read(
-            &mut h,
-            &report,
-            &reference,
-            &mut buffer,
-            long,
-        )
-        .unwrap();
-        assert!(r.matches);
-        assert_eq!(r.timed_blocks, long);
+        sd::read_blocks(&mut h, &card, 2048, &mut buffer).unwrap();
+        assert_eq!(buffer, reference);
+        for k in 1..commands {
+            sd::read_blocks(&mut h, &card, 2048 + 128 * k, &mut buffer).unwrap();
+        }
         h.registers_mut().direct_memory_access_corrupts = true;
-        let r = crate::bench::internal_direct_memory_access_read(
-            &mut h,
-            &report,
-            &reference,
-            &mut buffer,
-            short,
-        )
-        .unwrap();
-        assert!(!r.matches);
-        assert_eq!(r.timed_blocks, short);
+        sd::read_blocks(&mut h, &card, 2048, &mut buffer).unwrap();
+        assert_ne!(buffer, reference);
     }
 }

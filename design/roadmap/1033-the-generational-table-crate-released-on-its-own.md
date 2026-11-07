@@ -20,7 +20,8 @@ costs under `BUGS`. It points users who need growth to `slotmap` and `thunderdom
 
 ## What exists
 
-- `crates/generational_table`: `Table<T, N>` and `EntryName<T>`, about 820 lines with tests and
+- `crates/generational_table`: `Table<T, N>` and `EntryName<T>` with its `to_bits`, `from_bits` and
+  `NEVER_MINTED`, every name ratified, about 820 lines with tests and
   harnesses, no dependencies and `#![forbid(unsafe_code)]`. Its mechanism is in [Generational names](../../notes/generational-names.md).
 - Five Kani harnesses, each with a falsification patch under
   `crates/generational_table/falsifications/`. They prove five things. A removed name never resolves
@@ -54,7 +55,7 @@ The crate takes the third slot, after `file_allocation_table` (milestone
 - A slot retires after 2^32 - 1 occupants, which shrinks the table's capacity by one. The README
   states it.
 - Measured demand for fixed-capacity tables is close to nothing, so the crate may find few users.
-  Whether the README says so is open.
+  The README says so.
 
 ## Index row
 

@@ -90,7 +90,7 @@ radon's microSD card holds the FAT32 partition U-Boot loads the boot script, ker
 from (notes/visionfive2.md). Three rules keep this driver from costing that card:
 
 - **The first bench step cannot write.** `storage_bench` without `NIFE_STORAGE_BENCH_WRITE=scratch`
-  compiles no write test at all, and `bench::run_read_only_probe` sends no write command (a host test checks
+  compiles no write test at all, and `bench::run_read_only_probe` (in the kernel's storage bench) sends no write command (a host test checks
   the command log).
 - **A write test lands only before the first partition.**
   `partition::MasterBootRecord::scratch_sector_range` names at most eight sectors, ending just before the first partition and starting no lower than
