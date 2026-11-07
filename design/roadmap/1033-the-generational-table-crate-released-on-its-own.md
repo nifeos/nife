@@ -20,18 +20,20 @@ costs under `BUGS`. It points users who need growth to `slotmap` and `thunderdom
 
 ## What exists
 
-- `crates/generational_table`: `Table<T, N>`, about 550 lines with tests and harnesses, no
-  dependencies and no `unsafe`. Its mechanism is in [Generational names](../../notes/generational-names.md).
-- Four Kani harnesses, each with a falsification patch under
-  `crates/generational_table/falsifications/`. They prove four things. A removed name never resolves
-  again. A name the table never minted resolves to nothing. Live names are distinct and resolve to
-  their own entry. A bounded walk yields every live entry.
+- `crates/generational_table`: `Table<T, N>` and `EntryName<T>`, about 820 lines with tests and
+  harnesses, no dependencies and `#![forbid(unsafe_code)]`. Its mechanism is in [Generational names](../../notes/generational-names.md).
+- Five Kani harnesses, each with a falsification patch under
+  `crates/generational_table/falsifications/`. They prove five things. A removed name never resolves
+  again. A dead name stays dead whatever operations follow. A name the table never minted resolves
+  to nothing. Live names are distinct and resolve to their own entry. A bounded walk yields every
+  live entry.
 - The release record, [generational_table and the existing crates](../../notes/generational-table-and-existing-crates.md),
   answers whether a published crate already covers an allocation-free, fixed-capacity generational
-  table. None does: `slotmap` needs an allocator and lets two `u64` names reach one entry, and
-  `coca` is dormant and `unsafe`-heavy.
+  table. None does: `slotmap` needs an allocator and lets two `u64` names reach one entry, `coca` is
+  dormant and `unsafe`-heavy, and `triple_arena`'s stack backing has no `const` constructor, one
+  generation for the whole arena and `unsafe` storage.
 
-Reuse: none exists that fits. Searched crates.io and read nine candidates from source (`slotmap`, `thunderdome`, `coca` and six more); the release record gives each verdict.
+Reuse: none exists that fits. Searched crates.io and read twelve candidates from source (`slotmap`, `thunderdome`, `coca`, `triple_arena`, `heapless` and seven more); the release record gives each verdict.
 
 ## What remains
 
@@ -49,12 +51,11 @@ The crate takes the third slot, after `file_allocation_table` (milestone
 
 - Insert scans first-fit in O(N). The README states it.
 - `[Option<T>; N]` spends a tag per slot on any `T` without a niche. The README states it.
-- A slot reused 2^32 times resolves an ancient name again. The README states it.
-- Whether the public name type stays a bare `u64` or becomes a typed key is open. A newtype is the
-  stricter choice, since widening later is compatible and narrowing is not.
+- A slot retires after 2^32 - 1 occupants, which shrinks the table's capacity by one. The README
+  states it.
 - Measured demand for fixed-capacity tables is close to nothing, so the crate may find few users.
   Whether the README says so is open.
 
 ## Index row
 
-nife's generational table of named slots, with its four Kani proofs and their falsification patches, moves to its own `nifeos` repository. It publishes on crates.io as `generational_table` 0.1, the fixed-capacity, allocation-free member of the slotmap family. nife then consumes the release.
+nife's generational table of named slots, with its five Kani proofs and their falsification patches, moves to its own `nifeos` repository. It publishes on crates.io as `generational_table` 0.1, the fixed-capacity, allocation-free member of the slotmap family. nife then consumes the release.
