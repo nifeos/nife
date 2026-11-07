@@ -11,7 +11,7 @@ packet, a register, an atomic, a file), and need a reference to a dead record to
 rather than dangle or reach somebody else's record. It is not for a collection that must grow
 past a capacity known up front; see the comparison below.
 
-## Example
+## EXAMPLES
 
 ```rust
 use generational_table::Table;
@@ -83,7 +83,7 @@ something. The proofs use tables of two or three slots and operation sequences o
 steps, so the host tests cover the rest: a retired slot, a fully retired table, the hole below
 the walk bound, and an insert that is refused without running its closure.
 
-## Limitations
+## BUGS
 
 - Capacity is fixed. `insert_with` returns `None`, without running its closure, when every slot
   is live or retired.
