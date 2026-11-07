@@ -6,9 +6,9 @@ resolves to `None` for good, whether or not the slot has been filled again. The 
 of `N` slots chosen at compile time: it is `no_std`, needs no allocator, has no dependency, and
 forbids `unsafe` code. Game engines call the same shape a slotmap.
 
-Use it where you keep many short-lived records, hold references to them as plain words (in a
-packet, a register, an atomic, a file), and need a reference to a dead record to fail safely
-rather than dangle or reach somebody else's record. It is not for a collection that must grow
+Use it where you keep many short-lived records and hold references to them as plain words (in a
+packet, a register, an atomic, a file). It suits a program that needs a reference to a dead record
+to fail safely rather than dangle or reach somebody else's record. It is not for a collection that must grow
 past a capacity known up front; see the comparison below.
 
 ## Example
@@ -80,8 +80,8 @@ harness.
 Each harness has a falsification record at `falsifications/verification.<harness>.patch`.
 Applying it makes that harness fail at its own assertion, which shows the proof checks
 something. The proofs use tables of two or three slots and operation sequences of one or two
-steps, so the host tests cover the rest: a retired slot, a fully retired table, the hole below
-the walk bound, and an insert that is refused without running its closure.
+steps. The host tests cover the rest: a retired slot, a fully retired table, the hole below the
+walk bound, and an insert that is refused without running its closure.
 
 ## Limitations
 
@@ -90,8 +90,8 @@ the walk bound, and an insert that is refused without running its closure.
 - Generations are 32-bit and saturate; they never wrap. A slot whose generation reaches
   `u32::MAX` retires and is never filled again, so the table's capacity shrinks by one. A slot
   retires only after 2^32 - 1 occupants. A loop that does nothing but insert and remove one entry
-  can get there in about half a minute (about 7 nanoseconds a cycle on a 2.1 GHz server core),
-  and a table whose every slot has retired refuses every insert for good. A program that creates
+  can get there in about half a minute (about 7 nanoseconds a cycle on a 2.1 gigahertz server core).
+  A table whose every slot has retired refuses every insert for good. A program that creates
   and destroys entries without pause should treat a refused insert as a real outcome.
 - `insert_with` scans from slot 0 for the first free slot, which is O(N). `get` is O(1).
 - Storage is `[Option<T>; N]`, which spends a tag on each slot when `T` has no niche.
