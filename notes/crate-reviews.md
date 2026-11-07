@@ -240,10 +240,9 @@ openings follow the same choice.
 
 Result of `script/crate-standalone`. Clean.
 
-Names. The naming rules table, the renames and the ratified names a later rule reaches are in
-[crate-reviews/designware-ethernet.md](crate-reviews/designware-ethernet.md). The template's three
-checks find nothing. Two groups of ratified names wait for the architect, the parameters carry
-spelled-out names, provisional, and `CRC_BYTES` is borderline.
+Names. [crate-reviews/designware-ethernet.md](crate-reviews/designware-ethernet.md) has them. The
+template's checks find nothing, two ratified groups wait for the architect, and the parameters
+carry spelled-out names, provisional.
 
 Outstanding before the move.
 
@@ -296,18 +295,15 @@ Proofs. Nine harnesses. All nine prove and all nine patches fail.
 
 License. `MIT OR Apache-2.0`; nothing adapted. No quotation of a GPL source remains.
 
-Result of `script/crate-standalone`. Clean, before and after this lane's edits.
+Result of `script/crate-standalone`. Clean.
 
 Provenance. Milestone 1019 items 1, 7 and 11 stand done for this crate: no comment reproduces node text and
 every vendor claim links the revision it holds at, checked against the fetched files.
 
-Names. Six groups of ratified names fail a later rule and wait for the architect (`SDIO_BRING_UP`, the
-three `mux` report fields, `SYSTEM_BASE`, the `base` fields, `controller` and `sdcard_divider_for`).
-The package lists each with its recommended name. The parameters carry spelled-out names, provisional.
-
-Naming rules. The spelled-out check finds `SDIO_BRING_UP`, which is public and listed. The unit,
-question-shape and British-spelling checks find nothing. The package holds the table, the renames
-and the borderline names.
+Names. Six ratified groups wait for the architect (`SDIO_BRING_UP`, the `mux` report fields,
+`SYSTEM_BASE`, the `base` fields, `controller`, `sdcard_divider_for`), each listed in the package
+with its recommended name. Of the template's checks, only the spelled-out one finds anything
+(`SDIO_BRING_UP`). The parameters carry spelled-out names, provisional.
 
 Outstanding before the move.
 
