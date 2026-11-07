@@ -56,6 +56,10 @@ fn panic(info: &PanicInfo) -> ! {
     println!();
     println!("[PANIC] {info}");
     crate::stack::warn_if_smashed();
+    // A wait that ran out its budget gets the thread dump after the message, so the log tells a
+    // lost wake from slowness (`testing::dump_threads_for_budget_expired`).
+    #[cfg(any(test, feature = "system_tests"))]
+    crate::testing::dump_threads_after_panic(info);
 
     #[cfg(any(test, feature = "system_tests"))]
     arch::semihosting::exit(arch::semihosting::EXIT_FAILURE);

@@ -200,7 +200,9 @@ a second rung. When (A) lands, the driver's model changes in the two receiver-fi
   13,300 seeds into the sweep; seeds 900,012,000 to 900,015,000 passed alone 3 of 3 times, and
   every other guest passed the same seeds. A wake the scheduler lost (the class in
   `notes/scheduler/missed-reschedule-poke.md`) would fit; so would a host stall that ticks did not
-  show. A recurrence wants the seed and a `sched::dump_threads` in the message.
+  show. A budget-expired failure prints `sched::dump_threads` after its message (thread states, and
+  each core's `inbox_len`), so a recurrence shows whether threads were parked, runnable or waiting.
+  A recurrence still wants the seed, which the message does not carry.
 - A stopped vCPU is what the wait exists for, and an instrumented run on 2026-11-01 saw one. Four
   guests at once waited about 1.8 s. One loop went 1.54 s between two polls, and its guest took 6
   or 7 ticks where two running cores take about 360. What stops them is not known; four guests pinned to four
