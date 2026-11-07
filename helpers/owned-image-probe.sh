@@ -9,6 +9,7 @@
 #     helpers/owned-image-probe.sh qemu         the QEMU cache landed where script/ci-qemu looks, and
 #                                               what script/ci-qemu would decide (build or skip)
 #     helpers/owned-image-probe.sh qemu-fetch   the hosts a cold QEMU build fetches from answer
+#     helpers/owned-image-probe.sh kvm          /dev/kvm can create a VM (KVM_GET_API_VERSION is 12, KVM_CREATE_VM returns a descriptor)
 #
 # Run from the repository root. The owned canary (strict checks) and its dry run call this, so the
 # image is judged by one definition; notes/owned-runners.md says which job runs which. The probe
@@ -136,6 +137,18 @@ check_qemu_fetch() {
     check_pip
 }
 
+check_kvm() {
+    if out=$(python3 -c 'import os,fcntl;f=os.open("/dev/kvm",os.O_RDWR);print(fcntl.ioctl(f,0xAE00));print(fcntl.ioctl(f,0xAE01,0))' 2>&1); then
+        version=$(echo "$out" | sed -n 1p)
+        echo "kvm api version: $version, KVM_CREATE_VM descriptor: $(echo "$out" | sed -n 2p)"
+        if test "$version" != 12; then
+            finding "/dev/kvm reports API version '$version', not 12"
+        fi
+    else
+        finding "/dev/kvm cannot create a VM: $(echo "$out" | tail -1)"
+    fi
+}
+
 case "${1:-}" in
 tools) check_tools ;;
 toolchain) check_toolchain ;;
@@ -143,8 +156,9 @@ apt-proxy) check_apt_proxy ;;
 pip) check_pip ;;
 qemu) check_qemu ;;
 qemu-fetch) check_qemu_fetch ;;
+kvm) check_kvm ;;
 *)
-    echo "usage: helpers/owned-image-probe.sh tools|toolchain|apt-proxy|pip|qemu|qemu-fetch" >&2
+    echo "usage: helpers/owned-image-probe.sh tools|toolchain|apt-proxy|pip|qemu|qemu-fetch|kvm" >&2
     exit 2
     ;;
 esac
