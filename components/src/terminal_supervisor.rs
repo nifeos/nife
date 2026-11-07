@@ -464,7 +464,7 @@ impl<'a> Child<'a> {
     /// **Move the live instance to the other place**: steps 1 to 4, or 2' for a hung incumbent.
     /// ```text
     ///   1 BUILT      lay the replacement out, wired like the incumbent, not started.
-    ///   2 QUIESCED   OPERATION_QUIESCE within QUIESCE_BOUND_MS: the FIFO drains everything ahead,
+    ///   2 QUIESCED   OPERATION_QUIESCE within QUIESCE_BOUND_MILLISECONDS: the FIFO drains everything ahead,
     ///                a parked reader is answered FLAG_RETRY, the blob is written.
     ///   3 ABSORBING  start the replacement with START_ABSORB; it reads the blob before it serves.
     ///   4 COMMIT     NOTE_ABSORBED: tell the incumbent CTL_QUIT and collect it.
@@ -633,7 +633,7 @@ impl Supervisor<'_> {
     /// **`OPERATION_QUIESCE` on `served`, with a deadline a `CALL` cannot have.** Builds a
     /// stand-in, starts it to make the call, arms the timer, and waits on the notification both of
     /// them signal. The stand-in is built before the clock starts, so the bound measures the
-    /// incumbent and not a build. The bound, `QUIESCE_BOUND_MS` (250 ms), is wall time, about
+    /// incumbent and not a build. The bound, `QUIESCE_BOUND_MILLISECONDS` (250 ms), is wall time, about
     /// thirty times the slowest healthy answer measured, and fires at the first 10 ms tick at or
     /// after it (notes/hung-component/terminal-supervisor-bound.md).
     fn quiesce(&self, served: u64, faultep: u64) -> Quiesce {
@@ -663,7 +663,7 @@ impl Supervisor<'_> {
         delete_capability(badged);
         let Ok(child) = built else { fail() };
 
-        let bound = cntfrq() * s::QUIESCE_BOUND_MS / 1000;
+        let bound = cntfrq() * s::QUIESCE_BOUND_MILLISECONDS / 1000;
         let started = now();
         if !process_builder::start_child(child, MODE_STAND_IN, 0, 0)
             || timer_arm(d.timer, started + bound, d.wake, DEADLINE) < 0

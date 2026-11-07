@@ -22,7 +22,7 @@ use crate::cpu::{self, MAXIMUM_CPUS};
 /// its windows)), so a timed window opened just after a tick has a full second of virtual time
 /// before the next one. `kernel/src/bench/timing.rs`'s `TickWindow` opens every row's window that
 /// way and fails the run if a tick lands inside one.
-pub const TICK_HZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
+pub const TICK_HERTZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
 
 /// **The 8254 PIT's input frequency**, 1193182 Hz, and the one rate on a PC that is a fixed number
 /// rather than something to measure. It is 315/22 MHz divided by 12, which is to say it descends
@@ -389,7 +389,7 @@ pub(crate) fn calibration() -> Calibration {
 
 /// Counter ticks between scheduler ticks.
 pub fn interval() -> u64 {
-    frequency() / TICK_HZ
+    frequency() / TICK_HERTZ
 }
 
 /// The local APIC timer's measured frequency, for the boot print. Zero before calibration.
@@ -397,7 +397,7 @@ pub(crate) fn apic_timer_frequency() -> u64 {
     APIC_TIMER_HZ.load(Ordering::Relaxed)
 }
 
-/// **Arm the periodic tick.** The local APIC timer, at [`TICK_HZ`], on the vector
+/// **Arm the periodic tick.** The local APIC timer, at [`TICK_HERTZ`], on the vector
 /// `interrupt_controller` chose.
 ///
 /// # Panics
@@ -411,7 +411,7 @@ pub fn initialize() {
         apic_hz != 0,
         "the local APIC timer's rate has not been measured yet (call initialize_frequency first)",
     );
-    let count = u32::try_from(apic_hz / TICK_HZ)
+    let count = u32::try_from(apic_hz / TICK_HERTZ)
         .expect("one tick period does not fit the APIC timer's 32-bit initial count");
     assert!(
         count != 0,

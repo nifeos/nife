@@ -89,7 +89,7 @@ fn the_okay_s7_is_still_not_startable() {
         [1, 2, 3, 4],
         "the vendor tree's lies must cost the S7 its start, and nobody else theirs"
     );
-    assert_eq!(list.timebase_hz, Some(4_000_000));
+    assert_eq!(list.timebase_hertz, Some(4_000_000));
 }
 
 /// **No S context for the S7, and `2h` for the U74s.** The PLIC wiring is silicon, not a cpu-node

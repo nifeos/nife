@@ -56,7 +56,8 @@ use usb::descriptor::{self, ConfigurationHeader, DeviceDescriptor};
 use usb::request::SetupPacket;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{
-    call, exit, interrupt_acknowledge, interrupt_wait, monotonic_ns, receive_capability, send,
+    call, exit, interrupt_acknowledge, interrupt_wait, monotonic_nanoseconds, receive_capability,
+    send,
 };
 use video_terminal::keymap::{EV_KEY, Keyboard};
 
@@ -96,7 +97,7 @@ const CONTROL_BUFFER: MappedWindow = unsafe {
     )
 };
 
-/// One millisecond, in the units [`monotonic_ns`] counts.
+/// One millisecond, in the units [`monotonic_nanoseconds`] counts.
 const MS: u64 = 1_000_000;
 
 /// **Order ring writes before the doorbell, and a cycle bit's read before the payload it gates.**
@@ -155,11 +156,11 @@ struct Host {
 }
 
 fn deadline(ms: u64) -> u64 {
-    monotonic_ns().saturating_add(ms * MS)
+    monotonic_nanoseconds().saturating_add(ms * MS)
 }
 
 fn past(deadline: u64) -> bool {
-    monotonic_ns() > deadline
+    monotonic_nanoseconds() > deadline
 }
 
 fn zero_page(page: u64) {
@@ -736,7 +737,7 @@ impl Host {
     }
 
     /// **Debounce one port** whose connect change just arrived, as Linux's hub driver does before
-    /// it resets a new device: `true` when its connection held for [`port::DEBOUNCE_STABLE_MS`]
+    /// it resets a new device: `true` when its connection held for [`port::DEBOUNCE_STABLE_MILLISECONDS`]
     /// and it is still connected. A bouncing plug is reset once it stops bouncing, not mid-bounce.
     fn debounce(&self, n: u8) -> bool {
         let only = |h: &Host| {
@@ -749,16 +750,16 @@ impl Host {
         self.hold_still(&only) && self.reg(self.capabilities.portsc(n)) & port::CONNECTED != 0
     }
 
-    /// Read `read` every [`port::DEBOUNCE_STEP_MS`] until [`port::PortDebounce`] says it held still
+    /// Read `read` every [`port::DEBOUNCE_STEP_MILLISECONDS`] until [`port::PortDebounce`] says it held still
     /// (`true`) or gave up (`false`).
     fn hold_still(&self, read: &dyn Fn(&Host) -> port::Connections) -> bool {
-        let mut settle = port::PortDebounce::new(monotonic_ns() / MS, read(self));
+        let mut settle = port::PortDebounce::new(monotonic_nanoseconds() / MS, read(self));
         loop {
-            let end = deadline(port::DEBOUNCE_STEP_MS);
+            let end = deadline(port::DEBOUNCE_STEP_MILLISECONDS);
             while !past(end) {
                 core::hint::spin_loop();
             }
-            if let Some(settled) = settle.sample(monotonic_ns() / MS, read(self)) {
+            if let Some(settled) = settle.sample(monotonic_nanoseconds() / MS, read(self)) {
                 return settled;
             }
         }

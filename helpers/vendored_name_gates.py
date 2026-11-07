@@ -155,7 +155,7 @@ CAP_KEPT = {
     'kernel/src/stack.rs': ({'CAP'}, _CEILING),
     'kernel/src/arch/x86_64/timer.rs': ({'CALIBRATION_WINDOW_CAP'}, _CEILING),
     'redoxfs_server/src/bin/second_mount.rs': ({'cap', 'heap_cap', 'HIT_CAP', 'cap_mib'}, _CEILING),
-    'crates/swish/src/say/tests.rs': ({'the_heap_cap_is_named_in_kib'}, _CEILING),
+    'crates/swish/src/say/tests.rs': ({'the_heap_cap_is_named_in_kibibytes'}, _CEILING),
     'crates/domain_name_system/tests/replies.rs':
         ({'addresses_past_the_cap_are_dropped_and_the_rest_kept'}, _CEILING),
     'crates/video_terminal/src/vt/tests.rs': ({'scrolls_report_movement_and_cap_at_the_screen'}, _CEILING),
@@ -269,9 +269,11 @@ def _after_number(identifier):
 
 # What a rename of a unit symbol looks like to helpers/moved_rows.py: a row follows its item to
 # the respelled name. These are the respellings lanes made, not the rule's; see BUGS.
-_RESPELLED = {'nanos': 'ns', 'millis': 'ms', 'micros': 'microseconds', 'us': 'microseconds',
-              'usec': 'microseconds', 'usecs': 'microseconds', 'secs': 'seconds', 'sec': 'second',
-              'mins': 'minutes'}
+_RESPELLED = {'nanos': 'nanoseconds', 'millis': 'milliseconds', 'micros': 'microseconds',
+              'us': 'microseconds', 'usec': 'microseconds', 'usecs': 'microseconds',
+              'secs': 'seconds', 'sec': 'second', 'mins': 'minutes', 'ns': 'nanoseconds',
+              'ms': 'milliseconds', 'hz': 'hertz', 'khz': 'kilohertz', 'mhz': 'megahertz',
+              'ghz': 'gigahertz', 'kib': 'kibibytes', 'mib': 'mebibytes', 'gib': 'gibibytes'}
 _COMPONENT = re.compile(r'[A-Z]+(?![a-z])|[A-Z]?[a-z]+|[A-Z]+')
 
 
@@ -553,10 +555,10 @@ def unit_selftest():
             failed += 1
             print(f'unit selftest: the template word list lost a `{unit}` row it counts after `per` '
                   f'or a number', file=sys.stderr)
-    for old, new in (('NANOS_PER_SEC', 'NS_PER_SECOND'), ('SECS_PER_MIN', 'SECONDS_PER_MINUTE'),
-                     ('unix_nanos', 'unix_ns'), ('delay_us', 'delay_microseconds'),
-                     ('within_30_s', 'within_30_seconds'), ('cpu_millis', 'cpu_ms'),
-                     ('hz', 'hz')):
+    for old, new in (('NANOS_PER_SEC', 'NANOSECONDS_PER_SECOND'), ('TICK_HZ', 'TICK_HERTZ'), ('SECS_PER_MIN', 'SECONDS_PER_MINUTE'),
+                     ('unix_nanos', 'unix_nanoseconds'), ('delay_us', 'delay_microseconds'),
+                     ('within_30_s', 'within_30_seconds'), ('cpu_millis', 'cpu_milliseconds'),
+                     ('hz', 'hertz'), ('fine', 'fine')):
         if respell(old) != new:
             failed += 1
             print(f'unit selftest: respell({old!r}) is {respell(old)!r}, wanted {new!r}', file=sys.stderr)

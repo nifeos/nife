@@ -22,9 +22,10 @@
 //! `clocks` and `resets` into steps, asking the caller to look each phandle up.
 //!
 //! Mainline links are pinned to `torvalds/linux` commit `cbbddb6b08cc`; vendor links to
-//! `starfive-tech/u-boot` tag `VF2_v2.10.4`, commit `1ae835c25e3d`. All were fetched 2026-11-01
-//! (UTC). The vendor branch `JH7110_VisionFive2_devel` was also read at commit `c4c67bb66ae6`, and
-//! where the two differ the item says so.
+//! `starfive-tech/u-boot` tag `VF2_v2.10.4`, commit `1ae835c25e3d`, the release a VisionFive 2
+//! ships with. All were fetched 2026-11-01 (UTC), and every claim that names a revision was checked
+//! against these commits on 2026-11-06. The vendor branch `JH7110_VisionFive2_devel` was also read
+//! at commit `c4c67bb66ae6`, and where the tag and the branch differ the item says which holds it.
 //!
 //! [mainline-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110.dtsi
 //! [mainline-trng]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/drivers/char/hw_random/jh7110-trng.c
@@ -39,6 +40,11 @@
 //!
 //! Name: ratified 2026-09-13, replacing `jh7110_crg`; kept as the crates.io name (#1806).
 
+// Runs the README's usage example as a doctest, so a stranger's first copy of it compiles.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
+
 /// The bit that turns a clock on, in every one of this controller's per-clock words
 /// (\[mainline-clk-header\], `#define JH71X0_CLK_ENABLE BIT(31)`).
 ///
@@ -49,13 +55,13 @@ pub const CLOCK_ENABLE: u32 = 1 << 31;
 ///
 /// Deliberately a plan rather than a pair of methods on a driver: the order is the load-bearing
 /// part (\[mainline-trng\] enables both clocks *before* deasserting, and
-/// \[mainline-rst-common\]'s comment says why: *"if the associated clock is gated, deasserting
-/// might otherwise hang forever"*), and a plan is the only shape that lets a host test assert on
-/// the order without a device. A driver walks this slice; it does not know which device
+/// \[mainline-rst-common\] warns that a deassert against a gated clock can hang), and a plan is
+/// the only shape that lets a host test assert on the order without a device. A driver walks this slice; it does not know which device
 /// it is bringing up.
 ///
 /// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Step {
     /// Set [`CLOCK_ENABLE`] in the domain's word for this clock index.
     EnableClock(u32),
@@ -143,19 +149,21 @@ pub const fn with_parent(word: u32, parent: u32) -> u32 {
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `TRNG_BRING_UP` (it names the block for its
 /// abbreviation; the sequence brings up the entropy source).
 pub const ENTROPY_BRING_UP: &[Step] = &[
-    Step::EnableClock(STGCLK_SEC_AHB),
-    Step::EnableClock(STGCLK_SEC_MISC_AHB),
+    Step::EnableClock(STGCLK_SECURITY_AHB),
+    Step::EnableClock(STGCLK_SECURITY_MISC_AHB),
     Step::DeassertReset(SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS),
 ];
 
 /// `JH7110_STGCLK_SEC_AHB` \[mainline-ids\]; the vendor tree's `JH7110_SEC_HCLK` (205) rebased on
 /// its stg group's start (190). The TRNG's `hclk`.
-pub(crate) const STGCLK_SEC_AHB: u32 = 15;
+#[doc(alias = "JH7110_STGCLK_SEC_AHB")]
+pub(crate) const STGCLK_SECURITY_AHB: u32 = 15;
 
 /// `JH7110_STGCLK_SEC_MISC_AHB` \[mainline-ids\]; the vendor tree's `JH7110_SEC_MISCAHB_CLK` (206)
 /// rebased the same way. The TRNG's second clock, `ahb` to mainline and `miscahb_clk` to the
 /// vendor, which is the same wire under two names.
-pub(crate) const STGCLK_SEC_MISC_AHB: u32 = 16;
+#[doc(alias = "JH7110_STGCLK_SEC_MISC_AHB")]
+pub(crate) const STGCLK_SECURITY_MISC_AHB: u32 = 16;
 
 /// `JH7110_STGRST_SEC_AHB` \[mainline-ids\]; the vendor tree's `RSTN_U0_SEC_TOP_HRESETN` (131)
 /// rebased on its stg group's start (128).
@@ -216,13 +224,15 @@ pub(crate) const AONCLK_GMAC0_AHB: u32 = 2;
 /// `JH7110_AONCLK_GMAC0_AXI`: a gate, `gmac0`'s `stmmaceth` (its CSR and bus clock). Word `0x0c`.
 pub(crate) const AONCLK_GMAC0_AXI: u32 = 3;
 /// `JH7110_AONCLK_GMAC0_TX`: a gate with a two-way mux, `gmac0_gtxclk` (0) or
-/// `gmac0_rmii_rtx` (1). Word `0x14`, which radon's vendor U-Boot calls `GMAC5_0_CLK_TX_SHIFT`
-/// and sets bit 24 of (`jh7110_gmac_sel_tx_to_rgmii`, `board/starfive/visionfive2/`).
+/// `gmac0_rmii_rtx` (1). Word `0x14`, which the vendor U-Boot calls `GMAC5_0_CLK_TX_SHIFT`
+/// and sets bit 24 of (`jh7110_gmac_sel_tx_to_rgmii` in \[vendor-board\]).
+///
+/// [vendor-board]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/board/starfive/visionfive2/starfive_visionfive2.c
 pub(crate) const AONCLK_GMAC0_TX: u32 = 5;
 /// `gmac0_tx`'s parent on a VisionFive 2 v1.3B: `gmac0_rmii_rtx`, mainline's
 /// `assigned-clock-parents` for `&gmac0` in `jh7110-starfive-visionfive-2-v1.3b.dts` beside
-/// `starfive,tx-use-rgmii-clk`, and the same bit the vendor U-Boot sets. radon's EEPROM says PCB
-/// revision `0xb2`, a v1.3B (bench transcripts, `PCB revision: 0xb2`).
+/// `starfive,tx-use-rgmii-clk`, and the same bit the vendor U-Boot sets. A board whose EEPROM
+/// reports PCB revision `0xb2` is a v1.3B.
 pub(crate) const AONCLK_GMAC0_TX_PARENT_RMII_RTX: u32 = 1;
 /// `JH7110_AONRST_GMAC0_AXI` \[mainline-ids\], `gmac0`'s `stmmaceth` reset. Bit 0 at `0x38`.
 pub(crate) const AONRST_GMAC0_AXI: u32 = 0;
@@ -341,7 +351,7 @@ pub(crate) const SYSTEM_TOP_GROUP_SIZE: u64 = 0x1_0000;
 ///
 /// Offsets from \[mainline-rst\]'s `jh7110_sys_info` (`.assert_offset = 0x2F8, .status_offset =
 /// 0x308`, fetched 2026-09-25); the counts from \[mainline-ids\]'s `JH7110_SYSRST_END` (126) and
-/// `JH7110_SYSCLK_END` (190). The vendor header radon's U-Boot was built from agrees on the clock
+/// `JH7110_SYSCLK_END` (190). The vendor header of the U-Boot a VisionFive 2 ships with agrees on the clock
 /// count, as `JH7110_CLK_SYS_REG_END 190`, which is the boundary between clocks that have a
 /// register and the vendor's virtual ones numbered above it. The chip's own abbreviation is SYS,
 /// kept in the copied `SYSCLK_*` and `SYSRST_*` names.
@@ -369,29 +379,35 @@ pub(crate) const SYSTEM_SIZE: u64 = 0x1_0000;
 /// `JH7110_SYSCLK_I2C5_APB` \[mainline-ids\], and `JH7110_I2C5_CLK_APB` in the vendor header,
 /// both **143**: the vendor numbers the SYS group first, so no rebase is needed. Word `0x23c`.
 ///
-/// **This is I2C5's only gate.** Radon's U-Boot also names a `u5_dw_i2c_clk_core` (vendor id 298)
-/// and prints it at `Starting kernel`. At `VF2_v2.10.4` the clock driver
-/// (`drivers/clk/starfive/clk-jh7110.c`) registers it as a gate on `osc` at `SYS_OFFSET(298)`,
-/// byte `0x4a8`, past the last SYS word (id 190, `JH7110_CLK_SYS_REG_END`), so no register backs
-/// it. At the vendor branch head (`c4c67bb66ae6`) that driver registers no clock by this name.
+/// **This is I2C5's only gate.** The vendor U-Boot also names a `u5_dw_i2c_clk_core` (vendor id
+/// 298) and prints it at `Starting kernel`. At `VF2_v2.10.4` the clock driver
+/// (\[vendor-clk-driver\]) registers it as a gate on `osc` at `SYS_OFFSET(298)`, byte `0x4a8`,
+/// past the last SYS word (id 190, `JH7110_CLK_SYS_REG_END`), so no register backs it. At the
+/// vendor branch head (\[vendor-clk-driver-head\]) that driver registers no clock by this name.
 /// Mainline's `DesignWare` node names this clock alone. So there is no second gate to turn on, and
 /// 298 is not a word to write.
+///
+/// [vendor-clk-driver]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/drivers/clk/starfive/clk-jh7110.c
+/// [vendor-clk-driver-head]: https://github.com/starfive-tech/u-boot/blob/c4c67bb66ae6f41c98537d18cf5c3abc8b97b8e4/drivers/clk/starfive/clk-jh7110.c
 pub(crate) const SYSCLK_I2C5_APB: u32 = 143;
 
 /// `JH7110_SYSRST_I2C5_APB` \[mainline-ids\], and `RSTN_U5_DW_I2C_APB` in the vendor header, both
 /// **81**. Bit 17 of the word at `0x300`, watched at `0x310`.
 ///
-/// **This is the line the proposal did not name, and probably the cause.** Radon's U-Boot removes
-/// its I2C driver before handing over (`DM_FLAG_OS_PREPARE`), and `designware_i2c_remove` ends in
-/// `reset_release_bulk`, whose `reset_release_all` *asserts* every reset before freeing it. Radon's
-/// OpenSBI re-enables a clock before its I2C transfer and never touches a reset. A controller held
-/// in reset reads `IC_STATUS` as zero, so its transmit-FIFO-empty poll can never succeed, which is
-/// the ten `i2c read: write daddr 36 to` lines in radon's 2026-09-04 log.
+/// **The reset a clock-only bring-up misses.** The vendor U-Boot removes its I2C driver before
+/// handing over (`DM_FLAG_OS_PREPARE`), and `designware_i2c_remove` ends in `reset_release_bulk`
+/// (\[vendor-i2c\]), whose `reset_release_all` *asserts* every reset before freeing it. The
+/// OpenSBI of a VisionFive 2 re-enables a clock before its I2C transfer and never touches a reset.
+/// A controller held in reset reads `IC_STATUS` as zero, so its transmit-FIFO-empty poll can never
+/// succeed. That stall is the likely reason a PMIC transfer fails after the hand-over; a board run
+/// of the plan below is what would confirm it.
+///
+/// [vendor-i2c]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/drivers/i2c/designware_i2c.c
 pub(crate) const SYSRST_I2C5_APB: u32 = 81;
 
 /// **What I2C5 needs before OpenSBI can reach the PMIC**, when the tree does not say. Clock first,
 /// then reset, for [`ENTROPY_BRING_UP`]'s reason: Linux's reset driver warns that a deassert against a
-/// gated clock "might otherwise hang forever".
+/// gated clock can hang.
 pub(crate) const POWER_MANAGEMENT_CHIP_BUS_BRING_UP: &[Step] = &[
     Step::EnableClock(SYSCLK_I2C5_APB),
     Step::DeassertReset(SYSRST_I2C5_APB),
@@ -404,8 +420,13 @@ pub(crate) const SYSCLK_SDIO0_AHB: u32 = 91;
 /// controller's bus clock. Word `0x170`.
 pub(crate) const SYSCLK_SDIO1_AHB: u32 = 92;
 /// `JH7110_SYSCLK_SDIO0_SDCARD`, vendor `JH7110_SDIO0_CLK_SDCARD`, both **93**: the eMMC
-/// controller's card clock source, `ciu`, a gated divider that mainline (`jh7110-common.dtsi`) and the vendor branch head
-/// (`starfive_visionfive2.dts`) assign 50 MHz; `VF2_v2.10.4` assigns none. Word `0x174`.
+/// controller's card clock source, `ciu`, a gated divider that mainline (\[mainline-common-dts\]) and
+/// the vendor branch head (\[vendor-board-dts-head\]) assign 50 MHz; the board file at
+/// `VF2_v2.10.4` (\[vendor-board-dts\]) assigns none. Word `0x174`.
+///
+/// [mainline-common-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110-common.dtsi
+/// [vendor-board-dts]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/dts/starfive_visionfive2.dts
+/// [vendor-board-dts-head]: https://github.com/starfive-tech/u-boot/blob/c4c67bb66ae6f41c98537d18cf5c3abc8b97b8e4/arch/riscv/dts/starfive_visionfive2.dts
 pub(crate) const SYSCLK_SDIO0_SDCARD: u32 = 93;
 /// `JH7110_SYSCLK_SDIO1_SDCARD`, vendor `JH7110_SDIO1_CLK_SDCARD`, both **94**: the microSD
 /// controller's `ciu`. Word `0x178`.
@@ -420,8 +441,8 @@ pub(crate) const SYSRST_SDIO1_AHB: u32 = 65;
 /// slot 1 (the microSD slot): both clocks mainline's node names, then its reset, in
 /// [`ENTROPY_BRING_UP`]'s order and for its reason. OpenBSD's `dwmmc_attach` takes the same order
 /// (`clock_enable_all`, then `reset_deassert_all`). Every step is idempotent, which matters here:
-/// radon's U-Boot has already brought the microSD controller up to load the boot script, and the
-/// bench step reads whether it left it that way before it walks the plan.
+/// the vendor U-Boot has already brought the microSD controller up to load the boot script, and a
+/// caller can read whether it left it that way before it walks the plan.
 ///
 /// Name: ratified 2026-10-26 (UTC).
 pub const SDIO_BRING_UP: [&[Step]; 2] = [
@@ -439,7 +460,7 @@ pub const SDIO_BRING_UP: [&[Step]; 2] = [
 
 /// The divider field of a JH7110 clock word, bits 23:0 (\[mainline-clk-header\]'s
 /// `JH71X0_CLK_DIV_MASK`).
-/// A transcript prints it beside the enable bit so the card clock's source rate is read off the
+/// A caller can print it beside the enable bit, so the card clock's source rate is read off the
 /// silicon rather than assumed from `assigned-clock-rates`.
 ///
 /// Name: ratified 2026-10-26 (UTC).
@@ -448,19 +469,22 @@ pub const fn clock_divider(word: u32) -> u32 {
     word & 0x00ff_ffff
 }
 
-/// The PMIC (power management integrated circuit) as radon's vendor tree spells it: the
-/// `axp15060_reg@36` node under `&i2c5` in `arch/riscv/dts/starfive_visionfive2.dts` of
-/// `starfive-tech/u-boot` at tag `VF2_v2.10.4` (commit `1ae835c25e3d`, fetched 2026-11-01 UTC). The
-/// node gives this string as its `compatible` and `0x36` as its `reg`. This is also the string
-/// radon's OpenSBI matches to find its reset device.
+/// The PMIC (power management integrated circuit) as the vendor tree spells it: the
+/// `axp15060_reg@36` node under `&i2c5` in \[vendor-board-dts\] (`starfive-tech/u-boot` at tag
+/// `VF2_v2.10.4`, commit `1ae835c25e3d`; the branch head `c4c67bb66ae6` agrees). Its `compatible`
+/// is this string and its `reg` is `0x36`. A VisionFive 2's OpenSBI matches the same string to find
+/// its reset device.
+///
+/// [vendor-board-dts]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/dts/starfive_visionfive2.dts
 ///
 /// Name: ratified 2026-11-02 (UTC), #3090.
 #[doc(alias = "pmic")]
 pub const COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR: &[u8] = b"stf,axp15060-regulator";
 
-/// The same PMIC in mainline: the `pmic@36` node under `&i2c5` in
-/// `arch/riscv/boot/dts/starfive/jh7110-common.dtsi` of `torvalds/linux` at commit
-/// `cbbddb6b08cc`, fetched 2026-11-01 (UTC), whose `compatible` is this string.
+/// The same PMIC in mainline: the `pmic@36` node under `&i2c5` in \[mainline-common-dts\]
+/// (`torvalds/linux` at commit `cbbddb6b08cc`), whose `compatible` is this string.
+///
+/// [mainline-common-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110-common.dtsi
 ///
 /// Name: ratified 2026-11-02 (UTC), #3090.
 #[doc(alias = "pmic")]
@@ -477,30 +501,31 @@ pub const POWER_MANAGEMENT_CHIP_COMPATIBLES: [&[u8]; 2] = [
     COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR,
 ];
 
-/// How many steps a tree-derived plan can hold. Radon's tree names two clocks and one reset, one
-/// of those clocks virtual; four is slack, and a bus naming more is recorded as truncated.
+/// How many steps a tree-derived plan can hold. The vendor tree names two clocks and one reset,
+/// one of those clocks virtual; four is slack, and a bus naming more is recorded as truncated.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3090.
 pub const MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS: usize = 4;
 
 /// **The plan for the PMIC's bus, and where it came from.** The PMIC (power management integrated
-/// circuit) is radon's AXP15060, on I2C5.
+/// circuit) is the AXP15060 of the VisionFive 2, on I2C5.
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `PmicBus` (PMIC spelled out) and
 /// `PowerManagementBus` (it collides with the `PMBus` standard's name).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 #[doc(alias = "pmic")]
 pub struct PowerManagementChipBus {
     steps: [Step; MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS],
     len: usize,
     /// **True when the plan is the tree's own `clocks` and `resets` of the PMIC's parent bus**,
     /// false when it is the constant I2C5 plan (its clock 143, then its reset 81). The field a
-    /// bench transcript must carry, for [`WindowLocation::from_tree`]'s reason.
+    /// caller's log must carry, for [`WindowLocation::from_tree`]'s reason.
     pub from_tree: bool,
     /// Which PMIC `compatible` was found, or `None` when the tree names no known PMIC.
     pub power_management_chip: Option<&'static [u8]>,
     /// Clock or reset specifiers the bus named that are **not** a SYS-domain gate or line, and
-    /// were skipped rather than written: radon's virtual clock 298 is the expected one. A provider
+    /// were skipped rather than written: the vendor tree's virtual clock 298 is the expected one. A provider
     /// this crate does not recognise, or an id past [`SYSTEM`]'s bounds, lands here, never in a
     /// store.
     pub skipped: usize,
@@ -510,7 +535,7 @@ pub struct PowerManagementChipBus {
     /// tree states it. The direct reset write needs it; a plan without one (the constant fallback,
     /// or a tree that names no `reg`) leaves it `None` and the caller does not attempt the write.
     pub controller: Option<(u64, u64)>,
-    /// **The PMIC's 7-bit I2C address**, the PMIC node's own `reg`: `0x36` in both of radon's
+    /// **The PMIC's 7-bit I2C address**, the PMIC node's own `reg`: `0x36` in both
     /// trees. `None` when the tree names no known PMIC at all.
     pub power_management_chip_address: Option<u32>,
 }
@@ -603,7 +628,7 @@ impl PowerManagementChipBus {
     ) -> Result<Self, E> {
         let mut bus = PowerManagementChipBus::fallback(Some(power_management_chip), 0);
         // The PMIC's own `reg` is an I2C child address: one cell, size zero by `#size-cells 0`.
-        // Both of radon's trees spell it `<0x36>`.
+        // Both trees spell it `<0x36>`.
         if let Some(cells) = power_management_chip_reg
             && cells.len() >= 4
         {
@@ -689,6 +714,7 @@ pub const MAXIMUM_DEVICE_STEPS: usize = 4;
 ///
 /// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct DevicePlan {
     steps: [Step; MAXIMUM_DEVICE_STEPS],
     len: usize,
@@ -746,15 +772,18 @@ impl DevicePlan {
 // sources are the vendor trees cited in the crate's header.
 
 /// The SYS **syscon** window, `0x1303_0000`: where the PLL control words live, distinct from
-/// [`SYSTEM_BASE`]'s CRG window the clock words live in. Vendor `jh7110-regs.h` of the pinned tree
-/// (`SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS 0x13030000`, `SYS_CRG_BASE 0x13020000`, fetched 2026-10-10), which resolves
+/// [`SYSTEM_BASE`]'s CRG window the clock words live in. Vendor `jh7110-regs.h` at `VF2_v2.10.4`
+/// (\[vendor-regs\]: `SYS_SYSCON_BASE 0x13030000`, `SYS_CRG_BASE 0x13020000`), which resolves
 /// what looked like an overlap between the PLL words at `0x2c..0x34` and the early clock words:
-/// different windows, same offsets. The name is that header's macro, kept as copied; SYS is the
-/// chip's abbreviation for [`SYSTEM`], and syscon is its system-controller block.
+/// different windows, same offsets. SYS is the chip's abbreviation for [`SYSTEM`], and syscon is
+/// its system-controller block.
+///
+/// [vendor-regs]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/include/asm/arch-jh7110/jh7110-regs.h
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
 #[doc(alias = "system syscon")]
 #[doc(alias = "syscon")]
+#[doc(alias = "SYS_SYSCON_BASE")]
 pub const SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS: u64 = 0x1303_0000;
 
 /// The SYS syscon window's size, matching the CRG window's. The name follows
@@ -763,7 +792,7 @@ pub const SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS: u64 = 0x1303_0000;
 /// Name: ratified 2026-11-05 (UTC), #3279.
 pub const SYSTEM_CONTROLLER_SIZE_BYTES: u64 = 0x1_0000;
 
-/// `JH7110_BUS_ROOT` in the vendor header radon's U-Boot builds from, **5**. Word `0x14`: a mux
+/// `JH7110_BUS_ROOT` in the vendor header, **5**. Word `0x14`: a mux
 /// whose bit 24 picks `osc` (0) or `pll2_out` (1), per the vendor clock driver's registration
 /// (`bus_root_sels`, `starfive_clk_mux(..., SYS_OFFSET(JH7110_BUS_ROOT), 1, ...)`).
 ///
@@ -791,11 +820,11 @@ pub const SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_H
 pub const SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION: u32 = 11;
 
 /// The oscillator every JH7110 rate chain is rooted in, 24 MHz, `refclk` in the vendor PLL code.
-pub(crate) const OSC_HZ: u64 = 24_000_000;
+pub(crate) const OSC_HERTZ: u64 = 24_000_000;
 
 /// The vendor PLL code's default for a PLL it cannot interpret (`deffreq` for PLL2), returned
 /// rather than guessed from fields that are not in integer mode.
-pub(crate) const PLL2_DEFAULT_HZ: u64 = 1_188_000_000;
+pub(crate) const PLL2_DEFAULT_HERTZ: u64 = 1_188_000_000;
 
 /// **The words the I2C input-clock chain reads**, one struct so the caller can read them in one
 /// place and the arithmetic can be tested without a device. The CRG
@@ -897,12 +926,12 @@ pub const fn advanced_extensible_interface_configuration_0_hertz(
         let prediv = if prediv_raw == 0 { 1 } else { prediv_raw };
         let postdiv1 = 1u64 << ((w.phase_locked_loop_2_post_divider_1_word >> 28) & 3);
         if dacpd == 1 && dsmpd == 1 && fbdiv > 0 {
-            OSC_HZ * fbdiv / (prediv * postdiv1)
+            OSC_HERTZ * fbdiv / (prediv * postdiv1)
         } else {
-            PLL2_DEFAULT_HZ
+            PLL2_DEFAULT_HERTZ
         }
     } else {
-        OSC_HZ
+        OSC_HERTZ
     };
     parent / one_based_divider(w.advanced_extensible_interface_configuration_0, 2)
 }
@@ -924,7 +953,7 @@ pub const MAXIMUM_SD_CARD_DIVIDER: u32 = 15;
 /// **The divider that brings a card clock to at most `want_hertz`** from `parent_hertz`: the smallest
 /// that does, so the rate is as close below the ask as the divider allows, clamped to
 /// `1..=`[`MAXIMUM_SD_CARD_DIVIDER`]. The tree's `assigned-clock-rates` is a rate the OS is asked to
-/// program, and radon's firmware leaves this divider at 2, four times the tree's 50 MHz.
+/// program, and the firmware of a VisionFive 2 leaves this divider at 2, four times the tree's 50 MHz.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
 #[must_use]
@@ -1002,18 +1031,18 @@ pub struct StandardMode {
 /// (`IC_CON_SD`).
 const STANDARD_MODE_CON: u32 = 0b0110_0011;
 /// Standard mode's minimum SCL high time, in nanoseconds.
-const STANDARD_HIGH_NS: u128 = 4_000;
+const STANDARD_HIGH_NANOSECONDS: u128 = 4_000;
 /// Standard mode's minimum SCL low time, in nanoseconds.
-const STANDARD_LOW_NS: u128 = 4_700;
+const STANDARD_LOW_NANOSECONDS: u128 = 4_700;
 /// The SDA hold a device provides to bridge SCL's undefined falling edge, in nanoseconds.
-const STANDARD_SDA_HOLD_NS: u128 = 300;
+const STANDARD_SDA_HOLD_NANOSECONDS: u128 = 300;
 /// The bus rate this module programs, in hertz.
-const STANDARD_BUS_HZ: u128 = 100_000;
+const STANDARD_BUS_HERTZ: u128 = 100_000;
 
-/// The smallest count of input-clock periods lasting at least `period_ns`, never below 1 (zero is
+/// The smallest count of input-clock periods lasting at least `period_nanoseconds`, never below 1 (zero is
 /// not a count a controller can be programmed with) and never above `u32::MAX`.
-const fn counts(clock_frequency: u64, period_ns: u128) -> u32 {
-    let ticks = (clock_frequency as u128 * period_ns).div_ceil(1_000_000_000);
+const fn counts(clock_frequency: u64, period_nanoseconds: u128) -> u32 {
+    let ticks = (clock_frequency as u128 * period_nanoseconds).div_ceil(1_000_000_000);
     // The saturation subtracts the excess instead of comparing, so no boundary is left to
     // mutate: `ticks` minus whatever lies above `u32::MAX` is `min(ticks, u32::MAX)`.
     let ticks = ticks - ticks.saturating_sub(u32::MAX as u128);
@@ -1032,15 +1061,15 @@ const fn counts(clock_frequency: u64, period_ns: u128) -> u32 {
 /// result guarantees that `high_count + low_count` counts never span less than 10 microseconds, so the bus
 /// never runs faster than 100 kHz, and that each phase meets its minimum. Rise and fall times on
 /// the wire only add to the period. An input clock below 100 kHz still yields counts of at least 1
-/// and cannot reach 100 kHz; a bench transcript carries the computed input clock, so that case is
-/// visible as one.
+/// and cannot reach 100 kHz; a caller that logs the computed input clock makes that case visible
+/// as one.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
 #[must_use]
 pub const fn standard_mode_100_kilohertz(clock_frequency: u64) -> StandardMode {
-    let hcnt = counts(clock_frequency, STANDARD_HIGH_NS);
-    let minimum_lcnt = counts(clock_frequency, STANDARD_LOW_NS);
-    let period = counts(clock_frequency, 1_000_000_000 / STANDARD_BUS_HZ);
+    let hcnt = counts(clock_frequency, STANDARD_HIGH_NANOSECONDS);
+    let minimum_lcnt = counts(clock_frequency, STANDARD_LOW_NANOSECONDS);
+    let period = counts(clock_frequency, 1_000_000_000 / STANDARD_BUS_HERTZ);
     let shortfall = period.saturating_sub(hcnt);
     // The larger of the two, written as the minimum plus whatever the shortfall exceeds it by.
     let lcnt = minimum_lcnt + shortfall.saturating_sub(minimum_lcnt);
@@ -1048,13 +1077,14 @@ pub const fn standard_mode_100_kilohertz(clock_frequency: u64) -> StandardMode {
         control: STANDARD_MODE_CON,
         high_count: hcnt,
         low_count: lcnt,
-        data_hold: counts(clock_frequency, STANDARD_SDA_HOLD_NS),
+        data_hold: counts(clock_frequency, STANDARD_SDA_HOLD_NANOSECONDS),
     }
 }
 
 /// The AXP15060 PMIC (power management integrated circuit) register OpenSBI's reset and shutdown
-/// both go through, `0x32`, and the bit that resets: bit 6 (bit 7 powers off), as read on a
-/// VisionFive 2 bench on 2026-10-09 and 2026-10-10. The caller writes the reset bit alone,
+/// both go through, `0x32`, and the bit that resets: bit 6 (bit 7 powers off), as read from a
+/// VisionFive 2 board; the same register and bit are in the OpenSBI source for the board
+/// (`platform/generic/starfive/jh7110.c`, BSD-2-Clause). The caller writes the reset bit alone,
 /// read-modify-write, so the register's other bits keep whatever the PMIC already holds.
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `PMIC_RESET_REG` (PMIC and `reg` spelled out)
@@ -1073,7 +1103,7 @@ enum Spec {
     /// A SYS-domain gate or line, in bounds.
     Step(Step),
     /// A well-formed specifier for something else: another provider, or an id past [`SYSTEM`]'s
-    /// bounds (radon's virtual clock 298).
+    /// bounds (the vendor tree's virtual clock 298).
     Foreign,
     /// A provider without exactly one cell per specifier, or a short tail. The walk takes
     /// eight-byte strides, so everything from here on in the list is unreadable and skipped: the
@@ -1192,17 +1222,18 @@ pub const fn is_clock_enabled(clock_word: u32) -> bool {
 /// the tree-wide ruling asks).
 pub const MAXIMUM_RECORDED_CLOCKS: usize = 4;
 
-/// What the hardware said, in enough detail that a bench transcript is diagnosable without a
-/// second trip to the machine.
+/// What the hardware said, in enough detail that a log of it is diagnosable without a second trip
+/// to the machine.
 ///
 /// **The `before` words are the load-bearing ones.** If the clocks read back already enabled and
 /// the reset already released, then a gated clock or a held reset was not the cause, and an
-/// all-zero TRNG register window has some other one. That is the outcome a bench
-/// session most needs to be able to tell apart, and only a before-and-after can tell it.
+/// all-zero TRNG register window has some other one. That is the outcome a first
+/// bring-up most needs to be able to tell apart, and only a before-and-after can tell it.
 ///
 /// Name: ratified 2026-10-26 (UTC). Refused `Report` (a word that could name almost anything; it
 /// reports one bring-up).
 #[derive(Clone, Copy, Debug, Default)]
+#[non_exhaustive]
 pub struct BringUpReport {
     /// Each `EnableClock` step's word as it read *before* anything was written, in plan order.
     pub clock_before: [u32; MAXIMUM_RECORDED_CLOCKS],
@@ -1227,8 +1258,8 @@ pub struct BringUpReport {
     pub had_reset: bool,
     /// True when the status word said the line was out of reset before the poll gave up.
     pub released: bool,
-    /// How many status reads the deassert took. The driver's own `POLL_LIMIT` here means it never
-    /// came out.
+    /// How many status reads the deassert took. A count equal to the caller's poll limit means the
+    /// line never came out.
     pub polls: u32,
     /// Steps whose identifier this domain rejected, which would mean the plan and the domain
     /// disagree: a programming error, not a hardware condition. Nonzero here invalidates the rest.
@@ -1274,7 +1305,7 @@ impl BringUpReport {
 
     /// **Was the device already up before this ran?** True when every recorded clock was enabled
     /// and, if the plan had one, the reset was already released. See the type's own doc for why
-    /// this is the question a bench session asks first.
+    /// this is the question a first bring-up asks first.
     ///
     /// Name: ratified 2026-10-26 (UTC).
     #[must_use]
@@ -1299,13 +1330,14 @@ impl BringUpReport {
 /// Name: ratified 2026-10-26 (UTC). Refused `Found` (a word that could name almost anything; it is
 /// where a window was located).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct WindowLocation {
     /// Physical base of the register window.
     pub base: u64,
     /// Its size in bytes.
     pub size: u64,
     /// **True when the device tree said so, false when this is the window's constant.** The one
-    /// field a bench transcript must carry: a base that came from a constant is a base nobody on
+    /// field a caller's log must carry: a base that came from a constant is a base nobody on
     /// that machine confirmed, and a reader three months later cannot re-derive which it was.
     pub from_tree: bool,
     /// Which `compatible` string matched, or `None` when nothing did and the constant was used.
@@ -1323,8 +1355,8 @@ pub struct WindowLocation {
 pub const COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR: &[u8] = b"starfive,jh7110-stgcrg";
 
 /// **Vendor clock generator** (the `clkgen` node, \[vendor-dts\]): the vendor U-Boot's single
-/// clock controller covering sys, stg and aon. This is the one radon's firmware actually serves,
-/// if it serves either.
+/// clock controller covering sys, stg and aon. This is the one the firmware of a VisionFive 2 actually
+/// serves, if it serves either.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279.
 #[doc(alias = "clock generator")]

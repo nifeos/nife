@@ -124,7 +124,7 @@ pub struct CpuList {
     /// node, and because the RISC-V timer needs it *before* the ISA record exists:
     /// `timer::initialize` runs several steps ahead of `isa::initialize` in that boot. `None` on
     /// aarch64, whose counter frequency is architected in `CNTFRQ_EL0` and needs no tree.
-    pub timebase_hz: Option<u64>,
+    pub timebase_hertz: Option<u64>,
 }
 
 impl Default for CpuList {
@@ -134,7 +134,7 @@ impl Default for CpuList {
             len: 0,
             described: 0,
             address_cells: 1,
-            timebase_hz: None,
+            timebase_hertz: None,
         }
     }
 }
@@ -188,7 +188,7 @@ impl CpuList {
             };
         }
 
-        list.timebase_hz = timebase_hz(dt)?;
+        list.timebase_hertz = timebase_hertz(dt)?;
         Ok(list)
     }
 }
@@ -243,7 +243,7 @@ pub(crate) fn is_okay(value: &[u8]) -> bool {
 /// machine whose harts genuinely differ, so reading only the first is a simplification and not a
 /// correct general answer. The kernel treats the counter as machine-wide either way, so the honest
 /// place to record that limitation is here rather than at the call site.
-fn timebase_hz(dt: &DeviceTreeBlob<'_>) -> Result<Option<u64>, Error> {
+fn timebase_hertz(dt: &DeviceTreeBlob<'_>) -> Result<Option<u64>, Error> {
     if let Some(bytes) = dt.node_prop(b"cpus", b"timebase-frequency")? {
         return Ok(cells_to_u64(bytes));
     }

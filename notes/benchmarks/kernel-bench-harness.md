@@ -29,7 +29,7 @@ in the main page's first table and in [icount drift](icount-drift-and-provenance
 A ping-pong row (`ipc_rtt`, `ipc_rtt_el0`) is bimodal: each receive either finds its message
 waiting or blocks for it, and a tick inside the window can flip the loop between the two. Under a
 free-running tick an unrelated change moves those rows by whole percent. At the bench build's
-`TICK_HZ` of 1, a window that opens on a tick has a full second before the next, and the close
+`TICK_HERTZ` of 1, a window that opens on a tick has a full second before the next, and the close
 proves on every run that the row fit. The opening tick also fixes a ping-pong's starting mode, so
 `ipc_rtt` always measures the receiver-first mode. `yield_switch` and `spawn_reap` still do not
 mask interrupts; this only moves where involuntary switches fall. Ticks are per core, so a thread

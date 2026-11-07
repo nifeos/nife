@@ -867,13 +867,13 @@ fn grant_lines_are_read_strictly_and_follow_their_rows() {
     let a = [1u8; 32];
     let b = [2u8; 32];
     let text = |d: &Digest| String::from_utf8(measured_boot::digest_text(d).to_vec()).unwrap();
-    let (ta, tb) = (text(&a), text(&b));
+    let (text_a, text_b) = (text(&a), text(&b));
     // A comment and a blank line are skipped, as in every generation; `alto` is granted a zone
     // and not the network, so the network is never read off another grant of its digest.
     let table = format!(
-        "# generation 1\n{ta} dialer 0.1.0 dialer jig\n{tb} alto 0.1.0 duet jig\n\n\
-         default dialer {ta}\ndefault alto {tb}\ngrant {ta} network\ngrant {ta} zone .\n\
-         grant {ta} zone nife.test\ngrant {tb} zone nife.test\n"
+        "# generation 1\n{text_a} dialer 0.1.0 dialer jig\n{text_b} alto 0.1.0 duet jig\n\n\
+         default dialer {text_a}\ndefault alto {text_b}\ngrant {text_a} network\ngrant {text_a} zone .\n\
+         grant {text_a} zone nife.test\ngrant {text_b} zone nife.test\n"
     );
     assert_eq!(network_granted(&table, &a), Ok(true));
     assert_eq!(network_granted(&table, &b), Ok(false));
@@ -896,13 +896,13 @@ fn grant_lines_are_read_strictly_and_follow_their_rows() {
     let c = text(&[3u8; 32]);
     for bad in [
         format!("grant {c} network\n"),
-        format!("grant {ta} zone nife.test\ngrant {ta} network\n"),
-        format!("grant {ta} network\ngrant {ta} network\n"),
-        format!("grant {ta} zone Nife.test\n"),
-        format!("grant {ta} network now\n"),
-        format!("grant {ta} clock\n"),
+        format!("grant {text_a} zone nife.test\ngrant {text_a} network\n"),
+        format!("grant {text_a} network\ngrant {text_a} network\n"),
+        format!("grant {text_a} zone Nife.test\n"),
+        format!("grant {text_a} network now\n"),
+        format!("grant {text_a} clock\n"),
     ] {
-        let t = format!("{ta} dialer 0.1.0 dialer jig\n{bad}");
+        let t = format!("{text_a} dialer 0.1.0 dialer jig\n{bad}");
         assert_eq!(network_granted(&t, &a), Err(Error::Malformed), "{bad}");
     }
 
@@ -925,12 +925,12 @@ fn grant_lines_are_read_strictly_and_follow_their_rows() {
     let n = without_package(&next, "dialer", None, &Answered::Console, &mut out).unwrap();
     let after = core::str::from_utf8(&out[..n]).unwrap();
     assert!(
-        !after.contains(&format!("grant {ta}")),
+        !after.contains(&format!("grant {text_a}")),
         "a removal takes its rows' grants: {after}"
     );
     assert_eq!(network_granted(after, &a), Ok(false));
     assert!(
-        after.contains(&format!("grant {tb} zone nife.test")),
+        after.contains(&format!("grant {text_b} zone nife.test")),
         "and only its rows'"
     );
 }
@@ -971,9 +971,11 @@ fn an_install_writes_its_grants_in_order() {
     )
     .unwrap();
     let first = core::str::from_utf8(&out[..n]).unwrap().to_string();
-    let (ta, tb) = (text(&a), text(&b));
+    let (text_a, text_b) = (text(&a), text(&b));
     assert!(
-        first.ends_with(&format!("grant {ta} network\ngrant {ta} zone nife.test\n")),
+        first.ends_with(&format!(
+            "grant {text_a} network\ngrant {text_a} zone nife.test\n"
+        )),
         "network sorts before zone: {first}"
     );
     assert_eq!(network_granted(&first, &a), Ok(true));
@@ -997,9 +999,9 @@ fn an_install_writes_its_grants_in_order() {
     assert_eq!(
         lines,
         [
-            format!("grant {tb} zone ."),
-            format!("grant {ta} network"),
-            format!("grant {ta} zone nife.test"),
+            format!("grant {text_b} zone ."),
+            format!("grant {text_a} network"),
+            format!("grant {text_a} zone nife.test"),
         ]
     );
     // The same bytes again: the same table.
@@ -1092,11 +1094,11 @@ fn a_grant_for_no_new_row_or_a_misspelled_zone_is_refused() {
 fn two_default_pointers_for_one_program_make_the_table_malformed() {
     let (a, b) = ([1u8; 32], [2u8; 32]);
     let text = |d: &Digest| String::from_utf8(measured_boot::digest_text(d).to_vec()).unwrap();
-    let (ta, tb) = (text(&a), text(&b));
-    let rows = format!("{ta} uptime 0.1.0 uptime jig\n{tb} uptime 0.2.0 uptime jig\n");
-    let one = format!("{rows}default uptime {tb}\n");
+    let (text_a, text_b) = (text(&a), text(&b));
+    let rows = format!("{text_a} uptime 0.1.0 uptime jig\n{text_b} uptime 0.2.0 uptime jig\n");
+    let one = format!("{rows}default uptime {text_b}\n");
     assert_eq!(lookup(&one, "uptime").unwrap().unwrap().version, "0.2.0");
-    let two = format!("{one}default uptime {ta}\n");
+    let two = format!("{one}default uptime {text_a}\n");
     assert_eq!(lookup(&two, "uptime"), Err(Error::Malformed));
 }
 
@@ -1109,7 +1111,7 @@ fn two_default_pointers_for_one_program_make_the_table_malformed() {
 fn two_paths_write_one_record_and_their_answers_differ() {
     let a = [0x5au8; 32];
     let text = |d: &Digest| String::from_utf8(measured_boot::digest_text(d).to_vec()).unwrap();
-    let ta = text(&a);
+    let text_a = text(&a);
     let asks = [
         Grant {
             digest: a,
@@ -1179,8 +1181,8 @@ fn two_paths_write_one_record_and_their_answers_differ() {
     assert_eq!(
         lines,
         [
-            format!("grant {ta} network"),
-            format!("grant {ta} zone nife.test")
+            format!("grant {text_a} network"),
+            format!("grant {text_a} zone nife.test")
         ]
     );
     // A vouch, which grants nothing, records no answer: the line is beside the record.
@@ -1240,7 +1242,7 @@ fn an_answered_line_is_read_strictly() {
 fn service_dir_and_installer_grants_round_trip() {
     let a = [0x33u8; 32];
     let text = |d: &Digest| String::from_utf8(measured_boot::digest_text(d).to_vec()).unwrap();
-    let ta = text(&a);
+    let text_a = text(&a);
     let asks = [
         Grant {
             digest: a,
@@ -1278,9 +1280,9 @@ fn service_dir_and_installer_grants_round_trip() {
     assert_eq!(
         lines,
         [
-            format!("grant {ta} dir monit/state rw"),
-            format!("grant {ta} installer"),
-            format!("grant {ta} service"),
+            format!("grant {text_a} dir monit/state rw"),
+            format!("grant {text_a} installer"),
+            format!("grant {text_a} service"),
         ]
     );
     assert_eq!(answered(table).unwrap(), Some(Answered::Console));
@@ -1310,7 +1312,9 @@ fn service_dir_and_installer_grants_round_trip() {
     .unwrap();
     let table = core::str::from_utf8(&narrow[..n]).unwrap();
     assert!(
-        record(table).eq(core::iter::once(format!("grant {ta} dir monit/state r"))),
+        record(table).eq(core::iter::once(format!(
+            "grant {text_a} dir monit/state r"
+        ))),
         "the rights spell as the file does: {table}"
     );
     // And `r` is a rights word, not merely a spelling this reader passes over.
@@ -1322,11 +1326,11 @@ fn service_dir_and_installer_grants_round_trip() {
         }]
     );
     for bad in [
-        format!("grant {ta} dir monit/state rwx\n"),
-        format!("grant {ta} dir monit/state\n"),
-        format!("grant {ta} dir\n"),
-        format!("grant {ta} dir a.b r\n"),
-        format!("grant {ta} service now\n"),
+        format!("grant {text_a} dir monit/state rwx\n"),
+        format!("grant {text_a} dir monit/state\n"),
+        format!("grant {text_a} dir\n"),
+        format!("grant {text_a} dir a.b r\n"),
+        format!("grant {text_a} service now\n"),
     ] {
         assert_eq!(
             network_granted(&format!("{table}{bad}"), &a),

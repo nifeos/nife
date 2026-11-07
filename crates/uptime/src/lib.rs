@@ -2,7 +2,7 @@
 //! design/roadmap/0126-who-else-is-running.md).
 //!
 //! The program's whole logic, lifted out so it runs on the host; `components/src/uptime.rs` is the
-//! syscall and nothing else. It reads `user_mode_runtime::monotonic_ns`, the ambient counter
+//! syscall and nothing else. It reads `user_mode_runtime::monotonic_nanoseconds`, the ambient counter
 //! `date` reads too, which `kernel/src/arch/*/timer.rs`'s `init` grants every EL0 program as a
 //! deliberate exception to DECISIONS §10 (process model: capability-based, microkernel)'s
 //! no-ambient-authority rule: a monotonic counter observes time and affects nothing. So `uptime`
@@ -63,8 +63,8 @@ impl Formatted {
 /// assert_eq!(format(90 * 1_000_000_000).as_bytes(), b"up 00:01:30\n");
 /// assert_eq!(format(90_000 * 1_000_000_000).as_bytes(), b"up 1 day, 01:00:00\n");
 /// ```
-pub fn format(ns: u64) -> Formatted {
-    let total_seconds = ns / NS_PER_SECOND;
+pub fn format(nanoseconds: u64) -> Formatted {
+    let total_seconds = nanoseconds / NS_PER_SECOND;
     let days = total_seconds / SECONDS_PER_DAY;
     let hours = (total_seconds % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
     let minutes = (total_seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;

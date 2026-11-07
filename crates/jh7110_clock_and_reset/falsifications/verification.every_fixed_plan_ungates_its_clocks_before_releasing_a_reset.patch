@@ -14,8 +14,8 @@ index 7cc680a83..58d9fa9ad 100644
  /// abbreviation; the sequence brings up the entropy source).
  pub const ENTROPY_BRING_UP: &[Step] = &[
 +    Step::DeassertReset(SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS),
-     Step::EnableClock(STGCLK_SEC_AHB),
-     Step::EnableClock(STGCLK_SEC_MISC_AHB),
+     Step::EnableClock(STGCLK_SECURITY_AHB),
+     Step::EnableClock(STGCLK_SECURITY_MISC_AHB),
 -    Step::DeassertReset(SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS),
  ];
  

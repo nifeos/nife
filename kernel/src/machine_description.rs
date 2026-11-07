@@ -69,7 +69,7 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
         use crate::arch::{interrupts, timer};
         println!(
             "  timer            : {} Hz tick, counter at {} MHz, interrupts {}",
-            timer::TICK_HZ,
+            timer::TICK_HERTZ,
             timer::frequency() / 1_000_000,
             if interrupts::is_enabled() {
                 "ON"
@@ -131,7 +131,7 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
         smp::online_count(),
         memory::stats().map_or(0, |s| (s.total as u64 * page_frames::FRAME_SIZE)
             / (1024 * 1024)),
-        arch::timer::TICK_HZ,
+        arch::timer::TICK_HERTZ,
     );
 }
 

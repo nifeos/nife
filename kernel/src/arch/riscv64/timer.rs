@@ -21,7 +21,7 @@ pub(crate) const TIMER_INTID: u32 = 5;
 /// its windows)), so a timed window opened just after a tick has a full second of virtual time
 /// before the next one. `kernel/src/bench/timing.rs`'s `TickWindow` opens every row's window that
 /// way and fails the run if a tick lands inside one.
-pub const TICK_HZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
+pub const TICK_HERTZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
 
 /// The `time` CSR frequency in Hz, read from `/cpus/timebase-frequency`.
 ///
@@ -51,7 +51,7 @@ pub(crate) fn initialize_frequency(dtb_ptr: usize) {
     let list =
         machine_discovery::cpu_list::CpuList::from_device_tree(&dt).expect("cannot read /cpus");
     let hz = list
-        .timebase_hz
+        .timebase_hertz
         .expect("the device tree states no /cpus/timebase-frequency, and RISC-V has no CNTFRQ_EL0");
     assert!(
         counter_frequency_contract::is_plausible(hz),
@@ -63,7 +63,7 @@ pub(crate) fn initialize_frequency(dtb_ptr: usize) {
 
 /// The counter rate the machine stated. Panics if read before [`initialize_frequency`], as
 /// `arch::isa::get` does.
-fn timebase_hz() -> u64 {
+fn timebase_hertz() -> u64 {
     let hz = TIMEBASE_HZ.load(Ordering::Relaxed);
     assert!(
         hz > 0,
@@ -112,7 +112,7 @@ pub fn now() -> u64 {
 
 /// The counter's frequency in Hz, as the machine stated it.
 pub fn frequency() -> u64 {
-    timebase_hz()
+    timebase_hertz()
 }
 
 /// How many counter ticks make a second, or `None` if [`initialize_frequency`] has not run yet.
@@ -126,7 +126,7 @@ pub(crate) fn frequency_checked() -> Option<u64> {
 
 /// Counter ticks between two timer interrupts (the reload interval): one tick period.
 pub fn interval() -> u64 {
-    timebase_hz() / TICK_HZ
+    timebase_hertz() / TICK_HERTZ
 }
 
 /// Start the periodic timer: arm the first deadline through SBI, and enable the S-mode timer
@@ -316,7 +316,7 @@ pub fn is_tick_pending() -> bool {
 /// Milliseconds since boot, from the free-running counter rather than the tick count.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub(crate) fn uptime_ms() -> u64 {
-    now() / (timebase_hz() / 1000)
+    now() / (timebase_hertz() / 1000)
 }
 
 /// Busy-wait for `counter_ticks` of the free-running counter.
@@ -449,7 +449,7 @@ mod tests {
         .expect("device tree is unreadable");
         let stated = machine_discovery::cpu_list::CpuList::from_device_tree(&dt)
             .expect("cannot read /cpus")
-            .timebase_hz
+            .timebase_hertz
             .expect("QEMU virt states /cpus/timebase-frequency");
 
         assert_eq!(
@@ -459,7 +459,7 @@ mod tests {
         );
         assert_eq!(
             crate::arch::timer::interval(),
-            stated / super::TICK_HZ,
+            stated / super::TICK_HERTZ,
             "the tick interval is derived from the stated rate",
         );
     }

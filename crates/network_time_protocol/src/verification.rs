@@ -8,16 +8,19 @@ use super::*;
 /// ([`super::tests::every_nanosecond_survives_the_round_trip`]); this harness guards the low
 /// corner, where 1 ns is 4.29 ticks and truncating instead of rounding turns it into 0. See
 /// notes/ntp/what-is-proved.md.
-const PROVED_NS: u64 = 1 << 16;
+const PROVED_NANOSECONDS: u64 = 1 << 16;
 
-/// **Nanoseconds survive the fixed-point conversion**, for every value under [`PROVED_NS`].
+/// **Nanoseconds survive the fixed-point conversion**, for every value under [`PROVED_NANOSECONDS`].
 /// See that constant for what is and is not covered and why.
 /// Falsification: replayable `crates/network_time_protocol/falsifications/verification.nanoseconds_survive_the_fixed_point.patch`
 #[kani::proof]
 fn nanoseconds_survive_the_fixed_point() {
-    let ns: u32 = kani::any();
-    kani::assume((ns as u64) < PROVED_NS);
-    assert_eq!(ticks_to_ns(ns_to_ticks(ns)), ns);
+    let nanoseconds: u32 = kani::any();
+    kani::assume((nanoseconds as u64) < PROVED_NANOSECONDS);
+    assert_eq!(
+        ticks_to_nanoseconds(nanoseconds_to_ticks(nanoseconds)),
+        nanoseconds
+    );
 }
 
 /// **The era pivot is exact over the whole representable window**: for every Unix second in
@@ -26,7 +29,7 @@ fn nanoseconds_survive_the_fixed_point() {
 /// covers the era-0 branch, the era-1 branch, and the boundary between them in one proof. All
 /// 4.2 billion of them, in a third of a second, because this half is addition.
 ///
-/// It asserts the seconds; the nanoseconds are the sweep named on [`PROVED_NS`]. The halves
+/// It asserts the seconds; the nanoseconds are the sweep named on [`PROVED_NANOSECONDS`]. The halves
 /// compose because `from_unix` builds `(seconds << 32) | ticks` with `ticks < 2^32`, disjoint
 /// bits that `to_unix` reads back through separate accessors.
 /// Falsification: replayable `crates/network_time_protocol/falsifications/verification.the_era_pivot_is_exact_over_the_window.patch`
@@ -42,15 +45,15 @@ fn the_era_pivot_is_exact_over_the_window() {
 
 /// **Decoding is total, and it never produces an invalid sub-second.** For every one of the
 /// 2^64 bit patterns a packet can carry: `to_unix` does not panic, and the nanosecond it returns
-/// is under 1e9. The second half is the clamp in [`ticks_to_ns`], and it matters because a
+/// is under 1e9. The second half is the clamp in [`ticks_to_nanoseconds`], and it matters because a
 /// nanosecond field of exactly 1e9 is the kind of thing that panics inside a `Duration`
 /// constructor three layers away from the packet that caused it.
 /// Falsification: replayable `crates/network_time_protocol/falsifications/verification.decoding_any_wire_value_is_total.patch`
 #[kani::proof]
 fn decoding_any_wire_value_is_total() {
     let bits: u64 = kani::any();
-    let (_seconds, ns) = Timestamp::from_bits(bits).to_unix();
-    assert!((ns as u64) < NS_PER_SECOND);
+    let (_seconds, nanoseconds) = Timestamp::from_bits(bits).to_unix();
+    assert!((nanoseconds as u64) < NS_PER_SECOND);
 }
 
 /// **Out of range is refused, never aliased.** For every `seconds`, `from_unix` returns `Some` if
@@ -60,11 +63,11 @@ fn decoding_any_wire_value_is_total() {
 #[kani::proof]
 fn out_of_range_is_refused() {
     let seconds: u64 = kani::any();
-    let ns: u32 = kani::any();
-    let encoded = Timestamp::from_unix(seconds, ns);
+    let nanoseconds: u32 = kani::any();
+    let encoded = Timestamp::from_unix(seconds, nanoseconds);
     assert_eq!(
         encoded.is_some(),
-        seconds < UNIX_LIMIT && (ns as u64) < NS_PER_SECOND
+        seconds < UNIX_LIMIT && (nanoseconds as u64) < NS_PER_SECOND
     );
 }
 

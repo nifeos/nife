@@ -172,7 +172,7 @@ fn walk_split(dir: &Path, depth: usize, t: &mut Totals, s: &mut Split) -> io::Re
 }
 
 /// The median of [`REPS`] timed runs of `f`, in nanoseconds, after one untimed run.
-fn median_ns(mut f: impl FnMut() -> io::Result<()>) -> io::Result<u64> {
+fn median_nanoseconds(mut f: impl FnMut() -> io::Result<()>) -> io::Result<u64> {
     f()?;
     let mut runs = [0u64; REPS];
     for run in &mut runs {
@@ -236,7 +236,7 @@ impl Price {
     }
 
     /// What one more KiB read costs.
-    pub fn per_kib(&self) -> f64 {
+    pub fn per_kibibytes(&self) -> f64 {
         let (small, large) = (tree::SIZE_FILES[0].1, tree::SIZE_FILES[2].1);
         (self.read_large as f64 - self.read_small as f64) / ((large - small) as f64 / 1024.0)
     }
@@ -253,7 +253,7 @@ pub fn price(root: &Path) -> io::Result<Price> {
             level = level.join(tree::LEVEL);
         }
         let file = level.join(tree::LEVEL_FILE);
-        by_depth.push(median_ns(|| fs::read(&file).map(drop))?);
+        by_depth.push(median_nanoseconds(|| fs::read(&file).map(drop))?);
     }
     let xs: Vec<f64> = (0..by_depth.len()).map(|k| k as f64).collect();
     let ys: Vec<f64> = by_depth.iter().map(|&y| y as f64).collect();
@@ -261,7 +261,7 @@ pub fn price(root: &Path) -> io::Result<Price> {
 
     let list = |dir: &Path| {
         let dir = dir.to_path_buf();
-        median_ns(move || {
+        median_nanoseconds(move || {
             for e in fs::read_dir(&dir)? {
                 e?.file_type()?;
             }
@@ -274,8 +274,8 @@ pub fn price(root: &Path) -> io::Result<Price> {
     let sizes = root.join(tree::SIZES);
     let small = sizes.join(tree::SIZE_FILES[0].0);
     let large = sizes.join(tree::SIZE_FILES[2].0);
-    let read_small = median_ns(|| fs::read(&small).map(drop))?;
-    let read_large = median_ns(|| fs::read(&large).map(drop))?;
+    let read_small = median_nanoseconds(|| fs::read(&small).map(drop))?;
+    let read_large = median_nanoseconds(|| fs::read(&large).map(drop))?;
 
     // Warm: the walk that counted above is the untimed run. Each timed run is also split by call,
     // and the split reported is the median run's.
@@ -286,7 +286,7 @@ pub fn price(root: &Path) -> io::Result<Price> {
         walk_split(root, 0, &mut Totals::default(), &mut split)?;
         wholes.push((since(t0), split));
     }
-    wholes.sort_unstable_by_key(|&(ns, _)| ns);
+    wholes.sort_unstable_by_key(|&(nanoseconds, _)| nanoseconds);
     let (whole, split) = *middle(&wholes);
     let (whole_minimum, whole_maximum) = (wholes[0].0, wholes[WHOLE_REPS - 1].0);
 
@@ -334,7 +334,7 @@ pub fn report(p: &Price) -> Vec<String> {
         ),
         format!(
             "walk per KiB {:.0} ns (read 4 KiB: {} ns, read 256 KiB: {} ns)",
-            p.per_kib(),
+            p.per_kibibytes(),
             p.read_small,
             p.read_large,
         ),
@@ -483,7 +483,7 @@ mod tests {
         assert!(p.whole > 0 && p.list_wide > 0 && p.read_large > 0);
         // The split is the whole walk less the walker's own bookkeeping, so it cannot exceed it.
         assert!(p.split.total() <= p.whole && p.split.list > 0 && p.split.read > 0);
-        assert!(p.per_entry().is_finite() && p.per_kib().is_finite());
+        assert!(p.per_entry().is_finite() && p.per_kibibytes().is_finite());
         let lines = report(&p);
         assert_eq!(lines[0], totals_line(&p.totals));
         for (line, prefix) in lines[1..].iter().zip([
@@ -566,16 +566,20 @@ mod tests {
     /// The per-entry and per-KiB figures are differences of two timings over the difference in what
     /// they measured: 127 more entries, and 252 more KiB (the largest sized file less the smallest).
     #[test]
-    fn a_price_per_entry_and_per_kib_divide_the_difference_by_what_differs() {
-        let kib = (tree::SIZE_FILES[2].1 - tree::SIZE_FILES[0].1) / 1024;
+    fn a_price_per_entry_and_per_kibibytes_divide_the_difference_by_what_differs() {
+        let kibibytes = (tree::SIZE_FILES[2].1 - tree::SIZE_FILES[0].1) / 1024;
         let p = price_with(
             100,
             100 + 7 * (tree::WIDE_COUNT as u64 - 1),
             50,
-            50 + 3 * kib as u64,
+            50 + 3 * kibibytes as u64,
         );
         assert!((p.per_entry() - 7.0).abs() < 1e-9, "{}", p.per_entry());
-        assert!((p.per_kib() - 3.0).abs() < 1e-9, "{}", p.per_kib());
+        assert!(
+            (p.per_kibibytes() - 3.0).abs() < 1e-9,
+            "{}",
+            p.per_kibibytes()
+        );
     }
 
     /// The middle of five is the third. Real timings tie too often to tell it from the second, so
@@ -585,20 +589,23 @@ mod tests {
         assert_eq!(*middle(&[10, 20, 30, 40, 50]), 30);
     }
 
-    /// `median_ns` runs its closure once untimed and then `REPS` times, and answers what the middle
+    /// `median_nanoseconds` runs its closure once untimed and then `REPS` times, and answers what the middle
     /// run took.
     #[test]
     fn the_median_is_of_timed_runs_after_one_that_is_not() {
         let mut calls = 0;
-        let ns = median_ns(|| {
+        let nanoseconds = median_nanoseconds(|| {
             calls += 1;
             std::thread::sleep(std::time::Duration::from_millis(2));
             Ok(())
         })
         .unwrap();
         assert_eq!(calls, REPS + 1);
-        assert!(ns >= 2_000_000, "{ns} ns for a 2 ms sleep");
-        assert!(median_ns(|| Err(io::Error::other("x"))).is_err());
+        assert!(
+            nanoseconds >= 2_000_000,
+            "{nanoseconds} ns for a 2 ms sleep"
+        );
+        assert!(median_nanoseconds(|| Err(io::Error::other("x"))).is_err());
     }
 
     /// Every level of the chain is read. A tree missing its deepest file is a pricing error and not

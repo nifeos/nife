@@ -168,8 +168,8 @@ pub fn milliseconds(ticks: u64, frequency: u64) -> u64 {
     if frequency == 0 {
         return 0;
     }
-    let ms = u128::from(ticks) * 1000 / u128::from(frequency);
-    u64::try_from(ms).unwrap_or(u64::MAX)
+    let milliseconds = u128::from(ticks) * 1000 / u128::from(frequency);
+    u64::try_from(milliseconds).unwrap_or(u64::MAX)
 }
 
 #[cfg(test)]

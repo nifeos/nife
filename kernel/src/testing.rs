@@ -614,7 +614,7 @@ fn current_test_name() -> Option<&'static str> {
 /// ```ignore
 /// // Two seconds' worth of preemption opportunities on a quiet host, and more wall clock than that
 /// // on a busy one.
-/// let mut budget = TickBudget::new(2 * crate::arch::timer::TICK_HZ);
+/// let mut budget = TickBudget::new(2 * crate::arch::timer::TICK_HERTZ);
 /// while !done() {
 ///     assert!(!budget.is_expired(), "the workers never drained");
 ///     crate::sched::yield_now();
@@ -767,7 +767,7 @@ impl core::fmt::Display for EveryCoreTickBudget {
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests call it; the kernel's own do not
 pub fn wait_on_every_core(mut done: impl FnMut() -> bool) -> Result<(), EveryCoreTickBudget> {
     let mut budget = EveryCoreTickBudget::new(
-        (WAIT_ON_EVERY_CORE_SECONDS * crate::arch::timer::TICK_HZ) as u32,
+        (WAIT_ON_EVERY_CORE_SECONDS * crate::arch::timer::TICK_HERTZ) as u32,
         WAIT_ON_EVERY_CORE_BACKSTOP_SECONDS,
     );
     loop {

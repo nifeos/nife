@@ -1122,9 +1122,11 @@ crates/clock_contract/src/lib.rs::MAGIC
 
 crates/clock_contract/src/lib.rs::NONE
 
-crates/clock_contract/src/lib.rs::NOT_AFTER_NS
 
-crates/clock_contract/src/lib.rs::NOT_BEFORE_NS
+
+crates/clock_contract/src/lib.rs::NOT_AFTER_NANOSECONDS
+
+crates/clock_contract/src/lib.rs::NOT_BEFORE_NANOSECONDS
 
 crates/clock_contract/src/lib.rs::OPERATION_SHIFT
 
@@ -5110,7 +5112,8 @@ crates/machine_statistics_contract/src/lib.rs::RUNNABLE
 
 crates/machine_statistics_contract/src/lib.rs::Snapshot
 
-crates/machine_statistics_contract/src/lib.rs::TICK_HZ
+
+crates/machine_statistics_contract/src/lib.rs::TICK_HERTZ
 
 crates/machine_statistics_contract/src/lib.rs::TOTAL_FRAMES
 
@@ -5334,13 +5337,15 @@ crates/network_time_protocol/src/lib.rs::is_zero
 
 crates/network_time_protocol/src/lib.rs::microseconds
 
+crates/network_time_protocol/src/lib.rs::nanoseconds
+
+crates/network_time_protocol/src/lib.rs::nanoseconds
+
 crates/network_time_protocol/src/lib.rs::new
 
 crates/network_time_protocol/src/lib.rs::nonce
 
-crates/network_time_protocol/src/lib.rs::ns
 
-crates/network_time_protocol/src/lib.rs::ns
 
 crates/network_time_protocol/src/lib.rs::parse
 
@@ -7424,7 +7429,8 @@ crates/user_mode_runtime/src/clock.rs::cntfrq_checked
 
 crates/user_mode_runtime/src/clock.rs::current_cpu
 
-crates/user_mode_runtime/src/clock.rs::monotonic_ns
+
+crates/user_mode_runtime/src/clock.rs::monotonic_nanoseconds
 
 crates/user_mode_runtime/src/clock.rs::now
 
@@ -7742,7 +7748,8 @@ crates/walk_pricing/src/lib.rs::WHOLE_REPS
 
 crates/walk_pricing/src/lib.rs::per_entry
 
-crates/walk_pricing/src/lib.rs::per_kib
+
+crates/walk_pricing/src/lib.rs::per_kibibytes
 
 crates/walk_pricing/src/lib.rs::price
 
@@ -8120,7 +8127,8 @@ kernel/src/arch/aarch64/thread_pointer.rs
 
 kernel/src/arch/aarch64/timer.rs
 
-kernel/src/arch/aarch64/timer.rs::TICK_HZ
+
+kernel/src/arch/aarch64/timer.rs::TICK_HERTZ
 
 kernel/src/arch/aarch64/timer.rs::deadline
 
@@ -8298,7 +8306,8 @@ kernel/src/arch/riscv64/thread_pointer.rs
 
 kernel/src/arch/riscv64/timer.rs
 
-kernel/src/arch/riscv64/timer.rs::TICK_HZ
+
+kernel/src/arch/riscv64/timer.rs::TICK_HERTZ
 
 kernel/src/arch/riscv64/timer.rs::frequency
 
@@ -8482,7 +8491,8 @@ kernel/src/arch/x86_64/thread_pointer.rs
 
 kernel/src/arch/x86_64/timer.rs
 
-kernel/src/arch/x86_64/timer.rs::TICK_HZ
+
+kernel/src/arch/x86_64/timer.rs::TICK_HERTZ
 
 kernel/src/arch/x86_64/timer.rs::frequency
 
@@ -9136,7 +9146,8 @@ kernel/src/user/clock_service.rs::Wiring
 
 kernel/src/user/clock_service.rs::machine_has_no_rtc
 
-kernel/src/user/clock_service.rs::monotonic_ns
+
+kernel/src/user/clock_service.rs::monotonic_nanoseconds
 
 kernel/src/user/clock_service.rs::page
 
@@ -9146,7 +9157,8 @@ kernel/src/user/clock_service.rs::start
 
 kernel/src/user/clock_service.rs::start_in
 
-kernel/src/user/clock_service.rs::wall_ns
+
+kernel/src/user/clock_service.rs::wall_nanoseconds
 
 kernel/src/user/compositor_service.rs
 

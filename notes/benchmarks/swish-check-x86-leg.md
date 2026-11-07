@@ -20,7 +20,7 @@ Three measurements say what it was waiting for.
   would differ by the hosts' speed; this did not move with a 10x faster CPU.
 - Byte timestamps show a quantum. Typing `echo hello world` echoed two characters per 0.10 s,
   and every write of a line's answer arrived 0.08 s after the last.
-- A faster tick shrank it. `TICK_HZ` at 1000 instead of 100 (temporary, not committed) took the
+- A faster tick shrank it. `TICK_HERTZ` at 1000 instead of 100 (temporary, not committed) took the
   first boot from 488 s to 282 s and the second from 23.8 s to 4.5 s.
 
 The cause is the last line of the x86_64 boot. After `x86_hand_over` the boot thread called
@@ -47,7 +47,7 @@ here, so they type 118 or 119 lines where CI types 128.
 |---|---|---|---|---|---|---|
 | none (624's branch) | 486.4 s / 119 | 4.09 s | 2.72 s | 7.93 s | 20.2 s | not reached (`wc < args.txt` failed) |
 | `-cpu Skylake-Client` for `max` | 488.1 s / 118 | 4.14 s | 2.93 s | 7.68 s | 17.7 s | 23.8 s |
-| `TICK_HZ` 1000 (diagnostic) | 282.0 s / 118 | 2.39 s | 1.23 s | 5.38 s | 14.2 s | 4.5 s |
+| `TICK_HERTZ` 1000 (diagnostic) | 282.0 s / 118 | 2.39 s | 1.23 s | 5.38 s | 14.2 s | 4.5 s |
 | boot thread yields forever | 115.6 s / 118 | 0.98 s | 0.42 s | 2.39 s | 10.4 s | 1.1 s |
 | boot thread exits (shipped) | 125.7 s / 118 | 1.07 s | 0.42 s | 2.29 s | 10.8 s | 0.9 s |
 | exits, and no `intel-iommu` | 112.9 s / 118 | 0.96 s | 0.44 s | 2.16 s | 8.5 s | 1.0 s |

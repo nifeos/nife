@@ -384,15 +384,15 @@ pub fn order(seed: u64) -> [u8; MIX_LEN] {
 ///
 /// Saturating rather than wrapping, and zero on a zero-length or zero-frequency measurement, so a
 /// nonsense input produces a number a reader will disbelieve rather than one they will quote. The
-/// intermediate is `u128` because `jobs * 60 * hz` overflows `u64` at unremarkable inputs: 4,096
+/// intermediate is `u128` because `jobs * 60 * hertz` overflows `u64` at unremarkable inputs: 4,096
 /// jobs on radon's 4 MHz `rdtime` is already 9.8e11, and a 1 GHz counter would be there in one
 /// subrun.
 #[must_use]
-pub fn jobs_per_minute(jobs: u64, ticks: u64, hz: u64) -> u64 {
-    if ticks == 0 || hz == 0 {
+pub fn jobs_per_minute(jobs: u64, ticks: u64, hertz: u64) -> u64 {
+    if ticks == 0 || hertz == 0 {
         return 0;
     }
-    let n = u128::from(jobs) * 60 * u128::from(hz) / u128::from(ticks);
+    let n = u128::from(jobs) * 60 * u128::from(hertz) / u128::from(ticks);
     u64::try_from(n).unwrap_or(u64::MAX)
 }
 
@@ -550,15 +550,15 @@ mod tests {
         assert_eq!(jobs_per_minute(600, 4_000_000, 0), 0);
     }
 
-    /// **The overflow this function exists to hold.** `jobs * 60 * hz` at a plausible silicon
+    /// **The overflow this function exists to hold.** `jobs * 60 * hertz` at a plausible silicon
     /// frequency passes `u64::MAX` while the answer is small, so a `u64` intermediate would have
     /// reported a wrapped rate as though it were a measurement.
     #[test]
     fn a_plausible_silicon_measurement_does_not_overflow() {
         // 32 tasks * 128 jobs at 1 GHz over one second: the numerator is 2.5e11 * 1e9.
         let jobs = MAXIMUM_TASKS as u64 * JOBS_PER_TASK;
-        let hz = 1_000_000_000;
-        assert_eq!(jobs_per_minute(jobs, hz, hz), jobs * 60);
+        let hertz = 1_000_000_000;
+        assert_eq!(jobs_per_minute(jobs, hertz, hertz), jobs * 60);
     }
 
     /// The sweep is increasing and ends at the pool size, so the supervisor never releases more

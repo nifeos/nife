@@ -24,7 +24,7 @@ index d756010c0..380ce22fa 100644
          }
 -        every_core || self.is_past_backstop()
 +        let _ = every_core;
-+        self.elapsed >= u64::from(self.ticks) / crate::arch::timer::TICK_HZ * crate::arch::timer::frequency()
++        self.elapsed >= u64::from(self.ticks) / crate::arch::timer::TICK_HERTZ * crate::arch::timer::frequency()
 +            || self.is_past_backstop()
      }
  

@@ -64,12 +64,12 @@ fn start(rtc_kind: u64, rtc_seed: u64, _a2: u64) -> ! {
     // drift and its coarse resolution into a clock that already has better. `rtc_seed` is only
     // meaningful for `rtc::CMOS`, where it is the kernel's own reading rather than a register to
     // poll; every other kind ignores it.
-    if let Some(unix_ns) = read_rtc(rtc_kind, rtc_seed)
-        && policy::is_plausible(unix_ns)
+    if let Some(unix_nanoseconds) = read_rtc(rtc_kind, rtc_seed)
+        && policy::is_plausible(unix_nanoseconds)
     {
         page.publish(
             state::RTC,
-            clock_contract::offset_for(unix_ns, monotonic_ns()),
+            clock_contract::offset_for(unix_nanoseconds, monotonic_nanoseconds()),
         );
     }
 
@@ -101,7 +101,7 @@ fn serve(page: ClockPage) -> ! {
                     // provenance is what a caller weighing a certificate expiry actually wants.
                     page.publish(
                         state::SYNCED,
-                        clock_contract::offset_for(w1, monotonic_ns()),
+                        clock_contract::offset_for(w1, monotonic_nanoseconds()),
                     );
                 }
                 reply(capability, verdict, wall_now(&page));
@@ -121,7 +121,7 @@ fn serve(page: ClockPage) -> ! {
 fn wall_now(page: &ClockPage) -> u64 {
     let r = page.read();
     if state::is_known(r.state) {
-        clock_contract::wall_ns(r.offset_nanos, monotonic_ns())
+        clock_contract::wall_nanoseconds(r.offset_nanos, monotonic_nanoseconds())
     } else {
         0
     }
@@ -132,7 +132,7 @@ fn wall_now(page: &ClockPage) -> u64 {
 /// Split into whole seconds and a remainder rather than multiplying the raw tick count by a
 /// billion: at 62.5 MHz the naive product overflows a `u64` after about five minutes of uptime, and
 /// the resulting wall clock would jump backwards by six centuries at the wrap.
-fn monotonic_ns() -> u64 {
+fn monotonic_nanoseconds() -> u64 {
     let freq = cntfrq();
     let ticks = now();
     let seconds = ticks / freq;

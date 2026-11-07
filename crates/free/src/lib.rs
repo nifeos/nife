@@ -114,9 +114,9 @@ pub fn write_report(
         row(b"Mem:  ", total, total.saturating_sub(free), free, out);
     }
     if let Ok(sh) = share {
-        let kib = address_space_map::PAGE / 1024;
-        let total = sh.pages * kib;
-        let used = sh.committed.min(sh.pages) * kib;
+        let kibibytes = address_space_map::PAGE / 1024;
+        let total = sh.pages * kibibytes;
+        let used = sh.committed.min(sh.pages) * kibibytes;
         row(b"Yours:", total, used, total - used, out);
     }
 }

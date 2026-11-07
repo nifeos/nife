@@ -99,9 +99,9 @@ three properties and the naming reasons are in
 At a swap, a quiesce unanswered within the supervisor's bound. `swapper`'s operator asks for the
 drain with a deadline (milestone 106 (a wait that ends on either the interrupt or the deadline)'s
 timed wait) and treats no answer as a hang. A `CALL` takes no deadline, so a stand-in makes the call
-and the deadline is on its forwarded answer. The bound is `QUIESCE_BOUND_MS`, 250 ms, about forty
+and the deadline is on its forwarded answer. The bound is `QUIESCE_BOUND_MILLISECONDS`, 250 ms, about forty
 times the slowest healthy answer measured on three ISAs. `terminal_supervisor` does the same for
-`line_editor`, with a stand-in built from its own image and its own `QUIESCE_BOUND_MS`, measured
+`line_editor`, with a stand-in built from its own image and its own `QUIESCE_BOUND_MILLISECONDS`, measured
 against `line_editor`'s answer (`line_editor::component::supervisor`).
 
 The bound belongs to the supervisor, not to the manifest and not to the client. A contract cannot
@@ -210,7 +210,7 @@ service under a hung component: the Rust for each, with `ps`'s precedent quoted 
 ## BUGS
 
 **Detection exists only at a swap.** The operator notices a hang when its own quiesce goes
-unanswered within `QUIESCE_BOUND_MS`. Nothing watches a component between swaps.
+unanswered within `QUIESCE_BOUND_MILLISECONDS`. Nothing watches a component between swaps.
 
 **`SURVEY` does not say what a thread is blocked *on*, so no wait-for graph is possible.** It is
 the extension that would turn detection from a heuristic into a decision procedure. A cycle in
@@ -249,7 +249,7 @@ should take it first.
 
 **Every name in this residual is provisional.** `wedge`, `WEDGE_SEQ`, `ROLE_HUNG`,
 `ROLE_HUNG_WITHOUT_DEVICE`, `ROLE_QUIESCER`, `NOTE_QUIESCE_ANSWERED`, `WAS_GONE`, `RPT_SURVEY`,
-`RPT_UNCOLLECTABLE`, `RPT_UNANSWERED`, `RPT_RECLAIMED`, `survey_counts`, `QUIESCE_BOUND_MS`, and the
+`RPT_UNCOLLECTABLE`, `RPT_UNANSWERED`, `RPT_RECLAIMED`, `survey_counts`, `QUIESCE_BOUND_MILLISECONDS`, and the
 proposed `liveness_watch`. `wedge` is at least the word this tree already uses for the condition
 (§26's "alive but wedged", milestone 62's "a wedged one"). `caretaker` and `undertaker` were
 unavailable: both are spent on capability-narrowing programs.

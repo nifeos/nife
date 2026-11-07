@@ -158,7 +158,7 @@ impl AddressSpace {
         // core count until something grants fewer (§269 fork 7).
         let bytes = current_cpu_contract::build_page_allowing(
             u64::from(crate::smp::online_harts_mask().count_ones()),
-            crate::arch::timer::TICK_HZ,
+            crate::arch::timer::TICK_HERTZ,
         );
         let kernel_va = mmu::phys_to_virt(frame.addr());
         // SAFETY: `frame` is freshly allocated and owned by nobody else yet, the direct map is

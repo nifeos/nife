@@ -36,7 +36,7 @@ pub mod pat {
 
 const P: u64 = 1 << 0; // Present
 const RW: u64 = 1 << 1; // Read/Write (clear = read-only)
-const US: u64 = 1 << 2; // User/Supervisor (set = user may access)
+const USER_SUPERVISOR: u64 = 1 << 2; // User/Supervisor (set = user may access)
 const PWT: u64 = 1 << 3; // Page-level Write-Through
 const PCD: u64 = 1 << 4; // Page-level Cache Disable
 const A: u64 = 1 << 5; // Accessed
@@ -70,7 +70,7 @@ const SW_DEVICE: u64 = 1 << 10;
 /// and bit 63 is XD, so the mask must not be widened without checking both ends.
 const ADDR_MASK: u64 = 0x000f_ffff_ffff_f000;
 
-/// **An IA-32e entry's fields share no bit**: the address field, P, RW, US, PWT, PCD, A, D, PS, G,
+/// **An IA-32e entry's fields share no bit**: the address field, P, RW, `USER_SUPERVISOR`, PWT, PCD, A, D, PS, G,
 /// the two software bits and XD. Every `|` in `Ia32e::attrs`, `table_entry`, `leaf_entry` and
 /// `block_entry` joins words from this list, so each is its own `^`, and the mutation exclusions
 /// for them name this constant: the compiler checks what no test can.
@@ -81,7 +81,7 @@ pub const THE_ENTRY_FIELDS_SHARE_NO_BIT: () = {
         ADDR_MASK,
         P,
         RW,
-        US,
+        USER_SUPERVISOR,
         PWT,
         PCD,
         A,
@@ -110,7 +110,7 @@ impl Ia32e {
             bits |= RW | D;
         }
         if flags.is_user_accessible() {
-            bits |= US;
+            bits |= USER_SUPERVISOR;
         }
         if flags.is_global() {
             bits |= G;
@@ -157,7 +157,7 @@ impl PageFormat for Ia32e {
     fn table_entry(pa: u64, _level: usize) -> u64 {
         // Maximally permissive, because x86 ANDs the levels together and the leaf must be able to
         // grant anything. See notes/paging.md for what that trades away.
-        (pa & ADDR_MASK) | P | RW | US
+        (pa & ADDR_MASK) | P | RW | USER_SUPERVISOR
     }
 
     fn leaf_entry(pa: u64, flags: Flags) -> u64 {
@@ -169,11 +169,11 @@ impl PageFormat for Ia32e {
         if entry & RW != 0 {
             access |= ACCESS_WRITE;
         }
-        if entry & US != 0 {
+        if entry & USER_SUPERVISOR != 0 {
             access |= ACCESS_USER;
         }
         if entry & XD == 0 {
-            if entry & US != 0 {
+            if entry & USER_SUPERVISOR != 0 {
                 access |= ACCESS_USER_EXEC;
             } else if entry & SW_KERNEL_EXEC != 0 {
                 access |= ACCESS_KERNEL_EXEC;
@@ -218,7 +218,7 @@ impl PageFormat for Ia32e {
 /// **VT-d's second-level page-table format**: what an Intel IOMMU walks to translate a device's
 /// DMA address. The shape of [`Ia32e`], but a leaf has exactly two meaningful bits, Read (0) and
 /// Write (1); bits 2 through 10 are reserved and checked (QEMU's `VTD_SPTE_PAGE_L1_RSVD_MASK`), so
-/// `Ia32e`'s `US` and `XD` would fault every DMA. A device has no privilege level and no execute
+/// `Ia32e`'s `USER_SUPERVISOR` and `XD` would fault every DMA. A device has no privilege level and no execute
 /// permission here, and [`leaf_flags`](Vtd::leaf_flags) reports only write. See notes/paging.md,
 /// "VT-d".
 pub struct Vtd;
@@ -279,7 +279,7 @@ impl PageFormat for Vtd {
     }
 
     /// Read is unconditional (every domain this seam builds is at least readable) and write
-    /// follows `flags.is_writable()`. Nothing else: see this type's own doc for why `US` and `XD`
+    /// follows `flags.is_writable()`. Nothing else: see this type's own doc for why `USER_SUPERVISOR` and `XD`
     /// would be reserved-bit violations here rather than the extra permissiveness they are on the
     /// CPU's own format.
     fn leaf_entry(pa: u64, flags: Flags) -> u64 {
@@ -400,7 +400,7 @@ impl PageFormat for AmdVi {
     }
 
     /// A 4 KiB leaf: present, `NextLevel` 0, force coherent, readable, and writable when `flags`
-    /// says so. A device has no privilege level and no execute permission in this mode, so `US`
+    /// says so. A device has no privilege level and no execute permission in this mode, so `USER_SUPERVISOR`
     /// and `XD` have nowhere to go, exactly as on [`Vtd`].
     fn leaf_entry(pa: u64, flags: Flags) -> u64 {
         let mut bits = AMD_VI_PR | AMD_VI_FC | AMD_VI_IR;
@@ -596,7 +596,7 @@ mod tests {
             "a read-only intermediate would veto a writable leaf"
         );
         assert_ne!(
-            e & US,
+            e & USER_SUPERVISOR,
             0,
             "a supervisor intermediate would veto a user leaf"
         );
@@ -686,7 +686,7 @@ mod tests {
     /// [`Vtd`]: verified against QEMU's `VTD_SPTE_PAGE_L1_RSVD_MASK`, any bit outside `R`/`W`/the
     /// address field is reserved-must-be-zero at a second-level leaf, and QEMU's model checks it.
     /// Every `Flags` constructor is tried, including the ones (`user_code`, `kernel_data`, ...)
-    /// that would set `US` or `XD` on `Ia32e`'s encoding of the same flags.
+    /// that would set `USER_SUPERVISOR` or `XD` on `Ia32e`'s encoding of the same flags.
     ///
     /// The permitted set is a literal, [`VTD_PERMITTED_BITS`], which says why.
     #[test]
@@ -1063,8 +1063,8 @@ mod verification {
     #[kani::proof]
     fn a_block_keeps_address_and_permissions_apart() {
         let pa: u64 = kani::any();
-        let two_mib: bool = kani::any();
-        let (size, address_bits) = if two_mib {
+        let two_mebibytes: bool = kani::any();
+        let (size, address_bits) = if two_mebibytes {
             (PageSize::Size2MiB, 0x000f_ffff_ffe0_0000u64)
         } else {
             (PageSize::Size1GiB, 0x000f_ffff_c000_0000u64)

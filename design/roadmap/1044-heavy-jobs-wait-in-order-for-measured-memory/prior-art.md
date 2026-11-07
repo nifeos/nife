@@ -1,6 +1,6 @@
 # How other systems admit heavy work
 
-An appendix to [the proposal](../heavy-jobs-wait-in-order-for-measured-memory.md). Each entry says
+An appendix to [the milestone](../1044-heavy-jobs-wait-in-order-for-measured-memory.md). Each entry says
 how the system solves admission, where nife differs, and whether this lane read the source on
 2026-11-05 (UTC) or recalled it.
 

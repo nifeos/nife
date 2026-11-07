@@ -27,16 +27,16 @@ epoch in a `u64`, which runs out in 2554.
   `publish` claims the sequence with a compare-exchange, so writers exclude each other.
   `new` is `unsafe`: the address must be a mapped, 8-byte-aligned frame that stays mapped.
   A writer killed between its claim and its release leaves every reader spinning.
-- The conversion: `wall_ns(offset, monotonic)` saturates rather than wraps, and `offset_for` is its
+- The conversion: `wall_nanoseconds(offset, monotonic)` saturates rather than wraps, and `offset_for` is its
   inverse.
 - Proposals (`propose`, `status`): a request is `req(PROPOSE)` with the proposed time as the second
   word, or `req(STATE)` to ask what the clock knows. The opcode sits in bits 63:56. The reply's first
   word is a `status` (`ACCEPTED`, `REFUSED_IMPLAUSIBLE`, `REFUSED_TOO_FAR_FORWARD`,
   `REFUSED_TOO_FAR_BACKWARD`, `BAD_REQUEST`) and its second the wall-clock nanoseconds in force.
-- The policy (`policy::decide`): a proposal outside the window from 2026-01-01 (`NOT_BEFORE_NS`) to
-  2100-01-01 (`NOT_AFTER_NS`) is refused as implausible, and the window also judges what a hardware
+- The policy (`policy::decide`): a proposal outside the window from 2026-01-01 (`NOT_BEFORE_NANOSECONDS`) to
+  2100-01-01 (`NOT_AFTER_NANOSECONDS`) is refused as implausible, and the window also judges what a hardware
   clock reports. Once the clock knows the time, one accepted proposal may move it forward by at most
-  an hour (`MAXIMUM_STEP_FORWARD_NS`) and backward by at most a second (`MAXIMUM_STEP_BACKWARD_NS`).
+  an hour (`MAXIMUM_STEP_FORWARD_NANOSECONDS`) and backward by at most a second (`MAXIMUM_STEP_BACKWARD_NANOSECONDS`).
   Moving backward makes instants happen twice, which breaks log ordering and expiry. A clock that
   is `UNKNOWN` accepts any plausible proposal. The window is a floor on plausibility, not a claim of
   accuracy.
@@ -47,14 +47,14 @@ epoch in a `u64`, which runs out in 2554.
 ## Usage
 
 ```rust
-use clock_contract::{NS_PER_SECOND, offset_for, policy, state, status, wall_ns};
+use clock_contract::{NS_PER_SECOND, offset_for, policy, state, status, wall_nanoseconds};
 
 // The machine has been up for 5 seconds and the service learns the wall time.
 let monotonic = 5 * NS_PER_SECOND;
 let now = 1_800_000_000 * NS_PER_SECOND;
 assert_eq!(policy::decide(state::UNKNOWN, 0, now), status::ACCEPTED);
 let offset = offset_for(now, monotonic);
-assert_eq!(wall_ns(offset, monotonic), now);
+assert_eq!(wall_nanoseconds(offset, monotonic), now);
 
 // A proposal a day ahead of a synchronized clock is refused.
 assert_eq!(

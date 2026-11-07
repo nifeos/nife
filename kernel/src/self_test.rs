@@ -439,7 +439,7 @@ fn timer(tally: &mut Tally) {
     let mut counter = Counter::new();
     let start = counter.last;
     let ticks_before = timer::ticks();
-    // 20 ms: two tick periods at the 100 Hz `TICK_HZ` every architecture uses, so a single missed
+    // 20 ms: two tick periods at the 100 Hz `TICK_HERTZ` every architecture uses, so a single missed
     // tick does not read as a broken interrupt path.
     let window = hz / 50;
     let advanced = loop {

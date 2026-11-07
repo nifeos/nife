@@ -431,7 +431,7 @@ pub(super) fn reclaim(job_ut: u64) -> bool {
     swish::is_reclaimed_within(
         RECLAIM_PATIENCE_NS,
         || destroy_memory_region(job_ut),
-        monotonic_ns,
+        monotonic_nanoseconds,
         yield_now,
     )
 }
@@ -449,7 +449,7 @@ pub(super) fn release_budget(slot: u64, program: grant_plan::Program) {
         RECLAIM_PATIENCE_NS,
         || destroy_memory_region(slot),
         || user_mode_runtime::memory_region_usage(slot, abi::usage::CHILDREN),
-        monotonic_ns,
+        monotonic_nanoseconds,
         yield_now,
     );
     if verdict == swish::BudgetReturn::LeftChildren {

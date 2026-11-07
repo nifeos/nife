@@ -491,8 +491,8 @@ mod verification {
     fn a_block_keeps_address_and_permissions_apart() {
         let pa: u64 = kani::any();
         kani::assume(pa >> 56 == 0); // Sv39 physical addresses are 56 bits
-        let two_mib: bool = kani::any();
-        let (size, pa_bits) = if two_mib {
+        let two_mebibytes: bool = kani::any();
+        let (size, pa_bits) = if two_mebibytes {
             (PageSize::Size2MiB, 0x00ff_ffff_ffe0_0000u64)
         } else {
             (PageSize::Size1GiB, 0x00ff_ffff_c000_0000u64)

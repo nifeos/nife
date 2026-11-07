@@ -42,7 +42,7 @@ fn cannot_bind_renders_the_bind_refusals_own_message() {
 
 /// The heap cap is printed in KiB, by division, in the two places that name it.
 #[test]
-fn the_heap_cap_is_named_in_kib() {
+fn the_heap_cap_is_named_in_kibibytes() {
     let say = shown(|o| write_say(Say::HeapFull, o));
     assert!(say.contains("its cap is 32 KiB"), "{say}");
     let held = shown(|o| write_holdings(128, Holdings::default(), None, None, o));

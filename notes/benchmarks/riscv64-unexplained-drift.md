@@ -50,7 +50,7 @@ RUSTUP_TOOLCHAIN=nightly-2026-10-22 helpers/qemu-bounded.sh 1500 cargo xtask ben
 ```
 
 in a detached worktree at the commit. Commits before milestone 939 (the icount bench runs without
-a preemption tick in its windows) ran with `TICK_HZ` set to 1 in
+a preemption tick in its windows) ran with `TICK_HERTZ` set to 1 in
 `kernel/src/arch/riscv64/timer.rs`, so the numbers are costs and not the tick's phase.
 Commits before `964bd5a88` ran with its one-line `NIFE_DISK` fix applied. Every window was
 sampled at 15 to 30 points, then each interval whose ends differed was split again until one merge
@@ -163,7 +163,7 @@ That scan is the larger story. Deleting it on `main` at `7f54880c4`, and nothing
 `map_el0` from 47,891 to 30,785 (-35.7%), about 3,400 of a map's 9,600 instructions; every other
 row holds within a tick except `spawn_el0` (-0.24%). The scan runs on every map, whether or not
 the page holds a tombstone.
-[a-mapping-record-is-filed-without-a-scan](../../design/roadmap/proposals/a-mapping-record-is-filed-without-a-scan.md)
+[a-mapping-record-is-filed-without-a-scan](../../design/roadmap/1036-a-mapping-record-is-filed-without-a-scan.md)
 proposes a tombstone count per log page.
 
 Of the 4.27 points: the false term +3.02, #2965 +2.88, #1892 +0.50, #1360 +0.18, #2148 -0.29,

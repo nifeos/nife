@@ -39,7 +39,7 @@ does not make a round trip 3.2% cheaper.
 
 `ipc_rtt` is a single-hart ping-pong between two kernel threads. Each receive either finds the
 message already there or blocks for it, and the loop settles into one of those two modes.
-A preemption tick (`TICK_HZ` 100, one every 10M instructions, about two inside the window) can
+A preemption tick (`TICK_HERTZ` 100, one every 10M instructions, about two inside the window) can
 switch the loop from one mode to the other for the rest of the run. So where the ticks land
 decides the count, and any change to the instruction count before or inside the window moves
 where they land.
@@ -48,7 +48,7 @@ The evidence is two measurements. A QEMU plugin counting executed instructions p
 block (deterministic: two runs of one commit match block for block) shows `ipc_receive`'s code
 identical across a step while the number of receives taking the blocking path changes. Across
 the whole run that number moves +8,327 at #2188, -6,403 at #2025 and +5,876 at #1892's process
-commit. And rebuilding with `TICK_HZ` 1, so no tick lands in a window, removes the effect:
+commit. And rebuilding with `TICK_HERTZ` 1, so no tick lands in a window, removes the effect:
 
 - #2025's -36,215 on `ipc_rtt` becomes **+2,500**.
 - A crate move with no kernel change (#1968), which reads -11,240 on `ipc_rtt_el0` and -1,434 on
@@ -104,7 +104,7 @@ already a chain of calls at opt-level 0.
 - The `ipc_rtt` family is still bimodal under the tick. Milestone 939 (the icount bench runs
   without a preemption tick in its windows):
   [IPC rows run without a preemption tick](../../design/roadmap/0939-ipc-rows-run-without-a-preemption-tick.md).
-  Until then, a step on `ipc_rtt` or `ipc_rtt_el0` is not a cost until it survives `TICK_HZ` 1.
+  Until then, a step on `ipc_rtt` or `ipc_rtt_el0` is not a cost until it survives `TICK_HERTZ` 1.
 - `TPIDR_EL0`'s hand-over pays the same opt-level 0 toll as the read fixed here (about 48
   instructions a switch for three). It was named, not measured, as a candidate for the same fix.
 - riscv64 and x86_64 were not bisected. Their `read_current_thread` is already one load, so #2188

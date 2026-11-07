@@ -56,7 +56,7 @@ Two honest costs, and the first is the one to design against:
 
 ## What is built, and how it departs from this
 
-`swapper`'s operator bounds one thing, its `OPERATION_QUIESCE`, and in time: `QUIESCE_BOUND_MS`, 250
+`swapper`'s operator bounds one thing, its `OPERATION_QUIESCE`, and in time: `QUIESCE_BOUND_MILLISECONDS`, 250
 ms, chosen as about forty times the slowest healthy answer measured on three ISAs under a loaded
 host (the measurements are under "How the quiesce bound was measured" below). It reads no progress counter. Two things make the
 duration acceptable for this one question where the argument above rejects it in general. The
@@ -92,7 +92,7 @@ lanes' builds:
 | riscv64 (4 cores) | 10 MHz | 1.2 ms | 2.4 ms |
 | `x86_64` (2 cores, and the 1-core leg) | TSC, about 1 GHz | 1.1 ms | 6.5 ms |
 
-`QUIESCE_BOUND_MS` is 250 ms, about 38 times the slowest of the forty, and 25 scheduler ticks. The
+`QUIESCE_BOUND_MILLISECONDS` is 250 ms, about 38 times the slowest of the forty, and 25 scheduler ticks. The
 deadline fires at the first 10 ms tick at or after it (milestone 106's `BUGS`), so the real wait is
 250 to 260 ms, and the hung test prints what it was.
 

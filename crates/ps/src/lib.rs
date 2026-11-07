@@ -52,7 +52,7 @@ pub struct Row {
     /// only if a caller then runs [`Survey::join_cpu_time`]. A zero is a thread that has never been
     /// on a CPU at a tick, a different fact from "not asked". It also stays `None` for a thread
     /// that died between the two walks.
-    pub cpu_ms: Option<u64>,
+    pub cpu_milliseconds: Option<u64>,
     /// **Which process of the domain the thread belongs to**, as `abi::survey::record::PROCESS`
     /// labeled it in one walk (§313), or `None` when nobody asked or the thread died between
     /// walks.
@@ -71,7 +71,7 @@ pub struct Row {
 /// really happened.
 pub struct Survey<'a> {
     /// Mutable because a survey is written to after it is collected: a second walk fills
-    /// [`Row::cpu_ms`] in ([`Survey::join_cpu_time`]) and a ranking view reorders it
+    /// [`Row::cpu_milliseconds`] in ([`Survey::join_cpu_time`]) and a ranking view reorders it
     /// ([`Survey::rank_by_cpu_time`]). The borrow is still the caller's buffer; nothing here
     /// allocates.
     rows: &'a mut [Row],
@@ -151,7 +151,7 @@ pub fn collect<'a>(
         rows[n] = Row {
             tid,
             state,
-            cpu_ms: None,
+            cpu_milliseconds: None,
             process: None,
         };
         n += 1;
@@ -172,7 +172,7 @@ impl Survey<'_> {
         self.rows
     }
 
-    /// **Fill in [`Row::cpu_ms`] from a second walk of the same domain** (milestone 282 (a thread's CPU time, and the `top` it makes possible),
+    /// **Fill in [`Row::cpu_milliseconds`] from a second walk of the same domain** (milestone 282 (a thread's CPU time, and the `top` it makes possible),
     /// `abi::survey::record::CPU_TIME`).
     ///
     /// `read(cursor)` is one `SURVEY` asking for the CPU-time record, bound by the caller, as
@@ -183,7 +183,9 @@ impl Survey<'_> {
     /// [`is_refused`](Self::is_refused) tells the caller. notes/process-view/the-ps-crate.md has
     /// the cost and the bargain.
     pub fn join_cpu_time(&mut self, read: &mut dyn FnMut(u64) -> (i64, u64, u64)) {
-        self.join(read, |row, ms| row.cpu_ms = Some(ms));
+        self.join(read, |row, milliseconds| {
+            row.cpu_milliseconds = Some(milliseconds);
+        });
     }
 
     /// **Fill in [`Row::process`] from a walk of the same domain** (milestone 942 (`ps` and `top`
@@ -247,7 +249,7 @@ impl Survey<'_> {
     /// each thread's own time: the per-process ranking `top` offers beside
     /// [`rank_by_cpu_time`](Self::rank_by_cpu_time).
     ///
-    /// A process's total is the sum of its rows' [`Row::cpu_ms`], the unknown ones counting as
+    /// A process's total is the sum of its rows' [`Row::cpu_milliseconds`], the unknown ones counting as
     /// zero. The threads of one process end up adjacent. A row with no label is its own group and
     /// sorts after every labeled process, for the reason an unknown figure sorts last in the
     /// per-thread ranking. The order is total (ties break on label, then tid), so a redraw of an
@@ -261,7 +263,7 @@ impl Survey<'_> {
     /// **Order the rows by CPU time, most first**, which is what makes a listing a `top`.
     ///
     /// Ties break on the tid, ascending, so the order is total and a redraw of an idle machine does
-    /// not shuffle. A row with no figure (see [`Row::cpu_ms`]) sorts last, because "not known"
+    /// not shuffle. A row with no figure (see [`Row::cpu_milliseconds`]) sorts last, because "not known"
     /// is not "none used" and putting it at the head would be the strongest possible claim about
     /// the one row that has nothing to say.
     ///
@@ -283,7 +285,7 @@ impl Survey<'_> {
         if by_process {
             for r in self.rows.iter() {
                 if let Some(slot) = r.process.and_then(|l| total.get_mut(l as usize)) {
-                    *slot += r.cpu_ms.unwrap_or(0);
+                    *slot += r.cpu_milliseconds.unwrap_or(0);
                 }
             }
         }
@@ -304,8 +306,16 @@ impl Survey<'_> {
                 core::cmp::Ordering::Equal
             };
             grouping
-                .then(b.cpu_ms.unwrap_or(0).cmp(&a.cpu_ms.unwrap_or(0)))
-                .then(a.cpu_ms.is_none().cmp(&b.cpu_ms.is_none()))
+                .then(
+                    b.cpu_milliseconds
+                        .unwrap_or(0)
+                        .cmp(&a.cpu_milliseconds.unwrap_or(0)),
+                )
+                .then(
+                    a.cpu_milliseconds
+                        .is_none()
+                        .cmp(&b.cpu_milliseconds.is_none()),
+                )
                 .then(a.tid.cmp(&b.tid))
         });
     }
@@ -368,7 +378,7 @@ impl Survey<'_> {
         }
         // The TIME column appears only when somebody asked for it (`Survey::join_cpu_time`), so a
         // `pgrep`-shaped caller that did not is not handed a column of dashes to explain.
-        let timed = self.rows().iter().any(|r| r.cpu_ms.is_some());
+        let timed = self.rows().iter().any(|r| r.cpu_milliseconds.is_some());
         // The same for the process columns (milestone 942): `PROC` and `THR` appear only when the
         // process walk ran, so a caller that did not ask is not handed a column of dashes.
         let grouped = self.rows().iter().any(|r| r.process.is_some());
@@ -403,7 +413,7 @@ impl Survey<'_> {
                     out(b" ");
                 }
                 out(b"  ");
-                write_ms(row.cpu_ms, out);
+                write_milliseconds(row.cpu_milliseconds, out);
             }
             out(b"\n");
         }
@@ -479,18 +489,18 @@ fn write_cell(value: Option<u64>, width: usize, out: &mut dyn FnMut(&[u8])) {
 /// Eight columns holds 27 hours of CPU time before the column widens, and a figure that outgrows it
 /// pushes the column rather than losing a digit, for the same reason [`write_thread_id`] does.
 ///
-/// **`-` rather than `0` for an unknown figure**, which is the whole reason [`Row::cpu_ms`] is
+/// **`-` rather than `0` for an unknown figure**, which is the whole reason [`Row::cpu_milliseconds`] is
 /// an `Option`: a thread that was never on a CPU at a tick really does read `0`, and a reader who
 /// cannot tell that from "this row was not asked about" has been handed the plausible wrong number
 /// this tree keeps refusing to print.
-fn write_ms(ms: Option<u64>, out: &mut dyn FnMut(&[u8])) {
-    let Some(ms) = ms else {
+fn write_milliseconds(milliseconds: Option<u64>, out: &mut dyn FnMut(&[u8])) {
+    let Some(milliseconds) = milliseconds else {
         out(b"       -");
         return;
     };
     let mut buf = [0u8; 20];
     let mut i = buf.len();
-    let mut v = ms;
+    let mut v = milliseconds;
     loop {
         i -= 1;
         buf[i] = b'0' + (v % 10) as u8;
@@ -564,7 +574,7 @@ mod tests {
             Row {
                 tid: 9,
                 state: abi::survey::DEAD,
-                cpu_ms: None,
+                cpu_milliseconds: None,
                 process: None,
             }
         );
@@ -740,12 +750,12 @@ mod tests {
         assert_eq!(tid(1234), "        1234");
         assert_eq!(tid(123_456_789_012), "123456789012");
         assert_eq!(tid(1_234_567_890_123), "1234567890123");
-        let ms = |m| shown(|o| write_ms(Some(m), o));
-        assert_eq!(ms(0), "       0");
-        assert_eq!(ms(12_345), "   12345");
-        assert_eq!(ms(12_345_678), "12345678");
-        assert_eq!(ms(123_456_789), "123456789");
-        assert_eq!(shown(|o| write_ms(None, o)), "       -");
+        let milliseconds = |m| shown(|o| write_milliseconds(Some(m), o));
+        assert_eq!(milliseconds(0), "       0");
+        assert_eq!(milliseconds(12_345), "   12345");
+        assert_eq!(milliseconds(12_345_678), "12345678");
+        assert_eq!(milliseconds(123_456_789), "123456789");
+        assert_eq!(shown(|o| write_milliseconds(None, o)), "       -");
         let cell = |v, w| shown(|o| write_cell(v, w, o));
         assert_eq!(cell(Some(7), 4), "   7");
         assert_eq!(cell(Some(12), 4), "  12");
@@ -757,7 +767,7 @@ mod tests {
     /// A CPU-time reader over a canned domain: `entries` in slot order, then done.
     fn times(entries: &'static [(u64, u64)]) -> impl FnMut(u64) -> (i64, u64, u64) {
         move |cursor: u64| match entries.get(cursor as usize) {
-            Some(&(tid, ms)) => (cursor as i64 + 1, tid, ms),
+            Some(&(tid, milliseconds)) => (cursor as i64 + 1, tid, milliseconds),
             None => (abi::survey::DONE as i64, 0, 0),
         }
     }
@@ -777,8 +787,8 @@ mod tests {
         s.join_cpu_time(&mut times(&[(5, 20), (3, 990)]));
 
         assert_eq!(s.rows()[0].tid, 3);
-        assert_eq!(s.rows()[0].cpu_ms, Some(990));
-        assert_eq!(s.rows()[1].cpu_ms, Some(20));
+        assert_eq!(s.rows()[0].cpu_milliseconds, Some(990));
+        assert_eq!(s.rows()[1].cpu_milliseconds, Some(20));
     }
 
     /// **A thread that died between the two walks has no figure, and that is printed as `-`.**
@@ -795,7 +805,7 @@ mod tests {
         );
         s.join_cpu_time(&mut times(&[(3, 40)]));
 
-        assert_eq!(s.rows()[1].cpu_ms, None);
+        assert_eq!(s.rows()[1].cpu_milliseconds, None);
         let out = shown(|o| s.write_report(o));
         assert!(out.lines().nth(2).unwrap().ends_with('-'), "{out}");
     }

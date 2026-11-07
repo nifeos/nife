@@ -176,7 +176,7 @@ for (milestone 321 (a corpse that did not park)) happened about once in a thousa
   domain cannot hold the lock at its own discretion.
 
 The words it reports: CPU time is milliseconds, converted in the kernel so no reader depends on
-`TICK_HZ` (100 Hz outside the bench build, so it moves in steps of ten). Placement maps the kernel's
+`TICK_HERTZ` (100 Hz outside the bench build, so it moves in steps of ten). Placement maps the kernel's
 `u8::MAX` "not placed" to `record::NO_CPU` (`u64::MAX`), because 255 is a plausible CPU id for a
 reader to tally. State maps the two states a supervised thread cannot reach, `Embryo` and
 `Finished`, to `READY` and `DEAD`, its nearest neighbors; the `match` is exhaustive so a new state

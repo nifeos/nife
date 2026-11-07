@@ -275,7 +275,7 @@ pub fn current_cpu() -> Option<usize> {
     own_current_cpu_page().cpu()
 }
 
-/// This thread's first current-CPU page, which [`current_cpu`] and [`tick_hz`] read.
+/// This thread's first current-CPU page, which [`current_cpu`] and [`tick_hertz`] read.
 fn own_current_cpu_page() -> current_cpu_contract::CurrentCpuPage {
     // SAFETY: the kernel maps a page it owns, read-only, at `current_cpu_contract::PAGE_VA` into
     // every address space that a TCB binds, before that thread's first instruction runs. See
@@ -287,12 +287,12 @@ fn own_current_cpu_page() -> current_cpu_contract::CurrentCpuPage {
 /// current-CPU page, or `None` if the page carries none. A [`timer_arm`](crate::timer_arm)
 /// deadline fires at the first tick at or after it, so a program that must not lose a tick to a
 /// sleep reads this rather than assuming the kernel's rate
-/// (`current_cpu_contract::CurrentCpuPage::tick_hz`).
+/// (`current_cpu_contract::CurrentCpuPage::tick_hertz`).
 ///
 /// Name: provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
 /// receive-rate lane.
-pub fn tick_hz() -> Option<core::num::NonZeroU64> {
-    own_current_cpu_page().tick_hz()
+pub fn tick_hertz() -> Option<core::num::NonZeroU64> {
+    own_current_cpu_page().tick_hertz()
 }
 
 /// **Monotonic nanoseconds since boot**, from [`now`] and [`cntfrq`].
@@ -301,7 +301,7 @@ pub fn tick_hz() -> Option<core::num::NonZeroU64> {
 /// overflows a `u64` about five minutes into a boot at 62.5 MHz. No capability is needed: the
 /// counter is ambient, so any process can measure a duration. The wall clock is what needs one
 /// (notes/clock.md).
-pub fn monotonic_ns() -> u64 {
+pub fn monotonic_nanoseconds() -> u64 {
     use clock_contract::NS_PER_SECOND;
     let freq = cntfrq();
     let ticks = now();

@@ -62,7 +62,7 @@ fn qemu_virt_describes_the_four_cpus_the_runner_starts() {
         assert_eq!(cpu.enable_method, EnableMethod::Psci);
     }
     assert_eq!(
-        list.timebase_hz, None,
+        list.timebase_hertz, None,
         "aarch64 states its counter rate in CNTFRQ_EL0, not in the tree"
     );
 }
@@ -205,7 +205,7 @@ fn the_described_count_is_the_machines_and_the_length_is_ours() {
 /// its own from `CNTFRQ_EL0`.
 #[test]
 fn the_riscv_timebase_comes_from_the_tree() {
-    assert_eq!(cpus(QEMU_RISCV).timebase_hz, Some(10_000_000));
+    assert_eq!(cpus(QEMU_RISCV).timebase_hertz, Some(10_000_000));
 }
 
 /// **The `/cpus` decode does not care which architecture wrote the tree.** Same call, same struct,
@@ -292,7 +292,7 @@ fn a_reg_shorter_than_its_declared_width_has_no_hardware_id() {
 /// that dropped the arm would report no timebase at all and send the timer back to a constant.
 #[test]
 fn a_two_cell_timebase_decodes_as_one_number() {
-    assert_eq!(cpus(MANY_HARTS).timebase_hz, Some(0x1_0200_0000));
+    assert_eq!(cpus(MANY_HARTS).timebase_hertz, Some(0x1_0200_0000));
 }
 
 /// **A `/psci` node that states only its conduit is a node, not an absent one.**
