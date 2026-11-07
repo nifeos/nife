@@ -32,16 +32,18 @@ The rules every step keeps:
 
 `script/crate-move --dry-run --into <empty dir> <crate>` builds the crate repository's first tree
 locally and creates nothing. It copies the crate's tracked files and adds the template's scaffold,
-with every caller pinned at the newest template release. It deletes the `Name:` blocks, rewrites
-each falsification patch for `git apply -p1`, sets `repository` in the manifest and carries the crate's mutation baseline row into `.github/mutants-exempts` as a comment. Then it builds
+with every caller pinned at the newest template release. It deletes the `Name:` blocks, regenerates
+each falsification patch over the stripped source for `-p1`, sets `repository` in the manifest and carries the crate's mutation baseline row into `.github/mutants-exempts` as a comment. Then it builds
 and tests the copy at its `rust-version` and runs the template's cheap checks from that release. It ends
 with the nife-side follow-up: each consumer manifest's new line and every other file that names
 the crate. The script's header lists what it does not check.
 
 A finding is a change to make before the move. A lane fixes a finding against the crate itself, in
 nife: a README section or a sentence over the prose limits, a mention of nife in the crate's text.
-The template takes a finding against the template (see BUGS). The dry run rewrites each
-falsification patch for `git apply -p1` and moves each `Falsification:` line to the head of its
+The template takes a finding against the template (see BUGS). The dry run regenerates each
+falsification patch, so its hunk headers carry the stripped file's line numbers, and it refuses to
+finish when any patch applies at an offset, with fuzz or not at all under `patch -p1 --dry-run -F0`.
+It also moves each `Falsification:` line to the head of its
 harness's comment, where the template reads it, so those records pass `falsify.py --check`.
 
 ## Before the move, in nife
