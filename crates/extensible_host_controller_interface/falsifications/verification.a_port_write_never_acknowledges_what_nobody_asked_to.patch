@@ -5,15 +5,15 @@ The defect: `write_value` writes back the whole register read, so the write-one-
 Expected to fail: the harness's check that writing nothing writes no change bit.
 
 diff --git a/crates/extensible_host_controller_interface/src/port.rs b/crates/extensible_host_controller_interface/src/port.rs
-index 263437c5d..d23f96057 100644
+index 3dae9b336..4db009afb 100644
 --- a/crates/extensible_host_controller_interface/src/port.rs
 +++ b/crates/extensible_host_controller_interface/src/port.rs
-@@ -119,7 +119,7 @@ pub const fn speed_of(portsc: u32) -> u8 {
+@@ -119,7 +119,7 @@ pub const fn speed_of(port_status_and_control: u32) -> u8 {
  ///
  /// Name: ratified 2026-10-25 (#2720).
- pub const fn write_value(portsc: u32, bits: u32) -> u32 {
--    (portsc & PRESERVE) | bits
-+    portsc | bits
+ pub const fn write_value(port_status_and_control: u32, bits: u32) -> u32 {
+-    (port_status_and_control & PRESERVE) | bits
++    port_status_and_control | bits
  }
  
  /// **Endpoint 0's packet size before the device has said**, by speed (xHCI 1.2 section 4.3): 8 for low

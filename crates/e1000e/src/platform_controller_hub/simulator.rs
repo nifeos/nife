@@ -54,7 +54,7 @@ pub struct SimulatedHardware {
     pub strap_writes: Vec<u32>,
     pub elapsed_microseconds: u64,
     flash_status: u16,
-    flash_ctl: u16,
+    flash_control: u16,
     /// Reads of the flash status that still show a cycle in progress; `u32::MAX` never clears.
     pub flash_busy_reads: u32,
     /// Cycles that end in `FLCERR` before one succeeds.
@@ -103,7 +103,7 @@ impl SimulatedHardware {
             strap_writes: Vec::new(),
             elapsed_microseconds: 0,
             flash_status: non_volatile_memory::status::DESCRIPTOR_VALID,
-            flash_ctl: 0,
+            flash_control: 0,
             flash_busy_reads: 0,
             flash_failing_cycles: 0,
             flash_slow_reads: 0,
@@ -150,9 +150,10 @@ impl SimulatedHardware {
 
     fn mdic(&mut self, value: u32) {
         self.mdic_log.push(value);
-        let reg = (value & management_data_interface_control::REG_MASK)
-            >> management_data_interface_control::REG_SHIFT;
-        let address = value >> management_data_interface_control::PHY_SHIFT & 0x1f;
+        let register = (value & management_data_interface_control::REGISTER_MASK)
+            >> management_data_interface_control::REGISTER_SHIFT;
+        let address =
+            value >> management_data_interface_control::PHYSICAL_LAYER_DEVICE_SHIFT & 0x1f;
         if !self.physical_layer_device_answers() {
             self.mac.insert(
                 mac_mdic(),
@@ -162,7 +163,9 @@ impl SimulatedHardware {
             );
             return;
         }
-        let offset = if address == 1 && reg == physical_layer_device::IGP01E1000_PHY_PAGE_SELECT {
+        let offset = if address == 1
+            && register == physical_layer_device::IGP01E1000_PHYSICAL_LAYER_DEVICE_PAGE_SELECT
+        {
             None
         } else if address == 1 {
             let page = if self.page == 0 {
@@ -170,14 +173,17 @@ impl SimulatedHardware {
             } else {
                 self.page
             };
-            Some(physical_layer_device::paged_offset(page, reg))
+            Some(physical_layer_device::paged_offset(page, register))
         } else {
-            Some(reg)
+            Some(register)
         };
-        if value & management_data_interface_control::OP_WRITE != 0 {
+        if value & management_data_interface_control::OPERATION_WRITE != 0 {
             let data = value as u16;
             match offset {
-                None => self.page = u32::from(data) >> physical_layer_device::PHY_PAGE_SHIFT,
+                None => {
+                    self.page =
+                        u32::from(data) >> physical_layer_device::PHYSICAL_LAYER_DEVICE_PAGE_SHIFT;
+                }
                 Some(o) => {
                     self.physical_layer_device_registers.insert(o, data);
                     self.physical_layer_device_writes.push((o, data));
@@ -203,7 +209,7 @@ impl SimulatedHardware {
         }
     }
 
-    fn ctrl(&mut self, value: u32) {
+    fn device_control(&mut self, value: u32) {
         const OVERRIDE: u32 = 0x0001_0000;
         const VALUE: u32 = 0x0002_0000;
         if value & OVERRIDE != 0 && value & VALUE == 0 {
@@ -245,13 +251,13 @@ impl SimulatedHardware {
             & (non_volatile_memory::status::FLASH_CYCLE_DONE
                 | non_volatile_memory::status::FLASH_CYCLE_ERROR
                 | non_volatile_memory::status::DIRECT_ACCESS_ERROR));
-        self.flash_ctl = (value >> 16) as u16;
-        if self.flash_ctl & non_volatile_memory::control::FLASH_CYCLE_GO != 0 {
+        self.flash_control = (value >> 16) as u16;
+        if self.flash_control & non_volatile_memory::control::FLASH_CYCLE_GO != 0 {
             if self.flash_busy_reads > 0 || self.flash_pending > 0 {
                 self.flash_go_while_busy += 1;
             }
-            self.flash_cycles.push(self.flash_ctl);
-            self.flash_ctl &= !non_volatile_memory::control::FLASH_CYCLE_GO;
+            self.flash_cycles.push(self.flash_control);
+            self.flash_control &= !non_volatile_memory::control::FLASH_CYCLE_GO;
             self.flash_pending = self.flash_slow_reads;
             if self.flash_pending == 0 {
                 self.flash_end_cycle();
@@ -263,11 +269,11 @@ impl SimulatedHardware {
         let byte =
             self.get(non_volatile_memory::FLASH_BASE_ADDR + non_volatile_memory::FADDR) as usize;
         let w = byte / 2;
-        let lo = *self.non_volatile_memory.get(w).unwrap_or(&0xffff);
-        let hi = *self.non_volatile_memory.get(w + 1).unwrap_or(&0xffff);
+        let low = *self.non_volatile_memory.get(w).unwrap_or(&0xffff);
+        let high = *self.non_volatile_memory.get(w + 1).unwrap_or(&0xffff);
         self.mac.insert(
             non_volatile_memory::FLASH_BASE_ADDR + non_volatile_memory::FDATA0,
-            u32::from(hi) << 16 | u32::from(lo),
+            u32::from(high) << 16 | u32::from(low),
         );
         if self.flash_failing_cycles > 0 {
             self.flash_failing_cycles -= 1;
@@ -296,18 +302,18 @@ impl Hardware for SimulatedHardware {
                 if self.flash_pending == 0 {
                     self.flash_end_cycle();
                 } else {
-                    let st = self.flash_status | non_volatile_memory::status::IN_PROGRESS;
-                    return u32::from(self.flash_ctl) << 16 | u32::from(st);
+                    let status = self.flash_status | non_volatile_memory::status::IN_PROGRESS;
+                    return u32::from(self.flash_control) << 16 | u32::from(status);
                 }
             }
-            let mut st = self.flash_status;
+            let mut status = self.flash_status;
             if self.flash_busy_reads > 0 {
                 if self.flash_busy_reads != u32::MAX {
                     self.flash_busy_reads -= 1;
                 }
-                st |= non_volatile_memory::status::IN_PROGRESS;
+                status |= non_volatile_memory::status::IN_PROGRESS;
             }
-            return u32::from(self.flash_ctl) << 16 | u32::from(st);
+            return u32::from(self.flash_control) << 16 | u32::from(status);
         }
         self.reads.push(offset);
         self.get(offset)
@@ -316,7 +322,7 @@ impl Hardware for SimulatedHardware {
         self.writes.push((offset, value));
         match offset {
             o if o == registers::MDIC => self.mdic(value),
-            o if o == mac::DEVICE_CONTROL_REGISTER => self.ctrl(value),
+            o if o == mac::DEVICE_CONTROL_REGISTER => self.device_control(value),
             o if o == registers::EXTCNF_CTRL => {
                 let keep = if self.firmware_holds_software_flag {
                     value & !physical_layer_device::EXTCNF_CTRL_SWFLAG
@@ -359,8 +365,8 @@ mod tests {
     use super::super::sequence::{self, AccessPath, Error};
     use super::*;
 
-    fn swflag_free(sim: &SimulatedHardware) -> bool {
-        sim.get(registers::EXTCNF_CTRL) & physical_layer_device::EXTCNF_CTRL_SWFLAG == 0
+    fn is_software_flag_free(simulator: &SimulatedHardware) -> bool {
+        simulator.get(registers::EXTCNF_CTRL) & physical_layer_device::EXTCNF_CTRL_SWFLAG == 0
     }
 
     #[test]
@@ -411,16 +417,16 @@ mod tests {
             Ok(0x4000)
         );
         f.release(&mut s);
-        assert!(swflag_free(&s));
+        assert!(is_software_flag_free(&s));
         // The select went to address 1, register 31, with the page shifted left by five.
         let sel = s.mdic_log[0];
         assert_eq!(
-            sel >> management_data_interface_control::PHY_SHIFT & 0x1f,
+            sel >> management_data_interface_control::PHYSICAL_LAYER_DEVICE_SHIFT & 0x1f,
             1
         );
         assert_eq!(
-            (sel & management_data_interface_control::REG_MASK)
-                >> management_data_interface_control::REG_SHIFT,
+            (sel & management_data_interface_control::REGISTER_MASK)
+                >> management_data_interface_control::REGISTER_SHIFT,
             31
         );
         assert_eq!(sel as u16, (770 << 5) as u16);
@@ -478,7 +484,7 @@ mod tests {
             physical_layer_device::read_management_data_input_output(
                 &mut s,
                 2,
-                physical_layer_device::MAX_PHY_REG_ADDRESS
+                physical_layer_device::MAXIMUM_PHYSICAL_LAYER_DEVICE_REGISTER_ADDRESS
             )
             .is_ok()
         );
@@ -490,7 +496,7 @@ mod tests {
         assert_eq!(
             plan_paged_access(paged_offset(
                 769,
-                physical_layer_device::MAX_PHY_MULTI_PAGE_REG
+                physical_layer_device::MAXIMUM_PHYSICAL_LAYER_DEVICE_MULTI_PAGE_REGISTER
             ))
             .unwrap()
             .select,
@@ -499,7 +505,7 @@ mod tests {
         assert!(
             plan_paged_access(paged_offset(
                 769,
-                physical_layer_device::MAX_PHY_MULTI_PAGE_REG + 1
+                physical_layer_device::MAXIMUM_PHYSICAL_LAYER_DEVICE_MULTI_PAGE_REGISTER + 1
             ))
             .unwrap()
             .select
@@ -562,7 +568,7 @@ mod tests {
             SoftwareFlag::acquire(&mut s).unwrap_err(),
             PhysicalLayerDeviceError::SoftwareFlagRefused
         );
-        assert!(swflag_free(&s));
+        assert!(is_software_flag_free(&s));
         s.firmware_holds_software_flag = false;
         s.mac.insert(
             registers::EXTCNF_CTRL,
@@ -600,7 +606,7 @@ mod tests {
             0,
             "hardware PHY config gated"
         );
-        assert!(swflag_free(&s));
+        assert!(is_software_flag_free(&s));
     }
 
     #[test]
@@ -650,7 +656,10 @@ mod tests {
             Err(Error::PhysicalLayerDevicePowerCycleBlocked)
         );
         assert_eq!(s.lanphypc_toggles, 0);
-        assert!(swflag_free(&s), "the error path released the semaphore");
+        assert!(
+            is_software_flag_free(&s),
+            "the error path released the semaphore"
+        );
     }
 
     #[test]
@@ -690,7 +699,7 @@ mod tests {
         let cleared = 0x1ff4 & !0x1d74;
         assert_eq!(ulp, [cleared, cleared | 1], "cleared, then started");
         assert_eq!(s.get(registers::FEXTNVM7) & 0x20, 0);
-        assert!(swflag_free(&s));
+        assert!(is_software_flag_free(&s));
     }
 
     #[test]
@@ -705,7 +714,7 @@ mod tests {
             0,
             "LAN_INIT_DONE and PHYRA cleared"
         );
-        assert!(swflag_free(&s));
+        assert!(is_software_flag_free(&s));
 
         let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         s.mac.insert(
@@ -770,7 +779,7 @@ mod tests {
             s.physical_layer_device_registers[&physical_layer_device::registers::HV_SMB_ADDR],
             0x0002 | 0x0200 | 0x0080 | 0x1000
         );
-        assert!(swflag_free(&s));
+        assert!(is_software_flag_free(&s));
     }
 
     #[test]
@@ -799,7 +808,7 @@ mod tests {
             0
         );
         assert_eq!(s.get(registers::TXDCTL0) & 0x013f_003f, 0x0101_001f);
-        assert!(swflag_free(&s));
+        assert!(is_software_flag_free(&s));
     }
 
     #[test]
@@ -897,9 +906,9 @@ mod tests {
             s.writes
         );
         assert_eq!(s.flash_cycles.len(), 1);
-        let ctl = s.flash_cycles[0];
-        assert_eq!(ctl & 0x0300, 0x0300, "four bytes");
-        assert_eq!(ctl & 0x0006, 0, "a read");
+        let flash_control = s.flash_cycles[0];
+        assert_eq!(flash_control & 0x0300, 0x0300, "four bytes");
+        assert_eq!(flash_control & 0x0006, 0, "a read");
         assert_eq!(
             s.elapsed_microseconds, 1,
             "one microsecond before the cycle, none in it"
