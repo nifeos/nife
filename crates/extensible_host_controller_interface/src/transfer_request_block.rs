@@ -156,32 +156,36 @@ impl TransferRequestBlock {
         )
     }
 
-    /// Reset Endpoint `dci` of `slot`, after a stall halted it.
+    /// Reset Endpoint `device_context_index` of `slot`, after a stall halted it.
     ///
     /// Name: ratified 2026-10-25 (#2720).
-    pub const fn reset_endpoint(slot: u8, dci: u8) -> TransferRequestBlock {
+    pub const fn reset_endpoint(slot: u8, device_context_index: u8) -> TransferRequestBlock {
         TransferRequestBlock([
             0,
             0,
             0,
             control(transfer_request_block_type::RESET_ENDPOINT)
-                | (dci as u32) << 16
+                | (device_context_index as u32) << 16
                 | (slot as u32) << 24,
         ])
     }
 
-    /// Set TR Dequeue Pointer of endpoint `dci` of `slot` to `pointer` (the ring position with the
-    /// consumer cycle in bit 0, [`ProducerRing::dequeue_pointer`]), skipping what a stall left on
-    /// the ring.
+    /// Set TR Dequeue Pointer of endpoint `device_context_index` of `slot` to `pointer` (the ring
+    /// position with the consumer cycle in bit 0, [`ProducerRing::dequeue_pointer`]), skipping
+    /// what a stall left on the ring.
     ///
     /// Name: ratified 2026-10-25 (#2720).
-    pub const fn set_dequeue(pointer: u64, slot: u8, dci: u8) -> TransferRequestBlock {
+    pub const fn set_dequeue(
+        pointer: u64,
+        slot: u8,
+        device_context_index: u8,
+    ) -> TransferRequestBlock {
         TransferRequestBlock::pointer(
             pointer,
             [
                 0,
                 control(transfer_request_block_type::SET_TRANSFER_RING_DEQUEUE_POINTER)
-                    | (dci as u32) << 16
+                    | (device_context_index as u32) << 16
                     | (slot as u32) << 24,
             ],
         )

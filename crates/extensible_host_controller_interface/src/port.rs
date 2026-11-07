@@ -110,16 +110,16 @@ pub mod speed {
 /// The attached device's speed id, from bits 13:10.
 ///
 /// Name: ratified 2026-10-25 (#2720).
-pub const fn speed_of(portsc: u32) -> u8 {
-    ((portsc >> 10) & 0xf) as u8
+pub const fn speed_of(port_status_and_control: u32) -> u8 {
+    ((port_status_and_control >> 10) & 0xf) as u8
 }
 
 /// **What to write to set `bits`** without disabling the port or acknowledging a change nobody
-/// asked to: `portsc`'s preserved bits, plus `bits`.
+/// asked to: `port_status_and_control`'s preserved bits, plus `bits`.
 ///
 /// Name: ratified 2026-10-25 (#2720).
-pub const fn write_value(portsc: u32, bits: u32) -> u32 {
-    (portsc & PRESERVE) | bits
+pub const fn write_value(port_status_and_control: u32, bits: u32) -> u32 {
+    (port_status_and_control & PRESERVE) | bits
 }
 
 /// **Endpoint 0's packet size before the device has said**, by speed (xHCI 1.2 section 4.3): 8 for low

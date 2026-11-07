@@ -62,12 +62,12 @@ impl Event {
     /// Decode an event TRB. Total: every input is some variant.
     ///
     /// Name: ratified 2026-10-25 (#2720).
-    pub const fn decode(t: TransferRequestBlock) -> Event {
-        let words = t.0;
+    pub const fn decode(transfer_request_block: TransferRequestBlock) -> Event {
+        let words = transfer_request_block.0;
         let pointer = words[0] as u64 | (words[1] as u64) << 32;
         let code = (words[2] >> 24) as u8;
         let slot = (words[3] >> 24) as u8;
-        match t.kind() {
+        match transfer_request_block.kind() {
             transfer_request_block_type::TRANSFER_EVENT => Event::Transfer {
                 transfer_request_block: pointer,
                 residual: words[2] & 0x00ff_ffff,
