@@ -351,7 +351,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     /// transfer is judged on progress, not on its length. Progress is fewer owned descriptors than
     /// at any earlier look, so the deadline restarts at most `count` times: a controller that
     /// reopens a descriptor or rewrites its size cannot hold the wait open.
-    fn internal_direct_memory_access_wait(
+    pub(crate) fn internal_direct_memory_access_wait(
         &mut self,
         command: &Command,
         count: u32,
