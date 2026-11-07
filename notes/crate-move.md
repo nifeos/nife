@@ -81,8 +81,9 @@ harness's comment, where the template reads it, so those records pass `falsify.p
    ```
 
    Expected: `gh api orgs/nifeos/actions/secrets/SETTINGS_TOKEN/repositories --jq '.repositories[].name'`
-   lists the crate. The fine-grained token behind `SETTINGS_TOKEN` also needs the new repository in
-   its repository access, which only its owner can widen. No agent handles any key value.
+   lists the crate. The fine-grained token behind `SETTINGS_TOKEN` has access to all repositories of
+   the organization, so the secret's repository list is the only setting a move changes; the token
+   needs no per-crate widening. No agent handles any key value.
 
 ## The move
 
@@ -221,8 +222,8 @@ publishes.
 - Clear the crate's review, which approves creating its repository (step 4).
 - Create `nifeos/<crate>` (step 5).
 - Install the `nife-smelter` app on it (step 6).
-- Grant `NIFE_SMELTER_APP_ID`, `NIFE_SMELTER_PRIVATE_KEY` and `SETTINGS_TOKEN` to it, and widen the
-  `SETTINGS_TOKEN` token's repository access (step 7).
+- Grant `NIFE_SMELTER_APP_ID`, `NIFE_SMELTER_PRIVATE_KEY` and `SETTINGS_TOKEN` to it (step 7). The
+  `SETTINGS_TOKEN` token reaches every repository of the organization and needs no widening.
 - Dispatch the release that makes each tag, and cancel its publish (step 13).
 - Approve each publication onto the allowlist (step 16).
 - Create the first-publish token on the `crates-io` environment (step 17).
