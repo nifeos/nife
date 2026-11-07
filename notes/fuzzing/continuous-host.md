@@ -83,6 +83,9 @@ The status column of `windows.tsv` says which kind of hold it is:
 - `held-budget-expired`: a wait ran out its every-core tick budget (`EveryCoreTickBudget`). The guest
   was short of time, probably through the host's doing.
 
+The scheduler's thread dump follows the panic that carries the marker, on later lines. It holds
+neither the marker nor a replay line, so the classification below stays the same.
+
 A budget expiry outranks the other classes. The drivers begin the message of every such failure with
 `budget-expired:` (`BUDGET_EXPIRED_MARKER` in `kernel/src/testing.rs`, which the supervisor's selftest
 checks). The supervisor files the window as `held-budget-expired` whether or not the message

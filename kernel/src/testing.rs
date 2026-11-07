@@ -9,7 +9,9 @@
 //! one). The watchdogs, the frame ledger, skips, filters and repeats are in
 //! notes/kernel-test-harness.md.
 
-use core::sync::atomic::{AtomicBool, AtomicPtr, AtomicU32, AtomicU64, AtomicUsize, Ordering};
+use core::sync::atomic::{
+    AtomicBool, AtomicPtr, AtomicU8, AtomicU32, AtomicU64, AtomicUsize, Ordering,
+};
 
 // The per-test budget table lives in `crates/test_times` (`DEFAULT_BUDGET_SECONDS`, `SLOW_TESTS`),
 // because `xtask`'s host watchdog reads the same numbers (rule 7).
@@ -200,9 +202,63 @@ static PRINTED_A_SKIP_WORD: AtomicBool = AtomicBool::new(false);
 /// tree has none. See notes/kernel-test-harness.md.
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn note_printed(fragment: &str) {
-    if fragment.contains("skip") {
-        PRINTED_A_SKIP_WORD.store(true, Ordering::Relaxed);
+    // A byte loop, not `str::contains`: every print reaches this, and the two-way searcher's
+    // frames would ride on the deepest chain `script/stack-depth-check` measures (notes/stack.md).
+    let bytes = fragment.as_bytes();
+    let mut i = 0;
+    while i + 4 <= bytes.len() {
+        if bytes[i] == b's' && bytes[i + 1] == b'k' && bytes[i + 2] == b'i' && bytes[i + 3] == b'p'
+        {
+            PRINTED_A_SKIP_WORD.store(true, Ordering::Relaxed);
+            break;
+        }
+        i += 1;
     }
+    if CAPTURING.load(Ordering::Relaxed) {
+        let at = CAPTURED_LEN.fetch_add(fragment.len(), Ordering::Relaxed);
+        for (i, byte) in fragment.bytes().enumerate() {
+            if let Some(slot) = CAPTURED.get(at + i) {
+                slot.store(byte, Ordering::Relaxed);
+            }
+        }
+    }
+}
+
+/// Bytes of console output [`capture_console`] keeps; the rest is dropped.
+#[cfg(any(test, feature = "system_tests"))]
+const CAPTURED_BYTES: usize = 32 * 1024;
+/// Is [`capture_console`] recording?
+#[cfg(any(test, feature = "system_tests"))]
+static CAPTURING: AtomicBool = AtomicBool::new(false);
+/// Bytes offered to the capture, which may exceed [`CAPTURED_BYTES`].
+#[cfg(any(test, feature = "system_tests"))]
+static CAPTURED_LEN: AtomicUsize = AtomicUsize::new(0);
+/// What [`capture_console`] recorded. Lock-free, because it is written under the console lock.
+#[cfg(any(test, feature = "system_tests"))]
+static CAPTURED: [AtomicU8; CAPTURED_BYTES] = [const { AtomicU8::new(0) }; CAPTURED_BYTES];
+
+/// **Run `f`, then hand `check` what the whole machine printed to the console meanwhile**, up to
+/// 32 KiB. For a test of a diagnostic that only prints. Another core's output lands in it too, so
+/// check for substrings and their order, not for the whole text. One capture at a time.
+///
+/// Name: provisional (lane/fuzz-budget-expired-thread-dump).
+#[cfg(any(test, feature = "system_tests"))]
+#[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests call it; the kernel's own do not
+pub fn capture_console(f: impl FnOnce(), check: impl FnOnce(&str)) {
+    CAPTURED_LEN.store(0, Ordering::Relaxed);
+    CAPTURING.store(true, Ordering::SeqCst);
+    f();
+    CAPTURING.store(false, Ordering::SeqCst);
+    let len = CAPTURED_LEN.load(Ordering::Relaxed).min(CAPTURED_BYTES);
+    // SAFETY: `AtomicU8` has the layout of `u8`, and capture is off, so no print writes the bytes
+    // read here except a straggler on another core, whose byte is either value and still a `u8`.
+    let bytes = unsafe { core::slice::from_raw_parts(CAPTURED.as_ptr().cast::<u8>(), len) };
+    // A cut at the capacity can split a character; keep the valid head.
+    let text = match core::str::from_utf8(bytes) {
+        Ok(t) => t,
+        Err(e) => core::str::from_utf8(&bytes[..e.valid_up_to()]).unwrap_or(""),
+    };
+    check(text);
 }
 
 /// How many tests this run has skipped, for the final line. Read once, at the end; never
@@ -792,6 +848,62 @@ pub fn wait_on_every_core(mut done: impl FnMut() -> bool) -> Result<(), EveryCor
 #[cfg(any(test, feature = "system_tests"))]
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests print it; the kernel's own do not
 pub const BUDGET_EXPIRED_MARKER: &str = "budget-expired:";
+
+/// **After a panic whose message is a budget expiry, print the scheduler's thread dump**, so the
+/// log shows whether threads were parked, runnable or waiting (a lost wake from slowness) and each
+/// core's `inbox_len`. The panic handler calls it with the message after printing the panic, so the
+/// dump follows the message and the message itself, which `helpers/continuous-fuzz.sh` parses, is
+/// not touched. The dump carries no marker, replay line or seed, so it adds nothing to what the
+/// supervisor or the filer reads. Prints nothing for any other message.
+///
+/// Name: provisional (lane/fuzz-budget-expired-thread-dump).
+#[cfg(any(test, feature = "system_tests"))]
+pub fn dump_threads_for_budget_expired(message: &str) {
+    if message.contains(BUDGET_EXPIRED_MARKER) {
+        crate::sched::dump_threads();
+    }
+}
+
+/// [`dump_threads_for_budget_expired`] for a panic. The message is formatted and searched in
+/// [`panic_is_budget_expiry`], whose buffer is gone from the stack before the dump runs: the panic
+/// handler can run at a thread stack's deepest point, and `script/stack-depth-check` counts the
+/// dump there (notes/stack.md). The marker stands in for the message it was found in, so the
+/// panic takes the same path the test of the dump checks.
+#[cfg(any(test, feature = "system_tests"))]
+pub(crate) fn dump_threads_after_panic(info: &core::panic::PanicInfo<'_>) {
+    if panic_is_budget_expiry(info) {
+        dump_threads_for_budget_expired(BUDGET_EXPIRED_MARKER);
+    }
+}
+
+/// Does the panic's message hold [`BUDGET_EXPIRED_MARKER`]? Formats the message into a bounded
+/// buffer (the marker is near its start, so a truncated tail loses nothing) and looks for it.
+#[cfg(any(test, feature = "system_tests"))]
+fn panic_is_budget_expiry(info: &core::panic::PanicInfo<'_>) -> bool {
+    struct Bounded {
+        text: [u8; 256],
+        len: usize,
+    }
+    impl core::fmt::Write for Bounded {
+        fn write_str(&mut self, s: &str) -> core::fmt::Result {
+            // Cut at the byte limit; a cut inside a character leaves invalid UTF-8, handled below.
+            let take = s.len().min(self.text.len() - self.len);
+            self.text[self.len..self.len + take].copy_from_slice(&s.as_bytes()[..take]);
+            self.len += take;
+            Ok(())
+        }
+    }
+    let mut out = Bounded {
+        text: [0; 256],
+        len: 0,
+    };
+    let _ = core::fmt::write(&mut out, format_args!("{}", info.message()));
+    let valid = match core::str::from_utf8(&out.text[..out.len]) {
+        Ok(s) => s,
+        Err(e) => core::str::from_utf8(&out.text[..e.valid_up_to()]).unwrap_or(""),
+    };
+    valid.contains(BUDGET_EXPIRED_MARKER)
+}
 
 /// Seconds of ticks every online core must take before [`wait_on_every_core`] gives up.
 ///

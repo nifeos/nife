@@ -133,6 +133,14 @@ KVM, each of four guests running side by side stalled once for 1.45 s of the cou
 margin. The `BUGS` of milestone 752 (a seeded syscall driver with a shadow model) has the false reds
 such stalls caused.
 
+After it prints a panic whose message holds `BUDGET_EXPIRED_MARKER`, the panic handler calls
+`testing::dump_threads_after_panic`, which runs `sched::dump_threads`. That covers both fuzz drivers
+and every site that uses the marker. The dump lists each thread's state and wait and each core's
+`inbox_len` and ticks (notes/scheduler/thread-dump.md), so it tells a lost wake from slowness.
+The message line stays as it was and the dump holds no marker, replay line or seed, so the
+supervisor and the filer read the same fields with it as without. A test checks the dump through
+`testing::capture_console`, which records what the machine prints.
+
 ## The preemption window tests
 
 `bench/spawn_map.rs`'s `map_new` masks interrupts across a timed window of about 250 µs against a

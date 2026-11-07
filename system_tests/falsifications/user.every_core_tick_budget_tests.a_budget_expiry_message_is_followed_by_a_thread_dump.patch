@@ -1,0 +1,22 @@
+Falsifies `system_tests::user::every_core_tick_budget_tests::a_budget_expiry_message_is_followed_by_a_thread_dump`.
+
+Architecture: aarch64, riscv64, x86_64
+
+The defect is `dump_threads_for_budget_expired` never printing, so a budget-expired failure carries
+no thread states and no per-core `inbox_len`, and a lost wake cannot be told from slowness.
+
+Expected to fail: `assert!(dump.contains("--- thread dump"), "the dump follows the message: {dump}")`.
+
+diff --git a/kernel/src/testing.rs b/kernel/src/testing.rs
+index 7063d2ebd..c02423003 100644
+--- a/kernel/src/testing.rs
++++ b/kernel/src/testing.rs
+@@ -850,7 +850,7 @@ pub const BUDGET_EXPIRED_MARKER: &str = "budget-expired:";
+ /// Name: provisional (lane/fuzz-budget-expired-thread-dump).
+ #[cfg(any(test, feature = "system_tests"))]
+ pub fn dump_threads_for_budget_expired(message: &str) {
+-    if message.contains(BUDGET_EXPIRED_MARKER) {
++    if message.contains(BUDGET_EXPIRED_MARKER) && false {
+         crate::sched::dump_threads();
+     }
+ }

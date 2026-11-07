@@ -11,7 +11,10 @@
 use core::sync::atomic::{AtomicU32, Ordering};
 
 use crate::sched;
-use crate::testing::{EveryCoreTickBudget, wait_on_every_core};
+use crate::testing::{
+    BUDGET_EXPIRED_MARKER, EveryCoreTickBudget, capture_console, dump_threads_for_budget_expired,
+    wait_on_every_core,
+};
 
 /// What the stand-in core has done: 1 once its interrupts are masked, 2 once it has unmasked them.
 static STAGE: AtomicU32 = AtomicU32::new(0);
@@ -96,5 +99,92 @@ fn the_backstop_bounds_a_wait_on_a_core_that_never_ticks() {
     assert!(
         wait_on_every_core(|| STAGE.load(Ordering::SeqCst) == 2).is_ok(),
         "the stand-in core never unmasked its interrupts"
+    );
+}
+
+/// **A budget expiry's message is followed by a thread dump, and the message is unchanged.** The
+/// panic handler calls `dump_threads_for_budget_expired` after printing a message that holds the
+/// marker. This prints a message in the drivers' form and then makes that call, and checks that the
+/// message line opens with the marker and keeps its `{ms} ms of the counter[ (the backstop)];
+/// ticks taken of {n} on each core:` form, that the dump follows it with thread states and each
+/// core's `inbox_len`, and that the dump repeats no marker and carries no replay line, so the
+/// supervisor and the filer read the same thing with and without it. Another message gets no dump.
+///
+/// Name: provisional (lane/fuzz-budget-expired-thread-dump).
+///
+/// Falsification: replayable `system_tests/falsifications/user.every_core_tick_budget_tests.a_budget_expiry_message_is_followed_by_a_thread_dump.patch`
+#[test_case]
+fn a_budget_expiry_message_is_followed_by_a_thread_dump() {
+    let Err(budget) = wait_on_every_core(|| false) else {
+        panic!("a wait on a property that is never true succeeded");
+    };
+    let mut message = [0u8; 200];
+    let message = {
+        use core::fmt::Write;
+        struct Cursor<'a>(&'a mut [u8], usize);
+        impl Write for Cursor<'_> {
+            fn write_str(&mut self, s: &str) -> core::fmt::Result {
+                let end = self.1 + s.len();
+                self.0
+                    .get_mut(self.1..end)
+                    .ok_or(core::fmt::Error)?
+                    .copy_from_slice(s.as_bytes());
+                self.1 = end;
+                Ok(())
+            }
+        }
+        let mut cursor = Cursor(&mut message, 0);
+        write!(
+            cursor,
+            "{BUDGET_EXPIRED_MARKER} actor 0 neither finished nor parked: {budget}"
+        )
+        .expect("the message fits");
+        let end = cursor.1;
+        core::str::from_utf8(&message[..end]).expect("ASCII")
+    };
+    capture_console(
+        || {
+            crate::println!("{message}");
+            dump_threads_for_budget_expired(message);
+        },
+        |text| {
+            // Another core may print around the lines under test, so find them by content.
+            let at = text.find(message).expect("the message was printed");
+            let first = &text[at..];
+            let first = &first[..first.find('\n').expect("the message line ends")];
+            assert_eq!(first, message, "the message line changed");
+            assert!(
+                first.starts_with("budget-expired: actor 0 neither finished nor parked: ")
+                    && first.contains(" ms of the counter")
+                    && first.contains("; ticks taken of 200 on each core:"),
+                "the prefix and the budget's form are the parsed contract: {first}"
+            );
+            let dump = &text[at + first.len()..];
+            assert!(
+                dump.contains("--- thread dump"),
+                "the dump follows the message: {dump}"
+            );
+            assert!(
+                dump.contains(" state="),
+                "the dump lists thread states: {dump}"
+            );
+            assert!(
+                dump.matches(" inbox_len=").count() >= crate::smp::online_cpus().count(),
+                "the dump lists every online core's inbox_len: {dump}"
+            );
+            assert!(
+                !dump.contains(BUDGET_EXPIRED_MARKER) && !dump.contains("replay:"),
+                "the dump must not carry what the supervisor greps for"
+            );
+        },
+    );
+    capture_console(
+        || dump_threads_for_budget_expired("syscall fuzzer: seed 0x1 step 2: a mismatch"),
+        |text| {
+            assert!(
+                text.is_empty(),
+                "a message that is not a budget expiry got a dump: {text}"
+            );
+        },
     );
 }
