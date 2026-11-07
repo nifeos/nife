@@ -3,18 +3,20 @@
 
 use super::Hardware;
 
-/// PCI configuration offset of the descriptor ring status word.
+/// PCI configuration offset of the descriptor ring status word (`PCICFG_DESC_RING_STATUS`,
+/// OpenBSD's `sys/dev/pci/if_em.h`, then FreeBSD's `sys/dev/e1000/if_em.h`).
 ///
-/// Name: ratified 2026-10-26 (#2761). Ruled in the ruling that keeps a register or bit name copied
-/// from a cited source, strictly: FreeBSD's `PCICFG_DESC_RING_STATUS` (`if_em.h`). Refused
-/// `DESC_RING_STATUS` (a shortened copy).
-pub const PCICFG_DESC_RING_STATUS: u64 = 0xe4;
-/// The bit in it that says a flush is required.
+/// Name: ratified 2026-11-07 (UTC), #3322. Renamed from `PCICFG_DESC_RING_STATUS`, the sources'
+/// spelling, which stays as an alias. Refused `DESC_RING_STATUS` (a shortened copy).
+#[doc(alias = "PCICFG_DESC_RING_STATUS")]
+pub const PCI_CONFIGURATION_DESCRIPTOR_RING_STATUS_REGISTER: u64 = 0xe4;
+/// The bit in it that says the descriptor rings need a flush (`FLUSH_DESC_REQUIRED`, OpenBSD's
+/// `sys/dev/pci/if_em.h`, then FreeBSD's `sys/dev/e1000/if_em.h`).
 ///
-/// Name: ratified 2026-10-26 (#2761). Ruled in the ruling that keeps a register or bit name copied
-/// from a cited source, strictly: FreeBSD's `FLUSH_DESC_REQUIRED` (`if_em.h`). Refused `REQUIRED`
-/// (a shortened copy).
-pub const FLUSH_DESC_REQUIRED: u16 = 0x100;
+/// Name: ratified 2026-11-07 (UTC), #3322. Renamed from `FLUSH_DESC_REQUIRED`, the sources'
+/// spelling, which stays as an alias. Refused `REQUIRED` (a shortened copy).
+#[doc(alias = "FLUSH_DESC_REQUIRED")]
+pub const DESCRIPTOR_RING_FLUSH_REQUIRED: u16 = 0x100;
 /// Future Extended NVM 11 (`FEXTNVM11`), the "disable MULR fix" bit, set before the flush. `MULR` is
 /// the sources' own term and is left unexpanded: no source expands it for this bit. FreeBSD's
 /// `e1000_ich8lan.h` defines `E1000_FEXTNVM11_DISABLE_MULR_FIX` with no comment, and the
@@ -38,7 +40,7 @@ pub(crate) const TRANSMIT_DUMMY_LENGTH: u16 = 512;
 /// Name: ratified 2026-11-03 (UTC), #3151. Renamed from `required`, a bare adjective; the name now
 /// has the yes-or-no shape of a question.
 pub const fn is_flush_required(status: u16, transmit_descriptor_length: u32) -> bool {
-    status & FLUSH_DESC_REQUIRED != 0 && transmit_descriptor_length != 0
+    status & DESCRIPTOR_RING_FLUSH_REQUIRED != 0 && transmit_descriptor_length != 0
 }
 // The 512-byte length and the flag byte at bit 24 share no bit, so | and ^ compose them
 // identically; the compiler checks that here, so the word's
@@ -97,8 +99,8 @@ pub const fn receive_descriptor_control_register_value_for_flush(current: u32) -
 /// Name: ratified 2026-11-05 (UTC). Renamed from `RingAccess`: the trait is what the flush needs
 /// from its caller, so the name says flush support.
 pub trait FlushSupport {
-    /// Read the 16-bit descriptor ring status word at [`PCICFG_DESC_RING_STATUS`] in the
-    /// function's configuration space.
+    /// Read the 16-bit descriptor ring status word at
+    /// [`PCI_CONFIGURATION_DESCRIPTOR_RING_STATUS_REGISTER`] in the function's configuration space.
     fn descriptor_ring_status(&mut self) -> u16;
     /// Store `words` as transmit descriptor `index` of the ring the device reads, and order the
     /// stores before any later register write, since the next write hands the descriptor to the
@@ -180,7 +182,7 @@ pub fn empty_descriptor_rings(
         tail_after_dummy_transmit(tail, crate::TRANSMIT_ENTRIES),
     );
     hardware.delay_microseconds(250);
-    if rings.descriptor_ring_status() & FLUSH_DESC_REQUIRED == 0 {
+    if rings.descriptor_ring_status() & DESCRIPTOR_RING_FLUSH_REQUIRED == 0 {
         return EmptiedRings::TransmitFlushed;
     }
     let receive_control = hardware.read(RECEIVE_CONTROL_REGISTER);
