@@ -2,9 +2,30 @@
 
 Everything a USB host controller (xHCI) driver computes, with nothing it touches: register offsets
 and field decode, Transfer Request Block (TRB) construction and decode, the producer and event ring
-cycle discipline, slot and endpoint contexts, port status and the port debounce. The caller performs every volatile access and owns the DMA memory; this crate supplies the
+cycle discipline, slot and endpoint contexts, port status and the port debounce. The caller performs
+every volatile access and owns the direct memory access (DMA) memory; this crate supplies the
 arithmetic, so it runs in `no_std`, tests on the host and suits a model checker. It does not touch
 hardware, allocate, or drive a controller on its own.
+
+## EXAMPLES
+
+```rust
+use extensible_host_controller_interface::{Capabilities, ProducerRing, TransferRequestBlock};
+
+// QEMU's qemu-xhci: 0x40 bytes of capability registers, 64 slots, 16 interrupters and 8 ports
+// (4 USB 2 and 4 USB 3, the defaults), runtime at 0x1000, doorbells at 0x2000. Port 1's status
+// register and the command ring's doorbell:
+let caps = Capabilities::decode(0x0100_0040, 0x0800_1040, 0, 0x0000_7000, 0x2000, 0x1000);
+assert_eq!((caps.portsc(1), caps.doorbell(0)), (0x440, 0x2000));
+
+// A four-entry command ring: three usable slots, then a link TRB back to the first.
+let mut ring = ProducerRing::new(0x1000, 4);
+let a = ring.enqueue(TransferRequestBlock::enable_slot());
+assert_eq!((a.index, a.transfer_request_block.cycle(), a.link), (0, true, None));
+```
+
+The caller writes each placed TRB (and the link, when `link` is `Some`) to DMA memory at
+`ring.address_of(index)`, then rings the doorbell.
 
 ## What is proven
 
@@ -46,27 +67,7 @@ its own assertion, which shows the proof checks something real. Revert the patch
 
 Not yet proven: event decoding.
 
-## Usage
-
-```rust
-use extensible_host_controller_interface::{Capabilities, ProducerRing, TransferRequestBlock};
-
-// QEMU's qemu-xhci: 0x40 bytes of capability registers, 64 slots, 16 interrupters and 8 ports
-// (4 USB 2 and 4 USB 3, the defaults), runtime at 0x1000, doorbells at 0x2000. Port 1's status
-// register and the command ring's doorbell:
-let caps = Capabilities::decode(0x0100_0040, 0x0800_1040, 0, 0x0000_7000, 0x2000, 0x1000);
-assert_eq!((caps.portsc(1), caps.doorbell(0)), (0x440, 0x2000));
-
-// A four-entry command ring: three usable slots, then a link TRB back to the first.
-let mut ring = ProducerRing::new(0x1000, 4);
-let a = ring.enqueue(TransferRequestBlock::enable_slot());
-assert_eq!((a.index, a.transfer_request_block.cycle(), a.link), (0, true, None));
-```
-
-The caller writes each placed TRB (and the link, when `link` is `Some`) to DMA memory at
-`ring.address_of(index)`, then rings the doorbell.
-
-## Limitations
+## BUGS
 
 - Hubs are not modeled (route string 0), so a device behind a hub cannot be addressed. Only devices
   on the root ports work.
