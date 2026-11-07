@@ -1,0 +1,19 @@
+Falsifies `designware_mobile_storage::proofs::reading_a_block_never_writes_the_card_or_leaves_the_region`.
+
+The defect: the direction bit of the command word is inverted, so a read goes to the card as a
+write, and the card is overwritten with whatever the region holds.
+
+Expected to fail: `assert!(host.registers_mut().write_commands == 0)`.
+
+diff --git a/crates/designware_mobile_storage/src/command.rs b/crates/designware_mobile_storage/src/command.rs
+--- a/crates/designware_mobile_storage/src/command.rs
++++ b/crates/designware_mobile_storage/src/command.rs
+@@ -265,7 +265,7 @@
+         }
+         if let Some(d) = self.data {
+             w |= registers::COMMAND_DATA_EXPECTED;
+-            if d.is_write {
++            if !d.is_write {
+                 w |= registers::COMMAND_WRITE;
+             }
+             if d.blocks > 1 {
