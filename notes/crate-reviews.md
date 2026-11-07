@@ -102,12 +102,12 @@ seven prove and all seven patches fail. The proofs cover the context and port de
 
 Dependencies. None.
 
-Naming rules. The names section is [crate-reviews/extensible-host-controller-interface.md](crate-reviews/extensible-host-controller-interface.md).
+Naming rules. See [the names section](crate-reviews/extensible-host-controller-interface.md).
 
 | rule | result |
 |---|---|
-| spelled-out words, units, question shape, British spelling (the template's checks, 446 names) | 0 findings after 14 private names and 2 test names were renamed |
-| ratified names a later rule reaches | the specification's register mnemonics (`CAPLENGTH`, `USBCMD`, `CRCR`, `ERDP` and 15 more) and the parameters of 12 public functions, listed with a recommended name; none renamed |
+| the template's naming checks, 446 names | 0 findings after 14 private names and 2 test names were renamed |
+| ratified names a later rule reaches | 19 register mnemonics (`CAPLENGTH`, `USBCMD` and others) and the parameters of 12 public functions; none renamed |
 
 Companion crate. `usb` is released with it under the published name `universal_serial_bus`, because the
 name `usb` is taken on crates.io. The directory and the in-tree dependency name stay `usb` until the
@@ -196,9 +196,9 @@ Naming rules. The names section of the package has the detail.
 
 | rule | result |
 |---|---|
-| spelled-out words, units, question shape, British spelling (the template's checks, 1,046 names) | 1 finding after 34 private names were renamed: the public `LanInitTimeout`, listed for the architect with a recommended name |
-| ratified names a later rule reaches | six public names (five ratified, `LanInitTimeout` not), among them `MTA_ENTRIES`, `FLUSH_DESC_REQUIRED` and `PHY_CONTROL`; none renamed |
-| borderline private names | dozens of bit constants that mirror a FreeBSD define with no expansion; left, listed in the package |
+| the template's naming checks, 1,046 names | 1 finding after 34 private names were renamed: the public `LanInitTimeout` |
+| ratified names a later rule reaches | four renamed with aliases; `HV_KMRN_MODE_CTRL` and `LanInitTimeout` wait for the architect |
+| borderline private names | dozens of bit constants with no source expansion; left, listed in the package |
 
 Provenance. Milestone 1019 items 3 and 4 hold, and the notices are in the files. The manifest license
 field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.
