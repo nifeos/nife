@@ -197,11 +197,11 @@ pub const ALWAYS_ON: Domain = Domain {
 
 /// **The AON domain's register window**, `0x1700_0000`, size `0x1_0000`: mainline's `aoncrg`
 /// node and `reg-names` entry `"aon"`/`"aoncrg"` of both vendor nodes. The fallback when a tree
-/// names none of them, for [`SYSTEM_TOP_GROUP_BASE`]'s reason.
-pub(crate) const ALWAYS_ON_BASE: u64 = 0x1700_0000;
+/// names none of them, for [`SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS`]'s reason.
+pub(crate) const ALWAYS_ON_BASE_PHYSICAL_ADDRESS: u64 = 0x1700_0000;
 
 /// The AON window's size, `0x10000` in every tree that names it.
-pub(crate) const ALWAYS_ON_SIZE: u64 = 0x1_0000;
+pub(crate) const ALWAYS_ON_SIZE_BYTES: u64 = 0x1_0000;
 
 /// **AON clock and reset generator** (CRG, the device tree's `aoncrg` node, \[mainline-dts\]):
 /// mainline's dedicated AON clock-and-reset controller node, `aoncrg: clock-controller@17000000`.
@@ -216,24 +216,26 @@ pub const COMPATIBLE_ALWAYS_ON_CLOCK_AND_RESET_GENERATOR: &[u8] = b"starfive,jh7
 /// The `reg-names` entry naming the AON window in each vendor node's spelling (`"aon"` in
 /// `clkgen`, the clock generator node, and `"aoncrg"` in `rstgen`, the reset generator node;
 /// \[vendor-dts\]).
-const VENDOR_CLKGEN_ALWAYS_ON_NAME: &[u8] = b"aon";
-const VENDOR_RSTGEN_ALWAYS_ON_NAME: &[u8] = b"aoncrg";
+const VENDOR_CLOCK_GENERATOR_ALWAYS_ON_NAME: &[u8] = b"aon";
+const VENDOR_RESET_GENERATOR_ALWAYS_ON_NAME: &[u8] = b"aoncrg";
 
 /// `JH7110_AONCLK_GMAC0_AHB` \[mainline-ids\]: a gate, `gmac0`'s `pclk`. Word `0x08`.
 pub(crate) const AONCLK_GMAC0_AHB: u32 = 2;
 /// `JH7110_AONCLK_GMAC0_AXI`: a gate, `gmac0`'s `stmmaceth` (its CSR and bus clock). Word `0x0c`.
 pub(crate) const AONCLK_GMAC0_AXI: u32 = 3;
-/// `JH7110_AONCLK_GMAC0_TX`: a gate with a two-way mux, `gmac0_gtxclk` (0) or
+/// **`gmac0` transmit clock** (`AONCLK_GMAC0_TX`, `JH7110_AONCLK_GMAC0_TX` in \[mainline-ids\]): a gate with a two-way mux, `gmac0_gtxclk` (0) or
 /// `gmac0_rmii_rtx` (1). Word `0x14`, which the vendor U-Boot calls `GMAC5_0_CLK_TX_SHIFT`
 /// and sets bit 24 of (`jh7110_gmac_sel_tx_to_rgmii` in \[vendor-board\]).
 ///
 /// [vendor-board]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/board/starfive/visionfive2/starfive_visionfive2.c
+#[doc(alias = "JH7110_AONCLK_GMAC0_TX")]
+#[doc(alias = "gmac0 transmit clock")]
 pub(crate) const AONCLK_GMAC0_TX: u32 = 5;
 /// `gmac0_tx`'s parent on a VisionFive 2 v1.3B: `gmac0_rmii_rtx`, mainline's
 /// `assigned-clock-parents` for `&gmac0` in `jh7110-starfive-visionfive-2-v1.3b.dts` beside
 /// `starfive,tx-use-rgmii-clk`, and the same bit the vendor U-Boot sets. A board whose EEPROM
 /// reports PCB revision `0xb2` is a v1.3B.
-pub(crate) const AONCLK_GMAC0_TX_PARENT_RMII_RTX: u32 = 1;
+pub(crate) const AONCLK_GMAC0_TRANSMIT_PARENT_RMII_RTX: u32 = 1;
 /// `JH7110_AONRST_GMAC0_AXI` \[mainline-ids\], `gmac0`'s `stmmaceth` reset. Bit 0 at `0x38`.
 pub(crate) const AONRST_GMAC0_AXI: u32 = 0;
 /// `JH7110_AONRST_GMAC0_AHB`, `gmac0`'s `ahb` reset. Bit 1 at `0x38`.
@@ -274,7 +276,7 @@ pub const GMAC0_ALWAYS_ON_BRING_UP: &[Step] = &[
     Step::EnableClock(AONCLK_GMAC0_AHB),
     Step::SelectParent {
         clock: AONCLK_GMAC0_TX,
-        parent: AONCLK_GMAC0_TX_PARENT_RMII_RTX,
+        parent: AONCLK_GMAC0_TRANSMIT_PARENT_RMII_RTX,
     },
     Step::EnableClock(AONCLK_GMAC0_TX),
     Step::DeassertReset(AONRST_GMAC0_AXI),
@@ -341,10 +343,10 @@ pub const SYSTEM_TOP_GROUP: Domain = Domain {
 /// controller, and two independently published trees agree on this number. A caller must not
 /// store through a fallback on a machine that is not a JH7110: QEMU's riscv64 `virt` has nothing
 /// mapped there.
-pub(crate) const SYSTEM_TOP_GROUP_BASE: u64 = 0x1023_0000;
+pub(crate) const SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS: u64 = 0x1023_0000;
 
 /// The STG window's size, `0x10000` in both trees.
-pub(crate) const SYSTEM_TOP_GROUP_SIZE: u64 = 0x1_0000;
+pub(crate) const SYSTEM_TOP_GROUP_SIZE_BYTES: u64 = 0x1_0000;
 
 /// **The SYS domain**, which is where I2C5's clock and reset live, and so where the only road to
 /// a VisionFive 2's PMIC starts.
@@ -368,13 +370,13 @@ pub const SYSTEM: Domain = Domain {
 
 /// **The SYS domain's register window**, `0x1302_0000`, size `0x1_0000`, in mainline's `syscrg`
 /// node and as `reg-names` entry `"sys"`/`"syscrg"` of both vendor nodes. The fallback when a tree
-/// names none of them, for `SYSTEM_TOP_GROUP_BASE`'s reason.
+/// names none of them, for `SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS`'s reason.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3090.
 pub const SYSTEM_BASE: u64 = 0x1302_0000;
 
 /// The SYS window's size, `0x10000` in every tree that names it.
-pub(crate) const SYSTEM_SIZE: u64 = 0x1_0000;
+pub(crate) const SYSTEM_SIZE_BYTES: u64 = 0x1_0000;
 
 /// `JH7110_SYSCLK_I2C5_APB` \[mainline-ids\], and `JH7110_I2C5_CLK_APB` in the vendor header,
 /// both **143**: the vendor numbers the SYS group first, so no rebase is needed. Word `0x23c`.
@@ -413,13 +415,17 @@ pub(crate) const POWER_MANAGEMENT_CHIP_BUS_BRING_UP: &[Step] = &[
     Step::DeassertReset(SYSRST_I2C5_APB),
 ];
 
-/// `JH7110_SYSCLK_SDIO0_AHB` \[mainline-ids\], the vendor header's `JH7110_SDIO0_CLK_AHB`, both
+/// **eMMC controller bus clock** (`SYSCLK_SDIO0_AHB`, `JH7110_SYSCLK_SDIO0_AHB` in \[mainline-ids\]), the vendor header's `JH7110_SDIO0_CLK_AHB`, both
 /// **91**: the eMMC socket's controller's bus clock, `biu` in both trees. Word `0x16c`.
+#[doc(alias = "JH7110_SYSCLK_SDIO0_AHB")]
+#[doc(alias = "emmc controller bus clock")]
 pub(crate) const SYSCLK_SDIO0_AHB: u32 = 91;
-/// `JH7110_SYSCLK_SDIO1_AHB`, vendor `JH7110_SDIO1_CLK_AHB`, both **92**: the microSD slot's
+/// **microSD controller bus clock** (`SYSCLK_SDIO1_AHB`, `JH7110_SYSCLK_SDIO1_AHB`; vendor `JH7110_SDIO1_CLK_AHB`), both **92**: the microSD slot's
 /// controller's bus clock. Word `0x170`.
+#[doc(alias = "JH7110_SYSCLK_SDIO1_AHB")]
+#[doc(alias = "microsd controller bus clock")]
 pub(crate) const SYSCLK_SDIO1_AHB: u32 = 92;
-/// `JH7110_SYSCLK_SDIO0_SDCARD`, vendor `JH7110_SDIO0_CLK_SDCARD`, both **93**: the eMMC
+/// **eMMC controller card clock** (`SYSCLK_SDIO0_SDCARD`, `JH7110_SYSCLK_SDIO0_SDCARD`; vendor `JH7110_SDIO0_CLK_SDCARD`), both **93**: the eMMC
 /// controller's card clock source, `ciu`, a gated divider that mainline (\[mainline-common-dts\]) and
 /// the vendor branch head (\[vendor-board-dts-head\]) assign 50 MHz; the board file at
 /// `VF2_v2.10.4` (\[vendor-board-dts\]) assigns none. Word `0x174`.
@@ -427,14 +433,22 @@ pub(crate) const SYSCLK_SDIO1_AHB: u32 = 92;
 /// [mainline-common-dts]: https://github.com/torvalds/linux/blob/cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a/arch/riscv/boot/dts/starfive/jh7110-common.dtsi
 /// [vendor-board-dts]: https://github.com/starfive-tech/u-boot/blob/1ae835c25e3d8b7bc3c8981fb720f030c1892d57/arch/riscv/dts/starfive_visionfive2.dts
 /// [vendor-board-dts-head]: https://github.com/starfive-tech/u-boot/blob/c4c67bb66ae6f41c98537d18cf5c3abc8b97b8e4/arch/riscv/dts/starfive_visionfive2.dts
+#[doc(alias = "JH7110_SYSCLK_SDIO0_SDCARD")]
+#[doc(alias = "emmc controller card clock")]
 pub(crate) const SYSCLK_SDIO0_SDCARD: u32 = 93;
-/// `JH7110_SYSCLK_SDIO1_SDCARD`, vendor `JH7110_SDIO1_CLK_SDCARD`, both **94**: the microSD
+/// **microSD controller card clock** (`SYSCLK_SDIO1_SDCARD`, `JH7110_SYSCLK_SDIO1_SDCARD`; vendor `JH7110_SDIO1_CLK_SDCARD`), both **94**: the microSD
 /// controller's `ciu`. Word `0x178`.
+#[doc(alias = "JH7110_SYSCLK_SDIO1_SDCARD")]
+#[doc(alias = "microsd controller card clock")]
 pub(crate) const SYSCLK_SDIO1_SDCARD: u32 = 94;
-/// `JH7110_SYSRST_SDIO0_AHB` \[mainline-ids\]: the eMMC controller's one reset. Bit 0 of the
+/// **eMMC controller reset** (`SYSRST_SDIO0_AHB`, `JH7110_SYSRST_SDIO0_AHB` in \[mainline-ids\]): the eMMC controller's one reset. Bit 0 of the
 /// word at `0x300`.
+#[doc(alias = "JH7110_SYSRST_SDIO0_AHB")]
+#[doc(alias = "emmc controller reset")]
 pub(crate) const SYSRST_SDIO0_AHB: u32 = 64;
-/// `JH7110_SYSRST_SDIO1_AHB`: the microSD controller's one reset. Bit 1 of the word at `0x300`.
+/// **microSD controller reset** (`SYSRST_SDIO1_AHB`, `JH7110_SYSRST_SDIO1_AHB`): the microSD controller's one reset. Bit 1 of the word at `0x300`.
+#[doc(alias = "JH7110_SYSRST_SDIO1_AHB")]
+#[doc(alias = "microsd controller reset")]
 pub(crate) const SYSRST_SDIO1_AHB: u32 = 65;
 
 /// **What each SD/MMC controller needs before its registers answer**, slot 0 (the eMMC socket) then
@@ -570,8 +584,8 @@ impl PowerManagementChipBus {
 /// cells (`<hi lo size-hi size-lo>`, the root's `#address-cells 2` and `#size-cells 2`) or two
 /// (`<addr size>`). Big-endian, as every device tree cell is. `None` for a shorter or partial
 /// property, which the caller treats as "not stated".
-fn parse_reg(cells: &[u8]) -> Option<(u64, u64)> {
-    let u32be = |at: usize| -> u64 {
+fn parse_register_property(cells: &[u8]) -> Option<(u64, u64)> {
+    let big_endian_word = |at: usize| -> u64 {
         u64::from(u32::from_be_bytes([
             cells[at],
             cells[at + 1],
@@ -580,9 +594,12 @@ fn parse_reg(cells: &[u8]) -> Option<(u64, u64)> {
         ]))
     };
     if cells.len() >= 16 {
-        Some(((u32be(0) << 32) | u32be(4), (u32be(8) << 32) | u32be(12)))
+        Some((
+            (big_endian_word(0) << 32) | big_endian_word(4),
+            (big_endian_word(8) << 32) | big_endian_word(12),
+        ))
     } else if cells.len() >= 8 {
-        Some((u32be(0), u32be(4)))
+        Some((big_endian_word(0), big_endian_word(4)))
     } else {
         None
     }
@@ -636,7 +653,7 @@ impl PowerManagementChipBus {
                 Some(u32::from_be_bytes([cells[0], cells[1], cells[2], cells[3]]));
         }
         if let Some(cells) = bus_reg {
-            bus.controller = parse_reg(cells);
+            bus.controller = parse_register_property(cells);
         }
         if clocks.is_none() && resets.is_none() {
             // A bus that names nothing keeps the constant plan, and the addresses it does state.
@@ -666,7 +683,7 @@ struct Collected {
 
 /// **Turn a node's `clocks` and `resets` into SYS-domain steps**, clocks first, into `steps`. The
 /// one walk [`PowerManagementChipBus::from_nodes`] and [`DevicePlan::from_specifiers`] share, so a
-/// specifier is classified the same way whichever device named it: see [`Spec`] for what is kept,
+/// specifier is classified the same way whichever device named it: see [`Specifier`] for what is kept,
 /// counted or abandoned.
 fn collect_system_steps<'t, E>(
     clocks: Option<&[u8]>,
@@ -681,18 +698,18 @@ fn collect_system_steps<'t, E>(
     };
     for (list, is_clock) in [(clocks, true), (resets, false)] {
         let Some(list) = list else { continue };
-        let specs = list.chunks(8);
-        let total = specs.len();
-        for (i, spec) in specs.enumerate() {
-            match system_step(spec, is_clock, provider)? {
-                Spec::Step(step) if out.len < steps.len() => {
+        let specifiers = list.chunks(8);
+        let total = specifiers.len();
+        for (i, specifier) in specifiers.enumerate() {
+            match system_step(specifier, is_clock, provider)? {
+                Specifier::Step(step) if out.len < steps.len() => {
                     steps[out.len] = step;
                     out.len += 1;
                 }
-                Spec::Step(_) => out.truncated = true,
-                Spec::Foreign => out.skipped += 1,
+                Specifier::Step(_) => out.truncated = true,
+                Specifier::Foreign => out.skipped += 1,
                 // The stride is wrong from here on, so nothing after this is a specifier.
-                Spec::Unreadable => {
+                Specifier::Unreadable => {
                     out.skipped += total - i;
                     break;
                 }
@@ -820,11 +837,11 @@ pub const SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_H
 pub const SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION: u32 = 11;
 
 /// The oscillator every JH7110 rate chain is rooted in, 24 MHz, `refclk` in the vendor PLL code.
-pub(crate) const OSC_HERTZ: u64 = 24_000_000;
+pub(crate) const OSCILLATOR_HERTZ: u64 = 24_000_000;
 
 /// The vendor PLL code's default for a PLL it cannot interpret (`deffreq` for PLL2), returned
 /// rather than guessed from fields that are not in integer mode.
-pub(crate) const PLL2_DEFAULT_HERTZ: u64 = 1_188_000_000;
+pub(crate) const PHASE_LOCKED_LOOP_2_DEFAULT_HERTZ: u64 = 1_188_000_000;
 
 /// **The words the I2C input-clock chain reads**, one struct so the caller can read them in one
 /// place and the arithmetic can be tested without a device. The CRG
@@ -886,7 +903,8 @@ pub const fn one_based_divider(word: u32, width: u32) -> u64 {
 /// `bus_root -> axi_cfg0 -> stg_axiahb -> apb_bus_func -> (gate) u5_dw_i2c_clk_apb`. Every step is
 /// the vendor clock driver's own registration; the gates do not divide. PLL2's rate follows the
 /// vendor `pll.c` exactly: integer mode (`dacpd == 1 && dsmpd == 1`) is
-/// `24 MHz * fbdiv / (prediv * postdiv1)`, anything else is the vendor's own default rather than a
+/// `24 MHz * feedback_divider / (pre_divider * post_divider_1)` (the vendor code's `fbdiv`, `prediv` and
+/// `postdiv1`), anything else is the vendor's own default rather than a
 /// guess. The u64 divisions truncate, as the vendor's do.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3279. Refused `i2c5_ic_clk` (`ic_clk` is the `DesignWare`
@@ -920,18 +938,22 @@ pub const fn advanced_extensible_interface_configuration_0_hertz(
     let parent = if (w.bus_root >> 24) & 1 == 1 {
         let dacpd = (w.phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word >> 15) & 1;
         let dsmpd = (w.phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word >> 16) & 1;
-        let fbdiv =
+        let feedback_divider =
             ((w.phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word >> 17) & 0xfff) as u64;
-        let prediv_raw = (w.phase_locked_loop_2_pre_divider_word & 0x3f) as u64;
-        let prediv = if prediv_raw == 0 { 1 } else { prediv_raw };
-        let postdiv1 = 1u64 << ((w.phase_locked_loop_2_post_divider_1_word >> 28) & 3);
-        if dacpd == 1 && dsmpd == 1 && fbdiv > 0 {
-            OSC_HERTZ * fbdiv / (prediv * postdiv1)
+        let pre_divider_raw = (w.phase_locked_loop_2_pre_divider_word & 0x3f) as u64;
+        let pre_divider = if pre_divider_raw == 0 {
+            1
         } else {
-            PLL2_DEFAULT_HERTZ
+            pre_divider_raw
+        };
+        let post_divider_1 = 1u64 << ((w.phase_locked_loop_2_post_divider_1_word >> 28) & 3);
+        if dacpd == 1 && dsmpd == 1 && feedback_divider > 0 {
+            OSCILLATOR_HERTZ * feedback_divider / (pre_divider * post_divider_1)
+        } else {
+            PHASE_LOCKED_LOOP_2_DEFAULT_HERTZ
         }
     } else {
-        OSC_HERTZ
+        OSCILLATOR_HERTZ
     };
     parent / one_based_divider(w.advanced_extensible_interface_configuration_0, 2)
 }
@@ -961,13 +983,13 @@ pub const fn sdcard_divider_for(parent_hertz: u64, want_hertz: u64) -> u32 {
     if want_hertz == 0 {
         return MAXIMUM_SD_CARD_DIVIDER;
     }
-    let div = parent_hertz.div_ceil(want_hertz);
-    if div < 1 {
+    let divider = parent_hertz.div_ceil(want_hertz);
+    if divider < 1 {
         1
-    } else if div > MAXIMUM_SD_CARD_DIVIDER as u64 {
+    } else if divider > MAXIMUM_SD_CARD_DIVIDER as u64 {
         MAXIMUM_SD_CARD_DIVIDER
     } else {
-        div as u32
+        divider as u32
     }
 }
 
@@ -997,7 +1019,7 @@ pub const fn with_divider(word: u32, divider: u32) -> u32 {
 ///
 /// 100 kHz rather than a faster mode, because the AXP15060's datasheet timing is met by every
 /// standard-mode controller and the failure this answers was OpenSBI trusting a controller at
-/// reset defaults; slower than the spec floor is safe, faster is not.
+/// reset defaults; slower than the specification floor is safe, faster is not.
 ///
 /// Name: ratified 2026-10-26 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1029,7 +1051,7 @@ pub struct StandardMode {
 /// master mode (`IC_CON_MM`), the speed field in bits 2:1 holds `0b01` for standard speed
 /// (`IC_CON_SPD_SS`, bit 1 set), bit 5 is restart enable (`IC_CON_RE`) and bit 6 is slave disable
 /// (`IC_CON_SD`).
-const STANDARD_MODE_CON: u32 = 0b0110_0011;
+const STANDARD_MODE_CONTROL: u32 = 0b0110_0011;
 /// Standard mode's minimum SCL high time, in nanoseconds.
 const STANDARD_HIGH_NANOSECONDS: u128 = 4_000;
 /// Standard mode's minimum SCL low time, in nanoseconds.
@@ -1067,16 +1089,16 @@ const fn counts(clock_frequency: u64, period_nanoseconds: u128) -> u32 {
 /// Name: ratified 2026-11-05 (UTC), #3279.
 #[must_use]
 pub const fn standard_mode_100_kilohertz(clock_frequency: u64) -> StandardMode {
-    let hcnt = counts(clock_frequency, STANDARD_HIGH_NANOSECONDS);
-    let minimum_lcnt = counts(clock_frequency, STANDARD_LOW_NANOSECONDS);
+    let high_count = counts(clock_frequency, STANDARD_HIGH_NANOSECONDS);
+    let minimum_low_count = counts(clock_frequency, STANDARD_LOW_NANOSECONDS);
     let period = counts(clock_frequency, 1_000_000_000 / STANDARD_BUS_HERTZ);
-    let shortfall = period.saturating_sub(hcnt);
+    let shortfall = period.saturating_sub(high_count);
     // The larger of the two, written as the minimum plus whatever the shortfall exceeds it by.
-    let lcnt = minimum_lcnt + shortfall.saturating_sub(minimum_lcnt);
+    let low_count = minimum_low_count + shortfall.saturating_sub(minimum_low_count);
     StandardMode {
-        control: STANDARD_MODE_CON,
-        high_count: hcnt,
-        low_count: lcnt,
+        control: STANDARD_MODE_CONTROL,
+        high_count,
+        low_count,
         data_hold: counts(clock_frequency, STANDARD_SDA_HOLD_NANOSECONDS),
     }
 }
@@ -1099,7 +1121,7 @@ pub const POWER_MANAGEMENT_CHIP_RESET_REGISTER: u8 = 0x32;
 pub const POWER_MANAGEMENT_CHIP_RESET_BIT: u8 = 6;
 
 /// What one `<phandle id>` specifier turned out to be.
-enum Spec {
+enum Specifier {
     /// A SYS-domain gate or line, in bounds.
     Step(Step),
     /// A well-formed specifier for something else: another provider, or an id past [`SYSTEM`]'s
@@ -1112,14 +1134,14 @@ enum Spec {
     Unreadable,
 }
 
-/// Classify one specifier; see [`Spec`].
+/// Classify one specifier; see [`Specifier`].
 fn system_step<'t, E>(
-    spec: &[u8],
+    specifier: &[u8],
     is_clock: bool,
     provider: &mut impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
-) -> Result<Spec, E> {
-    let [p0, p1, p2, p3, i0, i1, i2, i3] = *spec else {
-        return Ok(Spec::Unreadable);
+) -> Result<Specifier, E> {
+    let [p0, p1, p2, p3, i0, i1, i2, i3] = *specifier else {
+        return Ok(Specifier::Unreadable);
     };
     let phandle = u32::from_be_bytes([p0, p1, p2, p3]);
     let id = u32::from_be_bytes([i0, i1, i2, i3]);
@@ -1129,10 +1151,10 @@ fn system_step<'t, E>(
         &b"#reset-cells"[..]
     };
     if provider(phandle, cells)? != Some(&[0, 0, 0, 1][..]) {
-        return Ok(Spec::Unreadable);
+        return Ok(Specifier::Unreadable);
     }
     let Some(compatible) = provider(phandle, b"compatible")? else {
-        return Ok(Spec::Foreign);
+        return Ok(Specifier::Foreign);
     };
     let known = [
         COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR,
@@ -1143,14 +1165,14 @@ fn system_step<'t, E>(
         },
     ];
     if !compatible.split(|&b| b == 0).any(|c| known.contains(&c)) {
-        return Ok(Spec::Foreign);
+        return Ok(Specifier::Foreign);
     }
     let step = if is_clock {
         SYSTEM.clock_offset(id).map(|_| Step::EnableClock(id))
     } else {
         SYSTEM.reset_bit(id).map(|_| Step::DeassertReset(id))
     };
-    Ok(step.map_or(Spec::Foreign, Spec::Step))
+    Ok(step.map_or(Specifier::Foreign, Specifier::Step))
 }
 
 impl Domain {
@@ -1372,8 +1394,8 @@ pub const COMPATIBLE_VENDOR_RESET_GENERATOR: &[u8] = b"starfive,jh7110-reset";
 
 /// The `reg-names` entry naming the STG window, in each vendor node's own spelling
 /// (`"stg"` in `clkgen`, `"stgcrg"` in `rstgen`; \[vendor-dts\]).
-const VENDOR_CLKGEN_SYSTEM_TOP_GROUP_NAME: &[u8] = b"stg";
-const VENDOR_RSTGEN_SYSTEM_TOP_GROUP_NAME: &[u8] = b"stgcrg";
+const VENDOR_CLOCK_GENERATOR_SYSTEM_TOP_GROUP_NAME: &[u8] = b"stg";
+const VENDOR_RESET_GENERATOR_SYSTEM_TOP_GROUP_NAME: &[u8] = b"stgcrg";
 
 /// **SYS clock and reset generator** (CRG, the device tree's `syscrg` node, \[mainline-dts\]):
 /// mainline's dedicated SYS clock-and-reset controller node, `syscrg: clock-controller@13020000`.
@@ -1388,8 +1410,8 @@ pub const COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR: &[u8] = b"starfive,jh7110
 /// The `reg-names` entry naming the SYS window, in each vendor node's own spelling (`"sys"` in
 /// `clkgen`, `"syscrg"` in `rstgen`; \[vendor-dts\]). Window 0 in both today, found by name anyway
 /// for the reason [`RegisterWindow`] gives.
-const VENDOR_CLKGEN_SYSTEM_NAME: &[u8] = b"sys";
-const VENDOR_RSTGEN_SYSTEM_NAME: &[u8] = b"syscrg";
+const VENDOR_CLOCK_GENERATOR_SYSTEM_NAME: &[u8] = b"sys";
+const VENDOR_RESET_GENERATOR_SYSTEM_NAME: &[u8] = b"syscrg";
 
 /// One way a device tree names a domain's window: a node's `compatible`, and the `reg-names`
 /// entry that selects the window when the node carries several.
@@ -1458,15 +1480,15 @@ pub const SYSTEM_TOP_GROUP_WINDOW: RegisterWindow = RegisterWindow {
         },
         WindowSpelling {
             compatible: COMPATIBLE_VENDOR_CLOCK_GENERATOR,
-            window: Some(VENDOR_CLKGEN_SYSTEM_TOP_GROUP_NAME),
+            window: Some(VENDOR_CLOCK_GENERATOR_SYSTEM_TOP_GROUP_NAME),
         },
         WindowSpelling {
             compatible: COMPATIBLE_VENDOR_RESET_GENERATOR,
-            window: Some(VENDOR_RSTGEN_SYSTEM_TOP_GROUP_NAME),
+            window: Some(VENDOR_RESET_GENERATOR_SYSTEM_TOP_GROUP_NAME),
         },
     ],
-    base: SYSTEM_TOP_GROUP_BASE,
-    size: SYSTEM_TOP_GROUP_SIZE,
+    base: SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
+    size: SYSTEM_TOP_GROUP_SIZE_BYTES,
 };
 
 /// **The AON window**, where `gmac0`'s bus clocks, transmit clock and resets live.
@@ -1481,15 +1503,15 @@ pub const ALWAYS_ON_WINDOW: RegisterWindow = RegisterWindow {
         },
         WindowSpelling {
             compatible: COMPATIBLE_VENDOR_CLOCK_GENERATOR,
-            window: Some(VENDOR_CLKGEN_ALWAYS_ON_NAME),
+            window: Some(VENDOR_CLOCK_GENERATOR_ALWAYS_ON_NAME),
         },
         WindowSpelling {
             compatible: COMPATIBLE_VENDOR_RESET_GENERATOR,
-            window: Some(VENDOR_RSTGEN_ALWAYS_ON_NAME),
+            window: Some(VENDOR_RESET_GENERATOR_ALWAYS_ON_NAME),
         },
     ],
-    base: ALWAYS_ON_BASE,
-    size: ALWAYS_ON_SIZE,
+    base: ALWAYS_ON_BASE_PHYSICAL_ADDRESS,
+    size: ALWAYS_ON_SIZE_BYTES,
 };
 
 /// **The SYS window**, where I2C5's clock and reset live.
@@ -1504,15 +1526,15 @@ pub const SYSTEM_WINDOW: RegisterWindow = RegisterWindow {
         },
         WindowSpelling {
             compatible: COMPATIBLE_VENDOR_CLOCK_GENERATOR,
-            window: Some(VENDOR_CLKGEN_SYSTEM_NAME),
+            window: Some(VENDOR_CLOCK_GENERATOR_SYSTEM_NAME),
         },
         WindowSpelling {
             compatible: COMPATIBLE_VENDOR_RESET_GENERATOR,
-            window: Some(VENDOR_RSTGEN_SYSTEM_NAME),
+            window: Some(VENDOR_RESET_GENERATOR_SYSTEM_NAME),
         },
     ],
     base: SYSTEM_BASE,
-    size: SYSTEM_SIZE,
+    size: SYSTEM_SIZE_BYTES,
 };
 
 impl WindowLocation {
@@ -1618,7 +1640,7 @@ mod verification {
     /// the step that makes a store. The solver cannot afford a lookup that answers differently on
     /// every call (the plan harnesses then run for over an hour), nor more than three specifiers, nor property lengths other than a whole number of specifiers, so the other answers (another
     /// provider, a different cell count, an error) are covered by the host tests, not proved.
-    fn sys_provider(_phandle: u32, name: &[u8]) -> Result<Option<&'static [u8]>, ()> {
+    fn system_provider(_phandle: u32, name: &[u8]) -> Result<Option<&'static [u8]>, ()> {
         if name == b"compatible" {
             Ok(Some(COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR))
         } else {
@@ -1721,7 +1743,7 @@ mod verification {
         let clocks = Some(&clocks[..]);
         let resets = Some(&resets[..]);
 
-        if let Ok(device) = DevicePlan::from_specifiers(clocks, resets, sys_provider) {
+        if let Ok(device) = DevicePlan::from_specifiers(clocks, resets, system_provider) {
             assert!(device.plan().len() <= MAXIMUM_DEVICE_STEPS);
             assert!(ungates_before_releasing(device.plan(), &SYSTEM));
         }
@@ -1732,26 +1754,26 @@ mod verification {
     /// `reg` bytes) and a SYS controller, `from_nodes` answers either the tree's own plan or, when the
     /// tree gave no usable step, the constant plan, and both keep every id in the SYS domain's
     /// bounds with every clock step ahead of every reset release.
-    /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.the_pmic_bus_plan_is_never_empty_and_ungates_before_it_releases.patch`
+    /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.the_power_management_chip_bus_plan_is_never_empty_and_ungates_before_it_releases.patch`
     #[kani::proof]
     #[kani::unwind(24)]
-    fn the_pmic_bus_plan_is_never_empty_and_ungates_before_it_releases() {
+    fn the_power_management_chip_bus_plan_is_never_empty_and_ungates_before_it_releases() {
         let clocks: [u8; 16] = kani::any();
         let resets: [u8; 8] = kani::any();
-        let bus_reg: [u8; 16] = kani::any();
-        let chip_reg: [u8; 4] = kani::any();
+        let bus_register_property: [u8; 16] = kani::any();
+        let chip_register_property: [u8; 4] = kani::any();
         let clocks = Some(&clocks[..]);
         let resets = Some(&resets[..]);
-        let bus_reg = Some(&bus_reg[..]);
-        let chip_reg = Some(&chip_reg[..]);
+        let bus_register_property = Some(&bus_register_property[..]);
+        let chip_register_property = Some(&chip_register_property[..]);
 
         if let Ok(bus) = PowerManagementChipBus::from_nodes(
             COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
-            chip_reg,
-            bus_reg,
+            chip_register_property,
+            bus_register_property,
             clocks,
             resets,
-            sys_provider,
+            system_provider,
         ) {
             assert!(!bus.plan().is_empty());
             assert!(bus.plan().len() <= MAXIMUM_POWER_MANAGEMENT_CHIP_BUS_STEPS);

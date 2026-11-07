@@ -28,7 +28,7 @@ Six Kani harnesses, in `src/proofs.rs`:
 - `a_transmit_descriptor_keeps_its_length_inside_its_fields`: for every buffer address and length,
   the transmit descriptor carries the address untouched, the device owns it, it is the first and
   last segment, and the length fits its two fields without reaching a flag bit.
-- `an_mdio_command_word_keeps_each_address_in_its_own_field`: for every PHY and register address,
+- `a_management_data_input_output_command_word_keeps_each_address_in_its_own_field`: for every PHY and register address,
   the command word holds each in its own five-bit field, says read or write as asked and sets the
   busy bit.
 - `a_coherent_verdict_needs_every_account_to_agree`: for every observation, a fatal bus error gives

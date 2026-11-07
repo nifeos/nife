@@ -6,8 +6,8 @@
 //! interface select, the PHY's node supplies its delays. radon's U-Boot hands over **the vendor's
 //! own tree**, not mainline Linux's, and the two spell the controller differently (vendor
 //! compatible, PHY as register values, interface select in board code). Both are read here, and
-//! their shared facts agree. A constant copied from a source drops the source's family prefix,
-//! such as `JH7110_`, and its documentation opens with its full name and its source's spelling.
+//! their shared facts agree. A constant copied from a source spells out what the source abbreviates, and the source's
+//! spelling, `JH7110_` prefix included, is in its documentation and in a `#[doc(alias)]`.
 //!
 //! The crate reads no device tree. The caller finds the port's node (one of [`COMPATIBLES`]) and
 //! hands [`Discovered::from_node`] its properties; it reads the PHY's node through `phy-handle` for
@@ -61,10 +61,10 @@ pub const BUS_CONFIGURATION: BusConfiguration = BusConfiguration {
     transmit_channel_burst_length: 16,
     receive_channel_burst_length: 16,
     threshold_mode: true,
-    bus_burst_lengths: registers::SYS_BUS_MODE_BLEN_256
-        | registers::SYS_BUS_MODE_BLEN_128
-        | registers::SYS_BUS_MODE_BLEN_64
-        | registers::SYS_BUS_MODE_BLEN_32,
+    bus_burst_lengths: registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_256_PERMITTED
+        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_128_PERMITTED
+        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_64_PERMITTED
+        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_32_PERMITTED,
     read_outstanding: 0xf,
     write_outstanding: 0xf,
 };
@@ -75,21 +75,21 @@ pub const BUS_CONFIGURATION: BusConfiguration = BusConfiguration {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 pub const BURST_LENGTH_BITS_DO_NOT_OVERLAP: () = assert!(
-    registers::SYS_BUS_MODE_BLEN_256
-        | registers::SYS_BUS_MODE_BLEN_128
-        | registers::SYS_BUS_MODE_BLEN_64
-        | registers::SYS_BUS_MODE_BLEN_32
-        == registers::SYS_BUS_MODE_BLEN_256
-            ^ registers::SYS_BUS_MODE_BLEN_128
-            ^ registers::SYS_BUS_MODE_BLEN_64
-            ^ registers::SYS_BUS_MODE_BLEN_32
+    registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_256_PERMITTED
+        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_128_PERMITTED
+        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_64_PERMITTED
+        | registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_32_PERMITTED
+        == registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_256_PERMITTED
+            ^ registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_128_PERMITTED
+            ^ registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_64_PERMITTED
+            ^ registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_BURST_LENGTH_32_PERMITTED
 );
 
 /// The always-on (AON) system controller's window: mainline's `aon_syscon: syscon@17010000` and the
 /// vendor's `aon_syscon@17010000`, both `0x1000` long.
-pub(crate) const ALWAYS_ON_SYSTEM_CONTROLLER_BASE: u64 = 0x1701_0000;
+pub(crate) const ALWAYS_ON_SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS: u64 = 0x1701_0000;
 /// Its size.
-pub(crate) const ALWAYS_ON_SYSTEM_CONTROLLER_SIZE: u64 = 0x1000;
+pub(crate) const ALWAYS_ON_SYSTEM_CONTROLLER_SIZE_BYTES: u64 = 0x1000;
 /// Mainline's compatible for it. The vendor's node says only `syscon`, which names nothing.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
@@ -113,7 +113,8 @@ pub(crate) const SYSTEM_CONTROLLER_FIELD: u32 = 0x7;
 /// **JH7110 PHY interface select, RGMII** (`JH7110_PHY_INTF_RGMII`, `if_dwqe_fdt.c`); the
 /// vendor's `BIT(SHIFT)` for 1000M.
 #[doc(alias = "rgmii interface select")]
-pub(crate) const PHY_INTF_RGMII: u32 = 1;
+#[doc(alias = "JH7110_PHY_INTF_RGMII")]
+pub(crate) const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT: u32 = 1;
 
 /// **The syscon word with `gmac0`'s interface select set to RGMII**, the reduced gigabit
 /// media-independent interface (the MAC-to-PHY wiring both JH7110 boards use), every other field
@@ -123,7 +124,7 @@ pub(crate) const PHY_INTF_RGMII: u32 = 1;
 #[doc(alias = "rgmii")]
 pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u32 {
     (word & !(SYSTEM_CONTROLLER_FIELD << GMAC0_SYSTEM_CONTROLLER_SHIFT))
-        | PHY_INTF_RGMII << GMAC0_SYSTEM_CONTROLLER_SHIFT
+        | REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT << GMAC0_SYSTEM_CONTROLLER_SHIFT
 }
 
 /// The interface value fits the field the function clears, which the compiler checks here: a
@@ -132,8 +133,10 @@ pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u3
 /// exclusion of those mutants names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP: () =
-    assert!(PHY_INTF_RGMII & SYSTEM_CONTROLLER_FIELD == PHY_INTF_RGMII);
+pub const INTERFACE_SELECT_AND_CLEARED_WORD_DO_NOT_OVERLAP: () = assert!(
+    REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT & SYSTEM_CONTROLLER_FIELD
+        == REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT
+);
 
 /// The interface select a syscon word holds for `gmac0`.
 ///
@@ -179,7 +182,7 @@ pub struct Discovered {
 
 /// The default RGMII internal delay when a mainline-style node gives one delay and not the
 /// other: OpenBSD's `1950`.
-const DEFAULT_DELAY_PS: u32 = 1950;
+const DEFAULT_DELAY_PICOSECONDS: u32 = 1950;
 
 /// `gmac0`'s PHY in the vendor tree: `gmac0`'s child, found by node name because the vendor tree
 /// gives it no `phy-handle`. `gmac0` precedes `gmac1` in that tree, and `gmac1`'s PHY is
@@ -252,14 +255,17 @@ impl Discovered {
 pub fn mainline_physical_layer_device<'t, E>(
     mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
 ) -> Result<(u8, Settings), E> {
-    let mut num = |name: &[u8]| property(name).map(|v| v.and_then(first_cell));
-    let address = num(b"reg")?.map_or(0, |r| (r & 0x1f) as u8);
-    let (receive, transmit) = (num(b"rx-internal-delay-ps")?, num(b"tx-internal-delay-ps")?);
+    let mut number = |name: &[u8]| property(name).map(|v| v.and_then(first_cell));
+    let address = number(b"reg")?.map_or(0, |r| (r & 0x1f) as u8);
+    let (receive, transmit) = (
+        number(b"rx-internal-delay-ps")?,
+        number(b"tx-internal-delay-ps")?,
+    );
     if receive.is_none() && transmit.is_none() {
         return Ok((address, Settings::FALLBACK_GMAC0));
     }
-    let receive_clock = num(b"motorcomm,rx-clk-drv-microamp")?.unwrap_or(0);
-    let receive_data = num(b"motorcomm,rx-data-drv-microamp")?.unwrap_or(0);
+    let receive_clock = number(b"motorcomm,rx-clk-drv-microamp")?.unwrap_or(0);
+    let receive_data = number(b"motorcomm,rx-data-drv-microamp")?.unwrap_or(0);
     let mut has = |name: &[u8]| property(name).map(|v| v.is_some());
     let inverted = if has(b"motorcomm,tx-clk-adj-enabled")? {
         Some([
@@ -273,8 +279,8 @@ pub fn mainline_physical_layer_device<'t, E>(
     Ok((
         address,
         Settings::from_mainline(
-            receive.unwrap_or(DEFAULT_DELAY_PS),
-            transmit.unwrap_or(DEFAULT_DELAY_PS),
+            receive.unwrap_or(DEFAULT_DELAY_PICOSECONDS),
+            transmit.unwrap_or(DEFAULT_DELAY_PICOSECONDS),
             receive_clock,
             receive_data,
             inverted,
@@ -295,28 +301,28 @@ pub fn mainline_physical_layer_device<'t, E>(
 pub fn vendor_physical_layer_device<'t, E>(
     mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
 ) -> Result<(u8, Settings), E> {
-    let mut num = |name: &[u8]| property(name).map(|v| v.and_then(first_cell));
-    let Some(receive) = num(b"rx_delay_sel")? else {
+    let mut number = |name: &[u8]| property(name).map(|v| v.and_then(first_cell));
+    let Some(receive) = number(b"rx_delay_sel")? else {
         return Ok((0, Settings::FALLBACK_GMAC0));
     };
     let f = Settings::FALLBACK_GMAC0;
     let flag = |v: Option<u32>, d: bool| v.map_or(d, |x| x != 0);
     Ok((
-        num(b"reg")?.map_or(0, |r| (r & 0x1f) as u8),
+        number(b"reg")?.map_or(0, |r| (r & 0x1f) as u8),
         Settings {
             receive_delay: (receive & 0xf) as u8,
-            receive_fixed_delay: flag(num(b"rxc_dly_en")?, f.receive_fixed_delay),
-            transmit_delay: num(b"tx_delay_sel")?.map_or(f.transmit_delay, |v| (v & 0xf) as u8),
-            receive_clock_drive: num(b"rgmii_sw_dr_rxc")?.map_or(f.receive_clock_drive, |v| {
+            receive_fixed_delay: flag(number(b"rxc_dly_en")?, f.receive_fixed_delay),
+            transmit_delay: number(b"tx_delay_sel")?.map_or(f.transmit_delay, |v| (v & 0xf) as u8),
+            receive_clock_drive: number(b"rgmii_sw_dr_rxc")?.map_or(f.receive_clock_drive, |v| {
                 PadDriveStrength::Code((v & 7) as u8)
             }),
-            receive_data_drive: num(b"rgmii_sw_dr")?.map_or(f.receive_data_drive, |v| {
+            receive_data_drive: number(b"rgmii_sw_dr")?.map_or(f.receive_data_drive, |v| {
                 PadDriveStrength::Code((v & 7) as u8)
             }),
             transmit_clock_inverted: [
-                flag(num(b"tx_inverted_10")?, f.transmit_clock_inverted[0]),
-                flag(num(b"tx_inverted_100")?, f.transmit_clock_inverted[1]),
-                flag(num(b"tx_inverted_1000")?, f.transmit_clock_inverted[2]),
+                flag(number(b"tx_inverted_10")?, f.transmit_clock_inverted[0]),
+                flag(number(b"tx_inverted_100")?, f.transmit_clock_inverted[1]),
+                flag(number(b"tx_inverted_1000")?, f.transmit_clock_inverted[2]),
             ],
             source: SettingsSource::VendorTree,
         },
@@ -346,8 +352,8 @@ impl SystemController {
     #[must_use]
     pub const fn fallback() -> Self {
         SystemController {
-            base: ALWAYS_ON_SYSTEM_CONTROLLER_BASE,
-            size: ALWAYS_ON_SYSTEM_CONTROLLER_SIZE,
+            base: ALWAYS_ON_SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS,
+            size: ALWAYS_ON_SYSTEM_CONTROLLER_SIZE_BYTES,
             from_tree: false,
         }
     }
@@ -486,12 +492,12 @@ mod tests {
         assert_eq!(address, 0);
         assert_eq!(
             s,
-            Settings::from_mainline(1500, DEFAULT_DELAY_PS, 0, 0, None)
+            Settings::from_mainline(1500, DEFAULT_DELAY_PICOSECONDS, 0, 0, None)
         );
         let table: &[(&[u8], &[u8])] = &[(b"tx-internal-delay-ps", &1500u32.to_be_bytes())];
         assert_eq!(
             mainline_physical_layer_device(node(table)).unwrap().1,
-            Settings::from_mainline(DEFAULT_DELAY_PS, 1500, 0, 0, None)
+            Settings::from_mainline(DEFAULT_DELAY_PICOSECONDS, 1500, 0, 0, None)
         );
         let table: &[(&[u8], &[u8])] = &[(b"reg", ONE)];
         assert_eq!(
@@ -587,7 +593,7 @@ mod tests {
             gmac0_interface_select(select_reduced_gigabit_media_independent_interface(
                 0x0010_0000
             )),
-            PHY_INTF_RGMII
+            REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT
         );
         // The vendor U-Boot's mask, 0x1c0000, is exactly this field.
         assert_eq!(
