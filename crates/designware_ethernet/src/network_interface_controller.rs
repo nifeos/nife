@@ -268,34 +268,9 @@ pub(crate) const fn is_region_in_reach(
     last >> direct_memory_access_address_bits == 0 && physical_address >> 32 == last >> 32
 }
 
-/// **Configure a controller just reset**, with nothing started: the DMA's bus mode, channel 0's
-/// burst lengths, buffer size, both rings at `region` (heads and tails at the ring bases, so
-/// nothing is available until the data plane posts), both queues' modes, flow control, the
-/// receive queue enable, the station address and filter, and every interrupt masked.
-///
-/// The FIFO sizes are the controller's own ([`Identity`]), not the tree's: radon's vendor tree
-/// says `rx-fifo-depth = <262144>` and mainline says `<2048>` for the same silicon, and a queue
-/// size computed from the first would overflow the field into the next. The hardware's statement
-/// is the one fact about the FIFO both trees are describing.
-///
-/// Name: ratified 2026-11-03 (UTC), #3122.
-pub fn configure(
-    hardware: &mut impl Hardware,
-    id: &Identity,
-    bus: &BusConfiguration,
-    region: u64,
-    station_address: [u8; 6],
-) -> Result<(), Error> {
-    if !is_region_in_reach(
-        region,
-        layout::DIRECT_MEMORY_ACCESS_REGION_BYTES,
-        id.direct_memory_access_address_bits(),
-    ) {
-        return Err(Error::RegionOutOfReach {
-            direct_memory_access_address_bits: id.direct_memory_access_address_bits(),
-        });
-    }
-
+/// The system bus mode: fixed burst, enhanced addressing past 32 bits, the outstanding request
+/// limits and the permitted burst lengths.
+fn program_system_bus_mode(hardware: &mut impl Hardware, id: &Identity, bus: &BusConfiguration) {
     let mut mode = hardware.read(registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_REGISTER);
     if bus.fixed_burst {
         mode |= registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_FIXED_BURST;
@@ -314,7 +289,11 @@ pub fn configure(
         registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_REGISTER,
         mode,
     );
+}
 
+/// The channel's control words: the burst-length multiplier, each side's burst length, operate on
+/// second packet, and the receive buffer size.
+fn program_channel_bursts(hardware: &mut impl Hardware, bus: &BusConfiguration) {
     let control = hardware.read(registers::CHANNEL_CONTROL_REGISTER);
     hardware.write(
         registers::CHANNEL_CONTROL_REGISTER,
@@ -349,7 +328,10 @@ pub fn configure(
                 & registers::CHANNEL_RECEIVE_CONTROL_PROGRAMMABLE_BURST_LENGTH_MASK
             | (BUFFER_BYTES as u32) << registers::CHANNEL_RECEIVE_CONTROL_BUFFER_SIZE_SHIFT,
     );
+}
 
+/// Both descriptor rings: base, length and tail, each pointing at an empty ring.
+fn program_descriptor_rings(hardware: &mut impl Hardware, region: u64) {
     let transmit_ring = region + layout::TRANSMIT_RING;
     let receive_ring = region + layout::RECEIVE_RING;
     hardware.write(
@@ -384,6 +366,39 @@ pub fn configure(
         registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER,
         receive_ring as u32,
     );
+}
+
+/// **Configure a controller just reset**, with nothing started: the DMA's bus mode, channel 0's
+/// burst lengths, buffer size, both rings at `region` (heads and tails at the ring bases, so
+/// nothing is available until the data plane posts), both queues' modes, flow control, the
+/// receive queue enable, the station address and filter, and every interrupt masked.
+///
+/// The FIFO sizes are the controller's own ([`Identity`]), not the tree's: radon's vendor tree
+/// says `rx-fifo-depth = <262144>` and mainline says `<2048>` for the same silicon, and a queue
+/// size computed from the first would overflow the field into the next. The hardware's statement
+/// is the one fact about the FIFO both trees are describing.
+///
+/// Name: ratified 2026-11-03 (UTC), #3122.
+pub fn configure(
+    hardware: &mut impl Hardware,
+    id: &Identity,
+    bus: &BusConfiguration,
+    region: u64,
+    station_address: [u8; 6],
+) -> Result<(), Error> {
+    if !is_region_in_reach(
+        region,
+        layout::DIRECT_MEMORY_ACCESS_REGION_BYTES,
+        id.direct_memory_access_address_bits(),
+    ) {
+        return Err(Error::RegionOutOfReach {
+            direct_memory_access_address_bits: id.direct_memory_access_address_bits(),
+        });
+    }
+
+    program_system_bus_mode(hardware, id, bus);
+    program_channel_bursts(hardware, bus);
+    program_descriptor_rings(hardware, region);
 
     let receive_mode = receive_queue_mode(
         hardware.read(registers::RECEIVE_QUEUE_0_OPERATION_MODE_REGISTER),
