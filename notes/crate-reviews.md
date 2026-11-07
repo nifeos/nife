@@ -181,7 +181,8 @@ Recommendation. Ready for review.
 The whole package is [crate-reviews/e1000e.md](crate-reviews/e1000e.md).
 
 Name and version. `e1000e` `0.1.0`, ratified as the family name QEMU and Linux both use, permanent on
-first publication. All 166 `Name:` blocks read ratified.
+first publication. All 166 `Name:` blocks read ratified. Four register names copied from a source
+are spelled out with the source spelling as an alias; `HV_KMRN_MODE_CTRL` is pending.
 
 API. Registers, descriptors and ring logic for the 82574L and the I219 behind four small traits,
 with the I219 bring-up in `platform_controller_hub`. Every error implements `Display` and
@@ -197,7 +198,7 @@ Naming rules. The names section of the package has the detail.
 | rule | result |
 |---|---|
 | spelled-out words, units, question shape, British spelling (the template's checks, 1,046 names) | 1 finding after 34 private names were renamed: the public `LanInitTimeout`, listed for the architect with a recommended name |
-| ratified names a later rule reaches | six public names (five ratified, `LanInitTimeout` not), among them `MTA_ENTRIES`, `FLUSH_DESC_REQUIRED` and `PHY_CONTROL`; none renamed |
+| names a later rule reaches | two public names wait for the architect, `HV_KMRN_MODE_CTRL` and the never ratified `LanInitTimeout` |
 | borderline private names | bit constants that mirror a FreeBSD define with no expansion, listed in the package |
 
 Provenance. Milestone 1019 items 3 and 4 hold, and the notices are in the files. The manifest license

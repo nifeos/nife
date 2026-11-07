@@ -126,7 +126,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     .ok_or(refused(Error::NoStationAddress))?;
 
     // No multicast groups: the table is unspecified after reset.
-    for k in 0..registers::MTA_ENTRIES {
+    for k in 0..registers::MULTICAST_TABLE_ARRAY_ENTRIES {
         c.w(registers::MULTICAST_TABLE_ARRAY_REGISTER + 4 * k, 0);
     }
     // Legacy receive descriptors, the only format `crates/e1000e` reads.
@@ -304,8 +304,9 @@ struct Rings<'a> {
 
 impl ::e1000e::platform_controller_hub::flush::FlushSupport for Rings<'_> {
     fn descriptor_ring_status(&mut self) -> u16 {
-        use ::e1000e::platform_controller_hub::flush::PCICFG_DESC_RING_STATUS;
-        self.dev.config_read32(PCICFG_DESC_RING_STATUS) as u16
+        use ::e1000e::platform_controller_hub::flush::PCI_CONFIGURATION_DESCRIPTOR_RING_STATUS_REGISTER;
+        self.dev
+            .config_read32(PCI_CONFIGURATION_DESCRIPTOR_RING_STATUS_REGISTER) as u16
     }
     fn write_transmit_descriptor(&mut self, index: u16, words: [u64; 2]) {
         let d = mmu::phys_to_virt(self.region + layout::transmit_descriptor(index)) as *mut u64;
