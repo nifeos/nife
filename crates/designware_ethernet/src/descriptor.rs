@@ -187,7 +187,7 @@ pub const RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP: () = assert!(
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16) -> [u64; 2] {
     let length = length as u32 & TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK;
-    let des2 = (length & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK)
+    let descriptor_word_2 = (length & TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK)
         | TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION;
     let descriptor_word_3 = TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
         | TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT
@@ -195,7 +195,7 @@ pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16
         | length;
     [
         buffer_physical_address,
-        des2 as u64 | (descriptor_word_3 as u64) << 32,
+        descriptor_word_2 as u64 | (descriptor_word_3 as u64) << 32,
     ]
 }
 

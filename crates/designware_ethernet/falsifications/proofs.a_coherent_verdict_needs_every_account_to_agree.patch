@@ -5,14 +5,13 @@ The defect: `classify` no longer looks at the fatal bus error bit first, so a fr
 Expected to fail: the harness's check that a fatal bus error in the status word gives the bus error verdict.
 
 diff --git a/crates/designware_ethernet/src/cache_coherence.rs b/crates/designware_ethernet/src/cache_coherence.rs
-index 46d8ba058..600b7e68f 100644
 --- a/crates/designware_ethernet/src/cache_coherence.rs
 +++ b/crates/designware_ethernet/src/cache_coherence.rs
-@@ -185,9 +185,6 @@ pub enum Verdict {
+@@ -185,9 +185,6 @@
  /// Name: ratified 2026-11-03 (UTC), #3122.
  pub fn classify(o: &Observation) -> Verdict {
-     let s = o.status;
--    if s & registers::CHAN_STATUS_FBE != 0 {
+     let status = o.status;
+-    if status & registers::CHANNEL_STATUS_FATAL_BUS_ERROR != 0 {
 -        return Verdict::BusError;
 -    }
      if o.receive_descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0 {

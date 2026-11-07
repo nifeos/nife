@@ -40,15 +40,15 @@ pub const WAIT_MICROSECONDS: u64 = 100_000;
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 pub fn probe_frame(station_address: [u8; 6]) -> [u8; PROBE_LENGTH] {
-    let mut f = [0u8; PROBE_LENGTH];
-    f[..6].copy_from_slice(&station_address);
-    f[6..12].copy_from_slice(&station_address);
-    f[12..14].copy_from_slice(&PROBE_ETHERTYPE.to_be_bytes());
-    for (i, b) in f[14..].iter_mut().enumerate() {
+    let mut frame = [0u8; PROBE_LENGTH];
+    frame[..6].copy_from_slice(&station_address);
+    frame[6..12].copy_from_slice(&station_address);
+    frame[12..14].copy_from_slice(&PROBE_ETHERTYPE.to_be_bytes());
+    for (index, byte) in frame[14..].iter_mut().enumerate() {
         // 0x40 to 0x7f, repeating: never 0xa5 and never zero.
-        *b = 0x40 | (i as u8 & 0x3f);
+        *byte = 0x40 | (index as u8 & 0x3f);
     }
-    f
+    frame
 }
 
 /// The probe payload byte's set bit and its six-bit counter share no bit, so the byte is 0x40 to
@@ -184,8 +184,8 @@ pub enum Verdict {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3122.
 pub fn classify(o: &Observation) -> Verdict {
-    let s = o.status;
-    if s & registers::CHAN_STATUS_FBE != 0 {
+    let status = o.status;
+    if status & registers::CHANNEL_STATUS_FATAL_BUS_ERROR != 0 {
         return Verdict::BusError;
     }
     if o.receive_descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0 {
@@ -198,12 +198,12 @@ pub fn classify(o: &Observation) -> Verdict {
             _ => Verdict::TransmittedPayloadStale,
         };
     }
-    if s & registers::CHAN_STATUS_RI != 0 {
+    if status & registers::CHANNEL_STATUS_RECEIVE_INTERRUPT != 0 {
         return Verdict::CpuCannotSeeDeviceWrites;
     }
-    let transmit_refused =
-        s & registers::CHAN_STATUS_TBU != 0 && s & registers::CHAN_STATUS_TI == 0;
-    let receive_refused = s & registers::CHAN_STATUS_RBU != 0;
+    let transmit_refused = status & registers::CHANNEL_STATUS_TRANSMIT_BUFFER_UNAVAILABLE != 0
+        && status & registers::CHANNEL_STATUS_TRANSMIT_INTERRUPT == 0;
+    let receive_refused = status & registers::CHANNEL_STATUS_RECEIVE_BUFFER_UNAVAILABLE != 0;
     if transmit_refused || receive_refused {
         return Verdict::DeviceCannotSeeCpuWrites;
     }
@@ -237,7 +237,7 @@ mod tests {
 
     const PHYSICAL_ADDRESS: u64 = 0x4800_0000;
     const STATION_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
-    const GIG: Link = Link {
+    const GIGABIT: Link = Link {
         speed: Speed::Thousand,
         full_duplex: true,
     };
@@ -245,30 +245,34 @@ mod tests {
     /// The whole probe, as the kernel half runs it, against a controller whose memory behaves as
     /// `memory` says and whose loopback works when `loops` is true.
     fn run(memory: Memory, loops: bool) -> Verdict {
-        let mut nic = NetworkInterfaceController::new(PHYSICAL_ADDRESS, memory);
+        let mut network_interface_controller =
+            NetworkInterfaceController::new(PHYSICAL_ADDRESS, memory);
         if !loops {
-            nic.break_loopback();
+            network_interface_controller.break_loopback();
         }
-        let id = Identity::read(&mut nic);
+        let id = Identity::read(&mut network_interface_controller);
         controller::configure(
-            &mut nic,
+            &mut network_interface_controller,
             &id,
             &BUS_CONFIGURATION,
             PHYSICAL_ADDRESS,
             STATION_ADDRESS,
         )
         .unwrap();
-        controller::start(&mut nic, GIG, true);
+        controller::start(&mut network_interface_controller, GIGABIT, true);
         let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
-        nic.with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
+        network_interface_controller
+            .with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
             .unwrap();
         let mut waited = 0;
-        while !nic.with(|r, _| is_delivered(r)) && waited < WAIT_MICROSECONDS {
-            nic.delay_microseconds(1000);
+        while !network_interface_controller.with(|r, _| is_delivered(r))
+            && waited < WAIT_MICROSECONDS
+        {
+            network_interface_controller.delay_microseconds(1000);
             waited += 1000;
         }
-        let status = nic.read(registers::CHANNEL_STATUS_REGISTER);
-        let o = nic.with(|r, _| observe(r, STATION_ADDRESS, status));
+        let status = network_interface_controller.read(registers::CHANNEL_STATUS_REGISTER);
+        let o = network_interface_controller.with(|r, _| observe(r, STATION_ADDRESS, status));
         classify(&o)
     }
 
@@ -319,7 +323,8 @@ mod tests {
                 | RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR
                 | (PROBE_LENGTH + CRC_BYTES) as u32,
             transmit_descriptor_word_3: 0,
-            status: registers::CHAN_STATUS_RI | registers::CHAN_STATUS_TI,
+            status: registers::CHANNEL_STATUS_RECEIVE_INTERRUPT
+                | registers::CHANNEL_STATUS_TRANSMIT_INTERRUPT,
             payload: Payload::Other,
         };
         assert_eq!(classify(&o), Verdict::TransmittedPayloadStale);
@@ -329,7 +334,7 @@ mod tests {
         };
         assert_eq!(classify(&o), Verdict::ReceivedPayloadStale);
         let o = Observation {
-            status: o.status | registers::CHAN_STATUS_FBE,
+            status: o.status | registers::CHANNEL_STATUS_FATAL_BUS_ERROR,
             ..o
         };
         assert_eq!(classify(&o), Verdict::BusError);
@@ -342,7 +347,8 @@ mod tests {
         let o = Observation {
             receive_descriptor_word_3: RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
             transmit_descriptor_word_3: 0,
-            status: registers::CHAN_STATUS_TI | registers::CHAN_STATUS_TBU,
+            status: registers::CHANNEL_STATUS_TRANSMIT_INTERRUPT
+                | registers::CHANNEL_STATUS_TRANSMIT_BUFFER_UNAVAILABLE,
             payload: Payload::Poison,
         };
         assert_eq!(classify(&o), Verdict::Inconclusive);
@@ -365,29 +371,33 @@ mod tests {
     /// Step 3 has queued the frame and the device has not run yet: descriptor 0 is still its.
     #[test]
     fn prepare_poisons_exactly_the_frame_and_its_crc_and_waits_on_descriptor_0() {
-        let mut nic =
+        let mut network_interface_controller =
             NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
-        let id = Identity::read(&mut nic);
+        let id = Identity::read(&mut network_interface_controller);
         controller::configure(
-            &mut nic,
+            &mut network_interface_controller,
             &id,
             &BUS_CONFIGURATION,
             PHYSICAL_ADDRESS,
             STATION_ADDRESS,
         )
         .unwrap();
-        controller::start(&mut nic, GIG, true);
+        controller::start(&mut network_interface_controller, GIGABIT, true);
         let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
-        nic.with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
+        network_interface_controller
+            .with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
             .unwrap();
-        nic.with(|r, _| {
+        network_interface_controller.with(|r, _| {
             let mut b = [0u8; PROBE_LENGTH + CRC_BYTES + 1];
             r.read_bytes(layout::receive_buffer(0), &mut b);
             assert!(b[..PROBE_LENGTH + CRC_BYTES].iter().all(|&x| x == POISON));
             assert_eq!(b[PROBE_LENGTH + CRC_BYTES], 0);
             assert!(!is_delivered(r));
         });
-        assert_eq!(nic.receive_available(), usize::from(POSTED_RECEIVE_ENTRIES));
+        assert_eq!(
+            network_interface_controller.receive_available(),
+            usize::from(POSTED_RECEIVE_ENTRIES)
+        );
         assert_eq!(POSTED_RECEIVE_ENTRIES, 15);
     }
 
@@ -395,23 +405,24 @@ mod tests {
     /// descriptor 0's write-back: first and last, its length, no ownership.
     #[test]
     fn a_completed_loopback_is_seen_on_both_rings() {
-        let mut nic =
+        let mut network_interface_controller =
             NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
-        let id = Identity::read(&mut nic);
+        let id = Identity::read(&mut network_interface_controller);
         controller::configure(
-            &mut nic,
+            &mut network_interface_controller,
             &id,
             &BUS_CONFIGURATION,
             PHYSICAL_ADDRESS,
             STATION_ADDRESS,
         )
         .unwrap();
-        controller::start(&mut nic, GIG, true);
+        controller::start(&mut network_interface_controller, GIGABIT, true);
         let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
-        nic.with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
+        network_interface_controller
+            .with(|r, t| prepare(&mut data_plane, r, t, STATION_ADDRESS))
             .unwrap();
-        nic.step();
-        let o = nic.with(|r, _| {
+        network_interface_controller.step();
+        let o = network_interface_controller.with(|r, _| {
             assert!(is_delivered(r));
             observe(r, STATION_ADDRESS, 0)
         });
@@ -433,16 +444,19 @@ mod tests {
     /// the frame.
     #[test]
     fn a_buffer_is_judged_poison_only_when_every_byte_is() {
-        let mut nic =
+        let mut network_interface_controller =
             NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
-        let judged = |nic: &mut NetworkInterfaceController, fill: u8| {
-            nic.with(|r, _| {
+        let judged = |network_interface_controller: &mut NetworkInterfaceController, fill: u8| {
+            network_interface_controller.with(|r, _| {
                 r.write_bytes(layout::receive_buffer(0), &[fill; PROBE_LENGTH]);
                 observe(r, STATION_ADDRESS, 0).payload
             })
         };
-        assert_eq!(judged(&mut nic, POISON), Payload::Poison);
-        assert_eq!(judged(&mut nic, 0), Payload::Other);
+        assert_eq!(
+            judged(&mut network_interface_controller, POISON),
+            Payload::Poison
+        );
+        assert_eq!(judged(&mut network_interface_controller, 0), Payload::Other);
     }
 
     /// Silence from the device, with no completion, is no answer: a transmit side that neither
