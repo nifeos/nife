@@ -5,13 +5,13 @@ The defect: the full- and low-speed exponent is computed one too high, so the pe
 Expected to fail: the harness's check that `2^interval` microframes do not exceed the device's period.
 
 diff --git a/crates/extensible_host_controller_interface/src/context.rs b/crates/extensible_host_controller_interface/src/context.rs
-index a7cd23fee..38805d25f 100644
+index 1bdb2f89c..e4bcf8b2a 100644
 --- a/crates/extensible_host_controller_interface/src/context.rs
 +++ b/crates/extensible_host_controller_interface/src/context.rs
-@@ -166,7 +166,7 @@ pub const fn is_superspeed(s: u8) -> bool {
- pub const fn interrupt_interval(speed: u8, b_interval: u8) -> u8 {
-     if speed == port::speed::FULL || speed == port::speed::LOW {
-         let microframes = (if b_interval == 0 { 1 } else { b_interval }) as u32 * 8;
+@@ -173,7 +173,7 @@ pub const fn interrupt_interval(speed: u8, descriptor_interval: u8) -> u8 {
+             descriptor_interval
+         }) as u32
+             * 8;
 -        let exponent = 31 - microframes.leading_zeros();
 +        let exponent = 32 - microframes.leading_zeros();
          let exponent = if exponent < 3 { 3 } else { exponent };
