@@ -50,6 +50,20 @@ still or jump either way.
   or below any target asked for, or at the slowest rate the divider has when the target is below
   it.
 
+- A FIFO data phase stays inside its buffer and ends, whatever fill and status the controller
+  reports, for data phases of one or two blocks of 4 or 8 bytes through a FIFO one or two words
+  deep. The loop's arithmetic does not depend on the length, and the FIFO step proof above holds
+  for any length.
+- Reading one block through the IDMAC never sends a write command, and the driver touches the
+  DMA region only inside it.
+- Writing one block through the IDMAC sends at most one write command, of 512 bytes, addressed to
+  the block asked for, and only when the card has that block.
+- The steps of identification end, never panic and never send a write command: reset, `CMD0`,
+  `CMD8`, power-up and addressing on the polled host, then configuration (an eMMC's `EXT_CSD`
+  read through the IDMAC). A configured SD card has a capacity and runs no faster than 25 MHz.
+  `identify` itself only builds a `Card` from these steps' results; as one harness it ran past
+  five minutes.
+
 The harnesses of whole sequences use a clock that passes every deadline at each reading, so they
 bound their loops by what the controller reports rather than by time. The two wait harnesses
 above cover a clock that takes longer, and every wait in the driver is one of those two loops.
@@ -109,8 +123,14 @@ can add a variant without breaking you.
   past five minutes with every solver tried and with the base bounded to 2^28.
 - A clock that never passes a deadline hangs the wait on it: the trait promises microseconds, and
   the driver has no other way to tell a slow controller from a dead one.
-- The card bring-up state machine, timing and the CID decode have no proofs. The MBR parse does
-  not know the card's size, so whether a partition fits the card is the caller's check.
+- The block harnesses move one block, and through the IDMAC only. The polled path's FIFO loop is
+  proved for data phases of 16 bytes or less: a 512-byte block took too many FIFO steps for the
+  solver. The host tests move whole blocks and multi-block transfers both ways, through a 32- and
+  a 48-word FIFO and with a confused fill count.
+- Identification is proved for safety only, step by step. Nothing proves that it brings up the
+  right kind of card or reads the right capacity; the host tests do that against simulated SD,
+  SDHC and eMMC cards. The MBR parse does not know the card's size, so whether a partition fits
+  the card is the caller's check.
 
 The minimum supported Rust version is 1.88.
 
