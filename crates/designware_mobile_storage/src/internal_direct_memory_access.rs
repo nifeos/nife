@@ -592,6 +592,27 @@ mod tests {
         assert_eq!(back, data);
     }
 
+    /// **A transfer longer than the deadline is not given up on while it progresses**: the
+    /// deadline restarts each time a descriptor closes. Moving one word per IDMAC step, with the
+    /// clock advanced 700 microseconds a reading, each of the two pages closes inside the
+    /// half-second deadline while the whole transfer takes longer than it. The simulator puts the
+    /// working range at about 500 to 900 microseconds: below it the whole transfer fits the
+    /// deadline and proves nothing, above it a single page does not.
+    #[test]
+    fn a_transfer_that_keeps_closing_descriptors_outlasts_the_deadline() {
+        let (mut h, card, memory) = polled(3);
+        let data = pattern(0x5a, 16 * 512);
+        sd::write_blocks(&mut h, &card, 80, &data).unwrap();
+        let mut h = with_internal_direct_memory_access(h, &memory);
+        h.registers_mut().direct_memory_access_words_per_step = Some(1);
+        h.registers_mut().clock_step = 700;
+        let start = h.registers_mut().now_microseconds();
+        let mut back = vec![0u8; 16 * 512];
+        sd::read_blocks(&mut h, &card, 80, &mut back).unwrap();
+        assert_eq!(back, data);
+        assert!(h.registers_mut().now_microseconds() - start > DATA_DEADLINE_MICROSECONDS);
+    }
+
     /// One more block than the region holds is refused before anything is sent, rather than
     /// written past the region's end; exactly what it holds is moved.
     #[test]
