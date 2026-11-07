@@ -217,7 +217,7 @@ accounts for, read at each week's last merge. Above 5% is a lane (calef, 2026-10
 save and reason: [the drift report](project-metrics/baseline-drift.md).
 
 <!-- baseline-drift: script/metrics writes this -->
-2026W45, `main` at `07773ac62`: unexplained past 5%: aarch64 `ipc_rtt` +5.62%.
+2026W45, `main` at `a1cb0f237`: unexplained past 5%: aarch64 `ipc_rtt` +5.62%.
 <!-- /baseline-drift -->
 
 ## Interface stability
