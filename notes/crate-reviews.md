@@ -204,7 +204,7 @@ signature.
 
 Proofs. Six harnesses: the delivered frame, the ring offsets, the PHY link decode, the transmit
 descriptor's length fields, the MDIO command word's address fields and the coherence verdict. All
-six prove and all six patches fail. A published driver needs more than three, so the review added three; MDIO sequencing, the PHY configuration writes and controller bring-up keep unit tests
+six prove and all six patches fail. MDIO sequencing, the PHY configuration writes and controller bring-up keep unit tests
 against the simulator and no proof.
 
 Dependencies. None.
@@ -300,10 +300,9 @@ Result of `script/crate-standalone`. Clean.
 Provenance. Milestone 1019 items 1, 7 and 11 stand done for this crate: no comment reproduces node text and
 every vendor claim links the revision it holds at, checked against the fetched files.
 
-Names. Six ratified groups wait for the architect (`SDIO_BRING_UP`, the `mux` report fields,
-`SYSTEM_BASE`, the `base` fields, `controller`, `sdcard_divider_for`), each listed in the package
-with its recommended name. Of the template's checks, only the spelled-out one finds anything
-(`SDIO_BRING_UP`). The parameters carry spelled-out names, provisional.
+Names. The package lists six ratified groups for the architect, each with its recommended name;
+the spelled-out check finds one, `SDIO_BRING_UP`. The parameters carry spelled-out names,
+provisional.
 
 Outstanding before the move.
 
