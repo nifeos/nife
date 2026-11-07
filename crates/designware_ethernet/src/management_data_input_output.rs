@@ -460,7 +460,7 @@ mod tests {
             self.writes.push((offset, value));
             match offset {
                 registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER => {
-                    self.address = value
+                    self.address = value;
                 }
                 registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER => self.data = value,
                 _ => panic!("MDIO wrote {offset:#x}, outside its two registers"),
