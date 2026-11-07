@@ -12,7 +12,6 @@
 //! - It re-initializes the card U-Boot booted from, so it halts rather than hand the card back.
 //! - The eMMC socket is probed read-only, always.
 
-
 use designware_mobile_storage::host_controller::{
     Error, HostController, Identity, RegisterWindowAndClock,
 };
@@ -800,19 +799,18 @@ fn read_matrix(slot: &Slot) {
     }
 }
 
+/// The bench step's two halves, as logic: the read-only probe and the scratch write test that a
+/// kernel's storage bench runs on a VisionFive 2, here so their order of operations, which is the
+/// safety argument, is tested on a host rather than first tried on the card the VisionFive 2 boots from.
+/// [`run_read_only_probe`] identifies the card, reads sector 0, parses the MBR, reads the first partition's
+/// boot sector and times a sequential read from its start; it sends no command that writes.
+/// [`run_scratch_write_test`] writes only inside `MasterBootRecord::scratch_sector_range`'s range, after reading what
+/// is there: a pattern, read back, then the original, read back too. A card with no gap is refused,
+/// not written.
+///
+/// Name: ratified 2026-11-03 (UTC), #3135. `bench` is the word for the physical test bench: the
+/// step run on the real board, not on a host.
 mod bench {
-    //! The bench step's two halves, as logic: the read-only probe and the scratch write test that a
-    //! kernel's storage bench runs on a VisionFive 2, here so their order of operations, which is the
-    //! safety argument, is tested on a host rather than first tried on the card the VisionFive 2 boots from.
-    //! [`run_read_only_probe`] identifies the card, reads sector 0, parses the MBR, reads the first partition's
-    //! boot sector and times a sequential read from its start; it sends no command that writes.
-    //! [`run_scratch_write_test`] writes only inside `MasterBootRecord::scratch_sector_range`'s range, after reading what
-    //! is there: a pattern, read back, then the original, read back too. A card with no gap is refused,
-    //! not written.
-    //!
-    //! Name: ratified 2026-11-03 (UTC), #3135. `bench` is the word for the physical test bench: the
-    //! step run on the real board, not on a host.
-
     use designware_mobile_storage::host_controller::{HostController, RegisterWindowAndClock};
     use designware_mobile_storage::internal_direct_memory_access::DirectMemoryAccessRegion;
     use designware_mobile_storage::partition::MasterBootRecord;
