@@ -130,7 +130,10 @@ pub enum Refusal {
     /// The region is not a descriptor page and 1 to [`MAXIMUM_DESCRIPTORS`] data pages: its length.
     Size(u32),
     /// Part of the region lies above 4 GiB, where a 32-bit descriptor cannot point: its address.
-    Above4GiB(u64),
+    ///
+    /// Name: ratified 2026-11-07 (UTC). Considered: `Above4GiB`, which put a unit symbol inside a
+    /// name; units are spelled out in any position, so the symbol fell to that rule.
+    AboveFourGibibytes(u64),
 }
 
 impl core::fmt::Display for Refusal {
@@ -150,7 +153,7 @@ impl core::fmt::Display for Refusal {
                     "a region of {length} bytes is not a descriptor page and data pages"
                 )
             }
-            Self::Above4GiB(base) => {
+            Self::AboveFourGibibytes(base) => {
                 write!(f, "the region at {base:#x} reaches above 4 GiB")
             }
         }
@@ -200,10 +203,10 @@ impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
             return Err(Refusal::Size(bytes));
         }
         let Ok(bus) = u32::try_from(base) else {
-            return Err(Refusal::Above4GiB(base));
+            return Err(Refusal::AboveFourGibibytes(base));
         };
         if bus.checked_add(bytes - 1).is_none() {
-            return Err(Refusal::Above4GiB(base));
+            return Err(Refusal::AboveFourGibibytes(base));
         }
         Ok(InternalDirectMemoryAccess {
             region,
@@ -459,10 +462,10 @@ mod tests {
         memory: &Memory,
     ) -> HostController<SimulatedHostController, Memory> {
         let mut h = h;
-        let hcon = h.registers_mut().peek(registers::HCON);
+        let hardware_configuration = h.registers_mut().peek(registers::HCON);
         let id = Identity {
             version_identification: 0,
-            hardware_configuration: hcon,
+            hardware_configuration,
             user_identification: 0,
             queue_threshold: 0,
             card_detect: 0,
@@ -509,9 +512,9 @@ mod tests {
     /// usable, one a page later is not, and neither is anything a 32-bit descriptor cannot hold.
     #[test]
     fn a_region_the_internal_direct_memory_access_engine_cannot_reach_or_describe_is_refused() {
-        let id = |hcon| Identity {
+        let id = |hardware_configuration| Identity {
             version_identification: 0,
-            hardware_configuration: hcon,
+            hardware_configuration,
             user_identification: 0,
             queue_threshold: 0,
             card_detect: 0,
@@ -523,10 +526,13 @@ mod tests {
                 .map(|i| i.capacity())
         };
         assert_eq!(new(0xffff_e000, 2), Ok(PAGE));
-        assert_eq!(new(0xffff_f000, 2), Err(Refusal::Above4GiB(0xffff_f000)));
+        assert_eq!(
+            new(0xffff_f000, 2),
+            Err(Refusal::AboveFourGibibytes(0xffff_f000))
+        );
         assert_eq!(
             new(0x1_0000_0000, 2),
-            Err(Refusal::Above4GiB(0x1_0000_0000))
+            Err(Refusal::AboveFourGibibytes(0x1_0000_0000))
         );
         assert_eq!(new(BASE + 8, 2), Err(Refusal::Alignment(BASE + 8)));
         assert_eq!(new(BASE, 1), Err(Refusal::Size(PAGE)));
