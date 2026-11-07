@@ -73,13 +73,15 @@ def selftest():
     for british, american in (('initialise', 'initialize'), ('initialisation', 'initialization'),
                               ('colour', 'color'), ('behavioural', 'behavioral'),
                               ('centre', 'center'), ('centred', 'centered'),
-                              ('cancelled', 'canceled'), ('serialiser', 'serializer')):
+                              ('cancelled', 'canceled'), ('serialiser', 'serializer'),
+                              ('recognised', 'recognized'), ('unrecognised', 'unrecognized'),
+                              ('pluralises', 'pluralizes'), ('pluralisation', 'pluralization')):
         if table.get(british) != american:
             failed += 1
             print(f'british_spelling selftest: {british} -> {table.get(british)}, wanted {american}',
                   file=sys.stderr)
     for fine in ('rise', 'promise', 'exercise', 'color', 'center', 'canceled', 'for', 'four',
-                 'hour', 'your', 'spectre', 'real'):
+                 'hour', 'your', 'spectre', 'real', 'plural', 'plurals', 'unrecognized'):
         if fine in table:
             failed += 1
             print(f'british_spelling selftest: {fine} must pass', file=sys.stderr)
