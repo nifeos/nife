@@ -543,3 +543,17 @@ fn start_clears_the_transmit_ring_and_the_cursor_follows_receive() {
         assert_eq!(dp.receive_cursor(), n);
     }
 }
+
+#[test]
+fn transmit_errors_say_which_limit_was_hit() {
+    use std::string::ToString;
+
+    assert_eq!(
+        TransmitError::BadLength.to_string(),
+        "the frame is empty or longer than the maximum frame size"
+    );
+    assert_eq!(
+        TransmitError::Full.to_string(),
+        "every transmit descriptor still belongs to the device"
+    );
+}
