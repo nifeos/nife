@@ -1,0 +1,20 @@
+Falsifies `designware_mobile_storage::proofs::a_command_word_sends_only_the_command_asked_for`.
+
+The defect: the write bit follows the block count as well as the direction, so a multi-block
+read goes out as a write and the controller sends the buffer's stale contents to the card.
+
+Expected to fail: the assertion that `COMMAND_WRITE` is set exactly on a write, on a read of two
+or more blocks.
+
+diff --git a/crates/designware_mobile_storage/src/command.rs b/crates/designware_mobile_storage/src/command.rs
+--- a/crates/designware_mobile_storage/src/command.rs
++++ b/crates/designware_mobile_storage/src/command.rs
+@@ -265,7 +265,7 @@
+         }
+         if let Some(d) = self.data {
+             w |= registers::COMMAND_DATA_EXPECTED;
+-            if d.is_write {
++            if d.is_write || d.blocks > 1 {
+                 w |= registers::COMMAND_WRITE;
+             }
+             if d.blocks > 1 {

@@ -41,6 +41,18 @@ still or jump either way.
   descriptor in the chain (bounded here at two).
 - The card clock divider is total for any base and target (no zero divisor, no overflow, no
   panic), and it bypasses the divider exactly when the base is at or below the target.
+- A command word carries the start bit and the command's own index, never the clock-update-only
+  bit, a data phase exactly when the command has one, and the write bit only on a write.
+- Sending a command with no data phase ends and never panics, whatever the controller answers.
+  Every error names the command sent, a bad response carries the status bit that made it bad, and
+  a short response leaves words 1 to 3 zero.
+- A reset and a card clock change end and never panic. From a 50 MHz base the card then runs at
+  or below any target asked for, or at the slowest rate the divider has when the target is below
+  it.
+
+The harnesses of whole sequences use a clock that passes every deadline at each reading, so they
+bound their loops by what the controller reports rather than by time. The two wait harnesses
+above cover a clock that takes longer, and every wait in the driver is one of those two loops.
 
 The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
 kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
@@ -92,10 +104,9 @@ can add a variant without breaking you.
   controller in the tests.
 - The IDMAC moves at most its region's data pages per command and copies through them once each
   way.
-- No proof shows that the card clock a divider gives stays at or below the target: a harness
-  that compares them makes the solver build two symbolic 32-bit divisions, and it ran past five
-  minutes with every solver tried and with the base bounded to 2^28. A host test checks it for
-  every target at 50 MHz.
+- That the card clock stays at or below the target is proved for a 50 MHz base only. For a base
+  the solver picks, the comparison makes it build two symbolic 32-bit divisions, and that ran
+  past five minutes with every solver tried and with the base bounded to 2^28.
 - A clock that never passes a deadline hangs the wait on it: the trait promises microseconds, and
   the driver has no other way to tell a slow controller from a dead one.
 - The card bring-up state machine, timing and the CID decode have no proofs. The MBR parse does

@@ -3,8 +3,8 @@
 use crate::card::{CardSpecificData, extended_card_specific_data_sectors, extract_bits};
 use crate::command::{Command, Data, Response};
 use crate::host_controller::{
-    DATA_DEADLINE_MICROSECONDS, HostController, RegisterWindowAndClock, card_clock, clock_divider,
-    queue_step,
+    DATA_DEADLINE_MICROSECONDS, Error, HostController, RegisterWindowAndClock, card_clock,
+    clock_divider, queue_step,
 };
 use crate::internal_direct_memory_access::{
     DESCRIPTOR_BYTES, DirectMemoryAccessRegion, InternalDirectMemoryAccess, MAXIMUM_DESCRIPTORS,
@@ -402,8 +402,9 @@ fn the_direct_memory_access_wait_returns_once_its_deadline_has_passed() {
 
 /// **The card clock divider is total**: for any base and target it divides by no zero, overflows
 /// nothing and panics nowhere, and the card clock it names is computed the same way. That the card
-/// clock stays at or below the target is the host test's, exhaustively at the VisionFive 2's
-/// 50 MHz: the comparison makes the solver build both 32-bit divisions, which ran past five minutes.
+/// clock stays at or below the target is proved at a 50 MHz base by
+/// `reset_and_the_card_clock_are_total_against_any_controller`: for any base the comparison makes
+/// the solver build both 32-bit divisions, which ran past five minutes.
 ///
 /// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.the_clock_divider_is_total.patch`
 #[kani::proof]
@@ -413,5 +414,144 @@ fn the_clock_divider_is_total() {
     if let Some(divider) = clock_divider(base, target) {
         assert!((divider == 0) == (base <= target));
         let _ = card_clock(base, divider);
+    }
+}
+
+/// A response kind, any of the seven.
+fn any_response() -> Response {
+    match kani::any::<u8>() % 7 {
+        0 => Response::None,
+        1 => Response::R1,
+        2 => Response::R1b,
+        3 => Response::R2,
+        4 => Response::R3,
+        5 => Response::R6,
+        _ => Response::R7,
+    }
+}
+
+/// **A controller that owes the driver nothing, and a clock that runs.** Every register read is
+/// the solver's and every write is dropped, as in [`AdversarialWindowAndClock`], but each clock
+/// reading is more than the longest deadline (the one-second power-up) past the one before, from
+/// any start, wrapping included. Every wait therefore ends at its second reading. The wait
+/// harnesses prove that a wait ends under any clock that passes its deadline; this clock lets the
+/// harnesses of whole sequences bound their loops by what the controller says rather than by time.
+struct AdversarialWindowAndRunningClock {
+    now: u64,
+    step: u64,
+}
+
+impl AdversarialWindowAndRunningClock {
+    fn new() -> Self {
+        let step: u64 = kani::any();
+        kani::assume(step > crate::sd::POWER_UP_DEADLINE_MICROSECONDS && step < 1 << 40);
+        AdversarialWindowAndRunningClock {
+            now: kani::any(),
+            step,
+        }
+    }
+}
+
+impl RegisterWindowAndClock for AdversarialWindowAndRunningClock {
+    fn read(&mut self, _offset: u32) -> u32 {
+        kani::any()
+    }
+
+    fn write(&mut self, _offset: u32, _value: u32) {}
+
+    fn now_microseconds(&mut self) -> u64 {
+        self.now = self.now.wrapping_add(self.step);
+        self.now
+    }
+}
+
+/// **A command word sends the command asked for and nothing else**: the start bit, the index in
+/// bits 5:0, never the clock-update-only bit (which would make the controller skip the command),
+/// a data phase exactly when the command has one, and the write direction only on a write.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.a_command_word_sends_only_the_command_asked_for.patch`
+#[kani::proof]
+fn a_command_word_sends_only_the_command_asked_for() {
+    let data = if kani::any() {
+        Some(Data {
+            block_size: kani::any(),
+            blocks: kani::any(),
+            is_write: kani::any(),
+        })
+    } else {
+        None
+    };
+    let command = Command {
+        index: kani::any(),
+        argument: kani::any(),
+        response: any_response(),
+        data,
+    };
+    let word = command.register_word();
+    assert!(word & crate::registers::COMMAND_START != 0);
+    assert!(word & 0x3f == u32::from(command.index) & 0x3f);
+    assert!(word & crate::registers::COMMAND_UPDATE_CLOCK_REGISTERS_ONLY == 0);
+    assert!((word & crate::registers::COMMAND_DATA_EXPECTED != 0) == data.is_some());
+    assert!((word & crate::registers::COMMAND_WRITE != 0) == matches!(data, Some(d) if d.is_write));
+}
+
+/// **Sending a command is total against any controller**: whatever the controller answers, the
+/// send ends, panics nowhere, and maps what it saw to an error that names this command. A short
+/// response leaves words 1 to 3 zero, and a bad response carries the status bit that made it bad.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.sending_a_command_is_total_against_any_controller.patch`
+#[kani::proof]
+#[kani::unwind(3)]
+fn sending_a_command_is_total_against_any_controller() {
+    let depth: u32 = kani::any();
+    kani::assume(depth > 0);
+    let Ok((mut host, _identity)) = HostController::new(
+        AdversarialWindowAndRunningClock::new(),
+        kani::any(),
+        Some(depth),
+    ) else {
+        return;
+    };
+    let command = Command::new(kani::any(), kani::any(), any_response());
+    match host.send_command(&command) {
+        Ok(response) => {
+            if command.response != Response::R2 {
+                assert!(response[1] == 0 && response[2] == 0 && response[3] == 0);
+            }
+        }
+        Err(Error::Busy) => {}
+        Err(Error::CommandNotTaken(index) | Error::NoResponse(index)) => {
+            assert!(index == command.index);
+        }
+        Err(Error::CommandTimeout(index, _)) => assert!(index == command.index),
+        Err(Error::BadResponse(index, status)) => {
+            assert!(index == command.index);
+            assert!(status & (crate::registers::RINTSTS_RCRC | crate::registers::RINTSTS_RE) != 0);
+        }
+        Err(_) => panic!("a command with no data phase failed in its data phase"),
+    }
+}
+
+/// **Reset and the card clock are total against any controller**: a reset and a clock change at
+/// any rate end and panic nowhere, whatever the controller answers, and at the VisionFive 2's
+/// 50 MHz the card runs no faster than asked, or at the slowest rate the divider has when nothing
+/// slower exists.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.reset_and_the_card_clock_are_total_against_any_controller.patch`
+#[kani::proof]
+#[kani::unwind(3)]
+fn reset_and_the_card_clock_are_total_against_any_controller() {
+    let Ok((mut host, _identity)) = HostController::new(
+        AdversarialWindowAndRunningClock::new(),
+        crate::jh7110::CARD_INTERFACE_UNIT_HERTZ,
+        None,
+    ) else {
+        return;
+    };
+    let _ = host.reset();
+    let target: u32 = kani::any();
+    if let Ok(hertz) = host.set_clock(target) {
+        let slowest = crate::jh7110::CARD_INTERFACE_UNIT_HERTZ / 510;
+        assert!(hertz <= target || hertz == slowest);
     }
 }
