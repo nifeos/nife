@@ -13,7 +13,8 @@ name: owned runner canary
 # owned runners waits for it: canary-owned (strict image checks) and canary-owned-dry-run must be
 # green on the pool first, and a maintainer reads these summaries after the flip too. Both jobs run the
 # same steps on the merge queue and on `main`, never on a pull request: the owned host admits
-# nothing else. `canary-owned` also checks the container's walls (no direct egress past the proxy,
+# nothing else. The isolation jobs (canary-owned-write, -check and -isolation) run on `push` to `main`
+# only, so a queue entry does not hold seven owned slots for a reading aid. `canary-owned` also checks the container's walls (no direct egress past the proxy,
 # no container-engine socket) and prints a FINDING for each one that is open. `canary-owned` is strict and
 # fails on any FINDING; none of the canary jobs is a required check, so none can fail the queue. Names are provisional.
 # notes/owned-runners.md is the runbook.
@@ -278,7 +279,7 @@ jobs:
   # leave behind. The container is rootless; sudo is tried when present. A path that cannot be
   # written is a finding in the summary, not a failure.
   canary-owned-write:
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    if: github.event_name == 'push'
     runs-on: [nife-owned-x86_64]
     continue-on-error: true  # outcome: exception, the canary measures the owned pool and must never block the queue
     timeout-minutes: 10
@@ -350,7 +351,7 @@ jobs:
   # file; each prints its runner name so the summary shows whether one landed on the writer's slot.
   canary-owned-check:
     needs: canary-owned-write
-    if: github.event_name == 'merge_group' || github.event_name == 'push'
+    if: github.event_name == 'push'
     runs-on: [nife-owned-x86_64]
     continue-on-error: true  # outcome: exception, the canary measures the owned pool and must never block the queue
     timeout-minutes: 10
@@ -436,7 +437,7 @@ jobs:
   # hex) mean one slot.
   canary-owned-isolation:
     needs: [canary-owned-write, canary-owned-check]
-    if: ${{ always() && (github.event_name == 'merge_group' || github.event_name == 'push') }}
+    if: ${{ always() && github.event_name == 'push' }}
     runs-on: ubuntu-26.04
     continue-on-error: true  # outcome: exception, a reading aid and never a verdict on the queue
     timeout-minutes: 10

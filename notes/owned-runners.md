@@ -186,7 +186,8 @@ can read only the log.
 ### What the isolation test proves
 
 An owned job starts from a clean container, so it sees none of an earlier job's files. Three jobs
-test that claim. All three are `continue-on-error`, and none is a required check.
+test that claim, on a push to `main` only and not on a merge group, so a queue entry does not hold
+seven owned slots for a reading aid. All three are `continue-on-error`, and none is a required check.
 
 - `canary-owned-write` writes a marker file, `nife-canary-marker-<run_id>`, to `$HOME`, `/tmp` and
   `/etc`. The container is rootless, so it tries `sudo -n` when plain writing fails. A path it
