@@ -19,12 +19,12 @@ diff --git a/crates/generational_table/src/lib.rs b/crates/generational_table/sr
 -        let slot = self
 -            .slots
 -            .iter()
--            .zip(&self.gens)
+-            .zip(&self.generations)
 -            .position(|(s, &g)| s.is_none() && g != Self::RETIRED)?;
 +        let slot = self.slots.iter().position(|s| s.is_none())?;
-         let name = Self::name(slot, self.gens[slot]);
+         let name = Self::name(slot, self.generations[slot]);
 @@ -276,3 +272,3 @@ impl<T, const N: usize> Table<T, N> {
          let value = self.slots[slot].take()?;
--        self.gens[slot] = self.gens[slot].saturating_add(1);
-+        self.gens[slot] = self.gens[slot].wrapping_add(1);
+-        self.generations[slot] = self.generations[slot].saturating_add(1);
++        self.generations[slot] = self.generations[slot].wrapping_add(1);
          self.live -= 1;
