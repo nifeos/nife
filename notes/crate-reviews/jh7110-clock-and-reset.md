@@ -99,10 +99,16 @@ renames none. `helpers/name_checks.py` finds the first only.
 | `SYSTEM_BASE` | an address says virtual or physical | `SYSTEM_BASE_PHYSICAL_ADDRESS` |
 | `RegisterWindow::base`, `WindowLocation::base` | the same; both hold physical addresses | `base_physical_address` |
 | `PowerManagementChipBus::controller` | an `(address, size)` pair with no word for either | `controller_physical_window` |
-| the parameter `w` of `inter_integrated_circuit_5_clock_frequency` and `advanced_extensible_interface_configuration_0_hertz` | a one-letter parameter in a public signature | `words` |
 | `sdcard_divider_for` | `SD` stays but `sdcard` fuses two words, while `MAXIMUM_SD_CARD_DIVIDER` separates them | `sd_card_divider_for` |
-| the parameters `power_management_chip_reg` and `bus_reg` of `PowerManagementChipBus::from_nodes` | `reg` abbreviates the property's meaning, and a parameter cannot carry the kept form | `power_management_chip_register_property`, `bus_register_property` |
-| the parameter `reg_names` of `WindowLocation::from_regions` | the same | `register_names` |
+
+Parameter names of public functions, spelled out. They are provisional: a parameter name is no
+part of a Rust signature's compatibility, so the maintainer rules them, pending the architect.
+
+| parameter | of | now |
+|---|---|---|
+| `w` | `inter_integrated_circuit_5_clock_frequency`, `advanced_extensible_interface_configuration_0_hertz` | `words` |
+| `power_management_chip_reg`, `bus_reg` | `PowerManagementChipBus::from_nodes` | `power_management_chip_register_property`, `bus_register_property`: `reg` clips the property's meaning, and a parameter cannot carry the kept form |
+| `reg_names` | `WindowLocation::from_regions` | `register_names` |
 
 ## Naming rules
 

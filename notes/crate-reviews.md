@@ -242,8 +242,8 @@ Result of `script/crate-standalone`. Clean.
 
 Names. The naming rules table, the renames and the ratified names a later rule reaches are in
 [crate-reviews/designware-ethernet.md](crate-reviews/designware-ethernet.md). The template's three
-checks find nothing. Six groups of ratified names wait for the architect, and `CRC_BYTES` is
-borderline.
+checks find nothing. Two groups of ratified names wait for the architect, the parameter names are
+spelled out, provisional, and `CRC_BYTES` is borderline.
 
 Outstanding before the move.
 
@@ -301,10 +301,9 @@ Result of `script/crate-standalone`. Clean, before and after this lane's edits.
 Provenance. Milestone 1019 items 1, 7 and 11 stand done for this crate: no comment reproduces node text and
 every vendor claim links the revision it holds at, checked against the fetched files.
 
-Names. Nine groups of ratified names fail a later rule and wait for the architect (`SDIO_BRING_UP`, the
-three `mux` report fields, `SYSTEM_BASE` and the `base` fields, `controller`, the `w` parameters,
-`sdcard_divider_for`, and the parameters `power_management_chip_reg`, `bus_reg` and `reg_names`).
-The package lists each with its recommended name.
+Names. Six groups of ratified names fail a later rule and wait for the architect (`SDIO_BRING_UP`, the
+three `mux` report fields, `SYSTEM_BASE`, the `base` fields, `controller` and `sdcard_divider_for`).
+The package lists each with its recommended name. The parameter names are spelled out, provisional.
 
 Naming rules. The spelled-out check finds `SDIO_BRING_UP`, which is public and listed. The unit,
 question-shape and British-spelling checks find nothing. The package holds the table, the renames

@@ -33,14 +33,22 @@ and decoder-needing words. Renamed, all private:
 The source's spelling, such as `GMAC_CHAN_TX_CONTROL_ST` or `MII_BMCR`, is in each constant's doc
 comment and in a `doc(alias)`. Every patch still applies and fails its own harness.
 
+Parameter names of public functions, spelled out. They are provisional: a parameter name is no
+part of a Rust signature's compatibility, so the maintainer rules them, pending the architect.
+
+| parameter | of | now |
+|---|---|---|
+| `i` | `layout::receive_descriptor`, `layout::transmit_descriptor`, `registers::mac_hardware_feature_register`, and the crate-private `layout::receive_buffer` and `transmit_buffer` | `index` |
+| `o` | `cache_coherence::classify`, `is_transmit_complete` | `observation` |
+| `s` | `motorcomm_physical_layer_device::configure`, `apply_speed` | `settings` |
+| `v` | `Hardware::write`, `DirectMemoryAccessRegion::write_u64`, `ManagementDataInputOutput::write`, `motorcomm_physical_layer_device::write_extended`, and every implementation of the three traits in the crate | `value` |
+
+The simulator's `with(f)` keeps `f`, the standard library's spelling for a closure argument.
+
 Ratified names a later rule reaches. This section renames none.
 
 | name | rule | recommended name |
 |---|---|---|
-| the parameter `i` of `layout::receive_descriptor`, `layout::transmit_descriptor` and `registers::mac_hardware_feature_register` | a one-letter parameter in a public signature | `index` |
-| the parameter `o` of `cache_coherence::classify` and `is_transmit_complete` | the same | `observation` |
-| the parameter `s` of `motorcomm_physical_layer_device::configure` and `apply_speed` | the same | `settings` |
-| the parameter `v` of `Hardware::write`, `DirectMemoryAccessRegion::write_u64`, `ManagementDataInputOutput::write` and `motorcomm_physical_layer_device::write_extended` | the same | `value` |
 | `jh7110::SystemController::base`, `size` | an address says virtual or physical, and a size carries its unit | `base_physical_address`, `size_bytes` |
 | `RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID` | the same address rule | `RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID` |
 
