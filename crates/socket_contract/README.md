@@ -15,8 +15,8 @@ never assumed.
 
 - `VERSION` (1) is the protocol's version: one number for the operation set and the reply shapes.
   A break bumps it; an addition (a new opcode, an optional field) does not.
-- Operations (`OPERATION_*`): attach the shared page frame, open a UDP socket, open a TCP socket,
-  send a datagram, receive, connect, send, close, listen, accept, and bind a UDP port. The opcode is
+- Operations (`OPERATION_*`): attach the shared page frame, open a User Datagram Protocol (UDP)
+  socket, open a Transmission Control Protocol (TCP) socket, send a datagram, receive, connect, send, close, listen, accept, and bind a UDP port. The opcode is
   the whole request word.
 - Replies: `REP_OK` (0, and receive replies its length instead), `REP_ERR` (bit 32 set, so it is
   never mistaken for a length), `CONNECT_ESTABLISHED` and `CONNECT_REFUSED` for connect, and
@@ -30,8 +30,8 @@ never assumed.
   `OFF_DST_PORT`, the payload length at `OFF_LEN` and up to `DATA_MAXIMUM` payload bytes at
   `OFF_PAYLOAD`.
 - `stack_slots` names where a network stack finds the two capabilities it is spawned with.
-- `lease` encodes the report a stack sends its spawner when it has an address: the IPv4 address
-  (`ipv4_word`, `word_ipv4`) and the first nameserver or `NO_NAMESERVER`.
+- `lease` encodes the report a stack sends its spawner when it has an address: the Internet Protocol version 4
+  (IPv4) address (`ipv4_word`, `word_ipv4`) and the first nameserver or `NO_NAMESERVER`.
 - `ephemeral::Ports` allocates outbound local ports from the private range 49152 to 65535 with a
   cursor that never falls behind a clock advancing 256 ports a second, so a new stack starts past
   ports an earlier one used. `polled_wait::next` decides whether a stack may sleep on a network card
@@ -39,7 +39,7 @@ never assumed.
 - `fixture` holds the fixed addresses and messages of the nife project's own test runners. It is not
   part of the contract and a consumer can ignore it.
 
-## Usage
+## EXAMPLES
 
 ```rust
 use socket_contract::{grant_allows, listen_grant, names_a_socket, udp_bind_grant, udp_grant_allows, SOCKET_BADGE};
@@ -53,6 +53,12 @@ assert!(names_a_socket(SOCKET_BADGE | 1));
 assert!(!names_a_socket(0)); // an unbadged front door
 ```
 
+## What is proven
+
+Nothing is machine-checked: there are no Kani harnesses. The directory `falsifications/` holds a
+patch that makes the ephemeral-port test fail; apply it with `patch -p3` from the crate root to see
+that the test checks something.
+
 ## Building and testing
 
 ```sh
@@ -60,9 +66,16 @@ cargo test
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
 ```
 
-The minimum supported Rust version is 1.88. There are no Kani harnesses. The directory
-`falsifications/` holds a patch that makes the ephemeral-port test fail; apply it with `patch -p3`
-from the crate root to see that the test checks something.
+## BUGS
+
+- A grant is the stack's, shared by every holder of its front door; a per-client grant would ride on
+  a badged front door, which nothing builds yet.
+- A listener's backlog is one connection: a second arriving before `ACCEPT` is refused by TCP.
+- `polled_wait` keeps a core busy while a stream flows, and for a tick after it ends.
+
+## Minimum Rust version
+
+Rust 1.88.
 
 ## License
 
