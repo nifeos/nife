@@ -982,11 +982,7 @@ jobs:
       # it, and the per-line bound it then holds is the other legs' 30 s, not TCG's 45 s.
       - if: steps.merge-group-gate.outputs.skip != 'true'
         name: Open /dev/kvm to the runner user
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-          ls -l /dev/kvm
+        run: helpers/open-kvm.sh
 
       # The row fetches `rg` from basalt first; the `swish-check` job above says why.
       # Each item's time into the job's record (milestone 808 (every gate accounts for its time)):
@@ -2543,11 +2539,7 @@ jobs:
           NIFE_SKIP_LINT_TOOLS: "1"
       - if: steps.merge-group-gate.outputs.skip != 'true'
         name: Open /dev/kvm to the runner user
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-          ls -l /dev/kvm
+        run: helpers/open-kvm.sh
       # Two builds of at most 10 minutes each and a guest of at most 5 minutes stay inside the budget.
       - if: steps.merge-group-gate.outputs.skip != 'true'
         name: Sweep the shard

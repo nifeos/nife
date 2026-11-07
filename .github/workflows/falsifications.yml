@@ -313,11 +313,7 @@ jobs:
 
       # GitHub's documented recipe, as ci.yml's swish-check-x86_64 job takes it.
       - name: Open /dev/kvm to the runner user
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-          ls -l /dev/kvm
+        run: helpers/open-kvm.sh
 
       - name: Build the std exerciser and fetch basalt's packages
         run: cargo xtask std-exerciser && cargo xtask basalt-fetch
