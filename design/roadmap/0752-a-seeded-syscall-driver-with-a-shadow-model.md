@@ -201,7 +201,7 @@ a second rung. When (A) lands, the driver's model changes in the two receiver-fi
   every other guest passed the same seeds. A wake the scheduler lost (the class in
   `notes/scheduler/missed-reschedule-poke.md`) would fit; so would a host stall that ticks did not
   show. A budget-expired failure prints `sched::dump_threads` after its message (thread states, and
-  each core's `inbox_len`), so a recurrence shows whether threads were parked, runnable or waiting.
+  each core's `inbox_len`), so a recurrence shows which threads sat parked, runnable or waiting.
   A recurrence still wants the seed, which the message does not carry.
 - A stopped vCPU is what the wait exists for, and an instrumented run on 2026-11-01 saw one. Four
   guests at once waited about 1.8 s. One loop went 1.54 s between two polls, and its guest took 6
