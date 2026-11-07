@@ -404,8 +404,12 @@ pub(crate) fn scan_live_thread_stacks() {
 }
 
 /// Print every thread's scheduler state, every rendezvous and notification with a waiter, and every
-/// online core, for diagnosing a hang. Used by the test watchdog. What each field can claim is in
-/// notes/scheduler/thread-dump.md.
+/// online core, for diagnosing a hang. Used by the test watchdog and after a budget-expired panic.
+/// What each field can claim is in notes/scheduler/thread-dump.md.
+///
+/// Each kind of line is printed by its own function, so this frame holds no formatting arguments
+/// and the console's print chain sits on one small frame. The panic handler can call this at the
+/// deepest point of a kernel thread stack, and `script/stack-depth-check` counts it there.
 ///
 /// Context: takes `IPC_TABLES`, which is free when the hang is a blocked thread.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
@@ -415,96 +419,121 @@ pub fn dump_threads() {
         crate::println!("  dump_threads: no scheduler");
         return;
     };
+    dump_header();
+    for t in sched.threads.iter_mut() {
+        dump_thread(t);
+    }
+    // Rendezvous with a waiter: a deadlock shows as a sender with no receiver.
+    for (name, &phys) in sched.rendezvous_table.iter() {
+        // SAFETY: a live rendezvous page, direct-mapped, under IPC_TABLES.
+        let ep = unsafe { &*(crate::arch::mmu::phys_to_virt(phys) as *const Rendezvous) };
+        dump_rendezvous(name.to_bits(), ep);
+    }
+    // Notifications with a waiter or a pending word.
+    for (name, &phys) in sched.notification_table.iter() {
+        // SAFETY: a live notification page, direct-mapped, under IPC_TABLES.
+        let n = unsafe { &*(crate::arch::mmu::phys_to_virt(phys) as *const NotificationPage) };
+        dump_notification(name.to_bits(), n);
+    }
+    // The online set, not `0..count`.
+    for c in crate::smp::online_cpus() {
+        dump_core(c);
+        trace::dump(c);
+    }
+    // A parked core with a non-empty inbox holds a thread nothing will run.
+    let online = crate::smp::online_harts_mask();
+    for c in (0..crate::cpu::MAXIMUM_CPUS).filter(|c| online & (1 << c) == 0) {
+        dump_parked_core(c);
+    }
+    crate::println!("--- end thread dump ---");
+}
+
+/// [`dump_threads`]'s first line.
+fn dump_header() {
     // `pc` is a racing read for a thread on its core (printed `pc*`); the per-core lines are
     // relaxed reads. See notes/scheduler/thread-dump.md.
     crate::println!(
         "--- thread dump (hang diagnostic; pc* = on-cpu, racy; tour stage {}) ---",
         BOOT_STAGE.load(Ordering::Relaxed),
     );
-    for t in sched.threads.iter_mut() {
-        let pc = t
-            .stack
-            .as_ref()
-            .map(|s| crate::arch::exceptions::user_pc(s.top()))
-            .unwrap_or(0);
-        // The space's root tells processes apart: every user program links at one base.
-        let root = t.space.as_ref().map(|s| s.root()).unwrap_or(0);
-        crate::print!(
-            "  tid={:#06x} state={:?} on_cpu={} wake_pending={} has_outgoing_cap={} pc={:#010x}{} address_space={:#010x}",
-            t.id,
-            t.handshake.state,
-            t.handshake.on_cpu,
-            t.handshake.wake_pending,
-            t.outgoing_capability.is_some(),
-            pc,
-            if t.handshake.on_cpu { "*" } else { "" },
-            root,
-        );
-        // `Blocked` with `wait=-` means a state byte was written outside the block paths.
-        match t.handshake.wait_on {
-            Some(Wait::Rendezvous(ep, role)) => crate::println!(" wait={ep:#x}/{role:?}"),
-            Some(Wait::Notification(n)) => crate::println!(" wait={n:#x}/Notification"),
-            Some(Wait::Futex(k)) => {
-                crate::println!(" wait={:#x}@{:#x}/Futex", k.address, k.space);
-            }
-            Some(Wait::Resume) => crate::println!(" wait=Resume"),
-            None => crate::println!(" wait=-"),
+}
+
+/// [`dump_threads`]'s line for thread `t`.
+fn dump_thread(t: &Thread) {
+    let pc = t
+        .stack
+        .as_ref()
+        .map(|s| crate::arch::exceptions::user_pc(s.top()))
+        .unwrap_or(0);
+    // The space's root tells processes apart: every user program links at one base.
+    let root = t.space.as_ref().map(|s| s.root()).unwrap_or(0);
+    crate::print!(
+        "  tid={:#06x} state={:?} on_cpu={} wake_pending={} has_outgoing_cap={} pc={:#010x}{} address_space={:#010x}",
+        t.id,
+        t.handshake.state,
+        t.handshake.on_cpu,
+        t.handshake.wake_pending,
+        t.outgoing_capability.is_some(),
+        pc,
+        if t.handshake.on_cpu { "*" } else { "" },
+        root,
+    );
+    // `Blocked` with `wait=-` means a state byte was written outside the block paths.
+    match t.handshake.wait_on {
+        Some(Wait::Rendezvous(ep, role)) => crate::println!(" wait={ep:#x}/{role:?}"),
+        Some(Wait::Notification(n)) => crate::println!(" wait={n:#x}/Notification"),
+        Some(Wait::Futex(k)) => {
+            crate::println!(" wait={:#x}@{:#x}/Futex", k.address, k.space);
         }
+        Some(Wait::Resume) => crate::println!(" wait=Resume"),
+        None => crate::println!(" wait=-"),
     }
-    // Rendezvous with a waiter: a deadlock shows as a sender with no receiver.
-    for (name, &phys) in sched.rendezvous_table.iter() {
-        // SAFETY: a live rendezvous page, direct-mapped, under IPC_TABLES.
-        let ep = unsafe { &*(crate::arch::mmu::phys_to_virt(phys) as *const Rendezvous) };
-        let (ns, nr, np) = ep.debug_counts();
-        if ns != 0 || nr != 0 || np != 0 {
-            crate::println!(
-                "  ep={:#06x} senders={ns} receivers={nr} pending={np}",
-                name.to_bits()
-            );
-        }
+}
+
+/// [`dump_threads`]'s line for the rendezvous named `name`, printed only when it has a waiter.
+fn dump_rendezvous(name: u64, ep: &Rendezvous) {
+    let (ns, nr, np) = ep.debug_counts();
+    if ns != 0 || nr != 0 || np != 0 {
+        crate::println!("  ep={name:#06x} senders={ns} receivers={nr} pending={np}");
     }
-    // Notifications with a waiter or a pending word.
-    for (name, &phys) in sched.notification_table.iter() {
-        // SAFETY: a live notification page, direct-mapped, under IPC_TABLES.
-        let n = unsafe { &*(crate::arch::mmu::phys_to_virt(phys) as *const NotificationPage) };
-        let (waiters, word) = n.state.debug_counts();
-        if waiters != 0 || word != 0 {
-            crate::println!(
-                "  notification={:#06x} waiters={waiters} word={word:#x} bound={:?}",
-                name.to_bits(),
-                n.bound
-            );
-        }
-    }
-    // The online set, not `0..count`.
-    for c in crate::smp::online_cpus() {
-        let pc = cpu::of(c);
-        let inbox_len = pc.inbox.lock().len();
+}
+
+/// [`dump_threads`]'s line for the notification named `name`, printed only when it has a waiter or
+/// a pending word.
+fn dump_notification(name: u64, n: &NotificationPage) {
+    let (waiters, word) = n.state.debug_counts();
+    if waiters != 0 || word != 0 {
         crate::println!(
-            "  core {c}: current={:#06x} idle={:#06x} switched_from={:#06x} need_resched={} inbox_len={} ticks={} steal_req={:?}",
-            pc.current.load(Ordering::Relaxed),
-            pc.idle.load(Ordering::Relaxed),
-            pc.switched_from.load(Ordering::Relaxed),
-            pc.need_resched.load(Ordering::Relaxed),
-            inbox_len,
-            // Frozen across dumps: no timer traps, so the core is wedged.
-            crate::arch::timer::ticks_on(c),
-            // Claimed across dumps: the victim never reached a scheduler entry.
-            pc.steal_request.peek(),
+            "  notification={name:#06x} waiters={waiters} word={word:#x} bound={:?}",
+            n.bound
         );
-        trace::dump(c);
     }
-    // A parked core with a non-empty inbox holds a thread nothing will run.
-    let online = crate::smp::online_harts_mask();
-    for c in (0..crate::cpu::MAXIMUM_CPUS).filter(|c| online & (1 << c) == 0) {
-        let inbox_len = cpu::of(c).inbox.lock().len();
-        if inbox_len != 0 {
-            crate::println!(
-                "  core {c}: PARKED with inbox_len={inbox_len} (placed on a dead core)"
-            );
-        }
+}
+
+/// [`dump_threads`]'s line for online core `c`.
+fn dump_core(c: usize) {
+    let pc = cpu::of(c);
+    let inbox_len = pc.inbox.lock().len();
+    crate::println!(
+        "  core {c}: current={:#06x} idle={:#06x} switched_from={:#06x} need_resched={} inbox_len={} ticks={} steal_req={:?}",
+        pc.current.load(Ordering::Relaxed),
+        pc.idle.load(Ordering::Relaxed),
+        pc.switched_from.load(Ordering::Relaxed),
+        pc.need_resched.load(Ordering::Relaxed),
+        inbox_len,
+        // Frozen across dumps: no timer traps, so the core is wedged.
+        crate::arch::timer::ticks_on(c),
+        // Claimed across dumps: the victim never reached a scheduler entry.
+        pc.steal_request.peek(),
+    );
+}
+
+/// [`dump_threads`]'s line for parked core `c`, printed only when its inbox holds a thread.
+fn dump_parked_core(c: usize) {
+    let inbox_len = cpu::of(c).inbox.lock().len();
+    if inbox_len != 0 {
+        crate::println!("  core {c}: PARKED with inbox_len={inbox_len} (placed on a dead core)");
     }
-    crate::println!("--- end thread dump ---");
 }
 
 /// How many senders are parked on the rendezvous `ep` (test support): the non-blocking look that

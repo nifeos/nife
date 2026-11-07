@@ -202,8 +202,17 @@ static PRINTED_A_SKIP_WORD: AtomicBool = AtomicBool::new(false);
 /// tree has none. See notes/kernel-test-harness.md.
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn note_printed(fragment: &str) {
-    if fragment.contains("skip") {
-        PRINTED_A_SKIP_WORD.store(true, Ordering::Relaxed);
+    // A byte loop, not `str::contains`: every print reaches this, and the two-way searcher's
+    // frames would ride on the deepest chain `script/stack-depth-check` measures (notes/stack.md).
+    let bytes = fragment.as_bytes();
+    let mut i = 0;
+    while i + 4 <= bytes.len() {
+        if bytes[i] == b's' && bytes[i + 1] == b'k' && bytes[i + 2] == b'i' && bytes[i + 3] == b'p'
+        {
+            PRINTED_A_SKIP_WORD.store(true, Ordering::Relaxed);
+            break;
+        }
+        i += 1;
     }
     if CAPTURING.load(Ordering::Relaxed) {
         let at = CAPTURED_LEN.fetch_add(fragment.len(), Ordering::Relaxed);
@@ -855,10 +864,21 @@ pub fn dump_threads_for_budget_expired(message: &str) {
     }
 }
 
-/// [`dump_threads_for_budget_expired`] for a panic: formats the message into a bounded buffer
-/// (the marker is near its start, so a truncated tail loses nothing) and looks for the marker.
+/// [`dump_threads_for_budget_expired`] for a panic. The message is formatted and searched in
+/// [`panic_is_budget_expiry`], whose buffer is gone from the stack before the dump runs: the panic
+/// handler can run at a thread stack's deepest point, and `script/stack-depth-check` counts the
+/// dump there (notes/stack.md).
 #[cfg(any(test, feature = "system_tests"))]
 pub(crate) fn dump_threads_after_panic(info: &core::panic::PanicInfo<'_>) {
+    if panic_is_budget_expiry(info) {
+        crate::sched::dump_threads();
+    }
+}
+
+/// Does the panic's message hold [`BUDGET_EXPIRED_MARKER`]? Formats the message into a bounded
+/// buffer (the marker is near its start, so a truncated tail loses nothing) and looks for it.
+#[cfg(any(test, feature = "system_tests"))]
+fn panic_is_budget_expiry(info: &core::panic::PanicInfo<'_>) -> bool {
     struct Bounded {
         text: [u8; 256],
         len: usize,
@@ -881,7 +901,7 @@ pub(crate) fn dump_threads_after_panic(info: &core::panic::PanicInfo<'_>) {
         Ok(s) => s,
         Err(e) => core::str::from_utf8(&out.text[..e.valid_up_to()]).unwrap_or(""),
     };
-    dump_threads_for_budget_expired(valid);
+    valid.contains(BUDGET_EXPIRED_MARKER)
 }
 
 /// Seconds of ticks every online core must take before [`wait_on_every_core`] gives up.
