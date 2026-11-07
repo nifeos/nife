@@ -120,6 +120,7 @@ exclude_globs = [
     "kernel/src/bench/**",
     "kernel/src/icount.rs",
     "kernel/src/storage_bench.rs",
+    "kernel/src/storage_bench/**",
     "kernel/src/disk_throughput.rs",
     "kernel/src/network_bench.rs",
     "kernel/src/job_mix.rs",

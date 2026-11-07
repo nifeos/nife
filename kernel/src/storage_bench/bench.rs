@@ -3,17 +3,50 @@
 //! safety argument, is tested on a host rather than first tried on the card the VisionFive 2 boots from.
 //! [`run_read_only_probe`] identifies the card, reads sector 0, parses the MBR, reads the first partition's
 //! boot sector and times a sequential read from its start; it sends no command that writes.
-//! [`run_scratch_write_test`] writes only inside [`MasterBootRecord::scratch_sector_range`]'s range, after reading what
+//! [`run_scratch_write_test`] writes only inside `MasterBootRecord::scratch_sector_range`'s range, after reading what
 //! is there: a pattern, read back, then the original, read back too. A card with no gap is refused,
 //! not written.
 //!
 //! Name: ratified 2026-11-03 (UTC), #3135. `bench` is the word for the physical test bench: the
 //! step run on the real board, not on a host.
 
-use crate::host_controller::{HostController, RegisterWindowAndClock};
-use crate::internal_direct_memory_access::DirectMemoryAccessRegion;
-use crate::partition::MasterBootRecord;
-use crate::sd::{self, BLOCK_BYTES, BlockTransferError, Card, InitializationError};
+use designware_mobile_storage::host_controller::{HostController, RegisterWindowAndClock};
+use designware_mobile_storage::internal_direct_memory_access::DirectMemoryAccessRegion;
+use designware_mobile_storage::partition::MasterBootRecord;
+#[cfg(feature = "storage_read_matrix")]
+use designware_mobile_storage::registers::{
+    STATUS_REGISTER, TRANSFERRED_CARD_BYTE_COUNT, TRANSFERRED_HOST_BYTE_COUNT,
+};
+use designware_mobile_storage::sd::{
+    self, BLOCK_BYTES, BlockTransferError, Card, InitializationError,
+};
+
+#[cfg(feature = "storage_read_matrix")]
+/// **Raw Interrupt Status Register** (OpenBSD's `SDMMC_RINTSTS`): write one to clear. The matrix
+/// reads it straight after each read, for its transcript.
+const RAW_INTERRUPT_STATUS_REGISTER: u32 = 0x044;
+
+#[cfg(feature = "storage_read_matrix")]
+/// **FIFO full** (`STATUS_FIFO_FULL`, the databook's `fifo_full`, which `dwmmc-host` keeps): the
+/// FIFO is full.
+const STATUS_QUEUE_FULL: u32 = 1 << 3;
+
+#[cfg(feature = "storage_read_matrix")]
+/// **FIFO count** (OpenBSD's `SDMMC_STATUS_FIFO_COUNT`, the databook's `fifo_count`): how many FIFO
+/// words are filled, bits 29:17 of `STATUS_REGISTER`.
+const fn queue_count(status: u32) -> u32 {
+    (status >> 17) & 0x1fff
+}
+
+/// The first used partition's start, or `None` when nothing is partitioned.
+fn first_partition_start_of(master_boot_record: MasterBootRecord) -> Option<u32> {
+    master_boot_record
+        .entries
+        .iter()
+        .filter(|e| e.is_used())
+        .map(|e| e.start)
+        .min()
+}
 
 /// How many sectors the write test uses at most: 4 KiB, one multi-block command each way.
 ///
@@ -47,7 +80,6 @@ pub struct ReadOnlyProbeReport {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3141. Where the read-only probe stopped, named for the probe. Renamed from `ReadFailure`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[non_exhaustive]
 pub enum ReadOnlyProbeFailure {
     /// Identification failed.
     Initialization(InitializationError),
@@ -85,7 +117,7 @@ pub fn run_read_only_probe<R: RegisterWindowAndClock, D: DirectMemoryAccessRegio
     sd::read_blocks(host, &card, 0, &mut sector).map_err(|e| ReadOnlyProbeFailure::Read(0, e))?;
     let master_boot_record = MasterBootRecord::parse(&sector);
     let first = master_boot_record
-        .and_then(|m| m.first_start())
+        .and_then(first_partition_start_of)
         .map_or(0, u64::from);
     let mut partition_boot_signature = false;
     let mut file_system_type = [0u8; 8];
@@ -148,7 +180,7 @@ pub struct InternalDirectMemoryAccessReport {
 }
 
 /// **The IDMAC's half of the read-only probe**, on a host
-/// [`HostController::with_internal_direct_memory_access`] made from the one [`run_read_only_probe`] ran on and reported
+/// `HostController::with_internal_direct_memory_access` made from the one [`run_read_only_probe`] ran on and reported
 /// `report`. `reference` is the polled host's read of `reference.len()` bytes from
 /// `report.timed_from`; the same blocks are read through the IDMAC and compared, then
 /// [`run_read_only_probe`]'s timed read runs again from there in `buffer.len()`-byte commands, so the two
@@ -202,7 +234,6 @@ pub const fn scratch_pattern_byte(logical_block_address: u64, i: usize) -> u8 {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3141. The verdict of the scratch write test, named for the test. Renamed from `WriteVerdict`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[non_exhaustive]
 pub enum ScratchWriteVerdict {
     /// No MBR, a GPT disk, or no gap before the first partition: nothing was written.
     Refused,
@@ -294,6 +325,7 @@ pub fn run_scratch_write_test<R: RegisterWindowAndClock, D: DirectMemoryAccessRe
     verdict.unwrap_or(ScratchWriteVerdict::Verified(first, count, blank))
 }
 
+#[cfg(feature = "storage_read_matrix")]
 /// **A register window that remembers how full the queue got**: every `STATUS_REGISTER` read updates the
 /// highest fill seen and counts the reads that found the queue full. It answers the multi-block
 /// read diagnosis: whether the polled CPU falls behind the card.
@@ -309,6 +341,7 @@ pub struct QueueWatch<R: RegisterWindowAndClock> {
     pub full_reads: u32,
 }
 
+#[cfg(feature = "storage_read_matrix")]
 impl<R: RegisterWindowAndClock> QueueWatch<R> {
     /// Watch the queue of `inner`.
     ///
@@ -330,12 +363,13 @@ impl<R: RegisterWindowAndClock> QueueWatch<R> {
     }
 }
 
+#[cfg(feature = "storage_read_matrix")]
 impl<R: RegisterWindowAndClock> RegisterWindowAndClock for QueueWatch<R> {
     fn read(&mut self, offset: u32) -> u32 {
         let v = self.inner.read(offset);
-        if offset == crate::registers::STATUS_REGISTER {
-            self.maximum_fill = self.maximum_fill.max(crate::registers::queue_count(v));
-            if v & crate::registers::STATUS_FIFO_FULL != 0 {
+        if offset == STATUS_REGISTER {
+            self.maximum_fill = self.maximum_fill.max(queue_count(v));
+            if v & STATUS_QUEUE_FULL != 0 {
                 self.full_reads += 1;
             }
         }
@@ -349,6 +383,7 @@ impl<R: RegisterWindowAndClock> RegisterWindowAndClock for QueueWatch<R> {
     }
 }
 
+#[cfg(feature = "storage_read_matrix")]
 /// One multi-block read of the matrix: its card clock, length, outcome and what the queue did.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. One row of the matrix of multi-block reads.
@@ -376,6 +411,7 @@ pub struct MatrixRow {
     pub after: [u32; 4],
 }
 
+#[cfg(feature = "storage_read_matrix")]
 /// The card clocks the matrix reads at: the transfer rate and two halvings of it.
 ///
 /// Name: ratified 2026-11-05 (UTC), #3276. The card clocks of the matrix; the unit is spelled out as
@@ -385,11 +421,13 @@ pub const MATRIX_HERTZ: [u32; 3] = [
     sd::TRANSFER_HERTZ / 2,
     sd::TRANSFER_HERTZ / 4,
 ];
+#[cfg(feature = "storage_read_matrix")]
 /// The `CMD18` lengths the matrix reads, in blocks.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. The `CMD18` lengths of the matrix, in blocks.
 pub const MATRIX_BLOCKS: [u32; 4] = [2, 8, 32, 128];
 
+#[cfg(feature = "storage_read_matrix")]
 /// **Read the same blocks at each clock and length, re-identifying the card before every read**,
 /// so a read that leaves the card mid-transfer cannot fail the next one. Read-only: `CMD18` from
 /// `logical_block_address` and identification, nothing else. `buffer` holds at least the longest
@@ -423,14 +461,10 @@ pub fn read_matrix<R: RegisterWindowAndClock>(
             let microseconds = host.registers_mut().now_microseconds().wrapping_sub(start);
             let watch = host.registers_mut();
             let after = [
-                watch.inner.read(crate::registers::STATUS_REGISTER),
-                watch.inner.read(crate::registers::RINTSTS),
-                watch
-                    .inner
-                    .read(crate::registers::TRANSFERRED_CARD_BYTE_COUNT),
-                watch
-                    .inner
-                    .read(crate::registers::TRANSFERRED_HOST_BYTE_COUNT),
+                watch.inner.read(STATUS_REGISTER),
+                watch.inner.read(RAW_INTERRUPT_STATUS_REGISTER),
+                watch.inner.read(TRANSFERRED_CARD_BYTE_COUNT),
+                watch.inner.read(TRANSFERRED_HOST_BYTE_COUNT),
             ];
             row(MatrixRow {
                 asked_hertz: hertz,
@@ -445,4 +479,89 @@ pub fn read_matrix<R: RegisterWindowAndClock>(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(feature = "storage_read_matrix")]
+    /// `QueueWatch` is what says whether the VisionFive 2's queue filled: its peak and full count must come from
+    /// `STATUS_REGISTER` alone, count every full read, and start again at `clear`.
+    #[test_case]
+    fn the_watch_counts_status_fill_and_nothing_else() {
+        /// `STATUS_REGISTER` reads `status`; every other register reads all ones.
+        struct Fixed {
+            status: u32,
+        }
+        impl RegisterWindowAndClock for Fixed {
+            fn read(&mut self, o: u32) -> u32 {
+                if o == STATUS_REGISTER {
+                    self.status
+                } else {
+                    u32::MAX
+                }
+            }
+            fn write(&mut self, _: u32, _: u32) {}
+            fn now_microseconds(&mut self) -> u64 {
+                0
+            }
+        }
+        // FIFO count in bits 29:17, the full flag in bit 3.
+        let mut w = QueueWatch::new(Fixed { status: 5 << 17 });
+        w.read(RAW_INTERRUPT_STATUS_REGISTER);
+        assert_eq!((w.maximum_fill, w.full_reads), (0, 0));
+        w.read(STATUS_REGISTER);
+        assert_eq!((w.maximum_fill, w.full_reads), (5, 0));
+        let mut w = QueueWatch::new(Fixed {
+            status: (128 << 17) | STATUS_QUEUE_FULL,
+        });
+        w.read(STATUS_REGISTER);
+        w.read(STATUS_REGISTER);
+        assert_eq!((w.maximum_fill, w.full_reads), (128, 2));
+        w.clear();
+        assert_eq!((w.maximum_fill, w.full_reads), (0, 0));
+    }
+
+    /// The pattern, worked by hand for a few bytes:
+    /// `i * 31 ^ logical_block_address * 7 ^ 0x5a ^ i >> 8`, each in eight bits. The `i >> 8` term is
+    /// what makes a sector's two halves differ.
+    #[test_case]
+    fn the_write_pattern_is_the_formula_and_its_halves_differ() {
+        assert_eq!(scratch_pattern_byte(0, 0), 0x5a);
+        assert_eq!(scratch_pattern_byte(0, 1), 31 ^ 0x5a);
+        assert_eq!(scratch_pattern_byte(1, 0), 7 ^ 0x5a);
+        assert_eq!(scratch_pattern_byte(3, 5), 155 ^ 21 ^ 0x5a);
+        assert_eq!(scratch_pattern_byte(0, 256), 0x5a ^ 1);
+        assert!(
+            (0..256)
+                .map(|i| scratch_pattern_byte(9, i))
+                .ne((256..512).map(|i| scratch_pattern_byte(9, i)))
+        );
+    }
+
+    /// The failure prints a sentence naming the block.
+    #[test_case]
+    fn the_read_failure_names_its_block() {
+        use core::fmt::Write;
+        struct Text([u8; 96], usize);
+        impl Write for Text {
+            fn write_str(&mut self, s: &str) -> core::fmt::Result {
+                self.0[self.1..self.1 + s.len()].copy_from_slice(s.as_bytes());
+                self.1 += s.len();
+                Ok(())
+            }
+        }
+        let mut t = Text([0; 96], 0);
+        write!(
+            t,
+            "{}",
+            ReadOnlyProbeFailure::Read(7, BlockTransferError::Length)
+        )
+        .unwrap();
+        assert_eq!(
+            &t.0[..t.1],
+            b"reading block 7 failed: the buffer is empty or not a whole number of blocks"
+        );
+    }
 }

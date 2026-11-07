@@ -288,11 +288,6 @@ pub(crate) const RINTSTS_ALL: u32 = 0xffff;
 #[doc(alias = "status register")]
 #[doc(alias = "STATUS")]
 pub const STATUS_REGISTER: u32 = 0x048;
-/// **FIFO full** (`STATUS_FIFO_FULL`, the databook's `fifo_full`, which `dwmmc-host` keeps): the
-/// FIFO is full.
-#[doc(alias = "queue full")]
-#[cfg(any(test, feature = "bench"))]
-pub(crate) const STATUS_FIFO_FULL: u32 = 1 << 3;
 /// **Data busy** (OpenBSD's `SDMMC_STATUS_DATA_BUSY`): the card is holding DAT0 low (busy after a
 /// write or an R1b command).
 #[doc(alias = "data busy")]
@@ -534,7 +529,7 @@ pub(crate) const DW_MMC_240A: u32 = 0x240a;
 
 /// **Where the data FIFO is**, given `VERID`: `0x200` from release 2.40a, `0x100` before. Linux's
 /// `dw_mci_probe` makes the same test; OpenBSD assumes `0x200` and so supports only the later
-/// releases. Reading the version rather than assuming it is what lets the bench transcript say
+/// releases. Reading the version rather than assuming it is what lets a board transcript say
 /// which applied.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors,

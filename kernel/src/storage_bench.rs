@@ -12,9 +12,8 @@
 //! - It re-initializes the card U-Boot booted from, so it halts rather than hand the card back.
 //! - The eMMC socket is probed read-only, always.
 
-use designware_mobile_storage::bench::{
-    self, ReadOnlyProbeFailure, ReadOnlyProbeReport, ScratchWriteVerdict,
-};
+mod bench;
+
 use designware_mobile_storage::host_controller::{
     Error, HostController, Identity, RegisterWindowAndClock,
 };
@@ -27,6 +26,7 @@ use designware_mobile_storage::sd::{
     self, BLOCK_BYTES, BlockTransferError, CardKind, InitializationError,
 };
 
+use self::bench::{ReadOnlyProbeFailure, ReadOnlyProbeReport, ScratchWriteVerdict};
 use crate::designware_mobile_storage::{Region, Window};
 use crate::{arch, println};
 
@@ -112,8 +112,6 @@ enum Outcome {
     NoCard(InitializationError),
     /// A read failed: the block and the error.
     ReadFailed(u64, BlockTransferError),
-    /// The probe stopped for a reason this build does not know (a variant the crate added later).
-    ProbeStopped(ReadOnlyProbeFailure),
     /// Read-only, and every polled read succeeded: the timed rate in KiB/s, and the IDMAC phase.
     ReadOk(u64, Dma),
     /// Read, then the scratch write test: the rate, the test's verdict, and the IDMAC phase.
@@ -203,7 +201,6 @@ fn print_verdict(o: &Outcome) {
             println!("storage-bench: verdict SKIPPED: the tree describes no microSD controller");
         }
         Outcome::NoCard(e) => println!("storage-bench: verdict NO-CARD: {e:?}"),
-        Outcome::ProbeStopped(e) => println!("storage-bench: verdict FAILED: probe stopped {e:?}"),
         Outcome::Controller(e) => println!("storage-bench: verdict FAILED: controller {e:?}"),
         Outcome::ReadFailed(lba, e) => {
             println!("storage-bench: verdict FAILED: read of block {lba}: {e:?}");
@@ -351,10 +348,6 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
                 (status >> 17) & 0x1fff
             );
             return Outcome::ReadFailed(lba, e);
-        }
-        Err(e) => {
-            say!(slot, "probe stopped: {e:?}");
-            return Outcome::ProbeStopped(e);
         }
         Ok(r) => r,
     };
@@ -766,7 +759,7 @@ fn pages(count: usize) -> Option<&'static mut [u8]> {
 /// error. Read-only, after the probe, whose clock bring-up it relies on.
 #[cfg(feature = "storage_read_matrix")]
 fn read_matrix(slot: &Slot) {
-    use designware_mobile_storage::bench::QueueWatch;
+    use self::bench::QueueWatch;
     let Some(buf) = pages(READ_PAGES) else {
         println!("storage-matrix: no pages for a buffer");
         return;
