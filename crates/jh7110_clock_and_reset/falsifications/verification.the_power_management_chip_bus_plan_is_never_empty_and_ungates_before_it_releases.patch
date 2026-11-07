@@ -1,4 +1,4 @@
-Falsifies `jh7110_clock_and_reset::verification::the_pmic_bus_plan_is_never_empty_and_ungates_before_it_releases`.
+Falsifies `jh7110_clock_and_reset::verification::the_power_management_chip_bus_plan_is_never_empty_and_ungates_before_it_releases`.
 
 The defect: the fallback to the constant plan is skipped, so a bus whose specifiers are all
 unusable is reported as `from_tree` with an empty plan and the PMIC bus is never brought up.
