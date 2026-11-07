@@ -223,7 +223,7 @@ const VENDOR_RESET_GENERATOR_ALWAYS_ON_NAME: &[u8] = b"aoncrg";
 pub(crate) const AONCLK_GMAC0_AHB: u32 = 2;
 /// `JH7110_AONCLK_GMAC0_AXI`: a gate, `gmac0`'s `stmmaceth` (its CSR and bus clock). Word `0x0c`.
 pub(crate) const AONCLK_GMAC0_AXI: u32 = 3;
-/// **`gmac0` transmit clock** (AONCLK_GMAC0_TX, `JH7110_AONCLK_GMAC0_TX` in \[mainline-ids\]): a gate with a two-way mux, `gmac0_gtxclk` (0) or
+/// **`gmac0` transmit clock** (`AONCLK_GMAC0_TX`, `JH7110_AONCLK_GMAC0_TX` in \[mainline-ids\]): a gate with a two-way mux, `gmac0_gtxclk` (0) or
 /// `gmac0_rmii_rtx` (1). Word `0x14`, which the vendor U-Boot calls `GMAC5_0_CLK_TX_SHIFT`
 /// and sets bit 24 of (`jh7110_gmac_sel_tx_to_rgmii` in \[vendor-board\]).
 ///
@@ -415,17 +415,17 @@ pub(crate) const POWER_MANAGEMENT_CHIP_BUS_BRING_UP: &[Step] = &[
     Step::DeassertReset(SYSRST_I2C5_APB),
 ];
 
-/// **eMMC controller bus clock** (SYSCLK_SDIO0_AHB, `JH7110_SYSCLK_SDIO0_AHB` in \[mainline-ids\]), the vendor header's `JH7110_SDIO0_CLK_AHB`, both
+/// **eMMC controller bus clock** (`SYSCLK_SDIO0_AHB`, `JH7110_SYSCLK_SDIO0_AHB` in \[mainline-ids\]), the vendor header's `JH7110_SDIO0_CLK_AHB`, both
 /// **91**: the eMMC socket's controller's bus clock, `biu` in both trees. Word `0x16c`.
 #[doc(alias = "JH7110_SYSCLK_SDIO0_AHB")]
 #[doc(alias = "emmc controller bus clock")]
 pub(crate) const SYSCLK_SDIO0_AHB: u32 = 91;
-/// **microSD controller bus clock** (SYSCLK_SDIO1_AHB, `JH7110_SYSCLK_SDIO1_AHB`; vendor `JH7110_SDIO1_CLK_AHB`), both **92**: the microSD slot's
+/// **microSD controller bus clock** (`SYSCLK_SDIO1_AHB`, `JH7110_SYSCLK_SDIO1_AHB`; vendor `JH7110_SDIO1_CLK_AHB`), both **92**: the microSD slot's
 /// controller's bus clock. Word `0x170`.
 #[doc(alias = "JH7110_SYSCLK_SDIO1_AHB")]
 #[doc(alias = "microsd controller bus clock")]
 pub(crate) const SYSCLK_SDIO1_AHB: u32 = 92;
-/// **eMMC controller card clock** (SYSCLK_SDIO0_SDCARD, `JH7110_SYSCLK_SDIO0_SDCARD`; vendor `JH7110_SDIO0_CLK_SDCARD`), both **93**: the eMMC
+/// **eMMC controller card clock** (`SYSCLK_SDIO0_SDCARD`, `JH7110_SYSCLK_SDIO0_SDCARD`; vendor `JH7110_SDIO0_CLK_SDCARD`), both **93**: the eMMC
 /// controller's card clock source, `ciu`, a gated divider that mainline (\[mainline-common-dts\]) and
 /// the vendor branch head (\[vendor-board-dts-head\]) assign 50 MHz; the board file at
 /// `VF2_v2.10.4` (\[vendor-board-dts\]) assigns none. Word `0x174`.
@@ -436,17 +436,17 @@ pub(crate) const SYSCLK_SDIO1_AHB: u32 = 92;
 #[doc(alias = "JH7110_SYSCLK_SDIO0_SDCARD")]
 #[doc(alias = "emmc controller card clock")]
 pub(crate) const SYSCLK_SDIO0_SDCARD: u32 = 93;
-/// **microSD controller card clock** (SYSCLK_SDIO1_SDCARD, `JH7110_SYSCLK_SDIO1_SDCARD`; vendor `JH7110_SDIO1_CLK_SDCARD`), both **94**: the microSD
+/// **microSD controller card clock** (`SYSCLK_SDIO1_SDCARD`, `JH7110_SYSCLK_SDIO1_SDCARD`; vendor `JH7110_SDIO1_CLK_SDCARD`), both **94**: the microSD
 /// controller's `ciu`. Word `0x178`.
 #[doc(alias = "JH7110_SYSCLK_SDIO1_SDCARD")]
 #[doc(alias = "microsd controller card clock")]
 pub(crate) const SYSCLK_SDIO1_SDCARD: u32 = 94;
-/// **eMMC controller reset** (SYSRST_SDIO0_AHB, `JH7110_SYSRST_SDIO0_AHB` in \[mainline-ids\]): the eMMC controller's one reset. Bit 0 of the
+/// **eMMC controller reset** (`SYSRST_SDIO0_AHB`, `JH7110_SYSRST_SDIO0_AHB` in \[mainline-ids\]): the eMMC controller's one reset. Bit 0 of the
 /// word at `0x300`.
 #[doc(alias = "JH7110_SYSRST_SDIO0_AHB")]
 #[doc(alias = "emmc controller reset")]
 pub(crate) const SYSRST_SDIO0_AHB: u32 = 64;
-/// **microSD controller reset** (SYSRST_SDIO1_AHB, `JH7110_SYSRST_SDIO1_AHB`): the microSD controller's one reset. Bit 1 of the word at `0x300`.
+/// **microSD controller reset** (`SYSRST_SDIO1_AHB`, `JH7110_SYSRST_SDIO1_AHB`): the microSD controller's one reset. Bit 1 of the word at `0x300`.
 #[doc(alias = "JH7110_SYSRST_SDIO1_AHB")]
 #[doc(alias = "microsd controller reset")]
 pub(crate) const SYSRST_SDIO1_AHB: u32 = 65;

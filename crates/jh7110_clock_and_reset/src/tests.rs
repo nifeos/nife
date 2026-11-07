@@ -558,8 +558,8 @@ fn register_property_cells_parse_in_both_spellings() {
 }
 
 /// **The PLL2 chain's guards and its post-divider**, each on its own. The vendor table's rows all
-/// have post_divider_1 at 0 (divide by one), so the field is exercised here with a 1 (divide by two);
-/// and integer mode needs both of dacpd and dsmpd and a nonzero feedback_divider, not any one of them.
+/// have `post_divider_1` at 0 (divide by one), so the field is exercised here with a 1 (divide by two);
+/// and integer mode needs both of dacpd and dsmpd and a nonzero `feedback_divider`, not any one of them.
 #[test]
 fn the_phase_locked_loop_2_chain_needs_both_mode_bits_and_honors_its_post_divider() {
     let integer = InterIntegratedCircuitClockWords {
