@@ -5,11 +5,10 @@ wraps past 2^64 during the second of power-up panics the driver.
 
 Expected to fail: the subtraction overflow check in `sd_power_up`, which is the property the
 harness states (the bring-up panics nowhere).
-
 diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobile_storage/src/sd.rs
 --- a/crates/designware_mobile_storage/src/sd.rs
 +++ b/crates/designware_mobile_storage/src/sd.rs
-@@ -441,7 +441,7 @@
+@@ -444,7 +444,7 @@
          if operation_conditions & OPERATION_CONDITIONS_BUSY_DONE != 0 {
              return Ok(operation_conditions);
          }

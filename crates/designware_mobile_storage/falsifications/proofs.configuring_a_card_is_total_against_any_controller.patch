@@ -4,11 +4,10 @@ The defect: an SD card whose CSD sizes nothing is configured anyway, so `identif
 a card of zero blocks only by its later check, and a caller of the step alone gets one.
 
 Expected to fail: `assert!(card.blocks > 0)`.
-
 diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobile_storage/src/sd.rs
 --- a/crates/designware_mobile_storage/src/sd.rs
 +++ b/crates/designware_mobile_storage/src/sd.rs
-@@ -381,9 +381,6 @@
+@@ -384,9 +384,6 @@
      maximum_bus_width: u8,
  ) -> Result<(), InitializationError> {
      let card_specific_data = CardSpecificData::from_sd_register(card_specific_data_raw);

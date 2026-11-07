@@ -6,11 +6,10 @@ as long as it likes.
 
 Expected to fail: `the driver read the clock again after its deadline had passed`, in the
 adversarial clock.
-
 diff --git a/crates/designware_mobile_storage/src/internal_direct_memory_access.rs b/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
 --- a/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
 +++ b/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
-@@ -384,7 +384,7 @@
+@@ -387,7 +387,7 @@
                  return Ok(());
              }
              let now = self.registers.now_microseconds();
