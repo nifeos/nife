@@ -191,7 +191,7 @@ pub struct SimulatedHostController {
     /// Set when a command was sent while the card clock was off.
     pub clockless_command: bool,
     /// The release `VERID` reports, which decides where the FIFO is.
-    verid: u32,
+    version_identification: u32,
     /// Set when the driver wrote the FIFO with no write transfer in progress.
     pub stray_queue_write: bool,
     /// Faults to inject: the command index, which of its occurrences (from 0), and what happens.
@@ -292,7 +292,7 @@ impl SimulatedHostController {
             fail_next_read_crc: false,
             busy_polls: 3,
             clockless_command: false,
-            verid: VERID,
+            version_identification: VERID,
             stray_queue_write: false,
             faults: Vec::new(),
             seen: [0; 64],
@@ -336,12 +336,15 @@ impl SimulatedHostController {
         s
     }
 
-    /// The same controller, reporting release `verid` instead (an older one puts the FIFO at
+    /// The same controller, reporting release `version_identification` instead (an older one puts the FIFO at
     /// `0x100`, where a later one has the card threshold register).
     #[must_use]
-    pub(crate) fn with_verid(mut self, verid: u32) -> SimulatedHostController {
-        self.verid = verid;
-        self.registers[(registers::VERID / 4) as usize] = verid;
+    pub(crate) fn with_version_identification(
+        mut self,
+        version_identification: u32,
+    ) -> SimulatedHostController {
+        self.version_identification = version_identification;
+        self.registers[(registers::VERID / 4) as usize] = version_identification;
         self
     }
 
@@ -801,7 +804,7 @@ impl SimulatedHostController {
     /// A card read threshold enabled above the FIFO's size in bytes, which the databook does not
     /// allow and Linux's `dw_mci_ctrl_thld` refuses to program.
     fn is_threshold_beyond_queue(&self) -> bool {
-        if registers::queue_offset(self.verid) == registers::CARDTHRCTL {
+        if registers::queue_offset(self.version_identification) == registers::CARDTHRCTL {
             return false;
         }
         let t = self.peek(registers::CARDTHRCTL);
@@ -828,7 +831,7 @@ impl SimulatedHostController {
 
 impl RegisterWindowAndClock for SimulatedHostController {
     fn read(&mut self, offset: u32) -> u32 {
-        let queue_offset = registers::queue_offset(self.verid);
+        let queue_offset = registers::queue_offset(self.version_identification);
         if offset == queue_offset {
             let w = self.queue.pop_front().unwrap_or(0xdead_dead);
             self.pump();
@@ -890,7 +893,7 @@ impl RegisterWindowAndClock for SimulatedHostController {
     }
 
     fn write(&mut self, offset: u32, value: u32) {
-        let queue_offset = registers::queue_offset(self.verid);
+        let queue_offset = registers::queue_offset(self.version_identification);
         if offset == queue_offset {
             if !self.transfer.as_ref().is_some_and(|t| t.write) {
                 self.stray_queue_write = true;

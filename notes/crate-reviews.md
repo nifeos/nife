@@ -58,8 +58,7 @@ against itself.
   (the packet pairs them), and `script/crate-standalone` ran each patch and saw its harness fail.
   `counter_frequency_contract` has no harness.
 - Units in names. The rule of 2026-11-03 spells every unit out (`_HERTZ`, not `_HZ`). A release
-  review re-opens a name ratified before a later rule. One name still carries a unit symbol,
-  `Refusal::Above4GiB` in `designware_mobile_storage`.
+  review re-opens a name ratified before a later rule.
 
 ## `file_allocation_table`, step 2
 
@@ -232,11 +231,11 @@ Recommendation. Item 9 needs a home before the review.
 The whole package is
 [crate-reviews/designware-mobile-storage.md](crate-reviews/designware-mobile-storage.md).
 
-Name and version. `designware_mobile_storage` `0.1.0`, ratified. 110 `Name:` blocks, all ratified.
+Name and version. `designware_mobile_storage` `0.1.0`, ratified. 111 `Name:` blocks, all ratified.
 
 API. The whole SD and eMMC driver for the Synopsys dw-mshc behind one trait,
 `RegisterWindowAndClock`, in eight public modules and about 100 items. The error enums and `CardKind` are
-`#[non_exhaustive]` (the maintainer's provisional ruling), and the errors implement `Display` and
+`#[non_exhaustive]` (ruled), and the errors implement `Display` and
 `core::error::Error`.
 
 Proofs. Eight harnesses. All eight prove and all eight patches fail.
@@ -251,7 +250,6 @@ Outstanding before the move.
 
 | item | owner |
 |---|---|
-| Four architect decisions: `Refusal::Above4GiB`, two address registers, three parameter names, and the `#[non_exhaustive]` set. | architect |
 | `repository` in the manifest. | move lane |
 
 Recommendation. Ready for review.
