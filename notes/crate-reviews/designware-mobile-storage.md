@@ -14,7 +14,8 @@ caller implements one trait, `RegisterWindowAndClock` (read a register, write on
 microsecond clock), and every sequence runs on a host against a simulated controller and card. It
 is `no_std`, with no allocator, no `unsafe` and no dependency. Eight Kani harnesses prove its
 parsers and bounds. Every public name has a ratified `Name:` block, and the compile-time checks have no public name.
-The board's test steps live in the kernel's storage bench, not here. No decision is open.
+The board's test steps live in the kernel's storage bench, not here. The public names under Names
+that break a naming rule wait for the architect.
 
 ## Identity
 
@@ -81,29 +82,44 @@ identification decode. 91 host tests drive those against the simulator.
 `python3 helpers/name_release.py --draft designware_mobile_storage` lists 111 rows. All 111 read
 ratified. Nothing is provisional.
 
-Against the rulings in force, checked with the template's own checks
-(`vendor/crate-workflows/helpers/`, run with `--manifest` over `src/*.rs`):
+Against the rulings in force, with the template's checks (`unit_symbols.py`, `spelled_out.py`,
+`question_shape.py`, `british_spelling.py`, `register_names.py` and the report-only
+`abbreviations.py`, run with `--manifest` over `src/*.rs`) and a read of every name:
 
 | rule | result |
 |---|---|
-| units spelled out (`unit_symbols.py`) | 0 findings. `_HERTZ`, `_MICROSECONDS` and `_BYTES` throughout. The checker reads suffixes only, and no name carries a unit symbol in another position. |
-| spelled-out words (`spelled_out.py`) | 0 findings. Six private source-kept constants open their doc comment with `(NAME, source)`, and no test name says `spec`. |
-| question shape (`question_shape.py`) | 0 findings. The private wait is `is_condition_met_within`, and the simulator predicates take `is_`. |
-| British spelling | 0 findings. |
+| units spelled out | passes. `_HERTZ`, `_MICROSECONDS` and `_BYTES` throughout. |
+| spelled-out words, accepted acronyms only | fails on the public names below. Every non-public name is spelled out: a register, bit, descriptor or command constant says what it is (`RAW_INTERRUPT_STATUS_REGISTER`, `SD_SEND_OPERATION_CONDITIONS`) and carries its source's spelling in `doc(alias)` (`RINTSTS`, `SD_SEND_OP_COND`), cited at the opening of its doc comment. |
+| register shape (`_REGISTER`, `_MASK`, a size's unit) | fails on six public register offsets below. Every non-public offset ends `_REGISTER` and every multi-bit constant `_MASK`. |
+| address naming | fails on two public names below. The other `register_names.py` address findings name a card's relative address or a logical block address, which are not memory locations. |
+| question shape | passes. |
+| British spelling | passes. |
 | `id`, `sd`, `jh7110` | accepted words and a chip name. |
-| aliases of an old nife spelling | none. Every `doc(alias)` is a specification or databook term. |
+| aliases of an old nife spelling | none. Every `doc(alias)` is a specification, databook or OpenBSD term. |
+| prose acronyms (`prose_acronyms.py`) | fails: 62 acronyms in the README and doc comments are not expanded where first used (`FIFO`, `CSD`, `OCR`, `MMIO`, the command numbers `CMD0` to `ACMD41` and others). |
 
-The two address registers, `CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER` and
-`CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER`, hold the descriptor address and buffer address the
-controller is on, as the bus sees them, which is physical on every board this driver runs on.
-`Refusal::AboveFourGibibytes` spells its unit out. The parameters of `registers::queue_offset`,
-`queue_width` and `uses_64_bit_direct_memory_access` are `version_identification` and
-`hardware_configuration`, and `jh7110::Slot::from_node` takes `property`. The renamed items carry
-the old spelling and the rule that refused it in their `Name:` blocks, and none carries a
-`doc(alias)` of it.
+Public names that break a rule, with a recommended name. Each is the architect's call.
 
-The private `pub(crate)` constants keep the databook and OpenBSD spellings
-(`CONTROL_FIFO_RESET`, `CONTROL_DMA_RESET`, `SEND_OP_COND`) through the kept-name form.
+| name | rule it breaks | recommended |
+|---|---|---|
+| `registers::CONTROL` | a register offset ends `_REGISTER` | `CONTROL_REGISTER` |
+| `registers::WRITE_PROTECT` | a register offset ends `_REGISTER` | `WRITE_PROTECT_REGISTER` |
+| `registers::TRANSFERRED_CARD_BYTE_COUNT` | a register offset ends `_REGISTER` | `TRANSFERRED_CARD_BYTE_COUNT_REGISTER` |
+| `registers::TRANSFERRED_HOST_BYTE_COUNT` | a register offset ends `_REGISTER` | `TRANSFERRED_HOST_BYTE_COUNT_REGISTER` |
+| `registers::HARDWARE_RESET` | a register offset ends `_REGISTER` | `HARDWARE_RESET_REGISTER` |
+| `registers::BUS_MODE` | a register offset ends `_REGISTER` | `BUS_MODE_REGISTER` |
+| `command::Response::has_crc` | `crc` is not an accepted acronym | `has_cyclic_redundancy_check`, alias `crc` |
+| `command::Data::block_size` | a size carries its unit | `block_bytes` |
+| `sd::CardKind::SdV1`, `SdV2` | `V` abbreviates version | `SdVersion1`, `SdVersion2` |
+| `internal_direct_memory_access::DirectMemoryAccessRegion::bus_address` | an address is virtual or physical | `physical_address` |
+| `jh7110::Slot::base`, and the `base` parameter of `Slot::from_node` | an address is virtual or physical | `registers_physical_address` |
+| `jh7110::Slot::size`, and the `size` parameter of `Slot::from_node` | a size carries its unit | `registers_size_bytes` |
+| `host_controller::clock_divider`, parameters `base` and `target` | a quantity carries its unit | `base_hertz`, `target_hertz` |
+| `host_controller::card_clock`, and its parameter `base` | a quantity carries its unit | `card_clock_hertz`, `base_hertz` |
+| `host_controller::queue_step`, parameters `depth` and `remaining` | a quantity carries its unit | `depth_words`, `remaining_bytes` |
+| `card::extract_bits`, parameter `len` | a length carries its unit | `width_bits` |
+| `registers::queue_width` | a quantity carries its unit | `queue_width_bytes` |
+| `jh7110::QUEUE_DEPTH`, `Slot::queue_depth`, `HostController::queue_depth` and the `queue_depth` parameter of `HostController::new` | a count names the things | `QUEUE_DEPTH_WORDS`, `queue_depth_words` |
 
 ## License
 
@@ -150,4 +166,4 @@ still build.
 
 ## Recommendation
 
-Ready for review.
+Ready for review once the architect rules on the public names under Names.
