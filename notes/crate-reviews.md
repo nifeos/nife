@@ -219,43 +219,10 @@ registers) is not done as far as this review could read. The manifest license fi
 
 Result of `script/crate-standalone`. Clean.
 
-Naming rules. The template's checks, run with `--manifest` over `src/*.rs`
-(`vendor/crate-workflows/helpers/`):
-
-| rule | result |
-|---|---|
-| spelled-out words (`spelled_out.py`) | 0 findings in 1,202 names. `100BASE-TX` keeps `TX` as the standard's name, in the kept form with a `doc(alias)`. |
-| units spelled out (`unit_symbols.py`) | 0 findings. Picoseconds, microamps and millivolts are spelled in the names that said `_PS`, `ua` and `mv`. |
-| question shape (`question_shape.py`) | 0 findings. `region_in_reach` and the simulator's `receiving` take `is_`. |
-| British spelling | 0 findings. |
-| aliases of an old nife spelling | none. Every `doc(alias)` is a databook, OpenBSD, Linux or IEEE term. |
-
-The word list reaches only the words it lists, so the sweep also read every identifier for clipped
-and decoder-needing words. Renamed, all private: the 66 `pub(crate)` register constants of
-`registers` (`CHAN_TX_CONTROL_ST` is `CHANNEL_TRANSMIT_CONTROL_START_TRANSMISSION`), the 24 clause 22
-register and bit constants of `management_data_input_output` (`BMCR_ANENABLE`), the Motorcomm
-register and bit constants of `motorcomm_physical_layer_device`, `PHY_INTF_RGMII`, the `_PS`
-constants, `ALWAYS_ON_SYSTEM_CONTROLLER_BASE` and `_SIZE`, the `mdio` import alias, the harness
-`an_mdio_command_word_keeps_each_address_in_its_own_field` with its patch, and the locals `nic`,
-`conf`, `rqs`, `tqs`, `rbsz`, `sel`, `des2`, `w01`, `w23`, `rxc`, `rxd` and the one-letter
-bindings of the non-test code. The source's spelling (`GMAC_CHAN_TX_CONTROL_ST`,
-`MII_BMCR`) is in each constant's doc comment and in a `doc(alias)`. Every patch still applies and
-fails its own harness.
-
-Ratified names a later rule reaches. This section renames none.
-
-| name | rule | recommended name |
-|---|---|---|
-| the parameter `i` of `layout::receive_descriptor`, `layout::transmit_descriptor` and `registers::mac_hardware_feature_register` | a one-letter parameter in a public signature | `index` |
-| the parameter `o` of `cache_coherence::classify` and `is_transmit_complete` | the same | `observation` |
-| the parameter `s` of `motorcomm_physical_layer_device::configure` and `apply_speed` | the same | `settings` |
-| the parameter `v` of `Hardware::write`, `DirectMemoryAccessRegion::write_u64`, `ManagementDataInputOutput::write` and `motorcomm_physical_layer_device::write_extended` | the same | `value` |
-| `jh7110::SystemController::base`, `size` | an address says virtual or physical, and a size carries its unit | `base_physical_address`, `size_bytes` |
-| `RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID` | the same address rule | `RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID` |
-
-Borderline, left as they are for the architect: `CRC_BYTES` and the `crc` in a test name (`CRC`
-passes the acronym test, since nobody says the expansion, but the accepted list names it nowhere),
-the simulator's `dram` field, and the `yt8531` model number.
+Names. The naming rules table, the renames and the ratified names a later rule reaches are in
+[crate-reviews/designware-ethernet.md](crate-reviews/designware-ethernet.md). The template's three
+checks find nothing. Six groups of ratified names wait for the architect, and `CRC_BYTES` is
+borderline.
 
 Outstanding before the move.
 
@@ -319,21 +286,9 @@ three `mux` report fields, `SYSTEM_BASE` and the `base` fields, `controller`, th
 `sdcard_divider_for`, and the parameters `power_management_chip_reg`, `bus_reg` and `reg_names`).
 The package lists each with its recommended name.
 
-Naming rules. The template's checks, run over `src/*.rs`:
-
-| rule | result |
-|---|---|
-| spelled-out words | 1 finding, `SDIO_BRING_UP`, which is public and listed. Eight private constants keep their dt-binding spelling in the kept form. |
-| units spelled out | 0 findings in 456 names. |
-| question shape | 0 findings. |
-| British spelling | 0 findings. |
-| aliases of an old nife spelling | none. |
-
-The sweep also renamed private names the word list does not reach (`Spec`, `OSC_HERTZ`,
-`PLL2_DEFAULT_HERTZ`, `parse_reg`, the `*_BASE` and `*_SIZE` constants, the PLL and I2C locals, the
-`pmic`, `sys`, `osc`, `pll2` and `i2c5` test names and one harness with its patch). About 20
-`SYSCLK_*`, `SYSRST_*`, `AONCLK_*`, `AONRST_*` and `STGCLK_*` binding identifiers are left as
-borderline for the architect.
+Naming rules. The spelled-out check finds `SDIO_BRING_UP`, which is public and listed. The unit,
+question-shape and British-spelling checks find nothing. The package holds the table, the renames
+and the borderline names.
 
 Outstanding before the move.
 

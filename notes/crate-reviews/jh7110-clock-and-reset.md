@@ -117,21 +117,24 @@ The template's checks, run with `--manifest` over `src/*.rs`
 | British spelling | 0 findings. |
 | aliases of an old nife spelling | none. Every `doc(alias)` is a specification, binding or databook term. |
 
-The word list reaches only the words it lists, so the sweep also read every identifier for clipped
-and decoder-needing words. Renamed, all private: `Spec` and its `spec` and `specs` are
-`Specifier`, `specifier` and `specifiers`; `OSC_HERTZ` and `PLL2_DEFAULT_HERTZ` are
-`OSCILLATOR_HERTZ` and `PHASE_LOCKED_LOOP_2_DEFAULT_HERTZ`; `parse_reg` and the test constant `BUS_REG` say
-`register_property`; `sys_provider` is `system_provider`; the six `VENDOR_CLKGEN_*` and
-`VENDOR_RSTGEN_*` names say `CLOCK_GENERATOR` and `RESET_GENERATOR`; `ALWAYS_ON_BASE`,
-`SYSTEM_TOP_GROUP_BASE` and the three `*_SIZE` constants say `PHYSICAL_ADDRESS` and `SIZE_BYTES`;
-`STANDARD_MODE_CON` is `STANDARD_MODE_CONTROL`; the PLL locals `fbdiv`, `prediv`, `prediv_raw` and
-`postdiv1` and the I2C locals `hcnt`, `lcnt` and `minimum_lcnt` are spelled out; `u32be`, `div`
-and the test locals `osc`, `pll2`, `frac`, `stg`, `aon`, `sys` and `rst` say what they hold; the
-harness `the_pmic_bus_plan_is_never_empty_and_ungates_before_it_releases` and its patch say
-`power_management_chip`, and eight test names say `power_management_chip`,
-`inter_integrated_circuit_5`, `oscillator`, `phase_locked_loop_2`, `system` and
-`sd_input_output` where they said `pmic`, `i2c5`, `osc`, `pll2`, `sys` and `sdio`. Every patch
-still applies and fails its own harness.
+The word list reaches only the words it lists. The sweep also read every identifier for clipped
+and decoder-needing words. Renamed, all private:
+
+| was | now |
+|---|---|
+| `Spec`, `spec`, `specs` | `Specifier`, `specifier`, `specifiers` |
+| `OSC_HERTZ`, `PLL2_DEFAULT_HERTZ` | `OSCILLATOR_HERTZ`, `PHASE_LOCKED_LOOP_2_DEFAULT_HERTZ` |
+| `parse_reg`, the test constant `BUS_REG` | `parse_register_property`, `BUS_REGISTER_PROPERTY` |
+| `sys_provider` | `system_provider` |
+| `VENDOR_CLKGEN_*`, `VENDOR_RSTGEN_*` | `VENDOR_CLOCK_GENERATOR_*`, `VENDOR_RESET_GENERATOR_*` |
+| `ALWAYS_ON_BASE`, `SYSTEM_TOP_GROUP_BASE` and the three `*_SIZE` constants | `*_BASE_PHYSICAL_ADDRESS` and `*_SIZE_BYTES` |
+| `STANDARD_MODE_CON` | `STANDARD_MODE_CONTROL` |
+| the locals `fbdiv`, `prediv`, `prediv_raw`, `postdiv1`, `hcnt`, `lcnt`, `minimum_lcnt`, `u32be`, `div` | `feedback_divider`, `pre_divider`, `pre_divider_raw`, `post_divider_1`, `high_count`, `low_count`, `minimum_low_count`, `big_endian_word`, `divider` |
+| the test locals `osc`, `pll2`, `frac`, `stg`, `aon`, `sys`, `rst` | words that say what they hold |
+| the harness `the_pmic_bus_plan_is_never_empty_and_ungates_before_it_releases` and its patch | the same with `power_management_chip` for `pmic` |
+| eight test names with `pmic`, `i2c5`, `osc`, `pll2`, `sys`, `sdio` or `syscrg` | the same with each word spelled out |
+
+Every patch still applies and fails its own harness.
 
 Borderline private names, left as they are for the architect:
 
