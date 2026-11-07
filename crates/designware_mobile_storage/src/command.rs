@@ -22,7 +22,7 @@ use crate::registers;
 /// OpenBSD's `sdmmcreg.h` uses the same words.
 #[doc(alias = "reset to idle")]
 pub const GO_IDLE_STATE: u8 = 0;
-/// **CMD1, send operation conditions** (JESD84-B51's `SEND_OP_COND`, eMMC only): negotiate the
+/// **CMD1, send operation conditions** (`SEND_OP_COND`, JESD84-B51, eMMC only): negotiate the
 /// voltage and wait for power-up. The response is R3.
 #[doc(alias = "multimedia card operation conditions")]
 pub(crate) const SEND_OP_COND: u8 = 1;
@@ -94,7 +94,7 @@ pub(crate) const APP_CMD: u8 = 55;
 /// bits. The response is R1.
 #[doc(alias = "bus width")]
 pub(crate) const SET_BUS_WIDTH: u8 = 6;
-/// **ACMD41, SD send operation conditions** (the SD specification's `SD_SEND_OP_COND`): negotiate
+/// **ACMD41, SD send operation conditions** (`SD_SEND_OP_COND`, the SD specification): negotiate
 /// the voltage and capacity support and wait for power-up. The response is R3.
 #[doc(alias = "SD operation conditions")]
 pub(crate) const SD_SEND_OP_COND: u8 = 41;

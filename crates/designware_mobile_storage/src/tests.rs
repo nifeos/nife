@@ -36,7 +36,7 @@ fn master_boot_record_card(blocks: usize, first: u32) -> SimulatedHostController
 }
 
 #[test]
-fn an_sdhc_card_is_identified_selected_and_widened_in_the_spec_order() {
+fn an_sdhc_card_is_identified_selected_and_widened_in_the_specification_order() {
     let mut h = host(CardKind::SdHighCapacity, 8192);
     let card = sd::identify(&mut h, 4).unwrap();
     assert_eq!(card.kind, sd::CardKind::SdHighCapacity);
@@ -191,7 +191,7 @@ fn the_read_only_probe_reads_and_never_writes() {
     );
 }
 
-/// The read matrix is radon's diagnosis for its failing `CMD18`, and a bench boot that wedged on
+/// The read matrix is the VisionFive 2's diagnosis for its failing `CMD18`, and a bench boot that wedged on
 /// its second row would waste a power cycle: every row must read the right bytes, write nothing,
 /// and see the FIFO fill.
 #[test]
@@ -220,7 +220,7 @@ fn the_read_matrix_reads_every_row_and_never_writes() {
     assert_eq!(buffer, want);
 }
 
-/// `QueueWatch` is what says whether radon's queue filled: its peak and full count must come from
+/// `QueueWatch` is what says whether the VisionFive 2's queue filled: its peak and full count must come from
 /// `STATUS_REGISTER` alone, count every full read, and start again at `clear`.
 #[test]
 fn the_watch_counts_status_fill_and_nothing_else() {
@@ -875,5 +875,37 @@ fn an_sd_card_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
         receiver.recv_timeout(std::time::Duration::from_secs(5)),
         Ok(true),
         "power-up neither finished nor gave up"
+    );
+}
+
+/// Every error enum prints a sentence and is a `core::error::Error`, so a caller can box it or
+/// print it with `{}`.
+#[test]
+fn the_error_enums_display_and_implement_the_error_trait() {
+    use crate::host_controller::Error;
+    use crate::internal_direct_memory_access::Refusal;
+    use crate::sd::{BlockTransferError, InitializationError};
+    fn text<E: core::error::Error>(e: E) -> std::string::String {
+        std::format!("{e}")
+    }
+    assert_eq!(text(Error::Busy), "the card stayed busy past the deadline");
+    assert_eq!(
+        text(Refusal::Alignment(0x1001)),
+        "the region at 0x1001 does not start on a page"
+    );
+    assert_eq!(
+        text(InitializationError::GoIdle(Error::NoResponse(0))),
+        "CMD0 failed: no card answered command 0"
+    );
+    assert_eq!(
+        text(BlockTransferError::Host(Error::ClockUpdate)),
+        "the transfer failed: the controller did not take a clock update"
+    );
+    assert_eq!(
+        text(bench::ReadOnlyProbeFailure::Read(
+            7,
+            BlockTransferError::Length
+        )),
+        "reading block 7 failed: the buffer is empty or not a whole number of blocks"
     );
 }

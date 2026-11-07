@@ -1,6 +1,6 @@
 //! The bench step's two halves, as logic: the read-only probe and the scratch write test that a
 //! kernel's storage bench runs on a VisionFive 2, here so their order of operations, which is the
-//! safety argument, is tested on a host rather than first tried on the card radon boots from.
+//! safety argument, is tested on a host rather than first tried on the card the VisionFive 2 boots from.
 //! [`run_read_only_probe`] identifies the card, reads sector 0, parses the MBR, reads the first partition's
 //! boot sector and times a sequential read from its start; it sends no command that writes.
 //! [`run_scratch_write_test`] writes only inside [`MasterBootRecord::scratch_sector_range`]'s range, after reading what
@@ -47,12 +47,24 @@ pub struct ReadOnlyProbeReport {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3141. Where the read-only probe stopped, named for the probe. Renamed from `ReadFailure`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ReadOnlyProbeFailure {
     /// Identification failed.
     Initialization(InitializationError),
     /// A read failed: the block and the error.
     Read(u64, BlockTransferError),
 }
+
+impl core::fmt::Display for ReadOnlyProbeFailure {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Initialization(e) => write!(f, "identification failed: {e}"),
+            Self::Read(block, e) => write!(f, "reading block {block} failed: {e}"),
+        }
+    }
+}
+
+impl core::error::Error for ReadOnlyProbeFailure {}
 
 /// **The read-only probe.** `buffer` is the transfer buffer (a whole number of blocks; the timed
 /// read moves `buffer.len()` bytes per command), `timed_blocks` how many blocks to time.
@@ -190,6 +202,7 @@ pub const fn scratch_pattern_byte(logical_block_address: u64, i: usize) -> u8 {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3141. The verdict of the scratch write test, named for the test. Renamed from `WriteVerdict`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ScratchWriteVerdict {
     /// No MBR, a GPT disk, or no gap before the first partition: nothing was written.
     Refused,

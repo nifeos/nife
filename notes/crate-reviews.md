@@ -234,21 +234,31 @@ Recommendation. Item 9 needs a home before the review.
 The whole package is
 [crate-reviews/designware-mobile-storage.md](crate-reviews/designware-mobile-storage.md).
 
-Name and version. `designware_mobile_storage` `0.1.0`, ratified. 135 `Name:` blocks, all ratified.
+Name and version. `designware_mobile_storage` `0.1.0`, ratified. 129 `Name:` blocks, all ratified;
+the `bench` feature has none.
 
 API. The whole SD and eMMC driver for the Synopsys dw-mshc behind one trait,
 `RegisterWindowAndClock`, in eight public modules and about 115 items. The ninth, `bench`, serves
-this tree's bring-up and sits behind the `bench` feature.
+board bring-up and sits behind the `bench` feature. The error enums and `CardKind` are
+`#[non_exhaustive]` (the maintainer's provisional ruling), and the errors implement `Display` and
+`core::error::Error`.
 
 Proofs. Eight harnesses. All eight prove and all eight patches fail.
 
 License. `(MIT OR Apache-2.0) AND ISC`, for the code adapted from OpenBSD's `dwmmc.c`, whose notice
-`src/lib.rs` carries. #3200 settled the second notice.
+`src/lib.rs` carries.
 
-Result of `script/crate-standalone`. Clean.
+Result of `script/crate-standalone`. Clean. The template's unit, spelled-out and question-shape
+checks find nothing. No shipped text names this tree.
 
-Recommendation. Ready for review after two questions: `#[non_exhaustive]` (the maintainer's to
-rule provisionally) and the spelling of `Refusal::Above4GiB` (the architect's).
+Outstanding before the move.
+
+| item | owner |
+|---|---|
+| Five architect decisions: whether `bench` ships, `Refusal::Above4GiB`, two address registers, three parameter names, and the `#[non_exhaustive]` set. | architect |
+| `repository` in the manifest. | move lane |
+
+Recommendation. Ready for review.
 
 ## `jh7110_clock_and_reset`, step 10
 
@@ -339,7 +349,7 @@ Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text 
 | `non_volatile_memory_express` | 5 | ready for review |
 | `e1000e` | 6 | ready for review |
 | `designware_ethernet` | 7 | item 9 of milestone 1019 needs a home |
-| `designware_mobile_storage` | 8 | ready for review after two questions, one the architect's |
+| `designware_mobile_storage` | 8 | ready for review |
 | `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
 | `block_roster` | contract | blocked by its identity value and one defect |
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |

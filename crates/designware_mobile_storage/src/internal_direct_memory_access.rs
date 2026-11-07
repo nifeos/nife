@@ -25,7 +25,7 @@ use crate::registers;
 /// Name: ratified 2026-11-02 (UTC), #3092. The region the descriptors and data pages live in,
 /// spelled out.
 pub trait DirectMemoryAccessRegion {
-    /// The region's first byte as the controller addresses it: on radon, its physical address.
+    /// The region's first byte as the controller addresses it: on the VisionFive 2, its physical address.
     fn bus_address(&self) -> u64;
     /// The region's length in bytes.
     fn bytes(&self) -> u32;
@@ -118,6 +118,7 @@ const _: () = assert!(DES0_OWN + DES0_CH == 0x8000_0010);
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. Why a region is refused for the engine.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Refusal {
     /// `HCON` names an external DMA interface, so there is no IDMAC: the field.
     #[doc(alias = "idmac")]
@@ -131,6 +132,32 @@ pub enum Refusal {
     /// Part of the region lies above 4 GiB, where a 32-bit descriptor cannot point: its address.
     Above4GiB(u64),
 }
+
+impl core::fmt::Display for Refusal {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::NoInternalDirectMemoryAccess(field) => {
+                write!(
+                    f,
+                    "the controller has no internal DMA controller (field {field})"
+                )
+            }
+            Self::Addressing64 => f.write_str("64-bit descriptors are not supported"),
+            Self::Alignment(base) => write!(f, "the region at {base:#x} does not start on a page"),
+            Self::Size(length) => {
+                write!(
+                    f,
+                    "a region of {length} bytes is not a descriptor page and data pages"
+                )
+            }
+            Self::Above4GiB(base) => {
+                write!(f, "the region at {base:#x} reaches above 4 GiB")
+            }
+        }
+    }
+}
+
+impl core::error::Error for Refusal {}
 
 /// **A region the IDMAC can use**, checked against the controller once. Only
 /// [`InternalDirectMemoryAccess::new`] makes one, so a [`HostController`] holding one has an IDMAC, 32-bit
@@ -284,7 +311,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         };
         self.registers
             .write(registers::BUS_MODE, registers::BUS_MODE_SWR);
-        if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
+        if !self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::BUS_MODE) & registers::BUS_MODE_SWR == 0
         }) {
             return Err(Error::ResetStuck(self.registers.read(registers::BUS_MODE)));
@@ -372,7 +399,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             registers::CONTROL,
             ctrl | registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET,
         );
-        let quiet = self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
+        let quiet = self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::CONTROL)
                 & (registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET)
                 == 0
@@ -468,7 +495,7 @@ mod tests {
         assert_eq!(descriptor(b, 0, 1, 512), [0x8000_001c, 512, b + 0x1000, b]);
     }
 
-    /// The 4 GiB edge is the one an 8 GB radon could reach: a region ending exactly there is
+    /// The 4 GiB edge is the one an 8 GB VisionFive 2 could reach: a region ending exactly there is
     /// usable, one a page later is not, and neither is anything a 32-bit descriptor cannot hold.
     #[test]
     fn a_region_the_internal_direct_memory_access_engine_cannot_reach_or_describe_is_refused() {
@@ -480,9 +507,10 @@ mod tests {
             card_detect: 0,
             firmware: [0; 5],
         };
-        let radon = id(0x00c4_3cc1);
+        let visionfive_2 = id(0x00c4_3cc1);
         let new = |base, pages| {
-            InternalDirectMemoryAccess::new(Memory::new(base, pages), &radon).map(|i| i.capacity())
+            InternalDirectMemoryAccess::new(Memory::new(base, pages), &visionfive_2)
+                .map(|i| i.capacity())
         };
         assert_eq!(new(0xffff_e000, 2), Ok(PAGE));
         assert_eq!(new(0xffff_f000, 2), Err(Refusal::Above4GiB(0xffff_f000)));
@@ -658,7 +686,7 @@ mod tests {
     }
 
     /// **The register contract of one transfer**, write by write, on a controller whose firmware
-    /// left `CONTROL` bit 8 and the IDMAC selected (radon's U-Boot hands over `CONTROL` bit 25 set).
+    /// left `CONTROL` bit 8 and the IDMAC selected (the VisionFive 2's U-Boot hands over `CONTROL` bit 25 set).
     /// Arming keeps the firmware's bit and sets both DMA bits whatever they were; `BUS_MODE` is
     /// written whole; stopping clears both DMA bits, resets the DMA interface and the FIFO, and
     /// puts the polled thresholds back. A single block finishes on `DTO` alone.

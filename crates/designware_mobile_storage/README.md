@@ -61,6 +61,11 @@ sectors before the first partition that a write test may use.
 constants and `Slot::from_node`, which decodes one slot from the properties of a device-tree node
 you found. The crate reads no device tree itself.
 
+Every error enum (`host_controller::Error`, `sd::InitializationError`, `sd::BlockTransferError`,
+`internal_direct_memory_access::Refusal`) implements `Display` and `core::error::Error`. They and
+`sd::CardKind` are `#[non_exhaustive]`, so a `match` on one needs a wildcard arm and a later release
+can add a variant without breaking you.
+
 ## Limitations
 
 - Default speed only: 25 MHz, 4-bit SD, 1-bit eMMC. No tuning, high speed, UHS or 8-bit bus.

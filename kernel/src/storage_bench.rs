@@ -112,6 +112,8 @@ enum Outcome {
     NoCard(InitializationError),
     /// A read failed: the block and the error.
     ReadFailed(u64, BlockTransferError),
+    /// The probe stopped for a reason this build does not know (a variant the crate added later).
+    ProbeStopped(ReadOnlyProbeFailure),
     /// Read-only, and every polled read succeeded: the timed rate in KiB/s, and the IDMAC phase.
     ReadOk(u64, Dma),
     /// Read, then the scratch write test: the rate, the test's verdict, and the IDMAC phase.
@@ -201,6 +203,7 @@ fn print_verdict(o: &Outcome) {
             println!("storage-bench: verdict SKIPPED: the tree describes no microSD controller");
         }
         Outcome::NoCard(e) => println!("storage-bench: verdict NO-CARD: {e:?}"),
+        Outcome::ProbeStopped(e) => println!("storage-bench: verdict FAILED: probe stopped {e:?}"),
         Outcome::Controller(e) => println!("storage-bench: verdict FAILED: controller {e:?}"),
         Outcome::ReadFailed(lba, e) => {
             println!("storage-bench: verdict FAILED: read of block {lba}: {e:?}");
@@ -348,6 +351,10 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
                 (status >> 17) & 0x1fff
             );
             return Outcome::ReadFailed(lba, e);
+        }
+        Err(e) => {
+            say!(slot, "probe stopped: {e:?}");
+            return Outcome::ProbeStopped(e);
         }
         Ok(r) => r,
     };

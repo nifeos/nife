@@ -12,9 +12,9 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 
 # no_std for a kernel, std for host tests. It is the whole SD and eMMC driver for the Synopsys
 # DesignWare Mobile Storage Host Controller: the register map, the command encoding, the polled
-# controller sequences behind one small `Registers` trait, card identification and block I/O, the
-# card registers' decoding, the MBR rule for where a write test may land, and what each JH7110
-# device tree says. Host-tested against a simulated controller and card; nothing here dereferences
+# controller sequences behind one small `RegisterWindowAndClock` trait, card identification and
+# block I/O, the card registers' decoding, the MBR rule for where a write test may land, and what
+# each JH7110 device tree says. Host-tested against a simulated controller and card; nothing here dereferences
 # a pointer.
 
 # No dependencies: the device-tree walk and the process layout around this driver are the

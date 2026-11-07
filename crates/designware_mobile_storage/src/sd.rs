@@ -50,6 +50,7 @@ pub(crate) const MULTIMEDIA_CARD_RELATIVE_CARD_ADDRESS: u16 = 1;
 /// Name: ratified 2026-11-03 (UTC), #3139. Renamed from `Kind`, which
 /// said nothing outside its module; the name now says it is the kind of a card.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CardKind {
     /// SD 1.x, standard capacity, byte addressed.
     SdV1,
@@ -68,6 +69,7 @@ pub enum CardKind {
 /// Name: ratified 2026-11-02 (UTC), #3092. `init` meaning initialize is spelled out wherever this
 /// tree authors it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum InitializationError {
     /// Reset, power or the identification clock.
     Controller(Error),
@@ -88,6 +90,31 @@ pub enum InitializationError {
     /// A command's R1 status reported an error: the command and the status.
     Status(u8, u32),
 }
+
+impl core::fmt::Display for InitializationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Controller(e) => write!(f, "the controller would not start: {e}"),
+            Self::GoIdle(e) => write!(f, "CMD0 failed: {e}"),
+            Self::InterfaceCondition(echo) => write!(f, "CMD8 echoed {echo:#x}"),
+            Self::NoCard(e) => write!(f, "no memory card answered: {e}"),
+            Self::PowerUp(ocr) => write!(f, "the card stayed busy at power up (OCR {ocr:#x})"),
+            Self::Identify(index, e) => write!(f, "CMD{index} failed during identification: {e}"),
+            Self::Capacity(structure) => {
+                write!(
+                    f,
+                    "the card specific data gives no capacity (structure {structure})"
+                )
+            }
+            Self::Configure(index, e) => write!(f, "CMD{index} failed during configuration: {e}"),
+            Self::Status(index, status) => {
+                write!(f, "CMD{index} reported a card error (status {status:#x})")
+            }
+        }
+    }
+}
+
+impl core::error::Error for InitializationError {}
 
 /// A card that is selected and in the transfer state.
 ///
@@ -149,7 +176,7 @@ fn r1_ok(index: u8, r1: u32) -> Result<(), InitializationError> {
 }
 
 /// **Bring up whatever card is in the slot** and leave it selected, in the transfer state, at
-/// [`TRANSFER_HERTZ`]. `maximum_bus_width` is the tree's `bus-width` for the slot (4 on radon's SD
+/// [`TRANSFER_HERTZ`]. `maximum_bus_width` is the tree's `bus-width` for the slot (4 on the VisionFive 2's SD
 /// slot, 8 on its eMMC slot).
 ///
 /// Name: ratified 2026-11-03 (UTC), #3139.
@@ -450,6 +477,7 @@ fn multimedia_card_power_up<R: RegisterWindowAndClock, D: DirectMemoryAccessRegi
 /// Name: ratified 2026-11-03 (UTC), #3139. Renamed from `IoError`, which
 /// covers only block transfers and not the other input and output a card does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum BlockTransferError {
     /// The buffer is empty or not a whole number of blocks.
     Length,
@@ -460,6 +488,19 @@ pub enum BlockTransferError {
     /// The card's R1 status reported an error.
     Status(u32),
 }
+
+impl core::fmt::Display for BlockTransferError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Length => f.write_str("the buffer is empty or not a whole number of blocks"),
+            Self::Range => f.write_str("the block range runs past what the card can address"),
+            Self::Host(e) => write!(f, "the transfer failed: {e}"),
+            Self::Status(status) => write!(f, "the card reported an error (status {status:#x})"),
+        }
+    }
+}
+
+impl core::error::Error for BlockTransferError {}
 
 /// **Can `count` blocks from `logical_block_address` be addressed on `card`?** Inside the card, and
 /// (on a byte-addressed card) inside the four gigabytes a 32-bit byte address reaches.
