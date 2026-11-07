@@ -47,10 +47,11 @@ What a stranger may find surprising:
   candidate in [the release record](../generational-table-and-existing-crates.md) uses a newtype
   (`slotmap`'s `KeyData`, `thunderdome`'s `Index`). `EntryName<T>` has `to_bits`, `from_bits`
   and `NEVER_MINTED` (the name no table mints), and the kernel converts at its system-call
-  boundary with them. Four kernel tables (`rendezvous_table`, `notification_table`, `timer_table`
-  and `processes` in `sched/ipc_tables.rs`) hold bare `u64` entries, so each of their names is an
-  `EntryName<u64>` and one table accepts another's names. The ruling is that each gets its own
-  entry newtype; that work has not landed on `main`.
+  boundary with them. Each kernel table has an entry type of its own, so a name of one table does
+  not resolve in another: the rendezvous, notification, timer and process tables in
+  `sched/ipc_tables.rs` hold `RendezvousPageAddress`, `NotificationPageAddress`, `TimerPageAddress`
+  and `ProcessPageAddress`, one-word `repr(transparent)` newtypes over the page's address. Four
+  conflicting impls in that file stop the build if two of them ever share a type.
 - A slot whose generation reaches `u32::MAX` retires and is never filled again, so capacity can
   shrink. The release record's table shows `slotmap` and `thunderdome` wrapping instead.
 - `Table` implements neither `Debug` nor `Clone`. Adding either later breaks nobody.

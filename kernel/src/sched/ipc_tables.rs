@@ -47,7 +47,8 @@ pub(super) struct IpcTables {
     pub(super) threads: Threads,
     /// The rendezvous registry: generational name to the physical address of the page the
     /// rendezvous lives at, retyped from a region that stays pinned while it lives.
-    pub(super) rendezvous_table: generational_table::Table<u64, MAXIMUM_RENDEZVOUS>,
+    pub(super) rendezvous_table:
+        generational_table::Table<RendezvousPageAddress, MAXIMUM_RENDEZVOUS>,
     /// The kernel's current object chunk, where its own endpoints (boot services, tests) are
     /// retyped from. Carved on the first [`create_rendezvous`] and replaced when it fills; a filled
     /// chunk's handle is forgotten, because no path tears a kernel chunk down.
@@ -56,16 +57,18 @@ pub(super) struct IpcTables {
     pub(super) kernel_ep_chunks: usize,
     /// The notification registry (§101 (notification objects)): name to the page a
     /// [`NotificationPage`] lives at, retyped from its creator's region.
-    pub(super) notification_table: generational_table::Table<u64, MAXIMUM_NOTIFICATIONS>,
+    pub(super) notification_table:
+        generational_table::Table<NotificationPageAddress, MAXIMUM_NOTIFICATIONS>,
     /// The timer registry (§147 (a timer a userspace service cannot hold)): name to the page a
     /// [`TimerPage`] lives at. The expiry walk iterates it.
-    pub(super) timer_table: generational_table::Table<u64, MAXIMUM_TIMERS>,
+    pub(super) timer_table: generational_table::Table<TimerPageAddress, MAXIMUM_TIMERS>,
     /// The futex wait queues (§269 (how threads share a process) fork 2): threads parked in
     /// `AddressSpace::WAIT`, by `(space, address)`. Under this lock so that the check of the word,
     /// the park, and a waker's take are one order. See [`futex_wait`].
     pub(super) futexes: inter_process_communication::futex::Futexes<Thread, FUTEX_BUCKETS>,
     /// The process registry: name to the physical address of a process's page.
-    pub(super) processes: generational_table::Table<u64, { process::MAXIMUM_PROCESSES }>,
+    pub(super) processes:
+        generational_table::Table<ProcessPageAddress, { process::MAXIMUM_PROCESSES }>,
 }
 
 /// How many buckets the futex table hashes into: a wake walks one, four waiters each on average
@@ -99,28 +102,131 @@ pub fn rendezvous_pressure() -> (usize, usize) {
 /// `Object::Rendezvous` capability carries. `u64` like a `ThreadId`, and stale-safe the same way.
 pub type RendezvousId = u64;
 
-/// The rendezvous table's typed name for a [`RendezvousId`]. A temporary adapter, like the three
-/// below it: the four registries store a bare `u64` page address, so their names share one type,
-/// and each id is still a `u64` across the kernel. Each adapter goes when its registry gets an
-/// entry type of its own and its id becomes that table's `EntryName`.
-pub(super) const fn rendezvous_entry(id: RendezvousId) -> EntryName<u64> {
+/// The physical address of the page a rendezvous lives at: the entry type of the rendezvous table, and a type of
+/// its own so that a name of one of the four registries is refused by the other three. One word,
+/// like the bare `u64` it replaces (`repr(transparent)`).
+///
+/// Name: provisional. Considered `RendezvousPage` and its kin, which the page structs already
+/// hold, and `RendezvousEntry`, which says where it is used and not what it holds.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(transparent)]
+pub(super) struct RendezvousPageAddress(u64);
+
+impl RendezvousPageAddress {
+    /// The entry for the page at physical address `phys`.
+    pub(super) const fn new(phys: u64) -> Self {
+        Self(phys)
+    }
+
+    /// The physical address of the page.
+    pub(super) const fn address(self) -> u64 {
+        self.0
+    }
+}
+
+/// The physical address of the page a notification lives at: the entry type of the notification table, and a type of
+/// its own so that a name of one of the four registries is refused by the other three. One word,
+/// like the bare `u64` it replaces (`repr(transparent)`).
+///
+/// Name: provisional. Considered `RendezvousPage` and its kin, which the page structs already
+/// hold, and `RendezvousEntry`, which says where it is used and not what it holds.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(transparent)]
+pub(super) struct NotificationPageAddress(u64);
+
+impl NotificationPageAddress {
+    /// The entry for the page at physical address `phys`.
+    pub(super) const fn new(phys: u64) -> Self {
+        Self(phys)
+    }
+
+    /// The physical address of the page.
+    pub(super) const fn address(self) -> u64 {
+        self.0
+    }
+}
+
+/// The physical address of the page a timer lives at: the entry type of the timer table, and a type of
+/// its own so that a name of one of the four registries is refused by the other three. One word,
+/// like the bare `u64` it replaces (`repr(transparent)`).
+///
+/// Name: provisional. Considered `RendezvousPage` and its kin, which the page structs already
+/// hold, and `RendezvousEntry`, which says where it is used and not what it holds.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(transparent)]
+pub(super) struct TimerPageAddress(u64);
+
+impl TimerPageAddress {
+    /// The entry for the page at physical address `phys`.
+    pub(super) const fn new(phys: u64) -> Self {
+        Self(phys)
+    }
+
+    /// The physical address of the page.
+    pub(super) const fn address(self) -> u64 {
+        self.0
+    }
+}
+
+/// The physical address of the page a process lives at: the entry type of the process table, and a type of
+/// its own so that a name of one of the four registries is refused by the other three. One word,
+/// like the bare `u64` it replaces (`repr(transparent)`).
+///
+/// Name: provisional. Considered `RendezvousPage` and its kin, which the page structs already
+/// hold, and `RendezvousEntry`, which says where it is used and not what it holds.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(transparent)]
+pub(super) struct ProcessPageAddress(u64);
+
+impl ProcessPageAddress {
+    /// The entry for the page at physical address `phys`.
+    pub(super) const fn new(phys: u64) -> Self {
+        Self(phys)
+    }
+
+    /// The physical address of the page.
+    pub(super) const fn address(self) -> u64 {
+        self.0
+    }
+}
+
+/// A system-call word is a name of exactly one table, and the four tables' names are four types.
+/// Each of these impls would conflict with another if two registries shared an entry type, so the
+/// tree stops building the moment they do. (The kernel library sets `doctest = false`, so a
+/// `compile_fail` doctest cannot run here; a conflicting impl is the compile-time check that can.)
+trait NamesOneTable {}
+impl NamesOneTable for EntryName<RendezvousPageAddress> {}
+impl NamesOneTable for EntryName<NotificationPageAddress> {}
+impl NamesOneTable for EntryName<TimerPageAddress> {}
+impl NamesOneTable for EntryName<ProcessPageAddress> {}
+
+const _: () = {
+    const fn names_one_table<T: NamesOneTable>() {}
+    names_one_table::<EntryName<RendezvousPageAddress>>();
+    names_one_table::<EntryName<NotificationPageAddress>>();
+    names_one_table::<EntryName<TimerPageAddress>>();
+    names_one_table::<EntryName<ProcessPageAddress>>();
+};
+
+/// The rendezvous table's typed name for a [`RendezvousId`]: the system-call word, converted at the
+/// boundary with `from_bits`. Each id is still a `u64` across the kernel; each adapter goes when
+/// its id is the table's `EntryName` itself.
+pub(super) const fn rendezvous_entry(id: RendezvousId) -> EntryName<RendezvousPageAddress> {
     EntryName::from_bits(id)
 }
 
-/// The notification table's typed name for a notification's id. A temporary adapter; see
-/// [`rendezvous_entry`].
-pub(super) const fn notification_entry(id: u64) -> EntryName<u64> {
+/// The notification table's typed name for a notification's id. See [`rendezvous_entry`].
+pub(super) const fn notification_entry(id: u64) -> EntryName<NotificationPageAddress> {
     EntryName::from_bits(id)
 }
 
-/// The timer table's typed name for a timer's id. A temporary adapter; see [`rendezvous_entry`].
-pub(super) const fn timer_entry(id: u64) -> EntryName<u64> {
+/// The timer table's typed name for a timer's id. See [`rendezvous_entry`].
+pub(super) const fn timer_entry(id: u64) -> EntryName<TimerPageAddress> {
     EntryName::from_bits(id)
 }
 
-/// The process table's typed name for a process id. A temporary adapter; see
-/// [`rendezvous_entry`].
-pub(super) const fn process_entry(pid: u64) -> EntryName<u64> {
+/// The process table's typed name for a process id. See [`rendezvous_entry`].
+pub(super) const fn process_entry(pid: u64) -> EntryName<ProcessPageAddress> {
     EntryName::from_bits(pid)
 }
 
