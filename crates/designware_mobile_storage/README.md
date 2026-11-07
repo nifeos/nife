@@ -26,6 +26,48 @@ Each property below has a Kani harness in `src/proofs.rs`:
   length under 512 bytes. The `EXT_CSD` sector count is read from bytes 212 to 215 of any buffer,
   and a buffer too short for it gives zero.
 
+The harnesses below prove safety against a controller and a clock that owe the driver nothing:
+every register read, every descriptor word in DMA memory and every clock reading is whatever the
+solver picks. They prove that no path panics, overflows or indexes out of bounds, and that each
+wait ends. They do not prove that the driver does the right thing with a faithful controller; the
+host tests against the simulated controller cover that, and only a board shows it for silicon.
+The one promise the clock is held to is that time passes: from some reading on, each reading is
+more than the deadline past every earlier one. Before that reading it may wrap past 2^64, stand
+still or jump either way.
+
+- A wait ends at the first clock reading past its deadline and reads the clock no more.
+- The IDMAC wait ends once the clock has passed its deadline, however the controller rewrites the
+  descriptors: the deadline restarts only when one more descriptor has closed, so at most once per
+  descriptor in the chain (bounded here at two).
+- The card clock divider is total for any base and target (no zero divisor, no overflow, no
+  panic), and it bypasses the divider exactly when the base is at or below the target.
+- A command word carries the start bit and the command's own index, never the clock-update-only
+  bit, a data phase exactly when the command has one, and the write bit only on a write.
+- Sending a command with no data phase ends and never panics, whatever the controller answers.
+  Every error names the command sent, a bad response carries the status bit that made it bad, and
+  a short response leaves words 1 to 3 zero.
+- A reset and a card clock change end and never panic. From a 50 MHz base the card then runs at
+  or below any target asked for, or at the slowest rate the divider has when the target is below
+  it.
+
+- A FIFO data phase stays inside its buffer and ends, whatever fill and status the controller
+  reports, for data phases of one or two blocks of 4 or 8 bytes through a FIFO one or two words
+  deep. The loop's arithmetic does not depend on the length, and the FIFO step proof above holds
+  for any length.
+- Reading one block through the IDMAC never sends a write command, and the driver touches the
+  DMA region only inside it.
+- Writing one block through the IDMAC sends at most one write command, of 512 bytes, addressed to
+  the block asked for, and only when the card has that block.
+- The steps of identification end, never panic and never send a write command: reset, `CMD0`,
+  `CMD8`, power-up and addressing on the polled host, then configuration (an eMMC's `EXT_CSD`
+  read through the IDMAC). A configured SD card has a capacity and runs no faster than 25 MHz.
+  `identify` itself only builds a `Card` from these steps' results; as one harness it ran past
+  five minutes.
+
+The harnesses of whole sequences use a clock that passes every deadline at each reading, so they
+bound their loops by what the controller reports rather than by time. The two wait harnesses
+above cover a clock that takes longer, and every wait in the driver is one of those two loops.
+
 The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
 kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
 checker, so it needs network access. CI uses version 0.68.0, and another version may verify
@@ -76,8 +118,19 @@ can add a variant without breaking you.
   controller in the tests.
 - The IDMAC moves at most its region's data pages per command and copies through them once each
   way.
-- The card bring-up state machine, timing and the CID decode have no proofs. The MBR parse does
-  not know the card's size, so whether a partition fits the card is the caller's check.
+- That the card clock stays at or below the target is proved for a 50 MHz base only. For a base
+  the solver picks, the comparison makes it build two symbolic 32-bit divisions, and that ran
+  past five minutes with every solver tried and with the base bounded to 2^28.
+- A clock that never passes a deadline hangs the wait on it: the trait promises microseconds, and
+  the driver has no other way to tell a slow controller from a dead one.
+- The block harnesses move one block, and through the IDMAC only. The polled path's FIFO loop is
+  proved for data phases of 16 bytes or less: a 512-byte block took too many FIFO steps for the
+  solver. The host tests move whole blocks and multi-block transfers both ways, through a 32- and
+  a 48-word FIFO and with a confused fill count.
+- Identification is proved for safety only, step by step. Nothing proves that it brings up the
+  right kind of card or reads the right capacity; the host tests do that against simulated SD,
+  SDHC and eMMC cards. The MBR parse does not know the card's size, so whether a partition fits
+  the card is the caller's check.
 
 The minimum supported Rust version is 1.88.
 

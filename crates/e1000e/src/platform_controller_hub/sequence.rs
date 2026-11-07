@@ -1154,7 +1154,7 @@ pub fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Error> {
         physical_layer_device::update(
             hardware,
             &f,
-            physical_layer_device::registers::PHY_CONTROL,
+            physical_layer_device::registers::PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER,
             |v| v | MII_CR_AUTO_NEG_EN | MII_CR_RESTART_AUTO_NEG,
         )
     })();
@@ -1518,7 +1518,8 @@ mod tests {
             0x0200
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_CONTROL],
+            s.physical_layer_device_registers
+                [&physical_layer_device::registers::PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER],
             0x1200
         );
 
@@ -1539,8 +1540,10 @@ mod tests {
             .insert(physical_layer_device::registers::PHY_AUTONEG_ADV, 0x0de1);
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::PHY_1000T_CTRL, 0x0300);
-        s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::PHY_CONTROL, 0x1200);
+        s.physical_layer_device_registers.insert(
+            physical_layer_device::registers::PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER,
+            0x1200,
+        );
         initialize_hardware(&mut s).unwrap();
         assert_eq!(
             mac(&s, registers::TARC1),
@@ -1571,7 +1574,8 @@ mod tests {
             0x0200
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_CONTROL],
+            s.physical_layer_device_registers
+                [&physical_layer_device::registers::PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER],
             0x1200
         );
     }

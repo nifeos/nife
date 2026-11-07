@@ -38,8 +38,14 @@ fn the_ulp_request_clears_the_indication_and_enforces() {
 
 #[test]
 fn the_flush_runs_only_when_asked_and_the_ring_has_length() {
-    assert!(flush::is_flush_required(flush::FLUSH_DESC_REQUIRED, 256));
-    assert!(!flush::is_flush_required(flush::FLUSH_DESC_REQUIRED, 0));
+    assert!(flush::is_flush_required(
+        flush::DESCRIPTOR_RING_FLUSH_REQUIRED,
+        256
+    ));
+    assert!(!flush::is_flush_required(
+        flush::DESCRIPTOR_RING_FLUSH_REQUIRED,
+        0
+    ));
     assert!(!flush::is_flush_required(0, 256));
     assert_eq!(flush::tail_after_dummy_transmit(15, 16), 0);
     assert_eq!(
@@ -235,7 +241,12 @@ fn the_flush_without_a_request_only_disables_the_mulr_fix() {
 /// `FEXTNVM11`.
 #[test]
 fn the_flush_refuses_a_transmit_ring_that_is_not_the_callers() {
-    let (outcome, steps) = flush_steps(&[flush::FLUSH_DESC_REQUIRED], 0x2_0000_1000, 3, 0x1000);
+    let (outcome, steps) = flush_steps(
+        &[flush::DESCRIPTOR_RING_FLUSH_REQUIRED],
+        0x2_0000_1000,
+        3,
+        0x1000,
+    );
     assert_eq!(
         outcome,
         flush::EmptiedRings::ForeignTransmitRing {
@@ -260,7 +271,7 @@ fn the_flush_runs_both_rings_in_freebsds_order() {
         TRANSMIT_DESCRIPTOR_TAIL_REGISTER,
     };
     let ring = 0x1_0000_1000;
-    let required = flush::FLUSH_DESC_REQUIRED;
+    let required = flush::DESCRIPTOR_RING_FLUSH_REQUIRED;
     let (outcome, steps) = flush_steps(&[required, required], ring, 15, ring);
     assert_eq!(outcome, flush::EmptiedRings::BothFlushed);
     assert_eq!(
@@ -299,7 +310,12 @@ fn the_flush_runs_both_rings_in_freebsds_order() {
 /// When the transmit flush clears the request, the receive ring is left alone.
 #[test]
 fn the_flush_stops_after_the_transmit_ring_when_the_request_clears() {
-    let (outcome, steps) = flush_steps(&[flush::FLUSH_DESC_REQUIRED, 0], 0x1000, 0, 0x1000);
+    let (outcome, steps) = flush_steps(
+        &[flush::DESCRIPTOR_RING_FLUSH_REQUIRED, 0],
+        0x1000,
+        0,
+        0x1000,
+    );
     assert_eq!(outcome, flush::EmptiedRings::TransmitFlushed);
     assert!(!steps.iter().any(
         |s| matches!(s, Step::Write(o, _) if *o == crate::registers::RECEIVE_CONTROL_REGISTER)

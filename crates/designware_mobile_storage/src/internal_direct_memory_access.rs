@@ -130,7 +130,10 @@ pub enum Refusal {
     /// The region is not a descriptor page and 1 to [`MAXIMUM_DESCRIPTORS`] data pages: its length.
     Size(u32),
     /// Part of the region lies above 4 GiB, where a 32-bit descriptor cannot point: its address.
-    Above4GiB(u64),
+    ///
+    /// Name: ratified 2026-11-07 (UTC). Considered: `Above4GiB`, which put a unit symbol inside a
+    /// name; units are spelled out in any position, so the symbol fell to that rule.
+    AboveFourGibibytes(u64),
 }
 
 impl core::fmt::Display for Refusal {
@@ -150,7 +153,7 @@ impl core::fmt::Display for Refusal {
                     "a region of {length} bytes is not a descriptor page and data pages"
                 )
             }
-            Self::Above4GiB(base) => {
+            Self::AboveFourGibibytes(base) => {
                 write!(f, "the region at {base:#x} reaches above 4 GiB")
             }
         }
@@ -200,10 +203,10 @@ impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
             return Err(Refusal::Size(bytes));
         }
         let Ok(bus) = u32::try_from(base) else {
-            return Err(Refusal::Above4GiB(base));
+            return Err(Refusal::AboveFourGibibytes(base));
         };
         if bus.checked_add(bytes - 1).is_none() {
-            return Err(Refusal::Above4GiB(base));
+            return Err(Refusal::AboveFourGibibytes(base));
         }
         Ok(InternalDirectMemoryAccess {
             region,
@@ -233,6 +236,13 @@ impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
                     .write_u32(i * DESCRIPTOR_BYTES + 4 * w as u32, *word);
             }
         }
+    }
+
+    /// How many descriptors of a chain of `count` the IDMAC still owns.
+    fn owned(&self, count: u32) -> u32 {
+        (0..count)
+            .filter(|i| self.region.read_u32(i * DESCRIPTOR_BYTES) & DES0_OWN != 0)
+            .count() as u32
     }
 
     /// Bytes in descriptors the IDMAC still owns, of a chain of `count`: what it has not moved.
@@ -340,9 +350,11 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     }
 
     /// Wait for the card's side (`DTO`, and `ACD` after more than one block) and the memory side
-    /// (the last descriptor closed). The deadline restarts whenever a descriptor closes, so a long
-    /// transfer is judged on progress, not on its length.
-    fn internal_direct_memory_access_wait(
+    /// (every descriptor closed). The deadline restarts whenever a descriptor closes, so a long
+    /// transfer is judged on progress, not on its length. Progress is fewer owned descriptors than
+    /// at any earlier look, so the deadline restarts at most `count` times: a controller that
+    /// reopens a descriptor or rewrites its size cannot hold the wait open.
+    pub(crate) fn internal_direct_memory_access_wait(
         &mut self,
         command: &Command,
         count: u32,
@@ -354,7 +366,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         let Some(direct_memory_access) = self.direct_memory_access.as_ref() else {
             return Err(Error::BufferSize);
         };
-        let mut owed = direct_memory_access.owed(count);
+        let mut owned = direct_memory_access.owned(count);
         let mut start = self.registers.now_microseconds();
         loop {
             let rint = self.registers.read(registers::RINTSTS);
@@ -370,15 +382,16 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             let Some(direct_memory_access) = self.direct_memory_access.as_ref() else {
                 return Err(Error::BufferSize);
             };
-            let now_owed = direct_memory_access.owed(count);
-            if rint & want == want && now_owed == 0 {
+            let now_owned = direct_memory_access.owned(count);
+            if rint & want == want && now_owned == 0 {
                 return Ok(());
             }
             let now = self.registers.now_microseconds();
-            if now_owed != owed {
-                owed = now_owed;
+            if now_owned < owned {
+                owned = now_owned;
                 start = now;
             } else if now.wrapping_sub(start) > DATA_DEADLINE_MICROSECONDS {
+                let owed = direct_memory_access.owed(count);
                 return Err(Error::DataTimeout(command.index, rint, owed));
             }
         }
@@ -449,10 +462,10 @@ mod tests {
         memory: &Memory,
     ) -> HostController<SimulatedHostController, Memory> {
         let mut h = h;
-        let hcon = h.registers_mut().peek(registers::HCON);
+        let hardware_configuration = h.registers_mut().peek(registers::HCON);
         let id = Identity {
             version_identification: 0,
-            hardware_configuration: hcon,
+            hardware_configuration,
             user_identification: 0,
             queue_threshold: 0,
             card_detect: 0,
@@ -499,9 +512,9 @@ mod tests {
     /// usable, one a page later is not, and neither is anything a 32-bit descriptor cannot hold.
     #[test]
     fn a_region_the_internal_direct_memory_access_engine_cannot_reach_or_describe_is_refused() {
-        let id = |hcon| Identity {
+        let id = |hardware_configuration| Identity {
             version_identification: 0,
-            hardware_configuration: hcon,
+            hardware_configuration,
             user_identification: 0,
             queue_threshold: 0,
             card_detect: 0,
@@ -513,10 +526,13 @@ mod tests {
                 .map(|i| i.capacity())
         };
         assert_eq!(new(0xffff_e000, 2), Ok(PAGE));
-        assert_eq!(new(0xffff_f000, 2), Err(Refusal::Above4GiB(0xffff_f000)));
+        assert_eq!(
+            new(0xffff_f000, 2),
+            Err(Refusal::AboveFourGibibytes(0xffff_f000))
+        );
         assert_eq!(
             new(0x1_0000_0000, 2),
-            Err(Refusal::Above4GiB(0x1_0000_0000))
+            Err(Refusal::AboveFourGibibytes(0x1_0000_0000))
         );
         assert_eq!(new(BASE + 8, 2), Err(Refusal::Alignment(BASE + 8)));
         assert_eq!(new(BASE, 1), Err(Refusal::Size(PAGE)));
@@ -574,6 +590,27 @@ mod tests {
         let mut back = vec![0u8; 16 * 512];
         sd::read_blocks(&mut h, &card, 40, &mut back).unwrap();
         assert_eq!(back, data);
+    }
+
+    /// **A transfer longer than the deadline is not given up on while it progresses**: the
+    /// deadline restarts each time a descriptor closes. Moving one word per IDMAC step, with the
+    /// clock advanced 700 microseconds a reading, each of the two pages closes inside the
+    /// half-second deadline while the whole transfer takes longer than it. The simulator puts the
+    /// working range at about 500 to 900 microseconds: below it the whole transfer fits the
+    /// deadline and proves nothing, above it a single page does not.
+    #[test]
+    fn a_transfer_that_keeps_closing_descriptors_outlasts_the_deadline() {
+        let (mut h, card, memory) = polled(3);
+        let data = pattern(0x5a, 16 * 512);
+        sd::write_blocks(&mut h, &card, 80, &data).unwrap();
+        let mut h = with_internal_direct_memory_access(h, &memory);
+        h.registers_mut().direct_memory_access_words_per_step = Some(1);
+        h.registers_mut().clock_step = 700;
+        let start = h.registers_mut().now_microseconds();
+        let mut back = vec![0u8; 16 * 512];
+        sd::read_blocks(&mut h, &card, 80, &mut back).unwrap();
+        assert_eq!(back, data);
+        assert!(h.registers_mut().now_microseconds() - start > DATA_DEADLINE_MICROSECONDS);
     }
 
     /// One more block than the region holds is refused before anything is sent, rather than

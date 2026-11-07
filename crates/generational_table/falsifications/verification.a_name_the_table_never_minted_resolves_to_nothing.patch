@@ -14,8 +14,8 @@ diff --git a/crates/generational_table/src/lib.rs b/crates/generational_table/sr
 +++ b/crates/generational_table/src/lib.rs
 @@ -244,5 +244,3 @@ impl<T, const N: usize> Table<T, N> {
          let (slot, generation) = Self::unpack(name);
--        if *self.gens.get(slot)? != generation {
+-        if *self.generations.get(slot)? != generation {
 -            return None;
 -        }
-+        self.gens.get(slot)?;
++        self.generations.get(slot)?;
          self.slots[slot].as_ref()?;
