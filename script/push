@@ -50,6 +50,10 @@
 #
 # - Nothing makes a lane use this rather than `git push`; notes/skills/worktree-commits/SKILL.md says
 #   to. The hook cannot do it: it runs before the update is sent and cannot see whether it arrived.
+# - On a fleet clone the hook inside the push still runs helpers/pre-push-fleet.sh, and its
+#   `script/lint-fleet` (about 40 s) is the longest part of the connected wait, because the lint
+#   marker does not cover it: it reads the branch name, and its selftests were never audited for
+#   other inputs. Covering it means keying a marker on the branch as well as the tree.
 #
 # Name: provisional. git's own verb for the act; considered `push-confirmed`, which says less than
 # the header does. calef has not ruled on it. See notes/scripts.md.
