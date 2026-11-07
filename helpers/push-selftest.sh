@@ -62,18 +62,25 @@ grep -q "NOT PUSHED" "$work/out" || fail "a silent non-push did not say NOT PUSH
 # 4. The pre-push hook runs before git connects, then again inside the push. A hook that logs
 # `hook` and a git that logs `push` before running the real one: a passing hook leaves the log
 # `hook push hook`, so the checks ran before the connection and `git push` still ran them all.
+# The hook also logs the `git` it finds and its directory, and the two runs must agree: the lint
+# marker keys on the tools' paths, so a first run under another PATH would never be matched. It
+# runs from a subdirectory, because git runs a hook from the top of the worktree wherever the
+# push started.
 rm "$work/bin/git"
 printf '#!/bin/sh\n[ "$1" = push ] && echo push >>"%s/log"\nexec "%s" "$@"\n' "$work" "$real_git" >"$work/bin/git"
 chmod +x "$work/bin/git"
 mkdir "$work/hooks"
-printf '#!/bin/sh\ncat >/dev/null\necho hook >>"%s/log"\n[ ! -f "%s/refuse" ]\n' "$work" "$work" >"$work/hooks/pre-push"
+printf '#!/bin/sh\ncat >/dev/null\necho hook >>"%s/log"\necho "$(command -v git) $(pwd)" >>"%s/seen"\n[ ! -f "%s/refuse" ]\n' "$work" "$work" "$work" >"$work/hooks/pre-push"
 chmod +x "$work/hooks/pre-push"
 git config core.hooksPath "$work/hooks"
 log() { tr '\n' ' ' <"$work/log" | sed 's/ $//'; }
 
 : >"$work/log"
-PATH="$work/bin:$PATH" "$root/script/push" >"$work/out" 2>&1 || fail "a push with a passing hook exited non-zero: $(cat "$work/out")"
+mkdir sub
+(cd sub && PATH="$work/bin:$PATH" "$root/script/push") >"$work/out" 2>&1 || fail "a push with a passing hook exited non-zero: $(cat "$work/out")"
 [ "$(log)" = "hook push hook" ] || fail "a passing hook did not run before the push and again inside it: $(log)"
+[ "$(sort -u "$work/seen" | wc -l)" -eq 1 ] ||
+    fail "the hook saw a different git or directory before the push than inside it: $(cat "$work/seen")"
 
 # 5. A refusing hook stops the push before git connects: the log holds the hook and no push.
 git commit -q --allow-empty -m three

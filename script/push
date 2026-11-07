@@ -93,15 +93,20 @@ verify=1
 for arg in "$@"; do
     [ "$arg" != "--no-verify" ] || verify=
 done
-hook="$(git rev-parse --git-path hooks/pre-push)"
+# It runs where git runs a hook, at the top of the worktree with git's exec-path first on PATH. The
+# PATH is load-bearing: helpers/pre-push-lint-cache.sh keys its marker on each tool's path, `git`
+# among them, and a marker written under any other PATH never matches inside the push.
+top="$(git rev-parse --show-toplevel)" || exit 2
+hook="$(cd "$top" && git rev-parse --path-format=absolute --git-path hooks/pre-push)" || exit 2
 if [ -n "$verify" ] && [ -x "$hook" ]; then
     zero=0000000000000000000000000000000000000000
     remote_before="$(git ls-remote origin "refs/heads/$branch" 2>/dev/null)" || remote_before=
     remote_before="${remote_before%%	*}"
     url="$(git remote get-url --push origin 2>/dev/null)" || url=origin
+    exec_path="$(git --exec-path)" || exit 2
     echo "push: running the pre-push hook before connecting to origin."
     if ! printf 'refs/heads/%s %s refs/heads/%s %s\n' "$branch" "$head" "$branch" "${remote_before:-$zero}" |
-        NIFE_PUSH_QUEUED="${requeue:+1}${NIFE_PUSH_QUEUED:-}" "$hook" origin "$url"; then
+        (cd "$top" && PATH="$exec_path:$PATH" NIFE_PUSH_QUEUED="${requeue:+1}${NIFE_PUSH_QUEUED:-}" "$hook" origin "$url"); then
         echo "push: NOT PUSHED. The pre-push hook refused, before any connection to origin." >&2
         exit 1
     fi
