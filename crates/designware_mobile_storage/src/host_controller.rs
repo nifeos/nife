@@ -3,7 +3,7 @@
 //! `dwmmc_pio_mode`, `dwmmc_exec_command` and `dwmmc_transfer_data` (the crate root carries the
 //! notice), with deliberate differences: every wait is a deadline on a clock the caller supplies
 //! rather than a count of `delay(100)`s, nothing sleeps, the interrupt line stays masked, and a
-//! 64-bit FIFO is refused (radon's is measured by the bench step before anything depends on it).
+//! 64-bit FIFO is refused (the VisionFive 2's is measured by the bench step before anything depends on it).
 //! `HostController<R>` moves every word through the FIFO by MMIO; `HostController<R, D>`, from
 //! [`HostController::with_internal_direct_memory_access`], hands each data phase to the controller's DMA
 //! engine ([`crate::internal_direct_memory_access`]). Commands and identification are the same on
@@ -40,6 +40,7 @@ pub trait RegisterWindowAndClock {
 ///
 /// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Error {
     /// `HCON` names a FIFO width this driver does not move: the raw width field.
     #[doc(alias = "fifo")]
@@ -67,6 +68,42 @@ pub enum Error {
     /// The IDMAC stopped on a bus error or a descriptor it did not own: the index and `IDSTS`.
     DirectMemoryAccess(u8, u32),
 }
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::QueueWidth(width) => write!(f, "unsupported queue width field {width}"),
+            Self::ResetStuck(word) => write!(f, "a reset bit did not clear (read {word:#x})"),
+            Self::ClockUpdate => f.write_str("the controller did not take a clock update"),
+            Self::CommandNotTaken(index) => write!(f, "command {index} was not taken"),
+            Self::CommandTimeout(index, status) => {
+                write!(f, "command {index} timed out (status {status:#x})")
+            }
+            Self::NoResponse(index) => write!(f, "no card answered command {index}"),
+            Self::BadResponse(index, status) => {
+                write!(f, "command {index} got a bad response (status {status:#x})")
+            }
+            Self::Data(index, status) => {
+                write!(
+                    f,
+                    "the data phase of command {index} failed (status {status:#x})"
+                )
+            }
+            Self::DataTimeout(index, status, owed) => write!(
+                f,
+                "the data phase of command {index} timed out (status {status:#x}, {owed} bytes owed)"
+            ),
+            Self::BufferSize => f.write_str("the buffer does not match the command's data phase"),
+            Self::Busy => f.write_str("the card stayed busy past the deadline"),
+            Self::DirectMemoryAccess(index, status) => write!(
+                f,
+                "the internal DMA controller stopped during command {index} (status {status:#x})"
+            ),
+        }
+    }
+}
+
+impl core::error::Error for Error {}
 
 /// The controller's identity, read before anything is written: what a bench transcript prints.
 ///
@@ -112,7 +149,7 @@ pub(crate) const DATA_DEADLINE_MICROSECONDS: u64 = 500_000;
 /// ```
 /// use designware_mobile_storage::host_controller::{clock_divider, card_clock};
 ///
-/// // radon's controllers run from 50 MHz (`assigned-clock-rates` in mainline and the vendor branch head).
+/// // the VisionFive 2's controllers run from 50 MHz (`assigned-clock-rates` in mainline and the vendor branch head).
 /// let d = clock_divider(50_000_000, 400_000).unwrap();
 /// assert_eq!(d, 63);
 /// assert!(card_clock(50_000_000, d) <= 400_000);
@@ -189,7 +226,7 @@ impl<R: RegisterWindowAndClock> HostController<R> {
     /// **Take a controller**, reading its identity and touching nothing.
     ///
     /// `base_hertz` is the rate of the clock the controller divides (the tree's `ciu`, 50 MHz on
-    /// radon), and `queue_depth` the tree's `fifo-depth` if it has one; without it the depth is
+    /// the VisionFive 2), and `queue_depth` the tree's `fifo-depth` if it has one; without it the depth is
     /// read from `FIFOTH`'s reset value, as OpenBSD does. Refuses a FIFO that is not 32 bits wide.
     ///
     /// # Errors
@@ -284,7 +321,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         self.registers
     }
 
-    pub(crate) fn wait<F: FnMut(&mut R) -> bool>(
+    pub(crate) fn is_condition_met_within<F: FnMut(&mut R) -> bool>(
         &mut self,
         deadline_microseconds: u64,
         mut done: F,
@@ -317,7 +354,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
                 | registers::CONTROL_INT_ENABLE);
         self.registers
             .write(registers::CONTROL, ctrl | registers::CONTROL_ALL_RESET);
-        if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
+        if !self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::CONTROL) & registers::CONTROL_ALL_RESET == 0
         }) {
             return Err(Error::ResetStuck(self.registers.read(registers::CONTROL)));
@@ -332,7 +369,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             .write(registers::FIFOTH, registers::fifoth_for_pio(self.depth));
         // The card read threshold stays off. It is for bus modes that cannot stop the card clock
         // (HS200, SDR104, HS400), which this driver does not run, and it may not exceed the FIFO:
-        // OpenBSD's one block, 512 bytes, against radon's 128-byte FIFO overran the first read.
+        // OpenBSD's one block, 512 bytes, against the VisionFive 2's 128-byte FIFO overran the first read.
         // Written rather than assumed, since firmware may have set it. Before release 2.40a the
         // offset is the data FIFO, and a write there would be a word of data.
         if self.queue_offset != registers::CARDTHRCTL {
@@ -341,7 +378,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         Ok(())
     }
 
-    /// Power slot 0. The JH7110 ties the card supply on the board, so on radon this bit is what
+    /// Power slot 0. The JH7110 ties the card supply on the board, so on the VisionFive 2 this bit is what
     /// U-Boot already set; written anyway, because a controller fresh from reset may not have it.
     pub(crate) fn power_on(&mut self) {
         self.registers.write(registers::PWREN, 1);
@@ -349,7 +386,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
 
     fn update_clock(&mut self) -> Result<(), Error> {
         self.registers.write(registers::CMD, UPDATE_CLOCK);
-        if self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
+        if self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::CMD) & registers::COMMAND_START == 0
         }) {
             Ok(())
@@ -399,7 +436,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     ///
     /// [`Error::Busy`] past [`DATA_DEADLINE_MICROSECONDS`].
     pub(crate) fn wait_not_busy(&mut self) -> Result<(), Error> {
-        if self.wait(DATA_DEADLINE_MICROSECONDS, |window| {
+        if self.is_condition_met_within(DATA_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::STATUS_REGISTER) & registers::STATUS_DATA_BUSY == 0
         }) {
             Ok(())
@@ -422,7 +459,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             let ctrl = self.registers.read(registers::CONTROL);
             self.registers
                 .write(registers::CONTROL, ctrl | registers::CONTROL_FIFO_RESET);
-            if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
+            if !self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
                 window.read(registers::CONTROL) & registers::CONTROL_FIFO_RESET == 0
             }) {
                 return Err(Error::ResetStuck(self.registers.read(registers::CONTROL)));
@@ -436,13 +473,13 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         self.registers.write(registers::CMDARG, command.argument);
         self.registers
             .write(registers::CMD, command.register_word());
-        if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
+        if !self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::CMD) & registers::COMMAND_START == 0
         }) {
             return Err(Error::CommandNotTaken(command.index));
         }
         let mut status = 0;
-        if !self.wait(COMMAND_DEADLINE_MICROSECONDS, |window| {
+        if !self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
             status = window.read(registers::RINTSTS);
             status & registers::RINTSTS_CD != 0
         }) {
@@ -594,7 +631,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         let mut status = 0;
         let depth = self.depth;
         let write = want == registers::RINTSTS_TXDR;
-        let ok = self.wait(DATA_DEADLINE_MICROSECONDS, |window| {
+        let ok = self.is_condition_met_within(DATA_DEADLINE_MICROSECONDS, |window| {
             rint = window.read(registers::RINTSTS);
             if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
                 return true;
@@ -621,7 +658,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             Some(d) if d.blocks > 1 => registers::RINTSTS_DTO | registers::RINTSTS_ACD,
             _ => registers::RINTSTS_DTO,
         };
-        let ok = self.wait(DATA_DEADLINE_MICROSECONDS, |window| {
+        let ok = self.is_condition_met_within(DATA_DEADLINE_MICROSECONDS, |window| {
             rint = window.read(registers::RINTSTS);
             rint & want == want
                 || rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0
@@ -649,7 +686,7 @@ mod tests {
                 }
             }
         }
-        // Every target the card could be asked for, at the base radon runs: exhaustive rather
+        // Every target the card could be asked for, at the base the VisionFive 2 runs: exhaustive rather
         // than a Kani harness, because two symbolic 32-bit divisions ran past twelve minutes
         // without finishing on 2026-10-06 and the domain that matters here is fifty million.
         // Under Miri the fifty million take over two hours, so it strides by 9,973 (prime) and
@@ -850,7 +887,7 @@ mod tests {
     }
 
     /// Before a data command the FIFO is reset and the reset waited for, and the card read
-    /// threshold is left off: a 512-byte one in radon's 32-word FIFO is what overran its first
+    /// threshold is left off: a 512-byte one in the VisionFive 2's 32-word FIFO is what overran its first
     /// read. Bit 8 of `CONTROL`, left by firmware, makes a wait that tested anything but the reset
     /// bits never finish.
     #[test]
@@ -878,6 +915,26 @@ mod tests {
             sd::read_blocks(&mut h, &card, 1, &mut block),
             Err(BlockTransferError::Host(Error::ResetStuck(_)))
         ));
+    }
+
+    /// A reset bit already set when a data command starts (left by firmware, or by an earlier
+    /// reset not yet cleared) must still be written set: the driver sets the bit, it does not
+    /// toggle it.
+    #[test]
+    fn a_fifo_reset_bit_already_set_is_written_set() {
+        let mut h = take(SimulatedHostController::new(
+            CardKind::SdHighCapacity,
+            2048,
+            32,
+        ));
+        let card = sd::identify(&mut h, 4).unwrap();
+        h.registers_mut()
+            .write(registers::CONTROL, registers::CONTROL_FIFO_RESET);
+        h.registers_mut().writes.clear();
+        let mut block = [0u8; 512];
+        sd::read_blocks(&mut h, &card, 1, &mut block).unwrap();
+        let read = &h.registers_mut().writes;
+        assert!(read.contains(&(registers::CONTROL, registers::CONTROL_FIFO_RESET)));
     }
 
     /// The size and direction checks come before anything is sent, so an empty slot (which would

@@ -2,7 +2,7 @@
 //! Linux's `arch/riscv/boot/dts/starfive/jh7110.dtsi` has `mmc0: mmc@16010000` and
 //! `mmc1: mmc@16020000`, `compatible = "starfive,jh7110-mmc"` (its binding includes
 //! `synopsys-dw-mshc-common.yaml`), `interrupts` 74 and 75 and `fifo-depth = <32>`. The vendor
-//! U-Boot tree radon's firmware hands over (`starfive-tech/u-boot`, tag `VF2_v2.10.4` at commit
+//! U-Boot tree the VisionFive 2's firmware hands over (`starfive-tech/u-boot`, tag `VF2_v2.10.4` at commit
 //! `1ae835c25e3d`, and branch `JH7110_VisionFive2_devel` at `c4c67bb66ae6`, both fetched 2026-11-01
 //! UTC) has `sdio0@16010000` and `sdio1@16020000`, `compatible = "snps,dw-mshc"`, and no
 //! `interrupts`. Mainline is `torvalds/linux` at `cbbddb6b08cc`. On a
@@ -35,7 +35,7 @@ pub const COMPATIBLE_VENDOR: &[u8] = b"snps,dw-mshc";
 /// input/output cards are used.
 #[doc(alias = "sdio0")]
 pub const SLOT_0_REGISTERS_PHYSICAL_ADDRESS: u64 = 0x1601_0000;
-/// Slot 1's controller registers: the microSD slot on a VisionFive 2, the card radon boots from.
+/// Slot 1's controller registers: the microSD slot on a VisionFive 2, the card the VisionFive 2 boots from.
 /// The vendor tree labels the instance `sdio1`.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3143. Renamed from `SDIO1_BASE`, for the reasons given on

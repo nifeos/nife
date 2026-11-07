@@ -328,7 +328,7 @@ mod tests {
 
     /// The arguments a card is sent, as numbers: what a protocol analyzer on the bus would show.
     #[test]
-    fn the_operating_condition_arguments_are_the_specs() {
+    fn the_operating_condition_arguments_are_the_specifications() {
         assert_eq!(OPERATION_CONDITIONS_VOLTAGE_WINDOW, 0x0030_0000);
         assert_eq!(SD_OPERATION_CONDITIONS_ARGUMENT, 0x4030_0000);
     }

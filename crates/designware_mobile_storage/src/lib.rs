@@ -1,10 +1,12 @@
 #![cfg_attr(not(test), no_std)]
-//! The Synopsys `DesignWare` Mobile Storage Host Controller, as pure logic: radon's microSD slot
-//! and eMMC socket. The whole driver sits behind [`host_controller::RegisterWindowAndClock`], a window and a clock; a
-//! kernel implements it over a mapped window and nothing more, so every sequence is tested against
-//! `simulator` on a host. [`jh7110`] has the evidence for the part and the board's constants. Modules:
-//! [`registers`], [`command`], [`host_controller`], [`internal_direct_memory_access`], [`card`], [`sd`],
-//! [`partition`], and `bench`, which is built only for this crate's own tests or with the `bench` feature.
+//! The Synopsys `DesignWare` Mobile Storage Host Controller, as pure logic: the VisionFive 2's
+//! microSD slot and eMMC socket. The whole driver sits behind
+//! [`host_controller::RegisterWindowAndClock`], a window and a clock; a kernel implements it over a
+//! mapped window and nothing more, so every sequence is tested against `simulator` on a host.
+//! [`jh7110`] has the evidence for the part and the board's constants. Modules: [`registers`],
+//! [`command`], [`host_controller`], [`internal_direct_memory_access`], [`card`], [`sd`],
+//! [`partition`], and `bench`, which is built only for this crate's own tests or with the `bench`
+//! feature.
 //!
 //! Name: ratified 2026-10-07 (calef, #1806): the databook's name for the part, spelled out as §154
 //! (the acronym test is whether the phrase is spoken) asks; permanent on first publication. The
@@ -41,8 +43,8 @@
 //! ```
 
 //! # BUGS
-//! - The polled path has read radon's card; the IDMAC path has run only against `simulator`, until a
-//!   bench step on silicon measures it.
+//! - The polled path has read the VisionFive 2's card; the IDMAC path has run only against
+//!   `simulator`, until a bench step on silicon measures it.
 //! - The IDMAC moves at most its region's data pages per command and copies once each way
 //!   through them.
 //! - Default speed only (25 MHz, 4-bit SD, 1-bit eMMC); no tuning, no 8-bit bus. Polled, with

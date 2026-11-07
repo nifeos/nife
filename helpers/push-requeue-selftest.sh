@@ -48,7 +48,15 @@ cat >"$tmp/bin/git" <<'STUB'
 d="$STUB_DIR"
 case "$1" in
 symbolic-ref) echo lane/x ;;
-rev-parse) echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ;;
+rev-parse)
+	case "$*" in
+	*--show-toplevel*) echo "$d" ;;
+	*--git-path*) echo "$d/hook" ;;
+	*) echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ;;
+	esac
+	;;
+--exec-path) echo "$d/bin" ;;
+remote) echo "$d/origin" ;;
 config) exit 1 ;;
 push) echo "git $*" >>"$d/log" ;;
 ls-remote) printf '%s\trefs/heads/lane/x\n' "${STUB_REMOTE:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}" ;;
@@ -91,6 +99,21 @@ check "queued: dequeue, then push, then merge" awk '/dequeuePullRequest/{d=NR} /
 check "queued: pushed" logged "git push origin HEAD:refs/heads/lane/x"
 check "queued: armed again" logged "pr merge 42 --auto --merge"
 check "queued: ends queued" test "$(cat "$tmp/queued")" = true
+
+# 1b. A pre-push hook runs before the dequeue, with the queued-branch refusal waived for that run
+# alone (the pull request is still queued), so a failing check leaves it in the queue.
+printf '#!/bin/sh\ncat >/dev/null\necho "hook queued-waived=$NIFE_PUSH_QUEUED" >>"%s/log"\n[ ! -e "%s/refuse" ]\n' "$tmp" "$tmp" >"$tmp/hook"
+chmod +x "$tmp/hook"
+state true false "ci" false
+run "hook: --requeue re-arms" 0 "armed" -- "$root/script/push" --requeue
+check "hook: hook, then dequeue, then push" awk '/^hook /{h=NR} /dequeuePullRequest/{d=NR} /git push/{p=NR} END{exit !(h && h<d && d<p)}' "$tmp/log"
+check "hook: queued refusal waived for the early run" logged "hook queued-waived=1"
+state true false "ci" false
+: >"$tmp/refuse"
+run "hook refuses: nothing dequeued" nonzero "NOT PUSHED" -- "$root/script/push" --requeue
+check "hook refuses: no dequeue, no push" sh -c "! grep -q -e dequeuePullRequest -e 'git push' '$tmp/log'"
+check "hook refuses: still queued" test "$(cat "$tmp/queued")" = true
+rm -f "$tmp/hook" "$tmp/refuse"
 
 # 2. Falsification: the re-arm step is a no-op, so the lane must hear it was NOT armed.
 state true false "" false

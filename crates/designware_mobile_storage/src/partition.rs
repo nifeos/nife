@@ -1,8 +1,8 @@
-//! Where on a card a write cannot hurt: the MBR, and the gap before its first partition. radon
+//! Where on a card a write cannot hurt: the MBR, and the gap before its first partition. The VisionFive 2
 //! boots from its microSD card, one FAT32 partition
 //! in an MBR, so the only sectors this crate names for a write are before the first partition and
 //! after sector 0: the alignment gap no filesystem owns and U-Boot does not read when the board
-//! boots from its QSPI flash, as radon does. A card with no MBR signature, a protective MBR (GPT,
+//! boots from its QSPI flash, as the VisionFive 2 does. A card with no MBR signature, a protective MBR (GPT,
 //! whose header and table live in that gap), no partitions, or a first partition at sector 1 gets
 //! no scratch range, and the bench probe refuses to write and says why. A Kani harness (`proofs` in
 //! the crate root) proves the range never touches a partition or sector 0, for every table.
@@ -132,7 +132,7 @@ impl MasterBootRecord {
     ///
     /// # Examples
     ///
-    /// A write test on radon's boot card may only land before the first partition:
+    /// A write test on the VisionFive 2's boot card may only land before the first partition:
     ///
     /// ```
     /// use designware_mobile_storage::partition::{PartitionEntry, MasterBootRecord};

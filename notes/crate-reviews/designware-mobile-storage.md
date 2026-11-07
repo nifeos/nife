@@ -7,15 +7,16 @@ together outgrow the page.*
 ## In one paragraph
 
 The whole SD and eMMC driver for the Synopsys DesignWare Mobile Storage Host Controller (`DW_mshc`,
-Linux's `dw_mmc`) as pure logic. It holds the register map, the command word, the polled controller
-sequences and the internal DMA controller's descriptor chains. It identifies the card, reads and
-writes blocks, and decodes the card's identification and specific-data registers. The caller
-implements one trait, `RegisterWindowAndClock` (read a register, write one, read a microsecond
-clock), and every sequence runs on a host against a simulated controller and card. It is `no_std`,
-with no allocator, no `unsafe` and no dependency. Eight Kani harnesses prove its parsers and bounds.
-Every name is ratified. The board's bench test sits behind the non-default `bench` feature, and the
-compile-time checks have no public name. What the architect decides is the spelling of one unit in a
-variant name.
+Linux's `dw_mmc`) as pure logic. It holds the register map, the command word, the polled
+controller sequences and the internal DMA controller's descriptor chains. It identifies the card,
+reads and writes blocks, and decodes the card's identification and specific-data registers. The
+caller implements one trait, `RegisterWindowAndClock` (read a register, write one, read a
+microsecond clock), and every sequence runs on a host against a simulated controller and card. It
+is `no_std`, with no allocator, no `unsafe` and no dependency. Eight Kani harnesses prove its
+parsers and bounds. Every public name has a ratified `Name:` block. The board's bench test sits behind the
+non-default `bench` feature, and the compile-time checks have no public name. What the architect
+decides is one unit spelled inside a variant name, whether `bench` ships in 0.1.0, and the
+ratified names that a later rule reaches.
 
 ## Identity
 
@@ -26,7 +27,7 @@ variant name.
 | edition, `rust-version` | 2024, 1.88 |
 | license | `(MIT OR Apache-2.0) AND ISC`; `LICENSE-MIT` and `LICENSE-APACHE` at the crate root, the ISC notice in `src/lib.rs` |
 | `publish` | `false` |
-| size | 7,098 lines in 13 files: about 5,030 of library, 879 of shared tests, 969 of simulator, 220 of Kani harnesses |
+| size | 7,254 lines in 13 files: about 5,150 of library, 911 of shared tests, 969 of simulator, 220 of Kani harnesses |
 | consumers in nife | `kernel`, `components` and `machine_discovery`, by path |
 
 ## Public API
@@ -53,11 +54,16 @@ What a stranger may find surprising:
   tests). `run_scratch_write_test` writes to the card (inside the gap before the first partition,
   which a harness proves), and `MATRIX_HERTZ` and `MatrixRow` serve one diagnosis on one board. A
   stranger driving a controller needs none of it, and with the feature off none of it is public.
-- No error enum is `#[non_exhaustive]` (`host_controller::Error`, `Refusal`, `InitializationError`,
-  `BlockTransferError`, `ReadOnlyProbeFailure`), and none implements `Display` or
-  `core::error::Error`. A new variant after publication breaks every exhaustive `match`.
+- The enums `host_controller::Error`, `Refusal`, `InitializationError`, `BlockTransferError`,
+  `ReadOnlyProbeFailure`, `ScratchWriteVerdict` and `CardKind` are `#[non_exhaustive]`
+  (provisional, below), so a new variant after publication breaks no `match`. The four error enums and
+  `ReadOnlyProbeFailure` implement `Display` and `core::error::Error`; neither needed a choice
+  that a later release cannot extend.
 - Public structs expose public fields (`Card`, `Identity`, `Slot`, `MatrixRow` and others), so a
-  field added later breaks callers who build them.
+  field added later breaks callers who build them. `Identity`, `Slot` and `Card` are values the
+  crate returns, and a caller seldom builds one.
+- The README is not the crate documentation. `src/lib.rs` carries the module index, the license
+  notice and the BUGS list, and five doctests check the examples there.
 
 ## Proofs and falsification patches
 
@@ -80,16 +86,38 @@ identification decode. 99 host tests drive those against the simulator.
 
 ## Names
 
-`python3 helpers/name_release.py --draft designware_mobile_storage` lists 135 names, all ratified:
-the crate on #1806 and the items on pull requests #3092 to #3144. Nothing is provisional.
+`python3 helpers/name_release.py --draft designware_mobile_storage` lists 130 rows. 129 read
+ratified: the crate on #1806 and the items on pull requests #3092 to #3144, #3096, #3101 and #3276. The 130th is the `bench` feature, which has no block. Nothing else is
+provisional.
 
-The units are spelled out: `jh7110::CARD_INTERFACE_UNIT_HERTZ`, `sd::TRANSFER_HERTZ`,
-`bench::MATRIX_HERTZ`, `jh7110::Slot::card_interface_unit_hertz`, `sd::Card::clock_hertz`,
-`bench::MatrixRow::asked_hertz` and `card_hertz`.
+Against the rulings in force, checked with the template's own checks
+(`vendor/crate-workflows/helpers/`, run with `--manifest` over `src/*.rs`, 1,561 names judged):
 
-One name still carries a unit symbol, and the units rule refuses symbols: the variant
-`internal_direct_memory_access::Refusal::Above4GiB`. Recommendation: `AboveFourGibibytes`; an
-alternative names the cause, `BeyondThirtyTwoBitAddress`.
+| rule | result |
+|---|---|
+| units spelled out (`unit_symbols.py`) | 0 findings. `_HERTZ`, `_MICROSECONDS` and `_BYTES` throughout. The checker reads suffixes only, so it does not see `Above4GiB` (below). |
+| spelled-out words (`spelled_out.py`) | 0 findings. Six private source-kept constants open their doc comment with `(NAME, source)`, and no test name says `spec`. |
+| question shape (`question_shape.py`) | 0 findings. The private wait is `is_condition_met_within`, and the simulator predicates take `is_`. |
+| British spelling | 0 findings. |
+| `id`, `sd`, `jh7110` | accepted words and a chip name. |
+| aliases of an old nife spelling | none. Every `doc(alias)` is a specification or databook term. |
+
+Ratified public names that a later rule reaches. They are not renamed here:
+
+| name | rule | recommended name |
+|---|---|---|
+| `internal_direct_memory_access::Refusal::Above4GiB` | units are spelled out, in any position | `AboveFourGibibytes` |
+| `registers::CURRENT_DESCRIPTOR_ADDRESS_REGISTER` | an address is `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS` in every location | `CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER` |
+| `registers::CURRENT_BUFFER_ADDRESS_REGISTER` | the same | `CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER` |
+| `registers::queue_offset(verid)`, `queue_width(hcon)`, `uses_64_bit_direct_memory_access(hcon)` | a parameter spells out the databook word | `version_identification`, `hardware_configuration` |
+| `jh7110::Slot::from_node(.., prop)` | `prop` abbreviates `property` | `property` |
+
+The two address registers hold the descriptor address and buffer address the controller is on, as
+the bus sees them, which is physical on every board this driver runs on. A parameter name is not
+part of a Rust signature's compatibility, so the parameter renames cost no caller anything.
+
+The private `pub(crate)` constants keep the databook and OpenBSD spellings
+(`CONTROL_FIFO_RESET`, `CONTROL_DMA_RESET`, `SEND_OP_COND`) through the kept-name form.
 
 ## License
 
@@ -102,38 +130,53 @@ facts from their sources, not their text) item 6 ruled. The authors read Linux, 
 device trees for hardware facts only. The notice opens with prose, not an `SPDX-License-Identifier:` line, which the
 proposal for a license check would add.
 
-## What the move still needs
+## Provisional rulings by the maintainer
+
+`#[non_exhaustive]` marks the five error enums, `ScratchWriteVerdict` and `CardKind`. It is
+the restrictive option: relaxing it in a later release breaks nobody, and adding it after
+publication breaks every exhaustive `match`. `CardKind` joins the list because its own comment
+already names SDUC as a future kind. `Response` stays exhaustive, since the specification fixes
+its seven values. The kernel's storage bench matches `ReadOnlyProbeFailure` with a wildcard arm, the
+one `match` in this tree that needed it. The architect's clearance of the API confirms or reverses
+this.
+
+## Outstanding before the move
 
 | item | owner |
 |---|---|
-| Shipped text names radon 29 times (`src/*.rs`); a stranger does not know the board's nickname. Say "a VisionFive 2". | move lane |
-| The manifest comment speaks of "one small `Registers` trait"; the trait is `RegisterWindowAndClock`. | move lane |
-| `repository` in the manifest. | move lane |
+| `repository` in the manifest, and `publish = false` with its nife-tree comment; the template owns both. | move lane |
+| The `Name:` blocks cite pull requests of this tree; the move commit strips them, as ruled. | move lane |
+| `bench` stays or leaves (decision 1). If it leaves, its 448 lines, its tests and `STATUS_FIFO_FULL` go with it into the kernel's storage bench. | maintainer, after the ruling |
+| Milestone 1019 item 11 (pin each vendor link to its revision) reads as done in this crate: `jh7110.rs` and `host_controller.rs` name the vendor tag and the branch head separately and say which assigns 50 MHz. The block still lists it as outstanding. | maintainer |
 
-Milestone 1019 item 11 (pin each vendor link to the revision its claim holds at) reads as done in
-this crate: `jh7110.rs` and `host_controller.rs` now name the vendor tag and the branch head
-separately and say which assigns 50 MHz. The milestone block still lists item 11 as outstanding,
-for this crate and `jh7110_clock_and_reset`. The maintainer can confirm and close it.
+No shipped text names this tree, a milestone number or a lane. The board is "a VisionFive 2"
+throughout.
 
 ## Proposed items
 
-No defect found in the logic. The two text items above (the stale trait name, radon) are the only
-inaccuracies this review read.
-
-## Open questions
-
-1. `#[non_exhaustive]` on the five error enums and `ScratchWriteVerdict`. Recommendation: add it
-   before 0.1.0, the stricter choice, which a later release can relax (the FAT package's question
-   3). The maintainer can rule it provisionally.
-2. The spelling of `Refusal::Above4GiB`, in the recommendation above. **architect** (renaming a
-   ratified name).
+No defect found in the logic.
 
 ## Result of `script/crate-standalone`
 
-Clean: manifest, files, citations, names, the build on 1.88 for the host and the three bare-metal
-targets, all eight harnesses and all eight falsifications.
+Clean: manifest, files, citations, names, the build on 1.88 for the host and
+the three bare-metal targets, all eight harnesses and all eight falsifications. The crate's 100
+host tests pass, `cargo clippy` reports nothing, and
+`machine_discovery`, `driver_process_contract`, `components` and the kernel (with `storage_bench`)
+still build.
 
 ## Recommendation
 
-Ready for review once the maintainer rules question 1 provisionally and the architect rules
-question 2. The move lane's text edits do not hold the review.
+Ready for the architect's review. Five decisions below remain, and none of them blocks reading the crate.
+
+## Decisions for the architect
+
+1. `bench` leaves 0.1.0: recommend moving it into the kernel's storage bench. Background: it is
+   board bring-up code, and adding a feature later is compatible while removing one is not.
+2. Rename `Refusal::Above4GiB` to `AboveFourGibibytes`: recommend yes. Background: the units rule
+   bans symbols, and the checker only reads suffixes, so a unit inside a name slipped through.
+3. Rename the two address registers to say `PHYSICAL`: recommend yes. Background: the naming rule
+   for addresses postdates their ratification, and these two hold bus addresses.
+4. Spell out the parameters `verid`, `hcon` and `prop`: recommend yes. Background: a later rule
+   forbids databook abbreviations in parameters, and a parameter rename breaks no caller.
+5. Confirm the maintainer's `#[non_exhaustive]` set, `CardKind` included: recommend confirm.
+   Background: a later release can relax the restrictive option but cannot add it.

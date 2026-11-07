@@ -173,39 +173,26 @@ Recommendation. Ready for review.
 
 ## `e1000e`, step 6
 
-Name and version. `e1000e` `0.1.0`. The architect ratified the crate name as the family name QEMU and Linux
-both use, permanent on first publication. The three `flush` names are ratified.
+The whole package is [crate-reviews/e1000e.md](crate-reviews/e1000e.md).
 
-API. Registers and descriptors for the 82574L and the I219 behind two small traits. The public items are `DataPlane`,
-`DirectMemoryAccessRegion`, `Tails`, `TransmitError`, the `layout` and `registers` modules, the device
-id table (`DEVICE_IDS`, `is_supported_device`, `model_name`), and `platform_controller_hub`, the I219
-bring-up (flush, reset, ultra low power, physical layer device access, non-volatile memory). No nife
-type appears in a public signature.
+Name and version. `e1000e` `0.1.0`, ratified as the family name QEMU and Linux both use, permanent on
+first publication. All 166 `Name:` blocks read ratified.
 
-Proofs. Three harnesses (a paged physical layer device access, the delivered frame, the ring
-offsets). All three prove and all three patches fail.
+API. Registers, descriptors and ring logic for the 82574L and the I219 behind four small traits,
+with the I219 bring-up in `platform_controller_hub`. Every error implements `Display` and
+`core::error::Error`, and the types that will grow are `#[non_exhaustive]`. No nife type appears in a
+public signature.
+
+Proofs. Three harnesses. All three prove and all three patches fail.
 
 Dependencies. None.
 
-Provenance. The `platform_controller_hub` module adapts FreeBSD's Intel shared code
-(BSD-3-Clause) and `if_em.c` and `if_em.h` (BSD-2-Clause), with notices in the module. Milestone 1019
-items 3 and 4 hold. The three flush names
-(`flush::empty_descriptor_rings`, `flush::FlushSupport`, `flush::EmptiedRings`) are ratified. The manifest
-license field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`, naming the license of
-each adapted source.
+Provenance. Milestone 1019 items 3 and 4 hold, and the notices are in the files. The manifest license
+field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.
 
-Names. The maintainer ratified three names provisionally, pending the architect's review: the register
-`HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER` (`non_volatile_memory.rs`, with `HSFSTS` as a
-`#[doc(alias)]`), `acquire` (`physical_layer_device.rs`) and `setup_copper_link` (`sequence.rs`).
-The maintainer's ruling stands unless the architect changes it at the crate's name review.
+Result of `script/crate-standalone`. Clean. The crate names no nife file.
 
-Outstanding before the move.
-
-| item | owner |
-|---|---|
-| The README describes the crate as built for the nife kernel; reword it. | move lane |
-
-Recommendation. Ready for review.
+Recommendation. Ready for review, with four rulings on names and the move (the package ends with them).
 
 ## `designware_ethernet`, step 7
 
@@ -247,21 +234,31 @@ Recommendation. Item 9 needs a home before the review.
 The whole package is
 [crate-reviews/designware-mobile-storage.md](crate-reviews/designware-mobile-storage.md).
 
-Name and version. `designware_mobile_storage` `0.1.0`, ratified. 135 `Name:` blocks, all ratified.
+Name and version. `designware_mobile_storage` `0.1.0`, ratified. 129 `Name:` blocks, all ratified;
+the `bench` feature has none.
 
 API. The whole SD and eMMC driver for the Synopsys dw-mshc behind one trait,
 `RegisterWindowAndClock`, in eight public modules and about 115 items. The ninth, `bench`, serves
-this tree's bring-up and sits behind the `bench` feature.
+board bring-up and sits behind the `bench` feature. The error enums and `CardKind` are
+`#[non_exhaustive]` (the maintainer's provisional ruling), and the errors implement `Display` and
+`core::error::Error`.
 
 Proofs. Eight harnesses. All eight prove and all eight patches fail.
 
 License. `(MIT OR Apache-2.0) AND ISC`, for the code adapted from OpenBSD's `dwmmc.c`, whose notice
-`src/lib.rs` carries. #3200 settled the second notice.
+`src/lib.rs` carries.
 
-Result of `script/crate-standalone`. Clean.
+Result of `script/crate-standalone`. Clean. The template's unit, spelled-out and question-shape
+checks find nothing. No shipped text names this tree.
 
-Recommendation. Ready for review after two questions: `#[non_exhaustive]` (the maintainer's to
-rule provisionally) and the spelling of `Refusal::Above4GiB` (the architect's).
+Outstanding before the move.
+
+| item | owner |
+|---|---|
+| Five architect decisions: whether `bench` ships, `Refusal::Above4GiB`, two address registers, three parameter names, and the `#[non_exhaustive]` set. | architect |
+| `repository` in the manifest. | move lane |
+
+Recommendation. Ready for review.
 
 ## `jh7110_clock_and_reset`, step 10
 
@@ -352,7 +349,7 @@ Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text 
 | `non_volatile_memory_express` | 5 | ready for review |
 | `e1000e` | 6 | ready for review |
 | `designware_ethernet` | 7 | item 9 of milestone 1019 needs a home |
-| `designware_mobile_storage` | 8 | ready for review after two questions, one the architect's |
+| `designware_mobile_storage` | 8 | ready for review |
 | `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
 | `block_roster` | contract | blocked by its identity value and one defect |
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |

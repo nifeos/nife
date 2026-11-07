@@ -29,6 +29,11 @@
 #[cfg(test)]
 extern crate std;
 
+// The README's usage example runs as a doctest, so it cannot drift from the API.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
+
 #[doc(alias = "pch")]
 pub mod platform_controller_hub;
 
