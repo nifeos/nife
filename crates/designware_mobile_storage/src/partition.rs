@@ -4,7 +4,7 @@
 //! after sector 0: the alignment gap no filesystem owns and U-Boot does not read when the board
 //! boots from its QSPI flash, as the VisionFive 2 does. A card with no MBR signature, a protective MBR (GPT,
 //! whose header and table live in that gap), no partitions, or a first partition at sector 1 gets
-//! no scratch range, and the bench probe refuses to write and says why. A Kani harness (`proofs` in
+//! no scratch range, and a caller that wants a scratch range gets none and must refuse to write. A Kani harness (`proofs` in
 //! the crate root) proves the range never touches a partition or sector 0, for every table.
 //!
 //! Name: ratified 2026-11-03 (UTC), #3135. A partition is the word for a region of a card that an MBR

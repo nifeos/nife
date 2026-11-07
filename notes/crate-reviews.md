@@ -232,12 +232,10 @@ Recommendation. Item 9 needs a home before the review.
 The whole package is
 [crate-reviews/designware-mobile-storage.md](crate-reviews/designware-mobile-storage.md).
 
-Name and version. `designware_mobile_storage` `0.1.0`, ratified. 129 `Name:` blocks, all ratified;
-the `bench` feature has none.
+Name and version. `designware_mobile_storage` `0.1.0`, ratified. 110 `Name:` blocks, all ratified.
 
 API. The whole SD and eMMC driver for the Synopsys dw-mshc behind one trait,
-`RegisterWindowAndClock`, in eight public modules and about 115 items. The ninth, `bench`, serves
-board bring-up and sits behind the `bench` feature. The error enums and `CardKind` are
+`RegisterWindowAndClock`, in eight public modules and about 100 items. The error enums and `CardKind` are
 `#[non_exhaustive]` (the maintainer's provisional ruling), and the errors implement `Display` and
 `core::error::Error`.
 
@@ -253,7 +251,7 @@ Outstanding before the move.
 
 | item | owner |
 |---|---|
-| Five architect decisions: whether `bench` ships, `Refusal::Above4GiB`, two address registers, three parameter names, and the `#[non_exhaustive]` set. | architect |
+| Four architect decisions: `Refusal::Above4GiB`, two address registers, three parameter names, and the `#[non_exhaustive]` set. | architect |
 | `repository` in the manifest. | move lane |
 
 Recommendation. Ready for review.

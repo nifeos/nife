@@ -13,10 +13,9 @@ reads and writes blocks, and decodes the card's identification and specific-data
 caller implements one trait, `RegisterWindowAndClock` (read a register, write one, read a
 microsecond clock), and every sequence runs on a host against a simulated controller and card. It
 is `no_std`, with no allocator, no `unsafe` and no dependency. Eight Kani harnesses prove its
-parsers and bounds. Every public name has a ratified `Name:` block. The board's bench test sits behind the
-non-default `bench` feature, and the compile-time checks have no public name. What the architect
-decides is one unit spelled inside a variant name, whether `bench` ships in 0.1.0, and the
-ratified names that a later rule reaches.
+parsers and bounds. Every public name has a ratified `Name:` block, and the compile-time checks have no public name.
+The board's test steps live in the kernel's storage bench, not here. What the architect decides is
+one unit spelled inside a variant name and the ratified names that a later rule reaches.
 
 ## Identity
 
@@ -27,12 +26,12 @@ ratified names that a later rule reaches.
 | edition, `rust-version` | 2024, 1.88 |
 | license | `(MIT OR Apache-2.0) AND ISC`; `LICENSE-MIT` and `LICENSE-APACHE` at the crate root, the ISC notice in `src/lib.rs` |
 | `publish` | `false` |
-| size | 7,254 lines in 13 files: about 5,150 of library, 911 of shared tests, 969 of simulator, 220 of Kani harnesses |
+| size | 6,570 lines in 12 files: about 4,690 of library, 687 of shared tests, 969 of simulator, 220 of Kani harnesses |
 | consumers in nife | `kernel`, `components` and `machine_discovery`, by path |
 
 ## Public API
 
-Eight public modules, a ninth (`bench`) behind the `bench` feature, and about 115 public items.
+Eight public modules and about 100 public items.
 
 | module | what it holds |
 |---|---|
@@ -43,23 +42,17 @@ Eight public modules, a ninth (`bench`) behind the `bench` feature, and about 11
 | `card` | `CardIdentification`, `CardSpecificData`, `extract_bits`, `r1_state` |
 | `sd` | `identify`, `read_blocks`, `write_blocks`, `Card`, `CardKind`, `can_address_blocks`, the two error enums |
 | `partition` | `MasterBootRecord::parse`, `PartitionEntry`, and `scratch_sector_range`, the rule for where a write test may land |
-| `bench` (feature `bench`) | the read-only probe, the scratch write test, the read matrix and `QueueWatch`, which a board bring-up runs |
 | `jh7110` | the two controllers' addresses, interrupts and queue depth on that chip, both device trees' compatible strings, and `Slot::from_node` |
 
 No public signature names another crate's type.
 
 What a stranger may find surprising:
 
-- `bench` is board bring-up code, built only with the `bench` feature (or for the crate's own
-  tests). `run_scratch_write_test` writes to the card (inside the gap before the first partition,
-  which a harness proves), and `MATRIX_HERTZ` and `MatrixRow` serve one diagnosis on one board. A
-  stranger driving a controller needs none of it, and with the feature off none of it is public.
-- The enums `host_controller::Error`, `Refusal`, `InitializationError`, `BlockTransferError`,
-  `ReadOnlyProbeFailure`, `ScratchWriteVerdict` and `CardKind` are `#[non_exhaustive]`
-  (provisional, below), so a new variant after publication breaks no `match`. The four error enums and
-  `ReadOnlyProbeFailure` implement `Display` and `core::error::Error`; neither needed a choice
-  that a later release cannot extend.
-- Public structs expose public fields (`Card`, `Identity`, `Slot`, `MatrixRow` and others), so a
+- The enums `host_controller::Error`, `Refusal`, `InitializationError`, `BlockTransferError` and
+  `CardKind` are `#[non_exhaustive]` (provisional, below), so a new variant after publication
+  breaks no `match`. The four error enums implement `Display` and `core::error::Error`; neither
+  needed a choice that a later release cannot extend.
+- Public structs expose public fields (`Card`, `Identity`, `Slot` and others), so a
   field added later breaks callers who build them. `Identity`, `Slot` and `Card` are values the
   crate returns, and a caller seldom builds one.
 - The README is not the crate documentation. `src/lib.rs` carries the module index, the license
@@ -82,16 +75,16 @@ on 1.88 and saw each patch fail its own harness.
 | `an_extended_card_specific_data_sector_count_is_total` | the eMMC sector count reads from bytes 212 to 215 of any buffer, and a short buffer gives zero |
 
 Not proved, and the README says so: the card bring-up state machine, the timing, and the
-identification decode. 99 host tests drive those against the simulator.
+identification decode. 91 host tests drive those against the simulator.
 
 ## Names
 
-`python3 helpers/name_release.py --draft designware_mobile_storage` lists 130 rows. 129 read
-ratified: the crate on #1806 and the items on pull requests #3092 to #3144, #3096, #3101 and #3276. The 130th is the `bench` feature, which has no block. Nothing else is
+`python3 helpers/name_release.py --draft designware_mobile_storage` lists 110 rows. All 110 read
+ratified: the crate on #1806 and the items on pull requests #3092 to #3144, #3096, #3101 and #3276. Nothing is
 provisional.
 
 Against the rulings in force, checked with the template's own checks
-(`vendor/crate-workflows/helpers/`, run with `--manifest` over `src/*.rs`, 1,561 names judged):
+(`vendor/crate-workflows/helpers/`, run with `--manifest` over `src/*.rs`):
 
 | rule | result |
 |---|---|
@@ -132,12 +125,11 @@ proposal for a license check would add.
 
 ## Provisional rulings by the maintainer
 
-`#[non_exhaustive]` marks the five error enums, `ScratchWriteVerdict` and `CardKind`. It is
+`#[non_exhaustive]` marks the four error enums and `CardKind`. It is
 the restrictive option: relaxing it in a later release breaks nobody, and adding it after
 publication breaks every exhaustive `match`. `CardKind` joins the list because its own comment
 already names SDUC as a future kind. `Response` stays exhaustive, since the specification fixes
-its seven values. The kernel's storage bench matches `ReadOnlyProbeFailure` with a wildcard arm, the
-one `match` in this tree that needed it. The architect's clearance of the API confirms or reverses
+its seven values. The architect's clearance of the API confirms or reverses
 this.
 
 ## Outstanding before the move
@@ -146,7 +138,6 @@ this.
 |---|---|
 | `repository` in the manifest, and `publish = false` with its nife-tree comment; the template owns both. | move lane |
 | The `Name:` blocks cite pull requests of this tree; the move commit strips them, as ruled. | move lane |
-| `bench` stays or leaves (decision 1). If it leaves, its 448 lines, its tests and `STATUS_FIFO_FULL` go with it into the kernel's storage bench. | maintainer, after the ruling |
 | Milestone 1019 item 11 (pin each vendor link to its revision) reads as done in this crate: `jh7110.rs` and `host_controller.rs` name the vendor tag and the branch head separately and say which assigns 50 MHz. The block still lists it as outstanding. | maintainer |
 
 No shipped text names this tree, a milestone number or a lane. The board is "a VisionFive 2"
@@ -159,24 +150,22 @@ No defect found in the logic.
 ## Result of `script/crate-standalone`
 
 Clean: manifest, files, citations, names, the build on 1.88 for the host and
-the three bare-metal targets, all eight harnesses and all eight falsifications. The crate's 100
-host tests pass, `cargo clippy` reports nothing, and
+the three bare-metal targets, all eight harnesses and all eight falsifications. The crate's 91
+host tests and five doctests pass, `cargo clippy` reports nothing, and
 `machine_discovery`, `driver_process_contract`, `components` and the kernel (with `storage_bench`)
 still build.
 
 ## Recommendation
 
-Ready for the architect's review. Five decisions below remain, and none of them blocks reading the crate.
+Ready for the architect's review. Four decisions below remain, and none of them blocks reading the crate.
 
 ## Decisions for the architect
 
-1. `bench` leaves 0.1.0: recommend moving it into the kernel's storage bench. Background: it is
-   board bring-up code, and adding a feature later is compatible while removing one is not.
-2. Rename `Refusal::Above4GiB` to `AboveFourGibibytes`: recommend yes. Background: the units rule
+1. Rename `Refusal::Above4GiB` to `AboveFourGibibytes`: recommend yes. Background: the units rule
    bans symbols, and the checker only reads suffixes, so a unit inside a name slipped through.
-3. Rename the two address registers to say `PHYSICAL`: recommend yes. Background: the naming rule
+2. Rename the two address registers to say `PHYSICAL`: recommend yes. Background: the naming rule
    for addresses postdates their ratification, and these two hold bus addresses.
-4. Spell out the parameters `verid`, `hcon` and `prop`: recommend yes. Background: a later rule
+3. Spell out the parameters `verid`, `hcon` and `prop`: recommend yes. Background: a later rule
    forbids databook abbreviations in parameters, and a parameter rename breaks no caller.
-5. Confirm the maintainer's `#[non_exhaustive]` set, `CardKind` included: recommend confirm.
+4. Confirm the maintainer's `#[non_exhaustive]` set, `CardKind` included: recommend confirm.
    Background: a later release can relax the restrictive option but cannot add it.

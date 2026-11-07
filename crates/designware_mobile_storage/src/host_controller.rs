@@ -3,7 +3,7 @@
 //! `dwmmc_pio_mode`, `dwmmc_exec_command` and `dwmmc_transfer_data` (the crate root carries the
 //! notice), with deliberate differences: every wait is a deadline on a clock the caller supplies
 //! rather than a count of `delay(100)`s, nothing sleeps, the interrupt line stays masked, and a
-//! 64-bit FIFO is refused (the VisionFive 2's is measured by the bench step before anything depends on it).
+//! 64-bit FIFO is refused (the VisionFive 2's is measured on the board before anything depends on it).
 //! `HostController<R>` moves every word through the FIFO by MMIO; `HostController<R, D>`, from
 //! [`HostController::with_internal_direct_memory_access`], hands each data phase to the controller's DMA
 //! engine ([`crate::internal_direct_memory_access`]). Commands and identification are the same on
@@ -105,7 +105,7 @@ impl core::fmt::Display for Error {
 
 impl core::error::Error for Error {}
 
-/// The controller's identity, read before anything is written: what a bench transcript prints.
+/// The controller's identity, read before anything is written: what a board transcript prints.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands. Its fields are spelled out; the
 /// databook's `verid`, `hcon`, `usrid`, `fifoth` and `cdetect` are kept as `doc(alias)` on each,

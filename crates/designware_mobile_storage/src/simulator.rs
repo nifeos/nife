@@ -1,6 +1,6 @@
 //! A simulated controller with a card behind it, for the host tests. QEMU has no `DW_mshc` model
 //! for any RISC-V machine (its one `dw_mmc`-shaped device, on some Arm boards, is unreachable from
-//! a RISC-V guest), so the tests run the real driver against this and the bench step
+//! a RISC-V guest), so the tests run the real driver against this and a test on the board
 //! checks this against silicon. It models only the contract the driver relies on, as the databook
 //! and OpenBSD describe it: self-clearing `CONTROL` resets, the `CMD` start bit, a FIFO raising
 //! `RXDR`, `TXDR`, `DTO` and `ACD`, `STATUS_REGISTER` fill and busy, `CARDTHRCTL` above the FIFO ending in
