@@ -420,32 +420,51 @@ pub fn dump_threads() {
         return;
     };
     dump_header();
+    dump_threads_of(sched);
+    dump_rendezvous_of(sched);
+    dump_notifications_of(sched);
+    dump_cores();
+    crate::println!("--- end thread dump ---");
+}
+
+/// [`dump_threads`]'s line for every thread.
+fn dump_threads_of(sched: &mut IpcTables) {
     for t in sched.threads.iter_mut() {
         dump_thread(t);
     }
-    // Rendezvous with a waiter: a deadlock shows as a sender with no receiver.
+}
+
+/// [`dump_threads`]'s lines for the rendezvous with a waiter: a deadlock shows as a sender with no
+/// receiver.
+fn dump_rendezvous_of(sched: &IpcTables) {
     for (name, &phys) in sched.rendezvous_table.iter() {
         // SAFETY: a live rendezvous page, direct-mapped, under IPC_TABLES.
         let ep = unsafe { &*(crate::arch::mmu::phys_to_virt(phys) as *const Rendezvous) };
         dump_rendezvous(name.to_bits(), ep);
     }
-    // Notifications with a waiter or a pending word.
+}
+
+/// [`dump_threads`]'s lines for the notifications with a waiter or a pending word.
+fn dump_notifications_of(sched: &IpcTables) {
     for (name, &phys) in sched.notification_table.iter() {
         // SAFETY: a live notification page, direct-mapped, under IPC_TABLES.
         let n = unsafe { &*(crate::arch::mmu::phys_to_virt(phys) as *const NotificationPage) };
         dump_notification(name.to_bits(), n);
     }
+}
+
+/// [`dump_threads`]'s lines for every online core, with its event ring, then for every parked core
+/// whose inbox holds a thread nothing will run.
+fn dump_cores() {
     // The online set, not `0..count`.
     for c in crate::smp::online_cpus() {
         dump_core(c);
         trace::dump(c);
     }
-    // A parked core with a non-empty inbox holds a thread nothing will run.
     let online = crate::smp::online_harts_mask();
     for c in (0..crate::cpu::MAXIMUM_CPUS).filter(|c| online & (1 << c) == 0) {
         dump_parked_core(c);
     }
-    crate::println!("--- end thread dump ---");
 }
 
 /// [`dump_threads`]'s first line.
@@ -458,8 +477,27 @@ fn dump_header() {
     );
 }
 
-/// [`dump_threads`]'s line for thread `t`.
+/// [`dump_threads`]'s line for thread `t`, printed in three parts so that no one frame holds
+/// every argument.
 fn dump_thread(t: &Thread) {
+    dump_thread_state(t);
+    dump_thread_place(t);
+    dump_thread_wait(t);
+}
+
+/// The scheduler state that opens [`dump_thread`]'s line.
+fn dump_thread_state(t: &Thread) {
+    crate::print!(
+        "  tid={:#06x} state={:?} on_cpu={} wake_pending={}",
+        t.id,
+        t.handshake.state,
+        t.handshake.on_cpu,
+        t.handshake.wake_pending,
+    );
+}
+
+/// Where thread `t` is: its outgoing capability, its user `pc` and its address space.
+fn dump_thread_place(t: &Thread) {
     let pc = t
         .stack
         .as_ref()
@@ -468,16 +506,16 @@ fn dump_thread(t: &Thread) {
     // The space's root tells processes apart: every user program links at one base.
     let root = t.space.as_ref().map(|s| s.root()).unwrap_or(0);
     crate::print!(
-        "  tid={:#06x} state={:?} on_cpu={} wake_pending={} has_outgoing_cap={} pc={:#010x}{} address_space={:#010x}",
-        t.id,
-        t.handshake.state,
-        t.handshake.on_cpu,
-        t.handshake.wake_pending,
+        " has_outgoing_cap={} pc={:#010x}{} address_space={:#010x}",
         t.outgoing_capability.is_some(),
         pc,
         if t.handshake.on_cpu { "*" } else { "" },
         root,
     );
+}
+
+/// What thread `t` waits on, which ends [`dump_thread`]'s line.
+fn dump_thread_wait(t: &Thread) {
     // `Blocked` with `wait=-` means a state byte was written outside the block paths.
     match t.handshake.wait_on {
         Some(Wait::Rendezvous(ep, role)) => crate::println!(" wait={ep:#x}/{role:?}"),
