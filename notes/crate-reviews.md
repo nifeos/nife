@@ -50,8 +50,7 @@ against itself.
   stand-in for the template's `standalone` job is `script/crate-standalone`, whose result is in each
   package. No further check can run before a repository exists.
 - README readiness. Every README has the sections a stranger looks for: what the crate does, the
-  proofs with their harness names, usage, limitations and license. `generational_table` has no
-  README yet. Every other README that names harnesses tells a newcomer how to install Kani. No crate
+  proofs with their harness names, usage, limitations and license. Every other README that names harnesses tells a newcomer how to install Kani. No crate
   has run a stranger test, and none can until it has a repository.
 - References to nife in shipped text. Crate repositories stand alone and do not mention nife.
   Each package lists the mentions that remain, each a small edit for the move lane.
@@ -121,7 +120,8 @@ Recommendation. Ready for review.
 
 The whole package is [crate-reviews/generational-table.md](crate-reviews/generational-table.md).
 
-Name and version. `generational_table` `0.1.0`, ratified, with all 14 item names (#3119) and `EntryName<T>`. The
+Name and version. `generational_table` `0.1.0`, ratified, with all 14 item names (#3119), `EntryName<T>` and its
+`to_bits`, `from_bits` and `NEVER_MINTED`. The
 architect ruled that it publishes, as milestone 1033 (`generational_table`: the fixed-capacity,
 proved slotmap, released on its own) records.
 
@@ -131,13 +131,11 @@ the generation, and a slot whose generation reaches `u32::MAX` retires.
 Proofs. Five harnesses, among them an induction step showing that a dead name stays dead after any
 number of operations. All five prove and all five patches fail.
 
-License. `MIT OR Apache-2.0`, inherited from the workspace; nothing adapted.
+License. `MIT OR Apache-2.0`, written in the crate's manifest, with both license files; nothing adapted.
 
-Result of `script/crate-standalone`. Eight failures: the three provisional names and seven of
-release shape (no README, no license files, no `rust-version`, two inherited manifest keys and one
-citation of this tree). The build passes; a run without Kani skipped the proofs.
+Result of `script/crate-standalone`. Passes; a run without Kani skips the proofs.
 
-Recommendation. Blocked by the release shape and the ratification of three provisional names.
+Recommendation. Ready for review.
 
 ## `non_volatile_memory_express`, step 5
 
@@ -345,7 +343,7 @@ Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text 
 |---|---|---|
 | `file_allocation_table` | 2 | ready for review |
 | `extensible_host_controller_interface` | 3 | ready for review |
-| `generational_table` | 4 | blocked by the release shape and three provisional names |
+| `generational_table` | 4 | ready for review |
 | `non_volatile_memory_express` | 5 | ready for review |
 | `e1000e` | 6 | ready for review |
 | `designware_ethernet` | 7 | item 9 of milestone 1019 needs a home |

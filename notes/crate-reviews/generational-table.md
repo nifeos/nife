@@ -8,22 +8,22 @@ together outgrow the page.*
 
 A fixed-capacity table that names each entry with an `EntryName<T>`, typed by the entry it names and
 holding one `u64`: the slot index in the low 32 bits and the slot's generation in the high 32. Removing an entry raises its slot's generation, so every copy
-of the old name resolves to `None` for good, while the slot itself is reused. The kernel keeps its
+of the old name resolves to `None` for good, while the slot itself serves a new entry. The kernel keeps its
 thread table and its object tables in it. It is `no_std` with no allocator, no `unsafe` and no
 dependency, and five Kani harnesses prove the safety claims. The architect ruled that it publishes,
 third in the order of milestone 857 (crates released on their own), as milestone 1033
-(`generational_table`: the fixed-capacity, proved slotmap, released on its own) records. It is not
-yet shaped for release: it has no README, no license files and no `rust-version`, and it inherits
-two keys from nife's workspace.
+(`generational_table`: the fixed-capacity, proved slotmap, released on its own) records. Its
+directory carries its own manifest values, a README whose example a doctest runs, and both
+license files. The `repository` key waits for the move.
 
 ## Identity
 
 | item | value |
 |---|---|
-| crate | `generational_table`, ratified (the crate name, the 14 item names and `EntryName<T>`); three names on `EntryName<T>` are provisional |
+| crate | `generational_table`, ratified (the crate name, the 14 item names, `EntryName<T>` and its `to_bits`, `from_bits` and `NEVER_MINTED`) |
 | version | `0.1.0`; no tag in this clone |
-| edition, `rust-version` | 2024; no `rust-version` |
-| license | `MIT OR Apache-2.0`, inherited from the nife workspace; no license files in the crate |
+| edition, `rust-version` | 2024; `rust-version` 1.88 |
+| license | `MIT OR Apache-2.0`, written in its own manifest, with `LICENSE-MIT` and `LICENSE-APACHE` in the crate |
 | `publish` | `false`; publication ruled, waiting on the move, the soak and the architect's approval of 0.1.0 |
 | size | one `src/lib.rs` of 816 lines: about 400 of library, 155 of Kani harnesses, 260 of tests |
 | consumers in nife | `kernel` and `memory_regions`, both by path |
@@ -63,7 +63,7 @@ five and saw each patch fail its own harness.
 
 | harness | what it proves |
 |---|---|
-| `a_removed_name_never_resolves_again` | from any starting generations, the last before retirement included, a removed name resolves through none of `get`, `get_mut` and `remove`, even after its slot is filled again |
+| `a_removed_name_never_resolves_again` | from any starting generations, the last before retirement included, a removed name resolves through none of `get`, `get_mut` and `remove`, even after its slot takes a new entry |
 | `a_removed_name_stays_dead_whatever_comes_after` | the induction step: from any reachable two-slot table, two arbitrary operations keep a dead name's slot generation above the name's, and keep every live slot below the retired generation, so the claim holds after any number of operations |
 | `live_names_are_distinct_and_resolve_to_their_own_entry` | two live entries never share a name, and each name reaches its own value |
 | `a_name_the_table_never_minted_resolves_to_nothing` | for any `u64`, resolution fails or lands on the entry whose minted name is that number |
@@ -75,13 +75,12 @@ walk bound and a refused insert that never runs its closure.
 
 ## Names
 
-The crate has 16 names with a block: the crate on its naming review, the 14 items on #3119
-under the ruling that the standard library's spellings win (`len`, `iter`, `get_mut`), and
-`EntryName<T>`, ratified on 2026-11-06. Three more names are provisional: the associated items
-`EntryName::to_bits`, `EntryName::from_bits` and `EntryName::NEVER_MINTED`. `to_bits` and
-`from_bits` take the standard library's spelling (`f64::to_bits`); `NEVER_MINTED` was chosen over
-`NONE` (which reads as `Option::None`) and `INVALID` (which it is not, since resolving it answers
-`None`). Recommendation: ratify all three. **architect** (names).
+The crate has 19 names with a block, all ratified. They are the crate itself, the 14 items on #3119
+(the standard library's spellings win: `len`, `iter`, `get_mut`), `EntryName<T>`, and its
+associated items `EntryName::to_bits`, `EntryName::from_bits` and `EntryName::NEVER_MINTED`.
+`to_bits` and `from_bits` take the standard library's spelling (`f64::to_bits`). `NEVER_MINTED`
+beat `NONE`, which reads as `Option::None`, and `INVALID`, which it is not, since resolving it
+answers `None`.
 
 ## License
 
@@ -92,42 +91,24 @@ documentation names `slotmap` as the same shape and copies nothing from it.
 
 | item | owner |
 |---|---|
-| A README with what the crate does, its proofs by harness name, how to install and run Kani, usage and limits. | move lane |
-| `LICENSE-MIT` and `LICENSE-APACHE` at the crate root, the `license` key written out, `rust-version = "1.88"` (after a build at 1.88), and the lint table copied in from the workspace. | move lane |
-| `src/lib.rs` line 12 cites `notes/generational-names.md`; the retirement arithmetic it points to moves into the crate's own documentation. | move lane |
-| Shipped text speaks of the kernel's tables: "revocation walks every capability table", "a Thread learns its `ThreadId`", "the `NO_TID` sentinel". Each becomes a general example. | move lane |
+| The `repository` key, written when the repository exists. | move lane |
+| A build at Rust 1.88, the declared `rust-version`. | move lane |
 
 ## Proposed items
 
-No defect found in the code. Three records disagree with it:
-
-1. Milestone 1033's block says four harnesses and lists under `BUGS` that a slot reused 2^32 times
-   resolves an ancient name again. The crate now saturates a slot's generation and retires it, and
-   a fifth harness proves a dead name stays dead after any number of operations. The block and the
-   release record's comparison table (`wraps after 2^32 reuses`) and recommended `BUGS` line
-   ("the 2^32 wrap") need the same correction, and the block's open item on the name type has
-   its answer, `EntryName<T>`. Owner: a lane, after the maintainer confirms.
-2. The crate's limits do not say that a table whose every slot has retired refuses every insert
-   for good. A test shows it (`a_table_of_retired_slots_refuses`), and the README's `BUGS` section
-   is where a stranger looks.
-3. Milestone 1033 says the README states how the crate differs; no README exists yet. The move
-   lane writes it from the release record's recommendation.
+None. No defect found in the code.
 
 ## Open questions
 
-1. Whether the README states expected demand as low. The crates.io API, read for this package,
-   shows `slotmap` at 36.2 million downloads in 90 days and the two fixed-capacity crates its search
-   finds, `slots` and `coca`, at 18 and 19. Recommendation: say it plainly in one sentence of the
-   README, as the release record suggests. The maintainer can decide it.
+None. The README says in one sentence that expected demand is low (the crates.io figures are in the
+release record).
 
 ## Result of `script/crate-standalone`
 
-Eight failures: the three provisional names, and seven of release shape (the manifest inherits
-`license` and `lints` and has no `rust-version`; the crate has no README and no license files; one
-line cites this tree). The build on the host and the three bare-metal targets passes on stable.
-That run skipped Kani (`--no-kani`); an earlier full run, before `EntryName<T>`, proved all five
-harnesses and saw all five patches fail.
+Passes every check but Kani, which a run with `--no-kani` skips. The build on the host and the
+three bare-metal targets passes on stable. A full run proved all five harnesses and saw all five
+patches fail.
 
 ## Recommendation
 
-Blocked by the release shape (the README, the license files and the manifest keys) and the three provisional names. After those, ready for review.
+Ready for review.

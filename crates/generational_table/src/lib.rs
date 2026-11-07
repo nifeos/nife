@@ -11,18 +11,25 @@
 //! - Capacity is fixed: `insert_with` returns `None` when all `N` slots are live.
 //! - Generations are 32-bit and never wrap. A slot whose generation reaches `u32::MAX` retires:
 //!   it is never filled again, so the table's capacity shrinks by one. A slot retires only after
-//!   2^32 - 1 occupants, and notes/generational-names.md has what that takes on the kernel's tables.
+//!   2^32 - 1 occupants of that slot. A loop that does nothing but insert and remove one entry
+//!   takes about 7 nanoseconds a cycle on a 2.1 GHz server core, so it retires its slot in about
+//!   half a minute; a loop that does real work per entry takes far longer. A table whose every
+//!   slot has retired refuses every insert for good.
 //! - Insert scans for a free slot in O(N); `get` and `get_mut` are O(1).
 //!
-//! Name: ratified 2026-08-23 (calef, a kernel-dependency crate naming review). Renamed from
-//! `slots`: flagged in CLAUDE.md's own text as an example of a too-generic name; matches the
-//! crate's own opening line ("a fixed-capacity generational table").
+//! Name: ratified 2026-08-23 (UTC). Considered: `slots`, which is too generic a name for a crate
+//! on a public registry; this name matches the crate's own opening line ("a fixed-capacity
+//! generational table").
 
 #![cfg_attr(not(test), no_std)]
 #![forbid(unsafe_code)]
 
 use core::fmt;
 use core::marker::PhantomData;
+
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
 
 /// The name of an entry in a [`Table`] whose entries are of type `T`: `(generation, slot)` packed
 /// in one `u64`, generation in the high 32 bits and slot in the low 32.
@@ -72,14 +79,14 @@ impl<T> EntryName<T> {
     /// table has, because [`Table::new`] refuses `N` above `u32::MAX`. Either fact alone keeps it
     /// unminted.
     ///
-    /// Name: provisional. Considered: `NONE`, which reads as `Option::None` and invites a match
+    /// Name: ratified 2026-11-07 (UTC). Considered: `NONE`, which reads as `Option::None` and invites a match
     /// on it; `INVALID`, which it is not, since resolving it is well defined and answers `None`.
     pub const NEVER_MINTED: Self = Self::from_bits(u64::MAX);
 
     /// The packed word, for a boundary that carries a plain `u64`: a syscall register, an atomic.
     /// [`from_bits`](Self::from_bits) of the result is this name again.
     ///
-    /// Name: provisional. The standard library's spelling for a lossless conversion to a word
+    /// Name: ratified 2026-11-07 (UTC). The standard library's spelling for a lossless conversion to a word
     /// (`f64::to_bits`), kept because the standard library's name is the one a reader already
     /// knows.
     pub const fn to_bits(self) -> u64 {
@@ -89,7 +96,7 @@ impl<T> EntryName<T> {
     /// The name a packed word spells. Total: every `u64` is a name, and one the table never
     /// minted resolves to nothing.
     ///
-    /// Name: provisional. The standard library's spelling (`f64::from_bits`), kept because the
+    /// Name: ratified 2026-11-07 (UTC). The standard library's spelling (`f64::from_bits`), kept because the
     /// standard library's name is the one a reader already knows.
     pub const fn from_bits(bits: u64) -> Self {
         Self {
@@ -307,8 +314,8 @@ impl<T, const N: usize> Table<T, N> {
         self.live == 0
     }
 
-    /// Every live entry by mutable reference, in slot order. For whole-table sweeps (revocation walks every capability table);
-    /// nothing on a hot path iterates.
+    /// Every live entry by mutable reference, in slot order. For whole-table sweeps, such as revoking every record that refers to something that is
+    /// going away; nothing on a hot path should iterate.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119. Renamed from `iter_mut`, which yielded only values and so disagreed with the standard library's `iter_mut`; it now pairs with `values`.
     pub fn values_mut(&mut self) -> impl Iterator<Item = &mut T> {
@@ -337,8 +344,8 @@ impl<T, const N: usize> Table<T, N> {
     }
 
     /// Every live entry with its current name, in slot order. For sweeps that must *remove* what
-    /// they find and so need the name, not just the value (object revocation: find every object
-    /// backed by a region, then remove it by name). `values`/`values_mut` suffice when the caller
+    /// they find and so need the name, not just the value (for example, find every entry
+    /// that refers to something going away, then remove it by name). `values`/`values_mut` suffice when the caller
     /// only needs the entry, as when each entry carries its own name.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3119. The standard library's spelling, kept because the standard library's name is the one a reader already knows.
@@ -395,8 +402,7 @@ impl<T, const N: usize> Default for Table<T, N> {
 }
 
 /// Machine-checked proofs, with Kani. These are the properties a caller that stores names in
-/// capabilities or other long-lived records leans on, proved before anything leans on them. A two-slot
-/// table exhibits every case that matters: the slot in question, a different slot, and reuse.
+/// long-lived records leans on. A two-slot table exhibits every case that matters: the slot in question, a different slot, and reuse.
 #[cfg(kani)]
 mod verification {
     use super::*;
@@ -557,7 +563,7 @@ mod verification {
 mod tests {
     use super::*;
 
-    /// The boot-thread contract: the first insert into a fresh table is named 0.
+    /// The first-name contract: the first insert into a fresh table is named 0.
     #[test]
     fn the_first_name_is_zero() {
         let mut t: Table<&str, 8> = Table::new();
@@ -565,7 +571,7 @@ mod tests {
         assert_eq!(t.get(EntryName::from_bits(0)), Some(&"boot"));
     }
 
-    /// The entry can carry its own name, which is how a Thread learns its `ThreadId`.
+    /// The entry can carry its own name, which is how a record learns its own name.
     #[test]
     fn the_entry_is_handed_its_name() {
         let mut t: Table<u64, 8> = Table::new();
@@ -574,8 +580,8 @@ mod tests {
     }
 
     /// `iter` yields each live entry paired with the very name that resolves to it, and skips the
-    /// dead. This is what lets object revocation find every object backed by a region and then
-    /// remove it by name (an `AddressSpace`, unlike a Thread, does not carry its own name).
+    /// dead. This is what lets a sweep find every entry that matches a test and then
+    /// remove it by name (an entry that does not carry its own name needs this).
     #[test]
     fn iter_yields_names_that_resolve_to_their_entry() {
         let mut t: Table<&str, 4> = Table::new();
