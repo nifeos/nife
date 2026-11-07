@@ -917,6 +917,26 @@ mod tests {
         ));
     }
 
+    /// A reset bit already set when a data command starts (left by firmware, or by an earlier
+    /// reset not yet cleared) must still be written set: the driver sets the bit, it does not
+    /// toggle it.
+    #[test]
+    fn a_fifo_reset_bit_already_set_is_written_set() {
+        let mut h = take(SimulatedHostController::new(
+            CardKind::SdHighCapacity,
+            2048,
+            32,
+        ));
+        let card = sd::identify(&mut h, 4).unwrap();
+        h.registers_mut()
+            .write(registers::CONTROL, registers::CONTROL_FIFO_RESET);
+        h.registers_mut().writes.clear();
+        let mut block = [0u8; 512];
+        sd::read_blocks(&mut h, &card, 1, &mut block).unwrap();
+        let read = &h.registers_mut().writes;
+        assert!(read.contains(&(registers::CONTROL, registers::CONTROL_FIFO_RESET)));
+    }
+
     /// The size and direction checks come before anything is sent, so an empty slot (which would
     /// answer `NoResponse` to anything sent) shows that nothing was.
     #[test]
