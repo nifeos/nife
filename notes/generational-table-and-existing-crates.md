@@ -5,12 +5,13 @@
 The release record for `crates/generational_table` owes one answer before publication:
 whether `slotmap`, or a crate like it, already covers an allocation-free, fixed-capacity generational
 table with what nife needs from one. This note gives that answer from the source of each candidate,
-a host experiment and five Kani harnesses run against the candidates, and ends with the question an architect rules on. The
+a host experiment and Kani harnesses run against the candidates, and ends with the ruling. The
 mechanism itself is in [Generational names](generational-names.md).
 
 The short answer: no published crate covers it. `slotmap` and `thunderdome` cover the growable,
-heap-backed case well and are the right choice there. The one fixed-capacity crate with
-generations, `coca`, has had no release since 2022 and almost no users. What separates
+heap-backed case well and are the right choice there. The two fixed-capacity crates with
+generations, `coca` and `triple_arena`'s stack backing, have no `const` constructor and keep their
+storage in `unsafe` code, and `coca` has had no release since 2022. What separates
 nife's table is the combination of no allocation, a `const` constructor, a name format the kernel
 already relies on, and proofs, one of which `slotmap` fails.
 
@@ -125,26 +126,21 @@ niche or to mark occupancy.
 | `coca` | `into_raw_parts` | no | no | 382 across the crate |
 | `triple_arena` | `Ptr::inx` | no | no | 72 across the crate |
 
-None of the candidates carries machine-checked proofs.
+None of the candidates carries machine-checked proofs. Against their documented behavior, nife's
+harnesses prove three things none states:
 
-Set against each candidate's documented behavior, the five harnesses prove three things that no
-candidate states:
-
-- No forgery. `slotmap`'s `from_ffi` maps two `u64`s to one key (below), and nife's harness proves
-  that cannot happen. `thunderdome`'s `from_bits` passes the same harness in the experiment below,
-  so on this property nife differs from `thunderdome` by shipping the proof, not by being right
-  where it is wrong.
+- No forgery. `slotmap`'s `from_ffi` maps two `u64`s to one key (below). `thunderdome`'s
+  `from_bits` passes the same harness, so there nife differs by shipping the proof.
 - Reuse without end. `slotmap` and `coca` wrap after 2^31 reuses of a slot and `thunderdome` after
-  2^32 - 1, and past the wrap a name from the first occupant resolves again, as `slotmap`'s
-  documentation says. nife's slot retires instead, and the induction harness proves a dead name stays
-  dead for any number of operations. `triple_arena` and `generational-arena` share one 64-bit
-  counter across the arena, which makes a wrap impractical rather than impossible.
-- The walk bound. No candidate keeps a highest-live-slot bound, so none has the property to prove.
+  2^32 - 1, and past the wrap the first occupant's name resolves again. nife's slot retires instead,
+  and the induction harness proves a dead name stays dead for any number of operations.
+  `triple_arena` and `generational-arena` share one 64-bit counter, so a wrap is impractical rather
+  than impossible.
+- The walk bound. No candidate keeps one, so none has the property to prove.
 
-The limit of the comparison: the harnesses check two- and three-slot tables, and the core
-properties of `slotmap` and `thunderdome` other than forgery hold at those bounds too. The proofs
-are evidence for nife's code, not evidence that the other crates' code is broken. `slotmap` runs Miri over one test and has
-had two soundness bugs in its `unsafe` code, both fixed: a double free in `HopSlotMap` (#69, 2021)
+The limit: the harnesses check two- and three-slot tables, and the other properties of `slotmap`
+and `thunderdome` hold at those bounds too. The proofs are evidence for nife's code, not against
+theirs. `slotmap` runs Miri over one test and has had two soundness bugs in its `unsafe` code, both fixed: a double free in `HopSlotMap` (#69, 2021)
 and a leak in `Slot::clone_from` (#110, open from 2023-10 to 2025-12).
 
 ## The experiment
@@ -200,10 +196,8 @@ fn slotmap_a_name_never_minted_resolves_to_nothing() {
 }
 ```
 
-The same run shows that Kani handles the `Vec`-backed crates at these bounds as quickly as it
-handles nife's, so the proofs are not a reason ours could exist and theirs could not. They are a
-reason ours does exist: the five harnesses ship with the crate, each with a patch that shows it can
-fail, and no candidate ships any.
+Kani handled the `Vec`-backed crates at these bounds as quickly as nife's. The difference is that
+nife's harnesses ship with the crate, each with a patch that shows it can fail.
 
 ## Could the kernel adopt one instead
 
@@ -222,16 +216,15 @@ fail, and no candidate ships any.
   and the handle is a struct, not a word a syscall register carries. It has no slot cursor, and its
   stack backing keeps `MaybeUninit` behind 72 lines of `unsafe` with no proofs.
 - `coca`: the other true match on storage. It has no release or commit since March 2022, no
-  reverse dependencies, 18 downloads in 90 days, a non-`const` constructor, a first name of
+  reverse dependencies, 19 downloads in 90 days, a non-`const` constructor, a first name of
   `0x1_0000_0000`, no slot cursor and 382 `unsafe` lines. Taking it would put a dormant crate
   with heavy `unsafe` into the kernel's shipping graph, which §46 (thin primitives or whole
   subsystems) exists to prevent.
 - `slab`, `sparseset`, `slots`: no generations, so a stale index reaches the next
   occupant. That is the bug the table exists to remove.
 
-The answer holds if both options were the same amount of work. Adopting `slotmap` would cost the
-kernel an allocator and a proved property, and adopting `coca` would trade a table with no `unsafe`
-for a dormant one with 382 lines of it; neither trade buys anything nife lacks.
+The answer holds if both options cost the same work: adopting any of them costs the kernel an
+allocator, a `const` constructor or a proved property, and buys nothing nife lacks.
 
 ## What the demand says
 
@@ -242,9 +235,8 @@ the fixed-capacity, allocation-free kind is close to nothing: `coca` takes 19 an
 says how many use the stack backing. A published `generational_table` would not capture `generational-arena`'s
 orphaned users, because those users grow their arenas.
 
-The users a fixed-capacity table can serve are kernels, firmware and embedded code with no heap,
-which today either write their own or accept `coca`. That audience is small and does not show up in
-download counts, because it writes its own. The crate name `generational_table` is free on
+The users a fixed-capacity table can serve are kernels, firmware and embedded code with no heap.
+That audience is small and does not show up in download counts, because it writes its own. The crate name `generational_table` is free on
 crates.io. The cost of publishing is the release machinery that milestone 887 (crate repositories share one CI template) already built, and the
 risk is a crate few people find.
 
