@@ -148,7 +148,7 @@ jobs:
 
   # The dry run: the setup steps of every job the runs-on expression can place on the pool, run on
   # the owned label without their real work, so the image can be proven before NIFE_RUNNER_OWNED
-  # is set. crate-probes: the pinned toolchain. KVM: the same step the QEMU jobs run, then a VM created. prove: Kani. swish-check-x86_64 and bench: the QEMU
+  # is set. crate-probes: the pinned toolchain. KVM: the same step the QEMU jobs run, then a VM created. swish-check-x86_64 and bench: the QEMU
   # cache and the build-or-skip decision, and what a cold build fetches (apt, the source tarball,
   # pip). Every step runs even after an earlier one fails, so one run names everything missing. It
   # reports and never blocks.
@@ -177,10 +177,6 @@ jobs:
         if: always()
         shell: bash
         run: helpers/owned-image-probe.sh kvm
-      - name: Install Kani (prove)
-        if: always()
-        shell: bash
-        run: script/kani-install
       - name: Cache QEMU (swish-check-x86_64, bench)
         if: always()
         id: qemu-cache

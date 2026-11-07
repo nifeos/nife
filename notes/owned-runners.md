@@ -60,14 +60,16 @@ describes.
 ## What runs on them
 
 Stage 1 moves the x86_64 jobs that run only on `merge_group` or `push` and fit one slot (4 vCPU,
-16 GiB, 50 GB disk, 90 minutes): the longest took 15 minutes on recent queue runs. They take the
+16 GiB, 50 GB disk, 90 minutes). An owned slot runs CPU-bound work about 1.4 times slower than a
+hosted runner, so a job moves only when it stays well inside its budget at that speed. They take the
 switch below with the variable unset, so they stay hosted until a maintainer sets the variable to `true`.
 
 - ci.yml: `swish-check-x86_64`, `bench`, `crate-probes`.
-- verify.yml: the four `prove` shards.
 
 These stay hosted on purpose:
 
+- The four Kani `prove` shards in verify.yml: they run 1.4 to 1.9 times slower on an owned slot and
+  would exceed the 20-minute budget, which is not raised.
 - `fuzz-guests` (the rule in `helpers/fuzz-ci-selftest.sh`: a fuzz finding stays private) and the two
   `fuzz-shard` jobs (the same disclosure rule may cover them; they wait for a ruling).
 - Every aarch64 and riscv64 guest job, and every job on an arm runner.
@@ -156,7 +158,9 @@ canary. It runs the setup steps of each job that the event-aware `runs-on` can p
 without the real work, and keeps going after a failed step so one run names everything missing:
 
 - `crate-probes`: the pinned toolchain install.
-- the `prove` shards: `script/kani-install`.
+- the KVM step, `helpers/open-kvm.sh`, which every job that runs QEMU on KVM runs, and then
+  `helpers/owned-image-probe.sh kvm`, which creates a VM on `/dev/kvm` (the API version must be 12
+  and `KVM_CREATE_VM` must return a descriptor).
 - `swish-check-x86_64` and `bench`: the QEMU cache restore and the decision `script/ci-qemu` would
   take, which is to skip on a hit and build on a miss. The workspace must be
   `/home/runner/work/nife/nife`, the layout where a cache saved by a hosted runner restores under
@@ -211,8 +215,7 @@ twin is unaffected, so the rollback below keeps the queue moving until the maint
 ## A pool that is down
 
 A job sent to the owned label waits for a runner, and `timeout-minutes` does not start until one
-takes it. Two required checks, `bench` and `swish-check-x86_64`, and the `prove` shards behind
-`verify (Kani proofs)`, sit on the switch, so with the pool down and the variable `true` every
+takes it. Two required checks, `bench` and `swish-check-x86_64`, sit on the switch, so with the pool down and the variable `true` every
 merge group waits. The merge queue's 240-minute check timeout then removes the entry, and GitHub
 cancels the waiting job after 24 hours. Nothing alarms sooner (see BUGS). A queue with entries
 in `AWAITING_CHECKS` and owned jobs in `queued` is the sign; roll back.
