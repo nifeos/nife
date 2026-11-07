@@ -41,7 +41,7 @@ Private names only (`pub(crate)`, module-private, locals and test names). None h
 | locals `maximum_service_interval_payload`, `clamped_interval`, `words`, `transfer_type`, `consumer_cycle_state`, `event_ring_dequeue_pointer`, `high`, `low` | `esit`, `b`, `d`, `trt`, `ccs`, `erdp`, `hi`, `lo` |
 | tests `the_port_status_and_control_bits_are_where_the_specification_puts_them`, `a_setup_transfer_request_block_carries_the_packet_and_the_transfer_type` | `the_portsc_bits_are_where_...`, `a_setup_trb_carries_...` |
 
-No falsification patch quotes a renamed name; all seven apply and fail their harness.
+All seven falsification patches apply and fail their harness.
 
 ### Ratified names a later rule reaches
 
@@ -62,22 +62,31 @@ the doc comment, as the rule for a kept foreign name asks. The crate has neither
 | `registers::IMAN`, `IMOD` | `INTERRUPTER_MANAGEMENT`, `INTERRUPTER_MODERATION` |
 | `registers::ERSTSZ`, `ERSTBA`, `ERDP` | `EVENT_RING_SEGMENT_TABLE_SIZE`, `EVENT_RING_SEGMENT_TABLE_BASE_ADDRESS`, `EVENT_RING_DEQUEUE_POINTER` |
 | `registers::IMAN_PENDING`, `IMAN_ENABLE`, `ERDP_BUSY` | `INTERRUPTER_MANAGEMENT_PENDING`, `INTERRUPTER_MANAGEMENT_ENABLE`, `EVENT_RING_DEQUEUE_POINTER_BUSY` |
-| `registers::Capabilities::portsc(n)` | `port_status_and_control(port_number)` |
-| `Capabilities::decode(caplength, hcsparams1, hcsparams2, hccparams1, dboff, rtsoff)`, `Capabilities::interrupter(reg)` | parameters spelled as the constants above, and `register_offset` |
-| `context::device_offset(dci)`, `transfer_request_block::reset_endpoint(slot, dci)`, `set_dequeue(pointer, slot, dci)` | `device_context_index` |
-| `context::endpoint(.., average_trb)` | `average_transfer_request_block_bytes` |
-| `context::is_superspeed(s)`, `event::Event::decode(t)` | `speed`, `transfer_request_block` |
-| `context::interrupt_interval(speed, b_interval)` | `interval_descriptor_value` |
-| `port::speed_of(portsc)`, `port::write_value(portsc, bits)` | `port_status_and_control` |
+| `registers::Capabilities::portsc` | `port_status_and_control` |
 
-A parameter name is not part of a Rust signature's compatibility, so the parameter renames cost
-no caller anything. `b_interval` is USB's `bInterval` descriptor field; the recommended name keeps
-its meaning.
+### Parameter names of public functions
+
+Spelled out. They are provisional: a parameter name is no part of a Rust signature's
+compatibility, so the maintainer rules them, pending the architect, and no caller changes.
+
+| parameter | of | now |
+|---|---|---|
+| `caplength`, `hcsparams1`, `hcsparams2`, `hccparams1`, `dboff`, `rtsoff` | `registers::Capabilities::decode` | `capability_registers_length`, `structural_parameters_1`, `structural_parameters_2`, `capability_parameters_1`, `doorbell_offset`, `runtime_register_space_offset`, as the constants above would be spelled |
+| `n` | `Capabilities::portsc` | `port_number` |
+| `reg` | `Capabilities::interrupter` | `register_offset` |
+| `dci` | `context::device_offset`, `TransferRequestBlock::reset_endpoint`, `set_dequeue` | `device_context_index` |
+| `average_trb` | `context::endpoint` | `average_transfer_request_block_bytes` |
+| `s` | `context::is_superspeed` | `speed` |
+| `t` | `event::Event::decode` | `transfer_request_block` |
+| `b_interval` | `context::interrupt_interval` | `descriptor_interval`; the doc comment says it is the endpoint descriptor's `bInterval` |
+| `portsc` | `port::speed_of`, `port::write_value` | `port_status_and_control` |
+
+`TransferRequestBlock::data` and `normal` keep `len`, the standard library's spelling for a length
+parameter (`slice::from_raw_parts`).
 
 ### Borderline private names, left as they are
 
 - `INTERRUPTER_0`: a digit-suffixed constant that reads as a register-set index, not a clip.
-- Single-letter names in non-test code are all parameters of public functions (`s`, `t`, `n`), which
-  the table above lists. The single-letter test locals are out of scope.
+- The single-letter test locals are out of scope.
 - Possessives in test names (`qemus_capability_registers_decode`, `the_preserved_set_is_linuxs`,
   `xenons_ports_are_all_counted_once_they_settle`): proper nouns with `s`, not abbreviations.
