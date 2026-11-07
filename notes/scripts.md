@@ -32,7 +32,7 @@ Full rows: [build-test-and-gate.md](scripts/build-test-and-gate.md).
 | `script/ci-qemu` | Build the pinned QEMU on Linux, where apt cannot. |
 | `script/drift` | Does a toolchain still build us? |
 | `script/toolchain-bump` | Raise the pinned nightly, with every gate as evidence. |
-| `script/kani-install` | Install the stock Kani that `.kani-version` pins, and repair a dangling toolchain link. The only place that does. |
+| `script/kani-install` | Install the stock Kani that `.kani-version` pins. The only place that does. |
 | `script/license-match` | Check each crate's `license` against its SPDX notices. |
 | `script/kani-bump` | Raise `.kani-version` to the newest stable Kani, and nothing else. |
 | `script/server` | Boot the OS in QEMU: the milestone tour, then the shell. |
