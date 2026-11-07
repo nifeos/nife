@@ -97,13 +97,14 @@ Each item gives the recommendation first.
    IOMMU and ACPI specifications under the five-word rule the `jh7110_entropy` audit used. The Xen
    `hvm_start_info` layout in `notes/machine-discovery.md` comes from an MIT header without its
    notice; it is an ABI layout, so a citation of the file and revision should be enough.
-9. The `designware_ethernet` YT8531 register names rest on a false claim. `motorcomm_physical_layer_device.rs` says
-   Linux's `motorcomm.c` is the only source that names the clock-gating and sleep-control registers.
-   OpenBSD's `ytphy.c` (`YT8511_EXT_CLK_GATE`, `YT8511_EXT_SLEEP_CTRL`) and FreeBSD's `mcommphy.c`
-   name them too. Recommendation: correct the sentence, then decide whether those two constants keep
-   Linux's names. The same line cites "Decision 52", a ruling recorded only in pull request #2762's
-   body; read against the tree it points at §52 (a set of names is a namespace), which is unrelated. Recommendation:
-   cite those rulings as "#2762 Decision N" across the crate's Name blocks.
+9. Done for `designware_ethernet`. The module documentation of
+   `motorcomm_physical_layer_device` is the home of its YT8531 register sources, each pinned to the
+   revision it holds at. OpenBSD's `ytphy.c` (`openbsd/src@9d7a05f92003`) and FreeBSD's
+   `mcommphy.c` (`freebsd/freebsd-src@2ad32d3a6868`) both name the clock gating and sleep control
+   registers, and Linux's `motorcomm.c` (`torvalds/linux@fc697291ad0a`) alone names the bit cleared
+   in each and the whole PHY identifier. The two register constants spell out what each register
+   is, and the crate's `Name:` blocks cite those rulings as "#2762 Decision N". The source table and
+   the two alias sets the naming rules reach are in the crate's package in `notes/crate-reviews.md`.
 10. `jh7110_watchdog` calls the block an Arm SP805, and no listed source says so. `WDOGIMS`
     appears in no source; SP805 names that offset `WDOGMIS`. Recommendation: cite the SP805 manual
     (ARM DDI 0270) if the identification stands, or say "SP805-like", as milestone 593 (the JH7110
@@ -132,8 +133,8 @@ Each item gives the recommendation first.
 
 ## Follow-on
 
-- **Outstanding.** Items 7 to 11 above, each waiting for an architect's ruling; each item's text
-  above says what it is waiting for.
+- **Outstanding.** Items 7, 8, 10 and 11 above, each waiting for an architect's ruling; each
+  item's text above says what it is waiting for.
 - **Proposed.** A check that a crate's `license` field names exactly the licenses of the notices it
   carries, in `design/roadmap/proposals/a-crates-license-field-matches-the-notices-it-carries.md`.
 
