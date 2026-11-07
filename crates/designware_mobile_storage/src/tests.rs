@@ -130,8 +130,8 @@ fn a_transfer_that_does_not_fit_the_card_or_the_buffer_is_refused_before_anythin
 
 #[test]
 fn a_controller_before_2_40a_reads_through_its_queue_at_0x100_and_gets_no_threshold_write() {
-    let sim =
-        SimulatedHostController::new(CardKind::SdHighCapacity, 8192, 32).with_verid(0x5342_230a);
+    let sim = SimulatedHostController::new(CardKind::SdHighCapacity, 8192, 32)
+        .with_version_identification(0x5342_230a);
     let (mut h, id) = HostController::new(sim, 50_000_000, Some(32)).unwrap();
     assert_eq!(
         crate::registers::queue_offset(id.version_identification),
