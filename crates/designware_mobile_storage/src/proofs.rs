@@ -340,6 +340,7 @@ fn a_wait_returns_at_the_first_reading_past_its_deadline() {
         deadline, past_from, past_from,
     ));
     let met = host.is_condition_met_within(deadline, |window| window.read(0) & 1 == 0);
+    assert!(host.registers_mut().taken <= past_from + 1);
     kani::cover!(!met && host.registers_mut().taken == past_from + 1);
 }
 
@@ -392,6 +393,7 @@ fn the_direct_memory_access_wait_returns_once_its_deadline_has_passed() {
         },
     );
     let result = host.internal_direct_memory_access_wait(&command, count);
+    assert!(host.registers_mut().taken <= past_from + count as usize + 1);
     kani::cover!(matches!(
         result,
         Err(crate::host_controller::Error::DataTimeout(..))
