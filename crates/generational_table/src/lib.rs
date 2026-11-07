@@ -166,7 +166,7 @@ pub struct Table<T, const N: usize> {
     /// the *next* occupant's name will carry after a bump. Survives the occupant on purpose. It
     /// only rises, and [`RETIRED`](Self::RETIRED) marks a slot that is never filled again, so no
     /// live name ever carries it.
-    gens: [u32; N],
+    generations: [u32; N],
     /// Live-entry count, maintained so `len` is O(1).
     live: usize,
     /// One past the highest live slot. Every slot at or above it is `None`, so a walk bounded by
@@ -185,7 +185,7 @@ impl<T, const N: usize> Table<T, N> {
         const { assert!(N > 0 && N <= u32::MAX as usize) };
         Self {
             slots: [const { None }; N],
-            gens: [0; N],
+            generations: [0; N],
             live: 0,
             top: 0,
         }
@@ -226,9 +226,9 @@ impl<T, const N: usize> Table<T, N> {
         let slot = self
             .slots
             .iter()
-            .zip(&self.gens)
+            .zip(&self.generations)
             .position(|(s, &g)| s.is_none() && g != Self::RETIRED)?;
-        let name = Self::name(slot, self.gens[slot]);
+        let name = Self::name(slot, self.generations[slot]);
         self.slots[slot] = Some(f(name));
         self.live += 1;
         // First-fit, so the free slot found is at most `top`, and this is the only way `top` grows.
@@ -247,7 +247,7 @@ impl<T, const N: usize> Table<T, N> {
     /// Name: ratified 2026-11-03 (UTC), #3119.
     pub fn slot_of(&self, name: EntryName<T>) -> Option<usize> {
         let (slot, generation) = Self::unpack(name);
-        if *self.gens.get(slot)? != generation {
+        if *self.generations.get(slot)? != generation {
             return None;
         }
         self.slots[slot].as_ref()?;
@@ -279,7 +279,7 @@ impl<T, const N: usize> Table<T, N> {
     pub fn remove(&mut self, name: EntryName<T>) -> Option<T> {
         let slot = self.slot_of(name)?;
         let value = self.slots[slot].take()?;
-        self.gens[slot] = self.gens[slot].saturating_add(1);
+        self.generations[slot] = self.generations[slot].saturating_add(1);
         self.live -= 1;
         // Removing anything below the top leaves a hole, which costs a walk nothing to skip.
         // Removing the top one means the bound can come down, past however many holes are under it.
@@ -390,7 +390,7 @@ impl<T, const N: usize> Table<T, N> {
             .skip(from)
             .filter_map(|(slot, s)| {
                 s.as_ref()
-                    .map(|t| (slot, Self::name(slot, self.gens[slot]), t))
+                    .map(|t| (slot, Self::name(slot, self.generations[slot]), t))
             })
     }
 }
@@ -417,9 +417,9 @@ mod verification {
     #[kani::proof]
     fn a_removed_name_never_resolves_again() {
         let mut t: Table<u8, 2> = Table::new();
-        t.gens = [kani::any(), kani::any()];
+        t.generations = [kani::any(), kani::any()];
         kani::cover!(
-            t.gens[0] == Table::<u8, 2>::RETIRED - 1,
+            t.generations[0] == Table::<u8, 2>::RETIRED - 1,
             "the last occupant a slot takes"
         );
         let Some(name) = t.insert_with(|_| kani::any()) else {
@@ -443,9 +443,9 @@ mod verification {
     fn any_reachable_table() -> Table<u8, 2> {
         let mut t: Table<u8, 2> = Table::new();
         for slot in 0..2 {
-            t.gens[slot] = kani::any();
+            t.generations[slot] = kani::any();
             if kani::any() {
-                kani::assume(t.gens[slot] != Table::<u8, 2>::RETIRED);
+                kani::assume(t.generations[slot] != Table::<u8, 2>::RETIRED);
                 t.slots[slot] = Some(kani::any());
                 t.live += 1;
                 t.top = slot + 1;
@@ -477,21 +477,21 @@ mod verification {
         let slot: usize = kani::any();
         kani::assume(slot < 2);
         let generation: u32 = kani::any();
-        kani::assume(generation < t.gens[slot]);
+        kani::assume(generation < t.generations[slot]);
         let dead = Table::<u8, 2>::name(slot, generation);
         kani::cover!(
-            t.gens[slot] == Table::<u8, 2>::RETIRED && t.slots[slot].is_none(),
+            t.generations[slot] == Table::<u8, 2>::RETIRED && t.slots[slot].is_none(),
             "a retired slot"
         );
 
         for _ in 0..2 {
             any_operation(&mut t);
             assert!(
-                generation < t.gens[slot],
+                generation < t.generations[slot],
                 "a slot's generation came back down"
             );
             for s in 0..2 {
-                assert!(t.slots[s].is_none() || t.gens[s] != Table::<u8, 2>::RETIRED);
+                assert!(t.slots[s].is_none() || t.generations[s] != Table::<u8, 2>::RETIRED);
             }
             assert!(t.get(dead).is_none());
         }
@@ -503,13 +503,13 @@ mod verification {
     #[kani::proof]
     fn live_names_are_distinct_and_resolve_to_their_own_entry() {
         let mut t: Table<u8, 2> = Table::new();
-        let (a_val, b_val): (u8, u8) = (kani::any(), kani::any());
-        let a = t.insert_with(|_| a_val).unwrap();
-        let b = t.insert_with(|_| b_val).unwrap();
+        let (a_value, b_value): (u8, u8) = (kani::any(), kani::any());
+        let a = t.insert_with(|_| a_value).unwrap();
+        let b = t.insert_with(|_| b_value).unwrap();
 
         assert_ne!(a, b);
-        assert_eq!(t.get(a).copied(), Some(a_val));
-        assert_eq!(t.get(b).copied(), Some(b_val));
+        assert_eq!(t.get(a).copied(), Some(a_value));
+        assert_eq!(t.get(b).copied(), Some(b_value));
     }
 
     /// A garbage name resolves to nothing. For any u64 whatsoever, the name `from_bits` makes of it
@@ -591,11 +591,11 @@ mod tests {
         t.remove(b); // a hole in the middle: iter must skip it
 
         let (mut count, mut saw_a, mut saw_c) = (0, false, false);
-        for (name, &val) in t.iter() {
+        for (name, &value) in t.iter() {
             count += 1;
             // Every name iter hands back resolves to exactly that entry.
-            assert_eq!(t.get(name), Some(&val));
-            match val {
+            assert_eq!(t.get(name), Some(&value));
+            match value {
                 "a" => {
                     assert_eq!(name, a);
                     saw_a = true;
@@ -737,7 +737,7 @@ mod tests {
     #[test]
     fn a_slot_at_its_last_generation_retires_on_removal() {
         let mut t: Table<u32, 2> = Table::new();
-        t.gens[0] = Table::<u32, 2>::RETIRED - 1;
+        t.generations[0] = Table::<u32, 2>::RETIRED - 1;
         let last = t.insert_with(|_| 1).unwrap();
         assert_eq!(
             last.to_bits(),
@@ -766,7 +766,7 @@ mod tests {
     #[test]
     fn a_table_of_retired_slots_refuses() {
         let mut t: Table<u32, 2> = Table::new();
-        t.gens = [Table::<u32, 2>::RETIRED; 2];
+        t.generations = [Table::<u32, 2>::RETIRED; 2];
         assert_eq!(
             t.insert_with(|_| unreachable!("closure ran on a retired table")),
             None
@@ -802,7 +802,7 @@ mod tests {
     #[test]
     fn no_table_mints_the_never_minted_name() {
         let mut t: Table<u32, 2> = Table::new();
-        t.gens = [Table::<u32, 2>::RETIRED - 1; 2];
+        t.generations = [Table::<u32, 2>::RETIRED - 1; 2];
         let a = t.insert_with(|_| 1).unwrap();
         let b = t.insert_with(|_| 2).unwrap();
         assert_ne!(a, EntryName::NEVER_MINTED);

@@ -13,5 +13,5 @@ diff --git a/crates/generational_table/src/lib.rs b/crates/generational_table/sr
 +++ b/crates/generational_table/src/lib.rs
 @@ -276,3 +276,2 @@ impl<T, const N: usize> Table<T, N> {
          let value = self.slots[slot].take()?;
--        self.gens[slot] = self.gens[slot].saturating_add(1);
+-        self.generations[slot] = self.generations[slot].saturating_add(1);
          self.live -= 1;
