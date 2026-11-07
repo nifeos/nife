@@ -182,13 +182,15 @@ pub const fn paged_offset(page: u32, register: u32) -> u32 {
 /// names. Refused `r` (a letter, not a name).
 pub mod registers {
     use super::paged_offset;
-    /// **Control Register** (`PHY_CONTROL`, FreeBSD's `e1000_defines.h`). MII register 0.
+    /// **Control Register** (OpenBSD's `PHY_CTRL`, `sys/dev/pci/if_em_hw.h`; FreeBSD's
+    /// `PHY_CONTROL`, `e1000_defines.h`). MII register 0.
     ///
-    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling that keeps a register or bit name
-    /// copied from a cited source, strictly: FreeBSD's `PHY_CONTROL` (`e1000_defines.h`). Refused
-    /// `CONTROL` (a shortened copy).
+    /// Name: ratified 2026-11-07 (UTC), #3322. Renamed from `PHY_CONTROL`, which stays as an alias
+    /// with OpenBSD's `PHY_CTRL`. Refused `CONTROL` (a shortened copy).
     #[doc(alias = "control register")]
-    pub const PHY_CONTROL: u32 = 0x00;
+    #[doc(alias = "PHY_CTRL")]
+    #[doc(alias = "PHY_CONTROL")]
+    pub const PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER: u32 = 0x00;
     /// **PHY Identifier, Word 1** (`PHY_ID1`, FreeBSD's `e1000_defines.h`). The high word.
     #[doc(alias = "physical layer device identifier, word 1")]
     pub(crate) const PHY_ID1: u32 = 0x02;
