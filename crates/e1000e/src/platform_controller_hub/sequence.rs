@@ -1573,4 +1573,40 @@ mod tests {
         );
         assert_eq!(s.physical_layer_device_resets, 2);
     }
+
+    /// The two errors that wrap another report it as their `source`, and every message says
+    /// something: a `Display` that wrote nothing would hide a failed bring-up from a log.
+    #[test]
+    fn errors_say_what_failed_and_name_the_error_inside() {
+        use core::error::Error as _;
+        use std::string::ToString;
+
+        let physical = Error::PhysicalLayerDevice(physical_layer_device::Error::NotReady);
+        let memory = Error::NonVolatileMemory(non_volatile_memory::Error::NoValidBank);
+        assert_eq!(
+            physical.to_string(),
+            "physical layer device access failed: nothing answered on the management data input output bus"
+        );
+        assert_eq!(
+            memory.to_string(),
+            "non-volatile memory read failed: neither bank carries the valid signature"
+        );
+        assert_eq!(
+            physical.source().map(ToString::to_string).as_deref(),
+            Some("nothing answered on the management data input output bus")
+        );
+        assert_eq!(
+            memory.source().map(ToString::to_string).as_deref(),
+            Some("neither bank carries the valid signature")
+        );
+        for plain in [
+            Error::PhysicalLayerDeviceInaccessible,
+            Error::PhysicalLayerDevicePowerCycleBlocked,
+            Error::BlockedAfterPhysicalLayerDeviceReset,
+            Error::ResetTimeout,
+        ] {
+            assert!(!plain.to_string().is_empty(), "{plain:?} has a message");
+            assert!(plain.source().is_none(), "{plain:?} wraps nothing");
+        }
+    }
 }
