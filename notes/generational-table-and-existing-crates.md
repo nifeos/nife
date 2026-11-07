@@ -58,15 +58,13 @@ generational_table` runs all five and all five patches.
 | `a_name_the_table_never_minted_resolves_to_nothing` | any `u64` either resolves to nothing or is exactly the name the table minted |
 | `a_bounded_walk_yields_every_live_entry` | the walks bounded by `top` see exactly `len` entries, holes included |
 
-The harnesses run on tables of two and three slots. They prove the properties for those sizes.
-The argument that two slots exhibit every case (the slot in question, another slot, and reuse) is
-in the harness module's doc comment, not in a proof.
+The harnesses prove the properties for tables of two and three slots. Why two slots exhibit every
+case is argued in the harness module's doc comment, not proved.
 
 ## The candidates
 
 Versions read are the newest on crates.io. Sources came from the published `.crate` files,
-downloads and reverse dependencies from the crates.io API (`recent_downloads`, which covers 90
-days, and `downloads`), and repository state from the GitHub API.
+downloads and reverse dependencies from the crates.io API, and repository state from GitHub.
 
 | crate | version, release | license | 90 days / all time | reverse deps | repository |
 |---|---|---|---|---|---|
@@ -162,10 +160,9 @@ What the host run printed:
 `thunderdome::Arena::new` compiled inside a `static`, as nife's does, and `slotmap::SlotMap::new`
 cannot, because it pushes the sentinel slot.
 
-The size row is a cost of nife's design, stated plainly. `[Option<T>; N]` spends a tag per slot on
-any `T` without a niche, and the kernel's thread table stores a raw pointer, which has none. `coca`
-keeps occupancy in the generation's low bit and stores values in `MaybeUninit`, which is how it fits
-in 60% of the space, and its 382 `unsafe` lines are the price of that.
+The size row is a cost of nife's design: one `Option` tag per slot, and the kernel's thread table
+stores a raw pointer, which has no niche. `coca` fits in 60% of the space by keeping occupancy in the
+generation's low bit and values in `MaybeUninit`, at the price of its 382 `unsafe` lines.
 
 The Kani results, each harness at unwind 4 and each under five seconds:
 
@@ -196,14 +193,13 @@ fn slotmap_a_name_never_minted_resolves_to_nothing() {
 }
 ```
 
-Kani handled the `Vec`-backed crates at these bounds as quickly as nife's. The difference is that
-nife's harnesses ship with the crate, each with a patch that shows it can fail.
+Kani handled the `Vec`-backed crates as quickly as nife's. The difference is that nife's harnesses
+ship with the crate, each with a patch that makes it fail.
 
 ## Could the kernel adopt one instead
 
-- `slotmap`: no. It needs an allocator the kernel does not have, it cannot construct in a
-  `static`, its names start at `0x1_0000_0001`, it hides the slot index, and it fails the forgery
-  property above. Working around all of that means a wrapper larger than the table.
+- `slotmap`: no. It needs an allocator, cannot construct in a `static`, starts names at
+  `0x1_0000_0001`, hides the slot index and fails the forgery property.
 - `thunderdome`: the closest in API. It exposes slots, has `get_by_slot`, keeps the same packing
   and passes both harnesses. It still needs an allocator and grows rather than refusing, its first
   name is not `0`, and its last release was 2023-06-25.
