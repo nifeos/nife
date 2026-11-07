@@ -247,6 +247,20 @@ jobs:
     runs-on: ubuntu-26.04
 """
 
+GOOD_PUSH_ONLY = """\
+on:
+  merge_group:
+  push:
+    branches: [main]
+jobs:
+  isolation:
+    if: github.event_name == 'push'
+    runs-on: [nife-owned-x86_64]
+    timeout-minutes: 10
+    steps:
+      - run: true
+"""
+
 BAD_PULL_REQUEST = """\
 on:
   pull_request:
@@ -490,6 +504,7 @@ def selftest():
     cases = [
         ("good", GOOD, 0),
         ("comment only", GOOD_COMMENT_ONLY, 0),
+        ("owned job guarded by push alone", GOOD_PUSH_ONLY, 0),
         ("block scalar guard and list runs-on", GOOD_BLOCK_IF, 0),
         ("writer and matrix checker, both guarded, branches as a list", GOOD_MATRIX_NEEDS, 0),
         ("matrix checker with no guard", BAD_MATRIX_NO_GUARD, 1),

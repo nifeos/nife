@@ -13,7 +13,7 @@
 use std::collections::HashMap;
 use std::vec::Vec;
 
-use super::physical_layer_device::{self, mdic};
+use super::physical_layer_device::{self, management_data_interface_control};
 use super::sequence::BringUpObservation;
 use super::{Hardware, non_volatile_memory, registers};
 use crate::registers as mac;
@@ -150,14 +150,15 @@ impl SimulatedHardware {
 
     fn mdic(&mut self, value: u32) {
         self.mdic_log.push(value);
-        let reg = (value & mdic::REG_MASK) >> mdic::REG_SHIFT;
-        let address = value >> mdic::PHY_SHIFT & 0x1f;
+        let reg = (value & management_data_interface_control::REG_MASK)
+            >> management_data_interface_control::REG_SHIFT;
+        let address = value >> management_data_interface_control::PHY_SHIFT & 0x1f;
         if !self.physical_layer_device_answers() {
             self.mac.insert(
                 mac_mdic(),
                 value
-                    | mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY
-                    | mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_ERROR,
+                    | management_data_interface_control::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY
+                    | management_data_interface_control::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_ERROR,
             );
             return;
         }
@@ -173,7 +174,7 @@ impl SimulatedHardware {
         } else {
             Some(reg)
         };
-        if value & mdic::OP_WRITE != 0 {
+        if value & management_data_interface_control::OP_WRITE != 0 {
             let data = value as u16;
             match offset {
                 None => self.page = u32::from(data) >> physical_layer_device::PHY_PAGE_SHIFT,
@@ -187,7 +188,7 @@ impl SimulatedHardware {
             }
             self.mac.insert(
                 mac_mdic(),
-                value | mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY,
+                value | management_data_interface_control::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY,
             );
         } else {
             let data = offset.map_or(0, |o| {
@@ -197,7 +198,7 @@ impl SimulatedHardware {
                 mac_mdic(),
                 (value & !0xffff)
                     | u32::from(data)
-                    | mdic::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY,
+                    | management_data_interface_control::MANAGEMENT_DATA_INPUT_OUTPUT_TRANSACTION_READY,
             );
         }
     }
@@ -413,8 +414,15 @@ mod tests {
         assert!(swflag_free(&s));
         // The select went to address 1, register 31, with the page shifted left by five.
         let sel = s.mdic_log[0];
-        assert_eq!(sel >> mdic::PHY_SHIFT & 0x1f, 1);
-        assert_eq!((sel & mdic::REG_MASK) >> mdic::REG_SHIFT, 31);
+        assert_eq!(
+            sel >> management_data_interface_control::PHY_SHIFT & 0x1f,
+            1
+        );
+        assert_eq!(
+            (sel & management_data_interface_control::REG_MASK)
+                >> management_data_interface_control::REG_SHIFT,
+            31
+        );
         assert_eq!(sel as u16, (770 << 5) as u16);
     }
 
@@ -452,7 +460,11 @@ mod tests {
             physical_layer_device::read_management_data_input_output(&mut m, 1, 2),
             Err(PhysicalLayerDeviceError::NotReady)
         );
-        assert_eq!(m.0, u64::from(mdic::POLLS) * mdic::POLL_MICROSECONDS);
+        assert_eq!(
+            m.0,
+            u64::from(management_data_interface_control::POLLS)
+                * management_data_interface_control::POLL_MICROSECONDS
+        );
         assert_eq!(m.0, 96_000, "FreeBSD's 96 ms: 1920 polls of 50 us");
     }
 
@@ -548,7 +560,7 @@ mod tests {
         s.firmware_holds_software_flag = true;
         assert_eq!(
             SoftwareFlag::acquire(&mut s).unwrap_err(),
-            PhysicalLayerDeviceError::SwflagRefused
+            PhysicalLayerDeviceError::SoftwareFlagRefused
         );
         assert!(swflag_free(&s));
         s.firmware_holds_software_flag = false;
@@ -558,7 +570,7 @@ mod tests {
         );
         assert_eq!(
             SoftwareFlag::acquire(&mut s).unwrap_err(),
-            PhysicalLayerDeviceError::SwflagHeld
+            PhysicalLayerDeviceError::SoftwareFlagHeld
         );
     }
 
@@ -572,7 +584,7 @@ mod tests {
         );
         assert!(
             s.notes
-                .contains(&BringUpObservation::UlpByMe { cleared: true })
+                .contains(&BringUpObservation::ManagementEngineUltraLowPowerExit { cleared: true })
         );
         assert!(
             s.notes
@@ -635,7 +647,7 @@ mod tests {
         ); // RSPCIPHY clear
         assert_eq!(
             sequence::initialize_physical_layer_device_workarounds(&mut s),
-            Err(Error::LanphypcBlocked)
+            Err(Error::PhysicalLayerDevicePowerCycleBlocked)
         );
         assert_eq!(s.lanphypc_toggles, 0);
         assert!(swflag_free(&s), "the error path released the semaphore");
@@ -654,7 +666,10 @@ mod tests {
             sequence::initialize_physical_layer_device_workarounds(&mut s),
             Ok(PHYSICAL_LAYER_DEVICE_ID)
         );
-        assert!(s.notes.contains(&BringUpObservation::UlpBySoftware(Ok(()))));
+        assert!(
+            s.notes
+                .contains(&BringUpObservation::SoftwareUltraLowPowerExit(Ok(())))
+        );
         assert!(s.lanphypc_toggles >= 1);
         assert_eq!(
             s.physical_layer_device_registers[&physical_layer_device::registers::CV_SMB_CTRL] & 1,

@@ -47,6 +47,7 @@ use super::Hardware;
 ///
 /// Name: ratified 2026-11-03 (UTC), #3152.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Error {
     /// `HSFSTS.FLDESVALID` is clear: no flash descriptor, so hardware sequencing is unavailable.
     NoDescriptor,
@@ -59,6 +60,20 @@ pub enum Error {
     /// Neither bank carries the valid signature.
     NoValidBank,
 }
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            Error::NoDescriptor => "no flash descriptor, so hardware sequencing is unavailable",
+            Error::Busy => "a previous flash cycle never finished",
+            Error::Cycle => "the flash cycle did not complete",
+            Error::OutOfRange => "the word is outside the shadow RAM",
+            Error::NoValidBank => "neither bank carries the valid signature",
+        })
+    }
+}
+
+impl core::error::Error for Error {}
 
 /// Where the flash registers sit in BAR0 on SPT (`E1000_FLASH_BASE_ADDR`).
 pub(crate) const FLASH_BASE_ADDR: u64 = 0xe000;
