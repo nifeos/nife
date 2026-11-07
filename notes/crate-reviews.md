@@ -173,7 +173,8 @@ Recommendation. Ready for review.
 The whole package is [crate-reviews/e1000e.md](crate-reviews/e1000e.md).
 
 Name and version. `e1000e` `0.1.0`, ratified as the family name QEMU and Linux both use, permanent on
-first publication. All 166 `Name:` blocks read ratified.
+first publication. All 166 `Name:` blocks read ratified. Four register names copied from a source
+are spelled out with the source spelling as an alias; `HV_KMRN_MODE_CTRL` is pending.
 
 API. Registers, descriptors and ring logic for the 82574L and the I219 behind four small traits,
 with the I219 bring-up in `platform_controller_hub`. Every error implements `Display` and

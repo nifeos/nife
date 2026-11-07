@@ -790,7 +790,8 @@ mod tests {
             0x0200
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_CONTROL],
+            s.physical_layer_device_registers
+                [&physical_layer_device::registers::PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER],
             0x1200
         );
         assert_ne!(
