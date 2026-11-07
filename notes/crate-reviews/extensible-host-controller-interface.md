@@ -17,7 +17,7 @@ hold.
 
 | rule | result |
 |---|---|
-| spelled-out words (`spelled_out.py`) | 0 findings. One private finding, `CONFIG_ERROR_CHANGE`, was renamed. |
+| spelled-out words (`spelled_out.py`) | 0 findings. `CONFIG_ERROR_CHANGE` is now `CONFIGURATION_ERROR_CHANGE`. |
 | units spelled out (`unit_symbols.py`) | 0 findings. `_MILLISECONDS` and `_BYTES` throughout. |
 | question shape (`question_shape.py`) | 0 findings. |
 | British spelling | 0 findings. |
@@ -45,9 +45,9 @@ No falsification patch quotes a renamed name; all seven apply and fail their har
 
 ### Ratified names a later rule reaches
 
-They are not renamed here. The specification's mnemonic is a term of art a reader searches for, so
-each recommended name is spelled out and keeps the mnemonic as a `doc(alias)`, with the expansion
-opening its doc comment, as the rule for a kept foreign name asks. The crate has neither today.
+They are not renamed here. The specification's mnemonic is a term of art a reader searches for.
+Each recommended name is spelled out and keeps the mnemonic as a `doc(alias)`. The expansion opens
+the doc comment, as the rule for a kept foreign name asks. The crate has neither today.
 
 | name | recommended name |
 |---|---|
