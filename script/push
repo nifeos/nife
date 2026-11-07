@@ -27,11 +27,21 @@
 # host.` and exits 141, killed by SIGPIPE writing the update to a closed socket, and the branch has
 # not moved. A lane piping the push through `tail` read tail's 0 and believed it (#2478).
 #
-# Two things here, each for one half of that:
+# Three things here, each for one part of that:
 #
+# - **The hook runs first, before git connects.** This script runs the pre-push hook itself, the
+#   same file git would run (`git rev-parse --git-path hooks/pre-push`), with the ref line git would
+#   give it. A failure stops here with the hook's own message and no connection opened. A pass
+#   leaves helpers/pre-push-lint-cache.sh's marker for this tree, so when git runs the hook again
+#   inside the push, `script/lint --no-cargo` is skipped and the connection waits only for the
+#   rest of the hook (`script/fmt --check`, the marker's key and, on a fleet clone, the fleet half).
+#   The hook is still the one list of what is checked, and `git push` still runs all of it. With
+#   `--no-verify` among the options git skips the hook, and so does this.
 # - **ssh keepalives** (`ServerAliveInterval=30`), so the connection is not idle while the hook
-#   runs. The same 480 s hook landed with them. They are added only when neither GIT_SSH_COMMAND,
-#   GIT_SSH nor core.sshCommand is set, so a person's own ssh setup is never overridden.
+#   runs. A 480 s hook landed with them. They are not enough alone: a hook of several minutes on a
+#   loaded machine has still lost the connection with them on, which is why the hook now runs
+#   first. They are added only when neither GIT_SSH_COMMAND, GIT_SSH nor core.sshCommand is set, so
+#   a person's own ssh setup is never overridden.
 # - **The read-back.** After the push, `git ls-remote` asks origin where the branch is, and anything
 #   but HEAD's commit is exit 1 with the reason. This does not trust git's exit status, so it holds
 #   for a failure that exits 0 and for a caller that loses the status in a pipe.
@@ -66,6 +76,33 @@ for arg in "$@"; do
     esac
 done
 
+head="$(git rev-parse HEAD)"
+short="$(git rev-parse --short=12 HEAD)"
+
+# The hook, before the connection. It runs ahead of --requeue's dequeue, so a failing check leaves
+# the pull request in the queue; the queued-branch refusal is waived for this run only, because the
+# dequeue has not happened yet, and the hook inside the push asks it again after the dequeue. The
+# remote sha comes from origin, as git's own would, so the hook's empty-push and rewrite checks
+# judge the same range; when origin cannot be asked it is the all-zero sha of a new branch, and the
+# hook inside the push judges the real one.
+verify=1
+for arg in "$@"; do
+    [ "$arg" != "--no-verify" ] || verify=
+done
+hook="$(git rev-parse --git-path hooks/pre-push)"
+if [ -n "$verify" ] && [ -x "$hook" ]; then
+    zero=0000000000000000000000000000000000000000
+    remote_before="$(git ls-remote origin "refs/heads/$branch" 2>/dev/null)" || remote_before=
+    remote_before="${remote_before%%	*}"
+    url="$(git remote get-url --push origin 2>/dev/null)" || url=origin
+    echo "push: running the pre-push hook before connecting to origin."
+    if ! printf 'refs/heads/%s %s refs/heads/%s %s\n' "$branch" "$head" "$branch" "${remote_before:-$zero}" |
+        NIFE_PUSH_QUEUED="${requeue:+1}${NIFE_PUSH_QUEUED:-}" "$hook" origin "$url"; then
+        echo "push: NOT PUSHED. The pre-push hook refused, before any connection to origin." >&2
+        exit 1
+    fi
+fi
+
 requeue_number=
 if [ -n "$requeue" ]; then
     requeue_dir="$(CDPATH='' cd -- "$(dirname -- "$0")/../helpers" && pwd)"
@@ -76,8 +113,6 @@ if [ -n "$requeue" ]; then
     *) requeue_number="${requeue_state% *}" ;;
     esac
 fi
-head="$(git rev-parse HEAD)"
-short="$(git rev-parse --short=12 HEAD)"
 
 if [ -z "${GIT_SSH_COMMAND:-}${GIT_SSH:-}" ] && ! git config core.sshCommand >/dev/null 2>&1; then
     GIT_SSH_COMMAND="ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=10"
