@@ -8,13 +8,13 @@ together outgrow the page.*
 
 A fixed-capacity table that names each entry with an `EntryName<T>`, typed by the entry it names and
 holding one `u64`: the slot index in the low 32 bits and the slot's generation in the high 32. Removing an entry raises its slot's generation, so every copy
-of the old name resolves to `None` for good, while the slot itself is reused. The kernel keeps its
+of the old name resolves to `None` for good, while the slot itself serves a new entry. The kernel keeps its
 thread table and its object tables in it. It is `no_std` with no allocator, no `unsafe` and no
 dependency, and five Kani harnesses prove the safety claims. The architect ruled that it publishes,
 third in the order of milestone 857 (crates released on their own), as milestone 1033
 (`generational_table`: the fixed-capacity, proved slotmap, released on its own) records. Its
-directory is shaped for release: its own manifest values, a README whose example a doctest runs,
-and both license files. The `repository` key waits for the move.
+directory carries its own manifest values, a README whose example a doctest runs, and both
+license files. The `repository` key waits for the move.
 
 ## Identity
 
@@ -63,7 +63,7 @@ five and saw each patch fail its own harness.
 
 | harness | what it proves |
 |---|---|
-| `a_removed_name_never_resolves_again` | from any starting generations, the last before retirement included, a removed name resolves through none of `get`, `get_mut` and `remove`, even after its slot is filled again |
+| `a_removed_name_never_resolves_again` | from any starting generations, the last before retirement included, a removed name resolves through none of `get`, `get_mut` and `remove`, even after its slot takes a new entry |
 | `a_removed_name_stays_dead_whatever_comes_after` | the induction step: from any reachable two-slot table, two arbitrary operations keep a dead name's slot generation above the name's, and keep every live slot below the retired generation, so the claim holds after any number of operations |
 | `live_names_are_distinct_and_resolve_to_their_own_entry` | two live entries never share a name, and each name reaches its own value |
 | `a_name_the_table_never_minted_resolves_to_nothing` | for any `u64`, resolution fails or lands on the entry whose minted name is that number |
@@ -75,12 +75,12 @@ walk bound and a refused insert that never runs its closure.
 
 ## Names
 
-The crate has 19 names with a block, all ratified: the crate on its naming review, the 14 items on
-#3119 under the ruling that the standard library's spellings win (`len`, `iter`, `get_mut`),
-`EntryName<T>`, and its associated items `EntryName::to_bits`, `EntryName::from_bits` and
-`EntryName::NEVER_MINTED`. `to_bits` and `from_bits` take the standard library's spelling
-(`f64::to_bits`); `NEVER_MINTED` was chosen over `NONE` (which reads as `Option::None`) and
-`INVALID` (which it is not, since resolving it answers `None`).
+The crate has 19 names with a block, all ratified. They are the crate itself, the 14 items on #3119
+(the standard library's spellings win: `len`, `iter`, `get_mut`), `EntryName<T>`, and its
+associated items `EntryName::to_bits`, `EntryName::from_bits` and `EntryName::NEVER_MINTED`.
+`to_bits` and `from_bits` take the standard library's spelling (`f64::to_bits`). `NEVER_MINTED`
+beat `NONE`, which reads as `Option::None`, and `INVALID`, which it is not, since resolving it
+answers `None`.
 
 ## License
 
