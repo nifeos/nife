@@ -235,6 +235,13 @@ impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
         }
     }
 
+    /// How many descriptors of a chain of `count` the IDMAC still owns.
+    fn owned(&self, count: u32) -> u32 {
+        (0..count)
+            .filter(|i| self.region.read_u32(i * DESCRIPTOR_BYTES) & DES0_OWN != 0)
+            .count() as u32
+    }
+
     /// Bytes in descriptors the IDMAC still owns, of a chain of `count`: what it has not moved.
     fn owed(&self, count: u32) -> u32 {
         (0..count)
@@ -340,8 +347,10 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     }
 
     /// Wait for the card's side (`DTO`, and `ACD` after more than one block) and the memory side
-    /// (the last descriptor closed). The deadline restarts whenever a descriptor closes, so a long
-    /// transfer is judged on progress, not on its length.
+    /// (every descriptor closed). The deadline restarts whenever a descriptor closes, so a long
+    /// transfer is judged on progress, not on its length. Progress is fewer owned descriptors than
+    /// at any earlier look, so the deadline restarts at most `count` times: a controller that
+    /// reopens a descriptor or rewrites its size cannot hold the wait open.
     fn internal_direct_memory_access_wait(
         &mut self,
         command: &Command,
@@ -354,7 +363,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         let Some(direct_memory_access) = self.direct_memory_access.as_ref() else {
             return Err(Error::BufferSize);
         };
-        let mut owed = direct_memory_access.owed(count);
+        let mut owned = direct_memory_access.owned(count);
         let mut start = self.registers.now_microseconds();
         loop {
             let rint = self.registers.read(registers::RINTSTS);
@@ -370,15 +379,16 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             let Some(direct_memory_access) = self.direct_memory_access.as_ref() else {
                 return Err(Error::BufferSize);
             };
-            let now_owed = direct_memory_access.owed(count);
-            if rint & want == want && now_owed == 0 {
+            let now_owned = direct_memory_access.owned(count);
+            if rint & want == want && now_owned == 0 {
                 return Ok(());
             }
             let now = self.registers.now_microseconds();
-            if now_owed != owed {
-                owed = now_owed;
+            if now_owned < owned {
+                owned = now_owned;
                 start = now;
             } else if now.wrapping_sub(start) > DATA_DEADLINE_MICROSECONDS {
+                let owed = direct_memory_access.owed(count);
                 return Err(Error::DataTimeout(command.index, rint, owed));
             }
         }
