@@ -57,7 +57,8 @@ what the table holds, not what it could hold.
 
 Five Kani harnesses prove the safety claims. Kani is a model checker that proves properties for
 all inputs up to a stated size. The proofs need Kani, which `rustup` does not install. Run
-`cargo install --locked kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step
+`cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step
 downloads a model checker, so it needs network access. CI uses version 0.68.0, and another
 version may verify differently. After that, `cargo kani` from the crate's directory runs every
 harness.
