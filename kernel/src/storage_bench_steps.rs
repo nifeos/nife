@@ -538,6 +538,8 @@ mod tests {
         assert_eq!(scratch_pattern_byte(1, 0), 7 ^ 0x5a);
         assert_eq!(scratch_pattern_byte(3, 5), 155 ^ 21 ^ 0x5a);
         assert_eq!(scratch_pattern_byte(0, 256), 0x5a ^ 1);
+        // Where the high term and the rest share a bit, it still XORs rather than ORs.
+        assert_eq!(scratch_pattern_byte(0, 257), 31 ^ 0x5a ^ 1);
         assert!(
             (0..256)
                 .map(|i| scratch_pattern_byte(9, i))
