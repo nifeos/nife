@@ -479,7 +479,8 @@ pub(super) fn reap_region(sched: &mut IpcTables, base: u64, end_: u64) {
     // End each one still live. `end` marks it ended, so each is found once.
     loop {
         let live = sched.processes.iter().find_map(|(pid, entry)| {
-            (doomed(entry.address()) && process_of(sched, pid.to_bits()).is_some_and(|p| !p.ended))
+            let phys = entry.address();
+            (doomed(phys) && process_of(sched, pid.to_bits()).is_some_and(|p| !p.ended))
                 .then_some(pid.to_bits())
         });
         let Some(pid) = live else { break };
