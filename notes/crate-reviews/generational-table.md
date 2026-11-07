@@ -48,10 +48,10 @@ What a stranger may find surprising:
   (`slotmap`'s `KeyData`, `thunderdome`'s `Index`). `EntryName<T>` has `to_bits`, `from_bits`
   and `NEVER_MINTED` (the name no table mints), and the kernel converts at its system-call
   boundary with them. Each kernel table has an entry type of its own, so a name of one table does
-  not resolve in another: the rendezvous, notification, timer and process tables in
+  not resolve in another. The rendezvous, notification, timer and process tables in
   `sched/ipc_tables.rs` hold `RendezvousPageAddress`, `NotificationPageAddress`, `TimerPageAddress`
-  and `ProcessPageAddress`, one-word `repr(transparent)` newtypes over the page's address. Four
-  conflicting impls in that file stop the build if two of them ever share a type.
+  and `ProcessPageAddress`. Each is a one-word `repr(transparent)` newtype over the page's address.
+  Four conflicting impls in that file stop the build if two of them ever share a type.
 - A slot whose generation reaches `u32::MAX` retires and is never filled again, so capacity can
   shrink. The release record's table shows `slotmap` and `thunderdome` wrapping instead.
 - `Table` implements neither `Debug` nor `Clone`. Adding either later breaks nobody.
