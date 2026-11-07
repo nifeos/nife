@@ -921,7 +921,7 @@ mod tests {
     /// reset not yet cleared) must still be written set: the driver sets the bit, it does not
     /// toggle it.
     #[test]
-    fn a_fifo_reset_bit_already_set_is_written_set() {
+    fn a_queue_reset_bit_already_set_is_written_set() {
         let mut h = take(SimulatedHostController::new(
             CardKind::SdHighCapacity,
             2048,

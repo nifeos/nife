@@ -26,11 +26,18 @@
 #    by the release's commit, `ci.yml` gets the crate's targets (docs.rs `targets`, else the three
 #    bare-metal ones) and `allow-unpublished: true` for the soak. A file the crate already carries
 #    wins over the scaffold's, and says so.
-# 4. Deletes every `Name:` block (`crate_release.strip_name_blocks`), rewrites each falsification
-#    patch from `a/crates/<crate>/` to `a/` and drops the block lines from its hunks, and sets
-#    `repository` in `Cargo.toml`.
+# 4. Deletes every `Name:` block (`crate_release.strip_name_blocks`), regenerates each falsification
+#    patch over the stripped source, and sets `repository` in `Cargo.toml`. A patch is regenerated
+#    and never edited: it is applied to the crate's source in this tree, both versions go through the
+#    same change the move makes to every file, and the patch is the difference, so every hunk header
+#    carries the stripped file's line numbers. The patch keeps its prose header and takes `a/`
+#    paths from the crate's root. An edit that lands inside a `Name:` block, or that does not apply
+#    here, is a finding.
 # 5. Unless `--no-build`: writes `Cargo.lock`, runs the host tests and builds each target at the
 #    manifest's `rust-version`.
+# 5b. Applies every staged patch with `patch -p1 --dry-run -F0` and refuses to finish when one
+#    applies at an offset, with fuzz, or not at all (`patch applies exactly`). A hunk header that
+#    drifted from its file passes plain `patch` with a note, so the note is what fails.
 # 6. `git init` and `git add --all` in the staged tree, so the checks that read `git ls-files` see
 #    what a push would carry. Nothing is committed.
 # 7. Runs the template's cheap checks from the pinned revision (standalone, prose, ratchets,
@@ -57,8 +64,6 @@
 #   (`falsify.py --check`), not replayed.
 # - The template's heavy jobs (coverage, clippy, rustdoc, supply chain, Miri, mutation) do not run;
 #   the repository's first CI run is their first run.
-# - The `Name:` block reader drops a block's continuation lines only when the block starts inside a
-#   patch hunk; a hunk that opens mid-block keeps the tail and fails `falsify.py --check`.
 # - There is no live mode. Creating the repository, pushing and tagging are the runbook's steps,
 #   taken by hand, because each is a person's or needs one's approval.
 set -eu
