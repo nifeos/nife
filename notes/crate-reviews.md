@@ -193,13 +193,9 @@ Proofs. Three harnesses. All three prove and all three patches fail.
 
 Dependencies. None.
 
-Naming rules. The names section of the package has the detail.
-
-| rule | result |
-|---|---|
-| spelled-out words, units, question shape, British spelling (the template's checks, 1,046 names) | 1 finding after 34 private names were renamed: the public `LanInitTimeout`, listed for the architect with a recommended name |
-| names a later rule reaches | two public names wait for the architect, `HV_KMRN_MODE_CTRL` and the never ratified `LanInitTimeout` |
-| borderline private names | bit constants that mirror a FreeBSD define with no expansion, listed in the package |
+Naming rules. The package has the detail. Of 1,046 names, the template's checks find one, the
+public `LanInitTimeout`. It and `HV_KMRN_MODE_CTRL` wait for the architect. The package also lists
+borderline bit constants that mirror a FreeBSD define with no expansion.
 
 Provenance. Milestone 1019 items 3 and 4 hold, and the notices are in the files. The manifest license
 field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.
