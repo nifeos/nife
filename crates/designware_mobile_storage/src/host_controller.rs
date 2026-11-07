@@ -15,7 +15,7 @@
 
 use crate::command::{Command, UPDATE_CLOCK};
 use crate::internal_direct_memory_access::{
-    DirectMemoryAccessRegion, InternalDirectMemoryAccess, NoDirectMemoryAccess, PAGE,
+    DirectMemoryAccessRegion, InternalDirectMemoryAccess, NoDirectMemoryAccess, PAGE_BYTES,
 };
 use crate::registers;
 
@@ -241,17 +241,17 @@ impl<R: RegisterWindowAndClock> HostController<R> {
         queue_depth: Option<u32>,
     ) -> Result<(Self, Identity), Error> {
         let id = Identity {
-            version_identification: registers.read(registers::VERID),
-            hardware_configuration: registers.read(registers::HCON),
-            user_identification: registers.read(registers::USRID),
-            queue_threshold: registers.read(registers::FIFOTH),
-            card_detect: registers.read(registers::CDETECT),
+            version_identification: registers.read(registers::VERSION_IDENTIFICATION_REGISTER),
+            hardware_configuration: registers.read(registers::HARDWARE_CONFIGURATION_REGISTER),
+            user_identification: registers.read(registers::USER_IDENTIFICATION_REGISTER),
+            queue_threshold: registers.read(registers::QUEUE_THRESHOLD_REGISTER),
+            card_detect: registers.read(registers::CARD_DETECT_REGISTER),
             firmware: [
                 registers.read(registers::CONTROL),
-                registers.read(registers::PWREN),
-                registers.read(registers::CLKDIV),
-                registers.read(registers::CLKENA),
-                registers.read(registers::CTYPE),
+                registers.read(registers::POWER_ENABLE_REGISTER),
+                registers.read(registers::CLOCK_DIVIDER_REGISTER),
+                registers.read(registers::CLOCK_ENABLE_REGISTER),
+                registers.read(registers::CARD_TYPE_REGISTER),
             ],
         };
         if registers::queue_width(id.hardware_configuration) != Some(4) {
@@ -259,7 +259,7 @@ impl<R: RegisterWindowAndClock> HostController<R> {
         }
         let depth = match queue_depth {
             Some(d) if d > 0 => d,
-            _ => registers::fifoth_receive_watermark(id.queue_threshold) + 1,
+            _ => registers::queue_threshold_receive_watermark(id.queue_threshold) + 1,
         };
         Ok((
             HostController {
@@ -347,33 +347,41 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     ///
     /// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands.
     pub fn reset(&mut self) -> Result<(), Error> {
-        self.registers.write(registers::CLKENA, 0);
-        let ctrl = self.registers.read(registers::CONTROL)
-            & !(registers::CONTROL_USE_INTERNAL_DMAC
-                | registers::CONTROL_DMA_ENABLE
-                | registers::CONTROL_INT_ENABLE);
-        self.registers
-            .write(registers::CONTROL, ctrl | registers::CONTROL_ALL_RESET);
+        self.registers.write(registers::CLOCK_ENABLE_REGISTER, 0);
+        let control = self.registers.read(registers::CONTROL)
+            & !(registers::CONTROL_USE_INTERNAL_DIRECT_MEMORY_ACCESS_CONTROLLER
+                | registers::CONTROL_DIRECT_MEMORY_ACCESS_ENABLE
+                | registers::CONTROL_INTERRUPT_ENABLE);
+        self.registers.write(
+            registers::CONTROL,
+            control | registers::CONTROL_ALL_RESETS_MASK,
+        );
         if !self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
-            window.read(registers::CONTROL) & registers::CONTROL_ALL_RESET == 0
+            window.read(registers::CONTROL) & registers::CONTROL_ALL_RESETS_MASK == 0
         }) {
             return Err(Error::ResetStuck(self.registers.read(registers::CONTROL)));
         }
-        self.registers.write(registers::INTMASK, 0);
-        self.registers.write(registers::RINTSTS, 0xffff_ffff);
+        self.registers
+            .write(registers::INTERRUPT_MASKING_REGISTER, 0);
+        self.registers
+            .write(registers::RAW_INTERRUPT_STATUS_REGISTER, 0xffff_ffff);
         // Longest response timeout (255 clocks) and data timeout (2^24 - 1 clocks): the deadlines
         // above are the real limit, and these only keep the controller from giving up first.
-        self.registers.write(registers::TMOUT, 0xffff_ffff);
-        self.registers.write(registers::CTYPE, 0);
         self.registers
-            .write(registers::FIFOTH, registers::fifoth_for_pio(self.depth));
+            .write(registers::TIMEOUT_REGISTER, 0xffff_ffff);
+        self.registers.write(registers::CARD_TYPE_REGISTER, 0);
+        self.registers.write(
+            registers::QUEUE_THRESHOLD_REGISTER,
+            registers::queue_threshold_for_programmed_input_output(self.depth),
+        );
         // The card read threshold stays off. It is for bus modes that cannot stop the card clock
         // (HS200, SDR104, HS400), which this driver does not run, and it may not exceed the FIFO:
         // OpenBSD's one block, 512 bytes, against the VisionFive 2's 128-byte FIFO overran the first read.
         // Written rather than assumed, since firmware may have set it. Before release 2.40a the
         // offset is the data FIFO, and a write there would be a word of data.
-        if self.queue_offset != registers::CARDTHRCTL {
-            self.registers.write(registers::CARDTHRCTL, 0);
+        if self.queue_offset != registers::CARD_THRESHOLD_CONTROL_REGISTER {
+            self.registers
+                .write(registers::CARD_THRESHOLD_CONTROL_REGISTER, 0);
         }
         Ok(())
     }
@@ -381,13 +389,14 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     /// Power slot 0. The JH7110 ties the card supply on the board, so on the VisionFive 2 this bit is what
     /// U-Boot already set; written anyway, because a controller fresh from reset may not have it.
     pub(crate) fn power_on(&mut self) {
-        self.registers.write(registers::PWREN, 1);
+        self.registers.write(registers::POWER_ENABLE_REGISTER, 1);
     }
 
     fn update_clock(&mut self) -> Result<(), Error> {
-        self.registers.write(registers::CMD, UPDATE_CLOCK);
+        self.registers
+            .write(registers::COMMAND_REGISTER, UPDATE_CLOCK);
         if self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
-            window.read(registers::CMD) & registers::COMMAND_START == 0
+            window.read(registers::COMMAND_REGISTER) & registers::COMMAND_START == 0
         }) {
             Ok(())
         } else {
@@ -408,13 +417,14 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     /// out; the parameter `hertz` spells the unit out (ratified 2026-11-05 (UTC), #3276).
     pub fn set_clock(&mut self, hertz: u32) -> Result<u32, Error> {
         let divider = clock_divider(self.base_hertz, hertz).unwrap_or(255);
-        self.registers.write(registers::CLKENA, 0);
-        self.registers.write(registers::CLKSRC, 0);
-        self.registers.write(registers::CLKDIV, u32::from(divider));
+        self.registers.write(registers::CLOCK_ENABLE_REGISTER, 0);
+        self.registers.write(registers::CLOCK_SOURCE_REGISTER, 0);
+        self.registers
+            .write(registers::CLOCK_DIVIDER_REGISTER, u32::from(divider));
         self.update_clock()?;
         self.registers.write(
-            registers::CLKENA,
-            registers::CLKENA_CCLK_ENABLE | registers::CLKENA_CCLK_LOW_POWER,
+            registers::CLOCK_ENABLE_REGISTER,
+            registers::CLOCK_ENABLE_CARD_CLOCK | registers::CLOCK_ENABLE_CARD_CLOCK_LOW_POWER,
         );
         self.update_clock()?;
         Ok(card_clock(self.base_hertz, divider))
@@ -422,12 +432,13 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
 
     /// Set the bus width the controller drives: 1, 4 or 8. Anything else is 1.
     pub(crate) fn set_bus_width(&mut self, width: u8) {
-        let ctype = match width {
-            4 => registers::CTYPE_4BIT,
-            8 => registers::CTYPE_8BIT,
+        let card_type = match width {
+            4 => registers::CARD_TYPE_4_BIT_BUS,
+            8 => registers::CARD_TYPE_8_BIT_BUS,
             _ => 0,
         };
-        self.registers.write(registers::CTYPE, ctype);
+        self.registers
+            .write(registers::CARD_TYPE_REGISTER, card_type);
     }
 
     /// **Wait until the card releases DAT0**, after an R1b command or a write.
@@ -454,13 +465,15 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     ) -> Result<[u32; 4], Error> {
         self.wait_not_busy()?;
         if let Some(d) = command.data {
-            self.registers.write(registers::BYTCNT, d.total_bytes());
-            self.registers.write(registers::BLKSIZ, d.block_size);
-            let ctrl = self.registers.read(registers::CONTROL);
             self.registers
-                .write(registers::CONTROL, ctrl | registers::CONTROL_FIFO_RESET);
+                .write(registers::BYTE_COUNT_REGISTER, d.total_bytes());
+            self.registers
+                .write(registers::BLOCK_SIZE_BYTES_REGISTER, d.block_size);
+            let control = self.registers.read(registers::CONTROL);
+            self.registers
+                .write(registers::CONTROL, control | registers::CONTROL_QUEUE_RESET);
             if !self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
-                window.read(registers::CONTROL) & registers::CONTROL_FIFO_RESET == 0
+                window.read(registers::CONTROL) & registers::CONTROL_QUEUE_RESET == 0
             }) {
                 return Err(Error::ResetStuck(self.registers.read(registers::CONTROL)));
             }
@@ -468,38 +481,45 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
                 self.internal_direct_memory_access_start()?;
             }
         }
+        self.registers.write(
+            registers::RAW_INTERRUPT_STATUS_REGISTER,
+            registers::RAW_INTERRUPT_ALL_MASK,
+        );
         self.registers
-            .write(registers::RINTSTS, registers::RINTSTS_ALL);
-        self.registers.write(registers::CMDARG, command.argument);
+            .write(registers::COMMAND_ARGUMENT_REGISTER, command.argument);
         self.registers
-            .write(registers::CMD, command.register_word());
+            .write(registers::COMMAND_REGISTER, command.register_word());
         if !self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
-            window.read(registers::CMD) & registers::COMMAND_START == 0
+            window.read(registers::COMMAND_REGISTER) & registers::COMMAND_START == 0
         }) {
             return Err(Error::CommandNotTaken(command.index));
         }
         let mut status = 0;
         if !self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
-            status = window.read(registers::RINTSTS);
-            status & registers::RINTSTS_CD != 0
+            status = window.read(registers::RAW_INTERRUPT_STATUS_REGISTER);
+            status & registers::RAW_INTERRUPT_COMMAND_DONE != 0
         }) {
             return Err(Error::CommandTimeout(command.index, status));
         }
-        if status & registers::RINTSTS_RTO != 0 {
+        if status & registers::RAW_INTERRUPT_RESPONSE_TIMEOUT != 0 {
             return Err(Error::NoResponse(command.index));
         }
-        if status & (registers::RINTSTS_RCRC | registers::RINTSTS_RE) != 0 {
+        if status
+            & (registers::RAW_INTERRUPT_RESPONSE_CYCLIC_REDUNDANCY_CHECK_ERROR
+                | registers::RAW_INTERRUPT_RESPONSE_ERROR)
+            != 0
+        {
             return Err(Error::BadResponse(command.index, status));
         }
         Ok(if command.response.is_long() {
             [
-                self.registers.read(registers::RESP0),
-                self.registers.read(registers::RESP1),
-                self.registers.read(registers::RESP2),
-                self.registers.read(registers::RESP3),
+                self.registers.read(registers::RESPONSE_0_REGISTER),
+                self.registers.read(registers::RESPONSE_1_REGISTER),
+                self.registers.read(registers::RESPONSE_2_REGISTER),
+                self.registers.read(registers::RESPONSE_3_REGISTER),
             ]
         } else {
-            [self.registers.read(registers::RESP0), 0, 0, 0]
+            [self.registers.read(registers::RESPONSE_0_REGISTER), 0, 0, 0]
         })
     }
 
@@ -548,18 +568,18 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             if d.total_bytes() > capacity {
                 return Err(Error::BufferSize);
             }
-            let resp = self.internal_direct_memory_access_transfer(command, d.total_bytes())?;
+            let response = self.internal_direct_memory_access_transfer(command, d.total_bytes())?;
             if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
-                direct_memory_access.region().read_bytes(PAGE, buffer);
+                direct_memory_access.region().read_bytes(PAGE_BYTES, buffer);
             }
-            return Ok(resp);
+            return Ok(response);
         }
-        let resp = self.issue(command, false)?;
+        let response = self.issue(command, false)?;
         let mut done = 0usize;
         while done < buffer.len() {
-            let (status, rint) = self.wait_queue(
+            let (status, raw_interrupt_status) = self.wait_queue(
                 command.index,
-                registers::RINTSTS_RXDR,
+                registers::RAW_INTERRUPT_RECEIVE_QUEUE_DATA_REQUEST,
                 (buffer.len() - done) as u32,
             )?;
             let n = queue_step(status, self.depth, false, (buffer.len() - done) as u32) as usize;
@@ -567,11 +587,13 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
                 *chunk = self.registers.read(self.queue_offset).to_le_bytes();
             }
             done += n;
-            self.registers
-                .write(registers::RINTSTS, rint & registers::RINTSTS_RXDR);
+            self.registers.write(
+                registers::RAW_INTERRUPT_STATUS_REGISTER,
+                raw_interrupt_status & registers::RAW_INTERRUPT_RECEIVE_QUEUE_DATA_REQUEST,
+            );
         }
         self.finish(command)?;
-        Ok(resp)
+        Ok(response)
     }
 
     /// **Send a command whose data phase writes `buffer`.** The same size rules as
@@ -597,17 +619,19 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             if d.total_bytes() > direct_memory_access.capacity() {
                 return Err(Error::BufferSize);
             }
-            direct_memory_access.region().write_bytes(PAGE, buffer);
-            let resp = self.internal_direct_memory_access_transfer(command, d.total_bytes())?;
+            direct_memory_access
+                .region()
+                .write_bytes(PAGE_BYTES, buffer);
+            let response = self.internal_direct_memory_access_transfer(command, d.total_bytes())?;
             self.wait_not_busy()?;
-            return Ok(resp);
+            return Ok(response);
         }
-        let resp = self.issue(command, false)?;
+        let response = self.issue(command, false)?;
         let mut done = 0usize;
         while done < buffer.len() {
-            let (status, rint) = self.wait_queue(
+            let (status, raw_interrupt_status) = self.wait_queue(
                 command.index,
-                registers::RINTSTS_TXDR,
+                registers::RAW_INTERRUPT_TRANSMIT_QUEUE_DATA_REQUEST,
                 (buffer.len() - done) as u32,
             )?;
             let n = queue_step(status, self.depth, true, (buffer.len() - done) as u32) as usize;
@@ -616,58 +640,79 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
                 self.registers.write(self.queue_offset, w);
             }
             done += n;
-            self.registers
-                .write(registers::RINTSTS, rint & registers::RINTSTS_TXDR);
+            self.registers.write(
+                registers::RAW_INTERRUPT_STATUS_REGISTER,
+                raw_interrupt_status & registers::RAW_INTERRUPT_TRANSMIT_QUEUE_DATA_REQUEST,
+            );
         }
         self.finish(command)?;
         self.wait_not_busy()?;
-        Ok(resp)
+        Ok(response)
     }
 
     /// Wait for the FIFO to want service (`want`) or the transfer to end; a data error ends it.
     /// Returns `STATUS_REGISTER` and `RINTSTS` once there is something to move.
     fn wait_queue(&mut self, index: u8, want: u32, owed: u32) -> Result<(u32, u32), Error> {
-        let mut rint = 0;
+        let mut raw_interrupt_status = 0;
         let mut status = 0;
         let depth = self.depth;
-        let write = want == registers::RINTSTS_TXDR;
+        let write = want == registers::RAW_INTERRUPT_TRANSMIT_QUEUE_DATA_REQUEST;
         let ok = self.is_condition_met_within(DATA_DEADLINE_MICROSECONDS, |window| {
-            rint = window.read(registers::RINTSTS);
-            if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
+            raw_interrupt_status = window.read(registers::RAW_INTERRUPT_STATUS_REGISTER);
+            if raw_interrupt_status
+                & (registers::RAW_INTERRUPT_DATA_ERROR_MASK
+                    | registers::RAW_INTERRUPT_DATA_TIMEOUT_MASK)
+                != 0
+            {
                 return true;
             }
             status = window.read(registers::STATUS_REGISTER);
             // Something to move: the controller's request, or (at the tail of a read, below the
             // watermark) words sitting in the FIFO after the transfer is over.
-            rint & want != 0 && queue_step(status, depth, write, owed) > 0
-                || rint & registers::RINTSTS_DTO != 0 && queue_step(status, depth, write, owed) > 0
+            raw_interrupt_status & want != 0 && queue_step(status, depth, write, owed) > 0
+                || raw_interrupt_status & registers::RAW_INTERRUPT_DATA_TRANSFER_OVER != 0
+                    && queue_step(status, depth, write, owed) > 0
         });
-        if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
-            return Err(Error::Data(index, rint));
+        if raw_interrupt_status
+            & (registers::RAW_INTERRUPT_DATA_ERROR_MASK
+                | registers::RAW_INTERRUPT_DATA_TIMEOUT_MASK)
+            != 0
+        {
+            return Err(Error::Data(index, raw_interrupt_status));
         }
         if !ok {
-            return Err(Error::DataTimeout(index, rint, owed));
+            return Err(Error::DataTimeout(index, raw_interrupt_status, owed));
         }
-        Ok((status, rint))
+        Ok((status, raw_interrupt_status))
     }
 
     /// Wait for data-transfer-over, and for the automatic CMD12 after a multi-block transfer.
     fn finish(&mut self, command: &Command) -> Result<(), Error> {
-        let mut rint = 0;
+        let mut raw_interrupt_status = 0;
         let want = match command.data {
-            Some(d) if d.blocks > 1 => registers::RINTSTS_DTO | registers::RINTSTS_ACD,
-            _ => registers::RINTSTS_DTO,
+            Some(d) if d.blocks > 1 => {
+                registers::RAW_INTERRUPT_DATA_TRANSFER_OVER
+                    | registers::RAW_INTERRUPT_AUTOMATIC_COMMAND_DONE
+            }
+            _ => registers::RAW_INTERRUPT_DATA_TRANSFER_OVER,
         };
         let ok = self.is_condition_met_within(DATA_DEADLINE_MICROSECONDS, |window| {
-            rint = window.read(registers::RINTSTS);
-            rint & want == want
-                || rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0
+            raw_interrupt_status = window.read(registers::RAW_INTERRUPT_STATUS_REGISTER);
+            raw_interrupt_status & want == want
+                || raw_interrupt_status
+                    & (registers::RAW_INTERRUPT_DATA_ERROR_MASK
+                        | registers::RAW_INTERRUPT_DATA_TIMEOUT_MASK)
+                    != 0
         });
-        if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
-            return Err(Error::Data(command.index, rint));
+        if raw_interrupt_status
+            & (registers::RAW_INTERRUPT_DATA_ERROR_MASK
+                | registers::RAW_INTERRUPT_DATA_TIMEOUT_MASK)
+            != 0
+        {
+            return Err(Error::Data(command.index, raw_interrupt_status));
         }
         if !ok {
-            return Err(Error::DataTimeout(command.index, rint, 0));
+            return Err(Error::DataTimeout(command.index, raw_interrupt_status, 0));
         }
         Ok(())
     }
@@ -733,13 +778,15 @@ mod tests {
     use std::time::Duration;
     use std::vec::Vec;
 
-    use crate::command::{Command, Data, Response, SEND_IF_COND, WRITE_BLOCK};
+    use crate::command::{Command, Data, Response, SEND_INTERFACE_CONDITION, WRITE_BLOCK};
     use crate::sd::{self, BlockTransferError};
     use crate::simulator::{CardKind, Fault, SimulatedHostController};
 
-    fn take(sim: SimulatedHostController) -> HostController<SimulatedHostController> {
-        let depth = u32::try_from(sim.queue_depth_words()).unwrap();
-        HostController::new(sim, 50_000_000, Some(depth)).unwrap().0
+    fn take(simulator: SimulatedHostController) -> HostController<SimulatedHostController> {
+        let depth = u32::try_from(simulator.queue_depth_words()).unwrap();
+        HostController::new(simulator, 50_000_000, Some(depth))
+            .unwrap()
+            .0
     }
 
     /// Runs `f` on a worker and fails if it has not returned in ten seconds. A wait whose deadline
@@ -759,50 +806,56 @@ mod tests {
         let mut h = take(SimulatedHostController::new(CardKind::Empty, 1, 32));
         // Firmware left the DMA and interrupt enables on, bit 8, which is not the driver's, and a
         // card read threshold.
-        let firmware = registers::CONTROL_USE_INTERNAL_DMAC
-            | registers::CONTROL_DMA_ENABLE
-            | registers::CONTROL_INT_ENABLE
+        let firmware = registers::CONTROL_USE_INTERNAL_DIRECT_MEMORY_ACCESS_CONTROLLER
+            | registers::CONTROL_DIRECT_MEMORY_ACCESS_ENABLE
+            | registers::CONTROL_INTERRUPT_ENABLE
             | 1 << 8;
         h.registers_mut().write(registers::CONTROL, firmware);
         h.registers_mut().write(
-            registers::CARDTHRCTL,
-            512 << 16 | registers::CARDTHRCTL_RDTHREN,
+            registers::CARD_THRESHOLD_CONTROL_REGISTER,
+            512 << 16 | registers::CARD_THRESHOLD_CONTROL_READ_THRESHOLD_ENABLE,
         );
         h.registers_mut().writes.clear();
         h.reset().unwrap();
         assert_eq!(
             h.registers_mut().writes,
             [
-                (registers::CLKENA, 0),
-                (registers::CONTROL, 1 << 8 | registers::CONTROL_ALL_RESET),
-                (registers::INTMASK, 0),
-                (registers::RINTSTS, 0xffff_ffff),
-                (registers::TMOUT, 0xffff_ffff),
-                (registers::CTYPE, 0),
-                (registers::FIFOTH, registers::fifoth_for_pio(32)),
-                (registers::CARDTHRCTL, 0),
+                (registers::CLOCK_ENABLE_REGISTER, 0),
+                (
+                    registers::CONTROL,
+                    1 << 8 | registers::CONTROL_ALL_RESETS_MASK
+                ),
+                (registers::INTERRUPT_MASKING_REGISTER, 0),
+                (registers::RAW_INTERRUPT_STATUS_REGISTER, 0xffff_ffff),
+                (registers::TIMEOUT_REGISTER, 0xffff_ffff),
+                (registers::CARD_TYPE_REGISTER, 0),
+                (
+                    registers::QUEUE_THRESHOLD_REGISTER,
+                    registers::queue_threshold_for_programmed_input_output(32)
+                ),
+                (registers::CARD_THRESHOLD_CONTROL_REGISTER, 0),
             ]
         );
         // A FIFO reset still in flight when the driver starts is asked for again, not toggled off.
         let mut h = take(SimulatedHostController::new(CardKind::Empty, 1, 32));
         h.registers_mut()
-            .write(registers::CONTROL, registers::CONTROL_FIFO_RESET);
+            .write(registers::CONTROL, registers::CONTROL_QUEUE_RESET);
         h.registers_mut().writes.clear();
         h.reset().unwrap();
         assert_eq!(
             h.registers_mut().writes[1],
-            (registers::CONTROL, registers::CONTROL_ALL_RESET)
+            (registers::CONTROL, registers::CONTROL_ALL_RESETS_MASK)
         );
     }
 
     #[test]
     fn a_reset_that_never_clears_is_reported_with_the_word_read() {
-        let mut sim = SimulatedHostController::new(CardKind::Empty, 1, 32);
-        sim.reset_stuck = true;
-        let mut h = take(sim);
+        let mut simulator = SimulatedHostController::new(CardKind::Empty, 1, 32);
+        simulator.reset_stuck = true;
+        let mut h = take(simulator);
         assert_eq!(
             h.reset(),
-            Err(Error::ResetStuck(registers::CONTROL_ALL_RESET))
+            Err(Error::ResetStuck(registers::CONTROL_ALL_RESETS_MASK))
         );
     }
 
@@ -810,17 +863,17 @@ mod tests {
     fn power_and_bus_width_land_in_their_registers() {
         let mut h = take(SimulatedHostController::new(CardKind::Empty, 1, 32));
         h.power_on();
-        assert_eq!(h.registers_mut().peek(registers::PWREN), 1);
-        for (width, ctype) in [
-            (4, registers::CTYPE_4BIT),
-            (8, registers::CTYPE_8BIT),
+        assert_eq!(h.registers_mut().peek(registers::POWER_ENABLE_REGISTER), 1);
+        for (width, card_type) in [
+            (4, registers::CARD_TYPE_4_BIT_BUS),
+            (8, registers::CARD_TYPE_8_BIT_BUS),
             (1, 0),
             (2, 0),
         ] {
             h.set_bus_width(width);
             assert_eq!(
-                h.registers_mut().peek(registers::CTYPE),
-                ctype,
+                h.registers_mut().peek(registers::CARD_TYPE_REGISTER),
+                card_type,
                 "width {width}"
             );
         }
@@ -828,9 +881,9 @@ mod tests {
 
     #[test]
     fn a_clock_update_the_controller_never_takes_is_an_error() {
-        let mut sim = SimulatedHostController::new(CardKind::Empty, 1, 32);
-        sim.clock_stuck = true;
-        let mut h = take(sim);
+        let mut simulator = SimulatedHostController::new(CardKind::Empty, 1, 32);
+        simulator.clock_stuck = true;
+        let mut h = take(simulator);
         assert_eq!(h.set_clock(400_000), Err(Error::ClockUpdate));
     }
 
@@ -842,11 +895,11 @@ mod tests {
         ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
     )]
     fn a_card_busy_forever_is_reported_once_the_deadline_has_passed() {
-        let mut sim = SimulatedHostController::new(CardKind::Empty, 1, 32);
-        sim.busy_forever = true;
-        sim.clock_step = 7;
+        let mut simulator = SimulatedHostController::new(CardKind::Empty, 1, 32);
+        simulator.busy_forever = true;
+        simulator.clock_step = 7;
         assert_ne!(DATA_DEADLINE_MICROSECONDS % 7, 0);
-        let mut h = take(sim);
+        let mut h = take(simulator);
         assert_eq!(
             within_ten_seconds(move || h.wait_not_busy()),
             Err(Error::Busy)
@@ -857,32 +910,32 @@ mod tests {
     /// after the write to `CMD`. The driver must wait for `CD` before it reads either.
     #[test]
     fn the_response_is_read_only_once_the_command_is_done() {
-        let mut sim = SimulatedHostController::new(CardKind::SdHighCapacity, 2048, 32);
-        sim.late_answer = 3;
-        let mut h = take(sim);
+        let mut simulator = SimulatedHostController::new(CardKind::SdHighCapacity, 2048, 32);
+        simulator.late_answer = 3;
+        let mut h = take(simulator);
         h.send_command(&Command::new(0, 0, Response::None)).unwrap();
         let echo = h
-            .send_command(&Command::new(SEND_IF_COND, 0x1aa, Response::R7))
+            .send_command(&Command::new(SEND_INTERFACE_CONDITION, 0x1aa, Response::R7))
             .unwrap();
         assert_eq!(echo[0] & 0xfff, 0x1aa);
-        let mut sim = SimulatedHostController::new(CardKind::Empty, 1, 32);
-        sim.late_answer = 3;
-        let mut h = take(sim);
+        let mut simulator = SimulatedHostController::new(CardKind::Empty, 1, 32);
+        simulator.late_answer = 3;
+        let mut h = take(simulator);
         assert_eq!(
-            h.send_command(&Command::new(SEND_IF_COND, 0x1aa, Response::R7)),
-            Err(Error::NoResponse(SEND_IF_COND))
+            h.send_command(&Command::new(SEND_INTERFACE_CONDITION, 0x1aa, Response::R7)),
+            Err(Error::NoResponse(SEND_INTERFACE_CONDITION))
         );
     }
 
     #[test]
-    fn a_response_crc_error_is_a_bad_response() {
-        let mut sim = SimulatedHostController::new(CardKind::SdHighCapacity, 2048, 32);
-        sim.faults = vec![(SEND_IF_COND, 0, Fault::BadCrc)];
-        let mut h = take(sim);
+    fn a_response_cyclic_redundancy_check_error_is_a_bad_response() {
+        let mut simulator = SimulatedHostController::new(CardKind::SdHighCapacity, 2048, 32);
+        simulator.faults = vec![(SEND_INTERFACE_CONDITION, 0, Fault::BadCyclicRedundancyCheck)];
+        let mut h = take(simulator);
         h.send_command(&Command::new(0, 0, Response::None)).unwrap();
         assert!(matches!(
-            h.send_command(&Command::new(SEND_IF_COND, 0x1aa, Response::R7)),
-            Err(Error::BadResponse(SEND_IF_COND, s)) if s & registers::RINTSTS_RCRC != 0
+            h.send_command(&Command::new(SEND_INTERFACE_CONDITION, 0x1aa, Response::R7)),
+            Err(Error::BadResponse(SEND_INTERFACE_CONDITION, s)) if s & registers::RAW_INTERRUPT_RESPONSE_CYCLIC_REDUNDANCY_CHECK_ERROR != 0
         ));
     }
 
@@ -903,12 +956,20 @@ mod tests {
         let mut block = [0u8; 512];
         sd::read_blocks(&mut h, &card, 1, &mut block).unwrap();
         let read = core::mem::take(&mut h.registers_mut().writes);
-        assert!(!read.iter().any(|&(o, _)| o == registers::CARDTHRCTL));
-        assert!(read.contains(&(registers::CONTROL, 1 << 8 | registers::CONTROL_FIFO_RESET)));
+        assert!(
+            !read
+                .iter()
+                .any(|&(o, _)| o == registers::CARD_THRESHOLD_CONTROL_REGISTER)
+        );
+        assert!(read.contains(&(registers::CONTROL, 1 << 8 | registers::CONTROL_QUEUE_RESET)));
         sd::write_blocks(&mut h, &card, 1, &block).unwrap();
         let write = &h.registers_mut().writes;
-        assert!(!write.iter().any(|&(o, _)| o == registers::CARDTHRCTL));
-        assert!(write.contains(&(registers::CONTROL, 1 << 8 | registers::CONTROL_FIFO_RESET)));
+        assert!(
+            !write
+                .iter()
+                .any(|&(o, _)| o == registers::CARD_THRESHOLD_CONTROL_REGISTER)
+        );
+        assert!(write.contains(&(registers::CONTROL, 1 << 8 | registers::CONTROL_QUEUE_RESET)));
         // A FIFO reset that never clears stops the command before it is sent.
         h.registers_mut().reset_stuck = true;
         assert!(matches!(
@@ -929,12 +990,12 @@ mod tests {
         ));
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers_mut()
-            .write(registers::CONTROL, registers::CONTROL_FIFO_RESET);
+            .write(registers::CONTROL, registers::CONTROL_QUEUE_RESET);
         h.registers_mut().writes.clear();
         let mut block = [0u8; 512];
         sd::read_blocks(&mut h, &card, 1, &mut block).unwrap();
         let read = &h.registers_mut().writes;
-        assert!(read.contains(&(registers::CONTROL, registers::CONTROL_FIFO_RESET)));
+        assert!(read.contains(&(registers::CONTROL, registers::CONTROL_QUEUE_RESET)));
     }
 
     /// The size and direction checks come before anything is sent, so an empty slot (which would
@@ -1048,11 +1109,11 @@ mod tests {
             32,
         ));
         let card = sd::identify(&mut h, 4).unwrap();
-        h.registers_mut().crc_error_at_end = true;
+        h.registers_mut().cyclic_redundancy_check_error_at_end = true;
         let start = h.registers_mut().now_microseconds();
         assert!(matches!(
             sd::write_blocks(&mut h, &card, 1, &[0u8; 512]),
-            Err(BlockTransferError::Host(Error::Data(24, rint))) if rint & registers::RINTSTS_DCRC != 0
+            Err(BlockTransferError::Host(Error::Data(24, raw_interrupt_status))) if raw_interrupt_status & registers::RAW_INTERRUPT_DATA_CYCLIC_REDUNDANCY_CHECK_ERROR != 0
         ));
         assert!(h.registers_mut().now_microseconds() - start < DATA_DEADLINE_MICROSECONDS);
     }
@@ -1066,7 +1127,7 @@ mod tests {
             32,
         ));
         let card = sd::identify(&mut h, 4).unwrap();
-        h.registers_mut().fail_next_read_crc = true;
+        h.registers_mut().fail_next_read_cyclic_redundancy_check = true;
         let start = h.registers_mut().now_microseconds();
         let mut block = [0u8; 512];
         assert!(matches!(
@@ -1085,11 +1146,13 @@ mod tests {
             32,
         ));
         let card = sd::identify(&mut h, 4).unwrap();
-        h.registers_mut().late_acd = 5;
+        h.registers_mut().late_automatic_command_done = 5;
         let mut blocks = [0u8; 4 * 512];
         sd::read_blocks(&mut h, &card, 1, &mut blocks).unwrap();
         assert_ne!(
-            h.registers_mut().peek(registers::RINTSTS) & registers::RINTSTS_ACD,
+            h.registers_mut()
+                .peek(registers::RAW_INTERRUPT_STATUS_REGISTER)
+                & registers::RAW_INTERRUPT_AUTOMATIC_COMMAND_DONE,
             0
         );
     }

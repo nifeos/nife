@@ -16,7 +16,10 @@ fn host(kind: CardKind, blocks: usize) -> HostController<SimulatedHostController
         Some(32),
     )
     .unwrap();
-    assert_eq!(id.version_identification, crate::simulator::VERID);
+    assert_eq!(
+        id.version_identification,
+        crate::simulator::SIMULATED_VERSION_IDENTIFICATION
+    );
     h
 }
 
@@ -36,7 +39,7 @@ fn master_boot_record_card(blocks: usize, first: u32) -> SimulatedHostController
 }
 
 #[test]
-fn an_sdhc_card_is_identified_selected_and_widened_in_the_specification_order() {
+fn a_high_capacity_sd_card_is_identified_selected_and_widened_in_the_specification_order() {
     let mut h = host(CardKind::SdHighCapacity, 8192);
     let card = sd::identify(&mut h, 4).unwrap();
     assert_eq!(card.kind, sd::CardKind::SdHighCapacity);
@@ -44,8 +47,8 @@ fn an_sdhc_card_is_identified_selected_and_widened_in_the_specification_order() 
     assert_eq!(card.blocks, 8192);
     assert_eq!((card.bus_width, card.clock_hertz), (4, 25_000_000));
     assert_eq!(&card.card_identification.name[..5], b"TEST1");
-    let sim = h.into_registers();
-    let order: Vec<u8> = sim.commands.iter().map(|c| c.0).collect();
+    let simulator = h.into_registers();
+    let order: Vec<u8> = simulator.commands.iter().map(|c| c.0).collect();
     // CMD0, CMD8, then ACMD41 until ready (three busy polls), CID, RCA, CSD, select, ACMD6,
     // block length.
     assert_eq!(
@@ -53,13 +56,13 @@ fn an_sdhc_card_is_identified_selected_and_widened_in_the_specification_order() 
         [0, 8, 55, 41, 55, 41, 55, 41, 55, 41, 2, 3, 9, 7, 55, 6, 16]
     );
     assert!(
-        !sim.clockless_command,
+        !simulator.clockless_command,
         "a command went out with the card clock off"
     );
 }
 
 #[test]
-fn an_old_sd_card_is_byte_addressed_and_an_emmc_is_told_apart_by_its_silence() {
+fn an_old_sd_card_is_byte_addressed_and_an_embedded_multimedia_card_is_told_apart_by_its_silence() {
     let mut h = host(CardKind::SdV1, 4096);
     let card = sd::identify(&mut h, 4).unwrap();
     assert_eq!(card.kind, sd::CardKind::SdV1);
@@ -100,10 +103,16 @@ fn blocks_written_read_back_and_multi_block_transfers_stop_by_themselves() {
     let mut one = [0u8; BLOCK_BYTES];
     sd::read_blocks(&mut h, &card, 103, &mut one).unwrap();
     assert_eq!(one[..], data[3 * BLOCK_BYTES..4 * BLOCK_BYTES]);
-    let sim = h.into_registers();
-    assert_eq!(sim.written, (100..108).collect::<Vec<u64>>());
+    let simulator = h.into_registers();
+    assert_eq!(simulator.written, (100..108).collect::<Vec<u64>>());
     // CMD25 and CMD18 each followed by the controller's own CMD12; CMD17 not.
-    let tail: Vec<u8> = sim.commands.iter().rev().take(6).map(|c| c.0).collect();
+    let tail: Vec<u8> = simulator
+        .commands
+        .iter()
+        .rev()
+        .take(6)
+        .map(|c| c.0)
+        .collect();
     assert_eq!(tail, [17, 12, 18, 13, 12, 25]);
 }
 
@@ -130,9 +139,9 @@ fn a_transfer_that_does_not_fit_the_card_or_the_buffer_is_refused_before_anythin
 
 #[test]
 fn a_controller_before_2_40a_reads_through_its_queue_at_0x100_and_gets_no_threshold_write() {
-    let sim = SimulatedHostController::new(CardKind::SdHighCapacity, 8192, 32)
+    let simulator = SimulatedHostController::new(CardKind::SdHighCapacity, 8192, 32)
         .with_version_identification(0x5342_230a);
-    let (mut h, id) = HostController::new(sim, 50_000_000, Some(32)).unwrap();
+    let (mut h, id) = HostController::new(simulator, 50_000_000, Some(32)).unwrap();
     assert_eq!(
         crate::registers::queue_offset(id.version_identification),
         0x100
@@ -151,10 +160,10 @@ fn a_controller_before_2_40a_reads_through_its_queue_at_0x100_and_gets_no_thresh
 fn a_read_whose_tail_is_below_the_watermark_is_drained_on_transfer_over() {
     // 24 words deep: a 128-word block arrives as five fills of 24 and a tail of 8, below the
     // receive watermark of 11, so the tail raises DTO and never RXDR.
-    let mut sim = SimulatedHostController::new(CardKind::SdHighCapacity, 8192, 24);
-    sim.strict_watermark = true;
-    sim.storage[5] = core::array::from_fn(|i| (i % 249) as u8);
-    let (mut h, _) = HostController::new(sim, 50_000_000, Some(24)).unwrap();
+    let mut simulator = SimulatedHostController::new(CardKind::SdHighCapacity, 8192, 24);
+    simulator.strict_watermark = true;
+    simulator.storage[5] = core::array::from_fn(|i| (i % 249) as u8);
+    let (mut h, _) = HostController::new(simulator, 50_000_000, Some(24)).unwrap();
     let card = sd::identify(&mut h, 4).unwrap();
     let mut one = [0u8; BLOCK_BYTES];
     sd::read_blocks(&mut h, &card, 5, &mut one).unwrap();
@@ -162,14 +171,14 @@ fn a_read_whose_tail_is_below_the_watermark_is_drained_on_transfer_over() {
 }
 
 #[test]
-fn a_data_crc_error_is_reported_with_its_command() {
+fn a_data_cyclic_redundancy_check_error_is_reported_with_its_command() {
     let mut h = host(CardKind::SdHighCapacity, 8192);
     let card = sd::identify(&mut h, 4).unwrap();
-    h.registers_mut().fail_next_read_crc = true;
+    h.registers_mut().fail_next_read_cyclic_redundancy_check = true;
     let mut buffer = [0u8; BLOCK_BYTES];
     assert!(matches!(
         sd::read_blocks(&mut h, &card, 0, &mut buffer),
-        Err(BlockTransferError::Host(Error::Data(17, rint))) if rint & crate::registers::RINTSTS_DCRC != 0
+        Err(BlockTransferError::Host(Error::Data(17, raw_interrupt_status))) if raw_interrupt_status & crate::registers::RAW_INTERRUPT_DATA_CYCLIC_REDUNDANCY_CHECK_ERROR != 0
     ));
 }
 
@@ -191,10 +200,10 @@ fn a_card_is_identified_and_read_through_its_partition_table_without_a_write() {
     for k in 0..8u64 {
         sd::read_blocks(&mut h, &card, 2048 + 128 * k, &mut buffer).unwrap();
     }
-    let sim = h.into_registers();
-    assert!(sim.written.is_empty());
+    let simulator = h.into_registers();
+    assert!(simulator.written.is_empty());
     assert!(
-        !sim.commands.iter().any(|c| matches!(c.0, 24 | 25)),
+        !simulator.commands.iter().any(|c| matches!(c.0, 24 | 25)),
         "a read-only sequence sent a write command"
     );
 }
@@ -203,9 +212,9 @@ fn a_card_is_identified_and_read_through_its_partition_table_without_a_write() {
 /// before every read, returns the right bytes every time and writes nothing.
 #[test]
 fn the_same_blocks_read_back_at_every_clock_and_length_after_a_fresh_identification() {
-    let sim = master_boot_record_card(8192, 2048);
-    let want = sim.storage[2048..2048 + 128].concat();
-    let (mut h, _) = HostController::new(sim, 50_000_000, Some(32)).unwrap();
+    let simulator = master_boot_record_card(8192, 2048);
+    let want = simulator.storage[2048..2048 + 128].concat();
+    let (mut h, _) = HostController::new(simulator, 50_000_000, Some(32)).unwrap();
     let mut buffer = vec![0u8; 128 * BLOCK_BYTES];
     let mut reads = 0;
     for hertz in [
@@ -217,9 +226,9 @@ fn the_same_blocks_read_back_at_every_clock_and_length_after_a_fresh_identificat
             let card = sd::identify(&mut h, 4).unwrap();
             let card_hertz = h.set_clock(hertz).unwrap();
             assert!(card_hertz <= hertz, "{card_hertz} Hz for {hertz} Hz");
-            let dst = &mut buffer[..blocks * BLOCK_BYTES];
-            sd::read_blocks(&mut h, &card, 2048, dst).unwrap();
-            assert_eq!(dst, &want[..blocks * BLOCK_BYTES]);
+            let destination = &mut buffer[..blocks * BLOCK_BYTES];
+            sd::read_blocks(&mut h, &card, 2048, destination).unwrap();
+            assert_eq!(destination, &want[..blocks * BLOCK_BYTES]);
             reads += 1;
         }
     }
@@ -231,11 +240,11 @@ fn the_same_blocks_read_back_at_every_clock_and_length_after_a_fresh_identificat
 /// restored: the gap ends as it began and no sector outside it is written.
 #[test]
 fn a_write_confined_to_the_gap_is_read_back_and_restored_exactly() {
-    let mut sim = master_boot_record_card(8192, 2048);
+    let mut simulator = master_boot_record_card(8192, 2048);
     // Something already in the gap: the restore must put it back, not zero it.
-    sim.storage[2043][0] = 0x42;
-    let before = sim.storage.clone();
-    let (mut h, _) = HostController::new(sim, 50_000_000, Some(32)).unwrap();
+    simulator.storage[2043][0] = 0x42;
+    let before = simulator.storage.clone();
+    let (mut h, _) = HostController::new(simulator, 50_000_000, Some(32)).unwrap();
     let card = sd::identify(&mut h, 4).unwrap();
     let mut sector = [0u8; BLOCK_BYTES];
     sd::read_blocks(&mut h, &card, 0, &mut sector).unwrap();
@@ -256,10 +265,15 @@ fn a_write_confined_to_the_gap_is_read_back_and_restored_exactly() {
     sd::write_blocks(&mut h, &card, first, &original).unwrap();
     sd::read_blocks(&mut h, &card, first, &mut back).unwrap();
     assert_eq!(back, original);
-    let sim = h.into_registers();
-    assert!(sim.written.iter().all(|&lba| (2040..2048).contains(&lba)));
-    assert_eq!(sim.written.len(), 16);
-    assert_eq!(sim.storage, before);
+    let simulator = h.into_registers();
+    assert!(
+        simulator
+            .written
+            .iter()
+            .all(|&lba| (2040..2048).contains(&lba))
+    );
+    assert_eq!(simulator.written.len(), 16);
+    assert_eq!(simulator.storage, before);
 }
 
 #[test]
@@ -268,7 +282,7 @@ fn a_sixteen_bit_queue_is_refused_at_the_door() {
     struct Narrow(SimulatedHostController);
     impl crate::host_controller::RegisterWindowAndClock for Narrow {
         fn read(&mut self, o: u32) -> u32 {
-            if o == crate::registers::HCON {
+            if o == crate::registers::HARDWARE_CONFIGURATION_REGISTER {
                 0
             } else {
                 self.0.read(o)
@@ -314,9 +328,11 @@ fn faulty(
     blocks: usize,
     faults: &[(u8, usize, Fault)],
 ) -> HostController<SimulatedHostController> {
-    let mut sim = SimulatedHostController::new(kind, blocks, 32);
-    sim.faults = faults.to_vec();
-    HostController::new(sim, 50_000_000, Some(32)).unwrap().0
+    let mut simulator = SimulatedHostController::new(kind, blocks, 32);
+    simulator.faults = faults.to_vec();
+    HostController::new(simulator, 50_000_000, Some(32))
+        .unwrap()
+        .0
 }
 
 #[test]
@@ -349,9 +365,11 @@ fn a_card_that_never_finishes_power_up_is_reported_with_its_last_operation_condi
     let (sender, receiver) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         for kind in [CardKind::SdHighCapacity, CardKind::MultimediaCard] {
-            let mut sim = SimulatedHostController::new(kind, 16_384, 32);
-            sim.busy_polls = u32::MAX;
-            let mut h = HostController::new(sim, 50_000_000, Some(32)).unwrap().0;
+            let mut simulator = SimulatedHostController::new(kind, 16_384, 32);
+            simulator.busy_polls = u32::MAX;
+            let mut h = HostController::new(simulator, 50_000_000, Some(32))
+                .unwrap()
+                .0;
             let busy_done = card::OPERATION_CONDITIONS_BUSY_DONE;
             let reported = matches!(
                 sd::identify(&mut h, 4),
@@ -370,7 +388,8 @@ fn a_card_that_never_finishes_power_up_is_reported_with_its_last_operation_condi
 }
 
 #[test]
-fn an_sd_2_0_card_silent_to_its_first_app_command_is_no_card_not_an_emmc() {
+fn an_sd_2_0_card_silent_to_its_first_application_command_is_no_card_not_an_embedded_multimedia_card()
+ {
     let mut h = faulty(
         CardKind::SdHighCapacity,
         8192,
@@ -474,9 +493,11 @@ fn an_error_bit_in_a_status_answer_stops_identification_at_that_command() {
 
 #[test]
 fn a_card_specific_data_this_driver_cannot_size_is_refused_with_its_structure() {
-    let mut sim = SimulatedHostController::new(CardKind::SdHighCapacity, 8192, 32);
-    sim.zero_capacity = true;
-    let mut h = HostController::new(sim, 50_000_000, Some(32)).unwrap().0;
+    let mut simulator = SimulatedHostController::new(CardKind::SdHighCapacity, 8192, 32);
+    simulator.zero_capacity = true;
+    let mut h = HostController::new(simulator, 50_000_000, Some(32))
+        .unwrap()
+        .0;
     assert_eq!(
         sd::identify(&mut h, 4),
         Err(InitializationError::Capacity(3))
@@ -576,10 +597,13 @@ fn an_sd_card_is_addressed_by_the_relative_card_address_it_chose_and_decoded_as_
             serial: 0x1234_5678,
         }
     );
-    let sim = h.into_registers();
-    let acmd6 = sim.commands.iter().position(|c| c.0 == 6).unwrap();
-    assert_eq!(sim.commands[acmd6 - 1], (55, 0xb368 << 16));
-    assert!(sim.commands.contains(&(41, 0x4030_0000)));
+    let simulator = h.into_registers();
+    let set_bus_width_position = simulator.commands.iter().position(|c| c.0 == 6).unwrap();
+    assert_eq!(
+        simulator.commands[set_bus_width_position - 1],
+        (55, 0xb368 << 16)
+    );
+    assert!(simulator.commands.contains(&(41, 0x4030_0000)));
     let mut h = host(CardKind::SdV1, 4096);
     sd::identify(&mut h, 4).unwrap();
     assert!(h.into_registers().commands.contains(&(41, 0x0030_0000)));
@@ -588,17 +612,22 @@ fn an_sd_card_is_addressed_by_the_relative_card_address_it_chose_and_decoded_as_
 /// An eMMC of 2 GB or less is byte addressed and sized by its CSD; `EXT_CSD`'s count, which
 /// such a part need not fill in, is not trusted for it. A larger one is sized by `EXT_CSD`.
 #[test]
-fn an_emmc_is_sized_by_extended_card_specific_data_only_when_it_is_sector_addressed() {
-    let mut sim = SimulatedHostController::new(CardKind::MultimediaCard, 4096, 32);
-    sim.multimedia_card_byte_addressed = true;
-    sim.extended_card_specific_data_sectors = Some(99_999);
-    let mut h = HostController::new(sim, 50_000_000, Some(32)).unwrap().0;
+fn an_embedded_multimedia_card_is_sized_by_extended_card_specific_data_only_when_it_is_sector_addressed()
+ {
+    let mut simulator = SimulatedHostController::new(CardKind::MultimediaCard, 4096, 32);
+    simulator.multimedia_card_byte_addressed = true;
+    simulator.extended_card_specific_data_sectors = Some(99_999);
+    let mut h = HostController::new(simulator, 50_000_000, Some(32))
+        .unwrap()
+        .0;
     let card = sd::identify(&mut h, 8).unwrap();
     assert!(!card.block_addressed);
     assert_eq!(card.blocks, 4096);
-    let mut sim = SimulatedHostController::new(CardKind::MultimediaCard, 4096, 32);
-    sim.extended_card_specific_data_sectors = Some(99_999);
-    let mut h = HostController::new(sim, 50_000_000, Some(32)).unwrap().0;
+    let mut simulator = SimulatedHostController::new(CardKind::MultimediaCard, 4096, 32);
+    simulator.extended_card_specific_data_sectors = Some(99_999);
+    let mut h = HostController::new(simulator, 50_000_000, Some(32))
+        .unwrap()
+        .0;
     let card = sd::identify(&mut h, 8).unwrap();
     assert!(card.block_addressed);
     assert_eq!(card.blocks, 99_999);
@@ -612,14 +641,16 @@ fn an_emmc_is_sized_by_extended_card_specific_data_only_when_it_is_sector_addres
     miri,
     ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
 )]
-fn an_emmc_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
+fn an_embedded_multimedia_card_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
     assert_ne!(sd::POWER_UP_DEADLINE_MICROSECONDS % 7, 0);
     let (sender, receiver) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
-        let mut sim = SimulatedHostController::new(CardKind::MultimediaCard, 4096, 32);
-        sim.busy_polls = u32::MAX;
-        sim.clock_step = 7;
-        let mut h = HostController::new(sim, 50_000_000, Some(32)).unwrap().0;
+        let mut simulator = SimulatedHostController::new(CardKind::MultimediaCard, 4096, 32);
+        simulator.busy_polls = u32::MAX;
+        simulator.clock_step = 7;
+        let mut h = HostController::new(simulator, 50_000_000, Some(32))
+            .unwrap()
+            .0;
         let busy_done = card::OPERATION_CONDITIONS_BUSY_DONE;
         let _ = sender.send(matches!(
             sd::identify(&mut h, 8),
@@ -644,10 +675,12 @@ fn an_sd_card_that_never_powers_up_is_given_up_on_whatever_the_clock_steps() {
     assert_ne!(sd::POWER_UP_DEADLINE_MICROSECONDS % 7, 0);
     let (sender, receiver) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
-        let mut sim = SimulatedHostController::new(CardKind::SdHighCapacity, 4096, 32);
-        sim.busy_polls = u32::MAX;
-        sim.clock_step = 7;
-        let mut h = HostController::new(sim, 50_000_000, Some(32)).unwrap().0;
+        let mut simulator = SimulatedHostController::new(CardKind::SdHighCapacity, 4096, 32);
+        simulator.busy_polls = u32::MAX;
+        simulator.clock_step = 7;
+        let mut h = HostController::new(simulator, 50_000_000, Some(32))
+            .unwrap()
+            .0;
         let busy_done = card::OPERATION_CONDITIONS_BUSY_DONE;
         let _ = sender.send(matches!(
             sd::identify(&mut h, 8),

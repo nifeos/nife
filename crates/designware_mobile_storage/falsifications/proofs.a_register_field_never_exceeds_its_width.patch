@@ -6,10 +6,9 @@ Every decoded capacity, manufacturer and serial inherits the stray bit.
 Expected to fail: the harness's assertion that a field shorter than 32 bits is below 2^len.
 
 diff --git a/crates/designware_mobile_storage/src/card.rs b/crates/designware_mobile_storage/src/card.rs
-index 552a189bb..bb308e496 100644
 --- a/crates/designware_mobile_storage/src/card.rs
 +++ b/crates/designware_mobile_storage/src/card.rs
-@@ -72,7 +72,7 @@ pub const fn extract_bits(register: &[u32; 4], start: u32, len: u32) -> u32 {
+@@ -89,7 +89,7 @@
      let mask = if len == 32 {
          0xffff_ffff
      } else {

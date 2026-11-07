@@ -25,16 +25,19 @@ pub const GO_IDLE_STATE: u8 = 0;
 /// **CMD1, send operation conditions** (`SEND_OP_COND`, JESD84-B51, eMMC only): negotiate the
 /// voltage and wait for power-up. The response is R3.
 #[doc(alias = "multimedia card operation conditions")]
-pub(crate) const SEND_OP_COND: u8 = 1;
+#[doc(alias = "SEND_OP_COND")]
+pub(crate) const SEND_OPERATION_CONDITIONS: u8 = 1;
 /// **CMD2, all send card identification** (`ALL_SEND_CID` in both specifications): the card's
 /// identity, 128 bits, as R2.
 #[doc(alias = "send card identification")]
-pub(crate) const ALL_SEND_CID: u8 = 2;
+#[doc(alias = "ALL_SEND_CID")]
+pub(crate) const ALL_SEND_CARD_IDENTIFICATION: u8 = 2;
 /// **CMD3, send relative address** (the SD specification's `SEND_RELATIVE_ADDR`; JESD84-B51 calls
 /// it `SET_RELATIVE_ADDR`): on SD the card picks its address and answers R6; on eMMC the host sets
 /// it and the card answers R1.
 #[doc(alias = "relative card address")]
-pub(crate) const SEND_RELATIVE_ADDR: u8 = 3;
+#[doc(alias = "SEND_RELATIVE_ADDR")]
+pub(crate) const SEND_RELATIVE_ADDRESS: u8 = 3;
 /// **CMD6, switch** (JESD84-B51's `SWITCH`; the SD specification's `SWITCH_FUNC`, unused here):
 /// write one byte of `EXT_CSD` on an eMMC. The response is R1b.
 ///
@@ -51,11 +54,13 @@ pub(crate) const SELECT_CARD: u8 = 7;
 /// `SEND_EXT_CSD`): on SD 2.0 and later, R7 echoing the voltage and check pattern; on eMMC, R1 and
 /// the 512-byte `EXT_CSD`. The same index with two meanings is how an eMMC is told from an SD card.
 #[doc(alias = "interface condition")]
-pub(crate) const SEND_IF_COND: u8 = 8;
+#[doc(alias = "SEND_IF_COND")]
+pub(crate) const SEND_INTERFACE_CONDITION: u8 = 8;
 /// **CMD9, send card-specific data** (`SEND_CSD` in both specifications): the card's capacity and
 /// timing, 128 bits, as R2.
 #[doc(alias = "send card specific data")]
-pub(crate) const SEND_CSD: u8 = 9;
+#[doc(alias = "SEND_CSD")]
+pub(crate) const SEND_CARD_SPECIFIC_DATA: u8 = 9;
 /// **CMD12, stop transmission** (`STOP_TRANSMISSION` in both specifications): end a multiple-block
 /// transfer. The response is R1b.
 #[doc(alias = "stop transfer")]
@@ -69,7 +74,8 @@ pub const SEND_STATUS: u8 = 13;
 /// **CMD16, set block length** (`SET_BLOCKLEN` in both specifications): 512, for a
 /// standard-capacity card; high-capacity cards ignore it. The response is R1.
 #[doc(alias = "set block length")]
-pub(crate) const SET_BLOCKLEN: u8 = 16;
+#[doc(alias = "SET_BLOCKLEN")]
+pub(crate) const SET_BLOCK_LENGTH: u8 = 16;
 /// **CMD17, read single block** (`READ_SINGLE_BLOCK` in both specifications): one block from the
 /// card. The response is R1.
 #[doc(alias = "read one block")]
@@ -89,7 +95,8 @@ pub(crate) const WRITE_MULTIPLE_BLOCK: u8 = 25;
 /// **CMD55, application command** (the SD specification's `APP_CMD`): the next command is
 /// application-specific (`ACMD`). The response is R1.
 #[doc(alias = "application command")]
-pub(crate) const APP_CMD: u8 = 55;
+#[doc(alias = "APP_CMD")]
+pub(crate) const APPLICATION_COMMAND: u8 = 55;
 /// **ACMD6, set bus width** (the SD specification's `SET_BUS_WIDTH`): the data bus width, 1 or 4
 /// bits. The response is R1.
 #[doc(alias = "bus width")]
@@ -97,7 +104,8 @@ pub(crate) const SET_BUS_WIDTH: u8 = 6;
 /// **ACMD41, SD send operation conditions** (`SD_SEND_OP_COND`, the SD specification): negotiate
 /// the voltage and capacity support and wait for power-up. The response is R3.
 #[doc(alias = "SD operation conditions")]
-pub(crate) const SD_SEND_OP_COND: u8 = 41;
+#[doc(alias = "SD_SEND_OP_COND")]
+pub(crate) const SD_SEND_OPERATION_CONDITIONS: u8 = 41;
 
 /// What comes back from the card, and so how the controller must be told to listen.
 ///
@@ -258,10 +266,10 @@ impl Command {
             w |= registers::COMMAND_RESPONSE_EXPECT;
         }
         if self.response.is_long() {
-            w |= registers::COMMAND_RESPONSE_LENGTH;
+            w |= registers::COMMAND_LONG_RESPONSE;
         }
         if self.response.has_crc() {
-            w |= registers::COMMAND_CHECK_RESPONSE_CRC;
+            w |= registers::COMMAND_CHECK_RESPONSE_CYCLIC_REDUNDANCY_CHECK;
         }
         if let Some(d) = self.data {
             w |= registers::COMMAND_DATA_EXPECTED;
@@ -295,25 +303,26 @@ mod tests {
     use crate::registers::*;
 
     #[test]
-    fn a_long_response_with_crc_and_no_data() {
-        let w = Command::new(ALL_SEND_CID, 0, Response::R2).register_word();
+    fn a_long_response_with_a_cyclic_redundancy_check_and_no_data() {
+        let w = Command::new(ALL_SEND_CARD_IDENTIFICATION, 0, Response::R2).register_word();
         assert_eq!(
             w,
             COMMAND_START
                 | COMMAND_USE_HOLD_REGISTER
                 | COMMAND_WAIT_FOR_PREVIOUS_DATA_COMPLETE
                 | COMMAND_RESPONSE_EXPECT
-                | COMMAND_RESPONSE_LENGTH
-                | COMMAND_CHECK_RESPONSE_CRC
+                | COMMAND_LONG_RESPONSE
+                | COMMAND_CHECK_RESPONSE_CYCLIC_REDUNDANCY_CHECK
                 | 2
         );
     }
 
     #[test]
-    fn the_operation_conditions_are_not_crc_checked_because_they_have_none() {
-        let w = Command::new(SD_SEND_OP_COND, 0x4030_0000, Response::R3).register_word();
+    fn the_operation_conditions_are_not_cyclic_redundancy_checked_because_they_have_none() {
+        let w =
+            Command::new(SD_SEND_OPERATION_CONDITIONS, 0x4030_0000, Response::R3).register_word();
         assert_ne!(w & COMMAND_RESPONSE_EXPECT, 0);
-        assert_eq!(w & COMMAND_CHECK_RESPONSE_CRC, 0);
+        assert_eq!(w & COMMAND_CHECK_RESPONSE_CYCLIC_REDUNDANCY_CHECK, 0);
     }
 
     #[test]
@@ -363,7 +372,7 @@ mod tests {
         ] {
             assert!(!r.is_long(), "{r:?}");
             assert_eq!(
-                Command::new(SEND_STATUS, 0, r).register_word() & COMMAND_RESPONSE_LENGTH,
+                Command::new(SEND_STATUS, 0, r).register_word() & COMMAND_LONG_RESPONSE,
                 0
             );
         }

@@ -77,42 +77,47 @@ impl DirectMemoryAccessRegion for NoDirectMemoryAccess {
 
 /// A page: the descriptor chain's size, and the most one descriptor's buffer holds here. The
 /// databook's field holds 8191 bytes; a page keeps each buffer inside one page of the region.
-pub(crate) const PAGE: u32 = 4096;
+pub(crate) const PAGE_BYTES: u32 = 4096;
 /// One 32-bit-address descriptor: four words.
 pub(crate) const DESCRIPTOR_BYTES: u32 = 16;
 /// The most descriptors the chain page holds, and so the most data pages a region may have.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. The maximum is spelled out.
-pub const MAXIMUM_DESCRIPTORS: u32 = PAGE / DESCRIPTOR_BYTES;
+pub const MAXIMUM_DESCRIPTORS: u32 = PAGE_BYTES / DESCRIPTOR_BYTES;
 
 /// **Own, descriptor word 0** (OpenBSD's `DES0_OWN`): the IDMAC owns this descriptor. Cleared by
 /// the IDMAC when it closes it.
 #[doc(alias = "owned by the controller")]
-pub(crate) const DES0_OWN: u32 = 1 << 31;
+#[doc(alias = "DES0_OWN")]
+pub(crate) const DESCRIPTOR_OWNED_BY_CONTROLLER: u32 = 1 << 31;
 /// **Second address chained, descriptor word 0** (OpenBSD's `DES0_CH`): word 3 holds the next
 /// descriptor's address, not a second buffer.
 #[doc(alias = "chained")]
-pub(crate) const DES0_CH: u32 = 1 << 4;
+#[doc(alias = "DES0_CH")]
+pub(crate) const DESCRIPTOR_CHAINED: u32 = 1 << 4;
 /// **First descriptor, descriptor word 0** (OpenBSD's `DES0_FS`): the first descriptor of a
 /// transfer.
 #[doc(alias = "first descriptor")]
-pub(crate) const DES0_FS: u32 = 1 << 3;
+#[doc(alias = "DES0_FS")]
+pub(crate) const DESCRIPTOR_FIRST: u32 = 1 << 3;
 /// **Last descriptor, descriptor word 0** (OpenBSD's `DES0_LD`): the last descriptor of a transfer.
 /// The IDMAC stops after it.
 #[doc(alias = "last descriptor")]
-pub(crate) const DES0_LD: u32 = 1 << 2;
+#[doc(alias = "DES0_LD")]
+pub(crate) const DESCRIPTOR_LAST: u32 = 1 << 2;
 /// **Disable interrupt on completion, descriptor word 0** (OpenBSD's `DES0_DIC`): do not raise
 /// `TI`/`RI` when this descriptor closes.
 #[doc(alias = "no completion interrupt")]
-pub(crate) const DES0_DIC: u32 = 1 << 1;
+#[doc(alias = "DES0_DIC")]
+pub(crate) const DESCRIPTOR_DISABLE_INTERRUPT_ON_COMPLETION: u32 = 1 << 1;
 /// Word 1: the first buffer's size in bytes, bits 12:0.
-pub(crate) const DES1_BS1_MASK: u32 = 0x1fff;
+pub(crate) const DESCRIPTOR_BUFFER_1_BYTES_MASK: u32 = 0x1fff;
 // The two word-0 bits every descriptor is written with share no bit (31 and 4), which the compiler
 // checks here; the mutation exclusion for `descriptor` names this check. The constant-assertion
 // lint is off on purpose: the assertion is constant by construction, and the compiler checking it
 // is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-const _: () = assert!(DES0_OWN + DES0_CH == 0x8000_0010);
+const _: () = assert!(DESCRIPTOR_OWNED_BY_CONTROLLER + DESCRIPTOR_CHAINED == 0x8000_0010);
 
 /// Why a region was refused before anything was written.
 ///
@@ -171,7 +176,7 @@ impl core::error::Error for Refusal {}
 #[doc(alias = "idmac")]
 pub struct InternalDirectMemoryAccess<D: DirectMemoryAccessRegion> {
     region: D,
-    bus: u32,
+    region_physical_address: u32,
     capacity: u32,
 }
 
@@ -194,24 +199,24 @@ impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
             return Err(Refusal::Addressing64);
         }
         let base = region.bus_address();
-        if !base.is_multiple_of(u64::from(PAGE)) {
+        if !base.is_multiple_of(u64::from(PAGE_BYTES)) {
             return Err(Refusal::Alignment(base));
         }
         let bytes = region.bytes();
-        let pages = bytes / PAGE;
-        if !bytes.is_multiple_of(PAGE) || pages < 2 || pages - 1 > MAXIMUM_DESCRIPTORS {
+        let pages = bytes / PAGE_BYTES;
+        if !bytes.is_multiple_of(PAGE_BYTES) || pages < 2 || pages - 1 > MAXIMUM_DESCRIPTORS {
             return Err(Refusal::Size(bytes));
         }
-        let Ok(bus) = u32::try_from(base) else {
+        let Ok(region_physical_address) = u32::try_from(base) else {
             return Err(Refusal::AboveFourGibibytes(base));
         };
-        if bus.checked_add(bytes - 1).is_none() {
+        if region_physical_address.checked_add(bytes - 1).is_none() {
             return Err(Refusal::AboveFourGibibytes(base));
         }
         Ok(InternalDirectMemoryAccess {
             region,
-            bus,
-            capacity: bytes - PAGE,
+            region_physical_address,
+            capacity: bytes - PAGE_BYTES,
         })
     }
 
@@ -230,7 +235,7 @@ impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
     fn write_chain(&mut self, bytes: u32) {
         let count = descriptors_for(bytes);
         for i in 0..count {
-            let d = descriptor(self.bus, i, count, bytes);
+            let d = descriptor(self.region_physical_address, i, count, bytes);
             for (w, word) in d.iter().enumerate() {
                 self.region
                     .write_u32(i * DESCRIPTOR_BYTES + 4 * w as u32, *word);
@@ -241,15 +246,21 @@ impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
     /// How many descriptors of a chain of `count` the IDMAC still owns.
     fn owned(&self, count: u32) -> u32 {
         (0..count)
-            .filter(|i| self.region.read_u32(i * DESCRIPTOR_BYTES) & DES0_OWN != 0)
+            .filter(|i| {
+                self.region.read_u32(i * DESCRIPTOR_BYTES) & DESCRIPTOR_OWNED_BY_CONTROLLER != 0
+            })
             .count() as u32
     }
 
     /// Bytes in descriptors the IDMAC still owns, of a chain of `count`: what it has not moved.
     fn owed(&self, count: u32) -> u32 {
         (0..count)
-            .filter(|i| self.region.read_u32(i * DESCRIPTOR_BYTES) & DES0_OWN != 0)
-            .map(|i| self.region.read_u32(i * DESCRIPTOR_BYTES + 4) & DES1_BS1_MASK)
+            .filter(|i| {
+                self.region.read_u32(i * DESCRIPTOR_BYTES) & DESCRIPTOR_OWNED_BY_CONTROLLER != 0
+            })
+            .map(|i| {
+                self.region.read_u32(i * DESCRIPTOR_BYTES + 4) & DESCRIPTOR_BUFFER_1_BYTES_MASK
+            })
             .sum()
     }
 }
@@ -257,32 +268,45 @@ impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
 /// How many descriptors a transfer of `bytes` takes: one a page, and at least one.
 #[must_use]
 pub(crate) const fn descriptors_for(bytes: u32) -> u32 {
-    if bytes == 0 { 1 } else { bytes.div_ceil(PAGE) }
+    if bytes == 0 {
+        1
+    } else {
+        bytes.div_ceil(PAGE_BYTES)
+    }
 }
 
-/// **Descriptor `i` of `count`** for a transfer of `bytes`, in a region whose first byte is at bus
-/// address `bus`: the chain page first, then the data pages in order. Every descriptor is the
+/// **Descriptor `i` of `count`** for a transfer of `bytes`, in a region whose first byte is at
+/// `region_physical_address` as the bus sees it: the chain page first, then the data pages in order. Every descriptor is the
 /// IDMAC's and chained; the first carries `FS`, the last `LD` and the only completion status, and
 /// each holds a page except the last, which holds what is left.
 #[must_use]
-pub(crate) const fn descriptor(bus: u32, i: u32, count: u32, bytes: u32) -> [u32; 4] {
+pub(crate) const fn descriptor(
+    region_physical_address: u32,
+    i: u32,
+    count: u32,
+    bytes: u32,
+) -> [u32; 4] {
     let last = i + 1 == count;
-    let mut des0 = DES0_OWN | DES0_CH;
+    let mut word_0 = DESCRIPTOR_OWNED_BY_CONTROLLER | DESCRIPTOR_CHAINED;
     if i == 0 {
-        des0 |= DES0_FS;
+        word_0 |= DESCRIPTOR_FIRST;
     }
     if last {
-        des0 |= DES0_LD;
+        word_0 |= DESCRIPTOR_LAST;
     } else {
-        des0 |= DES0_DIC;
+        word_0 |= DESCRIPTOR_DISABLE_INTERRUPT_ON_COMPLETION;
     }
-    let size = if last { bytes - i * PAGE } else { PAGE };
+    let size = if last {
+        bytes - i * PAGE_BYTES
+    } else {
+        PAGE_BYTES
+    };
     let next = if last { 0 } else { i + 1 };
     [
-        des0,
+        word_0,
         size,
-        bus + PAGE * (i + 1),
-        bus + DESCRIPTOR_BYTES * next,
+        region_physical_address + PAGE_BYTES * (i + 1),
+        region_physical_address + DESCRIPTOR_BYTES * next,
     ]
 }
 
@@ -299,53 +323,66 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             direct_memory_access.write_chain(bytes);
             direct_memory_access.region.barrier();
         }
-        let result = self.issue(command, true).and_then(|resp| {
+        let result = self.issue(command, true).and_then(|response| {
             self.internal_direct_memory_access_wait(command, count)
-                .map(|()| resp)
+                .map(|()| response)
         });
         let stopped = self.internal_direct_memory_access_stop();
-        let resp = result?;
+        let response = result?;
         stopped?;
         if let Some(direct_memory_access) = self.direct_memory_access.as_mut() {
             direct_memory_access.region.barrier();
         }
-        Ok(resp)
+        Ok(response)
     }
 
     /// **Arm the IDMAC** on the chain at the region's start: called by `issue` once the FIFO
     /// reset has cleared and before the command is written, so the engine is ready for the first
     /// word. `IDINTEN` stays zero and `CONTROL`'s interrupt enable clear; `IDSTS` is raw.
     pub(crate) fn internal_direct_memory_access_start(&mut self) -> Result<(), Error> {
-        let Some(bus) = self.direct_memory_access.as_ref().map(|d| d.bus) else {
+        let Some(region_physical_address) = self
+            .direct_memory_access
+            .as_ref()
+            .map(|d| d.region_physical_address)
+        else {
             return Ok(());
         };
         self.registers
-            .write(registers::BUS_MODE, registers::BUS_MODE_SWR);
+            .write(registers::BUS_MODE, registers::BUS_MODE_SOFTWARE_RESET);
         if !self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
-            window.read(registers::BUS_MODE) & registers::BUS_MODE_SWR == 0
+            window.read(registers::BUS_MODE) & registers::BUS_MODE_SOFTWARE_RESET == 0
         }) {
             return Err(Error::ResetStuck(self.registers.read(registers::BUS_MODE)));
         }
         self.registers.write(
-            registers::FIFOTH,
-            registers::fifoth_for_direct_memory_access(self.depth),
+            registers::QUEUE_THRESHOLD_REGISTER,
+            registers::queue_threshold_for_direct_memory_access(self.depth),
         );
-        self.registers.write(registers::IDINTEN, 0);
+        self.registers.write(
+            registers::INTERNAL_DIRECT_MEMORY_ACCESS_INTERRUPT_ENABLE_REGISTER,
+            0,
+        );
         self.registers.write(
             registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER,
-            registers::IDSTS_ALL,
+            registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_ALL_MASK,
         );
-        self.registers.write(registers::DBADDR, bus);
-        let ctrl = self.registers.read(registers::CONTROL);
+        self.registers.write(
+            registers::DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_REGISTER,
+            region_physical_address,
+        );
+        let control = self.registers.read(registers::CONTROL);
         self.registers.write(
             registers::CONTROL,
-            ctrl | registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE,
+            control
+                | registers::CONTROL_USE_INTERNAL_DIRECT_MEMORY_ACCESS_CONTROLLER
+                | registers::CONTROL_DIRECT_MEMORY_ACCESS_ENABLE,
         );
         self.registers.write(
             registers::BUS_MODE,
-            registers::BUS_MODE_DE | registers::BUS_MODE_FB,
+            registers::BUS_MODE_INTERNAL_DIRECT_MEMORY_ACCESS_ENABLE
+                | registers::BUS_MODE_FIXED_BURST,
         );
-        self.registers.write(registers::PLDMND, 1);
+        self.registers.write(registers::POLL_DEMAND_REGISTER, 1);
         Ok(())
     }
 
@@ -360,8 +397,11 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         count: u32,
     ) -> Result<(), Error> {
         let want = match command.data {
-            Some(d) if d.blocks > 1 => registers::RINTSTS_DTO | registers::RINTSTS_ACD,
-            _ => registers::RINTSTS_DTO,
+            Some(d) if d.blocks > 1 => {
+                registers::RAW_INTERRUPT_DATA_TRANSFER_OVER
+                    | registers::RAW_INTERRUPT_AUTOMATIC_COMMAND_DONE
+            }
+            _ => registers::RAW_INTERRUPT_DATA_TRANSFER_OVER,
         };
         let Some(direct_memory_access) = self.direct_memory_access.as_ref() else {
             return Err(Error::BufferSize);
@@ -369,21 +409,33 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         let mut owned = direct_memory_access.owned(count);
         let mut start = self.registers.now_microseconds();
         loop {
-            let rint = self.registers.read(registers::RINTSTS);
-            if rint & (registers::RINTSTS_DATA_ERR | registers::RINTSTS_DATA_TO) != 0 {
-                return Err(Error::Data(command.index, rint));
+            let raw_interrupt_status = self
+                .registers
+                .read(registers::RAW_INTERRUPT_STATUS_REGISTER);
+            if raw_interrupt_status
+                & (registers::RAW_INTERRUPT_DATA_ERROR_MASK
+                    | registers::RAW_INTERRUPT_DATA_TIMEOUT_MASK)
+                != 0
+            {
+                return Err(Error::Data(command.index, raw_interrupt_status));
             }
-            let idsts = self
+            let internal_direct_memory_access_status = self
                 .registers
                 .read(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER);
-            if idsts & registers::IDSTS_ERRORS != 0 {
-                return Err(Error::DirectMemoryAccess(command.index, idsts));
+            if internal_direct_memory_access_status
+                & registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_ERROR_MASK
+                != 0
+            {
+                return Err(Error::DirectMemoryAccess(
+                    command.index,
+                    internal_direct_memory_access_status,
+                ));
             }
             let Some(direct_memory_access) = self.direct_memory_access.as_ref() else {
                 return Err(Error::BufferSize);
             };
             let now_owned = direct_memory_access.owned(count);
-            if rint & want == want && now_owned == 0 {
+            if raw_interrupt_status & want == want && now_owned == 0 {
                 return Ok(());
             }
             let now = self.registers.now_microseconds();
@@ -392,7 +444,11 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
                 start = now;
             } else if now.wrapping_sub(start) > DATA_DEADLINE_MICROSECONDS {
                 let owed = direct_memory_access.owed(count);
-                return Err(Error::DataTimeout(command.index, rint, owed));
+                return Err(Error::DataTimeout(
+                    command.index,
+                    raw_interrupt_status,
+                    owed,
+                ));
             }
         }
     }
@@ -405,30 +461,38 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     /// the one held, else the `BUS_MODE` word.
     fn internal_direct_memory_access_stop(&mut self) -> Result<(), Error> {
         self.registers
-            .write(registers::BUS_MODE, registers::BUS_MODE_SWR);
-        let ctrl = self.registers.read(registers::CONTROL)
-            & !(registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE);
+            .write(registers::BUS_MODE, registers::BUS_MODE_SOFTWARE_RESET);
+        let control = self.registers.read(registers::CONTROL)
+            & !(registers::CONTROL_USE_INTERNAL_DIRECT_MEMORY_ACCESS_CONTROLLER
+                | registers::CONTROL_DIRECT_MEMORY_ACCESS_ENABLE);
         self.registers.write(
             registers::CONTROL,
-            ctrl | registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET,
+            control
+                | registers::CONTROL_DIRECT_MEMORY_ACCESS_RESET
+                | registers::CONTROL_QUEUE_RESET,
         );
         let quiet = self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
             window.read(registers::CONTROL)
-                & (registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET)
+                & (registers::CONTROL_DIRECT_MEMORY_ACCESS_RESET | registers::CONTROL_QUEUE_RESET)
                 == 0
-                && window.read(registers::BUS_MODE) & registers::BUS_MODE_SWR == 0
+                && window.read(registers::BUS_MODE) & registers::BUS_MODE_SOFTWARE_RESET == 0
         });
         self.registers.write(
             registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER,
-            registers::IDSTS_ALL,
+            registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_ALL_MASK,
         );
-        self.registers
-            .write(registers::FIFOTH, registers::fifoth_for_pio(self.depth));
-        let ctrl = self.registers.read(registers::CONTROL);
+        self.registers.write(
+            registers::QUEUE_THRESHOLD_REGISTER,
+            registers::queue_threshold_for_programmed_input_output(self.depth),
+        );
+        let control = self.registers.read(registers::CONTROL);
         if quiet {
             Ok(())
-        } else if ctrl & (registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET) != 0 {
-            Err(Error::ResetStuck(ctrl))
+        } else if control
+            & (registers::CONTROL_DIRECT_MEMORY_ACCESS_RESET | registers::CONTROL_QUEUE_RESET)
+            != 0
+        {
+            Err(Error::ResetStuck(control))
         } else {
             Err(Error::ResetStuck(self.registers.read(registers::BUS_MODE)))
         }
@@ -449,10 +513,10 @@ mod tests {
     /// An identified SDHC card behind a polled host, and memory of `pages` pages the sim's IDMAC
     /// reaches.
     fn polled(pages: usize) -> (HostController<SimulatedHostController>, Card, Memory) {
-        let mut sim = SimulatedHostController::new(CardKind::SdHighCapacity, 4096, 32);
+        let mut simulator = SimulatedHostController::new(CardKind::SdHighCapacity, 4096, 32);
         let memory = Memory::new(BASE, pages);
-        sim.memory = Some(memory.clone());
-        let (mut h, _) = HostController::new(sim, 50_000_000, Some(32)).unwrap();
+        simulator.memory = Some(memory.clone());
+        let (mut h, _) = HostController::new(simulator, 50_000_000, Some(32)).unwrap();
         let card = sd::identify(&mut h, 4).unwrap();
         (h, card, memory)
     }
@@ -462,7 +526,9 @@ mod tests {
         memory: &Memory,
     ) -> HostController<SimulatedHostController, Memory> {
         let mut h = h;
-        let hardware_configuration = h.registers_mut().peek(registers::HCON);
+        let hardware_configuration = h
+            .registers_mut()
+            .peek(registers::HARDWARE_CONFIGURATION_REGISTER);
         let id = Identity {
             version_identification: 0,
             hardware_configuration,
@@ -494,7 +560,14 @@ mod tests {
     #[test]
     fn the_descriptor_bits_and_a_two_page_chain_are_the_databooks() {
         assert_eq!(
-            [DES0_OWN, DES0_CH, DES0_FS, DES0_LD, DES0_DIC, DES1_BS1_MASK],
+            [
+                DESCRIPTOR_OWNED_BY_CONTROLLER,
+                DESCRIPTOR_CHAINED,
+                DESCRIPTOR_FIRST,
+                DESCRIPTOR_LAST,
+                DESCRIPTOR_DISABLE_INTERRUPT_ON_COMPLETION,
+                DESCRIPTOR_BUFFER_1_BYTES_MASK
+            ],
             [0x8000_0000, 0x10, 0x8, 0x4, 0x2, 0x1fff]
         );
         let b = BASE as u32;
@@ -525,7 +598,7 @@ mod tests {
             InternalDirectMemoryAccess::new(Memory::new(base, pages), &visionfive_2)
                 .map(|i| i.capacity())
         };
-        assert_eq!(new(0xffff_e000, 2), Ok(PAGE));
+        assert_eq!(new(0xffff_e000, 2), Ok(PAGE_BYTES));
         assert_eq!(
             new(0xffff_f000, 2),
             Err(Refusal::AboveFourGibibytes(0xffff_f000))
@@ -535,9 +608,9 @@ mod tests {
             Err(Refusal::AboveFourGibibytes(0x1_0000_0000))
         );
         assert_eq!(new(BASE + 8, 2), Err(Refusal::Alignment(BASE + 8)));
-        assert_eq!(new(BASE, 1), Err(Refusal::Size(PAGE)));
-        assert_eq!(new(BASE, 258), Err(Refusal::Size(258 * PAGE)));
-        assert_eq!(new(BASE, 257), Ok(256 * PAGE));
+        assert_eq!(new(BASE, 1), Err(Refusal::Size(PAGE_BYTES)));
+        assert_eq!(new(BASE, 258), Err(Refusal::Size(258 * PAGE_BYTES)));
+        assert_eq!(new(BASE, 257), Ok(256 * PAGE_BYTES));
         let m = Memory::new(BASE, 2);
         assert!(matches!(
             InternalDirectMemoryAccess::new(m.clone(), &id(2 << 16)),
@@ -565,7 +638,10 @@ mod tests {
         let second = pattern(0xa5, 9 * 512);
         sd::write_blocks(&mut h, &card, 300, &second).unwrap();
         for i in 0..2 {
-            assert_eq!(memory.read_u32(i * DESCRIPTOR_BYTES) & DES0_OWN, 0);
+            assert_eq!(
+                memory.read_u32(i * DESCRIPTOR_BYTES) & DESCRIPTOR_OWNED_BY_CONTROLLER,
+                0
+            );
         }
         let bus = memory.bus();
         assert!(!bus.unfenced_start && !bus.unfenced_read);
@@ -581,7 +657,7 @@ mod tests {
     /// stopped at `DTO` would hand back the memory's previous bytes; this one waits for the last
     /// descriptor to close.
     #[test]
-    fn a_read_is_over_when_its_last_descriptor_closes_not_at_dto() {
+    fn a_read_is_over_when_its_last_descriptor_closes_not_at_data_transfer_over() {
         let (mut h, card, memory) = polled(3);
         let data = pattern(0x33, 16 * 512);
         sd::write_blocks(&mut h, &card, 40, &data).unwrap();
@@ -649,15 +725,15 @@ mod tests {
         let cases: [(Inject, Expect); 3] = [
             (
                 |s| s.bus_error_at = Some(1),
-                |e| matches!(e, Error::DirectMemoryAccess(18, s) if s & registers::IDSTS_FBE != 0),
+                |e| matches!(e, Error::DirectMemoryAccess(18, s) if s & registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_FATAL_BUS_ERROR != 0),
             ),
             (
                 |s| s.unowned_at = Some(1),
-                |e| matches!(e, Error::DirectMemoryAccess(18, s) if s & registers::IDSTS_DU != 0),
+                |e| matches!(e, Error::DirectMemoryAccess(18, s) if s & registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_DESCRIPTOR_UNAVAILABLE != 0),
             ),
             (
-                |s| s.fail_next_read_crc = true,
-                |e| matches!(e, Error::Data(18, r) if r & registers::RINTSTS_DCRC != 0),
+                |s| s.fail_next_read_cyclic_redundancy_check = true,
+                |e| matches!(e, Error::Data(18, r) if r & registers::RAW_INTERRUPT_DATA_CYCLIC_REDUNDANCY_CHECK_ERROR != 0),
             ),
         ];
         for (inject, expected) in cases {
@@ -671,18 +747,26 @@ mod tests {
                 Err(BlockTransferError::Host(e)) => assert!(expected(&e), "{e:?}"),
                 other => panic!("{other:?}"),
             }
-            let sim = h.registers_mut();
+            let simulator = h.registers_mut();
             let direct_memory_access =
-                registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE;
-            assert_eq!(sim.peek(registers::CONTROL) & direct_memory_access, 0);
-            assert_eq!(sim.peek(registers::BUS_MODE) & registers::BUS_MODE_DE, 0);
-            assert_eq!(sim.peek(registers::FIFOTH), registers::fifoth_for_pio(32));
-            sim.stall_after = None;
-            sim.bus_error_at = None;
-            sim.unowned_at = None;
+                registers::CONTROL_USE_INTERNAL_DIRECT_MEMORY_ACCESS_CONTROLLER
+                    | registers::CONTROL_DIRECT_MEMORY_ACCESS_ENABLE;
+            assert_eq!(simulator.peek(registers::CONTROL) & direct_memory_access, 0);
+            assert_eq!(
+                simulator.peek(registers::BUS_MODE)
+                    & registers::BUS_MODE_INTERNAL_DIRECT_MEMORY_ACCESS_ENABLE,
+                0
+            );
+            assert_eq!(
+                simulator.peek(registers::QUEUE_THRESHOLD_REGISTER),
+                registers::queue_threshold_for_programmed_input_output(32)
+            );
+            simulator.stall_after = None;
+            simulator.bus_error_at = None;
+            simulator.unowned_at = None;
             let written = memory.bus().device_written;
             for _ in 0..64 {
-                sim.read(registers::STATUS_REGISTER);
+                simulator.read(registers::STATUS_REGISTER);
             }
             assert_eq!(memory.bus().device_written, written);
             sd::read_blocks(&mut h, &card, 60, &mut back).unwrap();
@@ -712,14 +796,17 @@ mod tests {
             let r = sd::read_blocks(&mut h, &card, 60, &mut back);
             let _ = sender.send((r, h.registers_mut().peek(registers::BUS_MODE)));
         });
-        let (r, bmod) = receiver
+        let (r, bus_mode) = receiver
             .recv_timeout(std::time::Duration::from_secs(10))
             .expect("the deadline never fired");
         assert!(matches!(
             r,
             Err(BlockTransferError::Host(Error::DataTimeout(18, _, 4608)))
         ));
-        assert_eq!(bmod & registers::BUS_MODE_DE, 0);
+        assert_eq!(
+            bus_mode & registers::BUS_MODE_INTERNAL_DIRECT_MEMORY_ACCESS_ENABLE,
+            0
+        );
     }
 
     /// **The register contract of one transfer**, write by write, on a controller whose firmware
@@ -730,8 +817,9 @@ mod tests {
     #[test]
     fn one_transfer_arms_and_stops_the_internal_direct_memory_access_register_by_register() {
         let (mut h, card, memory) = polled(2);
-        let firmware =
-            1 << 8 | registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE;
+        let firmware = 1 << 8
+            | registers::CONTROL_USE_INTERNAL_DIRECT_MEMORY_ACCESS_CONTROLLER
+            | registers::CONTROL_DIRECT_MEMORY_ACCESS_ENABLE;
         h.registers_mut().write(registers::CONTROL, firmware);
         let mut h = with_internal_direct_memory_access(h, &memory);
         h.registers_mut().writes.clear();
@@ -739,48 +827,60 @@ mod tests {
         sd::read_blocks(&mut h, &card, 7, &mut block).unwrap();
         let writes = &h.registers_mut().writes;
         let from = |w: (u32, u32)| writes.iter().position(|&x| x == w).unwrap();
-        let armed = from((registers::BUS_MODE, registers::BUS_MODE_SWR));
+        let armed = from((registers::BUS_MODE, registers::BUS_MODE_SOFTWARE_RESET));
         assert_eq!(
             writes[armed..armed + 8],
             [
-                (registers::BUS_MODE, registers::BUS_MODE_SWR),
+                (registers::BUS_MODE, registers::BUS_MODE_SOFTWARE_RESET),
                 (
-                    registers::FIFOTH,
-                    registers::fifoth_for_direct_memory_access(32)
+                    registers::QUEUE_THRESHOLD_REGISTER,
+                    registers::queue_threshold_for_direct_memory_access(32)
                 ),
-                (registers::IDINTEN, 0),
+                (
+                    registers::INTERNAL_DIRECT_MEMORY_ACCESS_INTERRUPT_ENABLE_REGISTER,
+                    0
+                ),
                 (
                     registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER,
-                    registers::IDSTS_ALL
+                    registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_ALL_MASK
                 ),
-                (registers::DBADDR, BASE as u32),
+                (
+                    registers::DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_REGISTER,
+                    BASE as u32
+                ),
                 (registers::CONTROL, firmware),
                 (
                     registers::BUS_MODE,
-                    registers::BUS_MODE_DE | registers::BUS_MODE_FB
+                    registers::BUS_MODE_INTERNAL_DIRECT_MEMORY_ACCESS_ENABLE
+                        | registers::BUS_MODE_FIXED_BURST
                 ),
-                (registers::PLDMND, 1),
+                (registers::POLL_DEMAND_REGISTER, 1),
             ]
         );
         let stopped = armed
             + 1
             + writes[armed + 1..]
                 .iter()
-                .position(|&x| x == (registers::BUS_MODE, registers::BUS_MODE_SWR))
+                .position(|&x| x == (registers::BUS_MODE, registers::BUS_MODE_SOFTWARE_RESET))
                 .unwrap();
         assert_eq!(
             writes[stopped..stopped + 4],
             [
-                (registers::BUS_MODE, registers::BUS_MODE_SWR),
+                (registers::BUS_MODE, registers::BUS_MODE_SOFTWARE_RESET),
                 (
                     registers::CONTROL,
-                    1 << 8 | registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET
+                    1 << 8
+                        | registers::CONTROL_DIRECT_MEMORY_ACCESS_RESET
+                        | registers::CONTROL_QUEUE_RESET
                 ),
                 (
                     registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER,
-                    registers::IDSTS_ALL
+                    registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_ALL_MASK
                 ),
-                (registers::FIFOTH, registers::fifoth_for_pio(32)),
+                (
+                    registers::QUEUE_THRESHOLD_REGISTER,
+                    registers::queue_threshold_for_programmed_input_output(32)
+                ),
             ]
         );
     }
@@ -791,11 +891,13 @@ mod tests {
     fn a_multi_block_transfer_waits_for_the_automatic_stop() {
         let (h, card, memory) = polled(2);
         let mut h = with_internal_direct_memory_access(h, &memory);
-        h.registers_mut().late_acd = 5;
+        h.registers_mut().late_automatic_command_done = 5;
         let mut blocks = [0u8; 2 * 512];
         sd::read_blocks(&mut h, &card, 7, &mut blocks).unwrap();
         assert_ne!(
-            h.registers_mut().peek(registers::RINTSTS) & registers::RINTSTS_ACD,
+            h.registers_mut()
+                .peek(registers::RAW_INTERRUPT_STATUS_REGISTER)
+                & registers::RAW_INTERRUPT_AUTOMATIC_COMMAND_DONE,
             0
         );
     }
@@ -811,15 +913,19 @@ mod tests {
         let cases: [(Hold, Word); 3] = [
             (
                 |s| s.bus_mode_resets_cleared = Some(0),
-                |w| w == registers::BUS_MODE_SWR,
+                |w| w == registers::BUS_MODE_SOFTWARE_RESET,
             ),
             (
                 |s| s.bus_mode_resets_cleared = Some(1),
-                |w| w == registers::BUS_MODE_SWR,
+                |w| w == registers::BUS_MODE_SOFTWARE_RESET,
             ),
             (
                 |s| s.control_resets_cleared = Some(1),
-                |w| w & (registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET) != 0,
+                |w| {
+                    w & (registers::CONTROL_DIRECT_MEMORY_ACCESS_RESET
+                        | registers::CONTROL_QUEUE_RESET)
+                        != 0
+                },
             ),
         ];
         for ((hold, word), sent) in cases.into_iter().zip(sent) {

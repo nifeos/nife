@@ -10,7 +10,7 @@ starting at 2 or above and `k == count - 1`.
 diff --git a/crates/designware_mobile_storage/src/partition.rs b/crates/designware_mobile_storage/src/partition.rs
 --- a/crates/designware_mobile_storage/src/partition.rs
 +++ b/crates/designware_mobile_storage/src/partition.rs
-@@ -120,7 +120,7 @@
+@@ -160,7 +160,7 @@
              return None;
          }
          let count = if want < gap { want } else { gap };

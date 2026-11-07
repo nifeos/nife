@@ -16,7 +16,8 @@ use std::vec::Vec;
 
 use crate::host_controller::RegisterWindowAndClock;
 use crate::internal_direct_memory_access::{
-    DES0_CH, DES0_DIC, DES0_LD, DES0_OWN, DES1_BS1_MASK, DirectMemoryAccessRegion,
+    DESCRIPTOR_BUFFER_1_BYTES_MASK, DESCRIPTOR_CHAINED, DESCRIPTOR_DISABLE_INTERRUPT_ON_COMPLETION,
+    DESCRIPTOR_LAST, DESCRIPTOR_OWNED_BY_CONTROLLER, DirectMemoryAccessRegion,
 };
 use crate::registers;
 
@@ -137,14 +138,14 @@ pub enum Fault {
     /// The card answers `CMD8` with the wrong check pattern.
     EchoWrong,
     /// The answer arrives with a response CRC error (`RCRC`).
-    BadCrc,
+    BadCyclicRedundancyCheck,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum State {
     Idle,
     Ready,
-    Ident,
+    Identification,
     Standby,
     Transfer,
 }
@@ -155,7 +156,7 @@ struct Transfer {
     first_logical_block_address: u64,
     bytes: usize,
     moved: usize,
-    auto_stop: bool,
+    automatic_stop: bool,
     buffer: Vec<u8>,
     extended_card_specific_data: bool,
 }
@@ -172,7 +173,7 @@ pub struct SimulatedHostController {
     depth: usize,
     transfer: Option<Transfer>,
     state: State,
-    app: bool,
+    application_command_pending: bool,
     power_up_polls: u32,
     relative_card_address: u16,
     busy_reads: u32,
@@ -185,7 +186,7 @@ pub struct SimulatedHostController {
     /// Every block the card was asked to program, in order.
     pub written: Vec<u64>,
     /// Make the next read's data phase fail its CRC.
-    pub fail_next_read_crc: bool,
+    pub fail_next_read_cyclic_redundancy_check: bool,
     /// How many `ACMD41`s or `CMD1`s report busy before power-up completes.
     pub busy_polls: u32,
     /// Set when a command was sent while the card clock was off.
@@ -228,10 +229,10 @@ pub struct SimulatedHostController {
     /// `STATUS_REGISTER` reports a full FIFO whatever it holds: a confused controller.
     pub overreport_fill: bool,
     /// A write's data phase ends with a data CRC error and no `DTO`.
-    pub crc_error_at_end: bool,
+    pub cyclic_redundancy_check_error_at_end: bool,
     /// How many `RINTSTS` reads pass after `DTO` before the automatic CMD12's `ACD` lands.
-    pub late_acd: u32,
-    acd_pending: u32,
+    pub late_automatic_command_done: u32,
+    automatic_command_done_pending: u32,
     /// An eMMC of 2 GB or less: byte addressed, its OCR without the sector-mode bit.
     pub multimedia_card_byte_addressed: bool,
     /// What `EXT_CSD`'s `SEC_COUNT` reports, if not the card's real size.
@@ -263,9 +264,9 @@ pub struct SimulatedHostController {
 }
 
 /// The `VERID` the simulation reports: release 2.90a, which puts the FIFO at `0x200`.
-pub(crate) const VERID: u32 = 0x5342_290a;
+pub(crate) const SIMULATED_VERSION_IDENTIFICATION: u32 = 0x5342_290a;
 /// The `HCON` it reports: a 32-bit FIFO, 32-bit addresses.
-pub(crate) const HCON: u32 = 1 << 7;
+pub(crate) const SIMULATED_HARDWARE_CONFIGURATION: u32 = 1 << 7;
 
 impl SimulatedHostController {
     /// A controller of FIFO `depth` words with `kind` of card holding `blocks` blocks of zero.
@@ -281,7 +282,7 @@ impl SimulatedHostController {
             depth,
             transfer: None,
             state: State::Idle,
-            app: false,
+            application_command_pending: false,
             power_up_polls: 0,
             relative_card_address: 0,
             busy_reads: 0,
@@ -289,10 +290,10 @@ impl SimulatedHostController {
             storage: vec![[0u8; 512]; blocks],
             commands: Vec::new(),
             written: Vec::new(),
-            fail_next_read_crc: false,
+            fail_next_read_cyclic_redundancy_check: false,
             busy_polls: 3,
             clockless_command: false,
-            version_identification: VERID,
+            version_identification: SIMULATED_VERSION_IDENTIFICATION,
             stray_queue_write: false,
             faults: Vec::new(),
             seen: [0; 64],
@@ -309,9 +310,9 @@ impl SimulatedHostController {
             stall_after: None,
             end_early: false,
             overreport_fill: false,
-            crc_error_at_end: false,
-            late_acd: 0,
-            acd_pending: 0,
+            cyclic_redundancy_check_error_at_end: false,
+            late_automatic_command_done: 0,
+            automatic_command_done_pending: 0,
             multimedia_card_byte_addressed: false,
             extended_card_specific_data_sectors: None,
             mangle_write: None,
@@ -327,12 +328,16 @@ impl SimulatedHostController {
             direct_memory_access_corrupts: false,
             direct_memory_access_write: false,
         };
-        s.registers[(registers::VERID / 4) as usize] = VERID;
-        s.registers[(registers::HCON / 4) as usize] = HCON;
+        s.registers[(registers::VERSION_IDENTIFICATION_REGISTER / 4) as usize] =
+            SIMULATED_VERSION_IDENTIFICATION;
+        s.registers[(registers::HARDWARE_CONFIGURATION_REGISTER / 4) as usize] =
+            SIMULATED_HARDWARE_CONFIGURATION;
         // FIFOTH's reset value carries depth - 1 as the receive watermark.
-        s.registers[(registers::FIFOTH / 4) as usize] = ((depth as u32 - 1) & 0xfff) << 16;
+        s.registers[(registers::QUEUE_THRESHOLD_REGISTER / 4) as usize] =
+            ((depth as u32 - 1) & 0xfff) << 16;
         // A card is present (active low).
-        s.registers[(registers::CDETECT / 4) as usize] = u32::from(kind == CardKind::Empty);
+        s.registers[(registers::CARD_DETECT_REGISTER / 4) as usize] =
+            u32::from(kind == CardKind::Empty);
         s
     }
 
@@ -344,7 +349,8 @@ impl SimulatedHostController {
         version_identification: u32,
     ) -> SimulatedHostController {
         self.version_identification = version_identification;
-        self.registers[(registers::VERID / 4) as usize] = version_identification;
+        self.registers[(registers::VERSION_IDENTIFICATION_REGISTER / 4) as usize] =
+            version_identification;
         self
     }
 
@@ -379,11 +385,17 @@ impl SimulatedHostController {
         let state = match self.state {
             State::Idle => 0,
             State::Ready => 1,
-            State::Ident => 2,
+            State::Identification => 2,
             State::Standby => 3,
             State::Transfer => 4,
         };
-        (state << 9) | (1 << 8) | if self.app { 1 << 5 } else { 0 }
+        (state << 9)
+            | (1 << 8)
+            | if self.application_command_pending {
+                1 << 5
+            } else {
+                0
+            }
     }
 
     fn card_specific_data(&self) -> [u32; 4] {
@@ -439,9 +451,10 @@ impl SimulatedHostController {
         if self.kind == CardKind::Empty {
             return None;
         }
-        let app = core::mem::replace(&mut self.app, false);
+        let application_command_pending =
+            core::mem::replace(&mut self.application_command_pending, false);
         let short = |v: u32| Some([v, 0, 0, 0]);
-        match (index, app, self.kind) {
+        match (index, application_command_pending, self.kind) {
             (0, _, _) => {
                 self.state = State::Idle;
                 self.power_up_polls = 0;
@@ -452,7 +465,7 @@ impl SimulatedHostController {
             }
             (55, _, CardKind::MultimediaCard) => None,
             (55, _, _) => {
-                self.app = true;
+                self.application_command_pending = true;
                 short(self.r1() | 1 << 5)
             }
             (41, true, _) | (1, false, CardKind::MultimediaCard) => {
@@ -468,16 +481,16 @@ impl SimulatedHostController {
                 short(operation_conditions)
             }
             (2, false, _) if self.state == State::Ready => {
-                self.state = State::Ident;
+                self.state = State::Identification;
                 Some(self.card_identification())
             }
-            (3, false, CardKind::MultimediaCard) if self.state == State::Ident => {
+            (3, false, CardKind::MultimediaCard) if self.state == State::Identification => {
                 self.relative_card_address = (argument >> 16) as u16;
                 let r = self.r1();
                 self.state = State::Standby;
                 short(r)
             }
-            (3, false, _) if self.state == State::Ident => {
+            (3, false, _) if self.state == State::Identification => {
                 self.relative_card_address = 0xb368;
                 self.state = State::Standby;
                 short(u32::from(self.relative_card_address) << 16 | 0x0500)
@@ -507,9 +520,11 @@ impl SimulatedHostController {
 
     fn command(&mut self, word: u32) {
         let index = (word & 0x3f) as u8;
-        let argument = *self.register(registers::CMDARG);
+        let argument = *self.register(registers::COMMAND_ARGUMENT_REGISTER);
         self.commands.push((index, argument));
-        if *self.register(registers::CLKENA) & registers::CLKENA_CCLK_ENABLE == 0 {
+        if *self.register(registers::CLOCK_ENABLE_REGISTER) & registers::CLOCK_ENABLE_CARD_CLOCK
+            == 0
+        {
             self.clockless_command = true;
         }
         let nth = self.seen[usize::from(index)];
@@ -531,22 +546,25 @@ impl SimulatedHostController {
                 _ => {}
             }
         }
-        let mut rint = registers::RINTSTS_CD;
+        let mut raw_interrupt_status = registers::RAW_INTERRUPT_COMMAND_DONE;
         match answer {
             None if word & registers::COMMAND_RESPONSE_EXPECT != 0 => {
-                rint |= registers::RINTSTS_RTO;
+                raw_interrupt_status |= registers::RAW_INTERRUPT_RESPONSE_TIMEOUT;
             }
             None => {}
-            Some(_) if fault == Some(Fault::BadCrc) => rint |= registers::RINTSTS_RCRC,
+            Some(_) if fault == Some(Fault::BadCyclicRedundancyCheck) => {
+                raw_interrupt_status |=
+                    registers::RAW_INTERRUPT_RESPONSE_CYCLIC_REDUNDANCY_CHECK_ERROR;
+            }
             Some(_) => {}
         }
         if self.late_answer > 0 {
-            self.answer_pending = Some((rint, answer, self.late_answer));
+            self.answer_pending = Some((raw_interrupt_status, answer, self.late_answer));
         } else {
-            self.land(rint, answer);
+            self.land(raw_interrupt_status, answer);
         }
         if answer.is_some() && word & registers::COMMAND_DATA_EXPECTED != 0 {
-            let bytes = *self.register(registers::BYTCNT) as usize;
+            let bytes = *self.register(registers::BYTE_COUNT_REGISTER) as usize;
             let write = word & registers::COMMAND_WRITE != 0;
             self.direct_memory_access_write = write;
             if self.is_internal_direct_memory_access_active()
@@ -565,7 +583,7 @@ impl SimulatedHostController {
                 },
                 bytes,
                 moved: 0,
-                auto_stop: word & registers::COMMAND_SEND_AUTOMATIC_STOP != 0,
+                automatic_stop: word & registers::COMMAND_SEND_AUTOMATIC_STOP != 0,
                 buffer: Vec::new(),
                 extended_card_specific_data,
             };
@@ -592,14 +610,14 @@ impl SimulatedHostController {
         }
     }
 
-    fn land(&mut self, rint: u32, answer: Option<[u32; 4]>) {
+    fn land(&mut self, raw_interrupt_status: u32, answer: Option<[u32; 4]>) {
         if let Some(r) = answer {
-            *self.register(registers::RESP0) = r[0];
-            *self.register(registers::RESP1) = r[1];
-            *self.register(registers::RESP2) = r[2];
-            *self.register(registers::RESP3) = r[3];
+            *self.register(registers::RESPONSE_0_REGISTER) = r[0];
+            *self.register(registers::RESPONSE_1_REGISTER) = r[1];
+            *self.register(registers::RESPONSE_2_REGISTER) = r[2];
+            *self.register(registers::RESPONSE_3_REGISTER) = r[3];
         }
-        *self.register(registers::RINTSTS) |= rint;
+        *self.register(registers::RAW_INTERRUPT_STATUS_REGISTER) |= raw_interrupt_status;
     }
 
     /// Advance the data phase: fill or drain the FIFO, and end it when every byte has moved.
@@ -642,18 +660,21 @@ impl SimulatedHostController {
                 self.end(&t);
                 return;
             }
-            *self.register(registers::RINTSTS) |= registers::RINTSTS_TXDR;
+            *self.register(registers::RAW_INTERRUPT_STATUS_REGISTER) |=
+                registers::RAW_INTERRUPT_TRANSMIT_QUEUE_DATA_REQUEST;
         } else {
             if self.is_threshold_beyond_queue() {
                 // What the VisionFive 2 answered (`RINTSTS 0x080c` with `CD`): the block ends, overrun.
-                *self.register(registers::RINTSTS) |=
-                    registers::RINTSTS_FRUN | registers::RINTSTS_DTO;
+                *self.register(registers::RAW_INTERRUPT_STATUS_REGISTER) |=
+                    registers::RAW_INTERRUPT_QUEUE_UNDERRUN_OR_OVERRUN
+                        | registers::RAW_INTERRUPT_DATA_TRANSFER_OVER;
                 return;
             }
-            if self.fail_next_read_crc && !t.extended_card_specific_data {
-                self.fail_next_read_crc = false;
-                *self.register(registers::RINTSTS) |=
-                    registers::RINTSTS_DCRC | registers::RINTSTS_DTO;
+            if self.fail_next_read_cyclic_redundancy_check && !t.extended_card_specific_data {
+                self.fail_next_read_cyclic_redundancy_check = false;
+                *self.register(registers::RAW_INTERRUPT_STATUS_REGISTER) |=
+                    registers::RAW_INTERRUPT_DATA_CYCLIC_REDUNDANCY_CHECK_ERROR
+                        | registers::RAW_INTERRUPT_DATA_TRANSFER_OVER;
                 return;
             }
             let limit = self.stall_after.unwrap_or(usize::MAX);
@@ -664,12 +685,15 @@ impl SimulatedHostController {
                 t.moved += 4;
             }
             let watermark = if self.strict_watermark {
-                registers::fifoth_receive_watermark(*self.register(registers::FIFOTH)) as usize
+                registers::queue_threshold_receive_watermark(
+                    *self.register(registers::QUEUE_THRESHOLD_REGISTER),
+                ) as usize
             } else {
                 0
             };
             if self.queue.len() > watermark {
-                *self.register(registers::RINTSTS) |= registers::RINTSTS_RXDR;
+                *self.register(registers::RAW_INTERRUPT_STATUS_REGISTER) |=
+                    registers::RAW_INTERRUPT_RECEIVE_QUEUE_DATA_REQUEST;
             }
             if t.moved >= t.bytes || (self.end_early && t.moved >= limit) {
                 self.end(&t);
@@ -680,9 +704,12 @@ impl SimulatedHostController {
     }
 
     fn is_internal_direct_memory_access_active(&self) -> bool {
-        let both = registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE;
+        let both = registers::CONTROL_USE_INTERNAL_DIRECT_MEMORY_ACCESS_CONTROLLER
+            | registers::CONTROL_DIRECT_MEMORY_ACCESS_ENABLE;
         self.peek(registers::CONTROL) & both == both
-            && self.peek(registers::BUS_MODE) & registers::BUS_MODE_DE != 0
+            && self.peek(registers::BUS_MODE)
+                & registers::BUS_MODE_INTERNAL_DIRECT_MEMORY_ACCESS_ENABLE
+                != 0
             && self.memory.is_some()
     }
 
@@ -712,12 +739,15 @@ impl SimulatedHostController {
             if !more {
                 return;
             }
-            let (desc, done) = match self.walk {
-                Walk::Idle => (self.peek(registers::DBADDR), 0),
+            let (descriptor_physical_address, done) = match self.walk {
+                Walk::Idle => (
+                    self.peek(registers::DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_REGISTER),
+                    0,
+                ),
                 Walk::At(d, n) => (d, n),
                 Walk::Suspended(_) | Walk::Halted | Walk::Finished => return,
             };
-            let Some(at) = self.offset(&bus, desc, 16) else {
+            let Some(at) = self.offset(&bus, descriptor_physical_address, 16) else {
                 self.halt();
                 return;
             };
@@ -725,11 +755,18 @@ impl SimulatedHostController {
                 let b = &bus.bytes[at + 4 * i..at + 4 * i + 4];
                 u32::from_le_bytes([b[0], b[1], b[2], b[3]])
             };
-            let (des0, size, buffer, next) = (word(0), word(1) & DES1_BS1_MASK, word(2), word(3));
-            if des0 & DES0_OWN == 0 || done == 0 && self.unowned_at == Some(self.walked) {
-                self.walk = Walk::Suspended(desc);
+            let (word_0, size, buffer, next) = (
+                word(0),
+                word(1) & DESCRIPTOR_BUFFER_1_BYTES_MASK,
+                word(2),
+                word(3),
+            );
+            if word_0 & DESCRIPTOR_OWNED_BY_CONTROLLER == 0
+                || done == 0 && self.unowned_at == Some(self.walked)
+            {
+                self.walk = Walk::Suspended(descriptor_physical_address);
                 *self.register(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER) |=
-                    registers::IDSTS_DU | registers::IDSTS_AIS;
+                    registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_DESCRIPTOR_UNAVAILABLE | registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_ABNORMAL_INTERRUPT_SUMMARY;
                 return;
             }
             if done == 0 && self.bus_error_at == Some(self.walked) {
@@ -752,34 +789,35 @@ impl SimulatedHostController {
             }
             let done = done + 4;
             if done < size {
-                self.walk = Walk::At(desc, done);
+                self.walk = Walk::At(descriptor_physical_address, done);
                 continue;
             }
-            bus.bytes[at..at + 4].copy_from_slice(&(des0 & !DES0_OWN).to_le_bytes());
+            bus.bytes[at..at + 4]
+                .copy_from_slice(&(word_0 & !DESCRIPTOR_OWNED_BY_CONTROLLER).to_le_bytes());
             bus.device_unfenced = true;
             self.walked += 1;
-            if des0 & DES0_DIC == 0 {
+            if word_0 & DESCRIPTOR_DISABLE_INTERRUPT_ON_COMPLETION == 0 {
                 let finished = if self.direct_memory_access_write {
-                    registers::IDSTS_TI
+                    registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_TRANSMIT_INTERRUPT
                 } else {
-                    registers::IDSTS_RI
+                    registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_RECEIVE_INTERRUPT
                 };
-                *self.register(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER) |=
-                    finished | registers::IDSTS_NIS;
+                *self.register(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER) |= finished
+                    | registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_NORMAL_INTERRUPT_SUMMARY;
             }
-            self.walk = if des0 & DES0_LD != 0 {
+            self.walk = if word_0 & DESCRIPTOR_LAST != 0 {
                 Walk::Finished
-            } else if des0 & DES0_CH != 0 {
+            } else if word_0 & DESCRIPTOR_CHAINED != 0 {
                 Walk::At(next, 0)
             } else {
-                Walk::At(desc + 16, 0)
+                Walk::At(descriptor_physical_address + 16, 0)
             };
         }
     }
 
     /// The byte offset in memory of `len` bytes at bus address `address`, if they are all there.
-    fn offset(&self, bus: &Bus, address: u32, len: usize) -> Option<usize> {
-        let off = usize::try_from(u64::from(address).checked_sub(bus.base)?).ok()?;
+    fn offset(&self, bus: &Bus, physical_address: u32, len: usize) -> Option<usize> {
+        let off = usize::try_from(u64::from(physical_address).checked_sub(bus.base)?).ok()?;
         (off + len <= bus.bytes.len()).then_some(off)
     }
 
@@ -798,34 +836,39 @@ impl SimulatedHostController {
     fn halt(&mut self) {
         self.walk = Walk::Halted;
         *self.register(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER) |=
-            registers::IDSTS_FBE | registers::IDSTS_AIS;
+            registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_FATAL_BUS_ERROR
+                | registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_ABNORMAL_INTERRUPT_SUMMARY;
     }
 
     /// A card read threshold enabled above the FIFO's size in bytes, which the databook does not
     /// allow and Linux's `dw_mci_ctrl_thld` refuses to program.
     fn is_threshold_beyond_queue(&self) -> bool {
-        if registers::queue_offset(self.version_identification) == registers::CARDTHRCTL {
+        if registers::queue_offset(self.version_identification)
+            == registers::CARD_THRESHOLD_CONTROL_REGISTER
+        {
             return false;
         }
-        let t = self.peek(registers::CARDTHRCTL);
-        t & registers::CARDTHRCTL_RDTHREN != 0 && (t >> 16) & 0xfff > self.depth as u32 * 4
+        let t = self.peek(registers::CARD_THRESHOLD_CONTROL_REGISTER);
+        t & registers::CARD_THRESHOLD_CONTROL_READ_THRESHOLD_ENABLE != 0
+            && (t >> 16) & 0xfff > self.depth as u32 * 4
     }
 
     fn end(&mut self, t: &Transfer) {
-        if t.write && self.crc_error_at_end {
-            *self.register(registers::RINTSTS) |= registers::RINTSTS_DCRC;
+        if t.write && self.cyclic_redundancy_check_error_at_end {
+            *self.register(registers::RAW_INTERRUPT_STATUS_REGISTER) |=
+                registers::RAW_INTERRUPT_DATA_CYCLIC_REDUNDANCY_CHECK_ERROR;
             return;
         }
-        let mut rint = registers::RINTSTS_DTO;
-        if t.auto_stop {
+        let mut raw_interrupt_status = registers::RAW_INTERRUPT_DATA_TRANSFER_OVER;
+        if t.automatic_stop {
             self.commands.push((12, 0));
-            if self.late_acd > 0 {
-                self.acd_pending = self.late_acd;
+            if self.late_automatic_command_done > 0 {
+                self.automatic_command_done_pending = self.late_automatic_command_done;
             } else {
-                rint |= registers::RINTSTS_ACD;
+                raw_interrupt_status |= registers::RAW_INTERRUPT_AUTOMATIC_COMMAND_DONE;
             }
         }
-        *self.register(registers::RINTSTS) |= rint;
+        *self.register(registers::RAW_INTERRUPT_STATUS_REGISTER) |= raw_interrupt_status;
     }
 }
 
@@ -842,15 +885,15 @@ impl RegisterWindowAndClock for SimulatedHostController {
                 // The bits read as set once, then clear: the driver must poll, not assume.
                 self.reset_pending = false;
                 let v = *self.register(registers::CONTROL);
-                *self.register(registers::CONTROL) &= !registers::CONTROL_ALL_RESET;
+                *self.register(registers::CONTROL) &= !registers::CONTROL_ALL_RESETS_MASK;
                 v
             }
             registers::BUS_MODE
-                if self.peek(registers::BUS_MODE) & registers::BUS_MODE_SWR != 0 =>
+                if self.peek(registers::BUS_MODE) & registers::BUS_MODE_SOFTWARE_RESET != 0 =>
             {
                 let v = self.peek(registers::BUS_MODE);
                 if !self.reset_stuck && !Self::holds(&mut self.bus_mode_resets_cleared) {
-                    *self.register(registers::BUS_MODE) &= !registers::BUS_MODE_SWR;
+                    *self.register(registers::BUS_MODE) &= !registers::BUS_MODE_SOFTWARE_RESET;
                 }
                 v
             }
@@ -870,23 +913,24 @@ impl RegisterWindowAndClock for SimulatedHostController {
                 }
                 s
             }
-            registers::RINTSTS => {
-                if let Some((rint, answer, polls)) = self.answer_pending {
+            registers::RAW_INTERRUPT_STATUS_REGISTER => {
+                if let Some((raw_interrupt_status, answer, polls)) = self.answer_pending {
                     if polls <= 1 {
                         self.answer_pending = None;
-                        self.land(rint, answer);
+                        self.land(raw_interrupt_status, answer);
                     } else {
-                        self.answer_pending = Some((rint, answer, polls - 1));
+                        self.answer_pending = Some((raw_interrupt_status, answer, polls - 1));
                     }
                 }
-                if self.acd_pending > 0 {
-                    self.acd_pending -= 1;
-                    if self.acd_pending == 0 {
-                        *self.register(registers::RINTSTS) |= registers::RINTSTS_ACD;
+                if self.automatic_command_done_pending > 0 {
+                    self.automatic_command_done_pending -= 1;
+                    if self.automatic_command_done_pending == 0 {
+                        *self.register(registers::RAW_INTERRUPT_STATUS_REGISTER) |=
+                            registers::RAW_INTERRUPT_AUTOMATIC_COMMAND_DONE;
                     }
                 }
                 self.pump();
-                *self.register(registers::RINTSTS)
+                *self.register(registers::RAW_INTERRUPT_STATUS_REGISTER)
             }
             _ => *self.register(offset),
         }
@@ -907,37 +951,42 @@ impl RegisterWindowAndClock for SimulatedHostController {
         }
         self.writes.push((offset, value));
         match offset {
-            registers::RINTSTS => *self.register(registers::RINTSTS) &= !value,
+            registers::RAW_INTERRUPT_STATUS_REGISTER => {
+                *self.register(registers::RAW_INTERRUPT_STATUS_REGISTER) &= !value;
+            }
             registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER => {
                 *self.register(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER) &= !value;
             }
             registers::BUS_MODE => {
-                if value & registers::BUS_MODE_SWR != 0
-                    || value & registers::BUS_MODE_DE & !self.peek(registers::BUS_MODE) != 0
+                if value & registers::BUS_MODE_SOFTWARE_RESET != 0
+                    || value
+                        & registers::BUS_MODE_INTERNAL_DIRECT_MEMORY_ACCESS_ENABLE
+                        & !self.peek(registers::BUS_MODE)
+                        != 0
                 {
                     self.walk = Walk::Idle;
                     self.walked = 0;
                 }
                 *self.register(registers::BUS_MODE) = value;
             }
-            registers::DBADDR => {
+            registers::DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_REGISTER => {
                 self.walk = Walk::Idle;
                 self.walked = 0;
-                *self.register(registers::DBADDR) = value;
+                *self.register(registers::DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_REGISTER) = value;
             }
-            registers::PLDMND => {
+            registers::POLL_DEMAND_REGISTER => {
                 if let Walk::Suspended(d) = self.walk {
                     self.walk = Walk::At(d, 0);
                 }
             }
             registers::CONTROL => {
-                if value & registers::CONTROL_DMA_RESET != 0 {
+                if value & registers::CONTROL_DIRECT_MEMORY_ACCESS_RESET != 0 {
                     self.walk = Walk::Idle;
                 }
-                if value & registers::CONTROL_ALL_RESET != 0 {
+                if value & registers::CONTROL_ALL_RESETS_MASK != 0 {
                     self.reset_pending =
                         !self.reset_stuck && !Self::holds(&mut self.control_resets_cleared);
-                    if value & registers::CONTROL_FIFO_RESET != 0 {
+                    if value & registers::CONTROL_QUEUE_RESET != 0 {
                         self.queue.clear();
                     }
                     if value & registers::CONTROL_CONTROLLER_RESET != 0 {
@@ -946,7 +995,7 @@ impl RegisterWindowAndClock for SimulatedHostController {
                 }
                 *self.register(registers::CONTROL) = value;
             }
-            registers::CMD => {
+            registers::COMMAND_REGISTER => {
                 if value & registers::COMMAND_START != 0
                     && value & registers::COMMAND_UPDATE_CLOCK_REGISTERS_ONLY == 0
                 {
@@ -954,13 +1003,15 @@ impl RegisterWindowAndClock for SimulatedHostController {
                 }
                 let stuck =
                     self.clock_stuck && value & registers::COMMAND_UPDATE_CLOCK_REGISTERS_ONLY != 0;
-                *self.register(registers::CMD) = if stuck {
+                *self.register(registers::COMMAND_REGISTER) = if stuck {
                     value
                 } else {
                     value & !registers::COMMAND_START
                 };
             }
-            registers::VERID | registers::HCON | registers::STATUS_REGISTER => {}
+            registers::VERSION_IDENTIFICATION_REGISTER
+            | registers::HARDWARE_CONFIGURATION_REGISTER
+            | registers::STATUS_REGISTER => {}
             _ => *self.register(offset) = value,
         }
     }

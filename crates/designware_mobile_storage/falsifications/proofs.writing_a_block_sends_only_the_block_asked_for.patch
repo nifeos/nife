@@ -8,7 +8,7 @@ admits the block.
 diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobile_storage/src/sd.rs
 --- a/crates/designware_mobile_storage/src/sd.rs
 +++ b/crates/designware_mobile_storage/src/sd.rs
-@@ -555,7 +555,7 @@
+@@ -572,7 +572,7 @@
      }
      let blocks = (len / BLOCK_BYTES) as u64;
      if blocks > u64::from(u32::MAX) / BLOCK_BYTES as u64

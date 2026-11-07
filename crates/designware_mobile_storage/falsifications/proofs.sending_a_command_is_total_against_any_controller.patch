@@ -10,12 +10,12 @@ Expected to fail: the assertion that a `BadResponse` carries `RCRC` or `RE`, on 
 diff --git a/crates/designware_mobile_storage/src/host_controller.rs b/crates/designware_mobile_storage/src/host_controller.rs
 --- a/crates/designware_mobile_storage/src/host_controller.rs
 +++ b/crates/designware_mobile_storage/src/host_controller.rs
-@@ -486,7 +486,7 @@
+@@ -502,7 +502,7 @@
              return Err(Error::CommandTimeout(command.index, status));
          }
-         if status & registers::RINTSTS_RTO != 0 {
+         if status & registers::RAW_INTERRUPT_RESPONSE_TIMEOUT != 0 {
 -            return Err(Error::NoResponse(command.index));
 +            return Err(Error::BadResponse(command.index, status));
          }
-         if status & (registers::RINTSTS_RCRC | registers::RINTSTS_RE) != 0 {
-             return Err(Error::BadResponse(command.index, status));
+         if status
+             & (registers::RAW_INTERRUPT_RESPONSE_CYCLIC_REDUNDANCY_CHECK_ERROR

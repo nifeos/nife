@@ -15,7 +15,7 @@
 /// busy initializing.
 #[doc(alias = "ocr")]
 pub(crate) const OPERATION_CONDITIONS_BUSY_DONE: u32 = 1 << 31;
-/// The OCR's card capacity status (SD) or access mode (eMMC, as bits 30:29 = `0b10`): set on a
+/// The OCR's card capacity status (SD) or access mode (on eMMC, bits 30:29 = `0b10`): set on a
 /// high-capacity card, which is addressed in 512-byte blocks rather than bytes.
 #[doc(alias = "ocr")]
 pub(crate) const OPERATION_CONDITIONS_HIGH_CAPACITY: u32 = 1 << 30;
@@ -131,13 +131,13 @@ impl CardSpecificData {
             // 10 or 11 on every card made; anything from 9 to 15 is decoded and a smaller one
             // refused rather than divided.
             0 => {
-                let c_size = extract_bits(register, 62, 12) as u64;
-                let mult = extract_bits(register, 47, 3);
-                let read_bl_len = extract_bits(register, 80, 4);
-                if read_bl_len < 9 {
+                let device_size = extract_bits(register, 62, 12) as u64;
+                let size_multiplier = extract_bits(register, 47, 3);
+                let read_block_length_exponent = extract_bits(register, 80, 4);
+                if read_block_length_exponent < 9 {
                     0
                 } else {
-                    (c_size + 1) << (mult + 2 + read_bl_len - 9)
+                    (device_size + 1) << (size_multiplier + 2 + read_block_length_exponent - 9)
                 }
             }
             // (C_SIZE + 1) * 512 KiB, C_SIZE 22 bits.
@@ -155,13 +155,13 @@ impl CardSpecificData {
     #[must_use]
     pub(crate) const fn multimedia_card(register: &[u32; 4]) -> CardSpecificData {
         let mut card_specific_data = CardSpecificData::from_sd_register(register);
-        let c_size = extract_bits(register, 62, 12) as u64;
-        let mult = extract_bits(register, 47, 3);
-        let read_bl_len = extract_bits(register, 80, 4);
-        card_specific_data.blocks = if read_bl_len < 9 {
+        let device_size = extract_bits(register, 62, 12) as u64;
+        let size_multiplier = extract_bits(register, 47, 3);
+        let read_block_length_exponent = extract_bits(register, 80, 4);
+        card_specific_data.blocks = if read_block_length_exponent < 9 {
             0
         } else {
-            (c_size + 1) << (mult + 2 + read_bl_len - 9)
+            (device_size + 1) << (size_multiplier + 2 + read_block_length_exponent - 9)
         };
         card_specific_data
     }
@@ -283,7 +283,7 @@ mod tests {
     }
 
     #[test]
-    fn an_sdxc_card_is_sized_in_half_megabytes() {
+    fn an_extended_capacity_sd_card_is_sized_in_half_megabytes() {
         let mut r = [0u32; 4];
         put(&mut r, 126, 2, 1);
         put(&mut r, 48, 22, 0x3f_ffff);
@@ -362,7 +362,7 @@ mod tests {
     }
 
     #[test]
-    fn an_sduc_card_is_sized_from_a_28_bit_count() {
+    fn an_ultra_capacity_sd_card_is_sized_from_a_28_bit_count() {
         let mut r = [0u32; 4];
         put(&mut r, 126, 2, 2);
         put(&mut r, 48, 28, 0x0abc_def0);
@@ -374,7 +374,7 @@ mod tests {
     /// An SD CID has a five-byte name; the byte after it is the product revision, not a sixth
     /// letter. An eMMC's name is six bytes and its serial sits eight bits lower.
     #[test]
-    fn an_sd_name_is_five_bytes_and_an_emmc_name_six() {
+    fn an_sd_name_is_five_bytes_and_an_embedded_multimedia_card_name_six() {
         let mut r = [0u32; 4];
         for (i, b) in b"TESTMC".iter().enumerate() {
             put(&mut r, 96 - 8 * i as u32, 8, u32::from(*b));

@@ -141,12 +141,18 @@ impl Slot {
         size: u64,
         mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
     ) -> Result<Option<Slot>, E> {
-        let Some(compat) = property(b"compatible")? else {
+        let Some(compatible_strings) = property(b"compatible")? else {
             return Ok(None);
         };
-        let compatible = if compat.split(|&b| b == 0).any(|s| s == COMPATIBLE_MAINLINE) {
+        let compatible = if compatible_strings
+            .split(|&b| b == 0)
+            .any(|s| s == COMPATIBLE_MAINLINE)
+        {
             COMPATIBLE_MAINLINE
-        } else if compat.split(|&b| b == 0).any(|s| s == COMPATIBLE_VENDOR) {
+        } else if compatible_strings
+            .split(|&b| b == 0)
+            .any(|s| s == COMPATIBLE_VENDOR)
+        {
             COMPATIBLE_VENDOR
         } else {
             return Ok(None);
