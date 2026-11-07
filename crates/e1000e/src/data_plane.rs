@@ -110,15 +110,18 @@ impl DataPlane {
     ///
     /// Name: ratified 2026-11-03 (UTC), #3123.
     pub fn start(&mut self, region: &mut impl DirectMemoryAccessRegion, tails: &mut impl Tails) {
-        for i in 0..RECEIVE_ENTRIES {
-            let d = layout::receive_descriptor(i);
-            region.write_u64(d, self.physical_address + layout::receive_buffer(i));
-            region.write_u64(d + 8, 0);
+        for index in 0..RECEIVE_ENTRIES {
+            let descriptor_offset = layout::receive_descriptor(index);
+            region.write_u64(
+                descriptor_offset,
+                self.physical_address + layout::receive_buffer(index),
+            );
+            region.write_u64(descriptor_offset + 8, 0);
         }
-        for i in 0..TRANSMIT_ENTRIES {
-            let d = layout::transmit_descriptor(i);
-            region.write_u64(d, 0);
-            region.write_u64(d + 8, 0);
+        for index in 0..TRANSMIT_ENTRIES {
+            let descriptor_offset = layout::transmit_descriptor(index);
+            region.write_u64(descriptor_offset, 0);
+            region.write_u64(descriptor_offset + 8, 0);
         }
         tails.barrier();
         tails.set_receive_tail(u32::from(RECEIVE_ENTRIES - 1));
@@ -136,8 +139,8 @@ impl DataPlane {
         out: &mut [u8],
     ) -> Option<usize> {
         loop {
-            let d = layout::receive_descriptor(self.receive_next);
-            let verdict = receive_verdict(region.read_u64(d + 8), out.len());
+            let descriptor_offset = layout::receive_descriptor(self.receive_next);
+            let verdict = receive_verdict(region.read_u64(descriptor_offset + 8), out.len());
             if verdict == ReceiveVerdict::NotYet {
                 return None;
             }
@@ -157,10 +160,10 @@ impl DataPlane {
             // Repost: the address again (a device may write back over it), the status cleared,
             // then hand the slot back by making it the tail.
             region.write_u64(
-                d,
+                descriptor_offset,
                 self.physical_address + layout::receive_buffer(self.receive_next),
             );
-            region.write_u64(d + 8, 0);
+            region.write_u64(descriptor_offset + 8, 0);
             tails.barrier();
             tails.set_receive_tail(u32::from(self.receive_next));
             self.receive_next = (self.receive_next + 1) % RECEIVE_ENTRIES;
@@ -188,12 +191,15 @@ impl DataPlane {
             return Err(TransmitError::Full);
         }
         region.write_bytes(layout::transmit_buffer(self.transmit_next), frame);
-        let d = layout::transmit_descriptor(self.transmit_next);
+        let descriptor_offset = layout::transmit_descriptor(self.transmit_next);
         region.write_u64(
-            d,
+            descriptor_offset,
             self.physical_address + layout::transmit_buffer(self.transmit_next),
         );
-        region.write_u64(d + 8, transmit_descriptor_command_word(frame.len() as u16));
+        region.write_u64(
+            descriptor_offset + 8,
+            transmit_descriptor_command_word(frame.len() as u16),
+        );
         tails.barrier();
         self.transmit_next = next;
         tails.set_transmit_tail(u32::from(next));

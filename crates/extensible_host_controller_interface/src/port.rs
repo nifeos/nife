@@ -40,7 +40,7 @@ pub const RESET_CHANGE: u32 = 1 << 21;
 /// Port Link State Change, write one to clear.
 pub(crate) const LINK_CHANGE: u32 = 1 << 22;
 /// Port Config Error Change, write one to clear.
-pub(crate) const CONFIG_ERROR_CHANGE: u32 = 1 << 23;
+pub(crate) const CONFIGURATION_ERROR_CHANGE: u32 = 1 << 23;
 
 /// Every change bit: what a driver writes back to acknowledge all of them.
 ///
@@ -51,7 +51,7 @@ pub const CHANGES: u32 = CONNECT_CHANGE
     | OVER_CURRENT_CHANGE
     | RESET_CHANGE
     | LINK_CHANGE
-    | CONFIG_ERROR_CHANGE;
+    | CONFIGURATION_ERROR_CHANGE;
 
 /// The seven change bits share no bit (each is alone at 17 to 23), which the compiler checks
 /// here; the mutation exclusions for this file's `|` constants name this constant. The
@@ -68,7 +68,7 @@ pub const PORT_CHANGE_BITS_DO_NOT_OVERLAP: () = assert!(
         + OVER_CURRENT_CHANGE
         + RESET_CHANGE
         + LINK_CHANGE
-        + CONFIG_ERROR_CHANGE
+        + CONFIGURATION_ERROR_CHANGE
         == CHANGES
 );
 
@@ -270,7 +270,7 @@ mod tests {
     /// The bit positions, pinned against xHCI 1.2 Table 5-27, so a shift written the wrong way
     /// round fails here rather than as a port that never enables on the bench.
     #[test]
-    fn the_portsc_bits_are_where_the_specification_puts_them() {
+    fn the_port_status_and_control_bits_are_where_the_specification_puts_them() {
         assert_eq!([CONNECTED, ENABLED, RESET, POWER], [1, 2, 0x10, 0x200]);
         assert_eq!(
             [
@@ -282,7 +282,7 @@ mod tests {
             [0x2_0000, 0x4_0000, 0x8_0000, 0x10_0000]
         );
         assert_eq!(
-            [RESET_CHANGE, LINK_CHANGE, CONFIG_ERROR_CHANGE],
+            [RESET_CHANGE, LINK_CHANGE, CONFIGURATION_ERROR_CHANGE],
             [0x20_0000, 0x40_0000, 0x80_0000]
         );
         assert_eq!(CHANGES, 0x00fe_0000);

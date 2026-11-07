@@ -108,7 +108,7 @@ pub const fn endpoint(
 ) -> [u32; 8] {
     // For an interrupt endpoint, the most it moves per service interval: one packet, since a
     // keyboard has no burst. Zero for control.
-    let esit = if kind == CONTROL {
+    let maximum_service_interval_payload = if kind == CONTROL {
         0
     } else {
         maximum_packet as u32
@@ -118,7 +118,7 @@ pub const fn endpoint(
         3 << 1 | (kind as u32) << 3 | (maximum_packet as u32) << 16,
         dequeue as u32,
         (dequeue >> 32) as u32,
-        average_trb as u32 | esit << 16,
+        average_trb as u32 | maximum_service_interval_payload << 16,
         0,
         0,
         0,
@@ -170,14 +170,14 @@ pub const fn interrupt_interval(speed: u8, b_interval: u8) -> u8 {
         let exponent = if exponent < 3 { 3 } else { exponent };
         (if exponent > 10 { 10 } else { exponent }) as u8
     } else {
-        let b = if b_interval == 0 {
+        let clamped_interval = if b_interval == 0 {
             1
         } else if b_interval > 16 {
             16
         } else {
             b_interval
         };
-        b - 1
+        clamped_interval - 1
     }
 }
 
