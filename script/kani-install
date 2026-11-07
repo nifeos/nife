@@ -11,6 +11,21 @@
 # 0.67.0 (script/verify-riscv64, notes/kernel-proofs/riscv64-with-a-patched-kani.md) and never
 # comes through here; that version skew is recorded there and in the milestone block.
 #
+# Two guards protect the shared ~/.kani, which every lane on a machine uses:
+#
+#   - A matching version is not proof that Kani works. `cargo kani setup` links
+#     ~/.kani/kani-<pin>/toolchain at the pinned nightly inside the active rustup, and a link that
+#     dangles (its target deleted) fails `cargo kani` for every lane. So after the version check
+#     this resolves the link with `readlink -e`, requires a directory with bin/rustc, and reruns
+#     setup, saying so, when it does not.
+#   - Setup follows RUSTUP_HOME at the moment it runs, so a lane with a private RUSTUP_HOME would
+#     point the shared link into a directory that lane may delete. This refuses, with exit 1, when
+#     RUSTUP_HOME is set to anything but $HOME/.rustup and it would run setup. A person who means
+#     it sets NIFE_KANI_SETUP_WITH_PRIVATE_RUSTUP=1.
+#
+# helpers/kani-install-selftest.sh proves both, in a temporary HOME. helpers/prune_toolchains.py
+# keeps the toolchain each ~/.kani/kani-*/rust-toolchain-version names, so a prune cannot dangle it.
+#
 # Name: provisional (milestone 795); no architect has ratified it.
 
 set -e
@@ -34,10 +49,31 @@ have="$(cargo kani --version 2>/dev/null | awk 'NR == 1 {
         if ($i ~ /^[0-9]+\.[0-9]+\.[0-9]+$/) { print $i; exit }
     }
 }' || true)"
+# Refuse to point the shared ~/.kani at a private rustup.
+refuse_private_rustup() {
+	if [ -n "${RUSTUP_HOME:-}" ] && [ "$RUSTUP_HOME" != "$HOME/.rustup" ] &&
+		[ "${NIFE_KANI_SETUP_WITH_PRIVATE_RUSTUP:-}" != 1 ]; then
+		echo "script/kani-install: refusing to run 'cargo kani setup': RUSTUP_HOME is '$RUSTUP_HOME', not '$HOME/.rustup'." >&2
+		echo "  Setup links $HOME/.kani/kani-$pin/toolchain into the active rustup, and every lane shares that link;" >&2
+		echo "  a private RUSTUP_HOME that is later deleted would break cargo kani for all of them." >&2
+		echo "  Unset RUSTUP_HOME, or set NIFE_KANI_SETUP_WITH_PRIVATE_RUSTUP=1 if you mean it." >&2
+		exit 1
+	fi
+}
+
 if [ "$have" = "$pin" ]; then
+	link="$HOME/.kani/kani-$pin/toolchain"
+	resolved="$(readlink -e "$link" 2>/dev/null || true)"
+	if [ -n "$resolved" ] && [ -d "$resolved" ] && [ -x "$resolved/bin/rustc" ]; then
+		exit 0
+	fi
+	refuse_private_rustup
+	echo "==> Kani $pin is installed but '$link' does not resolve to a toolchain with a rustc (found '${resolved:-nothing}'); rerunning cargo kani setup"
+	cargo kani setup
 	exit 0
 fi
 
+refuse_private_rustup
 echo "==> installing Kani $pin (pinned in .kani-version; found '${have:-none}')"
 cargo install --locked kani-verifier --version "=$pin" --force
 cargo kani setup

@@ -236,6 +236,9 @@ helpers/verify-parallel-selftest.sh >/dev/null
 # The machine's Kani memory is one pool however many lanes prove at once (helpers/heavy_slot.py,
 # "The Kani pool"): the third run waits, a run weighs its harnesses, the width is clamped, CI is off.
 helpers/kani-pool-selftest.sh >/dev/null
+# script/kani-install repairs a dangling toolchain link and refuses a private RUSTUP_HOME, and the
+# toolchain prune keeps Kani's own, all in a temporary HOME (helpers/kani-install-selftest.sh).
+helpers/kani-install-selftest.sh >/dev/null
 
 echo "==> script/verify --parallel forks the shards, joins their verdicts, and keeps to one slot"
 # The local parallel prove, milestone 957 (local parallel prove of the Kani verification suite): a stub
@@ -4613,7 +4616,12 @@ fi
 exit 0
 KANI_STUB
 chmod +x "$kstub/bin/cargo"
-if ! KANI_STUB_LOG="$kstub/first" KANI_STUB_VERSION=0.0.1 PATH="$kstub/bin:$PATH" \
+# A temporary HOME whose Kani toolchain link resolves, so the installed pin is judged healthy.
+mkdir -p "$kstub/home/.kani/kani-$kani_pin" "$kstub/home/tc/bin"
+: >"$kstub/home/tc/bin/rustc"
+chmod +x "$kstub/home/tc/bin/rustc"
+ln -s "$kstub/home/tc" "$kstub/home/.kani/kani-$kani_pin/toolchain"
+if ! env -u RUSTUP_HOME HOME="$kstub/home" KANI_STUB_LOG="$kstub/first" KANI_STUB_VERSION=0.0.1 PATH="$kstub/bin:$PATH" \
     sh "$kstub/tree/script/kani-install" >"$kstub/first.out" 2>&1; then
     echo "lint: script/kani-install failed against an older installed Kani:" >&2
     sed 's/^/  /' "$kstub/first.out" >&2
@@ -4626,7 +4634,7 @@ if ! grep -q "found '0.0.1'" "$kstub/first.out" || ! grep -q "^install .*kani-ve
     rm -rf "$kstub"
     exit 1
 fi
-if ! KANI_STUB_LOG="$kstub/second" KANI_STUB_VERSION="$kani_pin" PATH="$kstub/bin:$PATH" \
+if ! env -u RUSTUP_HOME HOME="$kstub/home" KANI_STUB_LOG="$kstub/second" KANI_STUB_VERSION="$kani_pin" PATH="$kstub/bin:$PATH" \
     sh "$kstub/tree/script/kani-install" >"$kstub/second.out" 2>&1; then
     echo "lint: script/kani-install failed against the installed pin:" >&2
     sed 's/^/  /' "$kstub/second.out" >&2
