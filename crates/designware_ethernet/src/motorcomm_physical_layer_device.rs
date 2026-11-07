@@ -5,15 +5,19 @@
 //! in the crate root). The link, speed and duplex come from the standard clause 22 registers, as
 //! OpenBSD's `ukphy_status` (`sys/dev/mii/ukphy_subr.c`) reads them, with IEEE 802.3's registers
 //! and OpenBSD's `mii.h` names. The part's vendor status register is not read.
-//! [`MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER`] and [`MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER`] take OpenBSD's names (`ytphy.c`); FreeBSD's `mcommphy.c`
-//! names the same two registers too, and each constant's documentation gives Linux's spelling.
-//! The bits inside them, and [`MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID`] (OpenBSD and FreeBSD match the OUI and model, not
-//! the whole identifier), come from Linux's `drivers/net/phy/motorcomm.c`, read as facts about the
-//! part (OpenBSD first, then FreeBSD, then Linux only for what neither names); why this driver writes them is at each. Each constant spells out what the source
-//! abbreviates, and the source's spelling (`YT8511_`, `YT8521_` or `YT8531_` prefix included) is in
-//! its documentation and in a `#[doc(alias)]`; its documentation opens with its full name and its
-//! source's spelling. The vendor tree states register values and
-//! mainline states physical quantities, and for `gmac0` they agree.
+//! [`MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER`] and [`MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER`]
+//! spell out what the two registers are. OpenBSD's `ytphy.c` names both (`YT8511_EXT_SLEEP_CTRL`
+//! and `YT8511_EXT_CLK_GATE`), and so does FreeBSD's `sys/dev/mii/mcommphy.c`
+//! (`PHY_SLEEP_CONTROL1_REG` and `PHY_CLOCK_GATING_REG`, at `freebsd/freebsd-src@2ad32d3a6868`);
+//! the words "sleep control 1" and "clock gating" are FreeBSD's and Linux's. Each constant's
+//! documentation gives the OpenBSD, Linux and FreeBSD spellings. The one bit this driver clears in
+//! each, and [`MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID`] (OpenBSD and FreeBSD match the OUI and
+//! model, not the whole identifier), are named by neither BSD source. They come from Linux's
+//! `drivers/net/phy/motorcomm.c` (at `torvalds/linux@fc697291ad0a`), read as facts about the part;
+//! why this driver writes them is at each. Every other register and bit here is OpenBSD's. Each
+//! register and bit constant's documentation opens with what it is, then its source's full
+//! spelling and file. The vendor tree states register values and mainline states physical
+//! quantities, and for `gmac0` they agree.
 //! [`Settings::FALLBACK_GMAC0`] applies only when a tree states neither, and [`Settings::source`]
 //! says which happened.
 //!
@@ -332,8 +336,8 @@ const FIXED_DELAY_PICOSECONDS: u32 = 1900;
 const STEP_PICOSECONDS: u32 = 150;
 
 impl Settings {
-    /// **radon's `gmac0` (Gigabit MAC, GMAC), from the table in this module's header.** Both trees give these values,
-    /// so a tree that names neither spelling still gets the board it is on, and says so.
+    /// **radon's `gmac0` (Gigabit MAC, GMAC).** Both trees give these values, so a tree that names
+    /// neither spelling still gets the board it is on, and says so.
     ///
     /// Name: ratified 2026-11-02 (UTC), #3094.
     pub const FALLBACK_GMAC0: Settings = Settings {
@@ -961,8 +965,10 @@ mod tests {
             0
         );
     }
-    /// The extended registers' bits as Linux's `motorcomm.c` names them, written out: the simulated
-    /// PHY reads the same names, so only a literal tells a misplaced bit from a right one.
+    /// The extended registers' bits, written out: the simulated PHY reads the same names, so only a
+    /// literal tells a misplaced bit from a right one. The first two take Linux's `motorcomm.c`
+    /// names and the other four OpenBSD's `ytphy.c` names, and every source that names a bit puts it
+    /// here.
     #[test]
     fn the_extended_register_bits_are_motorcomms() {
         assert_eq!(

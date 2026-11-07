@@ -1,0 +1,20 @@
+Falsifies `designware_mobile_storage::proofs::the_direct_memory_access_wait_returns_once_its_deadline_has_passed`.
+
+The defect: the IDMAC wait restarts its deadline on any change in the owned descriptors, not only
+on one closing, so a controller that sets a descriptor's `OWN` bit again keeps the wait open for
+as long as it likes.
+
+Expected to fail: `the driver read the clock again after its deadline had passed`, in the
+adversarial clock.
+diff --git a/crates/designware_mobile_storage/src/internal_direct_memory_access.rs b/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
+--- a/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
++++ b/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
+@@ -387,7 +387,7 @@
+                 return Ok(());
+             }
+             let now = self.registers.now_microseconds();
+-            if now_owned < owned {
++            if now_owned != owned {
+                 owned = now_owned;
+                 start = now;
+             } else if now.wrapping_sub(start) > DATA_DEADLINE_MICROSECONDS {

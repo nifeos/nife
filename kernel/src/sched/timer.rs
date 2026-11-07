@@ -33,7 +33,7 @@ pub(super) static EARLIEST_DEADLINE: AtomicU64 =
 /// The timer behind a name, or `None` if it no longer resolves. Caller holds `IPC_TABLES`; the
 /// `'static` is [`notification_of`]'s.
 pub(super) fn timer_of(sched: &IpcTables, id: TimerId) -> Option<&'static mut TimerPage> {
-    let phys = *sched.timer_table.get(timer_entry(id))?;
+    let phys = sched.timer_table.get(timer_entry(id))?.address();
     // SAFETY: retyped exclusively for this timer, its region pinned while the name resolves,
     // direct-mapped, and serialized by IPC_TABLES, which every caller holds.
     Some(unsafe { &mut *(crate::arch::mmu::phys_to_virt(phys) as *mut TimerPage) })
@@ -57,7 +57,7 @@ pub fn create_timer_from(region: u64) -> Option<TimerId> {
     }
     sched
         .timer_table
-        .insert_with(|_| phys)
+        .insert_with(|_| TimerPageAddress::new(phys))
         .map(EntryName::to_bits)
 }
 
@@ -121,8 +121,9 @@ pub(super) fn expire_timers() {
                     .timer_table
                     .values()
                     // SAFETY: each value is a live timer page, as `timer_of` argues.
-                    .map(|&phys| unsafe {
-                        &mut (*(crate::arch::mmu::phys_to_virt(phys) as *mut TimerPage)).state
+                    .map(|entry| unsafe {
+                        &mut (*(crate::arch::mmu::phys_to_virt(entry.address()) as *mut TimerPage))
+                            .state
                     }),
                 now,
             );
@@ -137,9 +138,11 @@ pub(super) fn expire_timers() {
                 poke |= 1 << cpu;
             }
         }
-        let cached = earliest(sched.timer_table.values().map(|&phys| {
+        let cached = earliest(sched.timer_table.values().map(|entry| {
             // SAFETY: as above.
-            unsafe { &(*(crate::arch::mmu::phys_to_virt(phys) as *const TimerPage)).state }
+            unsafe {
+                &(*(crate::arch::mmu::phys_to_virt(entry.address()) as *const TimerPage)).state
+            }
         }));
         EARLIEST_DEADLINE.store(cached, Ordering::Relaxed);
     }
@@ -158,7 +161,7 @@ pub(super) fn reap_region_timers(sched: &mut IpcTables, base: u64, end: u64) {
         let doomed = sched
             .timer_table
             .iter()
-            .find(|&(_, &phys)| base <= phys && phys < end)
+            .find(|&(_, entry)| (base..end).contains(&entry.address()))
             .map(|(name, _)| name);
         let Some(name) = doomed else { break };
         sched.timer_table.remove(name);

@@ -146,7 +146,7 @@ pub(super) fn reap_region_objects(base: u64, end: u64) -> Result<(), ()> {
         let doomed = sched
             .rendezvous_table
             .iter()
-            .find(|&(_, &phys)| base <= phys && phys < end)
+            .find(|&(_, entry)| (base..end).contains(&entry.address()))
             .map(|(name, _)| name);
         let Some(name) = doomed else { break };
 
