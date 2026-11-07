@@ -184,7 +184,7 @@ fn a_budget_expiry_message_is_followed_by_a_thread_dump() {
             assert!(
                 text.is_empty(),
                 "a message that is not a budget expiry got a dump: {text}"
-            )
+            );
         },
     );
 }
