@@ -336,7 +336,9 @@ fn a_wait_returns_at_the_first_reading_past_its_deadline() {
     kani::assume(deadline < 1 << 60);
     let past_from: usize = kani::any();
     kani::assume((1..=3).contains(&past_from));
-    let mut host = adversarial_host(AdversarialWindowAndClock::new(deadline, past_from, past_from));
+    let mut host = adversarial_host(AdversarialWindowAndClock::new(
+        deadline, past_from, past_from,
+    ));
     let met = host.is_condition_met_within(deadline, |window| window.read(0) & 1 == 0);
     kani::cover!(!met && host.registers_mut().taken == past_from + 1);
 }
@@ -390,7 +392,10 @@ fn the_direct_memory_access_wait_returns_once_its_deadline_has_passed() {
         },
     );
     let result = host.internal_direct_memory_access_wait(&command, count);
-    kani::cover!(matches!(result, Err(crate::host_controller::Error::DataTimeout(..))));
+    kani::cover!(matches!(
+        result,
+        Err(crate::host_controller::Error::DataTimeout(..))
+    ));
 }
 
 /// **The card clock divider is total**: for any base and target it divides by no zero, overflows
