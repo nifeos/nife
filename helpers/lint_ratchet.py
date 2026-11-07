@@ -113,6 +113,9 @@ CONFIGURATIONS = {
                                            'tools/glyph_atlas_generator/Cargo.toml',
                                            '--all-targets'),
     'fuzz/clippy': ('--manifest-path', 'fuzz/Cargo.toml', '--all-targets'),
+    'crates/extensible_host_controller_interface/fuzz/clippy': (
+        '--manifest-path', 'crates/extensible_host_controller_interface/fuzz/Cargo.toml',
+        '--all-targets'),
 }
 # Files whose change cannot alter what clippy reports (the freshness rule's exception): prose,
 # records, workflows, and the scripts and Python helpers that never reach rustc. A `.rs` file under

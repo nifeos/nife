@@ -330,6 +330,9 @@ echo "==> clippy: fuzz targets (its own workspace)"
 # lint-lane: fuzz
 python3 helpers/clippy_record.py fuzz/clippy cargo clippy \
     --manifest-path fuzz/Cargo.toml --all-targets -- -D warnings
+# A crate's own fuzz workspace, kept beside the crate so it leaves with it, rots the same way.
+python3 helpers/clippy_record.py crates/extensible_host_controller_interface/fuzz/clippy cargo clippy \
+    --manifest-path crates/extensible_host_controller_interface/fuzz/Cargo.toml --all-targets -- -D warnings
 
 # The proofs' own code, which nothing else in this file compiles (milestone 113).
 #

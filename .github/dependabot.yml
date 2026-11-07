@@ -65,7 +65,7 @@ updates:
   #
   # Each directory below is its own workspace with its own lockfile, so the root entry above never
   # sees it. The test of §81 (a dependency stays upgradable) is "if a newer version exists, does
-  # anything here ever tell us?", and for these ten graphs this entry is what tells us (the three
+  # anything here ever tell us?", and for these eleven graphs this entry is what tells us (the three
   # that build vendored RedoxFS have the entry after this one).
   # `script/lint` keeps this list complete: every committed Cargo.lock that `script/supply-chain`
   # checks must appear here or in the root entry, so a new workspace cannot join the tree unwatched.
@@ -85,6 +85,7 @@ updates:
   - package-ecosystem: cargo
     directories:
       - "/c_library"
+      - "/crates/extensible_host_controller_interface/fuzz"
       - "/cryptography_exerciser"
       - "/cryptography_provider"
       - "/jig"
@@ -111,7 +112,7 @@ updates:
       - dependency-name: "lock_api"
         update-types: ["version-update:semver-major"]
     groups:
-      # Minor and patch bumps across all ten workspaces, one pull request a week.
+      # Minor and patch bumps across all eleven workspaces, one pull request a week.
       workspaces-minor-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]

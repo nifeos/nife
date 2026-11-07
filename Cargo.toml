@@ -143,12 +143,15 @@ members = [
 # `fuzz` is excluded for a different reason (milestone 42): its targets link libFuzzer's `main`, are
 # built with a sanitizer and `-Zbuild-std`, and are meaningless to `cargo build`. It is its own
 # workspace root as well, so this entry is belt and braces; it is here so a reader of this list sees
-# every directory in the tree that is a package and is not ours to build in the ordinary way.
+# every directory in the tree that is a package and is not ours to build in the ordinary way. A
+# crate that is to leave for a repository of its own keeps its fuzz targets in its own `fuzz/`
+# directory, so they leave with it; each of those is excluded here for the same reason.
 exclude = [
     "vendor/redoxfs",
     "vendor/talc",
     "tools/redoxfs_host",
     "fuzz",
+    "crates/extensible_host_controller_interface/fuzz",
 ]
 
 # Shared package metadata. Each member opts in with `license.workspace = true`, so the
