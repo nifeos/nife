@@ -58,7 +58,7 @@ run() {
 setups() { grep -c '^kani setup$' "$tmp/$1.log" || true; }
 
 # 1. no link at all
-rm -rf "$tmp/home"
+rm -rf "${tmp:?}/home"
 mkdir -p "$tmp/home"
 run none
 [ "$rc" = 0 ] || fail "no link: exit $rc"
@@ -66,7 +66,7 @@ run none
 grep -q "does not resolve" "$tmp/none.out" || fail "no link: the rerun was not announced"
 
 # 2. a dangling link, then the repaired link
-rm -rf "$tmp/home"
+rm -rf "${tmp:?}/home"
 mkdir -p "$tmp/home/.kani/kani-$pin"
 ln -s "$tmp/home/gone/toolchain" "$tmp/home/.kani/kani-$pin/toolchain"
 run dangling
@@ -81,7 +81,7 @@ run repaired
 grep -v '^kani --version$' "$tmp/repaired.log" | grep -q . && fail "good link: cargo ran more than the version query"
 
 # 4. a private RUSTUP_HOME
-rm -rf "$tmp/home"
+rm -rf "${tmp:?}/home"
 mkdir -p "$tmp/home/.kani/kani-$pin"
 ln -s "$tmp/home/gone/toolchain" "$tmp/home/.kani/kani-$pin/toolchain"
 run private RUSTUP_HOME="$tmp/private-rustup"
@@ -100,8 +100,8 @@ run override RUSTUP_HOME="$tmp/private-rustup" NIFE_KANI_SETUP_WITH_PRIVATE_RUST
 [ "$(setups override)" = 1 ] || fail "override: setup did not run"
 
 # 5. the prune keeps Kani's toolchain
-rm -rf "$tmp/home" "$tmp/repo"
-mkdir -p "$tmp/home/.kani/kani-$pin" "$tmp/repo"
+rm -rf "${tmp:?}/home" "${tmp:?}/repo"
+mkdir -p "$tmp/home/.kani/kani-$pin" "${tmp:?}/repo"
 echo nightly-2020-01-01 >"$tmp/home/.kani/kani-$pin/rust-toolchain-version"
 cat >"$tmp/bin/rustup" <<'STUB'
 #!/bin/sh
