@@ -183,15 +183,15 @@ pub enum Verdict {
 /// **Compare the two accounts.**
 ///
 /// Name: ratified 2026-11-03 (UTC), #3122.
-pub fn classify(o: &Observation) -> Verdict {
-    let status = o.status;
+pub fn classify(observation: &Observation) -> Verdict {
+    let status = observation.status;
     if status & registers::CHANNEL_STATUS_FATAL_BUS_ERROR != 0 {
         return Verdict::BusError;
     }
-    if o.receive_descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0 {
+    if observation.receive_descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0 {
         return match (
-            o.payload,
-            receive_verdict(o.receive_descriptor_word_3, PROBE_LENGTH),
+            observation.payload,
+            receive_verdict(observation.receive_descriptor_word_3, PROBE_LENGTH),
         ) {
             (Payload::Matches, ReceiveVerdict::Frame(PROBE_LENGTH)) => Verdict::Coherent,
             (Payload::Poison, _) => Verdict::ReceivedPayloadStale,
@@ -213,8 +213,8 @@ pub fn classify(o: &Observation) -> Verdict {
 /// Whether the transmit descriptor was handed back, for a report line.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
-pub const fn is_transmit_complete(o: &Observation) -> bool {
-    o.transmit_descriptor_word_3 & TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0
+pub const fn is_transmit_complete(observation: &Observation) -> bool {
+    observation.transmit_descriptor_word_3 & TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0
 }
 
 /// How many receive descriptors the probe posts, for a report line: every one but the held-back

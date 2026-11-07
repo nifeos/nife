@@ -126,13 +126,13 @@ pub(crate) const MAC_INTERRUPT_ENABLE_REGISTER: u32 = 0x00b4;
 #[doc(alias = "VERSION")]
 #[doc(alias = "GMAC_VERSION")]
 pub const CORE_VERSION_REGISTER: u32 = 0x0110;
-/// **MAC hardware feature register** (`GMAC_MAC_HW_FEATURE(x)`, `dwqereg.h`), register `i` for `i`
-/// in `0..4`.
+/// **MAC hardware feature register** (`GMAC_MAC_HW_FEATURE(x)`, `dwqereg.h`), register `index`
+/// for `index` in `0..4`.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3126.
 #[doc(alias = "GMAC_MAC_HW_FEATURE")]
-pub const fn mac_hardware_feature_register(i: u32) -> u32 {
-    0x011c + 4 * (i % 4)
+pub const fn mac_hardware_feature_register(index: u32) -> u32 {
+    0x011c + 4 * (index % 4)
 }
 /// **MDIO (management data input/output) address register** (`GMAC_MAC_MDIO_ADDR`, `dwqereg.h`),
 /// which carries the command.

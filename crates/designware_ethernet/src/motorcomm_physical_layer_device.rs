@@ -449,7 +449,7 @@ pub fn write_extended(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
     extended: u16,
-    v: u16,
+    value: u16,
 ) -> Result<(), management_data_input_output::Error> {
     bus.write(
         physical_layer_device_address,
@@ -459,7 +459,7 @@ pub fn write_extended(
     bus.write(
         physical_layer_device_address,
         EXTENDED_REGISTER_DATA_PORT,
-        v,
+        value,
     )
 }
 
@@ -503,13 +503,13 @@ pub struct Applied {
 pub fn configure(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
-    s: &Settings,
+    settings: &Settings,
 ) -> Result<Applied, management_data_input_output::Error> {
     let saved = bus.read(
         physical_layer_device_address,
         EXTENDED_REGISTER_ADDRESS_PORT,
     )?;
-    let delay_enable = if s.receive_fixed_delay {
+    let delay_enable = if settings.receive_fixed_delay {
         RECEIVE_CLOCK_DELAY_ENABLE
     } else {
         0
@@ -522,8 +522,8 @@ pub fn configure(
         delay_enable,
     )?;
     let voltage_millivolts = strapped_voltage_millivolts(chip);
-    let delays = u16::from(s.receive_delay & 0xf) << RECEIVE_DELAY_SELECT_SHIFT
-        | u16::from(s.transmit_delay & 0xf) << TRANSMIT_DELAY_SELECT_SHIFT;
+    let delays = u16::from(settings.receive_delay & 0xf) << RECEIVE_DELAY_SELECT_SHIFT
+        | u16::from(settings.transmit_delay & 0xf) << TRANSMIT_DELAY_SELECT_SHIFT;
     let reduced_gigabit_media_independent_interface_configuration_1 = modify_extended(
         bus,
         physical_layer_device_address,
@@ -531,8 +531,9 @@ pub fn configure(
         0xf << RECEIVE_DELAY_SELECT_SHIFT | 0xf << TRANSMIT_DELAY_SELECT_SHIFT,
         delays,
     )?;
-    let receive_clock_code = u16::from(drive_code(voltage_millivolts, s.receive_clock_drive));
-    let receive_data_code = u16::from(drive_code(voltage_millivolts, s.receive_data_drive));
+    let receive_clock_code =
+        u16::from(drive_code(voltage_millivolts, settings.receive_clock_drive));
+    let receive_data_code = u16::from(drive_code(voltage_millivolts, settings.receive_data_drive));
     let pad_drive = modify_extended(
         bus,
         physical_layer_device_address,
@@ -597,13 +598,13 @@ pub const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_
 pub fn apply_speed(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
-    s: &Settings,
+    settings: &Settings,
     speed: Speed,
 ) -> Result<u16, management_data_input_output::Error> {
     let inverted = match speed {
-        Speed::Ten => s.transmit_clock_inverted[0],
-        Speed::Hundred => s.transmit_clock_inverted[1],
-        Speed::Thousand => s.transmit_clock_inverted[2],
+        Speed::Ten => settings.transmit_clock_inverted[0],
+        Speed::Hundred => settings.transmit_clock_inverted[1],
+        Speed::Thousand => settings.transmit_clock_inverted[2],
     };
     let saved = bus.read(
         physical_layer_device_address,

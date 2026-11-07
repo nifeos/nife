@@ -252,12 +252,12 @@ pub const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () = assert!(
 pub trait ManagementDataInputOutput {
     /// Read register `register` of the PHY at `physical_layer_device_address`.
     fn read(&mut self, physical_layer_device_address: u8, register: u8) -> Result<u16, Error>;
-    /// Write `v` to register `register` of the PHY at `physical_layer_device_address`.
+    /// Write `value` to register `register` of the PHY at `physical_layer_device_address`.
     fn write(
         &mut self,
         physical_layer_device_address: u8,
         register: u8,
-        v: u16,
+        value: u16,
     ) -> Result<(), Error>;
 }
 
@@ -308,12 +308,12 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
         &mut self,
         physical_layer_device_address: u8,
         register: u8,
-        v: u16,
+        value: u16,
     ) -> Result<(), Error> {
         self.wait(physical_layer_device_address, register)?;
         self.0.write(
             registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
-            u32::from(v),
+            u32::from(value),
         );
         self.0.write(
             registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
@@ -456,11 +456,13 @@ mod tests {
                 _ => panic!("MDIO touched {offset:#x}, outside its two registers"),
             }
         }
-        fn write(&mut self, offset: u32, v: u32) {
-            self.writes.push((offset, v));
+        fn write(&mut self, offset: u32, value: u32) {
+            self.writes.push((offset, value));
             match offset {
-                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER => self.address = v,
-                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER => self.data = v,
+                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER => {
+                    self.address = value
+                }
+                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER => self.data = value,
                 _ => panic!("MDIO wrote {offset:#x}, outside its two registers"),
             }
         }
@@ -574,9 +576,9 @@ mod tests {
             &mut self,
             _physical_layer_device_address: u8,
             register: u8,
-            v: u16,
+            value: u16,
         ) -> Result<(), Error> {
-            self.registers[register as usize] = v;
+            self.registers[register as usize] = value;
             Ok(())
         }
     }

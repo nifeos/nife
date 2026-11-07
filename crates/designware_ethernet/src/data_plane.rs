@@ -12,8 +12,8 @@ use super::*;
 pub trait DirectMemoryAccessRegion {
     /// Read the little-endian `u64` at `offset`.
     fn read_u64(&self, offset: u64) -> u64;
-    /// Write `v` at `offset`, little-endian.
-    fn write_u64(&mut self, offset: u64, v: u64);
+    /// Write `value` at `offset`, little-endian.
+    fn write_u64(&mut self, offset: u64, value: u64);
     /// Copy `out.len()` bytes starting at `offset` into `out`.
     fn read_bytes(&self, offset: u64, out: &mut [u8]);
     /// Copy `source` to `offset`.

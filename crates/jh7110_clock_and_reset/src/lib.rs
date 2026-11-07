@@ -619,9 +619,9 @@ impl PowerManagementChipBus {
     /// say.**
     ///
     /// `power_management_chip` is the [`POWER_MANAGEMENT_CHIP_COMPATIBLES`] entry the caller
-    /// matched. `power_management_chip_reg` is the PMIC node's own `reg` (its I2C address, one
-    /// cell), and `bus_reg`, `clocks` and `resets` are its parent bus node's properties; each is
-    /// `None` when the tree does not state it. A `<phandle id>` pair becomes a step only for a
+    /// matched. `power_management_chip_register_property` is the PMIC node's own `reg` (its I2C
+    /// address, one cell), and `bus_register_property`, `clocks` and `resets` are its parent bus
+    /// node's properties; each is `None` when the tree does not state it. A `<phandle id>` pair becomes a step only for a
     /// known one-cell SYS provider and an id inside [`SYSTEM`]'s bounds (the vendor numbers SYS
     /// first, so one bound serves both trees); the rest are counted in
     /// [`PowerManagementChipBus::skipped`]. `provider(phandle, name)` returns the property `name`
@@ -637,8 +637,8 @@ impl PowerManagementChipBus {
     /// it reads the PMIC's node and its bus's node).
     pub fn from_nodes<'t, E>(
         power_management_chip: &'static [u8],
-        power_management_chip_reg: Option<&[u8]>,
-        bus_reg: Option<&[u8]>,
+        power_management_chip_register_property: Option<&[u8]>,
+        bus_register_property: Option<&[u8]>,
         clocks: Option<&[u8]>,
         resets: Option<&[u8]>,
         mut provider: impl FnMut(u32, &[u8]) -> Result<Option<&'t [u8]>, E>,
@@ -646,13 +646,13 @@ impl PowerManagementChipBus {
         let mut bus = PowerManagementChipBus::fallback(Some(power_management_chip), 0);
         // The PMIC's own `reg` is an I2C child address: one cell, size zero by `#size-cells 0`.
         // Both trees spell it `<0x36>`.
-        if let Some(cells) = power_management_chip_reg
+        if let Some(cells) = power_management_chip_register_property
             && cells.len() >= 4
         {
             bus.power_management_chip_address =
                 Some(u32::from_be_bytes([cells[0], cells[1], cells[2], cells[3]]));
         }
-        if let Some(cells) = bus_reg {
+        if let Some(cells) = bus_register_property {
             bus.controller = parse_register_property(cells);
         }
         if clocks.is_none() && resets.is_none() {
@@ -914,14 +914,14 @@ pub const fn one_based_divider(word: u32, width: u32) -> u64 {
 #[doc(alias = "ic_clk")]
 #[doc(alias = "i2c")]
 pub const fn inter_integrated_circuit_5_clock_frequency(
-    w: &InterIntegratedCircuitClockWords,
+    words: &InterIntegratedCircuitClockWords,
 ) -> u64 {
-    advanced_extensible_interface_configuration_0_hertz(w)
+    advanced_extensible_interface_configuration_0_hertz(words)
         / one_based_divider(
-            w.system_top_group_advanced_extensible_interface_advanced_high_performance_bus,
+            words.system_top_group_advanced_extensible_interface_advanced_high_performance_bus,
             2,
         )
-        / one_based_divider(w.advanced_peripheral_bus_function, 4)
+        / one_based_divider(words.advanced_peripheral_bus_function, 4)
 }
 
 /// **`axi_cfg0`'s rate**: `bus_root` (PLL2 or the oscillator, by its mux) over `axi_cfg0`'s own
@@ -933,20 +933,21 @@ pub const fn inter_integrated_circuit_5_clock_frequency(
 #[must_use]
 #[doc(alias = "axi_cfg0")]
 pub const fn advanced_extensible_interface_configuration_0_hertz(
-    w: &InterIntegratedCircuitClockWords,
+    words: &InterIntegratedCircuitClockWords,
 ) -> u64 {
-    let parent = if (w.bus_root >> 24) & 1 == 1 {
-        let dacpd = (w.phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word >> 15) & 1;
-        let dsmpd = (w.phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word >> 16) & 1;
-        let feedback_divider =
-            ((w.phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word >> 17) & 0xfff) as u64;
-        let pre_divider_raw = (w.phase_locked_loop_2_pre_divider_word & 0x3f) as u64;
+    let parent = if (words.bus_root >> 24) & 1 == 1 {
+        let dacpd = (words.phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word >> 15) & 1;
+        let dsmpd = (words.phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word >> 16) & 1;
+        let feedback_divider = ((words.phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word
+            >> 17)
+            & 0xfff) as u64;
+        let pre_divider_raw = (words.phase_locked_loop_2_pre_divider_word & 0x3f) as u64;
         let pre_divider = if pre_divider_raw == 0 {
             1
         } else {
             pre_divider_raw
         };
-        let post_divider_1 = 1u64 << ((w.phase_locked_loop_2_post_divider_1_word >> 28) & 3);
+        let post_divider_1 = 1u64 << ((words.phase_locked_loop_2_post_divider_1_word >> 28) & 3);
         if dacpd == 1 && dsmpd == 1 && feedback_divider > 0 {
             OSCILLATOR_HERTZ * feedback_divider / (pre_divider * post_divider_1)
         } else {
@@ -955,7 +956,7 @@ pub const fn advanced_extensible_interface_configuration_0_hertz(
     } else {
         OSCILLATOR_HERTZ
     };
-    parent / one_based_divider(w.advanced_extensible_interface_configuration_0, 2)
+    parent / one_based_divider(words.advanced_extensible_interface_configuration_0, 2)
 }
 
 /// **Each SD/MMC controller's card clock** (`ciu` in the tree), by controller index: the eMMC
@@ -1550,14 +1551,14 @@ impl WindowLocation {
     pub fn from_regions(
         spelling: &WindowSpelling,
         regions: &[(u64, u64)],
-        reg_names: Option<&[u8]>,
+        register_names: Option<&[u8]>,
     ) -> Option<WindowLocation> {
         if regions.is_empty() {
             return None;
         }
         let index = match spelling.window {
             None => 0,
-            Some(want) => match reg_names.and_then(|bytes| name_index(bytes, want)) {
+            Some(want) => match register_names.and_then(|bytes| name_index(bytes, want)) {
                 Some(i) if i < regions.len() => i,
                 _ => return None,
             },

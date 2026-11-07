@@ -925,9 +925,9 @@ mod tests {
         fn read(&mut self, offset: u32) -> u32 {
             self.register(offset)
         }
-        fn write(&mut self, offset: u32, v: u32) {
-            self.writes.push((offset, v));
-            self.registers.insert(offset, v);
+        fn write(&mut self, offset: u32, value: u32) {
+            self.writes.push((offset, value));
+            self.registers.insert(offset, value);
         }
         fn delay_microseconds(&mut self, _microseconds: u64) {}
     }

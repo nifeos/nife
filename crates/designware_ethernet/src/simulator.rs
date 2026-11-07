@@ -134,8 +134,8 @@ impl DirectMemoryAccessRegion for Cpu<'_> {
         self.read_bytes(offset, &mut b);
         u64::from_le_bytes(b)
     }
-    fn write_u64(&mut self, offset: u64, v: u64) {
-        self.write_bytes(offset, &v.to_le_bytes());
+    fn write_u64(&mut self, offset: u64, value: u64) {
+        self.write_bytes(offset, &value.to_le_bytes());
     }
     fn read_bytes(&self, offset: u64, out: &mut [u8]) {
         assert!(
@@ -230,8 +230,8 @@ impl PhysicalLayerDevice {
         }
     }
     /// Set a clause 22 register directly.
-    pub(crate) fn write_raw(&mut self, register: u8, v: u16) {
-        self.registers[register as usize] = v;
+    pub(crate) fn write_raw(&mut self, register: u8, value: u16) {
+        self.registers[register as usize] = value;
     }
     /// Read a clause 22 register directly.
     pub(crate) fn raw(&self, register: u8) -> u16 {
@@ -301,7 +301,7 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
         &mut self,
         _physical_layer_device_address: u8,
         register: u8,
-        v: u16,
+        value: u16,
     ) -> Result<(), management_data_input_output::Error> {
         let register = register & 0x1f;
         match register {
@@ -309,15 +309,15 @@ impl ManagementDataInputOutput for PhysicalLayerDevice {
                 self.extended.insert(
                     self.registers
                         [motorcomm_physical_layer_device::EXTENDED_REGISTER_ADDRESS_PORT as usize],
-                    v,
+                    value,
                 );
             }
             management_data_input_output::BASIC_MODE_CONTROL_REGISTER => {
-                self.registers[0] = v
+                self.registers[0] = value
                     & !(management_data_input_output::BASIC_MODE_CONTROL_AUTONEGOTIATION_RESTART
                         | management_data_input_output::BASIC_MODE_CONTROL_RESET);
             }
-            r => self.registers[r as usize] = v,
+            r => self.registers[r as usize] = value,
         }
         Ok(())
     }
@@ -647,24 +647,24 @@ impl Hardware for NetworkInterfaceController {
         }
     }
 
-    fn write(&mut self, offset: u32, v: u32) {
+    fn write(&mut self, offset: u32, value: u32) {
         match offset {
             registers::DIRECT_MEMORY_ACCESS_BUS_MODE_REGISTER
-                if v & registers::DIRECT_MEMORY_ACCESS_BUS_MODE_SOFTWARE_RESET != 0 =>
+                if value & registers::DIRECT_MEMORY_ACCESS_BUS_MODE_SOFTWARE_RESET != 0 =>
             {
                 self.reset_registers();
-                self.registers.insert(offset, v);
+                self.registers.insert(offset, value);
                 self.reset_left = Some(self.reset_polls);
             }
             registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER
-                if v & management_data_input_output::COMMAND_BUSY != 0 =>
+                if value & management_data_input_output::COMMAND_BUSY != 0 =>
             {
-                let physical_layer_device = ((v
+                let physical_layer_device = ((value
                     >> management_data_input_output::PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)
                     & 0x1f) as u8;
                 let register =
-                    ((v >> management_data_input_output::REGISTER_ADDRESS_SHIFT) & 0x1f) as u8;
-                if v & (0x3 << 2) == management_data_input_output::OPERATION_COMMAND_READ {
+                    ((value >> management_data_input_output::REGISTER_ADDRESS_SHIFT) & 0x1f) as u8;
+                if value & (0x3 << 2) == management_data_input_output::OPERATION_COMMAND_READ {
                     let r = self
                         .physical_layer_device
                         .read(physical_layer_device, register)
@@ -682,14 +682,14 @@ impl Hardware for NetworkInterfaceController {
                         .unwrap();
                 }
                 self.registers
-                    .insert(offset, v & !management_data_input_output::COMMAND_BUSY);
+                    .insert(offset, value & !management_data_input_output::COMMAND_BUSY);
             }
             registers::CHANNEL_STATUS_REGISTER => {
-                let s = self.register(offset) & !v;
+                let s = self.register(offset) & !value;
                 self.registers.insert(offset, s);
             }
             _ => {
-                self.registers.insert(offset, v);
+                self.registers.insert(offset, value);
             }
         }
     }
