@@ -128,13 +128,13 @@
 <path class="seg c13" d="M567.5,159.3 V139.8 Q567.5,135.8 571.5,135.8 H593.3 Q597.3,135.8 597.3,139.8 V159.3 Z"><title>2026W44, claim (an empty commit): 266</title></path>
 <text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W44</text>
 <text class="fg val" x="582.4" y="130.8" font-size="10" text-anchor="middle">2123</text>
-<rect class="seg c2" x="612.6" y="305.2" width="29.8" height="18.8"><title>2026W45, Opus 5.5: 212</title></rect>
-<rect class="seg c4" x="612.6" y="263.9" width="29.8" height="41.3"><title>2026W45, Sonnet 5.5: 466</title></rect>
-<rect class="seg c11" x="612.6" y="262.4" width="29.8" height="1.5"><title>2026W45, unattributed: 17</title></rect>
-<rect class="seg c12" x="612.6" y="212.3" width="29.8" height="50.1"><title>2026W45, merge (a pull request landing): 565</title></rect>
-<path class="seg c13" d="M612.6,212.3 V198.7 Q612.6,194.7 616.6,194.7 H638.3 Q642.3,194.7 642.3,198.7 V212.3 Z"><title>2026W45, claim (an empty commit): 198</title></path>
+<rect class="seg c2" x="612.6" y="304.2" width="29.8" height="19.8"><title>2026W45, Opus 5.5: 223</title></rect>
+<rect class="seg c4" x="612.6" y="257.9" width="29.8" height="46.4"><title>2026W45, Sonnet 5.5: 523</title></rect>
+<rect class="seg c11" x="612.6" y="256.0" width="29.8" height="1.9"><title>2026W45, unattributed: 21</title></rect>
+<rect class="seg c12" x="612.6" y="204.0" width="29.8" height="52.0"><title>2026W45, merge (a pull request landing): 586</title></rect>
+<path class="seg c13" d="M612.6,204.0 V189.3 Q612.6,185.3 616.6,185.3 H638.3 Q642.3,185.3 642.3,189.3 V204.0 Z"><title>2026W45, claim (an empty commit): 211</title></path>
 <text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W45</text>
-<text class="fg val" x="627.5" y="189.7" font-size="10" text-anchor="middle">1458</text>
+<text class="fg val" x="627.5" y="180.3" font-size="10" text-anchor="middle">1564</text>
 <rect class="c13" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">claim (an empty</tspan><tspan x="689" dy="13">commit)</tspan></text>
 <rect class="c12" x="672" y="96" width="11" height="11" rx="2"/>
