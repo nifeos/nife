@@ -182,7 +182,7 @@ impl SimulatedHardware {
             match offset {
                 None => {
                     self.page =
-                        u32::from(data) >> physical_layer_device::PHYSICAL_LAYER_DEVICE_PAGE_SHIFT
+                        u32::from(data) >> physical_layer_device::PHYSICAL_LAYER_DEVICE_PAGE_SHIFT;
                 }
                 Some(o) => {
                     self.physical_layer_device_registers.insert(o, data);
