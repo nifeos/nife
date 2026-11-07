@@ -220,10 +220,10 @@ attributions is the module documentation of `motorcomm_physical_layer_device`.
 
 | crate item | source that names it |
 |---|---|
-| the register and bit constants other than the two below, and `configure`'s order | OpenBSD `sys/dev/mii/ytphy.c` at `openbsd/src@9d7a05f92003` (revision 1.6), lines 41 to 81 and 287 to 501 |
-| `MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER` (0x0c), `MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER` (0x27) | `ytphy.c` lines 44 and 55; FreeBSD `sys/dev/mii/mcommphy.c` at `freebsd/freebsd-src@2ad32d3a6868`, lines 66 and 71; Linux `drivers/net/phy/motorcomm.c` at `torvalds/linux@fc697291ad0a`, lines 147 and 155 |
-| `CGR_RX_CLK_EN` (bit 12), `ESC1R_SLEEP_SW` (bit 15) | `motorcomm.c` lines 148 and 156 only, cleared by `yt8531_config_init` (lines 1887 to 1900) for `motorcomm,keep-pll-enabled` and `motorcomm,auto-sleep-disabled` |
-| `MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID` (`0x4f51e91b`) | `motorcomm.c` line 20, matched exactly at line 3282; `ytphy.c` line 105 and `mcommphy.c` line 103 match the OUI and model |
+| the register and bit constants other than the two below, and `configure`'s order | OpenBSD `sys/dev/mii/ytphy.c` at `openbsd/src@9d7a05f92003` (revision 1.6): its `YT8511_` to `YT8531_` defines and `ytphy_yt8521_init`, `ytphy_yt8521_update`, `ytphy_yt8531_ds` and `ytphy_yt8531_init` |
+| `MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER` (0x0c), `MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER` (0x27) | `ytphy.c`'s `YT8511_EXT_CLK_GATE` and `YT8511_EXT_SLEEP_CTRL`; FreeBSD `sys/dev/mii/mcommphy.c` at `freebsd/freebsd-src@2ad32d3a6868`, `PHY_CLOCK_GATING_REG` and `PHY_SLEEP_CONTROL1_REG`; Linux `drivers/net/phy/motorcomm.c` at `torvalds/linux@fc697291ad0a`, `YT8521_CLOCK_GATING_REG` and `YT8521_EXTREG_SLEEP_CONTROL1_REG` |
+| `CGR_RX_CLK_EN` (bit 12), `ESC1R_SLEEP_SW` (bit 15) | `motorcomm.c` only, `YT8521_CGR_RX_CLK_EN` and `YT8521_ESC1R_SLEEP_SW`, which `yt8531_config_init` clears for `motorcomm,keep-pll-enabled` and `motorcomm,auto-sleep-disabled` |
+| `MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID` (`0x4f51e91b`) | `motorcomm.c`'s `PHY_ID_YT8531`, matched with `PHY_ID_MATCH_EXACT`; `ytphy.c`'s `ytphys` and `mcommphy.c`'s `mcommphys` match the OUI and model |
 
 Names a later rule reaches. Both register identifiers stand: each says what its register is, and
 FreeBSD's spelling supports "clock gating" and "sleep control 1". Their aliases do not meet
