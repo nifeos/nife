@@ -1,6 +1,6 @@
 #![cfg_attr(not(test), no_std)]
 //! The Synopsys `DesignWare` Mobile Storage Host Controller, as pure logic: the VisionFive 2's
-//! microSD slot and eMMC (embedded MultiMediaCard) socket. The whole driver sits behind
+//! microSD slot and eMMC (embedded multimedia card) socket. The whole driver sits behind
 //! [`host_controller::RegisterWindowAndClock`], a window and a clock; a kernel implements it over a
 //! mapped window and nothing more, so every sequence is tested against `simulator` on a host.
 //! [`jh7110`] has the evidence for the part and the board's constants. Modules: [`registers`],
