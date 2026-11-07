@@ -54,8 +54,8 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
 
 - While `filesystem_contract` is a path dependency this crate builds only beside it. The two leave
   together.
-- Much of the crate describes nife's own QEMU test runs (the witnesses, the benchmark phases), not a
-  filesystem in general. A third party gets the file names and the shapes as examples.
+- Much of the crate describes the QEMU test runs of the stack it was written for (the witnesses, the
+  benchmark phases), not a filesystem in general. A third party gets the file names and the shapes as examples.
 
 ## Minimum Rust version
 
