@@ -43,6 +43,7 @@ filesystem_contract 462 25 10 45
 filesystem_fixture 183 14 0 19
 firmware_configuration 28 4 0 4
 free 16 0 0 0
+generational_table 42 1 0 18
 glob 123 0 7 5
 globally_unique_identifier_partition_table 373 3 2 33
 grant_plan 1014 15 29 219
