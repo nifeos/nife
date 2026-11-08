@@ -33,7 +33,7 @@ pub(crate) struct KeyboardDevice {
     /// The event interrupt, routed and enabled.
     pub intid: u32,
     /// The one DMA page's physical base, which the page also carries at
-    /// `abi::virtio::DMA_PHYS_OFFSET`.
+    /// `abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`.
     pub dma: u64,
     /// The rendezvous the interrupt is bound to, which a bench row watches.
     pub interrupt_ep: RendezvousId,
@@ -48,7 +48,7 @@ pub(crate) fn wire_device() -> Option<KeyboardDevice> {
     let dma = crate::memory::alloc_contiguous_zeroed(DMA_PAGE_FRAMES as usize)
         .expect("no DMA region for the keyboard driver")
         .addr();
-    // Where the page is, in the page (`abi::virtio::DMA_PHYS_OFFSET`): the driver reads it there
+    // Where the page is, in the page (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`): the driver reads it there
     // rather than from `arg1`, so a supervisor that holds only the frame capability can build it.
     super::write_dma_phys(dma);
 

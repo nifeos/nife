@@ -144,7 +144,7 @@ the other.
 probes the virtio-net trio with `is_granted`. Both rest on `invoke` answering `NoSuchSlot` on an
 ungranted slot, since there is no `START` word left to say whether a trio was granted. The kernel
 grants each trio whole or not at all. No method translates a virtual address, so the DMA page
-carries its own physical base at `abi::virtio::DMA_PHYS_OFFSET`. The progenitor reads it through a
+carries its own physical base at `abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`. The progenitor reads it through a
 mapping of its own, which it gives up before the driver holds the page.
 
 The entropy service answers `READY` only after it has fetched a first bufferful from the device, so

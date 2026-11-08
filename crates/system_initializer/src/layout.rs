@@ -141,14 +141,15 @@ pub(super) const PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS: u64 =
     address_space_map::pair_page(0x0f00_0000);
 
 /// Where the progenitor briefly maps the virtio-rng DMA page, in **its own** address space, to read
-/// [`VIRTIO_DMA_PHYS_OFFSET`] back out before handing the same frame on to entropy. Given up with
+/// [`DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`] back out before handing the same frame on to entropy. Given up with
 /// `UNMAP` the moment the offset is read (§249 (a running address space stays nameable)).
 pub(super) const RNG_DMA_PEEK_VA: u64 = address_space_map::pair_page(0x0f10_0000);
 
 /// The DMA region's own physical base, written inside the page itself at its last eight bytes
-/// (`abi::virtio::DMA_PHYS_OFFSET`, which carries the reasoning for exactly this offset), shared
+/// (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, which carries the reasoning for exactly this offset), shared
 /// with the drivers that read it.
-pub(super) const VIRTIO_DMA_PHYS_OFFSET: u64 = abi::virtio::DMA_PHYS_OFFSET;
+pub(super) const DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET: u64 =
+    abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET;
 
 /// Where entropy maps its own DMA page. Must match `components/src/entropy.rs`'s `DMA_VA`.
 pub(super) const RNG_DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0090_0000);
@@ -161,7 +162,7 @@ pub(super) const RNG_MODE_VIRTIO: u64 = 0;
 // The network stack (milestone 590 (the booted system starts its network stack)).
 // -------------------------------------------------------------------------------------------
 
-/// Where this process briefly maps the network card's DMA page to read [`VIRTIO_DMA_PHYS_OFFSET`]
+/// Where this process briefly maps the network card's DMA page to read [`DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`]
 /// back out, [`RNG_DMA_PEEK_VA`]'s twin: given up with `UNMAP` once the offset is read.
 pub(super) const NET_DMA_PEEK_VA: u64 = address_space_map::pair_page(0x0f30_0000);
 
