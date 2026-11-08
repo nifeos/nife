@@ -23,7 +23,8 @@ What counts as pinned, and so is never touched:
     `~/.kani/kani-<version>/rust-toolchain-version`. The patched riscv64 Kani
     (notes/kernel-proofs/riscv64-with-a-patched-kani.md) builds from a source tree under
     `~/.cache/nife-kani-riscv64/kani-<version>/src`, whose `rust-toolchain.toml` names its pin. Both
-    are read, never hard-coded, so a Kani upgrade moves the pin with it;
+    are read, never hard-coded, so a Kani upgrade moves the pin with it
+    (helpers/kani-install-selftest.sh holds the prune to keeping it);
   - anything that is not a dated `nightly-*`: `stable`, a numbered release such as `1.98.1`, and
     the `nife-dev-*` links, which are each worktree's std farm (notes/std.md) and not installs.
 

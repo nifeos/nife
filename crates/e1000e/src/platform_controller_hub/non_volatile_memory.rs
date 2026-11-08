@@ -75,24 +75,45 @@ impl core::fmt::Display for Error {
 
 impl core::error::Error for Error {}
 
-/// Where the flash registers sit in BAR0 on SPT (`E1000_FLASH_BASE_ADDR`).
-pub(crate) const FLASH_BASE_ADDR: u64 = 0xe000;
+/// Where the flash registers begin in BAR0 on SPT (`E1000_FLASH_BASE_ADDR`). It is an offset into
+/// BAR0, not a memory address, so the name ends `_OFFSET_BYTES` as the region offsets of
+/// [`crate::layout`] do.
+///
+/// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `FLASH_BASE_ADDR`: a register name
+/// copied from a source is spelled out, and an offset into BAR0 is not an address (refused
+/// `FLASH_BASE_ADDRESS`).
+#[doc(alias = "FLASH_BASE_ADDR")]
+#[doc(alias = "E1000_FLASH_BASE_ADDR")]
+pub(crate) const FLASH_REGISTERS_OFFSET_BYTES: u64 = 0xe000;
 /// Hardware Sequencing Flash Status (`HSFSTS`), low half; Hardware Sequencing Flash Control, high half
 /// (OpenBSD's `ICH_FLASH_HSFSTS`).
 ///
-/// Name: ratified 2026-11-05 (UTC). Renamed from `HSFSTS`: a register name copied from a source is
-/// spelled out, and the source's spelling stays as a `doc(alias)`.
+/// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `HSFSTS`: a register name copied from a
+/// source is spelled out, and the source's spelling stays as a `doc(alias)`.
 #[doc(alias = "HSFSTS")]
 #[doc(alias = "E1000_HSFSTS")]
 #[doc(alias = "ICH_FLASH_HSFSTS")]
 pub const HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER: u64 = 0x04;
-/// Flash linear address (`ICH_FLASH_FADDR`).
-pub(crate) const FADDR: u64 = 0x08;
-/// Flash data 0 (`ICH_FLASH_FDATA0`).
-pub(crate) const FDATA0: u64 = 0x10;
+/// Flash linear address (OpenBSD's `ICH_FLASH_FADDR`).
+///
+/// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `FADDR`: a register name copied from a
+/// source is spelled out, and the source's spelling stays as a `doc(alias)`.
+#[doc(alias = "FADDR")]
+#[doc(alias = "ICH_FLASH_FADDR")]
+pub(crate) const FLASH_LINEAR_ADDRESS_REGISTER: u64 = 0x08;
+/// Flash data 0 (OpenBSD's `ICH_FLASH_FDATA0`).
+///
+/// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `FDATA0`: a register name copied from a
+/// source is spelled out, and the source's spelling stays as a `doc(alias)`.
+#[doc(alias = "FDATA0")]
+#[doc(alias = "ICH_FLASH_FDATA0")]
+pub(crate) const FLASH_DATA_0_REGISTER: u64 = 0x10;
 
 /// `HSFSTS` bits (`union ich8_hws_flash_status`).
-pub mod status {
+///
+/// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `status`: the module holds the flash
+/// status register's bits, and `status` did not say whose status.
+pub mod flash_status {
     /// Flash cycle done: the `flcdone` field of `union ich8_hws_flash_status` in OpenBSD's
     /// `if_em_hw.h` and FreeBSD's `e1000_ich8lan.c`.
     ///
@@ -116,7 +137,10 @@ pub mod status {
 }
 
 /// `HSFCTL` bits (`union ich8_hws_flash_ctrl`), in the high half of the `u32` at [`HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER`].
-pub mod control {
+///
+/// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `control`: the module holds the flash
+/// control register's bits, and `control` did not say what is controlled.
+pub mod flash_control {
     /// Start the cycle: the `flcgo` field of `union ich8_hws_flash_ctrl` in OpenBSD's
     /// `if_em_hw.h` and FreeBSD's `e1000_ich8lan.c`.
     ///
@@ -137,14 +161,15 @@ pub mod control {
 // swap is equivalent on the write-back beside it, which has already carried the bit).
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(
-    status::FLASH_CYCLE_ERROR ^ status::DIRECT_ACCESS_ERROR
-        == status::FLASH_CYCLE_ERROR | status::DIRECT_ACCESS_ERROR
+    flash_status::FLASH_CYCLE_ERROR ^ flash_status::DIRECT_ACCESS_ERROR
+        == flash_status::FLASH_CYCLE_ERROR | flash_status::DIRECT_ACCESS_ERROR
 );
 // The byte count `read_u32_at_byte` ORs in sits inside the field it just masked out, so | and ^
 // compose them identically; the compiler checks that here, so the
 // function's OR-to-XOR swap is an equivalent mutant.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
-const _: () = assert!((3u16 << control::BYTE_COUNT_SHIFT) & !control::BYTE_COUNT_MASK == 0);
+const _: () =
+    assert!((3u16 << flash_control::BYTE_COUNT_SHIFT) & !flash_control::BYTE_COUNT_MASK == 0);
 
 /// `ICH_FLASH_LINEAR_ADDR_MASK`.
 pub(crate) const LINEAR_ADDRESS_MASK: u32 = 0x00ff_ffff;
@@ -193,34 +218,34 @@ impl Geometry {
 }
 
 fn status_16_bit(hardware: &mut impl Hardware) -> u16 {
-    hardware.read16(FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER)
+    hardware.read16(FLASH_REGISTERS_OFFSET_BYTES + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER)
 }
 
 /// `e1000_flash_cycle_init_ich8lan`, SPT's 32-bit writes.
 fn initialize_cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
     let s = status_16_bit(hardware);
-    if s & status::DESCRIPTOR_VALID == 0 {
+    if s & flash_status::DESCRIPTOR_VALID == 0 {
         return Err(Error::NoDescriptor);
     }
     // Clear the cycle and direct-access errors by writing them as one.
-    let s = s | status::FLASH_CYCLE_ERROR | status::DIRECT_ACCESS_ERROR;
+    let s = s | flash_status::FLASH_CYCLE_ERROR | flash_status::DIRECT_ACCESS_ERROR;
     hardware.write(
-        FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
+        FLASH_REGISTERS_OFFSET_BYTES + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
         u32::from(s),
     );
-    if s & status::IN_PROGRESS == 0 {
+    if s & flash_status::IN_PROGRESS == 0 {
         hardware.write(
-            FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
-            u32::from(s | status::FLASH_CYCLE_DONE),
+            FLASH_REGISTERS_OFFSET_BYTES + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
+            u32::from(s | flash_status::FLASH_CYCLE_DONE),
         );
         return Ok(());
     }
     for _ in 0..READ_COMMAND_TIMEOUT {
         let now = status_16_bit(hardware);
-        if now & status::IN_PROGRESS == 0 {
+        if now & flash_status::IN_PROGRESS == 0 {
             hardware.write(
-                FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
-                u32::from(now | status::FLASH_CYCLE_DONE),
+                FLASH_REGISTERS_OFFSET_BYTES + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
+                u32::from(now | flash_status::FLASH_CYCLE_DONE),
             );
             return Ok(());
         }
@@ -231,22 +256,23 @@ fn initialize_cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
 
 /// `e1000_flash_cycle_ich8lan`: set `FLASH_CYCLE_GO` and wait for `FLASH_CYCLE_DONE`.
 fn cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
-    let flash_control = (hardware.read(FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER)
+    let flash_control = (hardware
+        .read(FLASH_REGISTERS_OFFSET_BYTES + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER)
         >> 16) as u16
-        | control::FLASH_CYCLE_GO;
+        | flash_control::FLASH_CYCLE_GO;
     hardware.write(
-        FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
+        FLASH_REGISTERS_OFFSET_BYTES + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
         u32::from(flash_control) << 16,
     );
     let mut s = 0;
     for _ in 0..=READ_COMMAND_TIMEOUT {
         s = status_16_bit(hardware);
-        if s & status::FLASH_CYCLE_DONE != 0 {
+        if s & flash_status::FLASH_CYCLE_DONE != 0 {
             break;
         }
         hardware.delay_microseconds(1);
     }
-    if s & status::FLASH_CYCLE_DONE != 0 && s & status::FLASH_CYCLE_ERROR == 0 {
+    if s & flash_status::FLASH_CYCLE_DONE != 0 && s & flash_status::FLASH_CYCLE_ERROR == 0 {
         Ok(())
     } else {
         Err(Error::Cycle)
@@ -265,25 +291,28 @@ pub(crate) fn read_u32_at_byte(hardware: &mut impl Hardware, byte: u32) -> Resul
         hardware.delay_microseconds(1);
         initialize_cycle(hardware)?;
         let mut flash_control = (hardware
-            .read(FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER)
+            .read(FLASH_REGISTERS_OFFSET_BYTES + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER)
             >> 16) as u16;
-        flash_control =
-            (flash_control & !control::BYTE_COUNT_MASK) | (3 << control::BYTE_COUNT_SHIFT);
-        flash_control &= !control::CYCLE_MASK;
+        flash_control = (flash_control & !flash_control::BYTE_COUNT_MASK)
+            | (3 << flash_control::BYTE_COUNT_SHIFT);
+        flash_control &= !flash_control::CYCLE_MASK;
         hardware.write(
-            FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
+            FLASH_REGISTERS_OFFSET_BYTES + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
             u32::from(flash_control) << 16,
         );
-        hardware.write(FLASH_BASE_ADDR + FADDR, byte & LINEAR_ADDRESS_MASK);
+        hardware.write(
+            FLASH_REGISTERS_OFFSET_BYTES + FLASH_LINEAR_ADDRESS_REGISTER,
+            byte & LINEAR_ADDRESS_MASK,
+        );
         last = cycle(hardware);
         if last.is_ok() {
-            return Ok(hardware.read(FLASH_BASE_ADDR + FDATA0));
+            return Ok(hardware.read(FLASH_REGISTERS_OFFSET_BYTES + FLASH_DATA_0_REGISTER));
         }
         let s = status_16_bit(hardware);
-        if s & status::FLASH_CYCLE_ERROR != 0 {
+        if s & flash_status::FLASH_CYCLE_ERROR != 0 {
             continue;
         }
-        if s & status::FLASH_CYCLE_DONE == 0 {
+        if s & flash_status::FLASH_CYCLE_DONE == 0 {
             break;
         }
     }

@@ -182,8 +182,8 @@ Recommendation. Ready for review.
 The whole package is [crate-reviews/e1000e.md](crate-reviews/e1000e.md).
 
 Name and version. `e1000e` `0.1.0`, ratified as the family name QEMU and Linux both use, permanent on
-first publication. All 166 `Name:` blocks read ratified. Five register names copied from a source
-are spelled out with the source spelling as an alias.
+first publication. All 180 `Name:` blocks read ratified. Register names copied from a source are
+spelled out with the source spelling as an alias.
 
 API. Registers, descriptors and ring logic for the 82574L and the I219 behind four small traits,
 with the I219 bring-up in `platform_controller_hub`. Every error implements `Display` and
@@ -202,8 +202,7 @@ field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.
 
 Result of `script/crate-standalone`. Clean. The crate names no nife file.
 
-Recommendation. Ready for review, with three rulings on names and the move (the package ends with
-them).
+Recommendation. Ready for review. What remains is the architect's clearance of the move.
 
 ## `designware_ethernet`, step 7
 
