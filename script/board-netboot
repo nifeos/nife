@@ -18,11 +18,11 @@
 #
 #   * It is not in the shipping graph, so §46's weight is lower here than it would be for a crate.
 #     That argument cuts toward dnsmasq, and is stated first so it is not hidden.
-#   * dnsmasq is a DHCP server that also does TFTP. On this bench the LAN is a family's house
-#     network with a router already handing out leases, and a second DHCP server on it is an
-#     outage for everyone in the building. `--port=0 --enable-tftp` with no `--dhcp-range` is
-#     safe, and it is safe only as long as every future invocation stays right. A tool that
-#     cannot speak DHCP at all cannot get that wrong.
+#   * dnsmasq is a DHCP server that also does TFTP. On this bench the local area network is a
+#     family's house network with a router already handing out leases, and a second DHCP server
+#     on it is an outage for everyone in the building. `--port=0 --enable-tftp` with no
+#     `--dhcp-range` is safe, and it is safe only as long as every future invocation stays right.
+#     A tool that cannot speak DHCP at all cannot get that wrong.
 #   * python3 is already what ten `script/` entry points are written in, so this is no new
 #     requirement on anybody's machine, while `brew install dnsmasq` is.
 #
@@ -60,9 +60,9 @@
 #     wait or time out. There is exactly one board.
 #   * No write support, and none is wanted: a board that can write to the machine that builds its
 #     kernel is a worse rig than one that cannot.
-#   * It trusts the LAN. Any host that can reach the port can read any file under the served
-#     directory. The directory is `target/board`, which holds a kernel and an archive that are
-#     about to be published anyway, and the traversal check keeps the request inside it.
+#   * It trusts the local area network. Any host that can reach the port can read any file under
+#     the served directory. The directory is `target/board`, which holds a kernel and an archive
+#     that are about to be published anyway, and the traversal check keeps the request inside it.
 #   * The addresses it prints are every private IPv4 this machine has. It cannot tell you which
 #     one radon can route to, only that these are the candidates.
 #   * The filename is taken verbatim, so a client that spells its path with backslashes gets a
