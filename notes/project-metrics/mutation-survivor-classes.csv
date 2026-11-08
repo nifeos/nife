@@ -181,8 +181,8 @@ inter_process_communication,<impl PartialEq for Receive<T>>::eq,replace && with 
 inter_process_communication,<impl PartialEq for Send<T>>::eq,replace && with ||,1,logic,equivalent,unclassified,algebraic,
 inter_process_communication,Rendezvous<T>::one_queue_invariant,replace Rendezvous<T>::one_queue_invariant -> bool with true,1,other,equivalent,unclassified,algebraic,yes
 jh7110_clock_and_reset,parse_reg,replace | with ^,2,or_xor,none,,unrowed_noise_candidate,
-jh7110_clock_and_reset,sd_card_divider_for,replace < with <=,1,comparison,equivalent,unclassified,algebraic,
-jh7110_clock_and_reset,sd_card_divider_for,replace > with >=,1,comparison,equivalent,unclassified,algebraic,
+jh7110_clock_and_reset,sdcard_divider_for,replace < with <=,1,comparison,none,,unrowed,
+jh7110_clock_and_reset,sdcard_divider_for,replace > with >=,1,comparison,none,,unrowed,
 jh7110_clock_and_reset,with_divider,replace | with ^,1,or_xor,equivalent,unclassified,noise,
 jh7110_clock_and_reset,with_parent,replace | with ^,1,or_xor,equivalent,unclassified,noise,
 job_mix,,replace > with >=,1,comparison,equivalent,unclassified,algebraic,
