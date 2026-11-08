@@ -708,8 +708,8 @@ fn through_idmac(
                 slot,
                 "IDMAC read failed: {e:?}; IDSTS {:#x} DSCADDR {:#x} BUFADDR {:#x} STATUS {:#x} TCBCNT {}",
                 w.read(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER),
-                w.read(registers::CURRENT_DESCRIPTOR_ADDRESS_REGISTER),
-                w.read(registers::CURRENT_BUFFER_ADDRESS_REGISTER),
+                w.read(registers::CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER),
+                w.read(registers::CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER),
                 w.read(registers::STATUS_REGISTER),
                 w.read(registers::TRANSFERRED_CARD_BYTE_COUNT),
             );

@@ -14,8 +14,7 @@ caller implements one trait, `RegisterWindowAndClock` (read a register, write on
 microsecond clock), and every sequence runs on a host against a simulated controller and card. It
 is `no_std`, with no allocator, no `unsafe` and no dependency. Eight Kani harnesses prove its
 parsers and bounds. Every public name has a ratified `Name:` block, and the compile-time checks have no public name.
-The board's test steps live in the kernel's storage bench, not here. What the architect decides is
-one unit spelled inside a variant name and the ratified names that a later rule reaches.
+The board's test steps live in the kernel's storage bench, not here. No decision is open.
 
 ## Identity
 
@@ -49,7 +48,7 @@ No public signature names another crate's type.
 What a stranger may find surprising:
 
 - The enums `host_controller::Error`, `Refusal`, `InitializationError`, `BlockTransferError` and
-  `CardKind` are `#[non_exhaustive]` (provisional, below), so a new variant after publication
+  `CardKind` are `#[non_exhaustive]` (ruled, below), so a new variant after publication
   breaks no `match`. The four error enums implement `Display` and `core::error::Error`; neither
   needed a choice that a later release cannot extend.
 - Public structs expose public fields (`Card`, `Identity`, `Slot` and others), so a
@@ -79,35 +78,29 @@ identification decode. 91 host tests drive those against the simulator.
 
 ## Names
 
-`python3 helpers/name_release.py --draft designware_mobile_storage` lists 110 rows. All 110 read
-ratified: the crate on #1806 and the items on pull requests #3092 to #3144, #3096, #3101 and #3276. Nothing is
-provisional.
+`python3 helpers/name_release.py --draft designware_mobile_storage` lists 111 rows. All 111 read
+ratified. Nothing is provisional.
 
 Against the rulings in force, checked with the template's own checks
 (`vendor/crate-workflows/helpers/`, run with `--manifest` over `src/*.rs`):
 
 | rule | result |
 |---|---|
-| units spelled out (`unit_symbols.py`) | 0 findings. `_HERTZ`, `_MICROSECONDS` and `_BYTES` throughout. The checker reads suffixes only, so it does not see `Above4GiB` (below). |
+| units spelled out (`unit_symbols.py`) | 0 findings. `_HERTZ`, `_MICROSECONDS` and `_BYTES` throughout. The checker reads suffixes only, and no name carries a unit symbol in another position. |
 | spelled-out words (`spelled_out.py`) | 0 findings. Six private source-kept constants open their doc comment with `(NAME, source)`, and no test name says `spec`. |
 | question shape (`question_shape.py`) | 0 findings. The private wait is `is_condition_met_within`, and the simulator predicates take `is_`. |
 | British spelling | 0 findings. |
 | `id`, `sd`, `jh7110` | accepted words and a chip name. |
 | aliases of an old nife spelling | none. Every `doc(alias)` is a specification or databook term. |
 
-Ratified public names that a later rule reaches. They are not renamed here:
-
-| name | rule | recommended name |
-|---|---|---|
-| `internal_direct_memory_access::Refusal::Above4GiB` | units are spelled out, in any position | `AboveFourGibibytes` |
-| `registers::CURRENT_DESCRIPTOR_ADDRESS_REGISTER` | an address is `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS` in every location | `CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER` |
-| `registers::CURRENT_BUFFER_ADDRESS_REGISTER` | the same | `CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER` |
-| `registers::queue_offset(verid)`, `queue_width(hcon)`, `uses_64_bit_direct_memory_access(hcon)` | a parameter spells out the databook word | `version_identification`, `hardware_configuration` |
-| `jh7110::Slot::from_node(.., prop)` | `prop` abbreviates `property` | `property` |
-
-The two address registers hold the descriptor address and buffer address the controller is on, as
-the bus sees them, which is physical on every board this driver runs on. A parameter name is not
-part of a Rust signature's compatibility, so the parameter renames cost no caller anything.
+The two address registers, `CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER` and
+`CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER`, hold the descriptor address and buffer address the
+controller is on, as the bus sees them, which is physical on every board this driver runs on.
+`Refusal::AboveFourGibibytes` spells its unit out. The parameters of `registers::queue_offset`,
+`queue_width` and `uses_64_bit_direct_memory_access` are `version_identification` and
+`hardware_configuration`, and `jh7110::Slot::from_node` takes `property`. The renamed items carry
+the old spelling and the rule that refused it in their `Name:` blocks, and none carries a
+`doc(alias)` of it.
 
 The private `pub(crate)` constants keep the databook and OpenBSD spellings
 (`CONTROL_FIFO_RESET`, `CONTROL_DMA_RESET`, `SEND_OP_COND`) through the kept-name form.
@@ -123,14 +116,14 @@ facts from their sources, not their text) item 6 ruled. The authors read Linux, 
 device trees for hardware facts only. The notice opens with prose, not an `SPDX-License-Identifier:` line, which the
 proposal for a license check would add.
 
-## Provisional rulings by the maintainer
+## Rulings on the API
 
-`#[non_exhaustive]` marks the four error enums and `CardKind`. It is
-the restrictive option: relaxing it in a later release breaks nobody, and adding it after
-publication breaks every exhaustive `match`. `CardKind` joins the list because its own comment
-already names SDUC as a future kind. `Response` stays exhaustive, since the specification fixes
-its seven values. The architect's clearance of the API confirms or reverses
-this.
+`#[non_exhaustive]` marks the four error enums and `CardKind`. It is the restrictive option:
+relaxing it in a later release breaks nobody, and adding it after publication breaks every
+exhaustive `match`. `CardKind` is on the list because its own comment already names SDUC as a
+future kind. `Response` stays exhaustive, since the specification fixes its seven values. The
+scratch write verdict, `ScratchWriteVerdict`, lives in the kernel's storage bench and not in this
+crate.
 
 ## Outstanding before the move
 
@@ -157,15 +150,4 @@ still build.
 
 ## Recommendation
 
-Ready for the architect's review. Four decisions below remain, and none of them blocks reading the crate.
-
-## Decisions for the architect
-
-1. Rename `Refusal::Above4GiB` to `AboveFourGibibytes`: recommend yes. Background: the units rule
-   bans symbols, and the checker only reads suffixes, so a unit inside a name slipped through.
-2. Rename the two address registers to say `PHYSICAL`: recommend yes. Background: the naming rule
-   for addresses postdates their ratification, and these two hold bus addresses.
-3. Spell out the parameters `verid`, `hcon` and `prop`: recommend yes. Background: a later rule
-   forbids databook abbreviations in parameters, and a parameter rename breaks no caller.
-4. Confirm the maintainer's `#[non_exhaustive]` set, `CardKind` included: recommend confirm.
-   Background: a later release can relax the restrictive option but cannot add it.
+Ready for review.

@@ -499,19 +499,23 @@ pub(crate) const IDINTEN: u32 = 0x090;
 /// **Current Host Descriptor Address Register** (OpenBSD's `SDMMC_DSCADDR`): the descriptor the
 /// IDMAC is on, for a transcript after a failure.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3092. The spelled-out form; OpenBSD's `DSCADDR` is kept as an
-/// alias.
+/// Name: ratified 2026-11-07 (UTC). The spelled-out form; OpenBSD's `DSCADDR` is kept as an
+/// alias. Considered: `CURRENT_DESCRIPTOR_ADDRESS_REGISTER`, which left the address unqualified;
+/// an address is `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS` in every location, and this one holds
+/// the address as the bus sees it, which is physical.
 #[doc(alias = "current descriptor address")]
 #[doc(alias = "DSCADDR")]
-pub const CURRENT_DESCRIPTOR_ADDRESS_REGISTER: u32 = 0x094;
+pub const CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER: u32 = 0x094;
 /// **Current Buffer Descriptor Address Register** (OpenBSD's `SDMMC_BUFADDR`): the buffer address
 /// the IDMAC is on.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3092. The spelled-out form; OpenBSD's `BUFADDR` is kept as an
-/// alias.
+/// Name: ratified 2026-11-07 (UTC). The spelled-out form; OpenBSD's `BUFADDR` is kept as an
+/// alias. Considered: `CURRENT_BUFFER_ADDRESS_REGISTER`, which left the address unqualified; an
+/// address is `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS` in every location, and this one holds the
+/// address as the bus sees it, which is physical.
 #[doc(alias = "current buffer address")]
 #[doc(alias = "BUFADDR")]
-pub const CURRENT_BUFFER_ADDRESS_REGISTER: u32 = 0x098;
+pub const CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER: u32 = 0x098;
 /// **Card Threshold Control Register** (OpenBSD's `SDMMC_CARDTHRCTL`): hold a read until a block
 /// fits in the FIFO.
 #[doc(alias = "card threshold control register")]
@@ -532,12 +536,14 @@ pub(crate) const DW_MMC_240A: u32 = 0x240a;
 /// releases. Reading the version rather than assuming it is what lets a board transcript say
 /// which applied.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors,
-/// and copied register names keep `FIFO`; the databook's `fifo` is kept as `doc(alias = "fifo")`.
+/// Name: ratified 2026-11-07 (UTC). `fifo` becomes `queue` in every name this tree authors, and
+/// copied register names keep `FIFO`; the databook's `fifo` is kept as `doc(alias = "fifo")`.
+/// Considered: the parameter `verid`, which abbreviates the databook's version identification
+/// register; a parameter spells out the word, so it is `version_identification`.
 #[doc(alias = "fifo")]
 #[must_use]
-pub const fn queue_offset(verid: u32) -> u32 {
-    if verid & 0xffff < DW_MMC_240A {
+pub const fn queue_offset(version_identification: u32) -> u32 {
+    if version_identification & 0xffff < DW_MMC_240A {
         0x100
     } else {
         0x200
@@ -549,12 +555,14 @@ pub const fn queue_offset(verid: u32) -> u32 {
 /// OpenBSD does the same for 16-bit and handles 64-bit as two words, which is a step this driver
 /// has not needed yet.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors;
-/// the databook's `fifo` is kept as `doc(alias = "fifo")`.
+/// Name: ratified 2026-11-07 (UTC). `fifo` becomes `queue` in every name this tree authors; the
+/// databook's `fifo` is kept as `doc(alias = "fifo")`. Considered: the parameter `hcon`, which
+/// abbreviates the databook's hardware configuration register; a parameter spells out the word, so
+/// it is `hardware_configuration`.
 #[doc(alias = "fifo")]
 #[must_use]
-pub const fn queue_width(hcon: u32) -> Option<u32> {
-    match (hcon >> 7) & 0x7 {
+pub const fn queue_width(hardware_configuration: u32) -> Option<u32> {
+    match (hardware_configuration >> 7) & 0x7 {
         0 => Some(2),
         1 => Some(4),
         2 => Some(8),
@@ -565,10 +573,12 @@ pub const fn queue_width(hcon: u32) -> Option<u32> {
 /// **Does the IDMAC use 64-bit addresses?** `HCON` bit 27. Changes the layout of every register
 /// from `0x88` up and doubles the descriptor, so the IDMAC path refuses it; the VisionFive 2's is clear.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3092. `dma` is spelled out wherever this tree authors it.
+/// Name: ratified 2026-11-07 (UTC). `dma` is spelled out wherever this tree authors it.
+/// Considered: the parameter `hcon`, which abbreviates the databook's hardware configuration
+/// register; a parameter spells out the word, so it is `hardware_configuration`.
 #[must_use]
-pub const fn uses_64_bit_direct_memory_access(hcon: u32) -> bool {
-    hcon & (1 << 27) != 0
+pub const fn uses_64_bit_direct_memory_access(hardware_configuration: u32) -> bool {
+    hardware_configuration & (1 << 27) != 0
 }
 
 /// **The controller's external DMA interface**, `HCON` bits 17:16: 0 is none, 1 Synopsys' own
@@ -576,8 +586,8 @@ pub const fn uses_64_bit_direct_memory_access(hcon: u32) -> bool {
 /// controller that reads 0 here, which is how Linux's `dw_mci_probe` decides to use it. The VisionFive 2
 /// reads 0, and its firmware reads the card through the IDMAC (`CONTROL` bit 25 as it hands over).
 #[must_use]
-pub(crate) const fn direct_memory_access_interface(hcon: u32) -> u32 {
-    (hcon >> 16) & 0x3
+pub(crate) const fn direct_memory_access_interface(hardware_configuration: u32) -> u32 {
+    (hardware_configuration >> 16) & 0x3
 }
 
 /// **Used register window bytes**: the highest offset this driver reads or writes, plus one word,
@@ -709,8 +719,8 @@ mod tests {
             (DBADDR, 0x88),
             (INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER, 0x8c),
             (IDINTEN, 0x90),
-            (CURRENT_DESCRIPTOR_ADDRESS_REGISTER, 0x94),
-            (CURRENT_BUFFER_ADDRESS_REGISTER, 0x98),
+            (CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER, 0x94),
+            (CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER, 0x98),
         ] {
             assert_eq!(bit, value);
         }

@@ -1,0 +1,19 @@
+Falsifies `designware_mobile_storage::proofs::writing_a_block_sends_only_the_block_asked_for`.
+
+The defect: the range check joins its two refusals with `&&`, so a block past the card's end, or
+past what the address can name, is sent unless the buffer is also too long for one command.
+
+Expected to fail: the assertion that a write command goes out only when `can_address_blocks`
+admits the block.
+diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobile_storage/src/sd.rs
+--- a/crates/designware_mobile_storage/src/sd.rs
++++ b/crates/designware_mobile_storage/src/sd.rs
+@@ -555,7 +555,7 @@
+     }
+     let blocks = (len / BLOCK_BYTES) as u64;
+     if blocks > u64::from(u32::MAX) / BLOCK_BYTES as u64
+-        || !can_address_blocks(
++        && !can_address_blocks(
+             card.blocks,
+             card.block_addressed,
+             logical_block_address,

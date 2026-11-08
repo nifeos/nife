@@ -58,8 +58,7 @@ against itself.
   (the packet pairs them), and `script/crate-standalone` ran each patch and saw its harness fail.
   `counter_frequency_contract` has no harness.
 - Units in names. The rule of 2026-11-03 spells every unit out (`_HERTZ`, not `_HZ`). A release
-  review re-opens a name ratified before a later rule. One name still carries a unit symbol,
-  `Refusal::Above4GiB` in `designware_mobile_storage`.
+  review re-opens a name ratified before a later rule.
 
 ## `file_allocation_table`, step 2
 
@@ -99,9 +98,17 @@ error type appears in a public signature. The spawn handoff lives in `driver_pro
 
 Proofs. Seven harnesses: the producer ring, the event ring's wrap, the capability walk, the device
 context index, the slot and endpoint contexts, the port status write and the interrupt interval. All
-seven prove and all seven patches fail. The proofs cover the context and port decoders.
+seven prove and all seven patches fail.
 
 Dependencies. None.
+
+Naming rules. The names section is [crate-reviews/extensible-host-controller-interface.md](crate-reviews/extensible-host-controller-interface.md).
+
+| rule | result |
+|---|---|
+| the template's checks (446 names) | 0 findings |
+| ratified names a later rule reaches | the specification's register mnemonics (`CAPLENGTH`, `USBCMD`, `CRCR`, `ERDP` and 15 more), each with a recommended name |
+| parameters of public functions | spelled out in 12 functions, provisional |
 
 Companion crate. `usb` is released with it under the published name `universal_serial_bus`, because the
 name `usb` is taken on crates.io. The directory and the in-tree dependency name stay `usb` until the
@@ -174,7 +181,8 @@ Recommendation. Ready for review.
 The whole package is [crate-reviews/e1000e.md](crate-reviews/e1000e.md).
 
 Name and version. `e1000e` `0.1.0`, ratified as the family name QEMU and Linux both use, permanent on
-first publication. All 166 `Name:` blocks read ratified.
+first publication. All 166 `Name:` blocks read ratified. Five register names copied from a source
+are spelled out with the source spelling as an alias.
 
 API. Registers, descriptors and ring logic for the 82574L and the I219 behind four small traits,
 with the I219 bring-up in `platform_controller_hub`. Every error implements `Display` and
@@ -184,6 +192,10 @@ public signature.
 Proofs. Three harnesses. All three prove and all three patches fail.
 
 Dependencies. None.
+
+Naming rules. The package has the detail. Of 1,046 names, the template's checks find one, the
+public `LanInitTimeout`. It waits for the architect. The package also lists
+borderline bit constants that mirror a FreeBSD define with no expansion.
 
 Provenance. Milestone 1019 items 3 and 4 hold, and the notices are in the files. The manifest license
 field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.
@@ -211,11 +223,33 @@ against the simulator and no proof.
 Dependencies. None.
 
 Provenance. The crate adapts OpenBSD's `dwqe` and `ytphy` (ISC, with copyright lines in `lib.rs`)
-and `ukphy_status` (NetBSD Foundation BSD-2-Clause). Both notices are in the tree. Milestone 1019 item 5
-holds and item 9 stays open. Item 9 (a source claim in
-`motorcomm_physical_layer_device.rs` that OpenBSD's `ytphy.c` and FreeBSD's `mcommphy.c` also name the
-registers) is not done as far as this review could read. The manifest license field reads
-`(MIT OR Apache-2.0) AND ISC AND BSD-2-Clause`, naming the license of each adapted source.
+and `ukphy_status` (NetBSD Foundation BSD-2-Clause). Both notices are in the tree. Milestone 1019
+items 5 and 9 hold. The manifest license field reads `(MIT OR Apache-2.0) AND ISC AND BSD-2-Clause`,
+naming the license of each adapted source.
+
+The YT8531 register sources, checked against each file at a pinned revision. The home of these
+attributions is the module documentation of `motorcomm_physical_layer_device`.
+
+| crate item | source that names it |
+|---|---|
+| the register and bit constants other than the two below, and `configure`'s order | OpenBSD `sys/dev/mii/ytphy.c` at `openbsd/src@9d7a05f92003` (revision 1.6): its `YT8511_` to `YT8531_` defines and `ytphy_yt8521_init`, `ytphy_yt8521_update`, `ytphy_yt8531_ds` and `ytphy_yt8531_init` |
+| `MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER` (0x0c), `MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER` (0x27) | `ytphy.c`'s `YT8511_EXT_CLK_GATE` and `YT8511_EXT_SLEEP_CTRL`; FreeBSD `sys/dev/mii/mcommphy.c` at `freebsd/freebsd-src@2ad32d3a6868`, `PHY_CLOCK_GATING_REG` and `PHY_SLEEP_CONTROL1_REG`; Linux `drivers/net/phy/motorcomm.c` at `torvalds/linux@fc697291ad0a`, `YT8521_CLOCK_GATING_REG` and `YT8521_EXTREG_SLEEP_CONTROL1_REG` |
+| `CGR_RX_CLK_EN` (bit 12), `ESC1R_SLEEP_SW` (bit 15) | `motorcomm.c` only, `YT8521_CGR_RX_CLK_EN` and `YT8521_ESC1R_SLEEP_SW`, which `yt8531_config_init` clears for `motorcomm,keep-pll-enabled` and `motorcomm,auto-sleep-disabled` |
+| `MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID` (`0x4f51e91b`) | `motorcomm.c`'s `PHY_ID_YT8531`, matched with `PHY_ID_MATCH_EXACT`; `ytphy.c`'s `ytphys` and `mcommphy.c`'s `mcommphys` match the OUI and model |
+
+Names a later rule reaches. Both register identifiers stand: each says what its register is, and
+FreeBSD's spelling supports "clock gating" and "sleep control 1". Their aliases do not meet
+`design/naming.md` (Registers and constants, and the alias rule before a first release):
+
+| item | alias now | recommended alias set |
+|---|---|---|
+| `MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER` | `clock gating register`, `EXT_CLK_GATE`, `YT8521_CLOCK_GATING_REG` | `clock gating register`, `YT8511_EXT_CLK_GATE`, `PHY_CLOCK_GATING_REG` |
+| `MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER` | `extended register, sleep control 1`, `EXT_SLEEP_CTRL`, `YT8521_EXTREG_SLEEP_CONTROL1_REG` | `extended register, sleep control 1`, `YT8511_EXT_SLEEP_CTRL`, `PHY_SLEEP_CONTROL1_REG` |
+
+`EXT_CLK_GATE` and `EXT_SLEEP_CTRL` are this tree's earlier spellings, which a crate carries none
+of before its first release, and the OpenBSD spelling is the whole one. Linux's spelling is cited
+only where no BSD source names the thing, and both BSD sources name these two. The doc comments'
+openings follow the same choice.
 
 Result of `script/crate-standalone`. Clean.
 
@@ -223,20 +257,20 @@ Outstanding before the move.
 
 | item | owner |
 |---|---|
-| Item 9 of milestone 1019: the false claim about which sources name the YT8531 registers. | maintainer, with an architect ruling on the names |
+| The two alias sets above. | architect |
 
-Recommendation. Item 9 needs a home before the review.
+Recommendation. Ready for review once the architect rules on the two alias sets.
 
 ## `designware_mobile_storage`, step 8
 
 The whole package is
 [crate-reviews/designware-mobile-storage.md](crate-reviews/designware-mobile-storage.md).
 
-Name and version. `designware_mobile_storage` `0.1.0`, ratified. 110 `Name:` blocks, all ratified.
+Name and version. `designware_mobile_storage` `0.1.0`, ratified. 111 `Name:` blocks, all ratified.
 
 API. The whole SD and eMMC driver for the Synopsys dw-mshc behind one trait,
 `RegisterWindowAndClock`, in eight public modules and about 100 items. The error enums and `CardKind` are
-`#[non_exhaustive]` (the maintainer's provisional ruling), and the errors implement `Display` and
+`#[non_exhaustive]` (ruled), and the errors implement `Display` and
 `core::error::Error`.
 
 Proofs. Eight harnesses. All eight prove and all eight patches fail.
@@ -251,7 +285,6 @@ Outstanding before the move.
 
 | item | owner |
 |---|---|
-| Four architect decisions: `Refusal::Above4GiB`, two address registers, three parameter names, and the `#[non_exhaustive]` set. | architect |
 | `repository` in the manifest. | move lane |
 
 Recommendation. Ready for review.
@@ -344,7 +377,7 @@ Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text 
 | `generational_table` | 4 | ready for review |
 | `non_volatile_memory_express` | 5 | ready for review |
 | `e1000e` | 6 | ready for review |
-| `designware_ethernet` | 7 | item 9 of milestone 1019 needs a home |
+| `designware_ethernet` | 7 | two alias sets for the architect |
 | `designware_mobile_storage` | 8 | ready for review |
 | `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
 | `block_roster` | contract | blocked by its identity value and one defect |

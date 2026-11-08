@@ -1,6 +1,7 @@
 //! The wall-clock contract (reading the clock is a page, setting it is a page you may write,
 //! proposing is an endpoint): the clock page's layout, the propose protocol and the policy the
-//! service applies, defined once for the clock service, its readers, the std PAL and the tests.
+//! service applies, defined once for the clock service, its readers, the standard library's
+//! platform abstraction layer and the tests.
 //!
 //! Reading is a read-only mapping of [`ClockPage`] plus the monotonic counter, setting is a
 //! read/write mapping of the same page, and proposing is an endpoint [`policy::decide`] answers.

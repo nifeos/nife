@@ -130,8 +130,9 @@ def tokens(text):
                 else:
                     i += 1
         elif c.isdigit():
-            i = NUMBER.match(text, i).end()
-            out.append(Token('num', '0', line))
+            end = NUMBER.match(text, i).end()
+            out.append(Token('num', text[i:end], line))
+            i = end
         elif IDENT_START.match(c):
             raw = RAW_STRING.match(text, i)
             if raw:
@@ -164,13 +165,16 @@ def tokens(text):
 
 class Definition:
     """One name the crate chose: `name`, `kind`, `line`, the doc comment lines above it (`docs`)
-    and the `#[doc(alias)]` strings it carries (`aliases`)."""
+    and the `#[doc(alias)]` strings it carries (`aliases`). A definition inside inline modules also
+    carries their names (`module`, outermost first); a `const` or `static` carries its type's first
+    word (`type_name`) and the tokens of its initializer (`value`, as text)."""
 
     def __init__(self, name, kind, line, docs=(), aliases=(), returns_bool=False, takes_mut=False):
         self.name, self.kind, self.line = name, kind, line
         self.docs, self.aliases = list(docs), list(aliases)
         # For a `fn`: whether it returns `bool`, and whether it takes any `&mut`.
         self.returns_bool, self.takes_mut = returns_bool, takes_mut
+        self.module, self.type_name, self.value = (), '', ()
 
     def __repr__(self):
         return f'{self.kind} {self.name}@{self.line}'
@@ -218,6 +222,7 @@ class _Reader:
     def __init__(self, toks):
         self.toks = toks
         self.out = []
+        self.modules = []
 
     def at(self, i):
         return self.toks[i] if 0 <= i < len(self.toks) else None
@@ -225,6 +230,7 @@ class _Reader:
     def add(self, t, kind, docs=(), aliases=()):
         if t is not None and t.kind == 'ident' and t.text != '_' and t.text not in KEYWORDS:
             self.out.append(Definition(t.text, kind, t.line, docs, aliases))
+            self.out[-1].module = tuple(self.modules)
             return self.out[-1]
         return None
 
@@ -399,7 +405,8 @@ class _Reader:
                     and nxt.text not in ('fn', 'unsafe', 'extern', 'async'):
                 name = self.at(i + 2) if nxt.text == 'mut' else nxt
                 if owned:
-                    self.add(name, 'const' if word == 'const' else 'static', docs, aliases)
+                    made = self.add(name, 'const' if word == 'const' else 'static', docs, aliases)
+                    self.initializer(made, i)
                 docs, aliases = [], []
                 i += 2
             elif word in ('struct', 'union', 'enum') and _is(nxt, 'ident'):
@@ -424,7 +431,9 @@ class _Reader:
                 j = i + 2
                 if _is(self.at(j), 'punct', '{'):
                     self.add(nxt, 'module', docs, aliases)
+                    self.modules.append(nxt.text)
                     i = self.block_group(j, 'module')
+                    self.modules.pop()
                 else:
                     i = j  # `mod x;` is its file, which the checks read by name
                 docs, aliases = [], []
@@ -449,6 +458,28 @@ class _Reader:
             else:
                 i += 1
         return end
+
+    def initializer(self, made, i):
+        """Record on the const or static at `i` its type's first word and its initializer."""
+        if made is None:
+            return
+        depth, colon, equals = 0, None, None
+        for j in range(i + 1, len(self.toks)):
+            t = self.toks[j]
+            if t.kind == 'punct' and t.text in OPEN:
+                depth += 1
+            elif t.kind == 'punct' and t.text in CLOSE:
+                depth -= 1
+            elif depth == 0 and _is(t, 'punct', ':') and colon is None and equals is None:
+                colon = j
+            elif depth == 0 and _is(t, 'punct', '=') and equals is None:
+                equals = j
+            elif depth == 0 and _is(t, 'punct', ';'):
+                if equals is not None:
+                    made.value = tuple(x.text for x in self.toks[equals + 1:j])
+                break
+        if colon is not None and _is(self.at(colon + 1), 'ident'):
+            made.type_name = self.at(colon + 1).text
 
     def angle(self, i):
         depth = 0

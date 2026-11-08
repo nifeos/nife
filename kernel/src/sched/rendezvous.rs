@@ -47,7 +47,7 @@ pub(super) fn try_create_rendezvous_from(region: u64) -> Result<RendezvousId, Re
     // Cannot fail: capacity was checked above under this same lock hold.
     let name = sched
         .rendezvous_table
-        .insert_with(|_| phys)
+        .insert_with(|_| RendezvousPageAddress::new(phys))
         .ok_or(RendezvousFailure::RegistryFull)?
         .to_bits();
     PEAK_RENDEZVOUS.fetch_max(sched.rendezvous_table.len(), Ordering::Relaxed);

@@ -124,23 +124,24 @@ fn big_endian_u32(bytes: &[u8]) -> Option<u32> {
 
 impl Slot {
     /// **Slot `index`, from the node named for it**: `base` and `size` are its `reg`, and
-    /// `prop(name)` is the node's property `name`. `None` when the node's `compatible` names
+    /// `property(name)` is the node's property `name`. `None` when the node's `compatible` names
     /// neither binding, since a node at the slot's name under another binding is not this
     /// controller. An absent `bus-width` is 1, and an absent or zero `assigned-clock-rates` is
     /// the 50 MHz that mainline and the vendor branch head assign.
     ///
     /// # Errors
     ///
-    /// Propagates the first error `prop` returns.
+    /// Propagates the first error `property` returns.
     ///
-    /// Name: ratified 2026-11-02 (UTC), #3092. Builds a slot from its device-tree node.
+    /// Name: ratified 2026-11-07 (UTC). Builds a slot from its device-tree node. Considered: the
+    /// parameter `prop`, which abbreviates `property`; a parameter spells out the word.
     pub fn from_node<'t, E>(
         index: u8,
         base: u64,
         size: u64,
-        mut prop: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
+        mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
     ) -> Result<Option<Slot>, E> {
-        let Some(compat) = prop(b"compatible")? else {
+        let Some(compat) = property(b"compatible")? else {
             return Ok(None);
         };
         let compatible = if compat.split(|&b| b == 0).any(|s| s == COMPATIBLE_MAINLINE) {
@@ -151,24 +152,24 @@ impl Slot {
             return Ok(None);
         };
         let status_okay =
-            prop(b"status")?.is_none_or(|v| matches!(v, b"okay\0" | b"okay" | b"ok\0" | b"ok"));
-        let bus_width = prop(b"bus-width")?
+            property(b"status")?.is_none_or(|v| matches!(v, b"okay\0" | b"okay" | b"ok\0" | b"ok"));
+        let bus_width = property(b"bus-width")?
             .and_then(big_endian_u32)
             .map_or(1, |w| u8::try_from(w).unwrap_or(1));
         Ok(Some(Slot {
             index,
             base,
             size,
-            interrupt: prop(b"interrupts")?.and_then(big_endian_u32),
+            interrupt: property(b"interrupts")?.and_then(big_endian_u32),
             bus_width,
-            queue_depth: prop(b"fifo-depth")?.and_then(big_endian_u32),
-            card_interface_unit_hertz: prop(b"assigned-clock-rates")?
+            queue_depth: property(b"fifo-depth")?.and_then(big_endian_u32),
+            card_interface_unit_hertz: property(b"assigned-clock-rates")?
                 .and_then(big_endian_u32)
                 .filter(|&hertz| hertz != 0)
                 .unwrap_or(CARD_INTERFACE_UNIT_HERTZ),
             compatible,
             status_okay,
-            non_removable: prop(b"non-removable")?.is_some(),
+            non_removable: property(b"non-removable")?.is_some(),
         }))
     }
 }

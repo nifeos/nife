@@ -47,10 +47,11 @@ What a stranger may find surprising:
   candidate in [the release record](../generational-table-and-existing-crates.md) uses a newtype
   (`slotmap`'s `KeyData`, `thunderdome`'s `Index`). `EntryName<T>` has `to_bits`, `from_bits`
   and `NEVER_MINTED` (the name no table mints), and the kernel converts at its system-call
-  boundary with them. Four kernel tables (`rendezvous_table`, `notification_table`, `timer_table`
-  and `processes` in `sched/ipc_tables.rs`) hold bare `u64` entries, so each of their names is an
-  `EntryName<u64>` and one table accepts another's names. The ruling is that each gets its own
-  entry newtype; that work has not landed on `main`.
+  boundary with them. Each kernel table has an entry type of its own, so a name of one table does
+  not resolve in another. The rendezvous, notification, timer and process tables in
+  `sched/ipc_tables.rs` hold `RendezvousPageAddress`, `NotificationPageAddress`, `TimerPageAddress`
+  and `ProcessPageAddress`. Each is a one-word `repr(transparent)` newtype over the page's address.
+  Four conflicting impls in that file stop the build if two of them ever share a type.
 - A slot whose generation reaches `u32::MAX` retires and is never filled again, so capacity can
   shrink. The release record's table shows `slotmap` and `thunderdome` wrapping instead.
 - `Table` implements neither `Debug` nor `Clone`. Adding either later breaks nobody.
@@ -81,6 +82,21 @@ associated items `EntryName::to_bits`, `EntryName::from_bits` and `EntryName::NE
 `to_bits` and `from_bits` take the standard library's spelling (`f64::to_bits`). `NEVER_MINTED`
 beat `NONE`, which reads as `Option::None`, and `INVALID`, which it is not, since resolving it
 answers `None`.
+
+## Naming rules
+
+Against the rulings in force, checked with the template's own checks
+(`vendor/crate-workflows/helpers/`, run with `--manifest Cargo.toml` over `src/lib.rs`; each judged
+122 names):
+
+| rule | result |
+|---|---|
+| units spelled out (`unit_symbols.py`) | 0 findings. The crate names no quantity. |
+| spelled-out words (`spelled_out.py`) | 0 findings. The checker judges only the words on its fixed list, so a clipped word that is not on it passes; the private field is `generations` and a read of every field, local, parameter and test name found no other clipped word. Single-letter names remain: the closure parameter `f` of `insert_with`, closure bindings `n`, `i` and `s`, and the test locals `a`, `b`, `c`, `d` and `t`. |
+| question shape (`question_shape.py`) | 0 findings. `is_empty` is the only predicate, and it is the standard library's spelling. |
+| British spelling (`british_spelling.py`) | 0 findings. |
+| standard library spellings | `len`, `iter`, `get_mut`, `values_mut`, `is_empty`, `to_bits` and `from_bits` keep the standard library's names. |
+| aliases of an old nife spelling | none. The two `doc(alias)` strings on `EntryName` (`generational index`, `slotmap key`) are terms a reader searches for. |
 
 ## License
 

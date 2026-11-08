@@ -1,7 +1,8 @@
 #![no_std]
-//! **xHCI, as pure logic**: everything a USB host controller driver computes, with nothing it
-//! touches. A kernel finds and confines the register file and DMA memory and a
-//! user-space driver drives them; this is the arithmetic between.
+//! **The extensible host controller interface (xHCI), as pure logic**: everything a USB host
+//! controller driver computes, with nothing it touches. A kernel finds and confines the register
+//! file and direct memory access (DMA) memory and a user-space driver drives them; this is the
+//! arithmetic between.
 //!
 //! [`registers`] and [`Capabilities`] name the registers; [`direct_memory_access`] is the DMA region's layout; a
 //! Transfer Request Block (TRB, [`TransferRequestBlock`]), [`Event`], [`ProducerRing`] and
