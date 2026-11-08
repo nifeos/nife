@@ -2,7 +2,7 @@
 
 *Name: provisional, minted 2026-11-05 (UTC) by lane/generational-table-vs-slotmap.*
 
-The release record for `crates/generational_table` owes one answer before publication:
+The release record for `nifeos/generational_table` owes one answer before publication:
 whether `slotmap`, or a crate like it, already covers an allocation-free, fixed-capacity generational
 table with what nife needs from one. This note gives that answer from the source of each candidate,
 a host experiment and Kani harnesses run against the candidates, and ends with the ruling. The
@@ -47,8 +47,7 @@ with no niche, and a slot retires after 2^32 - 1 occupants, which shrinks the ca
 ## What the proofs cover
 
 The crate ships five Kani harnesses, each with a falsification patch under
-`crates/generational_table/falsifications/` that makes it fail. `script/crate-standalone
-generational_table` runs all five and all five patches.
+`falsifications/` that makes it fail, and the repository's `proofs` workflow runs all five and all five patches.
 
 | harness | what it proves |
 |---|---|

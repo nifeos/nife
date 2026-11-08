@@ -219,7 +219,7 @@ memory_regions = { version = "0.1.0", path = "../crates/memory_regions" }
 # *grants* a net server its listen ports, so it packs the grant with the same `listen_grant` the
 # server checks against rather than open-coding the layout of a word two programs must agree on.
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
-generational_table = { version = "0.1.0", path = "../crates/generational_table" }
+generational_table = { version = "0.1.0", git = "https://github.com/nifeos/generational_table", rev = "759c8f7acb00f246a635c846ab6414890cf261f8" }
 # The lock under `InterruptSafeMutex`: an Acquire compare-exchange and a Release store, written in
 # the
 # tree so loom can check them, the fourth retrofit of work_steal_slot's move. Its `unsafe` and what
