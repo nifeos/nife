@@ -35,7 +35,7 @@ one of `TRANSPORT_VIRTIO_MEMORY_MAPPED_IO` (0), `TRANSPORT_VIRTIO_PCI` (1) and
   bumps both in one change, and an old reader then refuses the page. `INTERFACE_ID` (5) names this
   interface when a program declares which interfaces it links.
 
-## Usage
+## EXAMPLES
 
 ```rust
 use block_roster::{Device, Roster, TRANSPORT_VIRTIO_PCI};
@@ -51,6 +51,11 @@ assert_eq!(roster.get(0).unwrap().transport_name(), Some("virtio-pci"));
 assert_eq!(roster.count_by_transport(TRANSPORT_VIRTIO_PCI), 1);
 ```
 
+## What is proven
+
+Two Kani harnesses in `src/lib.rs` prove that `Roster::read` is total on any bytes and that `write`
+then `read` returns the same devices in order; run them with `cargo kani`.
+
 ## Building and testing
 
 ```sh
@@ -63,8 +68,14 @@ kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloa
 checker, so it needs network access. CI uses version 0.68.0, and another version may verify
 differently.
 
-The minimum supported Rust version is 1.88. Two Kani harnesses in `src/lib.rs` prove that `Roster::read` is total on any bytes
-and that `write` then `read` returns the same devices in order; run them with `cargo kani`.
+## BUGS
+
+- The harnesses check a page of up to three entries (40 bytes). A longer page is not
+  machine-checked.
+
+## Minimum Rust version
+
+Rust 1.88.
 
 ## License
 

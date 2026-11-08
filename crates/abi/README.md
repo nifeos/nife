@@ -1,6 +1,6 @@
 # abi
 
-The binary interface between a program and a capability kernel: the five syscall numbers, the
+The application binary interface (ABI) between a program and a capability kernel: the five syscall numbers, the
 method number of every operation on every kind of capability, the error codes, the rights bits and
 the shapes of the replies. `no_std`, no dependencies, and no code beyond constants, a handful of
 `const fn` helpers and tests. It was written for the nife kernel and the programs that run on it,
@@ -35,7 +35,7 @@ boundary.
 - The numbers are pinned as literals in the crate's tests, so changing one is a deliberate act that
   fails the build until the test and the version change with it.
 
-## Usage
+## EXAMPLES
 
 ```rust
 use abi::{Error, SYS_EXIT, SYS_INVOKE, SYS_YIELD, rendezvous};
@@ -48,6 +48,11 @@ assert_eq!(Error::NoSuchSlot as i64, -1);
 assert_ne!(Error::NoSuchSlot, Error::Gone);
 ```
 
+## What is proven
+
+Nothing is machine-checked: there are no Kani harnesses. The pinned-values tests carry the
+compatibility claim.
+
 ## Building and testing
 
 ```sh
@@ -55,8 +60,13 @@ cargo test
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
 ```
 
-The minimum supported Rust version is 1.88. There are no Kani harnesses; the pinned-values tests
-carry the compatibility claim.
+## BUGS
+
+None known.
+
+## Minimum Rust version
+
+Rust 1.88.
 
 ## License
 

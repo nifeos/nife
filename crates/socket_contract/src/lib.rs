@@ -11,7 +11,8 @@
 //!
 //! - A grant is the stack's, shared by every holder of its front door; a per-client grant would
 //!   ride on a badged front door, which nothing builds yet.
-//! - A listener's backlog is one connection: a second arriving before `ACCEPT` is refused by TCP.
+//! - A listener's backlog is one connection: a second arriving before `ACCEPT` is refused by the
+//!   Transmission Control Protocol (TCP).
 //! - The [`fixture`] module holds the fixed addresses and messages of nife's own QEMU test
 //!   runners. They are a test harness's facts, not part of this contract, and belong with that
 //!   harness.
@@ -198,8 +199,8 @@ pub const fn udp_grant_allows(grant: u64, port: u16) -> bool {
 }
 
 pub mod polled_wait {
-    //! Whether the network stack may sleep while it waits on a NIC that raises no interrupt (the
-    //! `e1000e` and a `DesignWare` port). For one scheduler
+    //! Whether the network stack may sleep while it waits on a network interface card (NIC) that
+    //! raises no interrupt (the `e1000e` and a `DesignWare` port). For one scheduler
     //! tick after the last frame the stack yields and looks at the ring again, and it sleeps only
     //! once a whole tick has passed with nothing, because a timed wait ends at a tick and a sleep
     //! would add up to a tick to every round trip. Here so its claim is a host test; only
