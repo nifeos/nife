@@ -68,9 +68,9 @@ photographing, not a setting.
 ### System Configuration
 
 IMG_4031, Integrated NIC. `Enable UEFI Network Stack` unticked. Disabled ( );
-Enabled (•); Enabled w/PXE ( ). So the LAN was visible to an OS, with no UEFI PXE path. Both
-settings were changed at the bench on 2026-10-04, to the stack ticked and `Enabled w/PXE`; the
-parent's table records that, and the photographs of it are owed.
+Enabled (•); Enabled w/PXE ( ). So the local area network was visible to an OS, with no UEFI PXE
+path. Both settings were changed at the bench on 2026-10-04, to the stack ticked and
+`Enabled w/PXE`; the parent's table records that, and the photographs of it are owed.
 
 IMG_4032, Serial Port. Disabled ( ); COM1 (•); COM2 ( ); COM3 ( ); COM4 ( ). Help text
 verbatim:

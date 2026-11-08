@@ -49,8 +49,11 @@ fn the_event_ring_stays_in_bounds_and_flips_only_at_the_wrap() {
     assert!(ring.dequeue < entries);
     assert_eq!(ring.cycle != cycle, dequeue == entries - 1);
     assert_eq!(ring.dequeue == 0, dequeue == entries - 1);
-    let erdp = ring.dequeue_pointer();
-    assert!(erdp >= base && erdp < base + u64::from(entries) * 16);
+    let event_ring_dequeue_pointer = ring.dequeue_pointer();
+    assert!(
+        event_ring_dequeue_pointer >= base
+            && event_ring_dequeue_pointer < base + u64::from(entries) * 16
+    );
 }
 
 /// **The extended-capability walk ends within 64 reads, reads only inside `limit`, moves forward on
@@ -141,12 +144,12 @@ fn the_slot_and_endpoint_contexts_keep_each_field_in_its_own_bits() {
     assert_eq!(endpoint[1] & 1, 0);
     assert_eq!(endpoint[2] as u64 | (endpoint[3] as u64) << 32, dequeue);
     assert_eq!(endpoint[4] & 0xffff, average_trb as u32);
-    let esit = if kind == context::CONTROL {
+    let maximum_service_interval_payload = if kind == context::CONTROL {
         0
     } else {
         maximum_packet as u32
     };
-    assert_eq!(endpoint[4] >> 16, esit);
+    assert_eq!(endpoint[4] >> 16, maximum_service_interval_payload);
     assert_eq!(endpoint[5..], [0; 3]);
 }
 
@@ -157,17 +160,23 @@ fn the_slot_and_endpoint_contexts_keep_each_field_in_its_own_bits() {
 /// Falsification: replayable `crates/extensible_host_controller_interface/falsifications/verification.a_port_write_never_acknowledges_what_nobody_asked_to.patch`
 #[kani::proof]
 fn a_port_write_never_acknowledges_what_nobody_asked_to() {
-    let portsc: u32 = kani::any();
+    let port_status_and_control: u32 = kani::any();
     let bits: u32 = kani::any();
-    let written = port::write_value(portsc, bits);
-    assert_eq!(written & !bits, portsc & port::PRESERVE & !bits);
+    let written = port::write_value(port_status_and_control, bits);
+    assert_eq!(
+        written & !bits,
+        port_status_and_control & port::PRESERVE & !bits
+    );
     assert_eq!(written & bits, bits);
-    let nothing = port::write_value(portsc, 0);
+    let nothing = port::write_value(port_status_and_control, 0);
     assert_eq!(nothing & port::CHANGES, 0);
     assert_eq!(nothing & port::ENABLED, 0);
     assert_eq!(nothing & port::RESET, 0);
-    assert!(port::speed_of(portsc) <= 0xf);
-    assert_eq!(port::speed_of(portsc) as u32, (portsc >> 10) & 0xf);
+    assert!(port::speed_of(port_status_and_control) <= 0xf);
+    assert_eq!(
+        port::speed_of(port_status_and_control) as u32,
+        (port_status_and_control >> 10) & 0xf
+    );
 }
 
 /// **The interrupt interval is the exponent the specification asks for, and the default control

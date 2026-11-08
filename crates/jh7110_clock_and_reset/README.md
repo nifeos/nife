@@ -2,11 +2,40 @@
 
 The logic of the clock and reset generator in the StarFive JH7110, the RISC-V system-on-chip of the
 VisionFive 2. It holds the register offsets and bit fields of the STG (System-Top-Group), AON
-(always-on) and SYS (system) domains, the bring-up plans the TRNG, the Ethernet controller, both
-SD/MMC controllers and the PMIC's I2C bus need, the I2C input-clock arithmetic, and what each of the
-chip's two device trees calls the controllers. It never touches a register: you map the window and
-do the volatile stores, and this crate says which word, which bit and in what order. It is `no_std`,
+(always-on) and SYS (system) domains, the bring-up plans the TRNG (true random number generator),
+the Ethernet controller, both SD/MMC (MultiMediaCard) controllers and the I2C bus of the PMIC (power
+management integrated circuit) need, the I2C input-clock arithmetic, and what each of the chip's two
+device trees calls the controllers. It never touches a register: you map the window and do the
+volatile stores, and this crate says which word, which bit and in what order. It is `no_std`,
 depends on nothing, and is tested on the host.
+
+## EXAMPLES
+
+```rust
+use jh7110_clock_and_reset::{
+    is_deasserted, Step, WindowLocation, ENTROPY_BRING_UP, SYSTEM_TOP_GROUP,
+    SYSTEM_TOP_GROUP_WINDOW,
+};
+
+// The vendor clkgen node: three windows, found by name.
+let regions = [(0x1302_0000, 0x1_0000), (0x1023_0000, 0x1_0000), (0x1700_0000, 0x1_0000)];
+let names = Some(&b"sys\0stg\0aon\0"[..]);
+let system_top_group = WindowLocation::from_regions(&SYSTEM_TOP_GROUP_WINDOW.spellings[1], &regions, names)
+    .unwrap_or(SYSTEM_TOP_GROUP_WINDOW.fallback());
+assert_eq!(system_top_group.base, 0x1023_0000);
+
+// The TRNG's plan: two clocks, then one reset.
+assert_eq!(ENTROPY_BRING_UP[2], Step::DeassertReset(3));
+assert_eq!(SYSTEM_TOP_GROUP.clock_offset(15), Some(0x3c));
+let reset = SYSTEM_TOP_GROUP.reset_bit(3).unwrap();
+assert!(is_deasserted(0b1000, reset.mask));
+```
+
+Walk a plan in order: for `EnableClock(i)` set `CLOCK_ENABLE` in the word at
+`domain.clock_offset(i)`, for `SelectParent` write `with_parent`, and for `DeassertReset(id)` clear
+the bit at `reset_bit(id).assert_offset`, then poll `status_offset` until `is_deasserted`. Keep the
+words before and after in a `BringUpReport`, which tells "already up" apart from "this run started
+it".
 
 ## What is proven
 
@@ -58,35 +87,7 @@ phandle's `#clock-cells`, `#reset-cells` and `compatible`. A specifier for anoth
 id past the domain's bounds (the vendor tree's virtual clock 298), is counted in `skipped` and never
 becomes a store.
 
-## Usage
-
-```rust
-use jh7110_clock_and_reset::{
-    is_deasserted, Step, WindowLocation, ENTROPY_BRING_UP, SYSTEM_TOP_GROUP,
-    SYSTEM_TOP_GROUP_WINDOW,
-};
-
-// The vendor clkgen node: three windows, found by name.
-let regions = [(0x1302_0000, 0x1_0000), (0x1023_0000, 0x1_0000), (0x1700_0000, 0x1_0000)];
-let names = Some(&b"sys\0stg\0aon\0"[..]);
-let stg = WindowLocation::from_regions(&SYSTEM_TOP_GROUP_WINDOW.spellings[1], &regions, names)
-    .unwrap_or(SYSTEM_TOP_GROUP_WINDOW.fallback());
-assert_eq!(stg.base, 0x1023_0000);
-
-// The TRNG's plan: two clocks, then one reset.
-assert_eq!(ENTROPY_BRING_UP[2], Step::DeassertReset(3));
-assert_eq!(SYSTEM_TOP_GROUP.clock_offset(15), Some(0x3c));
-let reset = SYSTEM_TOP_GROUP.reset_bit(3).unwrap();
-assert!(is_deasserted(0b1000, reset.mask));
-```
-
-Walk a plan in order: for `EnableClock(i)` set `CLOCK_ENABLE` in the word at
-`domain.clock_offset(i)`, for `SelectParent` write `with_parent`, and for `DeassertReset(id)` clear
-the bit at `reset_bit(id).assert_offset`, then poll `status_offset` until `is_deasserted`. Keep the
-words before and after in a `BringUpReport`, which tells "already up" apart from "this run started
-it".
-
-## Limitations
+## BUGS
 
 - None of the bring-up has been confirmed on silicon end to end. In particular, the PMIC reset path
   (`standard_mode_100_kilohertz` at the input clock `inter_integrated_circuit_5_clock_frequency`
@@ -97,12 +98,15 @@ it".
   `#[non_exhaustive]`, so a later release can add a step kind or a field without a breaking change.
   Build a `BringUpReport` with `BringUpReport::default()` and assign its fields, and match a `Step`
   with a wildcard arm.
-- The reset `SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS` is shared with the DMA engine, so the crate offers no assert.
+- The reset `SYSTEM_TOP_GROUP_RESET_SECURITY_ADVANCED_HIGH_PERFORMANCE_BUS` is shared with the
+  direct memory access (DMA) engine, so the crate offers no assert.
 - Some items describe one board and not the chip: the PMIC reset register and bit, the PMIC bus
   plan and the I2C5 clock chain follow the VisionFive 2's AXP15060 wiring.
 - Only the STG, AON and SYS domains are described, each only as far as a device needed it.
 
-Minimum Rust version: 1.88.
+## Minimum Rust version
+
+Rust 1.88.
 
 ## License
 

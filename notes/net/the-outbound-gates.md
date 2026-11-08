@@ -149,9 +149,9 @@ It was measured, not argued. A temporary instrument in the client sent the same 
 - The same host resolver, probed directly with `dig +tries=1 +time=2`, dropped 1 of 30.
 
 Two DNS queries ran per suite (mmio and PCIe), so a suite failed a few percent of the time from
-nothing but a dropped packet on somebody's LAN. That matches the roughly one-in-three seen across a
-handful of runs once network conditions were worse. UDP has no retransmit of its own and the client
-sent exactly once, so a single lost datagram was a failed gate.
+nothing but a dropped packet on somebody's local area network. That matches the roughly one-in-three
+seen across a handful of runs once network conditions were worse. UDP has no retransmit of its own
+and the client sent exactly once, so a single lost datagram was a failed gate.
 
 The fix keeps the coverage and removes the dependency. The gating UDP test now talks to slirp's
 own TFTP server (`tftp=` on the netdev, at the gateway `10.0.2.2:69`), which libslirp answers

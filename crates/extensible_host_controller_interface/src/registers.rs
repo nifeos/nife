@@ -6,145 +6,195 @@
 //! registers at `RTSOFF` (one set per interrupter, from 0x20), and the **doorbell array** at
 //! `DBOFF` (one 32-bit doorbell per device slot, slot 0 being the command ring's).
 //!
-//! Name: ratified 2026-10-26 (UTC), on #2760. Refused `regs` (an abbreviation; the constants inside
-//! keep the specification's names).
+//! Name: ratified 2026-10-26 (UTC), on #2760. Refused `regs` (an abbreviation).
 
-/// Capability register: `CAPLENGTH` in the low byte, `HCIVERSION` in the high half.
+/// **Capability Registers Length** (`CAPLENGTH`, xHCI specification), the capability register
+/// whose low byte is how many bytes the capability registers take, so where the operational
+/// registers start; the dword read here carries `HCIVERSION` in its high half.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const CAPLENGTH: u64 = 0x00;
-/// Capability register: slots, interrupters, ports.
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `CAPLENGTH` (the specification's mnemonic,
+/// kept as the alias), `CAPABILITY_REGISTERS_LENGTH_REGISTER` (a length carries its unit).
+#[doc(alias = "CAPLENGTH")]
+pub const CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER: u64 = 0x00;
+/// **Structural Parameters 1** (`HCSPARAMS1`, xHCI specification), a capability register: slots,
+/// interrupters, ports.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const HCSPARAMS1: u64 = 0x04;
-/// Capability register: scratchpad count, among others.
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `HCSPARAMS1` (the specification's mnemonic,
+/// kept as the alias).
+#[doc(alias = "HCSPARAMS1")]
+pub const STRUCTURAL_PARAMETERS_1_REGISTER: u64 = 0x04;
+/// **Structural Parameters 2** (`HCSPARAMS2`, xHCI specification), a capability register: the
+/// scratchpad count, among others.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const HCSPARAMS2: u64 = 0x08;
-/// Capability register: context size, extended capabilities pointer, among others.
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `HCSPARAMS2` (the specification's mnemonic,
+/// kept as the alias).
+#[doc(alias = "HCSPARAMS2")]
+pub const STRUCTURAL_PARAMETERS_2_REGISTER: u64 = 0x08;
+/// **Capability Parameters 1** (`HCCPARAMS1`, xHCI specification), a capability register: the
+/// context size and the extended capabilities pointer, among others.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const HCCPARAMS1: u64 = 0x10;
-/// Capability register: the doorbell array's offset.
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `HCCPARAMS1` (the specification's mnemonic,
+/// kept as the alias).
+#[doc(alias = "HCCPARAMS1")]
+pub const CAPABILITY_PARAMETERS_1_REGISTER: u64 = 0x10;
+/// **Doorbell Offset** (`DBOFF`, xHCI specification), a capability register: the doorbell array's
+/// offset.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const DBOFF: u64 = 0x14;
-/// Capability register: the runtime registers' offset.
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `DBOFF` (the specification's mnemonic, kept
+/// as the alias).
+#[doc(alias = "DBOFF")]
+pub const DOORBELL_OFFSET_REGISTER: u64 = 0x14;
+/// **Runtime Register Space Offset** (`RTSOFF`, xHCI specification), a capability register: the
+/// runtime registers' offset.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const RTSOFF: u64 = 0x18;
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `RTSOFF` (the specification's mnemonic, kept
+/// as the alias).
+#[doc(alias = "RTSOFF")]
+pub const RUNTIME_REGISTER_SPACE_OFFSET_REGISTER: u64 = 0x18;
 
-/// Operational register (from `CAPLENGTH`): `USBCMD`.
+/// **USB Command** (`USBCMD`, xHCI specification), an operational register, from
+/// [`CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER`]'s offset: run, reset, interrupts.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const USBCMD: u64 = 0x00;
-/// Operational register: `USBSTS`.
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `USBCMD` (the specification's mnemonic, kept
+/// as the alias).
+#[doc(alias = "USBCMD")]
+pub const USB_COMMAND_REGISTER: u64 = 0x00;
+/// **USB Status** (`USBSTS`, xHCI specification), an operational register.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const USBSTS: u64 = 0x04;
-/// Operational register: `PAGESIZE`, a bitmap of page sizes; bit 0 is 4 KiB.
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `USBSTS` (the specification's mnemonic, kept
+/// as the alias).
+#[doc(alias = "USBSTS")]
+pub const USB_STATUS_REGISTER: u64 = 0x04;
+/// **Page Size** (`PAGESIZE`, xHCI specification), an operational register: a bitmap of the page
+/// sizes the controller supports; bit 0 is 4 KiB.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const PAGESIZE: u64 = 0x08;
-/// Operational register: the command ring control register, its base and cycle.
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `PAGESIZE` (the specification's mnemonic,
+/// kept as the alias).
+#[doc(alias = "PAGESIZE")]
+pub const PAGE_SIZE_BITMAP_REGISTER: u64 = 0x08;
+/// **Command Ring Control** (`CRCR`, xHCI specification), an operational register: the command
+/// ring's base and cycle.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const CRCR: u64 = 0x18;
-/// Operational register: the device context base address array's pointer.
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `CRCR` (the specification's mnemonic, kept
+/// as the alias).
+#[doc(alias = "CRCR")]
+pub const COMMAND_RING_CONTROL_REGISTER: u64 = 0x18;
+/// **Device Context Base Address Array Pointer** (`DCBAAP`, xHCI specification), an operational
+/// register: the physical address of the array that holds each device context's physical address.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const DCBAAP: u64 = 0x30;
-/// Operational register: the register the xHCI specification calls `CONFIG`, whose low byte is how
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `DCBAAP` (the specification's mnemonic, kept
+/// as the alias), `DEVICE_CONTEXT_BASE_ADDRESS_ARRAY_POINTER_REGISTER` (an address says it is
+/// physical).
+#[doc(alias = "DCBAAP")]
+pub const DEVICE_CONTEXT_BASE_PHYSICAL_ADDRESS_ARRAY_POINTER_REGISTER: u64 = 0x30;
+/// **Configure** (`CONFIG`, xHCI specification), an operational register whose low byte is how
 /// many slots are enabled.
 ///
-/// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from `CONFIG`:
-/// `config` is ruled to expand; the specification's name for the register does not keep it.
-pub const CONFIGURATION: u64 = 0x38;
-/// Operational register: port 1's `PORTSC`; port `n`'s is `0x10 * (n - 1)` further.
-pub(crate) const PORTSC_BASE: u64 = 0x400;
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `CONFIG` (`config` expands; kept as the
+/// alias), `CONFIGURATION` (a register offset ends `_REGISTER`).
+#[doc(alias = "CONFIG")]
+pub const CONFIGURATION_REGISTER: u64 = 0x38;
+/// Port 1's **Port Status and Control** register (`PORTSC`, xHCI specification); port `n`'s is
+/// `0x10 * (n - 1)` further.
+#[doc(alias = "PORTSC")]
+pub(crate) const FIRST_PORT_STATUS_AND_CONTROL_REGISTER: u64 = 0x400;
 
 /// `USBCMD` Run/Stop.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `CMD_RUN` (spelled out; the register keeps
-/// `USBCMD`).
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `CMD_RUN` (spelled out).
 pub const COMMAND_RUN: u32 = 1 << 0;
 /// `USBCMD` Host Controller Reset.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `CMD_RESET` (spelled out; the register keeps
-/// `USBCMD`).
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `CMD_RESET` (spelled out).
 pub const COMMAND_RESET: u32 = 1 << 1;
 /// `USBCMD` Interrupter Enable.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `CMD_INTERRUPTS` (spelled out; the register
-/// keeps `USBCMD`).
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `CMD_INTERRUPTS` (spelled out).
 pub const COMMAND_INTERRUPTS: u32 = 1 << 2;
 
 /// `USBSTS` `HCHalted`.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_HALTED` (spelled out; the register keeps
-/// `USBSTS`).
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_HALTED` (spelled out).
 pub const STATUS_HALTED: u32 = 1 << 0;
 /// `USBSTS` Host System Error.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_HOST_SYSTEM_ERROR` (spelled out; the
-/// register keeps `USBSTS`).
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_HOST_SYSTEM_ERROR` (spelled out).
 pub const STATUS_HOST_SYSTEM_ERROR: u32 = 1 << 2;
 /// `USBSTS` Event Interrupt, write one to clear.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_EVENT_INTERRUPT` (spelled out; the
-/// register keeps `USBSTS`).
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_EVENT_INTERRUPT` (spelled out).
 pub const STATUS_EVENT_INTERRUPT: u32 = 1 << 3;
 /// `USBSTS` Port Change Detect, write one to clear.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_PORT_CHANGE` (spelled out; the register
-/// keeps `USBSTS`).
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_PORT_CHANGE` (spelled out).
 pub const STATUS_PORT_CHANGE: u32 = 1 << 4;
 /// `USBSTS` Controller Not Ready.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_NOT_READY` (spelled out; the register
-/// keeps `USBSTS`).
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_NOT_READY` (spelled out).
 pub const STATUS_NOT_READY: u32 = 1 << 11;
 /// `USBSTS` Host Controller Error.
 ///
-/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_CONTROLLER_ERROR` (spelled out; the
-/// register keeps `USBSTS`).
+/// Name: ratified 2026-10-26 (UTC), on #2760. Refused `STS_CONTROLLER_ERROR` (spelled out).
 pub const STATUS_CONTROLLER_ERROR: u32 = 1 << 12;
 
-/// Interrupter 0's register set, from `RTSOFF`.
-pub(crate) const INTERRUPTER_0: u64 = 0x20;
-/// Interrupter register: `IMAN` (pending, enable).
+/// Interrupter 0's register set, from [`RUNTIME_REGISTER_SPACE_OFFSET_REGISTER`]'s offset; its
+/// first register is [`INTERRUPTER_MANAGEMENT_REGISTER`].
+pub(crate) const INTERRUPTER_0_REGISTER: u64 = 0x20;
+/// **Interrupter Management** (`IMAN`, xHCI specification), an interrupter register: pending and
+/// enable.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const IMAN: u64 = 0x00;
-/// Interrupter register: `IMOD` (moderation interval).
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `IMAN` (the specification's mnemonic, kept
+/// as the alias).
+#[doc(alias = "IMAN")]
+pub const INTERRUPTER_MANAGEMENT_REGISTER: u64 = 0x00;
+/// **Interrupter Moderation** (`IMOD`, xHCI specification), an interrupter register: the
+/// moderation interval.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const IMOD: u64 = 0x04;
-/// Interrupter register: `ERSTSZ` (segment table size).
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `IMOD` (the specification's mnemonic, kept
+/// as the alias).
+#[doc(alias = "IMOD")]
+pub const INTERRUPTER_MODERATION_REGISTER: u64 = 0x04;
+/// **Event Ring Segment Table Size** (`ERSTSZ`, xHCI specification), an interrupter register: how
+/// many entries the event ring segment table holds.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const ERSTSZ: u64 = 0x08;
-/// Interrupter register: `ERSTBA` (segment table base).
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `ERSTSZ` (the specification's mnemonic, kept
+/// as the alias), `EVENT_RING_SEGMENT_TABLE_SIZE_REGISTER` (a size carries its unit).
+#[doc(alias = "ERSTSZ")]
+pub const EVENT_RING_SEGMENT_TABLE_SIZE_ENTRIES_REGISTER: u64 = 0x08;
+/// **Event Ring Segment Table Base Address** (`ERSTBA`, xHCI specification), an interrupter
+/// register: the segment table's physical address.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const ERSTBA: u64 = 0x10;
-/// Interrupter register: `ERDP` (dequeue pointer).
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `ERSTBA` (the specification's mnemonic, kept
+/// as the alias), `EVENT_RING_SEGMENT_TABLE_BASE_ADDRESS` (an address says it is physical).
+#[doc(alias = "ERSTBA")]
+pub const EVENT_RING_SEGMENT_TABLE_BASE_PHYSICAL_ADDRESS_REGISTER: u64 = 0x10;
+/// **Event Ring Dequeue Pointer** (`ERDP`, xHCI specification), an interrupter register: the
+/// physical address of the next event the driver will read.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const ERDP: u64 = 0x18;
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `ERDP` (the specification's mnemonic, kept
+/// as the alias).
+#[doc(alias = "ERDP")]
+pub const EVENT_RING_DEQUEUE_POINTER_REGISTER: u64 = 0x18;
 
-/// `IMAN` Interrupt Pending, write one to clear.
+/// **Interrupt Pending** (`IMAN.IP`, xHCI specification), the bit of
+/// [`INTERRUPTER_MANAGEMENT_REGISTER`] that says an interrupt is waiting; write one to clear.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const IMAN_PENDING: u32 = 1 << 0;
-/// `IMAN` Interrupt Enable.
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `IMAN_PENDING` (the register spelled out).
+#[doc(alias = "IMAN.IP")]
+pub const INTERRUPTER_MANAGEMENT_PENDING: u32 = 1 << 0;
+/// **Interrupt Enable** (`IMAN.IE`, xHCI specification), the bit of
+/// [`INTERRUPTER_MANAGEMENT_REGISTER`] that lets this interrupter interrupt.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const IMAN_ENABLE: u32 = 1 << 1;
-/// `ERDP` Event Handler Busy, write one to clear.
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `IMAN_ENABLE` (the register spelled out).
+#[doc(alias = "IMAN.IE")]
+pub const INTERRUPTER_MANAGEMENT_ENABLE: u32 = 1 << 1;
+/// **Event Handler Busy** (`ERDP.EHB`, xHCI specification), the bit of
+/// [`EVENT_RING_DEQUEUE_POINTER_REGISTER`] the controller sets when it raises an interrupt; write
+/// one to clear.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const ERDP_BUSY: u64 = 1 << 3;
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `ERDP_BUSY` (the register spelled out).
+#[doc(alias = "ERDP.EHB")]
+pub const EVENT_RING_DEQUEUE_POINTER_BUSY: u64 = 1 << 3;
 
 /// Extended capability id: USB Legacy Support, the firmware handoff (xHCI 1.2 section 7.1).
 ///
@@ -221,45 +271,58 @@ pub struct Capabilities {
 }
 
 impl Capabilities {
-    /// Decode the six capability registers, read as dwords at [`CAPLENGTH`], [`HCSPARAMS1`],
-    /// [`HCSPARAMS2`], [`HCCPARAMS1`], [`DBOFF`] and [`RTSOFF`]. Total, because every one of them
+    /// Decode the six capability registers, read as dwords at [`CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER`],
+    /// [`STRUCTURAL_PARAMETERS_1_REGISTER`], [`STRUCTURAL_PARAMETERS_2_REGISTER`],
+    /// [`CAPABILITY_PARAMETERS_1_REGISTER`], [`DOORBELL_OFFSET_REGISTER`] and
+    /// [`RUNTIME_REGISTER_SPACE_OFFSET_REGISTER`]. Total, because every one of them
     /// is the hardware's word and a value this driver cannot use is caught by whoever uses it.
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub const fn decode(
-        caplength: u32,
-        hcsparams1: u32,
-        hcsparams2: u32,
-        hccparams1: u32,
-        dboff: u32,
-        rtsoff: u32,
+        capability_registers_length: u32,
+        structural_parameters_1: u32,
+        structural_parameters_2: u32,
+        capability_parameters_1: u32,
+        doorbell_offset: u32,
+        runtime_register_space_offset: u32,
     ) -> Capabilities {
         Capabilities {
-            operational: (caplength & 0xff) as u64,
-            version: (caplength >> 16) as u16,
-            maximum_slots: hcsparams1 as u8,
-            maximum_interrupters: ((hcsparams1 >> 8) & 0x7ff) as u16,
-            maximum_ports: (hcsparams1 >> 24) as u8,
-            scratchpads: (((hcsparams2 >> 21) & 0x1f) << 5 | (hcsparams2 >> 27)) as u16,
-            context_bytes: if hccparams1 & (1 << 2) != 0 { 64 } else { 32 },
-            extended: ((hccparams1 >> 16) as u64) * 4,
-            doorbells: (dboff & !0x3) as u64,
-            runtime: (rtsoff & !0x1f) as u64,
+            operational: (capability_registers_length & 0xff) as u64,
+            version: (capability_registers_length >> 16) as u16,
+            maximum_slots: structural_parameters_1 as u8,
+            maximum_interrupters: ((structural_parameters_1 >> 8) & 0x7ff) as u16,
+            maximum_ports: (structural_parameters_1 >> 24) as u8,
+            scratchpads: (((structural_parameters_2 >> 21) & 0x1f) << 5
+                | (structural_parameters_2 >> 27)) as u16,
+            context_bytes: if capability_parameters_1 & (1 << 2) != 0 {
+                64
+            } else {
+                32
+            },
+            extended: ((capability_parameters_1 >> 16) as u64) * 4,
+            doorbells: (doorbell_offset & !0x3) as u64,
+            runtime: (runtime_register_space_offset & !0x1f) as u64,
         }
     }
 
-    /// Port `n`'s `PORTSC`, `n` from 1, as an offset into the register file.
+    /// Port `port_number`'s **Port Status and Control** register (`PORTSC`, xHCI specification),
+    /// `port_number` from 1, as an offset into the register file.
     ///
-    /// Name: ratified 2026-10-25 (#2720).
-    pub const fn portsc(&self, n: u8) -> u64 {
-        self.operational + PORTSC_BASE + 0x10 * (n as u64).saturating_sub(1)
+    /// Name: ratified 2026-11-08 (UTC), on #3330. Refused `portsc` (the specification's mnemonic,
+    /// kept as the alias).
+    #[doc(alias = "PORTSC")]
+    pub const fn port_status_and_control(&self, port_number: u8) -> u64 {
+        self.operational
+            + FIRST_PORT_STATUS_AND_CONTROL_REGISTER
+            + 0x10 * (port_number as u64).saturating_sub(1)
     }
 
-    /// Interrupter 0's register `reg` ([`IMAN`], [`ERDP`], ...), as an offset into the file.
+    /// Interrupter 0's register at `register_offset` ([`INTERRUPTER_MANAGEMENT_REGISTER`],
+    /// [`EVENT_RING_DEQUEUE_POINTER_REGISTER`], ...), as an offset into the file.
     ///
     /// Name: ratified 2026-10-25 (#2720).
-    pub const fn interrupter(&self, reg: u64) -> u64 {
-        self.runtime + INTERRUPTER_0 + reg
+    pub const fn interrupter(&self, register_offset: u64) -> u64 {
+        self.runtime + INTERRUPTER_0_REGISTER + register_offset
     }
 
     /// Slot `slot`'s doorbell (0 for the command ring), as an offset into the file.
@@ -319,9 +382,12 @@ mod tests {
         assert_eq!(capabilities.scratchpads, 0);
         assert_eq!(capabilities.context_bytes, 32);
         assert_eq!(capabilities.extended, 0x20); // the dword count in HCCPARAMS1's high half, times four
-        assert_eq!(capabilities.portsc(1), 0x440);
-        assert_eq!(capabilities.portsc(8), 0x4b0);
-        assert_eq!(capabilities.interrupter(ERDP), 0x1038);
+        assert_eq!(capabilities.port_status_and_control(1), 0x440);
+        assert_eq!(capabilities.port_status_and_control(8), 0x4b0);
+        assert_eq!(
+            capabilities.interrupter(EVENT_RING_DEQUEUE_POINTER_REGISTER),
+            0x1038
+        );
         // Slot 0 is the command ring's doorbell, so the stride is read at 0 as well as at 1.
         assert_eq!(capabilities.doorbell(0), 0x2000);
         assert_eq!(capabilities.doorbell(1), 0x2004);
@@ -332,9 +398,9 @@ mod tests {
     /// bits first in meaning: getting the order wrong gives a controller 32 times too few pages.
     #[test]
     fn the_scratchpad_count_joins_its_two_fields() {
-        let hi = 0b00001 << 21; // one 32
-        let lo = 0b00011 << 27; // plus three
-        let capabilities = Capabilities::decode(0x40, 0, hi | lo, 1 << 2, 0, 0);
+        let high = 0b00001 << 21; // one 32
+        let low = 0b00011 << 27; // plus three
+        let capabilities = Capabilities::decode(0x40, 0, high | low, 1 << 2, 0, 0);
         assert_eq!(capabilities.scratchpads, 35);
         assert_eq!(capabilities.context_bytes, 64);
     }
@@ -354,8 +420,14 @@ mod tests {
             [1, 4, 8, 0x10]
         );
         assert_eq!([STATUS_NOT_READY, STATUS_CONTROLLER_ERROR], [0x800, 0x1000]);
-        assert_eq!([IMAN_PENDING, IMAN_ENABLE], [1, 2]);
-        assert_eq!(ERDP_BUSY, 8);
+        assert_eq!(
+            [
+                INTERRUPTER_MANAGEMENT_PENDING,
+                INTERRUPTER_MANAGEMENT_ENABLE
+            ],
+            [1, 2]
+        );
+        assert_eq!(EVENT_RING_DEQUEUE_POINTER_BUSY, 8);
         assert_eq!(
             [LEGACY_BIOS_OWNED, LEGACY_OPERATING_SYSTEM_OWNED],
             [0x1_0000, 0x100_0000]

@@ -1,4 +1,5 @@
-//! **The GUID Partition Table**: reading one, writing one, and refusing a bad one.
+//! **The globally unique identifier (GUID) partition table**, the GPT (GUID Partition Table):
+//! reading one, writing one, and refusing a bad one.
 //!
 //! The disk format of UEFI 2.10 section 5.3, not the language models, for partitioning
 //! and formatting a real drive. No I/O, no allocation, no `unsafe`: it takes bytes
@@ -18,6 +19,10 @@
 // The documentation lint is on everywhere else; this crate opts out until its 23 undocumented
 // items are documented.
 #![allow(missing_docs)]
+
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
 
 pub mod crc;
 pub mod entry;

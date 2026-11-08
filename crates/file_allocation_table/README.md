@@ -1,9 +1,10 @@
 # file_allocation_table
 
-FAT12, FAT16 and FAT32 as pure computation: read, write and format volumes through a sector
-interface you implement. It does no I/O, needs no allocator (`no_std`), and names no device. It
-reads and writes long file names (VFAT). Every function that parses bytes read from a disk is
-checked with Kani, a model checker that proves properties for all inputs up to a stated size.
+The File Allocation Table (FAT) filesystem in its FAT12, FAT16 and FAT32 widths, as pure
+computation: read, write and format volumes through a sector interface you implement. It does no
+I/O, needs no allocator (`no_std`), and names no device. It reads and writes long file names, the
+VFAT (virtual FAT) extension. Every function that parses bytes read from a disk is checked with
+Kani, a model checker that proves properties for all inputs up to a stated size.
 
 ## What it does
 
@@ -22,7 +23,7 @@ checked with Kani, a model checker that proves properties for all inputs up to a
   boot file, with 512-byte sectors and 4096-byte clusters. The `efi_system_partition` module holds
   that shape's constants.
 
-## Example
+## EXAMPLES
 
 ```rust
 use file_allocation_table::{
@@ -100,13 +101,13 @@ fn main() {
 }
 ```
 
-`tests/the_readme_example.rs` compiles and runs this example. Every write goes through a
+`cargo test` compiles and runs this example as a doctest. Every write goes through a
 `WritableVolume`, which needs a `Clock`; `NoClock` is the explicit "no time", and the entries it
-stamps carry the zero timestamp. For an EFI system partition,
-`VolumeLayout::new(total_sectors, hidden_sectors, file_size_bytes, volume_id, label, "BOOTX64.EFI",
-&mut NoClock)` tells you what every metadata sector holds: write sectors `0..metadata_sectors()`
-from `fill_sector`, then the file's bytes from `file_first_sector()` on, `file_sectors()` long. The
-label is yours to choose, such as `"EFI SYSTEM"`.
+stamps carry the zero timestamp. For an EFI system partition, `VolumeLayout::new` takes the total
+and hidden sector counts, the file's size in bytes, the volume id, the label, the boot file's name
+(`"BOOTX64.EFI"`) and `&mut NoClock`, and tells you what every metadata sector holds: write sectors
+`0..metadata_sectors()` from `fill_sector`, then the file's bytes from `file_first_sector()` on,
+`file_sectors()` long. The label is yours to choose, such as `"EFI SYSTEM"`.
 
 Every error enum is `#[non_exhaustive]`, so a match on one needs a wildcard arm, and a later
 release can add a variant without breaking your code.
@@ -120,10 +121,10 @@ kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloa
 checker, so it needs network access. CI uses version 0.68.0, and another version may verify
 differently. After that, `cargo kani` from the crate's directory runs every harness.
 
-- **Hostile input.** No parse step panics or reads outside the volume: the boot sector and BPB
-  (every 512-byte sector), FAT entries, directory slots, long-name runs, the partition table and the
-  file system information sector. A cluster chain walk cannot loop: it ends within the volume's
-  cluster count.
+- **Hostile input.** No parse step panics or reads outside the volume: the boot sector and BPB (BIOS
+  parameter block) of every 512-byte sector, FAT entries, directory slots, long-name runs, the
+  partition table and the file system information sector. A cluster chain walk cannot loop: it ends
+  within the volume's cluster count.
 - **Writes.** A stored table entry reads back and disturbs nothing else; allocation takes one free
   cluster and changes nothing else; a release frees only the chain it was given and never a bad
   cluster; a cut keeps exactly the head of the chain; a partial sector write keeps the head, zeroes
@@ -150,7 +151,7 @@ Where `fsck.fat` or `fsck_msdos` is installed every image must pass `fsck -n`, a
 macOS host formatted and wrote are read to their recorded hashes. An ignored test has the host's
 own driver read an image (`cargo test -- --ignored`, on macOS).
 
-## Limitations
+## BUGS
 
 - Not crash-atomic, and there is no journal, since FAT has none. The crate orders its writes so a
   crash leaks a cluster and never shares one, and a write has no barrier: the device decides when a
@@ -168,7 +169,8 @@ own driver read an image (`cargo test -- --ignored`, on macOS).
 - Names compare by simple Unicode upper-casing, not the volume's code page or upcase table.
 - A directory slot is found by walking from the directory's first cluster each time, so a directory
   of thousands of clusters is slow.
-- The reader does not follow extended partitions and reads no GUID partition table.
+- The reader does not follow extended partitions and reads no globally unique identifier (GUID)
+  partition table.
 - exFAT is not covered; it is a sibling crate's job.
 
 ## Minimum Rust version

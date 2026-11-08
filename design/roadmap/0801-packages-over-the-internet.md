@@ -22,9 +22,9 @@ xenon's installed system. That is rung 3c of §157 (a trivial install is a web p
 packages over the internet), which [milestone 198's rung table](0198-package-manager.md#the-rungs)
 still maps.
 
-Rung 3a, the package client over plain HTTP on a LAN, is built and is milestone 198. Rung 3b, the
-network card xenon has, is milestone 494 (a driver for the network card a PC actually has). This
-milestone is what is left: the name, the transport, and §250's index.
+Rung 3a, the package client over plain HTTP on a local area network, is built and is milestone 198.
+Rung 3b, the network card xenon has, is milestone 494 (a driver for the network card a PC actually
+has). This milestone is what is left: the name, the transport, and §250's index.
 
 ## The work list
 

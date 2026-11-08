@@ -485,8 +485,8 @@ where
         direct_map(m, e.aon.base, e.aon.base + e.aon.size, Flags::device())?;
         direct_map(
             m,
-            e.syscon.base,
-            e.syscon.base + e.syscon.size,
+            e.syscon.base_physical_address,
+            e.syscon.base_physical_address + e.syscon.size_bytes,
             Flags::device(),
         )?;
     }
@@ -533,8 +533,13 @@ where
     if let Some(slots) = memory::jh7110_storage() {
         for s in slots.iter().flatten() {
             let used = u64::from(designware_mobile_storage::registers::USED_REGISTER_WINDOW_BYTES)
-                .min(s.size);
-            direct_map(m, s.base, s.base + used, Flags::device())?;
+                .min(s.registers_size_bytes);
+            direct_map(
+                m,
+                s.registers_physical_address,
+                s.registers_physical_address + used,
+                Flags::device(),
+            )?;
         }
     }
 

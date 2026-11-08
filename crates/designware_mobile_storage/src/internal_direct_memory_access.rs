@@ -5,7 +5,7 @@
 //! polled state [`HostController::reset`] leaves and, finished or failed, stops and resets it, so no engine
 //! walks a chain the caller reused. The databook's sequence, as OpenBSD's `dwmmc_dma_setup` and
 //! Linux's `dw_mci_idmac_start_dma` use it: reset the IDMAC, point `DBADDR` at the chain, select it
-//! in `CONTROL`, enable it in `BUS_MODE`, send the command. Polled completion: `RINTSTS` for the card, the
+//! in `CONTROL_REGISTER`, enable it in `BUS_MODE_REGISTER`, send the command. Polled completion: `RINTSTS` for the card, the
 //! last descriptor's `OWN` for memory, since a read's `DTO` can beat its last words to memory.
 //!
 //! Name: ratified 2026-11-02 (UTC), #3092. `idmac` and the names built on it spell out
@@ -238,6 +238,13 @@ impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
         }
     }
 
+    /// How many descriptors of a chain of `count` the IDMAC still owns.
+    fn owned(&self, count: u32) -> u32 {
+        (0..count)
+            .filter(|i| self.region.read_u32(i * DESCRIPTOR_BYTES) & DES0_OWN != 0)
+            .count() as u32
+    }
+
     /// Bytes in descriptors the IDMAC still owns, of a chain of `count`: what it has not moved.
     fn owed(&self, count: u32) -> u32 {
         (0..count)
@@ -307,17 +314,19 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
 
     /// **Arm the IDMAC** on the chain at the region's start: called by `issue` once the FIFO
     /// reset has cleared and before the command is written, so the engine is ready for the first
-    /// word. `IDINTEN` stays zero and `CONTROL`'s interrupt enable clear; `IDSTS` is raw.
+    /// word. `IDINTEN` stays zero and `CONTROL_REGISTER`'s interrupt enable clear; `IDSTS` is raw.
     pub(crate) fn internal_direct_memory_access_start(&mut self) -> Result<(), Error> {
         let Some(bus) = self.direct_memory_access.as_ref().map(|d| d.bus) else {
             return Ok(());
         };
         self.registers
-            .write(registers::BUS_MODE, registers::BUS_MODE_SWR);
+            .write(registers::BUS_MODE_REGISTER, registers::BUS_MODE_SWR);
         if !self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
-            window.read(registers::BUS_MODE) & registers::BUS_MODE_SWR == 0
+            window.read(registers::BUS_MODE_REGISTER) & registers::BUS_MODE_SWR == 0
         }) {
-            return Err(Error::ResetStuck(self.registers.read(registers::BUS_MODE)));
+            return Err(Error::ResetStuck(
+                self.registers.read(registers::BUS_MODE_REGISTER),
+            ));
         }
         self.registers.write(
             registers::FIFOTH,
@@ -329,13 +338,13 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             registers::IDSTS_ALL,
         );
         self.registers.write(registers::DBADDR, bus);
-        let ctrl = self.registers.read(registers::CONTROL);
+        let ctrl = self.registers.read(registers::CONTROL_REGISTER);
         self.registers.write(
-            registers::CONTROL,
+            registers::CONTROL_REGISTER,
             ctrl | registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE,
         );
         self.registers.write(
-            registers::BUS_MODE,
+            registers::BUS_MODE_REGISTER,
             registers::BUS_MODE_DE | registers::BUS_MODE_FB,
         );
         self.registers.write(registers::PLDMND, 1);
@@ -343,9 +352,11 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     }
 
     /// Wait for the card's side (`DTO`, and `ACD` after more than one block) and the memory side
-    /// (the last descriptor closed). The deadline restarts whenever a descriptor closes, so a long
-    /// transfer is judged on progress, not on its length.
-    fn internal_direct_memory_access_wait(
+    /// (every descriptor closed). The deadline restarts whenever a descriptor closes, so a long
+    /// transfer is judged on progress, not on its length. Progress is fewer owned descriptors than
+    /// at any earlier look, so the deadline restarts at most `count` times: a controller that
+    /// reopens a descriptor or rewrites its size cannot hold the wait open.
+    pub(crate) fn internal_direct_memory_access_wait(
         &mut self,
         command: &Command,
         count: u32,
@@ -357,7 +368,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         let Some(direct_memory_access) = self.direct_memory_access.as_ref() else {
             return Err(Error::BufferSize);
         };
-        let mut owed = direct_memory_access.owed(count);
+        let mut owned = direct_memory_access.owned(count);
         let mut start = self.registers.now_microseconds();
         loop {
             let rint = self.registers.read(registers::RINTSTS);
@@ -373,15 +384,16 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             let Some(direct_memory_access) = self.direct_memory_access.as_ref() else {
                 return Err(Error::BufferSize);
             };
-            let now_owed = direct_memory_access.owed(count);
-            if rint & want == want && now_owed == 0 {
+            let now_owned = direct_memory_access.owned(count);
+            if rint & want == want && now_owned == 0 {
                 return Ok(());
             }
             let now = self.registers.now_microseconds();
-            if now_owed != owed {
-                owed = now_owed;
+            if now_owned < owned {
+                owned = now_owned;
                 start = now;
             } else if now.wrapping_sub(start) > DATA_DEADLINE_MICROSECONDS {
+                let owed = direct_memory_access.owed(count);
                 return Err(Error::DataTimeout(command.index, rint, owed));
             }
         }
@@ -389,24 +401,24 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
 
     /// **Stop the IDMAC** and hand the FIFO back to the CPU: disable it, deselect it, reset it and
     /// the FIFO, clear its status, and put back the polled thresholds. After this nothing the
-    /// controller does can reach the region. `BUS_MODE` is written whole, as
+    /// controller does can reach the region. `BUS_MODE_REGISTER` is written whole, as
     /// [`HostController::internal_direct_memory_access_start`] writes it: none of its other bits is the
-    /// firmware's to keep. A reset that does not clear is reported with the `CONTROL` word if that is
-    /// the one held, else the `BUS_MODE` word.
+    /// firmware's to keep. A reset that does not clear is reported with the `CONTROL_REGISTER` word if that is
+    /// the one held, else the `BUS_MODE_REGISTER` word.
     fn internal_direct_memory_access_stop(&mut self) -> Result<(), Error> {
         self.registers
-            .write(registers::BUS_MODE, registers::BUS_MODE_SWR);
-        let ctrl = self.registers.read(registers::CONTROL)
+            .write(registers::BUS_MODE_REGISTER, registers::BUS_MODE_SWR);
+        let ctrl = self.registers.read(registers::CONTROL_REGISTER)
             & !(registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE);
         self.registers.write(
-            registers::CONTROL,
+            registers::CONTROL_REGISTER,
             ctrl | registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET,
         );
         let quiet = self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
-            window.read(registers::CONTROL)
+            window.read(registers::CONTROL_REGISTER)
                 & (registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET)
                 == 0
-                && window.read(registers::BUS_MODE) & registers::BUS_MODE_SWR == 0
+                && window.read(registers::BUS_MODE_REGISTER) & registers::BUS_MODE_SWR == 0
         });
         self.registers.write(
             registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER,
@@ -414,13 +426,15 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         );
         self.registers
             .write(registers::FIFOTH, registers::fifoth_for_pio(self.depth));
-        let ctrl = self.registers.read(registers::CONTROL);
+        let ctrl = self.registers.read(registers::CONTROL_REGISTER);
         if quiet {
             Ok(())
         } else if ctrl & (registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET) != 0 {
             Err(Error::ResetStuck(ctrl))
         } else {
-            Err(Error::ResetStuck(self.registers.read(registers::BUS_MODE)))
+            Err(Error::ResetStuck(
+                self.registers.read(registers::BUS_MODE_REGISTER),
+            ))
         }
     }
 }
@@ -582,6 +596,27 @@ mod tests {
         assert_eq!(back, data);
     }
 
+    /// **A transfer longer than the deadline is not given up on while it progresses**: the
+    /// deadline restarts each time a descriptor closes. Moving one word per IDMAC step, with the
+    /// clock advanced 700 microseconds a reading, each of the two pages closes inside the
+    /// half-second deadline while the whole transfer takes longer than it. The simulator puts the
+    /// working range at about 500 to 900 microseconds: below it the whole transfer fits the
+    /// deadline and proves nothing, above it a single page does not.
+    #[test]
+    fn a_transfer_that_keeps_closing_descriptors_outlasts_the_deadline() {
+        let (mut h, card, memory) = polled(3);
+        let data = pattern(0x5a, 16 * 512);
+        sd::write_blocks(&mut h, &card, 80, &data).unwrap();
+        let mut h = with_internal_direct_memory_access(h, &memory);
+        h.registers_mut().direct_memory_access_words_per_step = Some(1);
+        h.registers_mut().clock_step = 700;
+        let start = h.registers_mut().now_microseconds();
+        let mut back = vec![0u8; 16 * 512];
+        sd::read_blocks(&mut h, &card, 80, &mut back).unwrap();
+        assert_eq!(back, data);
+        assert!(h.registers_mut().now_microseconds() - start > DATA_DEADLINE_MICROSECONDS);
+    }
+
     /// One more block than the region holds is refused before anything is sent, rather than
     /// written past the region's end; exactly what it holds is moved.
     #[test]
@@ -643,8 +678,14 @@ mod tests {
             let sim = h.registers_mut();
             let direct_memory_access =
                 registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE;
-            assert_eq!(sim.peek(registers::CONTROL) & direct_memory_access, 0);
-            assert_eq!(sim.peek(registers::BUS_MODE) & registers::BUS_MODE_DE, 0);
+            assert_eq!(
+                sim.peek(registers::CONTROL_REGISTER) & direct_memory_access,
+                0
+            );
+            assert_eq!(
+                sim.peek(registers::BUS_MODE_REGISTER) & registers::BUS_MODE_DE,
+                0
+            );
             assert_eq!(sim.peek(registers::FIFOTH), registers::fifoth_for_pio(32));
             sim.stall_after = None;
             sim.bus_error_at = None;
@@ -679,7 +720,7 @@ mod tests {
         std::thread::spawn(move || {
             let mut back = vec![0u8; 9 * 512];
             let r = sd::read_blocks(&mut h, &card, 60, &mut back);
-            let _ = sender.send((r, h.registers_mut().peek(registers::BUS_MODE)));
+            let _ = sender.send((r, h.registers_mut().peek(registers::BUS_MODE_REGISTER)));
         });
         let (r, bmod) = receiver
             .recv_timeout(std::time::Duration::from_secs(10))
@@ -692,8 +733,8 @@ mod tests {
     }
 
     /// **The register contract of one transfer**, write by write, on a controller whose firmware
-    /// left `CONTROL` bit 8 and the IDMAC selected (the VisionFive 2's U-Boot hands over `CONTROL` bit 25 set).
-    /// Arming keeps the firmware's bit and sets both DMA bits whatever they were; `BUS_MODE` is
+    /// left `CONTROL_REGISTER` bit 8 and the IDMAC selected (the VisionFive 2's U-Boot hands over `CONTROL_REGISTER` bit 25 set).
+    /// Arming keeps the firmware's bit and sets both DMA bits whatever they were; `BUS_MODE_REGISTER` is
     /// written whole; stopping clears both DMA bits, resets the DMA interface and the FIFO, and
     /// puts the polled thresholds back. A single block finishes on `DTO` alone.
     #[test]
@@ -701,18 +742,19 @@ mod tests {
         let (mut h, card, memory) = polled(2);
         let firmware =
             1 << 8 | registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE;
-        h.registers_mut().write(registers::CONTROL, firmware);
+        h.registers_mut()
+            .write(registers::CONTROL_REGISTER, firmware);
         let mut h = with_internal_direct_memory_access(h, &memory);
         h.registers_mut().writes.clear();
         let mut block = [0u8; 512];
         sd::read_blocks(&mut h, &card, 7, &mut block).unwrap();
         let writes = &h.registers_mut().writes;
         let from = |w: (u32, u32)| writes.iter().position(|&x| x == w).unwrap();
-        let armed = from((registers::BUS_MODE, registers::BUS_MODE_SWR));
+        let armed = from((registers::BUS_MODE_REGISTER, registers::BUS_MODE_SWR));
         assert_eq!(
             writes[armed..armed + 8],
             [
-                (registers::BUS_MODE, registers::BUS_MODE_SWR),
+                (registers::BUS_MODE_REGISTER, registers::BUS_MODE_SWR),
                 (
                     registers::FIFOTH,
                     registers::fifoth_for_direct_memory_access(32)
@@ -723,9 +765,9 @@ mod tests {
                     registers::IDSTS_ALL
                 ),
                 (registers::DBADDR, BASE as u32),
-                (registers::CONTROL, firmware),
+                (registers::CONTROL_REGISTER, firmware),
                 (
-                    registers::BUS_MODE,
+                    registers::BUS_MODE_REGISTER,
                     registers::BUS_MODE_DE | registers::BUS_MODE_FB
                 ),
                 (registers::PLDMND, 1),
@@ -735,14 +777,14 @@ mod tests {
             + 1
             + writes[armed + 1..]
                 .iter()
-                .position(|&x| x == (registers::BUS_MODE, registers::BUS_MODE_SWR))
+                .position(|&x| x == (registers::BUS_MODE_REGISTER, registers::BUS_MODE_SWR))
                 .unwrap();
         assert_eq!(
             writes[stopped..stopped + 4],
             [
-                (registers::BUS_MODE, registers::BUS_MODE_SWR),
+                (registers::BUS_MODE_REGISTER, registers::BUS_MODE_SWR),
                 (
-                    registers::CONTROL,
+                    registers::CONTROL_REGISTER,
                     1 << 8 | registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET
                 ),
                 (
@@ -770,7 +812,7 @@ mod tests {
     }
 
     /// A reset that never clears is reported, not assumed done, with the word that holds it:
-    /// `BUS_MODE` when arming, and when stopping `BUS_MODE` or `CONTROL`, whichever is held.
+    /// `BUS_MODE_REGISTER` when arming, and when stopping `BUS_MODE_REGISTER` or `CONTROL_REGISTER`, whichever is held.
     #[test]
     fn an_internal_direct_memory_access_reset_that_never_clears_is_reported_with_its_register() {
         type Hold = fn(&mut SimulatedHostController);

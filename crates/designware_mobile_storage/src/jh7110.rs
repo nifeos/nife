@@ -53,13 +53,16 @@ pub const REGISTERS_SIZE_BYTES: u64 = 0x1_0000;
 /// Name: ratified 2026-11-05 (UTC), #3276. `ciu` is spelled out as the card interface unit and the
 /// unit as `HERTZ`.
 pub const CARD_INTERFACE_UNIT_HERTZ: u32 = 50_000_000;
-/// Both trees' `fifo-depth`.
+/// Both trees' `fifo-depth`: the FIFO's depth in entries of its width, which on the JH7110 (and in
+/// every controller [`HostController::new`](crate::host_controller::HostController::new) accepts)
+/// is 32 bits, so a count of 32-bit words.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors,
-/// and the device tree's `fifo-depth` keeps its spelling; the databook's `fifo` is kept as
-/// `doc(alias = "fifo")`.
+/// Name: ratified 2026-11-07 (UTC). `fifo` becomes `queue` in every name this tree authors, and
+/// the device tree's `fifo-depth` keeps its spelling; the databook's `fifo` is kept as
+/// `doc(alias = "fifo")`. Renamed from `QUEUE_DEPTH`, since a count names the things it counts.
 #[doc(alias = "fifo")]
-pub const QUEUE_DEPTH: u32 = 32;
+#[doc(alias = "fifo-depth")]
+pub const QUEUE_DEPTH_WORDS: u32 = 32;
 /// Mainline's interrupt numbers at the platform-level interrupt controller (PLIC), indexed by slot:
 /// slot 0 is 74 and slot 1 is 75.
 ///
@@ -81,17 +84,26 @@ pub const NODE_NAMES: [[&[u8]; 2]; 2] = [
 pub struct Slot {
     /// 0 or 1.
     pub index: u8,
-    /// The window's physical base.
-    pub base: u64,
-    /// The window's size.
-    pub size: u64,
+    /// The register window's physical address, the address of the tree's `reg`.
+    ///
+    /// Name: ratified 2026-11-07 (UTC). Renamed from `base`, since an address says whether it is
+    /// virtual or physical.
+    pub registers_physical_address: u64,
+    /// The register window's size in bytes, the size of the tree's `reg`.
+    ///
+    /// Name: ratified 2026-11-07 (UTC). Renamed from `size`, since a size ends with its unit.
+    pub registers_size_bytes: u64,
     /// The tree's `interrupts`, if it has one (the vendor tree does not).
     pub interrupt: Option<u32>,
     /// The tree's `bus-width`, 1 when absent.
     pub bus_width: u8,
-    /// The tree's `fifo-depth`, if it has one.
+    /// The tree's `fifo-depth`, if it has one, in 32-bit words (see [`QUEUE_DEPTH_WORDS`]).
+    ///
+    /// Name: ratified 2026-11-07 (UTC). Renamed from `queue_depth`, since a count names the things
+    /// it counts.
     #[doc(alias = "fifo")]
-    pub queue_depth: Option<u32>,
+    #[doc(alias = "fifo-depth")]
+    pub queue_depth_words: Option<u32>,
     /// The tree's first `assigned-clock-rates` cell, or [`CARD_INTERFACE_UNIT_HERTZ`] when absent.
     ///
     /// Name: ratified 2026-11-05 (UTC), #3276. The unit is spelled out.
@@ -123,7 +135,8 @@ fn big_endian_u32(bytes: &[u8]) -> Option<u32> {
 }
 
 impl Slot {
-    /// **Slot `index`, from the node named for it**: `base` and `size` are its `reg`, and
+    /// **Slot `index`, from the node named for it**: `registers_physical_address` and
+    /// `registers_size_bytes` are its `reg`, and
     /// `property(name)` is the node's property `name`. `None` when the node's `compatible` names
     /// neither binding, since a node at the slot's name under another binding is not this
     /// controller. An absent `bus-width` is 1, and an absent or zero `assigned-clock-rates` is
@@ -134,11 +147,13 @@ impl Slot {
     /// Propagates the first error `property` returns.
     ///
     /// Name: ratified 2026-11-07 (UTC). Builds a slot from its device-tree node. Considered: the
-    /// parameter `prop`, which abbreviates `property`; a parameter spells out the word.
+    /// parameter `prop`, which abbreviates `property`; a parameter spells out the word. Considered:
+    /// the parameters `base` and `size`; an address says whether it is virtual or physical, and a
+    /// size ends with its unit.
     pub fn from_node<'t, E>(
         index: u8,
-        base: u64,
-        size: u64,
+        registers_physical_address: u64,
+        registers_size_bytes: u64,
         mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
     ) -> Result<Option<Slot>, E> {
         let Some(compat) = property(b"compatible")? else {
@@ -158,11 +173,11 @@ impl Slot {
             .map_or(1, |w| u8::try_from(w).unwrap_or(1));
         Ok(Some(Slot {
             index,
-            base,
-            size,
+            registers_physical_address,
+            registers_size_bytes,
             interrupt: property(b"interrupts")?.and_then(big_endian_u32),
             bus_width,
-            queue_depth: property(b"fifo-depth")?.and_then(big_endian_u32),
+            queue_depth_words: property(b"fifo-depth")?.and_then(big_endian_u32),
             card_interface_unit_hertz: property(b"assigned-clock-rates")?
                 .and_then(big_endian_u32)
                 .filter(|&hertz| hertz != 0)
@@ -208,11 +223,11 @@ mod tests {
             slot,
             Slot {
                 index: 1,
-                base: SLOT_1_REGISTERS_PHYSICAL_ADDRESS,
-                size: REGISTERS_SIZE_BYTES,
+                registers_physical_address: SLOT_1_REGISTERS_PHYSICAL_ADDRESS,
+                registers_size_bytes: REGISTERS_SIZE_BYTES,
                 interrupt: Some(75),
                 bus_width: 4,
-                queue_depth: Some(QUEUE_DEPTH),
+                queue_depth_words: Some(QUEUE_DEPTH_WORDS),
                 card_interface_unit_hertz: 100_000_000,
                 compatible: COMPATIBLE_MAINLINE,
                 status_okay: true,

@@ -1,9 +1,14 @@
 //! Name: ratified 2026-11-03 (UTC), #3135. The Kani harnesses, named for what they are.
 
 use crate::card::{CardSpecificData, extended_card_specific_data_sectors, extract_bits};
-use crate::host_controller::queue_step;
+use crate::command::{Command, Data, Response};
+use crate::host_controller::{
+    DATA_DEADLINE_MICROSECONDS, Error, HostController, RegisterWindowAndClock, card_clock_hertz,
+    clock_divider, queue_step,
+};
 use crate::internal_direct_memory_access::{
-    DESCRIPTOR_BYTES, MAXIMUM_DESCRIPTORS, PAGE, descriptor, descriptors_for,
+    DESCRIPTOR_BYTES, DirectMemoryAccessRegion, InternalDirectMemoryAccess, MAXIMUM_DESCRIPTORS,
+    PAGE, descriptor, descriptors_for,
 };
 use crate::partition::{MasterBootRecord, PartitionEntry};
 use crate::sd::can_address_blocks;
@@ -217,4 +222,546 @@ fn an_extended_card_specific_data_sector_count_is_total() {
         );
     }
     assert!(sectors <= u64::from(u32::MAX));
+}
+
+/// The most clock readings one harness takes. Each harness bounds its own count below this.
+const CLOCK_READINGS: usize = 8;
+
+/// **A controller and a clock that owe the driver nothing.** Every register read is whatever the
+/// solver picks, every write is dropped, and the clock is any 64-bit value, wrapping, standing
+/// still or jumping either way, up to reading `past_from`. From that reading on, each reading is
+/// more than `deadline` microseconds past every earlier one, in wrapping arithmetic: the one thing
+/// the trait's "microseconds since some fixed point" promises a wait, that time passes. The
+/// assertion is the property each wait harness proves: the driver takes no reading after
+/// `last`.
+struct AdversarialWindowAndClock {
+    deadline: u64,
+    past_from: usize,
+    last: usize,
+    readings: [u64; CLOCK_READINGS],
+    taken: usize,
+}
+
+impl AdversarialWindowAndClock {
+    fn new(deadline: u64, past_from: usize, last: usize) -> Self {
+        assert!(last < CLOCK_READINGS);
+        AdversarialWindowAndClock {
+            deadline,
+            past_from,
+            last,
+            readings: [0; CLOCK_READINGS],
+            taken: 0,
+        }
+    }
+}
+
+impl RegisterWindowAndClock for AdversarialWindowAndClock {
+    fn read(&mut self, _offset: u32) -> u32 {
+        kani::any()
+    }
+
+    fn write(&mut self, _offset: u32, _value: u32) {}
+
+    fn now_microseconds(&mut self) -> u64 {
+        assert!(
+            self.taken <= self.last,
+            "the driver read the clock again after its deadline had passed"
+        );
+        let now: u64 = kani::any();
+        if self.taken >= self.past_from {
+            let mut i = 0;
+            while i < self.taken {
+                kani::assume(now.wrapping_sub(self.readings[i]) > self.deadline);
+                i += 1;
+            }
+        }
+        self.readings[self.taken] = now;
+        self.taken += 1;
+        now
+    }
+}
+
+/// **A DMA region whose descriptors the controller rewrites at will**: every word read is the
+/// solver's, every write and copy is dropped. Three pages at a page-aligned bus address below
+/// 4 GiB, so a chain is one or two descriptors. Each access asserts that the driver asked for
+/// bytes inside the region, which the trait leaves the implementation to bound.
+struct AdversarialRegion {
+    bus_address: u64,
+}
+
+impl DirectMemoryAccessRegion for AdversarialRegion {
+    fn bus_address(&self) -> u64 {
+        self.bus_address
+    }
+
+    fn bytes(&self) -> u32 {
+        3 * PAGE
+    }
+
+    fn read_u32(&self, offset: u32) -> u32 {
+        assert!(u64::from(offset) + 4 <= u64::from(self.bytes()));
+        kani::any()
+    }
+
+    fn write_u32(&mut self, offset: u32, _value: u32) {
+        assert!(u64::from(offset) + 4 <= u64::from(self.bytes()));
+    }
+
+    fn read_bytes(&self, offset: u32, out: &mut [u8]) {
+        assert!(u64::from(offset) + out.len() as u64 <= u64::from(self.bytes()));
+    }
+
+    fn write_bytes(&mut self, offset: u32, source: &[u8]) {
+        assert!(u64::from(offset) + source.len() as u64 <= u64::from(self.bytes()));
+    }
+
+    fn barrier(&mut self) {}
+}
+
+/// A polled host over `window`, taken as `HostController::new` takes any controller whose
+/// `HCON` names a 32-bit FIFO.
+fn adversarial_host(
+    window: AdversarialWindowAndClock,
+) -> HostController<AdversarialWindowAndClock> {
+    let depth: u32 = kani::any();
+    kani::assume(depth > 0);
+    let Ok((host, _identity)) = HostController::new(window, kani::any(), Some(depth)) else {
+        kani::assume(false);
+        unreachable!()
+    };
+    host
+}
+
+/// **A wait returns at the first clock reading past its deadline**, whatever the controller
+/// answers and whatever the clock did before: wrapped past 2^64, stood still or jumped either way.
+/// The reading past the deadline is the wait's last.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.a_wait_returns_at_the_first_reading_past_its_deadline.patch`
+#[kani::proof]
+#[kani::unwind(6)]
+fn a_wait_returns_at_the_first_reading_past_its_deadline() {
+    let deadline: u64 = kani::any();
+    kani::assume(deadline < 1 << 60);
+    let past_from: usize = kani::any();
+    kani::assume((1..=3).contains(&past_from));
+    let mut host = adversarial_host(AdversarialWindowAndClock::new(
+        deadline, past_from, past_from,
+    ));
+    let met = host.is_condition_met_within(deadline, |window| window.read(0) & 1 == 0);
+    assert!(host.registers_mut().taken <= past_from + 1);
+    kani::cover!(!met && host.registers_mut().taken == past_from + 1);
+}
+
+/// **The IDMAC wait returns once the clock has passed its deadline**, whatever `RINTSTS`, `IDSTS`
+/// and the descriptors say. The deadline restarts only when a descriptor closes that was the
+/// IDMAC's at every earlier look, so a controller that toggles a descriptor's `OWN` bit or
+/// rewrites its size cannot hold the wait open: past the deadline it takes at most one reading
+/// per descriptor in the chain.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.the_direct_memory_access_wait_returns_once_its_deadline_has_passed.patch`
+#[kani::proof]
+#[kani::unwind(7)]
+fn the_direct_memory_access_wait_returns_once_its_deadline_has_passed() {
+    let past_from: usize = kani::any();
+    kani::assume((1..=2).contains(&past_from));
+    let bytes: u32 = kani::any();
+    kani::assume((1..=2 * PAGE).contains(&bytes));
+    let count = descriptors_for(bytes);
+    let window = AdversarialWindowAndClock::new(
+        DATA_DEADLINE_MICROSECONDS,
+        past_from,
+        past_from + count as usize,
+    );
+    let host = adversarial_host(window);
+    let bus_address: u64 = kani::any();
+    kani::assume(bus_address.is_multiple_of(u64::from(PAGE)) && bus_address < 1 << 31);
+    let identity = crate::host_controller::Identity {
+        version_identification: 0,
+        hardware_configuration: 1 << 7,
+        user_identification: 0,
+        queue_threshold: 0,
+        card_detect: 0,
+        firmware: [0; 5],
+    };
+    let Ok(engine) = InternalDirectMemoryAccess::new(AdversarialRegion { bus_address }, &identity)
+    else {
+        panic!("a three-page region below 2 GiB is refused");
+    };
+    let mut host = host.with_internal_direct_memory_access(engine);
+    let blocks: u32 = kani::any();
+    kani::assume((1..=16).contains(&blocks));
+    let command = Command::with_data(
+        18,
+        kani::any(),
+        Response::R1,
+        Data {
+            block_bytes: 512,
+            blocks,
+            is_write: kani::any(),
+        },
+    );
+    let result = host.internal_direct_memory_access_wait(&command, count);
+    assert!(host.registers_mut().taken <= past_from + count as usize + 1);
+    kani::cover!(matches!(
+        result,
+        Err(crate::host_controller::Error::DataTimeout(..))
+    ));
+}
+
+/// **The card clock divider is total**: for any base and target it divides by no zero, overflows
+/// nothing and panics nowhere, and the card clock it names is computed the same way. That the card
+/// clock stays at or below the target is proved at a 50 MHz base by
+/// `reset_and_the_card_clock_are_total_against_any_controller`: for any base the comparison makes
+/// the solver build both 32-bit divisions, which ran past five minutes.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.the_clock_divider_is_total.patch`
+#[kani::proof]
+fn the_clock_divider_is_total() {
+    let base: u32 = kani::any();
+    let target: u32 = kani::any();
+    if let Some(divider) = clock_divider(base, target) {
+        assert!((divider == 0) == (base <= target));
+        let _ = card_clock_hertz(base, divider);
+    }
+}
+
+/// A response kind, any of the seven.
+fn any_response() -> Response {
+    match kani::any::<u8>() % 7 {
+        0 => Response::None,
+        1 => Response::R1,
+        2 => Response::R1b,
+        3 => Response::R2,
+        4 => Response::R3,
+        5 => Response::R6,
+        _ => Response::R7,
+    }
+}
+
+/// **A controller that owes the driver nothing, and a clock that runs.** Every register read is
+/// the solver's and every write is dropped, as in [`AdversarialWindowAndClock`], but each clock
+/// reading is more than the longest deadline (the one-second power-up) past the one before, from
+/// any start, wrapping included. Every wait therefore ends at its second reading. The wait
+/// harnesses prove that a wait ends under any clock that passes its deadline; this clock lets the
+/// harnesses of whole sequences bound their loops by what the controller says rather than by time.
+/// It records the address and byte count of every write command the driver sends.
+struct AdversarialWindowAndRunningClock {
+    now: u64,
+    step: u64,
+    argument: u32,
+    byte_count: u32,
+    write_commands: u32,
+    last_write: (u32, u32),
+}
+
+impl AdversarialWindowAndRunningClock {
+    fn new() -> Self {
+        let step: u64 = kani::any();
+        kani::assume(step > crate::sd::POWER_UP_DEADLINE_MICROSECONDS && step < 1 << 40);
+        AdversarialWindowAndRunningClock {
+            now: kani::any(),
+            step,
+            argument: 0,
+            byte_count: 0,
+            write_commands: 0,
+            last_write: (0, 0),
+        }
+    }
+}
+
+impl RegisterWindowAndClock for AdversarialWindowAndRunningClock {
+    fn read(&mut self, _offset: u32) -> u32 {
+        kani::any()
+    }
+
+    fn write(&mut self, offset: u32, value: u32) {
+        use crate::registers::{BYTCNT, CMD, CMDARG, COMMAND_WRITE};
+        if offset == CMDARG {
+            self.argument = value;
+        } else if offset == BYTCNT {
+            self.byte_count = value;
+        } else if offset == CMD && value & COMMAND_WRITE != 0 {
+            self.write_commands += 1;
+            self.last_write = (self.argument, self.byte_count);
+        }
+    }
+
+    fn now_microseconds(&mut self) -> u64 {
+        self.now = self.now.wrapping_add(self.step);
+        self.now
+    }
+}
+
+/// **A command word sends the command asked for and nothing else**: the start bit, the index in
+/// bits 5:0, never the clock-update-only bit (which would make the controller skip the command),
+/// a data phase exactly when the command has one, and the write direction only on a write.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.a_command_word_sends_only_the_command_asked_for.patch`
+#[kani::proof]
+fn a_command_word_sends_only_the_command_asked_for() {
+    let data = if kani::any() {
+        Some(Data {
+            block_bytes: kani::any(),
+            blocks: kani::any(),
+            is_write: kani::any(),
+        })
+    } else {
+        None
+    };
+    let command = Command {
+        index: kani::any(),
+        argument: kani::any(),
+        response: any_response(),
+        data,
+    };
+    let word = command.register_word();
+    assert!(word & crate::registers::COMMAND_START != 0);
+    assert!(word & 0x3f == u32::from(command.index) & 0x3f);
+    assert!(word & crate::registers::COMMAND_UPDATE_CLOCK_REGISTERS_ONLY == 0);
+    assert!((word & crate::registers::COMMAND_DATA_EXPECTED != 0) == data.is_some());
+    assert!((word & crate::registers::COMMAND_WRITE != 0) == matches!(data, Some(d) if d.is_write));
+}
+
+/// **Sending a command is total against any controller**: whatever the controller answers, the
+/// send ends, panics nowhere, and maps what it saw to an error that names this command. A short
+/// response leaves words 1 to 3 zero, and a bad response carries the status bit that made it bad.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.sending_a_command_is_total_against_any_controller.patch`
+#[kani::proof]
+#[kani::unwind(3)]
+fn sending_a_command_is_total_against_any_controller() {
+    let depth: u32 = kani::any();
+    kani::assume(depth > 0);
+    let Ok((mut host, _identity)) = HostController::new(
+        AdversarialWindowAndRunningClock::new(),
+        kani::any(),
+        Some(depth),
+    ) else {
+        return;
+    };
+    let command = Command::new(kani::any(), kani::any(), any_response());
+    match host.send_command(&command) {
+        Ok(response) => {
+            if command.response != Response::R2 {
+                assert!(response[1] == 0 && response[2] == 0 && response[3] == 0);
+            }
+        }
+        Err(Error::Busy) => {}
+        Err(Error::CommandNotTaken(index) | Error::NoResponse(index)) => {
+            assert!(index == command.index);
+        }
+        Err(Error::CommandTimeout(index, _)) => assert!(index == command.index),
+        Err(Error::BadResponse(index, status)) => {
+            assert!(index == command.index);
+            assert!(status & (crate::registers::RINTSTS_RCRC | crate::registers::RINTSTS_RE) != 0);
+        }
+        Err(_) => panic!("a command with no data phase failed in its data phase"),
+    }
+}
+
+/// **Reset and the card clock are total against any controller**: a reset and a clock change at
+/// any rate end and panic nowhere, whatever the controller answers, and at the VisionFive 2's
+/// 50 MHz the card runs no faster than asked, or at the slowest rate the divider has when nothing
+/// slower exists.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.reset_and_the_card_clock_are_total_against_any_controller.patch`
+#[kani::proof]
+#[kani::unwind(3)]
+fn reset_and_the_card_clock_are_total_against_any_controller() {
+    let Ok((mut host, _identity)) = HostController::new(
+        AdversarialWindowAndRunningClock::new(),
+        crate::jh7110::CARD_INTERFACE_UNIT_HERTZ,
+        None,
+    ) else {
+        return;
+    };
+    let _ = host.reset();
+    let target: u32 = kani::any();
+    if let Ok(hertz) = host.set_clock(target) {
+        let slowest = crate::jh7110::CARD_INTERFACE_UNIT_HERTZ / 510;
+        assert!(hertz <= target || hertz == slowest);
+    }
+}
+
+/// The largest FIFO data phase the queue harness moves, in bytes. Its loop runs once per FIFO
+/// step and its inner loop once per word, so the bound is this over four, plus one.
+const QUEUE_PROOF_BYTES: usize = 16;
+
+/// **A FIFO transfer stays inside its buffer**: whatever the controller reports (any fill, any
+/// status, data that ends early or never), `read_data` and `write_data` through a FIFO one or
+/// two words deep end, index the buffer only inside it, and panic nowhere. Bounded: data phases
+/// of one or two blocks of 4 or 8 bytes. The step arithmetic does not depend on the length, and
+/// `a_queue_step_never_overruns_the_queue_or_the_buffer` proves each step for any length; the host
+/// tests move whole 512-byte blocks.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.a_queue_transfer_stays_inside_its_buffer.patch`
+#[kani::proof]
+#[kani::unwind(6)]
+fn a_queue_transfer_stays_inside_its_buffer() {
+    let depth: u32 = kani::any();
+    kani::assume((1..=2).contains(&depth));
+    let Ok((mut host, _identity)) = HostController::new(
+        AdversarialWindowAndRunningClock::new(),
+        kani::any(),
+        Some(depth),
+    ) else {
+        return;
+    };
+    let words: u32 = kani::any();
+    kani::assume((1..=2).contains(&words));
+    let blocks: u32 = kani::any();
+    kani::assume((1..=2).contains(&blocks));
+    let write: bool = kani::any();
+    let data = Data {
+        block_bytes: 4 * words,
+        blocks,
+        is_write: write,
+    };
+    let command = Command::with_data(17, kani::any(), Response::R1, data);
+    let mut buffer = [0u8; QUEUE_PROOF_BYTES];
+    let length = data.total_bytes() as usize;
+    let result = if write {
+        host.write_data(&command, &buffer[..length])
+    } else {
+        host.read_data(&command, &mut buffer[..length])
+    };
+    assert!(result != Err(Error::BufferSize));
+}
+
+/// A host whose data phases go through the IDMAC, over [`AdversarialRegion`].
+fn adversarial_direct_memory_access_host()
+-> HostController<AdversarialWindowAndRunningClock, AdversarialRegion> {
+    let Ok((host, identity)) = HostController::new(
+        AdversarialWindowAndRunningClock::new(),
+        crate::jh7110::CARD_INTERFACE_UNIT_HERTZ,
+        None,
+    ) else {
+        kani::assume(false);
+        unreachable!()
+    };
+    let bus_address: u64 = kani::any();
+    let Ok(engine) = InternalDirectMemoryAccess::new(AdversarialRegion { bus_address }, &identity)
+    else {
+        kani::assume(false);
+        unreachable!()
+    };
+    host.with_internal_direct_memory_access(engine)
+}
+
+/// A card of any size and addressing, as `identify` might have left it.
+fn any_card() -> crate::sd::Card {
+    crate::sd::Card {
+        kind: crate::sd::CardKind::SdHighCapacity,
+        relative_card_address: kani::any(),
+        operation_conditions: 0,
+        card_identification_raw: [0; 4],
+        card_specific_data_raw: [0; 4],
+        card_identification: crate::card::CardIdentification::from_sd_register(&[0; 4]),
+        blocks: kani::any(),
+        block_addressed: kani::any(),
+        bus_width: 4,
+        clock_hertz: crate::sd::TRANSFER_HERTZ,
+    }
+}
+
+/// **Reading a block never writes the card or leaves the region**: whatever the controller and
+/// the descriptors say, `read_blocks` of one block through the IDMAC ends, panics nowhere, touches
+/// the DMA region only inside it, and sends no write command.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.reading_a_block_never_writes_the_card_or_leaves_the_region.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn reading_a_block_never_writes_the_card_or_leaves_the_region() {
+    let mut host = adversarial_direct_memory_access_host();
+    let card = any_card();
+    let mut buffer = [0u8; crate::sd::BLOCK_BYTES];
+    let _ = crate::sd::read_blocks(&mut host, &card, kani::any(), &mut buffer);
+    assert!(host.registers_mut().write_commands == 0);
+}
+
+/// **Writing a block sends only the block asked for**: whatever the controller and the
+/// descriptors say, `write_blocks` of one block through the IDMAC ends, panics nowhere, touches
+/// the DMA region only inside it, and sends at most one write command. That command addresses the
+/// block asked for, is 512 bytes long, and goes out only for a block the card has.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.writing_a_block_sends_only_the_block_asked_for.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn writing_a_block_sends_only_the_block_asked_for() {
+    let mut host = adversarial_direct_memory_access_host();
+    let card = any_card();
+    let logical_block_address: u64 = kani::any();
+    let buffer = [0u8; crate::sd::BLOCK_BYTES];
+    let _ = crate::sd::write_blocks(&mut host, &card, logical_block_address, &buffer);
+    let window = host.registers_mut();
+    assert!(window.write_commands <= 1);
+    if window.write_commands == 1 {
+        assert!(crate::sd::can_address_blocks(
+            card.blocks,
+            card.block_addressed,
+            logical_block_address,
+            1
+        ));
+        assert!(window.last_write.0 == card.block_address_argument(logical_block_address));
+        assert!(window.last_write.1 == crate::sd::BLOCK_BYTES as u32);
+    }
+}
+
+/// **Bringing a card up is total against any controller**: whatever the controller and the
+/// card answer, the first three steps of `identify` (reset and `CMD0`, `CMD8`, power-up by
+/// `ACMD41` or `CMD1`, then `CMD2`, `CMD3`, `CMD9` and `CMD7`) end, panic nowhere and send no write
+/// command. `identify` as one harness ran past five minutes; this and
+/// `configuring_a_card_is_total_against_any_controller` prove its steps, and what `identify` does
+/// between them is to build the `Card` from their results.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.bringing_a_card_up_is_total_against_any_controller.patch`
+#[kani::proof]
+#[kani::unwind(3)]
+fn bringing_a_card_up_is_total_against_any_controller() {
+    let Ok((mut host, _identity)) = HostController::new(
+        AdversarialWindowAndRunningClock::new(),
+        crate::jh7110::CARD_INTERFACE_UNIT_HERTZ,
+        None,
+    ) else {
+        return;
+    };
+    let mut steps = 0;
+    if let Ok(v2) = crate::sd::go_idle_and_check_interface(&mut host) {
+        steps += 1;
+        if let Ok((kind, _operation_conditions)) = crate::sd::power_up(&mut host, v2) {
+            steps += 1;
+            if crate::sd::address_and_select(&mut host, kind).is_ok() {
+                steps += 1;
+            }
+        }
+    }
+    assert!(host.registers_mut().write_commands == 0);
+    kani::cover!(steps == 3);
+}
+
+/// **Configuring a card is total against any controller**: whatever the controller, the card and
+/// its CSD and `EXT_CSD` say, the last steps of `identify` (bus width, block length and clock for
+/// an SD card; clock and `EXT_CSD` through the IDMAC for an eMMC) end, panic nowhere, touch the DMA
+/// region only inside it, and send no write command. A configured SD card has a capacity and runs
+/// no faster than the transfer clock; the CID decodes `identify` uses are total.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.configuring_a_card_is_total_against_any_controller.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn configuring_a_card_is_total_against_any_controller() {
+    let mut host = adversarial_direct_memory_access_host();
+    let mut card = any_card();
+    let card_specific_data: [u32; 4] = kani::any();
+    let card_identification: [u32; 4] = kani::any();
+    let _ = crate::card::CardIdentification::from_sd_register(&card_identification);
+    let _ = crate::card::CardIdentification::multimedia_card(&card_identification);
+    if kani::any() {
+        if crate::sd::configure_sd(&mut host, &mut card, &card_specific_data, kani::any()).is_ok() {
+            assert!(card.blocks > 0);
+            assert!(card.clock_hertz <= crate::sd::TRANSFER_HERTZ);
+        }
+    } else {
+        let _ = crate::sd::configure_multimedia_card(&mut host, &mut card, &card_specific_data);
+    }
+    assert!(host.registers_mut().write_commands == 0);
 }

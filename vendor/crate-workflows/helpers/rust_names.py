@@ -33,7 +33,13 @@ name with the alias and no stated source fails, and so does a stated source with
 exemption is checkable or it is not one. A parameter or a local binding has no doc comment, so it
 cannot be kept and takes the spelled-out word. A package or a `[[bin]]` has no item to carry an
 attribute, so it keeps its name by opening the crate root's `//!` docs with `(<name>, <source>)`;
-no alias is needed. The rule follows the naming rules page of the
+no alias is needed.
+
+**An integer constant is never kept.** A `const` or `static` of an integer type is a register
+offset, a bit, a field or a command code, and it takes the spelled-out name whatever its source
+calls it: `SD_SEND_OPERATION_CONDITIONS`, never `SD_SEND_OP_COND`. The source's spelling goes in
+`#[doc(alias)]`, which is where a search for it lands. Such a constant that claims the kept form
+fails with that reason. The rule follows the naming rules page of the
 operating system project this template serves (design/naming.md there, "A kept foreign name
 carries its expansion").
 
@@ -54,6 +60,7 @@ RAW_STRING = re.compile(r'(?:b|c)?r(#*)"')
 CHAR_LITERAL = re.compile(r"'(?:\\(?:x[0-9a-fA-F]{2}|u\{[0-9a-fA-F_]+\}|.)|[^\\'\n])'")
 NUMBER = re.compile(r'[0-9][0-9A-Za-z_]*')
 COMPONENT = re.compile(r'[0-9]+|[A-Z]+(?![a-z])|[A-Z]?[a-z]+|[A-Z]+')
+INTEGERS = {'u8', 'u16', 'u32', 'u64', 'u128', 'usize', 'i8', 'i16', 'i32', 'i64', 'i128', 'isize'}
 KEYWORDS = {'mut', 'ref', 'box', 'in', 'self', 'Self', 'super', 'crate', 'true', 'false', 'as',
             'if', 'else', 'match', 'move', 'return', 'loop', 'while', 'for', 'let', 'const'}
 
@@ -130,8 +137,9 @@ def tokens(text):
                 else:
                     i += 1
         elif c.isdigit():
-            i = NUMBER.match(text, i).end()
-            out.append(Token('num', '0', line))
+            end = NUMBER.match(text, i).end()
+            out.append(Token('num', text[i:end], line))
+            i = end
         elif IDENT_START.match(c):
             raw = RAW_STRING.match(text, i)
             if raw:
@@ -164,13 +172,16 @@ def tokens(text):
 
 class Definition:
     """One name the crate chose: `name`, `kind`, `line`, the doc comment lines above it (`docs`)
-    and the `#[doc(alias)]` strings it carries (`aliases`)."""
+    and the `#[doc(alias)]` strings it carries (`aliases`). A definition inside inline modules also
+    carries their names (`module`, outermost first); a `const` or `static` carries its type's first
+    word (`type_name`) and the tokens of its initializer (`value`, as text)."""
 
     def __init__(self, name, kind, line, docs=(), aliases=(), returns_bool=False, takes_mut=False):
         self.name, self.kind, self.line = name, kind, line
         self.docs, self.aliases = list(docs), list(aliases)
         # For a `fn`: whether it returns `bool`, and whether it takes any `&mut`.
         self.returns_bool, self.takes_mut = returns_bool, takes_mut
+        self.module, self.type_name, self.value = (), '', ()
 
     def __repr__(self):
         return f'{self.kind} {self.name}@{self.line}'
@@ -218,6 +229,7 @@ class _Reader:
     def __init__(self, toks):
         self.toks = toks
         self.out = []
+        self.modules = []
 
     def at(self, i):
         return self.toks[i] if 0 <= i < len(self.toks) else None
@@ -225,6 +237,7 @@ class _Reader:
     def add(self, t, kind, docs=(), aliases=()):
         if t is not None and t.kind == 'ident' and t.text != '_' and t.text not in KEYWORDS:
             self.out.append(Definition(t.text, kind, t.line, docs, aliases))
+            self.out[-1].module = tuple(self.modules)
             return self.out[-1]
         return None
 
@@ -399,7 +412,8 @@ class _Reader:
                     and nxt.text not in ('fn', 'unsafe', 'extern', 'async'):
                 name = self.at(i + 2) if nxt.text == 'mut' else nxt
                 if owned:
-                    self.add(name, 'const' if word == 'const' else 'static', docs, aliases)
+                    made = self.add(name, 'const' if word == 'const' else 'static', docs, aliases)
+                    self.initializer(made, i)
                 docs, aliases = [], []
                 i += 2
             elif word in ('struct', 'union', 'enum') and _is(nxt, 'ident'):
@@ -424,7 +438,9 @@ class _Reader:
                 j = i + 2
                 if _is(self.at(j), 'punct', '{'):
                     self.add(nxt, 'module', docs, aliases)
+                    self.modules.append(nxt.text)
                     i = self.block_group(j, 'module')
+                    self.modules.pop()
                 else:
                     i = j  # `mod x;` is its file, which the checks read by name
                 docs, aliases = [], []
@@ -449,6 +465,28 @@ class _Reader:
             else:
                 i += 1
         return end
+
+    def initializer(self, made, i):
+        """Record on the const or static at `i` its type's first word and its initializer."""
+        if made is None:
+            return
+        depth, colon, equals = 0, None, None
+        for j in range(i + 1, len(self.toks)):
+            t = self.toks[j]
+            if t.kind == 'punct' and t.text in OPEN:
+                depth += 1
+            elif t.kind == 'punct' and t.text in CLOSE:
+                depth -= 1
+            elif depth == 0 and _is(t, 'punct', ':') and colon is None and equals is None:
+                colon = j
+            elif depth == 0 and _is(t, 'punct', '=') and equals is None:
+                equals = j
+            elif depth == 0 and _is(t, 'punct', ';'):
+                if equals is not None:
+                    made.value = tuple(x.text for x in self.toks[equals + 1:j])
+                break
+        if colon is not None and _is(self.at(colon + 1), 'ident'):
+            made.type_name = self.at(colon + 1).text
 
     def angle(self, i):
         depth = 0
@@ -488,6 +526,11 @@ def components(identifier):
 SOURCE = '\\(\\s*`?{name}`?\\s*,\\s*([^)]*[A-Za-z][^)]*)\\)'
 
 
+def is_integer_constant(definition):
+    """Whether `definition` is a `const` or `static` of an integer type."""
+    return definition.kind in ('const', 'static') and definition.type_name in INTEGERS
+
+
 def kept(definition):
     """(kept, why) for a name a check refuses: whether it states its source in the kept form, and
     what it lacks when it claims the form and falls short."""
@@ -499,6 +542,14 @@ def kept(definition):
     if definition.kind in ('package', 'program'):
         # A package has no item to carry an attribute: its crate root's docs state the source.
         return bool(source), ''
+    if is_integer_constant(definition):
+        # A register, bit or command constant takes the spelled-out name: the source spelling is
+        # its alias, never its name.
+        if source or alias:
+            return False, ('it is an integer constant (a register, a bit, a field or a command), '
+                           'which is never kept: name what it is and carry the source spelling in '
+                           f'#[doc(alias = "{definition.name}")]')
+        return False, ''
     if source and alias:
         return True, ''
     if alias:
@@ -706,14 +757,25 @@ mod outer;
         if components(name) != want_parts:
             failed += 1
             print(f'rust_names selftest: components({name}) = {components(name)}', file=sys.stderr)
-    good = Definition('CAP', 'const', 1, ['**Controller Capabilities** (CAP, NVM Express Base '
+    good = Definition('CAP', 'type', 1, ['**Controller Capabilities** (CAP, NVM Express Base '
                                           'Specification 2.0, section 3.1.1).'], ['controller capabilities'])
     no_source = Definition('CAP', 'const', 1, ['Controller capabilities.'], ['controller capabilities'])
     no_alias = Definition('CAP', 'const', 1, ['(CAP, NVM Express Base Specification 2.0).'])
     local = Definition('rx', 'binding', 1)
+    # An integer constant with both parts is still not kept; a non-integer item is.
+    command = definitions('/// **ACMD41** (SD_SEND_OP_COND, the SD specification).\n'
+                          '#[doc(alias = "SD send operation conditions")]\n'
+                          'pub const SD_SEND_OP_COND: u8 = 41;\n')[0]
+    table = definitions('/// **Controller Capabilities** (Cap, NVM Express Base Specification).\n'
+                        '#[doc(alias = "controller capabilities")]\n'
+                        'pub struct Cap;\n')[0]
+    bit = definitions('/// A bit (FIFO_RESET, OpenBSD).\npub static FIFO_RESET: u32 = 1 << 1;\n')[0]
     checks = [(kept(good), (True, '')), (kept(no_source)[0], False), (kept(no_alias)[0], False),
               ('states no source' in kept(no_source)[1], True),
-              ('no #[doc(alias' in kept(no_alias)[1], True), (kept(local), (False, ''))]
+              ('no #[doc(alias' in kept(no_alias)[1], True), (kept(local), (False, '')),
+              (kept(command)[0], False), ('never kept' in kept(command)[1], True),
+              (kept(bit)[0], False), ('never kept' in kept(bit)[1], True),
+              (kept(table), (True, '')), (command.type_name, 'u8')]
     for k, (have, want_v) in enumerate(checks):
         if have != want_v:
             failed += 1

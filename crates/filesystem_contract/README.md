@@ -4,7 +4,7 @@ The wire protocols of a filesystem stack, as code: the **block protocol** betwee
 server and a block server, and the **file protocol** between a client and the filesystem server.
 `no_std`, no dependencies, no system calls. It was written for the nife kernel's filesystem
 stack, whose block server, filesystem server, caretakers and clients share this one definition so
-they cannot drift. A new verb changes this crate; the kernel routes the words as any IPC message
+they cannot drift. A new verb changes this crate; the kernel routes the words as any inter-process communication (IPC) message
 and never reads an opcode.
 
 Each request is an endpoint `CALL` of two words, answered through a one-shot reply capability. Bytes
@@ -42,7 +42,7 @@ defined). The opcode sits in bits 63:56 of the first word (`OPERATION_SHIFT`, `r
 - `READY` is the filesystem server's readiness word, and `DESCENT_REFUSED` a caretaker's refusal.
   `rm` defines what the `rm` program reports.
 
-## Usage
+## EXAMPLES
 
 ```rust
 use filesystem_contract::{dir, fs, operation, reply_err, reply_errno, req};
@@ -81,9 +81,22 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
 cargo kani
 ```
 
-The minimum supported Rust version is 1.88. The tests that pin the nife test fixture against these
-protocols live with the fixture, and the ones that pin the fixture against a glob matcher live with
-the matcher.
+The tests that pin the nife test fixture against these protocols live with the fixture, and the
+ones that pin the fixture against a glob matcher live with the matcher.
+
+## BUGS
+
+- `STATFS` answers about the whole image, never a subtree, and its free count is a forecast, not a
+  reservation: the store's `ENOSPC` at write time decides. Two subtrees on one image can signal
+  through it.
+- `SYNC` syncs the whole device and does not fence: a write and a sync issued at once on two
+  handles are unordered.
+- The verb table does not make the caretakers interchangeable: what each attenuates to stays
+  hand-written.
+
+## Minimum Rust version
+
+Rust 1.88.
 
 ## License
 

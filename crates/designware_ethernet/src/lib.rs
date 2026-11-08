@@ -2,20 +2,20 @@
 //! **The Synopsys `DesignWare` Ethernet `QoS` controller, as pure logic**: radon's network ports.
 //!
 //! Everything the driver's two halves compute and nothing either touches. A kernel half brings the
-//! controller and PHY up, measures DMA coherence and starts the DMA; a network-stack half fills
-//! descriptors and moves the tail pointers. Adapted from OpenBSD's `dwqe` (`sys/dev/ic/dwqe.c`,
-//! `dwqereg.h`, `sys/dev/fdt/if_dwqe_fdt.c`, whose JH7110 path reads `starfive,tx-use-rgmii-clk`)
-//! `ytphy` (`sys/dev/mii/ytphy.c`) and `ukphy_status` (`sys/dev/mii/ukphy_subr.c`); FreeBSD's `eqos`
-//! was a cross-check, and GPL sources gave hardware facts only, no code. Those were Linux's `stmmac`
-//! and `dwmac-starfive.c`, `include/uapi/linux/mii.h`, `include/linux/stmmac.h` and
-//! `drivers/net/phy/motorcomm.c`.
+//! controller and its PHY (physical layer device) up, measures direct memory access (DMA) coherence
+//! and starts the DMA; a network-stack half fills descriptors and moves the tail pointers. Adapted
+//! from OpenBSD's `dwqe` (`sys/dev/ic/dwqe.c`, `dwqereg.h`, `sys/dev/fdt/if_dwqe_fdt.c`, whose
+//! JH7110 path reads `starfive,tx-use-rgmii-clk`) `ytphy` (`sys/dev/mii/ytphy.c`) and
+//! `ukphy_status` (`sys/dev/mii/ukphy_subr.c`); FreeBSD's `eqos` was a cross-check, and GPL sources
+//! gave hardware facts only, no code. Those were Linux's `stmmac` and `dwmac-starfive.c`,
+//! `include/uapi/linux/mii.h`, `include/linux/stmmac.h` and `drivers/net/phy/motorcomm.c`.
 //!
 //! Name: ratified 2026-10-07 (calef, #1806): Synopsys's name, spelled out per §154 (the acronym
 //! test). The argument its minting lane gave: PROVISIONAL (milestone 53 (the board's own
 //! peripherals: network and storage on real silicon)'s lane, 2026-10-06 UTC); the manifest pointed
 //! to this paragraph for the argument and the alternative an architect may prefer.
 
-//! The ISC license requires this notice:
+//! The Internet Systems Consortium (ISC) license requires this notice:
 //!
 //! ```text
 //! SPDX-License-Identifier: ISC
@@ -77,7 +77,8 @@
 //!
 //! - Nothing here has touched the device; every test runs against `simulator`. One receive and one
 //!   transmit queue, polled: no interrupt, offloads, jumbo frames or multicast.
-//! - Only `gmac0` (`16030000`) is wired; `gmac1`'s SYS-domain clocks have no plan.
+//! - Only `gmac0` (`16030000`) is wired; `gmac1`'s clocks in the SYS (system) domain have no
+//!   plan.
 #[cfg(test)]
 extern crate std;
 
@@ -106,11 +107,12 @@ pub use data_plane::{DataPlane, DirectMemoryAccessRegion, Tails, TransmitError};
 use descriptor::*;
 pub use descriptor::{
     BUFFER_BYTES, CRC_BYTES, DESCRIPTOR_BYTES, MAXIMUM_FRAME_BYTES,
-    RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID, RECEIVE_DESCRIPTOR_WORD_3_CONTEXT_DESCRIPTOR,
-    RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY, RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR,
-    RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION, RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR,
-    RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE, RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_MASK,
-    RECEIVE_ENTRIES, ReceiveVerdict, TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK,
+    RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID,
+    RECEIVE_DESCRIPTOR_WORD_3_CONTEXT_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_ERROR_SUMMARY,
+    RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION,
+    RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR, RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
+    RECEIVE_DESCRIPTOR_WORD_3_PACKET_LENGTH_MASK, RECEIVE_ENTRIES, ReceiveVerdict,
+    TRANSMIT_DESCRIPTOR_WORD_2_BUFFER_1_LENGTH_MASK,
     TRANSMIT_DESCRIPTOR_WORD_2_INTERRUPT_ON_COMPLETION, TRANSMIT_DESCRIPTOR_WORD_3_ERROR_SUMMARY,
     TRANSMIT_DESCRIPTOR_WORD_3_FIRST_SEGMENT, TRANSMIT_DESCRIPTOR_WORD_3_FRAME_LENGTH_MASK,
     TRANSMIT_DESCRIPTOR_WORD_3_LAST_SEGMENT, TRANSMIT_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,

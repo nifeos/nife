@@ -2,8 +2,8 @@
 //! witnesses' verdict words, and the shapes of the `walk` and `throughput` benchmarks, in one place
 //! so the three programs that touch them agree: the host build (which writes these
 //! into the RedoxFS image with the host tool), the client (which reads and writes them through the
-//! FS server), and the kernel test (which asserts the client's report). Not part of either wire
-//! protocol: test data and test hooks only, and nothing that boots depends on it. Its one
+//! filesystem server), and the kernel test (which asserts the client's report). Not part of either
+//! wire protocol: test data and test hooks only, and nothing that boots depends on it. Its one
 //! dependency is `filesystem_contract`.
 //!
 //! # BUGS
@@ -18,6 +18,10 @@
 //! benchmark shapes). Calef names crates.
 
 #![no_std]
+
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
 
 /// The version of the test disk layouts the host build writes and the programs read: 1. A break
 /// bumps it, with the dated ledger entry the interface-stability discipline owes; an addition an

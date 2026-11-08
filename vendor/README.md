@@ -182,24 +182,33 @@ and priced it is notes/redoxfs-audit.md).
   `script/vendor-verify` asks the different question those cannot: not "does it still build" but
   "is this tree what we say it is".
 
-## crate-workflows, at upstream commit d3c634f520af
+## crate-workflows, at upstream commit 965f58a348a6
 
 The naming gates every repository shares, from `nifeos/crate-workflows`, the template that crate
 and package repositories call. A gate that is not specific to nife lives once, there; nife carries
 a pinned copy so it runs the same words as the crates do, and the two cannot drift.
 
-- **Source:** GitHub's archive of upstream commit `d3c634f520af28152aa29f2ee84122ee4975f77c` (main). The
+- **Source:** GitHub's archive of upstream commit `965f58a348a6c9ca7846ea155883cda7241b1934` (main). The
   pin's sha256 is of the archive's uncompressed tar stream,
-  `bf168f64c71aef0e2940373f4432f41f4e1e4aa9b02fa2f42fed6ae1b5baa938`.
+  `c4272b4d0b569887a09875e3913df6d9a4b537a0d9e7d8dcd3f41c0dfec63253`.
 - **What is vendored:** only the pin's `include` list: `helpers/naming_words.toml` (the words),
   `helpers/rust_names.py` (the Rust lexer), the checks `helpers/spelled_out.py`,
   `helpers/unit_symbols.py`, `helpers/british_spelling.py`, `helpers/service_model.py`,
-  `helpers/contract_names.py` and `helpers/question_shape.py`, and the two licences. `script/vendor-verify` fails a file under `vendor/crate-workflows/` that the
+  `helpers/contract_names.py` and `helpers/question_shape.py`; the report-only crate gates
+  `helpers/register_names.py`, `helpers/abbreviations.py`, `helpers/prose_acronyms.py`,
+  `helpers/readme_acronyms.py`, `helpers/inflated_wording.py` and `helpers/readme_sections.py`,
+  with the files they read (`helpers/prose_text.py`, `helpers/readme_documents.py`, the word lists
+  `helpers/english_words.txt` and `helpers/technical_words.txt` with `helpers/english_words.LICENSE`,
+  `helpers/prose_acronyms.toml` and `helpers/inflated_wording.toml`); and the two licences. `script/vendor-verify` fails a file under `vendor/crate-workflows/` that the
   list does not name, as it fails any unrecorded edit. No registry carries the template, so the pin
   says `registry = none` and `script/vendor-watch` reports its commits as the releases.
 - **Divergence from upstream, exhaustively:** none. The patch is empty. A change to a word or a
   check goes to `nifeos/crate-workflows` as its own pull request, and the pin moves to the merged
   commit (never to a branch).
+- **The report-only crate gates** run over every crate under `crates/` in `script/lint`, through
+  `helpers/template_report_gates.py`. A finding that exists never fails; a count over
+  `helpers/template_report_baseline.txt` for a crate and gate does, and `--bank` lowers the baseline
+  and never raises it.
 - **What nife adds beside it** (`helpers/vendored_name_gates.py`), because the template has no
   counterpart: the ceilings and the net-growth half of the `cap` and unit ratchets, the tables of
   names a rule does not reach (`CAP_KEPT`, `UNIT_KEPT`, `UNIT_STD`), the units the unit ratchet

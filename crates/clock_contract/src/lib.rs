@@ -1,6 +1,7 @@
 //! The wall-clock contract (reading the clock is a page, setting it is a page you may write,
 //! proposing is an endpoint): the clock page's layout, the propose protocol and the policy the
-//! service applies, defined once for the clock service, its readers, the std PAL and the tests.
+//! service applies, defined once for the clock service, its readers, the standard library's
+//! platform abstraction layer and the tests.
 //!
 //! Reading is a read-only mapping of [`ClockPage`] plus the monotonic counter, setting is a
 //! read/write mapping of the same page, and proposing is an endpoint [`policy::decide`] answers.
@@ -17,6 +18,10 @@
 //! `_contract` (calef's 2026-10-18 ruling).
 
 #![cfg_attr(not(test), no_std)]
+
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
 
 // The atomics are loom's under `--cfg loom` and the real ones otherwise, which is what lets
 // the `loom` model checker replay this seqlock under every interleaving the C11 model permits (build

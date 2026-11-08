@@ -53,9 +53,13 @@ pub(crate) const MULTIMEDIA_CARD_RELATIVE_CARD_ADDRESS: u16 = 1;
 #[non_exhaustive]
 pub enum CardKind {
     /// SD 1.x, standard capacity, byte addressed.
-    SdV1,
+    ///
+    /// Name: ratified 2026-11-07 (UTC). Renamed from `SdV1`, since `V` abbreviates version.
+    SdVersion1,
     /// SD 2.0 or later, standard capacity, byte addressed.
-    SdV2,
+    ///
+    /// Name: ratified 2026-11-07 (UTC). Renamed from `SdV2`, since `V` abbreviates version.
+    SdVersion2,
     /// SDHC, SDXC or SDUC: block addressed.
     SdHighCapacity,
     /// An eMMC (embedded multimedia card) or an MMC (multimedia card). Block addressed when the OCR
@@ -231,7 +235,10 @@ pub fn identify<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
 
 /// Steps 1 and 2: reset the controller at the identification clock, `CMD0`, then `CMD8`. Returns
 /// whether the card echoed the check pattern (SD 2.0 or later).
-fn go_idle_and_check_interface<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+pub(crate) fn go_idle_and_check_interface<
+    R: RegisterWindowAndClock,
+    D: DirectMemoryAccessRegion,
+>(
     host: &mut HostController<R, D>,
 ) -> Result<bool, InitializationError> {
     host.reset().map_err(InitializationError::Controller)?;
@@ -258,7 +265,7 @@ fn go_idle_and_check_interface<R: RegisterWindowAndClock, D: DirectMemoryAccessR
 
 /// Step 3: `ACMD41` until the card is powered up, or `CMD1` for an eMMC. Returns which kind of card
 /// answered and its OCR.
-fn power_up<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+pub(crate) fn power_up<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
     host: &mut HostController<R, D>,
     v2: bool,
 ) -> Result<(CardKind, u32), InitializationError> {
@@ -267,9 +274,9 @@ fn power_up<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
             let kind = if operation_conditions & OPERATION_CONDITIONS_HIGH_CAPACITY != 0 {
                 CardKind::SdHighCapacity
             } else if v2 {
-                CardKind::SdV2
+                CardKind::SdVersion2
             } else {
-                CardKind::SdV1
+                CardKind::SdVersion1
             };
             (kind, operation_conditions)
         }
@@ -287,7 +294,7 @@ fn power_up<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
 
 /// Step 4: `CMD2` for the CID, `CMD3` for the relative address, `CMD9` for the CSD, `CMD7` to
 /// select. Returns the raw CID, the address and the raw CSD.
-fn address_and_select<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+pub(crate) fn address_and_select<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
     host: &mut HostController<R, D>,
     kind: CardKind,
 ) -> Result<([u32; 4], u16, [u32; 4]), InitializationError> {
@@ -338,7 +345,7 @@ fn address_and_select<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
 }
 
 /// Steps 5 and 6 for an eMMC: the transfer clock, then `EXT_CSD` for the true sector count.
-fn configure_multimedia_card<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+pub(crate) fn configure_multimedia_card<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
     host: &mut HostController<R, D>,
     card: &mut Card,
     card_specific_data_raw: &[u32; 4],
@@ -355,7 +362,7 @@ fn configure_multimedia_card<R: RegisterWindowAndClock, D: DirectMemoryAccessReg
         0,
         Response::R1,
         Data {
-            block_size: BLOCK_BYTES as u32,
+            block_bytes: BLOCK_BYTES as u32,
             blocks: 1,
             is_write: false,
         },
@@ -374,7 +381,7 @@ fn configure_multimedia_card<R: RegisterWindowAndClock, D: DirectMemoryAccessReg
 
 /// Steps 5 and 6 for an SD card: the capacity from the CSD, `ACMD6` to 4-bit if the slot allows,
 /// `CMD16` to 512 bytes, then the transfer clock.
-fn configure_sd<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+pub(crate) fn configure_sd<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
     host: &mut HostController<R, D>,
     card: &mut Card,
     card_specific_data_raw: &[u32; 4],
@@ -539,7 +546,7 @@ fn data_command(card: &Card, logical_block_address: u64, blocks: u32, write: boo
         card.block_address_argument(logical_block_address),
         Response::R1,
         Data {
-            block_size: BLOCK_BYTES as u32,
+            block_bytes: BLOCK_BYTES as u32,
             blocks,
             is_write: write,
         },

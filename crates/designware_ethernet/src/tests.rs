@@ -17,123 +17,147 @@ fn frame(length: usize, seed: u8) -> Vec<u8> {
 
 #[test]
 fn start_hands_the_device_every_receive_buffer_but_one() {
-    let mut nic =
+    let mut network_interface_controller =
         NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
-    nic.program_rings_and_start(PHYSICAL_ADDRESS);
+    network_interface_controller.program_rings_and_start(PHYSICAL_ADDRESS);
     let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
-    nic.with(|r, t| data_plane.start(r, t));
+    network_interface_controller.with(|r, t| data_plane.start(r, t));
     assert_eq!(
-        nic.receive_tail(),
+        network_interface_controller.receive_tail(),
         (PHYSICAL_ADDRESS + layout::receive_descriptor(RECEIVE_ENTRIES - 1)) as u32
     );
-    assert_eq!(nic.receive_available(), usize::from(RECEIVE_ENTRIES - 1));
-    assert!(nic.barriers() >= 1);
+    assert_eq!(
+        network_interface_controller.receive_available(),
+        usize::from(RECEIVE_ENTRIES - 1)
+    );
+    assert!(network_interface_controller.barriers() >= 1);
 }
 
 #[test]
 fn frames_arrive_in_order_through_more_than_one_lap_of_the_ring() {
-    let mut nic =
+    let mut network_interface_controller =
         NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
-    nic.program_rings_and_start(PHYSICAL_ADDRESS);
+    network_interface_controller.program_rings_and_start(PHYSICAL_ADDRESS);
     let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
-    nic.with(|r, t| data_plane.start(r, t));
+    network_interface_controller.with(|r, t| data_plane.start(r, t));
     let mut out = vec![0u8; MAXIMUM_FRAME_BYTES];
     for k in 0..(3 * RECEIVE_ENTRIES as usize) {
         let f = frame(60 + k, k as u8);
-        assert!(nic.wire_in(&f), "the device had a buffer for frame {k}");
-        let n = nic.with(|r, t| data_plane.receive(r, t, &mut out)).unwrap();
+        assert!(
+            network_interface_controller.wire_in(&f),
+            "the device had a buffer for frame {k}"
+        );
+        let n = network_interface_controller
+            .with(|r, t| data_plane.receive(r, t, &mut out))
+            .unwrap();
         assert_eq!(&out[..n], &f[..]);
     }
-    assert_eq!(nic.with(|r, t| data_plane.receive(r, t, &mut out)), None);
+    assert_eq!(
+        network_interface_controller.with(|r, t| data_plane.receive(r, t, &mut out)),
+        None
+    );
     assert_eq!(data_plane.dropped, 0);
 }
 
 #[test]
 fn a_ring_the_driver_does_not_drain_fills_to_one_short_and_then_refuses() {
-    let mut nic =
+    let mut network_interface_controller =
         NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
-    nic.program_rings_and_start(PHYSICAL_ADDRESS);
+    network_interface_controller.program_rings_and_start(PHYSICAL_ADDRESS);
     let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
-    nic.with(|r, t| data_plane.start(r, t));
+    network_interface_controller.with(|r, t| data_plane.start(r, t));
     let accepted = (0..usize::from(RECEIVE_ENTRIES) + 4)
-        .filter(|&k| nic.wire_in(&frame(64, k as u8)))
+        .filter(|&k| network_interface_controller.wire_in(&frame(64, k as u8)))
         .count();
     assert_eq!(accepted, usize::from(RECEIVE_ENTRIES - 1));
     // Draining one makes room for exactly one more.
     let mut out = vec![0u8; MAXIMUM_FRAME_BYTES];
     assert!(
-        nic.with(|r, t| data_plane.receive(r, t, &mut out))
+        network_interface_controller
+            .with(|r, t| data_plane.receive(r, t, &mut out))
             .is_some()
     );
-    assert!(nic.wire_in(&frame(64, 0xee)));
-    assert!(!nic.wire_in(&frame(64, 0xef)));
+    assert!(network_interface_controller.wire_in(&frame(64, 0xee)));
+    assert!(!network_interface_controller.wire_in(&frame(64, 0xef)));
 }
 
 #[test]
 fn a_bad_frame_is_dropped_and_counted_without_stalling_the_ring() {
-    let mut nic =
+    let mut network_interface_controller =
         NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
-    nic.program_rings_and_start(PHYSICAL_ADDRESS);
+    network_interface_controller.program_rings_and_start(PHYSICAL_ADDRESS);
     let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
-    nic.with(|r, t| data_plane.start(r, t));
-    nic.wire_in_with_error(&frame(64, 1));
+    network_interface_controller.with(|r, t| data_plane.start(r, t));
+    network_interface_controller.wire_in_with_error(&frame(64, 1));
     let good = frame(80, 9);
-    nic.wire_in(&good);
+    network_interface_controller.wire_in(&good);
     let mut out = vec![0u8; MAXIMUM_FRAME_BYTES];
-    let n = nic.with(|r, t| data_plane.receive(r, t, &mut out)).unwrap();
+    let n = network_interface_controller
+        .with(|r, t| data_plane.receive(r, t, &mut out))
+        .unwrap();
     assert_eq!(&out[..n], &good[..]);
     assert_eq!(data_plane.dropped, 1);
 }
 
 #[test]
 fn transmitted_frames_leave_in_order_and_the_ring_is_reclaimed() {
-    let mut nic =
+    let mut network_interface_controller =
         NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
-    nic.program_rings_and_start(PHYSICAL_ADDRESS);
+    network_interface_controller.program_rings_and_start(PHYSICAL_ADDRESS);
     let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
-    nic.with(|r, t| data_plane.start(r, t));
+    network_interface_controller.with(|r, t| data_plane.start(r, t));
     let mut sent = Vec::new();
     for k in 0..(3 * TRANSMIT_ENTRIES as usize) {
         let f = frame(42 + k, k as u8);
-        nic.with(|r, t| data_plane.transmit(r, t, &f)).unwrap();
+        network_interface_controller
+            .with(|r, t| data_plane.transmit(r, t, &f))
+            .unwrap();
         sent.push(f);
-        nic.step();
+        network_interface_controller.step();
     }
-    assert_eq!(nic.wire_out(), sent);
+    assert_eq!(network_interface_controller.wire_out(), sent);
 }
 
 #[test]
 fn a_full_transmit_ring_refuses_rather_than_overwriting_an_owned_descriptor() {
-    let mut nic =
+    let mut network_interface_controller =
         NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
-    nic.program_rings_and_start(PHYSICAL_ADDRESS);
+    network_interface_controller.program_rings_and_start(PHYSICAL_ADDRESS);
     let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
-    nic.with(|r, t| data_plane.start(r, t));
+    network_interface_controller.with(|r, t| data_plane.start(r, t));
     for k in 0..usize::from(TRANSMIT_ENTRIES - 1) {
-        nic.with(|r, t| data_plane.transmit(r, t, &frame(60, k as u8)))
+        network_interface_controller
+            .with(|r, t| data_plane.transmit(r, t, &frame(60, k as u8)))
             .unwrap();
     }
     assert_eq!(
-        nic.with(|r, t| data_plane.transmit(r, t, &frame(60, 0))),
+        network_interface_controller.with(|r, t| data_plane.transmit(r, t, &frame(60, 0))),
         Err(TransmitError::Full)
     );
-    nic.step();
-    assert!(nic.with(|r, _| data_plane.can_transmit(r)));
-    assert_eq!(nic.wire_out().len(), usize::from(TRANSMIT_ENTRIES - 1));
+    network_interface_controller.step();
+    assert!(network_interface_controller.with(|r, _| data_plane.can_transmit(r)));
+    assert_eq!(
+        network_interface_controller.wire_out().len(),
+        usize::from(TRANSMIT_ENTRIES - 1)
+    );
 }
 
 #[test]
 fn a_frame_of_no_length_or_too_much_is_refused() {
-    let mut nic =
+    let mut network_interface_controller =
         NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
     let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
-    nic.with(|r, t| data_plane.start(r, t));
+    network_interface_controller.with(|r, t| data_plane.start(r, t));
     assert_eq!(
-        nic.with(|r, t| data_plane.transmit(r, t, &[])),
+        network_interface_controller.with(|r, t| data_plane.transmit(r, t, &[])),
         Err(TransmitError::BadLength)
     );
     assert_eq!(
-        nic.with(|r, t| data_plane.transmit(r, t, &[0; MAXIMUM_FRAME_BYTES + 1])),
+        network_interface_controller.with(|r, t| data_plane.transmit(
+            r,
+            t,
+            &[0; MAXIMUM_FRAME_BYTES + 1]
+        )),
         Err(TransmitError::BadLength)
     );
 }
@@ -189,7 +213,7 @@ fn descriptor_words_put_ownership_in_the_high_word_of_the_second_store() {
         (b >> 32) as u32,
         RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
             | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION
-            | RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID
+            | RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID
     );
     let [a, b] = transmit_descriptor_words(0x4000_0800, 60);
     assert_eq!(a, 0x4000_0800);
@@ -236,7 +260,7 @@ fn the_descriptor_bits_are_where_the_databook_puts_them() {
         [
             RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
             RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION,
-            RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID,
+            RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID,
             RECEIVE_DESCRIPTOR_WORD_3_CONTEXT_DESCRIPTOR,
             RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR,
             RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR,
@@ -270,17 +294,17 @@ fn the_descriptor_bits_are_where_the_databook_puts_them() {
 /// not wait on a frame nobody queued.
 #[test]
 fn start_holds_the_last_receive_slot_back_and_clears_a_stale_transmit_ring() {
-    let mut nic =
+    let mut network_interface_controller =
         NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
-    nic.with(|r, _| {
+    network_interface_controller.with(|r, _| {
         for i in 0..TRANSMIT_ENTRIES {
             r.write_u64(layout::transmit_descriptor(i), u64::MAX);
             r.write_u64(layout::transmit_descriptor(i) + 8, u64::MAX);
         }
     });
     let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
-    nic.with(|r, t| data_plane.start(r, t));
-    nic.with(|r, _| {
+    network_interface_controller.with(|r, t| data_plane.start(r, t));
+    network_interface_controller.with(|r, _| {
         assert_eq!(
             r.read_u64(layout::receive_descriptor(RECEIVE_ENTRIES - 1) + 8),
             0
@@ -299,15 +323,17 @@ fn start_holds_the_last_receive_slot_back_and_clears_a_stale_transmit_ring() {
 /// The receive cursor counts frames taken and wraps with the ring, so it always names a slot.
 #[test]
 fn the_receive_cursor_names_the_next_slot_and_wraps() {
-    let mut nic =
+    let mut network_interface_controller =
         NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
-    nic.program_rings_and_start(PHYSICAL_ADDRESS);
+    network_interface_controller.program_rings_and_start(PHYSICAL_ADDRESS);
     let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
-    nic.with(|r, t| data_plane.start(r, t));
+    network_interface_controller.with(|r, t| data_plane.start(r, t));
     let mut out = vec![0u8; MAXIMUM_FRAME_BYTES];
     for k in 1..=usize::from(RECEIVE_ENTRIES) + 2 {
-        assert!(nic.wire_in(&frame(64, k as u8)));
-        nic.with(|r, t| data_plane.receive(r, t, &mut out)).unwrap();
+        assert!(network_interface_controller.wire_in(&frame(64, k as u8)));
+        network_interface_controller
+            .with(|r, t| data_plane.receive(r, t, &mut out))
+            .unwrap();
         assert_eq!(
             usize::from(data_plane.receive_cursor()),
             k % usize::from(RECEIVE_ENTRIES)
@@ -319,21 +345,29 @@ fn the_receive_cursor_names_the_next_slot_and_wraps() {
 /// from a full one before anything is refused.
 #[test]
 fn the_largest_frame_is_sent_and_a_full_ring_says_so_in_advance() {
-    let mut nic =
+    let mut network_interface_controller =
         NetworkInterfaceController::new(PHYSICAL_ADDRESS, Memory::coherent(PHYSICAL_ADDRESS));
-    nic.program_rings_and_start(PHYSICAL_ADDRESS);
+    network_interface_controller.program_rings_and_start(PHYSICAL_ADDRESS);
     let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
-    nic.with(|r, t| data_plane.start(r, t));
-    assert!(nic.with(|r, _| data_plane.can_transmit(r)));
-    nic.with(|r, t| data_plane.transmit(r, t, &frame(MAXIMUM_FRAME_BYTES, 1)))
+    network_interface_controller.with(|r, t| data_plane.start(r, t));
+    assert!(network_interface_controller.with(|r, _| data_plane.can_transmit(r)));
+    network_interface_controller
+        .with(|r, t| data_plane.transmit(r, t, &frame(MAXIMUM_FRAME_BYTES, 1)))
         .unwrap();
     for k in 1..usize::from(TRANSMIT_ENTRIES - 1) {
-        assert!(nic.with(|r, _| data_plane.can_transmit(r)), "{k}");
-        nic.with(|r, t| data_plane.transmit(r, t, &frame(60, k as u8)))
+        assert!(
+            network_interface_controller.with(|r, _| data_plane.can_transmit(r)),
+            "{k}"
+        );
+        network_interface_controller
+            .with(|r, t| data_plane.transmit(r, t, &frame(60, k as u8)))
             .unwrap();
     }
-    assert!(!nic.with(|r, _| data_plane.can_transmit(r)));
-    nic.step();
-    assert!(nic.with(|r, _| data_plane.can_transmit(r)));
-    assert_eq!(nic.wire_out()[0].len(), MAXIMUM_FRAME_BYTES);
+    assert!(!network_interface_controller.with(|r, _| data_plane.can_transmit(r)));
+    network_interface_controller.step();
+    assert!(network_interface_controller.with(|r, _| data_plane.can_transmit(r)));
+    assert_eq!(
+        network_interface_controller.wire_out()[0].len(),
+        MAXIMUM_FRAME_BYTES
+    );
 }

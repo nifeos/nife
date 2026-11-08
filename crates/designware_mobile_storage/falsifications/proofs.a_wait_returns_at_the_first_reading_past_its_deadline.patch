@@ -1,0 +1,21 @@
+Falsifies `designware_mobile_storage::proofs::a_wait_returns_at_the_first_reading_past_its_deadline`.
+
+The defect: a wait gives up only when the clock lands exactly on its deadline, so a clock that
+steps past it (any real clock read at an arbitrary moment) never ends the wait, and a dead
+controller hangs the driver.
+
+Expected to fail: `the driver read the clock again after its deadline had passed`, in the
+adversarial clock.
+
+diff --git a/crates/designware_mobile_storage/src/host_controller.rs b/crates/designware_mobile_storage/src/host_controller.rs
+--- a/crates/designware_mobile_storage/src/host_controller.rs
++++ b/crates/designware_mobile_storage/src/host_controller.rs
+@@ -331,7 +331,7 @@
+             if done(&mut self.registers) {
+                 return true;
+             }
+-            if self.registers.now_microseconds().wrapping_sub(start) > deadline_microseconds {
++            if self.registers.now_microseconds().wrapping_sub(start) == deadline_microseconds {
+                 return done(&mut self.registers);
+             }
+         }

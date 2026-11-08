@@ -174,13 +174,16 @@ pub const RECEIVE_FILTER_CONTROL_REGISTER: u64 = 0x0_5008;
 #[doc(alias = "E1000_MTA")]
 #[doc(alias = "MTA")]
 pub const MULTICAST_TABLE_ARRAY_REGISTER: u64 = 0x0_5200;
-/// How many 32-bit entries [`MULTICAST_TABLE_ARRAY_REGISTER`] has.
+/// How many 32-bit entries [`MULTICAST_TABLE_ARRAY_REGISTER`] has (OpenBSD's
+/// `E1000_NUM_MTA_REGISTERS`, `sys/dev/pci/if_em_hw.h`).
 ///
-/// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused
-/// `MTA_DWORDS` (a DWORD is 32 bits in Intel's word sizes and not in Arm's or RISC-V's, so the
-/// count names what the table holds).
+/// Name: ratified 2026-11-07 (UTC), #3322. Renamed from `MTA_ENTRIES`, which stays as an alias with
+/// OpenBSD's `E1000_NUM_MTA_REGISTERS`. Refused `MTA_DWORDS` (a DWORD is 32 bits in Intel's word
+/// sizes and not in Arm's or RISC-V's, so the count names what the table holds).
+#[doc(alias = "E1000_NUM_MTA_REGISTERS")]
+#[doc(alias = "MTA_ENTRIES")]
 #[doc(alias = "dwords")]
-pub const MTA_ENTRIES: u64 = 128;
+pub const MULTICAST_TABLE_ARRAY_ENTRIES: u64 = 128;
 /// **Receive Address Low** (OpenBSD's `E1000_RAL(0)`, `sys/dev/pci/if_em_hw.h`). Entry 0: the MAC address's first
 /// four octets.
 ///

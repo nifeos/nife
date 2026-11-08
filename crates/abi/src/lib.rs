@@ -1,5 +1,5 @@
 //! The syscall boundary, as one crate the kernel and every user program depend on, so a change
-//! to the ABI fails to compile on both sides at once.
+//! to the application binary interface (ABI) fails to compile on both sides at once.
 //!
 //! The surface is five calls <!--count:syscalls-->. `exit`, `exit_thread`, `yield` and
 //! `capability_delete` act on the caller itself, and `invoke(capability, method, a0, a1, a2)` acts on everything
@@ -10,6 +10,12 @@
 //! test of whether an architect has to ask what it means, and this is the most-imported crate.
 
 #![no_std]
+
+// Index exception (2026-11-08): the README's examples compile as doctests from the crate root, where
+// the include has to sit; it is not an item a feature could grow from.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
 
 /// The syscall ABI's version: the generation of the syscall numbers, the method numbers and the
 /// error codes a program was built against, all one surface. One constant for the whole surface,
