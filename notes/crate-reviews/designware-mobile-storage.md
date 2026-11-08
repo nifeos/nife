@@ -78,8 +78,8 @@ identification decode. 91 host tests drive those against the simulator.
 
 ## Names
 
-`python3 helpers/name_release.py --draft designware_mobile_storage` lists 111 rows. All 111 read
-ratified. Nothing is provisional.
+`python3 helpers/name_release.py --draft designware_mobile_storage` lists 111 rows. 110 read
+ratified, and `DirectMemoryAccessRegion::direct_memory_access_address` is provisional.
 
 Against the rulings in force, with the template's checks (`unit_symbols.py`, `spelled_out.py`,
 `question_shape.py`, `british_spelling.py`, `register_names.py` and the report-only
@@ -96,6 +96,24 @@ Against the rulings in force, with the template's checks (`unit_symbols.py`, `sp
 | `id`, `sd`, `crc`, `jh7110` | accepted words and a chip name. |
 | aliases of an old nife spelling | none. Every `doc(alias)` is a specification, databook or OpenBSD term. |
 | prose acronyms (`prose_acronyms.py`) | fails: 62 acronyms in the README and doc comments are not expanded where first used (`FIFO`, `CSD`, `OCR`, `MMIO`, the command numbers `CMD0` to `ACMD41` and others). |
+
+The public names the rules refused, and where each stands:
+
+| row | name before | rule | now | status |
+|---|---|---|---|---|
+| 1 | `registers::CONTROL`, `WRITE_PROTECT`, `TRANSFERRED_CARD_BYTE_COUNT`, `TRANSFERRED_HOST_BYTE_COUNT`, `HARDWARE_RESET`, `BUS_MODE` | a register offset ends `_REGISTER` | each with `_REGISTER` appended | done |
+| 2 | `command::Response::has_crc` | `crc` was not an accepted acronym | `has_crc` | withdrawn: `crc` is an accepted acronym |
+| 3 | `command::Data::block_size` | a size carries its unit | `block_bytes` | done |
+| 4 | `sd::CardKind::SdV1`, `SdV2` | `V` abbreviates version | `SdVersion1`, `SdVersion2` | done |
+| 5 | `internal_direct_memory_access::DirectMemoryAccessRegion::bus_address` | an address says what kind it is | `direct_memory_access_address`, aliases `bus address` and `dma_addr_t` | done, provisional |
+| 6 | `jh7110::Slot::base`, and the `base` parameter of `Slot::from_node` | an address is virtual or physical | `registers_physical_address` | done |
+| 7 | `jh7110::Slot::size`, and the `size` parameter of `Slot::from_node` | a size carries its unit | `registers_size_bytes` | done |
+| 8 | `host_controller::clock_divider`, parameters `base` and `target` | a quantity carries its unit | `base_hertz`, `target_hertz` | done |
+| 9 | `host_controller::card_clock`, and its parameter `base` | a quantity carries its unit | `card_clock_hertz`, `base_hertz` | done |
+| 10 | `host_controller::queue_step`, parameters `depth` and `remaining` | a quantity carries its unit | `depth_words`, `remaining_bytes` | done |
+| 11 | `card::extract_bits`, parameter `len` | a length carries its unit | `width_bits` | done |
+| 12 | `registers::queue_width` | a quantity carries its unit | `queue_width_bytes` | done |
+| 13 | `jh7110::QUEUE_DEPTH`, `Slot::queue_depth`, `HostController::queue_depth`, the `queue_depth` parameter of `HostController::new` | a count names the things | `QUEUE_DEPTH_WORDS`, `queue_depth_words` | done |
 
 The two address registers, `CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER` and
 `CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER`, hold the descriptor address and buffer address the
