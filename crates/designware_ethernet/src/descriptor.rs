@@ -58,11 +58,12 @@ pub const RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE: u32 = 1 << 31;
 pub const RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION: u32 = 1 << 30;
 
 /// **Receive descriptor word 3, buffer 1 address valid** (`RDES3_BUF1V`, `dwqereg.h`). Receive,
-/// read format: buffer 1's address is valid.
+/// read format: buffer 1's physical address is valid.
 ///
-/// Name: ratified 2026-11-03 (UTC), #3125.
+/// Name: ratified 2026-11-08 (UTC), #3331, as
+/// `RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID`.
 #[doc(alias = "RDES3_BUF1V")]
-pub const RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID: u32 = 1 << 24;
+pub const RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID: u32 = 1 << 24;
 
 /// **Receive descriptor word 3, context descriptor** (`RDES3_CTXT`, `dwqereg.h`). Receive,
 /// write-back: this is a context descriptor (a timestamp), not a frame.
@@ -159,7 +160,7 @@ pub const fn receive_descriptor_words(buffer_physical_address: u64) -> [u64; 2] 
         buffer_physical_address,
         ((RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
             | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION
-            | RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID) as u64)
+            | RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID) as u64)
             << 32,
     ]
 }
@@ -174,10 +175,10 @@ pub const fn receive_descriptor_words(buffer_physical_address: u64) -> [u64; 2] 
 pub const RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP: () = assert!(
     RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
         | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION
-        | RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID
+        | RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID
         == RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
             ^ RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION
-            ^ RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID
+            ^ RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID
 );
 
 /// **A transmit descriptor for one whole frame in one buffer**: the address, the length with

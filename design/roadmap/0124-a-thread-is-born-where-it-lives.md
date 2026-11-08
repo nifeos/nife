@@ -211,7 +211,7 @@ proofs and tests run in a configuration nobody checks is not demonstrating.
   depth of the path it sits in, so "every instantiation under 4096" and the watermark are each half
   an answer and neither is sufficient alone.
 - **Recorded.** In `design/roadmap/0124-a-thread-is-born-where-it-lives.md`: the prediction that
-  the slot table, `crates/generational_table` (this block's prose still calls it
+  the slot table, `nifeos/generational_table` (this block's prose still calls it
   crates/slots, its name before the rename), was the main cost was wrong. It is kept because it is
   the plausible reading of `Table::insert_with` and the next person will make it too. The table stores a pointer; the thread
   is on its own page.

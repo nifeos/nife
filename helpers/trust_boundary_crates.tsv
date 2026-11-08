@@ -84,7 +84,7 @@ firmware_configuration	kernel	kernel
 frames	kernel	retired
 free	userspace	components
 fs_proto	shared	retired
-generational_table	kernel	kernel
+generational_table	kernel	retired
 gfx_proto	shared	retired
 glob	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
 globally_unique_identifier_partition_table	shared	components,kernel,redoxfs_server,uefi_loader

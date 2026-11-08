@@ -11,6 +11,12 @@
 
 #![no_std]
 
+// Index exception (2026-11-08): the README's examples compile as doctests from the crate root, where
+// the include has to sit; it is not an item a feature could grow from.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 /// The syscall ABI's version: the generation of the syscall numbers, the method numbers and the
 /// error codes a program was built against, all one surface. One constant for the whole surface,
 /// module-scoped constants refused (the scope is the syscall surface a program matches). The check is at spawn, not at run time: the

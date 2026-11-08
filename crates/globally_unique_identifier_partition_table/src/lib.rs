@@ -20,6 +20,10 @@
 // items are documented.
 #![allow(missing_docs)]
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 pub mod crc;
 pub mod entry;
 pub mod guid;

@@ -5,10 +5,10 @@ The defect: the transmit descriptor no longer masks the frame length to its 15 b
 Expected to fail: the harness's check that word 3 holds nothing outside the length, owned, first and last fields, on any length with bit 15 set.
 
 diff --git a/crates/designware_ethernet/src/descriptor.rs b/crates/designware_ethernet/src/descriptor.rs
-index aeab00326..6b6ef623f 100644
+index ef553e7e3..3e0844022 100644
 --- a/crates/designware_ethernet/src/descriptor.rs
 +++ b/crates/designware_ethernet/src/descriptor.rs
-@@ -186,7 +186,7 @@ pub const RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP: () = assert!(
+@@ -187,7 +187,7 @@ pub const RECEIVE_DESCRIPTOR_SET_BITS_DO_NOT_OVERLAP: () = assert!(
  ///
  /// Name: ratified 2026-11-02 (UTC), #3094.
  pub const fn transmit_descriptor_words(buffer_physical_address: u64, length: u16) -> [u64; 2] {

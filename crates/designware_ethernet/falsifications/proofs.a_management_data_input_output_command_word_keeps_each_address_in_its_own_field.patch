@@ -5,10 +5,10 @@ The defect: the command word no longer reduces the register address to five bits
 Expected to fail: the harness's check that the PHY address field equals the PHY address masked to five bits, on any register address with a bit above bit 4.
 
 diff --git a/crates/designware_ethernet/src/management_data_input_output.rs b/crates/designware_ethernet/src/management_data_input_output.rs
-index c484cfd95..1752da233 100644
+index c8ca099f8..7267e5384 100644
 --- a/crates/designware_ethernet/src/management_data_input_output.rs
 +++ b/crates/designware_ethernet/src/management_data_input_output.rs
-@@ -192,7 +192,7 @@ pub enum Error {
+@@ -216,7 +216,7 @@ pub enum Error {
  pub const fn command_word(physical_layer_device_address: u8, register: u8, write: bool) -> u32 {
      (CLOCK_RANGE_500_TO_800_MEGAHERTZ << CLOCK_RANGE_SHIFT)
          | (((physical_layer_device_address & 0x1f) as u32) << PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT)

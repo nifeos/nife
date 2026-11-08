@@ -175,7 +175,7 @@ impl DestroyClaim {
     }
 }
 
-/// **The untyped regions**, a generational table (`crates/generational_table`) plus every decision
+/// **The untyped regions**, a generational table (`nifeos/generational_table`) plus every decision
 /// taken over it. Removing a region bumps its slot's generation, so every capability minted for it
 /// stops resolving: that is what makes [`claim_for_destroy`](Self::claim_for_destroy) single-winner.
 /// `N` bounds the regions live at once (the kernel picks 256, the loom harnesses 2 or 4).
