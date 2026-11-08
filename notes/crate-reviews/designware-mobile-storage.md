@@ -78,8 +78,8 @@ identification decode. 91 host tests drive those against the simulator.
 
 ## Names
 
-`python3 helpers/name_release.py --draft designware_mobile_storage` lists 111 rows. 110 read
-ratified, and `DirectMemoryAccessRegion::direct_memory_access_address` is provisional.
+`python3 helpers/name_release.py --draft designware_mobile_storage` lists 111 rows. All 111 read
+ratified.
 
 Against the rulings in force, with the template's checks (`unit_symbols.py`, `spelled_out.py`,
 `question_shape.py`, `british_spelling.py`, `register_names.py` and the report-only
@@ -105,7 +105,7 @@ The public names the rules refused, and where each stands:
 | 2 | `command::Response::has_crc` | `crc` was not an accepted acronym | `has_crc` | withdrawn: `crc` is an accepted acronym |
 | 3 | `command::Data::block_size` | a size carries its unit | `block_bytes` | done |
 | 4 | `sd::CardKind::SdV1`, `SdV2` | `V` abbreviates version | `SdVersion1`, `SdVersion2` | done |
-| 5 | `internal_direct_memory_access::DirectMemoryAccessRegion::bus_address` | an address says what kind it is | `direct_memory_access_address`, aliases `bus address` and `dma_addr_t` | done, provisional |
+| 5 | `internal_direct_memory_access::DirectMemoryAccessRegion::bus_address` | an address says what kind it is | `direct_memory_access_address`, aliases `bus address` and `dma_addr_t` | done |
 | 6 | `jh7110::Slot::base`, and the `base` parameter of `Slot::from_node` | an address is virtual or physical | `registers_physical_address` | done |
 | 7 | `jh7110::Slot::size`, and the `size` parameter of `Slot::from_node` | a size carries its unit | `registers_size_bytes` | done |
 | 8 | `host_controller::clock_divider`, parameters `base` and `target` | a quantity carries its unit | `base_hertz`, `target_hertz` | done |
@@ -120,9 +120,8 @@ The two address registers, `CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER` and
 controller is on, as the bus sees them, which is physical on every board this driver runs on.
 `DirectMemoryAccessRegion::direct_memory_access_address` is the region's address as the controller's DMA engine
 uses it, which differs from the CPU physical address behind an IOMMU or a bus offset, so it does
-not take `physical_address`. It is `direct_memory_access_address`, provisionally, with
-`bus address` and `dma_addr_t` as aliases; the maintainer ruled it, and it is a two-way door
-before the first release.
+not take `physical_address`. It is `direct_memory_access_address`, with
+`bus address` and `dma_addr_t` as aliases; the architect ratified it.
 `Refusal::AboveFourGibibytes` spells its unit out. The parameters of `registers::queue_offset`,
 `queue_width_bytes` and `uses_64_bit_direct_memory_access` are `version_identification` and
 `hardware_configuration`, and `jh7110::Slot::from_node` takes `property`. The renamed items carry

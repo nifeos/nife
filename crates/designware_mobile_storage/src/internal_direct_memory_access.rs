@@ -29,8 +29,7 @@ pub trait DirectMemoryAccessRegion {
     /// VisionFive 2, its physical address. Behind an address translation unit or a bus offset it
     /// differs from the processor's physical address, so it does not take that name.
     ///
-    /// Name: provisional (the maintainer), a two-way door before the first release.
-    /// Renamed from `bus_address`, which a processor-physical `physical_address` would misname. The
+    /// Name: ratified 2026-11-08 (UTC). Renamed from `bus_address`, which a processor-physical `physical_address` would misname. The
     /// aliases are the plain term and `dma_addr_t`, the Linux type for the same thing.
     #[doc(alias = "bus address")]
     #[doc(alias = "dma_addr_t")]
