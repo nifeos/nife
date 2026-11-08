@@ -292,7 +292,7 @@ fn the_last_object_modules_are_pinned() {
         crate::virtio::WRITE_REGISTER => 1,
         crate::virtio::SETUP_QUEUE => 2,
         crate::virtio::NOTIFY => 3,
-        crate::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET => 4088,
+        crate::virtio::DMA_PHYS_OFFSET => 4088,
     }
 }
 

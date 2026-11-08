@@ -65,7 +65,7 @@ const DMA_PAGE_FRAMES: u64 = 1 + gfx::SURFACE_PAGE_FRAMES as u64;
 
 /// Where this driver puts its DMA region. Its choice, not the kernel's: it holds the frames and maps
 /// them (milestone 108). The physical base, which descriptors need, is read out of the region
-/// itself (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`; see `_start`).
+/// itself (`abi::virtio::DMA_PHYS_OFFSET`; see `_start`).
 ///
 /// **2 MiB-aligned** (milestone 142 (a text display good enough that people use it instead of a
 /// GUI), DECISIONS §102 (a Frame names a run of pages)): at the 1120x624 scanout
@@ -482,15 +482,11 @@ fn start(role: u64, _arg1: u64, arg2: u64) -> ! {
     // Where the region is, read out of the region (milestone 600 (provisional)): descriptors speak
     // physical addresses, and the progenitor that builds this driver holds the run as a capability
     // and knows none, so whoever built this process wrote the base into the tail of the first page
-    // (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, past `OFF_RESP`'s 408 bytes).
+    // (`abi::virtio::DMA_PHYS_OFFSET`, past `OFF_RESP`'s 408 bytes).
     // SAFETY: the whole run was just mapped read/write at `DMA_VA`, and the offset is inside its
     // first page.
-    let direct_memory_access_phys = unsafe {
-        core::ptr::read_volatile(
-            (DMA_VA + abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET)
-                as *const u64,
-        )
-    };
+    let direct_memory_access_phys =
+        unsafe { core::ptr::read_volatile((DMA_VA + abi::virtio::DMA_PHYS_OFFSET) as *const u64) };
 
     // Two roles in one binary, for the reason the blk attackers ride with the blk driver: the attack
     // differs from the honest driver by one field, and sharing the bring-up is what makes it a fair

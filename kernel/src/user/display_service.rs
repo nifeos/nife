@@ -155,7 +155,7 @@ pub fn start_backing_escape(driver_image: &'static [u8]) -> Option<(RendezvousId
 ///
 /// The transport is registered and confined to [`dma`](GpuDevice::dma)'s run, the interrupt routed
 /// and enabled, and the region's physical base written into its first page at
-/// `abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`. [`wire_driver`] spawns a driver on it; the progenitor is granted
+/// `abi::virtio::DMA_PHYS_OFFSET`. [`wire_driver`] spawns a driver on it; the progenitor is granted
 /// it as capabilities by `kernel::user::boot_progenitor` and builds `gpu_driver` and
 /// `display_terminal` itself.
 /// Name: provisional.

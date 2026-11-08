@@ -35,8 +35,8 @@ pub const NOTIFY: u64 = 3;
 /// `keyboard_driver` read it, so it is one constant.
 ///
 /// Name: provisional.
-pub const DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET: u64 = 4096 - 8;
+pub const DMA_PHYS_OFFSET: u64 = 4096 - 8;
 
 // The word is the page's last eight bytes; a wrong operator in the subtraction would put it past
 // the page or into a driver's rings, and nothing else runs the arithmetic.
-const _: () = assert!(DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET + 8 == 4096);
+const _: () = assert!(DMA_PHYS_OFFSET + 8 == 4096);

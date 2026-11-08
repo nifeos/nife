@@ -82,7 +82,7 @@ pub(super) struct VirtioBootGrant {
     pub(super) intid: u32,
     /// The DMA region's physical base. A driver writes physical addresses into virtio
     /// descriptors, no capability exposes one, and the progenitor's three `START` words are spent,
-    /// so the base is also written into the page at [`DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`] for the progenitor
+    /// so the base is also written into the page at [`VIRTIO_DMA_PHYS_OFFSET`] for the progenitor
     /// to read back and relay as the driver's `arg1`.
     pub(super) dma: u64,
 }
@@ -256,7 +256,7 @@ pub(super) fn boot_designware_network()
 }
 
 /// The shared body of [`boot_virtio_rng_device`] and [`boot_virtio_net_device`]: a zeroed DMA frame
-/// with its own physical base written at [`DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`], the interrupt routed but not
+/// with its own physical base written at [`VIRTIO_DMA_PHYS_OFFSET`], the interrupt routed but not
 /// enabled, and the transport registered with the kernel, confined to that one frame.
 fn boot_virtio_mmio_device(d: crate::virtio::VirtioMmioDevice) -> Option<VirtioBootGrant> {
     // Zeroed first, so no stale descriptor or buffer content is visible to the device or to the
@@ -264,7 +264,7 @@ fn boot_virtio_mmio_device(d: crate::virtio::VirtioMmioDevice) -> Option<VirtioB
     let dma = crate::memory::alloc_contiguous_zeroed(1)
         .expect("no DMA frame for a boot virtio device")
         .addr();
-    // Its physical base goes in the page's tail ([`DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`]).
+    // Its physical base goes in the page's tail ([`VIRTIO_DMA_PHYS_OFFSET`]).
     write_dma_phys(dma);
     // Routed, not yet enabled: [`VirtioBootGrant::intid`].
     crate::sched::bind_interrupt(d.intid, crate::sched::create_rendezvous());

@@ -158,11 +158,11 @@ pub(super) fn build_net_stack(ut: u64, program: &elf::Elf, g: &BootEndowment) ->
     let mapped = map_page_frame(g.virtio_net_dma, NET_DMA_PEEK_VA, true, ut);
     must_ok(mapped);
     // SAFETY: just mapped read/write, one page; the offset is inside it and outside
-    // `virtio_net_transport`'s rings and buffers (see `kernel::user::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`).
+    // `virtio_net_transport`'s rings and buffers (see `kernel::user::VIRTIO_DMA_PHYS_OFFSET`).
     let direct_memory_access_phys = unsafe {
         core::ptr::read_unaligned(
             (NET_DMA_PEEK_VA as *const u8)
-                .add(DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET as usize)
+                .add(VIRTIO_DMA_PHYS_OFFSET as usize)
                 .cast::<u64>(),
         )
     };
@@ -545,7 +545,7 @@ fn start_gpu_driver(l: &GraphicalTerminalLaunch, gpu_program: &elf::Elf) -> Resu
     };
     capability_delete(budget);
     // Role 0, the honest driver. No physical address: the run's first page carries it
-    // (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`), and this process could not supply one anyway.
+    // (`abi::virtio::DMA_PHYS_OFFSET`), and this process could not supply one anyway.
     if !start_child(driver, 0, 0, 0) {
         drop_capabilities(&[display, driver_report]);
         return Err(());
