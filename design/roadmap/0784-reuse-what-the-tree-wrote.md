@@ -22,6 +22,8 @@ under §46. Items (a), (d), (e), (f2), (g) and (i) are built, on calef's approva
 `httparse` (2026-10-18 UTC), `r-efi` and `pulldown-cmark` (both 2026-10-20 UTC), `talc` and
 `object` (both 2026-10-21 UTC), and `uuid` (2026-10-22 UTC). Items (c1) to (c4), (f) and (h) are
 refused.
+The `device_tree_blob` row stays ours for now: we revisit the comparison with `dtoolkit` after its open
+issues 102 and 103 resolve.
 
 ## Method, and what the numbers mean
 
