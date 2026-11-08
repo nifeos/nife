@@ -623,10 +623,10 @@ impl Host {
             }
             core::hint::spin_loop();
         }
-        if self.reg(self.op(registers::PAGE_SIZE_BITMAP_REGISTER)) & 1 == 0 {
+        if self.reg(self.op(registers::SUPPORTED_PAGE_SIZE_ORDER_REGISTER)) & 1 == 0 {
             return Err((
                 BringUpStep::NoFourKibibytePages,
-                self.reg(self.op(registers::PAGE_SIZE_BITMAP_REGISTER)),
+                self.reg(self.op(registers::SUPPORTED_PAGE_SIZE_ORDER_REGISTER)),
             ));
         }
         if u64::from(dma_pages)

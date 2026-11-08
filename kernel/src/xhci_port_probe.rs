@@ -8,7 +8,7 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use extensible_host_controller_interface::{Capabilities, registers};
+use extensible_host_controller_interface::{Capabilities, extended_capabilities, registers};
 
 /// Where the controller's registers are mapped, from [`before_handoff`] to [`after_report`]; 0
 /// for no controller.
@@ -62,7 +62,7 @@ pub(crate) fn before_handoff(regs_va: u64, bar_bytes: u64) {
         }
         let head = read(regs_va, at);
         match head as u8 {
-            registers::EXTENDED_LEGACY_SUPPORT => crate::println!(
+            extended_capabilities::LEGACY_SUPPORT_EXTENDED_CAPABILITY_ID => crate::println!(
                 "xhci-probe: firmware's  USBLEGSUP={head:#010x} USBLEGCTLSTS={:#010x}",
                 read(regs_va, at + 4)
             ),

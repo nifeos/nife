@@ -7,7 +7,8 @@
 //! [`registers`] and [`Capabilities`] name the registers; [`direct_memory_access`] is the DMA region's layout; a
 //! Transfer Request Block (TRB, [`TransferRequestBlock`]), [`Event`], [`ProducerRing`] and
 //! [`EventRing`] are the ring discipline (xHCI 1.2, chapters 4 and 6); [`context`] holds slot and
-//! endpoint contexts; [`port`] is the port status register.
+//! endpoint contexts; [`extended_capabilities`] holds the extended capability ids; [`port`] is the
+//! port status register.
 
 //! # BUGS
 //!
@@ -24,6 +25,7 @@ struct ReadmeExample;
 
 pub mod context;
 pub mod direct_memory_access;
+pub mod extended_capabilities;
 pub mod port;
 pub mod registers;
 
