@@ -71,13 +71,33 @@ Three names carry what the size and address rules add: a length or a size carrie
 array holds are physical. The private offsets follow the same rule: `FIRST_PORT_STATUS_AND_CONTROL_REGISTER` and
 `INTERRUPTER_0_REGISTER`.
 
-The template's `register_names.py` reads nine names in the crate as breaking a rule. Two are in
-`registers.rs`: `PAGE_SIZE_BITMAP_REGISTER` holds `size` with no unit, but it is a bitmap of page
-sizes, not a size; `EXTENDED_LEGACY_SUPPORT` is a plain integer in a register module, but it is an
-extended capability id, not an offset. The other seven hold `address`: `address_device`,
-`ADDRESS_DEVICE` and the test `the_assigned_address_and_the_superspeed_test` name the USB device
-address, and `slot_address`, `address_of` and two `address` parameters are physical addresses not
-yet named so.
+The template's `register_names.py` refuses four names in the crate. All four have a ratified
+name, so this note leaves them and asks the architect:
+
+| name | rule it breaks | a name that passes the gate |
+|---|---|---|
+| `registers::PAGE_SIZE_BITMAP_REGISTER` | `size` carries a unit from `[size_units]`; `bitmap` is not one | `SUPPORTED_PAGE_SIZE_ORDER_REGISTER`: each set bit n is a supported page of order n + 12 |
+| `registers::EXTENDED_LEGACY_SUPPORT` | an integer in a register module is an offset, but this is an extended capability id | `EXTENDED_LEGACY_SUPPORT_VALUE` |
+| `context::slot_address` | an address is virtual or physical; this is the USB device number in the slot context | a name without `address`, such as `assigned_device_number` |
+| `ring::ProducerRing::address_of` | the same | `physical_address_of` |
+
+`address_device` is the xHCI command of that name. The gate reads a leading `address` as a verb
+only before `and`, `or`, `the` and similar words, not before `device`, so the function states its
+source in the kept form instead: its doc comment opens with `(address_device, xHCI 1.2
+specification section 4.6.5)` and carries `#[doc(alias = "Address Device command")]`.
+
+### Provisional names from the gate findings
+
+| old name | new name | reason |
+|---|---|---|
+| `transfer_request_block_type::ADDRESS_DEVICE` (`pub(crate)`) | `DEVICE_ADDRESSING_COMMAND`, alias `Address Device` | an integer constant is never kept; `address` was neither virtual nor physical |
+| `context::endpoint_index` parameter `address` | `endpoint_number_and_direction` | the endpoint address of a descriptor is a number and a direction, not a memory address |
+| `TransferRequestBlock::pointer` parameter `address` (private) | `physical_address` | the controller reads the pointer from memory |
+| test `the_assigned_address_and_the_superspeed_test` | `the_assigned_device_number_and_the_superspeed_test` | the same rule |
+| test `the_next_pointer_is_in_dwords_and_the_limit_is_inclusive` | `the_next_pointer_is_in_double_words_and_the_limit_is_inclusive` | `dwords` is not a word |
+
+The prose acronyms the gate named (`USB`, `DCI`, `IOMMU`, `HC`, `BIOS`, `SMI`, `TR`, and the bare
+`IN`, `OUT`, `OFF` and `PORTSC`) now expand at their first use or sit in code.
 
 ### Parameter names of public functions
 
