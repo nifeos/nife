@@ -40,8 +40,8 @@ against itself.
   no crate. The caller of the template sets `allow-unpublished` until the architect approves a
   publication. Nothing here publishes.
 - Dependencies in nife today. Every consumer reaches these crates by a path dependency with a
-  `version` key (the packet's dependents tables list the manifests). None is a `git` and `rev`
-  dependency yet, so each move converts every consumer's line to the ruled form.
+  `version` key (the packet's dependents tables list the manifests), except `generational_table`,
+  reached by `git` and `rev`. Each move converts every consumer's line to that ruled form.
 - Unsafe. No crate has an `unsafe` site except `counter_frequency_contract`, whose reader names a
   raw address. Each other crate is pure computation behind a caller's volatile accesses.
 - Template status. [Milestone 887 (crate repositories share one CI template)](../design/roadmap/0887-crate-repositories-share-one-ci-template.md)
@@ -126,6 +126,7 @@ Recommendation. Ready for review.
 ## `generational_table`, step 4
 
 The whole package is [crate-reviews/generational-table.md](crate-reviews/generational-table.md).
+The crate lives in `nifeos/generational_table`, and nife depends on it by `git` and `rev`.
 
 Name and version. `generational_table` `0.1.0`, ratified, with all 14 item names (#3119), `EntryName<T>` and its
 `to_bits`, `from_bits` and `NEVER_MINTED`. The
