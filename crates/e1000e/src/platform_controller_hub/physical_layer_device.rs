@@ -105,15 +105,15 @@ impl core::error::Error for Error {}
 #[doc(alias = "mdic")]
 pub mod management_data_interface_control {
     /// The register field's shift.
-    pub(crate) const REG_SHIFT: u32 = 16;
+    pub(crate) const REGISTER_SHIFT: u32 = 16;
     /// The register field.
-    pub(crate) const REG_MASK: u32 = 0x001f_0000;
+    pub(crate) const REGISTER_MASK: u32 = 0x001f_0000;
     /// The PHY address field's shift.
-    pub(crate) const PHY_SHIFT: u32 = 21;
+    pub(crate) const PHYSICAL_LAYER_DEVICE_SHIFT: u32 = 21;
     /// Read opcode.
-    pub(crate) const OP_READ: u32 = 0x0800_0000;
+    pub(crate) const OPERATION_READ: u32 = 0x0800_0000;
     /// Write opcode.
-    pub(crate) const OP_WRITE: u32 = 0x0400_0000;
+    pub(crate) const OPERATION_WRITE: u32 = 0x0400_0000;
     /// **Management data input/output transaction ready** (`E1000_MDIC_READY`, OpenBSD's
     /// `sys/dev/pci/if_em_hw.h` and FreeBSD's `e1000_defines.h`, both `0x10000000`). The transaction
     /// completed.
@@ -139,14 +139,14 @@ pub mod management_data_interface_control {
     pub const POLL_MICROSECONDS: u64 = 50;
 }
 
-/// The highest MDIO register number (`MAX_PHY_REG_ADDRESS`).
-pub(crate) const MAX_PHY_REG_ADDRESS: u32 = 0x1f;
-/// Registers above this one sit behind a page select (`MAX_PHY_MULTI_PAGE_REG`).
-pub(crate) const MAX_PHY_MULTI_PAGE_REG: u32 = 0xf;
-/// The page-select register (`IGP01E1000_PHY_PAGE_SELECT`).
-pub(crate) const IGP01E1000_PHY_PAGE_SELECT: u32 = 0x1f;
-/// How a page and a register pack into one offset (`PHY_PAGE_SHIFT`).
-pub(crate) const PHY_PAGE_SHIFT: u32 = 5;
+/// The highest MDIO register number (`MAXIMUM_PHYSICAL_LAYER_DEVICE_REGISTER_ADDRESS`).
+pub(crate) const MAXIMUM_PHYSICAL_LAYER_DEVICE_REGISTER_ADDRESS: u32 = 0x1f;
+/// Registers above this one sit behind a page select (`MAXIMUM_PHYSICAL_LAYER_DEVICE_MULTI_PAGE_REGISTER`).
+pub(crate) const MAXIMUM_PHYSICAL_LAYER_DEVICE_MULTI_PAGE_REGISTER: u32 = 0xf;
+/// The page-select register (`IGP01E1000_PHYSICAL_LAYER_DEVICE_PAGE_SELECT`).
+pub(crate) const IGP01E1000_PHYSICAL_LAYER_DEVICE_PAGE_SELECT: u32 = 0x1f;
+/// How a page and a register pack into one offset (`PHYSICAL_LAYER_DEVICE_PAGE_SHIFT`).
+pub(crate) const PHYSICAL_LAYER_DEVICE_PAGE_SHIFT: u32 = 5;
 /// The first page reached at PHY address 1 rather than 2 (`HV_INTC_FC_PAGE_START`).
 pub(crate) const HV_INTC_FC_PAGE_START: u32 = 768;
 /// The host wakeup page (`BM_WUC_PAGE`), refused.
@@ -161,7 +161,10 @@ pub(crate) const MAXIMUM_PAGE: u32 = 0x7ff;
 // so | and ^ compose the word identically; the compiler checks that here for the widest page
 // there is, so the function's OR-to-XOR swap is an equivalent mutant.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
-const _: () = assert!((u32::MAX << PHY_PAGE_SHIFT) & MAX_PHY_REG_ADDRESS == 0);
+const _: () = assert!(
+    (u32::MAX << PHYSICAL_LAYER_DEVICE_PAGE_SHIFT) & MAXIMUM_PHYSICAL_LAYER_DEVICE_REGISTER_ADDRESS
+        == 0
+);
 
 /// A page and a register packed into the one offset [`read()`] and [`write()`] take: FreeBSD's
 /// `PHY_REG(page, reg)`.
@@ -171,7 +174,8 @@ const _: () = assert!((u32::MAX << PHY_PAGE_SHIFT) & MAX_PHY_REG_ADDRESS == 0);
 /// abbreviation).
 #[doc(alias = "PHY_REG")]
 pub const fn paged_offset(page: u32, register: u32) -> u32 {
-    page << PHY_PAGE_SHIFT | (register & MAX_PHY_REG_ADDRESS)
+    page << PHYSICAL_LAYER_DEVICE_PAGE_SHIFT
+        | (register & MAXIMUM_PHYSICAL_LAYER_DEVICE_REGISTER_ADDRESS)
 }
 
 /// The PHY's registers this crate addresses, from FreeBSD's `e1000_defines.h`, `e1000_phy.h` and
@@ -182,13 +186,15 @@ pub const fn paged_offset(page: u32, register: u32) -> u32 {
 /// names. Refused `r` (a letter, not a name).
 pub mod registers {
     use super::paged_offset;
-    /// **Control Register** (`PHY_CONTROL`, FreeBSD's `e1000_defines.h`). MII register 0.
+    /// **Control Register** (OpenBSD's `PHY_CTRL`, `sys/dev/pci/if_em_hw.h`; FreeBSD's
+    /// `PHY_CONTROL`, `e1000_defines.h`). MII register 0.
     ///
-    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling that keeps a register or bit name
-    /// copied from a cited source, strictly: FreeBSD's `PHY_CONTROL` (`e1000_defines.h`). Refused
-    /// `CONTROL` (a shortened copy).
+    /// Name: ratified 2026-11-07 (UTC), #3322. Renamed from `PHY_CONTROL`, which stays as an alias
+    /// with OpenBSD's `PHY_CTRL`. Refused `CONTROL` (a shortened copy).
     #[doc(alias = "control register")]
-    pub const PHY_CONTROL: u32 = 0x00;
+    #[doc(alias = "PHY_CTRL")]
+    #[doc(alias = "PHY_CONTROL")]
+    pub const PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER: u32 = 0x00;
     /// **PHY Identifier, Word 1** (`PHY_ID1`, FreeBSD's `e1000_defines.h`). The high word.
     #[doc(alias = "physical layer device identifier, word 1")]
     pub(crate) const PHY_ID1: u32 = 0x02;
@@ -245,8 +251,8 @@ pub mod registers {
     pub(crate) const HV_LED_CONFIG: u32 = paged_offset(768, 30);
 }
 
-/// `PHY_REVISION_MASK`: the identifier without its revision nibble.
-pub(crate) const PHY_REVISION_MASK: u32 = 0xffff_fff0;
+/// `PHYSICAL_LAYER_DEVICE_REVISION_MASK`: the identifier without its revision nibble.
+pub(crate) const PHYSICAL_LAYER_DEVICE_REVISION_MASK: u32 = 0xffff_fff0;
 
 /// How long to wait for someone else's `SWFLAG` to clear, in ms (`PHY_CFG_TIMEOUT`).
 ///
@@ -277,14 +283,15 @@ pub fn read_management_data_input_output(
     physical_layer_device_address: u32,
     register: u32,
 ) -> Result<u16, Error> {
-    if register > MAX_PHY_REG_ADDRESS {
+    if register > MAXIMUM_PHYSICAL_LAYER_DEVICE_REGISTER_ADDRESS {
         return Err(Error::OutOfRange);
     }
     hardware.write(
         super::registers::MDIC,
-        register << management_data_interface_control::REG_SHIFT
-            | physical_layer_device_address << management_data_interface_control::PHY_SHIFT
-            | management_data_interface_control::OP_READ,
+        register << management_data_interface_control::REGISTER_SHIFT
+            | physical_layer_device_address
+                << management_data_interface_control::PHYSICAL_LAYER_DEVICE_SHIFT
+            | management_data_interface_control::OPERATION_READ,
     );
     complete(hardware, register).map(|v| v as u16)
 }
@@ -302,15 +309,16 @@ pub fn write_management_data_input_output(
     register: u32,
     data: u16,
 ) -> Result<(), Error> {
-    if register > MAX_PHY_REG_ADDRESS {
+    if register > MAXIMUM_PHYSICAL_LAYER_DEVICE_REGISTER_ADDRESS {
         return Err(Error::OutOfRange);
     }
     hardware.write(
         super::registers::MDIC,
         u32::from(data)
-            | register << management_data_interface_control::REG_SHIFT
-            | physical_layer_device_address << management_data_interface_control::PHY_SHIFT
-            | management_data_interface_control::OP_WRITE,
+            | register << management_data_interface_control::REGISTER_SHIFT
+            | physical_layer_device_address
+                << management_data_interface_control::PHYSICAL_LAYER_DEVICE_SHIFT
+            | management_data_interface_control::OPERATION_WRITE,
     );
     complete(hardware, register).map(|_| ())
 }
@@ -333,8 +341,8 @@ fn complete(hardware: &mut impl Hardware, register: u32) -> Result<u32, Error> {
         != 0
     {
         Err(Error::ManagementDataInterface)
-    } else if (v & management_data_interface_control::REG_MASK)
-        >> management_data_interface_control::REG_SHIFT
+    } else if (v & management_data_interface_control::REGISTER_MASK)
+        >> management_data_interface_control::REGISTER_SHIFT
         != register
     {
         Err(Error::WrongRegister)
@@ -361,11 +369,11 @@ impl SoftwareFlag {
     /// (FreeBSD's `e1000_acquire_swflag_ich8lan`). Refused `lock` (it suggests release on drop, which
     /// this type does not do) and `take`.
     pub fn acquire(hardware: &mut impl Hardware) -> Result<Self, Error> {
-        let mut ext = 0;
+        let mut extended_control = 0;
         let mut free = false;
         for _ in 0..SOFTWARE_FLAG_FREE_MILLISECONDS {
-            ext = hardware.read(super::registers::EXTCNF_CTRL);
-            if ext & EXTCNF_CTRL_SWFLAG == 0 {
+            extended_control = hardware.read(super::registers::EXTCNF_CTRL);
+            if extended_control & EXTCNF_CTRL_SWFLAG == 0 {
                 free = true;
                 break;
             }
@@ -374,16 +382,19 @@ impl SoftwareFlag {
         if !free {
             return Err(Error::SoftwareFlagHeld);
         }
-        ext |= EXTCNF_CTRL_SWFLAG;
-        hardware.write(super::registers::EXTCNF_CTRL, ext);
+        extended_control |= EXTCNF_CTRL_SWFLAG;
+        hardware.write(super::registers::EXTCNF_CTRL, extended_control);
         for _ in 0..SOFTWARE_FLAG_TAKE_MILLISECONDS {
-            ext = hardware.read(super::registers::EXTCNF_CTRL);
-            if ext & EXTCNF_CTRL_SWFLAG != 0 {
+            extended_control = hardware.read(super::registers::EXTCNF_CTRL);
+            if extended_control & EXTCNF_CTRL_SWFLAG != 0 {
                 return Ok(SoftwareFlag(()));
             }
             hardware.delay_microseconds(1000);
         }
-        hardware.write(super::registers::EXTCNF_CTRL, ext & !EXTCNF_CTRL_SWFLAG);
+        hardware.write(
+            super::registers::EXTCNF_CTRL,
+            extended_control & !EXTCNF_CTRL_SWFLAG,
+        );
         Err(Error::SoftwareFlagRefused)
     }
 
@@ -392,9 +403,12 @@ impl SoftwareFlag {
     ///
     /// Name: ratified 2026-11-03 (UTC), #3153. It consumes the proof that `acquire` makes.
     pub fn release(self, hardware: &mut impl Hardware) {
-        let ext = hardware.read(super::registers::EXTCNF_CTRL);
-        if ext & EXTCNF_CTRL_SWFLAG != 0 {
-            hardware.write(super::registers::EXTCNF_CTRL, ext & !EXTCNF_CTRL_SWFLAG);
+        let extended_control = hardware.read(super::registers::EXTCNF_CTRL);
+        if extended_control & EXTCNF_CTRL_SWFLAG != 0 {
+            hardware.write(
+                super::registers::EXTCNF_CTRL,
+                extended_control & !EXTCNF_CTRL_SWFLAG,
+            );
         }
     }
 
@@ -435,8 +449,8 @@ pub struct PagedAccessPlan {
 /// Name: ratified 2026-11-03 (UTC), #3153. Renamed from `plan`, which did not say what is
 /// planned.
 pub const fn plan_paged_access(offset: u32) -> Result<PagedAccessPlan, Error> {
-    let page = offset >> PHY_PAGE_SHIFT;
-    let register = offset & MAX_PHY_REG_ADDRESS;
+    let page = offset >> PHYSICAL_LAYER_DEVICE_PAGE_SHIFT;
+    let register = offset & MAXIMUM_PHYSICAL_LAYER_DEVICE_REGISTER_ADDRESS;
     if page == BM_WUC_PAGE || (page > 0 && page < HV_INTC_FC_PAGE_START) || page > MAXIMUM_PAGE {
         return Err(Error::PageNotPorted);
     }
@@ -447,8 +461,8 @@ pub const fn plan_paged_access(offset: u32) -> Result<PagedAccessPlan, Error> {
     } else {
         page
     };
-    let select = if register > MAX_PHY_MULTI_PAGE_REG {
-        Some((shown << PHY_PAGE_SHIFT) as u16)
+    let select = if register > MAXIMUM_PHYSICAL_LAYER_DEVICE_MULTI_PAGE_REGISTER {
+        Some((shown << PHYSICAL_LAYER_DEVICE_PAGE_SHIFT) as u16)
     } else {
         None
     };
@@ -465,7 +479,12 @@ pub const fn plan_paged_access(offset: u32) -> Result<PagedAccessPlan, Error> {
 pub fn read(hardware: &mut impl Hardware, _held: &SoftwareFlag, offset: u32) -> Result<u16, Error> {
     let p = plan_paged_access(offset)?;
     if let Some(sel) = p.select {
-        write_management_data_input_output(hardware, 1, IGP01E1000_PHY_PAGE_SELECT, sel)?;
+        write_management_data_input_output(
+            hardware,
+            1,
+            IGP01E1000_PHYSICAL_LAYER_DEVICE_PAGE_SELECT,
+            sel,
+        )?;
     }
     read_management_data_input_output(hardware, p.physical_layer_device_address, p.register)
 }
@@ -482,7 +501,12 @@ pub fn write(
 ) -> Result<(), Error> {
     let p = plan_paged_access(offset)?;
     if let Some(sel) = p.select {
-        write_management_data_input_output(hardware, 1, IGP01E1000_PHY_PAGE_SELECT, sel)?;
+        write_management_data_input_output(
+            hardware,
+            1,
+            IGP01E1000_PHYSICAL_LAYER_DEVICE_PAGE_SELECT,
+            sel,
+        )?;
     }
     write_management_data_input_output(hardware, p.physical_layer_device_address, p.register, data)
 }
@@ -528,17 +552,17 @@ pub fn read_identifier_at_address(
     hardware: &mut impl Hardware,
     physical_layer_device_address: u32,
 ) -> Result<u32, Error> {
-    let hi = read_management_data_input_output(
+    let high = read_management_data_input_output(
         hardware,
         physical_layer_device_address,
         registers::PHY_ID1,
     )?;
-    let lo = read_management_data_input_output(
+    let low = read_management_data_input_output(
         hardware,
         physical_layer_device_address,
         registers::PHY_ID2,
     )?;
-    Ok((u32::from(hi) << 16 | u32::from(lo)) & PHY_REVISION_MASK)
+    Ok((u32::from(high) << 16 | u32::from(low)) & PHYSICAL_LAYER_DEVICE_REVISION_MASK)
 }
 
 #[cfg(kani)]
@@ -554,21 +578,21 @@ mod proofs {
     fn a_paged_access_selects_the_offsets_own_page_and_register() {
         let off: u32 = kani::any();
         if let Ok(p) = plan_paged_access(off) {
-            let page = off >> PHY_PAGE_SHIFT;
+            let page = off >> PHYSICAL_LAYER_DEVICE_PAGE_SHIFT;
             assert!(p.physical_layer_device_address == 1 || p.physical_layer_device_address == 2);
-            assert!(p.register == off & MAX_PHY_REG_ADDRESS);
+            assert!(p.register == off & MAXIMUM_PHYSICAL_LAYER_DEVICE_REGISTER_ADDRESS);
             assert!(page != BM_WUC_PAGE);
             match p.select {
                 Some(sel) => {
-                    assert!(p.register > MAX_PHY_MULTI_PAGE_REG);
+                    assert!(p.register > MAXIMUM_PHYSICAL_LAYER_DEVICE_MULTI_PAGE_REGISTER);
                     let shown = if page == HV_INTC_FC_PAGE_START {
                         0
                     } else {
                         page
                     };
-                    assert!(u32::from(sel) >> PHY_PAGE_SHIFT == shown);
+                    assert!(u32::from(sel) >> PHYSICAL_LAYER_DEVICE_PAGE_SHIFT == shown);
                 }
-                None => assert!(p.register <= MAX_PHY_MULTI_PAGE_REG),
+                None => assert!(p.register <= MAXIMUM_PHYSICAL_LAYER_DEVICE_MULTI_PAGE_REGISTER),
             }
         }
     }

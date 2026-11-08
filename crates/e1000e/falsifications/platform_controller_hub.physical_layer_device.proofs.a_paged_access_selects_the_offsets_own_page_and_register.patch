@@ -10,10 +10,10 @@ Expected to fail: the select assertion, on any offset whose page is 0x800 or mor
 diff --git a/crates/e1000e/src/platform_controller_hub/physical_layer_device.rs b/crates/e1000e/src/platform_controller_hub/physical_layer_device.rs
 --- a/crates/e1000e/src/platform_controller_hub/physical_layer_device.rs
 +++ b/crates/e1000e/src/platform_controller_hub/physical_layer_device.rs
-@@ -313,7 +313,7 @@
+@@ -451,7 +451,7 @@
  pub const fn plan_paged_access(offset: u32) -> Result<PagedAccessPlan, Error> {
-     let page = offset >> PHY_PAGE_SHIFT;
-     let register = offset & MAX_PHY_REG_ADDRESS;
+     let page = offset >> PHYSICAL_LAYER_DEVICE_PAGE_SHIFT;
+     let register = offset & MAXIMUM_PHYSICAL_LAYER_DEVICE_REGISTER_ADDRESS;
 -    if page == BM_WUC_PAGE || (page > 0 && page < HV_INTC_FC_PAGE_START) || page > MAXIMUM_PAGE {
 +    if page == BM_WUC_PAGE || (page > 0 && page < HV_INTC_FC_PAGE_START) || page > 0xffff {
          return Err(Error::PageNotPorted);

@@ -43,11 +43,12 @@ pub const fn input_offset(index: u8, context_bytes: u64) -> u64 {
     index as u64 * context_bytes
 }
 
-/// Byte offset of a context in a device (output) context: the slot is 0, DCI `n` is `n`.
+/// Byte offset of a context in a device (output) context: the slot is 0, and a
+/// `device_context_index` of `n` is `n`.
 ///
 /// Name: ratified 2026-10-25 (#2720).
-pub const fn device_offset(dci: u8, context_bytes: u64) -> u64 {
-    dci as u64 * context_bytes
+pub const fn device_offset(device_context_index: u8, context_bytes: u64) -> u64 {
+    device_context_index as u64 * context_bytes
 }
 
 /// **The input control context**: `add` and `drop` are bitmaps of context indices (bit 0 the slot
@@ -104,11 +105,11 @@ pub const fn endpoint(
     maximum_packet: u16,
     interval: u8,
     dequeue: u64,
-    average_trb: u16,
+    average_transfer_request_block_bytes: u16,
 ) -> [u32; 8] {
     // For an interrupt endpoint, the most it moves per service interval: one packet, since a
     // keyboard has no burst. Zero for control.
-    let esit = if kind == CONTROL {
+    let maximum_service_interval_payload = if kind == CONTROL {
         0
     } else {
         maximum_packet as u32
@@ -118,7 +119,7 @@ pub const fn endpoint(
         3 << 1 | (kind as u32) << 3 | (maximum_packet as u32) << 16,
         dequeue as u32,
         (dequeue >> 32) as u32,
-        average_trb as u32 | esit << 16,
+        average_transfer_request_block_bytes as u32 | maximum_service_interval_payload << 16,
         0,
         0,
         0,
@@ -150,12 +151,13 @@ pub const fn control_endpoint(maximum_packet: u16, dequeue: u64) -> [u32; 8] {
 /// Whether `speed` is one at which `bMaxPacketSize0` is an exponent.
 ///
 /// Name: ratified 2026-10-25 (#2720).
-pub const fn is_superspeed(s: u8) -> bool {
-    s == speed::SUPER || s == speed::SUPER_PLUS
+pub const fn is_superspeed(speed: u8) -> bool {
+    speed == speed::SUPER || speed == speed::SUPER_PLUS
 }
 
 /// **The `bInterval` of an interrupt endpoint as the xHCI Interval field**, which is an exponent:
 /// the period is `2^Interval` microframes of 125 µs (xHCI 1.2 section 6.2.3.6).
+/// `descriptor_interval` is the endpoint descriptor's `bInterval`.
 ///
 /// Full- and low-speed devices state the period in 1 ms frames (1 to 255), so the field is the
 /// largest exponent whose period does not exceed it, clamped to the specification's 3 (1 ms) to
@@ -163,21 +165,26 @@ pub const fn is_superspeed(s: u8) -> bool {
 /// so the field is that minus one.
 ///
 /// Name: ratified 2026-10-25 (#2720).
-pub const fn interrupt_interval(speed: u8, b_interval: u8) -> u8 {
+pub const fn interrupt_interval(speed: u8, descriptor_interval: u8) -> u8 {
     if speed == port::speed::FULL || speed == port::speed::LOW {
-        let microframes = (if b_interval == 0 { 1 } else { b_interval }) as u32 * 8;
+        let microframes = (if descriptor_interval == 0 {
+            1
+        } else {
+            descriptor_interval
+        }) as u32
+            * 8;
         let exponent = 31 - microframes.leading_zeros();
         let exponent = if exponent < 3 { 3 } else { exponent };
         (if exponent > 10 { 10 } else { exponent }) as u8
     } else {
-        let b = if b_interval == 0 {
+        let clamped_interval = if descriptor_interval == 0 {
             1
-        } else if b_interval > 16 {
+        } else if descriptor_interval > 16 {
             16
         } else {
-            b_interval
+            descriptor_interval
         };
-        b - 1
+        clamped_interval - 1
     }
 }
 
