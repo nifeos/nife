@@ -19,6 +19,10 @@
 
 #![no_std]
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 /// The version of the test disk layouts the host build writes and the programs read: 1. A break
 /// bumps it, with the dated ledger entry the interface-stability discipline owes; an addition an
 /// older peer ignores does not.
