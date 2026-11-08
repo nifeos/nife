@@ -217,7 +217,7 @@ names until the ratification pass, so this section keeps the links it carried.
 - `check / standalone` in `nifeos/e1000e` fails the template's register naming gate
   (`register_names.py`, ceiling 0) on 103 names. They are register offsets without the
   `_REGISTER` ending, bit constants written as values and not as shifts, addresses without
-  `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS`, and sizes without a unit. Many are ratified names, so
+  `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS`, and sizes without a unit. Many of them carry ratified names, so
   the repository's `main` cannot go green, and the repository's ruleset cannot merge a pull
   request, until the architect rules on them. The rest of the gates pass.
 - Nobody has installed the `nife-smelter` app on `nifeos/e1000e`, and the repository holds none of the
