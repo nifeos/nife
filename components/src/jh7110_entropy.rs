@@ -34,48 +34,57 @@ use jh7110_entropy::{
     INTERRUPT_STATUS_DOCUMENTED_BITS_MASK, INTERRUPT_STATUS_RANDOM_NUMBER_READY,
     INTERRUPT_STATUS_SEED_DONE, MODE_256_BIT_OUTPUT, Pool, generation_outcome,
 };
-use tock_registers::interfaces::{Readable, Writeable};
-use tock_registers::register_structs;
-use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
+use tock_registers::{Mmio64, Read, Write};
 use user_mode_runtime::{receive_request, reply, send};
 
-register_structs! {
-    /// The JH7110 TRNG's register block, offsets from `jh7110_entropy::registers` (itself transcribed
-    /// from the Linux driver), checked at compile time. Unlike the NS16550's, this layout has no
-    /// runtime stride or width: [binding] gives one `reg` window (`reg = <0x1600C000 0x4000>`) with
-    /// no `reg-shift` or `reg-io-width`. Only the registers this driver touches are named; the rest
-    /// are reserved padding here.
-    ///
-    /// [binding]: https://github.com/torvalds/linux/blob/master/Documentation/devicetree/bindings/rng/starfive%2Cjh7110-trng.yaml
-    #[allow(non_snake_case)]
-    RegisterBlock {
-        (0x00 => CTRL: WriteOnly<u32>),
-        // `STAT` is read on **every** poll now, not only for the bring-up diagnostic: it carries
-        // `SEEDED`, which is what says a latched `RAND_RDY` is an answer rather than a leftover.
-        // See `jh7110_entropy::GenerationOutcome::Unseeded`.
-        (0x04 => STAT: ReadOnly<u32>),
-        (0x08 => MODE: ReadWrite<u32>),
-        (0x0c => _reserved_smode),
-        (0x10 => IE: ReadWrite<u32>),
-        // Write-1-to-clear, per the TRM's register map (`jh7110_entropy::registers::INTERRUPT_STATUS_REGISTER`). `RAND_RDY`
-        // latches, so a driver that never writes this register sees every generation after the
-        // first complete instantly.
-        (0x14 => ISTAT: ReadWrite<u32>),
-        (0x18 => _reserved_pad),
-        (0x20 => RAND0: ReadOnly<u32>),
-        (0x24 => RAND1: ReadOnly<u32>),
-        (0x28 => RAND2: ReadOnly<u32>),
-        (0x2c => RAND3: ReadOnly<u32>),
-        (0x30 => RAND4: ReadOnly<u32>),
-        (0x34 => RAND5: ReadOnly<u32>),
-        (0x38 => RAND6: ReadOnly<u32>),
-        (0x3c => RAND7: ReadOnly<u32>),
-        (0x40 => _reserved_seed),
-        (0x60 => AUTO_RQSTS: ReadWrite<u32>),
-        (0x64 => AUTO_AGE: ReadWrite<u32>),
-        (0x68 => @END),
+// The register names are the TRM's and the Linux driver's (CTRL, STAT, ISTAT, ...), kept as the
+// methods' names, so the module that declares them allows the case.
+#[allow(non_snake_case)]
+mod trng {
+    use tock_registers::{Read, Write, register_map_mmio64};
+
+    // Every gap carries its size, so the macro asserts each offset at compile time: after an
+    // unsized `_` it cannot know where the next register should start, and checks nothing.
+    register_map_mmio64! {
+        /// The JH7110 TRNG's register block, offsets from `jh7110_entropy::registers` (itself
+        /// transcribed from the Linux driver), checked at compile time and reached through a
+        /// handle that holds the address, never a reference to device memory. Unlike the
+        /// NS16550's, this layout has no runtime stride or width: [binding] gives one `reg`
+        /// window (`reg = <0x1600C000 0x4000>`) with no `reg-shift` or `reg-io-width`. Only the
+        /// registers this driver touches are named; the rest are padding here.
+        ///
+        /// [binding]: https://github.com/torvalds/linux/blob/master/Documentation/devicetree/bindings/rng/starfive%2Cjh7110-trng.yaml
+        pub registers {
+            0x00 => CTRL: u32 { Write },
+            // `STAT` is read on **every** poll, not only for the bring-up diagnostic: it
+            // carries `SEEDED`, which is what says a latched `RAND_RDY` is an answer rather than
+            // a leftover. See `jh7110_entropy::GenerationOutcome::Unseeded`.
+            0x04 => STAT: u32 { Read },
+            0x08 => MODE: u32 { Read, Write },
+            0x0c => _: 0x04,
+            0x10 => IE: u32 { Read, Write },
+            // Write-1-to-clear, per the TRM's register map
+            // (`jh7110_entropy::registers::INTERRUPT_STATUS_REGISTER`). `RAND_RDY` latches, so a
+            // driver that never writes this register sees every generation after the first
+            // complete instantly.
+            0x14 => ISTAT: u32 { Read, Write },
+            0x18 => _: 0x08,
+            0x20 => RAND0: u32 { Read },
+            0x24 => RAND1: u32 { Read },
+            0x28 => RAND2: u32 { Read },
+            0x2c => RAND3: u32 { Read },
+            0x30 => RAND4: u32 { Read },
+            0x34 => RAND5: u32 { Read },
+            0x38 => RAND6: u32 { Read },
+            0x3c => RAND7: u32 { Read },
+            0x40 => _: 0x20,
+            0x60 => AUTO_RQSTS: u32 { Read, Write },
+            0x64 => AUTO_AGE: u32 { Read, Write },
+        }
     }
 }
+
+use trng::registers;
 
 /// Capability slots, by convention with `kernel/src/user/entropy_service.rs`. Slot 0, the request
 /// endpoint, received on in `entropy_contract`'s wire format.
@@ -105,32 +114,33 @@ const POLL_TRIES: usize = 100_000;
 /// spin on forever.
 const LOCKUP_RETRIES: usize = 4;
 
-fn regs() -> &'static RegisterBlock {
+use registers::Interface;
+
+fn regs() -> registers::Real {
     // SAFETY: TRNG_VA is our device mapping of the JH7110 TRNG's register window, handed to us at
     // spawn (rule 2: this driver is told the address, never told to look), for the whole lifetime
-    // of this process. This is the same invariant the hand-written r32/w32 calls used to assert by
-    // comment; register_structs! now checks every offset above at compile time instead.
-    unsafe { &*(TRNG_VA as *const RegisterBlock) }
+    // of this process. The register map above checks every offset at compile time.
+    unsafe { registers::Real::new(Mmio64::from_addr(TRNG_VA as usize)) }
 }
 
 fn rand_words() -> [u32; 8] {
     let r = regs();
     [
-        r.RAND0.get(),
-        r.RAND1.get(),
-        r.RAND2.get(),
-        r.RAND3.get(),
-        r.RAND4.get(),
-        r.RAND5.get(),
-        r.RAND6.get(),
-        r.RAND7.get(),
+        r.RAND0().get(),
+        r.RAND1().get(),
+        r.RAND2().get(),
+        r.RAND3().get(),
+        r.RAND4().get(),
+        r.RAND5().get(),
+        r.RAND6().get(),
+        r.RAND7().get(),
     ]
 }
 
 /// **Acknowledge `ISTAT` bits.** The register is write-1-to-clear (`jh7110_entropy::registers::INTERRUPT_STATUS_REGISTER`),
 /// so writing a mask back clears exactly the bits in it and leaves the rest standing.
 fn ack(bits: u32) {
-    regs().ISTAT.set(bits);
+    regs().ISTAT().set(bits);
 }
 
 /// Put the block in a known state before asking it for anything (milestone 159 (a real hardware
@@ -143,12 +153,12 @@ fn ack(bits: u32) {
 /// took, and `STAT.SEEDED` whether the reseed the caller runs next is still needed.
 fn initialize() -> u32 {
     let r = regs();
-    r.AUTO_AGE.set(0);
-    r.AUTO_RQSTS.set(0);
+    r.AUTO_AGE().set(0);
+    r.AUTO_RQSTS().set(0);
     ack(INTERRUPT_STATUS_DOCUMENTED_BITS_MASK);
-    r.MODE.set(r.MODE.get() | MODE_256_BIT_OUTPUT);
-    r.IE.set(0);
-    r.STAT.get()
+    r.MODE().set(r.MODE().get() | MODE_256_BIT_OUTPUT);
+    r.IE().set(0);
+    r.STAT().get()
 }
 
 /// Force a reseed and wait (bounded) for `ISTAT.SEED_DONE`, acknowledging it. Called once at
@@ -158,9 +168,9 @@ fn initialize() -> u32 {
 /// acknowledged on both sides; an unacked one makes every later reseed appear to complete at once.
 fn reseed_and_wait() -> bool {
     ack(INTERRUPT_STATUS_SEED_DONE);
-    regs().CTRL.set(CONTROL_COMMAND_RESEED);
+    regs().CTRL().set(CONTROL_COMMAND_RESEED);
     for _ in 0..POLL_TRIES {
-        if regs().ISTAT.get() & INTERRUPT_STATUS_SEED_DONE != 0 {
+        if regs().ISTAT().get() & INTERRUPT_STATUS_SEED_DONE != 0 {
             ack(INTERRUPT_STATUS_SEED_DONE);
             return true;
         }
@@ -179,9 +189,9 @@ fn reseed_and_wait() -> bool {
 fn generate() -> Option<[u8; 32]> {
     for _ in 0..=LOCKUP_RETRIES {
         ack(INTERRUPT_STATUS_RANDOM_NUMBER_READY);
-        regs().CTRL.set(CONTROL_COMMAND_GENERATE);
+        regs().CTRL().set(CONTROL_COMMAND_GENERATE);
         for _ in 0..POLL_TRIES {
-            match generation_outcome(regs().STAT.get(), regs().ISTAT.get(), rand_words()) {
+            match generation_outcome(regs().STAT().get(), regs().ISTAT().get(), rand_words()) {
                 GenerationOutcome::Ready(bytes) => {
                     ack(INTERRUPT_STATUS_RANDOM_NUMBER_READY);
                     return Some(bytes);
@@ -222,7 +232,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     // bench session reads first means one thing. All zeros says the window read as nothing (a gated
     // clock, an undeasserted reset, or a base that is not the TRNG); a nonzero `STAT` with `SEEDED`
     // clear says the device is alive and the seeding sequence did not finish.
-    let diagnostic = (u64::from(regs().STAT.get()) << 32) | u64::from(regs().ISTAT.get());
+    let diagnostic = (u64::from(regs().STAT().get()) << 32) | u64::from(regs().ISTAT().get());
     // Word 1 carries the byte count and, in its high half, the `STAT` seen right after
     // `initialize`, whose `R256` says whether the 32 bytes are all device output or only 16 of
     // them.
