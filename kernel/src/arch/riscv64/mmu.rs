@@ -452,22 +452,12 @@ where
 
     // 6b. The JH7110's STG clock and reset generator, which ungates the TRNG.
     if let Some(crg) = memory::jh7110_clock_and_reset() {
-        direct_map(
-            m,
-            crg.base_physical_address,
-            crg.base_physical_address + crg.size,
-            Flags::device(),
-        )?;
+        direct_map_device_window(m, crg.base_physical_address, crg.size)?;
     }
 
     // 6c. The JH7110's SYS clock and reset generator: I2C5 for the PMIC reset, and gmac0's clocks.
     if let Some(sys) = memory::jh7110_sys_window() {
-        direct_map(
-            m,
-            sys.base_physical_address,
-            sys.base_physical_address + sys.size,
-            Flags::device(),
-        )?;
+        direct_map_device_window(m, sys.base_physical_address, sys.size)?;
     }
 
     // 6c'. The SYS syscon (the PLL words the I2C clock reads) and the PMIC bus's I2C controller.
@@ -480,7 +470,7 @@ where
             Flags::device(),
         )?;
         if let Some((base, size)) = bus.controller_physical_window {
-            direct_map(m, base, base + size, Flags::device())?;
+            direct_map_device_window(m, base, size)?;
         }
     }
 
@@ -492,12 +482,7 @@ where
             e.port.registers_physical_address + e.port.registers_size_bytes,
             Flags::device(),
         )?;
-        direct_map(
-            m,
-            e.aon.base_physical_address,
-            e.aon.base_physical_address + e.aon.size,
-            Flags::device(),
-        )?;
+        direct_map_device_window(m, e.aon.base_physical_address, e.aon.size)?;
         direct_map(
             m,
             e.syscon.base_physical_address,
@@ -577,6 +562,19 @@ where
     }
     let pages = (va_end - va_start).div_ceil(PAGE_SIZE);
     m.map_range(va_start, virt_to_phys(va_start), pages, flags)
+}
+
+/// A device window given as its physical base and size, mapped as [`direct_map`] maps a device.
+fn direct_map_device_window<A, P>(
+    m: &mut Mapper<A, P, Format>,
+    physical_base: u64,
+    size: u64,
+) -> Result<(), MapError>
+where
+    A: FnMut() -> Option<u64>,
+    P: Fn(u64) -> *mut PageTable,
+{
+    direct_map(m, physical_base, physical_base + size, Flags::device())
 }
 
 /// Map physical `[pa_start, pa_end)` into the direct map with `flags`. Panics on a range
