@@ -106,7 +106,8 @@ line verbatim.
   driver while the userspace console server drives the same device, with nothing arbitrating, so two
   writers' bytes shuffle (milestone 230's finding). A marker that looks corrupt may not be.
 - Nothing can power-cycle radon remotely (milestone 224). Its Kasa KP303 answers the vendor app
-  and is invisible to ARP from every machine on the bench LAN, so a hung soak needs a person.
+  and is invisible to ARP from every machine on the bench local area network, so a hung soak needs a
+  person.
 
 ## xenon, if there is a second evening
 

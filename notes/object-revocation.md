@@ -19,7 +19,7 @@ its siblings) and it is the machinery milestone 19 (run a real workload) decline
 nife already had a different lever, and it decided the design:
 
 - **Objects carry generational names.** A `ThreadControlBlock`, `Rendezvous`, or `AddressSpace` capability holds a
-  `(generation, slot)` name into a registry (`crates/generational_table`, notes/generational-names.md). Free the
+  `(generation, slot)` name into a registry (`nifeos/generational_table`, notes/generational-names.md). Free the
   registry slot and every outstanding capability to that object stops resolving, *forever*, because
   its generation no longer matches. Invalidation is a side effect of freeing the object, with no
   capability to hunt down: the milestone-14 machinery, reused for teardown.

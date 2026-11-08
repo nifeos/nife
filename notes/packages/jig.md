@@ -72,9 +72,9 @@ console grants at `std_runtime_contract::FS_DIR_SLOT`.
 After that, a name is looked up in the copy first. The package is fetched from the entry's locations,
 or from the repository's own `targets/`, over HTTPS, and judged by the entry's digest. The progenitor
 installs it on the same copy's word (ruling I2). Before any `update`, a name is looked up in the
-image's catalog and fetched from the LAN package source, as since milestone 198 (a package
-manager)'s rung 3a. A command word with a `/` in it is a file, by the prompt's rule for a command
-word (§219 (how the shell names an installed program to the spawner)).
+image's catalog and fetched from the local area network package source, as since milestone 198 (a
+package manager)'s rung 3a. A command word with a `/` in it is a file, by the prompt's rule for a
+command word (§219 (how the shell names an installed program to the spawner)).
 
 ## How an install travels
 
@@ -149,8 +149,9 @@ installs from the Pages copy. The ignored test `a_release_download_is_e46_then_o
   a grant (milestone 892 (a std program at the prompt holds the network and a name resolver)) is inside the same base. A compromised `jig` already holds the network,
   so that adds only a grant that outlives it.
 - Before any `update`, `list` reads the image's catalog, and a name is fetched over plain HTTP
-  from the LAN source. The catalog and the index copy are each one page, so `xtask` refuses a
-  catalog of a page or more and `update` refuses an index whose lines for this architecture are.
+  from the local area network source. The catalog and the index copy are each one page, so `xtask`
+  refuses a catalog of a page or more and `update` refuses an index whose lines for this
+  architecture are.
 - An image names the test peer and root (`xtask`'s `image_index_sources`), reached at 10.0.2.9 by
   the sources' address, unless it is built with `NIFE_INDEX_SOURCES=basalt`, which packs
   `package_index::BASALT_SOURCES` (`basalt.nifeos.org` pinned to ISRG Root X1). No check boots

@@ -32,7 +32,8 @@
 //!
 //! - No host fuzz target reaches this dispatch; `notes/fuzzing-the-services.md` prices one.
 //! - One client can take every socket: nothing bounds how many of [`SOCKETS`] one client holds.
-//! - DHCP has no bound: a live link to a LAN with no DHCP server is a wait with no end.
+//! - DHCP has no bound: a live link to a local area network with no DHCP server is a wait
+//!   with no end.
 //! - A spawn without slot 8 cannot reuse a socket's page, so after sixteen it carries no bytes.
 
 #![no_std]

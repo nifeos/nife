@@ -26,8 +26,8 @@ git log -1 --format=%h                          # goes in the Results row
 ```
 
 In a second terminal, the TFTP server, left running: `script/board-netboot`. The Ethernet cable
-goes in `ethernet@16030000`'s port, the one U-Boot netboots over, on a LAN whose DHCP hands out a
-name server and reaches the internet.
+goes in `ethernet@16030000`'s port, the one U-Boot netboots over, on a local area network whose DHCP
+hands out a name server and reaches the internet.
 
 ## Step A: what today's image says (two minutes, any radon evening)
 

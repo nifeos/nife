@@ -106,7 +106,6 @@ members = [
     "crates/driver_process_contract",
     "crates/e1000e",
     "crates/designware_ethernet",
-    "crates/generational_table",
     "crates/work_steal_slot",
     "crates/allocation_cache",
     "crates/user_mode_runtime",

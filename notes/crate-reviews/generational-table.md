@@ -13,8 +13,8 @@ thread table and its object tables in it. It is `no_std` with no allocator, no `
 dependency, and five Kani harnesses prove the safety claims. The architect ruled that it publishes,
 third in the order of milestone 857 (crates released on their own), as milestone 1033
 (`generational_table`: the fixed-capacity, proved slotmap, released on its own) records. Its
-directory carries its own manifest values, a README whose example a doctest runs, and both
-license files. The `repository` key waits for the move.
+repository, `nifeos/generational_table`, carries its own manifest values with the `repository` key,
+a README whose example a doctest runs, and both license files.
 
 ## Identity
 
@@ -26,7 +26,7 @@ license files. The `repository` key waits for the move.
 | license | `MIT OR Apache-2.0`, written in its own manifest, with `LICENSE-MIT` and `LICENSE-APACHE` in the crate |
 | `publish` | `false`; publication ruled, waiting on the move, the soak and the architect's approval of 0.1.0 |
 | size | one `src/lib.rs` of 816 lines: about 400 of library, 155 of Kani harnesses, 260 of tests |
-| consumers in nife | `kernel` and `memory_regions`, both by path |
+| consumers in nife | `kernel` and `memory_regions`, both by `git` and `rev` |
 
 ## Public API
 
@@ -103,12 +103,11 @@ Against the rulings in force, checked with the template's own checks
 `license = "MIT OR Apache-2.0"`. The crate adapts no source, so no `AND` term follows the pair. Its
 documentation names `slotmap` as the same shape and copies nothing from it.
 
-## What the move still needs
+## What the release still needs
 
 | item | owner |
 |---|---|
-| The `repository` key, written when the repository exists. | move lane |
-| A build at Rust 1.88, the declared `rust-version`. | move lane |
+| The tag `v0.1.0`, made by the release workflow. | calef |
 
 ## Proposed items
 

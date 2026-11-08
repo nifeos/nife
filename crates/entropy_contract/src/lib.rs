@@ -17,6 +17,10 @@
 
 #![cfg_attr(not(test), no_std)]
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 /// The most bytes one request can carry: the reply's second word.
 ///
 /// A `CALL` replies with two words. The first is the count, so the bytes get exactly one word.
