@@ -6,7 +6,7 @@
 use super::*;
 
 #[test]
-fn i2c5s_clock_and_reset_land_where_linux_puts_them() {
+fn inter_integrated_circuit_5s_clock_and_reset_land_where_linux_puts_them() {
     // [mainline-clk] `base + 4 * idx`, and the OpenSBI of a VisionFive 2, `0x13020228 + 5 * 4`, for the
     // same gate: two derivations of 0x23c.
     assert_eq!(SYSTEM.clock_offset(SYSCLK_I2C5_APB), Some(0x23c));
@@ -23,7 +23,7 @@ fn i2c5s_clock_and_reset_land_where_linux_puts_them() {
 }
 
 #[test]
-fn the_sys_domains_last_clock_word_does_not_reach_its_reset_words() {
+fn the_system_domains_last_clock_word_does_not_reach_its_reset_words() {
     let last = SYSTEM.clock_offset(SYSTEM.clocks - 1).unwrap();
     assert_eq!(last, 0x2f4);
     assert!(last + 4 <= SYSTEM.reset_assert);
@@ -38,7 +38,7 @@ fn the_sys_domains_last_clock_word_does_not_reach_its_reset_words() {
 }
 
 #[test]
-fn the_pmic_plan_ungates_before_it_releases() {
+fn the_power_management_chip_plan_ungates_before_it_releases() {
     assert!(matches!(
         POWER_MANAGEMENT_CHIP_BUS_BRING_UP[0],
         Step::EnableClock(_)
@@ -301,7 +301,7 @@ fn an_enabled_clock_reads_its_top_bit_back() {
 }
 
 #[test]
-fn reg_names_index_by_name_not_by_position() {
+fn register_names_index_by_name_not_by_position() {
     assert_eq!(name_index(b"sys\0stg\0aon\0", b"stg"), Some(1));
     assert_eq!(
         name_index(b"syscrg\0stgcrg\0aoncrg\0ispcrg\0voutcrg\0", b"stgcrg"),
@@ -385,9 +385,9 @@ fn a_one_based_divider_field_reading_zero_divides_by_one() {
 }
 
 #[test]
-fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
+fn the_oscillator_root_chain_divides_and_the_phase_locked_loop_2_chain_multiplies() {
     // bus_root on osc, every divider at 1: the chain is transparent.
-    let osc = InterIntegratedCircuitClockWords {
+    let oscillator_words = InterIntegratedCircuitClockWords {
         bus_root: 0,
         advanced_extensible_interface_configuration_0: 1,
         system_top_group_advanced_extensible_interface_advanced_high_performance_bus: 1,
@@ -396,15 +396,18 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
         phase_locked_loop_2_post_divider_1_word: 0,
         phase_locked_loop_2_pre_divider_word: 0,
     };
-    assert_eq!(inter_integrated_circuit_5_clock_frequency(&osc), OSC_HERTZ);
+    assert_eq!(
+        inter_integrated_circuit_5_clock_frequency(&oscillator_words),
+        OSCILLATOR_HERTZ
+    );
 
     // bus_root on pll2 in integer mode. The fields are the vendor PLL2 table's 1228.8 MHz row
-    // (fbdiv 768, prediv 15, postdiv1 1, dacpd 1, dsmpd 1, from the pll.c this crate cites),
+    // (feedback_divider 768, pre_divider 15, post_divider_1 1, dacpd 1, dsmpd 1, from the pll.c this crate cites),
     // laid into the words at the syscon's offsets: 0x2c carries dsmpd<<16 | dacpd<<15 |
-    // fbdiv<<17, 0x30 carries postdiv1<<28, 0x34 carries prediv. The dividers are field
+    // feedback_divider<<17, 0x30 carries post_divider_1<<28, 0x34 carries pre_divider. The dividers are field
     // values, not words: the 2-bit fields hold 2 and 2, the 4-bit field 12, so the chain is
     // 1_228_800_000 / 2 / 2 / 12.
-    let pll2 = InterIntegratedCircuitClockWords {
+    let phase_locked_loop_2_words = InterIntegratedCircuitClockWords {
         bus_root: 1 << 24,
         advanced_extensible_interface_configuration_0: 2,
         system_top_group_advanced_extensible_interface_advanced_high_performance_bus: 2,
@@ -416,7 +419,7 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
         phase_locked_loop_2_pre_divider_word: 15,
     };
     assert_eq!(
-        inter_integrated_circuit_5_clock_frequency(&pll2),
+        inter_integrated_circuit_5_clock_frequency(&phase_locked_loop_2_words),
         1_228_800_000 / 2 / 2 / 12
     );
 
@@ -433,12 +436,12 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
     };
     assert_eq!(
         inter_integrated_circuit_5_clock_frequency(&zeros),
-        OSC_HERTZ
+        OSCILLATOR_HERTZ
     );
 
     // Fractional mode (dacpd 0, dsmpd 0) is the vendor's default rate, not a guess from the
     // fields: 1_188_000_000 divided by the chain.
-    let frac = InterIntegratedCircuitClockWords {
+    let fractional_words = InterIntegratedCircuitClockWords {
         bus_root: 1 << 24,
         advanced_extensible_interface_configuration_0: 1,
         system_top_group_advanced_extensible_interface_advanced_high_performance_bus: 1,
@@ -448,8 +451,8 @@ fn the_osc_root_chain_divides_and_the_pll2_chain_multiplies() {
         phase_locked_loop_2_pre_divider_word: 15,
     };
     assert_eq!(
-        inter_integrated_circuit_5_clock_frequency(&frac),
-        PLL2_DEFAULT_HERTZ
+        inter_integrated_circuit_5_clock_frequency(&fractional_words),
+        PHASE_LOCKED_LOOP_2_DEFAULT_HERTZ
     );
 }
 
@@ -518,7 +521,7 @@ fn a_slow_input_clock_still_produces_legal_counts() {
 }
 
 #[test]
-fn reg_cells_parse_in_both_spellings() {
+fn register_property_cells_parse_in_both_spellings() {
     // The vendor and mainline bus nodes: <0x0 0x12050000 0x0 0x10000>.
     let four = 0x0000_0000u32
         .to_be_bytes()
@@ -528,7 +531,10 @@ fn reg_cells_parse_in_both_spellings() {
         .chain(0x0001_0000u32.to_be_bytes().iter())
         .copied()
         .collect::<Vec<u8>>();
-    assert_eq!(parse_reg(&four), Some((0x1205_0000, 0x1_0000)));
+    assert_eq!(
+        parse_register_property(&four),
+        Some((0x1205_0000, 0x1_0000))
+    );
     // A one-address-cell spelling: <0x12050000 0x10000>.
     let two = 0x1205_0000u32
         .to_be_bytes()
@@ -536,23 +542,26 @@ fn reg_cells_parse_in_both_spellings() {
         .chain(0x0001_0000u32.to_be_bytes().iter())
         .copied()
         .collect::<Vec<u8>>();
-    assert_eq!(parse_reg(&two), Some((0x1205_0000, 0x1_0000)));
+    assert_eq!(parse_register_property(&two), Some((0x1205_0000, 0x1_0000)));
     // A truncated property is not a window.
-    assert_eq!(parse_reg(&[0, 0, 0]), None);
+    assert_eq!(parse_register_property(&[0, 0, 0]), None);
     // Four cells carry a high word in both the address and the size, and it lands above bit 31
     // rather than being dropped: <0x1 0x12050000 0x2 0x10000>.
     let high = [1u32, 0x1205_0000, 2, 0x1_0000]
         .iter()
         .flat_map(|c| c.to_be_bytes())
         .collect::<Vec<u8>>();
-    assert_eq!(parse_reg(&high), Some((0x1_1205_0000, 0x2_0001_0000)));
+    assert_eq!(
+        parse_register_property(&high),
+        Some((0x1_1205_0000, 0x2_0001_0000))
+    );
 }
 
 /// **The PLL2 chain's guards and its post-divider**, each on its own. The vendor table's rows all
-/// have postdiv1 at 0 (divide by one), so the field is exercised here with a 1 (divide by two);
-/// and integer mode needs both of dacpd and dsmpd and a nonzero fbdiv, not any one of them.
+/// have `post_divider_1` at 0 (divide by one), so the field is exercised here with a 1 (divide by two);
+/// and integer mode needs both of dacpd and dsmpd and a nonzero `feedback_divider`, not any one of them.
 #[test]
-fn the_pll2_chain_needs_both_mode_bits_and_honors_its_post_divider() {
+fn the_phase_locked_loop_2_chain_needs_both_mode_bits_and_honors_its_post_divider() {
     let integer = InterIntegratedCircuitClockWords {
         bus_root: 1 << 24,
         advanced_extensible_interface_configuration_0: 1,
@@ -575,16 +584,16 @@ fn the_pll2_chain_needs_both_mode_bits_and_honors_its_post_divider() {
     };
     assert_eq!(
         inter_integrated_circuit_5_clock_frequency(&dacpd_only),
-        PLL2_DEFAULT_HERTZ
+        PHASE_LOCKED_LOOP_2_DEFAULT_HERTZ
     );
-    // Integer mode with fbdiv 0 would be a zero rate; it is the default instead.
+    // Integer mode with feedback_divider 0 would be a zero rate; it is the default instead.
     let no_fbdiv = InterIntegratedCircuitClockWords {
         phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word: (1 << 15) | (1 << 16),
         ..integer
     };
     assert_eq!(
         inter_integrated_circuit_5_clock_frequency(&no_fbdiv),
-        PLL2_DEFAULT_HERTZ
+        PHASE_LOCKED_LOOP_2_DEFAULT_HERTZ
     );
 }
 
@@ -610,7 +619,7 @@ fn all_resets_are_released_counts_the_released_against_the_planned() {
 // The SD/MMC bring-up plans.
 
 #[test]
-fn each_sdio_plan_ungates_both_clocks_before_its_reset_and_stays_in_the_sys_domain() {
+fn each_sd_input_output_plan_ungates_both_clocks_before_its_reset_and_stays_in_the_system_domain() {
     for plan in SDIO_BRING_UP {
         assert!(matches!(plan.last(), Some(Step::DeassertReset(_))));
         assert_eq!(plan.len(), 3);
@@ -631,7 +640,7 @@ fn each_sdio_plan_ungates_both_clocks_before_its_reset_and_stays_in_the_sys_doma
     assert_eq!(clock_divider(CLOCK_ENABLE | 8), 8);
 }
 
-/// Words read from a VisionFive 2 (PLL2 `fbdiv 99 prediv 2 postdiv1 1`, `axi_cfg0` divider 3): 396 MHz
+/// Words read from a VisionFive 2 (PLL2 `feedback_divider 99 pre_divider 2 post_divider_1 1`, `axi_cfg0` divider 3): 396 MHz
 /// into the card clock, so the tree's 50 MHz needs a divider of 8 (49.5 MHz), where the firmware's
 /// 2 gives 198 MHz. A card driver that measured its transfer rates saw the 198 MHz clock, not 50.
 #[test]
@@ -666,7 +675,7 @@ fn the_card_clock_of_a_visionfive_2_comes_to_the_trees_rate_from_below() {
 // ===== The device-tree decoders, on hand-built property values =====
 
 /// A big-endian `<phandle id>` list, as a node's `clocks` or `resets` holds it.
-fn specs(pairs: &[(u32, u32)]) -> Vec<u8> {
+fn specifiers(pairs: &[(u32, u32)]) -> Vec<u8> {
     pairs
         .iter()
         .flat_map(|&(phandle, id)| [phandle.to_be_bytes(), id.to_be_bytes()])
@@ -695,18 +704,18 @@ fn provider(phandle: u32, name: &[u8]) -> Result<Option<&'static [u8]>, ()> {
 }
 
 /// `<0x0 0x12050000 0x0 0x10000>`, the PMIC bus's `reg` in both trees.
-const BUS_REG: [u8; 16] = [0, 0, 0, 0, 0x12, 0x05, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0];
+const BUS_REGISTER_PROPERTY: [u8; 16] = [0, 0, 0, 0, 0x12, 0x05, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0];
 
 #[test]
 fn a_vendor_shaped_bus_skips_the_virtual_clock_and_keeps_its_one_gate_and_one_reset() {
     // The vendor tree names clock 298 first, a divide-by-one child of 143 with no register:
     // writing "word 298" would be a store past every clock and reset word.
-    let clocks = specs(&[(2, 298), (2, 143)]);
-    let resets = specs(&[(3, 81)]);
+    let clocks = specifiers(&[(2, 298), (2, 143)]);
+    let resets = specifiers(&[(3, 81)]);
     let bus = PowerManagementChipBus::from_nodes(
         COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR,
         Some(&[0, 0, 0, 0x36]),
-        Some(&BUS_REG),
+        Some(&BUS_REGISTER_PROPERTY),
         Some(&clocks),
         Some(&resets),
         provider,
@@ -725,13 +734,13 @@ fn a_vendor_shaped_bus_skips_the_virtual_clock_and_keeps_its_one_gate_and_one_re
 }
 
 #[test]
-fn a_mainline_shaped_bus_gives_the_same_plan_through_syscrg() {
+fn a_mainline_shaped_bus_gives_the_same_plan_through_the_system_clock_and_reset_generator() {
     let bus = PowerManagementChipBus::from_nodes(
         COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
         None,
         None,
-        Some(&specs(&[(1, 143)])),
-        Some(&specs(&[(1, 81)])),
+        Some(&specifiers(&[(1, 143)])),
+        Some(&specifiers(&[(1, 81)])),
         provider,
     )
     .unwrap();
@@ -749,12 +758,12 @@ fn a_bus_naming_only_foreign_specifiers_falls_back_and_forgets_the_addresses() {
     // Another domain, an id past SYS's bounds, then a two-cell provider that makes the rest of
     // its list unreadable (the trailing `<&syscrg 143>` included). In `resets`, an id past the
     // bounds, a provider naming no `compatible`, and a clock provider asked for a reset.
-    let clocks = specs(&[(4, 3), (1, 190), (5, 143), (1, 143)]);
-    let resets = specs(&[(1, 126), (6, 81), (2, 81)]);
+    let clocks = specifiers(&[(4, 3), (1, 190), (5, 143), (1, 143)]);
+    let resets = specifiers(&[(1, 126), (6, 81), (2, 81)]);
     let bus = PowerManagementChipBus::from_nodes(
         COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
         Some(&[0, 0, 0, 0x36]),
-        Some(&BUS_REG),
+        Some(&BUS_REGISTER_PROPERTY),
         Some(&clocks),
         Some(&resets),
         provider,
@@ -777,7 +786,7 @@ fn a_bus_naming_only_foreign_specifiers_falls_back_and_forgets_the_addresses() {
 
 #[test]
 fn a_short_tail_is_unreadable_and_the_specifiers_before_it_still_count() {
-    let mut clocks = specs(&[(1, 143)]);
+    let mut clocks = specifiers(&[(1, 143)]);
     clocks.extend_from_slice(&[0, 0, 0, 1]);
     let bus = PowerManagementChipBus::from_nodes(
         COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
@@ -795,7 +804,7 @@ fn a_short_tail_is_unreadable_and_the_specifiers_before_it_still_count() {
 
 #[test]
 fn a_bus_with_more_gates_than_the_plan_holds_keeps_the_first_four_and_says_so() {
-    let clocks = specs(&[(1, 140), (1, 141), (1, 142), (1, 143), (1, 144)]);
+    let clocks = specifiers(&[(1, 140), (1, 141), (1, 142), (1, 143), (1, 144)]);
     let bus = PowerManagementChipBus::from_nodes(
         COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
         None,
@@ -823,7 +832,7 @@ fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() 
     let bus = PowerManagementChipBus::from_nodes(
         COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR,
         Some(&[0, 0, 0, 0x36]),
-        Some(&BUS_REG),
+        Some(&BUS_REGISTER_PROPERTY),
         None,
         None,
         provider,
@@ -841,7 +850,7 @@ fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() 
     let short = PowerManagementChipBus::from_nodes(
         COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR,
         Some(&[0, 0, 0x36]),
-        Some(&BUS_REG[..7]),
+        Some(&BUS_REGISTER_PROPERTY[..7]),
         None,
         None,
         provider,
@@ -854,7 +863,7 @@ fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() 
 }
 
 #[test]
-fn a_tree_without_a_pmic_gets_the_constant_plan_unclaimed() {
+fn a_tree_without_a_power_management_chip_gets_the_constant_plan_unclaimed() {
     let bus = PowerManagementChipBus::without_power_management_chip();
     assert_eq!(bus.plan(), POWER_MANAGEMENT_CHIP_BUS_BRING_UP);
     assert!(!bus.from_tree);
@@ -872,7 +881,7 @@ fn a_tree_without_a_pmic_gets_the_constant_plan_unclaimed() {
 #[test]
 fn a_provider_error_stops_the_walk_and_reaches_the_caller() {
     let failing = |_: u32, _: &[u8]| -> Result<Option<&'static [u8]>, u8> { Err(7) };
-    let clocks = specs(&[(1, 143)]);
+    let clocks = specifiers(&[(1, 143)]);
     assert_eq!(
         PowerManagementChipBus::from_nodes(
             COMPATIBLE_POWER_MANAGEMENT_CHIP_MAINLINE,
@@ -893,8 +902,8 @@ fn a_provider_error_stops_the_walk_and_reaches_the_caller() {
 #[test]
 fn a_device_plan_takes_its_clocks_before_its_resets_and_has_no_fallback() {
     let plan = DevicePlan::from_specifiers(
-        Some(&specs(&[(2, 123), (1, 122)])),
-        Some(&specs(&[(3, 110), (1, 109)])),
+        Some(&specifiers(&[(2, 123), (1, 122)])),
+        Some(&specifiers(&[(3, 110), (1, 109)])),
         provider,
     )
     .unwrap();
@@ -912,8 +921,8 @@ fn a_device_plan_takes_its_clocks_before_its_resets_and_has_no_fallback() {
     assert!(empty.plan().is_empty());
     assert_eq!((empty.skipped, empty.truncated), (0, false));
     let over = DevicePlan::from_specifiers(
-        Some(&specs(&[(1, 1), (1, 2), (1, 3), (1, 4), (4, 5)])),
-        Some(&specs(&[(1, 6)])),
+        Some(&specifiers(&[(1, 1), (1, 2), (1, 3), (1, 4), (4, 5)])),
+        Some(&specifiers(&[(1, 6)])),
         provider,
     )
     .unwrap();
@@ -922,7 +931,7 @@ fn a_device_plan_takes_its_clocks_before_its_resets_and_has_no_fallback() {
 }
 
 #[test]
-fn a_single_window_node_answers_with_its_one_reg() {
+fn a_single_window_node_answers_with_its_one_register_property() {
     let found = WindowLocation::from_regions(
         &SYSTEM_TOP_GROUP_WINDOW.spellings[0],
         &[(0x1023_0000, 0x1_0000)],
@@ -949,37 +958,44 @@ fn a_vendor_node_window_is_found_by_name_not_position() {
     // `reg[0]` is the SYS window: a driver that took it would enable clock 15 of the wrong
     // controller.
     let regions = [
-        (SYSTEM_BASE, SYSTEM_SIZE),
-        (SYSTEM_TOP_GROUP_BASE, SYSTEM_TOP_GROUP_SIZE),
-        (ALWAYS_ON_BASE, ALWAYS_ON_SIZE),
+        (SYSTEM_BASE, SYSTEM_SIZE_BYTES),
+        (
+            SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
+            SYSTEM_TOP_GROUP_SIZE_BYTES,
+        ),
+        (ALWAYS_ON_BASE_PHYSICAL_ADDRESS, ALWAYS_ON_SIZE_BYTES),
     ];
     let names: &[u8] = b"sys\0stg\0aon\0";
-    let stg =
+    let system_top_group =
         WindowLocation::from_regions(&SYSTEM_TOP_GROUP_WINDOW.spellings[1], &regions, Some(names))
             .unwrap();
     assert_eq!(
-        (stg.base, stg.compatible),
+        (system_top_group.base, system_top_group.compatible),
         (
-            SYSTEM_TOP_GROUP_BASE,
+            SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
             Some(COMPATIBLE_VENDOR_CLOCK_GENERATOR)
         )
     );
-    let aon = WindowLocation::from_regions(&ALWAYS_ON_WINDOW.spellings[1], &regions, Some(names))
-        .unwrap();
-    assert_eq!((aon.base, aon.size), (ALWAYS_ON_BASE, ALWAYS_ON_SIZE));
-    let sys =
+    let always_on =
+        WindowLocation::from_regions(&ALWAYS_ON_WINDOW.spellings[1], &regions, Some(names))
+            .unwrap();
+    assert_eq!(
+        (always_on.base, always_on.size),
+        (ALWAYS_ON_BASE_PHYSICAL_ADDRESS, ALWAYS_ON_SIZE_BYTES)
+    );
+    let system =
         WindowLocation::from_regions(&SYSTEM_WINDOW.spellings[1], &regions, Some(names)).unwrap();
-    assert_eq!(sys.base, SYSTEM_BASE);
-    let rst = WindowLocation::from_regions(
+    assert_eq!(system.base, SYSTEM_BASE);
+    let reset_window = WindowLocation::from_regions(
         &SYSTEM_TOP_GROUP_WINDOW.spellings[2],
         &regions,
         Some(b"syscrg\0stgcrg\0aoncrg\0"),
     )
     .unwrap();
     assert_eq!(
-        (rst.base, rst.compatible),
+        (reset_window.base, reset_window.compatible),
         (
-            SYSTEM_TOP_GROUP_BASE,
+            SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
             Some(COMPATIBLE_VENDOR_RESET_GENERATOR)
         )
     );
@@ -988,8 +1004,11 @@ fn a_vendor_node_window_is_found_by_name_not_position() {
 #[test]
 fn a_multi_window_node_refuses_rather_than_guesses() {
     let regions = [
-        (SYSTEM_BASE, SYSTEM_SIZE),
-        (SYSTEM_TOP_GROUP_BASE, SYSTEM_TOP_GROUP_SIZE),
+        (SYSTEM_BASE, SYSTEM_SIZE_BYTES),
+        (
+            SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
+            SYSTEM_TOP_GROUP_SIZE_BYTES,
+        ),
     ];
     let vendor = &SYSTEM_TOP_GROUP_WINDOW.spellings[1];
     // No `reg-names`, and `reg-names` without the entry.
@@ -1011,12 +1030,12 @@ fn each_window_tries_mainline_first_and_falls_back_to_the_published_constant() {
         (
             SYSTEM_TOP_GROUP_WINDOW,
             COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR,
-            SYSTEM_TOP_GROUP_BASE,
+            SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
         ),
         (
             ALWAYS_ON_WINDOW,
             COMPATIBLE_ALWAYS_ON_CLOCK_AND_RESET_GENERATOR,
-            ALWAYS_ON_BASE,
+            ALWAYS_ON_BASE_PHYSICAL_ADDRESS,
         ),
         (
             SYSTEM_WINDOW,

@@ -87,9 +87,9 @@ Not a connected UDP socket whose local address the kernel picks from the route, 
 route can belong to a VPN interface, and every probe would then answer a CGNAT address the board
 has no path to. Interfaces are enumerated instead, and anything outside RFC 1918 is dropped.
 
-patagonia has two addresses on the bench LAN: `en0` at `.216` and a USB adapter at `.206`. Either
-serves equally well, because the server binds every interface. The first is taken, and both are
-printed so `--server` can pick the other.
+patagonia has two addresses on the bench local area network: `en0` at `.216` and a USB adapter at
+`.206`. Either serves equally well, because the server binds every interface. The first is taken,
+and both are printed so `--server` can pick the other.
 
 ## Measured on 2026-09-04, over the wire
 
@@ -108,10 +108,10 @@ exists to serve.
 
 dnsmasq is somebody else's tested code and is not in the shipping graph. That is a real argument,
 and it is why the decision was made rather than assumed (§46 (thin primitives or whole subsystems)). It lost on one point.
-dnsmasq is a DHCP server that also does TFTP. This LAN is a family's house network with a router
-already handing out leases. A second DHCP server on it is an outage for everyone in the building.
-`--port=0 --enable-tftp` with no `--dhcp-range` is safe, but only as long as every future invocation
-stays right. A tool that cannot speak DHCP at all cannot get that wrong.
+dnsmasq is a DHCP server that also does TFTP. This local area network is a family's house network
+with a router already handing out leases. A second DHCP server on it is an outage for everyone in
+the building. `--port=0 --enable-tftp` with no `--dhcp-range` is safe, but only as long as every
+future invocation stays right. A tool that cannot speak DHCP at all cannot get that wrong.
 
 python3 is also already what ten `script/` entry points are written in. So this asks nothing new of
 anybody's machine, while `brew install dnsmasq` does. Port 69 binds without root on macOS

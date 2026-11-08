@@ -6,9 +6,9 @@
 //! `dwqe_mii_writereg` (`sys/dev/ic/dwqe.c`, ISC license, notice in the crate root): the data
 //! first on a write, then the address with the busy bit set, then wait for the controller to clear
 //! it. The clause 22 register numbers and bits are the standard's, named as Linux's
-//! `include/uapi/linux/mii.h` or OpenBSD's `sys/dev/mii/mii.h` names them, as each constant says. Each constant keeps its source's name without the
-//! family prefix, `GMAC_MAC_MDIO_ADDR_` or `MII_`, and its documentation opens with its full name
-//! and its source's spelling.
+//! `include/uapi/linux/mii.h` or OpenBSD's `sys/dev/mii/mii.h` names them, as each constant says. Each constant spells out what the source abbreviates, and the
+//! source's spelling (`MII_` or `BMCR_` prefix included) is in its documentation and in a
+//! `#[doc(alias)]`; its documentation opens with its full name and its source's spelling.
 //!
 //! Name: ratified 2026-11-02 (UTC), #3094.
 
@@ -70,13 +70,16 @@ const POLL_MICROSECONDS: u64 = 10;
 
 /// **Basic mode control register** (`MII_BMCR`, `mii.h`), clause 22.
 #[doc(alias = "basic mode control register")]
-pub(crate) const BMCR: u8 = 0x00;
+#[doc(alias = "MII_BMCR")]
+pub(crate) const BASIC_MODE_CONTROL_REGISTER: u8 = 0x00;
 /// **Autonegotiation restart** (`BMCR_ANRESTART`, `mii.h`), self-clearing.
 #[doc(alias = "autonegotiation restart")]
-pub(crate) const BMCR_ANRESTART: u16 = 1 << 9;
+#[doc(alias = "BMCR_ANRESTART")]
+pub(crate) const BASIC_MODE_CONTROL_AUTONEGOTIATION_RESTART: u16 = 1 << 9;
 /// **Autonegotiation enable** (`BMCR_ANENABLE`, `mii.h`).
 #[doc(alias = "autonegotiation enable")]
-pub(crate) const BMCR_ANENABLE: u16 = 1 << 12;
+#[doc(alias = "BMCR_ANENABLE")]
+pub(crate) const BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE: u16 = 1 << 12;
 /// **Reset to the default state** (`BMCR_RESET`, `mii.h`): a software reset of the PHY,
 /// self-clearing.
 ///
@@ -85,70 +88,89 @@ pub(crate) const BMCR_ANENABLE: u16 = 1 << 12;
 pub const BASIC_MODE_CONTROL_RESET: u16 = 1 << 15;
 /// **Basic mode status register** (`MII_BMSR`, `mii.h`), clause 22.
 #[doc(alias = "basic mode status register")]
-pub(crate) const BMSR: u8 = 0x01;
+#[doc(alias = "MII_BMSR")]
+pub(crate) const BASIC_MODE_STATUS_REGISTER: u8 = 0x01;
 /// **Link status** (`BMSR_LSTATUS`, `mii.h`), latched low: a link that dropped since the last read
 /// reads zero once, so the current state is the second of two reads.
 #[doc(alias = "link status")]
-pub(crate) const BMSR_LSTATUS: u16 = 1 << 2;
+#[doc(alias = "BMSR_LSTATUS")]
+pub(crate) const BASIC_MODE_STATUS_LINK_STATUS: u16 = 1 << 2;
 /// **Isolate** (`BMCR_ISO`, OpenBSD `sys/dev/mii/mii.h`): the PHY is electrically isolated from
 /// the MAC.
 #[doc(alias = "isolate")]
-pub(crate) const BMCR_ISO: u16 = 0x0400;
+#[doc(alias = "BMCR_ISO")]
+pub(crate) const BASIC_MODE_CONTROL_ISOLATE: u16 = 0x0400;
 /// **Set duplex mode** (`BMCR_FDX`, OpenBSD `sys/dev/mii/mii.h`): full duplex when forced.
 #[doc(alias = "full duplex")]
-pub(crate) const BMCR_FDX: u16 = 0x0100;
+#[doc(alias = "BMCR_FDX")]
+pub(crate) const BASIC_MODE_CONTROL_FULL_DUPLEX: u16 = 0x0100;
 /// **100 Mb/s** (`BMCR_S100`, OpenBSD `sys/dev/mii/mii.h`): the forced speed's low selection bit.
 #[doc(alias = "forced 100 mbit/s")]
-pub(crate) const BMCR_S100: u16 = 0x2000;
+#[doc(alias = "BMCR_S100")]
+pub(crate) const BASIC_MODE_CONTROL_SPEED_100: u16 = 0x2000;
 /// **1000 Mb/s** (`BMCR_S1000`, OpenBSD `sys/dev/mii/mii.h`): the forced speed's high selection
 /// bit.
 #[doc(alias = "forced 1000 mbit/s")]
-pub(crate) const BMCR_S1000: u16 = 0x0040;
+#[doc(alias = "BMCR_S1000")]
+pub(crate) const BASIC_MODE_CONTROL_SPEED_1000: u16 = 0x0040;
 /// **Autonegotiation advertisement register** (`MII_ANAR`, OpenBSD `sys/dev/mii/mii.h`), clause 28.
-/// The crate drops the `MII_` prefix, as it does for `BMCR`.
 #[doc(alias = "autonegotiation advertisement")]
-pub(crate) const ANAR: u8 = 0x04;
+#[doc(alias = "MII_ANAR")]
+pub(crate) const AUTONEGOTIATION_ADVERTISEMENT_REGISTER: u8 = 0x04;
 /// **Autonegotiation link partner abilities register** (`MII_ANLPAR`, OpenBSD
 /// `sys/dev/mii/mii.h`), clause 28.
 #[doc(alias = "autonegotiation link partner abilities")]
-pub(crate) const ANLPAR: u8 = 0x05;
+#[doc(alias = "MII_ANLPAR")]
+pub(crate) const AUTONEGOTIATION_LINK_PARTNER_ABILITIES_REGISTER: u8 = 0x05;
 /// **Link partner supports 100BASE-T4** (`ANLPAR_T4`, OpenBSD `sys/dev/mii/mii.h`).
 #[doc(alias = "100base-t4")]
-pub(crate) const ANLPAR_T4: u16 = 0x0200;
-/// **Link partner supports 100BASE-TX full duplex** (`ANLPAR_TX_FD`, OpenBSD
-/// `sys/dev/mii/mii.h`).
+#[doc(alias = "ANLPAR_T4")]
+pub(crate) const AUTONEGOTIATION_LINK_PARTNER_100BASE_T4: u16 = 0x0200;
+/// **Link partner supports 100BASE-TX full duplex** (`AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX`,
+/// IEEE 802.3 clause 28, which OpenBSD's `sys/dev/mii/mii.h` spells `ANLPAR_TX_FD`).
 #[doc(alias = "100base-tx full duplex")]
-pub(crate) const ANLPAR_TX_FD: u16 = 0x0100;
-/// **Link partner supports 100BASE-TX** (`ANLPAR_TX`, OpenBSD `sys/dev/mii/mii.h`).
+#[doc(alias = "ANLPAR_TX_FD")]
+pub(crate) const AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX: u16 = 0x0100;
+/// **Link partner supports 100BASE-TX** (`AUTONEGOTIATION_LINK_PARTNER_100BASE_TX`, IEEE 802.3
+/// clause 28, which OpenBSD's `sys/dev/mii/mii.h` spells `ANLPAR_TX`). `TX` is the standard's name
+/// for the twisted-pair physical layer, so it stays.
 #[doc(alias = "100base-tx")]
-pub(crate) const ANLPAR_TX: u16 = 0x0080;
+#[doc(alias = "ANLPAR_TX")]
+pub(crate) const AUTONEGOTIATION_LINK_PARTNER_100BASE_TX: u16 = 0x0080;
 /// **Link partner supports 10BASE-T full duplex** (`ANLPAR_10_FD`, OpenBSD `sys/dev/mii/mii.h`).
 #[doc(alias = "10base-t full duplex")]
-pub(crate) const ANLPAR_10_FD: u16 = 0x0040;
+#[doc(alias = "ANLPAR_10_FD")]
+pub(crate) const AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX: u16 = 0x0040;
 /// **Link partner supports 10BASE-T** (`ANLPAR_10`, OpenBSD `sys/dev/mii/mii.h`).
 #[doc(alias = "10base-t")]
-pub(crate) const ANLPAR_10: u16 = 0x0020;
-/// **1000BASE-T control register** (`MII_100T2CR`, OpenBSD `sys/dev/mii/mii.h`), clause 40. The
-/// name keeps `MII_` because an identifier cannot begin with a digit.
+#[doc(alias = "ANLPAR_10")]
+pub(crate) const AUTONEGOTIATION_LINK_PARTNER_10BASE_T: u16 = 0x0020;
+/// **1000BASE-T control register** (`MII_100T2CR`, OpenBSD `sys/dev/mii/mii.h`), clause 40.
 #[doc(alias = "1000base-t control")]
-pub(crate) const MII_100T2CR: u8 = 0x09;
+#[doc(alias = "MII_100T2CR")]
+pub(crate) const CONTROL_1000BASE_T_REGISTER: u8 = 0x09;
 /// **Advertise 1000BASE-T full duplex** (`GTCR_ADV_1000TFDX`, OpenBSD `sys/dev/mii/mii.h`).
 #[doc(alias = "advertise 1000base-t full duplex")]
-pub(crate) const GTCR_ADV_1000TFDX: u16 = 0x0200;
+#[doc(alias = "GTCR_ADV_1000TFDX")]
+pub(crate) const CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX: u16 = 0x0200;
 /// **Advertise 1000BASE-T half duplex** (`GTCR_ADV_1000THDX`, OpenBSD `sys/dev/mii/mii.h`).
 #[doc(alias = "advertise 1000base-t half duplex")]
-pub(crate) const GTCR_ADV_1000THDX: u16 = 0x0100;
+#[doc(alias = "GTCR_ADV_1000THDX")]
+pub(crate) const CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX: u16 = 0x0100;
 /// **1000BASE-T status register** (`MII_100T2SR`, OpenBSD `sys/dev/mii/mii.h`), clause 40.
 #[doc(alias = "1000base-t status")]
-pub(crate) const MII_100T2SR: u8 = 0x0a;
+#[doc(alias = "MII_100T2SR")]
+pub(crate) const STATUS_1000BASE_T_REGISTER: u8 = 0x0a;
 /// **Link partner 1000BASE-T full duplex capable** (`GTSR_LP_1000TFDX`, OpenBSD
 /// `sys/dev/mii/mii.h`).
 #[doc(alias = "link partner 1000base-t full duplex")]
-pub(crate) const GTSR_LP_1000TFDX: u16 = 0x0800;
+#[doc(alias = "GTSR_LP_1000TFDX")]
+pub(crate) const STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE: u16 = 0x0800;
 /// **Link partner 1000BASE-T half duplex capable** (`GTSR_LP_1000THDX`, OpenBSD
 /// `sys/dev/mii/mii.h`).
 #[doc(alias = "link partner 1000base-t half duplex")]
-pub(crate) const GTSR_LP_1000THDX: u16 = 0x0400;
+#[doc(alias = "GTSR_LP_1000THDX")]
+pub(crate) const STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE: u16 = 0x0400;
 /// **Autonegotiation complete** (`BMSR_ANEGCOMPLETE`, `mii.h`).
 ///
 /// Name: ratified 2026-11-03 (UTC), #3127, renamed from the ratified
@@ -159,11 +181,13 @@ pub const BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE: u16 = 1 << 5;
 /// **Physical layer device identifier 1** (`MII_PHYSID1`, `mii.h`), clause 22: the
 /// identifier's high half.
 #[doc(alias = "physical layer device identifier 1")]
-pub(crate) const PHYSID1: u8 = 0x02;
+#[doc(alias = "MII_PHYSID1")]
+pub(crate) const PHYSICAL_LAYER_DEVICE_ID_1_REGISTER: u8 = 0x02;
 /// **Physical layer device identifier 2** (`MII_PHYSID2`, `mii.h`), clause 22: the
 /// identifier's low half (the low four bits are the revision).
 #[doc(alias = "physical layer device identifier 2")]
-pub(crate) const PHYSID2: u8 = 0x03;
+#[doc(alias = "MII_PHYSID2")]
+pub(crate) const PHYSICAL_LAYER_DEVICE_ID_2_REGISTER: u8 = 0x03;
 
 /// Why an MDIO command did not complete.
 ///
@@ -228,12 +252,12 @@ pub const COMMAND_WORD_FIELDS_DO_NOT_OVERLAP: () = assert!(
 pub trait ManagementDataInputOutput {
     /// Read register `register` of the PHY at `physical_layer_device_address`.
     fn read(&mut self, physical_layer_device_address: u8, register: u8) -> Result<u16, Error>;
-    /// Write `v` to register `register` of the PHY at `physical_layer_device_address`.
+    /// Write `value` to register `register` of the PHY at `physical_layer_device_address`.
     fn write(
         &mut self,
         physical_layer_device_address: u8,
         register: u8,
-        v: u16,
+        value: u16,
     ) -> Result<(), Error>;
 }
 
@@ -284,12 +308,12 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
         &mut self,
         physical_layer_device_address: u8,
         register: u8,
-        v: u16,
+        value: u16,
     ) -> Result<(), Error> {
         self.wait(physical_layer_device_address, register)?;
         self.0.write(
             registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER,
-            u32::from(v),
+            u32::from(value),
         );
         self.0.write(
             registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
@@ -299,7 +323,7 @@ impl<H: Hardware> ManagementDataInputOutput for Bus<'_, H> {
     }
 }
 
-/// **The PHY's identifier**, `PHYSID1 << 16 | PHYSID2`, revision included. It returns the
+/// **The PHY's identifier**, `PHYSICAL_LAYER_DEVICE_ID_1_REGISTER << 16 | PHYSICAL_LAYER_DEVICE_ID_2_REGISTER`, revision included. It returns the
 /// identifier; `physical_layer_device_address` is the bus address of the device to ask.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
@@ -308,8 +332,14 @@ pub fn physical_layer_device_id(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
 ) -> Result<u32, Error> {
-    let high = bus.read(physical_layer_device_address, PHYSID1)?;
-    let low = bus.read(physical_layer_device_address, PHYSID2)?;
+    let high = bus.read(
+        physical_layer_device_address,
+        PHYSICAL_LAYER_DEVICE_ID_1_REGISTER,
+    )?;
+    let low = bus.read(
+        physical_layer_device_address,
+        PHYSICAL_LAYER_DEVICE_ID_2_REGISTER,
+    )?;
     Ok(u32::from(high) << 16 | u32::from(low))
 }
 
@@ -329,8 +359,12 @@ pub fn is_link_up(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
 ) -> Result<bool, Error> {
-    let _ = bus.read(physical_layer_device_address, BMSR)?;
-    Ok(bus.read(physical_layer_device_address, BMSR)? & BMSR_LSTATUS != 0)
+    let _ = bus.read(physical_layer_device_address, BASIC_MODE_STATUS_REGISTER)?;
+    Ok(
+        bus.read(physical_layer_device_address, BASIC_MODE_STATUS_REGISTER)?
+            & BASIC_MODE_STATUS_LINK_STATUS
+            != 0,
+    )
 }
 
 /// **Restart autonegotiation**, advertising whatever the PHY's own defaults advertise (every speed
@@ -341,11 +375,14 @@ pub fn restart_autonegotiation(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
 ) -> Result<(), Error> {
-    let bmcr = bus.read(physical_layer_device_address, BMCR)?;
+    let basic_mode_control =
+        bus.read(physical_layer_device_address, BASIC_MODE_CONTROL_REGISTER)?;
     bus.write(
         physical_layer_device_address,
-        BMCR,
-        bmcr | BMCR_ANENABLE | BMCR_ANRESTART,
+        BASIC_MODE_CONTROL_REGISTER,
+        basic_mode_control
+            | BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE
+            | BASIC_MODE_CONTROL_AUTONEGOTIATION_RESTART,
     )
 }
 
@@ -354,8 +391,9 @@ pub fn restart_autonegotiation(
 /// `restart_autonegotiation` names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP: () =
-    assert!(BMCR_ANENABLE & BMCR_ANRESTART == 0);
+pub const AUTONEGOTIATION_ENABLE_AND_RESTART_DO_NOT_OVERLAP: () = assert!(
+    BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE & BASIC_MODE_CONTROL_AUTONEGOTIATION_RESTART == 0
+);
 
 #[cfg(test)]
 mod tests {
@@ -363,7 +401,7 @@ mod tests {
 
     #[test]
     fn a_read_command_carries_the_largest_divider_the_addresses_and_the_busy_bit() {
-        let c = command_word(0, PHYSID1, false);
+        let c = command_word(0, PHYSICAL_LAYER_DEVICE_ID_1_REGISTER, false);
         assert_eq!(c, 7 << 8 | 2 << 16 | 3 << 2 | 1);
         let w = command_word(31, 31, true);
         assert_eq!(w, 7 << 8 | 31 << 21 | 31 << 16 | 1 << 2 | 1);
@@ -418,11 +456,13 @@ mod tests {
                 _ => panic!("MDIO touched {offset:#x}, outside its two registers"),
             }
         }
-        fn write(&mut self, offset: u32, v: u32) {
-            self.writes.push((offset, v));
+        fn write(&mut self, offset: u32, value: u32) {
+            self.writes.push((offset, value));
             match offset {
-                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER => self.address = v,
-                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER => self.data = v,
+                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER => {
+                    self.address = value;
+                }
+                registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_DATA_REGISTER => self.data = value,
                 _ => panic!("MDIO wrote {offset:#x}, outside its two registers"),
             }
         }
@@ -434,12 +474,15 @@ mod tests {
     #[test]
     fn a_read_issues_one_read_command_and_returns_the_data_register() {
         let mut hardware = Pair::new(0xbeef, 3);
-        assert_eq!(Bus(&mut hardware).read(4, BMSR), Ok(0xbeef));
+        assert_eq!(
+            Bus(&mut hardware).read(4, BASIC_MODE_STATUS_REGISTER),
+            Ok(0xbeef)
+        );
         assert_eq!(
             hardware.writes,
             [(
                 registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
-                command_word(4, BMSR, false)
+                command_word(4, BASIC_MODE_STATUS_REGISTER, false)
             )]
         );
         assert_eq!(
@@ -453,7 +496,9 @@ mod tests {
     fn a_write_puts_the_data_down_before_the_command_that_sends_it() {
         // The other order would send whatever the data register held before.
         let mut hardware = Pair::new(0, 2);
-        Bus(&mut hardware).write(1, BMCR, 0x1200).unwrap();
+        Bus(&mut hardware)
+            .write(1, BASIC_MODE_CONTROL_REGISTER, 0x1200)
+            .unwrap();
         assert_eq!(
             hardware.writes,
             [
@@ -463,7 +508,7 @@ mod tests {
                 ),
                 (
                     registers::MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER,
-                    command_word(1, BMCR, true)
+                    command_word(1, BASIC_MODE_CONTROL_REGISTER, true)
                 )
             ]
         );
@@ -473,7 +518,10 @@ mod tests {
     fn a_command_still_busy_from_someone_else_is_waited_out_not_overwritten() {
         let mut hardware = Pair::new(0x1234, 2);
         hardware.address = command_word(7, 9, false); // firmware's read, in flight
-        assert_eq!(Bus(&mut hardware).read(0, PHYSID1), Ok(0x1234));
+        assert_eq!(
+            Bus(&mut hardware).read(0, PHYSICAL_LAYER_DEVICE_ID_1_REGISTER),
+            Ok(0x1234)
+        );
         // Nothing was written until the firmware's command had cleared its busy bit.
         assert_eq!(hardware.writes.len(), 1);
         assert!(hardware.waited_microseconds >= 2 * POLL_MICROSECONDS);
@@ -485,10 +533,10 @@ mod tests {
         hardware.stuck = true;
         hardware.address = COMMAND_BUSY;
         assert_eq!(
-            Bus(&mut hardware).read(3, BMSR),
+            Bus(&mut hardware).read(3, BASIC_MODE_STATUS_REGISTER),
             Err(Error::Timeout {
                 physical_layer_device_address: 3,
-                register: BMSR
+                register: BASIC_MODE_STATUS_REGISTER
             })
         );
         assert_eq!(hardware.waited_microseconds, COMMAND_LIMIT_MICROSECONDS);
@@ -499,10 +547,10 @@ mod tests {
         let mut hardware = Pair::new(0, 0);
         hardware.stuck = true;
         assert_eq!(
-            Bus(&mut hardware).write(2, BMCR, 1),
+            Bus(&mut hardware).write(2, BASIC_MODE_CONTROL_REGISTER, 1),
             Err(Error::Timeout {
                 physical_layer_device_address: 2,
-                register: BMCR
+                register: BASIC_MODE_CONTROL_REGISTER
             })
         );
         assert_eq!(hardware.waited_microseconds, COMMAND_LIMIT_MICROSECONDS);
@@ -517,10 +565,10 @@ mod tests {
 
     impl ManagementDataInputOutput for Latched {
         fn read(&mut self, _physical_layer_device_address: u8, register: u8) -> Result<u16, Error> {
-            if register == BMSR {
+            if register == BASIC_MODE_STATUS_REGISTER {
                 let up = self.link_now && !self.dropped_since_read;
                 self.dropped_since_read = false;
-                return Ok(if up { BMSR_LSTATUS } else { 0 });
+                return Ok(if up { BASIC_MODE_STATUS_LINK_STATUS } else { 0 });
             }
             Ok(self.registers[register as usize])
         }
@@ -528,9 +576,9 @@ mod tests {
             &mut self,
             _physical_layer_device_address: u8,
             register: u8,
-            v: u16,
+            value: u16,
         ) -> Result<(), Error> {
-            self.registers[register as usize] = v;
+            self.registers[register as usize] = value;
             Ok(())
         }
     }
@@ -554,8 +602,8 @@ mod tests {
             link_now: false,
             dropped_since_read: false,
         };
-        physical_layer_device.registers[PHYSID1 as usize] = 0x4f51;
-        physical_layer_device.registers[PHYSID2 as usize] = 0xe91b;
+        physical_layer_device.registers[PHYSICAL_LAYER_DEVICE_ID_1_REGISTER as usize] = 0x4f51;
+        physical_layer_device.registers[PHYSICAL_LAYER_DEVICE_ID_2_REGISTER as usize] = 0xe91b;
         assert_eq!(
             physical_layer_device_id(&mut physical_layer_device, 0),
             Ok(0x4f51_e91b)
@@ -569,11 +617,13 @@ mod tests {
             link_now: false,
             dropped_since_read: false,
         };
-        physical_layer_device.registers[BMCR as usize] = 0x0100; // full duplex, set by someone else
+        physical_layer_device.registers[BASIC_MODE_CONTROL_REGISTER as usize] = 0x0100; // full duplex, set by someone else
         restart_autonegotiation(&mut physical_layer_device, 0).unwrap();
         assert_eq!(
-            physical_layer_device.registers[BMCR as usize],
-            0x0100 | BMCR_ANENABLE | BMCR_ANRESTART
+            physical_layer_device.registers[BASIC_MODE_CONTROL_REGISTER as usize],
+            0x0100
+                | BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE
+                | BASIC_MODE_CONTROL_AUTONEGOTIATION_RESTART
         );
     }
 
@@ -596,9 +646,12 @@ mod tests {
             link_now: false,
             dropped_since_read: false,
         };
-        physical_layer_device.registers[BMCR as usize] = 0x1300;
+        physical_layer_device.registers[BASIC_MODE_CONTROL_REGISTER as usize] = 0x1300;
         restart_autonegotiation(&mut physical_layer_device, 0).unwrap();
-        assert_eq!(physical_layer_device.registers[BMCR as usize], 0x1300);
+        assert_eq!(
+            physical_layer_device.registers[BASIC_MODE_CONTROL_REGISTER as usize],
+            0x1300
+        );
     }
 
     /// Clause 22's bits as IEEE 802.3 numbers them (22.2.4.1 and 22.2.4.2), written out: the
@@ -608,10 +661,10 @@ mod tests {
     fn the_clause_22_bits_are_the_standards() {
         assert_eq!(
             [
-                BMCR_ANRESTART,
-                BMCR_ANENABLE,
+                BASIC_MODE_CONTROL_AUTONEGOTIATION_RESTART,
+                BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE,
                 BASIC_MODE_CONTROL_RESET,
-                BMSR_LSTATUS,
+                BASIC_MODE_STATUS_LINK_STATUS,
                 BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE
             ],
             [0x0200, 0x1000, 0x8000, 0x0004, 0x0020]

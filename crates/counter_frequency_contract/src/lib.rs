@@ -21,6 +21,10 @@
 
 #![cfg_attr(not(test), no_std)]
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 /// The page's first eight bytes: an assembled page from an unrecognized or zeroed frame. ASCII,
 /// unpadded, the same shape the sibling shared pages' magics use.
 ///

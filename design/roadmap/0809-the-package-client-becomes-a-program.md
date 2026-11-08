@@ -174,7 +174,7 @@ meets a program, not a builtin.
    `http_response` exception in `packages/init.package.toml`.
 4. Grants by verb (V2), or V1 with a `BUGS` line if V2 is refused.
 5. `list`, reading the image's catalog until an index exists, and saying so.
-6. `update` and `list -u` over the LAN fixture source, plain HTTP, as rung 3a, with
+6. `update` and `list -u` over the local area network fixture source, as rung 3a, with
    `jig` writing the index copy through `package_index`.
 7. `add-repository`, with the many-indexes details above. Waits on an unproposed milestone for the
    web's authority list and on the added index's TUF root (Follow-on).
