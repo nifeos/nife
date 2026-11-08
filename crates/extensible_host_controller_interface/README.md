@@ -16,7 +16,7 @@ use extensible_host_controller_interface::{Capabilities, ProducerRing, TransferR
 // (4 USB 2 and 4 USB 3, the defaults), runtime at 0x1000, doorbells at 0x2000. Port 1's status
 // register and the command ring's doorbell:
 let caps = Capabilities::decode(0x0100_0040, 0x0800_1040, 0, 0x0000_7000, 0x2000, 0x1000);
-assert_eq!((caps.portsc(1), caps.doorbell(0)), (0x440, 0x2000));
+assert_eq!((caps.port_status_and_control(1), caps.doorbell(0)), (0x440, 0x2000));
 
 // A four-entry command ring: three usable slots, then a link TRB back to the first.
 let mut ring = ProducerRing::new(0x1000, 4);

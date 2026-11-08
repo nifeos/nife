@@ -65,12 +65,12 @@ pub fn bring_up() -> Result<Found, Absent> {
         unsafe { core::ptr::read_volatile((regs_va + off) as *const u32) }
     };
     let capabilities = Capabilities::decode(
-        read(registers::CAPLENGTH),
-        read(registers::HCSPARAMS1),
-        read(registers::HCSPARAMS2),
-        read(registers::HCCPARAMS1),
-        read(registers::DBOFF),
-        read(registers::RTSOFF),
+        read(registers::CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER),
+        read(registers::STRUCTURAL_PARAMETERS_1_REGISTER),
+        read(registers::STRUCTURAL_PARAMETERS_2_REGISTER),
+        read(registers::CAPABILITY_PARAMETERS_1_REGISTER),
+        read(registers::DOORBELL_OFFSET_REGISTER),
+        read(registers::RUNTIME_REGISTER_SPACE_OFFSET_REGISTER),
     );
     #[cfg(feature = "xhci_port_probe")]
     crate::xhci_port_probe::before_handoff(regs_va, dev.bar_bytes);
