@@ -226,15 +226,21 @@ same fuzzing, and our four properties hold on its code. Its whole parse is no ea
 prove than ours, so the proofs do not favor either crate. 857 should therefore not publish
 `device_tree_blob`, and "contribute" stands.
 
-What contributing means changes. Today `dtoolkit` cannot replace ours in the kernel. It refuses real
-Linux trees over a name's length and walks a deep tree in quadratic time. It would add ten crates
-and two proc macros to a kernel graph that holds four and no proc macro, and it breaks its API every minor release. §46 (thin primitives or whole subsystems; we write everything in between) rule 3
-keeps the kernel's parser ours regardless, so none of this argues for a switch; it says what to
-send. Three bug reports, now filed ([the reports](dtoolkit-upstream-reports.md)): the name-length
-refusal, the quadratic walk, and `Display`'s panic. Then the four harnesses above, which hold on its
-code, the hostile corpus as fuzz seeds, and a CI job for its fuzz target. Each of those is code, so
-each needs the CLA signed first.
+What contributing means changes. As measured here, `dtoolkit` 0.4.1 cannot replace ours in the kernel.
+It refuses real Linux trees over a name's length and walks a deep tree in quadratic time. It would
+add ten crates and two proc macros to a kernel graph that holds four and no proc macro, and it
+breaks its API every minor release. §46 (thin primitives or whole subsystems; we write everything
+in between) rule 3 keeps the kernel's parser ours regardless, so none of this argues for a switch; it
+says what to send. Three bug reports, filed ([the reports](dtoolkit-upstream-reports.md)): the
+name-length refusal (#101, closed upstream by #104), the quadratic walk (#102, open) and `Display`'s
+panic (#103, open). A contribution for the quadratic walk is open as google/dtoolkit#108, which adds
+`Fdt::events`. Then the four harnesses above, which hold on its code, the hostile corpus as fuzz
+seeds, and a CI job for its fuzz target.
 
-If calef later wants the kernel's parser gone, the gate is a release that reads long names and
-walks in linear time, after the 0.5 API settles. Even then the policy stays ours, about 300 lines.
-That would be its own ruling under §46. This page proposes none.
+## The decision
+
+nife keeps its own `device_tree_blob` crate for now, and nothing is retired. The comparison above is
+revisited after google/dtoolkit#102 and #103 are resolved. If `dtoolkit` adopts the work and covers
+nife's needs (long property names read, a linear walk, no panic in `Display`, an API that holds
+still), retiring `device_tree_blob` in favour of `dtoolkit` becomes an architect's call under §46.
+Even then the policy stays ours, about 300 lines. This page proposes no retirement.

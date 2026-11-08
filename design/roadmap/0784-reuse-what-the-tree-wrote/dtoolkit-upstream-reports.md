@@ -1,18 +1,24 @@
 # Reports to `dtoolkit`
 
-Appendix to [784. Reuse what the tree wrote](../0784-reuse-what-the-tree-wrote.md), drafted from
+Appendix to [784. Reuse what the tree wrote](../0784-reuse-what-the-tree-wrote.md), written from
 [`device_tree_blob` against `dtoolkit`](dtoolkit-against-device-tree-blob.md). Name provisional.
 
 calef approved all three on 2026-10-25 (UTC), and the maintainers filed each on google/dtoolkit:
 [#101](https://github.com/google/dtoolkit/issues/101) (R1),
 [#102](https://github.com/google/dtoolkit/issues/102) (R2) and
-[#103](https://github.com/google/dtoolkit/issues/103) (R3). These are bug reports, not code, so
-they needed no CLA. Each describes 0.4.1 and `main` at `4a7faf2e7`; the filed issues carry
-a self-contained Rust reproduction in place of the probe.
+[#103](https://github.com/google/dtoolkit/issues/103) (R3). Each describes 0.4.1 and `main` at
+`4a7faf2e7`; the filed issues carry a self-contained Rust reproduction in place of the probe.
+
+State upstream: #101 is closed, completed by google/dtoolkit#104, which adds `Fdt::with_options`.
+#102 and #103 are open. A contribution for #102 is open as
+[google/dtoolkit#108](https://github.com/google/dtoolkit/pull/108), which adds `Fdt::events`, a flat
+single-pass iterator over the structure block. The comparison is read again once #102 and #103 are
+resolved ([the decision](dtoolkit-against-device-tree-blob.md#what-it-means-for-784s-contribute)).
+
 [dtoolkit-probe.sh](dtoolkit-probe.sh) reproduces each, in the mode named under it, through
 `dtoolkit`'s public API alone.
 
-## R1. `Fdt::new` rejects a whole tree over one property name of 32 characters (#101)
+## R1. `Fdt::new` rejects a whole tree over one property name of 32 characters (#101, closed)
 
 `Fdt::new` returns `InvalidPropertyName` for any blob that holds a property name
 longer than 31 characters, or one with a character outside `[A-Za-z0-9,._+?#-]`. The whole tree
@@ -34,7 +40,7 @@ Validate names only on the write side, or make read-side name validation opt-in
 (for example `Fdt::new_strict`), so a reader accepts what `dtc` and Linux accept. If validation stays
 on by default, a length limit that matches what Linux trees contain would be enough for this case.
 
-## R2. Visiting every node through `children()` takes time quadratic in depth (#102)
+## R2. Visiting every node through `children()` takes time quadratic in depth (#102, open; pull request #108)
 
 `FdtChildIter::next` finds the next sibling with `next_sibling_offset`, which walks
 the whole subtree of the previous child. A depth-first visit of every node therefore costs the sum
@@ -58,7 +64,7 @@ When a child has been fully walked, the iterator already knows where it ended;
 resuming from there makes a full visit linear. A flat, single-pass iterator over the structure
 block (each node with its depth) would serve callers that want every node and keep no stack.
 
-## R3. `Display` panics on a tree nested 16,384 levels deep (#103)
+## R3. `Display` panics on a tree nested 16,384 levels deep (#103, open)
 
 `fmt_recursive` indents with `{:indent$}` and four columns per level. At 16,384
 levels below the root the width passes `u16::MAX`, and formatting panics with "Formatting argument
