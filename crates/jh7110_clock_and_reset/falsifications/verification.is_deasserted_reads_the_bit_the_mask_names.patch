@@ -7,10 +7,10 @@ against one still in reset.
 Expected to fail: the harness's first assertion, equality with the named status bit.
 
 diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
-index 7cc680a83..3604cda82 100644
+index e840194c9..4d3b8c5a8 100644
 --- a/crates/jh7110_clock_and_reset/src/lib.rs
 +++ b/crates/jh7110_clock_and_reset/src/lib.rs
-@@ -1112,7 +1112,7 @@ impl Domain {
+@@ -1228,7 +1228,7 @@
  /// Name: ratified 2026-10-26 (UTC).
  #[must_use]
  pub const fn is_deasserted(status_word: u32, mask: u32) -> bool {

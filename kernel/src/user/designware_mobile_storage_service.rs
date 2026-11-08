@@ -73,9 +73,9 @@ pub(crate) fn start(
     // every identifier is in range; every step is idempotent on a controller already up.
     let report = unsafe {
         crate::drivers::jh7110_clock_and_reset::bring_up(
-            crate::arch::mmu::phys_to_virt(sys.base) as usize,
+            crate::arch::mmu::phys_to_virt(sys.base_physical_address) as usize,
             &jh7110_clock_and_reset::SYSTEM,
-            jh7110_clock_and_reset::SDIO_BRING_UP[usize::from(slot.index) & 1],
+            jh7110_clock_and_reset::SD_INPUT_OUTPUT_BRING_UP[usize::from(slot.index) & 1],
         )
     };
     if !report.has_clocks_running() || !report.released {

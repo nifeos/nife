@@ -209,12 +209,12 @@ fn run(
     // which is `bring_up`'s contract.
     unsafe {
         r.sys = crate::drivers::jh7110_clock_and_reset::bring_up(
-            mmu::phys_to_virt(e.sys.base) as usize,
+            mmu::phys_to_virt(e.sys.base_physical_address) as usize,
             &crg::SYSTEM,
             crg::GMAC0_SYSTEM_BRING_UP,
         );
         r.aon = crate::drivers::jh7110_clock_and_reset::bring_up(
-            mmu::phys_to_virt(e.aon.base) as usize,
+            mmu::phys_to_virt(e.aon.base_physical_address) as usize,
             &crg::ALWAYS_ON,
             crg::GMAC0_ALWAYS_ON_BRING_UP,
         );

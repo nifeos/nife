@@ -279,7 +279,7 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         );
         return Outcome::NoClockWindow;
     };
-    let plan = jh7110_clock_and_reset::SDIO_BRING_UP[usize::from(slot.index)];
+    let plan = jh7110_clock_and_reset::SD_INPUT_OUTPUT_BRING_UP[usize::from(slot.index)];
     // SAFETY: `memory::jh7110_sys_window` answers only on a JH7110, and `mmu::initialize` step 6c
     // mapped exactly this window device-typed. The plan and the domain are the same crate's, so
     // every identifier is in range; every step is idempotent on a controller already up.

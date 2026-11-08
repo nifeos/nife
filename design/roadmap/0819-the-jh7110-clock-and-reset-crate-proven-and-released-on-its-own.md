@@ -187,7 +187,7 @@ names until the ratification pass, so this section keeps the links it carried.
 - The crate doc: the volatile shell is `kernel/src/drivers/jh7110_clock_and_reset.rs`, and the
   story is `notes/jh7110-clock-and-reset.md`.
 - `Step::SelectParent`, `AON`, `GMAC0_SYSTEM_BRING_UP`, `GMAC0_ALWAYS_ON_BRING_UP`, `SYSCLK_SDIO0_AHB`,
-  `SDIO_BRING_UP` and `BringUpReport::resets` cite the JH7110's Ethernet and SD/MMC work, milestone 53
+  `SD_INPUT_OUTPUT_BRING_UP` and `BringUpReport::resets` cite the JH7110's Ethernet and SD/MMC work, milestone 53
   (the board's own peripherals: network and storage on real silicon).
 - `SYSTEM_TOP_GROUP_BASE`: why a fallback address is safe is the note's section "The one genuinely dangerous
   thing here, and what stops it".

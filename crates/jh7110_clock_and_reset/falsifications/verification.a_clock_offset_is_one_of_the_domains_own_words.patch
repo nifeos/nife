@@ -6,10 +6,10 @@ an offset, which is the first word of whatever follows the clock words.
 Expected to fail: the harness's `assert!(index < domain.clocks)` on a returned offset.
 
 diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
-index 7cc680a83..3c4140715 100644
+index e840194c9..99da8512f 100644
 --- a/crates/jh7110_clock_and_reset/src/lib.rs
 +++ b/crates/jh7110_clock_and_reset/src/lib.rs
-@@ -1072,7 +1072,7 @@ impl Domain {
+@@ -1188,7 +1188,7 @@
      /// Name: ratified 2026-10-26 (UTC).
      #[must_use]
      pub const fn clock_offset(&self, index: u32) -> Option<u64> {

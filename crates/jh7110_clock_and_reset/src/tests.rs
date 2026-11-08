@@ -620,7 +620,7 @@ fn all_resets_are_released_counts_the_released_against_the_planned() {
 
 #[test]
 fn each_sd_input_output_plan_ungates_both_clocks_before_its_reset_and_stays_in_the_system_domain() {
-    for plan in SDIO_BRING_UP {
+    for plan in SD_INPUT_OUTPUT_BRING_UP {
         assert!(matches!(plan.last(), Some(Step::DeassertReset(_))));
         assert_eq!(plan.len(), 3);
         for s in plan {
@@ -662,13 +662,13 @@ fn the_card_clock_of_a_visionfive_2_comes_to_the_trees_rate_from_below() {
         inter_integrated_circuit_5_clock_frequency(&words),
         49_500_000
     );
-    let div = sdcard_divider_for(parent, 50_000_000);
+    let div = sd_card_divider_for(parent, 50_000_000);
     assert_eq!(div, 8);
     assert!(parent / u64::from(div) <= 50_000_000);
-    assert_eq!(sdcard_divider_for(parent, 1), MAXIMUM_SD_CARD_DIVIDER);
-    assert_eq!(sdcard_divider_for(parent, 1_000_000_000), 1);
+    assert_eq!(sd_card_divider_for(parent, 1), MAXIMUM_SD_CARD_DIVIDER);
+    assert_eq!(sd_card_divider_for(parent, 1_000_000_000), 1);
     // A parent read as zero (a gated or unreadable chain) still gives a divider the field allows.
-    assert_eq!(sdcard_divider_for(0, 50_000_000), 1);
+    assert_eq!(sd_card_divider_for(0, 50_000_000), 1);
     assert_eq!(with_divider(0x8000_0002, 8), 0x8000_0008);
 }
 
@@ -729,7 +729,10 @@ fn a_vendor_shaped_bus_skips_the_virtual_clock_and_keeps_its_one_gate_and_one_re
     );
     assert_eq!(bus.skipped, 1);
     assert!(!bus.truncated);
-    assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
+    assert_eq!(
+        bus.controller_physical_window,
+        Some((0x1205_0000, 0x1_0000))
+    );
     assert_eq!(bus.power_management_chip_address, Some(0x36));
 }
 
@@ -748,7 +751,10 @@ fn a_mainline_shaped_bus_gives_the_same_plan_through_the_system_clock_and_reset_
     assert!(bus.from_tree);
     assert_eq!(bus.skipped, 0);
     assert_eq!(
-        (bus.controller, bus.power_management_chip_address),
+        (
+            bus.controller_physical_window,
+            bus.power_management_chip_address
+        ),
         (None, None)
     );
 }
@@ -779,7 +785,10 @@ fn a_bus_naming_only_foreign_specifiers_falls_back_and_forgets_the_addresses() {
     // the provider without `compatible`, then the clkgen node asked for `#reset-cells`.
     assert_eq!(bus.skipped, 2 + 2 + 3);
     assert_eq!(
-        (bus.controller, bus.power_management_chip_address),
+        (
+            bus.controller_physical_window,
+            bus.power_management_chip_address
+        ),
         (None, None)
     );
 }
@@ -844,7 +853,10 @@ fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() 
         bus.power_management_chip,
         Some(COMPATIBLE_POWER_MANAGEMENT_CHIP_VENDOR)
     );
-    assert_eq!(bus.controller, Some((0x1205_0000, 0x1_0000)));
+    assert_eq!(
+        bus.controller_physical_window,
+        Some((0x1205_0000, 0x1_0000))
+    );
     assert_eq!(bus.power_management_chip_address, Some(0x36));
     // A `reg` too short to hold its value is not stated.
     let short = PowerManagementChipBus::from_nodes(
@@ -857,7 +869,10 @@ fn a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses() 
     )
     .unwrap();
     assert_eq!(
-        (short.controller, short.power_management_chip_address),
+        (
+            short.controller_physical_window,
+            short.power_management_chip_address
+        ),
         (None, None)
     );
 }
@@ -941,7 +956,7 @@ fn a_single_window_node_answers_with_its_one_register_property() {
     assert_eq!(
         found,
         WindowLocation {
-            base: 0x1023_0000,
+            base_physical_address: 0x1023_0000,
             size: 0x1_0000,
             from_tree: true,
             compatible: Some(COMPATIBLE_SYSTEM_TOP_GROUP_CLOCK_AND_RESET_GENERATOR),
@@ -958,7 +973,7 @@ fn a_vendor_node_window_is_found_by_name_not_position() {
     // `reg[0]` is the SYS window: a driver that took it would enable clock 15 of the wrong
     // controller.
     let regions = [
-        (SYSTEM_BASE, SYSTEM_SIZE_BYTES),
+        (SYSTEM_BASE_PHYSICAL_ADDRESS, SYSTEM_SIZE_BYTES),
         (
             SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
             SYSTEM_TOP_GROUP_SIZE_BYTES,
@@ -970,7 +985,10 @@ fn a_vendor_node_window_is_found_by_name_not_position() {
         WindowLocation::from_regions(&SYSTEM_TOP_GROUP_WINDOW.spellings[1], &regions, Some(names))
             .unwrap();
     assert_eq!(
-        (system_top_group.base, system_top_group.compatible),
+        (
+            system_top_group.base_physical_address,
+            system_top_group.compatible
+        ),
         (
             SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
             Some(COMPATIBLE_VENDOR_CLOCK_GENERATOR)
@@ -980,12 +998,12 @@ fn a_vendor_node_window_is_found_by_name_not_position() {
         WindowLocation::from_regions(&ALWAYS_ON_WINDOW.spellings[1], &regions, Some(names))
             .unwrap();
     assert_eq!(
-        (always_on.base, always_on.size),
+        (always_on.base_physical_address, always_on.size),
         (ALWAYS_ON_BASE_PHYSICAL_ADDRESS, ALWAYS_ON_SIZE_BYTES)
     );
     let system =
         WindowLocation::from_regions(&SYSTEM_WINDOW.spellings[1], &regions, Some(names)).unwrap();
-    assert_eq!(system.base, SYSTEM_BASE);
+    assert_eq!(system.base_physical_address, SYSTEM_BASE_PHYSICAL_ADDRESS);
     let reset_window = WindowLocation::from_regions(
         &SYSTEM_TOP_GROUP_WINDOW.spellings[2],
         &regions,
@@ -993,7 +1011,7 @@ fn a_vendor_node_window_is_found_by_name_not_position() {
     )
     .unwrap();
     assert_eq!(
-        (reset_window.base, reset_window.compatible),
+        (reset_window.base_physical_address, reset_window.compatible),
         (
             SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
             Some(COMPATIBLE_VENDOR_RESET_GENERATOR)
@@ -1004,7 +1022,7 @@ fn a_vendor_node_window_is_found_by_name_not_position() {
 #[test]
 fn a_multi_window_node_refuses_rather_than_guesses() {
     let regions = [
-        (SYSTEM_BASE, SYSTEM_SIZE_BYTES),
+        (SYSTEM_BASE_PHYSICAL_ADDRESS, SYSTEM_SIZE_BYTES),
         (
             SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
             SYSTEM_TOP_GROUP_SIZE_BYTES,
@@ -1040,7 +1058,7 @@ fn each_window_tries_mainline_first_and_falls_back_to_the_published_constant() {
         (
             SYSTEM_WINDOW,
             COMPATIBLE_SYSTEM_CLOCK_AND_RESET_GENERATOR,
-            SYSTEM_BASE,
+            SYSTEM_BASE_PHYSICAL_ADDRESS,
         ),
     ] {
         assert_eq!(window.spellings[0].compatible, mainline);
@@ -1056,7 +1074,7 @@ fn each_window_tries_mainline_first_and_falls_back_to_the_published_constant() {
         assert_eq!(
             window.fallback(),
             WindowLocation {
-                base,
+                base_physical_address: base,
                 size: 0x1_0000,
                 from_tree: false,
                 compatible: None,

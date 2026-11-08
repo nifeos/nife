@@ -6,10 +6,10 @@ device's built plan releases a reset ahead of its clocks.
 Expected to fail: the harness's `assert!(ungates_before_releasing(device.plan(), &SYSTEM))`.
 
 diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
-index 7cc680a83..97b7ac8c4 100644
+index e840194c9..681e30b1f 100644
 --- a/crates/jh7110_clock_and_reset/src/lib.rs
 +++ b/crates/jh7110_clock_and_reset/src/lib.rs
-@@ -637,7 +637,7 @@ fn collect_system_steps<'t, E>(
+@@ -698,7 +698,7 @@
          skipped: 0,
          truncated: false,
      };

@@ -6,10 +6,10 @@ word and a bit, a store into a line the domain does not have.
 Expected to fail: the harness's `assert!(id < domain.resets)` on a returned reset line.
 
 diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
-index 7cc680a83..647dd18ae 100644
+index e840194c9..d46bd2d02 100644
 --- a/crates/jh7110_clock_and_reset/src/lib.rs
 +++ b/crates/jh7110_clock_and_reset/src/lib.rs
-@@ -1088,7 +1088,7 @@ impl Domain {
+@@ -1204,7 +1204,7 @@
      /// Name: ratified 2026-10-26 (UTC).
      #[must_use]
      pub const fn reset_bit(&self, id: u32) -> Option<ResetBit> {
