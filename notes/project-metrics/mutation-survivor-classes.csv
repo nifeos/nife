@@ -99,7 +99,7 @@ e1000e,cycle,replace | with ^,1,or_xor,equivalent,algebraic,algebraic,
 e1000e,initialize_cycle,replace & with ^,1,bitwise,equivalent,algebraic,algebraic,
 e1000e,initialize_cycle,replace & with |,1,bitwise,equivalent,algebraic,algebraic,
 e1000e,initialize_cycle,replace | with &,2,bitwise,equivalent,algebraic,algebraic,
-e1000e,local_area_network_connected_device_configuration,replace | with ^,1,or_xor,equivalent,caller,caller,yes
+e1000e,lan_connected_device_configuration,replace | with ^,1,or_xor,equivalent,caller,caller,yes
 e1000e,physical_layer_device_reset_generic,replace | with ^,1,or_xor,equivalent,caller,caller,
 e1000e,read_mdic,replace | with ^,2,or_xor,equivalent,caller,caller,yes
 e1000e,read_u32_at_byte,delete !,1,other,equivalent,algebraic,algebraic,
