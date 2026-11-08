@@ -66,12 +66,15 @@ pub const USB_COMMAND_REGISTER: u64 = 0x00;
 #[doc(alias = "USBSTS")]
 pub const USB_STATUS_REGISTER: u64 = 0x04;
 /// **Page Size** (`PAGESIZE`, xHCI specification), an operational register: a bitmap of the page
-/// sizes the controller supports; bit 0 is 4 KiB.
+/// size orders the controller supports; bit n set is a page size of 2^(n + 12) bytes, so bit 0 is
+/// 4 KiB.
 ///
-/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `PAGESIZE` (the specification's mnemonic,
-/// kept as the alias).
+/// Name: ratified 2026-11-08 (UTC), on #3357; it replaced `PAGE_SIZE_BITMAP_REGISTER`, because the
+/// template reads `size` as a quantity that carries a unit and each set bit is an order. Refused
+/// `PAGESIZE` (the specification's mnemonic, kept as the alias) and the plural
+/// `SUPPORTED_PAGE_SIZE_ORDERS_REGISTER`, which the template also reads as a size.
 #[doc(alias = "PAGESIZE")]
-pub const PAGE_SIZE_BITMAP_REGISTER: u64 = 0x08;
+pub const SUPPORTED_PAGE_SIZE_ORDER_REGISTER: u64 = 0x08;
 /// **Command Ring Control** (`CRCR`, xHCI specification), an operational register: the command
 /// ring's base and cycle.
 ///
@@ -196,10 +199,6 @@ pub const INTERRUPTER_MANAGEMENT_ENABLE: u32 = 1 << 1;
 #[doc(alias = "ERDP.EHB")]
 pub const EVENT_RING_DEQUEUE_POINTER_BUSY: u64 = 1 << 3;
 
-/// Extended capability id: USB Legacy Support, the firmware handoff (xHCI 1.2 section 7.1).
-///
-/// Name: ratified 2026-10-25 (#2720).
-pub const EXTENDED_LEGACY_SUPPORT: u8 = 1;
 /// `USBLEGSUP` Host Controller (HC) Basic Input/Output System (BIOS) Owned Semaphore.
 ///
 /// Name: ratified 2026-10-25 (#2720).

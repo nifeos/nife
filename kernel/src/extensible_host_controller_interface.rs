@@ -17,7 +17,9 @@
 //! `kernel/src/non_volatile_memory_express.rs` takes its crate's: the volatile half of one pair.
 
 use driver_process_contract::extensible_host_controller_interface::{Handoff, WindowRefusal};
-use extensible_host_controller_interface::{Capabilities, direct_memory_access, registers};
+use extensible_host_controller_interface::{
+    Capabilities, direct_memory_access, extended_capabilities, registers,
+};
 
 use crate::arch::mmu;
 
@@ -136,7 +138,7 @@ fn take_from_firmware(regs_va: u64, capabilities: &Capabilities, bar_bytes: u64)
     let Some(at) = registers::find_extended(
         capabilities.extended,
         bar_bytes,
-        registers::EXTENDED_LEGACY_SUPPORT,
+        extended_capabilities::LEGACY_SUPPORT_EXTENDED_CAPABILITY_ID,
         &mut read,
     ) else {
         return;

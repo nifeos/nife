@@ -55,7 +55,7 @@ physical.
 | `HCCPARAMS1` | `CAPABILITY_PARAMETERS_1_REGISTER` |
 | `DBOFF`, `RTSOFF` | `DOORBELL_OFFSET_REGISTER`, `RUNTIME_REGISTER_SPACE_OFFSET_REGISTER` |
 | `USBCMD`, `USBSTS` | `USB_COMMAND_REGISTER`, `USB_STATUS_REGISTER` |
-| `PAGESIZE` | `PAGE_SIZE_BITMAP_REGISTER` (kept; see below) |
+| `PAGESIZE` | `SUPPORTED_PAGE_SIZE_ORDER_REGISTER` |
 | `CRCR` | `COMMAND_RING_CONTROL_REGISTER` |
 | `DCBAAP` | `DEVICE_CONTEXT_BASE_PHYSICAL_ADDRESS_ARRAY_POINTER_REGISTER` |
 | `CONFIG` | `CONFIGURATION_REGISTER` |
@@ -72,20 +72,14 @@ array holds are physical. The private offsets follow the same rule: `FIRST_PORT_
 `INTERRUPTER_0_REGISTER`.
 
 The template's `register_names.py` refuses four ratified names. The architect ruled a new name for
-each. The gate passes two of them, and the crate carries them:
+each, and the crate carries all four:
 
 | old name | ratified name | rule it satisfies |
 |---|---|---|
+| `registers::PAGE_SIZE_BITMAP_REGISTER` | `registers::SUPPORTED_PAGE_SIZE_ORDER_REGISTER`, alias `PAGESIZE` | `size` carries a unit from `[size_units]` and `bitmap` is not one; each set bit n is a supported page size of order n, which is 2^(n + 12) bytes. The plural `SUPPORTED_PAGE_SIZE_ORDERS_REGISTER` is refused as a size without a unit |
+| `registers::EXTENDED_LEGACY_SUPPORT` | `extended_capabilities::LEGACY_SUPPORT_EXTENDED_CAPABILITY_ID` | an integer in a `registers` module is an offset, but this is an extended capability id, so it moved to the new `extended_capabilities` module |
 | `context::slot_address` | `context::slot_device_number`, alias `USB Device Address` | an address is virtual or physical; this is the USB device number in the slot context, so the name has no `address` |
 | `ring::ProducerRing::address_of` | `ring::ProducerRing::entry_physical_address` | the address is physical, and the name says so |
-
-The gate refuses the ruled name of the other two, so they keep their old names until the architect
-rules again:
-
-| name kept | ruled name | gate output on the ruled name |
-|---|---|---|
-| `registers::PAGE_SIZE_BITMAP_REGISTER` | `SUPPORTED_PAGE_SIZES_REGISTER` | a size, a length or a limit carries its unit: end it `_BYTES`, `_BITS`, `_WORDS` or another unit from `[size_units]` (`size` inside `SIZES` is read as a size) |
-| `registers::EXTENDED_LEGACY_SUPPORT` | `LEGACY_SUPPORT_EXTENDED_CAPABILITY_ID` | a register offset ends `_REGISTER`; another quantity ends `_MASK`, `_SHIFT`, `_VALUE`, `_BYTES` or `_BITS` (`_ID` is none of them) |
 
 `address_device` is the xHCI command of that name. The gate reads a leading `address` as a verb
 only before `and`, `or`, `the` and similar words, not before `device`, so the function states its
