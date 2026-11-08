@@ -242,5 +242,5 @@ seeds, and a CI job for its fuzz target.
 nife keeps its own `device_tree_blob` crate for now, and nothing is retired. The comparison above is
 revisited after google/dtoolkit#102 and #103 are resolved. If `dtoolkit` adopts the work and covers
 nife's needs (long property names read, a linear walk, no panic in `Display`, an API that holds
-still), retiring `device_tree_blob` in favour of `dtoolkit` becomes an architect's call under §46.
+still), retiring `device_tree_blob` in favor of `dtoolkit` becomes an architect's call under §46.
 Even then the policy stays ours, about 300 lines. This page proposes no retirement.
