@@ -3,7 +3,7 @@
 //!
 //! The process (`net_stack`) is handed BAR0's two queue pages and the region; this file keeps what
 //! it must not do, on pages 0 and 5. A ring base shares a page with its tail, so the IOMMU domain
-//! is the whole DMA bound. Every offset and layout is `crates/e1000e`'s. See notes/e1000e.md.
+//! is the whole DMA bound. Every offset and layout is `nifeos/e1000e`'s. See notes/e1000e.md.
 
 //! # BUGS
 //! - Two bring-ups share this file (the 82574L's and the I219's), and QEMU proves only one.
@@ -28,7 +28,7 @@ pub enum Error {
     ResetTimeout,
     /// Receive-address entry 0 was not marked valid after reset: the NVM load did not happen.
     NoStationAddress,
-    /// An I219 bring-up pass stopped (`crates/e1000e/src/platform_controller_hub/sequence.rs`).
+    /// An I219 bring-up pass stopped (`nifeos/e1000e/src/platform_controller_hub/sequence.rs`).
     Pch(::e1000e::platform_controller_hub::sequence::Error),
     /// The PHY identifier could not be read over MDIO.
     PhysicalLayerDeviceId(::e1000e::platform_controller_hub::physical_layer_device::Error),
@@ -37,7 +37,7 @@ pub enum Error {
 /// Why there is no NIC to hand out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Absent {
-    /// No function on the bus is one `crates/e1000e` claims.
+    /// No function on the bus is one `nifeos/e1000e` claims.
     NoController,
     /// One is, and bring-up refused it. Never a skip.
     Refused {
@@ -96,7 +96,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     }
 
     // Reset re-enabled nothing we want; mask again and clear anything pending.
-    c.w(registers::INTERRUPT_MASK_CLEAR_REGISTER, u32::MAX);
+    c.w(registers::INTERRUPT_CLEAR_MASK_REGISTER, u32::MAX);
     let _ = c.r(registers::INTERRUPT_CAUSE_READ_REGISTER);
     zero(region);
 
@@ -119,9 +119,9 @@ pub fn bring_up() -> Result<Found, Absent> {
         );
     }
 
-    let station_address = ::e1000e::station_address_from_receive_address(
-        c.r(registers::RECEIVE_ADDRESS_0_LOW_REGISTER),
-        c.r(registers::RECEIVE_ADDRESS_0_HIGH_REGISTER),
+    let station_address = ::e1000e::station_mac_address_from_receive_words(
+        c.r(registers::RECEIVE_MAC_ADDRESS_0_LOW_REGISTER),
+        c.r(registers::RECEIVE_MAC_ADDRESS_0_HIGH_REGISTER),
     )
     .ok_or(refused(Error::NoStationAddress))?;
 
@@ -129,7 +129,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     for k in 0..registers::MULTICAST_TABLE_ARRAY_ENTRIES {
         c.w(registers::MULTICAST_TABLE_ARRAY_REGISTER + 4 * k, 0);
     }
-    // Legacy receive descriptors, the only format `crates/e1000e` reads.
+    // Legacy receive descriptors, the only format `nifeos/e1000e` reads.
     c.w(
         registers::RECEIVE_FILTER_CONTROL_REGISTER,
         c.r(registers::RECEIVE_FILTER_CONTROL_REGISTER)
@@ -158,7 +158,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     let physical_layer_device_id = match physical_layer_device_id {
         Some(id) => id,
         None => {
-            ::e1000e::platform_controller_hub::physical_layer_device::read_identifier_at_address(
+            ::e1000e::platform_controller_hub::physical_layer_device::read_identifier_at_device_number(
                 &mut hw, 1,
             )
             .map_err(|e| refused(Error::PhysicalLayerDeviceId(e)))?
@@ -188,29 +188,29 @@ fn program_rings(c: &Controller, region: u64) {
     let rx = region + layout::RECEIVE_RING_OFFSET_BYTES;
     let tx = region + layout::TRANSMIT_RING_OFFSET_BYTES;
     c.w(
-        registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
+        registers::RECEIVE_DESCRIPTOR_BASE_PHYSICAL_ADDRESS_LOW_REGISTER,
         rx as u32,
     );
     c.w(
-        registers::RECEIVE_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+        registers::RECEIVE_DESCRIPTOR_BASE_PHYSICAL_ADDRESS_HIGH_REGISTER,
         (rx >> 32) as u32,
     );
     c.w(
-        registers::RECEIVE_DESCRIPTOR_LENGTH_REGISTER,
+        registers::RECEIVE_DESCRIPTOR_LENGTH_BYTES_REGISTER,
         u32::from(::e1000e::RECEIVE_ENTRIES) * 16,
     );
     c.w(registers::RECEIVE_DESCRIPTOR_HEAD_REGISTER, 0);
     c.w(registers::RECEIVE_DESCRIPTOR_TAIL_REGISTER, 0);
     c.w(
-        registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_LOW_REGISTER,
+        registers::TRANSMIT_DESCRIPTOR_BASE_PHYSICAL_ADDRESS_LOW_REGISTER,
         tx as u32,
     );
     c.w(
-        registers::TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
+        registers::TRANSMIT_DESCRIPTOR_BASE_PHYSICAL_ADDRESS_HIGH_REGISTER,
         (tx >> 32) as u32,
     );
     c.w(
-        registers::TRANSMIT_DESCRIPTOR_LENGTH_REGISTER,
+        registers::TRANSMIT_DESCRIPTOR_LENGTH_BYTES_REGISTER,
         u32::from(::e1000e::TRANSMIT_ENTRIES) * 16,
     );
     c.w(registers::TRANSMIT_DESCRIPTOR_HEAD_REGISTER, 0);
@@ -220,7 +220,7 @@ fn program_rings(c: &Controller, region: u64) {
 /// **The 82574L's quiesce and global reset**, unchanged from before the I219 passes existed.
 fn reset_82574(c: &Controller) -> Result<(), Error> {
     // Quiesce: no interrupts, receiver and transmitter off, then a posted-write flush.
-    c.w(registers::INTERRUPT_MASK_CLEAR_REGISTER, u32::MAX);
+    c.w(registers::INTERRUPT_CLEAR_MASK_REGISTER, u32::MAX);
     c.w(registers::RECEIVE_CONTROL_REGISTER, 0);
     c.w(registers::TRANSMIT_CONTROL_REGISTER, 0);
     let _ = c.r(registers::DEVICE_STATUS_REGISTER);
@@ -279,7 +279,7 @@ fn zero(region: u64) {
 }
 
 /// Empty the descriptor rings before the reset if the hardware says it must. The sequence, its
-/// source and its notice are `crates/e1000e`'s (`platform_controller_hub::flush::empty_descriptor_rings`);
+/// source and its notice are `nifeos/e1000e`'s (`platform_controller_hub::flush::empty_descriptor_rings`);
 /// this supplies the configuration space and the ring memory it runs against.
 fn flush_descriptor_rings(hw: &mut Bar<'_>, dev: &crate::pci::PciE1000eDevice, region: u64) {
     use ::e1000e::platform_controller_hub::flush;
@@ -324,7 +324,7 @@ impl ::e1000e::platform_controller_hub::flush::FlushSupport for Rings<'_> {
 /// BAR0, through the direct map.
 struct Controller(u64);
 
-/// The largest offset any `crates/e1000e` constant reaches, plus the access: the flash data
+/// The largest offset any `nifeos/e1000e` constant reaches, plus the access: the flash data
 /// register at `0xe010` on SPT is the highest. Both parts' BAR0 is 128 KiB.
 const BAR0_BYTES: u64 = 128 * 1024;
 
@@ -347,7 +347,7 @@ impl Controller {
     }
 }
 
-/// What `crates/e1000e`'s I219 sequences and MDIO layer run against: BAR0, configuration space
+/// What `nifeos/e1000e`'s I219 sequences and MDIO layer run against: BAR0, configuration space
 /// (the vendor-id read the reset uses as a delay), the timer, and the console.
 struct Bar<'a> {
     c: &'a Controller,

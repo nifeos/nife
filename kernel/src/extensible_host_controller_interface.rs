@@ -17,7 +17,9 @@
 //! `kernel/src/non_volatile_memory_express.rs` takes its crate's: the volatile half of one pair.
 
 use driver_process_contract::extensible_host_controller_interface::{Handoff, WindowRefusal};
-use extensible_host_controller_interface::{Capabilities, direct_memory_access, registers};
+use extensible_host_controller_interface::{
+    Capabilities, direct_memory_access, extended_capabilities, registers,
+};
 
 use crate::arch::mmu;
 
@@ -111,7 +113,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     Ok(Found {
         bar0: dev.bar0,
         handoff: Handoff {
-            direct_memory_access_physical_address: dma,
+            data_plane_physical_address: dma,
             direct_memory_access_pages: pages as u32,
             // `register_window` never sets a bit at or above `MAXIMUM_REGISTER_PAGES` (16).
             registers: registers as u16,
@@ -136,7 +138,7 @@ fn take_from_firmware(regs_va: u64, capabilities: &Capabilities, bar_bytes: u64)
     let Some(at) = registers::find_extended(
         capabilities.extended,
         bar_bytes,
-        registers::EXTENDED_LEGACY_SUPPORT,
+        extended_capabilities::LEGACY_SUPPORT_EXTENDED_CAPABILITY_ID,
         &mut read,
     ) else {
         return;

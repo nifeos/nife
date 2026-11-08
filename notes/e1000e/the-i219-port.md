@@ -1,7 +1,7 @@
-# The I219 port: `crates/e1000e`'s sources, and its PCH bring-up
+# The I219 port: `nifeos/e1000e`'s sources, and its PCH bring-up
 
 An appendix to [the `e1000e` NIC](../e1000e.md). The crate tells its own story of the I219
-bring-up in `crates/e1000e/src/platform_controller_hub/`. This page holds what nife adds to it: why the port reads
+bring-up in `nifeos/e1000e/src/platform_controller_hub/`. This page holds what nife adds to it: why the port reads
 FreeBSD, how the kernel calls it, and what the QEMU gates prove of it. The stem `the-i219-port` is
 a provisional name.
 
@@ -35,7 +35,7 @@ FreeBSD's `e1000_pch_spt` class are carried, because every I219 the crate claims
 
 Every sequence is generic over `platform_controller_hub::Hardware`, so it runs on the host against a simulated I219
 (`pch/simulator.rs`) as well as in the kernel. QEMU's 82574L is not a PCH part and never reaches
-`sequence`. It does reach `physical_layer_device::read_identifier_at_address`, which shares
+`sequence`. It does reach `physical_layer_device::read_identifier_at_device_number`, which shares
 `physical_layer_device::read_management_data_input_output` with everything here, so the MDIO primitive is the one piece the
 QEMU gates prove.
 

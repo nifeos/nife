@@ -8,9 +8,10 @@ name = "drivers"
 kind = "base"
 home = { repo = "drivers", status = "provisional" }
 crates = ["virtio"]
-# `e1000e` is linked by the kernel, which resets the NIC and programs the rings' bases, and by
-# `net_stack` in the network package, which drives the rings (milestone 494 (a driver for the
-# network card a PC actually has)). Both link it, so it is an interface rather than an internal crate.
+# The crate `e1000e` lives in the repository `nifeos/e1000e` and is not listed here. The kernel
+# resets the NIC and programs the rings' bases through it, and `net_stack` in the network package
+# drives the rings (milestone 494 (a driver for the network card a PC actually has)). Both link it,
+# so it is an interface rather than an internal crate.
 # `designware_ethernet` is the same contract for the JH7110's Ethernet controller (milestone 53
 # (the board's own peripherals: network and storage on real silicon)), for the same reason.
 # `designware_mobile_storage` is the JH7110's SD/MMC driver (milestone 53 (the board's own
@@ -23,7 +24,6 @@ crates = ["virtio"]
 # The crate `jh7110_entropy` lives in the repository `nifeos/jh7110_entropy` and is not listed here;
 # the EL0 server of the same name drives the device and stays a program below.
 interfaces = [
-    "e1000e",
     "designware_ethernet",
     "designware_mobile_storage",
     "non_volatile_memory_express",

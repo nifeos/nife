@@ -8,7 +8,7 @@ use crate::host_controller::{
 };
 use crate::internal_direct_memory_access::{
     DESCRIPTOR_BYTES, DirectMemoryAccessRegion, InternalDirectMemoryAccess, MAXIMUM_DESCRIPTORS,
-    PAGE, descriptor, descriptors_for,
+    PAGE_BYTES, descriptor, descriptors_for,
 };
 use crate::partition::{MasterBootRecord, PartitionEntry};
 use crate::sd::can_address_blocks;
@@ -90,24 +90,34 @@ fn an_admitted_range_is_inside_the_card_and_the_address() {
 fn a_chain_describes_its_bytes_inside_the_region() {
     let pages: u32 = kani::any();
     kani::assume((1..=MAXIMUM_DESCRIPTORS).contains(&pages));
-    let bus: u32 = kani::any();
-    kani::assume(bus.is_multiple_of(PAGE));
-    kani::assume(u64::from(bus) + u64::from((pages + 1) * PAGE) <= 1 << 32);
+    let region_direct_memory_access_address: u32 = kani::any();
+    kani::assume(region_direct_memory_access_address.is_multiple_of(PAGE_BYTES));
+    kani::assume(
+        u64::from(region_direct_memory_access_address) + u64::from((pages + 1) * PAGE_BYTES)
+            <= 1 << 32,
+    );
     let bytes: u32 = kani::any();
-    kani::assume((1..=pages * PAGE).contains(&bytes));
+    kani::assume((1..=pages * PAGE_BYTES).contains(&bytes));
     let count = descriptors_for(bytes);
     assert!((1..=pages).contains(&count));
     let i: u32 = kani::any();
     kani::assume(i < count);
-    let [des0, size, buffer, next] = descriptor(bus, i, count, bytes);
-    assert!((1..=PAGE).contains(&size));
-    assert!(buffer >= bus + PAGE && buffer - bus + size <= (pages + 1) * PAGE);
+    let [word_0, size, buffer, next] =
+        descriptor(region_direct_memory_access_address, i, count, bytes);
+    assert!((1..=PAGE_BYTES).contains(&size));
+    assert!(
+        buffer >= region_direct_memory_access_address + PAGE_BYTES
+            && buffer - region_direct_memory_access_address + size <= (pages + 1) * PAGE_BYTES
+    );
     if i + 1 == count {
-        assert!(i * PAGE + size == bytes);
-        assert!(des0 & crate::internal_direct_memory_access::DES0_LD != 0);
+        assert!(i * PAGE_BYTES + size == bytes);
+        assert!(word_0 & crate::internal_direct_memory_access::DESCRIPTOR_LAST != 0);
     } else {
-        assert!(size == PAGE && next == bus + (i + 1) * DESCRIPTOR_BYTES);
-        assert!(des0 & crate::internal_direct_memory_access::DES0_LD == 0);
+        assert!(
+            size == PAGE_BYTES
+                && next == region_direct_memory_access_address + (i + 1) * DESCRIPTOR_BYTES
+        );
+        assert!(word_0 & crate::internal_direct_memory_access::DESCRIPTOR_LAST == 0);
     }
 }
 
@@ -286,16 +296,16 @@ impl RegisterWindowAndClock for AdversarialWindowAndClock {
 /// 4 GiB, so a chain is one or two descriptors. Each access asserts that the driver asked for
 /// bytes inside the region, which the trait leaves the implementation to bound.
 struct AdversarialRegion {
-    bus_address: u64,
+    direct_memory_access_address: u64,
 }
 
 impl DirectMemoryAccessRegion for AdversarialRegion {
-    fn bus_address(&self) -> u64 {
-        self.bus_address
+    fn direct_memory_access_address(&self) -> u64 {
+        self.direct_memory_access_address
     }
 
     fn bytes(&self) -> u32 {
-        3 * PAGE
+        3 * PAGE_BYTES
     }
 
     fn read_u32(&self, offset: u32) -> u32 {
@@ -365,7 +375,7 @@ fn the_direct_memory_access_wait_returns_once_its_deadline_has_passed() {
     let past_from: usize = kani::any();
     kani::assume((1..=2).contains(&past_from));
     let bytes: u32 = kani::any();
-    kani::assume((1..=2 * PAGE).contains(&bytes));
+    kani::assume((1..=2 * PAGE_BYTES).contains(&bytes));
     let count = descriptors_for(bytes);
     let window = AdversarialWindowAndClock::new(
         DATA_DEADLINE_MICROSECONDS,
@@ -373,8 +383,11 @@ fn the_direct_memory_access_wait_returns_once_its_deadline_has_passed() {
         past_from + count as usize,
     );
     let host = adversarial_host(window);
-    let bus_address: u64 = kani::any();
-    kani::assume(bus_address.is_multiple_of(u64::from(PAGE)) && bus_address < 1 << 31);
+    let direct_memory_access_address: u64 = kani::any();
+    kani::assume(
+        direct_memory_access_address.is_multiple_of(u64::from(PAGE_BYTES))
+            && direct_memory_access_address < 1 << 31,
+    );
     let identity = crate::host_controller::Identity {
         version_identification: 0,
         hardware_configuration: 1 << 7,
@@ -383,8 +396,12 @@ fn the_direct_memory_access_wait_returns_once_its_deadline_has_passed() {
         card_detect: 0,
         firmware: [0; 5],
     };
-    let Ok(engine) = InternalDirectMemoryAccess::new(AdversarialRegion { bus_address }, &identity)
-    else {
+    let Ok(engine) = InternalDirectMemoryAccess::new(
+        AdversarialRegion {
+            direct_memory_access_address,
+        },
+        &identity,
+    ) else {
         panic!("a three-page region below 2 GiB is refused");
     };
     let mut host = host.with_internal_direct_memory_access(engine);
@@ -475,12 +492,14 @@ impl RegisterWindowAndClock for AdversarialWindowAndRunningClock {
     }
 
     fn write(&mut self, offset: u32, value: u32) {
-        use crate::registers::{BYTCNT, CMD, CMDARG, COMMAND_WRITE};
-        if offset == CMDARG {
+        use crate::registers::{
+            BYTE_COUNT_REGISTER, COMMAND_ARGUMENT_REGISTER, COMMAND_REGISTER, COMMAND_WRITE,
+        };
+        if offset == COMMAND_ARGUMENT_REGISTER {
             self.argument = value;
-        } else if offset == BYTCNT {
+        } else if offset == BYTE_COUNT_REGISTER {
             self.byte_count = value;
-        } else if offset == CMD && value & COMMAND_WRITE != 0 {
+        } else if offset == COMMAND_REGISTER && value & COMMAND_WRITE != 0 {
             self.write_commands += 1;
             self.last_write = (self.argument, self.byte_count);
         }
@@ -553,7 +572,12 @@ fn sending_a_command_is_total_against_any_controller() {
         Err(Error::CommandTimeout(index, _)) => assert!(index == command.index),
         Err(Error::BadResponse(index, status)) => {
             assert!(index == command.index);
-            assert!(status & (crate::registers::RINTSTS_RCRC | crate::registers::RINTSTS_RE) != 0);
+            assert!(
+                status
+                    & (crate::registers::RAW_INTERRUPT_RESPONSE_CRC_ERROR
+                        | crate::registers::RAW_INTERRUPT_RESPONSE_ERROR)
+                    != 0
+            );
         }
         Err(_) => panic!("a command with no data phase failed in its data phase"),
     }
@@ -639,9 +663,13 @@ fn adversarial_direct_memory_access_host()
         kani::assume(false);
         unreachable!()
     };
-    let bus_address: u64 = kani::any();
-    let Ok(engine) = InternalDirectMemoryAccess::new(AdversarialRegion { bus_address }, &identity)
-    else {
+    let direct_memory_access_address: u64 = kani::any();
+    let Ok(engine) = InternalDirectMemoryAccess::new(
+        AdversarialRegion {
+            direct_memory_access_address,
+        },
+        &identity,
+    ) else {
         kani::assume(false);
         unreachable!()
     };
@@ -726,9 +754,11 @@ fn bringing_a_card_up_is_total_against_any_controller() {
         return;
     };
     let mut steps = 0;
-    if let Ok(v2) = crate::sd::go_idle_and_check_interface(&mut host) {
+    if let Ok(is_version_2_or_later) = crate::sd::go_idle_and_check_interface(&mut host) {
         steps += 1;
-        if let Ok((kind, _operation_conditions)) = crate::sd::power_up(&mut host, v2) {
+        if let Ok((kind, _operation_conditions)) =
+            crate::sd::power_up(&mut host, is_version_2_or_later)
+        {
             steps += 1;
             if crate::sd::address_and_select(&mut host, kind).is_ok() {
                 steps += 1;
@@ -764,4 +794,648 @@ fn configuring_a_card_is_total_against_any_controller() {
         let _ = crate::sd::configure_multimedia_card(&mut host, &mut card, &card_specific_data);
     }
     assert!(host.registers_mut().write_commands == 0);
+}
+
+/// Where a card stands in bring-up: the states of the SD Physical Layer Simplified
+/// Specification's card identification mode (figure 4-1, version 9.10) and JEDEC JESD84's, which
+/// `identify` walks in this order, and `Unknown` for a card whose answer the controller garbled.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CardState {
+    /// After `CMD0`, and while `ACMD41` or `CMD1` reports busy.
+    Idle,
+    /// Powered up: `ACMD41` or `CMD1` reported the busy bit done.
+    Ready,
+    /// `CMD2` sent the card identification.
+    Identification,
+    /// `CMD3` gave the card its relative address.
+    Standby,
+    /// `CMD7` selected the card.
+    Transfer,
+    /// The controller garbled an answer, so the card may have moved or not. Only `CMD0` is sure
+    /// to reach it.
+    Unknown,
+}
+
+/// Any state, as an earlier bring-up that failed at any step might leave a card.
+fn any_card_state() -> CardState {
+    match kani::any::<u8>() % 6 {
+        0 => CardState::Idle,
+        1 => CardState::Ready,
+        2 => CardState::Identification,
+        3 => CardState::Standby,
+        4 => CardState::Transfer,
+        _ => CardState::Unknown,
+    }
+}
+
+/// How the card met the last command.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Answer {
+    /// It answered, and the controller reports a clean response and, for a data command, the
+    /// data transferred.
+    Answered,
+    /// It did not answer, and the controller reports a response timeout.
+    Silent,
+    /// The controller reports a response error. Whether the card moved is unknown.
+    Garbled,
+}
+
+/// The bits of `ModeledCard::passed`: each state bring-up enters after `CMD0`.
+const PASSED_READY: u8 = 1 << 0;
+/// `CMD3` answered after `CMD2`.
+const PASSED_IDENTIFICATION: u8 = 1 << 1;
+/// `CMD3` answered.
+const PASSED_STANDBY: u8 = 1 << 2;
+/// `CMD7` answered.
+const PASSED_TRANSFER: u8 = 1 << 3;
+/// Every state bring-up passes through.
+const PASSED_EVERY_STATE: u8 =
+    PASSED_READY | PASSED_IDENTIFICATION | PASSED_STANDBY | PASSED_TRANSFER;
+
+/// What the controller looked like when the first card command went out.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct FirstCommand {
+    index: u8,
+    controller_was_reset: bool,
+    powered: bool,
+    clock_enabled: bool,
+    clock_divider: u32,
+    controller_bus_width: u8,
+}
+
+/// **A card of any history behind a controller that carries out each command, judged against the
+/// card state machine.** It starts in any state with any relative address and bus width, and the
+/// controller with any bus width and clock, as an earlier bring-up that failed anywhere might leave
+/// them. For each command the solver picks whether the card answered, stayed silent or had its
+/// answer garbled, and picks the response words; the controller reports that choice and is
+/// otherwise idle and error free, so every wait the driver makes on it is met at its first look.
+/// That keeps these harnesses on the order of commands. A controller that fails a command another
+/// way (never takes it, never finishes it, holds the card busy) reaches the driver as an error from
+/// the same call, which the driver meets as it meets a garbled answer, and the harnesses of the
+/// totality of each step cover such a controller. The one thing assumed of the card is that an SD
+/// card publishes a relative address other than zero, which the SD specification reserves.
+///
+/// The clock reads two seconds for each power-up command (`ACMD41` or `CMD1`) since the last
+/// `CMD0`. Every wait on this controller is met at its first look, so power-up's deadline is the
+/// only one that reads the clock twice, and it sees the deadline pass after one try. The wait
+/// harnesses prove that a wait ends under any clock that passes its deadline, and
+/// `a_card_that_keeps_reporting_busy_is_given_up_on_once_the_deadline_passes` proves the retries.
+///
+/// Each command is judged legal or not against the state the card is in: `CMD0` from any state;
+/// `CMD8` in idle, or with a data phase (an eMMC's `EXT_CSD`) in transfer; `CMD55` addressed to the
+/// card's own address in idle, standby or transfer; `ACMD41` or `CMD1` in idle; `CMD2` in ready;
+/// `CMD3` in identification; `CMD9` and `CMD7` addressed to the card in standby; `ACMD6` to an SD
+/// card and `CMD16` in transfer. An application command is legal only straight after `CMD55`, and
+/// nothing else is. A card that answers a legal command moves as the specification says; a garbled
+/// answer, or an answer to an illegal command, leaves it unknown.
+struct ModeledCard {
+    power_up_commands_since_go_idle: u64,
+    state: CardState,
+    application_command_pending: bool,
+    multimedia_card: bool,
+    relative_card_address: u16,
+    card_bus_width: u8,
+    block_bytes_set: bool,
+    extended_card_specific_data_read: bool,
+    passed: u8,
+    ready_operation_conditions: u32,
+    answer: Answer,
+    response: [u32; 4],
+    argument: u32,
+    controller_bus_width: u8,
+    controller_was_reset: bool,
+    powered: bool,
+    clock_enabled: bool,
+    clock_divider: u32,
+    commands: u32,
+    illegal_commands: u32,
+    write_commands: u32,
+    first_command: Option<FirstCommand>,
+}
+
+impl ModeledCard {
+    fn new() -> Self {
+        let controller_bus_width = match kani::any::<u8>() % 3 {
+            0 => 1,
+            1 => 4,
+            _ => 8,
+        };
+        ModeledCard {
+            power_up_commands_since_go_idle: 0,
+            state: any_card_state(),
+            application_command_pending: kani::any(),
+            multimedia_card: kani::any(),
+            relative_card_address: kani::any(),
+            card_bus_width: if kani::any() { 4 } else { 1 },
+            block_bytes_set: kani::any(),
+            extended_card_specific_data_read: kani::any(),
+            passed: 0,
+            ready_operation_conditions: 0,
+            answer: Answer::Garbled,
+            response: [0; 4],
+            argument: 0,
+            controller_bus_width,
+            controller_was_reset: false,
+            powered: false,
+            clock_enabled: false,
+            clock_divider: kani::any(),
+            commands: 0,
+            illegal_commands: 0,
+            write_commands: 0,
+            first_command: None,
+        }
+    }
+
+    /// Whether the card, as it stands, accepts command `index` with this argument.
+    fn accepts(&self, index: u8, has_data: bool, is_write: bool) -> bool {
+        use crate::command::{
+            ALL_SEND_CARD_IDENTIFICATION, APPLICATION_COMMAND, GO_IDLE_STATE,
+            SD_SEND_OPERATION_CONDITIONS, SELECT_CARD, SEND_CARD_SPECIFIC_DATA,
+            SEND_INTERFACE_CONDITION, SEND_OPERATION_CONDITIONS, SEND_RELATIVE_ADDRESS,
+            SET_BLOCK_LENGTH, SET_BUS_WIDTH,
+        };
+        let addressed = (self.argument >> 16) as u16 == self.relative_card_address;
+        let is_application_command =
+            index == SD_SEND_OPERATION_CONDITIONS || index == SET_BUS_WIDTH;
+        if index == GO_IDLE_STATE {
+            return !has_data;
+        }
+        if self.state == CardState::Unknown
+            || self.application_command_pending != is_application_command
+            || is_write
+            || (has_data && index != SEND_INTERFACE_CONDITION)
+        {
+            return false;
+        }
+        match index {
+            SEND_INTERFACE_CONDITION if has_data => {
+                self.state == CardState::Transfer && self.multimedia_card
+            }
+            SEND_INTERFACE_CONDITION => self.state == CardState::Idle,
+            APPLICATION_COMMAND => {
+                addressed
+                    && matches!(
+                        self.state,
+                        CardState::Idle | CardState::Standby | CardState::Transfer
+                    )
+            }
+            SD_SEND_OPERATION_CONDITIONS | SEND_OPERATION_CONDITIONS => {
+                self.state == CardState::Idle
+            }
+            ALL_SEND_CARD_IDENTIFICATION => self.state == CardState::Ready,
+            SEND_RELATIVE_ADDRESS => self.state == CardState::Identification,
+            SEND_CARD_SPECIFIC_DATA | SELECT_CARD => addressed && self.state == CardState::Standby,
+            SET_BUS_WIDTH => self.state == CardState::Transfer && !self.multimedia_card,
+            SET_BLOCK_LENGTH => self.state == CardState::Transfer,
+            _ => false,
+        }
+    }
+
+    /// The card meets a command the driver wrote to `COMMAND_REGISTER`.
+    fn meet(&mut self, word: u32) {
+        use crate::card::OPERATION_CONDITIONS_BUSY_DONE;
+        use crate::command::{
+            ALL_SEND_CARD_IDENTIFICATION, APPLICATION_COMMAND, GO_IDLE_STATE,
+            SD_SEND_OPERATION_CONDITIONS, SELECT_CARD, SEND_INTERFACE_CONDITION,
+            SEND_OPERATION_CONDITIONS, SEND_RELATIVE_ADDRESS, SET_BLOCK_LENGTH, SET_BUS_WIDTH,
+        };
+        use crate::registers::{COMMAND_DATA_EXPECTED, COMMAND_WRITE};
+        let index = (word & 0x3f) as u8;
+        let has_data = word & COMMAND_DATA_EXPECTED != 0;
+        let is_write = word & COMMAND_WRITE != 0;
+        if self.first_command.is_none() {
+            self.first_command = Some(FirstCommand {
+                index,
+                controller_was_reset: self.controller_was_reset,
+                powered: self.powered,
+                clock_enabled: self.clock_enabled,
+                clock_divider: self.clock_divider,
+                controller_bus_width: self.controller_bus_width,
+            });
+        }
+        self.commands += 1;
+        if index == GO_IDLE_STATE {
+            self.power_up_commands_since_go_idle = 0;
+        } else if index == SD_SEND_OPERATION_CONDITIONS || index == SEND_OPERATION_CONDITIONS {
+            self.power_up_commands_since_go_idle += 1;
+        }
+        if is_write {
+            self.write_commands += 1;
+        }
+        let legal = self.accepts(index, has_data, is_write);
+        if !legal {
+            self.illegal_commands += 1;
+        }
+        self.answer = match kani::any::<u8>() % 3 {
+            0 => Answer::Answered,
+            1 => Answer::Silent,
+            _ => Answer::Garbled,
+        };
+        self.response = kani::any();
+        match self.answer {
+            Answer::Silent => {
+                self.application_command_pending = false;
+                return;
+            }
+            Answer::Garbled => {
+                self.application_command_pending = false;
+                self.state = CardState::Unknown;
+                return;
+            }
+            Answer::Answered if !legal => {
+                self.application_command_pending = false;
+                self.state = CardState::Unknown;
+                return;
+            }
+            Answer::Answered => {}
+        }
+        self.application_command_pending = false;
+        let busy_done = self.response[0] & OPERATION_CONDITIONS_BUSY_DONE != 0;
+        match index {
+            GO_IDLE_STATE => {
+                self.state = CardState::Idle;
+                self.relative_card_address = 0;
+                self.card_bus_width = 1;
+                self.block_bytes_set = false;
+                self.extended_card_specific_data_read = false;
+                self.passed = 0;
+            }
+            APPLICATION_COMMAND => self.application_command_pending = true,
+            SD_SEND_OPERATION_CONDITIONS | SEND_OPERATION_CONDITIONS if busy_done => {
+                self.state = CardState::Ready;
+                self.multimedia_card = index == SEND_OPERATION_CONDITIONS;
+                self.ready_operation_conditions = self.response[0];
+                self.passed |= PASSED_READY;
+            }
+            ALL_SEND_CARD_IDENTIFICATION => {
+                self.state = CardState::Identification;
+                self.passed |= PASSED_IDENTIFICATION;
+            }
+            SEND_RELATIVE_ADDRESS => {
+                self.state = CardState::Standby;
+                self.relative_card_address = if self.multimedia_card {
+                    (self.argument >> 16) as u16
+                } else {
+                    kani::assume(self.response[0] >> 16 != 0);
+                    (self.response[0] >> 16) as u16
+                };
+                self.passed |= PASSED_STANDBY;
+            }
+            SELECT_CARD => {
+                self.state = CardState::Transfer;
+                self.passed |= PASSED_TRANSFER;
+            }
+            SET_BUS_WIDTH => self.card_bus_width = if self.argument & 3 == 2 { 4 } else { 1 },
+            SET_BLOCK_LENGTH => {
+                self.block_bytes_set = self.argument == crate::sd::BLOCK_BYTES as u32;
+            }
+            SEND_INTERFACE_CONDITION if has_data => self.extended_card_specific_data_read = true,
+            _ => {}
+        }
+    }
+}
+
+impl RegisterWindowAndClock for ModeledCard {
+    fn read(&mut self, offset: u32) -> u32 {
+        use crate::registers::{
+            BUS_MODE_REGISTER, COMMAND_REGISTER, CONTROL_REGISTER,
+            INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER, RAW_INTERRUPT_COMMAND_DONE,
+            RAW_INTERRUPT_DATA_TRANSFER_OVER, RAW_INTERRUPT_RESPONSE_ERROR,
+            RAW_INTERRUPT_RESPONSE_TIMEOUT, RAW_INTERRUPT_STATUS_REGISTER, RESPONSE_0_REGISTER,
+            RESPONSE_1_REGISTER, RESPONSE_2_REGISTER, RESPONSE_3_REGISTER, STATUS_REGISTER,
+        };
+        match offset {
+            COMMAND_REGISTER
+            | CONTROL_REGISTER
+            | STATUS_REGISTER
+            | BUS_MODE_REGISTER
+            | INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER => 0,
+            RAW_INTERRUPT_STATUS_REGISTER => match self.answer {
+                Answer::Answered => RAW_INTERRUPT_COMMAND_DONE | RAW_INTERRUPT_DATA_TRANSFER_OVER,
+                Answer::Silent => RAW_INTERRUPT_COMMAND_DONE | RAW_INTERRUPT_RESPONSE_TIMEOUT,
+                Answer::Garbled => RAW_INTERRUPT_COMMAND_DONE | RAW_INTERRUPT_RESPONSE_ERROR,
+            },
+            RESPONSE_0_REGISTER => self.response[0],
+            RESPONSE_1_REGISTER => self.response[1],
+            RESPONSE_2_REGISTER => self.response[2],
+            RESPONSE_3_REGISTER => self.response[3],
+            _ => kani::any(),
+        }
+    }
+
+    fn write(&mut self, offset: u32, value: u32) {
+        use crate::registers::{
+            CARD_TYPE_4_BIT_BUS, CARD_TYPE_8_BIT_BUS, CARD_TYPE_REGISTER, CLOCK_DIVIDER_REGISTER,
+            CLOCK_ENABLE_CARD_CLOCK, CLOCK_ENABLE_REGISTER, COMMAND_ARGUMENT_REGISTER,
+            COMMAND_REGISTER, COMMAND_START, COMMAND_UPDATE_CLOCK_REGISTERS_ONLY,
+            CONTROL_ALL_RESETS_MASK, CONTROL_REGISTER, POWER_ENABLE_REGISTER,
+        };
+        match offset {
+            COMMAND_ARGUMENT_REGISTER => self.argument = value,
+            COMMAND_REGISTER
+                if value & COMMAND_START != 0
+                    && value & COMMAND_UPDATE_CLOCK_REGISTERS_ONLY == 0 =>
+            {
+                self.meet(value);
+            }
+            CARD_TYPE_REGISTER => {
+                self.controller_bus_width = if value & CARD_TYPE_8_BIT_BUS != 0 {
+                    8
+                } else if value & CARD_TYPE_4_BIT_BUS != 0 {
+                    4
+                } else {
+                    1
+                };
+            }
+            CLOCK_DIVIDER_REGISTER => self.clock_divider = value,
+            CLOCK_ENABLE_REGISTER => self.clock_enabled = value & CLOCK_ENABLE_CARD_CLOCK != 0,
+            POWER_ENABLE_REGISTER => self.powered = value & 1 != 0,
+            CONTROL_REGISTER if value & CONTROL_ALL_RESETS_MASK == CONTROL_ALL_RESETS_MASK => {
+                self.controller_was_reset = true;
+            }
+            _ => {}
+        }
+    }
+
+    fn now_microseconds(&mut self) -> u64 {
+        self.power_up_commands_since_go_idle * 2 * crate::sd::POWER_UP_DEADLINE_MICROSECONDS
+    }
+}
+
+/// **A DMA region whose descriptors the IDMAC has closed**: every word reads zero, so a chain is
+/// done at the first look, and each access asserts it is inside the region, as
+/// [`AdversarialRegion`]'s do. The data the card sends is not what these harnesses are about.
+struct ClosedRegion {
+    direct_memory_access_address: u64,
+}
+
+impl DirectMemoryAccessRegion for ClosedRegion {
+    fn direct_memory_access_address(&self) -> u64 {
+        self.direct_memory_access_address
+    }
+
+    fn bytes(&self) -> u32 {
+        3 * PAGE_BYTES
+    }
+
+    fn read_u32(&self, offset: u32) -> u32 {
+        assert!(u64::from(offset) + 4 <= u64::from(self.bytes()));
+        0
+    }
+
+    fn write_u32(&mut self, offset: u32, _value: u32) {
+        assert!(u64::from(offset) + 4 <= u64::from(self.bytes()));
+    }
+
+    fn read_bytes(&self, offset: u32, out: &mut [u8]) {
+        assert!(u64::from(offset) + out.len() as u64 <= u64::from(self.bytes()));
+    }
+
+    fn write_bytes(&mut self, offset: u32, source: &[u8]) {
+        assert!(u64::from(offset) + source.len() as u64 <= u64::from(self.bytes()));
+    }
+
+    fn barrier(&mut self) {}
+}
+
+/// A host over a [`ModeledCard`] whose data phases go through the IDMAC, over a
+/// [`ClosedRegion`], so an eMMC's `EXT_CSD` read is one descriptor rather than a FIFO loop.
+/// The FIFO is the JH7110's, 32 words deep; bring-up does not depend on its depth.
+fn modeled_card_host() -> HostController<ModeledCard, ClosedRegion> {
+    let Ok((host, identity)) = HostController::new(
+        ModeledCard::new(),
+        crate::jh7110::CARD_INTERFACE_UNIT_HERTZ,
+        Some(crate::jh7110::QUEUE_DEPTH_WORDS),
+    ) else {
+        kani::assume(false);
+        unreachable!()
+    };
+    let direct_memory_access_address: u64 = kani::any();
+    let Ok(engine) = InternalDirectMemoryAccess::new(
+        ClosedRegion {
+            direct_memory_access_address,
+        },
+        &identity,
+    ) else {
+        kani::assume(false);
+        unreachable!()
+    };
+    host.with_internal_direct_memory_access(engine)
+}
+
+/// **Each bring-up command goes to a card state that accepts it**: whatever state the card starts
+/// in and whatever it and the controller answer, every command `identify` sends is legal in the
+/// state the card is in, as [`ModeledCard`] judges it, and none is a write. So no step runs before
+/// the one it needs, an application command always follows `CMD55`, and `CMD9` and `CMD7` go to the
+/// address the card holds.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.each_bring_up_command_goes_to_a_card_state_that_accepts_it.patch`
+#[kani::proof]
+#[kani::unwind(7)]
+fn each_bring_up_command_goes_to_a_card_state_that_accepts_it() {
+    let mut host = modeled_card_host();
+    let _ = crate::sd::identify(&mut host, kani::any());
+    let card = host.registers_mut();
+    assert!(card.illegal_commands == 0);
+    assert!(card.write_commands == 0);
+    kani::cover!(card.state == CardState::Transfer);
+}
+
+/// **A card is brought up only through every step**: when `identify` hands back a card, the card
+/// went from `CMD0` through ready, identification and standby to transfer, holds the relative
+/// address the `Card` names, reported the OCR (operation conditions register) the `Card` holds,
+/// and is the kind the `Card` says. An SD card has its block length set to 512 bytes and the bus
+/// width the slot allows, an eMMC has had its `EXT_CSD` read on a 1-bit bus, and the controller
+/// runs the transfer clock.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.a_card_is_brought_up_only_through_every_step.patch`
+#[kani::proof]
+#[kani::unwind(7)]
+fn a_card_is_brought_up_only_through_every_step() {
+    let mut host = modeled_card_host();
+    let maximum_bus_width: u8 = kani::any();
+    let result = crate::sd::identify(&mut host, maximum_bus_width);
+    let model = host.registers_mut();
+    if let Ok(card) = result {
+        assert!(model.state == CardState::Transfer);
+        assert!(model.passed == PASSED_EVERY_STATE);
+        assert!(card.relative_card_address == model.relative_card_address);
+        assert!(card.operation_conditions == model.ready_operation_conditions);
+        assert!((card.kind == crate::sd::CardKind::MultimediaCard) == model.multimedia_card);
+        assert!(card.bus_width == model.card_bus_width);
+        if model.multimedia_card {
+            assert!(model.extended_card_specific_data_read);
+            assert!(card.bus_width == 1);
+        } else {
+            assert!(model.block_bytes_set);
+            assert!(card.bus_width == if maximum_bus_width >= 4 { 4 } else { 1 });
+        }
+        assert!(
+            model.clock_divider
+                == u32::from(
+                    clock_divider(
+                        crate::jh7110::CARD_INTERFACE_UNIT_HERTZ,
+                        crate::sd::TRANSFER_HERTZ
+                    )
+                    .unwrap_or(255)
+                )
+        );
+    }
+    kani::cover!(result.is_ok());
+}
+
+/// **A bring-up starts over from whatever a failed one left**: from any card state and any
+/// controller bus width and clock, `identify` resets the controller, powers the slot, drops it to
+/// a 1-bit bus at the identification clock and sends `CMD0` before any other command. A card it
+/// hands back runs the same bus width on the card, on the controller and in the `Card`, so an error
+/// at any step leaves nothing half brought up that the next bring-up inherits.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.a_bring_up_starts_over_from_whatever_a_failed_one_left.patch`
+#[kani::proof]
+#[kani::unwind(7)]
+fn a_bring_up_starts_over_from_whatever_a_failed_one_left() {
+    let mut host = modeled_card_host();
+    let initial_controller_bus_width = host.registers_mut().controller_bus_width;
+    let result = crate::sd::identify(&mut host, kani::any());
+    let model = host.registers_mut();
+    if let Some(first) = model.first_command {
+        assert!(first.index == crate::command::GO_IDLE_STATE);
+        assert!(first.controller_was_reset && first.powered && first.clock_enabled);
+        assert!(first.controller_bus_width == 1);
+        assert!(
+            first.clock_divider
+                == u32::from(
+                    clock_divider(
+                        crate::jh7110::CARD_INTERFACE_UNIT_HERTZ,
+                        crate::sd::IDENTIFY_HERTZ
+                    )
+                    .unwrap_or(255)
+                )
+        );
+    }
+    if let Ok(card) = result {
+        assert!(model.controller_bus_width == card.bus_width);
+        assert!(model.card_bus_width == card.bus_width);
+    }
+    kani::cover!(result.is_ok() && initial_controller_bus_width != 1);
+}
+
+/// **A card that keeps reporting busy at a clock that runs forward from any start, at any pace.**
+/// It answers every command at once and never holds DAT0 (data line 0) busy. An SD card answers
+/// `CMD55` and `ACMD41`; an eMMC is silent to `CMD55` and answers `CMD0` and `CMD1`. Every OCR it
+/// reports has the busy bit clear. The clock never goes backward, and from reading `past_from` on
+/// each reading is more than the one-second power-up deadline past the one before. It counts the
+/// power-up commands (`ACMD41` and `CMD1`) sent after that reading.
+struct BusyForeverCard {
+    multimedia_card: bool,
+    index: u8,
+    now: u64,
+    past_from: u32,
+    taken: u32,
+    power_up_commands: u32,
+    power_up_commands_after_the_deadline: u32,
+}
+
+impl RegisterWindowAndClock for BusyForeverCard {
+    fn read(&mut self, offset: u32) -> u32 {
+        use crate::registers::{
+            COMMAND_REGISTER, RAW_INTERRUPT_COMMAND_DONE, RAW_INTERRUPT_RESPONSE_TIMEOUT,
+            RAW_INTERRUPT_STATUS_REGISTER, RESPONSE_0_REGISTER, STATUS_REGISTER,
+        };
+        match offset {
+            COMMAND_REGISTER | STATUS_REGISTER => 0,
+            RAW_INTERRUPT_STATUS_REGISTER => {
+                if self.multimedia_card && self.index == crate::command::APPLICATION_COMMAND {
+                    RAW_INTERRUPT_COMMAND_DONE | RAW_INTERRUPT_RESPONSE_TIMEOUT
+                } else {
+                    RAW_INTERRUPT_COMMAND_DONE
+                }
+            }
+            RESPONSE_0_REGISTER => {
+                kani::any::<u32>() & !crate::card::OPERATION_CONDITIONS_BUSY_DONE
+            }
+            _ => kani::any(),
+        }
+    }
+
+    fn write(&mut self, offset: u32, value: u32) {
+        use crate::registers::{COMMAND_REGISTER, COMMAND_START};
+        if offset == COMMAND_REGISTER && value & COMMAND_START != 0 {
+            self.index = (value & 0x3f) as u8;
+            if self.index == crate::command::SD_SEND_OPERATION_CONDITIONS
+                || self.index == crate::command::SEND_OPERATION_CONDITIONS
+            {
+                self.power_up_commands += 1;
+                if self.taken > self.past_from {
+                    self.power_up_commands_after_the_deadline += 1;
+                    assert!(
+                        self.power_up_commands_after_the_deadline <= 1,
+                        "power-up asked the card again after its deadline had passed"
+                    );
+                }
+            }
+        }
+    }
+
+    fn now_microseconds(&mut self) -> u64 {
+        let step: u64 = kani::any();
+        if self.taken >= self.past_from {
+            kani::assume(step > crate::sd::POWER_UP_DEADLINE_MICROSECONDS);
+        }
+        kani::assume(step < 1 << 40);
+        self.now += step;
+        self.taken += 1;
+        self.now
+    }
+}
+
+/// **A card that keeps reporting busy is given up on once the deadline passes**: against a card
+/// whose every `ACMD41` or `CMD1` reports busy, power-up repeats the command while the clock is
+/// inside one second of the first try and ends with `PowerUp` and the last OCR, whatever the
+/// clock did before then. It sends at most one more power-up command once the clock has passed
+/// the deadline, so it never loops forever on a busy card. An eMMC is tried only for a card that
+/// did not echo `CMD8`.
+///
+/// Falsification: replayable `crates/designware_mobile_storage/falsifications/proofs.a_card_that_keeps_reporting_busy_is_given_up_on_once_the_deadline_passes.patch`
+#[kani::proof]
+#[kani::unwind(8)]
+fn a_card_that_keeps_reporting_busy_is_given_up_on_once_the_deadline_passes() {
+    let past_from: u32 = kani::any();
+    kani::assume((1..=16).contains(&past_from));
+    let start: u64 = kani::any();
+    kani::assume(start < 1 << 62);
+    let multimedia_card: bool = kani::any();
+    let Ok((mut host, _identity)) = HostController::new(
+        BusyForeverCard {
+            multimedia_card,
+            index: 0,
+            now: start,
+            past_from,
+            taken: 0,
+            power_up_commands: 0,
+            power_up_commands_after_the_deadline: 0,
+        },
+        crate::jh7110::CARD_INTERFACE_UNIT_HERTZ,
+        Some(32),
+    ) else {
+        kani::assume(false);
+        unreachable!()
+    };
+    let is_version_2_or_later: bool = kani::any();
+    let result = crate::sd::power_up(&mut host, is_version_2_or_later);
+    let card = host.registers_mut();
+    if multimedia_card && is_version_2_or_later {
+        assert!(matches!(
+            result,
+            Err(crate::sd::InitializationError::NoCard(_))
+        ));
+    } else {
+        assert!(matches!(
+            result,
+            Err(crate::sd::InitializationError::PowerUp(operation_conditions))
+                if operation_conditions & crate::card::OPERATION_CONDITIONS_BUSY_DONE == 0
+        ));
+        assert!(card.power_up_commands >= 1);
+    }
+    kani::cover!(card.power_up_commands >= 2);
 }

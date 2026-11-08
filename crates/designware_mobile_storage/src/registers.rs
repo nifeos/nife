@@ -23,101 +23,127 @@ pub const CONTROL_REGISTER: u32 = 0x000;
 /// **Controller reset** (OpenBSD's `SDMMC_CTRL_CONTROLLER_RESET`): reset the controller's state
 /// machines. Self-clearing.
 #[doc(alias = "controller reset")]
+#[doc(alias = "CTRL_CONTROLLER_RESET")]
 pub(crate) const CONTROL_CONTROLLER_RESET: u32 = 1 << 0;
-/// **FIFO reset** (`CONTROL_FIFO_RESET`, OpenBSD's `SDMMC_CTRL_FIFO_RESET`): reset the data
+/// **FIFO reset** (OpenBSD's `SDMMC_CTRL_FIFO_RESET`): reset the data
 /// FIFO. Self-clearing.
 #[doc(alias = "queue reset")]
-pub(crate) const CONTROL_FIFO_RESET: u32 = 1 << 1;
-/// **DMA reset** (`CONTROL_DMA_RESET`, OpenBSD's `SDMMC_CTRL_DMA_RESET`): reset the DMA interface.
+#[doc(alias = "CTRL_FIFO_RESET")]
+pub(crate) const CONTROL_QUEUE_RESET: u32 = 1 << 1;
+/// **DMA reset** (OpenBSD's `SDMMC_CTRL_DMA_RESET`): reset the DMA interface.
 /// Self-clearing.
 #[doc(alias = "direct memory access reset")]
-pub(crate) const CONTROL_DMA_RESET: u32 = 1 << 2;
+#[doc(alias = "CTRL_DMA_RESET")]
+pub(crate) const CONTROL_DIRECT_MEMORY_ACCESS_RESET: u32 = 1 << 2;
 /// **All resets** (OpenBSD's `SDMMC_CTRL_ALL_RESET`): all three resets, which is how bring-up uses
 /// them.
 #[doc(alias = "all control resets")]
-pub(crate) const CONTROL_ALL_RESET: u32 =
-    CONTROL_CONTROLLER_RESET | CONTROL_FIFO_RESET | CONTROL_DMA_RESET;
+#[doc(alias = "CTRL_ALL_RESET")]
+pub(crate) const CONTROL_ALL_RESETS_MASK: u32 =
+    CONTROL_CONTROLLER_RESET | CONTROL_QUEUE_RESET | CONTROL_DIRECT_MEMORY_ACCESS_RESET;
 /// **Interrupt enable** (OpenBSD's `SDMMC_CTRL_INT_ENABLE`): the global interrupt enable. This
 /// driver polls, so it stays clear: an interrupt nobody routes is a line held asserted at the PLIC
 /// for no reader.
 #[doc(alias = "interrupt enable")]
-pub(crate) const CONTROL_INT_ENABLE: u32 = 1 << 4;
-/// **DMA enable** (`CONTROL_DMA_ENABLE`, OpenBSD's `SDMMC_CTRL_DMA_ENABLE`): hand the FIFO to a DMA engine
+#[doc(alias = "CTRL_INT_ENABLE")]
+pub(crate) const CONTROL_INTERRUPT_ENABLE: u32 = 1 << 4;
+/// **DMA enable** (OpenBSD's `SDMMC_CTRL_DMA_ENABLE`): hand the FIFO to a DMA engine
 /// instead of the CPU.
 #[doc(alias = "direct memory access enable")]
-pub(crate) const CONTROL_DMA_ENABLE: u32 = 1 << 5;
+#[doc(alias = "CTRL_DMA_ENABLE")]
+pub(crate) const CONTROL_DIRECT_MEMORY_ACCESS_ENABLE: u32 = 1 << 5;
 /// **Use internal DMAC** (OpenBSD's `SDMMC_CTRL_USE_INTERNAL_DMAC`): use the controller's own
 /// descriptor-walking DMA (IDMAC) rather than an external one.
 #[doc(alias = "use internal direct memory access controller")]
-pub(crate) const CONTROL_USE_INTERNAL_DMAC: u32 = 1 << 25;
+#[doc(alias = "CTRL_USE_INTERNAL_DMAC")]
+pub(crate) const CONTROL_USE_INTERNAL_DIRECT_MEMORY_ACCESS_CONTROLLER: u32 = 1 << 25;
 // The three enables `reset` clears and the IDMAC arms share no bit (25, 5 and 4), which the
 // compiler checks here; the mutation exclusions for `HostController::reset` and
 // `internal_direct_memory_access_start` name this check. The constant-assertion lint is off on
 // purpose: the assertion is constant by construction, and the compiler checking it is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-const _: () =
-    assert!(CONTROL_USE_INTERNAL_DMAC + CONTROL_DMA_ENABLE + CONTROL_INT_ENABLE == 0x0200_0030);
+const _: () = assert!(
+    CONTROL_USE_INTERNAL_DIRECT_MEMORY_ACCESS_CONTROLLER
+        + CONTROL_DIRECT_MEMORY_ACCESS_ENABLE
+        + CONTROL_INTERRUPT_ENABLE
+        == 0x0200_0030
+);
 
 /// **Power Enable Register** (OpenBSD's `SDMMC_PWREN`): one bit per card slot. Slot 0 is the only
 /// one on the JH7110.
 #[doc(alias = "power enable register")]
-pub(crate) const PWREN: u32 = 0x004;
+#[doc(alias = "PWREN")]
+pub(crate) const POWER_ENABLE_REGISTER: u32 = 0x004;
 /// **Clock Divider Register** (OpenBSD's `SDMMC_CLKDIV`): clock divider 0 in bits 7:0: card clock
 /// is `base / (2 * divider)`, or `base` itself when 0.
 #[doc(alias = "clock divider register")]
-pub(crate) const CLKDIV: u32 = 0x008;
+#[doc(alias = "CLKDIV")]
+pub(crate) const CLOCK_DIVIDER_REGISTER: u32 = 0x008;
 /// **Clock Source Register** (OpenBSD's `SDMMC_CLKSRC`): which divider each card uses. Always 0
 /// here.
 #[doc(alias = "clock source register")]
-pub(crate) const CLKSRC: u32 = 0x00c;
+#[doc(alias = "CLKSRC")]
+pub(crate) const CLOCK_SOURCE_REGISTER: u32 = 0x00c;
 /// **Clock Enable Register** (OpenBSD's `SDMMC_CLKENA`): card clock enable (bit 0) and low-power
 /// gating (bit 16), per slot.
 #[doc(alias = "clock enable register")]
-pub(crate) const CLKENA: u32 = 0x010;
+#[doc(alias = "CLKENA")]
+pub(crate) const CLOCK_ENABLE_REGISTER: u32 = 0x010;
 /// **Card clock enable** (OpenBSD's `SDMMC_CLKENA_CCLK_ENABLE`): card clock on, slot 0.
 #[doc(alias = "card clock enable")]
-pub(crate) const CLKENA_CCLK_ENABLE: u32 = 1 << 0;
+#[doc(alias = "CLKENA_CCLK_ENABLE")]
+pub(crate) const CLOCK_ENABLE_CARD_CLOCK: u32 = 1 << 0;
 /// **Card clock low-power mode** (OpenBSD's `SDMMC_CLKENA_CCLK_LOW_POWER`): stop the card clock
 /// while the bus is idle. Memory cards only; an SDIO card needs the clock to signal its interrupt.
 #[doc(alias = "card clock low power")]
-pub(crate) const CLKENA_CCLK_LOW_POWER: u32 = 1 << 16;
+#[doc(alias = "CLKENA_CCLK_LOW_POWER")]
+pub(crate) const CLOCK_ENABLE_CARD_CLOCK_LOW_POWER: u32 = 1 << 16;
 // The two clock-enable bits `set_clock` writes share no bit (0 and 16), which the compiler checks
 // here; the mutation exclusion for `HostController::set_clock` names this check. The constant-assertion
 // lint is off on purpose: the assertion is constant by construction, and the compiler checking it
 // is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-const _: () = assert!(CLKENA_CCLK_ENABLE + CLKENA_CCLK_LOW_POWER == 0x0001_0001);
+const _: () = assert!(CLOCK_ENABLE_CARD_CLOCK + CLOCK_ENABLE_CARD_CLOCK_LOW_POWER == 0x0001_0001);
 /// **Timeout Register** (OpenBSD's `SDMMC_TMOUT`): response timeout in bits 7:0 (card clocks), data
 /// read timeout in bits 31:8.
 #[doc(alias = "timeout register")]
-pub(crate) const TMOUT: u32 = 0x014;
+#[doc(alias = "TMOUT")]
+pub(crate) const TIMEOUT_REGISTER: u32 = 0x014;
 /// **Card Type Register** (OpenBSD's `SDMMC_CTYPE`): bus width per slot: bit 0 for 4-bit, bit 16
 /// for 8-bit, neither for 1-bit.
 #[doc(alias = "card type register")]
-pub(crate) const CTYPE: u32 = 0x018;
+#[doc(alias = "CTYPE")]
+pub(crate) const CARD_TYPE_REGISTER: u32 = 0x018;
 /// **4-bit card width** (OpenBSD's `SDMMC_CTYPE_4BIT`): 4-bit bus, slot 0.
 #[doc(alias = "four-bit bus")]
-pub(crate) const CTYPE_4BIT: u32 = 1 << 0;
+#[doc(alias = "CTYPE_4BIT")]
+pub(crate) const CARD_TYPE_4_BIT_BUS: u32 = 1 << 0;
 /// **8-bit card width** (OpenBSD's `SDMMC_CTYPE_8BIT`): 8-bit bus, slot 0.
 #[doc(alias = "eight-bit bus")]
-pub(crate) const CTYPE_8BIT: u32 = 1 << 16;
+#[doc(alias = "CTYPE_8BIT")]
+pub(crate) const CARD_TYPE_8_BIT_BUS: u32 = 1 << 16;
 /// **Block Size Register** (OpenBSD's `SDMMC_BLKSIZ`): block size in bytes for the next data phase.
 #[doc(alias = "block size register")]
-pub(crate) const BLKSIZ: u32 = 0x01c;
+#[doc(alias = "BLKSIZ")]
+pub(crate) const BLOCK_SIZE_BYTES_REGISTER: u32 = 0x01c;
 /// **Byte Count Register** (OpenBSD's `SDMMC_BYTCNT`): total bytes in the next data phase.
 #[doc(alias = "byte count register")]
-pub(crate) const BYTCNT: u32 = 0x020;
+#[doc(alias = "BYTCNT")]
+pub(crate) const BYTE_COUNT_REGISTER: u32 = 0x020;
 /// **Interrupt Mask Register** (OpenBSD's `SDMMC_INTMASK`): which raw interrupt bits reach the
 /// interrupt line. Zero: this driver polls `RINTSTS`.
 #[doc(alias = "interrupt mask register")]
-pub(crate) const INTMASK: u32 = 0x024;
+#[doc(alias = "INTMASK")]
+pub(crate) const INTERRUPT_MASKING_REGISTER: u32 = 0x024;
 /// **Command Argument Register** (OpenBSD's `SDMMC_CMDARG`): the next command's argument.
 #[doc(alias = "command argument register")]
-pub(crate) const CMDARG: u32 = 0x028;
+#[doc(alias = "CMDARG")]
+pub(crate) const COMMAND_ARGUMENT_REGISTER: u32 = 0x028;
 /// **Command Register** (OpenBSD's `SDMMC_CMD`): writing it with [`COMMAND_START`] hands the
 /// command to the card interface.
 #[doc(alias = "command register")]
-pub(crate) const CMD: u32 = 0x02c;
+#[doc(alias = "CMD")]
+pub(crate) const COMMAND_REGISTER: u32 = 0x02c;
 /// **Start command** (OpenBSD's `SDMMC_CMD_START_CMD`): set by software to issue; the controller
 /// clears it when it has taken the command.
 ///
@@ -176,7 +202,7 @@ pub(crate) const COMMAND_CHECK_RESPONSE_CRC: u32 = 1 << 8;
 /// **Response length** (OpenBSD's `SDMMC_CMD_RESPONSE_LENGTH`): the response is 136 bits (R2).
 #[doc(alias = "long response")]
 #[doc(alias = "CMD_RESPONSE_LENGTH")]
-pub(crate) const COMMAND_RESPONSE_LENGTH: u32 = 1 << 7;
+pub(crate) const COMMAND_LONG_RESPONSE: u32 = 1 << 7;
 /// **Response expect** (OpenBSD's `SDMMC_CMD_RESPONSE_EXPECT`): the command has a response.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; OpenBSD's `SDMMC_CMD_RESPONSE_EXPECT`
@@ -188,97 +214,125 @@ pub const COMMAND_RESPONSE_EXPECT: u32 = 1 << 6;
 /// **Response Register 0** (OpenBSD's `SDMMC_RESP0`): response word 0, bits 31:0 of a short
 /// response, or bits 31:0 of a long one.
 #[doc(alias = "response register 0")]
-pub(crate) const RESP0: u32 = 0x030;
+#[doc(alias = "RESP0")]
+pub(crate) const RESPONSE_0_REGISTER: u32 = 0x030;
 /// **Response Register 1** (OpenBSD's `SDMMC_RESP1`): response word 1 (long responses).
 #[doc(alias = "response register 1")]
-pub(crate) const RESP1: u32 = 0x034;
+#[doc(alias = "RESP1")]
+pub(crate) const RESPONSE_1_REGISTER: u32 = 0x034;
 /// **Response Register 2** (OpenBSD's `SDMMC_RESP2`): response word 2 (long responses).
 #[doc(alias = "response register 2")]
-pub(crate) const RESP2: u32 = 0x038;
+#[doc(alias = "RESP2")]
+pub(crate) const RESPONSE_2_REGISTER: u32 = 0x038;
 /// **Response Register 3** (OpenBSD's `SDMMC_RESP3`): response word 3, bits 127:96 of a long
 /// response.
 #[doc(alias = "response register 3")]
-pub(crate) const RESP3: u32 = 0x03c;
+#[doc(alias = "RESP3")]
+pub(crate) const RESPONSE_3_REGISTER: u32 = 0x03c;
 /// **Raw Interrupt Status Register** (OpenBSD's `SDMMC_RINTSTS`): write one to clear. The driver's
 /// only completion signal.
 #[doc(alias = "raw interrupt status register")]
-pub(crate) const RINTSTS: u32 = 0x044;
+#[doc(alias = "RINTSTS")]
+pub(crate) const RAW_INTERRUPT_STATUS_REGISTER: u32 = 0x044;
 /// **Response error** (OpenBSD's `SDMMC_RINTSTS_RE`): response error.
 #[doc(alias = "response error")]
-pub(crate) const RINTSTS_RE: u32 = 1 << 1;
+#[doc(alias = "RINTSTS_RE")]
+pub(crate) const RAW_INTERRUPT_RESPONSE_ERROR: u32 = 1 << 1;
 /// **Command done** (OpenBSD's `SDMMC_RINTSTS_CD`): command done: the controller sent the command
 /// and, if one was expected, took the response.
 #[doc(alias = "command done")]
-pub(crate) const RINTSTS_CD: u32 = 1 << 2;
+#[doc(alias = "RINTSTS_CD")]
+pub(crate) const RAW_INTERRUPT_COMMAND_DONE: u32 = 1 << 2;
 /// **Data transfer over** (OpenBSD's `SDMMC_RINTSTS_DTO`): data transfer over.
 #[doc(alias = "data transfer over")]
-pub(crate) const RINTSTS_DTO: u32 = 1 << 3;
+#[doc(alias = "RINTSTS_DTO")]
+pub(crate) const RAW_INTERRUPT_DATA_TRANSFER_OVER: u32 = 1 << 3;
 /// **Transmit FIFO data request** (OpenBSD's `SDMMC_RINTSTS_TXDR`): transmit FIFO data request:
 /// room at or below the transmit watermark.
 #[doc(alias = "transmit queue data request")]
-pub(crate) const RINTSTS_TXDR: u32 = 1 << 4;
+#[doc(alias = "RINTSTS_TXDR")]
+pub(crate) const RAW_INTERRUPT_TRANSMIT_QUEUE_DATA_REQUEST: u32 = 1 << 4;
 /// **Receive FIFO data request** (OpenBSD's `SDMMC_RINTSTS_RXDR`): receive FIFO data request: data
 /// above the receive watermark.
 #[doc(alias = "receive queue data request")]
-pub(crate) const RINTSTS_RXDR: u32 = 1 << 5;
+#[doc(alias = "RINTSTS_RXDR")]
+pub(crate) const RAW_INTERRUPT_RECEIVE_QUEUE_DATA_REQUEST: u32 = 1 << 5;
 /// **Response CRC error** (OpenBSD's `SDMMC_RINTSTS_RCRC`): response CRC error.
 #[doc(alias = "response CRC error")]
-pub(crate) const RINTSTS_RCRC: u32 = 1 << 6;
+#[doc(alias = "RINTSTS_RCRC")]
+pub(crate) const RAW_INTERRUPT_RESPONSE_CRC_ERROR: u32 = 1 << 6;
 /// **Data CRC error** (OpenBSD's `SDMMC_RINTSTS_DCRC`): data CRC error.
 #[doc(alias = "data CRC error")]
-pub(crate) const RINTSTS_DCRC: u32 = 1 << 7;
+#[doc(alias = "RINTSTS_DCRC")]
+pub(crate) const RAW_INTERRUPT_DATA_CRC_ERROR: u32 = 1 << 7;
 /// **Response timeout** (OpenBSD's `SDMMC_RINTSTS_RTO`): response timeout: no card answered.
 #[doc(alias = "response timeout")]
-pub(crate) const RINTSTS_RTO: u32 = 1 << 8;
+#[doc(alias = "RINTSTS_RTO")]
+pub(crate) const RAW_INTERRUPT_RESPONSE_TIMEOUT: u32 = 1 << 8;
 /// **Data read timeout** (OpenBSD's `SDMMC_RINTSTS_DRTO`): data read timeout.
 #[doc(alias = "data read timeout")]
-pub(crate) const RINTSTS_DRTO: u32 = 1 << 9;
+#[doc(alias = "RINTSTS_DRTO")]
+pub(crate) const RAW_INTERRUPT_DATA_READ_TIMEOUT: u32 = 1 << 9;
 /// **Data starvation-by-host timeout** (OpenBSD's `SDMMC_RINTSTS_HTO`): data starvation by host
 /// timeout: the FIFO was not serviced in time.
 #[doc(alias = "host timeout")]
-pub(crate) const RINTSTS_HTO: u32 = 1 << 10;
+#[doc(alias = "RINTSTS_HTO")]
+pub(crate) const RAW_INTERRUPT_HOST_TIMEOUT: u32 = 1 << 10;
 /// **FIFO underrun or overrun error** (OpenBSD's `SDMMC_RINTSTS_FRUN`): FIFO underrun or overrun.
 #[doc(alias = "queue underrun or overrun")]
-pub(crate) const RINTSTS_FRUN: u32 = 1 << 11;
+#[doc(alias = "RINTSTS_FRUN")]
+pub(crate) const RAW_INTERRUPT_QUEUE_UNDERRUN_OR_OVERRUN: u32 = 1 << 11;
 /// **Hardware locked write error** (OpenBSD's `SDMMC_RINTSTS_HLE`): hardware locked write: a write
 /// to `CMD` while a command was still loading.
 #[doc(alias = "hardware locked write error")]
-pub(crate) const RINTSTS_HLE: u32 = 1 << 12;
+#[doc(alias = "RINTSTS_HLE")]
+pub(crate) const RAW_INTERRUPT_HARDWARE_LOCKED_WRITE_ERROR: u32 = 1 << 12;
 /// **Start-bit error** (OpenBSD's `SDMMC_RINTSTS_SBE`): start bit error.
 #[doc(alias = "start bit error")]
-pub(crate) const RINTSTS_SBE: u32 = 1 << 13;
+#[doc(alias = "RINTSTS_SBE")]
+pub(crate) const RAW_INTERRUPT_START_BIT_ERROR: u32 = 1 << 13;
 /// **Auto command done** (OpenBSD's `SDMMC_RINTSTS_ACD`): auto command done: the automatic CMD12
 /// finished.
 #[doc(alias = "automatic command done")]
-pub(crate) const RINTSTS_ACD: u32 = 1 << 14;
+#[doc(alias = "RINTSTS_ACD")]
+pub(crate) const RAW_INTERRUPT_AUTOMATIC_COMMAND_DONE: u32 = 1 << 14;
 // The transfer-over bits `finish` and the IDMAC wait for share no bit (3 and 14), which the
 // compiler checks here; the mutation exclusions for `HostController::finish` and the IDMAC wait name this
 // check. The constant-assertion lint is off on purpose: the assertion is constant by
 // construction, and the compiler checking it is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-const _: () = assert!(RINTSTS_DTO + RINTSTS_ACD == 0x0000_4008);
+const _: () =
+    assert!(RAW_INTERRUPT_DATA_TRANSFER_OVER + RAW_INTERRUPT_AUTOMATIC_COMMAND_DONE == 0x0000_4008);
 /// **End-bit error** (OpenBSD's `SDMMC_RINTSTS_EBE`): end bit error (read) or no CRC status
 /// (write).
 #[doc(alias = "end bit error")]
-pub(crate) const RINTSTS_EBE: u32 = 1 << 15;
+#[doc(alias = "RINTSTS_EBE")]
+pub(crate) const RAW_INTERRUPT_END_BIT_ERROR: u32 = 1 << 15;
 /// **Data errors** (OpenBSD's `SDMMC_RINTSTS_DATA_ERR`): every bit that means a data phase went
 /// wrong, as OpenBSD groups them.
 #[doc(alias = "data errors")]
-pub(crate) const RINTSTS_DATA_ERR: u32 =
-    RINTSTS_EBE | RINTSTS_SBE | RINTSTS_HLE | RINTSTS_FRUN | RINTSTS_DCRC;
+#[doc(alias = "RINTSTS_DATA_ERR")]
+pub(crate) const RAW_INTERRUPT_DATA_ERROR_MASK: u32 = RAW_INTERRUPT_END_BIT_ERROR
+    | RAW_INTERRUPT_START_BIT_ERROR
+    | RAW_INTERRUPT_HARDWARE_LOCKED_WRITE_ERROR
+    | RAW_INTERRUPT_QUEUE_UNDERRUN_OR_OVERRUN
+    | RAW_INTERRUPT_DATA_CRC_ERROR;
 /// **Data timeouts** (OpenBSD's `SDMMC_RINTSTS_DATA_TO`): every bit that means a data phase timed
 /// out.
 #[doc(alias = "data timeouts")]
-pub(crate) const RINTSTS_DATA_TO: u32 = RINTSTS_HTO | RINTSTS_DRTO;
+#[doc(alias = "RINTSTS_DATA_TO")]
+pub(crate) const RAW_INTERRUPT_DATA_TIMEOUT_MASK: u32 =
+    RAW_INTERRUPT_HOST_TIMEOUT | RAW_INTERRUPT_DATA_READ_TIMEOUT;
 // The data-error group and the data-timeout group share no bit with each other ({15, 13, 12, 11,
 // 7} against {10, 9}), which the compiler checks here; every masked test that composes them, and
 // the mutation exclusions that cover those tests, name this check. The constant-assertion lint
 // is off on purpose: the assertion is constant by construction, and the compiler checking it is
 // its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-const _: () = assert!(RINTSTS_DATA_ERR + RINTSTS_DATA_TO == 0x0000_be80);
+const _: () =
+    assert!(RAW_INTERRUPT_DATA_ERROR_MASK + RAW_INTERRUPT_DATA_TIMEOUT_MASK == 0x0000_be80);
 /// Every bit below the SDIO interrupts, which is what a clear writes.
-pub(crate) const RINTSTS_ALL: u32 = 0xffff;
+pub(crate) const RAW_INTERRUPT_ALL_MASK: u32 = 0xffff;
 
 /// **Status Register** (OpenBSD's `SDMMC_STATUS`): FIFO count, busy, command state.
 ///
@@ -304,11 +358,12 @@ pub(crate) const fn queue_count(status: u32) -> u32 {
 /// **FIFO Threshold Watermark Register** (OpenBSD's `SDMMC_FIFOTH`): FIFO thresholds and the DMA
 /// burst size.
 #[doc(alias = "queue threshold register")]
-pub(crate) const FIFOTH: u32 = 0x04c;
+#[doc(alias = "FIFOTH")]
+pub(crate) const QUEUE_THRESHOLD_REGISTER: u32 = 0x04c;
 
 // The three fields the polled `FIFOTH` word composes share no bit (the burst code at bit 29, the
 // receive watermark in bits 27:16, the transmit watermark in bits 11:0), which the compiler checks
-// here; the mutation exclusion for `fifoth_for_pio` names this check. The constant-assertion
+// here; the mutation exclusion for `queue_threshold_for_programmed_input_output` names this check. The constant-assertion
 // lint is off on purpose: the assertion is constant by construction, and the compiler checking it
 // is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
@@ -318,7 +373,7 @@ const _: () = assert!((2 << 28) + 0x0fff_0000 + 0x0000_0fff == 0x2fff_0fff);
 /// below half and a transmit watermark at half, OpenBSD's `dwmmc_pio_mode`. The burst field is
 /// OpenBSD's `2` and means nothing without DMA.
 #[must_use]
-pub(crate) const fn fifoth_for_pio(depth: u32) -> u32 {
+pub(crate) const fn queue_threshold_for_programmed_input_output(depth: u32) -> u32 {
     let half = depth / 2;
     let receive_watermark = if half == 0 { 0 } else { half - 1 };
     (2 << 28) | ((receive_watermark & 0xfff) << 16) | (half & 0xfff)
@@ -327,7 +382,7 @@ pub(crate) const fn fifoth_for_pio(depth: u32) -> u32 {
 // The three fields the IDMAC `FIFOTH` word composes share no bit (the burst encoding in bits
 // 31:29, whose largest code is 7, the receive watermark in bits 27:16, the transmit watermark in
 // bits 11:0), which the compiler checks here; the mutation exclusion for
-// `fifoth_for_direct_memory_access` names this check. The constant-assertion lint is off on
+// `queue_threshold_for_direct_memory_access` names this check. The constant-assertion lint is off on
 // purpose: the assertion is constant by construction, and the compiler checking it is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 const _: () = assert!((7 << 28) + 0x0fff_0000 + 0x0000_0fff == 0x7fff_0fff);
@@ -338,7 +393,7 @@ const _: () = assert!((7 << 28) + 0x0fff_0000 + 0x0000_0fff == 0x7fff_0fff);
 /// of a block or overruns the FIFO. The receive watermark is one burst less one word, so a burst
 /// is ready whenever the IDMAC is asked for one. Depth 32 gives bursts of 16.
 #[must_use]
-pub(crate) fn fifoth_for_direct_memory_access(depth: u32) -> u32 {
+pub(crate) fn queue_threshold_for_direct_memory_access(depth: u32) -> u32 {
     const BURSTS: [u32; 8] = [1, 4, 8, 16, 32, 64, 128, 256];
     let transmit_watermark = depth / 2;
     let free = depth - transmit_watermark;
@@ -353,14 +408,15 @@ pub(crate) fn fifoth_for_direct_memory_access(depth: u32) -> u32 {
 /// The receive watermark field of `FIFOTH`, which OpenBSD reads back as `depth - 1` when the tree
 /// gives no `fifo-depth` (the reset value is `depth - 1`).
 #[must_use]
-pub(crate) const fn fifoth_receive_watermark(fifoth: u32) -> u32 {
-    (fifoth >> 16) & 0xfff
+pub(crate) const fn queue_threshold_receive_watermark(queue_threshold: u32) -> u32 {
+    (queue_threshold >> 16) & 0xfff
 }
 
 /// **Card Detect Register** (OpenBSD's `SDMMC_CDETECT`): active low: bit 0 clear means a card is in
 /// slot 0.
 #[doc(alias = "card detect register")]
-pub(crate) const CDETECT: u32 = 0x050;
+#[doc(alias = "CDETECT")]
+pub(crate) const CARD_DETECT_REGISTER: u32 = 0x050;
 /// **Write Protect Register** (OpenBSD's `SDMMC_WRTPRT`): active high, slot 0.
 ///
 /// Name: ratified 2026-11-07 (UTC). The spelled-out form; OpenBSD's `SDMMC_WRTPRT` spelling
@@ -390,15 +446,18 @@ pub const TRANSFERRED_HOST_BYTE_COUNT_REGISTER: u32 = 0x060;
 /// **User ID Register** (OpenBSD's `SDMMC_USRID`): the integrator's user identifier, a free-form
 /// word.
 #[doc(alias = "user identifier register")]
-pub(crate) const USRID: u32 = 0x068;
+#[doc(alias = "USRID")]
+pub(crate) const USER_IDENTIFICATION_REGISTER: u32 = 0x068;
 /// **Version ID Register** (OpenBSD's `SDMMC_VERID`): `0x5342_xxxx`, where `xxxx` is the release,
 /// `0x270a` for 2.70a.
 #[doc(alias = "version identifier register")]
-pub(crate) const VERID: u32 = 0x06c;
+#[doc(alias = "VERID")]
+pub(crate) const VERSION_IDENTIFICATION_REGISTER: u32 = 0x06c;
 /// **Hardware Configuration Register** (OpenBSD's `SDMMC_HCON`): FIFO width, address width, how
 /// many slots.
 #[doc(alias = "hardware configuration register")]
-pub(crate) const HCON: u32 = 0x070;
+#[doc(alias = "HCON")]
+pub(crate) const HARDWARE_CONFIGURATION_REGISTER: u32 = 0x070;
 /// **Ultra High Speed mode register** (OpenBSD's `SDMMC_UHS_REG`, databook `UHS_REG`, offset 0x74;
 /// Linux's `SDMMC_UHS_REG`): 1.8 V select and DDR mode per card. Per slot, DDR mode is bit 16 and
 /// 1.8 V signaling is bit 0.
@@ -427,28 +486,33 @@ pub const BUS_MODE_REGISTER: u32 = 0x080;
 /// **Software reset** (OpenBSD's `SDMMC_BMOD_SWR`): reset the IDMAC's registers and state.
 /// Self-clearing.
 #[doc(alias = "software reset")]
-pub(crate) const BUS_MODE_SWR: u32 = 1 << 0;
+#[doc(alias = "BMOD_SWR")]
+pub(crate) const BUS_MODE_SOFTWARE_RESET: u32 = 1 << 0;
 /// **Fixed burst** (OpenBSD's `SDMMC_BMOD_FB`): fixed-length bursts on the bus, of the size
 /// `FIFOTH`'s burst field names.
 #[doc(alias = "fixed burst")]
-pub(crate) const BUS_MODE_FB: u32 = 1 << 1;
+#[doc(alias = "BMOD_FB")]
+pub(crate) const BUS_MODE_FIXED_BURST: u32 = 1 << 1;
 // The two bus-mode bits the IDMAC arm writes share no bit (7 and 1), which the compiler checks
 // here; the mutation exclusion for `internal_direct_memory_access_start` names this check. The
 // constant-assertion lint is off on purpose: the assertion is constant by construction, and the
 // compiler checking it is its job.
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
-const _: () = assert!(BUS_MODE_DE + BUS_MODE_FB == 0x82);
+const _: () = assert!(BUS_MODE_INTERNAL_DIRECT_MEMORY_ACCESS_ENABLE + BUS_MODE_FIXED_BURST == 0x82);
 /// **IDMAC enable** (OpenBSD's `SDMMC_BMOD_DE`): the IDMAC walks descriptors.
 #[doc(alias = "internal direct memory access enable")]
-pub(crate) const BUS_MODE_DE: u32 = 1 << 7;
+#[doc(alias = "BMOD_DE")]
+pub(crate) const BUS_MODE_INTERNAL_DIRECT_MEMORY_ACCESS_ENABLE: u32 = 1 << 7;
 /// **Poll Demand Register** (OpenBSD's `SDMMC_PLDMND`): any write wakes an IDMAC suspended on a
 /// descriptor it did not own.
 #[doc(alias = "poll demand register")]
-pub(crate) const PLDMND: u32 = 0x084;
+#[doc(alias = "PLDMND")]
+pub(crate) const POLL_DEMAND_REGISTER: u32 = 0x084;
 /// **Descriptor List Base Address Register** (OpenBSD's `SDMMC_DBADDR`): the bus address of the
 /// first descriptor (32-bit addressing; `HCON` bit 27 clear).
 #[doc(alias = "descriptor list base address")]
-pub(crate) const DBADDR: u32 = 0x088;
+#[doc(alias = "DBADDR")]
+pub(crate) const DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_REGISTER: u32 = 0x088;
 /// **Internal DMAC Status Register** (Linux's `SDMMC_IDSTS`, OpenBSD's `SDMMC_IDSTS32`): write one
 /// to clear. Raw: set whatever `IDINTEN` holds. The driver reads only its error bits; the
 /// completion bits are `simulator`'s, and the tests'.
@@ -462,43 +526,54 @@ pub const INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER: u32 = 0x08c;
 /// transmit (memory to card).
 #[cfg(test)]
 #[doc(alias = "transmit interrupt")]
-pub(crate) const IDSTS_TI: u32 = 1 << 0;
+#[doc(alias = "IDSTS_TI")]
+pub(crate) const INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_TRANSMIT_INTERRUPT: u32 = 1 << 0;
 /// **Receive interrupt** (OpenBSD's `SDMMC_IDSTS_RI`): A descriptor without `DIC` finished a
 /// receive (card to memory).
 #[cfg(test)]
 #[doc(alias = "receive interrupt")]
-pub(crate) const IDSTS_RI: u32 = 1 << 1;
+#[doc(alias = "IDSTS_RI")]
+pub(crate) const INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_RECEIVE_INTERRUPT: u32 = 1 << 1;
 /// **Fatal bus error interrupt** (the databook's `FBE` in `IDSTS`, Linux's `SDMMC_IDMAC_INT_FBE`):
 /// fatal bus error: the bus refused a descriptor or buffer access. The IDMAC stops.
 #[doc(alias = "fatal bus error")]
-pub(crate) const IDSTS_FBE: u32 = 1 << 2;
+#[doc(alias = "FBE")]
+pub(crate) const INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_FATAL_BUS_ERROR: u32 = 1 << 2;
 /// **Descriptor unavailable interrupt** (the databook's `DU` in `IDSTS`, Linux's
 /// `SDMMC_IDMAC_INT_DU`): descriptor unavailable: the next descriptor's `OWN` bit was clear. The
 /// IDMAC suspends.
 #[doc(alias = "descriptor unavailable")]
-pub(crate) const IDSTS_DU: u32 = 1 << 4;
+#[doc(alias = "DU")]
+pub(crate) const INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_DESCRIPTOR_UNAVAILABLE: u32 = 1 << 4;
 /// **Card error summary** (the databook's `CES` in `IDSTS`, Linux's `SDMMC_IDMAC_INT_CES`): card
 /// error summary: a data-phase error in `RINTSTS` closed a descriptor.
 #[doc(alias = "card error summary")]
-pub(crate) const IDSTS_CES: u32 = 1 << 5;
+#[doc(alias = "CES")]
+pub(crate) const INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_CARD_ERROR_SUMMARY: u32 = 1 << 5;
 /// **Normal interrupt summary** (OpenBSD's `SDMMC_IDSTS_NIS`): normal interrupt summary (`TI` or
 /// `RI`).
 #[cfg(test)]
 #[doc(alias = "normal interrupt summary")]
-pub(crate) const IDSTS_NIS: u32 = 1 << 8;
+#[doc(alias = "IDSTS_NIS")]
+pub(crate) const INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_NORMAL_INTERRUPT_SUMMARY: u32 = 1 << 8;
 /// **Abnormal interrupt summary** (the databook's `AIS` in `IDSTS`, Linux's `SDMMC_IDMAC_INT_AI`):
-/// abnormal interrupt summary (`FBE`, `DU` or `CES`).
+/// abnormal interrupt summary: `FBE`, `DU` or `CES`.
 #[cfg(test)]
 #[doc(alias = "abnormal interrupt summary")]
-pub(crate) const IDSTS_AIS: u32 = 1 << 9;
+#[doc(alias = "AIS")]
+pub(crate) const INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_ABNORMAL_INTERRUPT_SUMMARY: u32 = 1 << 9;
 /// Every `IDSTS` bit that means the IDMAC could not finish.
-pub(crate) const IDSTS_ERRORS: u32 = IDSTS_FBE | IDSTS_DU | IDSTS_CES;
+pub(crate) const INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_ERROR_MASK: u32 =
+    INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_FATAL_BUS_ERROR
+        | INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_DESCRIPTOR_UNAVAILABLE
+        | INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_CARD_ERROR_SUMMARY;
 /// Every write-one-to-clear bit of `IDSTS`, bits 9:0.
-pub(crate) const IDSTS_ALL: u32 = 0x3ff;
+pub(crate) const INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_ALL_MASK: u32 = 0x3ff;
 /// **Internal DMAC Interrupt Enable Register** (Linux's `SDMMC_IDINTEN`, OpenBSD's
 /// `SDMMC_IDINTEN32`): zero: this driver polls, as it does `RINTSTS`.
 #[doc(alias = "internal direct memory access interrupt enable register")]
-pub(crate) const IDINTEN: u32 = 0x090;
+#[doc(alias = "IDINTEN")]
+pub(crate) const INTERNAL_DIRECT_MEMORY_ACCESS_INTERRUPT_ENABLE_REGISTER: u32 = 0x090;
 /// **Current Host Descriptor Address Register** (OpenBSD's `SDMMC_DSCADDR`): the descriptor the
 /// IDMAC is on, for a transcript after a failure.
 ///
@@ -522,17 +597,20 @@ pub const CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER: u32 = 0x098;
 /// **Card Threshold Control Register** (OpenBSD's `SDMMC_CARDTHRCTL`): hold a read until a block
 /// fits in the FIFO.
 #[doc(alias = "card threshold control register")]
-pub(crate) const CARDTHRCTL: u32 = 0x100;
+#[doc(alias = "CARDTHRCTL")]
+pub(crate) const CARD_THRESHOLD_CONTROL_REGISTER: u32 = 0x100;
 /// **Card read threshold enable** (OpenBSD's `SDMMC_CARDTHRCTL_RDTHREN`): enable the card read
 /// threshold, which the driver never does; the sim and tests name it.
 #[cfg(test)]
 #[doc(alias = "card read threshold enable")]
-pub(crate) const CARDTHRCTL_RDTHREN: u32 = 1 << 0;
+#[doc(alias = "CARDTHRCTL_RDTHREN")]
+pub(crate) const CARD_THRESHOLD_CONTROL_READ_THRESHOLD_ENABLE: u32 = 1 << 0;
 
 /// **Release 2.40a** (Linux's `DW_MMC_240A`): the release `VERID` is compared at. Controllers
 /// before it put the data FIFO at `0x100`, from it on at `0x200`.
 #[doc(alias = "release 2.40a")]
-pub(crate) const DW_MMC_240A: u32 = 0x240a;
+#[doc(alias = "DW_MMC_240A")]
+pub(crate) const RELEASE_2_40A: u32 = 0x240a;
 
 /// **Where the data FIFO is**, given `VERID`: `0x200` from release 2.40a, `0x100` before. Linux's
 /// `dw_mci_probe` makes the same test; OpenBSD assumes `0x200` and so supports only the later
@@ -546,7 +624,7 @@ pub(crate) const DW_MMC_240A: u32 = 0x240a;
 #[doc(alias = "fifo")]
 #[must_use]
 pub const fn queue_offset(version_identification: u32) -> u32 {
-    if version_identification & 0xffff < DW_MMC_240A {
+    if version_identification & 0xffff < RELEASE_2_40A {
         0x100
     } else {
         0x200
@@ -606,7 +684,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn hcon_names_every_queue_width_and_refuses_the_reserved_codes() {
+    fn the_hardware_configuration_names_every_queue_width_and_refuses_the_reserved_codes() {
         assert_eq!(queue_width_bytes(0), Some(2));
         assert_eq!(queue_width_bytes(1 << 7), Some(4));
         assert_eq!(queue_width_bytes(2 << 7), Some(8));
@@ -630,35 +708,44 @@ mod tests {
     #[test]
     fn the_direct_memory_access_burst_divides_a_block_and_the_free_half_of_the_queue() {
         assert_eq!(
-            fifoth_for_direct_memory_access(32),
+            queue_threshold_for_direct_memory_access(32),
             (3 << 28) | (15 << 16) | 16
         );
         assert_eq!(
-            fifoth_for_direct_memory_access(48),
+            queue_threshold_for_direct_memory_access(48),
             (2 << 28) | (7 << 16) | 24
         );
         assert_eq!(
-            fifoth_for_direct_memory_access(128),
+            queue_threshold_for_direct_memory_access(128),
             (5 << 28) | (63 << 16) | 64
         );
-        assert_eq!(fifoth_for_direct_memory_access(1), 0);
+        assert_eq!(queue_threshold_for_direct_memory_access(1), 0);
         // An odd depth leaves a free half one word larger than the transmit watermark: 4 of 7.
         assert_eq!(
-            fifoth_for_direct_memory_access(7),
+            queue_threshold_for_direct_memory_access(7),
             (1 << 28) | (3 << 16) | 3
         );
     }
 
     #[test]
-    fn the_queue_moves_at_release_2_40a_and_the_pio_thresholds_straddle_half() {
+    fn the_queue_moves_at_release_2_40a_and_the_programmed_input_output_thresholds_straddle_half() {
         assert_eq!(queue_offset(0x5342_2309), 0x100);
         assert_eq!(queue_offset(0x5342_240a), 0x200);
         assert_eq!(queue_offset(0x5342_290a), 0x200);
         // depth 32: receive watermark 15, transmit 16, OpenBSD's burst code 2.
-        assert_eq!(fifoth_for_pio(32), (2 << 28) | (15 << 16) | 16);
-        assert_eq!(fifoth_receive_watermark(fifoth_for_pio(32)), 15);
+        assert_eq!(
+            queue_threshold_for_programmed_input_output(32),
+            (2 << 28) | (15 << 16) | 16
+        );
+        assert_eq!(
+            queue_threshold_receive_watermark(queue_threshold_for_programmed_input_output(32)),
+            15
+        );
         // A one-word FIFO cannot go below zero.
-        assert_eq!(fifoth_receive_watermark(fifoth_for_pio(1)), 0);
+        assert_eq!(
+            queue_threshold_receive_watermark(queue_threshold_for_programmed_input_output(1)),
+            0
+        );
         assert_eq!(queue_count(0x1fff << 17), 0x1fff);
         assert_eq!(queue_count(!(0x1fff << 17)), 0);
     }
@@ -671,15 +758,18 @@ mod tests {
     fn the_register_bits_are_the_databooks() {
         for (bit, value) in [
             (CONTROL_CONTROLLER_RESET, 0x1),
-            (CONTROL_FIFO_RESET, 0x2),
-            (CONTROL_DMA_RESET, 0x4),
-            (CONTROL_INT_ENABLE, 0x10),
-            (CONTROL_DMA_ENABLE, 0x20),
-            (CONTROL_USE_INTERNAL_DMAC, 0x2000000),
-            (CLKENA_CCLK_ENABLE, 0x1),
-            (CLKENA_CCLK_LOW_POWER, 0x10000),
-            (CTYPE_4BIT, 0x1),
-            (CTYPE_8BIT, 0x10000),
+            (CONTROL_QUEUE_RESET, 0x2),
+            (CONTROL_DIRECT_MEMORY_ACCESS_RESET, 0x4),
+            (CONTROL_INTERRUPT_ENABLE, 0x10),
+            (CONTROL_DIRECT_MEMORY_ACCESS_ENABLE, 0x20),
+            (
+                CONTROL_USE_INTERNAL_DIRECT_MEMORY_ACCESS_CONTROLLER,
+                0x2000000,
+            ),
+            (CLOCK_ENABLE_CARD_CLOCK, 0x1),
+            (CLOCK_ENABLE_CARD_CLOCK_LOW_POWER, 0x10000),
+            (CARD_TYPE_4_BIT_BUS, 0x1),
+            (CARD_TYPE_8_BIT_BUS, 0x10000),
             (COMMAND_START, 0x80000000),
             (COMMAND_USE_HOLD_REGISTER, 0x20000000),
             (COMMAND_UPDATE_CLOCK_REGISTERS_ONLY, 0x200000),
@@ -690,46 +780,61 @@ mod tests {
             (COMMAND_WRITE, 0x400),
             (COMMAND_DATA_EXPECTED, 0x200),
             (COMMAND_CHECK_RESPONSE_CRC, 0x100),
-            (COMMAND_RESPONSE_LENGTH, 0x80),
+            (COMMAND_LONG_RESPONSE, 0x80),
             (COMMAND_RESPONSE_EXPECT, 0x40),
-            (RINTSTS_RE, 0x2),
-            (RINTSTS_CD, 0x4),
-            (RINTSTS_DTO, 0x8),
-            (RINTSTS_TXDR, 0x10),
-            (RINTSTS_RXDR, 0x20),
-            (RINTSTS_RCRC, 0x40),
-            (RINTSTS_DCRC, 0x80),
-            (RINTSTS_RTO, 0x100),
-            (RINTSTS_DRTO, 0x200),
-            (RINTSTS_HTO, 0x400),
-            (RINTSTS_FRUN, 0x800),
-            (RINTSTS_HLE, 0x1000),
-            (RINTSTS_SBE, 0x2000),
-            (RINTSTS_ACD, 0x4000),
-            (RINTSTS_EBE, 0x8000),
+            (RAW_INTERRUPT_RESPONSE_ERROR, 0x2),
+            (RAW_INTERRUPT_COMMAND_DONE, 0x4),
+            (RAW_INTERRUPT_DATA_TRANSFER_OVER, 0x8),
+            (RAW_INTERRUPT_TRANSMIT_QUEUE_DATA_REQUEST, 0x10),
+            (RAW_INTERRUPT_RECEIVE_QUEUE_DATA_REQUEST, 0x20),
+            (RAW_INTERRUPT_RESPONSE_CRC_ERROR, 0x40),
+            (RAW_INTERRUPT_DATA_CRC_ERROR, 0x80),
+            (RAW_INTERRUPT_RESPONSE_TIMEOUT, 0x100),
+            (RAW_INTERRUPT_DATA_READ_TIMEOUT, 0x200),
+            (RAW_INTERRUPT_HOST_TIMEOUT, 0x400),
+            (RAW_INTERRUPT_QUEUE_UNDERRUN_OR_OVERRUN, 0x800),
+            (RAW_INTERRUPT_HARDWARE_LOCKED_WRITE_ERROR, 0x1000),
+            (RAW_INTERRUPT_START_BIT_ERROR, 0x2000),
+            (RAW_INTERRUPT_AUTOMATIC_COMMAND_DONE, 0x4000),
+            (RAW_INTERRUPT_END_BIT_ERROR, 0x8000),
             (STATUS_DATA_BUSY, 0x200),
-            (CARDTHRCTL_RDTHREN, 0x1),
-            (BUS_MODE_SWR, 0x1),
-            (BUS_MODE_FB, 0x2),
-            (BUS_MODE_DE, 0x80),
-            (IDSTS_TI, 0x1),
-            (IDSTS_RI, 0x2),
-            (IDSTS_FBE, 0x4),
-            (IDSTS_DU, 0x10),
-            (IDSTS_CES, 0x20),
-            (IDSTS_NIS, 0x100),
-            (IDSTS_AIS, 0x200),
-            (PLDMND, 0x84),
-            (DBADDR, 0x88),
+            (CARD_THRESHOLD_CONTROL_READ_THRESHOLD_ENABLE, 0x1),
+            (BUS_MODE_SOFTWARE_RESET, 0x1),
+            (BUS_MODE_FIXED_BURST, 0x2),
+            (BUS_MODE_INTERNAL_DIRECT_MEMORY_ACCESS_ENABLE, 0x80),
+            (INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_TRANSMIT_INTERRUPT, 0x1),
+            (INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_RECEIVE_INTERRUPT, 0x2),
+            (INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_FATAL_BUS_ERROR, 0x4),
+            (
+                INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_DESCRIPTOR_UNAVAILABLE,
+                0x10,
+            ),
+            (
+                INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_CARD_ERROR_SUMMARY,
+                0x20,
+            ),
+            (
+                INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_NORMAL_INTERRUPT_SUMMARY,
+                0x100,
+            ),
+            (
+                INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_ABNORMAL_INTERRUPT_SUMMARY,
+                0x200,
+            ),
+            (POLL_DEMAND_REGISTER, 0x84),
+            (DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_REGISTER, 0x88),
             (INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER, 0x8c),
-            (IDINTEN, 0x90),
+            (
+                INTERNAL_DIRECT_MEMORY_ACCESS_INTERRUPT_ENABLE_REGISTER,
+                0x90,
+            ),
             (CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER, 0x94),
             (CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER, 0x98),
         ] {
             assert_eq!(bit, value);
         }
-        assert_eq!(CONTROL_ALL_RESET, 0x7);
-        assert_eq!(RINTSTS_DATA_ERR, 0xb880);
-        assert_eq!(RINTSTS_DATA_TO, 0x600);
+        assert_eq!(CONTROL_ALL_RESETS_MASK, 0x7);
+        assert_eq!(RAW_INTERRUPT_DATA_ERROR_MASK, 0xb880);
+        assert_eq!(RAW_INTERRUPT_DATA_TIMEOUT_MASK, 0x600);
     }
 }

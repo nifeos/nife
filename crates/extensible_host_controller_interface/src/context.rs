@@ -2,8 +2,8 @@
 //! device and its endpoints.
 //!
 //! A *device context* is an array of contexts the controller owns once a device is addressed: the
-//! slot context, then one endpoint context per *device context index* (DCI; endpoint 0 is DCI 1,
-//! endpoint `n` OUT is `2n`, IN is `2n + 1`). An *input context* is what the driver hands a
+//! slot context, then one endpoint context per device context index (DCI), where endpoint 0 is DCI 1,
+//! endpoint `n` `OUT` is `2n` and `IN` is `2n + 1`. An *input context* is what the driver hands a
 //! command: an input control context saying which contexts to add or drop, then a slot context
 //! and endpoint contexts in the same order, one index along. A context is 32 or 64 bytes depending
 //! on the controller (`HCCPARAMS1.CSZ`); only the first 32 carry fields.
@@ -17,21 +17,21 @@ use crate::port::speed;
 ///
 /// Name: ratified 2026-10-25 (#2720).
 pub const CONTROL: u8 = 4;
-/// Endpoint type: interrupt IN.
+/// Endpoint type: interrupt `IN`.
 ///
 /// Name: ratified 2026-10-25 (#2720).
 pub const INTERRUPT_IN: u8 = 7;
 
-/// **The device context index** of endpoint `address` (direction bit included). Endpoint 0 is 1
+/// **The device context index** of the endpoint with `endpoint_number_and_direction` (direction bit included). Endpoint 0 is 1
 /// in either direction.
 ///
 /// Name: ratified 2026-10-25 (#2720).
-pub const fn endpoint_index(address: u8) -> u8 {
-    let number = address & 0x0f;
+pub const fn endpoint_index(endpoint_number_and_direction: u8) -> u8 {
+    let number = endpoint_number_and_direction & 0x0f;
     if number == 0 {
         1
     } else {
-        number * 2 + (address >> 7)
+        number * 2 + (endpoint_number_and_direction >> 7)
     }
 }
 
@@ -86,11 +86,14 @@ pub const fn slot(speed: u8, port: u8, entries: u8) -> [u32; 8] {
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 pub const SLOT_CONTEXT_FIELDS_DO_NOT_OVERLAP: () = assert!(((0xfu32 << 20) & (0x1f << 27)) == 0);
 
-/// The slot context's device address, assigned by Address Device: dword 3's low byte of a slot
+/// The slot context's USB device number, assigned by Address Device: dword 3's low byte of a slot
 /// context the controller wrote.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const fn slot_address(context: &[u32; 8]) -> u8 {
+/// Name: ratified 2026-11-08 (UTC), on #3357; it replaced `slot_address`, because the template
+/// reads `address` as a virtual or physical address and this is a device number. The specification
+/// calls the field USB Device Address, kept as the alias.
+#[doc(alias = "USB Device Address")]
+pub const fn slot_device_number(context: &[u32; 8]) -> u8 {
     context[3] as u8
 }
 
@@ -244,11 +247,11 @@ mod tests {
         }
     }
 
-    /// The address the controller assigned, read back from the slot context it wrote; and which
+    /// The device number the controller assigned, read back from the slot context it wrote; and which
     /// speeds state `bMaxPacketSize0` as an exponent.
     #[test]
-    fn the_assigned_address_and_the_superspeed_test() {
-        assert_eq!(slot_address(&[0, 0, 0, 0x0800_0005, 0, 0, 0, 0]), 5);
+    fn the_assigned_device_number_and_the_superspeed_test() {
+        assert_eq!(slot_device_number(&[0, 0, 0, 0x0800_0005, 0, 0, 0, 0]), 5);
         assert!(is_superspeed(speed::SUPER) && is_superspeed(speed::SUPER_PLUS));
         assert!(
             !is_superspeed(speed::HIGH)

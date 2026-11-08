@@ -18,7 +18,7 @@ use crate::card::{
     MULTIMEDIA_CARD_OPERATION_CONDITIONS_ARGUMENT, OPERATION_CONDITIONS_BUSY_DONE,
     OPERATION_CONDITIONS_HIGH_CAPACITY, R1_ERROR_MASK, SD_OPERATION_CONDITIONS_ARGUMENT,
 };
-use crate::command::{self as c, Command, Data, Response};
+use crate::command::{self, Command, Data, Response};
 use crate::host_controller::{Error, HostController, RegisterWindowAndClock};
 use crate::internal_direct_memory_access::DirectMemoryAccessRegion;
 
@@ -54,11 +54,11 @@ pub(crate) const MULTIMEDIA_CARD_RELATIVE_CARD_ADDRESS: u16 = 1;
 pub enum CardKind {
     /// SD 1.x, standard capacity, byte addressed.
     ///
-    /// Name: ratified 2026-11-07 (UTC). Renamed from `SdV1`, since `V` abbreviates version.
+    /// Name: ratified 2026-11-07 (UTC). Renamed from `SdVersion1`, since `V` abbreviates version.
     SdVersion1,
     /// SD 2.0 or later, standard capacity, byte addressed.
     ///
-    /// Name: ratified 2026-11-07 (UTC). Renamed from `SdV2`, since `V` abbreviates version.
+    /// Name: ratified 2026-11-07 (UTC). Renamed from `SdVersion2`, since `V` abbreviates version.
     SdVersion2,
     /// SDHC, SDXC or SDUC: block addressed.
     SdHighCapacity,
@@ -192,8 +192,8 @@ pub fn identify<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
     host: &mut HostController<R, D>,
     maximum_bus_width: u8,
 ) -> Result<Card, InitializationError> {
-    let v2 = go_idle_and_check_interface(host)?;
-    let (kind, operation_conditions) = power_up(host, v2)?;
+    let is_version_2_or_later = go_idle_and_check_interface(host)?;
+    let (kind, operation_conditions) = power_up(host, is_version_2_or_later)?;
     let (card_identification_raw, relative_card_address, card_specific_data_raw) =
         address_and_select(host, kind)?;
 
@@ -247,33 +247,38 @@ pub(crate) fn go_idle_and_check_interface<
         .map_err(InitializationError::Controller)?;
     host.set_bus_width(1);
 
-    host.send_command(&Command::new(c::GO_IDLE_STATE, 0, Response::None))
+    host.send_command(&Command::new(command::GO_IDLE_STATE, 0, Response::None))
         .map_err(InitializationError::GoIdle)?;
 
-    let v2 = match host.send_command(&Command::new(
-        c::SEND_IF_COND,
+    let is_version_2_or_later = match host.send_command(&Command::new(
+        command::SEND_INTERFACE_CONDITION,
         INTERFACE_CONDITION_ARGUMENT,
         Response::R7,
     )) {
         Ok(r) if r[0] & 0xfff == INTERFACE_CONDITION_ARGUMENT => true,
         Ok(r) => return Err(InitializationError::InterfaceCondition(r[0])),
         Err(Error::NoResponse(_)) => false,
-        Err(e) => return Err(InitializationError::Identify(c::SEND_IF_COND, e)),
+        Err(e) => {
+            return Err(InitializationError::Identify(
+                command::SEND_INTERFACE_CONDITION,
+                e,
+            ));
+        }
     };
-    Ok(v2)
+    Ok(is_version_2_or_later)
 }
 
 /// Step 3: `ACMD41` until the card is powered up, or `CMD1` for an eMMC. Returns which kind of card
 /// answered and its OCR.
 pub(crate) fn power_up<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
     host: &mut HostController<R, D>,
-    v2: bool,
+    is_version_2_or_later: bool,
 ) -> Result<(CardKind, u32), InitializationError> {
-    let (kind, operation_conditions) = match sd_power_up(host, v2) {
+    let (kind, operation_conditions) = match sd_power_up(host, is_version_2_or_later) {
         Ok(operation_conditions) => {
             let kind = if operation_conditions & OPERATION_CONDITIONS_HIGH_CAPACITY != 0 {
                 CardKind::SdHighCapacity
-            } else if v2 {
+            } else if is_version_2_or_later {
                 CardKind::SdVersion2
             } else {
                 CardKind::SdVersion1
@@ -282,8 +287,8 @@ pub(crate) fn power_up<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
         }
         // No answer to CMD55: not an SD card. An eMMC, or nothing. CMD0 again first, since a
         // failed ACMD may have left a card confused about whether it is in application mode.
-        Err(InitializationError::NoCard(_)) if !v2 => {
-            host.send_command(&Command::new(c::GO_IDLE_STATE, 0, Response::None))
+        Err(InitializationError::NoCard(_)) if !is_version_2_or_later => {
+            host.send_command(&Command::new(command::GO_IDLE_STATE, 0, Response::None))
                 .map_err(InitializationError::GoIdle)?;
             (CardKind::MultimediaCard, multimedia_card_power_up(host)?)
         }
@@ -299,44 +304,52 @@ pub(crate) fn address_and_select<R: RegisterWindowAndClock, D: DirectMemoryAcces
     kind: CardKind,
 ) -> Result<([u32; 4], u16, [u32; 4]), InitializationError> {
     let card_identification_raw = host
-        .send_command(&Command::new(c::ALL_SEND_CID, 0, Response::R2))
-        .map_err(|e| InitializationError::Identify(c::ALL_SEND_CID, e))?;
+        .send_command(&Command::new(
+            command::ALL_SEND_CARD_IDENTIFICATION,
+            0,
+            Response::R2,
+        ))
+        .map_err(|e| InitializationError::Identify(command::ALL_SEND_CARD_IDENTIFICATION, e))?;
 
     let relative_card_address = if kind == CardKind::MultimediaCard {
         let r1 = host
             .send_command(&Command::new(
-                c::SEND_RELATIVE_ADDR,
+                command::SEND_RELATIVE_ADDRESS,
                 u32::from(MULTIMEDIA_CARD_RELATIVE_CARD_ADDRESS) << 16,
                 Response::R1,
             ))
-            .map_err(|e| InitializationError::Identify(c::SEND_RELATIVE_ADDR, e))?;
-        r1_ok(c::SEND_RELATIVE_ADDR, r1[0])?;
+            .map_err(|e| InitializationError::Identify(command::SEND_RELATIVE_ADDRESS, e))?;
+        r1_ok(command::SEND_RELATIVE_ADDRESS, r1[0])?;
         MULTIMEDIA_CARD_RELATIVE_CARD_ADDRESS
     } else {
         let r6 = host
-            .send_command(&Command::new(c::SEND_RELATIVE_ADDR, 0, Response::R6))
-            .map_err(|e| InitializationError::Identify(c::SEND_RELATIVE_ADDR, e))?;
+            .send_command(&Command::new(
+                command::SEND_RELATIVE_ADDRESS,
+                0,
+                Response::R6,
+            ))
+            .map_err(|e| InitializationError::Identify(command::SEND_RELATIVE_ADDRESS, e))?;
         (r6[0] >> 16) as u16
     };
 
     let card_specific_data_raw = host
         .send_command(&Command::new(
-            c::SEND_CSD,
+            command::SEND_CARD_SPECIFIC_DATA,
             u32::from(relative_card_address) << 16,
             Response::R2,
         ))
-        .map_err(|e| InitializationError::Identify(c::SEND_CSD, e))?;
+        .map_err(|e| InitializationError::Identify(command::SEND_CARD_SPECIFIC_DATA, e))?;
 
     let r1 = host
         .send_command(&Command::new(
-            c::SELECT_CARD,
+            command::SELECT_CARD,
             u32::from(relative_card_address) << 16,
             Response::R1b,
         ))
-        .map_err(|e| InitializationError::Identify(c::SELECT_CARD, e))?;
-    r1_ok(c::SELECT_CARD, r1[0])?;
+        .map_err(|e| InitializationError::Identify(command::SELECT_CARD, e))?;
+    r1_ok(command::SELECT_CARD, r1[0])?;
     host.wait_not_busy()
-        .map_err(|e| InitializationError::Identify(c::SELECT_CARD, e))?;
+        .map_err(|e| InitializationError::Identify(command::SELECT_CARD, e))?;
     Ok((
         card_identification_raw,
         relative_card_address,
@@ -355,10 +368,10 @@ pub(crate) fn configure_multimedia_card<R: RegisterWindowAndClock, D: DirectMemo
     // The clock first: EXT_CSD is 512 bytes, and at 400 kHz on one line that is 10 ms.
     card.clock_hertz = host
         .set_clock(TRANSFER_HERTZ)
-        .map_err(|e| InitializationError::Configure(c::SEND_IF_COND, e))?;
-    let mut ext = [0u8; BLOCK_BYTES];
+        .map_err(|e| InitializationError::Configure(command::SEND_INTERFACE_CONDITION, e))?;
+    let mut extended_card_specific_data = [0u8; BLOCK_BYTES];
     let command = Command::with_data(
-        c::SEND_IF_COND,
+        command::SEND_INTERFACE_CONDITION,
         0,
         Response::R1,
         Data {
@@ -368,11 +381,11 @@ pub(crate) fn configure_multimedia_card<R: RegisterWindowAndClock, D: DirectMemo
         },
     );
     let r1 = host
-        .read_data(&command, &mut ext)
-        .map_err(|e| InitializationError::Configure(c::SEND_IF_COND, e))?;
-    r1_ok(c::SEND_IF_COND, r1[0])?;
+        .read_data(&command, &mut extended_card_specific_data)
+        .map_err(|e| InitializationError::Configure(command::SEND_INTERFACE_CONDITION, e))?;
+    r1_ok(command::SEND_INTERFACE_CONDITION, r1[0])?;
     // Above 2 GB the CSD's size is a placeholder; EXT_CSD's count is the truth.
-    let sectors = card::extended_card_specific_data_sectors(&ext);
+    let sectors = card::extended_card_specific_data_sectors(&extended_card_specific_data);
     if card.block_addressed && sectors != 0 {
         card.blocks = sectors;
     }
@@ -393,57 +406,61 @@ pub(crate) fn configure_sd<R: RegisterWindowAndClock, D: DirectMemoryAccessRegio
     }
     card.blocks = card_specific_data.blocks;
     if maximum_bus_width >= 4 {
-        app_command(host, card)?;
+        application_command(host, card)?;
         let r1 = host
-            .send_command(&Command::new(c::SET_BUS_WIDTH, 2, Response::R1))
-            .map_err(|e| InitializationError::Configure(c::SET_BUS_WIDTH, e))?;
-        r1_ok(c::SET_BUS_WIDTH, r1[0])?;
+            .send_command(&Command::new(command::SET_BUS_WIDTH, 2, Response::R1))
+            .map_err(|e| InitializationError::Configure(command::SET_BUS_WIDTH, e))?;
+        r1_ok(command::SET_BUS_WIDTH, r1[0])?;
         host.set_bus_width(4);
         card.bus_width = 4;
     }
     let r1 = host
         .send_command(&Command::new(
-            c::SET_BLOCKLEN,
+            command::SET_BLOCK_LENGTH,
             BLOCK_BYTES as u32,
             Response::R1,
         ))
-        .map_err(|e| InitializationError::Configure(c::SET_BLOCKLEN, e))?;
-    r1_ok(c::SET_BLOCKLEN, r1[0])?;
+        .map_err(|e| InitializationError::Configure(command::SET_BLOCK_LENGTH, e))?;
+    r1_ok(command::SET_BLOCK_LENGTH, r1[0])?;
     card.clock_hertz = host
         .set_clock(TRANSFER_HERTZ)
-        .map_err(|e| InitializationError::Configure(c::SET_BLOCKLEN, e))?;
+        .map_err(|e| InitializationError::Configure(command::SET_BLOCK_LENGTH, e))?;
     Ok(())
 }
 
-fn app_command<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
+fn application_command<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
     host: &mut HostController<R, D>,
     card: &Card,
 ) -> Result<(), InitializationError> {
     let r1 = host
         .send_command(&Command::new(
-            c::APP_CMD,
+            command::APPLICATION_COMMAND,
             card.relative_card_address_argument(),
             Response::R1,
         ))
-        .map_err(|e| InitializationError::Configure(c::APP_CMD, e))?;
-    r1_ok(c::APP_CMD, r1[0])
+        .map_err(|e| InitializationError::Configure(command::APPLICATION_COMMAND, e))?;
+    r1_ok(command::APPLICATION_COMMAND, r1[0])
 }
 
 fn sd_power_up<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
     host: &mut HostController<R, D>,
-    v2: bool,
+    is_version_2_or_later: bool,
 ) -> Result<u32, InitializationError> {
-    let argument = if v2 {
+    let argument = if is_version_2_or_later {
         SD_OPERATION_CONDITIONS_ARGUMENT
     } else {
         SD_OPERATION_CONDITIONS_ARGUMENT & !OPERATION_CONDITIONS_HIGH_CAPACITY
     };
     let start = host.registers_mut().now_microseconds();
     loop {
-        host.send_command(&Command::new(c::APP_CMD, 0, Response::R1))
+        host.send_command(&Command::new(command::APPLICATION_COMMAND, 0, Response::R1))
             .map_err(InitializationError::NoCard)?;
         let operation_conditions = host
-            .send_command(&Command::new(c::SD_SEND_OP_COND, argument, Response::R3))
+            .send_command(&Command::new(
+                command::SD_SEND_OPERATION_CONDITIONS,
+                argument,
+                Response::R3,
+            ))
             .map_err(InitializationError::NoCard)?[0];
         if operation_conditions & OPERATION_CONDITIONS_BUSY_DONE != 0 {
             return Ok(operation_conditions);
@@ -463,7 +480,7 @@ fn multimedia_card_power_up<R: RegisterWindowAndClock, D: DirectMemoryAccessRegi
     loop {
         let operation_conditions = host
             .send_command(&Command::new(
-                c::SEND_OP_COND,
+                command::SEND_OPERATION_CONDITIONS,
                 MULTIMEDIA_CARD_OPERATION_CONDITIONS_ARGUMENT,
                 Response::R3,
             ))
@@ -536,10 +553,10 @@ pub const fn can_address_blocks(
 
 fn data_command(card: &Card, logical_block_address: u64, blocks: u32, write: bool) -> Command {
     let index = match (write, blocks) {
-        (false, 1) => c::READ_SINGLE_BLOCK,
-        (false, _) => c::READ_MULTIPLE_BLOCK,
-        (true, 1) => c::WRITE_BLOCK,
-        (true, _) => c::WRITE_MULTIPLE_BLOCK,
+        (false, 1) => command::READ_SINGLE_BLOCK,
+        (false, _) => command::READ_MULTIPLE_BLOCK,
+        (true, 1) => command::WRITE_BLOCK,
+        (true, _) => command::WRITE_MULTIPLE_BLOCK,
     };
     Command::with_data(
         index,
@@ -627,7 +644,7 @@ pub fn write_blocks<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
     // after the transfer, not in the R1 that started it).
     let status = host
         .send_command(&Command::new(
-            c::SEND_STATUS,
+            command::SEND_STATUS,
             card.relative_card_address_argument(),
             Response::R1,
         ))

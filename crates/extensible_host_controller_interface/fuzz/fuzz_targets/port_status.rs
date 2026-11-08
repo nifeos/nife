@@ -11,7 +11,7 @@
 
 #![no_main]
 
-use extensible_host_controller_interface::context::slot_address;
+use extensible_host_controller_interface::context::slot_device_number;
 use extensible_host_controller_interface::port::{
     CHANGES, CONNECTED, Connections, DEBOUNCE_STABLE_MILLISECONDS, DEBOUNCE_TIMEOUT_MILLISECONDS,
     ENABLED, POWER, PortDebounce, RESET, default_control_packet, speed_name, speed_of, write_value,
@@ -56,7 +56,7 @@ fuzz_target!(|data: &[u8]| {
         return;
     };
     let context: [u32; 8] = core::array::from_fn(|i| dword(&context_bytes[i * 4..i * 4 + 4]));
-    assert_eq!(slot_address(&context), context[3] as u8);
+    assert_eq!(slot_device_number(&context), context[3] as u8);
 
     let start_milliseconds = 0u64;
     let mut now_milliseconds = start_milliseconds;

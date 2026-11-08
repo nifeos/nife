@@ -74,10 +74,10 @@
 <path class="seg s1" d="M567.5,174.9 V106.2 Q567.5,102.2 571.5,102.2 H593.3 Q597.3,102.2 597.3,106.2 V174.9 Z"><title>2026W44, in Rust doc comments: 410</title></path>
 <text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W44</text>
 <text class="fg val" x="582.4" y="97.2" font-size="10" text-anchor="middle">1251</text>
-<rect class="seg s0" x="612.6" y="172.7" width="29.8" height="151.3"><title>2026W45, in markdown: 853</title></rect>
-<path class="seg s1" d="M612.6,172.7 V103.7 Q612.6,99.7 616.6,99.7 H638.3 Q642.3,99.7 642.3,103.7 V172.7 Z"><title>2026W45, in Rust doc comments: 412</title></path>
+<rect class="seg s0" x="612.6" y="169.9" width="29.8" height="154.1"><title>2026W45, in markdown: 869</title></rect>
+<path class="seg s1" d="M612.6,169.9 V101.2 Q612.6,97.2 616.6,97.2 H638.3 Q642.3,97.2 642.3,101.2 V169.9 Z"><title>2026W45, in Rust doc comments: 410</title></path>
 <text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W45</text>
-<text class="fg val" x="627.5" y="94.7" font-size="10" text-anchor="middle">1265</text>
+<text class="fg val" x="627.5" y="92.2" font-size="10" text-anchor="middle">1279</text>
 <rect class="s1" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">in Rust doc comments</tspan></text>
 <rect class="s0" x="672" y="83" width="11" height="11" rx="2"/>

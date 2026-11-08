@@ -41,7 +41,7 @@ can add a variant without breaking you.
 
 ## What is proven
 
-Each property below has a Kani harness in `src/proofs.rs`:
+Each property below has a Kani harness in `src/proofs.rs`, twenty-three in all:
 
 - No partition table makes the write test's scratch range touch a partition or sector 0.
 - A FIFO step never moves more than the transfer still owes, and a write step never more than the
@@ -98,6 +98,31 @@ The harnesses of whole sequences use a clock that passes every deadline at each 
 bound their loops by what the controller reports rather than by time. The two wait harnesses
 above cover a clock that takes longer, and every wait in the driver is one of those two loops.
 
+The bring-up harnesses below judge `identify` against the card state machine of the SD
+specification and the eMMC standard (idle, ready, identification, standby, transfer). The card starts
+in any state, with any address and bus width, and the controller with any bus width and clock, as
+an earlier bring-up that failed anywhere might leave them. For each command the solver picks
+whether the card answered, stayed silent or had its answer garbled, and the response words. The
+controller reports that choice and otherwise carries out each command at once; a controller that
+fails some other way reaches the driver as the same error from the same call, and the harnesses
+above cover it. The one thing assumed of a card is that an SD card publishes a relative address
+other than zero.
+
+- Every command `identify` sends is legal in the state the card is in: no step runs before the
+  one it needs, an application command always follows `CMD55`, `CMD9` and `CMD7` go to the
+  card's own address, and no command writes.
+- A card comes back from `identify` only after it went from `CMD0` through every state to
+  transfer. The `Card` names the address, operation conditions register (OCR) and kind the card
+  has; an SD card has its 512-byte block length and the bus width the slot allows, an eMMC has
+  had its `EXT_CSD` read on a 1-bit bus, and the controller runs the transfer clock.
+- Whatever a failed bring-up left, the next one resets the controller, powers the slot, drops it
+  to a 1-bit bus at the identification clock and sends `CMD0` before anything else, and a card it
+  hands back runs one bus width on the card, the controller and the `Card`.
+- Against a card that reports busy to every `ACMD41` or `CMD1`, power-up ends with
+  `InitializationError::PowerUp` and the last OCR, and sends at most one more power-up command
+  once the clock has passed its one-second deadline. Its clock runs forward at any pace, from any
+  start below 2^62.
+
 The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
 kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
 checker, so it needs network access. CI uses version 0.68.0, and another version may verify
@@ -127,10 +152,13 @@ Rerun them with `cargo kani`. Each harness has a patch at
   proved for data phases of 16 bytes or less: a 512-byte block took too many FIFO steps for the
   solver. The host tests move whole blocks and multi-block transfers both ways, through a 32- and
   a 48-word FIFO and with a confused fill count.
-- Identification is proved for safety only, step by step. Nothing proves that it brings up the right
-  kind of card or reads the right capacity; the host tests do that against simulated SD, SDHC (SD
-  High Capacity) and eMMC cards. The MBR parse does not know the card's size, so whether a partition
-  fits the card is the caller's check.
+- Identification is proved to walk the card state machine in order, but nothing proves that it
+  reads the right capacity or tells SD from SDHC (SD High Capacity); the host tests do that against
+  simulated SD, SDHC and eMMC cards. The MBR parse does not know the card's size, so whether a
+  partition fits the card is the check of the layer that mounts it.
+- The address an SD card publishes with `CMD3` is taken as it comes. A card that published zero
+  would get `CMD7` at zero, which deselects every card, and the bring-up proofs assume a card
+  publishes a nonzero address.
 
 ## Minimum Rust version
 

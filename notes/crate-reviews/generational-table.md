@@ -21,7 +21,7 @@ a README whose example a doctest runs, and both license files.
 | item | value |
 |---|---|
 | crate | `generational_table`, ratified (the crate name, the 14 item names, `EntryName<T>` and its `to_bits`, `from_bits` and `NEVER_MINTED`) |
-| version | `0.1.0`; no tag in this clone |
+| version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024; `rust-version` 1.88 |
 | license | `MIT OR Apache-2.0`, written in its own manifest, with `LICENSE-MIT` and `LICENSE-APACHE` in the crate |
 | `publish` | `false`; publication ruled, waiting on the move, the soak and the architect's approval of 0.1.0 |

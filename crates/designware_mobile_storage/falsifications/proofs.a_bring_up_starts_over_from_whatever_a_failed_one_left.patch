@@ -1,0 +1,17 @@
+Falsifies `designware_mobile_storage::proofs::a_bring_up_starts_over_from_whatever_a_failed_one_left`.
+
+The defect: bring-up no longer resets the controller before `CMD0`, so whatever a failed bring-up
+left in it (a FIFO mid-transfer, the IDMAC armed, raw status still set) carries into the next.
+
+Expected to fail: `assert!(first.controller_was_reset && first.powered && first.clock_enabled)`.
+diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobile_storage/src/sd.rs
+--- a/crates/designware_mobile_storage/src/sd.rs
++++ b/crates/designware_mobile_storage/src/sd.rs
+@@ -241,7 +241,6 @@
+ >(
+     host: &mut HostController<R, D>,
+ ) -> Result<bool, InitializationError> {
+-    host.reset().map_err(InitializationError::Controller)?;
+     host.power_on();
+     host.set_clock(IDENTIFY_HERTZ)
+         .map_err(InitializationError::Controller)?;

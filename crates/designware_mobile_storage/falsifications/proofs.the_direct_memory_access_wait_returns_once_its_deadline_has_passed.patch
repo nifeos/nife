@@ -9,7 +9,7 @@ adversarial clock.
 diff --git a/crates/designware_mobile_storage/src/internal_direct_memory_access.rs b/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
 --- a/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
 +++ b/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
-@@ -387,7 +387,7 @@
+@@ -439,7 +439,7 @@
                  return Ok(());
              }
              let now = self.registers.now_microseconds();

@@ -81,8 +81,13 @@ impl TransferRequestBlock {
         TransferRequestBlock(words)
     }
 
-    const fn pointer(address: u64, rest: [u32; 2]) -> TransferRequestBlock {
-        TransferRequestBlock([address as u32, (address >> 32) as u32, rest[0], rest[1]])
+    const fn pointer(physical_address: u64, rest: [u32; 2]) -> TransferRequestBlock {
+        TransferRequestBlock([
+            physical_address as u32,
+            (physical_address >> 32) as u32,
+            rest[0],
+            rest[1],
+        ])
     }
 
     /// A link TRB back to `target` with Toggle Cycle set, which is what flips the consumer's
@@ -115,16 +120,18 @@ impl TransferRequestBlock {
         ])
     }
 
-    /// Address Device: take the input context at `input` (physical) for `slot`, and send the
-    /// device its address.
+    /// (`address_device`, xHCI 1.2 specification section 4.6.5) Address Device: take the input
+    /// context at `input` (physical) for `slot`, and send the device its address.
     ///
     /// Name: ratified 2026-10-25 (#2720).
+    #[doc(alias = "Address Device command")]
     pub const fn address_device(input: u64, slot: u8) -> TransferRequestBlock {
         TransferRequestBlock::pointer(
             input,
             [
                 0,
-                control(transfer_request_block_type::ADDRESS_DEVICE) | (slot as u32) << 24,
+                control(transfer_request_block_type::DEVICE_ADDRESSING_COMMAND)
+                    | (slot as u32) << 24,
             ],
         )
     }
@@ -241,7 +248,7 @@ impl TransferRequestBlock {
     }
 
     /// A Normal TRB: `len` bytes at `buffer` (physical), with an event on completion or a short
-    /// packet. What an interrupt IN endpoint's ring holds.
+    /// packet. What an interrupt `IN` endpoint's ring holds.
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub const fn normal(buffer: u64, len: u16) -> TransferRequestBlock {

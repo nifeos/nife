@@ -26,3 +26,4 @@ week,chart,note
 2026W41,unsafe-trust.svg,"userspace rose 466 to 531. Of those, 29 blocks are c_library and jig, which landed this week; they were in the census and in no band until pull request #2482 (2026-10-20 UTC) placed them."
 2026W43,unsafe-trust.svg,"every week here was restated on 2026-10-20 UTC by pull request #2482, which generates the crate table from cargo metadata. The unclassified band (60, 39 and 28 in 2026W41 to 2026W43) moved into userspace and shared, and no week's total fell."
 2026W45,ci-jobs.svg,CI job fuzz ran at 92% of its budget on its newest merge-group run; tracking issue #3081
+2026W45,ci-jobs.svg,CI job prove ran at 94% of its budget on its newest merge-group run; tracking issue #3350

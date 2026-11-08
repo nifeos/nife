@@ -1,7 +1,7 @@
 //! **The `e1000e` data plane inside `net_stack`** (milestone 494 (a driver for the network card a PC
 //! actually has); notes/e1000e.md).
 //!
-//! The volatile shell around `crates/e1000e`'s [`DataPlane`]: two windows and a barrier. The ring
+//! The volatile shell around `nifeos/e1000e`'s [`DataPlane`]: two windows and a barrier. The ring
 //! logic, descriptor formats and judgement of every device-written word are the crate's,
 //! host-tested against a simulated device. The kernel already reset the device, read its MAC and
 //! set both ring bases (`kernel/src/e1000e.rs`); `kernel/src/user/e1000e_service.rs`'s header says
@@ -24,7 +24,7 @@
 //! is qualified only when its name covers more than one kind of device, as Synopsys's does. Refused
 //! `intel_e1000e_transport` and `e1000e_ethernet_transport` (nothing else is called e1000e; Linux
 //! names the driver `e1000e` and puts the vendor in the directory; vendors rebrand while family
-//! names stay). The vendor, Intel, is recorded here and in `crates/e1000e`'s header instead.
+//! names stay). The vendor, Intel, is recorded here and in `nifeos/e1000e`'s header instead.
 
 use alloc::vec::Vec;
 

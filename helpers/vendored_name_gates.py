@@ -180,10 +180,6 @@ CAP_KEPT = {
     'kernel/src/non_volatile_memory_express.rs': ({'CAP', 'Cap', 'cap'}, _REGISTER),
     'crates/non_volatile_memory_express/src/lib.rs':
         ({'CAP', 'Cap', 'cap', 'cap_fields_decode_from_their_spec_positions'}, _REGISTER),
-    # IEEE 802.3 clause 28 ability bits, spelled as Linux's e1000e spells them.
-    'crates/e1000e/src/platform_controller_hub/sequence.rs': ({'NWAY_AR_10T_HD_CAPS', 'NWAY_AR_10T_FD_CAPS',
-                                           'NWAY_AR_100TX_HD_CAPS', 'NWAY_AR_100TX_FD_CAPS',
-                                           'CR_1000T_HD_CAPS', 'CR_1000T_FD_CAPS'}, _REGISTER),
 }
 
 
@@ -231,8 +227,6 @@ UNIT_KEPT = {
     'crates/clock_contract/src/lib.rs':
         ({'NANOS_PER_SEC', 'wall_nanos', 'offset_nanos', 'monotonic_nanos'},
          'the names the std overlay reads'),
-    'crates/e1000e/src/platform_controller_hub/sequence.rs':
-        ({'FEXTNVM3_PHY_CFG_COUNTER_50MSEC'}, 'a register field, spelled as Linux spells it'),
     'cryptography_provider/src/lib.rs': ({'Sec1Point', 'ToSec1Point', 'from_sec1_bytes', 'to_sec1_point', 'sec1'}, _SEC1),
     'cryptography_exerciser/src/main.rs': ({'Sec1Point', 'ToSec1Point', 'from_sec1_bytes', 'to_sec1_point', 'sec1'}, _SEC1),
 }

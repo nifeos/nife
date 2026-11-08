@@ -8,10 +8,9 @@ Expected to fail: the harness's check that a buffer under 216 bytes gives 0, and
 216 bytes give the little-endian word at 212.
 
 diff --git a/crates/designware_mobile_storage/src/card.rs b/crates/designware_mobile_storage/src/card.rs
-index 552a189bb..69f585703 100644
 --- a/crates/designware_mobile_storage/src/card.rs
 +++ b/crates/designware_mobile_storage/src/card.rs
-@@ -203,7 +203,7 @@ impl CardIdentification {
+@@ -226,7 +226,7 @@
  #[doc(alias = "ext_csd")]
  #[must_use]
  pub(crate) fn extended_card_specific_data_sectors(extended_card_specific_data: &[u8]) -> u64 {

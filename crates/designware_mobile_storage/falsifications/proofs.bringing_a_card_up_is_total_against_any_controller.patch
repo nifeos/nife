@@ -8,7 +8,7 @@ harness states (the bring-up panics nowhere).
 diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobile_storage/src/sd.rs
 --- a/crates/designware_mobile_storage/src/sd.rs
 +++ b/crates/designware_mobile_storage/src/sd.rs
-@@ -444,7 +444,7 @@
+@@ -461,7 +461,7 @@
          if operation_conditions & OPERATION_CONDITIONS_BUSY_DONE != 0 {
              return Ok(operation_conditions);
          }

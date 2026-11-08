@@ -1,6 +1,6 @@
 # extensible_host_controller_interface
 
-Everything a USB host controller (xHCI) driver computes, with nothing it touches: register offsets
+Everything a Universal Serial Bus (USB) host controller (xHCI) driver computes, with nothing it touches: register offsets
 and field decode, Transfer Request Block (TRB) construction and decode, the producer and event ring
 cycle discipline, slot and endpoint contexts, port status and the port debounce. The caller performs
 every volatile access and owns the direct memory access (DMA) memory; this crate supplies the
@@ -25,7 +25,7 @@ assert_eq!((a.index, a.transfer_request_block.is_cycle(), a.link), (0, true, Non
 ```
 
 The caller writes each placed TRB (and the link, when `link` is `Some`) to DMA memory at
-`ring.address_of(index)`, then rings the doorbell.
+`ring.entry_physical_address(index)`, then rings the doorbell.
 
 ## What is proven
 

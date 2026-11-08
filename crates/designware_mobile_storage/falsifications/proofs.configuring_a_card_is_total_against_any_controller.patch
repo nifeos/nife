@@ -7,7 +7,7 @@ Expected to fail: `assert!(card.blocks > 0)`.
 diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobile_storage/src/sd.rs
 --- a/crates/designware_mobile_storage/src/sd.rs
 +++ b/crates/designware_mobile_storage/src/sd.rs
-@@ -384,9 +384,6 @@
+@@ -397,9 +397,6 @@
      maximum_bus_width: u8,
  ) -> Result<(), InitializationError> {
      let card_specific_data = CardSpecificData::from_sd_register(card_specific_data_raw);
@@ -16,4 +16,4 @@ diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobi
 -    }
      card.blocks = card_specific_data.blocks;
      if maximum_bus_width >= 4 {
-         app_command(host, card)?;
+         application_command(host, card)?;

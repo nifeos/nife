@@ -85,7 +85,7 @@ impl Region {
 }
 
 impl DirectMemoryAccessRegion for Region {
-    fn bus_address(&self) -> u64 {
+    fn direct_memory_access_address(&self) -> u64 {
         self.phys
     }
 

@@ -4,17 +4,21 @@ The defect: the last descriptor holds a whole page whatever is left, so a transf
 whole number of pages describes more bytes than the command moves, and the IDMAC waits on a
 descriptor the card will never fill.
 
-Expected to fail: `assert!(i * PAGE + size == bytes)`, on any `bytes` that is not a multiple of a page.
+Expected to fail: `assert!(i * PAGE_BYTES + size == bytes)`, on any `bytes` that is not a multiple of a page.
 
 diff --git a/crates/designware_mobile_storage/src/internal_direct_memory_access.rs b/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
 --- a/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
 +++ b/crates/designware_mobile_storage/src/internal_direct_memory_access.rs
-@@ -214,7 +214,7 @@
+@@ -296,11 +296,7 @@
      } else {
-         des0 |= DES0_DIC;
+         word_0 |= DESCRIPTOR_DISABLE_INTERRUPT_ON_COMPLETION;
      }
--    let size = if last { bytes - i * PAGE } else { PAGE };
-+    let size = PAGE;
+-    let size = if last {
+-        bytes - i * PAGE_BYTES
+-    } else {
+-        PAGE_BYTES
+-    };
++    let size = PAGE_BYTES;
      let next = if last { 0 } else { i + 1 };
      [
-         des0,
+         word_0,

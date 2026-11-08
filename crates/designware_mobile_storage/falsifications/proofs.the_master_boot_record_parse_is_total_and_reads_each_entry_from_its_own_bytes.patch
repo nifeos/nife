@@ -8,10 +8,9 @@ Expected to fail: the harness's assertion that `entry.sectors` equals the little
 offset 12 of its entry, on any sector 0 whose start and length words differ.
 
 diff --git a/crates/designware_mobile_storage/src/partition.rs b/crates/designware_mobile_storage/src/partition.rs
-index 0fe377276..7d165ef99 100644
 --- a/crates/designware_mobile_storage/src/partition.rs
 +++ b/crates/designware_mobile_storage/src/partition.rs
-@@ -88,7 +88,7 @@ impl MasterBootRecord {
+@@ -106,7 +106,7 @@
              *e = PartitionEntry {
                  kind: sector[at + 4],
                  start: le(8),

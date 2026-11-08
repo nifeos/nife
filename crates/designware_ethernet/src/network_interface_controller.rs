@@ -369,7 +369,7 @@ fn program_descriptor_rings(hardware: &mut impl Hardware, region: u64) {
 }
 
 /// **Configure a controller just reset**, with nothing started: the DMA's bus mode, channel 0's
-/// burst lengths, buffer size, both rings at `region` (heads and tails at the ring bases, so
+/// burst lengths, buffer size, both rings at `region_physical_address` (heads and tails at the ring bases, so
 /// nothing is available until the data plane posts), both queues' modes, flow control, the
 /// receive queue enable, the station address and filter, and every interrupt masked.
 ///
@@ -383,11 +383,11 @@ pub fn configure(
     hardware: &mut impl Hardware,
     id: &Identity,
     bus: &BusConfiguration,
-    region: u64,
+    region_physical_address: u64,
     station_address: [u8; 6],
 ) -> Result<(), Error> {
     if !is_region_in_reach(
-        region,
+        region_physical_address,
         layout::DIRECT_MEMORY_ACCESS_REGION_BYTES,
         id.direct_memory_access_address_bits(),
     ) {
@@ -398,7 +398,7 @@ pub fn configure(
 
     program_system_bus_mode(hardware, id, bus);
     program_channel_bursts(hardware, bus);
-    program_descriptor_rings(hardware, region);
+    program_descriptor_rings(hardware, region_physical_address);
 
     let receive_mode = receive_queue_mode(
         hardware.read(registers::RECEIVE_QUEUE_0_OPERATION_MODE_REGISTER),

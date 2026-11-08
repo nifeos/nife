@@ -259,7 +259,7 @@ impl Host {
     /// **One command, to its completion.** The slot the completion names, on success.
     fn command(&mut self, trb: TransferRequestBlock) -> Result<u8, Fail> {
         let p = self.commands.enqueue(trb);
-        let at = self.commands.address_of(p.index);
+        let at = self.commands.entry_physical_address(p.index);
         Host::put(direct_memory_access::COMMAND_RING, p);
         self.ring_doorbell(0, 0);
         match self.wait_for(
@@ -288,13 +288,13 @@ impl Host {
             let p = self
                 .control
                 .enqueue(TransferRequestBlock::data(buffer, len, inbound));
-            data_at = Some(self.control.address_of(p.index));
+            data_at = Some(self.control.entry_physical_address(p.index));
             Host::put(direct_memory_access::CONTROL_RING, p);
         }
         let p = self
             .control
             .enqueue(TransferRequestBlock::status(len > 0 && inbound));
-        let status_at = self.control.address_of(p.index);
+        let status_at = self.control.entry_physical_address(p.index);
         Host::put(direct_memory_access::CONTROL_RING, p);
         self.ring_doorbell(slot, 1);
 
@@ -565,10 +565,10 @@ impl Host {
             REGS.r32(registers::DOORBELL_OFFSET_REGISTER),
             REGS.r32(registers::RUNTIME_REGISTER_SPACE_OFFSET_REGISTER),
         );
-        let phys = |page: u64| h.direct_memory_access_physical_address + page * PAGE_BYTES;
+        let phys = |page: u64| h.data_plane_physical_address + page * PAGE_BYTES;
         let host = Host {
             capabilities,
-            dma_phys: h.direct_memory_access_physical_address,
+            dma_phys: h.data_plane_physical_address,
             commands: ProducerRing::new(
                 phys(direct_memory_access::COMMAND_RING),
                 direct_memory_access::RING_ENTRIES,
@@ -623,10 +623,10 @@ impl Host {
             }
             core::hint::spin_loop();
         }
-        if self.reg(self.op(registers::PAGE_SIZE_BITMAP_REGISTER)) & 1 == 0 {
+        if self.reg(self.op(registers::SUPPORTED_PAGE_SIZE_ORDER_REGISTER)) & 1 == 0 {
             return Err((
                 BringUpStep::NoFourKibibytePages,
-                self.reg(self.op(registers::PAGE_SIZE_BITMAP_REGISTER)),
+                self.reg(self.op(registers::SUPPORTED_PAGE_SIZE_ORDER_REGISTER)),
             ));
         }
         if u64::from(dma_pages)

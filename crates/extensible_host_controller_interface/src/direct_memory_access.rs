@@ -4,7 +4,7 @@
 //! The pages through [`SCRATCHPAD_ARRAY`] are the driver's own and are mapped into it. The
 //! controller's scratchpad pages follow and are **not** mapped: the driver writes their physical addresses into
 //! [`SCRATCHPAD_ARRAY`] and never touches them, so a process that cannot read the controller's
-//! private memory cannot be confused by it. The IOMMU confines the device to the whole region.
+//! private memory cannot be confused by it. The input-output memory management unit (IOMMU) confines the device to the whole region.
 //!
 //! Name: ratified 2026-10-26 (UTC), on #2760. Refused `dma` (spelled out, as the acronym test
 //! asks).
@@ -37,7 +37,7 @@ pub const DEVICE_CONTEXT: u64 = 5;
 ///
 /// Name: ratified 2026-10-25 (#2720).
 pub const CONTROL_RING: u64 = 6;
-/// The keyboard's interrupt IN transfer ring.
+/// The keyboard's interrupt `IN` transfer ring.
 ///
 /// Name: ratified 2026-10-25 (#2720).
 pub const INTERRUPT_RING: u64 = 7;

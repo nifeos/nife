@@ -26,7 +26,7 @@ use super::*;
 /// assert!(link.is_cycle()); // stamped with the lap it ends, so the controller follows it
 /// let d = ring.enqueue(TransferRequestBlock::enable_slot());
 /// assert_eq!((d.index, d.transfer_request_block.is_cycle()), (0, false)); // second lap, cycle flipped
-/// assert_eq!(ring.address_of(d.index), 0x1000);
+/// assert_eq!(ring.entry_physical_address(d.index), 0x1000);
 /// ```
 ///
 /// Name: ratified 2026-10-25 (#2720).
@@ -80,17 +80,18 @@ impl ProducerRing {
 
     /// The physical address of entry `index`.
     ///
-    /// Name: ratified 2026-10-25 (#2720).
-    pub const fn address_of(&self, index: u16) -> u64 {
+    /// Name: ratified 2026-11-08 (UTC), on #3357; it replaced `address_of`, because the template
+    /// reads `address` as a virtual or physical address and the name now says physical.
+    pub const fn entry_physical_address(&self, index: u16) -> u64 {
         self.base + index as u64 * 16
     }
 
-    /// The physical address and cycle of the next TRB to be written: what a TR Dequeue Pointer or
+    /// The physical address and cycle of the next TRB to be written: what a Transfer Ring (TR) Dequeue Pointer or
     /// `CRCR` is set to (the cycle in bit 0, as both registers take it).
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub const fn dequeue_pointer(&self) -> u64 {
-        self.address_of(self.enqueue) | self.cycle as u64
+        self.entry_physical_address(self.enqueue) | self.cycle as u64
     }
 
     /// **Place one TRB**, and the link if this fills the lap.

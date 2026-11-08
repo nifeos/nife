@@ -103,7 +103,7 @@ and cannot run:
   comment *"no byte the device would touch lies outside the granted region"*, directly below the two
   assertions it is the conjunction of. Removed in 307; the sentence moved onto the live pair.
 - Row 14. `an_accepted_descriptor_is_confined` kept `assert!(!d.is_indirect())` and
-  `assert!(is_in_region(base, size, d.addr, d.buf_len()))` *below* the assertions that replaced them,
+  `assert!(is_in_region(base, size, d.guest_physical_address, d.buf_len()))` *below* the assertions that replaced them,
   from milestone 211 (a harness that states its property through the function under test cannot see
   that function break). Inside `if is_descriptor_allowed(..)` those are the same two calls with the same
   arguments the guard returns false on, so neither can fail. 211 added the working phrasing and left

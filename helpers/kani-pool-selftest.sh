@@ -49,6 +49,15 @@ exit 0
 STUB
 chmod +x "$tmp/bin/cargo"
 export PATH="$tmp/bin:$PATH"
+# script/kani-install, which script/verify runs, repairs a Kani toolchain link that does not resolve
+# by running `cargo kani setup`, which the stub would count as a proof. A temporary HOME whose link
+# resolves keeps the runs to the proofs, on a machine that has no Kani installed as on one that has.
+mkdir -p "$tmp/home/tc/bin"
+: >"$tmp/home/tc/bin/rustc"
+chmod +x "$tmp/home/tc/bin/rustc"
+mkdir -p "$tmp/home/.kani/kani-$(tr -d '[:space:]' <"$root/.kani-version")"
+ln -s "$tmp/home/tc" "$tmp/home/.kani/kani-$(tr -d '[:space:]' <"$root/.kani-version")/toolchain"
+export HOME="$tmp/home"
 unset LINT_NO_CARGO GITHUB_ACTIONS NIFE_KANI_UNITS NIFE_KANI_POOL VERIFY_JOBS
 NIFE_HEAVY_SLOT_DIR="$tmp/slots"
 NIFE_HEAVY_SLOTS=16

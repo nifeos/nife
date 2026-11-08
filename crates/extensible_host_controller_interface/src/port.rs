@@ -229,7 +229,7 @@ mod tests {
     use super::*;
 
     /// **The trap, closed**: a port that is enabled with a reset change pending, written to start
-    /// another reset, keeps its enable bit OFF in the written value (writing it would disable the
+    /// another reset, keeps its enable bit off in the written value (writing it would disable the
     /// port) and does not acknowledge the change.
     #[test]
     fn a_write_never_carries_the_enable_bit_or_a_change() {
@@ -337,7 +337,7 @@ mod tests {
         (t, None, at(t))
     }
 
-    /// **xenon's ports after the reset**, from the PORTSC probe on 2026-10-21 (UTC): nothing at
+    /// **xenon's ports after the reset**, from the `PORTSC` probe on 2026-10-21 (UTC): nothing at
     /// first, ports 4 and 9 back about 10 ms later, port 1 a millisecond after them. The scan the
     /// boot line counts read none of them; a settled scan reads all three.
     #[test]

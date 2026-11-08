@@ -10,8 +10,8 @@ property the harness states (the buffer is indexed only inside it).
 diff --git a/crates/designware_mobile_storage/src/host_controller.rs b/crates/designware_mobile_storage/src/host_controller.rs
 --- a/crates/designware_mobile_storage/src/host_controller.rs
 +++ b/crates/designware_mobile_storage/src/host_controller.rs
-@@ -562,7 +562,7 @@
-                 registers::RINTSTS_RXDR,
+@@ -582,7 +582,7 @@
+                 registers::RAW_INTERRUPT_RECEIVE_QUEUE_DATA_REQUEST,
                  (buffer.len() - done) as u32,
              )?;
 -            let n = queue_step(status, self.depth, false, (buffer.len() - done) as u32) as usize;

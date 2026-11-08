@@ -12,8 +12,9 @@ controller sequences and the internal DMA controller's descriptor chains. It ide
 reads and writes blocks, and decodes the card's identification and specific-data registers. The
 caller implements one trait, `RegisterWindowAndClock` (read a register, write one, read a
 microsecond clock), and every sequence runs on a host against a simulated controller and card. It
-is `no_std`, with no allocator, no `unsafe` and no dependency. Eight Kani harnesses prove its
-parsers and bounds. Every public name has a ratified `Name:` block, and the compile-time checks have no public name.
+is `no_std`, with no allocator, no `unsafe` and no dependency. Twenty-three Kani harnesses prove its
+parsers and bounds, that each controller sequence is total against any controller, and that card
+bring-up walks the card state machine in order. Every public name has a ratified `Name:` block, and the compile-time checks have no public name.
 The board's test steps live in the kernel's storage bench, not here. No decision is open.
 
 ## Identity
@@ -25,7 +26,7 @@ The board's test steps live in the kernel's storage bench, not here. No decision
 | edition, `rust-version` | 2024, 1.88 |
 | license | `(MIT OR Apache-2.0) AND ISC`; `LICENSE-MIT` and `LICENSE-APACHE` at the crate root, the ISC notice in `src/lib.rs` |
 | `publish` | `false` |
-| size | 6,570 lines in 12 files: about 4,690 of library, 687 of shared tests, 969 of simulator, 220 of Kani harnesses |
+| size | 8,324 lines in 12 files: about 5,150 of library, 720 of shared tests, 1,026 of simulator, 1,426 of Kani harnesses |
 | consumers in nife | `kernel`, `components` and `machine_discovery`, by path |
 
 ## Public API
@@ -59,8 +60,7 @@ What a stranger may find surprising:
 
 ## Proofs and falsification patches
 
-Eight harnesses in `src/proofs.rs`, each with one patch. `script/crate-standalone` proved all eight
-on 1.88 and saw each patch fail its own harness.
+Twenty-three harnesses in `src/proofs.rs`, each with one patch that fails it at its own assertion.
 
 | harness | what it proves |
 |---|---|
@@ -72,41 +72,88 @@ on 1.88 and saw each patch fail its own harness.
 | `a_register_field_never_exceeds_its_width` | a field read from a 128-bit register never exceeds its width and never panics |
 | `a_card_specific_data_decode_is_total_and_never_overflows` | decoding any specific-data register, as SD or eMMC, sizes the card without overflow |
 | `an_extended_card_specific_data_sector_count_is_total` | the eMMC sector count reads from bytes 212 to 215 of any buffer, and a short buffer gives zero |
+| `a_wait_returns_at_the_first_reading_past_its_deadline` | a wait ends at the first clock reading past its deadline, however the clock wrapped, stood or jumped before |
+| `the_direct_memory_access_wait_returns_once_its_deadline_has_passed` | the IDMAC wait ends once its deadline has passed, however the controller rewrites the descriptors |
+| `the_clock_divider_is_total` | the card clock divider never divides by zero, overflows or panics |
+| `a_command_word_sends_only_the_command_asked_for` | a command word carries the start bit and its own index, a data phase exactly when the command has one, and the write bit only on a write |
+| `sending_a_command_is_total_against_any_controller` | a command with no data phase ends without a panic, and every error names the command |
+| `reset_and_the_card_clock_are_total_against_any_controller` | a reset and a clock change end without a panic, and at 50 MHz the card runs no faster than asked |
+| `a_queue_transfer_stays_inside_its_buffer` | a polled data phase ends and indexes its buffer only inside it |
+| `reading_a_block_never_writes_the_card_or_leaves_the_region` | a one-block read through the IDMAC sends no write command and stays inside the region |
+| `writing_a_block_sends_only_the_block_asked_for` | a one-block write through the IDMAC sends at most one write command, of the block asked for, inside the card |
+| `bringing_a_card_up_is_total_against_any_controller` | reset, `CMD0`, `CMD8`, power-up and addressing end without a panic and send no write command |
+| `configuring_a_card_is_total_against_any_controller` | configuration ends without a panic and sends no write command, and a configured SD card has a capacity and the transfer clock |
+| `each_bring_up_command_goes_to_a_card_state_that_accepts_it` | from any card state, every command `identify` sends is legal in the state the card is in, and none writes |
+| `a_card_is_brought_up_only_through_every_step` | a `Card` comes back only after the card passed from `CMD0` through every state to transfer, with its address, kind, block length and bus width set |
+| `a_bring_up_starts_over_from_whatever_a_failed_one_left` | from any state a failed bring-up left, `identify` resets the controller and drops it to a 1-bit bus at the identification clock before `CMD0`, and a card it hands back runs one bus width on the card, the controller and the `Card` |
+| `a_card_that_keeps_reporting_busy_is_given_up_on_once_the_deadline_passes` | power-up against a card that is busy forever ends with `PowerUp`, and sends at most one more power-up command once the one-second deadline has passed |
 
-Not proved, and the README says so: the card bring-up state machine, the timing, and the
-identification decode. 91 host tests drive those against the simulator.
+Not proved, and the README says so: the timing and the identification decode (the right
+capacity, SD told from SDHC). 92 host tests drive those against the simulator.
 
 ## Names
 
 `python3 helpers/name_release.py --draft designware_mobile_storage` lists 111 rows. All 111 read
-ratified. Nothing is provisional.
+ratified.
 
-Against the rulings in force, checked with the template's own checks
-(`vendor/crate-workflows/helpers/`, run with `--manifest` over `src/*.rs`):
+Against the rulings in force, with the template's checks (`unit_symbols.py`, `spelled_out.py`,
+`question_shape.py`, `british_spelling.py`, `register_names.py` and the report-only
+`abbreviations.py`, run with `--manifest` over `src/*.rs`) and a read of every name:
 
 | rule | result |
 |---|---|
-| units spelled out (`unit_symbols.py`) | 0 findings. `_HERTZ`, `_MICROSECONDS` and `_BYTES` throughout. The checker reads suffixes only, and no name carries a unit symbol in another position. |
-| spelled-out words (`spelled_out.py`) | 0 findings. Six private source-kept constants open their doc comment with `(NAME, source)`, and no test name says `spec`. |
-| question shape (`question_shape.py`) | 0 findings. The private wait is `is_condition_met_within`, and the simulator predicates take `is_`. |
-| British spelling | 0 findings. |
-| `id`, `sd`, `jh7110` | accepted words and a chip name. |
-| aliases of an old nife spelling | none. Every `doc(alias)` is a specification or databook term. |
+| units spelled out | passes. `_HERTZ`, `_MICROSECONDS` and `_BYTES` throughout. |
+| spelled-out words, accepted acronyms only | passes. Every non-public name is spelled out: a register, bit, descriptor or command constant says what it is (`RAW_INTERRUPT_STATUS_REGISTER`, `SD_SEND_OPERATION_CONDITIONS`) and carries its source's spelling in `doc(alias)` (`RINTSTS`, `SD_SEND_OP_COND`), cited at the opening of its doc comment. `crc` is an accepted acronym, so the CRC constants keep it (`RAW_INTERRUPT_DATA_CRC_ERROR`, alias `RINTSTS_DCRC`). |
+| register shape (`_REGISTER`, `_MASK`, a size's unit) | passes. Every offset ends `_REGISTER` and every multi-bit constant `_MASK`. |
+| address naming | passes. The other `register_names.py` address findings name a card's relative address or a logical block address, which are not memory locations. |
+| question shape | passes. |
+| British spelling | passes. |
+| `id`, `sd`, `crc`, `jh7110` | accepted words and a chip name. |
+| aliases of an old nife spelling | none. Every `doc(alias)` is a specification, databook or OpenBSD term. |
+| prose acronyms (`prose_acronyms.py`) | fails: 62 acronyms in the README and doc comments are not expanded where first used (`FIFO`, `CSD`, `OCR`, `MMIO`, the command numbers `CMD0` to `ACMD41` and others). |
+
+The public names the rules refused, and where each stands:
+
+| row | name before | rule | now | status |
+|---|---|---|---|---|
+| 1 | `registers::CONTROL`, `WRITE_PROTECT`, `TRANSFERRED_CARD_BYTE_COUNT`, `TRANSFERRED_HOST_BYTE_COUNT`, `HARDWARE_RESET`, `BUS_MODE` | a register offset ends `_REGISTER` | each with `_REGISTER` appended | done |
+| 2 | `command::Response::has_crc` | `crc` was not an accepted acronym | `has_crc` | withdrawn: `crc` is an accepted acronym |
+| 3 | `command::Data::block_size` | a size carries its unit | `block_bytes` | done |
+| 4 | `sd::CardKind::SdV1`, `SdV2` | `V` abbreviates version | `SdVersion1`, `SdVersion2` | done |
+| 5 | `internal_direct_memory_access::DirectMemoryAccessRegion::bus_address` | an address says what kind it is | `direct_memory_access_address`, aliases `bus address` and `dma_addr_t` | done |
+| 6 | `jh7110::Slot::base`, and the `base` parameter of `Slot::from_node` | an address is virtual or physical | `registers_physical_address` | done |
+| 7 | `jh7110::Slot::size`, and the `size` parameter of `Slot::from_node` | a size carries its unit | `registers_size_bytes` | done |
+| 8 | `host_controller::clock_divider`, parameters `base` and `target` | a quantity carries its unit | `base_hertz`, `target_hertz` | done |
+| 9 | `host_controller::card_clock`, and its parameter `base` | a quantity carries its unit | `card_clock_hertz`, `base_hertz` | done |
+| 10 | `host_controller::queue_step`, parameters `depth` and `remaining` | a quantity carries its unit | `depth_words`, `remaining_bytes` | done |
+| 11 | `card::extract_bits`, parameter `len` | a length carries its unit | `width_bits` | done |
+| 12 | `registers::queue_width` | a quantity carries its unit | `queue_width_bytes` | done |
+| 13 | `jh7110::QUEUE_DEPTH`, `Slot::queue_depth`, `HostController::queue_depth`, the `queue_depth` parameter of `HostController::new` | a count names the things | `QUEUE_DEPTH_WORDS`, `queue_depth_words` | done |
 
 The two address registers, `CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER` and
 `CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER`, hold the descriptor address and buffer address the
 controller is on, as the bus sees them, which is physical on every board this driver runs on.
-`DirectMemoryAccessRegion::bus_address` is the region's address as the controller's DMA engine
+`DirectMemoryAccessRegion::direct_memory_access_address` is the region's address as the controller's DMA engine
 uses it, which differs from the CPU physical address behind an IOMMU or a bus offset, so it does
-not take `physical_address`; its name waits for the architect.
+not take `physical_address`. It is `direct_memory_access_address`, with
+`bus address` and `dma_addr_t` as aliases; the architect ratified it.
+Every private name inside the crate that holds that same value carries the same spelling. The
+value is the address as the controller's DMA engine uses it, which the trait contract allows to
+differ from the CPU physical address, so none of these names says physical. All are provisional.
+
+| item | name before | now |
+|---|---|---|
+| `InternalDirectMemoryAccess` field, and the `descriptor` parameter | `region_physical_address` | `region_direct_memory_access_address` |
+| `simulator` descriptor walk local | `descriptor_physical_address` | `descriptor_direct_memory_access_address` |
+| `simulator` `offset` parameter | `physical_address` | `direct_memory_access_address` |
+| the `proofs` regions' fields and harness locals | `physical_address` | `direct_memory_access_address` |
+
+The only CPU-side address is `jh7110::Slot::registers_physical_address`, which stays physical.
 `Refusal::AboveFourGibibytes` spells its unit out. The parameters of `registers::queue_offset`,
 `queue_width_bytes` and `uses_64_bit_direct_memory_access` are `version_identification` and
 `hardware_configuration`, and `jh7110::Slot::from_node` takes `property`. The renamed items carry
 the old spelling and the rule that refused it in their `Name:` blocks, and none carries a
 `doc(alias)` of it.
-
-The private `pub(crate)` constants keep the databook and OpenBSD spellings
-(`CONTROL_FIFO_RESET`, `CONTROL_DMA_RESET`, `SEND_OP_COND`) through the kept-name form.
 
 ## License
 
@@ -128,6 +175,11 @@ future kind. `Response` stays exhaustive, since the specification fixes its seve
 scratch write verdict, `ScratchWriteVerdict`, lives in the kernel's storage bench and not in this
 crate.
 
+The crate has no helper that checks whether a partition fits inside the card. Partition handling
+above the driver belongs to the layer that mounts the partition, which knows the card's size from
+`Card::blocks` and the partition's extent from `PartitionEntry`. Adding such a helper in a later
+release stays compatible.
+
 ## Outstanding before the move
 
 | item | owner |
@@ -146,8 +198,8 @@ No defect found in the logic.
 ## Result of `script/crate-standalone`
 
 Clean: manifest, files, citations, names, the build on 1.88 for the host and
-the three bare-metal targets, all eight harnesses and all eight falsifications. The crate's 91
-host tests and five doctests pass, `cargo clippy` reports nothing, and
+the three bare-metal targets, all twenty-three harnesses and all twenty-three falsifications. The
+crate's 92 host tests and five doctests pass, `cargo clippy` reports nothing, and
 `machine_discovery`, `driver_process_contract`, `components` and the kernel (with `storage_bench`)
 still build.
 
