@@ -4,8 +4,8 @@
 //! wait-for-previous-data on everything but CMD12 and CMD13, the initialization clocks on CMD0, and
 //! an automatic CMD12 after a multi-block transfer. The response kinds are the SD Physical Layer
 //! Simplified Specification's (section 4.9) and JEDEC JESD84's for eMMC; which of them carry a
-//! CRC is the spec's statement, and the R3 exception (the OCR register has no CRC, its CRC field
-//! reads as all ones) is why [`Response::has_cyclic_redundancy_check`] exists.
+//! cyclic redundancy check (CRC) is the spec's statement, and the R3 exception (the OCR register
+//! has no CRC, its CRC field reads as all ones) is why [`Response::has_crc`] exists.
 //!
 //! The command constants keep the specifications' names: the SD specification's section 4.7.4 and
 //! JESD84-B51's section 6.10.4. Each doc gives the command's number and what it does.
@@ -136,12 +136,10 @@ pub enum Response {
 impl Response {
     /// Does the card send a CRC the controller can check? All but R3 and no response.
     ///
-    /// Name: ratified 2026-11-07 (UTC). Whether the response carries a cyclic redundancy check
-    /// (CRC) the controller can check; the specifications' `CRC` is kept as `doc(alias = "crc")`.
-    /// Renamed from `has_crc`, since `crc` is not an accepted acronym.
-    #[doc(alias = "crc")]
+    /// Name: ratified 2026-11-02 (UTC), #3092. Whether the response carries a CRC the controller
+    /// can check; `crc` is an accepted acronym, so the name keeps it.
     #[must_use]
-    pub const fn has_cyclic_redundancy_check(self) -> bool {
+    pub const fn has_crc(self) -> bool {
         !matches!(self, Response::None | Response::R3)
     }
 
@@ -265,7 +263,7 @@ impl Command {
         if self.response.is_long() {
             w |= registers::COMMAND_RESPONSE_LENGTH;
         }
-        if self.response.has_cyclic_redundancy_check() {
+        if self.response.has_crc() {
             w |= registers::COMMAND_CHECK_RESPONSE_CRC;
         }
         if let Some(d) = self.data {
