@@ -848,10 +848,11 @@ mod tests {
         protective[446 + 4] = 0xee;
         let mut at_one = table_sector(1);
         at_one[446 + 4] = 0x0b;
-        for sector in [[0u8; BLOCK_BYTES], at_one, protective] {
+        let sectors = [[0u8; BLOCK_BYTES], at_one, protective];
+        for sector in &sectors {
             let mut store = [0u8; FAKE_BYTES];
             let (mut host, card) = host_over(FakeCard::new(&mut store, false));
-            let table = MasterBootRecord::parse(&sector);
+            let table = MasterBootRecord::parse(sector);
             let (mut a, mut b) = ([0u8; GAP_BYTES], [0u8; GAP_BYTES]);
             let verdict = run_scratch_write_test(&mut host, &card, table.as_ref(), &mut a, &mut b);
             let fake = host.into_registers();
