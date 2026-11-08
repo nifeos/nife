@@ -183,7 +183,7 @@ impl core::error::Error for Refusal {}
 #[doc(alias = "idmac")]
 pub struct InternalDirectMemoryAccess<D: DirectMemoryAccessRegion> {
     region: D,
-    region_physical_address: u32,
+    region_direct_memory_access_address: u32,
     capacity: u32,
 }
 
@@ -214,15 +214,18 @@ impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
         if !bytes.is_multiple_of(PAGE_BYTES) || pages < 2 || pages - 1 > MAXIMUM_DESCRIPTORS {
             return Err(Refusal::Size(bytes));
         }
-        let Ok(region_physical_address) = u32::try_from(base) else {
+        let Ok(region_direct_memory_access_address) = u32::try_from(base) else {
             return Err(Refusal::AboveFourGibibytes(base));
         };
-        if region_physical_address.checked_add(bytes - 1).is_none() {
+        if region_direct_memory_access_address
+            .checked_add(bytes - 1)
+            .is_none()
+        {
             return Err(Refusal::AboveFourGibibytes(base));
         }
         Ok(InternalDirectMemoryAccess {
             region,
-            region_physical_address,
+            region_direct_memory_access_address,
             capacity: bytes - PAGE_BYTES,
         })
     }
@@ -242,7 +245,7 @@ impl<D: DirectMemoryAccessRegion> InternalDirectMemoryAccess<D> {
     fn write_chain(&mut self, bytes: u32) {
         let count = descriptors_for(bytes);
         for i in 0..count {
-            let d = descriptor(self.region_physical_address, i, count, bytes);
+            let d = descriptor(self.region_direct_memory_access_address, i, count, bytes);
             for (w, word) in d.iter().enumerate() {
                 self.region
                     .write_u32(i * DESCRIPTOR_BYTES + 4 * w as u32, *word);
@@ -283,12 +286,12 @@ pub(crate) const fn descriptors_for(bytes: u32) -> u32 {
 }
 
 /// **Descriptor `i` of `count`** for a transfer of `bytes`, in a region whose first byte is at
-/// `region_physical_address` as the bus sees it: the chain page first, then the data pages in order. Every descriptor is the
+/// `region_direct_memory_access_address` as the bus sees it: the chain page first, then the data pages in order. Every descriptor is the
 /// IDMAC's and chained; the first carries `FS`, the last `LD` and the only completion status, and
 /// each holds a page except the last, which holds what is left.
 #[must_use]
 pub(crate) const fn descriptor(
-    region_physical_address: u32,
+    region_direct_memory_access_address: u32,
     i: u32,
     count: u32,
     bytes: u32,
@@ -312,8 +315,8 @@ pub(crate) const fn descriptor(
     [
         word_0,
         size,
-        region_physical_address + PAGE_BYTES * (i + 1),
-        region_physical_address + DESCRIPTOR_BYTES * next,
+        region_direct_memory_access_address + PAGE_BYTES * (i + 1),
+        region_direct_memory_access_address + DESCRIPTOR_BYTES * next,
     ]
 }
 
@@ -347,10 +350,10 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     /// reset has cleared and before the command is written, so the engine is ready for the first
     /// word. `IDINTEN` stays zero and `CONTROL_REGISTER`'s interrupt enable clear; `IDSTS` is raw.
     pub(crate) fn internal_direct_memory_access_start(&mut self) -> Result<(), Error> {
-        let Some(region_physical_address) = self
+        let Some(region_direct_memory_access_address) = self
             .direct_memory_access
             .as_ref()
-            .map(|d| d.region_physical_address)
+            .map(|d| d.region_direct_memory_access_address)
         else {
             return Ok(());
         };
@@ -379,7 +382,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         );
         self.registers.write(
             registers::DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_REGISTER,
-            region_physical_address,
+            region_direct_memory_access_address,
         );
         let control = self.registers.read(registers::CONTROL_REGISTER);
         self.registers.write(
