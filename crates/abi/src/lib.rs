@@ -1,5 +1,5 @@
 //! The syscall boundary, as one crate the kernel and every user program depend on, so a change
-//! to the ABI fails to compile on both sides at once.
+//! to the application binary interface (ABI) fails to compile on both sides at once.
 //!
 //! The surface is five calls <!--count:syscalls-->. `exit`, `exit_thread`, `yield` and
 //! `capability_delete` act on the caller itself, and `invoke(capability, method, a0, a1, a2)` acts on everything

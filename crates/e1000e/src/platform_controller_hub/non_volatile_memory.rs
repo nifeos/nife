@@ -231,12 +231,12 @@ fn initialize_cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
 
 /// `e1000_flash_cycle_ich8lan`: set `FLASH_CYCLE_GO` and wait for `FLASH_CYCLE_DONE`.
 fn cycle(hardware: &mut impl Hardware) -> Result<(), Error> {
-    let ctl = (hardware.read(FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER) >> 16)
-        as u16
+    let flash_control = (hardware.read(FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER)
+        >> 16) as u16
         | control::FLASH_CYCLE_GO;
     hardware.write(
         FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
-        u32::from(ctl) << 16,
+        u32::from(flash_control) << 16,
     );
     let mut s = 0;
     for _ in 0..=READ_COMMAND_TIMEOUT {
@@ -264,13 +264,15 @@ pub(crate) fn read_u32_at_byte(hardware: &mut impl Hardware, byte: u32) -> Resul
     for _ in 0..=CYCLE_REPEAT_COUNT {
         hardware.delay_microseconds(1);
         initialize_cycle(hardware)?;
-        let mut ctl = (hardware.read(FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER)
+        let mut flash_control = (hardware
+            .read(FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER)
             >> 16) as u16;
-        ctl = (ctl & !control::BYTE_COUNT_MASK) | (3 << control::BYTE_COUNT_SHIFT);
-        ctl &= !control::CYCLE_MASK;
+        flash_control =
+            (flash_control & !control::BYTE_COUNT_MASK) | (3 << control::BYTE_COUNT_SHIFT);
+        flash_control &= !control::CYCLE_MASK;
         hardware.write(
             FLASH_BASE_ADDR + HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER,
-            u32::from(ctl) << 16,
+            u32::from(flash_control) << 16,
         );
         hardware.write(FLASH_BASE_ADDR + FADDR, byte & LINEAR_ADDRESS_MASK);
         last = cycle(hardware);

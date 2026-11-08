@@ -61,7 +61,7 @@ pub const DCBAAP: u64 = 0x30;
 /// `config` is ruled to expand; the specification's name for the register does not keep it.
 pub const CONFIGURATION: u64 = 0x38;
 /// Operational register: port 1's `PORTSC`; port `n`'s is `0x10 * (n - 1)` further.
-pub(crate) const PORTSC_BASE: u64 = 0x400;
+pub(crate) const PORT_STATUS_AND_CONTROL_BASE: u64 = 0x400;
 
 /// `USBCMD` Run/Stop.
 ///
@@ -227,39 +227,47 @@ impl Capabilities {
     ///
     /// Name: ratified 2026-10-25 (#2720).
     pub const fn decode(
-        caplength: u32,
-        hcsparams1: u32,
-        hcsparams2: u32,
-        hccparams1: u32,
-        dboff: u32,
-        rtsoff: u32,
+        capability_registers_length: u32,
+        structural_parameters_1: u32,
+        structural_parameters_2: u32,
+        capability_parameters_1: u32,
+        doorbell_offset: u32,
+        runtime_register_space_offset: u32,
     ) -> Capabilities {
         Capabilities {
-            operational: (caplength & 0xff) as u64,
-            version: (caplength >> 16) as u16,
-            maximum_slots: hcsparams1 as u8,
-            maximum_interrupters: ((hcsparams1 >> 8) & 0x7ff) as u16,
-            maximum_ports: (hcsparams1 >> 24) as u8,
-            scratchpads: (((hcsparams2 >> 21) & 0x1f) << 5 | (hcsparams2 >> 27)) as u16,
-            context_bytes: if hccparams1 & (1 << 2) != 0 { 64 } else { 32 },
-            extended: ((hccparams1 >> 16) as u64) * 4,
-            doorbells: (dboff & !0x3) as u64,
-            runtime: (rtsoff & !0x1f) as u64,
+            operational: (capability_registers_length & 0xff) as u64,
+            version: (capability_registers_length >> 16) as u16,
+            maximum_slots: structural_parameters_1 as u8,
+            maximum_interrupters: ((structural_parameters_1 >> 8) & 0x7ff) as u16,
+            maximum_ports: (structural_parameters_1 >> 24) as u8,
+            scratchpads: (((structural_parameters_2 >> 21) & 0x1f) << 5
+                | (structural_parameters_2 >> 27)) as u16,
+            context_bytes: if capability_parameters_1 & (1 << 2) != 0 {
+                64
+            } else {
+                32
+            },
+            extended: ((capability_parameters_1 >> 16) as u64) * 4,
+            doorbells: (doorbell_offset & !0x3) as u64,
+            runtime: (runtime_register_space_offset & !0x1f) as u64,
         }
     }
 
-    /// Port `n`'s `PORTSC`, `n` from 1, as an offset into the register file.
+    /// Port `port_number`'s `PORTSC`, `port_number` from 1, as an offset into the register file.
     ///
     /// Name: ratified 2026-10-25 (#2720).
-    pub const fn portsc(&self, n: u8) -> u64 {
-        self.operational + PORTSC_BASE + 0x10 * (n as u64).saturating_sub(1)
+    pub const fn portsc(&self, port_number: u8) -> u64 {
+        self.operational
+            + PORT_STATUS_AND_CONTROL_BASE
+            + 0x10 * (port_number as u64).saturating_sub(1)
     }
 
-    /// Interrupter 0's register `reg` ([`IMAN`], [`ERDP`], ...), as an offset into the file.
+    /// Interrupter 0's register at `register_offset` ([`IMAN`], [`ERDP`], ...), as an offset into
+    /// the file.
     ///
     /// Name: ratified 2026-10-25 (#2720).
-    pub const fn interrupter(&self, reg: u64) -> u64 {
-        self.runtime + INTERRUPTER_0 + reg
+    pub const fn interrupter(&self, register_offset: u64) -> u64 {
+        self.runtime + INTERRUPTER_0 + register_offset
     }
 
     /// Slot `slot`'s doorbell (0 for the command ring), as an offset into the file.
@@ -332,9 +340,9 @@ mod tests {
     /// bits first in meaning: getting the order wrong gives a controller 32 times too few pages.
     #[test]
     fn the_scratchpad_count_joins_its_two_fields() {
-        let hi = 0b00001 << 21; // one 32
-        let lo = 0b00011 << 27; // plus three
-        let capabilities = Capabilities::decode(0x40, 0, hi | lo, 1 << 2, 0, 0);
+        let high = 0b00001 << 21; // one 32
+        let low = 0b00011 << 27; // plus three
+        let capabilities = Capabilities::decode(0x40, 0, high | low, 1 << 2, 0, 0);
         assert_eq!(capabilities.scratchpads, 35);
         assert_eq!(capabilities.context_bytes, 64);
     }

@@ -6,8 +6,9 @@
 
 //! # BUGS
 //!
-//! - The TSC is assumed invariant (`CPUID.80000007H:EDX[8]` is not checked); a part that changes
-//!   its rate leaves every process reading a stale number. QEMU's TCG does not advertise the bit.
+//! - The x86_64 time stamp counter (TSC) is assumed invariant (`CPUID.80000007H:EDX[8]` is not
+//!   checked); a part that changes its rate leaves every process reading a stale number. QEMU's Tiny
+//!   Code Generator does not advertise the bit.
 //! - A process spawned another way (the hand-built demo spaces) has no page, and
 //!   the reader there faults, on purpose.
 //! - The rate is read once per process, so a later, better number could not reach it.

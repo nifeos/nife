@@ -8,42 +8,42 @@ use std::vec::Vec;
 
 use super::*;
 
-const PHYS: u64 = 0x8000_0000;
+const PHYSICAL_ADDRESS: u64 = 0x8000_0000;
 
 /// A simulated 82574L: the region as bytes, the tails as the driver wrote them, and a device
 /// side that consumes posted receive descriptors and completed transmit ones the way the
 /// hardware does (head chases tail).
-struct Sim {
-    mem: Vec<u8>,
-    rdt: u32,
-    tdt: u32,
-    rdh: u16,
-    tdh: u16,
+struct SimulatedDevice {
+    memory: Vec<u8>,
+    receive_tail: u32,
+    transmit_tail: u32,
+    receive_head: u16,
+    transmit_head: u16,
     barriers: usize,
     sent: Vec<Vec<u8>>,
 }
 
-impl DirectMemoryAccessRegion for Sim {
+impl DirectMemoryAccessRegion for SimulatedDevice {
     fn read_u64(&self, offset: u64) -> u64 {
         let o = offset as usize;
-        u64::from_le_bytes(self.mem[o..o + 8].try_into().unwrap())
+        u64::from_le_bytes(self.memory[o..o + 8].try_into().unwrap())
     }
     fn write_u64(&mut self, offset: u64, value: u64) {
         let o = offset as usize;
-        self.mem[o..o + 8].copy_from_slice(&value.to_le_bytes());
+        self.memory[o..o + 8].copy_from_slice(&value.to_le_bytes());
     }
     fn read_bytes(&self, offset: u64, out: &mut [u8]) {
         let o = offset as usize;
-        out.copy_from_slice(&self.mem[o..o + out.len()]);
+        out.copy_from_slice(&self.memory[o..o + out.len()]);
     }
     fn write_bytes(&mut self, offset: u64, source: &[u8]) {
         let o = offset as usize;
-        self.mem[o..o + source.len()].copy_from_slice(source);
+        self.memory[o..o + source.len()].copy_from_slice(source);
     }
 }
 
-struct Regs<'a>(&'a mut u32, &'a mut u32, &'a mut usize);
-impl Tails for Regs<'_> {
+struct TailRegisters<'a>(&'a mut u32, &'a mut u32, &'a mut usize);
+impl Tails for TailRegisters<'_> {
     fn set_receive_tail(&mut self, value: u32) {
         *self.0 = value;
     }
@@ -55,36 +55,43 @@ impl Tails for Regs<'_> {
     }
 }
 
-impl Sim {
-    fn new() -> Sim {
-        Sim {
-            mem: vec![0xa5; layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize],
-            rdt: 0,
-            tdt: 0,
-            rdh: 0,
-            tdh: 0,
+impl SimulatedDevice {
+    fn new() -> SimulatedDevice {
+        SimulatedDevice {
+            memory: vec![0xa5; layout::DIRECT_MEMORY_ACCESS_REGION_BYTES as usize],
+            receive_tail: 0,
+            transmit_tail: 0,
+            receive_head: 0,
+            transmit_head: 0,
             barriers: 0,
             sent: Vec::new(),
         }
     }
-    fn with<R>(&mut self, action: impl FnOnce(&mut Sim, &mut Regs<'_>) -> R) -> R {
-        let (mut rdt, mut tdt, mut b) = (self.rdt, self.tdt, self.barriers);
-        let r = action(self, &mut Regs(&mut rdt, &mut tdt, &mut b));
-        (self.rdt, self.tdt, self.barriers) = (rdt, tdt, b);
+    fn with<R>(
+        &mut self,
+        action: impl FnOnce(&mut SimulatedDevice, &mut TailRegisters<'_>) -> R,
+    ) -> R {
+        let (mut receive_tail, mut transmit_tail, mut b) =
+            (self.receive_tail, self.transmit_tail, self.barriers);
+        let r = action(
+            self,
+            &mut TailRegisters(&mut receive_tail, &mut transmit_tail, &mut b),
+        );
+        (self.receive_tail, self.transmit_tail, self.barriers) = (receive_tail, transmit_tail, b);
         r
     }
     /// The device receives `frame` off the wire with `status` and `errors`, if it owns a
     /// descriptor; false when the ring is full (head has caught the tail).
     fn deliver(&mut self, frame: &[u8], length: u16, status: u8, errors: u8) -> bool {
-        if u32::from(self.rdh) == self.rdt {
+        if u32::from(self.receive_head) == self.receive_tail {
             return false;
         }
-        let d = layout::receive_descriptor(self.rdh);
+        let d = layout::receive_descriptor(self.receive_head);
         let address = self.read_u64(d);
-        let off = address - PHYS;
+        let off = address - PHYSICAL_ADDRESS;
         assert_eq!(
             off,
-            layout::receive_buffer(self.rdh),
+            layout::receive_buffer(self.receive_head),
             "a descriptor names a foreign buffer"
         );
         self.write_bytes(off, frame);
@@ -92,31 +99,31 @@ impl Sim {
             d + 8,
             length as u64 | (status as u64) << 32 | (errors as u64) << 40,
         );
-        self.rdh = (self.rdh + 1) % RECEIVE_ENTRIES;
+        self.receive_head = (self.receive_head + 1) % RECEIVE_ENTRIES;
         true
     }
     /// The device sends every descriptor up to the tail and writes `DD` back.
     fn drain_transmit(&mut self) {
-        while u32::from(self.tdh) != self.tdt {
-            let d = layout::transmit_descriptor(self.tdh);
+        while u32::from(self.transmit_head) != self.transmit_tail {
+            let d = layout::transmit_descriptor(self.transmit_head);
             let address = self.read_u64(d);
             let word = self.read_u64(d + 8);
             assert_eq!((word >> 24) as u8, TRANSMIT_COMMAND);
             let len = (word & 0xffff) as usize;
             let mut f = vec![0; len];
-            self.read_bytes(address - PHYS, &mut f);
+            self.read_bytes(address - PHYSICAL_ADDRESS, &mut f);
             self.sent.push(f);
             self.write_u64(d + 8, word | (TRANSMIT_STATUS_DESCRIPTOR_DONE as u64) << 32);
-            self.tdh = (self.tdh + 1) % TRANSMIT_ENTRIES;
+            self.transmit_head = (self.transmit_head + 1) % TRANSMIT_ENTRIES;
         }
     }
 }
 
-fn started() -> (Sim, DataPlane) {
-    let mut sim = Sim::new();
-    let mut dp = DataPlane::new(PHYS);
-    sim.with(|s, r| dp.start(s, r));
-    (sim, dp)
+fn started() -> (SimulatedDevice, DataPlane) {
+    let mut simulator = SimulatedDevice::new();
+    let mut data_plane = DataPlane::new(PHYSICAL_ADDRESS);
+    simulator.with(|s, r| data_plane.start(s, r));
+    (simulator, data_plane)
 }
 
 fn frame(tag: u8, length: usize) -> Vec<u8> {
@@ -127,56 +134,65 @@ const GOOD: u8 = RECEIVE_STATUS_DESCRIPTOR_DONE | RECEIVE_STATUS_END_OF_PACKET;
 
 #[test]
 fn start_posts_every_receive_buffer_but_one_and_names_only_its_own_buffers() {
-    let (sim, _) = started();
-    assert_eq!(sim.rdt, u32::from(RECEIVE_ENTRIES - 1));
+    let (simulator, _) = started();
+    assert_eq!(simulator.receive_tail, u32::from(RECEIVE_ENTRIES - 1));
     for i in 0..RECEIVE_ENTRIES {
         let d = layout::receive_descriptor(i);
-        assert_eq!(sim.read_u64(d), PHYS + layout::receive_buffer(i));
         assert_eq!(
-            sim.read_u64(d + 8),
+            simulator.read_u64(d),
+            PHYSICAL_ADDRESS + layout::receive_buffer(i)
+        );
+        assert_eq!(
+            simulator.read_u64(d + 8),
             0,
             "a stale status would read as a frame"
         );
     }
     assert!(
-        sim.barriers >= 1,
+        simulator.barriers >= 1,
         "the tail was written with no barrier before it"
     );
 }
 
 #[test]
 fn frames_arrive_in_order_across_many_laps_of_the_ring() {
-    let (mut sim, mut dp) = started();
+    let (mut simulator, mut data_plane) = started();
     let mut out = [0u8; MAXIMUM_FRAME_BYTES];
     for n in 0..5 * RECEIVE_ENTRIES as usize {
         let f = frame(n as u8, 60 + n % 1400);
         assert!(
-            sim.deliver(&f, f.len() as u16, GOOD, 0),
+            simulator.deliver(&f, f.len() as u16, GOOD, 0),
             "ring full at frame {n}"
         );
-        let got = sim.with(|s, r| dp.receive(s, r, &mut out));
+        let got = simulator.with(|s, r| data_plane.receive(s, r, &mut out));
         assert_eq!(got, Some(f.len()));
         assert_eq!(&out[..f.len()], &f[..]);
-        assert_eq!(sim.with(|s, r| dp.receive(s, r, &mut out)), None);
+        assert_eq!(
+            simulator.with(|s, r| data_plane.receive(s, r, &mut out)),
+            None
+        );
     }
-    assert_eq!(dp.dropped, 0);
+    assert_eq!(data_plane.dropped, 0);
 }
 
 #[test]
 fn a_full_ring_holds_all_but_one_and_drains_completely() {
-    let (mut sim, mut dp) = started();
+    let (mut simulator, mut data_plane) = started();
     let mut delivered = 0;
-    while sim.deliver(&frame(1, 64), 64, GOOD, 0) {
+    while simulator.deliver(&frame(1, 64), 64, GOOD, 0) {
         delivered += 1;
     }
     assert_eq!(delivered, RECEIVE_ENTRIES - 1);
     let mut out = [0u8; MAXIMUM_FRAME_BYTES];
     for _ in 0..delivered {
-        assert_eq!(sim.with(|s, r| dp.receive(s, r, &mut out)), Some(64));
+        assert_eq!(
+            simulator.with(|s, r| data_plane.receive(s, r, &mut out)),
+            Some(64)
+        );
     }
     // Every slot was handed back, so the device can fill the ring again.
     let mut again = 0;
-    while sim.deliver(&frame(2, 64), 64, GOOD, 0) {
+    while simulator.deliver(&frame(2, 64), 64, GOOD, 0) {
         again += 1;
     }
     assert_eq!(again, RECEIVE_ENTRIES - 1);
@@ -184,44 +200,53 @@ fn a_full_ring_holds_all_but_one_and_drains_completely() {
 
 #[test]
 fn a_lying_or_bad_descriptor_is_dropped_and_the_ring_moves_on() {
-    let (mut sim, mut dp) = started();
+    let (mut simulator, mut data_plane) = started();
     let mut out = [0u8; MAXIMUM_FRAME_BYTES];
-    assert!(sim.deliver(&frame(1, 64), 0xffff, GOOD, 0)); // longer than any buffer
-    assert!(sim.deliver(&frame(2, 64), 64, RECEIVE_STATUS_DESCRIPTOR_DONE, 0)); // no end of packet
-    assert!(sim.deliver(&frame(3, 64), 64, GOOD, 0x01)); // CRC error
-    assert!(sim.deliver(&frame(4, 8), 8, GOOD, 0)); // shorter than a header
+    assert!(simulator.deliver(&frame(1, 64), 0xffff, GOOD, 0)); // longer than any buffer
+    assert!(simulator.deliver(&frame(2, 64), 64, RECEIVE_STATUS_DESCRIPTOR_DONE, 0)); // no end of packet
+    assert!(simulator.deliver(&frame(3, 64), 64, GOOD, 0x01)); // CRC error
+    assert!(simulator.deliver(&frame(4, 8), 8, GOOD, 0)); // shorter than a header
     let f = frame(5, 99);
-    assert!(sim.deliver(&f, 99, GOOD, 0));
-    assert_eq!(sim.with(|s, r| dp.receive(s, r, &mut out)), Some(99));
+    assert!(simulator.deliver(&f, 99, GOOD, 0));
+    assert_eq!(
+        simulator.with(|s, r| data_plane.receive(s, r, &mut out)),
+        Some(99)
+    );
     assert_eq!(&out[..99], &f[..]);
-    assert_eq!(dp.dropped, 4);
+    assert_eq!(data_plane.dropped, 4);
 }
 
 #[test]
 fn a_frame_larger_than_the_callers_room_is_dropped_not_truncated() {
-    let (mut sim, mut dp) = started();
-    assert!(sim.deliver(&frame(1, 600), 600, GOOD, 0));
+    let (mut simulator, mut data_plane) = started();
+    assert!(simulator.deliver(&frame(1, 600), 600, GOOD, 0));
     let mut small = [0u8; 576];
-    assert_eq!(sim.with(|s, r| dp.receive(s, r, &mut small)), None);
-    assert_eq!(dp.dropped, 1);
+    assert_eq!(
+        simulator.with(|s, r| data_plane.receive(s, r, &mut small)),
+        None
+    );
+    assert_eq!(data_plane.dropped, 1);
 }
 
 #[test]
 fn a_device_that_overwrote_the_buffer_address_gets_it_back_on_repost() {
-    let (mut sim, mut dp) = started();
-    assert!(sim.deliver(&frame(1, 64), 64, GOOD, 0));
-    sim.write_u64(layout::receive_descriptor(0), 0xdead_0000);
+    let (mut simulator, mut data_plane) = started();
+    assert!(simulator.deliver(&frame(1, 64), 64, GOOD, 0));
+    simulator.write_u64(layout::receive_descriptor(0), 0xdead_0000);
     let mut out = [0u8; MAXIMUM_FRAME_BYTES];
-    assert_eq!(sim.with(|s, r| dp.receive(s, r, &mut out)), Some(64));
     assert_eq!(
-        sim.read_u64(layout::receive_descriptor(0)),
-        PHYS + layout::receive_buffer(0)
+        simulator.with(|s, r| data_plane.receive(s, r, &mut out)),
+        Some(64)
+    );
+    assert_eq!(
+        simulator.read_u64(layout::receive_descriptor(0)),
+        PHYSICAL_ADDRESS + layout::receive_buffer(0)
     );
 }
 
 #[test]
 fn transmit_sends_exact_bytes_and_reports_full_until_the_device_catches_up() {
-    let (mut sim, mut dp) = started();
+    let (mut simulator, mut data_plane) = started();
     let mut queued = Vec::new();
     loop {
         // A bound, so a transmit that never reports a full ring fails here instead of hanging.
@@ -230,39 +255,41 @@ fn transmit_sends_exact_bytes_and_reports_full_until_the_device_catches_up() {
             "the ring never filled"
         );
         let f = frame(queued.len() as u8, 60 + queued.len() * 90);
-        match sim.with(|s, r| dp.transmit(s, r, &f)) {
+        match simulator.with(|s, r| data_plane.transmit(s, r, &f)) {
             Ok(()) => queued.push(f),
             Err(TransmitError::Full) => break,
             Err(e) => panic!("{e:?}"),
         }
     }
     assert_eq!(queued.len(), TRANSMIT_ENTRIES as usize - 1);
-    assert!(!dp.can_transmit(&mut sim));
-    sim.drain_transmit();
-    assert_eq!(sim.sent, queued);
-    assert!(dp.can_transmit(&mut sim));
+    assert!(!data_plane.can_transmit(&mut simulator));
+    simulator.drain_transmit();
+    assert_eq!(simulator.sent, queued);
+    assert!(data_plane.can_transmit(&mut simulator));
     // And the ring keeps going round.
     for n in 0..3 * TRANSMIT_ENTRIES as usize {
         let f = frame(n as u8, MAXIMUM_FRAME_BYTES);
-        sim.with(|s, r| dp.transmit(s, r, &f)).unwrap();
-        sim.drain_transmit();
-        assert_eq!(sim.sent.last(), Some(&f));
+        simulator
+            .with(|s, r| data_plane.transmit(s, r, &f))
+            .unwrap();
+        simulator.drain_transmit();
+        assert_eq!(simulator.sent.last(), Some(&f));
     }
 }
 
 #[test]
 fn transmit_refuses_empty_and_oversized_frames() {
-    let (mut sim, mut dp) = started();
+    let (mut simulator, mut data_plane) = started();
     assert_eq!(
-        sim.with(|s, r| dp.transmit(s, r, &[])),
+        simulator.with(|s, r| data_plane.transmit(s, r, &[])),
         Err(TransmitError::BadLength)
     );
     let big = vec![0u8; MAXIMUM_FRAME_BYTES + 1];
     assert_eq!(
-        sim.with(|s, r| dp.transmit(s, r, &big)),
+        simulator.with(|s, r| data_plane.transmit(s, r, &big)),
         Err(TransmitError::BadLength)
     );
-    assert_eq!(sim.tdt, 0, "a refused frame moved the tail");
+    assert_eq!(simulator.transmit_tail, 0, "a refused frame moved the tail");
 }
 
 #[test]
@@ -324,14 +351,18 @@ fn the_queue_pages_hold_the_tails_and_not_the_control_registers() {
 #[test]
 fn the_station_address_reads_from_entry_zero_and_refuses_an_invalid_one() {
     // QEMU's default, 52:54:00:12:34:56, as RAL/RAH hold it.
-    let ral = u32::from_le_bytes([0x52, 0x54, 0x00, 0x12]);
-    let rah = u32::from_le_bytes([0x34, 0x56, 0, 0]) | RECEIVE_ADDRESS_HIGH_ADDRESS_VALID;
+    let receive_address_low = u32::from_le_bytes([0x52, 0x54, 0x00, 0x12]);
+    let receive_address_high =
+        u32::from_le_bytes([0x34, 0x56, 0, 0]) | RECEIVE_ADDRESS_HIGH_ADDRESS_VALID;
     assert_eq!(
-        station_address_from_receive_address(ral, rah),
+        station_address_from_receive_address(receive_address_low, receive_address_high),
         Some([0x52, 0x54, 0x00, 0x12, 0x34, 0x56])
     );
     assert_eq!(
-        station_address_from_receive_address(ral, rah & !RECEIVE_ADDRESS_HIGH_ADDRESS_VALID),
+        station_address_from_receive_address(
+            receive_address_low,
+            receive_address_high & !RECEIVE_ADDRESS_HIGH_ADDRESS_VALID
+        ),
         None
     );
     assert_eq!(
@@ -432,7 +463,7 @@ fn every_frame_error_bit_drops_the_frame() {
 /// A transmit descriptor's command byte asks for all three things the ring depends on: end of
 /// packet, the FCS appended, and a status write-back that `reclaim` waits for.
 #[test]
-fn the_transmit_command_is_eop_ifcs_and_rs() {
+fn the_transmit_command_is_end_of_packet_frame_check_sequence_and_report_status() {
     assert_eq!(TRANSMIT_COMMAND & 0x01, 0x01, "EOP");
     assert_eq!(TRANSMIT_COMMAND & 0x02, 0x02, "IFCS");
     assert_eq!(TRANSMIT_COMMAND & 0x08, 0x08, "RS");
@@ -526,21 +557,24 @@ fn ring_slots_are_distinct_evenly_spaced_and_wrap() {
 /// reads next.
 #[test]
 fn start_clears_the_transmit_ring_and_the_cursor_follows_receive() {
-    let (mut sim, mut dp) = started();
+    let (mut simulator, mut data_plane) = started();
     for i in 0..TRANSMIT_ENTRIES {
         let d = layout::transmit_descriptor(i);
         assert_eq!(
-            (sim.read_u64(d), sim.read_u64(d + 8)),
+            (simulator.read_u64(d), simulator.read_u64(d + 8)),
             (0, 0),
             "descriptor {i}"
         );
     }
-    assert_eq!(dp.receive_cursor(), 0);
+    assert_eq!(data_plane.receive_cursor(), 0);
     let mut out = [0u8; MAXIMUM_FRAME_BYTES];
     for n in 1..=3u16 {
-        assert!(sim.deliver(&frame(1, 64), 64, GOOD, 0));
-        assert_eq!(sim.with(|s, r| dp.receive(s, r, &mut out)), Some(64));
-        assert_eq!(dp.receive_cursor(), n);
+        assert!(simulator.deliver(&frame(1, 64), 64, GOOD, 0));
+        assert_eq!(
+            simulator.with(|s, r| data_plane.receive(s, r, &mut out)),
+            Some(64)
+        );
+        assert_eq!(data_plane.receive_cursor(), n);
     }
 }
 

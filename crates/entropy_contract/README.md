@@ -33,9 +33,7 @@ A `CALL` carries one request word and returns two reply words.
 - `VERSION` (1) is the protocol's version: one number for the operation set and the reply shape. A
   break bumps it; an addition (a new opcode, an optional field) does not.
 
-Continuous health testing of the source is not part of this contract; the check is bring-up only.
-
-## Usage
+## EXAMPLES
 
 ```rust
 use entropy_contract::{GET, MAXIMUM_BYTES, delivered, req, take, want};
@@ -59,6 +57,11 @@ assert_eq!(MAXIMUM_BYTES, 8);
 `fill_with(out, call)` does that loop for you, given a closure that performs the `CALL`. It returns
 `None` if any reply is not a count or delivers fewer bytes than asked.
 
+## What is proven
+
+Nothing is machine-checked: there are no Kani harnesses. The properties above are covered by unit
+tests and doctests, among them that no byte count collides with a kernel error.
+
 ## Building and testing
 
 ```sh
@@ -66,8 +69,15 @@ cargo test
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
 ```
 
-The minimum supported Rust version is 1.88. There are no Kani harnesses; the properties above are
-covered by unit tests and doctests, among them that no byte count collides with a kernel error.
+## BUGS
+
+- An all-zero first draw is read as a dead device (`readiness`): wrong with probability 2^-64 to
+  2^-2048 by source, and the safe way round.
+- Continuous health testing of the source is not part of this contract; the check is bring-up only.
+
+## Minimum Rust version
+
+Rust 1.88.
 
 ## License
 

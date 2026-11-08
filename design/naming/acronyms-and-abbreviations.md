@@ -46,6 +46,8 @@ Every name this tree authors spells these out, function parameters included.
 
 - Earned, because nobody says the expansion: `pci`, `elf`, `usb`, `syscall`, `cpu`, `xor`, `io`,
   `bios`, `efi`, QEMU, and the hardware acronyms `MAC`, `GMAC` and `SD`. `glob` and `paging` are words.
+- `crc` stays, because nobody says cyclic redundancy check: `has_crc`, `CRC_BYTES`, `crc32`. Every
+  name spells it `crc`, and prose expands it at first use, as "cyclic redundancy check (CRC)".
 - `id` and `Id` stay, as std writes `ThreadId`, `TypeId` and `process::id`: `device_id`,
   `DEVICE_IDS`. Spell `identifier` out only where ID is one letter of a compound specification
   acronym: `address_space_identifier`, `CardIdentification`, `version_identification`.
