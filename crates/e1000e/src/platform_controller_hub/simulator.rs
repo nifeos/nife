@@ -169,7 +169,7 @@ impl SimulatedHardware {
             None
         } else if address == 1 {
             let page = if self.page == 0 {
-                physical_layer_device::FIRST_PAGE_AT_ADDRESS_ONE
+                physical_layer_device::FIRST_PAGE_AT_PHYSICAL_LAYER_DEVICE_ADDRESS_ONE
             } else {
                 self.page
             };

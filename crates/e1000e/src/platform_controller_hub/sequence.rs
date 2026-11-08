@@ -285,7 +285,10 @@ const TARC0_CB_MULTIQ_3_REQ: u32 = 0x3000_0000;
 const TARC0_CB_MULTIQ_2_REQ: u32 = 0x2000_0000;
 // PHY register bits.
 const CV_SMB_CTRL_FORCE_SMBUS: u16 = 0x0001;
-const HV_PM_CTRL_K1_ENABLE: u16 = 0x4000;
+/// The K1 enable bit of the Power Management Control register (`HV_PM_CTRL_K1_ENABLE`, from
+/// FreeBSD's `HV_PM_CTRL` in `e1000_ich8lan.h`).
+#[doc(alias = "HV_PM_CTRL_K1_ENABLE")]
+const POWER_MANAGEMENT_CONTROL_K1_ENABLE: u16 = 1 << 14;
 const I218_ULTRA_LOW_POWER_CONFIGURATION1_START: u16 = 0x0001;
 const ULTRA_LOW_POWER_CONFIGURATION1_CLEARED: u16 = 0x0004 // IND
     | 0x0010 // STICKY_ULP
@@ -303,15 +306,35 @@ const _: () = assert!(
         == 0x0004 ^ 0x0010 ^ 0x0100 ^ 0x0040 ^ 0x0020 ^ 0x0400 ^ 0x0800 ^ 0x1000
 );
 const BM_WUC_HOST_WU_BIT: u16 = 1 << 4;
-const HV_SMB_ADDR_MASK: u16 = 0x007f;
-const HV_SMB_ADDR_PEC_EN: u16 = 0x0200;
-const HV_SMB_ADDR_VALID: u16 = 0x0080;
-const HV_SMB_ADDR_FREQ_MASK: u16 = 0x1100;
-const HV_SMB_ADDR_FREQ_LOW_SHIFT: u16 = 8;
-const HV_SMB_ADDR_FREQ_HIGH_SHIFT: u16 = 12;
-const HV_OEM_BITS_GBE_DIS: u16 = 0x0040;
-const HV_OEM_BITS_LPLU: u16 = 0x0004;
-const HV_OEM_BITS_RESTART_AN: u16 = 0x0400;
+/// The address field of the System Management Bus Address register (`HV_SMB_ADDR_MASK`).
+#[doc(alias = "HV_SMB_ADDR_MASK")]
+const SYSTEM_MANAGEMENT_BUS_ADDRESS_MASK: u16 = 0x007f;
+/// The packet error checking enable bit of the same register (`HV_SMB_ADDR_PEC_EN`).
+#[doc(alias = "HV_SMB_ADDR_PEC_EN")]
+const SYSTEM_MANAGEMENT_BUS_ADDRESS_PACKET_ERROR_CHECKING_ENABLE: u16 = 1 << 9;
+/// The address valid bit of the same register (`HV_SMB_ADDR_VALID`).
+#[doc(alias = "HV_SMB_ADDR_VALID")]
+const SYSTEM_MANAGEMENT_BUS_ADDRESS_VALID: u16 = 1 << 7;
+/// The two bus frequency bits of the same register, at the shifts below (`HV_SMB_ADDR_FREQ_MASK`).
+#[doc(alias = "HV_SMB_ADDR_FREQ_MASK")]
+const SYSTEM_MANAGEMENT_BUS_ADDRESS_FREQUENCY_MASK: u16 = (1
+    << SYSTEM_MANAGEMENT_BUS_ADDRESS_FREQUENCY_LOW_SHIFT)
+    | (1 << SYSTEM_MANAGEMENT_BUS_ADDRESS_FREQUENCY_HIGH_SHIFT);
+/// The low frequency bit's position (`HV_SMB_ADDR_FREQ_LOW_SHIFT`).
+#[doc(alias = "HV_SMB_ADDR_FREQ_LOW_SHIFT")]
+const SYSTEM_MANAGEMENT_BUS_ADDRESS_FREQUENCY_LOW_SHIFT: u16 = 8;
+/// The high frequency bit's position (`HV_SMB_ADDR_FREQ_HIGH_SHIFT`).
+#[doc(alias = "HV_SMB_ADDR_FREQ_HIGH_SHIFT")]
+const SYSTEM_MANAGEMENT_BUS_ADDRESS_FREQUENCY_HIGH_SHIFT: u16 = 12;
+/// The gigabit disable bit of the OEM Bits register (`HV_OEM_BITS_GBE_DIS`).
+#[doc(alias = "HV_OEM_BITS_GBE_DIS")]
+const OEM_BITS_GIGABIT_DISABLE: u16 = 1 << 6;
+/// The low power link up bit of the same register (`HV_OEM_BITS_LPLU`).
+#[doc(alias = "HV_OEM_BITS_LPLU")]
+const OEM_BITS_LOW_POWER_LINK_UP: u16 = 1 << 2;
+/// The restart autonegotiation bit of the same register (`HV_OEM_BITS_RESTART_AN`).
+#[doc(alias = "HV_OEM_BITS_RESTART_AN")]
+const OEM_BITS_RESTART_AUTONEGOTIATION: u16 = 1 << 10;
 const I82577_CONFIGURATION_ASSERT_CRS_ON_TRANSMIT: u16 = 1 << 15;
 const I82577_CFG_ENABLE_DOWNSHIFT: u16 = 3 << 10;
 const I82577_PHYSICAL_LAYER_DEVICE_CTRL2_MDIX_CONFIGURATION_MASK: u16 = 0x0600;
@@ -516,7 +539,7 @@ fn leave_ultra_low_power_by_physical_layer_device(
             hardware,
             &f,
             physical_layer_device::registers::POWER_MANAGEMENT_CONTROL_REGISTER,
-            pm | HV_PM_CTRL_K1_ENABLE,
+            pm | POWER_MANAGEMENT_CONTROL_K1_ENABLE,
         );
         // Clear the ULP configuration, then commit it by starting auto ULP configuration.
         let u = physical_layer_device::read(
@@ -914,10 +937,17 @@ fn local_area_network_connected_device_configuration(
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(
     (STRAP_SYSTEM_MANAGEMENT_BUS_ADDRESS_MASK >> STRAP_SYSTEM_MANAGEMENT_BUS_ADDRESS_SHIFT)
-        & !(HV_SMB_ADDR_MASK as u32)
+        & !(SYSTEM_MANAGEMENT_BUS_ADDRESS_MASK as u32)
         == 0
-        && HV_SMB_ADDR_PEC_EN & HV_SMB_ADDR_VALID == 0
+        && SYSTEM_MANAGEMENT_BUS_ADDRESS_PACKET_ERROR_CHECKING_ENABLE
+            & SYSTEM_MANAGEMENT_BUS_ADDRESS_VALID
+            == 0
 );
+
+// The frequency mask is bits 8 and 12 and no other, so the compiler checks that here and the
+// mask's shift and OR swaps cannot compile.
+#[allow(clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(SYSTEM_MANAGEMENT_BUS_ADDRESS_FREQUENCY_MASK == 0x1100);
 
 /// **`e1000_write_smbus_addr`**: the PHY's System Management Bus (`SMBus`) address, for the
 /// I217-family PHY every I219 carries.
@@ -935,12 +965,15 @@ fn write_system_management_bus_address(
         flag,
         physical_layer_device::registers::SYSTEM_MANAGEMENT_BUS_ADDRESS_REGISTER,
     )?;
-    v = (v & !HV_SMB_ADDR_MASK) | address | HV_SMB_ADDR_PEC_EN | HV_SMB_ADDR_VALID;
+    v = (v & !SYSTEM_MANAGEMENT_BUS_ADDRESS_MASK)
+        | address
+        | SYSTEM_MANAGEMENT_BUS_ADDRESS_PACKET_ERROR_CHECKING_ENABLE
+        | SYSTEM_MANAGEMENT_BUS_ADDRESS_VALID;
     if freq != 0 {
         let fq = freq - 1;
-        v &= !HV_SMB_ADDR_FREQ_MASK;
-        v |= (fq & 1) << HV_SMB_ADDR_FREQ_LOW_SHIFT;
-        v |= (fq & 2) << (HV_SMB_ADDR_FREQ_HIGH_SHIFT - 1);
+        v &= !SYSTEM_MANAGEMENT_BUS_ADDRESS_FREQUENCY_MASK;
+        v |= (fq & 1) << SYSTEM_MANAGEMENT_BUS_ADDRESS_FREQUENCY_LOW_SHIFT;
+        v |= (fq & 2) << (SYSTEM_MANAGEMENT_BUS_ADDRESS_FREQUENCY_HIGH_SHIFT - 1);
     } else {
         hardware.note(BringUpObservation::SystemManagementBusFrequencyUnsupported);
     }
@@ -956,7 +989,7 @@ fn write_system_management_bus_address(
 // The two OEM bits share no bit, so the mask's | and ^ compose it identically; the compiler
 // checks that here, so the function's OR-to-XOR swap is an equivalent mutant.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
-const _: () = assert!(HV_OEM_BITS_GBE_DIS & HV_OEM_BITS_LPLU == 0);
+const _: () = assert!(OEM_BITS_GIGABIT_DISABLE & OEM_BITS_LOW_POWER_LINK_UP == 0);
 
 /// **`e1000_oem_bits_config_ich8lan`** for D0: carry the MAC's gigabit-disable and LPLU settings
 /// into the PHY's OEM bits and restart autonegotiation to apply them.
@@ -971,15 +1004,15 @@ fn oem_bits(hardware: &mut impl Hardware) -> Result<(), Error> {
             hardware,
             &f,
             physical_layer_device::registers::OEM_BITS_REGISTER,
-        )? & !(HV_OEM_BITS_GBE_DIS | HV_OEM_BITS_LPLU);
+        )? & !(OEM_BITS_GIGABIT_DISABLE | OEM_BITS_LOW_POWER_LINK_UP);
         if pc & PHYSICAL_LAYER_DEVICE_CTRL_GBE_DISABLE != 0 {
-            v |= HV_OEM_BITS_GBE_DIS;
+            v |= OEM_BITS_GIGABIT_DISABLE;
         }
         if pc & PHYSICAL_LAYER_DEVICE_CTRL_D0A_LPLU != 0 {
-            v |= HV_OEM_BITS_LPLU;
+            v |= OEM_BITS_LOW_POWER_LINK_UP;
         }
         if !physical_layer_device::reset_blocked(hardware) {
-            v |= HV_OEM_BITS_RESTART_AN;
+            v |= OEM_BITS_RESTART_AUTONEGOTIATION;
         }
         physical_layer_device::write(
             hardware,
