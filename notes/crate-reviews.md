@@ -69,7 +69,7 @@ The whole package, with the signature list, the stranger run and seven questions
 crate as #3267 leaves it, with no reference to nife. The maintainer ruled six of the questions
 provisionally, and #3267 applied them. The architect cleared the move. The repository
 `nifeos/file_allocation_table` exists, and `crates/file_allocation_table` is still in this tree.
-No tag is cleared. The crate is exempt from the publish hold, and its publication is not cleared.
+The architect has not cleared the tag or publication, though the publish hold exempts this crate.
 
 Name and version. `file_allocation_table` `0.1.0`, ratified with FAT spelled out. Every `Name:`
 block reads ratified.
@@ -87,7 +87,7 @@ Dependencies. None at run time. Dev only: `lamfat =0.4.3` and `ruzstd =0.9.1`, b
 Result of `script/crate-standalone`. Clean: every step passes, Kani and the 31 falsifications
 included.
 
-Recommendation. Cleared to move. The tag and publication are not cleared.
+Recommendation. The architect cleared the move, and has not cleared the tag or publication.
 
 ## `extensible_host_controller_interface`, step 3
 
@@ -146,7 +146,7 @@ License. `MIT OR Apache-2.0`, written in the crate's manifest, with both license
 
 Result of `script/crate-standalone`. Passes; a run without Kani skips the proofs.
 
-Recommendation. Cleared to move. The tag and publication are not cleared.
+Recommendation. The architect cleared the move, and has not cleared the tag or publication.
 
 ## `non_volatile_memory_express`, step 5
 
@@ -178,7 +178,7 @@ Outstanding before the move.
 |---|---|
 | `design/decisions/0086-el0-nvme-driver/prior-art.md` and milestone 569 (the disk an installer names has no model, only a size) still cite `prp_pair`, `CNS_CONTROLLER` and `CNS_NAMESPACE`. | maintainer |
 
-Recommendation. Cleared to move. The tag and publication are not cleared.
+Recommendation. The architect cleared the move, and has not cleared the tag or publication.
 
 ## `e1000e`, step 6
 
@@ -205,7 +205,7 @@ field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.
 
 Result of `script/crate-standalone`. Clean. The crate names no nife file.
 
-Recommendation. Cleared to move. The tag and publication are not cleared.
+Recommendation. The architect cleared the move, and has not cleared the tag or publication.
 
 ## `designware_ethernet`, step 7
 
