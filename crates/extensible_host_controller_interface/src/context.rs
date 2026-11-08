@@ -86,11 +86,14 @@ pub const fn slot(speed: u8, port: u8, entries: u8) -> [u32; 8] {
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 pub const SLOT_CONTEXT_FIELDS_DO_NOT_OVERLAP: () = assert!(((0xfu32 << 20) & (0x1f << 27)) == 0);
 
-/// The slot context's device address, assigned by Address Device: dword 3's low byte of a slot
+/// The slot context's USB device number, assigned by Address Device: dword 3's low byte of a slot
 /// context the controller wrote.
 ///
-/// Name: ratified 2026-10-25 (#2720).
-pub const fn slot_address(context: &[u32; 8]) -> u8 {
+/// Name: ratified 2026-11-08 (UTC), on #3357; it replaced `slot_address`, because the template
+/// reads `address` as a virtual or physical address and this is a device number. The specification
+/// calls the field USB Device Address, kept as the alias.
+#[doc(alias = "USB Device Address")]
+pub const fn slot_device_number(context: &[u32; 8]) -> u8 {
     context[3] as u8
 }
 
@@ -248,7 +251,7 @@ mod tests {
     /// speeds state `bMaxPacketSize0` as an exponent.
     #[test]
     fn the_assigned_device_number_and_the_superspeed_test() {
-        assert_eq!(slot_address(&[0, 0, 0, 0x0800_0005, 0, 0, 0, 0]), 5);
+        assert_eq!(slot_device_number(&[0, 0, 0, 0x0800_0005, 0, 0, 0, 0]), 5);
         assert!(is_superspeed(speed::SUPER) && is_superspeed(speed::SUPER_PLUS));
         assert!(
             !is_superspeed(speed::HIGH)
