@@ -35,7 +35,7 @@ FreeBSD's `e1000_pch_spt` class are carried, because every I219 the crate claims
 
 Every sequence is generic over `platform_controller_hub::Hardware`, so it runs on the host against a simulated I219
 (`pch/simulator.rs`) as well as in the kernel. QEMU's 82574L is not a PCH part and never reaches
-`sequence`. It does reach `physical_layer_device::read_identifier_at_address`, which shares
+`sequence`. It does reach `physical_layer_device::read_identifier_at_device_number`, which shares
 `physical_layer_device::read_management_data_input_output` with everything here, so the MDIO primitive is the one piece the
 QEMU gates prove.
 
