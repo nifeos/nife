@@ -28,8 +28,8 @@ fn in_region_is_sound() {
             .checked_add(size)
             .expect("acceptance implies no base+size overflow");
         // **The containment sentence is on the two assertions rather than below them**
-        // (milestone 307). There used to be a third line here, `assert!(physical_address >= base && end <=
-        // limit)`, carrying the readable comment "no byte the device would touch lies outside
+        // (milestone 307, which assertion actually fires when a confinement claim is broken). There
+        // used to be a third line here, `assert!(physical_address >= base && end <= limit)`, carrying the readable comment "no byte the device would touch lies outside
         // the granted region". It was the conjunction of the two above it, so it could not fail
         // under any defect: the readable statement of the claim was the unreachable one, which
         // is the shape milestone 305 found in DECISIONS §31 and in row 24 of
