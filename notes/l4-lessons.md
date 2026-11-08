@@ -28,7 +28,7 @@ design/decisions/0095-a-proven-ipc-fastpath.md is deciding about.
 | 9 | Abandoned: hierarchical process management | yes | capabilities. §40 supervision is a lifetime relation, not an authority hierarchy |
 | 10 | Abandoned: recursive page mappings | yes | capabilities with §16 revocation, rather than authority riding on a mapping |
 | 11 | **Replaced: process kernel by event kernel** | **no** | every thread owns `STACK_PAGES` (6) of kernel stack plus a guard page. The word "continuation" appears nowhere in `kernel/src` |
-| 12 | Abandoned: virtual TCB addressing | yes | a generational slot table (`crates/generational_table`), proved in `a_removed_name_never_resolves_again` |
+| 12 | Abandoned: virtual TCB addressing | yes | a generational slot table (`nifeos/generational_table`), proved in `a_removed_name_never_resolves_again` |
 | 13 | Replaced: lazy scheduling by Benno scheduling | **partly** | the ready queue holds every runnable thread *except* the running one, requeue happens at switch, and blocking does no queue surgery. But a rendezvous **queues** the receiver instead of switching to it |
 | 14 | **Replaced: direct process switch subject to priorities** | **no** | `sched::ipc_send` fills the mailbox, wakes the receiver onto the run queue, and returns. The sender keeps running |
 | 15 | Retained: mostly non-preemptible, strategic preemption points | yes | `preempt_if_needed` takes a `need_resched` flag at a defined point one frame outside the interrupt trampoline |

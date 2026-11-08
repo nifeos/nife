@@ -2539,10 +2539,6 @@ REGISTRY = {
         'how many Kani proof harnesses crates/inter_process_communication carries',
         lambda: _harness_hits().get('inter_process_communication', 0),
     ),
-    'generational-table-harnesses': (
-        'how many Kani proof harnesses crates/generational_table carries',
-        lambda: _harness_hits().get('generational_table', 0),
-    ),
     'intrusive-fifo-harnesses': (
         'how many Kani proof harnesses crates/intrusive_queue carries',
         lambda: _harness_hits().get('intrusive_queue', 0),

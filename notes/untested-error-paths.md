@@ -92,8 +92,8 @@ refuse a grant or an allocation. Line numbers are at base `1a145fcaa`.
 | 3 | `crates/paging/src/mapper.rs` (`unmap`) | `unmap` on the wrong half | same, by address |
 | 4 | `crates/paging/src/mapper.rs` (`unmap`) | `unmap` misaligned | same, by alignment |
 | 5 | `crates/capability/src/lib.rs` (`empty`) | `empty`, slot out of range (first `?`) | the one door a capability leaves a table through |
-| 6 | `crates/generational_table/src/lib.rs` (`remove`) | `remove` of a stale name | the kernel's table: a stale name removing a live entry |
-| 7 | `crates/generational_table/src/lib.rs` (`remove`) | `remove` of an empty slot | `live` miscounted |
+| 6 | `nifeos/generational_table` `src/lib.rs` (`remove`) | `remove` of a stale name | the kernel's table: a stale name removing a live entry |
+| 7 | `nifeos/generational_table` `src/lib.rs` (`remove`) | `remove` of an empty slot | `live` miscounted |
 | 8 | `crates/paging/src/mapper.rs` (`map_span`) | `map_span` fails after `done` bytes are mapped | a half-mapped span, with no unwind in the crate |
 | 9 | `crates/paging/src/mapper.rs` (`map_range`) | `map_range` fails midway | the same, page by page |
 | 10 | `crates/paging/src/mapper.rs` (`map_block`) | `map_block`'s allocator returns nothing | tables taken at upper levels stay |

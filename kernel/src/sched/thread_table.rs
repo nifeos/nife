@@ -68,7 +68,7 @@ pub(super) struct ThreadControlBlockPointer(*mut Thread);
 // SAFETY: see the type's doc; sending the pointer is sound because dereferencing it is gated.
 unsafe impl Send for ThreadControlBlockPointer {}
 
-/// The thread table: generational names (`crates/generational_table`, notes/generational-names.md) over
+/// The thread table: generational names (`nifeos/generational_table`, notes/generational-names.md) over
 /// page-resident TCBs, each at the start of one page that never moves, so the context-switch
 /// assembly and the intrusive queues may hold pointers into it. See notes/thread-control-block.md.
 pub(super) struct Threads {
