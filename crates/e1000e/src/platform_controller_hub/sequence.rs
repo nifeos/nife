@@ -75,6 +75,10 @@ pub enum Error {
     /// (an abbreviation).
     PhysicalLayerDeviceInaccessible,
     /// The PHY did not answer and firmware blocks the `LANPHYPC` toggle that would have reset it.
+    ///
+    /// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `LanphypcBlocked`: the
+    /// `LANPHYPC` bit power cycles the physical layer device, so the name says that, and `lanphypc`
+    /// stays as an alias.
     #[doc(alias = "lanphypc")]
     PhysicalLayerDevicePowerCycleBlocked,
     /// Firmware began blocking PHY access after the PHY reset.
@@ -148,6 +152,9 @@ pub enum AccessPath {
     #[doc(alias = "smbus")]
     InSystemManagementBus,
     /// After the `LANPHYPC` power cycle.
+    ///
+    /// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `AfterLanphypc`: the name
+    /// says what the `LANPHYPC` bit does, and `lanphypc` stays as an alias.
     #[doc(alias = "lanphypc")]
     AfterPhysicalLayerDevicePowerCycle,
     /// After the power cycle and unforcing `SMBus` in the MAC.
@@ -162,12 +169,19 @@ pub enum AccessPath {
 #[non_exhaustive]
 pub enum BringUpObservation {
     /// The Management Engine was asked to leave ULP; `cleared` says whether it finished in time.
+    ///
+    /// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `UlpByMe`: ULP and ME are
+    /// abbreviations, so the name spells out ultra low power and the Management Engine, and `ulp`
+    /// stays as an alias.
     #[doc(alias = "ulp")]
     ManagementEngineUltraLowPowerExit {
         /// `FWSM.ULP_CFG_DONE` cleared before [`ultra_low_power::MANAGEMENT_ENGINE_WAIT_MILLISECONDS`].
         cleared: bool,
     },
     /// There is no ME; ULP was left by PHY registers, with this outcome.
+    ///
+    /// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `UlpBySoftware`: ultra low
+    /// power is spelled out, and `ulp` stays as an alias.
     #[doc(alias = "ulp")]
     SoftwareUltraLowPowerExit(Result<(), Error>),
     /// The PHY answered, with this identifier (revision masked off).
@@ -197,6 +211,9 @@ pub enum BringUpObservation {
     /// Refused `PhyResetNotAsserted` (an abbreviation).
     PhysicalLayerDeviceResetNotAsserted,
     /// The semaphore could not be taken before the global reset; FreeBSD resets anyway.
+    ///
+    /// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `SwflagBeforeReset`: `swflag`
+    /// abbreviates software flag, and stays as an alias.
     #[doc(alias = "swflag")]
     SoftwareFlagBeforeReset(physical_layer_device::Error),
     /// Master requests were still pending when the reset went ahead.
@@ -1105,7 +1122,7 @@ const _: () = assert!(
 /// which writes `PHY_1000T_CTRL` back unchanged. FreeBSD's short wait for link afterwards is the
 /// kernel half's own `STATUS.LU` wait.
 ///
-/// Name: ratified 2026-11-05 (UTC). A verb phrase; "copper link" is the Ethernet term of art (FreeBSD's
+/// Name: ratified 2026-11-08 (UTC), this PR. A verb phrase; "copper link" is the Ethernet term of art (FreeBSD's
 /// `e1000_setup_copper_link_pch_lpt`). Refused `bring_up_copper_link` (departs from the source for
 /// no gain) and `setup_copper_link_pch_lpt` (repeats the module context and adds the abbreviations
 /// pch and lpt).

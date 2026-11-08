@@ -214,8 +214,8 @@ exclude_re = [
     # share no bits with each other; the assertions beside each function compile both.
     "^crates/e1000e/src/platform_controller_hub/flush\\.rs:\\d+:\\d+: replace \\| with \\^ in dummy_transmit_descriptor_command_word$",
     "^crates/e1000e/src/platform_controller_hub/flush\\.rs:\\d+:\\d+: replace \\| with \\^ in receive_descriptor_control_register_value_for_flush$",
-    # The flash registers (platform_controller_hub/non_volatile_memory.rs). status::FLASH_CYCLE_DONE and
-    # control::FLASH_CYCLE_GO are `1 << 0` and `1 >> 0` is the same word, the shift identity; the
+    # The flash registers (platform_controller_hub/non_volatile_memory.rs). flash_status::FLASH_CYCLE_DONE and
+    # flash_control::FLASH_CYCLE_GO are `1 << 0` and `1 >> 0` is the same word, the shift identity; the
     # file-level shift entry also sweeps the other `1 << n` status bits and the two `0b11 << n`
     # masks, whose swaps are killed by the_flash_register_bits_are_the_ich8_unions.
     # initialize_cycle ORs two write-one-to-clear error bits that share no bit (assertion beside
