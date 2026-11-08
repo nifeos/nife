@@ -71,8 +71,8 @@ Three names carry what the size and address rules add: a length or a size carrie
 array holds are physical. The private offsets follow the same rule: `FIRST_PORT_STATUS_AND_CONTROL_REGISTER` and
 `INTERRUPTER_0_REGISTER`.
 
-The template's `register_names.py` reads four names in the crate as breaking a rule, and each is
-ratified, so none is renamed here; the architect rules on them:
+The template's `register_names.py` refuses four names in the crate. All four have a ratified
+name, so this note leaves them and asks the architect:
 
 | name | rule it breaks | a name that passes the gate |
 |---|---|---|
@@ -97,7 +97,7 @@ specification section 4.6.5)` and carries `#[doc(alias = "Address Device command
 | test `the_next_pointer_is_in_dwords_and_the_limit_is_inclusive` | `the_next_pointer_is_in_double_words_and_the_limit_is_inclusive` | `dwords` is not a word |
 
 The prose acronyms the gate named (`USB`, `DCI`, `IOMMU`, `HC`, `BIOS`, `SMI`, `TR`, and the bare
-`IN`, `OUT`, `OFF` and `PORTSC`) are expanded at their first use or set in code.
+`IN`, `OUT`, `OFF` and `PORTSC`) now expand at their first use or sit in code.
 
 ### Parameter names of public functions
 
