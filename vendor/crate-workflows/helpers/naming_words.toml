@@ -246,10 +246,34 @@ endings = ["re", "res"]
 # manual.
 #
 # A qualifier that makes `address` something other than a location in memory: an address of a
-# network, a bus or a mailbox is not virtual or physical.
+# network, a bus or a mailbox is not virtual or physical, and neither is a card's relative address
+# or a logical block address on a disk. `virtual` and `physical` stand straight before `address`;
+# any other qualifier may stand one word further back (`RELATIVE_CARD_ADDRESS`).
 [address_qualifiers]
 words = ["virtual", "physical", "mac", "ip", "ipv4", "ipv6", "i2c", "email", "socket", "network",
-         "ethernet", "peer"]
+         "ethernet", "peer", "relative", "block", "logical"]
+
+# The words straight before `address` that make it a verb, not a location: `can_address_blocks`.
+[address_verb_before]
+words = ["can", "cannot", "to", "may", "must", "will", "should", "could", "would", "might"]
+
+# The words that, straight after a function name's leading `address`, make it a verb:
+# `address_and_select`.
+[address_verb_after]
+words = ["and", "or", "the", "a", "an", "each", "every", "it", "them"]
+
+# The leading words that make an integer constant a command, not a quantity: `SET_BLOCK_LENGTH` is
+# the command that sets a block length, so the size rule does not read it.
+[command_verbs]
+words = ["set", "get", "query", "select", "erase", "switch", "lock", "unlock"]
+
+# The words that make a parenthesis in a doc comment a source citation, `(<name>, <source>)`, in
+# lowercase: "(`SDMMC_CTRL`, OpenBSD)" cites one, "(`FBE`, `DU` or `CES`)" lists three names. A file
+# name (`dwqereg.h`) and a section number also cite one.
+[source_words]
+words = ["openbsd", "freebsd", "netbsd", "dragonfly", "illumos", "linux", "u-boot", "databook",
+         "datasheet", "specification", "specifications", "standard", "manual", "reference", "rfc",
+         "errata", "jedec", "jesd84", "device tree", "section", "chapter", "table", "library"]
 
 # The words that give a size, a length or a limit its unit, or say it is not a quantity of memory:
 # `BUFFER_SIZE_BYTES`, `RING_SIZE_ENTRIES`, `PAGE_SIZE_SHIFT`. A name that holds `size`, `len` or
@@ -274,6 +298,7 @@ syscall = "the word every kernel and its readers use"
 bios = "nobody says Basic Input/Output System"
 efi = "nobody says Extensible Firmware Interface"
 uefi = "nobody says Unified Extensible Firmware Interface"
+crc = "nobody says cyclic redundancy check in a name (has_crc, CRC_BYTES)"
 xor = "the operator's name"
 sd = "the card's name; nobody says Secure Digital"
 mac = "the address's name; nobody says media access control address"
