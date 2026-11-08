@@ -24,23 +24,24 @@ pub const DIRECT_MEMORY_ACCESS_REGION_BYTES: u64 =
 /// Name: ratified 2026-11-03 (UTC), renamed from `PAGES`.
 pub const DIRECT_MEMORY_ACCESS_REGION_PAGES: u64 = DIRECT_MEMORY_ACCESS_REGION_BYTES.div_ceil(PAGE);
 
-/// Receive buffer `i`'s offset. `i` is reduced modulo the ring so no input leaves the region.
-pub(crate) const fn receive_buffer(i: u16) -> u64 {
-    RECEIVE_BUFFERS + (i % RECEIVE_ENTRIES) as u64 * BUFFER_BYTES
+/// Receive buffer `index`'s offset. `index` is reduced modulo the ring so no input leaves the
+/// region.
+pub(crate) const fn receive_buffer(index: u16) -> u64 {
+    RECEIVE_BUFFERS + (index % RECEIVE_ENTRIES) as u64 * BUFFER_BYTES
 }
-/// Transmit buffer `i`'s offset, reduced the same way.
-pub(crate) const fn transmit_buffer(i: u16) -> u64 {
-    TRANSMIT_BUFFERS + (i % TRANSMIT_ENTRIES) as u64 * BUFFER_BYTES
+/// Transmit buffer `index`'s offset, reduced the same way.
+pub(crate) const fn transmit_buffer(index: u16) -> u64 {
+    TRANSMIT_BUFFERS + (index % TRANSMIT_ENTRIES) as u64 * BUFFER_BYTES
 }
-/// Receive descriptor `i`'s offset.
+/// Receive descriptor `index`'s offset.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
-pub const fn receive_descriptor(i: u16) -> u64 {
-    RECEIVE_RING + (i % RECEIVE_ENTRIES) as u64 * DESCRIPTOR_BYTES
+pub const fn receive_descriptor(index: u16) -> u64 {
+    RECEIVE_RING + (index % RECEIVE_ENTRIES) as u64 * DESCRIPTOR_BYTES
 }
-/// Transmit descriptor `i`'s offset.
+/// Transmit descriptor `index`'s offset.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
-pub const fn transmit_descriptor(i: u16) -> u64 {
-    TRANSMIT_RING + (i % TRANSMIT_ENTRIES) as u64 * DESCRIPTOR_BYTES
+pub const fn transmit_descriptor(index: u16) -> u64 {
+    TRANSMIT_RING + (index % TRANSMIT_ENTRIES) as u64 * DESCRIPTOR_BYTES
 }

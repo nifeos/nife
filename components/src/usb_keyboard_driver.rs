@@ -229,8 +229,9 @@ impl Host {
         }
         self.events.advance();
         self.set_reg64(
-            self.capabilities.interrupter(registers::ERDP),
-            self.events.dequeue_pointer() | registers::ERDP_BUSY,
+            self.capabilities
+                .interrupter(registers::EVENT_RING_DEQUEUE_POINTER_REGISTER),
+            self.events.dequeue_pointer() | registers::EVENT_RING_DEQUEUE_POINTER_BUSY,
         );
         Some(Event::decode(t))
     }
@@ -353,7 +354,7 @@ impl Host {
 
     /// **Bring one connected root port's device up to a served keyboard**, or say why not.
     fn attach(&mut self, port_number: u8) -> Result<Attached, Fail> {
-        let portsc = self.capabilities.portsc(port_number);
+        let portsc = self.capabilities.port_status_and_control(port_number);
         let sc = self.reg(portsc);
         // Acknowledge every change pending, so a stale connect change does not bring us back.
         self.set_reg(portsc, port::write_value(sc, sc & port::CHANGES));
@@ -557,12 +558,12 @@ impl Host {
     /// found it, took it from the firmware and confined it.
     fn bring_up(h: Handoff) -> Result<Host, Fail> {
         let capabilities = Capabilities::decode(
-            REGS.r32(registers::CAPLENGTH),
-            REGS.r32(registers::HCSPARAMS1),
-            REGS.r32(registers::HCSPARAMS2),
-            REGS.r32(registers::HCCPARAMS1),
-            REGS.r32(registers::DBOFF),
-            REGS.r32(registers::RTSOFF),
+            REGS.r32(registers::CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER),
+            REGS.r32(registers::STRUCTURAL_PARAMETERS_1_REGISTER),
+            REGS.r32(registers::STRUCTURAL_PARAMETERS_2_REGISTER),
+            REGS.r32(registers::CAPABILITY_PARAMETERS_1_REGISTER),
+            REGS.r32(registers::DOORBELL_OFFSET_REGISTER),
+            REGS.r32(registers::RUNTIME_REGISTER_SPACE_OFFSET_REGISTER),
         );
         let phys = |page: u64| h.direct_memory_access_physical_address + page * PAGE_BYTES;
         let host = Host {
@@ -600,8 +601,8 @@ impl Host {
     /// Halt the controller (the firmware may have left it running), reset it, and check it can
     /// use this driver's pages and that `dma_pages` holds everything it will lay out.
     fn halt_and_reset(&self, dma_pages: u32) -> Result<(), Fail> {
-        let usbcmd = self.op(registers::USBCMD);
-        let usbsts = self.op(registers::USBSTS);
+        let usbcmd = self.op(registers::USB_COMMAND_REGISTER);
+        let usbsts = self.op(registers::USB_STATUS_REGISTER);
 
         // Halt (the firmware may have left it running), then reset.
         self.set_reg(usbcmd, self.reg(usbcmd) & !registers::COMMAND_RUN);
@@ -622,10 +623,10 @@ impl Host {
             }
             core::hint::spin_loop();
         }
-        if self.reg(self.op(registers::PAGESIZE)) & 1 == 0 {
+        if self.reg(self.op(registers::PAGE_SIZE_BITMAP_REGISTER)) & 1 == 0 {
             return Err((
                 BringUpStep::NoFourKibibytePages,
-                self.reg(self.op(registers::PAGESIZE)),
+                self.reg(self.op(registers::PAGE_SIZE_BITMAP_REGISTER)),
             ));
         }
         if u64::from(dma_pages)
@@ -646,7 +647,7 @@ impl Host {
         let phys = |page: u64| self.dma_phys + page * PAGE_BYTES;
         // One slot: this driver serves one device at a time, and gives a slot back before it
         // asks for another.
-        let config = self.op(registers::CONFIGURATION);
+        let config = self.op(registers::CONFIGURATION_REGISTER);
         self.set_reg(config, (self.reg(config) & !0xff) | 1);
 
         // The slot array, its entry 0 the scratchpad array when the controller wants one.
@@ -667,10 +668,13 @@ impl Host {
         }
         barrier();
         self.set_reg64(
-            self.op(registers::DCBAAP),
+            self.op(registers::DEVICE_CONTEXT_BASE_PHYSICAL_ADDRESS_ARRAY_POINTER_REGISTER),
             phys(direct_memory_access::DEVICE_CONTEXT_ARRAY),
         );
-        self.set_reg64(self.op(registers::CRCR), self.commands.dequeue_pointer());
+        self.set_reg64(
+            self.op(registers::COMMAND_RING_CONTROL_REGISTER),
+            self.commands.dequeue_pointer(),
+        );
 
         // The event ring: its one segment table entry, then interrupter 0, base last.
         let entry = self.events.segment_table_entry();
@@ -681,25 +685,32 @@ impl Host {
             );
         }
         barrier();
-        self.set_reg(self.capabilities.interrupter(registers::ERSTSZ), 1);
+        self.set_reg(
+            self.capabilities
+                .interrupter(registers::EVENT_RING_SEGMENT_TABLE_SIZE_ENTRIES_REGISTER),
+            1,
+        );
         self.set_reg64(
-            self.capabilities.interrupter(registers::ERDP),
+            self.capabilities
+                .interrupter(registers::EVENT_RING_DEQUEUE_POINTER_REGISTER),
             self.events.dequeue_pointer(),
         );
         self.set_reg64(
-            self.capabilities.interrupter(registers::ERSTBA),
+            self.capabilities
+                .interrupter(registers::EVENT_RING_SEGMENT_TABLE_BASE_PHYSICAL_ADDRESS_REGISTER),
             phys(direct_memory_access::EVENT_SEGMENT_TABLE),
         );
         self.set_reg(
-            self.capabilities.interrupter(registers::IMAN),
-            registers::IMAN_ENABLE | registers::IMAN_PENDING,
+            self.capabilities
+                .interrupter(registers::INTERRUPTER_MANAGEMENT_REGISTER),
+            registers::INTERRUPTER_MANAGEMENT_ENABLE | registers::INTERRUPTER_MANAGEMENT_PENDING,
         );
     }
 
     /// Set the controller running with interrupts on, and wait for it to leave the halted state.
     fn run(&self) -> Result<(), Fail> {
-        let usbcmd = self.op(registers::USBCMD);
-        let usbsts = self.op(registers::USBSTS);
+        let usbcmd = self.op(registers::USB_COMMAND_REGISTER);
+        let usbsts = self.op(registers::USB_STATUS_REGISTER);
         self.set_reg(
             usbcmd,
             registers::COMMAND_RUN | registers::COMMAND_INTERRUPTS,
@@ -717,10 +728,10 @@ impl Host {
     /// Power every port that is not powered (only on a controller with port power control).
     fn power_ports(&self) {
         for n in 1..=self.capabilities.maximum_ports {
-            let sc = self.reg(self.capabilities.portsc(n));
+            let sc = self.reg(self.capabilities.port_status_and_control(n));
             if sc & port::POWER == 0 {
                 self.set_reg(
-                    self.capabilities.portsc(n),
+                    self.capabilities.port_status_and_control(n),
                     port::write_value(sc, port::POWER),
                 );
             }
@@ -742,12 +753,13 @@ impl Host {
     fn debounce(&self, n: u8) -> bool {
         let only = |h: &Host| {
             let mut bits = [0u32; 8];
-            if h.reg(h.capabilities.portsc(n)) & port::CONNECTED != 0 {
+            if h.reg(h.capabilities.port_status_and_control(n)) & port::CONNECTED != 0 {
                 bits[usize::from(n / 32)] = 1 << (n % 32);
             }
             bits
         };
-        self.hold_still(&only) && self.reg(self.capabilities.portsc(n)) & port::CONNECTED != 0
+        self.hold_still(&only)
+            && self.reg(self.capabilities.port_status_and_control(n)) & port::CONNECTED != 0
     }
 
     /// Read `read` every [`port::DEBOUNCE_STEP_MILLISECONDS`] until [`port::PortDebounce`] says it held still
@@ -769,7 +781,7 @@ impl Host {
     fn connections(&self) -> port::Connections {
         let mut bits = [0u32; 8];
         for n in 1..=self.capabilities.maximum_ports {
-            if self.reg(self.capabilities.portsc(n)) & port::CONNECTED != 0 {
+            if self.reg(self.capabilities.port_status_and_control(n)) & port::CONNECTED != 0 {
                 bits[usize::from(n / 32)] |= 1 << (n % 32);
             }
         }
@@ -781,7 +793,7 @@ impl Host {
         let mut connected = 0;
         let mut refused = 0;
         for n in 1..=self.capabilities.maximum_ports {
-            if self.reg(self.capabilities.portsc(n)) & port::CONNECTED == 0 {
+            if self.reg(self.capabilities.port_status_and_control(n)) & port::CONNECTED == 0 {
                 continue;
             }
             connected += 1;
@@ -800,7 +812,7 @@ impl Host {
     /// gained a device when nothing is being served.
     fn service_ports(&mut self) {
         for n in 1..=self.capabilities.maximum_ports {
-            let at = self.capabilities.portsc(n);
+            let at = self.capabilities.port_status_and_control(n);
             let sc = self.reg(at);
             let changed = sc & port::CHANGES;
             if changed != 0 {
@@ -975,11 +987,12 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         // Clear the pending bits before draining, so an event that lands after the drain raises
         // the interrupt again rather than waiting for the next one.
         host.set_reg(
-            host.capabilities.interrupter(registers::IMAN),
-            registers::IMAN_ENABLE | registers::IMAN_PENDING,
+            host.capabilities
+                .interrupter(registers::INTERRUPTER_MANAGEMENT_REGISTER),
+            registers::INTERRUPTER_MANAGEMENT_ENABLE | registers::INTERRUPTER_MANAGEMENT_PENDING,
         );
         host.set_reg(
-            host.op(registers::USBSTS),
+            host.op(registers::USB_STATUS_REGISTER),
             registers::STATUS_EVENT_INTERRUPT | registers::STATUS_PORT_CHANGE,
         );
         while let Some(e) = host.poll_event() {

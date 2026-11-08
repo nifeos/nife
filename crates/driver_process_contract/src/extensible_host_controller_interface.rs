@@ -48,7 +48,10 @@ const INTERRUPTER_BYTES: u64 = 0x20;
 /// [`register_window`] checks the mapped pages against.
 const fn needed_ranges(capabilities: &Capabilities) -> [(u64, u64); 3] {
     [
-        (0, capabilities.portsc(capabilities.maximum_ports) + 0x0f),
+        (
+            0,
+            capabilities.port_status_and_control(capabilities.maximum_ports) + 0x0f,
+        ),
         (
             capabilities.interrupter(0),
             capabilities.interrupter(0) + INTERRUPTER_BYTES - 1,

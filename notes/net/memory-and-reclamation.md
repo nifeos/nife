@@ -126,7 +126,7 @@ second client, `socket_squatter`.
 report. So a link that is up with no DHCP server behind it is a wait with no end. The kernel's
 `e1000e_service` and `designware_ethernet_service` refuse a link that never came up
 (`Absent::NoLink`, `NotStarted::NoLink`). Every test runner provides slirp's server. Only a live
-link to a LAN with no DHCP server reaches the hang.
+link to a local area network with no DHCP server reaches the hang.
 
 **A spawn without slot 8 cannot reuse a socket's page.** With no address space to `UNMAP` from, a
 closed socket's page stays mapped. Its table entry then refuses every later frame rather than show

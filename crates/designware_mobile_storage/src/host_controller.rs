@@ -45,7 +45,7 @@ pub enum Error {
     /// `HCON` names a FIFO width this driver does not move: the raw width field.
     #[doc(alias = "fifo")]
     QueueWidth(u32),
-    /// A reset bit in `CONTROL` or `BUS_MODE` did not clear: the word last read.
+    /// A reset bit in `CONTROL_REGISTER` or `BUS_MODE_REGISTER` did not clear: the word last read.
     ResetStuck(u32),
     /// The controller did not take a clock update (the start bit stayed set).
     ClockUpdate,
@@ -127,7 +127,7 @@ pub struct Identity {
     /// `CDETECT` as found: bit 0 clear means a card is present.
     #[doc(alias = "cdetect")]
     pub card_detect: u32,
-    /// `CONTROL`, `PWREN`, `CLKDIV`, `CLKENA` and `CTYPE` as the firmware left them.
+    /// `CONTROL_REGISTER`, `PWREN`, `CLKDIV`, `CLKENA` and `CTYPE` as the firmware left them.
     pub firmware: [u32; 5],
 }
 
@@ -139,36 +139,38 @@ pub(crate) const COMMAND_DEADLINE_MICROSECONDS: u64 = 100_000;
 /// to start a write (the SD spec's write timeout for SDHC); half a second is that with slack.
 pub(crate) const DATA_DEADLINE_MICROSECONDS: u64 = 500_000;
 
-/// **The card clock divider** for a `target` from a `base`: the smallest `divider` with
-/// `base / (2 * divider) <= target`, or 0 (bypass) when `base` itself is low enough. `None` when
-/// even 255 is too fast.
+/// **The card clock divider** for a `target_hertz` from a `base_hertz`: the smallest `divider`
+/// with `base_hertz / (2 * divider) <= target_hertz`, or 0 (bypass) when `base_hertz` itself is
+/// low enough. `None` when even 255 is too fast.
 ///
 /// OpenBSD's loop, with its edge closed: OpenBSD exits at `div = 256` and writes that to an
 /// eight-bit field, which reads back as 0, the fastest setting there is.
 ///
 /// ```
-/// use designware_mobile_storage::host_controller::{clock_divider, card_clock};
+/// use designware_mobile_storage::host_controller::{clock_divider, card_clock_hertz};
 ///
 /// // the VisionFive 2's controllers run from 50 MHz (`assigned-clock-rates` in mainline and the vendor branch head).
 /// let d = clock_divider(50_000_000, 400_000).unwrap();
 /// assert_eq!(d, 63);
-/// assert!(card_clock(50_000_000, d) <= 400_000);
+/// assert!(card_clock_hertz(50_000_000, d) <= 400_000);
 /// assert_eq!(clock_divider(50_000_000, 50_000_000), Some(0));
 /// assert_eq!(clock_divider(50_000_000, 25_000_000), Some(1));
 /// ```
 ///
-/// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands.
+/// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands. Considered: the parameters
+/// `base` and `target` (ratified 2026-11-07 (UTC) as `base_hertz` and `target_hertz`); a quantity
+/// ends with its unit.
 #[must_use]
-pub const fn clock_divider(base: u32, target: u32) -> Option<u8> {
-    if target == 0 {
+pub const fn clock_divider(base_hertz: u32, target_hertz: u32) -> Option<u8> {
+    if target_hertz == 0 {
         return None;
     }
-    if base <= target {
+    if base_hertz <= target_hertz {
         return Some(0);
     }
     // ceil(base / (2 * target)). Saturating, and still exact: a target of 2^31 or more saturates
     // to u32::MAX, and since base > target the quotient is then 1 either way.
-    let divider = base.div_ceil(target.saturating_mul(2));
+    let divider = base_hertz.div_ceil(target_hertz.saturating_mul(2));
     if divider > 255 {
         None
     } else {
@@ -176,32 +178,45 @@ pub const fn clock_divider(base: u32, target: u32) -> Option<u8> {
     }
 }
 
-/// The card clock a divider gives: `base` at 0, `base / (2 * divider)` otherwise.
+/// The card clock, in hertz, a divider gives: `base_hertz` at 0, `base_hertz / (2 * divider)`
+/// otherwise.
 ///
-/// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands.
+/// Name: ratified 2026-11-07 (UTC). Renamed from `card_clock`, with the parameter `base` now
+/// `base_hertz`, since a quantity ends with its unit.
 #[must_use]
-pub const fn card_clock(base: u32, divider: u8) -> u32 {
+pub const fn card_clock_hertz(base_hertz: u32, divider: u8) -> u32 {
     if divider == 0 {
-        base
+        base_hertz
     } else {
-        base / (2 * divider as u32)
+        base_hertz / (2 * divider as u32)
     }
 }
 
-/// **How many bytes the next FIFO step moves**: the FIFO's filled words (reading) or empty words
-/// (writing), in bytes, never more than `remaining`. A count the controller reports above `depth`
-/// is clamped to `depth`, so a confused `STATUS_REGISTER` cannot make a write overrun the FIFO.
+/// **How many bytes the next FIFO step moves**: the FIFO's filled 32-bit words (reading) or empty
+/// words (writing) out of `depth_words`, in bytes, never more than the `remaining_bytes` the
+/// transfer still owes. A count the controller reports above `depth_words` is clamped to it, so a
+/// confused `STATUS_REGISTER` cannot make a write overrun the FIFO.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree authors;
-/// the databook's `fifo` is kept as `doc(alias = "fifo")`.
+/// the databook's `fifo` is kept as `doc(alias = "fifo")`. Considered: the parameters `depth` and
+/// `remaining` (ratified 2026-11-07 (UTC) as `depth_words` and `remaining_bytes`); a quantity ends
+/// with its unit.
 #[doc(alias = "fifo")]
 #[must_use]
-pub const fn queue_step(status: u32, depth: u32, write: bool, remaining: u32) -> u32 {
+pub const fn queue_step(status: u32, depth_words: u32, write: bool, remaining_bytes: u32) -> u32 {
     let filled = registers::queue_count(status);
-    let filled = if filled > depth { depth } else { filled };
-    let words = if write { depth - filled } else { filled };
+    let filled = if filled > depth_words {
+        depth_words
+    } else {
+        filled
+    };
+    let words = if write { depth_words - filled } else { filled };
     let bytes = words.saturating_mul(4);
-    if bytes < remaining { bytes } else { remaining }
+    if bytes < remaining_bytes {
+        bytes
+    } else {
+        remaining_bytes
+    }
 }
 
 /// The driver: a window, the FIFO's place and depth, the card clock's source rate, and, when the
@@ -226,19 +241,22 @@ impl<R: RegisterWindowAndClock> HostController<R> {
     /// **Take a controller**, reading its identity and touching nothing.
     ///
     /// `base_hertz` is the rate of the clock the controller divides (the tree's `ciu`, 50 MHz on
-    /// the VisionFive 2), and `queue_depth` the tree's `fifo-depth` if it has one; without it the depth is
-    /// read from `FIFOTH`'s reset value, as OpenBSD does. Refuses a FIFO that is not 32 bits wide.
+    /// the VisionFive 2), and `queue_depth_words` the tree's `fifo-depth` if it has one, in 32-bit
+    /// words; without it the depth is read from `FIFOTH`'s reset value, as OpenBSD does. Refuses a
+    /// FIFO that is not 32 bits wide, so every depth this driver holds counts 32-bit words.
     ///
     /// # Errors
     ///
     /// [`Error::QueueWidth`] for a 16- or 64-bit FIFO.
     ///
     /// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands; the parameter `base_hertz`
-    /// spells the unit out (ratified 2026-11-05 (UTC), #3276).
+    /// spells the unit out (ratified 2026-11-05 (UTC), #3276). Considered: the parameter
+    /// `queue_depth` (ratified 2026-11-07 (UTC) as `queue_depth_words`); a count names the things
+    /// it counts.
     pub fn new(
         mut registers: R,
         base_hertz: u32,
-        queue_depth: Option<u32>,
+        queue_depth_words: Option<u32>,
     ) -> Result<(Self, Identity), Error> {
         let id = Identity {
             version_identification: registers.read(registers::VERID),
@@ -247,17 +265,17 @@ impl<R: RegisterWindowAndClock> HostController<R> {
             queue_threshold: registers.read(registers::FIFOTH),
             card_detect: registers.read(registers::CDETECT),
             firmware: [
-                registers.read(registers::CONTROL),
+                registers.read(registers::CONTROL_REGISTER),
                 registers.read(registers::PWREN),
                 registers.read(registers::CLKDIV),
                 registers.read(registers::CLKENA),
                 registers.read(registers::CTYPE),
             ],
         };
-        if registers::queue_width(id.hardware_configuration) != Some(4) {
+        if registers::queue_width_bytes(id.hardware_configuration) != Some(4) {
             return Err(Error::QueueWidth((id.hardware_configuration >> 7) & 7));
         }
-        let depth = match queue_depth {
+        let depth = match queue_depth_words {
             Some(d) if d > 0 => d,
             _ => registers::fifoth_receive_watermark(id.queue_threshold) + 1,
         };
@@ -296,13 +314,14 @@ impl<R: RegisterWindowAndClock> HostController<R> {
 }
 
 impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D> {
-    /// The FIFO depth in words, as decided by [`HostController::new`].
+    /// The FIFO depth in 32-bit words, as decided by [`HostController::new`].
     ///
-    /// Name: ratified 2026-11-02 (UTC), #3092. `fifo` becomes `queue` in every name this tree
-    /// authors; the databook's `fifo` is kept as `doc(alias = "fifo")`.
+    /// Name: ratified 2026-11-07 (UTC). `fifo` becomes `queue` in every name this tree authors; the
+    /// databook's `fifo` is kept as `doc(alias = "fifo")`. Renamed from `queue_depth`, since a
+    /// count names the things it counts.
     #[doc(alias = "fifo")]
     #[must_use]
-    pub fn queue_depth(&self) -> u32 {
+    pub fn queue_depth_words(&self) -> u32 {
         self.depth
     }
 
@@ -348,16 +367,20 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
     /// Name: ratified 2026-11-03 (UTC), #3136. Ratified as it stands.
     pub fn reset(&mut self) -> Result<(), Error> {
         self.registers.write(registers::CLKENA, 0);
-        let ctrl = self.registers.read(registers::CONTROL)
+        let ctrl = self.registers.read(registers::CONTROL_REGISTER)
             & !(registers::CONTROL_USE_INTERNAL_DMAC
                 | registers::CONTROL_DMA_ENABLE
                 | registers::CONTROL_INT_ENABLE);
-        self.registers
-            .write(registers::CONTROL, ctrl | registers::CONTROL_ALL_RESET);
+        self.registers.write(
+            registers::CONTROL_REGISTER,
+            ctrl | registers::CONTROL_ALL_RESET,
+        );
         if !self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
-            window.read(registers::CONTROL) & registers::CONTROL_ALL_RESET == 0
+            window.read(registers::CONTROL_REGISTER) & registers::CONTROL_ALL_RESET == 0
         }) {
-            return Err(Error::ResetStuck(self.registers.read(registers::CONTROL)));
+            return Err(Error::ResetStuck(
+                self.registers.read(registers::CONTROL_REGISTER),
+            ));
         }
         self.registers.write(registers::INTMASK, 0);
         self.registers.write(registers::RINTSTS, 0xffff_ffff);
@@ -417,7 +440,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             registers::CLKENA_CCLK_ENABLE | registers::CLKENA_CCLK_LOW_POWER,
         );
         self.update_clock()?;
-        Ok(card_clock(self.base_hertz, divider))
+        Ok(card_clock_hertz(self.base_hertz, divider))
     }
 
     /// Set the bus width the controller drives: 1, 4 or 8. Anything else is 1.
@@ -455,14 +478,18 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
         self.wait_not_busy()?;
         if let Some(d) = command.data {
             self.registers.write(registers::BYTCNT, d.total_bytes());
-            self.registers.write(registers::BLKSIZ, d.block_size);
-            let ctrl = self.registers.read(registers::CONTROL);
-            self.registers
-                .write(registers::CONTROL, ctrl | registers::CONTROL_FIFO_RESET);
+            self.registers.write(registers::BLKSIZ, d.block_bytes);
+            let ctrl = self.registers.read(registers::CONTROL_REGISTER);
+            self.registers.write(
+                registers::CONTROL_REGISTER,
+                ctrl | registers::CONTROL_FIFO_RESET,
+            );
             if !self.is_condition_met_within(COMMAND_DEADLINE_MICROSECONDS, |window| {
-                window.read(registers::CONTROL) & registers::CONTROL_FIFO_RESET == 0
+                window.read(registers::CONTROL_REGISTER) & registers::CONTROL_FIFO_RESET == 0
             }) {
-                return Err(Error::ResetStuck(self.registers.read(registers::CONTROL)));
+                return Err(Error::ResetStuck(
+                    self.registers.read(registers::CONTROL_REGISTER),
+                ));
             }
             if direct_memory_access {
                 self.internal_direct_memory_access_start()?;
@@ -682,7 +709,7 @@ mod tests {
         for base in [24_000_000u32, 50_000_000, 100_000_000, 200_000_000] {
             for target in [100_000u32, 400_000, 12_500_000, 25_000_000, 52_000_000] {
                 if let Some(d) = clock_divider(base, target) {
-                    assert!(card_clock(base, d) <= target, "{base} {target} {d}");
+                    assert!(card_clock_hertz(base, d) <= target, "{base} {target} {d}");
                 }
             }
         }
@@ -699,7 +726,7 @@ mod tests {
             .chain(base - 1_000..=base);
         for target in targets {
             if let Some(d) = clock_divider(base, target) {
-                assert!(card_clock(base, d) <= target, "{target} {d}");
+                assert!(card_clock_hertz(base, d) <= target, "{target} {d}");
                 // And it is the fastest that does not exceed: one divider less would, in exact
                 // arithmetic (the rate itself is floored, so compare the products).
                 if d > 1 {
@@ -763,7 +790,8 @@ mod tests {
             | registers::CONTROL_DMA_ENABLE
             | registers::CONTROL_INT_ENABLE
             | 1 << 8;
-        h.registers_mut().write(registers::CONTROL, firmware);
+        h.registers_mut()
+            .write(registers::CONTROL_REGISTER, firmware);
         h.registers_mut().write(
             registers::CARDTHRCTL,
             512 << 16 | registers::CARDTHRCTL_RDTHREN,
@@ -774,7 +802,10 @@ mod tests {
             h.registers_mut().writes,
             [
                 (registers::CLKENA, 0),
-                (registers::CONTROL, 1 << 8 | registers::CONTROL_ALL_RESET),
+                (
+                    registers::CONTROL_REGISTER,
+                    1 << 8 | registers::CONTROL_ALL_RESET
+                ),
                 (registers::INTMASK, 0),
                 (registers::RINTSTS, 0xffff_ffff),
                 (registers::TMOUT, 0xffff_ffff),
@@ -786,12 +817,12 @@ mod tests {
         // A FIFO reset still in flight when the driver starts is asked for again, not toggled off.
         let mut h = take(SimulatedHostController::new(CardKind::Empty, 1, 32));
         h.registers_mut()
-            .write(registers::CONTROL, registers::CONTROL_FIFO_RESET);
+            .write(registers::CONTROL_REGISTER, registers::CONTROL_FIFO_RESET);
         h.registers_mut().writes.clear();
         h.reset().unwrap();
         assert_eq!(
             h.registers_mut().writes[1],
-            (registers::CONTROL, registers::CONTROL_ALL_RESET)
+            (registers::CONTROL_REGISTER, registers::CONTROL_ALL_RESET)
         );
     }
 
@@ -888,7 +919,7 @@ mod tests {
 
     /// Before a data command the FIFO is reset and the reset waited for, and the card read
     /// threshold is left off: a 512-byte one in the VisionFive 2's 32-word FIFO is what overran its first
-    /// read. Bit 8 of `CONTROL`, left by firmware, makes a wait that tested anything but the reset
+    /// read. Bit 8 of `CONTROL_REGISTER`, left by firmware, makes a wait that tested anything but the reset
     /// bits never finish.
     #[test]
     fn a_data_command_resets_the_queue_and_leaves_the_threshold_off() {
@@ -897,18 +928,24 @@ mod tests {
             2048,
             32,
         ));
-        h.registers_mut().write(registers::CONTROL, 1 << 8);
+        h.registers_mut().write(registers::CONTROL_REGISTER, 1 << 8);
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers_mut().writes.clear();
         let mut block = [0u8; 512];
         sd::read_blocks(&mut h, &card, 1, &mut block).unwrap();
         let read = core::mem::take(&mut h.registers_mut().writes);
         assert!(!read.iter().any(|&(o, _)| o == registers::CARDTHRCTL));
-        assert!(read.contains(&(registers::CONTROL, 1 << 8 | registers::CONTROL_FIFO_RESET)));
+        assert!(read.contains(&(
+            registers::CONTROL_REGISTER,
+            1 << 8 | registers::CONTROL_FIFO_RESET
+        )));
         sd::write_blocks(&mut h, &card, 1, &block).unwrap();
         let write = &h.registers_mut().writes;
         assert!(!write.iter().any(|&(o, _)| o == registers::CARDTHRCTL));
-        assert!(write.contains(&(registers::CONTROL, 1 << 8 | registers::CONTROL_FIFO_RESET)));
+        assert!(write.contains(&(
+            registers::CONTROL_REGISTER,
+            1 << 8 | registers::CONTROL_FIFO_RESET
+        )));
         // A FIFO reset that never clears stops the command before it is sent.
         h.registers_mut().reset_stuck = true;
         assert!(matches!(
@@ -929,12 +966,12 @@ mod tests {
         ));
         let card = sd::identify(&mut h, 4).unwrap();
         h.registers_mut()
-            .write(registers::CONTROL, registers::CONTROL_FIFO_RESET);
+            .write(registers::CONTROL_REGISTER, registers::CONTROL_FIFO_RESET);
         h.registers_mut().writes.clear();
         let mut block = [0u8; 512];
         sd::read_blocks(&mut h, &card, 1, &mut block).unwrap();
         let read = &h.registers_mut().writes;
-        assert!(read.contains(&(registers::CONTROL, registers::CONTROL_FIFO_RESET)));
+        assert!(read.contains(&(registers::CONTROL_REGISTER, registers::CONTROL_FIFO_RESET)));
     }
 
     /// The size and direction checks come before anything is sent, so an empty slot (which would
@@ -943,7 +980,7 @@ mod tests {
     fn a_buffer_or_direction_that_does_not_match_the_command_is_refused_unsent() {
         let mut h = take(SimulatedHostController::new(CardKind::Empty, 1, 32));
         let one = |write| Data {
-            block_size: 512,
+            block_bytes: 512,
             blocks: 1,
             is_write: write,
         };

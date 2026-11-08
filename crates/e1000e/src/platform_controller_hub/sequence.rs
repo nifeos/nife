@@ -188,8 +188,14 @@ pub enum BringUpObservation {
     /// chip) as `physical_layer_device`, which names it. Refused `PhyResetBlocked` (an
     /// abbreviation).
     PhysicalLayerDeviceResetBlocked,
-    /// `STATUS.LAN_INIT_DONE` did not rise in 150 ms after a reset.
-    LanInitTimeout,
+    /// The local area network initialization done bit (`STATUS.LAN_INIT_DONE`) did not rise in
+    /// 150 ms after a reset.
+    ///
+    /// Name: ratified 2026-11-08 (UTC), #3335. Ruled tree-wide: LAN is not an accepted acronym and
+    /// is spelled out `local_area_network`, and `init` is spelled out `initialization`. Refused
+    /// `LanInitTimeout` (two abbreviations) and `LanInitializationTimeout` (keeps LAN).
+    #[doc(alias = "LAN_INIT_DONE")]
+    LocalAreaNetworkInitializationTimeout,
     /// `STATUS.PHYRA` was not set after a PHY reset (FreeBSD: "needs delay").
     ///
     /// Name: ratified 2026-11-03 (UTC), #3154. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip)
@@ -201,23 +207,27 @@ pub enum BringUpObservation {
     SoftwareFlagBeforeReset(physical_layer_device::Error),
     /// Master requests were still pending when the reset went ahead.
     MasterRequestsPending,
-    /// The NVM's extended configuration region was replayed into the LAN connected device (LCD,
-    /// Intel's name for the PHY beside a PCH): this many words.
+    /// The NVM's extended configuration region was replayed into the local area network connected
+    /// device (Intel's LAN Connected Device, LCD, the PHY beside a PCH): this many words.
     ///
-    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused
-    /// `LcdConfigured` (`Lcd` reads as a display).
+    /// Name: ratified 2026-11-08 (UTC), #3335. Ruled tree-wide: LAN is not an accepted acronym and
+    /// is spelled out `local_area_network`; the rest of the name was ratified 2026-10-26 (#2761).
+    /// Refused `LcdConfigured` (`Lcd` reads as a display) and `LanConnectedDeviceConfigured` (keeps
+    /// LAN).
     #[doc(alias = "lcd")]
-    LanConnectedDeviceConfigured {
+    LocalAreaNetworkConnectedDeviceConfigured {
         /// (value, register) pairs written.
         pairs: u32,
     },
-    /// No extended configuration to replay into the LAN connected device (`FEXTNVM.SW_CONFIG`
-    /// clear, or a zero size).
+    /// No extended configuration to replay into the local area network connected device
+    /// (`FEXTNVM.SW_CONFIG` clear, or a zero size).
     ///
-    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused
-    /// `LcdNotConfigured` (as `LcdConfigured`).
+    /// Name: ratified 2026-11-08 (UTC), #3335. Ruled tree-wide: LAN is not an accepted acronym and
+    /// is spelled out `local_area_network`; the rest of the name was ratified 2026-10-26 (#2761).
+    /// Refused `LcdNotConfigured` (as `LcdConfigured`) and `LanConnectedDeviceNotConfigured` (keeps
+    /// LAN).
     #[doc(alias = "lcd")]
-    LanConnectedDeviceNotConfigured,
+    LocalAreaNetworkConnectedDeviceNotConfigured,
     /// `STRAP` names a System Management Bus (`SMBus`) frequency of zero, which FreeBSD declines to
     /// program.
     ///
@@ -242,7 +252,9 @@ const CTRL_EXT_FORCE_SMBUS: u32 = 0x0000_0800;
 const CTRL_EXT_RO_DIS: u32 = 0x0002_0000;
 const CTRL_EXT_PHYPDEN: u32 = 0x0010_0000;
 // `STATUS` bits.
-const STATUS_LAN_INITIALIZATION_DONE: u32 = 0x0000_0200;
+/// FreeBSD's `E1000_STATUS_LAN_INIT_DONE`: the local area network initialization is done.
+#[doc(alias = "LAN_INIT_DONE")]
+const STATUS_LOCAL_AREA_NETWORK_INITIALIZATION_DONE: u32 = 0x0000_0200;
 const STATUS_PHYRA: u32 = 0x0000_0400;
 // Others, each named for its FreeBSD define.
 const EXTCNF_CTRL_GATE_PHYSICAL_LAYER_DEVICE_CONFIGURATION: u32 = 0x0000_0080;
@@ -498,12 +510,12 @@ fn leave_ultra_low_power_by_physical_layer_device(
         let pm = physical_layer_device::read(
             hardware,
             &f,
-            physical_layer_device::registers::HV_PM_CTRL,
+            physical_layer_device::registers::POWER_MANAGEMENT_CONTROL_REGISTER,
         )?;
         let _ = physical_layer_device::write(
             hardware,
             &f,
-            physical_layer_device::registers::HV_PM_CTRL,
+            physical_layer_device::registers::POWER_MANAGEMENT_CONTROL_REGISTER,
             pm | HV_PM_CTRL_K1_ENABLE,
         );
         // Clear the ULP configuration, then commit it by starting auto ULP configuration.
@@ -678,18 +690,18 @@ fn configuration_done(hardware: &mut impl Hardware) -> Result<(), Error> {
     for _ in 0..1500 {
         let s = hardware.read(mac::DEVICE_STATUS_REGISTER);
         hardware.delay_microseconds(100);
-        if s & STATUS_LAN_INITIALIZATION_DONE != 0 {
+        if s & STATUS_LOCAL_AREA_NETWORK_INITIALIZATION_DONE != 0 {
             done = true;
             break;
         }
     }
     if !done {
-        hardware.note(BringUpObservation::LanInitTimeout);
+        hardware.note(BringUpObservation::LocalAreaNetworkInitializationTimeout);
     }
     clear(
         hardware,
         mac::DEVICE_STATUS_REGISTER,
-        STATUS_LAN_INITIALIZATION_DONE,
+        STATUS_LOCAL_AREA_NETWORK_INITIALIZATION_DONE,
     );
     let s = hardware.read(mac::DEVICE_STATUS_REGISTER);
     if s & STATUS_PHYRA != 0 {
@@ -826,17 +838,19 @@ fn post_physical_layer_device_reset(hardware: &mut impl Hardware) -> Result<(), 
         }
         f.release(hardware);
     }
-    lan_connected_device_configuration(hardware)?;
+    local_area_network_connected_device_configuration(hardware)?;
     oem_bits(hardware)
 }
 
-/// **`e1000_sw_lcd_config_ich8lan`**, the LAN connected device (LCD) configuration: when the NVM
-/// says software configures the PHY ("an issue
+/// **`e1000_sw_lcd_config_ich8lan`**, the local area network connected device (Intel's LAN
+/// Connected Device, LCD) configuration: when the NVM says software configures the PHY ("an issue
 /// where the NVM configuration is not properly autoloaded after power transitions"), write the
 /// `SMBus` address and LED configuration, then replay the extended configuration region's
 /// (value, register) pairs into the PHY.
 #[doc(alias = "lcd")]
-fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<(), Error> {
+fn local_area_network_connected_device_configuration(
+    hardware: &mut impl Hardware,
+) -> Result<(), Error> {
     let f = SoftwareFlag::acquire(hardware)?;
     let out = (|| {
         if hardware.read(registers::FEXTNVM) & FEXTNVM_SOFTWARE_CONFIGURATION_ICH8M == 0 {
@@ -855,7 +869,7 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
         physical_layer_device::write(
             hardware,
             &f,
-            physical_layer_device::registers::HV_LED_CONFIG,
+            physical_layer_device::registers::LED_CONFIGURATION_REGISTER,
             led,
         )?;
         let g = non_volatile_memory::Geometry::read_from_hardware(hardware);
@@ -885,9 +899,9 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
     f.release(hardware);
     match out {
         Ok(Some(pairs)) => {
-            hardware.note(BringUpObservation::LanConnectedDeviceConfigured { pairs });
+            hardware.note(BringUpObservation::LocalAreaNetworkConnectedDeviceConfigured { pairs });
         }
-        Ok(None) => hardware.note(BringUpObservation::LanConnectedDeviceNotConfigured),
+        Ok(None) => hardware.note(BringUpObservation::LocalAreaNetworkConnectedDeviceNotConfigured),
         Err(e) => return Err(e),
     }
     Ok(())
@@ -919,7 +933,7 @@ fn write_system_management_bus_address(
     let mut v = physical_layer_device::read(
         hardware,
         flag,
-        physical_layer_device::registers::HV_SMB_ADDR,
+        physical_layer_device::registers::SYSTEM_MANAGEMENT_BUS_ADDRESS_REGISTER,
     )?;
     v = (v & !HV_SMB_ADDR_MASK) | address | HV_SMB_ADDR_PEC_EN | HV_SMB_ADDR_VALID;
     if freq != 0 {
@@ -933,7 +947,7 @@ fn write_system_management_bus_address(
     physical_layer_device::write(
         hardware,
         flag,
-        physical_layer_device::registers::HV_SMB_ADDR,
+        physical_layer_device::registers::SYSTEM_MANAGEMENT_BUS_ADDRESS_REGISTER,
         v,
     )?;
     Ok(())
@@ -956,7 +970,7 @@ fn oem_bits(hardware: &mut impl Hardware) -> Result<(), Error> {
         let mut v = physical_layer_device::read(
             hardware,
             &f,
-            physical_layer_device::registers::HV_OEM_BITS,
+            physical_layer_device::registers::OEM_BITS_REGISTER,
         )? & !(HV_OEM_BITS_GBE_DIS | HV_OEM_BITS_LPLU);
         if pc & PHYSICAL_LAYER_DEVICE_CTRL_GBE_DISABLE != 0 {
             v |= HV_OEM_BITS_GBE_DIS;
@@ -970,7 +984,7 @@ fn oem_bits(hardware: &mut impl Hardware) -> Result<(), Error> {
         physical_layer_device::write(
             hardware,
             &f,
-            physical_layer_device::registers::HV_OEM_BITS,
+            physical_layer_device::registers::OEM_BITS_REGISTER,
             v,
         )
     })();
@@ -1329,7 +1343,7 @@ mod tests {
         assert_eq!(
             hardware.notes,
             [
-                BringUpObservation::LanInitTimeout,
+                BringUpObservation::LocalAreaNetworkInitializationTimeout,
                 BringUpObservation::PhysicalLayerDeviceResetNotAsserted
             ]
         );
@@ -1340,7 +1354,10 @@ mod tests {
         // The simulated reset raises both, and nothing is reported.
         let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         global_reset(&mut s, 1000).unwrap();
-        assert!(!s.notes.contains(&BringUpObservation::LanInitTimeout));
+        assert!(
+            !s.notes
+                .contains(&BringUpObservation::LocalAreaNetworkInitializationTimeout)
+        );
         assert!(
             !s.notes
                 .contains(&BringUpObservation::PhysicalLayerDeviceResetNotAsserted)
@@ -1399,13 +1416,12 @@ mod tests {
         );
         assert!(
             s.notes
-                .contains(&BringUpObservation::LanConnectedDeviceNotConfigured)
+                .contains(&BringUpObservation::LocalAreaNetworkConnectedDeviceNotConfigured)
         );
-        assert!(
-            !s.notes
-                .iter()
-                .any(|n| matches!(n, BringUpObservation::LanConnectedDeviceConfigured { .. }))
-        );
+        assert!(!s.notes.iter().any(|n| matches!(
+            n,
+            BringUpObservation::LocalAreaNetworkConnectedDeviceConfigured { .. }
+        )));
     }
 
     /// **The `SMBus` address word takes its address and frequency from `STRAP`** and keeps only
@@ -1422,13 +1438,16 @@ mod tests {
         ] {
             let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
             s.mac.insert(registers::STRAP, strap(2, freq));
-            s.physical_layer_device_registers
-                .insert(physical_layer_device::registers::HV_SMB_ADDR, preset);
+            s.physical_layer_device_registers.insert(
+                physical_layer_device::registers::SYSTEM_MANAGEMENT_BUS_ADDRESS_REGISTER,
+                preset,
+            );
             let f = SoftwareFlag::acquire(&mut s).unwrap();
             write_system_management_bus_address(&mut s, &f).unwrap();
             f.release(&mut s);
             assert_eq!(
-                s.physical_layer_device_registers[&physical_layer_device::registers::HV_SMB_ADDR],
+                s.physical_layer_device_registers
+                    [&physical_layer_device::registers::SYSTEM_MANAGEMENT_BUS_ADDRESS_REGISTER],
                 want,
                 "frequency field {freq}"
             );
@@ -1447,7 +1466,7 @@ mod tests {
     fn the_oem_bits_follow_the_mac() {
         let sw = FEXTNVM_SOFTWARE_CONFIGURATION_ICH8M;
         let both = PHYSICAL_LAYER_DEVICE_CTRL_GBE_DISABLE | PHYSICAL_LAYER_DEVICE_CTRL_D0A_LPLU;
-        // (FEXTNVM, PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER, HV_OEM_BITS before, firmware blocks resets, HV_OEM_BITS after)
+        // (FEXTNVM, PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER, OEM_BITS_REGISTER before, firmware blocks resets, OEM_BITS_REGISTER after)
         for (fextnvm, pc, before, blocked, after) in [
             (sw, both, 0x0000, false, 0x0444),
             (sw | 1, 0, 0x8044, false, 0x8400),
@@ -1462,10 +1481,11 @@ mod tests {
                 s.mac.insert(registers::FWSM, 0);
             }
             s.physical_layer_device_registers
-                .insert(physical_layer_device::registers::HV_OEM_BITS, before);
+                .insert(physical_layer_device::registers::OEM_BITS_REGISTER, before);
             oem_bits(&mut s).unwrap();
             assert_eq!(
-                s.physical_layer_device_registers[&physical_layer_device::registers::HV_OEM_BITS],
+                s.physical_layer_device_registers
+                    [&physical_layer_device::registers::OEM_BITS_REGISTER],
                 after,
                 "{fextnvm:#x} {pc:#x} {before:#x}"
             );
@@ -1604,8 +1624,10 @@ mod tests {
             SimulatedHardware::new(PhysicalLayerDeviceStartState::InSystemManagementBus, false);
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::CV_SMB_CTRL, 0x0101);
-        s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::HV_PM_CTRL, 0x4001);
+        s.physical_layer_device_registers.insert(
+            physical_layer_device::registers::POWER_MANAGEMENT_CONTROL_REGISTER,
+            0x4001,
+        );
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::I218_ULP_CONFIG1, 0x1ff5);
         assert!(initialize_physical_layer_device_workarounds(&mut s).is_ok());
@@ -1621,7 +1643,10 @@ mod tests {
             !smb.is_empty() && smb.iter().all(|&v| v == 0x0100),
             "{smb:x?}"
         );
-        assert_eq!(to(physical_layer_device::registers::HV_PM_CTRL), [0x4001]);
+        assert_eq!(
+            to(physical_layer_device::registers::POWER_MANAGEMENT_CONTROL_REGISTER),
+            [0x4001]
+        );
         assert_eq!(
             to(physical_layer_device::registers::I218_ULP_CONFIG1),
             [0x0281, 0x0281]

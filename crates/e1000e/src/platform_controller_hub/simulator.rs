@@ -169,7 +169,7 @@ impl SimulatedHardware {
             None
         } else if address == 1 {
             let page = if self.page == 0 {
-                physical_layer_device::HV_INTC_FC_PAGE_START
+                physical_layer_device::FIRST_PAGE_AT_ADDRESS_ONE
             } else {
                 self.page
             };
@@ -381,9 +381,11 @@ mod tests {
         );
         // Page 768 is selected as page 0; page 0 lives at address 2 and needs no select.
         assert_eq!(
-            plan_paged_access(physical_layer_device::registers::HV_SMB_ADDR)
-                .unwrap()
-                .select,
+            plan_paged_access(
+                physical_layer_device::registers::SYSTEM_MANAGEMENT_BUS_ADDRESS_REGISTER
+            )
+            .unwrap()
+            .select,
             Some(0)
         );
         assert_eq!(
@@ -408,12 +410,16 @@ mod tests {
         physical_layer_device::write(
             &mut s,
             &f,
-            physical_layer_device::registers::HV_PM_CTRL,
+            physical_layer_device::registers::POWER_MANAGEMENT_CONTROL_REGISTER,
             0x4000,
         )
         .unwrap();
         assert_eq!(
-            physical_layer_device::read(&mut s, &f, physical_layer_device::registers::HV_PM_CTRL),
+            physical_layer_device::read(
+                &mut s,
+                &f,
+                physical_layer_device::registers::POWER_MANAGEMENT_CONTROL_REGISTER
+            ),
             Ok(0x4000)
         );
         f.release(&mut s);
@@ -685,7 +691,8 @@ mod tests {
             0
         );
         assert_ne!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::HV_PM_CTRL]
+            s.physical_layer_device_registers
+                [&physical_layer_device::registers::POWER_MANAGEMENT_CONTROL_REGISTER]
                 & 0x4000,
             0,
             "K1 re-enabled"
@@ -759,8 +766,9 @@ mod tests {
         s.mac.insert(registers::LEDCTL, 0x0007_8484);
         sequence::global_reset(&mut s, 1000).unwrap();
         assert!(
-            s.notes
-                .contains(&BringUpObservation::LanConnectedDeviceConfigured { pairs: 3 })
+            s.notes.contains(
+                &BringUpObservation::LocalAreaNetworkConnectedDeviceConfigured { pairs: 3 }
+            )
         );
         assert_eq!(
             s.physical_layer_device_registers[&paged_offset(769, 17)],
@@ -771,12 +779,14 @@ mod tests {
             0x0042
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::HV_LED_CONFIG],
+            s.physical_layer_device_registers
+                [&physical_layer_device::registers::LED_CONFIGURATION_REGISTER],
             0x8484
         );
         // SMBus address 2 from STRAP, PEC and valid set, frequency 3 - 1 = 2 into bit 12.
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::HV_SMB_ADDR],
+            s.physical_layer_device_registers
+                [&physical_layer_device::registers::SYSTEM_MANAGEMENT_BUS_ADDRESS_REGISTER],
             0x0002 | 0x0200 | 0x0080 | 0x1000
         );
         assert!(is_software_flag_free(&s));

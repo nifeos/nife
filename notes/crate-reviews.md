@@ -107,7 +107,7 @@ Naming rules. The names section is [crate-reviews/extensible-host-controller-int
 | rule | result |
 |---|---|
 | the template's checks (446 names) | 0 findings |
-| ratified names a later rule reaches | the specification's register mnemonics (`CAPLENGTH`, `USBCMD`, `CRCR`, `ERDP` and 15 more), each with a recommended name |
+| the specification's register mnemonics | spelled out, each with the mnemonic as its alias |
 | parameters of public functions | spelled out in 12 functions, provisional |
 
 Companion crate. `usb` is released with it under the published name `universal_serial_bus`, because the
@@ -181,8 +181,8 @@ Recommendation. Ready for review.
 The whole package is [crate-reviews/e1000e.md](crate-reviews/e1000e.md).
 
 Name and version. `e1000e` `0.1.0`, ratified as the family name QEMU and Linux both use, permanent on
-first publication. All 166 `Name:` blocks read ratified. Four register names copied from a source
-are spelled out with the source spelling as an alias; `HV_KMRN_MODE_CTRL` is pending.
+first publication. All 166 `Name:` blocks read ratified. Five register names copied from a source
+are spelled out with the source spelling as an alias.
 
 API. Registers, descriptors and ring logic for the 82574L and the I219 behind four small traits,
 with the I219 bring-up in `platform_controller_hub`. Every error implements `Display` and
@@ -193,16 +193,16 @@ Proofs. Three harnesses. All three prove and all three patches fail.
 
 Dependencies. None.
 
-Naming rules. The package has the detail. Of 1,046 names, the template's checks find one, the
-public `LanInitTimeout`. It and `HV_KMRN_MODE_CTRL` wait for the architect. The package also lists
-borderline bit constants that mirror a FreeBSD define with no expansion.
+Naming rules. The package has the detail. Of 1,046 names, the template's checks find none. The
+package also lists borderline bit constants that mirror a FreeBSD define with no expansion.
 
 Provenance. Milestone 1019 items 3 and 4 hold, and the notices are in the files. The manifest license
 field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.
 
 Result of `script/crate-standalone`. Clean. The crate names no nife file.
 
-Recommendation. Ready for review, with four rulings on names and the move (the package ends with them).
+Recommendation. Ready for review, with three rulings on names and the move (the package ends with
+them).
 
 ## `designware_ethernet`, step 7
 
@@ -217,7 +217,7 @@ signature.
 
 Proofs. Six harnesses: the delivered frame, the ring offsets, the PHY link decode, the transmit
 descriptor's length fields, the MDIO command word's address fields and the coherence verdict. All
-six prove and all six patches fail. A published driver needs more than three, so the review added three; MDIO sequencing, the PHY configuration writes and controller bring-up keep unit tests
+six prove and all six patches fail. MDIO sequencing, the PHY configuration writes and controller bring-up keep unit tests
 against the simulator and no proof.
 
 Dependencies. None.
@@ -252,6 +252,10 @@ only where no BSD source names the thing, and both BSD sources name these two. T
 openings follow the same choice.
 
 Result of `script/crate-standalone`. Clean.
+
+Names. [crate-reviews/designware-ethernet.md](crate-reviews/designware-ethernet.md) has them. The
+template's checks find nothing, two ratified groups wait for the architect, and the parameters
+carry spelled-out names, provisional.
 
 Outstanding before the move.
 
@@ -304,14 +308,14 @@ Proofs. Nine harnesses. All nine prove and all nine patches fail.
 
 License. `MIT OR Apache-2.0`; nothing adapted. No quotation of a GPL source remains.
 
-Result of `script/crate-standalone`. Clean, before and after this lane's edits.
+Result of `script/crate-standalone`. Clean.
 
 Provenance. Milestone 1019 items 1, 7 and 11 stand done for this crate: no comment reproduces node text and
 every vendor claim links the revision it holds at, checked against the fetched files.
 
-Names. Seven ratified names fail a later rule and wait for the architect (`SDIO_BRING_UP`, the
-three `mux` report fields, `SYSTEM_BASE` and the `base` fields, `controller`, the `w` parameters
-and `sdcard_divider_for`). The package lists each with its rename.
+Names. The package lists six ratified groups for the architect, each with its recommended name;
+the spelled-out check finds one, `SDIO_BRING_UP`. The parameters carry spelled-out names,
+provisional.
 
 Outstanding before the move.
 
@@ -320,7 +324,6 @@ Outstanding before the move.
 | Four decisions, listed in the package. | architect |
 | The PMIC reset path (198 high and 297 low counts at 49.5 MHz) has not run on a board; the README says so. | maintainers (bench) |
 | Mark milestone 1019 items 7 and 11 done for this crate. | maintainer |
-| 13 private names the unit gate reports. | unit-suffix sweep lane |
 | `repository` in the manifest, the tag, the `Name:` blocks, the stranger test. | move lane |
 
 Recommendation. Ready for review.

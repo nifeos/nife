@@ -147,8 +147,11 @@ pub(crate) const MAXIMUM_PHYSICAL_LAYER_DEVICE_MULTI_PAGE_REGISTER: u32 = 0xf;
 pub(crate) const IGP01E1000_PHYSICAL_LAYER_DEVICE_PAGE_SELECT: u32 = 0x1f;
 /// How a page and a register pack into one offset (`PHYSICAL_LAYER_DEVICE_PAGE_SHIFT`).
 pub(crate) const PHYSICAL_LAYER_DEVICE_PAGE_SHIFT: u32 = 5;
-/// The first page reached at PHY address 1 rather than 2 (`HV_INTC_FC_PAGE_START`).
-pub(crate) const HV_INTC_FC_PAGE_START: u32 = 768;
+/// The first page reached at PHY address 1 rather than 2: OpenBSD's `HV_INTC_FC_PAGE_START`
+/// (`sys/dev/pci/if_em_hw.h`), which FreeBSD's `e1000_phy.h` spells the same. No source expands
+/// `INTC_FC`, so the name says what the page is instead. It is selected as page 0.
+#[doc(alias = "HV_INTC_FC_PAGE_START")]
+pub(crate) const FIRST_PAGE_AT_ADDRESS_ONE: u32 = 768;
 /// The host wakeup page (`BM_WUC_PAGE`), refused.
 pub(crate) const BM_WUC_PAGE: u32 = 800;
 
@@ -214,14 +217,21 @@ pub mod registers {
     /// **82577 PHY Control 2** (`I82577_PHY_CTRL_2`, FreeBSD's `e1000_phy.h`).
     #[doc(alias = "82577 physical layer device control 2")]
     pub(crate) const I82577_PHY_CTRL_2: u32 = 18;
-    /// **Kumeran Mode Control** (`HV_KMRN_MODE_CTRL`, FreeBSD's `e1000_ich8lan.h`). Page 769,
-    /// register 16.
+    /// **Kumeran Mode Control** (OpenBSD's `HV_KMRN_MODE_CTRL`, with `I2_MODE_CTRL` as its I217
+    /// name, `sys/dev/pci/if_em_hw.h`; FreeBSD's `HV_KMRN_MODE_CTRL`, `e1000_ich8lan.h`). Page 769,
+    /// register 16. Kumeran is the interconnect between the MAC and this PHY. The register was
+    /// first defined for the Hanksville (82577) PHY and still applies on the later I217 through
+    /// I219 parts. It is not the GG82563 PHY's Kumeran Mode Control on page 193
+    /// (`GG82563_PHY_KMRN_MODE_CTRL`), which this crate does not address.
     ///
-    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling that keeps a register or bit name
-    /// copied from a cited source, strictly: FreeBSD's `HV_KMRN_MODE_CTRL` (`e1000_ich8lan.h`).
-    /// Refused `KMRN_MODE_CTRL` (a shortened copy).
+    /// Name: ratified 2026-11-08 (UTC), #3329. Renamed from `HV_KMRN_MODE_CTRL`, which stays as an
+    /// alias with OpenBSD's `I2_MODE_CTRL`; the module path carries the PHY family. Refused
+    /// `KMRN_MODE_CTRL` (a shortened copy) and a `HANKSVILLE_` prefix (the register outlives the
+    /// 82577).
     #[doc(alias = "kumeran mode control")]
-    pub const HV_KMRN_MODE_CTRL: u32 = paged_offset(769, 16);
+    #[doc(alias = "HV_KMRN_MODE_CTRL")]
+    #[doc(alias = "I2_MODE_CTRL")]
+    pub const KUMERAN_MODE_CONTROL_REGISTER: u32 = paged_offset(769, 16);
     /// **Port General Configuration** (`BM_PORT_GEN_CFG`, FreeBSD's `e1000_ich8lan.h`). Page 769,
     /// register 17.
     #[doc(alias = "port general configuration")]
@@ -230,25 +240,33 @@ pub mod registers {
     /// register 23.
     #[doc(alias = "system management bus control")]
     pub(crate) const CV_SMB_CTRL: u32 = paged_offset(769, 23);
-    /// **Power Management Control** (`HV_PM_CTRL`, FreeBSD's `e1000_ich8lan.h`). Page 770, register
-    /// 17.
+    /// **Power Management Control** (OpenBSD's `HV_PM_CTRL`, `sys/dev/pci/if_em_hw.h`; FreeBSD's
+    /// `HV_PM_CTRL`, `e1000_ich8lan.h`). Page 770, register 17: the PHY's power management, with
+    /// the K1 enable bit. OpenBSD also names the same offset `IGP3_KMRN_POWER_MNG_CTRL`.
     #[doc(alias = "power management control")]
-    pub(crate) const HV_PM_CTRL: u32 = paged_offset(770, 17);
+    #[doc(alias = "HV_PM_CTRL")]
+    pub(crate) const POWER_MANAGEMENT_CONTROL_REGISTER: u32 = paged_offset(770, 17);
     /// **Ultra-Low-Power Configuration 1** (`I218_ULP_CONFIG1`, FreeBSD's `e1000_ich8lan.h`). Page
     /// 779, register 16.
     #[doc(alias = "ultra-low-power configuration 1")]
     pub(crate) const I218_ULP_CONFIG1: u32 = paged_offset(779, 16);
-    /// **OEM Bits** (`HV_OEM_BITS`, FreeBSD's `e1000_ich8lan.h`). LPLU, gigabit disable and restart
-    /// autonegotiation; page 768, register 25.
+    /// **OEM Bits** (OpenBSD's `HV_OEM_BITS`, `sys/dev/pci/if_em_hw.h`; FreeBSD's `HV_OEM_BITS`,
+    /// `e1000_ich8lan.h`). The bits the original equipment manufacturer's configuration sets: low
+    /// power link up, gigabit disable and restart autonegotiation; page 768, register 25.
     #[doc(alias = "oem bits")]
-    pub(crate) const HV_OEM_BITS: u32 = paged_offset(768, 25);
-    /// **System Management Bus Address** (`HV_SMB_ADDR`, FreeBSD's `e1000_ich8lan.h`). Page 768,
-    /// register 26.
+    #[doc(alias = "HV_OEM_BITS")]
+    pub(crate) const OEM_BITS_REGISTER: u32 = paged_offset(768, 25);
+    /// **System Management Bus Address** (FreeBSD's `HV_SMB_ADDR`, `e1000_ich8lan.h`; OpenBSD does
+    /// not name it). Page 768, register 26: the PHY's address on the system management bus, its
+    /// valid and packet error checking bits, and the bus frequency.
     #[doc(alias = "system management bus address")]
-    pub(crate) const HV_SMB_ADDR: u32 = paged_offset(768, 26);
-    /// **LED Configuration** (`HV_LED_CONFIG`, FreeBSD's `e1000_ich8lan.h`). Page 768, register 30.
+    #[doc(alias = "HV_SMB_ADDR")]
+    pub(crate) const SYSTEM_MANAGEMENT_BUS_ADDRESS_REGISTER: u32 = paged_offset(768, 26);
+    /// **LED Configuration** (FreeBSD's `HV_LED_CONFIG`, `e1000_ich8lan.h`; OpenBSD does not name
+    /// it). Page 768, register 30: the PHY's LED modes, copied from the MAC's `LEDCTL`.
     #[doc(alias = "led configuration")]
-    pub(crate) const HV_LED_CONFIG: u32 = paged_offset(768, 30);
+    #[doc(alias = "HV_LED_CONFIG")]
+    pub(crate) const LED_CONFIGURATION_REGISTER: u32 = paged_offset(768, 30);
 }
 
 /// `PHYSICAL_LAYER_DEVICE_REVISION_MASK`: the identifier without its revision nibble.
@@ -419,7 +437,11 @@ impl SoftwareFlag {
 
 /// Which PHY address a page lives at (`e1000_get_phy_addr_for_hv_page`).
 pub(crate) const fn address_for(page: u32) -> u32 {
-    if page >= HV_INTC_FC_PAGE_START { 1 } else { 2 }
+    if page >= FIRST_PAGE_AT_ADDRESS_ONE {
+        1
+    } else {
+        2
+    }
 }
 
 /// What one paged access does on the bus: the page-select write, if any, then the register.
@@ -451,12 +473,13 @@ pub struct PagedAccessPlan {
 pub const fn plan_paged_access(offset: u32) -> Result<PagedAccessPlan, Error> {
     let page = offset >> PHYSICAL_LAYER_DEVICE_PAGE_SHIFT;
     let register = offset & MAXIMUM_PHYSICAL_LAYER_DEVICE_REGISTER_ADDRESS;
-    if page == BM_WUC_PAGE || (page > 0 && page < HV_INTC_FC_PAGE_START) || page > MAXIMUM_PAGE {
+    if page == BM_WUC_PAGE || (page > 0 && page < FIRST_PAGE_AT_ADDRESS_ONE) || page > MAXIMUM_PAGE
+    {
         return Err(Error::PageNotPorted);
     }
     let physical_layer_device_address = address_for(page);
     // Page 768 is selected as page 0 (FreeBSD: "if (page == HV_INTC_FC_PAGE_START) page = 0").
-    let shown = if page == HV_INTC_FC_PAGE_START {
+    let shown = if page == FIRST_PAGE_AT_ADDRESS_ONE {
         0
     } else {
         page
@@ -585,7 +608,7 @@ mod proofs {
             match p.select {
                 Some(sel) => {
                     assert!(p.register > MAXIMUM_PHYSICAL_LAYER_DEVICE_MULTI_PAGE_REGISTER);
-                    let shown = if page == HV_INTC_FC_PAGE_START {
+                    let shown = if page == FIRST_PAGE_AT_ADDRESS_ONE {
                         0
                     } else {
                         page

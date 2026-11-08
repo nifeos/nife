@@ -53,9 +53,13 @@ pub(crate) const MULTIMEDIA_CARD_RELATIVE_CARD_ADDRESS: u16 = 1;
 #[non_exhaustive]
 pub enum CardKind {
     /// SD 1.x, standard capacity, byte addressed.
-    SdV1,
+    ///
+    /// Name: ratified 2026-11-07 (UTC). Renamed from `SdV1`, since `V` abbreviates version.
+    SdVersion1,
     /// SD 2.0 or later, standard capacity, byte addressed.
-    SdV2,
+    ///
+    /// Name: ratified 2026-11-07 (UTC). Renamed from `SdV2`, since `V` abbreviates version.
+    SdVersion2,
     /// SDHC, SDXC or SDUC: block addressed.
     SdHighCapacity,
     /// An eMMC (embedded multimedia card) or an MMC (multimedia card). Block addressed when the OCR
@@ -270,9 +274,9 @@ pub(crate) fn power_up<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion>(
             let kind = if operation_conditions & OPERATION_CONDITIONS_HIGH_CAPACITY != 0 {
                 CardKind::SdHighCapacity
             } else if v2 {
-                CardKind::SdV2
+                CardKind::SdVersion2
             } else {
-                CardKind::SdV1
+                CardKind::SdVersion1
             };
             (kind, operation_conditions)
         }
@@ -358,7 +362,7 @@ pub(crate) fn configure_multimedia_card<R: RegisterWindowAndClock, D: DirectMemo
         0,
         Response::R1,
         Data {
-            block_size: BLOCK_BYTES as u32,
+            block_bytes: BLOCK_BYTES as u32,
             blocks: 1,
             is_write: false,
         },
@@ -542,7 +546,7 @@ fn data_command(card: &Card, logical_block_address: u64, blocks: u32, write: boo
         card.block_address_argument(logical_block_address),
         Response::R1,
         Data {
-            block_size: BLOCK_BYTES as u32,
+            block_bytes: BLOCK_BYTES as u32,
             blocks,
             is_write: write,
         },

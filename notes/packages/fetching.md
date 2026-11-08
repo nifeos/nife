@@ -77,9 +77,9 @@ system starts its network stack)'s `BUGS`).
 ## The HTTP client's rules
 
 `crates/http_response` is the pure-logic half of the client: the request line, and a reader for the
-response that never holds the body. Plain HTTP is enough on a LAN. §196 (nife carries TLS) rules
-HTTPS for the internet rung, and under §195 (a reviewed recipe vouches for a package) a package's
-digest, not its transport, decides whether its bytes may run.
+response that never holds the body. Plain HTTP is enough on a local area network. §196 (nife carries
+TLS) rules HTTPS for the internet rung, and under §195 (a reviewed recipe vouches for a package) a
+package's digest, not its transport, decides whether its bytes may run.
 
 The reader is incremental and holds only the head. A response arrives one socket read at a time,
 at most `socket_contract::DATA_MAXIMUM` bytes each, and the body is a package that may be a
