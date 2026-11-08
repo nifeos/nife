@@ -87,7 +87,7 @@ first candidate for a fifth row.
    and its source divides by purpose) has milestone 610 (the interface's stability is
    measured weekly)'s per-package co-change column, and the soak (step 6) is how the second is
    measured. When the soak exits, calef adds it to the lint-checked publish allowlist. The
-   `nifeos/e1000e` repository is created when the crate moves, on the shared CI template (milestone
+   `nifeos/e1000e` repository exists since the crate moved, on the shared CI template (milestone
    887), through reusable workflows: Kani through `kani-github-action`, lint, release. Its release
    workflow refuses to publish unless the proof job is green. No harness here reads `target_arch`,
    so stock Kani proves them. The patched Kani of §218 (carry a Kani patch so riscv64 is proved, and
