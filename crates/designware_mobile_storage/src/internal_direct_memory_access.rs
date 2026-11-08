@@ -26,8 +26,8 @@ use crate::registers;
 /// spelled out.
 pub trait DirectMemoryAccessRegion {
     /// The region's first byte as the controller's direct memory access engine addresses it: on the
-    /// VisionFive 2, its physical address. Behind an IOMMU or a bus offset it differs from the
-    /// processor's physical address, so it does not take that name.
+    /// VisionFive 2, its physical address. Behind an address translation unit or a bus offset it
+    /// differs from the processor's physical address, so it does not take that name.
     ///
     /// Name: provisional (the maintainer), a two-way door before the first release.
     /// Renamed from `bus_address`, which a processor-physical `physical_address` would misname. The
