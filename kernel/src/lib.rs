@@ -130,6 +130,12 @@ mod network_bench;
 mod storage_bench;
 #[cfg(all(feature = "storage_bench", not(target_arch = "riscv64")))]
 compile_error!("storage_bench probes the JH7110's SD/MMC controller and builds only for riscv64");
+// The bench's hardware-free steps (the read-only probe and the scratch write test), generic over the
+// register window. Built on every architecture in the unit-test image so a fake card tests them; in
+// any other build only the riscv64 `storage_bench` boot has a caller. See kernel/src/storage_bench_steps.rs.
+#[cfg(any(test, all(feature = "storage_bench", target_arch = "riscv64")))]
+#[cfg_attr(not(feature = "storage_bench"), allow(dead_code))]
+mod storage_bench_steps;
 // The JH7110's SD/MMC controller's volatile half (milestone 53): a mapped window and a clock for
 // `designware_mobile_storage`'s driver. riscv64-only because the JH7110 is; the module header
 // carries the parity note. See kernel/src/designware_mobile_storage.rs.
