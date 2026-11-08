@@ -58,6 +58,8 @@ cargo fmt --manifest-path redoxfs_server/Cargo.toml "$@"
 # this costs a rustfmt pass over four small files and closes the hole before it opens: the lesson
 # above is that a gate does not reach across a workspace boundary, and this is a new boundary.
 cargo fmt --manifest-path fuzz/Cargo.toml "$@"
+# A crate's own fuzz workspace, which leaves with the crate when it moves to a repository of its own.
+cargo fmt --manifest-path crates/extensible_host_controller_interface/fuzz/Cargo.toml "$@"
 
 # `std_exerciser` is a fifth, and finding it unformatted is the third time this exact lesson has been
 # learned in this file. It has been its own workspace since milestone 27 and this gate has never

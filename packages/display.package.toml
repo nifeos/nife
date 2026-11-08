@@ -18,7 +18,9 @@ interfaces = [
     "glyph_atlas",
     "extensible_host_controller_interface",
 ]
-crates = ["usb", "glyph_atlas_generator"]
+# `extensible_host_controller_interface_fuzz` is that crate's own fuzz targets, kept beside it so they
+# leave with it.
+crates = ["usb", "glyph_atlas_generator", "extensible_host_controller_interface_fuzz"]
 # The fonts the terminal's atlas is drawn from (milestone 142 (a text display good enough that
 # people use it instead of a GUI)).
 paths = ["vendor/dejavu/"]
