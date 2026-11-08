@@ -61,7 +61,7 @@ pub(crate) fn start(
         window,
         card_interface_unit_hertz: slot.card_interface_unit_hertz,
         bus_width: slot.bus_width,
-        queue_depth: u8::try_from(slot.queue_depth.unwrap_or(32)).unwrap_or(0),
+        queue_depth: u8::try_from(slot.queue_depth_words.unwrap_or(32)).unwrap_or(0),
     };
     let words = handoff.pack();
     if Handoff::unpack(words) != Some(handoff) {
@@ -87,7 +87,7 @@ pub(crate) fn start(
 
     let ready = crate::sched::create_rendezvous();
     let request = crate::sched::create_rendezvous();
-    let base = slot.base;
+    let base = slot.registers_physical_address;
     crate::sched::spawn(move || {
         let mut maps = [Mapping {
             va: 0,

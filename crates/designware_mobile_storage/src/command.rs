@@ -5,7 +5,7 @@
 //! an automatic CMD12 after a multi-block transfer. The response kinds are the SD Physical Layer
 //! Simplified Specification's (section 4.9) and JEDEC JESD84's for eMMC; which of them carry a
 //! CRC is the spec's statement, and the R3 exception (the OCR register has no CRC, its CRC field
-//! reads as all ones) is why [`Response::has_crc`] exists.
+//! reads as all ones) is why [`Response::has_cyclic_redundancy_check`] exists.
 //!
 //! The command constants keep the specifications' names: the SD specification's section 4.7.4 and
 //! JESD84-B51's section 6.10.4. Each doc gives the command's number and what it does.
@@ -136,10 +136,12 @@ pub enum Response {
 impl Response {
     /// Does the card send a CRC the controller can check? All but R3 and no response.
     ///
-    /// Name: ratified 2026-11-02 (UTC), #3092. Whether the response carries a CRC the controller
-    /// can check.
+    /// Name: ratified 2026-11-07 (UTC). Whether the response carries a cyclic redundancy check
+    /// (CRC) the controller can check; the specifications' `CRC` is kept as `doc(alias = "crc")`.
+    /// Renamed from `has_crc`, since `crc` is not an accepted acronym.
+    #[doc(alias = "crc")]
     #[must_use]
-    pub const fn has_crc(self) -> bool {
+    pub const fn has_cyclic_redundancy_check(self) -> bool {
         !matches!(self, Response::None | Response::R3)
     }
 
@@ -156,8 +158,11 @@ impl Response {
 /// that moves blocks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Data {
-    /// Bytes per block. 512 for every block transfer this driver makes.
-    pub block_size: u32,
+    /// Bytes per block, the `BLKSIZ` value. 512 for every block transfer this driver makes.
+    ///
+    /// Name: ratified 2026-11-07 (UTC). Renamed from `block_size`, since a size ends with its unit.
+    #[doc(alias = "block size")]
+    pub block_bytes: u32,
     /// How many blocks. Above one, the controller sends CMD12 by itself at the end.
     pub blocks: u32,
     /// True for a write to the card.
@@ -176,7 +181,7 @@ impl Data {
     /// from `bytes`, which suggested a byte slice and not a count.
     #[must_use]
     pub const fn total_bytes(&self) -> u32 {
-        self.block_size.saturating_mul(self.blocks)
+        self.block_bytes.saturating_mul(self.blocks)
     }
 }
 
@@ -260,7 +265,7 @@ impl Command {
         if self.response.is_long() {
             w |= registers::COMMAND_RESPONSE_LENGTH;
         }
-        if self.response.has_crc() {
+        if self.response.has_cyclic_redundancy_check() {
             w |= registers::COMMAND_CHECK_RESPONSE_CRC;
         }
         if let Some(d) = self.data {
@@ -328,7 +333,7 @@ mod tests {
     #[test]
     fn only_a_multi_block_transfer_asks_for_the_automatic_stop() {
         let one = Data {
-            block_size: 512,
+            block_bytes: 512,
             blocks: 1,
             is_write: false,
         };
