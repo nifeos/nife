@@ -459,10 +459,10 @@ pub fn configure(
 /// other and against the burst-length bits (which is what `bus_burst_lengths` carries), the
 /// transmit and receive burst-length fields against the bits set beside them, the receive buffer
 /// size against the receive burst-length field, and the pause time against the flow-control
-/// enable; the compiler checks it here, and the mutation exclusion for `configure` names this
-/// constant. A field value reaches its `|` through its own mask, and a word whose field the line
-/// above cleared takes a value only inside that field; where neither holds, the configure tests
-/// kill the swap.
+/// enable; the compiler checks it here, and the mutation exclusion for `configure` and the triage
+/// rows for `program_system_bus_mode` and `program_channel_bursts` name this constant. A field
+/// value reaches its `|` through its own mask, and a word whose field the line above cleared takes
+/// a value only inside that field; where neither holds, the configure tests kill the swap.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 pub const CONFIGURED_BUS_FIELDS_DO_NOT_OVERLAP: () = assert!(
