@@ -137,6 +137,12 @@ controller is on, as the bus sees them, which is physical on every board this dr
 uses it, which differs from the CPU physical address behind an IOMMU or a bus offset, so it does
 not take `physical_address`. It is `direct_memory_access_address`, with
 `bus address` and `dma_addr_t` as aliases; the architect ratified it.
+Every name inside the crate that holds that same value carries the same spelling: the engine's
+field and the `descriptor` parameter are `region_direct_memory_access_address`, the simulator's
+walk holds `descriptor_direct_memory_access_address`, and the test regions' fields are
+`direct_memory_access_address`. Each is private, converted nowhere (the value is the region's
+`direct_memory_access_address` narrowed to `u32` for the 32-bit descriptor list), and provisional.
+The only CPU-side address is `jh7110::Slot::registers_physical_address`, which stays physical.
 `Refusal::AboveFourGibibytes` spells its unit out. The parameters of `registers::queue_offset`,
 `queue_width_bytes` and `uses_64_bit_direct_memory_access` are `version_identification` and
 `hardware_configuration`, and `jh7110::Slot::from_node` takes `property`. The renamed items carry

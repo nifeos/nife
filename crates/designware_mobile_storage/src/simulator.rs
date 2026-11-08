@@ -740,7 +740,7 @@ impl SimulatedHostController {
             if !more {
                 return;
             }
-            let (descriptor_physical_address, done) = match self.walk {
+            let (descriptor_direct_memory_access_address, done) = match self.walk {
                 Walk::Idle => (
                     self.peek(registers::DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_REGISTER),
                     0,
@@ -748,7 +748,7 @@ impl SimulatedHostController {
                 Walk::At(d, n) => (d, n),
                 Walk::Suspended(_) | Walk::Halted | Walk::Finished => return,
             };
-            let Some(at) = self.offset(&bus, descriptor_physical_address, 16) else {
+            let Some(at) = self.offset(&bus, descriptor_direct_memory_access_address, 16) else {
                 self.halt();
                 return;
             };
@@ -765,7 +765,7 @@ impl SimulatedHostController {
             if word_0 & DESCRIPTOR_OWNED_BY_CONTROLLER == 0
                 || done == 0 && self.unowned_at == Some(self.walked)
             {
-                self.walk = Walk::Suspended(descriptor_physical_address);
+                self.walk = Walk::Suspended(descriptor_direct_memory_access_address);
                 *self.register(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER) |=
                     registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_DESCRIPTOR_UNAVAILABLE | registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_ABNORMAL_INTERRUPT_SUMMARY;
                 return;
@@ -790,7 +790,7 @@ impl SimulatedHostController {
             }
             let done = done + 4;
             if done < size {
-                self.walk = Walk::At(descriptor_physical_address, done);
+                self.walk = Walk::At(descriptor_direct_memory_access_address, done);
                 continue;
             }
             bus.bytes[at..at + 4]
@@ -811,14 +811,15 @@ impl SimulatedHostController {
             } else if word_0 & DESCRIPTOR_CHAINED != 0 {
                 Walk::At(next, 0)
             } else {
-                Walk::At(descriptor_physical_address + 16, 0)
+                Walk::At(descriptor_direct_memory_access_address + 16, 0)
             };
         }
     }
 
-    /// The byte offset in memory of `len` bytes at bus address `address`, if they are all there.
-    fn offset(&self, bus: &Bus, physical_address: u32, len: usize) -> Option<usize> {
-        let off = usize::try_from(u64::from(physical_address).checked_sub(bus.base)?).ok()?;
+    /// The byte offset in memory of `len` bytes at `direct_memory_access_address`, if they are all there.
+    fn offset(&self, bus: &Bus, direct_memory_access_address: u32, len: usize) -> Option<usize> {
+        let off =
+            usize::try_from(u64::from(direct_memory_access_address).checked_sub(bus.base)?).ok()?;
         (off + len <= bus.bytes.len()).then_some(off)
     }
 

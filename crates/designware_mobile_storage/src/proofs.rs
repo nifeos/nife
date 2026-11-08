@@ -90,10 +90,11 @@ fn an_admitted_range_is_inside_the_card_and_the_address() {
 fn a_chain_describes_its_bytes_inside_the_region() {
     let pages: u32 = kani::any();
     kani::assume((1..=MAXIMUM_DESCRIPTORS).contains(&pages));
-    let region_physical_address: u32 = kani::any();
-    kani::assume(region_physical_address.is_multiple_of(PAGE_BYTES));
+    let region_direct_memory_access_address: u32 = kani::any();
+    kani::assume(region_direct_memory_access_address.is_multiple_of(PAGE_BYTES));
     kani::assume(
-        u64::from(region_physical_address) + u64::from((pages + 1) * PAGE_BYTES) <= 1 << 32,
+        u64::from(region_direct_memory_access_address) + u64::from((pages + 1) * PAGE_BYTES)
+            <= 1 << 32,
     );
     let bytes: u32 = kani::any();
     kani::assume((1..=pages * PAGE_BYTES).contains(&bytes));
@@ -101,17 +102,21 @@ fn a_chain_describes_its_bytes_inside_the_region() {
     assert!((1..=pages).contains(&count));
     let i: u32 = kani::any();
     kani::assume(i < count);
-    let [word_0, size, buffer, next] = descriptor(region_physical_address, i, count, bytes);
+    let [word_0, size, buffer, next] =
+        descriptor(region_direct_memory_access_address, i, count, bytes);
     assert!((1..=PAGE_BYTES).contains(&size));
     assert!(
-        buffer >= region_physical_address + PAGE_BYTES
-            && buffer - region_physical_address + size <= (pages + 1) * PAGE_BYTES
+        buffer >= region_direct_memory_access_address + PAGE_BYTES
+            && buffer - region_direct_memory_access_address + size <= (pages + 1) * PAGE_BYTES
     );
     if i + 1 == count {
         assert!(i * PAGE_BYTES + size == bytes);
         assert!(word_0 & crate::internal_direct_memory_access::DESCRIPTOR_LAST != 0);
     } else {
-        assert!(size == PAGE_BYTES && next == region_physical_address + (i + 1) * DESCRIPTOR_BYTES);
+        assert!(
+            size == PAGE_BYTES
+                && next == region_direct_memory_access_address + (i + 1) * DESCRIPTOR_BYTES
+        );
         assert!(word_0 & crate::internal_direct_memory_access::DESCRIPTOR_LAST == 0);
     }
 }
@@ -291,12 +296,12 @@ impl RegisterWindowAndClock for AdversarialWindowAndClock {
 /// 4 GiB, so a chain is one or two descriptors. Each access asserts that the driver asked for
 /// bytes inside the region, which the trait leaves the implementation to bound.
 struct AdversarialRegion {
-    physical_address: u64,
+    direct_memory_access_address: u64,
 }
 
 impl DirectMemoryAccessRegion for AdversarialRegion {
     fn direct_memory_access_address(&self) -> u64 {
-        self.physical_address
+        self.direct_memory_access_address
     }
 
     fn bytes(&self) -> u32 {
@@ -378,9 +383,10 @@ fn the_direct_memory_access_wait_returns_once_its_deadline_has_passed() {
         past_from + count as usize,
     );
     let host = adversarial_host(window);
-    let physical_address: u64 = kani::any();
+    let direct_memory_access_address: u64 = kani::any();
     kani::assume(
-        physical_address.is_multiple_of(u64::from(PAGE_BYTES)) && physical_address < 1 << 31,
+        direct_memory_access_address.is_multiple_of(u64::from(PAGE_BYTES))
+            && direct_memory_access_address < 1 << 31,
     );
     let identity = crate::host_controller::Identity {
         version_identification: 0,
@@ -390,9 +396,12 @@ fn the_direct_memory_access_wait_returns_once_its_deadline_has_passed() {
         card_detect: 0,
         firmware: [0; 5],
     };
-    let Ok(engine) =
-        InternalDirectMemoryAccess::new(AdversarialRegion { physical_address }, &identity)
-    else {
+    let Ok(engine) = InternalDirectMemoryAccess::new(
+        AdversarialRegion {
+            direct_memory_access_address,
+        },
+        &identity,
+    ) else {
         panic!("a three-page region below 2 GiB is refused");
     };
     let mut host = host.with_internal_direct_memory_access(engine);
@@ -654,10 +663,13 @@ fn adversarial_direct_memory_access_host()
         kani::assume(false);
         unreachable!()
     };
-    let physical_address: u64 = kani::any();
-    let Ok(engine) =
-        InternalDirectMemoryAccess::new(AdversarialRegion { physical_address }, &identity)
-    else {
+    let direct_memory_access_address: u64 = kani::any();
+    let Ok(engine) = InternalDirectMemoryAccess::new(
+        AdversarialRegion {
+            direct_memory_access_address,
+        },
+        &identity,
+    ) else {
         kani::assume(false);
         unreachable!()
     };
@@ -1154,12 +1166,12 @@ impl RegisterWindowAndClock for ModeledCard {
 /// done at the first look, and each access asserts it is inside the region, as
 /// [`AdversarialRegion`]'s do. The data the card sends is not what these harnesses are about.
 struct ClosedRegion {
-    physical_address: u64,
+    direct_memory_access_address: u64,
 }
 
 impl DirectMemoryAccessRegion for ClosedRegion {
     fn direct_memory_access_address(&self) -> u64 {
-        self.physical_address
+        self.direct_memory_access_address
     }
 
     fn bytes(&self) -> u32 {
@@ -1198,9 +1210,13 @@ fn modeled_card_host() -> HostController<ModeledCard, ClosedRegion> {
         kani::assume(false);
         unreachable!()
     };
-    let physical_address: u64 = kani::any();
-    let Ok(engine) = InternalDirectMemoryAccess::new(ClosedRegion { physical_address }, &identity)
-    else {
+    let direct_memory_access_address: u64 = kani::any();
+    let Ok(engine) = InternalDirectMemoryAccess::new(
+        ClosedRegion {
+            direct_memory_access_address,
+        },
+        &identity,
+    ) else {
         kani::assume(false);
         unreachable!()
     };
