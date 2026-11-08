@@ -83,7 +83,10 @@ fn both_trees_name_the_aon_syscon() {
     for blob in [VENDOR, MAINLINE] {
         let tree = tree(blob);
         let s = discover_aon_syscon(&tree).unwrap();
-        assert_eq!((s.base_physical_address, s.size_bytes), (0x1701_0000, 0x1000));
+        assert_eq!(
+            (s.base_physical_address, s.size_bytes),
+            (0x1701_0000, 0x1000)
+        );
         assert!(s.from_tree);
     }
 }
