@@ -8,12 +8,12 @@ Expected to fail: the harness's assertion that a field shorter than 32 bits is b
 diff --git a/crates/designware_mobile_storage/src/card.rs b/crates/designware_mobile_storage/src/card.rs
 --- a/crates/designware_mobile_storage/src/card.rs
 +++ b/crates/designware_mobile_storage/src/card.rs
-@@ -89,7 +89,7 @@
-     let mask = if len == 32 {
+@@ -91,7 +91,7 @@ pub const fn extract_bits(register: &[u32; 4], start: u32, width_bits: u32) -> u
+     let mask = if width_bits == 32 {
          0xffff_ffff
      } else {
--        (1u64 << len) - 1
-+        (1u64 << (len + 1)) - 1
+-        (1u64 << width_bits) - 1
++        (1u64 << (width_bits + 1)) - 1
      };
      (v & mask) as u32
  }

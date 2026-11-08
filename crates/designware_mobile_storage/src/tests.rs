@@ -63,9 +63,9 @@ fn a_high_capacity_sd_card_is_identified_selected_and_widened_in_the_specificati
 
 #[test]
 fn an_old_sd_card_is_byte_addressed_and_an_embedded_multimedia_card_is_told_apart_by_its_silence() {
-    let mut h = host(CardKind::SdV1, 4096);
+    let mut h = host(CardKind::SdVersion1, 4096);
     let card = sd::identify(&mut h, 4).unwrap();
-    assert_eq!(card.kind, sd::CardKind::SdV1);
+    assert_eq!(card.kind, sd::CardKind::SdVersion1);
     assert!(!card.block_addressed);
     assert_eq!(card.block_address_argument(3), 3 * 512);
 
@@ -314,7 +314,7 @@ fn without_a_tree_depth_the_queue_depth_is_read_from_its_reset_watermark() {
         None,
     )
     .unwrap();
-    assert_eq!(h.queue_depth(), 16);
+    assert_eq!(h.queue_depth_words(), 16);
 }
 
 // **The error paths.** Each test below injects one fault the sim can produce and checks that
@@ -337,9 +337,9 @@ fn faulty(
 
 #[test]
 fn an_sd_2_0_standard_capacity_card_answers_the_echo_and_is_still_byte_addressed() {
-    let mut h = host(CardKind::SdV2, 4096);
+    let mut h = host(CardKind::SdVersion2, 4096);
     let card = sd::identify(&mut h, 4).unwrap();
-    assert_eq!(card.kind, sd::CardKind::SdV2);
+    assert_eq!(card.kind, sd::CardKind::SdVersion2);
     assert!(!card.block_addressed);
     // It answered CMD8 but did not set CCS in its OCR, so it is not mistaken for SDHC.
     assert_eq!(card.block_address_argument(2), 1024);
@@ -604,7 +604,7 @@ fn an_sd_card_is_addressed_by_the_relative_card_address_it_chose_and_decoded_as_
         (55, 0xb368 << 16)
     );
     assert!(simulator.commands.contains(&(41, 0x4030_0000)));
-    let mut h = host(CardKind::SdV1, 4096);
+    let mut h = host(CardKind::SdVersion1, 4096);
     sd::identify(&mut h, 4).unwrap();
     assert!(h.into_registers().commands.contains(&(41, 0x0030_0000)));
 }

@@ -15,11 +15,11 @@
 /// **Control Register** (OpenBSD's `SDMMC_CTRL`): the three self-clearing resets, the interrupt and
 /// DMA enables.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; OpenBSD's `SDMMC_CTRL`
-/// spelling `CTRL` is kept as an alias.
+/// Name: ratified 2026-11-07 (UTC). The spelled-out form; OpenBSD's `SDMMC_CTRL` spelling `CTRL`
+/// is kept as an alias. Considered: `CONTROL`; a register offset ends `_REGISTER`.
 #[doc(alias = "control register")]
 #[doc(alias = "CTRL")]
-pub const CONTROL: u32 = 0x000;
+pub const CONTROL_REGISTER: u32 = 0x000;
 /// **Controller reset** (OpenBSD's `SDMMC_CTRL_CONTROLLER_RESET`): reset the controller's state
 /// machines. Self-clearing.
 #[doc(alias = "controller reset")]
@@ -419,27 +419,30 @@ pub(crate) const fn queue_threshold_receive_watermark(queue_threshold: u32) -> u
 pub(crate) const CARD_DETECT_REGISTER: u32 = 0x050;
 /// **Write Protect Register** (OpenBSD's `SDMMC_WRTPRT`): active high, slot 0.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; OpenBSD's `SDMMC_WRTPRT`
-/// spelling `WRTPRT` is kept as an alias.
+/// Name: ratified 2026-11-07 (UTC). The spelled-out form; OpenBSD's `SDMMC_WRTPRT` spelling
+/// `WRTPRT` is kept as an alias. Considered: `WRITE_PROTECT`; a register offset ends
+/// `_REGISTER`.
 #[doc(alias = "write protect register")]
 #[doc(alias = "WRTPRT")]
-pub const WRITE_PROTECT: u32 = 0x054;
+pub const WRITE_PROTECT_REGISTER: u32 = 0x054;
 /// **Transferred CIU Card Byte Count Register** (OpenBSD's `SDMMC_TCBCNT`): bytes the card
 /// interface has moved in the current data phase.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; OpenBSD's `SDMMC_TCBCNT`
-/// spelling `TCBCNT` is kept as an alias.
+/// Name: ratified 2026-11-07 (UTC). The spelled-out form; OpenBSD's `SDMMC_TCBCNT` spelling
+/// `TCBCNT` is kept as an alias. Considered: `TRANSFERRED_CARD_BYTE_COUNT`; a register offset ends
+/// `_REGISTER`.
 #[doc(alias = "transferred card byte count")]
 #[doc(alias = "TCBCNT")]
-pub const TRANSFERRED_CARD_BYTE_COUNT: u32 = 0x05c;
+pub const TRANSFERRED_CARD_BYTE_COUNT_REGISTER: u32 = 0x05c;
 /// **Transferred Host to BIU-FIFO Byte Count Register** (OpenBSD's `SDMMC_TBBCNT`): bytes moved
 /// between the host and the FIFO in the current data phase.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; OpenBSD's `SDMMC_TBBCNT`
-/// spelling `TBBCNT` is kept as an alias.
+/// Name: ratified 2026-11-07 (UTC). The spelled-out form; OpenBSD's `SDMMC_TBBCNT` spelling
+/// `TBBCNT` is kept as an alias. Considered: `TRANSFERRED_HOST_BYTE_COUNT`; a register offset ends
+/// `_REGISTER`.
 #[doc(alias = "transferred host byte count")]
 #[doc(alias = "TBBCNT")]
-pub const TRANSFERRED_HOST_BYTE_COUNT: u32 = 0x060;
+pub const TRANSFERRED_HOST_BYTE_COUNT_REGISTER: u32 = 0x060;
 /// **User ID Register** (OpenBSD's `SDMMC_USRID`): the integrator's user identifier, a free-form
 /// word.
 #[doc(alias = "user identifier register")]
@@ -468,18 +471,18 @@ pub const ULTRA_HIGH_SPEED_REGISTER: u32 = 0x074;
 /// **Hardware Reset Register** (Linux's `SDMMC_RST_N`; OpenBSD writes `SDMMC_RST_n`): per-slot
 /// hardware reset line to an eMMC device, active low.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; Linux's `SDMMC_RST_N`
-/// spelling `RST_N` is kept as an alias.
+/// Name: ratified 2026-11-07 (UTC). The spelled-out form; Linux's `SDMMC_RST_N` spelling `RST_N`
+/// is kept as an alias. Considered: `HARDWARE_RESET`; a register offset ends `_REGISTER`.
 #[doc(alias = "hardware reset register")]
 #[doc(alias = "RST_N")]
-pub const HARDWARE_RESET: u32 = 0x078;
+pub const HARDWARE_RESET_REGISTER: u32 = 0x078;
 /// **Bus Mode Register** (OpenBSD's `SDMMC_BMOD`): the IDMAC's resets, burst mode and enable.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3096. The spelled-out form; OpenBSD's `SDMMC_BMOD`
-/// spelling `BMOD` is kept as an alias.
+/// Name: ratified 2026-11-07 (UTC). The spelled-out form; OpenBSD's `SDMMC_BMOD` spelling `BMOD`
+/// is kept as an alias. Considered: `BUS_MODE`; a register offset ends `_REGISTER`.
 #[doc(alias = "bus mode register")]
 #[doc(alias = "BMOD")]
-pub const BUS_MODE: u32 = 0x080;
+pub const BUS_MODE_REGISTER: u32 = 0x080;
 /// **Software reset** (OpenBSD's `SDMMC_BMOD_SWR`): reset the IDMAC's registers and state.
 /// Self-clearing.
 #[doc(alias = "software reset")]
@@ -636,10 +639,11 @@ pub const fn queue_offset(version_identification: u32) -> u32 {
 /// Name: ratified 2026-11-07 (UTC). `fifo` becomes `queue` in every name this tree authors; the
 /// databook's `fifo` is kept as `doc(alias = "fifo")`. Considered: the parameter `hcon`, which
 /// abbreviates the databook's hardware configuration register; a parameter spells out the word, so
-/// it is `hardware_configuration`.
+/// it is `hardware_configuration`. Considered: `queue_width`, which a quantity does not take, since
+/// it ends with its unit.
 #[doc(alias = "fifo")]
 #[must_use]
-pub const fn queue_width(hardware_configuration: u32) -> Option<u32> {
+pub const fn queue_width_bytes(hardware_configuration: u32) -> Option<u32> {
     match (hardware_configuration >> 7) & 0x7 {
         0 => Some(2),
         1 => Some(4),
@@ -662,7 +666,7 @@ pub const fn uses_64_bit_direct_memory_access(hardware_configuration: u32) -> bo
 /// **The controller's external DMA interface**, `HCON` bits 17:16: 0 is none, 1 Synopsys' own
 /// `DW_DMA`, 2 a generic DMA handshake, 3 a non-Synopsys one. An IDMAC is built only into a
 /// controller that reads 0 here, which is how Linux's `dw_mci_probe` decides to use it. The VisionFive 2
-/// reads 0, and its firmware reads the card through the IDMAC (`CONTROL` bit 25 as it hands over).
+/// reads 0, and its firmware reads the card through the IDMAC (`CONTROL_REGISTER` bit 25 as it hands over).
 #[must_use]
 pub(crate) const fn direct_memory_access_interface(hardware_configuration: u32) -> u32 {
     (hardware_configuration >> 16) & 0x3
@@ -681,14 +685,14 @@ mod tests {
 
     #[test]
     fn the_hardware_configuration_names_every_queue_width_and_refuses_the_reserved_codes() {
-        assert_eq!(queue_width(0), Some(2));
-        assert_eq!(queue_width(1 << 7), Some(4));
-        assert_eq!(queue_width(2 << 7), Some(8));
+        assert_eq!(queue_width_bytes(0), Some(2));
+        assert_eq!(queue_width_bytes(1 << 7), Some(4));
+        assert_eq!(queue_width_bytes(2 << 7), Some(8));
         for code in 3..8 {
-            assert_eq!(queue_width(code << 7), None, "code {code}");
+            assert_eq!(queue_width_bytes(code << 7), None, "code {code}");
         }
         // Bits outside 9:7 do not leak into the width.
-        assert_eq!(queue_width(!(7 << 7) | (1 << 7)), Some(4));
+        assert_eq!(queue_width_bytes(!(7 << 7) | (1 << 7)), Some(4));
         assert!(uses_64_bit_direct_memory_access(1 << 27));
         assert!(!uses_64_bit_direct_memory_access(!(1 << 27)));
         // the VisionFive 2's word, read on both slots: no external DMA interface, so an IDMAC, and 32-bit

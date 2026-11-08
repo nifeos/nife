@@ -8,12 +8,12 @@ Expected to fail: `assert!(n <= (depth - filled) * 4)`, on any write with a nonz
 diff --git a/crates/designware_mobile_storage/src/host_controller.rs b/crates/designware_mobile_storage/src/host_controller.rs
 --- a/crates/designware_mobile_storage/src/host_controller.rs
 +++ b/crates/designware_mobile_storage/src/host_controller.rs
-@@ -199,7 +199,7 @@
- pub const fn queue_step(status: u32, depth: u32, write: bool, remaining: u32) -> u32 {
-     let filled = registers::queue_count(status);
-     let filled = if filled > depth { depth } else { filled };
--    let words = if write { depth - filled } else { filled };
-+    let words = if write { depth } else { filled };
+@@ -210,7 +210,7 @@ pub const fn queue_step(status: u32, depth_words: u32, write: bool, remaining_by
+     } else {
+         filled
+     };
+-    let words = if write { depth_words - filled } else { filled };
++    let words = if write { depth_words } else { filled };
      let bytes = words.saturating_mul(4);
-     if bytes < remaining { bytes } else { remaining }
- }
+     if bytes < remaining_bytes {
+         bytes

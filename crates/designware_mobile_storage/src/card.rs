@@ -70,26 +70,28 @@ pub const fn r1_state(r1: u32) -> u32 {
 /// with. Renamed from `STATE_TRANSFER`.
 pub const R1_STATE_TRANSFER: u32 = 4;
 
-/// **Bits `[start, start + len)` of a 128-bit register** held as four words, low word first.
-/// `len` above 32 is clamped to 32; positions past bit 127 read as zero.
+/// **Bits `[start, start + width_bits)` of a 128-bit register** held as four words, low word first.
+/// `width_bits` above 32 is clamped to 32; positions past bit 127 read as zero.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3138. The name says what the function does. Renamed from `bits`.
+/// Considered: the parameter `len` (ratified 2026-11-07 (UTC) as `width_bits`); a length ends with
+/// its unit.
 #[must_use]
-pub const fn extract_bits(register: &[u32; 4], start: u32, len: u32) -> u32 {
-    let len = if len > 32 { 32 } else { len };
-    if len == 0 || start >= 128 {
+pub const fn extract_bits(register: &[u32; 4], start: u32, width_bits: u32) -> u32 {
+    let width_bits = if width_bits > 32 { 32 } else { width_bits };
+    if width_bits == 0 || start >= 128 {
         return 0;
     }
     let word = (start / 32) as usize;
     let shift = start % 32;
     let mut v = (register[word] as u64) >> shift;
-    if shift + len > 32 && word + 1 < 4 {
+    if shift + width_bits > 32 && word + 1 < 4 {
         v |= (register[word + 1] as u64) << (32 - shift);
     }
-    let mask = if len == 32 {
+    let mask = if width_bits == 32 {
         0xffff_ffff
     } else {
-        (1u64 << len) - 1
+        (1u64 << width_bits) - 1
     };
     (v & mask) as u32
 }

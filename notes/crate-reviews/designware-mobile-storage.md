@@ -14,8 +14,7 @@ caller implements one trait, `RegisterWindowAndClock` (read a register, write on
 microsecond clock), and every sequence runs on a host against a simulated controller and card. It
 is `no_std`, with no allocator, no `unsafe` and no dependency. Nineteen Kani harnesses prove its
 parsers and bounds, and that each controller sequence is total against any controller. Every public name has a ratified `Name:` block, and the compile-time checks have no public name.
-The board's test steps live in the kernel's storage bench, not here. The public names under Names
-that break a naming rule wait for the architect.
+The board's test steps live in the kernel's storage bench, not here. No decision is open.
 
 ## Identity
 
@@ -35,9 +34,9 @@ Eight public modules and about 100 public items.
 
 | module | what it holds |
 |---|---|
-| `registers` | the register offsets and bits the driver uses, `queue_offset`, `queue_width`, `uses_64_bit_direct_memory_access` |
+| `registers` | the register offsets and bits the driver uses, `queue_offset`, `queue_width_bytes`, `uses_64_bit_direct_memory_access` |
 | `command` | `Command`, `Response`, `Data` and the command word encoding |
-| `host_controller` | `RegisterWindowAndClock`, `HostController` (reset, clock, send a command, read and write data), `Identity`, `Error`, `clock_divider`, `card_clock`, `queue_step` |
+| `host_controller` | `RegisterWindowAndClock`, `HostController` (reset, clock, send a command, read and write data), `Identity`, `Error`, `clock_divider`, `card_clock_hertz`, `queue_step` |
 | `internal_direct_memory_access` | `InternalDirectMemoryAccess`, the `DirectMemoryAccessRegion` trait, `NoDirectMemoryAccess`, `Refusal` |
 | `card` | `CardIdentification`, `CardSpecificData`, `extract_bits`, `r1_state` |
 | `sd` | `identify`, `read_blocks`, `write_blocks`, `Card`, `CardKind`, `can_address_blocks`, the two error enums |
@@ -89,36 +88,28 @@ Against the rulings in force, with the template's checks (`unit_symbols.py`, `sp
 | rule | result |
 |---|---|
 | units spelled out | passes. `_HERTZ`, `_MICROSECONDS` and `_BYTES` throughout. |
-| spelled-out words, accepted acronyms only | fails on the public names below. Every non-public name is spelled out: a register, bit, descriptor or command constant says what it is (`RAW_INTERRUPT_STATUS_REGISTER`, `SD_SEND_OPERATION_CONDITIONS`) and carries its source's spelling in `doc(alias)` (`RINTSTS`, `SD_SEND_OP_COND`), cited at the opening of its doc comment. `crc` is an accepted acronym, so the CRC constants keep it (`RAW_INTERRUPT_DATA_CRC_ERROR`, alias `RINTSTS_DCRC`). |
-| register shape (`_REGISTER`, `_MASK`, a size's unit) | fails on six public register offsets below. Every non-public offset ends `_REGISTER` and every multi-bit constant `_MASK`. |
-| address naming | fails on two public names below. The other `register_names.py` address findings name a card's relative address or a logical block address, which are not memory locations. |
+| spelled-out words, accepted acronyms only | passes. Every non-public name is spelled out: a register, bit, descriptor or command constant says what it is (`RAW_INTERRUPT_STATUS_REGISTER`, `SD_SEND_OPERATION_CONDITIONS`) and carries its source's spelling in `doc(alias)` (`RINTSTS`, `SD_SEND_OP_COND`), cited at the opening of its doc comment. `crc` is an accepted acronym, so the CRC constants keep it (`RAW_INTERRUPT_DATA_CRC_ERROR`, alias `RINTSTS_DCRC`). |
+| register shape (`_REGISTER`, `_MASK`, a size's unit) | passes. Every offset ends `_REGISTER` and every multi-bit constant `_MASK`. |
+| address naming | passes. The other `register_names.py` address findings name a card's relative address or a logical block address, which are not memory locations. |
 | question shape | passes. |
 | British spelling | passes. |
 | `id`, `sd`, `crc`, `jh7110` | accepted words and a chip name. |
 | aliases of an old nife spelling | none. Every `doc(alias)` is a specification, databook or OpenBSD term. |
 | prose acronyms (`prose_acronyms.py`) | fails: 62 acronyms in the README and doc comments are not expanded where first used (`FIFO`, `CSD`, `OCR`, `MMIO`, the command numbers `CMD0` to `ACMD41` and others). |
 
-Public names that break a rule, with a recommended name. Each is the architect's call.
-
-| name | rule it breaks | recommended |
-|---|---|---|
-| `registers::CONTROL` | a register offset ends `_REGISTER` | `CONTROL_REGISTER` |
-| `registers::WRITE_PROTECT` | a register offset ends `_REGISTER` | `WRITE_PROTECT_REGISTER` |
-| `registers::TRANSFERRED_CARD_BYTE_COUNT` | a register offset ends `_REGISTER` | `TRANSFERRED_CARD_BYTE_COUNT_REGISTER` |
-| `registers::TRANSFERRED_HOST_BYTE_COUNT` | a register offset ends `_REGISTER` | `TRANSFERRED_HOST_BYTE_COUNT_REGISTER` |
-| `registers::HARDWARE_RESET` | a register offset ends `_REGISTER` | `HARDWARE_RESET_REGISTER` |
-| `registers::BUS_MODE` | a register offset ends `_REGISTER` | `BUS_MODE_REGISTER` |
-| `command::Data::block_size` | a size carries its unit | `block_bytes` |
-| `sd::CardKind::SdV1`, `SdV2` | `V` abbreviates version | `SdVersion1`, `SdVersion2` |
-| `internal_direct_memory_access::DirectMemoryAccessRegion::bus_address` | an address is virtual or physical | `physical_address` |
-| `jh7110::Slot::base`, and the `base` parameter of `Slot::from_node` | an address is virtual or physical | `registers_physical_address` |
-| `jh7110::Slot::size`, and the `size` parameter of `Slot::from_node` | a size carries its unit | `registers_size_bytes` |
-| `host_controller::clock_divider`, parameters `base` and `target` | a quantity carries its unit | `base_hertz`, `target_hertz` |
-| `host_controller::card_clock`, and its parameter `base` | a quantity carries its unit | `card_clock_hertz`, `base_hertz` |
-| `host_controller::queue_step`, parameters `depth` and `remaining` | a quantity carries its unit | `depth_words`, `remaining_bytes` |
-| `card::extract_bits`, parameter `len` | a length carries its unit | `width_bits` |
-| `registers::queue_width` | a quantity carries its unit | `queue_width_bytes` |
-| `jh7110::QUEUE_DEPTH`, `Slot::queue_depth`, `HostController::queue_depth` and the `queue_depth` parameter of `HostController::new` | a count names the things | `QUEUE_DEPTH_WORDS`, `queue_depth_words` |
+The two address registers, `CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER` and
+`CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER`, hold the descriptor address and buffer address the
+controller is on, as the bus sees them, which is physical on every board this driver runs on.
+`DirectMemoryAccessRegion::direct_memory_access_address` is the region's address as the controller's DMA engine
+uses it, which differs from the CPU physical address behind an IOMMU or a bus offset, so it does
+not take `physical_address`. It is `direct_memory_access_address`, provisionally, with
+`bus address` and `dma_addr_t` as aliases; the maintainer ruled it, and it is a two-way door
+before the first release.
+`Refusal::AboveFourGibibytes` spells its unit out. The parameters of `registers::queue_offset`,
+`queue_width_bytes` and `uses_64_bit_direct_memory_access` are `version_identification` and
+`hardware_configuration`, and `jh7110::Slot::from_node` takes `property`. The renamed items carry
+the old spelling and the rule that refused it in their `Name:` blocks, and none carries a
+`doc(alias)` of it.
 
 ## License
 
@@ -165,4 +156,4 @@ still build.
 
 ## Recommendation
 
-Ready for review once the architect rules on the public names under Names.
+Ready for review.

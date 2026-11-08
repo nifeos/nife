@@ -4,8 +4,8 @@
 //! wait-for-previous-data on everything but CMD12 and CMD13, the initialization clocks on CMD0, and
 //! an automatic CMD12 after a multi-block transfer. The response kinds are the SD Physical Layer
 //! Simplified Specification's (section 4.9) and JEDEC JESD84's for eMMC; which of them carry a
-//! CRC is the spec's statement, and the R3 exception (the OCR register has no CRC, its CRC field
-//! reads as all ones) is why [`Response::has_crc`] exists.
+//! cyclic redundancy check (CRC) is the spec's statement, and the R3 exception (the OCR register
+//! has no CRC, its CRC field reads as all ones) is why [`Response::has_crc`] exists.
 //!
 //! The command constants keep the specifications' names: the SD specification's section 4.7.4 and
 //! JESD84-B51's section 6.10.4. Each doc gives the command's number and what it does.
@@ -145,7 +145,7 @@ impl Response {
     /// Does the card send a CRC the controller can check? All but R3 and no response.
     ///
     /// Name: ratified 2026-11-02 (UTC), #3092. Whether the response carries a CRC the controller
-    /// can check.
+    /// can check; `crc` is an accepted acronym, so the name keeps it.
     #[must_use]
     pub const fn has_crc(self) -> bool {
         !matches!(self, Response::None | Response::R3)
@@ -164,8 +164,11 @@ impl Response {
 /// that moves blocks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Data {
-    /// Bytes per block. 512 for every block transfer this driver makes.
-    pub block_size: u32,
+    /// Bytes per block, the `BLKSIZ` value. 512 for every block transfer this driver makes.
+    ///
+    /// Name: ratified 2026-11-07 (UTC). Renamed from `block_size`, since a size ends with its unit.
+    #[doc(alias = "block size")]
+    pub block_bytes: u32,
     /// How many blocks. Above one, the controller sends CMD12 by itself at the end.
     pub blocks: u32,
     /// True for a write to the card.
@@ -184,7 +187,7 @@ impl Data {
     /// from `bytes`, which suggested a byte slice and not a count.
     #[must_use]
     pub const fn total_bytes(&self) -> u32 {
-        self.block_size.saturating_mul(self.blocks)
+        self.block_bytes.saturating_mul(self.blocks)
     }
 }
 
@@ -337,7 +340,7 @@ mod tests {
     #[test]
     fn only_a_multi_block_transfer_asks_for_the_automatic_stop() {
         let one = Data {
-            block_size: 512,
+            block_bytes: 512,
             blocks: 1,
             is_write: false,
         };
