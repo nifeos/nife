@@ -60,7 +60,7 @@ e1000e,write_mdic,replace | with ^,crates/e1000e/src/pch/physical_layer_device.r
 e1000e,write_mdic,replace | with ^,crates/e1000e/src/pch/physical_layer_device.rs,260,site,| physical_layer_device_address << mdic::PHY_SHIFT
 e1000e,write_mdic,replace | with ^,crates/e1000e/src/pch/physical_layer_device.rs,261,site,"| mdic::OP_WRITE,"
 e1000e,physical_layer_device_reset_generic,replace | with ^,crates/e1000e/src/pch/sequence.rs,551,site,"hardware.write(mac::CTRL, ctrl | CTRL_PHY_RST);"
-e1000e,lan_connected_device_configuration,replace | with ^,crates/e1000e/src/pch/sequence.rs,755,site,"(at & physical_layer_device::MAX_PHY_REG_ADDRESS) | page,"
+e1000e,local_area_network_connected_device_configuration,replace | with ^,crates/e1000e/src/pch/sequence.rs,755,site,"(at & physical_layer_device::MAX_PHY_REG_ADDRESS) | page,"
 entropy_contract,req,replace | with ^,crates/entropy_contract/src/lib.rs,55,site,(operation << OPERATION_SHIFT) | (n & 0xff)
 entropy_contract,bringup_failure,replace | with ^,crates/entropy_contract/src/lib.rs,100,site,DEAD | step
 extensible_host_controller_interface,ProducerRing::dequeue_pointer,replace | with ^,crates/extensible_host_controller_interface/src/ring.rs,93,site,self.address_of(self.enqueue) | self.cycle as u64

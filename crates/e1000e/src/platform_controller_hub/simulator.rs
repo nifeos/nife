@@ -767,7 +767,7 @@ mod tests {
         sequence::global_reset(&mut s, 1000).unwrap();
         assert!(
             s.notes
-                .contains(&BringUpObservation::LanConnectedDeviceConfigured { pairs: 3 })
+                .contains(&BringUpObservation::LocalAreaNetworkConnectedDeviceConfigured { pairs: 3 })
         );
         assert_eq!(
             s.physical_layer_device_registers[&paged_offset(769, 17)],

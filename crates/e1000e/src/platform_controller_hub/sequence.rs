@@ -188,8 +188,14 @@ pub enum BringUpObservation {
     /// chip) as `physical_layer_device`, which names it. Refused `PhyResetBlocked` (an
     /// abbreviation).
     PhysicalLayerDeviceResetBlocked,
-    /// `STATUS.LAN_INIT_DONE` did not rise in 150 ms after a reset.
-    LanInitTimeout,
+    /// The local area network initialization done bit (`STATUS.LAN_INIT_DONE`) did not rise in
+    /// 150 ms after a reset.
+    ///
+    /// Name: ratified 2026-11-08 (UTC), #3335. Ruled tree-wide: LAN is not an accepted acronym and
+    /// is spelled out `local_area_network`, and `init` is spelled out `initialization`. Refused
+    /// `LanInitTimeout` (two abbreviations) and `LanInitializationTimeout` (keeps LAN).
+    #[doc(alias = "LAN_INIT_DONE")]
+    LocalAreaNetworkInitializationTimeout,
     /// `STATUS.PHYRA` was not set after a PHY reset (FreeBSD: "needs delay").
     ///
     /// Name: ratified 2026-11-03 (UTC), #3154. Ruled 2026-10-26 (UTC), tree-wide: `phy` (the chip)
@@ -201,23 +207,27 @@ pub enum BringUpObservation {
     SoftwareFlagBeforeReset(physical_layer_device::Error),
     /// Master requests were still pending when the reset went ahead.
     MasterRequestsPending,
-    /// The NVM's extended configuration region was replayed into the LAN connected device (LCD,
-    /// Intel's name for the PHY beside a PCH): this many words.
+    /// The NVM's extended configuration region was replayed into the local area network connected
+    /// device (Intel's LAN Connected Device, LCD, the PHY beside a PCH): this many words.
     ///
-    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused
-    /// `LcdConfigured` (`Lcd` reads as a display).
+    /// Name: ratified 2026-11-08 (UTC), #3335. Ruled tree-wide: LAN is not an accepted acronym and
+    /// is spelled out `local_area_network`; the rest of the name was ratified 2026-10-26 (#2761).
+    /// Refused `LcdConfigured` (`Lcd` reads as a display) and `LanConnectedDeviceConfigured` (keeps
+    /// LAN).
     #[doc(alias = "lcd")]
-    LanConnectedDeviceConfigured {
+    LocalAreaNetworkConnectedDeviceConfigured {
         /// (value, register) pairs written.
         pairs: u32,
     },
-    /// No extended configuration to replay into the LAN connected device (`FEXTNVM.SW_CONFIG`
-    /// clear, or a zero size).
+    /// No extended configuration to replay into the local area network connected device
+    /// (`FEXTNVM.SW_CONFIG` clear, or a zero size).
     ///
-    /// Name: ratified 2026-10-26 (#2761). Ruled in the ruling on e1000e's names. Refused
-    /// `LcdNotConfigured` (as `LcdConfigured`).
+    /// Name: ratified 2026-11-08 (UTC), #3335. Ruled tree-wide: LAN is not an accepted acronym and
+    /// is spelled out `local_area_network`; the rest of the name was ratified 2026-10-26 (#2761).
+    /// Refused `LcdNotConfigured` (as `LcdConfigured`) and `LanConnectedDeviceNotConfigured` (keeps
+    /// LAN).
     #[doc(alias = "lcd")]
-    LanConnectedDeviceNotConfigured,
+    LocalAreaNetworkConnectedDeviceNotConfigured,
     /// `STRAP` names a System Management Bus (`SMBus`) frequency of zero, which FreeBSD declines to
     /// program.
     ///
@@ -242,7 +252,9 @@ const CTRL_EXT_FORCE_SMBUS: u32 = 0x0000_0800;
 const CTRL_EXT_RO_DIS: u32 = 0x0002_0000;
 const CTRL_EXT_PHYPDEN: u32 = 0x0010_0000;
 // `STATUS` bits.
-const STATUS_LAN_INITIALIZATION_DONE: u32 = 0x0000_0200;
+/// FreeBSD's `E1000_STATUS_LAN_INIT_DONE`: the local area network initialization is done.
+#[doc(alias = "LAN_INIT_DONE")]
+const STATUS_LOCAL_AREA_NETWORK_INITIALIZATION_DONE: u32 = 0x0000_0200;
 const STATUS_PHYRA: u32 = 0x0000_0400;
 // Others, each named for its FreeBSD define.
 const EXTCNF_CTRL_GATE_PHYSICAL_LAYER_DEVICE_CONFIGURATION: u32 = 0x0000_0080;
@@ -678,18 +690,18 @@ fn configuration_done(hardware: &mut impl Hardware) -> Result<(), Error> {
     for _ in 0..1500 {
         let s = hardware.read(mac::DEVICE_STATUS_REGISTER);
         hardware.delay_microseconds(100);
-        if s & STATUS_LAN_INITIALIZATION_DONE != 0 {
+        if s & STATUS_LOCAL_AREA_NETWORK_INITIALIZATION_DONE != 0 {
             done = true;
             break;
         }
     }
     if !done {
-        hardware.note(BringUpObservation::LanInitTimeout);
+        hardware.note(BringUpObservation::LocalAreaNetworkInitializationTimeout);
     }
     clear(
         hardware,
         mac::DEVICE_STATUS_REGISTER,
-        STATUS_LAN_INITIALIZATION_DONE,
+        STATUS_LOCAL_AREA_NETWORK_INITIALIZATION_DONE,
     );
     let s = hardware.read(mac::DEVICE_STATUS_REGISTER);
     if s & STATUS_PHYRA != 0 {
@@ -826,17 +838,17 @@ fn post_physical_layer_device_reset(hardware: &mut impl Hardware) -> Result<(), 
         }
         f.release(hardware);
     }
-    lan_connected_device_configuration(hardware)?;
+    local_area_network_connected_device_configuration(hardware)?;
     oem_bits(hardware)
 }
 
-/// **`e1000_sw_lcd_config_ich8lan`**, the LAN connected device (LCD) configuration: when the NVM
-/// says software configures the PHY ("an issue
+/// **`e1000_sw_lcd_config_ich8lan`**, the local area network connected device (Intel's LAN
+/// Connected Device, LCD) configuration: when the NVM says software configures the PHY ("an issue
 /// where the NVM configuration is not properly autoloaded after power transitions"), write the
 /// `SMBus` address and LED configuration, then replay the extended configuration region's
 /// (value, register) pairs into the PHY.
 #[doc(alias = "lcd")]
-fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<(), Error> {
+fn local_area_network_connected_device_configuration(hardware: &mut impl Hardware) -> Result<(), Error> {
     let f = SoftwareFlag::acquire(hardware)?;
     let out = (|| {
         if hardware.read(registers::FEXTNVM) & FEXTNVM_SOFTWARE_CONFIGURATION_ICH8M == 0 {
@@ -885,9 +897,9 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
     f.release(hardware);
     match out {
         Ok(Some(pairs)) => {
-            hardware.note(BringUpObservation::LanConnectedDeviceConfigured { pairs });
+            hardware.note(BringUpObservation::LocalAreaNetworkConnectedDeviceConfigured { pairs });
         }
-        Ok(None) => hardware.note(BringUpObservation::LanConnectedDeviceNotConfigured),
+        Ok(None) => hardware.note(BringUpObservation::LocalAreaNetworkConnectedDeviceNotConfigured),
         Err(e) => return Err(e),
     }
     Ok(())
@@ -1329,7 +1341,7 @@ mod tests {
         assert_eq!(
             hardware.notes,
             [
-                BringUpObservation::LanInitTimeout,
+                BringUpObservation::LocalAreaNetworkInitializationTimeout,
                 BringUpObservation::PhysicalLayerDeviceResetNotAsserted
             ]
         );
@@ -1340,7 +1352,7 @@ mod tests {
         // The simulated reset raises both, and nothing is reported.
         let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         global_reset(&mut s, 1000).unwrap();
-        assert!(!s.notes.contains(&BringUpObservation::LanInitTimeout));
+        assert!(!s.notes.contains(&BringUpObservation::LocalAreaNetworkInitializationTimeout));
         assert!(
             !s.notes
                 .contains(&BringUpObservation::PhysicalLayerDeviceResetNotAsserted)
@@ -1399,12 +1411,12 @@ mod tests {
         );
         assert!(
             s.notes
-                .contains(&BringUpObservation::LanConnectedDeviceNotConfigured)
+                .contains(&BringUpObservation::LocalAreaNetworkConnectedDeviceNotConfigured)
         );
         assert!(
             !s.notes
                 .iter()
-                .any(|n| matches!(n, BringUpObservation::LanConnectedDeviceConfigured { .. }))
+                .any(|n| matches!(n, BringUpObservation::LocalAreaNetworkConnectedDeviceConfigured { .. }))
         );
     }
 
