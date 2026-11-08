@@ -4,8 +4,8 @@
 
 The release record for `nifeos/generational_table` owes one answer before publication:
 whether `slotmap`, or a crate like it, already covers an allocation-free, fixed-capacity generational
-table with what nife needs from one. This note gives that answer from the source of each candidate,
-a host experiment and Kani harnesses run against the candidates, and ends with the ruling. The
+table with what nife needs from one. This note answers from each candidate's source, a host experiment and Kani
+harnesses run against the candidates, and ends with the ruling. The
 mechanism itself is in [Generational names](generational-names.md).
 
 The short answer: no published crate covers it. `slotmap` and `thunderdome` cover the growable,

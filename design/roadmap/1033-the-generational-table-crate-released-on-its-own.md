@@ -40,8 +40,8 @@ Reuse: none exists that fits. Searched crates.io and read twelve candidates from
 
 - The crate lives in `nifeos/generational_table`, on the shared template of milestone 887 (crate
   repositories share one CI template) with its callers pinned at `nifeos/crate-workflows`
-  `965f58a`, and `script/apply-settings` applied there: both rulesets, the `crates-io` environment
-  with calef as reviewer, the labels, the team and private vulnerability reporting. The manifest
+  `965f58a`. `script/apply-settings` applied the settings there: both rulesets, the `crates-io`
+  environment with calef as reviewer, the labels, the team and private vulnerability reporting. The manifest
   keeps `publish = false`, and the caller sets `allow-unpublished` for the soak. No tag exists.
 - nife keeps no copy. `kernel` and `memory_regions` depend on `nifeos/generational_table` by `rev`
   (§305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit)), at `759c8f7`,
@@ -81,6 +81,14 @@ The crate takes the third slot, after `file_allocation_table` (milestone
   states it.
 - Measured demand for fixed-capacity tables is close to nothing, so the crate may find few users.
   The README says so.
+
+## Follow-on
+
+- **Outstanding.** The tag `v0.1.0`, the pin moved to its commit, the soak's end conditions 2 to 5
+  and the publication. Checked by `gh api repos/nifeos/generational_table/tags`, which lists no
+  tag, and `docs/stranger-test.md` there, which reads `Last run: none`.
+- **Recorded.** An organization owner installs the `nife-smelter` app and grants the three secrets;
+  see *BUGS* above.
 
 ## Index row
 
