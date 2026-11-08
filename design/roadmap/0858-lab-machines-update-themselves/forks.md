@@ -99,8 +99,8 @@ fetch: its gate's builds are 14-day workflow artifacts. No channel exists.
 
 - 8a. A `lab` index at `basalt.nifeos.org`. Waits on the index path (§250 (an image names its
   distribution's package index)), TLS (milestone 801 (packages over the internet)), and calef publishing.
-- 8b. A `lab` index on patagonia over the LAN, served by `helpers/package-http-peer`, the same
-  format as 8a.
+- 8b. A `lab` index on patagonia over the local area network, served by `helpers/package-http-peer`,
+  the same format as 8a.
 - 8c. Package bytes as GitHub Releases on basalt, the index on patagonia.
 
 Recommend 8b now and 8a later. The channel advances on each basalt gate that passes, with the pin

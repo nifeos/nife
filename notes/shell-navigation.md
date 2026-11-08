@@ -113,7 +113,7 @@ Why revoke is absent is a fact about the contract rather than a preference: it w
 invalidating handles the FS server minted for clients it cannot enumerate. The handle table is
 per *server* (that is [dir-capability.md](dir-capability.md)'s structural finding), and the server
 does not track which client holds which handle. §13 revokes frames and §16 revokes objects because
-the kernel owns those tables; nothing owns this one that way yet. `crates/generational_table`' generational names
+the kernel owns those tables; nothing owns this one that way yet. `nifeos/generational_table`'s generational names
 would make a revoked handle fail safely once something does.
 
 ### Unlink defers the free, so it is not a revoke

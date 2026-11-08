@@ -124,9 +124,9 @@ the policy is a loop over the ports in order.
 7. **On radon, with a person moving the cable.** With the cable in `gmac1`'s jack, the bench
    prints a `link` line and a `dhcp : leased` line for `0x16040000`. `verdict
    LEASED-AND-MEASURED` waits on 53's receive stall. With the cable in `gmac0`'s jack, the run
-   matches 53's. With `gmac0` cabled to a switch that serves no DHCP and `gmac1` to the LAN, the
-   boot gives `gmac0` up after the bound and leases on `gmac1`. Both logs are committed under `bench/radon-<date>/`, each recording its port's
-   PHY id, I/O voltage and settings source.
+   matches 53's. With `gmac0` cabled to a switch that serves no DHCP and `gmac1` to the local area
+   network, the boot gives `gmac0` up after the bound and leases on `gmac1`. Both logs are committed
+   under `bench/radon-<date>/`, each recording its port's PHY id, I/O voltage and settings source.
 8. `notes/designware-ethernet.md` says the cable may go in either jack, its runbook covers both,
    and its BUGS loses "`gmac0` only".
 

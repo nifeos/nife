@@ -19,6 +19,10 @@
 
 #![cfg_attr(not(test), no_std)]
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 // The atomics are loom's under `--cfg loom` and the real ones otherwise, which is what lets
 // the `loom` model checker replay this seqlock under every interleaving the C11 model permits (build
 // with `RUSTFLAGS="--cfg loom"`). The algorithms below are written once and are the ones the

@@ -11,11 +11,11 @@
 //! # Flags
 //!
 //! `--stage-only` builds and stages without booting, the night-of use. `--peer a.b.c.d:port` bakes
-//! the LAN peer into the image (it has no other way to learn one); without it the rehearsal's
-//! `10.0.2.9:9494` is used, which on a real LAN reaches nothing. `--debug` builds the debug
-//! profile. `--debug-userspace` builds the archive debug under a release kernel, the pairing
-//! `script/board-image` ships to radon (milestone 797 (release userspace in board images)), so the
-//! rehearsal's `receive` line shows the cost radon's programs pay
+//! the local area network peer into the image (it has no other way to learn one); without it the
+//! rehearsal's `10.0.2.9:9494` is used, which on a real local area network reaches nothing.
+//! `--debug` builds the debug profile. `--debug-userspace` builds the archive debug under a release
+//! kernel, the pairing `script/board-image` ships to radon (milestone 797 (release userspace in
+//! board images)), so the rehearsal's `receive` line shows the cost radon's programs pay
 //! (notes/designware-ethernet/the-receive-rate.md). Names provisional.
 
 use std::io::{BufRead, BufReader, Write};
@@ -73,8 +73,8 @@ pub(crate) fn network_bench() -> ExitCode {
     }
     if peer.is_some() && !stage_only {
         eprintln!(
-            "network-bench: --peer names a LAN host the rehearsal cannot reach; use it with \
-             --stage-only"
+            "network-bench: --peer names a local area network host the rehearsal cannot reach; use \
+             it with --stage-only"
         );
         return ExitCode::from(4);
     }

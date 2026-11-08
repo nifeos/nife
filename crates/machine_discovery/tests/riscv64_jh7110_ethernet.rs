@@ -74,7 +74,7 @@ fn qemu_virt_has_no_port_and_the_syscon_falls_back_and_says_so() {
     let tree = tree(QEMU_RISCV64_VIRT);
     assert_eq!(discover(&tree).unwrap(), None);
     let s = discover_aon_syscon(&tree).unwrap();
-    assert_eq!(s.base, 0x1701_0000);
+    assert_eq!(s.base_physical_address, 0x1701_0000);
     assert!(!s.from_tree);
 }
 
@@ -83,7 +83,10 @@ fn both_trees_name_the_aon_syscon() {
     for blob in [VENDOR, MAINLINE] {
         let tree = tree(blob);
         let s = discover_aon_syscon(&tree).unwrap();
-        assert_eq!((s.base, s.size), (0x1701_0000, 0x1000));
+        assert_eq!(
+            (s.base_physical_address, s.size_bytes),
+            (0x1701_0000, 0x1000)
+        );
         assert!(s.from_tree);
     }
 }

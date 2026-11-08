@@ -178,11 +178,11 @@ There was no rewire, because `capability::CapabilityTable` and
 `inter_process_communication::Rendezvous` already *are* the kernel's capability table and endpoint
 state. The proofs landed on code the kernel was running all along.
 
-## `crates/generational_table`
+## `generational_table`
 
-Five in `crates/generational_table/src/lib.rs` <!--count:generational-table-harnesses-->, the
-generational thread table (milestone 14 phase
-A; see notes/generational-names.md); the table names the three this appendix adjudicated:
+Five in the repository `nifeos/generational_table`, whose `proofs` workflow proves them and replays
+each falsification patch. It is the generational thread table (milestone 14 phase A; see
+notes/generational-names.md); the table names the three this appendix adjudicated:
 
 | Harness | Property |
 |---|---|

@@ -475,7 +475,6 @@ page_frames	2	the physical frame allocator
 address_space_map	4	the user address-space map: every address in exactly one band, and each band function accepts exactly its band
 device_tree_blob	3	the device-tree parser's leaf readers
 inter_process_communication	12	the rendezvous state machine
-generational_table	9	the generational thread table
 intrusive_queue	8	the scheduler's queue structure
 address_space_identifier	2	the TLB tag allocator
 nifefs	2	the initial ramdisk parser the kernel runs on boot input

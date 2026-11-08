@@ -22,8 +22,9 @@ A writing-only lane wrote it the same day and built nothing.
 Not until a workload needs two networks. #2470's milestone gives a person a lease from whichever
 jack they cable. The cases that would justify this:
 
-- A management LAN and a data LAN. An SSH server or a monitoring agent listens on one, a service
-  on the other, and neither can be reached from the wrong side because it was never handed it.
+- A management local area network and a data local area network. An SSH server or a monitoring agent
+  listens on one, a service on the other, and neither can be reached from the wrong side because it
+  was never handed it.
 - A router or firewall: forwarding between the two is a program holding both.
 - A machine with an untrusted segment, a camera network or a lab bench, that a few programs may
   reach and the rest may not.
@@ -94,5 +95,6 @@ is given, which is the capability answer above.
 ## Index row
 
 Both of a machine's NICs up at once, each its own stack, and a program reaching only the network
-whose `Stack` capability it was granted: a management LAN and a data LAN, or a router. It waits on
-an unwritten decision about how the manifest names a network and what the progenitor hands out.
+whose `Stack` capability it was granted: a management local area network and a data local area
+network, or a router. It waits on an unwritten decision about how the manifest names a network and
+what the progenitor hands out.

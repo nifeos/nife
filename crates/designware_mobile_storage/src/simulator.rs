@@ -2,7 +2,7 @@
 //! for any RISC-V machine (its one `dw_mmc`-shaped device, on some Arm boards, is unreachable from
 //! a RISC-V guest), so the tests run the real driver against this and a test on the board
 //! checks this against silicon. It models only the contract the driver relies on, as the databook
-//! and OpenBSD describe it: self-clearing `CONTROL` resets, the `CMD` start bit, a FIFO raising
+//! and OpenBSD describe it: self-clearing `CONTROL_REGISTER` resets, the `CMD` start bit, a FIFO raising
 //! `RXDR`, `TXDR`, `DTO` and `ACD`, `STATUS_REGISTER` fill and busy, `CARDTHRCTL` above the FIFO ending in
 //! `FRUN` and `DTO` as on the VisionFive 2, and the IDMAC walk, whose last read words reach memory after
 //! `DTO`. Time is one microsecond per `now_microseconds` call, so a test that would hang on silicon fails
@@ -116,9 +116,9 @@ pub(crate) enum CardKind {
     /// An SDHC card: answers CMD8, high capacity, block addressed.
     SdHighCapacity,
     /// An SD 1.x card: ignores CMD8, standard capacity, byte addressed.
-    SdV1,
+    SdVersion1,
     /// An SD 2.0 card of standard capacity: answers CMD8, byte addressed.
-    SdV2,
+    SdVersion2,
     /// An eMMC: ignores CMD8 in idle and CMD55, answers CMD1, takes its address from the host.
     MultimediaCard,
     /// An empty slot: nothing answers.
@@ -211,7 +211,7 @@ pub struct SimulatedHostController {
     pub strict_watermark: bool,
     /// Every register write the driver made, in order, FIFO words excepted.
     pub writes: Vec<(u32, u32)>,
-    /// `CONTROL`'s reset bits never clear.
+    /// `CONTROL_REGISTER`'s reset bits never clear.
     pub reset_stuck: bool,
     /// The controller never takes a clock update: `CMD`'s start bit stays set.
     pub clock_stuck: bool,
@@ -248,9 +248,9 @@ pub struct SimulatedHostController {
     /// The descriptor walked at this position (from 0) of a chain reads as the CPU's: a chain the
     /// driver did not finish handing over.
     pub unowned_at: Option<u32>,
-    /// This many `CONTROL` reset requests clear; every later one holds, as `reset_stuck` does.
+    /// This many `CONTROL_REGISTER` reset requests clear; every later one holds, as `reset_stuck` does.
     pub control_resets_cleared: Option<u32>,
-    /// This many `BUS_MODE` soft resets clear; every later one holds.
+    /// This many `BUS_MODE_REGISTER` soft resets clear; every later one holds.
     pub bus_mode_resets_cleared: Option<u32>,
     walked: u32,
     /// The IDMAC moves at most this many words each time the sim advances: a slow bus, which lets
@@ -371,7 +371,7 @@ impl SimulatedHostController {
     }
 
     fn is_high_capacity(&self) -> bool {
-        !matches!(self.kind, CardKind::SdV1 | CardKind::SdV2)
+        !matches!(self.kind, CardKind::SdVersion1 | CardKind::SdVersion2)
             && !(self.kind == CardKind::MultimediaCard && self.multimedia_card_byte_addressed)
     }
 
@@ -447,7 +447,9 @@ impl SimulatedHostController {
                 self.power_up_polls = 0;
                 None
             }
-            (8, false, CardKind::SdHighCapacity | CardKind::SdV2) if self.state == State::Idle => {
+            (8, false, CardKind::SdHighCapacity | CardKind::SdVersion2)
+                if self.state == State::Idle =>
+            {
                 short(argument & 0xfff)
             }
             (55, _, CardKind::MultimediaCard) => None,
@@ -681,8 +683,8 @@ impl SimulatedHostController {
 
     fn is_internal_direct_memory_access_active(&self) -> bool {
         let both = registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE;
-        self.peek(registers::CONTROL) & both == both
-            && self.peek(registers::BUS_MODE) & registers::BUS_MODE_DE != 0
+        self.peek(registers::CONTROL_REGISTER) & both == both
+            && self.peek(registers::BUS_MODE_REGISTER) & registers::BUS_MODE_DE != 0
             && self.memory.is_some()
     }
 
@@ -838,19 +840,19 @@ impl RegisterWindowAndClock for SimulatedHostController {
             return w;
         }
         match offset {
-            registers::CONTROL if self.reset_pending => {
+            registers::CONTROL_REGISTER if self.reset_pending => {
                 // The bits read as set once, then clear: the driver must poll, not assume.
                 self.reset_pending = false;
-                let v = *self.register(registers::CONTROL);
-                *self.register(registers::CONTROL) &= !registers::CONTROL_ALL_RESET;
+                let v = *self.register(registers::CONTROL_REGISTER);
+                *self.register(registers::CONTROL_REGISTER) &= !registers::CONTROL_ALL_RESET;
                 v
             }
-            registers::BUS_MODE
-                if self.peek(registers::BUS_MODE) & registers::BUS_MODE_SWR != 0 =>
+            registers::BUS_MODE_REGISTER
+                if self.peek(registers::BUS_MODE_REGISTER) & registers::BUS_MODE_SWR != 0 =>
             {
-                let v = self.peek(registers::BUS_MODE);
+                let v = self.peek(registers::BUS_MODE_REGISTER);
                 if !self.reset_stuck && !Self::holds(&mut self.bus_mode_resets_cleared) {
-                    *self.register(registers::BUS_MODE) &= !registers::BUS_MODE_SWR;
+                    *self.register(registers::BUS_MODE_REGISTER) &= !registers::BUS_MODE_SWR;
                 }
                 v
             }
@@ -911,14 +913,15 @@ impl RegisterWindowAndClock for SimulatedHostController {
             registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER => {
                 *self.register(registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_REGISTER) &= !value;
             }
-            registers::BUS_MODE => {
+            registers::BUS_MODE_REGISTER => {
                 if value & registers::BUS_MODE_SWR != 0
-                    || value & registers::BUS_MODE_DE & !self.peek(registers::BUS_MODE) != 0
+                    || value & registers::BUS_MODE_DE & !self.peek(registers::BUS_MODE_REGISTER)
+                        != 0
                 {
                     self.walk = Walk::Idle;
                     self.walked = 0;
                 }
-                *self.register(registers::BUS_MODE) = value;
+                *self.register(registers::BUS_MODE_REGISTER) = value;
             }
             registers::DBADDR => {
                 self.walk = Walk::Idle;
@@ -930,7 +933,7 @@ impl RegisterWindowAndClock for SimulatedHostController {
                     self.walk = Walk::At(d, 0);
                 }
             }
-            registers::CONTROL => {
+            registers::CONTROL_REGISTER => {
                 if value & registers::CONTROL_DMA_RESET != 0 {
                     self.walk = Walk::Idle;
                 }
@@ -944,7 +947,7 @@ impl RegisterWindowAndClock for SimulatedHostController {
                         self.transfer = None;
                     }
                 }
-                *self.register(registers::CONTROL) = value;
+                *self.register(registers::CONTROL_REGISTER) = value;
             }
             registers::CMD => {
                 if value & registers::COMMAND_START != 0

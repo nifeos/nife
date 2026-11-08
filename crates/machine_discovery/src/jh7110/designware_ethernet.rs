@@ -59,8 +59,8 @@ pub fn discover_aon_syscon(tree: &DeviceTreeBlob<'_>) -> Result<SystemController
         || tree.node_reg(ALWAYS_ON_SYSTEM_CONTROLLER_NODE, &mut regions)? == 1
     {
         return Ok(SystemController {
-            base: regions[0].start,
-            size: regions[0].size,
+            base_physical_address: regions[0].start,
+            size_bytes: regions[0].size,
             from_tree: true,
         });
     }

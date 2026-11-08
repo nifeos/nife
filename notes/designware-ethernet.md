@@ -119,8 +119,8 @@ About ten minutes, and nothing on the card changes: radon's card was written onc
 puts the ordinary image back.
 
 On the Mac radon's UART goes into, in this branch's worktree, with `P` set to its address on the
-bench LAN (`P=$(ipconfig getifaddr en0)`). In a second terminal, the peer, which serves 100 MiB per
-connection (allow `nc` if macOS asks):
+bench local area network (`P=$(ipconfig getifaddr en0)`). In a second terminal, the peer, which
+serves 100 MiB per connection (allow `nc` if macOS asks):
 
 ```sh
 while true; do head -c 104857600 /dev/zero | nc -l 9494; done

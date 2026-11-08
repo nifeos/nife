@@ -3,19 +3,21 @@ Falsifies `designware_ethernet::proofs::a_link_is_decoded_only_from_what_the_reg
 The defect: the link decode forgets that an isolated PHY is electrically cut off from the MAC.
 A PHY with the isolate bit set and its link bit up then reads as a working link.
 
-Expected to fail: the harness's `assert!(bmcr & mdio::BMCR_ISO == 0)`, on any control word with the
+Expected to fail: the harness's `assert!(basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_ISOLATE == 0)`, on any control word with the
 isolate bit set and a status word with the link bit set.
 
 diff --git a/crates/designware_ethernet/src/motorcomm_physical_layer_device.rs b/crates/designware_ethernet/src/motorcomm_physical_layer_device.rs
-index b4c52597b..a81323d53 100644
+index 3ea0e8757..1de447475 100644
 --- a/crates/designware_ethernet/src/motorcomm_physical_layer_device.rs
 +++ b/crates/designware_ethernet/src/motorcomm_physical_layer_device.rs
-@@ -169,7 +169,7 @@ pub(crate) const fn link_from_registers(
-     gtsr: u16,
+@@ -200,9 +200,7 @@ pub(crate) const fn link_from_registers(
+     control_1000base_t: u16,
+     status_1000base_t: u16,
  ) -> Option<Link> {
-     use management_data_input_output as mdio;
--    if bmsr & mdio::BMSR_LSTATUS == 0 || bmcr & mdio::BMCR_ISO != 0 {
-+    if bmsr & mdio::BMSR_LSTATUS == 0 {
+-    if basic_mode_status & management_data_input_output::BASIC_MODE_STATUS_LINK_STATUS == 0
+-        || basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_ISOLATE != 0
+-    {
++    if basic_mode_status & management_data_input_output::BASIC_MODE_STATUS_LINK_STATUS == 0 {
          return None;
      }
-     if bmcr & mdio::BMCR_ANENABLE == 0 {
+     if basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE

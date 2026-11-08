@@ -1,0 +1,138 @@
+# Rhetorical or inflated wording in a README or a crate-level doc comment, each entry with what to
+# write instead. Read by inflated_wording.py (its header is the manual), which reports and never
+# fails. `phrase` is a regular expression matched in any case between word boundaries, across line
+# breaks; `instead` is what the report shows. Every entry needs both.
+#
+# The list grows: add the wording a review had to explain. An entry that no crate uses any more can
+# move to prose_figures.toml, where it fails. The file's name and its keys are provisional.
+
+# Claims of quality the text does not show.
+[[wording]]
+phrase = "comprehensive(ly)?"
+instead = "say what it covers, and what it leaves out"
+
+[[wording]]
+phrase = "robust(ly|ness)?"
+instead = "say what input or failure it handles, and how that was checked"
+
+[[wording]]
+phrase = "seamless(ly)?"
+instead = "say what the caller does, step by step"
+
+[[wording]]
+phrase = "blazing(ly)?( fast)?|lightning[- ]fast"
+instead = "the measured number and what it was measured against"
+
+[[wording]]
+phrase = "powerful"
+instead = "say what it does"
+
+[[wording]]
+phrase = "elegant(ly)?"
+instead = "say what is simple about it"
+
+[[wording]]
+phrase = "effortless(ly)?|painless(ly)?|hassle[- ]free|a breeze"
+instead = "say what the caller does"
+
+[[wording]]
+phrase = "rigorous(ly)?"
+instead = "name the proof or test that backs the claim"
+
+[[wording]]
+phrase = "cutting[- ]edge|state[- ]of[- ]the[- ]art|world[- ]class|best[- ]in[- ]class|first[- ]class"
+instead = "say what it does that others do not, and cite the comparison"
+
+[[wording]]
+phrase = "feature[- ]rich"
+instead = "list the features"
+
+[[wording]]
+phrase = "game[- ]changer|holy grail|silver bullet|secret sauce"
+instead = "state the effect plainly"
+
+[[wording]]
+phrase = "just works"
+instead = "say what the caller does, and what happens"
+
+[[wording]]
+phrase = "magically"
+instead = "say what the code does"
+
+# Words that signal emphasis instead of carrying content.
+[[wording]]
+phrase = "delve|delves|delved|delving"
+instead = "'look at', 'read', or say what the text explains"
+
+[[wording]]
+phrase = "landscape"
+instead = "name the systems or crates meant"
+
+[[wording]]
+phrase = "moreover|furthermore|additionally"
+instead = "drop it; start the sentence with its subject"
+
+[[wording]]
+phrase = "notably"
+instead = "drop it, or say why the point matters"
+
+[[wording]]
+phrase = "straightforward(ly)?"
+instead = "drop it; show the steps"
+
+[[wording]]
+phrase = "it is worth noting( that)?|it's worth noting( that)?|worth noting( that)?|needless to say"
+instead = "drop it and state the fact"
+
+[[wording]]
+phrase = "simply"
+instead = "drop it; the reader decides what is simple"
+
+[[wording]]
+phrase = "incredibly|extremely|truly|highly"
+instead = "drop the intensifier, or give the number"
+
+[[wording]]
+phrase = "crucial(ly)?|pivotal|paramount|vital(ly)?"
+instead = "say what breaks without it"
+
+[[wording]]
+phrase = "leverage|leverages|leveraged|leveraging"
+instead = "'use'"
+
+[[wording]]
+phrase = "utilize|utilizes|utilized|utilizing"
+instead = "'use'"
+
+[[wording]]
+phrase = "in order to"
+instead = "'to'"
+
+[[wording]]
+phrase = "realm|tapestry|testament to"
+instead = "state the fact"
+
+[[wording]]
+phrase = "empower(s|ed|ing)?|unlock(s|ed|ing)?"
+instead = "say what the caller can now do"
+
+# Rhetorical metaphors: a figure the reader decodes before the fact arrives.
+[[wording]]
+phrase = "owes? (the|a|an|its|their|your|you|us|them) (\\w+ )?nothing"
+instead = "the assumption in plain words, for example 'a controller whose every register read is arbitrary'"
+
+[[wording]]
+phrase = "speaks for itself"
+instead = "state the evidence"
+
+[[wording]]
+phrase = "(the )?heavy lifting"
+instead = "say which part does the work"
+
+[[wording]]
+phrase = "at (its|the) (core|heart)"
+instead = "name the part meant"
+
+[[wording]]
+phrase = "plays? an? (crucial|key|vital|central|pivotal) role"
+instead = "say what it does"

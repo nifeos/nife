@@ -61,7 +61,7 @@ tree boots. So the host tests run the real driver against `simulator`, and the b
 against silicon. It models the contract the driver relies on, as the databook and OpenBSD's driver
 describe it, and no more.
 
-- `CONTROL`'s reset bits clear themselves one read after they are set.
+- `CONTROL_REGISTER`'s reset bits clear themselves one read after they are set.
 - A write to `CMD` with the start bit either loads the clock (and clears the bit) or runs the
   command against the card. Running it sets the response words and `RINTSTS` (`CD`, plus `RTO`
   when nothing answered), and clears the bit.
@@ -71,7 +71,7 @@ describe it, and no more.
 - `STATUS` reports the FIFO's fill and, for a few reads after a write, data busy.
 - A read with the card read threshold (`CARDTHRCTL`) enabled above the FIFO's size ends at once
   with `FRUN` and `DTO`, the word radon's controller gave for it.
-- With the IDMAC selected in `CONTROL` and enabled in `BUS_MODE`, the FIFO's other end is `Memory`. The
+- With the IDMAC selected in `CONTROL_REGISTER` and enabled in `BUS_MODE_REGISTER`, the FIFO's other end is `Memory`. The
   walk starts at `DBADDR` and loads each descriptor. It suspends with `DU` on one it does not own,
   and stops with `FBE` on an address outside memory. It moves the buffer and closes the descriptor
   (clears `OWN`, raises `RI` or `TI` unless `DIC`), then stops after `LD` or follows `CH`. A read's

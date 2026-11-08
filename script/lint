@@ -2542,10 +2542,6 @@ REGISTRY = {
         'how many Kani proof harnesses crates/inter_process_communication carries',
         lambda: _harness_hits().get('inter_process_communication', 0),
     ),
-    'generational-table-harnesses': (
-        'how many Kani proof harnesses crates/generational_table carries',
-        lambda: _harness_hits().get('generational_table', 0),
-    ),
     'intrusive-fifo-harnesses': (
         'how many Kani proof harnesses crates/intrusive_queue carries',
         lambda: _harness_hits().get('intrusive_queue', 0),
@@ -3649,6 +3645,13 @@ echo "==> unit symbols are spelled out (2026-10-27)"
 # fails a count over its ceiling or a branch that adds any net. Fixtures first.
 python3 helpers/vendored_name_gates.py unit --selftest
 python3 helpers/vendored_name_gates.py unit --check
+echo "==> the template's report-only name and README gates (baseline only shrinks)"
+# The register-name, abbreviation, prose-acronym, README-acronym, inflated-wording and README-section
+# gates of the vendored crate-workflows pin, run over every crate under crates/. They report: a
+# finding that already exists never fails, and a count over helpers/template_report_baseline.txt
+# for a crate and gate does. helpers/template_report_gates.py's header is the manual. Fixtures first.
+python3 helpers/template_report_gates.py --selftest
+python3 helpers/template_report_gates.py --check
 echo "==> no line-number citations (§277: cite a heading or a symbol)"
 # lint-quick
 # §277 (cite a heading or a symbol, never a line number), calef, 2026-10-11 (UTC): a document is

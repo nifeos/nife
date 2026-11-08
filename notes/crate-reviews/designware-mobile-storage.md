@@ -34,9 +34,9 @@ Eight public modules and about 100 public items.
 
 | module | what it holds |
 |---|---|
-| `registers` | the register offsets and bits the driver uses, `queue_offset`, `queue_width`, `uses_64_bit_direct_memory_access` |
+| `registers` | the register offsets and bits the driver uses, `queue_offset`, `queue_width_bytes`, `uses_64_bit_direct_memory_access` |
 | `command` | `Command`, `Response`, `Data` and the command word encoding |
-| `host_controller` | `RegisterWindowAndClock`, `HostController` (reset, clock, send a command, read and write data), `Identity`, `Error`, `clock_divider`, `card_clock`, `queue_step` |
+| `host_controller` | `RegisterWindowAndClock`, `HostController` (reset, clock, send a command, read and write data), `Identity`, `Error`, `clock_divider`, `card_clock_hertz`, `queue_step` |
 | `internal_direct_memory_access` | `InternalDirectMemoryAccess`, the `DirectMemoryAccessRegion` trait, `NoDirectMemoryAccess`, `Refusal` |
 | `card` | `CardIdentification`, `CardSpecificData`, `extract_bits`, `r1_state` |
 | `sd` | `identify`, `read_blocks`, `write_blocks`, `Card`, `CardKind`, `can_address_blocks`, the two error enums |
@@ -96,8 +96,11 @@ Against the rulings in force, checked with the template's own checks
 The two address registers, `CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER` and
 `CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER`, hold the descriptor address and buffer address the
 controller is on, as the bus sees them, which is physical on every board this driver runs on.
+`DirectMemoryAccessRegion::bus_address` is the region's address as the controller's DMA engine
+uses it, which differs from the CPU physical address behind an IOMMU or a bus offset, so it does
+not take `physical_address`; its name waits for the architect.
 `Refusal::AboveFourGibibytes` spells its unit out. The parameters of `registers::queue_offset`,
-`queue_width` and `uses_64_bit_direct_memory_access` are `version_identification` and
+`queue_width_bytes` and `uses_64_bit_direct_memory_access` are `version_identification` and
 `hardware_configuration`, and `jh7110::Slot::from_node` takes `property`. The renamed items carry
 the old spelling and the rule that refused it in their `Name:` blocks, and none carries a
 `doc(alias)` of it.

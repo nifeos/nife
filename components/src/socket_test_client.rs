@@ -41,8 +41,8 @@ pub(crate) const TEST_TCP_ACCEPT: u64 = 5;
 pub(crate) const TEST_HTTP_PACKAGE: u64 = 6;
 /// **Drain a TCP stream from a peer named at spawn, and time it** (milestone 494 (a driver for the
 /// network card a PC actually has)'s bench boot). The second start word is the peer, packed
-/// `ipv4 << 16 | port`. Not a gate: its peer is a host on a real LAN, or a slirp `guestfwd` command
-/// in the rehearsal, and what it reports is a number rather than a verdict.
+/// `ipv4 << 16 | port`. Not a gate: its peer is a host on a real local area network, or a slirp
+/// `guestfwd` command in the rehearsal, and what it reports is a number rather than a verdict.
 pub const TEST_TCP_DRAIN: u64 = 7;
 /// **The socket-capability roles** (§255 (each socket is its own capability), milestone 649 (every
 /// client of a network stack shares its socket numbers)), driven by `net_confinement_tests`. Role

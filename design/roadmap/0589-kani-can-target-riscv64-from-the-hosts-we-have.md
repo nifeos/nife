@@ -103,9 +103,9 @@ Why `radon` is the wrong host. `radon` runs nife by netboot on the bench: UART i
 smart plug 2. Milestone 225 (run the soak on radon, argon and xenon) and pull request #1275's bench
 rehearsal both need it as a nife board. As a Linux runner it would boot Linux from local storage, so every bench run first has
 to take it off CI duty and back again. A soak cannot share it at all. A self-hosted runner on a
-public repository also executes pull request code on a machine on calef's LAN, next to patagonia.
-The Scaleway RV1 avoids the LAN problem but pull request #1278 is preparing it as a nife port
-target, so it has the same conflict.
+public repository also executes pull request code on a machine on calef's local area network, next
+to patagonia. The Scaleway RV1 avoids that problem, but pull request #1278 is preparing it as a nife
+port target: the same conflict.
 
 ## Part 3: Would upstream take (a)?
 

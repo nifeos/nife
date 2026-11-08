@@ -22,6 +22,10 @@
 
 #![no_std]
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 /// `"blkrosv1"` little-endian, at offset 0. A page that does not start with this is not a roster,
 /// and in particular a zeroed frame is not an empty one. The digits are the page layout's version
 /// ([`VERSION`]); a bump re-mints both in one change.
