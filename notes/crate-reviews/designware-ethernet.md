@@ -45,9 +45,9 @@ part of a Rust signature's compatibility, so the maintainer rules them, pending 
 
 The simulator's `with(f)` keeps `f`, the standard library's spelling for a closure argument.
 
-Ratified names a later rule reaches. This section renames none.
+Ratified names that a later rule reached, and the names they now have.
 
-| name | rule | recommended name |
+| was | rule | now |
 |---|---|---|
 | `jh7110::SystemController::base`, `size` | an address says virtual or physical, and a size carries its unit | `base_physical_address`, `size_bytes` |
 | `RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID` | the same address rule | `RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID` |

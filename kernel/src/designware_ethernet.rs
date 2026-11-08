@@ -227,7 +227,8 @@ fn run(
     }
 
     let syscon =
-        mmu::phys_to_virt(e.syscon.base + jh7110::GMAC0_SYSTEM_CONTROLLER_OFFSET) as *mut u32;
+        mmu::phys_to_virt(e.syscon.base_physical_address + jh7110::GMAC0_SYSTEM_CONTROLLER_OFFSET)
+            as *mut u32;
     // SAFETY: the AON syscon page is mapped device-typed (step 6d) and the offset is inside its
     // 4 KiB. A read-modify-write of `gmac0`'s three bits; nothing else in this kernel writes the
     // word, and this runs on the one thread wiring the port.

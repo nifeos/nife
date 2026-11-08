@@ -213,7 +213,7 @@ fn descriptor_words_put_ownership_in_the_high_word_of_the_second_store() {
         (b >> 32) as u32,
         RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE
             | RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION
-            | RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID
+            | RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID
     );
     let [a, b] = transmit_descriptor_words(0x4000_0800, 60);
     assert_eq!(a, 0x4000_0800);
@@ -260,7 +260,7 @@ fn the_descriptor_bits_are_where_the_databook_puts_them() {
         [
             RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE,
             RECEIVE_DESCRIPTOR_WORD_3_INTERRUPT_ON_COMPLETION,
-            RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID,
+            RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID,
             RECEIVE_DESCRIPTOR_WORD_3_CONTEXT_DESCRIPTOR,
             RECEIVE_DESCRIPTOR_WORD_3_FIRST_DESCRIPTOR,
             RECEIVE_DESCRIPTOR_WORD_3_LAST_DESCRIPTOR,
