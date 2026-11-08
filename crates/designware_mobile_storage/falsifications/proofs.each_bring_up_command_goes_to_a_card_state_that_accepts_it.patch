@@ -1,0 +1,19 @@
+Falsifies `designware_mobile_storage::proofs::each_bring_up_command_goes_to_a_card_state_that_accepts_it`.
+
+The defect: `CMD7` carries the relative card address in the low half of its argument instead of
+bits 31:16, so it selects address zero, which deselects every card, rather than the card that
+answered `CMD3`.
+
+Expected to fail: `assert!(card.illegal_commands == 0)`.
+diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobile_storage/src/sd.rs
+--- a/crates/designware_mobile_storage/src/sd.rs
++++ b/crates/designware_mobile_storage/src/sd.rs
+@@ -343,7 +343,7 @@
+     let r1 = host
+         .send_command(&Command::new(
+             command::SELECT_CARD,
+-            u32::from(relative_card_address) << 16,
++            u32::from(relative_card_address),
+             Response::R1b,
+         ))
+         .map_err(|e| InitializationError::Identify(command::SELECT_CARD, e))?;
