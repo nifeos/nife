@@ -883,7 +883,7 @@ struct ModeledCard {
     multimedia_card: bool,
     relative_card_address: u16,
     card_bus_width: u8,
-    block_length_set: bool,
+    block_bytes_set: bool,
     extended_card_specific_data_read: bool,
     passed: u8,
     ready_operation_conditions: u32,
@@ -915,7 +915,7 @@ impl ModeledCard {
             multimedia_card: kani::any(),
             relative_card_address: kani::any(),
             card_bus_width: if kani::any() { 4 } else { 1 },
-            block_length_set: kani::any(),
+            block_bytes_set: kani::any(),
             extended_card_specific_data_read: kani::any(),
             passed: 0,
             ready_operation_conditions: 0,
@@ -1044,7 +1044,7 @@ impl ModeledCard {
                 self.state = CardState::Idle;
                 self.relative_card_address = 0;
                 self.card_bus_width = 1;
-                self.block_length_set = false;
+                self.block_bytes_set = false;
                 self.extended_card_specific_data_read = false;
                 self.passed = 0;
             }
@@ -1075,7 +1075,7 @@ impl ModeledCard {
             }
             SET_BUS_WIDTH => self.card_bus_width = if self.argument & 3 == 2 { 4 } else { 1 },
             SET_BLOCK_LENGTH => {
-                self.block_length_set = self.argument == crate::sd::BLOCK_BYTES as u32;
+                self.block_bytes_set = self.argument == crate::sd::BLOCK_BYTES as u32;
             }
             SEND_INTERFACE_CONDITION if has_data => self.extended_card_specific_data_read = true,
             _ => {}
@@ -1252,7 +1252,7 @@ fn a_card_is_brought_up_only_through_every_step() {
             assert!(model.extended_card_specific_data_read);
             assert!(card.bus_width == 1);
         } else {
-            assert!(model.block_length_set);
+            assert!(model.block_bytes_set);
             assert!(card.bus_width == if maximum_bus_width >= 4 { 4 } else { 1 });
         }
         assert!(

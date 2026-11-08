@@ -3,7 +3,7 @@ Falsifies `designware_mobile_storage::proofs::a_card_is_brought_up_only_through_
 The defect: SD configuration skips `CMD16`, so a card comes back from `identify` without its
 block length set to 512 bytes.
 
-Expected to fail: `assert!(model.block_length_set)`.
+Expected to fail: `assert!(model.block_bytes_set)`.
 diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobile_storage/src/sd.rs
 --- a/crates/designware_mobile_storage/src/sd.rs
 +++ b/crates/designware_mobile_storage/src/sd.rs

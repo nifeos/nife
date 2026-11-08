@@ -99,7 +99,7 @@ bound their loops by what the controller reports rather than by time. The two wa
 above cover a clock that takes longer, and every wait in the driver is one of those two loops.
 
 The bring-up harnesses below judge `identify` against the card state machine of the SD
-specification and JEDEC JESD84 (idle, ready, identification, standby, transfer). The card starts
+specification and the eMMC standard (idle, ready, identification, standby, transfer). The card starts
 in any state, with any address and bus width, and the controller with any bus width and clock, as
 an earlier bring-up that failed anywhere might leave them. For each command the solver picks
 whether the card answered, stayed silent or had its answer garbled, and the response words. The
