@@ -12,9 +12,8 @@
 /// whose low byte is how many bytes the capability registers take, so where the operational
 /// registers start; the dword read here carries `HCIVERSION` in its high half.
 ///
-/// Name: provisional. The specification's term spelled out with `_BYTES`, because a length carries
-/// its unit. Refused `CAPLENGTH` (the specification's mnemonic, kept as the alias),
-/// `CAPABILITY_REGISTERS_LENGTH_REGISTER` (a length without its unit).
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `CAPLENGTH` (the specification's mnemonic,
+/// kept as the alias), `CAPABILITY_REGISTERS_LENGTH_REGISTER` (a length carries its unit).
 #[doc(alias = "CAPLENGTH")]
 pub const CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER: u64 = 0x00;
 /// **Structural Parameters 1** (`HCSPARAMS1`, xHCI specification), a capability register: slots,
@@ -83,10 +82,9 @@ pub const COMMAND_RING_CONTROL_REGISTER: u64 = 0x18;
 /// **Device Context Base Address Array Pointer** (`DCBAAP`, xHCI specification), an operational
 /// register: the physical address of the array that holds each device context's physical address.
 ///
-/// Name: provisional. The specification's term spelled out, with `PHYSICAL` before the address the
-/// array holds, since an address is virtual or physical. Refused `DCBAAP` (the specification's
-/// mnemonic, kept as the alias), `DEVICE_CONTEXT_BASE_ADDRESS_ARRAY_POINTER_REGISTER` (an address
-/// that does not say it is physical).
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `DCBAAP` (the specification's mnemonic, kept
+/// as the alias), `DEVICE_CONTEXT_BASE_ADDRESS_ARRAY_POINTER_REGISTER` (an address says it is
+/// physical).
 #[doc(alias = "DCBAAP")]
 pub const DEVICE_CONTEXT_BASE_PHYSICAL_ADDRESS_ARRAY_POINTER_REGISTER: u64 = 0x30;
 /// **Configure** (`CONFIG`, xHCI specification), an operational register whose low byte is how
@@ -159,9 +157,8 @@ pub const INTERRUPTER_MODERATION_REGISTER: u64 = 0x04;
 /// **Event Ring Segment Table Size** (`ERSTSZ`, xHCI specification), an interrupter register: how
 /// many entries the event ring segment table holds.
 ///
-/// Name: provisional. The specification's term spelled out with `_ENTRIES`, because a size
-/// carries its unit. Refused `ERSTSZ` (the specification's mnemonic, kept as the alias),
-/// `EVENT_RING_SEGMENT_TABLE_SIZE_REGISTER` (a size without its unit).
+/// Name: ratified 2026-11-08 (UTC), on #3330. Refused `ERSTSZ` (the specification's mnemonic, kept
+/// as the alias), `EVENT_RING_SEGMENT_TABLE_SIZE_REGISTER` (a size carries its unit).
 #[doc(alias = "ERSTSZ")]
 pub const EVENT_RING_SEGMENT_TABLE_SIZE_ENTRIES_REGISTER: u64 = 0x08;
 /// **Event Ring Segment Table Base Address** (`ERSTBA`, xHCI specification), an interrupter

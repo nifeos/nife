@@ -6,8 +6,7 @@ own file because the list of public names a later rule reaches is longer than th
 
 ## Names
 
-The crate has 446 judged names across 12 files. Its `Name:` blocks read ratified except the three
-provisional register names below.
+The crate has 446 judged names across 12 files. Its `Name:` blocks all read ratified.
 
 ### Naming rules
 
@@ -49,27 +48,27 @@ Spelled out, each with the specification's mnemonic as its `doc(alias)` and its 
 the doc comment. A register offset ends `_REGISTER`, and an address held in a register says it is
 physical.
 
-| mnemonic | name | state |
-|---|---|---|
-| `CAPLENGTH` | `CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER` | provisional |
-| `HCSPARAMS1`, `HCSPARAMS2` | `STRUCTURAL_PARAMETERS_1_REGISTER`, `STRUCTURAL_PARAMETERS_2_REGISTER` | ratified |
-| `HCCPARAMS1` | `CAPABILITY_PARAMETERS_1_REGISTER` | ratified |
-| `DBOFF`, `RTSOFF` | `DOORBELL_OFFSET_REGISTER`, `RUNTIME_REGISTER_SPACE_OFFSET_REGISTER` | ratified |
-| `USBCMD`, `USBSTS` | `USB_COMMAND_REGISTER`, `USB_STATUS_REGISTER` | ratified |
-| `PAGESIZE` | `PAGE_SIZE_BITMAP_REGISTER` | ratified |
-| `CRCR` | `COMMAND_RING_CONTROL_REGISTER` | ratified |
-| `DCBAAP` | `DEVICE_CONTEXT_BASE_PHYSICAL_ADDRESS_ARRAY_POINTER_REGISTER` | provisional |
-| `CONFIG` | `CONFIGURATION_REGISTER` | ratified |
-| `IMAN`, `IMOD` | `INTERRUPTER_MANAGEMENT_REGISTER`, `INTERRUPTER_MODERATION_REGISTER` | ratified |
-| `ERSTSZ` | `EVENT_RING_SEGMENT_TABLE_SIZE_ENTRIES_REGISTER` | provisional |
-| `ERSTBA` | `EVENT_RING_SEGMENT_TABLE_BASE_PHYSICAL_ADDRESS_REGISTER` | ratified |
-| `ERDP` | `EVENT_RING_DEQUEUE_POINTER_REGISTER` | ratified |
-| `IMAN.IP`, `IMAN.IE`, `ERDP.EHB` | `INTERRUPTER_MANAGEMENT_PENDING`, `INTERRUPTER_MANAGEMENT_ENABLE`, `EVENT_RING_DEQUEUE_POINTER_BUSY` | ratified |
-| `PORTSC` | `Capabilities::port_status_and_control` | ratified |
+| mnemonic | name |
+|---|---|
+| `CAPLENGTH` | `CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER` |
+| `HCSPARAMS1`, `HCSPARAMS2` | `STRUCTURAL_PARAMETERS_1_REGISTER`, `STRUCTURAL_PARAMETERS_2_REGISTER` |
+| `HCCPARAMS1` | `CAPABILITY_PARAMETERS_1_REGISTER` |
+| `DBOFF`, `RTSOFF` | `DOORBELL_OFFSET_REGISTER`, `RUNTIME_REGISTER_SPACE_OFFSET_REGISTER` |
+| `USBCMD`, `USBSTS` | `USB_COMMAND_REGISTER`, `USB_STATUS_REGISTER` |
+| `PAGESIZE` | `PAGE_SIZE_BITMAP_REGISTER` |
+| `CRCR` | `COMMAND_RING_CONTROL_REGISTER` |
+| `DCBAAP` | `DEVICE_CONTEXT_BASE_PHYSICAL_ADDRESS_ARRAY_POINTER_REGISTER` |
+| `CONFIG` | `CONFIGURATION_REGISTER` |
+| `IMAN`, `IMOD` | `INTERRUPTER_MANAGEMENT_REGISTER`, `INTERRUPTER_MODERATION_REGISTER` |
+| `ERSTSZ` | `EVENT_RING_SEGMENT_TABLE_SIZE_ENTRIES_REGISTER` |
+| `ERSTBA` | `EVENT_RING_SEGMENT_TABLE_BASE_PHYSICAL_ADDRESS_REGISTER` |
+| `ERDP` | `EVENT_RING_DEQUEUE_POINTER_REGISTER` |
+| `IMAN.IP`, `IMAN.IE`, `ERDP.EHB` | `INTERRUPTER_MANAGEMENT_PENDING`, `INTERRUPTER_MANAGEMENT_ENABLE`, `EVENT_RING_DEQUEUE_POINTER_BUSY` |
+| `PORTSC` | `Capabilities::port_status_and_control` |
 
-The three provisional names carry what the size and address rules add: a length or a size carries
-its unit (`_BYTES`, `_ENTRIES`), and the addresses the device context base address array holds are
-physical. The private offsets follow the same rule: `FIRST_PORT_STATUS_AND_CONTROL_REGISTER` and
+Three names carry what the size and address rules add: a length or a size carries its unit
+(`CAPLENGTH`'s `_BYTES`, `ERSTSZ`'s `_ENTRIES`), and the addresses the device context base address
+array holds are physical. The private offsets follow the same rule: `FIRST_PORT_STATUS_AND_CONTROL_REGISTER` and
 `INTERRUPTER_0_REGISTER`.
 
 The template's `register_names.py` reads nine names in the crate as breaking a rule. Two are in
