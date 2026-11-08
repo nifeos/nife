@@ -46,35 +46,39 @@ considered and declined on these numbers.
 
 ## Sharding, and where the floor moved
 
-This is milestone 119 (the long pole is one prover), re-measured 2026-10-07. On 2026-08-14 `glob`
-was half of a 30.3-minute job. So two shards reached 15.1 minutes, and a third bought nothing. By
-2026-10-06 the shards took about 20 and 27 minutes, on x86_64 runners since milestone 587. These are
-medians of 40 green runs, 37424472664 to 37562060742:
+This is milestone 119 (the long pole is one prover). The packer balances crates by their measured
+seconds, so the slowest shard can never beat the slowest crate, and the slowest crate can never
+beat its slowest harness, one formula in one single-threaded solver. These are medians of the ten
+merge-group and push runs 42456372750 to 42523187972 (2026-11-08 UTC), with the largest harness
+of each crate from run 42523187972:
 
-| crate | then (the table) | now (40-run median) |
+| crate | median | largest harness |
 |---|---|---|
-| `glob` | 15.0 min | 11.8 min |
-| `machine_discovery` | 3.0 min | 11.5 min |
-| `calendar` | 10.0 min | 5.2 min |
-| `subtree_scope` | 2.0 min | 4.4 min |
-| `usb` | 0.5 min | 2.8 min |
-| the other 30 | 9.2 min | 11.4 min |
-| serial | 39.7 min | 47.1 min |
+| `glob` | 9.1 min | 9.0 min, `no_magic_means_the_pattern_is_its_own_only_match` |
+| `designware_mobile_storage` | 9.0 min | 2.2 min, four bring-up harnesses near that size |
+| `file_allocation_table` | 8.7 min | 3.5 min, `a_write_extends_the_chain_to_the_size_and_stays_inside_it` |
+| `machine_discovery` | 5.9 min | 7.1 min, `every_hex_field_the_loader_writes_is_one_the_kernel_reads_back` |
+| `calendar` | 4.3 min | 2.2 min |
+| `subtree_scope` | 3.6 min | 2.5 min |
+| the other 37 | 15.1 min | |
+| serial | 55.7 min | |
 
-`glob` got faster; the growth is `machine_discovery`, `subtree_scope` and `usb`. Packed:
+A harness can outlast its crate's median because two run at once (`VERIFY_JOBS=2`) and the
+runner's speed varies by about 20% from run to run. Packed by these medians, each prove job also
+spends about 0.7 minutes on setup:
 
-| prove shards | proving | job |
-|---|---|---|
-| two, old table (what ran) | 26.6 min | about 27 |
-| two, refreshed | 23.6 min | about 24 |
-| **three (ruled, #1802)** | **15.7 min** | **about 16.5** |
-| four | 11.8 min (`glob` alone) | about 12.5 |
+| prove shards | slowest shard, median | slowest shard, worst of ten | without the driver crates leaving the tree |
+|---|---|---|---|
+| four | 14.1 min | 16.1 min | 11.4 and 13.1 min |
+| **five (what runs)** | **11.6 min** | **12.3 min** | **9.3 and 10.3 min** |
+| six | 9.4 min | 10.7 min | 9.2 and 10.3 min |
 
-Rebalancing alone does not reach 20 minutes. A third prove shard does, for about one more
-runner-minute per run, and calef ruled for it on 2026-10-07. The re-falsify shards were planned at 20
-minutes of replay, and ran a median 22.5 job-minutes at their slowest. He ruled their target down to
-17 the same day. `helpers/verify_times.py` keeps the table current, and
-[notes/project-metrics.md](../project-metrics.md) charts it.
+Four shards put the job past the 85% warning of its 20-minute budget, which #3350 reported. Five
+hold the slowest job near 60% of it. A sixth buys under two minutes while the driver crates
+(`designware_mobile_storage`, `extensible_host_controller_interface` and
+`non_volatile_memory_express`, about 10 serial minutes) are in the table, and nothing once they
+leave, because `glob`'s one harness then sets the pace. `helpers/verify_times.py` keeps the table
+current, and [notes/project-metrics.md](../project-metrics.md) charts it.
 
 The dangerous failure mode is a crate that lands in no shard, because an unproved crate is
 invisible. The suite goes green *faster*, and nothing says a harness stopped running. So the packer
