@@ -12,7 +12,9 @@
 #![no_main]
 
 use extensible_host_controller_interface::Capabilities;
-use extensible_host_controller_interface::registers::{ERDP, IMAN, find_extended};
+use extensible_host_controller_interface::registers::{
+    EVENT_RING_DEQUEUE_POINTER_REGISTER, INTERRUPTER_MANAGEMENT_REGISTER, find_extended,
+};
 use libfuzzer_sys::fuzz_target;
 
 fn dword(bytes: &[u8]) -> u32 {
@@ -109,14 +111,17 @@ fuzz_target!(|data: &[u8]| {
     // Every port's register follows the last at the 16-byte stride, from the operational base.
     let mut previous = None;
     for port in 1..=capabilities.maximum_ports {
-        let offset = capabilities.portsc(port);
+        let offset = capabilities.port_status_and_control(port);
         assert!(offset >= capabilities.operational);
         if let Some(before) = previous {
             assert_eq!(offset, before + 0x10);
         }
         previous = Some(offset);
     }
-    assert_eq!(capabilities.portsc(0), capabilities.portsc(1));
+    assert_eq!(
+        capabilities.port_status_and_control(0),
+        capabilities.port_status_and_control(1)
+    );
     for slot in 0..=capabilities.maximum_slots {
         assert_eq!(
             capabilities.doorbell(slot),
@@ -124,10 +129,11 @@ fuzz_target!(|data: &[u8]| {
         );
     }
     assert_eq!(
-        capabilities.interrupter(ERDP) - capabilities.interrupter(IMAN),
-        ERDP - IMAN
+        capabilities.interrupter(EVENT_RING_DEQUEUE_POINTER_REGISTER)
+            - capabilities.interrupter(INTERRUPTER_MANAGEMENT_REGISTER),
+        EVENT_RING_DEQUEUE_POINTER_REGISTER - INTERRUPTER_MANAGEMENT_REGISTER
     );
-    assert!(capabilities.interrupter(IMAN) >= capabilities.runtime);
+    assert!(capabilities.interrupter(INTERRUPTER_MANAGEMENT_REGISTER) >= capabilities.runtime);
 
     let id = walk_head[0];
     let first = u64::from(u16::from_le_bytes([walk_head[1], walk_head[2]]));
