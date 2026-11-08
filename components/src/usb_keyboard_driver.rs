@@ -565,10 +565,10 @@ impl Host {
             REGS.r32(registers::DOORBELL_OFFSET_REGISTER),
             REGS.r32(registers::RUNTIME_REGISTER_SPACE_OFFSET_REGISTER),
         );
-        let phys = |page: u64| h.direct_memory_access_physical_address + page * PAGE_BYTES;
+        let phys = |page: u64| h.data_plane_physical_address + page * PAGE_BYTES;
         let host = Host {
             capabilities,
-            dma_phys: h.direct_memory_access_physical_address,
+            dma_phys: h.data_plane_physical_address,
             commands: ProducerRing::new(
                 phys(direct_memory_access::COMMAND_RING),
                 direct_memory_access::RING_ENTRIES,

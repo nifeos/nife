@@ -111,7 +111,7 @@ pub fn bring_up() -> Result<Found, Absent> {
     Ok(Found {
         bar0: dev.bar0,
         handoff: Handoff {
-            direct_memory_access_physical_address: dma,
+            data_plane_physical_address: dma,
             direct_memory_access_pages: pages as u32,
             // `register_window` never sets a bit at or above `MAXIMUM_REGISTER_PAGES` (16).
             registers: registers as u16,

@@ -66,7 +66,7 @@ pub(crate) fn start(
 
     let (bar0, dma_phys, registers) = (
         found.bar0,
-        found.handoff.direct_memory_access_physical_address,
+        found.handoff.data_plane_physical_address,
         found.handoff.registers,
     );
     let intid = found.intid;
