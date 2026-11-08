@@ -336,10 +336,14 @@ pub fn vendor_physical_layer_device<'t, E>(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[doc(alias = "syscon")]
 pub struct SystemController {
-    /// Physical base.
-    pub base: u64,
-    /// Size.
-    pub size: u64,
+    /// Physical base address.
+    ///
+    /// Name: ratified 2026-11-08 (UTC), #3331, as `base_physical_address`.
+    pub base_physical_address: u64,
+    /// Size in bytes.
+    ///
+    /// Name: ratified 2026-11-08 (UTC), #3331, as `size_bytes`.
+    pub size_bytes: u64,
     /// True when a tree node named it; false when this is [`SystemController::fallback`].
     pub from_tree: bool,
 }
@@ -352,8 +356,8 @@ impl SystemController {
     #[must_use]
     pub const fn fallback() -> Self {
         SystemController {
-            base: ALWAYS_ON_SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS,
-            size: ALWAYS_ON_SYSTEM_CONTROLLER_SIZE_BYTES,
+            base_physical_address: ALWAYS_ON_SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS,
+            size_bytes: ALWAYS_ON_SYSTEM_CONTROLLER_SIZE_BYTES,
             from_tree: false,
         }
     }
@@ -571,8 +575,8 @@ mod tests {
         assert_eq!(
             SystemController::fallback(),
             SystemController {
-                base: 0x1701_0000,
-                size: 0x1000,
+                base_physical_address: 0x1701_0000,
+                size_bytes: 0x1000,
                 from_tree: false
             }
         );

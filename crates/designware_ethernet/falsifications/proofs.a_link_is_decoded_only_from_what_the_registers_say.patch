@@ -7,9 +7,10 @@ Expected to fail: the harness's `assert!(basic_mode_control & management_data_in
 isolate bit set and a status word with the link bit set.
 
 diff --git a/crates/designware_ethernet/src/motorcomm_physical_layer_device.rs b/crates/designware_ethernet/src/motorcomm_physical_layer_device.rs
+index 3ea0e8757..1de447475 100644
 --- a/crates/designware_ethernet/src/motorcomm_physical_layer_device.rs
 +++ b/crates/designware_ethernet/src/motorcomm_physical_layer_device.rs
-@@ -196,9 +196,7 @@
+@@ -200,9 +200,7 @@ pub(crate) const fn link_from_registers(
      control_1000base_t: u16,
      status_1000base_t: u16,
  ) -> Option<Link> {
