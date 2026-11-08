@@ -6,7 +6,7 @@
 //! against the board-shaped fixtures and the tree every CI boot uses.
 
 use designware_mobile_storage::jh7110::{
-    COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, QUEUE_DEPTH, REGISTERS_SIZE_BYTES,
+    COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, QUEUE_DEPTH_WORDS, REGISTERS_SIZE_BYTES,
     SLOT_0_REGISTERS_PHYSICAL_ADDRESS, SLOT_1_REGISTERS_PHYSICAL_ADDRESS, SLOT_INTERRUPT_NUMBERS,
 };
 use device_tree_blob::DeviceTreeBlob;
@@ -20,18 +20,18 @@ fn radons_vendor_tree_names_both_slots_with_the_generic_binding_and_no_interrupt
     let tree = DeviceTreeBlob::from_bytes(VENDOR).unwrap();
     let sd = discover(&tree, 1).unwrap().unwrap();
     assert_eq!(
-        (sd.base, sd.size),
+        (sd.registers_physical_address, sd.registers_size_bytes),
         (SLOT_1_REGISTERS_PHYSICAL_ADDRESS, REGISTERS_SIZE_BYTES)
     );
     assert_eq!(sd.compatible, COMPATIBLE_VENDOR);
     assert_eq!(sd.bus_width, 4);
-    assert_eq!(sd.queue_depth, Some(QUEUE_DEPTH));
+    assert_eq!(sd.queue_depth_words, Some(QUEUE_DEPTH_WORDS));
     assert_eq!(sd.card_interface_unit_hertz, 50_000_000);
     assert_eq!(sd.interrupt, None);
     assert!(sd.status_okay);
     let emmc = discover(&tree, 0).unwrap().unwrap();
     assert_eq!(
-        (emmc.base, emmc.bus_width),
+        (emmc.registers_physical_address, emmc.bus_width),
         (SLOT_0_REGISTERS_PHYSICAL_ADDRESS, 8)
     );
     assert_eq!(emmc.board_role(), "eMMC socket");
