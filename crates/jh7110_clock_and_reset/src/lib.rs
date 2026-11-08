@@ -372,8 +372,8 @@ pub const SYSTEM: Domain = Domain {
 /// node and as `reg-names` entry `"sys"`/`"syscrg"` of both vendor nodes. The fallback when a tree
 /// names none of them, for `SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS`'s reason.
 ///
-/// Name: ratified 2026-11-02 (UTC), #3090.
-pub const SYSTEM_BASE: u64 = 0x1302_0000;
+/// Name: ratified 2026-11-02 (UTC), #3090; renamed 2026-11-08 (UTC) to say the address is physical.
+pub const SYSTEM_BASE_PHYSICAL_ADDRESS: u64 = 0x1302_0000;
 
 /// The SYS window's size, `0x10000` in every tree that names it.
 pub(crate) const SYSTEM_SIZE_BYTES: u64 = 0x1_0000;
@@ -458,8 +458,8 @@ pub(crate) const SYSRST_SDIO1_AHB: u32 = 65;
 /// the vendor U-Boot has already brought the microSD controller up to load the boot script, and a
 /// caller can read whether it left it that way before it walks the plan.
 ///
-/// Name: ratified 2026-10-26 (UTC).
-pub const SDIO_BRING_UP: [&[Step]; 2] = [
+/// Name: ratified 2026-10-26 (UTC); renamed 2026-11-08 (UTC) to spell out the controller's name.
+pub const SD_INPUT_OUTPUT_BRING_UP: [&[Step]; 2] = [
     &[
         Step::EnableClock(SYSCLK_SDIO0_AHB),
         Step::EnableClock(SYSCLK_SDIO0_SDCARD),
@@ -548,7 +548,9 @@ pub struct PowerManagementChipBus {
     /// **The I2C controller's register window**, the `reg` of the PMIC's parent bus node, when the
     /// tree states it. The direct reset write needs it; a plan without one (the constant fallback,
     /// or a tree that names no `reg`) leaves it `None` and the caller does not attempt the write.
-    pub controller: Option<(u64, u64)>,
+    ///
+    /// Name: ratified 2026-11-08 (UTC), renamed to say the pair is a physical address and a size.
+    pub controller_physical_window: Option<(u64, u64)>,
     /// **The PMIC's 7-bit I2C address**, the PMIC node's own `reg`: `0x36` in both
     /// trees. `None` when the tree names no known PMIC at all.
     pub power_management_chip_address: Option<u32>,
@@ -571,7 +573,7 @@ impl PowerManagementChipBus {
             power_management_chip,
             skipped,
             truncated: false,
-            controller: None,
+            controller_physical_window: None,
             power_management_chip_address: None,
         };
         bus.steps[..POWER_MANAGEMENT_CHIP_BUS_BRING_UP.len()]
@@ -653,7 +655,7 @@ impl PowerManagementChipBus {
                 Some(u32::from_be_bytes([cells[0], cells[1], cells[2], cells[3]]));
         }
         if let Some(cells) = bus_register_property {
-            bus.controller = parse_register_property(cells);
+            bus.controller_physical_window = parse_register_property(cells);
         }
         if clocks.is_none() && resets.is_none() {
             // A bus that names nothing keeps the constant plan, and the addresses it does state.
@@ -789,7 +791,7 @@ impl DevicePlan {
 // sources are the vendor trees cited in the crate's header.
 
 /// The SYS **syscon** window, `0x1303_0000`: where the PLL control words live, distinct from
-/// [`SYSTEM_BASE`]'s CRG window the clock words live in. Vendor `jh7110-regs.h` at `VF2_v2.10.4`
+/// [`SYSTEM_BASE_PHYSICAL_ADDRESS`]'s CRG window the clock words live in. Vendor `jh7110-regs.h` at `VF2_v2.10.4`
 /// (\[vendor-regs\]: `SYS_SYSCON_BASE 0x13030000`, `SYS_CRG_BASE 0x13020000`), which resolves
 /// what looked like an overlap between the PLL words at `0x2c..0x34` and the early clock words:
 /// different windows, same offsets. SYS is the chip's abbreviation for [`SYSTEM`], and syscon is
@@ -978,9 +980,9 @@ pub const MAXIMUM_SD_CARD_DIVIDER: u32 = 15;
 /// `1..=`[`MAXIMUM_SD_CARD_DIVIDER`]. The tree's `assigned-clock-rates` is a rate the OS is asked to
 /// program, and the firmware of a VisionFive 2 leaves this divider at 2, four times the tree's 50 MHz.
 ///
-/// Name: ratified 2026-11-05 (UTC), #3279.
+/// Name: ratified 2026-11-05 (UTC), #3279; renamed 2026-11-08 (UTC) to separate the words of the card.
 #[must_use]
-pub const fn sdcard_divider_for(parent_hertz: u64, want_hertz: u64) -> u32 {
+pub const fn sd_card_divider_for(parent_hertz: u64, want_hertz: u64) -> u32 {
     if want_hertz == 0 {
         return MAXIMUM_SD_CARD_DIVIDER;
     }
@@ -1294,13 +1296,19 @@ pub struct BringUpReport {
     /// How many of those read as released before the poll gave up.
     pub resets_released: u32,
     /// The last `SelectParent` step's clock word before it was written, and
-    /// [`BringUpReport::mux_after`] the word read back. Both zero when the plan had none, which
-    /// [`BringUpReport::had_mux`] distinguishes.
-    pub mux_before: u32,
-    /// See [`BringUpReport::mux_before`].
-    pub mux_after: u32,
+    /// [`BringUpReport::select_parent_after`] the word read back. Both zero when the plan had none, which
+    /// [`BringUpReport::had_select_parent`] distinguishes.
+    ///
+    /// Name: ratified 2026-11-08 (UTC), renamed to use the step's name.
+    pub select_parent_before: u32,
+    /// See [`BringUpReport::select_parent_before`].
+    ///
+    /// Name: ratified 2026-11-08 (UTC), renamed to use the step's name.
+    pub select_parent_after: u32,
     /// True when the plan contained a `SelectParent`.
-    pub had_mux: bool,
+    ///
+    /// Name: ratified 2026-11-08 (UTC), renamed to use the step's name.
+    pub had_select_parent: bool,
 }
 
 impl BringUpReport {
@@ -1356,7 +1364,9 @@ impl BringUpReport {
 #[non_exhaustive]
 pub struct WindowLocation {
     /// Physical base of the register window.
-    pub base: u64,
+    ///
+    /// Name: ratified 2026-11-08 (UTC), renamed to say the address is physical.
+    pub base_physical_address: u64,
     /// Its size in bytes.
     pub size: u64,
     /// **True when the device tree said so, false when this is the window's constant.** The one
@@ -1449,7 +1459,9 @@ pub struct RegisterWindow {
     /// The spellings to try, in order.
     pub spellings: [WindowSpelling; 3],
     /// The window's base in both published trees.
-    pub base: u64,
+    ///
+    /// Name: ratified 2026-11-08 (UTC), renamed to say the address is physical.
+    pub base_physical_address: u64,
     /// The window's size in both published trees.
     pub size: u64,
 }
@@ -1461,7 +1473,7 @@ impl RegisterWindow {
     #[must_use]
     pub const fn fallback(&self) -> WindowLocation {
         WindowLocation {
-            base: self.base,
+            base_physical_address: self.base_physical_address,
             size: self.size,
             from_tree: false,
             compatible: None,
@@ -1488,7 +1500,7 @@ pub const SYSTEM_TOP_GROUP_WINDOW: RegisterWindow = RegisterWindow {
             window: Some(VENDOR_RESET_GENERATOR_SYSTEM_TOP_GROUP_NAME),
         },
     ],
-    base: SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
+    base_physical_address: SYSTEM_TOP_GROUP_BASE_PHYSICAL_ADDRESS,
     size: SYSTEM_TOP_GROUP_SIZE_BYTES,
 };
 
@@ -1511,7 +1523,7 @@ pub const ALWAYS_ON_WINDOW: RegisterWindow = RegisterWindow {
             window: Some(VENDOR_RESET_GENERATOR_ALWAYS_ON_NAME),
         },
     ],
-    base: ALWAYS_ON_BASE_PHYSICAL_ADDRESS,
+    base_physical_address: ALWAYS_ON_BASE_PHYSICAL_ADDRESS,
     size: ALWAYS_ON_SIZE_BYTES,
 };
 
@@ -1534,7 +1546,7 @@ pub const SYSTEM_WINDOW: RegisterWindow = RegisterWindow {
             window: Some(VENDOR_RESET_GENERATOR_SYSTEM_NAME),
         },
     ],
-    base: SYSTEM_BASE,
+    base_physical_address: SYSTEM_BASE_PHYSICAL_ADDRESS,
     size: SYSTEM_SIZE_BYTES,
 };
 
@@ -1563,9 +1575,9 @@ impl WindowLocation {
                 _ => return None,
             },
         };
-        let (base, size) = regions[index];
+        let (base_physical_address, size) = regions[index];
         Some(WindowLocation {
-            base,
+            base_physical_address,
             size,
             from_tree: true,
             compatible: Some(spelling.compatible),
@@ -1727,8 +1739,14 @@ mod verification {
             POWER_MANAGEMENT_CHIP_BUS_BRING_UP,
             &SYSTEM
         ));
-        assert!(ungates_before_releasing(SDIO_BRING_UP[0], &SYSTEM));
-        assert!(ungates_before_releasing(SDIO_BRING_UP[1], &SYSTEM));
+        assert!(ungates_before_releasing(
+            SD_INPUT_OUTPUT_BRING_UP[0],
+            &SYSTEM
+        ));
+        assert!(ungates_before_releasing(
+            SD_INPUT_OUTPUT_BRING_UP[1],
+            &SYSTEM
+        ));
     }
 
     /// **A plan built from a device's specifiers holds only usable steps, in order**: for two

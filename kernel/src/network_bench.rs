@@ -278,10 +278,10 @@ mod radon {
                 );
             }
         }
-        if r.aon.had_mux {
+        if r.aon.had_select_parent {
             println!(
                 "network-bench: clocks    : aon tx mux {:#010x} -> {:#010x}",
-                r.aon.mux_before, r.aon.mux_after
+                r.aon.select_parent_before, r.aon.select_parent_after
             );
         }
         println!(

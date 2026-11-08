@@ -76,9 +76,9 @@ pub unsafe fn bring_up(base: usize, domain: &Domain, plan: &[Step]) -> BringUpRe
                 // the parent field (`with_parent`), so the enable bit and divider are kept.
                 unsafe { core::ptr::write_volatile(reg, with_parent(before, parent)) };
                 // SAFETY: as above; read back, for `EnableClock`'s reason.
-                report.mux_after = unsafe { core::ptr::read_volatile(reg) };
-                report.mux_before = before;
-                report.had_mux = true;
+                report.select_parent_after = unsafe { core::ptr::read_volatile(reg) };
+                report.select_parent_before = before;
+                report.had_select_parent = true;
             }
             Step::DeassertReset(id) => {
                 let Some(bit) = domain.reset_bit(id) else {
@@ -157,7 +157,7 @@ pub(crate) unsafe fn set_card_clock(
         SYSTEM_CLOCK_ADVANCED_PERIPHERAL_BUS_FUNCTION, SYSTEM_CLOCK_BUS_ROOT,
         SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD,
         SYSTEM_CLOCK_SYSTEM_TOP_GROUP_ADVANCED_EXTENSIBLE_INTERFACE_ADVANCED_HIGH_PERFORMANCE_BUS,
-        advanced_extensible_interface_configuration_0_hertz, clock_divider, sdcard_divider_for,
+        advanced_extensible_interface_configuration_0_hertz, clock_divider, sd_card_divider_for,
         with_divider,
     };
     let reg = (crg + SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD[controller] as usize * 4) as *mut u32;
@@ -177,7 +177,7 @@ pub(crate) unsafe fn set_card_clock(
             phase_locked_loop_2_pre_divider_word: word(syscon, 0x34),
         });
         let before = core::ptr::read_volatile(reg);
-        let div = sdcard_divider_for(parent_hz, u64::from(want_hz));
+        let div = sd_card_divider_for(parent_hz, u64::from(want_hz));
         let gated = with_divider(before & !CLOCK_ENABLE, div);
         core::ptr::write_volatile(reg, gated);
         core::ptr::write_volatile(reg, gated | (before & CLOCK_ENABLE));

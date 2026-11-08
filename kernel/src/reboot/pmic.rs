@@ -27,7 +27,7 @@ fn pmic_bus(
     };
 
     let (sys, bus) = crate::memory::jh7110_pmic_bus()?;
-    let (controller, _size) = bus.controller?;
+    let (controller, _size) = bus.controller_physical_window?;
     let address = bus.power_management_chip_address?;
 
     // The input-clock chain, from the two windows the plan's guard mapped: the CRG words at their
@@ -37,7 +37,7 @@ fn pmic_bus(
     let word = |base: usize, offset: usize| unsafe {
         core::ptr::read_volatile((base + offset) as *const u32)
     };
-    let crg = crate::arch::mmu::phys_to_virt(sys.base) as usize;
+    let crg = crate::arch::mmu::phys_to_virt(sys.base_physical_address) as usize;
     let syscon = crate::arch::mmu::phys_to_virt(SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS) as usize;
     let words = InterIntegratedCircuitClockWords {
         bus_root: word(crg, SYSTEM_CLOCK_BUS_ROOT as usize * 4),

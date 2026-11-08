@@ -340,7 +340,7 @@ fn jh7110_clock_bring_up() -> Option<jh7110_clock_and_reset::BringUpReport> {
     // domain and the plan are the same crate's, so every identifier in the plan is in range for it.
     Some(unsafe {
         crate::drivers::jh7110_clock_and_reset::bring_up(
-            crate::arch::mmu::phys_to_virt(crg.base) as usize,
+            crate::arch::mmu::phys_to_virt(crg.base_physical_address) as usize,
             &jh7110_clock_and_reset::SYSTEM_TOP_GROUP,
             jh7110_clock_and_reset::ENTROPY_BRING_UP,
         )

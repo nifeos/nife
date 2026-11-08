@@ -556,7 +556,7 @@ fn arm_watchdog() -> Option<Watchdog> {
          SYS CRG at {:#x} ({})",
         core::str::from_utf8(found.compatible).unwrap_or("?"),
         found.base,
-        sys.base,
+        sys.base_physical_address,
         if sys.from_tree {
             "named by this machine's tree"
         } else {
@@ -631,7 +631,7 @@ fn start_watchdog_clocks(
     // were bounded by `SYSTEM` when it was built, and `bring_up` bounds them again.
     let report = unsafe {
         crate::drivers::jh7110_clock_and_reset::bring_up(
-            arch::mmu::phys_to_virt(sys.base) as usize,
+            arch::mmu::phys_to_virt(sys.base_physical_address) as usize,
             &jh7110_clock_and_reset::SYSTEM,
             plan.plan(),
         )

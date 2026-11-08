@@ -91,7 +91,7 @@ boot is the driver's first meeting with the part, and it has to say everything a
 microSD slot (slot 1) and then the eMMC socket (slot 0), every line `storage-bench:`:
 
 1. The slot as the tree describes it.
-2. Its clocks and reset as found, walked through `SDIO_BRING_UP`, every step idempotent.
+2. Its clocks and reset as found, walked through `SD_INPUT_OUTPUT_BRING_UP`, every step idempotent.
 3. The controller's identity (`VERID`, `HCON`, the FIFO, `CDETECT`) and the five registers the
    firmware's driver last wrote, read before anything is written.
 4. The read-only probe (`storage_bench::bench::run_read_only_probe`): identification, the CID, the

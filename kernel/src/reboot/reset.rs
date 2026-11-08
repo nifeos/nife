@@ -56,7 +56,7 @@ pub fn prepare_reset_route(marker: &str) {
             "{marker} JH7110: bringing the PMIC's I2C bus back up first, because OpenSBI \
              resets this board with an I2C write to the AXP15060 (milestone 592). SYS CRG at \
              {:#x} ({}); plan {} ({} specifier(s) skipped{}).",
-            sys.base,
+            sys.base_physical_address,
             if sys.from_tree {
                 "named by this machine's device tree"
             } else {
@@ -76,7 +76,7 @@ pub fn prepare_reset_route(marker: &str) {
         // them again.
         let report = unsafe {
             crate::drivers::jh7110_clock_and_reset::bring_up(
-                crate::arch::mmu::phys_to_virt(sys.base) as usize,
+                crate::arch::mmu::phys_to_virt(sys.base_physical_address) as usize,
                 &jh7110_clock_and_reset::SYSTEM,
                 bus.plan(),
             )

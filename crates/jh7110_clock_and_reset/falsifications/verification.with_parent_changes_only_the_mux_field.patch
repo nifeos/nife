@@ -7,10 +7,10 @@ running mid-switch, which the function exists to prevent.
 Expected to fail: the harness's assertion that every bit outside `CLOCK_PARENT_MASK` is unchanged.
 
 diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
-index 7cc680a83..333afdc34 100644
+index e840194c9..85e112937 100644
 --- a/crates/jh7110_clock_and_reset/src/lib.rs
 +++ b/crates/jh7110_clock_and_reset/src/lib.rs
-@@ -103,7 +103,7 @@ pub(crate) const CLOCK_MUX_SHIFT: u32 = 24;
+@@ -113,7 +113,7 @@
  /// Name: ratified 2026-10-26 (UTC).
  #[must_use]
  pub const fn with_parent(word: u32, parent: u32) -> u32 {

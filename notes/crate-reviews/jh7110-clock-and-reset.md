@@ -35,9 +35,9 @@ One module and 69 public items (36 constants, 22 functions, 10 structs and the `
 | group | items |
 |---|---|
 | words and bits | `CLOCK_ENABLE`, `CLOCK_PARENT_MASK`, `with_parent`, `clock_divider`, `with_divider`, `is_clock_enabled`, `is_deasserted` |
-| domains | `Domain` (with `clock_offset` and `reset_bit`), `ResetBit`, `SYSTEM`, `ALWAYS_ON`, `SYSTEM_TOP_GROUP`, `SYSTEM_BASE`, the three `RegisterWindow` values and `WindowLocation::from_regions` |
-| plans | `Step`, `ENTROPY_BRING_UP`, `GMAC0_SYSTEM_BRING_UP`, `GMAC0_ALWAYS_ON_BRING_UP`, `SDIO_BRING_UP`, `DevicePlan::from_specifiers`, `PowerManagementChipBus::from_nodes` |
-| rates | `InterIntegratedCircuitClockWords`, `advanced_extensible_interface_configuration_0_hertz`, `inter_integrated_circuit_5_clock_frequency`, `one_based_divider`, `sdcard_divider_for`, `StandardMode`, `standard_mode_100_kilohertz` |
+| domains | `Domain` (with `clock_offset` and `reset_bit`), `ResetBit`, `SYSTEM`, `ALWAYS_ON`, `SYSTEM_TOP_GROUP`, `SYSTEM_BASE_PHYSICAL_ADDRESS`, the three `RegisterWindow` values and `WindowLocation::from_regions` |
+| plans | `Step`, `ENTROPY_BRING_UP`, `GMAC0_SYSTEM_BRING_UP`, `GMAC0_ALWAYS_ON_BRING_UP`, `SD_INPUT_OUTPUT_BRING_UP`, `DevicePlan::from_specifiers`, `PowerManagementChipBus::from_nodes` |
+| rates | `InterIntegratedCircuitClockWords`, `advanced_extensible_interface_configuration_0_hertz`, `inter_integrated_circuit_5_clock_frequency`, `one_based_divider`, `sd_card_divider_for`, `StandardMode`, `standard_mode_100_kilohertz` |
 | device-tree strings | seven `COMPATIBLE_*` constants and `POWER_MANAGEMENT_CHIP_COMPATIBLES` |
 | the PMIC reset | `POWER_MANAGEMENT_CHIP_RESET_REGISTER` (`0x32`) and `POWER_MANAGEMENT_CHIP_RESET_BIT` (6) |
 | reporting | `BringUpReport` and its three questions |
@@ -88,18 +88,17 @@ Provisional. The maintainer ratified `CLOCK_PARENT_MASK`, pending the architect.
 the field holds, as `with_parent` and `Step::SelectParent` already do. The ruling refused
 `CLOCK_MUX_MASK`, `CLOCK_MULTIPLEXER_MASK` and `CLOCK_PARENT_SELECT_MASK`. Recommendation: ratify.
 
-Ratified names a later rule reaches. The architect's ruling keeps each until a name review, and
-a release is that review, because names become permanent on first publication. This package
-renames none. `helpers/name_checks.py` finds the first only.
+Ratified names a later rule reached, renamed and ratified on 2026-11-08 (UTC) before the first
+release, because names become permanent on first publication.
 
-| name | rule | recommended name |
+| was | rule | now |
 |---|---|---|
 | `SDIO_BRING_UP` | `SDIO` is not an accepted acronym | `SD_INPUT_OUTPUT_BRING_UP`, as `SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD` already spells it |
-| `BringUpReport::mux_before`, `mux_after`, `had_mux` | the ruling on `CLOCK_PARENT_MASK` refused `mux` | `select_parent_before`, `select_parent_after`, `had_select_parent`, reusing the step's name as `had_reset` reuses `DeassertReset` |
+| `BringUpReport::mux_before`, `mux_after`, `had_mux` | the ruling on `CLOCK_PARENT_MASK` refused `mux` | `select_parent_before`, `select_parent_after`, `had_select_parent` |
 | `SYSTEM_BASE` | an address says virtual or physical | `SYSTEM_BASE_PHYSICAL_ADDRESS` |
 | `RegisterWindow::base`, `WindowLocation::base` | the same; both hold physical addresses | `base_physical_address` |
 | `PowerManagementChipBus::controller` | an `(address, size)` pair with no word for either | `controller_physical_window` |
-| `sdcard_divider_for` | `SD` stays but `sdcard` fuses two words, while `MAXIMUM_SD_CARD_DIVIDER` separates them | `sd_card_divider_for` |
+| `sdcard_divider_for` | `sdcard` fuses two words, while `MAXIMUM_SD_CARD_DIVIDER` separates them | `sd_card_divider_for` |
 
 Parameter names of public functions, spelled out. They are provisional: a parameter name is no
 part of a Rust signature's compatibility, so the maintainer rules them, pending the architect.
@@ -117,7 +116,7 @@ The template's checks, run with `--manifest` over `src/*.rs`
 
 | rule | result |
 |---|---|
-| spelled-out words (`spelled_out.py`) | 1 finding, `SDIO_BRING_UP`, which is the first row above. The eight private `SYSCLK_SDIO*`, `SYSRST_SDIO*` and `AONCLK_GMAC0_TX` constants mirror the dt-binding identifiers and now open their doc comment with `(NAME, source)` and carry a `doc(alias)` of the binding's spelling. |
+| spelled-out words (`spelled_out.py`) | 0 findings. The eight private `SYSCLK_SDIO*`, `SYSRST_SDIO*` and `AONCLK_GMAC0_TX` constants mirror the dt-binding identifiers and now open their doc comment with `(NAME, source)` and carry a `doc(alias)` of the binding's spelling. |
 | units spelled out (`unit_symbols.py`) | 0 findings in 456 names. The checker reads suffixes only. |
 | question shape (`question_shape.py`) | 0 findings. |
 | British spelling | 0 findings. |
@@ -208,7 +207,7 @@ not run on a board.
 
 | item | owner |
 |---|---|
-| Decisions 1 to 4 below. | architect |
+| Decisions 1 to 3 below. | architect |
 | Mark milestone 1019 items 7 and 11 done for this crate. | maintainer |
 | The 13 private unit-symbol names, and the exemption for `SEC` meaning security. | unit-suffix sweep lane |
 | Run the PMIC reset path on a board, then lift the README's limitation. | maintainers, at the bench |
@@ -223,9 +222,6 @@ not run on a board.
    that makes a VisionFive 2 reset itself, and no board has run that timing yet.
 2. Ratify `CLOCK_PARENT_MASK`. Recommendation: ratify. Background: the maintainer chose it over
    three alternatives on 2026-11-05 and left it provisional for you.
-3. Reopen the seven names in the table above. Recommendation: rename all before `0.1.0` in one
-   pull request. Background: a later rule overtook each ruling, and names become permanent when the
-   crate first publishes.
-4. Keep the VisionFive 2 board items (the PMIC reset, the PMIC bus plan, the I2C5 clock chain) in
+3. Keep the VisionFive 2 board items (the PMIC reset, the PMIC bus plan, the I2C5 clock chain) in
    this chip crate. Recommendation: keep them, as the README says they are board facts. Background:
    moving them to a board crate later would break every caller.
