@@ -102,7 +102,7 @@ impl SimulatedHardware {
             global_resets: 0,
             strap_writes: Vec::new(),
             elapsed_microseconds: 0,
-            flash_status: non_volatile_memory::status::DESCRIPTOR_VALID,
+            flash_status: non_volatile_memory::flash_status::DESCRIPTOR_VALID,
             flash_control: 0,
             flash_busy_reads: 0,
             flash_failing_cycles: 0,
@@ -248,16 +248,16 @@ impl SimulatedHardware {
         let low = value as u16;
         // Write one to clear: done, error, direct access error.
         self.flash_status &= !(low
-            & (non_volatile_memory::status::FLASH_CYCLE_DONE
-                | non_volatile_memory::status::FLASH_CYCLE_ERROR
-                | non_volatile_memory::status::DIRECT_ACCESS_ERROR));
+            & (non_volatile_memory::flash_status::FLASH_CYCLE_DONE
+                | non_volatile_memory::flash_status::FLASH_CYCLE_ERROR
+                | non_volatile_memory::flash_status::DIRECT_ACCESS_ERROR));
         self.flash_control = (value >> 16) as u16;
-        if self.flash_control & non_volatile_memory::control::FLASH_CYCLE_GO != 0 {
+        if self.flash_control & non_volatile_memory::flash_control::FLASH_CYCLE_GO != 0 {
             if self.flash_busy_reads > 0 || self.flash_pending > 0 {
                 self.flash_go_while_busy += 1;
             }
             self.flash_cycles.push(self.flash_control);
-            self.flash_control &= !non_volatile_memory::control::FLASH_CYCLE_GO;
+            self.flash_control &= !non_volatile_memory::flash_control::FLASH_CYCLE_GO;
             self.flash_pending = self.flash_slow_reads;
             if self.flash_pending == 0 {
                 self.flash_end_cycle();
@@ -266,21 +266,24 @@ impl SimulatedHardware {
     }
 
     fn flash_end_cycle(&mut self) {
-        let byte =
-            self.get(non_volatile_memory::FLASH_BASE_ADDR + non_volatile_memory::FADDR) as usize;
+        let byte = self.get(
+            non_volatile_memory::FLASH_REGISTERS_OFFSET_BYTES
+                + non_volatile_memory::FLASH_LINEAR_ADDRESS_REGISTER,
+        ) as usize;
         let w = byte / 2;
         let low = *self.non_volatile_memory.get(w).unwrap_or(&0xffff);
         let high = *self.non_volatile_memory.get(w + 1).unwrap_or(&0xffff);
         self.mac.insert(
-            non_volatile_memory::FLASH_BASE_ADDR + non_volatile_memory::FDATA0,
+            non_volatile_memory::FLASH_REGISTERS_OFFSET_BYTES
+                + non_volatile_memory::FLASH_DATA_0_REGISTER,
             u32::from(high) << 16 | u32::from(low),
         );
         if self.flash_failing_cycles > 0 {
             self.flash_failing_cycles -= 1;
-            self.flash_status |= non_volatile_memory::status::FLASH_CYCLE_DONE
-                | non_volatile_memory::status::FLASH_CYCLE_ERROR;
+            self.flash_status |= non_volatile_memory::flash_status::FLASH_CYCLE_DONE
+                | non_volatile_memory::flash_status::FLASH_CYCLE_ERROR;
         } else {
-            self.flash_status |= non_volatile_memory::status::FLASH_CYCLE_DONE;
+            self.flash_status |= non_volatile_memory::flash_status::FLASH_CYCLE_DONE;
         }
     }
 }
@@ -292,7 +295,7 @@ fn mac_mdic() -> u64 {
 impl Hardware for SimulatedHardware {
     fn read(&mut self, offset: u64) -> u32 {
         if offset
-            == non_volatile_memory::FLASH_BASE_ADDR
+            == non_volatile_memory::FLASH_REGISTERS_OFFSET_BYTES
                 + non_volatile_memory::HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER
         {
             if self.flash_pending > 0 {
@@ -302,7 +305,7 @@ impl Hardware for SimulatedHardware {
                 if self.flash_pending == 0 {
                     self.flash_end_cycle();
                 } else {
-                    let status = self.flash_status | non_volatile_memory::status::IN_PROGRESS;
+                    let status = self.flash_status | non_volatile_memory::flash_status::IN_PROGRESS;
                     return u32::from(self.flash_control) << 16 | u32::from(status);
                 }
             }
@@ -311,7 +314,7 @@ impl Hardware for SimulatedHardware {
                 if self.flash_busy_reads != u32::MAX {
                     self.flash_busy_reads -= 1;
                 }
-                status |= non_volatile_memory::status::IN_PROGRESS;
+                status |= non_volatile_memory::flash_status::IN_PROGRESS;
             }
             return u32::from(self.flash_control) << 16 | u32::from(status);
         }
@@ -332,7 +335,7 @@ impl Hardware for SimulatedHardware {
                 self.mac.insert(offset, keep);
             }
             o if o
-                == non_volatile_memory::FLASH_BASE_ADDR
+                == non_volatile_memory::FLASH_REGISTERS_OFFSET_BYTES
                     + non_volatile_memory::HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER =>
             {
                 self.flash_write(value);
@@ -888,15 +891,18 @@ mod tests {
     /// `ich8_hws_flash_ctrl` unions put them.
     #[test]
     fn the_flash_register_bits_are_the_ich8_unions() {
-        assert_eq!(non_volatile_memory::status::FLASH_CYCLE_DONE, 0x0001);
-        assert_eq!(non_volatile_memory::status::FLASH_CYCLE_ERROR, 0x0002);
-        assert_eq!(non_volatile_memory::status::DIRECT_ACCESS_ERROR, 0x0004);
-        assert_eq!(non_volatile_memory::status::IN_PROGRESS, 0x0020);
-        assert_eq!(non_volatile_memory::status::DESCRIPTOR_VALID, 0x4000);
-        assert_eq!(non_volatile_memory::control::FLASH_CYCLE_GO, 0x0001);
-        assert_eq!(non_volatile_memory::control::CYCLE_MASK, 0x0006);
-        assert_eq!(non_volatile_memory::control::BYTE_COUNT_SHIFT, 8);
-        assert_eq!(non_volatile_memory::control::BYTE_COUNT_MASK, 0x0300);
+        assert_eq!(non_volatile_memory::flash_status::FLASH_CYCLE_DONE, 0x0001);
+        assert_eq!(non_volatile_memory::flash_status::FLASH_CYCLE_ERROR, 0x0002);
+        assert_eq!(
+            non_volatile_memory::flash_status::DIRECT_ACCESS_ERROR,
+            0x0004
+        );
+        assert_eq!(non_volatile_memory::flash_status::IN_PROGRESS, 0x0020);
+        assert_eq!(non_volatile_memory::flash_status::DESCRIPTOR_VALID, 0x4000);
+        assert_eq!(non_volatile_memory::flash_control::FLASH_CYCLE_GO, 0x0001);
+        assert_eq!(non_volatile_memory::flash_control::CYCLE_MASK, 0x0006);
+        assert_eq!(non_volatile_memory::flash_control::BYTE_COUNT_SHIFT, 8);
+        assert_eq!(non_volatile_memory::flash_control::BYTE_COUNT_MASK, 0x0300);
     }
 
     /// **A flash read touches only the flash registers** and starts one cycle, a read (cycle type
@@ -907,8 +913,8 @@ mod tests {
         s.non_volatile_memory[0x20] = 0x1234;
         s.non_volatile_memory[0x21] = 0x5678;
         assert_eq!(non_volatile_memory::read_u32(&mut s, 0x20), Ok(0x5678_1234));
-        let flash =
-            non_volatile_memory::FLASH_BASE_ADDR..non_volatile_memory::FLASH_BASE_ADDR + 0x100;
+        let flash = non_volatile_memory::FLASH_REGISTERS_OFFSET_BYTES
+            ..non_volatile_memory::FLASH_REGISTERS_OFFSET_BYTES + 0x100;
         assert!(s.reads.iter().all(|o| flash.contains(o)), "{:x?}", s.reads);
         assert!(
             s.writes.iter().all(|(o, _)| flash.contains(o)),
