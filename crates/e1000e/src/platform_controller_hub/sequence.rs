@@ -498,12 +498,12 @@ fn leave_ultra_low_power_by_physical_layer_device(
         let pm = physical_layer_device::read(
             hardware,
             &f,
-            physical_layer_device::registers::HV_PM_CTRL,
+            physical_layer_device::registers::POWER_MANAGEMENT_CONTROL_REGISTER,
         )?;
         let _ = physical_layer_device::write(
             hardware,
             &f,
-            physical_layer_device::registers::HV_PM_CTRL,
+            physical_layer_device::registers::POWER_MANAGEMENT_CONTROL_REGISTER,
             pm | HV_PM_CTRL_K1_ENABLE,
         );
         // Clear the ULP configuration, then commit it by starting auto ULP configuration.
@@ -855,7 +855,7 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
         physical_layer_device::write(
             hardware,
             &f,
-            physical_layer_device::registers::HV_LED_CONFIG,
+            physical_layer_device::registers::LED_CONFIGURATION_REGISTER,
             led,
         )?;
         let g = non_volatile_memory::Geometry::read_from_hardware(hardware);
@@ -919,7 +919,7 @@ fn write_system_management_bus_address(
     let mut v = physical_layer_device::read(
         hardware,
         flag,
-        physical_layer_device::registers::HV_SMB_ADDR,
+        physical_layer_device::registers::SYSTEM_MANAGEMENT_BUS_ADDRESS_REGISTER,
     )?;
     v = (v & !HV_SMB_ADDR_MASK) | address | HV_SMB_ADDR_PEC_EN | HV_SMB_ADDR_VALID;
     if freq != 0 {
@@ -933,7 +933,7 @@ fn write_system_management_bus_address(
     physical_layer_device::write(
         hardware,
         flag,
-        physical_layer_device::registers::HV_SMB_ADDR,
+        physical_layer_device::registers::SYSTEM_MANAGEMENT_BUS_ADDRESS_REGISTER,
         v,
     )?;
     Ok(())
@@ -956,7 +956,7 @@ fn oem_bits(hardware: &mut impl Hardware) -> Result<(), Error> {
         let mut v = physical_layer_device::read(
             hardware,
             &f,
-            physical_layer_device::registers::HV_OEM_BITS,
+            physical_layer_device::registers::OEM_BITS_REGISTER,
         )? & !(HV_OEM_BITS_GBE_DIS | HV_OEM_BITS_LPLU);
         if pc & PHYSICAL_LAYER_DEVICE_CTRL_GBE_DISABLE != 0 {
             v |= HV_OEM_BITS_GBE_DIS;
@@ -970,7 +970,7 @@ fn oem_bits(hardware: &mut impl Hardware) -> Result<(), Error> {
         physical_layer_device::write(
             hardware,
             &f,
-            physical_layer_device::registers::HV_OEM_BITS,
+            physical_layer_device::registers::OEM_BITS_REGISTER,
             v,
         )
     })();
@@ -1422,13 +1422,16 @@ mod tests {
         ] {
             let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
             s.mac.insert(registers::STRAP, strap(2, freq));
-            s.physical_layer_device_registers
-                .insert(physical_layer_device::registers::HV_SMB_ADDR, preset);
+            s.physical_layer_device_registers.insert(
+                physical_layer_device::registers::SYSTEM_MANAGEMENT_BUS_ADDRESS_REGISTER,
+                preset,
+            );
             let f = SoftwareFlag::acquire(&mut s).unwrap();
             write_system_management_bus_address(&mut s, &f).unwrap();
             f.release(&mut s);
             assert_eq!(
-                s.physical_layer_device_registers[&physical_layer_device::registers::HV_SMB_ADDR],
+                s.physical_layer_device_registers
+                    [&physical_layer_device::registers::SYSTEM_MANAGEMENT_BUS_ADDRESS_REGISTER],
                 want,
                 "frequency field {freq}"
             );
@@ -1447,7 +1450,7 @@ mod tests {
     fn the_oem_bits_follow_the_mac() {
         let sw = FEXTNVM_SOFTWARE_CONFIGURATION_ICH8M;
         let both = PHYSICAL_LAYER_DEVICE_CTRL_GBE_DISABLE | PHYSICAL_LAYER_DEVICE_CTRL_D0A_LPLU;
-        // (FEXTNVM, PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER, HV_OEM_BITS before, firmware blocks resets, HV_OEM_BITS after)
+        // (FEXTNVM, PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER, OEM_BITS_REGISTER before, firmware blocks resets, OEM_BITS_REGISTER after)
         for (fextnvm, pc, before, blocked, after) in [
             (sw, both, 0x0000, false, 0x0444),
             (sw | 1, 0, 0x8044, false, 0x8400),
@@ -1462,10 +1465,11 @@ mod tests {
                 s.mac.insert(registers::FWSM, 0);
             }
             s.physical_layer_device_registers
-                .insert(physical_layer_device::registers::HV_OEM_BITS, before);
+                .insert(physical_layer_device::registers::OEM_BITS_REGISTER, before);
             oem_bits(&mut s).unwrap();
             assert_eq!(
-                s.physical_layer_device_registers[&physical_layer_device::registers::HV_OEM_BITS],
+                s.physical_layer_device_registers
+                    [&physical_layer_device::registers::OEM_BITS_REGISTER],
                 after,
                 "{fextnvm:#x} {pc:#x} {before:#x}"
             );
@@ -1604,8 +1608,10 @@ mod tests {
             SimulatedHardware::new(PhysicalLayerDeviceStartState::InSystemManagementBus, false);
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::CV_SMB_CTRL, 0x0101);
-        s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::HV_PM_CTRL, 0x4001);
+        s.physical_layer_device_registers.insert(
+            physical_layer_device::registers::POWER_MANAGEMENT_CONTROL_REGISTER,
+            0x4001,
+        );
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::I218_ULP_CONFIG1, 0x1ff5);
         assert!(initialize_physical_layer_device_workarounds(&mut s).is_ok());
@@ -1621,7 +1627,10 @@ mod tests {
             !smb.is_empty() && smb.iter().all(|&v| v == 0x0100),
             "{smb:x?}"
         );
-        assert_eq!(to(physical_layer_device::registers::HV_PM_CTRL), [0x4001]);
+        assert_eq!(
+            to(physical_layer_device::registers::POWER_MANAGEMENT_CONTROL_REGISTER),
+            [0x4001]
+        );
         assert_eq!(
             to(physical_layer_device::registers::I218_ULP_CONFIG1),
             [0x0281, 0x0281]
