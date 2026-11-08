@@ -21,6 +21,10 @@
 
 #![no_std]
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 /// The page's first eight bytes: ASCII, unpadded, the shape the sibling pages' magics use. The last
 /// byte is the layout's [`VERSION`] as a digit, so [`read_page`] can tell another layout of this
 /// page from a page that is not this one.

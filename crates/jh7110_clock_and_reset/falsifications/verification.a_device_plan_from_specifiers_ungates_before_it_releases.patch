@@ -16,5 +16,5 @@ index 7cc680a83..97b7ac8c4 100644
 -    for (list, is_clock) in [(clocks, true), (resets, false)] {
 +    for (list, is_clock) in [(resets, false), (clocks, true)] {
          let Some(list) = list else { continue };
-         let specs = list.chunks(8);
-         let total = specs.len();
+         let specifiers = list.chunks(8);
+         let total = specifiers.len();

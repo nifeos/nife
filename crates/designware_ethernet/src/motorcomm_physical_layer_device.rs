@@ -25,7 +25,7 @@
 
 use crate::management_data_input_output::{self, ManagementDataInputOutput};
 
-/// **The YT8531's PHY identifier** (`PHY_ID_YT8531`, `motorcomm.c`), `PHYSID1 << 16 | PHYSID2`,
+/// **The YT8531's PHY identifier** (`PHY_ID_YT8531`, `motorcomm.c`), `PHYSICAL_LAYER_DEVICE_ID_1_REGISTER << 16 | PHYSICAL_LAYER_DEVICE_ID_2_REGISTER`,
 /// matched exactly there; OpenBSD matches the OUI and model.
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
@@ -36,11 +36,13 @@ pub const MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID: u32 = 0x4f51_e91b;
 /// **Extended register address port** (`YT8511_REG_ADDR`, `ytphy.c`): write an extended register's
 /// number here.
 #[doc(alias = "extended register address port")]
-pub(crate) const REG_ADDR: u8 = 0x1e;
+#[doc(alias = "YT8511_REG_ADDR")]
+pub(crate) const EXTENDED_REGISTER_ADDRESS_PORT: u8 = 0x1e;
 /// **Extended register data port** (`YT8511_REG_DATA`, `ytphy.c`): then read or write its value
 /// here.
 #[doc(alias = "extended register data port")]
-pub(crate) const REG_DATA: u8 = 0x1f;
+#[doc(alias = "YT8511_REG_DATA")]
+pub(crate) const EXTENDED_REGISTER_DATA_PORT: u8 = 0x1f;
 
 /// **Clock gate register** (`YT8511_EXT_CLK_GATE`, `ytphy.c`). Linux calls it
 /// `YT8521_CLOCK_GATING_REG` (`motorcomm.c`) and FreeBSD `PHY_CLOCK_GATING_REG` (`mcommphy.c`).
@@ -57,7 +59,8 @@ pub const MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER: u16 = 0x000c;
 /// `phylink_rx_clk_stop_block` for the same reason), and a board booted with its cable out must
 /// still reset cleanly rather than refuse.
 #[doc(alias = "receive clock enable")]
-pub(crate) const CGR_RX_CLK_EN: u16 = 1 << 12;
+#[doc(alias = "YT8521_CGR_RX_CLK_EN")]
+pub(crate) const CLOCK_GATING_RECEIVE_CLOCK_ENABLE: u16 = 1 << 12;
 /// **Extended register, sleep control** (`YT8511_EXT_SLEEP_CTRL`, `ytphy.c`). Linux calls it
 /// `YT8521_EXTREG_SLEEP_CONTROL1_REG` (`motorcomm.c`) and FreeBSD `PHY_SLEEP_CONTROL1_REG`
 /// (`mcommphy.c`).
@@ -70,48 +73,64 @@ pub const MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER: u16 = 0x0027;
 /// **Sleep control 1, sleep switch** (`YT8521_ESC1R_SLEEP_SW`, `motorcomm.c`). Clear it to stop the
 /// PHY sleeping when the cable is out, which also stops its clocks. Linux clears it for
 /// `motorcomm,auto-sleep-disabled`; this driver clears it for
-/// [`CGR_RX_CLK_EN`]'s reason. The cost is the PHY's idle power with no cable.
+/// [`CLOCK_GATING_RECEIVE_CLOCK_ENABLE`]'s reason. The cost is the PHY's idle power with no cable.
 #[doc(alias = "sleep switch")]
-pub(crate) const ESC1R_SLEEP_SW: u16 = 1 << 15;
+#[doc(alias = "YT8521_ESC1R_SLEEP_SW")]
+pub(crate) const SLEEP_CONTROL_1_SLEEP_SWITCH: u16 = 1 << 15;
 /// **Extended register, chip configuration** (`YT8521_EXT_CHIP_CONFIG`, `ytphy.c`).
 #[doc(alias = "extended register, chip configuration")]
-pub(crate) const EXT_CHIP_CONFIG: u16 = 0xa001;
+#[doc(alias = "YT8521_EXT_CHIP_CONFIG")]
+pub(crate) const EXTENDED_CHIP_CONFIGURATION_REGISTER: u16 = 0xa001;
 /// **Receive clock delay enable** (`YT8521_RXC_DLY_EN`, `ytphy.c`). The receive clock's extra fixed
 /// delay (about 1.9 ns) is enabled.
 #[doc(alias = "receive clock delay enable")]
-pub(crate) const RXC_DLY_EN: u16 = 1 << 8;
+#[doc(alias = "YT8521_RXC_DLY_EN")]
+pub(crate) const RECEIVE_CLOCK_DELAY_ENABLE: u16 = 1 << 8;
 /// **Chip configuration, low-dropout regulator voltage field** (`YT8521_CFG_LDO_MASK`, `ytphy.c`).
 /// The RGMII I/O voltage the PHY's LDO is strapped to.
 #[doc(alias = "chip configuration, low-dropout regulator voltage field")]
-pub(crate) const CFG_LDO_MASK: u16 = 0x3 << 4;
+#[doc(alias = "YT8521_CFG_LDO_MASK")]
+pub(crate) const LOW_DROPOUT_REGULATOR_VOLTAGE_MASK: u16 = 0x3 << 4;
 /// **Low-dropout regulator at 3.3 V** (`YT8521_CFG_LDO_3V3`, `ytphy.c`).
 #[doc(alias = "low-dropout regulator at 3.3 v")]
-pub(crate) const CFG_LDO_3V3: u16 = 0;
+#[doc(alias = "YT8521_CFG_LDO_3V3")]
+pub(crate) const LOW_DROPOUT_REGULATOR_3300_MILLIVOLTS: u16 = 0;
 /// **Low-dropout regulator at 2.5 V** (`YT8521_CFG_LDO_2V5`, `ytphy.c`).
 #[doc(alias = "low-dropout regulator at 2.5 v")]
-pub(crate) const CFG_LDO_2V5: u16 = 1 << 4;
+#[doc(alias = "YT8521_CFG_LDO_2V5")]
+pub(crate) const LOW_DROPOUT_REGULATOR_2500_MILLIVOLTS: u16 = 1 << 4;
 /// **Extended register, RGMII configuration 1** (`YT8521_EXT_RGMII_CONFIG1`, `ytphy.c`).
 #[doc(alias = "extended register, rgmii configuration 1")]
-pub(crate) const EXT_RGMII_CONFIG1: u16 = 0xa003;
+#[doc(alias = "YT8521_EXT_RGMII_CONFIG1")]
+pub(crate) const EXTENDED_REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_CONFIGURATION_1_REGISTER:
+    u16 = 0xa003;
 /// **Transmit clock select** (`YT8521_TX_CLK_SEL`, `ytphy.c`): set, the transmit clock is inverted.
 #[doc(alias = "transmit clock select")]
-pub(crate) const TX_CLK_SEL: u16 = 1 << 14;
+#[doc(alias = "YT8521_TX_CLK_SEL")]
+pub(crate) const TRANSMIT_CLOCK_SELECT: u16 = 1 << 14;
 /// **Receive delay select shift** (`YT8521_RX_DELAY_SEL_SHIFT`, `ytphy.c`), in 150 ps steps.
 #[doc(alias = "receive delay select shift")]
-pub(crate) const RX_DELAY_SEL_SHIFT: u16 = 10;
+#[doc(alias = "YT8521_RX_DELAY_SEL_SHIFT")]
+pub(crate) const RECEIVE_DELAY_SELECT_SHIFT: u16 = 10;
 /// **Transmit delay select shift** (`YT8521_TX_DELAY_SEL_SHIFT`, `ytphy.c`), in 150 ps steps.
 #[doc(alias = "transmit delay select shift")]
-pub(crate) const TX_DELAY_SEL_SHIFT: u16 = 0;
+#[doc(alias = "YT8521_TX_DELAY_SEL_SHIFT")]
+pub(crate) const TRANSMIT_DELAY_SELECT_SHIFT: u16 = 0;
 /// **Extended register, pad drive strength** (`YT8521_EXT_PAD_DRIVE_STRENGTH`, `ytphy.c`).
 #[doc(alias = "extended register, pad drive strength")]
-pub(crate) const EXT_PAD_DRIVE_STRENGTH: u16 = 0xa010;
+#[doc(alias = "YT8521_EXT_PAD_DRIVE_STRENGTH")]
+pub(crate) const EXTENDED_PAD_DRIVE_STRENGTH_REGISTER: u16 = 0xa010;
 /// **RGMII receive clock drive strength shift** (`YT8531_RGMII_RXC_DS_SHIFT`, `ytphy.c`).
 #[doc(alias = "rgmii receive clock drive strength shift")]
-pub(crate) const RGMII_RXC_DS_SHIFT: u16 = 13;
+#[doc(alias = "YT8531_RGMII_RXC_DS_SHIFT")]
+pub(crate) const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_CLOCK_DRIVE_STRENGTH_SHIFT:
+    u16 = 13;
 /// **RGMII receive data drive strength mask** (`YT8531_RGMII_RXD_DS_MASK`, `ytphy.c`): its low two
 /// bits are bits 5:4, its high bit is bit 12.
 #[doc(alias = "rgmii receive data drive strength mask")]
-pub(crate) const RGMII_RXD_DS_MASK: u16 = (1 << 12) | (0x3 << 4);
+#[doc(alias = "YT8531_RGMII_RXD_DS_MASK")]
+pub(crate) const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_DATA_DRIVE_STRENGTH_MASK: u16 =
+    (1 << 12) | (0x3 << 4);
 /// The mask's two fields share no bit, so its `|` is its `^`, which the compiler checks here; the
 /// exclusion of the mask's or-versus-xor mutant names this constant. The clippy lints fold the
 /// literals; that is what a gate is, allowed here for exactly that reason.
@@ -121,12 +140,14 @@ pub(crate) const RGMII_RXD_DS_MASK: u16 = (1 << 12) | (0x3 << 4);
 pub const RECEIVE_DATA_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!((1 << 12) & (0x3 << 4) == 0);
 /// **Extended register, synchronous Ethernet configuration** (`YT8521_EXT_SYNCE_CFG`, `ytphy.c`).
 #[doc(alias = "extended register, synchronous ethernet configuration")]
-pub(crate) const EXT_SYNCE_CFG: u16 = 0xa012;
+#[doc(alias = "YT8521_EXT_SYNCE_CFG")]
+pub(crate) const EXTENDED_SYNCHRONOUS_ETHERNET_CONFIGURATION_REGISTER: u16 = 0xa012;
 /// **Synchronous Ethernet clock output enable** (`YT8531_EN_SYNC_E`, `ytphy.c`). Neither JH7110
 /// tree asks for it, so it is cleared, as OpenBSD and Linux both do when
 /// `motorcomm,clk-out-frequency-hz` is absent.
 #[doc(alias = "synchronous ethernet clock output enable")]
-pub(crate) const EN_SYNC_E: u16 = 1 << 6;
+#[doc(alias = "YT8531_EN_SYNC_E")]
+pub(crate) const SYNCHRONOUS_ETHERNET_CLOCK_OUTPUT_ENABLE: u16 = 1 << 6;
 
 /// A link speed.
 ///
@@ -172,50 +193,83 @@ pub struct Link {
 /// 100BASE-T4 partner reads as 100 Mbit/s half duplex. With autonegotiation off they are the
 /// forced bits of the control register.
 pub(crate) const fn link_from_registers(
-    bmsr: u16,
-    bmcr: u16,
-    anar: u16,
-    anlpar: u16,
-    gtcr: u16,
-    gtsr: u16,
+    basic_mode_status: u16,
+    basic_mode_control: u16,
+    autonegotiation_advertisement: u16,
+    link_partner_abilities: u16,
+    control_1000base_t: u16,
+    status_1000base_t: u16,
 ) -> Option<Link> {
-    use management_data_input_output as mdio;
-    if bmsr & mdio::BMSR_LSTATUS == 0 || bmcr & mdio::BMCR_ISO != 0 {
+    if basic_mode_status & management_data_input_output::BASIC_MODE_STATUS_LINK_STATUS == 0
+        || basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_ISOLATE != 0
+    {
         return None;
     }
-    if bmcr & mdio::BMCR_ANENABLE == 0 {
-        let speed = if bmcr & mdio::BMCR_S1000 != 0 {
+    if basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE
+        == 0
+    {
+        let speed = if basic_mode_control
+            & management_data_input_output::BASIC_MODE_CONTROL_SPEED_1000
+            != 0
+        {
             Speed::Thousand
-        } else if bmcr & mdio::BMCR_S100 != 0 {
+        } else if basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_SPEED_100
+            != 0
+        {
             Speed::Hundred
         } else {
             Speed::Ten
         };
         return Some(Link {
             speed,
-            full_duplex: bmcr & mdio::BMCR_FDX != 0,
+            full_duplex: basic_mode_control
+                & management_data_input_output::BASIC_MODE_CONTROL_FULL_DUPLEX
+                != 0,
         });
     }
-    if bmsr & mdio::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE == 0 {
+    if basic_mode_status & management_data_input_output::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE
+        == 0
+    {
         return None;
     }
-    let common = anar & anlpar;
-    let (speed, full_duplex) =
-        if gtcr & mdio::GTCR_ADV_1000TFDX != 0 && gtsr & mdio::GTSR_LP_1000TFDX != 0 {
-            (Speed::Thousand, true)
-        } else if gtcr & mdio::GTCR_ADV_1000THDX != 0 && gtsr & mdio::GTSR_LP_1000THDX != 0 {
-            (Speed::Thousand, false)
-        } else if common & mdio::ANLPAR_TX_FD != 0 {
-            (Speed::Hundred, true)
-        } else if common & (mdio::ANLPAR_T4 | mdio::ANLPAR_TX) != 0 {
-            (Speed::Hundred, false)
-        } else if common & mdio::ANLPAR_10_FD != 0 {
-            (Speed::Ten, true)
-        } else if common & mdio::ANLPAR_10 != 0 {
-            (Speed::Ten, false)
-        } else {
-            return None;
-        };
+    let common = autonegotiation_advertisement & link_partner_abilities;
+    let (speed, full_duplex) = if control_1000base_t
+        & management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX
+        != 0
+        && status_1000base_t
+            & management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE
+            != 0
+    {
+        (Speed::Thousand, true)
+    } else if control_1000base_t
+        & management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX
+        != 0
+        && status_1000base_t
+            & management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE
+            != 0
+    {
+        (Speed::Thousand, false)
+    } else if common
+        & management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX
+        != 0
+    {
+        (Speed::Hundred, true)
+    } else if common
+        & (management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4
+            | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX)
+        != 0
+    {
+        (Speed::Hundred, false)
+    } else if common
+        & management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
+        != 0
+    {
+        (Speed::Ten, true)
+    } else if common & management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T != 0 {
+        (Speed::Ten, false)
+    } else {
+        return None;
+    };
     Some(Link { speed, full_duplex })
 }
 
@@ -224,8 +278,11 @@ pub(crate) const fn link_from_registers(
 /// `link_from_registers` names this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
-pub const PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP: () =
-    assert!(management_data_input_output::ANLPAR_T4 & management_data_input_output::ANLPAR_TX == 0);
+pub const PARTNER_HUNDRED_MEGABIT_ABILITIES_DO_NOT_OVERLAP: () = assert!(
+    management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4
+        & management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
+        == 0
+);
 
 /// A pad drive strength, as a tree states it.
 ///
@@ -274,9 +331,9 @@ pub struct Settings {
 }
 
 /// The receive delay at or above which the fixed extra delay is used (OpenBSD's `1900`).
-const FIXED_DELAY_PS: u32 = 1900;
+const FIXED_DELAY_PICOSECONDS: u32 = 1900;
 /// The delay select's step.
-const STEP_PS: u32 = 150;
+const STEP_PICOSECONDS: u32 = 150;
 
 impl Settings {
     /// **radon's `gmac0` (Gigabit MAC, GMAC).** Both trees give these values, so a tree that names
@@ -301,35 +358,38 @@ impl Settings {
     /// and "not inverted" here: the bit is written either way, so it is decided rather than
     /// inherited.
     pub(crate) fn from_mainline(
-        receive_ps: u32,
-        transmit_ps: u32,
-        receive_clock_ua: u32,
-        receive_data_ua: u32,
+        receive_picoseconds: u32,
+        transmit_picoseconds: u32,
+        receive_clock_microamps: u32,
+        receive_data_microamps: u32,
         transmit_inverted: Option<[bool; 3]>,
     ) -> Settings {
-        let (receive_ps, receive_fixed_delay) = if receive_ps >= FIXED_DELAY_PS
-            && (receive_ps - FIXED_DELAY_PS).is_multiple_of(STEP_PS)
+        let (receive_picoseconds, receive_fixed_delay) = if receive_picoseconds
+            >= FIXED_DELAY_PICOSECONDS
+            && (receive_picoseconds - FIXED_DELAY_PICOSECONDS).is_multiple_of(STEP_PICOSECONDS)
         {
-            (receive_ps - FIXED_DELAY_PS, true)
+            (receive_picoseconds - FIXED_DELAY_PICOSECONDS, true)
         } else {
-            (receive_ps, false)
+            (receive_picoseconds, false)
         };
-        let sel = |ps: u32| ((ps.saturating_add(STEP_PS / 2)) / STEP_PS).min(0xf) as u8;
+        let select = |picoseconds: u32| {
+            ((picoseconds.saturating_add(STEP_PICOSECONDS / 2)) / STEP_PICOSECONDS).min(0xf) as u8
+        };
         Settings {
-            receive_delay: sel(receive_ps),
+            receive_delay: select(receive_picoseconds),
             receive_fixed_delay,
-            transmit_delay: sel(transmit_ps),
-            receive_clock_drive: PadDriveStrength::Microamps(receive_clock_ua),
-            receive_data_drive: PadDriveStrength::Microamps(receive_data_ua),
+            transmit_delay: select(transmit_picoseconds),
+            receive_clock_drive: PadDriveStrength::Microamps(receive_clock_microamps),
+            receive_data_drive: PadDriveStrength::Microamps(receive_data_microamps),
             transmit_clock_inverted: transmit_inverted.unwrap_or([false; 3]),
             source: SettingsSource::MainlineTree,
         }
     }
 }
 
-/// **The pad drive code for a current at a voltage**, OpenBSD's `ytphy_yt8531_ds_map`. Unknown
+/// **The pad drive code for current current at current voltage**, OpenBSD's `ytphy_yt8531_ds_map`. Unknown
 /// pairs, which includes everything at 2.5 V, get the part's default of 3, as there.
-pub(crate) fn drive_code(voltage_mv: u32, d: PadDriveStrength) -> u8 {
+pub(crate) fn drive_code(voltage_millivolts: u32, strength: PadDriveStrength) -> u8 {
     const MAP: [(u32, u32, u8); 16] = [
         (1800, 1200, 0),
         (1800, 2100, 1),
@@ -348,20 +408,20 @@ pub(crate) fn drive_code(voltage_mv: u32, d: PadDriveStrength) -> u8 {
         (3300, 5740, 6),
         (3300, 6140, 7),
     ];
-    match d {
-        PadDriveStrength::Code(c) => c & 0x7,
-        PadDriveStrength::Microamps(ua) => MAP
+    match strength {
+        PadDriveStrength::Code(code) => code & 0x7,
+        PadDriveStrength::Microamps(microamps) => MAP
             .iter()
-            .find(|&&(v, a, _)| v == voltage_mv && a == ua)
-            .map_or(3, |&(_, _, c)| c),
+            .find(|&&(voltage, current, _)| voltage == voltage_millivolts && current == microamps)
+            .map_or(3, |&(_, _, code)| code),
     }
 }
 
 /// The I/O voltage the chip configuration word's LDO field states, in millivolts.
-pub(crate) const fn voltage_mv(chip_configuration: u16) -> u32 {
-    match chip_configuration & CFG_LDO_MASK {
-        CFG_LDO_3V3 => 3300,
-        CFG_LDO_2V5 => 2500,
+pub(crate) const fn strapped_voltage_millivolts(chip_configuration: u16) -> u32 {
+    match chip_configuration & LOW_DROPOUT_REGULATOR_VOLTAGE_MASK {
+        LOW_DROPOUT_REGULATOR_3300_MILLIVOLTS => 3300,
+        LOW_DROPOUT_REGULATOR_2500_MILLIVOLTS => 2500,
         _ => 1800,
     }
 }
@@ -374,8 +434,12 @@ pub fn read_extended(
     physical_layer_device_address: u8,
     extended: u16,
 ) -> Result<u16, management_data_input_output::Error> {
-    bus.write(physical_layer_device_address, REG_ADDR, extended)?;
-    bus.read(physical_layer_device_address, REG_DATA)
+    bus.write(
+        physical_layer_device_address,
+        EXTENDED_REGISTER_ADDRESS_PORT,
+        extended,
+    )?;
+    bus.read(physical_layer_device_address, EXTENDED_REGISTER_DATA_PORT)
 }
 
 /// Write extended register `extended`.
@@ -385,10 +449,18 @@ pub fn write_extended(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
     extended: u16,
-    v: u16,
+    value: u16,
 ) -> Result<(), management_data_input_output::Error> {
-    bus.write(physical_layer_device_address, REG_ADDR, extended)?;
-    bus.write(physical_layer_device_address, REG_DATA, v)
+    bus.write(
+        physical_layer_device_address,
+        EXTENDED_REGISTER_ADDRESS_PORT,
+        extended,
+    )?;
+    bus.write(
+        physical_layer_device_address,
+        EXTENDED_REGISTER_DATA_PORT,
+        value,
+    )
 }
 
 /// Read, change and write back extended register `extended`, clearing `clear` then setting `set`.
@@ -399,9 +471,9 @@ fn modify_extended(
     clear: u16,
     set: u16,
 ) -> Result<u16, management_data_input_output::Error> {
-    let v = (read_extended(bus, physical_layer_device_address, extended)? & !clear) | set;
-    write_extended(bus, physical_layer_device_address, extended, v)?;
-    Ok(v)
+    let value = (read_extended(bus, physical_layer_device_address, extended)? & !clear) | set;
+    write_extended(bus, physical_layer_device_address, extended, value)?;
+    Ok(value)
 }
 
 /// What [`configure`] found and wrote.
@@ -431,74 +503,92 @@ pub struct Applied {
 pub fn configure(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
-    s: &Settings,
+    settings: &Settings,
 ) -> Result<Applied, management_data_input_output::Error> {
-    let saved = bus.read(physical_layer_device_address, REG_ADDR)?;
-    let delay_en = if s.receive_fixed_delay { RXC_DLY_EN } else { 0 };
+    let saved = bus.read(
+        physical_layer_device_address,
+        EXTENDED_REGISTER_ADDRESS_PORT,
+    )?;
+    let delay_enable = if settings.receive_fixed_delay {
+        RECEIVE_CLOCK_DELAY_ENABLE
+    } else {
+        0
+    };
     let chip = modify_extended(
         bus,
         physical_layer_device_address,
-        EXT_CHIP_CONFIG,
-        RXC_DLY_EN,
-        delay_en,
+        EXTENDED_CHIP_CONFIGURATION_REGISTER,
+        RECEIVE_CLOCK_DELAY_ENABLE,
+        delay_enable,
     )?;
-    let volt = voltage_mv(chip);
-    let delays = u16::from(s.receive_delay & 0xf) << RX_DELAY_SEL_SHIFT
-        | u16::from(s.transmit_delay & 0xf) << TX_DELAY_SEL_SHIFT;
+    let voltage_millivolts = strapped_voltage_millivolts(chip);
+    let delays = u16::from(settings.receive_delay & 0xf) << RECEIVE_DELAY_SELECT_SHIFT
+        | u16::from(settings.transmit_delay & 0xf) << TRANSMIT_DELAY_SELECT_SHIFT;
     let reduced_gigabit_media_independent_interface_configuration_1 = modify_extended(
         bus,
         physical_layer_device_address,
-        EXT_RGMII_CONFIG1,
-        0xf << RX_DELAY_SEL_SHIFT | 0xf << TX_DELAY_SEL_SHIFT,
+        EXTENDED_REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_CONFIGURATION_1_REGISTER,
+        0xf << RECEIVE_DELAY_SELECT_SHIFT | 0xf << TRANSMIT_DELAY_SELECT_SHIFT,
         delays,
     )?;
-    let rxc = u16::from(drive_code(volt, s.receive_clock_drive));
-    let rxd = u16::from(drive_code(volt, s.receive_data_drive));
+    let receive_clock_code =
+        u16::from(drive_code(voltage_millivolts, settings.receive_clock_drive));
+    let receive_data_code = u16::from(drive_code(voltage_millivolts, settings.receive_data_drive));
     let pad_drive = modify_extended(
         bus,
         physical_layer_device_address,
-        EXT_PAD_DRIVE_STRENGTH,
-        0x7 << RGMII_RXC_DS_SHIFT | RGMII_RXD_DS_MASK,
-        rxc << RGMII_RXC_DS_SHIFT | (rxd & 0x3) << 4 | (rxd >> 2) << 12,
+        EXTENDED_PAD_DRIVE_STRENGTH_REGISTER,
+        0x7 << REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_CLOCK_DRIVE_STRENGTH_SHIFT
+            | REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_DATA_DRIVE_STRENGTH_MASK,
+        receive_clock_code
+            << REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_CLOCK_DRIVE_STRENGTH_SHIFT
+            | (receive_data_code & 0x3) << 4
+            | (receive_data_code >> 2) << 12,
     )?;
     modify_extended(
         bus,
         physical_layer_device_address,
-        EXT_SYNCE_CFG,
-        EN_SYNC_E,
+        EXTENDED_SYNCHRONOUS_ETHERNET_CONFIGURATION_REGISTER,
+        SYNCHRONOUS_ETHERNET_CLOCK_OUTPUT_ENABLE,
         0,
     )?;
     modify_extended(
         bus,
         physical_layer_device_address,
         MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER,
-        CGR_RX_CLK_EN,
+        CLOCK_GATING_RECEIVE_CLOCK_ENABLE,
         0,
     )?;
     modify_extended(
         bus,
         physical_layer_device_address,
         MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER,
-        ESC1R_SLEEP_SW,
+        SLEEP_CONTROL_1_SLEEP_SWITCH,
         0,
     )?;
-    bus.write(physical_layer_device_address, REG_ADDR, saved)?;
+    bus.write(
+        physical_layer_device_address,
+        EXTENDED_REGISTER_ADDRESS_PORT,
+        saved,
+    )?;
     Ok(Applied {
-        voltage_millivolts: volt,
+        voltage_millivolts,
         reduced_gigabit_media_independent_interface_configuration_1,
         pad_drive,
     })
 }
 
 /// The delay and drive fields the two words compose share no bit, and the transmit delay select
-/// is zero: every `|` here is its `^`, and a shift by `TX_DELAY_SEL_SHIFT` is the identity; the
+/// is zero: every `|` here is its `^`, and a shift by `TRANSMIT_DELAY_SELECT_SHIFT` is the identity; the
 /// compiler checks both here, and the mutation exclusions for `configure` name this constant.
 ///
 /// Name: ratified 2026-11-03 (UTC), #3120.
 pub const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_NOT_OVERLAP: () = assert!(
-    (0xf << RX_DELAY_SEL_SHIFT) & (0xf << TX_DELAY_SEL_SHIFT) == 0
-        && (0x7 << RGMII_RXC_DS_SHIFT) & RGMII_RXD_DS_MASK == 0
-        && TX_DELAY_SEL_SHIFT == 0
+    (0xf << RECEIVE_DELAY_SELECT_SHIFT) & (0xf << TRANSMIT_DELAY_SELECT_SHIFT) == 0
+        && (0x7 << REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_CLOCK_DRIVE_STRENGTH_SHIFT)
+            & REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_DATA_DRIVE_STRENGTH_MASK
+            == 0
+        && TRANSMIT_DELAY_SELECT_SHIFT == 0
 );
 
 /// **Set the transmit clock's inversion for the speed just negotiated**, OpenBSD's
@@ -508,25 +598,32 @@ pub const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_DELAY_AND_DRIVE_FIELDS_DO_
 pub fn apply_speed(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
-    s: &Settings,
+    settings: &Settings,
     speed: Speed,
 ) -> Result<u16, management_data_input_output::Error> {
     let inverted = match speed {
-        Speed::Ten => s.transmit_clock_inverted[0],
-        Speed::Hundred => s.transmit_clock_inverted[1],
-        Speed::Thousand => s.transmit_clock_inverted[2],
+        Speed::Ten => settings.transmit_clock_inverted[0],
+        Speed::Hundred => settings.transmit_clock_inverted[1],
+        Speed::Thousand => settings.transmit_clock_inverted[2],
     };
-    let saved = bus.read(physical_layer_device_address, REG_ADDR)?;
-    let set = if inverted { TX_CLK_SEL } else { 0 };
-    let v = modify_extended(
+    let saved = bus.read(
+        physical_layer_device_address,
+        EXTENDED_REGISTER_ADDRESS_PORT,
+    )?;
+    let set = if inverted { TRANSMIT_CLOCK_SELECT } else { 0 };
+    let value = modify_extended(
         bus,
         physical_layer_device_address,
-        EXT_RGMII_CONFIG1,
-        TX_CLK_SEL,
+        EXTENDED_REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_CONFIGURATION_1_REGISTER,
+        TRANSMIT_CLOCK_SELECT,
         set,
     )?;
-    bus.write(physical_layer_device_address, REG_ADDR, saved)?;
-    Ok(v)
+    bus.write(
+        physical_layer_device_address,
+        EXTENDED_REGISTER_ADDRESS_PORT,
+        saved,
+    )?;
+    Ok(value)
 }
 
 /// **The link, if there is one**, read from the standard clause 22 registers the way OpenBSD's
@@ -538,16 +635,43 @@ pub fn read_link(
     bus: &mut impl ManagementDataInputOutput,
     physical_layer_device_address: u8,
 ) -> Result<Option<Link>, management_data_input_output::Error> {
-    use management_data_input_output as mdio;
     let address = physical_layer_device_address;
-    let _ = bus.read(address, mdio::BMSR)?;
-    let bmsr = bus.read(address, mdio::BMSR)?;
-    let bmcr = bus.read(address, mdio::BMCR)?;
-    let anar = bus.read(address, mdio::ANAR)?;
-    let anlpar = bus.read(address, mdio::ANLPAR)?;
-    let gtcr = bus.read(address, mdio::MII_100T2CR)?;
-    let gtsr = bus.read(address, mdio::MII_100T2SR)?;
-    Ok(link_from_registers(bmsr, bmcr, anar, anlpar, gtcr, gtsr))
+    let _ = bus.read(
+        address,
+        management_data_input_output::BASIC_MODE_STATUS_REGISTER,
+    )?;
+    let basic_mode_status = bus.read(
+        address,
+        management_data_input_output::BASIC_MODE_STATUS_REGISTER,
+    )?;
+    let basic_mode_control = bus.read(
+        address,
+        management_data_input_output::BASIC_MODE_CONTROL_REGISTER,
+    )?;
+    let autonegotiation_advertisement = bus.read(
+        address,
+        management_data_input_output::AUTONEGOTIATION_ADVERTISEMENT_REGISTER,
+    )?;
+    let link_partner_abilities = bus.read(
+        address,
+        management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_ABILITIES_REGISTER,
+    )?;
+    let control_1000base_t = bus.read(
+        address,
+        management_data_input_output::CONTROL_1000BASE_T_REGISTER,
+    )?;
+    let status_1000base_t = bus.read(
+        address,
+        management_data_input_output::STATUS_1000BASE_T_REGISTER,
+    )?;
+    Ok(link_from_registers(
+        basic_mode_status,
+        basic_mode_control,
+        autonegotiation_advertisement,
+        link_partner_abilities,
+        control_1000base_t,
+        status_1000base_t,
+    ))
 }
 
 #[cfg(test)]
@@ -595,30 +719,63 @@ mod tests {
     #[test]
     fn the_clause_22_registers_decode_every_speed_and_duplex() {
         use management_data_input_output::*;
-        let up = BMSR_LSTATUS | BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE;
-        let advertise = ANLPAR_TX_FD | ANLPAR_TX | ANLPAR_10_FD | ANLPAR_10;
-        let both = GTCR_ADV_1000TFDX | GTCR_ADV_1000THDX;
+        let up = BASIC_MODE_STATUS_LINK_STATUS | BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE;
+        let advertise = AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX
+            | AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
+            | AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
+            | AUTONEGOTIATION_LINK_PARTNER_10BASE_T;
+        let both =
+            CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX | CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX;
         let l = |speed, full_duplex| Some(Link { speed, full_duplex });
-        let decode = |bmsr, anlpar, gtsr| {
-            link_from_registers(bmsr, BMCR_ANENABLE, advertise, anlpar, both, gtsr)
+        let decode = |basic_mode_status, link_partner_abilities, status_1000base_t| {
+            link_from_registers(
+                basic_mode_status,
+                BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE,
+                advertise,
+                link_partner_abilities,
+                both,
+                status_1000base_t,
+            )
         };
-        assert_eq!(decode(up, 0, GTSR_LP_1000TFDX), l(Speed::Thousand, true));
-        assert_eq!(decode(up, 0, GTSR_LP_1000THDX), l(Speed::Thousand, false));
-        assert_eq!(decode(up, ANLPAR_TX_FD, 0), l(Speed::Hundred, true));
-        assert_eq!(decode(up, ANLPAR_TX, 0), l(Speed::Hundred, false));
-        assert_eq!(decode(up, ANLPAR_T4, 0), None, "T4 is not advertised");
-        assert_eq!(decode(up, ANLPAR_10_FD, 0), l(Speed::Ten, true));
-        assert_eq!(decode(up, ANLPAR_10, 0), l(Speed::Ten, false));
+        assert_eq!(
+            decode(up, 0, STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE),
+            l(Speed::Thousand, true)
+        );
+        assert_eq!(
+            decode(up, 0, STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE),
+            l(Speed::Thousand, false)
+        );
+        assert_eq!(
+            decode(up, AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX, 0),
+            l(Speed::Hundred, true)
+        );
+        assert_eq!(
+            decode(up, AUTONEGOTIATION_LINK_PARTNER_100BASE_TX, 0),
+            l(Speed::Hundred, false)
+        );
+        assert_eq!(
+            decode(up, AUTONEGOTIATION_LINK_PARTNER_100BASE_T4, 0),
+            None,
+            "T4 is not advertised"
+        );
+        assert_eq!(
+            decode(up, AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX, 0),
+            l(Speed::Ten, true)
+        );
+        assert_eq!(
+            decode(up, AUTONEGOTIATION_LINK_PARTNER_10BASE_T, 0),
+            l(Speed::Ten, false)
+        );
         assert_eq!(decode(up, 0, 0), None, "nothing in common");
         // Gigabit needs both ends: a partner that does not advertise it falls back.
         assert_eq!(
             link_from_registers(
                 up,
-                BMCR_ANENABLE,
+                BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE,
                 advertise,
-                ANLPAR_TX_FD,
+                AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX,
                 0,
-                GTSR_LP_1000TFDX
+                STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE
             ),
             l(Speed::Hundred, true)
         );
@@ -626,28 +783,35 @@ mod tests {
         assert_eq!(
             link_from_registers(
                 up,
-                BMCR_ANENABLE,
+                BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE,
                 advertise,
-                ANLPAR_TX_FD,
-                GTCR_ADV_1000TFDX,
-                GTSR_LP_1000THDX
+                AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX,
+                CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX,
+                STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE
             ),
             l(Speed::Hundred, true)
         );
         assert_eq!(
             link_from_registers(
                 up,
-                BMCR_ANENABLE,
+                BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE,
                 advertise,
-                ANLPAR_TX_FD,
-                GTCR_ADV_1000THDX,
-                GTSR_LP_1000TFDX
+                AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX,
+                CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX,
+                STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE
             ),
             l(Speed::Hundred, true)
         );
         // A 100BASE-T4 partner reads as 100 Mbit/s half duplex when we advertise it.
         assert_eq!(
-            link_from_registers(up, BMCR_ANENABLE, ANLPAR_T4, ANLPAR_T4, 0, 0),
+            link_from_registers(
+                up,
+                BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE,
+                AUTONEGOTIATION_LINK_PARTNER_100BASE_T4,
+                AUTONEGOTIATION_LINK_PARTNER_100BASE_T4,
+                0,
+                0
+            ),
             l(Speed::Hundred, false)
         );
     }
@@ -655,18 +819,33 @@ mod tests {
     #[test]
     fn a_link_that_is_down_or_still_negotiating_decodes_to_none() {
         use management_data_input_output::*;
-        let all = ANLPAR_TX_FD | ANLPAR_TX | ANLPAR_10_FD | ANLPAR_10;
-        let go = |bmsr, bmcr| link_from_registers(bmsr, bmcr, all, all, 0, 0);
+        let all = AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX
+            | AUTONEGOTIATION_LINK_PARTNER_100BASE_TX
+            | AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX
+            | AUTONEGOTIATION_LINK_PARTNER_10BASE_T;
+        let go = |basic_mode_status, basic_mode_control| {
+            link_from_registers(basic_mode_status, basic_mode_control, all, all, 0, 0)
+        };
         assert_eq!(
-            go(BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE, BMCR_ANENABLE),
+            go(
+                BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE,
+                BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE
+            ),
             None,
             "link down"
         );
-        assert_eq!(go(BMSR_LSTATUS, BMCR_ANENABLE), None, "negotiation running");
         assert_eq!(
             go(
-                BMSR_LSTATUS | BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE,
-                BMCR_ANENABLE | BMCR_ISO
+                BASIC_MODE_STATUS_LINK_STATUS,
+                BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE
+            ),
+            None,
+            "negotiation running"
+        );
+        assert_eq!(
+            go(
+                BASIC_MODE_STATUS_LINK_STATUS | BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE,
+                BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE | BASIC_MODE_CONTROL_ISOLATE
             ),
             None
         );
@@ -675,93 +854,115 @@ mod tests {
     #[test]
     fn with_negotiation_off_the_forced_bits_decide() {
         use management_data_input_output::*;
-        let up = BMSR_LSTATUS;
+        let up = BASIC_MODE_STATUS_LINK_STATUS;
         let l = |speed, full_duplex| Some(Link { speed, full_duplex });
-        let go = |bmcr| link_from_registers(up, bmcr, 0, 0, 0, 0);
-        assert_eq!(go(BMCR_S1000 | BMCR_FDX), l(Speed::Thousand, true));
-        assert_eq!(go(BMCR_S100), l(Speed::Hundred, false));
+        let go = |basic_mode_control| link_from_registers(up, basic_mode_control, 0, 0, 0, 0);
+        assert_eq!(
+            go(BASIC_MODE_CONTROL_SPEED_1000 | BASIC_MODE_CONTROL_FULL_DUPLEX),
+            l(Speed::Thousand, true)
+        );
+        assert_eq!(go(BASIC_MODE_CONTROL_SPEED_100), l(Speed::Hundred, false));
         assert_eq!(go(0), l(Speed::Ten, false));
     }
 
     #[test]
     fn configure_writes_radons_registers_and_restores_the_address_port() {
-        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
-        physical_layer_device.write_raw(REG_ADDR, 0x1234);
+        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1800_millivolts();
+        physical_layer_device.write_raw(EXTENDED_REGISTER_ADDRESS_PORT, 0x1234);
         let a = configure(&mut physical_layer_device, 0, &Settings::FALLBACK_GMAC0).unwrap();
         assert_eq!(a.voltage_millivolts, 1800);
         assert_eq!(
-            physical_layer_device.extended(EXT_RGMII_CONFIG1) & 0x3c0f,
+            physical_layer_device.extended(
+                EXTENDED_REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_CONFIGURATION_1_REGISTER
+            ) & 0x3c0f,
             0xa << 10 | 0xa
         );
         assert_eq!(
-            physical_layer_device.extended(EXT_PAD_DRIVE_STRENGTH) >> 13,
+            physical_layer_device.extended(EXTENDED_PAD_DRIVE_STRENGTH_REGISTER) >> 13,
             6
         );
         assert_eq!(
-            physical_layer_device.extended(EXT_PAD_DRIVE_STRENGTH) & RGMII_RXD_DS_MASK,
+            physical_layer_device.extended(EXTENDED_PAD_DRIVE_STRENGTH_REGISTER)
+                & REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_DATA_DRIVE_STRENGTH_MASK,
             3 << 4
         );
         assert_eq!(
-            physical_layer_device.extended(EXT_CHIP_CONFIG) & RXC_DLY_EN,
+            physical_layer_device.extended(EXTENDED_CHIP_CONFIGURATION_REGISTER)
+                & RECEIVE_CLOCK_DELAY_ENABLE,
             0
         );
-        assert_eq!(physical_layer_device.extended(EXT_SYNCE_CFG) & EN_SYNC_E, 0);
+        assert_eq!(
+            physical_layer_device.extended(EXTENDED_SYNCHRONOUS_ETHERNET_CONFIGURATION_REGISTER)
+                & SYNCHRONOUS_ETHERNET_CLOCK_OUTPUT_ENABLE,
+            0
+        );
         assert_eq!(
             physical_layer_device.extended(MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER)
-                & ESC1R_SLEEP_SW,
+                & SLEEP_CONTROL_1_SLEEP_SWITCH,
             0
         );
         assert_eq!(
             physical_layer_device.extended(MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER)
-                & CGR_RX_CLK_EN,
+                & CLOCK_GATING_RECEIVE_CLOCK_ENABLE,
             0
         );
-        assert_eq!(physical_layer_device.raw(REG_ADDR), 0x1234);
+        assert_eq!(
+            physical_layer_device.raw(EXTENDED_REGISTER_ADDRESS_PORT),
+            0x1234
+        );
     }
 
     #[test]
     fn a_drive_code_with_its_high_bit_set_lands_in_bit_twelve() {
-        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
+        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1800_millivolts();
         let s = Settings {
             receive_data_drive: PadDriveStrength::Code(7),
             ..Settings::FALLBACK_GMAC0
         };
         configure(&mut physical_layer_device, 0, &s).unwrap();
         assert_eq!(
-            physical_layer_device.extended(EXT_PAD_DRIVE_STRENGTH) & RGMII_RXD_DS_MASK,
+            physical_layer_device.extended(EXTENDED_PAD_DRIVE_STRENGTH_REGISTER)
+                & REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_DATA_DRIVE_STRENGTH_MASK,
             1 << 12 | 3 << 4
         );
     }
 
     #[test]
     fn the_link_reads_none_until_a_cable_resolves_it() {
-        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
+        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1800_millivolts();
         assert_eq!(read_link(&mut physical_layer_device, 0).unwrap(), None);
         assert!(!management_data_input_output::is_link_up(&mut physical_layer_device, 0).unwrap());
-        let gig = Link {
+        let gigabit = Link {
             speed: Speed::Thousand,
             full_duplex: true,
         };
-        physical_layer_device.set_link(Some(gig));
-        assert_eq!(read_link(&mut physical_layer_device, 0).unwrap(), Some(gig));
+        physical_layer_device.set_link(Some(gigabit));
+        assert_eq!(
+            read_link(&mut physical_layer_device, 0).unwrap(),
+            Some(gigabit)
+        );
         assert!(management_data_input_output::is_link_up(&mut physical_layer_device, 0).unwrap());
     }
 
     #[test]
     fn the_transmit_clock_inverts_per_speed() {
-        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
+        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1800_millivolts();
         let s = Settings {
             transmit_clock_inverted: [false, false, true],
             ..Settings::FALLBACK_GMAC0
         };
         apply_speed(&mut physical_layer_device, 0, &s, Speed::Thousand).unwrap();
         assert_ne!(
-            physical_layer_device.extended(EXT_RGMII_CONFIG1) & TX_CLK_SEL,
+            physical_layer_device.extended(
+                EXTENDED_REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_CONFIGURATION_1_REGISTER
+            ) & TRANSMIT_CLOCK_SELECT,
             0
         );
         apply_speed(&mut physical_layer_device, 0, &s, Speed::Hundred).unwrap();
         assert_eq!(
-            physical_layer_device.extended(EXT_RGMII_CONFIG1) & TX_CLK_SEL,
+            physical_layer_device.extended(
+                EXTENDED_REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_CONFIGURATION_1_REGISTER
+            ) & TRANSMIT_CLOCK_SELECT,
             0
         );
     }
@@ -773,12 +974,12 @@ mod tests {
     fn the_extended_register_bits_are_motorcomms() {
         assert_eq!(
             [
-                CGR_RX_CLK_EN,
-                ESC1R_SLEEP_SW,
-                RXC_DLY_EN,
-                CFG_LDO_2V5,
-                RGMII_RXD_DS_MASK,
-                EN_SYNC_E,
+                CLOCK_GATING_RECEIVE_CLOCK_ENABLE,
+                SLEEP_CONTROL_1_SLEEP_SWITCH,
+                RECEIVE_CLOCK_DELAY_ENABLE,
+                LOW_DROPOUT_REGULATOR_2500_MILLIVOLTS,
+                REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_DATA_DRIVE_STRENGTH_MASK,
+                SYNCHRONOUS_ETHERNET_CLOCK_OUTPUT_ENABLE,
             ],
             [0x1000, 0x8000, 0x0100, 0x0010, 0x1030, 0x0040]
         );
@@ -794,12 +995,12 @@ mod tests {
 
     /// Each LDO strap, whatever the bits around the field hold.
     #[test]
-    fn the_ldo_field_alone_names_the_voltage() {
-        assert_eq!(voltage_mv(0), 3300);
-        assert_eq!(voltage_mv(0xffcf), 3300);
-        assert_eq!(voltage_mv(0x0010), 2500);
-        assert_eq!(voltage_mv(0x0020), 1800);
-        assert_eq!(voltage_mv(0x0030), 1800);
+    fn the_low_dropout_regulator_field_alone_names_the_voltage() {
+        assert_eq!(strapped_voltage_millivolts(0), 3300);
+        assert_eq!(strapped_voltage_millivolts(0xffcf), 3300);
+        assert_eq!(strapped_voltage_millivolts(0x0010), 2500);
+        assert_eq!(strapped_voltage_millivolts(0x0020), 1800);
+        assert_eq!(strapped_voltage_millivolts(0x0030), 1800);
     }
 
     /// A delay rounds to the nearest 150 ps step: 1450 ps is nearer 1500 than 1350.
@@ -813,9 +1014,21 @@ mod tests {
     /// the drive codes into a pad word that held nothing, so a stray bit would show.
     #[test]
     fn configure_replaces_the_delay_and_drive_fields_and_nothing_else() {
-        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1v8();
-        write_extended(&mut physical_layer_device, 0, EXT_RGMII_CONFIG1, 0xffff).unwrap();
-        write_extended(&mut physical_layer_device, 0, EXT_PAD_DRIVE_STRENGTH, 0).unwrap();
+        let mut physical_layer_device = PhysicalLayerDevice::yt8531_at_1800_millivolts();
+        write_extended(
+            &mut physical_layer_device,
+            0,
+            EXTENDED_REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_CONFIGURATION_1_REGISTER,
+            0xffff,
+        )
+        .unwrap();
+        write_extended(
+            &mut physical_layer_device,
+            0,
+            EXTENDED_PAD_DRIVE_STRENGTH_REGISTER,
+            0,
+        )
+        .unwrap();
         let s = Settings {
             receive_data_drive: PadDriveStrength::Code(7),
             ..Settings::FALLBACK_GMAC0
@@ -829,7 +1042,7 @@ mod tests {
         // Clock drive 6 in bits 15:13; data drive 7 as 0b11 in bits 5:4 and 0b1 in bit 12.
         assert_eq!(a.pad_drive, 0xd030);
         assert_eq!(
-            physical_layer_device.extended(EXT_PAD_DRIVE_STRENGTH),
+            physical_layer_device.extended(EXTENDED_PAD_DRIVE_STRENGTH_REGISTER),
             0xd030
         );
     }

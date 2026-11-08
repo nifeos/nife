@@ -19,6 +19,10 @@
 //!
 //! Name: ratified 2026-08-01 (calef, the naming tenet); `_contract` per calef's 2026-10-18 ruling.
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 // Operations. The opcode is the whole request word.
 
 /// The protocol's version, one for the operation set and the reply shapes together: one constant

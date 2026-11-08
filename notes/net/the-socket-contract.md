@@ -54,9 +54,9 @@ tick at or after its deadline. The tick is 100 Hz, as the kernel publishes it on
 page (`user_mode_runtime::tick_hertz`). So the 1 ms poll sleep the polled NICs ask for lasts up to 10
 ms.
 
-On a stream, the next segment arrives one round trip after the stack's acknowledgment, and on a LAN
-that is well under a tick. A stack that sleeps once nothing is waiting adds up to a tick to every
-round trip. A window's worth of data per tick then becomes the rate
+On a stream, the next segment arrives one round trip after the stack's acknowledgment, and on a
+local area network that is well under a tick. A stack that sleeps once nothing is waiting adds up to
+a tick to every round trip. A window's worth of data per tick then becomes the rate
 ([notes/designware-ethernet/the-receive-rate.md](../designware-ethernet/the-receive-rate.md) has the
 measurements).
 

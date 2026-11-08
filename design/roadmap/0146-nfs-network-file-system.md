@@ -12,7 +12,7 @@ needs_person: no
 Minted 2026-08-21 by calef, as the other network file protocol milestone 54's
 options table left explicitly *possible* and neither milestone 54 nor 55 would build. NFS is the
 general-purpose network file system: a Mac can mount it, Linux and every BSD already does, and a
-NAS on the same LAN serves it natively.
+NAS on the same local area network serves it natively.
 
 The adapter pattern is proven (milestone 54), `fs_proto` is stable, the network
 stack runs, and the protocol is a published spec rather than a design fork. Nothing structural
@@ -25,8 +25,8 @@ In brief. Two halves sharing one protocol library:
   built-in `mount_nfs` or a Linux `mount -t nfs` against this board's IP would traverse the
   share's directory tree, read files, write them, and report free space, all through the same
   `fs_proto` seam the SMB adapter uses. The credential story is simpler than NTLMv2 (AUTH_SYS by
-  default, with the option of Kerberos if the LAN demands it), and it is weaker: a uid/gid pair
-  is a claim the server chooses to trust rather than a proof.
+  default, with the option of Kerberos if the local area network demands it). It is also weaker: a
+  uid/gid pair is a claim the server chooses to trust rather than a proof.
 
 - Phase B, the client: nife mounting a remote NFS share. The shape inverts the adapter: a
   program holds a network endpoint to a remote server and an `fs_proto` *server* endpoint, so any
@@ -45,9 +45,9 @@ because NFSv3 has no session key.
 Milestone 54 chose SMB because it was required for Time Machine, and it was right to. SMB serves
 the macOS/backup path; NFS serves everything else:
 
-- Linux and BSD workstations already mount NFS out of the box. A nife machine on a LAN with a
-  Linux build server would share build artifacts, package caches, and source trees over NFS while
-  serving backups over SMB. Two adapters, one store.
+- Linux and BSD workstations already mount NFS out of the box. A nife machine on a local area
+  network with a Linux build server would share build artifacts, package caches, and source trees
+  over NFS while serving backups over SMB. Two adapters, one store.
 - **NAS appliances** (Synology, QNAP, TrueNAS) export NFS natively. Phase B mounts them, so nife
   gains terabytes of network-attached storage without a local block device.
 - The confinement story is the same across both protocols: an NFS adapter holds exactly one
@@ -122,7 +122,7 @@ rule already priced. Each new adapter adds the wire format only.
 
 - Nothing here is measured against a real NFS server or client. The protocol crate would be
   host-tested before it sees the guest, but the end-to-end claim (a Mac mounts nife over NFS with
-  `mount_nfs -o vers=3`, or nife mounts a Synology) needs hardware and a LAN.
+  `mount_nfs -o vers=3`, or nife mounts a Synology) needs hardware and a local area network.
 - **The NFS access model (AUTH_SYS) is not an identity model.** A uid/gid is a claim the server
   trusts by convention; there is no proof. This is the same limitation the milestone 54 table
   named under "NFSv3" and the reason SMB was required for Time Machine. If the demonstration
