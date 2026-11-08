@@ -138,13 +138,13 @@ Full rows: the appendices above.
 | `script/lint-fleet` | The fleet tooling's checks, apart from `script/lint`; CI runs both. |
 | `script/read-advisory <id>` | A fix lane reads a held finding's advisory. |
 | `script/claim <branch-name>` | Cut a lane's branch, worktree and draft pull request; sets `nife.fleet`. `--debt-paydown` or `--new-work` ([debt-paydown.md](debt-paydown.md)). |
-| `script/grant-org-secrets <repo>...` | Grant a new repository the selected-visibility organization secrets. |
+| `script/grant-org-secrets <repo>...` | Grant a repository the selected organization secrets. |
 | `script/preflight-queue`, `script/queue-conflicts` | Replay the merge queue locally; check for conflicts. |
-| `script/architect-queue`, `script/record-ruling` | calef's queue; rulings. |
-| `script/nanny` | Work the merge queue by delegating the rebases. |
-| `script/redo-rate` | How often delegated work has to be done again. |
-| `script/effort` | Machine effort spent per ISO week, from agent session records. |
-| `script/launch-pass --reviewer glm\|fable --commit <sha>` | Start one outsider pass, pinned to a commit and a model; `--complete` sends its one completion round ([outsider-passes.md](scripts/outsider-passes.md)). |
+| `script/architect-queue`, `script/record-ruling` | The architect's queue; rulings. |
+| `script/nanny` | Work the merge queue, delegating rebases. |
+| `script/redo-rate` | How often delegated work is redone. |
+| `script/effort` | Machine effort per ISO week, from session records. |
+| `script/launch-pass --reviewer glm\|fable --commit <sha>` | Start an outsider pass at a commit and model; `--complete` sends its one completion round ([outsider-passes.md](scripts/outsider-passes.md)). |
 | `script/booted-rows` | An outsider pass's booted rows against the brief's floor; `--short-only` for the completion round ([outsider-passes.md](scripts/outsider-passes.md)). |
 
 ## They are thin wrappers, on purpose
