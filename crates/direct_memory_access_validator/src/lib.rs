@@ -9,7 +9,7 @@
 //! copy nothing reads. See notes/dma.md.
 
 //! # BUGS
-//! - The shadow descriptor is published in two stores; a device can see the new `addr` with the
+//! - The shadow descriptor is published in two stores; a device can see the new `guest_physical_address` with the
 //!   old `len` (`notes/confinement-claims.md` row 17;
 //!   design/roadmap/0799-the-shadow-descriptor-is-published-in-two-stores.md).
 //!
@@ -29,21 +29,21 @@ pub const F_NEXT: u16 = 1;
 /// feature that enables it is negotiated off in the kernel), so the confinement fails closed.
 pub const F_INDIRECT: u16 = 4;
 
-/// Is `[addr, addr + len)` wholly inside `[base, base + size)`? The whole confinement, as one
+/// Is `[physical_address, physical_address + len)` wholly inside `[base, base + size)`? The whole confinement, as one
 /// predicate, and direction-agnostic on purpose: whether the device reads the buffer (transmit) or
 /// writes it (receive), the address must be in-region, so one check closes both hazards. Total: a
-/// length that overflows `addr`, or a region whose own `base + size` wraps `u64`, returns `false`
+/// length that overflows `physical_address`, or a region whose own `base + size` wraps `u64`, returns `false`
 /// (refuse) rather than panicking, and a wrapping region can only over-reject, the safe direction.
 /// See the `in_region_is_sound` proof and notes/dma/validator.md.
-pub fn is_in_region(base: u64, size: u64, addr: u64, len: u64) -> bool {
-    match (addr.checked_add(len), base.checked_add(size)) {
-        (Some(end), Some(limit)) => addr >= base && end <= limit,
+pub fn is_in_region(base: u64, size: u64, physical_address: u64, len: u64) -> bool {
+    match (physical_address.checked_add(len), base.checked_add(size)) {
+        (Some(end), Some(limit)) => physical_address >= base && end <= limit,
         _ => false,
     }
 }
 
 /// One virtqueue split-ring descriptor as it sits in memory: `{ u64 addr @0; u32 len @8; u16 flags
-/// @12; u16 next @14 }`. The kernel reads the low 8 bytes as `addr` and the high 8 as one `word`
+/// @12; u16 next @14 }`. The kernel reads the low 8 bytes as `guest_physical_address` and the high 8 as one `word`
 /// carrying len/flags/next, and copies both verbatim into the shadow, so this models the same two
 /// 64-bit words and decodes the fields the same way.
 ///
@@ -60,12 +60,12 @@ pub fn is_in_region(base: u64, size: u64, addr: u64, len: u64) -> bool {
 /// // An **indirect** descriptor names a table of further descriptors. The table is never copied
 /// // into the shadow, so the device would follow the driver's own memory unchecked. Refused
 /// // outright rather than validated, whatever it points at.
-/// let indirect = Desc { addr: base, word: 16 | ((F_INDIRECT as u64) << 32) };
+/// let indirect = Desc { guest_physical_address: base, word: 16 | ((F_INDIRECT as u64) << 32) };
 /// assert!(indirect.is_indirect());
 /// assert!(!is_descriptor_allowed(base, size, qsize, indirect));
 ///
 /// // A `next` link outside the ring would walk the chain off the end of the queue.
-/// let bad_link = Desc { addr: base, word: 16 | ((F_NEXT as u64) << 32) | ((qsize as u64) << 48) };
+/// let bad_link = Desc { guest_physical_address: base, word: 16 | ((F_NEXT as u64) << 32) | ((qsize as u64) << 48) };
 /// assert!(bad_link.has_next() && bad_link.next() == qsize);
 /// assert!(!is_descriptor_allowed(base, size, qsize, bad_link));
 ///
@@ -76,8 +76,10 @@ pub fn is_in_region(base: u64, size: u64, addr: u64, len: u64) -> bool {
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Desc {
-    /// The buffer's guest-physical address, the first 64-bit word.
-    pub addr: u64,
+    /// The buffer's guest-physical address, the first 64-bit word. The virtio specification
+    /// names the field `addr`.
+    #[doc(alias = "addr")]
+    pub guest_physical_address: u64,
     /// Length, flags and next-index packed into the second 64-bit word; decode with
     /// [`buf_len`](Self::buf_len), [`flags`](Self::flags) and [`next`](Self::next).
     pub word: u64,
@@ -130,18 +132,18 @@ impl Desc {
 ///
 /// // A descriptor pointing at a 1500-byte frame inside the region. Fine in either direction: the
 /// // device may read it (transmit) or write it (receive).
-/// let ok = Desc { addr: base + 0x1000, word: 1500 };
+/// let ok = Desc { guest_physical_address: base + 0x1000, word: 1500 };
 /// assert!(is_descriptor_allowed(base, size, qsize, ok));
 ///
 /// // The same length, aimed at the kernel. Refused, and this is the whole point of the crate: a
 /// // receive buffer here would let the device overwrite the kernel, and a transmit buffer would
 /// // let it put the kernel on the wire.
-/// let escape = Desc { addr: 0xffff_0000_0000_0000, word: 1500 };
+/// let escape = Desc { guest_physical_address: 0xffff_0000_0000_0000, word: 1500 };
 /// assert!(!is_descriptor_allowed(base, size, qsize, escape));
 ///
 /// // A buffer that starts inside and runs off the end is refused too. One predicate closes both,
 /// // which is why there is only one.
-/// let overrun = Desc { addr: base + size - 8, word: 1500 };
+/// let overrun = Desc { guest_physical_address: base + size - 8, word: 1500 };
 /// assert!(!is_descriptor_allowed(base, size, qsize, overrun));
 /// assert!(!is_in_region(base, size, base + size - 8, 1500));
 /// ```
@@ -149,7 +151,7 @@ pub fn is_descriptor_allowed(base: u64, size: u64, qsize: u16, d: Desc) -> bool 
     if d.is_indirect() {
         return false; // an indirect table is never copied, so the device would follow it unchecked
     }
-    if !is_in_region(base, size, d.addr, d.buf_len()) {
+    if !is_in_region(base, size, d.guest_physical_address, d.buf_len()) {
         return false; // the buffer escapes the driver's region
     }
     if d.has_next() && d.next() >= qsize {
@@ -254,7 +256,7 @@ fn shadow_one_head(
     for _ in 0..qsize {
         let src = driver_desc + d as u64 * 16;
         let desc = Desc {
-            addr: read64(src),
+            guest_physical_address: read64(src),
             word: read64(src + 8),
         };
 
@@ -270,7 +272,7 @@ fn shadow_one_head(
         // Copy the validated descriptor into the shadow, byte-for-byte. From here the device reads
         // this, not the driver's copy.
         let dst = shadow_desc + d as u64 * 16;
-        write64(dst, desc.addr);
+        write64(dst, desc.guest_physical_address);
         write64(dst + 8, desc.word);
 
         if !desc.has_next() {
@@ -348,17 +350,32 @@ mod tests {
     impl Rings {
         fn new() -> Self {
             Rings {
-                driver_desc: [Desc { addr: 0, word: 0 }; 8],
+                driver_desc: [Desc {
+                    guest_physical_address: 0,
+                    word: 0,
+                }; 8],
                 driver_ring: [0; 8],
                 driver_idx: 0,
-                shadow_desc: core::cell::RefCell::new([Desc { addr: 0, word: 0 }; 8]),
+                shadow_desc: core::cell::RefCell::new(
+                    [Desc {
+                        guest_physical_address: 0,
+                        word: 0,
+                    }; 8],
+                ),
                 shadow_ring: core::cell::RefCell::new([0; 8]),
                 shadow_idx: core::cell::RefCell::new(0),
             }
         }
-        fn set_desc(&mut self, i: usize, addr: u64, len: u32, flags: u16, next: u16) {
+        fn set_desc(
+            &mut self,
+            i: usize,
+            guest_physical_address: u64,
+            len: u32,
+            flags: u16,
+            next: u16,
+        ) {
             self.driver_desc[i] = Desc {
-                addr,
+                guest_physical_address,
                 word: (len as u64) | ((flags as u64) << 32) | ((next as u64) << 48),
             };
         }
@@ -390,7 +407,7 @@ mod tests {
                     let off = p - DD;
                     let d = self.driver_desc[(off / 16) as usize];
                     if off.is_multiple_of(16) {
-                        d.addr
+                        d.guest_physical_address
                     } else {
                         d.word
                     }
@@ -407,7 +424,7 @@ mod tests {
                     let off = p - SD;
                     let d = (off / 16) as usize;
                     if off.is_multiple_of(16) {
-                        self.shadow_desc.borrow_mut()[d].addr = v;
+                        self.shadow_desc.borrow_mut()[d].guest_physical_address = v;
                     } else {
                         self.shadow_desc.borrow_mut()[d].word = v;
                     }
@@ -427,7 +444,10 @@ mod tests {
         r.driver_ring[0] = 0;
         r.driver_idx = 1;
         assert!(r.run(), "an in-region chain was refused");
-        assert_eq!(r.shadow_desc.borrow()[0].addr, BASE + 0x200);
+        assert_eq!(
+            r.shadow_desc.borrow()[0].guest_physical_address,
+            BASE + 0x200
+        );
         assert_eq!(
             *r.shadow_idx.borrow(),
             1,
@@ -526,7 +546,7 @@ mod tests {
         r.driver_idx = 1;
         assert!(r.run(), "a 0 -> 2 chain was refused");
         assert_eq!(
-            r.shadow_desc.borrow()[2].addr,
+            r.shadow_desc.borrow()[2].guest_physical_address,
             BASE + 0x400,
             "the chain did not shadow the slot its next field names"
         );
@@ -594,7 +614,7 @@ mod tests {
 
     #[test]
     fn in_region_rejects_overflow() {
-        assert!(!is_in_region(0, 0x1000, u64::MAX, 1)); // addr + len wraps
+        assert!(!is_in_region(0, 0x1000, u64::MAX, 1)); // physical_address + len wraps
         assert!(is_in_region(0x1000, 0x1000, 0x1000, 0x1000)); // exact fit
         assert!(!is_in_region(0x1000, 0x1000, 0x1000, 0x1001)); // one past
     }
@@ -706,13 +726,16 @@ mod tests {
     /// **One queue's validation touches nothing in another queue's block** (claim 16).
     #[test]
     fn a_validate_on_queue_one_touches_nothing_in_queue_zero_block() {
-        let mut other_desc = [Desc { addr: 0, word: 0 }; 8];
+        let mut other_desc = [Desc {
+            guest_physical_address: 0,
+            word: 0,
+        }; 8];
         other_desc[0] = Desc {
-            addr: BASE + 0x200,
+            guest_physical_address: BASE + 0x200,
             word: (16u64) | ((F_NEXT as u64) << 32) | (1 << 48),
         };
         other_desc[1] = Desc {
-            addr: BASE + 0x400,
+            guest_physical_address: BASE + 0x400,
             word: 16,
         };
         let driver_ring = [0u16; 8];
@@ -746,7 +769,7 @@ mod tests {
             &|p| {
                 let off = (p - dd) / 16;
                 if (p - dd).is_multiple_of(16) {
-                    other_desc[off as usize].addr
+                    other_desc[off as usize].guest_physical_address
                 } else {
                     other_desc[off as usize].word
                 }
@@ -796,10 +819,10 @@ mod tests {
         r.driver_idx = 1;
         assert!(r.run(), "the honest descriptor was refused");
 
-        r.driver_desc[0].addr = u64::MAX - 0x1000;
+        r.driver_desc[0].guest_physical_address = u64::MAX - 0x1000;
         r.driver_desc[0].word = 0xffff_ffff;
 
-        let shadow_addr = r.shadow_desc.borrow()[0].addr;
+        let shadow_addr = r.shadow_desc.borrow()[0].guest_physical_address;
         let shadow_word = r.shadow_desc.borrow()[0].word;
         assert_eq!(
             shadow_addr,
