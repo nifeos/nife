@@ -220,7 +220,7 @@ names until the ratification pass, so this section keeps the links it carried.
   `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS`, and sizes without a unit. Many are ratified names, so
   the repository's `main` cannot go green, and the repository's ruleset cannot merge a pull
   request, until the architect rules on them. The rest of the gates pass.
-- The `nife-smelter` app is not installed on `nifeos/e1000e`, and the repository holds none of the
+- Nobody has installed the `nife-smelter` app on `nifeos/e1000e`, and the repository holds none of the
   organization secrets `NIFE_SMELTER_APP_ID`, `NIFE_SMELTER_PRIVATE_KEY` and `SETTINGS_TOKEN`.
   `script/apply-settings` refused the app (the API wants an organization owner). The release
   workflow's tag job and the weekly settings-drift job need them, so both wait on calef.

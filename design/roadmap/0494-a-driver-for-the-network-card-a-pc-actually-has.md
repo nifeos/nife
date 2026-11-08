@@ -253,7 +253,7 @@ meet a known gap). Take no dependency; vendor nothing.
 - **Milestone 804.** Milestone 804 (the I219 reconfigures its PHY when link comes up). The I219's link-up reconfiguration, about 250 lines of FreeBSD, once the bench
   boot leases. `design/roadmap/0804-the-i219-reconfigures-its-phy-when-link-comes-up.md`.
 - **Recorded.** No third-party notices file ships with an image, which Intel's BSD license asks
-  of binary redistribution. The BUGS of `nifeos/e1000e`'s `platform_controller_hub` module.
+  of binary redistribution. The BUGS of `nifeos/e1000e`.
 - **Recorded.** `disk_throughput`, the other bench feature, is linted by nothing. `script/lint`,
   beside the `network_bench` line.
 
