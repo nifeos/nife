@@ -26,8 +26,9 @@ packages of three crates name its effects.
 
 Not run, and so not claimed: the stranger test, coverage, mutation, `cargo-semver-checks` (a first
 release has no baseline) and the publish rehearsal. The template's `check`, `proofs` and `weekly`
-workflows did not run either, because no repository exists for any of these crates. The stranger
-record lives in the crate repository, in `docs/stranger-test.md`. The `file_allocation_table`
+workflows did not run either, because a repository exists for only four of these crates:
+`file_allocation_table`, `non_volatile_memory_express`, `generational_table` and `e1000e`. The
+stranger record lives in the crate repository, in `docs/stranger-test.md`. The `file_allocation_table`
 package is the exception: it ran the README's commands in a scratch copy and `cargo-semver-checks`
 against itself.
 
@@ -35,7 +36,7 @@ against itself.
 
 - Version. Every manifest says `0.1.0`, edition 2024, `rust-version = "1.88"`, license
   `MIT OR Apache-2.0` unless a package says otherwise. The proposed first version is `0.1.0`: the move commit carries the tag `v0.1.0`, and nife depends on it the way it depends on the pilot, by `git` and `rev`
-  with `version = "0.1.0"` beside it. No tag exists for any of these crates in this clone.
+  with `version = "0.1.0"` beside it. No tag exists for any of these crates.
 - Publish flag. Every manifest carries `publish = false`, and `crates/publish-allowlist.txt` lists
   no crate. The caller of the template sets `allow-unpublished` until the architect approves a
   publication. Nothing here publishes.
@@ -50,8 +51,9 @@ against itself.
   stand-in for the template's `standalone` job is `script/crate-standalone`, whose result is in each
   package. No further check can run before a repository exists.
 - README readiness. Every README has the sections a stranger looks for: what the crate does, the
-  proofs with their harness names, usage, limitations and license. Every other README that names harnesses tells a newcomer how to install Kani. No crate
-  has run a stranger test, and none can until it has a repository.
+  proofs with their harness names, usage, limitations and license. Every other README that names harnesses tells a newcomer how to install Kani. The four
+  crates with a repository record a stranger test there; no other crate has run one, and none can
+  until it has a repository.
 - References to nife in shipped text. Crate repositories stand alone and do not mention nife.
   Each package lists the mentions that remain, each a small edit for the move lane.
 - Harnesses and patches. In every crate, each Kani harness has exactly one falsification patch
@@ -65,7 +67,9 @@ against itself.
 The whole package, with the signature list, the stranger run and seven questions, is
 [crate-reviews/file-allocation-table.md](crate-reviews/file-allocation-table.md). It covers the
 crate as #3267 leaves it, with no reference to nife. The maintainer ruled six of the questions
-provisionally, and #3267 applied them; the seventh, the version, tag and repository, is open.
+provisionally, and #3267 applied them. The architect cleared the move. The repository
+`nifeos/file_allocation_table` exists, and `crates/file_allocation_table` is still in this tree.
+The architect has not cleared the tag or publication, though the publish hold exempts this crate.
 
 Name and version. `file_allocation_table` `0.1.0`, ratified with FAT spelled out. Every `Name:`
 block reads ratified.
@@ -83,8 +87,7 @@ Dependencies. None at run time. Dev only: `lamfat =0.4.3` and `ruzstd =0.9.1`, b
 Result of `script/crate-standalone`. Clean: every step passes, Kani and the 31 falsifications
 included.
 
-Recommendation. Ready for review. What remains is the architect's clearance of the API the
-provisional rulings leave, and the answer to the seventh question.
+Recommendation. The architect cleared the move, and has not cleared the tag or publication.
 
 ## `extensible_host_controller_interface`, step 3
 
@@ -143,7 +146,7 @@ License. `MIT OR Apache-2.0`, written in the crate's manifest, with both license
 
 Result of `script/crate-standalone`. Passes; a run without Kani skips the proofs.
 
-Recommendation. Ready for review.
+Recommendation. The architect cleared the move, and has not cleared the tag or publication.
 
 ## `non_volatile_memory_express`, step 5
 
@@ -175,7 +178,7 @@ Outstanding before the move.
 |---|---|
 | `design/decisions/0086-el0-nvme-driver/prior-art.md` and milestone 569 (the disk an installer names has no model, only a size) still cite `prp_pair`, `CNS_CONTROLLER` and `CNS_NAMESPACE`. | maintainer |
 
-Recommendation. Ready for review.
+Recommendation. The architect cleared the move, and has not cleared the tag or publication.
 
 ## `e1000e`, step 6
 
@@ -202,7 +205,7 @@ field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.
 
 Result of `script/crate-standalone`. Clean. The crate names no nife file.
 
-Recommendation. Ready for review. What remains is the architect's clearance of the move.
+Recommendation. The architect cleared the move, and has not cleared the tag or publication.
 
 ## `designware_ethernet`, step 7
 
@@ -374,11 +377,11 @@ Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text 
 
 | crate | step | recommendation |
 |---|---|---|
-| `file_allocation_table` | 2 | ready for review |
+| `file_allocation_table` | 2 | cleared to move; repository exists |
 | `extensible_host_controller_interface` | 3 | ready for review |
-| `generational_table` | 4 | ready for review |
-| `non_volatile_memory_express` | 5 | ready for review |
-| `e1000e` | 6 | moved; the register naming gate holds its CI red |
+| `generational_table` | 4 | cleared to move; repository exists |
+| `non_volatile_memory_express` | 5 | cleared to move; repository exists |
+| `e1000e` | 6 | cleared to move; repository exists |
 | `designware_ethernet` | 7 | two alias sets for the architect |
 | `designware_mobile_storage` | 8 | ready for review |
 | `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
