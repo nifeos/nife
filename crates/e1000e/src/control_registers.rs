@@ -54,18 +54,21 @@ pub const RECEIVE_FILTER_CONTROL_EXTENDED_DESCRIPTORS_ENABLE: u32 = 0x0000_8000;
 pub const RECEIVE_ADDRESS_HIGH_ADDRESS_VALID: u32 = 0x8000_0000;
 
 /// `RCTL`: receive enable (Linux's `regs.h`).
-pub(crate) const RCTL_EN: u32 = 0x0000_0002;
+pub(crate) const RECEIVE_CONTROL_ENABLE: u32 = 0x0000_0002;
 
 /// `RCTL`: accept broadcast, which DHCP's offer needs (`E1000_RCTL_BAM`).
-const RCTL_BAM: u32 = 0x0000_8000;
+const RECEIVE_CONTROL_ACCEPT_BROADCAST: u32 = 0x0000_8000;
 
 /// `RCTL`: strip the CRC (`E1000_RCTL_SECRC`).
-const RCTL_SECRC: u32 = 0x0400_0000;
+const RECEIVE_CONTROL_STRIP_CRC: u32 = 0x0400_0000;
 
 // The three share no bit, so | and ^ compose the word identically; the compiler checks that here,
 // so receive_control_register_value's OR-to-XOR swaps are equivalent mutants.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
-const _: () = assert!(RCTL_EN ^ RCTL_BAM ^ RCTL_SECRC == RCTL_EN | RCTL_BAM | RCTL_SECRC);
+const _: () = assert!(
+    RECEIVE_CONTROL_ENABLE ^ RECEIVE_CONTROL_ACCEPT_BROADCAST ^ RECEIVE_CONTROL_STRIP_CRC
+        == RECEIVE_CONTROL_ENABLE | RECEIVE_CONTROL_ACCEPT_BROADCAST | RECEIVE_CONTROL_STRIP_CRC
+);
 
 /// **Receive Control** (`E1000_RCTL`, Linux's `regs.h`) as the kernel half programs it: enabled,
 /// broadcast accepted (DHCP's offer is broadcast), 2048-byte buffers (size field zero), the CRC
@@ -77,20 +80,21 @@ const _: () = assert!(RCTL_EN ^ RCTL_BAM ^ RCTL_SECRC == RCTL_EN | RCTL_BAM | RC
 #[doc(alias = "rctl")]
 #[doc(alias = "E1000_RCTL")]
 pub const fn receive_control_register_value() -> u32 {
-    RCTL_EN | RCTL_BAM | RCTL_SECRC
+    RECEIVE_CONTROL_ENABLE | RECEIVE_CONTROL_ACCEPT_BROADCAST | RECEIVE_CONTROL_STRIP_CRC
 }
 
 /// `TCTL`: transmit enable (Linux's `regs.h`).
-pub(crate) const TCTL_EN: u32 = 0x0000_0002;
+pub(crate) const TRANSMIT_CONTROL_ENABLE: u32 = 0x0000_0002;
 
 /// `TCTL`: pad short frames (`E1000_TCTL_PSP`).
-const TCTL_PSP: u32 = 0x0000_0008;
+const TRANSMIT_CONTROL_PAD_SHORT_PACKETS: u32 = 0x0000_0008;
 
 // The four operands share no bit, so | and ^ compose the word identically; the compiler checks
 // that here, so transmit_control_register_value's OR-to-XOR swaps are equivalent mutants.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(
-    TCTL_EN ^ TCTL_PSP ^ (15 << 4) ^ (63 << 12) == TCTL_EN | TCTL_PSP | (15 << 4) | (63 << 12)
+    TRANSMIT_CONTROL_ENABLE ^ TRANSMIT_CONTROL_PAD_SHORT_PACKETS ^ (15 << 4) ^ (63 << 12)
+        == TRANSMIT_CONTROL_ENABLE | TRANSMIT_CONTROL_PAD_SHORT_PACKETS | (15 << 4) | (63 << 12)
 );
 
 /// **Transmit Control** (`E1000_TCTL`, Linux's `regs.h`) as the kernel half programs it: enabled, short
@@ -102,7 +106,7 @@ const _: () = assert!(
 #[doc(alias = "tctl")]
 #[doc(alias = "E1000_TCTL")]
 pub const fn transmit_control_register_value() -> u32 {
-    TCTL_EN | TCTL_PSP | 15 << 4 | 63 << 12
+    TRANSMIT_CONTROL_ENABLE | TRANSMIT_CONTROL_PAD_SHORT_PACKETS | 15 << 4 | 63 << 12
 }
 
 // The three field values share no bit, so | and ^ compose the word identically; the compiler
@@ -137,9 +141,16 @@ pub fn station_address_from_receive_address(
     if receive_address_high & RECEIVE_ADDRESS_HIGH_ADDRESS_VALID == 0 {
         return None;
     }
-    let l = receive_address_low.to_le_bytes();
-    let h = receive_address_high.to_le_bytes();
-    let station_address = [l[0], l[1], l[2], l[3], h[0], h[1]];
+    let low_bytes = receive_address_low.to_le_bytes();
+    let high_bytes = receive_address_high.to_le_bytes();
+    let station_address = [
+        low_bytes[0],
+        low_bytes[1],
+        low_bytes[2],
+        low_bytes[3],
+        high_bytes[0],
+        high_bytes[1],
+    ];
     // All zeros, or a group address, is not an address a station can own.
     (station_address != [0; 6] && station_address[0] & 1 == 0).then_some(station_address)
 }

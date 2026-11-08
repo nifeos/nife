@@ -249,7 +249,7 @@ echo "==> script/verify --parallel forks the shards, joins their verdicts, and k
 # because a deadlock never returns on its own.
 python3 helpers/verify_parallel.py --selftest >/dev/null
 echo "==> script/crate-move stages a move as the runbook says"
-# notes/crate-move.md: the dry run deletes Name: blocks, rewrites falsification patches for -p1 and
+# notes/crate-move.md: the dry run deletes Name: blocks, regenerates falsification patches over the stripped source and
 # fills the template pins. The selftest drives those transforms on fixtures, with no tree and no
 # network.
 python3 helpers/crate_move.py --selftest >/dev/null

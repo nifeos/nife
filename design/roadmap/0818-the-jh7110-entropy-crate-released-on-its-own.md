@@ -137,15 +137,15 @@ harness.
 
 ## The soak, started 2026-10-31 (UTC)
 
-- The crate moved to `nifeos/jh7110_entropy` on the shared template at `nifeos/crate-workflows`
-  release v7 (`ce603f5`), after `script/apply-settings` ran against it: both rulesets, the
+- The crate moved to `nifeos/jh7110_entropy` on the shared template at `nifeos/crate-workflows`,
+  whose current `main` (`4e5b07d`) its workflows pin, after `script/apply-settings` ran against it: both rulesets, the
   `crates-io` environment with calef as reviewer, the labels and the team. The manifest keeps
   `publish = false`; the caller sets `allow-unpublished` for the soak.
 - `crates/jh7110_entropy` no longer exists here. `kernel`, `components` and `machine_discovery`
-  depend on `nifeos/jh7110_entropy` by `rev` `53b022b` (§305), the commit of its tag `v0.1.1`. The
+  depend on `nifeos/jh7110_entropy` by `rev` `cfdbeb7` (§305), the commit of its tag `v0.2.0`. The
   verify table, the Kani reach list and the trust-boundary table no longer list it; the repository's
   own `proofs / kani` and `proofs / falsify` jobs prove the four harnesses.
-- End condition 1 holds once this pull request merges and the repository's `main` is green.
+- End condition 1 holds: nife builds against the repository at that commit and its `main` is green.
   Condition 2 holds: the first scheduled weekly run, on 2026-11-02 (UTC), is green. Condition 4
   holds: `docs/stranger-test.md` there records a run on 2026-10-31. Condition 3 waits on a release
   dry run. Condition 5 counts four weeks from `v0.1.1`, so it ends no earlier than 2026-11-29.
@@ -160,8 +160,8 @@ first so reviewed, the pilot of the review as of the mechanics. It moved on 2026
 before that ruling, so the review reads its repository, and it comes before any contract crate
 leaves. The ruling's second item needs a tagged release whose
 commit carries the Cargo version, so that `cargo-semver-checks --baseline-rev` has a baseline.
-`nifeos/jh7110_entropy` carries the tags `v0.1.0` and `v0.1.1`, and nife's three pins state
-`version = "0.1.1"` beside the revision. The architect cleared this crate's review on 2026-11-01
+`nifeos/jh7110_entropy` carries the tags `v0.1.0`, `v0.1.1` and `v0.2.0`, and nife's three pins
+state `version = "0.2.0"` beside the revision. The architect cleared this crate's review on 2026-11-01
 (UTC).
 
 ## Review before release

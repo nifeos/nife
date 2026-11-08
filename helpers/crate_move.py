@@ -8,6 +8,7 @@ nife), a maintainer decision. It reuses `crate_release.py`'s citation rules and 
 reader, so the move, `script/crate-standalone` and the review packet agree on what a block is.
 """
 import argparse
+import difflib
 import os
 import re
 import shutil
@@ -49,45 +50,82 @@ TEMPLATE_CHECKS = (
 )
 
 
-def rewrite_patch(text, crate):
+def moved_source(text, crate):
+    """A source file as the crate repository carries it.
+
+    The `Name:` blocks are deleted, each `Falsification:` record moves to the head of its comment
+    run, and a path into the crate's own directory becomes a path from the repository's root.
+    Returns (text, blocks removed, records moved, paths made relative).
+    """
+    stripped = crate_release.strip_name_blocks(text, remove=True)
+    moved = falsification_first(stripped)
+    new, paths = re.subn(r'(?<![\w/.])crates/' + re.escape(crate) + '/', '', moved)
+    return new, int(stripped != text), int(moved != stripped), paths
+
+
+def diff_files(text):
+    """The crate-relative paths a patch changes, in order, read from its `diff --git` lines."""
+    return [m.group(1) for m in re.finditer(r'(?m)^diff --git a/crates/[^/]+/(\S+) b/', text)]
+
+
+def regenerate_patch(text, crate, source):
     """A falsification patch as the crate repository applies it: `-p1` from the crate's root.
 
-    Paths lose their `crates/<crate>/` prefix, and a context line that is part of a `Name:` block
-    is dropped with its hunk's counts, since the move removes those lines from the source. Returns
-    (text, problems); a problem is a removed or added line inside a block, which only a person can
-    rewrite.
+    `source` is the crate's directory in this tree. The patch is applied there, as the lane that
+    wrote it did (`patch -p3`); the files before and after are then put through `moved_source`, the
+    change the move makes to every source file, and the patch is written again as the difference
+    between those two. Every hunk header therefore matches the stripped source, whatever the
+    move deleted before it. Returns (text, problems); a problem is an edit that cannot be carried:
+    a patch that does not apply here, an edit that lands inside a `Name:` block (the move deletes
+    the block, so nothing is left to change) or an edit the move leaves empty.
     """
-    out, problems, lines, i = [], [], text.split('\n'), 0
-    prefix = re.compile(r'(^|\s)([ab])/crates/' + re.escape(crate) + '/')
-    while i < len(lines):
-        line = lines[i]
-        if line.startswith(('diff --git ', '--- ', '+++ ')):
-            out.append(prefix.sub(r'\1\2/', line))
-            i += 1
-            continue
-        m = HUNK.match(line)
-        if not m:
-            out.append(line)
-            i += 1
-            continue
-        j = i + 1
-        while j < len(lines) and lines[j][:1] in (' ', '-', '+', '\\') and not HUNK.match(lines[j]):
-            j += 1
-        body = lines[i + 1:j]
-        old = [(n, b) for n, b in enumerate(body) if b[:1] in (' ', '-')]
-        stripped = crate_release.strip_name_blocks('\n'.join(b[1:] for _, b in old)).split('\n')
-        drop = {old[k][0] for k, s in enumerate(stripped) if s == '' and old[k][1][1:] != ''}
-        for n in sorted(drop):
-            if body[n][:1] == '-':
-                problems.append(f'a removed line is part of a Name: block: {body[n][1:].strip()}')
-        drop = {n for n in drop if body[n][:1] == ' '}
-        old_start, old_count = int(m.group(1)), int(m.group(2) or 1)
-        new_start, new_count = int(m.group(3)), int(m.group(4) or 1)
-        out.append(f'@@ -{old_start},{old_count - len(drop)} +{new_start},{new_count - len(drop)} @@'
-                   f'{m.group(5)}')
-        out += [b for n, b in enumerate(body) if n not in drop]
-        i = j
-    return '\n'.join(out), problems
+    files = diff_files(text)
+    if not files:
+        return text, ['the patch names no file under crates/' + crate + '/']
+    preamble = text[:text.index('diff --git ')]
+    with tempfile.TemporaryDirectory(prefix='crate-move-patch-') as tmp:
+        before = {}
+        for rel in files:
+            to = os.path.join(tmp, rel)
+            os.makedirs(os.path.dirname(to), exist_ok=True)
+            shutil.copy2(os.path.join(source, rel), to)
+            before[rel] = open(to, errors='replace').read()
+        code, out = run(['patch', '-s', '-p3'], tmp, stdin=text)
+        if code:
+            return text, [f'the patch does not apply to the source in this tree: {tail(out)}']
+        pieces, problems = [], []
+        for rel in files:
+            after = open(os.path.join(tmp, rel), errors='replace').read()
+            old_lines, new_lines = before[rel].split('\n'), after.split('\n')
+            blanked = {n for n, (o, b) in enumerate(zip(old_lines, crate_release.strip_name_blocks(
+                before[rel]).split('\n'))) if o and not b}
+            for tag, i1, i2, _j1, _j2 in difflib.SequenceMatcher(None, old_lines, new_lines,
+                                                                 autojunk=False).get_opcodes():
+                if tag != 'equal' and blanked & set(range(i1, max(i2, i1 + 1))):
+                    problems.append(f'{rel}: an edit lands inside a Name: block, which the move deletes')
+            old, new = moved_source(before[rel], crate)[0], moved_source(after, crate)[0]
+            if old == new:
+                problems.append(f'{rel}: nothing is left of the edit once the move has run')
+                continue
+            for name, body in (('old', old), ('new', new)):
+                open(os.path.join(tmp, name), 'w').write(body)
+            _code, delta = run(['diff', '-u', '--label', 'a/' + rel, '--label', 'b/' + rel,
+                                os.path.join(tmp, 'old'), os.path.join(tmp, 'new')], tmp)
+            pieces.append(f'diff --git a/{rel} b/{rel}\n' + delta + '\n')
+    return preamble + ''.join(pieces).rstrip('\n') + '\n', problems
+
+
+def patch_application(into, patch):
+    """What `patch -p1 --dry-run -F0` says of one patch against the staged tree, or '' when clean.
+
+    A patch that applies at an offset or with fuzz still exits 0, which is how a stale hunk header
+    passes: the move accepts only a patch that applies exactly where it says.
+    """
+    code, out = run(['patch', '-p1', '--dry-run', '-F0', '-i', patch], into)
+    if code:
+        return 'does not apply: ' + tail(out)
+    notes = [line for line in out.splitlines() if re.search(r'offset|fuzz', line)]
+    return '; '.join(notes[:2])
 
 
 def falsification_first(text):
@@ -214,8 +252,8 @@ def exempts_note(row):
             f'# {todo}\n')
 
 
-def run(argv, cwd, env=None):
-    p = subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True)
+def run(argv, cwd, env=None, stdin=None):
+    p = subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, input=stdin)
     return p.returncode, (p.stdout + p.stderr).strip()
 
 
@@ -310,6 +348,7 @@ def stage(root, crate, into, tree, sha, report):
                              + (f'; the crate\'s own {", ".join(sorted(kept))} kept' if kept else ''))
 
     blocks = patches = paths = records = 0
+    source = os.path.join(root, 'crates', crate)
     for dirpath, _dirs, names in os.walk(into):
         if '/.git' in dirpath or dirpath.endswith('/.git'):
             continue
@@ -320,29 +359,39 @@ def stage(root, crate, into, tree, sha, report):
                 continue
             text = open(path, errors='replace').read()
             if rel.startswith('falsifications/') and rel.endswith('.patch'):
-                new, problems = rewrite_patch(text, crate)
+                new, problems = regenerate_patch(text, crate, source)
                 for p in problems:
                     report('FAIL', 'patch', f'{rel}: {p}')
                 patches += new != text
             else:
-                new = crate_release.strip_name_blocks(text, remove=True)
-                blocks += new != text
-                if rel.endswith('.rs'):
-                    moved = falsification_first(new)
-                    records += moved != new
-                    new = moved
-                # A path into the crate's own directory is a path from the repository's root.
-                new, n = re.subn(r'(?<![\w/.])crates/' + re.escape(crate) + '/', '', new)
-                paths += n
+                new, b, r, n = moved_source(text, crate)
+                blocks, records, paths = blocks + b, records + r, paths + n
             if rel == 'Cargo.toml':
                 new = add_repository(new, crate)
             if new != text:
                 open(path, 'w').write(new)
-    report('ok', 'rewrite', f'Name: blocks removed from {blocks} files, {patches} patches rewritten '
-                            f'to -p1, {paths} paths made repository-relative, falsification records '
-                            f'moved to the head of their comments in {records} files, repository set '
-                            'in Cargo.toml')
+    report('ok', 'rewrite', f'Name: blocks removed from {blocks} files, {patches} patches regenerated '
+                            f'for -p1 over the stripped source, {paths} paths made repository-relative, '
+                            f'falsification records moved to the head of their comments in {records} '
+                            'files, repository set in Cargo.toml')
+    check_patches(into, report)
     return manifest, targets
+
+
+def check_patches(into, report):
+    """Refuse a staged patch that applies with an offset or fuzz, or not at all."""
+    directory = os.path.join(into, 'falsifications')
+    names = sorted(n for n in os.listdir(directory) if n.endswith('.patch')) \
+        if os.path.isdir(directory) else []
+    bad = 0
+    for name in names:
+        said = patch_application(into, os.path.join(directory, name))
+        if said:
+            bad += 1
+            report('FAIL', 'patch applies exactly', f'falsifications/{name}: {said}')
+    if not bad:
+        report('ok', 'patch applies exactly', f'{len(names)} patches apply with no offset and no fuzz '
+                                              '(patch -p1 --dry-run -F0)')
 
 
 def build(into, manifest, targets, work, report):
@@ -412,18 +461,43 @@ def follow_up(root, crate, version):
             print(f'  {f}')
 
 
-def selftest():
+def patch_selftest():
+    """A patch written against lines the move shifts is regenerated, and the gate sees a stale one."""
+    lib = ('//! Doc.\n//!\n//! Name: ratified 2026-10-25 (#1).\n//!   Reason.\n\n'
+           'pub fn a() {}\n\n/// Doc.\n///\n/// Name: ratified 2026-10-25 (#1).\n'
+           'pub fn f(n: u32) -> bool {\n    let m = n + 1;\n    m > n\n}\n\n'
+           'pub fn g() {}\npub fn h() {}\npub fn i() {}\npub fn j() {}\n')
     patch = ('Falsifies `x::verification::h`.\n\n'
-             'diff --git a/crates/x/src/a.rs b/crates/x/src/a.rs\n'
-             '--- a/crates/x/src/a.rs\n+++ b/crates/x/src/a.rs\n'
-             '@@ -10,5 +10,5 @@ fn f() {\n'
-             '     /// Doc.\n     ///\n     /// Name: ratified 2026-10-25 (#1).\n'
-             '-    a\n+    b\n')
-    new, problems = rewrite_patch(patch, 'x')
-    assert 'diff --git a/src/a.rs b/src/a.rs' in new and '--- a/src/a.rs' in new, new
-    assert '@@ -10,3 +10,3 @@ fn f() {' in new and 'Name:' not in new and not problems, new
-    bad = 'diff --git a/crates/x/s b/crates/x/s\n@@ -1,1 +1,1 @@\n-/// Name: ratified\n+x\n'
-    assert rewrite_patch(bad, 'x')[1], 'a removed Name: line is a problem'
+             'diff --git a/crates/x/src/lib.rs b/crates/x/src/lib.rs\n'
+             '--- a/crates/x/src/lib.rs\n+++ b/crates/x/src/lib.rs\n'
+             '@@ -12,3 +12,3 @@ pub fn f\n     let m = n + 1;\n-    m > n\n+    m >= n\n }\n')
+    with tempfile.TemporaryDirectory(prefix='crate-move-selftest-') as tmp:
+        source, staged = os.path.join(tmp, 'crates', 'x'), os.path.join(tmp, 'into')
+        for d in (os.path.join(source, 'src'), os.path.join(staged, 'src'), os.path.join(staged, 'falsifications')):
+            os.makedirs(d)
+        open(os.path.join(source, 'src', 'lib.rs'), 'w').write(lib)
+        open(os.path.join(staged, 'src', 'lib.rs'), 'w').write(moved_source(lib, 'x')[0])
+        stale = os.path.join(staged, 'falsifications', 'stale.patch')
+        open(stale, 'w').write(patch.replace('a/crates/x/', 'a/').replace('b/crates/x/', 'b/'))
+        said = patch_application(staged, stale)
+        assert 'offset' in said, 'the gate refuses a patch whose header no longer matches: ' + said
+        new, problems = regenerate_patch(patch, 'x', source)
+        assert not problems, problems
+        assert 'a/src/lib.rs' in new and 'crates/x' not in new and 'Name:' not in new, new
+        fresh = os.path.join(staged, 'falsifications', 'fresh.patch')
+        open(fresh, 'w').write(new)
+        assert patch_application(staged, fresh) == '', patch_application(staged, fresh)
+        assert new.startswith('Falsifies `x::verification::h`.\n'), new
+        block = ('diff --git a/crates/x/src/lib.rs b/crates/x/src/lib.rs\n--- a/crates/x/src/lib.rs\n'
+                 '+++ b/crates/x/src/lib.rs\n@@ -10,3 +10,3 @@\n ///\n-/// Name: ratified 2026-10-25 (#1).\n'
+                 '+/// Name: provisional.\n pub fn f(n: u32) -> bool {\n')
+        assert regenerate_patch(block, 'x', source)[1], 'an edit inside a Name: block is a problem'
+        missing = patch.replace('m > n', 'no such line')
+        assert regenerate_patch(missing, 'x', source)[1], 'a patch that does not apply is a problem'
+
+
+def selftest():
+    patch_selftest()
     src = '//! Doc.\n//!\n//! Name: ratified 2026-11-01 (UTC), the\n//!   reason.\n\npub fn f() {}\n'
     assert crate_release.strip_name_blocks(src, remove=True) == '//! Doc.\n\npub fn f() {}\n'
     assert crate_release.strip_name_blocks(src).count('\n') == src.count('\n')

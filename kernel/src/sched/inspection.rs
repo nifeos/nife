@@ -198,13 +198,22 @@ pub fn object_page(object: &Object) -> Option<u64> {
     let guard = IPC_TABLES.lock();
     let sched = guard.as_ref()?;
     match *object {
-        Object::Rendezvous(id, _) => sched.rendezvous_table.get(rendezvous_entry(id)).copied(),
+        Object::Rendezvous(id, _) => sched
+            .rendezvous_table
+            .get(rendezvous_entry(id))
+            .map(|entry| entry.address()),
         Object::Notification(id) => sched
             .notification_table
             .get(notification_entry(id))
-            .copied(),
-        Object::Timer(id) => sched.timer_table.get(timer_entry(id)).copied(),
-        Object::Process(pid) => sched.processes.get(process_entry(pid)).copied(),
+            .map(|entry| entry.address()),
+        Object::Timer(id) => sched
+            .timer_table
+            .get(timer_entry(id))
+            .map(|entry| entry.address()),
+        Object::Process(pid) => sched
+            .processes
+            .get(process_entry(pid))
+            .map(|entry| entry.address()),
         Object::ThreadControlBlock(tid) => sched
             .threads
             .get(tid)
@@ -437,7 +446,8 @@ fn dump_threads_of(sched: &mut IpcTables) {
 /// [`dump_threads`]'s lines for the rendezvous with a waiter: a deadlock shows as a sender with no
 /// receiver.
 fn dump_rendezvous_of(sched: &IpcTables) {
-    for (name, &phys) in sched.rendezvous_table.iter() {
+    for (name, entry) in sched.rendezvous_table.iter() {
+        let phys = entry.address();
         // SAFETY: a live rendezvous page, direct-mapped, under IPC_TABLES.
         let ep = unsafe { &*(crate::arch::mmu::phys_to_virt(phys) as *const Rendezvous) };
         dump_rendezvous(name.to_bits(), ep);
@@ -446,7 +456,8 @@ fn dump_rendezvous_of(sched: &IpcTables) {
 
 /// [`dump_threads`]'s lines for the notifications with a waiter or a pending word.
 fn dump_notifications_of(sched: &IpcTables) {
-    for (name, &phys) in sched.notification_table.iter() {
+    for (name, entry) in sched.notification_table.iter() {
+        let phys = entry.address();
         // SAFETY: a live notification page, direct-mapped, under IPC_TABLES.
         let n = unsafe { &*(crate::arch::mmu::phys_to_virt(phys) as *const NotificationPage) };
         dump_notification(name.to_bits(), n);
