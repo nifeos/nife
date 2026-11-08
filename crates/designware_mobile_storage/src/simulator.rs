@@ -138,7 +138,7 @@ pub enum Fault {
     /// The card answers `CMD8` with the wrong check pattern.
     EchoWrong,
     /// The answer arrives with a response CRC error (`RCRC`).
-    BadCyclicRedundancyCheck,
+    BadCrc,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -186,7 +186,7 @@ pub struct SimulatedHostController {
     /// Every block the card was asked to program, in order.
     pub written: Vec<u64>,
     /// Make the next read's data phase fail its CRC.
-    pub fail_next_read_cyclic_redundancy_check: bool,
+    pub fail_next_read_crc: bool,
     /// How many `ACMD41`s or `CMD1`s report busy before power-up completes.
     pub busy_polls: u32,
     /// Set when a command was sent while the card clock was off.
@@ -229,7 +229,7 @@ pub struct SimulatedHostController {
     /// `STATUS_REGISTER` reports a full FIFO whatever it holds: a confused controller.
     pub overreport_fill: bool,
     /// A write's data phase ends with a data CRC error and no `DTO`.
-    pub cyclic_redundancy_check_error_at_end: bool,
+    pub crc_error_at_end: bool,
     /// How many `RINTSTS` reads pass after `DTO` before the automatic CMD12's `ACD` lands.
     pub late_automatic_command_done: u32,
     automatic_command_done_pending: u32,
@@ -290,7 +290,7 @@ impl SimulatedHostController {
             storage: vec![[0u8; 512]; blocks],
             commands: Vec::new(),
             written: Vec::new(),
-            fail_next_read_cyclic_redundancy_check: false,
+            fail_next_read_crc: false,
             busy_polls: 3,
             clockless_command: false,
             version_identification: SIMULATED_VERSION_IDENTIFICATION,
@@ -310,7 +310,7 @@ impl SimulatedHostController {
             stall_after: None,
             end_early: false,
             overreport_fill: false,
-            cyclic_redundancy_check_error_at_end: false,
+            crc_error_at_end: false,
             late_automatic_command_done: 0,
             automatic_command_done_pending: 0,
             multimedia_card_byte_addressed: false,
@@ -552,9 +552,8 @@ impl SimulatedHostController {
                 raw_interrupt_status |= registers::RAW_INTERRUPT_RESPONSE_TIMEOUT;
             }
             None => {}
-            Some(_) if fault == Some(Fault::BadCyclicRedundancyCheck) => {
-                raw_interrupt_status |=
-                    registers::RAW_INTERRUPT_RESPONSE_CYCLIC_REDUNDANCY_CHECK_ERROR;
+            Some(_) if fault == Some(Fault::BadCrc) => {
+                raw_interrupt_status |= registers::RAW_INTERRUPT_RESPONSE_CRC_ERROR;
             }
             Some(_) => {}
         }
@@ -670,10 +669,10 @@ impl SimulatedHostController {
                         | registers::RAW_INTERRUPT_DATA_TRANSFER_OVER;
                 return;
             }
-            if self.fail_next_read_cyclic_redundancy_check && !t.extended_card_specific_data {
-                self.fail_next_read_cyclic_redundancy_check = false;
+            if self.fail_next_read_crc && !t.extended_card_specific_data {
+                self.fail_next_read_crc = false;
                 *self.register(registers::RAW_INTERRUPT_STATUS_REGISTER) |=
-                    registers::RAW_INTERRUPT_DATA_CYCLIC_REDUNDANCY_CHECK_ERROR
+                    registers::RAW_INTERRUPT_DATA_CRC_ERROR
                         | registers::RAW_INTERRUPT_DATA_TRANSFER_OVER;
                 return;
             }
@@ -854,9 +853,9 @@ impl SimulatedHostController {
     }
 
     fn end(&mut self, t: &Transfer) {
-        if t.write && self.cyclic_redundancy_check_error_at_end {
+        if t.write && self.crc_error_at_end {
             *self.register(registers::RAW_INTERRUPT_STATUS_REGISTER) |=
-                registers::RAW_INTERRUPT_DATA_CYCLIC_REDUNDANCY_CHECK_ERROR;
+                registers::RAW_INTERRUPT_DATA_CRC_ERROR;
             return;
         }
         let mut raw_interrupt_status = registers::RAW_INTERRUPT_DATA_TRANSFER_OVER;

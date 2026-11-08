@@ -18,4 +18,4 @@ diff --git a/crates/designware_mobile_storage/src/host_controller.rs b/crates/de
 +            return Err(Error::BadResponse(command.index, status));
          }
          if status
-             & (registers::RAW_INTERRUPT_RESPONSE_CYCLIC_REDUNDANCY_CHECK_ERROR
+             & (registers::RAW_INTERRUPT_RESPONSE_CRC_ERROR

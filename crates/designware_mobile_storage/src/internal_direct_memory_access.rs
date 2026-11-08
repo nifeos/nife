@@ -732,8 +732,8 @@ mod tests {
                 |e| matches!(e, Error::DirectMemoryAccess(18, s) if s & registers::INTERNAL_DIRECT_MEMORY_ACCESS_STATUS_DESCRIPTOR_UNAVAILABLE != 0),
             ),
             (
-                |s| s.fail_next_read_cyclic_redundancy_check = true,
-                |e| matches!(e, Error::Data(18, r) if r & registers::RAW_INTERRUPT_DATA_CYCLIC_REDUNDANCY_CHECK_ERROR != 0),
+                |s| s.fail_next_read_crc = true,
+                |e| matches!(e, Error::Data(18, r) if r & registers::RAW_INTERRUPT_DATA_CRC_ERROR != 0),
             ),
         ];
         for (inject, expected) in cases {

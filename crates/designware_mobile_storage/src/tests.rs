@@ -171,14 +171,14 @@ fn a_read_whose_tail_is_below_the_watermark_is_drained_on_transfer_over() {
 }
 
 #[test]
-fn a_data_cyclic_redundancy_check_error_is_reported_with_its_command() {
+fn a_data_crc_error_is_reported_with_its_command() {
     let mut h = host(CardKind::SdHighCapacity, 8192);
     let card = sd::identify(&mut h, 4).unwrap();
-    h.registers_mut().fail_next_read_cyclic_redundancy_check = true;
+    h.registers_mut().fail_next_read_crc = true;
     let mut buffer = [0u8; BLOCK_BYTES];
     assert!(matches!(
         sd::read_blocks(&mut h, &card, 0, &mut buffer),
-        Err(BlockTransferError::Host(Error::Data(17, raw_interrupt_status))) if raw_interrupt_status & crate::registers::RAW_INTERRUPT_DATA_CYCLIC_REDUNDANCY_CHECK_ERROR != 0
+        Err(BlockTransferError::Host(Error::Data(17, raw_interrupt_status))) if raw_interrupt_status & crate::registers::RAW_INTERRUPT_DATA_CRC_ERROR != 0
     ));
 }
 

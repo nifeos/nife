@@ -269,7 +269,7 @@ impl Command {
             w |= registers::COMMAND_LONG_RESPONSE;
         }
         if self.response.has_crc() {
-            w |= registers::COMMAND_CHECK_RESPONSE_CYCLIC_REDUNDANCY_CHECK;
+            w |= registers::COMMAND_CHECK_RESPONSE_CRC;
         }
         if let Some(d) = self.data {
             w |= registers::COMMAND_DATA_EXPECTED;
@@ -303,7 +303,7 @@ mod tests {
     use crate::registers::*;
 
     #[test]
-    fn a_long_response_with_a_cyclic_redundancy_check_and_no_data() {
+    fn a_long_response_with_a_crc_and_no_data() {
         let w = Command::new(ALL_SEND_CARD_IDENTIFICATION, 0, Response::R2).register_word();
         assert_eq!(
             w,
@@ -312,17 +312,17 @@ mod tests {
                 | COMMAND_WAIT_FOR_PREVIOUS_DATA_COMPLETE
                 | COMMAND_RESPONSE_EXPECT
                 | COMMAND_LONG_RESPONSE
-                | COMMAND_CHECK_RESPONSE_CYCLIC_REDUNDANCY_CHECK
+                | COMMAND_CHECK_RESPONSE_CRC
                 | 2
         );
     }
 
     #[test]
-    fn the_operation_conditions_are_not_cyclic_redundancy_checked_because_they_have_none() {
+    fn the_operation_conditions_are_not_crced_because_they_have_none() {
         let w =
             Command::new(SD_SEND_OPERATION_CONDITIONS, 0x4030_0000, Response::R3).register_word();
         assert_ne!(w & COMMAND_RESPONSE_EXPECT, 0);
-        assert_eq!(w & COMMAND_CHECK_RESPONSE_CYCLIC_REDUNDANCY_CHECK, 0);
+        assert_eq!(w & COMMAND_CHECK_RESPONSE_CRC, 0);
     }
 
     #[test]

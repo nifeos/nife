@@ -565,7 +565,7 @@ fn sending_a_command_is_total_against_any_controller() {
             assert!(index == command.index);
             assert!(
                 status
-                    & (crate::registers::RAW_INTERRUPT_RESPONSE_CYCLIC_REDUNDANCY_CHECK_ERROR
+                    & (crate::registers::RAW_INTERRUPT_RESPONSE_CRC_ERROR
                         | crate::registers::RAW_INTERRUPT_RESPONSE_ERROR)
                     != 0
             );

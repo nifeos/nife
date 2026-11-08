@@ -505,7 +505,7 @@ impl<R: RegisterWindowAndClock, D: DirectMemoryAccessRegion> HostController<R, D
             return Err(Error::NoResponse(command.index));
         }
         if status
-            & (registers::RAW_INTERRUPT_RESPONSE_CYCLIC_REDUNDANCY_CHECK_ERROR
+            & (registers::RAW_INTERRUPT_RESPONSE_CRC_ERROR
                 | registers::RAW_INTERRUPT_RESPONSE_ERROR)
             != 0
         {
@@ -928,14 +928,14 @@ mod tests {
     }
 
     #[test]
-    fn a_response_cyclic_redundancy_check_error_is_a_bad_response() {
+    fn a_response_crc_error_is_a_bad_response() {
         let mut simulator = SimulatedHostController::new(CardKind::SdHighCapacity, 2048, 32);
-        simulator.faults = vec![(SEND_INTERFACE_CONDITION, 0, Fault::BadCyclicRedundancyCheck)];
+        simulator.faults = vec![(SEND_INTERFACE_CONDITION, 0, Fault::BadCrc)];
         let mut h = take(simulator);
         h.send_command(&Command::new(0, 0, Response::None)).unwrap();
         assert!(matches!(
             h.send_command(&Command::new(SEND_INTERFACE_CONDITION, 0x1aa, Response::R7)),
-            Err(Error::BadResponse(SEND_INTERFACE_CONDITION, s)) if s & registers::RAW_INTERRUPT_RESPONSE_CYCLIC_REDUNDANCY_CHECK_ERROR != 0
+            Err(Error::BadResponse(SEND_INTERFACE_CONDITION, s)) if s & registers::RAW_INTERRUPT_RESPONSE_CRC_ERROR != 0
         ));
     }
 
@@ -1109,11 +1109,11 @@ mod tests {
             32,
         ));
         let card = sd::identify(&mut h, 4).unwrap();
-        h.registers_mut().cyclic_redundancy_check_error_at_end = true;
+        h.registers_mut().crc_error_at_end = true;
         let start = h.registers_mut().now_microseconds();
         assert!(matches!(
             sd::write_blocks(&mut h, &card, 1, &[0u8; 512]),
-            Err(BlockTransferError::Host(Error::Data(24, raw_interrupt_status))) if raw_interrupt_status & registers::RAW_INTERRUPT_DATA_CYCLIC_REDUNDANCY_CHECK_ERROR != 0
+            Err(BlockTransferError::Host(Error::Data(24, raw_interrupt_status))) if raw_interrupt_status & registers::RAW_INTERRUPT_DATA_CRC_ERROR != 0
         ));
         assert!(h.registers_mut().now_microseconds() - start < DATA_DEADLINE_MICROSECONDS);
     }
@@ -1127,7 +1127,7 @@ mod tests {
             32,
         ));
         let card = sd::identify(&mut h, 4).unwrap();
-        h.registers_mut().fail_next_read_cyclic_redundancy_check = true;
+        h.registers_mut().fail_next_read_crc = true;
         let start = h.registers_mut().now_microseconds();
         let mut block = [0u8; 512];
         assert!(matches!(

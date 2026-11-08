@@ -198,7 +198,7 @@ pub(crate) const COMMAND_DATA_EXPECTED: u32 = 1 << 9;
 /// the response's CRC7.
 #[doc(alias = "check response CRC")]
 #[doc(alias = "CMD_CHECK_RESPONSE_CRC")]
-pub(crate) const COMMAND_CHECK_RESPONSE_CYCLIC_REDUNDANCY_CHECK: u32 = 1 << 8;
+pub(crate) const COMMAND_CHECK_RESPONSE_CRC: u32 = 1 << 8;
 /// **Response length** (OpenBSD's `SDMMC_CMD_RESPONSE_LENGTH`): the response is 136 bits (R2).
 #[doc(alias = "long response")]
 #[doc(alias = "CMD_RESPONSE_LENGTH")]
@@ -260,11 +260,11 @@ pub(crate) const RAW_INTERRUPT_RECEIVE_QUEUE_DATA_REQUEST: u32 = 1 << 5;
 /// **Response CRC error** (OpenBSD's `SDMMC_RINTSTS_RCRC`): response CRC error.
 #[doc(alias = "response CRC error")]
 #[doc(alias = "RINTSTS_RCRC")]
-pub(crate) const RAW_INTERRUPT_RESPONSE_CYCLIC_REDUNDANCY_CHECK_ERROR: u32 = 1 << 6;
+pub(crate) const RAW_INTERRUPT_RESPONSE_CRC_ERROR: u32 = 1 << 6;
 /// **Data CRC error** (OpenBSD's `SDMMC_RINTSTS_DCRC`): data CRC error.
 #[doc(alias = "data CRC error")]
 #[doc(alias = "RINTSTS_DCRC")]
-pub(crate) const RAW_INTERRUPT_DATA_CYCLIC_REDUNDANCY_CHECK_ERROR: u32 = 1 << 7;
+pub(crate) const RAW_INTERRUPT_DATA_CRC_ERROR: u32 = 1 << 7;
 /// **Response timeout** (OpenBSD's `SDMMC_RINTSTS_RTO`): response timeout: no card answered.
 #[doc(alias = "response timeout")]
 #[doc(alias = "RINTSTS_RTO")]
@@ -316,7 +316,7 @@ pub(crate) const RAW_INTERRUPT_DATA_ERROR_MASK: u32 = RAW_INTERRUPT_END_BIT_ERRO
     | RAW_INTERRUPT_START_BIT_ERROR
     | RAW_INTERRUPT_HARDWARE_LOCKED_WRITE_ERROR
     | RAW_INTERRUPT_QUEUE_UNDERRUN_OR_OVERRUN
-    | RAW_INTERRUPT_DATA_CYCLIC_REDUNDANCY_CHECK_ERROR;
+    | RAW_INTERRUPT_DATA_CRC_ERROR;
 /// **Data timeouts** (OpenBSD's `SDMMC_RINTSTS_DATA_TO`): every bit that means a data phase timed
 /// out.
 #[doc(alias = "data timeouts")]
@@ -775,7 +775,7 @@ mod tests {
             (COMMAND_SEND_AUTOMATIC_STOP, 0x1000),
             (COMMAND_WRITE, 0x400),
             (COMMAND_DATA_EXPECTED, 0x200),
-            (COMMAND_CHECK_RESPONSE_CYCLIC_REDUNDANCY_CHECK, 0x100),
+            (COMMAND_CHECK_RESPONSE_CRC, 0x100),
             (COMMAND_LONG_RESPONSE, 0x80),
             (COMMAND_RESPONSE_EXPECT, 0x40),
             (RAW_INTERRUPT_RESPONSE_ERROR, 0x2),
@@ -783,8 +783,8 @@ mod tests {
             (RAW_INTERRUPT_DATA_TRANSFER_OVER, 0x8),
             (RAW_INTERRUPT_TRANSMIT_QUEUE_DATA_REQUEST, 0x10),
             (RAW_INTERRUPT_RECEIVE_QUEUE_DATA_REQUEST, 0x20),
-            (RAW_INTERRUPT_RESPONSE_CYCLIC_REDUNDANCY_CHECK_ERROR, 0x40),
-            (RAW_INTERRUPT_DATA_CYCLIC_REDUNDANCY_CHECK_ERROR, 0x80),
+            (RAW_INTERRUPT_RESPONSE_CRC_ERROR, 0x40),
+            (RAW_INTERRUPT_DATA_CRC_ERROR, 0x80),
             (RAW_INTERRUPT_RESPONSE_TIMEOUT, 0x100),
             (RAW_INTERRUPT_DATA_READ_TIMEOUT, 0x200),
             (RAW_INTERRUPT_HOST_TIMEOUT, 0x400),
