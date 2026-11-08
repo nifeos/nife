@@ -944,6 +944,11 @@ const _: () = assert!(
             == 0
 );
 
+// The frequency mask is bits 8 and 12 and no other, so the compiler checks that here and the
+// mask's shift and OR swaps cannot compile.
+#[allow(clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
+const _: () = assert!(SYSTEM_MANAGEMENT_BUS_ADDRESS_FREQUENCY_MASK == 0x1100);
+
 /// **`e1000_write_smbus_addr`**: the PHY's System Management Bus (`SMBus`) address, for the
 /// I217-family PHY every I219 carries.
 #[doc(alias = "smbus")]
