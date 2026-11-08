@@ -55,7 +55,7 @@ physical.
 | `HCCPARAMS1` | `CAPABILITY_PARAMETERS_1_REGISTER` |
 | `DBOFF`, `RTSOFF` | `DOORBELL_OFFSET_REGISTER`, `RUNTIME_REGISTER_SPACE_OFFSET_REGISTER` |
 | `USBCMD`, `USBSTS` | `USB_COMMAND_REGISTER`, `USB_STATUS_REGISTER` |
-| `PAGESIZE` | `PAGE_SIZE_BITMAP_REGISTER` |
+| `PAGESIZE` | `PAGE_SIZE_BITMAP_REGISTER` (kept; see below) |
 | `CRCR` | `COMMAND_RING_CONTROL_REGISTER` |
 | `DCBAAP` | `DEVICE_CONTEXT_BASE_PHYSICAL_ADDRESS_ARRAY_POINTER_REGISTER` |
 | `CONFIG` | `CONFIGURATION_REGISTER` |
@@ -71,15 +71,21 @@ Three names carry what the size and address rules add: a length or a size carrie
 array holds are physical. The private offsets follow the same rule: `FIRST_PORT_STATUS_AND_CONTROL_REGISTER` and
 `INTERRUPTER_0_REGISTER`.
 
-The template's `register_names.py` refuses four names in the crate. All four have a ratified
-name, so this note leaves them and asks the architect:
+The template's `register_names.py` refuses four ratified names. The architect ruled a new name for
+each. The gate passes two of them, and the crate carries them:
 
-| name | rule it breaks | a name that passes the gate |
+| old name | ratified name | rule it satisfies |
 |---|---|---|
-| `registers::PAGE_SIZE_BITMAP_REGISTER` | `size` carries a unit from `[size_units]`; `bitmap` is not one | `SUPPORTED_PAGE_SIZE_ORDER_REGISTER`: each set bit n is a supported page of order n + 12 |
-| `registers::EXTENDED_LEGACY_SUPPORT` | an integer in a register module is an offset, but this is an extended capability id | `EXTENDED_LEGACY_SUPPORT_VALUE` |
-| `context::slot_address` | an address is virtual or physical; this is the USB device number in the slot context | a name without `address`, such as `assigned_device_number` |
-| `ring::ProducerRing::address_of` | the same | `physical_address_of` |
+| `context::slot_address` | `context::slot_device_number`, alias `USB Device Address` | an address is virtual or physical; this is the USB device number in the slot context, so the name has no `address` |
+| `ring::ProducerRing::address_of` | `ring::ProducerRing::entry_physical_address` | the address is physical, and the name says so |
+
+The gate refuses the ruled name of the other two, so they keep their old names until the architect
+rules again:
+
+| name kept | ruled name | gate output on the ruled name |
+|---|---|---|
+| `registers::PAGE_SIZE_BITMAP_REGISTER` | `SUPPORTED_PAGE_SIZES_REGISTER` | a size, a length or a limit carries its unit: end it `_BYTES`, `_BITS`, `_WORDS` or another unit from `[size_units]` (`size` inside `SIZES` is read as a size) |
+| `registers::EXTENDED_LEGACY_SUPPORT` | `LEGACY_SUPPORT_EXTENDED_CAPABILITY_ID` | a register offset ends `_REGISTER`; another quantity ends `_MASK`, `_SHIFT`, `_VALUE`, `_BYTES` or `_BITS` (`_ID` is none of them) |
 
 `address_device` is the xHCI command of that name. The gate reads a leading `address` as a verb
 only before `and`, `or`, `the` and similar words, not before `device`, so the function states its

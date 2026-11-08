@@ -259,7 +259,7 @@ impl Host {
     /// **One command, to its completion.** The slot the completion names, on success.
     fn command(&mut self, trb: TransferRequestBlock) -> Result<u8, Fail> {
         let p = self.commands.enqueue(trb);
-        let at = self.commands.address_of(p.index);
+        let at = self.commands.entry_physical_address(p.index);
         Host::put(direct_memory_access::COMMAND_RING, p);
         self.ring_doorbell(0, 0);
         match self.wait_for(
@@ -288,13 +288,13 @@ impl Host {
             let p = self
                 .control
                 .enqueue(TransferRequestBlock::data(buffer, len, inbound));
-            data_at = Some(self.control.address_of(p.index));
+            data_at = Some(self.control.entry_physical_address(p.index));
             Host::put(direct_memory_access::CONTROL_RING, p);
         }
         let p = self
             .control
             .enqueue(TransferRequestBlock::status(len > 0 && inbound));
-        let status_at = self.control.address_of(p.index);
+        let status_at = self.control.entry_physical_address(p.index);
         Host::put(direct_memory_access::CONTROL_RING, p);
         self.ring_doorbell(slot, 1);
 
