@@ -72,19 +72,19 @@ harness's comment, where the template reads it, so those records pass `falsify.p
 6. Install the `nife-smelter` app on it (calef, as an organization owner, in the app's
    repository access settings). The release workflow's tag job authenticates as the app, and the
    tag ruleset accepts the app as its bypass actor only once the app sits on the repository.
-7. Grant the three organization secrets (calef, with an `admin:org` token). Each has the
-   visibility "selected repositories", so the list grows by one per crate:
+7. Grant the two organization secrets that have selected visibility (calef, with an `admin:org`
+   token). `NIFE_SMELTER_APP_ID` is open to every repository and needs nothing. The list of
+   `NIFE_SMELTER_PRIVATE_KEY` and `SETTINGS_TOKEN` grows by one per crate:
 
    ```sh
-   id=$(gh api repos/nifeos/<crate> --jq .id)
-   for name in NIFE_SMELTER_APP_ID NIFE_SMELTER_PRIVATE_KEY SETTINGS_TOKEN; do
-     gh api -X PUT "/orgs/nifeos/actions/secrets/$name/repositories/$id"
-   done
+   script/grant-org-secrets <crate>
    ```
 
-   Expected: `gh api orgs/nifeos/actions/secrets/SETTINGS_TOKEN/repositories --jq '.repositories[].name'`
-   lists the crate. The fine-grained token behind `SETTINGS_TOKEN` has access to all repositories of
-   the organization, so the secret's repository list is the only setting a move changes; the token
+   The script resolves the repository id, makes both grants (granting twice changes nothing),
+   lists each secret's repositories and exits 1 if the crate is missing. `--dry-run` shows what it
+   would do. It refuses `nife` and any name that is not an existing repository of the organization.
+   The fine-grained token behind `SETTINGS_TOKEN` has access to all repositories of the
+   organization, so the secret's repository list is the only setting a move changes; the token
    needs no per-crate widening. No agent handles any key value.
 
 ## The move
@@ -224,8 +224,9 @@ publishes.
 - Clear the crate's review, which approves creating its repository (step 4).
 - Create `nifeos/<crate>` (step 5).
 - Install the `nife-smelter` app on it (step 6).
-- Grant `NIFE_SMELTER_APP_ID`, `NIFE_SMELTER_PRIVATE_KEY` and `SETTINGS_TOKEN` to it (step 7). The
-  `SETTINGS_TOKEN` token reaches every repository of the organization and needs no widening.
+- Run `script/grant-org-secrets <crate>` to grant `NIFE_SMELTER_PRIVATE_KEY` and `SETTINGS_TOKEN`
+  to it (step 7). `NIFE_SMELTER_APP_ID` is org-wide, and the `SETTINGS_TOKEN` token reaches every
+  repository of the organization and needs no widening.
 - Dispatch the release that makes each tag, and cancel its publish (step 13).
 - Approve each publication onto the allowlist (step 16).
 - Create the first-publish token on the `crates-io` environment (step 17).
