@@ -848,7 +848,9 @@ fn post_physical_layer_device_reset(hardware: &mut impl Hardware) -> Result<(), 
 /// `SMBus` address and LED configuration, then replay the extended configuration region's
 /// (value, register) pairs into the PHY.
 #[doc(alias = "lcd")]
-fn local_area_network_connected_device_configuration(hardware: &mut impl Hardware) -> Result<(), Error> {
+fn local_area_network_connected_device_configuration(
+    hardware: &mut impl Hardware,
+) -> Result<(), Error> {
     let f = SoftwareFlag::acquire(hardware)?;
     let out = (|| {
         if hardware.read(registers::FEXTNVM) & FEXTNVM_SOFTWARE_CONFIGURATION_ICH8M == 0 {
@@ -1352,7 +1354,10 @@ mod tests {
         // The simulated reset raises both, and nothing is reported.
         let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
         global_reset(&mut s, 1000).unwrap();
-        assert!(!s.notes.contains(&BringUpObservation::LocalAreaNetworkInitializationTimeout));
+        assert!(
+            !s.notes
+                .contains(&BringUpObservation::LocalAreaNetworkInitializationTimeout)
+        );
         assert!(
             !s.notes
                 .contains(&BringUpObservation::PhysicalLayerDeviceResetNotAsserted)
@@ -1413,11 +1418,10 @@ mod tests {
             s.notes
                 .contains(&BringUpObservation::LocalAreaNetworkConnectedDeviceNotConfigured)
         );
-        assert!(
-            !s.notes
-                .iter()
-                .any(|n| matches!(n, BringUpObservation::LocalAreaNetworkConnectedDeviceConfigured { .. }))
-        );
+        assert!(!s.notes.iter().any(|n| matches!(
+            n,
+            BringUpObservation::LocalAreaNetworkConnectedDeviceConfigured { .. }
+        )));
     }
 
     /// **The `SMBus` address word takes its address and frequency from `STRAP`** and keeps only

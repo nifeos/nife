@@ -766,8 +766,9 @@ mod tests {
         s.mac.insert(registers::LEDCTL, 0x0007_8484);
         sequence::global_reset(&mut s, 1000).unwrap();
         assert!(
-            s.notes
-                .contains(&BringUpObservation::LocalAreaNetworkConnectedDeviceConfigured { pairs: 3 })
+            s.notes.contains(
+                &BringUpObservation::LocalAreaNetworkConnectedDeviceConfigured { pairs: 3 }
+            )
         );
         assert_eq!(
             s.physical_layer_device_registers[&paged_offset(769, 17)],
