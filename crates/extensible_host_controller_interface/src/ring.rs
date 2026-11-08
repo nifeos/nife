@@ -85,7 +85,7 @@ impl ProducerRing {
         self.base + index as u64 * 16
     }
 
-    /// The physical address and cycle of the next TRB to be written: what a TR Dequeue Pointer or
+    /// The physical address and cycle of the next TRB to be written: what a Transfer Ring (TR) Dequeue Pointer or
     /// `CRCR` is set to (the cycle in bit 0, as both registers take it).
     ///
     /// Name: ratified 2026-10-25 (#2720).

@@ -18,6 +18,10 @@
 //! Name: ratified 2026-10-07 (#1806). xHCI expanded, as the acronym test asks; permanent once
 //! published. Too long for a program name, so the program is `usb_keyboard_driver`.
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 pub mod context;
 pub mod direct_memory_access;
 pub mod port;

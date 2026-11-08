@@ -21,7 +21,8 @@ pub(crate) const ENABLE_SLOT: u8 = 9;
 /// Disable Slot command.
 pub(crate) const DISABLE_SLOT: u8 = 10;
 /// Address Device command.
-pub(crate) const ADDRESS_DEVICE: u8 = 11;
+#[doc(alias = "Address Device")]
+pub(crate) const DEVICE_ADDRESSING_COMMAND: u8 = 11;
 /// Configure Endpoint command.
 pub(crate) const CONFIGURE_ENDPOINT: u8 = 12;
 /// Evaluate Context command.

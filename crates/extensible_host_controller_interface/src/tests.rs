@@ -211,7 +211,7 @@ fn every_command_decodes_back_to_its_slot_endpoint_and_pointer() {
     );
     assert_eq!(
         decode(TransferRequestBlock::address_device(0x5000, 1)),
-        (transfer_request_block_type::ADDRESS_DEVICE, 1, 0, 0x5000)
+        (transfer_request_block_type::DEVICE_ADDRESSING_COMMAND, 1, 0, 0x5000)
     );
     assert_eq!(
         decode(TransferRequestBlock::configure_endpoint(0x5000, 2)),
