@@ -8,12 +8,12 @@ Expected to fail: `assert!((divider == 0) == (base <= target))`, at a target equ
 diff --git a/crates/designware_mobile_storage/src/host_controller.rs b/crates/designware_mobile_storage/src/host_controller.rs
 --- a/crates/designware_mobile_storage/src/host_controller.rs
 +++ b/crates/designware_mobile_storage/src/host_controller.rs
-@@ -163,7 +163,7 @@
-     if target == 0 {
+@@ -165,7 +165,7 @@ pub const fn clock_divider(base_hertz: u32, target_hertz: u32) -> Option<u8> {
+     if target_hertz == 0 {
          return None;
      }
--    if base <= target {
-+    if base < target {
+-    if base_hertz <= target_hertz {
++    if base_hertz < target_hertz {
          return Some(0);
      }
      // ceil(base / (2 * target)). Saturating, and still exact: a target of 2^31 or more saturates

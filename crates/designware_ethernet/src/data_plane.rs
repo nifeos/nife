@@ -12,8 +12,8 @@ use super::*;
 pub trait DirectMemoryAccessRegion {
     /// Read the little-endian `u64` at `offset`.
     fn read_u64(&self, offset: u64) -> u64;
-    /// Write `v` at `offset`, little-endian.
-    fn write_u64(&mut self, offset: u64, v: u64);
+    /// Write `value` at `offset`, little-endian.
+    fn write_u64(&mut self, offset: u64, value: u64);
     /// Copy `out.len()` bytes starting at `offset` into `out`.
     fn read_bytes(&self, offset: u64, out: &mut [u8]);
     /// Copy `source` to `offset`.
@@ -104,20 +104,20 @@ impl DataPlane {
     ///
     /// Name: ratified 2026-11-03 (UTC), #3123.
     pub fn start(&mut self, region: &mut impl DirectMemoryAccessRegion, tails: &mut impl Tails) {
-        for i in 0..RECEIVE_ENTRIES {
-            let d = layout::receive_descriptor(i);
-            let [w01, w23] = if i == RECEIVE_ENTRIES - 1 {
+        for index in 0..RECEIVE_ENTRIES {
+            let descriptor = layout::receive_descriptor(index);
+            let [words_0_and_1, words_2_and_3] = if index == RECEIVE_ENTRIES - 1 {
                 [0, 0]
             } else {
-                receive_descriptor_words(self.physical_address + layout::receive_buffer(i))
+                receive_descriptor_words(self.physical_address + layout::receive_buffer(index))
             };
-            region.write_u64(d, w01);
-            region.write_u64(d + 8, w23);
+            region.write_u64(descriptor, words_0_and_1);
+            region.write_u64(descriptor + 8, words_2_and_3);
         }
-        for i in 0..TRANSMIT_ENTRIES {
-            let d = layout::transmit_descriptor(i);
-            region.write_u64(d, 0);
-            region.write_u64(d + 8, 0);
+        for index in 0..TRANSMIT_ENTRIES {
+            let descriptor = layout::transmit_descriptor(index);
+            region.write_u64(descriptor, 0);
+            region.write_u64(descriptor + 8, 0);
         }
         tails.barrier();
         tails.set_receive_tail(self.receive_tail(RECEIVE_ENTRIES - 1));
@@ -135,8 +135,8 @@ impl DataPlane {
         out: &mut [u8],
     ) -> Option<usize> {
         loop {
-            let d = layout::receive_descriptor(self.receive_next);
-            let descriptor_word_3 = (region.read_u64(d + 8) >> 32) as u32;
+            let descriptor = layout::receive_descriptor(self.receive_next);
+            let descriptor_word_3 = (region.read_u64(descriptor + 8) >> 32) as u32;
             let verdict = receive_verdict(descriptor_word_3, out.len());
             if verdict == ReceiveVerdict::NotYet {
                 return None;
@@ -158,11 +158,11 @@ impl DataPlane {
             // is the device's write-back and not owned, so leaving it as it is keeps it out of the
             // device's reach until it is reposted in turn.
             let behind = (self.receive_next + RECEIVE_ENTRIES - 1) % RECEIVE_ENTRIES;
-            let [w01, w23] =
+            let [words_0_and_1, words_2_and_3] =
                 receive_descriptor_words(self.physical_address + layout::receive_buffer(behind));
-            let b = layout::receive_descriptor(behind);
-            region.write_u64(b, w01);
-            region.write_u64(b + 8, w23);
+            let reposted_descriptor = layout::receive_descriptor(behind);
+            region.write_u64(reposted_descriptor, words_0_and_1);
+            region.write_u64(reposted_descriptor + 8, words_2_and_3);
             tails.barrier();
             tails.set_receive_tail(self.receive_tail(self.receive_next));
             self.receive_next = (self.receive_next + 1) % RECEIVE_ENTRIES;
@@ -190,14 +190,14 @@ impl DataPlane {
             return Err(TransmitError::Full);
         }
         region.write_bytes(layout::transmit_buffer(self.transmit_next), frame);
-        let d = layout::transmit_descriptor(self.transmit_next);
-        let [w01, w23] = transmit_descriptor_words(
+        let descriptor = layout::transmit_descriptor(self.transmit_next);
+        let [words_0_and_1, words_2_and_3] = transmit_descriptor_words(
             self.physical_address + layout::transmit_buffer(self.transmit_next),
             frame.len() as u16,
         );
-        region.write_u64(d, w01);
+        region.write_u64(descriptor, words_0_and_1);
         // Word 3, with the ownership bit, goes last and in one store with word 2.
-        region.write_u64(d + 8, w23);
+        region.write_u64(descriptor + 8, words_2_and_3);
         tails.barrier();
         self.transmit_next = next;
         tails.set_transmit_tail(self.transmit_tail(next));

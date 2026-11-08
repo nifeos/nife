@@ -49,10 +49,10 @@ BUGS:
 
 `kernel/src/network_bench.rs`, for exit criterion 2 of milestone 494 (a driver for the network card
 a PC actually has). It asks for the PCI survey line naming the card, a DHCP lease from the house
-router, and a measured transfer from a host on the LAN, photographed. The tour prints the survey.
-This boot runs the other two through exactly the code the QEMU gates prove (`e1000e_service`,
-`net_stack`, `socket_test_client`) and prints them in the order they can fail, every line
-`network-bench:`.
+router, and a measured transfer from a host on the local area network, photographed. The tour prints
+the survey. This boot runs the other two through exactly the code the QEMU gates prove
+(`e1000e_service`, `net_stack`, `socket_test_client`) and prints them in the order they can fail,
+every line `network-bench:`.
 
 1. `nic`: the device id and model, its requester id, whether the link came up, the MAC address.
 2. `phy`: the PHY's identifier, read over MDIO at bring-up (`0x01410cb0` under QEMU; on an I219 the

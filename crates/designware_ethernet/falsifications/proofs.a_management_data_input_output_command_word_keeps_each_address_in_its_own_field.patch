@@ -1,4 +1,4 @@
-Falsifies `designware_ethernet::proofs::an_mdio_command_word_keeps_each_address_in_its_own_field`.
+Falsifies `designware_ethernet::proofs::a_management_data_input_output_command_word_keeps_each_address_in_its_own_field`.
 
 The defect: the command word no longer reduces the register address to five bits, so a register address above 31 spills into the PHY address field and addresses a different PHY.
 

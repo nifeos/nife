@@ -29,16 +29,16 @@ grows.
   once per boot, because comparing two builds means interleaving them.
 - It removes the co-location. First light is on record as happening because the video output was the
   only channel: *"patagonia could not be moved to the bench"*. A netboot does not need it to be.
-  xenon needs an ethernet cable to the house LAN, and the serving Mac needs to be on the same LAN,
-  from wherever it is.
+  xenon needs an ethernet cable to the house local area network, and the serving Mac needs to be on
+  the same local area network, from wherever it is.
 
 ## What you need
 
-- xenon, on the house LAN by cable into the motherboard's ethernet. Not the Wi-Fi card in
-  Slot2_M.2: `Integrated NIC` switches the LOM and nothing else, and only the LOM can PXE.
-- The serving Mac on the same LAN, and its address. `script/board-netboot` prints every private
-  address this machine has. That is a list of candidates rather than an answer; see the failure
-  table.
+- xenon, on the house local area network by cable into the motherboard's ethernet. Not the Wi-Fi
+  card in Slot2_M.2: `Integrated NIC` switches the LOM and nothing else, and only the LOM can PXE.
+- The serving Mac on the same local area network, and its address. `script/board-netboot` prints
+  every private address this machine has. That is a list of candidates rather than an answer; see
+  the failure table.
 - The house router, once, to take the DHCP lines. Nothing in this repository has ever talked to it.
 - A monitor on xenon, exactly as for the stick procedure, because the Dell's serial port does not
   carry firmware output, and the firmware is the half that is new here.

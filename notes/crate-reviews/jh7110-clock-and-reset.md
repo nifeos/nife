@@ -88,33 +88,74 @@ Provisional. The maintainer ratified `CLOCK_PARENT_MASK`, pending the architect.
 the field holds, as `with_parent` and `Step::SelectParent` already do. The ruling refused
 `CLOCK_MUX_MASK`, `CLOCK_MULTIPLEXER_MASK` and `CLOCK_PARENT_SELECT_MASK`. Recommendation: ratify.
 
-Ratified earlier, failing a later rule. The architect's ruling keeps each until a name review, and
-a release is that review, because names become permanent on first publication. This lane renames
-none. `helpers/name_checks.py` finds the first only.
+Ratified names a later rule reaches. The architect's ruling keeps each until a name review, and
+a release is that review, because names become permanent on first publication. This package
+renames none. `helpers/name_checks.py` finds the first only.
 
-| name | rule | recommended rename |
+| name | rule | recommended name |
 |---|---|---|
 | `SDIO_BRING_UP` | `SDIO` is not an accepted acronym | `SD_INPUT_OUTPUT_BRING_UP`, as `SYSTEM_CLOCK_SD_INPUT_OUTPUT_SD_CARD` already spells it |
 | `BringUpReport::mux_before`, `mux_after`, `had_mux` | the ruling on `CLOCK_PARENT_MASK` refused `mux` | `select_parent_before`, `select_parent_after`, `had_select_parent`, reusing the step's name as `had_reset` reuses `DeassertReset` |
 | `SYSTEM_BASE` | an address says virtual or physical | `SYSTEM_BASE_PHYSICAL_ADDRESS` |
 | `RegisterWindow::base`, `WindowLocation::base` | the same; both hold physical addresses | `base_physical_address` |
 | `PowerManagementChipBus::controller` | an `(address, size)` pair with no word for either | `controller_physical_window` |
-| the parameter `w` of `inter_integrated_circuit_5_clock_frequency` and `advanced_extensible_interface_configuration_0_hertz` | a one-letter parameter in a public signature | `words` |
 | `sdcard_divider_for` | `SD` stays but `sdcard` fuses two words, while `MAXIMUM_SD_CARD_DIVIDER` separates them | `sd_card_divider_for` |
+
+Parameter names of public functions, spelled out. They are provisional: a parameter name is no
+part of a Rust signature's compatibility, so the maintainer rules them, pending the architect.
+
+| parameter | of | now |
+|---|---|---|
+| `w` | `inter_integrated_circuit_5_clock_frequency`, `advanced_extensible_interface_configuration_0_hertz` | `words` |
+| `power_management_chip_reg`, `bus_reg` | `PowerManagementChipBus::from_nodes` | `power_management_chip_register_property`, `bus_register_property`: `reg` clips the property's meaning, and a parameter cannot carry the kept form |
+| `reg_names` | `WindowLocation::from_regions` | `register_names` |
+
+## Naming rules
+
+The template's checks, run with `--manifest` over `src/*.rs`
+(`vendor/crate-workflows/helpers/`):
+
+| rule | result |
+|---|---|
+| spelled-out words (`spelled_out.py`) | 1 finding, `SDIO_BRING_UP`, which is the first row above. The eight private `SYSCLK_SDIO*`, `SYSRST_SDIO*` and `AONCLK_GMAC0_TX` constants mirror the dt-binding identifiers and now open their doc comment with `(NAME, source)` and carry a `doc(alias)` of the binding's spelling. |
+| units spelled out (`unit_symbols.py`) | 0 findings in 456 names. The checker reads suffixes only. |
+| question shape (`question_shape.py`) | 0 findings. |
+| British spelling | 0 findings. |
+| aliases of an old nife spelling | none. Every `doc(alias)` is a specification, binding or databook term. |
+
+The word list reaches only the words it lists. The sweep also read every identifier for clipped
+and decoder-needing words. Renamed, all private:
+
+| was | now |
+|---|---|
+| `Spec`, `spec`, `specs` | `Specifier`, `specifier`, `specifiers` |
+| `OSC_HERTZ`, `PLL2_DEFAULT_HERTZ` | `OSCILLATOR_HERTZ`, `PHASE_LOCKED_LOOP_2_DEFAULT_HERTZ` |
+| `parse_reg`, the test constant `BUS_REG` | `parse_register_property`, `BUS_REGISTER_PROPERTY` |
+| `sys_provider` | `system_provider` |
+| `VENDOR_CLKGEN_*`, `VENDOR_RSTGEN_*` | `VENDOR_CLOCK_GENERATOR_*`, `VENDOR_RESET_GENERATOR_*` |
+| `ALWAYS_ON_BASE`, `SYSTEM_TOP_GROUP_BASE` and the three `*_SIZE` constants | `*_BASE_PHYSICAL_ADDRESS` and `*_SIZE_BYTES` |
+| `STANDARD_MODE_CON` | `STANDARD_MODE_CONTROL` |
+| the locals `fbdiv`, `prediv`, `prediv_raw`, `postdiv1`, `hcnt`, `lcnt`, `minimum_lcnt`, `u32be`, `div` | `feedback_divider`, `pre_divider`, `pre_divider_raw`, `post_divider_1`, `high_count`, `low_count`, `minimum_low_count`, `big_endian_word`, `divider` |
+| the test locals `osc`, `pll2`, `frac`, `stg`, `aon`, `sys`, `rst` | words that say what they hold |
+| the harness `the_pmic_bus_plan_is_never_empty_and_ungates_before_it_releases` and its patch | the same with `power_management_chip` for `pmic` |
+| eight test names with `pmic`, `i2c5`, `osc`, `pll2`, `sys`, `sdio` or `syscrg` | the same with each word spelled out |
+
+Every patch still applies and fails its own harness.
+
+Borderline private names, left as they are for the architect:
+
+| names | why |
+|---|---|
+| `SYSCLK_*`, `SYSRST_*`, `AONCLK_*`, `AONRST_*`, `STGCLK_*` (about 20 constants) | `CLK` and `RST` are clipped, but each is a dt-binding identifier minus its `JH7110_` prefix, and the doc comment cites the binding. Only the eight the gate flagged are in the kept form. |
+| the `PLL`, `TRNG`, `AHB`, `AXI`, `APB`, `PTP`, `GTXC`, `RMII` and `RTX` components of constants, tests and fields | each is a hardware term of art that the word list does not name; the acronym test (nobody says the expansion as a phrase) probably keeps `AHB`, `AXI`, `APB` and `TRNG`. |
+| `AONCLK_GMAC0_TRANSMIT_PARENT_RMII_RTX` | `RMII_RTX` is the mainline clock's own name, quoted. |
+| the locals `dacpd` and `dsmpd` | register-field names the vendor PLL code uses; nothing read here expands them. |
 
 Public names the sweeps accept, checked: `GMAC0_*` (`GMAC` stays), the `SD_CARD` spellings, `id`,
 `from_tree` (a device tree is the tree), and the hertz, kilohertz and bytes suffixes. No public name
-carries a unit symbol. The unit gate (`vendor/crate-workflows/helpers/unit_symbols.py`) reports 13
-names in this crate, all private: `OSC_HZ`, `PLL2_DEFAULT_HZ`, four `STANDARD_*` constants,
-`period_ns`, one test parameter, and `STGCLK_SEC_AHB`, `STGCLK_SEC_MISC_AHB` and three test
-constants, where `SEC` means security and not seconds. The unit-suffix sweep lane owns all 13; the
-five `SEC` names are a false positive of the gate that wants an exemption or a spelled-out
-`SECURITY`. No alias of an old nife spelling exists. The aliases are the sources' spellings, as
-`CLKMUX_MASK` and `JH7110_MUX_MASK` are for `CLOCK_PARENT_MASK`.
-
-The register-field names `phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word` and its two
-siblings keep `DACPD`, `DSMPD` and `FBDIV`, which the vendor PLL code uses. Nothing read here
-expands the first two; the docs do not claim a source does.
+carries a unit symbol. The register-field names
+`phase_locked_loop_2_dacpd_dsmpd_and_feedback_divider_word` and its two siblings keep `DACPD`,
+`DSMPD` and `FBDIV`, which the vendor PLL code uses; nothing read here expands the first two.
 
 ## License and provenance
 

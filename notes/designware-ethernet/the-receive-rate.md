@@ -19,8 +19,8 @@ Two things in `net_stack`, each measured, and they multiply.
 - **Every round trip waited for a scheduler tick.** Neither polled NIC raises an interrupt, so
   when the ring was empty `net_stack` slept 1 ms. The kernel ends a timed wait only at a tick
   (DECISIONS §147 (a timer a userspace service cannot hold)), 100 Hz on every architecture, so
-  the sleep lasted up to 10 ms. On a LAN the next segment comes back well within a tick, and found
-  the stack asleep.
+  the sleep lasted up to 10 ms. On a local area network the next segment comes back well within a
+  tick, and found the stack asleep.
 
 One 1460-byte segment per half tick on average is 2.34 Mbit/s, and the row is 104,857,600 bytes
 in 71,820 segments over 362.965 s, 5.05 ms each.
@@ -68,9 +68,9 @@ tcpdump -nn -tt -r bench/radon-$(date -u +%F)/network-bench-rate.pcap 'src port 
 ```
 
 On radon the two causes do not separate by rate alone. The window by itself gives 16 KiB per half
-tick, about 26 Mbit/s; the wait by itself gives one segment per LAN round trip, tens of Mbit/s.
-Together they allow over 100 Mbit/s at a 1 ms round trip, so radon's cores copying each frame
-probably set the rate. The capture decides:
+tick, about 26 Mbit/s; the wait by itself gives one segment per local area network round trip, tens
+of Mbit/s. Together they allow over 100 Mbit/s at a 1 ms round trip, so radon's cores copying each
+frame probably set the rate. The capture decides:
 
 | what the run shows | meaning | next |
 |---|---|---|

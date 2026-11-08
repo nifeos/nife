@@ -436,10 +436,10 @@ exclude_re = [
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in ports_report$",
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in failure_report$",
     # extensible_host_controller_interface's own registers. The `1 << 0` constants (CONNECTED,
-    # COMMAND_RUN, STATUS_HALTED, IMAN_PENDING) are the shift survivors, where the shift is the
-    # identity; every other constant's value is pinned by
+    # COMMAND_RUN, STATUS_HALTED, INTERRUPTER_MANAGEMENT_PENDING) are the shift survivors, where
+    # the shift is the identity; every other constant's value is pinned by
     # the_register_bits_are_where_the_specification_puts_them and
-    # the_portsc_bits_are_where_the_specification_puts_them, which stay.
+    # the_port_status_and_control_bits_are_where_the_specification_puts_them, which stay.
     "^crates/extensible_host_controller_interface/src/port\\.rs:\\d+:\\d+: replace << with >>$",
     "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace << with >>$",
     # The const-level `|` survivors: CHANGES and PRESERVE (port.rs), per

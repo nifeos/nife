@@ -41,27 +41,45 @@ fn every_ring_offset_is_inside_the_region() {
 /// Falsification: replayable `crates/designware_ethernet/falsifications/proofs.a_link_is_decoded_only_from_what_the_registers_say.patch`
 #[kani::proof]
 fn a_link_is_decoded_only_from_what_the_registers_say() {
-    use management_data_input_output as mdio;
-    let bmsr: u16 = kani::any();
-    let bmcr: u16 = kani::any();
-    let anar: u16 = kani::any();
-    let anlpar: u16 = kani::any();
-    let gtcr: u16 = kani::any();
-    let gtsr: u16 = kani::any();
-    if let Some(link) =
-        motorcomm_physical_layer_device::link_from_registers(bmsr, bmcr, anar, anlpar, gtcr, gtsr)
-    {
-        assert!(bmsr & mdio::BMSR_LSTATUS != 0);
-        assert!(bmcr & mdio::BMCR_ISO == 0);
-        if bmcr & mdio::BMCR_ANENABLE == 0 {
-            assert!(link.full_duplex == (bmcr & mdio::BMCR_FDX != 0));
+    let basic_mode_status: u16 = kani::any();
+    let basic_mode_control: u16 = kani::any();
+    let autonegotiation_advertisement: u16 = kani::any();
+    let link_partner_abilities: u16 = kani::any();
+    let control_1000base_t: u16 = kani::any();
+    let status_1000base_t: u16 = kani::any();
+    if let Some(link) = motorcomm_physical_layer_device::link_from_registers(
+        basic_mode_status,
+        basic_mode_control,
+        autonegotiation_advertisement,
+        link_partner_abilities,
+        control_1000base_t,
+        status_1000base_t,
+    ) {
+        assert!(
+            basic_mode_status & management_data_input_output::BASIC_MODE_STATUS_LINK_STATUS != 0
+        );
+        assert!(basic_mode_control & management_data_input_output::BASIC_MODE_CONTROL_ISOLATE == 0);
+        if basic_mode_control
+            & management_data_input_output::BASIC_MODE_CONTROL_AUTONEGOTIATION_ENABLE
+            == 0
+        {
+            assert!(
+                link.full_duplex
+                    == (basic_mode_control
+                        & management_data_input_output::BASIC_MODE_CONTROL_FULL_DUPLEX
+                        != 0)
+            );
         } else {
-            assert!(bmsr & mdio::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE != 0);
-            let common = anar & anlpar;
+            assert!(
+                basic_mode_status
+                    & management_data_input_output::BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE
+                    != 0
+            );
+            let common = autonegotiation_advertisement & link_partner_abilities;
             let gigabit_full =
-                gtcr & mdio::GTCR_ADV_1000TFDX != 0 && gtsr & mdio::GTSR_LP_1000TFDX != 0;
+                control_1000base_t & management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_FULL_DUPLEX != 0 && status_1000base_t & management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_FULL_DUPLEX_CAPABLE != 0;
             let gigabit_half =
-                gtcr & mdio::GTCR_ADV_1000THDX != 0 && gtsr & mdio::GTSR_LP_1000THDX != 0;
+                control_1000base_t & management_data_input_output::CONTROL_1000BASE_T_ADVERTISE_HALF_DUPLEX != 0 && status_1000base_t & management_data_input_output::STATUS_1000BASE_T_LINK_PARTNER_HALF_DUPLEX_CAPABLE != 0;
             match link.speed {
                 motorcomm_physical_layer_device::Speed::Thousand => {
                     assert!(gigabit_full || gigabit_half);
@@ -69,12 +87,12 @@ fn a_link_is_decoded_only_from_what_the_registers_say() {
                 }
                 motorcomm_physical_layer_device::Speed::Hundred => {
                     assert!(!gigabit_full && !gigabit_half);
-                    assert!(common & (mdio::ANLPAR_TX_FD | mdio::ANLPAR_TX | mdio::ANLPAR_T4) != 0);
+                    assert!(common & (management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4) != 0);
                 }
                 motorcomm_physical_layer_device::Speed::Ten => {
                     assert!(!gigabit_full && !gigabit_half);
-                    assert!(common & (mdio::ANLPAR_TX_FD | mdio::ANLPAR_TX | mdio::ANLPAR_T4) == 0);
-                    assert!(common & (mdio::ANLPAR_10_FD | mdio::ANLPAR_10) != 0);
+                    assert!(common & (management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX_FULL_DUPLEX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_TX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_100BASE_T4) == 0);
+                    assert!(common & (management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T_FULL_DUPLEX | management_data_input_output::AUTONEGOTIATION_LINK_PARTNER_10BASE_T) != 0);
                 }
             }
         }
@@ -120,23 +138,31 @@ fn a_transmit_descriptor_keeps_its_length_inside_its_fields() {
 /// field, the operation bits say read or write as asked, and the busy bit that starts the command
 /// is set.
 ///
-/// Falsification: replayable `crates/designware_ethernet/falsifications/proofs.an_mdio_command_word_keeps_each_address_in_its_own_field.patch`
+/// Falsification: replayable `crates/designware_ethernet/falsifications/proofs.a_management_data_input_output_command_word_keeps_each_address_in_its_own_field.patch`
 #[kani::proof]
-fn an_mdio_command_word_keeps_each_address_in_its_own_field() {
-    use management_data_input_output as mdio;
+fn a_management_data_input_output_command_word_keeps_each_address_in_its_own_field() {
     let device: u8 = kani::any();
     let register: u8 = kani::any();
     let write: bool = kani::any();
-    let word = mdio::command_word(device, register, write);
-    assert!((word >> mdio::PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT) & 0x1f == (device & 0x1f) as u32);
-    assert!((word >> mdio::REGISTER_ADDRESS_SHIFT) & 0x1f == (register & 0x1f) as u32);
-    assert!((word >> mdio::CLOCK_RANGE_SHIFT) & 0xf == mdio::CLOCK_RANGE_500_TO_800_MEGAHERTZ);
-    assert!(word & mdio::COMMAND_BUSY != 0);
+    let word = management_data_input_output::command_word(device, register, write);
+    assert!(
+        (word >> management_data_input_output::PHYSICAL_LAYER_DEVICE_ADDRESS_SHIFT) & 0x1f
+            == (device & 0x1f) as u32
+    );
+    assert!(
+        (word >> management_data_input_output::REGISTER_ADDRESS_SHIFT) & 0x1f
+            == (register & 0x1f) as u32
+    );
+    assert!(
+        (word >> management_data_input_output::CLOCK_RANGE_SHIFT) & 0xf
+            == management_data_input_output::CLOCK_RANGE_500_TO_800_MEGAHERTZ
+    );
+    assert!(word & management_data_input_output::COMMAND_BUSY != 0);
     let operation = word & (0x3 << 2);
     if write {
-        assert!(operation == mdio::OPERATION_COMMAND_WRITE);
+        assert!(operation == management_data_input_output::OPERATION_COMMAND_WRITE);
     } else {
-        assert!(operation == mdio::OPERATION_COMMAND_READ);
+        assert!(operation == management_data_input_output::OPERATION_COMMAND_READ);
     }
     assert!(word >> 26 == 0);
 }
@@ -162,11 +188,11 @@ fn a_coherent_verdict_needs_every_account_to_agree() {
         payload,
     };
     let verdict = classify(&observation);
-    if observation.status & registers::CHAN_STATUS_FBE != 0 {
+    if observation.status & registers::CHANNEL_STATUS_FATAL_BUS_ERROR != 0 {
         assert!(verdict == Verdict::BusError);
     }
     if verdict == Verdict::Coherent {
-        assert!(observation.status & registers::CHAN_STATUS_FBE == 0);
+        assert!(observation.status & registers::CHANNEL_STATUS_FATAL_BUS_ERROR == 0);
         assert!(
             observation.receive_descriptor_word_3 & RECEIVE_DESCRIPTOR_WORD_3_OWNED_BY_DEVICE == 0
         );

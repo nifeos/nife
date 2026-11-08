@@ -5,8 +5,9 @@
 # way the TCP echo peer at 10.0.2.9:7777 is a `/bin/cat`: it writes NIFE_NETWORK_BENCH_BYTES bytes
 # (8 MiB unless set) and closes, which is what the bench boot's drain client reads and times.
 #
-# On the bench the peer is a real host on the LAN doing the same thing; notes/e1000e.md has the
-# one line for that. A number this produces under QEMU is a number about QEMU.
+# On the bench the peer is a real host on the local area network doing the same thing;
+# notes/e1000e.md has the one line for that. A number this produces under QEMU is a number
+# about QEMU.
 #
 # Name: provisional (milestone 494's lane, 2026-10-04).
 exec head -c "${NIFE_NETWORK_BENCH_BYTES:-8388608}" /dev/zero

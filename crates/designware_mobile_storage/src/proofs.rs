@@ -3,7 +3,7 @@
 use crate::card::{CardSpecificData, extended_card_specific_data_sectors, extract_bits};
 use crate::command::{Command, Data, Response};
 use crate::host_controller::{
-    DATA_DEADLINE_MICROSECONDS, Error, HostController, RegisterWindowAndClock, card_clock,
+    DATA_DEADLINE_MICROSECONDS, Error, HostController, RegisterWindowAndClock, card_clock_hertz,
     clock_divider, queue_step,
 };
 use crate::internal_direct_memory_access::{
@@ -395,7 +395,7 @@ fn the_direct_memory_access_wait_returns_once_its_deadline_has_passed() {
         kani::any(),
         Response::R1,
         Data {
-            block_size: 512,
+            block_bytes: 512,
             blocks,
             is_write: kani::any(),
         },
@@ -421,7 +421,7 @@ fn the_clock_divider_is_total() {
     let target: u32 = kani::any();
     if let Some(divider) = clock_divider(base, target) {
         assert!((divider == 0) == (base <= target));
-        let _ = card_clock(base, divider);
+        let _ = card_clock_hertz(base, divider);
     }
 }
 
@@ -501,7 +501,7 @@ impl RegisterWindowAndClock for AdversarialWindowAndRunningClock {
 fn a_command_word_sends_only_the_command_asked_for() {
     let data = if kani::any() {
         Some(Data {
-            block_size: kani::any(),
+            block_bytes: kani::any(),
             blocks: kani::any(),
             is_write: kani::any(),
         })
@@ -613,7 +613,7 @@ fn a_queue_transfer_stays_inside_its_buffer() {
     kani::assume((1..=2).contains(&blocks));
     let write: bool = kani::any();
     let data = Data {
-        block_size: 4 * words,
+        block_bytes: 4 * words,
         blocks,
         is_write: write,
     };
