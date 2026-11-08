@@ -42,7 +42,7 @@ So step 1 below is useful now, and steps 2 and 3 wait on basalt.
   `http://<cordoba's local area network address>:8090/lab/`. The port is the homelab agent's choice;
   tell calef which. Plain HTTP is enough: every byte is verified by TUF signatures and digests (§195
   (a reviewed recipe vouches for a package)).
-- LAN only. Not on the tailnet, not through the router to the internet.
+- Local area network only. Not on the tailnet, not through the router to the internet.
 - GET and HEAD only, `Content-Length` on every reply, no directory listings, no redirects, no
   compression. nife's HTTP client is minimal, and the only server it has met answers HTTP/1.0
   (`helpers/package-http-peer`).
