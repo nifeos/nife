@@ -9,11 +9,11 @@ calef approved all three on 2026-10-25 (UTC), and the maintainers filed each on 
 [#103](https://github.com/google/dtoolkit/issues/103) (R3). Each describes 0.4.1 and `main` at
 `4a7faf2e7`; the filed issues carry a self-contained Rust reproduction in place of the probe.
 
-State upstream: #101 is closed, completed by google/dtoolkit#104, which adds `Fdt::with_options`.
+State upstream: google/dtoolkit#104, which adds `Fdt::with_options`, completed and closed #101.
 #102 and #103 are open. A contribution for #102 is open as
 [google/dtoolkit#108](https://github.com/google/dtoolkit/pull/108), which adds `Fdt::events`, a flat
-single-pass iterator over the structure block. The comparison is read again once #102 and #103 are
-resolved ([the decision](dtoolkit-against-device-tree-blob.md#what-it-means-for-784s-contribute)).
+single-pass iterator over the structure block. We read the comparison again once #102 and #103
+resolve ([the decision](dtoolkit-against-device-tree-blob.md#the-decision)).
 
 [dtoolkit-probe.sh](dtoolkit-probe.sh) reproduces each, in the mode named under it, through
 `dtoolkit`'s public API alone.

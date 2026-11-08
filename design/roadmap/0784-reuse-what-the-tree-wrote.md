@@ -22,6 +22,8 @@ under §46. Items (a), (d), (e), (f2), (g) and (i) are built, on calef's approva
 `httparse` (2026-10-18 UTC), `r-efi` and `pulldown-cmark` (both 2026-10-20 UTC), `talc` and
 `object` (both 2026-10-21 UTC), and `uuid` (2026-10-22 UTC). Items (c1) to (c4), (f) and (h) are
 refused.
+The `device_tree_blob` row stays ours for now: we revisit the comparison with `dtoolkit` after its open
+issues 102 and 103 resolve.
 
 ## Method, and what the numbers mean
 
@@ -57,7 +59,7 @@ amendment's exemption). The crates: `paging` (2,866 lines, 36 Kani), `capability
 Kani-proved and outside the kernel, keep unless a proof is no longer worth having. The crates, with lines and Kani proofs: `calendar`
 (1,089, 11), `timetable` (2,884, 10), `globally_unique_identifier_partition_table` (2,219, 9),
 `elf` (1,173, 8, also kernel), `network_time_protocol` (684, 7). Also `glob` (650, 6), `capability_plan`
-(1,248, 5), `subtree_scope` (384, 5), `device_tree_blob` (1,814, 4, also kernel; [measured](0784-reuse-what-the-tree-wrote/dtoolkit-against-device-tree-blob.md), [reports](0784-reuse-what-the-tree-wrote/dtoolkit-upstream-reports.md); kept ours for now, revisited after the two open reports are resolved),
+(1,248, 5), `subtree_scope` (384, 5), `device_tree_blob` (1,814, 4, also kernel; [measured](0784-reuse-what-the-tree-wrote/dtoolkit-against-device-tree-blob.md), [reports](0784-reuse-what-the-tree-wrote/dtoolkit-upstream-reports.md)),
 `credential_contract` (322, 3), `filesystem_contract` (2,636, 3), `package_archive` (677, 2),
 `capability_manifest_note` (607, 2), `nifefs` (354, 2).
 
