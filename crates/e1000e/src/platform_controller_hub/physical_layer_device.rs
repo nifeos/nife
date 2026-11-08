@@ -75,13 +75,13 @@ pub enum Error {
     OutOfRange,
     /// Someone else's `EXTCNF_CTRL.SWFLAG` stayed set for [`SOFTWARE_FLAG_FREE_MILLISECONDS`].
     ///
-    /// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `SwflagHeld`: `swflag`
+    /// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `SwflagHeld`: `swflag`
     /// abbreviates software flag, and stays as an alias.
     #[doc(alias = "swflag")]
     SoftwareFlagHeld,
     /// The flag would not stick for [`SOFTWARE_FLAG_TAKE_MILLISECONDS`]: firmware or hardware has the PHY.
     ///
-    /// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `SwflagRefused`: `swflag`
+    /// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `SwflagRefused`: `swflag`
     /// abbreviates software flag, and stays as an alias.
     #[doc(alias = "swflag")]
     SoftwareFlagRefused,
@@ -109,7 +109,7 @@ impl core::error::Error for Error {}
 
 /// `MDIC` register bits, from FreeBSD's `e1000_defines.h`.
 ///
-/// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `mdic`: the register's name is spelled
+/// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `mdic`: the register's name is spelled
 /// out, and `mdic` stays as an alias.
 #[doc(alias = "mdic")]
 pub mod management_data_interface_control {
@@ -392,7 +392,7 @@ impl SoftwareFlag {
     /// `e1000_acquire_swflag_ich8lan`: wait for the flag to be free, set it, and wait for it to
     /// read back set. On a refusal it clears the bit it wrote, as FreeBSD does.
     ///
-    /// Name: ratified 2026-11-08 (UTC), this PR. A verb that pairs with `release` and returns the held proof
+    /// Name: ratified 2026-11-08 (UTC), this pull request. A verb that pairs with `release` and returns the held proof
     /// (FreeBSD's `e1000_acquire_swflag_ich8lan`). Refused `lock` (it suggests release on drop, which
     /// this type does not do) and `take`.
     pub fn acquire(hardware: &mut impl Hardware) -> Result<Self, Error> {

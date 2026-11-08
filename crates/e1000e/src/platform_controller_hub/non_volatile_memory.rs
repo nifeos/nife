@@ -79,7 +79,7 @@ impl core::error::Error for Error {}
 /// BAR0, not a memory address, so the name ends `_OFFSET_BYTES` as the region offsets of
 /// [`crate::layout`] do.
 ///
-/// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `FLASH_BASE_ADDR`: a register name
+/// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `FLASH_BASE_ADDR`: a register name
 /// copied from a source is spelled out, and an offset into BAR0 is not an address (refused
 /// `FLASH_BASE_ADDRESS`).
 #[doc(alias = "FLASH_BASE_ADDR")]
@@ -88,7 +88,7 @@ pub(crate) const FLASH_REGISTERS_OFFSET_BYTES: u64 = 0xe000;
 /// Hardware Sequencing Flash Status (`HSFSTS`), low half; Hardware Sequencing Flash Control, high half
 /// (OpenBSD's `ICH_FLASH_HSFSTS`).
 ///
-/// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `HSFSTS`: a register name copied from a
+/// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `HSFSTS`: a register name copied from a
 /// source is spelled out, and the source's spelling stays as a `doc(alias)`.
 #[doc(alias = "HSFSTS")]
 #[doc(alias = "E1000_HSFSTS")]
@@ -96,14 +96,14 @@ pub(crate) const FLASH_REGISTERS_OFFSET_BYTES: u64 = 0xe000;
 pub const HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER: u64 = 0x04;
 /// Flash linear address (OpenBSD's `ICH_FLASH_FADDR`).
 ///
-/// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `FADDR`: a register name copied from a
+/// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `FADDR`: a register name copied from a
 /// source is spelled out, and the source's spelling stays as a `doc(alias)`.
 #[doc(alias = "FADDR")]
 #[doc(alias = "ICH_FLASH_FADDR")]
 pub(crate) const FLASH_LINEAR_ADDRESS_REGISTER: u64 = 0x08;
 /// Flash data 0 (OpenBSD's `ICH_FLASH_FDATA0`).
 ///
-/// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `FDATA0`: a register name copied from a
+/// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `FDATA0`: a register name copied from a
 /// source is spelled out, and the source's spelling stays as a `doc(alias)`.
 #[doc(alias = "FDATA0")]
 #[doc(alias = "ICH_FLASH_FDATA0")]
@@ -111,7 +111,7 @@ pub(crate) const FLASH_DATA_0_REGISTER: u64 = 0x10;
 
 /// `HSFSTS` bits (`union ich8_hws_flash_status`).
 ///
-/// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `status`: the module holds the flash
+/// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `status`: the module holds the flash
 /// status register's bits, and `status` did not say whose status.
 pub mod flash_status {
     /// Flash cycle done: the `flcdone` field of `union ich8_hws_flash_status` in OpenBSD's
@@ -138,7 +138,7 @@ pub mod flash_status {
 
 /// `HSFCTL` bits (`union ich8_hws_flash_ctrl`), in the high half of the `u32` at [`HARDWARE_SEQUENCING_FLASH_STATUS_REGISTER`].
 ///
-/// Name: ratified 2026-11-08 (UTC), this PR. Renamed from `control`: the module holds the flash
+/// Name: ratified 2026-11-08 (UTC), this pull request. Renamed from `control`: the module holds the flash
 /// control register's bits, and `control` did not say what is controlled.
 pub mod flash_control {
     /// Start the cycle: the `flcgo` field of `union ich8_hws_flash_ctrl` in OpenBSD's
