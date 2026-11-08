@@ -89,7 +89,7 @@ Twenty-three harnesses in `src/proofs.rs`, each with one patch that fails it at 
 | `a_card_that_keeps_reporting_busy_is_given_up_on_once_the_deadline_passes` | power-up against a card that is busy forever ends with `PowerUp`, and sends at most one more power-up command once the one-second deadline has passed |
 
 Not proved, and the README says so: the timing and the identification decode (the right
-capacity, SD told from SDHC). 91 host tests drive those against the simulator.
+capacity, SD told from SDHC). 92 host tests drive those against the simulator.
 
 ## Names
 
@@ -186,8 +186,8 @@ No defect found in the logic.
 ## Result of `script/crate-standalone`
 
 Clean: manifest, files, citations, names, the build on 1.88 for the host and
-the three bare-metal targets, all eight harnesses and all eight falsifications. The crate's 91
-host tests and five doctests pass, `cargo clippy` reports nothing, and
+the three bare-metal targets, all twenty-three harnesses and all twenty-three falsifications. The
+crate's 92 host tests and five doctests pass, `cargo clippy` reports nothing, and
 `machine_discovery`, `driver_process_contract`, `components` and the kernel (with `storage_bench`)
 still build.
 
