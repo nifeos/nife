@@ -11,6 +11,8 @@
 
 #![no_std]
 
+// Index exception (2026-11-08): the README's examples compile as doctests from the crate root, where
+// the include has to sit; it is not an item a feature could grow from.
 #[cfg(doctest)]
 #[doc = include_str!("../README.md")]
 struct ReadmeExample;
