@@ -148,6 +148,11 @@ future kind. `Response` stays exhaustive, since the specification fixes its seve
 scratch write verdict, `ScratchWriteVerdict`, lives in the kernel's storage bench and not in this
 crate.
 
+The crate has no helper that checks whether a partition fits inside the card. Partition handling
+above the driver belongs to the layer that mounts the partition, which knows the card's size from
+`Card::blocks` and the partition's extent from `PartitionEntry`. Adding such a helper in a later
+release stays compatible.
+
 ## Outstanding before the move
 
 | item | owner |
