@@ -278,7 +278,7 @@ jobs:
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
 
   prove:
-    name: prove (shard ${{ matrix.shard }}/4)
+    name: prove (shard ${{ matrix.shard }}/5)
     needs: [gate, scope]
     # `!cancelled()` for the same reason `verify` below gives: without it a failed or cancelled
     # dependency skips this job outright, whatever the condition says, and a skipped job still
@@ -303,7 +303,7 @@ jobs:
       # whole suite did is the difference between one investigation and fifteen.
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5]
     steps:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
@@ -327,21 +327,20 @@ jobs:
       # cost more to miss. Revisit if this step's time grows past a minute.
       - name: Install Kani
         run: script/kani-install
-      # Four shards, calef's ruling on #1979 (2026-10-12 UTC): "A", prove goes from three shards
-      # to four. Three was his ruling on #1802 (2026-10-07 UTC): "Add a third prove shard." On
-      # 2026-08-14 two was a measurement (`glob` alone was half the job, so a third bought
-      # nothing); by 2026-10-07 `machine_discovery` had grown to match `glob`, and the 40-run
-      # medians packed to 23.6 minutes at two shards and 15.7 at three. Once #1979 halved
-      # re-falsify, three shards (17.4 minutes slowest, n=46) were the build's long pole alone;
-      # two probe runs of four took 13.2 and 12.9 minutes slowest, for no more runner-minutes
-      # (47.7 against 48.4), since the idle tail at each crate's end shrinks as much as the added
-      # setup grows. `glob` (about 12.2 minutes) is now the floor, so a fifth buys nothing.
-      # script/verify's comment above `--shard` has the ladder.
+      # **Five shards, so the slowest stays near 60% of the 20-minute budget.** Measured over the
+      # ten merge-group and push runs 42456372750 to 42523187972 (2026-11-08 UTC), the suite is 55.7
+      # serial minutes of proving and a shard job adds about 0.7 minutes of setup. Packed by those
+      # medians, four shards prove in 14.1 minutes at the median and 16.1 at the worst, which put
+      # the job past the 85% warning (#3350); five prove in 11.6 and 12.3. The floor is one `glob`
+      # harness (`no_magic_means_the_pattern_is_its_own_only_match`, about 9 minutes), so a sixth
+      # buys under two minutes now and nothing once the 10 minutes of driver crates leaving the
+      # tree are gone: without them five shards prove in 9.3 and 10.3, where `glob` alone sets the
+      # pace. notes/verification/ci-timings.md has the table.
       # The balance is by measured seconds from the table in script/verify, which
       # verify-shard-refresh.yml keeps current, and each shard warns when it ran more than 30% off
       # its plan.
-      - name: script/verify --shard ${{ matrix.shard }}/4
-        run: script/verify --shard ${{ matrix.shard }}/4
+      - name: script/verify --shard ${{ matrix.shard }}/5
+        run: script/verify --shard ${{ matrix.shard }}/5
         # VERIFY_JOBS=2, not the script's default 4, and this is a measurement, not caution: the
         # first four runs of the parallel suite on this runner were each killed ~15 minutes in,
         # inside glob's largest harnesses, as a bare "operation was canceled" with orphaned cbmc

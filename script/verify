@@ -258,7 +258,7 @@ fi
 
 # --parallel [N]: prove the whole table on this machine, N shards at a time. Off unless asked for.
 #
-# Why it exists. CI already splits the proofs across four runners, and one machine could not do the
+# Why it exists. CI already splits the proofs across five runners, and one machine could not do the
 # same: `--shard k/n` typed N times is N heavy scripts, each waiting for its own heavy-job slot and
 # each racing the others through the same target directory, with nothing joining their verdicts.
 # Measured on an 80-vCPU, 128 GiB host on 2026-10-28 (UTC): four shards concurrently took 967 s
@@ -292,7 +292,7 @@ fi
 #    table, so a plan that would leave a crate unproved stops here rather than reporting a subset
 #    as the suite.
 #
-# CI does not take this path: verify.yml still runs `--shard k/4` on four runners and the required
+# CI does not take this path: verify.yml still runs `--shard k/5` on five runners and the required
 # check keeps its name. It is refused beside --shard, --only or any other argument, because each of
 # those makes the run something other than the suite.
 #
