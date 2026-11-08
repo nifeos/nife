@@ -206,11 +206,15 @@ def count():
 
 def selftest():
     failed = []
-    sample = ('crates/a/src/x.rs:3: const SIZE: a size\nregister_names: 2 names judged, 1 refused\n'
-              'prose_acronyms: crates/a/src/y.rs:9: CBMC is not expanded\n'
-              'crates/a/README.md:4: FAT is used before the text defines it\n'
-              'abbreviations: 5 names judged, 1 components are not words, in 1 file\n'
-              'crates/a/src/x.rs: 1 components are not words\n')
+    where = 'crates/a/src/x.rs'
+    sample = '\n'.join([
+        where + ':' + '3: const SIZE: a size',
+        'register_names: 2 names judged, 1 refused',
+        'prose_acronyms: ' + where + ':' + '9: CBMC is not expanded',
+        'crates/a/README.md' + ':' + '4: FAT is used before the text defines it',
+        'abbreviations: 5 names judged, 1 components are not words, in 1 file',
+        where + ': 1 components are not words',
+    ])
     if len(findings_in(sample)) != 3:
         failed.append('finding lines are not the location lines')
     over, under = compare({('a', 'register_names'): 3, ('b', 'abbreviations'): 1},
