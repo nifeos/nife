@@ -25,7 +25,7 @@ In brief. Two halves sharing one protocol library:
   built-in `mount_nfs` or a Linux `mount -t nfs` against this board's IP would traverse the
   share's directory tree, read files, write them, and report free space, all through the same
   `fs_proto` seam the SMB adapter uses. The credential story is simpler than NTLMv2 (AUTH_SYS by
-  default, with the option of Kerberos if the local area network demands it), and it is weaker: a
+  default, with the option of Kerberos if the local area network demands it). It is also weaker: a
   uid/gid pair is a claim the server chooses to trust rather than a proof.
 
 - Phase B, the client: nife mounting a remote NFS share. The shape inverts the adapter: a

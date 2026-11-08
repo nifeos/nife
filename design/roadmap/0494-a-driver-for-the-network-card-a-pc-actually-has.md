@@ -168,8 +168,8 @@ recorded as such.
    and a TCP transfer through the new driver, the same gates milestone 30's virtio-net passes, on
    x86_64. aarch64 and riscv64 carry the driver too, since QEMU's `e1000e` is a PCIe device on
    every bus the runners attach, or a scope note says why not (DECISIONS §19).
-2. On xenon, a DHCP lease from the house router and a measured transfer from a host on the local
-   area network, photographed, with the survey line naming the card.
+2. On xenon, a DHCP lease from the house router and a measured transfer from a local area network
+   host, photographed, with the survey line naming the card.
 
 ## Reuse
 
