@@ -1053,7 +1053,7 @@ fn jh7110_clock(tally: &mut Tally, clock: Option<jh7110_clock_and_reset::BringUp
         ok,
         format_args!(
             "JH7110 STG CRG at {:#x} ({}): clocks {:#010x},{:#010x} -> {:#010x},{:#010x}, reset {} after {} polls{}",
-            found.map_or(0, |f| f.base),
+            found.map_or(0, |f| f.base_physical_address),
             if found.is_some_and(|f| f.from_tree) { "from the tree" } else { "the published constant" },
             report.clock_before[0],
             report.clock_before[1],

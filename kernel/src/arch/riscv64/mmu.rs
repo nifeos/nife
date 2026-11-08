@@ -452,12 +452,22 @@ where
 
     // 6b. The JH7110's STG clock and reset generator, which ungates the TRNG.
     if let Some(crg) = memory::jh7110_clock_and_reset() {
-        direct_map(m, crg.base, crg.base + crg.size, Flags::device())?;
+        direct_map(
+            m,
+            crg.base_physical_address,
+            crg.base_physical_address + crg.size,
+            Flags::device(),
+        )?;
     }
 
     // 6c. The JH7110's SYS clock and reset generator: I2C5 for the PMIC reset, and gmac0's clocks.
     if let Some(sys) = memory::jh7110_sys_window() {
-        direct_map(m, sys.base, sys.base + sys.size, Flags::device())?;
+        direct_map(
+            m,
+            sys.base_physical_address,
+            sys.base_physical_address + sys.size,
+            Flags::device(),
+        )?;
     }
 
     // 6c'. The SYS syscon (the PLL words the I2C clock reads) and the PMIC bus's I2C controller.
@@ -469,7 +479,7 @@ where
                 + jh7110_clock_and_reset::SYSTEM_CONTROLLER_SIZE_BYTES,
             Flags::device(),
         )?;
-        if let Some((base, size)) = bus.controller {
+        if let Some((base, size)) = bus.controller_physical_window {
             direct_map(m, base, base + size, Flags::device())?;
         }
     }
@@ -482,7 +492,12 @@ where
             e.port.registers_physical_address + e.port.registers_size_bytes,
             Flags::device(),
         )?;
-        direct_map(m, e.aon.base, e.aon.base + e.aon.size, Flags::device())?;
+        direct_map(
+            m,
+            e.aon.base_physical_address,
+            e.aon.base_physical_address + e.aon.size,
+            Flags::device(),
+        )?;
         direct_map(
             m,
             e.syscon.base,

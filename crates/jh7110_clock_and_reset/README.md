@@ -22,7 +22,7 @@ let regions = [(0x1302_0000, 0x1_0000), (0x1023_0000, 0x1_0000), (0x1700_0000, 0
 let names = Some(&b"sys\0stg\0aon\0"[..]);
 let system_top_group = WindowLocation::from_regions(&SYSTEM_TOP_GROUP_WINDOW.spellings[1], &regions, names)
     .unwrap_or(SYSTEM_TOP_GROUP_WINDOW.fallback());
-assert_eq!(system_top_group.base, 0x1023_0000);
+assert_eq!(system_top_group.base_physical_address, 0x1023_0000);
 
 // The TRNG's plan: two clocks, then one reset.
 assert_eq!(ENTROPY_BRING_UP[2], Step::DeassertReset(3));
