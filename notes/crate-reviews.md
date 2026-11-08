@@ -381,7 +381,7 @@ Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text 
 | `extensible_host_controller_interface` | 3 | ready for review |
 | `generational_table` | 4 | cleared to move; repository exists |
 | `non_volatile_memory_express` | 5 | cleared to move; repository exists |
-| `e1000e` | 6 | cleared to move; repository exists; the register naming gate holds its CI red |
+| `e1000e` | 6 | cleared to move; repository exists |
 | `designware_ethernet` | 7 | two alias sets for the architect |
 | `designware_mobile_storage` | 8 | ready for review |
 | `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
