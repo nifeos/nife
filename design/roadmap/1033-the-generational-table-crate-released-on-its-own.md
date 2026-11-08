@@ -46,7 +46,7 @@ Reuse: none exists that fits. Searched crates.io and read twelve candidates from
 - nife keeps no copy. `kernel` and `memory_regions` depend on `nifeos/generational_table` by `rev`
   (§305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit)), at `759c8f7`,
   a commit on its `main`. The verify table, the Kani reach list, the Kani peaks table and the mutation
-  baseline no longer list it; the repository's own `proofs / kani` and `proofs / falsify` jobs
+  triage no longer list it; the repository's own `proofs / kani` and `proofs / falsify` jobs
   prove the five harnesses.
 - End condition 1 holds once the repository's `main` is green at the pinned commit. Condition 2
   waits on the first weekly run, 3 on a release dry run, 4 on a recorded stranger run
