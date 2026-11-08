@@ -26,9 +26,9 @@ pub trait DirectMemoryAccessRegion {
 /// Name: ratified 2026-11-03 (UTC), #3123.
 pub trait Tails {
     /// Write the receive tail pointer's low 32 bits ([`registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER`]).
-    fn set_receive_tail(&mut self, address: u32);
+    fn set_receive_tail(&mut self, tail_pointer_low_bits: u32);
     /// Write the transmit tail pointer's low 32 bits ([`registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER`]).
-    fn set_transmit_tail(&mut self, address: u32);
+    fn set_transmit_tail(&mut self, tail_pointer_low_bits: u32);
     /// Order every region access before this against every access after it, as seen by the
     /// device. Called between filling a descriptor and the tail write that announces it, and
     /// between reading an ownership bit and reading the bytes it covers.

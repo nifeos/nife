@@ -72,7 +72,7 @@ const fn needed_ranges(capabilities: &Capabilities) -> [(u64, u64); 3] {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Handoff {
     /// The DMA region's physical base. Page aligned.
-    pub direct_memory_access_physical_address: u64,
+    pub data_plane_physical_address: u64,
     /// The region's length in pages: [`WORK_PAGES`] plus the controller's scratchpads.
     pub direct_memory_access_pages: u32,
     /// The register pages mapped, [`register_window`]'s mask.
@@ -95,7 +95,7 @@ impl Handoff {
     /// Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
     pub const fn pack(&self) -> [u64; 3] {
         [
-            self.direct_memory_access_physical_address,
+            self.data_plane_physical_address,
             self.direct_memory_access_pages as u64 | (self.registers as u64) << 32,
             0,
         ]
@@ -115,7 +115,7 @@ impl Handoff {
             && registers & 1 != 0
             && w[2] == 0;
         ok.then_some(Handoff {
-            direct_memory_access_physical_address: w[0],
+            data_plane_physical_address: w[0],
             direct_memory_access_pages,
             registers,
         })
@@ -444,7 +444,7 @@ mod tests {
     #[test]
     fn the_handoff_round_trips_and_refuses_what_no_kernel_sends() {
         let h = Handoff {
-            direct_memory_access_physical_address: 0x4000_0000,
+            data_plane_physical_address: 0x4000_0000,
             direct_memory_access_pages: 12,
             registers: 0b0111,
         };

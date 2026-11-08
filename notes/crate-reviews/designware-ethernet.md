@@ -51,6 +51,8 @@ Ratified names that a later rule reached, and the names they now have.
 |---|---|---|
 | `jh7110::SystemController::base`, `size` | an address says virtual or physical, and a size carries its unit | `base_physical_address`, `size_bytes` |
 | `RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_ADDRESS_VALID` | the same address rule | `RECEIVE_DESCRIPTOR_WORD_3_BUFFER_1_PHYSICAL_ADDRESS_VALID` |
+| the parameter `region` of `network_interface_controller::configure` | the same address rule: it is the base physical address of the controller's DMA region | `region_physical_address` |
+| the parameter `address` of `Tails::set_receive_tail` and `set_transmit_tail`, and of every implementation | it is the low 32 bits of the tail pointer, not an address | `tail_pointer_low_bits` |
 
 Borderline, left as they are for the architect:
 

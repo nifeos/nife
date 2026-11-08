@@ -25,14 +25,14 @@ What it does not reach: the crate's `BUGS` entry, a device reading the shadow be
 `write64`s of one descriptor. Nothing here models a concurrent reader.
 
 diff --git a/crates/direct_memory_access_validator/src/lib.rs b/crates/direct_memory_access_validator/src/lib.rs
-index 7354f4738..314db12a5 100644
+index bb71bac08..5461a9f9f 100644
 --- a/crates/direct_memory_access_validator/src/lib.rs
 +++ b/crates/direct_memory_access_validator/src/lib.rs
-@@ -322,8 +322,8 @@ fn shadow_one_head(
+@@ -272,8 +272,8 @@ fn shadow_one_head(
          // Copy the validated descriptor into the shadow, byte-for-byte. From here the device reads
          // this, not the driver's copy.
          let dst = shadow_desc + d as u64 * 16;
--        write64(dst, desc.addr);
+-        write64(dst, desc.guest_physical_address);
 -        write64(dst + 8, desc.word);
 +        write64(dst, read64(src));
 +        write64(dst + 8, read64(src + 8));

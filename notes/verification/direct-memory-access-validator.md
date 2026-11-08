@@ -22,7 +22,7 @@ end-to-end tests, on both ISAs. So the extraction is faithful.
 
 | Harness | Property |
 |---|---|
-| `in_region_is_sound` | the confinement predicate is sound and total: for every base/size/addr/len, if `is_in_region` accepts then `base <= addr` and `addr + len <= base + size` with no overflow (direction-agnostic, so it underwrites both TX device-reads and RX device-writes) |
+| `in_region_is_sound` | the confinement predicate is sound and total: for every base/size/physical_address/len, if `is_in_region` accepts then `base <= physical_address` and `physical_address + len <= base + size` with no overflow (direction-agnostic, so it underwrites both TX device-reads and RX device-writes) |
 | `an_accepted_descriptor_is_confined` | for every descriptor bit pattern (flags fully symbolic, so the device-writable RX bit is covered) and every region, an accepted descriptor is not indirect and its whole buffer is in-region |
 | `validate_and_shadow_confines_every_chain` | **the main theorem**: over a fully symbolic driver descriptor table and region, no descriptor the walk copies into the shadow is ever out-of-region or indirect, so the device only ever reads confined descriptors. Symbolic-index-bounded, so it also proves the walk never reads or writes past a ring |
 | `an_oversized_batch_is_refused` | a batch claiming more than `qsize` new entries is refused before a single descriptor is read or written (the DoS bound on the outer loop; the memory closures panic if called) |
@@ -55,7 +55,7 @@ harnesses, stated with its justification:
 | loop unrolling | `unwind(10)` / `unwind(11)` | One more than each loop can need, so Kani's *unwinding assertion* is part of the proof: if any input could drive a loop longer, verification fails. That turns the bound from an assumption into the **termination proof**. Checked by falsification: delete `validate_and_shadow`'s batch-size guard and the unwinding assertion fails at iteration 11. |
 | batch size | ≤ `qsize` | Proved as a property (`an_oversized_batch_is_refused`), not assumed: a claim of more than `qsize` new entries is refused before a single read. |
 | queue count | `MAXIMUM_QUEUES` = 2 | Compile-time asserted in the kernel (`MAXIMUM_QUEUES * RING_BLOCK <= FRAME_SIZE`, one shadow frame per device) and enforced at runtime (`setup_queue`/`notify` refuse `queue >= MAXIMUM_QUEUES`). |
-| region base/size, descriptor `addr`/`len`/`flags`/`next`, ring indices | **unbounded** | Fully symbolic `u64`/`u16`. Every attacker-controlled value is unconstrained, which is the point: the bounds above are all structural (how many slots a ring has), never a restriction on what an attacker may write into one. |
+| region base/size, descriptor `guest_physical_address`/`len`/`flags`/`next`, ring indices | **unbounded** | Fully symbolic `u64`/`u16`. Every attacker-controlled value is unconstrained, which is the point: the bounds above are all structural (how many slots a ring has), never a restriction on what an attacker may write into one. |
 
 The one place the composition is an argument rather than a single harness, said plainly: "the whole
 batch is confined" follows from four legs taken together. They are the per-head theorem, the

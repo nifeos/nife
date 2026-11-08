@@ -65,22 +65,22 @@ impl DirectMemoryAccessRegion for Plane {
 struct Channel;
 
 impl Tails for Channel {
-    fn set_receive_tail(&mut self, addr: u32) {
+    fn set_receive_tail(&mut self, tail_pointer_low_bits: u32) {
         DMA.w32(
             u64::from(
                 registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER
                     - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE,
             ),
-            addr,
+            tail_pointer_low_bits,
         );
     }
-    fn set_transmit_tail(&mut self, addr: u32) {
+    fn set_transmit_tail(&mut self, tail_pointer_low_bits: u32) {
         DMA.w32(
             u64::from(
                 registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER
                     - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE,
             ),
-            addr,
+            tail_pointer_low_bits,
         );
     }
     fn barrier(&mut self) {

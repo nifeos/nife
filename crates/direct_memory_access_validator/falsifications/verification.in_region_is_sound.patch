@@ -5,26 +5,26 @@ there, dropping `end <= limit`. This is the whole confinement reduced to a
 half-check, and it is the plausible half to lose: a driver's buffers all begin
 inside its own region, so every honest workload still works, every hand-written
 test with an in-region base still passes, and the escape is a *length* rather than
-an address. A device handed `addr = base + size - 8` with a 4 KiB length reads or
+an address. A device handed `guest_physical_address = base + size - 8` with a 4 KiB length reads or
 writes 4 KiB past the end of the grant.
 
 Expected to fail: `assert!(end <= limit)` in `in_region_is_sound`. Confirmed:
 Kani reports exactly one failing check, described as `assertion failed: end <=
-limit`, with the witness `base = 0, size = u64::MAX - 1, addr = 0, len =
-u64::MAX`. The two `assert!(addr >= base)` statements around it stay green, which
+limit`, with the witness `base = 0, size = u64::MAX - 1, physical_address = 0, len =
+u64::MAX`. The two `assert!(physical_address >= base)` statements around it stay green, which
 is what makes this a falsification of the containment claim rather than of the
 harness.
 
 diff --git a/crates/direct_memory_access_validator/src/lib.rs b/crates/direct_memory_access_validator/src/lib.rs
-index 9a6d0500..01b883c1 100644
+index bb71bac08..bf2e041d2 100644
 --- a/crates/direct_memory_access_validator/src/lib.rs
 +++ b/crates/direct_memory_access_validator/src/lib.rs
-@@ -40,7 +40,7 @@ pub const F_INDIRECT: u16 = 4;
+@@ -37,7 +37,7 @@ pub const F_INDIRECT: u16 = 4;
  /// See the `in_region_is_sound` proof and notes/dma/validator.md.
- pub fn is_in_region(base: u64, size: u64, addr: u64, len: u64) -> bool {
-     match (addr.checked_add(len), base.checked_add(size)) {
--        (Some(end), Some(limit)) => addr >= base && end <= limit,
-+        (Some(_end), Some(_limit)) => addr >= base,
+ pub fn is_in_region(base: u64, size: u64, physical_address: u64, len: u64) -> bool {
+     match (physical_address.checked_add(len), base.checked_add(size)) {
+-        (Some(end), Some(limit)) => physical_address >= base && end <= limit,
++        (Some(_end), Some(_limit)) => physical_address >= base,
          _ => false,
      }
  }

@@ -15,9 +15,9 @@ touches must be in the driver's region. A receive buffer aimed at the kernel wou
 overwrite it. A transmit buffer aimed there would let it put the kernel on the wire. One check closes
 both, which is why there is only one.
 
-The predicate is total. Both additions are checked, so a length that overflows `addr`, or a region
-whose own `base + size` wraps `u64`, answers "refuse" rather than panicking. A wrapping region can
-only over-reject: the run's end is a huge in-region address, above any wrapped limit. Real DMA
+The predicate is total. Both additions are checked, so a length that overflows `physical_address`, or
+a region whose own `base + size` wraps `u64`, answers "refuse" rather than panicking. A wrapping
+region can only over-reject: the run's end is a huge in-region address, above any wrapped limit. Real DMA
 regions are bounded by RAM and never wrap, so the hardening changes nothing the kernel sees.
 
 ## What each harness covers

@@ -11,7 +11,7 @@ descriptors on a failing chain, which is exactly the reasoning this defect abuse
 
 Expected to fail: the write closure's two invariants, `assert!(
 !landed.is_indirect(), "an indirect descriptor reached the shadow the device
-reads")` and `assert!(is_in_region(self.base, self.size, landed.addr,
+reads")` and `assert!(is_in_region(self.base, self.size, landed.guest_physical_address,
 landed.buf_len()), "a descriptor that escapes the DMA region reached the shadow
 the device reads")`. The harness's own body has no assertion; the whole property
 is checked as each descriptor lands, so those two carry it. Confirmed: Kani
@@ -19,38 +19,31 @@ reports exactly two failing checks, at `ChainMem::write64` lines 468 and 472,
 which are those two assertions and nothing else.
 
 diff --git a/crates/direct_memory_access_validator/src/lib.rs b/crates/direct_memory_access_validator/src/lib.rs
-index 459a98410..36c978edd 100644
+index bb71bac08..faffd9dfb 100644
 --- a/crates/direct_memory_access_validator/src/lib.rs
 +++ b/crates/direct_memory_access_validator/src/lib.rs
-@@ -286,21 +286,20 @@ fn shadow_one_head(
+@@ -260,6 +260,11 @@ fn shadow_one_head(
              word: read64(src + 8),
          };
  
--        if !is_descriptor_allowed(
--            direct_memory_access_base,
--            direct_memory_access_size,
--            qsize,
--            desc,
--        ) {
--            return false;
--        }
--
++        // Copy first, refuse after. The refusal is unchanged; the bytes are already visible.
++        let dst = shadow_desc + d as u64 * 16;
++        write64(dst, desc.guest_physical_address);
++        write64(dst + 8, desc.word);
++
+         if !is_descriptor_allowed(
+             direct_memory_access_base,
+             direct_memory_access_size,
+@@ -269,12 +274,6 @@ fn shadow_one_head(
+             return false;
+         }
+ 
 -        // Copy the validated descriptor into the shadow, byte-for-byte. From here the device reads
 -        // this, not the driver's copy.
-+        // Copy first, refuse after. The refusal is unchanged; the bytes are already visible.
-         let dst = shadow_desc + d as u64 * 16;
-         write64(dst, desc.addr);
-         write64(dst + 8, desc.word);
- 
-+        if !is_descriptor_allowed(
-+            direct_memory_access_base,
-+            direct_memory_access_size,
-+            qsize,
-+            desc,
-+        ) {
-+            return false;
-+        }
-+
+-        let dst = shadow_desc + d as u64 * 16;
+-        write64(dst, desc.guest_physical_address);
+-        write64(dst + 8, desc.word);
+-
          if !desc.has_next() {
              break;
          }

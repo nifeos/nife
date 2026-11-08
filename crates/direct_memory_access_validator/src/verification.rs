@@ -8,8 +8,8 @@ const QS: u16 = 8;
 const Q: usize = 8;
 
 /// **The confinement predicate is sound: an accepted range is genuinely inside the region.**
-/// For every base, size, addr, and len, if [`is_in_region`] says yes then the addition did not
-/// overflow and `base <= addr` and `addr + len <= base + size`. This is the arithmetic the
+/// For every base, size, `physical_address`, and len, if [`is_in_region`] says yes then the addition did not
+/// overflow and `base <= physical_address` and `physical_address + len <= base + size`. This is the arithmetic the
 /// whole boundary rests on, quantified over all 2^256 input combinations at once, and it also
 /// proves totality (the hardened checked adds never panic on any input).
 /// Falsification: replayable `crates/direct_memory_access_validator/falsifications/verification.in_region_is_sound.patch`
@@ -17,26 +17,26 @@ const Q: usize = 8;
 fn in_region_is_sound() {
     let base: u64 = kani::any();
     let size: u64 = kani::any();
-    let addr: u64 = kani::any();
+    let physical_address: u64 = kani::any();
     let len: u64 = kani::any();
 
-    if is_in_region(base, size, addr, len) {
-        let end = addr
+    if is_in_region(base, size, physical_address, len) {
+        let end = physical_address
             .checked_add(len)
-            .expect("acceptance implies no addr+len overflow");
+            .expect("acceptance implies no physical_address+len overflow");
         let limit = base
             .checked_add(size)
             .expect("acceptance implies no base+size overflow");
         // **The containment sentence is on the two assertions rather than below them**
-        // (milestone 307). There used to be a third line here, `assert!(addr >= base && end <=
-        // limit)`, carrying the readable comment "no byte the device would touch lies outside
+        // (milestone 307 (which assertion actually fires when a confinement claim is broken)). There
+        // used to be a third line here, `assert!(physical_address >= base && end <= limit)`, carrying the readable comment "no byte the device would touch lies outside
         // the granted region". It was the conjunction of the two above it, so it could not fail
         // under any defect: the readable statement of the claim was the unreachable one, which
         // is the shape milestone 305 found in DECISIONS §31 and in row 24 of
         // notes/confinement-claims.md. Deleting it loses nothing and moving its sentence up
         // means a reader who quotes this harness quotes something that fires.
         assert!(
-            addr >= base,
+            physical_address >= base,
             "an accepted range starts below the granted region",
         );
         assert!(
@@ -58,7 +58,7 @@ fn an_accepted_descriptor_is_confined() {
     let base: u64 = kani::any();
     let size: u64 = kani::any();
     let d = Desc {
-        addr: kani::any(),
+        guest_physical_address: kani::any(),
         word: kani::any(),
     };
     if is_descriptor_allowed(base, size, QS, d) {
@@ -74,18 +74,18 @@ fn an_accepted_descriptor_is_confined() {
             "an indirect descriptor was accepted",
         );
         let end = d
-            .addr
+            .guest_physical_address
             .checked_add(d.word & 0xffff_ffff)
             .expect("an accepted descriptor's buffer cannot overflow");
         let limit = base
             .checked_add(size)
             .expect("acceptance implies the region has an end");
         assert!(
-            d.addr >= base && end <= limit,
+            d.guest_physical_address >= base && end <= limit,
             "an accepted descriptor escapes the region"
         );
         // **The two assertions that used to sit here are gone** (milestone 307).
-        // `assert!(!d.is_indirect())` and `assert!(is_in_region(base, size, d.addr,
+        // `assert!(!d.is_indirect())` and `assert!(is_in_region(base, size, d.guest_physical_address,
         // d.buf_len()))` were the same two calls, with the same arguments, that
         // `is_descriptor_allowed` returns false on: pure restatements of the `if` guard just
         // passed, so neither could fail under any defect in this crate. They carried the two
@@ -97,7 +97,7 @@ fn an_accepted_descriptor_is_confined() {
 }
 
 // Concrete, widely-separated descriptor-table bases so that decoding an address the walk
-// generates is concrete arithmetic over symbolic *contents*. A descriptor's own `addr` field is
+// generates is concrete arithmetic over symbolic *contents*. A descriptor's own `guest_physical_address` field is
 // symbolic and checked against the region; it is never decoded as a table address, so the
 // separation is clean.
 const DRIVER_DESC: u64 = 0x1_0000;
@@ -126,11 +126,14 @@ struct ChainMem {
 
 impl ChainMem {
     fn symbolic() -> ChainMem {
-        let mut d_desc = [Desc { addr: 0, word: 0 }; Q];
+        let mut d_desc = [Desc {
+            guest_physical_address: 0,
+            word: 0,
+        }; Q];
         let mut i = 0;
         while i < Q {
             d_desc[i] = Desc {
-                addr: kani::any(),
+                guest_physical_address: kani::any(),
                 word: kani::any(),
             };
             i += 1;
@@ -139,7 +142,12 @@ impl ChainMem {
             base: kani::any(),
             size: kani::any(),
             d_desc: RefCell::new(d_desc),
-            s_desc: RefCell::new([Desc { addr: 0, word: 0 }; Q]),
+            s_desc: RefCell::new(
+                [Desc {
+                    guest_physical_address: 0,
+                    word: 0,
+                }; Q],
+            ),
             s_written: RefCell::new([false; Q]),
             racing: false,
         }
@@ -159,7 +167,7 @@ impl ChainMem {
         let d = (off / 16) as usize;
         let entry = self.d_desc.borrow()[d];
         if off.is_multiple_of(16) {
-            entry.addr
+            entry.guest_physical_address
         } else {
             entry.word
         }
@@ -181,7 +189,7 @@ impl ChainMem {
         );
         let d = (off / 16) as usize;
         if off.is_multiple_of(16) {
-            self.s_desc.borrow_mut()[d].addr = v; // addr half, written first
+            self.s_desc.borrow_mut()[d].guest_physical_address = v; // address half, written first
         } else {
             self.s_desc.borrow_mut()[d].word = v; // word half: the pair is now complete
             self.s_written.borrow_mut()[d] = true;
@@ -193,7 +201,12 @@ impl ChainMem {
                 "an indirect descriptor reached the shadow the device reads",
             );
             assert!(
-                is_in_region(self.base, self.size, landed.addr, landed.buf_len()),
+                is_in_region(
+                    self.base,
+                    self.size,
+                    landed.guest_physical_address,
+                    landed.buf_len()
+                ),
                 "a descriptor that escapes the DMA region reached the shadow the device reads",
             );
         }
@@ -289,14 +302,19 @@ fn a_descriptor_mutated_after_validation_cannot_reach_the_device() {
         );
         let device_sees = mem.s_desc.borrow()[slot];
         assert!(
-            is_in_region(mem.base, mem.size, device_sees.addr, device_sees.buf_len()),
+            is_in_region(
+                mem.base,
+                mem.size,
+                device_sees.guest_physical_address,
+                device_sees.buf_len()
+            ),
             "the device would read an out-of-region descriptor from the shadow",
         );
 
         // The driver now aims its OWN copy of that descriptor at an arbitrary address, after the
         // check. On async-DMA hardware this is the time-of-check/time-of-use race.
         mem.d_desc.borrow_mut()[slot] = Desc {
-            addr: kani::any(),
+            guest_physical_address: kani::any(),
             word: kani::any(),
         };
 

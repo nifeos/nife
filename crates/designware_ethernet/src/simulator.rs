@@ -164,16 +164,16 @@ pub(crate) struct TailRegisters<'a> {
 }
 
 impl Tails for TailRegisters<'_> {
-    fn set_receive_tail(&mut self, address: u32) {
+    fn set_receive_tail(&mut self, tail_pointer_low_bits: u32) {
         self.registers.insert(
             registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER,
-            address,
+            tail_pointer_low_bits,
         );
     }
-    fn set_transmit_tail(&mut self, address: u32) {
+    fn set_transmit_tail(&mut self, tail_pointer_low_bits: u32) {
         self.registers.insert(
             registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER,
-            address,
+            tail_pointer_low_bits,
         );
     }
     fn barrier(&mut self) {

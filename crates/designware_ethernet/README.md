@@ -40,8 +40,8 @@ impl DirectMemoryAccessRegion for Memory {
 
 struct NoDevice;
 impl Tails for NoDevice {
-    fn set_receive_tail(&mut self, _address: u32) {}
-    fn set_transmit_tail(&mut self, _address: u32) {}
+    fn set_receive_tail(&mut self, _tail_pointer_low_bits: u32) {}
+    fn set_transmit_tail(&mut self, _tail_pointer_low_bits: u32) {}
     fn barrier(&mut self) {}
 }
 
