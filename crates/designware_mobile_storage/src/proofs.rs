@@ -1120,10 +1120,11 @@ impl RegisterWindowAndClock for ModeledCard {
         };
         match offset {
             COMMAND_ARGUMENT_REGISTER => self.argument = value,
-            COMMAND_REGISTER => {
-                if value & COMMAND_START != 0 && value & COMMAND_UPDATE_CLOCK_REGISTERS_ONLY == 0 {
-                    self.meet(value);
-                }
+            COMMAND_REGISTER
+                if value & COMMAND_START != 0
+                    && value & COMMAND_UPDATE_CLOCK_REGISTERS_ONLY == 0 =>
+            {
+                self.meet(value);
             }
             CARD_TYPE_REGISTER => {
                 self.controller_bus_width = if value & CARD_TYPE_8_BIT_BUS != 0 {
@@ -1137,10 +1138,8 @@ impl RegisterWindowAndClock for ModeledCard {
             CLOCK_DIVIDER_REGISTER => self.clock_divider = value,
             CLOCK_ENABLE_REGISTER => self.clock_enabled = value & CLOCK_ENABLE_CARD_CLOCK != 0,
             POWER_ENABLE_REGISTER => self.powered = value & 1 != 0,
-            CONTROL_REGISTER => {
-                if value & CONTROL_ALL_RESETS_MASK == CONTROL_ALL_RESETS_MASK {
-                    self.controller_was_reset = true;
-                }
+            CONTROL_REGISTER if value & CONTROL_ALL_RESETS_MASK == CONTROL_ALL_RESETS_MASK => {
+                self.controller_was_reset = true;
             }
             _ => {}
         }
