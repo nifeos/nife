@@ -484,7 +484,6 @@ package_archive	5	a package file is refused or read entirely inside itself, on b
 measured_boot	60	a digest text form reads back as itself, and nothing but a labeled sha256 parses
 pci	24	config-space decode on hostile-device input
 non_volatile_memory_express	4	the queue rings never index out, the doorbell/PRP arithmetic is total, and a transfer command names only a block the namespace has
-e1000e	1	no descriptor word a device writes makes the NIC driver read outside a buffer
 designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller writes makes the driver read outside a buffer
 block_roster	13	the roster page reader is total on any bytes, and a written roster reads back as written
 jh7110_clock_and_reset	46	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
