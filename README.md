@@ -1,5 +1,8 @@
 # nife
 
+[![CI](https://github.com/nifeos/nife/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nifeos/nife/actions/workflows/ci.yml?query=branch%3Amain)
+[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/nifeos/nife#security-and-license)
+
 A capability microkernel in Rust, built from the first instruction. Every driver and server is an
 ordinary process, and the kernel allocates no memory of its own. It boots on aarch64, riscv64 and
 x86_64, under emulation and on real silicon, and it runs unmodified `ripgrep`
@@ -18,8 +21,7 @@ machine-checked proofs. Many agents build it in parallel lanes and the architect
 
 *Cobble, guardian of the machinery, designed by calef's kid ([notes/mascot.md](notes/mascot.md)).*
 
-[![CI](https://github.com/nifeos/nife/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nifeos/nife/actions/workflows/ci.yml)
-The badge is green only when every check `script/ci-build --list` names passes on `main`;
+The CI badge under the title is green only when every check `script/ci-build --list` names passes on `main`;
 [notes/check-inventory.md](notes/check-inventory.md) says what each one proves.
 
 ## Try it
