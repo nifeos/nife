@@ -203,11 +203,11 @@ starts a driver itself only where the progenitor could not build it as well.
   left running, served by `framebuffer_driver`, so a PC with no serial port shows the prompt.
 
 The virtio-rng and virtio-net devices are only discovered and wired: a zeroed DMA frame with its own
-physical base written at `VIRTIO_DMA_PHYS_OFFSET`, the interrupt routed, and the transport
-registered and confined to that frame. Only the MMIO transport is used, a first cut scoped to what
-an interactive boot needs; PCIe behind the IOMMU is follow-on work. The progenitor builds the
-entropy service and `net_stack` from the three capabilities, with `crates/system_initializer`'s ELF
-loader, the tree's only one (milestone 96 (one init)).
+physical base written at `DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, the
+interrupt routed, and the transport registered and confined to that frame. Only the MMIO transport
+is used, a first cut scoped to what an interactive boot needs; PCIe behind the IOMMU is follow-on
+work. The progenitor builds the entropy service and `net_stack` from the three capabilities, with
+`crates/system_initializer`'s ELF loader, the tree's only one (milestone 96 (one init)).
 
 A driver writes physical addresses into virtio descriptors, and no capability exposes one. The DMA
 page's base is therefore written into the page itself. The progenitor maps the granted frame
