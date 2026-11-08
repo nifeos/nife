@@ -89,7 +89,7 @@ provisional rulings leave, and the answer to the seventh question.
 ## `extensible_host_controller_interface`, step 3
 
 Name and version. `extensible_host_controller_interface` `0.1.0`, ratified with xHCI spelled out.
-146 `Name:` blocks, all ratified.
+146 `Name:` blocks: 143 ratified and 3 provisional.
 
 API. The xHCI half of a USB driver as pure computation: `registers` (offsets and the `Capabilities`
 decode), `port`, `context`, `direct_memory_access` layout, `TransferRequestBlock`, `ProducerRing`,
@@ -107,7 +107,7 @@ Naming rules. The names section is [crate-reviews/extensible-host-controller-int
 | rule | result |
 |---|---|
 | the template's checks (446 names) | 0 findings |
-| ratified names a later rule reaches | the specification's register mnemonics (`CAPLENGTH`, `USBCMD`, `CRCR`, `ERDP` and 15 more), each with a recommended name |
+| the specification's register mnemonics | spelled out, each with the mnemonic as its alias; three names provisional |
 | parameters of public functions | spelled out in 12 functions, provisional |
 
 Companion crate. `usb` is released with it under the published name `universal_serial_bus`, because the
