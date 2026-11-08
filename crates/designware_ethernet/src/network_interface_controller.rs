@@ -331,9 +331,9 @@ fn program_channel_bursts(hardware: &mut impl Hardware, bus: &BusConfiguration) 
 }
 
 /// Both descriptor rings: base, length and tail, each pointing at an empty ring.
-fn program_descriptor_rings(hardware: &mut impl Hardware, region_physical_address: u64) {
-    let transmit_ring = region_physical_address + layout::TRANSMIT_RING;
-    let receive_ring = region_physical_address + layout::RECEIVE_RING;
+fn program_descriptor_rings(hardware: &mut impl Hardware, region: u64) {
+    let transmit_ring = region + layout::TRANSMIT_RING;
+    let receive_ring = region + layout::RECEIVE_RING;
     hardware.write(
         registers::CHANNEL_TRANSMIT_DESCRIPTOR_LIST_BASE_PHYSICAL_ADDRESS_HIGH_REGISTER,
         (transmit_ring >> 32) as u32,
