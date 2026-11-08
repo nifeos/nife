@@ -107,7 +107,7 @@ Naming rules. The names section is [crate-reviews/extensible-host-controller-int
 | rule | result |
 |---|---|
 | the template's checks (446 names) | 0 findings |
-| ratified names a later rule reaches | the specification's register mnemonics (`CAPLENGTH`, `USBCMD`, `CRCR`, `ERDP` and 15 more), each with a recommended name |
+| the specification's register mnemonics | spelled out, each with the mnemonic as its alias |
 | parameters of public functions | spelled out in 12 functions, provisional |
 
 Companion crate. `usb` is released with it under the published name `universal_serial_bus`, because the

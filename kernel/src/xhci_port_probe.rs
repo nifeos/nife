@@ -29,12 +29,12 @@ fn read(regs_va: u64, off: u64) -> u32 {
 fn capabilities_of(regs_va: u64) -> Capabilities {
     let r = |off| read(regs_va, off);
     Capabilities::decode(
-        r(registers::CAPLENGTH),
-        r(registers::HCSPARAMS1),
-        r(registers::HCSPARAMS2),
-        r(registers::HCCPARAMS1),
-        r(registers::DBOFF),
-        r(registers::RTSOFF),
+        r(registers::CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER),
+        r(registers::STRUCTURAL_PARAMETERS_1_REGISTER),
+        r(registers::STRUCTURAL_PARAMETERS_2_REGISTER),
+        r(registers::CAPABILITY_PARAMETERS_1_REGISTER),
+        r(registers::DOORBELL_OFFSET_REGISTER),
+        r(registers::RUNTIME_REGISTER_SPACE_OFFSET_REGISTER),
     )
 }
 
@@ -49,11 +49,11 @@ pub(crate) fn before_handoff(regs_va: u64, bar_bytes: u64) {
     let op = capabilities.operational;
     crate::println!(
         "xhci-probe: firmware's  USBCMD={:#010x} USBSTS={:#010x} HCSPARAMS1={:#010x} HCCPARAMS1={:#010x} (PPC={})",
-        read(regs_va, op + registers::USBCMD),
-        read(regs_va, op + registers::USBSTS),
-        read(regs_va, registers::HCSPARAMS1),
-        read(regs_va, registers::HCCPARAMS1),
-        (read(regs_va, registers::HCCPARAMS1) >> 3) & 1,
+        read(regs_va, op + registers::USB_COMMAND_REGISTER),
+        read(regs_va, op + registers::USB_STATUS_REGISTER),
+        read(regs_va, registers::STRUCTURAL_PARAMETERS_1_REGISTER),
+        read(regs_va, registers::CAPABILITY_PARAMETERS_1_REGISTER),
+        (read(regs_va, registers::CAPABILITY_PARAMETERS_1_REGISTER) >> 3) & 1,
     );
     let mut at = capabilities.extended;
     for _ in 0..64 {
@@ -118,13 +118,22 @@ pub(crate) fn after_report() {
 fn dump(when: &str, regs_va: u64, capabilities: &Capabilities, mut last: Option<&mut [u32; 256]>) {
     crate::println!(
         "xhci-probe: {when} USBSTS={:#010x} IMAN={:#010x} ERDP={:#010x}",
-        read(regs_va, capabilities.operational + registers::USBSTS),
-        read(regs_va, capabilities.interrupter(registers::IMAN)),
-        read(regs_va, capabilities.interrupter(registers::ERDP)),
+        read(
+            regs_va,
+            capabilities.operational + registers::USB_STATUS_REGISTER
+        ),
+        read(
+            regs_va,
+            capabilities.interrupter(registers::INTERRUPTER_MANAGEMENT_REGISTER)
+        ),
+        read(
+            regs_va,
+            capabilities.interrupter(registers::EVENT_RING_DEQUEUE_POINTER_REGISTER)
+        ),
     );
     let mut connected = 0;
     for n in 1..=capabilities.maximum_ports {
-        let sc = read(regs_va, capabilities.portsc(n));
+        let sc = read(regs_va, capabilities.port_status_and_control(n));
         connected += sc & 1;
         if let Some(last) = last.as_deref_mut() {
             let moved = last[n as usize] != sc || when.starts_with("at report");

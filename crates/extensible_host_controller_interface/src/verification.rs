@@ -160,17 +160,23 @@ fn the_slot_and_endpoint_contexts_keep_each_field_in_its_own_bits() {
 /// Falsification: replayable `crates/extensible_host_controller_interface/falsifications/verification.a_port_write_never_acknowledges_what_nobody_asked_to.patch`
 #[kani::proof]
 fn a_port_write_never_acknowledges_what_nobody_asked_to() {
-    let portsc: u32 = kani::any();
+    let port_status_and_control: u32 = kani::any();
     let bits: u32 = kani::any();
-    let written = port::write_value(portsc, bits);
-    assert_eq!(written & !bits, portsc & port::PRESERVE & !bits);
+    let written = port::write_value(port_status_and_control, bits);
+    assert_eq!(
+        written & !bits,
+        port_status_and_control & port::PRESERVE & !bits
+    );
     assert_eq!(written & bits, bits);
-    let nothing = port::write_value(portsc, 0);
+    let nothing = port::write_value(port_status_and_control, 0);
     assert_eq!(nothing & port::CHANGES, 0);
     assert_eq!(nothing & port::ENABLED, 0);
     assert_eq!(nothing & port::RESET, 0);
-    assert!(port::speed_of(portsc) <= 0xf);
-    assert_eq!(port::speed_of(portsc) as u32, (portsc >> 10) & 0xf);
+    assert!(port::speed_of(port_status_and_control) <= 0xf);
+    assert_eq!(
+        port::speed_of(port_status_and_control) as u32,
+        (port_status_and_control >> 10) & 0xf
+    );
 }
 
 /// **The interrupt interval is the exponent the specification asks for, and the default control
