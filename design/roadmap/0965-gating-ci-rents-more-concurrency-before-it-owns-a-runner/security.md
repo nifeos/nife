@@ -52,8 +52,8 @@ What an owned runner adds:
   cache enforces.
 - The host. An escape from the runner's account or container lands on what the host holds: lane
   worktrees, and the maintainer credential that pushes and merges.
-- The network. Without an egress rule, a job on a home connection reaches the maintainer's LAN,
-  including the bench's power and serial controls, from the maintainer's own address.
+- The network. Without an egress rule, a job on a home connection reaches the maintainer's local
+  area network, including the bench's power and serial controls, from the maintainer's own address.
 
 ## The stronger shape: a VM per job
 
@@ -66,9 +66,9 @@ preconditions stop being enough, and these take their place:
    guest serves.
 2. No maintainer credential on the hypervisor host: a host of its own, or the lane work moved into
    a VM of its own.
-3. Its own network segment, with no LAN route and outbound denied by default.
-4. A launcher selftest that refuses a VM configuration with a host mount, a LAN route or a reused
-   disk.
+3. Its own network segment, with no local area network route and outbound denied by default.
+4. A launcher selftest that refuses a VM configuration with a host mount, a local area network route
+   or a reused disk.
 
 ## The outsider pass, as a pattern to copy
 

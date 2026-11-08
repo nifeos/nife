@@ -39,15 +39,15 @@ From `tailscale.com/kb/1019/subnets`, read 2026-09-05:
 > Subnet routers let you extend your Tailscale network (known as a tailnet) to include **devices
 > that don't or can't run the Tailscale client**.
 
-So a machine already on the tailnet advertises the route covering the bench LAN, and every tailnet
-device reaches radon and xenon. Zero nife work, and it is Tailscale's designed answer for this
-case rather than a workaround.
+So a machine already on the tailnet advertises the route covering the bench local area network, and
+every tailnet device reaches radon and xenon. Zero nife work, and it is Tailscale's designed answer
+for this case rather than a workaround.
 
 patagonia is already a tailnet node, measured the same day: `utun6` at `100.75.22.70`, and that
-interface owns the default route. It is also on the bench LAN at `192.168.8.216`, so it could
-advertise `192.168.8.0/24` today. cordoba is the better choice if it is on the tailnet, because
-patagonia sleeps and cordoba is the always-on box, and a subnet router that is asleep is a subnet
-that is gone.
+interface owns the default route. It is also on the bench local area network at `192.168.8.216`, so
+it could advertise `192.168.8.0/24` today. cordoba is the better choice if it is on the tailnet,
+because patagonia sleeps and cordoba is the always-on box, and a subnet router that is asleep is a
+subnet that is gone.
 
 ## The hazard this already caused, before any nife work existed
 
@@ -122,8 +122,8 @@ which is why this is a proposal with no milestone attached.
 - **No WireGuard implementation has been evaluated.** Rust ones exist and none has been read against
   this tree's `no_std` userspace or §46's test, so "take it" is a direction rather than a choice.
 - **The subnet router is not free of tradeoffs and this proposal does not price them.** Advertising
-  a route puts the whole bench LAN on the tailnet, not just the boards, and whether that is wanted
-  is calef's network decision rather than a nife one.
+  a route puts the whole bench local area network on the tailnet, not just the boards, and whether
+  that is wanted is calef's network decision rather than a nife one.
 - **This is not a customer**, and saying it came from the lab should not be read as filling the
   ranking function's vacancy. It is a lab convenience with real value and no workload behind it.
 
@@ -132,17 +132,17 @@ which is why this is a proposal with no milestone attached.
 calef asked whether a milestone covered Tailscale, since the lab depends on it for several things
 and nife hosts will need to be reachable. The finding is that the near-term answer needs no nife
 work at all: a subnet router is Tailscale's own designed answer for devices that cannot run the
-client. A machine already on the tailnet advertises the route covering the bench LAN, and every
-tailnet device reaches radon and xenon. cordoba is the right one to do it. Patagonia sleeps, and a subnet router that is asleep is a subnet
-that is gone. A native client is the wrong target and
-their documentation says why: `tailscaled` is Go, it wants `/dev/net/tun`, and the mode for machines
-without one degrades to a SOCKS5 proxy, which is "nife processes can egress" rather than "nife hosts
-are on the tailnet". The coordination protocol is also not a stable public API. The interesting
-middle is WireGuard, which is Tailscale's data plane and is bounded and well specified where the
-control plane is neither. This block also carries the hazard joining a tailnet already caused: a
-default route through the tailnet makes "what is my own address" answer with a CGNAT address nothing
-on the bench LAN can reach, which cost milestone 257 a correct server discovery. And it carries the
-third instance of one pattern in a single evening, beside milestones 384 and 387. Joining a tailnet
-puts every process on the box on the whole network, where a peer grant would put that boundary
-inside the machine. It is a lab convenience with real value and no workload behind it, and it does
-not fill the ranking function's vacancy.
+client. A machine already on the tailnet advertises the route covering the bench local area network,
+and every tailnet device reaches radon and xenon. cordoba is the right one to do it. Patagonia
+sleeps, and a subnet router that is asleep is a subnet that is gone. A native client is the wrong
+target and their documentation says why: `tailscaled` is Go, it wants `/dev/net/tun`, and the mode
+for machines without one degrades to a SOCKS5 proxy, which is "nife processes can egress" rather
+than "nife hosts are on the tailnet". The coordination protocol is also not a stable public API. The
+interesting middle is WireGuard, which is Tailscale's data plane and is bounded and well specified
+where the control plane is neither. This block also carries the hazard joining a tailnet already
+caused: a default route through the tailnet makes "what is my own address" answer with a CGNAT
+address nothing on the bench local area network can reach, which cost milestone 257 a correct server
+discovery. And it carries the third instance of one pattern in a single evening, beside milestones
+384 and 387. Joining a tailnet puts every process on the box on the whole network, where a peer
+grant would put that boundary inside the machine. It is a lab convenience with real value and no
+workload behind it, and it does not fill the ranking function's vacancy.

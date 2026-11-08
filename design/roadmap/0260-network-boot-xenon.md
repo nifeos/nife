@@ -132,8 +132,8 @@ failure table keyed on what a person with a camera and no shell can actually see
 
 It removes the co-location, which is the second reason to want it. First light is on record as
 happening the way it did because *"patagonia could not be moved to the bench"*. A netboot does not
-need it to be: xenon needs a cable to the house LAN and patagonia needs to be on the same LAN, from
-wherever it is.
+need it to be: xenon needs a cable to the house local area network and patagonia needs to be on the
+same local area network, from wherever it is.
 
 ## The two firmware settings, which are calef's
 
@@ -213,14 +213,14 @@ media, and it does not exist yet. Against the tree:
   Address for the home network is Fixed or Off. Set to Rotating, the reservation silently stops
   matching and `.138` can move again. That condition is met: calef confirmed on 2026-10-04 (UTC)
   that the setting is Fixed. Anyone changing it owes this line an edit.
-- The transfer rate is a loopback number and is not a LAN number. 9,210,880 bytes in 1.40s
-  (6,429 KiB/s) is python talking to itself through a synthetic ethernet with no cable, no switch
-  and no loss. radon's real measurement over TFTP on this LAN was 428 KiB/s, and nobody has measured
-  a UEFI client on a real wire.
+- The transfer rate is a loopback number and is not a local area network number. 9,210,880 bytes in
+  1.40s (6,429 KiB/s) is python talking to itself through a synthetic ethernet with no cable, no
+  switch and no loss. radon's real measurement over TFTP on this local area network was 428 KiB/s,
+  and nobody has measured a UEFI client on a real wire.
 - macOS's firewall is a failure mode this rig has that radon's did not. `board-netboot` is
-  python3 binding a UDP port, and the first inbound packet from a machine on the LAN is the first
-  time macOS will be asked about it. It is in the runbook's failure table; it has not been hit,
-  because the rehearsal is loopback.
+  python3 binding a UDP port, and the first inbound packet from a machine on the local area network
+  is the first time macOS will be asked about it. It is in the runbook's failure table; it has not
+  been hit, because the rehearsal is loopback.
 - `script/netboot-rehearsal` answers no IPv6 at all. EDK2 tries IPv4 PXE first, so this costs
   nothing today; a firmware that preferred IPv6 would spend its retries in silence before falling
   back, and the rehearsal would look like a timeout with nothing to say about why.

@@ -193,16 +193,16 @@ Proofs. Three harnesses. All three prove and all three patches fail.
 
 Dependencies. None.
 
-Naming rules. The package has the detail. Of 1,046 names, the template's checks find one, the
-public `LanInitTimeout`. It waits for the architect. The package also lists
-borderline bit constants that mirror a FreeBSD define with no expansion.
+Naming rules. The package has the detail. Of 1,046 names, the template's checks find none. The
+package also lists borderline bit constants that mirror a FreeBSD define with no expansion.
 
 Provenance. Milestone 1019 items 3 and 4 hold, and the notices are in the files. The manifest license
 field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.
 
 Result of `script/crate-standalone`. Clean. The crate names no nife file.
 
-Recommendation. Ready for review, with four rulings on names and the move (the package ends with them).
+Recommendation. Ready for review, with three rulings on names and the move (the package ends with
+them).
 
 ## `designware_ethernet`, step 7
 
