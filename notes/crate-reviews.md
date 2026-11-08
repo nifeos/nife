@@ -98,9 +98,17 @@ error type appears in a public signature. The spawn handoff lives in `driver_pro
 
 Proofs. Seven harnesses: the producer ring, the event ring's wrap, the capability walk, the device
 context index, the slot and endpoint contexts, the port status write and the interrupt interval. All
-seven prove and all seven patches fail. The proofs cover the context and port decoders.
+seven prove and all seven patches fail.
 
 Dependencies. None.
+
+Naming rules. The names section is [crate-reviews/extensible-host-controller-interface.md](crate-reviews/extensible-host-controller-interface.md).
+
+| rule | result |
+|---|---|
+| the template's checks (446 names) | 0 findings |
+| ratified names a later rule reaches | the specification's register mnemonics (`CAPLENGTH`, `USBCMD`, `CRCR`, `ERDP` and 15 more), each with a recommended name |
+| parameters of public functions | spelled out in 12 functions, provisional |
 
 Companion crate. `usb` is released with it under the published name `universal_serial_bus`, because the
 name `usb` is taken on crates.io. The directory and the in-tree dependency name stay `usb` until the
@@ -173,7 +181,8 @@ Recommendation. Ready for review.
 The whole package is [crate-reviews/e1000e.md](crate-reviews/e1000e.md).
 
 Name and version. `e1000e` `0.1.0`, ratified as the family name QEMU and Linux both use, permanent on
-first publication. All 166 `Name:` blocks read ratified.
+first publication. All 166 `Name:` blocks read ratified. Four register names copied from a source
+are spelled out with the source spelling as an alias; `HV_KMRN_MODE_CTRL` is pending.
 
 API. Registers, descriptors and ring logic for the 82574L and the I219 behind four small traits,
 with the I219 bring-up in `platform_controller_hub`. Every error implements `Display` and
@@ -183,6 +192,10 @@ public signature.
 Proofs. Three harnesses. All three prove and all three patches fail.
 
 Dependencies. None.
+
+Naming rules. The package has the detail. Of 1,046 names, the template's checks find one, the
+public `LanInitTimeout`. It and `HV_KMRN_MODE_CTRL` wait for the architect. The package also lists
+borderline bit constants that mirror a FreeBSD define with no expansion.
 
 Provenance. Milestone 1019 items 3 and 4 hold, and the notices are in the files. The manifest license
 field reads `(MIT OR Apache-2.0) AND BSD-3-Clause AND BSD-2-Clause`.

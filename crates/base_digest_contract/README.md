@@ -18,7 +18,7 @@ before it reads a line of the table.
 - `INTERFACE_ID` (22) names this interface in a program's `INTERFACES` note.
 - The page has no fixed address. A capability names it, and only its one reader maps it.
 
-## Usage
+## EXAMPLES
 
 ```rust
 use base_digest_contract::{Refused, build_page, read_page};
@@ -29,6 +29,11 @@ assert_eq!(read_page(&page), Ok(digest));
 assert_eq!(read_page(&[0u8; 40]), Err(Refused::NotThisPage));
 ```
 
+## What is proven
+
+Nothing is machine-checked: there are no Kani harnesses. The crate's tests check the layout and
+each refusal.
+
 ## Building and testing
 
 ```sh
@@ -36,7 +41,15 @@ cargo test
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
 ```
 
-The minimum supported Rust version is 1.88. There are no Kani harnesses.
+## BUGS
+
+- The digest is SHA-256 alone. A second algorithm is a new `VERSION` and a new `MAGIC`.
+- `read_page` refuses an all-zero digest as a frame nobody wrote. A table whose real SHA-256 is all
+  zeroes would be refused too; finding one is a preimage attack on SHA-256.
+
+## Minimum Rust version
+
+Rust 1.88.
 
 ## License
 

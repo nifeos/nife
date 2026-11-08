@@ -224,7 +224,7 @@ stems = [
     "local", "modern", "memor", "apolog", "critic", "real", "recogn", "organ", "legal", "mobil",
     "stabil", "crystal", "equal", "item", "pressur", "harmon", "hospital", "sympath", "digit",
     "colon", "penal", "fertil", "jeopard", "subsid", "unit", "formal", "social", "factor",
-    "canon",
+    "canon", "unrecogn", "plural",
 ]
 endings = ["e", "ed", "ing", "es", "er", "ers", "ation", "ations"]
 
@@ -241,3 +241,110 @@ endings = ["our", "ours", "oured", "ouring", "ourful", "ourless", "ourable", "ou
 [british_re]
 stems = ["cent", "met", "lit", "fib", "theat", "calib", "somb", "lust", "meag"]
 endings = ["re", "res"]
+
+# Register, mask, address and size names. Read by helpers/register_names.py, whose header is the
+# manual.
+#
+# A qualifier that makes `address` something other than a location in memory: an address of a
+# network, a bus or a mailbox is not virtual or physical.
+[address_qualifiers]
+words = ["virtual", "physical", "mac", "ip", "ipv4", "ipv6", "i2c", "email", "socket", "network",
+         "ethernet", "peer"]
+
+# The words that give a size, a length or a limit its unit, or say it is not a quantity of memory:
+# `BUFFER_SIZE_BYTES`, `RING_SIZE_ENTRIES`, `PAGE_SIZE_SHIFT`. A name that holds `size`, `len` or
+# `length` and none of these fails.
+[size_units]
+words = ["bytes", "kibibytes", "mebibytes", "gibibytes", "tebibytes", "bits", "words", "sectors",
+         "blocks", "pages", "entries", "elements", "characters", "descriptors", "slots", "lines",
+         "shift", "order"]
+
+# Short words a name keeps, each with its reason. Read by helpers/abbreviations.py, which reports
+# every component of a name that is neither an English word nor a technical word
+# (helpers/technical_words.txt) nor listed here. A word belongs here when nobody says its
+# expansion, or when the standard library spells it so and a name that mirrors it keeps the spelling.
+[accepted]
+id = "the standard library's own spelling (ThreadId), and nobody says identifier in its place"
+pci = "nobody says Peripheral Component Interconnect"
+elf = "nobody says Executable and Linkable Format"
+usb = "nobody says Universal Serial Bus"
+cpu = "nobody says central processing unit in code"
+io = "nobody says input/output in a name"
+syscall = "the word every kernel and its readers use"
+bios = "nobody says Basic Input/Output System"
+efi = "nobody says Extensible Firmware Interface"
+uefi = "nobody says Unified Extensible Firmware Interface"
+xor = "the operator's name"
+sd = "the card's name; nobody says Secure Digital"
+mac = "the address's name; nobody says media access control address"
+len = "the standard library's spelling (len, is_empty)"
+iter = "the standard library's spelling (iter, iter_mut, into_iter)"
+mut = "the standard library's spelling (get_mut, as_mut)"
+std = "the standard library's crate name"
+alloc = "the standard library's crate name"
+eq = "the standard library's spelling (PartialEq, assert_eq)"
+ne = "the standard library's spelling (assert_ne)"
+cmp = "the standard library's spelling (Ord::cmp, PartialOrd::partial_cmp)"
+ord = "the standard library's spelling (Ord, PartialOrd)"
+fmt = "the standard library's spelling (core::fmt)"
+usize = "a primitive type"
+isize = "a primitive type"
+utf = "the encoding's name (UTF-8); nobody says Unicode Transformation Format"
+ascii = "the encoding's name"
+ram = "nobody says random-access memory"
+rom = "nobody says read-only memory"
+ok = "the standard library's spelling (Result::Ok)"
+str = "the standard library's string slice (as_str, from_str)"
+vec = "the standard library's spelling (Vec, to_vec)"
+le = "the standard library's spelling (to_le_bytes, from_le_bytes)"
+
+# Components the English word list holds that a name still spells out, each with the word to
+# write. helpers/abbreviations.py reports them although a dictionary has them.
+[abbreviations]
+err = "error"
+errs = "errors"
+info = "information"
+temp = "temporary"
+ref = "reference"
+refs = "references"
+lib = "library"
+doc = "document"
+sec = "seconds or secondary, by what it holds"
+dev = "device"
+devs = "devices"
+param = "parameter"
+params = "parameters"
+
+# What helpers/abbreviations.py suggests for a component that is not a word. A suggestion is a hint
+# in a report, never a rule; the spelled-out table above suggests too.
+[expansions]
+val = "value"
+vals = "values"
+cnt = "count"
+idx = "index"
+buf = "buffer"
+bufs = "buffers"
+ptr = "pointer"
+addr = "address"
+num = "number"
+ctx = "context"
+desc = "descriptor"
+descs = "descriptors"
+reg = "register"
+regs = "registers"
+src = "source"
+dst = "destination"
+tmp = "temporary"
+hdr = "header"
+msg = "message"
+pkt = "packet"
+cmd = "command"
+req = "request"
+resp = "response"
+res = "result"
+sz = "size"
+cur = "current"
+prev = "previous"
+nxt = "next"
+cfg = "configuration"
+ack = "acknowledge"

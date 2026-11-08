@@ -1,12 +1,12 @@
 #![no_std]
-//! **A FAT12, FAT16 and FAT32 filesystem, sans I/O**, in three parts: a reader, a writer and a
-//! format.
+//! **A File Allocation Table (FAT) filesystem in its FAT12, FAT16 and FAT32 widths, sans I/O**, in
+//! three parts: a reader, a writer and a format.
 //!
 //! The reader opens a volume through [`SectorDevice`], a trait the caller implements over any
 //! device that reads whole sectors. [`BootSector::read`] reads and checks the boot sector and its
-//! BPB, and types the volume by its cluster count as the specification does (see
-//! `boot_sector.rs`). Every field is treated as hostile: a parse never panics and never reads out
-//! of bounds, and what it accepts has its regions in order inside the volume.
+//! BPB (BIOS parameter block), and types the volume by its cluster count as the specification does
+//! (see `boot_sector.rs`). Every field is treated as hostile: a parse never panics and never reads
+//! out of bounds, and what it accepts has its regions in order inside the volume.
 //!
 //! [`Volume`] holds the device and the boot sector and reads the rest. It decodes the file
 //! allocation table entry by entry ([`TableEntry`]), walks a cluster chain with [`Volume::chain`],
@@ -61,8 +61,10 @@
 //! - A file's bytes are read by cluster chain only; there is no cache above the sector and a
 //!   backwards seek walks the chain again from its start.
 //! - Names compare by simple Unicode upper-casing, not the volume's code page or upcase table, and
-//!   a short name's bytes above 0x7F (an OEM code page) match only themselves.
-//! - The MBR reader does not follow extended partitions, and reads no GUID partition table.
+//!   a short name's bytes above 0x7F, from an original equipment manufacturer (OEM) code page,
+//!   match only themselves.
+//! - The master boot record (MBR) reader does not follow extended partitions, and reads no
+//!   globally unique identifier (GUID) partition table.
 //! - Partition sectors are in the device's own sectors, which is 512 bytes for the tools that wrote
 //!   the tables this was tested against.
 //! - A long name is compared by its UTF-16 code units as stored; a lone surrogate is not an error.

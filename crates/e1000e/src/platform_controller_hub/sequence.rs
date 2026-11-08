@@ -232,7 +232,7 @@ pub enum BringUpObservation {
 // `CTRL` bits.
 const CTRL_LANPHYPC_OVERRIDE: u32 = 0x0001_0000;
 const CTRL_LANPHYPC_VALUE: u32 = 0x0002_0000;
-const CTRL_PHY_RST: u32 = 0x8000_0000;
+const CTRL_PHYSICAL_LAYER_DEVICE_RESET: u32 = 0x8000_0000;
 const CTRL_FRCSPD: u32 = 0x0000_0800;
 const CTRL_FRCDPX: u32 = 0x0000_1000;
 const CTRL_MEHE: u32 = 0x0008_0000;
@@ -242,23 +242,23 @@ const CTRL_EXT_FORCE_SMBUS: u32 = 0x0000_0800;
 const CTRL_EXT_RO_DIS: u32 = 0x0002_0000;
 const CTRL_EXT_PHYPDEN: u32 = 0x0010_0000;
 // `STATUS` bits.
-const STATUS_LAN_INIT_DONE: u32 = 0x0000_0200;
+const STATUS_LAN_INITIALIZATION_DONE: u32 = 0x0000_0200;
 const STATUS_PHYRA: u32 = 0x0000_0400;
 // Others, each named for its FreeBSD define.
-const EXTCNF_CTRL_GATE_PHY_CFG: u32 = 0x0000_0080;
+const EXTCNF_CTRL_GATE_PHYSICAL_LAYER_DEVICE_CONFIGURATION: u32 = 0x0000_0080;
 const EXTCNF_CTRL_EXT_CNF_POINTER_MASK: u32 = 0x0fff_0000;
-const EXTCNF_SIZE_EXT_PCIE_LENGTH_MASK: u32 = 0x00ff_0000;
-const FEXTNVM_SW_CONFIG_ICH8M: u32 = 1 << 27;
-const FEXTNVM3_PHY_CFG_COUNTER_MASK: u32 = 0x0c00_0000;
-const FEXTNVM3_PHY_CFG_COUNTER_50_MILLISECONDS: u32 = 0x0800_0000;
+const EXTCNF_SIZE_EXT_PCI_EXPRESS_LENGTH_MASK: u32 = 0x00ff_0000;
+const FEXTNVM_SOFTWARE_CONFIGURATION_ICH8M: u32 = 1 << 27;
+const FEXTNVM3_PHYSICAL_LAYER_DEVICE_CONFIGURATION_COUNTER_MASK: u32 = 0x0c00_0000;
+const FEXTNVM3_PHYSICAL_LAYER_DEVICE_CONFIGURATION_COUNTER_50_MILLISECONDS: u32 = 0x0800_0000;
 const FEXTNVM7_DISABLE_SMB_PERST: u32 = 0x0000_0020;
-const PHY_CTRL_GBE_DISABLE: u32 = 0x0000_0040;
-const PHY_CTRL_D0A_LPLU: u32 = 0x0000_0002;
+const PHYSICAL_LAYER_DEVICE_CTRL_GBE_DISABLE: u32 = 0x0000_0040;
+const PHYSICAL_LAYER_DEVICE_CTRL_D0A_LPLU: u32 = 0x0000_0002;
 const STRAP_SYSTEM_MANAGEMENT_BUS_ADDRESS_MASK: u32 = 0x00fe_0000;
 const STRAP_SYSTEM_MANAGEMENT_BUS_ADDRESS_SHIFT: u32 = 17;
 const STRAP_SMT_FREQ_MASK: u32 = 0x0000_3000;
 const STRAP_SMT_FREQ_SHIFT: u32 = 12;
-const TCTL_PSP: u32 = 0x0000_0008;
+const TRANSMIT_CONTROL_PAD_SHORT_PACKETS: u32 = 0x0000_0008;
 const TCTL_MULR: u32 = 0x1000_0000;
 const RFCTL_NFSW_DIS: u32 = 0x0000_0040;
 const RFCTL_NFSR_DIS: u32 = 0x0000_0080;
@@ -266,16 +266,16 @@ const PBECCSTS_ECC_ENABLE: u32 = 0x0001_0000;
 const PBA_26K: u32 = 0x001a;
 const TXDCTL_WTHRESH: u32 = 0x003f_0000;
 const TXDCTL_PTHRESH: u32 = 0x0000_003f;
-const TXDCTL_FULL_TX_DESC_WB: u32 = 0x0101_0000;
-const TXDCTL_MAX_TX_DESC_PREFETCH: u32 = 0x0100_001f;
+const TXDCTL_FULL_TRANSMIT_DESCRIPTOR_WRITE_BACK: u32 = 0x0101_0000;
+const TXDCTL_MAXIMUM_TRANSMIT_DESCRIPTOR_PREFETCH: u32 = 0x0100_001f;
 const RCTL_RDMTS_HEX: u32 = 0x0001_0000;
 const TARC0_CB_MULTIQ_3_REQ: u32 = 0x3000_0000;
 const TARC0_CB_MULTIQ_2_REQ: u32 = 0x2000_0000;
 // PHY register bits.
 const CV_SMB_CTRL_FORCE_SMBUS: u16 = 0x0001;
 const HV_PM_CTRL_K1_ENABLE: u16 = 0x4000;
-const I218_ULP_CONFIG1_START: u16 = 0x0001;
-const ULP_CONFIG1_CLEARED: u16 = 0x0004 // IND
+const I218_ULTRA_LOW_POWER_CONFIGURATION1_START: u16 = 0x0001;
+const ULTRA_LOW_POWER_CONFIGURATION1_CLEARED: u16 = 0x0004 // IND
     | 0x0010 // STICKY_ULP
     | 0x0100 // RESET_TO_SMBUS
     | 0x0040 // WOL_HOST
@@ -287,7 +287,8 @@ const ULP_CONFIG1_CLEARED: u16 = 0x0004 // IND
 // checks that here, so the constant's OR-to-XOR swaps are equivalent mutants.
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(
-    ULP_CONFIG1_CLEARED == 0x0004 ^ 0x0010 ^ 0x0100 ^ 0x0040 ^ 0x0020 ^ 0x0400 ^ 0x0800 ^ 0x1000
+    ULTRA_LOW_POWER_CONFIGURATION1_CLEARED
+        == 0x0004 ^ 0x0010 ^ 0x0100 ^ 0x0040 ^ 0x0020 ^ 0x0400 ^ 0x0800 ^ 0x1000
 );
 const BM_WUC_HOST_WU_BIT: u16 = 1 << 4;
 const HV_SMB_ADDR_MASK: u16 = 0x007f;
@@ -299,20 +300,20 @@ const HV_SMB_ADDR_FREQ_HIGH_SHIFT: u16 = 12;
 const HV_OEM_BITS_GBE_DIS: u16 = 0x0040;
 const HV_OEM_BITS_LPLU: u16 = 0x0004;
 const HV_OEM_BITS_RESTART_AN: u16 = 0x0400;
-const I82577_CFG_ASSERT_CRS_ON_TX: u16 = 1 << 15;
+const I82577_CONFIGURATION_ASSERT_CRS_ON_TRANSMIT: u16 = 1 << 15;
 const I82577_CFG_ENABLE_DOWNSHIFT: u16 = 3 << 10;
-const I82577_PHY_CTRL2_MDIX_CFG_MASK: u16 = 0x0600;
-const I82577_PHY_CTRL2_AUTO_MDI_MDIX: u16 = 0x0400;
+const I82577_PHYSICAL_LAYER_DEVICE_CTRL2_MDIX_CONFIGURATION_MASK: u16 = 0x0600;
+const I82577_PHYSICAL_LAYER_DEVICE_CTRL2_AUTO_MDI_MDIX: u16 = 0x0400;
 const MII_CR_AUTO_NEG_EN: u16 = 0x1000;
 const MII_CR_RESTART_AUTO_NEG: u16 = 0x0200;
-const NWAY_AR_10T_HD_CAPS: u16 = 0x0020;
-const NWAY_AR_10T_FD_CAPS: u16 = 0x0040;
-const NWAY_AR_100TX_HD_CAPS: u16 = 0x0080;
-const NWAY_AR_100TX_FD_CAPS: u16 = 0x0100;
+const NWAY_AR_10_MEGABITS_HALF_DUPLEX_CAPABILITY: u16 = 0x0020;
+const NWAY_AR_10_MEGABITS_FULL_DUPLEX_CAPABILITY: u16 = 0x0040;
+const NWAY_AR_100_MEGABITS_HALF_DUPLEX_CAPABILITY: u16 = 0x0080;
+const NWAY_AR_100_MEGABITS_FULL_DUPLEX_CAPABILITY: u16 = 0x0100;
 const NWAY_AR_PAUSE: u16 = 0x0400;
-const NWAY_AR_ASM_DIR: u16 = 0x0800;
-const CR_1000T_HD_CAPS: u16 = 0x0100;
-const CR_1000T_FD_CAPS: u16 = 0x0200;
+const NWAY_AR_ASYMMETRIC_PAUSE_DIRECTION: u16 = 0x0800;
+const CR_1000_MEGABITS_HALF_DUPLEX_CAPABILITY: u16 = 0x0100;
+const CR_1000_MEGABITS_FULL_DUPLEX_CAPABILITY: u16 = 0x0200;
 
 fn set(hardware: &mut impl Hardware, offset: u64, bits: u32) {
     let v = hardware.read(offset);
@@ -354,11 +355,15 @@ pub fn initialize_physical_layer_device_workarounds(
     hardware: &mut impl Hardware,
 ) -> Result<u32, Error> {
     // Gate automatic PHY configuration by hardware; this driver configures it in `global_reset`.
-    set(hardware, registers::EXTCNF_CTRL, EXTCNF_CTRL_GATE_PHY_CFG);
+    set(
+        hardware,
+        registers::EXTCNF_CTRL,
+        EXTCNF_CTRL_GATE_PHYSICAL_LAYER_DEVICE_CONFIGURATION,
+    );
 
     // "It is not possible to be certain of the current state of ULP so forcibly disable it."
     // FreeBSD reports a failure here and carries on; so does this.
-    leave_ulp(hardware);
+    leave_ultra_low_power(hardware);
 
     let f = SoftwareFlag::acquire(hardware)?;
     let mut id = 0;
@@ -416,7 +421,7 @@ pub fn initialize_physical_layer_device_workarounds(
 
 /// **`e1000_disable_ulp_lpt_lp` with `force`.** Through the ME when there is one; by PHY registers
 /// when not. Reports rather than returns, as its caller does.
-fn leave_ulp(hardware: &mut impl Hardware) {
+fn leave_ultra_low_power(hardware: &mut impl Hardware) {
     if has_management_engine(hardware) {
         let h = hardware.read(registers::H2ME);
         hardware.write(
@@ -443,12 +448,14 @@ fn leave_ulp(hardware: &mut impl Hardware) {
         hardware.note(BringUpObservation::ManagementEngineUltraLowPowerExit { cleared });
         return;
     }
-    let outcome = leave_ulp_by_physical_layer_device(hardware);
+    let outcome = leave_ultra_low_power_by_physical_layer_device(hardware);
     hardware.note(BringUpObservation::SoftwareUltraLowPowerExit(outcome));
 }
 
 /// The software branch of `e1000_disable_ulp_lpt_lp`.
-fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<(), Error> {
+fn leave_ultra_low_power_by_physical_layer_device(
+    hardware: &mut impl Hardware,
+) -> Result<(), Error> {
     let f = SoftwareFlag::acquire(hardware)?;
     toggle_lanphypc(hardware);
     let done = (|| -> Result<(), physical_layer_device::Error> {
@@ -504,7 +511,7 @@ fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<()
             hardware,
             &f,
             physical_layer_device::registers::I218_ULP_CONFIG1,
-        )? & !ULP_CONFIG1_CLEARED;
+        )? & !ULTRA_LOW_POWER_CONFIGURATION1_CLEARED;
         let _ = physical_layer_device::write(
             hardware,
             &f,
@@ -515,7 +522,7 @@ fn leave_ulp_by_physical_layer_device(hardware: &mut impl Hardware) -> Result<()
             hardware,
             &f,
             physical_layer_device::registers::I218_ULP_CONFIG1,
-            u | I218_ULP_CONFIG1_START,
+            u | I218_ULTRA_LOW_POWER_CONFIGURATION1_START,
         );
         clear(hardware, registers::FEXTNVM7, FEXTNVM7_DISABLE_SMB_PERST);
         Ok(())
@@ -545,17 +552,18 @@ fn accessible(hardware: &mut impl Hardware, flag: &SoftwareFlag, id: &mut u32) -
     for _ in 0..2 {
         last =
             physical_layer_device::read(hardware, flag, physical_layer_device::registers::PHY_ID1);
-        let Ok(hi) = last else { continue };
-        if hi == 0xffff {
+        let Ok(high) = last else { continue };
+        if high == 0xffff {
             continue;
         }
         last =
             physical_layer_device::read(hardware, flag, physical_layer_device::registers::PHY_ID2);
-        let Ok(lo) = last else { continue };
-        if lo == 0xffff {
+        let Ok(low) = last else { continue };
+        if low == 0xffff {
             continue;
         }
-        seen = (u32::from(hi) << 16 | u32::from(lo)) & physical_layer_device::PHY_REVISION_MASK;
+        seen = (u32::from(high) << 16 | u32::from(low))
+            & physical_layer_device::PHYSICAL_LAYER_DEVICE_REVISION_MASK;
         break;
     }
     let known = *id != 0;
@@ -594,8 +602,11 @@ fn accessible(hardware: &mut impl Hardware, flag: &SoftwareFlag, id: &mut u32) -
 // is an equivalent mutant (the read join's swap is killed by
 // the_lanphypc_toggle_moves_only_its_own_bits_and_waits_for_lpcd and stays mutated).
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
-const _: () =
-    assert!(FEXTNVM3_PHY_CFG_COUNTER_50_MILLISECONDS & !FEXTNVM3_PHY_CFG_COUNTER_MASK == 0);
+const _: () = assert!(
+    FEXTNVM3_PHYSICAL_LAYER_DEVICE_CONFIGURATION_COUNTER_50_MILLISECONDS
+        & !FEXTNVM3_PHYSICAL_LAYER_DEVICE_CONFIGURATION_COUNTER_MASK
+        == 0
+);
 
 /// **`e1000_toggle_lanphypc_pch_lpt`**: fully power-cycle the PHY by driving the `LANPHYPC` pin
 /// low for a millisecond, then wait for the hardware's "LCD power cycle done".
@@ -603,14 +614,18 @@ fn toggle_lanphypc(hardware: &mut impl Hardware) {
     let n3 = hardware.read(registers::FEXTNVM3);
     hardware.write(
         registers::FEXTNVM3,
-        (n3 & !FEXTNVM3_PHY_CFG_COUNTER_MASK) | FEXTNVM3_PHY_CFG_COUNTER_50_MILLISECONDS,
+        (n3 & !FEXTNVM3_PHYSICAL_LAYER_DEVICE_CONFIGURATION_COUNTER_MASK)
+            | FEXTNVM3_PHYSICAL_LAYER_DEVICE_CONFIGURATION_COUNTER_50_MILLISECONDS,
     );
-    let ctrl = (hardware.read(mac::DEVICE_CONTROL_REGISTER) | CTRL_LANPHYPC_OVERRIDE)
+    let device_control = (hardware.read(mac::DEVICE_CONTROL_REGISTER) | CTRL_LANPHYPC_OVERRIDE)
         & !CTRL_LANPHYPC_VALUE;
-    hardware.write(mac::DEVICE_CONTROL_REGISTER, ctrl);
+    hardware.write(mac::DEVICE_CONTROL_REGISTER, device_control);
     flush_writes(hardware);
     delay_milliseconds(hardware, 1);
-    hardware.write(mac::DEVICE_CONTROL_REGISTER, ctrl & !CTRL_LANPHYPC_OVERRIDE);
+    hardware.write(
+        mac::DEVICE_CONTROL_REGISTER,
+        device_control & !CTRL_LANPHYPC_OVERRIDE,
+    );
     flush_writes(hardware);
     // FreeBSD: up to 21 polls of 5 ms for CTRL_EXT.LPCD, then 30 ms whatever it said.
     for _ in 0..=20 {
@@ -629,19 +644,22 @@ fn physical_layer_device_reset_generic(hardware: &mut impl Hardware) -> Result<(
         return Ok(());
     }
     let f = SoftwareFlag::acquire(hardware)?;
-    let ctrl = hardware.read(mac::DEVICE_CONTROL_REGISTER);
+    let device_control = hardware.read(mac::DEVICE_CONTROL_REGISTER);
     // CTRL.PHY_RST is clear on every entry: each pulse writes CTRL back without it and a global
-    // reset returns CTRL to its defaults. On that caller claim `ctrl | CTRL_PHY_RST` and
-    // `ctrl ^ CTRL_PHY_RST` agree; the triage row records it as a caller equivalence.
-    hardware.write(mac::DEVICE_CONTROL_REGISTER, ctrl | CTRL_PHY_RST);
+    // reset returns CTRL to its defaults. On that caller claim `device_control | CTRL_PHYSICAL_LAYER_DEVICE_RESET` and
+    // `device_control ^ CTRL_PHYSICAL_LAYER_DEVICE_RESET` agree; the triage row records it as a caller equivalence.
+    hardware.write(
+        mac::DEVICE_CONTROL_REGISTER,
+        device_control | CTRL_PHYSICAL_LAYER_DEVICE_RESET,
+    );
     flush_writes(hardware);
     // `phy->reset_delay_us`, 100 for every PCH part.
     hardware.delay_microseconds(100);
-    hardware.write(mac::DEVICE_CONTROL_REGISTER, ctrl);
+    hardware.write(mac::DEVICE_CONTROL_REGISTER, device_control);
     flush_writes(hardware);
     hardware.delay_microseconds(150);
     f.release(hardware);
-    config_done(hardware)
+    configuration_done(hardware)
 }
 
 /// **`e1000_phy_hw_reset_ich8lan`**: the generic reset and then the post-reset configuration (the
@@ -653,14 +671,14 @@ fn physical_layer_device_reset_ich8lan(hardware: &mut impl Hardware) -> Result<(
 
 /// **`e1000_get_cfg_done_ich8lan`**: 10 ms, then `LAN_INIT_DONE`, then clear `PHYRA`, then check
 /// that an NVM bank is valid.
-fn config_done(hardware: &mut impl Hardware) -> Result<(), Error> {
+fn configuration_done(hardware: &mut impl Hardware) -> Result<(), Error> {
     delay_milliseconds(hardware, 10);
     // `e1000_lan_init_done_ich8lan`: up to 1500 polls of 100 µs.
     let mut done = false;
     for _ in 0..1500 {
         let s = hardware.read(mac::DEVICE_STATUS_REGISTER);
         hardware.delay_microseconds(100);
-        if s & STATUS_LAN_INIT_DONE != 0 {
+        if s & STATUS_LAN_INITIALIZATION_DONE != 0 {
             done = true;
             break;
         }
@@ -668,7 +686,11 @@ fn config_done(hardware: &mut impl Hardware) -> Result<(), Error> {
     if !done {
         hardware.note(BringUpObservation::LanInitTimeout);
     }
-    clear(hardware, mac::DEVICE_STATUS_REGISTER, STATUS_LAN_INIT_DONE);
+    clear(
+        hardware,
+        mac::DEVICE_STATUS_REGISTER,
+        STATUS_LAN_INITIALIZATION_DONE,
+    );
     let s = hardware.read(mac::DEVICE_STATUS_REGISTER);
     if s & STATUS_PHYRA != 0 {
         hardware.write(mac::DEVICE_STATUS_REGISTER, s & !STATUS_PHYRA);
@@ -688,7 +710,7 @@ fn config_done(hardware: &mut impl Hardware) -> Result<(), Error> {
 /// allocation and followed by nothing the kernel half does not already do for the 82574L.
 ///
 /// The MAC and PHY reset together, unless firmware blocks PHY resets, in which case the MAC resets
-/// alone. After a PHY reset the PHY is configured from the NVM: `config_done` waits for it and
+/// alone. After a PHY reset the PHY is configured from the NVM: `configuration_done` waits for it and
 /// checks a bank is valid, and `post_physical_layer_device_reset` replays the NVM's configuration
 /// and the OEM bits.
 ///
@@ -724,16 +746,19 @@ pub fn global_reset(
 
     hardware.write(mac::INTERRUPT_MASK_CLEAR_REGISTER, u32::MAX);
     hardware.write(mac::RECEIVE_CONTROL_REGISTER, 0);
-    hardware.write(mac::TRANSMIT_CONTROL_REGISTER, TCTL_PSP);
+    hardware.write(
+        mac::TRANSMIT_CONTROL_REGISTER,
+        TRANSMIT_CONTROL_PAD_SHORT_PACKETS,
+    );
     flush_writes(hardware);
     delay_milliseconds(hardware, 10);
 
     // "Full-chip reset requires MAC and PHY reset at the same time to make sure the interface
     // between MAC and the external PHY is reset."
-    let mut ctrl = hardware.read(mac::DEVICE_CONTROL_REGISTER);
+    let mut device_control = hardware.read(mac::DEVICE_CONTROL_REGISTER);
     let with_physical_layer_device = !physical_layer_device::reset_blocked(hardware);
     if with_physical_layer_device {
-        ctrl |= CTRL_PHY_RST;
+        device_control |= CTRL_PHYSICAL_LAYER_DEVICE_RESET;
     }
     match SoftwareFlag::acquire(hardware) {
         Ok(f) => f.lost_to_reset(),
@@ -745,7 +770,7 @@ pub fn global_reset(
     hardware.write(registers::STRAP, u32::from(v));
     hardware.write(
         mac::DEVICE_CONTROL_REGISTER,
-        ctrl | crate::DEVICE_CONTROL_GLOBAL_RESET,
+        device_control | crate::DEVICE_CONTROL_GLOBAL_RESET,
     );
     // "cannot issue a flush here because it hangs the hardware"
     delay_milliseconds(hardware, 20);
@@ -765,7 +790,7 @@ pub fn global_reset(
     }
 
     if with_physical_layer_device {
-        config_done(hardware)?;
+        configuration_done(hardware)?;
         post_physical_layer_device_reset(hardware)?;
     }
     hardware.write(mac::INTERRUPT_MASK_CLEAR_REGISTER, u32::MAX);
@@ -814,15 +839,16 @@ fn post_physical_layer_device_reset(hardware: &mut impl Hardware) -> Result<(), 
 fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<(), Error> {
     let f = SoftwareFlag::acquire(hardware)?;
     let out = (|| {
-        if hardware.read(registers::FEXTNVM) & FEXTNVM_SW_CONFIG_ICH8M == 0 {
+        if hardware.read(registers::FEXTNVM) & FEXTNVM_SOFTWARE_CONFIGURATION_ICH8M == 0 {
             return Ok(None);
         }
-        let ext = hardware.read(registers::EXTCNF_CTRL);
-        let size = (hardware.read(registers::EXTCNF_SIZE) & EXTCNF_SIZE_EXT_PCIE_LENGTH_MASK) >> 16;
+        let extended_control = hardware.read(registers::EXTCNF_CTRL);
+        let size =
+            (hardware.read(registers::EXTCNF_SIZE) & EXTCNF_SIZE_EXT_PCI_EXPRESS_LENGTH_MASK) >> 16;
         if size == 0 {
             return Ok(None);
         }
-        let base = (ext & EXTCNF_CTRL_EXT_CNF_POINTER_MASK) >> 16;
+        let base = (extended_control & EXTCNF_CTRL_EXT_CNF_POINTER_MASK) >> 16;
         // Past the 82578 generation the hardware leaves these to software.
         write_system_management_bus_address(hardware, &f)?;
         let led = hardware.read(registers::LEDCTL) as u16;
@@ -842,7 +868,7 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
                 g,
                 word + i * 2 + 1,
             )?);
-            if at == physical_layer_device::IGP01E1000_PHY_PAGE_SELECT {
+            if at == physical_layer_device::IGP01E1000_PHYSICAL_LAYER_DEVICE_PAGE_SELECT {
                 // Save the page for the writes that follow; it is already `page << 5`.
                 page = u32::from(value);
                 continue;
@@ -850,7 +876,7 @@ fn lan_connected_device_configuration(hardware: &mut impl Hardware) -> Result<()
             physical_layer_device::write(
                 hardware,
                 &f,
-                (at & physical_layer_device::MAX_PHY_REG_ADDRESS) | page,
+                (at & physical_layer_device::MAXIMUM_PHYSICAL_LAYER_DEVICE_REGISTER_ADDRESS) | page,
                 value,
             )?;
         }
@@ -923,19 +949,19 @@ const _: () = assert!(HV_OEM_BITS_GBE_DIS & HV_OEM_BITS_LPLU == 0);
 fn oem_bits(hardware: &mut impl Hardware) -> Result<(), Error> {
     let f = SoftwareFlag::acquire(hardware)?;
     let out = (|| {
-        if hardware.read(registers::FEXTNVM) & FEXTNVM_SW_CONFIG_ICH8M == 0 {
+        if hardware.read(registers::FEXTNVM) & FEXTNVM_SOFTWARE_CONFIGURATION_ICH8M == 0 {
             return Ok(());
         }
-        let pc = hardware.read(registers::PHY_CTRL);
+        let pc = hardware.read(registers::PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER);
         let mut v = physical_layer_device::read(
             hardware,
             &f,
             physical_layer_device::registers::HV_OEM_BITS,
         )? & !(HV_OEM_BITS_GBE_DIS | HV_OEM_BITS_LPLU);
-        if pc & PHY_CTRL_GBE_DISABLE != 0 {
+        if pc & PHYSICAL_LAYER_DEVICE_CTRL_GBE_DISABLE != 0 {
             v |= HV_OEM_BITS_GBE_DIS;
         }
-        if pc & PHY_CTRL_D0A_LPLU != 0 {
+        if pc & PHYSICAL_LAYER_DEVICE_CTRL_D0A_LPLU != 0 {
             v |= HV_OEM_BITS_LPLU;
         }
         if !physical_layer_device::reset_blocked(hardware) {
@@ -973,8 +999,8 @@ const _: () = assert!(
         && (1 << 26) & (1 << 27) == 0
         && (1 << 26) & (1 << 30) == 0
         && RFCTL_NFSW_DIS & RFCTL_NFSR_DIS == 0
-        && TXDCTL_FULL_TX_DESC_WB & !TXDCTL_WTHRESH
-            == TXDCTL_MAX_TX_DESC_PREFETCH & !TXDCTL_PTHRESH
+        && TXDCTL_FULL_TRANSMIT_DESCRIPTOR_WRITE_BACK & !TXDCTL_WTHRESH
+            == TXDCTL_MAXIMUM_TRANSMIT_DESCRIPTOR_PREFETCH & !TXDCTL_PTHRESH
 );
 
 /// **`e1000_init_hw_ich8lan`**, the parts that are not already the kernel half's (it programs the
@@ -1024,8 +1050,11 @@ pub fn initialize_hardware(hardware: &mut impl Hardware) -> Result<(), Error> {
 
     for q in [registers::TXDCTL0, registers::TXDCTL1] {
         let t = hardware.read(q);
-        let t = (t & !TXDCTL_WTHRESH) | TXDCTL_FULL_TX_DESC_WB;
-        hardware.write(q, (t & !TXDCTL_PTHRESH) | TXDCTL_MAX_TX_DESC_PREFETCH);
+        let t = (t & !TXDCTL_WTHRESH) | TXDCTL_FULL_TRANSMIT_DESCRIPTOR_WRITE_BACK;
+        hardware.write(
+            q,
+            (t & !TXDCTL_PTHRESH) | TXDCTL_MAXIMUM_TRANSMIT_DESCRIPTOR_PREFETCH,
+        );
     }
     set(
         hardware,
@@ -1044,15 +1073,24 @@ pub fn initialize_hardware(hardware: &mut impl Hardware) -> Result<(), Error> {
 #[allow(clippy::eq_op, clippy::assertions_on_constants)] // the lint folds the constant comparison; it is the argument
 const _: () = assert!(
     CTRL_FRCSPD & CTRL_FRCDPX == 0
-        && I82577_CFG_ASSERT_CRS_ON_TX & I82577_CFG_ENABLE_DOWNSHIFT == 0
-        && I82577_PHY_CTRL2_AUTO_MDI_MDIX & !I82577_PHY_CTRL2_MDIX_CFG_MASK == 0
-        && NWAY_AR_ASM_DIR & NWAY_AR_PAUSE == 0
-        && NWAY_AR_10T_HD_CAPS & NWAY_AR_10T_FD_CAPS == 0
-        && NWAY_AR_10T_HD_CAPS & NWAY_AR_100TX_HD_CAPS == 0
-        && NWAY_AR_10T_HD_CAPS & NWAY_AR_100TX_FD_CAPS == 0
-        && NWAY_AR_10T_FD_CAPS & NWAY_AR_100TX_HD_CAPS == 0
-        && NWAY_AR_10T_FD_CAPS & NWAY_AR_100TX_FD_CAPS == 0
-        && NWAY_AR_100TX_HD_CAPS & NWAY_AR_100TX_FD_CAPS == 0
+        && I82577_CONFIGURATION_ASSERT_CRS_ON_TRANSMIT & I82577_CFG_ENABLE_DOWNSHIFT == 0
+        && I82577_PHYSICAL_LAYER_DEVICE_CTRL2_AUTO_MDI_MDIX
+            & !I82577_PHYSICAL_LAYER_DEVICE_CTRL2_MDIX_CONFIGURATION_MASK
+            == 0
+        && NWAY_AR_ASYMMETRIC_PAUSE_DIRECTION & NWAY_AR_PAUSE == 0
+        && NWAY_AR_10_MEGABITS_HALF_DUPLEX_CAPABILITY & NWAY_AR_10_MEGABITS_FULL_DUPLEX_CAPABILITY
+            == 0
+        && NWAY_AR_10_MEGABITS_HALF_DUPLEX_CAPABILITY & NWAY_AR_100_MEGABITS_HALF_DUPLEX_CAPABILITY
+            == 0
+        && NWAY_AR_10_MEGABITS_HALF_DUPLEX_CAPABILITY & NWAY_AR_100_MEGABITS_FULL_DUPLEX_CAPABILITY
+            == 0
+        && NWAY_AR_10_MEGABITS_FULL_DUPLEX_CAPABILITY & NWAY_AR_100_MEGABITS_HALF_DUPLEX_CAPABILITY
+            == 0
+        && NWAY_AR_10_MEGABITS_FULL_DUPLEX_CAPABILITY & NWAY_AR_100_MEGABITS_FULL_DUPLEX_CAPABILITY
+            == 0
+        && NWAY_AR_100_MEGABITS_HALF_DUPLEX_CAPABILITY
+            & NWAY_AR_100_MEGABITS_FULL_DUPLEX_CAPABILITY
+            == 0
         && MII_CR_AUTO_NEG_EN & MII_CR_RESTART_AUTO_NEG == 0
 );
 
@@ -1081,36 +1119,42 @@ pub fn setup_copper_link(hardware: &mut impl Hardware) -> Result<(), Error> {
             hardware,
             &f,
             physical_layer_device::registers::I82577_CFG_REG,
-            |v| v | I82577_CFG_ASSERT_CRS_ON_TX | I82577_CFG_ENABLE_DOWNSHIFT,
+            |v| v | I82577_CONFIGURATION_ASSERT_CRS_ON_TRANSMIT | I82577_CFG_ENABLE_DOWNSHIFT,
         )?;
         physical_layer_device::update(
             hardware,
             &f,
             physical_layer_device::registers::I82577_PHY_CTRL_2,
-            |v| (v & !I82577_PHY_CTRL2_MDIX_CFG_MASK) | I82577_PHY_CTRL2_AUTO_MDI_MDIX,
+            |v| {
+                (v & !I82577_PHYSICAL_LAYER_DEVICE_CTRL2_MDIX_CONFIGURATION_MASK)
+                    | I82577_PHYSICAL_LAYER_DEVICE_CTRL2_AUTO_MDI_MDIX
+            },
         )?;
         physical_layer_device::update(
             hardware,
             &f,
             physical_layer_device::registers::PHY_AUTONEG_ADV,
             |v| {
-                (v & !(NWAY_AR_ASM_DIR | NWAY_AR_PAUSE))
-                    | NWAY_AR_10T_HD_CAPS
-                    | NWAY_AR_10T_FD_CAPS
-                    | NWAY_AR_100TX_HD_CAPS
-                    | NWAY_AR_100TX_FD_CAPS
+                (v & !(NWAY_AR_ASYMMETRIC_PAUSE_DIRECTION | NWAY_AR_PAUSE))
+                    | NWAY_AR_10_MEGABITS_HALF_DUPLEX_CAPABILITY
+                    | NWAY_AR_10_MEGABITS_FULL_DUPLEX_CAPABILITY
+                    | NWAY_AR_100_MEGABITS_HALF_DUPLEX_CAPABILITY
+                    | NWAY_AR_100_MEGABITS_FULL_DUPLEX_CAPABILITY
             },
         )?;
         physical_layer_device::update(
             hardware,
             &f,
             physical_layer_device::registers::PHY_1000T_CTRL,
-            |v| (v & !CR_1000T_HD_CAPS) | CR_1000T_FD_CAPS,
+            |v| {
+                (v & !CR_1000_MEGABITS_HALF_DUPLEX_CAPABILITY)
+                    | CR_1000_MEGABITS_FULL_DUPLEX_CAPABILITY
+            },
         )?;
         physical_layer_device::update(
             hardware,
             &f,
-            physical_layer_device::registers::PHY_CONTROL,
+            physical_layer_device::registers::PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER,
             |v| v | MII_CR_AUTO_NEG_EN | MII_CR_RESTART_AUTO_NEG,
         )
     })();
@@ -1191,8 +1235,8 @@ mod tests {
         }
     }
 
-    fn mac(sim: &SimulatedHardware, offset: u64) -> u32 {
-        *sim.mac.get(&offset).unwrap_or(&0)
+    fn mac(simulator: &SimulatedHardware, offset: u64) -> u32 {
+        *simulator.mac.get(&offset).unwrap_or(&0)
     }
 
     /// **An ME that never finishes is given FreeBSD's whole 2.5 s** (250 waits of 10 ms over 251
@@ -1205,7 +1249,7 @@ mod tests {
             registers::FWSM,
             ultra_low_power::ICH_FWSM_FW_VALID | ultra_low_power::FWSM_ULP_CFG_DONE,
         );
-        leave_ulp(&mut hardware);
+        leave_ultra_low_power(&mut hardware);
         assert_eq!(hardware.elapsed_microseconds, 2_500_000);
         // One read to ask whether there is an ME, then the 251 polls.
         assert_eq!(
@@ -1229,7 +1273,7 @@ mod tests {
         hardware
             .registers
             .insert(registers::FWSM, ultra_low_power::ICH_FWSM_FW_VALID);
-        leave_ulp(&mut hardware);
+        leave_ultra_low_power(&mut hardware);
         assert_eq!(hardware.elapsed_microseconds, 0);
         assert_eq!(
             hardware.notes,
@@ -1277,7 +1321,7 @@ mod tests {
     fn a_configuration_that_never_completes_is_reported_after_its_wait() {
         let mut hardware = Inert::default();
         assert_eq!(
-            config_done(&mut hardware),
+            configuration_done(&mut hardware),
             Err(Error::NonVolatileMemory(
                 non_volatile_memory::Error::NoDescriptor
             ))
@@ -1331,7 +1375,11 @@ mod tests {
             .last()
             .unwrap();
         assert_ne!(last & crate::DEVICE_CONTROL_GLOBAL_RESET, 0);
-        assert_ne!(last & CTRL_PHY_RST, 0, "the PHY is reset with the MAC");
+        assert_ne!(
+            last & CTRL_PHYSICAL_LAYER_DEVICE_RESET,
+            0,
+            "the PHY is reset with the MAC"
+        );
     }
 
     /// **After a PHY reset the host wakeup bit is cleared and nothing else in the port
@@ -1397,9 +1445,9 @@ mod tests {
     /// blocks PHY resets. Without `SW_CONFIG` the PHY is not touched.
     #[test]
     fn the_oem_bits_follow_the_mac() {
-        let sw = FEXTNVM_SW_CONFIG_ICH8M;
-        let both = PHY_CTRL_GBE_DISABLE | PHY_CTRL_D0A_LPLU;
-        // (FEXTNVM, PHY_CTRL, HV_OEM_BITS before, firmware blocks resets, HV_OEM_BITS after)
+        let sw = FEXTNVM_SOFTWARE_CONFIGURATION_ICH8M;
+        let both = PHYSICAL_LAYER_DEVICE_CTRL_GBE_DISABLE | PHYSICAL_LAYER_DEVICE_CTRL_D0A_LPLU;
+        // (FEXTNVM, PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER, HV_OEM_BITS before, firmware blocks resets, HV_OEM_BITS after)
         for (fextnvm, pc, before, blocked, after) in [
             (sw, both, 0x0000, false, 0x0444),
             (sw | 1, 0, 0x8044, false, 0x8400),
@@ -1408,7 +1456,8 @@ mod tests {
         ] {
             let mut s = SimulatedHardware::new(PhysicalLayerDeviceStartState::Healthy, true);
             s.mac.insert(registers::FEXTNVM, fextnvm);
-            s.mac.insert(registers::PHY_CTRL, pc);
+            s.mac
+                .insert(registers::PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER, pc);
             if blocked {
                 s.mac.insert(registers::FWSM, 0);
             }
@@ -1469,7 +1518,8 @@ mod tests {
             0x0200
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_CONTROL],
+            s.physical_layer_device_registers
+                [&physical_layer_device::registers::PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER],
             0x1200
         );
 
@@ -1490,8 +1540,10 @@ mod tests {
             .insert(physical_layer_device::registers::PHY_AUTONEG_ADV, 0x0de1);
         s.physical_layer_device_registers
             .insert(physical_layer_device::registers::PHY_1000T_CTRL, 0x0300);
-        s.physical_layer_device_registers
-            .insert(physical_layer_device::registers::PHY_CONTROL, 0x1200);
+        s.physical_layer_device_registers.insert(
+            physical_layer_device::registers::PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER,
+            0x1200,
+        );
         initialize_hardware(&mut s).unwrap();
         assert_eq!(
             mac(&s, registers::TARC1),
@@ -1522,7 +1574,8 @@ mod tests {
             0x0200
         );
         assert_eq!(
-            s.physical_layer_device_registers[&physical_layer_device::registers::PHY_CONTROL],
+            s.physical_layer_device_registers
+                [&physical_layer_device::registers::PHYSICAL_LAYER_DEVICE_CONTROL_REGISTER],
             0x1200
         );
     }
