@@ -17,7 +17,7 @@ use designware_mobile_storage::internal_direct_memory_access::DirectMemoryAccess
 use designware_mobile_storage::partition::MasterBootRecord;
 #[cfg(feature = "storage_read_matrix")]
 use designware_mobile_storage::registers::{
-    STATUS_REGISTER, TRANSFERRED_CARD_BYTE_COUNT, TRANSFERRED_HOST_BYTE_COUNT,
+    STATUS_REGISTER, TRANSFERRED_CARD_BYTE_COUNT_REGISTER, TRANSFERRED_HOST_BYTE_COUNT_REGISTER,
 };
 use designware_mobile_storage::sd::{
     self, BLOCK_BYTES, BlockTransferError, Card, InitializationError,
@@ -409,7 +409,7 @@ pub struct MatrixRow {
     pub maximum_fill: u32,
     /// `STATUS_REGISTER` reads that found the queue full.
     pub full_reads: u32,
-    /// `STATUS_REGISTER`, `RINTSTS`, `TRANSFERRED_CARD_BYTE_COUNT` and `TRANSFERRED_HOST_BYTE_COUNT` read straight after it.
+    /// `STATUS_REGISTER`, `RINTSTS`, `TRANSFERRED_CARD_BYTE_COUNT_REGISTER` and `TRANSFERRED_HOST_BYTE_COUNT_REGISTER` read straight after it.
     pub after: [u32; 4],
 }
 
@@ -465,8 +465,8 @@ pub fn read_matrix<R: RegisterWindowAndClock>(
             let after = [
                 watch.inner.read(STATUS_REGISTER),
                 watch.inner.read(RAW_INTERRUPT_STATUS_REGISTER),
-                watch.inner.read(TRANSFERRED_CARD_BYTE_COUNT),
-                watch.inner.read(TRANSFERRED_HOST_BYTE_COUNT),
+                watch.inner.read(TRANSFERRED_CARD_BYTE_COUNT_REGISTER),
+                watch.inner.read(TRANSFERRED_HOST_BYTE_COUNT_REGISTER),
             ];
             row(MatrixRow {
                 asked_hertz: hertz,

@@ -262,12 +262,12 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
     say!(
         slot,
         "{:#x}+{:#x}, compatible {}, status {}, bus-width {}, fifo-depth {:?}, ciu {} Hz, interrupt {:?}",
-        slot.base,
-        slot.size,
+        slot.registers_physical_address,
+        slot.registers_size_bytes,
         core::str::from_utf8(slot.compatible).unwrap_or("?"),
         if slot.status_okay { "okay" } else { "disabled" },
         slot.bus_width,
-        slot.queue_depth,
+        slot.queue_depth_words,
         slot.card_interface_unit_hertz,
         slot.interrupt,
     );
@@ -313,15 +313,15 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
 
     // SAFETY: step 10 of `mmu::initialize` mapped this slot's first page from the same
     // `memory::jh7110_storage` answer, and this boot thread is the only thing that drives it.
-    let window = unsafe { Window::new(slot.base) };
-    let (mut host, id) = match HostController::new(window, ciu_hz, slot.queue_depth) {
+    let window = unsafe { Window::new(slot.registers_physical_address) };
+    let (mut host, id) = match HostController::new(window, ciu_hz, slot.queue_depth_words) {
         Ok(h) => h,
         Err(e) => {
             say!(slot, "controller refused: {e:?}");
             return Outcome::Controller(e);
         }
     };
-    print_identity(slot, &id, host.queue_depth());
+    print_identity(slot, &id, host.queue_depth_words());
 
     let Some(buf) = pages(READ_PAGES) else {
         return Outcome::NoMemory;
@@ -339,8 +339,8 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
             let r = host.registers_mut();
             let (status, tcb, tbb) = (
                 r.read(registers::STATUS_REGISTER),
-                r.read(registers::TRANSFERRED_CARD_BYTE_COUNT),
-                r.read(registers::TRANSFERRED_HOST_BYTE_COUNT),
+                r.read(registers::TRANSFERRED_CARD_BYTE_COUNT_REGISTER),
+                r.read(registers::TRANSFERRED_HOST_BYTE_COUNT_REGISTER),
             );
             say!(
                 slot,
@@ -573,7 +573,7 @@ fn print_identity(slot: &Slot, id: &Identity, depth: u32) {
         id.hardware_configuration,
         id.user_identification,
         registers::queue_offset(id.version_identification),
-        registers::queue_width(id.hardware_configuration),
+        registers::queue_width_bytes(id.hardware_configuration),
         depth,
         registers::uses_64_bit_direct_memory_access(id.hardware_configuration),
         id.card_detect,
@@ -711,7 +711,7 @@ fn through_idmac(
                 w.read(registers::CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER),
                 w.read(registers::CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER),
                 w.read(registers::STATUS_REGISTER),
-                w.read(registers::TRANSFERRED_CARD_BYTE_COUNT),
+                w.read(registers::TRANSFERRED_CARD_BYTE_COUNT_REGISTER),
             );
             return Dma::Failed(e);
         }
@@ -769,14 +769,14 @@ fn read_matrix(slot: &Slot) {
     };
     let ciu_hz = card_clock(slot, sys.base);
     let first = 2048;
-    for depth in [slot.queue_depth, Some(128)] {
+    for depth in [slot.queue_depth_words, Some(128)] {
         // SAFETY: as `probe`'s window: the same mapped page, and this boot thread alone drives it.
-        let window = unsafe { Window::new(slot.base) };
+        let window = unsafe { Window::new(slot.registers_physical_address) };
         let Ok((mut host, _)) = HostController::new(QueueWatch::new(window), ciu_hz, depth) else {
             println!("storage-matrix: controller refused");
             return;
         };
-        let used = host.queue_depth();
+        let used = host.queue_depth_words();
         let done = bench::read_matrix(&mut host, slot.bus_width, first, buf, |r| {
             println!(
                 "storage-matrix: depth {used} card {} Hz (asked {}) blocks {}: {:?} in {} us, \
