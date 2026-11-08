@@ -269,7 +269,7 @@ exclude_re = [
     '^crates/designware_mobile_storage/src/command\.rs:\d+:\d+: replace \| with \^ in Command::register_word$',
     # reset clears the three enables, disjoint per
     # the compile-time overlap check on the direct memory access enables (registers.rs); the excluded
-    # `ctrl | CONTROL_ALL_RESET` write's mutant, which
+    # `control | CONTROL_ALL_RESETS_MASK` write's mutant, which
     # reset_clears_the_enables_keeps_other_bits_and_asks_for_all_three_resets killed, is covered by
     # the same exclusion.
     '^crates/designware_mobile_storage/src/host_controller\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::reset$',
@@ -288,7 +288,7 @@ exclude_re = [
     '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in descriptor$',
     # internal_direct_memory_access_start ORs the enable pair and BUS_MODE's enable with fixed burst,
     # disjoint per the compile-time overlap check on the direct memory access enables and
-    # the compile-time overlap check on the bus mode bits (registers.rs); the `ctrl | CONTROL_USE_INTERNAL_DMAC` write's
+    # the compile-time overlap check on the bus mode bits (registers.rs); the `control | CONTROL_USE_INTERNAL_DIRECT_MEMORY_ACCESS_CONTROLLER` write's
     # mutant, which one_transfer_arms_and_stops_the_internal_direct_memory_access_register_by_register
     # killed, is covered by the same exclusion.
     '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::internal_direct_memory_access_start$',
@@ -296,14 +296,14 @@ exclude_re = [
     # the compile-time overlap check on the transfer over bits and the compile-time overlap check on the data error and timeout bits
     # (registers.rs).
     '^crates/designware_mobile_storage/src/internal_direct_memory_access\.rs:\d+:\d+: replace \| with \^ in HostController<R, D>::internal_direct_memory_access_wait$',
-    # fifoth_for_pio composes the burst code (bit 29), the receive watermark (bits 27:16) and the
+    # queue_threshold_for_programmed_input_output composes the burst code (bit 29), the receive watermark (bits 27:16) and the
     # transmit watermark (bits 11:0), disjoint per
     # the compile-time overlap check on the polled queue threshold fields (registers.rs).
-    '^crates/designware_mobile_storage/src/registers\.rs:\d+:\d+: replace \| with \^ in fifoth_for_pio$',
-    # fifoth_for_direct_memory_access composes the same three fields with the larger burst
+    '^crates/designware_mobile_storage/src/registers\.rs:\d+:\d+: replace \| with \^ in queue_threshold_for_programmed_input_output$',
+    # queue_threshold_for_direct_memory_access composes the same three fields with the larger burst
     # encoding, disjoint per
     # the compile-time overlap check on the direct memory access queue threshold fields (registers.rs).
-    '^crates/designware_mobile_storage/src/registers\.rs:\d+:\d+: replace \| with \^ in fifoth_for_direct_memory_access$',
+    '^crates/designware_mobile_storage/src/registers\.rs:\d+:\d+: replace \| with \^ in queue_threshold_for_direct_memory_access$',
 
     # The crate's const-item survivors leave the same way. cargo-mutants names a const item's
     # mutant with no function, so the file and the shape are the narrowest scope that survives an

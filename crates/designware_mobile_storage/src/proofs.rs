@@ -8,7 +8,7 @@ use crate::host_controller::{
 };
 use crate::internal_direct_memory_access::{
     DESCRIPTOR_BYTES, DirectMemoryAccessRegion, InternalDirectMemoryAccess, MAXIMUM_DESCRIPTORS,
-    PAGE, descriptor, descriptors_for,
+    PAGE_BYTES, descriptor, descriptors_for,
 };
 use crate::partition::{MasterBootRecord, PartitionEntry};
 use crate::sd::can_address_blocks;
@@ -90,24 +90,29 @@ fn an_admitted_range_is_inside_the_card_and_the_address() {
 fn a_chain_describes_its_bytes_inside_the_region() {
     let pages: u32 = kani::any();
     kani::assume((1..=MAXIMUM_DESCRIPTORS).contains(&pages));
-    let bus: u32 = kani::any();
-    kani::assume(bus.is_multiple_of(PAGE));
-    kani::assume(u64::from(bus) + u64::from((pages + 1) * PAGE) <= 1 << 32);
+    let region_physical_address: u32 = kani::any();
+    kani::assume(region_physical_address.is_multiple_of(PAGE_BYTES));
+    kani::assume(
+        u64::from(region_physical_address) + u64::from((pages + 1) * PAGE_BYTES) <= 1 << 32,
+    );
     let bytes: u32 = kani::any();
-    kani::assume((1..=pages * PAGE).contains(&bytes));
+    kani::assume((1..=pages * PAGE_BYTES).contains(&bytes));
     let count = descriptors_for(bytes);
     assert!((1..=pages).contains(&count));
     let i: u32 = kani::any();
     kani::assume(i < count);
-    let [des0, size, buffer, next] = descriptor(bus, i, count, bytes);
-    assert!((1..=PAGE).contains(&size));
-    assert!(buffer >= bus + PAGE && buffer - bus + size <= (pages + 1) * PAGE);
+    let [word_0, size, buffer, next] = descriptor(region_physical_address, i, count, bytes);
+    assert!((1..=PAGE_BYTES).contains(&size));
+    assert!(
+        buffer >= region_physical_address + PAGE_BYTES
+            && buffer - region_physical_address + size <= (pages + 1) * PAGE_BYTES
+    );
     if i + 1 == count {
-        assert!(i * PAGE + size == bytes);
-        assert!(des0 & crate::internal_direct_memory_access::DES0_LD != 0);
+        assert!(i * PAGE_BYTES + size == bytes);
+        assert!(word_0 & crate::internal_direct_memory_access::DESCRIPTOR_LAST != 0);
     } else {
-        assert!(size == PAGE && next == bus + (i + 1) * DESCRIPTOR_BYTES);
-        assert!(des0 & crate::internal_direct_memory_access::DES0_LD == 0);
+        assert!(size == PAGE_BYTES && next == region_physical_address + (i + 1) * DESCRIPTOR_BYTES);
+        assert!(word_0 & crate::internal_direct_memory_access::DESCRIPTOR_LAST == 0);
     }
 }
 
@@ -286,16 +291,16 @@ impl RegisterWindowAndClock for AdversarialWindowAndClock {
 /// 4 GiB, so a chain is one or two descriptors. Each access asserts that the driver asked for
 /// bytes inside the region, which the trait leaves the implementation to bound.
 struct AdversarialRegion {
-    bus_address: u64,
+    physical_address: u64,
 }
 
 impl DirectMemoryAccessRegion for AdversarialRegion {
-    fn bus_address(&self) -> u64 {
-        self.bus_address
+    fn direct_memory_access_address(&self) -> u64 {
+        self.physical_address
     }
 
     fn bytes(&self) -> u32 {
-        3 * PAGE
+        3 * PAGE_BYTES
     }
 
     fn read_u32(&self, offset: u32) -> u32 {
@@ -365,7 +370,7 @@ fn the_direct_memory_access_wait_returns_once_its_deadline_has_passed() {
     let past_from: usize = kani::any();
     kani::assume((1..=2).contains(&past_from));
     let bytes: u32 = kani::any();
-    kani::assume((1..=2 * PAGE).contains(&bytes));
+    kani::assume((1..=2 * PAGE_BYTES).contains(&bytes));
     let count = descriptors_for(bytes);
     let window = AdversarialWindowAndClock::new(
         DATA_DEADLINE_MICROSECONDS,
@@ -373,8 +378,10 @@ fn the_direct_memory_access_wait_returns_once_its_deadline_has_passed() {
         past_from + count as usize,
     );
     let host = adversarial_host(window);
-    let bus_address: u64 = kani::any();
-    kani::assume(bus_address.is_multiple_of(u64::from(PAGE)) && bus_address < 1 << 31);
+    let physical_address: u64 = kani::any();
+    kani::assume(
+        physical_address.is_multiple_of(u64::from(PAGE_BYTES)) && physical_address < 1 << 31,
+    );
     let identity = crate::host_controller::Identity {
         version_identification: 0,
         hardware_configuration: 1 << 7,
@@ -383,7 +390,8 @@ fn the_direct_memory_access_wait_returns_once_its_deadline_has_passed() {
         card_detect: 0,
         firmware: [0; 5],
     };
-    let Ok(engine) = InternalDirectMemoryAccess::new(AdversarialRegion { bus_address }, &identity)
+    let Ok(engine) =
+        InternalDirectMemoryAccess::new(AdversarialRegion { physical_address }, &identity)
     else {
         panic!("a three-page region below 2 GiB is refused");
     };
@@ -475,12 +483,14 @@ impl RegisterWindowAndClock for AdversarialWindowAndRunningClock {
     }
 
     fn write(&mut self, offset: u32, value: u32) {
-        use crate::registers::{BYTCNT, CMD, CMDARG, COMMAND_WRITE};
-        if offset == CMDARG {
+        use crate::registers::{
+            BYTE_COUNT_REGISTER, COMMAND_ARGUMENT_REGISTER, COMMAND_REGISTER, COMMAND_WRITE,
+        };
+        if offset == COMMAND_ARGUMENT_REGISTER {
             self.argument = value;
-        } else if offset == BYTCNT {
+        } else if offset == BYTE_COUNT_REGISTER {
             self.byte_count = value;
-        } else if offset == CMD && value & COMMAND_WRITE != 0 {
+        } else if offset == COMMAND_REGISTER && value & COMMAND_WRITE != 0 {
             self.write_commands += 1;
             self.last_write = (self.argument, self.byte_count);
         }
@@ -553,7 +563,12 @@ fn sending_a_command_is_total_against_any_controller() {
         Err(Error::CommandTimeout(index, _)) => assert!(index == command.index),
         Err(Error::BadResponse(index, status)) => {
             assert!(index == command.index);
-            assert!(status & (crate::registers::RINTSTS_RCRC | crate::registers::RINTSTS_RE) != 0);
+            assert!(
+                status
+                    & (crate::registers::RAW_INTERRUPT_RESPONSE_CRC_ERROR
+                        | crate::registers::RAW_INTERRUPT_RESPONSE_ERROR)
+                    != 0
+            );
         }
         Err(_) => panic!("a command with no data phase failed in its data phase"),
     }
@@ -639,8 +654,9 @@ fn adversarial_direct_memory_access_host()
         kani::assume(false);
         unreachable!()
     };
-    let bus_address: u64 = kani::any();
-    let Ok(engine) = InternalDirectMemoryAccess::new(AdversarialRegion { bus_address }, &identity)
+    let physical_address: u64 = kani::any();
+    let Ok(engine) =
+        InternalDirectMemoryAccess::new(AdversarialRegion { physical_address }, &identity)
     else {
         kani::assume(false);
         unreachable!()
@@ -726,9 +742,11 @@ fn bringing_a_card_up_is_total_against_any_controller() {
         return;
     };
     let mut steps = 0;
-    if let Ok(v2) = crate::sd::go_idle_and_check_interface(&mut host) {
+    if let Ok(is_version_2_or_later) = crate::sd::go_idle_and_check_interface(&mut host) {
         steps += 1;
-        if let Ok((kind, _operation_conditions)) = crate::sd::power_up(&mut host, v2) {
+        if let Ok((kind, _operation_conditions)) =
+            crate::sd::power_up(&mut host, is_version_2_or_later)
+        {
             steps += 1;
             if crate::sd::address_and_select(&mut host, kind).is_ok() {
                 steps += 1;

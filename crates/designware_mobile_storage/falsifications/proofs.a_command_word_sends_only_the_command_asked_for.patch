@@ -9,7 +9,7 @@ or more blocks.
 diff --git a/crates/designware_mobile_storage/src/command.rs b/crates/designware_mobile_storage/src/command.rs
 --- a/crates/designware_mobile_storage/src/command.rs
 +++ b/crates/designware_mobile_storage/src/command.rs
-@@ -265,7 +265,7 @@
+@@ -273,7 +273,7 @@
          }
          if let Some(d) = self.data {
              w |= registers::COMMAND_DATA_EXPECTED;

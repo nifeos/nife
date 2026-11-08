@@ -7,10 +7,9 @@ range check then admits blocks the card does not have.
 Expected to fail: the harness's structure 1 bound, `sd.blocks <= 1 << 32`.
 
 diff --git a/crates/designware_mobile_storage/src/card.rs b/crates/designware_mobile_storage/src/card.rs
-index 552a189bb..2dbbc5251 100644
 --- a/crates/designware_mobile_storage/src/card.rs
 +++ b/crates/designware_mobile_storage/src/card.rs
-@@ -121,7 +121,7 @@ impl CardSpecificData {
+@@ -141,7 +141,7 @@
                  }
              }
              // (C_SIZE + 1) * 512 KiB, C_SIZE 22 bits.

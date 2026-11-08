@@ -10,7 +10,7 @@ blocks and a logical block address at or past 8 Mi.
 diff --git a/crates/designware_mobile_storage/src/sd.rs b/crates/designware_mobile_storage/src/sd.rs
 --- a/crates/designware_mobile_storage/src/sd.rs
 +++ b/crates/designware_mobile_storage/src/sd.rs
-@@ -356,11 +356,8 @@
+@@ -540,11 +540,8 @@
      if count == 0 || end > card_blocks {
          return false;
      }

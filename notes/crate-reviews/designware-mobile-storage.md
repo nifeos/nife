@@ -12,8 +12,8 @@ controller sequences and the internal DMA controller's descriptor chains. It ide
 reads and writes blocks, and decodes the card's identification and specific-data registers. The
 caller implements one trait, `RegisterWindowAndClock` (read a register, write one, read a
 microsecond clock), and every sequence runs on a host against a simulated controller and card. It
-is `no_std`, with no allocator, no `unsafe` and no dependency. Eight Kani harnesses prove its
-parsers and bounds. Every public name has a ratified `Name:` block, and the compile-time checks have no public name.
+is `no_std`, with no allocator, no `unsafe` and no dependency. Nineteen Kani harnesses prove its
+parsers and bounds, and that each controller sequence is total against any controller. Every public name has a ratified `Name:` block, and the compile-time checks have no public name.
 The board's test steps live in the kernel's storage bench, not here. No decision is open.
 
 ## Identity
@@ -79,34 +79,54 @@ identification decode. 91 host tests drive those against the simulator.
 ## Names
 
 `python3 helpers/name_release.py --draft designware_mobile_storage` lists 111 rows. All 111 read
-ratified. Nothing is provisional.
+ratified.
 
-Against the rulings in force, checked with the template's own checks
-(`vendor/crate-workflows/helpers/`, run with `--manifest` over `src/*.rs`):
+Against the rulings in force, with the template's checks (`unit_symbols.py`, `spelled_out.py`,
+`question_shape.py`, `british_spelling.py`, `register_names.py` and the report-only
+`abbreviations.py`, run with `--manifest` over `src/*.rs`) and a read of every name:
 
 | rule | result |
 |---|---|
-| units spelled out (`unit_symbols.py`) | 0 findings. `_HERTZ`, `_MICROSECONDS` and `_BYTES` throughout. The checker reads suffixes only, and no name carries a unit symbol in another position. |
-| spelled-out words (`spelled_out.py`) | 0 findings. Six private source-kept constants open their doc comment with `(NAME, source)`, and no test name says `spec`. |
-| question shape (`question_shape.py`) | 0 findings. The private wait is `is_condition_met_within`, and the simulator predicates take `is_`. |
-| British spelling | 0 findings. |
-| `id`, `sd`, `jh7110` | accepted words and a chip name. |
-| aliases of an old nife spelling | none. Every `doc(alias)` is a specification or databook term. |
+| units spelled out | passes. `_HERTZ`, `_MICROSECONDS` and `_BYTES` throughout. |
+| spelled-out words, accepted acronyms only | passes. Every non-public name is spelled out: a register, bit, descriptor or command constant says what it is (`RAW_INTERRUPT_STATUS_REGISTER`, `SD_SEND_OPERATION_CONDITIONS`) and carries its source's spelling in `doc(alias)` (`RINTSTS`, `SD_SEND_OP_COND`), cited at the opening of its doc comment. `crc` is an accepted acronym, so the CRC constants keep it (`RAW_INTERRUPT_DATA_CRC_ERROR`, alias `RINTSTS_DCRC`). |
+| register shape (`_REGISTER`, `_MASK`, a size's unit) | passes. Every offset ends `_REGISTER` and every multi-bit constant `_MASK`. |
+| address naming | passes. The other `register_names.py` address findings name a card's relative address or a logical block address, which are not memory locations. |
+| question shape | passes. |
+| British spelling | passes. |
+| `id`, `sd`, `crc`, `jh7110` | accepted words and a chip name. |
+| aliases of an old nife spelling | none. Every `doc(alias)` is a specification, databook or OpenBSD term. |
+| prose acronyms (`prose_acronyms.py`) | fails: 62 acronyms in the README and doc comments are not expanded where first used (`FIFO`, `CSD`, `OCR`, `MMIO`, the command numbers `CMD0` to `ACMD41` and others). |
+
+The public names the rules refused, and where each stands:
+
+| row | name before | rule | now | status |
+|---|---|---|---|---|
+| 1 | `registers::CONTROL`, `WRITE_PROTECT`, `TRANSFERRED_CARD_BYTE_COUNT`, `TRANSFERRED_HOST_BYTE_COUNT`, `HARDWARE_RESET`, `BUS_MODE` | a register offset ends `_REGISTER` | each with `_REGISTER` appended | done |
+| 2 | `command::Response::has_crc` | `crc` was not an accepted acronym | `has_crc` | withdrawn: `crc` is an accepted acronym |
+| 3 | `command::Data::block_size` | a size carries its unit | `block_bytes` | done |
+| 4 | `sd::CardKind::SdV1`, `SdV2` | `V` abbreviates version | `SdVersion1`, `SdVersion2` | done |
+| 5 | `internal_direct_memory_access::DirectMemoryAccessRegion::bus_address` | an address says what kind it is | `direct_memory_access_address`, aliases `bus address` and `dma_addr_t` | done |
+| 6 | `jh7110::Slot::base`, and the `base` parameter of `Slot::from_node` | an address is virtual or physical | `registers_physical_address` | done |
+| 7 | `jh7110::Slot::size`, and the `size` parameter of `Slot::from_node` | a size carries its unit | `registers_size_bytes` | done |
+| 8 | `host_controller::clock_divider`, parameters `base` and `target` | a quantity carries its unit | `base_hertz`, `target_hertz` | done |
+| 9 | `host_controller::card_clock`, and its parameter `base` | a quantity carries its unit | `card_clock_hertz`, `base_hertz` | done |
+| 10 | `host_controller::queue_step`, parameters `depth` and `remaining` | a quantity carries its unit | `depth_words`, `remaining_bytes` | done |
+| 11 | `card::extract_bits`, parameter `len` | a length carries its unit | `width_bits` | done |
+| 12 | `registers::queue_width` | a quantity carries its unit | `queue_width_bytes` | done |
+| 13 | `jh7110::QUEUE_DEPTH`, `Slot::queue_depth`, `HostController::queue_depth`, the `queue_depth` parameter of `HostController::new` | a count names the things | `QUEUE_DEPTH_WORDS`, `queue_depth_words` | done |
 
 The two address registers, `CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER` and
 `CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER`, hold the descriptor address and buffer address the
 controller is on, as the bus sees them, which is physical on every board this driver runs on.
-`DirectMemoryAccessRegion::bus_address` is the region's address as the controller's DMA engine
+`DirectMemoryAccessRegion::direct_memory_access_address` is the region's address as the controller's DMA engine
 uses it, which differs from the CPU physical address behind an IOMMU or a bus offset, so it does
-not take `physical_address`; its name waits for the architect.
+not take `physical_address`. It is `direct_memory_access_address`, with
+`bus address` and `dma_addr_t` as aliases; the architect ratified it.
 `Refusal::AboveFourGibibytes` spells its unit out. The parameters of `registers::queue_offset`,
 `queue_width_bytes` and `uses_64_bit_direct_memory_access` are `version_identification` and
 `hardware_configuration`, and `jh7110::Slot::from_node` takes `property`. The renamed items carry
 the old spelling and the rule that refused it in their `Name:` blocks, and none carries a
 `doc(alias)` of it.
-
-The private `pub(crate)` constants keep the databook and OpenBSD spellings
-(`CONTROL_FIFO_RESET`, `CONTROL_DMA_RESET`, `SEND_OP_COND`) through the kept-name form.
 
 ## License
 
