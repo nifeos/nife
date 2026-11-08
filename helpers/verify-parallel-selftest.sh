@@ -67,12 +67,14 @@ export NIFE_SELFTEST_LOG="$log"
 run() { "$root/script/verify" "$@"; }
 
 # --- 1. N computation ----------------------------------------------------------------------
-# CI runs 4 prove shards, read from verify.yml. A two-slot fixture caps the default at two children.
+# The default reads CI's prove shard count from verify.yml, so the expected line reads it the same
+# way. A two-slot fixture caps the default at two children.
+ci_shards="$(cd "$root" && python3 helpers/verify_times.py shards)" || fail "verify_times.py shards failed"
 out="$tmp/auto.out"
 : >"$log"
 NIFE_HEAVY_SLOTS=2 NIFE_VERIFY_MEMORY_BYTES=$((128 * 1024 * 1024 * 1024)) \
 	run --parallel >"$out" 2>&1 || fail "the default-count run exited non-zero"
-grep -q "the smaller of CI's 4 shards and this machine's 2 heavy-job slots" "$out" ||
+grep -q "the smaller of CI's $ci_shards shards and this machine's 2 heavy-job slots" "$out" ||
 	fail "the default count did not read the fixture slot count" 
 [ "$(grep -c 'started shard' "$out")" -eq 2 ] ||
 	fail "a two-slot fixture did not bound the default to two children" "$out"
