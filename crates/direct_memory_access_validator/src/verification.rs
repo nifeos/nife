@@ -8,7 +8,7 @@ const QS: u16 = 8;
 const Q: usize = 8;
 
 /// **The confinement predicate is sound: an accepted range is genuinely inside the region.**
-/// For every base, size, physical_address, and len, if [`is_in_region`] says yes then the addition did not
+/// For every base, size, `physical_address`, and len, if [`is_in_region`] says yes then the addition did not
 /// overflow and `base <= physical_address` and `physical_address + len <= base + size`. This is the arithmetic the
 /// whole boundary rests on, quantified over all 2^256 input combinations at once, and it also
 /// proves totality (the hardened checked adds never panic on any input).
