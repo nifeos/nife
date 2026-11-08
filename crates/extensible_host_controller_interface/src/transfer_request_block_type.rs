@@ -29,7 +29,7 @@ pub(crate) const EVALUATE_CONTEXT: u8 = 13;
 /// Reset Endpoint command: take an endpoint out of the Halted state a stall left it in.
 pub(crate) const RESET_ENDPOINT: u8 = 14;
 /// Set TR Dequeue Pointer command: move an endpoint's ring past what a stall abandoned.
-pub(crate) const SET_TR_DEQUEUE: u8 = 16;
+pub(crate) const SET_TRANSFER_RING_DEQUEUE_POINTER: u8 = 16;
 /// Transfer Event.
 pub(crate) const TRANSFER_EVENT: u8 = 32;
 /// Command Completion Event.

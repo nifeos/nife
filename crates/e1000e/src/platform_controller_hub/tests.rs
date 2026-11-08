@@ -199,7 +199,7 @@ fn flush_steps(
             TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
             (device_ring >> 32) as u32,
         ),
-        // TCTL_EN (0x2) is already on, so an XOR in place of the OR would clear it.
+        // TRANSMIT_CONTROL_ENABLE (0x2) is already on, so an XOR in place of the OR would clear it.
         (TRANSMIT_CONTROL_REGISTER, 0x8 | 0x2),
         (TRANSMIT_DESCRIPTOR_TAIL_REGISTER, tail),
         (RECEIVE_CONTROL_REGISTER, RECEIVE_CONTROL),

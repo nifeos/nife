@@ -62,18 +62,18 @@ impl Event {
     /// Decode an event TRB. Total: every input is some variant.
     ///
     /// Name: ratified 2026-10-25 (#2720).
-    pub const fn decode(t: TransferRequestBlock) -> Event {
-        let d = t.0;
-        let pointer = d[0] as u64 | (d[1] as u64) << 32;
-        let code = (d[2] >> 24) as u8;
-        let slot = (d[3] >> 24) as u8;
-        match t.kind() {
+    pub const fn decode(transfer_request_block: TransferRequestBlock) -> Event {
+        let words = transfer_request_block.0;
+        let pointer = words[0] as u64 | (words[1] as u64) << 32;
+        let code = (words[2] >> 24) as u8;
+        let slot = (words[3] >> 24) as u8;
+        match transfer_request_block.kind() {
             transfer_request_block_type::TRANSFER_EVENT => Event::Transfer {
                 transfer_request_block: pointer,
-                residual: d[2] & 0x00ff_ffff,
+                residual: words[2] & 0x00ff_ffff,
                 code,
                 slot,
-                endpoint: ((d[3] >> 16) & 0x1f) as u8,
+                endpoint: ((words[3] >> 16) & 0x1f) as u8,
             },
             transfer_request_block_type::COMMAND_COMPLETION => Event::Command {
                 transfer_request_block: pointer,
@@ -81,7 +81,7 @@ impl Event {
                 slot,
             },
             transfer_request_block_type::PORT_STATUS_CHANGE => Event::PortStatus {
-                port: (d[0] >> 24) as u8,
+                port: (words[0] >> 24) as u8,
             },
             kind => Event::Other { kind },
         }

@@ -12,8 +12,8 @@
 //! - Generations are 32-bit and never wrap. A slot whose generation reaches `u32::MAX` retires:
 //!   it is never filled again, so the table's capacity shrinks by one. A slot retires only after
 //!   2^32 - 1 occupants of that slot. A loop that does nothing but insert and remove one entry
-//!   takes about 7 nanoseconds a cycle on a 2.1 GHz server core, so it retires its slot in about
-//!   half a minute; a loop that does real work per entry takes far longer. A table whose every
+//!   takes about 7 nanoseconds a cycle on a 2.1 gigahertz server core, so it retires its slot in
+//!   about half a minute; a loop that does real work per entry takes far longer. A table whose every
 //!   slot has retired refuses every insert for good.
 //! - Insert scans for a free slot in O(N); `get` and `get_mut` are O(1).
 //!

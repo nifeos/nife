@@ -14,6 +14,39 @@ A PRP entry is a physical address of one page of a transfer's data. A command ca
 not build. An LBA (logical block address) numbers the fixed-size blocks of a namespace, which is
 the unit of storage a controller exposes, from 0.
 
+## EXAMPLES
+
+```rust
+use non_volatile_memory_express::{
+    Command, Completion, CompletionQueue, Doorbell, SubmissionQueue, doorbell,
+    physical_region_page_pair,
+};
+
+let mut submission_queue = SubmissionQueue::new(64);
+let mut completion_queue = CompletionQueue::new(64);
+
+// Read eight 512-byte blocks from LBA 0 of namespace 1 into a buffer that straddles a page.
+let pages = physical_region_page_pair(0x4000_0800, 4096, 4096).expect("two pages suffice");
+let read = Command::read(1, 1, 0, 8, pages);
+// Write `read.0` into submission slot `slot`, then ring the tail:
+let slot = submission_queue.push().expect("the ring has room");
+assert_eq!(doorbell(1, Doorbell::SubmissionTail, 0), 0x1008); // write the tail here
+assert_eq!((slot, submission_queue.tail()), (0, 1));
+assert_eq!(read.0[1], 1);
+
+// Poll completion slot `completion_queue.head()` until the controller's entry carries the
+// expected phase.
+let done = Completion::from_dwords([0, 1 | (1 << 16), 0, 1 | (1 << 16)]);
+assert!(completion_queue.is_owned(&done) && done.command_id == 1 && done.status == 0);
+submission_queue.record_head(done.submission_queue_head);
+// Write the new head to doorbell(1, Doorbell::CompletionHead, stride).
+assert_eq!(completion_queue.pop(), 1);
+```
+
+The public structs that a later release may widen (`Completion`, `IdentifyNamespace` and
+`Namespace`) are `#[non_exhaustive]`: build a `Namespace` with `Namespace::new`, and read the other
+two from the controller's answer.
+
 ## What is proven
 
 To run the proofs, install Kani as its
@@ -47,36 +80,7 @@ Each harness has a falsification record at `falsifications/<module.path>.<harnes
 applying it with `patch -p3` from the crate root makes that harness fail at its own assertion,
 which shows the proof checks something.
 
-## Usage
-
-```rust
-use non_volatile_memory_express::{
-    Command, Completion, CompletionQueue, Doorbell, SubmissionQueue, doorbell,
-    physical_region_page_pair,
-};
-
-let mut submission_queue = SubmissionQueue::new(64);
-let mut completion_queue = CompletionQueue::new(64);
-
-// Read eight 512-byte blocks from LBA 0 of namespace 1 into a buffer that straddles a page.
-let pages = physical_region_page_pair(0x4000_0800, 4096, 4096).expect("two pages suffice");
-let read = Command::read(1, 1, 0, 8, pages);
-// Write `read.0` into submission slot `slot`, then ring the tail:
-let slot = submission_queue.push().expect("the ring has room");
-assert_eq!(doorbell(1, Doorbell::SubmissionTail, 0), 0x1008); // write the tail here
-assert_eq!((slot, submission_queue.tail()), (0, 1));
-assert_eq!(read.0[1], 1);
-
-// Poll completion slot `completion_queue.head()` until the controller's entry carries the
-// expected phase.
-let done = Completion::from_dwords([0, 1 | (1 << 16), 0, 1 | (1 << 16)]);
-assert!(completion_queue.is_owned(&done) && done.command_id == 1 && done.status == 0);
-submission_queue.record_head(done.submission_queue_head);
-// Write the new head to doorbell(1, Doorbell::CompletionHead, stride).
-assert_eq!(completion_queue.pop(), 1);
-```
-
-## Limitations
+## BUGS
 
 - `SubmissionQueue` models one ring and keeps no count of commands in flight. `push` returns
   `None` when the ring is full, and the caller decides whether that is a bug or a reason to wait.
@@ -87,11 +91,9 @@ assert_eq!(completion_queue.pop(), 1);
 - Not proven: the meaning of the status code and status code type inside a completion's status
   field, and anything in time, which belongs to the caller.
 
-The public structs that a later release may widen (`Completion`, `IdentifyNamespace` and
-`Namespace`) are `#[non_exhaustive]`: build a `Namespace` with `Namespace::new`, and read the other
-two from the controller's answer.
+## Minimum Rust version
 
-The minimum supported Rust version is 1.88.
+Rust 1.88.
 
 ## License
 

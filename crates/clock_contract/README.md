@@ -44,7 +44,7 @@ epoch in a `u64`, which runs out in 2554.
   and `CMOS`. The first three name a register layout the service polls; `CMOS` means the value has
   already been read and arrives as data.
 
-## Usage
+## EXAMPLES
 
 ```rust
 use clock_contract::{NS_PER_SECOND, offset_for, policy, state, status, wall_nanoseconds};
@@ -63,6 +63,11 @@ assert_eq!(
 );
 ```
 
+## What is proven
+
+There are no Kani harnesses. The loom run checks the seqlock's two memory-ordering fences against
+the C11 model, not against the Arm or RISC-V memory models.
+
 ## Building and testing
 
 ```sh
@@ -71,8 +76,15 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
 RUSTFLAGS="--cfg loom" cargo test --release      # the seqlock under every interleaving loom permits
 ```
 
-The minimum supported Rust version is 1.88. The loom run checks the seqlock's two memory-ordering
-fences against the C11 model, not against ARM's or RISC-V's own models. There are no Kani harnesses.
+## BUGS
+
+- A writer killed between its claim and its release leaves every reader spinning.
+- `NANOS_PER_SEC` and `wall_nanos` are older spellings of `NS_PER_SECOND` and `wall_nanoseconds`,
+  kept for a standard-library overlay, which reads them by those names. Use the newer spellings.
+
+## Minimum Rust version
+
+Rust 1.88.
 
 ## License
 

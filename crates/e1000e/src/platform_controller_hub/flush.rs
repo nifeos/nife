@@ -146,7 +146,7 @@ pub fn empty_descriptor_rings(
     rings: &mut impl FlushSupport,
     transmit_ring: u64,
 ) -> EmptiedRings {
-    use crate::control_registers::{RCTL_EN, TCTL_EN};
+    use crate::control_registers::{RECEIVE_CONTROL_ENABLE, TRANSMIT_CONTROL_ENABLE};
     use crate::registers::{
         RECEIVE_CONTROL_REGISTER, TRANSMIT_CONTROL_REGISTER,
         TRANSMIT_DESCRIPTOR_BASE_ADDRESS_HIGH_REGISTER,
@@ -170,7 +170,10 @@ pub fn empty_descriptor_rings(
         return EmptiedRings::ForeignTransmitRing { base };
     }
     let transmit_control = hardware.read(TRANSMIT_CONTROL_REGISTER);
-    hardware.write(TRANSMIT_CONTROL_REGISTER, transmit_control | TCTL_EN);
+    hardware.write(
+        TRANSMIT_CONTROL_REGISTER,
+        transmit_control | TRANSMIT_CONTROL_ENABLE,
+    );
     let tail =
         hardware.read(TRANSMIT_DESCRIPTOR_TAIL_REGISTER) % u32::from(crate::TRANSMIT_ENTRIES);
     rings.write_transmit_descriptor(
@@ -186,7 +189,10 @@ pub fn empty_descriptor_rings(
         return EmptiedRings::TransmitFlushed;
     }
     let receive_control = hardware.read(RECEIVE_CONTROL_REGISTER);
-    hardware.write(RECEIVE_CONTROL_REGISTER, receive_control & !RCTL_EN);
+    hardware.write(
+        RECEIVE_CONTROL_REGISTER,
+        receive_control & !RECEIVE_CONTROL_ENABLE,
+    );
     super::flush_writes(hardware);
     hardware.delay_microseconds(150);
     let current = hardware.read(super::registers::RECEIVE_DESCRIPTOR_CONTROL_REGISTER);
@@ -194,9 +200,15 @@ pub fn empty_descriptor_rings(
         super::registers::RECEIVE_DESCRIPTOR_CONTROL_REGISTER,
         receive_descriptor_control_register_value_for_flush(current),
     );
-    hardware.write(RECEIVE_CONTROL_REGISTER, receive_control | RCTL_EN);
+    hardware.write(
+        RECEIVE_CONTROL_REGISTER,
+        receive_control | RECEIVE_CONTROL_ENABLE,
+    );
     super::flush_writes(hardware);
     hardware.delay_microseconds(150);
-    hardware.write(RECEIVE_CONTROL_REGISTER, receive_control & !RCTL_EN);
+    hardware.write(
+        RECEIVE_CONTROL_REGISTER,
+        receive_control & !RECEIVE_CONTROL_ENABLE,
+    );
     EmptiedRings::BothFlushed
 }

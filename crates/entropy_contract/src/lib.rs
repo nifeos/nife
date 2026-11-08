@@ -1,7 +1,7 @@
 //! **The entropy contract** (entropy is a capability): the request and
 //! reply that carry random bytes out of the entropy service, defined once for the service, its
-//! clients, the std PAL and the kernel-side tests. One process holds the virtio-rng device; a
-//! client holds an endpoint that names no device, `CALL`s with a byte count and gets the bytes in
+//! clients, the standard library's platform abstraction layer and the kernel-side tests. One
+//! process holds the virtio-rng device; a client holds an endpoint that names no device, `CALL`s with a byte count and gets the bytes in
 //! the reply words, at most [`MAXIMUM_BYTES`] per round trip. No shared page, against the usual
 //! bulk rule, because random bytes are worth exactly that nobody else has seen them, and no byte is
 //! transformed, so the claim stays "these are the device's bytes".

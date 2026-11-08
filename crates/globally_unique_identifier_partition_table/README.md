@@ -1,39 +1,28 @@
 # globally_unique_identifier_partition_table
 
-The GUID Partition Table (UEFI 2.10, section 5.3): reading one, writing one, and refusing a bad one.
-The three letters "GPT" are the UEFI disk format and have nothing to do with language models.
-`no_std`, no allocation, no `unsafe`, no I/O of any kind. Every function takes bytes the caller
-already read and returns bytes the caller is about to place, so the tests run on the host against
-disks that real tools made. The only dependency is `uuid` (default features off). It was written
-for the nife kernel and its disk programs.
-
-## What is on the disk
-
-```text
-  LBA 0     protective MBR   one fake record of type 0xEE covering the whole disk
-  LBA 1     primary header   92 bytes: signature, geometry, two CRC-32s, the disk GUID
-  LBA 2..   entry array      128 entries x 128 bytes = 16 KiB
-  ...       the partitions, between first_usable_lba and last_usable_lba
-  LBA n-33  backup array     the same 16 KiB again
-  LBA n-1   backup header    the same header, my_lba and alternate_lba swapped
-```
-
-Four CRC-32s (a header CRC and an array CRC, each stored twice) make a GPT a format that can tell
-you it is broken, so every check here is an error and never a warning.
+The globally unique identifier (GUID) partition table of UEFI 2.10, section 5.3, the GPT (GUID
+Partition Table): reading one, writing one, and refusing a bad one. The three letters "GPT" are the
+UEFI disk format and have nothing to do with language models. `no_std`, no allocation, no `unsafe`,
+no I/O of any kind. Every function takes bytes the caller already read and returns bytes the caller
+is about to place, so the tests run on the host against disks that real tools made. The only
+dependency is `uuid` (default features off). It was written for the nife kernel and its disk
+programs.
 
 ## The contract
 
 - `GloballyUniqueIdentifierPartitionTable::parse(header_block, entry_array)` judges the table against
   the disk: the header (`Header::decode`: signature, revision, size, both reserved regions, its own
-  CRC), the array CRC, the usable range, partitions off the end and partitions that overlap.
+  cyclic redundancy check (CRC)), the array CRC, the usable range, partitions off the end and
+  partitions that overlap.
   `check_backup` compares the backup copy field by field. `create` builds a table, and
   `write_protective_mbr`, `write_primary_header` and `write_backup_header` lay it out. `mbr::validate`
-  refuses a hybrid MBR on purpose (one disk described twice by tools that will not agree for long).
+  refuses a hybrid master boot record (MBR) on purpose (one disk described twice by tools that will
+  not agree for long).
 - `Entry::decode` judges nothing: every one of 2^1024 bit patterns is an entry, so the round trip
   is provable over all of them. An entry is unused when its type GUID is all zero, and only then.
 - A GUID is mixed-endian on disk: the first three groups are little-endian integers and the last two
   are bytes in the order written. `guid::from_disk` and `guid::to_disk` are the only functions that
-  see on-disk bytes, so a `Uuid` here is always in RFC 9562 order.
+  see on-disk bytes, so a `Uuid` here is always in the order of RFC (Request for Comments) 9562.
 - `last_lba` is inclusive. A one-block partition has `first_lba == last_lba`.
 - `entry_count * entry_size` from a hostile header is computed without overflow and returns an
   error, never a shortened CRC.
@@ -44,10 +33,11 @@ you it is broken, so every check here is an error and never a warning.
   RedoxFS data partition) and `NIFE_BOOT` (a boot slot). Those two are fixed forever.
 - What the two real fixtures taught: macOS writes no GPT partition names (72 zero bytes where the
   name goes), so nothing built on this crate may key off the name; identify a partition by type GUID
-  or unique GUID. The two tools write different CHS bytes in the protective MBR and both are right,
-  so `mbr::validate` checks only the fields that protect (start at LBA 1, cover the disk).
+  or unique GUID. The two tools write different cylinder-head-sector (CHS) bytes in the protective
+  MBR and both are right, so `mbr::validate` checks only the fields that protect (start at logical
+  block address (LBA) 1, cover the disk).
 
-## Usage
+## EXAMPLES
 
 ```rust
 use globally_unique_identifier_partition_table::GloballyUniqueIdentifierPartitionTable;
@@ -82,6 +72,20 @@ Where a domain is small enough to count, the tests count it: every single-byte c
 header block and of a small table. Run the proofs with `cargo kani`. Applying a patch with `patch -p3`
 from the crate root makes its harness fail at its own assertion.
 
+## What is on the disk
+
+```text
+  LBA 0     protective MBR   one fake record of type 0xEE covering the whole disk
+  LBA 1     primary header   92 bytes: signature, geometry, two CRC-32s, the disk GUID
+  LBA 2..   entry array      128 entries x 128 bytes = 16 KiB
+  ...       the partitions, between first_usable_lba and last_usable_lba
+  LBA n-33  backup array     the same 16 KiB again
+  LBA n-1   backup header    the same header, my_lba and alternate_lba swapped
+```
+
+Four CRC-32s (a header CRC and an array CRC, each stored twice) make a GPT a format that can tell
+you it is broken, so every check here is an error and never a warning.
+
 ## Building and testing
 
 ```sh
@@ -89,9 +93,6 @@ cargo test --release     # the exhaustive sweeps take minutes in a debug build
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
 cargo kani
 ```
-
-The minimum supported Rust version is 1.89 (the `uuid` dependency requires it). The crate opts out of `missing_docs` until its 23
-undocumented items are documented.
 
 ## Regenerating the fixtures
 
@@ -119,6 +120,14 @@ hdiutil detach /dev/diskN
 dd if=apple64.img of=apple-64m.head bs=512 count=34
 dd if=apple64.img of=apple-64m.tail bs=512 skip=131039 count=33
 ```
+
+## BUGS
+
+- The crate opts out of `missing_docs` until its 23 undocumented items are documented.
+
+## Minimum Rust version
+
+Rust 1.89 (the `uuid` dependency requires it).
 
 ## License
 
