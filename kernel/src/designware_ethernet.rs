@@ -457,16 +457,16 @@ impl Hardware for Window {
 struct TailRegs(u64);
 
 impl Tails for TailRegs {
-    fn set_receive_tail(&mut self, addr: u32) {
+    fn set_receive_tail(&mut self, tail_pointer_low_bits: u32) {
         Window(self.0).write(
             registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER,
-            addr,
+            tail_pointer_low_bits,
         );
     }
-    fn set_transmit_tail(&mut self, addr: u32) {
+    fn set_transmit_tail(&mut self, tail_pointer_low_bits: u32) {
         Window(self.0).write(
             registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER,
-            addr,
+            tail_pointer_low_bits,
         );
     }
     fn barrier(&mut self) {
