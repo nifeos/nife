@@ -6,8 +6,7 @@ own file because the list of public names a later rule reaches is longer than th
 
 ## Names
 
-The crate has 446 judged names across 12 files. Its `Name:` blocks all read ratified, and the
-specification's register mnemonics are the public names a later rule reaches.
+The crate has 446 judged names across 12 files. Its `Name:` blocks all read ratified.
 
 ### Naming rules
 
@@ -21,48 +20,64 @@ hold.
 | units spelled out (`unit_symbols.py`) | 0 findings. `_MILLISECONDS` and `_BYTES` throughout. |
 | question shape (`question_shape.py`) | 0 findings. |
 | British spelling | 0 findings. |
-| aliases of an old nife spelling | none. The crate has no `doc(alias)`. |
+| aliases of an old nife spelling | none. Every `doc(alias)` is the specification's spelling. |
 | `usb`, `bios`, `id` | accepted words. |
 
 A general gate for undeclared abbreviations: the word list refuses only listed words. Here it
-caught one of the private names renamed below, `CONFIG_ERROR_CHANGE`. The others (`IOC`, `ISP`,
+caught one of the private names below, `CONFIG_ERROR_CHANGE`. The others (`IOC`, `ISP`,
 `IDT`, `TR`, `PORTSC`, `esit`, `trt`, `ccs`, `erdp`, `hi`, `lo`) were not on the list.
 
-### Renamed by this lane
+### Private names spelled out
 
 Private names only (`pub(crate)`, module-private, locals and test names). None has a `Name:` block.
 
-| now | was |
+| name | refused |
 |---|---|
 | `INTERRUPT_ON_COMPLETION`, `INTERRUPT_ON_SHORT_PACKET`, `IMMEDIATE_DATA` | `IOC`, `ISP`, `IDT` |
 | `SET_TRANSFER_RING_DEQUEUE_POINTER` | `SET_TR_DEQUEUE` |
 | `CONFIGURATION_ERROR_CHANGE` | `CONFIG_ERROR_CHANGE` |
-| `PORT_STATUS_AND_CONTROL_BASE` | `PORTSC_BASE` |
+| `FIRST_PORT_STATUS_AND_CONTROL_REGISTER`, `INTERRUPTER_0_REGISTER` | `PORTSC_BASE`, `INTERRUPTER_0` |
 | locals `maximum_service_interval_payload`, `clamped_interval`, `words`, `transfer_type`, `consumer_cycle_state`, `event_ring_dequeue_pointer`, `high`, `low` | `esit`, `b`, `d`, `trt`, `ccs`, `erdp`, `hi`, `lo` |
 | tests `the_port_status_and_control_bits_are_where_the_specification_puts_them`, `a_setup_transfer_request_block_carries_the_packet_and_the_transfer_type` | `the_portsc_bits_are_where_...`, `a_setup_trb_carries_...` |
 
 All seven falsification patches apply and fail their harness.
 
-### Ratified names a later rule reaches
+### The specification's register mnemonics
 
-They are not renamed here. The specification's mnemonic is a term of art a reader searches for.
-Each recommended name is spelled out and keeps the mnemonic as a `doc(alias)`. The expansion opens
-the doc comment, as the rule for a kept foreign name asks. The crate has neither today.
+Spelled out, each with the specification's mnemonic as its `doc(alias)` and its expansion opening
+the doc comment. A register offset ends `_REGISTER`, and an address held in a register says it is
+physical.
 
-| name | recommended name |
+| mnemonic | name |
 |---|---|
-| `registers::CAPLENGTH` | `CAPABILITY_REGISTERS_LENGTH` |
-| `registers::HCSPARAMS1`, `HCSPARAMS2` | `STRUCTURAL_PARAMETERS_1`, `STRUCTURAL_PARAMETERS_2` |
-| `registers::HCCPARAMS1` | `CAPABILITY_PARAMETERS_1` |
-| `registers::DBOFF`, `RTSOFF` | `DOORBELL_OFFSET`, `RUNTIME_REGISTER_SPACE_OFFSET` |
-| `registers::USBCMD`, `USBSTS` | `USB_COMMAND`, `USB_STATUS` |
-| `registers::PAGESIZE` | `PAGE_SIZE_BITMAP` |
-| `registers::CRCR` | `COMMAND_RING_CONTROL` |
-| `registers::DCBAAP` | `DEVICE_CONTEXT_BASE_ADDRESS_ARRAY_POINTER` |
-| `registers::IMAN`, `IMOD` | `INTERRUPTER_MANAGEMENT`, `INTERRUPTER_MODERATION` |
-| `registers::ERSTSZ`, `ERSTBA`, `ERDP` | `EVENT_RING_SEGMENT_TABLE_SIZE`, `EVENT_RING_SEGMENT_TABLE_BASE_ADDRESS`, `EVENT_RING_DEQUEUE_POINTER` |
-| `registers::IMAN_PENDING`, `IMAN_ENABLE`, `ERDP_BUSY` | `INTERRUPTER_MANAGEMENT_PENDING`, `INTERRUPTER_MANAGEMENT_ENABLE`, `EVENT_RING_DEQUEUE_POINTER_BUSY` |
-| `registers::Capabilities::portsc` | `port_status_and_control` |
+| `CAPLENGTH` | `CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER` |
+| `HCSPARAMS1`, `HCSPARAMS2` | `STRUCTURAL_PARAMETERS_1_REGISTER`, `STRUCTURAL_PARAMETERS_2_REGISTER` |
+| `HCCPARAMS1` | `CAPABILITY_PARAMETERS_1_REGISTER` |
+| `DBOFF`, `RTSOFF` | `DOORBELL_OFFSET_REGISTER`, `RUNTIME_REGISTER_SPACE_OFFSET_REGISTER` |
+| `USBCMD`, `USBSTS` | `USB_COMMAND_REGISTER`, `USB_STATUS_REGISTER` |
+| `PAGESIZE` | `PAGE_SIZE_BITMAP_REGISTER` |
+| `CRCR` | `COMMAND_RING_CONTROL_REGISTER` |
+| `DCBAAP` | `DEVICE_CONTEXT_BASE_PHYSICAL_ADDRESS_ARRAY_POINTER_REGISTER` |
+| `CONFIG` | `CONFIGURATION_REGISTER` |
+| `IMAN`, `IMOD` | `INTERRUPTER_MANAGEMENT_REGISTER`, `INTERRUPTER_MODERATION_REGISTER` |
+| `ERSTSZ` | `EVENT_RING_SEGMENT_TABLE_SIZE_ENTRIES_REGISTER` |
+| `ERSTBA` | `EVENT_RING_SEGMENT_TABLE_BASE_PHYSICAL_ADDRESS_REGISTER` |
+| `ERDP` | `EVENT_RING_DEQUEUE_POINTER_REGISTER` |
+| `IMAN.IP`, `IMAN.IE`, `ERDP.EHB` | `INTERRUPTER_MANAGEMENT_PENDING`, `INTERRUPTER_MANAGEMENT_ENABLE`, `EVENT_RING_DEQUEUE_POINTER_BUSY` |
+| `PORTSC` | `Capabilities::port_status_and_control` |
+
+Three names carry what the size and address rules add: a length or a size carries its unit
+(`CAPLENGTH`'s `_BYTES`, `ERSTSZ`'s `_ENTRIES`), and the addresses the device context base address
+array holds are physical. The private offsets follow the same rule: `FIRST_PORT_STATUS_AND_CONTROL_REGISTER` and
+`INTERRUPTER_0_REGISTER`.
+
+The template's `register_names.py` reads nine names in the crate as breaking a rule. Two are in
+`registers.rs`: `PAGE_SIZE_BITMAP_REGISTER` holds `size` with no unit, but it is a bitmap of page
+sizes, not a size; `EXTENDED_LEGACY_SUPPORT` is a plain integer in a register module, but it is an
+extended capability id, not an offset. The other seven hold `address`: `address_device`,
+`ADDRESS_DEVICE` and the test `the_assigned_address_and_the_superspeed_test` name the USB device
+address, and `slot_address`, `address_of` and two `address` parameters are physical addresses not
+yet named so.
 
 ### Parameter names of public functions
 
@@ -71,8 +86,8 @@ compatibility, so the maintainer rules them, pending the architect, and no calle
 
 | parameter | of | now |
 |---|---|---|
-| `caplength`, `hcsparams1`, `hcsparams2`, `hccparams1`, `dboff`, `rtsoff` | `registers::Capabilities::decode` | `capability_registers_length`, `structural_parameters_1`, `structural_parameters_2`, `capability_parameters_1`, `doorbell_offset`, `runtime_register_space_offset`, as the constants above would be spelled |
-| `n` | `Capabilities::portsc` | `port_number` |
+| `caplength`, `hcsparams1`, `hcsparams2`, `hccparams1`, `dboff`, `rtsoff` | `registers::Capabilities::decode` | `capability_registers_length`, `structural_parameters_1`, `structural_parameters_2`, `capability_parameters_1`, `doorbell_offset`, `runtime_register_space_offset` |
+| `n` | `Capabilities::port_status_and_control` | `port_number` |
 | `reg` | `Capabilities::interrupter` | `register_offset` |
 | `dci` | `context::device_offset`, `TransferRequestBlock::reset_endpoint`, `set_dequeue` | `device_context_index` |
 | `average_trb` | `context::endpoint` | `average_transfer_request_block_bytes` |
@@ -86,7 +101,6 @@ parameter (`slice::from_raw_parts`).
 
 ### Borderline private names, left as they are
 
-- `INTERRUPTER_0`: a digit-suffixed constant that reads as a register-set index, not a clip.
 - The single-letter test locals are out of scope.
 - Possessives in test names (`qemus_capability_registers_decode`, `the_preserved_set_is_linuxs`,
   `xenons_ports_are_all_counted_once_they_settle`): proper nouns with `s`, not abbreviations.
