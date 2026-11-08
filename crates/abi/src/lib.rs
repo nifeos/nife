@@ -11,6 +11,10 @@
 
 #![no_std]
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 /// The syscall ABI's version: the generation of the syscall numbers, the method numbers and the
 /// error codes a program was built against, all one surface. One constant for the whole surface,
 /// module-scoped constants refused (the scope is the syscall surface a program matches). The check is at spawn, not at run time: the

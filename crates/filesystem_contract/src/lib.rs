@@ -12,6 +12,10 @@
 
 #![no_std]
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 /// One page, in bytes, and one RedoxFS block (`redoxfs::BLOCK_SIZE`), so a block move is a page
 /// move and one frame of the direct map holds exactly one block. Both channels are built from it:
 /// a `blk` request moves up to [`blk::TRANSFER_BLOCKS`] of these and a file request up to
