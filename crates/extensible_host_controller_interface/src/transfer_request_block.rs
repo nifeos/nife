@@ -115,7 +115,7 @@ impl TransferRequestBlock {
         ])
     }
 
-    /// (address_device, xHCI 1.2 specification section 4.6.5) Address Device: take the input
+    /// (`address_device`, xHCI 1.2 specification section 4.6.5) Address Device: take the input
     /// context at `input` (physical) for `slot`, and send the device its address.
     ///
     /// Name: ratified 2026-10-25 (#2720).
