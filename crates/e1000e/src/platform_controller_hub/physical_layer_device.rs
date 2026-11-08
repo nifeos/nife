@@ -149,9 +149,10 @@ pub(crate) const IGP01E1000_PHYSICAL_LAYER_DEVICE_PAGE_SELECT: u32 = 0x1f;
 pub(crate) const PHYSICAL_LAYER_DEVICE_PAGE_SHIFT: u32 = 5;
 /// The first page reached at PHY address 1 rather than 2: OpenBSD's `HV_INTC_FC_PAGE_START`
 /// (`sys/dev/pci/if_em_hw.h`), which FreeBSD's `e1000_phy.h` spells the same. No source expands
-/// `INTC_FC`, so the name says what the page is instead. It is selected as page 0.
+/// `INTC_FC`, so the name says what the page is instead, and says whose address: the physical
+/// layer device's, not a register's. It is selected as page 0.
 #[doc(alias = "HV_INTC_FC_PAGE_START")]
-pub(crate) const FIRST_PAGE_AT_ADDRESS_ONE: u32 = 768;
+pub(crate) const FIRST_PAGE_AT_PHYSICAL_LAYER_DEVICE_ADDRESS_ONE: u32 = 768;
 /// The host wakeup page (`BM_WUC_PAGE`), refused.
 pub(crate) const BM_WUC_PAGE: u32 = 800;
 
@@ -437,7 +438,7 @@ impl SoftwareFlag {
 
 /// Which PHY address a page lives at (`e1000_get_phy_addr_for_hv_page`).
 pub(crate) const fn address_for(page: u32) -> u32 {
-    if page >= FIRST_PAGE_AT_ADDRESS_ONE {
+    if page >= FIRST_PAGE_AT_PHYSICAL_LAYER_DEVICE_ADDRESS_ONE {
         1
     } else {
         2
@@ -473,13 +474,15 @@ pub struct PagedAccessPlan {
 pub const fn plan_paged_access(offset: u32) -> Result<PagedAccessPlan, Error> {
     let page = offset >> PHYSICAL_LAYER_DEVICE_PAGE_SHIFT;
     let register = offset & MAXIMUM_PHYSICAL_LAYER_DEVICE_REGISTER_ADDRESS;
-    if page == BM_WUC_PAGE || (page > 0 && page < FIRST_PAGE_AT_ADDRESS_ONE) || page > MAXIMUM_PAGE
+    if page == BM_WUC_PAGE
+        || (page > 0 && page < FIRST_PAGE_AT_PHYSICAL_LAYER_DEVICE_ADDRESS_ONE)
+        || page > MAXIMUM_PAGE
     {
         return Err(Error::PageNotPorted);
     }
     let physical_layer_device_address = address_for(page);
     // Page 768 is selected as page 0 (FreeBSD: "if (page == HV_INTC_FC_PAGE_START) page = 0").
-    let shown = if page == FIRST_PAGE_AT_ADDRESS_ONE {
+    let shown = if page == FIRST_PAGE_AT_PHYSICAL_LAYER_DEVICE_ADDRESS_ONE {
         0
     } else {
         page
@@ -608,7 +611,7 @@ mod proofs {
             match p.select {
                 Some(sel) => {
                     assert!(p.register > MAXIMUM_PHYSICAL_LAYER_DEVICE_MULTI_PAGE_REGISTER);
-                    let shown = if page == FIRST_PAGE_AT_ADDRESS_ONE {
+                    let shown = if page == FIRST_PAGE_AT_PHYSICAL_LAYER_DEVICE_ADDRESS_ONE {
                         0
                     } else {
                         page
