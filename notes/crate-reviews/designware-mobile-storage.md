@@ -12,8 +12,8 @@ controller sequences and the internal DMA controller's descriptor chains. It ide
 reads and writes blocks, and decodes the card's identification and specific-data registers. The
 caller implements one trait, `RegisterWindowAndClock` (read a register, write one, read a
 microsecond clock), and every sequence runs on a host against a simulated controller and card. It
-is `no_std`, with no allocator, no `unsafe` and no dependency. Eight Kani harnesses prove its
-parsers and bounds. Every public name has a ratified `Name:` block, and the compile-time checks have no public name.
+is `no_std`, with no allocator, no `unsafe` and no dependency. Nineteen Kani harnesses prove its
+parsers and bounds, and that each controller sequence is total against any controller. Every public name has a ratified `Name:` block, and the compile-time checks have no public name.
 The board's test steps live in the kernel's storage bench, not here. The public names under Names
 that break a naming rule wait for the architect.
 
@@ -89,12 +89,12 @@ Against the rulings in force, with the template's checks (`unit_symbols.py`, `sp
 | rule | result |
 |---|---|
 | units spelled out | passes. `_HERTZ`, `_MICROSECONDS` and `_BYTES` throughout. |
-| spelled-out words, accepted acronyms only | fails on the public names below. Every non-public name is spelled out: a register, bit, descriptor or command constant says what it is (`RAW_INTERRUPT_STATUS_REGISTER`, `SD_SEND_OPERATION_CONDITIONS`) and carries its source's spelling in `doc(alias)` (`RINTSTS`, `SD_SEND_OP_COND`), cited at the opening of its doc comment. |
+| spelled-out words, accepted acronyms only | fails on the public names below. Every non-public name is spelled out: a register, bit, descriptor or command constant says what it is (`RAW_INTERRUPT_STATUS_REGISTER`, `SD_SEND_OPERATION_CONDITIONS`) and carries its source's spelling in `doc(alias)` (`RINTSTS`, `SD_SEND_OP_COND`), cited at the opening of its doc comment. `crc` is an accepted acronym, so the CRC constants keep it (`RAW_INTERRUPT_DATA_CRC_ERROR`, alias `RINTSTS_DCRC`). |
 | register shape (`_REGISTER`, `_MASK`, a size's unit) | fails on six public register offsets below. Every non-public offset ends `_REGISTER` and every multi-bit constant `_MASK`. |
 | address naming | fails on two public names below. The other `register_names.py` address findings name a card's relative address or a logical block address, which are not memory locations. |
 | question shape | passes. |
 | British spelling | passes. |
-| `id`, `sd`, `jh7110` | accepted words and a chip name. |
+| `id`, `sd`, `crc`, `jh7110` | accepted words and a chip name. |
 | aliases of an old nife spelling | none. Every `doc(alias)` is a specification, databook or OpenBSD term. |
 | prose acronyms (`prose_acronyms.py`) | fails: 62 acronyms in the README and doc comments are not expanded where first used (`FIFO`, `CSD`, `OCR`, `MMIO`, the command numbers `CMD0` to `ACMD41` and others). |
 
@@ -108,7 +108,6 @@ Public names that break a rule, with a recommended name. Each is the architect's
 | `registers::TRANSFERRED_HOST_BYTE_COUNT` | a register offset ends `_REGISTER` | `TRANSFERRED_HOST_BYTE_COUNT_REGISTER` |
 | `registers::HARDWARE_RESET` | a register offset ends `_REGISTER` | `HARDWARE_RESET_REGISTER` |
 | `registers::BUS_MODE` | a register offset ends `_REGISTER` | `BUS_MODE_REGISTER` |
-| `command::Response::has_crc` | `crc` is not an accepted acronym | `has_cyclic_redundancy_check`, alias `crc` |
 | `command::Data::block_size` | a size carries its unit | `block_bytes` |
 | `sd::CardKind::SdV1`, `SdV2` | `V` abbreviates version | `SdVersion1`, `SdVersion2` |
 | `internal_direct_memory_access::DirectMemoryAccessRegion::bus_address` | an address is virtual or physical | `physical_address` |
