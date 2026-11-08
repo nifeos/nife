@@ -25,7 +25,7 @@ assert_eq!((a.index, a.transfer_request_block.is_cycle(), a.link), (0, true, Non
 ```
 
 The caller writes each placed TRB (and the link, when `link` is `Some`) to DMA memory at
-`ring.address_of(index)`, then rings the doorbell.
+`ring.entry_physical_address(index)`, then rings the doorbell.
 
 ## What is proven
 
