@@ -42,9 +42,9 @@ questions, no LLVM port.
 - **TLS is not a hard prerequisite for a first cut.** nife has no TLS/crypto stack today
   ([milestone 66 (vaultwarden)](0066-vaultwarden.md) names this exact gap for an unrelated program, "TLS: none.
   `rustls` needs entropy (have it) and a large crypto surface"). A first version of this
-  milestone could still run over plain TCP on a trusted LAN, the same way calef's own dev machine and a
-  build box already share a network today. Real TLS becomes necessary only once this needs to cross
-  a network calef does not trust. That is a later, separable hardening pass.
+  milestone could still run over plain TCP on a trusted local area network, the same way calef's own
+  dev machine and a build box already share a network today. Real TLS becomes necessary only once
+  this needs to cross a network calef does not trust. That is a later, separable hardening pass.
 
 ## Why it matters
 
@@ -67,4 +67,4 @@ picks this up.
 The nearer-term alternative to full local self-hosting. Edit and version-control on nife, and hand the
 actual `cargo build` to a remote service over the network. Needs a network client and a
 remote-build protocol, not the capability-native subprocess primitive or an LLVM port; could run
-over plain TCP on a trusted LAN before nife's still-missing TLS stack matters.
+over plain TCP on a trusted local area network before nife's still-missing TLS stack matters.

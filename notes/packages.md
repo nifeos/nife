@@ -299,8 +299,8 @@ removed) is met, and so is §219's gate D2. The boot prompt is the owner's conso
 - x86_64 fetches under QEMU only: xenon's I219 is left alone at boot
   ([packages/fetching.md](packages/fetching.md)).
 - `greeting` and `noteless` (no manifest note) prove the path, not a useful program.
-- The package peer is a `guestfwd` process over slirp, not a server on a LAN: enough to prove the
-  client, not a real network card or a host elsewhere (rung 3b).
+- The package peer is a `guestfwd` process over slirp, not a server on a local area network: enough
+  to prove the client, not a real network card or a host elsewhere (rung 3b).
 - Plain HTTP carries the package, and that is safe only because of the image's catalog. A
   source whose digests arrive over the same connection would be worth nothing against a machine in
   the middle; that is what §196 (nife carries TLS)'s TLS is for on rung 3c.

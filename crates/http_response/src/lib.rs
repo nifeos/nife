@@ -1,6 +1,6 @@
 //! One HTTP/1.x `GET`, written, and the response to it, read as it arrives: the pure-logic halves
-//! of the plain LAN client rung 3a of milestone 198 (a package manager, and the trivial install that
-//! makes a second customer possible) fetches packages with.
+//! of the plain local area network client rung 3a of milestone 198 (a package manager, and the
+//! trivial install that makes a second customer possible) fetches packages with.
 //!
 //! [`get_request`] writes the request line. [`Response::feed`] takes each socket read, keeps only
 //! the status line and headers in a fixed buffer (parsed by `httparse`), and hands back the part
@@ -43,8 +43,8 @@ const MAXIMUM_HEADERS: usize = 128;
 /// line, about 940 the `Location` URL. It was 5,291 on 2026-10-13, so the bound is three times
 /// today's head rather than a fit to it; GitHub sets the size, not nife. `pinned_tls_client` reads
 /// with this bound, boxed, so a package client can follow the one redirect calef ruled on
-/// 2026-10-12 (UTC) on #2048; the plain LAN reader keeps [`HEAD_MAXIMUM`], because its consumers
-/// include a `no_std` test component with a small stack.
+/// 2026-10-12 (UTC) on #2048; the plain local area network reader keeps [`HEAD_MAXIMUM`], because
+/// its consumers include a `no_std` test component with a small stack.
 ///
 /// Name: provisional, minted 2026-10-13 (UTC) by lane `lane/basalt-on-pages-and-releases`.
 pub const REDIRECT_HEAD_MAXIMUM: usize = 32 * 1024;

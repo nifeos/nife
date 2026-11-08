@@ -164,7 +164,8 @@ calef is the only contributor. Everything else is agent lanes acting for him. So
    and (e) close it.
 2. The Actions surface: the job token, secrets and third-party actions. The default token is
    read-only, no gating workflow reads a secret, and the two third-party actions are SHA-pinned.
-3. Reach from a job into the maintainer's LAN, including the bench's power and serial controls.
+3. Reach from a job into the maintainer's local area network, including the bench's power and serial
+   controls.
 4. Supply chain. A dependency's build script runs in the job, but lanes already run the same code
    on the build host.
 5. A misled agent or a stolen token pushing code. Lanes arm their own pull requests, so the queue
@@ -194,7 +195,7 @@ unattended, as something other than the maintainer, which is a chance to run it 
    token, SSH keys or home directory.
 3. Ephemeral or just-in-time registration, one job each, with no writable cache shared between
    jobs.
-4. Egress to the LAN blocked; outbound allowed to GitHub and the crate registry only.
+4. Egress to the local area network blocked; outbound allowed to GitHub and the crate registry only.
 5. A runner group restricted to nifeos/nife, with GitHub's public-repository override set on purpose.
 
 A fresh VM per job is the stronger shape, and the appendix describes it. It becomes necessary the

@@ -749,7 +749,7 @@ fn host_tool_output(program: &str, args: &[&str]) -> Option<String> {
         .then(|| String::from_utf8_lossy(&out.stdout).into_owned())
 }
 
-/// Keep only the addresses a board on a private LAN could route to.
+/// Keep only the addresses a board on a private local area network could route to.
 fn keep_private(found: Vec<(String, std::net::Ipv4Addr)>) -> Vec<(String, std::net::Ipv4Addr)> {
     found
         .into_iter()
@@ -1169,7 +1169,7 @@ mod tests {
     /// `100.75.22.70`, an address radon has no path to. The private-space filter is what drops it,
     /// and the test asserts the drop rather than only asserting the keeps.
     #[test]
-    fn the_hosts_own_lan_addresses_are_read_off_both_tools() {
+    fn the_hosts_own_local_area_network_addresses_are_read_off_both_tools() {
         let ifconfig = "\
 lo0: flags=8049<UP,LOOPBACK,RUNNING,MULTICAST> mtu 16384
 \tinet 127.0.0.1 netmask 0xff000000

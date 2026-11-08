@@ -60,7 +60,7 @@ column counts the times the file names calef.
 | `script/crate-standalone` | 1/2 | a crate stands outside nife: build check and vocabulary check | `h/crate_release.py`, `s/metrics` | `s/falsifications`, `s/metrics`, `s/names` | 240 | 4 |
 | `script/cadence-check` | 1/3 | which scheduled workflows stopped producing a result; also reads effort and the watcher | `trunk-health.yml`, `undefined-behavior-check.yml`, `h/trunk-health.sh`, `h/watcher_watch.py`, +4 | `s/audits`, `s/ci-build`, `s/effort`, `s/lint`, +4 | 284 | 3 |
 | `script/ci-log-baseline` | 1/3 | mines failed CI logs per check; gate evidence, but kept for the queue's triage | `ci.yml` | `s/coverage`, `s/cpu-matrix`, `s/icount`, `s/lint`, +4 | 392 | 3 |
-| `script/netboot-rehearsal` | 1/4 | a netboot rehearsal; carries one machine's hardware address and the home LAN prefix | none | `s/board-netboot`, `s/ci-qemu`, `h/qemu-bounded.sh`, `h/qemu-path.sh`, +1 | 716 | 3 |
+| `script/netboot-rehearsal` | 1/4 | a netboot rehearsal; carries one machine's hardware address and the home local area network prefix | none | `s/board-netboot`, `s/ci-qemu`, `h/qemu-bounded.sh`, `h/qemu-path.sh`, +1 | 716 | 3 |
 | `script/apropos` | 2 | search the documentation | `s/lint`, `xtask/main.rs`, `xtask/manual.rs` | `s/ci-qemu`, `h/qemu-path.sh`, `notes/scripts.md` | 109 | 1 |
 | `script/audits` | 2 | audit cadence and index | `audit-cadence.yml`, `s/cadence-check`, `s/lint`, `s/roadmap`, +2 | `s/citations`, `s/drift`, `s/lint`, `s/roadmap`, +2 | 576 | 1 |
 | `script/citations` | 2 | citations resolve and quotations still hold | `h/needs-maintainer-selftest.sh`, `h/open-lane.sh`, `h/prose_only.py`, `h/prose_ratchet.py`, +10 | `s/decisions`, `s/falsifications`, `s/lint`, `s/metrics`, +3 | 1340 | 5 |

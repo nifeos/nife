@@ -38,11 +38,11 @@ So step 1 below is useful now, and steps 2 and 3 wait on basalt.
 
 ## Step 1: serve a directory
 
-- Serve `/srv/nife/lab/current/` read-only over plain HTTP on the house LAN at
-  `http://<cordoba's LAN address>:8090/lab/`. The port is the homelab agent's choice; tell calef
-  which. Plain HTTP is enough: every byte is verified by TUF signatures and digests (§195 (a
-  reviewed recipe vouches for a package)).
-- LAN only. Not on the tailnet, not through the router to the internet.
+- Serve `/srv/nife/lab/current/` read-only over plain HTTP on the house local area network at
+  `http://<cordoba's local area network address>:8090/lab/`. The port is the homelab agent's choice;
+  tell calef which. Plain HTTP is enough: every byte is verified by TUF signatures and digests (§195
+  (a reviewed recipe vouches for a package)).
+- Local area network only. Not on the tailnet, not through the router to the internet.
 - GET and HEAD only, `Content-Length` on every reply, no directory listings, no redirects, no
   compression. nife's HTTP client is minimal, and the only server it has met answers HTTP/1.0
   (`helpers/package-http-peer`).
@@ -83,15 +83,17 @@ Do not re-sign, re-compress or rename anything. A mirror that changes a byte bre
 
 ## What the lab machines need
 
-- To reach cordoba's address and port from the lab's LAN. radon takes `192.168.8.200` by DHCP
-  (milestone 257 (boot radon over the network)); xenon's address is in the router's lease table.
+- To reach cordoba's address and port from the lab's local area network. radon takes `192.168.8.200`
+  by DHCP (milestone 257 (boot radon over the network)); xenon's address is in the router's lease
+  table.
 - Nothing else from the homelab agent. The nife side (a configurable source, TUF verification,
   automatic updates as an owner setting) is nife's work and is listed in the plan.
 
 ## Verify
 
-- From another machine on the LAN: `curl -sI http://<address>:<port>/lab/metadata/timestamp.json`
-  returns 200 once step 3 has run, and 404 before.
+- From another machine on the local area network,
+  `curl -sI http://<address>:<port>/lab/metadata/timestamp.json` returns 200 once step 3 has run,
+  and 404 before.
 - A request for a path outside `/lab/` returns 404.
 - After a sync, `readlink /srv/nife/lab/current` names the newest directory, and the log line says
   pass.
