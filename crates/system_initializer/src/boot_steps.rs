@@ -390,13 +390,14 @@ fn start_virtio_entropy(
     let magic = user_mode_runtime::virtio::read_register(g.virtio_rng, 0);
     if magic >= 0 {
         if map_page_frame(g.virtio_rng_dma, RNG_DMA_PEEK_VA, true, ut) {
-            // SAFETY: just mapped read/write, one page, ours alone until entropy is built and
-            // holds its own copy of the same frame; `VIRTIO_DMA_PHYS_OFFSET` is inside it and
+            // SAFETY: just mapped read/write, one page, ours alone until entropy is built and holds
+            // its own copy of the same frame;
+            // `DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET` is inside it and
             // outside entropy's own ring-and-buffer layout (that constant's own doc).
             let direct_memory_access_phys = unsafe {
                 core::ptr::read_unaligned(
                     (RNG_DMA_PEEK_VA as *const u8)
-                        .add(VIRTIO_DMA_PHYS_OFFSET as usize)
+                        .add(DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET as usize)
                         .cast::<u64>(),
                 )
             };

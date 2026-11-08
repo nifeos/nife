@@ -10,7 +10,6 @@ components/src/swish/witness.rs::removed question-shape
 
 crates/abi/src/futex.rs::admitted question-shape
 
-crates/abi/src/virtio.rs::DMA_PHYS_OFFSET spelled-out
 
 crates/address_space_identifier/src/lib.rs::ASIDS spelled-out
 
