@@ -12,8 +12,9 @@ controller sequences and the internal DMA controller's descriptor chains. It ide
 reads and writes blocks, and decodes the card's identification and specific-data registers. The
 caller implements one trait, `RegisterWindowAndClock` (read a register, write one, read a
 microsecond clock), and every sequence runs on a host against a simulated controller and card. It
-is `no_std`, with no allocator, no `unsafe` and no dependency. Nineteen Kani harnesses prove its
-parsers and bounds, and that each controller sequence is total against any controller. Every public name has a ratified `Name:` block, and the compile-time checks have no public name.
+is `no_std`, with no allocator, no `unsafe` and no dependency. Twenty-three Kani harnesses prove its
+parsers and bounds, that each controller sequence is total against any controller, and that card
+bring-up walks the card state machine in order. Every public name has a ratified `Name:` block, and the compile-time checks have no public name.
 The board's test steps live in the kernel's storage bench, not here. No decision is open.
 
 ## Identity
@@ -25,7 +26,7 @@ The board's test steps live in the kernel's storage bench, not here. No decision
 | edition, `rust-version` | 2024, 1.88 |
 | license | `(MIT OR Apache-2.0) AND ISC`; `LICENSE-MIT` and `LICENSE-APACHE` at the crate root, the ISC notice in `src/lib.rs` |
 | `publish` | `false` |
-| size | 6,570 lines in 12 files: about 4,690 of library, 687 of shared tests, 969 of simulator, 220 of Kani harnesses |
+| size | 8,324 lines in 12 files: about 5,150 of library, 720 of shared tests, 1,026 of simulator, 1,426 of Kani harnesses |
 | consumers in nife | `kernel`, `components` and `machine_discovery`, by path |
 
 ## Public API
@@ -59,8 +60,7 @@ What a stranger may find surprising:
 
 ## Proofs and falsification patches
 
-Eight harnesses in `src/proofs.rs`, each with one patch. `script/crate-standalone` proved all eight
-on 1.88 and saw each patch fail its own harness.
+Twenty-three harnesses in `src/proofs.rs`, each with one patch that fails it at its own assertion.
 
 | harness | what it proves |
 |---|---|
@@ -72,9 +72,24 @@ on 1.88 and saw each patch fail its own harness.
 | `a_register_field_never_exceeds_its_width` | a field read from a 128-bit register never exceeds its width and never panics |
 | `a_card_specific_data_decode_is_total_and_never_overflows` | decoding any specific-data register, as SD or eMMC, sizes the card without overflow |
 | `an_extended_card_specific_data_sector_count_is_total` | the eMMC sector count reads from bytes 212 to 215 of any buffer, and a short buffer gives zero |
+| `a_wait_returns_at_the_first_reading_past_its_deadline` | a wait ends at the first clock reading past its deadline, however the clock wrapped, stood or jumped before |
+| `the_direct_memory_access_wait_returns_once_its_deadline_has_passed` | the IDMAC wait ends once its deadline has passed, however the controller rewrites the descriptors |
+| `the_clock_divider_is_total` | the card clock divider never divides by zero, overflows or panics |
+| `a_command_word_sends_only_the_command_asked_for` | a command word carries the start bit and its own index, a data phase exactly when the command has one, and the write bit only on a write |
+| `sending_a_command_is_total_against_any_controller` | a command with no data phase ends without a panic, and every error names the command |
+| `reset_and_the_card_clock_are_total_against_any_controller` | a reset and a clock change end without a panic, and at 50 MHz the card runs no faster than asked |
+| `a_queue_transfer_stays_inside_its_buffer` | a polled data phase ends and indexes its buffer only inside it |
+| `reading_a_block_never_writes_the_card_or_leaves_the_region` | a one-block read through the IDMAC sends no write command and stays inside the region |
+| `writing_a_block_sends_only_the_block_asked_for` | a one-block write through the IDMAC sends at most one write command, of the block asked for, inside the card |
+| `bringing_a_card_up_is_total_against_any_controller` | reset, `CMD0`, `CMD8`, power-up and addressing end without a panic and send no write command |
+| `configuring_a_card_is_total_against_any_controller` | configuration ends without a panic and sends no write command, and a configured SD card has a capacity and the transfer clock |
+| `each_bring_up_command_goes_to_a_card_state_that_accepts_it` | from any card state, every command `identify` sends is legal in the state the card is in, and none writes |
+| `a_card_is_brought_up_only_through_every_step` | a `Card` comes back only after the card passed from `CMD0` through every state to transfer, with its address, kind, block length and bus width set |
+| `a_bring_up_starts_over_from_whatever_a_failed_one_left` | from any state a failed bring-up left, `identify` resets the controller and drops it to a 1-bit bus at the identification clock before `CMD0`, and a card it hands back runs one bus width on the card, the controller and the `Card` |
+| `a_card_that_keeps_reporting_busy_is_given_up_on_once_the_deadline_passes` | power-up against a card that is busy forever ends with `PowerUp`, and sends at most one more power-up command once the one-second deadline has passed |
 
-Not proved, and the README says so: the card bring-up state machine, the timing, and the
-identification decode. 91 host tests drive those against the simulator.
+Not proved, and the README says so: the timing and the identification decode (the right
+capacity, SD told from SDHC). 92 host tests drive those against the simulator.
 
 ## Names
 
@@ -148,6 +163,11 @@ future kind. `Response` stays exhaustive, since the specification fixes its seve
 scratch write verdict, `ScratchWriteVerdict`, lives in the kernel's storage bench and not in this
 crate.
 
+The crate has no helper that checks whether a partition fits inside the card. Partition handling
+above the driver belongs to the layer that mounts the partition, which knows the card's size from
+`Card::blocks` and the partition's extent from `PartitionEntry`. Adding such a helper in a later
+release stays compatible.
+
 ## Outstanding before the move
 
 | item | owner |
@@ -166,8 +186,8 @@ No defect found in the logic.
 ## Result of `script/crate-standalone`
 
 Clean: manifest, files, citations, names, the build on 1.88 for the host and
-the three bare-metal targets, all eight harnesses and all eight falsifications. The crate's 91
-host tests and five doctests pass, `cargo clippy` reports nothing, and
+the three bare-metal targets, all twenty-three harnesses and all twenty-three falsifications. The
+crate's 92 host tests and five doctests pass, `cargo clippy` reports nothing, and
 `machine_discovery`, `driver_process_contract`, `components` and the kernel (with `storage_bench`)
 still build.
 
