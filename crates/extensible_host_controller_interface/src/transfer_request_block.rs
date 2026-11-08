@@ -82,7 +82,12 @@ impl TransferRequestBlock {
     }
 
     const fn pointer(physical_address: u64, rest: [u32; 2]) -> TransferRequestBlock {
-        TransferRequestBlock([physical_address as u32, (physical_address >> 32) as u32, rest[0], rest[1]])
+        TransferRequestBlock([
+            physical_address as u32,
+            (physical_address >> 32) as u32,
+            rest[0],
+            rest[1],
+        ])
     }
 
     /// A link TRB back to `target` with Toggle Cycle set, which is what flips the consumer's
@@ -125,7 +130,8 @@ impl TransferRequestBlock {
             input,
             [
                 0,
-                control(transfer_request_block_type::DEVICE_ADDRESSING_COMMAND) | (slot as u32) << 24,
+                control(transfer_request_block_type::DEVICE_ADDRESSING_COMMAND)
+                    | (slot as u32) << 24,
             ],
         )
     }
