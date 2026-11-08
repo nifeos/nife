@@ -774,39 +774,43 @@ mod tests {
         }
     }
 
-    /// **A card that stalls is given up on once the deadline has passed**, owing both descriptors
-    /// still open (a page and a 512-byte tail of a nine-block read), with the engine stopped. A
-    /// clock that advances seven microseconds a read never lands on the deadline exactly, so the
-    /// give-up test has to be a comparison past it. On a worker, so a wait that never gives up is
-    /// a named failure rather than a hung run.
+    /// **A card that stalls is given up on once the deadline has passed**, owing what the
+    /// descriptors it still owns describe, with the engine stopped. A nine-block read is a page and
+    /// a 512-byte tail: a stall inside the page owes both (4608 bytes); a stall once the page is
+    /// done owes the tail alone (512), so only the descriptors still owned are counted, each by its
+    /// own size. A clock that advances seven microseconds a read never lands on the deadline
+    /// exactly, so the give-up test has to be a comparison past it. On a worker, so a wait that
+    /// never gives up is a named failure rather than a hung run.
     #[test]
     #[cfg_attr(
         miri,
         ignore = "a ten-second wall-clock watchdog; the interpreted spin to the simulated deadline outlasts it"
     )]
     fn a_stalled_transfer_gives_up_once_the_deadline_has_passed() {
-        let (h, card, memory) = polled(3);
-        let mut h = with_internal_direct_memory_access(h, &memory);
-        h.registers_mut().stall_after = Some(512);
-        h.registers_mut().clock_step = 7;
         assert_ne!(DATA_DEADLINE_MICROSECONDS % 7, 0);
-        let (sender, receiver) = std::sync::mpsc::channel();
-        std::thread::spawn(move || {
-            let mut back = vec![0u8; 9 * 512];
-            let r = sd::read_blocks(&mut h, &card, 60, &mut back);
-            let _ = sender.send((r, h.registers_mut().peek(registers::BUS_MODE)));
-        });
-        let (r, bus_mode) = receiver
-            .recv_timeout(std::time::Duration::from_secs(10))
-            .expect("the deadline never fired");
-        assert!(matches!(
-            r,
-            Err(BlockTransferError::Host(Error::DataTimeout(18, _, 4608)))
-        ));
-        assert_eq!(
-            bus_mode & registers::BUS_MODE_INTERNAL_DIRECT_MEMORY_ACCESS_ENABLE,
-            0
-        );
+        for (stall_after, owed) in [(512, 4608), (4096, 512)] {
+            let (h, card, memory) = polled(3);
+            let mut h = with_internal_direct_memory_access(h, &memory);
+            h.registers_mut().stall_after = Some(stall_after);
+            h.registers_mut().clock_step = 7;
+            let (sender, receiver) = std::sync::mpsc::channel();
+            std::thread::spawn(move || {
+                let mut back = vec![0u8; 9 * 512];
+                let r = sd::read_blocks(&mut h, &card, 60, &mut back);
+                let _ = sender.send((r, h.registers_mut().peek(registers::BUS_MODE)));
+            });
+            let (r, bus_mode) = receiver
+                .recv_timeout(std::time::Duration::from_secs(10))
+                .expect("the deadline never fired");
+            assert!(
+                matches!(r, Err(BlockTransferError::Host(Error::DataTimeout(18, _, o))) if o == owed),
+                "stalled after {stall_after}: {r:?}"
+            );
+            assert_eq!(
+                bus_mode & registers::BUS_MODE_INTERNAL_DIRECT_MEMORY_ACCESS_ENABLE,
+                0
+            );
+        }
     }
 
     /// **The register contract of one transfer**, write by write, on a controller whose firmware
