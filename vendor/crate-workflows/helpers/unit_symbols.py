@@ -78,6 +78,9 @@ pub const BUS_MEGAHERTZ: u32 = 1;
 /// **Timeout Value** (TO_MS, a vendor databook, register table 4).
 #[doc(alias = "timeout value")]
 pub const TO_MS: u32 = 0;
+/// **Timeout Value** (TimeoutMs, a vendor databook, register table 4).
+#[doc(alias = "timeout value")]
+pub struct TimeoutMs;
 // pub const IN_A_COMMENT_MS: u32 = 0;
 '''
     found = rust_names.definitions(src)
@@ -85,7 +88,7 @@ pub const TO_MS: u32 = 0;
     names = [line.split(': ')[1] for line in bad]
     want = ['const TIMEOUT_MS', 'const CLOCK_MHZ', 'fn delay_us', 'parameter us',
             'binding within_30_s', 'binding kib_per_s', 'const SECONDS_PER_MIN',
-            'const NANOS_PER_SEC', 'const BUFFER_KB']
+            'const NANOS_PER_SEC', 'const BUFFER_KB', 'const TO_MS']
     failed = 0
     if names != want:
         failed += 1
@@ -95,7 +98,8 @@ pub const TO_MS: u32 = 0;
                          ('const CLOCK_MHZ', 'write `megahertz`'),
                          ('const SECONDS_PER_MIN', 'write `minute`'),
                          ('binding within_30_s', 'write `seconds`'),
-                         ('const NANOS_PER_SEC', '`sec` is spelled out: write `seconds`')):
+                         ('const NANOS_PER_SEC', '`sec` is spelled out: write `seconds`'),
+                         ('const TO_MS', 'integer constant')):
         if needle not in msg.get(name, ''):
             failed += 1
             print(f'unit_symbols selftest: {name} message lacks {needle!r}: {msg.get(name)}',

@@ -1,7 +1,7 @@
 # Generational names
 
 *(Milestone 14 (kernel objects from untyped) phase A. The mechanism behind
-`crates/generational_table`, the scheduler's thread table since the `BTreeMap` was retired. See
+`nifeos/generational_table`, the scheduler's thread table since the `BTreeMap` was retired. See
 design/kernel-objects-from-untyped.md, decision D2.)*
 
 ## The problem it solves
@@ -251,7 +251,7 @@ shape ever promised.
 
 ## What is proved (milestone 18 style, before anything leans on it)
 
-Five Kani harnesses in `crates/generational_table` (`script/verify`):
+Five Kani harnesses in `nifeos/generational_table`, proved by that repository's `proofs` workflow:
 
 | Harness | Property |
 |---|---|

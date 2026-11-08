@@ -485,8 +485,8 @@ where
         direct_map(m, e.aon.base, e.aon.base + e.aon.size, Flags::device())?;
         direct_map(
             m,
-            e.syscon.base,
-            e.syscon.base + e.syscon.size,
+            e.syscon.base_physical_address,
+            e.syscon.base_physical_address + e.syscon.size_bytes,
             Flags::device(),
         )?;
     }

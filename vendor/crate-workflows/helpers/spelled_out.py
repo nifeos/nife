@@ -12,7 +12,8 @@ and `initial` do not. Comments, strings and `#[doc(alias)]` strings are never ju
 where the source's spelling belongs.
 
 A name that mirrors a datasheet, a specification or the standard library keeps its spelling in the
-kept form rust_names.py describes, at the item. There is no baseline: a new crate repository starts
+kept form rust_names.py describes, at the item. An integer constant (a register, bit, field or
+command) is never kept: it is spelled out, and the source spelling is its alias. There is no baseline: a new crate repository starts
 at a ceiling of 0, and every finding fails.
 
 The rule is the naming rules page's spelled-out rulings and its acronym test, in the operating
@@ -68,11 +69,17 @@ pub const SECONDS_PER_MIN: u64 = 60;
 #[doc(alias = "fifo")]
 /// The receive queue; the alias and this doc mention rx and fifo.
 pub struct ReceiveQueue;
-/// **Controller Capabilities** (CAP, NVM Express Base Specification 2.0, section 3.1.1).
+/// **Controller Capabilities** (Cap, NVM Express Base Specification 2.0, section 3.1.1).
 #[doc(alias = "controller capabilities")]
-pub const CAP: u32 = 0;
+pub struct Cap;
 #[doc(alias = "controller capabilities")]
-pub const CAPS: u32 = 0;
+pub struct Caps;
+/// **ACMD41, SD send operation conditions** (SD_SEND_OP_COND, the SD specification).
+#[doc(alias = "SD send operation conditions")]
+pub const SD_SEND_OP_COND: u8 = 41;
+/// **ACMD41** (`SD_SEND_OP_COND`, the SD specification).
+#[doc(alias = "SD_SEND_OP_COND")]
+pub const SD_SEND_OPERATION_CONDITIONS: u8 = 41;
 // let rx = 1; is a comment
 pub fn quoted() { let s = "irq"; }
 '''
@@ -80,7 +87,7 @@ pub fn quoted() { let s = "irq"; }
     bad = rust_names.judge('x.rs', found, hits)
     names = [line.split(': ')[1] for line in bad]
     want = ['struct RxRing', 'field tx_head', 'const MAX_FRAME_BYTES', 'fn init', 'parameter config',
-            'const CAPS']
+            'struct Caps', 'const SD_SEND_OP_COND']
     failed = 0
     if names != want:
         failed += 1
@@ -88,7 +95,8 @@ pub fn quoted() { let s = "irq"; }
     msg = {line.split(': ')[1]: line for line in bad}
     for name, needle in (('struct RxRing', '`rx` is spelled out: write `receive`'),
                          ('const MAX_FRAME_BYTES', 'write `maximum`'),
-                         ('const CAPS', 'states no source'),
+                         ('struct Caps', 'states no source'),
+                         ('const SD_SEND_OP_COND', 'integer constant'),
                          ('fn init', 'open its doc comment with `(init, <source>)`')):
         if needle not in msg.get(name, ''):
             failed += 1
