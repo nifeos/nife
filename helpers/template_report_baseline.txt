@@ -119,9 +119,9 @@ environment_contract abbreviations 19
 environment_contract prose_acronyms 4
 environment_contract readme_acronyms 2
 environment_contract register_names 3
-extensible_host_controller_interface abbreviations 21
+extensible_host_controller_interface abbreviations 1
 extensible_host_controller_interface prose_acronyms 12
-extensible_host_controller_interface register_names 27
+extensible_host_controller_interface register_names 9
 file_allocation_table abbreviations 71
 file_allocation_table prose_acronyms 12
 file_allocation_table register_names 16
