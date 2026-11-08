@@ -65,7 +65,7 @@ domain_name_resolution_contract	shared	components,fixtures,jig,kernel,redoxfs_se
 domain_name_system	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
 driver_process_contract	shared	components,kernel
 dtb	shared	retired
-e1000e	shared	components,kernel
+e1000e	shared	retired
 elf	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader
 entropy_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std
 entropy_proto	shared	retired

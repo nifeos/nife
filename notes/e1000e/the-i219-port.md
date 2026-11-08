@@ -1,7 +1,7 @@
-# The I219 port: `crates/e1000e`'s sources, and its PCH bring-up
+# The I219 port: `nifeos/e1000e`'s sources, and its PCH bring-up
 
 An appendix to [the `e1000e` NIC](../e1000e.md). The crate tells its own story of the I219
-bring-up in `crates/e1000e/src/platform_controller_hub/`. This page holds what nife adds to it: why the port reads
+bring-up in `nifeos/e1000e/src/platform_controller_hub/`. This page holds what nife adds to it: why the port reads
 FreeBSD, how the kernel calls it, and what the QEMU gates prove of it. The stem `the-i219-port` is
 a provisional name.
 

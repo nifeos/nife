@@ -105,10 +105,6 @@ domain_name_system register_names 8
 driver_process_contract abbreviations 37
 driver_process_contract prose_acronyms 18
 driver_process_contract register_names 8
-e1000e abbreviations 237
-e1000e prose_acronyms 48
-e1000e readme_acronyms 1
-e1000e register_names 109
 elf abbreviations 102
 elf prose_acronyms 8
 elf readme_acronyms 1

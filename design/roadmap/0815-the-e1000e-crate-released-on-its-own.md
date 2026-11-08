@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-10-07
 milestone_dependencies: 887
 decision_dependencies: none
@@ -26,7 +26,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
 
 ## What exists, checked 2026-10-07 (UTC)
 
-- `crates/e1000e`: 2,151 code lines (3,210 with comments), written by milestone 494 (a driver for
+- `nifeos/e1000e`: 2,151 code lines (3,210 with comments), written by milestone 494 (a driver for
   the network card a PC actually has), which is PARTIAL. It claims the 82574L that QEMU's
   `-device e1000e` presents and the Sunrise Point I219 rows, which is xenon's I219-LM5. Later PCH
   generations are refused until a bench proves one; the crate's `BUGS` says why.
@@ -60,7 +60,7 @@ nife contributes only to projects nife depends on.
 
 Each row is a property this crate must prove before it publishes. The harness cell names the Kani
 harness that proves it, or says `none yet`; every named harness carries a falsification patch that
-makes it fail at its own assertion. Each patch is at `crates/e1000e/falsifications/`. All
+makes it fail at its own assertion. Each patch is under `falsifications/` in that repository. All
 three prove.
 
 | property | harness |
@@ -184,7 +184,50 @@ names until the ratification pass, so this section keeps the links it carried.
 - `src/platform_controller_hub/mod.rs`, the first BUGS entry: the run on silicon without a cable is in that note's
   "BUGS", which links the BUGS of `notes/e1000e.md`.
 
+## The soak
+
+- The crate lives in `nifeos/e1000e`, on the shared template of milestone 887 (crate repositories
+  share one CI template) with its callers pinned at `nifeos/crate-workflows` `e0c1fca`.
+  `script/apply-settings` applied the settings there: both rulesets, the `crates-io` environment
+  with calef as reviewer, the labels, the team and private vulnerability reporting. The manifest
+  keeps `publish = false`, and the caller sets `allow-unpublished` for the soak. No tag exists.
+- nife keeps no copy. `kernel`, `components` and `system_tests` depend on `nifeos/e1000e` by `rev`
+  (§305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit)), at the root
+  commit of its `main`, because no later commit has landed. The verify table, the Kani peaks table
+  and the mutation exclusions no longer list it; the repository's own `proofs / kani` and
+  `proofs / falsify` jobs prove the three harnesses. The `drivers` package no longer lists it as
+  an interface crate.
+- End condition 1 holds once the repository's `main` is green at the pinned commit. Condition 2
+  waits on the first weekly run, 3 on a release dry run, 4 on a recorded stranger run, and 5 on
+  four weeks from the tag nife pins.
+- A bump of the pin is a separate pull request citing the landed commit as `nifeos/e1000e@<sha>`.
+
+## What remains
+
+1. The register naming rules, so that `check / standalone` passes (see *BUGS*).
+2. The tag `v0.1.0`, which the release workflow makes when calef dispatches it, and the pin moved
+   to that tag's commit.
+3. The soak, which ends on evidence and not a duration, as in milestone 818 (`jh7110_entropy`:
+   proven JH7110 TRNG logic, released on its own).
+4. The publication of 0.1.0 by trusted publishing, which waits for the architect's approval.
+5. nife consuming the release by semantic version, with `Cargo.lock` recording its checksum.
+
 ## BUGS
+
+- `check / standalone` in `nifeos/e1000e` fails the template's register naming gate
+  (`register_names.py`, ceiling 0) on 103 names. They are register offsets without the
+  `_REGISTER` ending, bit constants written as values and not as shifts, addresses without
+  `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS`, and sizes without a unit. Many are ratified names, so
+  the repository's `main` cannot go green, and the repository's ruleset cannot merge a pull
+  request, until the architect rules on them. The rest of the gates pass.
+- The `nife-smelter` app is not installed on `nifeos/e1000e`, and the repository holds none of the
+  organization secrets `NIFE_SMELTER_APP_ID`, `NIFE_SMELTER_PRIVATE_KEY` and `SETTINGS_TOKEN`.
+  `script/apply-settings` refused the app (the API wants an organization owner). The release
+  workflow's tag job and the weekly settings-drift job need them, so both wait on calef.
+- The mutation census lists 72 missed mutants and no locations, and the exclusions for mutants that
+  cannot differ (an OR of operands that share no bit) did not travel. The first weekly mutation run
+  in `nifeos/e1000e` names each survivor, and each goes into `.github/mutants-exempts` there with
+  its reason.
 
 - Steps 5 and 6 wait on milestone 887 (crate repositories share one CI template),
   which owns the shared CI template, the publish allowlist lint and the `nifeos` crates.io team,
@@ -193,6 +236,15 @@ names until the ratification pass, so this section keeps the links it carried.
   before 494 lands costs only version churn.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 7 can start now.
+
+## Follow-on
+
+- **Outstanding.** The register naming ruling, the pin moved to a green commit, the tag `v0.1.0`,
+  the soak's end conditions 2 to 5 and the publication. Checked by `gh run list -R nifeos/e1000e
+  --workflow ci.yml`, which shows `check` red, and `gh api repos/nifeos/e1000e/tags`, which lists no
+  tag.
+- **Recorded.** An organization owner installs the `nife-smelter` app and grants the three secrets;
+  see *BUGS* above.
 
 ## Index row
 

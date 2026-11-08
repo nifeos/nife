@@ -56,7 +56,7 @@ Agrred = "Agrred"
 nife = "nife"
 Nife = "Nife"
 NIFE = "NIFE"
-# Intel's `RFCTL.EXTEN` (extended receive descriptors), the bit `crates/e1000e` clears so the NIC
+# Intel's `RFCTL.EXTEN` (extended receive descriptors), the bit the `e1000e` driver clears so the NIC
 # writes the legacy format; Linux's `defines.h` spells it `E1000_RFCTL_EXTEN` (milestone 494 (a
 # driver for the network card a PC actually has)).
 EXTEN = "EXTEN"

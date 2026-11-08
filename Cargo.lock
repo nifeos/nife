@@ -465,6 +465,7 @@ dependencies = [
 [[package]]
 name = "e1000e"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/e1000e?rev=83e44b2fa9dff74f0bfb8d67a462b3b346fc2b6d#83e44b2fa9dff74f0bfb8d67a462b3b346fc2b6d"
 
 [[package]]
 name = "elf"
