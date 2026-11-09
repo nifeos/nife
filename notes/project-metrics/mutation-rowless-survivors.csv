@@ -12,8 +12,5 @@ designware_ethernet,select_rgmii,replace | with ^
 designware_ethernet,tx_descriptor_words,replace | with ^
 designware_ethernet,tx_queue_mode,replace | with ^
 driver_process_contract,Handoff::pack,replace | with ^
-non_volatile_memory_express,Command::create_io_cq,replace | with ^
-non_volatile_memory_express,Command::create_io_sq,replace | with ^
 non_volatile_memory_express,Handoff::pack,replace | with ^
-non_volatile_memory_express,cc_enabled,replace | with ^
 system_log_contract,,replace - with /
