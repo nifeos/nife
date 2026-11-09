@@ -10,8 +10,9 @@ needs_person: yes
 # 1059. `block_roster_contract`: the outside review's findings land before its first release
 
 Raised by the lane `milestone/1059-block-roster-contract-outside-review`. A reviewer with no prior
-exposure to this project read the crate's repository at `436d4ce` (`main`, after its pull request
-#1), against [the review package](../../notes/crate-reviews/README.md) for `block_roster_contract`.
+exposure to this project read the crate's repository at `436d4ce`, the `main` after its pull
+request #1. The reviewer read it against [the review package](../../notes/crate-reviews/README.md)
+for `block_roster_contract`.
 Pull request #2 of the repository then renamed the crate to `block_roster_contract` (`47ac5a9`,
 now `main`), and this block cites files and symbols at that commit. This block proposes work and
 changes nothing in that repository. Every item below is work for a lane there.
@@ -19,7 +20,7 @@ changes nothing in that repository. Every item below is work for a lane there.
 The identity stays as frozen: `INTERFACE_ID` 5, `VERSION` 1, magic `blkrosv1`. Nothing below asks
 to change it. The names the review package ratifies, and the decisions it records, stay closed
 here. This crate is the contract pilot of milestone 1017 (the contract crates leave in this order),
-which owns the order of extraction and the reasons for it; milestone 1034 (a runbook for moving a
+which owns the order of extraction and the reasons for it. Milestone 1034 (a runbook for moving a
 crate out of nife) owns the move itself. This block owns the findings that land after the move and
 before a first release.
 
@@ -30,16 +31,15 @@ new tool.
 
 ## Goal
 
-The crate is small, free of dependencies, safe Rust, and its three proofs hold. What stands between
-it and a first release is housekeeping the shared workflows already measure: the weekly run is red
-twice over, the template pin predates the mutation stack, and the shipped text still carries the
+The crate is small, free of dependencies, safe Rust, and its three proofs hold. Housekeeping the shared
+workflows already measure stands between it and a first release. The weekly run is red twice over, the template pin predates the mutation stack, and the shipped text still carries the
 wording of the tree it left. The three API changes ruled below land before any tag, while they cost
 two call sites and no version bump.
 
 Publishing stays held. No crate from this organization publishes to crates.io until the
 maintainers have extracted several crates and a review has decided whether any of them combine.
-Nothing in this block lifts that hold, and no tag is ruled: a tag is a number others compare
-against, so placing one is a separate question for the architect.
+Nothing in this block lifts that hold, and no ruling covers a tag: a tag is a number others
+compare against, so placing one is a separate question for the architect.
 
 ## What the review covered
 
@@ -66,8 +66,8 @@ Rechecked at `47ac5a9` for this block: the manifest, the workflow pins, `.github
 moved none of them. The latest weekly run is still the one on `436d4ce`; `check` and `proofs` pass
 on `47ac5a9`.
 
-Not run: the stranger test proper, on a machine with no target preinstalled (the targets were
-installed here, which hides one README gap in P1-7). Also Miri (the weekly job runs it green),
+Not run: the stranger test proper, on a machine with no target preinstalled (this host had the
+targets already, which hides one README gap in P1-7). Also Miri (the weekly job runs it green),
 `cargo-semver-checks` (no tag exists) and the template's workflows locally; the CI results above
 come from the repository's runs. The reviewer pushed, tagged, branched and opened nothing.
 
@@ -108,8 +108,8 @@ Every caller pins `nifeos/crate-workflows` at `cd1b484`. That commit is not behi
 the lag check passes, but `main` of the template is 33 commits ahead and carries `mutation.yml`,
 `check / mutation-diff` and the mutation requirement of the release gate. The repository has no
 `.github/workflows/mutation.yml` caller. Change, once the template cuts its next release: bump
-every pin, add the `mutation.yml` caller with the per-repository cron line the scaffold now has,
-then apply the settings so `check / mutation-diff` becomes required only after a run of it exists.
+every pin, and add the `mutation.yml` caller with the per-repository cron line the scaffold now has.
+Then apply the settings so the ruleset requires `check / mutation-diff` only after a run of it exists.
 A required check that never reports holds every pull request. Inferred, not verified: the callers
 carry no `# vN` comment after the commit, and whether Dependabot opens a bump for a bare commit is
 unconfirmed; the bump should add the comment. Two-way. S.
@@ -169,7 +169,7 @@ Each finding is in the file and symbol named:
   in `CHANGELOG.md`, whose `0.1.0` line should state the identity values and that the magic carries
   the version digits.
 - The comment on the `publish = false` line of `Cargo.toml` names `crates/publish-allowlist.txt`, a
-  path from another repository. Say why the crate is unpublished in words that hold here: the
+  path from another repository. Say why the crate stays off crates.io in words that hold here: the
   publishing hold above.
 - The README's "Building and testing" section builds for a bare-metal target without saying that
   `rustup target add <target>` comes first. The stranger run of P0-1 will trip here.
@@ -186,7 +186,7 @@ Two-way. S.
 
 `Device` derives neither `Hash` nor `Ord`, so a listing cannot sort or deduplicate without a
 wrapper. `Roster::devices` is a `filter_map` over `get`, which loses `ExactSizeIterator` though the
-count is known, and `get` keeps `try_into().ok()?` paths the proofs show unreachable.
+roster knows its count, and `get` keeps `try_into().ok()?` paths the proofs show unreachable.
 
 Ruled 2026-11-09. `Device` derives `Hash`, `PartialOrd` and `Ord`. `Roster::devices` becomes an
 exact-size, infallible iterator built on `chunks_exact(ENTRY_BYTES).take(count)`, and the
@@ -245,8 +245,8 @@ None needs hardware or QEMU.
 ## Index row
 
 An outside reading of `block_roster_contract`: two red weekly jobs block the first release (no
-stranger run; mutation survivors inside the Kani module). Eight items go before it: the CI pin and
-the mutation caller, a `Result` from `Roster::read` (ruled), a checked capacity word, `Display` on
-`TooManyDevices`, `forbid(unsafe_code)`, `index` and three aliases (ruled), the shipped text, and
-`Hash` and `Ord` on `Device` with an exact-size `devices()` (ruled). Eight follow it. The sort order
+stranger run; mutation survivors inside the Kani module). Eight items go before it. The CI pin and
+the mutation caller, a checked capacity word, `Display` on `TooManyDevices`, `forbid(unsafe_code)`
+and the shipped text are the maintainers' calls. A `Result` from `Roster::read`, `index` and three
+aliases, and `Hash` and `Ord` on `Device` with an exact-size `devices()` are ruled. Eight follow it. The sort order
 of `Device` and any tag are open; publishing stays held.

@@ -35,14 +35,14 @@ an arbitrary device list through `write`; then `public-crash-inputs: true` in
 ## P2-5. Nothing proves a page longer than 40 bytes
 
 The README's BUGS says a longer page is not machine-checked. The in-bounds argument rests on
-arithmetic, not contents, so two small harnesses cover it: one over `capacity_of` for any `len`
-(that `HEADER_BYTES + capacity_of(len) * ENTRY_BYTES <= len` whenever `len >= HEADER_BYTES`), and
-one that reads a 4096-byte page with a symbolic header and concrete entries and fetches every
+arithmetic, not contents, so two small harnesses cover it. One runs over `capacity_of` for any `len`
+(that `HEADER_BYTES + capacity_of(len) * ENTRY_BYTES <= len` whenever `len >= HEADER_BYTES`). The
+other reads a 4096-byte page with a symbolic header and concrete entries and fetches every
 counted entry. Each arrives with its falsification patch. M.
 
 ## P2-6. The docs do not say what a reader may trust
 
-`ordinal` and `transport` on `Device` are unchecked `u32` values. A reader that indexes its own
+`ordinal` and `transport` on `Device` are `u32` values nothing checks. A reader that indexes its own
 table by `ordinal` must bound the index itself, and the page is a snapshot with no hot plug.
 Change: one paragraph in the crate header and in the doc of `Device`. S.
 

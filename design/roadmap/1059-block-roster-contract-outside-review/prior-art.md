@@ -1,7 +1,8 @@
 # Prior art for the block_roster_contract crate
 
-An appendix to [the milestone](../1059-block-roster-contract-outside-review.md). Recalled from
-general knowledge unless marked read; the crates.io figures were read on 2026-11-09.
+An appendix to [the milestone](../1059-block-roster-contract-outside-review.md). The reviewer
+recalled these from general knowledge unless a row says read, and read the crates.io figures on
+2026-11-09.
 
 ## How other systems list block devices
 
@@ -21,12 +22,12 @@ general knowledge unless marked read; the crates.io figures were read on 2026-11
 
 ## Error types for a refused parse
 
-P1-2 follows the common shape of `core` and the ecosystem: `core::str::from_utf8` returns a
-`Utf8Error` that implements `Display` and `core::error::Error`, and parsers such as `httparse` return
+P1-2 follows the common shape of `core` and the ecosystem. `core::str::from_utf8` returns a
+`Utf8Error` that implements `Display` and `core::error::Error`. Parsers such as `httparse` return
 one small error enum, a variant per refusal, rather than `Option`. `ReadError` takes the same
 shape, with one variant per refusal, which is what lets the reader of the page say "the magic is
 wrong" in place of "no roster".
 
-Unique to this crate: a page written once whose reader and writer are proven total, a version
-carried in the magic so an old reader refuses a new page, and the capability shape, a listing a
-program is granted that is never a lever.
+Unique to this crate: Kani proves both the reader and the writer of the page total. The magic
+carries the version, so an old reader refuses a new page. And the page has the capability shape: a
+program holds a listing someone granted it, never a lever.
