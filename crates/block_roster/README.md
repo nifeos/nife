@@ -56,9 +56,9 @@ assert_eq!(roster.count_by_transport(TRANSPORT_VIRTIO_PCI), 1);
 
 ## What is proven
 
-Three Kani harnesses in `src/lib.rs` prove that `Roster::read` is total on any bytes, that `write`
-is total on any page length and refuses a page too short for its header, and that `write` then
-`read` returns the same devices in order; run them with `cargo kani`.
+Three Kani harnesses in `src/lib.rs` prove three things. `Roster::read` is total on any bytes.
+`write` is total on any page length and refuses a page too short for its header. `write` then
+`read` returns the same devices in order. Run them with `cargo kani`.
 
 ## Building and testing
 
