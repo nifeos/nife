@@ -7,7 +7,7 @@
 //! Name: provisional, minted 2026-10-26 (UTC) by lane driver-contracts-folded, after the crate it
 //! serves, as this crate's other modules are named.
 
-use ::non_volatile_memory_express::registers::DOORBELL_BASE;
+use ::non_volatile_memory_express::registers::FIRST_DOORBELL_REGISTER;
 
 // ---------------------------------------------------------------------------------------------
 // The split between an admin plane and a data plane.
@@ -70,7 +70,7 @@ pub const fn client_window(badge: u64) -> Option<usize> {
 /// an assumption.
 ///
 /// The kernel maps the EL0 data plane one page of BAR0, the doorbell page at `0x1000`
-/// ([`DOORBELL_BASE`]), and the data plane rings the doorbells of queues 0 and 1 only, up to
+/// ([`FIRST_DOORBELL_REGISTER`]), and the data plane rings the doorbells of queues 0 and 1 only, up to
 /// doorbell index 3. Doorbell N sits at `0x1000 + N * (4 << DSTRD)`, so they fit while
 /// `0x1000 + 3 * (4 << DSTRD) + 4 <= 0x2000`, which is `DSTRD <= 8`. `CAP`'s four-bit field lets a
 /// controller report 9 to 15, which the kernel refuses at bring-up and [`Handoff::unpack`] refuses
@@ -85,13 +85,15 @@ pub const fn client_window(badge: u64) -> Option<usize> {
 pub const MAXIMUM_DOORBELL_STRIDE: u32 = 8;
 
 /// The one page of BAR0 the data plane is mapped, from the doorbell base.
-const DOORBELL_PAGE_END: u64 = DOORBELL_BASE + 0x1000;
+const DOORBELL_PAGE_END: u64 = FIRST_DOORBELL_REGISTER + 0x1000;
 
 // The bound is the page's edge, at compile time: doorbell index 3 ends inside the page at
 // `MAXIMUM_DOORBELL_STRIDE` and past it one stride wider.
-const _: () = assert!(DOORBELL_BASE + 3 * (4 << MAXIMUM_DOORBELL_STRIDE) + 4 <= DOORBELL_PAGE_END);
 const _: () =
-    assert!(DOORBELL_BASE + 3 * (4 << (MAXIMUM_DOORBELL_STRIDE + 1)) + 4 > DOORBELL_PAGE_END);
+    assert!(FIRST_DOORBELL_REGISTER + 3 * (4 << MAXIMUM_DOORBELL_STRIDE) + 4 <= DOORBELL_PAGE_END);
+const _: () = assert!(
+    FIRST_DOORBELL_REGISTER + 3 * (4 << (MAXIMUM_DOORBELL_STRIDE + 1)) + 4 > DOORBELL_PAGE_END
+);
 
 /// **The sentinel that selects the test-only DMA-escape role**, written by the confinement
 /// falsification's wiring into the first `u64` of the data plane's transfer buffer before `_start`
