@@ -8,8 +8,9 @@ outgrows its section lives here, and the section links it.
 - [`file-allocation-table-public-api.md`](file-allocation-table-public-api.md): every public item
   of `file_allocation_table` and its signature.
 - [`generational-table.md`](generational-table.md), [`designware-ethernet.md`](designware-ethernet.md) (its names only), [`designware-mobile-storage.md`](designware-mobile-storage.md),
-  [`jh7110-clock-and-reset.md`](jh7110-clock-and-reset.md), [`e1000e.md`](e1000e.md), [`block-roster.md`](block-roster.md) and
-  [`counter-frequency-contract.md`](counter-frequency-contract.md): one package each, with its
+  [`jh7110-clock-and-reset.md`](jh7110-clock-and-reset.md), [`e1000e.md`](e1000e.md), [`block-roster.md`](block-roster.md),
+  [`counter-frequency-contract.md`](counter-frequency-contract.md) and
+  [`socket-contract.md`](socket-contract.md): one package each, with its
   names, proposed items and open questions.
 - [`extensible-host-controller-interface.md`](extensible-host-controller-interface.md): the names
   section of `extensible_host_controller_interface`'s package.
