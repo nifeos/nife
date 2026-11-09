@@ -17,9 +17,39 @@ the pins in this directory were taken deliberately. What to do about a gap is in
 
 ## crate-workflows
 
-Pinned at upstream git commit `b0d6299d27d8`; no registry carries it.
+Pinned at upstream git commit `965f58a348a6`; no registry carries it.
 
-**Upstream git: current.** No commits on the tracked branch since the pinned sha.
+**Upstream git: 18 non-merge commits** since the pinned sha (plus 33 merge commits, dropped), head `e9723181c6dd`.
+
+Full comparison: https://github.com/nifeos/crate-workflows/compare/965f58a348a6c9ca7846ea155883cda7241b1934...main
+
+- 2026-11-08 `dcebc764c14` prose checks: read a line of badges as no prose
+- 2026-11-08 `947a8583329` README badge row: scaffold, gate and weekly crates.io check
+- 2026-11-08 `ce18acd7756` falsify: name a harness in an inline module by its module path
+- 2026-11-08 `a216b1ba812` README badge row: link the minimum Rust version to Cargo.toml
+- 2026-11-08 `a57fa9cd6dc` Say that the weekly stranger job also fails on a record of none
+- 2026-11-08 `0b3a16364db` Move the full mutation run into its own reusable workflow
+- 2026-11-08 `8f50bba7420` README badge row: fail check / standalone on a finding
+- 2026-11-08 `2363df17859` Run the full mutation pass weekly on each repository's own day, and skip an unchanged tree
+- 2026-11-08 `0b0b5e9014d` Mutate each pull request's changed lines in check.yml
+- 2026-11-08 `f5bc7ab420b` Refuse a release without a green full mutation run at its commit
+- 2026-11-08 `1db832e6702` Require check / mutation-diff on every crate repository's main
+- 2026-11-08 `19399ab4d3c` Split the release path's mutation sentence under the 40-word cap
+- 2026-11-08 `efc8b82da4f` Accept notice licenses after the pair, and encode parentheses in the license badge
+- 2026-11-08 `3116726d4d9` Add bus to the address qualifiers
+- 2026-11-09 `3c1d134311f` claim: lane/mutation-verdict-step-name
+- 2026-11-09 `1f952f43faf` Name the mutation verdict step and annotate a refusal
+- 2026-11-09 `ced625f47d0` Fix the mutation verdict for a run of one shard
+- 2026-11-09 `1be3ec1e8a0` Make actionlint a required, pinned gate of script/lint
+
+**Upstream has edited files our `include` list names**, so a bump changes what we run there:
+
+- `helpers/inflated_wording.py`
+- `helpers/naming_words.toml`
+- `helpers/prose_text.py`
+- `helpers/readme_acronyms.py`
+- `helpers/readme_sections.py`
+- `helpers/register_names.py`
 
 ## redoxfs
 

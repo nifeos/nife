@@ -76,8 +76,8 @@ impl Span {
 mod tests {
     use super::*;
 
-    /// The three reads a GPT reader actually makes on the disk this project tests against: a 64 MiB
-    /// disk, 512-byte logical blocks, fetched in 4096-byte filesystem blocks.
+    /// The three reads a GPT reader makes on a typical test disk: a 64 MiB disk, 512-byte logical
+    /// blocks, fetched in 4096-byte filesystem blocks.
     #[test]
     fn the_three_reads_a_gpt_reader_makes() {
         const T: u64 = 4096;

@@ -22,71 +22,74 @@
 <text class="mut" x="56" y="127.5" font-size="10" text-anchor="end">750</text>
 <line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
 <text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">1000</text>
-<rect class="seg s0" x="71.7" y="306.2" width="29.8" height="17.8"><title>2026W33, into code: 67</title></rect>
-<path class="seg s1" d="M71.7,306.2 V304.4 Q71.7,302.7 73.4,302.7 H99.7 Q101.4,302.7 101.4,304.4 V306.2 Z"><title>2026W33, into a Markdown document: 13</title></path>
-<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W33</text>
-<text class="fg val" x="86.5" y="297.7" font-size="10" text-anchor="middle">80</text>
-<rect class="seg s0" x="116.7" y="284.4" width="29.8" height="39.6"><title>2026W34, into code: 149</title></rect>
-<path class="seg s1" d="M116.7,284.4 V280.6 Q116.7,276.9 120.5,276.9 H142.8 Q146.5,276.9 146.5,280.6 V284.4 Z"><title>2026W34, into a Markdown document: 28</title></path>
-<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W34</text>
-<text class="fg val" x="131.6" y="271.9" font-size="10" text-anchor="middle">177</text>
-<rect class="seg s0" x="161.8" y="277.4" width="29.8" height="46.5"><title>2026W35, into code: 175</title></rect>
-<path class="seg s1" d="M161.8,277.4 V273.6 Q161.8,269.7 165.7,269.7 H187.7 Q191.6,269.7 191.6,273.6 V277.4 Z"><title>2026W35, into a Markdown document: 29</title></path>
-<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W35</text>
-<text class="fg val" x="176.7" y="264.7" font-size="10" text-anchor="middle">204</text>
-<rect class="seg s0" x="206.9" y="271.1" width="29.8" height="52.9"><title>2026W36, into code: 199</title></rect>
-<path class="seg s1" d="M206.9,271.1 V267.2 Q206.9,263.4 210.8,263.4 H232.8 Q236.6,263.4 236.6,267.2 V271.1 Z"><title>2026W36, into a Markdown document: 29</title></path>
-<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W36</text>
-<text class="fg val" x="221.8" y="258.4" font-size="10" text-anchor="middle">228</text>
-<rect class="seg s0" x="252.0" y="265.2" width="29.8" height="58.8"><title>2026W37, into code: 221</title></rect>
-<path class="seg s1" d="M252.0,265.2 V261.4 Q252.0,257.5 255.8,257.5 H277.9 Q281.7,257.5 281.7,261.4 V265.2 Z"><title>2026W37, into a Markdown document: 29</title></path>
-<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W37</text>
-<text class="fg val" x="266.8" y="252.5" font-size="10" text-anchor="middle">250</text>
-<rect class="seg s0" x="297.0" y="249.0" width="29.8" height="75.0"><title>2026W38, into code: 282</title></rect>
-<path class="seg s1" d="M297.0,249.0 V245.1 Q297.0,241.3 300.9,241.3 H322.9 Q326.8,241.3 326.8,245.1 V249.0 Z"><title>2026W38, into a Markdown document: 29</title></path>
-<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W38</text>
-<text class="fg val" x="311.9" y="236.3" font-size="10" text-anchor="middle">311</text>
-<rect class="seg s0" x="342.1" y="229.8" width="29.8" height="94.2"><title>2026W39, into code: 354</title></rect>
-<path class="seg s1" d="M342.1,229.8 V226.1 Q342.1,222.4 345.8,222.4 H368.2 Q371.9,222.4 371.9,226.1 V229.8 Z"><title>2026W39, into a Markdown document: 28</title></path>
-<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W39</text>
-<text class="fg val" x="357.0" y="217.4" font-size="10" text-anchor="middle">382</text>
-<rect class="seg s0" x="387.2" y="164.4" width="29.8" height="159.6"><title>2026W40, into code: 600</title></rect>
-<path class="seg s1" d="M387.2,164.4 V154.8 Q387.2,150.8 391.2,150.8 H413.0 Q417.0,150.8 417.0,154.8 V164.4 Z"><title>2026W40, into a Markdown document: 51</title></path>
-<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W40</text>
-<text class="fg val" x="402.1" y="145.8" font-size="10" text-anchor="middle">651</text>
-<rect class="seg s0" x="432.3" y="102.4" width="29.8" height="221.6"><title>2026W41, into code: 833</title></rect>
-<path class="seg s1" d="M432.3,102.4 V102.2 Q432.3,101.9 432.5,101.9 H461.8 Q462.0,101.9 462.0,102.2 V102.4 Z"><title>2026W41, into a Markdown document: 2</title></path>
-<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W41</text>
-<text class="fg val" x="447.2" y="96.9" font-size="10" text-anchor="middle">835</text>
-<rect class="seg s0" x="477.4" y="134.1" width="29.8" height="189.9"><title>2026W42, into code: 714</title></rect>
-<path class="seg s1" d="M477.4,134.1 V133.8 Q477.4,133.5 477.6,133.5 H506.8 Q507.1,133.5 507.1,133.8 V134.1 Z"><title>2026W42, into a Markdown document: 2</title></path>
-<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W42</text>
-<text class="fg val" x="492.2" y="128.5" font-size="10" text-anchor="middle">716</text>
-<rect class="seg s0" x="522.4" y="135.9" width="29.8" height="188.1"><title>2026W43, into code: 707</title></rect>
-<path class="seg s1" d="M522.4,135.9 V135.7 Q522.4,135.4 522.7,135.4 H551.9 Q552.2,135.4 552.2,135.7 V135.9 Z"><title>2026W43, into a Markdown document: 2</title></path>
-<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="fg val" x="537.3" y="130.4" font-size="10" text-anchor="middle">709</text>
-<rect class="seg s0" x="567.5" y="139.4" width="29.8" height="184.6"><title>2026W44, into code: 694</title></rect>
-<path class="seg s1" d="M567.5,139.4 V139.1 Q567.5,138.9 567.8,138.9 H597.0 Q597.3,138.9 597.3,139.1 V139.4 Z"><title>2026W44, into a Markdown document: 2</title></path>
-<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<text class="fg val" x="582.4" y="133.9" font-size="10" text-anchor="middle">696</text>
-<rect class="seg s0" x="612.6" y="290.2" width="29.8" height="33.8"><title>2026W45, into code: 127</title></rect>
-<path class="seg s1" d="M612.6,290.2 V290.0 Q612.6,289.7 612.9,289.7 H642.1 Q642.3,289.7 642.3,290.0 V290.2 Z"><title>2026W45, into a Markdown document: 2</title></path>
-<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W45</text>
+<rect class="seg s0" x="71.7" y="284.4" width="29.8" height="39.6"><title>2026W34, into code: 149</title></rect>
+<path class="seg s1" d="M71.7,284.4 V280.6 Q71.7,276.9 75.4,276.9 H97.7 Q101.4,276.9 101.4,280.6 V284.4 Z"><title>2026W34, into a Markdown document: 28</title></path>
+<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W34</text>
+<text class="fg val" x="86.5" y="271.9" font-size="10" text-anchor="middle">177</text>
+<rect class="seg s0" x="116.7" y="277.4" width="29.8" height="46.5"><title>2026W35, into code: 175</title></rect>
+<path class="seg s1" d="M116.7,277.4 V273.6 Q116.7,269.7 120.6,269.7 H142.6 Q146.5,269.7 146.5,273.6 V277.4 Z"><title>2026W35, into a Markdown document: 29</title></path>
+<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W35</text>
+<text class="fg val" x="131.6" y="264.7" font-size="10" text-anchor="middle">204</text>
+<rect class="seg s0" x="161.8" y="271.1" width="29.8" height="52.9"><title>2026W36, into code: 199</title></rect>
+<path class="seg s1" d="M161.8,271.1 V267.2 Q161.8,263.4 165.7,263.4 H187.7 Q191.6,263.4 191.6,267.2 V271.1 Z"><title>2026W36, into a Markdown document: 29</title></path>
+<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="fg val" x="176.7" y="258.4" font-size="10" text-anchor="middle">228</text>
+<rect class="seg s0" x="206.9" y="265.2" width="29.8" height="58.8"><title>2026W37, into code: 221</title></rect>
+<path class="seg s1" d="M206.9,265.2 V261.4 Q206.9,257.5 210.8,257.5 H232.8 Q236.6,257.5 236.6,261.4 V265.2 Z"><title>2026W37, into a Markdown document: 29</title></path>
+<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W37</text>
+<text class="fg val" x="221.8" y="252.5" font-size="10" text-anchor="middle">250</text>
+<rect class="seg s0" x="252.0" y="249.0" width="29.8" height="75.0"><title>2026W38, into code: 282</title></rect>
+<path class="seg s1" d="M252.0,249.0 V245.1 Q252.0,241.3 255.8,241.3 H277.9 Q281.7,241.3 281.7,245.1 V249.0 Z"><title>2026W38, into a Markdown document: 29</title></path>
+<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W38</text>
+<text class="fg val" x="266.8" y="236.3" font-size="10" text-anchor="middle">311</text>
+<rect class="seg s0" x="297.0" y="229.8" width="29.8" height="94.2"><title>2026W39, into code: 354</title></rect>
+<path class="seg s1" d="M297.0,229.8 V226.1 Q297.0,222.4 300.8,222.4 H323.1 Q326.8,222.4 326.8,226.1 V229.8 Z"><title>2026W39, into a Markdown document: 28</title></path>
+<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W39</text>
+<text class="fg val" x="311.9" y="217.4" font-size="10" text-anchor="middle">382</text>
+<rect class="seg s0" x="342.1" y="164.4" width="29.8" height="159.6"><title>2026W40, into code: 600</title></rect>
+<path class="seg s1" d="M342.1,164.4 V154.8 Q342.1,150.8 346.1,150.8 H367.9 Q371.9,150.8 371.9,154.8 V164.4 Z"><title>2026W40, into a Markdown document: 51</title></path>
+<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W40</text>
+<text class="fg val" x="357.0" y="145.8" font-size="10" text-anchor="middle">651</text>
+<rect class="seg s0" x="387.2" y="102.4" width="29.8" height="221.6"><title>2026W41, into code: 833</title></rect>
+<path class="seg s1" d="M387.2,102.4 V102.2 Q387.2,101.9 387.5,101.9 H416.7 Q417.0,101.9 417.0,102.2 V102.4 Z"><title>2026W41, into a Markdown document: 2</title></path>
+<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W41</text>
+<text class="fg val" x="402.1" y="96.9" font-size="10" text-anchor="middle">835</text>
+<rect class="seg s0" x="432.3" y="134.1" width="29.8" height="189.9"><title>2026W42, into code: 714</title></rect>
+<path class="seg s1" d="M432.3,134.1 V133.8 Q432.3,133.5 432.5,133.5 H461.8 Q462.0,133.5 462.0,133.8 V134.1 Z"><title>2026W42, into a Markdown document: 2</title></path>
+<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W42</text>
+<text class="fg val" x="447.2" y="128.5" font-size="10" text-anchor="middle">716</text>
+<rect class="seg s0" x="477.4" y="135.9" width="29.8" height="188.1"><title>2026W43, into code: 707</title></rect>
+<path class="seg s1" d="M477.4,135.9 V135.7 Q477.4,135.4 477.6,135.4 H506.8 Q507.1,135.4 507.1,135.7 V135.9 Z"><title>2026W43, into a Markdown document: 2</title></path>
+<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W43</text>
+<text class="fg val" x="492.2" y="130.4" font-size="10" text-anchor="middle">709</text>
+<rect class="seg s0" x="522.4" y="139.4" width="29.8" height="184.6"><title>2026W44, into code: 694</title></rect>
+<path class="seg s1" d="M522.4,139.4 V139.1 Q522.4,138.9 522.7,138.9 H551.9 Q552.2,138.9 552.2,139.1 V139.4 Z"><title>2026W44, into a Markdown document: 2</title></path>
+<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W44</text>
+<text class="fg val" x="537.3" y="133.9" font-size="10" text-anchor="middle">696</text>
+<rect class="seg s0" x="567.5" y="290.2" width="29.8" height="33.8"><title>2026W45, into code: 127</title></rect>
+<path class="seg s1" d="M567.5,290.2 V290.0 Q567.5,289.7 567.8,289.7 H597.0 Q597.3,289.7 597.3,290.0 V290.2 Z"><title>2026W45, into a Markdown document: 2</title></path>
+<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W45</text>
+<text class="fg val" x="582.4" y="284.7" font-size="10" text-anchor="middle">129</text>
+<rect class="seg s0" x="612.6" y="290.2" width="29.8" height="33.8"><title>2026W46, into code: 127</title></rect>
+<path class="seg s1" d="M612.6,290.2 V290.0 Q612.6,289.7 612.9,289.7 H642.1 Q642.3,289.7 642.3,290.0 V290.2 Z"><title>2026W46, into a Markdown document: 2</title></path>
+<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W46</text>
 <text class="fg val" x="627.5" y="284.7" font-size="10" text-anchor="middle">129</text>
-<line class="tr" x1="447.2" y1="101.9" x2="492.2" y2="134.6" stroke-width="2"/>
+<line class="tr" x1="402.1" y1="101.9" x2="447.2" y2="134.6" stroke-width="2"/>
+<line class="tr" x1="447.2" y1="134.6" x2="492.2" y2="134.6" stroke-width="2"/>
 <line class="tr" x1="492.2" y1="134.6" x2="537.3" y2="134.6" stroke-width="2"/>
-<line class="tr" x1="537.3" y1="134.6" x2="582.4" y2="134.6" stroke-width="2"/>
-<line class="tr" x1="582.4" y1="134.6" x2="627.5" y2="291.5" stroke-width="2"/>
-<circle class="trd" cx="447.2" cy="101.9" r="3"><title>2026W41, code ceiling: 835</title></circle>
-<text class="fg val" x="447.2" y="94.9" font-size="10" text-anchor="middle">835</text>
-<circle class="trd" cx="492.2" cy="134.6" r="3"><title>2026W42, code ceiling: 712</title></circle>
+<line class="tr" x1="537.3" y1="134.6" x2="582.4" y2="291.5" stroke-width="2"/>
+<line class="tr" x1="582.4" y1="291.5" x2="627.5" y2="291.5" stroke-width="2"/>
+<circle class="trd" cx="402.1" cy="101.9" r="3"><title>2026W41, code ceiling: 835</title></circle>
+<text class="fg val" x="402.1" y="94.9" font-size="10" text-anchor="middle">835</text>
+<circle class="trd" cx="447.2" cy="134.6" r="3"><title>2026W42, code ceiling: 712</title></circle>
+<text class="fg val" x="447.2" y="127.6" font-size="10" text-anchor="middle">712</text>
+<circle class="trd" cx="492.2" cy="134.6" r="3"><title>2026W43, code ceiling: 712</title></circle>
 <text class="fg val" x="492.2" y="127.6" font-size="10" text-anchor="middle">712</text>
-<circle class="trd" cx="537.3" cy="134.6" r="3"><title>2026W43, code ceiling: 712</title></circle>
+<circle class="trd" cx="537.3" cy="134.6" r="3"><title>2026W44, code ceiling: 712</title></circle>
 <text class="fg val" x="537.3" y="127.6" font-size="10" text-anchor="middle">712</text>
-<circle class="trd" cx="582.4" cy="134.6" r="3"><title>2026W44, code ceiling: 712</title></circle>
-<text class="fg val" x="582.4" y="127.6" font-size="10" text-anchor="middle">712</text>
-<circle class="trd" cx="627.5" cy="291.5" r="3"><title>2026W45, code ceiling: 122</title></circle>
+<circle class="trd" cx="582.4" cy="291.5" r="3"><title>2026W45, code ceiling: 122</title></circle>
+<text class="fg val" x="582.4" y="284.5" font-size="10" text-anchor="middle">122</text>
+<circle class="trd" cx="627.5" cy="291.5" r="3"><title>2026W46, code ceiling: 122</title></circle>
 <text class="fg val" x="627.5" y="284.5" font-size="10" text-anchor="middle">122</text>
 <line class="tr" x1="672" y1="69" x2="683" y2="69" stroke-width="2"/>
 <circle class="trd" cx="677.5" cy="69" r="3"/>

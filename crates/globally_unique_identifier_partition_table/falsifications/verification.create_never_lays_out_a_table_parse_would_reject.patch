@@ -7,10 +7,10 @@ own writer just made.
 Expected to fail: the harness's `assert!(h.last_usable_lba + span < h.alternate_lba)`.
 
 diff --git a/crates/globally_unique_identifier_partition_table/src/table.rs b/crates/globally_unique_identifier_partition_table/src/table.rs
-index 33636ffdc..455a9534c 100644
+index c7f02ba6d..94f23433e 100644
 --- a/crates/globally_unique_identifier_partition_table/src/table.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/table.rs
-@@ -146,7 +146,7 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
+@@ -177,7 +177,7 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
                  need,
              });
          }
