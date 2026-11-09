@@ -131,7 +131,7 @@ harness's comment, where the template reads it, so those records pass `falsify.p
     available; never the lane that wrote the crate or took part in its extraction). It runs once the
     repository exists and before its first tag or publish. The pass is read-only on the crate
     repository: no push, no pull request, no issue, no tag. It reads the crate's review package
-    for the accepted baseline, so a settled decision is not raised again. It covers:
+    for the accepted baseline, so it does not raise a settled decision again. It covers:
     - public API and names, against the naming rules;
     - correctness and soundness;
     - proofs and their falsification patches, tests and mutation results;
@@ -139,20 +139,20 @@ harness's comment, where the template reads it, so those records pass `falsify.p
     - Cargo metadata for publishing, the template pin and the workflow wiring;
     - the `no_std` posture and performance;
     - prior art on crates.io;
-    - which checks need real hardware. None is claimed done without it.
+    - which checks need real hardware. The pass never claims one done without it.
 
-    Its output is one draft milestone in the roadmap format. Items are prioritized: P0 blocks any
+    Its output is one draft milestone in the roadmap format. Each item carries a priority: P0 blocks any
     publish, P1 comes before the first release, P2 can follow later. Each item gives the finding,
     the evidence, the change, the door (one-way or two-way) and the effort. The milestone also
     carries a prior-art box and acceptance criteria. The maintainer promotes it into the roadmap,
     and a lane addresses its items. Only the one-way doors go to an architect, one at a time,
     each with a recommendation.
 
-    Three safeguards apply. Every finding is checked against the code before anyone acts on it,
-    since a pass can be wrong, for example about what a CI run shows; a claim that could not be
-    verified is marked unverified. A possible vulnerability is not written into the milestone but
-    reported to the maintainer alone. Fuzz findings, seeds and crash inputs are never read.
-    Expected: the draft milestone exists and its P0 items are closed. The combine review checks
+    Three safeguards apply. A lane checks every finding against the code before it acts on one,
+    since a pass can be wrong, for example about what a CI run shows. The pass marks a claim it
+    could not verify as unverified. It reports a possible vulnerability to the maintainer alone and
+    leaves it out of the milestone. It never reads fuzz findings, seeds or crash inputs.
+    Expected: the draft milestone exists and its P0 items stand closed. The combine review checks
     both for each crate.
 
 ## The stranger test and the tag
