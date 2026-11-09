@@ -57,4 +57,4 @@ claim. Nothing reads a planned set of lanes, and nothing reads the queue before 
 
 ## Index row
 
-A pull request that conflicts with an entry ahead of it is armed anyway and removed later at the cost of a full run. This checks the conflict before arming and before a wide run launches.
+The queue arms a pull request that conflicts with an entry ahead of it, then removes it later at the cost of a full run. This checks the conflict before arming and before a wide run launches.

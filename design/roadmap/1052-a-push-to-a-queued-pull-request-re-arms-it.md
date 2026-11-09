@@ -52,4 +52,4 @@ time, discarding three group builds.
 
 ## Index row
 
-A push to a queued pull request drops it from the queue, and arming a held pull request is allowed. This makes the push script re-arm in one step and makes arming refuse a pull request that carries a hold label.
+A push to a queued pull request drops it from the queue, and arming a held pull request succeeds. This makes the push script re-arm in one step and makes arming refuse a pull request that carries a hold label.
