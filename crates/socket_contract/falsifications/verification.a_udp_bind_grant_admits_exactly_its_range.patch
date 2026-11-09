@@ -1,0 +1,21 @@
+Falsifies `socket_contract::verification::a_udp_bind_grant_admits_exactly_its_range`.
+
+The defect: `udp_grant_allows` compares the port with `<` against the high bound, the off-by-one
+a reader writes when it takes an inclusive range for a half-open one. A single-port UDP grant then
+admits nothing, and every range loses its top port.
+
+Expected to fail: the harness's `assert_eq!` on `udp_grant_allows`, with the port equal to the
+high bound.
+
+diff --git a/crates/socket_contract/src/lib.rs b/crates/socket_contract/src/lib.rs
+--- a/crates/socket_contract/src/lib.rs
++++ b/crates/socket_contract/src/lib.rs
+@@ -201,7 +201,7 @@
+ pub const fn udp_grant_allows(grant: u64, port: u16) -> bool {
+     let lo = ((grant >> 32) & 0xffff) as u16;
+     let hi = ((grant >> 48) & 0xffff) as u16;
+-    lo != 0 && port >= lo && port <= hi
++    lo != 0 && port >= lo && port < hi
+ }
+ 
+ pub mod polled_wait {

@@ -55,9 +55,14 @@ assert!(!names_a_socket(0)); // an unbadged front door
 
 ## What is proven
 
-Nothing is machine-checked: there are no Kani harnesses. The directory `falsifications/` holds a
-patch that makes the ephemeral-port test fail; apply it with `patch -p3` from the crate root to see
-that the test checks something.
+Three Kani harnesses in `src/lib.rs` prove the port grants for every pair of bounds and every port.
+A listen grant admits exactly its range and no UDP port, a UDP bind grant admits exactly its range
+and no listen port, and each half of a composed grant answers exactly as it does alone. Run them
+with `cargo kani`. Tests check the rest of the contract: the opcodes, the reply words and the
+frame layout.
+
+Each patch under `falsifications/` names the harness or test it breaks, and applying it with
+`patch -p1` from the repository root makes that check fail.
 
 ## Building and testing
 
@@ -65,6 +70,11 @@ that the test checks something.
 cargo test
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
 ```
+
+The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+checker, so it needs network access. CI uses version 0.68.0, and another version may verify
+differently.
 
 ## BUGS
 

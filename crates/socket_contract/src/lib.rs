@@ -818,3 +818,57 @@ mod tests {
         }
     }
 }
+
+/// Machine-checked proofs, run with `cargo kani`. The port grants are the authority checks, so each
+/// harness ranges over every pair of bounds and every port rather than the cases a test lists.
+#[cfg(kani)]
+mod verification {
+    use super::*;
+
+    /// **A listen grant admits exactly its range**: for any bounds and any port, a word packed by
+    /// [`listen_grant`] lets [`grant_allows`] admit the port exactly when the low bound is a port and
+    /// the port lies between the bounds, and it grants no UDP port at all.
+    /// Falsification: replayable `crates/socket_contract/falsifications/verification.a_listen_grant_admits_exactly_its_range.patch`
+    #[kani::proof]
+    fn a_listen_grant_admits_exactly_its_range() {
+        let lowest: u16 = kani::any();
+        let highest: u16 = kani::any();
+        let port: u16 = kani::any();
+        let grant = listen_grant(lowest, highest);
+        assert_eq!(
+            grant_allows(grant, port),
+            lowest != 0 && lowest <= port && port <= highest
+        );
+        assert!(!udp_grant_allows(grant, port));
+    }
+
+    /// **A UDP bind grant admits exactly its range**: the same property for [`udp_bind_grant`] and
+    /// [`udp_grant_allows`], and such a word grants no listen port at all.
+    /// Falsification: replayable `crates/socket_contract/falsifications/verification.a_udp_bind_grant_admits_exactly_its_range.patch`
+    #[kani::proof]
+    fn a_udp_bind_grant_admits_exactly_its_range() {
+        let lowest: u16 = kani::any();
+        let highest: u16 = kani::any();
+        let port: u16 = kani::any();
+        let grant = udp_bind_grant(lowest, highest);
+        assert_eq!(
+            udp_grant_allows(grant, port),
+            lowest != 0 && lowest <= port && port <= highest
+        );
+        assert!(!grant_allows(grant, port));
+    }
+
+    /// **The two halves of a composed grant are independent**: for any listen range, any UDP range
+    /// and any port, the word the two make with `|` answers each question exactly as its own half
+    /// alone does.
+    /// Falsification: replayable `crates/socket_contract/falsifications/verification.a_composed_grant_answers_each_question_from_its_own_half.patch`
+    #[kani::proof]
+    fn a_composed_grant_answers_each_question_from_its_own_half() {
+        let listen = listen_grant(kani::any(), kani::any());
+        let udp = udp_bind_grant(kani::any(), kani::any());
+        let port: u16 = kani::any();
+        let both = listen | udp;
+        assert_eq!(grant_allows(both, port), grant_allows(listen, port));
+        assert_eq!(udp_grant_allows(both, port), udp_grant_allows(udp, port));
+    }
+}
