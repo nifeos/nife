@@ -38,7 +38,7 @@ fn put(byte: u8) {
     let status = (base + (LINE_STATUS << shift)) as *const u32;
     let transmit = (base + (TRANSMIT_HOLDING << shift)) as *mut u32;
     if shift == 0 {
-        // A byte-wide 16550 (QEMU `virt`): 32-bit accesses would touch the neighbouring registers.
+        // A byte-wide 16550 (QEMU `virt`): 32-bit accesses would touch the neighboring registers.
         // SAFETY: `base` is the console UART the tree named; these are its LSR and THR.
         unsafe {
             while core::ptr::read_volatile(status.cast::<u8>()) as u32 & LINE_STATUS_TRANSMIT_EMPTY

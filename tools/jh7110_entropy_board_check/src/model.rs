@@ -32,7 +32,7 @@ const RESEED_READS: u32 = 6;
 /// Which generation raises `LFSR_LOCKUP`.
 const LOCKUP_AT_GENERATION: u64 = 5000;
 
-/// The modelled block's state.
+/// The modeled block's state.
 pub(crate) struct Model {
     status: u32,
     mode: u32,
