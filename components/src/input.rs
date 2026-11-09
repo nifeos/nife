@@ -38,15 +38,16 @@ const INTERRUPT: u64 = 1; // WAIT / ACK the receive interrupt
 /// IMSC, an explicit interrupt-clear register ICR). RISC-V's has an NS16550 (byte registers,
 /// data-ready and transmit-holding-empty in the Line Status Register, RX interrupt enabled in IER,
 /// and the RX interrupt is cleared by *reading* the received byte, so there is nothing to clear).
-// The PL011 half uses `tock_registers`, as `kernel/src/drivers/pl011.rs` does, so every offset is
-// checked at compile time. The RISC-V half stays on volatile access because the NS16550's register
-// stride is a runtime value (QEMU spaces registers one byte apart, the JH7110 four, `reg-shift =
-// <2>`), which `register_structs!`'s fixed layout cannot express.
+// The PL011 half uses `tock_registers::register_map!`, so every offset is checked at compile time
+// and each register is reached through a handle that holds the address, never a reference to
+// device memory. The RISC-V half stays on volatile access because the NS16550's register stride is
+// a runtime value (QEMU spaces registers one byte apart, the JH7110 four, `reg-shift = <2>`), which
+// a register map's fixed layout cannot express. The register names are the PL011 manual's (DR, FR,
+// IMSC, ICR), kept as the methods' names.
 #[cfg(target_arch = "aarch64")]
+#[allow(non_snake_case)]
 mod uart {
-    use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
-    use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
-    use tock_registers::{register_bitfields, register_structs};
+    use tock_registers::{Mmio64, Read, Write, register_bitfields, register_map_mmio64};
 
     use super::UART_VA;
 
@@ -64,51 +65,51 @@ mod uart {
         ],
     }
 
-    register_structs! {
-        /// The PL011's memory-mapped register block, the same layout
-        /// `kernel/src/drivers/pl011.rs` verifies at compile time for the identical hardware,
-        /// extended with IMSC and ICR (the receive-interrupt registers the kernel's own driver
-        /// does not touch, but this driver does).
-        #[allow(non_snake_case)]
-        RegisterBlock {
-            (0x00 => DR: ReadOnly<u32>),
-            (0x04 => _reserved0),
-            (0x18 => FR: ReadOnly<u32, FR::Register>),
-            (0x1c => _reserved1),
-            (0x38 => IMSC: ReadWrite<u32, IMSC::Register>),
-            (0x3c => _reserved2),
-            (0x44 => ICR: WriteOnly<u32>),
-            (0x48 => @END),
+    // Every gap carries its size, so the macro asserts each offset at compile time: after an
+    // unsized `_` it cannot know where the next register should start, and checks nothing.
+    register_map_mmio64! {
+        /// The PL011's memory-mapped register block: the data and flag registers, and IMSC and
+        /// ICR, the receive-interrupt registers the kernel's own driver does not touch but this
+        /// driver does.
+        registers {
+            0x00 => DR: u32 { Read },
+            0x04 => _: 0x14,
+            0x18 => FR: FR::Register { Read },
+            0x1c => _: 0x1c,
+            0x38 => IMSC: IMSC::Register { Read, Write },
+            0x3c => _: 0x08,
+            0x44 => ICR: u32 { Write },
         }
     }
 
-    fn regs() -> &'static RegisterBlock {
+    use registers::Interface;
+
+    fn regs() -> registers::Real {
         // SAFETY: UART_VA is our device mapping of the PL011, handed to us at spawn, for the
-        // whole lifetime of this process. This is the same invariant the hand-written rd/wr calls
-        // used to assert by comment; register_structs! now checks every offset above at compile
-        // time instead.
-        unsafe { &*(UART_VA as *const RegisterBlock) }
+        // whole lifetime of this process. The register map above checks every offset at compile
+        // time.
+        unsafe { registers::Real::new(Mmio64::from_addr(UART_VA as usize)) }
     }
 
     /// Name: ratified 2026-09-24 (calef, #1255 review). Refused `rx_pending` and `is_rx_pending`
     /// (`rx` is a decoder for "receive").
     pub fn is_byte_waiting() -> bool {
-        !regs().FR.is_set(FR::RXFE)
+        !regs().FR().is_set(FR::RXFE)
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
     /// design/naming/acronyms-and-abbreviations.md; `read_byte` reads the byte `is_byte_waiting`
     /// reports.
     pub fn read_byte() -> u8 {
-        regs().DR.get() as u8
+        regs().DR().get() as u8
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
     /// design/naming/acronyms-and-abbreviations.md; `arm_receive_interrupt` is the word the NS16550
     /// and PL011 manuals spell out.
     pub fn arm_receive_interrupt() {
-        regs().IMSC.modify(IMSC::RXIM::SET);
+        regs().IMSC().modify(IMSC::RXIM::SET);
     }
     pub(crate) fn clear_interrupt() {
-        regs().ICR.set(0x7ff);
+        regs().ICR().set(0x7ff);
     }
 }
 

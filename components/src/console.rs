@@ -53,20 +53,21 @@ use user_mode_runtime::{
     Received, call, cntfrq, now, receive, receive_bound, send, timer_arm, timer_cancel,
 };
 
-/// The PL011's register block, migrated onto `tock_registers` (milestone 139 round 5): every
-/// offset checked at compile time instead of asserted by a hand-written comment, matching
-/// `kernel/src/drivers/pl011.rs`'s own idiom for the identical hardware. Only the two registers
-/// `uart_put` needs (DR, FR): the kernel's own driver configures the device at boot, so this
-/// program only ever transmits. The RISC-V half below stays on plain volatile access, for the
-/// reason `kernel/src/drivers/ns16550.rs`'s own module doc gives: the NS16550's register *stride*
-/// is a runtime value (QEMU spaces its emulated registers one byte apart; the JH7110's real
-/// hardware spaces them four bytes apart, `reg-shift = <2>`), which `register_structs!`'s
+/// The PL011's register block, declared with `tock_registers::register_map!`: every offset is
+/// checked at compile time instead of asserted by a hand-written comment, and each register is
+/// reached through a handle that holds the address, never a reference to device memory. Only the
+/// two registers `uart_put` needs (DR, FR): the kernel's own driver configures the device at boot,
+/// so this program only ever transmits. The RISC-V half below stays on plain volatile access, for
+/// the reason `kernel/src/drivers/ns16550.rs`'s own module doc gives: the NS16550's register
+/// *stride* is a runtime value (QEMU spaces its emulated registers one byte apart; the JH7110's
+/// real hardware spaces them four bytes apart, `reg-shift = <2>`), which a register map's
 /// compile-time-fixed layout cannot express. The PL011 has no such knob, so it is the one half of
 /// this file the macro actually fits.
 #[cfg(target_arch = "aarch64")]
+// The register names are the PL011 manual's (DR, FR), kept as the methods' names.
+#[allow(non_snake_case)]
 mod pl011 {
-    use tock_registers::registers::{ReadOnly, WriteOnly};
-    use tock_registers::{register_bitfields, register_structs};
+    use tock_registers::{Read, Write, register_bitfields, register_map_mmio64};
 
     register_bitfields! {
         u32,
@@ -77,15 +78,14 @@ mod pl011 {
         ],
     }
 
-    register_structs! {
-        /// The PL011's memory-mapped register block, the same layout
-        /// `kernel/src/drivers/pl011.rs` verifies at compile time for the identical hardware.
-        #[allow(non_snake_case)]
-        pub RegisterBlock {
-            (0x00 => pub DR: WriteOnly<u32>),
-            (0x04 => _reserved0),
-            (0x18 => pub FR: ReadOnly<u32, FR::Register>),
-            (0x1c => @END),
+    // Every gap carries its size, so the macro asserts each offset at compile time: after an
+    // unsized `_` it cannot know where the next register should start, and checks nothing.
+    register_map_mmio64! {
+        /// The PL011's memory-mapped register block, the two registers this program uses.
+        pub registers {
+            0x00 => DR: u32 { Write },
+            0x04 => _: 0x14,
+            0x18 => FR: FR::Register { Read },
         }
     }
 }
@@ -359,19 +359,18 @@ fn paint_screen(b: &mut ScreenBatch) {
 /// boot; we only transmit.
 #[cfg(target_arch = "aarch64")]
 fn uart_put(byte: u8) {
-    use pl011::{FR, RegisterBlock};
-    use tock_registers::interfaces::{Readable, Writeable};
+    use pl011::FR;
+    use pl011::registers::Interface;
+    use tock_registers::{Mmio64, Read, Write};
 
     // SAFETY: UART_VA is our device mapping of the PL011, handed to us at spawn, for the whole
-    // lifetime of this process. This is the same invariant the hand-written read_volatile/
-    // write_volatile calls used to assert by comment; register_structs! now checks every offset
-    // above at compile time instead (kernel/src/drivers/pl011.rs's own comment: "an off-by-four
-    // here is a build error rather than a mystery at runtime", true here for the identical reason).
-    let regs = unsafe { &*(UART_VA as *const RegisterBlock) };
-    while regs.FR.is_set(FR::TXFF) {
+    // lifetime of this process. The register map above checks every offset at compile time, so an
+    // off-by-four is a build error rather than a mystery at runtime.
+    let registers = unsafe { pl011::registers::Real::new(Mmio64::from_addr(UART_VA as usize)) };
+    while registers.FR().is_set(FR::TXFF) {
         core::hint::spin_loop();
     }
-    regs.DR.set(byte as u32);
+    registers.DR().set(u32::from(byte));
 }
 
 /// The UART's register shape, the second start word (`abi::uart`), stored before the first byte.

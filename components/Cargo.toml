@@ -752,7 +752,7 @@ video_terminal = { version = "0.1.0", path = "../crates/video_terminal" }
 # console.rs's and input.rs's PL011 half and jh7110_entropy.rs use, matching
 # kernel/src/drivers/pl011.rs's own idiom for the identical hardware. Pinned to the same version as
 # kernel/Cargo.toml's own dependency so the two crates using this library never skew.
-tock-registers = "0.10"
+tock-registers = "0.12"
 # smoltcp (milestone 30, piece 3): the userspace TCP/IP stack. no_std, heap over user_mode_runtime's
 # UntypedHeap. Pinned at 0.13.1; divergence policy is the vendored-engine discipline (DECISIONS §18).
 smoltcp = { version = "0.14.0", default-features = false, features = [
