@@ -11,6 +11,8 @@
 //! - **An all-zero first draw is read as a dead device** ([`readiness`]): wrong with probability
 //!   2^-64 to 2^-2048 by source, and the safe way round.
 //! - The check is bring-up only; continuous health testing is a decision still to be made.
+//! - No request carries [`VERSION`], and the service answers no query for the versions it serves,
+//!   so a client built against another version is not refused at bind.
 //!
 //! Name: ratified 2026-08-23 (calef): the service's own word, `entropy`, with the contract suffix
 //! `_contract` (calef's 2026-10-18 ruling).
@@ -30,14 +32,14 @@ struct ReadmeExample;
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_BYTES: u64 = 8;
 
-/// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position
-/// the sibling message contracts of the nife kernel use, so the contracts read alike.
+/// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position its
+/// sibling message contracts use, so the contracts read alike.
 pub const OPERATION_SHIFT: u32 = 56;
 
 /// The protocol's version, one for the operation set and the reply shape together: one constant
 /// per wire format. A break bumps this and owes a dated ledger entry; an addition (a new opcode, an
-/// optional field) owes no bump. The check lives at bind: a client asks for the served versions and
-/// binds only when its own version is in the set.
+/// optional field) owes no bump. A program declares it beside [`INTERFACE_ID`]; no peer checks it
+/// at bind yet (see this crate's `BUGS`).
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
@@ -228,11 +230,10 @@ pub fn take(n: usize, word: u64, out: &mut [u8]) -> usize {
 /// `None` if any reply is not a count (no entropy capability; see [`delivered`]) or delivers fewer
 /// bytes than asked (the service is dry); then `out` is unspecified and must not be used. Asks for
 /// [`MAXIMUM_BYTES`] at a time and the remainder last. The `CALL` is a parameter so this crate
-/// makes no syscall; the caller passes a real one. The std PAL accepts
-/// partial counts instead, deliberately.
+/// makes no syscall; the caller passes a real one. The standard library's platform abstraction
+/// layer accepts partial counts instead, deliberately.
 ///
-/// Name: ratified 2026-10-07 (calef, #1795). His word: "Yes". std's `_with` suffix, for a function
-/// that takes a closure.
+/// Name: ratified 2026-10-07 (#1795). std's `_with` suffix, for a function that takes a closure.
 pub fn fill_with(out: &mut [u8], mut call: impl FnMut(u64) -> (u64, u64)) -> Option<()> {
     let mut filled = 0;
     while filled < out.len() {
@@ -366,7 +367,7 @@ mod tests {
     /// bufferful of zeros must not be able to report [`READY`]. Asserted against every width a
     /// backend actually draws, because the predicate is "no nonzero byte anywhere" rather than
     /// "the first word is zero", and a check written the second way would pass this test at 8
-    /// bytes and let a 256-byte DMA page through.
+    /// bytes and let a 256-byte direct memory access (DMA) page through.
     #[test]
     fn an_all_zero_first_bufferful_is_never_ready() {
         // The three widths a backend actually draws: the instruction's eight bytes, the JH7110's

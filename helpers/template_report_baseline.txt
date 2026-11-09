@@ -106,7 +106,6 @@ elf prose_acronyms 8
 elf readme_acronyms 1
 elf register_names 9
 entropy_contract abbreviations 7
-entropy_contract prose_acronyms 2
 environment_contract abbreviations 19
 environment_contract prose_acronyms 4
 environment_contract readme_acronyms 2
@@ -212,9 +211,6 @@ nifefs abbreviations 30
 nifefs prose_acronyms 4
 nifefs readme_acronyms 2
 nifefs register_names 4
-non_volatile_memory_express abbreviations 19
-non_volatile_memory_express prose_acronyms 20
-non_volatile_memory_express register_names 6
 number_writer abbreviations 2
 package_archive abbreviations 17
 package_archive prose_acronyms 2

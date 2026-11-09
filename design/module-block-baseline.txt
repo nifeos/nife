@@ -9960,7 +9960,6 @@ notes/kernel-suite-time.md
 
 notes/l4-lessons.md
 
-notes/lab-index-on-cordoba.md
 
 notes/line-discipline.md
 

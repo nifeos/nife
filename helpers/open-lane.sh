@@ -23,7 +23,7 @@
 # providers are OpenAI-shaped, so a translating gateway sits in between; LiteLLM is the one the
 # Claude Code documentation names. Set these before running:
 #
-#     export OPEN_LANE_BASE_URL=https://<cordoba>.<tailnet>.ts.net:4000
+#     export OPEN_LANE_BASE_URL=https://<gateway-host>:4000
 #     export OPEN_LANE_MODEL=<model id the gateway exposes>
 #     export OPEN_LANE_EFFORT=low                        # optional; see below
 #

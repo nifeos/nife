@@ -384,7 +384,7 @@ fi
 # records one harness that reached 3.5 GB before it was killed, DECISIONS §203 (capacity is rented
 # rather than bought) budgets "about 3.5 GB a harness", and concurrent harnesses multiply the peak.
 # That figure is the largest harness seen, not a typical, so budgeting on it errs high. Four fits the
-# dev Mac and cordoba's 23 GB; **CI's 16 GB runner fits two**, measured the hard way: four runs were
+# dev Mac; **CI's 16 GB runner fits two**, measured the hard way: four runs were
 # memory-killed mid-glob before verify.yml pinned VERIFY_JOBS=2 (the kill reports as a bare
 # "operation was canceled", which cost an evening to attribute). Override with VERIFY_JOBS=N;
 # VERIFY_JOBS=1 serializes the execution again (the output stays terse either way).
@@ -483,7 +483,6 @@ interfaces_note	32	the INTERFACES note has one encoding, and decoding hostile by
 package_archive	4	a package file is refused or read entirely inside itself, on bytes the solver chose
 measured_boot	51	a digest text form reads back as itself, and nothing but a labeled sha256 parses
 pci	23	config-space decode on hostile-device input
-non_volatile_memory_express	5	the queue rings never index out, the doorbell/PRP arithmetic is total, and a transfer command names only a block the namespace has
 designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller writes makes the driver read outside a buffer
 block_roster	11	the roster page reader is total on any bytes, and a written roster reads back as written
 jh7110_clock_and_reset	61	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run

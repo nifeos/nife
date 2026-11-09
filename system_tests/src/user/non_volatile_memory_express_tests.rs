@@ -67,7 +67,12 @@ fn start() -> Option<non_volatile_memory_express_service::Wiring> {
 /// disk's prior contents, so it re-runs on a used disk. One test on purpose: bring-up is not
 /// idempotent (a second wiring would reset the controller and recreate the queues under the first).
 ///
-/// Falsification: replayable `system_tests/falsifications/user.non_volatile_memory_express_tests.a_confined_el0_process_serves_the_block_interface_end_to_end.patch`
+/// Falsification: attested 2026-11-09. Dropped the block-to-logical-block conversion in
+/// `non_volatile_memory_express::Namespace::transfer_command`, so block 37 started at logical block
+/// 37 and not at `37 * blocks_per_transfer`; the second write overwrote seven eighths of the first
+/// and the read-back of block 37 came back wrong at byte 512. The crate lives in
+/// `nifeos/non_volatile_memory_express` now, so the defect is no longer a patch this tree can
+/// apply; the crate's own falsification records carry the Kani side of the same conversion.
 #[test_case]
 fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
     let Some(disk) = start() else {

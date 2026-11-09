@@ -177,7 +177,9 @@ Outstanding before the move.
 |---|---|
 | `design/decisions/0086-el0-nvme-driver/prior-art.md` and milestone 569 (the disk an installer names has no model, only a size) still cite `prp_pair`, `CNS_CONTROLLER` and `CNS_NAMESPACE`. | maintainer |
 
-Recommendation. The architect cleared the move, and has not cleared the tag or publication.
+Recommendation. The architect cleared the move, and has not cleared the tag or publication. The
+repository `nifeos/non_volatile_memory_express` exists, and `kernel`, `components` and
+`driver_process_contract` pin it by revision.
 
 ## `e1000e`, step 6
 
@@ -375,7 +377,7 @@ Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text 
 ## `clock_contract`, a contract crate
 
 The whole package is [crate-reviews/clock-contract.md](crate-reviews/clock-contract.md): a leaf
-with no Kani harness, identity 8, version 1, magic `CLOCKv01`.
+with no Kani harness.
 
 ## Summary
 
@@ -391,4 +393,5 @@ with no Kani harness, identity 8, version 1, magic `CLOCKv01`.
 | `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
 | `block_roster` | contract | ready for review |
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |
-| `clock_contract` | contract | blocked by its identity values and the overlay's names |
+| `entropy_contract` | contract | names and identity for the architect; [package](crate-reviews/entropy-contract.md) |
+| `clock_contract` | contract | identity and overlay names for the architect |
