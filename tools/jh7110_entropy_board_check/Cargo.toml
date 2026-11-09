@@ -27,7 +27,7 @@ device_tree_blob = { path = "../../crates/device_tree_blob" }
 
 [features]
 # Replaces the register window with a software model of the block, so the whole run, the log and
-# the checker can be rehearsed under QEMU `virt`, which has no JH7110. A modelled run says so on its
+# the checker can be rehearsed under QEMU `virt`, which has no JH7110. A modeled run says so on its
 # first line, and the checker refuses it as a board result.
 model = []
 
