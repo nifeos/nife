@@ -15,8 +15,8 @@ capacity, then one eight-byte entry per device (an ordinal and a transport numbe
 it once; any program granted the mapping reads it. The crate is the one definition both sides
 compile, so a reader built from another commit refuses a page it does not recognize rather than
 misreading it. It is `no_std`, has no dependency and no `unsafe`, and three Kani harnesses prove
-that the reader and the writer are total and that a written page reads back. Its identity is frozen,
-and `write` no longer panics on any input. It is a leaf: nothing in the crate points back into nife.
+that the reader and the writer are total and that a written page reads back. The architect froze its
+identity, and `write` no longer panics on any input. It is a leaf: nothing in the crate points back into nife.
 
 ## Identity
 
@@ -70,10 +70,10 @@ What a stranger may find surprising:
   return references. The page holds bytes, not `Device` values, so a reference is not possible
   without `unsafe`.
 - The reader ignores the capacity word at bytes 12 to 16 and computes the capacity from the length
-  of the slice it is given.
+  of the slice it receives.
 - `write` refuses a page shorter than the header with `TooManyDevices`, the crate's one write
-  error: such a page has room for no device, not even for a count of zero. A refused page is left
-  untouched. A page with room for more than `u32::MAX` entries records a capacity of `u32::MAX`.
+  error: such a page has room for no device, not even for a count of zero. `write` leaves a refused
+  page untouched. A page with room for more than `u32::MAX` entries records a capacity of `u32::MAX`.
 - `TooManyDevices` implements neither `Display` nor `core::error::Error`, and neither it nor
   `Device` is `#[non_exhaustive]`. The page layout fixes `Device`'s two fields.
 
@@ -97,8 +97,8 @@ reach. The README's `BUGS` section says so for the first.
 
 ## Names
 
-Every name with a block reads ratified; the move commit strips them. The fields `ordinal` and
-`transport` are ratified inside `Device`'s block.
+Every name with a block reads ratified; the move commit strips them. `Device`'s block ratifies its
+fields `ordinal` and `transport`.
 
 | name | kind | status | rule check |
 |---|---|---|---|
@@ -122,8 +122,8 @@ No name holds an address, a mask or a register offset, so the address, mask and 
 
 ### Findings for the maintainer
 
-None is renamed by this lane. Each is a two-way door, since nothing outside nife has acted on the
-crate.
+This lane renames none of the names below. Each is a two-way door, since nothing outside nife
+has acted on the crate.
 
 | # | names | finding | recommendation |
 |---|---|---|---|
@@ -157,14 +157,14 @@ The crate itself does not: it is a leaf, with no dependency and no path, citatio
 1. Whether a reader should also check the capacity word against the slice length. Recommendation:
    refuse a page whose capacity word exceeds what the slice holds, because that is a writer bug the
    reader can see. It changes a refusal and no signature; the maintainer can decide it.
-2. A page with room for more than `u32::MAX` entries records `u32::MAX` rather than being refused.
-   The maintainer rules this provisionally: refusing would report `TooManyDevices` for a page that
-   holds every device it was given, and such a page is over 32 GiB.
+2. A page with room for more than `u32::MAX` entries records `u32::MAX`, and `write` does not
+   refuse it. The maintainer rules this provisionally: refusing would report `TooManyDevices` for a page that
+   holds every device the caller passed, and such a page is over 32 GiB.
 
 ## Recommendation
 
-Ready for review. The defect is fixed and proved, and the identity is frozen. The architect's
-clearance is the one decision.
+Ready for review. This branch fixes and proves the defect, and the identity holds its frozen
+values. The architect's clearance is the one decision.
 
 ## Decisions for the architect
 

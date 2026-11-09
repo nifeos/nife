@@ -334,8 +334,8 @@ Recommendation. Ready for review.
 
 The whole package is [crate-reviews/block-roster.md](crate-reviews/block-roster.md).
 
-Name and version. `block_roster` `0.1.0`, ratified, with all 21 names; its identity (`INTERFACE_ID`
-5, `VERSION` 1, magic `blkrosv1`) is ratified and frozen.
+Name and version. `block_roster` `0.1.0`, ratified, with all 21 names. The architect froze its identity:
+`INTERFACE_ID` 5, `VERSION` 1, magic `blkrosv1`.
 
 API. The read-only page that lists attached block devices: `write`, `Roster::read` and its readers,
 `Device`, and the transport numbers. Milestone 1017 keeps it unpublished, pinned by `rev`.
