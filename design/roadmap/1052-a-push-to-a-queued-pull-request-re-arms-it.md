@@ -28,17 +28,17 @@ time, discarding three group builds.
 
 ## What exists
 
-1. **Re-arming push.** `script/push --requeue` runs the pre-push hook first, then
+1. Re-arming push. `script/push --requeue` runs the pre-push hook first, then
    `helpers/push-requeue.sh before` dequeues the pull request (`dequeuePullRequest`, read back), the
    push lands and is read back from origin, and `helpers/push-requeue.sh after` arms it through
    `helpers/arm.sh`. A pull request that was not armed stays unarmed. Without the flag
    `helpers/push-queued-check.sh` keeps refusing.
-2. **One arming entry point.** `helpers/arm.sh <n>` refuses a draft, a closed pull request and one
+2. One arming entry point. `helpers/arm.sh <n>` refuses a draft, a closed pull request and one
    wearing a hold label, naming the label, then runs `gh pr merge --auto --merge` and reads GitHub
    back (`helpers/pr-queue-state.sh`). The holds are one definition, `helpers/hold-labels.sh`
    (`hold_label_of`), which `helpers/merge-drain.sh` sources too. `script/push --requeue` and
    `briefs/gate-in-ci.md` use it.
-3. **The drain reports an unarmed pull request.** The `unarmed` cause (`nm_unarmed` in
+3. The drain reports an unarmed pull request. The `unarmed` cause (`nm_unarmed` in
    `helpers/needs-maintainer.jq`) labels a ready, unheld pull request (`nm_ready_unheld`) that is
    neither armed nor queued for 30 minutes (`NM_MINUTES` in `helpers/merge-drain.sh`), once per
    episode, and arms nothing.
@@ -51,7 +51,7 @@ no-op re-arm that must fail, every hold refused with its label named and no merg
 
 ## What remains
 
-1. **The instructions still name the bare command.** The briefs, the developer-lane skill and the
+1. The instructions still name the bare command. The briefs, the developer-lane skill and the
    two texts a person reads at the moment of arming still say `gh pr merge --auto` where they should
    say `helpers/arm.sh` or `script/push --requeue`:
    - `notes/skills/developer-lane/SKILL.md` (the ready-and-arm bullet);
@@ -86,7 +86,7 @@ no-op re-arm that must fail, every hold refused with its label named and no merg
 
 - **Outstanding.** The instruction texts listed under "What remains" still name `gh pr merge
   --auto`; checked 2026-11-09 (UTC) by a grep of `briefs/`, `notes/skills/` and `helpers/`. The
-  re-arming push, the arming entry point and the drain's `unarmed` report are built, and
+  re-arming push, the arming entry point and the drain's `unarmed` report exist, and
   `helpers/push-requeue-selftest.sh` passed on that date.
 
 ## Index row

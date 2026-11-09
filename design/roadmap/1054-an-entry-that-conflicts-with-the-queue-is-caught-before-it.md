@@ -28,14 +28,14 @@ run of its checks.
 
 ## What exists
 
-1. **The pre-arm check.** `script/queue-conflicts [--pr N]` (`cmd_check` and `evaluate` in
+1. The pre-arm check. `script/queue-conflicts [--pr N]` (`cmd_check` and `evaluate` in
    `helpers/queue_conflicts.py`) merges the pull request's head with `git merge-tree` against `main`
    plus every entry ahead of it in the queue, in a scratch repository that borrows the caller's
    objects, and names each conflicting file and the entries ahead that changed it. Exit 0 clean, 1
    conflict, 2 could not tell. `script/push` runs it in `--advisory` mode after a confirmed push,
    and the developer-lane skill tells a lane to run it before arming. The notes are
    `notes/merge-queue/conflict-precheck.md`.
-2. **The launch check for wide runs.** `script/queue-conflicts shared SCOPE...` (`cmd_shared` and
+2. The launch check for wide runs. `script/queue-conflicts shared SCOPE...` (`cmd_shared` and
    `shared_paths`) lists every path two planned lanes' scope files both name, directory prefixes
    included, and exits 1 when there is one. Step 2 of the partition in
    `briefs/run-a-milestone-wide.md` runs it before the first claim, with the generated records in
@@ -49,12 +49,12 @@ that conflicts with those before it, the advisory mode and the scope check, and 
 
 ## What remains
 
-1. **Arming does not refuse a conflict.** The check reports and never blocks: `helpers/arm.sh`, the
+1. Arming does not refuse a conflict. The check reports and never blocks: `helpers/arm.sh`, the
    one arming entry point of milestone 1052 (a push to a queued pull request re-arms it), does not run
    it, and `script/push` runs it only as advice. This item makes `helpers/arm.sh` run the check and
-   refuse on exit 1, naming the files and the entries ahead, with an explicit override that the pull
-   request states, as `notes/merge-queue/conflict-precheck.md` already asks of a lane that arms over
-   a reported conflict.
+   refuse on exit 1, naming the files and the entries ahead. An explicit override still arms, and
+   the pull request states why, as `notes/merge-queue/conflict-precheck.md` already asks of a lane
+   that arms over a reported conflict.
 
 The drain's comment on a queued entry gone UNMERGEABLE, and the cap on ready pull requests from one
 wide run, are milestone 1041 (the drain names a conflicting entry and a wide run stops at six pushes).
@@ -79,8 +79,8 @@ wide run, are milestone 1041 (the drain names a conflicting entry and a wide run
 
 - **Outstanding.** `helpers/arm.sh` does not call `script/queue-conflicts`, so arming over a
   conflict succeeds; checked 2026-11-09 (UTC) by reading `helpers/arm.sh` and `script/push`. The
-  check itself is built: its selftest passed on that date, `script/queue-conflicts --pr 3389` and
-  `--pr 3392` ran clean against the live queue without changing a ref, and `shared` refused two
+  check itself works. Its selftest passed on that date, and `script/queue-conflicts --pr 3389` and
+  `--pr 3392` ran clean against the live queue without changing a ref. `shared` refused two
   planted scopes that both named one file.
 - **Milestone 1041.** The drain pass that comments once on a conflicting queued entry, and the cap
   of six ready pull requests per wide run.
