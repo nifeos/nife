@@ -17,12 +17,9 @@ that repository. Every item below is work for a lane there. Milestone 814
 (`non_volatile_memory_express`: proven NVMe queue logic, released on its own) owns the extraction
 and the release path; this block owns the findings that land inside that path.
 
-The review package settles the crate name, the version `0.1.0`, the dual license, and the names it
-records as ratified: the register offsets, the opcodes and Identify selectors, the two private
-assertion constants, `PhysicalRegionPagePair` with `first_entry` and `second_entry`,
-`Namespace::new`, the module names, `Namespace`, `holds_whole_block`, `transfer_command`,
-`capacity_bytes`, `timeout_in_500_millisecond_units` and `command_id`. Those stay closed here. The
-package clears the move and neither the tag nor publication.
+The review package settles the crate name, the version `0.1.0`, the dual license and every name it
+records as ratified, and those stay closed here. It clears the move, and neither the tag nor
+publication.
 
 Reuse: the shared crate workflows `nifeos/crate-workflows` and their scaffold, `cargo-mutants`,
 Kani, `cargo-fuzz` and the harness shapes of the crate. No new tool.
@@ -56,23 +53,18 @@ The reviewer verified these firsthand, in a fresh clone of `main` on one Linux h
   timeout. The 76 misses sit on exactly the 28 source lines that `.github/mutants-exempts` lists:
   six production lines whose OR-to-XOR and shift swaps act on disjoint bits, and 22 lines inside
   `#[cfg(kani)]` harness bodies that the ordinary tests never compile.
-- All three `cargo-fuzz` targets build on nightly and ran 20 seconds each with no finding.
-- `typos` and `cargo deny check` pass (one unmatched `Zlib` allowance warns). `cargo package
-  --list` ships 55 files. `cargo publish --dry-run` refuses, because the manifest says `publish =
-  false`.
-- No `unsafe` in `src/`, no contraction in any prose or comment, and no mention of this tree in the
-  text of the crate beyond the secret names of the organization's App in `release.yml`.
-- Through the GitHub API: the last weekly run green in every job, two rulesets with nine required
-  checks, no tag, and the distance of the template pin from the template's releases and head.
+- All three `cargo-fuzz` targets ran 20 seconds each with no finding. `typos` and
+  `cargo deny check` pass, and `cargo package --list` ships 55 files.
+- No `unsafe` in `src/`, and no mention of this tree beyond the App secret names in `release.yml`.
+- Through the GitHub API: the last weekly run green in every job, nine required checks, no tag.
 
 Inferred, not verified: the ordering hazard of P1-6, from the API shape and from the two consumers
 that pin the repository, not from a failure on hardware; and the page-size mismatch of P1-9, since
 nobody built a kernel with 16 KiB pages against the crate.
 
-Not run: `cargo semver-checks` (no baseline exists), Miri (the weekly job ran it green), a long fuzz
-campaign, the dry run of the release workflow, the name checks of the template at its head, and
-anything that needs a controller. The reviewer pushed, tagged, branched and opened nothing in the
-repository.
+Not run: `cargo semver-checks` (no baseline exists), Miri (green in the weekly job), a long fuzz
+campaign, the release dry run, the name checks of the template at its head, and anything that needs
+a controller. The reviewer changed nothing in the repository.
 
 Effort sizes: XS is under an hour, S half a day, M a day or two.
 
@@ -119,9 +111,8 @@ One-way (public names). XS.
 covers, yet `holds_whole_block` and `transfer_command` (`src/namespace.rs`) take `unit` again on
 every call. The byte bound uses the caller's `unit`; the logical block address uses the stored
 `blocks_per_transfer`. When the two disagree, the byte bound passes and the command addresses a
-block past the end. A namespace of 512-byte blocks built with `blocks_per_transfer` 8 and asked
-with `unit` 512 lands eight times past it. The controller refuses such a command with a status, so
-this is a claim that is too strong, not memory unsafety. The harness
+block past the end. The controller refuses such a command with a status, so this is a claim that is too
+strong, not memory unsafety. The harness
 `a_transfer_command_is_only_built_for_a_block_the_namespace_has` (`src/verification.rs`) states
 only the byte bound, so it cannot see the mismatch.
 
@@ -193,9 +184,8 @@ needs a barrier. On the completion side, `Completion::from_dwords` (`src/complet
 four dwords at once, so a caller reads the whole entry and then asks `CompletionQueue::is_owned`
 (`src/queues.rs`). On a weakly ordered host the loads of dwords 0 to 2 may precede the write of the
 controller while dword 3 follows it, and a fresh phase then carries a stale head and command
-identifier. The Linux PCIe driver puts a read barrier between its phase check and the rest of the
-entry; the reviewer cites that from memory and did not reread it. Both consumers that pin this
-repository read the entry as one volatile `[u32; 4]` after a single barrier before the poll loop.
+identifier. Both consumers that pin this repository read the entry as one volatile `[u32; 4]` after a
+single barrier before the poll loop.
 
 Change: state the discipline in three sentences in the README and on `SubmissionQueue::push` and
 `CompletionQueue::is_owned`. A write barrier goes between the entry and the tail doorbell. The
@@ -223,9 +213,7 @@ identifiers. Two-way. XS.
 comment says so. Neither checks `entries` against `Capabilities::maximum_queue_entries`, or
 `queue_id` against zero, the admin pair. `physical_region_page_pair`
 (`src/physical_region_page.rs`) asserts a power-of-two page size of at least 512 bytes, and its doc
-comment does not say so. `Command::read` and `write` show the right shape: they assert with a
-message and their doc comments name the condition. No value the controller writes reaches either
-panic. Change: an `assert!` with a message for `entries >= 2` in both queue builders and a sentence
+comment does not say so. No value the controller writes reaches either panic. Change: an `assert!` with a message for `entries >= 2` in both queue builders and a sentence
 in each doc comment, and the page-size condition in the doc comment of `physical_region_page_pair`.
 The depth check against the capabilities stays with the caller, and the doc says so. Two-way. XS.
 
@@ -234,8 +222,7 @@ The depth check against the capabilities stays with the caller, and the doc says
 `enabled_controller_configuration()` (`src/configuration.rs`) returns `CC` with `MPS` 0, so a
 kernel whose frames are 16 KiB or 64 KiB cannot use it. Nothing ties that `MPS` to the
 `page_size_bytes` the page-pair builder takes, so the two can disagree without a warning.
-`Capabilities` decodes `MPSMIN` and not `MPSMAX`, so a caller cannot check the upper bound. The
-review inferred this from the code. Change, as the review recommends:
+`Capabilities` decodes `MPSMIN` and not `MPSMAX`, so a caller cannot check the upper bound. Change, as the review recommends:
 `enabled_controller_configuration(page_size_bytes) -> Option<u32>`, which encodes
 `MPS = log2(page_size_bytes) - 12` and refuses a size that is not a power of two or lies outside
 4 KiB to 128 MiB; `Capabilities::maximum_page_size_bytes` beside the minimum; and a harness that the
@@ -269,23 +256,19 @@ five. Two-way. XS.
 
 Every caller workflow (`.github/workflows/ci.yml` and the six others) pins `nifeos/crate-workflows`
 at `4e5b07dd`, 68 commits past the newest release of the template and 68 behind its head, so the
-lag job passes. The head adds a `mutation.yml` caller that takes the full run out of `weekly.yml`,
-`check / mutation-diff` on every pull request, and a release gate that refuses a release without a
-green full mutation run at the released commit. It also adds a badge-row gate, three report-only
-README checks and the abbreviation report. The `main` ruleset requires nine checks, and
+lag job passes. The head adds a `mutation.yml` caller, `check / mutation-diff` on every pull request, and a release
+gate that wants a green full mutation run at the released commit. The `main` ruleset requires nine checks, and
 `check / mutation-diff` is not among them.
 
-Change: when the template releases, take the pin bump from Dependabot. The same pull request adds
-the `mutation.yml` caller of the scaffold with the repository's own cron line and copies its
-budgets file. Then the settings script makes the tenth check required, and one dispatch of
-`mutation.yml` on `main` before the release gives the gate a green run to read. Two-way. S.
+Change: when the template releases, take the pin bump from Dependabot, and in the same pull request
+add the scaffold's `mutation.yml` caller and budgets file. The settings script then makes the tenth
+check required, and one dispatch on `main` gives the release gate a green run. Two-way. S.
 
 #### P1-14. `IdentifyNamespace::default()` reads as a namespace
 
 `Default` (`src/identify.rs`) yields zero blocks of 512 bytes, standing for "before Identify has
-answered". A stranger reads `IdentifyNamespace::default()` as a real, empty namespace. Its one
-consumer uses it as a field initializer that an `Option<IdentifyNamespace>` would serve. Removing a
-trait implementation after publication breaks callers; removing it before costs nothing. Change,
+answered". A stranger reads `IdentifyNamespace::default()` as a real, empty namespace. Removing a trait implementation after publication breaks callers;
+removing it before costs nothing. Change,
 as the review recommends: remove the implementation. The alternative keeps it, with a doc comment
 that says `blocks == 0` means "not yet identified". One-way at the tag. XS.
 
@@ -319,14 +302,12 @@ claims none of the QEMU or hardware steps.
 
 ## BUGS
 
-- P1-6 is a hazard read from the API shape and from two consumers. Nobody has observed a stale
-  field on hardware, and the review had none to run. The fix is documentation and one helper,
+- Nobody has observed the hazard of P1-6 on hardware. Its fix is documentation and one helper,
   cheap enough to land without the observation.
 - P1-9 comes from reading the code, not from a kernel with 16 KiB pages built against the crate.
 - The prior-art rows for `nvme-driver`, `vroom` and Redox describe their front pages, not their
   code. A user of one of them may miss less, or more, than the table says.
-- P1-13 waits on the next release of the template. Until it lands, the mutation stack cannot arrive
-  through Dependabot.
+- P1-13 waits on the next release of the template.
 - The review did not run the name checks of the template at its head. The review package ran them
   at the pin, and P1-2 and P1-3 are what reading the rules against the code found beyond that run.
 - The fuzz runs took 20 seconds per target, and the weekly job gives five minutes. Neither is a
@@ -337,10 +318,7 @@ claims none of the QEMU or hardware steps.
 ## Index row
 
 An outside reading of `non_volatile_memory_express`: two items block the tag (a manifest comment;
-four register spellings, ruled). Fourteen go before the first release: a namespace type that
-cannot hold a wrong unit, the quantity and address names of its parameters, spelled-out harness
-names, the specification's mnemonics as aliases, a direction type, the ordering discipline a weakly
-ordered host needs, a correct worked completion, documented panics, a page-size argument for the
-controller configuration, an admin queue builder, the README order, a keyword, the mutation stack
-of the template, and no `Default` on the Identify parse. Ten follow it. No tag is ruled, and
-publishing stays held.
+four register spellings, ruled). Fourteen go before the first release, among them a namespace that
+cannot hold a wrong unit, unit and address names on parameters, the ordering a weakly ordered host
+needs, a page-size argument, and the mutation stack of the template. Ten follow it. No tag is
+ruled, and publishing stays held.
