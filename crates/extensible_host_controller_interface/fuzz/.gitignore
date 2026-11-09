@@ -1,5 +1,0 @@
-# What a fuzz run writes: the working corpus, the crashing inputs, coverage and the build tree.
-corpus/
-artifacts/
-coverage/
-target/

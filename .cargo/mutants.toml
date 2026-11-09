@@ -308,47 +308,6 @@ exclude_re = [
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in keyboard_report$",
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in ports_report$",
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in failure_report$",
-    # extensible_host_controller_interface's own registers. The `1 << 0` constants (CONNECTED,
-    # COMMAND_RUN, STATUS_HALTED, INTERRUPTER_MANAGEMENT_PENDING) are the shift survivors, where
-    # the shift is the identity; every other constant's value is pinned by
-    # the_register_bits_are_where_the_specification_puts_them and
-    # the_port_status_and_control_bits_are_where_the_specification_puts_them, which stay.
-    "^crates/extensible_host_controller_interface/src/port\\.rs:\\d+:\\d+: replace << with >>$",
-    "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace << with >>$",
-    # The const-level `|` survivors: CHANGES and PRESERVE (port.rs), per
-    # PORT_CHANGE_BITS_DO_NOT_OVERLAP and PRESERVED_FIELDS_DO_NOT_OVERLAP, beside them.
-    "^crates/extensible_host_controller_interface/src/port\\.rs:\\d+:\\d+: replace \\| with \\^$",
-    # LEGACY_SYSTEM_MANAGEMENT_INTERRUPT_ENABLES's three bits (0, 4, 13:15), per
-    # LEGACY_ENABLE_BITS_DO_NOT_OVERLAP, beside the constant; the killed mutants the entry
-    # sweeps are pinned by the_register_bits_are_where_the_specification_puts_them, which stays.
-    "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace \\| with \\^$",
-    # The scratchpad count's two fields (5:9 against 0:4), per
-    # SCRATCHPAD_FIELDS_DO_NOT_OVERLAP, beside the impl.
-    "^crates/extensible_host_controller_interface/src/registers\\.rs:\\d+:\\d+: replace \\| with \\^ in Capabilities::decode$",
-    # The event pointer's halves (dword 0 below, dword 1 above bit 32), per
-    # EVENT_POINTER_HALVES_DO_NOT_OVERLAP, beside the impl.
-    "^crates/extensible_host_controller_interface/src/event\\.rs:\\d+:\\d+: replace \\| with \\^ in Event::decode$",
-    # The context words: slot's two dword-0 fields (20:23 against 27:31), per
-    # SLOT_CONTEXT_FIELDS_DO_NOT_OVERLAP, and endpoint's dword-1 fields and dword-4 halves, per
-    # ENDPOINT_CONTEXT_FIELDS_DO_NOT_OVERLAP, beside their functions.
-    "^crates/extensible_host_controller_interface/src/context\\.rs:\\d+:\\d+: replace \\| with \\^ in slot$",
-    "^crates/extensible_host_controller_interface/src/context\\.rs:\\d+:\\d+: replace \\| with \\^ in endpoint$",
-    # The transfer control words: the type field at 10:15 against the flag bits and the fields at
-    # 16 and above, per TRANSFER_CONTROL_FIELDS_DO_NOT_OVERLAP, beside control().
-    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::link$",
-    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::disable_slot$",
-    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::address_device$",
-    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::configure_endpoint$",
-    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::evaluate_context$",
-    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::reset_endpoint$",
-    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::set_dequeue$",
-    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::setup$",
-    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::data$",
-    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::status$",
-    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::normal$",
-    # The cycle stamp, whose mask clears bit 0 and whose bool cannot hold more, per
-    # CYCLE_BIT_AND_CLEARED_WORD_DO_NOT_OVERLAP, beside control().
-    "^crates/extensible_host_controller_interface/src/transfer_request_block\\.rs:\\d+:\\d+: replace \\| with \\^ in TransferRequestBlock::with_cycle$",
     # grant_plan: the rights bits (five single bits), per THE_RIGHTS_BITS_SHARE_NO_BIT, beside
     # WordGrant::rights, whose fn-local `1 << 0` constants are the shift survivor.
     "^crates/grant_plan/src/manifest\\.rs:\\d+:\\d+: replace \\| with \\^ in WordGrant::rights$",

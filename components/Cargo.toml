@@ -721,7 +721,7 @@ designware_ethernet = { version = "0.1.0", path = "../crates/designware_ethernet
 # descriptors and boot reports, and the xHCI ring and context arithmetic. What it agrees on with the
 # kernel (the handoff, the register window and the bring-up report) is in `driver_process_contract`.
 usb = { version = "0.1.0", path = "../crates/usb" }
-extensible_host_controller_interface = { version = "0.1.0", path = "../crates/extensible_host_controller_interface" }
+extensible_host_controller_interface = { version = "0.1.0", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "bea025706ab4837cf541bf93c436ff4e1057922a" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The aperture arithmetic `framebuffer_driver` copies through: the clipped geometry, the stride and
 # the byte order, host-tested there because this program has no harness of its own.

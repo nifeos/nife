@@ -28,7 +28,7 @@ once.
 | What the driver is handed and refused | `kernel/src/user/usb_keyboard_service.rs` | the `Spawn` literal |
 | Reset, rings, enumeration, the keyboard | `components/src/usb_keyboard_driver.rs` | EL0 |
 | Descriptors, setup packets, boot reports | `crates/usb` | host-tested, Kani |
-| Register window, handoff, TRBs, rings, contexts, `PORTSC` | `crates/extensible_host_controller_interface` | host-tested, Kani |
+| Register window, handoff, TRBs, rings, contexts, `PORTSC` | `nifeos/extensible_host_controller_interface` | host-tested, Kani |
 | Where the line discipline's endpoint comes from | `crates/system_initializer`, step 3b | the progenitor |
 
 The kernel starts the driver before the progenitor and waits for its one bring-up report, which it
@@ -163,7 +163,7 @@ port's `PORTSC` as the firmware left it and over the five seconds after the driv
 
 ## The rings and the cycle bit
 
-`crates/extensible_host_controller_interface` is the xHCI arithmetic with nothing it touches, the
+`nifeos/extensible_host_controller_interface` is the xHCI arithmetic with nothing it touches, the
 same split the NVMe driver has. This is the protocol it models (xHCI 1.2, chapters 4 and 6).
 
 The xHCI is the first controller in the tree whose data structures the device walks on its own.
@@ -203,7 +203,7 @@ that for every input up to a bound, not only for the inputs a test happened to t
 ## BUGS
 
 - Root ports only: a keyboard behind a hub is not found, and neither is a keyboard with a hub
-  built into it. `crates/extensible_host_controller_interface`'s BUGS.
+  built into it. `nifeos/extensible_host_controller_interface`'s BUGS.
 - One controller, one keyboard. The first xHCI on the bus, the first boot keyboard on it.
 - No key repeat, no Caps Lock, no LEDs. `crates/usb`'s BUGS.
 - No IOMMU, no USB keyboard. radon has none; a machine whose VT-d tables give the controller to

@@ -63,7 +63,6 @@ e1000e,physical_layer_device_reset_generic,replace | with ^,crates/e1000e/src/pc
 e1000e,lan_connected_device_configuration,replace | with ^,crates/e1000e/src/pch/sequence.rs,755,site,"(at & physical_layer_device::MAX_PHY_REG_ADDRESS) | page,"
 entropy_contract,req,replace | with ^,crates/entropy_contract/src/lib.rs,55,site,(operation << OPERATION_SHIFT) | (n & 0xff)
 entropy_contract,bringup_failure,replace | with ^,crates/entropy_contract/src/lib.rs,100,site,DEAD | step
-extensible_host_controller_interface,ProducerRing::dequeue_pointer,replace | with ^,crates/extensible_host_controller_interface/src/ring.rs,94,site,self.entry_physical_address(self.enqueue) | self.cycle as u64
 file_allocation_table,,replace | with ^,crates/file_allocation_table/src/directory.rs,32,const,1 | 2 | 4 | 8 are pairwise disjoint
 file_allocation_table,,replace | with ^,crates/file_allocation_table/src/directory.rs,32,const,1 | 2 | 4 | 8 are pairwise disjoint
 file_allocation_table,,replace | with ^,crates/file_allocation_table/src/directory.rs,32,const,1 | 2 | 4 | 8 are pairwise disjoint

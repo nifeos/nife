@@ -185,7 +185,7 @@ designware_ethernet = { version = "0.1.0", path = "../crates/designware_ethernet
 # driver is mapped and the handoff it is spawned with. The kernel's extensible_host_controller_interface
 # module is its volatile half, the same split as `non_volatile_memory_express` above. The window, the
 # handoff and the driver's bring-up report are `driver_process_contract`'s.
-extensible_host_controller_interface = { version = "0.1.0", path = "../crates/extensible_host_controller_interface" }
+extensible_host_controller_interface = { version = "0.1.0", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "bea025706ab4837cf541bf93c436ff4e1057922a" }
 elf = { version = "0.1.0", path = "../crates/elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
 intrusive_queue = { version = "0.1.0", path = "../crates/intrusive_queue" }
