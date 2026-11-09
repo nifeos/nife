@@ -191,8 +191,9 @@ change the dependent side in a separate pull request that cites the landed commi
 
 Each step lands alone. Steps 1 to 5 land in this repository.
 
-1. Tag each `script/lint` section as record or code, the way `lint-quick` tags sections. No
-   behavior changes; the record repository's lint then becomes a selection.
+1. Built: each `script/lint` section carries `# lint-scope: record`, `code` or `both`, as
+   `lint-quick` tags sections. No run selects by it. Of 140 sections, 8 read only the record, 35
+   read the record and code, and 97 read no record document.
 2. Teach `script/roadmap --check` to resolve `nifeos/<repo>:<path>` at basalt's pin, and fix
    milestone 159's `jh7110_entropy` bullet as the first user.
 3. Built: `script/site` builds the site from `design/`, `notes/` and `briefs/`, and
@@ -205,19 +206,13 @@ Each step lands alone. Steps 1 to 5 land in this repository.
    `AGENTS.md` stay. For each note it decides between cross-cutting and about one crate alone, and
    it produces the number of the second kind. It also lists every link from a record into a path that
    stays, since the site's link check fails the build on such a link.
-5. Measure whether the record's checks can run only on the record's own directories, so a change to the site's other paths does not trigger them. The ruling of 2026-11-01 (UTC) makes this a
-   condition of the one-repository shape, and it is not yet verified. Three checks are
-   repository-wide today. The `needs-architect` required check of §88 (`needs-architect` as a required check) runs on every pull request and
-   merge group (`.github/workflows/architect-hold.yml`) with no path condition. `script/lint` runs
-   every section, and `ci.yml` never skips its `lint` job. The merge queue tests a group against the
-   union of its queued changes. One record change in a group therefore runs every check for the
-   others.
-   The constraint found so far: `ci.yml` records that a workflow skipped by a path filter leaves its
-   required checks Pending and blocks the merge. So the limit has to be a job-level condition that
-   reports Success when skipped, as `ci.yml` does for code. Whether that holds for `architect-hold`,
-   whether the `script/lint` sections tagged in step 1 can run by directory, and what a
-   mixed queue group runs are the three things to measure. If the limit proves impossible, the
-   ruling's condition fails and the shape returns to the architect.
+5. Measured: the record's checks can run by directory, the condition the ruling of 2026-11-01
+   (UTC) set on the one-repository shape. Each of the three measurements in the appendix supports
+   it. The hold check of §88 (`needs-architect` as a required check) reads labels and no file, in
+   4 to 5 seconds, and applies to every change. Of `script/lint`'s 140 sections a record-only
+   change needs the 43 tagged `record` or `both`: 80 of 454 seconds on a measured run. The merge
+   queue classifies each entry against the entry ahead, so a record entry queued behind a code
+   entry skips the heavy jobs while the code entry runs them.
 6. After step 5's measurement and the architect's approval of creation: extract by path, then remove the
    paths from this repository in one pull request. That pull request writes `packages/moved.toml`
    with the anchor, and leaves a pointer in the README.
@@ -285,8 +280,12 @@ Steps 6 to 8 wait on step 5's measurement and the architect's approval of creati
 ## Follow-on
 
 - **Done.** Step 3, carried by `script/site`, `site/` and `.github/workflows/record-site.yml`.
-- **Outstanding.** Steps 1, 2 and 4 to 8 above. Checked 2026-11-04 against `script/lint`, which
-  tags no section as record or code, and `script/roadmap`, which resolves no `nifeos/<repo>:<path>`.
+- **Done.** Step 1, the `# lint-scope:` lines in `script/lint`, and step 5, in the appendix.
+- **Outstanding.** Steps 2, 4 and 6 to 8 above. Checked 2026-11-09 against `script/roadmap`,
+  which resolves no `nifeos/<repo>:<path>`, and `packages/homes.toml`, which sorts no note.
+- **Outstanding.** Two comments in `ci.yml` and the header of `empty-diff.yml` call
+  `merge_group.base_sha` the base branch's tip; the appendix's runs log the entry ahead. The skip
+  rule is safe either way, so only the comments change.
 
 ## Index row
 

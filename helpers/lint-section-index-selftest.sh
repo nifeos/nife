@@ -6,8 +6,8 @@
 #     helpers/lint-section-index-selftest.sh
 #
 # A fixture lint script has four sections. The gate must pass on the untouched fixture and fail
-# after a rename, a drop, a reorder, a flipped `# lint-quick` flag, a changed lane and a changed
-# `# lint-id:`, and `write` must restore a pass. Then --section must run one section by slug and
+# after a rename, a drop, a reorder, a flipped `# lint-quick` flag, a changed lane, a changed
+# `# lint-id:` and a changed `# lint-scope:`, and `write` must restore a pass. Then --section must run one section by slug and
 # by exact name, with the preamble, and refuse an unknown name and an ambiguous one.
 # No tree and no cargo; it runs in milliseconds.
 
@@ -23,6 +23,7 @@ shared=from-the-preamble
 echo "==> alpha"
 # lint-quick
 # lint-id: first
+# lint-scope: record
 echo "alpha ran $shared"
 echo "==> beta"
 # lint-lane: writer
@@ -61,6 +62,8 @@ sed 's/^# lint-lane: writer$/# lint-lane: other/' "$work/base" >"$work/lane"
 expect_fail "a changed lane" "$work/lane"
 sed 's/^# lint-id: first$/# lint-id: second/' "$work/base" >"$work/slug"
 expect_fail "a changed lint-id" "$work/slug"
+sed 's/^# lint-scope: record$/# lint-scope: both/' "$work/base" >"$work/scope"
+expect_fail "a changed lint-scope" "$work/scope"
 sh helpers/lint-section-index.sh write "$work/reordered" >/dev/null
 sh helpers/lint-section-index.sh check "$work/reordered" >/dev/null 2>&1 || fail "write did not bring the snapshot back in line"
 
