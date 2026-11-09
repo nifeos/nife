@@ -7,10 +7,9 @@ a point unrelated to the last stack's ports, and some gap lands it on them.
 Expected to fail: the test's `!first.contains(p)` assertion, naming the boot time, gap and reused port.
 
 diff --git a/crates/socket_contract/src/lib.rs b/crates/socket_contract/src/lib.rs
-index 6fbaed8b1..43a9374fb 100644
 --- a/crates/socket_contract/src/lib.rs
 +++ b/crates/socket_contract/src/lib.rs
-@@ -313,7 +313,9 @@ pub mod ephemeral {
+@@ -329,7 +329,9 @@
          /// holds. Bounded by the range, so it always returns; a stack holds far fewer sockets than
          /// the range has ports, so in practice the first or second candidate is free.
          pub fn next(&mut self, milliseconds: u64, held: impl Fn(u16) -> bool) -> u16 {

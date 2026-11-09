@@ -11,7 +11,8 @@ outgrows its section lives here, and the section links it.
   [`jh7110-clock-and-reset.md`](jh7110-clock-and-reset.md), [`e1000e.md`](e1000e.md), [`block-roster-contract.md`](block-roster-contract.md),
   [`counter-frequency-contract.md`](counter-frequency-contract.md),
   [`entropy-contract.md`](entropy-contract.md), [`clock-contract.md`](clock-contract.md) and
-  [`globally-unique-identifier-partition-table.md`](globally-unique-identifier-partition-table.md): one package each, with its
+  [`globally-unique-identifier-partition-table.md`](globally-unique-identifier-partition-table.md),
+  [`socket-contract.md`](socket-contract.md): one package each, with its
   names, proposed items and open questions.
 - [`extensible-host-controller-interface.md`](extensible-host-controller-interface.md): the names
   section of `extensible_host_controller_interface`'s package.

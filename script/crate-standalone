@@ -52,7 +52,9 @@
 #    none. docs.rs's key is used because a stranger's tooling already reads it.
 # 5. The proofs, with the stock Kani on `PATH`: every harness passes on the copy, and each
 #    `falsifications/<module.path>.<harness>.patch`, applied to a fresh copy, makes its own harness
-#    fail. A patch is written against this tree's paths (`a/crates/<crate>/...`), so it is applied
+#    fail. A patch named for a host test (`<module.path>.tests.<test>.patch`, a function with no
+#    `#[kani::proof]` above it) must make that test fail under `cargo test` instead. A patch is
+#    written against this tree's paths (`a/crates/<crate>/...`), so it is applied
 #    with `-p3`; a crate repository rewrites them to `-p1` when it leaves.
 #
 # It exits 0 only when every check passes. It never edits the tree.
@@ -216,6 +218,17 @@ def kani_run(copy, env, harness=None):
     return run(argv, copy, env)
 
 
+def kani_harness_names(copy):
+    """The function name of every `#[kani::proof]` harness under the copy's `src/`."""
+    names = set()
+    for top, _, files in os.walk(os.path.join(copy, "src")):
+        for f in files:
+            if f.endswith(".rs"):
+                with open(os.path.join(top, f)) as handle:
+                    names.update(re.findall(r"#\[kani::proof\][^{]*?\bfn\s+(\w+)", handle.read()))
+    return names
+
+
 def check_proofs(crate, copy, fail, env, work):
     patches = sorted(os.listdir(os.path.join(copy, "falsifications"))) \
         if os.path.isdir(os.path.join(copy, "falsifications")) else []
@@ -230,6 +243,7 @@ def check_proofs(crate, copy, fail, env, work):
         return
     summary = re.search(r"Complete - .*", out)
     print(f"  ok   proofs: {summary.group(0) if summary else 'every harness verified'}")
+    proofs = kani_harness_names(copy)
     for p in patches:
         harness = p[: -len(".patch")].replace(".", "::")
         fresh = os.path.join(work, "falsified")
@@ -238,6 +252,16 @@ def check_proofs(crate, copy, fail, env, work):
         code, out = run(["patch", "-s", "-p3", "-i", os.path.join(copy, "falsifications", p)], fresh)
         if code:
             fail("falsification", f"{p} does not apply to the copy: {tail(out, 1)}")
+            continue
+        if harness.rsplit("::", 1)[-1] not in proofs:
+            # A patch for a host test: the test, not Kani, must turn red.
+            code, out = run(["cargo", "test", "--quiet", "--lib", "--", "--exact", harness], fresh, env)
+            if code == 0:
+                fail("falsification", f"{p}: the test {harness} still passes with the defect applied")
+            elif "test result: FAILED" not in out:
+                fail("falsification", f"{p}: fails without a failed test (compile error?): {tail(out)}")
+            else:
+                print(f"  ok   falsification: the test {harness} fails under its patch")
             continue
         code, out = kani_run(fresh, env, harness)
         if code == 0:
