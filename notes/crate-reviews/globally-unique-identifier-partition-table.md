@@ -45,8 +45,8 @@ Each check ran in this lane's worktree, on this branch.
 |---|---|
 | `script/crate-standalone globally_unique_identifier_partition_table` | one failure, `names`: 82 names not ratified. The build on 1.89 for the host and the three bare-metal targets passes; Kani proves 8 of 8; each of the 8 falsification patches makes its harness fail |
 | `patch -p1 --dry-run -F0` for each patch | all 8 apply with no offset and no fuzz. On `main` all 8 applied only at an offset of 16 to 31 lines; this branch cuts them again, and no defect changes |
-| `script/crate-move --dry-run` | the copy builds and tests on 1.89 for every target, and all 8 regenerated patches apply exactly. Three findings, all in the template's scaffold (below) |
-| `cargo test --release` | 59 tests and the README and module doctests pass |
+| `script/crate-move --dry-run` | the copy builds and tests on 1.89 for every target, and all 8 regenerated patches apply exactly. Three findings: two in the template's scaffold, and 18 lines naming nife, 5 of them the scaffold's and 13 the crate's "nife data" and "nife boot slot" strings (decision 1) |
+| `cargo test --release` | 58 tests and 4 doctests pass, the README's included; one exhaustive sweep is `#[ignore]` at 163 seconds and did not run |
 | `script/names` and `python3 helpers/name_release.py --draft` | 6 names ratified with the crate, 1 recorded, 3 provisional and 77 with no block |
 | the template's checks (`vendor/crate-workflows/helpers/`, `--manifest Cargo.toml` over `src/*.rs`) | `unit_symbols`, `question_shape`, `british_spelling`: 432 names, 0 refused. `spelled_out`: 1, a test function. `register_names`: 10, five of them public. `abbreviations` (report only): 72 components, chiefly `lba`, `mbr` and `guid` |
 | `helpers/lint_externalized_crates.py` | 21 hits, under its ceiling, which this branch lowers from 23 |
