@@ -102,8 +102,8 @@ pub mod types {
     );
 
     /// Linux root filesystem, arm64. From the Discoverable Partitions Specification, which is how a
-    /// systemd machine finds its root without a kernel command line. Here because arm64 is the
-    /// architecture this OS runs on and a disk shared with Linux may carry one.
+    /// systemd machine finds its root without a kernel command line. Here because a disk shared
+    /// with an arm64 Linux system may carry one.
     pub(crate) const LINUX_ROOT_ARM64: Uuid = Uuid::from_fields(
         0xB921_B045,
         0x1DF0,
@@ -268,11 +268,11 @@ mod tests {
         );
     }
 
-    /// **RFC 9562 Appendix A.3, end to end, through the calls this tree makes**: the sixteen
-    /// random bytes the RFC starts from, stamped by `uuid::Builder::from_random_bytes` (what
-    /// `disk_partitioner`, `system_installer` and the `uuid` program call), printed by the uppercase
-    /// hyphenated encoder (what the `uuid` program prints), and read back in lower case. A `uuid`
-    /// release that moved the stamp or the case would fail here and nowhere else on the host.
+    /// **RFC 9562 Appendix A.3, end to end, through the calls a partitioning tool makes**: the
+    /// sixteen random bytes the RFC starts from, stamped by `uuid::Builder::from_random_bytes`
+    /// (how a tool mints a disk or partition GUID), printed by the uppercase hyphenated encoder, and
+    /// read back in lower case. A `uuid` release that moved the stamp or the case would fail here
+    /// and nowhere else on the host.
     #[test]
     fn the_rfc_9562_version_4_example_comes_out_as_printed() {
         let random = [

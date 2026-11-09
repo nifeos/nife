@@ -7,10 +7,10 @@ happened to hit a byte whose eighth round matters.
 Expected to fail: the harness's `assert_eq!(crc::crc32(&bytes), crc::crc32_bitwise(&bytes))`.
 
 diff --git a/crates/globally_unique_identifier_partition_table/src/crc.rs b/crates/globally_unique_identifier_partition_table/src/crc.rs
-index f5353d139..ea80a6ed3 100644
+index c1e8f547e..1984e87ed 100644
 --- a/crates/globally_unique_identifier_partition_table/src/crc.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/crc.rs
-@@ -38,3 +38,3 @@ const TABLE: [u32; 256] = {
+@@ -21,3 +21,3 @@ const TABLE: [u32; 256] = {
          let mut bit = 0;
 -        while bit < 8 {
 +        while bit < 7 {

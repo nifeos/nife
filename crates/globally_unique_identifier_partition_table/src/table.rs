@@ -107,7 +107,7 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
         })
     }
 
-    /// Build a new table. The `mkpart` half of the milestone.
+    /// Build a new table.
     ///
     /// `entry_array` must be a whole number of entries, and its size sets
     /// `NumberOfPartitionEntries`: pass `[0u8; `[`ENTRY_ARRAY_BYTES`]`]` for the usual 128. It is
