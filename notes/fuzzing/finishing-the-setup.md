@@ -353,7 +353,7 @@ Verify. After each command, the text after the colon is its expected output:
 - `sudo /usr/local/sbin/fuzz-token check reader --fresh`, as yourself: `app: nife-fuzz-reader (App ID
   5571868, installation 177642435)`, `permissions: metadata:read,repository_advisories:read`,
   `repositories: nifeos/nife`, an `expires:` line about an hour ahead, `revoked: yes`, exit status 0.
-- As the lane account, `sudo -n /usr/local/sbin/fuzz-token issue reader | wc -c`: a number near 521 (a token of about 520 characters and a newline),
+- As the lane account, `sudo -n /usr/local/sbin/fuzz-token issue reader | wc -c`: a number near 521,
   and one `issued one reader token` line on standard error.
 - As the lane account, `sudo -n /usr/local/sbin/fuzz-token issue reader` with nothing after it: a
   refusal, because standard output is a terminal.
