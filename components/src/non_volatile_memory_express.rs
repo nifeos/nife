@@ -204,7 +204,11 @@ impl Plane {
             ) - PAGE,
             new_head as u32,
         );
-        self.sq.record_head(c.submission_queue_head);
+        // A head the controller cannot have reached is the same protocol violation as a wrong
+        // command identifier, so it answers EIO too.
+        if self.sq.record_head(c.submission_queue_head).is_err() {
+            return Err(u16::MAX);
+        }
 
         // The one-at-a-time discipline makes any other cid a protocol violation. Answering EIO
         // rather than panicking, because this is a server and a client is waiting on it: a

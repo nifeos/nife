@@ -35,7 +35,6 @@ measured_boot	crates/measured_boot	b02a870bbd1773d845a14503e6c7a51c3fd09ada	0.68
 memory_regions	crates/memory_regions	c5818b7a649054613c767cc8f57fde454ffc4986	0.68.0	75
 network_time_protocol	crates/network_time_protocol	42991bd0c9578685b69bb6851f0cb2897b08a1cf	0.68.0	465
 nifefs	crates/nifefs	a7038e8018ae2d1f802c8065ce8a80b14654d248	0.68.0	390
-non_volatile_memory_express	crates/non_volatile_memory_express	3865f1c7f05853472d2f1aa5281828b90a78fe14	0.68.0	427
 package_archive	crates/package_archive	226714b9f133d678297b1dd4d759897edb047476	0.68.0	381
 page_frames	crates/page_frames	f11347388d22c03da514ee9f2bdf64f0839fe4ac	0.68.0	305
 paging	crates/paging	6a9384aa9ac33a8f3dbe6c5abe64a6139d4e5b1b	0.68.0	104
