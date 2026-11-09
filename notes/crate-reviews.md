@@ -388,3 +388,4 @@ Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text 
 | `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
 | `block_roster` | contract | ready for review |
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |
+| `entropy_contract` | contract | names and identity for the architect; [package](crate-reviews/entropy-contract.md) |
