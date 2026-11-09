@@ -94,14 +94,29 @@ A person creates that token (scoped to this one name, short expiry), approves th
 then binds the trusted publisher and deletes the token. The token and the `crates-io`
 environment approval wait for the publishing hold to lift. Effort S.
 
-#### Item 4: The published tree has not run on the board
+#### Item 4: The published tree ran on the board once, at one commit
 
-The README's "Hardware evidence" section says an earlier version
-under another name produced output on a VisionFive 2 and this exact tree has not. The crate's
-one claim is the board. Before the first publish, one bench session builds a driver on the
-release commit and records the checks listed under *Done when, on hardware*; the README's
-"Hardware evidence" section then names the version that ran. Only the bench can do this. Two-way. Effort M, bench time. The maintainers may move this to P1 if they choose to
-publish with the caveat as written; the maintainers recommend the stricter reading.
+The bench session ran on radon (a VisionFive 2) on 2026-11-09 (UTC) against
+`nifeos/jh7110_entropy` commit `ee0bde8feb9f78a67da011c928f9a2a697f3bbc1`, with a payload built from nife
+`9a1c55963b`, loaded over the network after a cold power-on.
+The checker printed PASS; the table is in
+[bench/radon-2026-11-09/](../../bench/radon-2026-11-09/README-1049.md), and the crate's README
+"Hardware evidence" section records the run for that commit only.
+
+- Passed: the polled reseed and two generations, 256-bit output after `MODE_256_BIT_OUTPUT`, and
+  1,048,576 driver-path generations with no timeout, wrong width or all-zero output.
+- Recorded, not judged: the first `STAT` read showed `SEEDED` = 1 and `LAST_RESEED` = 4, the
+  state after the bootloader and not shown to be silicon reset. `MODE` (`0x08`), `FEATURES` (`0x0d`)
+  and `BCONF` (`0x3d`) were read before any `MODE` write, so "`BCONF` bit 3 set means 256-bit" holds
+  only if nothing wrote `MODE` since reset. `STAT` bits 19 to 23 never set. Timings are in the table.
+- Open: no `LFSR_LOCKUP` appeared, so whether a reseed clears it is unanswered.
+- Statistics: one 1,310,720-byte capture, 2 of 524 FIPS 140-2 blocks failed (bar at most 3), 7.999854
+  bits per byte. It shows no gross defect and proves nothing about
+  unpredictability. No outside suite ran.
+
+The console log ([bench/radon-2026-11-09/1049-board.log](../../bench/radon-2026-11-09/1049-board.log),
+SHA-256 `540996ad...960e`) holds two boots, and the judged run is the second. The capture's SHA-256 is `97fc5325...9263`.
+Two-way. Effort M, bench time.
 
 ### P1
 
@@ -131,8 +146,8 @@ README's bring-up paragraph points at it. Adding a variant to an enum that is no
 read them. `generation_outcome` answers `Ready` for a snapshot with `RAND_RDY` latched while `STAT` reports a generation in flight, and `RANDOM_NUMBER_0..7` may be mid-rewrite at that instant. Linux's driver
 polls both bits clear before issuing a command, which is why it never meets this; a pure decoder
 can return `NotReady` while either bit shows, which costs a caller one more poll and nothing else.
-Whether the hardware can show `RAND_RDY` and `RAND_GENERATING` together is a bench question
-(below). Recommended: fold the two bits into the `NotReady` arm, extend
+The hardware can show `RAND_RDY` and `RAND_GENERATING` together: the bench run saw both in 8,775
+snapshots after a second `GENERATE` over a latched `RAND_RDY` (item 4). Recommended: fold the two bits into the `NotReady` arm, extend
 `neither_bit_set_is_always_not_ready` or add a harness, and add the falsification patch. The
 function's signature does not change; its answers for some inputs do. Two-way. Effort S.
 
@@ -276,8 +291,9 @@ The review claims none of the hardware checks.
 
 ## BUGS
 
-- Item 4 needs bench time the lane cannot schedule, and the README's "Hardware evidence" section
-  stays as written until it happens.
+- Item 4's bench session ran at crate commit `ee0bde8`. The release commit is a later one, and
+  the README's "Hardware evidence" section names `ee0bde8` only, so a release commit that changes
+  `src/` needs another session before the section can name it.
 - The prior-art rows marked *recalled* were not re-read; a lane that revisits item 17 reads the
   HAL crates it cites first.
 
