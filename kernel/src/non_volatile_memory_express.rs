@@ -148,7 +148,7 @@ impl NonVolatileMemoryExpress {
             ns: IdentifyNamespace::default(),
             cid: 0,
         };
-        let cap = Capabilities(c.reg64(registers::CAPABILITIES));
+        let cap = Capabilities(c.reg64(registers::CONTROLLER_CAPABILITIES_REGISTER));
         // The doorbell stride is also checked in `Handoff::unpack`; here it fails at bring-up,
         // naming the controller, not in a process that cannot reach its doorbells
         // (`MAXIMUM_DOORBELL_STRIDE`).
@@ -179,11 +179,11 @@ impl NonVolatileMemoryExpress {
             (ENTRIES as u32 - 1) << 16 | (ENTRIES as u32 - 1),
         );
         c.wr64(
-            registers::ADMIN_SUBMISSION_QUEUE_BASE_ADDRESS_REGISTER,
+            registers::ADMIN_SUBMISSION_QUEUE_BASE_PHYSICAL_ADDRESS_REGISTER,
             direct_memory_access_phys + ADMIN_SQ_PAGE * page_frames::FRAME_SIZE,
         );
         c.wr64(
-            registers::ADMIN_COMPLETION_QUEUE_BASE_ADDRESS_REGISTER,
+            registers::ADMIN_COMPLETION_QUEUE_BASE_PHYSICAL_ADDRESS_REGISTER,
             direct_memory_access_phys + ADMIN_CQ_PAGE * page_frames::FRAME_SIZE,
         );
         #[cfg(feature = "disk_throughput")]
@@ -217,7 +217,7 @@ impl NonVolatileMemoryExpress {
             )
         };
         let refused = Error::UnsupportedNamespace {
-            lba_shift: non_volatile_memory_express::logical_block_address_format_shift(data)
+            lba_shift: non_volatile_memory_express::logical_block_format_size_shift(data)
                 .unwrap_or(0),
             blocks: data
                 .get(0..8)
@@ -372,7 +372,9 @@ impl NonVolatileMemoryExpress {
             non_volatile_memory_express::doorbell(0, Doorbell::CompletionHead, self.dstrd),
             new_head as u32,
         );
-        self.admin_sq.record_head(c.submission_queue_head);
+        self.admin_sq
+            .record_head(c.submission_queue_head)
+            .expect("controller reported an impossible head");
 
         // The one-at-a-time discipline makes any other cid a protocol violation worth dying on
         // legibly rather than misattributing a completion.
@@ -396,7 +398,7 @@ impl NonVolatileMemoryExpress {
         if when == "pre " {
             crate::println!(
                 "diag nvme cap {:#x} vs {:#x} dstrd {}",
-                self.reg64(registers::CAPABILITIES),
+                self.reg64(registers::CONTROLLER_CAPABILITIES_REGISTER),
                 self.reg32(0x08),
                 self.dstrd
             );
@@ -406,8 +408,8 @@ impl NonVolatileMemoryExpress {
             self.reg32(registers::CONTROLLER_CONFIGURATION_REGISTER),
             self.reg32(registers::CONTROLLER_STATUS_REGISTER),
             self.reg32(registers::ADMIN_QUEUE_ATTRIBUTES_REGISTER),
-            self.reg64(registers::ADMIN_SUBMISSION_QUEUE_BASE_ADDRESS_REGISTER),
-            self.reg64(registers::ADMIN_COMPLETION_QUEUE_BASE_ADDRESS_REGISTER),
+            self.reg64(registers::ADMIN_SUBMISSION_QUEUE_BASE_PHYSICAL_ADDRESS_REGISTER),
+            self.reg64(registers::ADMIN_COMPLETION_QUEUE_BASE_PHYSICAL_ADDRESS_REGISTER),
         );
     }
 

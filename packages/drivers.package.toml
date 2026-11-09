@@ -18,14 +18,14 @@ crates = ["virtio"]
 # and is not listed here. It is the JH7110's SD/MMC driver (milestone 53 (the board's own
 # peripherals: network and storage on real silicon)): the kernel links it for the bench boot, and
 # the EL0 block server `designware_mobile_storage` links the same crate.
-# `non_volatile_memory_express` is linked by the kernel, which brings the controller up (the admin
-# queue and IDENTIFY), and by the EL0 server of the same name, which drives the I/O rings, so it is
-# an interface for the reason `e1000e` is. What each pair agrees on, the windows and the spawn
-# handoff, is `driver_process_contract`'s, in `contracts`.
+# The crate `non_volatile_memory_express` lives in the repository
+# `nifeos/non_volatile_memory_express` and is not listed here. The kernel links it to bring the
+# controller up (the admin queue and IDENTIFY), and the EL0 server of the same name links it to
+# drive the I/O rings. What each pair agrees on, the windows and the spawn handoff, is
+# `driver_process_contract`'s, in `contracts`.
 # The crate `jh7110_entropy` lives in the repository `nifeos/jh7110_entropy` and is not listed here;
 # the EL0 server of the same name drives the device and stays a program below.
 interfaces = [
     "designware_ethernet",
-    "non_volatile_memory_express",
 ]
 programs = ["block_driver", "non_volatile_memory_express", "jh7110_entropy", "designware_mobile_storage"]

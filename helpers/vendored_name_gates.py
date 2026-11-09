@@ -178,8 +178,6 @@ CAP_KEPT = {
     'kernel/src/arch/riscv64/iommu.rs': ({'CAPS', 'caps', 'CAP_MSI_FLAT', 'CAP_SV39'}, _REGISTER),
     # NVMe base specification, section 3.1: Controller Capabilities, `CAP`.
     'kernel/src/non_volatile_memory_express.rs': ({'CAP', 'Cap', 'cap'}, _REGISTER),
-    'crates/non_volatile_memory_express/src/lib.rs':
-        ({'CAP', 'Cap', 'cap', 'cap_fields_decode_from_their_spec_positions'}, _REGISTER),
 }
 
 
