@@ -27,7 +27,7 @@
 #
 # # BUGS
 #
-# - **It needs the gateway up** (on cordoba, notes/open-model-lanes.md) and `OPEN_LANE_BASE_URL`
+# - **It needs the gateway up** (notes/open-model-lanes.md) and `OPEN_LANE_BASE_URL`
 #   and `OPEN_LANE_MODEL` set. Without them it says so and does nothing, rather than falling back to
 #   doing the work in the expensive session, because a silent fallback would restore exactly the
 #   habit this exists to replace.

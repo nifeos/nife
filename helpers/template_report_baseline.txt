@@ -106,7 +106,6 @@ elf prose_acronyms 8
 elf readme_acronyms 1
 elf register_names 9
 entropy_contract abbreviations 7
-entropy_contract prose_acronyms 2
 environment_contract abbreviations 19
 environment_contract prose_acronyms 4
 environment_contract readme_acronyms 2
