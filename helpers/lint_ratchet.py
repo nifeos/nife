@@ -674,7 +674,7 @@ def saved_cases():
         case('--check on such a directory exits non-zero and prints the files',
              status == 1 and 'host.json' in printed.getvalue())
         case('every required configuration is checked, not only those present',
-             len(CONFIGURATIONS) == 10)
+             len(CONFIGURATIONS) == 9)
     case('newest_input names a file of the tree', newest_input()[1] != '')
     return cases
 

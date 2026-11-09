@@ -190,8 +190,7 @@ names until the ratification pass, so this section keeps the links it carried.
   settings there. The manifest keeps `publish = false`, and the caller sets `allow-unpublished`
   for the soak. No tag exists.
 - nife keeps no copy. `kernel`, `components` and `driver_process_contract` depend on the repository
-  by `rev` (§305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit)),
-  at the commit its `main` is green at. The verify table, the Kani peaks table, the mutation
+  by `rev`, at a landed commit where its `main` is green. The verify table, the Kani peaks table, the mutation
   exclusions, the crate's fuzz workspace and its package entry no longer list it; the repository's
   own `proofs` jobs prove the harnesses.
 - End condition 1 holds once nife's merge queue is green at the pin. Condition 2 waits on the
@@ -218,6 +217,14 @@ names until the ratification pass, so this section keeps the links it carried.
 - Whether the context and port decoders want proofs before 0.1 is still open.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 6 can start now.
+
+## Follow-on
+
+- **Outstanding.** The tag `v0.1.0`, the pin moved to that tag's commit, the soak's end conditions
+  1 to 5 and the publication. Checked by `gh api repos/nifeos/extensible_host_controller_interface/tags`,
+  which lists no tag.
+- **Recorded.** The crate's mutation baseline row stays in `.cargo/mutants-baseline.txt` until the
+  repository's first weekly mutation run names each survivor.
 
 ## Index row
 
