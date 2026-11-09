@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-crates-license-field-matches-the-notices-it-carries
 raised: 2026-11-05
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,9 +8,9 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A crate's license field matches the notices it carries
+# 1051. A crate's license field matches the notices it carries
 
-Raised by lane/manifest-license-names-adapted-sources. The integrator mints the number at promotion.
+Raised by lane/manifest-license-names-adapted-sources.
 
 Reuse: `license_is_accepted` and `NOTICE_LICENSES` in `helpers/crate_release.py`, which
 `script/crate-standalone` already runs. No new tool.
@@ -43,3 +44,7 @@ notice").
 - `script/crate-standalone` fails a crate whose `license` field and carried notices disagree, and a
   test shows both directions failing.
 - `e1000e`, `designware_ethernet` and `designware_mobile_storage` pass it.
+
+## Index row
+
+A crate's `license` field can drift from the notices its repository carries, and nothing checks it. This adds a check to the standalone-crate script that fails either direction of disagreement.

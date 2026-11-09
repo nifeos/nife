@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-template-carries-the-naming-and-spelling-gates-nife-still-runs-alone
 raised: 2026-11-05
 milestone_dependencies: 887
 decision_dependencies: none
@@ -7,9 +8,9 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The template carries the naming and spelling gates nife still runs alone
+# 1056. The template carries the naming and spelling gates nife still runs alone
 
-Raised by lane/record-follow-on-items. The integrator mints the number at promotion.
+Raised by lane/record-follow-on-items.
 
 Reuse: the template's Rust lexer and word list (`helpers/rust_names.py` and
 `helpers/naming_words.toml` in `nifeos/crate-workflows`), and nife's vendoring of them at a pinned
@@ -54,3 +55,7 @@ question-shape checks either way.
 - A crate repository on the template fails a British spelling and a yes-or-no function that does
   not read as a question, and the template's canary shows each red on a planted break.
 - nife runs the same checks from its vendored copy, and its own copies are gone.
+
+## Index row
+
+Naming and spelling gates that are not specific to nife still run only in nife. This moves them into the shared crate template so every crate repository fails the same breaks.

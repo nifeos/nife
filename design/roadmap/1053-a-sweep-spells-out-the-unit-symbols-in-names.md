@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-sweep-spells-out-the-unit-symbols-in-names
 raised: 2026-11-05
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,9 +8,9 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# A sweep spells out the unit symbols in names, and the unit ratchet counts every unit
+# 1053. A sweep spells out the unit symbols in names, and the unit ratchet counts every unit
 
-Raised by lane/record-follow-on-items. The integrator mints the number at promotion.
+Raised by lane/record-follow-on-items.
 
 Reuse: `helpers/vendored_name_gates.py`'s unit ratchet and its `--unclear` listing, and the
 template's `[units]` table. No new tool.
@@ -39,3 +40,7 @@ lists 162 distinct identifiers that carry one, uses included.
   with its reason.
 - `UNIT_COUNTED` holds every unit of the template's table, at a count of 0.
 - design/naming.md no longer says a sweep remains.
+
+## Index row
+
+Names that use a unit symbol survive because the unit ratchet counts only some units. This sweeps the symbols out of existing names and has the ratchet count every unit the template refuses.

@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: a-push-to-a-queued-pull-request-re-arms-it
 raised: 2026-11-04
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,13 +8,12 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A push to a queued pull request re-arms it, and arming refuses a held one
+# 1052. A push to a queued pull request re-arms it, and arming refuses a held one
 
 COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 7.
 
 Raised by lane/coe-merge-queue-2026-11-03 on 2026-11-04 (UTC), from the correction of error for the
-Pacific day of 2026-11-03 (`notes/coes/2026-11-03-merge-queue-backlog.md`). The integrator mints
-the number at promotion.
+Pacific day of 2026-11-03 (`notes/coes/2026-11-03-merge-queue-backlog.md`).
 
 Reuse: `helpers/push-queued-check.sh`, `script/push`, and the hold labels `helpers/merge-drain.sh`
 already reads (`needs-architect`, `held-by-lane`, `Blocked-by:`).
@@ -49,3 +49,7 @@ time, discarding three group builds.
 
 - `script/push --requeue` on a queued fixture branch leaves it armed at the pushed head.
 - Arming a pull request with `needs-architect` fails with the label named.
+
+## Index row
+
+A push to a queued pull request drops it from the queue, and arming a held pull request succeeds. This makes the push script re-arm in one step and makes arming refuse a pull request that carries a hold label.
