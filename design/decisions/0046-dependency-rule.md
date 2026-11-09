@@ -7,9 +7,9 @@ ratified_by: calef
 
 # 46. Thin primitives or whole subsystems; we write everything in between
 
-(three amendments below: 2026-07-31 distinguishes taking from vendoring, 2026-10-04 makes taking
+(four amendments below: 2026-07-31 distinguishes taking from vendoring, 2026-10-04 makes taking
 the default outside the kernel and the crates Kani proves, and 2026-10-25 gives the kernel a bar in
-place of a blanket. Rule 1 carries a 2026-10-26 ruling that takes register access off the crates.)
+place of a blanket, and 2026-11-09 approves our own crates in advance. Rule 1 carries a 2026-10-26 ruling that takes register access off the crates.)
 
 Decided 2026-07-30 (calef), after the calendar crate made the absence of a rule visible. The
 practice was already unanimous and written down nowhere, which is the state that produces an
@@ -271,3 +271,21 @@ here changes the ABI, capabilities or the verification path.
 The first case under the bar is `device_tree_blob` against Google's `dtoolkit`, measured in
 milestone 784 (reuse what the tree wrote).
 
+## Our own crates, 2026-11-09
+
+Ruled 2026-11-09 (UTC): a new dependency on one of our own crates, a crate from the `nifeos` GitHub
+organization, is approved in advance. That includes kernel and image dependencies. It no longer
+waits on an architect, so it does not get the `needs-architect` hold. The test above and the
+kernel's bar still describe the choice of what to depend on; this removes only the per-dependency
+approval for our own crates.
+
+Two conditions come with it:
+
+- A git dependency pins a full 40-hexadecimal-digit commit with `rev`: no branch, no tag and no
+  floating reference.
+- That commit is on the repository's main.
+
+Third-party dependencies keep the hold unchanged. `helpers/architect-label-rules.py` applies the
+exception to a git dependency under `https://github.com/nifeos/` with a full `rev`. It does not
+yet recognize a crates.io dependency by a first-party name, and it does not check that the commit is
+on main; a reviewer checks the second until a lint does.

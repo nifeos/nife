@@ -35,7 +35,8 @@ requirements are known.
    squander it.
 
 6. Taking a dependency is a decision, not a convenience: DECISIONS §46 (thin primitives or whole
-   subsystems). The tree's shape is thin primitives (`uuid`, `tock-registers`) or whole
+   subsystems). A dependency on one of our own `nifeos` crates, pinned to a full commit on that
+   repository's main, is approved in advance (2026-11-09). The tree's shape is thin primitives (`uuid`, `tock-registers`) or whole
    subsystems we would never write (`smoltcp`, vendored RedoxFS), with nothing in between: most
    crates here have no external dependencies at all. Write it if it is on the verification path, because you cannot restructure someone else's crate to make a model
    checker tractable. Vendor it if correctness is won by *exposure* rather than by reading the spec,
