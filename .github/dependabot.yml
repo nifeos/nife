@@ -94,6 +94,7 @@ updates:
       - "/std_exerciser"
       - "/tools/glyph_atlas_generator"
       - "/tools/host_reordering_litmus"
+      - "/tools/jh7110_entropy_board_check"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5

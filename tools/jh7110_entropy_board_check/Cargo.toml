@@ -1,0 +1,42 @@
+# A bare-metal riscv64 payload for the VisionFive 2 that runs the `jh7110_entropy` crate's board
+# checks and prints one machine-readable line per result. U-Boot's `booti` enters it the way it
+# enters the kernel, so the board's network-first boot script serves it with no typing at the
+# prompt. Its own workspace: it is built for one bare-metal target with its own link script, and it
+# pins the crate at the commit under test rather than the commit the kernel uses. See
+# notes/jh7110-entropy-board-check.md.
+# Name: provisional.
+[package]
+name = "jh7110_entropy_board_check"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "jh7110_entropy_board_check"
+path = "src/main.rs"
+test = false
+bench = false
+
+[dependencies]
+# The commit under test. `build.sh --crate-commit <sha>` replaces it for one build without editing
+# this file; the payload prints whichever commit it was built against.
+jh7110_entropy = { git = "https://github.com/nifeos/jh7110_entropy", rev = "ee0bde8feb9f78a67da011c928f9a2a697f3bbc1" }
+jh7110_clock_and_reset = { path = "../../crates/jh7110_clock_and_reset" }
+device_tree_blob = { path = "../../crates/device_tree_blob" }
+
+[features]
+# Replaces the register window with a software model of the block, so the whole run, the log and
+# the checker can be rehearsed under QEMU `virt`, which has no JH7110. A modeled run says so on its
+# first line, and the checker refuses it as a board result.
+model = []
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+opt-level = 2
+debug = false
+
+[workspace]
