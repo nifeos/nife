@@ -85,12 +85,9 @@ refer to it.
 
 ## What needs the architect
 
-Only the one-way doors. The maintainer decides everything else above, and a lane lands it. The architect ratified the five new public names of item 6, so nothing waits on them.
-
-- `Ord` on `EntryName<T>` (item 11), a trait implementation a later release cannot remove.
-
-The ruling already covers the publication, its version, the license and the crate name. This
-block does not reopen them.
+No one-way door remains open. The architect ratified the five new public names of item 6 and
+`Ord` on `EntryName<T>` (item 11). The ruling already covers the publication, its version, the
+license and the crate name. This block does not reopen them.
 
 ## Done when
 
