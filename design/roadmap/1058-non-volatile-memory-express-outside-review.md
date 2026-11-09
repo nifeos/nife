@@ -40,9 +40,8 @@ Nothing in this block lifts that hold, and a green gate here is not permission t
 
 The reviewer verified these firsthand, in a fresh clone of `main` on one Linux host:
 
-- `cargo build`, `cargo test` (29 unit tests and 7 doctests, the README example among them),
-  `cargo clippy --all-targets -D warnings`, `cargo doc` with warnings denied and `cargo fmt
-  --check`: all clean on stable 1.99.1 and on 1.88, the `rust-version` of the manifest. The same
+- `cargo build`, `cargo test` (29 unit tests and 7 doctests), `cargo clippy`, `cargo doc` and
+  `cargo fmt --check`, all with warnings denied: clean on 1.99.1 and on 1.88, the `rust-version`. The same
   tests pass on 1.85 with `--ignore-rust-version`.
 - The crate builds for `aarch64-unknown-none-softfloat`, `riscv64imac-unknown-none-elf` and
   `x86_64-unknown-none`.
@@ -58,9 +57,9 @@ The reviewer verified these firsthand, in a fresh clone of `main` on one Linux h
 - No `unsafe` in `src/`, and no mention of this tree beyond the App secret names in `release.yml`.
 - Through the GitHub API: the last weekly run green in every job, nine required checks, no tag.
 
-Inferred, not verified: the ordering hazard of P1-6, from the API shape and from the two consumers
-that pin the repository, not from a failure on hardware; and the page-size mismatch of P1-9, since
-nobody built a kernel with 16 KiB pages against the crate.
+Inferred, not verified: the ordering hazard of P1-6, read from the API shape and two consumers.
+The page-size mismatch of P1-9 is also inferred, since nobody built a kernel with 16 KiB pages
+against the crate.
 
 Not run: `cargo semver-checks` (no baseline exists), Miri (green in the weekly job), a long fuzz
 campaign, the release dry run, the name checks of the template at its head, and anything that needs
@@ -223,10 +222,10 @@ The depth check against the capabilities stays with the caller, and the doc says
 kernel whose frames are 16 KiB or 64 KiB cannot use it. Nothing ties that `MPS` to the
 `page_size_bytes` the page-pair builder takes, so the two can disagree without a warning.
 `Capabilities` decodes `MPSMIN` and not `MPSMAX`, so a caller cannot check the upper bound. Change, as the review recommends:
-`enabled_controller_configuration(page_size_bytes) -> Option<u32>`, which encodes
+`enabled_controller_configuration(page_size_bytes) -> Option<u32>`. It encodes
 `MPS = log2(page_size_bytes) - 12` and refuses a size that is not a power of two or lies outside
-4 KiB to 128 MiB; `Capabilities::maximum_page_size_bytes` beside the minimum; and a harness that the
-value decodes back to the page size it came from, with its patch. One-way (a signature and a new
+4 KiB to 128 MiB. `Capabilities::maximum_page_size_bytes` joins the minimum, and a harness with its
+patch shows that the value decodes back to its page size. One-way (a signature and a new
 name). S.
 
 #### P1-10. The admin queue attributes have a formula in a comment and no builder
@@ -277,8 +276,7 @@ that says `blocks == 0` means "not yet identified". One-way at the tag. XS.
 1. The four register spellings (P0-2). Ruled 2026-11-09: ratified as `src/registers.rs` spells
    them.
 2. The tag. No tag is ruled for this crate. Which commit carries one, and when, is a separate
-   question for the architect, asked on its own; it is one-way, since a tag is a number others
-   compare against, and it waits for the go of the architect.
+   question for the architect. It is one-way, since a tag is a number others compare against.
 3. The public API of P1-1, P1-2, P1-5, P1-9 and P1-14, each one-way at the tag, with the
    recommendation each item states. These need the architect before the tag.
 4. The new names of P1-6, P1-10 and P2-1 to P2-5. A lane mints each provisionally in its own pull
