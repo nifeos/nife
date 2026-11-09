@@ -85,7 +85,6 @@ updates:
   - package-ecosystem: cargo
     directories:
       - "/c_library"
-      - "/crates/extensible_host_controller_interface/fuzz"
       - "/cryptography_exerciser"
       - "/cryptography_provider"
       - "/jig"

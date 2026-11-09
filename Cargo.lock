@@ -488,6 +488,7 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 [[package]]
 name = "extensible_host_controller_interface"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev=bea025706ab4837cf541bf93c436ff4e1057922a#bea025706ab4837cf541bf93c436ff4e1057922a"
 
 [[package]]
 name = "file_allocation_table"

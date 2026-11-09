@@ -488,7 +488,6 @@ designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller 
 block_roster	11	the roster page reader is total on any bytes, and a written roster reads back as written
 jh7110_clock_and_reset	61	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
 usb	122	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
-extensible_host_controller_interface	48	the producer and event ring arithmetic stays in bounds, and the capability walk ends inside its limit
 direct_memory_access_validator	127	the DMA-confinement validator, no descriptor escapes the grant
 network_time_protocol	20	the 1900-epoch era pivot, and no hostile packet moves the clock
 domain_name_system	34	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
