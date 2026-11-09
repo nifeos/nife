@@ -257,6 +257,9 @@ publishes.
   and no locations, so the lines cannot be written mechanically. The crate repository's first
   `weekly / mutation` run fails on each survivor and names it; the move lane lists them in one pull
   request there. The dry run does not run cargo-mutants.
+- The dry run's nife check skips a word joined to another by an underscore, so it passes an
+  identifier such as `NIFE_DATA` that `helpers/lint_externalized_crates.py` reports. Read that
+  lint's count for the crate as well.
 - Condition 3 is unmeasured on the pilot. Its release runs were the two that made its tags, and
   none ran with `dry-run=true`, so whether a dry run of an already tagged version passes the gate is
   unknown.
