@@ -37,10 +37,11 @@ move must change.
 
 ## Who depends on it in nife
 
-Six manifests reach it by path, with `version = "0.1.0"`: `kernel` (the entropy service's spawner
-and self-test), `components` (the virtio and JH7110 entropy backends, and 15 programs that declare
-the pair of `INTERFACE_ID` and `VERSION`), `crates/user_mode_runtime`, `crates/system_initializer`,
-`fixtures`, and `system_tests` as a development dependency. Every edge points from nife to the
+Six manifests reach it by path, with `version = "0.1.0"`: `kernel`, `components`,
+`crates/user_mode_runtime`, `crates/system_initializer`, `fixtures`, and `system_tests` as a
+development dependency. The kernel spawns the entropy service and tests it. `components` holds the
+virtio and JH7110 entropy backends, and 15 programs there declare the pair of `INTERFACE_ID` and
+`VERSION`. Every edge points from nife to the
 crate, which milestone 1017 permits.
 
 One dependent reads the source file, not the crate. `xtask/src/farm/generate.rs` copies
