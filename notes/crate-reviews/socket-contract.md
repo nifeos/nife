@@ -120,7 +120,7 @@ crate has not left, so each is a two-way door.
 | `OPERATION_SENDTO` | `OPERATION_SEND_TO`, alias `sendto` | two words; POSIX's `sendto` kept as the alias |
 | `OPERATION_ATTACH_PAGE_FRAME` | `OPERATION_ATTACH_SHARED_PAGE` | `frame` is a word to avoid, and here it also means a network frame (`polled_wait`) |
 | the other ten `OPERATION_` constants | keep | `udp` and `tcp` pass the acronym test, as `pci` does; add both to the template's accepted words |
-| `SOCKET_BADGE` | `SOCKET_BADGE_BIT` | it is the bit; `SOCKET_BADGE | 1` is a badge |
+| `SOCKET_BADGE` | `SOCKET_BADGE_BIT` | it is the bit; a socket's badge is that bit with others set |
 | `names_a_socket` | keep | a third-person verb phrase |
 | `REP_OK`, `REP_ERR` | `REPLY_OK`, `REPLY_ERROR` | `rep` and `err` abbreviate; `REPLY_` is the tree's prefix elsewhere |
 | `CONNECT_ESTABLISHED`, `CONNECT_REFUSED` | keep | |
