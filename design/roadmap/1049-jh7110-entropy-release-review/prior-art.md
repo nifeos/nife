@@ -15,7 +15,7 @@ The review read the cited tree for rows marked *read*. Rows marked *recalled* co
 | esp-hal, embassy-stm32, atsamd-hal, nrf-hal (*recalled*) | Each SoC HAL exposes its TRNG as a type implementing rand_core's trait, blocking or fallible; embassy-stm32's RNG recovers from the hardware's seed and clock error bits and does not serve bytes past them. | items 6, 7, 17 |
 | embedded-hal 1.0 (*recalled*) | Carries no RNG trait; the ecosystem converged on rand_core. | item 17 |
 | Tock `Entropy32` and Zephyr `entropy` (*recalled*) | Both define an OS-side entropy interface that a driver fills; neither is reachable from a Rust crate without the OS. | none |
-| `jh71xx-pac`, `jh71xx-hal` (Codeberg, GPL-3.0-only; from milestone 818, `jh7110_entropy`: proven JH7110 TRNG logic, released on its own) | Register maps for the JH7110 family with no TRNG logic, under a license this crate cannot take. | none; this crate stays the only Rust TRNG logic for the chip found |
+| `jh71xx-pac`, `jh71xx-hal` (Codeberg, GPL-3.0-only; found by milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic, released on its own)) | Register maps for the JH7110 family with no TRNG logic, under a license this crate cannot take. | none; this crate stays the only Rust TRNG logic for the chip found |
 
 A user would miss three things today. One is a `TryRng` implementation (item 17, declined). Another is a decoded answer to "what width is this block in" (items 6, 16). The last is a measured poll bound (the bench).
 
