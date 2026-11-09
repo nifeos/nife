@@ -110,7 +110,7 @@ main runs there unattended as `lane`. The fuzz host needs no reader step. Pin on
 sequence:
 
 ```sh
-FUZZ_HOST_COMMIT=a3f3d443de13cb27a01c8eff25016a91d4c1651b
+FUZZ_HOST_COMMIT=5219b163caf8380bdbd0b56cc3f1c4a13b8bd423
 ```
 
 Read the diff before using a later commit.
@@ -126,7 +126,7 @@ git -C ~/fuzz-host log --oneline -1
 ~/fuzz-host/script/test
 ```
 
-Verify: `git log` prints `a3f3d44 Merge pull request #4 from nifeos/lane/fuzz-reader-token`, and
+Verify: `git log` prints `5219b16 Merge pull request #13 from nifeos/lane/filer-group-normalize`, and
 `script/test` (which needs `python3` and `openssl`, makes its own throwaway keys and never touches
 GitHub) ends with every selftest passing. Run it as yourself.
 
@@ -353,7 +353,7 @@ Verify. After each command, the text after the colon is its expected output:
 - `sudo /usr/local/sbin/fuzz-token check reader --fresh`, as yourself: `app: nife-fuzz-reader (App ID
   5571868, installation 177642435)`, `permissions: metadata:read,repository_advisories:read`,
   `repositories: nifeos/nife`, an `expires:` line about an hour ahead, `revoked: yes`, exit status 0.
-- As the lane account, `sudo -n /usr/local/sbin/fuzz-token issue reader | wc -c`: a number near 41,
+- As the lane account, `sudo -n /usr/local/sbin/fuzz-token issue reader | wc -c`: a number near 521,
   and one `issued one reader token` line on standard error.
 - As the lane account, `sudo -n /usr/local/sbin/fuzz-token issue reader` with nothing after it: a
   refusal, because standard output is a terminal.
