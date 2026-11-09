@@ -129,7 +129,7 @@ pub mod state {
     /// **The wall clock is unknown.** No clock page, no clock service, an RTC that is absent, or an
     /// RTC whose reading failed [`super::policy::is_plausible`]. The offset is meaningless and must
     /// not be used. This is also what a zeroed page reads as, so a page nobody has published to is
-    /// honest by default rather than by initialisation.
+    /// honest by default rather than by initialization.
     pub const UNKNOWN: u64 = 0;
     /// Set once at startup from the hardware RTC. As good as the battery-backed clock on the board,
     /// which on QEMU is the host's clock and on a real board is whatever the coin cell managed.
@@ -159,8 +159,8 @@ pub const MAGIC: u64 = 0x434c_4f43_4b76_3031;
 
 /// The clock page layout's version, the digits [`MAGIC`] carries. A reader's check is the magic
 /// itself: a reader built against one generation reads a page of another as no clock page at all,
-/// and a break bumps this and re-mints the magic's digits in one change, with the dated ledger
-/// entry the interface-stability discipline owes.
+/// and a break bumps this and re-mints the magic's digits in one change, which the changelog
+/// records.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
@@ -246,8 +246,8 @@ impl ClockPage {
     /// anyone else has a mapping, so it needs no sequence claim.
     ///
     /// The magic goes down **last**, with a release, so a reader that races the first publish sees
-    /// either a page it does not recognise (and reports unknown) or a fully initialised one. Never
-    /// a recognised page with garbage in it.
+    /// either a page it does not recognize (and reports unknown) or a fully initialized one. Never
+    /// a recognized page with garbage in it.
     ///
     /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
     /// design/naming/acronyms-and-abbreviations.md.
@@ -284,10 +284,10 @@ impl ClockPage {
             // halves of the pair are checked rather than argued.
             //
             // PAIR: the writer's `fence(Ordering::Release)` after its claim of the sequence in
-            // `publish`, below in this file. **The only protocol in the tree where both halves must
-            // be here**, because a reader is in a different address space and reaches this page with
-            // no syscall at all: there is no IPC rendezvous underneath to supply the edge the way
-            // there is for every other shared page.
+            // `publish`, below in this file. **Both halves must be here**, because a reader is in a
+            // different address space and reaches this page with no syscall at all: there is no IPC
+            // rendezvous underneath to supply the edge, as there is for a page handed over by a
+            // message.
             fence(Ordering::Acquire);
             if self.word(W_SEQ).load(Ordering::Relaxed) == s1 {
                 return Reading {
@@ -349,8 +349,8 @@ impl ClockPage {
 /// network time client: a compromised one can lie inside [`policy`]'s bounds and can do nothing
 /// else at all.
 pub mod propose {
-    /// Where the opcode sits in the first `CALL` word: bits 63:56, the same position the
-    /// sibling message contracts of the nife kernel use, so the contracts read alike.
+    /// Where the opcode sits in the first `CALL` word: bits 63:56, the same position its sibling
+    /// message contracts use, so the contracts read alike.
     pub const OPERATION_SHIFT: u32 = 56;
 
     /// Build a request's first word.
@@ -583,8 +583,8 @@ mod tests {
 
     #[test]
     fn the_sanity_window_rejects_the_two_lies_that_matter() {
-        // 1970 is what a machine with no clock reports, and it is exactly what this milestone
-        // exists to stop being mistaken for an answer.
+        // 1970 is what a machine with no clock reports, and it is exactly what this crate exists
+        // to stop being mistaken for an answer.
         assert!(!policy::is_plausible(0));
         // The far future is where a clock attack aims: past every certificate's expiry.
         assert!(!policy::is_plausible(policy::NOT_AFTER_NANOSECONDS));
@@ -776,6 +776,16 @@ mod tests {
         assert_eq!(propose::operation(0), 0);
     }
 
+    /// The page's identity, written out as literals. A reader built against another value reads
+    /// the page as no clock page at all, so a change here is a new version of the interface, never
+    /// an edit: bump [`VERSION`] and the magic's digits together, and this test with them.
+    #[test]
+    fn the_identity_is_the_one_readers_were_built_against() {
+        assert_eq!(MAGIC.to_be_bytes(), *b"CLOCKv01");
+        assert_eq!(VERSION, 1);
+        assert_eq!(INTERFACE_ID, 8);
+    }
+
     /// The plausibility window's endpoints are seconds times a billion, and the multiplication is
     /// exactly the kind of arithmetic a mutant can quietly break (a `/` there made the floor
     /// microscopic, and every implausible proposal became plausible). Pin the products.
@@ -795,8 +805,7 @@ mod tests {
 // ================================================================================================
 #[cfg(all(test, loom))]
 mod interleavings {
-    //! **The clock page is the sharpest weak-memory target in the tree**, and that is why it is
-    //! here rather than only the scheduler's steal slot. It is a hand-rolled seqlock whose two
+    //! **The clock page is a sharp weak-memory target.** It is a hand-rolled seqlock whose two
     //! halves run in *different address spaces*, with no lock available between them, and its own
     //! documentation says the memory ordering is the point rather than decoration. On x86 a sloppy
     //! version passes forever; on the aarch64 and riscv64 this project targets it does not.
@@ -829,8 +838,10 @@ mod interleavings {
         unsafe { ClockPage::new(words.as_ptr() as u64) }
     }
 
-    /// Non-vacuity, across executions rather than within one. See
-    /// `steal_request`'s copy of this for why a model checker needs it.
+    /// Non-vacuity, across executions rather than within one. A model checker explores every
+    /// interleaving, and a harness whose interesting branch no execution reaches passes while
+    /// checking nothing; each harness marks the branches it expects and asserts, after the model
+    /// ends, that some execution reached each one.
     struct Reached(core::sync::atomic::AtomicBool);
     impl Reached {
         const fn new() -> Self {
@@ -849,7 +860,7 @@ mod interleavings {
 
     /// **The seqlock's whole reason to exist: a reader never sees half a publish.**
     ///
-    /// The state and the offset are a matched pair (a state of `SYNCHRONISED` with the offset from
+    /// The state and the offset are a matched pair (a state of `SYNCED` with the offset from
     /// before the sync is a wrong wall clock, not a crash, which is the worst kind of bug to leave
     /// possible). A reader that catches the writer mid-publish must retry, never blend.
     #[test]
@@ -898,7 +909,7 @@ mod interleavings {
             };
 
             let r = page.read();
-            // Generation 0 is the initialised page nobody has published to; 1 is the one publish.
+            // Generation 0 is the initialized page nobody has published to; 1 is the one publish.
             let expected = if r.state == state::UNKNOWN { 0 } else { 1 };
             assert_eq!(
                 r.generation, expected,
@@ -909,13 +920,13 @@ mod interleavings {
         });
     }
 
-    /// **Two writers serialise rather than corrupt.**
+    /// **Two writers serialize rather than corrupt.**
     ///
     /// The crate's own documentation says this and says why: the capability layout permits several
     /// processes to hold a read/write mapping, so claiming the sequence is a compare-exchange
     /// rather than a plain store, and a seqlock that assumed one writer would corrupt silently.
-    /// "Would corrupt silently" is a claim about interleavings, which is the sentence no test in
-    /// this tree could check before this one.
+    /// "Would corrupt silently" is a claim about interleavings, which only a model checker can
+    /// check.
     #[test]
     fn two_writers_serialise_rather_than_corrupt_the_page() {
         static BOTH_LANDED: Reached = Reached::new();
@@ -955,12 +966,12 @@ mod interleavings {
         BOTH_LANDED.assert("any execution at all");
     }
 
-    /// **A page is recognisable only once it is whole.**
+    /// **A page is recognizable only once it is whole.**
     ///
     /// `initialize` writes the magic last, with a release, precisely so a reader racing the first
-    /// publish sees either a page it does not recognise (and reports `UNKNOWN`, which is the truth
-    /// about a frame nobody has published to) or a fully initialised one. Never a recognised page
-    /// with garbage in it. The release is the whole mechanism, and until now nothing checked it.
+    /// publish sees either a page it does not recognize (and reports `UNKNOWN`, which is the truth
+    /// about a frame nobody has published to) or a fully initialized one. Never a recognized page
+    /// with garbage in it. The release is the whole mechanism, and this harness checks it.
     #[test]
     fn a_racing_reader_sees_an_unrecognised_page_or_a_whole_one() {
         static SAW_UNRECOGNISED: Reached = Reached::new();
@@ -981,7 +992,7 @@ mod interleavings {
             match (r.state, r.offset_nanos) {
                 (state::UNKNOWN, 0) => SAW_UNRECOGNISED.mark(),
                 (state::RTC, 1_000) => SAW_INITIALISED.mark(),
-                other => panic!("a reader saw a recognised page with garbage in it: {other:?}"),
+                other => panic!("a reader saw a recognized page with garbage in it: {other:?}"),
             }
 
             writer.join().unwrap();

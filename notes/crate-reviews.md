@@ -50,9 +50,8 @@ against itself.
   stand-in for the template's `standalone` job is `script/crate-standalone`, whose result is in each
   package. No further check can run before a repository exists.
 - README readiness. Every README has the sections a stranger looks for: what the crate does, the
-  proofs with their harness names, usage, limitations and license. Every other README that names harnesses tells a newcomer how to install Kani. The four
-  crates with a repository record a stranger test there; no other crate has run one, and none can
-  until it has a repository.
+  proofs with their harness names, usage, limitations and license. Every other README that names harnesses tells a newcomer how to install Kani. Three
+  crates record a stranger test in their repository, and no other has run one.
 - References to nife in shipped text. Crate repositories stand alone and do not mention nife.
   Each package lists the mentions that remain, each a small edit for the move lane.
 - Harnesses and patches. In every crate, each Kani harness has exactly one falsification patch
@@ -374,6 +373,11 @@ The build passes on 1.88 for the host and the three bare-metal targets.
 
 Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text edits naming nife.
 
+## `clock_contract`, a contract crate
+
+The whole package is [crate-reviews/clock-contract.md](crate-reviews/clock-contract.md): a leaf
+with no Kani harness.
+
 ## Summary
 
 | crate | step | recommendation |
@@ -389,4 +393,5 @@ Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text 
 | `block_roster` | contract | ready for review |
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |
 | `entropy_contract` | contract | names and identity for the architect; [package](crate-reviews/entropy-contract.md) |
-| `socket_contract` | contract | identity, scope and names; [package](crate-reviews/socket-contract.md) |
+| `clock_contract` | contract | identity and overlay names for the architect |
+| `socket_contract` | contract | identity, scope, names; [package](crate-reviews/socket-contract.md) |
