@@ -4,7 +4,7 @@
 
 The architect reads every crate by hand before it leaves this tree
 ([journey 5](../design/journeys/05-crates-released-on-their-own.md), steps 2 to 8 and 10, and the
-first contract crates of milestone 1017 (the contract crates leave in this order)).
+first contract crates of milestone 1017).
 This note holds one package per crate, so a review starts from evidence and not from a search. Each
 package follows the review of `jh7110_entropy` in
 [milestone 818 (proven JH7110 TRNG logic, released on its own)](../design/roadmap/0818-the-jh7110-entropy-crate-released-on-its-own.md).
@@ -15,7 +15,7 @@ recommendation. A package gathers facts. The architect judges the API's vocabula
 ## What was run
 
 Every result below comes from `main` as it stands. Pull request #3200 (milestone 1019 (the driver
-crates carry facts from their sources, not their text), items 3 to 6) is still open, and the
+crates carry facts from their sources, not their text), items 3 to 6) is open, and the
 packages of three crates name its effects.
 
 | check | command | scope |
