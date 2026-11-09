@@ -204,8 +204,8 @@ about a real device at real speed.
   of the three this milestone added. They prove the handoff round-trips, that the doorbell offsets
   an accepted handoff produces stay inside the one page mapped, and that no block outside the
   namespace becomes a command. The first two are *about* the confinement's arithmetic rather than
-  about the confinement, which is a hardware claim no prover reaches. **The confinement claim's own
-  test is now the escape test**. A confined EL0 server aims a PRP outside its region and the IOMMU
+  about the confinement, which is a hardware claim no prover reaches. The confinement claim's own
+  test is now the escape test. A confined EL0 server aims a PRP outside its region and the IOMMU
   refuses it, with a replayable falsification that widens the domain and turns the test red
   (`a_confined_el0_server_cannot_dma_outside_its_region`, done 2026-10-04, in `## Follow-on`). What
   earlier stood here, the `confined_by_iommu` assertion alone, was the decorative case milestone 202
@@ -252,8 +252,8 @@ about a real device at real speed.
 - **Recorded.** One command in flight, inherited from the driver this replaced, so any throughput
   measured against this server is a lower bound on the device rather than a measurement of it.
   `notes/non-volatile-memory-express.md` and the same `BUGS` section.
-- **Milestone 421 (the block roster names an NVMe disk).** `block_roster_contract` still cannot list
-  the NVMe disk: §86 named its NVMe transport
+- **Milestone 421.** `block_roster_contract` (milestone 421 (a block roster that can name an NVMe
+  disk)) still cannot list the NVMe disk: §86 named its NVMe transport
   kind as blocked on who owns the controller, and that is now answered (a process does), so the wire
   shape can be decided. Not taken here because it is something two programs agree on, which is the
   expensive category.

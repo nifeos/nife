@@ -162,12 +162,16 @@ def git(*args, cwd=None):
 
 
 def changed_files(base, cwd=None):
-    names = git('diff', '--name-only', '--no-renames', base, '--', 'crates', cwd=cwd) or ''
+    """Each changed path with its base and head text. A file git reads as moved is judged against
+    the text it had at its old path, so moving a crate's directory is not a removal of its magic."""
+    rows = (git('diff', '--name-status', '-M', base, '--', 'crates', cwd=cwd) or '').splitlines()
     files = {}
-    for path in names.split():
-        if not judged(path):
+    for row in rows:
+        fields = row.split('\t')
+        old_path, path = fields[1], fields[-1]
+        if not judged(path) and not judged(old_path):
             continue
-        old = git('show', f'{base}:{path}', cwd=cwd)
+        old = git('show', f'{base}:{old_path}', cwd=cwd)
         head = os.path.join(cwd or '.', path)
         new = open(head, errors='replace').read() if os.path.exists(head) else None
         files[path] = (old, new)
