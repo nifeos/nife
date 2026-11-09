@@ -23,9 +23,9 @@ as the reference for the I219 port. No new tool.
 
 ## Goal
 
-A stranger who finds `nifeos/e1000e` can read what the crate is, build it, run its proofs, drive a
-ring against a fake device from an example, and know exactly what the crate does not do, before the
-first tag goes on it. The weekly gates pass, the public trait names are final, and the port of the
+A stranger who finds `nifeos/e1000e` can read what the crate is, build it and run its proofs. They
+can drive a ring against a fake device from an example, and know exactly what the crate does not
+do, before the first tag goes on it. The weekly gates pass, the public trait names are final, and the port of the
 I219 bring-up states every place it departs from its source.
 
 Publishing stays held. No crate from this organization publishes to crates.io until the
@@ -47,13 +47,13 @@ The reviewer verified these firsthand, in a fresh clone on a Linux host with Rus
   missed, 7 unviable, 4 timeouts. The tests catch every mutant in `data_plane.rs` or time it out.
   The 7 survivors are all OR-to-XOR swaps in `descriptor.rs` that the compile-time assertions
   beside them argue are equivalent.
-- The GitHub state of the repository: no tag, no release, two merged pull requests, no issue;
-  `check` and `proofs` green on `main`; the latest `weekly` run red in two jobs (`stranger cadence`
-  and `mutation`), with the five mutation shards reporting 82 missed, 711 caught, 27 unviable and 4
-  timeouts in all.
+- The GitHub state of the repository: no tag, no release, two merged pull requests, no issue.
+  `check` and `proofs` pass on `main`. The latest `weekly` run failed in two jobs (`stranger
+  cadence` and `mutation`), and its five mutation shards reported 82 missed, 711 caught, 27
+  unviable and 4 timeouts in all.
 - Every register offset and bit constant, against FreeBSD's `e1000_regs.h`, `e1000_defines.h`,
-  `e1000_ich8lan.h` and `if_em.h` and Linux's `regs.h` and `defines.h` as the reviewer knows them,
-  and the full I219 sequences against FreeBSD `main`'s `e1000_ich8lan.c`, `e1000_phy.c`,
+  `e1000_ich8lan.h` and `if_em.h` and Linux's `regs.h` and `defines.h` as the reviewer knows them.
+  The full I219 sequences, against FreeBSD `main`'s `e1000_ich8lan.c`, `e1000_phy.c`,
   `e1000_mac.c` and `if_em.c`, fetched for the purpose. No offset or bit is wrong. The write of the
   PCI vendor id to the read-only `STRAP` register around the global reset looks like an invention;
   it is FreeBSD's own (`e1000_reset_hw_ich8lan`). The 2.5 second wait on the Management Engine and
