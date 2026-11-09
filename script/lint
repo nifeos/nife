@@ -18,7 +18,9 @@
 # the cores, at most 8; 1 gives the old one-at-a-time loop). A section opts into the scheduler
 # with comment lines (`# lint-lane:`, `# lint-waits-for:`, `# lint-target-dir:`, `# lint-quick`)
 # that helpers/lint-no-cargo.awk reads and helpers/lint-sections.sh's header explains. Every
-# section runs and the verdict is the same at any job count.
+# section runs and the verdict is the same at any job count. Every section also carries
+# `# lint-scope: record|code|both`, what it reads (helpers/lint-no-cargo.awk's header); no mode
+# selects by it.
 #
 # Name: recorded (AGENTS.md's naming section, "standard terms a reader already knows from
 # outside"; and DECISIONS §134 for the verb half). Introduced 2026-07-22 with the Scripts to Rule
@@ -136,6 +138,7 @@ if [ -z "${LINT_SECTION:-}" ]; then
 fi
 
 echo "==> the section list (script/lint's sections are a reviewed interface)"
+# lint-scope: code
 # lint-quick
 # lint-id: section-list
 # The sections' names, order, lanes, waits, target dirs and quick flags are read by the scheduler, the
@@ -145,8 +148,16 @@ echo "==> the section list (script/lint's sections are a reviewed interface)"
 # touch its lines.
 helpers/lint-section-index-selftest.sh
 helpers/lint-section-index.sh check
+# Every section says what it reads, so the record's lint is a selection by this column.
+unscoped=$(awk -v mode=index -f helpers/lint-no-cargo.awk "$0" | awk -F'\t' '$7 == "-" { print $8 }')
+if [ -n "$unscoped" ]; then
+    echo "lint: these sections carry no \`# lint-scope: record|code|both\` line (helpers/lint-no-cargo.awk says which):" >&2
+    printf '  %s\n' "$unscoped" >&2
+    exit 1
+fi
 
 echo "==> the pre-push hook's contract with this script"
+# lint-scope: code
 # The pre-push hook's contract with this script, checked (2026-09-29). `.githooks/pre-push` runs
 # `script/fmt --check` then `script/lint --no-cargo` before any push leaves a worktree, and every
 # part of that line can rot silently: a script the hook names can be renamed, and the hook's own
@@ -184,6 +195,7 @@ helpers/pre-push-selftest.sh >/dev/null
 helpers/pre-push-lint-cache-selftest.sh >/dev/null
 
 echo "==> the commit-msg hook (an agent's commit carries a Co-Authored-By trailer)"
+# lint-scope: code
 # Milestone 725 (machine effort and commit attribution count every vendor): `.githooks/commit-msg` refuses a commit made under an agent harness
 # (CLAUDECODE=1 or OPENCODE=1) with no trailer. Same reasoning as the pre-push contract above: a
 # hook that is deleted or loses its executable bit stops gating with no signal, so its absence
@@ -201,6 +213,7 @@ helpers/lint-no-cargo-selftest.sh >/dev/null
 helpers/lint-sections-selftest.sh >/dev/null
 
 echo "==> no reproducer in this branch's commit messages (a replay line, a seed assignment)"
+# lint-scope: both
 # lint-quick
 # Proposal fix-lanes-read-the-advisory, name provisional. A seed, a crash input and a replay line stay
 # out of public text until the fix for the finding is on main, and a commit message is public text
@@ -217,6 +230,7 @@ else
 fi
 
 echo "==> the heavy-job slots (a full machine holds a job back; a killed holder frees its slot)"
+# lint-scope: code
 # helpers/heavy_slot.py caps how many heavy jobs run on the machine at once, and this file is one of
 # them. Proved in a scratch tree with a private slot directory and one slot, so it never waits on a
 # real job: helpers/heavy-slot-selftest.sh lists its five stages and what breaks each.
@@ -224,6 +238,7 @@ helpers/heavy-slot-selftest.sh >/dev/null
 # The CI fuzz job (proposal a-short-sharded-fuzz-pass-in-ci): wired for merge_group only, on a hosted
 # runner, and a finding prints no guest output. helpers/fuzz-ci-selftest.sh lists both checks.
 echo "==> the CI fuzz job keeps a finding private"
+# lint-scope: code
 helpers/fuzz-ci-selftest.sh >/dev/null
 # The daily fuzz report must run before the supervisor's first window: a dry run on an empty home.
 helpers/fuzz-daily-publish-selftest.sh >/dev/null
@@ -241,6 +256,7 @@ helpers/kani-pool-selftest.sh >/dev/null
 helpers/kani-install-selftest.sh >/dev/null
 
 echo "==> script/verify --parallel forks the shards, joins their verdicts, and keeps to one slot"
+# lint-scope: code
 # The local parallel prove, milestone 957 (local parallel prove of the Kani verification suite): a stub
 # kani-install and a stub `cargo` in a scratch tree, so the shard children are the real orchestration
 # over stubbed proving, and the whole thing costs milliseconds with no Kani and no slot of the
@@ -249,6 +265,7 @@ echo "==> script/verify --parallel forks the shards, joins their verdicts, and k
 # because a deadlock never returns on its own.
 python3 helpers/verify_parallel.py --selftest >/dev/null
 echo "==> script/crate-move stages a move as the runbook says"
+# lint-scope: code
 # notes/crate-move.md: the dry run deletes Name: blocks, regenerates falsification patches over the stripped source and
 # fills the template pins. The selftest drives those transforms on fixtures, with no tree and no
 # network.
@@ -257,27 +274,32 @@ python3 helpers/crate_move.py --selftest >/dev/null
 # slots section above runs it, so it is not run twice.
 
 echo "==> script/push believes origin's ref, not git's exit status"
+# lint-scope: code
 # A push that never landed has exited 141 and exited 0 alike (#2478), and no CI run pushes, so this
 # local-origin selftest is the only place the read-back is seen to refuse one.
 helpers/push-selftest.sh >/dev/null
 
 echo "==> script/push --requeue re-arms, and arming refuses a held pull request"
+# lint-scope: code
 # Stub gh and git. The re-arm is made a no-op inside the selftest and must fail loudly, so this is
 # where a --requeue that silently arms nothing is seen to be caught (COE action 7).
 helpers/push-requeue-selftest.sh >/dev/null
 
 echo "==> the rustup retry (a dropped CDN connection retries; a real error does not)"
+# lint-scope: code
 # A stub rustup, no network. The retry only runs during a CDN outage, which no green CI run
 # exercises, so this is the only place its classifier and its bound are ever seen to work.
 helpers/rustup-retry-selftest.sh >/dev/null
 
 echo "==> the continuous fuzz supervisor installs the pinned toolchain once, before any slot"
+# lint-scope: code
 # A stub rustup, no network, no KVM. Four slots that each downloaded a newer pin at once collided on
 # the host's first start; this holds the one serial install, its clear failure and its absence of
 # window rows. helpers/continuous-fuzz-selftest.sh says more.
 helpers/continuous-fuzz-selftest.sh >/dev/null
 
 echo "==> the fuzz host follows only a green, fast-forward main and installs no unit file"
+# lint-scope: code
 # A scratch upstream, a stub git, curl and API, no network and no KVM, about five seconds. The four
 # limits ruled 2026-11-01 (UTC) are each held here; helpers/fuzz-follow-main-selftest.sh lists them,
 # and the green rule's own cases are in the helper's --selftest.
@@ -285,6 +307,7 @@ python3 -I helpers/fuzz-follow-main.py --selftest >/dev/null
 helpers/fuzz-follow-main-selftest.sh >/dev/null
 
 echo "==> clippy: host crates + xtask"
+# lint-scope: code
 # lint-lane: host
 # lint-target-dir: host
 # The derived half of the selection (helpers/host-excluded-crates.sh). `kernel` and `system_tests`
@@ -303,6 +326,7 @@ python3 helpers/clippy_record.py host cargo clippy --workspace --exclude kernel 
 # code there is still held to -D warnings. The engine it depends on is external to its workspace too,
 # so clippy does not lint upstream redoxfs, only our tool.
 echo "==> clippy: redoxfs_host (its own workspace)"
+# lint-scope: code
 # lint-lane: redoxfs_host
 python3 helpers/clippy_record.py tools/redoxfs_host/clippy cargo clippy \
     --manifest-path tools/redoxfs_host/Cargo.toml --all-targets -- -D warnings
@@ -311,6 +335,7 @@ python3 helpers/clippy_record.py tools/redoxfs_host/clippy cargo clippy \
 # graph any shipped program is built from (milestone 142 (a text display good enough that people use
 # it instead of a GUI)); lint it on its own for the same reason.
 echo "==> clippy: glyph_atlas_generator (its own workspace)"
+# lint-scope: code
 # lint-lane: glyph_atlas_generator
 python3 helpers/clippy_record.py tools/glyph_atlas_generator/clippy cargo clippy \
     --manifest-path tools/glyph_atlas_generator/Cargo.toml --all-targets -- -D warnings
@@ -320,6 +345,7 @@ python3 helpers/clippy_record.py tools/glyph_atlas_generator/clippy cargo clippy
 # and there was a real `deref_addrof` sitting in `second_mount` when this line was added. `-D warnings`
 # applies to local crates only, so the vendored engine's own warnings do not fail the run.
 echo "==> clippy: redoxfs_server (its own workspace)"
+# lint-scope: code
 # lint-lane: redoxfs_server
 python3 helpers/clippy_record.py redoxfs_server/clippy cargo clippy \
     --manifest-path redoxfs_server/Cargo.toml --all-targets -- -D warnings
@@ -330,6 +356,7 @@ python3 helpers/clippy_record.py redoxfs_server/clippy cargo clippy \
 # else compiles, which makes it exactly the kind of code that rots: it is the one place in the tree
 # where a crate's API can change and nothing notices until somebody goes looking for a bug.
 echo "==> clippy: fuzz targets (its own workspace)"
+# lint-scope: code
 # lint-lane: fuzz
 python3 helpers/clippy_record.py fuzz/clippy cargo clippy \
     --manifest-path fuzz/Cargo.toml --all-targets -- -D warnings
@@ -358,6 +385,7 @@ python3 helpers/clippy_record.py fuzz/clippy cargo clippy \
 # only come from a proc-macro crate; read that directory for what the shim does and does not promise.
 # A clean pass here is not a proof, and `script/verify` remains the thing that proves.
 echo "==> clippy: the Kani proof harnesses (--cfg kani)"
+# lint-scope: code
 # lint-lane: host
 # lint-target-dir: host
 shim=target/kani-lint-shim
@@ -400,6 +428,7 @@ cargo clippy --workspace --exclude kernel --exclude system_tests $bare_excludes 
     --cfg kani --extern "kani=$shim/libkani.rlib" -L "$shim" -D warnings
 
 echo "==> clippy: kernel + user + user_mode_runtime (aarch64)"
+# lint-scope: code
 # lint-lane: aarch64
 # lint-target-dir: aarch64
 python3 helpers/clippy_record.py aarch64 cargo clippy -p kernel -p components -p fixtures \
@@ -411,6 +440,7 @@ python3 helpers/clippy_record.py aarch64 cargo clippy -p kernel -p components -p
 # shared run would quietly lint the kernel with its dead-code check off. `--all-targets` is what
 # reaches the suite, which is `cfg(test)`.
 echo "==> clippy: system_tests (aarch64)"
+# lint-scope: code
 # lint-lane: aarch64
 # lint-target-dir: aarch64
 python3 helpers/clippy_record.py system_tests cargo clippy -p system_tests \
@@ -422,6 +452,7 @@ python3 helpers/clippy_record.py system_tests cargo clippy -p system_tests \
 # on, and the shipped lint above must not. One architecture, because the gated code is
 # architecture-neutral; the shipped build is linted on x86_64 below as well.
 echo "==> clippy: components --features confinement_attackers (aarch64)"
+# lint-scope: code
 # lint-lane: aarch64
 # lint-target-dir: aarch64
 cargo clippy -p components --features confinement_attackers --target aarch64-unknown-none-softfloat --all-targets -- -D warnings
@@ -470,6 +501,7 @@ cargo clippy -p components --features confinement_attackers --target aarch64-unk
 # What it does cover is every line of `arch/x86_64/` and every portable file compiled with
 # `target_arch = "x86_64"`, held to the same `-D warnings` as the other two.
 echo "==> clippy: kernel (x86_64, the binary only; see the note above)"
+# lint-scope: code
 # lint-lane: x86_64
 # lint-target-dir: x86_64
 python3 helpers/clippy_record.py x86_64 cargo clippy -p kernel --target x86_64-unknown-none -- \
@@ -480,6 +512,7 @@ python3 helpers/clippy_record.py x86_64 cargo clippy -p kernel --target x86_64-u
 # and the ratchet used to run its own clippy for this case. It runs here at `-D warnings` so the
 # ratchet reads its diagnostics, and it was clean when it was added.
 echo "==> clippy: kernel (riscv64)"
+# lint-scope: code
 # lint-lane: riscv64
 # lint-target-dir: riscv64
 python3 helpers/clippy_record.py riscv64 cargo clippy -p kernel --target riscv64imac-unknown-none-elf -- -D warnings
@@ -496,6 +529,7 @@ python3 helpers/clippy_record.py riscv64 cargo clippy -p kernel --target riscv64
 # for a reason the gate cannot fix. The earlier version of this comment said all five failed,
 # which stopped being true once each of the four grew arch-neutral or dead-only code.
 echo "==> clippy: kernel --features bench (x86_64, the binary only; see the note above)"
+# lint-scope: code
 # lint-lane: x86_64
 # lint-target-dir: x86_64
 cargo clippy -p kernel --features bench --target x86_64-unknown-none -- \
@@ -508,6 +542,7 @@ cargo clippy -p kernel --features bench --target x86_64-unknown-none -- \
 # is held to this ISA's bar rather than to nobody's. Same flags as the two lines above, and for the
 # same reasons: the `-A dead_code` is the partial boot's, not this feature's.
 echo "==> clippy: kernel --features cycle_counter_grant (x86_64, the binary only; see the note above)"
+# lint-scope: code
 # lint-lane: x86_64
 # lint-target-dir: x86_64
 cargo clippy -p kernel --features cycle_counter_grant --target x86_64-unknown-none -- \
@@ -527,6 +562,7 @@ done
 # `cargo xtask network-bench` is in no gate, and a bench boot that has rotted is found on the
 # evening rather than here. `disk_throughput` has the same exposure and is not in this file yet.
 echo "==> clippy: kernel --features network_bench (x86_64, the binary only; see the note above)"
+# lint-scope: code
 # lint-lane: x86_64
 # lint-target-dir: x86_64
 cargo clippy -p kernel --features network_bench --target x86_64-unknown-none -- \
@@ -541,6 +577,7 @@ cargo clippy -p kernel --features network_bench --target x86_64-unknown-none -- 
 # it, a lane could add an aarch64/riscv64 pair to a user program and never learn that x86 fell
 # through to nothing until `cargo xtask test --arch x86_64` failed to pack an archive.
 echo "==> clippy: user + user_mode_runtime (x86_64)"
+# lint-scope: code
 # lint-lane: x86_64_user
 # lint-target-dir: x86_64_user
 cargo clippy -p components -p fixtures -p user_mode_runtime --target x86_64-unknown-none --all-targets -- -D warnings
@@ -602,6 +639,7 @@ for tgt in aarch64-unknown-none-softfloat riscv64imac-unknown-none-elf; do
     cargo clippy -p kernel --features watchdog_probe --target "$tgt" --all-targets -- -D warnings
 done
 echo "==> clippy: kernel --features watchdog_probe (x86_64)"
+# lint-scope: code
 # lint-lane: x86_64
 # lint-target-dir: x86_64
 cargo clippy -p kernel --features watchdog_probe --target x86_64-unknown-none --all-targets -- \
@@ -640,6 +678,7 @@ cargo clippy -p kernel --features watchdog_probe --target x86_64-unknown-none --
 # gate; `refuse_an_unsealed_pair` runs only when both paths are set, and the seal is `cargo xtask
 # uefi-image`'s own check.
 echo "==> uefi_loader: build the three kernels the boot files embed (see the note above)"
+# lint-scope: code
 # lint-lane: uefi
 # lint-target-dir: uefi
 cargo build -p kernel --target x86_64-unknown-none
@@ -647,6 +686,7 @@ cargo build -p kernel --target aarch64-unknown-none-softfloat
 cargo build -p kernel --target riscv64imac-unknown-none-elf --features board
 
 echo "==> clippy: uefi_loader --features uefi (x86_64-unknown-uefi)"
+# lint-scope: code
 # lint-lane: uefi
 # lint-target-dir: uefi
 NIFE_UEFI_KERNEL="${CARGO_TARGET_DIR:-$PWD/target}/x86_64-unknown-none/debug/kernel" \
@@ -654,6 +694,7 @@ NIFE_UEFI_KERNEL="${CARGO_TARGET_DIR:-$PWD/target}/x86_64-unknown-none/debug/ker
     --target x86_64-unknown-uefi -- -D warnings
 
 echo "==> clippy: uefi_loader --features uefi (aarch64-unknown-uefi)"
+# lint-scope: code
 # lint-lane: uefi
 # lint-target-dir: uefi
 NIFE_UEFI_KERNEL="${CARGO_TARGET_DIR:-$PWD/target}/aarch64-unknown-none-softfloat/debug/kernel" \
@@ -661,6 +702,7 @@ NIFE_UEFI_KERNEL="${CARGO_TARGET_DIR:-$PWD/target}/aarch64-unknown-none-softfloa
     --target aarch64-unknown-uefi -- -D warnings
 
 echo "==> clippy: uefi_loader --features uefi (riscv64imac-unknown-none-elf, the stick's PE payload)"
+# lint-scope: code
 # lint-lane: uefi
 # lint-target-dir: uefi
 NIFE_UEFI_KERNEL="${CARGO_TARGET_DIR:-$PWD/target}/riscv64imac-unknown-none-elf/debug/kernel" \
@@ -672,6 +714,7 @@ NIFE_UEFI_KERNEL="${CARGO_TARGET_DIR:-$PWD/target}/riscv64imac-unknown-none-elf/
 # host-linted through the package's self dev-dependency, but only for the host; this is the
 # firmware-target build of it.
 echo "==> clippy: uefi_loader --features uefi,screen_hold (x86_64-unknown-uefi, uefi-boot's build)"
+# lint-scope: code
 # lint-lane: uefi
 # lint-target-dir: uefi
 NIFE_UEFI_KERNEL="${CARGO_TARGET_DIR:-$PWD/target}/x86_64-unknown-none/debug/kernel" \
@@ -716,6 +759,7 @@ fi
 # same reason. Without that exclusion this check is twelve false positives out of thirteen, which is
 # a nag rather than a gate.
 echo "==> unsafe fn contracts"
+# lint-scope: code
 python3 - <<'PY'
 import pathlib
 import re
@@ -800,6 +844,7 @@ PY
 # self-consistency argument: prose may name the macro (`asm!`, no parenthesis, as user.rs already
 # does), but a comment that spells the call form is one copy-paste from being code.
 echo "==> rule 1 (arch code stays under kernel/src/arch/)"
+# lint-scope: code
 # `system_tests/src` too: the system suite is kernel-side code that left the kernel crate
 # (milestone 609 (the system tests leave the kernel crate)), and the rule did not move with it.
 # $$ (this shell's own pid), not a fixed name: `/tmp` is shared by every worktree on the machine,
@@ -832,6 +877,7 @@ echo "rule 1: no asm outside kernel/src/arch/"
 # alignment at run time for one program; this holds every other one to the same entry. `$$` for
 # the reason rule 1 gives above.
 echo "==> programs enter through program_entry!"
+# lint-scope: code
 if git grep -nE 'extern "C" fn _start' -- 'components/src' 'fixtures/src' 'redoxfs_server/src' \
     > "/tmp/nife-program-entry.$$" 2>/dev/null; then
     echo "lint: a program writes its own _start; use user_mode_runtime::program_entry!(start):" >&2
@@ -857,6 +903,7 @@ echo "program entry: every program enters through program_entry!"
 # is a design fork and not this check's to make. What the text reading cannot see is the
 # helper's BUGS paragraph.
 echo "==> rule 5 (every arch:: path portable code names exists in every port)"
+# lint-scope: code
 python3 helpers/lint_arch_parity.py
 
 # Hand-written assembly carries call-frame information (milestone: CFI in hand-written asm).
@@ -873,6 +920,7 @@ python3 helpers/lint_arch_parity.py
 # example today) says so with a `CFI-EXEMPT:` comment instead of carrying directives that would
 # describe a frame the file never builds; see notes/cfi-unwind.md for what that would cost.
 echo "==> hand-written asm carries CFI"
+# lint-scope: code
 cfi_bad=""
 cfi_seen=0
 # The hazard is the pattern, not the check: milestone 401 (a gate that selects the set it judges).
@@ -921,6 +969,7 @@ echo "CFI: every hand-written .s file with an exported symbol carries call-frame
 # `notes/kernel-proofs.md` stub-list item 5 and `notes/linker-scripts.md` carry the design. The
 # empty-selector guard fails a run that judges no custom section at all.
 echo "==> the custom-section link_section names are gated to the bare-metal target"
+# lint-scope: code
 python3 "$(dirname "$0")/../helpers/lint_link_section_target.py" --selftest >/dev/null
 python3 "$(dirname "$0")/../helpers/lint_link_section_target.py" || exit 1
 
@@ -942,6 +991,7 @@ python3 "$(dirname "$0")/../helpers/lint_link_section_target.py" || exit 1
 # against; the helper prints their count rather than passing over them in silence. An empty pair
 # set fails rather than passing (milestone 401 (a gate that selects the set it judges)).
 echo "==> every committed .dtb matches its .dts"
+# lint-scope: code
 python3 "$(dirname "$0")/../helpers/lint_dtb_matches_dts.py" --selftest >/dev/null
 python3 "$(dirname "$0")/../helpers/lint_dtb_matches_dts.py" || exit 1
 
@@ -965,6 +1015,7 @@ python3 "$(dirname "$0")/../helpers/lint_dtb_matches_dts.py" || exit 1
 # neither is a boot anybody reads to bring up a board), which is why the scan starts after the
 # opening brace rather than at the attribute.
 echo "==> the machine description is not gated on a boot mode"
+# lint-scope: code
 python3 - <<'M267EOF' || exit 1
 import re, sys
 
@@ -1036,6 +1087,7 @@ M267EOF
 # is a grep away; `fence()` names nothing at all, which is what makes it the site where the partner
 # has to be written down by hand.
 echo "==> every fence names its counterpart"
+# lint-scope: code
 python3 - <<'PYEOF' || exit 1
 import re, subprocess, sys
 
@@ -1157,6 +1209,7 @@ PYEOF
 # rather than line-matched because `rustfmt` splits a long `cfg_attr` across lines, and the crate-wide
 # riscv one would have been split the moment it grew a second condition.
 echo "==> module-wide dead-code suppression"
+# lint-scope: code
 # One interpreter reads every tracked .rs file (helpers/dead_code_suppression.py; it had been one
 # awk per file). It exits 1 with the hits, 3 when it read no .rs files at all, and carries the
 # exemption for an attribute whose whole list is `unused_crate_dependencies`: that lint is about the
@@ -1196,6 +1249,7 @@ echo "module-wide suppression: none"
 # heap.rs, and main.rs must declare `mod heap`. A missing directory gives no hit at all, which fails, so renaming the directory cannot
 # quietly turn this check off.
 echo "==> the shell allocates only where it can fail"
+# lint-scope: code
 shell_dir=components/src/swish
 shell_alloc=$(grep -rn 'extern crate alloc' "$shell_dir" 2>/dev/null || true)
 if [ "$(printf '%s\n' "$shell_alloc" | grep -c 'extern crate alloc')" -ne 1 ] \
@@ -1218,6 +1272,7 @@ echo "shell allocation: one declaration, in heap.rs"
 # so nothing failed and no test noticed, which is exactly why it needs a gate: broken markup in a
 # documentation deliverable is invisible to every other check we run. Costs a grep.
 echo "==> conflict markers"
+# lint-scope: both
 # lint-quick
 # $$, not a fixed name: see the note on the rule-1 check above for why (a shared /tmp path races
 # two worktrees' lint runs against each other).
@@ -1231,6 +1286,7 @@ fi
 rm -f "/tmp/nife-conflict-markers.$$"
 
 echo "==> no [patch] section reaches main"
+# lint-scope: code
 # lint-quick
 # A crate that has moved to its own repository is pinned as { version, git, rev } at its tag's commit
 # (milestone 857 (crates released on their own), fork 2; notes/crate-move.md). A [patch] redirects a dependency for the whole build
@@ -1249,6 +1305,7 @@ helpers/patch-section-check.sh
 # github-actions ecosystem (.github/dependabot.yml) bumps the SHA and the comment together.
 # LINT_ACTIONS_REV, a test hook only, reads another revision (`origin/main`) to watch this fail.
 echo "==> actions are pinned to a commit SHA"
+# lint-scope: code
 unpinned="$(git grep -nE '^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]' ${LINT_ACTIONS_REV:-} -- .github \
     | grep -vE 'uses:[[:space:]]+\./' \
     | grep -vE 'uses:[[:space:]]+[^@[:space:]]+@[0-9a-f]{40}([[:space:]]|$)' || true)"
@@ -1293,6 +1350,7 @@ echo "actions: every uses: line is pinned to a commit SHA"
 # lesson the hard way: a citation that resolves to nothing is a broken footnote, and one that is
 # merely well-formed is worse.
 echo "==> TODO markers cite a milestone"
+# lint-scope: both
 # lint-quick
 todo_bad=$(git grep -nE '(TODO|FIXME|XXX|HACK)[[:blank:]]*[(:]' -- \
     ':!vendor' ':!patches' ':!*.md' ':!script/lint' 2>/dev/null |
@@ -1340,6 +1398,7 @@ echo "TODO markers: $todo_count in code, each naming a milestone that has a bloc
 # `script/catch-up` still read it at historical revisions, where it exists and is what that
 # revision said.
 echo "==> roadmap status"
+# lint-scope: both
 # lint-quick
 "$(dirname "$0")/roadmap" --check
 # The ready-time half (milestone 630): `--ready-branch` runs on `pull_request` from
@@ -1383,6 +1442,7 @@ echo "==> roadmap status"
 # the sixth, for `walk_pricing`'s reason: it maps `std::io::ErrorKind` to `errno`, so it is `std` by
 # nature, and its nife build is `c_library`'s.
 echo "==> rustdoc (broken intra-doc links)"
+# lint-scope: code
 # lint-lane: doc
 # lint-target-dir: doc
 DOCFLAGS="-D rustdoc::broken_intra_doc_links -D rustdoc::invalid_html_tags"
@@ -1415,6 +1475,7 @@ RUSTDOCFLAGS="$DOCFLAGS" cargo doc --no-deps --quiet --manifest-path redoxfs_ser
 # caught only because an agent noticed; ~400 code comments cite a section by number, so a dangling citation is a broken footnote in the one place this project asks a reader to
 # trust prose. See script/decisions, including what it still cannot check.
 echo "==> decisions"
+# lint-scope: both
 # lint-quick
 "$(dirname "$0")/decisions" --check
 
@@ -1426,6 +1487,7 @@ echo "==> decisions"
 # needs, and the rollup can regress when a milestone is re-scoped without that being a defect. The
 # schema is a record, and this gate can read it.
 echo "==> journeys"
+# lint-scope: record
 "$(dirname "$0")/journeys" --check
 
 # A numbered record's file name carries exactly four digits (calef, 2026-10-07 UTC), so a directory
@@ -1441,6 +1503,7 @@ echo "==> journeys"
 # An appendix directory beside a block is judged like a file, since `listdir` returns both. A
 # lettered roadmap file is not this check's to judge: `script/roadmap --check` refuses it outright.
 echo "==> numbered record files carry four digits"
+# lint-scope: record
 python3 - <<'PY'
 import os, re, sys
 
@@ -1481,6 +1544,7 @@ PY
 # So this refuses the SILENT foreclosure, not the deliberate one. An exception is allowed and has to
 # say it is one, which is CLAUDE.md's rule for every rung of the ladder.
 echo "==> dependency upgrades stay reachable"
+# lint-scope: code
 dependabot="$(dirname "$0")/../.github/dependabot.yml"
 if [ -f "$dependabot" ] && grep -qE '^[[:space:]]*ignore:' "$dependabot" &&
     ! grep -q 'EXCEPTION (§81)' "$dependabot"; then
@@ -1506,6 +1570,7 @@ fi
 # lockfiles, which `script/vendor-watch` covers; the measurement harness has no Cargo.toml). A
 # change to one exclusion list belongs in both.
 echo "==> every committed Cargo.lock has an update watcher"
+# lint-scope: code
 python3 - "$(dirname "$0")/.." <<'PY'
 import os, re, subprocess, sys
 
@@ -1563,6 +1628,7 @@ PY
 # too, because a list nobody prunes stops meaning anything. helpers/crate_release.py reads the
 # same file for script/metrics' stage column; this check is what keeps its reading true.
 echo "==> the publish allowlist"
+# lint-scope: code
 python3 - <<'PYALLOWLIST'
 import sys
 import tomllib
@@ -1617,6 +1683,7 @@ PYALLOWLIST
 # milestone 583 (a citation a line break split, or a lettered milestone).
 # The metrics page's table of contents is generated (script/metrics --charts writes it between two
 echo "==> citations"
+# lint-scope: both
 # lint-quick
 "$(dirname "$0")/citations" --selftest >/dev/null
 "$(dirname "$0")/citations" --check
@@ -1645,6 +1712,7 @@ echo "==> citations"
 # request merges from #953 to #1002: a median of 16 asks per pull request, each answered by one
 # parenthetical, with one outlier of 893 (#970, which landed 24 proposal files at once).
 echo "==> new citations say what they cite"
+# lint-scope: both
 # lint-quick
 "$(dirname "$0")/citations" --ratchet
 
@@ -1662,6 +1730,7 @@ echo "==> new citations say what they cite"
 # failure here would be a failure about prose nobody can prove wrong. This is the one place in
 # script/lint where a non-zero exit is the bug rather than the finding.
 echo "==> notes citing a milestone this branch moved"
+# lint-scope: both
 # lint-quick
 "$(dirname "$0")/citations" --moved || true
 
@@ -1686,6 +1755,7 @@ echo "==> notes citing a milestone this branch moved"
 # unable to fail". Eleven fixtures, eight that must come back red and three near-misses that must
 # stay quiet.
 echo "==> fatal risks"
+# lint-scope: both
 "$(dirname "$0")/fatal-risks" --selftest >/dev/null
 "$(dirname "$0")/fatal-risks" --check
 
@@ -1725,6 +1795,7 @@ echo "==> fatal risks"
 # (kernel here, xtask in coverage, the Miri-only set), because those exclusions carry their own
 # recorded reasons and are judgment rather than physics.
 echo "==> the host pass excludes exactly the bare-metal crates"
+# lint-scope: both
 python3 - <<'PYEOF' || exit 1
 import json, pathlib, subprocess, sys
 
@@ -1783,12 +1854,14 @@ python3 helpers/host_exclusion_wiring.py --selftest
 python3 helpers/host_exclusion_wiring.py --check
 
 echo "==> every crates/ member has a row in the trust-boundary table"
+# lint-scope: code
 # The no-cargo half, so the pre-push hook catches a new crate: helpers/trust_boundary_crates.tsv
 # has exactly one row per crates/ member, and every workspace of its own is a known root. A
 # member with no row is the `unclassified` band on unsafe-trust.svg, which read 60 in 2026W41.
 python3 helpers/trust_boundary.py --check-rows
 
 echo "==> the trust-boundary table matches cargo metadata"
+# lint-scope: code
 # The cargo half: regenerate the table (helpers/trust_boundary.py runs `cargo metadata` once per
 # workspace) and fail when the checked-in file differs, which is a crate whose binaries changed side.
 command -v cargo >/dev/null || { echo "lint: the trust-boundary check needs cargo" >&2; exit 1; }
@@ -1796,6 +1869,7 @@ python3 helpers/trust_boundary.py --selftest
 python3 helpers/trust_boundary.py --check
 
 echo "==> the unsafe listing of the crates the kernel links matches Cargo.lock"
+# lint-scope: both
 # §46 (thin primitives or whole subsystems; we write everything in between), in its kernel bar,
 # asks each registry crate the kernel links to list its `unsafe` and what checks it.
 # notes/kernel-dependency-unsafe/sites.tsv is that list, regenerated from the pinned source, so a
@@ -1828,6 +1902,7 @@ python3 helpers/kernel_dependency_unsafe.py --check
 # and rung four. Coverage is not checked here: `script/coverage` reports on files the build
 # produced, so a target it never built contributes no lines to drag the floor down.
 echo "==> mutation excludes every target the host build never selects"
+# lint-scope: code
 python3 - <<'MUTEOF' || exit 1
 import json, subprocess, sys
 
@@ -1974,6 +2049,7 @@ MUTEOF
 # and a `#[cfg]` block in the library would pass here and should not; nothing in the tree does that
 # today.
 echo "==> mutation compiles every feature of the crates it scores"
+# lint-scope: code
 python3 - <<'FEATEOF' || exit 1
 import json, subprocess, sys
 
@@ -2061,6 +2137,7 @@ print(f"mutation: {checked} feature(s) on mutated crates, every one compiled by 
 FEATEOF
 
 echo "==> script docs"
+# lint-scope: both
 missing=""
 for f in "$(dirname "$0")"/*; do
     name="$(basename "$f")"
@@ -2114,6 +2191,7 @@ echo "script docs: every script documented, every README reference resolves"
 # `[CARGO, "xtask"]`, or `"xtask"` appended to a list built elsewhere. No entry point does that
 # today; the literal-list form is the one `script/falsifications` used, and it is caught.
 echo "==> the project's QEMU is on PATH"
+# lint-scope: code
 python3 - <<'QEMUEOF' || exit 1
 import pathlib
 import re
@@ -2216,6 +2294,7 @@ QEMUEOF
 # this check running unexempted on the bump's pull request. A green lint bought with this variable
 # means nothing.
 echo "==> the icount baselines name the pinned nightly"
+# lint-scope: code
 python3 "$(dirname "$0")/../helpers/lint_icount_baselines.py" || exit 1
 
 # Counted claims (milestone 125). DECISIONS §39 says a name is a claim; so is a number, and a number
@@ -2241,6 +2320,7 @@ python3 "$(dirname "$0")/../helpers/lint_icount_baselines.py" || exit 1
 # buys, and it is the same restraint `script/names --check` keeps: insist a marked number be right,
 # never that every number be marked.
 echo "==> counted claims"
+# lint-scope: both
 # The comment-and-literal stripper every count below is built on, against its fixtures first. It
 # once backtracked exponentially on an unterminated raw string (CodeQL alert 26, see
 # notes/code-scanning.md), which would hang this gate instead of failing it.
@@ -2815,6 +2895,7 @@ PYEOF
 # does not have, and the claim survived four milestones because nothing was looking. Cheap greps,
 # because lint runs constantly.
 echo "==> naming conventions"
+# lint-scope: both
 
 # 1 to 3 are the template's checks (vendor/crate-workflows/helpers/service_model.py and
 #    contract_names.py), run over this tree's names by helpers/vendored_name_gates.py, whose
@@ -2845,6 +2926,7 @@ python3 helpers/vendored_name_gates.py service --check
 # this paragraph correctly says `/tmp/nife-daemon.txt` in prose, and
 # `script/stranger-test`'s own usage note names literal example paths for a human to paste.
 echo "==> fixed /tmp paths in scripts (they race across worktrees; see the note above)"
+# lint-scope: code
 if git grep -nE '[<>]>?[[:space:]]*"?/tmp/[A-Za-z0-9_.-]+"?' -- 'script/*' 'helpers/*.sh' \
     | grep -vE ':[[:space:]]*#' \
     | grep -v '\$' > "/tmp/nife-fixed-tmp-paths.$$" 2>/dev/null; then
@@ -2931,6 +3013,7 @@ fi
 #     and refused outright, but `super::super::` climbing out of a nested module is caught only
 #     as the literal `super::super`.
 echo "==> proof-only modules: crate::arch is the host's"
+# lint-scope: both
 python3 - <<'PY'
 import re, sys
 
@@ -3053,6 +3136,7 @@ python3 helpers/name_crossings.py --selftest
 python3 helpers/name_ruled.py --selftest
 
 echo "==> names meet the current naming rules"
+# lint-scope: both
 # A name a change adds or renames passes every mechanical naming check; the unratified names that
 # do not yet are a baseline that only shrinks, and ratified names are exempt. The manual is
 # helpers/name_checks.py's header.
@@ -3094,12 +3178,14 @@ echo "        every name carries its provenance, and exactly one block per file"
 #    `falsifications/` is claimed by a harness. Without the second, a patch rots into a file nothing
 #    runs, which is the failure this whole record exists to end wearing different clothes.
 echo "==> every Kani harness carries a falsification record"
+# lint-scope: code
 # The new-confinement-test ratchet's fixtures first, for the reason `fatal-risks --selftest` runs
 # first: a green `--check` looks the same whether the ratchet works or matches nothing.
 "$(dirname "$0")/falsifications" --selftest
 "$(dirname "$0")/falsifications" --check
 
 echo "==> the audit index"
+# lint-scope: record
 "$(dirname "$0")/audits" --check
 
 #    **And the stranger test's run record, for the same reason and with the same split**
@@ -3111,6 +3197,7 @@ echo "==> the audit index"
 #    The selftest runs first, for the reason `fatal-risks --selftest` does: a green `--check` looks
 #    the same whether the pause line parses or matches nothing.
 echo "==> the stranger test's run record"
+# lint-scope: record
 "$(dirname "$0")/stranger-test" --selftest >/dev/null
 "$(dirname "$0")/stranger-test" --check
 
@@ -3154,6 +3241,7 @@ echo "==> the stranger test's run record"
 #    and gets nothing finds that record by grepping the name. Add to it only when the code that read
 #    the name was deleted deliberately, never to quiet a rename the prose did not follow.
 echo "==> environment names in prose"
+# lint-scope: both
 python3 - <<'PY'
 import re, subprocess, sys
 
@@ -3218,6 +3306,7 @@ PY
 #     imports the `.pyc` when its mtime matches, and a reader diffs the `.py`) and a large hygiene
 #     tell. `git ls-files -ci --exclude-standard` is the whole check, and it is empty today.
 echo "==> tracked files the tree ignores"
+# lint-scope: both
 ignored=$(git ls-files -ci --exclude-standard)
 if [ -n "$ignored" ]; then
 	echo "lint: these tracked files match .gitignore, and a tracked file the tree says to ignore is a mistake somebody forced past git:" >&2
@@ -3232,6 +3321,7 @@ echo "tracked-but-ignored files: none"
 #     12 (the CI-poll refusal hook) went with them. The empty-diff check stays here: a merge that
 #     changes nothing is wrong in any repository, queue or none.
 echo "==> the empty-diff check"
+# lint-scope: code
 #     The empty-diff check (milestone 627 (a pull request that changes nothing does not merge), provisional number; helpers/empty-diff-check.sh): a merge
 #     whose tree equals its first parent's. Fixtures in throwaway repositories, the failing cases
 #     first-class, because a gate's green looks the same as a gate that cannot fire.
@@ -3245,6 +3335,7 @@ echo "==> the empty-diff check"
 #     nothing for three weeks behind exactly those two constructs. Fixtures first, because a green
 #     run looks the same as a check that cannot fire. See notes/denominators.md.
 echo "==> workflow steps that swallow a failure"
+# lint-scope: code
 python3 "$(dirname "$0")/../helpers/workflow_swallows.py" --selftest
 python3 "$(dirname "$0")/../helpers/workflow_swallows.py"
 
@@ -3257,6 +3348,7 @@ python3 "$(dirname "$0")/../helpers/workflow_swallows.py"
 #     `script/bootstrap` installs where it is missing; the helper's header says what it cannot see. Fixtures first, because a green run looks the same
 #     as a parser that cannot fire.
 echo "==> every workflow file parses"
+# lint-scope: code
 python3 "$(dirname "$0")/../helpers/workflow_parses.py" --selftest
 python3 "$(dirname "$0")/../helpers/workflow_parses.py"
 
@@ -3267,6 +3359,7 @@ python3 "$(dirname "$0")/../helpers/workflow_parses.py"
 #     (UTC): GitHub-hosted runner, `contents: read` and `issues: write`, no secrets, and only the
 #     schedule and manual triggers.
 echo "==> the fuzz heartbeat (selftest, and the workflow keeps to its limits)"
+# lint-scope: code
 python3 "$(dirname "$0")/../helpers/fuzz-heartbeat.py" --selftest >/dev/null
 hb=.github/workflows/fuzz-heartbeat.yml
 if grep -nE 'self-hosted|secrets\.|pull_request|push:|contents:[[:space:]]*write' "$hb" \
@@ -3287,6 +3380,7 @@ fi
 #     its list of validation errors, parsed with `ruby -ryaml` as 12c is. Fixtures first, each one
 #     asserting the rule it names, because a green run looks the same as a check that cannot fire.
 echo "==> every issue form renders"
+# lint-scope: code
 python3 "$(dirname "$0")/../helpers/issue_forms.py" --selftest
 python3 "$(dirname "$0")/../helpers/issue_forms.py"
 
@@ -3313,6 +3407,7 @@ python3 "$(dirname "$0")/../helpers/issue_forms.py"
 #     `non_volatile_memory_express` are the five of those today, and whether they are services at
 #     all is the division question pull request #1389 raises, not this check's.
 echo "==> the kernel's dependencies: nothing only its tests use"
+# lint-scope: code
 python3 - <<'KDEPEOF' || exit 1
 import json, os, re, subprocess, sys
 run = subprocess.run(['cargo', 'metadata', '--no-deps', '--offline', '--format-version', '1'],
@@ -3367,6 +3462,7 @@ KDEPEOF
 # every other dependent in every graph, but it cannot see a dependency's kind; this reads the kind,
 # so `lamfat` moving from `[dev-dependencies]` to `[dependencies]` is a red gate, not a review catch.
 echo "==> test oracles stay dev-dependencies of the crate they judge"
+# lint-scope: code
 python3 - <<'ORACLEEOF' || exit 1
 import json, subprocess, sys
 ORACLES = {'lamfat': 'file_allocation_table'}
@@ -3402,6 +3498,7 @@ ORACLEEOF
 #     cannot fire. Its allowlist lives in the helper, one reason per entry, and every entry is a
 #     finding; an entry that stops being an orphan fails too.
 echo "==> every .rs file under a crate is declared by a module tree"
+# lint-scope: code
 python3 "$(dirname "$0")/../helpers/orphan_rust.py" --selftest
 python3 "$(dirname "$0")/../helpers/orphan_rust.py"
 
@@ -3413,11 +3510,13 @@ python3 "$(dirname "$0")/../helpers/orphan_rust.py"
 #     (notes/job-mix/spawn-destroy-gone.md). A missing declaration is invisible in review, which is
 #     why this is a gate. The selftest runs first, for check 14's reason.
 echo "==> every userspace trap declares the registers the kernel writes"
+# lint-scope: code
 python3 "$(dirname "$0")/../helpers/syscall_asm.py" --selftest
 python3 "$(dirname "$0")/../helpers/syscall_asm.py"
 
 
 echo "==> markdown links and the notes index"
+# lint-scope: both
 # lint-quick
 # Two checks, and deliberately NOT a markdown linter. A survey of all 95 markdown files found zero
 # broken relative links and exactly one unindexed note, so generic style rules (heading case, line
@@ -3490,6 +3589,7 @@ print(f'markdown: {len(md)} files, every relative link resolves, every note inde
 PY
 
 echo "==> the prose ratchet (§212 words, §213 sentences, bold and passives)"
+# lint-scope: both
 # lint-quick
 # Milestone 586 (a prose ratchet in lint). §212 (a prose budget) and §213 (writing standards) were
 # ratified on 2026-09-23 with a ratchet as their enforcement and no gate built, and on 2026-09-24 the
@@ -3512,6 +3612,7 @@ echo "==> the prose ratchet (§212 words, §213 sentences, bold and passives)"
 python3 helpers/prose_ratchet.py --selftest
 python3 helpers/prose_ratchet.py --check
 echo "==> the removed-files index (design/removed.tsv: each path absent, each sha real, no retired number returns)"
+# lint-scope: both
 # lint-quick
 # 2026-10-31 (UTC) the architect ruled that files nothing depends on are removed and an index keeps
 # what went. helpers/removed_index.py, whose header is the manual, holds the index true and refuses a
@@ -3519,6 +3620,7 @@ echo "==> the removed-files index (design/removed.tsv: each path absent, each sh
 python3 helpers/removed_index.py --selftest
 python3 helpers/removed_index.py --check
 echo "==> the file-length ratchet (§266's 2,000-line ceiling on Rust files)"
+# lint-scope: code
 # Milestone 841 (a ratchet on Rust file length, and its dashboard row). calef ruled §266 (a Rust
 # source file stays under 2,000 lines) on 2026-10-08 (UTC): the measure (physical lines, comments
 # and blank lines counted, because a reader loads every line), the 2,000-line ceiling, and option
@@ -3533,6 +3635,7 @@ echo "==> the file-length ratchet (§266's 2,000-line ceiling on Rust files)"
 python3 helpers/file_length_ratchet.py --selftest
 python3 helpers/file_length_ratchet.py --check
 echo "==> the module-block ratchet (every module, document and pub item carries a Name: block; the unblocked list only shrinks)"
+# lint-scope: both
 # lint-quick
 # A module is a file, every .rs under a src/ directory, and a pub item is a line in one, so
 # script/names and script/metrics count each whether or not its block exists, and one without a
@@ -3541,11 +3644,13 @@ echo "==> the module-block ratchet (every module, document and pub item carries 
 python3 helpers/module_block_ratchet.py --selftest
 python3 helpers/module_block_ratchet.py --check
 echo "==> the lint ratchet's selftest (clippy lints counted against a baseline that only falls)"
+# lint-scope: code
 # Milestone 888 (a ratchet on function length). The rules, the baseline format and the failure
 # messages live in helpers/lint_ratchet.py, whose header is the manual. The selftest is fixtures
 # only, so it runs in the pre-push mode; the check needs clippy and runs in the next section.
 python3 helpers/lint_ratchet.py --selftest
 echo "==> the lint ratchet (the clippy sections' saved diagnostics, judged; no clippy of its own)"
+# lint-scope: code
 # The panic proposal's mechanism (design/roadmap/0896-panics-in-the-kernel-and-the-parsers-are-
 # counted-and-fall.md), built by milestone 888 with one lint registered: `too_many_lines` at 100
 # code lines (calef, 2026-10-09 UTC), one row per function in design/lint-baseline.tsv, over every
@@ -3573,6 +3678,7 @@ echo "==> the lint ratchet (the clippy sections' saved diagnostics, judged; no c
 # lint-waits-for: host,aarch64,x86_64,x86_64_user,riscv64,redoxfs_host,glyph_atlas_generator,redoxfs_server,fuzz
 python3 helpers/lint_ratchet.py --check target/lint-clippy
 echo "==> the comment-block ratchet (calef's 40-line cap on a comment block, 2026-10-07; per-directory caps and in-body ceilings, milestone 929)"
+# lint-scope: code
 # Milestone 860 (comments state the constraint as it is now). calef ruled the ruling on 2026-10-07
 # (UTC), deciding fork (c) of notes/comment-cost-2026-10-07.md (PR #1800), recorded as §267 (a
 # comment states the constraint as it is now): a comment states the constraint as it is now, in a
@@ -3592,6 +3698,7 @@ echo "==> the comment-block ratchet (calef's 40-line cap on a comment block, 202
 python3 helpers/comment_block_ratchet.py --selftest
 python3 helpers/comment_block_ratchet.py --check
 echo "==> the parent-index check (§282: when a file is split, the parent becomes an index)"
+# lint-scope: code
 # lint-quick
 # calef ruled §282 (when a file is split, the parent becomes an index) on 2026-10-11 (UTC), ruling
 # fork 1 of #1959: a parent that has been split holds module docs, `mod` lines, `use` and
@@ -3606,6 +3713,7 @@ echo "==> the parent-index check (§282: when a file is split, the parent become
 python3 helpers/parent_index.py --selftest
 python3 helpers/parent_index.py --check
 echo "==> American spelling and metric units (calef, 2026-10-06)"
+# lint-scope: both
 # calef ruled on 2026-10-06 (UTC) that the tree's prose and names use American spelling and its
 # measurements are metric. On that day the tree held about 3,900 British forms, so this is a
 # ratchet and not a cliff: helpers/house_style.py counts British spellings (typos' en-us locale,
@@ -3618,6 +3726,7 @@ echo "==> American spelling and metric units (calef, 2026-10-06)"
 python3 helpers/house_style.py --selftest
 python3 helpers/house_style.py --check
 echo "==> §298 (a document states what is in force now), calef 2026-10-13"
+# lint-scope: both
 # lint-quick
 # calef ruled on 2026-10-13 (UTC): "We do not need the history in the text. That is what revision
 # control is for." helpers/history_ratchet.py counts the phrases that only a document's own history
@@ -3629,6 +3738,7 @@ echo "==> §298 (a document states what is in force now), calef 2026-10-13"
 python3 helpers/history_ratchet.py --selftest
 python3 helpers/history_ratchet.py --check
 echo "==> capability is not abbreviated cap (calef, 2026-10-06)"
+# lint-scope: code
 # lint-quick
 # design/naming/acronyms-and-abbreviations.md: every name spells `capability` out. The sweep of
 # existing identifiers brought the count to zero, and helpers/vendored_name_gates.py counts Rust
@@ -3638,6 +3748,7 @@ echo "==> capability is not abbreviated cap (calef, 2026-10-06)"
 python3 helpers/vendored_name_gates.py cap --selftest
 python3 helpers/vendored_name_gates.py cap --check
 echo "==> unit symbols are spelled out (2026-10-27)"
+# lint-scope: code
 # lint-quick
 # design/naming.md ("Units"): a name spells its unit out. helpers/vendored_name_gates.py counts Rust
 # identifiers that carry `us`, `s`, `sec`, `secs`, `nanos`, `millis`, `micros` or `mins` (comments
@@ -3646,6 +3757,7 @@ echo "==> unit symbols are spelled out (2026-10-27)"
 python3 helpers/vendored_name_gates.py unit --selftest
 python3 helpers/vendored_name_gates.py unit --check
 echo "==> the template's report-only name and README gates (baseline only shrinks)"
+# lint-scope: code
 # The register-name, abbreviation, prose-acronym, README-acronym, inflated-wording and README-section
 # gates of the vendored crate-workflows pin, run over every crate under crates/. They report: a
 # finding that already exists never fails, and a count over helpers/template_report_baseline.txt
@@ -3653,6 +3765,7 @@ echo "==> the template's report-only name and README gates (baseline only shrink
 python3 helpers/template_report_gates.py --selftest
 python3 helpers/template_report_gates.py --check
 echo "==> no line-number citations (§277: cite a heading or a symbol)"
+# lint-scope: both
 # lint-quick
 # §277 (cite a heading or a symbol, never a line number), calef, 2026-10-11 (UTC): a document is
 # cited by its heading and code by a symbol, never by line number, because a line number moves with
@@ -3664,6 +3777,7 @@ echo "==> no line-number citations (§277: cite a heading or a symbol)"
 python3 helpers/line_citations.py --selftest
 python3 helpers/line_citations.py --check
 echo "==> the outsider-pass floor checker and launcher selftests"
+# lint-scope: record
 # Milestone 920 (an outsider pass is launched pinned and floor-checked). script/booted-rows counts a
 # pass's booted rows against the floor in briefs/confinement-outsider-pass.md; its fixtures run
 # here, and so does its replay of pass 8 and pass 9, whose notes give 25 and 20. script/launch-pass
@@ -3672,6 +3786,7 @@ echo "==> the outsider-pass floor checker and launcher selftests"
 python3 helpers/booted_rows.py --selftest >/dev/null
 python3 helpers/launch_pass.py --selftest >/dev/null
 echo "==> exception markers the ratchets honor (a warning, never a failure)"
+# lint-scope: both
 # A marked exception is the one way an item passes a ratchet's limit with no baseline row, so once a
 # ratchet's debt is gone it is the only way that debt comes back. helpers/exception_markers.py reads
 # each kind with its own gate's parser and prints the count per ratchet and each item; it prints
@@ -3691,14 +3806,17 @@ python3 helpers/baseline_drift.py --selftest >/dev/null
 # included .md, a walked directory, a message that is not a read, and mixed. A wrong skip turns a
 # red main green, so the rule is checked wherever it can change.
 echo "==> the prose-only classifier"
+# lint-scope: code
 python3 helpers/prose_only.py --selftest >/dev/null
 echo "==> CI job wall-time budgets"
+# lint-scope: code
 python3 helpers/job-budget.py --selftest >/dev/null
 python3 helpers/job-budget.py lint
 # Every `script/ci-build` step in ci.yml runs under helpers/hang_evidence.py and its job uploads
 # what that leaves, so a hung step reports before timeout-minutes discards the job's log
 # (lane ci/hung-shard-leaves-evidence, provisional; #2413 kept no log of its hang).
 echo "==> CI steps leave evidence when they hang"
+# lint-scope: code
 python3 helpers/hang_evidence.py --selftest >/dev/null
 python3 helpers/hang_evidence.py lint
 # No rust-cache entry is saved from a merge group, where no later run can restore it
@@ -3711,6 +3829,7 @@ python3 helpers/hang_evidence.py lint
 # a drifted QEMU key, Kani path and Kani SHA planted in ci.yml one at a time; the selftest plants
 # the same three.
 echo "==> merge groups save no rust-cache entry; main-caches saves what jobs restore"
+# lint-scope: code
 python3 helpers/cache_save_scope.py --selftest >/dev/null
 python3 helpers/cache_save_scope.py
 # Owned runners: a job that can resolve runs-on to the owned label or the NIFE_RUNNER_OWNED switch
@@ -3722,6 +3841,7 @@ python3 helpers/cache_save_scope.py
 # pull_request_target and workflow_run, and requires each to fail. notes/owned-runners.md;
 # helpers/owned_runner_check.py says more.
 echo "==> owned-runner jobs run only for the queue and main, and no base-token job checks out a head"
+# lint-scope: code
 # lint-quick
 python3 helpers/owned_runner_check.py --selftest >/dev/null
 python3 helpers/owned_runner_check.py
@@ -3736,6 +3856,7 @@ helpers/open-kvm-selftest.sh
 # Observed failing: 2026-10-04, run 37230967057: refused a probe workflow, new since the cutoff,
 #   that said `never` (commit 0562ea03b; the commit after it removes the probe).
 echo "==> every workflow records the run it was watched failing in"
+# lint-scope: code
 python3 helpers/observed_failing.py --selftest >/dev/null
 python3 helpers/observed_failing.py
 # Milestone 610 (provisional): the interface stability series' classification (what is breaking,
@@ -3751,17 +3872,20 @@ python3 helpers/mutation_inflow.py --selftest >/dev/null
 # And every triage row still names a package. A crate renamed without a row in the rename table
 # strands its rows, and the weekly check files their survivors as unattributed instead of failing.
 echo "==> every mutation triage row names a package, through the rename table"
+# lint-scope: both
 python3 helpers/mutation_inflow.py orphans
 # Part 1 of the survivor proposal (a survivor accepted once is not accepted forever): the real-hole
 # count per crate is generated, not counted by hand, so the committed outputs must equal a
 # regeneration from the newest census and the triage file.
 python3 helpers/mutation_real_holes.py --selftest >/dev/null
 echo "==> the survivor classification is current"
+# lint-scope: both
 python3 helpers/mutation_real_holes.py check
 # The crate-to-file table in notes/mutation-testing/README.md is generated from the ledgers'
 # headings and the triage file, so it must equal a regeneration.
 python3 helpers/mutation_ledger_index.py --selftest >/dev/null
 echo "==> the mutation ledger crate table is current"
+# lint-scope: both
 python3 helpers/mutation_ledger_index.py check
 # Part 1 of the same proposal, the shape check: every noise-shape survivor's own line, at the
 # census's commit, either proves the no-test-can-kill argument from the literals and consts on it
@@ -3771,6 +3895,7 @@ python3 helpers/mutation_shape_sites.py --selftest >/dev/null
 # The weekly record job regenerates the CSV with each census, so a file more than one census behind
 # the census record means a regeneration was missed. One behind is the open record pull request.
 echo "==> the shape-sites file is at most one census behind"
+# lint-scope: record
 python3 helpers/mutation_shape_sites.py stale
 # Part 2 of the same proposal: the triage file's `kind`, `verified` and `home` columns. A new
 # `equivalent` row arrives classified and a new `gap` row arrives housed; the two legacy counts sit
@@ -3779,10 +3904,12 @@ python3 helpers/mutation_shape_sites.py stale
 python3 helpers/mutation_survivor_rows.py --selftest >/dev/null
 python3 helpers/mutation_gate_replay.py --selftest >/dev/null
 echo "==> the mutation triage rows are classified and housed (a baseline that only falls)"
+# lint-scope: record
 python3 helpers/mutation_survivor_rows.py lint
 # The baseline every `script/mutation --report` diffs against names the census it holds, and holds
 # it row for row. Without the name, the reader dated the file by a literal that outlived its contents.
 echo "==> the mutation baseline is the recorded census it names"
+# lint-scope: record
 script/mutation-census --check-baseline >/dev/null
 # And the record's real-holes column round-trips: the census report is generated, not counted by
 # hand, and part 1 of the survivor proposal reads the trend out of it.
@@ -3806,6 +3933,7 @@ python3 helpers/mutation_diff_gate.py --selftest >/dev/null
 # nothing (design/roadmap/0401-a-gate-that-selects-the-set-it-judges.md). The selftest proves
 # every rule against fixtures, including the generic `Host<R, D>::reset` form.
 echo "==> every mutation exclusion names code that exists"
+# lint-scope: code
 python3 helpers/mutation_exclusion_check.py --selftest >/dev/null
 python3 helpers/mutation_exclusion_check.py check
 
@@ -3836,18 +3964,21 @@ python3 helpers/mutation_kernel_census.py --selftest >/dev/null
 # flag for #1405's toml addition). This selftest builds a throwaway repo under mktemp to reproduce
 # that exact shape, cheap enough (one `git init`, five commits) to run on every invocation here.
 echo "==> the shared scope/architect-label merge-base resolution"
+# lint-scope: code
 helpers/scope-merge-base-selftest.sh >/dev/null
 
 # The heavy gates run only in the merge queue (provisional, ruled 2026-11-03 UTC): the draft gates of
 # ci.yml and verify.yml ask helpers/full_ci.py whether a run takes them. Its rules are fixtures here,
 # with no network, since only a real pull request exercises the label read.
 echo "==> a pull request skips the heavy gates unless it carries full-ci"
+# lint-scope: code
 python3 helpers/full_ci.py --selftest >/dev/null
 
 # A magic or a public ABI number that moves owes its version constant in the same change (milestone
 # 956 step 4, calef's ruling of 2026-10-29 UTC, PR #2852, question 5). The selftest drives the rules
 # as fixtures and a scratch repository; the check reads this branch's diff against the merge base.
 echo "==> format values move with their version constants"
+# lint-scope: code
 python3 helpers/format_values_check.py --selftest
 python3 helpers/format_values_check.py
 
@@ -3857,10 +3988,12 @@ python3 helpers/format_values_check.py
 # first code to leave this repository)). The list is
 # written by hand, and this is what keeps it from drifting from the graph.
 echo "==> the first cut's programs declare what they link"
+# lint-scope: both
 python3 helpers/interface_declarations_check.py --selftest
 python3 helpers/interface_declarations_check.py
 
 echo "==> em-dashes"
+# lint-scope: both
 # lint-quick
 # calef's standing style rule (CLAUDE.md): no em-dashes, use commas, periods, semicolons or
 # parentheses. It is a house style rather than a correctness property, and it is gated for the same
@@ -3921,6 +4054,7 @@ fi
 echo "em-dashes: none outside vendored trees and quoted blockquote lines"
 
 echo "==> externalized crates name no nife program"
+# lint-scope: code
 # lint-quick
 # A crate on crates/externalization-list.txt is to leave for a repository of its own, and a crate
 # repository stands alone: its README, Cargo.toml and sources do not mention nife, a nife program or
@@ -3932,6 +4066,7 @@ python3 helpers/lint_externalized_crates.py --selftest
 python3 helpers/lint_externalized_crates.py
 
 echo "==> each crate's license field matches the licenses its sources adapt"
+# lint-scope: code
 # lint-quick
 # Milestone 887 (crate repositories share one CI template, adapted from nife's gates), ruled
 # 2026-11-05 (UTC): the manifest's `license` is the crate's own `MIT OR Apache-2.0` joined with AND
@@ -3943,6 +4078,7 @@ python3 helpers/license_match.py --selftest
 script/license-match
 
 echo "==> shellcheck"
+# lint-scope: code
 # lint-id: shellcheck
 # The 37 `#!/bin/sh` scripts, gated at warning severity. Two reasons this earns a dependency here
 # rather than being generic hygiene:
@@ -3991,6 +4127,7 @@ echo "shellcheck: $(ls script/* helpers/*.sh | wc -l | tr -d ' ') sh scripts, no
 # `user_mode_runtime` is deliberately NOT in the forbidden set even though it is EL0 syscall `asm!`: it lives
 # in crates/ and is a legitimate dependency for other EL0 crates.
 echo "==> dependency direction"
+# lint-scope: code
 # lint-quick
 upward=""
 for f in crates/*/Cargo.toml; do
@@ -4011,6 +4148,7 @@ fi
 echo "dependency direction: $(ls -d crates/*/ | wc -l | tr -d ' ') crates, none depends on a binary"
 
 echo "==> package boundaries"
+# lint-scope: both
 # lint-quick
 # Milestone 611 (every program and crate belongs to a package, and every package has a home). calef
 # ruled on 2026-09-27 (pull request #1389, its decision's fork 3) that the tree stays one repository for now
@@ -4075,6 +4213,7 @@ python3 helpers/packages.py --check
 # the read half of a decision the table no longer knows it gave out. A gate whose only answer is
 # "no" is a gate people route around.
 echo "==> the region claim protocol has one decision path"
+# lint-scope: code
 python3 - <<'REGIONCLAIM'
 import re
 import sys
@@ -4288,6 +4427,7 @@ REGIONCLAIM
 # (vendor/README.md) and therefore cannot annotate. A gate that reports things you are forbidden to
 # fix is a gate people learn to skip.
 echo "==> unused dependencies"
+# lint-scope: code
 if ! command -v cargo-machete >/dev/null 2>&1; then
     echo "lint: cargo-machete not found; run script/bootstrap (it installs it)." >&2
     exit 1
@@ -4312,6 +4452,7 @@ echo "unused dependencies: none in our packages"
 # this was written; nothing gates the number, and it went stale exactly as a hand-kept count does.
 # It is a sense of scale, not a claim, which is why it is not worth a gate of its own.)
 echo "==> tests the suite cannot see"
+# lint-scope: code
 # lint-quick
 python3 - <<'PY'
 import pathlib
@@ -4405,6 +4546,7 @@ PY
 # `script/verify` on purpose, because a missing row costs nothing to find and 42 minutes to find
 # late.
 echo "==> every crate with proof harnesses is in the verify table"
+# lint-scope: code
 python3 - <<'PY'
 import json
 import os
@@ -4500,6 +4642,7 @@ PY
 # `git grep` does not understand `\b` and silently matches nothing (design/naming/rename-traps.md
 # records the same trap costing two renames a count), so the boundaries here are POSIX classes.
 echo "==> every RETYPE outside the run wrapper passes 0"
+# lint-scope: code
 # `MemoryRegion::RETYPE`'s first argument became a page count on 2026-09-26 (calef, option A of
 # design/roadmap/0659-a-region-retypes-a-frame-run.md), with 0 meaning one page. Every caller
 # before it passed 0 and still means one page, so a raw invoke passing anything else is a run asked
@@ -4515,6 +4658,7 @@ fi
 echo "RETYPE: every raw call passes 0, and runs go through one wrapper"
 
 echo "==> halves that are not halves"
+# lint-scope: both
 # lint-quick
 if git grep -nEi '(^|[^[:alnum:]_])(three|four|five|six|seven|eight|nine|ten|several|many)[[:space:]]+halves([^[:alnum:]_]|$)' \
     -- '*.md' '*.rs' '*.yml' '*.toml' 'script/*' 'helpers/*' ':!vendor' ':!patches'; then
@@ -4528,6 +4672,7 @@ echo "halves: none counted above two"
 # note is a defect in the product. Configuration and the honest assessment of what this found are in
 # _typos.toml.
 echo "==> spelling"
+# lint-scope: both
 if ! command -v typos >/dev/null 2>&1; then
     echo "lint: typos not found; run script/bootstrap (it installs it)." >&2
     exit 1
@@ -4547,6 +4692,7 @@ echo "spelling: clean"
 # `/bin/sh` is dash and will not reproduce this defect, which is fine: the gate's job here is to fire
 # on the machine that has the bug, not to prove the bug exists everywhere.
 echo "==> sh -n (does the dev machine's own /bin/sh parse every script)"
+# lint-scope: code
 shfail=""
 for f in script/* helpers/*.sh; do
     [ -f "$f" ] || continue
@@ -4569,6 +4715,7 @@ echo "sh -n: every #!/bin/sh script parses under this machine's own /bin/sh"
 # Run it against a stub `cargo` that records its arguments; no Kani is involved, so this costs a
 # second. script/verify-riscv64 adds no argument handling of its own: it forwards "$@" here.
 echo "==> script/verify passes extra arguments through to cargo kani"
+# lint-scope: code
 # The run is stubbed, so it takes no Kani unit: a run behind another lane's real proof once idled here
 # for 30 minutes at 0 percent CPU. helpers/verify-stub-selftest.sh holds the whole pool with a fake
 # holder and proves the stubbed run finishes anyway, over a scratch slot directory.
@@ -4578,6 +4725,7 @@ helpers/verify-stub-selftest.sh
 # 795). An unpinned `cargo install ... kani-verifier` anywhere else would let the prover move
 # without a commit; `script/kani-bump` is the one other place that names the crate, to raise the pin.
 echo "==> every kani-verifier install reads .kani-version"
+# lint-scope: both
 kani_pin="$(tr -d '[:space:]' <.kani-version)"
 case "$kani_pin" in
 [0-9]*.[0-9]*.[0-9]*) ;;
@@ -4605,6 +4753,7 @@ echo "Kani: pinned at $kani_pin, one install path"
 # ~/.kani. The stub prints what a real cargo-kani prints; the first run sees an older version and
 # installs, the second sees the pin and must not run cargo again.
 echo "==> script/kani-install: an installed pin is not reinstalled"
+# lint-scope: code
 kani_pin="$(tr -d '[:space:]' <.kani-version)"
 kstub="$(mktemp -d)"
 mkdir -p "$kstub/tree/script" "$kstub/bin"

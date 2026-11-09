@@ -24,7 +24,7 @@
 #        awk -v mode=split -v dir=<empty dir> -f helpers/lint-no-cargo.awk script/lint
 #   emit  prints the script to run (preamble plus the kept sections).
 #   list  prints one `run`/`skip` line per section, for a person asking what the mode covers.
-#   index prints one `slug<tab>keep<tab>lane<tab>waits<tab>quick<tab>target<tab>name` line per
+#   index prints one `slug<tab>keep<tab>lane<tab>waits<tab>quick<tab>target<tab>scope<tab>name` line per
 #         section, in file order, with lane as the section resolves it (`main` for an ordinary cargo
 #         section). helpers/lint-section-index.sh snapshots it into helpers/lint-section-index.tsv,
 #         and the section named "the section list" fails when the live index differs.
@@ -45,6 +45,15 @@
 #                                    would queue on cargo's one build directory lock run side by
 #                                    side. A section that names a path under target/ must read
 #                                    ${CARGO_TARGET_DIR:-$PWD/target}.
+#         # lint-scope: SCOPE      what the section reads: `record` (only the design record:
+#                                  design/, notes/, briefs/, the root's AGENTS.md, ARCHITECTS.md and
+#                                  CLAUDE.md, .claude/), `code` (no record document; a tree-wide walk
+#                                  of Rust or a baseline file under design/ still counts as code), or
+#                                  `both`. It selects what a record repository's lint would carry
+#                                  (milestone 1018 (the design record moves and is published), step
+#                                  1), and nothing runs differently because of it. `index` mode
+#                                  prints it, `-` when absent; the section list check in script/lint
+#                                  fails on a section that lacks one.
 #         # lint-id: SLUG          a stable name for `script/lint --section SLUG` (lowercase letters,
 #                                  digits, hyphens; unique across the file). Optional: `-` when absent.
 #                                  helpers/lint-sections.sh also takes a section's exact name.
@@ -78,7 +87,7 @@ function close_block(   keep, file) {
     if (okmark && !guarded) { print "lint --no-cargo: \"" name "\" carries a no-cargo-ok marker but never reads LINT_NO_CARGO, so it would run cargo in the mode that forbids it" > "/dev/stderr"; bad = 1 }
     keep = (!cargo || okmark)
     if (mode == "list") print (keep ? "run   " : "skip  ") name
-    else if (mode == "index") printf "%s\t%d\t%s\t%s\t%d\t%s\t%s\n", slug, keep, lane, waits, quick, tdir, substr(name, 5)
+    else if (mode == "index") printf "%s\t%d\t%s\t%s\t%d\t%s\t%s\t%s\n", slug, keep, lane, waits, quick, tdir, (scope == "" ? "-" : scope), substr(name, 5)
     else if (mode == "quicklist") { if (quick && keep) print name }
     else if (mode == "split") {
         file = sprintf("%03d", ++sections)
@@ -92,7 +101,7 @@ function close_block(   keep, file) {
 /^echo "==> / {
     close_block()
     name = substr($0, 7, length($0) - 7); body = $0 "\n"
-    cargo = 0; okmark = 0; guarded = 0; lane = ""; waits = ""; quick = 0; tdir = ""; slug = ""
+    cargo = 0; okmark = 0; guarded = 0; lane = ""; waits = ""; quick = 0; tdir = ""; slug = ""; scope = ""
     next
 }
 {
@@ -104,6 +113,7 @@ function close_block(   keep, file) {
     if ($0 ~ /^[ \t]*#[ \t]*lint-waits-for:[ \t]*[A-Za-z0-9_,-]+[ \t]*$/) { waits = $0; sub(/^[ \t]*#[ \t]*lint-waits-for:[ \t]*/, "", waits); sub(/[ \t]*$/, "", waits) }
     if ($0 ~ /^[ \t]*#[ \t]*lint-id:[ \t]*[a-z0-9-]+[ \t]*$/) { slug = $0; sub(/^[ \t]*#[ \t]*lint-id:[ \t]*/, "", slug); sub(/[ \t]*$/, "", slug) }
     if ($0 ~ /^[ \t]*#[ \t]*lint-quick[ \t]*$/) quick = 1
+    if ($0 ~ /^[ \t]*#[ \t]*lint-scope:[ \t]*(record|code|both)[ \t]*$/) { scope = $0; sub(/^[ \t]*#[ \t]*lint-scope:[ \t]*/, "", scope); sub(/[ \t]*$/, "", scope) }
     if ($0 ~ /^[ \t]*#[ \t]*lint-target-dir:[ \t]*[A-Za-z0-9_-]+[ \t]*$/) { tdir = $0; sub(/^[ \t]*#[ \t]*lint-target-dir:[ \t]*/, "", tdir); sub(/[ \t]*$/, "", tdir) }
     if ($0 !~ /^[ \t]*#/ && $0 ~ /LINT_NO_CARGO/) guarded = 1
 }

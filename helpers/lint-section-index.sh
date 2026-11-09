@@ -6,10 +6,10 @@
 #
 # helpers/lint-no-cargo.awk's `index` mode prints one line per section, in file order: the
 # `# lint-id:` slug (`-` when absent), keep (1 when `--no-cargo` runs it), lane, waits, quick, target
-# dir and name, tab separated. helpers/lint-section-index.tsv holds the committed copy.
+# dir, scope (`# lint-scope:`, `-` when absent) and name, tab separated. helpers/lint-section-index.tsv holds the committed copy.
 #
 # `check` (the default) fails with a diff when the live index differs. A renamed, dropped, added or
-# reordered section, a changed lane, wait, target dir or `# lint-quick` flag, or a section that
+# reordered section, a changed lane, wait, target dir, scope or `# lint-quick` flag, or a section that
 # gained or lost its cargo-ness (keep) all show. Why it exists: a section's name is what the
 # section-times CSV (helpers/lint-sections.sh) and script/ci-log-baseline key on, and its quick,
 # lane and wait markers decide what runs where and when, so none of them should move without a
@@ -41,7 +41,7 @@ check)
     if ! diff -u "$snapshot" "$live" >&2; then
         echo "" >&2
         echo "lint-section-index: script/lint's sections differ from $snapshot (- committed, + live)." >&2
-        echo "  Columns: lint-id, keep, lane, waits, quick, target dir, name." >&2
+        echo "  Columns: lint-id, keep, lane, waits, quick, target dir, scope, name." >&2
         echo "  If the change is intended, run helpers/lint-section-index.sh write and commit the file;" >&2
         echo "  a renamed section also changes its row in the section-times CSV and in script/ci-log-baseline's output." >&2
         exit 1
