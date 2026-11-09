@@ -21,7 +21,7 @@ bench = false
 [dependencies]
 # The commit under test. `build.sh --crate-commit <sha>` replaces it for one build without editing
 # this file; the payload prints whichever commit it was built against.
-jh7110_entropy = { git = "https://github.com/nifeos/jh7110_entropy", rev = "bf93ff430cddd9e9d1b3619881959d15140b7903" }
+jh7110_entropy = { git = "https://github.com/nifeos/jh7110_entropy", rev = "ee0bde8feb9f78a67da011c928f9a2a697f3bbc1" }
 jh7110_clock_and_reset = { path = "../../crates/jh7110_clock_and_reset" }
 device_tree_blob = { path = "../../crates/device_tree_blob" }
 

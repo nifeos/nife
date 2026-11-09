@@ -13,7 +13,7 @@ version = "0.1.0"
 [[package]]
 name = "jh7110_entropy"
 version = "0.2.0"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=bf93ff430cddd9e9d1b3619881959d15140b7903#bf93ff430cddd9e9d1b3619881959d15140b7903"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=ee0bde8feb9f78a67da011c928f9a2a697f3bbc1#ee0bde8feb9f78a67da011c928f9a2a697f3bbc1"
 
 [[package]]
 name = "jh7110_entropy_board_check"
