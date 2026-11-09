@@ -170,7 +170,7 @@ device_tree_blob = { version = "0.1.0", path = "../crates/device_tree_blob" }
 pci = { version = "0.1.0", path = "../crates/pci" }
 # The NVMe queue mechanics (milestone 53's storage half): pure logic, host-tested and proved; the
 # kernel's non_volatile_memory_express module is its volatile half, the same split as `pci` above.
-non_volatile_memory_express = { version = "0.1.0", path = "../crates/non_volatile_memory_express" }
+non_volatile_memory_express = { version = "0.1.0", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "87bbef8c9ac4cd05cc6babf88f31fa8500166e9d" }
 # The `e1000e` NIC family's register map, descriptors and ring logic (milestone 494 (a driver for the
 # network card a PC actually has)): the kernel resets the device and programs the rings' bases from
 # it. The `Handoff` it gives `net_stack` is `driver_process_contract`'s. Same split as the NVMe
