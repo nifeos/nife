@@ -135,8 +135,10 @@ Measured 2026-11-09 (UTC) on this branch over `origin/main` `412c3ce58`, on a Li
 the 118 sections that build nothing ran alone under `strace -f -e trace=%file,getdents64`, and each
 tracked path it opened was sorted as record or code. The 22 clippy, build and rustdoc sections
 were sorted by reading them: they run cargo on the workspaces, and no build script opens a record
-path. The tag is the `# lint-scope:` line in each section, and `helpers/lint-section-index.tsv`
-carries it as its seventh column.
+path. Two sections exited non-zero under the tracer, the lint ratchet (it reads the clippy
+sections' output, which no clippy section had written) and the CI fuzz selftest, so the files they
+opened before failing are what sorted them. The tag is the `# lint-scope:` line in each section,
+and `helpers/lint-section-index.tsv` carries it as its seventh column.
 
 | tag | sections | what it means |
 |---|---|---|
@@ -179,13 +181,13 @@ request number and reads its labels through the API, on `pull_request` and on `m
 | record-only pull request #3383 (two roadmap files) | ran twice on `pull_request`, 4 seconds each |
 | its merge-group entry, run 42686419143 | queued 4 seconds, ran 5 seconds, run 10 seconds |
 | the code entry ahead of it, #3385, run 42685696857 | queued 5 seconds, ran 4 seconds, run 9 seconds |
-| 97 completed runs of 2026-11-09, `merge_group` | median 10 seconds, 90th percentile 14, maximum 53 |
-| 97 completed runs of 2026-11-09, `pull_request` | median 10 seconds, 90th percentile 21, maximum 77 |
+| 23 successful `merge_group` runs of 2026-11-09 | median 10 seconds, 90th percentile 14, maximum 53 |
+| 74 successful `pull_request` runs of 2026-11-09 | median 10 seconds, 90th percentile 21, maximum 77 |
 | billable time, both runs above | 0 milliseconds (a public repository) |
 
-A job skipped by its condition satisfies a required check here: on #3383's head `77eca4bec`, the
-required `test`, `bench`, `boot-check` and eleven more reported `skipped` by condition, and the
-pull request entered the queue and merged. So the hold could be limited by a job-level condition.
+A job skipped by its condition satisfies a required check here: on #3383's head `77eca4bec`, 18
+required checks, `test`, `bench` and `boot-check` among them, reported `skipped`, and the pull
+request entered the queue and merged. So the hold could be limited by a job-level condition.
 It reads no file, though, and the label it reads applies to any change, so a limit would lift the
 hold from every change outside the record. The condition holds without limiting it.
 
@@ -227,12 +229,12 @@ batch, #3383 behind #3385.
 
 | entry | what `helpers/prose_only.py merge-group` classified | heavy jobs | `lint` job |
 |---|---|---|---|
-| #3385, run 42685697323 | 1 file over `7cd9b3c39`: not prose | 29 ran, the longest 903 seconds | 448 seconds |
-| #3383, run 42686419342 | 2 files over `ddc37dab3`, #3385's entry: prose | 29 skipped their steps, 8 to 19 seconds each | 558 seconds |
+| #3385, run 42685697323 | 1 file over `7cd9b3c39`: not prose | 27 ran, 9,850 seconds in all, the longest 903 | 448 seconds |
+| #3383, run 42686419342 | 2 files over `ddc37dab3`, #3385's entry: prose | 27 skipped their steps, 8 to 19 seconds each | 558 seconds |
 
 So in this queue a record entry and a code entry each run what their own diff asks. The record
-entry still holds a runner per heavy job for its skip step, about 6 runner-minutes in all, and
-runs the whole lint. One pull request that carries both kinds of change runs everything, as it
+entry still holds a runner per heavy job for its skip step, 364 seconds in all, and runs the whole
+lint. One pull request that carries both kinds of change runs everything, as it
 should.
 
 ### What this leaves unverified
