@@ -140,7 +140,7 @@ fn measure() -> &'static str {
 type Frames = crate::e1000e::FrameCounts;
 
 /// The `frames` line: good frames received and transmitted, and the two receive error counts, from
-/// the device's own counters, totalled since bring-up. These are the counts in both directions the
+/// the device's own counters, totaled since bring-up. These are the counts in both directions the
 /// cabled I219 run records (notes/e1000e/the-i219-cabled-run.md).
 fn print_frames(when: &str, total: &mut Frames) {
     let Some(read) = service::frame_counts() else {

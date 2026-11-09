@@ -31,7 +31,7 @@ a switch, records the three things the issue asks for:
    `link NOT UP`;
 3. whether frames passed in both directions, with counts, as the `network-bench: frames` lines.
    They are the device's own statistics counters (good frames received and transmitted, CRC
-   errors, missed frames), totalled since bring-up, so they count what crossed the wire whatever
+   errors, missed frames), totaled since bring-up, so they count what crossed the wire whatever
    the rings did.
 
 The boot also takes a DHCP lease and times one TCP transfer, which is milestone 494 (a driver for
