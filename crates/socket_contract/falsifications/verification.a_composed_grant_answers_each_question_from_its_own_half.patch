@@ -1,0 +1,20 @@
+Falsifies `socket_contract::verification::a_composed_grant_answers_each_question_from_its_own_half`.
+
+The defect: `udp_bind_grant` packs its low bound 16 bits into the word instead of 32, onto the
+listen half's high bound. Composing a UDP grant with a listen grant then widens the listen range,
+so a stack granted one TCP port may listen on others.
+
+Expected to fail: the harness's `assert_eq!` on `grant_allows`, for a composed word.
+
+diff --git a/crates/socket_contract/src/lib.rs b/crates/socket_contract/src/lib.rs
+--- a/crates/socket_contract/src/lib.rs
++++ b/crates/socket_contract/src/lib.rs
+@@ -192,7 +192,7 @@
+     if lo == 0 || hi < lo {
+         return NO_LISTEN_GRANT;
+     }
+-    ((lo as u64) << 32) | ((hi as u64) << 48)
++    ((lo as u64) << 16) | ((hi as u64) << 48)
+ }
+ 
+ /// May a holder of a stack carrying `grant` bind a UDP socket to the fixed `port`? [`grant_allows`]
