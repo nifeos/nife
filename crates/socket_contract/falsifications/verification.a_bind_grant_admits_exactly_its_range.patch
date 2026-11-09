@@ -1,4 +1,4 @@
-Falsifies `socket_contract::verification::a_udp_bind_grant_admits_exactly_its_range`.
+Falsifies `socket_contract::verification::a_bind_grant_admits_exactly_its_range`.
 
 The defect: `udp_grant_allows` compares the port with `<` against the high bound, the off-by-one
 a reader writes when it takes an inclusive range for a half-open one. A single-port UDP grant then

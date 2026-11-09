@@ -844,9 +844,9 @@ mod verification {
 
     /// **A UDP bind grant admits exactly its range**: the same property for [`udp_bind_grant`] and
     /// [`udp_grant_allows`], and such a word grants no listen port at all.
-    /// Falsification: replayable `crates/socket_contract/falsifications/verification.a_udp_bind_grant_admits_exactly_its_range.patch`
+    /// Falsification: replayable `crates/socket_contract/falsifications/verification.a_bind_grant_admits_exactly_its_range.patch`
     #[kani::proof]
-    fn a_udp_bind_grant_admits_exactly_its_range() {
+    fn a_bind_grant_admits_exactly_its_range() {
         let lowest: u16 = kani::any();
         let highest: u16 = kani::any();
         let port: u16 = kani::any();
@@ -865,10 +865,10 @@ mod verification {
     #[kani::proof]
     fn a_composed_grant_answers_each_question_from_its_own_half() {
         let listen = listen_grant(kani::any(), kani::any());
-        let udp = udp_bind_grant(kani::any(), kani::any());
+        let bind = udp_bind_grant(kani::any(), kani::any());
         let port: u16 = kani::any();
-        let both = listen | udp;
+        let both = listen | bind;
         assert_eq!(grant_allows(both, port), grant_allows(listen, port));
-        assert_eq!(udp_grant_allows(both, port), udp_grant_allows(udp, port));
+        assert_eq!(udp_grant_allows(both, port), udp_grant_allows(bind, port));
     }
 }
