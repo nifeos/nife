@@ -135,10 +135,10 @@ command, with its falsification patch. One-way (three signatures). S.
 - The free function `logical_block_format_size_shift` and the field `logical_block_size_shift`
   spell one quantity two ways.
 
-Ruled 2026-11-09: `minimum_page_size_bytes`; `unit_bytes` and `page_size_bytes` everywhere; a
-`_physical_address` suffix on every address parameter, `data_physical_address` for Identify and
-`queue_physical_address` for the two queue builders; `role` for the doorbell parameter; and the one
-spelling `logical_block_size_shift`, for the free function and the field alike. One-way at the tag.
+Ruled 2026-11-09: `minimum_page_size_bytes`, and `unit_bytes` and `page_size_bytes` everywhere.
+Every address parameter takes a `_physical_address` suffix: `data_physical_address` for Identify,
+`queue_physical_address` for the two queue builders. The doorbell parameter becomes `role`, and the
+shift takes the one spelling `logical_block_size_shift`, for the free function and the field alike. One-way at the tag.
 S.
 
 #### P1-3. Two harness names and their patch files carry `sq` and `cq`
@@ -171,10 +171,10 @@ comment that lacks it. Two-way. XS.
 
 `transfer_command(.., write: bool)` takes seven arguments and carries
 `#[allow(clippy::too_many_arguments)]`, and a `true` at the call site says nothing. Every driver in
-the prior art names the direction. Change, as the review recommends: a two-variant enum,
-`Direction { Read, Write }` (name provisional), in place of the `bool`. It keeps one builder and
-reads at the call site, where two methods `read_command` and `write_command` would double the
-builder. One-way at the tag. XS.
+the prior art names the direction.
+
+Ruled 2026-11-09: a two-variant enum, `Direction` with the variants `Read` and `Write`, replaces
+the `bool`, and one builder stays rather than two methods. One-way at the tag. XS.
 
 #### P1-6. Nothing states the memory ordering either ring needs
 
@@ -222,11 +222,12 @@ The depth check against the capabilities stays with the caller, and the doc says
 `enabled_controller_configuration()` (`src/configuration.rs`) returns `CC` with `MPS` 0, so a
 kernel whose frames are 16 KiB or 64 KiB cannot use it. Nothing ties that `MPS` to the
 `page_size_bytes` the page-pair builder takes, so the two can disagree without a warning.
-`Capabilities` decodes `MPSMIN` and not `MPSMAX`, so a caller cannot check the upper bound. Change, as the review recommends:
-`enabled_controller_configuration(page_size_bytes) -> Option<u32>`. It encodes
-`MPS = log2(page_size_bytes) - 12` and refuses a size that is not a power of two or lies outside
-4 KiB to 128 MiB. `Capabilities::maximum_page_size_bytes` joins the minimum, and a harness with its
-patch shows that the value decodes back to its page size. One-way (a signature and a new
+`Capabilities` decodes `MPSMIN` and not `MPSMAX`, so a caller cannot check the upper bound. Ruled
+2026-11-09: `enabled_controller_configuration(page_size_bytes) -> Option<u32>`. It encodes
+`MPS = log2(page_size_bytes) - 12` and returns `None` for a size that is not a power of two or lies
+outside 4 KiB to 128 MiB. `Capabilities::maximum_page_size_bytes` joins the minimum. A harness with
+its falsification patch shows that the encoded value decodes back to the page size it came from.
+One-way (a signature and a new
 name). S.
 
 #### P1-10. The admin queue attributes have a formula in a comment and no builder
@@ -278,10 +279,11 @@ that says `blocks == 0` means "not yet identified". One-way at the tag. XS.
    them.
 2. The tag. No tag is ruled for this crate. Which commit carries one, and when, is a separate
    question for the architect. It is one-way, since a tag is a number others compare against.
-3. `Namespace` carries its unit (P1-1), and the parameter and method names (P1-2). Both ruled
-   2026-11-09, as the items state.
-4. The public API of P1-5, P1-9 and P1-14, each one-way at the tag, with the
-   recommendation each item states. These need the architect before the tag.
+3. P1-1 (`Namespace` carries its unit), P1-2 (parameter and method names), P1-5 (`Direction`)
+   and P1-9 (the page size in the controller configuration). All four ruled 2026-11-09, as the
+   items state.
+4. `Default` on `IdentifyNamespace` (P1-14), one-way at the tag, with the recommendation the item
+   states. It needs the architect before the tag.
 5. The new names of P1-6, P1-10 and P2-1 to P2-5. A lane mints each provisionally in its own pull
    request, and the release review ratifies them together. Only those that land before the tag
    need a ruling then.
@@ -321,5 +323,5 @@ claims none of the QEMU or hardware steps.
 An outside reading of `non_volatile_memory_express`: two items block the tag (a manifest comment;
 four register spellings, ruled). Fourteen go before the first release, among them a namespace that
 cannot hold a wrong unit, unit and address names on parameters (ruled), the ordering a weakly ordered host
-needs, a page-size argument, and the mutation stack of the template. Ten follow it. No tag is
+needs, a page-size argument (ruled), and the mutation stack of the template. Ten follow it. No tag is
 ruled, and publishing stays held.
