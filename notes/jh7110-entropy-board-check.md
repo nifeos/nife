@@ -25,20 +25,18 @@ a board. This session runs it on one: a small bare-metal payload, built against 
 crate, performs the register sequences below and prints one checksummed line per result, and a
 script on the host judges the log. One boot runs every check, in about fifteen minutes.
 
-It answers questions as well as meeting bars. A row of the results table is PASS or FAIL against a
-criterion, or RECORDED where the board is answering a question (what the block resets to, whether
-two bits are ever set together). The statistics in check 9 are a measurement of one capture, never
+A row of the results table is PASS or FAIL against a criterion, or RECORDED where the board answers
+a question, such as what the block resets to. The statistics in check 9 are a measurement of one capture, never
 a proof that the output is random.
 
 The payload is `tools/jh7110_entropy_board_check/`, and the checker is its `results.py`. Neither
-uses the kernel: the kernel pins the crate at an older commit, and the board check tests the commit
-about to be released.
+uses the kernel, which pins an older commit of the crate than the one the release will tag.
 
 ## Before anything else
 
-1. **Read the off-tree bench instructions.** The maintainers keep the unit-specific details of the
-   bench (which serial device is the board's, which outlet powers it, which outlets and hubs must
-   never lose power) in a private lab checkout, not in this repository. Ask the person where that
+1. **Read the off-tree bench instructions.** The maintainers keep the bench's unit-specific details
+   in a private lab checkout, not in this repository: which serial device is the board's, which
+   outlet powers it, and which outlets and hubs must never lose power. Ask the person where that
    checkout is, and read its `README.md` before touching any hardware. Follow its warnings over
    anything here. Never quote it or name anything from it in public text: a commit, a pull
    request, an issue or a note.
@@ -66,7 +64,7 @@ What must be true before step 1, and how to confirm each:
 | The board and this machine share a local network, and the address the card's script asks for is this machine's | compare the `tftp server is` line with this machine's addresses (`script/board-netboot` prints its candidates) | the person types the fallback in step 5, or the card is rewritten with their go |
 | UDP port 69 is free here | `lsof -i UDP:69` prints nothing | stop the other server only if the person says it is theirs to stop |
 | The toolchain from `script/setup` (the pinned nightly, `rust-src`, `llvm-tools`, the `riscv64imac-unknown-none-elf` target) and `python3` | `rustc --version` in the checkout prints the pinned nightly | run `script/setup` |
-| For the rehearsal in step 3 only: `qemu-system-riscv64` | `qemu-system-riscv64 --version` | skip the rehearsal and say so; it is not a board check |
+| `qemu-system-riscv64`, for step 3 only | `qemu-system-riscv64 --version` | skip step 3 and say so |
 
 ## The steps
 
@@ -81,7 +79,7 @@ gh api repos/nifeos/jh7110_entropy/commits/main --jq .sha
 ```
 
 If an open pull request changes `src/`, stop and ask whether to wait for it. Otherwise record the
-40-digit commit; it is row R1. The payload's `Cargo.toml` pins the commit this page was verified
+40-digit commit; it is row R1. The payload's `Cargo.toml` pins the commit this page last ran
 against, and `--crate-commit` overrides it for one build.
 
 ### Step 2: build the payload
@@ -104,9 +102,9 @@ tools/jh7110_entropy_board_check/build.sh --crate-commit <commit> --model --rehe
 ```
 
 This builds the same payload with the register window replaced by a software model and runs it
-under QEMU `virt`. It must end `results.py: PASS, 0 problem(s)`. It proves the payload boots, prints,
-and that its log parses; it says nothing about the silicon, and a model log is refused as a board
-result. Record its last line in your report.
+under QEMU `virt`. It must end `results.py: PASS, 0 problem(s)`. It shows that the payload boots and prints
+and that its log parses. It says nothing about the silicon, and `check` refuses a model log as a
+board result. Record its last line in your report.
 
 ### Step 4: serve, then watch
 
@@ -151,8 +149,8 @@ In this order, with `LC_ALL=C grep -a 'board-check' target/jh7110-entropy-board-
 1. `nife: payload came from net` (or the typed fallback). Row R3.
 2. `board-check: begin ... model=0 crate_commit=<the commit from step 1> ...`. A different commit
    means a stale payload: stop.
-3. `board-check: window trng=0x1600c000 ... from_tree=1`. `status_okay=0` is expected on the vendor
-   tree, which marks the node disabled because U-Boot has no driver for it.
+3. `board-check: window trng=0x1600c000 ... from_tree=1`. The vendor tree marks the node disabled,
+   because U-Boot has no driver for it, so `status_okay=0` is normal.
 4. Three `clock_step` lines, the last with `released=1`.
 5. `reset_state`, `bring_up`, `first_reseed done=1`, and two `generation ... outcome=ready` lines.
 
@@ -192,8 +190,8 @@ python3 -I tools/jh7110_entropy_board_check/results.py check \
 
 `summarize` fills every row it can from the records whose checksums match, takes the last run in the
 log, and writes the capture's bytes. `check` recomputes every verdict from the table's values and
-exits 1 when a row fails, is blank, or carries a verdict its values do not support. If an outside
-suite is installed (`ent`, or `dieharder -a -g 201 -f capture.bin`), run it on `capture.bin` and put
+exits 1 when a row fails, is blank, or carries a verdict its values do not support. If this machine
+has an outside suite (`ent`, or `dieharder -a -g 201 -f capture.bin`), run it on `capture.bin` and put
 its name and one-line summary in row 9g instead of "not run".
 
 ### Step 9: record the result
@@ -204,127 +202,99 @@ its name and one-line summary in row 9g instead of "not run".
   machine's address and the board's network identity into it. A public record carries the filled
   table, the checker's output, the crate commit and the SHA-256 of `board.log` and `capture.bin`,
   and no address.
-- The results then go to two places, each in its own pull request: the crate's README "Hardware
-  evidence" section, written as facts about the crate commit that ran and naming no other project,
-  and milestone 1049 (`jh7110_entropy` is ready to publish)'s block in this repository. The session
-  hands both to the maintainer rather than opening them unasked.
+- The results then go to two places, each in its own pull request. One is the crate's README
+  "Hardware evidence" section, stating facts about the commit that ran and naming no other project.
+  The other is milestone 1049 (`jh7110_entropy` is ready to publish)'s block here. Hand both to the
+  maintainer rather than opening them unasked.
 
 ## The checks
 
-Every register offset and bit below is a `jh7110_entropy` constant, and the payload uses the
-constant, so the run tests the crate's map. `STAT` is at `0x04`, `CTRL` `0x00`, `MODE` `0x08`, `SMODE`
-`0x0C`, `IE` `0x10`, `ISTAT` `0x14`, `FEATURES` `0x1C`, `RAND0..7` `0x20..0x3C`, `AUTO_RQSTS` `0x60`,
-`AUTO_AGE` `0x64` and `BCONF` `0x68`, from the window base `0x1600_C000`. `ISTAT` is
-write-1-to-clear. Every poll is bounded by one second of the `time` CSR and counts a timeout rather
-than hanging. Ticks are of `timebase_hertz` on the `begin` line, 4 MHz on this board.
+Each check names its register sequence and its rows; the criterion column of
+`tools/jh7110_entropy_board_check/results-template.md` holds each row's bar. Every offset and bit
+is a `jh7110_entropy` constant, so the run tests the crate's map. The offsets: `CTRL` `0x00`, `STAT` `0x04`,
+`MODE` `0x08`, `SMODE` `0x0C`, `IE` `0x10`, `ISTAT` `0x14` (write-1-to-clear), `FEATURES` `0x1C`,
+`RAND0..7` `0x20..0x3C`, `AUTO_RQSTS` `0x60`, `AUTO_AGE` `0x64` and `BCONF` `0x68`, from base
+`0x1600_C000`. A poll gives up after one second of the `time` CSR and counts a timeout. Ticks are
+of `timebase_hertz` on the `begin` line, 4 MHz on this board.
 
 ### Check 0: the run itself (rows R1 to R9)
 
-The payload enables STG clocks 15 and 16 and releases STG reset 3, the TRNG's plan in
-`jh7110_clock_and_reset::ENTROPY_BRING_UP`, at the STG window `0x1023_0000`, printing each word
-before and after. Pass: the commit is the one under test, the run is not the model, the window is
-`0x1600c000` from the tree, both clocks read enabled, the reset reads released, and the run reaches
-`end complete=1`. Row R9 counts records dropped for a bad checksum; a few are expected on this link.
+The payload enables STG clocks 15 and 16 and releases STG reset 3 at `0x1023_0000`, the plan
+`jh7110_clock_and_reset::ENTROPY_BRING_UP` gives, printing each word before and after.
 
 ### Check 1: a reseed and a generation by polling (rows 1a to 1e)
 
-Sequence: after check 3's bring-up, write `SEED_DONE` (bit 1) to `ISTAT`, write `RESEED` (2) to `CTRL`,
-poll `ISTAT` for bit 1 and write it back. Then twice: write `RAND_RDY` (bit 0) to `ISTAT`, write
-`GENERATE` (1) to `CTRL`, and hand each `(STAT, ISTAT)` poll to `generation_outcome` until it answers
-anything but `NotReady`; on `Ready`, write `RAND_RDY` back. Pass: the reseed completes with
-`STAT.SEEDED` (bit 9) set, both outcomes are `ready`, neither 32 bytes are all zero, and the two
-differ. Capture: both 64-digit byte strings.
+Write `SEED_DONE` (bit 1) to `ISTAT`, `RESEED` (2) to `CTRL`, poll `ISTAT` for bit 1 and write it
+back. Then twice: write `RAND_RDY` (bit 0) to `ISTAT` and `GENERATE` (1) to `CTRL`, hand each
+`(STAT, ISTAT)` poll to `generation_outcome` until it answers anything but `NotReady`, and write
+`RAND_RDY` back after a `Ready`. This is the driver path the later checks reuse.
 
 ### Check 2: STAT.SEEDED and LAST_RESEED after reset (rows 2a to 2c)
 
-Sequence: the first read of `STAT` after the clock plan, before any write to the block. Recorded:
-`SEEDED` and `LAST_RESEED` (bits 16 to 18, `STATUS_LAST_RESEED_MASK`), where the manual gives 7 as
-unseeded; and `LAST_RESEED` again after check 1's reseed. These are answers, not bars.
+The first read of `STAT`, before any write to the block, gives `SEEDED` (bit 9) and `LAST_RESEED`
+(bits 16 to 18), where the manual gives 7 as unseeded. Row 2c reads `LAST_RESEED` again after
+check 1's reseed.
 
 ### Check 3: the output width (rows 3a to 3g, and 7a)
 
-Sequence: the same first read gives `STAT.R256` (bit 3), `MODE`, `FEATURES` and `BCONF` before any
-write. Then the bring-up the crate documents: write 0 to `AUTO_AGE` and `AUTO_RQSTS`, write
-`INTERRUPT_STATUS_DOCUMENTED_BITS_MASK` (`0x1F`) to `ISTAT` and read the residue (row 7a), set
-`MODE_256_BIT_OUTPUT` (bit 3) in `MODE`, write 0 to `IE`, and read `STAT`. Pass: `STAT.R256` reads 1
-after the write (3e), no documented `ISTAT` bit survives the clear (7a), and `FEATURES` bits 1:0 and
-`BCONF` bit 2 both say the block was built for 256 bits (3g). Recorded: which value of `BCONF` bit 3
-(`PRNG_LEN_AFTER_RST`) means 256 bits (3f), read off the width the block reset to. That reading holds
-only if nothing wrote `MODE` between reset and the payload; U-Boot has no driver for the block.
+The same first read gives `STAT.R256` (bit 3), `MODE`, `FEATURES` and `BCONF`. Then the crate's
+bring-up: write 0 to `AUTO_AGE` and `AUTO_RQSTS`, write `0x1F` to `ISTAT` and read the residue (7a),
+set bit 3 in `MODE`, write 0 to `IE`, and read `STAT` (3e). Row 3f reads which value of `BCONF`
+bit 3 means 256 bits off the width the block reset to, which holds only if nothing wrote `MODE`
+since reset.
 
 ### Check 4: RAND_RDY and RAND_GENERATING together (rows 4a, 4b)
 
-Each snapshot reads `STAT`, `ISTAT`, `STAT`. A snapshot counts as `together` when both `STAT` reads
-show `RAND_GENERATING` (bit 30) and `ISTAT` shows `RAND_RDY`, and as `together_loose` when either
-`STAT` read does, since the three reads are not one instant. Scenario 4a, 1000 trials: acknowledge
-`RAND_RDY`, write `GENERATE`, snapshot until `RAND_RDY` is set with no generation in flight.
-Scenario 4b, 1000 trials: finish a generation, leave its `RAND_RDY` latched, write `GENERATE` again,
-and snapshot until a generation was seen and ended, or 64 quiet snapshots pass. 4b also records
-whether the block accepted the second command and whether the `RAND` words changed. Pass: no
-timeouts. Recorded: the counts, which answer whether the decoder's `NotReady` for this case is ever
-exercised by the silicon.
+A snapshot reads `STAT`, `ISTAT`, `STAT`. It counts as `together` when both `STAT` reads show
+`RAND_GENERATING` (bit 30) beside `RAND_RDY`, and as `together_loose` when one does. In 4a, 1000
+trials acknowledge `RAND_RDY`, write `GENERATE` and snapshot until the generation ends. In 4b, 1000
+trials write a second `GENERATE` over a latched `RAND_RDY` and snapshot until a generation starts
+and ends, or 64 quiet snapshots pass; 4b also counts commands accepted and `RAND` words changed.
 
 ### Check 5: the width of LAST_RESEED (rows 5a to 5c)
 
-Every `STAT` read in the run is folded into one OR and into a set of `LAST_RESEED` values seen.
-Recorded: any `STAT` bit outside every field the crate names (5a), the values seen (5b), and whether
-any of bits 19 to 23, just above a three-bit field, was ever set (5c). A board can show that the
-field is at least as wide as its largest value and that the bits above it stayed clear; it cannot
-prove the field ends at bit 18.
+The payload ORs every `STAT` read together and keeps each `LAST_RESEED` value it saw. A board can
+show that bits 19 to 23 stayed clear; it cannot prove the field ends at bit 18.
 
 ### Check 6: how long a generation and a reseed take (rows 6a to 6e)
 
-Generation, 1000 samples: acknowledge `RAND_RDY`, read the time CSR, write `GENERATE`, poll `ISTAT`
-alone for `RAND_RDY`, read the time CSR. Reseed, 100 samples: the same around `RESEED` and
-`SEED_DONE`. Pass: no timeouts. Recorded: minimum, median, 99th percentile and maximum in ticks, the
-median and maximum in microseconds, and the cost of one time CSR read (6e), which bounds the
-resolution. These are the measured poll bound the crate's README lacks.
+Around 1000 generations and 100 reseeds, read the time CSR, write the command, poll `ISTAT` alone
+for `RAND_RDY` or `SEED_DONE`, and read the time CSR. Row 6e is one read's own cost.
 
 ### Check 7: the ISTAT residue and the alarm bits (rows 7a to 7c)
 
-Sequence: clear `ISTAT`, write 1 to `AUTO_RQSTS` and read it back, run four generations, and OR every
-`ISTAT` read; write 0 and clear again, and read the residue. Then write 1 to `AUTO_AGE`, poll `ISTAT`
-for bit 2 for up to two seconds, write 0, clear, and read the residue. A reseed follows, since an
-automatic reseed may have run. Recorded: whether bit 3 (the request alarm) and bit 2 (the age
-alarm) latched. Pass: no documented bit survives each clear.
+Write 1 to `AUTO_RQSTS`, run four generations and OR every `ISTAT` read, then write 0, clear and
+read the residue. Write 1 to `AUTO_AGE`, poll `ISTAT` for bit 2 for two seconds, write 0, clear and
+read the residue. A reseed follows, since an automatic one may have run.
 
 ### Check 8: LFSR_LOCKUP over a long run (rows 8a, 8b)
 
-Sequence: 1,048,576 generations on the driver path of check 1, counting each outcome. On the first
-`Lockup` (`ISTAT` bit 4), the payload reseeds without acknowledging bit 4, reads `ISTAT`, then writes
-bit 4 back, reads `ISTAT` again, and runs one more generation. Pass: no all-zero answer, no
-`WrongOutputWidth`, no timeout, and, if a lockup appeared, the next generation is `ready`. Recorded:
-how many lockups, and whether a reseed alone cleared the bit. A run with no lockup records "none
-seen", and the reseed question stays open.
+1,048,576 generations on the driver path, counting each outcome. On the first `Lockup` (`ISTAT`
+bit 4) the payload reseeds without acknowledging bit 4 and reads `ISTAT`, then writes bit 4 back,
+reads `ISTAT` again, and runs one more generation. A run with no lockup records "none seen", and
+whether a reseed clears the bit stays open.
 
 ### Check 9: a capture through a statistical suite (rows 9a to 9g)
 
-Sequence: 40,960 generations on the driver path, each printed as a checksummed line, 1.25 MiB in all.
-`results.py` keeps the lines whose checksums match. Pass: at least 1,048,576 verified bytes; at most
-3 of the FIPS 140-2 blocks (20,000 bits each) fail the monobit, poker, runs or long-run test, where a
-good source fails about one block in 1,250; Shannon entropy of at least 7.99 bits per byte; a
-chi-square over byte values with an upper-tail probability between 0.001 and 0.999; a mean byte
-within 0.5 of 127.5 and a lag-1 serial correlation under 0.005 in size; and no 32-byte generation
-repeated. These say the capture shows no gross defect. They do not say the source is unpredictable,
-and the README's "quality unmeasured" line gains a measurement, not a proof.
+40,960 generations on the driver path, each a checksummed line, 1.25 MiB in all. `results.py` keeps
+the verified lines and runs the FIPS 140-2 battery over 20,000-bit blocks, where a good source fails
+about one block in 1,250. It adds Shannon entropy, a chi-square over byte values, the mean byte, the
+lag-1 serial correlation and a count of repeated generations. A pass says the capture shows no gross defect, not
+that the source is unpredictable.
 
 ## The records
 
-Every line the payload prints is `board-check: <record> *<crc32>`, the checksum being zlib's CRC-32
-of the record, so `results.py` drops a line the link damaged instead of misreading it. A record is a
-kind followed by `key=value` tokens, except `capture <sequence> <64 hex digits>`. The kinds, in
-order: `begin`, `window`, `clock_step` (or `clock_plan skipped=model`), `reset_state`, `bring_up`,
-`first_reseed`, `generation`, `overlap`, `timing`, `alarm`, `long_run_progress`, `lockup`,
-`long_run`, `status_bits`, `capture`, `capture_gap`, `capture_end`, `end`, and on an exception
-`fault`. `begin` carries `format=1`; a payload that changes a record raises it.
+Each line is `board-check: <record> *<crc32>`, a kind and its `key=value` tokens followed by zlib's
+CRC-32 of them. `src/checks.rs` prints them and `results.py` reads them; `begin` carries `format=1`,
+which a change to any record raises.
 
 ## What has run, and what has not
 
 Run on a host: the payload builds for `riscv64imac-unknown-none-elf` against the commit the
-manifest pins and passes `cargo clippy` with warnings denied; the model build runs the whole sequence
-under QEMU `virt` and its log summarizes and checks to PASS; `results.py --selftest` (in
-`script/lint`) drives `summarize`, `fill` and `check` over synthetic logs, a damaged line, a model
-run, a zero capture and a short one, and holds `results-template.md` to the code.
+manifest pins, and passes `cargo clippy` with warnings denied. The model build runs the whole
+sequence under QEMU `virt`, and its log summarizes and checks to PASS. `results.py --selftest`, in
+`script/lint`, drives `summarize`, `fill` and `check` over synthetic logs (a damaged line, a model
+run, a zero capture, a short one) and holds `results-template.md` to the code.
 
 Not run: anything on a VisionFive 2. The clock plan's register writes, the image's acceptance by
 U-Boot's `booti`, the console stride on the board's UART, and every value in checks 1 to 9 are
@@ -336,9 +306,7 @@ unrun until a session follows this page.
   rehearsal says the plumbing works and nothing about the block.
 - Check 3f assumes nothing wrote `MODE` between reset and the payload. A firmware that ever gains a
   TRNG driver makes the reading wrong without saying so.
-- The time CSR on this board may be emulated by firmware, which makes one read cost more than a
-  tick; row 6e records the cost and every timing includes it.
+- Firmware may emulate the time CSR on this board, so one read can cost more than a tick; row 6e
+  records the cost, and every timing includes it.
 - The payload parks at the end, and nothing but a power cycle frees the board, which is a person.
-- `results.py` reads only the last run in a log. A log that holds two boots keeps the second.
-- The checker cannot tell a capture taken from the TRNG from one taken from anything else that
-  prints the same records; the `begin` line's commit and the payload's SHA-256 are the provenance.
+- `results.py` reads only the last run in a log, so a log of two boots keeps the second.
