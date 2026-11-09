@@ -1,0 +1,24 @@
+Falsifies `block_roster::write_is_total_on_any_page_length`.
+
+The defect: `write` drops its check that the page holds the header, the guard a
+writer forgets when it reasons that an empty device list always fits. With no
+devices the capacity check still passes (zero fit in a capacity of zero), and
+the header stores then slice past the end of a page shorter than 16 bytes.
+
+Expected to fail: an out-of-bounds slice index in `write`'s header stores, on
+any page of 0 to 15 bytes with no devices.
+
+
+diff --git a/crates/block_roster/src/lib.rs b/crates/block_roster/src/lib.rs
+--- a/crates/block_roster/src/lib.rs
++++ b/crates/block_roster/src/lib.rs
+@@ -168,9 +168,6 @@
+ /// assert_eq!(roster.get(2).unwrap().transport_name(), Some("nvme"));
+ /// ```
+ pub fn write(page: &mut [u8], devices: &[Device]) -> Result<(), TooManyDevices> {
+-    if page.len() < HEADER_BYTES {
+-        return Err(TooManyDevices);
+-    }
+     let capacity = u32::try_from(capacity_of(page.len())).unwrap_or(u32::MAX);
+     let Ok(count) = u32::try_from(devices.len()) else {
+         return Err(TooManyDevices);

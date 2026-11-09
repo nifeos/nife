@@ -14,7 +14,7 @@ exactly `count` entries of room.
 diff --git a/crates/block_roster/src/lib.rs b/crates/block_roster/src/lib.rs
 --- a/crates/block_roster/src/lib.rs
 +++ b/crates/block_roster/src/lib.rs
-@@ -240,7 +240,7 @@
+@@ -256,7 +256,7 @@
      /// Name: ratified 2026-11-06 (UTC): the standard library's spelling for indexed access that
      /// returns an `Option`.
      pub fn get(&self, i: usize) -> Option<Device> {

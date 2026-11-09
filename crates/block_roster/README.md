@@ -26,6 +26,8 @@ one of `TRANSPORT_VIRTIO_MEMORY_MAPPED_IO` (0), `TRANSPORT_VIRTIO_PCI` (1) and
 `TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS` (2).
 
 - The roster carries no capacity in bytes. Size is learned by asking the device.
+- `write` refuses with `TooManyDevices`, and leaves the page untouched, when the page cannot hold
+  the header and the devices; a page shorter than the header holds no roster at all.
 - `Roster::read` returns `None` when the page is shorter than the header, when the magic is wrong
   (a zeroed frame is not an empty roster) or when the count runs past what the page holds. A
   reader never indexes past its own mapping.
@@ -53,8 +55,9 @@ assert_eq!(roster.count_by_transport(TRANSPORT_VIRTIO_PCI), 1);
 
 ## What is proven
 
-Two Kani harnesses in `src/lib.rs` prove that `Roster::read` is total on any bytes and that `write`
-then `read` returns the same devices in order; run them with `cargo kani`.
+Three Kani harnesses in `src/lib.rs` prove that `Roster::read` is total on any bytes, that `write`
+is total on any page length and refuses a page too short for its header, and that `write` then
+`read` returns the same devices in order; run them with `cargo kani`.
 
 ## Building and testing
 
