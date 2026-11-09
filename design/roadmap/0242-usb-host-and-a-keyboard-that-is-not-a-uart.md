@@ -76,7 +76,7 @@ by `system_initializer`).
 | The `Spawn` literal: what the driver holds and is refused | `kernel/src/user/usb_keyboard_service.rs` |
 | Halt, reset, rings, port reset, Enable Slot, Address Device, descriptors, Evaluate Context, `SET_CONFIGURATION`, `SET_PROTOCOL`, `SET_IDLE`, Configure Endpoint, interrupt reads, stall recovery, hot-plug | `components/src/usb_keyboard_driver.rs` |
 | Descriptor walk, setup packets, boot-report diffing, usage to evdev | `crates/usb` (19 host tests, 3 Kani harnesses) |
-| Register window, handoff, TRBs, rings, contexts, `PORTSC`, the report words | `crates/extensible_host_controller_interface` (21 host tests, 3 Kani harnesses) |
+| Register window, handoff, TRBs, rings, contexts, `PORTSC`, the report words | `nifeos/extensible_host_controller_interface` (21 host tests, 3 Kani harnesses) |
 | Control chords (`^C` from a keyboard) | `video_terminal::keymap`, shared with the virtio keyboard |
 | The attach handshake | `crates/system_initializer` step 3b, `components/src/progenitor.rs` slot 27 |
 | The gate | `script/swish-check`'s fourth boot, `xtask/src/swish_check.rs` `usb_keyboard_boot` |
@@ -151,7 +151,7 @@ Needs xenon, its monitor on the display port, a USB keyboard plugged into a rear
   and QEMU models no low-speed device. Full speed and MSI-only are modeled, because those are what
   xenon's keyboard and controller are.
 - Root ports only, one controller, one keyboard. A hub, or a keyboard with one inside, is not
-  found. `crates/extensible_host_controller_interface`'s and the driver's BUGS.
+  found. `nifeos/extensible_host_controller_interface`'s and the driver's BUGS.
 - No key repeat, no Caps Lock, no LEDs. `crates/usb`'s BUGS.
 
 - This block does not price it in hours, and should not: xHCI is the largest single driver this
@@ -173,7 +173,7 @@ Needs xenon, its monitor on the display port, a USB keyboard plugged into a rear
   `main`'s scan runs before the ports re-detect and prints `0 of 26`. Step 3's monitor waits on
   pull request #2528.
 - **Recorded.** Hubs: a keyboard behind a hub, or with one built in, is not found. In
-  `crates/extensible_host_controller_interface`'s and `components/src/usb_keyboard_driver.rs`'s
+  `nifeos/extensible_host_controller_interface`'s and `components/src/usb_keyboard_driver.rs`'s
   `BUGS`.
 - **Recorded.** Typematic repeat, Caps Lock and the keyboard LEDs. In `crates/usb`'s `BUGS`.
 - **Recorded.** A second xHCI controller, and a second keyboard. In

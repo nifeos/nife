@@ -26,8 +26,9 @@ packages of three crates name its effects.
 
 Not run, and so not claimed: the stranger test, coverage, mutation, `cargo-semver-checks` (a first
 release has no baseline) and the publish rehearsal. The template's `check`, `proofs` and `weekly`
-workflows did not run either, because a repository exists for only four of these crates:
-`file_allocation_table`, `non_volatile_memory_express`, `generational_table` and `e1000e`. The
+workflows did not run either, because a repository exists for only five of these crates:
+`file_allocation_table`, `non_volatile_memory_express`, `generational_table`, `e1000e` and
+`extensible_host_controller_interface`. The
 stranger record lives in the crate repository, in `docs/stranger-test.md`. The `file_allocation_table`
 package is the exception: it ran the README's commands in a scratch copy and `cargo-semver-checks`
 against itself.
@@ -378,7 +379,7 @@ Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text 
 | crate | step | recommendation |
 |---|---|---|
 | `file_allocation_table` | 2 | cleared to move; repository exists |
-| `extensible_host_controller_interface` | 3 | ready for review |
+| `extensible_host_controller_interface` | 3 | cleared to move; repository exists |
 | `generational_table` | 4 | cleared to move; repository exists |
 | `non_volatile_memory_express` | 5 | cleared to move; repository exists |
 | `e1000e` | 6 | cleared to move; repository exists |

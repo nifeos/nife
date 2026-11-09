@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-10-07
 milestone_dependencies: 887
 decision_dependencies: none
@@ -30,7 +30,7 @@ calef's rulings, quoted from the maintainer comments on #1806 of 2026-10-07 (UTC
 
 ## What exists, checked 2026-10-07 (UTC)
 
-- `crates/extensible_host_controller_interface`: 1,191 code lines (1,817 with comments), written by
+- `nifeos/extensible_host_controller_interface`: 1,191 code lines (1,817 with comments), written by
   milestone 242 (USB host and HID, because on commodity hardware the keyboard is not a UART), which
   is PARTIAL. It is everything a USB host controller driver computes and nothing it touches:
   capability and operational registers, device and endpoint contexts, the rings, port status and
@@ -64,7 +64,7 @@ rust-osdev to revive it, and calef ruled no offer, since nife does not depend on
 Each row is a property this crate must prove before it publishes. The harness cell names the Kani
 harness that proves it, or says `none yet`; every named harness carries a falsification patch that
 makes it fail at its own assertion. Each patch is at
-`crates/extensible_host_controller_interface/falsifications/`. The window and handoff rows left with their code
+`falsifications/` in the `nifeos/extensible_host_controller_interface` repository. The window and handoff rows left with their code
 for `driver_process_contract`, which does not publish, so the crate proves 3 of 3.
 
 | property | harness |
@@ -182,6 +182,31 @@ names until the ratification pass, so this section keeps the links it carried.
   (testing: QEMU harness + host-testable crates, from commit one). The keyboard driver it serves
   belongs to milestone 242 (USB host and HID, because on commodity hardware the keyboard is not a
   UART).
+
+## The soak
+
+- The crate lives in `nifeos/extensible_host_controller_interface`, on the shared template of
+  milestone 887 (crate repositories share one CI template). `script/apply-settings` applied the
+  settings there. The manifest keeps `publish = false`, and the caller sets `allow-unpublished`
+  for the soak. No tag exists.
+- nife keeps no copy. `kernel`, `components` and `driver_process_contract` depend on the repository
+  by `rev` (§305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit)),
+  at the commit its `main` is green at. The verify table, the Kani peaks table, the mutation
+  exclusions, the crate's fuzz workspace and its package entry no longer list it; the repository's
+  own `proofs` jobs prove the harnesses.
+- End condition 1 holds once nife's merge queue is green at the pin. Condition 2 waits on the
+  first weekly run, 3 on a release dry run, 4 on a recorded stranger run, and 5 on four weeks from
+  the tag nife pins.
+- A bump of the pin is a separate pull request citing the landed commit as
+  `nifeos/extensible_host_controller_interface@<sha>`.
+
+## What remains
+
+1. The tag `v0.1.0`, which the release workflow makes when calef dispatches it, and the pin moved
+   to that tag's commit.
+2. The soak, which ends on evidence and not a duration.
+3. The publication of 0.1.0 by trusted publishing, which waits for the architect's approval.
+4. nife consuming the release by semantic version, with `Cargo.lock` recording its checksum.
 
 ## BUGS
 
