@@ -11,7 +11,7 @@ needs_person: no
 # 1041. The drain names a conflicting entry and a wide run stops at six pushes
 
 Raised by lane/queue-conflict-precheck on 2026-11-04 (UTC), while it built the pre-arm check for
-[the pre-arm check proposal](proposals/an-entry-that-conflicts-with-the-queue-is-caught-before-it.md)
+[the pre-arm check proposal](1054-an-entry-that-conflicts-with-the-queue-is-caught-before-it.md)
 (COE action 6, `notes/coes/2026-11-03-merge-queue-backlog.md`). That lane built
 `script/queue-conflicts` and the launch check for shared scope files. Two parts of the original
 proposal remain, and each needs a design the first two did not.
