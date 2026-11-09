@@ -13,7 +13,7 @@ ordinal differs from its transport.
 diff --git a/crates/block_roster/src/lib.rs b/crates/block_roster/src/lib.rs
 --- a/crates/block_roster/src/lib.rs
 +++ b/crates/block_roster/src/lib.rs
-@@ -184,7 +184,7 @@
+@@ -190,7 +190,7 @@
      for (i, d) in devices.iter().enumerate() {
          let at = HEADER_BYTES + i * ENTRY_BYTES;
          page[at..at + 4].copy_from_slice(&d.ordinal.to_le_bytes());

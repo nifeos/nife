@@ -17,6 +17,12 @@
 //!   0..4     ordinal: which device of this transport, 0-based
 //!   4..8     transport: one of the TRANSPORT_ kinds below
 //! ```
+//!
+//! # Identity
+//!
+//! The page's identity is frozen: [`INTERFACE_ID`] is 5, [`VERSION`] is 1 and [`MAGIC`] is the
+//! bytes `blkrosv1`. The id stays 5 for good. A layout break is a new version, which re-mints the
+//! magic in the same change; it is never a new id, and a retired value is never reused.
 
 //! Name: ratified 2026-08-03 (calef): a read-only page, deliberately not a `_protocol`.
 
@@ -442,6 +448,13 @@ mod tests {
     /// The magic is a fixed byte string on disk, not whatever `u64::from_le_bytes` happens to
     /// produce today. Spelling it out is what makes a page written by one build readable by
     /// another built on a different endianness.
+    #[test]
+    fn the_identity_keeps_its_frozen_values() {
+        assert_eq!(INTERFACE_ID, 5);
+        assert_eq!(VERSION, 1);
+        assert_eq!(MAGIC.to_le_bytes(), *b"blkrosv1");
+    }
+
     #[test]
     fn the_magic_is_the_bytes_it_says_it_is() {
         let mut page = [0u8; 4096];

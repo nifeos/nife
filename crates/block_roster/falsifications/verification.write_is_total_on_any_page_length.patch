@@ -12,7 +12,7 @@ any page of 0 to 15 bytes with no devices.
 diff --git a/crates/block_roster/src/lib.rs b/crates/block_roster/src/lib.rs
 --- a/crates/block_roster/src/lib.rs
 +++ b/crates/block_roster/src/lib.rs
-@@ -168,9 +168,6 @@
+@@ -174,9 +174,6 @@
  /// assert_eq!(roster.get(2).unwrap().transport_name(), Some("nvme"));
  /// ```
  pub fn write(page: &mut [u8], devices: &[Device]) -> Result<(), TooManyDevices> {

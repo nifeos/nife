@@ -33,9 +33,10 @@ one of `TRANSPORT_VIRTIO_MEMORY_MAPPED_IO` (0), `TRANSPORT_VIRTIO_PCI` (1) and
   reader never indexes past its own mapping.
 - A number the reader does not know as a transport has no name (`Device::transport_name` returns
   `None`); the reader decides what to do with it.
-- The page has one version, `VERSION` (1), which is also the digits of the magic. A layout break
-  bumps both in one change, and an old reader then refuses the page. `INTERFACE_ID` (5) names this
-  interface when a program declares which interfaces it links.
+- The identity is frozen: `INTERFACE_ID` 5, `VERSION` 1 and the magic `blkrosv1`.
+  `INTERFACE_ID` names this interface when a program declares which interfaces it links, and it
+  stays 5 for good. The page has one version, which is also the digits of the magic. A layout
+  break bumps both in one change, never the id, and an old reader then refuses the page.
 
 ## EXAMPLES
 
