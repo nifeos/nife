@@ -2,8 +2,8 @@
 
 The wire contract between a network stack and its clients, in which each socket is its own
 capability: a process holds a front door that can only make sockets, plus one capability per open
-socket. `no_std`, no dependencies, no system calls of its own. It was written for the nife network
-stack and the programs that talk to it, which share this one definition so they cannot drift.
+socket. `no_std`, no dependencies, no system calls of its own. A network stack and the programs that
+talk to it share this one definition, so they cannot drift.
 
 Opening and listening are calls on the front door, answered with the socket's capability. Every
 other operation is a call on the socket, with an opcode, one argument and one reply word. The stack
@@ -36,7 +36,7 @@ never assumed.
   cursor that never falls behind a clock advancing 256 ports a second, so a new stack starts past
   ports an earlier one used. `polled_wait::next` decides whether a stack may sleep on a network card
   that raises no interrupt.
-- `fixture` holds the fixed addresses and messages of the nife project's own test runners. It is not
+- `fixture` holds the fixed addresses and messages of one network stack's test runners. It is not
   part of the contract and a consumer can ignore it.
 
 ## EXAMPLES
@@ -72,6 +72,8 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
   a badged front door, which nothing builds yet.
 - A listener's backlog is one connection: a second arriving before `ACCEPT` is refused by TCP.
 - `polled_wait` keeps a core busy while a stream flows, and for a tick after it ends.
+- No operation carries `VERSION`, so a client and a stack built from different versions are not
+  told apart when the client binds.
 
 ## Minimum Rust version
 

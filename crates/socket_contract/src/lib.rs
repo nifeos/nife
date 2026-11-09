@@ -13,9 +13,11 @@
 //!   ride on a badged front door, which nothing builds yet.
 //! - A listener's backlog is one connection: a second arriving before `ACCEPT` is refused by the
 //!   Transmission Control Protocol (TCP).
-//! - The [`fixture`] module holds the fixed addresses and messages of nife's own QEMU test
-//!   runners. They are a test harness's facts, not part of this contract, and belong with that
-//!   harness.
+//! - The [`fixture`] module holds the fixed addresses and messages of one network stack's QEMU
+//!   test runners. They are a test harness's facts, not part of this contract, and belong with
+//!   that harness.
+//! - No operation carries [`VERSION`]: a client and a stack built from different versions of this
+//!   crate are not told apart when the client binds.
 //!
 //! Name: ratified 2026-08-01 (calef, the naming tenet); `_contract` per calef's 2026-10-18 ruling.
 
@@ -26,9 +28,9 @@ struct ReadmeExample;
 // Operations. The opcode is the whole request word.
 
 /// The protocol's version, one for the operation set and the reply shapes together: one constant
-/// per wire format. A break bumps this and owes a dated ledger entry; an addition (a new opcode, an
-/// optional field) owes no bump. The check lives at bind: a client `CALL`s `OPERATION_VERSION` on the
-/// front door and binds only when its own version is in the served set.
+/// per wire format. A break bumps this; an addition (a new opcode, an optional field) does not. No
+/// operation carries it yet, so a client and a stack built from different versions are not told
+/// apart at bind (see BUGS).
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
@@ -43,7 +45,7 @@ pub const INTERFACE_ID: u64 = 19;
 
 /// `SEND_CAPABILITY` on a socket's capability: delegate that socket's shared frame.
 pub const OPERATION_ATTACH_PAGE_FRAME: u64 = 1;
-/// `CALL` on the front door: create a UDP socket and bind an ephemeral local port. Answered
+/// `CALL` on the front door: create a User Datagram Protocol (UDP) socket and bind an ephemeral local port. Answered
 /// [`REP_OK`] with the socket's capability.
 pub const OPERATION_OPEN_UDP: u64 = 2;
 /// `CALL` on the front door: create a TCP socket. Answered [`REP_OK`] with the socket's capability.
@@ -103,7 +105,7 @@ pub const fn names_a_socket(badge: u64) -> bool {
 pub const REP_OK: u64 = 0;
 /// `OPERATION_CONNECT` succeeded.
 pub const CONNECT_ESTABLISHED: u64 = 0;
-/// The peer sent RST, or the connect otherwise failed or closed.
+/// The peer sent a reset (RST), or the connect otherwise failed or closed.
 pub const CONNECT_REFUSED: u64 = 1;
 /// A failure sentinel (a capability that names no live socket, a bad operation, or a server-side
 /// timeout). Bit 32 set, so it is never mistaken for a length or a connect outcome.
@@ -126,11 +128,11 @@ pub const NO_LISTEN_GRANT: u64 = 0;
 
 /// Pack an inclusive listen-port range into the one word a net server is spawned with. `lo == 0` is
 /// [`NO_LISTEN_GRANT`] whatever `hi` says, because port 0 is not a port and a grant that starts at
-/// "no port" grants nothing; that keeps the "no grant" case a single value a reader can recognise.
+/// "no port" grants nothing; that keeps the "no grant" case a single value a reader can recognize.
 ///
 /// # Examples
 ///
-/// The degenerate cases collapse to one value a reader can recognise:
+/// The degenerate cases collapse to one value a reader can recognize:
 ///
 /// ```
 /// use socket_contract::{NO_LISTEN_GRANT, listen_grant};
@@ -254,7 +256,7 @@ pub mod polled_wait {
     mod tests {
         use super::*;
 
-        const TICK: u64 = 40_000; // radon: a 4 MHz counter at 100 Hz
+        const TICK: u64 = 40_000; // a 4 MHz counter at 100 Hz, as on a VisionFive 2
 
         /// The regression: any wait inside a tick of the last frame sleeps through a tick instead.
         #[test]
@@ -296,7 +298,7 @@ pub mod ephemeral {
     //! - The clock is boot-relative, so a rebooted machine's first ports repeat the last boot's.
     //! - The sequence-number half stays smoltcp's: a reused 4-tuple still fails half the time.
 
-    /// The lowest port of the private ephemeral range (RFC 6335).
+    /// The lowest port of the private ephemeral range (Request for Comments (RFC) 6335).
     pub const LO: u16 = 49152;
     /// The highest.
     pub const HI: u16 = 65535;
@@ -375,8 +377,8 @@ pub mod ephemeral {
             (got, at - gap_milliseconds)
         }
 
-        /// A stack started after another hands out none of its ports. The shapes are the name
-        /// resolver tests': fourteen opens 50 ms apart, then a new stack whose first open comes
+        /// A stack started after another hands out none of its ports. The shapes are a name
+        /// resolver's: fourteen opens 50 ms apart, then a new stack whose first open comes
         /// every whole number of milliseconds from one tick (4 ms) to 2 s later (the measured gap
         /// is about 230 ms on riscv64), at a spread of boot times. Seeding the cursor once from
         /// the counter fails this.
@@ -456,7 +458,7 @@ pub mod stack_slots {
 ///   +0x008  ...    payload   up to DATA_MAXIMUM bytes
 /// ```
 pub const OFF_DST_IP: u64 = 0x000;
-/// The destination port, right after the destination IP.
+/// The destination port, right after the destination Internet Protocol (IP) address.
 pub const OFF_DST_PORT: u64 = 0x004;
 /// The payload length.
 pub const OFF_LEN: u64 = 0x006;
@@ -470,10 +472,10 @@ pub const DATA_MAXIMUM: usize = 4096 - OFF_PAYLOAD as usize;
 
 /// The inbound gate's shared facts, for the programs that must agree on them. The host's copy is
 /// deliberately not here: the host side spells them again, so the gate proves two independently
-/// written sides agree. These are nife's test harness's facts, not part of the contract.
+/// written sides agree. These are a test harness's facts, not part of the contract.
 pub mod fixture {
     /// The port the inbound gate listens on, and the guest side of the runners' `hostfwd`. Both
-    /// ISA legs use the same number because they run one after the other and never hold it at once.
+    /// architecture legs use the same number because they run one after the other and never hold it at once.
     pub const LISTEN_PORT: u16 = 7778;
     /// A port deliberately outside every listen grant the tests hand out, so asking for it
     /// proves the grant *refuses* rather than that nothing happened to bind. It is the whole of the
@@ -511,9 +513,9 @@ pub mod fixture {
     pub const PACKAGE_PEER_HOST: &str = "10.0.2.9";
 }
 
-/// The lease report the network stack sends its spawner once DHCP completes, provisional, as is the
-/// name. Word 0 is the leased IPv4
-/// address, big-endian in the low 32 bits; word 1 the first DNS server the lease named, for the
+/// The lease report the network stack sends its spawner once the Dynamic Host Configuration Protocol (DHCP) completes, provisional, as is the
+/// name. Word 0 is the leased Internet Protocol version 4
+/// (IPv4) address, big-endian in the low 32 bits; word 1 the first Domain Name System (DNS) server the lease named, for the
 /// resolver's spawner (the name resolver is its own confined program), the same encoding or
 /// [`lease::NO_NAMESERVER`]; word 2 is zero and reserved.
 ///
