@@ -25,7 +25,7 @@ use jh7110_entropy::{
 
 use crate::console::{Hex, configure, record};
 use crate::device::Trng;
-use crate::ticks;
+use crate::machine::ticks;
 
 /// The record format's version, printed on `begin`; `results.py` refuses another.
 const FORMAT: u32 = 1;
