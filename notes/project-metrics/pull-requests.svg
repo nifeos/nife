@@ -22,70 +22,70 @@
 <text class="mut" x="56" y="127.5" font-size="10" text-anchor="end">300</text>
 <line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
 <text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">400</text>
-<path class="seg s0" d="M71.7,324.0 V254.8 Q71.7,250.8 75.7,250.8 H97.4 Q101.4,250.8 101.4,254.8 V324.0 Z"><title>2026W33, merged that week: 110</title></path>
-<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W33</text>
-<text class="fg val" x="86.5" y="245.8" font-size="10" text-anchor="middle">110</text>
-<path class="seg s0" d="M116.7,324.0 V202.3 Q116.7,198.3 120.7,198.3 H142.5 Q146.5,198.3 146.5,202.3 V324.0 Z"><title>2026W34, merged that week: 189</title></path>
-<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W34</text>
-<text class="fg val" x="131.6" y="193.3" font-size="10" text-anchor="middle">189</text>
-<path class="seg s0" d="M161.8,324.0 V235.6 Q161.8,231.6 165.8,231.6 H187.6 Q191.6,231.6 191.6,235.6 V324.0 Z"><title>2026W35, merged that week: 139</title></path>
-<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W35</text>
-<text class="fg val" x="176.7" y="226.6" font-size="10" text-anchor="middle">139</text>
-<path class="seg s0" d="M206.9,324.0 V208.3 Q206.9,204.3 210.9,204.3 H232.6 Q236.6,204.3 236.6,208.3 V324.0 Z"><title>2026W36, merged that week: 180</title></path>
-<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W36</text>
-<text class="fg val" x="221.8" y="199.3" font-size="10" text-anchor="middle">180</text>
-<path class="seg s0" d="M252.0,324.0 V284.8 Q252.0,280.8 256.0,280.8 H277.7 Q281.7,280.8 281.7,284.8 V324.0 Z"><title>2026W37, merged that week: 65</title></path>
-<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W37</text>
-<text class="fg val" x="266.8" y="275.8" font-size="10" text-anchor="middle">65</text>
-<path class="seg s0" d="M297.0,324.0 V213.6 Q297.0,209.6 301.0,209.6 H322.8 Q326.8,209.6 326.8,213.6 V324.0 Z"><title>2026W38, merged that week: 172</title></path>
-<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W38</text>
-<text class="fg val" x="311.9" y="204.6" font-size="10" text-anchor="middle">172</text>
-<path class="seg s0" d="M342.1,324.0 V83.3 Q342.1,79.3 346.1,79.3 H367.9 Q371.9,79.3 371.9,83.3 V324.0 Z"><title>2026W39, merged that week: 368</title></path>
-<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W39</text>
-<text class="fg val" x="357.0" y="74.3" font-size="10" text-anchor="middle">368</text>
-<path class="seg s0" d="M387.2,324.0 V189.0 Q387.2,185.0 391.2,185.0 H413.0 Q417.0,185.0 417.0,189.0 V324.0 Z"><title>2026W40, merged that week: 209</title></path>
-<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W40</text>
-<text class="fg val" x="402.1" y="180.0" font-size="10" text-anchor="middle">209</text>
-<path class="seg s0" d="M432.3,324.0 V125.8 Q432.3,121.8 436.3,121.8 H458.0 Q462.0,121.8 462.0,125.8 V324.0 Z"><title>2026W41, merged that week: 304</title></path>
-<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W41</text>
-<text class="fg val" x="447.2" y="116.8" font-size="10" text-anchor="middle">304</text>
-<path class="seg s0" d="M477.4,324.0 V83.3 Q477.4,79.3 481.4,79.3 H503.1 Q507.1,79.3 507.1,83.3 V324.0 Z"><title>2026W42, merged that week: 368</title></path>
-<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W42</text>
-<text class="fg val" x="492.2" y="74.3" font-size="10" text-anchor="middle">368</text>
-<path class="seg s0" d="M522.4,324.0 V123.2 Q522.4,119.2 526.4,119.2 H548.2 Q552.2,119.2 552.2,123.2 V324.0 Z"><title>2026W43, merged that week: 308</title></path>
-<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="fg val" x="537.3" y="114.2" font-size="10" text-anchor="middle">308</text>
-<path class="seg s0" d="M567.5,324.0 V123.8 Q567.5,119.8 571.5,119.8 H593.3 Q597.3,119.8 597.3,123.8 V324.0 Z"><title>2026W44, merged that week: 307</title></path>
-<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<text class="fg val" x="582.4" y="114.8" font-size="10" text-anchor="middle">307</text>
-<path class="seg s0" d="M612.6,324.0 V154.4 Q612.6,150.4 616.6,150.4 H638.3 Q642.3,150.4 642.3,154.4 V324.0 Z"><title>2026W45, merged that week: 261</title></path>
-<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W45</text>
-<text class="fg val" x="627.5" y="145.4" font-size="10" text-anchor="middle">261</text>
-<line class="tr" x1="86.5" y1="292.9" x2="131.6" y2="277.1" stroke-width="2" stroke-dasharray="4 3"/>
-<line class="tr" x1="131.6" y1="277.1" x2="176.7" y2="270.6" stroke-width="2" stroke-dasharray="4 3"/>
-<line class="tr" x1="176.7" y1="270.6" x2="221.8" y2="262.3" stroke-width="2" stroke-dasharray="4 3"/>
-<line class="tr" x1="221.8" y1="262.3" x2="266.8" y2="264.4" stroke-width="2" stroke-dasharray="4 3"/>
-<line class="tr" x1="266.8" y1="264.4" x2="311.9" y2="258.9" stroke-width="2" stroke-dasharray="4 3"/>
-<line class="tr" x1="311.9" y1="258.9" x2="357.0" y2="242.6" stroke-width="2" stroke-dasharray="4 3"/>
-<line class="tr" x1="357.0" y1="242.6" x2="402.1" y2="237.8" stroke-width="2" stroke-dasharray="4 3"/>
-<line class="tr" x1="402.1" y1="237.8" x2="447.2" y2="228.9" stroke-width="2"/>
-<line class="tr" x1="447.2" y1="228.9" x2="492.2" y2="210.0" stroke-width="2"/>
-<line class="tr" x1="492.2" y1="210.0" x2="537.3" y2="194.3" stroke-width="2"/>
-<line class="tr" x1="537.3" y1="194.3" x2="582.4" y2="179.0" stroke-width="2"/>
-<line class="tr" x1="582.4" y1="179.0" x2="627.5" y2="171.6" stroke-width="2"/>
-<circle class="trd" cx="86.5" cy="292.9" r="3"><title>2026W33, trailing mean, fewer than 13 weeks: 46.8</title></circle>
-<circle class="trd" cx="131.6" cy="277.1" r="3"><title>2026W34, trailing mean, fewer than 13 weeks: 70.5</title></circle>
-<circle class="trd" cx="176.7" cy="270.6" r="3"><title>2026W35, trailing mean, fewer than 13 weeks: 80.3</title></circle>
-<circle class="trd" cx="221.8" cy="262.3" r="3"><title>2026W36, trailing mean, fewer than 13 weeks: 92.8</title></circle>
-<circle class="trd" cx="266.8" cy="264.4" r="3"><title>2026W37, trailing mean, fewer than 13 weeks: 89.7</title></circle>
-<circle class="trd" cx="311.9" cy="258.9" r="3"><title>2026W38, trailing mean, fewer than 13 weeks: 97.9</title></circle>
-<circle class="trd" cx="357.0" cy="242.6" r="3"><title>2026W39, trailing mean, fewer than 13 weeks: 122.5</title></circle>
-<circle class="trd" cx="402.1" cy="237.8" r="3"><title>2026W40, trailing mean, fewer than 13 weeks: 129.7</title></circle>
-<circle class="trd" cx="447.2" cy="228.9" r="3"><title>2026W41, trailing 13-week mean: 143.1</title></circle>
-<circle class="trd" cx="492.2" cy="210.0" r="3"><title>2026W42, trailing 13-week mean: 171.4</title></circle>
-<circle class="trd" cx="537.3" cy="194.3" r="3"><title>2026W43, trailing 13-week mean: 195.1</title></circle>
-<circle class="trd" cx="582.4" cy="179.0" r="3"><title>2026W44, trailing 13-week mean: 218.1</title></circle>
-<circle class="trd" cx="627.5" cy="171.6" r="3"><title>2026W45, trailing 13-week mean: 229.2</title></circle>
+<path class="seg s0" d="M71.7,324.0 V202.3 Q71.7,198.3 75.7,198.3 H97.4 Q101.4,198.3 101.4,202.3 V324.0 Z"><title>2026W34, merged that week: 189</title></path>
+<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W34</text>
+<text class="fg val" x="86.5" y="193.3" font-size="10" text-anchor="middle">189</text>
+<path class="seg s0" d="M116.7,324.0 V235.6 Q116.7,231.6 120.7,231.6 H142.5 Q146.5,231.6 146.5,235.6 V324.0 Z"><title>2026W35, merged that week: 139</title></path>
+<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W35</text>
+<text class="fg val" x="131.6" y="226.6" font-size="10" text-anchor="middle">139</text>
+<path class="seg s0" d="M161.8,324.0 V208.3 Q161.8,204.3 165.8,204.3 H187.6 Q191.6,204.3 191.6,208.3 V324.0 Z"><title>2026W36, merged that week: 180</title></path>
+<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="fg val" x="176.7" y="199.3" font-size="10" text-anchor="middle">180</text>
+<path class="seg s0" d="M206.9,324.0 V284.8 Q206.9,280.8 210.9,280.8 H232.6 Q236.6,280.8 236.6,284.8 V324.0 Z"><title>2026W37, merged that week: 65</title></path>
+<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W37</text>
+<text class="fg val" x="221.8" y="275.8" font-size="10" text-anchor="middle">65</text>
+<path class="seg s0" d="M252.0,324.0 V213.6 Q252.0,209.6 256.0,209.6 H277.7 Q281.7,209.6 281.7,213.6 V324.0 Z"><title>2026W38, merged that week: 172</title></path>
+<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W38</text>
+<text class="fg val" x="266.8" y="204.6" font-size="10" text-anchor="middle">172</text>
+<path class="seg s0" d="M297.0,324.0 V83.3 Q297.0,79.3 301.0,79.3 H322.8 Q326.8,79.3 326.8,83.3 V324.0 Z"><title>2026W39, merged that week: 368</title></path>
+<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W39</text>
+<text class="fg val" x="311.9" y="74.3" font-size="10" text-anchor="middle">368</text>
+<path class="seg s0" d="M342.1,324.0 V189.0 Q342.1,185.0 346.1,185.0 H367.9 Q371.9,185.0 371.9,189.0 V324.0 Z"><title>2026W40, merged that week: 209</title></path>
+<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W40</text>
+<text class="fg val" x="357.0" y="180.0" font-size="10" text-anchor="middle">209</text>
+<path class="seg s0" d="M387.2,324.0 V125.8 Q387.2,121.8 391.2,121.8 H413.0 Q417.0,121.8 417.0,125.8 V324.0 Z"><title>2026W41, merged that week: 304</title></path>
+<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W41</text>
+<text class="fg val" x="402.1" y="116.8" font-size="10" text-anchor="middle">304</text>
+<path class="seg s0" d="M432.3,324.0 V83.3 Q432.3,79.3 436.3,79.3 H458.0 Q462.0,79.3 462.0,83.3 V324.0 Z"><title>2026W42, merged that week: 368</title></path>
+<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W42</text>
+<text class="fg val" x="447.2" y="74.3" font-size="10" text-anchor="middle">368</text>
+<path class="seg s0" d="M477.4,324.0 V123.2 Q477.4,119.2 481.4,119.2 H503.1 Q507.1,119.2 507.1,123.2 V324.0 Z"><title>2026W43, merged that week: 308</title></path>
+<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W43</text>
+<text class="fg val" x="492.2" y="114.2" font-size="10" text-anchor="middle">308</text>
+<path class="seg s0" d="M522.4,324.0 V123.8 Q522.4,119.8 526.4,119.8 H548.2 Q552.2,119.8 552.2,123.8 V324.0 Z"><title>2026W44, merged that week: 307</title></path>
+<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W44</text>
+<text class="fg val" x="537.3" y="114.8" font-size="10" text-anchor="middle">307</text>
+<path class="seg s0" d="M567.5,324.0 V146.5 Q567.5,142.5 571.5,142.5 H593.3 Q597.3,142.5 597.3,146.5 V324.0 Z"><title>2026W45, merged that week: 273</title></path>
+<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W45</text>
+<text class="fg val" x="582.4" y="137.5" font-size="10" text-anchor="middle">273</text>
+<path class="seg s0" d="M612.6,324.0 V320.7 Q612.6,317.4 615.9,317.4 H639.0 Q642.3,317.4 642.3,320.7 V324.0 Z"><title>2026W46, merged that week: 10</title></path>
+<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W46</text>
+<text class="fg val" x="627.5" y="312.4" font-size="10" text-anchor="middle">10</text>
+<line class="tr" x1="86.5" y1="277.1" x2="131.6" y2="270.6" stroke-width="2" stroke-dasharray="4 3"/>
+<line class="tr" x1="131.6" y1="270.6" x2="176.7" y2="262.3" stroke-width="2" stroke-dasharray="4 3"/>
+<line class="tr" x1="176.7" y1="262.3" x2="221.8" y2="264.4" stroke-width="2" stroke-dasharray="4 3"/>
+<line class="tr" x1="221.8" y1="264.4" x2="266.8" y2="258.9" stroke-width="2" stroke-dasharray="4 3"/>
+<line class="tr" x1="266.8" y1="258.9" x2="311.9" y2="242.6" stroke-width="2" stroke-dasharray="4 3"/>
+<line class="tr" x1="311.9" y1="242.6" x2="357.0" y2="237.8" stroke-width="2" stroke-dasharray="4 3"/>
+<line class="tr" x1="357.0" y1="237.8" x2="402.1" y2="228.9" stroke-width="2"/>
+<line class="tr" x1="402.1" y1="228.9" x2="447.2" y2="210.0" stroke-width="2"/>
+<line class="tr" x1="447.2" y1="210.0" x2="492.2" y2="194.3" stroke-width="2"/>
+<line class="tr" x1="492.2" y1="194.3" x2="537.3" y2="179.0" stroke-width="2"/>
+<line class="tr" x1="537.3" y1="179.0" x2="582.4" y2="170.9" stroke-width="2"/>
+<line class="tr" x1="582.4" y1="170.9" x2="627.5" y2="176.1" stroke-width="2"/>
+<circle class="trd" cx="86.5" cy="277.1" r="3"><title>2026W34, trailing mean, fewer than 13 weeks: 70.5</title></circle>
+<circle class="trd" cx="131.6" cy="270.6" r="3"><title>2026W35, trailing mean, fewer than 13 weeks: 80.3</title></circle>
+<circle class="trd" cx="176.7" cy="262.3" r="3"><title>2026W36, trailing mean, fewer than 13 weeks: 92.8</title></circle>
+<circle class="trd" cx="221.8" cy="264.4" r="3"><title>2026W37, trailing mean, fewer than 13 weeks: 89.7</title></circle>
+<circle class="trd" cx="266.8" cy="258.9" r="3"><title>2026W38, trailing mean, fewer than 13 weeks: 97.9</title></circle>
+<circle class="trd" cx="311.9" cy="242.6" r="3"><title>2026W39, trailing mean, fewer than 13 weeks: 122.5</title></circle>
+<circle class="trd" cx="357.0" cy="237.8" r="3"><title>2026W40, trailing mean, fewer than 13 weeks: 129.7</title></circle>
+<circle class="trd" cx="402.1" cy="228.9" r="3"><title>2026W41, trailing 13-week mean: 143.1</title></circle>
+<circle class="trd" cx="447.2" cy="210.0" r="3"><title>2026W42, trailing 13-week mean: 171.4</title></circle>
+<circle class="trd" cx="492.2" cy="194.3" r="3"><title>2026W43, trailing 13-week mean: 195.1</title></circle>
+<circle class="trd" cx="537.3" cy="179.0" r="3"><title>2026W44, trailing 13-week mean: 218.1</title></circle>
+<circle class="trd" cx="582.4" cy="170.9" r="3"><title>2026W45, trailing 13-week mean: 230.2</title></circle>
+<circle class="trd" cx="627.5" cy="176.1" r="3"><title>2026W46, trailing 13-week mean: 222.5</title></circle>
 <line class="tr" x1="672" y1="69" x2="683" y2="69" stroke-width="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">trailing 13-week mean</tspan></text>
 <line class="tr" x1="672" y1="88" x2="683" y2="88" stroke-width="2" stroke-dasharray="4 3"/>

@@ -22,102 +22,102 @@
 <text class="mut" x="56" y="127.5" font-size="10" text-anchor="end">7500</text>
 <line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
 <text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">10000</text>
-<rect class="seg s0" x="71.7" y="322.0" width="29.8" height="2.0"><title>2026W33, Ratified: 74</title></rect>
-<rect class="seg s2" x="71.7" y="321.7" width="29.8" height="0.3"><title>2026W33, Recorded: 11</title></rect>
-<rect class="seg s3" x="71.7" y="321.6" width="29.8" height="0.1"><title>2026W33, Provisional: 4</title></rect>
-<rect class="seg s4" x="71.7" y="320.0" width="29.8" height="1.6"><title>2026W33, Unrecorded: 60</title></rect>
-<path class="seg s5" d="M71.7,320.0 V237.0 Q71.7,233.0 75.7,233.0 H97.4 Q101.4,233.0 101.4,237.0 V320.0 Z"><title>2026W33, No provenance block: 3271</title></path>
-<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W33</text>
-<text class="fg val" x="86.5" y="228.0" font-size="10" text-anchor="middle">3420</text>
-<rect class="seg s0" x="116.7" y="321.3" width="29.8" height="2.7"><title>2026W34, Ratified: 100</title></rect>
-<rect class="seg s2" x="116.7" y="321.1" width="29.8" height="0.2"><title>2026W34, Recorded: 8</title></rect>
-<rect class="seg s3" x="116.7" y="320.7" width="29.8" height="0.4"><title>2026W34, Provisional: 16</title></rect>
-<rect class="seg s4" x="116.7" y="319.1" width="29.8" height="1.6"><title>2026W34, Unrecorded: 62</title></rect>
-<path class="seg s5" d="M116.7,319.1 V223.5 Q116.7,219.5 120.7,219.5 H142.5 Q146.5,219.5 146.5,223.5 V319.1 Z"><title>2026W34, No provenance block: 3742</title></path>
-<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W34</text>
-<text class="fg val" x="131.6" y="214.5" font-size="10" text-anchor="middle">3928</text>
-<rect class="seg s0" x="161.8" y="321.3" width="29.8" height="2.7"><title>2026W35, Ratified: 102</title></rect>
-<rect class="seg s2" x="161.8" y="321.0" width="29.8" height="0.2"><title>2026W35, Recorded: 9</title></rect>
-<rect class="seg s3" x="161.8" y="320.4" width="29.8" height="0.7"><title>2026W35, Provisional: 26</title></rect>
-<rect class="seg s4" x="161.8" y="318.7" width="29.8" height="1.7"><title>2026W35, Unrecorded: 64</title></rect>
-<path class="seg s5" d="M161.8,318.7 V208.7 Q161.8,204.7 165.8,204.7 H187.6 Q191.6,204.7 191.6,208.7 V318.7 Z"><title>2026W35, No provenance block: 4283</title></path>
-<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W35</text>
-<text class="fg val" x="176.7" y="199.7" font-size="10" text-anchor="middle">4484</text>
-<rect class="seg s0" x="206.9" y="321.2" width="29.8" height="2.8"><title>2026W36, Ratified: 105</title></rect>
-<rect class="seg s2" x="206.9" y="320.2" width="29.8" height="1.0"><title>2026W36, Recorded: 37</title></rect>
-<rect class="seg s3" x="206.9" y="318.5" width="29.8" height="1.8"><title>2026W36, Provisional: 66</title></rect>
-<rect class="seg s4" x="206.9" y="318.4" width="29.8" height="0.1"><title>2026W36, Unrecorded: 2</title></rect>
-<path class="seg s5" d="M206.9,318.4 V206.8 Q206.9,202.8 210.9,202.8 H232.6 Q236.6,202.8 236.6,206.8 V318.4 Z"><title>2026W36, No provenance block: 4347</title></path>
-<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<rect class="seg s0" x="71.7" y="321.3" width="29.8" height="2.7"><title>2026W34, Ratified: 100</title></rect>
+<rect class="seg s2" x="71.7" y="321.1" width="29.8" height="0.2"><title>2026W34, Recorded: 8</title></rect>
+<rect class="seg s3" x="71.7" y="320.7" width="29.8" height="0.4"><title>2026W34, Provisional: 16</title></rect>
+<rect class="seg s4" x="71.7" y="319.1" width="29.8" height="1.6"><title>2026W34, Unrecorded: 62</title></rect>
+<path class="seg s5" d="M71.7,319.1 V223.5 Q71.7,219.5 75.7,219.5 H97.4 Q101.4,219.5 101.4,223.5 V319.1 Z"><title>2026W34, No provenance block: 3742</title></path>
+<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W34</text>
+<text class="fg val" x="86.5" y="214.5" font-size="10" text-anchor="middle">3928</text>
+<rect class="seg s0" x="116.7" y="321.3" width="29.8" height="2.7"><title>2026W35, Ratified: 102</title></rect>
+<rect class="seg s2" x="116.7" y="321.0" width="29.8" height="0.2"><title>2026W35, Recorded: 9</title></rect>
+<rect class="seg s3" x="116.7" y="320.4" width="29.8" height="0.7"><title>2026W35, Provisional: 26</title></rect>
+<rect class="seg s4" x="116.7" y="318.7" width="29.8" height="1.7"><title>2026W35, Unrecorded: 64</title></rect>
+<path class="seg s5" d="M116.7,318.7 V208.7 Q116.7,204.7 120.7,204.7 H142.5 Q146.5,204.7 146.5,208.7 V318.7 Z"><title>2026W35, No provenance block: 4283</title></path>
+<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W35</text>
+<text class="fg val" x="131.6" y="199.7" font-size="10" text-anchor="middle">4484</text>
+<rect class="seg s0" x="161.8" y="321.2" width="29.8" height="2.8"><title>2026W36, Ratified: 105</title></rect>
+<rect class="seg s2" x="161.8" y="320.2" width="29.8" height="1.0"><title>2026W36, Recorded: 37</title></rect>
+<rect class="seg s3" x="161.8" y="318.5" width="29.8" height="1.8"><title>2026W36, Provisional: 66</title></rect>
+<rect class="seg s4" x="161.8" y="318.4" width="29.8" height="0.1"><title>2026W36, Unrecorded: 2</title></rect>
+<path class="seg s5" d="M161.8,318.4 V206.8 Q161.8,202.8 165.8,202.8 H187.6 Q191.6,202.8 191.6,206.8 V318.4 Z"><title>2026W36, No provenance block: 4347</title></path>
+<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="fg val" x="176.7" y="197.8" font-size="10" text-anchor="middle">4557</text>
+<rect class="seg s0" x="206.9" y="320.6" width="29.8" height="3.4"><title>2026W37, Ratified: 127</title></rect>
+<rect class="seg s1" x="206.9" y="320.4" width="29.8" height="0.2"><title>2026W37, Ruled, rename owed: 9</title></rect>
+<rect class="seg s2" x="206.9" y="319.3" width="29.8" height="1.0"><title>2026W37, Recorded: 39</title></rect>
+<rect class="seg s3" x="206.9" y="318.4" width="29.8" height="0.9"><title>2026W37, Provisional: 35</title></rect>
+<rect class="seg s4" x="206.9" y="318.4" width="29.8" height="0.1"><title>2026W37, Unrecorded: 2</title></rect>
+<path class="seg s5" d="M206.9,318.4 V206.8 Q206.9,202.8 210.9,202.8 H232.6 Q236.6,202.8 236.6,206.8 V318.4 Z"><title>2026W37, No provenance block: 4345</title></path>
+<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W37</text>
 <text class="fg val" x="221.8" y="197.8" font-size="10" text-anchor="middle">4557</text>
-<rect class="seg s0" x="252.0" y="320.6" width="29.8" height="3.4"><title>2026W37, Ratified: 127</title></rect>
-<rect class="seg s1" x="252.0" y="320.4" width="29.8" height="0.2"><title>2026W37, Ruled, rename owed: 9</title></rect>
-<rect class="seg s2" x="252.0" y="319.3" width="29.8" height="1.0"><title>2026W37, Recorded: 39</title></rect>
-<rect class="seg s3" x="252.0" y="318.4" width="29.8" height="0.9"><title>2026W37, Provisional: 35</title></rect>
-<rect class="seg s4" x="252.0" y="318.4" width="29.8" height="0.1"><title>2026W37, Unrecorded: 2</title></rect>
-<path class="seg s5" d="M252.0,318.4 V206.8 Q252.0,202.8 256.0,202.8 H277.7 Q281.7,202.8 281.7,206.8 V318.4 Z"><title>2026W37, No provenance block: 4345</title></path>
-<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W37</text>
-<text class="fg val" x="266.8" y="197.8" font-size="10" text-anchor="middle">4557</text>
-<rect class="seg s0" x="297.0" y="319.8" width="29.8" height="4.2"><title>2026W38, Ratified: 157</title></rect>
-<rect class="seg s1" x="297.0" y="319.6" width="29.8" height="0.2"><title>2026W38, Ruled, rename owed: 9</title></rect>
-<rect class="seg s2" x="297.0" y="318.9" width="29.8" height="0.7"><title>2026W38, Recorded: 27</title></rect>
-<rect class="seg s3" x="297.0" y="317.6" width="29.8" height="1.3"><title>2026W38, Provisional: 49</title></rect>
-<rect class="seg s4" x="297.0" y="317.5" width="29.8" height="0.1"><title>2026W38, Unrecorded: 2</title></rect>
-<path class="seg s5" d="M297.0,317.5 V196.5 Q297.0,192.5 301.0,192.5 H322.8 Q326.8,192.5 326.8,196.5 V317.5 Z"><title>2026W38, No provenance block: 4701</title></path>
-<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W38</text>
-<text class="fg val" x="311.9" y="187.5" font-size="10" text-anchor="middle">4945</text>
-<rect class="seg s0" x="342.1" y="318.2" width="29.8" height="5.8"><title>2026W39, Ratified: 217</title></rect>
-<rect class="seg s1" x="342.1" y="318.0" width="29.8" height="0.2"><title>2026W39, Ruled, rename owed: 8</title></rect>
-<rect class="seg s2" x="342.1" y="317.2" width="29.8" height="0.8"><title>2026W39, Recorded: 30</title></rect>
-<rect class="seg s3" x="342.1" y="305.6" width="29.8" height="11.6"><title>2026W39, Provisional: 437</title></rect>
-<rect class="seg s4" x="342.1" y="305.5" width="29.8" height="0.1"><title>2026W39, Unrecorded: 3</title></rect>
-<path class="seg s5" d="M342.1,305.5 V161.8 Q342.1,157.8 346.1,157.8 H367.9 Q371.9,157.8 371.9,161.8 V305.5 Z"><title>2026W39, No provenance block: 5553</title></path>
-<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W39</text>
-<text class="fg val" x="357.0" y="152.8" font-size="10" text-anchor="middle">6248</text>
-<rect class="seg s0" x="387.2" y="317.6" width="29.8" height="6.4"><title>2026W40, Ratified: 242</title></rect>
-<rect class="seg s1" x="387.2" y="317.4" width="29.8" height="0.2"><title>2026W40, Ruled, rename owed: 7</title></rect>
-<rect class="seg s2" x="387.2" y="316.6" width="29.8" height="0.8"><title>2026W40, Recorded: 31</title></rect>
-<rect class="seg s3" x="387.2" y="303.1" width="29.8" height="13.4"><title>2026W40, Provisional: 505</title></rect>
-<rect class="seg s4" x="387.2" y="302.9" width="29.8" height="0.2"><title>2026W40, Unrecorded: 9</title></rect>
-<path class="seg s5" d="M387.2,302.9 V139.2 Q387.2,135.2 391.2,135.2 H413.0 Q417.0,135.2 417.0,139.2 V302.9 Z"><title>2026W40, No provenance block: 6303</title></path>
-<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W40</text>
-<text class="fg val" x="402.1" y="130.2" font-size="10" text-anchor="middle">7097</text>
-<rect class="seg s0" x="432.3" y="316.3" width="29.8" height="7.7"><title>2026W41, Ratified: 291</title></rect>
-<rect class="seg s1" x="432.3" y="316.1" width="29.8" height="0.2"><title>2026W41, Ruled, rename owed: 7</title></rect>
-<rect class="seg s2" x="432.3" y="315.2" width="29.8" height="0.9"><title>2026W41, Recorded: 32</title></rect>
-<rect class="seg s3" x="432.3" y="288.4" width="29.8" height="26.8"><title>2026W41, Provisional: 1007</title></rect>
-<rect class="seg s4" x="432.3" y="288.2" width="29.8" height="0.2"><title>2026W41, Unrecorded: 9</title></rect>
-<path class="seg s5" d="M432.3,288.2 V85.6 Q432.3,81.6 436.3,81.6 H458.0 Q462.0,81.6 462.0,85.6 V288.2 Z"><title>2026W41, No provenance block: 7765</title></path>
-<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W41</text>
-<text class="fg val" x="447.2" y="76.6" font-size="10" text-anchor="middle">9111</text>
-<rect class="seg s0" x="477.4" y="301.5" width="29.8" height="22.5"><title>2026W42, Ratified: 847</title></rect>
-<rect class="seg s1" x="477.4" y="301.3" width="29.8" height="0.2"><title>2026W42, Ruled, rename owed: 6</title></rect>
-<rect class="seg s2" x="477.4" y="300.5" width="29.8" height="0.8"><title>2026W42, Recorded: 30</title></rect>
-<rect class="seg s3" x="477.4" y="273.5" width="29.8" height="27.0"><title>2026W42, Provisional: 1016</title></rect>
-<path class="seg s5" d="M477.4,273.5 V100.7 Q477.4,96.7 481.4,96.7 H503.1 Q507.1,96.7 507.1,100.7 V273.5 Z"><title>2026W42, No provenance block: 6645</title></path>
-<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W42</text>
-<text class="fg val" x="492.2" y="91.7" font-size="10" text-anchor="middle">8544</text>
-<rect class="seg s0" x="522.4" y="300.1" width="29.8" height="23.9"><title>2026W43, Ratified: 900</title></rect>
-<rect class="seg s2" x="522.4" y="299.3" width="29.8" height="0.7"><title>2026W43, Recorded: 27</title></rect>
-<rect class="seg s3" x="522.4" y="256.5" width="29.8" height="42.8"><title>2026W43, Provisional: 1609</title></rect>
-<rect class="seg s4" x="522.4" y="256.5" width="29.8" height="0.0"><title>2026W43, Unrecorded: 1</title></rect>
-<path class="seg s5" d="M522.4,256.5 V90.6 Q522.4,86.6 526.4,86.6 H548.2 Q552.2,86.6 552.2,90.6 V256.5 Z"><title>2026W43, No provenance block: 6387</title></path>
-<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<text class="fg val" x="537.3" y="81.6" font-size="10" text-anchor="middle">8924</text>
-<rect class="seg s0" x="567.5" y="277.8" width="29.8" height="46.2"><title>2026W44, Ratified: 1735</title></rect>
-<rect class="seg s2" x="567.5" y="276.8" width="29.8" height="1.1"><title>2026W44, Recorded: 40</title></rect>
-<rect class="seg s3" x="567.5" y="218.1" width="29.8" height="58.7"><title>2026W44, Provisional: 2206</title></rect>
-<rect class="seg s4" x="567.5" y="218.1" width="29.8" height="0.0"><title>2026W44, Unrecorded: 1</title></rect>
-<path class="seg s5" d="M567.5,218.1 V71.6 Q567.5,67.6 571.5,67.6 H593.3 Q597.3,67.6 597.3,71.6 V218.1 Z"><title>2026W44, No provenance block: 5657</title></path>
-<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<text class="fg val" x="582.4" y="62.6" font-size="10" text-anchor="middle">9639</text>
-<rect class="seg s0" x="612.6" y="267.6" width="29.8" height="56.4"><title>2026W45, Ratified: 2122</title></rect>
-<rect class="seg s2" x="612.6" y="266.6" width="29.8" height="0.9"><title>2026W45, Recorded: 35</title></rect>
-<rect class="seg s3" x="612.6" y="211.2" width="29.8" height="55.4"><title>2026W45, Provisional: 2084</title></rect>
-<rect class="seg s4" x="612.6" y="211.2" width="29.8" height="0.0"><title>2026W45, Unrecorded: 1</title></rect>
-<path class="seg s5" d="M612.6,211.2 V73.1 Q612.6,69.1 616.6,69.1 H638.3 Q642.3,69.1 642.3,73.1 V211.2 Z"><title>2026W45, No provenance block: 5341</title></path>
-<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W45</text>
-<text class="fg val" x="627.5" y="64.1" font-size="10" text-anchor="middle">9583</text>
+<rect class="seg s0" x="252.0" y="319.8" width="29.8" height="4.2"><title>2026W38, Ratified: 157</title></rect>
+<rect class="seg s1" x="252.0" y="319.6" width="29.8" height="0.2"><title>2026W38, Ruled, rename owed: 9</title></rect>
+<rect class="seg s2" x="252.0" y="318.9" width="29.8" height="0.7"><title>2026W38, Recorded: 27</title></rect>
+<rect class="seg s3" x="252.0" y="317.6" width="29.8" height="1.3"><title>2026W38, Provisional: 49</title></rect>
+<rect class="seg s4" x="252.0" y="317.5" width="29.8" height="0.1"><title>2026W38, Unrecorded: 2</title></rect>
+<path class="seg s5" d="M252.0,317.5 V196.5 Q252.0,192.5 256.0,192.5 H277.7 Q281.7,192.5 281.7,196.5 V317.5 Z"><title>2026W38, No provenance block: 4701</title></path>
+<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W38</text>
+<text class="fg val" x="266.8" y="187.5" font-size="10" text-anchor="middle">4945</text>
+<rect class="seg s0" x="297.0" y="318.2" width="29.8" height="5.8"><title>2026W39, Ratified: 217</title></rect>
+<rect class="seg s1" x="297.0" y="318.0" width="29.8" height="0.2"><title>2026W39, Ruled, rename owed: 8</title></rect>
+<rect class="seg s2" x="297.0" y="317.2" width="29.8" height="0.8"><title>2026W39, Recorded: 30</title></rect>
+<rect class="seg s3" x="297.0" y="305.6" width="29.8" height="11.6"><title>2026W39, Provisional: 437</title></rect>
+<rect class="seg s4" x="297.0" y="305.5" width="29.8" height="0.1"><title>2026W39, Unrecorded: 3</title></rect>
+<path class="seg s5" d="M297.0,305.5 V161.8 Q297.0,157.8 301.0,157.8 H322.8 Q326.8,157.8 326.8,161.8 V305.5 Z"><title>2026W39, No provenance block: 5553</title></path>
+<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W39</text>
+<text class="fg val" x="311.9" y="152.8" font-size="10" text-anchor="middle">6248</text>
+<rect class="seg s0" x="342.1" y="317.6" width="29.8" height="6.4"><title>2026W40, Ratified: 242</title></rect>
+<rect class="seg s1" x="342.1" y="317.4" width="29.8" height="0.2"><title>2026W40, Ruled, rename owed: 7</title></rect>
+<rect class="seg s2" x="342.1" y="316.6" width="29.8" height="0.8"><title>2026W40, Recorded: 31</title></rect>
+<rect class="seg s3" x="342.1" y="303.1" width="29.8" height="13.4"><title>2026W40, Provisional: 505</title></rect>
+<rect class="seg s4" x="342.1" y="302.9" width="29.8" height="0.2"><title>2026W40, Unrecorded: 9</title></rect>
+<path class="seg s5" d="M342.1,302.9 V139.2 Q342.1,135.2 346.1,135.2 H367.9 Q371.9,135.2 371.9,139.2 V302.9 Z"><title>2026W40, No provenance block: 6303</title></path>
+<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W40</text>
+<text class="fg val" x="357.0" y="130.2" font-size="10" text-anchor="middle">7097</text>
+<rect class="seg s0" x="387.2" y="316.3" width="29.8" height="7.7"><title>2026W41, Ratified: 291</title></rect>
+<rect class="seg s1" x="387.2" y="316.1" width="29.8" height="0.2"><title>2026W41, Ruled, rename owed: 7</title></rect>
+<rect class="seg s2" x="387.2" y="315.2" width="29.8" height="0.9"><title>2026W41, Recorded: 32</title></rect>
+<rect class="seg s3" x="387.2" y="288.4" width="29.8" height="26.8"><title>2026W41, Provisional: 1007</title></rect>
+<rect class="seg s4" x="387.2" y="288.2" width="29.8" height="0.2"><title>2026W41, Unrecorded: 9</title></rect>
+<path class="seg s5" d="M387.2,288.2 V85.6 Q387.2,81.6 391.2,81.6 H413.0 Q417.0,81.6 417.0,85.6 V288.2 Z"><title>2026W41, No provenance block: 7765</title></path>
+<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W41</text>
+<text class="fg val" x="402.1" y="76.6" font-size="10" text-anchor="middle">9111</text>
+<rect class="seg s0" x="432.3" y="301.5" width="29.8" height="22.5"><title>2026W42, Ratified: 847</title></rect>
+<rect class="seg s1" x="432.3" y="301.3" width="29.8" height="0.2"><title>2026W42, Ruled, rename owed: 6</title></rect>
+<rect class="seg s2" x="432.3" y="300.5" width="29.8" height="0.8"><title>2026W42, Recorded: 30</title></rect>
+<rect class="seg s3" x="432.3" y="273.5" width="29.8" height="27.0"><title>2026W42, Provisional: 1016</title></rect>
+<path class="seg s5" d="M432.3,273.5 V100.7 Q432.3,96.7 436.3,96.7 H458.0 Q462.0,96.7 462.0,100.7 V273.5 Z"><title>2026W42, No provenance block: 6645</title></path>
+<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W42</text>
+<text class="fg val" x="447.2" y="91.7" font-size="10" text-anchor="middle">8544</text>
+<rect class="seg s0" x="477.4" y="300.1" width="29.8" height="23.9"><title>2026W43, Ratified: 900</title></rect>
+<rect class="seg s2" x="477.4" y="299.3" width="29.8" height="0.7"><title>2026W43, Recorded: 27</title></rect>
+<rect class="seg s3" x="477.4" y="256.5" width="29.8" height="42.8"><title>2026W43, Provisional: 1609</title></rect>
+<rect class="seg s4" x="477.4" y="256.5" width="29.8" height="0.0"><title>2026W43, Unrecorded: 1</title></rect>
+<path class="seg s5" d="M477.4,256.5 V90.6 Q477.4,86.6 481.4,86.6 H503.1 Q507.1,86.6 507.1,90.6 V256.5 Z"><title>2026W43, No provenance block: 6387</title></path>
+<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W43</text>
+<text class="fg val" x="492.2" y="81.6" font-size="10" text-anchor="middle">8924</text>
+<rect class="seg s0" x="522.4" y="277.8" width="29.8" height="46.2"><title>2026W44, Ratified: 1735</title></rect>
+<rect class="seg s2" x="522.4" y="276.8" width="29.8" height="1.1"><title>2026W44, Recorded: 40</title></rect>
+<rect class="seg s3" x="522.4" y="218.1" width="29.8" height="58.7"><title>2026W44, Provisional: 2206</title></rect>
+<rect class="seg s4" x="522.4" y="218.1" width="29.8" height="0.0"><title>2026W44, Unrecorded: 1</title></rect>
+<path class="seg s5" d="M522.4,218.1 V71.6 Q522.4,67.6 526.4,67.6 H548.2 Q552.2,67.6 552.2,71.6 V218.1 Z"><title>2026W44, No provenance block: 5657</title></path>
+<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W44</text>
+<text class="fg val" x="537.3" y="62.6" font-size="10" text-anchor="middle">9639</text>
+<rect class="seg s0" x="567.5" y="267.5" width="29.8" height="56.5"><title>2026W45, Ratified: 2123</title></rect>
+<rect class="seg s2" x="567.5" y="266.6" width="29.8" height="0.9"><title>2026W45, Recorded: 35</title></rect>
+<rect class="seg s3" x="567.5" y="211.1" width="29.8" height="55.5"><title>2026W45, Provisional: 2085</title></rect>
+<rect class="seg s4" x="567.5" y="211.1" width="29.8" height="0.0"><title>2026W45, Unrecorded: 1</title></rect>
+<path class="seg s5" d="M567.5,211.1 V73.0 Q567.5,69.0 571.5,69.0 H593.3 Q597.3,69.0 597.3,73.0 V211.1 Z"><title>2026W45, No provenance block: 5341</title></path>
+<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W45</text>
+<text class="fg val" x="582.4" y="64.0" font-size="10" text-anchor="middle">9585</text>
+<rect class="seg s0" x="612.6" y="274.6" width="29.8" height="49.4"><title>2026W46, Ratified: 1857</title></rect>
+<rect class="seg s2" x="612.6" y="273.7" width="29.8" height="0.9"><title>2026W46, Recorded: 35</title></rect>
+<rect class="seg s3" x="612.6" y="218.2" width="29.8" height="55.5"><title>2026W46, Provisional: 2086</title></rect>
+<rect class="seg s4" x="612.6" y="218.2" width="29.8" height="0.0"><title>2026W46, Unrecorded: 1</title></rect>
+<path class="seg s5" d="M612.6,218.2 V80.1 Q612.6,76.1 616.6,76.1 H638.3 Q642.3,76.1 642.3,80.1 V218.2 Z"><title>2026W46, No provenance block: 5340</title></path>
+<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W46</text>
+<text class="fg val" x="627.5" y="71.1" font-size="10" text-anchor="middle">9319</text>
 <rect class="s5" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">No provenance block</tspan></text>
 <rect class="s4" x="672" y="83" width="11" height="11" rx="2"/>
