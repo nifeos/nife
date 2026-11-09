@@ -112,7 +112,7 @@ about:
 | | |
 |---|---|
 | **The syscall surface** | A boundary, not a habit. A new method inside the existing capability model is fine and gets its semantics recorded in `design/decisions/`; a new syscall number is a design fork. |
-| **A new dependency** | Taking one is a decision (DECISIONS §46 (thin primitives or whole subsystems)); a dependency on one of our own `nifeos` crates, pinned by a git `rev` of a full 40-hexadecimal-digit commit on that repository's main, is approved in advance. The tree is thin architectural primitives or whole subsystems nobody would write, with nothing in between. |
+| **A new dependency** | Taking one is a decision (DECISIONS §46 (thin primitives or whole subsystems)); a dependency on one of our own `nifeos` crates needs no ruling when its git `rev` is a full commit on that repository's main. The tree is thin architectural primitives or whole subsystems nobody would write, with nothing in between. |
 | **Names** | Crates, programs, modules, public functions and directories are named by an architect. Ship provisional, say so. |
 | **Anything two programs agree on** | A wire format, an opcode number, a packed word. The code is a morning's work; the un-shipping is not. |
 | **`design/decisions/` section numbers** | Assigned at merge. |
