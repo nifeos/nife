@@ -1002,6 +1002,7 @@ version = "0.1.0"
 [[package]]
 name = "non_volatile_memory_express"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=87bbef8c9ac4cd05cc6babf88f31fa8500166e9d#87bbef8c9ac4cd05cc6babf88f31fa8500166e9d"
 
 [[package]]
 name = "nu-ansi-term"

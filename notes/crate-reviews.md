@@ -179,7 +179,9 @@ Outstanding before the move.
 |---|---|
 | `design/decisions/0086-el0-nvme-driver/prior-art.md` and milestone 569 (the disk an installer names has no model, only a size) still cite `prp_pair`, `CNS_CONTROLLER` and `CNS_NAMESPACE`. | maintainer |
 
-Recommendation. The architect cleared the move, and has not cleared the tag or publication.
+Recommendation. The architect cleared the move, and has not cleared the tag or publication. The
+repository `nifeos/non_volatile_memory_express` exists, and `kernel`, `components` and
+`driver_process_contract` pin it by revision.
 
 ## `e1000e`, step 6
 

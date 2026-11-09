@@ -65,7 +65,6 @@ memory_corruption_canary_gate 14 2 0 2
 memory_regions 109 0 0 2
 network_time_protocol 166 5 0 14
 nifefs 107 0 0 8
-non_volatile_memory_express 179 7 0 10
 number_writer 25 0 0 0
 package_archive 217 0 0 17
 package_index 172 1 4 42
