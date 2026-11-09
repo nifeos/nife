@@ -1,4 +1,4 @@
-# census=2026-11-02 run=41451956976 sha=23765cb46d775dc6ffd92927005d72034795749f
+# census=2026-11-09 run=42628160522 sha=ae84ab77997d7e0b5148c65fe69520a1c39b9710
 crate,function,mutation,path,line,verdict,detail
 abi,admitted,replace | with ^,crates/abi/src/futex.rs,17,const,128 | 2 are pairwise disjoint
 abi,,replace << with >>,crates/abi/src/rights.rs,2,literal,a zero feed or amount: 1 and 0
@@ -30,16 +30,16 @@ compositor,background_pixel,replace | with ^,crates/compositor/src/lib.rs,320,si
 coremark,fsm_work,replace >> with <<,crates/coremark/src/lib.rs,203,site,"c = crc16(c, (n >> 16) as u16);"
 credential_contract,req,replace | with ^,crates/credential_contract/src/lib.rs,115,site,(operation << OPERATION_SHIFT) | ((id_len as u64 & 0xffff) << 16) | (secret_len as u64 & 0xffff)
 credential_contract,req,replace | with ^,crates/credential_contract/src/lib.rs,115,site,(operation << OPERATION_SHIFT) | ((id_len as u64 & 0xffff) << 16) | (secret_len as u64 & 0xffff)
-designware_ethernet,modify_extended,replace | with ^,crates/designware_ethernet/src/motorcomm_physical_layer_device.rs,388,site,"let v = (read_extended(bus, physical_layer_device_address, extended)? & !clear) | set;"
-designware_mobile_storage,pattern,replace ^ with |,crates/designware_mobile_storage/src/bench.rs,170,site,^ (i >> 8) as u8
-designware_mobile_storage,"Host<R, D>::issue",replace | with ^,crates/designware_mobile_storage/src/host_controller.rs,385,site,".write(registers::CONTROL, ctrl | registers::CONTROL_FIFO_RESET);"
-designware_mobile_storage,"Host<R, D>::issue",replace | with ^,crates/designware_mobile_storage/src/host_controller.rs,414,site,if status & (registers::RINTSTS_RCRC | registers::RINTSTS_RE) != 0 {
-designware_mobile_storage,"Host<R, D>::internal_direct_memory_access_stop",replace | with ^,crates/designware_mobile_storage/src/internal_direct_memory_access.rs,361,site,& !(registers::CONTROL_USE_INTERNAL_DMAC | registers::CONTROL_DMA_ENABLE);
-designware_mobile_storage,"Host<R, D>::internal_direct_memory_access_stop",replace | with ^,crates/designware_mobile_storage/src/internal_direct_memory_access.rs,364,site,"ctrl | registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET,"
-designware_mobile_storage,"Host<R, D>::internal_direct_memory_access_stop",replace | with ^,crates/designware_mobile_storage/src/internal_direct_memory_access.rs,364,site,"ctrl | registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET,"
-designware_mobile_storage,"Host<R, D>::internal_direct_memory_access_stop",replace | with ^,crates/designware_mobile_storage/src/internal_direct_memory_access.rs,367,site,window.read(registers::CONTROL) & (registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET)
-designware_mobile_storage,"Host<R, D>::internal_direct_memory_access_stop",replace | with ^,crates/designware_mobile_storage/src/internal_direct_memory_access.rs,377,site,} else if ctrl & (registers::CONTROL_DMA_RESET | registers::CONTROL_FIFO_RESET) != 0 {
-device_tree_blob,DeviceTreeBlob<'a>::cells,replace | with ^,crates/device_tree_blob/src/lib.rs,1144,site,"value = (value << 32) | be32(self.bytes, at + i * 4)? as u64;"
+designware_ethernet,modify_extended,replace | with ^,crates/designware_ethernet/src/motorcomm_physical_layer_device.rs,474,site,"let value = (read_extended(bus, physical_layer_device_address, extended)? & !clear) | set;"
+designware_ethernet,program_system_bus_mode,replace | with ^,crates/designware_ethernet/src/network_interface_controller.rs,282,site,| registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_WRITE_OUTSTANDING_REQUEST_LIMIT_MASK);
+designware_ethernet,program_system_bus_mode,replace | with ^,crates/designware_ethernet/src/network_interface_controller.rs,285,site,| (bus.write_outstanding << registers::DIRECT_MEMORY_ACCESS_SYSTEM_BUS_MODE_WRITE_OUTSTANDING_REQUEST_LIMIT_SHIFT)
+designware_ethernet,program_system_bus_mode,replace | with ^,crates/designware_ethernet/src/network_interface_controller.rs,287,site,| bus.bus_burst_lengths;
+designware_ethernet,program_channel_bursts,replace | with ^,crates/designware_ethernet/src/network_interface_controller.rs,311,site,| (bus.transmit_channel_burst_length
+designware_ethernet,program_channel_bursts,replace | with ^,crates/designware_ethernet/src/network_interface_controller.rs,314,site,"| registers::CHANNEL_TRANSMIT_CONTROL_OPERATE_ON_SECOND_PACKET,"
+designware_ethernet,program_channel_bursts,replace | with ^,crates/designware_ethernet/src/network_interface_controller.rs,322,site,| receive_buffer_size);
+designware_ethernet,program_channel_bursts,replace | with ^,crates/designware_ethernet/src/network_interface_controller.rs,326,site,| (bus.receive_channel_burst_length
+designware_ethernet,program_channel_bursts,replace | with ^,crates/designware_ethernet/src/network_interface_controller.rs,329,site,"| (BUFFER_BYTES as u32) << registers::CHANNEL_RECEIVE_CONTROL_BUFFER_SIZE_SHIFT,"
+device_tree_blob,DeviceTreeBlob<'a>::cells,replace | with ^,crates/device_tree_blob/src/lib.rs,1212,site,"value = (value << 32) | be32(self.bytes, at + i * 4)? as u64;"
 disk_tree,,replace | with ^,crates/disk_tree/src/lib.rs,37,site,pub const ROOT_RIGHTS: u64 = dir::ENUMERATE | dir::READ | dir::DESCEND;
 disk_tree,,replace | with ^,crates/disk_tree/src/lib.rs,37,site,pub const ROOT_RIGHTS: u64 = dir::ENUMERATE | dir::READ | dir::DESCEND;
 domain_name_resolution_contract,port_and_transport,replace | with ^,crates/domain_name_resolution_contract/src/endowment.rs,21,site,port as u64 | transport << 16
@@ -52,17 +52,8 @@ domain_name_system,decode_name_into,replace | with ^,crates/domain_name_system/s
 domain_name_system,Reader<'a>::record,replace | with ^,crates/domain_name_system/src/lib.rs,509,site,"ttl: (ttl_hi << 16) | ttl_lo,"
 driver_process_contract::designware_ethernet,Handoff::pack,replace | with ^,crates/driver_process_contract/src/designware_ethernet.rs,54,site,"ROLE_TAG | u64::from_le_bytes(station_address) << 16,"
 driver_process_contract::e1000e,Handoff::pack,replace | with ^,crates/driver_process_contract/src/e1000e.rs,87,site,"ROLE_TAG | u64::from_le_bytes(station_address) << 16,"
-e1000e,cycle,replace | with ^,crates/e1000e/src/pch/non_volatile_memory.rs,181,site,let ctl = (hardware.read(FLASH_BASE_ADDR + HSFSTS) >> 16) as u16 | control::FLASH_CYCLE_GO;
-e1000e,read_u32_at_byte,replace >> with <<,crates/e1000e/src/pch/non_volatile_memory.rs,209,site,let mut ctl = (hardware.read(FLASH_BASE_ADDR + HSFSTS) >> 16) as u16;
-e1000e,read_mdic,replace | with ^,crates/e1000e/src/pch/physical_layer_device.rs,238,site,| physical_layer_device_address << mdic::PHY_SHIFT
-e1000e,read_mdic,replace | with ^,crates/e1000e/src/pch/physical_layer_device.rs,239,site,"| mdic::OP_READ,"
-e1000e,write_mdic,replace | with ^,crates/e1000e/src/pch/physical_layer_device.rs,259,site,| register << mdic::REG_SHIFT
-e1000e,write_mdic,replace | with ^,crates/e1000e/src/pch/physical_layer_device.rs,260,site,| physical_layer_device_address << mdic::PHY_SHIFT
-e1000e,write_mdic,replace | with ^,crates/e1000e/src/pch/physical_layer_device.rs,261,site,"| mdic::OP_WRITE,"
-e1000e,physical_layer_device_reset_generic,replace | with ^,crates/e1000e/src/pch/sequence.rs,551,site,"hardware.write(mac::CTRL, ctrl | CTRL_PHY_RST);"
-e1000e,lan_connected_device_configuration,replace | with ^,crates/e1000e/src/pch/sequence.rs,755,site,"(at & physical_layer_device::MAX_PHY_REG_ADDRESS) | page,"
-entropy_contract,req,replace | with ^,crates/entropy_contract/src/lib.rs,55,site,(operation << OPERATION_SHIFT) | (n & 0xff)
-entropy_contract,bringup_failure,replace | with ^,crates/entropy_contract/src/lib.rs,100,site,DEAD | step
+entropy_contract,req,replace | with ^,crates/entropy_contract/src/lib.rs,61,site,(operation << OPERATION_SHIFT) | (n & 0xff)
+entropy_contract,bringup_failure,replace | with ^,crates/entropy_contract/src/lib.rs,106,site,DEAD | step
 file_allocation_table,,replace | with ^,crates/file_allocation_table/src/directory.rs,32,const,1 | 2 | 4 | 8 are pairwise disjoint
 file_allocation_table,,replace | with ^,crates/file_allocation_table/src/directory.rs,32,const,1 | 2 | 4 | 8 are pairwise disjoint
 file_allocation_table,,replace | with ^,crates/file_allocation_table/src/directory.rs,32,const,1 | 2 | 4 | 8 are pairwise disjoint
@@ -94,25 +85,24 @@ filesystem_contract,,replace | with ^,crates/filesystem_contract/src/verb.rs,198
 filesystem_contract,,replace | with ^,crates/filesystem_contract/src/verb.rs,284,site,"dir::WRITE | dir::SETTIME,"
 filesystem_contract,spec,replace | with ^,crates/filesystem_contract/src/xattr.rs,83,site,((kind as u64) << 32) | (value_len & 0xffff_ffff)
 filesystem_contract,reply,replace | with ^,crates/filesystem_contract/src/xattr.rs,101,site,(((kind & MAXIMUM_KIND) as i64) << 32) | (value_len as i64 & 0xffff_ffff)
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,232,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,711,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,790,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,824,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,879,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,1013,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,1046,literal,a zero feed or amount: 1 and 0
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1077,site,| LISTED
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1078,site,| SURVIVED_RENAME
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1079,site,| GONE_AFTER_REMOVE
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1080,site,| GONE_AFTER_UNLINK
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1081,site,| OVERSIZE_REFUSED
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1082,site,| STORE_UNNAMEABLE
-filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1083,site,| STORE_UNLISTED;
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,236,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,715,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,794,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,828,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,883,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,1017,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace << with >>,crates/filesystem_fixture/src/lib.rs,1050,literal,a zero feed or amount: 1 and 0
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1081,site,| LISTED
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1082,site,| SURVIVED_RENAME
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1083,site,| GONE_AFTER_REMOVE
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1084,site,| GONE_AFTER_UNLINK
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1085,site,| OVERSIZE_REFUSED
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1086,site,| STORE_UNNAMEABLE
+filesystem_fixture,,replace | with ^,crates/filesystem_fixture/src/lib.rs,1087,site,| STORE_UNLISTED;
 firmware_configuration,DmaCommand::read,replace | with ^,crates/firmware_configuration/src/lib.rs,82,site,"control: ((key as u32) << 16) | control::SELECT | control::READ,"
 firmware_configuration,DmaCommand::read,replace | with ^,crates/firmware_configuration/src/lib.rs,82,site,"control: ((key as u32) << 16) | control::SELECT | control::READ,"
 firmware_configuration,DmaCommand::write,replace | with ^,crates/firmware_configuration/src/lib.rs,106,site,"control: ((key as u32) << 16) | control::SELECT | control::WRITE,"
 firmware_configuration,DmaCommand::write,replace | with ^,crates/firmware_configuration/src/lib.rs,106,site,"control: ((key as u32) << 16) | control::SELECT | control::WRITE,"
-generational_table,"Table<T, N>::name",replace | with ^,crates/generational_table/src/lib.rs,72,site,((generation as u64) << 32) | slot as u64
 globally_unique_identifier_partition_table,,replace << with >>,crates/globally_unique_identifier_partition_table/src/entry.rs,24,literal,a zero feed or amount: 1 and 0
 glyph_atlas,blend,replace | with ^,crates/glyph_atlas/src/blend.rs,33,site,"channel(fg, bg, a, 16) | channel(fg, bg, a, 8) | channel(fg, bg, a, 0)"
 glyph_atlas,blend,replace | with ^,crates/glyph_atlas/src/blend.rs,33,site,"channel(fg, bg, a, 16) | channel(fg, bg, a, 8) | channel(fg, bg, a, 0)"
@@ -123,10 +113,10 @@ grant_plan,delegated_installer_badge,replace | with ^,crates/grant_plan/src/spaw
 grant_plan,installer_label,replace | with ^,crates/grant_plan/src/spawnproto.rs,1097,site,Some(badge & !(INSTALLER_BADGE | (0x3fff_ffff << DELEGATED_APPROVAL_SHIFT)))
 graphics_contract,pixel,replace | with ^,crates/graphics_contract/src/lib.rs,86,site,(r << 16) | (g << 8) | b
 graphics_contract,pixel,replace | with ^,crates/graphics_contract/src/lib.rs,86,site,(r << 16) | (g << 8) | b
-graphics_contract,req,replace | with ^,crates/graphics_contract/src/lib.rs,163,site,(operation << OPERATION_SHIFT) | (operand & ((1 << OPERATION_SHIFT) - 1))
-graphics_contract,rect,replace | with ^,crates/graphics_contract/src/lib.rs,199,site,| (((y as u64) & 0x3fff) << 14)
-graphics_contract,rect,replace | with ^,crates/graphics_contract/src/lib.rs,200,site,| (((w as u64) & 0x3fff) << 28)
-graphics_contract,rect,replace | with ^,crates/graphics_contract/src/lib.rs,201,site,| (((h as u64) & 0x3fff) << 42)
+graphics_contract,req,replace | with ^,crates/graphics_contract/src/lib.rs,165,site,(operation << OPERATION_SHIFT) | (operand & ((1 << OPERATION_SHIFT) - 1))
+graphics_contract,rect,replace | with ^,crates/graphics_contract/src/lib.rs,201,site,| (((y as u64) & 0x3fff) << 14)
+graphics_contract,rect,replace | with ^,crates/graphics_contract/src/lib.rs,202,site,| (((w as u64) & 0x3fff) << 28)
+graphics_contract,rect,replace | with ^,crates/graphics_contract/src/lib.rs,203,site,| (((h as u64) & 0x3fff) << 42)
 hot_swap_contract,,replace << with >>,crates/hot_swap_contract/src/lib.rs,216,literal,a zero feed or amount: 1 and 0
 hot_swap_contract,,replace << with >>,crates/hot_swap_contract/src/lib.rs,220,wide,1 shifted by 1 changes value
 hot_swap_contract,,replace << with >>,crates/hot_swap_contract/src/lib.rs,223,wide,1 shifted by 2 changes value
@@ -145,10 +135,10 @@ hot_swap_contract,survey_counts,replace | with ^,crates/hot_swap_contract/src/li
 hot_swap_contract,state_blob,replace | with ^,crates/hot_swap_contract/src/lib.rs,452,site,"[STATE_MAGIC | layout, tally]"
 hot_swap_contract,digest,replace >> with <<,crates/hot_swap_contract/src/lib.rs,678,site,h ^= (seq >> (8 * i)) & 0xff;
 hot_swap_contract,tag,replace | with ^,crates/hot_swap_contract/src/lib.rs,714,site,(version << 32) | (seq & 0xffff_ffff)
-jh7110_clock_and_reset,with_parent,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,94,site,(word & !CLOCK_MUX_MASK) | ((parent << CLOCK_MUX_SHIFT) & CLOCK_MUX_MASK)
-jh7110_clock_and_reset,parse_reg,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,540,site,"Some(((u32be(0) << 32) | u32be(4), (u32be(8) << 32) | u32be(12)))"
-jh7110_clock_and_reset,parse_reg,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,540,site,"Some(((u32be(0) << 32) | u32be(4), (u32be(8) << 32) | u32be(12)))"
-jh7110_clock_and_reset,with_divider,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,902,site,(word & !0x00ff_ffff) | (divider & 0x00ff_ffff)
+jh7110_clock_and_reset,with_parent,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,116,site,(word & !CLOCK_PARENT_MASK) | ((parent << CLOCK_MUX_SHIFT) & CLOCK_PARENT_MASK)
+jh7110_clock_and_reset,parse_register_property,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,600,site,"(big_endian_word(0) << 32) | big_endian_word(4),"
+jh7110_clock_and_reset,parse_register_property,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,601,site,"(big_endian_word(8) << 32) | big_endian_word(12),"
+jh7110_clock_and_reset,with_divider,replace | with ^,crates/jh7110_clock_and_reset/src/lib.rs,1005,site,(word & !0x00ff_ffff) | (divider & 0x00ff_ffff)
 line_editor,supervisor::image_lengths,replace | with ^,crates/line_editor/src/component.rs,192,site,if (editor | own | display) >> LENGTH_BITS != 0 {
 line_editor,supervisor::image_lengths,replace | with ^,crates/line_editor/src/component.rs,192,site,if (editor | own | display) >> LENGTH_BITS != 0 {
 line_editor,supervisor::image_lengths,replace | with ^,crates/line_editor/src/component.rs,195,site,Some(editor | (own << LENGTH_BITS) | (display << (2 * LENGTH_BITS)))
@@ -171,8 +161,8 @@ machine_discovery,,replace << with >>,crates/machine_discovery/src/x86_64.rs,347
 measured_boot,Sha256::compress,replace ^ with |,crates/measured_boot/src/lib.rs,147,site,let ch = (e & f) ^ ((!e) & g);
 measured_boot,Sha256::compress,replace ^ with |,crates/measured_boot/src/lib.rs,154,site,let maj = (a & b) ^ (a & c) ^ (b & c);
 measured_boot,Sha256::compress,replace ^ with |,crates/measured_boot/src/lib.rs,154,site,let maj = (a & b) ^ (a & c) ^ (b & c);
-measured_boot,parse_hex,replace | with ^,crates/measured_boot/src/lib.rs,518,site,*slot = (nibble(bytes[i * 2])? << 4) | nibble(bytes[i * 2 + 1])?;
-network_time_protocol,Timestamp::from_unix,replace | with ^,crates/network_time_protocol/src/lib.rs,189,site,"((ntp_seconds as u64) << 32) | ns_to_ticks(ns) as u64,"
+measured_boot,parse_hex,replace | with ^,crates/measured_boot/src/lib.rs,818,site,*slot = (nibble(bytes[i * 2])? << 4) | nibble(bytes[i * 2 + 1])?;
+network_time_protocol,Timestamp::from_unix,replace | with ^,crates/network_time_protocol/src/lib.rs,189,site,"((ntp_seconds as u64) << 32) | nanoseconds_to_ticks(nanoseconds) as u64,"
 network_time_protocol,Timestamp::randomise_low,replace | with ^,crates/network_time_protocol/src/lib.rs,235,site,Timestamp((self.0 & !(mask as u64)) | (random & mask) as u64)
 network_time_protocol,Packet::to_bytes,replace | with ^,crates/network_time_protocol/src/lib.rs,421,site,w[0] = ((self.leap & 0b11) << 6) | ((self.version & 0b111) << 3) | (self.mode & 0b111);
 network_time_protocol,Packet::to_bytes,replace | with ^,crates/network_time_protocol/src/lib.rs,421,site,w[0] = ((self.leap & 0b11) << 6) | ((self.version & 0b111) << 3) | (self.mode & 0b111);
@@ -195,8 +185,8 @@ screen_console,Aperture::to_words,replace | with ^,crates/screen_console/src/lib
 screen_console,Aperture::to_words,replace | with ^,crates/screen_console/src/lib.rs,176,site,"self.stride as u64 | order << 32 | (self.scale as u64) << 40,"
 screen_console,Aperture::to_words,replace | with ^,crates/screen_console/src/lib.rs,176,site,"self.stride as u64 | order << 32 | (self.scale as u64) << 40,"
 screen_console,Aperture::copy_wide_screen,replace | with ^,crates/screen_console/src/lib.rs,339,site,"write64(at, lo | hi << 32);"
-socket_contract,listen_grant,replace | with ^,crates/socket_contract/src/lib.rs,140,site,(lo as u64) | ((hi as u64) << 16)
-socket_contract,udp_bind_grant,replace | with ^,crates/socket_contract/src/lib.rs,188,site,((lo as u64) << 32) | ((hi as u64) << 48)
+socket_contract,listen_grant,replace | with ^,crates/socket_contract/src/lib.rs,145,site,(lo as u64) | ((hi as u64) << 16)
+socket_contract,udp_bind_grant,replace | with ^,crates/socket_contract/src/lib.rs,193,site,((lo as u64) << 32) | ((hi as u64) << 48)
 system_log_contract,kernel_ring::Ring<'a>::read,replace >> with <<,crates/system_log_contract/src/lib.rs,522,site,"kind: ((m >> 32) & 0xff) as u8,"
 system_log_contract,console::chunk,replace | with ^,crates/system_log_contract/src/lib.rs,584,site,(OPERATION_KERNEL_LINE << 56) | n as u64
 timetable,request,replace | with ^,crates/timetable/src/registration.rs,89,site,(seq << 8) | (operation & 0xff)
