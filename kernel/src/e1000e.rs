@@ -361,7 +361,7 @@ impl ::e1000e::platform_controller_hub::Hardware for Bar<'_> {
     fn write(&mut self, off: u64, v: u32) {
         self.c.w(off, v);
     }
-    fn read16(&mut self, off: u64) -> u16 {
+    fn read_flash_status(&mut self, off: u64) -> u16 {
         self.c.r16(off)
     }
     fn delay_microseconds(&mut self, microseconds: u64) {

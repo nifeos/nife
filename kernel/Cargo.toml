@@ -175,7 +175,7 @@ non_volatile_memory_express = { version = "0.1.0", git = "https://github.com/nif
 # network card a PC actually has)): the kernel resets the device and programs the rings' bases from
 # it. The `Handoff` it gives `net_stack` is `driver_process_contract`'s. Same split as the NVMe
 # crate above.
-e1000e = { version = "0.1.0", git = "https://github.com/nifeos/e1000e", rev = "8ac75a65851046bab839c4ab848996f1440ca334" }
+e1000e = { version = "0.1.0", git = "https://github.com/nifeos/e1000e", rev = "40c1ec9c7e73e5099661636c046773dfcaecbb6d" }
 # The JH7110's Ethernet controller (milestone 53 (the board's own peripherals: network and storage
 # on real silicon)): register map, descriptors, ring logic, the bring-up and PHY sequences and the
 # coherence probe, all host-tested. `kernel/src/designware_ethernet.rs` is its volatile half, the
