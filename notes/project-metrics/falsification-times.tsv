@@ -15,9 +15,9 @@ address_space_map::runtime_window_refuses_every_address_its_doc_forbids	0.4
 address_space_map::service_window_accepts_every_page_of_its_band	0.9
 address_space_map::service_window_refuses_every_address_its_doc_forbids	0.4
 address_space_map::the_bands_are_listed_in_address_order	0.5
-block_roster::read_is_total_and_every_counted_entry_is_gettable	4.4
-block_roster::write_is_total_on_any_page_length	17.6
-block_roster::write_then_read_returns_the_same_devices_in_order	13.4
+block_roster_contract::read_is_total_and_every_counted_entry_is_gettable	4.4
+block_roster_contract::write_is_total_on_any_page_length	17.6
+block_roster_contract::write_then_read_returns_the_same_devices_in_order	13.4
 calendar::a_day_number_always_decodes_to_a_real_date	3.6
 calendar::day_of_year_is_bounded_and_366_means_leap	21.2
 calendar::each_day_sorts_after_the_one_before_it	23.8

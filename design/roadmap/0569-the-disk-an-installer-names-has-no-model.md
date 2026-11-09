@@ -75,7 +75,7 @@ the thing in their hand. A serial number is that; a model number on its own is n
 
 B. A program names the disk. This is the wire question and it is an architect's. `disk_surveyor`
 is what would list the machine's drives for a person to choose between. It cannot see an NVMe
-controller at all: `crates/block_roster` encodes two transport kinds and neither is NVMe. That is
+controller at all: `crates/block_roster_contract` encodes two transport kinds and neither is NVMe. That is
 milestone 421 (the block roster cannot name an NVMe disk) exactly, held since 2026-09-19 on
 DECISIONS §193 (NVMe in the block roster). Its open question is the transport kind's spelling
 **and whether an NVMe entry carries anything a virtio one does not**. A controller identity is that

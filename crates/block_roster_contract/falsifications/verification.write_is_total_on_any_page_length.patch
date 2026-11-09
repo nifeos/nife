@@ -1,4 +1,4 @@
-Falsifies `block_roster::write_is_total_on_any_page_length`.
+Falsifies `block_roster_contract::write_is_total_on_any_page_length`.
 
 The defect: `write` drops its check that the page holds the header, the guard a
 writer forgets when it reasons that an empty device list always fits. With no
@@ -9,9 +9,9 @@ Expected to fail: an out-of-bounds slice index in `write`'s header stores, on
 any page of 0 to 15 bytes with no devices.
 
 
-diff --git a/crates/block_roster/src/lib.rs b/crates/block_roster/src/lib.rs
---- a/crates/block_roster/src/lib.rs
-+++ b/crates/block_roster/src/lib.rs
+diff --git a/crates/block_roster_contract/src/lib.rs b/crates/block_roster_contract/src/lib.rs
+--- a/crates/block_roster_contract/src/lib.rs
++++ b/crates/block_roster_contract/src/lib.rs
 @@ -174,9 +174,6 @@
  /// assert_eq!(roster.get(2).unwrap().transport_name(), Some("nvme"));
  /// ```

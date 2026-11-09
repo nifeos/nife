@@ -1,6 +1,6 @@
 //! The block-device roster, the disk surveyor, and the blank disk's partitioner and `mkfs`.
 //!
-//! The kernel's part is two separate authorities. It writes one roster page (`block_roster`) that
+//! The kernel's part is two separate authorities. It writes one roster page (`block_roster_contract`) that
 //! lists every block device and is handed out read-only, a listing and not a handle. It hands one
 //! device to one process: a block server owns one disk's DMA and transport
 //! (`fs_service::spawn_block_server`), and a client holds an endpoint to it and a page they share.
@@ -78,22 +78,22 @@ pub struct Wiring {
 /// comes last so that adding it moved no virtio entry. A device is listed whether or not a server
 /// has been wired for it.
 fn devices() -> (
-    [block_roster::Device; block_roster::capacity_of(FRAME_SIZE as usize)],
+    [block_roster_contract::Device; block_roster_contract::capacity_of(FRAME_SIZE as usize)],
     usize,
 ) {
-    let mut out = [block_roster::Device {
+    let mut out = [block_roster_contract::Device {
         ordinal: 0,
-        transport: block_roster::TRANSPORT_VIRTIO_MEMORY_MAPPED_IO,
-    }; block_roster::capacity_of(FRAME_SIZE as usize)];
+        transport: block_roster_contract::TRANSPORT_VIRTIO_MEMORY_MAPPED_IO,
+    }; block_roster_contract::capacity_of(FRAME_SIZE as usize)];
     let mut n = 0;
 
     for i in 0..crate::virtio::count_block_devices() {
         if n == out.len() {
             break;
         }
-        out[n] = block_roster::Device {
+        out[n] = block_roster_contract::Device {
             ordinal: i as u32,
-            transport: block_roster::TRANSPORT_VIRTIO_MEMORY_MAPPED_IO,
+            transport: block_roster_contract::TRANSPORT_VIRTIO_MEMORY_MAPPED_IO,
         };
         n += 1;
     }
@@ -101,9 +101,9 @@ fn devices() -> (
         if n == out.len() {
             break;
         }
-        out[n] = block_roster::Device {
+        out[n] = block_roster_contract::Device {
             ordinal: i as u32,
-            transport: block_roster::TRANSPORT_VIRTIO_PCI,
+            transport: block_roster_contract::TRANSPORT_VIRTIO_PCI,
         };
         n += 1;
     }
@@ -111,9 +111,9 @@ fn devices() -> (
         if n == out.len() {
             break;
         }
-        out[n] = block_roster::Device {
+        out[n] = block_roster_contract::Device {
             ordinal: i as u32,
-            transport: block_roster::TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS,
+            transport: block_roster_contract::TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS,
         };
         n += 1;
     }
@@ -131,7 +131,7 @@ fn roster_page() -> (u64, usize) {
     };
     page.fill(0);
     let (devs, n) = devices();
-    block_roster::write(page, &devs[..n]).expect("the roster page sizes its own array");
+    block_roster_contract::write(page, &devs[..n]).expect("the roster page sizes its own array");
     (phys, n)
 }
 

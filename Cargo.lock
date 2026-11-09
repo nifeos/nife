@@ -101,7 +101,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "block_roster"
+name = "block_roster_contract"
 version = "0.1.0"
 
 [[package]]
@@ -206,7 +206,7 @@ version = "0.1.0"
 dependencies = [
  "abi",
  "address_space_map",
- "block_roster",
+ "block_roster_contract",
  "boot_ladder",
  "boot_slot",
  "byte_sink_contract",
@@ -774,7 +774,7 @@ dependencies = [
  "address_space_identifier",
  "address_space_map",
  "base_digest_contract",
- "block_roster",
+ "block_roster_contract",
  "boot_ladder",
  "boot_slot",
  "byte_sink_contract",
@@ -1476,7 +1476,7 @@ version = "0.1.0"
 dependencies = [
  "abi",
  "address_space_map",
- "block_roster",
+ "block_roster_contract",
  "byte_sink_contract",
  "c_program_fixture",
  "calendar",

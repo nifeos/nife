@@ -23,9 +23,9 @@ index 6f53c155e..73dffd212 100644
 -        if n == out.len() {
 -            break;
 -        }
--        out[n] = block_roster::Device {
+-        out[n] = block_roster_contract::Device {
 -            ordinal: i as u32,
--            transport: block_roster::TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS,
+-            transport: block_roster_contract::TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS,
 -        };
 -        n += 1;
 -    }

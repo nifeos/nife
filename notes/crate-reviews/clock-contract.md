@@ -161,7 +161,7 @@ Linux text.
 
 | item | owner |
 |---|---|
-| Freeze the identity values, as for `block_roster`. Milestone 1017 asks for ratified `INTERFACE_ID` values before a contract crate leaves. | architect |
+| Freeze the identity values, as for `block_roster_contract`. Milestone 1017 asks for ratified `INTERFACE_ID` values before a contract crate leaves. | architect |
 | The names above. The two overlay spellings and `offset_nanos` must go before the move, or the crate leaves carrying this tree's old spellings. | architect, then a lane |
 | `cargo xtask std-src` copies the crate's source by path; after the move it must read the pinned checkout, as must `helpers/interface_stability.py`, `helpers/interface_declarations_check.py`, `script/interleaving-check` and the farm stamp. | move lane |
 | Convert the eight path dependencies to `git` and `rev` with `version = "0.1.0"`. | move lane |

@@ -1,6 +1,6 @@
-# Review package: `block_roster`
+# Review package: `block_roster_contract`
 
-*Name: provisional, minted by lane lane/crate-review-packages-five. The `block_roster` package of
+*Name: provisional, minted by lane lane/crate-review-packages-five. The `block_roster_contract` package of
 [crate-reviews.md](../crate-reviews.md), in its own file because the packages together outgrow the
 page.*
 
@@ -22,7 +22,7 @@ identity, and `write` no longer panics on any input. It is a leaf: nothing in th
 
 | item | value |
 |---|---|
-| crate | `block_roster`, ratified ("a read-only page, deliberately not a `_protocol`") |
+| crate | `block_roster_contract`, ratified ("a read-only page, deliberately not a `_protocol`") |
 | identity values | ratified and frozen: `INTERFACE_ID` 5, `VERSION` 1, `MAGIC` the bytes `blkrosv1`; row 5 of [milestone 956 (the linked interfaces carry checkable versions)](../../design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md)'s id table. The crate header and README state them, and a host test pins all three as literals |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024, 1.88 |
@@ -38,12 +38,12 @@ This lane ran each check in its own worktree, on this branch.
 
 | check | result |
 |---|---|
-| `script/crate-standalone block_roster` | clean: manifest, files, citations, names, and the build on 1.88 for the host and the three bare-metal targets; Kani 3 of 3 prove; all 3 falsification patches fail their harness |
-| `cargo test -p block_roster` | 10 unit tests and 2 doctests pass; one doctest is the README's usage example |
+| `script/crate-standalone block_roster_contract` | clean: manifest, files, citations, names, and the build on 1.88 for the host and the three bare-metal targets; Kani 3 of 3 prove; all 3 falsification patches fail their harness |
+| `cargo test -p block_roster_contract` | 10 unit tests and 2 doctests pass; one doctest is the README's usage example |
 | `cargo clippy --all-targets`, `cargo doc` with warnings denied | no warning |
 | `cargo package` | passes; the one warning is the missing `repository` key, which the move adds |
-| `script/names block_roster` | the crate name ratified |
-| `python3 helpers/name_release.py --draft block_roster` | 21 names, every one ratified |
+| `script/names block_roster_contract` | the crate name ratified |
+| `python3 helpers/name_release.py --draft block_roster_contract` | 21 names, every one ratified |
 | the template's naming checks (`vendor/crate-workflows/helpers/`, `--manifest Cargo.toml` over `src/lib.rs`) | `spelled_out`, `unit_symbols`, `question_shape`, `british_spelling` and `register_names`: 80 names judged, 0 refused each. `abbreviations` (report only): 3 components not words, the baseline's 3 |
 | `script/lint`, `script/test` | in the pull request's checks |
 
@@ -102,7 +102,7 @@ fields `ordinal` and `transport`.
 
 | name | kind | status | rule check |
 |---|---|---|---|
-| `block_roster` | crate | ratified | passes |
+| `block_roster_contract` | crate | ratified | passes |
 | `MAGIC`, `VERSION`, `INTERFACE_ID` | constants | ratified | `id` is an accepted word |
 | `HEADER_BYTES`, `ENTRY_BYTES` | constants | ratified | the size rule: the unit is spelled out |
 | `TRANSPORT_VIRTIO_MEMORY_MAPPED_IO` | constant | ratified | findings 1 and 2 |
@@ -144,9 +144,9 @@ The crate itself does not: it is a leaf, with no dependency and no path, citatio
 
 | item | owner |
 |---|---|
-| Clear the move. The clearance is the go for creating `nifeos/block_roster`; nothing publishes and no tag is asked. | architect |
+| Clear the move. The clearance is the go for creating `nifeos/block_roster_contract`; nothing publishes and no tag is asked. | architect |
 | Convert the three path dependencies (`kernel`, `components`, `system_tests`) to `git` and `rev` with `version = "0.1.0"`. The consumers stay in nife: the kernel's writer and `disk_surveyor`, the reader, which declares the pair of `INTERFACE_ID` and `VERSION`. | move lane |
-| `helpers/interface_declarations_check.py` finds each `INTERFACE_ID` by walking the workspace members, so once the crate is a git dependency it reports "the table assigns 5 to `block_roster`, which carries no `INTERFACE_ID`". Milestone 1017 says the declaration check, the Kani reach list, the verify table and milestone 610 (the interface's stability is measured weekly)'s series must read the pinned checkout instead; `helpers/interface_stability.py` names the crate. `helpers/format_values_check.py` guards a magic and version change only under `crates/`, so after the move that guard is the crate's own identity test. | move lane |
+| `helpers/interface_declarations_check.py` finds each `INTERFACE_ID` by walking the workspace members, so once the crate is a git dependency it reports "the table assigns 5 to `block_roster_contract`, which carries no `INTERFACE_ID`". Milestone 1017 says the declaration check, the Kani reach list, the verify table and milestone 610 (the interface's stability is measured weekly)'s series must read the pinned checkout instead; `helpers/interface_stability.py` names the crate. `helpers/format_values_check.py` guards a magic and version change only under `crates/`, so after the move that guard is the crate's own identity test. | move lane |
 | Shipped text speaks of "the kernel" and "wiring time" (the crate header, `Device`, `write`, `TooManyDevices`, the manifest's `description`), where the README says "one party". | move lane |
 | The doc comment on `MAGIC` carries a dated "Amendments" entry, and `VERSION`'s doc asks for one per break; the history belongs in the crate's changelog. | move lane |
 | `helpers/template_report_baseline.txt` holds rows for the crate. | move lane |
@@ -168,5 +168,5 @@ values. The architect's clearance is the one decision.
 
 ## Decisions for the architect
 
-1. Clear the move to `nifeos/block_roster`, with no tag and no publication. Background: the
+1. Clear the move to `nifeos/block_roster_contract`, with no tag and no publication. Background: the
    clearance of the review is the go for creating the repository.

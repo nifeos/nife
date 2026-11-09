@@ -11,7 +11,7 @@ virtio-blk with no board, so it is schedulable before 2026-08-21 rather than wai
 
 Status, taken from the tree on 2026-08-03 rather than from this entry. The reading half is done
 end to end. `crates/globally_unique_identifier_partition_table` parses and writes tables, and `disk_surveyor` reads a real one off a virtio-blk
-device on both ISAs. `crates/block_roster` answers "what drives are attached" as a read-only mapping.
+device on both ISAs. `crates/block_roster_contract` answers "what drives are attached" as a read-only mapping.
 The extended-attribute layer and its host recovery half are built, and `tools/redoxfs_host` extracts.
 Writing on the target was gated on randomness, and both halves were built in commit `4db2fd74`,
 each holding an entropy endpoint (see the Follow-on). See the corrected table below, which used to
@@ -50,7 +50,7 @@ had. Take a status from the merged tree.
 | GPT parsing | Built 2026-07-30 | `crates/globally_unique_identifier_partition_table`, proved against tables `sgdisk` and macOS `diskutil` wrote. Mandatory even if we never write one: you cannot find a partition on a real disk without reading the table |
 | GPT writing | Built 2026-07-30 | `Gpt::create`, `write_primary_header`, `write_backup_header`, `mbr::write`. Re-emitting `sgdisk`'s table reproduces its bytes exactly. What it will not do is invent a unique GUID, which is the row below |
 | Reading a table on the target | Built 2026-08-03 | `disk_surveyor` over the block service, both ISAs, against an image built from the `sgdisk` fixture. notes/block-devices.md |
-| Block device enumeration | Built 2026-08-03 | `crates/block_roster`: a read-only page the kernel writes, listing what is attached and deliberately not how big it is. Listing and holding are different authorities, and the negative control writes to the roster and dies |
+| Block device enumeration | Built 2026-08-03 | `crates/block_roster_contract`: a read-only page the kernel writes, listing what is attached and deliberately not how big it is. Listing and holding are different authorities, and the negative control writes to the roster and dies |
 | Partitioning on the target | Built in commit `4db2fd74` | `components/src/disk_partitioner.rs` draws a unique GUID per partition from the entropy service and lays out the table with `Gpt::create`. No pin divergence |
 | `mkfs` on the target | Built in commit `4db2fd74` | `redoxfs_server/src/bin/mkfs.rs`, with `Header::new_with_uuid` taken as divergence 4 (`vendor/README.md`). Never blocked on `std`; see the finding below |
 
@@ -123,7 +123,7 @@ attached devices and holding one of them are different authorities.
 Built 2026-08-03, and it did not become an `enumerate` *right* (notes/block-devices.md). The
 prediction that it would was reasonable and the tree said otherwise: `dir::ENUMERATE` is a bit in a
 capability a server checks, and a device listing has no server to check it. So the listing is a
-read-only mapping instead, `crates/block_roster`, which is the compositor's window-enumeration
+read-only mapping instead, `crates/block_roster_contract`, which is the compositor's window-enumeration
 shape (DECISIONS §33) rather than the filesystem's. There is nothing to authorize at read time
 because the authorization happened when the mapping was made, and a program that holds no mapping
 has nowhere to look rather than a request that gets refused.

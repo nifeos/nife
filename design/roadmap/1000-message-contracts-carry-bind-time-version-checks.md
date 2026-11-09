@@ -16,7 +16,7 @@ Reuse: the steps reuse the tree's rustdoc-JSON `FORMAT_CONST` pattern (`helpers/
 
 ## Why this left 956
 
-The first cut links `abi`, `address_space_map`, `glob`, `machine_statistics_contract` and `block_roster`. None of them is a message contract, so condition 4 of milestone 756 does not need a bind-time check, a dual path or a swap invariant. Building them now would put code in front of a consumer that does not exist. The trigger to raise this as a milestone is a message contract about to leave the tree. This proposal keeps clear of `filesystem_contract` while UFS2 replaces RedoxFS; that contract gets a version only after the replacement settles.
+The first cut links `abi`, `address_space_map`, `glob`, `machine_statistics_contract` and `block_roster_contract`. None of them is a message contract, so condition 4 of milestone 756 does not need a bind-time check, a dual path or a swap invariant. Building them now would put code in front of a consumer that does not exist. The trigger to raise this as a milestone is a message contract about to leave the tree. This proposal keeps clear of `filesystem_contract` while UFS2 replaces RedoxFS; that contract gets a version only after the replacement settles.
 
 ## The steps
 

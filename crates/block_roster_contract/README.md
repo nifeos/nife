@@ -1,4 +1,4 @@
-# block_roster
+# block_roster_contract
 
 The page that answers "what block devices are attached": a small, fixed-width, pointer-free layout
 that one party writes once, at wiring time, and that other programs then map read-only and read.
@@ -41,11 +41,11 @@ one of `TRANSPORT_VIRTIO_MEMORY_MAPPED_IO` (0), `TRANSPORT_VIRTIO_PCI` (1) and
 ## EXAMPLES
 
 ```rust
-use block_roster::{Device, Roster, TRANSPORT_VIRTIO_PCI};
+use block_roster_contract::{Device, Roster, TRANSPORT_VIRTIO_PCI};
 
 // The writer lays the roster into a page it owns.
 let mut page = [0u8; 4096];
-block_roster::write(&mut page, &[Device { ordinal: 0, transport: TRANSPORT_VIRTIO_PCI }]).unwrap();
+block_roster_contract::write(&mut page, &[Device { ordinal: 0, transport: TRANSPORT_VIRTIO_PCI }]).unwrap();
 
 // A reader holds the mapped page and borrows from it.
 let roster = Roster::read(&page).unwrap();

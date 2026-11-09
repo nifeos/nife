@@ -69,7 +69,7 @@ calef ruled both questions on 2026-10-04 (UTC), relayed by the maintainer on pul
 - Ruled 2026-11-01 (UTC) on pull request #3026's questions: departure package by package replaces
   the single cut. Each package leaves as soon as the shared crates it links have left, in the
   order `disk-tools`, `process-tools`, `core-tools`, and takes the crates only it uses with it. The `INTERFACES` note type moves into a leaf
-  crate of its own so `disk-tools` need not wait for `grant_plan`, and `block_roster` stays the
+  crate of its own so `disk-tools` need not wait for `grant_plan`, and `block_roster_contract` stays the
   first crate a consumer outside nife reads. Each shared crate gets a repository of its own once
   the architect approves that repository. The order is in
   [the proposal](1017-the-contract-crates-leave-in-this-order.md).

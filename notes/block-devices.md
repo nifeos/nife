@@ -63,7 +63,7 @@ This is the design claim, and milestone 57's entry has been making it since 2026
 > instructions carry a "confirm the target device path before proceeding" warning precisely because
 > the tool cannot enforce it. **Here the warning is structural**: the tool was handed one disk.
 
-`crates/block_roster` is the listing half. One page, written by the kernel at wiring time from its
+`crates/block_roster_contract` is the listing half. One page, written by the kernel at wiring time from its
 own mmio and PCIe scans (virtio-blk on either transport, and NVMe controllers by class code),
 mapped **read-only** into whichever program was granted it. A program without the mapping has
 nowhere to look, and the refusal is "you hold no such capability" rather than a permission check.
@@ -213,7 +213,7 @@ names neither disk.
 ## What this lane deliberately did not do
 
 - No hot plug. The roster is written once and never again. A hot-plug story would change
-  `block_roster` (a published-page discipline, the way `clock_contract` has one) rather than its
+  `block_roster_contract` (a published-page discipline, the way `clock_contract` has one) rather than its
   readers.
 - No partition-aware mount. Nothing yet opens a filesystem *at* a partition's offset. The blk
   wire protocol has no base-block field, so a partition capability (an endpoint bound to a window of

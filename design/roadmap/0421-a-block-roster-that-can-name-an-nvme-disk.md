@@ -11,7 +11,7 @@ needs_person: no
 ---
 # 421. The block roster names an NVMe disk
 
-`block_roster` is the read-only page a process holds when it may know which block devices exist
+`block_roster_contract` is the read-only page a process holds when it may know which block devices exist
 without holding any of them (milestone 57 (partitioning and formatting a real drive),
 `notes/block-devices.md`). It lists NVMe controllers beside the virtio disks, so `disk_surveyor`
 sees the one disk in this tree whose driver is a confined process (milestone 261 (the NVMe driver
@@ -21,7 +21,7 @@ leaves the kernel)).
 
 - The kinds, as §193 (what a block-roster entry calls an NVMe disk) rules.
   `TRANSPORT_VIRTIO_MEMORY_MAPPED_IO = 0`, `TRANSPORT_VIRTIO_PCI = 1` and
-  `TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS = 2`, in `crates/block_roster`. An entry is 8 bytes for
+  `TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS = 2`, in `crates/block_roster_contract`. An entry is 8 bytes for
   every kind: an ordinal and a kind. A host test pins the three wire values as literals.
 - The printed names. `transport_name` prints `virtio-mmio`, `virtio-pci` and `nvme`. `nvme`
   is what QEMU calls the device model (`-device nvme`), what Linux calls the driver and its
@@ -61,7 +61,7 @@ server. The roster's shape is about block devices, not about virtio.
 
 ## Index row
 
-`block_roster`, the read-only page that says which disks exist without granting any, lists NVMe
+`block_roster_contract`, the read-only page that says which disks exist without granting any, lists NVMe
 controllers beside virtio disks under `TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS = 2`, printed `nvme`,
 with the two virtio kinds named `TRANSPORT_VIRTIO_MEMORY_MAPPED_IO` and `TRANSPORT_VIRTIO_PCI`
 (§193). The kernel counts controllers from config space alone, so a listing never brings one up,

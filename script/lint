@@ -3407,7 +3407,7 @@ python3 "$(dirname "$0")/../helpers/issue_forms.py"
 #     written inline in a non-test file (`#[cfg(test)] mod tests { use ps::... }`) counts as a
 #     production use, so a crate used only there slips through. Comment lines are skipped, but a
 #     name inside a string is not. And it says nothing about a service crate the kernel uses for
-#     real: `calendar`, `jh7110_entropy`, `video_terminal`, `block_roster` and
+#     real: `calendar`, `jh7110_entropy`, `video_terminal`, `block_roster_contract` and
 #     `non_volatile_memory_express` are the five of those today, and whether they are services at
 #     all is the division question pull request #1389 raises, not this check's.
 echo "==> the kernel's dependencies: nothing only its tests use"

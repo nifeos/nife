@@ -6,7 +6,7 @@ address_space_identifier 21 2 0 2
 address_space_map 30 1 0 9
 allocation_cache 44 0 0 8
 bitmap_font 12 0 0 2
-block_roster 54 1 0 4
+block_roster_contract 54 1 0 4
 board_console 385 6 6 41
 boot_slot 107 7 0 8
 byte_sink_contract 73 4 0 2

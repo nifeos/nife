@@ -1,4 +1,4 @@
-Falsifies `block_roster::read_is_total_and_every_counted_entry_is_gettable`.
+Falsifies `block_roster_contract::read_is_total_and_every_counted_entry_is_gettable`.
 
 The defect: `Roster::get` bounds its index with `i > self.count` instead of
 `i >= self.count`, the off-by-one a reader writes when it thinks of `count` as a
@@ -11,9 +11,9 @@ header accepts, or an out-of-bounds slice inside `get` when the accepted page ha
 exactly `count` entries of room.
 
 
-diff --git a/crates/block_roster/src/lib.rs b/crates/block_roster/src/lib.rs
---- a/crates/block_roster/src/lib.rs
-+++ b/crates/block_roster/src/lib.rs
+diff --git a/crates/block_roster_contract/src/lib.rs b/crates/block_roster_contract/src/lib.rs
+--- a/crates/block_roster_contract/src/lib.rs
++++ b/crates/block_roster_contract/src/lib.rs
 @@ -262,7 +262,7 @@
      /// Name: ratified 2026-11-06 (UTC): the standard library's spelling for indexed access that
      /// returns an `Option`.

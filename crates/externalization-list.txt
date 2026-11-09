@@ -6,7 +6,7 @@
 # has already left is removed from this file by the pull request that moves it.
 abi
 address_space_map
-block_roster
+block_roster_contract
 byte_sink_contract
 calendar
 capability_manifest_note

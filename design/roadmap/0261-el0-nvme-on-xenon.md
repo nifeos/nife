@@ -252,7 +252,7 @@ about a real device at real speed.
 - **Recorded.** One command in flight, inherited from the driver this replaced, so any throughput
   measured against this server is a lower bound on the device rather than a measurement of it.
   `notes/non-volatile-memory-express.md` and the same `BUGS` section.
-- **Milestone 421.** `block_roster` still cannot list the NVMe disk: §86 named its NVMe transport
+- **Milestone 421.** `block_roster_contract` still cannot list the NVMe disk: §86 named its NVMe transport
   kind as blocked on who owns the controller, and that is now answered (a process does), so the wire
   shape can be decided. Not taken here because it is something two programs agree on, which is the
   expensive category.

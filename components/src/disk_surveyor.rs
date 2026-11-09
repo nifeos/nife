@@ -1,7 +1,7 @@
 //! `disk_surveyor`: what drives are attached, and how the one we hold is divided up
 //! (milestone 57, notes/block-devices.md).
 //!
-//! It holds a `READ`-only `PageFrame` capability on the roster page (`block_roster`), so no
+//! It holds a `READ`-only `PageFrame` capability on the roster page (`block_roster_contract`), so no
 //! writable mapping of the listing can be obtained (see [`probe`]), and a block-service endpoint
 //! for one device (`filesystem_contract::blk`). It was handed one disk: no path to type, and
 //! nothing in the roster turns into a handle. It reads LBA 1, parses the GUID Partition Table,
@@ -39,7 +39,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use block_roster::{
+use block_roster_contract::{
     Roster, TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS, TRANSPORT_VIRTIO_MEMORY_MAPPED_IO,
     TRANSPORT_VIRTIO_PCI,
 };
@@ -141,8 +141,8 @@ interfaces_note::carry_interfaces!(&[
         version: address_space_map::VERSION
     },
     interfaces_note::Declared {
-        id: block_roster::INTERFACE_ID,
-        version: block_roster::VERSION
+        id: block_roster_contract::INTERFACE_ID,
+        version: block_roster_contract::VERSION
     },
     interfaces_note::Declared {
         id: clock_contract::INTERFACE_ID,
@@ -257,7 +257,7 @@ fn survey() -> ! {
 
     // How big is the disk? This is the question only a *holder* can ask: the roster deliberately
     // carries no capacity, because a size is a fact about the device rather than about the machine
-    // having one (crates/block_roster).
+    // having one (crates/block_roster_contract).
     let size = call(BLK, req(blk::SIZE), 0).0 as i64;
     if size > 0 && (size as u64).is_multiple_of(LBA) {
         flags |= F_SIZE;
@@ -396,7 +396,7 @@ fn probe() -> ! {
     user_mode_runtime::exit()
 }
 
-/// The roster page, read-only. Its contents are checked by `block_roster::Roster::read`, which
+/// The roster page, read-only. Its contents are checked by `block_roster_contract::Roster::read`, which
 /// refuses a page nobody wrote and a count larger than the page can hold.
 fn roster_page() -> &'static [u8] {
     // SAFETY: a page this program mapped read-only from a frame it holds `READ` on, of exactly

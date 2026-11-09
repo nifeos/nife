@@ -58,7 +58,7 @@ region, so neither verdict is known.
 | schedule_store | 2 | 0 | 3 | 0 | 0 |
 | abi | 1 | 0 | 3 | 0 | 0 |
 | program_argument_contract | 1 | 0 | 10 | 5 | 0 |
-| block_roster | 1 | 0 | 8 | 4 | 0 |
+| block_roster_contract | 1 | 0 | 8 | 4 | 0 |
 | firmware_configuration | 1 | 0 | 1 | 0 | 0 |
 | inter_process_communication | 1 | 0 | 0 | 0 | 0 |
 | pmap | 1 | 0 | 0 | 0 | 0 |

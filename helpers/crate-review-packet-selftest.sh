@@ -10,8 +10,8 @@ set -eu
 root="$(cd "$(dirname "$0")/.." && pwd)"
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-"$root/script/crate-review-packet" --no-rustdoc --out "$work" block_roster >/dev/null
-packet="$work/block_roster.md"
+"$root/script/crate-review-packet" --no-rustdoc --out "$work" block_roster_contract >/dev/null
+packet="$work/block_roster_contract.md"
 for heading in '## The crate' '## Source size' '## Public API' '## `unsafe`' \
     '## Dependencies, and where each points' '## References back into nife' \
     '## Kani harnesses and falsification patches' '## Crates in nife that depend on it' \
