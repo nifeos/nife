@@ -191,11 +191,9 @@ change the dependent side in a separate pull request that cites the landed commi
 
 Each step lands alone. Steps 1 to 5 land in this repository.
 
-1. Built: each `script/lint` section carries `# lint-scope: record`, `code` or `both`, the way
-   `lint-quick` tags sections, and `helpers/lint-section-index.tsv` shows the column. No run
-   selects by it, so nothing runs differently; the record repository's lint is the selection of
-   `record` and `both`. Of 140 sections, 8 read only the record, 35 read the record and code, and
-   97 read no record document.
+1. Built: each `script/lint` section carries `# lint-scope: record`, `code` or `both`, as
+   `lint-quick` tags sections. No run selects by it. Of 140 sections, 8 read only the record, 35
+   read the record and code, and 97 read no record document.
 2. Teach `script/roadmap --check` to resolve `nifeos/<repo>:<path>` at basalt's pin, and fix
    milestone 159's `jh7110_entropy` bullet as the first user.
 3. Built: `script/site` builds the site from `design/`, `notes/` and `briefs/`, and
@@ -208,23 +206,13 @@ Each step lands alone. Steps 1 to 5 land in this repository.
    `AGENTS.md` stay. For each note it decides between cross-cutting and about one crate alone, and
    it produces the number of the second kind. It also lists every link from a record into a path that
    stays, since the site's link check fails the build on such a link.
-5. Measured: the record's checks can run by directory. The ruling of 2026-11-01 (UTC) makes this
-   a condition of the one-repository shape, and each of the three measurements supports it; the
-   appendix holds the evidence.
-   - The `needs-architect` required check of §88 (`needs-architect` as a required check)
-     (`.github/workflows/architect-hold.yml`) runs on every pull request and merge group, a
-     record-only one included. It reads labels and no file, and its job takes 4 to 5 seconds. A
-     job-level condition could limit it, since a job skipped by its condition satisfies a required
-     check here, but limiting it would lift the hold from every other change.
-   - `script/lint` runs all 140 sections on every change. On a record-only pull request they took
-     454 seconds; the 43 sections tagged `record` or `both` took 80 of them. A change to code
-     alone needs the 132 tagged `code` or `both`. In a record repository the 35 `both` sections
-     need a fetch of the pinned code, as the path claims below already do.
-   - The merge queue tests each entry on top of the entries ahead of it, and
-     `merge_group.base_sha` is the entry just ahead (`main`'s tip for the first). So a record
-     entry queued behind a code entry skips the heavy jobs, each still holding a runner for 8 to
-     19 seconds, while the code entry runs them in full. A pull request that carries both runs
-     everything.
+5. Measured: the record's checks can run by directory, the condition the ruling of 2026-11-01
+   (UTC) set on the one-repository shape. Each of the three measurements in the appendix supports
+   it. The hold check of §88 (`needs-architect` as a required check) reads labels and no file, in
+   4 to 5 seconds, and applies to every change. Of `script/lint`'s 140 sections a record-only
+   change needs the 43 tagged `record` or `both`: 80 of 454 seconds on a measured run. The merge
+   queue classifies each entry against the entry ahead, so a record entry queued behind a code
+   entry skips the heavy jobs while the code entry runs them.
 6. After step 5's measurement and the architect's approval of creation: extract by path, then remove the
    paths from this repository in one pull request. That pull request writes `packages/moved.toml`
    with the anchor, and leaves a pointer in the README.
@@ -292,16 +280,12 @@ Steps 6 to 8 wait on step 5's measurement and the architect's approval of creati
 ## Follow-on
 
 - **Done.** Step 3, carried by `script/site`, `site/` and `.github/workflows/record-site.yml`.
-- **Done.** Step 1, carried by the `# lint-scope:` lines in `script/lint`, read by
-  `helpers/lint-no-cargo.awk`.
-- **Done.** Step 5's three measurements, in the appendix.
+- **Done.** Step 1, the `# lint-scope:` lines in `script/lint`, and step 5, in the appendix.
 - **Outstanding.** Steps 2, 4 and 6 to 8 above. Checked 2026-11-09 against `script/roadmap`,
   which resolves no `nifeos/<repo>:<path>`, and `packages/homes.toml`, which sorts no note.
-- **Outstanding.** Two comments in `.github/workflows/ci.yml` (the `gate` job's and its prose
-  step's) and the header of `.github/workflows/empty-diff.yml` say `merge_group.base_sha` is the
-  base branch's tip, so a group's diff spans every queued pull request. The runs in the appendix
-  log it as the entry ahead. The skip rule is safe under either reading, so only the comments
-  change.
+- **Outstanding.** Two comments in `ci.yml` and the header of `empty-diff.yml` call
+  `merge_group.base_sha` the base branch's tip; the appendix's runs log the entry ahead. The skip
+  rule is safe either way, so only the comments change.
 
 ## Index row
 
