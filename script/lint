@@ -253,6 +253,10 @@ echo "==> script/crate-move stages a move as the runbook says"
 # fills the template pins. The selftest drives those transforms on fixtures, with no tree and no
 # network.
 python3 helpers/crate_move.py --selftest >/dev/null
+# The board-check checker (notes/jh7110-entropy-board-check.md) judges a log no gate here can produce,
+# so its selftest is what keeps summarize, fill and check right between bench sessions, and it holds
+# results-template.md to the code.
+python3 -I tools/jh7110_entropy_board_check/results.py --selftest >/dev/null
 # helpers/verify-parallel-selftest.sh proves the shards, the join and the one slot; the heavy-job
 # slots section above runs it, so it is not run twice.
 
