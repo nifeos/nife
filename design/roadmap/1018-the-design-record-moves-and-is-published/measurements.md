@@ -128,3 +128,117 @@ citations, each with its example.
 The 67 off-record links point at paths the site does not carry: `bench/` (16), `system_tests/`
 (14), `crates/` (12), a note's data directory with no `README.md` (8), and the rest at `c_library/`,
 `xtask/`, `fuzz/`, `patches/`, `kernel/`, `components/` and `vendor/`. Step 4 sorts each.
+
+## What each lint section reads, step 1
+
+Measured 2026-11-09 (UTC) on this branch over `origin/main` `412c3ce58`, on a Linux host. Each of
+the 118 sections that build nothing ran alone under `strace -f -e trace=%file,getdents64`, and each
+tracked path it opened was sorted as record or code. The 22 clippy, build and rustdoc sections
+were sorted by reading them: they run cargo on the workspaces, and no build script opens a record
+path. The tag is the `# lint-scope:` line in each section, and `helpers/lint-section-index.tsv`
+carries it as its seventh column.
+
+| tag | sections | what it means |
+|---|---|---|
+| `record` | 8 | opens record documents and no code |
+| `both` | 35 | opens record documents and code, or every tracked file |
+| `code` | 97 | opens no record document |
+
+Two kinds of reading count as code. A walk of every `.rs` file opens the 28 Rust files under
+`notes/` too (probes and measurement crates). A ratchet whose one record-tree file is its own
+baseline under `design/` reads that baseline, which the list above keeps with code.
+
+The `record` sections: journeys, numbered record files, the audit index, the stranger test's run
+record, the outsider-pass selftests, and three mutation-record checks that read only
+`notes/project-metrics/`. The `both` sections fall into three kinds:
+
+- The record's own gates that also read code: roadmap status (its path claims), decisions,
+  citations and its two siblings, fatal risks, counted claims, the naming checks, the prose
+  ratchet, the module-block ratchet, the history ratchet, line citations, exception markers.
+- Checks of code that read a record file as data: script docs (`notes/scripts.md`), the unsafe
+  listing (`notes/kernel-dependency-unsafe/sites.tsv`), package boundaries, the removed-files
+  index, three mutation checks, the host-pass wiring, the first cut's declarations.
+- Checks of every tracked file: conflict markers, TODO markers, environment names, tracked files
+  the tree ignores, markdown links, house style, em-dashes, halves, spelling, the Kani install
+  pin, and the commit messages the branch adds.
+
+## The record's checks by directory, step 5
+
+Measured 2026-11-09 (UTC) from the runs named below, all on hosted runners. `nifeos.org` does not
+exist yet, so this repository stands in for it: a record path here plays a record path there, and
+a code path plays the site's other paths. The record paths are `design/`, `notes/`, `briefs/`
+and the root's `AGENTS.md`, `ARCHITECTS.md` and `CLAUDE.md`.
+
+### The hold check
+
+`.github/workflows/architect-hold.yml` has no path condition and no checkout. It resolves the pull
+request number and reads its labels through the API, on `pull_request` and on `merge_group`.
+
+| what | value |
+|---|---|
+| record-only pull request #3383 (two roadmap files) | ran twice on `pull_request`, 4 seconds each |
+| its merge-group entry, run 42686419143 | queued 4 seconds, ran 5 seconds, run 10 seconds |
+| the code entry ahead of it, #3385, run 42685696857 | queued 5 seconds, ran 4 seconds, run 9 seconds |
+| 97 completed runs of 2026-11-09, `merge_group` | median 10 seconds, 90th percentile 14, maximum 53 |
+| 97 completed runs of 2026-11-09, `pull_request` | median 10 seconds, 90th percentile 21, maximum 77 |
+| billable time, both runs above | 0 milliseconds (a public repository) |
+
+A job skipped by its condition satisfies a required check here: on #3383's head `77eca4bec`, the
+required `test`, `bench`, `boot-check` and eleven more reported `skipped` by condition, and the
+pull request entered the queue and merged. So the hold could be limited by a job-level condition.
+It reads no file, though, and the label it reads applies to any change, so a limit would lift the
+hold from every change outside the record. The condition holds without limiting it.
+
+### What lint runs
+
+The `lint` job in `ci.yml` has no path condition, and `script/lint` runs all 140 sections, one at a
+time on the hosted four-core runner. Section seconds come from each run's `lint-section-time`
+lines, summed by the tag.
+
+| run | `record` | `both` | `code` | all |
+|---|---|---|---|---|
+| #3383, record only, pull request run 42683721051 | 3 | 77 | 374 | 454 |
+| #3383's merge-group entry, run 42686419342 | 4 | 55 | 324 | 383 |
+| #3385, code only, merge-group entry run 42685697323 | 3 | 40 | 275 | 318 |
+
+A record-only change needs the 43 `record` and `both` sections: 80 of 454 seconds on the pull
+request run. A change to code alone needs the 132 `code` and `both` sections, 451 seconds, and a
+record section's own tool counts as code. The job spends more than the sections: on the pull
+request run it took 654 seconds, of which 111 installed `typos` and `cargo-machete`. Run here one
+at a time with `script/lint --section`, the 43 passed alone in 147 seconds, each paying its own
+preamble.
+
+In a record repository the 35 `both` sections lose their code half. Each either fetches the code
+at basalt's pins, as the path claims already plan to, or drops that half. The tree-wide hygiene
+checks among them would read the site's files too; on the pull request run they cost about 18
+seconds.
+
+### A queue batch with a record change and a code change
+
+Measured, from runs, and checked against the ruleset. Ruleset 19596094's merge queue builds up to
+five entries and merges up to five at once (`ALLGREEN`, `MERGE`). Each entry gets its own branch,
+`gh-readonly-queue/main/pr-<N>-<parent>`, holding the pull request merged on top of the entries
+ahead. Its `merge_group.base_sha` is that parent: four entries sampled (#3383, #3384, #3380,
+#3386) each logged a base equal to the commit in their branch name, the entry ahead or `main`'s
+tip.
+
+#3385 (code: `vendor/upstream-status.md`) and #3383 (record: two roadmap files) landed in one
+batch, #3383 behind #3385.
+
+| entry | what `helpers/prose_only.py merge-group` classified | heavy jobs | `lint` job |
+|---|---|---|---|
+| #3385, run 42685697323 | 1 file over `7cd9b3c39`: not prose | 29 ran, the longest 903 seconds | 448 seconds |
+| #3383, run 42686419342 | 2 files over `ddc37dab3`, #3385's entry: prose | 29 skipped their steps, 8 to 19 seconds each | 558 seconds |
+
+So in this queue a record entry and a code entry each run what their own diff asks. The record
+entry still holds a runner per heavy job for its skip step, about 6 runner-minutes in all, and
+runs the whole lint. One pull request that carries both kinds of change runs everything, as it
+should.
+
+### What this leaves unverified
+
+- The runs come from one day and one queue configuration. A ruleset that rebased instead of
+  merging, or GitHub changing the base it reports, would change the batch result.
+- The site's other paths do not exist yet, so no run measured a site change.
+- The tags record what each section opened on this tree. A section that reads a path only when it
+  appears (a new file kind, a failure branch) can read more than it showed here.
