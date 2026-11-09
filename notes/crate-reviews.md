@@ -26,8 +26,9 @@ packages of three crates name its effects.
 
 Not run, and so not claimed: the stranger test, coverage, mutation, `cargo-semver-checks` (a first
 release has no baseline) and the publish rehearsal. The template's `check`, `proofs` and `weekly`
-workflows did not run either, because a repository exists for only four of these crates:
-`file_allocation_table`, `non_volatile_memory_express`, `generational_table` and `e1000e`. The
+workflows did not run either, because a repository exists for only five of these crates:
+`file_allocation_table`, `non_volatile_memory_express`, `generational_table`, `e1000e` and
+`designware_mobile_storage`. The
 stranger record lives in the crate repository, in `docs/stranger-test.md`. The `file_allocation_table`
 package is the exception: it ran the README's commands in a scratch copy and `cargo-semver-checks`
 against itself.
@@ -292,9 +293,9 @@ Outstanding before the move.
 
 | item | owner |
 |---|---|
-| `repository` in the manifest. | move lane |
+| none | the repository `nifeos/designware_mobile_storage` exists and nife pins it by revision |
 
-Recommendation. Ready for review.
+Recommendation. The architect cleared the move, and has not cleared the tag or publication.
 
 ## `jh7110_clock_and_reset`, step 10
 
@@ -383,7 +384,7 @@ Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text 
 | `non_volatile_memory_express` | 5 | cleared to move; repository exists |
 | `e1000e` | 6 | cleared to move; repository exists |
 | `designware_ethernet` | 7 | two alias sets for the architect |
-| `designware_mobile_storage` | 8 | ready for review |
+| `designware_mobile_storage` | 8 | cleared to move; repository exists |
 | `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
 | `block_roster` | contract | ready for review |
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |

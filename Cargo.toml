@@ -93,7 +93,6 @@ members = [
     "crates/intrusive_queue",
     "crates/line_editor",
     "crates/loaded_image_check",
-    "crates/designware_mobile_storage",
     "crates/documentation",
     "crates/domain_name_system",
     "crates/domain_name_resolution_contract",
