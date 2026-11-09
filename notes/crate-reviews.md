@@ -14,9 +14,7 @@ recommendation. A package gathers facts. The architect judges the API's vocabula
 
 ## What was run
 
-Every result below comes from `main` as it stands. Pull request #3200 (milestone 1019 (the driver
-crates carry facts from their sources, not their text), items 3 to 6) is still open, and the
-packages of three crates name its effects.
+Every result below comes from `main` as it stands.
 
 | check | command | scope |
 |---|---|---|
