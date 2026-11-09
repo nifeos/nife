@@ -296,7 +296,7 @@ sequence under QEMU `virt`, and its log summarizes and checks to PASS. `results.
 `script/lint`, drives `summarize`, `fill` and `check` over synthetic logs (a damaged line, a model
 run, a zero capture, a short one) and holds `results-template.md` to the code.
 
-Run on a VisionFive 2: once, on 2026-11-09 (UTC), against crate commit `ee0bde8`. Every check ran
+Run on a VisionFive 2 once, on 2026-11-09 (UTC), against crate commit `ee0bde8`; every check ran
 ([bench/radon-2026-11-09/README-1049.md](../bench/radon-2026-11-09/README-1049.md)). A later commit that changes
 `src/` has not run.
 

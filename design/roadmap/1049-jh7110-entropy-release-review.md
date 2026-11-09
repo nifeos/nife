@@ -97,8 +97,8 @@ environment approval wait for the publishing hold to lift. Effort S.
 #### Item 4: The published tree ran on the board once, at one commit
 
 The bench session ran on radon (a VisionFive 2) on 2026-11-09 (UTC) against
-`nifeos/jh7110_entropy` commit `ee0bde8feb9f78a67da011c928f9a2a697f3bbc1`, with the payload (SHA-256
-`e421000b...54e8`) built from nife `9a1c55963b` and loaded over the network after a cold power-on.
+`nifeos/jh7110_entropy` commit `ee0bde8feb9f78a67da011c928f9a2a697f3bbc1`, with a payload built from nife
+`9a1c55963b`, loaded over the network after a cold power-on.
 The checker printed PASS; the table is in
 [bench/radon-2026-11-09/](../../bench/radon-2026-11-09/README-1049.md), and the crate's README
 "Hardware evidence" section records the run for that commit only.
@@ -112,7 +112,7 @@ The checker printed PASS; the table is in
 - Open: no `LFSR_LOCKUP` appeared, so whether a reseed clears it is unanswered.
 - Statistics: one 1,310,720-byte capture, 2 of 524 FIPS 140-2 blocks failed (bar at most 3), 7.999854
   bits per byte. It shows no gross defect and proves nothing about
-  unpredictability. No outside suite ran, so "quality unmeasured" stays.
+  unpredictability. No outside suite ran.
 
 The console log (SHA-256 `540996ad...960e`, kept by the maintainers) holds two boots, and the judged
 run is the second. The capture's SHA-256 is `97fc5325...9263`.
