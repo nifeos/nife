@@ -8,7 +8,6 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [The boot protocol](../boot-protocol.md): the arm64 Image header that marks a kernel.
 - [The boot stick, and the program that makes it](../boot-stick.md).
 - [What a nife package is, and what still cannot be done with one](../packages.md).
-- [Serving the lab's update index from cordoba: a spec for calef's homelab agent](../lab-index-on-cordoba.md).
 - [Package boundaries: every crate and program in a package, every path with a home](../package-boundaries.md).
 - [The composed image's first installed-programs table](../the-first-installed-programs-table.md): what its first generation holds, what measured boot needs from it, and why it waits on the UFS2 launch volume.
 - [Who may write the activation set: a proposal](../who-may-write-the-activation-set.md).

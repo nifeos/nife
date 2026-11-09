@@ -183,7 +183,7 @@ A lane that hits the commit-first trap, and the fix:
 - The QEMU check is best-effort. `pgrep -l qemu` matches both `qemu-system-aarch64` and
   `qemu-system-riscv64`. It will not catch an emulator started under a name this brief did not
   anticipate. It says nothing about a leaked process on a machine other than the one you are
-  running on (`cordoba`, a board rig).
+  running on (a board rig, say).
 - **Nothing here measures whether following this brief actually stops the clause-dropping it was
   written to fix.** The evidence for writing it down is `notes/effort-levels.md`'s finding that
   correctness comes from prompt wording rather than from the reader's capability; whether this
