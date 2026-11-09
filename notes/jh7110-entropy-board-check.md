@@ -20,8 +20,8 @@ the VisionFive 2's serial adapter and shares its local network:
 ## What this decides, and what it does not
 
 The crate `nifeos/jh7110_entropy` holds the JH7110 TRNG's register map and the function that
-decides whether a generation succeeded. Its README says that this exact source tree has not run on
-a board. This session runs it on one: a small bare-metal payload, built against one commit of the
+decides whether a generation succeeded. Its README records which commit has run on a board.
+This session runs a commit on one: a small bare-metal payload, built against one commit of the
 crate, performs the register sequences below and prints one checksummed line per result, and a
 script on the host judges the log. One boot runs every check, in about fifteen minutes.
 
@@ -296,9 +296,9 @@ sequence under QEMU `virt`, and its log summarizes and checks to PASS. `results.
 `script/lint`, drives `summarize`, `fill` and `check` over synthetic logs (a damaged line, a model
 run, a zero capture, a short one) and holds `results-template.md` to the code.
 
-Not run: anything on a VisionFive 2. The clock plan's register writes, the image's acceptance by
-U-Boot's `booti`, the console stride on the board's UART, and every value in checks 1 to 9 are
-unrun until a session follows this page.
+Run on a VisionFive 2: once, on 2026-11-09 (UTC), against crate commit `ee0bde8`. Every check ran
+([bench/radon-2026-11-09/README-1049.md](../bench/radon-2026-11-09/README-1049.md)). A later commit that changes
+`src/` has not run.
 
 ## BUGS
 
@@ -310,7 +310,5 @@ unrun until a session follows this page.
   records the cost, and every timing includes it.
 - The payload parks at the end, and nothing but a power cycle frees the board, which is a person.
 - `results.py` reads only the last run in a log, so a log of two boots keeps the second.
-- The card's boot script asks for a second file under an old name, `nife-initrd.img`, and the staged
-  `serve/` directory holds `nife-initial-ramdisk.img`. Unless a copy is served under the old name,
-  the first boot silently falls back to the card's kernel (`payload came from card`), and only a
-  second boot runs the payload.
+- The card's boot script also asks for `nife-initrd.img`; unless a copy is served under that name,
+  the first boot silently falls back to the card.

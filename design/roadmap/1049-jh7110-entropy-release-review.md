@@ -96,33 +96,27 @@ environment approval wait for the publishing hold to lift. Effort S.
 
 #### Item 4: The published tree ran on the board once, at one commit
 
-The first bench session ran on radon (a VisionFive 2) on 2026-11-09 (UTC), against
-`nifeos/jh7110_entropy` commit `ee0bde8feb9f78a67da011c928f9a2a697f3bbc1`, with the payload of
-`tools/jh7110_entropy_board_check/` (SHA-256 `e421000b...54e8`) built from nife `9a1c55963b` and
-loaded over the network after a cold power-on by the person. The checker printed `PASS, 0
-problem(s)`; the filled table is in
-[bench/radon-2026-11-09/](../../bench/radon-2026-11-09/README-1049.md).
-The crate's README "Hardware evidence" section records the run for that commit only.
+The bench session ran on radon (a VisionFive 2) on 2026-11-09 (UTC) against
+`nifeos/jh7110_entropy` commit `ee0bde8feb9f78a67da011c928f9a2a697f3bbc1`, with the payload (SHA-256
+`e421000b...54e8`) built from nife `9a1c55963b` and loaded over the network after a cold power-on.
+The checker printed PASS; the table is in
+[bench/radon-2026-11-09/](../../bench/radon-2026-11-09/README-1049.md), and the crate's README
+"Hardware evidence" section records the run for that commit only.
 
-- Passed: the polled reseed and two generations (32 bytes, not all zero, different), 256-bit output
-  after `MODE_256_BIT_OUTPUT`, and 1,048,576 driver-path generations with no timeout, no wrong width
-  and no all-zero output.
-- Recorded, not judged: the first read of `STAT` showed `SEEDED` = 1 and `LAST_RESEED` = 4. That
-  is the state after the bootloader and is not shown to be the silicon's reset state. `STAT.R256`,
-  `MODE` (`0x08`), `FEATURES` (`0x0d`) and `BCONF` (`0x3d`) were read before any `MODE` write,
-  which gives "`BCONF` bit 3 set means 256-bit" only if nothing wrote `MODE` since reset. `STAT` bits
-  19 to 23 were never set (that does not show the field ends at bit 18). A generation took a median
-  6.0 microseconds and a reseed 43.5 (time CSR at 4 MHz, each figure including one read's cost).
-- Open: no `LFSR_LOCKUP` appeared in 1,048,576 generations, so whether a reseed clears it is not
-  answered.
-- Statistics: one 1,310,720-byte capture, 2 of 524 FIPS 140-2 blocks failed (bar at most 3),
-  7.999854 bits of entropy per byte, no repeated generation. It shows no gross defect and proves
-  nothing about unpredictability. No outside suite ran (`ent` and `dieharder` were absent), so the
-  "quality unmeasured" line stays.
+- Passed: the polled reseed and two generations, 256-bit output after `MODE_256_BIT_OUTPUT`, and
+  1,048,576 driver-path generations with no timeout, wrong width or all-zero output.
+- Recorded, not judged: the first `STAT` read showed `SEEDED` = 1 and `LAST_RESEED` = 4, the
+  state after the bootloader and not shown to be silicon reset. `MODE` (`0x08`), `FEATURES` (`0x0d`)
+  and `BCONF` (`0x3d`) were read before any `MODE` write, so "`BCONF` bit 3 set means 256-bit" holds
+  only if nothing wrote `MODE` since reset. `STAT` bits 19 to 23 never set. Timings are in the table.
+- Open: no `LFSR_LOCKUP` appeared, so whether a reseed clears it is unanswered.
+- Statistics: one 1,310,720-byte capture, 2 of 524 FIPS 140-2 blocks failed (bar at most 3), 7.999854
+  bits per byte. It shows no gross defect and proves nothing about
+  unpredictability. No outside suite ran, so "quality unmeasured" stays.
 
-The raw console log (SHA-256 `540996ad...960e`, kept by the maintainers) holds two boots; the first fell back to the card's
-kernel and the judged run is the second. The capture's SHA-256 is `97fc5325...9263`. Two-way.
-Effort M, bench time, spent once; a commit that changes `src/` needs a new session.
+The console log (SHA-256 `540996ad...960e`, kept by the maintainers) holds two boots, and the judged
+run is the second. The capture's SHA-256 is `97fc5325...9263`.
+Two-way. Effort M, bench time.
 
 ### P1
 
