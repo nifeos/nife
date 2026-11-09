@@ -6,10 +6,10 @@ the `entry_size` bytes belong to nobody. Re-encoding writes the count's bytes wh
 Expected to fail: the harness's `assert_eq!(round_tripped[24..92], block[24..92])`.
 
 diff --git a/crates/globally_unique_identifier_partition_table/src/header.rs b/crates/globally_unique_identifier_partition_table/src/header.rs
-index 8f37c6284..c427f10e0 100644
+index 2495db796..34992b227 100644
 --- a/crates/globally_unique_identifier_partition_table/src/header.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/header.rs
-@@ -156,3 +156,3 @@ impl Header {
+@@ -139,3 +139,3 @@ impl Header {
              entry_count: le32(block, at::ENTRY_COUNT),
 -            entry_size: le32(block, at::ENTRY_SIZE),
 +            entry_size: le32(block, at::ENTRY_COUNT),

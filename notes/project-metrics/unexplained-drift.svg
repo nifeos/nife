@@ -27,46 +27,48 @@
 <line class="grid" x1="64" y1="58.0" x2="650.0" y2="58.0" stroke-width="1"/>
 <text class="mut" x="56" y="61.0" font-size="10" text-anchor="end">6</text>
 <line x1="64" y1="102.3" x2="650.0" y2="102.3" stroke="#D55E00" stroke-width="1.5" stroke-dasharray="5 4"/>
-<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W33</text>
-<text class="mut" x="86.5" y="308.0" font-size="9" text-anchor="middle">not<tspan x="86.5" dy="10">measured</tspan><title>2026W33: not measured</title></text>
-<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W34</text>
-<text class="mut" x="131.6" y="308.0" font-size="9" text-anchor="middle">not<tspan x="131.6" dy="10">measured</tspan><title>2026W34: not measured</title></text>
-<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W35</text>
-<text class="mut" x="176.7" y="308.0" font-size="9" text-anchor="middle">not<tspan x="176.7" dy="10">measured</tspan><title>2026W35: not measured</title></text>
-<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W36</text>
-<text class="mut" x="221.8" y="308.0" font-size="9" text-anchor="middle">not<tspan x="221.8" dy="10">measured</tspan><title>2026W36: not measured</title></text>
-<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W37</text>
-<text class="mut" x="266.8" y="308.0" font-size="9" text-anchor="middle">not<tspan x="266.8" dy="10">measured</tspan><title>2026W37: not measured</title></text>
-<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W38</text>
-<text class="mut" x="311.9" y="308.0" font-size="9" text-anchor="middle">not<tspan x="311.9" dy="10">measured</tspan><title>2026W38: not measured</title></text>
-<path class="seg s0" d="M342.1,324.0 V319.9 Q342.1,316.9 345.1,316.9 H348.0 Q351.0,316.9 351.0,319.9 V324.0 Z"><title>2026W39, aarch64: 0.2</title></path>
-<path class="seg s1" d="M352.0,324.0 V310.2 Q352.0,307.2 355.0,307.2 H358.0 Q361.0,307.2 361.0,310.2 V324.0 Z"><title>2026W39, riscv64: 0.4</title></path>
-<path class="seg s2" d="M362.0,324.0 V244.5 Q362.0,241.5 365.0,241.5 H367.9 Q370.9,241.5 370.9,244.5 V324.0 Z"><title>2026W39, x86_64: 1.9</title></path>
-<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W39</text>
-<path class="seg s0" d="M387.2,324.0 V322.7 Q387.2,321.3 388.5,321.3 H394.8 Q396.1,321.3 396.1,322.7 V324.0 Z"><title>2026W40, aarch64: 0.1</title></path>
-<path class="seg s1" d="M397.1,324.0 V288.4 Q397.1,285.4 400.1,285.4 H403.0 Q406.0,285.4 406.0,288.4 V324.0 Z"><title>2026W40, riscv64: 0.9</title></path>
-<path class="seg s2" d="M407.0,324.0 V315.5 Q407.0,312.5 410.0,312.5 H413.0 Q416.0,312.5 416.0,315.5 V324.0 Z"><title>2026W40, x86_64: 0.3</title></path>
-<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W40</text>
-<path class="seg s0" d="M432.3,324.0 V221.0 Q432.3,218.0 435.3,218.0 H438.2 Q441.2,218.0 441.2,221.0 V324.0 Z"><title>2026W41, aarch64: 2.4</title></path>
-<path class="seg s1" d="M442.2,324.0 V263.6 Q442.2,260.6 445.2,260.6 H448.1 Q451.1,260.6 451.1,263.6 V324.0 Z"><title>2026W41, riscv64: 1.4</title></path>
-<path class="seg s2" d="M452.1,324.0 V239.7 Q452.1,236.7 455.1,236.7 H458.0 Q461.0,236.7 461.0,239.7 V324.0 Z"><title>2026W41, x86_64: 2.0</title></path>
-<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W41</text>
-<path class="seg s0" d="M477.4,324.0 V221.0 Q477.4,218.0 480.4,218.0 H483.3 Q486.3,218.0 486.3,221.0 V324.0 Z"><title>2026W42, aarch64: 2.4</title></path>
-<path class="seg s1" d="M487.3,324.0 V291.5 Q487.3,288.5 490.3,288.5 H493.2 Q496.2,288.5 496.2,291.5 V324.0 Z"><title>2026W42, riscv64: 0.8</title></path>
-<path class="seg s2" d="M497.2,324.0 V315.9 Q497.2,312.9 500.2,312.9 H503.1 Q506.1,312.9 506.1,315.9 V324.0 Z"><title>2026W42, x86_64: 0.2</title></path>
-<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W42</text>
-<path class="seg s0" d="M522.4,324.0 V293.8 Q522.4,290.8 525.4,290.8 H528.3 Q531.3,290.8 531.3,293.8 V324.0 Z"><title>2026W43, aarch64: 0.8</title></path>
-<path class="seg s1" d="M532.3,324.0 V321.3 Q532.3,318.7 535.0,318.7 H538.6 Q541.3,318.7 541.3,321.3 V324.0 Z"><title>2026W43, riscv64: 0.1</title></path>
-<path class="seg s2" d="M542.3,324.0 V318.1 Q542.3,315.1 545.3,315.1 H548.2 Q551.2,315.1 551.2,318.1 V324.0 Z"><title>2026W43, x86_64: 0.2</title></path>
-<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W43</text>
-<path class="seg s0" d="M567.5,324.0 V294.2 Q567.5,291.2 570.5,291.2 H573.4 Q576.4,291.2 576.4,294.2 V324.0 Z"><title>2026W44, aarch64: 0.7</title></path>
-<path class="seg s1" d="M577.4,324.0 V321.6 Q577.4,319.1 579.9,319.1 H583.9 Q586.3,319.1 586.3,321.6 V324.0 Z"><title>2026W44, riscv64: 0.1</title></path>
-<path class="seg s2" d="M587.3,324.0 V317.2 Q587.3,314.2 590.3,314.2 H593.3 Q596.3,314.2 596.3,317.2 V324.0 Z"><title>2026W44, x86_64: 0.2</title></path>
-<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W44</text>
-<path class="seg s0" d="M612.6,324.0 V72.1 Q612.6,69.1 615.6,69.1 H618.5 Q621.5,69.1 621.5,72.1 V324.0 Z"><title>2026W45, aarch64: 5.8</title></path>
-<path class="seg s1" d="M622.5,324.0 V102.2 Q622.5,99.2 625.5,99.2 H628.4 Q631.4,99.2 631.4,102.2 V324.0 Z"><title>2026W45, riscv64: 5.1</title></path>
-<path class="seg s2" d="M632.4,324.0 V120.8 Q632.4,117.8 635.4,117.8 H638.3 Q641.3,117.8 641.3,120.8 V324.0 Z"><title>2026W45, x86_64: 4.7</title></path>
-<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W45</text>
+<text class="mut" x="86.5" y="342" font-size="10" text-anchor="middle">2026W34</text>
+<text class="mut" x="86.5" y="308.0" font-size="9" text-anchor="middle">not<tspan x="86.5" dy="10">measured</tspan><title>2026W34: not measured</title></text>
+<text class="mut" x="131.6" y="342" font-size="10" text-anchor="middle">2026W35</text>
+<text class="mut" x="131.6" y="308.0" font-size="9" text-anchor="middle">not<tspan x="131.6" dy="10">measured</tspan><title>2026W35: not measured</title></text>
+<text class="mut" x="176.7" y="342" font-size="10" text-anchor="middle">2026W36</text>
+<text class="mut" x="176.7" y="308.0" font-size="9" text-anchor="middle">not<tspan x="176.7" dy="10">measured</tspan><title>2026W36: not measured</title></text>
+<text class="mut" x="221.8" y="342" font-size="10" text-anchor="middle">2026W37</text>
+<text class="mut" x="221.8" y="308.0" font-size="9" text-anchor="middle">not<tspan x="221.8" dy="10">measured</tspan><title>2026W37: not measured</title></text>
+<text class="mut" x="266.8" y="342" font-size="10" text-anchor="middle">2026W38</text>
+<text class="mut" x="266.8" y="308.0" font-size="9" text-anchor="middle">not<tspan x="266.8" dy="10">measured</tspan><title>2026W38: not measured</title></text>
+<path class="seg s0" d="M297.0,324.0 V319.9 Q297.0,316.9 300.0,316.9 H303.0 Q306.0,316.9 306.0,319.9 V324.0 Z"><title>2026W39, aarch64: 0.2</title></path>
+<path class="seg s1" d="M307.0,324.0 V310.2 Q307.0,307.2 310.0,307.2 H312.9 Q315.9,307.2 315.9,310.2 V324.0 Z"><title>2026W39, riscv64: 0.4</title></path>
+<path class="seg s2" d="M316.9,324.0 V244.5 Q316.9,241.5 319.9,241.5 H322.8 Q325.8,241.5 325.8,244.5 V324.0 Z"><title>2026W39, x86_64: 1.9</title></path>
+<text class="mut" x="311.9" y="342" font-size="10" text-anchor="middle">2026W39</text>
+<path class="seg s0" d="M342.1,324.0 V322.7 Q342.1,321.3 343.5,321.3 H349.7 Q351.0,321.3 351.0,322.7 V324.0 Z"><title>2026W40, aarch64: 0.1</title></path>
+<path class="seg s1" d="M352.0,324.0 V288.4 Q352.0,285.4 355.0,285.4 H358.0 Q361.0,285.4 361.0,288.4 V324.0 Z"><title>2026W40, riscv64: 0.9</title></path>
+<path class="seg s2" d="M362.0,324.0 V315.5 Q362.0,312.5 365.0,312.5 H367.9 Q370.9,312.5 370.9,315.5 V324.0 Z"><title>2026W40, x86_64: 0.3</title></path>
+<text class="mut" x="357.0" y="342" font-size="10" text-anchor="middle">2026W40</text>
+<path class="seg s0" d="M387.2,324.0 V221.0 Q387.2,218.0 390.2,218.0 H393.1 Q396.1,218.0 396.1,221.0 V324.0 Z"><title>2026W41, aarch64: 2.4</title></path>
+<path class="seg s1" d="M397.1,324.0 V263.6 Q397.1,260.6 400.1,260.6 H403.0 Q406.0,260.6 406.0,263.6 V324.0 Z"><title>2026W41, riscv64: 1.4</title></path>
+<path class="seg s2" d="M407.0,324.0 V239.7 Q407.0,236.7 410.0,236.7 H413.0 Q416.0,236.7 416.0,239.7 V324.0 Z"><title>2026W41, x86_64: 2.0</title></path>
+<text class="mut" x="402.1" y="342" font-size="10" text-anchor="middle">2026W41</text>
+<path class="seg s0" d="M432.3,324.0 V221.0 Q432.3,218.0 435.3,218.0 H438.2 Q441.2,218.0 441.2,221.0 V324.0 Z"><title>2026W42, aarch64: 2.4</title></path>
+<path class="seg s1" d="M442.2,324.0 V291.5 Q442.2,288.5 445.2,288.5 H448.1 Q451.1,288.5 451.1,291.5 V324.0 Z"><title>2026W42, riscv64: 0.8</title></path>
+<path class="seg s2" d="M452.1,324.0 V315.9 Q452.1,312.9 455.1,312.9 H458.0 Q461.0,312.9 461.0,315.9 V324.0 Z"><title>2026W42, x86_64: 0.2</title></path>
+<text class="mut" x="447.2" y="342" font-size="10" text-anchor="middle">2026W42</text>
+<path class="seg s0" d="M477.4,324.0 V293.8 Q477.4,290.8 480.4,290.8 H483.3 Q486.3,290.8 486.3,293.8 V324.0 Z"><title>2026W43, aarch64: 0.8</title></path>
+<path class="seg s1" d="M487.3,324.0 V321.3 Q487.3,318.7 489.9,318.7 H493.5 Q496.2,318.7 496.2,321.3 V324.0 Z"><title>2026W43, riscv64: 0.1</title></path>
+<path class="seg s2" d="M497.2,324.0 V318.1 Q497.2,315.1 500.2,315.1 H503.1 Q506.1,315.1 506.1,318.1 V324.0 Z"><title>2026W43, x86_64: 0.2</title></path>
+<text class="mut" x="492.2" y="342" font-size="10" text-anchor="middle">2026W43</text>
+<path class="seg s0" d="M522.4,324.0 V294.2 Q522.4,291.2 525.4,291.2 H528.3 Q531.3,291.2 531.3,294.2 V324.0 Z"><title>2026W44, aarch64: 0.7</title></path>
+<path class="seg s1" d="M532.3,324.0 V321.6 Q532.3,319.1 534.8,319.1 H538.8 Q541.3,319.1 541.3,321.6 V324.0 Z"><title>2026W44, riscv64: 0.1</title></path>
+<path class="seg s2" d="M542.3,324.0 V317.2 Q542.3,314.2 545.3,314.2 H548.2 Q551.2,314.2 551.2,317.2 V324.0 Z"><title>2026W44, x86_64: 0.2</title></path>
+<text class="mut" x="537.3" y="342" font-size="10" text-anchor="middle">2026W44</text>
+<path class="seg s0" d="M567.5,324.0 V72.1 Q567.5,69.1 570.5,69.1 H573.4 Q576.4,69.1 576.4,72.1 V324.0 Z"><title>2026W45, aarch64: 5.8</title></path>
+<path class="seg s1" d="M577.4,324.0 V102.2 Q577.4,99.2 580.4,99.2 H583.3 Q586.3,99.2 586.3,102.2 V324.0 Z"><title>2026W45, riscv64: 5.1</title></path>
+<path class="seg s2" d="M587.3,324.0 V120.8 Q587.3,117.8 590.3,117.8 H593.3 Q596.3,117.8 596.3,120.8 V324.0 Z"><title>2026W45, x86_64: 4.7</title></path>
+<text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W45</text>
+<path class="seg s0" d="M612.6,324.0 V72.1 Q612.6,69.1 615.6,69.1 H618.5 Q621.5,69.1 621.5,72.1 V324.0 Z"><title>2026W46, aarch64: 5.8</title></path>
+<path class="seg s1" d="M622.5,324.0 V102.2 Q622.5,99.2 625.5,99.2 H628.4 Q631.4,99.2 631.4,102.2 V324.0 Z"><title>2026W46, riscv64: 5.1</title></path>
+<path class="seg s2" d="M632.4,324.0 V120.8 Q632.4,117.8 635.4,117.8 H638.3 Q641.3,117.8 641.3,120.8 V324.0 Z"><title>2026W46, x86_64: 4.7</title></path>
+<text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W46</text>
 <rect class="s0" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">aarch64</tspan></text>
 <rect class="s1" x="672" y="83" width="11" height="11" rx="2"/>

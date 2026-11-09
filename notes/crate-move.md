@@ -127,6 +127,34 @@ harness's comment, where the template reads it, so those records pass `falsify.p
     nifeos/<crate> --branch main --limit 4` shows `check` and `proofs` succeeded. A pull request in the
     crate repository fixes a red job, and the maintainer gates and merges it as in nife.
 
+11a. Run the outside review (a fresh lane the maintainer launches, on the most capable model
+    available; never the lane that wrote the crate or took part in its extraction). It runs once the
+    repository exists and before its first tag or publish. The pass is read-only on the crate
+    repository: no push, no pull request, no issue, no tag. It reads the crate's review package
+    for the accepted baseline, so it does not raise a settled decision again. It covers:
+    - public API and names, against the naming rules;
+    - correctness and soundness;
+    - proofs and their falsification patches, tests and mutation results;
+    - the README and documentation, read as a stranger would;
+    - Cargo metadata for publishing, the template pin and the workflow wiring;
+    - the `no_std` posture and performance;
+    - prior art on crates.io;
+    - which checks need real hardware. The pass never claims one done without it.
+
+    Its output is one draft milestone in the roadmap format. Each item carries a priority: P0 blocks any
+    publish, P1 comes before the first release, P2 can follow later. Each item gives the finding,
+    the evidence, the change, the door (one-way or two-way) and the effort. The milestone also
+    carries a prior-art box and acceptance criteria. The maintainer promotes it into the roadmap,
+    and a lane addresses its items. Only the one-way doors go to an architect, one at a time,
+    each with a recommendation.
+
+    Three safeguards apply. A lane checks every finding against the code before it acts on one,
+    since a pass can be wrong, for example about what a CI run shows. The pass marks a claim it
+    could not verify as unverified. It reports a possible vulnerability to the maintainer alone and
+    leaves it out of the milestone. It never reads fuzz findings, seeds or crash inputs.
+    Expected: the draft milestone exists and its P0 items stand closed. The combine review checks
+    both for each crate.
+
 ## The stranger test and the tag
 
 12. Run the stranger test (a fresh-context agent the maintainer launches, never the move
@@ -257,6 +285,9 @@ publishes.
   and no locations, so the lines cannot be written mechanically. The crate repository's first
   `weekly / mutation` run fails on each survivor and names it; the move lane lists them in one pull
   request there. The dry run does not run cargo-mutants.
+- The dry run's nife check skips a word joined to another by an underscore, so it passes an
+  identifier such as `NIFE_DATA` that `helpers/lint_externalized_crates.py` reports. Read that
+  lint's count for the crate as well.
 - Condition 3 is unmeasured on the pilot. Its release runs were the two that made its tags, and
   none ran with `dry-run=true`, so whether a dry run of an already tagged version passes the gate is
   unknown.

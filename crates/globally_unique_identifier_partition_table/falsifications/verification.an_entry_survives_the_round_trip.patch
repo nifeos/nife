@@ -5,10 +5,10 @@ The defect: `Entry::encode` writes the UTF-16 name units big-endian where `decod
 Expected to fail: the harness's `assert_eq!(Entry::decode(&bytes).encode(), bytes)`.
 
 diff --git a/crates/globally_unique_identifier_partition_table/src/entry.rs b/crates/globally_unique_identifier_partition_table/src/entry.rs
-index 46177592b..85e9650e8 100644
+index 04d4270c8..595f342c2 100644
 --- a/crates/globally_unique_identifier_partition_table/src/entry.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/entry.rs
-@@ -197,3 +197,3 @@ impl Entry {
+@@ -181,3 +181,3 @@ impl Entry {
              let o = at::NAME + i * 2;
 -            bytes[o..o + 2].copy_from_slice(&unit.to_le_bytes());
 +            bytes[o..o + 2].copy_from_slice(&unit.to_be_bytes());

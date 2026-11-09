@@ -6,10 +6,10 @@ blocks gets a header that decodes with a smaller usable range than it was built 
 Expected to fail: the harness's `assert_eq!(Header::decode_fields(&block), header)`.
 
 diff --git a/crates/globally_unique_identifier_partition_table/src/header.rs b/crates/globally_unique_identifier_partition_table/src/header.rs
-index 8f37c6284..f0cc3fec6 100644
+index 2495db796..ccb10a1c9 100644
 --- a/crates/globally_unique_identifier_partition_table/src/header.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/header.rs
-@@ -194,3 +194,3 @@ impl Header {
+@@ -177,3 +177,3 @@ impl Header {
          put64(block, at::FIRST_USABLE_LBA, self.first_usable_lba);
 -        put64(block, at::LAST_USABLE_LBA, self.last_usable_lba);
 +        put64(block, at::LAST_USABLE_LBA, self.last_usable_lba as u32 as u64);

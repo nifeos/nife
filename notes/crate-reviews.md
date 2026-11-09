@@ -86,8 +86,6 @@ Dependencies. None at run time. Dev only: `lamfat =0.4.3` and `ruzstd =0.9.1`, b
 Result of `script/crate-standalone`. Clean: every step passes, Kani and the 31 falsifications
 included.
 
-Recommendation. The architect cleared the move, and has not cleared the tag or publication.
-
 ## `extensible_host_controller_interface`, step 3
 
 Name and version. `extensible_host_controller_interface` `0.1.0`, ratified with xHCI spelled out.
@@ -395,3 +393,4 @@ with no Kani harness.
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |
 | `entropy_contract` | contract | names and identity for the architect; [package](crate-reviews/entropy-contract.md) |
 | `clock_contract` | contract | identity and overlay names for the architect |
+| `globally_unique_identifier_partition_table` | 2 | [package](crate-reviews/globally-unique-identifier-partition-table.md) |
