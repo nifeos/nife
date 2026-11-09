@@ -654,6 +654,12 @@ if mode == "--ratchet":
     EXCLUDE = (":!vendor/", ":!patches/", ":!*.lock", ":!*.log", ":!script/citations",
                ":!design/roadmap/README.md", ":!notes/project-metrics/baseline-drift.md",
                ":!notes/dependency-census/dependencies.tsv",
+               # notes/project-metrics/ci-builds.csv is the fourth: `helpers/ci_job_times.py` writes
+               # it, rows of dates, workflow and job names and seconds, no prose. Its fold of old
+               # per-build rows into weekly rows rewrote all 68,741 lines at once, and the sweep
+               # detection below compares every added line with every removed one, so that one
+               # commit ran the lint job past its 20 minute budget.
+               ":!notes/project-metrics/ci-builds.csv",
                # helpers/lint-section-index.tsv copies each script/lint section's name exactly, and
                # a name may cite a section or milestone; a gloss there would break the copy.
                ":!helpers/lint-section-index.tsv",
