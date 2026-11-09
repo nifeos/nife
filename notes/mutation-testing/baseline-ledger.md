@@ -45,7 +45,7 @@ Rows are the 2026-08-03 run's survivors, missed plus timeout. The columns mean:
 
 The 2-survivor crates are `asid`, `credential_protocol`, `entropy_protocol`, `byte_sink_protocol`,
 `socket_protocol` and `generational_table`'s siblings. The 1-survivor crates are `abi`,
-`block_roster`, `c_seam` and `capability`. Their survivors are the
+`block_roster_contract`, `c_seam` and `capability`. Their survivors are the
 [recurring patterns](baseline-2026-08-03.md#patterns-that-recur-named-once), one or two each.
 
 ### Nothing is deferred, and here is what that rests on

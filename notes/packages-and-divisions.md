@@ -47,7 +47,7 @@ Normal and build dependencies only, counted per package pair, dependent first.
 | kernel to contracts | 23 | intended |
 | fixtures to contracts | 19 | intended |
 | host to contracts | 10 | intended |
-| kernel to services | 9 | not intended: `ps`, `pgrep`, `pmap`, `video_terminal`, `network_time_protocol`, `block_roster`, `non_volatile_memory_express`, `calendar`, `jh7110_entropy` |
+| kernel to services | 9 | not intended: `ps`, `pgrep`, `pmap`, `video_terminal`, `network_time_protocol`, `block_roster_contract`, `non_volatile_memory_express`, `calendar`, `jh7110_entropy` |
 | kernel to fixtures | 3 | not intended: `coremark`, `job_mix`, `soak_page` |
 | fixtures to services | 3 | `system_initializer`, `schedule_store`, `network_time_protocol` |
 | contracts to runtime | 0 | `process_builder` and `hot_swap_server` hold the two runtime halves instead |

@@ -1,4 +1,4 @@
-Falsifies `block_roster::write_then_read_returns_the_same_devices_in_order`.
+Falsifies `block_roster_contract::write_then_read_returns_the_same_devices_in_order`.
 
 The defect: `write` stores each device's ordinal in the transport half of its
 entry, so the transport is lost and read back as the ordinal. The page still has
@@ -10,9 +10,9 @@ Expected to fail: `assert_eq!(roster.get(i), Some(devices[i]))`, on any list who
 ordinal differs from its transport.
 
 
-diff --git a/crates/block_roster/src/lib.rs b/crates/block_roster/src/lib.rs
---- a/crates/block_roster/src/lib.rs
-+++ b/crates/block_roster/src/lib.rs
+diff --git a/crates/block_roster_contract/src/lib.rs b/crates/block_roster_contract/src/lib.rs
+--- a/crates/block_roster_contract/src/lib.rs
++++ b/crates/block_roster_contract/src/lib.rs
 @@ -190,7 +190,7 @@
      for (i, d) in devices.iter().enumerate() {
          let at = HEADER_BYTES + i * ENTRY_BYTES;

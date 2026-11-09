@@ -36,7 +36,7 @@ Measured on 2026-11-05 (UTC), Kani 0.68.0, on an x86_64 Linux host, heaviest fir
 | `interfaces_note` | 1.41 | 1 |
 | `jh7110_clock_and_reset` | 1.35 | 1 |
 | `components` | 0.99 | 1 |
-| `block_roster` | 0.93 | 1 |
+| `block_roster_contract` | 0.93 | 1 |
 | `extensible_host_controller_interface` | 0.78 | 1 |
 | `direct_memory_access_validator` | 0.76 | 1 |
 | `driver_process_contract::extensible_host_controller_interface` | 0.75 | 1 |

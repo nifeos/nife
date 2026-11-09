@@ -123,12 +123,12 @@ not listed by `name_release.py`, and are listed here.
 | 2 | every `lba` component: the five `Header` LBA fields, `Entry::first_lba` and `last_lba`, `PRIMARY_HEADER_LBA`, six table readers, `BackupMismatch::MyLba` to `EntryArrayLba`, `MbrProblem::StartLba` and `SizeLba` | the acronym test | decision 2 |
 | 3 | `mbr`, `MbrProblem`, `Error::Mbr`, `check_protective_mbr`, `write_protective_mbr` | the acronym test | decision 2 |
 | 4 | `MINIMUM_BLOCK_SIZE`, `MAXIMUM_BLOCK_SIZE` | a limit ends with its unit; ratified before that rule, so the release review reopens them | `MINIMUM_BLOCK_BYTES`, `MAXIMUM_BLOCK_BYTES` |
-| 5 | `entry::SIZE` | a size carries its unit | `entry::ENTRY_BYTES`, as `block_roster` spells it |
+| 5 | `entry::SIZE` | a size carries its unit | `entry::ENTRY_BYTES`, as `block_roster_contract` spells it |
 | 6 | `Header::entry_size`, `BackupMismatch::EntrySize`, `Error::EntrySize` | a size carries its unit; UEFI's field is `SizeOfPartitionEntry` | `entry_bytes`, `EntryBytes`, each with `#[doc(alias = "SizeOfPartitionEntry")]` |
 | 7 | `GloballyUniqueIdentifierPartitionTable::block_size`, `create`'s parameter `block_size` | a size carries its unit | `block_bytes` |
 | 8 | `ATTR_REQUIRED`, `ATTR_NO_BLOCK_IO`, `ATTR_LEGACY_BIOS_BOOTABLE` | a bit constant copied from a source is spelled out, its source spelling the alias | `ATTRIBUTE_REQUIRED_PARTITION`, `ATTRIBUTE_NO_BLOCK_IO_PROTOCOL`, `ATTRIBUTE_LEGACY_BIOS_BOOTABLE`, each aliased to UEFI's attribute name |
 | 9 | `primary_entry_lba`, `backup_entry_lba` | one concept, one word: the header field is `entry_array_lba` and the reader `entry_array_blocks` | `primary_entry_array_lba`, `backup_entry_array_lba`, under decision 2's spelling |
-| 10 | `GloballyUniqueIdentifierPartitionTable::entry(index)` | a method takes std's spelling | `get`, as `block_roster::Roster::get` returns a value |
+| 10 | `GloballyUniqueIdentifierPartitionTable::entry(index)` | a method takes std's spelling | `get`, as `block_roster_contract::Roster::get` returns a value |
 | 11 | `Span::covering`'s and `buffer_bytes`'s parameter `transfer` | a size carries its unit, parameters included | `transfer_bytes` |
 | 12 | `Error::PartitionsOverlap { a, b }` | single letters in a public field | `first`, `second` |
 | 13 | the `Header` and `Entry` fields that mirror UEFI's (`my_lba`, `disk_guid`, `entry_count`, `entry_array_crc`, `type_guid`, `unique_guid`) | a specification's spelling goes in `#[doc(alias)]` | no rename; add `MyLBA`, `DiskGUID`, `NumberOfPartitionEntries`, `PartitionEntryArrayCRC32`, `PartitionTypeGUID`, `UniquePartitionGUID` |

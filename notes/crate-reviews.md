@@ -328,11 +328,11 @@ Outstanding before the move.
 
 Recommendation. Ready for review.
 
-## `block_roster`, the first contract crate
+## `block_roster_contract`, the first contract crate
 
-The whole package is [crate-reviews/block-roster.md](crate-reviews/block-roster.md).
+The whole package is [crate-reviews/block-roster-contract.md](crate-reviews/block-roster-contract.md).
 
-Name and version. `block_roster` `0.1.0`, ratified, with all 21 names. The architect froze its identity:
+Name and version. `block_roster_contract` `0.1.0`, ratified, with all 21 names. The architect froze its identity:
 `INTERFACE_ID` 5, `VERSION` 1, magic `blkrosv1`.
 
 API. The read-only page that lists attached block devices: `write`, `Roster::read` and its readers,
@@ -388,7 +388,7 @@ with no Kani harness.
 | `designware_ethernet` | 7 | two alias sets for the architect |
 | `designware_mobile_storage` | 8 | cleared to move; repository exists |
 | `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
-| `block_roster` | contract | ready for review |
+| `block_roster_contract` | contract | ready for review |
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |
 | `entropy_contract` | contract | names and identity for the architect; [package](crate-reviews/entropy-contract.md) |
 | `clock_contract` | contract | identity and overlay names for the architect |

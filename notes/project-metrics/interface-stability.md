@@ -16,7 +16,7 @@ Sorted by breaking changes in the last four weeks (2026W43 to 2026W46), then by 
 | `hot_swap_contract` | 19 | 0 | 38 | 126 | 73 | 66 (90%) |
 | `capability_plan` | 18 | 15 | 18 | 15 | 15 | 14 (93%) |
 | `globally_unique_identifier_partition_table` | 12 | 5 | 103 | 286 | 62 | 49 (79%) |
-| `block_roster` | 11 | 11 | 11 | 11 | 16 | 10 (62%) |
+| `block_roster_contract` | 11 | 11 | 11 | 11 | 16 | 10 (62%) |
 | `clock_contract` | 10 | 13 | 16 | 67 | 52 | 48 (92%) |
 | `line_editor` | 8 | 27 | 23 | 146 | 67 | 56 (84%) |
 | `compositor` | 7 | 2 | 21 | 101 | 50 | 42 (84%) |

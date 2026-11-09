@@ -1,6 +1,6 @@
 use core::sync::atomic::Ordering;
 
-use block_roster::{
+use block_roster_contract::{
     Roster, TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS, TRANSPORT_VIRTIO_MEMORY_MAPPED_IO,
     TRANSPORT_VIRTIO_PCI,
 };
@@ -265,7 +265,7 @@ fn the_roster_can_be_revoked_out_from_under_its_holder() {
     );
     // The roster's first word is its magic. Asserting it (rather than "not zero") is what makes the
     // second read's absence meaningful: a page of zeroes would read the same before and after.
-    assert_eq!(word, block_roster::MAGIC);
+    assert_eq!(word, block_roster_contract::MAGIC);
 
     // Take the page back. Every capability to it is deleted and it is unmapped from every address
     // space that recorded a mapping of it, the holder's included.

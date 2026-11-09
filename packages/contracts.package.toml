@@ -57,7 +57,7 @@ interfaces = [
     "machine_discovery",
     "boot_ladder",
     "test_times",
-    "block_roster",
+    "block_roster_contract",
     "address_space_map",
     # Where a device-driver process finds its windows, and its spawn words: the kernel and the
     # driver component both link it (milestone 857 (crates released on their own)).

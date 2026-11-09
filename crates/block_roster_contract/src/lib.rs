@@ -24,7 +24,8 @@
 //! bytes `blkrosv1`. The id stays 5 for good. A layout break is a new version, which re-mints the
 //! magic in the same change; it is never a new id, and a retired value is never reused.
 
-//! Name: ratified 2026-08-03 (calef): a read-only page, deliberately not a `_protocol`.
+//! Name: ratified 2026-11-09 (UTC): the `_contract` suffix marks a wire-contract crate, and this is
+//! the pilot of the contract crates; the page stays read-only and deliberately not a `_protocol`.
 
 #![no_std]
 
@@ -159,15 +160,15 @@ pub const fn capacity_of(len: usize) -> usize {
 /// # Examples
 ///
 /// ```
-/// # use block_roster::{Device, Roster, TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS};
-/// # use block_roster::{TRANSPORT_VIRTIO_MEMORY_MAPPED_IO, TRANSPORT_VIRTIO_PCI};
+/// # use block_roster_contract::{Device, Roster, TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS};
+/// # use block_roster_contract::{TRANSPORT_VIRTIO_MEMORY_MAPPED_IO, TRANSPORT_VIRTIO_PCI};
 /// let mut page = [0u8; 4096];
 /// let devices = [
 ///     Device { ordinal: 0, transport: TRANSPORT_VIRTIO_MEMORY_MAPPED_IO },
 ///     Device { ordinal: 0, transport: TRANSPORT_VIRTIO_PCI },
 ///     Device { ordinal: 0, transport: TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS },
 /// ];
-/// block_roster::write(&mut page, &devices).unwrap();
+/// block_roster_contract::write(&mut page, &devices).unwrap();
 ///
 /// let roster = Roster::read(&page).unwrap();
 /// assert_eq!(roster.len(), 3);
@@ -492,7 +493,7 @@ mod verification {
     /// **`Roster::read` is total on any bytes**: for any page of up to `PAGE` bytes, whatever its
     /// contents and length, `read` neither panics nor indexes out of bounds, and when it accepts the
     /// page every one of its `len()` entries can be fetched and the one after the last cannot.
-    /// Falsification: replayable `crates/block_roster/falsifications/verification.read_is_total_and_every_counted_entry_is_gettable.patch`
+    /// Falsification: replayable `crates/block_roster_contract/falsifications/verification.read_is_total_and_every_counted_entry_is_gettable.patch`
     #[kani::proof]
     #[kani::unwind(6)]
     fn read_is_total_and_every_counted_entry_is_gettable() {
@@ -514,7 +515,7 @@ mod verification {
     /// **A written roster reads back as written**: for any list of up to three devices, `write`
     /// into a page that fits and then `read` returns the same devices in the same order, and no
     /// more.
-    /// Falsification: replayable `crates/block_roster/falsifications/verification.write_then_read_returns_the_same_devices_in_order.patch`
+    /// Falsification: replayable `crates/block_roster_contract/falsifications/verification.write_then_read_returns_the_same_devices_in_order.patch`
     #[kani::proof]
     #[kani::unwind(6)]
     fn write_then_read_returns_the_same_devices_in_order() {
@@ -552,7 +553,7 @@ mod verification {
     /// up to three devices, `write` neither panics nor indexes out of bounds. It succeeds exactly
     /// when the page holds the header and the devices, and a page it accepted reads back with that
     /// many devices.
-    /// Falsification: replayable `crates/block_roster/falsifications/verification.write_is_total_on_any_page_length.patch`
+    /// Falsification: replayable `crates/block_roster_contract/falsifications/verification.write_is_total_on_any_page_length.patch`
     #[kani::proof]
     #[kani::unwind(6)]
     fn write_is_total_on_any_page_length() {

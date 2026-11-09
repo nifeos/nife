@@ -30,7 +30,7 @@ then counts it, and the next weekly record shows the rise. Both pairs arrived th
 - Two `interfaces_note` harnesses came with the pull request that moved the INTERFACES note to a
   leaf crate (#3043). Their blocks read "Kani does not run in the lane that wrote this; the gate
   does", so the author knew nobody had seen either harness fail.
-- Two `block_roster` harnesses came with the pull request that made the crate stand alone and
+- Two `block_roster_contract` harnesses came with the pull request that made the crate stand alone and
   proved its reader (#3062).
 
 The authors did not break the rule. The rule lets a lane stop one step short, and the cheapest

@@ -116,7 +116,7 @@ crate has not left, so each is a two-way door.
 
 | item now | proposed | rule |
 |---|---|---|
-| `VERSION`, `INTERFACE_ID` | keep | the names `block_roster` ratified |
+| `VERSION`, `INTERFACE_ID` | keep | the names `block_roster_contract` ratified |
 | `OPERATION_SENDTO` | `OPERATION_SEND_TO`, alias `sendto` | two words; POSIX's `sendto` kept as the alias |
 | `OPERATION_ATTACH_PAGE_FRAME` | `OPERATION_ATTACH_SHARED_PAGE` | `frame` is a word to avoid, and here it also means a network frame (`polled_wait`) |
 | the other ten `OPERATION_` constants | keep | `udp` and `tcp` pass the acronym test, as `pci` does; add both to the template's accepted words |

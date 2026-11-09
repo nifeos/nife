@@ -24,7 +24,7 @@ first, then `process-tools`, then `core-tools`. The note's type moves to a leaf 
 `disk-tools` need not wait for `grant_plan`.
 
 - (a) Recommended, as above. `disk-tools` becomes the first consumer outside nife, of the
-  `block_roster` pilot.
+  `block_roster_contract` pilot.
 - (b) The three packages leave together once all 18 crates they reach with the note have left. One
   event, but the latest possible.
 - (c) The packages leave now and pin nife for the crates they link. Refused by the direction of
@@ -33,7 +33,7 @@ first, then `process-tools`, then `core-tools`. The note's type moves to a leaf 
 Ruled 2026-11-01 (UTC): (a). Milestone 756 (`process-tools`, `core-tools` and `disk-tools` are the
 first code to leave this repository)'s single cut gives way to package-by-package departure, each
 package leaving as soon as the shared crates it links have left, in the order `disk-tools`,
-`process-tools`, `core-tools`. A crate only one package uses leaves with it, in its repository. The `INTERFACES` note type moves into its own small leaf crate, and `block_roster`
+`process-tools`, `core-tools`. A crate only one package uses leaves with it, in its repository. The `INTERFACES` note type moves into its own small leaf crate, and `block_roster_contract`
 stays the first consumed crate. 
 
 This lane read `helpers/interface_declarations_check.py` against the move and did not run it.

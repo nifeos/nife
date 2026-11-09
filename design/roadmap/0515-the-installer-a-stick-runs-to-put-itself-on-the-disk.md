@@ -73,7 +73,7 @@ than assumed:
   service the boot builds mounts a whole block device and has no NVMe arm
   (`kernel/src/user/fs_service.rs` names neither). An installed system has to mount the nife data
   partition off the NVMe server's endpoint, or it boots to a prompt with no disk.
-- The installer has to find the disk. ~~`block_roster` cannot name an NVMe disk, so this
+- The installer has to find the disk. ~~`block_roster_contract` cannot name an NVMe disk, so this
   proposal depends on `a-block-roster-that-can-name-an-nvme-disk.md`.~~ It did not. Rung 2a was
   built on 2026-09-21 without it: the kernel hands the installer the NVMe endpoint directly and
   never consults the roster. The roster proposal stands on its own merits and is unaffected; what

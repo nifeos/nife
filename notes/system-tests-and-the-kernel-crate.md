@@ -25,7 +25,7 @@ Reading each use site gives three kinds, and a fourth turned up when the new gat
 | `calendar` | `arch/x86_64/rtc.rs`: the RTC's civil date to Unix seconds | still linked |
 | `jh7110_entropy` | `memory.rs`: find the TRNG in the device tree at boot | still linked |
 | `video_terminal` | the tour's display bring-up reads `status::TERM_UP` and the grid size | still linked |
-| `block_roster` | `disk_service` writes the roster page a program reads | still linked |
+| `block_roster_contract` | `disk_service` writes the roster page a program reads | still linked |
 | `non_volatile_memory_express` | the kernel's own NVMe module, dead outside tests | still linked |
 
 So `cargo build -p kernel` now compiles eight fewer crates on all three targets. `cargo tree -p

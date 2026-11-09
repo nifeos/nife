@@ -484,7 +484,7 @@ package_archive	4	a package file is refused or read entirely inside itself, on b
 measured_boot	51	a digest text form reads back as itself, and nothing but a labeled sha256 parses
 pci	23	config-space decode on hostile-device input
 designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller writes makes the driver read outside a buffer
-block_roster	11	the roster page reader is total on any bytes, and a written roster reads back as written
+block_roster_contract	11	the roster page reader is total on any bytes, and a written roster reads back as written
 socket_contract	3	the listen and UDP bind grants admit exactly their ranges, and the two halves of a composed grant are independent
 jh7110_clock_and_reset	61	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
 usb	122	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded

@@ -37,7 +37,7 @@ Each step lands a provable piece. Every new name is provisional.
 1. The version constants land beside the wire formats the first cut links. `abi` carries
    `ABI_VERSION` at the crate root; `address_space_map` carries `VERSION`;
    `machine_statistics_contract` carries a version word beside its `MACHSTA1` magic, an index in the
-   crate's `word` module; `block_roster` carries `VERSION` in the digits of its magic. One constant
+   crate's `word` module; `block_roster_contract` carries `VERSION` in the digits of its magic. One constant
    per wire format, as ruled (question 1). `program_argument_contract`'s `nifeargv` stays
    unnumbered: basalt's published `rg` reads an argv page from the prebuilt archive the gates
    fetch, so its digits move with that rebuild. Proves: the constants are public, and the
@@ -104,7 +104,7 @@ table. No registry outside it exists.
 | 2 | `address_space_map` |
 | 3 | retired, `glob` |
 | 4 | `machine_statistics_contract` |
-| 5 | `block_roster` |
+| 5 | `block_roster_contract` |
 | 6 | `byte_sink_contract` |
 | 7 | `capability_manifest_note` |
 | 8 | `clock_contract` |

@@ -88,7 +88,7 @@ break a new tagged release.
 The rule: a crate leaves when every crate it links (normal, build and dev) has left or leaves with
 it, and no file in it names a nife path. Within a layer, the cheapest coordination goes first. Ruled 2026-11-01 (UTC): each
 package leaves as soon as the shared crates it links have left, in the order `disk-tools`, `process-tools`,
-`core-tools`, replacing milestone 756's single cut, and `block_roster` stays the first crate a
+`core-tools`, replacing milestone 756's single cut, and `block_roster_contract` stays the first crate a
 consumer outside nife reads. Ruled the same day: one repository per contract crate, created when
 the crate moves and only with the architect's approval of that exact repository. No lane creates
 one. A repository per package or per layer is refused. The four crates whose disposition is contribute
@@ -98,7 +98,7 @@ order too (ruled 2026-11-01 UTC); only the offer waits.
 | step | crates | why here |
 |---|---|---|
 | 0, the review pilot | `jh7110_entropy` | tag it, then the architect reads it; the others follow only as each review clears |
-| 1, the contract pilot | `block_roster` | a leaf with no blocking reference; one writer in the kernel, one reader in `disk_surveyor`; its magic carries its version, so a reader refuses a mismatch today |
+| 1, the contract pilot | `block_roster_contract` | a leaf with no blocking reference; one writer in the kernel, one reader in `disk_surveyor`; its magic carries its version, so a reader refuses a mismatch today |
 | 2, leaves for `disk-tools` | `entropy_contract`, `clock_contract`, `socket_contract`, `globally_unique_identifier_partition_table`, `counter_frequency_contract`, then `filesystem_contract` with `filesystem_fixture`, then `abi` | cheapest first by crossing commits and outside dependents; `abi` last, at 66 crossing commits and 12 dependents |
 | 3 | `address_space_map`, then `current_cpu_contract`, then `user_mode_runtime`, then `interfaces_note` | after the `link.ld` test moves; `user_mode_runtime` links six crates of step 2. `interfaces_note`, the `INTERFACES` leaf crate (provisional), already holds the note type inside nife and leaves like any leaf (below) |
 | 4, first package | `disk-tools` | leaves as soon as its 12 crates and `interfaces_note` have left; milestone 756's condition 4 has it carry the `INTERFACES` macro, and it never waits for `grant_plan` |
@@ -111,7 +111,7 @@ order too (ruled 2026-11-01 UTC); only the offer waits.
 `jh7110_entropy` stays the leaf pilot (milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic,
 released on its own)). It proves that a leaf crate builds from its own repository and nife pins it by `rev`. It does not prove the contract case: no
 consumer outside nife, so no two pins must agree, and no version check has refused a real mismatch
-across the boundary. `block_roster` proves both once `disk-tools` leaves.
+across the boundary. `block_roster_contract` proves both once `disk-tools` leaves.
 
 Two findings want lanes of their own:
 
@@ -186,7 +186,7 @@ contract and a consumer to land together it needs four things:
 
 A real one took 53 minutes (`jh7110_entropy` pull request #5, then nife pull request #2979). The
 [landing appendix](1017-the-contract-crates-leave-in-this-order/landing.md) works that case, then the
-contract case for `block_roster` in four steps. The page is single-version, so the three pins move
+contract case for `block_roster_contract` in four steps. The page is single-version, so the three pins move
 in one basalt pull request. A message contract serves N and N-1, so its steps may ship in separate
 bumps.
 
@@ -280,5 +280,5 @@ name is a provisional maintainer decision.
 ## Index row
 
 The order in which the 22 crates the first cut links leave this repository: bottom-up, one
-repository each, `block_roster` as the contract pilot, `disk-tools` as the first package. It sets
+repository each, `block_roster_contract` as the contract pilot, `disk-tools` as the first package. It sets
 the version policy and the gate that let a breaking change land across two repositories.

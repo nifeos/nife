@@ -7,7 +7,7 @@ A real one, 2026-10-31 (UTC). `jh7110_entropy` pull request #5 renamed five cons
 manifests that pin the crate and the program that names the constants, and merged at 23:15. Fifty-three
 minutes end to end. nife's `main` never broke, because it pinned the old commit until the bump.
 
-The contract case, worked for `block_roster` after step 4: a hypothetical page change to version 2,
+The contract case, worked for `block_roster_contract` after step 4: a hypothetical page change to version 2,
 with the durations the proposal measured.
 
 1. The contract repository merges version 2: `VERSION = 2`, magic `blkrosv2`, Cargo `0.2.0`, a dated

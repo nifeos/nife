@@ -6,7 +6,7 @@
 row	path	tree	kani	peak_mib
 address_space_identifier	crates/address_space_identifier	e110da1b5c95d704cdd55118ae0101db8c1bec59	0.68.0	93
 address_space_map	crates/address_space_map	6cc7dd3e042d38083e9cc90f69c9e0d24f7a717e	0.68.0	131
-block_roster	crates/block_roster	bc1eb2a131f09ff72f48407e957c95ec9454165d	0.68.0	950
+block_roster_contract	crates/block_roster_contract	bc1eb2a131f09ff72f48407e957c95ec9454165d	0.68.0	950
 calendar	crates/calendar	57a92657e6234da1b6f09c6e48a948406e7bd650	0.68.0	3381
 capability	crates/capability	55f611a3fa1cde9bcc47d961e103aee8fc74ba47	0.68.0	571
 capability_manifest_note	crates/capability_manifest_note	7c62f31595d50906f1b35a8731d508198907c8ad	0.68.0	3682

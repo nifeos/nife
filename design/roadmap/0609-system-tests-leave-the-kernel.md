@@ -50,7 +50,7 @@ check 13 fails if one creeps back.
   to userspace, calef's third rule:
   `design/roadmap/0690-harness-only-system-tests-move-to-userspace.md`.
 - **Recorded.** Five service crates are still kernel dependencies because the kernel uses them for
-  real (`calendar`, `jh7110_entropy`, `video_terminal`, `block_roster`,
+  real (`calendar`, `jh7110_entropy`, `video_terminal`, `block_roster_contract`,
   `non_volatile_memory_express`); whether each is a service at all is pull request #1389's division
   question. The BUGS section of notes/system-tests-and-the-kernel-crate.md carries it.
 - **Done.** `system_tests` is its own package, `system-tests`, of kind `test`, in

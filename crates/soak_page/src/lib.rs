@@ -22,7 +22,7 @@
 //! **The refusal is the valuable half, and it draws a line the rest of `crates/` follows without
 //! writing down.** `soak_proto` was refused because **nothing here is a wire protocol: it is a
 //! memory layout**, and the `_proto` suffix in this tree names request/reply vocabularies. That
-//! puts this crate in a family with `block_roster` and `grant_plan::job_page_frame`, against
+//! puts this crate in a family with `block_roster_contract` and `grant_plan::job_page_frame`, against
 //! `clock_contract`, `credential_contract` and `supervision_contract` on the other side of the line.
 //!
 //! **The list this block used to give was wrong on its own terms**, and the correction is recorded

@@ -87,7 +87,7 @@ Two records disagree with what was measured here:
 
 ## No credible candidate, one line each
 
-- The ABI crates (rule 3): `abi`, `address_space_map`, `block_roster`, `boot_ladder`. Nothing
+- The ABI crates (rule 3): `abi`, `address_space_map`, `block_roster_contract`, `boot_ladder`. Nothing
   upstream reads nife's ABI.
 - The contract crates, for the same reason: `byte_sink_contract`, `capability_witness_contract`,
   `counter_frequency_contract`, `current_cpu_contract`, `domain_name_resolution_contract`,

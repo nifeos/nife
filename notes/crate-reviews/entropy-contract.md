@@ -120,7 +120,7 @@ What a stranger may find surprising:
 | `entropy_contract` | crate | ratified | passes |
 | `MAXIMUM_BYTES` | constant | ratified | passes: a limit that opens `MAXIMUM_` and ends with its unit |
 | `fill_with` | function | ratified | passes: std's `_with` for a function that takes a closure |
-| `VERSION`, `INTERFACE_ID` | constants | provisional | pass; `block_roster` ratified the same pair, and `id` is an accepted word |
+| `VERSION`, `INTERFACE_ID` | constants | provisional | pass; `block_roster_contract` ratified the same pair, and `id` is an accepted word |
 | `OPERATION_SHIFT` | constant | no block | passes; six other crates share the name and value |
 | `GET` | constant | no block | passes; the protocol's one operation |
 | `NO_ENTROPY`, `READY`, `DEAD` | constants | no block | pass |

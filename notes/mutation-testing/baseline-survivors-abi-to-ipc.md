@@ -19,7 +19,7 @@ Rights bits and the fault slot, killed by `rights_are_distinct_single_bits` and
 Both are in `free`'s release-mode range guard. Equivalent under the harness (`debug_assert`
 shielding, as above).
 
-### `block_roster` (3)
+### `block_roster_contract` (3)
 
 The header-only page, killed by `a_header_only_page_is_an_empty_roster_not_a_short_one`.
 `capacity_of`'s `<` to `<=` is equivalent: `len == HEADER_BYTES` yields capacity 0 down both arms.

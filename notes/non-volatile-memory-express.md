@@ -231,7 +231,7 @@ anything is staged.
   region that contains the admin rings, so the server can aim DMA at them, and with stride 0 it can ring the admin
   doorbell. Neither is an escape and both are option 4's to close.
 - Nothing but the test serves it over blk IPC. `non_volatile_memory_express` speaks the four
-  blk verbs and `block_roster` lists the controller (`TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS`,
+  blk verbs and `block_roster_contract` lists the controller (`TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS`,
   §193 (what a block-roster entry calls an NVMe disk)), so `disk_surveyor` sees the disk, but no
   program is handed its endpoint and the FS server's default remains virtio-blk.
 - A transfer is one command per filesystem block, so a sixteen-block blk request is sixteen

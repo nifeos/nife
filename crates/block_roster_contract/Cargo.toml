@@ -1,5 +1,5 @@
 [package]
-name = "block_roster"
+name = "block_roster_contract"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
@@ -15,9 +15,9 @@ publish = false     # the default; the allowlist lint holds the exception (crate
 # host-tested, no_std, dependency-free, so the writer and the reader share ONE definition and cannot
 # drift.
 #
-# NOT a message protocol, and the name is deliberate. A wire contract describes messages two
-# programs exchange; this describes bytes at an address, written once and thereafter only read.
-# There is no request, no reply, no server, and nothing to authorize at read time.
+# Not a message protocol. A message contract describes messages two programs exchange; this
+# contract fixes bytes at an address, written once and thereafter only read. There is no request, no
+# reply, no server, and nothing to authorize at read time.
 
 [lints.rust]
 # `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
