@@ -30,8 +30,8 @@ run of its checks.
 
 1. The pre-arm check. `script/queue-conflicts [--pr N]` (`cmd_check` and `evaluate` in
    `helpers/queue_conflicts.py`) merges the pull request's head with `git merge-tree` against `main`
-   plus every entry ahead of it in the queue, in a scratch repository that borrows the caller's
-   objects, and names each conflicting file and the entries ahead that changed it. Exit 0 clean, 1
+   plus every entry ahead of it in the queue. It works in a scratch repository that borrows the
+   caller's objects, and names each conflicting file and the entries ahead that changed it. Exit 0 clean, 1
    conflict, 2 could not tell. `script/push` runs it in `--advisory` mode after a confirmed push,
    and the developer-lane skill tells a lane to run it before arming. The notes are
    `notes/merge-queue/conflict-precheck.md`.
@@ -44,8 +44,8 @@ run of its checks.
 `python3 helpers/queue_conflicts.py --selftest`, run by `script/lint-fleet` (which the `lint` job of
 `.github/workflows/ci.yml` runs), builds local repositories with no network. It covers a conflict
 with an entry ahead, a clean pull request, an entry behind, a conflict with `main` alone, an entry
-that conflicts with those before it, the advisory mode and the scope check, and a no-op
-`merge_tree` under which the conflict case must fail.
+that conflicts with those before it, the advisory mode and the scope check. Under a no-op
+`merge_tree` the conflict case must fail.
 
 ## What remains
 
