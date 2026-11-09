@@ -57,10 +57,10 @@ P0 blocks the baseline tag and any publish. P1 lands before the first release. P
 `Identity` (`src/host_controller.rs`) declares `pub firmware: [u32; 5]`, and `HostController::new`
 fills it with `CONTROL_REGISTER`, `PWREN`, `CLKDIV`, `CLKENA` and `CTYPE` in that order. A reader of
 a board transcript has to open the source to know which word is which, and a caller who indexes it
-wrong still compiles. Ruled: five named public fields replace the array, each with its
-`doc(alias)`. The architect has not yet ratified the field names. The review proposes `control`,
-`power_enable`, `clock_divider`, `clock_enable` and `card_type`, provisionally. Verified in the
-source. One-way door (a public struct with public fields). S.
+wrong still compiles. Ruled: five named public fields replace the array. Ratified, in register
+order: `host_control`, `power_enable`, `clock_divider`, `clock_enable` and `card_type`. Each field
+carries a `doc(alias)` that cites the BSD spelling `SDMMC_<name>` first, then the specification
+name (`CTRL`, `PWREN`, `CLKDIV`, `CLKENA`, `CTYPE`). Verified in the source. One-way door (a public struct with public fields). S.
 
 #### P0-2. The visibility of the public surface follows no stated rule
 
@@ -195,21 +195,24 @@ source. Two-way. S.
 
 One-way doors only. Everything else above is the maintainers' call.
 
-1. The field names of `Identity` (P0-1). The shape has its ruling: five named fields, no array.
-   The five names stay open, with the provisional names of P0-1 as the recommendation.
-2. The go for the baseline tag (P0-4). The tag and its commit have their ruling. Placing it waits
+The one decision left for the architect is placing the baseline tag.
+
+1. The go for the baseline tag (P0-4). The tag and its commit have their ruling. Placing it waits
    for the go of the architect once the P0 items have merged and `main` passes.
-3. Where the JH7110 facts live. The `jh7110` module (`src/jh7110.rs`) holds the addresses,
+
+Two more one-way doors wait for the combine review, each with a recommendation:
+
+2. Where the JH7110 facts live. The `jh7110` module (`src/jh7110.rs`) holds the addresses,
    interrupts and device-tree spellings of one chip inside a controller crate, as the
    `dw_mmc-starfive.c` glue of Linux sits beside `dw_mmc.c`. Moving it out after a publish is a
    break. Recommendation: keep it; revisit only if a second board arrives or the combine review
    chooses a shared JH7110 crate.
-4. A shared DMA region trait with the sibling crate. See
+3. A shared DMA region trait with the sibling crate. See
    [the pair section](1050-designware-mobile-storage-outside-review/prior-art.md). Recommendation:
    not yet; each crate keeps its own trait until a third consumer exists, since a shared trait is a
    one-way door for both.
 
-The items record the rulings on the shape of `Identity` (P0-1), the visibility rule (P0-2) and the
+The items record the rulings on the shape and field names of `Identity` (P0-1), the visibility rule (P0-2) and the
 baseline tag (P0-4). The publishing hold stands.
 
 ## Prior art and the DesignWare pair
@@ -261,7 +264,7 @@ claims none of the hardware steps.
 
 An outside review of `designware_mobile_storage` found no defect in its logic and thirteen things
 to settle before a first release. Four are one-way shapes and packaging facts that a tag or a
-publish would freeze. They are the shape of `Identity` and the visibility rule, both ruled; the
+publish would freeze. They are the shape and field names of `Identity` and the visibility rule, all ruled; the
 license notice; and a baseline tag `v0.1.0`, ruled, whose placing waits for a go. Nine land before
 the first release. They are a missing `CMD12` recovery, fixed deadlines, undocumented trait
 contracts and untriaged mutation survivors. They also cover a stranger run never made, a README
