@@ -17,6 +17,14 @@ changed lines (the merge base against the tree) and fails in two cases:
    `Error` discriminant), and `ABI_VERSION` did not change. The syscall surface is one version;
    adding a number is an addition and owes nothing.
 
+A rename is not a move (the maintainer's ruling of 2026-11-08 UTC): the number a reader of the
+version ledger cares about did not change, so a bump would tell them something false. A removed
+name and an added one in the same file are read as one rename when they carry the same value, the
+same type and the same doc comment, and when no other removed or added name in that file carries
+the same three. A changed doc comment says the number now means something else, so the value reused
+under it still owes the bump; a pairing that is not one to one is not a rename either, and both
+names count as moved.
+
 It is the diff-grep the ruling names, not the rustdoc diff, which waits for a consumer outside the
 tree. It sees what a line says: a constant whose value moves through another constant it names is
 read by its text, and a semantic change behind an unchanged number is a break this cannot see (the
@@ -37,7 +45,7 @@ import sys
 import tempfile
 
 # A public constant, joined across continuation lines up to its semicolon.
-CONST = re.compile(r'^\s*pub\s+const\s+([A-Z][A-Z0-9_]*)\s*:[^=]+=\s*([^;]+);', re.M)
+CONST = re.compile(r'^\s*pub\s+const\s+([A-Z][A-Z0-9_]*)\s*:([^=]+)=\s*([^;]+);', re.M)
 # An enum discriminant line: `    NoSuchSlot = -1,`.
 DISCRIMINANT = re.compile(r'^\s+([A-Z][A-Za-z0-9]*)\s*=\s*(-?\d+)\s*,', re.M)
 MAGIC = re.compile(r'(^|_)MAGIC($|_)')
@@ -45,17 +53,52 @@ VERSION = re.compile(r'(^|_)(VERSION|REVISION)($|_)')
 ABI_CRATE = 'crates/abi/'
 
 
+def squeeze(text):
+    return ' '.join(text.split())
+
+
+def doc_above(text, start):
+    """The `///` doc comment directly above offset `start`, attributes skipped, squeezed."""
+    lines = text[:start].split('\n')[:-1]
+    doc = []
+    for line in reversed(lines):
+        line = line.strip()
+        if line.startswith('///'):
+            doc.append(line[3:])
+        elif line.startswith('#['):
+            continue
+        else:
+            break
+    return squeeze(' '.join(reversed(doc)))
+
+
 def values(text, path):
-    """{key: normalized value} of the public constants (and, in abi, the discriminants)."""
+    """{key: (normalized value, meaning)} of the public constants (and, in abi, the
+    discriminants). The meaning is what a rename must keep: the type and the doc comment."""
     found = {}
     # Drop the test module: everything from `#[cfg(test)]` on is not a public format.
     text = text.split('#[cfg(test)]', 1)[0]
-    for name, value in CONST.findall(text):
-        found[('const', name)] = ' '.join(value.split())
+    for match in CONST.finditer(text):
+        name, kind, value = match.groups()
+        found[('const', name)] = (squeeze(value), (squeeze(kind), doc_above(text, match.start())))
     if path.startswith(ABI_CRATE):
-        for name, value in DISCRIMINANT.findall(text):
-            found[('discriminant', name)] = value
+        for match in DISCRIMINANT.finditer(text):
+            name, value = match.groups()
+            found[('discriminant', name)] = (value, ('', doc_above(text, match.start())))
     return found
+
+
+def renames(before, after):
+    """The removed keys that are one-to-one renames of an added key: same kind, value and meaning."""
+    def by_signature(keys, side):
+        groups = {}
+        for key in keys:
+            groups.setdefault((key[0], side[key]), []).append(key)
+        return groups
+    removed = by_signature(set(before) - set(after), before)
+    added = by_signature(set(after) - set(before), after)
+    return {old[0] for signature, old in removed.items()
+            if len(old) == 1 and len(added.get(signature, [])) == 1}
 
 
 def judged(path):
@@ -75,10 +118,14 @@ def problems(files):
             continue
         before = values(old or '', path)
         after = values(new or '', path)
+        renamed = renames(before, after)
         crate = moved.setdefault(crate_of(path), {'magic': [], 'version': [], 'abi': []})
         for key in sorted(set(before) | set(after)):
             kind, name = key
-            was, now = before.get(key), after.get(key)
+            if key in renamed:
+                continue
+            was = before[key][0] if key in before else None
+            now = after[key][0] if key in after else None
             if was == now:
                 continue
             changed = was is not None  # a changed or removed value; a new one is an addition
@@ -178,6 +225,42 @@ def selftest():
           {'crates/abi/src/lib.rs': ('    NoSuchSlot = -1,\n', '    NoSuchSlot = -2,\n')}, True)
     fails('a constant outside abi is not an abi number',
           {'crates/x/src/lib.rs': ('pub const SIZE: u64 = 1;\n', 'pub const SIZE: u64 = 2;\n')}, False)
+
+    # A rename is not a move; a changed value, a deleted name or a reused value still is.
+    word = ('pub const ABI_VERSION: u32 = 1;\n/// The word\'s offset.\n///\n/// Name: provisional.\n'
+            '#[doc(alias = "w")]\npub const {}: u64 = 4096 - 8;\n')
+    fails('a renamed constant with its value, type and doc passes',
+          {'crates/abi/src/virtio.rs': (word.format('OLD'), word.format('NEW'))}, False)
+    fails('a renamed constant whose value changed fails',
+          {'crates/abi/src/virtio.rs': (word.format('OLD'), word.format('NEW').replace('- 8', '- 16'))}, True)
+    fails('a renamed constant whose type changed fails',
+          {'crates/abi/src/virtio.rs': (word.format('OLD'), word.format('NEW').replace('u64', 'usize'))}, True)
+    fails('a deleted constant fails',
+          {'crates/abi/src/virtio.rs': (word.format('OLD'), 'pub const ABI_VERSION: u32 = 1;\n')}, True)
+    fails('a value reused under a new name for a different meaning fails',
+          {'crates/abi/src/virtio.rs': (word.format('OLD'),
+                                        word.format('NEW').replace("word's offset", 'ring length'))}, True)
+    fails('a value moved onto a name that already held another fails',
+          {'crates/abi/src/lib.rs': ('pub const A: u64 = 5;\npub const B: u64 = 6;\n',
+                                     'pub const B: u64 = 5;\n')}, True)
+    fails('two removed names of one value are not one rename',
+          {'crates/abi/src/lib.rs': ('pub const A: u64 = 5;\npub const B: u64 = 5;\n',
+                                     'pub const C: u64 = 5;\n')}, True)
+    fails('one removed name added twice is not one rename',
+          {'crates/abi/src/lib.rs': ('pub const A: u64 = 5;\n',
+                                     'pub const C: u64 = 5;\npub const D: u64 = 5;\n')}, True)
+    fails('a name moved to another file of abi is not a rename',
+          {'crates/abi/src/a.rs': ('pub const A: u64 = 5;\n', ''),
+           'crates/abi/src/b.rs': ('', 'pub const A: u64 = 5;\n')}, True)
+    fails('a renamed error discriminant passes',
+          {'crates/abi/src/lib.rs': ('    /// No slot.\n    NoSuchSlot = -1,\n',
+                                     '    /// No slot.\n    SlotAbsent = -1,\n')}, False)
+    fails('a renamed magic with its value passes',
+          {'crates/x/src/lib.rs': (magic_old, magic_old.replace('MAGIC', 'FORMAT_MAGIC'))}, False)
+    fails('a rename with a version bump still passes',
+          {'crates/abi/src/virtio.rs': (word.format('OLD'),
+                                        word.format('NEW').replace('VERSION: u32 = 1', 'VERSION: u32 = 2'))},
+          False)
 
 
     # The same rules over a scratch repository: a synthetic pull request that moves a value.

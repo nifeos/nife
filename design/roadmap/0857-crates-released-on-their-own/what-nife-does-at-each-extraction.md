@@ -41,15 +41,14 @@ released on its own), and every later extraction runs the same list.
   dependency, and is left to fire; that pull request is the ruling that nife depends on the crate
   repository.
 - `cargo-deny` applies to the crate as to any dependency.
-- A person holding an `admin:org` token adds the new repository to the selected-repositories list
-  of both organization secrets the release workflow's tag job reads, `NIFE_SMELTER_APP_ID` and
-  `NIFE_SMELTER_PRIVATE_KEY`, once per secret:
-  `gh api -X PUT /orgs/nifeos/actions/secrets/<NAME>/repositories/<repository id>`, where the id
-  comes from `gh api repos/nifeos/<crate> --jq .id`. Both secrets use the visibility "selected
-  repositories", never "all repositories" (ruled 2026-11-01 UTC): the key bypasses the crate tag
-  rulesets, so it stays out of nife and basalt, where lanes push branches. No agent handles the key
-  value; the grant moves only the list. Do it before the first release tag job runs, since that
-  job cannot authenticate without it.
+- A person holding an `admin:org` token runs `script/grant-org-secrets <crate>`, which adds the new
+  repository to the selected-repositories list of the two organization secrets with that
+  visibility, `NIFE_SMELTER_PRIVATE_KEY` and `SETTINGS_TOKEN`, and checks that both lists name it.
+  `NIFE_SMELTER_APP_ID` is open to every repository and needs no grant. Both secrets use the
+  visibility "selected repositories", never "all repositories" (ruled 2026-11-01 UTC): the key
+  bypasses the crate tag rulesets, so it stays out of nife and basalt, where lanes push branches.
+  No agent handles the key value; the grant moves only the list. Do it before the first release
+  tag job runs, since that job cannot authenticate without it.
 - The name leaves `script/names`, which tracks names in this tree, and no record of it is kept.
 
 ## What the metrics do

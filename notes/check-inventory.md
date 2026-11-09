@@ -65,7 +65,7 @@ the heavy checks, which report Success (notes/merge-queue.md).
 | `re-falsify the harnesses this change can reach` | verify | merge queue, push, `full-ci` PR | no | green today, **was red through a merge** |
 | `architect hold (needs-architect label)` | architect-hold | PR, merge queue | no | green |
 | `verify scope` | verify | merge queue, push, `full-ci` PR | no | green |
-| `prove (shard N/3)` | verify | merge queue, push, `full-ci` PR | no | green |
+| `prove (shard N/5)` | verify | merge queue, push, `full-ci` PR | no | green |
 | `draft gate` (two jobs, one name) | ci, verify | PR, push | no | green |
 
 Three of the unrequired five are correct as they stand. `verify scope` and the two `prove` shards
@@ -222,7 +222,7 @@ decide rather than assume. A label added to a pull request already sitting in th
 this red mid-group, and an ALLGREEN group of up to five is evicted together. That is a narrow window
 and the label is normally applied long before enqueue.
 
-**Do not add** `verify scope`, `prove (shard N/3)`, or `draft gate`, for the reasons under A.
+**Do not add** `verify scope`, `prove (shard N/5)`, or `draft gate`, for the reasons under A.
 
 ## What this said about fatal risk 3, without changing its status
 
