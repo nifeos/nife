@@ -39,7 +39,16 @@ against literal fixture strings, no repository and no subprocess required, cheap
    version does not fire (#1597), a features-only change does not, a `path = ` entry never counts,
    and a dep moved to a version nothing at the base uses DOES fire. The base comes from
    `--base-rev REV`; without it nothing is known and every changed dependency fires. See BUGS for
-   what "external" cannot see: a multi-line inline table.
+   what "external" cannot see: a multi-line inline table. Since calef's ruling of 2026-11-09
+   (UTC), a dependency on one of our own crates is approved in advance and does not fire when it is
+   a git dependency whose URL is `https://github.com/nifeos/<repository>` (a trailing `.git` is
+   allowed) with `rev` a full 40-hexadecimal-digit commit and no `branch` or `tag`. A branch, a tag,
+   a short rev, no rev, another organization, or a look-alike such as `nifeos-fork` still fires.
+   Third-party dependencies are unchanged (§46). Known gaps, both deliberate: (a) a crates.io
+   dependency whose name is a first-party crate still fires, because no reliable list exists (the
+   organization's repositories include non-crates, `packages/homes.toml` names homes rather than
+   crates, and nothing is published to crates.io yet); (b) the rule cannot tell that the commit is
+   on that repository's main, which the ruling requires. Reviewers check it until a lint does.
 3. **format-crate**: a version constant, magic value, or documented on-disk layout moved in a crate
    that is classified, from its own head content, as a format crate: it declares a `pub const`
    ending in `VERSION` or `MAGIC`, or its module doc carries a markdown table with a `version`
@@ -317,6 +326,29 @@ SECTION_RE = re.compile(r'^\[(.+)\]$')
 DEP_KEY_RE = re.compile(r'^([A-Za-z0-9_.-]+)\s*=\s*(.*)$')
 
 
+GIT_URL_RE = re.compile(r'\bgit\s*=\s*"([^"]*)"')
+REV_RE = re.compile(r'\brev\s*=\s*"([^"]*)"')
+FIRST_PARTY_GIT_RE = re.compile(r'https://github\.com/nifeos/[A-Za-z0-9_.-]+')
+FULL_COMMIT_RE = re.compile(r'[0-9a-fA-F]{40}')
+
+
+def is_pinned_first_party_git(rest):
+    """True for a git dependency on a crate of the `nifeos` organization at a full commit.
+
+    The URL must be `https://github.com/nifeos/<repository>` (optionally ending `.git`) and `rev`
+    must be 40 hexadecimal digits. A `branch`, a `tag`, a short or missing `rev` is not pinned, so
+    it is not exempt. Whether the commit is on that repository's main is NOT checked here (see the
+    module docstring's follow-up note).
+    """
+    gm, rm = GIT_URL_RE.search(rest), REV_RE.search(rest)
+    if not gm or not rm or re.search(r'\b(branch|tag)\s*=', rest):
+        return False
+    url = gm.group(1)
+    if url.endswith('.git'):
+        url = url[:-4]
+    return bool(FIRST_PARTY_GIT_RE.fullmatch(url) and FULL_COMMIT_RE.fullmatch(rm.group(1)))
+
+
 VERSION_RE = re.compile(r'\bversion\s*=\s*"([^"]*)"')
 BARE_REQ_RE = re.compile(r'^"([^"]*)"')
 
@@ -344,6 +376,8 @@ def toml_external_deps(lines):
         name, rest = km.group(1), km.group(2)
         if 'path' in rest:
             continue  # `path = "../crates/x"` somewhere in the value: an in-tree dependency
+        if is_pinned_first_party_git(rest):
+            continue  # our own crate at a full commit: approved in advance (2026-11-09 UTC)
         vm = BARE_REQ_RE.match(rest) or VERSION_RE.search(rest)
         external.add((name, vm.group(1) if vm else rest.strip()))
     return external
@@ -992,6 +1026,96 @@ diff --git a/fuzz/Cargo.toml b/fuzz/Cargo.toml
 -redox_syscall = { version = "0.9.0" }
 +redox_syscall = { version = "0.9.0", features = ["std"] }
 """, None, KNOWN_BASE),
+
+    ("dependency: a nifeos git dependency at a full commit stays quiet", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++e1000e = { version = "0.1.0", git = "https://github.com/nifeos/e1000e", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+""", None),
+
+    ("dependency: a nifeos git dependency with a .git suffix at a full commit stays quiet", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++e1000e = { git = "https://github.com/nifeos/e1000e.git", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+""", None),
+
+    ("dependency: a nifeos git dependency on a branch fires", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++e1000e = { git = "https://github.com/nifeos/e1000e", branch = "main" }
+""", 'dependency'),
+
+    ("dependency: a nifeos git dependency on a tag fires", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++e1000e = { git = "https://github.com/nifeos/e1000e", tag = "v0.1.0" }
+""", 'dependency'),
+
+    ("dependency: a nifeos git dependency with no rev fires", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++e1000e = { version = "0.1.0", git = "https://github.com/nifeos/e1000e" }
+""", 'dependency'),
+
+    ("dependency: a nifeos git dependency with a short rev fires", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++e1000e = { git = "https://github.com/nifeos/e1000e", rev = "8ac75a6" }
+""", 'dependency'),
+
+    ("dependency: a nifeos git dependency with a rev and a branch fires", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++e1000e = { git = "https://github.com/nifeos/e1000e", branch = "main", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+""", 'dependency'),
+
+    ("dependency: a git dependency on another organization at a full commit fires", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++thing = { git = "https://github.com/someone/thing", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+""", 'dependency'),
+
+    ("dependency: a look-alike organization at a full commit fires", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++thing = { git = "https://github.com/nifeos-fork/thing", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+""", 'dependency'),
+
+    ("dependency: a crates.io dependency named like a first-party crate still fires", """\
+diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml
+--- a/kernel/Cargo.toml
++++ b/kernel/Cargo.toml
+@@ -1,2 +1,3 @@
+ [dependencies]
++e1000e = "0.1"
+""", 'dependency'),
 
     ("dependency: a target-specific dependency section is still read", """\
 diff --git a/kernel/Cargo.toml b/kernel/Cargo.toml

@@ -200,7 +200,7 @@ one buys is in [design/tenets/codebase-rules.md](design/tenets/codebase-rules.md
 6. Taking a dependency is a decision, not a convenience (§46). Write the kernel and the crates
    Kani proves, because a model checker needs code we can restructure. Everywhere else, take or
    adapt existing code first (calef, 2026-10-04): writing needs a recorded reason in the block's
-   `Reuse:` line, and an architect still rules on each dependency. Vendor only what needs a patch.
+   `Reuse:` line, and an architect still rules on each third-party dependency. A dependency on one of our own `nifeos` crates needs no ruling when its git `rev` is a full commit on that repository's main (2026-11-09). Vendor only what needs a patch.
 7. Anything two binaries must agree on is a crate, never a `#[path]` module (calef, 2026-08-01). If
    a constant, an opcode, a layout, or an error code is shared by more than one program, it goes in
    `crates/` and is depended on. `#[path = "x.rs"] mod x;` is not an option, and `script/lint` check
