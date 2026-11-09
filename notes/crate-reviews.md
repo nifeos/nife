@@ -14,9 +14,7 @@ recommendation. A package gathers facts. The architect judges the API's vocabula
 
 ## What was run
 
-Every result below comes from `main` as it stands. Pull request #3200 (milestone 1019 (the driver
-crates carry facts from their sources, not their text), items 3 to 6) is open, and the
-packages of three crates name its effects.
+Every result below comes from `main` as it stands.
 
 | check | command | scope |
 |---|---|---|
@@ -374,6 +372,11 @@ The build passes on 1.88 for the host and the three bare-metal targets.
 
 Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text edits naming nife.
 
+## `clock_contract`, a contract crate
+
+The whole package is [crate-reviews/clock-contract.md](crate-reviews/clock-contract.md): a leaf
+with no Kani harness.
+
 ## Summary
 
 | crate | step | recommendation |
@@ -389,4 +392,5 @@ Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text 
 | `block_roster` | contract | ready for review |
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |
 | `entropy_contract` | contract | names and identity for the architect; [package](crate-reviews/entropy-contract.md) |
+| `clock_contract` | contract | identity and overlay names for the architect |
 | `globally_unique_identifier_partition_table` | 2 | [package](crate-reviews/globally-unique-identifier-partition-table.md) |

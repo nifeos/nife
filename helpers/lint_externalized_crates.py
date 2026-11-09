@@ -34,7 +34,6 @@ WAIVERS = {
     "abi": (6, PENDING),
     "byte_sink_contract": (2, PENDING),
     "capability_manifest_note": (37, PENDING),
-    "clock_contract": (5, PENDING),
     "counter_frequency_contract": (1, PENDING),
     "current_cpu_contract": (3, PENDING),
     "domain_name_resolution_contract": (54, PENDING),

@@ -2,9 +2,9 @@
 
 The wall clock as a contract between a clock service and everything that reads or sets the time:
 the layout of a shared clock page, the small protocol for proposing a new time, and the policy a
-proposal must meet. `no_std`, no dependencies outside an optional model-checking build. It was
-written for the nife kernel's clock service, its readers and its standard library, which share this
-one definition so they cannot drift.
+proposal must meet. `no_std`, no dependencies outside an optional model-checking build. A clock
+service, its readers and a standard library's time support share this one definition, so they
+cannot drift.
 
 Reading the clock is a read-only mapping of the page. Setting it is a read/write mapping of the same
 page. Proposing a time is a message to an endpoint, which the service answers by applying the policy
