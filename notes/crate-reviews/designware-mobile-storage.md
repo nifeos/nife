@@ -27,7 +27,8 @@ The board's test steps live in the kernel's storage bench, not here. No decision
 | license | `(MIT OR Apache-2.0) AND ISC`; `LICENSE-MIT` and `LICENSE-APACHE` at the crate root, the ISC notice in `src/lib.rs` |
 | `publish` | `false` |
 | size | 8,324 lines in 12 files: about 5,150 of library, 720 of shared tests, 1,026 of simulator, 1,426 of Kani harnesses |
-| consumers in nife | `kernel`, `components` and `machine_discovery`, by path |
+| repository | `nifeos/designware_mobile_storage` |
+| consumers in nife | `kernel`, `components` and `machine_discovery`, by git revision |
 
 ## Public API
 
@@ -120,7 +121,7 @@ The public names the rules refused, and where each stands:
 | 2 | `command::Response::has_crc` | `crc` was not an accepted acronym | `has_crc` | withdrawn: `crc` is an accepted acronym |
 | 3 | `command::Data::block_size` | a size carries its unit | `block_bytes` | done |
 | 4 | `sd::CardKind::SdV1`, `SdV2` | `V` abbreviates version | `SdVersion1`, `SdVersion2` | done |
-| 5 | `internal_direct_memory_access::DirectMemoryAccessRegion::bus_address` | an address says what kind it is | `direct_memory_access_address`, aliases `bus address` and `dma_addr_t` | done |
+| 5 | `internal_direct_memory_access::DirectMemoryAccessRegion::bus_address` | an address says what kind it is | `direct_memory_access_bus_address`, aliases `bus address` and `dma_addr_t` | done |
 | 6 | `jh7110::Slot::base`, and the `base` parameter of `Slot::from_node` | an address is virtual or physical | `registers_physical_address` | done |
 | 7 | `jh7110::Slot::size`, and the `size` parameter of `Slot::from_node` | a size carries its unit | `registers_size_bytes` | done |
 | 8 | `host_controller::clock_divider`, parameters `base` and `target` | a quantity carries its unit | `base_hertz`, `target_hertz` | done |
@@ -133,9 +134,9 @@ The public names the rules refused, and where each stands:
 The two address registers, `CURRENT_DESCRIPTOR_PHYSICAL_ADDRESS_REGISTER` and
 `CURRENT_BUFFER_PHYSICAL_ADDRESS_REGISTER`, hold the descriptor address and buffer address the
 controller is on, as the bus sees them, which is physical on every board this driver runs on.
-`DirectMemoryAccessRegion::direct_memory_access_address` is the region's address as the controller's DMA engine
+`DirectMemoryAccessRegion::direct_memory_access_bus_address` is the region's address as the controller's DMA engine
 uses it, which differs from the CPU physical address behind an IOMMU or a bus offset, so it does
-not take `physical_address`. It is `direct_memory_access_address`, with
+not take `physical_address`. It is `direct_memory_access_bus_address`, with
 `bus address` and `dma_addr_t` as aliases; the architect ratified it.
 Every private name inside the crate that holds that same value carries the same spelling. The
 value is the address as the controller's DMA engine uses it, which the trait contract allows to
@@ -143,10 +144,10 @@ differ from the CPU physical address, so none of these names says physical. All 
 
 | item | name before | now |
 |---|---|---|
-| `InternalDirectMemoryAccess` field, and the `descriptor` parameter | `region_physical_address` | `region_direct_memory_access_address` |
-| `simulator` descriptor walk local | `descriptor_physical_address` | `descriptor_direct_memory_access_address` |
-| `simulator` `offset` parameter | `physical_address` | `direct_memory_access_address` |
-| the `proofs` regions' fields and harness locals | `physical_address` | `direct_memory_access_address` |
+| `InternalDirectMemoryAccess` field, and the `descriptor` parameter | `region_physical_address` | `region_direct_memory_access_bus_address` |
+| `simulator` descriptor walk local | `descriptor_physical_address` | `descriptor_direct_memory_access_bus_address` |
+| `simulator` `offset` parameter | `physical_address` | `direct_memory_access_bus_address` |
+| the `proofs` regions' fields and harness locals | `physical_address` | `direct_memory_access_bus_address` |
 
 The only CPU-side address is `jh7110::Slot::registers_physical_address`, which stays physical.
 `Refusal::AboveFourGibibytes` spells its unit out. The parameters of `registers::queue_offset`,
@@ -182,11 +183,7 @@ release stays compatible.
 
 ## Outstanding before the move
 
-| item | owner |
-|---|---|
-| `repository` in the manifest, and `publish = false` with its nife-tree comment; the template owns both. | move lane |
-| The `Name:` blocks cite pull requests of this tree; the move commit strips them, as ruled. | move lane |
-| Milestone 1019 item 11 (pin each vendor link to its revision) reads as done in this crate: `jh7110.rs` and `host_controller.rs` name the vendor tag and the branch head separately and say which assigns 50 MHz. The block still lists it as outstanding. | maintainer |
+Nothing. The repository `nifeos/designware_mobile_storage` exists, its checks pass on `main`, and nife pins it by revision. The `Name:` blocks stay in this tree's history and the repository carries none.
 
 No shipped text names this tree, a milestone number or a lane. The board is "a VisionFive 2"
 throughout.
@@ -205,4 +202,4 @@ still build.
 
 ## Recommendation
 
-Ready for review.
+The architect cleared the move, and has not cleared the tag or publication.

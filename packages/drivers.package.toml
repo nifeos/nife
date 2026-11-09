@@ -14,7 +14,8 @@ crates = ["virtio"]
 # so it is an interface rather than an internal crate.
 # `designware_ethernet` is the same contract for the JH7110's Ethernet controller (milestone 53
 # (the board's own peripherals: network and storage on real silicon)), for the same reason.
-# `designware_mobile_storage` is the JH7110's SD/MMC driver (milestone 53 (the board's own
+# The crate `designware_mobile_storage` lives in the repository `nifeos/designware_mobile_storage`
+# and is not listed here. It is the JH7110's SD/MMC driver (milestone 53 (the board's own
 # peripherals: network and storage on real silicon)): the kernel links it for the bench boot, and
 # the EL0 block server `designware_mobile_storage` links the same crate.
 # `non_volatile_memory_express` is linked by the kernel, which brings the controller up (the admin
@@ -25,7 +26,6 @@ crates = ["virtio"]
 # the EL0 server of the same name drives the device and stays a program below.
 interfaces = [
     "designware_ethernet",
-    "designware_mobile_storage",
     "non_volatile_memory_express",
 ]
 programs = ["block_driver", "non_volatile_memory_express", "jh7110_entropy", "designware_mobile_storage"]
