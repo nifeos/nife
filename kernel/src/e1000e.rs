@@ -78,6 +78,8 @@ static BRING_UP_BAR0: AtomicU64 = AtomicU64::new(0);
 /// What the device's own statistics counters say crossed the wire since the last read, or since
 /// [`bring_up`] for the first read after it. They count independently of the rings, so they are
 /// the witness of whether frames passed in each direction.
+///
+/// Name: provisional, minted 2026-11-09 (UTC) by lane/i219-cabled-run.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct FrameCounts {
     /// Good frames received (`GPRC`).
@@ -90,10 +92,10 @@ pub struct FrameCounts {
     pub missed: u32,
 }
 
-impl FrameCounts {
-    /// Both counts summed, each field saturating.
-    #[must_use]
-    pub fn plus(self, later: FrameCounts) -> FrameCounts {
+/// Two reads summed, each field saturating: the counters clear on read, so a total is a sum.
+impl core::ops::Add for FrameCounts {
+    type Output = FrameCounts;
+    fn add(self, later: FrameCounts) -> FrameCounts {
         FrameCounts {
             received: self.received.saturating_add(later.received),
             transmitted: self.transmitted.saturating_add(later.transmitted),
@@ -108,6 +110,8 @@ impl FrameCounts {
 /// Read, and so clear, the four counters of the controller [`bring_up`] last brought up; `None`
 /// before any bring-up. The counters sit on BAR0's page `0x4000`, which the process is not mapped,
 /// so reading them here races nothing it does.
+///
+/// Name: provisional, minted 2026-11-09 (UTC) by lane/i219-cabled-run.
 pub fn frame_counts() -> Option<FrameCounts> {
     let bar0 = BRING_UP_BAR0.load(Ordering::Acquire);
     (bar0 != 0).then(|| read_frame_counts(&Controller(mmu::phys_to_virt(bar0))))
@@ -117,7 +121,8 @@ fn read_frame_counts(c: &Controller) -> FrameCounts {
     FrameCounts {
         received: c.r(registers::GOOD_PACKETS_RECEIVED_COUNT_REGISTER),
         transmitted: c.r(registers::GOOD_PACKETS_TRANSMITTED_COUNT_REGISTER),
-        cyclic_redundancy_check_errors: c.r(registers::CYCLIC_REDUNDANCY_CHECK_ERROR_COUNT_REGISTER),
+        cyclic_redundancy_check_errors: c
+            .r(registers::CYCLIC_REDUNDANCY_CHECK_ERROR_COUNT_REGISTER),
         missed: c.r(registers::MISSED_PACKET_COUNT_REGISTER),
     }
 }

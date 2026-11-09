@@ -131,6 +131,8 @@ pub(crate) const PCH_PROVEN_ON_SILICON: bool = false;
 /// What the device's statistics counters say crossed the wire since the last call, or since the
 /// last bring-up for the first call after it: [`crate::e1000e::frame_counts`], for the bench boot
 /// and the DHCP gate. `None` before any bring-up.
+///
+/// Name: provisional, minted 2026-11-09 (UTC) by lane/i219-cabled-run.
 pub fn frame_counts() -> Option<crate::e1000e::FrameCounts> {
     crate::e1000e::frame_counts()
 }

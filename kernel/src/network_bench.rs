@@ -147,7 +147,7 @@ fn print_frames(when: &str, total: &mut Frames) {
         println!("network-bench: frames    : {when}, no counters (no bring-up recorded a device)");
         return;
     };
-    *total = total.plus(read);
+    *total = *total + read;
     println!(
         "network-bench: frames    : {when}, received {} good, transmitted {} good, {} CRC errors, {} missed",
         total.received, total.transmitted, total.cyclic_redundancy_check_errors, total.missed,
