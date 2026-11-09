@@ -141,7 +141,7 @@ jobs:
         id: covtool
         if: steps.day.outputs.coverage == 'true'
         continue-on-error: true  # outcome: re-raised
-        uses: taiki-e/install-action@c509219cf42fba86913069efd0ade2458c59337b # cargo-llvm-cov
+        uses: taiki-e/install-action@3a3daafd3b7f23b8f65d9f5ba2db203fb59b79e2 # cargo-llvm-cov
 
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         if: steps.day.outputs.coverage == 'true' && steps.covtool.outcome == 'success'
