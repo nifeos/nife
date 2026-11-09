@@ -114,8 +114,8 @@ The checker printed PASS; the table is in
   bits per byte. It shows no gross defect and proves nothing about
   unpredictability. No outside suite ran.
 
-The console log (SHA-256 `540996ad...960e`, kept by the maintainers) holds two boots, and the judged
-run is the second. The capture's SHA-256 is `97fc5325...9263`.
+The console log ([bench/radon-2026-11-09/1049-board.log](../../bench/radon-2026-11-09/1049-board.log),
+SHA-256 `540996ad...960e`) holds two boots, and the judged run is the second. The capture's SHA-256 is `97fc5325...9263`.
 Two-way. Effort M, bench time.
 
 ### P1

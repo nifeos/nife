@@ -11,13 +11,12 @@ The person powered the board on from off.
 | file | what it is |
 |---|---|
 | `1049-board-check-results.md` | the filled table from `results.py summarize`, with R4 and 9g filled by hand; `results.py check` printed `PASS, 0 problem(s)` |
+| `1049-board.log` | the console of both boots, unedited; SHA-256 `540996ad74682bd9fbe350e897028af2310113a9d210df37590847b40a2c960e` |
 
-Two files from the run are kept by the maintainers, and their SHA-256 sums are the record:
-
-| file | SHA-256 |
-|---|---|
-| `board.log` (the console, two boots) | `540996ad74682bd9fbe350e897028af2310113a9d210df37590847b40a2c960e` |
-| `capture.bin` (1,310,720 bytes, 40,960 generations) | `97fc5325be5ca81d31cfb85b73aaea73191efc474d24d25a0af82f0817079263` |
+calef ruled on 2026-11-09 (UTC) that the log goes in the record as is: it holds the board's serial
+number, its two MAC addresses and two private LAN addresses. The capture (`capture.bin`, 1,310,720
+bytes, 40,960 generations, SHA-256 `97fc5325be5ca81d31cfb85b73aaea73191efc474d24d25a0af82f0817079263`)
+stays with the maintainers.
 
 ## Two boots in one log
 
