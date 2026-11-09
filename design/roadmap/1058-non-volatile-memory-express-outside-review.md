@@ -135,10 +135,11 @@ command, with its falsification patch. One-way (three signatures). S.
 - The free function `logical_block_format_size_shift` and the field `logical_block_size_shift`
   spell one quantity two ways.
 
-Change, as the review recommends: `minimum_page_size_bytes`; `unit_bytes` and `page_size_bytes`
-everywhere; `data_physical_address` for Identify and `queue_physical_address` for the two queue
-builders; `role` for the doorbell parameter; and the one spelling `logical_block_size_shift`.
-One-way at the tag. S.
+Ruled 2026-11-09: `minimum_page_size_bytes`; `unit_bytes` and `page_size_bytes` everywhere; a
+`_physical_address` suffix on every address parameter, `data_physical_address` for Identify and
+`queue_physical_address` for the two queue builders; `role` for the doorbell parameter; and the one
+spelling `logical_block_size_shift`, for the free function and the field alike. One-way at the tag.
+S.
 
 #### P1-3. Two harness names and their patch files carry `sq` and `cq`
 
@@ -277,8 +278,9 @@ that says `blocks == 0` means "not yet identified". One-way at the tag. XS.
    them.
 2. The tag. No tag is ruled for this crate. Which commit carries one, and when, is a separate
    question for the architect. It is one-way, since a tag is a number others compare against.
-3. `Namespace` carries its unit (P1-1). Ruled 2026-11-09, as the item states.
-4. The public API of P1-2, P1-5, P1-9 and P1-14, each one-way at the tag, with the
+3. `Namespace` carries its unit (P1-1), and the parameter and method names (P1-2). Both ruled
+   2026-11-09, as the items state.
+4. The public API of P1-5, P1-9 and P1-14, each one-way at the tag, with the
    recommendation each item states. These need the architect before the tag.
 5. The new names of P1-6, P1-10 and P2-1 to P2-5. A lane mints each provisionally in its own pull
    request, and the release review ratifies them together. Only those that land before the tag
@@ -318,6 +320,6 @@ claims none of the QEMU or hardware steps.
 
 An outside reading of `non_volatile_memory_express`: two items block the tag (a manifest comment;
 four register spellings, ruled). Fourteen go before the first release, among them a namespace that
-cannot hold a wrong unit, unit and address names on parameters, the ordering a weakly ordered host
+cannot hold a wrong unit, unit and address names on parameters (ruled), the ordering a weakly ordered host
 needs, a page-size argument, and the mutation stack of the template. Ten follow it. No tag is
 ruled, and publishing stays held.
