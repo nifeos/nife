@@ -67,7 +67,7 @@ This lane ran each check in its own worktree, on this branch.
 
 | check | result |
 |---|---|
-| `script/crate-standalone clock_contract` | two failures. `names`: 37 names not ratified. `proofs`: no Kani harness. The build passes on 1.88 for the host and the three bare-metal targets. No falsification patch exists, so none was applied |
+| `script/crate-standalone clock_contract` | two failures. `names`: 37 names lack a ratified block. `proofs`: no Kani harness. The build passes on 1.88 for the host and the three bare-metal targets. No falsification patch exists, so the check applied none |
 | `script/crate-move --dry-run` | stages at template `v7`; builds on 1.88 for the host and three targets; 0 patches to rewrite. Three findings, all in the template's scaffold and listed in the runbook's `BUGS`: the pull request template names the architect, `CONTRIBUTING.md` cites a nife path, and the commit hook, `deny.toml`, `rustfmt.toml` and `docs/stranger-test.md` mention nife. The crate's own README and `OPERATION_SHIFT` doc named nife too; this branch rewords both |
 | `cargo test -p clock_contract` | 12 host tests and 3 doctests pass; one doctest is the README's example |
 | `script/interleaving-check` | the four loom models of `mod interleavings` pass |
@@ -116,7 +116,7 @@ What a stranger may find surprising:
 No Kani harness, and so no falsification patch; the README says so. The loom models check four
 claims about the seqlock: a reader never sees half a publish, a reading's generation matches its
 pair, two writers serialize, and a reader racing `initialize` sees an unrecognized page or a whole
-one. Each model asserts that the branches it expects were reached. Loom judges against C11, not the
+one. Each model asserts that some execution reached each branch it expects. Loom judges against C11, not the
 Arm or RISC-V model, and the crate's `BUGS` says that too.
 
 ## Names
@@ -144,8 +144,8 @@ renames none of them. Each proposal is provisional; nothing outside nife has act
 | the other 30 items of the draft table, the modules `state`, `propose`, `status` and `policy`, and the fields `state` and `generation` | | pass every rule | ratify as written; `INTERFACE_ID` and `VERSION` with the identity values |
 
 Private names, for the move lane: `W_SEQ` (`seq`), `W_OFFSET` (refused by `register_names`), the
-locals `s1`, `st`, `off` and `s`, and four British spellings in loom test names and statics
-(`serialise`, `unrecognised`, `initialised`). Proposed: `WORD_MAGIC`, `WORD_SEQUENCE`, `WORD_STATE`,
+locals `s1`, `st`, `off` and `s`, and two loom test names and two statics that the template's
+`british_spelling` check refuses. Proposed: `WORD_MAGIC`, `WORD_SEQUENCE`, `WORD_STATE`,
 `WORD_OFFSET`, spelled-out locals, and the American spellings. `notes/interleaving.md`,
 `notes/interleaving/what-was-modeled.md` and the mutation regression note cite the test names, so
 they move together.
@@ -153,7 +153,8 @@ they move together.
 ## License
 
 `license = "MIT OR Apache-2.0"`. The crate adapts no source, so no `AND` term follows the pair.
-`smp_wmb()` and `write_seqcount_begin` are cited from Linux as the ordering they mirror, not copied.
+`smp_wmb()` and `write_seqcount_begin` name the Linux ordering the code mirrors; the crate copies no
+Linux text.
 `PL031`, `goldfish-rtc` and the CMOS ports are register facts.
 
 ## What still blocks the move
@@ -179,5 +180,6 @@ they move together.
 
 ## Recommendation
 
-Not ready for review until the identity values are frozen and the overlay spellings are decided.
+Not ready for review until the architect freezes the identity values and rules on the overlay
+spellings.
 The crate itself is a leaf with nothing pointing back into nife.
