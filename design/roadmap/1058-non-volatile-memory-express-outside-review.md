@@ -269,9 +269,10 @@ check required, and one dispatch on `main` gives the release gate a green run. T
 
 `Default` (`src/identify.rs`) yields zero blocks of 512 bytes, standing for "before Identify has
 answered". A stranger reads `IdentifyNamespace::default()` as a real, empty namespace. Removing a trait implementation after publication breaks callers;
-removing it before costs nothing. Change,
-as the review recommends: remove the implementation. The alternative keeps it, with a doc comment
-that says `blocks == 0` means "not yet identified". One-way at the tag. XS.
+removing it before costs nothing.
+
+Ruled 2026-11-09: the `Default` implementation goes before the tag, and the state before Identify
+answers becomes `None` in an `Option<IdentifyNamespace>`. One-way at the tag. XS.
 
 ## Decisions this block needs
 
@@ -279,15 +280,12 @@ that says `blocks == 0` means "not yet identified". One-way at the tag. XS.
    them.
 2. The tag. No tag is ruled for this crate. Which commit carries one, and when, is a separate
    question for the architect. It is one-way, since a tag is a number others compare against.
-3. P1-1 (`Namespace` carries its unit), P1-2 (parameter and method names), P1-5 (`Direction`)
-   and P1-9 (the page size in the controller configuration). All four ruled 2026-11-09, as the
-   items state.
-4. `Default` on `IdentifyNamespace` (P1-14), one-way at the tag, with the recommendation the item
-   states. It needs the architect before the tag.
-5. The new names of P1-6, P1-10 and P2-1 to P2-5. A lane mints each provisionally in its own pull
+3. The public API of P1-1, P1-2, P1-5, P1-9 and P1-14. All five ruled 2026-11-09, as the items
+   state.
+4. The new names of P1-6, P1-10 and P2-1 to P2-5. A lane mints each provisionally in its own pull
    request, and the release review ratifies them together. Only those that land before the tag
    need a ruling then.
-6. Every two-way item, the harness names of P1-3 among them, is a provisional call of the
+5. Every two-way item, the harness names of P1-3 among them, is a provisional call of the
    maintainers and not a ruling.
 
 The publishing hold stands.
@@ -321,7 +319,8 @@ claims none of the QEMU or hardware steps.
 ## Index row
 
 An outside reading of `non_volatile_memory_express`: two items block the tag (a manifest comment;
-four register spellings, ruled). Fourteen go before the first release, among them a namespace that
-cannot hold a wrong unit, unit and address names on parameters (ruled), the ordering a weakly ordered host
-needs, a page-size argument (ruled), and the mutation stack of the template. Ten follow it. No tag is
-ruled, and publishing stays held.
+four register spellings, ruled). Fourteen go before the first release. Five of them change the
+public API and are ruled: a namespace that carries its unit, unit and address names on parameters,
+a `Direction` type, a page-size argument, and no `Default` on the Identify parse. The rest include
+the ordering a weakly ordered host needs and the mutation stack of the template. Ten follow it. No
+tag is ruled, and publishing stays held.
