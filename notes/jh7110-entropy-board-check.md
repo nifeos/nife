@@ -310,3 +310,7 @@ unrun until a session follows this page.
   records the cost, and every timing includes it.
 - The payload parks at the end, and nothing but a power cycle frees the board, which is a person.
 - `results.py` reads only the last run in a log, so a log of two boots keeps the second.
+- The card's boot script asks for a second file under an old name, `nife-initrd.img`, and the staged
+  `serve/` directory holds `nife-initial-ramdisk.img`. Unless a copy is served under the old name,
+  the first boot silently falls back to the card's kernel (`payload came from card`), and only a
+  second boot runs the payload.
