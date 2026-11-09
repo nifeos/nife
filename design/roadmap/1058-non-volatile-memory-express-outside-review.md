@@ -115,10 +115,10 @@ strong, not memory unsafety. The harness
 `a_transfer_command_is_only_built_for_a_block_the_namespace_has` (`src/verification.rs`) states
 only the byte bound, so it cannot see the mismatch.
 
-Change: let the type carry the unit. The review recommends a constructor from the parse,
-`Namespace::from_identify(&IdentifyNamespace, unit_bytes) -> Option<Namespace>`, which refuses a
-unit the namespace cannot serve and makes the inconsistency unrepresentable. `new` keeps the unit
-as its second argument for a caller with no parse, and the two methods drop `unit`. The harness
+Ruled 2026-11-09. The type carries the unit. A new constructor,
+`Namespace::from_identify(&IdentifyNamespace, unit_bytes) -> Option<Namespace>`, returns `None`
+for a unit the namespace cannot serve. `Namespace::new` stays for a caller with no parse, with the
+unit as its second argument, and `holds_whole_block` and `transfer_command` drop `unit`. The harness
 gains the block bound, `starting_logical_block + blocks <= namespace.blocks` for every accepted
 command, with its falsification patch. One-way (three signatures). S.
 
@@ -277,12 +277,13 @@ that says `blocks == 0` means "not yet identified". One-way at the tag. XS.
    them.
 2. The tag. No tag is ruled for this crate. Which commit carries one, and when, is a separate
    question for the architect. It is one-way, since a tag is a number others compare against.
-3. The public API of P1-1, P1-2, P1-5, P1-9 and P1-14, each one-way at the tag, with the
+3. `Namespace` carries its unit (P1-1). Ruled 2026-11-09, as the item states.
+4. The public API of P1-2, P1-5, P1-9 and P1-14, each one-way at the tag, with the
    recommendation each item states. These need the architect before the tag.
-4. The new names of P1-6, P1-10 and P2-1 to P2-5. A lane mints each provisionally in its own pull
+5. The new names of P1-6, P1-10 and P2-1 to P2-5. A lane mints each provisionally in its own pull
    request, and the release review ratifies them together. Only those that land before the tag
    need a ruling then.
-5. Every two-way item, the harness names of P1-3 among them, is a provisional call of the
+6. Every two-way item, the harness names of P1-3 among them, is a provisional call of the
    maintainers and not a ruling.
 
 The publishing hold stands.
