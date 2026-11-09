@@ -11,8 +11,9 @@ It describes the crate as `main` plus this lane's pull request leaves it.
 ## In one paragraph
 
 The wire contract between a network stack and its clients, where each socket is its own
-capability: a front door that only makes sockets, one capability per open socket, eleven opcodes,
-the reply words, a 4 KiB shared page per socket and a spawn word that grants inbound ports. It is
+capability. A client holds a front door that only makes sockets and one capability per open
+socket. The contract holds eleven opcodes, the reply words, a 4 KiB shared page per socket and a
+spawn word that grants inbound ports. It is
 `no_std`, has no dependency and no `unsafe`, and three Kani harnesses prove the port grants. Besides
 the contract it carries three things only one side uses: the network stack's ephemeral-port cursor
 (`ephemeral`), its polled-wait policy (`polled_wait`), and the fixed addresses and messages of one
@@ -65,8 +66,8 @@ baseline) and the template's workflows, which run in the repository.
 
 ### What this lane changed in the crate
 
-- The text no longer names nife, except the two message bytes above. Eight acronyms are expanded at
-  first use, and a test comment no longer names a machine.
+- The text no longer names nife, except the two message bytes above. The text expands eight acronyms
+  at first use, and a test comment no longer names a machine.
 - `VERSION`'s documentation described a bind-time call that the crate does not define. It now
   says no operation carries the version, and BUGS says so.
 - The ephemeral-port patch applied 14 lines off; it applies exactly now.
@@ -94,7 +95,7 @@ baseline) and the template's workflows, which run in the repository.
 No nife type appears in a signature. What a stranger may find surprising:
 
 - `CONNECT_ESTABLISHED` and `REP_OK` share the value 0, and so do `LISTEN_GRANTED` and
-  `NO_LISTEN_GRANT`: each vocabulary is read only in reply to its own operation.
+  `NO_LISTEN_GRANT`: a client reads each vocabulary only in reply to its own operation.
 - The `LISTEN_` replies also answer `OPERATION_BIND_UDP`, and `NO_LISTEN_GRANT` is the empty word
   for both halves of the grant.
 - The documentation refers to a `PageFrame` that the crate does not define; it means the shared
@@ -104,8 +105,8 @@ No nife type appears in a signature. What a stranger may find surprising:
 
 ## Names
 
-The crate name is ratified. `DATA_MAXIMUM` is ratified, before the rule that a limit opens
-`MAXIMUM_` and ends with its unit; a release review reopens it. `VERSION`, `INTERFACE_ID` and
+The architect ratified the crate name, and `DATA_MAXIMUM` before the rule that a limit opens
+`MAXIMUM_` and ends with its unit; a release review reopens that one. `VERSION`, `INTERFACE_ID` and
 `polled_wait::Next` are provisional, and the 52 other items, the five modules and both `Next`
 variants have no block. A doc comment saying "name provisional" is not a block, and the move does
 not strip it.

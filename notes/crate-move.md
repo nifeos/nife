@@ -260,7 +260,7 @@ publishes.
 - The `std` farm copies contract sources by path. `xtask/src/farm/generate.rs` writes
   `crates/<crate>/src/lib.rs` verbatim into the `std-nife` platform layer, and
   `xtask/src/farm/stamp.rs` rebuilds the farm when that file changes, for 13 crates of
-  milestone 1017, `socket_contract`, `clock_contract` and `entropy_contract` among them. Once a
+  milestone 1017 (the contract crates leave in this order), `socket_contract`, `clock_contract` and `entropy_contract` among them. Once a
   crate leaves, that path is gone and the farm build fails. Both must read the pinned checkout's
   source, which `cargo metadata` names, before the first of these crates moves. The dry run lists
   both files among those that name the crate, and does not say that the build breaks.
