@@ -686,7 +686,7 @@ fn through_idmac(
     say!(
         slot,
         "IDMAC region at {:#x}, {} bytes",
-        region.direct_memory_access_address(),
+        region.direct_memory_access_bus_address(),
         region.bytes(),
     );
     let idmac = match InternalDirectMemoryAccess::new(region, id) {

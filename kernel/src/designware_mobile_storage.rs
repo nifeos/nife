@@ -1,5 +1,5 @@
 //! radon's SD/MMC controller, the volatile half: one volatile load, one volatile store and a clock,
-//! over a base address it is handed, for the sequences in `crates/designware_mobile_storage`.
+//! over a base address it is handed, for the sequences in the `designware_mobile_storage` crate.
 //!
 //! Parity: the JH7110 is a riscv64 part on one board, so this module is riscv64-only. The crate is
 //! architecture-neutral, and a board with this controller on another ISA (several Rockchip arm64
@@ -85,7 +85,7 @@ impl Region {
 }
 
 impl DirectMemoryAccessRegion for Region {
-    fn direct_memory_access_address(&self) -> u64 {
+    fn direct_memory_access_bus_address(&self) -> u64 {
         self.phys
     }
 
