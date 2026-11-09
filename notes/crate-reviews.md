@@ -334,23 +334,23 @@ Recommendation. Ready for review.
 
 The whole package is [crate-reviews/block-roster.md](crate-reviews/block-roster.md).
 
-Name and version. `block_roster` `0.1.0`, ratified, with all 17 public names (#3282).
+Name and version. `block_roster` `0.1.0`, ratified, with all 21 names; its identity (`INTERFACE_ID`
+5, `VERSION` 1, magic `blkrosv1`) is ratified and frozen.
 
 API. The read-only page that lists attached block devices: `write`, `Roster::read` and its readers,
 `Device`, and the transport numbers. Milestone 1017 keeps it unpublished, pinned by `rev`.
 
-Proofs. Two harnesses: `read` is total on any bytes, and `write` then `read` round-trips. Both
-prove and both patches fail.
+Proofs. Three harnesses: `read` and `write` are total, and `write` then `read` round-trips. Each
+has a patch that applies exactly.
 
 License. `MIT OR Apache-2.0`; nothing adapted.
 
-Result of `script/crate-standalone`. Clean on `main` without Kani; the proofs ran before the renames
-and passed.
+Result of `script/crate-standalone`. Clean, Kani included.
 
-Defect. `write` panics on a page shorter than its 16-byte header when the device list is empty.
-The package proposes the fix and a harness.
+Blocks the move. Nothing in the crate, a leaf; nife's declaration check must read the pinned
+checkout.
 
-Recommendation. Blocked by the identity value `INTERFACE_ID = 5` and the `write` defect.
+Recommendation. Ready for review; four name findings for the maintainer.
 
 ## `counter_frequency_contract`, a contract crate
 
@@ -385,5 +385,5 @@ Recommendation. Blocked by the identity value `INTERFACE_ID = 9` and three text 
 | `designware_ethernet` | 7 | two alias sets for the architect |
 | `designware_mobile_storage` | 8 | ready for review |
 | `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
-| `block_roster` | contract | blocked by its identity value and one defect |
+| `block_roster` | contract | ready for review |
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |
