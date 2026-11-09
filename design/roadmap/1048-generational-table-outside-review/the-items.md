@@ -14,7 +14,7 @@ layout, a license); everything else is two-way and the maintainer decides it.
    Evidence: `Cargo.toml` line 22.
    Change: now, replace the comment with one sentence a stranger can act on ("set to `true` only in
    the release that publishes"). At the release, delete the line. The release itself waits on the
-   approval milestone 1033 records; nothing here reopens that.
+   approval milestone 1033 (`generational_table`: the fixed-capacity, proved slotmap, released on its own) records; nothing here reopens that.
    Door: the comment is two-way; publishing is one-way and already ruled. Effort: XS.
 
 ### P1: before the first release
