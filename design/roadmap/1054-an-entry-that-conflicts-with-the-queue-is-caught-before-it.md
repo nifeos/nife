@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: an-entry-that-conflicts-with-the-queue-is-caught-before-it
 raised: 2026-11-04
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,14 +8,12 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# An entry that conflicts with the queue is caught before it
+# 1054. An entry that conflicts with the queue is caught before it
 
 COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 6.
 
 Raised by lane/coe-merge-queue-2026-11-03 on 2026-11-04 (UTC), from the correction of error for the
-Pacific day of 2026-11-03 (`notes/coes/2026-11-03-merge-queue-backlog.md`). The integrator mints
-the number at promotion.
-
+Pacific day of 2026-11-03 (`notes/coes/2026-11-03-merge-queue-backlog.md`). 
 Reuse: `git merge-tree --write-tree`, the GraphQL `mergeQueue` entries the drain already reads in
 `helpers/merge-drain.sh`, and the scope-file partition of `briefs/run-a-milestone-wide.md`.
 
@@ -54,3 +53,7 @@ claim. Nothing reads a planned set of lanes, and nothing reads the queue before 
 - The pre-arm check refuses a fixture pull request that conflicts with a queued entry, and passes one
   that does not, under `script/lint`.
 - A wide run's launch names its shared files before the first claim.
+
+## Index row
+
+A pull request that conflicts with an entry ahead of it is armed anyway and removed later at the cost of a full run. This checks the conflict before arming and before a wide run launches.

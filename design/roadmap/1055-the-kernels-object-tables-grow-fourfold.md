@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-kernels-object-tables-grow-fourfold
 raised: 2026-11-05
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,10 +8,9 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# The kernel's object tables grow fourfold
+# 1055. The kernel's object tables grow fourfold
 
-Raised by lane/record-follow-on-items. The integrator mints the number at promotion.
-
+Raised by lane/record-follow-on-items. 
 Reuse: the existing constants and `registry_footprint` in `kernel/src/user/address_space_registry.rs`,
 `script/stack-frame-check` and `cargo xtask bench`. No new tool.
 
@@ -37,3 +37,7 @@ page.
 - Each table is four times its current size on all three architectures, with the measurements
   recorded.
 - `script/stack-frame-check` passes, and no bench row leaves its band.
+
+## Index row
+
+The kernel's object tables are small enough to bind early. This grows each fourfold on all three architectures, with the memory and stack measurements recorded.
