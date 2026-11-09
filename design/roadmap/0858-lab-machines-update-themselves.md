@@ -41,8 +41,7 @@ calef ruled every fork on #1805 on 2026-10-07 (UTC), relayed by the maintainer i
 | owner sources | owners choose their sources: basalt, their own mirror or server, or local media, air-gapped included. A mirror copies the TUF repository without re-signing. An owner may trust a further repository under their own root key. Freshness is on by default and switchable off per source; rollback protection is always on | "I want to make certain owners can update off of their own media or servers. I'm thinking of air gapped deployments for example.", then "Yes" |
 
 Fork 6 and the owner-source requirement are recorded as calef's ruling in §250 (an image names its
-distribution's package index)'s amendment of 2026-10-07. The cordoba spec is
-[notes/lab-index-on-cordoba.md](../../notes/lab-index-on-cordoba.md).
+distribution's package index)'s amendment of 2026-10-07.
 
 An automatic update installs only within an approval file the owner wrote, through an installer
 endpoint badged to it: milestone 911 (scripted installs grant only what the owner's approval file

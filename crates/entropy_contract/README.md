@@ -2,8 +2,8 @@
 
 The words a client and an entropy service exchange to move random bytes, and the rules for reading
 what comes back. `no_std`, no dependencies, no system calls of its own: the caller supplies the
-`CALL`. It was written for the nife kernel's entropy service, its clients and its standard library,
-which share this one definition so they cannot drift.
+`CALL`. The service, its clients and a standard library's platform layer share this one
+definition, so they cannot drift.
 
 The service holds the random-number device. A client holds an endpoint that names no device, sends
 a request word naming a byte count, and gets the bytes back in the reply words. No byte is
