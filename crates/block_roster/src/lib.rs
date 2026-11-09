@@ -137,7 +137,12 @@ pub const fn capacity_of(len: usize) -> usize {
     }
 }
 
-/// Lay a roster into `page`. Fails if the page cannot hold `devices`.
+/// Lay a roster into `page`. Refuses with [`TooManyDevices`], and leaves `page` untouched, when the
+/// page cannot hold the header and `devices`: a page shorter than [`HEADER_BYTES`] holds no roster
+/// at all, not even an empty one. `write` never panics, whatever the lengths.
+///
+/// The count and capacity words are `u32`, so a page with room for more than `u32::MAX` entries
+/// records a capacity of `u32::MAX` and takes at most that many devices.
 ///
 /// Name: ratified 2026-11-06 (UTC): the pair `write` and [`Roster::read`] names the two parties,
 /// the one writer and the readers.
@@ -163,13 +168,19 @@ pub const fn capacity_of(len: usize) -> usize {
 /// assert_eq!(roster.get(2).unwrap().transport_name(), Some("nvme"));
 /// ```
 pub fn write(page: &mut [u8], devices: &[Device]) -> Result<(), TooManyDevices> {
-    let capacity = capacity_of(page.len());
-    if devices.len() > capacity {
+    if page.len() < HEADER_BYTES {
+        return Err(TooManyDevices);
+    }
+    let capacity = u32::try_from(capacity_of(page.len())).unwrap_or(u32::MAX);
+    let Ok(count) = u32::try_from(devices.len()) else {
+        return Err(TooManyDevices);
+    };
+    if count > capacity {
         return Err(TooManyDevices);
     }
     page[..8].copy_from_slice(&MAGIC.to_le_bytes());
-    page[8..12].copy_from_slice(&(devices.len() as u32).to_le_bytes());
-    page[12..16].copy_from_slice(&(capacity as u32).to_le_bytes());
+    page[8..12].copy_from_slice(&count.to_le_bytes());
+    page[12..16].copy_from_slice(&capacity.to_le_bytes());
     for (i, d) in devices.iter().enumerate() {
         let at = HEADER_BYTES + i * ENTRY_BYTES;
         page[at..at + 4].copy_from_slice(&d.ordinal.to_le_bytes());
@@ -178,9 +189,10 @@ pub fn write(page: &mut [u8], devices: &[Device]) -> Result<(), TooManyDevices> 
     Ok(())
 }
 
-/// More devices than the page has room for. The kernel treats this as a wiring bug rather than a
-/// runtime condition: a machine with more disks than a page can name is a machine this design has
-/// to be told about.
+/// More devices than the page has room for, which includes a page too short for the header: it has
+/// room for no device, not even for the count of zero. The kernel treats this as a wiring bug
+/// rather than a runtime condition: a machine with more disks than a page can name is a machine
+/// this design has to be told about.
 ///
 /// Name: ratified 2026-11-06 (UTC): the name states the refusal. It replaced `Full`, which said
 /// the page's state and not what was refused, and which read as the same word as the many other
@@ -352,6 +364,35 @@ mod tests {
         assert_eq!(capacity_of(HEADER_BYTES), 0);
     }
 
+    /// A page shorter than the header holds no roster, not even an empty one, so `write` refuses it
+    /// rather than slicing past its end. Every length from zero to two entries past the header,
+    /// with zero to two devices, either fits or is refused, and a refused page is left as it was.
+    #[test]
+    fn write_refuses_a_page_too_short_for_its_header_and_never_panics() {
+        let devices = sample();
+        for len in 0..=HEADER_BYTES + 2 * ENTRY_BYTES {
+            for count in 0..=2 {
+                let mut page = [0xA5u8; HEADER_BYTES + 2 * ENTRY_BYTES];
+                let fits = len >= HEADER_BYTES && count <= capacity_of(len);
+                let result = write(&mut page[..len], &devices[..count]);
+                assert_eq!(result.is_ok(), fits, "length {len}, {count} devices");
+                if fits {
+                    assert_eq!(Roster::read(&page[..len]).map(|r| r.len()), Some(count));
+                } else {
+                    assert!(
+                        page.iter().all(|&b| b == 0xA5),
+                        "a refused page is untouched"
+                    );
+                }
+            }
+        }
+        assert_eq!(write(&mut [], &[]), Err(TooManyDevices));
+        assert_eq!(
+            write(&mut [0u8; HEADER_BYTES - 1], &[]),
+            Err(TooManyDevices)
+        );
+    }
+
     #[test]
     fn transports_are_named_and_an_unknown_one_is_not_guessed() {
         assert_eq!(
@@ -492,5 +533,41 @@ mod verification {
             i += 1;
         }
         assert!(roster.get(count).is_none());
+    }
+
+    /// **`write` is total on any page length**: for any page of up to `PAGE` bytes and any list of
+    /// up to three devices, `write` neither panics nor indexes out of bounds. It succeeds exactly
+    /// when the page holds the header and the devices, and a page it accepted reads back with that
+    /// many devices.
+    /// Falsification: replayable `crates/block_roster/falsifications/verification.write_is_total_on_any_page_length.patch`
+    #[kani::proof]
+    #[kani::unwind(6)]
+    fn write_is_total_on_any_page_length() {
+        let devices: [Device; 3] = [
+            Device {
+                ordinal: kani::any(),
+                transport: kani::any(),
+            },
+            Device {
+                ordinal: kani::any(),
+                transport: kani::any(),
+            },
+            Device {
+                ordinal: kani::any(),
+                transport: kani::any(),
+            },
+        ];
+        let count: usize = kani::any();
+        kani::assume(count <= devices.len());
+        let len: usize = kani::any();
+        kani::assume(len <= PAGE);
+
+        let mut page = [0u8; PAGE];
+        let fits = len >= HEADER_BYTES && count <= capacity_of(len);
+        assert_eq!(write(&mut page[..len], &devices[..count]).is_ok(), fits);
+        if fits {
+            let roster = Roster::read(&page[..len]).expect("a written page reads");
+            assert_eq!(roster.len(), count);
+        }
     }
 }
