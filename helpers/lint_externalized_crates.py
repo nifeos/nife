@@ -41,7 +41,7 @@ WAIVERS = {
     "entropy_contract": (2, PENDING),
     "filesystem_contract": (21, PENDING),
     "filesystem_fixture": (18, PENDING),
-    "globally_unique_identifier_partition_table": (23, PENDING),
+    "globally_unique_identifier_partition_table": (21, PENDING),
     "grant_plan": (103, PENDING),
     "machine_statistics_contract": (1, PENDING),
     "program_argument_contract": (2, PENDING),

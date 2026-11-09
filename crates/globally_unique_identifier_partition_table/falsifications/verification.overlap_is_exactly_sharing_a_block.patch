@@ -6,9 +6,10 @@ block (one ends exactly where the next begins) are reported as disjoint.
 Expected to fail: the harness's `assert_eq!(a.overlaps(&b), shared)`.
 
 diff --git a/crates/globally_unique_identifier_partition_table/src/entry.rs b/crates/globally_unique_identifier_partition_table/src/entry.rs
+index 04d4270c8..1344cf887 100644
 --- a/crates/globally_unique_identifier_partition_table/src/entry.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/entry.rs
-@@ -211,3 +211,3 @@ impl Entry {
+@@ -194,3 +194,3 @@ impl Entry {
              && other.is_used()
 -            && self.first_lba <= other.last_lba
 +            && self.first_lba < other.last_lba

@@ -5,8 +5,7 @@ Partition Table): reading one, writing one, and refusing a bad one. The three le
 UEFI disk format and have nothing to do with language models. `no_std`, no allocation, no `unsafe`,
 no I/O of any kind. Every function takes bytes the caller already read and returns bytes the caller
 is about to place, so the tests run on the host against disks that real tools made. The only
-dependency is `uuid` (default features off). It was written for the nife kernel and its disk
-programs.
+dependency is `uuid` (default features off).
 
 ## The contract
 
