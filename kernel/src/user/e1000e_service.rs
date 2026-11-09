@@ -123,10 +123,19 @@ pub(crate) fn start_for_boot(image: &'static [u8]) -> Result<Wiring, NotAtBoot> 
 /// Whether the booted system may bring up an I219 on its own, gated on silicon, not on review.
 ///
 /// Flip it to `true` only in a commit that cites a xenon bench boot of the same I219 bring-up
-/// ending `verdict LEASED-AND-MEASURED` (notes/e1000e.md, "calef's bench step on xenon", with its
-/// Results row filled in). Nothing a lane can run proves it: QEMU's 82574L never takes the PCH
+/// ending `verdict LEASED-AND-MEASURED` (notes/e1000e/the-i219-cabled-run.md, with its Results
+/// table filled in). Nothing a lane can run proves it: QEMU's 82574L never takes the PCH
 /// path, and the host simulation is this tree's reading of FreeBSD, not the device.
 pub(crate) const PCH_PROVEN_ON_SILICON: bool = false;
+
+/// What the device's statistics counters say crossed the wire since the last call, or since the
+/// last bring-up for the first call after it: [`crate::e1000e::frame_counts`], for the bench boot
+/// and the DHCP gate. `None` before any bring-up.
+///
+/// Name: provisional, minted 2026-11-09 (UTC) by lane/i219-cabled-run.
+pub fn frame_counts() -> Option<crate::e1000e::FrameCounts> {
+    crate::e1000e::frame_counts()
+}
 
 fn refuse_if_busy() -> Result<(), Absent> {
     let previous = SERVER.load(core::sync::atomic::Ordering::Acquire);

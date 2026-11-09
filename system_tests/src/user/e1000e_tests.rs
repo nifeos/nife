@@ -34,6 +34,10 @@ fn image() -> &'static [u8] {
 /// not an assertion**: `net_stack`'s DHCP loop has no bound and this test blocks on its report, so
 /// the run was stopped by hand after eleven minutes, which is why this is attested rather than a
 /// replayable patch.
+///
+/// The frame-count assertion: attested 2026-11-09 (UTC), x86_64 under the PVH runner, with
+/// `kernel/src/e1000e.rs::read_frame_counts` reading the CRC error counter for `received`: the
+/// test failed on `FrameCounts { received: 0, transmitted: 2, .. }`.
 #[test_case]
 fn net_stack_gets_a_dhcp_lease_over_the_e1000e_nic_behind_the_iommu() {
     let w = wired_or_skip!(e1000e_service::start_net_server(
@@ -62,6 +66,15 @@ fn net_stack_gets_a_dhcp_lease_over_the_e1000e_nic_behind_the_iommu() {
         addr & 0xffff_ff00,
         0x0A00_0200,
         "net_stack's DHCP lease over the e1000e NIC, {addr:#010x}, is not in slirp's 10.0.2.0/24",
+    );
+    // A lease takes at least a discover and a request out and an offer and an acknowledgement
+    // back, so the device's own counters, which the bench boot prints as its `frames` line, must
+    // count two good frames each way since this bring-up.
+    let frames = e1000e_service::frame_counts().expect("no frame counters after a bring-up");
+    assert!(
+        frames.received >= 2 && frames.transmitted >= 2,
+        "the e1000e NIC's counters say {frames:?} after a DHCP lease, fewer than two good frames \
+         in a direction",
     );
     w.held.release_or_fail("net_stack over the e1000e NIC");
 }

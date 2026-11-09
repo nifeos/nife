@@ -205,6 +205,13 @@ fn rehearse() -> bool {
             ok = false;
         }
     }
+    if !frames_passed_both_ways(&transcript) {
+        eprintln!(
+            "network-bench: want a `frames` line after the transfer with good frames received and \
+             transmitted"
+        );
+        ok = false;
+    }
     let verdict_at = transcript.find("network-bench: verdict ");
     let preflight_at = transcript.find("network-bench: preflight");
     if transcript.matches("network-bench: verdict ").count() != 1
@@ -220,4 +227,23 @@ fn rehearse() -> bool {
         log_path.display()
     );
     ok
+}
+
+/// Whether the `frames` line after the transfer counts at least one good frame received and one
+/// transmitted, from the device's own counters, which QEMU's `e1000e` emulates.
+fn frames_passed_both_ways(transcript: &str) -> bool {
+    let Some(line) = transcript
+        .lines()
+        .find(|l| l.starts_with("network-bench: frames    : after the transfer,"))
+    else {
+        return false;
+    };
+    let count_after = |word: &str| -> Option<u64> {
+        let (_, tail) = line.split_once(word)?;
+        tail.split_whitespace().next()?.parse().ok()
+    };
+    matches!(
+        (count_after(" received "), count_after(" transmitted ")),
+        (Some(r), Some(t)) if r > 0 && t > 0
+    )
 }

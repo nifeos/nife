@@ -7,6 +7,8 @@
 
 //! # BUGS
 //! - Two bring-ups share this file (the 82574L's and the I219's), and QEMU proves only one.
+//! - [`frame_counts`] reads counters that clear on read, so two callers would split one count
+//!   between them; the bench boot and the DHCP gate are its only callers, one per boot.
 //! - Waiting for link is a spin of up to [`LINK_WAIT_MS`], holding a core once per wiring.
 //! - The DMA region is never returned: a wired boot keeps [`::e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES`] pages.
 
@@ -70,6 +72,61 @@ pub struct Found {
 /// The region's physical base, once allocated: zero until the first bring-up.
 static REGION: AtomicU64 = AtomicU64::new(0);
 
+/// BAR0's physical base of the last controller brought up: zero until the first bring-up.
+static BRING_UP_BAR0: AtomicU64 = AtomicU64::new(0);
+
+/// What the device's own statistics counters say crossed the wire since the last read, or since
+/// [`bring_up`] for the first read after it. They count independently of the rings, so they are
+/// the witness of whether frames passed in each direction.
+///
+/// Name: provisional, minted 2026-11-09 (UTC) by lane/i219-cabled-run.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct FrameCounts {
+    /// Good frames received (`GPRC`).
+    pub received: u32,
+    /// Good frames transmitted (`GPTC`).
+    pub transmitted: u32,
+    /// Received frames with a bad cyclic redundancy check (`CRCERRS`).
+    pub cyclic_redundancy_check_errors: u32,
+    /// Received frames the device missed (`MPC`).
+    pub missed: u32,
+}
+
+/// Two reads summed, each field saturating: the counters clear on read, so a total is a sum.
+impl core::ops::Add for FrameCounts {
+    type Output = FrameCounts;
+    fn add(self, later: FrameCounts) -> FrameCounts {
+        FrameCounts {
+            received: self.received.saturating_add(later.received),
+            transmitted: self.transmitted.saturating_add(later.transmitted),
+            cyclic_redundancy_check_errors: self
+                .cyclic_redundancy_check_errors
+                .saturating_add(later.cyclic_redundancy_check_errors),
+            missed: self.missed.saturating_add(later.missed),
+        }
+    }
+}
+
+/// Read, and so clear, the four counters of the controller [`bring_up`] last brought up; `None`
+/// before any bring-up. The counters sit on BAR0's page `0x4000`, which the process is not mapped,
+/// so reading them here races nothing it does.
+///
+/// Name: provisional, minted 2026-11-09 (UTC) by lane/i219-cabled-run.
+pub fn frame_counts() -> Option<FrameCounts> {
+    let bar0 = BRING_UP_BAR0.load(Ordering::Acquire);
+    (bar0 != 0).then(|| read_frame_counts(&Controller(mmu::phys_to_virt(bar0))))
+}
+
+fn read_frame_counts(c: &Controller) -> FrameCounts {
+    FrameCounts {
+        received: c.r(registers::GOOD_PACKETS_RECEIVED_COUNT_REGISTER),
+        transmitted: c.r(registers::GOOD_PACKETS_TRANSMITTED_COUNT_REGISTER),
+        cyclic_redundancy_check_errors: c
+            .r(registers::CYCLIC_REDUNDANCY_CHECK_ERROR_COUNT_REGISTER),
+        missed: c.r(registers::MISSED_PACKET_COUNT_REGISTER),
+    }
+}
+
 /// Find, confine, reset and program the NIC, or return why not.
 ///
 /// A second call resets the device under the process that held the first, so the service that
@@ -86,10 +143,12 @@ pub fn bring_up() -> Result<Found, Absent> {
         // An I219 behind a PCH: FreeBSD's passes, in FreeBSD's order; QEMU's 82574L never comes
         // here.
         use ::e1000e::platform_controller_hub::sequence;
+        pass_begins(1, "initialize_physical_layer_device_workarounds");
         let id = sequence::initialize_physical_layer_device_workarounds(&mut hw)
             .map_err(|e| refused(Error::Pch(e)))?;
         physical_layer_device_id = Some(id);
         flush_descriptor_rings(&mut hw, &dev, region);
+        pass_begins(2, "global_reset");
         sequence::global_reset(&mut hw, RESET_WAIT_MS).map_err(|e| refused(Error::Pch(e)))?;
     } else {
         reset_82574(&c).map_err(refused)?;
@@ -108,8 +167,10 @@ pub fn bring_up() -> Result<Found, Absent> {
     );
     if pch {
         // FreeBSD's `e1000_init_hw_ich8lan`, whose copper-link setup sets `CTRL.SLU` itself.
+        pass_begins(3, "initialize_hardware");
         ::e1000e::platform_controller_hub::sequence::initialize_hardware(&mut hw)
             .map_err(|e| refused(Error::Pch(e)))?;
+        crate::println!("  e1000e: the three passes returned");
     } else {
         c.w(
             registers::DEVICE_CONTROL_REGISTER,
@@ -149,6 +210,10 @@ pub fn bring_up() -> Result<Found, Absent> {
     if pch {
         ::e1000e::platform_controller_hub::sequence::transmit_errata(&mut hw);
     }
+    // Discard whatever the statistics counters hold from before, so the first read after this one
+    // counts only what this bring-up's rings carry.
+    let _ = read_frame_counts(&c);
+    BRING_UP_BAR0.store(dev.bar0, Ordering::Release);
     c.w(
         registers::RECEIVE_CONTROL_REGISTER,
         ::e1000e::receive_control_register_value(),
@@ -180,6 +245,12 @@ pub fn bring_up() -> Result<Found, Absent> {
         link_up,
         physical_layer_device_id,
     })
+}
+
+/// The console line before each I219 pass, so a refusal or a hang on the bench names its pass: the
+/// last `pass N` line above it.
+fn pass_begins(n: u32, name: &str) {
+    crate::println!("  e1000e: pass {n} of 3: {name}");
 }
 
 /// Point the device at both rings, with every head and tail at zero.
@@ -361,7 +432,7 @@ impl ::e1000e::platform_controller_hub::Hardware for Bar<'_> {
     fn write(&mut self, off: u64, v: u32) {
         self.c.w(off, v);
     }
-    fn read16(&mut self, off: u64) -> u16 {
+    fn read_flash_status(&mut self, off: u64) -> u16 {
         self.c.r16(off)
     }
     fn delay_microseconds(&mut self, microseconds: u64) {

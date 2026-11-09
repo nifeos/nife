@@ -7,7 +7,8 @@
 //! See notes/bench-boots.md.
 
 //! # BUGS
-//! - The DHCP wait has no bound; a boot with no lease ends on the `waiting` line.
+//! - The DHCP wait has no bound; a boot with no lease ends on the `waiting` line, before any
+//!   `frames` line, so such a boot counts no frames.
 //! - The peer is baked into the image (`NIFE_NETWORK_BENCH_PEER`); another peer is a rebuild.
 
 use crate::user::e1000e_service::{self as service, Absent};
@@ -102,6 +103,7 @@ fn measure() -> &'static str {
             "network-bench: dhcp      : leased {}.{}.{}.{}",
             o[0], o[1], o[2], o[3]
         );
+        print_frames("at the lease", &mut Frames::default());
         return if w.confined_by_iommu {
             "NO-PEER: leased, nothing to measure (build with NIFE_NETWORK_BENCH_PEER)"
         } else {
@@ -113,13 +115,17 @@ fn measure() -> &'static str {
         "network-bench: dhcp      : leased {}.{}.{}.{}",
         o[0], o[1], o[2], o[3]
     );
+    let mut frames = Frames::default();
+    print_frames("at the lease", &mut frames);
     let [code, bytes, ticks, ..] = crate::sched::ipc_receive(cli);
     if code != 1 {
         println!("network-bench: transfer  : client stopped with code {code:#x}");
+        print_frames("after the transfer", &mut frames);
         return "FAILED: the transfer did not complete (see socket_test_client for the code)";
     }
     print_transfer(bytes, ticks);
     print_receive(cli, bytes, ticks);
+    print_frames("after the transfer", &mut frames);
     if bytes == 0 {
         "FAILED: connected and received nothing"
     } else if w.confined_by_iommu {
@@ -127,6 +133,25 @@ fn measure() -> &'static str {
     } else {
         "UNCONFINED: measured, but no IOMMU unit this kernel programmed owns the NIC"
     }
+}
+
+/// The running total of the `e1000e` device's frame counters since bring-up. They clear on read, so
+/// each `frames` line adds what it read to this.
+type Frames = crate::e1000e::FrameCounts;
+
+/// The `frames` line: good frames received and transmitted, and the two receive error counts, from
+/// the device's own counters, totaled since bring-up. These are the counts in both directions the
+/// cabled I219 run records (notes/e1000e/the-i219-cabled-run.md).
+fn print_frames(when: &str, total: &mut Frames) {
+    let Some(read) = service::frame_counts() else {
+        println!("network-bench: frames    : {when}, no counters (no bring-up recorded a device)");
+        return;
+    };
+    *total = *total + read;
+    println!(
+        "network-bench: frames    : {when}, received {} good, transmitted {} good, {} CRC errors, {} missed",
+        total.received, total.transmitted, total.cyclic_redundancy_check_errors, total.missed,
+    );
 }
 
 /// The `transfer` line, the same on every NIC so two machines' transcripts compare line for line.

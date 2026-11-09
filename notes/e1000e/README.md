@@ -6,7 +6,9 @@ step on xenon. This directory holds what the page links to and does not carry:
 - [The I219 port](the-i219-port.md): why `nifeos/e1000e`'s `pch` module ports FreeBSD's I219
   bring-up, how the kernel calls its passes, and its `BUGS`.
 - [The system tests](the-system-tests.md): why the DHCP lease test is also the confinement test.
+- [The I219 cabled run](the-i219-cabled-run.md): the bench session on xenon, with the I219 cabled
+  to a switch, that records the bring-up observations, the link state and the frame counts.
 
-*Name: provisional, for the directory and the stems `the-i219-port` and `the-system-tests`: the
-directory follows `notes/process-view/`'s shape, a page's appendices beside it. calef names
-directories and files.*
+*Name: provisional, for the directory and the stems `the-i219-port`, `the-system-tests` and
+`the-i219-cabled-run`: the directory follows `notes/process-view/`'s shape, a page's appendices
+beside it. calef names directories and files.*
