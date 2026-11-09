@@ -2,8 +2,8 @@
 
 The wire contract between a network stack and its clients, in which each socket is its own
 capability: a process holds a front door that can only make sockets, plus one capability per open
-socket. `no_std`, no dependencies, no system calls of its own. It was written for the nife network
-stack and the programs that talk to it, which share this one definition so they cannot drift.
+socket. `no_std`, no dependencies, no system calls of its own. A network stack and the programs that
+talk to it share this one definition, so they cannot drift.
 
 Opening and listening are calls on the front door, answered with the socket's capability. Every
 other operation is a call on the socket, with an opcode, one argument and one reply word. The stack
@@ -36,7 +36,7 @@ never assumed.
   cursor that never falls behind a clock advancing 256 ports a second, so a new stack starts past
   ports an earlier one used. `polled_wait::next` decides whether a stack may sleep on a network card
   that raises no interrupt.
-- `fixture` holds the fixed addresses and messages of the nife project's own test runners. It is not
+- `fixture` holds the fixed addresses and messages of one network stack's test runners. It is not
   part of the contract and a consumer can ignore it.
 
 ## EXAMPLES
@@ -55,9 +55,14 @@ assert!(!names_a_socket(0)); // an unbadged front door
 
 ## What is proven
 
-Nothing is machine-checked: there are no Kani harnesses. The directory `falsifications/` holds a
-patch that makes the ephemeral-port test fail; apply it with `patch -p3` from the crate root to see
-that the test checks something.
+Three Kani harnesses in `src/lib.rs` prove the port grants for every pair of bounds and every port.
+A listen grant admits exactly its range and no UDP port, a UDP bind grant admits exactly its range
+and no listen port, and each half of a composed grant answers exactly as it does alone. Run them
+with `cargo kani`. Tests check the rest of the contract: the opcodes, the reply words and the
+frame layout.
+
+Each patch under `falsifications/` names the harness or test it breaks, and applying it with
+`patch -p1` from the repository root makes that check fail.
 
 ## Building and testing
 
@@ -66,12 +71,19 @@ cargo test
 cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-softfloat, riscv64imac-unknown-none-elf
 ```
 
+The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
+checker, so it needs network access. CI uses version 0.68.0, and another version may verify
+differently.
+
 ## BUGS
 
 - A grant is the stack's, shared by every holder of its front door; a per-client grant would ride on
   a badged front door, which nothing builds yet.
 - A listener's backlog is one connection: a second arriving before `ACCEPT` is refused by TCP.
 - `polled_wait` keeps a core busy while a stream flows, and for a tick after it ends.
+- No operation carries `VERSION`, so a client and a stack built from different versions are not
+  told apart when the client binds.
 
 ## Minimum Rust version
 

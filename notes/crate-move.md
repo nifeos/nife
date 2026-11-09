@@ -285,6 +285,13 @@ publishes.
   and no locations, so the lines cannot be written mechanically. The crate repository's first
   `weekly / mutation` run fails on each survivor and names it; the move lane lists them in one pull
   request there. The dry run does not run cargo-mutants.
+- The `std` farm copies contract sources by path. `xtask/src/farm/generate.rs` writes
+  `crates/<crate>/src/lib.rs` verbatim into the `std-nife` platform layer, and
+  `xtask/src/farm/stamp.rs` rebuilds the farm when that file changes, for 13 crates of
+  milestone 1017 (the contract crates leave in this order), `socket_contract`, `clock_contract` and `entropy_contract` among them. Once a
+  crate leaves, that path is gone and the farm build fails. Both must read the pinned checkout's
+  source, which `cargo metadata` names, before the first of these crates moves. The dry run lists
+  both files among those that name the crate, and does not say that the build breaks.
 - The dry run's nife check skips a word joined to another by an underscore, so it passes an
   identifier such as `NIFE_DATA` that `helpers/lint_externalized_crates.py` reports. Read that
   lint's count for the crate as well.

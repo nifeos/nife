@@ -1,0 +1,20 @@
+Falsifies `socket_contract::verification::a_listen_grant_admits_exactly_its_range`.
+
+The defect: `grant_allows` drops its `lo != 0` test, the guard that makes a word with no listen
+half grant nothing. `NO_LISTEN_GRANT` then reads as the range 0 to 0, and port 0 passes the
+authority check under no grant at all.
+
+Expected to fail: the harness's `assert_eq!` on `grant_allows`, with a low bound of 0 and port 0.
+
+diff --git a/crates/socket_contract/src/lib.rs b/crates/socket_contract/src/lib.rs
+--- a/crates/socket_contract/src/lib.rs
++++ b/crates/socket_contract/src/lib.rs
+@@ -153,7 +153,7 @@
+ pub const fn grant_allows(grant: u64, port: u16) -> bool {
+     let lo = (grant & 0xffff) as u16;
+     let hi = ((grant >> 16) & 0xffff) as u16;
+-    lo != 0 && port >= lo && port <= hi
++    port >= lo && port <= hi
+ }
+ 
+ /// Pack an inclusive UDP bind port range into the high half of the spawn word (the
