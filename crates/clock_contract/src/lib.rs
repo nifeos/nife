@@ -776,6 +776,16 @@ mod tests {
         assert_eq!(propose::operation(0), 0);
     }
 
+    /// The page's identity, written out as literals. A reader built against another value reads
+    /// the page as no clock page at all, so a change here is a new version of the interface, never
+    /// an edit: bump [`VERSION`] and the magic's digits together, and this test with them.
+    #[test]
+    fn the_identity_is_the_one_readers_were_built_against() {
+        assert_eq!(MAGIC.to_be_bytes(), *b"CLOCKv01");
+        assert_eq!(VERSION, 1);
+        assert_eq!(INTERFACE_ID, 8);
+    }
+
     /// The plausibility window's endpoints are seconds times a billion, and the multiplication is
     /// exactly the kind of arithmetic a mutant can quietly break (a `/` there made the floor
     /// microscopic, and every implausible proposal became plausible). Pin the products.
