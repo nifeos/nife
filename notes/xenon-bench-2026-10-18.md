@@ -90,7 +90,7 @@ that program)`, not a memory failure.
 
 ## Step 1: the I219 boot
 
-The procedure is `notes/e1000e.md`, "calef's bench step on xenon", with its table of every ending.
+The procedure is `notes/e1000e/the-i219-cabled-run.md`, with its tables of every ending.
 In short: start the peer in a terminal on the build Mac,
 
 ```sh
@@ -106,10 +106,11 @@ cp target/esp-network-bench/EFI/BOOT/BOOTX64.EFI /Volumes/NIFE/EFI/BOOT/BOOTX64.
 ```
 
 Success is `network-bench: nic : 8086:15e3 I219-LM5 (SPT), link up`, a `dhcp : leased` line,
-a `transfer` line and `network-bench: verdict LEASED-AND-MEASURED`. Anything else ends the evening's
-network half: route it by that table, and go to step 6's Linux half and step 7.
+a `transfer` line, two `frames` lines and `network-bench: verdict LEASED-AND-MEASURED`. Anything
+else ends the evening's network half: route it by that page's tables, and go to step 6's Linux
+half and step 7.
 
-Record: the log as `bench/xenon-<date>/i219.log`, and `notes/e1000e.md`'s Results row. Read off its
+Record: the log as `bench/xenon-<date>/i219-cabled-run.log`, and that page's Results table. Read off its
 `iommu` line for each VT-d unit, which ends `dmar INTR_REMAP set` or `clear`. That closes milestone
 494's exit criterion 2.
 
