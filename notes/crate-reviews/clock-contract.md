@@ -50,11 +50,12 @@ Two more readers reach the crate by its path, not by Cargo:
   by `xtask/src/farm/stamp.rs`), and the time support in
   `patches/std-nife/overlay/std/src/sys/time/nife.rs` reads `NANOS_PER_SEC`, `wall_nanos`,
   `Reading::offset_nanos` and `state::is_known` from that copy.
-- The tooling. `script/interleaving-check` and `.github/workflows/ci.yml` run the loom models;
-  `helpers/interface_stability.py` reads the source for milestone 610's series;
-  `helpers/vendored_name_gates.py` exempts the three overlay names; `helpers/template_report_baseline.txt`
-  holds three rows; `.cargo/mutants-baseline.txt` holds the census row (caught 54, missed 3, timeout
-  7, unviable 5); `packages/contracts.package.toml` and `crates/externalization-list.txt` list it.
+- The tooling. `script/interleaving-check` and `.github/workflows/ci.yml` run the loom models.
+  `helpers/interface_stability.py` reads the source for the series of milestone 610 (the
+  interface's stability is measured weekly). `helpers/vendored_name_gates.py` exempts the three
+  overlay names, and `helpers/template_report_baseline.txt` holds three rows.
+  `.cargo/mutants-baseline.txt` holds the census row (caught 54, missed 3, timeout 7, unviable 5).
+  `packages/contracts.package.toml` and `crates/externalization-list.txt` list the crate.
 
 What references back into nife from the crate: nothing. It has no path or development dependency,
 no `include_str!` outside its own README, no test that reads a nife file, and no fuzz target in
@@ -170,9 +171,9 @@ they move together.
 
 1. Whether a contract crate this small needs a Kani harness, since `script/crate-standalone` fails
    `proofs` without one. Recommendation: add two. `policy::decide` is a pure function of three
-   words, and a harness that it never accepts an implausible time and never steps a known clock
-   past either bound costs little; `propose::operation(propose::req(x))` returning `x` for any
-   opcode below 256 is the second. The maintainer can decide it.
+   words, so a harness costs little: it never accepts an implausible time, and never steps a known
+   clock past either bound. The second proves that `propose::operation(propose::req(x))` returns
+   `x` for any opcode below 256. The maintainer can decide it.
 2. Whether `propose` should carry a reply type. Recommendation: no; the reply is two words of a
    message, and the request has no type either. The maintainer can decide it.
 
