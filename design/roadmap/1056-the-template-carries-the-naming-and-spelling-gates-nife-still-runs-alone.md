@@ -10,7 +10,8 @@ needs_person: no
 ---
 # 1056. The template carries the naming and spelling gates nife still runs alone
 
-Raised by lane/record-follow-on-items. 
+Raised by lane/record-follow-on-items.
+
 Reuse: the template's Rust lexer and word list (`helpers/rust_names.py` and
 `helpers/naming_words.toml` in `nifeos/crate-workflows`), and nife's vendoring of them at a pinned
 revision (`helpers/vendored_name_gates.py`, `vendor/crate-workflows.pin`). The checks themselves

@@ -135,7 +135,7 @@ Each item gives the recommendation first.
 
 - **Outstanding.** Items 7, 8, 10 and 11 above, each waiting for an architect's ruling; each
   item's text above says what it is waiting for.
-- **Milestone 1051.** A check that a crate's `license` field names exactly the licenses of the notices it
+- **Milestone 1051 (a crate's license field matches its notices).** A check that a crate's `license` field names exactly the licenses of the notices it
   carries, in `design/roadmap/1051-a-crates-license-field-matches-the-notices-it-carries.md`.
 
 ## Index row

@@ -10,7 +10,8 @@ needs_person: no
 ---
 # 1051. A crate's license field matches the notices it carries
 
-Raised by lane/manifest-license-names-adapted-sources. 
+Raised by lane/manifest-license-names-adapted-sources.
+
 Reuse: `license_is_accepted` and `NOTICE_LICENSES` in `helpers/crate_release.py`, which
 `script/crate-standalone` already runs. No new tool.
 

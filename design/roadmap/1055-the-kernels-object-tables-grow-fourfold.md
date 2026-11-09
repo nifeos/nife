@@ -10,7 +10,8 @@ needs_person: no
 ---
 # 1055. The kernel's object tables grow fourfold
 
-Raised by lane/record-follow-on-items. 
+Raised by lane/record-follow-on-items.
+
 Reuse: the existing constants and `registry_footprint` in `kernel/src/user/address_space_registry.rs`,
 `script/stack-frame-check` and `cargo xtask bench`. No new tool.
 

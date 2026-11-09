@@ -13,7 +13,8 @@ needs_person: no
 COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 6.
 
 Raised by lane/coe-merge-queue-2026-11-03 on 2026-11-04 (UTC), from the correction of error for the
-Pacific day of 2026-11-03 (`notes/coes/2026-11-03-merge-queue-backlog.md`). 
+Pacific day of 2026-11-03 (`notes/coes/2026-11-03-merge-queue-backlog.md`).
+
 Reuse: `git merge-tree --write-tree`, the GraphQL `mergeQueue` entries the drain already reads in
 `helpers/merge-drain.sh`, and the scope-file partition of `briefs/run-a-milestone-wide.md`.
 

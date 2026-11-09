@@ -10,7 +10,8 @@ needs_person: yes
 ---
 # 1053. A sweep spells out the unit symbols in names, and the unit ratchet counts every unit
 
-Raised by lane/record-follow-on-items. 
+Raised by lane/record-follow-on-items.
+
 Reuse: `helpers/vendored_name_gates.py`'s unit ratchet and its `--unclear` listing, and the
 template's `[units]` table. No new tool.
 
