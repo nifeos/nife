@@ -11,6 +11,9 @@ needs_person: no
 
 *(The number, title and slug are provisional.)*
 
+Reuse: both drivers already build their tables; this grows them in place. The kernel drives the
+IOMMU, and Kani proves these drivers, so no third-party crate applies.
+
 Ruled 2026-11-10 (UTC): the QEMU runners keep virtio-mmio, and §18 (the PCIe transport: one driver,
 two buses, the seam in the kernel)'s item 3 stands. A later move of the aarch64 and riscv64 runners
 to virtio-pci needs this milestone and milestone 1065 (several drivers share an interrupt line, or
@@ -27,8 +30,8 @@ drivers index their table by it, and both stop at 64:
   `kernel/src/arch/riscv64/iommu.rs`). With the extended 64-byte context it holds requester ids 0
   to 63, and `context_offset` panics past it.
 
-So only bus 0's slots 0 to 7 can be confined. The riscv64 runner already uses all eight and put the
-e1000e at `00:03.1` to stay inside (#1632, when a ninth slot panicked the driver). A device behind
+So neither driver confines anything past bus 0's slots 0 to 7. The riscv64 runner already uses
+all eight and put the e1000e at `00:03.1` to stay inside (#1632, when a ninth slot panicked the driver). A device behind
 a bridge, on any bus but 0, is out of reach. Any PCI driver on these two architectures meets the
 ceiling, whether or not the runners move.
 
@@ -49,18 +52,19 @@ these tables. 1064 does not grow them.
    allocated as devices attach. Effort: M (a guess).
 3. The Kani bounds in both drivers' `mod proofs` move to the new limits, and the proof that no
    device reaches another device's entry holds over the whole range.
-4. The riscv64 runner moves the e1000e to a slot of its own, and a function at a requester id of 64
-   or more is confined on both architectures.
+4. The riscv64 runner moves the e1000e to a slot of its own, and both architectures confine a
+   function at a requester id of 64 or more.
 
 Total: S to M (a guess).
 
 ## Done when
 
-1. On aarch64 and riscv64 a PCI function at requester id 64 or above is attached, confined, and
-   faults on a DMA outside its domain, shown by a system test on each architecture.
+1. On aarch64 and riscv64 the kernel attaches and confines a PCI function at requester id 64 or
+   above, and the function faults on a DMA outside its domain. A system test on each architecture
+   shows it.
 2. The Kani harnesses that bound requester ids prove the new range.
-3. Neither driver panics on a requester id the board can produce, and one beyond the new table is
-   refused with an error, not a panic.
+3. Neither driver panics on a requester id the board can produce, and each refuses one beyond the
+   new table with an error, not a panic.
 4. The existing IOMMU and PCI gates pass on every architecture, with no test weakened.
 
 ## Index row
