@@ -72,14 +72,9 @@ The I219's PHY half; QEMU never takes the PCH path, so xenon is the test.
 - QEMU proves the MDIO read: the DHCP gate asserts the 82574L's PHY identifier, `0x01410cb0`.
 - The boot refusal's lift is one constant, `e1000e_service::PCH_PROVEN_ON_SILICON`, still `false`.
 
-## What was checked, 2026-10-06
-
-No new code. The runbook now expects what xenon already printed (below, and `BUGS`), and
-`cargo xtask network-bench` rehearsed green on `ab9ae95aa`.
-
 ## Bench runbook: one boot on xenon (calef)
 
-Whole, with every failure ending and the Results table: [the I219 cabled run](../../notes/e1000e/the-i219-cabled-run.md). Success ends `network-bench: verdict LEASED-AND-MEASURED`. It is step 1 of the xenon
+The whole runbook, with every failure ending and the Results table, is [the I219 cabled run](../../notes/e1000e/the-i219-cabled-run.md). Success ends `network-bench: verdict LEASED-AND-MEASURED`. It is step 1 of the xenon
 evening calef ruled on 2026-10-24 (UTC), beside milestone 260's network boot and 801's `jig` leg:
 `notes/xenon-bench-2026-10-18.md`.
 
