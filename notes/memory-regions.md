@@ -212,9 +212,8 @@ the subtree counts are drawn from.
 
 ## Subtree ceilings
 
-Every kind of kernel object lives in a fixed-size table the whole machine shares. A region's page
-count alone bounds how many objects one program can make, and a page is cheap, so the region tree
-also bounds each table by subtree.
+Every kind of kernel object lives in a fixed-size table the whole machine shares. The region tree
+bounds each table by subtree as well as by pages.
 
 Each region carries two counts for every counted kind:
 
