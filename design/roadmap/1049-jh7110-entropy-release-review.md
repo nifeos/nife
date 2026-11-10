@@ -110,7 +110,7 @@ person's statement). The checker printed PASS both times. Tables, logs and SHA-2
   256-bit" holds only if nothing wrote `MODE` since reset. `STAT` bits 19 to 23
   never set. The tables differ in the reseed median and the `RAND_RDY` with `RAND_GENERATING` counts.
 - Open: no `LFSR_LOCKUP` appeared, so whether a reseed clears it is unknown.
-- Statistics: two captures; 2 and 1 of 524 FIPS 140-2 blocks failed (bar at most 3). They show no gross defect and prove nothing about unpredictability. The
+- Statistics: two captures; 2 and 1 of 524 FIPS 140-2 blocks failed (bar at most 3). They show no gross defect. They prove nothing about unpredictability. The
   second run's `ent` output recomputes the same statistics: a cross-check, not an independent suite.
 
 Two-way. Effort M, bench time.
