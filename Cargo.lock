@@ -260,6 +260,7 @@ dependencies = [
  "slabtop",
  "smoltcp",
  "socket_contract",
+ "startup_page_contract",
  "supervision_contract",
  "swish",
  "system_initializer",

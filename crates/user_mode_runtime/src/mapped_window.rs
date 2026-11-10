@@ -60,6 +60,17 @@ impl MappedWindow {
         Self { base, len }
     }
 
+    /// **The `len` bytes at `off`**, a window inside this one. Panics if they would run past it.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/drivers-read-the-startup-page.
+    pub fn sub(&self, off: u64, len: u64) -> MappedWindow {
+        self.check(off, len);
+        Self {
+            base: self.base + off,
+            len,
+        }
+    }
+
     /// Panics if `off .. off + size` would fall outside the window, naming the access.
     fn check(&self, off: u64, size: u64) {
         assert!(

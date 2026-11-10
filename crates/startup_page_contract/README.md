@@ -22,6 +22,9 @@ page size and the band the page sits in.
   kind, a window of zero pages, an unaligned address, or more windows than fit.
   `StartupPage::parse(bytes)` reads one, and `StartupPage::mapped()` reads the one at the fixed
   address.
+- `StartupWindow` is the reader a program keeps as a `static`: it names a kind and the bytes the
+  program uses, and `virtual_address()` reads the page on first use and panics, naming the kind,
+  when the page is missing, lists no such window, or lists one too short.
 
 ## EXAMPLES
 
@@ -61,6 +64,10 @@ writer refuses each malformed list and writes nothing for it, that a full page h
 - A process the kernel builds by hand, or one a userspace builder spawns, has no page yet.
 - Each contract crate mints its own kinds, and nothing checks numbers across crates. Today only
   `driver_process_contract` mints any, and its own test holds them apart.
+- `StartupWindow::virtual_address` reads the page at its fixed address, which no host process maps,
+  so no host test reaches that one line; its logic is `virtual_address_in`, which host tests drive.
+  The booted system tests of the e1000e and non-volatile memory express drivers reach them only
+  through it.
 
 ## Minimum Rust version
 
