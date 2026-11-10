@@ -63,8 +63,8 @@ domain, and the bus server writes only what the table lets through.
 3. x86_64 AMD-Vi: its interrupt remapping table, under QEMU's `amd-iommu`. Effort: S to M (a guess).
 4. aarch64: the GICv3 ITS (command queue, device table, `MAPD` and `MAPTI`), so a device's MSIs
    translate through its own table. Effort: L (a guess); it is the bill milestone 317 names as owed.
-5. A test in the shape of milestone 202 (every confinement test is a ritual until somebody breaks
-   the confinement and watches it fail) on each architecture: a component holding a device's
+5. A test on each architecture in the shape of milestone 202 (every confinement test is a ritual
+   until somebody breaks the confinement and watches it fail). A component holding a device's
    MSI-X table page aims an interrupt at a vector it was never granted, and the hardware refuses it.
 
 Total: L (a guess).
