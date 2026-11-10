@@ -279,9 +279,9 @@ fn start(uart_shape: u64, _x1: u64, _x2: u64) -> ! {
 /// hold, the window a lost interrupt needs. Off in every shipped image.
 #[cfg(feature = "input_race_probe")]
 fn hold_after_drain() {
-    const HOLD_NS: u64 = 200_000_000;
+    const HOLD_NANOSECONDS: u64 = 200_000_000;
     let start = user_mode_runtime::monotonic_nanoseconds();
-    while user_mode_runtime::monotonic_nanoseconds().wrapping_sub(start) < HOLD_NS {
+    while user_mode_runtime::monotonic_nanoseconds().wrapping_sub(start) < HOLD_NANOSECONDS {
         core::hint::spin_loop();
     }
 }

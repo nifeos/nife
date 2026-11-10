@@ -53,7 +53,7 @@ pub(super) fn firmware_fill_ceiling(mut spans: impl FnMut(&mut dyn FnMut(u64, u6
 /// Name: provisional (minted beside [`memory_mapped_io_window`]).
 pub(super) fn firmware_mmio_hole(mut spans: impl FnMut(&mut dyn FnMut(u64, u64))) -> (u64, u64) {
     let floor = firmware_fill_ceiling(&mut spans);
-    let mut ceiling = FOUR_GIB;
+    let mut ceiling = FOUR_GIBIBYTES;
     spans(&mut |start, end| {
         if end > floor && start > floor && start < ceiling {
             ceiling = start;
@@ -63,7 +63,7 @@ pub(super) fn firmware_mmio_hole(mut spans: impl FnMut(&mut dyn FnMut(u64, u64))
 }
 
 /// One past the last address a 32-bit BAR can name.
-const FOUR_GIB: u64 = 0x1_0000_0000;
+const FOUR_GIBIBYTES: u64 = 0x1_0000_0000;
 
 /// **The lowest `size`-aligned span of `size` bytes inside `lo..hi` that overlaps nothing in
 /// `avoid`**, or `None` when the hole has no such room.

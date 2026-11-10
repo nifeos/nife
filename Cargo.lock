@@ -170,6 +170,10 @@ dependencies = [
 [[package]]
 name = "capability_witness_contract"
 version = "0.1.0"
+dependencies = [
+ "address_space_map",
+ "startup_page_contract",
+]
 
 [[package]]
 name = "cc"
@@ -562,6 +566,7 @@ dependencies = [
  "process_builder",
  "soak_page",
  "socket_contract",
+ "startup_page_contract",
  "supervision_contract",
  "system_initializer",
  "timetable",
@@ -1117,6 +1122,7 @@ dependencies = [
  "address_space_map",
  "counter_frequency_contract",
  "elf",
+ "startup_page_contract",
  "supervision_contract",
  "user_mode_runtime",
 ]
@@ -1388,6 +1394,7 @@ name = "supervision_contract"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "startup_page_contract",
 ]
 
 [[package]]

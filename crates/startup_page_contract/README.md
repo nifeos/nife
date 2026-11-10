@@ -61,7 +61,7 @@ writer refuses each malformed list and writes nothing for it, that a full page h
 
 - One page per address space: two programs sharing a space would share it, and two instances of one
   program in one space could not tell their windows apart.
-- A process the kernel builds by hand, or one a userspace builder spawns, has no page yet.
+- A process the kernel builds by hand has no page yet.
 - Each contract crate mints its own kinds, and nothing checks numbers across crates. Today only
   `driver_process_contract` mints any, and its own test holds them apart.
 - `StartupWindow::virtual_address` reads the page at its fixed address, which no host process maps,

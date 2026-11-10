@@ -716,7 +716,7 @@ fn prove_a_device_line() {
     // after.
     mask_timer();
     let pit = isa_routing(timer::PIT_INTERRUPT_NUMBER);
-    let hz = timer::start_pit_ticking(timer::TICK_HERTZ);
+    let hertz = timer::start_pit_ticking(timer::TICK_HERTZ);
     enable(timer::PIT_INTERRUPT_NUMBER);
     // Read after `enable` rather than before, which is what makes the `expect` honest: `enable`
     // has just routed this GSI and panics with a named reason if the IO APIC does not own it. It
@@ -737,7 +737,7 @@ fn prove_a_device_line() {
     DEVICE_LINE_INTERRUPTS.store(delivered as u64, Ordering::Relaxed);
     crate::println!(
         "  device interrupt : pit interrupt {} -> gsi {} on vector {vector:#x}: {delivered} \
-        interrupts in ~0.2s at {hz} Hz",
+        interrupts in ~0.2s at {hertz} Hz",
         timer::PIT_INTERRUPT_NUMBER,
         pit.gsi,
     );

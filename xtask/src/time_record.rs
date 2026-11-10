@@ -482,7 +482,7 @@ pub(crate) fn host_pass(took: Duration) {
         image: "host crates".into(),
         kind: "phase".into(),
         name: "suite".into(),
-        milliseconds: ms(took),
+        milliseconds: milliseconds(took),
     }]);
 }
 
@@ -503,7 +503,7 @@ pub(crate) fn items(leg: &str, image: &str, kind: &str, took: &[(&str, Duration)
             image: image.to_string(),
             kind: kind.to_string(),
             name: name.replace(['\t', '\n', '\r'], " "),
-            milliseconds: ms(*d),
+            milliseconds: milliseconds(*d),
         })
         .collect();
     append(&rows);
@@ -640,32 +640,32 @@ pub(crate) struct ClockCheck;
 
 impl ClockCheck {
     const UPPER_RATIO: f64 = 1.05;
-    const UPPER_SLACK_MS: f64 = 500.0;
+    const UPPER_SLACK_MILLISECONDS: f64 = 500.0;
     const LOWER_RATIO: f64 = 0.5;
-    const LOWER_SLACK_MS: f64 = 3000.0;
+    const LOWER_SLACK_MILLISECONDS: f64 = 3000.0;
 
-    /// `Ok` when `guest_ms` is honest against `host_ms`, otherwise the sentence that says why not.
-    pub(crate) fn judge(guest_ms: u64, host_ms: u64) -> Result<(), String> {
-        let (g, h) = (guest_ms as f64, host_ms as f64);
-        let high = h * Self::UPPER_RATIO + Self::UPPER_SLACK_MS;
-        let low = h * Self::LOWER_RATIO - Self::LOWER_SLACK_MS;
+    /// `Ok` when `guest_milliseconds` is honest against `host_milliseconds`, otherwise the sentence that says why not.
+    pub(crate) fn judge(guest_milliseconds: u64, host_milliseconds: u64) -> Result<(), String> {
+        let (g, h) = (guest_milliseconds as f64, host_milliseconds as f64);
+        let high = h * Self::UPPER_RATIO + Self::UPPER_SLACK_MILLISECONDS;
+        let low = h * Self::LOWER_RATIO - Self::LOWER_SLACK_MILLISECONDS;
         if g > high {
             return Err(format!(
-                "the guest says its tests took {guest_ms} ms but the host saw the suite take \
-                 {host_ms} ms: the guest clock runs fast (the bound is {high:.0} ms)"
+                "the guest says its tests took {guest_milliseconds} ms but the host saw the suite take \
+                 {host_milliseconds} ms: the guest clock runs fast (the bound is {high:.0} ms)"
             ));
         }
         if g < low {
             return Err(format!(
-                "the guest says its tests took {guest_ms} ms but the host saw the suite take \
-                 {host_ms} ms: the guest clock runs slow (the bound is {low:.0} ms)"
+                "the guest says its tests took {guest_milliseconds} ms but the host saw the suite take \
+                 {host_milliseconds} ms: the guest clock runs slow (the bound is {low:.0} ms)"
             ));
         }
         Ok(())
     }
 }
 
-fn ms(d: Duration) -> u64 {
+fn milliseconds(d: Duration) -> u64 {
     u64::try_from(d.as_millis()).unwrap_or(u64::MAX)
 }
 
@@ -677,7 +677,7 @@ fn phases(leg: &str, image: &str, r: &Reading, exited: Duration) -> Vec<Row> {
         image: image.to_string(),
         kind: "phase".into(),
         name: name.into(),
-        milliseconds: ms(span),
+        milliseconds: milliseconds(span),
     };
     let mut rows = vec![row("build", r.first_line.unwrap_or(exited))];
     if let (Some(first), Some(running)) = (r.first_line, r.running) {
@@ -701,12 +701,12 @@ pub(crate) fn account(
 ) -> bool {
     let r = read(lines);
     let mut rows = phases(leg, image, &r, exited);
-    rows.extend(r.record.iter().map(|(path, ms)| Row {
+    rows.extend(r.record.iter().map(|(path, milliseconds)| Row {
         leg: leg.to_string(),
         image: image.to_string(),
         kind: "test".into(),
         name: path.clone(),
-        milliseconds: *ms,
+        milliseconds: *milliseconds,
     }));
     append(&rows);
     if !child_ok {
@@ -716,9 +716,9 @@ pub(crate) fn account(
         eprintln!("time-record: {leg} {image}: {why}");
         return false;
     }
-    let guest: u64 = r.record.iter().map(|(_, ms)| ms).sum();
+    let guest: u64 = r.record.iter().map(|(_, milliseconds)| milliseconds).sum();
     let host = match (r.running, r.heading) {
-        (Some(a), Some(b)) => ms(b.saturating_sub(a)),
+        (Some(a), Some(b)) => milliseconds(b.saturating_sub(a)),
         _ => 0,
     };
     let ratio = if host == 0 {
@@ -796,8 +796,8 @@ pub(crate) fn parse_file(text: &str) -> Result<Vec<Row>, String> {
 /// has the rest.
 const SLOWEST: usize = 15;
 
-fn seconds(ms: u64) -> String {
-    format!("{:.1}", ms as f64 / 1000.0)
+fn seconds(milliseconds: u64) -> String {
+    format!("{:.1}", milliseconds as f64 / 1000.0)
 }
 
 /// The step summary's markdown for `rows`.
@@ -917,14 +917,14 @@ fn slowest_items(rows: &[Row]) -> String {
 mod tests {
     use super::*;
 
-    fn at(ms: u64, text: &str) -> Stamped {
+    fn at(milliseconds: u64, text: &str) -> Stamped {
         Stamped {
-            at: Duration::from_millis(ms),
+            at: Duration::from_millis(milliseconds),
             text: text.to_string(),
         }
     }
 
-    fn transcript(times: &[(&str, u64)], host_span_ms: u64) -> Vec<Stamped> {
+    fn transcript(times: &[(&str, u64)], host_span_milliseconds: u64) -> Vec<Stamped> {
         let mut v = vec![
             at(2000, "nife on riscv64"),
             at(3000, ""),
@@ -933,19 +933,22 @@ mod tests {
         for (name, _) in times {
             v.push(at(3100, &format!("test {name} ... ok")));
         }
-        v.push(at(3000 + host_span_ms, test_times::HEADING));
-        for (name, ms) in times {
+        v.push(at(3000 + host_span_milliseconds, test_times::HEADING));
+        for (name, milliseconds) in times {
             v.push(at(
-                3000 + host_span_ms,
+                3000 + host_span_milliseconds,
                 &test_times::Line {
-                    milliseconds: *ms,
+                    milliseconds: *milliseconds,
                     path: name,
                 }
                 .to_string(),
             ));
         }
-        v.push(at(3000 + host_span_ms, ""));
-        v.push(at(3001 + host_span_ms, "test result: ok. 2 passed"));
+        v.push(at(3000 + host_span_milliseconds, ""));
+        v.push(at(
+            3001 + host_span_milliseconds,
+            "test result: ok. 2 passed",
+        ));
         v
     }
 
@@ -1136,7 +1139,7 @@ mod tests {
             matches!(stage, Stage::Test(_)).then_some(Duration::from_secs(1))
         }
         let start = Instant::now();
-        let at = |ms: u64| start + Duration::from_millis(ms);
+        let at = |milliseconds: u64| start + Duration::from_millis(milliseconds);
         let mut p = Progress {
             stage: Stage::Build,
             since: start,

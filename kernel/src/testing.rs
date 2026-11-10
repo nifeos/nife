@@ -627,14 +627,14 @@ fn check_test_ceiling() {
     // re-enter this path and report twice.
     TEST_START.store(0, Ordering::Relaxed);
 
-    let hz = crate::arch::timer::frequency().max(1);
+    let hertz = crate::arch::timer::frequency().max(1);
     println!();
     println!(
         "WATCHDOG: test exceeded its {} s budget (ran {} s) WHILE MAKING PROGRESS: a livelock, not a \
          lost wakeup. The no-progress heartbeat cannot see this, which is why the per-test ceiling \
          exists. If this test is honestly this slow, give it an entry in test_times::SLOW_TESTS.",
-        budget / hz,
-        elapsed / hz,
+        budget / hertz,
+        elapsed / hertz,
     );
     if let Some(name) = current_test_name() {
         println!("  test: {name}");
@@ -1235,8 +1235,9 @@ fn run_selected(tests: &[&dyn Testable], filter: &str) {
                 test.run();
                 // The record holds the sum over every run; `xtask` knows a repeated run by
                 // `test_times::REPEAT_ANNOUNCEMENT` and reads it as one.
-                let ms = LAST_TEST_MILLISECONDS.load(Ordering::Relaxed);
-                let sum = u64::from(TEST_MILLISECONDS[index].load(Ordering::Relaxed)) + ms;
+                let milliseconds = LAST_TEST_MILLISECONDS.load(Ordering::Relaxed);
+                let sum =
+                    u64::from(TEST_MILLISECONDS[index].load(Ordering::Relaxed)) + milliseconds;
                 TEST_MILLISECONDS[index]
                     .store(u32::try_from(sum).unwrap_or(u32::MAX), Ordering::Relaxed);
             }

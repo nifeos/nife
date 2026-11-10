@@ -20,14 +20,14 @@ pub(super) enum Probe {
     FloodDetached,
     Panic,
     /// `--input-race`: the input driver holds after every drain (`components/input_race_probe`)
-    /// and Enter follows each line by [`INPUT_RACE_ENTER_PAUSE_MS`], so Enter lands inside the
+    /// and Enter follows each line by [`INPUT_RACE_ENTER_PAUSE_MILLISECONDS`], so Enter lands inside the
     /// hold on every line. That is the window where clearing the PL011's interrupt after the
     /// drain would strand a byte in its FIFO and stop all input. One boot, the first script.
     InputRace,
 }
 
 /// The pause before Enter under `--input-race`, in ms: well inside the driver's 200 ms hold.
-pub(super) const INPUT_RACE_ENTER_PAUSE_MS: u64 = 50;
+pub(super) const INPUT_RACE_ENTER_PAUSE_MILLISECONDS: u64 = 50;
 
 static PROBE: std::sync::OnceLock<Probe> = std::sync::OnceLock::new();
 

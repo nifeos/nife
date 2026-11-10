@@ -43,12 +43,9 @@ while read -r _ _ remote_ref _; do
 		cat >&2 <<MSG
 push-queued-check: pull request #$2 for $branch is in the merge queue, and a push removes it.
   The group build is thrown away, auto-merge is cancelled, and every group behind it rebuilds.
-  Better: take it out first, push, then arm it again after your LAST push:
-    gh api graphql -f query='mutation{dequeuePullRequest(input:{id:"$3"}){clientMutationId}}'
-    git push ...
-    gh pr merge $2 --auto --merge
-  (gh pr merge --disable-auto does nothing here: auto-merge is already null once queued.)
-  If this push is intended: NIFE_PUSH_QUEUED=1 git push ...
+  Push with script/push --requeue instead: it dequeues #$2, pushes, reads the branch back,
+  and arms it again through helpers/arm.sh, which refuses a hold or a queue conflict.
+  If a push that drops the entry is intended: NIFE_PUSH_QUEUED=1 git push ...
 MSG
 		refused=1
 		;;

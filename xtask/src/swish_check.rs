@@ -24,7 +24,9 @@ use transcript::*;
 use verdict::*;
 
 use crate::archive::{has_initial_ramdisk_riscv, initial_ramdisk_path, riscv_initial_ramdisk_path};
-use crate::disk::{SWISH_CHECK_DISK_MIB, disk_path, mkdisk, mkredoxfs_of, redoxfs_server_build};
+use crate::disk::{
+    SWISH_CHECK_DISK_MEBIBYTES, disk_path, mkdisk, mkredoxfs_of, redoxfs_server_build,
+};
 use crate::host::{flag_value, workspace_root};
 use crate::scanout::{gpu_mon_socket, screendump, sendkey};
 use crate::suite::ArchLegs;

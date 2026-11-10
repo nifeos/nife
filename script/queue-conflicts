@@ -10,17 +10,18 @@
 # `check` merges the pull request's head, with `git merge-tree` in a scratch repository, against
 # main plus every entry ahead of it in the merge queue (GraphQL `mergeQueue(branch: "main")`), and
 # names each conflicting file and the entries ahead that changed it. Exit 0 when clean, 1 on a
-# conflict, 2 when it could not tell. Run it before `gh pr merge --auto`; a conflict you arm costs
-# the pull request its place and a full run of checks (notes/coes/2026-11-03-merge-queue-backlog.md).
+# conflict, 2 when it could not tell. helpers/arm.sh runs it and refuses on exit 1; a conflict you
+# arm costs the pull request its place and a full run of checks
+# (notes/coes/2026-11-03-merge-queue-backlog.md).
 # It reads your worktrees and branches and writes none of them.
 #
 # `shared` is the launch check of briefs/run-a-milestone-wide.md: one file per planned lane, one path
 # per line (a trailing `/` names a directory); the lane is the file's name. Exit 1 lists the paths
 # in more than one scope. Run it before the first claim.
 #
-# Escape hatch: nothing here blocks arming. `gh pr merge --auto` runs without it, and script/push
-# skips its advisory run when NIFE_SKIP_QUEUE_CHECK=1. Say why in the pull request when you arm
-# over a reported conflict.
+# Escape hatch: `helpers/arm.sh <n> --despite-conflict "<why>"` arms over a reported conflict and
+# posts the reason on the pull request. script/push skips its advisory run when
+# NIFE_SKIP_QUEUE_CHECK=1.
 #
 # See notes/merge-queue/conflict-precheck.md and helpers/queue_conflicts.py.
 #
@@ -29,7 +30,7 @@
 
 case "${1:-}" in
 -h | --help)
-    sed -n "3,24p" "$0" | sed 's/^# \{0,1\}//'
+    sed -n "3,26p" "$0" | sed 's/^# \{0,1\}//'
     exit 0
     ;;
 shared)

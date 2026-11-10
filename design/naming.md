@@ -73,8 +73,9 @@ megahertz or millihertz. The IEC binary prefixes (`kib`, `mib`, `gib`) are symbo
 - A length or a limit carries its unit (`MAXIMUM_NAME_BYTES`, never `MAXIMUM_NAME_LEN`). A count of
   things names the things (`MAXIMUM_COLUMNS`).
 - A Rust standard-library or smoltcp method keeps its owner's spelling (`as_nanos`, `total_millis`).
-- About 95 existing names use a symbol (`TRANSFER_HZ`, `NS_PER_SECOND`); a separate sweep renames
-  them, and a ratified one keeps its spelling until its own name review.
+- `helpers/vendored_name_gates.py` counts every identifier that carries a symbol of that list, at a
+  ceiling of 0, and `unit --unclear` lists the few that keep one on purpose, each with its reason.
+  A ratified name keeps its spelling until its own name review (`NS_PER_SECOND`).
 
 ## Registers and constants
 
@@ -240,8 +241,5 @@ a closed record keep their names, and a path is fixed everywhere. The checklist 
 - `helpers/` helpers are outside the worklist on purpose, per milestone 446 (the naming worklist
   says what it covers).
 - A `ratified` is never checked against an architect, and a `recorded` citation is never followed.
-- `helpers/vendored_name_gates.py` does not count `ns`, `ms`, `hz`, the byte and bit-rate symbols
-  (`kib`, `mib` and `gib` among them) or the other `[units]` rows beyond `UNIT_COUNTED`, and still
-  respells `nanos` as `ns`. The gate passes a new name that breaks those rows.
 - `design/capsicum-and-the-retrofit-question.md` still names `worker`, `heeder` and `spinner` in a
   present-tense claim.

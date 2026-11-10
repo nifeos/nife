@@ -112,7 +112,7 @@ An armed pull request whose checks are green can still sit outside the queue wit
 its merge state `BLOCKED`. The usual cause is a cancelled run left over from its draft days (the
 first BUGS entry below). Turn auto-merge off and on, which enqueues it again:
 
-    gh pr merge <N> --disable-auto && gh pr merge <N> --auto --merge
+    gh pr merge <N> --disable-auto && helpers/arm.sh <N>
 
 If it stays `BLOCKED`, look for a cancelled run that is the newest of its workflow on the head
 commit. That is the duplicate `synchronize` in `notes/merge-queue/limitations.md`, and the merge

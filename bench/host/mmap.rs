@@ -30,7 +30,7 @@ const PAGE: usize = 4096;
 /// Fault in `pages` fresh anonymous pages, one write each, and return ns per page. `mmap` is lazy, so
 /// the first write to each page traps into the kernel's fault handler, which installs the PTE (and,
 /// unlike our aliasing bench, allocates and zeroes a page). `write_volatile` cannot be optimized away.
-fn map_fault_ns(pages: usize) -> f64 {
+fn map_fault_nanoseconds(pages: usize) -> f64 {
     let len = pages * PAGE;
     let p = unsafe {
         mmap(
@@ -48,17 +48,17 @@ fn map_fault_ns(pages: usize) -> f64 {
         // SAFETY: `p` covers `pages` pages; this writes the first byte of page i, faulting it in.
         unsafe { p.add(i * PAGE).write_volatile(1) };
     }
-    let ns = t.elapsed().as_nanos() as f64 / pages as f64;
+    let nanoseconds = t.elapsed().as_nanos() as f64 / pages as f64;
     unsafe { munmap(p, len) };
-    ns
+    nanoseconds
 }
 
 fn main() {
     // Warm the mmap and fault paths on a throwaway region (allocator, loop, branch predictor). The
     // timed run uses a fresh region: a first touch cannot be warmed on the same pages, since once
     // faulted they stay resident and a second touch would measure a hit, not a map.
-    let _ = map_fault_ns(2_000);
-    let ns = map_fault_ns(50_000);
+    let _ = map_fault_nanoseconds(2_000);
+    let nanoseconds = map_fault_nanoseconds(50_000);
     let operating_system = if cfg!(target_os = "macos") { "macos" } else { "linux" };
-    println!("{operating_system} map (first-touch fault-in): {ns:.1} ns/page");
+    println!("{operating_system} map (first-touch fault-in): {nanoseconds:.1} ns/page");
 }

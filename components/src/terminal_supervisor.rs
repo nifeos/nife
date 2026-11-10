@@ -476,11 +476,13 @@ impl<'a> Child<'a> {
         let laid = self.lay_out(next)?;
         let display = matches!(self.kind, Kind::DisplayTerminal);
 
-        let waited_ms = match sup.quiesce(self.served, self.faultep) {
+        let waited_milliseconds = match sup.quiesce(self.served, self.faultep) {
             Quiesce::Answered => None,
-            Quiesce::Unanswered { waited_ms } => Some(waited_ms),
+            Quiesce::Unanswered {
+                waited_milliseconds,
+            } => Some(waited_milliseconds),
         };
-        if let Some(waited_ms) = waited_ms {
+        if let Some(waited_milliseconds) = waited_milliseconds {
             // A hung incumbent wrote no blob, so the replacement starts empty. Started before the
             // incumbent is destroyed, so a caller freed below finds a server when it asks again
             // rather than parking in the down window. `DESTROY` finishes the blocked incumbent
@@ -491,7 +493,7 @@ impl<'a> Child<'a> {
             self.destroy(cur);
             self.current = next;
             self.wait_up();
-            return Some(Hop::Hung(waited_ms));
+            return Some(Hop::Hung(waited_milliseconds));
         }
 
         if display {
@@ -695,7 +697,7 @@ impl Supervisor<'_> {
         give_back(region);
         let _ = notification_poll(d.wake);
         Quiesce::Unanswered {
-            waited_ms: waited * 1000 / cntfrq(),
+            waited_milliseconds: waited * 1000 / cntfrq(),
         }
     }
 }
@@ -718,7 +720,7 @@ enum Quiesce {
     /// The incumbent answered within the bound, and is drained and waiting for its control word.
     Answered,
     /// The bound passed with no answer.
-    Unanswered { waited_ms: u64 },
+    Unanswered { waited_milliseconds: u64 },
 }
 
 /// **Destroy a region, whatever its resident is doing** (`swapper`'s helper of the same name). A

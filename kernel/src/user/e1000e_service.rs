@@ -41,7 +41,7 @@ pub enum Absent {
     },
     /// The previous server is still alive, and a bring-up would reset the device under it.
     Busy,
-    /// Bring-up finished and `STATUS.LU` never rose within `e1000e::LINK_WAIT_MS`, so no server was
+    /// Bring-up finished and `STATUS.LU` never rose within `e1000e::LINK_WAIT_MILLISECONDS`, so no server was
     /// started: `net_stack`'s DHCP loop has no bound and every caller blocks on its lease. Whether
     /// this is a skip or a failure is the caller's, which knows whether a link was promised.
     NoLink {
