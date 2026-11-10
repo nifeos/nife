@@ -8,7 +8,7 @@
 //! and a length in pages. A reader takes the kinds it knows and skips the rest, so a later spawner
 //! may add kinds and move windows without breaking an earlier program. [`VERSION`] changes only
 //! when the entry format itself changes. See
-//! design/roadmap/proposals/a-process-reads-its-window-addresses-from-a-startup-page.md.
+//! design/roadmap/1069-a-process-reads-its-window-addresses-from-a-startup-page.md.
 
 //! # BUGS
 //!
