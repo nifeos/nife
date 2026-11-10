@@ -130,15 +130,15 @@ objects needs `IPC_TABLES`, while `destroy` must never take it, because it is re
 
 ## How many regions can be live
 
-`memory_region::MAXIMUM_REGIONS` (256) bounds regions live at once, not creations over the kernel's
+`memory_region::MAXIMUM_REGIONS` (1,024) bounds regions live at once, not creations over the kernel's
 lifetime, since slots are reused. Every suite run prints the peak on its `regions:` line, with the
 test during which it was set. Measured 2026-09-26:
 
 | architecture | peak | spare | live when the first test starts | live after the last |
 |---|---|---|---|---|
-| aarch64 | **225** | 31 | 1 | 222 |
-| riscv64 | **224** | 32 | 1 | 221 |
-| `x86_64` | **125** | 131 | 1 | 122 |
+| aarch64 | **225** | 799 | 1 | 222 |
+| riscv64 | **224** | 800 | 1 | 221 |
+| `x86_64` | **125** | 899 | 1 | 122 |
 
 The table is nearly empty at boot. Almost every region live at the peak is one an earlier test left
 behind (on aarch64, `ntp_tests` 39 and `login_tests` 33 lead, then the compositor, file service and

@@ -624,9 +624,9 @@ mod tests {
     /// has slots, and each round returns its own page.
     #[test_case]
     fn destroyed_region_slots_are_reused() {
-        // More than MAXIMUM_REGIONS (256), and the frame is checked per round, so a leak fails on
-        // the round that leaked.
-        for _ in 0..320 {
+        // More than MAXIMUM_REGIONS, and the frame is checked per round, so a leak fails on the
+        // round that leaked.
+        for _ in 0..crate::memory_region::MAXIMUM_REGIONS + 64 {
             let r = crate::memory_region::create(1)
                 .expect("a region slot must be reused, not exhausted");
             let run = crate::testing::RegionRun::of(r);
