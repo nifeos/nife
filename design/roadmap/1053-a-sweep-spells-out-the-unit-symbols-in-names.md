@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: BUILT
 promoted_from: a-sweep-spells-out-the-unit-symbols-in-names
 raised: 2026-11-05
 milestone_dependencies: none
