@@ -27,7 +27,7 @@ The README says "Not yet proven: event decoding". Four more properties lack a pr
 - a producer and a modeled consumer agree across a wrap (the host test runs three laps of a
   four-entry ring with fixed bursts).
 
- Change: five harnesses, each with a falsification patch that the proofs workflow replays
+Change: five harnesses, each with a falsification patch that the proofs workflow replays
 red, and the README's "Not yet proven" line goes. S.
 
 ## P2-3. The crate's front page on docs.rs shows no code
