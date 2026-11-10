@@ -7,7 +7,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# 1068. Interrupt remapping is turned on where an IOMMU offers it
+# 1068. The kernel turns interrupt remapping on where an IOMMU offers it
 
 *(The number, title and slug are provisional.)*
 
@@ -23,7 +23,7 @@ what refuses that, and §319 makes it a milestone of its own that milestone 1064
 leaves the kernel) waits on.
 
 Confinement means an IOMMU. This milestone applies only where one exists. On a machine without one,
-nothing confines a device's interrupts or its DMA, and its drivers are trusted.
+nothing confines a device's interrupts or its DMA, and the kernel trusts its drivers.
 
 ## Today
 
@@ -56,15 +56,16 @@ domain, and the bus server writes only what the table lets through.
 ## The work, in order
 
 1. x86_64 VT-d: an interrupt remapping table, `GCMD.IRE` set, and each MSI the kernel grants
-   written as a remapped entry that names the one vector the holder was given. The test 317 holds
-   (`GSTS.IRES` stays clear) turns into its opposite. Effort: M (a guess).
+   written as a remapped entry that names the one vector the kernel granted its holder. The test
+   milestone 317 holds (`GSTS.IRES` stays clear) turns into its opposite. Effort: M (a guess).
 2. riscv64: an MSI page table per device context, `msiptp` in flat mode, with one entry per granted
    interrupt file. Effort: S to M (a guess).
 3. x86_64 AMD-Vi: its interrupt remapping table, under QEMU's `amd-iommu`. Effort: S to M (a guess).
 4. aarch64: the GICv3 ITS (command queue, device table, `MAPD` and `MAPTI`), so a device's MSIs
    translate through its own table. Effort: L (a guess); it is the bill milestone 317 names as owed.
-5. A test in milestone 202's shape on each architecture: a component holding a device's MSI-X table
-   page aims an interrupt at a vector it was never granted, and the hardware refuses it.
+5. A test in the shape of milestone 202 (every confinement test is a ritual until somebody breaks
+   the confinement and watches it fail) on each architecture: a component holding a device's
+   MSI-X table page aims an interrupt at a vector it was never granted, and the hardware refuses it.
 
 Total: L (a guess).
 

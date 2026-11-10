@@ -10,9 +10,9 @@ ratified_by: calef
 *(The title and every name below are provisional.)*
 
 PCI enumeration leaves the kernel, last of the extractions (milestone 1064 (PCI enumeration leaves
-the kernel)). The kernel keeps two objects for it: a device object and a DMA-domain object. The bus
-server in userspace holds configuration space and is trusted with it. Confinement of DMA rests on
-the domain object and the IOMMU, and confinement of interrupts on interrupt remapping, which is a
+the kernel)). The kernel keeps two objects for it: a device object and a DMA-domain object. The
+kernel trusts the bus server in userspace with configuration space. Confinement of DMA rests on the
+domain object and the IOMMU, and confinement of interrupts on interrupt remapping, which is a
 milestone of its own that 1064 waits on.
 
 ## The problem
@@ -41,24 +41,24 @@ already grantable as a `DeviceFrame` page.
    function it discovers, and the object names that function's requester id. A DMA domain is an
    object of its own: it holds the IOMMU page table, and its holder makes it from memory like any
    other object. An invoke on a device object binds the device to a domain. The kernel refuses to
-   set bus mastering on a device until it is bound. One domain can serve several devices, such as
-   the functions of a multi-function card, and revoking a domain stops every device bound to it
+   set bus mastering on a device until it has a domain. One domain can serve several devices, such
+   as the functions of a multi-function card, and revoking a domain stops every device bound to it
    (§16 (object revocation)).
-2. **The bus server is trusted with configuration space.** It places BARs and writes configuration
-   space, and the kernel does not check BAR placement against the windows the firmware named. A
-   bad placement misdirects the CPU's accesses, but it does not widen what a device can reach by
-   DMA: that is confined by the device's domain and the IOMMU alone, which keeps the confinement
-   argument in the kernel, as §4 (kernel shape) requires.
+2. **The kernel trusts the bus server with configuration space.** The server places BARs and
+   writes configuration space, and the kernel does not check BAR placement against the windows the
+   firmware named. A bad placement misdirects the CPU's accesses. It does not widen what a device
+   can reach by DMA, because the device's domain and the IOMMU alone confine that. The confinement
+   argument stays in the kernel, as §4 (kernel shape) requires.
 3. **Interrupt remapping is a prerequisite milestone, not part of 1064.** A bus server that writes
    MSI targets can aim an interrupt at a vector it was never given unless interrupt remapping
-   confines it. Milestone 1068 (interrupt remapping is turned on where an IOMMU offers it) builds
-   that, and milestone 1064 depends on it.
+   confines it. Milestone 1068 (the kernel turns interrupt remapping on where an IOMMU offers it)
+   builds that, and milestone 1064 depends on it.
 
 Confinement means an IOMMU. On a machine without one, nothing confines a device's DMA or its
-interrupts, and the drivers there are trusted. Both objects and interrupt remapping apply only where
-an IOMMU exists.
+interrupts, and the kernel trusts the drivers there. Both objects and interrupt remapping apply
+only where an IOMMU exists.
 
-## What was considered
+## The options that lost
 
 - A device object alone, with the domain inside it and a kernel check of BAR placement. It lost
   because one domain could not serve several devices, and a multi-function card or a group the
@@ -70,15 +70,15 @@ an IOMMU exists.
 ## Prior art, recalled, not re-read
 
 - seL4 on x86 has an `IOSpace` capability per PCI requester id and `IOPageTable` objects the root
-  task maps into it; the kernel walks the DMAR at boot and leaves configuration space to userspace.
+  task maps into it. The kernel walks the DMAR at boot and leaves configuration space to userspace.
   The rule here is close to it.
 - Fuchsia (Zircon) splits an `IOMMU` object from a `BTI` (bus transaction initiator) object made
   from it per requester id, and pins memory through the BTI. The PCI bus driver runs in userspace
-  and is trusted with configuration space. The rule here is the same shape.
+  and Zircon trusts it with configuration space. The rule here is the same shape.
 - Genode's platform driver runs in userspace, owns configuration space, and in recent releases
   programs the IOMMU itself. nife trusts its bus server with configuration space the same way, but
   keeps the IOMMU in the kernel.
-- Redox runs `pcid` in userspace, trusted with configuration space, and confines no DMA.
+- Redox runs `pcid` in userspace, trusts it with configuration space, and confines no DMA.
 - Linux VFIO confines by IOMMU group, the smallest set of devices the IOMMU can tell apart, and
   virtualizes configuration-space writes to the BARs and MSI fields. Xen's `pciback` filters a
   guest's configuration-space writes. Both are stricter than the rule here, which goes with
@@ -99,5 +99,5 @@ still reaches only the domain's pages. Revoking the domain stops the device.
 ## What this unblocks
 
 Milestone 1064 (PCI enumeration leaves the kernel), and with it the last 500 or so lines of
-`kernel/src/pci.rs` and the kernel's link to `crates/pci`, once milestone 1068 (interrupt remapping
-is turned on where an IOMMU offers it) has landed.
+`kernel/src/pci.rs` and the kernel's link to `crates/pci`, once milestone 1068 (the kernel turns
+interrupt remapping on where an IOMMU offers it) has landed.
