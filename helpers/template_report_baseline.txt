@@ -1,4 +1,4 @@
-abi abbreviations 34
+abi abbreviations 32
 abi prose_acronyms 26
 abi register_names 9
 address_space_identifier abbreviations 10
@@ -262,7 +262,7 @@ slabtop register_names 1
 soak_page abbreviations 4
 soak_page prose_acronyms 1
 socket_contract abbreviations 20
-socket_contract prose_acronyms 6
+socket_contract prose_acronyms 1
 socket_contract register_names 1
 spin_lock abbreviations 1
 spin_lock prose_acronyms 1
@@ -282,7 +282,7 @@ supervision_contract prose_acronyms 2
 swish abbreviations 63
 swish prose_acronyms 4
 swish register_names 3
-system_initializer abbreviations 558
+system_initializer abbreviations 555
 system_initializer prose_acronyms 28
 system_initializer readme_acronyms 5
 system_initializer register_names 7
