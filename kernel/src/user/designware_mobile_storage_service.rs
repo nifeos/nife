@@ -119,13 +119,13 @@ pub(crate) fn start(
                 maps: &maps,
                 windows: &[
                     startup_page_contract::Window {
-                        kind: startup_page_contract::kind::DESIGNWARE_MOBILE_STORAGE_TRANSFER,
-                        address: TRANSFER_VIRTUAL_ADDRESS,
+                        kind: ::driver_process_contract::designware_mobile_storage::TRANSFER_KIND,
+                        virtual_address: TRANSFER_VIRTUAL_ADDRESS,
                         pages: blk::TRANSFER_BLOCKS as u32,
                     },
                     startup_page_contract::Window {
-                        kind: startup_page_contract::kind::DESIGNWARE_MOBILE_STORAGE_REGISTER_PAGE,
-                        address: REGISTER_VIRTUAL_ADDRESS,
+                        kind: ::driver_process_contract::designware_mobile_storage::REGISTER_KIND,
+                        virtual_address: REGISTER_VIRTUAL_ADDRESS,
                         pages: 1,
                     },
                 ],

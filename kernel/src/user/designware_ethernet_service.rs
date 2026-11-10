@@ -164,13 +164,13 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: Found) -> Wiring
                 maps: &maps,
                 windows: &[
                     startup_page_contract::Window {
-                        kind: startup_page_contract::kind::DESIGNWARE_ETHERNET_DATA_PLANE,
-                        address: DATA_PLANE_VIRTUAL_ADDRESS,
+                        kind: ::driver_process_contract::designware_ethernet::DATA_PLANE_KIND,
+                        virtual_address: DATA_PLANE_VIRTUAL_ADDRESS,
                         pages: PLANE as u32,
                     },
                     startup_page_contract::Window {
-                        kind: startup_page_contract::kind::DESIGNWARE_ETHERNET_DIRECT_MEMORY_ACCESS_REGISTER_PAGE,
-                        address: DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS,
+                        kind: ::driver_process_contract::designware_ethernet::DIRECT_MEMORY_ACCESS_REGISTER_PAGE_KIND,
+                        virtual_address: DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS,
                         pages: 1,
                     },
                 ],

@@ -16,6 +16,7 @@
 //! serves, as this crate's other modules are named.
 
 use ::extensible_host_controller_interface::{Capabilities, PAGE_BYTES};
+use startup_page_contract::WindowKind;
 
 /// **How many pages of the register file a driver can be mapped**: the bits of [`Handoff`]'s
 /// register mask. 64 KiB, which is the BAR of every Intel xHCI this project has read about; a
@@ -25,6 +26,16 @@ use ::extensible_host_controller_interface::{Capabilities, PAGE_BYTES};
 /// Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC). Ruled 2026-10-26
 /// (UTC), on #2760: max is spelled out, which refused `MAX_REGISTER_PAGES`.
 pub const MAXIMUM_REGISTER_PAGES: u64 = 16;
+
+/// The register file's entry on the startup page: up to [`MAXIMUM_REGISTER_PAGES`] pages, device
+/// memory, with the pages the register mask leaves out unmapped.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+pub const REGISTER_KIND: WindowKind = WindowKind(10);
+/// The work region's entry on the startup page: [`WORK_PAGES`] pages, normal memory.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+pub const WORK_KIND: WindowKind = WindowKind(11);
 
 /// How many pages of the DMA region the driver is mapped: every page of
 /// `extensible_host_controller_interface::direct_memory_access`'s layout, through its scratchpad array. Scratchpad

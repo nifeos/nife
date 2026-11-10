@@ -348,17 +348,18 @@ fn run_with(image: &[u8], spawn: Spawn, device: Option<DeviceRun>, own_space: Op
     enter_at(entry, spawn.arg0, spawn.arg1, spawn.arg2)
 }
 
-/// Does the spawn map `w`'s first page, through `maps` or the device run? A window listed at an address the space lacks would send the program
-/// to a fault; refusing it at spawn names the spawner instead. A window may be sparse inside its
+/// Does the spawn map `w`'s first page, through `maps` or the device run? A window listed at an
+/// address the space lacks would send the program to a fault; refusing it at spawn names the
+/// spawner instead. A window may be sparse inside its
 /// span: the xHCI register window maps only the pages its register mask names.
 fn window_is_mapped(
     w: &startup_page_contract::Window,
     maps: &[Mapping],
     device: Option<&DeviceRun>,
 ) -> bool {
-    let va = w.address;
-    maps.iter().any(|m| m.va == va)
-        || device.is_some_and(|d| va >= d.va && va < d.va + d.pages * FRAME_SIZE)
+    let first = w.virtual_address;
+    maps.iter().any(|m| m.va == first)
+        || device.is_some_and(|d| first >= d.va && first < d.va + d.pages * FRAME_SIZE)
 }
 
 /// Drop the **current** thread to user mode at `entry` on `user_sp`, with `arg0` to `arg2` in the

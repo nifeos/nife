@@ -5,6 +5,7 @@
 //! serves.
 
 use address_space_map::{PAGE, pair_page};
+use startup_page_contract::WindowKind;
 
 /// The DMA region, `designware_ethernet::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` pages, normal memory. The same address as
 /// the virtio and `e1000e` servers' DMA windows; a `net_stack` drives one NIC, never two.
@@ -23,6 +24,15 @@ pub const DATA_PLANE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_0090_0000);
 #[doc(alias = "dma_page")]
 pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS: u64 =
     pair_page(0x0000_0000_009c_0000);
+
+/// [`DATA_PLANE_VIRTUAL_ADDRESS`]'s entry on the startup page.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+pub const DATA_PLANE_KIND: WindowKind = WindowKind(6);
+/// [`DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS`]'s entry on the startup page.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+pub const DIRECT_MEMORY_ACCESS_REGISTER_PAGE_KIND: WindowKind = WindowKind(7);
 
 /// The role word's low half when `arg0` is this server's handoff. Disjoint from `net_stack`'s
 /// existing roles: 0 is the virtio server, small integers are socket clients, `0xe1e0` is

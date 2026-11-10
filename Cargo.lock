@@ -462,6 +462,7 @@ dependencies = [
  "extensible_host_controller_interface",
  "filesystem_contract",
  "non_volatile_memory_express",
+ "startup_page_contract",
 ]
 
 [[package]]
