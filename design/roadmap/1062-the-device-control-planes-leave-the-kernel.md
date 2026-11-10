@@ -60,7 +60,7 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    two ports the service reads. §130's title, and the glosses that cite it, change with the code.
 7. The virtio validator becomes a grant the progenitor makes when it starts a driver (§23
    (multi-queue DMA confinement)), as the next section designs it. Ruled 2026-11-10 (UTC), option 3
-   of three. Its four pull requests are listed there.
+   of three. That section lists its four pull requests.
 
 Every new program, process, crate and verb ships with a provisional name.
 
@@ -76,8 +76,8 @@ flag, no build feature and no boot parameter for it, and the choice can differ p
   `kernel/src/virtio.rs`).
 - Direct. The driver also holds its device's doorbell page as a `DeviceFrame`, and writes the
   doorbell itself, as the NVMe data-path driver does with BAR0's second page. The device reads the
-  driver's own rings. Nothing validates a `NOTIFY`, and the driver is trusted, as an NVMe driver
-  is on a machine without an IOMMU.
+  driver's own rings. Nothing validates a `NOTIFY`, and nife trusts the driver, as it trusts an
+  NVMe driver on a machine without an IOMMU.
 
 The kernel keeps the validator, the shadow page and the proofs for both grants.
 
@@ -108,15 +108,15 @@ architect approves.
 page, read-only to the device (`iommu::virtio_regions`). A direct grant keeps that domain. The
 device can then reach only the driver's region and one zeroed page that the kernel never writes
 once `NOTIFY` refuses. So with an IOMMU a direct grant stays confined in hardware, and without one
-the driver is trusted. `DOORBELL_PAGE` needs nothing more of the IOMMU case.
+nife trusts the driver. `DOORBELL_PAGE` needs nothing more of the IOMMU case.
 
 ### Which grant, by default
 
 Provisional, not yet ruled: the progenitor on the QEMU runners grants direct wherever the device
 allows it, which means the PCI functions. Provisional, not yet ruled: a cloud image without an
-IOMMU grants mediated. The rule lives in the image's progenitor, never in the kernel. A virtio-mmio
-driver is trusted without an IOMMU, as an NVMe driver is. The validator stays as the proved form of
-§86's option 4, used only if a cloud target with virtio and no IOMMU becomes real.
+IOMMU grants mediated. The rule lives in the image's progenitor, never in the kernel. nife trusts a
+virtio-mmio driver without an IOMMU, as it trusts an NVMe driver. The validator stays as the proved form of
+§86's option 4, and nife uses it only if a cloud target with virtio and no IOMMU becomes real.
 
 ### Tests, proofs and starters
 
@@ -165,8 +165,8 @@ a PCI disk. The work is medium: about 150 kernel lines, 60 in `crates/user_mode_
 
 ### Order of work
 
-1. The §23 amendment and the ABI: `DOORBELL_PAGE`'s number and semantics, approved by the
-   architect before any code.
+1. The §23 amendment and the ABI: `DOORBELL_PAGE`'s number and semantics, which the
+   architect approves before any code.
 2. The kernel half: the `Device` field, `DOORBELL_PAGE` and its refusals, the `SETUP_QUEUE` and
    `NOTIFY` branches, and the revoke at `unregister`, with the kernel tests.
 3. The driver half in `crates/user_mode_runtime`: write the doorbell page when the driver holds
