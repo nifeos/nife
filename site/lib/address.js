@@ -1,6 +1,6 @@
 // The address of each record file on the site, derived from its repository path alone.
 //
-// Milestone 1018 (the design record moves to `nifeos.org` and is published as a website) asks for
+// Milestone 1018 (the design record moves to `nifeos/record` and is published as a website) asks for
 // one stable address per record number, with no slug in it, because titles are drafts. So a
 // numbered record is its kind and its number: design/roadmap/1018-the-design-record-moves.md is
 // /roadmap/1018/, and a file in that block's appendix directory sits under it, as
