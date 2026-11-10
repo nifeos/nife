@@ -101,16 +101,16 @@ sits on a stack ([notes/region-reaping.md](region-reaping.md)).
 
 ### `MAXIMUM_RENDEZVOUS`, and the kernel's chunks
 
-`MAXIMUM_RENDEZVOUS` is 512 live at once. Tearing down a region removes its rendezvous and frees
+`MAXIMUM_RENDEZVOUS` is 2,048 live at once. Tearing down a region removes its rendezvous and frees
 their slots, so it bounds concurrency, not creations. `PEAK_RENDEZVOUS` and
 `KERNEL_CHUNK_RENDEZVOUS` report the peak and how many of those sat on the kernel's own chunks,
 updated at the one insert under the lock. Measured 2026-10-19 (UTC) on the `system_tests` image:
 
 | architecture | peak | spare | on kernel chunks |
 |---|---|---|---|
-| aarch64 | **269** | 243 | 188 |
-| riscv64 | **260** | 252 | 179 |
-| `x86_64` | **189** | 323 | 133 |
+| aarch64 | **269** | 1,779 | 188 |
+| riscv64 | **260** | 1,788 | 179 |
+| `x86_64` | **189** | 1,859 | 133 |
 
 A rendezvous on a kernel chunk lives for the whole boot, so every test that wires a service with
 `create_rendezvous` spends the registry until shutdown. On aarch64 the largest spenders are the

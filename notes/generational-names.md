@@ -195,7 +195,7 @@ of the tables timed soonest in the region table, at a floor of about four minute
 ### The one-slot `Option` tag
 
 `[Option<T>; N]` spends a tag on each slot when `T` has no niche. In the kernel that means the four
-`u64` tables (rendezvous 512, notifications, timers and processes 256 each) and the thread table's
+`u64` tables (rendezvous 2,048, notifications, timers and processes 256 each) and the thread table's
 raw pointer (1,024). Each slot takes 16 bytes instead of 8, 12 KiB of the kernel's static data in all.
 `Region` holds a `bool`, and the virtio `Device` and the address-space `Registered` entry hold
 enums, so each has a niche, and Rust folds the tag into it at no cost. Taking the tag out means

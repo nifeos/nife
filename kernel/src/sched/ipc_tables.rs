@@ -76,7 +76,7 @@ pub(super) struct IpcTables {
 pub(super) const FUTEX_BUCKETS: usize = 64;
 
 /// The most endpoints that can exist at once: the registry's bound.
-pub(crate) const MAXIMUM_RENDEZVOUS: usize = 512;
+pub(crate) const MAXIMUM_RENDEZVOUS: usize = 2048;
 
 /// The most rendezvous that were ever live at once on this boot, and how many of those sat on the
 /// kernel's own chunks, which only rises. [`MAXIMUM_RENDEZVOUS`]'s instrument; it reports and does
