@@ -8,7 +8,8 @@ An appendix to [the milestone](../1059-block-roster-contract-outside-review.md).
   ruleset requires `check / mutation-diff`, which reports (P1-1).
 - P1-2 to P1-8 have closed in the repository, each by a pull request that cites this block by
   number. `Roster::read` returns `Result<Roster, ReadError>`, `Roster::get` takes `index`, the three
-  transport constants carry their aliases, `Device` derives `Hash` and `Ord`, and `devices()` is an
+  transport constants carry their aliases, `Device` derives `Hash` and `Ord` with
+  `transport` declared first and a host test pinning the order, and `devices()` is an
   `ExactSizeIterator`. The two call sites in this organization build against the new signature.
 - `cargo test`, `cargo kani` and the falsification replay stay green on every change, and a new
   harness arrives with its patch.
