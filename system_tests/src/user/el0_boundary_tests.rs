@@ -183,7 +183,8 @@ fn a_user_threads_trap_frame_sits_where_the_trap_path_rebuilds_it() {
 fn the_hardware_says_el0_cannot_read_the_kernels_memory() {
     const KERNEL_TEXT: u64 = 0xffff_0000_4008_0000;
 
-    let (space, _) = load(loader_subject_image(), 0).expect("the initial ramdisk did not load");
+    let (space, _) =
+        load(loader_subject_image(), 0, &[]).expect("the initial ramdisk did not load");
 
     space.while_installed(|| {
         // The precondition: the address is mapped and the kernel can read it.

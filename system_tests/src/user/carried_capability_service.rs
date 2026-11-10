@@ -32,6 +32,7 @@ pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
                     endpoint(probe, Rights::WRITE),         // slot 4: usable, not passable
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -49,6 +50,7 @@ pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
                     endpoint(client_report, Rights::WRITE), // slot 1: the verdict
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })

@@ -35,6 +35,7 @@ pub fn start(
                     rendezvous_capability(report, Rights::WRITE), // slot 1: report the result
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })

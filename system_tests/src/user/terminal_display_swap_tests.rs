@@ -261,6 +261,7 @@ impl Rig {
                         rendezvous_capability(swap, Rights::READ), // the swap endpoint
                     ],
                     maps: &maps[..windows],
+                    windows: &[],
                 },
             )
         })

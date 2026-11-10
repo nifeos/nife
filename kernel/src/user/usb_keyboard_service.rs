@@ -123,6 +123,18 @@ pub(crate) fn start(
                     rendezvous_capability(report, Rights::WRITE), // slot 2: the one bring-up report
                 ],
                 maps: &maps[..n],
+                windows: &[
+                    startup_page_contract::Window {
+                        kind: ::driver_process_contract::extensible_host_controller_interface::WORK_KIND,
+                        virtual_address: DMA_VA,
+                        pages: WORK_PAGES as u32,
+                    },
+                    startup_page_contract::Window {
+                        kind: ::driver_process_contract::extensible_host_controller_interface::REGISTER_KIND,
+                        virtual_address: REGS_VA,
+                        pages: MAXIMUM_REGISTER_PAGES as u32,
+                    },
+                ],
             },
         )
     })

@@ -35,6 +35,7 @@ pub fn wire(endpoints: u64) -> RendezvousId {
                     rendezvous_capability(channel, Rights::WRITE), // slot 1: delegate the frame
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -53,6 +54,7 @@ pub fn wire(endpoints: u64) -> RendezvousId {
                     rendezvous_capability(report, Rights::WRITE), // slot 2: report the verdict
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
