@@ -34,9 +34,9 @@ dependency) rules on citations across repositories. Its section 4 says a record 
 `nifeos/<repo>@<sha>`, code does not cite records, and the numbering namespace stayed with nife until the ruling of 2026-11-01 (UTC) below.
 
 On 2026-11-10 (UTC) the architect ruled question 1 below. The record lives in a repository of its
-own, `nifeos/record`. The website is a separate repository, `nifeos/nifeos.org`, and it is a
-consumer of the record: at build time it pulls the record, a page for each crate from that crate's
-own repository, and the planned tutorial on building a RISC-V operating system, a class. None of
+own, `nifeos/record`. The website is a separate repository, `nifeos/nifeos.org`, a consumer of the
+record. At build time it pulls the record, a page for each crate from that crate's own repository,
+and the planned tutorial on building a RISC-V operating system, a class. None of
 them is copied into the website's repository. The same day ruled the name, `nifeos/record`, over
 `nifeos/project` and `nifeos/project-management`. The rulings create nothing: creating
 `nifeos/record` and creating `nifeos/nifeos.org` each wait for the architect's separate approval.
@@ -71,20 +71,6 @@ makes the move smaller.
 Reuse: Eleventy builds the site and Pagefind indexes it. A small markdown-it plugin in `site/lib/`
 links citations with its own pattern, since `script/citations` is Python and Eleventy runs in Node.
 The extraction reuses `git filter-repo`.
-
-## The measurements, in brief
-
-Taken 2026-11-01 at `origin/main` `295782808`; the appendix has the commands, their limits and the
-site build's numbers.
-
-- 138 tracked tool files name a record path outside a comment. Of `script/lint`'s 128 sections, 56
-  name the record directly, 34 more call a helper that reads it, and 38 do neither.
-- Outside the record, 1,972 of 3,425 tracked files cite it: 7,774 `milestone N` and 3,525 `§N`
-  occurrences, and 1,062 record paths.
-- 812 of 952 top-level roadmap blocks name a code path, 7,845 times. Decision files name one 1,119
-  times.
-- Of 11,661 non-merge commits, 4,134 touch only the record, 2,729 touch both, and 3,299 touch only
-  code.
 
 ## How the record cites, once it leaves
 
@@ -176,9 +162,8 @@ built-in pull-request preview; and a soft bandwidth limit of 100 GB a month.
   rule that a `TODO` names a milestone, which binds code to the record.
 
 The record's own checks and tooling live in `nifeos/record`, under the ruling on question 4.
-Which script and helper counts as the record's own is the sort in
-[the appendix](1018-the-design-record-moves-and-is-published/measurements.md#where-each-script-goes),
-provisional: the record repository takes `script/roadmap`, `script/decisions`, `script/journeys`
+[The appendix](1018-the-design-record-moves-and-is-published/measurements.md#where-each-script-goes)
+sorts each script and helper, provisionally. The record repository takes `script/roadmap`, `script/decisions`, `script/journeys`
 and the core of `script/citations`, the website takes `script/site` and `site/`, and the fleet and
 template tooling (`script/claim`, `script/record-ruling`) follows the tooling ruling of 2026-11-01.
 A counted claim in the record whose derivation walks code fetches that code at basalt's pins,
@@ -255,26 +240,8 @@ repository, where each project above renders one source. An integrator mints the
 a whole. A pull-request number, as Rust uses, would collide across repositories. And nife's records
 feed gates, which the PEPs do not, so the checks move with the text.
 
-## What this does not verify
-
-- The lint section counts come from a text search of each section's body, and the reader counts
-  from string matches outside comment lines. Both are approximations.
-- How long a hosted runner takes; the appendix times a larger host, and each run's summary says.
-- That GitHub Pages redirects a project site from `github.io` to a custom domain once configured.
-  Recalled.
-- Whether the registration renews automatically. The term is one year, and a lapse would break
-  every quoted link.
-- Whether the organization's settings allow a custom domain on Pages.
-- The traffic the class tutorial would draw, against the 100 GB soft limit.
-- That `git filter-repo` keeps the renames of files moved between `notes/` and `design/`. Not tried.
-- How many notes concern a single crate. Not measured; step 4 produces the number.
-- Where `script/claim` lives once tooling leaves. The lane skills are ruled; the code repositories'
-  `AGENTS.md` files point at them today by relative path, and how they point at skills held in
-  another repository is not worked out.
-- How `nifeos/nifeos.org` learns that the record's main moved: a schedule, a dispatch from
-  `nifeos/record`, or a build on demand. Not tried.
-- How many links from the record reach a note or crate path that stays. A rough count found 168
-  notes linked from the record, 5 named for a crate. Step 4 replaces it with a real sort.
+The appendix lists [what this does not
+verify](1018-the-design-record-moves-and-is-published/measurements.md#what-the-proposal-does-not-verify).
 
 ## Open questions for the architect
 
@@ -297,10 +264,10 @@ One decision each, recommendation first. Ask them one at a time.
    time as it pulls a crate's page. The tutorial has code to build and test, and a stranger can
    fork it.
 
-6. Provisional, recorded by the maintainer, and the architect may reverse each: the sort of the
-   record's own tooling into `nifeos/record` in the appendix; the rework that moves the status flip
-   of `helpers/milestone-branch-block.sh` and `ready-status.yml` to the record's pull request; and
-   counted claims fetching code at basalt's pins.
+6. Provisional, recorded by the maintainer, and the architect may reverse each. The appendix's
+   sort of the record's own tooling into `nifeos/record`. The rework that moves the status flip in
+   `helpers/milestone-branch-block.sh` and `ready-status.yml` to the record's pull request. Counted
+   claims that fetch code at basalt's pins.
 
 Still to be ruled by the architect:
 
@@ -324,8 +291,8 @@ Still to be ruled by the architect:
   rule is safe either way, so only the comments change.
 
 - **Outstanding.** §201 (one roadmap until a citation has to cross), journey 5 and milestone 857
-  (crates released on their own) still name `nifeos.org` as the record's repository; each changes
-  to `nifeos/record` in its own pull request, §201's with the architect's approval.
+  (crates released on their own) still name `nifeos.org` as the record's repository. Each changes
+  to `nifeos/record` in its own pull request, and §201's needs the architect's approval.
 
 ## Index row
 

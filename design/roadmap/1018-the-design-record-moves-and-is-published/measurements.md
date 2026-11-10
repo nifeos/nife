@@ -288,3 +288,24 @@ a lint driver of its own that runs only its subset.
 | `architect-hold.yml` | every repository |
 | `metrics.yml`, the mutation and falsification workflows | C; their output leaves `notes/` with the data |
 | `stranger-cadence.yml` | unknown: its run record is in `notes/`, and the test builds the OS |
+
+## What the proposal does not verify
+
+- The lint section counts come from a text search of each section's body, and the reader counts
+  from string matches outside comment lines. Both are approximations.
+- How long a hosted runner takes; the appendix times a larger host, and each run's summary says.
+- That GitHub Pages redirects a project site from `github.io` to a custom domain once configured.
+  Recalled.
+- Whether the registration renews automatically. The term is one year, and a lapse would break
+  every quoted link.
+- Whether the organization's settings allow a custom domain on Pages.
+- The traffic the class tutorial would draw, against the 100 GB soft limit.
+- That `git filter-repo` keeps the renames of files moved between `notes/` and `design/`. Not tried.
+- How many notes concern a single crate. Not measured; step 4 produces the number.
+- Where `script/claim` lives once tooling leaves. The lane skills are ruled; the code repositories'
+  `AGENTS.md` files point at them today by relative path, and how they point at skills held in
+  another repository is not worked out.
+- How `nifeos/nifeos.org` learns that the record's main moved: a schedule, a dispatch from
+  `nifeos/record`, or a build on demand. Not tried.
+- How many links from the record reach a note or crate path that stays. A rough count found 168
+  notes linked from the record, 5 named for a crate. Step 4 replaces it with a real sort.
