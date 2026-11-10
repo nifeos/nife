@@ -2,7 +2,7 @@
 status: NOT-STARTED
 raised: 2026-11-10
 milestone_dependencies: 811
-decision_dependencies: 4, 23, 86, 130, 251
+decision_dependencies: 4, 23, 86, 130, 251, 320
 machine_requirements: none
 specific_machine: none
 needs_person: yes
@@ -33,15 +33,16 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    and the kernel stops linking `crates/e1000e`. Waiting for 811's step 6 keeps the starter and the
    control plane from moving twice.
 2. The JH7110 clock and reset server. A userspace server holds the shared clock and reset
-   window, which serves USB, PCIe, DMA, the security block and Ethernet. It answers per-device
-   verbs: a client asks for its own device's clocks and resets, by name, and never touches
-   another's. The verbs live in a contract crate both sides depend on (§311 (a contract is
-   code, not prose)). The wire details (verb numbers, the request layout, how a client's device is
-   named) return to the architect as a separate decision before they freeze. Until then they ship
-   provisional. `kernel/src/drivers/jh7110_clock_and_reset.rs` shrinks to what the kernel's own
+   window, which serves USB, PCIe, DMA, the security block and Ethernet. It answers the
+   device-level verbs of §320 (the JH7110 clock and reset wire): the badge is the device, and a
+   client brings up, reads and rates its own device's clocks and resets and never touches
+   another's. No verb turns a device off. The verbs live in a contract crate both sides depend on
+   (§311 (a contract is code, not prose)), at interface id 24. The names ship provisional.
+   `kernel/src/drivers/jh7110_clock_and_reset.rs` shrinks to what the kernel's own
    JH7110 watchdog (milestone 593 (a wedged kernel resets itself)) needs to turn its clock on, and
    the entropy and Ethernet bring-ups ask the server instead.
-3. The DesignWare GMAC control plane, which needs step 2 for its clocks and resets. Its
+3. The DesignWare GMAC control plane, which brings its clocks and resets up through step 2's
+   server with §320 (the JH7110 clock and reset wire)'s bring-up verb. Its
    userspace control process holds the channel and MAC pages. `kernel/src/designware_ethernet.rs`
    goes, and the kernel stops linking `crates/designware_ethernet`. radon proves it, so this step
    needs a person.
@@ -50,7 +51,8 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    `kernel/src/non_volatile_memory_express.rs` goes. The split keeps §86's option 4 addable.
 5. The JH7110 PMIC route, as §251 (restarting the machine is a kernel object the progenitor
    hands out) states it. A userspace route holds the I2C5 controller's page as a `DeviceFrame`,
-   asks the step 2 server for I2C5's clock and reset, and writes the AXP15060. `reboot` calls it
+   brings I2C5's clocks and reset up through the step 2 server (§320 (the JH7110 clock and
+   reset wire)), and writes the AXP15060. `reboot` calls it
    before `REBOOT`, with a timeout and a fallback to the plain `REBOOT` route.
    `kernel/src/reboot/designware_i2c.rs` and the PMIC half of `kernel/src/reboot/pmic.rs` go.
    radon proves it.
