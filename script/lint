@@ -3763,7 +3763,7 @@ python3 helpers/vendored_name_gates.py unit --check
 echo "==> a component reads its window addresses from the startup page (ceiling only falls)"
 # lint-scope: code
 # lint-quick
-# design/roadmap/proposals/a-process-reads-its-window-addresses-from-a-startup-page.md: a component
+# design/roadmap/1069-a-process-reads-its-window-addresses-from-a-startup-page.md: a component
 # finds each window on its startup page rather than at an address it compiled in.
 # helpers/window_address_literals.py counts `pair_page(0x`, `runtime_window(0x` and
 # `service_window(0x` calls in components/src/ and fails a count over its ceiling, or under it so

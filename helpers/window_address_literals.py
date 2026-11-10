@@ -3,7 +3,7 @@
 A component reads each of its windows from the startup page (`startup_page_contract`, through
 `user_mode_runtime::startup_window`) instead of compiling the address in, so the spawner that maps
 a window is the only side that names its address. See
-design/roadmap/proposals/a-process-reads-its-window-addresses-from-a-startup-page.md.
+design/roadmap/1069-a-process-reads-its-window-addresses-from-a-startup-page.md.
 
     python3 helpers/window_address_literals.py --check     # what script/lint runs
     python3 helpers/window_address_literals.py --list      # every counted hit, path:line: text
