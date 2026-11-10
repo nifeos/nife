@@ -1,0 +1,34 @@
+Falsifies `memory_regions::proofs::a_refused_carve_or_split_moves_nothing`.
+
+The defect: the split carves first and asks the ceiling second. It reads as a reordering with no
+effect, since both checks still run, but a split the ceiling refuses has already advanced the
+parent's watermark and raised its child count.
+
+Expected to fail: the harness's `assert!(run.snapshots() == before, "a refusal moved something")`,
+on a split refused at the region ceiling.
+
+diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
+--- a/crates/memory_regions/src/table.rs
++++ b/crates/memory_regions/src/table.rs
+@@ -421,11 +421,6 @@ impl<const N: usize> RegionTable<N> {
+     /// assert_eq!(table.usage(parent), Some((4, 8)), "the refused carve stays spent");
+     /// ```
+     pub fn split(&mut self, parent: u64, pages: u64) -> Option<u64> {
+-        let r = self.table.get(parent)?;
+-        split_new_watermark(r.pages, r.watermark, pages)?;
+-        if !self.charge(parent, Counted::Region) {
+-            return None;
+-        }
+         let (base_page, ceilings) = {
+             let r = self.table.get_mut(parent)?;
+             let new_watermark = split_new_watermark(r.pages, r.watermark, pages)?;
+@@ -435,6 +430,9 @@ impl<const N: usize> RegionTable<N> {
+             r.spent.children += pages;
+             (base_page, Ceilings::for_child_of(r))
+         };
++        if !self.charge(parent, Counted::Region) {
++            return None;
++        }
+         let child = self.table.insert_with(|_| Region {
+             base_page,
+             pages,

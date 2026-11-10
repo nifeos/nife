@@ -27,15 +27,18 @@ quantified over table states, not sampled.
 
 ## `crates/memory_regions`
 
-Four in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
+Seven in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
 untyped-region accounting behind object revocation
 (DECISIONS §16 (object revocation)). Two when this was written, and in `src/lib.rs`, where they no
-longer live; the table names those two. The scary property there is no double-free:
+longer live; the table names those two and the three that count objects under subtree ceilings (notes/memory-regions.md, "Subtree ceilings"). The scary property there is no double-free:
 
 | Harness | Property |
 |---|---|
 | `split_stays_within_budget_and_progresses` | a successful carve advances the watermark by exactly `want` without overflow and never past the parent's budget, and strictly progresses, so consecutive carves are disjoint runs within the parent |
 | `destroy_never_frees_a_child_to_the_allocator` | a pinned or parent region refuses; a **root** frees to the allocator; a **child** *never* does, its pages return to the parent. So a page reaches the allocator only through the one root that owns it, exactly once |
+| `a_refused_carve_or_split_moves_nothing` | a carve or split the table refuses leaves every region's pages, pin, child count and live counts as they were, whichever limit refused it |
+| `live_counts_are_exact_and_never_pass_a_ceiling` | after every step of a run, each region's live count of each kind equals what its subtree holds and is at most its ceiling |
+| `a_reclaimed_subtree_leaves_no_count_behind` | reclaiming a subtree leaf by leaf gives every count it held back, leaving the root's live counts at zero |
 
 The second is the no-double-free crux. The kernel (`untyped::split`, `untyped::destroy`) *calls*
 `memory_regions::split_new_watermark` and `memory_regions::destroy_outcome` rather than keeping a
