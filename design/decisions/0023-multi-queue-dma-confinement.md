@@ -1,5 +1,5 @@
 ---
-status: DECIDED
+status: AMENDED
 raised: 2026-07-28
 decided: 2026-07-28
 ratified_by: calef
@@ -42,3 +42,21 @@ receive buffer validates; the same buffer aimed at kernel memory is refused. The
 `a_second_queue_validates_on_its_own_block`. A good chain on queue 1 lands in queue 1's shadow
 block while a sentinel in queue 0's block is untouched. A queue-1 escape is refused the same as
 queue 0. See notes/net/the-driver-and-dhcp.md and notes/dma.md.
+
+## Where the validator applies
+
+Ruled 2026-11-10 (UTC). The validator is no named exception to §86's rule that confinement means
+an IOMMU (§86 (whether an NVMe driver can leave the kernel)). A virtio driver behind an IOMMU is
+confined by the IOMMU. A virtio-mmio driver has no IOMMU under it and is trusted, as an NVMe driver
+on a machine without one is.
+
+- QEMU's `virt` on aarch64 (SMMUv3), `virt` on riscv64 (`riscv-iommu-pci`) and `q35`
+  (`intel-iommu`) give a virtio device on PCI an IOMMU, and nife has a driver for each
+  (`kernel/src/arch/*/iommu.rs`).
+- A virtio-mmio device sits behind none of them, so no IOMMU translates its DMA.
+- nife has no virtio-iommu driver.
+
+`crates/direct_memory_access_validator` and its Kani harnesses stay in the tree as the proved form
+of §86's option 4, doorbell mediation. The kernel switches the shadow-ring validation on only for a
+target that runs virtio without an IOMMU, such as a cloud machine, once one is real. The
+validation this section describes is the mechanism for that case.
