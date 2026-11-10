@@ -17,6 +17,11 @@ on. It turns nothing on.
 
 Name: provisional. The slug, and every name below, is the lane's.
 
+Reuse: the startup page follows seL4's `BootInfo` (§15 (the native ABI) names it) and the read-only
+pages `std_runtime_contract` already places. A search of `crates/` and `vendor/` for an auxiliary
+vector or boot-information reader found two, neither a window table: relibc's, which reads Linux's
+auxiliary vector, and `machine_discovery`'s, which reads the loader's handoff to the kernel.
+
 ## The problem
 
 A component finds each of its memory windows (a shared page, a device register page, a DMA region,
@@ -24,7 +29,7 @@ a transfer buffer) at a virtual address compiled into it. The spawner that maps 
 in the same number. Two costs follow.
 
 1. Two components can never share one address space, because nothing stops their numbers from
-   colliding; `address_space_map`'s own `BUGS` section says pair pages are checked for membership
+   colliding; `address_space_map`'s own `BUGS` section says it checks pair pages for membership
    and not for collisions within one process.
 2. Each address is an agreement between two programs. Where both sides read one constant from a
    contract crate, that agreement is code. Where each side writes its own literal and a comment says
@@ -45,7 +50,7 @@ Counted on the tree at the lane's base, with the commands in the pull request bo
   `components/src/non_volatile_memory_express.rs`, each with its own constant.
 - The kernel spawners in `kernel/src/user/*_service.rs` place windows in 14 files, and the
   userspace builder `system_initializer` places 27 more in `src/layout.rs`.
-- Addresses are reused on purpose across programs that never share a space: `0x0090_0000` is the
+- Programs that never share a space reuse addresses on purpose: `0x0090_0000` is the
   DMA region of the e1000e, DesignWare Ethernet and virtio network servers, the entropy server and
   the keyboard driver.
 
@@ -67,7 +72,7 @@ The three words are full for the drivers that hold the most windows:
 | DesignWare mobile storage | role, clock, bus width, queue depth | window's first sector | window length |
 | xHCI | DMA physical base | DMA pages and register mask | free |
 
-So four of the five drivers cannot be told where their windows are without a new place to say it, and the fifth has one word for a data plane and up to sixteen register pages. Smaller components
+So the spawner has no room to tell four of the five drivers where their windows are. The fifth has one free word for a data plane and up to sixteen register pages. Smaller components
 (the keyboard driver, the credentialer, the disk tree) leave words free, but packing an address
 into whichever word is free would mint one more wire format per component and would still leave
 the drivers unconverted.
@@ -110,7 +115,7 @@ The options:
 - **B. The component maps its own windows.** The spawner grants each window as a frame capability
   and the component maps it with `address_space::MAP_INTO` where its own allocator says, as a
   Fuchsia process maps the VMOs in its bootstrap message and a Genode component attaches its
-  dataspaces (both recalled, not reread). No address is fixed at all. It widens every component's
+  dataspaces (both recalled, not reread). No address stays fixed at all. It widens every component's
   authority (a capability over its own address space with write rights, so it may remap its own
   pages), spends a capability slot per window, and moves mapping and its failure paths
   into every component.
@@ -124,14 +129,14 @@ The options:
 Why A over each:
 
 - Over B: A changes no component's authority and adds no capability, and a component reads a table
-  where B has it map, check and unwind. B is the more capability-native shape; it is refused here
+  where B has it map, check and unwind. B is the more capability-native shape; this proposal refuses it
   for the authority it adds, not for its work.
 - Over C: A touches neither the entry contract nor the syscall surface.
 - Over D: D leaves the collision, which is the half of the problem the request names first.
-- At equal cost: A is still chosen over B and C. Against D it is chosen because D does not solve
+- At equal cost: A still wins over B and C. It wins over D because D does not solve
   the problem; D is less work, and that is the only argument for it.
 
-Reversibility: the page's layout is read by every converted component, so once several read it, a
+Reversibility: every converted component reads the page's layout, so once several read it, a
 change is a coordinated change across all of them. The interface id, once minted, is never reused.
 Both are why this waits for a ruling.
 
@@ -149,5 +154,5 @@ Every conversion. Under A the work is three steps, each green on main alone:
 
 Under D, step 3 alone applies, counting prose pairs instead.
 
-Nothing drives a shared address space in the tree yet: no two components are placed in one today.
+Nothing drives a shared address space in the tree yet: no spawner places two components in one today.
 The architect's request is the driver.
