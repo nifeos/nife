@@ -3,7 +3,7 @@
 An appendix to [the milestone](../1061-file-allocation-table-outside-review.md).
 
 - The callers pin a template revision at or past `ced625f4` (P0-2).
-- A green full `mutation` run is recorded at the release commit, with each survivor killed by a
+- The release commit has a green full `mutation` run, with each survivor killed by a
   test or exempted with its reason (P0-1).
 - The first-publish token is in place at the architect's go to publish (P0-3).
 - The weekly `settings drift` job is green, with `check / mutation-diff` required (P1-3).
@@ -12,8 +12,8 @@ An appendix to [the milestone](../1061-file-allocation-table-outside-review.md).
 - The README's `BUGS` and the crate overview state the rename exception to the crash-ordering claim
   (P1-2).
 - A default format chooses its cluster size by volume size, one sector stays an explicit choice,
-  and the pinned digests and the README's size examples match (P1-4), or the item is refused with
-  its reason in the README's `BUGS`.
+  and the pinned digests and the README's size examples match (P1-4), or the README's `BUGS`
+  refuses the item with its reason.
 - `VolumeLayout::new(options, clock)` takes a `VolumeLayoutOptions` (P1-5).
 - `CivilDateTime` has private fields, a checked `new` with a test for each impossible date it
   refuses, and six getters (P1-6).

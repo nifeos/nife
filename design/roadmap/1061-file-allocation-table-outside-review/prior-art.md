@@ -22,8 +22,8 @@ eight by downloads. The keywords of P2-8 put this crate beside them.
 
 Verification is the distinct claim. hadris-fat-raw also runs Kani proofs; the ACL2 LoFAT and
 HiFAT models were co-simulated against mtools and Linux as research, not as a driver; FSCQ and
-Cogent proved other file systems. No FAT crate was found that ships a falsification patch per
-harness, so that is this crate's claim. Being the first FAT crate with Kani proofs is not, and the
+Cogent proved other file systems. The review found no FAT crate that ships a falsification patch
+per harness, so that is this crate's claim. Being the first FAT crate with Kani proofs is not, and the
 README does not make that claim.
 
 A concrete example: a hostile image whose cluster chain loops back on itself. rust-fatfs's tracker

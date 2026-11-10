@@ -31,7 +31,7 @@ the tests against rust-fatfs (through `lamfat`) and `fsck.fat`, and the stranger
 A stranger finds `file_allocation_table` on crates.io, reads its README, depends on it, and reads,
 writes or formats a FAT12, FAT16 or FAT32 volume without asking anyone, on a volume another system
 wrote and on one another system will read. Everything that would break that stranger later (a public
-name, a signature, a default that changes output bytes) is settled before the first tag, and
+name, a signature, a default that changes output bytes) gets settled before the first tag, and
 everything that only improves the crate waits for a later minor release.
 
 The organization's publishing hold exempts this crate. What stands in its place is an assessment of
@@ -174,8 +174,8 @@ target `fuzz/fuzz_targets/file_allocation_table_writer.rs` builds the value by l
 standard library spells that `trim_ascii_end` on `[u8]`, and a label holds no other ASCII
 whitespace, so the meanings coincide on every value the type holds.
 
-Ruled 2026-11-10. It is renamed `trim_ascii_end`, with no `doc(alias)` for the old name, since the
-crate has no release. A test pins that the result equals `as_bytes().trim_ascii_end()` for a label
+Ruled 2026-11-10. It takes the name `trim_ascii_end`, with no `doc(alias)` for the old name, since
+the crate has no release. A test pins that the result equals `as_bytes().trim_ascii_end()` for a label
 padded with spaces. One-way (name). S.
 
 #### P1-8. A directory is a bare `u32`
@@ -198,8 +198,8 @@ opened from the entry `create_file` returned reads 0 bytes with no error. Wideni
 after release breaks every caller that matches it; doing it now breaks nobody.
 
 Ruled 2026-11-10. One generic `OpenError<E>`, with `IsADirectory`, `IsAVolumeLabel`, `EntryChanged`
-and `Chain(ChainError<E>)`, replaces `FileOpenError` and is shared by `Volume::open_file_reader` and
-`WritableVolume::open_file_writer`. Both verify the directory slot at open. A test pins that
+and `Chain(ChainError<E>)`, replaces `FileOpenError`, and `Volume::open_file_reader` and `WritableVolume::open_file_writer`
+both return it. Both verify the directory slot at open. A test pins that
 `EntryChanged` means the same in each: the slot no longer holds the entry the caller passed. The
 stale-entry entry in the README's `BUGS` shrinks to looking the entry up again after a write. The
 name is provisional until the release review. nife's fuzz target
@@ -226,9 +226,9 @@ Every name these rulings bring is provisional until the release review ratifies 
 For the architect, one-way, not yet ruled: the tag and the first publish, each asked separately once
 the P0 and P1 items have closed.
 
-The maintainers' provisional calls: every two-way item above and in the appendix, among them the
+The maintainers make every two-way call above and in the appendix provisionally, among them the
 default cluster size (P1-4), untailed aliases (P2-2), the lenient open (P2-3) and the keywords
-(P2-8), and the names a lane mints for them, which go through the naming review before any tag.
+(P2-8). The names a lane mints for them go through the naming review before any tag.
 
 ## Prior art
 
@@ -241,10 +241,10 @@ The checks are in [the done-when appendix](1061-file-allocation-table-outside-re
 
 ## BUGS
 
-- The power-loss findings (P1-1 and P1-2) were read, not reproduced: no fault-injecting
-  `WritableSectorDevice` exists in the tests. The lane that fixes P1-1 adds one.
+- The reviewer read the power-loss findings (P1-1 and P1-2) and did not reproduce them: no
+  fault-injecting `WritableSectorDevice` exists in the tests. The lane that fixes P1-1 adds one.
 - Every statement about another crate's behavior is a reading of its source or documentation, not
-  an execution; only the download figures were fetched.
+  an execution; the reviewer fetched only the download figures.
 - The one-shard count of P0-2 rests on the census line in `.github/mutants-exempts`, not on a count
   from `cargo mutants --list`.
 - The P2 order is the reviewer's judgment of what a user asks for first. Nobody outside has asked

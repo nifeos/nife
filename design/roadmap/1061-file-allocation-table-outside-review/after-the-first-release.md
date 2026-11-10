@@ -37,7 +37,7 @@ reads that directory. S.
 ## P2-5. Interoperability with Linux tools beyond `fsck`
 
 The suite compares against rust-fatfs and `fsck.fat`, works on `mkfs.fat` volumes, and reads two
-macOS images; the only third-party driver test runs on macOS alone and is ignored. `mtools` (`mdir`,
+macOS images; the only third-party driver test runs on macOS alone, and the suite ignores it. `mtools` (`mdir`,
 `mcopy`, `mattrib`) runs unprivileged and reads and writes images. Change: a test that uses it when
 present, the way the `fsck` check does. S to M.
 
@@ -79,7 +79,7 @@ Name rust-fatfs, embedded-sdmmc and hadris-fat, and what each has that this crat
 
 ## P2-12. `.github/mutants-exempts` contradicts itself
 
-Its header says no mutant is missed and no line is expected below, and eleven exemption lines
+Its header says the run missed no mutant and expects no line below, and eleven exemption lines
 follow. The gate reads the file, so its text states the present rule only. S.
 
 ## P2-13. Text a stranger run left behind
