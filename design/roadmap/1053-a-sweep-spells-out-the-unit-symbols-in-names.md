@@ -54,5 +54,6 @@ Names that use a unit symbol survive because the unit ratchet counts only some u
 - **Recorded.** `ppm` stays in `helpers/vendored_name_gates.py` (`UNIT_UNSETTLED`): it is the
   Portable PixMap format nearly everywhere, and the one parts-per-million quantity has no row in the
   template's units table and no ruling.
-- **None.** Every other name that wrote a unit symbol in a nife crate or program now spells the unit
-  out, and no standalone crate repository holds one.
+- **Done.** Every other name that wrote a unit symbol in a nife crate or program spells the unit
+  out, no standalone crate repository holds one, and `helpers/vendored_name_gates.py` counts every
+  unit of the template's table at a ceiling of 0.
