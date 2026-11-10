@@ -1,8 +1,8 @@
 //! **The rungs of the boot ladder, as the exact bytes that appear on a console** (milestone 268).
 //!
 //! Each rung's line is a contract between the program that prints it and the programs that read
-//! it, on a bench, in CI or in a photograph of a monitor. The kernel prints [`BANNER`], [`MACHINE`]
-//! and [`SELF_TEST`]; `swish` prints [`PROMPT`]; `serial_console` matches all of them (rule 7 of
+//! it, on a bench, in CI or in a photograph of a monitor. The kernel prints [`BANNER`] and [`MACHINE`];
+//! `boot_self_test` prints [`SELF_TEST`]; `swish` prints [`PROMPT`]; `serial_console` matches all of them (rule 7 of
 //! `AGENTS.md`). Every constant is the stable head of a line whose tail carries numbers: a matcher
 //! keys on the head, which never changes, and the tail is free to improve. Each carries its own
 //! trailing space or punctuation, so a match is on a boundary. See notes/boot-ladder.md.
@@ -26,6 +26,9 @@
 
 #![no_std]
 
+pub mod kernel_half;
+pub mod verdict;
+
 /// **The earliest line: `nife on <architecture> (...)`.**
 ///
 /// Printed by `kernel_main` as the first thing after `console::initialize`, on every architecture since
@@ -47,9 +50,11 @@ pub const MACHINE: &str = "nife machine: ";
 /// **The self-test verdict: `nife self-test: 13 of 13 passed`, `... , 2 absent: <names>`, or
 /// `... , 1 FAILED: <names>`.**
 ///
-/// Printed by `kernel/src/self_test.rs` after the description and before anything is handed to
-/// userspace. The counts are there on success as well as on failure, so that "ran nothing and
-/// passed" is distinguishable from "ran the set and passed".
+/// Printed by `boot_self_test`, the userspace program the progenitor runs before the shell, once
+/// it has run its checks on top of the kernel's (`kernel/src/self_test.rs`); the kernel prints it
+/// itself only when it has no progenitor to hand the rest to. [`verdict::Verdict`] renders it. The
+/// counts are there on success as well as on failure, so that "ran nothing and passed" is
+/// distinguishable from "ran the set and passed".
 pub const SELF_TEST: &str = "nife self-test: ";
 
 /// **What a red verdict says before it names the checks that failed.**
@@ -71,12 +76,14 @@ pub const SELF_TEST_FAILED: &str = "FAILED: ";
 /// Name: provisional, minted 2026-10-20 (UTC) by lane `milestone/890-tours-to-self-test`.
 pub const SELF_TEST_ABSENT: &str = "absent: ";
 
-/// **The boot self-test's checks, by name, in the order they run** (milestone 268).
+/// **The boot self-test's checks, by name, in the order the verdict names them** (milestone 268).
 ///
-/// One list for every architecture. The kernel takes its check names from here and counts its
-/// verdict against this list rather than against what ran: a listed check that did not run fails
-/// by name, an unlisted one fails by name, and `serial_console` fails a verdict whose total is not
-/// this list's length. See notes/boot-ladder.md, "One list of checks, for every architecture".
+/// One list for every architecture and both halves: the kernel runs the checks of its own
+/// internals, and `boot_self_test` the ones that need a user program (milestone 1063). Each takes
+/// its check's index from here at compile time (`verdict::check`), so an unlisted check does not
+/// build, and the verdict counts against this list rather than against what ran: a listed check
+/// that did not run fails by name, and `serial_console` fails a verdict whose total is not this
+/// list's length. See notes/boot-ladder.md, "One list of checks, for every architecture".
 ///
 /// Names provisional (milestone 268): they are printed, and matched, so they are a contract.
 /// `device_interrupt` (spelled `deviceirq` until 2026-10-26 (UTC)) awaits a ruling, and so does
@@ -116,10 +123,10 @@ pub const SELF_TEST_CHECKS_EARLIER: &[usize] = &[5, 13];
 
 /// **The boot's middle stages ran to their end**: `nife: the capability core runs on <arch>.`
 ///
-/// Printed by `kernel_main` on all three architectures after the [`SELF_TEST`] verdict and any
-/// tour, just before the hand-over, so it says the machine was described and every check in
-/// [`SELF_TEST_CHECKS`] ran. It does not say they passed; the verdict says that. The `<arch>` is
-/// the kernel's own `arch::NAME`.
+/// Printed by `kernel_main` on all three architectures after the kernel's own self-test checks,
+/// just before the hand-over, so it says the machine was described and the kernel's half of
+/// [`SELF_TEST_CHECKS`] ran. The [`SELF_TEST`] verdict follows it, from the hand-over, and says
+/// whether they passed. The `<arch>` is the kernel's own `arch::NAME`.
 pub const TOUR: &str = "nife: the capability core runs on ";
 
 /// **Userspace is up and the shell is offering a prompt.**
