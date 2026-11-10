@@ -183,7 +183,7 @@ After the passes:
 
 | line | what it records | PASS | FAIL |
 |---|---|---|---|
-| `network-bench: nic : 8086:15e3 I219-LM5 (SPT), link up, ...` | the link state: `DEVICE_STATUS_LINK_UP` rose within 3 s (`LINK_WAIT_MS`) | `link up` | `link NOT UP` then `FAILED: no link` |
+| `network-bench: nic : 8086:15e3 I219-LM5 (SPT), link up, ...` | the link state: `DEVICE_STATUS_LINK_UP` rose within 3 s (`LINK_WAIT_MILLISECONDS`) | `link up` | `link NOT UP` then `FAILED: no link` |
 | `network-bench: phy : id 0x...` | the identifier pass 1 read | any value | none |
 | `network-bench: preflight dmar scope : PASS` | the IOMMU owns the NIC | `PASS` | `FAIL`: record it; the frame counts still stand |
 | `network-bench: dhcp : leased a.b.c.d` | frames both ways at the protocol level | a lease | `waiting for a lease` is the last line |

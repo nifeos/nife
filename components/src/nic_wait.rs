@@ -24,21 +24,21 @@ pub(super) fn frame_taken() {
 /// **Wait for the NIC to need attention again, without stalling smoltcp's timers or the caller's
 /// bound.**
 ///
-/// The wait ends at the earliest of a frame, smoltcp's next timer and `deadline_ms` (the caller's
+/// The wait ends at the earliest of a frame, smoltcp's next timer and `deadline_milliseconds` (the caller's
 /// bound, on `instant`'s clock), and blocks on the interrupt alone only when neither exists. On the
 /// interrupt alone, an exchange waiting on one of smoltcp's own timers (a retransmit whose ACK was
 /// dropped) deadlocks, because no frame is coming; without the deadline, a listener nobody connects
 /// to never lets `service_until`'s 15 s bound expire. A polled NIC sleeps at most
-/// `e1000e_transport::POLL_MS` instead. See notes/net/the-outbound-gates.md, "The wait ends at the
+/// `e1000e_transport::POLL_MILLISECONDS` instead. See notes/net/the-outbound-gates.md, "The wait ends at the
 /// caller's deadline".
 pub(super) fn wait_for_nic(
     iface: &mut Interface,
     dev: &mut Nic,
     sockets: &mut SocketSet,
-    deadline_ms: Option<i64>,
+    deadline_milliseconds: Option<i64>,
 ) {
     match dev {
-        // A polled NIC sleeps at most `e1000e_transport::POLL_MS`, so the caller's bound holds.
+        // A polled NIC sleeps at most `e1000e_transport::POLL_MILLISECONDS`, so the caller's bound holds.
         Nic::Gigabit(nic) => return poll_without_interrupt(iface, nic.frame_waiting(), sockets),
         Nic::DesignWare(nic) => {
             return poll_without_interrupt(iface, nic.frame_waiting(), sockets);
@@ -46,8 +46,8 @@ pub(super) fn wait_for_nic(
         Nic::Virtio(_) => {}
     }
     let at = instant();
-    let left =
-        deadline_ms.map(|end| Duration::from_millis((end - at.total_millis()).max(0) as u64));
+    let left = deadline_milliseconds
+        .map(|end| Duration::from_millis((end - at.total_millis()).max(0) as u64));
     let Some(delay) = (match (iface.poll_delay(at, sockets), left) {
         (Some(timer), Some(left)) => Some(timer.min(left)),
         (timer, left) => timer.or(left),
@@ -86,7 +86,7 @@ pub(super) fn wait_for_nic(
 /// a scheduler tick of the last frame taken, the wait is a yield, because a sleep could not end
 /// before that tick and a stream's next segment comes sooner (`socket_contract::polled_wait` has
 /// the argument and its measurements). After that it sleeps until smoltcp's own deadline or
-/// `e1000e_transport::POLL_MS`, whichever is sooner, and the timer rounds that up to a tick. The
+/// `e1000e_transport::POLL_MILLISECONDS`, whichever is sooner, and the timer rounds that up to a tick. The
 /// timer and notification are the same pair the virtio server's retransmit wait uses (slots 5
 /// and 6).
 fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &mut SocketSet) {
@@ -106,7 +106,7 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
         LAST_FRAME.load(Ordering::Relaxed),
         tick,
         due,
-        e1000e_transport::POLL_MS * 1000,
+        e1000e_transport::POLL_MILLISECONDS * 1000,
     ) {
         polled_wait::Next::Look => {
             user_mode_runtime::yield_now();

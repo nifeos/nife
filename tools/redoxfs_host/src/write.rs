@@ -34,8 +34,8 @@ pub fn mkfs(image: &Path, size: u64) -> Result<(), String> {
     let _ = std::fs::remove_file(image); // ignore "not found"; any other error surfaces below
     let disk = DiskFile::create(image, size)
         .map_err(|e| format!("cannot create {}: {e}", image.display()))?;
-    let (seconds, nsec) = now();
-    FileSystem::create(disk, None, seconds, nsec)
+    let (seconds, nanoseconds) = now();
+    FileSystem::create(disk, None, seconds, nanoseconds)
         .map_err(|e| format!("mkfs on {} failed: {e}", image.display()))?;
     Ok(())
 }
@@ -57,7 +57,7 @@ pub(crate) fn put_transaction<D: Disk>(
     let Some((name, parents)) = comps.split_last() else {
         return Err("no file name given".to_string());
     };
-    let (seconds, nsec) = now();
+    let (seconds, nanoseconds) = now();
     let parent = resolve(transaction, parents)?;
     if !parent.data().is_dir() {
         return Err(format!("/{}: not a directory", parents.join("/")));
@@ -65,17 +65,23 @@ pub(crate) fn put_transaction<D: Disk>(
     let node_ptr = match transaction.find_node(parent.ptr(), name) {
         Ok(node) => {
             transaction
-                .truncate_node(node.ptr(), 0, seconds, nsec)
+                .truncate_node(node.ptr(), 0, seconds, nanoseconds)
                 .map_err(|e| format!("{name}: truncate failed: {e}"))?;
             node.ptr()
         }
         Err(_) => transaction
-            .create_node(parent.ptr(), name, Node::MODE_FILE | 0o644, seconds, nsec)
+            .create_node(
+                parent.ptr(),
+                name,
+                Node::MODE_FILE | 0o644,
+                seconds,
+                nanoseconds,
+            )
             .map_err(|e| format!("{name}: create failed: {e}"))?
             .ptr(),
     };
     transaction
-        .write_node(node_ptr, 0, data, seconds, nsec)
+        .write_node(node_ptr, 0, data, seconds, nanoseconds)
         .map_err(|e| format!("{name}: write failed: {e}"))?;
     Ok(())
 }

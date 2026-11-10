@@ -676,16 +676,16 @@ fn build_leg(arch: &str, fresh: bool) -> bool {
         // the FS server has to exist first so the archive carries it.
         redoxfs_server_build(X86_TARGET)
             && mkdisk()
-            && mkredoxfs_of(SWISH_CHECK_DISK_MIB)
+            && mkredoxfs_of(SWISH_CHECK_DISK_MEBIBYTES)
             && if probe_features().is_empty() {
                 uefi_image()
             } else {
                 uefi_image_with(Some(probe_features()))
             }
     } else if riscv {
-        redoxfs_server_build(RISCV_TARGET) && mkdisk() && mkredoxfs_of(SWISH_CHECK_DISK_MIB) && has_initial_ramdisk_riscv()
+        redoxfs_server_build(RISCV_TARGET) && mkdisk() && mkredoxfs_of(SWISH_CHECK_DISK_MEBIBYTES) && has_initial_ramdisk_riscv()
     } else {
-        redoxfs_server_build(TARGET) && mkredoxfs_of(SWISH_CHECK_DISK_MIB) && mkdisk() && user()
+        redoxfs_server_build(TARGET) && mkredoxfs_of(SWISH_CHECK_DISK_MEBIBYTES) && mkdisk() && user()
     } // After the archive build, whose packages it copies: a package the image's catalog
     // vouches for, a tampered copy, and an unvouched program, on the disk for the installer's
     // lines in the script (milestone 198 rung 3a).
@@ -1060,8 +1060,8 @@ fn type_one_line(
     // `--input-race` sets its own, so Enter lands inside the input driver's hold.
     let pause = std::env::var("NIFE_SWISH_ENTER_PAUSE_MS")
         .ok()
-        .and_then(|ms| ms.parse().ok())
-        .or((probe() == Probe::InputRace).then_some(INPUT_RACE_ENTER_PAUSE_MS))
+        .and_then(|milliseconds| milliseconds.parse().ok())
+        .or((probe() == Probe::InputRace).then_some(INPUT_RACE_ENTER_PAUSE_MILLISECONDS))
         .map(Duration::from_millis);
     let typed = match pause {
         Some(p) if !enter.is_empty() => {
@@ -1460,11 +1460,11 @@ fn stack_gauge_failures(
 /// along, as 576 used, and nothing read it: this is the read that turns it from intermittent
 /// into a failure on every run.
 fn job_pool_failure(filtered: &str) -> Option<String> {
-    let used = yours_used_kib(filtered)?;
-    (used > YOURS_CEILING_KIB).then(|| {
+    let used = yours_used_kibibytes(filtered)?;
+    (used > YOURS_CEILING_KIBIBYTES).then(|| {
         format!(
             "`free` reports {used} KiB of the progenitor's job pool in use, above the \
-             {YOURS_CEILING_KIB} KiB that `free` itself and one job the reaper has not reached yet \
+             {YOURS_CEILING_KIBIBYTES} KiB that `free` itself and one job the reaper has not reached yet \
              account for. Something left a region behind: memory_regions' \
              `RegionTable::return_to_parent` is where a returned job's pages go back, and \
              notes/swish-check-flake.md has how this was traced."
@@ -1479,9 +1479,9 @@ fn job_pool_failure(filtered: &str) -> Option<String> {
 /// script has no such pair, as on a leg that skips it.
 fn held_cycles_failure(filtered: &str) -> Option<String> {
     let (_, from_before) = filtered.split_once(CYCLES_BEFORE)?;
-    let before = yours_used_kib(from_before)?;
+    let before = yours_used_kibibytes(from_before)?;
     let (_, from_after) = from_before.split_once(CYCLES_AFTER)?;
-    let after = yours_used_kib(from_after)?;
+    let after = yours_used_kibibytes(from_after)?;
     (after > before).then(|| {
         format!(
             "`free` reports {after} KiB of the shell's budget in use after a hundred held jobs, \

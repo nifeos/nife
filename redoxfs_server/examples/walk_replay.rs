@@ -48,14 +48,14 @@ fn main() {
     let reads0 = srv.disk_mut().inner().reads;
     let cold = walk_model::walk(&mut srv, root).expect("cold walk");
     let reads1 = srv.disk_mut().inner().reads;
-    let mut ns = Vec::with_capacity(runs);
+    let mut nanoseconds = Vec::with_capacity(runs);
     for _ in 0..runs {
         let t0 = Instant::now();
         walk_model::walk(&mut srv, root).expect("warm walk");
-        ns.push(t0.elapsed().as_nanos() as u64);
+        nanoseconds.push(t0.elapsed().as_nanos() as u64);
     }
     let reads2 = srv.disk_mut().inner().reads;
-    ns.sort_unstable();
+    nanoseconds.sort_unstable();
     // A namespace change forgets the memo; what is left is the block cache under it.
     let h = srv.create_file_at(0, &named("scratch")).expect("create");
     srv.close(h).expect("close");
@@ -87,8 +87,8 @@ fn main() {
     );
     println!(
         "server time per warm walk: median {} ns, min {} ns, max {} ns ({runs} runs)",
-        ns[runs / 2],
-        ns[0],
-        ns[runs - 1]
+        nanoseconds[runs / 2],
+        nanoseconds[0],
+        nanoseconds[runs - 1]
     );
 }

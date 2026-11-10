@@ -37,7 +37,9 @@
 #    root in the copy only, so the later steps still report something.
 # 2. Files a stranger needs: a README, and `LICENSE-MIT` and `LICENSE-APACHE` at the crate's root
 #    with `license = "MIT OR Apache-2.0"` in the manifest, nife's own license, or that pair joined
-#    with the license of a file the crate adapts (`(MIT OR Apache-2.0) AND ISC`).
+#    with the license of a file the crate adapts (`(MIT OR Apache-2.0) AND ISC`). The field and the
+#    notices the crate carries must agree both ways: each notice opens with an
+#    `SPDX-License-Identifier:` line, and the set of those ids equals the field's `AND` terms.
 # 3. Citations of this tree, in every shipped text file (and an `include_bytes!` or `include_str!`
 #    that reads outside the crate, which `cargo package` cannot ship): `§N`, `milestone N`, paths
 #    into `design/`, `notes/`, `script/`, `helpers/` or `briefs/`, the architect's name, and
@@ -129,7 +131,7 @@ def copy_crate(crate, dest):
         to = os.path.join(dest, rel)
         os.makedirs(os.path.dirname(to), exist_ok=True)
         shutil.copy2(os.path.join(root, f), to)
-        if rel.endswith(crate_release.TEXT):
+        if rel.endswith(crate_release.TEXT) or crate_release.is_notice_carrier(rel):
             texts[rel] = open(to, errors="replace").read()
     return texts
 

@@ -120,7 +120,7 @@ pub struct NonVolatileMemoryExpress {
     admin_sq: SubmissionQueue,
     admin_cq: CompletionQueue,
     /// The namespace's geometry, from IDENTIFY: size and blocks-per-filesystem-block.
-    ns: IdentifyNamespace,
+    namespace: IdentifyNamespace,
     /// The next command identifier. Echoed back in completions and checked there; monotonic and
     /// wrapping, so a stale completion cannot impersonate a fresh one within 65536 commands.
     cid: u16,
@@ -145,7 +145,7 @@ impl NonVolatileMemoryExpress {
             direct_memory_access_va,
             admin_sq: SubmissionQueue::new(ENTRIES),
             admin_cq: CompletionQueue::new(ENTRIES),
-            ns: IdentifyNamespace::default(),
+            namespace: IdentifyNamespace::default(),
             cid: 0,
         };
         let cap = Capabilities(c.reg64(registers::CONTROLLER_CAPABILITIES_REGISTER));
@@ -224,8 +224,8 @@ impl NonVolatileMemoryExpress {
                 .and_then(|b| b.try_into().ok())
                 .map_or(0, u64::from_le_bytes),
         };
-        c.ns = non_volatile_memory_express::parse_identify_namespace(data).ok_or(refused)?;
-        if c.ns.blocks == 0 || c.ns.blocks_per_transfer(BLOCK_SIZE as u64).is_none() {
+        c.namespace = non_volatile_memory_express::parse_identify_namespace(data).ok_or(refused)?;
+        if c.namespace.blocks == 0 || c.namespace.blocks_per_transfer(BLOCK_SIZE as u64).is_none() {
             return Err(refused);
         }
 
@@ -245,7 +245,7 @@ impl NonVolatileMemoryExpress {
     /// The disk's capacity in bytes: the blk-IPC `SIZE` answer, which the EL0 server is told
     /// rather than left to ask, because asking means IDENTIFY and IDENTIFY is an admin command.
     pub(crate) fn size_bytes(&self) -> u64 {
-        self.ns.capacity_bytes()
+        self.namespace.capacity_bytes()
     }
 
     /// Take the controller down (`CC.EN` cleared, `CSTS.RDY` followed), then free its DMA region.
@@ -274,7 +274,7 @@ impl NonVolatileMemoryExpress {
             dstrd: self.dstrd,
             // `new` refused a namespace this returns `None` for, so the unwrap cannot fire.
             blocks_per_transfer: self
-                .ns
+                .namespace
                 .blocks_per_transfer(BLOCK_SIZE as u64)
                 .expect("new() refuses a namespace whose format 4096 is not a multiple of"),
             entries: ENTRIES,

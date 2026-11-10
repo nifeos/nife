@@ -11,38 +11,28 @@ naming the crate and the file or the term.
 
 Usage: helpers/license_match.py [--selftest] [crates-dir]
 """
-import re
 import sys
 import tomllib
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import crate_release  # noqa: E402
+
 OWN = 'MIT OR Apache-2.0'
-OWN_IDS = {'MIT', 'Apache-2.0'}
-TEXT = ('.rs', '.md', '.toml', '.txt')
-MARKER = re.compile(r'SPDX-License-Identifier:([^`\n]*)')
-ID = re.compile(r'[A-Za-z0-9][A-Za-z0-9.+-]*')
-OPERATORS = {'AND', 'OR', 'WITH'}
-
-
-def ids_in(text):
-    """The license identifiers named on `SPDX-License-Identifier:` lines in `text`."""
-    found = set()
-    for m in MARKER.finditer(text):
-        found |= {t for t in ID.findall(m.group(1)) if t not in OPERATORS}
-    return found
 
 
 def carried(crate_dir):
-    """{identifier: first file naming it} over the crate's text files, minus the crate's own."""
-    out = {}
+    """{identifier: first file naming it} over the crate's files, minus the crate's own pair.
+
+    The reading is `crate_release.notice_licenses`, the same one `script/crate-standalone` runs.
+    """
+    files = {}
     for path in sorted(crate_dir.rglob('*')):
-        parts = path.relative_to(crate_dir).parts
-        if (not path.is_file() or path.suffix not in TEXT or parts[0] in ('target', 'fuzz')
-                or path.name.startswith('LICENSE')):
-            continue
-        for ident in sorted(ids_in(path.read_text(errors='replace')) - OWN_IDS):
-            out.setdefault(ident, str(path.relative_to(crate_dir)))
-    return out
+        rel = path.relative_to(crate_dir)
+        if path.is_file() and rel.parts[0] not in ('target', 'fuzz') \
+                and crate_release.is_notice_carrier(rel.as_posix()):
+            files[rel.as_posix()] = path.read_text(errors='replace')
+    return crate_release.notice_licenses(files)
 
 
 def field_of(manifest, workspace_license):
@@ -107,8 +97,11 @@ def selftest():
         _crate(base, 'plain', pair, {'src/lib.rs': '//! nothing adapted\n'})
         _crate(base, 'adapts', isc, {'src/lib.rs': notice})
         _crate(base, 'own_marker', pair, {'src/lib.rs': '//! SPDX-License-Identifier: MIT OR Apache-2.0\n'})
-        _crate(base, 'prose_marker', f'({OWN}) AND BSD-2-Clause AND BSD-3-Clause',
-               {'src/lib.rs': '//! are `SPDX-License-Identifier: BSD-2-Clause AND BSD-3-Clause`, with the\n'})
+        _crate(base, 'two_in_one_line', f'({OWN}) AND BSD-2-Clause AND BSD-3-Clause',
+               {'src/lib.rs': '//! SPDX-License-Identifier: BSD-2-Clause AND BSD-3-Clause\n'})
+        _crate(base, 'license_file', isc, {'src/lib.rs': '', 'LICENSE-ISC': 'SPDX-License-Identifier: ISC\n'})
+        _crate(base, 'prose_quote', pair,
+               {'src/lib.rs': '//! Read, not adapted: `SPDX-License-Identifier: GPL-2.0`, so no term.\n'})
         assert findings(base / 'crates', None) == [], findings(base / 'crates', None)
     cases = {
         'notice missing from the field': ('adapts_unnamed', pair, {'src/lib.rs': notice}, 'carries ISC'),

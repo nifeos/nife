@@ -480,8 +480,8 @@ pub(crate) fn quiet_uart_interrupt() {
 /// Name: provisional (milestone 198's rung 2a): calef names public items.
 #[cfg(target_arch = "x86_64")]
 pub fn read_line(out: &mut [u8], patience: core::time::Duration) -> Option<usize> {
-    let hz = crate::arch::timer::frequency_checked()?;
-    let deadline = crate::arch::timer::now() + hz * patience.as_secs();
+    let hertz = crate::arch::timer::frequency_checked()?;
+    let deadline = crate::arch::timer::now() + hertz * patience.as_secs();
     let mut n = 0usize;
     loop {
         // The lock is taken per byte rather than held across the wait, because holding it would

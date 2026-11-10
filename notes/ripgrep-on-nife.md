@@ -164,7 +164,7 @@ often, and nothing else, in any order, since RedoxFS and APFS list a directory d
 beside `RG_WALK_SECONDS` in `xtask/src/swish_check/launch.rs`.
 
 The walk exposed three faults, each fixed in the same change, among them swish-check's image
-growing to 32 MiB (`SWISH_CHECK_DISK_MIB`); [`walk-faults.md`](ripgrep-on-nife/walk-faults.md) has
+growing to 32 MiB (`SWISH_CHECK_DISK_MEBIBYTES`); [`walk-faults.md`](ripgrep-on-nife/walk-faults.md) has
 all three.
 
 ## The heap and `--no-mmap`, decided by measurement

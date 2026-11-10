@@ -63,10 +63,10 @@ const PCI_CONFIG_DATA: u16 = 0xcfc;
 
 /// Spin for `ms` of wall clock. Only on the way to a reset, where yielding would hand the core
 /// to a workload that is about to stop existing.
-fn wait_ms(ms: u64) {
-    let hz = super::timer::frequency();
+fn wait_milliseconds(milliseconds: u64) {
+    let hertz = super::timer::frequency();
     let start = super::timer::now();
-    while super::timer::now().wrapping_sub(start) < hz / 1000 * ms {
+    while super::timer::now().wrapping_sub(start) < hertz / 1000 * milliseconds {
         core::hint::spin_loop();
     }
 }
@@ -97,7 +97,7 @@ pub fn reboot(marker: &str) -> abi::Error {
             crate::console::drain();
             // SAFETY: the port and value firmware's FADT names for exactly this purpose.
             unsafe { out8(port as u16, value) };
-            wait_ms(100);
+            wait_milliseconds(100);
         }
         (packed, 2) => {
             let device = (packed >> 32) & 0x1f;
@@ -122,7 +122,7 @@ pub fn reboot(marker: &str) -> abi::Error {
                 );
                 out8(PCI_CONFIG_DATA + (offset & 3) as u16, value);
             }
-            wait_ms(100);
+            wait_milliseconds(100);
         }
         (address, space) => println!(
             "{marker} attempt 1 of 3 skipped: the FADT reset register is in address space {space} \
@@ -141,10 +141,10 @@ pub fn reboot(marker: &str) -> abi::Error {
     unsafe {
         let keep = in8(RESET_CONTROL_PORT) & !RESET_CONTROL_COLD;
         out8(RESET_CONTROL_PORT, keep | RESET_CONTROL_SYSTEM);
-        wait_ms(1);
+        wait_milliseconds(1);
         out8(RESET_CONTROL_PORT, keep | RESET_CONTROL_COLD);
     }
-    wait_ms(100);
+    wait_milliseconds(100);
 
     println!(
         "{marker} attempt 3 of 3: 8042 reset pulse, port {KBC_PORT:#x} <- {KBC_PULSE_RESET:#04x}"
@@ -161,7 +161,7 @@ pub fn reboot(marker: &str) -> abi::Error {
         }
         out8(KBC_PORT, KBC_PULSE_RESET);
     }
-    wait_ms(100);
+    wait_milliseconds(100);
 
     println!("{marker} all three reset routes returned: this machine did not reset");
     // Every route was tried (the fallbacks are never skipped), so this is never "no mechanism".

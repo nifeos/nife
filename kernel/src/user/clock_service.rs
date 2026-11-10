@@ -177,7 +177,7 @@ impl Wiring {
     }
 
     /// Play a proposer: `CALL` the propose endpoint. Returns `(status, wall_nanos_after)`.
-    pub fn propose_ns(&self, unix_nanoseconds: u64) -> (u64, u64) {
+    pub fn propose_nanoseconds(&self, unix_nanoseconds: u64) -> (u64, u64) {
         let r = crate::sched::ipc_call(
             self.propose,
             [

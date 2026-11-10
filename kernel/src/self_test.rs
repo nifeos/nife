@@ -435,13 +435,13 @@ fn frames(tally: &mut Tally) {
 /// the window means the same on every timer, and it spins through [`Counter`] rather than sleeping,
 /// so a stopped counter or a missing interrupt ends the check instead of the boot.
 fn timer(tally: &mut Tally) {
-    let hz = timer::frequency();
+    let hertz = timer::frequency();
     let mut counter = Counter::new();
     let start = counter.last;
     let ticks_before = timer::ticks();
     // 20 ms: two tick periods at the 100 Hz `TICK_HERTZ` every architecture uses, so a single missed
     // tick does not read as a broken interrupt path.
-    let window = hz / 50;
+    let window = hertz / 50;
     let advanced = loop {
         let Some(now) = counter.read() else {
             tally.record(
@@ -468,7 +468,7 @@ fn timer(tally: &mut Tally) {
         ok,
         format_args!(
             "the {}MHz counter advanced {advanced} and {ticks} tick(s) arrived in ~20ms",
-            hz / 1_000_000
+            hertz / 1_000_000
         ),
     );
 }

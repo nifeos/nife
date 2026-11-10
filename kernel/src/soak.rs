@@ -412,8 +412,8 @@ fn draw_again(elapsed: u64) {
     );
 
     // Polled through the whole window, yielding the core between checks.
-    let hz = arch::timer::frequency();
-    let deadline = arch::timer::now().wrapping_add(hz.wrapping_mul(REBOOT_GRACE_SECONDS));
+    let hertz = arch::timer::frequency();
+    let deadline = arch::timer::now().wrapping_add(hertz.wrapping_mul(REBOOT_GRACE_SECONDS));
     while arch::timer::now().wrapping_sub(deadline) > u64::MAX / 2 {
         if crate::console::is_byte_waiting() {
             println!(
@@ -573,12 +573,12 @@ fn arm_watchdog() -> Option<Watchdog> {
     // `start_watchdog_clocks` has just read both clocks running and both resets released.
     let mut dog = unsafe { Watchdog::new(arch::mmu::phys_to_virt(found.base) as usize) };
     dog.arm(load);
-    let hz = measure_watchdog_rate(&dog);
-    if !jh7110_watchdog::rate_agrees(hz, CORE_CLOCK_HERTZ) {
+    let hertz = measure_watchdog_rate(&dog);
+    if !jh7110_watchdog::rate_agrees(hertz, CORE_CLOCK_HERTZ) {
         dog.disarm();
         let halted = !dog.is_counting();
         println!(
-            "{WATCHDOG_MARKER} NOT ARMED: the counter ran at {hz} Hz against this kernel's timer, \
+            "{WATCHDOG_MARKER} NOT ARMED: the counter ran at {hertz} Hz against this kernel's timer, \
              not the {CORE_CLOCK_HERTZ} Hz its count was computed for, so it would reset at the wrong \
              time or never. It is {}.",
             if halted {
@@ -591,7 +591,7 @@ fn arm_watchdog() -> Option<Watchdog> {
     }
     let tenths = jh7110_watchdog::reset_after_tenths(load, CORE_CLOCK_HERTZ);
     println!(
-        "{WATCHDOG_MARKER} the counter runs at {hz} Hz, measured against this kernel's timer. The \
+        "{WATCHDOG_MARKER} the counter runs at {hertz} Hz, measured against this kernel's timer. The \
          JH7110 keeps no record this kernel knows of how its previous boot ended, so a watchdog \
          reset shows only as this kernel starting again."
     );
@@ -675,15 +675,15 @@ fn start_watchdog_clocks(
 /// yielded, so the window is the timer's and not the scheduler's.
 #[cfg(all(soak_watchdog, target_arch = "riscv64"))]
 fn measure_watchdog_rate(dog: &Watchdog) -> u64 {
-    let hz = arch::timer::frequency();
+    let hertz = arch::timer::frequency();
     let start = arch::timer::now();
     let before = dog.ticks_left();
-    while arch::timer::now().wrapping_sub(start) < hz / 10 {
+    while arch::timer::now().wrapping_sub(start) < hertz / 10 {
         core::hint::spin_loop();
     }
     let after = dog.ticks_left();
     let elapsed = arch::timer::now().wrapping_sub(start);
-    jh7110_watchdog::measured_hertz(before, after, elapsed, hz)
+    jh7110_watchdog::measured_hertz(before, after, elapsed, hertz)
 }
 
 /// Stop beating, on purpose, for `--features wedge_soak_test`.
@@ -809,7 +809,7 @@ fn watch(
     tids: &[u64; MAXIMUM_WORKERS],
     placed: &[u8; MAXIMUM_WORKERS],
 ) -> ! {
-    let hz = arch::timer::frequency();
+    let hertz = arch::timer::frequency();
     let started = arch::timer::now();
     let mut previous = [0u64; MAXIMUM_WORKERS];
     let mut here = [u8::MAX; MAXIMUM_WORKERS];
@@ -827,15 +827,15 @@ fn watch(
 
     loop {
         // Yielded rather than spun, so the supervisor does not take a core from the workload.
-        let due = arch::timer::now().wrapping_add(hz.wrapping_mul(BEAT_SECONDS));
+        let due = arch::timer::now().wrapping_add(hertz.wrapping_mul(BEAT_SECONDS));
         while arch::timer::now().wrapping_sub(due) > u64::MAX / 2 {
             sched::yield_now();
         }
 
         beat += 1;
         let now = arch::timer::now();
-        let elapsed = now.wrapping_sub(started) / hz.max(1);
-        let window = (now.wrapping_sub(last_at) / hz.max(1)).max(1);
+        let elapsed = now.wrapping_sub(started) / hertz.max(1);
+        let window = (now.wrapping_sub(last_at) / hertz.max(1)).max(1);
 
         let BeatSample {
             total,
