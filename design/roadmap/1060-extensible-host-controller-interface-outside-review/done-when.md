@@ -11,8 +11,8 @@ An appendix to [the milestone](../1060-extensible-host-controller-interface-outs
   against the README (P1-2).
 - `context::endpoint` takes an `EndpointType`, keeps the mask, and its harness and patch prove the
   mask (P1-3).
-- The read order, the write order and the fences a driver needs are stated on `EventRing`,
-  `ProducerRing` and in the README (P1-4).
+- `EventRing`, `ProducerRing` and the README state the read order, the write order and the fences
+  a driver needs (P1-4).
 - `EventRing::new` and `ProducerRing::new` refuse sizes outside the bounds read from the
   specification text, through `MINIMUM_SEGMENT_ENTRIES` and `MAXIMUM_SEGMENT_ENTRIES`, and the
   harnesses and the fuzz range cover only the accepted sizes (P1-5).
@@ -43,7 +43,8 @@ closes with a dated bench record or a README `BUGS` line naming it as unrun.
   clears, the system management interrupt enables clear, the events acknowledge, and the controller
   runs afterward.
 - The port debounce on silicon: ports reappear after the controller reset within the stable
-  interval, a plugged device is believed after its last bounce, and the timeout fires on nothing.
+  interval, the driver believes a plugged device after its last bounce, and the timeout fires on
+  nothing.
 - A device on a USB 3 root port, speed id 4 or 5, and the pairing of that port with its USB 2 twin
   (P2-6).
 - A controller with 64-byte contexts (`HCCPARAMS1.CSZ` set) and a nonzero scratchpad count,

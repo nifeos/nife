@@ -17,21 +17,19 @@ cites files and symbols at that commit, which is still `main`. It proposes work 
 in that repository. Every item below is work for a lane there.
 
 The review package and milestone 820 (`extensible_host_controller_interface`: proven xHCI logic,
-released on its own) settle the crate name and its 146 ratified names, the four register names the
-architect renamed, the spelled-out parameter names, the dual license, the version 0.1.0, that the
-crate publishes, and the hub limit the README states. They stay closed here. Milestone 820 owns the
-release path; this block owns the findings that land inside that path.
+released on its own) settle the crate name, its 146 ratified names, the license and the version.
+They stay closed here. Milestone 820 owns the release path; this block owns the findings that land
+inside it.
 
-Reuse: the shared crate workflows at the pinned revision and their scaffold, `cargo-mutants`, Kani,
-`cargo-fuzz`, and the simulated controller in the crate's own `src/tests.rs`. No new tool.
+Reuse: the shared crate workflows and their scaffold, `cargo-mutants`, Kani, `cargo-fuzz`, and the
+simulated controller in `src/tests.rs`. No new tool.
 
 ## Goal
 
 A stranger who finds the crate can tell in one screen what it computes and what it leaves to the
-driver. The same stranger can build, test, prove and falsify it from the README alone, can name
-every code the crate hands back, and can write a controller driver on a weakly ordered machine
-without guessing the read and write order the ring discipline needs. The weekly gates are green for
-the crate's own reasons, and red only for them.
+driver. The same stranger can build, test, prove and falsify it from the README alone. They can
+name every code the crate hands back, and write a driver on a weakly ordered machine without
+guessing the order the ring discipline needs. The weekly gates are green.
 
 Publishing stays held. No crate from this organization publishes to crates.io until the
 maintainers have extracted several crates and a review has decided whether any of them combine.
@@ -52,24 +50,18 @@ The reviewer ran these firsthand at `bea0257`, in a fresh clone on an x86_64 Lin
 | the three `cargo-fuzz` targets | 30 seconds each on nightly, no finding |
 | `cargo deny check`, `cargo package --list` | pass, with two warnings for unmatched license allowances; the package ships `src/`, the patches and the repository's `.github/` |
 | every public name against [design/naming.md](../naming.md) | no finding against a ratified name |
-| each decoded register, context and TRB field against the field positions the reviewer carries from the xHCI 1.2 specification | no field misplaced |
+| each decoded field against the xHCI 1.2 positions the reviewer recalls | no field misplaced |
 
-Of the 49 missed mutants, 44 are `|` to `^` or `<<` to `>>` on bits that do not overlap, and 5 are
-comparisons in clamps that no input reaches (P1-1, P2-1).
-
-Rechecked for this block, by reading `main` and through the GitHub API: every file and symbol each
-item cites, the manifest, the template pin and its distance from the template's `main` (33
-commits), and that the weekly run on `bea0257` fails in `mutation` and in `stranger cadence` and
-passes its other jobs. Not rerun for this block: the builds, tests, proofs, patches, mutation
-counts, fuzz runs and the 99-survivor count of the weekly run, all of which come from the review.
+Rechecked for this block on `main`: every file and symbol each item cites, and the template pin, 33
+commits behind the template's `main`. The weekly run on `bea0257` fails in `mutation` and in
+`stranger cadence` and passes its other jobs. The builds, tests, proofs, mutation counts and fuzz
+runs come from the review; this block did not rerun them.
 
 Inferred, not verified: the two specification bounds of P1-5 and P1-7, which the reviewer recalls
 from the specification and from Linux's ring code. BUGS says so.
 
-Not run: anything on hardware (the done-when appendix lists what waits for a bench), `cargo
-semver-checks` (no release to compare against), Miri (the weekly job runs it green), a long fuzz
-campaign, a release dry run, and the template's name-check helpers. The reviewer changed nothing in
-the repository.
+Not run: anything on hardware, `cargo semver-checks` (no release exists), Miri (green weekly), a
+long fuzz campaign, a release dry run and the template's name-check helpers.
 
 Effort sizes: XS is under an hour for a lane, S half a day, M a day or two.
 
@@ -89,8 +81,8 @@ In `Cargo.toml`, `description` says the crate covers "HID boot reports", and no 
 in `src/`: the only report names are layout constants in `src/direct_memory_access.rs`.
 `keywords` holds `no-std`, `kani` and `driver`, and not `xhci` or `usb`, the two words a user
 searches. The comment on `publish = false` names `crates/publish-allowlist.txt`, a file from
-another repository. The block comment under `[package]` describes which register pages a confined
-driver is mapped and a spawn handoff, which live elsewhere.
+another repository. The block comment under `[package]` describes register mappings and a spawn
+handoff that live elsewhere.
 
 Change: a description of what the crate holds ("xHCI host controller logic as pure computation:
 register offsets and decode, TRBs, rings, contexts and port status, proven with Kani"), `keywords =
@@ -104,10 +96,9 @@ holds. Two-way. XS.
 
 The weekly run's `mutation` job fails with 99 survivors. Fifty sit in `src/verification.rs`, which
 compiles only under `cfg(kani)`, so no host test can kill them. The other 49 are the ones a local
-run reports: `|` to `^` on constants whose bits the `_DO_NOT_OVERLAP` assertions prove disjoint
-(for example `PORT_CHANGE_BITS_DO_NOT_OVERLAP` in `src/port.rs` and
-`ENDPOINT_CONTEXT_FIELDS_DO_NOT_OVERLAP` in `src/context.rs`), `<<` to `>>` on `1 << 0`, and the
-dead clamps of P2-1. The source wrote those assertions to justify exemptions and then wrote none.
+run reports. Most are `|` to `^` on constants whose bits a `_DO_NOT_OVERLAP` assertion proves
+disjoint, such as `PORT_CHANGE_BITS_DO_NOT_OVERLAP` in `src/port.rs`. The rest are `<<` to `>>` on
+`1 << 0`, and the dead clamps of P2-1. The source wrote those assertions to justify exemptions and then wrote none.
 `.github/mutants-exempts` carries the census comment from the tree the crate left, which the first
 weekly run has now answered.
 
@@ -142,17 +133,17 @@ masks its speed in the same file, so the asymmetry is an oversight.
 
 Ruled 2026-11-09. `context::endpoint` takes an `EndpointType` enum in place of the `u8`, and keeps
 the mask. The lane mints the variant names provisionally from the specification's spellings, and
-they are ratified with the batch of P1-12. The harness asserts that bits 6 to 15 of dword 1 are
+the release review ratifies them with the names of P1-8 and P1-12. The harness asserts that bits 6 to 15 of dword 1 are
 zero and that the type reads back as the variant's code, and the falsification patch drops the
 mask. One-way (public signature). XS.
 
 #### P1-4. The read order a consumer needs on a weakly ordered machine is stated nowhere
 
 The doc of `TransferRequestBlockPlacement` in `src/ring.rs` says the driver writes the cycle dword
-last, which is the producer's half. Nothing states the consumer's half: the controller writes an
+last, which is the producer's half. Nothing states the consumer's half. The controller writes an
 event's cycle dword last, so a driver that reads all four dwords and then calls
-`EventRing::is_ready` can see a fresh cycle bit beside stale data on aarch64 or riscv64, unless it
-reads the control dword first with acquire ordering. Nothing says a release fence belongs between
+`EventRing::is_ready` can see a fresh cycle bit beside stale data on aarch64 or riscv64. It must
+read the control dword first, with acquire ordering. Nothing says a release fence belongs between
 the TRB writes and the doorbell write. Two of the three bare-metal targets are weakly ordered.
 
 Change: one paragraph on `EventRing::is_ready` and one on `ProducerRing::enqueue` stating the order
@@ -164,8 +155,8 @@ and fences in sequence. Two-way. XS.
 `EventRing::new` accepts any `entries > 0` and `ProducerRing::new` any `entries >= 2`. The reviewer
 recalls the specification's Event Ring Segment Table entry as valid for 16 to 4,096 TRBs per
 segment. The host tests in `src/tests.rs` build event rings of 2 and 4 entries,
-`fuzz/fuzz_targets/event_ring.rs` ranges over 1 to 256, and the proofs over every `u16`, so part
-of their range is spent on configurations no controller runs.
+`fuzz/fuzz_targets/event_ring.rs` ranges over 1 to 256, and the proofs over every `u16`, so they
+spend part of their range on configurations no controller runs.
 
 Ruled 2026-11-09. `EventRing::new` and `ProducerRing::new` refuse sizes outside the
 specification's bounds, with named constants `MINIMUM_SEGMENT_ENTRIES` and
@@ -175,8 +166,8 @@ them. The harness assumptions and the fuzz range narrow to match. One-way (publi
 #### P1-6. A producer ring has no notion of being full
 
 `ProducerRing::enqueue` always places the next TRB and wraps, so a caller who enqueues more than
-`entries - 1` TRBs between two consumptions overwrites TRBs the controller has not reached. The one
-driver of the crate never does; a stranger's driver may. The only statement of the rule is a
+`entries - 1` TRBs between two consumptions overwrites TRBs the controller has not reached. The crate's
+own driver never does; a stranger's may. The only statement of the rule is a
 comment in the host test `a_simulated_controller_runs_exactly_what_was_produced_across_laps`.
 
 Change: `ProducerRing::capacity() -> u16` (`entries - 1`, name provisional), a sentence on
@@ -188,8 +179,7 @@ Two-way. XS.
 `TransferRequestBlock::data` and `TransferRequestBlock::normal` take any buffer and length. A `u16`
 length keeps a TRB under 64 kibibytes, but a buffer that is not aligned can still cross a 64
 kibibyte boundary, which Linux splits a TD at and the reviewer recalls as a specification rule.
-The crate's own layout never crosses one, so its driver is safe by construction, and a stranger's
-is not told.
+The crate's own layout never crosses one; a stranger's might.
 
 Change: read the rule, state it on both builders and in the README `BUGS`, and add
 `fits_one_transfer_request_block(buffer, len) -> bool` (name provisional). Two-way. XS.
@@ -205,8 +195,8 @@ against anything but full speed. Five of the seven change bits (`ENABLE_CHANGE`,
 `pub(crate)`. `src/completion.rs` names five of the roughly 37 completion codes, so a driver that
 meets Babble, Stopped or Command Aborted gets a number it cannot name.
 
-Ruled 2026-11-09. These names are taken before any tag. The existing type codes, speed ids and
-change bits become public. The missing completion codes are added with spelled-out names and the
+Ruled 2026-11-09. These names land before any tag. The existing type codes, speed ids and change
+bits become public. The crate adds the missing completion codes with spelled-out names and the
 specification's name as `doc(alias)`. `completion::name(code) -> &'static str` sits beside
 `port::speed_name`. Every new name is provisional until the release review ratifies them together.
 One-way (names). S.
@@ -216,20 +206,19 @@ One-way (names). S.
 No `unsafe` block exists, yet the manifest enables `unsafe_op_in_unsafe_fn` and
 `undocumented_unsafe_blocks`, `SECURITY.md` speaks of the crate corrupting "memory it confines",
 and `.github/workflows/fuzz.yml` keeps crash inputs private. Change: `#![forbid(unsafe_code)]` in
-`src/lib.rs`, drop the two lints, reword the security policy to what a report here can be (a wrong
-field position, a wrong ring step, a proof that does not hold), and set `public-crash-inputs:
+`src/lib.rs`, and drop the two lints. Reword the security policy to what a report here can be: a
+wrong field position, a wrong ring step, a proof that does not hold. Set `public-crash-inputs:
 true`, which the standing rule allows for a crate with no `unsafe`. Two-way. XS.
 
 #### P1-10. The next template release brings the mutation stack
 
 Every caller pins `nifeos/crate-workflows` at `cd1b484`, at or past release `v7`, so the `lag` job
-passes. The template's `main` is 33 commits further on, all unreleased, and adds a `mutation.yml`
-caller, `check / mutation-diff` as a required check, a release gate that refuses a release without
-a green full run, and a `mutation-diff` budget line. The ruleset requires nine checks today.
+passes. The template's unreleased `main` adds a `mutation.yml` caller, `check / mutation-diff` as a
+required check, and a release gate that wants a green full run.
 
-Change, once the template releases: take the pin bump, add the scaffold's `mutation.yml` caller
-with this repository's own cron line, copy the budget file, apply the settings so the tenth check
-becomes required only after it has reported once, and dispatch `mutation.yml` on `main`. P1-1
+Change, once the template releases: take the pin bump, and add the scaffold's `mutation.yml`
+caller with this repository's own cron line and the budget file. Dispatch `mutation.yml` on
+`main`, then apply the settings, so the tenth check becomes required only after it has reported. P1-1
 lands first, or that run is red. Two-way. S.
 
 #### P1-11. Port 0 aliases port 1, and no port offset is bounded
@@ -276,11 +265,10 @@ Ruled 2026-11-09, and closed here:
 2. `EventRing::new` and `ProducerRing::new` refuse sizes outside the specification's bounds, read
    from its text first, with `MINIMUM_SEGMENT_ENTRIES` and `MAXIMUM_SEGMENT_ENTRIES`; the harness
    assumptions and the fuzz range narrow to match (P1-5).
-3. New public names are taken before any tag: the type codes, speed ids and change bits made
-   public, the missing completion codes with the specification's names as aliases,
-   `completion::name`, the two enums, `try_enqueue`, `complete` and the fake controller example
-   (P1-8, P1-12, P1-13). Every name is provisional until the release review ratifies them
-   together.
+3. New public names land before any tag (P1-8, P1-12, P1-13). They are the type codes, speed ids
+   and change bits made public, the missing completion codes with aliases, `completion::name`, the
+   two enums, `try_enqueue` and `complete`, with the fake controller example. Every name stays
+   provisional until the release review ratifies them together.
 4. `Capabilities::port_status_and_control` returns `Option<u64>`, `None` for port 0 or past
    `maximum_ports`, and the fuzz target asserts `None` (P1-11).
 
@@ -316,25 +304,19 @@ The review claims none of the hardware steps.
   which bound, if any, the text sets for a producer ring before it refuses one. This block's lane
   fetched the specification PDF but had no tool here to extract its text, so the bounds remain
   unread.
-- The fuzz runs took 30 seconds per target on one machine, and the weekly job gives five minutes.
-  Neither is a long campaign, and the repository commits no seed corpus, so each run starts cold.
-- The review did not run the template's name-check helpers again. The review package's run covers
-  the ratified names; the new names of P1-3, P1-8, P1-12 and P1-13 meet them in their own pull
+- The fuzz runs took 30 seconds per target, and the repository commits no seed corpus.
+- The new names of P1-3, P1-8, P1-12 and P1-13 meet the template's name checks in their own pull
   requests.
-- The hostile-input surface a USB device presents (descriptors, report lengths) is not this
-  crate's: it decodes only what the controller writes. The crate that parses descriptors is where
-  that review belongs.
-- P1-10 waits on a template release, and nothing in this repository can move it.
+- The crate decodes only what the controller writes. The hostile input a USB device presents
+  (descriptors, report lengths) belongs to the review of the crate that parses descriptors.
+- P1-10 waits on a template release.
 - The P2 order is the judgment of the reviewer on what a user asks for first. Nobody outside has
   asked for anything yet.
 
 ## Index row
 
 An outside reading of `extensible_host_controller_interface`: one manifest fix blocks the first
-release. Thirteen items go before it. The red mutation verdict, the unrecorded stranger run, the
-read order for weakly ordered machines, ring capacity, the 64 kibibyte rule, `forbid(unsafe_code)`
-and the template's mutation stack are the maintainers' calls. An `EndpointType` enum with the mask,
-ring sizes refused outside the specification's bounds, public names for every code the crate
-returns, two enums for `Option<bool>`, `try_enqueue` with a fake controller example, and an
-`Option` port offset are ruled. Twelve follow it; the Event Data field awaits the architect. Any
-tag is open; publishing stays held.
+release, and thirteen items go before it. Six change the public API and carry rulings: an
+`EndpointType` enum, refused ring sizes, public names for every returned code, two enums for
+`Option<bool>`, `try_enqueue` with a fake controller, and an `Option` port offset. Twelve follow
+it; the Event Data field awaits the architect. Any tag is open, and publishing stays held.

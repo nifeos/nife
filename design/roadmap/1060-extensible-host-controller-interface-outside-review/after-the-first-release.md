@@ -11,19 +11,23 @@ microframes as `descriptor_interval * 8`, between 8 and 2,040, so the exponent a
 3 and 10, and both clamps on it are dead. The doc comment says the field is "clamped to the
 specification's 3 (1 ms) to 10 (128 ms)", which reads as cases the code handles. Five mutants on
 those comparisons and on the high-speed clamp survive for that reason. Change: delete both clamps,
-say in the doc comment that 3 to 10 is the range the arithmetic produces, keep the harness's
-`(3..=10)` assertion as the proof, and exempt the surviving `>` to `>=` on the high-speed clamp as
-equivalent (both give 16). XS.
+and say in the doc comment that 3 to 10 is the range the arithmetic produces. The harness's
+`(3..=10)` assertion stays as the proof. Exempt the surviving `>` to `>=` on the high-speed clamp
+as equivalent, since both give 16. XS.
 
 ## P2-2. Five proofs are cheap and missing
 
-The README says "Not yet proven: event decoding". Also unproven: that each TRB builder places the
-slot in bits 31:24 and the endpoint in bits 20:16 of its last dword and the pointer in the first
-two (a host test checks fixed values); that `Capabilities::decode` keeps each field to its width
-(the fuzz target `capability_registers` checks it, the model checker does not); that
-`PortDebounce::sample` answers by the timeout for any sample sequence; and that a producer and a
-modeled consumer agree across a wrap (the host test runs three laps of a four-entry ring with fixed
-bursts). Change: five harnesses, each with a falsification patch that the proofs workflow replays
+The README says "Not yet proven: event decoding". Four more properties lack a proof:
+
+- each TRB builder places the slot in bits 31:24 and the endpoint in bits 20:16 of its last dword,
+  and the pointer in the first two (a host test checks fixed values);
+- `Capabilities::decode` keeps each field to its width (the fuzz target `capability_registers`
+  checks it, the model checker does not);
+- `PortDebounce::sample` answers by the timeout for any sample sequence;
+- a producer and a modeled consumer agree across a wrap (the host test runs three laps of a
+  four-entry ring with fixed bursts).
+
+ Change: five harnesses, each with a falsification patch that the proofs workflow replays
 red, and the README's "Not yet proven" line goes. S.
 
 ## P2-3. The crate's front page on docs.rs shows no code
@@ -43,8 +47,8 @@ on `dequeue_pointer` saying to set it. XS.
 ## P2-5. One interrupter
 
 `Capabilities::interrupter` reaches interrupter 0 only, through `INTERRUPTER_0_REGISTER`; the
-stride between interrupter register sets is 32 bytes, and `maximum_interrupters` is decoded and
-then unused. Change: `interrupter_register(interrupter: u16, register_offset: u64)` beside the
+stride between interrupter register sets is 32 bytes, and nothing reads the decoded
+`maximum_interrupters`. Change: `interrupter_register(interrupter: u16, register_offset: u64)` beside the
 existing method. Additive. XS.
 
 ## P2-6. The Supported Protocol capability is absent
@@ -89,7 +93,7 @@ in the form the interrupter bits use. Additive. XS.
   nothing. Leave the scaffold's list, and let this line record the warning.
 - The repository's GitHub description is the scaffold's sentence and does not say xHCI, and its
   topics lack `xhci` and `usb`. Set both through the template's settings path.
-- The host test `xenons_ports_are_all_counted_once_they_settle` in `src/port.rs` is named for a
+- The name of the host test `xenons_ports_are_all_counted_once_they_settle` in `src/port.rs` names a
   bench machine a stranger cannot identify, with a dated probe in its doc comment. Name it for what
   the ports did.
 
@@ -104,7 +108,7 @@ the test's check as a remainder, state 1.85, and let the weekly `msrv` job hold 
 
 ## P2-12. The Event Data bit is ignored
 
-A transfer event whose Event Data bit (bit 2 of its last dword) is set carries the event data value
+When a transfer event has its Event Data bit (bit 2 of its last dword) on, it carries the event data value
 in its pointer field, not a TRB address. The crate builds no Event Data TRBs, so its own controller
 never sets the bit, and `Event::decode` in `src/event.rs` would report the value as an address in
 `Event::Transfer`. Whether the variant grows an `event_data` field is one-way and waits on the
