@@ -10,11 +10,19 @@ needs_person: no
 # The daily fuzz output drives changes
 
 Raised by lane proposal/the-daily-fuzz-output-drives-changes, at the maintainer's request. The
-question is what the daily fuzz report is for once it exists, beyond proving the loop is alive.
+question is what the daily fuzz report is for once it exists, beyond proving the loop is alive. An
+architect ruled option A on 2026-11-10 (UTC); "What is in force" below states the ruling.
 
 Reuse: the release reader in `helpers/fuzz-heartbeat.py`, the open, update and close of a labeled
 issue in `helpers/ci_job_times.py sync`, and the hosted schedule of
 `.github/workflows/fuzz-heartbeat.yml`. No new dependency.
+
+## What is in force
+
+Ruled 2026-11-10 (UTC): option A. A weekly workflow on a GitHub-hosted runner reads the daily fuzz
+releases and keeps one labeled issue per rule. It opens the issue when the rule fires, updates it
+while the rule holds, and closes it when the rule stops. No fuzz figure enters the tree. The reasons
+are under "Recommendation" below, and moving to option B later stays compatible.
 
 ## Background
 
@@ -152,7 +160,7 @@ extend to every new field and to every issue the reader writes.
 
 ## Recommendation
 
-Option A. The test of effort does not decide it: B costs one more CSV and chart, and C costs less
+Option A, which the ruling chose. The test of effort does not decide it: B costs one more CSV and chart, and C costs less
 than A. A matches how this tree already turns a daily number into work: `ci_job_times.py` reads a
 record and keeps one issue per condition, and the heartbeat keeps one issue per broken loop. A
 person still turns each issue into an action, and the issue says which kind.
