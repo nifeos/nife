@@ -122,3 +122,43 @@ fn the_page_sits_clear_of_its_neighbors() {
     assert!(address_space_map::RUNTIME_WINDOWS.contains(PAGE_VIRTUAL_ADDRESS));
     assert!(PAGE_VIRTUAL_ADDRESS >= 0x1700_0000 + address_space_map::PAGE);
 }
+
+/// A `StartupWindow` finds its kind's address on the page, then answers from its cache without
+/// reading the page again.
+#[test]
+fn a_startup_window_reads_the_page_once() {
+    let mut page = [0u8; PAGE_BYTES];
+    write(&mut page, &[window(DATA_PLANE, 0x98_0000, 2)]).unwrap();
+    // SAFETY: the test hands the page in a buffer and never calls `virtual_address`.
+    let plane = unsafe { StartupWindow::new(DATA_PLANE, 2 * address_space_map::PAGE) };
+    assert_eq!(plane.length_bytes(), 2 * address_space_map::PAGE);
+    assert_eq!(
+        plane.virtual_address_in(|| StartupPage::parse(&page)),
+        0x98_0000
+    );
+    assert_eq!(
+        plane.virtual_address_in(|| panic!("the page was read twice")),
+        0x98_0000
+    );
+}
+
+/// A missing page, a missing kind and a window shorter than the program uses each panic.
+#[test]
+fn a_startup_window_refuses_a_spawner_that_does_not_match() {
+    let mut page = [0u8; PAGE_BYTES];
+    write(&mut page, &[window(DATA_PLANE, 0x98_0000, 1)]).unwrap();
+    let run = |kind: WindowKind, length_bytes: u64, present: bool| {
+        std::panic::catch_unwind(|| {
+            // SAFETY: the test hands the page in a buffer and never calls `virtual_address`.
+            let w = unsafe { StartupWindow::new(kind, length_bytes) };
+            w.virtual_address_in(|| present.then(|| StartupPage::parse(&page).unwrap()))
+        })
+    };
+    assert_eq!(
+        run(DATA_PLANE, address_space_map::PAGE, true).ok(),
+        Some(0x98_0000)
+    );
+    assert!(run(DATA_PLANE, address_space_map::PAGE, false).is_err());
+    assert!(run(DOORBELL_PAGE, address_space_map::PAGE, true).is_err());
+    assert!(run(DATA_PLANE, address_space_map::PAGE + 1, true).is_err());
+}
