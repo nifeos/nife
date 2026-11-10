@@ -109,6 +109,7 @@ replay() { # replay HOME COMMIT SHARD; output in $work/out
         "$tree/helpers/continuous-fuzz.sh" --replay "$2" "$3" "$(($(date +%s) - 600))" > "$work/out" 2>&1 \
         || fail "--replay exited non-zero: $(cat "$work/out")"
 }
+# shellcheck disable=SC2046  # two words, split on purpose
 set -- $(cd "$tree" && helpers/continuous-fuzz.sh --ci-range 0)
 first0="$2"
 
@@ -155,6 +156,7 @@ grep -q "replay refused" "$work/out" || fail "a commit off main was not refused:
 # like no shard. 14: a red shard on a commit main never took. 15: a red shard 3 on main.
 now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 runs() { for r; do
+    # shellcheck disable=SC2086  # two words, split on purpose
     set -- $r
     printf '{"id":%s,"head_sha":"%s","event":"merge_group","status":"completed","head_branch":"gh-readonly-queue/main/pr-%s-x","created_at":"%s"},' "$1" "$2" "$1" "$now"
 done; }

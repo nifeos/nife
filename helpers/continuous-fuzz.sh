@@ -450,7 +450,7 @@ replay() {
     set -e
     ms=$((($(date +%s) - start) * 1000))
     classify "$log" "$rc" "$first"
-    [ "$status" != ok ] || status=replay-clean
+    [ "$status" != ok ] || status="replay-clean"
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$driver" replay "$first" "$ran" "$ms" "$status" \
         "$(git -C "$dir" rev-parse --short HEAD)" >> "$state/windows.tsv"
