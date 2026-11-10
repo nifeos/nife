@@ -15,7 +15,8 @@
 //! - The data plane cannot read `CSTS`, so a hung controller presents as a timeout, not
 //!   `CSTS.CFS`.
 //! - One command in flight, so throughput measured against it is a lower bound.
-//! - A refused bring-up keeps its DMA run for the rest of the boot.
+//! - A refused bring-up keeps its DMA run and the admin process's stack frames for the rest of
+//!   the boot.
 //!
 //! Name: recorded (crates/non_volatile_memory_express), renamed 2026-09-18 under DECISIONS §154
 //! (the acronym test is whether the phrase is spoken). A `<program>_service` like
@@ -40,6 +41,11 @@ const REGISTERS_VA: u64 = address_space_map::pair_page(0x0000_0000_0098_0000);
 
 /// Where the admin process's admin pages of the DMA run are mapped, listed on its startup page.
 const ADMIN_QUEUES_VA: u64 = address_space_map::pair_page(0x0000_0000_009c_0000);
+
+/// Stack pages the admin process gets beyond the one every loaded program gets. Its bring-up is
+/// a call chain carrying 64-byte commands and the IDENTIFY bytes by value, and in a debug build
+/// one page overflowed.
+const ADMIN_EXTRA_STACK_PAGES: usize = 3;
 
 /// Everything one wiring of the server is, from the outside.
 pub struct Wiring {
@@ -134,6 +140,9 @@ struct Admin {
     /// What it read from IDENTIFY.
     size_bytes: u64,
     blocks_per: u16,
+    /// The extra stack frames its spawn mapped, freed once it is gone.
+    #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
+    stack: [u64; ADMIN_EXTRA_STACK_PAGES],
 }
 
 /// **Start the admin process on a found and confined controller, and wait for its report.**
@@ -156,7 +165,13 @@ fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
         NonZeroU64::new(DATA_PLANE_PAGES).expect("the data plane has pages"),
         Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
     );
-    const MAPS: usize = (REGISTER_PAGES + ADMIN_PAGES) as usize;
+    let mut stack = [0u64; ADMIN_EXTRA_STACK_PAGES];
+    for frame in &mut stack {
+        *frame = crate::memory::alloc_zeroed()
+            .expect("no frame for the NVMe admin process's stack")
+            .addr();
+    }
+    const MAPS: usize = (REGISTER_PAGES + ADMIN_PAGES) as usize + ADMIN_EXTRA_STACK_PAGES;
     let thread = crate::sched::spawn(move || {
         let mut maps = [Mapping {
             va: 0,
@@ -178,6 +193,13 @@ fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
             dma,
             ADMIN_PAGES as usize,
         );
+        for (k, &frame) in stack.iter().enumerate() {
+            maps[(REGISTER_PAGES + ADMIN_PAGES) as usize + k] = Mapping {
+                va: USER_STACK_VA - (k as u64 + 1) * page_frames::FRAME_SIZE,
+                phys: frame,
+                flags: Flags::user_data(),
+            };
+        }
         // In `admin_slots` order: the grants are the process's whole authority.
         let grant_list = [
             rendezvous_capability(report, Rights::WRITE),
@@ -223,6 +245,7 @@ fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
             thread,
             size_bytes,
             blocks_per: blocks_per_transfer,
+            stack,
         }),
         Some(AdminReport::Refused(why)) => {
             crate::println!(
@@ -391,6 +414,9 @@ impl DmaEscape {
             return false;
         }
         crate::non_volatile_memory_express::free_retired_run(self.dma);
+        for &frame in &self.admin.stack {
+            crate::memory::free(page_frames::PageFrame::from_addr(frame));
+        }
         crate::memory::free(page_frames::PageFrame::from_addr(self.victim));
         crate::sched::reclaim_region(self.ep_region).is_ok()
     }
