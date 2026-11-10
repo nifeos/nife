@@ -68,6 +68,23 @@ pub const TRANSCRIPT_VIRTUAL_ADDRESS: u64 = 0x0061_0000;
 /// Name: provisional.
 pub const TRANSCRIPT_BYTES: usize = 4096;
 
+/// Where the program maps disk 0's direct memory access page, read-only, to learn the physical
+/// base the page records.
+///
+/// Name: provisional.
+pub const DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS: u64 = 0x0062_0000;
+
+/// Where `block_driver` expects its direct memory access page, the address the `virtio` crate
+/// names `DMA_VA`; the program maps disk 0's page there in the driver it builds.
+///
+/// Name: provisional.
+pub const BLOCK_DRIVER_DIRECT_MEMORY_ACCESS_VIRTUAL_ADDRESS: u64 = 0x0090_0000;
+
+/// An address nothing maps in `kernel_test_subject`, for the `supervised` check to fault on.
+///
+/// Name: provisional.
+pub const UNMAPPED_VIRTUAL_ADDRESS: u64 = 0x00A5_0000;
+
 /// **Where the image table starts**: one page of [`header`] words, then each image in
 /// [`image`] order, each starting on a fresh page.
 ///

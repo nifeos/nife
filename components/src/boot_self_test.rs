@@ -50,12 +50,11 @@ user_mode_runtime::program_entry!(start);
 const KERNEL_HALF_VA: u64 = address_space_map::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS);
 const TRANSCRIPT_VA: u64 = address_space_map::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS);
 const IMAGES_VA: u64 = address_space_map::pair_page(contract::IMAGES_VIRTUAL_ADDRESS);
-/// Where this program maps disk 0's DMA page, read-only, to learn the physical base it records.
-const DISK_DMA_PEEK_VA: u64 = address_space_map::pair_page(0x0062_0000);
-/// Where `block_driver` expects its DMA page: `components/src/block_driver.rs`'s `DMA_VA`.
-const BLOCK_DRIVER_DMA_VA: u64 = address_space_map::pair_page(0x0090_0000);
-/// An address nothing maps in `kernel_test_subject`, for `supervised` to fault on.
-const UNMAPPED_ADDRESS: u64 = address_space_map::pair_page(0x00A5_0000);
+const DISK_DMA_PEEK_VA: u64 =
+    address_space_map::pair_page(contract::DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS);
+const BLOCK_DRIVER_DMA_VA: u64 =
+    address_space_map::pair_page(contract::BLOCK_DRIVER_DIRECT_MEMORY_ACCESS_VIRTUAL_ADDRESS);
+const UNMAPPED_ADDRESS: u64 = address_space_map::pair_page(contract::UNMAPPED_VIRTUAL_ADDRESS);
 
 /// `kernel_test_subject`'s role that reads its second argument and dies:
 /// `fixtures/src/kernel_test_subject.rs`'s `READ_KERNEL`.
@@ -360,7 +359,7 @@ impl Child {
 
     /// **Wait up to `seconds` for the child to die, then take its death message**: event, thread,
     /// pc and address. `None` while it is still alive.
-    fn death(&self, seconds: u64) -> Option<(u64, u64, u64, u64)> {
+    fn death(&self, seconds: u64) -> Option<Death> {
         if !wait_until(seconds, || self.state() == abi::survey::DEAD) {
             return None;
         }
@@ -567,10 +566,14 @@ fn budget(r: &mut Report, images: &Images, d: Option<&Deadline>) {
     }
 }
 
+/// A child's death message as its supervisor receives it: the event, the thread id, the pc and the
+/// faulting address.
+type Death = (u64, u64, u64, u64);
+
 /// **One supervised child that faults, its death received, and its region reaped**: the round
 /// `supervised` judges once and `teardown` twice. Returns the death message and the child's thread
 /// id, or which step refused.
-fn supervised_round(bytes: &[u8]) -> Result<((u64, u64, u64, u64), u64), &'static str> {
+fn supervised_round(bytes: &[u8]) -> Result<(Death, u64), &'static str> {
     let child = spawn(bytes, &[], &[], [READ_ADDRESS_ROLE, UNMAPPED_ADDRESS, 0])?;
     let tid = child.tid;
     let Some(message) = child.death(2) else {
