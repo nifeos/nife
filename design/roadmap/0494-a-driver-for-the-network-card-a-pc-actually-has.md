@@ -23,10 +23,10 @@ milestone 261 needs.
 
 ## What was built, 2026-10-04
 
-Exit criterion 1 is met. Criterion 2 is not: the driver is built and rehearsed under QEMU, and the
-cabled bench run on xenon has not happened. It needs a person and a cable, and its result goes in
-the Results table of [the I219 cabled-run runbook](../../notes/e1000e/the-i219-cabled-run.md).
-Procedure, evidence and the confinement finding: [notes/e1000e.md](../../notes/e1000e.md).
+Exit criterion 1 is met. Criterion 2 is open: QEMU rehearses the driver, but the cabled run on xenon
+needs a person and a cable, and its result goes in the Results table of
+[the I219 cabled-run runbook](../../notes/e1000e/the-i219-cabled-run.md). The confinement finding:
+[notes/e1000e.md](../../notes/e1000e.md).
 
 - The datasheet question, answered from the register map. Ring base and ring tail share a
   4 KiB page (`0x2800`/`0x2818`, `0x3800`/`0x3818`, read from Linux's `regs.h`; Intel's I219
@@ -79,8 +79,7 @@ No new code. The runbook now expects what xenon already printed (below, and `BUG
 
 ## Bench runbook: one boot on xenon (calef)
 
-Whole, with every failure ending and the Results table: notes/e1000e.md, "calef's bench step on
-xenon". Success ends `network-bench: verdict LEASED-AND-MEASURED`. It is step 1 of the xenon
+Whole, with every failure ending and the Results table: [the I219 cabled run](../../notes/e1000e/the-i219-cabled-run.md). Success ends `network-bench: verdict LEASED-AND-MEASURED`. It is step 1 of the xenon
 evening calef ruled on 2026-10-24 (UTC), beside milestone 260's network boot and 801's `jig` leg:
 `notes/xenon-bench-2026-10-18.md`.
 
@@ -171,9 +170,8 @@ recorded as such.
    x86_64. aarch64 and riscv64 carry the driver too, since QEMU's `e1000e` is a PCIe device on
    every bus the runners attach, or a scope note says why not (DECISIONS §19).
 2. On xenon, a DHCP lease from the house router and a measured transfer from a local area network
-   host, photographed, with the survey line naming the card. This is the cabled run in
-   [the I219 cabled-run runbook](../../notes/e1000e/the-i219-cabled-run.md); it has not happened,
-   and its result goes in that page's Results table.
+   host, photographed, with the survey line naming the card. The runbook is
+   [the I219 cabled run](../../notes/e1000e/the-i219-cabled-run.md); no run has happened yet.
 
 ## Reuse
 
