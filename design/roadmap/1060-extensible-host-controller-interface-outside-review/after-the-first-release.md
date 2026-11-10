@@ -1,8 +1,8 @@
 # P2: after the first release
 
 An appendix to [the milestone](../1060-extensible-host-controller-interface-outside-review.md).
-Every item here is two-way and the maintainers' provisional call, except P2-12, whose field waits on
-the architect; the main page carries its recommendation. A name an item mints is provisional.
+Every item here is two-way and the maintainers' provisional call. A name an item mints is
+provisional.
 
 ## P2-1. Two clamps that cannot fire, and a doc comment that claims them
 
@@ -105,11 +105,3 @@ The library and its tests build and pass at 1.85 except for one call to `is_mult
 host test `a_port_that_never_holds_still_ends_at_the_timeout`, stabilized in 1.87. Edition 2024
 needs 1.85, and lowering later is compatible while raising is a change users feel. Change: write
 the test's check as a remainder, state 1.85, and let the weekly `msrv` job hold it. XS.
-
-## P2-12. The Event Data bit is ignored
-
-When a transfer event has its Event Data bit (bit 2 of its last dword) on, it carries the event data value
-in its pointer field, not a TRB address. The crate builds no Event Data TRBs, so its own controller
-never sets the bit, and `Event::decode` in `src/event.rs` would report the value as an address in
-`Event::Transfer`. Whether the variant grows an `event_data` field is one-way and waits on the
-architect; the documentation sentence is two-way and lands now. XS.

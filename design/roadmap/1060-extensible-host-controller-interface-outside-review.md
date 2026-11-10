@@ -57,8 +57,7 @@ commits behind the template's `main`. The weekly run on `bea0257` fails in `muta
 `stranger cadence` and passes its other jobs. The builds, tests, proofs, mutation counts and fuzz
 runs come from the review; this block did not rerun them.
 
-Inferred, not verified: the two specification bounds of P1-5 and P1-7, which the reviewer recalls
-from the specification and from Linux's ring code. BUGS says so.
+Inferred, not verified: the specification bounds of P1-5 and P1-7 (BUGS).
 
 Not run: anything on hardware, `cargo semver-checks` (no release exists), Miri (green weekly), a
 long fuzz campaign, a release dry run and the template's name-check helpers.
@@ -255,9 +254,19 @@ completion event to. `examples/fake_controller.rs` builds the rings, enqueues a 
 consumes it as the controller would and decodes the events it writes. The names are provisional
 until the release review. One-way (names). M.
 
+#### P1-14. The Event Data bit is ignored
+
+When a transfer event has its Event Data bit (bit 2 of its last dword) on, its pointer field holds
+the event data value, not a TRB address. For a driver that issues Event Data TRBs, `Event::decode` in
+`src/event.rs` reports that value as an address.
+
+Ruled 2026-11-10. `Event::Transfer` grows no `event_data` field now. Its documentation states that
+the pointer is a TRB address only while the driver issues no Event Data TRBs. The field arrives
+with a builder for Event Data TRBs. Two-way (documentation). XS.
+
 ## Decisions this block needs
 
-Ruled 2026-11-09, and closed here:
+Ruled, and closed here (decisions 1 to 4 on 2026-11-09, decision 5 on 2026-11-10):
 
 1. `context::endpoint` takes an `EndpointType` enum and keeps the mask; a lane mints the variant
    names provisionally from the specification's spellings, and the release review ratifies them
@@ -271,13 +280,10 @@ Ruled 2026-11-09, and closed here:
    provisional until the release review ratifies them together.
 4. `Capabilities::port_status_and_control` returns `Option<u64>`, `None` for port 0 or past
    `maximum_ports`, and the fuzz target asserts `None` (P1-11).
+5. `Event::Transfer` grows no `event_data` field until a builder for Event Data TRBs arrives; its
+   documentation says when the pointer is a TRB address (P1-14).
 
-For the architect, one-way, not yet ruled:
-
-- Whether `Event::Transfer` grows an `event_data: bool` field (P2-12). Recommendation: one sentence
-  of documentation now, saying the pointer is a TRB address only while the driver issues no Event
-  Data TRBs, and the field only when a builder for Event Data TRBs arrives.
-- Any tag, asked separately when the weekly gates pass.
+For the architect, one-way, not yet ruled: any tag, asked separately when the weekly gates pass.
 
 The maintainers' provisional calls: every two-way item above and in the appendix, and the names a
 lane mints for them (`capacity`, `fits_one_transfer_request_block` and the rest), which go through
@@ -287,26 +293,20 @@ The publishing hold stands.
 
 ## Prior art
 
-How Linux, U-Boot, Redox and the Rust USB crates handle what the items touch, and where this crate
-differs, are in
+Linux, U-Boot, Redox and the Rust USB crates, against this one, are in
 [the prior art appendix](1060-extensible-host-controller-interface-outside-review/prior-art.md).
 
 ## Done when
 
-The checks, and the steps that need a controller, are in
+The checks, and the hardware steps the review claims none of, are in
 [the done-when appendix](1060-extensible-host-controller-interface-outside-review/done-when.md).
-The review claims none of the hardware steps.
 
 ## BUGS
 
-- P1-5 and P1-7 rest on the reviewer's memory of the specification and of Linux's ring code, not
-  on its text. The recalled bound of P1-5 is the Event Ring Segment Table entry's; the lane reads
-  which bound, if any, the text sets for a producer ring before it refuses one. This block's lane
-  fetched the specification PDF but had no tool here to extract its text, so the bounds remain
-  unread.
+- P1-5 and P1-7 rest on the reviewer's memory of the specification and of Linux's ring code,
+  not on its text, which nobody has read for this block. The recalled bound of P1-5 is the Event
+  Ring Segment Table entry's; the lane reads which bound, if any, applies to a producer ring.
 - The fuzz runs took 30 seconds per target, and the repository commits no seed corpus.
-- The new names of P1-3, P1-8, P1-12 and P1-13 meet the template's name checks in their own pull
-  requests.
 - The crate decodes only what the controller writes. The hostile input a USB device presents
   (descriptors, report lengths) belongs to the review of the crate that parses descriptors.
 - P1-10 waits on a template release.
@@ -316,7 +316,7 @@ The review claims none of the hardware steps.
 ## Index row
 
 An outside reading of `extensible_host_controller_interface`: one manifest fix blocks the first
-release, and thirteen items go before it. Six change the public API and carry rulings: an
-`EndpointType` enum, refused ring sizes, public names for every returned code, two enums for
-`Option<bool>`, `try_enqueue` with a fake controller, and an `Option` port offset. Twelve follow
-it; the Event Data field awaits the architect. Any tag is open, and publishing stays held.
+release, and fourteen items go before it. Seven carry rulings: an `EndpointType` enum, refused
+ring sizes, public names for every returned code, two enums for `Option<bool>`, `try_enqueue` with
+a fake controller, an `Option` port offset, and no Event Data field yet. Eleven follow it. Any tag
+is open, and publishing stays held.
