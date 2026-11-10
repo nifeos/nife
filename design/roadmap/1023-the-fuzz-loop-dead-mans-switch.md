@@ -1,5 +1,6 @@
 ---
-status: NOT-STARTED
+status: BUILT
+built: 2026-11-01
 promoted_from: the-fuzz-loop-dead-mans-switch
 raised: 2026-11-01
 milestone_dependencies: none
@@ -36,11 +37,16 @@ The maintainer decides these, provisionally; reversing costs one pull request:
 The implementation is `helpers/fuzz-heartbeat.py` and `.github/workflows/fuzz-heartbeat.yml`, and the selftest
 that `script/lint` runs proves it.
 
-## Not done here
+## BUGS
 
 Nothing repairs the loop, and nothing watches the watcher: if the schedule itself stops, GitHub
 disables scheduled workflows after sixty days without repository activity, which this repository does
 not reach.
+
+## Follow-on
+
+- **Recorded.** The two limits under `BUGS` stay: the heartbeat repairs nothing and has no watcher of
+  its own. Both are the ruling's, and a person turns an issue into an action.
 
 ## Index row
 
