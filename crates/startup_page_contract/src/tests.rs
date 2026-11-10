@@ -144,7 +144,7 @@ fn a_startup_window_reads_the_page_once() {
 
 /// A missing page, a missing kind and a window shorter than the program uses each panic.
 #[test]
-fn a_startup_window_refuses_a_spawner_that_does_not_match() {
+fn a_startup_window_refuses_a_page_that_does_not_match() {
     let mut page = [0u8; PAGE_BYTES];
     write(&mut page, &[window(DATA_PLANE, 0x98_0000, 1)]).unwrap();
     let run = |kind: WindowKind, length_bytes: u64, present: bool| {
