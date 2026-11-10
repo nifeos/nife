@@ -39,11 +39,26 @@ assert_eq!(read.window(kind::NON_VOLATILE_MEMORY_EXPRESS_DOORBELL_PAGE), Some(do
 assert_eq!(read.window(kind::E1000E_DATA_PLANE), None);
 ```
 
+## What is proven
+
+Host tests only, no Kani harness. They hold that a written page reads back entry for entry, that a
+reader skips a kind it does not know, that bytes which are not a page read as none, that the
+writer refuses each malformed list and writes nothing for it, that a full page holds exactly
+`MAXIMUM_WINDOWS`, and that every kind's number is distinct and nonzero.
+
+## Building and testing
+
+`cargo test -p startup_page_contract` runs the host tests and the examples.
+
 ## BUGS
 
 - One page per address space: two programs sharing a space would share it, and two instances of one
   program in one space could not tell their windows apart.
 - A process the kernel builds by hand, or one a userspace builder spawns, has no page yet.
+
+## Minimum Rust version
+
+Rust 1.88.
 
 ## License
 

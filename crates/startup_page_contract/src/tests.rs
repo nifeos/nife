@@ -68,7 +68,7 @@ fn the_writer_refuses_each_malformed_list() {
         window(WindowKind(0), 0x90_0000, 1),
         window(kind::E1000E_DATA_PLANE, 0x90_0000, 0),
         window(kind::E1000E_DATA_PLANE, 0x90_0008, 1),
-        window(kind::E1000E_DATA_PLANE, u64::MAX & !0xfff, 2),
+        window(kind::E1000E_DATA_PLANE, 0xffff_ffff_ffff_f000, 2),
     ] {
         assert_eq!(
             write(&mut page, &[bad]),
@@ -113,7 +113,8 @@ fn every_kind_has_its_own_nonzero_number() {
 
 /// The page sits in the runtime band and clear of std's runtime pages and the builder scratch.
 #[test]
-fn the_page_address_sits_clear_of_its_neighbours() {
+#[allow(clippy::assertions_on_constants)]
+fn the_page_address_sits_clear_of_its_neighbors() {
     assert!(address_space_map::RUNTIME_WINDOWS.contains(PAGE_VIRTUAL_ADDRESS));
     assert!(PAGE_VIRTUAL_ADDRESS >= 0x1700_0000 + address_space_map::PAGE);
 }

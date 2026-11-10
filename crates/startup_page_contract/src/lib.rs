@@ -109,7 +109,7 @@ impl Window {
     }
 }
 
-/// **Why [`write`] refused a list of windows.**
+/// **Why [`write()`] refused a list of windows.**
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -171,7 +171,7 @@ pub fn write(page: &mut [u8], windows: &[Window]) -> Result<(), Refusal> {
     Ok(())
 }
 
-/// **A startup page, read**: the bytes [`write`] made, checked for the magic and a count that fits.
+/// **A startup page, read**: the bytes [`write()`] made, checked for the magic and a count that fits.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
 #[derive(Debug, Clone, Copy)]
@@ -244,7 +244,7 @@ impl<'a> StartupPage<'a> {
 /// **The kinds of window a spawner in this tree hands out**, one number each, never reused.
 ///
 /// A number is unique across every program, not only within one, so a page that some day lists
-/// the windows of two programs in one space stays unambiguous. [`ALL`] lists them, and a test
+/// the windows of two programs in one space stays unambiguous. [`kind::ALL`] lists them, and a test
 /// holds every number apart.
 pub mod kind {
     use super::WindowKind;
@@ -270,19 +270,19 @@ pub mod kind {
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
     pub const E1000E_TRANSMIT_QUEUE_PAGE: WindowKind = WindowKind(5);
-    /// The DesignWare Ethernet server's DMA region, normal memory.
+    /// The `DesignWare` Ethernet server's DMA region, normal memory.
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
     pub const DESIGNWARE_ETHERNET_DATA_PLANE: WindowKind = WindowKind(6);
-    /// The DesignWare Ethernet controller's DMA register page, device memory.
+    /// The `DesignWare` Ethernet controller's DMA register page, device memory.
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
     pub const DESIGNWARE_ETHERNET_DIRECT_MEMORY_ACCESS_REGISTER_PAGE: WindowKind = WindowKind(7);
-    /// The DesignWare mobile storage controller's register page, device memory.
+    /// The `DesignWare` mobile storage controller's register page, device memory.
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
     pub const DESIGNWARE_MOBILE_STORAGE_REGISTER_PAGE: WindowKind = WindowKind(8);
-    /// The DesignWare mobile storage server's transfer buffer, normal memory.
+    /// The `DesignWare` mobile storage server's transfer buffer, normal memory.
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
     pub const DESIGNWARE_MOBILE_STORAGE_TRANSFER: WindowKind = WindowKind(9);
