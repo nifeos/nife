@@ -63,6 +63,54 @@ def license_is_accepted(field):
         return False
     return all(part in NOTICE_LICENSES for part in rest.split(' AND '))
 
+# A notice of adapted source opens with a line `SPDX-License-Identifier: <id>` naming that source's
+# license, after any comment marker. Only a line that begins with the marker counts, so prose that
+# quotes one is not a notice. The crate's own pair is not a notice.
+NOTICE_LINE = re.compile(r'^\s*(?://[!/]?|#|\*)?\s*SPDX-License-Identifier:(.*)$', re.M)
+OWN_IDENTIFIERS = {'MIT', 'Apache-2.0'}
+EXPRESSION_WORDS = {'AND', 'OR', 'WITH'}
+
+
+def is_notice_carrier(rel):
+    """Is the crate-relative path `rel` a file a notice can sit in: text, or a `LICENSE-<name>`?"""
+    name = rel.rsplit('/', 1)[-1]
+    if name in LICENSE_FILES:
+        return False
+    return rel.endswith(TEXT) or name.startswith('LICENSE-')
+
+
+def notice_licenses(files):
+    """{identifier: first path whose notice opens with it} over {path: text}, minus the own pair."""
+    found = {}
+    for path in sorted(files):
+        if not is_notice_carrier(path):
+            continue
+        for m in NOTICE_LINE.finditer(files[path]):
+            for ident in re.findall(r'[A-Za-z0-9][A-Za-z0-9.+-]*', m.group(1)):
+                if ident not in OWN_IDENTIFIERS | EXPRESSION_WORDS:
+                    found.setdefault(ident, path)
+    return found
+
+
+def notice_findings(files, field):
+    """[(step, why)] where the `AND` terms of `field` and the notices in `files` disagree.
+
+    Both directions fail: a notice whose license the field omits, naming the file, and a term no
+    notice backs, naming the term. A field that is not in the accepted shape is reported by
+    `file_findings`, so it adds nothing here.
+    """
+    if not license_is_accepted(field):
+        return []
+    terms = set() if field == LICENSE else set(field.partition(f'({LICENSE}) AND ')[2].split(' AND '))
+    notices = notice_licenses(files)
+    found = [('license', f'{where} carries {ident}, which the license field {field!r} does not name')
+             for ident, where in sorted(notices.items()) if ident not in terms]
+    found += [('license', f'license field names {term}, but no file carries an '
+                          f'SPDX-License-Identifier: {term} notice')
+              for term in sorted(terms - set(notices))]
+    return found
+
+
 CITATIONS = [
     ('section citation', re.compile(r'§\s?\d+')),
     ('milestone citation', re.compile(r'\bmilestones? \d+', re.I)),
@@ -186,6 +234,7 @@ def static_findings(files, root_names):
     if isinstance(field, dict) and field.get('workspace'):
         field = LICENSE   # inherited, so nife's own; the inheritance is reported above
     found += file_findings(root_names, field)
+    found += notice_findings(files, field)
     found += citation_findings(files)
     return found
 
@@ -232,3 +281,35 @@ def published(crate, lock_text):
 
 def allowlisted(crate, allowlist_text):
     return crate in {line.split('#')[0].strip() for line in (allowlist_text or '').split('\n')}
+
+
+def selftest():
+    """`static_findings` fails a crate whose license field and notices disagree, in both directions."""
+    manifest = '[package]\nname = "x"\nrust-version = "1.85"\nlicense = "%s"\n'
+    notice = '//! ```text\n//! SPDX-License-Identifier: ISC\n//! ```\n'
+    roots = {'README.md', 'LICENSE-MIT', 'LICENSE-APACHE'}
+    pair, joined = LICENSE, f'({LICENSE}) AND ISC'
+
+    def why(field, extra):
+        files = {'Cargo.toml': manifest % field, **extra}
+        return [w for step, w in static_findings(files, roots) if step == 'license']
+
+    assert why(pair, {'src/lib.rs': '//! plain\n'}) == []
+    assert why(joined, {'src/lib.rs': notice}) == []
+    assert why(joined, {'src/lib.rs': '', 'LICENSE-ISC': 'SPDX-License-Identifier: ISC\n'}) == []
+    assert why(pair, {'src/lib.rs': '//! see `SPDX-License-Identifier: GPL-2.0` in prose\n'}) == []
+    omitted = why(pair, {'src/lib.rs': notice})
+    assert len(omitted) == 1 and omitted[0].startswith('src/lib.rs carries ISC'), omitted
+    unbacked = why(joined, {'src/lib.rs': '//! plain\n'})
+    assert len(unbacked) == 1 and 'names ISC' in unbacked[0], unbacked
+    wrong = why(f'({LICENSE}) AND BSD-2-Clause', {'src/lib.rs': notice})
+    assert len(wrong) == 2, wrong
+    print('crate_release selftest: ok')
+
+
+if __name__ == '__main__':
+    import sys
+    if sys.argv[1:] == ['--selftest']:
+        selftest()
+    else:
+        sys.exit('usage: crate_release.py --selftest')

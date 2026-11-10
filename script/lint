@@ -4087,7 +4087,9 @@ echo "==> each crate's license field matches the licenses its sources adapt"
 # to the SPDX identifier of every license of source it adapts, and each adapted notice opens with an
 # `SPDX-License-Identifier:` line. A published manifest cannot be withdrawn, so a notice the field
 # omits and a term no notice backs both fail. The selftest plants each bad fixture.
-# helpers/license_match.py has the rules; script/license-match runs them alone.
+# helpers/crate_release.py reads the notices (script/crate-standalone runs the same reading on one
+# crate); helpers/license_match.py runs it over every crate, and script/license-match runs that alone.
+python3 helpers/crate_release.py --selftest
 python3 helpers/license_match.py --selftest
 script/license-match
 
