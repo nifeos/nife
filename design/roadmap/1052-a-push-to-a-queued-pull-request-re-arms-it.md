@@ -38,8 +38,7 @@ time, discarding three group builds.
    wearing a hold label, naming the label, then runs `gh pr merge --auto --merge` and reads GitHub
    back (`helpers/pr-queue-state.sh`). The holds are one definition, `helpers/hold-labels.sh`
    (`hold_label_of`), which `helpers/merge-drain.sh` sources too. It also refuses a pull request
-   that conflicts with the queue, milestone 1054 (an entry that conflicts with the queue is caught
-   before it).
+   that conflicts with the queue, which milestone 1054 built.
 3. The drain reports an unarmed pull request. The `unarmed` cause (`nm_unarmed` in
    `helpers/needs-maintainer.jq`) labels a ready, unheld pull request (`nm_ready_unheld`) that is
    neither armed nor queued for 30 minutes (`NM_MINUTES` in `helpers/merge-drain.sh`), once per
