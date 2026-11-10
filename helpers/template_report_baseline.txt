@@ -44,7 +44,7 @@ capability_plan prose_acronyms 4
 capability_plan register_names 1
 capability_witness_contract prose_acronyms 2
 clock_contract abbreviations 16
-clock_contract prose_acronyms 9
+clock_contract prose_acronyms 8
 clock_contract register_names 2
 compositor abbreviations 25
 compositor prose_acronyms 5

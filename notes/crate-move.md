@@ -96,7 +96,10 @@ harness's comment, where the template reads it, so those records pass `falsify.p
    ```
 
    Expected: exit 0 and `<crate>: clean`. The staged tree has git initialized, every file added and
-   nothing committed.
+   nothing committed. The run builds each fuzz target with `cargo +nightly fuzz build` and runs it
+   once over its corpus, so it needs `cargo-fuzz` and a nightly toolchain. The staged weekly caller passes `fuzz: true` only for a crate with no `unsafe` code, the
+   opt-in the maintainers ruled for weekly fuzzing; for any other crate it stays `false` and the
+   run says why.
 9. Commit and push (lane). The message names the template release and nothing of nife:
 
    ```sh
@@ -196,8 +199,16 @@ harness's comment, where the template reads it, so those records pass `falsify.p
     - the `script/verify` table and the Kani reach list in `.github/workflows/kani-reach.yml`;
     - `helpers/trust_boundary_crates.tsv` and `packages/*.package.toml`;
     - the mutation baseline, the `deny.toml` wrappers and `_typos.toml`;
-    - fuzz targets and their seeds, which move to the crate repository's `fuzz/`
-      ([the proposal](../design/roadmap/1043-a-moved-crate-is-fuzzed-in-its-own-repository.md));
+    - the fuzz targets, which the dry run staged in the crate repository's `fuzz/`
+      ([milestone 1043 (a moved crate is fuzzed in its own repository)](../design/roadmap/1043-a-moved-crate-is-fuzzed-in-its-own-repository.md)).
+      The dry run's last list names each removal:
+      - the `[[bin]]` sections of `fuzz/Cargo.toml`, and the crate's dependency line there when no
+        remaining target links it;
+      - `fuzz/fuzz_targets/<target>.rs`, and the targets' names and fixtures case in `script/fuzz`;
+      - `fuzz/seeds/<target>`, the seed scripts and their paragraphs in `fuzz/seeds/README.md`;
+      - the targets' sections of `notes/fuzzing/targets.md`.
+
+      Afterwards `script/fuzz --list` names none of them.
     - citations into `crates/<crate>/src`, which repoint to the repository at the tag, by symbol.
 
     The crate's milestone block states the soak's state. Expected: `cargo tree --locked -i <crate>`
@@ -274,10 +285,6 @@ publishes.
 - The template's scaffold mentions nife. The commit hook, `rustfmt.toml`, `deny.toml` and
   `docs/stranger-test.md` name it, and the pull request template names the architect. Every crate
   repository inherits those lines.
-- The dry run does not stage fuzz targets. They move to the crate repository's `fuzz/`, with
-  `fuzz: true` in its weekly caller, as
-  [the proposal](../design/roadmap/1043-a-moved-crate-is-fuzzed-in-its-own-repository.md)
-  provisionally rules; until the staging is built the move lane copies them by hand.
 - The mutation baseline travels as counts only. The dry run copies the crate's row from
   `.cargo/mutants-baseline.txt` into the staged `.github/mutants-exempts` as a comment, and the
   follow-up list says to delete the row here. The template's gate wants one `<file>:<line> # <reason>`

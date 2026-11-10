@@ -8471,7 +8471,6 @@ kernel/src/arch/x86_64/primitives.rs::wait_for_interrupt
 
 kernel/src/arch/x86_64/reset.rs
 
-kernel/src/arch/x86_64/rtc.rs
 
 kernel/src/arch/x86_64/segments.rs
 

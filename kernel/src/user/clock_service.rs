@@ -24,14 +24,19 @@ pub struct Wiring {
 
 /// Does this machine have an RTC at all?
 ///
-/// Elsewhere the device tree answers (`memory::rtc_region()`); on `x86_64` the kernel's own CMOS
-/// reader does, since that RTC is I/O ports the kernel keeps (§121 (what a device capability is
-/// when the device has no page)), and no answer means a reading it could not make into a date. A
-/// test asks before [`start`], so a skip leaves no service's frames charged to it.
+/// Elsewhere the device tree answers (`memory::rtc_region()`). On `x86_64` the answer is always
+/// yes: every PC-compatible machine has the CMOS at `clock_contract::rtc::INDEX_PORT`, and the
+/// kernel no longer reads it, so it cannot tell a dead battery from a live clock. A test asks
+/// before [`start`], so a skip leaves no service's frames charged to it.
+///
+/// # BUGS
+/// - On `x86_64` a CMOS that reads as no date (a dead battery with no host to seed it) fails the
+///   RTC-dependent tests instead of skipping them: only the clock service reads the CMOS, and it
+///   reports that case as `state::UNKNOWN`.
 pub fn machine_has_no_rtc() -> bool {
     #[cfg(target_arch = "x86_64")]
     {
-        crate::arch::rtc::read_unix_ns().is_none()
+        false
     }
     #[cfg(not(target_arch = "x86_64"))]
     {
@@ -42,9 +47,8 @@ pub fn machine_has_no_rtc() -> bool {
 /// The reason every RTC-dependent test gives when it skips. One string, because four files share
 /// one cause and a reader comparing two runs should not have to decide whether two wordings mean
 /// the same thing.
-pub const NO_RTC: &str = "this machine has no working real-time clock (no RTC binding in its \
-                          device tree, or on x86_64 a CMOS reading this kernel could not make \
-                          into a real calendar date)";
+pub const NO_RTC: &str = "this machine has no real-time clock (no RTC binding in its device \
+                          tree)";
 
 /// Wire and spawn the clock service.
 pub fn start(image: &'static [u8]) -> Wiring {
@@ -82,16 +86,13 @@ fn spawn_with(
 ) -> (Wiring, crate::thread::ThreadId) {
     let rtc = crate::memory::rtc_region();
 
-    // On x86_64 there is no RTC register to map, so the kernel reads the CMOS once and hands the
-    // wall clock over as `seed` (§130 (how the kernel-resident CMOS RTC reaches the userspace clock
-    // service), option 3); elsewhere the driver polls its own.
+    // On x86_64 the RTC is the CMOS behind two I/O ports, which the service reads itself through
+    // the `PortRange` granted below (§130 (the CMOS RTC and the userspace clock service));
+    // elsewhere the device tree names a page.
     #[cfg(target_arch = "x86_64")]
-    let (kind, seed) = match crate::arch::rtc::read_unix_ns() {
-        Some(ns) => (clock_contract::rtc::CMOS, ns),
-        None => (clock_contract::rtc::NONE, 0u64),
-    };
+    let kind = clock_contract::rtc::CMOS;
     #[cfg(not(target_arch = "x86_64"))]
-    let (kind, seed) = (rtc.map_or(clock_contract::rtc::NONE, |(_, _, k)| k), 0u64);
+    let kind = rtc.map_or(clock_contract::rtc::NONE, |(_, _, k)| k);
 
     // The RTC page is mapped with no `DeviceFrame` capability, as the console's UART is: the
     // service never delegates it, and §41 (a device is revoked by taking it back)'s revocation
@@ -116,17 +117,27 @@ fn spawn_with(
         None => 1,
     };
 
+    let grants = [
+        rendezvous_capability(propose, Rights::READ), // slot 0: serve proposals
+        rendezvous_capability(report, Rights::WRITE), // slot 1: the startup verdict
+        // Slot 2, x86_64 only: the CMOS ports. `WRITE` because the I/O permission bitmap cannot
+        // permit `in` without `out`; no `GRANT`, since the service never lends them on.
+        #[cfg(target_arch = "x86_64")]
+        crate::capability_object::port_range_capability(
+            clock_contract::rtc::INDEX_PORT,
+            clock_contract::rtc::DATA_PORT - clock_contract::rtc::INDEX_PORT + 1,
+            Rights::WRITE,
+        ),
+    ];
+
     let tid = crate::sched::spawn(move || {
         run(
             image,
             Spawn {
                 arg0: kind, // which register layout the MACHINE has, not which ISA we are
-                arg1: seed, // x86_64/CMOS only: the wall clock the kernel already read; 0 elsewhere
+                arg1: 0,
                 arg2: 0,
-                grants: &[
-                    rendezvous_capability(propose, Rights::READ), // slot 0: serve proposals
-                    rendezvous_capability(report, Rights::WRITE), // slot 1: the startup verdict
-                ],
+                grants: &grants,
                 maps: &maps[..n_maps],
                 windows: &[],
             },
