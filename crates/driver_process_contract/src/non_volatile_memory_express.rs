@@ -27,8 +27,8 @@ use startup_page_contract::WindowKind;
 /// process or as the data plane, and the capabilities each spawn grants are what separate them.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
-pub const ADMIN_ROLE: u64 = 0x4E56_4D45_4144_4D31;
-/// The data plane's role word, [`ADMIN_ROLE`]'s twin.
+pub const ADMINISTRATION_ROLE: u64 = 0x4E56_4D45_4144_4D31;
+/// The data plane's role word, [`ADMINISTRATION_ROLE`]'s twin.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
 pub const DATA_PLANE_ROLE: u64 = 0x4E56_4D45_4441_5431;
@@ -44,11 +44,11 @@ pub const REGISTER_PAGES: u64 = 2;
 /// The admin submission ring's page in the DMA run.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
-pub const ADMIN_SUBMISSION_QUEUE_PAGE: u64 = 0;
+pub const ADMINISTRATION_SUBMISSION_QUEUE_PAGE: u64 = 0;
 /// The admin completion ring's page in the DMA run.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
-pub const ADMIN_COMPLETION_QUEUE_PAGE: u64 = 1;
+pub const ADMINISTRATION_COMPLETION_QUEUE_PAGE: u64 = 1;
 /// The page IDENTIFY writes the namespace structure into.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
@@ -57,12 +57,12 @@ pub const IDENTIFY_PAGE: u64 = 2;
 /// IDENTIFY page. The data plane is never granted them.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
-pub const ADMIN_PAGES: u64 = 3;
+pub const ADMINISTRATION_PAGES: u64 = 3;
 /// Pages in one client's transfer window: one request's worth of filesystem blocks.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
 pub const TRANSFER_PAGES: u64 = filesystem_contract::blk::TRANSFER_BLOCKS as u64;
-/// Pages the data plane is granted, from [`ADMIN_PAGES`] on: the I/O submission ring, the I/O
+/// Pages the data plane is granted, from [`ADMINISTRATION_PAGES`] on: the I/O submission ring, the I/O
 /// completion ring, then one [`TRANSFER_PAGES`] window per client.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
@@ -70,7 +70,7 @@ pub const DATA_PLANE_PAGES: u64 = 2 + TRANSFER_PAGES * CLIENT_WINDOWS as u64;
 /// The whole DMA run the kernel allocates and confines the controller to.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
-pub const DIRECT_MEMORY_ACCESS_PAGES: u64 = ADMIN_PAGES + DATA_PLANE_PAGES;
+pub const DIRECT_MEMORY_ACCESS_PAGES: u64 = ADMINISTRATION_PAGES + DATA_PLANE_PAGES;
 /// The I/O submission ring's page, counted from the start of the data plane's pages.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
@@ -89,24 +89,34 @@ pub const FIRST_TRANSFER_PAGE: u64 = 2;
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
 pub const REGISTER_KIND: WindowKind = WindowKind(1);
-/// The admin process's queue window on its startup page: the run's first [`ADMIN_PAGES`] pages.
+/// The admin process's queue window on its startup page: the run's first [`ADMINISTRATION_PAGES`] pages.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
-pub const ADMIN_QUEUE_KIND: WindowKind = WindowKind(2);
+pub const ADMINISTRATION_QUEUE_KIND: WindowKind = WindowKind(2);
 
 /// **The admin process's capability slots**, in the order its spawn grants them.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
-pub mod admin_slots {
-    /// `WRITE`: the endpoint the admin process sends its one [`super::AdminReport`] on.
+pub mod administration_slots {
+    /// `WRITE`: the endpoint the admin process sends its one [`super::AdministrationReport`] on.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
     pub const REPORT: u64 = 0;
     /// `WRITE`: the endpoint the data plane receives its handoff and its two grants on.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
     pub const GRANTS: u64 = 1;
     /// `WRITE | GRANT`: the doorbell page, as a `DeviceFrame`, for the data plane.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
     pub const DOORBELL_PAGE: u64 = 2;
     /// `READ | WRITE | GRANT`: the data plane's pages of the DMA run, as one `PageFrame` run.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
     pub const DATA_PLANE: u64 = 3;
     /// `READ`: the endpoint the kernel calls with [`super::RETIRE`].
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
     pub const CONTROL: u64 = 4;
 }
 
@@ -117,12 +127,20 @@ pub mod admin_slots {
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
 pub mod data_plane_slots {
     /// `READ`: the request endpoint the data plane serves `filesystem_contract::blk` on.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
     pub const REQUEST: u64 = 0;
     /// `WRITE`: the readiness endpoint, written once.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
     pub const READY: u64 = 1;
     /// `READ`: where the admin process's handoff and grants arrive.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
     pub const GRANTS: u64 = 2;
     /// `WRITE`: the data plane's own address space, which it maps its two grants into.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
     pub const OWN_SPACE: u64 = 3;
 }
 
@@ -147,7 +165,7 @@ pub const RETIRE: u64 = 0x4E56_5254;
 /// **Why the admin process refused the controller**, each naming the phase it died in, because
 /// "the disk did not come up" from a five-step bring-up is the kind of message this project's
 /// debugging notes complain about. It crosses from the admin process to the kernel in
-/// [`AdminReport`].
+/// [`AdministrationReport`].
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -161,13 +179,14 @@ pub enum BringUpError {
     /// The controller completed an admin command with a nonzero status field (the field is
     /// carried).
     Command(u16),
-    /// The identify data described a namespace this driver cannot serve (LBA format outside
-    /// 512..=4096 bytes, or a size of zero). `lba_shift` is the format's LBADS as the controller
-    /// reported it, 0 if the structure was too short to carry one, so the refusal names the LBA
-    /// size it refused (fatal risk 6's second night-of condition).
+    /// The identify data described a namespace this driver cannot serve (a logical block format
+    /// outside 512..=4096 bytes, or a size of zero). `logical_block_size_shift` is the format's
+    /// size shift as the controller reported it, 0 if the structure was too short to carry one, so
+    /// the refusal names the logical block size it refused (fatal risk 6's second night-of
+    /// condition).
     UnsupportedNamespace {
-        /// The LBA format's size shift.
-        lba_shift: u8,
+        /// The logical block format's size shift.
+        logical_block_size_shift: u8,
         /// The namespace's size in logical blocks.
         blocks: u64,
     },
@@ -181,9 +200,9 @@ pub enum BringUpError {
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AdminReport {
+pub enum AdministrationReport {
     /// The controller is enabled with its one I/O pair created, and the data plane's handoff is
-    /// next on [`admin_slots::GRANTS`].
+    /// next on [`administration_slots::GRANTS`].
     Ready {
         /// The namespace's capacity in bytes.
         size_bytes: u64,
@@ -194,30 +213,31 @@ pub enum AdminReport {
     Refused(BringUpError),
 }
 
-/// [`AdminReport::Ready`]'s word 0.
+/// [`AdministrationReport::Ready`]'s word 0.
 const REPORT_READY: u64 = 0x4E56_4144_0000_0001;
-/// [`AdminReport::Refused`]'s word 0; the low byte of word 1 names the variant.
+/// [`AdministrationReport::Refused`]'s word 0; the low byte of word 1 names the variant.
 const REPORT_REFUSED: u64 = 0x4E56_4144_0000_0002;
 
-impl AdminReport {
+impl AdministrationReport {
     /// The three words of one `SEND`.
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
     pub const fn pack(&self) -> [u64; 3] {
         match *self {
-            AdminReport::Ready {
+            AdministrationReport::Ready {
                 size_bytes,
                 blocks_per_transfer,
             } => [REPORT_READY, size_bytes, blocks_per_transfer as u64],
-            AdminReport::Refused(why) => {
+            AdministrationReport::Refused(why) => {
                 let (kind, detail, blocks) = match why {
                     BringUpError::ControllerTimeout => (1, 0, 0),
                     BringUpError::ControllerFatal => (2, 0, 0),
                     BringUpError::CompletionTimeout => (3, 0, 0),
                     BringUpError::Command(status) => (4, status as u64, 0),
-                    BringUpError::UnsupportedNamespace { lba_shift, blocks } => {
-                        (5, lba_shift as u64, blocks)
-                    }
+                    BringUpError::UnsupportedNamespace {
+                        logical_block_size_shift,
+                        blocks,
+                    } => (5, logical_block_size_shift as u64, blocks),
                     BringUpError::UnsupportedController => (6, 0, 0),
                 };
                 [REPORT_REFUSED, kind + (detail << 8), blocks]
@@ -229,13 +249,13 @@ impl AdminReport {
     /// a variant byte that names none, or a ready geometry outside `1..=8`.
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
-    pub const fn unpack(words: [u64; 3]) -> Option<AdminReport> {
+    pub const fn unpack(words: [u64; 3]) -> Option<AdministrationReport> {
         match words[0] {
             REPORT_READY => {
                 if words[2] < 1 || words[2] > 8 {
                     return None;
                 }
-                Some(AdminReport::Ready {
+                Some(AdministrationReport::Ready {
                     size_bytes: words[1],
                     blocks_per_transfer: words[2] as u16,
                 })
@@ -248,13 +268,13 @@ impl AdminReport {
                     3 => BringUpError::CompletionTimeout,
                     4 => BringUpError::Command(detail as u16),
                     5 => BringUpError::UnsupportedNamespace {
-                        lba_shift: detail as u8,
+                        logical_block_size_shift: detail as u8,
                         blocks: words[2],
                     },
                     6 => BringUpError::UnsupportedController,
                     _ => return None,
                 };
-                Some(AdminReport::Refused(why))
+                Some(AdministrationReport::Refused(why))
             }
             _ => None,
         }
@@ -352,12 +372,12 @@ const _: () = assert!(
 pub const ESCAPE_MAGIC: u64 = 0xE5CA_9E00_4E56_4D45;
 
 /// **What the admin process tells the data plane before its two grants**, and the whole of it: the
-/// physical base, because PRP fields carry physical addresses and a process knows virtual ones; the
+/// physical base, because physical region page (PRP) fields carry physical addresses and a process knows virtual ones; the
 /// geometry, because reading it means IDENTIFY, the admin authority this split withholds; and the
 /// doorbell stride, because it lives in `CAP`, on the register page the data plane is not granted.
 ///
 /// **Three `u64`s because one `SEND` carries three words**, the first message on
-/// [`admin_slots::GRANTS`]. The admin process packs them and the data plane unpacks them, so the
+/// [`administration_slots::GRANTS`]. The admin process packs them and the data plane unpacks them, so the
 /// packing is written once, here, and a Kani round trip checks its inverse.
 ///
 /// Name: provisional. No ruling covers it.
@@ -483,29 +503,29 @@ mod tests {
     /// Every report the admin process can send comes back as itself, each refusal keeping its
     /// variant and detail apart from every other's.
     #[test]
-    fn every_admin_report_round_trips() {
+    fn every_administration_report_round_trips() {
         let reports = [
-            AdminReport::Ready {
+            AdministrationReport::Ready {
                 size_bytes: 8 * 1024 * 1024,
                 blocks_per_transfer: 8,
             },
-            AdminReport::Ready {
+            AdministrationReport::Ready {
                 size_bytes: u64::MAX,
                 blocks_per_transfer: 1,
             },
-            AdminReport::Refused(BringUpError::ControllerTimeout),
-            AdminReport::Refused(BringUpError::ControllerFatal),
-            AdminReport::Refused(BringUpError::CompletionTimeout),
-            AdminReport::Refused(BringUpError::Command(0x4002)),
-            AdminReport::Refused(BringUpError::Command(u16::MAX)),
-            AdminReport::Refused(BringUpError::UnsupportedNamespace {
-                lba_shift: 13,
+            AdministrationReport::Refused(BringUpError::ControllerTimeout),
+            AdministrationReport::Refused(BringUpError::ControllerFatal),
+            AdministrationReport::Refused(BringUpError::CompletionTimeout),
+            AdministrationReport::Refused(BringUpError::Command(0x4002)),
+            AdministrationReport::Refused(BringUpError::Command(u16::MAX)),
+            AdministrationReport::Refused(BringUpError::UnsupportedNamespace {
+                logical_block_size_shift: 13,
                 blocks: 0x1_0000_0001,
             }),
-            AdminReport::Refused(BringUpError::UnsupportedController),
+            AdministrationReport::Refused(BringUpError::UnsupportedController),
         ];
         for (n, r) in reports.iter().enumerate() {
-            assert_eq!(AdminReport::unpack(r.pack()), Some(*r), "{r:?}");
+            assert_eq!(AdministrationReport::unpack(r.pack()), Some(*r), "{r:?}");
             for other in &reports[..n] {
                 assert_ne!(r.pack(), other.pack(), "{r:?} packs as {other:?}");
             }
@@ -515,32 +535,32 @@ mod tests {
     /// Words no admin process sends are refused: a wrong first word, a variant byte that names
     /// none, and a ready geometry outside `1..=8`.
     #[test]
-    fn an_admin_report_no_admin_process_sends_is_refused() {
-        assert_eq!(AdminReport::unpack([0, 0, 0]), None);
-        assert_eq!(AdminReport::unpack([REPORT_READY, 4096, 0]), None);
-        assert_eq!(AdminReport::unpack([REPORT_READY, 4096, 9]), None);
-        assert!(AdminReport::unpack([REPORT_READY, 4096, 1]).is_some());
-        assert_eq!(AdminReport::unpack([REPORT_REFUSED, 0, 0]), None);
-        assert_eq!(AdminReport::unpack([REPORT_REFUSED, 7, 0]), None);
+    fn an_administration_report_no_administration_process_sends_is_refused() {
+        assert_eq!(AdministrationReport::unpack([0, 0, 0]), None);
+        assert_eq!(AdministrationReport::unpack([REPORT_READY, 4096, 0]), None);
+        assert_eq!(AdministrationReport::unpack([REPORT_READY, 4096, 9]), None);
+        assert!(AdministrationReport::unpack([REPORT_READY, 4096, 1]).is_some());
+        assert_eq!(AdministrationReport::unpack([REPORT_REFUSED, 0, 0]), None);
+        assert_eq!(AdministrationReport::unpack([REPORT_REFUSED, 7, 0]), None);
         // The detail rides above the variant byte, so a status whose low byte is a variant number
         // still decodes as the status it is.
         assert_eq!(
-            AdminReport::unpack([REPORT_REFUSED, 4 | 0x0106 << 8, 0]),
-            Some(AdminReport::Refused(BringUpError::Command(0x0106)))
+            AdministrationReport::unpack([REPORT_REFUSED, 4 | 0x0106 << 8, 0]),
+            Some(AdministrationReport::Refused(BringUpError::Command(0x0106)))
         );
     }
 
     /// The run's layout: the admin pages first, then the data plane's rings and windows, with
     /// nothing between or past them.
     #[test]
-    fn the_direct_memory_access_run_is_the_admin_pages_then_the_data_plane() {
-        let admin = [
-            ADMIN_SUBMISSION_QUEUE_PAGE,
-            ADMIN_COMPLETION_QUEUE_PAGE,
+    fn the_direct_memory_access_run_is_the_administration_pages_then_the_data_plane() {
+        let administration = [
+            ADMINISTRATION_SUBMISSION_QUEUE_PAGE,
+            ADMINISTRATION_COMPLETION_QUEUE_PAGE,
             IDENTIFY_PAGE,
         ];
-        assert!(admin.iter().all(|&p| p < ADMIN_PAGES));
-        assert_eq!(ADMIN_PAGES, 3);
+        assert!(administration.iter().all(|&p| p < ADMINISTRATION_PAGES));
+        assert_eq!(ADMINISTRATION_PAGES, 3);
         assert_eq!(
             FIRST_TRANSFER_PAGE + TRANSFER_PAGES * CLIENT_WINDOWS as u64,
             DATA_PLANE_PAGES

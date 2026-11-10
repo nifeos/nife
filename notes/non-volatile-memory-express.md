@@ -26,15 +26,13 @@ The tree's usual split, with the driver in two processes from one program:
 - **`kernel/src/non_volatile_memory_express.rs`**: the kernel's whole part.
   `find_and_confine()` finds the controller, allocates its DMA run, and confines its requester id
   to that run before any process holds BAR0. It knows nothing else about NVMe (§86's ruling).
-- **`components/src/non_volatile_memory_express_admin.rs`**: the admin process, at EL0. Reset, the
-  admin rings by register, enable, IDENTIFY, Create I/O Queue, then the grants to the data plane.
-  It stays alive to retire the controller.
-- **`components/src/non_volatile_memory_express.rs`**: the data plane, at EL0. Copies commands
-  into the I/O submission ring, rings the doorbell, polls the completion ring's phase tag, and
-  serves `filesystem_contract::blk`. The program serves both roles, picked by `arg0`. It shares the
-  crate's name rather than carrying a `_server` suffix, which calef ruled on 2026-09-18: the obvious
-  spelling is 34 bytes against `nifefs`'s 32-byte `NAME_LEN`, and the program's own header has the
-  argument. A separate admin program would hit the same limit.
+- **`components/src/non_volatile_memory_express.rs`**: one EL0 program in two roles, picked by
+  `arg0`. Its `_admin` module resets the controller, sets up the admin rings, runs IDENTIFY and
+  Create I/O Queue, grants the data plane its pages, and stays alive to retire the controller. Its
+  `_data_plane` module copies commands into the I/O submission ring, rings the doorbell, polls the
+  completion ring's phase tag, and serves `filesystem_contract::blk`. The program shares the
+  crate's name, which calef ruled on 2026-09-18: a `_server` suffix would not fit `nifefs`'s 32-byte
+  `NAME_LEN`, and a separate admin program would not either.
 - **`crates/driver_process_contract/src/non_volatile_memory_express.rs`**: what the three agree
   on: the run's layout, each process's slots, the admin report, the handoff and the grant tags.
 - **`kernel/src/user/non_volatile_memory_express_service.rs`**: the wiring: what each process is
@@ -77,9 +75,9 @@ queue addresses and checks every descriptor against the driver's DMA region befo
 device. NVMe's equivalent of a descriptor is the PRP inside a command the controller fetches from
 driver-written memory, and nothing kernel-side parses commands on their way past.
 
-What bounds the device instead is the IOMMU alone (milestone 16b): `find_and_confine` confines
-the controller's requester id to its DMA run *before* any process can enable it, so there is no
-instant at which an enabled controller could reach other memory. On a machine without an IOMMU
+What bounds the device instead is the IOMMU alone (milestone 16b (IOMMU-backed driver isolation)).
+`find_and_confine` confines the controller's requester id to its DMA run *before* any process can
+enable it, so no enabled controller could ever reach other memory. On a machine without an IOMMU
 nothing bounds it, and nife trusts both processes (§86's ruling: confinement means an IOMMU). All three test boots have an
 IOMMU denying unlisted requester ids by default. They are aarch64's SMMUv3, riscv64's ratified
 RISC-V IOMMU, and x86_64's VT-d, confirmed behind this driver 2026-08-25 per the evidence section of §86 (whether an NVMe
@@ -99,12 +97,12 @@ The split costs no new syscall surface, because NVMe 1.4 section 3.1 already put
 where the authority boundary belongs. The controller registers (`CC`, `CSTS`, `AQA`, `ASQ`, `ACQ`)
 are below offset `1000h` and the first doorbell is at `1000h`.
 
-- **The admin process** is mapped BAR0's register and doorbell pages and the run's first three
-  pages (the admin rings and the IDENTIFY page), as spawn-time mappings it holds no name for. It
+- The kernel maps the admin process BAR0's register and doorbell pages and the run's first three
+  pages (the admin rings and the IDENTIFY page), as spawn-time mappings. It
   also holds the doorbell page as a `DeviceFrame` and the run's data-plane pages as one `PageFrame`
   run, both with `GRANT`, and never maps them. BAR0's later pages stay unmapped: a controller may
   put its MSI-X table there, and mapping it would hand a process the power to aim an interrupt.
-- **The data plane** starts with three endpoints and its own address space. It receives three
+- The data plane starts with three endpoints and its own address space. It receives three
   words of geometry and then the two capabilities from the admin process, narrowed so it cannot
   pass them on, and maps them into its own space with `AddressSpace::MAP_INTO`. It holds no
   `Interrupt` and no `Virtio` capability, and nothing names the register page or the admin pages.
@@ -121,10 +119,9 @@ ring. And with `CAP.DSTRD` = 0 the admin doorbells share the granted page, so it
 queue without being able to write what that queue holds. Both are denial of service against the
 controller rather than an escape, and option 4's doorbell validator is what would close them.
 
-**Option 4 stays addable** (§86). Which submission queue the controller is told about is the admin
+§86's option 4 stays addable. Which submission queue the controller is told about is the admin
 process's choice. Doorbell mediation would put that choice and the doorbell behind a kernel
-capability, and the data plane would ring through the capability instead of the granted page,
-changing almost nothing else in it.
+capability, and the data plane would ring through it instead, changing little else.
 
 ### What x86_64 needed that the other two did not
 

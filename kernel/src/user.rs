@@ -164,7 +164,8 @@ pub mod entropy_service;
 #[cfg_attr(not(feature = "storage_bench"), allow(dead_code))]
 pub mod designware_mobile_storage_service;
 
-/// **The NVMe disk's wiring** (milestone 261; DECISIONS §86).
+/// **The NVMe disk's wiring** (milestone 261; DECISIONS §86 (whether an NVMe driver can leave the
+/// kernel)).
 ///
 /// The kernel confines the controller to one DMA run and starts two processes: an admin process,
 /// which holds BAR0 and the admin pages and says where every queue lives, and a data plane it

@@ -1,13 +1,15 @@
 //! What the kernel does for an NVMe controller under §86 (whether an NVMe driver can leave the
 //! kernel): find it, allocate its DMA run, and confine its requester id to that run before any
 //! process can reach BAR0. Everything else about NVMe (reset, the admin rings, IDENTIFY, the I/O
-//! queues, every command) runs in userspace: the admin process and the data plane, both
-//! `components/src/non_volatile_memory_express.rs`. See notes/non-volatile-memory-express.md.
+//! queues, every command) runs in userspace, in the two roles of the `non_volatile_memory_express`
+//! program (`components/src/non_volatile_memory_express.rs`). See
+//! notes/non-volatile-memory-express.md.
 //!
 //! Name: ratified 2026-09-17 (calef, DECISIONS §154), performed 2026-09-18. Introduced 2026-08-15
-//! with milestone 53's NVMe block driver as `nvme.rs`, and it takes its crate's name because that
-//! is what the pairing means: `pci` and `virtio` already sit this way. The argument and the
-//! refusals are recorded once, beside the crate, in `crates/non_volatile_memory_express`.
+//! with milestone 53 (the board's own peripherals)'s NVMe block driver as `nvme.rs`, and it takes
+//! its crate's name because that is what the pairing means: `pci` and `virtio` already sit this
+//! way. The argument and the refusals are recorded once, beside the crate, in
+//! `crates/non_volatile_memory_express`.
 
 use driver_process_contract::non_volatile_memory_express::{
     BringUpError, DIRECT_MEMORY_ACCESS_PAGES,

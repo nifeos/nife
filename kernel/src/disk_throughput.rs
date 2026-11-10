@@ -149,7 +149,11 @@ fn bring_up(image: &'static [u8]) -> Result<Wiring, Verdict> {
         }
         Err(Absent::Refused {
             rid,
-            why: BringUpError::UnsupportedNamespace { lba_shift, blocks },
+            why:
+                BringUpError::UnsupportedNamespace {
+                    logical_block_size_shift: lba_shift,
+                    blocks,
+                },
         }) => {
             // No server, so no wiring; the requester id still answers the scope.
             print_scope(rid, crate::iommu::scope_of(rid));

@@ -8,7 +8,7 @@
 
 //! # Capability contract
 //!
-//! Held, the complete list: `admin_slots::REPORT`, `GRANTS` and `CONTROL`, three endpoints; the
+//! Held, the complete list: `administration_slots::REPORT`, `GRANTS` and `CONTROL`, three endpoints; the
 //! doorbell page as a `DeviceFrame` and the data plane's pages as a `PageFrame` run, both with
 //! `GRANT`, both delegated narrowed to the data plane and never mapped here; BAR0's register and
 //! doorbell pages, [`REGISTERS`]; and the run's admin pages, [`ADMIN_QUEUES`], both mapped by the
@@ -27,20 +27,32 @@
 //! program.
 
 use driver_process_contract::non_volatile_memory_express::{
-    ADMIN_COMPLETION_QUEUE_PAGE, ADMIN_PAGES, ADMIN_QUEUE_KIND, ADMIN_SUBMISSION_QUEUE_PAGE,
-    AdminReport, BringUpError, DATA_PLANE_GRANT, DOORBELL_PAGE_GRANT, Handoff, IDENTIFY_PAGE,
-    IO_COMPLETION_QUEUE_PAGE, IO_SUBMISSION_QUEUE_PAGE, MAXIMUM_DOORBELL_STRIDE, REGISTER_KIND,
-    REGISTER_PAGES, RETIRE, admin_slots,
+    ADMINISTRATION_COMPLETION_QUEUE_PAGE, ADMINISTRATION_PAGES, ADMINISTRATION_QUEUE_KIND,
+    ADMINISTRATION_SUBMISSION_QUEUE_PAGE, AdministrationReport, BringUpError, DATA_PLANE_GRANT,
+    DOORBELL_PAGE_GRANT, Handoff, IDENTIFY_PAGE, IO_COMPLETION_QUEUE_PAGE,
+    IO_SUBMISSION_QUEUE_PAGE, MAXIMUM_DOORBELL_STRIDE, REGISTER_KIND, REGISTER_PAGES, RETIRE,
+    administration_slots,
 };
 use non_volatile_memory_express::{
     Capabilities, Command, Completion, CompletionQueue, Doorbell, IdentifyNamespace,
     SubmissionQueue, registers,
 };
 use startup_page_contract::StartupWindow;
-use user_mode_runtime::mapped_window::PAGE;
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{exit, receive_request, reply, send, send_capability};
 
-use crate::{BLOCK_SIZE, IO_QID, NSID, SPIN_BOUND, barrier, mapped};
+use crate::{IO_QID, NSID, SPIN_BOUND, barrier};
+
+/// One filesystem block, the unit IDENTIFY's geometry is checked against.
+const BLOCK_SIZE: u64 = filesystem_contract::blk::BLOCK_SIZE as u64;
+
+/// A window from the startup page, as a bounds-checked [`MappedWindow`] of the length its static
+/// declares.
+fn mapped(window: &StartupWindow) -> MappedWindow {
+    // SAFETY: each `StartupWindow` here was declared on the spawner's promise that it maps the
+    // window for the life of the process, which is what `MappedWindow::new` asks.
+    unsafe { MappedWindow::new(window.virtual_address(), window.length_bytes()) }
+}
 
 /// Sixteen entries per ring: one page holds 64 (submission) or 256 (completion), but the data
 /// plane completes each command before submitting the next, so depth buys nothing and a small
@@ -56,7 +68,7 @@ static REGISTERS: StartupWindow =
 /// The admin submission ring, the admin completion ring and the IDENTIFY page.
 // SAFETY: as [`REGISTERS`], mapped read/write normal memory.
 static ADMIN_QUEUES: StartupWindow =
-    unsafe { StartupWindow::new(ADMIN_QUEUE_KIND, ADMIN_PAGES * PAGE) };
+    unsafe { StartupWindow::new(ADMINISTRATION_QUEUE_KIND, ADMINISTRATION_PAGES * PAGE) };
 
 /// How many bytes of the IDENTIFY namespace structure the parse reads: through the LBA format
 /// table, which ends at byte 384.
@@ -126,7 +138,10 @@ impl Controller {
             .admin_sq
             .push()
             .expect("one command in flight per queue, so the admin ring cannot be full");
-        queues.write(ADMIN_SUBMISSION_QUEUE_PAGE * PAGE + slot as u64 * 64, cmd.0);
+        queues.write(
+            ADMINISTRATION_SUBMISSION_QUEUE_PAGE * PAGE + slot as u64 * 64,
+            cmd.0,
+        );
         // The entry before the doorbell that announces it; the same barrier orders the poll
         // reads below.
         barrier();
@@ -135,7 +150,7 @@ impl Controller {
             self.admin_sq.tail() as u32,
         );
 
-        let cqe = ADMIN_COMPLETION_QUEUE_PAGE * PAGE + self.admin_cq.head() as u64 * 16;
+        let cqe = ADMINISTRATION_COMPLETION_QUEUE_PAGE * PAGE + self.admin_cq.head() as u64 * 16;
         let mut done: Option<Completion> = None;
         for _ in 0..SPIN_BOUND {
             let c = Completion::from_dwords(queues.read::<[u32; 4]>(cqe));
@@ -177,16 +192,16 @@ impl Controller {
     /// queues, enable, identify the namespace, create the I/O queue pair in the data plane's
     /// pages. Returns the namespace it identified.
     fn bring_up(&mut self) -> Result<IdentifyNamespace, BringUpError> {
-        let cap = Capabilities(self.reg64(registers::CONTROLLER_CAPABILITIES_REGISTER));
+        let capabilities = Capabilities(self.reg64(registers::CONTROLLER_CAPABILITIES_REGISTER));
         // The doorbell stride is also checked in `Handoff::unpack`; here it fails at bring-up,
         // naming the controller, not in a process that cannot reach its doorbells.
-        if cap.maximum_queue_entries() < ENTRIES as u32
-            || cap.minimum_page_size() > PAGE
-            || cap.doorbell_stride() > MAXIMUM_DOORBELL_STRIDE
+        if capabilities.maximum_queue_entries() < ENTRIES as u32
+            || capabilities.minimum_page_size() > PAGE
+            || capabilities.doorbell_stride() > MAXIMUM_DOORBELL_STRIDE
         {
             return Err(BringUpError::UnsupportedController);
         }
-        self.dstrd = cap.doorbell_stride();
+        self.dstrd = capabilities.doorbell_stride();
 
         // A controller that was already enabled (a warm reboot, or a previous test) must be taken
         // down before the admin queue registers may change; RDY follows EN in both directions.
@@ -207,11 +222,11 @@ impl Controller {
         );
         self.wr64(
             registers::ADMIN_SUBMISSION_QUEUE_BASE_PHYSICAL_ADDRESS_REGISTER,
-            self.dma + ADMIN_SUBMISSION_QUEUE_PAGE * PAGE,
+            self.dma + ADMINISTRATION_SUBMISSION_QUEUE_PAGE * PAGE,
         );
         self.wr64(
             registers::ADMIN_COMPLETION_QUEUE_BASE_PHYSICAL_ADDRESS_REGISTER,
-            self.dma + ADMIN_COMPLETION_QUEUE_PAGE * PAGE,
+            self.dma + ADMINISTRATION_COMPLETION_QUEUE_PAGE * PAGE,
         );
         self.wr32(
             registers::CONTROLLER_CONFIGURATION_REGISTER,
@@ -231,8 +246,10 @@ impl Controller {
         let mut data = [0u8; IDENTIFY_BYTES];
         mapped(&ADMIN_QUEUES).copy_to_slice(IDENTIFY_PAGE * PAGE, &mut data);
         let refused = BringUpError::UnsupportedNamespace {
-            lba_shift: non_volatile_memory_express::logical_block_format_size_shift(&data)
-                .unwrap_or(0),
+            logical_block_size_shift: non_volatile_memory_express::logical_block_format_size_shift(
+                &data,
+            )
+            .unwrap_or(0),
             blocks: u64::from_le_bytes(data[0..8].try_into().unwrap_or([0; 8])),
         };
         let namespace =
@@ -243,7 +260,7 @@ impl Controller {
 
         // Completion queue first: the submission queue names it, so the other order is an Invalid
         // Queue Identifier. Both rings sit in the data plane's pages.
-        let data_plane = self.dma + ADMIN_PAGES * PAGE;
+        let data_plane = self.dma + ADMINISTRATION_PAGES * PAGE;
         let cid = self.next_cid();
         self.transact(Command::create_io_completion_queue(
             cid,
@@ -281,8 +298,8 @@ pub(crate) fn run(dma: u64) -> ! {
     let namespace = match controller.bring_up() {
         Ok(namespace) => namespace,
         Err(why) => {
-            let [w0, w1, w2] = AdminReport::Refused(why).pack();
-            send(admin_slots::REPORT, w0, w1, w2);
+            let [w0, w1, w2] = AdministrationReport::Refused(why).pack();
+            send(administration_slots::REPORT, w0, w1, w2);
             exit();
         }
     };
@@ -290,12 +307,12 @@ pub(crate) fn run(dma: u64) -> ! {
     let Some(blocks_per_transfer) = namespace.blocks_per_transfer(BLOCK_SIZE) else {
         exit();
     };
-    let report = AdminReport::Ready {
+    let report = AdministrationReport::Ready {
         size_bytes: namespace.capacity_bytes(),
         blocks_per_transfer,
     };
     let [w0, w1, w2] = report.pack();
-    send(admin_slots::REPORT, w0, w1, w2);
+    send(administration_slots::REPORT, w0, w1, w2);
 
     // The data plane's whole world from this process: three words, then the doorbell page and its
     // pages of the run, each narrowed so it cannot pass them on.
@@ -303,27 +320,27 @@ pub(crate) fn run(dma: u64) -> ! {
         dstrd: controller.dstrd,
         blocks_per_transfer,
         entries: ENTRIES,
-        data_plane_physical_address: dma + ADMIN_PAGES * PAGE,
+        data_plane_physical_address: dma + ADMINISTRATION_PAGES * PAGE,
         size_bytes: namespace.capacity_bytes(),
     };
     let [w0, w1, w2] = handoff.pack();
-    send(admin_slots::GRANTS, w0, w1, w2);
+    send(administration_slots::GRANTS, w0, w1, w2);
     send_capability(
-        admin_slots::GRANTS,
-        admin_slots::DOORBELL_PAGE,
+        administration_slots::GRANTS,
+        administration_slots::DOORBELL_PAGE,
         abi::rights::WRITE,
         DOORBELL_PAGE_GRANT,
     );
     send_capability(
-        admin_slots::GRANTS,
-        admin_slots::DATA_PLANE,
+        administration_slots::GRANTS,
+        administration_slots::DATA_PLANE,
         abi::rights::READ | abi::rights::WRITE,
         DATA_PLANE_GRANT,
     );
 
     // Hold the controller until asked to give it up.
     loop {
-        let request = receive_request(admin_slots::CONTROL);
+        let request = receive_request(administration_slots::CONTROL);
         let Some(to) = request.delivered.into_reply() else {
             continue;
         };

@@ -26,7 +26,8 @@
 use core::num::NonZeroU64;
 
 use driver_process_contract::non_volatile_memory_express::{
-    self as contract, ADMIN_PAGES, AdminReport, DATA_PLANE_PAGES, REGISTER_PAGES, admin_slots,
+    self as contract, ADMINISTRATION_PAGES, AdministrationReport, DATA_PLANE_PAGES, REGISTER_PAGES,
+    administration_slots,
 };
 
 use super::*;
@@ -147,7 +148,7 @@ struct Admin {
 
 /// **Start the admin process on a found and confined controller, and wait for its report.**
 ///
-/// It is handed BAR0's [`REGISTER_PAGES`] pages and the run's first [`ADMIN_PAGES`] pages as
+/// It is handed BAR0's [`REGISTER_PAGES`] pages and the run's first [`ADMINISTRATION_PAGES`] pages as
 /// spawn-time mappings, which it holds no name for and so cannot delegate, and two capabilities it
 /// can: the doorbell page as a `DeviceFrame` and the run's data-plane pages as one `PageFrame` run.
 /// [`Absent::Refused`] carries the phase it reported when it refused the controller.
@@ -161,7 +162,7 @@ fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
         Rights::WRITE.union(Rights::GRANT),
     );
     let data_plane = page_frame_run_capability(
-        dma + ADMIN_PAGES * page_frames::FRAME_SIZE,
+        dma + ADMINISTRATION_PAGES * page_frames::FRAME_SIZE,
         NonZeroU64::new(DATA_PLANE_PAGES).expect("the data plane has pages"),
         Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
     );
@@ -171,7 +172,7 @@ fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
             .expect("no frame for the NVMe admin process's stack")
             .addr();
     }
-    const MAPS: usize = (REGISTER_PAGES + ADMIN_PAGES) as usize + ADMIN_EXTRA_STACK_PAGES;
+    const MAPS: usize = (REGISTER_PAGES + ADMINISTRATION_PAGES) as usize + ADMIN_EXTRA_STACK_PAGES;
     let thread = crate::sched::spawn(move || {
         let mut maps = [Mapping {
             va: 0,
@@ -191,16 +192,16 @@ fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
             &mut maps[REGISTER_PAGES as usize..],
             ADMIN_QUEUES_VA,
             dma,
-            ADMIN_PAGES as usize,
+            ADMINISTRATION_PAGES as usize,
         );
         for (k, &frame) in stack.iter().enumerate() {
-            maps[(REGISTER_PAGES + ADMIN_PAGES) as usize + k] = Mapping {
+            maps[(REGISTER_PAGES + ADMINISTRATION_PAGES) as usize + k] = Mapping {
                 va: USER_STACK_VA - (k as u64 + 1) * page_frames::FRAME_SIZE,
                 phys: frame,
                 flags: Flags::user_data(),
             };
         }
-        // In `admin_slots` order: the grants are the process's whole authority.
+        // In `administration_slots` order: the grants are the process's whole authority.
         let grant_list = [
             rendezvous_capability(report, Rights::WRITE),
             rendezvous_capability(grants, Rights::WRITE),
@@ -208,11 +209,11 @@ fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
             data_plane,
             rendezvous_capability(control, Rights::READ),
         ];
-        const _: () = assert!(admin_slots::CONTROL == 4);
+        const _: () = assert!(administration_slots::CONTROL == 4);
         run(
             image,
             Spawn {
-                arg0: contract::ADMIN_ROLE,
+                arg0: contract::ADMINISTRATION_ROLE,
                 arg1: dma, // the run's PHYSICAL base: queue creation names physical pages
                 arg2: 0,
                 grants: &grant_list,
@@ -224,9 +225,9 @@ fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
                         pages: REGISTER_PAGES as u32,
                     },
                     startup_page_contract::Window {
-                        kind: contract::ADMIN_QUEUE_KIND,
+                        kind: contract::ADMINISTRATION_QUEUE_KIND,
                         virtual_address: ADMIN_QUEUES_VA,
-                        pages: ADMIN_PAGES as u32,
+                        pages: ADMINISTRATION_PAGES as u32,
                     },
                 ],
             },
@@ -235,8 +236,8 @@ fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
     .expect("could not spawn the NVMe admin process");
 
     let [w0, w1, w2, ..] = crate::sched::ipc_receive(report);
-    match AdminReport::unpack([w0, w1, w2]) {
-        Some(AdminReport::Ready {
+    match AdministrationReport::unpack([w0, w1, w2]) {
+        Some(AdministrationReport::Ready {
             size_bytes,
             blocks_per_transfer,
         }) => Ok(Admin {
@@ -247,7 +248,7 @@ fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
             blocks_per: blocks_per_transfer,
             stack,
         }),
-        Some(AdminReport::Refused(why)) => {
+        Some(AdministrationReport::Refused(why)) => {
             crate::println!(
                 "  non_volatile_memory_express: controller present but failed bring-up: {why:?}"
             );
@@ -293,7 +294,7 @@ fn spawn_data_plane(
 
 /// The physical base of window 0's transfer buffer in the run at `dma`.
 fn transfer_phys_of(dma: u64) -> u64 {
-    dma + (ADMIN_PAGES + contract::FIRST_TRANSFER_PAGE) * page_frames::FRAME_SIZE
+    dma + (ADMINISTRATION_PAGES + contract::FIRST_TRANSFER_PAGE) * page_frames::FRAME_SIZE
 }
 
 /// Find and confine the controller, start its admin process, then the data plane it grants to.

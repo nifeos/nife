@@ -65,7 +65,7 @@ mod preemption_window_tests;
 // decode logic is crates/pci, and each arch supplies its window/interrupt constants. See
 // kernel/src/pci.rs.
 mod pci;
-// The kernel's part of the NVMe disk (§86): find the controller over the PCIe transport above and
+// The kernel's part of the NVMe disk (§86 (whether an NVMe driver can leave the kernel)): find the controller over the PCIe transport above and
 // confine it behind the machine's IOMMU; the admin and data planes run in userspace. See
 // kernel/src/non_volatile_memory_express.rs. Only the test boot drives it today, so the non-test
 // build allows it dead rather than cfg-gating a module whose next caller is already known.

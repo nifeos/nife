@@ -27,9 +27,9 @@ The attacker is this exact server differing by one field, the physical address i
 the attack tests the IOMMU rather than a straw man (milestone 261 (the NVMe driver leaves the
 kernel)). `start_dma_escape` in the kernel's wiring writes a magic word and a victim's physical
 address into the transfer buffer before either process runs. A real admin process brings the
-controller up and grants the attacker its pages, and the attacker reads the two words before its
-readiness transfer reuses that page. Afterwards the admin process retires the controller, so the
-kernel frees the run only once nothing can DMA into it. The victim is a raw number read out of shared memory, exactly
+controller up. It grants the attacker its pages, and the attacker reads the two words before its
+readiness transfer reuses that page. The admin process retires the controller afterwards. Only
+then does the kernel free the run. The victim is a raw number read out of shared memory, exactly
 the authority an escaping driver would fabricate from nothing. The role is compiled only with the
 `confinement_attackers` feature, which only `cargo xtask test` turns on, so a shipped server has
 neither the check nor the attack.
