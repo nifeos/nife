@@ -227,14 +227,40 @@ classify() {
     fi
 }
 
+# Build the image for one seed range in checkout $1 and sweep it in one guest under KVM. $2 is the
+# driver, $3 the first seed, $4 the seed count, $5 the label of the log's first line. Everything goes
+# to standard output, which the caller sends to the window's log. 125 means the build failed or ran
+# out its bound, which is infrastructure whatever the log says; otherwise the guest's exit status.
+sweep() {
+    (
+        cd "$1"
+        # shellcheck disable=SC2046  # two words, split on purpose
+        set -- "$@" $(driver_test "$2")
+        filter="$6"
+        var="$7"
+        # Build once. The archive does not depend on the range; the system test image does, because
+        # the range and the filter are baked in at build time.
+        "$root/helpers/qemu-bounded.sh" "$build_bound" cargo xtask initial-ramdisk-x86 || exit 125
+        NIFE_INITIAL_RAMDISK="$PWD/target/initial-ramdisk-x86_64.img"
+        export NIFE_INITIAL_RAMDISK
+        NIFE_TEST_FILTER="$filter"
+        NIFE_TEST_FILTER_ACROSS_IMAGES=1
+        export NIFE_TEST_FILTER NIFE_TEST_FILTER_ACROSS_IMAGES
+        export "$var=$3:$4"
+        json="$1.build.json"
+        "$root/helpers/qemu-bounded.sh" "$build_bound" cargo test -p system_tests --target x86_64-unknown-none \
+            --no-run --message-format=json-render-diagnostics > "$json" || exit 125
+        elf="$(sed -n '/"reason":"compiler-artifact"/{/"name":"system_tests"/s/.*"executable":"\([^"]*\)".*/\1/p;}' "$json" | tail -1)"
+        [ -n "$elf" ] || { echo "continuous-fuzz: cargo named no system_tests executable" >&2; exit 125; }
+        echo "continuous-fuzz: $5: $2, seeds from $3, accelerator kvm, image $elf"
+        "$root/helpers/qemu-bounded.sh" "$bound" ./helpers/qemu-runner-x86_64.sh "$elf" -accel kvm
+    )
+}
+
 # One window. Prints the status word on stdout; everything else goes to the log.
 window() {
     driver="$1"
     slot="$2"
-    # shellcheck disable=SC2046  # two words, split on purpose
-    set -- $(driver_test "$driver")
-    filter="$1"
-    var="$2"
     refuse_without_kvm || { echo infrastructure; return 0; }
     prepare_slot "$slot"
     first="$(cat "$state/next-$slot")"
@@ -242,26 +268,7 @@ window() {
     commit="$(git -C "$home/work/$slot" rev-parse --short HEAD)"
     start="$(date +%s)"
     set +e
-    (
-        cd "$home/work/$slot"
-        # Build once. The archive does not depend on the range; the system test image does, because
-        # the range and the filter are baked in at build time. 125 means the build failed or ran out
-        # its bound, which is infrastructure whatever the log says.
-        "$root/helpers/qemu-bounded.sh" "$build_bound" cargo xtask initial-ramdisk-x86 || exit 125
-        NIFE_INITIAL_RAMDISK="$PWD/target/initial-ramdisk-x86_64.img"
-        export NIFE_INITIAL_RAMDISK
-        NIFE_TEST_FILTER="$filter"
-        NIFE_TEST_FILTER_ACROSS_IMAGES=1
-        export NIFE_TEST_FILTER NIFE_TEST_FILTER_ACROSS_IMAGES
-        export "$var=$first:$ask"
-        json="$home/work/$slot.build.json"
-        "$root/helpers/qemu-bounded.sh" "$build_bound" cargo test -p system_tests --target x86_64-unknown-none \
-            --no-run --message-format=json-render-diagnostics > "$json" || exit 125
-        elf="$(sed -n '/"reason":"compiler-artifact"/{/"name":"system_tests"/s/.*"executable":"\([^"]*\)".*/\1/p;}' "$json" | tail -1)"
-        [ -n "$elf" ] || { echo "continuous-fuzz: cargo named no system_tests executable" >&2; exit 125; }
-        echo "continuous-fuzz: slot $slot: $driver, seeds from $first, accelerator kvm, image $elf"
-        "$root/helpers/qemu-bounded.sh" "$bound" ./helpers/qemu-runner-x86_64.sh "$elf" -accel kvm
-    ) > "$log" 2>&1
+    sweep "$home/work/$slot" "$driver" "$first" "$ask" "slot $slot" > "$log" 2>&1
     rc=$?
     set -e
     ms=$((($(date +%s) - start) * 1000))
