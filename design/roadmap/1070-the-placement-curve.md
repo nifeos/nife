@@ -1,13 +1,14 @@
 ---
-status: PROPOSED
+status: NOT-STARTED
+promoted_from: the-placement-curve
 raised: 2026-11-10
-milestone_dependencies: none
+milestone_dependencies: 1069
 decision_dependencies: none
 machine_requirements: riscv64 and x86_64 silicon; a core cycle counter a bench boot can read
 specific_machine: none
 needs_person: yes
 ---
-# The placement curve: what moving one component across the kernel boundary costs, in cycles
+# 1070. The placement curve: what moving one component across the kernel boundary costs, in cycles
 
 Raised by lane proposal/the-placement-curve, at the architect's request. It replaces a heavier idea
 that would have built four whole operating systems from one set of components.
@@ -229,9 +230,11 @@ All three figures are guesses with no measurement behind them.
 - Components must read their window addresses from the `Handoff` and not from constants. Today
   they use fixed addresses, such as `DATA_PLANE_VA` in `components/src/non_volatile_memory_express.rs`
   and `BLK_PAGE` in `redoxfs_server/src/bin/redoxfs_server.rs`. In one shared address space those
-  collide. Another lane is making that change, and this work waits for it.
-- Another lane is listing what should leave the kernel to restore the microkernel. Its list decides
-  which control planes the curve can place. This proposal does not repeat that list.
+  collide. Milestone 1069 (a process reads its window addresses from a startup page) makes that
+  change, and this work waits for it.
+- Milestone 1062 (the device control planes leave the kernel) lists what leaves the kernel to
+  restore the microkernel. Its list decides which control planes the curve can place. This block
+  does not repeat that list.
 
 ## The written result
 
