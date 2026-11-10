@@ -74,7 +74,7 @@ The I219's PHY half; QEMU never takes the PCH path, so xenon is the test.
 
 ## Bench runbook: one boot on xenon (calef)
 
-The whole runbook, with every failure ending and the Results table, is [the I219 cabled run](../../notes/e1000e/the-i219-cabled-run.md). Success ends `network-bench: verdict LEASED-AND-MEASURED`. It is step 1 of the xenon
+The runbook, with the Results table, is [the I219 cabled run](../../notes/e1000e/the-i219-cabled-run.md). Success ends `network-bench: verdict LEASED-AND-MEASURED`. It is step 1 of the xenon
 evening calef ruled on 2026-10-24 (UTC), beside milestone 260's network boot and 801's `jig` leg:
 `notes/xenon-bench-2026-10-18.md`.
 
