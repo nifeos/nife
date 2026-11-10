@@ -23,8 +23,10 @@ milestone 261 needs.
 
 ## What was built, 2026-10-04
 
-Exit criterion 1 is met; criterion 2 is calef's bench step, staged and written down. Procedure,
-evidence and the confinement finding: [notes/e1000e.md](../../notes/e1000e.md).
+Exit criterion 1 is met. Criterion 2 is open: QEMU rehearses the driver, but the cabled run on xenon
+needs a person and a cable, and its result goes in the Results table of
+[the I219 cabled-run runbook](../../notes/e1000e/the-i219-cabled-run.md). The confinement finding:
+[notes/e1000e.md](../../notes/e1000e.md).
 
 - The datasheet question, answered from the register map. Ring base and ring tail share a
   4 KiB page (`0x2800`/`0x2818`, `0x3800`/`0x3818`, read from Linux's `regs.h`; Intel's I219
@@ -70,15 +72,9 @@ The I219's PHY half; QEMU never takes the PCH path, so xenon is the test.
 - QEMU proves the MDIO read: the DHCP gate asserts the 82574L's PHY identifier, `0x01410cb0`.
 - The boot refusal's lift is one constant, `e1000e_service::PCH_PROVEN_ON_SILICON`, still `false`.
 
-## What was checked, 2026-10-06
-
-No new code. The runbook now expects what xenon already printed (below, and `BUGS`), and
-`cargo xtask network-bench` rehearsed green on `ab9ae95aa`.
-
 ## Bench runbook: one boot on xenon (calef)
 
-Whole, with every failure ending and the Results table: notes/e1000e.md, "calef's bench step on
-xenon". Success ends `network-bench: verdict LEASED-AND-MEASURED`. It is step 1 of the xenon
+The runbook, with the Results table, is [the I219 cabled run](../../notes/e1000e/the-i219-cabled-run.md). Success ends `network-bench: verdict LEASED-AND-MEASURED`. It is step 1 of the xenon
 evening calef ruled on 2026-10-24 (UTC), beside milestone 260's network boot and 801's `jig` leg:
 `notes/xenon-bench-2026-10-18.md`.
 
@@ -169,7 +165,8 @@ recorded as such.
    x86_64. aarch64 and riscv64 carry the driver too, since QEMU's `e1000e` is a PCIe device on
    every bus the runners attach, or a scope note says why not (DECISIONS §19).
 2. On xenon, a DHCP lease from the house router and a measured transfer from a local area network
-   host, photographed, with the survey line naming the card.
+   host, photographed, with the survey line naming the card. The runbook is
+   [the I219 cabled run](../../notes/e1000e/the-i219-cabled-run.md); no run has happened yet.
 
 ## Reuse
 
