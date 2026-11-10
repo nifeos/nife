@@ -51,9 +51,10 @@ Load alone did not reproduce the red: 10 serial boots and 36 at 12 concurrent al
 
 ## The fix, and what it was measured against
 
-`userspace` waits for its thread to be reaped (`is_thread_present`, rule 1) and fails by name if
-the thread outlives 2 s. 36 boots at 12 concurrent: every one returned with the thread gone and the
-count at 5447, and every `budget` read `5524 -> 5524`. `script/boot-check` was green on all three
+`userspace` collects its child before it returns (rule 1): `boot_self_test` reaps the corpse,
+and the reap reclaims the child's region before the call returns, or the check destroys the
+region and fails by name. The kernel's version of the same wait, measured over 36 boots at 12
+concurrent, returned with the thread gone every time and every `budget` read `5524 -> 5524`. `script/boot-check` was green on all three
 architectures. The "not reaped within 2s" failure path was not exercised by injection.
 
 `boot-check` uploads `target/boot-check-*.log` when it fails, so the next red keeps the check's own
@@ -63,5 +64,5 @@ line.
 
 `budget` still compares the machine's used-frame count. Its claim, that the kernel allocates
 nothing for the process, has no single object to ask, so rule 2 has no fit. It is sound while every
-earlier check leaves no teardown in flight; `kernel/src/self_test.rs`'s BUGS says so where a new
+earlier check leaves no teardown in flight; `components/src/boot_self_test.rs`'s BUGS says so where a new
 check's author meets it, and nothing enforces it.

@@ -75,13 +75,16 @@ these lines *were* the transcript.
 
 ## The self-test: it reports, it does not gate
 
-`kernel/src/self_test.rs` runs fifteen checks between the description and the hand-off: `exceptions` (a
+Fifteen checks run in two halves. `kernel/src/self_test.rs` runs the kernel's between the
+description and the hand-off, and `boot_self_test`, a program the progenitor builds before the
+shell, runs the ones that need a user program and prints the verdict
+([self-test-checks.md](self-test-checks.md), "The two halves"). The kernel's are `exceptions` (a
 breakpoint is caught and stepped over) and `mapping` (a fresh page is mapped, written, read back and
 unmapped at an address computed from this machine's own RAM). Then `frames` (one frame out of the
 allocator and back, with the accounting agreeing at both ends), `timer` (the counter advances and a
 tick interrupt arrives), `scheduler` (a spawned kernel thread runs and carries its captured state).
 The other ten are the per-port tours' claims. `preemption` runs one never-yield thread more than
-there are cores, and none starves. `userspace` has a program at user level read a kernel address;
+there are cores, and none starves. From userspace, `userspace` has a program at user level read a kernel address;
 it is killed and the kernel survives. `budget` has a process spend its untyped while the kernel's
 frame count does not move. `supervised` has a child born supervised fault, and its supervisor
 receives the death naming the thread, the pc and the address. `teardown` spawns and reaps that
@@ -112,7 +115,7 @@ that prints `FAILED:` anywhere but the verdict would go unread.
 ## One list of checks, for every architecture
 
 `boot_ladder::SELF_TEST_CHECKS` is the self-test's set. Before it, the set was a compile-time fact
-inside `kernel/src/self_test.rs`. An architecture that ran a different set, or a smaller one with
+inside the kernel's self-test module. An architecture that ran a different set, or a smaller one with
 the count adjusted to match, still printed *N of N passed* and read as green. Measured on 2026-09-14
 (UTC): `x86_64` with `scheduler` cut and the count set to four printed
 `nife self-test: 4 of 4 passed`, and `boot-check` passed it. So the kernel's verdict now counts
@@ -148,11 +151,12 @@ One architecture:
 $ script/boot-check --arch riscv64
 ```
 
-Prove the gate has teeth, by making one check fail and requiring the run to come back **red**:
+Prove the gate has teeth, by making one check in each half fail and requiring the run to come back
+**red**, naming both:
 
 ```
 $ script/boot-check --inject
-boot-check (aarch64): nife self-test: 4 of 15 passed, 5 absent: blockdev device_interrupt clock trng entropy, 6 FAILED: exceptions timer userspace budget supervised teardown
+boot-check (aarch64): nife self-test: 6 of 15 passed, 5 absent: blockdev device_interrupt clock trng entropy, 4 FAILED: exceptions timer preemption userspace
 ...
 boot-check: every architecture's self-test verdict came back RED, as the injection asked
 ```
