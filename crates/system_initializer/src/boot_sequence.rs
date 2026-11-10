@@ -42,6 +42,7 @@ use super::*;
 ///         kernel_ring: 24, kernel_ring_cursor: 25, kernel_ring_notification: 26,
 ///         usb_keyboard_attach: 27, own_space: 28,
 ///         net_stack_ep: 29, net_stack_report: 30, reboot: 31, base_digest_page: 34,
+///         self_test_page: 35, self_test_trng: 36, self_test_disk: [37, 38, 39],
 ///         for_test_roles: &[],
 ///     };
 ///     boot(&endowment, initial_ramdisk_len, fs_rights, uart_shape, None)
@@ -57,6 +58,7 @@ pub fn boot(
     // Probed before anything here allocates, because a slot the kernel left empty is one a later
     // retype may land in.
     let mounted_tree = mounted_tree.filter(|t| is_granted(t.ep) && is_granted(t.pool));
+    let self_test_grants = SelfTestGrants::probe(g);
     let (fs, table) = open_archive(g, initial_ramdisk_len, uart_shape);
     let p = read_boot_programs(&fs, table);
     let spawnable = measure_spawnable(&fs, table);
@@ -98,6 +100,9 @@ pub fn boot(
     };
 
     start_keystroke_sources(g, ut, &in_elf, term.ep, uart_shape);
+    // The boot self-test's userspace half, before the shell: its verdict is printed with the
+    // announcements below, ahead of the prompt.
+    let self_test = run_self_test(g, ut, (&fs, table), self_test_grants, &devices.entropy);
     let chan = retype_spawn_channel(ut);
 
     // 4. The shell, holding its own untyped budget so `run --mem N` grants from memory that is the
@@ -128,6 +133,7 @@ pub fn boot(
     let term_sink = start_sink_adapter(&w, p.sink_elf.as_ref());
     let login = start_login_stack(&w, &p.login, table, devices.entropy.client);
     let kept = give_away_budget(&w, shell.tcb, login.run_unvouched);
+    print_self_test(w.term.ep, &self_test);
     announce_outcomes(
         &w,
         &spawnable,

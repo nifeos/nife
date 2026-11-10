@@ -41,6 +41,7 @@ mod image_request;
 mod layout;
 mod measurement;
 mod refusal_console;
+mod self_test;
 mod spawn_loop;
 mod std_layout;
 
@@ -69,6 +70,7 @@ use process_builder::{
     build_child, forget_thread_control_block, hand_to_requester, retype_obj_from as retype_obj,
     retype_page_frame_from as retype_page_frame, start_child,
 };
+use self_test::*;
 use spawn_loop::*;
 use std_layout::{NO_RESOLVERS, Resolvers, StdGrants, StdLayout};
 // The tree's only loader, named here rather than qualified at every call.

@@ -1433,6 +1433,7 @@ dependencies = [
  "abi",
  "address_space_map",
  "base_digest_contract",
+ "boot_ladder",
  "byte_sink_contract",
  "capability_manifest_note",
  "credential_contract",

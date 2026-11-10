@@ -198,6 +198,25 @@ pub struct BootEndowment {
     ///
     /// Name: ratified 2026-11-03 (UTC), #3102.
     pub base_digest_page: u64,
+    /// **The kernel's half of the boot self-test** (milestone 1063): a `PageFrame` capability with
+    /// `READ | GRANT` to the page `boot_ladder::kernel_half` describes, granted on every boot.
+    /// [`boot`](crate::boot) maps it read-only into `boot_self_test` and deletes its own copy once
+    /// the program's verdict is printed.
+    ///
+    /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
+    pub self_test_page: u64,
+    /// The JH7110 TRNG service's request endpoint, `WRITE | GRANT`, which the `clock` and `trng`
+    /// checks draw through. **Absent** on every machine but a JH7110; [`boot`](crate::boot)
+    /// probes. Passed to `boot_self_test` and then deleted.
+    ///
+    /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
+    pub self_test_trng: u64,
+    /// Disk 0's `Virtio` transport, interrupt and DMA page, all with `GRANT`, for the `blockdev`
+    /// check. **Absent** on a machine with no virtio disk; [`boot`](crate::boot) probes. Passed to
+    /// `boot_self_test` and then deleted.
+    ///
+    /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
+    pub self_test_disk: [u64; 3],
     /// **Capabilities the kernel granted that the interactive system never uses**, deleted before
     /// anything is built. Empty on riscv64; on aarch64 the kernel's report endpoint and a test SGI,
     /// which exist because that boot path is shared with the test roles.

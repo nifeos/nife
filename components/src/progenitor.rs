@@ -110,6 +110,11 @@ const GRANTS: BootEndowment = BootEndowment {
     // `READ` alone, granted on every boot past the disk tree's pair (32 and 33), so no slot moves.
     // `system_initializer::boot` checks the measurement table against it before reading the table.
     base_digest_page: 34,
+    // The boot self-test's userspace half (milestone 1063): the kernel's half on every boot, then
+    // the JH7110 TRNG service and disk 0's trio when the machine has them, past the base digest.
+    self_test_page: 35,
+    self_test_trng: 36,
+    self_test_disk: [37, 38, 39],
     // Nothing. Since milestone 166 the boot loader is not shared with milestone 19d's test roles on
     // any architecture, so the kernel grants exactly what the interactive system uses. aarch64 once
     // carried a report endpoint (slot 1) and the 19d.2b test interrupt (slot 3) here.
