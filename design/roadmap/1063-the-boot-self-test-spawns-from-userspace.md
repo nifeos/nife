@@ -57,14 +57,15 @@ halves", has the design.
 | run | verdict |
 |---|---|
 | aarch64, `boot-check` | 10 of 15 passed, 5 absent: blockdev device_interrupt clock trng entropy |
+| riscv64, `boot-check` | 10 of 15 passed, 5 absent: blockdev device_interrupt clock trng entropy |
 | `x86_64`, `boot-check` | 12 of 15 passed, 3 absent: blockdev clock trng |
 | aarch64, a virtio-mmio disk and virtio-rng | 12 of 15 passed, 3 absent: device_interrupt clock trng |
 | `x86_64`, a virtio-pci disk | 13 of 15 passed, 2 absent: clock trng |
 | aarch64, `boot-check --inject` | red: exceptions timer preemption userspace |
 | `x86_64`, `boot-check --inject` | red: exceptions timer userspace |
 
-riscv64 is gated by the merge queue's `boot-check`. Falsification: a progenitor that placed disk 0's
-transport without `GRANT` failed `blockdev` by name and turned the disk boots' verdicts red.
+Falsification: a progenitor that placed disk 0's transport without `GRANT` failed `blockdev` by
+name and turned the disk boots' verdicts red.
 
 ## Exit criteria, as built
 
