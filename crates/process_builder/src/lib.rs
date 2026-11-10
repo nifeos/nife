@@ -314,6 +314,18 @@ fn lay_out_child(
         capability_delete(stack_frame);
     }
 
+    // The startup page: read-only to the child, written here with the windows the endowment lists,
+    // so the child reads where its windows sit and compiles no address in
+    // (`startup_page_contract`). Every child gets one, empty or not, as the kernel's loader does.
+    fill_and_map_with(
+        own_ut,
+        build_ut,
+        aspace,
+        startup_page_contract::PAGE_VIRTUAL_ADDRESS,
+        abi::address_space::MAP_RO,
+        |page| startup_page_contract::write(page, endow.windows).map_err(|_| ()),
+    )?;
+
     // The timebase page: the builder's own rate, written into a fresh page from `build_ut`, so
     // every child of this, the only userspace loader, inherits it. A builder that does not know
     // the rate writes a zeroed page and the child refuses (calef, 2026-09-21: only accurate
@@ -471,6 +483,25 @@ fn fill_and_map(
     src: Option<(usize, &[u8])>,
     mode: u64,
 ) -> Result<(), ()> {
+    fill_and_map_with(own_ut, build_ut, aspace, va, mode, |dst| {
+        if let Some((at, bytes)) = src {
+            dst[at..at + bytes.len()].copy_from_slice(bytes);
+        }
+        Ok(())
+    })
+}
+
+/// [`fill_and_map`] with the page's contents written by `fill`, which gets the page zeroed and
+/// refuses with `Err` to leave the child without it. The startup page is written this way, by the
+/// contract's own writer.
+fn fill_and_map_with(
+    own_ut: u64,
+    build_ut: u64,
+    aspace: u64,
+    va: u64,
+    mode: u64,
+    fill: impl FnOnce(&mut [u8]) -> Result<(), ()>,
+) -> Result<(), ()> {
     let frame = retype_page_frame_from(build_ut)?;
     let Ok(scratch) = map_scratch(frame, true, own_ut) else {
         capability_delete(frame);
@@ -479,10 +510,8 @@ fn fill_and_map(
     // SAFETY: `scratch` is a page we just mapped read/write in our own address space.
     let dst = unsafe { core::slice::from_raw_parts_mut(scratch as *mut u8, PAGE as usize) };
     dst.fill(0);
-    if let Some((at, bytes)) = src {
-        dst[at..at + bytes.len()].copy_from_slice(bytes);
-    }
-    let mapped = address_space_map_into(aspace, va, frame, mode) == 0;
+    let filled = fill(dst);
+    let mapped = filled.is_ok() && address_space_map_into(aspace, va, frame, mode) == 0;
     capability_delete(frame);
     // The page is written and in the child (or the build failed): either way this builder is done
     // with its own window onto it. Given up here, one page at a time, rather than after the child

@@ -213,10 +213,12 @@ today. The architect's request is the driver.
 
 ## Follow-on
 
-- **Outstanding.** `system_initializer` does not write the page yet, so a process a userspace
-  builder spawns has none (`startup_page_contract`'s `BUGS` says so). The kernel's spawners write
-  it, and the five drivers (NVMe, e1000e, DesignWare Ethernet, DesignWare mobile storage, the xHCI
-  keyboard driver) read their windows from it.
+- **Built.** The kernel's spawners and `process_builder` (so `system_initializer` and every other
+  userspace builder) write the page for each process they build, and the five drivers (NVMe,
+  e1000e, DesignWare Ethernet, DesignWare mobile storage, the xHCI keyboard driver) read their
+  windows from it. A userspace builder lists a child's windows in `ChildEndowment::windows`;
+  `system_initializer` lists none yet, and gains an entry for each window as its component
+  converts.
 - **Outstanding.** The other components still compile their window addresses in: the ratchet in
   `script/lint` holds 63 literal window addresses in 37 files of `components/src/`, which
   `python3 helpers/window_address_literals.py --list` names, and the count falls to zero as they
