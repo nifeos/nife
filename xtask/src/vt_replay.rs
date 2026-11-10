@@ -601,7 +601,7 @@ struct SessionSpec {
     /// The TERM the session runs under.
     term: &'static str,
     /// Milliseconds to wait before the first keystroke: the program's start-up and first paint.
-    startup_ms: u64,
+    startup_milliseconds: u64,
     /// `(bytes, wait after)` per keystroke.
     keys: &'static [(&'static [u8], u64)],
     /// End the session by closing the pty and killing the program rather than waiting for it to
@@ -620,7 +620,7 @@ const SESSIONS: &[(&str, SessionSpec)] = &[
         SessionSpec {
             command: "vim '{sample}'",
             term: "xterm-256color",
-            startup_ms: 1500,
+            startup_milliseconds: 1500,
             keys: &[
                 (b"\x06", 1000),             // Ctrl-F, one page down
                 (b"\x06", 1000),             // again
@@ -645,7 +645,7 @@ const SESSIONS: &[(&str, SessionSpec)] = &[
         SessionSpec {
             command: "nvim '{sample}'",
             term: "xterm-256color",
-            startup_ms: 2000,
+            startup_milliseconds: 2000,
             // The same keys as the vim session, as the census's Neovim session used the same keys
             // as its vim session. The last wait covers Neovim's one-second DA1 wait at exit.
             keys: &[
@@ -672,7 +672,7 @@ const SESSIONS: &[(&str, SessionSpec)] = &[
         SessionSpec {
             command: "less '{sample}'",
             term: "xterm-256color",
-            startup_ms: 1200,
+            startup_milliseconds: 1200,
             keys: &[
                 (b" ", 1000), // page forward
                 (b" ", 1000),
@@ -694,7 +694,7 @@ const SESSIONS: &[(&str, SessionSpec)] = &[
         SessionSpec {
             command: "top",
             term: "xterm-256color",
-            startup_ms: 2500,
+            startup_milliseconds: 2500,
             // macOS top: '?' is the help screen, 'o' prompts for a sort key.
             keys: &[
                 (b"?", 1300),  // the help screen
@@ -712,7 +712,7 @@ const SESSIONS: &[(&str, SessionSpec)] = &[
         SessionSpec {
             command: "htop",
             term: "xterm-256color",
-            startup_ms: 2000,
+            startup_milliseconds: 2000,
             keys: &[
                 (b"t", 1400),     // tree view
                 (b"\x1b[B", 800), // Down
@@ -731,7 +731,7 @@ const SESSIONS: &[(&str, SessionSpec)] = &[
         SessionSpec {
             command: "nano '{sample}'",
             term: "xterm-256color",
-            startup_ms: 1500,
+            startup_milliseconds: 1500,
             keys: &[
                 (b"\x16", 1200),  // Ctrl-V, one page down
                 (b"\x1b[B", 600), // Down
@@ -750,7 +750,7 @@ const SESSIONS: &[(&str, SessionSpec)] = &[
         SessionSpec {
             command: "'{ncurses_test}'",
             term: "xterm-256color",
-            startup_ms: 1500,
+            startup_milliseconds: 1500,
             // The program draws its whole screen, flashes, and exits on the one key; the census's
             // session also graded one checkpoint.
             keys: &[(b"x", 1200)],
@@ -762,7 +762,7 @@ const SESSIONS: &[(&str, SessionSpec)] = &[
         SessionSpec {
             command: "emacs -nw -Q '{sample}'",
             term: "xterm-256color",
-            startup_ms: 2500,
+            startup_milliseconds: 2500,
             keys: &[
                 (b"\x16", 1200), // Ctrl-V
                 (b"\x16", 1200),
@@ -781,7 +781,7 @@ const SESSIONS: &[(&str, SessionSpec)] = &[
         SessionSpec {
             command: "mc -u",
             term: "xterm-256color",
-            startup_ms: 2000,
+            startup_milliseconds: 2000,
             // The census's Midnight Commander session also did not exit; the harness ended it.
             keys: &[
                 (b"\x1b[B", 900), // Down
@@ -797,7 +797,7 @@ const SESSIONS: &[(&str, SessionSpec)] = &[
         SessionSpec {
             command: "tmux -f /dev/null new-session",
             term: "xterm-256color",
-            startup_ms: 1800,
+            startup_milliseconds: 1800,
             keys: &[
                 (b"\x02%", 1600),             // prefix, split vertically
                 (b"\x02\"", 1600),            // prefix, split horizontally
@@ -818,7 +818,7 @@ const SESSIONS: &[(&str, SessionSpec)] = &[
         SessionSpec {
             command: "vttest",
             term: "xterm",
-            startup_ms: 1500,
+            startup_milliseconds: 1500,
             // Menu 1, cursor movement: six screens numbered 1.1 to 1.6 as conformance.md numbers
             // them, of which 1.2 and 1.4 are the 132-column second pass.
             keys: &[
@@ -839,7 +839,7 @@ const SESSIONS: &[(&str, SessionSpec)] = &[
         SessionSpec {
             command: "vttest",
             term: "xterm",
-            startup_ms: 1500,
+            startup_milliseconds: 1500,
             // Menu 2, screen features: fifteen screens numbered 2.1 to 2.15, of which 2.3 and 2.5
             // are 132-column.
             keys: &[
@@ -869,7 +869,7 @@ const SESSIONS: &[(&str, SessionSpec)] = &[
         SessionSpec {
             command: "vttest",
             term: "xterm",
-            startup_ms: 1500,
+            startup_milliseconds: 1500,
             // Menu 8, VT102 insert and delete: the seven 80-column screens numbered 8.1 to 8.7,
             // then the menu's 132-column second pass, 8.8 to 8.14.
             keys: &[
@@ -997,7 +997,7 @@ fn run_pty_session(name: &str, spec: &SessionSpec) -> Result<Recording, String> 
     let reader = spawn_reader(stdout, Arc::clone(&buffer));
 
     let mut keystrokes = Vec::new();
-    std::thread::sleep(Duration::from_millis(spec.startup_ms));
+    std::thread::sleep(Duration::from_millis(spec.startup_milliseconds));
     for (key, wait) in spec.keys {
         let at = buffer
             .lock()

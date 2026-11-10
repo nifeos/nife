@@ -103,7 +103,7 @@ fn control_buffer() -> MappedWindow {
 }
 
 /// One millisecond, in the units [`monotonic_nanoseconds`] counts.
-const MS: u64 = 1_000_000;
+const NANOSECONDS_PER_MILLISECOND: u64 = 1_000_000;
 
 /// **Order ring writes before the doorbell, and a cycle bit's read before the payload it gates.**
 /// The NVMe server's barrier and for its reason (`components/src/non_volatile_memory_express.rs`
@@ -160,8 +160,8 @@ struct Host {
     keys: Keyboard,
 }
 
-fn deadline(ms: u64) -> u64 {
-    monotonic_nanoseconds().saturating_add(ms * MS)
+fn deadline(milliseconds: u64) -> u64 {
+    monotonic_nanoseconds().saturating_add(milliseconds * NANOSECONDS_PER_MILLISECOND)
 }
 
 fn past(deadline: u64) -> bool {
@@ -247,8 +247,8 @@ impl Host {
     }
 
     /// Poll for an event `wanted` accepts, remembering port changes and dropping the rest.
-    fn wait_for(&mut self, ms: u64, wanted: &dyn Fn(&Event) -> bool) -> Option<Event> {
-        let end = deadline(ms);
+    fn wait_for(&mut self, milliseconds: u64, wanted: &dyn Fn(&Event) -> bool) -> Option<Event> {
+        let end = deadline(milliseconds);
         loop {
             if let Some(e) = self.poll_event() {
                 if wanted(&e) {
@@ -775,13 +775,19 @@ impl Host {
     /// Read `read` every [`port::DEBOUNCE_STEP_MILLISECONDS`] until [`port::PortDebounce`] says it held still
     /// (`true`) or gave up (`false`).
     fn hold_still(&self, read: &dyn Fn(&Host) -> port::Connections) -> bool {
-        let mut settle = port::PortDebounce::new(monotonic_nanoseconds() / MS, read(self));
+        let mut settle = port::PortDebounce::new(
+            monotonic_nanoseconds() / NANOSECONDS_PER_MILLISECOND,
+            read(self),
+        );
         loop {
             let end = deadline(port::DEBOUNCE_STEP_MILLISECONDS);
             while !past(end) {
                 core::hint::spin_loop();
             }
-            if let Some(settled) = settle.sample(monotonic_nanoseconds() / MS, read(self)) {
+            if let Some(settled) = settle.sample(
+                monotonic_nanoseconds() / NANOSECONDS_PER_MILLISECOND,
+                read(self),
+            ) {
                 return settled;
             }
         }

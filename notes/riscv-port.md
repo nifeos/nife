@@ -25,7 +25,7 @@ rest of the kernel calls through `crate::arch`:
   `translate`/`translate_user`, `is_enabled`), and the
   `VIRTIO_MMIO_BASE`/`SIZE`/`INTERRUPT_NUMBER_BASE` consts.
 - `interrupts`: `enabled`/`disable`/`restore`/`enable`.
-- `timer`: `TIMER_INTID`, `TICK_HERTZ`, `init`, `tick`, `ticks`, `now`, `frequency`, `uptime_ms`,
+- `timer`: `TIMER_INTID`, `TICK_HERTZ`, `init`, `tick`, `ticks`, `now`, `frequency`, `uptime_milliseconds`,
   `spin_for`, `interval`, `missed_ticks`.
 - `exceptions`: the `TrapFrame` type `syscall::dispatch` consumes, the fault stat statics, `init`.
 - `semihosting`: `EXIT_SUCCESS`/`EXIT_FAILURE`, `exit` (the test-harness exit).

@@ -64,13 +64,13 @@ std::thread_local! {
 /// `deadline`, an absolute `CLOCK_MONOTONIC` time as relibc passes it, as a [`Duration`] on the
 /// same clock as `super::sys::monotonic`.
 fn deadline_of(deadline: &timespec) -> Result<Duration> {
-    let ns = u32::try_from(deadline.tv_nsec)
+    let nanoseconds = u32::try_from(deadline.tv_nsec)
         .ok()
         .filter(|&n| n < 1_000_000_000)
         .ok_or(Errno(EINVAL))?;
     // A deadline before the clock's zero has passed already.
     let seconds = u64::try_from(deadline.tv_sec).unwrap_or(0);
-    Ok(Duration::new(seconds, ns))
+    Ok(Duration::new(seconds, nanoseconds))
 }
 
 /// **Sleep while `*addr == val`**, as [`wait_on`] does, for relibc's locks, which hand over a

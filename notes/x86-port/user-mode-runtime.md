@@ -92,7 +92,7 @@ x86 has".
 rather than a number with a comment. There is no architected TSC rate at all: `CPUID` leaf 0x15
 gives a ratio to a crystal that leaf 0x16 may not report, and neither leaf exists on every part. So
 the kernel does not read the rate, it measures it against the PIT (`timer::initialize_frequency`)
-and stores it in `TSC_HZ`. A ring-3 program cannot repeat that measurement, and should not be able
+and stores it in `TSC_HERTZ`. A ring-3 program cannot repeat that measurement, and should not be able
 to. The PIT is at ports 0x40..0x43, `IOPL` is 0 and the TSS's permission bitmap is empty, so an `in`
 from a process is a #GP. That is §121 not being decided yet rather than an oversight to route
 around. The constant returned is QEMU's 1 GHz, which the kernel measures as 1001 MHz. On milestone

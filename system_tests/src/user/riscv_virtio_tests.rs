@@ -574,14 +574,15 @@ fn an_accept_nobody_answers_ends_at_the_stacks_bound() {
         crate::testing::skip!("no virtio-net-pci device attached");
     };
     let verdict = sched::ipc_receive(report)[0];
-    let waited_ms = (crate::arch::timer::now() - started) * 1000 / crate::arch::timer::frequency();
+    let waited_milliseconds =
+        (crate::arch::timer::now() - started) * 1000 / crate::arch::timer::frequency();
     assert_eq!(
         verdict, NET_CLIENT_OK,
         "an accept nobody could reach did not come back refused (client code {verdict:#x})",
     );
     assert!(
-        waited_ms >= 15_000,
-        "the accept was refused after {waited_ms} ms, before net_stack's 15 s bound",
+        waited_milliseconds >= 15_000,
+        "the accept was refused after {waited_milliseconds} ms, before net_stack's 15 s bound",
     );
     net.release_or_fail("a net test's net_stack");
 }

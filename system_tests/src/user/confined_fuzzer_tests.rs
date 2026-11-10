@@ -1630,7 +1630,7 @@ fn a_confined_fuzzer_reaches_nothing_it_was_not_granted() {
     let Some(image) = program("confined_syscall_fuzzer") else {
         crate::testing::skip!("no confined_syscall_fuzzer program in the archive");
     };
-    let hz = crate::arch::timer::frequency();
+    let hertz = crate::arch::timer::frequency();
     let start = crate::arch::timer::now();
     let mut ran = 0u64;
     match sweep() {
@@ -1642,7 +1642,7 @@ fn a_confined_fuzzer_reaches_nothing_it_was_not_granted() {
             crate::println!("    confined fuzzer: seeds 0..{SUITE_SEEDS} and corpus {CORPUS:?}");
         }
         Some((first, count)) => {
-            let capability = start + SWEEP_SECONDS * hz;
+            let capability = start + SWEEP_SECONDS * hertz;
             for seed in first..first.saturating_add(count) {
                 if crate::arch::timer::now() > capability {
                     break;
@@ -1657,9 +1657,9 @@ fn a_confined_fuzzer_reaches_nothing_it_was_not_granted() {
             );
         }
     }
-    let ms = (crate::arch::timer::now() - start) * 1000 / hz;
+    let milliseconds = (crate::arch::timer::now() - start) * 1000 / hertz;
     crate::println!(
-        "    confined fuzzer: {ran} seeds, {ms} ms ({} seeds/s)",
-        (ran * 1000).checked_div(ms).unwrap_or(0)
+        "    confined fuzzer: {ran} seeds, {milliseconds} ms ({} seeds/s)",
+        (ran * 1000).checked_div(milliseconds).unwrap_or(0)
     );
 }

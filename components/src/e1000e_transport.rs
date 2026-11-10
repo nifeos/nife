@@ -38,7 +38,7 @@ use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
 /// How long the poll loop asks to sleep between looks at an idle receive ring when smoltcp has
 /// nothing sooner. The kernel rounds every timed wait up to the next scheduler tick
 /// (`user_mode_runtime::tick_hertz`), so the sleep lasts up to 10 ms whatever this says.
-pub(crate) const POLL_MS: u64 = 1;
+pub(crate) const POLL_MILLISECONDS: u64 = 1;
 
 // SAFETY: the spawner (`e1000e_service`) lists these three windows on the startup page and maps
 // them before `_start` runs: `layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` pages of the DMA region
