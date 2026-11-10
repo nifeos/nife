@@ -1291,6 +1291,7 @@ fn spawn_fuzzers(
                     arg2: 0,
                     grants: &grants[..granted],
                     maps: &maps,
+                    windows: &[],
                 },
             )
         })

@@ -32,6 +32,7 @@ fn spawn_writer(
                     rendezvous_capability(report, Rights::WRITE), // slot 1: the classification
                 ],
                 maps: &[],
+                windows: &[],
             },
         ),
         None => {
@@ -45,6 +46,7 @@ fn spawn_writer(
                     arg2: 0,
                     grants: &[],
                     maps: &[],
+                    windows: &[],
                 },
             )
         }
@@ -75,6 +77,7 @@ fn spawn_wc(source: RendezvousId, endpoints: u64) -> RendezvousId {
                     rendezvous_capability(source, Rights::READ), // slot 1: where its bytes come from
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -431,6 +434,7 @@ fn the_terminal_is_a_sink_like_any_other_and_the_writer_cannot_tell() {
                     rendezvous_capability(term_ep, Rights::WRITE), // slot 1: the terminal it prints to
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })

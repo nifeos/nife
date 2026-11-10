@@ -1,29 +1,46 @@
-//! The `e1000e` server's windows, which `net_stack`'s transport reads and the kernel maps, and the
+//! The `e1000e` server's windows, which the kernel maps and lists on the startup page, and the
 //! spawn words the kernel hands it ([`Handoff`]).
 //!
 //! Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, after the crate it
 //! serves.
 
 use address_space_map::{PAGE, pair_page};
+use startup_page_contract::WindowKind;
 
 /// The DMA region, `e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` pages, normal memory. The virtio server's one DMA
 /// page lives at the same address; a `net_stack` drives one NIC or the other, never both.
+/// The spawner maps it here and lists it on the startup page, where the server reads it.
 ///
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
 /// driver crate's `DATA_PLANE_VA`, renamed to spell out the address as design/naming.md asks.
 pub const DATA_PLANE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_0090_0000);
 /// BAR0's receive-queue page, device memory.
+/// The spawner maps it here and lists it on the startup page, where the server reads it.
 ///
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. Ruled 2026-10-26
 /// (UTC), tree-wide: `rx` and `tx` are spelled out. Refused `RX_QUEUE_VA` (an abbreviated
 /// address), `RX_QUEUE_VIRTUAL_ADDRESS` (rx abbreviates receive).
 pub const RECEIVE_QUEUE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_009c_0000);
 /// BAR0's transmit-queue page, device memory.
+/// The spawner maps it here and lists it on the startup page, where the server reads it.
 ///
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. Ruled 2026-10-26
 /// (UTC), tree-wide: `rx` and `tx` are spelled out. Refused `TX_QUEUE_VA` (an abbreviated
 /// address), `TX_QUEUE_VIRTUAL_ADDRESS` (tx abbreviates transmit).
 pub const TRANSMIT_QUEUE_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_0000_009c_1000);
+
+/// [`DATA_PLANE_VIRTUAL_ADDRESS`]'s entry on the startup page.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+pub const DATA_PLANE_KIND: WindowKind = WindowKind(3);
+/// [`RECEIVE_QUEUE_VIRTUAL_ADDRESS`]'s entry on the startup page.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+pub const RECEIVE_QUEUE_KIND: WindowKind = WindowKind(4);
+/// [`TRANSMIT_QUEUE_VIRTUAL_ADDRESS`]'s entry on the startup page.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+pub const TRANSMIT_QUEUE_KIND: WindowKind = WindowKind(5);
 
 /// The role word's low half when `arg0` is an `e1000e` server handoff. Disjoint from `net_stack`'s
 /// existing roles (0 is the virtio server, small integers are socket clients).

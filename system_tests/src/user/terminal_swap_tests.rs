@@ -184,6 +184,7 @@ impl Terminal {
                         rendezvous_capability(swap, Rights::READ), // the swap endpoint
                     ],
                     maps: &maps_ro[..windows],
+                    windows: &[],
                 },
             )
         })

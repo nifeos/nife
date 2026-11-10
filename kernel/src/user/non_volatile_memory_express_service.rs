@@ -21,13 +21,13 @@ use super::*;
 use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::RendezvousId;
 
-/// Where the server's data-plane run is mapped. Must match
-/// `components/src/non_volatile_memory_express.rs`. Distinct from the `0x0090_0000` and
+/// Where the server's data-plane run is mapped; the server reads it from the startup page, so this
+/// file alone chooses it. Distinct from the `0x0090_0000` and
 /// `0x0094_0000` DMA addresses other drivers use, so no two such constants mean two things.
 const DATA_PLANE_VA: u64 = address_space_map::pair_page(0x0000_0000_0098_0000);
 
-/// Where the server's one page of BAR0 is mapped, device-typed. Must match
-/// `components/src/non_volatile_memory_express.rs`. Far enough above [`DATA_PLANE_VA`] that the data plane's run
+/// Where the server's one page of BAR0 is mapped, device-typed, and listed on the startup page. Far
+/// enough above [`DATA_PLANE_VA`] that the data plane's run
 /// can grow without colliding with it.
 const DOORBELL_VA: u64 = address_space_map::pair_page(0x0000_0000_009c_0000);
 
@@ -168,6 +168,19 @@ fn start(image: &'static [u8]) -> Result<Wiring, crate::non_volatile_memory_expr
                     rendezvous_capability(ready, Rights::WRITE),  // slot 1: signal readiness once
                 ],
                 maps: &maps,
+                windows: &[
+                    startup_page_contract::Window {
+                        kind: ::driver_process_contract::non_volatile_memory_express::DATA_PLANE_KIND,
+                        virtual_address: DATA_PLANE_VA,
+                        pages: DATA_PLANE_PAGES as u32,
+                    },
+                    startup_page_contract::Window {
+                        kind:
+                            ::driver_process_contract::non_volatile_memory_express::DOORBELL_PAGE_KIND,
+                        virtual_address: DOORBELL_VA,
+                        pages: 1,
+                    },
+                ],
             },
         )
     })
@@ -353,6 +366,19 @@ pub fn start_dma_escape(image: &'static [u8]) -> Option<DmaEscape> {
                     rendezvous_capability(report, Rights::WRITE),
                 ],
                 maps: &maps,
+                windows: &[
+                    startup_page_contract::Window {
+                        kind: ::driver_process_contract::non_volatile_memory_express::DATA_PLANE_KIND,
+                        virtual_address: DATA_PLANE_VA,
+                        pages: DATA_PLANE_PAGES as u32,
+                    },
+                    startup_page_contract::Window {
+                        kind:
+                            ::driver_process_contract::non_volatile_memory_express::DOORBELL_PAGE_KIND,
+                        virtual_address: DOORBELL_VA,
+                        pages: 1,
+                    },
+                ],
             },
         )
     })

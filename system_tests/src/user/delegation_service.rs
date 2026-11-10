@@ -38,6 +38,7 @@ pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
                     rendezvous_capability(resource, Rights::WRITE.union(Rights::GRANT)), // slot 1: delegate this
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -56,6 +57,7 @@ pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
                     rendezvous_capability(loopback, Rights::WRITE), // slot 2: attempt re-delegation here
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })

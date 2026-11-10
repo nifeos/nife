@@ -73,6 +73,7 @@ pub fn start_shared_frame_witness(
                         rendezvous_capability(sync, Rights::READ.union(Rights::WRITE)), // slot 2: handshake
                     ],
                     maps: &maps[..n],
+                    windows: &[],
                 },
             )
         })

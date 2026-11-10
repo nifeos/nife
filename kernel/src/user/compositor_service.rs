@@ -144,6 +144,7 @@ pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> 
                 arg2: 0,
                 grants: &grants[..ngrants],
                 maps: &maps[..m],
+                windows: &[],
             },
         )
     })
@@ -298,6 +299,7 @@ impl Wiring {
                     arg2: 0,
                     grants: &grants[..ngrants],
                     maps: &maps[..m],
+                    windows: &[],
                 },
             )
         })
@@ -472,6 +474,7 @@ impl Wiring {
                     arg2: 0,
                     grants: &grants,
                     maps: &maps[..m],
+                    windows: &[],
                 },
             )
         })

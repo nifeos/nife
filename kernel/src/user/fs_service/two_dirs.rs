@@ -103,6 +103,7 @@ pub fn start_granted_two_dirs(
                     rendezvous_capability(report, Rights::WRITE),   // slot 2: report to the kernel
                 ],
                 maps: &maps[..n + stack_pages],
+                windows: &[],
             },
         )
     })

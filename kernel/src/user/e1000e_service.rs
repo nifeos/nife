@@ -72,6 +72,25 @@ pub struct Wiring {
     pub lease: u32,
 }
 
+/// The windows the server finds on its startup page: the data plane, then BAR0's two queue pages.
+const SERVER_WINDOWS: [startup_page_contract::Window; 3] = [
+    startup_page_contract::Window {
+        kind: ::driver_process_contract::e1000e::DATA_PLANE_KIND,
+        virtual_address: DATA_PLANE_VIRTUAL_ADDRESS,
+        pages: ::e1000e::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as u32,
+    },
+    startup_page_contract::Window {
+        kind: ::driver_process_contract::e1000e::RECEIVE_QUEUE_KIND,
+        virtual_address: RECEIVE_QUEUE_VIRTUAL_ADDRESS,
+        pages: 1,
+    },
+    startup_page_contract::Window {
+        kind: ::driver_process_contract::e1000e::TRANSMIT_QUEUE_KIND,
+        virtual_address: TRANSMIT_QUEUE_VIRTUAL_ADDRESS,
+        pages: 1,
+    },
+];
+
 /// The last server's thread, so a second wiring can refuse while it lives. On a booted system with
 /// the stack, that is the boot's own server, so a later bring-up there refuses rather than reset it.
 static SERVER: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(u64::MAX);
@@ -228,6 +247,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
                 arg2: listen_grant,
                 grants: &[rendezvous_capability(report, Rights::WRITE)], // slot 0
                 maps: &maps,
+                windows: &SERVER_WINDOWS,
             },
             socket_contract::stack_slots::OWN_SPACE,
         )

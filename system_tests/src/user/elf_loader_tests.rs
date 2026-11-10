@@ -64,7 +64,7 @@ fn an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused() {
     let image = forged_elf(mmu::KERNEL_VA_BASE, elf::PF_R | elf::PF_X);
 
     assert_eq!(
-        load(&image, 0).err(),
+        load(&image, 0, &[]).err(),
         Some(LoadError::Unmappable(MapError::WrongHalf)),
         "the kernel agreed to map a user program on top of itself",
     );
@@ -84,7 +84,7 @@ fn an_elf_that_asks_for_a_writable_executable_page_is_refused() {
     );
 
     assert_eq!(
-        load(&image, 0).err(),
+        load(&image, 0, &[]).err(),
         Some(LoadError::NotLoadable(elf::Error::WritableAndExecutable)),
     );
 }
@@ -104,7 +104,7 @@ fn an_image_too_large_for_its_band_is_refused_as_too_large() {
     let image = forged_elf_sized(IMAGE_BASE, elf::PF_R | elf::PF_X, IMAGE.bytes() + PAGE);
 
     assert_eq!(
-        load(&image, 0).err(),
+        load(&image, 0, &[]).err(),
         Some(LoadError::Misplaced(ImagePlacement::TooLarge {
             image_end: IMAGE.end + PAGE,
             stack_base: STACK.start,
@@ -119,7 +119,7 @@ fn an_image_linked_below_the_image_band_is_refused_as_outside_it() {
     let image = forged_elf(0x40_0000, elf::PF_R | elf::PF_X);
 
     assert_eq!(
-        load(&image, 0).err(),
+        load(&image, 0, &[]).err(),
         Some(LoadError::Misplaced(
             address_space_map::ImagePlacement::OutsideBand {
                 image_start: 0x40_0000,
@@ -137,7 +137,7 @@ fn an_image_past_the_old_ceiling_loads() {
     const BYTES: u64 = 2 << 20;
 
     let image = forged_elf_sized(IMAGE_BASE, elf::PF_R | elf::PF_X, BYTES);
-    let (space, entry) = load(&image, 0).expect("a 2 MiB image did not load");
+    let (space, entry) = load(&image, 0, &[]).expect("a 2 MiB image did not load");
     assert_eq!(entry, IMAGE_BASE);
 
     let last = space.while_installed(|| {
@@ -150,9 +150,9 @@ fn an_image_past_the_old_ceiling_loads() {
 /// Junk is refused, and refusing it does not take the kernel down.
 #[test_case]
 fn a_bad_binary_is_refused_rather_than_panicking() {
-    assert!(load(b"#!/bin/sh\necho hi\n", 0).is_err());
-    assert!(load(&[], 0).is_err());
-    assert!(load(&[0u8; 4096], 0).is_err());
+    assert!(load(b"#!/bin/sh\necho hi\n", 0, &[]).is_err());
+    assert!(load(&[], 0, &[]).is_err());
+    assert!(load(&[0u8; 4096], 0, &[]).is_err());
     // And we are still executing, which is the assertion.
 }
 
@@ -218,5 +218,50 @@ fn a_real_elf_from_the_initial_ramdisk_runs_at_el0_and_verifies_itself() {
         faults,
         "the program reached EL0 and then FAILED its own self-check: one of \
          .text/.rodata/.data/.bss/stack was not what the ELF asked for",
+    );
+}
+
+/// **Every space the loader builds carries the startup page**, read-only at its fixed address, and
+/// the page lists exactly the windows the spawner named; a list a reader could misread is refused
+/// before the program exists.
+///
+/// Falsification: unfalsified. Nobody has yet broken the loader's mapping of the page to watch this
+/// test fail.
+#[test_case]
+fn the_loader_writes_the_startup_page_read_only() {
+    use address_space_map::IMAGE_BASE;
+    use startup_page_contract::{PAGE_VIRTUAL_ADDRESS, StartupPage, Window, WindowKind};
+
+    let doorbell = Window {
+        kind: WindowKind(2),
+        virtual_address: 0x9c_0000,
+        pages: 1,
+    };
+    let image = forged_elf(IMAGE_BASE, elf::PF_R | elf::PF_X);
+    let (space, _) = load(&image, 0, &[doorbell]).expect("a one-window spawn did not load");
+    let (writable, listed, count) = space.while_installed(|| {
+        let (phys, flags) =
+            mmu::translate_user(PAGE_VIRTUAL_ADDRESS).expect("the startup page is not mapped");
+        // SAFETY: the frame belongs to `space`, alive for this closure, and the direct map reaches
+        // it; nothing writes it after the loader did.
+        let bytes =
+            unsafe { core::slice::from_raw_parts(mmu::phys_to_virt(phys) as *const u8, 4096) };
+        let page = StartupPage::parse(bytes).expect("the frame is not a startup page");
+        (
+            flags.is_writable(),
+            page.window(doorbell.kind),
+            page.windows().count(),
+        )
+    });
+    drop(space);
+    assert!(!writable, "the program could rewrite its own startup page");
+    assert_eq!(listed, Some(doorbell));
+    assert_eq!(count, 1);
+
+    assert_eq!(
+        load(&image, 0, &[doorbell, doorbell]).err(),
+        Some(LoadError::StartupPage(
+            startup_page_contract::Refusal::DuplicateKind(doorbell.kind)
+        )),
     );
 }

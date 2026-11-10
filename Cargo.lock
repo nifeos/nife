@@ -461,6 +461,7 @@ dependencies = [
  "extensible_host_controller_interface",
  "filesystem_contract",
  "non_volatile_memory_express",
+ "startup_page_contract",
 ]
 
 [[package]]
@@ -829,6 +830,7 @@ dependencies = [
  "soak_page",
  "socket_contract",
  "spin_lock",
+ "startup_page_contract",
  "std_runtime_contract",
  "system_log_contract",
  "test_times",
@@ -1347,6 +1349,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 
 [[package]]
+name = "startup_page_contract"
+version = "0.1.0"
+dependencies = [
+ "address_space_map",
+]
+
+[[package]]
 name = "std_runtime_contract"
 version = "0.1.0"
 dependencies = [
@@ -1515,6 +1524,7 @@ dependencies = [
  "ps",
  "socket_contract",
  "spin_lock",
+ "startup_page_contract",
  "std_runtime_contract",
  "system_log_contract",
  "timetable",
@@ -1775,6 +1785,7 @@ dependencies = [
  "current_cpu_contract",
  "entropy_contract",
  "socket_contract",
+ "startup_page_contract",
 ]
 
 [[package]]

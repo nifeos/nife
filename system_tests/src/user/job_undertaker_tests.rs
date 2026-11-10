@@ -92,7 +92,7 @@ fn spawn_job_undertaker_with(
 ) {
     let bytes =
         program("job_undertaker").expect("no job_undertaker program in the initial ramdisk");
-    let (space, entry) = load(bytes, 0).expect("job_undertaker is not loadable");
+    let (space, entry) = load(bytes, 0, &[]).expect("job_undertaker is not loadable");
     let aspace = readopt_user_address_space(space).expect("register the job_undertaker aspace");
 
     let thread_control_block_region =

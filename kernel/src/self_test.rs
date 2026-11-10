@@ -635,6 +635,7 @@ fn userspace(tally: &mut Tally) {
                 arg2: 0,
                 grants: &[],
                 maps: &[],
+                windows: &[],
             },
         )
     });

@@ -128,6 +128,7 @@ fn spawn_with(
                     rendezvous_capability(report, Rights::WRITE), // slot 1: the startup verdict
                 ],
                 maps: &maps[..n_maps],
+                windows: &[],
             },
         )
     })

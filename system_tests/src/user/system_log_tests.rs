@@ -59,6 +59,7 @@ fn spawn_writer(image: &'static [u8], intake: RendezvousId, badge: u32, report: 
                     rendezvous_capability(report, Rights::WRITE),                      // slot 1
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -156,6 +157,7 @@ fn two_badged_writers_are_attributed_by_the_badge_and_a_per_user_read_filters() 
                         flags: Flags::user_data(),
                     },
                 ],
+                windows: &[],
             },
         )
     })
@@ -331,6 +333,7 @@ fn a_plain_send_arrives_with_its_capabilitys_badge_on_receive_and_receive_capabi
                     rendezvous_capability(report, Rights::WRITE), // slot 1
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })

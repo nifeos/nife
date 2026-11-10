@@ -74,6 +74,7 @@ fn a_child_holds_exactly_what_its_caller_granted_and_no_device() {
                     page_frame_run_capability(page_b, page_frame_run_len(1), Rights::READ),
                 ],
                 maps: &[],
+                windows: &[],
             },
         );
     })
@@ -170,6 +171,7 @@ fn a_child_with_no_construction_authority_cannot_build() {
                 arg2: 0,
                 grants: &[rendezvous_capability(report, Rights::WRITE)],
                 maps: &[],
+                windows: &[],
             },
         );
     })

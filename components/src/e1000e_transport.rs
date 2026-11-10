@@ -28,51 +28,49 @@
 
 use alloc::vec::Vec;
 
-use driver_process_contract::e1000e::{
-    DATA_PLANE_VIRTUAL_ADDRESS, Handoff, RECEIVE_QUEUE_VIRTUAL_ADDRESS,
-    TRANSMIT_QUEUE_VIRTUAL_ADDRESS,
-};
+use driver_process_contract::e1000e::Handoff;
 use e1000e::{
     DataPlane, DirectMemoryAccessRegion, MAXIMUM_FRAME_BYTES, TAIL_IN_PAGE, Tails, layout,
 };
-use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
+use user_mode_runtime::mapped_window::{PAGE, doorbell_barrier};
+use user_mode_runtime::startup_window::StartupWindow;
 
 /// How long the poll loop asks to sleep between looks at an idle receive ring when smoltcp has
 /// nothing sooner. The kernel rounds every timed wait up to the next scheduler tick
 /// (`user_mode_runtime::tick_hertz`), so the sleep lasts up to 10 ms whatever this says.
 pub(crate) const POLL_MS: u64 = 1;
 
-// SAFETY: the spawner maps `layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` pages of the DMA region read/write at
-// DATA_PLANE_VIRTUAL_ADDRESS, and one device-typed page at each queue VA, before `_start` runs
-// (`e1000e_service`).
-const PLANE: MappedWindow = unsafe {
-    MappedWindow::new(
-        DATA_PLANE_VIRTUAL_ADDRESS,
+// SAFETY: the spawner (`e1000e_service`) lists these three windows on the startup page and maps
+// them before `_start` runs: `layout::DIRECT_MEMORY_ACCESS_REGION_PAGES` pages of the DMA region
+// read/write, and one device-typed page for each queue.
+static PLANE: StartupWindow = unsafe {
+    StartupWindow::new(
+        ::driver_process_contract::e1000e::DATA_PLANE_KIND,
         layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * PAGE,
     )
 };
 // SAFETY: as above.
-const RECEIVE_QUEUE: MappedWindow =
-    unsafe { MappedWindow::new(RECEIVE_QUEUE_VIRTUAL_ADDRESS, PAGE) };
+static RECEIVE_QUEUE: StartupWindow =
+    unsafe { StartupWindow::new(::driver_process_contract::e1000e::RECEIVE_QUEUE_KIND, PAGE) };
 // SAFETY: as above.
-const TRANSMIT_QUEUE: MappedWindow =
-    unsafe { MappedWindow::new(TRANSMIT_QUEUE_VIRTUAL_ADDRESS, PAGE) };
+static TRANSMIT_QUEUE: StartupWindow =
+    unsafe { StartupWindow::new(::driver_process_contract::e1000e::TRANSMIT_QUEUE_KIND, PAGE) };
 
 /// The region, through its window: every offset bounds-checked by `MappedWindow`.
 struct Plane;
 
 impl DirectMemoryAccessRegion for Plane {
     fn read_u64(&self, off: u64) -> u64 {
-        PLANE.r64(off)
+        PLANE.get().r64(off)
     }
     fn write_u64(&mut self, off: u64, v: u64) {
-        PLANE.w64(off, v);
+        PLANE.get().w64(off, v);
     }
     fn read_bytes(&self, off: u64, out: &mut [u8]) {
-        PLANE.copy_to_slice(off, out);
+        PLANE.get().copy_to_slice(off, out);
     }
     fn write_bytes(&mut self, off: u64, src: &[u8]) {
-        PLANE.copy_from_slice(off, src);
+        PLANE.get().copy_from_slice(off, src);
     }
 }
 
@@ -81,10 +79,10 @@ struct Queues;
 
 impl Tails for Queues {
     fn set_receive_tail(&mut self, v: u32) {
-        RECEIVE_QUEUE.w32(TAIL_IN_PAGE, v);
+        RECEIVE_QUEUE.get().w32(TAIL_IN_PAGE, v);
     }
     fn set_transmit_tail(&mut self, v: u32) {
-        TRANSMIT_QUEUE.w32(TAIL_IN_PAGE, v);
+        TRANSMIT_QUEUE.get().w32(TAIL_IN_PAGE, v);
     }
     fn barrier(&mut self) {
         doorbell_barrier();
@@ -139,7 +137,9 @@ impl GigabitNic {
 
     /// Whether a frame is waiting, without taking it, so the poll loop can skip a sleep.
     pub(crate) fn frame_waiting(&self) -> bool {
-        let word = PLANE.r64(layout::receive_descriptor(self.plane.receive_cursor()) + 8);
+        let word = PLANE
+            .get()
+            .r64(layout::receive_descriptor(self.plane.receive_cursor()) + 8);
         e1000e::receive_verdict(word, MAXIMUM_FRAME_BYTES) != e1000e::ReceiveVerdict::NotYet
     }
 }

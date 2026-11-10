@@ -133,6 +133,7 @@ fn spawn_client(
                 arg2: 0,
                 grants: in_order,
                 maps: &maps,
+                windows: &[],
             },
         )
     })

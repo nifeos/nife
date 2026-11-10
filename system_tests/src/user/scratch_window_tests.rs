@@ -81,6 +81,7 @@ fn a_builder_reuses_scratch_its_reaped_children_gave_back() {
                     memory_region_capability(tables),         // slot 2: its own page tables
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
