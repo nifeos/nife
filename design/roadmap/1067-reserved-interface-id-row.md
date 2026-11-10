@@ -15,7 +15,7 @@ Reuse: `helpers/interface_declarations_check.py` already reads the one table of 
 (the linked interfaces carry checkable versions); this adds one row form to its reader. Nothing
 outside the tree does this job.
 
-An interface id is held before its crate exists when a ruling fixes the wire first. The first such
+A ruling sometimes fixes a wire before its crate exists, and the wire's interface id waits for the crate. The first such
 case is the JH7110 clock and reset wire ruling, which gives its contract interface id 24 before
 `crates/` holds the contract. The table needs a row for it, and the check cannot read that row yet.
 
@@ -65,7 +65,7 @@ it, and striking it is a reviewed edit to the table like any other.
 Effort: S. One regex and one row kind in a script of about 330 lines, one rule in `id_problems`,
 four fixtures and a sentence in 956's block.
 
-Dependencies: none. Pull request #3422 (the clock and reset wire ruling, §320 once it lands) is the first user: its reserved row for id 24 is the
+Dependencies: none. Pull request #3422 (the clock and reset wire ruling) is the first user: its reserved row for id 24 is the
 case this makes checkable. Once this lands, that row is the first one the check reads.
 
 ## Done when
