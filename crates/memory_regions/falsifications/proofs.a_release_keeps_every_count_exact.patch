@@ -4,8 +4,8 @@ The defect: a release gives the object back to its own region and stops. It read
 a carve from a leaf, but every ancestor keeps counting an object that has left its kernel table,
 and the root's subtree reaches its ceiling on objects that are gone.
 
-Expected to fail: the harness's `assert!(live == self.ghost_tree_count(r, k), "a count drifted
-from the subtree")`, on a release from the child or the grandchild.
+Expected to fail: the harness's `assert!(counts.exact, "a count drifted from the subtree")`, on a
+release from the child or the grandchild.
 
 diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
 --- a/crates/memory_regions/src/table.rs

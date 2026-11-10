@@ -210,6 +210,16 @@ fn same_snapshot(a: Option<RegionSnapshot>, b: Option<RegionSnapshot>) -> bool {
     }
 }
 
+/// The invariant, part by part, over every live region of the tree.
+struct Counts {
+    /// Its ceilings are its root's, or a sixteenth of them below the root.
+    shares: bool,
+    /// Each live count is at or under its ceiling.
+    within_ceilings: bool,
+    /// Each live count is the ghost count of what its subtree holds.
+    exact: bool,
+}
+
 /// The table, the three names (a region the tree does not reach is `None`), the root's ceilings,
 /// and the ghost: how many objects of each kind each region retyped for itself and has not
 /// released, and how many regions it split that are still live.
@@ -329,26 +339,25 @@ impl Run {
         (0..REGIONS).all(|r| same_snapshot(now[r], before[r]))
     }
 
-    /// Every live region's counts are its ghost subtree's, under its ceilings, and those are its
-    /// root's share.
-    fn assert_counts_follow_the_tree(&self) {
+    /// Which parts of the invariant every live region of the tree holds.
+    fn counts(&self) -> Counts {
+        let mut counts = Counts {
+            shares: true,
+            within_ceilings: true,
+            exact: true,
+        };
         for r in 0..REGIONS {
             let Some(s) = self.names[r].and_then(|n| self.table.snapshot(n)) else {
                 continue;
             };
-            assert!(
-                same_ceilings(s.ceilings, ceilings_of(r, self.root_ceilings)),
-                "a region's ceilings are not its root's share"
-            );
+            counts.shares &= same_ceilings(s.ceilings, ceilings_of(r, self.root_ceilings));
             for (k, counted) in KINDS.into_iter().enumerate() {
                 let live = s.live.get(counted);
-                assert!(live <= s.ceilings.get(counted), "past a ceiling");
-                assert!(
-                    live == self.ghost_tree_count(r, k),
-                    "a count drifted from the subtree"
-                );
+                counts.within_ceilings &= live <= s.ceilings.get(counted);
+                counts.exact &= live == self.ghost_tree_count(r, k);
             }
         }
+        counts
     }
 
     fn name(&self, r: usize) -> u64 {
@@ -451,7 +460,13 @@ fn a_refused_split_moves_nothing() {
 fn a_carve_keeps_every_count_exact_and_under_its_ceiling() {
     Run::for_every_depth(|mut run, r| {
         let refused = run.carve(r, any_object_kind());
-        run.assert_counts_follow_the_tree();
+        let counts = run.counts();
+        assert!(
+            counts.shares,
+            "a region's ceilings are not its root's share"
+        );
+        assert!(counts.within_ceilings, "past a ceiling");
+        assert!(counts.exact, "a count drifted from the subtree");
         kani::cover!(
             !refused
                 && r == 2
@@ -487,7 +502,13 @@ fn a_split_keeps_every_count_exact_and_under_its_ceiling() {
     );
     Run::for_every_depth(|mut run, r| {
         let child = run.split(r);
-        run.assert_counts_follow_the_tree();
+        let counts = run.counts();
+        assert!(
+            counts.shares,
+            "a region's ceilings are not its root's share"
+        );
+        assert!(counts.within_ceilings, "past a ceiling");
+        assert!(counts.exact, "a count drifted from the subtree");
         if let Some(child) = child {
             let s = run.table.snapshot(child).expect("the child is live");
             assert!(
@@ -511,7 +532,13 @@ fn a_split_keeps_every_count_exact_and_under_its_ceiling() {
 fn a_release_keeps_every_count_exact() {
     Run::for_every_depth(|mut run, r| {
         let held = run.release(r, any_object_kind());
-        run.assert_counts_follow_the_tree();
+        let counts = run.counts();
+        assert!(
+            counts.shares,
+            "a region's ceilings are not its root's share"
+        );
+        assert!(counts.within_ceilings, "past a ceiling");
+        assert!(counts.exact, "a count drifted from the subtree");
         kani::cover!(held && r == 2, "the grandchild releases an object");
     });
 }
@@ -525,8 +552,8 @@ fn a_release_keeps_every_count_exact() {
 #[kani::unwind(9)]
 fn a_reclaimed_region_tree_leaves_no_count_behind() {
     let mut run = Run::any(3, true, false);
-    for k in 0..REGION_COUNT {
-        kani::assume(run.own[0][k] == 0);
+    for held in &run.own[0][..REGION_COUNT] {
+        kani::assume(*held == 0);
     }
     kani::cover!(
         run.own[2][ObjectKind::Rendezvous as usize] > 0

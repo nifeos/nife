@@ -4,8 +4,8 @@ The defect: the deciding walk of `charge` stops at the region itself and never a
 It reads as a shortcut, since the commit walk still counts every ancestor and a lone region behaves
 exactly as before, but a root can then be pushed past its own ceiling through the regions below it.
 
-Expected to fail: the harness's `assert!(live <= s.ceilings.get(counted), "past a ceiling")`, on
-a carve from the grandchild of a child at its ceiling.
+Expected to fail: the harness's `assert!(counts.within_ceilings, "past a ceiling")`, on a carve
+from the grandchild of a child at its ceiling.
 
 diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
 --- a/crates/memory_regions/src/table.rs
