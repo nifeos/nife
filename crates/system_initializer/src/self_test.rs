@@ -115,32 +115,14 @@ fn run_measured(
     let Some(elf) = measured(fs, table, "boot_self_test").elf else {
         return none;
     };
-    let source = match (entropy.client, entropy.from_instruction) {
-        (None, _) => entropy_source::NONE,
-        (Some(_), true) => entropy_source::INSTRUCTION,
-        (Some(_), false) => entropy_source::DEVICE,
-    };
-    // Each image only when the table vouches for it; an empty one fails its check by name.
-    let mut lengths = [0u64; image::COUNT];
-    let mut images: [&[u8]; image::COUNT] = [&[]; image::COUNT];
-    for (i, name) in image::NAMES.iter().enumerate() {
-        if measured(fs, table, name).elf.is_some()
-            && let Some(bytes) = fs.read(name)
-        {
-            lengths[i] = bytes.len() as u64;
-            images[i] = bytes;
-        }
-    }
-    if !images_fit(&lengths) {
+    let Some(ImageTable {
+        lengths,
+        images,
+        head,
+    }) = image_table((fs, table), entropy)
+    else {
         return none;
-    }
-    let mut words = [0u64; header::COUNT];
-    words[header::ENTROPY_SOURCE] = source;
-    words[header::IMAGE_BYTE_COUNTS..].copy_from_slice(&lengths);
-    let mut head = [0u8; header::COUNT * 8];
-    for (chunk, w) in head.as_chunks_mut::<8>().0.iter_mut().zip(words) {
-        chunk.copy_from_slice(&w.to_le_bytes());
-    }
+    };
 
     let image_pages: u64 = lengths
         .iter()
@@ -174,6 +156,109 @@ fn run_measured(
         memory_region,
     ));
 
+    let (placed, n) = placements(g, grants, entropy);
+    let blobs = [
+        (contract::IMAGES_VIRTUAL_ADDRESS, &head[..]),
+        (image_virtual_address(&lengths, 0), images[0]),
+        (image_virtual_address(&lengths, 1), images[1]),
+        (image_virtual_address(&lengths, 2), images[2]),
+    ];
+    let child = must(build_child(
+        memory_region,
+        built,
+        &elf,
+        &ChildEndowment {
+            capabilities: &[(budget, abi::rights::ALL), (report, abi::rights::WRITE)],
+            placed: &placed[..n],
+            maps: &[
+                (
+                    address_space_map::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS),
+                    g.self_test_page,
+                    abi::address_space::MAP_RO,
+                ),
+                (
+                    machine_statistics_contract::PAGE_VA,
+                    g.machine_page,
+                    abi::address_space::MAP_RO,
+                ),
+                (
+                    address_space_map::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS),
+                    frame,
+                    abi::address_space::MAP_RW,
+                ),
+            ],
+            blobs: &blobs,
+            fault: Some(report),
+            stack_pages: SELF_TEST_STACK_PAGES,
+            ..ChildEndowment::new(Retention::Nothing)
+        },
+    ));
+    must_ok(start_child(child, 0, 0, 0));
+
+    let (end, done) = wait_for_verdict(report);
+    // The budget first: the program's own region is the budget's sibling, not its parent.
+    reclaim(budget);
+    reclaim(built);
+    capability_delete(report);
+    SelfTestTranscript {
+        frame: Some(frame),
+        end,
+        done,
+        missing: false,
+    }
+}
+
+/// The header page and the images, as [`image_virtual_address`] lays them out.
+struct ImageTable {
+    lengths: [u64; image::COUNT],
+    images: [&'static [u8]; image::COUNT],
+    head: [u8; header::COUNT * 8],
+}
+
+/// **Read the images the table vouches for and write the header**, or `None` when they do not fit
+/// the program's address space.
+fn image_table((fs, table): (&nifefs::Fs<'static>, &str), entropy: &Entropy) -> Option<ImageTable> {
+    let source = match (entropy.client, entropy.from_instruction) {
+        (None, _) => entropy_source::NONE,
+        (Some(_), true) => entropy_source::INSTRUCTION,
+        (Some(_), false) => entropy_source::DEVICE,
+    };
+    // Each image only when the table vouches for it; an empty one fails its check by name.
+    let mut lengths = [0u64; image::COUNT];
+    let mut images: [&[u8]; image::COUNT] = [&[]; image::COUNT];
+    for (i, name) in image::NAMES.iter().enumerate() {
+        if measured(fs, table, name).elf.is_some()
+            && let Some(bytes) = fs.read(name)
+        {
+            lengths[i] = bytes.len() as u64;
+            images[i] = bytes;
+        }
+    }
+    if !images_fit(&lengths) {
+        return None;
+    }
+    let mut words = [0u64; header::COUNT];
+    words[header::ENTROPY_SOURCE] = source;
+    words[header::IMAGE_BYTE_COUNTS..].copy_from_slice(&lengths);
+    let mut head = [0u8; header::COUNT * 8];
+    for (chunk, w) in head.as_chunks_mut::<8>().0.iter_mut().zip(words) {
+        chunk.copy_from_slice(&w.to_le_bytes());
+    }
+
+    Some(ImageTable {
+        lengths,
+        images,
+        head,
+    })
+}
+
+/// **The capabilities the program finds in its fixed slots**: its own thread always, then each
+/// service and device this machine has. Returns the placements and how many are in use.
+fn placements(
+    g: &BootEndowment,
+    grants: SelfTestGrants,
+    entropy: &Entropy,
+) -> ([(u64, u64, u64); 6], usize) {
     let mut placed = [(0u64, 0u64, 0u64); 6];
     let mut n = 0;
     let mut place = |child_slot, ours, rights| {
@@ -215,46 +300,13 @@ fn run_measured(
             abi::rights::READ | abi::rights::WRITE,
         );
     }
-    let blobs = [
-        (contract::IMAGES_VIRTUAL_ADDRESS, &head[..]),
-        (image_virtual_address(&lengths, 0), images[0]),
-        (image_virtual_address(&lengths, 1), images[1]),
-        (image_virtual_address(&lengths, 2), images[2]),
-    ];
-    let child = must(build_child(
-        memory_region,
-        built,
-        &elf,
-        &ChildEndowment {
-            capabilities: &[(budget, abi::rights::ALL), (report, abi::rights::WRITE)],
-            placed: &placed[..n],
-            maps: &[
-                (
-                    address_space_map::pair_page(contract::KERNEL_HALF_VIRTUAL_ADDRESS),
-                    g.self_test_page,
-                    abi::address_space::MAP_RO,
-                ),
-                (
-                    machine_statistics_contract::PAGE_VA,
-                    g.machine_page,
-                    abi::address_space::MAP_RO,
-                ),
-                (
-                    address_space_map::pair_page(contract::TRANSCRIPT_VIRTUAL_ADDRESS),
-                    frame,
-                    abi::address_space::MAP_RW,
-                ),
-            ],
-            blobs: &blobs,
-            fault: Some(report),
-            stack_pages: SELF_TEST_STACK_PAGES,
-            ..ChildEndowment::new(Retention::Nothing)
-        },
-    ));
-    must_ok(start_child(child, 0, 0, 0));
+    (placed, n)
+}
 
-    // Every message is the program's, `LINE` or `DONE`, until its death arrives on the same
-    // endpoint as its supervisor's message.
+/// **Follow the program's transcript until it says `DONE` or dies**: every message is the
+/// program's, `LINE` or `DONE`, until its death arrives on the same endpoint as its supervisor's
+/// message. Returns the transcript's end and whether the verdict came.
+fn wait_for_verdict(report: u64) -> (usize, bool) {
     let mut end = 0usize;
     let done = loop {
         let (code, at, ..) = user_mode_runtime::receive_fault(report);
@@ -267,16 +319,7 @@ fn run_measured(
             _ => break false,
         }
     };
-    // The budget first: the program's own region is the budget's sibling, not its parent.
-    reclaim(budget);
-    reclaim(built);
-    capability_delete(report);
-    SelfTestTranscript {
-        frame: Some(frame),
-        end,
-        done,
-        missing: false,
-    }
+    (end, done)
 }
 
 /// `DESTROY` a region, retrying while a resident it holds is still being killed, a bounded number

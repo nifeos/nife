@@ -54,7 +54,7 @@ const DISK_DMA_PEEK_VA: u64 =
     address_space_map::pair_page(contract::DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS);
 const BLOCK_DRIVER_DMA_VA: u64 =
     address_space_map::pair_page(contract::BLOCK_DRIVER_DIRECT_MEMORY_ACCESS_VIRTUAL_ADDRESS);
-const UNMAPPED_ADDRESS: u64 = address_space_map::pair_page(contract::UNMAPPED_VIRTUAL_ADDRESS);
+const UNMAPPED_ADDRESS: u64 = address_space_map::pair_page(contract::ABSENT_PAGE_VIRTUAL_ADDRESS);
 
 /// `kernel_test_subject`'s role that reads its second argument and dies:
 /// `fixtures/src/kernel_test_subject.rs`'s `READ_KERNEL`.
