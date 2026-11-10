@@ -473,6 +473,18 @@ fn a_carve_keeps_every_count_exact_and_under_its_ceiling() {
 #[kani::proof]
 #[kani::unwind(9)]
 fn a_split_keeps_every_count_exact_and_under_its_ceiling() {
+    let mut table = RegionTable::<1>::new();
+    let ceilings = Ceilings::from_counts(kani::any());
+    let root = table
+        .insert_root_with_ceilings(kani::any(), kani::any(), ceilings)
+        .expect("an empty table has room");
+    let s = table.snapshot(root).expect("the root is live");
+    assert!(
+        same_ceilings(s.ceilings, ceilings)
+            && same_ceilings(s.live, Ceilings::from_counts([0; 8]))
+            && s.children == 0,
+        "a new root starts with something counted"
+    );
     Run::for_every_depth(|mut run, r| {
         let child = run.split(r);
         run.assert_counts_follow_the_tree();
