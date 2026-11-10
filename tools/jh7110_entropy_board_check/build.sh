@@ -13,8 +13,10 @@
 # `script/board-netboot --root target/jh7110-entropy-board-check/serve`.
 #
 # --crate-commit clones nifeos/jh7110_entropy at that commit under target/ and builds against the
-# clone through a one-build `[patch]`, so Cargo.toml and Cargo.lock stay as committed. The payload
-# prints the commit it was built against on its first record either way.
+# clone through a one-build `[patch]`. Cargo rewrites Cargo.lock during that build (it drops the
+# crate's `source` line once the patch resolves it to the clone), so the script saves the lock
+# first and restores it on every exit, and the tracked tree stays as it was. The payload prints the
+# commit it was built against on its first record either way.
 #
 # --rehearse boots the model build under QEMU virt for at most ten minutes and runs
 # `results.py summarize` and `results.py check --allow-model` on its log. It needs
@@ -46,6 +48,12 @@ if [ "$REHEARSE" = yes ] && [ "$MODEL" = no ]; then
     exit 2
 fi
 mkdir -p "$OUT"
+
+# Cargo rewrites the lock under a [patch]; put it back however this script ends.
+LOCK="$TOOL/Cargo.lock"
+cp "$LOCK" "$OUT/Cargo.lock.saved"
+trap 'cp "$OUT/Cargo.lock.saved" "$LOCK"' EXIT
+trap 'exit 130' INT TERM HUP
 
 set --
 if [ -n "$COMMIT" ]; then

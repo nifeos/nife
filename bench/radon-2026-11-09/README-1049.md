@@ -5,8 +5,10 @@ bench session that [notes/jh7110-entropy-board-check.md](../../notes/jh7110-entr
 drives. The crate commit under test was `nifeos/jh7110_entropy` `ee0bde8feb9f78a67da011c928f9a2a697f3bbc1`.
 The payload (`tools/jh7110_entropy_board_check/`, SHA-256
 `e421000bc0b66d35ac60315cbe618ba1c8e15fb46d9bf8aac44f3a27b82054e8`) was built from nife
-`9a1c55963b` with an uncommitted change to its `Cargo.lock`, and served by `script/board-netboot`.
-The person powered the board on from off.
+`9a1c55963b`, and served by `script/board-netboot`.
+The build itself rewrote the payload's `Cargo.lock` (one deleted `source` line, the resolved crate
+still `ee0bde8`); `build.sh` now restores the lock on every exit. The person powered the board on
+from off.
 
 | file | what it is |
 |---|---|
