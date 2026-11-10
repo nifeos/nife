@@ -35,7 +35,7 @@
 /// cost against the child stack.
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_ROWS: usize = 256;
+pub const MAXIMUM_ROWS: usize = 1024;
 
 /// One line of the listing: a thread and what it is doing.
 ///

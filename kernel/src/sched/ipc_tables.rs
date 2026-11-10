@@ -23,9 +23,9 @@ use super::*;
 pub(super) type Rendezvous = inter_process_communication::Rendezvous<Thread>;
 
 /// The most threads that can be alive at once, whole machine: a documented limit of the image, so
-/// spawn past it fails cleanly, as out-of-memory does. About twice the peak [`PEAK_THREADS`]
-/// reports. What scales with it, and why 256, are in notes/ipc-tables-lock-inventory.md ("What the
-/// tables hold").
+/// spawn past it fails cleanly, as out-of-memory does. Several times the peak [`PEAK_THREADS`]
+/// reports, which leaves room for many more concurrent programs than the boot runs. What scales
+/// with it, and why 1024, are in notes/ipc-tables-lock-inventory.md ("What the tables hold").
 ///
 /// # BUGS
 ///
@@ -34,12 +34,12 @@ pub(super) type Rendezvous = inter_process_communication::Rendezvous<Thread>;
 /// - The peak is a whole-boot high-water and cannot name the test that pushed it.
 /// - A thread slot retires after 2^32 - 1 occupants (`generational_table` saturates rather than
 ///   wrap), and a spawn loop at the fastest measured rate retires one about every 93 minutes, all
-///   256 in about 16.5 days, after which spawn fails until the next boot. Nothing sizes this
+///   1,024 in about 66 days, after which spawn fails until the next boot. Nothing sizes this
 ///   table, or the other generational tables, against that time; notes/generational-names.md has
 ///   the measurements.
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_THREADS: usize = 256;
+pub const MAXIMUM_THREADS: usize = 1024;
 
 pub(super) struct IpcTables {
     /// The thread table: generational names over page-resident TCBs. See [`Threads`] and

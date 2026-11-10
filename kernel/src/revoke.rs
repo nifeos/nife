@@ -235,10 +235,10 @@ mod chain {
     }
 }
 
-/// The most concurrently-live address spaces the registry can track: every user thread has one
-/// (bounded by [`crate::sched::MAXIMUM_THREADS`]), plus 32 for the tests' bare `AddressSpace`s.
+/// The most concurrently-live address spaces the registry can track: every process has one
+/// (bounded by the process table), plus 32 for the tests' bare `AddressSpace`s.
 /// `user::MAXIMUM_USER_SPACES` is sized to it.
-pub(crate) const MAXIMUM_SPACES: usize = crate::sched::MAXIMUM_THREADS + 32;
+pub(crate) const MAXIMUM_SPACES: usize = 256 + 32;
 
 /// The registry of live address spaces: the fixed index that finds each space's log, whose records
 /// live in the spaces' own regions.

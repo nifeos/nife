@@ -117,8 +117,8 @@ How fast a loop can refill one slot, from the fastest create-and-destroy loops m
 
 | table, `N` | loop | one cycle | 2^32 cycles |
 |---|---|---|---|
-| threads, 256 | `spawn_reap`, HVF on Apple Silicon, release, one hart | ~1.3 us | ~93 minutes |
-| threads, 256 | `spawn_reap`, radon (JH7110, release kernel) | 19.8 us (79.3 ticks of the 4 MHz timer) | ~23.6 hours |
+| threads, 1,024 | `spawn_reap`, HVF on Apple Silicon, release, one hart | ~1.3 us | ~93 minutes |
+| threads, 1,024 | `spawn_reap`, radon (JH7110, release kernel) | 19.8 us (79.3 ticks of the 4 MHz timer) | ~23.6 hours |
 | memory regions, 256 | `SPLIT` then `DESTROY` from EL0 | not measured; two traps cost at least 54 ns at the 27 ns null syscall | at least ~3.9 minutes |
 
 The table above times only the thread and region tables, and none of the others. The address-space
@@ -127,8 +127,8 @@ More harts do not speed up one slot: first-fit puts concurrent inserts in differ
 
 So a wrapping generation is reachable. A user program with a region could resurrect a dead region name in
 minutes of tight looping, and a kernel spawn loop could do it to a thread id inside two hours.
-Under saturation the same loops retire a slot instead. Retiring all 256 thread slots takes about
-16.5 days of nonstop spawning on HVF, and all 256 region slots at least 16 hours at the region
+Under saturation the same loops retire a slot instead. Retiring all 1,024 thread slots takes about
+66 days of nonstop spawning on HVF, and all 256 region slots at least 16 hours at the region
 floor. After that, those creates fail as a full table does until the next boot.
 
 Three designs, built in the crate and measured on the host (`Table<u64, N>`, one core of a
@@ -196,7 +196,7 @@ of the tables timed soonest in the region table, at a floor of about four minute
 
 `[Option<T>; N]` spends a tag on each slot when `T` has no niche. In the kernel that means the four
 `u64` tables (rendezvous 512, notifications, timers and processes 256 each) and the thread table's
-raw pointer (256). Each slot takes 16 bytes instead of 8, 12 KiB of the kernel's static data in all.
+raw pointer (1,024). Each slot takes 16 bytes instead of 8, 12 KiB of the kernel's static data in all.
 `Region` holds a `bool`, and the virtio `Device` and the address-space `Registered` entry hold
 enums, so each has a niche, and Rust folds the tag into it at no cost. Taking the tag out means
 storing an uninitialized `T` in a free slot, `MaybeUninit` and `unsafe`, in a crate that forbids

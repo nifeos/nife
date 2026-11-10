@@ -21,9 +21,10 @@ use crate::user::{BoundSpace, Holder};
 /// capability carries. *(Provisional, as the object is.)*
 pub type ProcessId = u64;
 
-/// The most processes that can exist at once, whole machine: one per thread at most, so the thread
-/// ceiling.
-pub(super) const MAXIMUM_PROCESSES: usize = super::MAXIMUM_THREADS;
+/// The most processes that can exist at once, whole machine: one per thread at most, so no more
+/// than the thread ceiling.
+pub(super) const MAXIMUM_PROCESSES: usize = 256;
+const _: () = assert!(MAXIMUM_PROCESSES <= super::MAXIMUM_THREADS);
 
 /// **What lives at the start of a process's page.** The capability table follows it, at
 /// [`TABLE_OFFSET`], outside the struct for the reason `thread::capability_table_of` gives: a
