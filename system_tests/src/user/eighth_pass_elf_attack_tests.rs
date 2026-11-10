@@ -84,7 +84,7 @@ fn an_elf_whose_segment_arithmetic_overflows_is_refused_as_an_overflow() {
     let image = forged(u64::MAX - 15, elf::PF_R | elf::PF_X, 16);
 
     assert_eq!(
-        load(&image, 0).err(),
+        load(&image, 0, &[]).err(),
         Some(LoadError::NotLoadable(elf::Error::AddressOverflow)),
         "a segment whose vaddr plus memsz overflows u64 was accepted (or wrapped): the loader \
          trusted arithmetic a hostile image did",
@@ -105,7 +105,7 @@ fn an_elf_that_reaches_from_its_band_into_the_kernel_half_is_refused() {
         mmu::KERNEL_VA_BASE.wrapping_sub(address_space_map::IMAGE_BASE) + page_frames::FRAME_SIZE;
     let image = forged(address_space_map::IMAGE_BASE, elf::PF_R | elf::PF_X, reach);
 
-    let refused = load(&image, 0).err();
+    let refused = load(&image, 0, &[]).err();
     assert!(
         refused.is_some(),
         "an image claiming to reach from its band into the kernel's half was loaded",
@@ -130,7 +130,7 @@ fn an_elf_whose_second_segment_names_the_kernel_is_refused() {
     let image = forged_two_segment(mmu::KERNEL_VA_BASE);
 
     assert_eq!(
-        load(&image, 0).err(),
+        load(&image, 0, &[]).err(),
         Some(LoadError::Misplaced(
             address_space_map::ImagePlacement::TooLarge {
                 image_end: mmu::KERNEL_VA_BASE + page_frames::FRAME_SIZE,
@@ -159,7 +159,7 @@ fn an_elf_dressing_writable_executable_in_vendor_bits_is_refused() {
     );
 
     assert_eq!(
-        load(&image, 0).err(),
+        load(&image, 0, &[]).err(),
         Some(LoadError::NotLoadable(elf::Error::WritableAndExecutable)),
         "OS/vendor flag bits turned a writable executable request into one the loader stopped \
          checking",

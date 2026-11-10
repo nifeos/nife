@@ -119,6 +119,7 @@ fn spawn_echo_servers(
                     arg2: 0,
                     grants: &[grant],
                     maps: &[],
+                    windows: &[],
                 },
             )
         });
@@ -165,6 +166,7 @@ fn spawn_tasks(image: &'static [u8], pool: &Pool, placed: &mut [u8; ECHO_SERVERS
                         .wrapping_add(1),
                     grants: &grants,
                     maps: &[],
+                    windows: &[],
                 },
             )
         });

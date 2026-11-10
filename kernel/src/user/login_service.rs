@@ -481,6 +481,7 @@ pub fn spawn_client(
                     memory_region_root_capability(scratch),
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })

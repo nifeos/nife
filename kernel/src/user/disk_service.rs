@@ -193,6 +193,7 @@ pub fn start(blk_image: &'static [u8], surveyor_image: &'static [u8]) -> Option<
                 arg2: 0,
                 grants: &[], // every one of them is placed above, at its own slot
                 maps: &stack,
+                windows: &[],
             },
         )
     })
@@ -238,6 +239,7 @@ pub fn start_probe(surveyor_image: &'static [u8]) -> RendezvousId {
                 arg2: 0,
                 grants: &[], // every one of them is placed above, at its own slot
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -295,6 +297,7 @@ pub fn start_holder(surveyor_image: &'static [u8]) -> HolderWiring {
                 arg2: 0,
                 grants: &[], // every one of them is placed above, at its own slot
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -460,6 +463,7 @@ pub fn start_partitioner(
                 arg2: 0,
                 grants: &[], // every one of them is placed above, at its own slot
                 maps: &stack,
+                windows: &[],
             },
         )
     })
@@ -545,6 +549,7 @@ pub fn start_maker(
                 arg2: 0,
                 grants: &[], // every one of them is placed above, at its own slot
                 maps: &maps,
+                windows: &[],
             },
         )
     })

@@ -64,6 +64,7 @@ fn wire(
                     phys: dma,
                     flags: Flags::user_data(),
                 }],
+                windows: &[],
             },
         )
     })
@@ -263,6 +264,7 @@ fn wire_net_server(
                     rendezvous_capability(stack, Rights::WRITE.union(Rights::GRANT)),
                 ],
                 maps: &maps,
+                windows: &[],
             },
             socket_contract::stack_slots::OWN_SPACE,
         )
@@ -457,6 +459,7 @@ pub(super) fn spawn_stack_client(
                 arg2: 0,
                 grants: &grants,
                 maps: &maps[..n_maps],
+                windows: &[],
             },
         )
     })
@@ -533,6 +536,7 @@ pub fn start_net_std(
                     memory_region_lending_capability(frames), // slot 3: mint per-socket shared frames
                 ],
                 maps: &stackmaps,
+                windows: &[],
             },
         )
     })
@@ -612,6 +616,7 @@ pub fn start_attacker(image: &'static [u8]) -> Option<RendezvousId> {
                     phys: dma,
                     flags: Flags::user_data(),
                 }],
+                windows: &[],
             },
         )
     })
@@ -659,6 +664,7 @@ pub fn start_attacker_indirect(image: &'static [u8]) -> Option<RendezvousId> {
                     phys: dma,
                     flags: Flags::user_data(),
                 }],
+                windows: &[],
             },
         )
     })

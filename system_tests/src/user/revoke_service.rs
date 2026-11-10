@@ -24,6 +24,7 @@ pub fn wire(endpoints: u64) -> RendezvousId {
                     rendezvous_capability(report, Rights::WRITE), // slot 1: report the verdict
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })

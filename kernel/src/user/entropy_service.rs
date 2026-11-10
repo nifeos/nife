@@ -174,6 +174,7 @@ fn start(image: &'static [u8], bus: Bus) -> Option<Wiring> {
                     rendezvous_capability(ready, Rights::WRITE), // slot 3: signal readiness once
                 ],
                 maps: &maps,
+                windows: &[],
             },
         )
     })
@@ -236,6 +237,7 @@ fn start_instruction(image: &'static [u8]) -> Option<Wiring> {
                     rendezvous_capability(ready, Rights::WRITE),  // slot 1: signal readiness once
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -314,6 +316,7 @@ fn start_jh7110(image: &'static [u8]) -> Option<Wiring> {
                     rendezvous_capability(ready, Rights::WRITE),  // slot 1: signal readiness once
                 ],
                 maps: &maps,
+                windows: &[],
             },
         )
     })

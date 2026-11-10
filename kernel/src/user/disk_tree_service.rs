@@ -83,6 +83,7 @@ pub(crate) fn start(fs_window_zero: u64) -> Option<DiskTree> {
                     rendezvous_capability(report, Rights::WRITE),
                 ],
                 maps: &maps,
+                windows: &[],
             },
         )
     })
