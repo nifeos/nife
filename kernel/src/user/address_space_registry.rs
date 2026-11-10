@@ -137,7 +137,7 @@ pub const fn registry_footprint() -> usize {
 /// root page is retyped from it (pinning it, atomically with the carve), and the region becomes
 /// the space's table-and-record budget, exactly as for an exec-built space. `None` on an
 /// exhausted region, a full registry, or all 255 ASIDs live (reachable, since `MAXIMUM_SPACES` is
-/// 288).
+/// 1,056).
 pub fn user_address_space_create(region: u64) -> Option<u64> {
     let root = crate::memory_region::retype_object_page(
         region,
