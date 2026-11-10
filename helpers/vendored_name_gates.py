@@ -195,6 +195,8 @@ UNIT_COUNTED = (
     'nanos', 'millis', 'micros', 'us', 'usec', 'usecs', 'sec', 'secs', 'mins',
     # The nanosecond symbols.
     'ns', 'nsec', 'nsecs',
+    # The millisecond symbols.
+    'ms', 'msec', 'msecs',
 )
 # Lookalikes outside the template's table that the ruling does not settle, listed by `--unclear`.
 UNIT_UNSETTLED = {
@@ -538,10 +540,11 @@ def unit_selftest():
          ['within_30_s', 'TICKS_PER_SEC', 'mins']),
         # The units the template refuses and the ratchet has not counted yet, the spelled-out names
         # and the std methods are never hits.
-        ('let b_ms = 2; let c_kib = 3; let hz = 4; let seconds = 5; let minutes = 6; '
+        ('let c_kib = 3; let hz = 4; let seconds = 5; let minutes = 6; '
          'let microseconds = 7; d.as_nanos(); d.as_secs(); Duration::from_millis(1);', []),
         ('let a_ns = 1; let nsec = 2; let NS_PER_SECOND = 3; let tv_nsec = 4; let ns16550 = 5;',
          ['a_ns', 'nsec']),
+        ('let b_ms = 2; let msec = 3; let MS = 4;', ['b_ms', 'msec', 'MS']),
         # A bare `s`, a mode-bit prefix and a possessive are not units.
         ('let s = 1; const S_IFDIR: u32 = 1; let s_context = 2; let saw_s = false; let ds_s = 1;', []),
         # `min` is a minimum unless it follows `per`.
@@ -562,8 +565,8 @@ def unit_selftest():
     if names('const US: u64 = 1;', 'crates/paging/src/x86_64.rs'):
         failed += 1
         print('unit selftest: UNIT_KEPT US counted', file=sys.stderr)
-    if [w for _, w, _ in unclear_hits('let ms = 1; let kb = 2; let ns = 3; let nanos = 4;')] != [
-            'ms', 'kb']:
+    if [w for _, w, _ in unclear_hits('let hz = 1; let kb = 2; let ns = 3; let nanos = 4;')] != [
+            'hz', 'kb']:
         failed += 1
         print('unit selftest: unclear lookalikes', file=sys.stderr)
     # The ratchet counts a subset of what the template refuses: a name it counts, the template's own

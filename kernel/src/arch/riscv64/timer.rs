@@ -315,7 +315,7 @@ pub fn is_tick_pending() -> bool {
 
 /// Milliseconds since boot, from the free-running counter rather than the tick count.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
-pub(crate) fn uptime_ms() -> u64 {
+pub(crate) fn uptime_milliseconds() -> u64 {
     now() / (timebase_hertz() / 1000)
 }
 
@@ -651,9 +651,9 @@ mod tests {
     fn uptime_advances_monotonically() {
         use crate::arch::timer;
 
-        let a = timer::uptime_ms();
+        let a = timer::uptime_milliseconds();
         timer::spin_for(timer::frequency() / 50); // 20 ms
-        let b = timer::uptime_ms();
+        let b = timer::uptime_milliseconds();
 
         assert!(b > a, "uptime went backwards or stalled: {a} -> {b}");
         assert!(

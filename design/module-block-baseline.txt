@@ -8150,7 +8150,7 @@ kernel/src/arch/aarch64/timer.rs::spin_for
 
 kernel/src/arch/aarch64/timer.rs::ticks
 
-kernel/src/arch/aarch64/timer.rs::uptime_ms
+kernel/src/arch/aarch64/timer.rs::uptime_milliseconds
 
 kernel/src/arch/mod.rs
 

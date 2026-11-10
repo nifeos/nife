@@ -80,13 +80,13 @@ pub(super) fn drain_sink(ep: crate::sched::RendezvousId, out: &mut [u8], what: &
 ///
 /// Name: provisional, milestone 514's lane, 2026-10-12 (UTC). Named for what is checked and how
 /// often; `LIVENESS_PERIOD_MS` was considered.
-const WRITER_CHECK_MS: u64 = 100;
+const WRITER_CHECK_MILLISECONDS: u64 = 100;
 
 /// [`drain_sink`] for a caller that knows the writing thread: if it dies before ending the stream,
 /// fail at once and print all it wrote (milestone 514 (the HVF leg's std listener test hangs in
 /// some full runs and passes alone)).
 ///
-/// A bound notification's timer ends the `RECEIVE` every [`WRITER_CHECK_MS`] (§101 (notification
+/// A bound notification's timer ends the `RECEIVE` every [`WRITER_CHECK_MILLISECONDS`] (§101 (notification
 /// objects)) to ask if the writer still resolves; `echo` serves `xtask/src/inbound.rs`'s relay.
 ///
 /// # BUGS
@@ -108,7 +108,7 @@ pub(super) fn drain_sink_from(
     let tick = crate::sched::create_timer_from(region).expect("no timer for a writer watch");
     crate::sched::notification_bind(bell, crate::sched::current())
         .expect("this test thread already has a notification bound to it");
-    let period = frequency() * WRITER_CHECK_MS / 1000;
+    let period = frequency() * WRITER_CHECK_MILLISECONDS / 1000;
     let arm = || {
         crate::sched::timer_arm(tick, now() + period, bell, 1)
             .expect("could not arm the writer watch");

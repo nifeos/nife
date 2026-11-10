@@ -1060,8 +1060,8 @@ fn type_one_line(
     // `--input-race` sets its own, so Enter lands inside the input driver's hold.
     let pause = std::env::var("NIFE_SWISH_ENTER_PAUSE_MS")
         .ok()
-        .and_then(|ms| ms.parse().ok())
-        .or((probe() == Probe::InputRace).then_some(INPUT_RACE_ENTER_PAUSE_MS))
+        .and_then(|milliseconds| milliseconds.parse().ok())
+        .or((probe() == Probe::InputRace).then_some(INPUT_RACE_ENTER_PAUSE_MILLISECONDS))
         .map(Duration::from_millis);
     let typed = match pause {
         Some(p) if !enter.is_empty() => {
