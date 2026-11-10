@@ -11,7 +11,7 @@ needs_person: yes
 
 Raised by the lane `milestone/1059-block-roster-contract-outside-review`. A reviewer with no prior
 exposure to this project read the crate's repository at `436d4ce`, the `main` after its pull
-request #1. The reviewer read it against [the review package](../../notes/crate-reviews/README.md)
+request #1. The reviewer read it against [the review package](../../notes/crate-reviews/block-roster-contract.md)
 for `block_roster_contract`.
 Pull request #2 of the repository then renamed the crate to `block_roster_contract` (`47ac5a9`,
 now `main`), and this block cites files and symbols at that commit. This block proposes work and
@@ -190,8 +190,14 @@ roster knows its count, and `get` keeps `try_into().ok()?` paths the proofs show
 
 Ruled 2026-11-09. `Device` derives `Hash`, `PartialOrd` and `Ord`. `Roster::devices` becomes an
 exact-size, infallible iterator built on `chunks_exact(ENTRY_BYTES).take(count)`, and the
-unreachable `try_into().ok()?` paths in `get` go. One-way once published (public API). S. The order
-a derived `Ord` sorts by is still open; see the decisions below.
+unreachable `try_into().ok()?` paths in `get` go.
+
+Ruled 2026-11-09, the sort order. The struct declares `transport` before `ordinal`, so the derived
+`Ord` sorts by the value of the transport constant and then by ordinal: a listing groups by bus.
+The struct declares `ordinal` first today, so the change moves `transport` above it. The page
+layout does not follow, since `write` and `get` name each field. A comment on the struct says its
+field order is the sort order and a published behavior, and a host test pins that order. One-way
+once published (public API). S.
 
 ## Decisions this block needs
 
@@ -204,17 +210,12 @@ Ruled 2026-11-09, and closed here:
    `virtio-pci` and `nvme` (P1-6).
 3. `Device` derives `Hash`, `Ord` and `PartialOrd`, and `Roster::devices` is an exact-size,
    infallible iterator over `chunks_exact(ENTRY_BYTES).take(count)` (P1-8).
-4. The crate is `block_roster_contract`, since [design/naming.md](../naming.md) ends a wire-contract
+4. `Device` declares `transport` before `ordinal`, so the derived `Ord` sorts by transport and then
+   by ordinal; a comment on the struct and a host test hold that order (P1-8).
+5. The crate is `block_roster_contract`, since [design/naming.md](../naming.md) ends a wire-contract
    crate in `_contract`.
 
-For the architect, one-way, not yet ruled:
-
-1. Which field a derived `Ord` on `Device` compares first (P1-8). A derive compares in declaration
-   order, and the struct declares `ordinal` before `transport`, so as written a listing sorts by
-   ordinal across buses. Recommendation: declare `transport` first, so a listing sorts by bus and
-   then by ordinal, the order a person reads. The page layout does not fix the field order, since
-   `write` and `get` name each field. Once published, the sort order is part of the API.
-2. Any tag. Not ruled, and asked separately when the weekly gates pass.
+For the architect, one-way, not yet ruled: any tag, asked separately when the weekly gates pass.
 
 The maintainers' provisional calls: every two-way item above and in the appendix, and the names of
 the capacity-word refusals in P1-3, which go through the naming review before any tag.
@@ -248,5 +249,5 @@ An outside reading of `block_roster_contract`: two red weekly jobs block the fir
 stranger run; mutation survivors inside the Kani module). Eight items go before it. The CI pin and
 the mutation caller, a checked capacity word, `Display` on `TooManyDevices`, `forbid(unsafe_code)`
 and the shipped text are the maintainers' calls. A `Result` from `Roster::read`, `index` and three
-aliases, and `Hash` and `Ord` on `Device` with an exact-size `devices()` are ruled. Eight follow it. The sort order
-of `Device` and any tag are open; publishing stays held.
+aliases, and `Hash` and `Ord` on `Device` sorted by transport then ordinal, with an exact-size
+`devices()`, are ruled. Eight follow it. Any tag is open; publishing stays held.
