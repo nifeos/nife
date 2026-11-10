@@ -213,7 +213,7 @@ today. The architect's request is the driver.
 
 ## Follow-on
 
-- **Built.** The kernel's spawners and `process_builder` (so `system_initializer` and every other
+- **Done.** The kernel's spawners and `process_builder` (so `system_initializer` and every other
   userspace builder) write the page for each process they build, and the five drivers (NVMe,
   e1000e, DesignWare Ethernet, DesignWare mobile storage, the xHCI keyboard driver) read their
   windows from it. A userspace builder lists a child's windows in `ChildEndowment::windows`;
