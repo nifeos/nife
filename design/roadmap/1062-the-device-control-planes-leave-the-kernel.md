@@ -58,9 +58,10 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    service) states it: the clock service holds a `PortRange` over ports 0x70 and 0x71 and reads the
    CMOS itself. `kernel/src/arch/x86_64/rtc.rs` goes, and `clock_contract::rtc::CMOS` comes to name
    two ports the service reads. §130's title, and the glosses that cite it, change with the code.
-7. The virtio shadow-ring validation becomes a switch, off by default (§23 (multi-queue DMA
-   confinement)). `crates/direct_memory_access_validator` and its harnesses stay, switched on only
-   for a target that runs virtio without an IOMMU.
+7. The virtio shadow-ring validation becomes a switch (§23 (multi-queue DMA confinement)).
+   `crates/direct_memory_access_validator` and its harnesses stay, switched on if a cloud target
+   with virtio and no IOMMU becomes real. Off by default until then is provisional: the architect
+   has not ruled on the default, and this step waits for that ruling.
 
 Every new program, process, crate and verb ships with a provisional name.
 

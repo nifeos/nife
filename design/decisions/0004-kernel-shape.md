@@ -1,7 +1,7 @@
 ---
-status: AMENDED
+status: DECIDED
 raised: 2026-07-13
-decided: 2026-07-13
+decided: 2026-11-10
 ratified_by: calef
 ---
 
