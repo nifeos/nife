@@ -1444,7 +1444,7 @@ fn seeded_syscalls_agree_with_the_shadow_model() {
         seq: 0,
     };
 
-    let hz = crate::arch::timer::frequency();
+    let hertz = crate::arch::timer::frequency();
     let start = crate::arch::timer::now();
     let mut total = Census::default();
     let mut ran = 0u64;
@@ -1457,7 +1457,7 @@ fn seeded_syscalls_agree_with_the_shadow_model() {
             crate::println!("    syscall fuzzer: seeds 0..{SUITE_SEEDS} and corpus {CORPUS:?}");
         }
         Some((first, count)) => {
-            let cap = start + SWEEP_SECONDS * hz;
+            let cap = start + SWEEP_SECONDS * hertz;
             for seed in first..first.saturating_add(count) {
                 if crate::arch::timer::now() > cap {
                     break;
@@ -1472,10 +1472,10 @@ fn seeded_syscalls_agree_with_the_shadow_model() {
             );
         }
     }
-    let ms = (crate::arch::timer::now() - start) * 1000 / hz;
+    let milliseconds = (crate::arch::timer::now() - start) * 1000 / hertz;
     crate::println!(
-        "    syscall fuzzer: {ran} seeds, {ms} ms ({} seeds/s), {total:?}",
-        (ran * 1000).checked_div(ms).unwrap_or(0)
+        "    syscall fuzzer: {ran} seeds, {milliseconds} ms ({} seeds/s), {total:?}",
+        (ran * 1000).checked_div(milliseconds).unwrap_or(0)
     );
 
     for a in 0..ACTORS {

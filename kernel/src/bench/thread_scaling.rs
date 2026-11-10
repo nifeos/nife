@@ -10,14 +10,14 @@ use super::*;
 /// states its own (24 MHz on the Apple Silicon dev machine). Nothing else inside the guest tells
 /// the accelerators apart.
 #[cfg(target_arch = "aarch64")]
-const TCG_VIRT_CNTFRQ_HZ: u64 = 62_500_000;
+const TCG_VIRT_CNTFRQ_HERTZ: u64 = 62_500_000;
 
 /// The riscv64 twin: QEMU `virt`'s `/cpus/timebase-frequency`, against radon's 4 MHz.
 ///
 /// It says "not QEMU `virt`", not "has a 32 KB L1"; the runbook records which machine a number came
 /// from. See notes/benchmarks/kernel-bench-harness.md.
 #[cfg(target_arch = "riscv64")]
-const TCG_VIRT_CNTFRQ_HZ: u64 = 10_000_000;
+const TCG_VIRT_CNTFRQ_HERTZ: u64 = 10_000_000;
 
 /// Shared precondition for E1 and E4: a real core, so there is a cache, and a single hart, so every
 /// thread contends for one core's cache.
@@ -34,7 +34,7 @@ pub(super) fn real_single_hart_or_skip(name: &str) -> bool {
         return false;
     }
     let freq = crate::arch::timer::frequency();
-    if freq == TCG_VIRT_CNTFRQ_HZ {
+    if freq == TCG_VIRT_CNTFRQ_HERTZ {
         println!(
             "bench: {name} skipped (QEMU virt detected via counter frequency {freq} Hz; TCG \
              models no cache, see design/roadmap/0134-the-measurements-that-decide.md)"

@@ -4,7 +4,7 @@
 //! absolute deadline (`CNTV_CVAL_EL0`), so the ticks sit on a grid anchored at boot. See
 //! notes/aarch64-port.md, "The Generic Timer", and notes/interrupts.md.
 
-// `ticks`, `missed_ticks`, `uptime_ms` and `interval` have no caller outside this file's tests on
+// `ticks`, `missed_ticks`, `uptime_milliseconds` and `interval` have no caller outside this file's tests on
 // aarch64, so each is `cfg_attr(not(test), allow(dead_code))` rather than the whole module.
 
 use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -370,7 +370,7 @@ pub(crate) fn check_frequency_against_device_tree(dtb_ptr: usize) {
 ///
 /// Not `ticks() * 10`, which undercounts every missed tick.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // this file's tests are the callers
-pub fn uptime_ms() -> u64 {
+pub fn uptime_milliseconds() -> u64 {
     let freq = instructions::read_cntfrq();
     if freq == 0 {
         return 0;
@@ -635,9 +635,9 @@ mod tests {
     fn uptime_advances_monotonically() {
         use crate::arch::timer;
 
-        let a = timer::uptime_ms();
+        let a = timer::uptime_milliseconds();
         timer::spin_for(timer::frequency() / 50); // 20 ms
-        let b = timer::uptime_ms();
+        let b = timer::uptime_milliseconds();
 
         assert!(b > a, "uptime went backwards or stalled: {a} -> {b}");
         assert!(

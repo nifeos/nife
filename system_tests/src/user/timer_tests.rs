@@ -41,7 +41,7 @@ fn reclaim(r: u64) {
 }
 
 /// `ms` milliseconds of counter ticks.
-fn ms(n: u64) -> u64 {
+fn milliseconds(n: u64) -> u64 {
     frequency() * n / 1000
 }
 
@@ -70,7 +70,7 @@ fn a_wait_ends_on_a_signal_before_the_deadline() {
     let r = region();
     let n = sched::create_notification_from(r).expect("notification");
     let t = sched::create_timer_from(r).expect("timer");
-    let deadline = now() + ms(2000);
+    let deadline = now() + milliseconds(2000);
     assert_eq!(sched::timer_arm(t, deadline, n, 0b10), Ok(()));
 
     let waiter = sched::spawn(move || {
@@ -125,7 +125,7 @@ fn a_wait_ends_at_the_deadline_with_no_signal() {
     let t = sched::create_timer_from(r).expect("timer");
 
     // In WAIT.
-    let deadline = now() + ms(50);
+    let deadline = now() + milliseconds(50);
     assert_eq!(sched::timer_arm(t, deadline, n, 0b100), Ok(()));
     sched::spawn(move || {
         let w = sched::notification_wait(n).expect("wait");
@@ -141,7 +141,7 @@ fn a_wait_ends_at_the_deadline_with_no_signal() {
     let woke = WOKE_AT.load(Ordering::SeqCst);
     assert!(woke >= deadline, "woke before the deadline");
     assert!(
-        woke < deadline + ms(1000),
+        woke < deadline + milliseconds(1000),
         "woke a second or more late: {} ms",
         (woke - deadline) * 1000 / frequency()
     );
@@ -170,7 +170,7 @@ fn a_wait_ends_at_the_deadline_with_no_signal() {
         "the receiver never parked in RECEIVE"
     );
     assert_eq!(sched::notification_bind(n, receiver), Ok(()));
-    let deadline = now() + ms(50);
+    let deadline = now() + milliseconds(50);
     assert_eq!(sched::timer_arm(t, deadline, n, 0b1000), Ok(()));
     assert!(
         wait_for(|| RECEIVED_DONE.load(Ordering::Acquire) == 1),
@@ -204,20 +204,32 @@ fn a_cancelled_or_rearmed_timer_never_fires_stale() {
     let b = sched::create_timer_from(r).expect("timer b");
 
     let start = now();
-    assert_eq!(sched::timer_arm(a, start + ms(30), n, 0b0001), Ok(()));
+    assert_eq!(
+        sched::timer_arm(a, start + milliseconds(30), n, 0b0001),
+        Ok(())
+    );
     assert_eq!(sched::timer_cancel(a), Ok(true));
-    assert_eq!(sched::timer_arm(a, start + ms(30), n, 0b0010), Ok(()));
-    assert_eq!(sched::timer_arm(a, start + ms(400), n, 0b0100), Ok(()));
-    assert_eq!(sched::timer_arm(b, start + ms(150), n, 0b1000), Ok(()));
+    assert_eq!(
+        sched::timer_arm(a, start + milliseconds(30), n, 0b0010),
+        Ok(())
+    );
+    assert_eq!(
+        sched::timer_arm(a, start + milliseconds(400), n, 0b0100),
+        Ok(())
+    );
+    assert_eq!(
+        sched::timer_arm(b, start + milliseconds(150), n, 0b1000),
+        Ok(())
+    );
 
     assert_eq!(
         sched::notification_wait(n),
         Ok(0b1000),
         "a cancelled or replaced deadline fired"
     );
-    assert!(now() >= start + ms(150));
+    assert!(now() >= start + milliseconds(150));
     assert_eq!(sched::notification_wait(n), Ok(0b0100));
-    assert!(now() >= start + ms(400));
+    assert!(now() >= start + milliseconds(400));
     assert_eq!(sched::timer_cancel(a), Ok(false));
     assert_eq!(sched::timer_cancel(b), Ok(false));
     assert_eq!(sched::notification_poll(n), Ok(0), "something fired twice");
@@ -266,7 +278,7 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
     let t_read = sched::grant(crate::capability_object::timer_capability(t, Rights::READ))
         .expect("read view");
 
-    let later = now() + ms(10_000);
+    let later = now() + milliseconds(10_000);
     assert_eq!(
         invoke(t_read, abi::timer::ARM, later, n_slot, 1),
         Err(Error::NotPermitted)
@@ -298,11 +310,11 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
     // notification lives in a second region so it can go while the timer stays.
     let r2 = region();
     let n2 = sched::create_notification_from(r2).expect("second notification");
-    let deadline = now() + ms(30);
+    let deadline = now() + milliseconds(30);
     assert_eq!(sched::timer_arm(t, deadline, n2, 1), Ok(()));
     reclaim(r2);
     assert!(
-        wait_for(|| now() > deadline + ms(50)),
+        wait_for(|| now() > deadline + milliseconds(50)),
         "the counter stopped"
     );
     assert_eq!(
@@ -311,7 +323,7 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
         "the expiry should have fired (into nothing) and disarmed"
     );
     assert_eq!(
-        sched::timer_arm(t, now() + ms(10), n2, 1),
+        sched::timer_arm(t, now() + milliseconds(10), n2, 1),
         Err(Error::Gone),
         "arming at a destroyed notification is refused up front"
     );
@@ -342,7 +354,7 @@ fn a_timer_sleep_costs_a_wake_where_a_yield_loop_costs_a_cpu() {
     let r = region();
     let n = sched::create_notification_from(r).expect("notification");
     let t = sched::create_timer_from(r).expect("timer");
-    let period = ms(200);
+    let period = milliseconds(200);
 
     sched::spawn(move || {
         let deadline = now() + period;
