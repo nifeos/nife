@@ -3,10 +3,8 @@
 //! storage on real silicon); notes/designware-mobile-storage.md). The driver is the crate of the
 //! same name; this file is its register window and serve loop. It holds only what
 //! `kernel/src/user/designware_mobile_storage_service.rs` gives it: the controller's register page
-//! at `driver_process_contract::designware_mobile_storage::REGISTER_VIRTUAL_ADDRESS` (the kernel
-//! ungates the shared clock generator, §86 (whether an NVMe driver can leave the kernel)), the
-//! transfer region at
-//! `driver_process_contract::designware_mobile_storage::TRANSFER_VIRTUAL_ADDRESS`, the request
+//! (the kernel ungates the shared clock generator, §86 (whether an NVMe driver can leave the
+//! kernel)) and the transfer region, both where the startup page says they are, the request
 //! (slot 0) and readiness (slot 1) endpoints, and the card's window, clock, width and FIFO depth.
 //! No DMA, but that page holds `BUS_MODE_REGISTER` and `DBADDR` and the JH7110 has no IOMMU, so it
 //! is as confined as its own code, the position of milestone 261 (the NVMe driver leaves the kernel).
@@ -33,10 +31,11 @@
 use designware_mobile_storage::host_controller::{HostController, RegisterWindowAndClock};
 use designware_mobile_storage::sd::{self, Card};
 use designware_mobile_storage::{command as c, registers};
-use driver_process_contract::designware_mobile_storage::{
-    Handoff, REGISTER_VIRTUAL_ADDRESS, TRANSFER_VIRTUAL_ADDRESS,
-};
+use driver_process_contract::designware_mobile_storage::Handoff;
 use filesystem_contract::blk;
+use startup_page_contract::kind;
+use user_mode_runtime::mapped_window::PAGE;
+use user_mode_runtime::startup_window::StartupWindow;
 use user_mode_runtime::{exit, receive_request, reply, send};
 
 /// The request endpoint.
@@ -56,29 +55,33 @@ const EIO: i32 = 5;
 const EINVAL: i32 = 22;
 const EROFS: i32 = 30;
 
+/// The controller's first page, device-typed, where the startup page says the spawner mapped it.
+// SAFETY: the spawner (`designware_mobile_storage_service`) lists this page and maps it
+// device-typed before `_start` runs.
+static REGISTERS: StartupWindow =
+    unsafe { StartupWindow::new(kind::DESIGNWARE_MOBILE_STORAGE_REGISTER_PAGE, PAGE) };
+
+/// The request buffer, `blk::TRANSFER_BLOCKS` pages.
+// SAFETY: the spawner lists this window and maps all of it read/write before `_start` runs.
+static TRANSFER: StartupWindow = unsafe {
+    StartupWindow::new(
+        kind::DESIGNWARE_MOBILE_STORAGE_TRANSFER,
+        blk::TRANSFER_MAXIMUM as u64,
+    )
+};
+
 /// The controller's first page, as the kernel mapped it.
 struct Page;
 
 impl RegisterWindowAndClock for Page {
     fn read(&mut self, offset: u32) -> u32 {
         debug_assert!(offset < registers::USED_REGISTER_WINDOW_BYTES);
-        // SAFETY: the spawner maps one device-typed page of the controller at
-        // REGISTER_VIRTUAL_ADDRESS before `_start` runs, and every offset the crate passes is a
-        // word-aligned register in it.
-        unsafe {
-            core::ptr::read_volatile((REGISTER_VIRTUAL_ADDRESS + u64::from(offset)) as *const u32)
-        }
+        REGISTERS.get().r32(u64::from(offset))
     }
 
     fn write(&mut self, offset: u32, value: u32) {
         debug_assert!(offset < registers::USED_REGISTER_WINDOW_BYTES);
-        // SAFETY: as `read`.
-        unsafe {
-            core::ptr::write_volatile(
-                (REGISTER_VIRTUAL_ADDRESS + u64::from(offset)) as *mut u32,
-                value,
-            );
-        }
+        REGISTERS.get().w32(u64::from(offset), value);
     }
 
     fn now_microseconds(&mut self) -> u64 {
@@ -87,12 +90,9 @@ impl RegisterWindowAndClock for Page {
 }
 
 fn transfer() -> &'static mut [u8] {
-    // SAFETY: the spawner maps `blk::TRANSFER_BLOCKS` pages read/write at TRANSFER_VIRTUAL_ADDRESS
-    // before `_start` runs; this process is single-threaded, so this is the only reference at a
+    // SAFETY: this process is single-threaded, so this is the only reference to the buffer at a
     // time.
-    unsafe {
-        core::slice::from_raw_parts_mut(TRANSFER_VIRTUAL_ADDRESS as *mut u8, blk::TRANSFER_MAXIMUM)
-    }
+    unsafe { TRANSFER.get().as_mut_slice() }
 }
 
 user_mode_runtime::program_entry!(start);

@@ -34,3 +34,6 @@ entropy_contract = { version = "0.1.0", path = "../entropy_contract" }
 # is built on mapped_window, which cannot compile for the host, and socket_contract's wire format
 # is host-tested; the module doc has the whole reason.
 socket_contract = { version = "0.1.0", path = "../socket_contract" }
+# The startup page: where the spawner mapped each window, read by `startup_window::StartupWindow`
+# rather than an address compiled into the program. no_std, like the protocol crates above.
+startup_page_contract = { version = "0.1.0", path = "../startup_page_contract" }

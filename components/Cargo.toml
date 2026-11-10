@@ -622,6 +622,9 @@ address_space_map = { version = "0.1.0", path = "../crates/address_space_map" }
 # `non_volatile_memory_express`), which those crates leave to nife (milestone 857 (crates released
 # on their own)).
 driver_process_contract = { version = "0.1.0", path = "../crates/driver_process_contract" }
+# Where the spawner mapped each window: a driver reads its addresses from the startup page rather
+# than compiling them in (`user_mode_runtime::startup_window`).
+startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 # radon's SD/MMC driver (milestone 53): designware_mobile_storage.rs is its register window and
 # serve loop over it.
 designware_mobile_storage = { version = "0.1.0", git = "https://github.com/nifeos/designware_mobile_storage", rev = "a800e4b89cf379a85947e473082ebe7f8f933c34" }
