@@ -293,6 +293,62 @@ mod tests {
         assert_eq!(forged.to_words(), [0, both, 0]);
     }
 
+    /// A check has an outcome once it is recorded, whatever the outcome, and recording one check
+    /// leaves every other check's outcome alone.
+    #[test]
+    fn recording_one_check_keeps_the_others() {
+        let mut t = Tally::new();
+        assert!(!t.is_recorded(check("timer")));
+        t.record(check("timer"), Outcome::Passed);
+        t.record(check("clock"), Outcome::Failed);
+        t.record(check("blockdev"), Outcome::Absent);
+        t.record(check("trng"), Outcome::Absent);
+        for name in ["timer", "clock", "blockdev", "trng"] {
+            assert!(t.is_recorded(check(name)), "{name}");
+        }
+        assert!(!t.is_recorded(check("mapping")));
+        assert_eq!(
+            format!("{}", t.verdict()),
+            format!(
+                "nife self-test: 1 of {CHECKS} passed, 2 absent: blockdev trng, 1 FAILED: clock"
+            )
+        );
+    }
+
+    /// With every check recorded, nothing is failed for being unrecorded and the verdict is clean.
+    #[test]
+    fn a_full_tally_fails_nothing_unrecorded() {
+        let mut t = Tally::new();
+        for i in 0..CHECKS {
+            t.record(i, Outcome::Passed);
+        }
+        assert_eq!(t.fail_unrecorded().count(), 0);
+        assert_eq!(
+            format!("{}", t.verdict()),
+            format!("nife self-test: {CHECKS} of {CHECKS} passed")
+        );
+    }
+
+    /// A failed or absent check is recorded, so only the checks with no outcome at all are failed
+    /// for being unrecorded.
+    #[test]
+    fn failed_and_absent_checks_are_not_unrecorded() {
+        let mut t = Tally::new();
+        for i in 0..CHECKS {
+            t.record(i, Outcome::Passed);
+        }
+        t.record(check("clock"), Outcome::Failed);
+        t.record(check("trng"), Outcome::Absent);
+        assert_eq!(t.fail_unrecorded().count(), 0);
+    }
+
+    /// A name off the list stops at the list's end, with the message that names the list.
+    #[test]
+    #[should_panic(expected = "not a check in boot_ladder::SELF_TEST_CHECKS")]
+    fn a_name_off_the_list_is_refused() {
+        check("not_a_check");
+    }
+
     /// The line keeps the column widths the kernel always printed.
     #[test]
     fn a_check_line_keeps_its_columns() {

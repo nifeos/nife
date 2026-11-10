@@ -230,5 +230,13 @@ mod tests {
         );
         assert!(images_fit(&lengths));
         assert!(!images_fit(&[IMAGES_MAXIMUM_BYTES, 0, 0]));
+        assert!(images_fit(&[IMAGES_MAXIMUM_BYTES - PAGE, 0, 0]));
+    }
+
+    /// The header holds the entropy source and then one length per image, and nothing past them.
+    #[test]
+    fn the_header_has_a_length_for_each_image() {
+        assert_eq!(header::COUNT - header::IMAGE_BYTE_COUNTS, image::COUNT);
+        assert!(header::ENTROPY_SOURCE < header::IMAGE_BYTE_COUNTS);
     }
 }

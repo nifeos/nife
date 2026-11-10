@@ -196,12 +196,39 @@ mod tests {
     use super::*;
     use crate::verdict::{Outcome, check};
 
+    /// Every flag is its own single bit, starting at bit 0 and leaving none out, so one fact never
+    /// reads as another.
+    #[test]
+    fn each_flag_is_its_own_bit() {
+        let flags = [
+            flag::INJECT,
+            flag::RANDOM_NUMBER_GENERATOR_FOUND,
+            flag::RANDOM_NUMBER_GENERATOR_STATUS_OKAY,
+            flag::RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING,
+            flag::RANDOM_NUMBER_GENERATOR_WIRED,
+            flag::RANDOM_NUMBER_GENERATOR_ANSWERED,
+            flag::CLOCK_REPORTED,
+            flag::CLOCK_RUNNING,
+            flag::CLOCK_RELEASED,
+            flag::CLOCK_ALREADY_UP,
+            flag::CLOCK_FROM_TREE,
+            flag::RANDOM_NUMBER_GENERATOR_256_BIT,
+            flag::DISK_MEMORY_MAPPED,
+            flag::DISK_PCI,
+        ];
+        for (bit, value) in flags.iter().enumerate() {
+            assert_eq!(*value, 1u64 << bit, "flag {bit}");
+        }
+    }
+
     /// What the kernel writes is what the program reads, and a page without the magic reads as
     /// nothing.
     #[test]
     fn the_half_round_trips_through_its_words() {
         let mut tally = Tally::new();
         tally.record(check("timer"), Outcome::Passed);
+        tally.record(check("mapping"), Outcome::Failed);
+        tally.record(check("device_interrupt"), Outcome::Absent);
         let mut half = KernelHalf {
             tally,
             flags: flag::INJECT | flag::DISK_PCI,
