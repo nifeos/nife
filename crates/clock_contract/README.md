@@ -42,7 +42,7 @@ epoch in a `u64`, which runs out in 2554.
   accuracy.
 - `rtc` names the kinds of hardware clock the service can be told about: `NONE`, `PL031`, `GOLDFISH`
   and `CMOS`. `PL031` and `GOLDFISH` name a register layout the service reads through a mapped
-  page; `CMOS` names the two I/O ports, `CMOS_INDEX_PORT` and `CMOS_DATA_PORT`, it reads through a
+  page; `CMOS` names the two I/O ports, `INDEX_PORT` and `DATA_PORT`, it reads through a
   port capability.
 
 ## EXAMPLES

@@ -194,7 +194,7 @@ fn goldfish_unix_ns(base: u64) -> u64 {
 }
 
 /// **The CMOS RTC driver** (`x86_64`): an MC146818-compatible clock behind
-/// [`rtc::CMOS_INDEX_PORT`] and [`rtc::CMOS_DATA_PORT`], reached through the `PortRange` the
+/// [`rtc::INDEX_PORT`] and [`rtc::DATA_PORT`], reached through the `PortRange` the
 /// wiring grants in slot 2. See notes/clock.md for the register map, tearing and the century.
 ///
 /// # BUGS
@@ -207,7 +207,7 @@ fn goldfish_unix_ns(base: u64) -> u64 {
 /// `pl031_unix_ns` and `goldfish_unix_ns` carry theirs.
 #[cfg(target_arch = "x86_64")]
 mod cmos {
-    use clock_contract::rtc::{CMOS_DATA_PORT, CMOS_INDEX_PORT};
+    use clock_contract::rtc::{DATA_PORT, INDEX_PORT};
     use user_mode_runtime::{inb, outb};
 
     const REGISTER_SECONDS: u8 = 0x00;
@@ -231,8 +231,8 @@ mod cmos {
 
     /// Read one CMOS register: name it at the index port, then read the data port.
     fn read(register: u8) -> u8 {
-        outb(CMOS_INDEX_PORT, register);
-        inb(CMOS_DATA_PORT)
+        outb(INDEX_PORT, register);
+        inb(DATA_PORT)
     }
 
     fn is_update_in_progress() -> bool {

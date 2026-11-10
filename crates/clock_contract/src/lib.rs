@@ -530,7 +530,7 @@ pub mod policy {
 // ================================================================================================
 
 /// **Which RTC the machine has**, discovered from the device tree's `compatible` (or, on `x86_64`,
-/// the CMOS every PC-compatible machine has) and passed to the clock service at spawn.
+/// the CMOS clock behind two fixed I/O ports) and passed to the clock service at spawn.
 ///
 /// The service could have keyed the register layout off `target_arch`, which is what the console
 /// driver does for its UART. It does not, because the RTC is where that shortcut runs out: the
@@ -551,27 +551,27 @@ pub mod rtc {
     /// correct except across the low word's wrap, which is a bug that shows up once every four
     /// seconds and looks like a 4-second jump.
     pub const GOLDFISH: u64 = 2;
-    /// **The `x86_64` CMOS RTC**, an MC146818-compatible clock behind two fixed I/O ports,
-    /// [`CMOS_INDEX_PORT`] and [`CMOS_DATA_PORT`], with no page. `PL031` and `GOLDFISH` name a
-    /// register layout the clock service reads through a mapping it holds; this one names the two
-    /// ports the service reads through a `PortRange` capability over both, which the wiring grants
-    /// with `WRITE` because the I/O permission bitmap cannot permit `in` without `out`.
+    /// **The `x86_64` CMOS RTC**, a clock behind two fixed I/O ports, [`INDEX_PORT`] and
+    /// [`DATA_PORT`], with no page. `PL031` and `GOLDFISH` name a register layout the clock
+    /// service reads through a mapping it holds; this one names the two ports the service reads
+    /// through a `PortRange` capability over both, which the wiring grants with `WRITE` because
+    /// the I/O permission bitmap cannot permit `in` without `out`.
     ///
     /// Name and value provisional.
     pub const CMOS: u64 = 3;
 
-    /// The CMOS index port: write a register number here before reaching it at [`CMOS_DATA_PORT`].
+    /// The CMOS index port: write a register number here before reaching it at [`DATA_PORT`].
     /// The lower of the two ports a [`CMOS`] binding's `PortRange` names.
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/cmos-read-in-the-clock-service for
     /// milestone 1062 (the device control planes leave the kernel), step 6.
-    pub const CMOS_INDEX_PORT: u16 = 0x70;
+    pub const INDEX_PORT: u16 = 0x70;
 
-    /// The CMOS data port: reads and writes the register [`CMOS_INDEX_PORT`] last named.
+    /// The CMOS data port: reads and writes the register [`INDEX_PORT`] last named.
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/cmos-read-in-the-clock-service for
     /// milestone 1062 (the device control planes leave the kernel), step 6.
-    pub const CMOS_DATA_PORT: u16 = 0x71;
+    pub const DATA_PORT: u16 = 0x71;
 }
 
 #[cfg(all(test, not(loom)))]

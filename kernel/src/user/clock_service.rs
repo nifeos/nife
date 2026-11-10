@@ -25,7 +25,7 @@ pub struct Wiring {
 /// Does this machine have an RTC at all?
 ///
 /// Elsewhere the device tree answers (`memory::rtc_region()`). On `x86_64` the answer is always
-/// yes: every PC-compatible machine has the CMOS at `clock_contract::rtc::CMOS_INDEX_PORT`, and the
+/// yes: every PC-compatible machine has the CMOS at `clock_contract::rtc::INDEX_PORT`, and the
 /// kernel no longer reads it, so it cannot tell a dead battery from a live clock. A test asks
 /// before [`start`], so a skip leaves no service's frames charged to it.
 ///
@@ -124,8 +124,8 @@ fn spawn_with(
         // permit `in` without `out`; no `GRANT`, since the service never lends them on.
         #[cfg(target_arch = "x86_64")]
         crate::capability_object::port_range_capability(
-            clock_contract::rtc::CMOS_INDEX_PORT,
-            clock_contract::rtc::CMOS_DATA_PORT - clock_contract::rtc::CMOS_INDEX_PORT + 1,
+            clock_contract::rtc::INDEX_PORT,
+            clock_contract::rtc::DATA_PORT - clock_contract::rtc::INDEX_PORT + 1,
             Rights::WRITE,
         ),
     ];
