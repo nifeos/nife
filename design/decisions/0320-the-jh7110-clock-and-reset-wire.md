@@ -22,14 +22,14 @@ Today the kernel does it. `kernel/src/drivers/jh7110_clock_and_reset.rs` (193 li
 walks plans that `crates/jh7110_clock_and_reset` supplies, for five callers: the entropy starter,
 the GMAC bring-up, the SD/MMC starter and its card clock, the reboot path's I2C5, and the soak's
 watchdog. Nothing in the tree turns a clock off or asserts a reset. §304 (who may turn a device off)
-keeps it so until the power cost is measured.
+keeps it so until a bench run measures the power cost.
 
 Milestone 1062 (the device control planes leave the kernel) moves this to a userspace server whose
 verbs live in a contract crate both sides use (§311 (a contract is code, not prose)). Its steps 3
 and 5 depend on that server. The wire must fit three fixed facts. A `CALL` carries two words and its
 reply two (§12 (call and reply IPC)). The server learns the caller by a badge the kernel stamps
 once (§230 (badged endpoint capabilities)). And a server scopes each client by that badge, never by
-an id the client wrote (§256 (a server scopes each client by the caller's badge)).
+an id the client wrote (§256 (a server that keeps windows for many clients scopes each by the caller's badge)).
 
 ## The decision
 
@@ -57,7 +57,7 @@ Opcodes 5 to 255 are free. No verb turns a device off.
 Bring up walks the device's clocks, each parent choice before its clock's enable, then its
 resets, in the crate's plan order. It is idempotent, since firmware may have started the block, so
 a client whose call failed simply calls again. Set rate serves the one rated clock a caller sets
-today, the SD/MMC card clock; a device with none is refused.
+today, the SD/MMC card clock; the server refuses it for a device with none.
 
 Reply word 0 is a status, a small non-negative number. A kernel failure of the `CALL` itself is a
 small negative, enormous as a `u64`, so the two never collide (`entropy_contract::delivered`'s
@@ -81,18 +81,18 @@ back as running, 23:16 the resets in the plan, 31:24 those released. Bit 32 says
 already up before the call. Bits 47:40 count steps the server refused. The rest is zero.
 
 Why A. It has the fewest moving parts. The order the silicon needs stays in one place, the server,
-where host tests already pin it. It needs no refcount, since nothing is released twice or turned
-off, and it obeys §304 by having no off verb. And it is the restrictive choice. nife means its
+where host tests already pin it. It needs no refcount, since nothing releases twice or turns off,
+and it obeys §304 by having no off verb. And it is the restrictive choice. nife means its
 drivers to be portable across many chips, so line-level verbs may come later. They arrive as new
 opcodes with no version bump, while taking one back would be a break.
 
 ## The options refused
 
-- **B, line-level verbs by the device tree's `clock-names` and `reset-names`.** Every client would
+- B, line-level verbs by the device tree's `clock-names` and `reset-names`. Every client would
   carry the order the silicon needs, and any later off verb would need a per-line refcount. Refused
-  for today; it can be added as new opcodes.
-- **C, a plan the client uploads.** A list of steps does not fit two words, so it needs a shared
-  page and a magic, and the server would check the order it was handed anyway.
+  for today; it can arrive later as new opcodes.
+- C, a plan the client uploads. A list of steps does not fit two words, so it needs a shared
+  page and a magic, and the server would check the client's order anyway.
 
 ## Prior art
 
@@ -112,14 +112,14 @@ opcodes with no version bump, while taking one back would be a break.
   resets and clocks as its description lists them. The client calls no clock verb. This is A's
   shape and the closest precedent.
 
-Where nife differs: the verbs cross a process boundary; the device is named by the kernel-stamped
-badge, never by a client-written id; the order is the server's, where the BSDs leave it to each
-driver; and nothing turns off, so nothing is counted.
+Where nife differs: the verbs cross a process boundary; the kernel-stamped badge names the
+device, never a client-written id; the order is the server's, where the BSDs leave it to each
+driver; and nothing turns off, so nothing needs counting.
 
 A concrete example. The progenitor starts the server with the STG, SYS and AON windows. To start
 the GMAC's control process it badges the server's endpoint with `0x1603_0000` and calls opcode 1.
 The server enables SYS clocks 108, 111 and 109 and AON clocks 3 and 2, chooses parent 1 for AON
-clock 5 while it is gated, enables clock 5, and releases AON resets 0 and 1. It replies status 0
+clock 5 while its gate is still shut, enables clock 5, and releases AON resets 0 and 1. It replies status 0
 with a summary of six clocks enabled and running and two resets released. A read of clock 9 on that
 capability answers status 5, and nothing it can send reaches the TRNG's clocks in STG.
 
@@ -136,6 +136,6 @@ Once a peer outside the tree builds against the wire, these hold for good:
 That no verb turns a device off is not one-way: an off verb is a new opcode, and a version 1
 client never relied on its absence.
 
-Two-way: every name, the crate's and the program's included; whether the starter or the driver
-holds the capability; whether the server takes a device's plan from the crate or the tree; the
-readiness word, the poll bound and the restart policy; and new opcodes.
+Two-way: every name, the crate's and the program's included, and any new opcode. So are whether
+the starter or the driver holds the capability, and whether the server takes a device's plan from
+the crate or the tree. The readiness word, the poll bound and the restart policy are two-way too.
