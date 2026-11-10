@@ -1,3 +1,8 @@
+//! The startup page's host tests: a written page reads back, a reader skips unknown kinds, and the
+//! writer refuses every list a reader could misread.
+//!
+//! Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+
 use super::*;
 
 fn window(kind: WindowKind, address: u64, pages: u32) -> Window {
