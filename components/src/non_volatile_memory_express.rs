@@ -57,6 +57,7 @@ fn barrier() {
 
 user_mode_runtime::program_entry!(start);
 
+// Index exception (2026-11-10): the entry point only picks the role, and each role is a child.
 fn start(role: u64, direct_memory_access: u64, _: u64) -> ! {
     match role {
         ADMINISTRATION_ROLE => admin::run(direct_memory_access),

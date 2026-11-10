@@ -19,7 +19,8 @@
 //! # BUGS
 //!
 //! - One command in flight, so measured throughput is a lower bound on the device.
-//! - It polls: no interrupt vector, and nothing would confine one aimed from userspace (§86).
+//! - It polls: no interrupt vector, and nothing would confine one aimed from userspace (§86
+//!   (whether an NVMe driver can leave the kernel)).
 //! - A hung controller is `EIO` after [`SPIN_BOUND`] polls: `CSTS.CFS` is on the unmapped page.
 //! - A PRP aimed backwards from [`Handoff::data_plane_physical_address`] could overwrite the admin
 //!   ring; not an escape, and §86 option 4's doorbell validator would close it.
