@@ -582,7 +582,7 @@ nm_comment() {
 
 $runs
 
-Hand it to its lane: a pushed fix, or the conflict resolved, takes this label off. If the failure was a flake, re-arm it (\`gh pr merge $1 --auto --merge\`); back in the queue takes the label off too."
+Hand it to its lane: a pushed fix, or the conflict resolved, takes this label off. If the failure was a flake, re-arm it (\`helpers/arm.sh $1\`); back in the queue takes the label off too."
 		;;
 	conflict)
 		head=$(printf '%s' "$c" | jq -r '.head')
@@ -598,7 +598,7 @@ Rebase or merge \`main\` (briefs/rebase-onto-main.md), push, and arm it. The lab
 		blockers=$(printf '%s' "$c" | jq -r 'if (.blockers | length) > 0 then " Its `Blocked-by:` pull requests have all resolved (" + (.blockers | join(", ")) + ")." else "" end')
 		what="READY AND UNARMED since $since, over $NM_MINUTES minutes, and not in the merge queue.$blockers Nothing arms a pull request but its lane or a maintainer session, and a lane that has ended its turn is not running: the maintainer session owns this.
 
-If it is done, arm it: \`gh pr merge $1 --auto --merge\`. If it is not, make it a draft again: \`gh pr ready $1 --undo\`. Either takes the label off."
+If it is done, arm it: \`helpers/arm.sh $1\`. If it is not, make it a draft again: \`gh pr ready $1 --undo\`. Either takes the label off."
 		;;
 	off-main)
 		since=$(printf '%s' "$c" | jq -r '.since')

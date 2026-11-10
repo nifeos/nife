@@ -36,7 +36,7 @@ expect() { # name expected-exit expected-stderr-fragment
 }
 
 (FAKE_GH_OUT='queued 42 PR_abc' expect "queued refuses and names the pull request" 1 '#42') || fail=1
-(FAKE_GH_OUT='queued 42 PR_abc' expect "the refusal gives the dequeue" 1 'dequeuePullRequest(input:{id:"PR_abc"})') || fail=1
+(FAKE_GH_OUT='queued 42 PR_abc' expect "the refusal names the re-arming push" 1 'script/push --requeue') || fail=1
 (FAKE_GH_OUT='queued 42 PR_abc' expect "the refusal names the override" 1 'NIFE_PUSH_QUEUED=1') || fail=1
 (FAKE_GH_OUT='idle' expect "open, not queued passes" 0 '') || fail=1
 (FAKE_GH_OUT='none' expect "no pull request passes" 0 '') || fail=1

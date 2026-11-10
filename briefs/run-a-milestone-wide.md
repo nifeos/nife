@@ -69,7 +69,7 @@ same refs and index locks. A claim takes seconds. Sequence them and launch the a
 ## Each lane runs the follow-through contract
 
 `briefs/gate-a-lane.md`'s PENDING file applies per lane, unchanged. Write one beside each lane's log
-at dispatch, holding that lane's push, `gh pr ready` and `gh pr merge --auto`. Tail each log sixty
+at dispatch, holding that lane's push, `gh pr ready` and `helpers/arm.sh <N>`. Tail each log sixty
 seconds after dispatch, because twenty dispatches make a dead one easy to miss. A wide run is
 where an unexecuted ending is likeliest, because twenty of them live in one context at once.
 
@@ -164,7 +164,7 @@ should raise it as one exception rather than three.
 
 ## Arm as soon as the last fix is pushed
 
-A wide run arms a pull request (`gh pr merge <N> --auto --merge`) as soon as its review passes and
+A wide run arms a pull request (`helpers/arm.sh <N>`) as soon as its review passes and
 its fixes are pushed, while CI is still running. That is `briefs/gate-in-ci.md`'s Step 4, which
 every lane follows (calef, 2026-10-24 UTC). Auto-merge waits for the required checks itself, and the
 merge queue runs them again on the merge group. Waiting on green only adds a polling round to every
