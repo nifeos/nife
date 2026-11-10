@@ -27,6 +27,7 @@
 #![no_std]
 
 pub mod kernel_half;
+pub mod self_test_program;
 pub mod verdict;
 
 /// **The earliest line: `nife on <architecture> (...)`.**
