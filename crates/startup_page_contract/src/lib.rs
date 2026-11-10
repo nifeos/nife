@@ -98,22 +98,6 @@ pub struct Window {
     pub pages: u32,
 }
 
-impl Window {
-    /// The first address past the window.
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const fn end(&self) -> u64 {
-        self.virtual_address + self.pages as u64 * address_space_map::PAGE
-    }
-
-    /// Does `virtual_address` fall inside the window?
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const fn contains(&self, virtual_address: u64) -> bool {
-        virtual_address >= self.virtual_address && virtual_address < self.end()
-    }
-}
-
 /// **Why [`write()`] refused a list of windows.**
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
