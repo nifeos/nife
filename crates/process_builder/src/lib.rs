@@ -299,7 +299,7 @@ fn lay_out_child(
             } else {
                 None
             };
-            fill_and_map(own_ut, build_ut, aspace, va, src, mode)?;
+            fill_and_map(own_ut, build_ut, aspace, va, mode, copy_in(src))?;
             va += PAGE;
         }
     }
@@ -317,7 +317,7 @@ fn lay_out_child(
     // The startup page: read-only to the child, written here with the windows the endowment lists,
     // so the child reads where its windows sit and compiles no address in
     // (`startup_page_contract`). Every child gets one, empty or not, as the kernel's loader does.
-    fill_and_map_with(
+    fill_and_map(
         own_ut,
         build_ut,
         aspace,
@@ -338,8 +338,8 @@ fn lay_out_child(
             build_ut,
             aspace,
             counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
-            page.as_ref().map(|bytes| (0usize, &bytes[..])),
             abi::address_space::MAP_RO,
+            copy_in(page.as_ref().map(|bytes| (0usize, &bytes[..]))),
         )?;
     }
 
@@ -355,8 +355,8 @@ fn lay_out_child(
                 build_ut,
                 aspace,
                 base + off as u64,
-                Some((0, &bytes[off..off + n])),
                 abi::address_space::MAP_RO,
+                copy_in(Some((0, &bytes[off..off + n]))),
             )?;
             off += n;
         }
@@ -472,29 +472,11 @@ pub fn configure_child(tcb: u64, aspace: u64, entry: u64) -> Result<(), ()> {
     Ok(())
 }
 
-/// Retype one page out of `build_ut`, fill it (zeroed, then `src` bytes at an offset) through our own
-/// scratch window, and map it into `aspace` at `va`. The one place a page's contents are written, so
-/// segments and blobs cannot drift apart.
+/// Retype one page out of `build_ut`, fill it through our own scratch window, and map it into
+/// `aspace` at `va`. The one place a page's contents are written, so segments, blobs and the startup
+/// page cannot drift apart. `fill` gets the page zeroed; its `Err` leaves the child without the
+/// page and fails the build.
 fn fill_and_map(
-    own_ut: u64,
-    build_ut: u64,
-    aspace: u64,
-    va: u64,
-    src: Option<(usize, &[u8])>,
-    mode: u64,
-) -> Result<(), ()> {
-    fill_and_map_with(own_ut, build_ut, aspace, va, mode, |dst| {
-        if let Some((at, bytes)) = src {
-            dst[at..at + bytes.len()].copy_from_slice(bytes);
-        }
-        Ok(())
-    })
-}
-
-/// [`fill_and_map`] with the page's contents written by `fill`, which gets the page zeroed and
-/// refuses with `Err` to leave the child without it. The startup page is written this way, by the
-/// contract's own writer.
-fn fill_and_map_with(
     own_ut: u64,
     build_ut: u64,
     aspace: u64,
@@ -518,6 +500,17 @@ fn fill_and_map_with(
     // is built, so the window is never wider than the page being filled.
     give_up_own_page(scratch);
     if mapped { Ok(()) } else { Err(()) }
+}
+
+/// **A fill for [`fill_and_map`] that copies `bytes` in at `at`**, or leaves the zeroed page alone
+/// for `None`: what a segment's page and a blob's page hold.
+fn copy_in(content: Option<(usize, &[u8])>) -> impl FnOnce(&mut [u8]) -> Result<(), ()> {
+    move |page| {
+        if let Some((at, bytes)) = content {
+            page[at..at + bytes.len()].copy_from_slice(bytes);
+        }
+        Ok(())
+    }
 }
 
 /// Name: provisional, minted 2026-10-29 (UTC) by lane `milestone/607-item-3-contracts-drop-the-runtime`; it moved here from

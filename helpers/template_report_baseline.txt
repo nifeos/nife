@@ -240,7 +240,7 @@ pmap register_names 1
 primitive_benchmark_contract abbreviations 7
 primitive_benchmark_contract prose_acronyms 2
 primitive_benchmark_contract readme_acronyms 1
-process_builder abbreviations 40
+process_builder abbreviations 39
 process_builder prose_acronyms 4
 program_argument_contract abbreviations 7
 program_argument_contract prose_acronyms 2
