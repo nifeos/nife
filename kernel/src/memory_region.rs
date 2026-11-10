@@ -331,8 +331,8 @@ pub(crate) fn usage_record(region: u64, record: u64) -> Option<u64> {
 ///
 /// Name: provisional, minted 2026-11-05 (UTC) by the table-ceilings lane.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // only the system tests call it
-pub fn subtree_live(region: u64, counted: Counted) -> Option<(u32, u32)> {
-    REGIONS.lock().subtree_live(region, counted)
+pub fn live_and_ceiling(region: u64, counted: Counted) -> Option<(u32, u32)> {
+    REGIONS.lock().live_and_ceiling(region, counted)
 }
 
 /// How many pages the region has retyped, and its size. For the demo and tests.

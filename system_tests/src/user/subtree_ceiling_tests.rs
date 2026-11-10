@@ -195,7 +195,7 @@ fn a_region_filled_to_its_subtree_ceilings_leaves_its_siblings_able_to_build() {
         Counted::Region,
     ] {
         assert_eq!(
-            crate::memory_region::subtree_live(root, counted).map(|(live, _)| live),
+            crate::memory_region::live_and_ceiling(root, counted).map(|(live, _)| live),
             Some(0),
             "{counted:?} outlived the subtree that held it",
         );

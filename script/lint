@@ -4282,7 +4282,7 @@ PINNED = {
     ("RegionTable", "insert_root_with_ceilings", "&mut self"),
     ("RegionTable", "release_object", "&mut self"),
     ("RegionTable", "ceiling_reached", "&self"),
-    ("RegionTable", "subtree_live", "&self"),
+    ("RegionTable", "live_and_ceiling", "&self"),
     # The protocol itself. `&mut self` is not a detail of the signature, it is the whole argument.
     ("RegionTable", "claim_for_destroy", "&mut self"),
     ("RegionTable", "return_to_parent", "&mut self"),

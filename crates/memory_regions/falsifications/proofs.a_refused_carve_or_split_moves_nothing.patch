@@ -8,27 +8,28 @@ Expected to fail: the harness's `assert!(run.snapshots() == before, "a refusal m
 on a split refused at the region ceiling.
 
 diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
+index d850fff06..ecf30d8ee 100644
 --- a/crates/memory_regions/src/table.rs
 +++ b/crates/memory_regions/src/table.rs
-@@ -421,11 +421,6 @@ impl<const N: usize> RegionTable<N> {
+@@ -432,11 +432,6 @@ impl<const N: usize> RegionTable<N> {
      /// assert_eq!(table.usage(parent), Some((4, 8)), "the refused carve stays spent");
      /// ```
      pub fn split(&mut self, parent: u64, pages: u64) -> Option<u64> {
--        let r = self.table.get(parent)?;
+-        let r = self.table.get(entry(parent))?;
 -        split_new_watermark(r.pages, r.watermark, pages)?;
 -        if !self.charge(parent, Counted::Region) {
 -            return None;
 -        }
          let (base_page, ceilings) = {
-             let r = self.table.get_mut(parent)?;
+             let r = self.table.get_mut(entry(parent))?;
              let new_watermark = split_new_watermark(r.pages, r.watermark, pages)?;
-@@ -435,6 +430,9 @@ impl<const N: usize> RegionTable<N> {
+@@ -446,6 +441,9 @@ impl<const N: usize> RegionTable<N> {
              r.spent.children += pages;
              (base_page, Ceilings::for_child_of(r))
          };
 +        if !self.charge(parent, Counted::Region) {
 +            return None;
 +        }
-         let child = self.table.insert_with(|_| Region {
-             base_page,
-             pages,
+         let child = self
+             .table
+             .insert_with(|_| Region {

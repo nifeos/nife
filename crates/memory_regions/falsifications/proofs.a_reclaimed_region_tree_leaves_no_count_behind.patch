@@ -1,4 +1,4 @@
-Falsifies `memory_regions::proofs::a_reclaimed_subtree_leaves_no_count_behind`.
+Falsifies `memory_regions::proofs::a_reclaimed_region_tree_leaves_no_count_behind`.
 
 The defect: the claim gives back the claimed region's own slot and not the objects it still counts.
 It reads as complete, because threads and spaces release themselves before the reclaim; the

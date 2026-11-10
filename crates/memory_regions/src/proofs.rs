@@ -217,11 +217,11 @@ impl Run {
     }
 
     /// `r`'s ghost subtree: its own counts and every live descendant's.
-    fn ghost_subtree(&self, r: usize, k: usize) -> u32 {
+    fn ghost_tree_count(&self, r: usize, k: usize) -> u32 {
         let mut total = self.own[r][k];
         for d in (r + 1)..REGIONS {
             if self.names[d].is_some() && self.parent_of[d] == r {
-                total += self.ghost_subtree(d, k);
+                total += self.ghost_tree_count(d, k);
             }
         }
         total
@@ -303,7 +303,7 @@ fn live_counts_are_exact_and_never_pass_a_ceiling() {
                 assert!(live <= s.ceilings.get(counted), "past a ceiling");
                 // A child split by a step is not driven, so it holds no objects of its own.
                 assert!(
-                    live == run.ghost_subtree(r, k),
+                    live == run.ghost_tree_count(r, k),
                     "a count drifted from the subtree"
                 );
             }
@@ -314,10 +314,10 @@ fn live_counts_are_exact_and_never_pass_a_ceiling() {
 /// **Reclaiming a subtree gives every count it held back to the root**: after any run inside the
 /// child's subtree, releasing what was reaped and reclaiming the grandchild and then the child
 /// leaves the root's live counts at zero for every kind.
-/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_reclaimed_subtree_leaves_no_count_behind.patch`
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_reclaimed_region_tree_leaves_no_count_behind.patch`
 #[kani::proof]
 #[kani::unwind(9)]
-fn a_reclaimed_subtree_leaves_no_count_behind() {
+fn a_reclaimed_region_tree_leaves_no_count_behind() {
     let mut run = Run::new();
     let (Some(root), Some(child), Some(grandchild)) = (run.names[0], run.names[1], run.names[2])
     else {

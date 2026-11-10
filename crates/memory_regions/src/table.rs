@@ -563,7 +563,7 @@ impl<const N: usize> RegionTable<N> {
     ///
     /// Name: provisional.
     #[must_use]
-    pub fn subtree_live(&self, name: u64, counted: Counted) -> Option<(u32, u32)> {
+    pub fn live_and_ceiling(&self, name: u64, counted: Counted) -> Option<(u32, u32)> {
         let k = counted.index();
         self.table
             .get(entry(name))
@@ -1232,7 +1232,11 @@ mod tests {
         t.unpin(root);
         assert_eq!(t.retype_object_page(root, ObjectKind::Thread), None);
         assert_eq!(t.usage(root), Some((3, 100)), "no page spent");
-        assert_eq!(t.subtree_live(root, THREAD), Some((3, 3)), "no count moved");
+        assert_eq!(
+            t.live_and_ceiling(root, THREAD),
+            Some((3, 3)),
+            "no count moved"
+        );
         assert!(
             t.claim_for_destroy(root).is_some(),
             "and no pin: the refusal left the region claimable"
@@ -1259,18 +1263,18 @@ mod tests {
         let grandchild = t.split(child, 10).unwrap();
         let great = t.split(grandchild, 1).unwrap();
         for r in [child, grandchild, great] {
-            assert_eq!(t.subtree_live(r, THREAD), Some((0, 10)));
+            assert_eq!(t.live_and_ceiling(r, THREAD), Some((0, 10)));
         }
         let unlimited = t.insert_root(2000, 10).unwrap();
         let below = t.split(unlimited, 1).unwrap();
         assert_eq!(
-            t.subtree_live(below, THREAD),
+            t.live_and_ceiling(below, THREAD),
             Some((0, u32::MAX / CHILD_SHARE_OF_ROOT))
         );
     }
 
     #[test]
-    fn sibling_subtrees_together_never_pass_their_parents_ceiling() {
+    fn sibling_trees_together_never_pass_their_parents_ceiling() {
         let mut t = RegionTable::<64>::new();
         let root = t.insert_root_with_ceilings(0, 10_000, every(48)).unwrap();
         let mut made = 0;
@@ -1281,11 +1285,11 @@ mod tests {
             }
         }
         assert_eq!(made, 48, "three a child, until the root's 48");
-        assert_eq!(t.subtree_live(root, THREAD), Some((48, 48)));
+        assert_eq!(t.live_and_ceiling(root, THREAD), Some((48, 48)));
     }
 
     #[test]
-    fn a_reclaimed_subtree_gives_back_every_count_it_held() {
+    fn a_reclaimed_region_tree_gives_back_every_count_it_held() {
         let mut t = RegionTable::<8>::new();
         let root = t.insert_root_with_ceilings(0, 1000, every(64)).unwrap();
         let job = t.split(root, 500).unwrap();
@@ -1294,9 +1298,9 @@ mod tests {
         t.retype_object_page(inner, ObjectKind::Thread).unwrap();
         t.retype_object_page(job, ObjectKind::Process).unwrap();
         t.release_object(inner, ObjectKind::Thread); // reaped before the reclaim
-        assert_eq!(t.subtree_live(root, RENDEZVOUS), Some((1, 64)));
-        assert_eq!(t.subtree_live(root, Counted::Region), Some((2, 64)));
-        assert_eq!(t.subtree_live(job, Counted::Region), Some((1, 4)));
+        assert_eq!(t.live_and_ceiling(root, RENDEZVOUS), Some((1, 64)));
+        assert_eq!(t.live_and_ceiling(root, Counted::Region), Some((2, 64)));
+        assert_eq!(t.live_and_ceiling(job, Counted::Region), Some((1, 4)));
 
         for r in [inner, job] {
             t.unpin(r);
@@ -1307,7 +1311,7 @@ mod tests {
             assert_eq!(t.table.get(entry(root)).unwrap().live.0[k], 0, "kind {k}");
         }
         t.release_object(inner, ObjectKind::Rendezvous); // a dead name: inert
-        assert_eq!(t.subtree_live(root, RENDEZVOUS), Some((0, 64)));
+        assert_eq!(t.live_and_ceiling(root, RENDEZVOUS), Some((0, 64)));
     }
 
     #[test]
@@ -1326,8 +1330,8 @@ mod tests {
             "two below the job, its ceiling of 32 / 16"
         );
         assert_eq!(t.usage(job), Some((2, 100)), "no page carved");
-        assert_eq!(t.subtree_live(job, Counted::Region), Some((2, 2)));
-        assert_eq!(t.subtree_live(root, Counted::Region), Some((3, 32)));
+        assert_eq!(t.live_and_ceiling(job, Counted::Region), Some((2, 2)));
+        assert_eq!(t.live_and_ceiling(root, Counted::Region), Some((3, 32)));
         assert!(
             t.split(root, 1).is_some(),
             "a sibling of the job still splits"
@@ -1341,7 +1345,7 @@ mod tests {
         t.split(root, 2).unwrap();
         assert_eq!(t.split(root, 2), None);
         assert_eq!(
-            t.subtree_live(root, Counted::Region).map(|(n, _)| n),
+            t.live_and_ceiling(root, Counted::Region).map(|(n, _)| n),
             Some(1)
         );
     }
