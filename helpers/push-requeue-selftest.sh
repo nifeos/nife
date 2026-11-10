@@ -177,8 +177,9 @@ want="[\"$HELD_LABEL\", \"$LANE_HELD_LABEL\", \"$RED_TRUNK_LABEL\"]"
 got="$(sed -n 's/^def nm_held: \(.*\);$/\1/p' "$here/needs-maintainer.jq")"
 check "needs-maintainer.jq nm_held is $want" test "$got" = "$want"
 
-# 10. arm.sh refuses a pull request that conflicts with an entry ahead (milestone 1054). The check is
-# the real script/queue-conflicts, run with the real git against a local fixture: a bare origin with
+# 10. arm.sh refuses a pull request that conflicts with an entry ahead, milestone 1054 (an entry
+# that conflicts with the queue is caught before it). The check is the real script/queue-conflicts,
+# run with the real git against a local fixture: a bare origin with
 # `main`, entry #7 ahead in the queue that rewrites line 2 of `shared`, a pull request head that
 # rewrites the same line (conflict) and one that changes another file (clean). The wrapper takes
 # the head from FIXTURE_HEAD and ignores the arguments arm.sh passes, since the fixture is not on
@@ -242,18 +243,19 @@ state false false "" false
 ARM_QUEUE_CHECK="$tmp/check-unknown" run "check could not tell: armed, and says so" 0 "armed unchecked" -- "$root/helpers/arm.sh" 42
 check "check could not tell: merge called" logged "pr merge 42 --auto --merge"
 
-# 11. No instruction names the bare arming command (milestone 1052). The briefs, the skills, the
-# hook's refusal and the drain's comments say helpers/arm.sh or script/push --requeue, so the holds
-# and the conflict check are not skipped by a person following them. `gh pr merge --disable-auto`
-# is not arming and does not match. The drain's own requeue_stuck_head is cut out first: it is code,
-# not an instruction, and calef's one ruled exception (#1833) that helpers/needs-maintainer-selftest.sh
+# 11. No instruction names the bare arming command, milestone 1052 (a push to a queued pull request
+# re-arms it, and arming refuses a held one). The briefs, the skills, CONTRIBUTING.md, the hook's
+# refusal and the drain's comments say helpers/arm.sh or script/push --requeue, so a person following
+# them does not skip the holds and the conflict check. `gh pr merge --disable-auto` is not arming
+# and does not match. The drain's own requeue_stuck_head is cut out first: it is code, not an
+# instruction, and the one ruled exception (#1833) that helpers/needs-maintainer-selftest.sh
 # section 5 guards.
 bare_arms() { # files... -> each line naming `gh pr merge ... --auto`
 	for f in "$@"; do
 		awk '/^requeue_stuck_head\(\) \{/ { skip = 1 } !skip { print FILENAME ":" FNR ": " $0 } skip && /^\}/ { skip = 0 }' "$f"
 	done | grep -E 'gh pr merge .*--auto' || true
 }
-scope="$(find "$root/briefs" "$root/notes/skills" -type f -name '*.md' | sort) $root/helpers/push-queued-check.sh $root/helpers/merge-drain.sh"
+scope="$(find "$root/briefs" "$root/notes/skills" -type f -name '*.md' | sort) $root/CONTRIBUTING.md $root/helpers/push-queued-check.sh $root/helpers/merge-drain.sh"
 # shellcheck disable=SC2086
 bare="$(bare_arms $scope)"
 if [ -n "$bare" ]; then

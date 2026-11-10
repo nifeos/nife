@@ -58,9 +58,9 @@ reports no conflict and requires the conflict case to fail under it.
 
 `helpers/push-requeue-selftest.sh`, run by `script/lint`, covers the refusal in `helpers/arm.sh`
 (case 10). It runs this check with the real `git` against a local fixture whose queue holds one
-entry ahead: a conflicting head is refused with the file and the entry named, a clean head arms,
-`--despite-conflict` comments and then arms, and `script/push --requeue` over a conflict is not
-re-armed.
+entry ahead. `helpers/arm.sh` refuses the conflicting head and names the file and the entry, and
+arms the clean head. Under `--despite-conflict` it comments and then arms, and `script/push
+--requeue` over the conflict leaves the pull request unarmed.
 
 ## BUGS
 
