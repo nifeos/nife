@@ -12,7 +12,7 @@ needs_person: no
 Raised by lane proposal/the-daily-fuzz-output-drives-changes, at the maintainer's request. The
 question is what the daily fuzz report is for once it exists, beyond proving the loop is alive.
 
-Reuse: the release reader in `helpers/fuzz-heartbeat.py`, the open, update and close of a labelled
+Reuse: the release reader in `helpers/fuzz-heartbeat.py`, the open, update and close of a labeled
 issue in `helpers/ci_job_times.py sync`, and the hosted schedule of
 `.github/workflows/fuzz-heartbeat.yml`. No new dependency.
 
@@ -95,7 +95,7 @@ Each row that fires leads to one of four actions, each with an owner. A host pro
 stopped, infrastructure share rising, main not followed) becomes a written spec the architect hands
 to the homelab agent, as the heartbeat's issue already says. A coverage plateau becomes either a
 dated line that condition 2 of risk 7 holds, or a proposal extending the driver's model, whose
-unmodelled calls the driver note lists (`REAP`, `SURVEY`, `MemoryRegion` and the rest). A maintainer
+unmodeled calls the driver note lists (`REAP`, `SURVEY`, `MemoryRegion` and the rest). A maintainer
 lane makes that call, not the reader.
 
 The last two rows need no daily release. A rough census over `crates/` (a grep for `unsafe fn`,
@@ -137,7 +137,7 @@ extend to every new field and to every issue the reader writes.
 
 ## Options
 
-- A. A weekly hosted workflow reads the last eight releases and keeps one labelled issue per rule:
+- A. A weekly hosted workflow reads the last eight releases and keeps one labeled issue per rule:
   it opens the issue when a rule fires, updates it while the rule holds, and closes it when the rule
   stops. Nothing enters the tree. `helpers/ci_job_times.py sync` already does this for CI jobs near
   their budget, with its `near-budget` label. A deleted release shortens the window the reader sees,
@@ -206,7 +206,7 @@ In week 2026W49 the confined driver's clean seeds rise as usual, and its edges s
 rule fires, and the reader opens one `fuzz-review` issue. It reads: "confined: edges hit 9,310 of
 41,882, up 0 over 14 days, from fuzz-2026-11-23 to fuzz-2026-12-07. Rule: coverage stopped growing.
 The action is a maintainer's: record condition 2 of risk 7 as holding, or propose a model extension."
-A maintainer lane reads the driver note's list of unmodelled calls and proposes a milestone that
+A maintainer lane reads the driver note's list of unmodeled calls and proposes a milestone that
 adds `REAP` and `SURVEY` to the model. When edges rise again, the reader closes the issue. The
 figures are illustrative, since no counter exists yet. The issue names no slot, no seed and no
 window.
@@ -218,4 +218,4 @@ condition 2 still has no one comparing weeks.
 
 ## Index row
 
-The daily fuzz release proves the loop is alive and drives nothing. A weekly reader turns its figures into one labelled issue per rule that fires, and the report gains a rate and a freshness line, with no held input anywhere.
+The daily fuzz release proves the loop is alive and drives nothing. A weekly reader turns its figures into one labeled issue per rule that fires, and the report gains a rate and a freshness line, with no held input anywhere.
