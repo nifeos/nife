@@ -11,7 +11,7 @@ use super::*;
 /// [`MAXIMUM_RENDEZVOUS`], and half of it, since §101 (notification objects)'s consumers want about
 /// one per thread or service. It bounds only the name table, 16 bytes a slot; the pages come from
 /// the creators' regions.
-pub(super) const MAXIMUM_NOTIFICATIONS: usize = 256;
+pub(super) const MAXIMUM_NOTIFICATIONS: usize = 1024;
 
 /// A notification's name: a generational name over the notification registry, what an
 /// `Object::Notification` capability carries. Stale-safe like every other name.
