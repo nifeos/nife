@@ -39,6 +39,7 @@ case "$*" in
 	fi
 	;;
 "pr merge"*) [ -n "$STUB_MERGE_NOOP" ] || echo true >"$d/queued" ;;
+"pr comment"*) [ -z "$STUB_COMMENT_FAIL" ] || exit 1 ;;
 *) echo "stub gh: unexpected: $*" >&2; exit 1 ;;
 esac
 STUB
@@ -65,6 +66,14 @@ esac
 STUB
 chmod +x "$tmp/bin/gh" "$tmp/bin/git"
 
+# helpers/arm.sh runs script/queue-conflicts. Every case but 10 replaces it with one that finds
+# nothing, so no case reaches the network; case 10 runs the real check against a local fixture.
+printf '#!/bin/sh\nexit 0\n' >"$tmp/check-clean"
+printf '#!/bin/sh\necho "queue-conflicts: could not read the queue (offline); nothing was checked."\nexit 2\n' >"$tmp/check-unknown"
+chmod +x "$tmp/check-clean" "$tmp/check-unknown"
+ARM_QUEUE_CHECK="$tmp/check-clean"
+export ARM_QUEUE_CHECK
+
 fail=0
 # run <name> <want: 0|nonzero> <fragment of output or ''> -- args...   state comes from the caller
 run() {
@@ -88,8 +97,8 @@ check() { # name command-that-must-succeed
 	name="$1"; shift
 	"$@" || { echo "$me: $name" >&2; fail=1; }
 }
-STUB_MERGE_NOOP='' STUB_GRAPHQL_FAIL=''
-export STUB_MERGE_NOOP STUB_GRAPHQL_FAIL
+STUB_MERGE_NOOP='' STUB_GRAPHQL_FAIL='' STUB_COMMENT_FAIL=''
+export STUB_MERGE_NOOP STUB_GRAPHQL_FAIL STUB_COMMENT_FAIL
 unset STUB_REMOTE
 
 # 1. A queued pull request: dequeue, push, arm, in that order, and armed at the end.
@@ -167,6 +176,71 @@ check "merge-drain no longer defines them" sh -c "! grep -q '^HELD_LABEL=' '$roo
 want="[\"$HELD_LABEL\", \"$LANE_HELD_LABEL\", \"$RED_TRUNK_LABEL\"]"
 got="$(sed -n 's/^def nm_held: \(.*\);$/\1/p' "$here/needs-maintainer.jq")"
 check "needs-maintainer.jq nm_held is $want" test "$got" = "$want"
+
+# 10. arm.sh refuses a pull request that conflicts with an entry ahead (milestone 1054). The check is
+# the real script/queue-conflicts, run with the real git against a local fixture: a bare origin with
+# `main`, entry #7 ahead in the queue that rewrites line 2 of `shared`, a pull request head that
+# rewrites the same line (conflict) and one that changes another file (clean). The wrapper takes
+# the head from FIXTURE_HEAD and ignores the arguments arm.sh passes, since the fixture is not on
+# GitHub.
+fx="$tmp/fixture"
+fxgit() { GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid \
+	GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.invalid git -C "$fx/work" "$@" >/dev/null 2>&1; }
+fxcommit() { # branch file text -> prints the commit, pushed to the fixture origin as that branch
+	fxgit checkout -q -B "$1" "$fxbase" && printf '%s' "$3" >"$fx/work/$2" && fxgit add -A &&
+		fxgit commit -q -m "$1" && fxgit push -q origin "$1:refs/heads/$1" &&
+		git -C "$fx/work" rev-parse HEAD
+}
+fxok=0
+if mkdir -p "$fx" && git init -q --bare -b main "$fx/origin.git" >/dev/null 2>&1 &&
+	git init -q -b main "$fx/work" >/dev/null 2>&1 &&
+	printf 'one\ntwo\nthree\n' >"$fx/work/shared" && printf 'x\n' >"$fx/work/other" &&
+	fxgit add -A && fxgit commit -q -m base && fxgit remote add origin "$fx/origin.git" &&
+	fxgit push -q origin main && fxbase="$(git -C "$fx/work" rev-parse HEAD)" &&
+	ahead="$(fxcommit ahead shared 'one
+ahead
+three
+')" && conflicting="$(fxcommit mine shared 'one
+mine
+three
+')" && clean="$(fxcommit clean other 'y
+')"; then
+	jq -n --arg h "$ahead" '{data:{repository:{mergeQueue:{entries:{nodes:[{position:1,state:"QUEUED",pullRequest:{number:7,headRefOid:$h}}]}}}}}' >"$fx/queue.json" && fxok=1
+fi
+if [ "$fxok" = 1 ]; then
+	cat >"$tmp/check-fixture" <<CHECK
+#!/bin/sh
+cd "$fx/work" && PATH="$PATH" exec "$root/script/queue-conflicts" --pr 42 --head "\$FIXTURE_HEAD" \\
+	--entries-json "$fx/queue.json" --remote "$fx/origin.git" --repo-dir "$fx/work/.git"
+CHECK
+	chmod +x "$tmp/check-fixture"
+	state false false "" false
+	FIXTURE_HEAD="$conflicting" ARM_QUEUE_CHECK="$tmp/check-fixture" run "conflict refused" nonzero "NOT ARMED" -- "$root/helpers/arm.sh" 42
+	check "conflict: names the file" sh -c "printf '%s' \"\$1\" | grep -q 'shared  (changed by #7)'" _ "$out"
+	check "conflict: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+	check "conflict: still unarmed" test "$(cat "$tmp/queued")" = false
+	state false false "" false
+	FIXTURE_HEAD="$clean" ARM_QUEUE_CHECK="$tmp/check-fixture" run "clean passes" 0 "armed" -- "$root/helpers/arm.sh" 42
+	check "clean: merge called" logged "pr merge 42 --auto --merge"
+	state false false "" false
+	FIXTURE_HEAD="$conflicting" ARM_QUEUE_CHECK="$tmp/check-fixture" run "override arms" 0 "armed" -- "$root/helpers/arm.sh" 42 --despite-conflict "entry 7 is being dequeued"
+	check "override: reason commented, then merge" awk '/pr comment 42/{c=NR} /entry 7 is being dequeued/{w=NR} /pr merge 42/{m=NR} END{exit !(c && w && c<m)}' "$tmp/log"
+	check "override: ends queued" test "$(cat "$tmp/queued")" = true
+	state false false "" false
+	FIXTURE_HEAD="$conflicting" ARM_QUEUE_CHECK="$tmp/check-fixture" STUB_COMMENT_FAIL=1 run "override, comment fails" nonzero "could not post" -- "$root/helpers/arm.sh" 42 --despite-conflict "why"
+	check "override, comment fails: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+	state true false "" false
+	FIXTURE_HEAD="$conflicting" ARM_QUEUE_CHECK="$tmp/check-fixture" run "requeue over a conflict is not re-armed" nonzero "NOT re-armed" -- "$root/script/push" --requeue
+	check "requeue over a conflict: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+else
+	echo "$me: case 10: could not build the git fixture" >&2; fail=1
+fi
+state false false "" false
+run "override needs a reason" nonzero "needs the reason" -- "$root/helpers/arm.sh" 42 --despite-conflict " "
+run "unknown argument" nonzero "usage" -- "$root/helpers/arm.sh" 42 --force
+state false false "" false
+ARM_QUEUE_CHECK="$tmp/check-unknown" run "check could not tell: armed, and says so" 0 "armed unchecked" -- "$root/helpers/arm.sh" 42
+check "check could not tell: merge called" logged "pr merge 42 --auto --merge"
 
 [ "$fail" = 0 ] && echo "$me: ok"
 exit "$fail"
