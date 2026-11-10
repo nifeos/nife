@@ -99,6 +99,32 @@ fn the_ladder_climbs_banner_machine_self_test_prompt() {
     assert_eq!(progress.reached(), Stage::Prompt);
 }
 
+/// **The verdict follows the tour line** (milestone 1063): the kernel prints its half and the tour
+/// line, and the hand-over prints the verdict. A watch for the verdict must not stop at the tour,
+/// which the ratchet alone would let it do.
+#[test]
+fn the_verdict_after_the_tour_is_what_a_self_test_wait_waits_for() {
+    let mut progress = BootProgress::new(&crate::board::EMULATOR);
+    progress.observe_line("nife machine: aarch64, 4 processor(s), 256 MiB, 100 Hz");
+    progress.observe_line("nife: the capability core runs on aarch64.");
+    assert_eq!(progress.reached(), Stage::Tour);
+    assert!(
+        !progress.has_reached(Stage::SelfTest),
+        "the tour line is not the verdict"
+    );
+    assert!(progress.has_reached(Stage::Tour));
+    progress.observe_line(
+        "nife self-test: 11 of 15 passed, 4 absent: blockdev device_interrupt clock trng",
+    );
+    assert!(progress.has_reached(Stage::SelfTest));
+    assert_eq!(
+        progress.reached(),
+        Stage::Tour,
+        "the ratchet does not step back"
+    );
+    assert_eq!(progress.failure(), None);
+}
+
 /// **Every architecture reaches the verdict, and that is the point of the milestone.** The
 /// same three assertions against the three banners this tree prints, because finding 3 was
 /// exactly a marker that only one architecture's arm produced.

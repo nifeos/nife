@@ -13,7 +13,8 @@ use crate::{RISCV_TARGET, RUNNER, TARGET, X86_TARGET, profile_dir, user};
 /// the configuration `cargo xtask run` gives a person (nothing else in CI boots the default riscv64
 /// or `x86_64` kernel), through the machine description (`Stage::Machine`), every boot self-test's
 /// printed verdict, and up to the `swish` prompt. `--inject` rebuilds with `--features
-/// self_test_injection`, which fails one check, and requires red: a gate only seen green is untested.
+/// self_test_injection`, which fails one check in each half, and requires red naming both: a gate
+/// only seen green is untested.
 ///
 /// It attaches the archive but no disk: nothing here types, so `<` and `>` are `swish-check`'s. The
 /// archive costs about six seconds; `x86_64` boots PVH `-kernel`, not the UEFI image `swish-check`
@@ -316,8 +317,13 @@ fn stop_boot_check_leg(child: &mut std::process::Child) {
     let _ = child.wait();
 }
 
-/// **The leg's verdict**: green climbed to the prompt with nothing failed, and an injected run
-/// must come back red instead. A failure says which, and where the log is.
+/// The checks `self_test_injection` fails, one in each half of the self-test: `kernel/src/self_test.rs`'s
+/// `exceptions` and `components/src/boot_self_test.rs`'s `userspace`.
+const INJECTED_CHECKS: [&str; 2] = ["exceptions", "userspace"];
+
+/// **The leg's verdict**: green climbed to the prompt with the verdict printed and nothing failed,
+/// and an injected run must come back red instead, naming both injected checks. A failure says
+/// which, and where the log is.
 fn boot_check_verdict(
     session: &serial_console::watch::Session,
     arch: &str,
@@ -327,15 +333,20 @@ fn boot_check_verdict(
     use serial_console::progress::{Failure, Stage};
     use serial_console::watch::Outcome;
 
+    // Red names one injected check from each half: `exceptions` from the kernel and `userspace`
+    // from `boot_self_test`, so an injected run proves the verdict reads both.
     let red = matches!(
-        session.outcome,
-        Outcome::Announced(Failure::SelfTestFailed(_))
+        &session.outcome,
+        Outcome::Announced(Failure::SelfTestFailed(names))
+            if INJECTED_CHECKS.iter().all(|check| names.split_whitespace().any(|n| n == *check))
     );
     // `>= Stage::Prompt` rather than `== `: the rungs are ordered, so a boot that went further
     // still climbed past this one, and an architecture that grows a rung above the prompt should
-    // not turn this gate red on the day it lands.
+    // not turn this gate red on the day it lands. The verdict prints after the tour, from the
+    // hand-over, so reaching the prompt does not say it printed; its line is required by name.
     let green = matches!(session.outcome, Outcome::Reached(_))
         && session.progress.reached() >= Stage::Prompt
+        && session.progress.self_test_line().is_some()
         && session.progress.failure().is_none();
 
     let pass = if inject { red } else { green };
@@ -344,8 +355,9 @@ fn boot_check_verdict(
         if inject {
             eprintln!(
                 "boot-check ({arch}): FAILED. A kernel built with `--features self_test_injection` \
-                 must print a RED verdict and this run did not, so the gate cannot see a failing \
-                 self-test and is not gating anything. This is the defect milestone 268's block \
+                 must print a RED verdict naming `exceptions` and `userspace`, one from each half, \
+                 and this run did not, so the gate cannot see a failing self-test and is not \
+                 gating anything. This is the defect milestone 268's block \
                  predicted: a verdict nobody reads."
             );
         } else {

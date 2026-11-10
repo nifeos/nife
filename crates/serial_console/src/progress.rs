@@ -53,6 +53,9 @@ pub enum Stage {
     Machine,
     /// The boot self-test printed its verdict (`boot_ladder::SELF_TEST`).
     ///
+    /// The verdict arrives after [`Stage::Tour`]'s line, from the hand-over, and the ratchet keeps
+    /// the order below; [`BootProgress::has_reached`] is what waits for the line itself.
+    ///
     /// **This is the stage to wait for**: it is reachable on every architecture, it means paging,
     /// traps, the frame allocator, the timer with its interrupt and the scheduler came up, and its
     /// line carries counts rather than a claim. A *failed* verdict is [`Failure::SelfTestFailed`],
@@ -60,9 +63,9 @@ pub enum Stage {
     SelfTest,
     /// The boot's middle stages ran to their end (`nife: the capability core runs on ...`).
     ///
-    /// Printed after the self-test verdict and the tour on all three architectures, just before
-    /// the hand-over, so it says the machine was described and every self-test check ran. It is
-    /// not the default to wait for: [`Stage::Prompt`] is above it, and a boot that stops here has
+    /// Printed after the kernel's half of the self-test and before the hand-over, which prints the
+    /// verdict, on all three architectures. It says the machine was described and the kernel's own
+    /// checks ran. It is not the default to wait for: [`Stage::Prompt`] is above it, and a boot that stops here has
     /// not handed over. Whether the checks passed is [`Failure::SelfTestFailed`]'s to say, not
     /// this rung's.
     Tour,
@@ -359,6 +362,17 @@ impl BootProgress {
     #[must_use]
     pub fn reached(&self) -> Stage {
         self.reached
+    }
+
+    /// **Whether this boot has shown `wanted`**, which a watch waits for.
+    ///
+    /// The ratchet's order, except for [`Stage::SelfTest`]: the kernel prints its half and then
+    /// [`Stage::Tour`]'s line, and the verdict follows from the hand-over, so a boot past the tour
+    /// has shown the verdict only once its line arrived. Without that, `--until selftest` would stop
+    /// at the tour line, before the verdict it was run to read.
+    #[must_use]
+    pub fn has_reached(&self, wanted: Stage) -> bool {
+        self.reached >= wanted && (wanted != Stage::SelfTest || self.self_test_line.is_some())
     }
 
     /// The first announced failure, if the board announced one.

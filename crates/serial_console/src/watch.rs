@@ -290,7 +290,7 @@ where
                 }
                 if settling.is_none()
                     && let Some(wanted) = policy.until
-                    && progress.reached() >= wanted
+                    && progress.has_reached(wanted)
                 {
                     settling = Some(Instant::now());
                 }
