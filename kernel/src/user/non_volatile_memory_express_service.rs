@@ -43,6 +43,15 @@ const REGISTERS_VA: u64 = address_space_map::pair_page(0x0000_0000_0098_0000);
 /// Where the admin process's admin pages of the DMA run are mapped, listed on its startup page.
 const ADMIN_QUEUES_VA: u64 = address_space_map::pair_page(0x0000_0000_009c_0000);
 
+/// Where the data plane maps the data-plane run it is granted; its spawn's second argument.
+const DATA_PLANE_VA: u64 = address_space_map::pair_page(0x0000_0000_0098_0000);
+
+/// Where the data plane maps the doorbell page it is granted; its spawn's third argument.
+const DOORBELL_PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_009c_0000);
+
+const _: () =
+    assert!(DATA_PLANE_VA + DATA_PLANE_PAGES * page_frames::FRAME_SIZE <= DOORBELL_PAGE_VA);
+
 /// Stack pages the admin process gets beyond the one every loaded program gets. Its bring-up is
 /// a call chain carrying 64-byte commands and the IDENTIFY bytes by value, and in a debug build
 /// one page overflowed.
@@ -294,8 +303,8 @@ fn spawn_data_plane(
             image,
             Spawn {
                 arg0: contract::DATA_PLANE_ROLE,
-                arg1: 0,
-                arg2: 0,
+                arg1: DATA_PLANE_VA,
+                arg2: DOORBELL_PAGE_VA,
                 grants: &grant_list,
                 maps: &[],
                 windows: &[],

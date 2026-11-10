@@ -58,10 +58,12 @@ fn barrier() {
 user_mode_runtime::program_entry!(start);
 
 // Index exception (2026-11-10): the entry point only picks the role, and each role is a child.
-fn start(role: u64, direct_memory_access: u64, _: u64) -> ! {
+fn start(role: u64, first: u64, second: u64) -> ! {
     match role {
-        ADMINISTRATION_ROLE => admin::run(direct_memory_access),
-        DATA_PLANE_ROLE => data_plane::run(),
+        // The run's physical base.
+        ADMINISTRATION_ROLE => admin::run(first),
+        // Where to map the data-plane run and the doorbell page.
+        DATA_PLANE_ROLE => data_plane::run(first, second),
         _ => user_mode_runtime::exit(),
     }
 }

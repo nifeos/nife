@@ -9,9 +9,9 @@
 //! The data plane holds, the complete list: `data_plane_slots::REQUEST`, the request endpoint
 //! (`filesystem_contract::blk`, as the virtio block server speaks); `READY`, a readiness endpoint;
 //! `GRANTS`, where the admin process's handoff and grants arrive; `OWN_SPACE`, its own address
-//! space; and the two grants, mapped at [`DATA_VIRTUAL_ADDRESS`] (the two I/O rings and one window
-//! of [`TRANSFER_BLOCKS`] pages per client) and [`DOORBELL_VIRTUAL_ADDRESS`] (BAR0's doorbell
-//! page), held without `GRANT`. Denied, each by decision: BAR0's register page (`CC`, `CSTS`, the
+//! space; and the two grants, held without `GRANT`, mapped where the spawn's second and third
+//! arguments say: the data-plane run (the two I/O rings and one window of [`TRANSFER_BLOCKS`]
+//! pages per client) and BAR0's doorbell page. Denied, each by decision: BAR0's register page (`CC`, `CSTS`, the
 //! admin ring registers), which NVMe 1.4 puts on its own page so this split costs no syscall; the
 //! admin pages of the run; every admin command, so where the rings live is the admin process's
 //! statement; an `Interrupt`; a `Virtio`; and everything else.
@@ -71,17 +71,25 @@ const IO_SQ_OFF: u64 = IO_SUBMISSION_QUEUE_PAGE * PAGE;
 const IO_CQ_OFF: u64 = IO_COMPLETION_QUEUE_PAGE * PAGE;
 const TRANSFER_OFF: u64 = FIRST_TRANSFER_PAGE * PAGE;
 
-/// Where the data plane maps its run: two rings and one transfer window per client, window `w` at
-/// `TRANSFER_OFF + w * TRANSFER_BLOCKS` pages. The data plane chooses it; its spawn budgets the
-/// room (`run_with_own_space_and_room`).
-const DATA_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0000_0000_0098_0000);
+/// Where the spawner says to map the two grants: the data-plane run (two rings and one transfer
+/// window per client, window `w` at `TRANSFER_OFF + w * TRANSFER_BLOCKS` pages) and the doorbell
+/// page. The doorbell page maps device-typed, because a `DeviceFrame` maps no other way, so every
+/// access is uncached and unreordered: a cached write is a command the controller never hears
+/// about. The spawner budgets the room (`run_with_own_space_and_room`).
+#[derive(Clone, Copy)]
+struct Placement {
+    data: u64,
+    doorbell: u64,
+}
 
-/// Where the data plane maps the doorbell page, device-typed (a `DeviceFrame` maps no other way),
-/// so every access is uncached and unreordered, which is what a doorbell needs: a cached write is
-/// a command the controller never hears about.
-const DOORBELL_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0000_0000_009c_0000);
-
-const _: () = assert!(DATA_VIRTUAL_ADDRESS + DATA_PLANE_PAGES * PAGE <= DOORBELL_VIRTUAL_ADDRESS);
+impl Placement {
+    /// The two addresses, if each is a nonzero page boundary and the two do not overlap.
+    fn new(data: u64, doorbell: u64) -> Option<Self> {
+        let page_aligned = |va: u64| va != 0 && va.is_multiple_of(PAGE);
+        let apart = data + DATA_PLANE_PAGES * PAGE <= doorbell || doorbell + PAGE <= data;
+        (page_aligned(data) && page_aligned(doorbell) && apart).then_some(Self { data, doorbell })
+    }
+}
 
 /// The bring-up step words this server reports on its readiness endpoint, in the `0xDEAD_..`
 /// shape `entropy_contract::bringup_failure` established, so a boot transcript reads the same way
@@ -93,9 +101,9 @@ const STEP_FIRST_READ: u64 = 0xDEAD_0002;
 /// The server's whole mutable state: the two ring cursors and a command id.
 struct Plane {
     handoff: Handoff,
-    /// The data-plane run, mapped at [`DATA_VIRTUAL_ADDRESS`].
+    /// The data-plane run, mapped where [`Placement::data`] says.
     data: MappedWindow,
-    /// The doorbell page, mapped at [`DOORBELL_VIRTUAL_ADDRESS`].
+    /// The doorbell page, mapped where [`Placement::doorbell`] says.
     bells: MappedWindow,
     sq: SubmissionQueue,
     cq: CompletionQueue,
@@ -208,7 +216,7 @@ impl Plane {
 
 /// **Take the admin process's grants and map them**: three words, then the doorbell page and the
 /// data-plane run, each tagged with what it is. `None` for anything else, which is a wiring bug.
-fn take_grants() -> Option<(Handoff, MappedWindow, MappedWindow)> {
+fn take_grants(placement: Placement) -> Option<(Handoff, MappedWindow, MappedWindow)> {
     let (w0, w1, w2) = receive(data_plane_slots::GRANTS);
     let handoff = Handoff::unpack([w0, w1, w2])?;
     let (mut data, mut bells) = (false, false);
@@ -217,11 +225,11 @@ fn take_grants() -> Option<(Handoff, MappedWindow, MappedWindow)> {
         let va = match what {
             DOORBELL_PAGE_GRANT if !bells => {
                 bells = true;
-                DOORBELL_VIRTUAL_ADDRESS
+                placement.doorbell
             }
             DATA_PLANE_GRANT if !data => {
                 data = true;
-                DATA_VIRTUAL_ADDRESS
+                placement.data
             }
             _ => return None,
         };
@@ -239,18 +247,21 @@ fn take_grants() -> Option<(Handoff, MappedWindow, MappedWindow)> {
     // returned 0, for the life of the process: nothing here unmaps them.
     let windows = unsafe {
         (
-            MappedWindow::new(DATA_VIRTUAL_ADDRESS, DATA_PLANE_PAGES * PAGE),
-            MappedWindow::new(DOORBELL_VIRTUAL_ADDRESS, PAGE),
+            MappedWindow::new(placement.data, DATA_PLANE_PAGES * PAGE),
+            MappedWindow::new(placement.doorbell, PAGE),
         )
     };
     Some((handoff, windows.0, windows.1))
 }
 
-/// **The data plane**: take the grants, prove one read, report, serve. Never returns.
-pub(crate) fn run() -> ! {
-    // The handoff and two grants are the whole of what this process was told; anything else is a
-    // wiring bug, reported rather than acted on.
-    let Some((handoff, data, bells)) = take_grants() else {
+/// **The data plane**: take the grants, map them at `data_address` and `doorbell_address` (the
+/// spawn's second and third arguments), prove one read, report, serve. Never returns.
+pub(crate) fn run(data_address: u64, doorbell_address: u64) -> ! {
+    // The placement, the handoff and two grants are the whole of what this process was told;
+    // anything else is a wiring bug, reported rather than acted on.
+    let Some((handoff, data, bells)) =
+        Placement::new(data_address, doorbell_address).and_then(take_grants)
+    else {
         send(READY, STEP_BAD_HANDOFF, 0, 0);
         exit();
     };

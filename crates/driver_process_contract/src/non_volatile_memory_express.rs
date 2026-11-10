@@ -122,7 +122,8 @@ pub mod administration_slots {
 
 /// **The data plane's capability slots.** The first three come from its spawn; the doorbell page
 /// and the data-plane run arrive later over [`GRANTS`](data_plane_slots::GRANTS), in slots the
-/// kernel chooses.
+/// kernel chooses. The spawn's second and third arguments are the addresses the data plane maps
+/// the run and the doorbell page at, so the spawner is the one side that names them.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
 pub mod data_plane_slots {
