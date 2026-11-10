@@ -11,6 +11,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	0	-	code	the rustup retry (a dropped CDN connection retries; a real error does not)
 -	1	-	-	0	-	code	the continuous fuzz supervisor installs the pinned toolchain once, before any slot
 -	1	-	-	0	-	code	the fuzz host follows only a green, fast-forward main and installs no unit file
+-	1	-	-	0	-	code	the fuzz host replays a red CI shard from main alone and holds what reproduces
 -	0	host	-	0	host	code	clippy: host crates + xtask
 -	0	redoxfs_host	-	0	-	code	clippy: redoxfs_host (its own workspace)
 -	0	glyph_atlas_generator	-	0	-	code	clippy: glyph_atlas_generator (its own workspace)
@@ -100,6 +101,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	1	-	both	§298 (a document states what is in force now), calef 2026-10-13
 -	1	-	-	1	-	code	capability is not abbreviated cap (calef, 2026-10-06)
 -	1	-	-	1	-	code	unit symbols are spelled out (2026-10-27)
+-	1	-	-	1	-	code	a component reads its window addresses from the startup page (ceiling only falls)
 -	1	-	-	0	-	code	the template's report-only name and README gates (baseline only shrinks)
 -	1	-	-	1	-	both	no line-number citations (§277: cite a heading or a symbol)
 -	1	-	-	0	-	record	the outsider-pass floor checker and launcher selftests

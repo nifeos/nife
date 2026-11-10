@@ -39,7 +39,6 @@ pub mod mmu;
 pub mod pmu;
 pub mod port;
 pub mod reset;
-pub mod rtc;
 pub mod segments;
 pub mod semihosting;
 // The Intel TCO watchdog (milestone 593 (a wedged kernel resets itself), provisional number). Only

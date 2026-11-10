@@ -49,9 +49,11 @@ The maintainer side of the same queue is in [the maintainer](../maintainer/SKILL
   Push with `script/push`, which reads the branch back from origin. Then confirm the head is the
   commit you mean: `git ls-remote origin refs/heads/<branch>` prints the same commit as
   `git rev-parse HEAD`, and `gh pr view <number> --json headRefOid --jq .headRefOid` agrees. Run
-  `gh pr ready <number>` and `gh pr merge <number> --auto` after that and not before. Run
-  `script/queue-conflicts` before arming: it merges the pull request against `main` plus the
-  entries ahead of it, and a conflict it names is one the queue would remove you for. The
+  `gh pr ready <number>` and `helpers/arm.sh <number>` after that and not before. `helpers/arm.sh`
+  is the one way to arm: it refuses a draft and a held pull request, and runs
+  `script/queue-conflicts`, which merges the pull request against `main` plus the entries ahead of
+  it and refuses a conflict the queue would remove you for. A push to a pull request that is already
+  armed or queued is `script/push --requeue`, which dequeues, pushes and arms again. The
   `empty diff` check has no draft skip, so marking ready before the commits arrive makes it run on
   the claim-only head and fail. The failure is accurate and clears on the next push, but a pull
   request that is already waiting loses minutes to hours before the check passes again.

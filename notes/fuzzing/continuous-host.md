@@ -67,6 +67,44 @@ three details, provisionally; reversing any costs one pull request. The required
 main's rules, not from a list in the tree; a run counts only when GitHub Actions made it; and a check
 whose runs were all skipped is not green.
 
+## Replaying a red CI shard
+
+The `fuzz-guests` job sweeps four shards on every merge-queue entry, and a red shard prints only
+its commit, its shard and "the fuzz host replays this shard". The host does that replay. At most
+every 15 minutes (`NIFE_FUZZ_REPLAY_EVERY`, in seconds; 0 turns it off) the supervisor runs
+`helpers/fuzz-red-shards.py look`. It lists the failed merge-queue runs of `ci.yml` from the public
+API with no credential, and keeps a run only once the clone's HEAD contains its commit. It then
+reads that run's jobs and queues each `fuzz-guests` shard that ended `failure` or `timed_out`. A
+green, skipped or cancelled shard, and a red job of any other name, queue nothing. The commit must
+also be green by the follower's rule. Then each slot stops after its current window, and the
+supervisor re-executes itself and replays the queue before any slot starts.
+
+A replay checks the commit out in its own worktree and asks that commit's
+`helpers/continuous-fuzz.sh --ci-range SHARD` for the driver and first seed. It then builds and
+sweeps the range once, as a window does. The host holds a reproduction like any window: its log moves to
+the held directory, and its `windows.tsv` row carries the held class and the slot `replay`. The filer
+reads both unchanged and files a private advisory. The journal gets one line, the finding id and
+the time since the shard went red. A clean replay keeps no log and writes one `replay-clean` row.
+
+Three choices hold this to the host's rules.
+
+- **A poll, not a push.** A push from the job to the host needs a credential in the workflow and an
+  inbound path to the host. The poll reads what any stranger can read: about 4 requests an hour
+  beside the follower's, against 60 an hour unauthenticated.
+- **The commit comes from the clone, never from the merge queue's branch.** `fuzz-guests` is not a
+  required check, so an entry whose only red is a shard still lands, and its commit reaches main
+  unchanged. The follower moves the clone there within one look. A replay therefore runs only code
+  that passed main's gates, and the four limits above still hold. An entry that never lands is not
+  replayed. After 24 hours the poll records its run as `never-on-main` and drops it.
+- **The daily report counts a clean replay.** Its "Windows by status" table lists `replay-clean` by
+  count with no change to the report. A clean replay of a red shard is a false red, or a finding
+  this host does not reproduce. It is the rate that decides whether `fuzz-guests` becomes required.
+
+`helpers/fuzz-replay-selftest.sh`, run by `script/lint`, holds each part against stand-in guests and
+stub API answers. The maintainer chose the 15-minute poll, the 24-hour patience, the three attempts
+after an infrastructure failure and the `replay-clean` row, provisionally; reversing any costs one
+pull request.
+
 ## What it keeps
 
 Everything lives under one state directory. `windows.tsv` holds one row per window: the driver, the
@@ -201,3 +239,13 @@ unit's user. It prints the tag and the assets and publishes nothing.
   public, because nothing tells the host that a person published it
   ([the milestone](../../design/roadmap/1016-the-clean-range-table-does-not-locate-a-held-seed.md)).
   The held log also stays on the host.
+- A red shard on a merge-queue entry that never lands is never replayed. The entry's next run sweeps
+  other seeds, because the seeds derive from the commit, so the host loses a finding only that run saw.
+- A replay sweeps for 60 seconds of guest time, like the job. A host slower than the hosted runner
+  may stop before the failing seed, and a failure that needed the runner's timing may not recur.
+  Either reads as `replay-clean`, so that count is an upper bound on false reds.
+- A replay builds with this script's CI seed count (100,000). If a later commit changes the count
+  in `--ci`, a replay of an older commit uses the newer count. The first seed still comes from the
+  commit itself.
+- Two commits whose first 20 bits agree modulo 20,000 share a CI seed block. If both replays hold a
+  finding, the filer refuses both as conflicting rows.

@@ -4,7 +4,7 @@
 //
 // Every count here is a report and never a verdict: the build exits non-zero only when a step
 // itself fails, not when it finds a broken link (milestone 1018 (the design record moves to
-// `nifeos.org` and is published as a website), step 3).
+// `nifeos/record` and is published as a website), step 3).
 //
 // Name: provisional, minted 2026-11-04 (UTC) by lane/record-site-build-eleventy.
 

@@ -126,7 +126,7 @@ them costs more than getting them wrong.
 script/claim fix/short-description --debt-paydown  # or --new-work; branch, worktree, empty commit, push, draft PR
 # ...work in the worktree, committing and pushing as pieces prove out...
 script/ci-build                              # every local check a PR must pass, cheapest first
-gh pr ready && gh pr merge --auto --merge    # CI runs (a draft skips it); armed, it lands when green
+gh pr ready && helpers/arm.sh <N>            # CI runs (a draft skips it); armed, it lands when green
 ```
 
 Claim before you work. §90 (the claim is a draft pull request) makes a draft pull request the

@@ -58,7 +58,7 @@ periodic_deadline = { version = "0.1.0", path = "../crates/periodic_deadline" }
 # The shell's grant-expression logic (milestone 47's `rm -r`). The kernel plans nothing; its `rm`
 # test **starts the program the way the shell would**, so the option bits it packs come from the
 # manifest the prompt checks against rather than from a second copy of an ordering. Same rule as
-# `line_editor`, `video_terminal` and `calendar` below: no party has its own copy of a shared definition.
+# `line_editor` and `video_terminal` below: no party has its own copy of a shared definition.
 grant_plan = { version = "0.1.0", path = "../crates/grant_plan" }
 # The wall-clock contract (milestone 51, DECISIONS §43). The kernel discovers the RTC by
 # `compatible` and names the binding with these constants, and its clock tests read the shared page
@@ -544,12 +544,6 @@ jh7110_watchdog = { version = "0.1.0", path = "../crates/jh7110_watchdog" }
 # §46 (thin primitives or whole subsystems; we write everything in between) decision, and the alternative was a second spelling of a token with nothing keeping the two in
 # step.
 boot_slot = { version = "0.1.0", path = "../crates/boot_slot" }
-
-# The calendar (milestone 51 (wall-clock time, the `date` command, and an NTP service)). The kernel does no date arithmetic of its own; the one caller is
-# `arch::x86_64::rtc`, which refuses a reading that is not a real civil date (`calendar::Civil::new`).
-# Target-gated to match, because aarch64 and riscv64 never name the crate and cargo's unused-dependency
-# lint warned on every one of those builds (the lane for milestone 129 (scheduled execution: a cron whose every entry is a grant), 2026-10-02).
-calendar = { version = "0.1.0", path = "../crates/calendar" }
 
 # x86_64 only, because the chooser that writes the token is: `uefi_loader::chooser` runs on a UEFI
 # machine with an installed disk, which is the only place rung 2b's slots exist. A scope note
