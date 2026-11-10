@@ -78,7 +78,7 @@ plainly:
   *"Atmosphere is a multiprocessor system, but to simplify verification we rely on a big-lock
   synchronization, i.e., all interrupts and system calls execute in the microkernel under one global
   lock and with further interrupts disabled."* This tree runs SMP with fine-grained locking and
-  DECISIONS §4 (kernel shape: monolithic, deferred, with two cheap rules) rule 4, assume weak memory
+  DECISIONS §4 (kernel shape) rule 4, assume weak memory
   ordering, as a tenet. Atmosphere's design bought its ratio.
 - One architecture. The SOSP '25 TCB list is x86_64 throughout. nife has three, and DECISIONS
   §19 (architectural parity is a tenet; the targets are aarch64, riscv64, and x86_64) makes that a

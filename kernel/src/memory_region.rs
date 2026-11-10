@@ -74,8 +74,9 @@ pub fn create(pages: u64) -> Option<u64> {
         name
     };
     if name.is_none() {
-        // No free region slot: give the memory back rather than leak it. With reuse this is now a
-        // genuine concurrency limit (too many live regions), not a lifetime one.
+        // No free region slot: give the memory back rather than leak it, and refuse as for any
+        // other shortage. Slots are reused, but this refusal can come with fewer than
+        // `MAXIMUM_REGIONS` live, so no caller may treat it as unreachable.
         for i in 0..pages {
             memory::free(PageFrame::from_addr(base + i * FRAME_SIZE));
         }

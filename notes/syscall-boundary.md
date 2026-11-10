@@ -19,7 +19,7 @@ semantics of each method are recorded in `design/decisions/`, and the wire contr
 
 All but one are authority over the caller itself, and the last is everything else. That property
 matters more than the count. There is no `open`, `read`, `write` or `fork`: a process can only act
-on things it was handed. DECISIONS §4 (kernel shape: monolithic, deferred, with two cheap rules)
+on things it was handed. DECISIONS §4 (kernel shape)
 keeps the surface narrow, "a boundary, not a habit". §8 (process model / syscall ABI: deferred to a
 hard decision point) deferred the choice, and §10 (process model: capability-based, microkernel)
 made it.

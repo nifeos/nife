@@ -20,7 +20,7 @@ get it to run on one, that would also likely kill the effort."*
 Sharpened, because the ISA count is not the fatal part. An OS that runs on two of three
 architectures is still an OS. What would be fatal is what a failure would reveal. That adding an
 architecture requires changing the kernel rather than adding a directory under `arch/`, which is
-exactly what DECISIONS §4 (kernel shape, with two cheap rules)'s rule 1 and §19 (architectural
+exactly what DECISIONS §4 (kernel shape)'s rule 1 and §19 (architectural
 parity is a tenet) claim it does not.
 
 Widened 2026-09-23 from architectures to machines, and the ruling is calef's. He raised it about

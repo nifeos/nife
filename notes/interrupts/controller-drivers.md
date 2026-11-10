@@ -32,7 +32,7 @@ Three things change from GICv2, and two of them are `gicv3.rs`:
 | per-core private state (SGIs, PPIs) | banked inside the distributor | a redistributor frame per core, each at its own address | `gicv3.rs` |
 | CPU interface | banked MMIO, `GICC_*` | system registers, `ICC_*` | `arch/aarch64/gic_cpu_interface.rs` |
 
-The split follows the first rule of §4 (kernel shape: monolithic, deferred, with two cheap rules).
+The split follows the first rule of §4 (kernel shape).
 `msr` and `mrs` are architecture code, so the CPU interface lives under `arch/`, and everything
 reached through a pointer stays a driver handed its addresses. `arch::interrupt_controller` holds
 both and decides
