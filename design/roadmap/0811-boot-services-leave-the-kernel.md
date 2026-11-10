@@ -117,9 +117,9 @@ window into a restarted driver.
 3. The NVMe arm, then `install_service::confirm`. Moving confirm into the progenitor retires the
    foot gun that the header of `offer` in `install_service.rs` names: the single-user window now holds
    because one process sequences both, not because the kernel is single-threaded.
-4. `clock`: the RTC page as a `DeviceFrame`; on `x86_64` the kernel writes its CMOS reading (§130
-   (how the kernel-resident CMOS RTC reaches the userspace clock service)) into the clock page
-   before the grant.
+4. `clock`: the RTC page as a `DeviceFrame`; on `x86_64` a `PortRange` over the CMOS ports (§130
+   (how the kernel-resident CMOS RTC reaches the userspace clock service)), which milestone 1062
+   (the device control planes leave the kernel) builds.
 5. `entropy` in instruction mode: the fact travels in the inert-configuration page (§111 (inert
    configuration is a read-only page)), and the kernel stops building the service.
 6. `net_stack` over `e1000e`, then over the GMAC once `PROVEN_ON_SILICON` is true.
