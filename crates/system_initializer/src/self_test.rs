@@ -116,7 +116,7 @@ fn run_measured(
         return none;
     };
     let Some(ImageTable {
-        lengths,
+        lengths_bytes: lengths,
         images,
         head,
     }) = image_table((fs, table), entropy)
@@ -210,7 +210,7 @@ fn run_measured(
 
 /// The header page and the images, as [`image_virtual_address`] lays them out.
 struct ImageTable {
-    lengths: [u64; image::COUNT],
+    lengths_bytes: [u64; image::COUNT],
     images: [&'static [u8]; image::COUNT],
     head: [u8; header::COUNT * 8],
 }
@@ -246,7 +246,7 @@ fn image_table((fs, table): (&nifefs::Fs<'static>, &str), entropy: &Entropy) -> 
     }
 
     Some(ImageTable {
-        lengths,
+        lengths_bytes: lengths,
         images,
         head,
     })
