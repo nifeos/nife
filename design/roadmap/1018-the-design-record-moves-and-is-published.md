@@ -36,9 +36,9 @@ dependency) rules on citations across repositories. Its section 4 says a record 
 On 2026-11-10 (UTC) the architect ruled question 1 below. The record lives in a repository of its
 own, `nifeos/record`. The website is a separate repository, `nifeos/nifeos.org`, a consumer of the
 record. At build time it pulls the record, a page for each crate from that crate's own repository,
-and the planned tutorial on building a RISC-V operating system, a class. None of
-them is copied into the website's repository. The same day ruled the name, `nifeos/record`, over
-`nifeos/project` and `nifeos/project-management`. The rulings create nothing: creating
+and the planned tutorial on building a RISC-V operating system, a class. None of them is copied
+into the website's repository. The same day ruled the name, `nifeos/record`, over `nifeos/project`
+and `nifeos/project-management`. The rulings create nothing: creating
 `nifeos/record` and creating `nifeos/nifeos.org` each wait for the architect's separate approval.
 
 The architect ruled question 4 below on 2026-11-01 (UTC), and its contents on 2026-11-10 (UTC).
@@ -82,9 +82,8 @@ gains no second list.
 
 Code does not cite records by number, under §201 section 4. That rule needs no change. Code that
 names a record file by path, 1,062 times today, writes `nifeos/record:<path>`, such as
-`nifeos/record:design/naming.md`. The 7,774 milestone
-citations in code convert when each crate moves, under §315 (a crate's documentation leaves with
-it), and not in this move. The same section sends a note about one crate alone with that crate.
+`nifeos/record:design/naming.md`. The 7,774 milestone citations in code convert when each crate
+moves, under §315 (a crate's documentation leaves with it), and not in this move. The same section sends a note about one crate alone with that crate.
 
 The roadmap blocks already written are the hard part. A finished block's bullets name the files and
 checks that did the work, as bare paths such as `crates/x/src/y.rs`. Rewriting 7,845 of them is the
