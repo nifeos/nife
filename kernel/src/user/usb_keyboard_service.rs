@@ -125,13 +125,13 @@ pub(crate) fn start(
                 maps: &maps[..n],
                 windows: &[
                     startup_page_contract::Window {
-                        kind: startup_page_contract::kind::EXTENSIBLE_HOST_CONTROLLER_INTERFACE_DATA_PLANE,
-                        address: DMA_VA,
+                        kind: ::driver_process_contract::extensible_host_controller_interface::WORK_KIND,
+                        virtual_address: DMA_VA,
                         pages: WORK_PAGES as u32,
                     },
                     startup_page_contract::Window {
-                        kind: startup_page_contract::kind::EXTENSIBLE_HOST_CONTROLLER_INTERFACE_REGISTERS,
-                        address: REGS_VA,
+                        kind: ::driver_process_contract::extensible_host_controller_interface::REGISTER_KIND,
+                        virtual_address: REGS_VA,
                         pages: MAXIMUM_REGISTER_PAGES as u32,
                     },
                 ],

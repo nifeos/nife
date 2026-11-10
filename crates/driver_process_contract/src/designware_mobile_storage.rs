@@ -14,6 +14,7 @@
 //! crate.
 
 use filesystem_contract::blk;
+use startup_page_contract::WindowKind;
 
 /// Where the server finds the controller's first page, mapped device-typed.
 ///
@@ -26,6 +27,15 @@ pub const REGISTER_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0060_00
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
 /// driver crate's `TRANSFER_VA`, renamed to spell out the address as design/naming.md asks.
 pub const TRANSFER_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0070_0000);
+
+/// [`REGISTER_VIRTUAL_ADDRESS`]'s entry on the startup page.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+pub const REGISTER_KIND: WindowKind = WindowKind(8);
+/// [`TRANSFER_VIRTUAL_ADDRESS`]'s entry on the startup page.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+pub const TRANSFER_KIND: WindowKind = WindowKind(9);
 
 /// Card sectors in one `blk` block. An SD card's sector is `blk`'s 512-byte sector.
 ///

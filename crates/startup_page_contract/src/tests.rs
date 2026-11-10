@@ -5,10 +5,14 @@
 
 use super::*;
 
-fn window(kind: WindowKind, address: u64, pages: u32) -> Window {
+const DATA_PLANE: WindowKind = WindowKind(1);
+const DOORBELL_PAGE: WindowKind = WindowKind(2);
+const OTHER_DATA_PLANE: WindowKind = WindowKind(3);
+
+fn window(kind: WindowKind, virtual_address: u64, pages: u32) -> Window {
     Window {
         kind,
-        address,
+        virtual_address,
         pages,
     }
 }
@@ -18,17 +22,13 @@ fn window(kind: WindowKind, address: u64, pages: u32) -> Window {
 fn a_written_page_reads_back_every_window() {
     let mut page = [0u8; PAGE_BYTES];
     let windows = [
-        window(kind::NON_VOLATILE_MEMORY_EXPRESS_DATA_PLANE, 0x98_0000, 50),
-        window(
-            kind::NON_VOLATILE_MEMORY_EXPRESS_DOORBELL_PAGE,
-            0x9c_0000,
-            1,
-        ),
+        window(DATA_PLANE, 0x98_0000, 50),
+        window(DOORBELL_PAGE, 0x9c_0000, 1),
     ];
     write(&mut page, &windows).unwrap();
     let read = StartupPage::parse(&page).unwrap();
     assert!(read.windows().eq(windows.iter().copied()));
-    assert_eq!(read.window(kind::E1000E_DATA_PLANE), None);
+    assert_eq!(read.window(OTHER_DATA_PLANE), None);
 }
 
 /// A reader skips a kind it was never told about, so a later spawner may add kinds.
@@ -36,12 +36,10 @@ fn a_written_page_reads_back_every_window() {
 fn an_unknown_kind_is_skipped_and_the_known_one_still_found() {
     let mut page = [0u8; PAGE_BYTES];
     let later = window(WindowKind(0xffff), 0x60_0000, 1);
-    let known = window(kind::E1000E_DATA_PLANE, 0x90_0000, 64);
+    let known = window(OTHER_DATA_PLANE, 0x90_0000, 64);
     write(&mut page, &[later, known]).unwrap();
     assert_eq!(
-        StartupPage::parse(&page)
-            .unwrap()
-            .window(kind::E1000E_DATA_PLANE),
+        StartupPage::parse(&page).unwrap().window(OTHER_DATA_PLANE),
         Some(known)
     );
 }
@@ -62,13 +60,13 @@ fn bytes_that_are_not_a_page_read_as_none() {
 #[test]
 fn the_writer_refuses_each_malformed_list() {
     let mut page = [0u8; PAGE_BYTES];
-    let good = window(kind::E1000E_DATA_PLANE, 0x90_0000, 1);
+    let good = window(OTHER_DATA_PLANE, 0x90_0000, 1);
     assert_eq!(write(&mut [0u8; 64], &[good]), Err(Refusal::PageTooSmall));
     for bad in [
         window(WindowKind(0), 0x90_0000, 1),
-        window(kind::E1000E_DATA_PLANE, 0x90_0000, 0),
-        window(kind::E1000E_DATA_PLANE, 0x90_0008, 1),
-        window(kind::E1000E_DATA_PLANE, 0xffff_ffff_ffff_f000, 2),
+        window(OTHER_DATA_PLANE, 0x90_0000, 0),
+        window(OTHER_DATA_PLANE, 0x90_0008, 1),
+        window(OTHER_DATA_PLANE, 0xffff_ffff_ffff_f000, 2),
     ] {
         assert_eq!(
             write(&mut page, &[bad]),
@@ -99,22 +97,10 @@ fn a_full_page_fits_its_maximum() {
     assert!(StartupPage::parse(&page).unwrap().windows().eq(windows));
 }
 
-/// Every kind's number is distinct and none is zero, which names no window.
-#[test]
-fn every_kind_has_its_own_nonzero_number() {
-    for (n, k) in kind::ALL.iter().enumerate() {
-        assert_ne!(k.0, 0);
-        assert!(
-            kind::ALL[..n].iter().all(|earlier| earlier != k),
-            "{k:?} repeats"
-        );
-    }
-}
-
 /// The page sits in the runtime band and clear of std's runtime pages and the builder scratch.
 #[test]
 #[allow(clippy::assertions_on_constants)]
-fn the_page_address_sits_clear_of_its_neighbors() {
+fn the_page_sits_clear_of_its_neighbors() {
     assert!(address_space_map::RUNTIME_WINDOWS.contains(PAGE_VIRTUAL_ADDRESS));
     assert!(PAGE_VIRTUAL_ADDRESS >= 0x1700_0000 + address_space_map::PAGE);
 }

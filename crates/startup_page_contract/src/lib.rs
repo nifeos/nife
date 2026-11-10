@@ -1,7 +1,8 @@
 //! **The startup page**: one read-only page, at one fixed address, that lists where a process's
 //! memory windows were mapped. The spawner writes it before the process runs; the process reads
 //! each window's address from it instead of compiling the address in. A window is a run of pages
-//! the spawner mapped for the process: a shared page, a device's registers, a DMA region.
+//! the spawner mapped for the process: a shared page, a device's registers, a region a device reaches by direct memory
+//! access.
 //!
 //! The page is the only address in this contract. Each entry names a [`WindowKind`], an address
 //! and a length in pages. A reader takes the kinds it knows and skips the rest, so a later spawner
@@ -15,6 +16,9 @@
 //!   page, and two instances of one program in one space could not tell their windows apart.
 //! - A process the kernel builds by hand, or one a userspace builder spawns, has no page yet;
 //!   [`StartupPage::mapped`] there reads unmapped memory and faults, on purpose.
+//! - Each contract crate mints the kinds of the windows it describes, and nothing checks numbers
+//!   across crates. Today only `driver_process_contract` mints any, and its own test holds them
+//!   apart.
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners, after the page it
 //! defines, as `counter_frequency_contract` is named after its page. Considered `window_table`
@@ -74,7 +78,8 @@ const ENTRY_BYTES: usize = 16;
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
 pub const MAXIMUM_WINDOWS: usize = (PAGE_BYTES - OFF_ENTRIES) / ENTRY_BYTES;
 
-/// **Which window an entry describes**: a number both sides read from [`kind`]. Zero names none.
+/// **Which window an entry describes**: a number minted by the contract crate both sides
+/// link, so the agreement is code. Zero names none.
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -88,7 +93,7 @@ pub struct Window {
     /// What the window is.
     pub kind: WindowKind,
     /// Its first page's virtual address, page aligned.
-    pub address: u64,
+    pub virtual_address: u64,
     /// Its length in pages, at least one.
     pub pages: u32,
 }
@@ -98,14 +103,14 @@ impl Window {
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
     pub const fn end(&self) -> u64 {
-        self.address + self.pages as u64 * address_space_map::PAGE
+        self.virtual_address + self.pages as u64 * address_space_map::PAGE
     }
 
-    /// Does `va` fall inside the window?
+    /// Does `virtual_address` fall inside the window?
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const fn contains(&self, va: u64) -> bool {
-        va >= self.address && va < self.end()
+    pub const fn contains(&self, virtual_address: u64) -> bool {
+        virtual_address >= self.virtual_address && virtual_address < self.end()
     }
 }
 
@@ -131,12 +136,12 @@ pub enum Refusal {
 /// # Examples
 ///
 /// ```
-/// use startup_page_contract::{StartupPage, Window, kind, write, PAGE_BYTES};
+/// use startup_page_contract::{StartupPage, Window, WindowKind, write, PAGE_BYTES};
 ///
 /// let mut page = [0u8; PAGE_BYTES];
-/// let dma = Window { kind: kind::E1000E_DATA_PLANE, address: 0x90_0000, pages: 64 };
-/// write(&mut page, &[dma]).unwrap();
-/// assert_eq!(StartupPage::parse(&page).unwrap().window(kind::E1000E_DATA_PLANE), Some(dma));
+/// let plane = Window { kind: WindowKind(3), virtual_address: 0x90_0000, pages: 64 };
+/// write(&mut page, &[plane]).unwrap();
+/// assert_eq!(StartupPage::parse(&page).unwrap().window(WindowKind(3)), Some(plane));
 /// ```
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
@@ -148,8 +153,8 @@ pub fn write(page: &mut [u8], windows: &[Window]) -> Result<(), Refusal> {
         return Err(Refusal::TooManyWindows);
     }
     for (n, w) in windows.iter().enumerate() {
-        let fits = w.address.is_multiple_of(address_space_map::PAGE)
-            && w.address
+        let fits = w.virtual_address.is_multiple_of(address_space_map::PAGE)
+            && w.virtual_address
                 .checked_add(w.pages as u64 * address_space_map::PAGE)
                 .is_some();
         if w.kind.0 == 0 || w.pages == 0 || !fits {
@@ -166,7 +171,7 @@ pub fn write(page: &mut [u8], windows: &[Window]) -> Result<(), Refusal> {
         let at = OFF_ENTRIES + n * ENTRY_BYTES;
         page[at..at + 4].copy_from_slice(&w.kind.0.to_le_bytes());
         page[at + 4..at + 8].copy_from_slice(&w.pages.to_le_bytes());
-        page[at + 8..at + 16].copy_from_slice(&w.address.to_le_bytes());
+        page[at + 8..at + 16].copy_from_slice(&w.virtual_address.to_le_bytes());
     }
     Ok(())
 }
@@ -227,7 +232,7 @@ impl<'a> StartupPage<'a> {
             Window {
                 kind: WindowKind(word(0, 4) as u32),
                 pages: word(4, 8) as u32,
-                address: word(8, 16),
+                virtual_address: word(8, 16),
             }
         })
     }
@@ -239,78 +244,6 @@ impl<'a> StartupPage<'a> {
     pub fn window(&self, kind: WindowKind) -> Option<Window> {
         self.windows().find(|w| w.kind == kind)
     }
-}
-
-/// **The kinds of window a spawner in this tree hands out**, one number each, never reused.
-///
-/// A number is unique across every program, not only within one, so a page that some day lists
-/// the windows of two programs in one space stays unambiguous. [`kind::ALL`] lists them, and a test
-/// holds every number apart.
-pub mod kind {
-    use super::WindowKind;
-
-    /// The NVMe data plane's run: the I/O submission ring, the I/O completion ring, then the
-    /// transfer buffer, one window per client.
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const NON_VOLATILE_MEMORY_EXPRESS_DATA_PLANE: WindowKind = WindowKind(1);
-    /// The one page of the NVMe controller's BAR0 that holds the doorbells, device memory.
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const NON_VOLATILE_MEMORY_EXPRESS_DOORBELL_PAGE: WindowKind = WindowKind(2);
-    /// The e1000e server's DMA region, normal memory.
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const E1000E_DATA_PLANE: WindowKind = WindowKind(3);
-    /// BAR0's receive-queue page of the e1000e, device memory.
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const E1000E_RECEIVE_QUEUE_PAGE: WindowKind = WindowKind(4);
-    /// BAR0's transmit-queue page of the e1000e, device memory.
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const E1000E_TRANSMIT_QUEUE_PAGE: WindowKind = WindowKind(5);
-    /// The `DesignWare` Ethernet server's DMA region, normal memory.
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const DESIGNWARE_ETHERNET_DATA_PLANE: WindowKind = WindowKind(6);
-    /// The `DesignWare` Ethernet controller's DMA register page, device memory.
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const DESIGNWARE_ETHERNET_DIRECT_MEMORY_ACCESS_REGISTER_PAGE: WindowKind = WindowKind(7);
-    /// The `DesignWare` mobile storage controller's register page, device memory.
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const DESIGNWARE_MOBILE_STORAGE_REGISTER_PAGE: WindowKind = WindowKind(8);
-    /// The `DesignWare` mobile storage server's transfer buffer, normal memory.
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const DESIGNWARE_MOBILE_STORAGE_TRANSFER: WindowKind = WindowKind(9);
-    /// The xHCI controller's register pages, device memory, as many as the register mask names.
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const EXTENSIBLE_HOST_CONTROLLER_INTERFACE_REGISTERS: WindowKind = WindowKind(10);
-    /// The xHCI driver's DMA region, normal memory.
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const EXTENSIBLE_HOST_CONTROLLER_INTERFACE_DATA_PLANE: WindowKind = WindowKind(11);
-
-    /// Every kind above, for the test that holds their numbers apart.
-    ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-    pub const ALL: [WindowKind; 11] = [
-        NON_VOLATILE_MEMORY_EXPRESS_DATA_PLANE,
-        NON_VOLATILE_MEMORY_EXPRESS_DOORBELL_PAGE,
-        E1000E_DATA_PLANE,
-        E1000E_RECEIVE_QUEUE_PAGE,
-        E1000E_TRANSMIT_QUEUE_PAGE,
-        DESIGNWARE_ETHERNET_DATA_PLANE,
-        DESIGNWARE_ETHERNET_DIRECT_MEMORY_ACCESS_REGISTER_PAGE,
-        DESIGNWARE_MOBILE_STORAGE_REGISTER_PAGE,
-        DESIGNWARE_MOBILE_STORAGE_TRANSFER,
-        EXTENSIBLE_HOST_CONTROLLER_INTERFACE_REGISTERS,
-        EXTENSIBLE_HOST_CONTROLLER_INTERFACE_DATA_PLANE,
-    ];
 }
 
 #[cfg(test)]
