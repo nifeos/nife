@@ -52,12 +52,14 @@ mod timer {
 const INJECT: bool = cfg!(feature = "self_test_injection");
 
 /// Whether this build injects a failure ([`INJECT`]), for the hand-over to tell `boot_self_test`.
+///
+/// Name: provisional.
 pub const fn injects() -> bool {
     INJECT
 }
 
-/// **The kernel's half of the tally**, kept from [`run`] until the hand-over writes it into the page
-/// the progenitor passes on ([`kernel_half`]) or, with no progenitor to hand it to, prints the
+/// **The kernel's half of the tally**, kept from [`run`] until the hand-over writes it into the
+/// page the progenitor passes on ([`kernel_half`]) or, with no progenitor to hand it to, prints the
 /// verdict itself ([`verdict_without_userspace`]). Three words: `boot_ladder::verdict::Tally`'s.
 static HALF: [AtomicU64; 3] = [const { AtomicU64::new(0) }; 3];
 
@@ -138,6 +140,8 @@ pub fn run() {
 }
 
 /// **This half's tally, as [`run`] left it**, for the page the hand-over writes.
+///
+/// Name: provisional.
 pub fn kernel_tally() -> Tally {
     Tally::from_words(core::array::from_fn(|i| HALF[i].load(Ordering::Acquire)))
 }
@@ -145,6 +149,8 @@ pub fn kernel_tally() -> Tally {
 /// **Print the verdict from this half alone**, for a boot with no progenitor to run the other: no
 /// archive, or one whose progenitor would not load. Every check of the userspace half fails by
 /// name, because it did not run.
+///
+/// Name: provisional.
 pub fn verdict_without_userspace(why: &str) {
     let mut tally = kernel_tally();
     for name in tally.fail_unrecorded() {

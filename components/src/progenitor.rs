@@ -110,8 +110,9 @@ const GRANTS: BootEndowment = BootEndowment {
     // `READ` alone, granted on every boot past the disk tree's pair (32 and 33), so no slot moves.
     // `system_initializer::boot` checks the measurement table against it before reading the table.
     base_digest_page: 34,
-    // The boot self-test's userspace half (milestone 1063): the kernel's half on every boot, then
-    // the JH7110 TRNG service and disk 0's trio when the machine has them, past the base digest.
+    // The boot self-test's userspace half (milestone 1063 (the boot self-test's spawning checks run
+    // from userspace)): the kernel's half on every boot, then the JH7110 TRNG service and disk 0's
+    // trio when the machine has them, past the base digest.
     self_test_page: 35,
     self_test_trng: 36,
     self_test_disk: [37, 38, 39],

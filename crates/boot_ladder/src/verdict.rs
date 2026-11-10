@@ -1,8 +1,8 @@
 //! **The self-test's tally and the lines it prints**, shared by its two halves: the kernel, which
 //! runs the checks of its own internals, and `boot_self_test`, the userspace program the progenitor
-//! runs for the checks that need a user program (milestone 1063). Both print through this code, so
-//! a check line and the verdict read the same whichever half printed them. See
-//! notes/self-test-checks.md, "The verdict's mechanics".
+//! runs for the checks that need a user program (milestone 1063 (the boot self-test's spawning
+//! checks run from userspace)). Both print through this code, so a check line and the verdict read
+//! the same whichever half printed them. See notes/self-test-checks.md, "The verdict's mechanics".
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`, for what the module renders.
@@ -12,6 +12,8 @@ use core::fmt;
 use crate::{SELF_TEST, SELF_TEST_ABSENT, SELF_TEST_CHECKS, SELF_TEST_FAILED};
 
 /// How many checks there are: the length of [`SELF_TEST_CHECKS`].
+///
+/// Name: provisional.
 pub const CHECKS: usize = SELF_TEST_CHECKS.len();
 
 // The tally is three bitmasks over the list, one bit per check.
@@ -84,6 +86,8 @@ pub struct Tally {
 
 impl Tally {
     /// A tally with nothing recorded.
+    ///
+    /// Name: provisional.
     pub const fn new() -> Self {
         Self {
             passed: 0,
@@ -93,6 +97,8 @@ impl Tally {
     }
 
     /// Record `check`'s outcome. A second record of the same check replaces the first.
+    ///
+    /// Name: provisional.
     pub fn record(&mut self, check: usize, outcome: Outcome) {
         let bit = 1u64 << check;
         self.passed &= !bit;
@@ -106,6 +112,8 @@ impl Tally {
     }
 
     /// Whether `check` has an outcome yet.
+    ///
+    /// Name: provisional.
     pub fn is_recorded(&self, check: usize) -> bool {
         (self.passed | self.failed | self.absent) & (1 << check) != 0
     }
@@ -113,6 +121,8 @@ impl Tally {
     /// **Fail every listed check that recorded nothing, and return their names**, for the caller
     /// to print a line for each before the verdict. The total is the list's length, not how many
     /// checks ran, so a check that never ran reads as `FAILED` by name on every architecture.
+    ///
+    /// Name: provisional.
     pub fn fail_unrecorded(&mut self) -> impl Iterator<Item = &'static str> + use<> {
         let missing = !(self.passed | self.failed | self.absent) & all_checks();
         self.failed |= missing;
@@ -120,12 +130,16 @@ impl Tally {
     }
 
     /// The tally as the three words the kernel hands over: passed, failed, absent.
+    ///
+    /// Name: provisional.
     pub const fn to_words(&self) -> [u64; 3] {
         [self.passed, self.failed, self.absent]
     }
 
     /// A tally from [`to_words`](Tally::to_words)'s three words. Bits past the list are dropped,
     /// and a bit set in more than one word keeps the worst: failed, then absent, then passed.
+    ///
+    /// Name: provisional.
     pub const fn from_words(words: [u64; 3]) -> Self {
         let failed = words[1] & all_checks();
         let absent = words[2] & all_checks() & !failed;
@@ -138,6 +152,8 @@ impl Tally {
     }
 
     /// The verdict line, without its newline: [`Verdict`]'s `Display`.
+    ///
+    /// Name: provisional.
     pub fn verdict(&self) -> Verdict<'_> {
         Verdict(self)
     }

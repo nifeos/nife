@@ -198,10 +198,11 @@ pub struct BootEndowment {
     ///
     /// Name: ratified 2026-11-03 (UTC), #3102.
     pub base_digest_page: u64,
-    /// **The kernel's half of the boot self-test** (milestone 1063): a `PageFrame` capability with
-    /// `READ | GRANT` to the page `boot_ladder::kernel_half` describes, granted on every boot.
-    /// [`boot`](crate::boot) maps it read-only into `boot_self_test` and deletes its own copy once
-    /// the program's verdict is printed.
+    /// **The kernel's half of the boot self-test** (milestone 1063 (the boot self-test's spawning
+    /// checks run from userspace)): a `PageFrame` capability with `READ | GRANT` to the page
+    /// `boot_ladder::kernel_half` describes, granted on every boot. [`boot`](crate::boot) maps it
+    /// read-only into `boot_self_test` and deletes its own copy once the program's verdict is
+    /// printed.
     ///
     /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
     pub self_test_page: u64,

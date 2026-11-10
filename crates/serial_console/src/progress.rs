@@ -65,9 +65,9 @@ pub enum Stage {
     ///
     /// Printed after the kernel's half of the self-test and before the hand-over, which prints the
     /// verdict, on all three architectures. It says the machine was described and the kernel's own
-    /// checks ran. It is not the default to wait for: [`Stage::Prompt`] is above it, and a boot that stops here has
-    /// not handed over. Whether the checks passed is [`Failure::SelfTestFailed`]'s to say, not
-    /// this rung's.
+    /// checks ran. It is not the default to wait for: [`Stage::Prompt`] is above it, and a boot
+    /// that stops here has not handed over. Whether the checks passed is
+    /// [`Failure::SelfTestFailed`]'s to say, not this rung's.
     Tour,
     /// Userspace is up and the shell is offering a prompt (`boot_ladder::PROMPT`).
     ///
@@ -368,8 +368,10 @@ impl BootProgress {
     ///
     /// The ratchet's order, except for [`Stage::SelfTest`]: the kernel prints its half and then
     /// [`Stage::Tour`]'s line, and the verdict follows from the hand-over, so a boot past the tour
-    /// has shown the verdict only once its line arrived. Without that, `--until selftest` would stop
-    /// at the tour line, before the verdict it was run to read.
+    /// has shown the verdict only once its line arrived. Without that, `--until selftest` would
+    /// stop at the tour line, before the verdict it was run to read.
+    ///
+    /// Name: provisional.
     #[must_use]
     pub fn has_reached(&self, wanted: Stage) -> bool {
         self.reached >= wanted && (wanted != Stage::SelfTest || self.self_test_line.is_some())

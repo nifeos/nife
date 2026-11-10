@@ -1,5 +1,6 @@
 //! **The boot self-test's userspace half**: the checks that need a user program, run by a user
-//! program, and the one verdict (milestone 1063).
+//! program, and the one verdict (milestone 1063 (the boot self-test's spawning checks run from
+//! userspace)).
 //!
 //! The kernel runs the checks of its own internals and hands their tally over in the page
 //! `boot_ladder::kernel_half` describes. The progenitor builds this program before the shell, with
@@ -22,9 +23,10 @@
 //! kernel runs checks too).
 
 #![no_std]
-// Program entry points, not the crates/ library surface milestone 68's ratchet tracks
-// (DECISIONS §107): each `[[bin]]` is its own crate root with one `_start`, and 58 of them
-// documenting an OS-facing ABI entry point is not what the lint is for.
+// Program entry points, not the crates/ library surface milestone 68 (code-quality gates)'s ratchet
+// tracks (DECISIONS §107 (`missing_docs` moves to `workspace.lints.rust`)): each `[[bin]]` is its
+// own crate root with one `_start`, and documenting an OS-facing ABI entry point is not what the
+// lint is for.
 #![allow(missing_docs)]
 #![no_main]
 

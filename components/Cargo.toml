@@ -86,8 +86,9 @@ path = "src/progenitor.rs"
 test = false
 bench = false
 
-# The boot self-test's userspace half (milestone 1063): the checks that spawn a user program,
-# run by the progenitor before the shell, and the one verdict.
+# The boot self-test's userspace half (milestone 1063 (the boot self-test's spawning checks run from
+# userspace)): the checks that spawn a user program, run by the progenitor before the shell, and the
+# one verdict.
 [[bin]]
 name = "boot_self_test"
 path = "src/boot_self_test.rs"

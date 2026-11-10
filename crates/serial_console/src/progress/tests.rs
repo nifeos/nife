@@ -99,9 +99,10 @@ fn the_ladder_climbs_banner_machine_self_test_prompt() {
     assert_eq!(progress.reached(), Stage::Prompt);
 }
 
-/// **The verdict follows the tour line** (milestone 1063): the kernel prints its half and the tour
-/// line, and the hand-over prints the verdict. A watch for the verdict must not stop at the tour,
-/// which the ratchet alone would let it do.
+/// **The verdict follows the tour line** (milestone 1063 (the boot self-test's spawning checks run
+/// from userspace)): the kernel prints its half and the tour line, and the hand-over prints the
+/// verdict. A watch for the verdict must not stop at the tour, which the ratchet alone would let it
+/// do.
 #[test]
 fn the_verdict_after_the_tour_is_what_a_self_test_wait_waits_for() {
     let mut progress = BootProgress::new(&crate::board::EMULATOR);

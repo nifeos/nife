@@ -1,7 +1,8 @@
 //! **The boot self-test's userspace half**: build `boot_self_test`, hand it the kernel's half and
 //! what its checks need, wait for its verdict, and print its transcript before the prompt
-//! (milestone 1063). The checks themselves are the program's; this is only the wiring, in the
-//! terms `boot_ladder::self_test_program` fixes. See notes/self-test-checks.md, "The two halves".
+//! (milestone 1063 (the boot self-test's spawning checks run from userspace)). The checks
+//! themselves are the program's; this is only the wiring, in the terms
+//! `boot_ladder::self_test_program` fixes. See notes/self-test-checks.md, "The two halves".
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`.

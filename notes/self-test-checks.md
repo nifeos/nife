@@ -17,11 +17,10 @@ program or starts a service, so a kernel that leaves services to userspace keeps
 other eight, `userspace`, `budget`, `supervised`, `teardown`, `blockdev`, `clock`, `trng` and
 `entropy`, run in `boot_self_test`, which the progenitor builds before the shell.
 
-- The tally is code both halves share, `boot_ladder::verdict`: one bit per check in three masks,
-  and the line and verdict formats. The kernel writes its tally into the page
-  `boot_ladder::kernel_half` lays out, the hand-over grants it to the progenitor, and the
-  progenitor maps it read-only into the program, which adds its own outcomes and prints the one
-  verdict.
+- The tally is code both halves share, `boot_ladder::verdict`: one bit per check in three masks, and
+  the line and verdict formats. The kernel writes its tally into the page `boot_ladder::kernel_half`
+  lays out. The hand-over grants that page to the progenitor. The progenitor maps it read-only into
+  the program, which adds its own outcomes and prints the one verdict.
 - The page also carries what the program cannot learn at user level: a kernel address to fault on,
   whether the build injects, and what the JH7110 bring-up answered. `boot_ladder::self_test_program`
   fixes the program's slots, its addresses, the image table and its two messages.
@@ -29,13 +28,12 @@ other eight, `userspace`, `budget`, `supervised`, `teardown`, `blockdev`, `clock
   `memory_region_depleter` and `block_driver` and copies them in. The program builds each child
   from a budget of its own, supervises it, and collects or destroys it before the next check.
 - The program writes each line into a transcript page and tells the progenitor where it ends. The
-  progenitor can print only once the shell's output page is mapped, so the transcript and the
+  progenitor can print only once the shell's output page is mapped. So the transcript and the
   verdict reach the console after the tour line, between the hand-over's lines and the prompt.
   `serial_console`'s `has_reached` waits for the verdict line itself, and `boot-check` requires it.
-- A boot that cannot reach the program still prints a verdict. With no archive or no progenitor the
-  kernel prints one that fails the eight by name, and a program that dies before its verdict makes
-  the progenitor say so, which leaves the boot with no `nife self-test:` line for `boot-check` to
-  pass.
+- A boot that cannot reach the program still prints a verdict. With no archive or no progenitor, the
+  kernel prints one that fails the eight by name. A program that dies before its verdict makes the
+  progenitor say so. That boot has no `nife self-test:` line, and `boot-check` fails it.
 
 ## The verdict's mechanics
 
@@ -96,19 +94,20 @@ spinners runnable each look can cost a whole tick; a million looks would be thre
   which was the shape of the tours this replaced. `system_tests`'
   `a_user_program_that_never_yields_is_preempted_anyway` makes the same claim at user level.
 - `userspace` has `kernel_test_subject` read the kernel's own fault counter, at the address the
-  kernel's half carries, which is certainly mapped and certainly not the program's, so it takes a
-  permission fault. Its death must reach its supervisor naming that address, and its corpse must be
-  collected before `budget` brackets the free-frame count.
+  kernel's half carries. That page is certainly mapped and certainly not the program's, so it takes
+  a permission fault. Its death must reach its supervisor naming that address, and its corpse must
+  be collected before `budget` brackets the free-frame count.
 - `budget` is the claim of milestone 11 (untyped memory): a process maps until its region is spent and
   the machine's free-frame count, read from the machine statistics page, does not move. The process
   spins after its second report so the count holds still, and the check then destroys its region.
 - `supervised` builds `kernel_test_subject` in a region of its own with its supervision endpoint in
   the reserved fault slot, so `START` makes it supervised (DECISIONS §26 (the fault endpoint)). The
   child loads from an address nothing maps. The check waits for the endpoint's survey to list the
-  child dead, not on a receive, because a receive has no deadline; a corpse parked as the endpoint's
-  sender then makes the receive return at once. The message must say `EVENT_FAULT` and name the
-  child, a pc inside its executable segment and the address, and the supervisor reaps the corpse
-  with its region. It reads the thread id from the survey, since the program never sees a TCB's.
+  child dead. It does not wait on a receive, because a receive has no deadline. A corpse parked as
+  the endpoint's sender then makes the receive return at once. The message must say `EVENT_FAULT`
+  and name the child, a pc inside its executable segment and the address, and the supervisor reaps
+  the corpse with its region. It reads the thread id from the survey, since the program never sees a
+  TCB's.
 - `teardown` runs `supervised`'s round twice and judges the second: the machine's free-frame count
   must not move across a spawn, a death and a reap. A first round pays first-use carves that are
   not leaks (a kernel stack the recycler has not held yet), so one before-and-after over a single
@@ -124,11 +123,10 @@ spinners runnable each look can cost a whole tick; a million looks would be thre
   interrupts without input or a disk, so the input driver and `blockdev` prove a line there.
 - `clock` and `trng` come from one JH7110 bring-up. `clock` is the clock-and-reset controller's
   before and after (milestone 220 (this kernel drives no clock or reset controller, and the first
-  real device will need one)). `trng` is two different device generations drawn through the
-  confined driver, timed (milestone 306 (time the hw entropy step)). The hand-over brings the
-  controller up and wires the TRNG's service, records what both answered in the kernel's half, and
-  grants the service's endpoint for the program to draw from. The kernel never reads a `RAND`
-  register.
+  real device will need one)). `trng` is two different device generations drawn through the confined
+  driver, timed (milestone 306 (time the hw entropy step)). The hand-over brings the controller up
+  and wires the TRNG's service. It records what both answered in the kernel's half and grants the
+  service's endpoint for the program to draw from. The kernel never reads a `RAND` register.
 - `entropy` draws twice from the JH7110 TRNG where the tree names one, else from the progenitor's
   own entropy service, whatever it draws from: the CPU's seed instruction or a virtio-rng device.
 
@@ -156,16 +154,16 @@ which the `clock` line explains.
 
 - Nothing proves an architecture ran the right set. The list is a compile-time fact, a check
   deleted from it takes its evidence with it, and review guards the set.
-- The checks cost time on every boot: `timer` waits about 20 ms and `preemption` a fifth of a
-  second, and the progenitor builds `boot_self_test`, which spawns five processes and waits for
-  them, before it builds the shell.
+- The checks cost time on every boot. `timer` waits about 20 ms and `preemption` a fifth of a
+  second. The progenitor builds `boot_self_test` before the shell, and it spawns five processes and
+  waits for them.
 - `budget` and `teardown` bracket the machine's free-frame count, so each is sound only while
   nothing on any core allocates or frees in its window. Each earlier check collects its children
   before it returns; a check added before them that returns with a teardown in flight reopens the
   red [load-sensitive-assertions.md](load-sensitive-assertions.md) records.
-- The hand-over, not userspace, starts the JH7110 TRNG's service and sets disk 0 aside, and a TRNG
-  that never reports ready leaves a kernel thread parked on the receive. Milestone 811 (the boot
-  services leave the kernel) moves those starters out.
+- The hand-over, not userspace, starts the JH7110 TRNG's service and sets disk 0 aside. A TRNG that
+  never reports ready leaves a kernel thread parked on the receive. Milestone 811 (the boot services
+  leave the kernel) moves those starters out.
 - `trng` and `entropy` draw with calls that have no deadline, so a service that never answers holds
   the boot before the shell.
 - `supervised` checks that the faulting pc lies in the child's executable segment, not which

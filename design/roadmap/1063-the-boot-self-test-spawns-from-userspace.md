@@ -82,6 +82,16 @@ transport without `GRANT` failed `blockdev` by name and turned the disk boots' v
 - The verdict reaches the console after the tour line, so a watcher reading the ladder's order
   needs `serial_console`'s `has_reached` rather than the ratchet alone.
 
+## Follow-on
+
+- **Milestone 811.** The JH7110 TRNG and disk 0 starters left in the hand-over
+  (`kernel/src/user/self_test_hand_over.rs`) move out with the other boot services; its table's
+  rows for `userspace`, `budget`, `blockdev` and `entropy` now name `boot_self_test`'s checks.
+- **Recorded.** `supervised`'s pc check and the draws with no deadline are BUGS in
+  `components/src/boot_self_test.rs`.
+- **Recorded.** A boot whose kernel has no self-test prints no verdict, in
+  `crates/system_initializer/src/self_test.rs`'s BUGS.
+
 ## Index row
 
 The boot self-test spawns up to six user programs from the kernel on every boot. Spawning is the

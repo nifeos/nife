@@ -317,8 +317,8 @@ fn stop_boot_check_leg(child: &mut std::process::Child) {
     let _ = child.wait();
 }
 
-/// The checks `self_test_injection` fails, one in each half of the self-test: `kernel/src/self_test.rs`'s
-/// `exceptions` and `components/src/boot_self_test.rs`'s `userspace`.
+/// The checks `self_test_injection` fails, one in each half of the self-test:
+/// `kernel/src/self_test.rs`'s `exceptions` and `components/src/boot_self_test.rs`'s `userspace`.
 const INJECTED_CHECKS: [&str; 2] = ["exceptions", "userspace"];
 
 /// **The leg's verdict**: green climbed to the prompt with the verdict printed and nothing failed,
@@ -357,8 +357,8 @@ fn boot_check_verdict(
                 "boot-check ({arch}): FAILED. A kernel built with `--features self_test_injection` \
                  must print a RED verdict naming `exceptions` and `userspace`, one from each half, \
                  and this run did not, so the gate cannot see a failing self-test and is not \
-                 gating anything. This is the defect milestone 268's block \
-                 predicted: a verdict nobody reads."
+                 gating anything. This is the defect milestone 268 (every architecture boots the \
+                 same way)'s block predicted: a verdict nobody reads."
             );
         } else {
             eprintln!(
