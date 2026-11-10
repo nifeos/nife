@@ -78,6 +78,7 @@ pub(super) struct Threads {
 /// The table's typed name for a thread id. A temporary adapter: `ThreadId` is still a `u64`
 /// across the kernel, and [`Threads`] is the one edge where it becomes the table's
 /// `EntryName`. It goes when `ThreadId` is that `EntryName` itself.
+#[inline(always)]
 const fn thread_entry(tid: ThreadId) -> EntryName<ThreadControlBlockPointer> {
     EntryName::from_bits(tid)
 }

@@ -114,11 +114,13 @@ pub(super) struct RendezvousPageAddress(u64);
 
 impl RendezvousPageAddress {
     /// The entry for the page at physical address `phys`.
+    #[inline(always)]
     pub(super) const fn new(phys: u64) -> Self {
         Self(phys)
     }
 
     /// The physical address of the page.
+    #[inline(always)]
     pub(super) const fn address(self) -> u64 {
         self.0
     }
@@ -136,11 +138,13 @@ pub(super) struct NotificationPageAddress(u64);
 
 impl NotificationPageAddress {
     /// The entry for the page at physical address `phys`.
+    #[inline(always)]
     pub(super) const fn new(phys: u64) -> Self {
         Self(phys)
     }
 
     /// The physical address of the page.
+    #[inline(always)]
     pub(super) const fn address(self) -> u64 {
         self.0
     }
@@ -158,11 +162,13 @@ pub(super) struct TimerPageAddress(u64);
 
 impl TimerPageAddress {
     /// The entry for the page at physical address `phys`.
+    #[inline(always)]
     pub(super) const fn new(phys: u64) -> Self {
         Self(phys)
     }
 
     /// The physical address of the page.
+    #[inline(always)]
     pub(super) const fn address(self) -> u64 {
         self.0
     }
@@ -180,11 +186,13 @@ pub(super) struct ProcessPageAddress(u64);
 
 impl ProcessPageAddress {
     /// The entry for the page at physical address `phys`.
+    #[inline(always)]
     pub(super) const fn new(phys: u64) -> Self {
         Self(phys)
     }
 
     /// The physical address of the page.
+    #[inline(always)]
     pub(super) const fn address(self) -> u64 {
         self.0
     }
@@ -211,21 +219,25 @@ const _: () = {
 /// The rendezvous table's typed name for a [`RendezvousId`]: the system-call word, converted at the
 /// boundary with `from_bits`. Each id is still a `u64` across the kernel; each adapter goes when
 /// its id is the table's `EntryName` itself.
+#[inline(always)]
 pub(super) const fn rendezvous_entry(id: RendezvousId) -> EntryName<RendezvousPageAddress> {
     EntryName::from_bits(id)
 }
 
 /// The notification table's typed name for a notification's id. See [`rendezvous_entry`].
+#[inline(always)]
 pub(super) const fn notification_entry(id: u64) -> EntryName<NotificationPageAddress> {
     EntryName::from_bits(id)
 }
 
 /// The timer table's typed name for a timer's id. See [`rendezvous_entry`].
+#[inline(always)]
 pub(super) const fn timer_entry(id: u64) -> EntryName<TimerPageAddress> {
     EntryName::from_bits(id)
 }
 
 /// The process table's typed name for a process id. See [`rendezvous_entry`].
+#[inline(always)]
 pub(super) const fn process_entry(pid: u64) -> EntryName<ProcessPageAddress> {
     EntryName::from_bits(pid)
 }
