@@ -596,7 +596,7 @@ fn read_bench_lines(
         }
         let parts: Vec<&str> = rest.split_whitespace().collect();
         match parts.as_slice() {
-            ["cntfrq", hz] => cntfrq = hz.parse().unwrap_or(0),
+            ["cntfrq", hertz] => cntfrq = hertz.parse().unwrap_or(0),
             [name, ticks, iters] => {
                 if let (Ok(t), Ok(i)) = (ticks.parse(), iters.parse()) {
                     results.push((name.to_string(), t, i));

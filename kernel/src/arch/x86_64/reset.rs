@@ -64,9 +64,9 @@ const PCI_CONFIG_DATA: u16 = 0xcfc;
 /// Spin for `ms` of wall clock. Only on the way to a reset, where yielding would hand the core
 /// to a workload that is about to stop existing.
 fn wait_milliseconds(milliseconds: u64) {
-    let hz = super::timer::frequency();
+    let hertz = super::timer::frequency();
     let start = super::timer::now();
-    while super::timer::now().wrapping_sub(start) < hz / 1000 * milliseconds {
+    while super::timer::now().wrapping_sub(start) < hertz / 1000 * milliseconds {
         core::hint::spin_loop();
     }
 }

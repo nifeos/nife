@@ -170,8 +170,8 @@ fn timebase_page_phys() -> Option<u64> {
     let phys = crate::memory::alloc_zeroed()?.addr();
     let dst = mmu::phys_to_virt(phys) as *mut u8;
     match crate::arch::timer::frequency_checked() {
-        Some(hz) => {
-            let bytes = counter_frequency_contract::build_page(hz);
+        Some(hertz) => {
+            let bytes = counter_frequency_contract::build_page(hertz);
             // SAFETY: `dst` names a freshly allocated frame, reachable through the direct map and
             // owned by nobody else yet; `bytes` is `PAGE_CONTENT_BYTES` (16) bytes, far under the frame's
             // `FRAME_SIZE`, so the copy does not run past it.

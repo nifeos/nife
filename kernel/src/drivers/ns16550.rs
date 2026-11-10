@@ -78,8 +78,8 @@ impl Shape {
     /// The divisor for [`BAUD`] from a stated input clock, rounded to nearest: a 16550 divides the
     /// clock by 16 x divisor. 24 MHz gives 13 (actual rate 115385, 0.16% high, well inside
     /// tolerance); QEMU `virt`'s stated 3.6864 MHz gives exactly 2.
-    pub(crate) const fn divisor_for(clock_hz: u32) -> u16 {
-        ((clock_hz + 8 * BAUD) / (16 * BAUD)) as u16
+    pub(crate) const fn divisor_for(clock_hertz: u32) -> u16 {
+        ((clock_hertz + 8 * BAUD) / (16 * BAUD)) as u16
     }
 }
 

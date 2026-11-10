@@ -251,11 +251,11 @@ fn card_clock(slot: &Slot, crg_phys: u64) -> u32 {
         "card clock: {:#010x} -> {:#010x}, {} Hz from a {} Hz parent (the tree asks {} Hz)",
         c.before,
         c.after,
-        c.hz,
-        c.parent_hz,
+        c.hertz,
+        c.parent_hertz,
         slot.card_interface_unit_hertz
     );
-    c.hz
+    c.hertz
 }
 
 fn probe(slot: &Slot, write: bool) -> Outcome {
@@ -309,12 +309,12 @@ fn probe(slot: &Slot, write: bool) -> Outcome {
         return Outcome::ClocksDown;
     }
 
-    let ciu_hz = card_clock(slot, sys.base);
+    let ciu_hertz = card_clock(slot, sys.base);
 
     // SAFETY: step 10 of `mmu::initialize` mapped this slot's first page from the same
     // `memory::jh7110_storage` answer, and this boot thread is the only thing that drives it.
     let window = unsafe { Window::new(slot.registers_physical_address) };
-    let (mut host, id) = match HostController::new(window, ciu_hz, slot.queue_depth_words) {
+    let (mut host, id) = match HostController::new(window, ciu_hertz, slot.queue_depth_words) {
         Ok(h) => h,
         Err(e) => {
             say!(slot, "controller refused: {e:?}");
@@ -767,12 +767,13 @@ fn read_matrix(slot: &Slot) {
     let Some(sys) = crate::memory::jh7110_sys_window() else {
         return;
     };
-    let ciu_hz = card_clock(slot, sys.base);
+    let ciu_hertz = card_clock(slot, sys.base);
     let first = 2048;
     for depth in [slot.queue_depth_words, Some(128)] {
         // SAFETY: as `probe`'s window: the same mapped page, and this boot thread alone drives it.
         let window = unsafe { Window::new(slot.registers_physical_address) };
-        let Ok((mut host, _)) = HostController::new(QueueWatch::new(window), ciu_hz, depth) else {
+        let Ok((mut host, _)) = HostController::new(QueueWatch::new(window), ciu_hertz, depth)
+        else {
             println!("storage-matrix: controller refused");
             return;
         };

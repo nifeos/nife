@@ -351,8 +351,8 @@ fn a_plain_send_arrives_with_its_capabilitys_badge_on_receive_and_receive_capabi
 /// Busy-wait `ns` on the kernel's own clock: long enough for the ring to call its drainer
 /// stalled, without a sleep primitive the test harness would have to provide.
 fn spin_for(nanoseconds: u64) {
-    let hz = crate::arch::timer::frequency();
-    let until = crate::arch::timer::now() + nanoseconds * hz / 1_000_000_000;
+    let hertz = crate::arch::timer::frequency();
+    let until = crate::arch::timer::now() + nanoseconds * hertz / 1_000_000_000;
     while crate::arch::timer::now() < until {
         core::hint::spin_loop();
     }
@@ -445,8 +445,8 @@ fn a_stalled_drainers_last_line_reaches_the_wire_with_no_line_after_it() {
     // The stall test needs `STALL_NANOSECONDS` and the poll runs once a second; three seconds bounds
     // both with room for a loaded emulator. The poll may run on another core and writes the text
     // and its newline separately, so the loop waits for the whole line, not the first byte.
-    let hz = crate::arch::timer::frequency();
-    let until = crate::arch::timer::now() + 3 * hz;
+    let hertz = crate::arch::timer::frequency();
+    let until = crate::arch::timer::now() + 3 * hertz;
     while crate::console::bytes_written() - held_written < line.len() as u64
         && crate::arch::timer::now() < until
     {

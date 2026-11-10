@@ -80,7 +80,7 @@ pub(super) fn fs_throughput() {
         }
         let _ = sched::ipc_receive(ready);
     }
-    let hz = crate::arch::timer::frequency();
+    let hertz = crate::arch::timer::frequency();
     for _ in 0..filesystem_fixture::throughput::PHASES {
         let [ticks, transfers, phase, ..] = sched::ipc_receive(report);
         let Some(name) = filesystem_fixture::throughput::name(phase) else {
@@ -91,7 +91,7 @@ pub(super) fn fs_throughput() {
         // Hundredths of MiB/s. Zero ticks is a broken run, reported as zero rather than divided.
         let bytes = transfers * filesystem_fixture::throughput::UNIT as u64;
         let hundredths = bytes
-            .checked_mul(hz)
+            .checked_mul(hertz)
             .and_then(|v| v.checked_mul(100))
             .and_then(|v| v.checked_div(ticks))
             .map(|v| v >> 20)
@@ -202,7 +202,7 @@ pub(super) fn rg_search() {
     };
     use filesystem_contract::dir;
     use filesystem_fixture::walk as tree;
-    let hz = crate::arch::timer::frequency();
+    let hertz = crate::arch::timer::frequency();
     let mut searched = [0u64; RG_SEARCH_RUNS];
     let mut whole = [0u64; RG_SEARCH_RUNS];
     for run in 0..=RG_SEARCH_RUNS {
@@ -244,12 +244,15 @@ pub(super) fn rg_search() {
             continue;
         }
         searched[run - 1] = nanoseconds;
-        whole[run - 1] = (ended - started) * 1_000_000_000 / hz;
+        whole[run - 1] = (ended - started) * 1_000_000_000 / hertz;
     }
     searched.sort_unstable();
     whole.sort_unstable();
     let mid = RG_SEARCH_RUNS / 2;
-    println!("bench: rg_search {} 1", searched[mid] * hz / 1_000_000_000);
+    println!(
+        "bench: rg_search {} 1",
+        searched[mid] * hertz / 1_000_000_000
+    );
     println!(
         "bench-probe: rg_search {} ns by rg's own clock, {} to {}",
         searched[mid],
@@ -319,7 +322,7 @@ fn walk_rows(report: crate::sched::RendezvousId, row: &str) {
         }
     }
     let text = core::str::from_utf8(&text[..len]).unwrap_or("");
-    let hz = crate::arch::timer::frequency();
+    let hertz = crate::arch::timer::frequency();
     for line in text.lines() {
         if let Some(rest) = line.strip_prefix("walk whole ") {
             let nanoseconds: u64 = rest
@@ -328,7 +331,7 @@ fn walk_rows(report: crate::sched::RendezvousId, row: &str) {
                 .and_then(|n| n.parse().ok())
                 .unwrap_or(0);
             // The program timed in nanoseconds; the row is in counter ticks like every other.
-            println!("bench: {row} {} 1", nanoseconds * hz / 1_000_000_000);
+            println!("bench: {row} {} 1", nanoseconds * hertz / 1_000_000_000);
         }
         if let Some(rest) = line.strip_prefix("walk ") {
             println!("bench-probe: {row} {rest}");

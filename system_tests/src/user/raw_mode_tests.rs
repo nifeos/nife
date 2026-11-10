@@ -391,9 +391,9 @@ fn a_keystroke_edited_by_the_client_costs_two_more_round_trips() {
     );
     rawmode(w.term, false);
 
-    let hz = crate::arch::timer::frequency();
+    let hertz = crate::arch::timer::frequency();
     let nanoseconds =
-        |ticks: u64| (ticks as u128 * 1_000_000_000 / hz.max(1) as u128 / N as u128) as u64;
+        |ticks: u64| (ticks as u128 * 1_000_000_000 / hertz.max(1) as u128 / N as u128) as u64;
     crate::println!(
         "measure: keystroke cooked {} ns, raw with client echo {} ns (per keystroke, {} each)",
         nanoseconds(cooked),

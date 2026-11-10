@@ -27,7 +27,7 @@ pub const TICK_HERTZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
 /// **The 8254 PIT's input frequency**, 1193182 Hz, and the one rate on a PC that is a fixed number
 /// rather than something to measure. It is 315/22 MHz divided by 12, which is to say it descends
 /// from the NTSC colour-burst crystal that made 1981's parts cheap.
-const PIT_HZ: u64 = 1_193_182;
+const PIT_HERTZ: u64 = 1_193_182;
 
 /// How long one calibration window is. Ten milliseconds is a compromise: long enough that the
 /// polling loop's own overhead is noise, short enough that the PIT's 16-bit counter holds it (its
@@ -82,19 +82,19 @@ const PIT_CHANNEL0_RATE: u8 = 0b0011_0100;
 pub(crate) const PIT_INTERRUPT_NUMBER: u32 = 0;
 
 /// The TSC's frequency in hertz, established by [`initialize_frequency`]. Zero until then.
-static TSC_HZ: AtomicU64 = AtomicU64::new(0);
+static TSC_HERTZ: AtomicU64 = AtomicU64::new(0);
 
-/// Whether [`TSC_HZ`] came from `CPUID` leaf `0x15` (`true`) or from PIT calibration (`false`).
-/// Set by [`initialize_frequency`] alongside `TSC_HZ` itself; meaningless before that (reads
+/// Whether [`TSC_HERTZ`] came from `CPUID` leaf `0x15` (`true`) or from PIT calibration (`false`).
+/// Set by [`initialize_frequency`] alongside `TSC_HERTZ` itself; meaningless before that (reads
 /// `false`, the calibration path's own value, which is also what every QEMU boot actually takes:
-/// see `arch::x86_64::isa::tsc_crystal_hz`'s own docs for why leaf 0x15 is empirically unavailable
+/// see `arch::x86_64::isa::tsc_crystal_hertz`'s own docs for why leaf 0x15 is empirically unavailable
 /// under `-cpu max`).
-static TSC_HZ_FROM_CPUID: core::sync::atomic::AtomicBool =
+static TSC_HERTZ_FROM_CPUID: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
 /// The local APIC timer's frequency in hertz, at the divider `interrupt_controller` programs. Zero
 /// until measured.
-static APIC_TIMER_HZ: AtomicU64 = AtomicU64::new(0);
+static APIC_TIMER_HERTZ: AtomicU64 = AtomicU64::new(0);
 
 /// Every window's implied TSC rate, in the order timed; only the first [`CALIBRATION_TAKEN`] mean
 /// anything. Their spread says whether the host fought this boot's calibration, and the boot line
@@ -141,7 +141,7 @@ fn rdtsc() -> u64 {
 /// frequency and a timer that never fires, which is why it is done here rather than at the call
 /// site.
 fn measure_against_the_pit() -> (u64, u32) {
-    let count = (PIT_HZ * CALIBRATION_MILLISECONDS / 1000) as u16;
+    let count = (PIT_HERTZ * CALIBRATION_MILLISECONDS / 1000) as u16;
 
     // Start the APIC timer as a free-running masked counter from its maximum, so it cannot wrap
     // during a window this short: at any plausible bus clock, 0xffffffff ticks divided by 16 is
@@ -206,7 +206,7 @@ pub(super) fn calibration_has_converged(samples: &[u64]) -> bool {
 /// Establish the TSC's rate and measure the local APIC timer against the PIT. The arch contract's
 /// boot-info pointer is ignored: the numbers come from the machine.
 ///
-/// [`crate::arch::x86_64::isa::tsc_crystal_hz`] (`CPUID` leaf 0x15) is asked first for the TSC,
+/// [`crate::arch::x86_64::isa::tsc_crystal_hertz`] (`CPUID` leaf 0x15) is asked first for the TSC,
 /// and has why QEMU always takes the calibrated path. The windows run regardless, because the APIC
 /// timer's rate has no `CPUID` source.
 ///
@@ -247,18 +247,18 @@ pub(crate) fn initialize_frequency(boot_info_pointer: usize) {
     }
     CALIBRATION_TAKEN.store(taken, Ordering::Relaxed);
 
-    APIC_TIMER_HZ.store(u64::from(apic_delta) * per_second, Ordering::Relaxed);
+    APIC_TIMER_HERTZ.store(u64::from(apic_delta) * per_second, Ordering::Relaxed);
 
-    let (hz, from_cpuid) = match super::isa::tsc_crystal_hz() {
-        Some(hz) => (hz, true),
+    let (hertz, from_cpuid) = match super::isa::tsc_crystal_hertz() {
+        Some(hertz) => (hertz, true),
         None => (tsc_delta * per_second, false),
     };
 
     // A measured rate can be wrong with nothing broken, so it is held to the band the other
     // architectures' rates are (`counter_frequency_contract::is_plausible`).
     assert!(
-        counter_frequency_contract::is_plausible(hz),
-        "the TSC rate came back as {hz} Hz ({}), which no real part runs at",
+        counter_frequency_contract::is_plausible(hertz),
+        "the TSC rate came back as {hertz} Hz ({}), which no real part runs at",
         if from_cpuid {
             "CPUID leaf 0x15"
         } else {
@@ -266,8 +266,8 @@ pub(crate) fn initialize_frequency(boot_info_pointer: usize) {
         }
     );
 
-    TSC_HZ.store(hz, Ordering::Relaxed);
-    TSC_HZ_FROM_CPUID.store(from_cpuid, Ordering::Relaxed);
+    TSC_HERTZ.store(hertz, Ordering::Relaxed);
+    TSC_HERTZ_FROM_CPUID.store(from_cpuid, Ordering::Relaxed);
 
     let calibration = calibration();
     crate::println!(
@@ -289,8 +289,8 @@ pub(crate) fn initialize_frequency(boot_info_pointer: usize) {
 /// `interrupt_controller::enable` arms the entry the MADT's override names.
 ///
 /// Name: provisional (milestone 161 (the kernel port)).
-pub fn start_pit_ticking(hz: u64) -> u64 {
-    let divisor = (PIT_HZ / hz).clamp(1, u16::MAX as u64) as u16;
+pub fn start_pit_ticking(hertz: u64) -> u64 {
+    let divisor = (PIT_HERTZ / hertz).clamp(1, u16::MAX as u64) as u16;
 
     // SAFETY: the PIT is a fixed ISA device present on every x86 machine, and these three writes
     // are its documented programming sequence: the mode/command byte first (which latches the
@@ -302,7 +302,7 @@ pub fn start_pit_ticking(hz: u64) -> u64 {
         out8(PIT_CHANNEL0, (divisor >> 8) as u8);
     }
 
-    PIT_HZ / divisor as u64
+    PIT_HERTZ / divisor as u64
 }
 
 /// The counter's current value: the TSC.
@@ -318,8 +318,8 @@ pub fn now() -> u64 {
 /// time any process is loaded: `initialize_frequency` runs early in the boot, well before the
 /// first call to `kernel::user::load`.
 pub(crate) fn frequency_checked() -> Option<u64> {
-    let hz = TSC_HZ.load(Ordering::Relaxed);
-    (hz != 0).then_some(hz)
+    let hertz = TSC_HERTZ.load(Ordering::Relaxed);
+    (hertz != 0).then_some(hertz)
 }
 
 /// How many counter ticks make a second.
@@ -335,9 +335,9 @@ pub fn frequency() -> u64 {
 /// boot print and this milestone's own evidence. `"uncalibrated"` before [`initialize_frequency`]
 /// has run, which [`frequency`] itself would panic on; this never panics.
 pub(crate) fn frequency_source() -> &'static str {
-    if TSC_HZ.load(Ordering::Relaxed) == 0 {
+    if TSC_HERTZ.load(Ordering::Relaxed) == 0 {
         "uncalibrated"
-    } else if TSC_HZ_FROM_CPUID.load(Ordering::Relaxed) {
+    } else if TSC_HERTZ_FROM_CPUID.load(Ordering::Relaxed) {
         "cpuid leaf 0x15"
     } else {
         "PIT calibration"
@@ -394,7 +394,7 @@ pub fn interval() -> u64 {
 
 /// The local APIC timer's measured frequency, for the boot print. Zero before calibration.
 pub(crate) fn apic_timer_frequency() -> u64 {
-    APIC_TIMER_HZ.load(Ordering::Relaxed)
+    APIC_TIMER_HERTZ.load(Ordering::Relaxed)
 }
 
 /// **Arm the periodic tick.** The local APIC timer, at [`TICK_HERTZ`], on the vector
@@ -406,12 +406,12 @@ pub(crate) fn apic_timer_frequency() -> u64 {
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
 /// design/naming/acronyms-and-abbreviations.md.
 pub fn initialize() {
-    let apic_hz = APIC_TIMER_HZ.load(Ordering::Relaxed);
+    let apic_hertz = APIC_TIMER_HERTZ.load(Ordering::Relaxed);
     assert!(
-        apic_hz != 0,
+        apic_hertz != 0,
         "the local APIC timer's rate has not been measured yet (call initialize_frequency first)",
     );
-    let count = u32::try_from(apic_hz / TICK_HERTZ)
+    let count = u32::try_from(apic_hertz / TICK_HERTZ)
         .expect("one tick period does not fit the APIC timer's 32-bit initial count");
     assert!(
         count != 0,

@@ -40,10 +40,10 @@ fn a_userspace_program_reads_the_frequency_the_kernel_measured() {
 /// here rather than in a boot nobody watched.
 #[test_case]
 fn the_machines_own_rate_is_inside_the_plausibility_band() {
-    let hz = crate::arch::timer::frequency();
+    let hertz = crate::arch::timer::frequency();
     assert!(
-        counter_frequency_contract::is_plausible(hz),
-        "this machine's counter runs at {hz} Hz, which the plausibility band refuses; either the \
+        counter_frequency_contract::is_plausible(hertz),
+        "this machine's counter runs at {hertz} Hz, which the plausibility band refuses; either the \
          band is wrong or the boot should not have got this far",
     );
 }

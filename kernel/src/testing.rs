@@ -627,14 +627,14 @@ fn check_test_ceiling() {
     // re-enter this path and report twice.
     TEST_START.store(0, Ordering::Relaxed);
 
-    let hz = crate::arch::timer::frequency().max(1);
+    let hertz = crate::arch::timer::frequency().max(1);
     println!();
     println!(
         "WATCHDOG: test exceeded its {} s budget (ran {} s) WHILE MAKING PROGRESS: a livelock, not a \
          lost wakeup. The no-progress heartbeat cannot see this, which is why the per-test ceiling \
          exists. If this test is honestly this slow, give it an entry in test_times::SLOW_TESTS.",
-        budget / hz,
-        elapsed / hz,
+        budget / hertz,
+        elapsed / hertz,
     );
     if let Some(name) = current_test_name() {
         println!("  test: {name}");

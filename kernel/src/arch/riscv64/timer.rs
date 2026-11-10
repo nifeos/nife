@@ -28,7 +28,7 @@ pub const TICK_HERTZ: u64 = if cfg!(feature = "bench") { 1 } else { 100 };
 /// Holds zero until [`initialize_frequency`] runs, and its readers ([`frequency`], [`interval`])
 /// assert it nonzero, so a boot that never read the machine panics rather than running at a guessed
 /// rate.
-static TIMEBASE_HZ: AtomicU64 = AtomicU64::new(0);
+static TIMEBASE_HERTZ: AtomicU64 = AtomicU64::new(0);
 
 /// Read the counter rate out of the device tree at `dtb_ptr` (a physical address).
 ///
@@ -50,26 +50,26 @@ pub(crate) fn initialize_frequency(dtb_ptr: usize) {
     .expect("device tree is unreadable");
     let list =
         machine_discovery::cpu_list::CpuList::from_device_tree(&dt).expect("cannot read /cpus");
-    let hz = list
+    let hertz = list
         .timebase_hertz
         .expect("the device tree states no /cpus/timebase-frequency, and RISC-V has no CNTFRQ_EL0");
     assert!(
-        counter_frequency_contract::is_plausible(hz),
-        "the device tree states a timebase of {hz} Hz, which no real part runs at: a counter that \
+        counter_frequency_contract::is_plausible(hertz),
+        "the device tree states a timebase of {hertz} Hz, which no real part runs at: a counter that \
          slow cannot drive a tick, and one that fast was never measured"
     );
-    TIMEBASE_HZ.store(hz, Ordering::Relaxed);
+    TIMEBASE_HERTZ.store(hertz, Ordering::Relaxed);
 }
 
 /// The counter rate the machine stated. Panics if read before [`initialize_frequency`], as
 /// `arch::isa::get` does.
 fn timebase_hertz() -> u64 {
-    let hz = TIMEBASE_HZ.load(Ordering::Relaxed);
+    let hertz = TIMEBASE_HERTZ.load(Ordering::Relaxed);
     assert!(
-        hz > 0,
+        hertz > 0,
         "arch::timer used before arch::timer::initialize_frequency"
     );
-    hz
+    hertz
 }
 
 /// `sie.STIE`, bit 5: the Supervisor Timer Interrupt Enable.
@@ -120,8 +120,8 @@ pub fn frequency() -> u64 {
 /// The non-panicking [`frequency`], for the timebase page (`kernel::user::timebase_page_phys`), the
 /// same as `arch::x86_64::timer::frequency_checked`. It is `Some` before any process loads.
 pub(crate) fn frequency_checked() -> Option<u64> {
-    let hz = TIMEBASE_HZ.load(Ordering::Relaxed);
-    (hz != 0).then_some(hz)
+    let hertz = TIMEBASE_HERTZ.load(Ordering::Relaxed);
+    (hertz != 0).then_some(hertz)
 }
 
 /// Counter ticks between two timer interrupts (the reload interval): one tick period.
