@@ -68,6 +68,24 @@ rights bit beyond what invoking any object needs.
 - The kernel does not quiesce devices first, so it cuts off a DMA transfer in flight. After `SYNC`
   the block servers are idle, and nothing else writes to persistent storage.
 
+## A board's PMIC route runs in userspace
+
+Ruled 2026-11-10 (UTC). A board that resets through its power controller does so from userspace,
+not from the reboot object. On a JH7110 the I2C master and the AXP15060 PMIC write leave the kernel
+for a userspace PMIC route: a process that holds the I2C controller's page as a `DeviceFrame` and
+answers one request, reset the board.
+
+- The image's `reboot` calls the route after the `SYNC` and before `REBOOT`. A write the PMIC
+  honors never returns.
+- `reboot` waits for the route with a timeout. If the route is absent, refuses, or does not reset
+  the board within the timeout, `reboot` invokes `REBOOT`, the plain firmware route above.
+- The reboot object itself stays as clause 1 states it: no payload and no device. `REBOOT` calls
+  `arch::reboot` and nothing board-specific.
+
+Until milestone 1062 (the device control planes leave the kernel) lands,
+`kernel/src/reboot/designware_i2c.rs` and `kernel/src/reboot/pmic.rs` still run the PMIC write
+inside `REBOOT`. The route's name and its request are provisional, like the object's.
+
 ## How `reboot` syncs: a sync-only capability
 
 For an ordinary client, `fs::SYNC` needs a handle carrying `dir::WRITE`, which is also the right to
