@@ -146,6 +146,10 @@ pub mod header {
     pub const COUNT: usize = IMAGE_BYTE_COUNTS + super::image::COUNT;
 }
 
+// The header holds the entropy source and then one length per image, and nothing past them.
+const _: () = assert!(header::COUNT - header::IMAGE_BYTE_COUNTS == image::COUNT);
+const _: () = assert!(header::ENTROPY_SOURCE < header::IMAGE_BYTE_COUNTS);
+
 /// **What the boot's entropy service draws from**, so the `entropy` check can say.
 ///
 /// Name: provisional (milestone 1063's lane, 2026-11-10 UTC).
@@ -231,12 +235,5 @@ mod tests {
         assert!(images_fit(&lengths));
         assert!(!images_fit(&[IMAGES_MAXIMUM_BYTES, 0, 0]));
         assert!(images_fit(&[IMAGES_MAXIMUM_BYTES - PAGE, 0, 0]));
-    }
-
-    /// The header holds the entropy source and then one length per image, and nothing past them.
-    #[test]
-    fn the_header_has_a_length_for_each_image() {
-        assert_eq!(header::COUNT - header::IMAGE_BYTE_COUNTS, image::COUNT);
-        assert!(header::ENTROPY_SOURCE < header::IMAGE_BYTE_COUNTS);
     }
 }
