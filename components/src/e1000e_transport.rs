@@ -32,7 +32,6 @@ use driver_process_contract::e1000e::Handoff;
 use e1000e::{
     DataPlane, DirectMemoryAccessRegion, MAXIMUM_FRAME_BYTES, TAIL_IN_PAGE, Tails, layout,
 };
-use startup_page_contract::kind;
 use user_mode_runtime::mapped_window::{PAGE, doorbell_barrier};
 use user_mode_runtime::startup_window::StartupWindow;
 
@@ -46,16 +45,16 @@ pub(crate) const POLL_MS: u64 = 1;
 // read/write, and one device-typed page for each queue.
 static PLANE: StartupWindow = unsafe {
     StartupWindow::new(
-        kind::E1000E_DATA_PLANE,
+        ::driver_process_contract::e1000e::DATA_PLANE_KIND,
         layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * PAGE,
     )
 };
 // SAFETY: as above.
 static RECEIVE_QUEUE: StartupWindow =
-    unsafe { StartupWindow::new(kind::E1000E_RECEIVE_QUEUE_PAGE, PAGE) };
+    unsafe { StartupWindow::new(::driver_process_contract::e1000e::RECEIVE_QUEUE_KIND, PAGE) };
 // SAFETY: as above.
 static TRANSMIT_QUEUE: StartupWindow =
-    unsafe { StartupWindow::new(kind::E1000E_TRANSMIT_QUEUE_PAGE, PAGE) };
+    unsafe { StartupWindow::new(::driver_process_contract::e1000e::TRANSMIT_QUEUE_KIND, PAGE) };
 
 /// The region, through its window: every offset bounds-checked by `MappedWindow`.
 struct Plane;

@@ -51,7 +51,6 @@ use extensible_host_controller_interface::{
     TransferRequestBlockPlacement, completion, context, direct_memory_access, port, registers,
 };
 use line_editor::proto;
-use startup_page_contract::kind;
 use usb::boot_keyboard::{BootReport, REPORT_LEN, changes};
 use usb::descriptor::{self, ConfigurationHeader, DeviceDescriptor};
 use usb::request::SetupPacket;
@@ -74,7 +73,7 @@ const REPORT: u64 = 2;
 // interrupter-0 and doorbell registers, which `register_window` refused to start it without.
 static REGS: StartupWindow = unsafe {
     StartupWindow::new(
-        kind::EXTENSIBLE_HOST_CONTROLLER_INTERFACE_REGISTERS,
+        ::driver_process_contract::extensible_host_controller_interface::REGISTER_KIND,
         driver_process_contract::extensible_host_controller_interface::MAXIMUM_REGISTER_PAGES
             * PAGE_BYTES,
     )
@@ -82,7 +81,7 @@ static REGS: StartupWindow = unsafe {
 // SAFETY: the kernel lists the DMA window and maps its WORK_PAGES pages read/write before `_start`.
 static DMA: StartupWindow = unsafe {
     StartupWindow::new(
-        kind::EXTENSIBLE_HOST_CONTROLLER_INTERFACE_DATA_PLANE,
+        ::driver_process_contract::extensible_host_controller_interface::WORK_KIND,
         driver_process_contract::extensible_host_controller_interface::WORK_PAGES * PAGE_BYTES,
     )
 };

@@ -25,7 +25,6 @@ use designware_ethernet::{
     DataPlane, DirectMemoryAccessRegion, MAXIMUM_FRAME_BYTES, Tails, layout, registers,
 };
 use driver_process_contract::designware_ethernet::Handoff;
-use startup_page_contract::kind;
 use user_mode_runtime::mapped_window::{PAGE, doorbell_barrier};
 use user_mode_runtime::startup_window::StartupWindow;
 
@@ -34,14 +33,14 @@ use user_mode_runtime::startup_window::StartupWindow;
 // region read/write, and the controller's DMA register page device-typed.
 static PLANE: StartupWindow = unsafe {
     StartupWindow::new(
-        kind::DESIGNWARE_ETHERNET_DATA_PLANE,
+        ::driver_process_contract::designware_ethernet::DATA_PLANE_KIND,
         layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * PAGE,
     )
 };
 // SAFETY: as above.
 static DMA: StartupWindow = unsafe {
     StartupWindow::new(
-        kind::DESIGNWARE_ETHERNET_DIRECT_MEMORY_ACCESS_REGISTER_PAGE,
+        ::driver_process_contract::designware_ethernet::DIRECT_MEMORY_ACCESS_REGISTER_PAGE_KIND,
         PAGE,
     )
 };

@@ -80,6 +80,6 @@ impl StartupWindow {
             "the startup page lists {window:?}, shorter than the {} bytes this program uses",
             self.len,
         );
-        window.address
+        window.virtual_address
     }
 }

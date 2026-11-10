@@ -45,7 +45,6 @@ use filesystem_contract::blk;
 use non_volatile_memory_express::{
     Command, Completion, CompletionQueue, Doorbell, Namespace, SubmissionQueue,
 };
-use startup_page_contract::kind;
 use user_mode_runtime::mapped_window::PAGE;
 use user_mode_runtime::startup_window::StartupWindow;
 use user_mode_runtime::{exit, receive_request, reply, send};
@@ -82,7 +81,7 @@ const TRANSFER_OFF: u64 = 2 * PAGE;
 // process.
 static DATA: StartupWindow = unsafe {
     StartupWindow::new(
-        kind::NON_VOLATILE_MEMORY_EXPRESS_DATA_PLANE,
+        ::driver_process_contract::non_volatile_memory_express::DATA_PLANE_KIND,
         TRANSFER_OFF + (CLIENT_WINDOWS * TRANSFER_BLOCKS) as u64 * PAGE,
     )
 };
@@ -90,8 +89,12 @@ static DATA: StartupWindow = unsafe {
 /// The doorbell page. Device-typed, so every access is uncached and unreordered, which is what a
 /// doorbell needs: a cached write is a command the controller never hears about.
 // SAFETY: the spawner lists the doorbell page and maps it device-typed before `_start` runs.
-static BELLS: StartupWindow =
-    unsafe { StartupWindow::new(kind::NON_VOLATILE_MEMORY_EXPRESS_DOORBELL_PAGE, PAGE) };
+static BELLS: StartupWindow = unsafe {
+    StartupWindow::new(
+        ::driver_process_contract::non_volatile_memory_express::DOORBELL_PAGE_KIND,
+        PAGE,
+    )
+};
 
 /// The one I/O queue pair the kernel's admin plane created. Ringing any other queue's doorbell
 /// would be ringing a queue that does not exist.

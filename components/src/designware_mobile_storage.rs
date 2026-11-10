@@ -33,7 +33,6 @@ use designware_mobile_storage::sd::{self, Card};
 use designware_mobile_storage::{command as c, registers};
 use driver_process_contract::designware_mobile_storage::Handoff;
 use filesystem_contract::blk;
-use startup_page_contract::kind;
 use user_mode_runtime::mapped_window::PAGE;
 use user_mode_runtime::startup_window::StartupWindow;
 use user_mode_runtime::{exit, receive_request, reply, send};
@@ -58,14 +57,18 @@ const EROFS: i32 = 30;
 /// The controller's first page, device-typed, where the startup page says the spawner mapped it.
 // SAFETY: the spawner (`designware_mobile_storage_service`) lists this page and maps it
 // device-typed before `_start` runs.
-static REGISTERS: StartupWindow =
-    unsafe { StartupWindow::new(kind::DESIGNWARE_MOBILE_STORAGE_REGISTER_PAGE, PAGE) };
+static REGISTERS: StartupWindow = unsafe {
+    StartupWindow::new(
+        ::driver_process_contract::designware_mobile_storage::REGISTER_KIND,
+        PAGE,
+    )
+};
 
 /// The request buffer, `blk::TRANSFER_BLOCKS` pages.
 // SAFETY: the spawner lists this window and maps all of it read/write before `_start` runs.
 static TRANSFER: StartupWindow = unsafe {
     StartupWindow::new(
-        kind::DESIGNWARE_MOBILE_STORAGE_TRANSFER,
+        ::driver_process_contract::designware_mobile_storage::TRANSFER_KIND,
         blk::TRANSFER_MAXIMUM as u64,
     )
 };
