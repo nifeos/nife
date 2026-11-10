@@ -146,6 +146,49 @@ struct Admin {
     stack: [u64; ADMIN_EXTRA_STACK_PAGES],
 }
 
+/// How many spawn-time mappings the admin process gets: BAR0's pages, the admin pages, and the
+/// extra stack.
+const ADMIN_MAPS: usize =
+    (REGISTER_PAGES + ADMINISTRATION_PAGES) as usize + ADMIN_EXTRA_STACK_PAGES;
+
+/// The admin process's spawn-time mappings: BAR0's [`REGISTER_PAGES`] pages as device memory at
+/// [`REGISTERS_VA`], the run's first [`ADMINISTRATION_PAGES`] pages at [`ADMIN_QUEUES_VA`], and
+/// `stack` below [`USER_STACK_VA`].
+fn admin_maps(
+    bar0: u64,
+    dma: u64,
+    stack: &[u64; ADMIN_EXTRA_STACK_PAGES],
+) -> [Mapping; ADMIN_MAPS] {
+    let mut maps = [Mapping {
+        va: 0,
+        phys: 0,
+        flags: Flags::user_data(),
+    }; ADMIN_MAPS];
+    // Device flags for BAR0, because a cached or reordered register write is one the controller
+    // never sees.
+    for (page, m) in maps.iter_mut().take(REGISTER_PAGES as usize).enumerate() {
+        *m = Mapping {
+            va: REGISTERS_VA + page as u64 * page_frames::FRAME_SIZE,
+            phys: bar0 + page as u64 * page_frames::FRAME_SIZE,
+            flags: Flags::user_device(),
+        };
+    }
+    super::fs_service::map_channel(
+        &mut maps[REGISTER_PAGES as usize..],
+        ADMIN_QUEUES_VA,
+        dma,
+        ADMINISTRATION_PAGES as usize,
+    );
+    for (k, &frame) in stack.iter().enumerate() {
+        maps[(REGISTER_PAGES + ADMINISTRATION_PAGES) as usize + k] = Mapping {
+            va: USER_STACK_VA - (k as u64 + 1) * page_frames::FRAME_SIZE,
+            phys: frame,
+            flags: Flags::user_data(),
+        };
+    }
+    maps
+}
+
 /// **Start the admin process on a found and confined controller, and wait for its report.**
 ///
 /// It is handed BAR0's [`REGISTER_PAGES`] pages and the run's first [`ADMINISTRATION_PAGES`] pages as
@@ -172,35 +215,8 @@ fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
             .expect("no frame for the NVMe admin process's stack")
             .addr();
     }
-    const MAPS: usize = (REGISTER_PAGES + ADMINISTRATION_PAGES) as usize + ADMIN_EXTRA_STACK_PAGES;
     let thread = crate::sched::spawn(move || {
-        let mut maps = [Mapping {
-            va: 0,
-            phys: 0,
-            flags: Flags::user_data(),
-        }; MAPS];
-        // Device flags for BAR0, because a cached or reordered register write is one the
-        // controller never sees.
-        for (page, m) in maps.iter_mut().take(REGISTER_PAGES as usize).enumerate() {
-            *m = Mapping {
-                va: REGISTERS_VA + page as u64 * page_frames::FRAME_SIZE,
-                phys: bar0 + page as u64 * page_frames::FRAME_SIZE,
-                flags: Flags::user_device(),
-            };
-        }
-        super::fs_service::map_channel(
-            &mut maps[REGISTER_PAGES as usize..],
-            ADMIN_QUEUES_VA,
-            dma,
-            ADMINISTRATION_PAGES as usize,
-        );
-        for (k, &frame) in stack.iter().enumerate() {
-            maps[(REGISTER_PAGES + ADMINISTRATION_PAGES) as usize + k] = Mapping {
-                va: USER_STACK_VA - (k as u64 + 1) * page_frames::FRAME_SIZE,
-                phys: frame,
-                flags: Flags::user_data(),
-            };
-        }
+        let maps = admin_maps(bar0, dma, &stack);
         // In `administration_slots` order: the grants are the process's whole authority.
         let grant_list = [
             rendezvous_capability(report, Rights::WRITE),
