@@ -72,8 +72,8 @@ The three words are full for the drivers that hold the most windows:
 | DesignWare mobile storage | role, clock, bus width, queue depth | window's first sector | window length |
 | xHCI | DMA physical base | DMA pages and register mask | free |
 
-So the spawner has no room to tell four of the five drivers where their windows are. The fifth has one free word for a data plane and up to sixteen register pages. Smaller components
-(the keyboard driver, the credentialer, the disk tree) leave words free, but packing an address
+So the spawner has no room to tell four of the five drivers where their windows are. The fifth, xHCI, has one free word, room for its two window addresses. Smaller
+components (the keyboard driver, the credentialer, the disk tree) leave words free as well, but packing an address
 into whichever word is free would mint one more wire format per component and would still leave
 the drivers unconverted.
 
