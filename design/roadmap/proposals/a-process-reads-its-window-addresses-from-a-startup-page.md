@@ -113,9 +113,9 @@ The options:
 
 - **A. A startup page,** as above. Reopens §15's deferral of `BootInfo`.
 - **B. The component maps its own windows.** The spawner grants each window as a frame capability
-  and the component maps it with `address_space::MAP_INTO` where its own allocator says, as a
-  Fuchsia process maps the VMOs in its bootstrap message and a Genode component attaches its
-  dataspaces (both recalled, not reread). No address stays fixed at all. It widens every component's
+  and the component maps it with `address_space::MAP_INTO` where its own allocator says. A
+  Fuchsia process maps the VMOs in its bootstrap message this way, and a Genode component attaches
+  its dataspaces so (both recalled, not reread). No address stays fixed at all. It widens every component's
   authority (a capability over its own address space with write rights, so it may remap its own
   pages), spends a capability slot per window, and moves mapping and its failure paths
   into every component.
