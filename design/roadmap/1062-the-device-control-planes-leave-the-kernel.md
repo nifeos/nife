@@ -77,8 +77,8 @@ build feature and no boot parameter for it, and the choice can differ per device
   changes.
 - Direct. The driver holds its device's register pages as plain device frames, listed on its
   startup page, and its DMA region. It resets the device, negotiates features, sets up each queue
-  in the common configuration and writes its doorbells itself, as the xHCI driver does with its
-  register file (milestone 242) and as the NVMe admin process does with BAR0 (step 4). The kernel
+  in the common configuration and writes its doorbells itself. The xHCI driver does the same with
+  its register file (milestone 242), and the NVMe admin process with BAR0 (step 4). The kernel
   holds no `Device` entry and no shadow page for it, and validates nothing. The IOMMU domain is the
   confinement.
 
@@ -97,7 +97,7 @@ its interrupt and read its virtio capability list. For a direct grant the starte
 things, in this order.
 
 1. It confines the function with `iommu::confine` over the driver's DMA region alone, before any
-   queue exists. No shadow page is mapped, because none exists.
+   queue exists. It maps no shadow page, because none exists.
 2. It maps, device-typed, the pages that hold the four virtio-pci structures the capability list
    names (common configuration, notify, ISR and device configuration, virtio 1.2 section 4.1.4),
    and nothing else of the BARs. A page that also holds the function's MSI-X table or pending-bit
@@ -107,7 +107,7 @@ things, in this order.
 3. It writes the startup page: one window for each run of register pages and one for the DMA
    region. The handoff carries what a window cannot: each structure's byte offset in its window,
    `notify_off_multiplier`, the MSI-X table entry the kernel armed (or none), and the region's bus
-   address, which is its physical address because every domain is an identity map
+   address. That address is the physical one, because every domain is an identity map
    (`kernel/src/iommu.rs`). The window kinds and the packed handoff live in a new
    `driver_process_contract::virtio` module (provisional) that both sides use (§311 (a contract is
    code, not prose)).
@@ -151,8 +151,8 @@ A direct driver takes the same line or vector a mediated one does.
   the line, as `Transport::read_reg` does for a mediated device.
 
 A line routes to one driver (`kernel/src/sched/interrupt_route.rs`), so a direct driver meets the
-limit a mediated one meets, and milestone 1065 (several drivers share an interrupt line) lifts it
-for both. Until 1065 lands, a direct driver's test reads its used ring before it blocks, as the
+limit a mediated one meets, and the work that lets several drivers share an interrupt line lifts
+it for both. Until that lands, a direct driver's test reads its used ring before it blocks, as the
 entropy driver does.
 
 ### What stays in `kernel/src/virtio.rs`
@@ -185,15 +185,15 @@ its own tests. Whatever the ruling, the rule lives in the starter and never in t
 - Linux VFIO. A userspace driver maps the device's regions at the offsets the device descriptor
   lists and receives interrupts through eventfds (`VFIO_DEVICE_SET_IRQS`). The IOMMU group is the
   unit of isolation, because DMA is the greatest risk a userspace driver poses (read:
-  docs.kernel.org, "VFIO"). A virtio-pci function bound to `vfio-pci` is driven from userspace
-  exactly so.
+  docs.kernel.org, "VFIO"). Userspace drives a virtio-pci function bound to `vfio-pci` exactly
+  so.
 - DPDK's virtio poll-mode driver binds the function to `vfio-pci`, in VFIO's no-IOMMU mode where a
   machine has no IOMMU, which trusts the driver (read: the DPDK guide, "Virtio"). That it maps the
-  modern capabilities and writes the common configuration and the doorbells itself is recalled,
-  not re-read.
+  modern capabilities and writes the common configuration and the doorbells itself comes from
+  memory, not from a reading.
 
-nife differs in two ways. The grant is chosen per device when the driver starts, not once per
-boot or per binding. And a device the starter will not hand over keeps a mediated path whose
+nife differs in two ways. A starter chooses the grant per device when the driver starts, not
+once per boot or per binding. And a device the starter will not hand over keeps a mediated path whose
 validator has a Kani proof.
 
 ### An example
@@ -201,7 +201,7 @@ validator has a Kani proof.
 The `x86_64` runner attaches `virtio-blk-pci,iommu_platform=on` behind `intel-iommu`. A starter
 that grants it direct confines its requester id to the driver's DMA region and maps the pages of
 the four structures. QEMU places them at 0x0, 0x1000, 0x2000 and 0x3000 of BAR4, and the MSI-X
-table in BAR1; that is recalled, and the starter reads the capability list rather than relying on
+table in BAR1; that layout comes from memory, and the starter reads the capability list rather than relying on
 it. It lists the pages on the startup page and passes `notify_off_multiplier` 4 and MSI-X entry 0.
 The driver writes 0 to `device_status`, accepts `VERSION_1` and `ACCESS_PLATFORM`, selects queue
 0, writes ring addresses inside its region, enables the queue and sets `DRIVER_OK`. To submit a
@@ -260,14 +260,13 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 4. `script/fastpath-footprint` reports no change. None of these paths is hot, so a change there
    is a finding.
 5. A virtio-pci driver runs on either grant, the kernel's own starters keep the mediated grant
-   until the default is ruled, and CI runs the direct and the mediated path on all three
+   until the architect rules the default, and CI runs the direct and the mediated path on all three
    architectures.
 
 ## Index row
 
 The kernel still carries the control planes of e1000e, the GMAC, NVMe, the JH7110's clock and
 reset block and its PMIC, and reads the x86 CMOS itself. None of that must run at EL1, and none of
-it confines DMA, which is the IOMMU's job. This moves each one to a userspace process, keeps the
-virtio validator for a device granted mediated, lets a starter grant a virtio-pci device's
-registers directly behind the IOMMU, and takes about 1,500 kernel lines and
-two driver crates out of the trusted base.
+it confines DMA, which is the IOMMU's job. This moves each one to a userspace process and takes about 1,500 kernel lines and
+two driver crates out of the trusted base. The virtio validator stays for a device granted
+mediated, and a starter may grant a virtio-pci device's registers directly behind the IOMMU.
