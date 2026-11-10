@@ -248,12 +248,47 @@ pub fn current_capability(
 /// Hand the current thread a capability. **The only way authority ever enters a process.**
 ///
 /// The running thread's own table, under its own lock and not `IPC_TABLES`, as [`current_capability`].
+/// On `x86_64` a `PortRange` with `WRITE` also becomes the thread's port grant
+/// ([`install_current_port_grant`]), as one placed in an embryo by `CAPABILITY_INSERT` does.
 pub fn grant(
     capability: crate::capability_object::Capability,
 ) -> Result<u64, crate::capability_object::Error> {
-    current_capabilities().map_or(Err(crate::capability_object::Error::NoFreeSlot), |mut t| {
-        t.insert(capability)
-    })
+    let slot = current_capabilities()
+        .map_or(Err(crate::capability_object::Error::NoFreeSlot), |mut t| {
+            t.insert(capability)
+        })?;
+    #[cfg(target_arch = "x86_64")]
+    install_current_port_grant(capability);
+    Ok(slot)
+}
+
+/// Make a `PortRange` the running thread was just granted its port grant, and open its ports on
+/// this core now: a kernel-built process enters user mode on this core with no context switch in
+/// between, so the switch-in install would come too late for its first `in`. A capability that is
+/// not a `PortRange`, or lacks `WRITE`, changes nothing (the bitmap cannot permit `in` without
+/// `out`, §121 (what a device capability is when the device has no page)). `x86_64` only.
+///
+/// Context: takes `IPC_TABLES`, as every TSS bitmap writer does, after the table lock is dropped.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/cmos-read-in-the-clock-service for
+/// milestone 1062 (the device control planes leave the kernel), step 6.
+#[cfg(target_arch = "x86_64")]
+fn install_current_port_grant(capability: crate::capability_object::Capability) {
+    let crate::capability_object::Object::PortRange(base, count) = capability.object else {
+        return;
+    };
+    if !capability
+        .rights
+        .allows(crate::capability_object::Rights::WRITE)
+    {
+        return;
+    }
+    let mut guard = IPC_TABLES.lock();
+    let current = current_thread_id();
+    if let Some(t) = guard.as_mut().and_then(|sched| sched.threads.get_mut(current)) {
+        t.port_range_grant = Some((base, count));
+        crate::arch::segments::set_port_range_grant(Some((base, count)));
+    }
 }
 
 /// `(occupied, capacity)` of the running thread's capability table, for the test runner's repeat
