@@ -5,8 +5,8 @@
 # One definition for the two things that must agree: helpers/merge-drain.sh dequeues a pull request
 # wearing one of these, and helpers/arm.sh refuses to arm one. Before this file each held its own
 # copy of the strings, so a fourth hold added to one would still be armed by the other. The jq side
-# (`nm_held` in helpers/needs-maintainer.jq) cannot source a shell file; helpers/arm-selftest.sh
-# checks that its list names the same three.
+# (`nm_held` in helpers/needs-maintainer.jq) cannot source a shell file; case 9 of
+# helpers/push-requeue-selftest.sh checks that its list names the same three.
 #
 #     HELD_LABEL        needs-architect: a person must decide something.
 #     LANE_HELD_LABEL   held-by-lane: calef has ruled and the lane owes a change. Its own label, so

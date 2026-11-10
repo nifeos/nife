@@ -30,7 +30,7 @@ No step needs an organization secret or variable.
 | Finding filer | built and merged in nifeos/fuzz-host (pull request 5), not installed; it runs as `lane`; unverified against GitHub and systemd | `fuzz-filer` and [docs/fuzz-filer.md](https://github.com/nifeos/fuzz-host/blob/main/docs/fuzz-filer.md), [milestone](../../design/roadmap/1020-the-fuzz-host-files-held-findings-as-advisories.md) |
 | Fix lanes read the advisory: script, skill rule text, replay-line lint | built and merged | `script/read-advisory`, `helpers/replay-line-check.sh`, the developer-lane skill, [milestone](../../design/roadmap/1014-fix-lanes-read-the-advisory.md) |
 | Reader token helper | built and merged in nifeos/fuzz-host (pull request 4) as the `reader` profile of `fuzz-token`, with `issue reader` for the sudo rule; not installed; unverified under a real sudo rule | [docs/fuzz-token-reader.md](https://github.com/nifeos/fuzz-host/blob/main/docs/fuzz-token-reader.md), [milestone](../../design/roadmap/1013-fix-lanes-get-a-one-hour-reader-token.md) |
-| Host replays a red CI shard | not built | [proposal](../../design/roadmap/1038-the-fuzz-host-replays-a-red-ci-shard.md) |
+| Host replays a red CI shard | built; the host runs it once its clone follows main past it, and nothing files a reproduction until the filer is installed | `--replay` in `helpers/continuous-fuzz.sh`, `helpers/fuzz-red-shards.py`, [continuous-host.md](continuous-host.md#replaying-a-red-ci-shard) |
 | `nife-fuzz` App | created, installed, no key placed | App ID 5571801, installation 177641059 |
 | `nife-fuzz-reader` App | created, installed, no key placed | App ID 5571868, installation 177642435 |
 
@@ -372,9 +372,6 @@ repositories to `nifeos/nife` alone.
 - **Nothing after filing, by ruling.** The host does not replay a fix, publish an advisory or move a
   held log. A person publishes each advisory after its fix. The clean-range table therefore keeps
   withholding every range of a slot that held a finding, and the held log stays on the host.
-- **The host replays a red CI shard.** A red `fuzz-guests` job names a commit and a shard, and nobody
-  replays it. The proposal is
-  [the fuzz host replays a red CI shard](../../design/roadmap/1038-the-fuzz-host-replays-a-red-ci-shard.md).
 - **Held rows' seeds under the held directory.** A change to nife's supervisor, recorded in the
   `BUGS` of [`continuous-host.md`](continuous-host.md#bugs).
 

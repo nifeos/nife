@@ -310,6 +310,14 @@ echo "==> the fuzz host follows only a green, fast-forward main and installs no 
 python3 -I helpers/fuzz-follow-main.py --selftest >/dev/null
 helpers/fuzz-follow-main-selftest.sh >/dev/null
 
+echo "==> the fuzz host replays a red CI shard from main alone and holds what reproduces"
+# lint-scope: code
+# A scratch clone, stub cargo, QEMU and API, no network and no KVM, about ten seconds. A reproduction
+# leaves one held log and prints a finding id and an age alone; a clean replay leaves no log; a
+# green, skipped or unrelated red run queues nothing. helpers/fuzz-replay-selftest.sh lists each check.
+python3 -I helpers/fuzz-red-shards.py --selftest >/dev/null
+helpers/fuzz-replay-selftest.sh >/dev/null
+
 echo "==> clippy: host crates + xtask"
 # lint-scope: code
 # lint-lane: host
