@@ -37,13 +37,20 @@ paths = [
 ]
 
 [[home]]
-# The design records and the notes go with the rest of the documentation to the website repository,
-# milestone 1018 (the design record moves to `nifeos.org` and is published as a website). `briefs/`
-# are project records, treated as documentation for now; that part is provisional within a
-# provisional home, and whether the briefs stay with this repository is open.
+# The design record, milestone 1018 (the design record moves to `nifeos/record` and is published as
+# a website): the roadmap, decisions, journeys, naming, tenets, cross-cutting notes, the briefs and
+# the lane skills, in a repository of their own. The website pulls them at build time.
 status = "provisional"
-repo = "nifeos.org"
+repo = "record"
 paths = ["design/", "briefs/", "notes/"]
+
+[[home]]
+# Tool data and the scripts' own documentation under notes/, which stay with the code whose tools
+# read or describe them (milestone 1018, question 4).
+status = "undecided"
+reason = "tool data; it leaves with the tool that reads it, whose repository is not yet named"
+paths = ["notes/project-metrics/", "notes/mutation-testing/", "notes/kernel-dependency-unsafe/sites.tsv",
+         "notes/scripts.md"]
 
 [[home]]
 status = "undecided"
@@ -51,9 +58,9 @@ reason = "documentation; the site, a package or the records is an open question"
 paths = ["vendor/README.md", "vendor/upstream-status.md"]
 
 [[home]]
-# The design record's site build, milestone 1018 (the design record moves to `nifeos.org` and is
-# published as a website) step 3. The ruling of 2026-11-01 (UTC) puts the whole site in that
-# repository; where its builder sits there is not yet ruled.
+# The site build, milestone 1018 (the design record moves to `nifeos/record` and is published as a
+# website) step 3. The website repository pulls the record, each crate's page and the tutorial at
+# build time, and builds and deploys the site.
 status = "provisional"
 repo = "nifeos.org"
 paths = ["site/"]
