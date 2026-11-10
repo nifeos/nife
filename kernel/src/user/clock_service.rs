@@ -87,8 +87,8 @@ fn spawn_with(
     let rtc = crate::memory::rtc_region();
 
     // On x86_64 the RTC is the CMOS behind two I/O ports, which the service reads itself through
-    // the `PortRange` granted below (§130 (how the kernel-resident CMOS RTC reaches the userspace
-    // clock service)); elsewhere the device tree names a page.
+    // the `PortRange` granted below (§130 (the CMOS RTC and the userspace clock service));
+    // elsewhere the device tree names a page.
     #[cfg(target_arch = "x86_64")]
     let kind = clock_contract::rtc::CMOS;
     #[cfg(not(target_arch = "x86_64"))]

@@ -285,7 +285,10 @@ fn install_current_port_grant(capability: crate::capability_object::Capability) 
     }
     let mut guard = IPC_TABLES.lock();
     let current = current_thread_id();
-    if let Some(t) = guard.as_mut().and_then(|sched| sched.threads.get_mut(current)) {
+    if let Some(t) = guard
+        .as_mut()
+        .and_then(|sched| sched.threads.get_mut(current))
+    {
         t.port_range_grant = Some((base, count));
         crate::arch::segments::set_port_range_grant(Some((base, count)));
     }

@@ -5,7 +5,7 @@
 //! WRITE), the clock page read/write and the RTC's registers. A compromised clock service is a
 //! machine that believes the wrong time, no more. It stamps the page `UNKNOWN`, reads the RTC once
 //! (the driver `a0` names: a mapped PL031 or Goldfish, or on `x86_64` the CMOS through a `PortRange`
-//! over its two ports, §121 (x86 port I/O), §130 (how the kernel-resident CMOS RTC reaches the
+//! over its two ports, §121 (x86 port I/O), §130 (the CMOS RTC and the
 //! userspace clock service)), publishes only a
 //! plausible reading (§42 (a filesystem must be truthful)'s no-silent-degradation rule), then
 //! serves proposals judged by `clock_contract::policy`. See notes/clock.md, "Three authorities".
