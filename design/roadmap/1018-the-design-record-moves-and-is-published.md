@@ -8,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# 1018. The design record moves to `nifeos.org` and is published as a website
+# 1018. The design record moves to `nifeos/record` and is published as a website
 
 The lane `lane/the-design-record-moves-and-is-published` wrote this on 2026-11-01 (UTC), on that
 day's rulings. Its measurements are in
@@ -33,34 +33,37 @@ direction. §201 (one roadmap until a citation has to cross, and the blocked sid
 dependency) rules on citations across repositories. Its section 4 says a record points at code as
 `nifeos/<repo>@<sha>`, code does not cite records, and the numbering namespace stayed with nife until the ruling of 2026-11-01 (UTC) below.
 
-On 2026-11-01 (UTC) the architect ruled question 1 below. The record moves to one repository named
-`nifeos.org`, and the provisional name `nife-design` is withdrawn. That repository holds the whole
-site published at nifeos.org: the record, a page for
-each crate, material about nife itself, and the planned tutorial on building a RISC-V operating
-system, a class. The record and the site are one repository, not two. A crate's page pulls from that
-crate's own repository at build time and is not copied in. If the record ever has to split from the
-site, the path-filtered extraction measured in the appendix allows it, with history. The ruling
-creates nothing: the move creates the repository, and creating it needs the architect's approval under the existing ruling. The ruling carries one condition, step 5 below.
+On 2026-11-10 (UTC) the architect ruled question 1 below. The record lives in a repository of its
+own, `nifeos/record`. The website is a separate repository, `nifeos/nifeos.org`, and it is a
+consumer of the record: at build time it pulls the record, a page for each crate from that crate's
+own repository, and the planned tutorial on building a RISC-V operating system, a class. None of
+them is copied into the website's repository. The same day ruled the name, `nifeos/record`, over
+`nifeos/project` and `nifeos/project-management`. The rulings create nothing: creating
+`nifeos/record` and creating `nifeos/nifeos.org` each wait for the architect's separate approval.
 
-On 2026-11-01 (UTC) the architect ruled question 4 below. The record repository takes the
-whole-project material: the roadmap, decisions, journeys, naming, tenets, cross-cutting notes,
-`briefs/` and the lane skills. Each code repository keeps its crate documentation, its `BUGS`
-sections, the notes about that crate alone, its lint baselines and workflow data, and its own
-`AGENTS.md`. When a crate leaves this repository, its notes move with it under §315 (a crate's
-documentation leaves with it): the sort that section orders puts a note about the crate alone into
-the crate's README, rustdoc or `docs/` folder.
+The architect ruled question 4 below on 2026-11-01 (UTC), and its contents on 2026-11-10 (UTC).
+`nifeos/record` holds `design/`, `briefs/`, the lane skills, and `notes/` except the tool data that
+stays with code: `notes/project-metrics/`, `notes/mutation-testing/`,
+`notes/kernel-dependency-unsafe/sites.tsv` and `notes/scripts.md`. It also holds the record's own
+checks and tooling: `script/roadmap`, `script/decisions`, `script/journeys`, the core of
+`script/citations`, and the inputs the site build reads from the record. Each code repository
+keeps its crate documentation, its `BUGS` sections, the notes about that crate alone, its lint
+baselines and workflow data, and its own `AGENTS.md`. When a crate leaves this repository, its
+notes move with it under §315 (a crate's documentation leaves with it): the sort that section
+orders puts a note about the crate alone into the crate's README, rustdoc or `docs/` folder.
 
 Why now. If the record stays in `nifeos/nife`, it stays in a repository whose stated role is
 history. Every other move then lands its record edits in a repository that is winding down.
 
 ## Recommendation
 
-Move the record to the `nifeos.org` repository by a path-filtered extraction, so every commit that touched a
+Move the record to `nifeos/record` by a path-filtered extraction, so every commit that touched a
 record file keeps its message, author and date. The record keeps its numbers, and the numbering
-namespace moves with it. The same repository holds the rest of the site, so one build publishes
-everything. Build the website from it in CI on every merge: a static
-site with one stable address per record number, search, and a link check. What describes a single
-crate or carries a tool's data stays with that code, as the Background states.
+namespace moves with it. `nifeos/record` runs the record's checks on every pull request.
+`nifeos/nifeos.org` builds the website: it pulls the record, the crate pages and the tutorial at
+build time and publishes a static site with one stable address per record number, search, and a
+link check. What describes a single crate or carries a tool's data stays with that code, as the
+Background states.
 
 Most of this can start before the move. Steps 1 to 5 below land in this repository today, and each
 makes the move smaller.
@@ -91,7 +94,9 @@ one form for a path inside another repository, `nifeos/<repo>:<path>`, resolved 
 basalt's manifest pins. basalt already names the current commit of each component, so the record
 gains no second list.
 
-Code does not cite records, under §201 section 4. That rule needs no change. The 7,774 milestone
+Code does not cite records by number, under §201 section 4. That rule needs no change. Code that
+names a record file by path, 1,062 times today, writes `nifeos/record:<path>`, such as
+`nifeos/record:design/naming.md`. The 7,774 milestone
 citations in code convert when each crate moves, under §315 (a crate's documentation leaves with
 it), and not in this move. The same section sends a note about one crate alone with that crate.
 
@@ -144,7 +149,7 @@ working.
 - Search across 3.6 million words, built at generation time with no server.
 - A link check: internal links fail the build, and external links run on a schedule outside the
   merge gate, since a remote outage should not block a merge.
-- A CI build on every pull request and a deploy on every merge to main.
+- A build in `nifeos/nifeos.org` that pulls the record's main, and a deploy when either moves.
 
 The generator is Eleventy, with Pagefind for search, approved on 2026-11-04 (UTC) as CI-only
 dependencies. The terms: a committed lockfile, installation with `npm ci --ignore-scripts`, exact
@@ -152,8 +157,7 @@ versions at least two weeks old when pinned, and bumps through the ordinary pull
 record, also worked; Jekyll lost on build speed, and mdBook fits poorly with addresses made of a
 number alone.
 
-Hosting, ruled 2026-11-01 (UTC): GitHub Pages, deployed from Actions in the `nifeos.org`
-repository, with nifeos.org as the custom domain. The domain dates from 2026-10-03, sits with its registrar's name servers, expires 2027-10-03 and has no web address set. The domain is ours, so the host
+Hosting, ruled 2026-11-01 (UTC): GitHub Pages, deployed from Actions in `nifeos/nifeos.org`, with nifeos.org as the custom domain. The domain dates from 2026-10-03, sits with its registrar's name servers, expires 2027-10-03 and has no web address set. The domain is ours, so the host
 stays reversible: a later move changes DNS only. Page addresses derive from the record's kind and
 number alone, and no address names the host. Enabling Pages, setting the custom domain and changing DNS each wait for the architect's approval.
 
@@ -171,8 +175,14 @@ built-in pull-request preview; and a soft bandwidth limit of 100 GB a month.
 - Gone from the record repository: every clippy, build, QEMU and unsafe-listing section, and the
   rule that a `TODO` names a milestone, which binds code to the record.
 
-The scripts move with the record. The tooling ruling of 2026-11-01 sends tooling to its own
-repositories too, so this proposal does not pick their final home.
+The record's own checks and tooling live in `nifeos/record`, under the ruling on question 4.
+Which script and helper counts as the record's own is the sort in
+[the appendix](1018-the-design-record-moves-and-is-published/measurements.md#where-each-script-goes),
+provisional: the record repository takes `script/roadmap`, `script/decisions`, `script/journeys`
+and the core of `script/citations`, the website takes `script/site` and `site/`, and the fleet and
+template tooling (`script/claim`, `script/record-ruling`) follows the tooling ruling of 2026-11-01.
+A counted claim in the record whose derivation walks code fetches that code at basalt's pins,
+provisionally.
 
 ## Lanes across two repositories
 
@@ -182,7 +192,10 @@ change the dependent side in a separate pull request that cites the landed commi
 - A record-only lane, such as a proposal or a decision, has one draft, in the record repository.
 - A lane that builds code opens one draft in each. The code lands first, through its own queue.
   The record's pull request then flips the block's status and cites `nifeos/<repo>@<sha>`, which
-  matches §90 (the claim is a draft pull request; the status flip is a gate).
+  matches §90 (the claim is a draft pull request; the status flip is a gate). The two checks that
+  read the block on the lane's own branch, `helpers/milestone-branch-block.sh` (`script/lint-fleet`
+  4b) and `.github/workflows/ready-status.yml`, move that flip to the record's pull request,
+  provisionally.
 - The board is `gh search prs --owner nifeos --draft`, which already spans repositories.
 - The record repository needs `script/claim` and the lane skills. The ruling on question 4 puts the
   lane skills in the record repository. Where `script/claim` lives stays with the tooling ruling.
@@ -199,41 +212,46 @@ Each step lands alone. Steps 1 to 5 land in this repository.
 3. Built: `script/site` builds the site from `design/`, `notes/` and `briefs/`, and
    `.github/workflows/record-site.yml` runs it on each pull request that touches them and uploads
    the site as an artifact, deployed nowhere. Its step summary reports build time, index size and
-   broken citations and links, and it never blocks a merge.
+   broken citations and links, and it never blocks a merge. The builder's home is
+   `nifeos/nifeos.org`, where it pulls the record at build time.
 4. Sort each record into moves or stays in `packages/homes.toml`, which already gives every path a
    home and counts the notes left undecided. The sort follows the ruling on question 4: whole-project
    material moves, and crate documentation, `BUGS` sections, lint baselines, workflow data and
    `AGENTS.md` stay. For each note it decides between cross-cutting and about one crate alone, and
    it produces the number of the second kind. It also lists every link from a record into a path that
    stays, since the site's link check fails the build on such a link.
-5. Measured: the record's checks can run by directory, the condition the ruling of 2026-11-01
-   (UTC) set on the one-repository shape. Each of the three measurements in the appendix supports
-   it. The hold check of §88 (`needs-architect` as a required check) reads labels and no file, in
-   4 to 5 seconds, and applies to every change. Of `script/lint`'s 140 sections a record-only
-   change needs the 43 tagged `record` or `both`: 80 of 454 seconds on a measured run. The merge
-   queue classifies each entry against the entry ahead, so a record entry queued behind a code
-   entry skips the heavy jobs while the code entry runs them.
-6. After step 5's measurement and the architect's approval of creation: extract by path, then remove the
+5. Measured: the record's checks can run by directory, which sets what `nifeos/record`'s CI runs.
+   The hold check of §88 (`needs-architect` as a required check) reads labels and no file, in 4 to
+   5 seconds, and applies to every change. Of `script/lint`'s 140 sections a record-only change
+   needs the 43 tagged `record` or `both`: 80 of 454 seconds on a measured run. The merge queue
+   classifies each entry against the entry ahead, so a record entry queued behind a code entry
+   skips the heavy jobs while the code entry runs them.
+6. After the architect approves creating `nifeos/record`: extract by path into it, then remove the
    paths from this repository in one pull request. That pull request writes `packages/moved.toml`
    with the anchor, and leaves a pointer in the README.
-7. Turn on the new repository's CI: the record checks, limited to the record's directories, the site
-   build and the link check.
-8. Deploy from Actions to GitHub Pages. Three tasks belong to a person, since no lane holds the
-   registrar's credentials. They are setting the DNS records that point nifeos.org at Pages, setting
-   auto-renew on the registration or a longer term, and confirming the organization's settings
-   allow a custom domain on Pages. A lane prepares the workflow and the exact record values and
-   stops there.
+7. Turn on `nifeos/record`'s CI: the record checks, limited to the record's directories, with the
+   record halves of the `both` sections and the tooling that runs them.
+8. After the architect approves creating `nifeos/nifeos.org`: build there, pulling the record, the
+   crate pages and the tutorial, and deploy from Actions to GitHub Pages. Three tasks belong to a
+   person, since no lane holds the registrar's credentials. They are setting the DNS records that
+   point nifeos.org at Pages, setting auto-renew on the registration or a longer term, and
+   confirming the organization's settings allow a custom domain on Pages. A lane prepares the
+   workflow and the exact record values and stops there.
 
 ## Prior art
 
 - Python's PEPs, read 2026-11-01: a separate `python/peps` repository, published automatically to
-  `peps.python.org`, with a render workflow in Actions and Read the Docs previews per pull request.
+  `peps.python.org`, apart from the `python.org` website's own repository, with a render workflow
+  in Actions and Read the Docs previews per pull request.
 - Rust's RFCs, read 2026-11-01: `rust-lang/rfcs`, where an RFC's number is its pull request's
-  number, rendered as a book at `rust-lang.github.io/rfcs`.
+  number, rendered as a book at `rust-lang.github.io/rfcs`. The Reference lives in
+  `rust-lang/reference` and the website in `rust-lang/www.rust-lang.org`, recalled.
+- Redox and seL4, recalled: each keeps its RFCs in a repository apart from its website's.
 - FreeBSD, Go and Kubernetes, recalled: each keeps its documentation or design records apart from
-  the source (the Handbook, `golang/proposal`, `kubernetes/enhancements`).
+  the source (FreeBSD's `doc` tree apart from `src`, `golang/proposal`, `kubernetes/enhancements`).
 
-Where nife differs: an integrator mints the number at merge. That is why the namespace can move as
+Where nife differs: the website pulls the record, crate pages and tutorial from three kinds of
+repository, where each project above renders one source. An integrator mints the number at merge. That is why the namespace can move as
 a whole. A pull-request number, as Rust uses, would collide across repositories. And nife's records
 feed gates, which the PEPs do not, so the checks move with the text.
 
@@ -253,6 +271,8 @@ feed gates, which the PEPs do not, so the checks move with the text.
 - Where `script/claim` lives once tooling leaves. The lane skills are ruled; the code repositories'
   `AGENTS.md` files point at them today by relative path, and how they point at skills held in
   another repository is not worked out.
+- How `nifeos/nifeos.org` learns that the record's main moved: a schedule, a dispatch from
+  `nifeos/record`, or a build on demand. Not tried.
 - How many links from the record reach a note or crate path that stays. A rough count found 168
   notes linked from the record, 5 named for a crate. Step 4 replaces it with a real sort.
 
@@ -260,22 +280,38 @@ feed gates, which the PEPs do not, so the checks move with the text.
 
 One decision each, recommendation first. Ask them one at a time.
 
-1. Ruled 2026-11-01 (UTC): the repository is `nifeos.org`, one repository for the record and the
-   whole site, as the Background states. Its condition is step 5's measurement.
+1. Ruled 2026-11-10 (UTC): the record lives in its own repository, `nifeos/record`, and
+   `nifeos/nifeos.org` is the website, which pulls the record, the crate pages and the tutorial at
+   build time, as the Background states. The name `nifeos/record` is ruled the same day.
 2. Ruled 2026-11-01 (UTC), as recommended: the number stays the identity and its namespace moves
    with the record, under the citation forms above. §201 section 4 says so, and its revisit
    condition stays armed.
-3. Ruled 2026-11-01 (UTC): GitHub Pages, as the website section states; step 8 names the
-   person-only tasks.
-4. Ruled 2026-11-01 (UTC), as recommended: the division the Background states, with a crate's
-   notes moving with the crate under §315 (a crate's documentation leaves with it).
+3. Ruled 2026-11-01 (UTC): GitHub Pages, deployed from `nifeos/nifeos.org`, as the website
+   section states; step 8 names the person-only tasks.
+4. Ruled 2026-11-01 (UTC), as recommended, with the contents of `nifeos/record` ruled 2026-11-10
+   (UTC): the division the Background states, with a crate's notes moving with the crate under
+   §315 (a crate's documentation leaves with it).
 
 5. Provisional, recorded by the maintainer on 2026-11-04 (UTC), and the architect may reverse it:
    the planned tutorial's source lives in a repository of its own, which the site pulls at build
    time as it pulls a crate's page. The tutorial has code to build and test, and a stranger can
    fork it.
 
-Steps 6 to 8 wait on step 5's measurement and the architect's approval of creation.
+6. Provisional, recorded by the maintainer, and the architect may reverse each: the sort of the
+   record's own tooling into `nifeos/record` in the appendix; the rework that moves the status flip
+   of `helpers/milestone-branch-block.sh` and `ready-status.yml` to the record's pull request; and
+   counted claims fetching code at basalt's pins.
+
+Still to be ruled by the architect:
+
+7. What a `milestone N` or `§N` citation in code, and the rule that a `TODO(milestone N)` names a
+   milestone, check against once the record has left. Code holds 7,774 milestone and 3,525 section
+   citations. Recommended: `nifeos/record` publishes an index of its numbers and titles, and each
+   code repository fetches it, so the check keeps its strength. The other option changes the
+   `TODO` rule and stops checking code citations.
+8. The creation of `nifeos/record` and of `nifeos/nifeos.org`. This block creates neither, and
+   steps 6 to 8 wait on that approval.
+
 
 ## Follow-on
 
@@ -286,6 +322,10 @@ Steps 6 to 8 wait on step 5's measurement and the architect's approval of creati
 - **Outstanding.** Two comments in `ci.yml` and the header of `empty-diff.yml` call
   `merge_group.base_sha` the base branch's tip; the appendix's runs log the entry ahead. The skip
   rule is safe either way, so only the comments change.
+
+- **Outstanding.** §201 (one roadmap until a citation has to cross), journey 5 and milestone 857
+  (crates released on their own) still name `nifeos.org` as the record's repository; each changes
+  to `nifeos/record` in its own pull request, §201's with the architect's approval.
 
 ## Index row
 

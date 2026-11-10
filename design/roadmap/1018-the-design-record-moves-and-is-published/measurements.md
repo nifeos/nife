@@ -166,9 +166,9 @@ record, the outsider-pass selftests, and three mutation-record checks that read 
 
 ## The record's checks by directory, step 5
 
-Measured 2026-11-09 (UTC) from the runs named below, all on hosted runners. `nifeos.org` does not
-exist yet, so this repository stands in for it: a record path here plays a record path there, and
-a code path plays the site's other paths. The record paths are `design/`, `notes/`, `briefs/`
+Measured 2026-11-09 (UTC) from the runs named below, all on hosted runners. `nifeos/record` does
+not exist yet, so this repository stands in for it: a record path here plays a record path there,
+and a code path plays a path in a code repository. The record paths are `design/`, `notes/`, `briefs/`
 and the root's `AGENTS.md`, `ARCHITECTS.md` and `CLAUDE.md`.
 
 ### The hold check
@@ -210,9 +210,9 @@ request run it took 654 seconds, of which 111 installed `typos` and `cargo-mache
 at a time with `script/lint --section`, the 43 passed alone in 147 seconds, each paying its own
 preamble.
 
-In a record repository the 35 `both` sections lose their code half. Each either fetches the code
-at basalt's pins, as the path claims already plan to, or drops that half. The tree-wide hygiene
-checks among them would read the site's files too; on the pull request run they cost about 18
+In `nifeos/record` the 35 `both` sections lose their code half. Each either fetches the code at
+basalt's pins, as the path claims already plan to, or drops that half. The tree-wide hygiene checks
+among them would read the record's own tooling too; on the pull request run they cost about 18
 seconds.
 
 ### A queue batch with a record change and a code change
@@ -241,6 +241,49 @@ should.
 
 - The runs come from one day and one queue configuration. A ruleset that rebased instead of
   merging, or GitHub changing the base it reports, would change the batch result.
-- The site's other paths do not exist yet, so no run measured a site change.
+- No run measured a change in the website's repository, which does not exist yet.
 - The tags record what each section opened on this tree. A section that reads a path only when it
   appears (a new file kind, a failure branch) can read more than it showed here.
+
+## Where each script goes
+
+Sorted 2026-11-10 (UTC) by reading each script, helper, lint section and workflow at `8e597457a`.
+The sort is provisional. **R** goes to `nifeos/record`. **W** goes to `nifeos/nifeos.org`, the
+website. **C** stays with code. **S-each** runs in every repository on its own files. **S-cross**
+splits, and one side needs the other's data: code at basalt's pins, or the record's number index
+that open question 7 asks about. **T** goes to the template (`nifeos/crate-workflows`) or the fleet
+repository, under milestone 902's forks.
+
+| script | reads | goes to |
+|---|---|---|
+| `script/roadmap` | blocks, proposals, decision statuses, CoE actions; code paths in path claims; merges for the merged-branch check | S-cross: the core to R; path claims need code at basalt's pins and the anchor; `--ready-branch` needs the block while it runs on a code branch |
+| `script/journeys` | journeys, through `helpers/roadmap_block.py` | R |
+| `script/citations` | every tracked file; `helpers/lint-section-index.tsv` | S-cross: the record half to R; the code half needs the number index |
+| `script/decisions` | the decision schema; `§N` across the tree | R core; the citation sweep is S-cross |
+| `script/site` | `site/`, and the record it builds | W |
+| `script/claim` | no record file at run time | T (fleet); it runs in every repository |
+| `script/record-ruling` | labels and comments only | T (template) |
+
+The helpers follow their callers. `helpers/roadmap_block.py` belongs to R, and the code and fleet
+readers (`script/metrics`, `prose_ratchet.py`, `consumer_census.py`, `milestone-branch-block.sh`)
+need a pinned copy or stop reading blocks. `roadmap_proposals.py`, `coe_actions.py` and
+`roadmap_migrate.py` go to R. `branch-name-check.sh`, `smelter-token` and `stash-block.sh` go to T.
+`helpers/milestone-branch-block.sh` reads the block on the lane's own branch, so it goes to T with
+the rework that moves the status flip to the record's pull request.
+
+Of the 43 lint sections tagged `record` or `both`, 5 go to R, 14 stay with code, 12 are S-each and
+12 are S-cross. The three mutation sections tagged `record` stay with code, since they read only
+`notes/project-metrics/`, which is tool data. The 97 `code` sections stay with code, 9 of them
+(hooks, push, empty diff, the label merge base, and the template gates) in T. `nifeos/record` needs
+a lint driver of its own that runs only its subset.
+
+| workflow | goes to |
+|---|---|
+| `ci.yml` job `lint` | S: R runs the 5 record sections and the record halves of the 24 S sections |
+| `record-site.yml` | W |
+| `audit-cadence.yml` | R |
+| `ready-status.yml`, `script/lint-fleet` 4b | T, reworked for lanes across two repositories |
+| `architect-label.yml`, `coe-architect-label.yml` | T; the decision rule fires in R |
+| `architect-hold.yml` | every repository |
+| `metrics.yml`, the mutation and falsification workflows | C; their output leaves `notes/` with the data |
+| `stranger-cadence.yml` | unknown: its run record is in `notes/`, and the test builds the OS |
