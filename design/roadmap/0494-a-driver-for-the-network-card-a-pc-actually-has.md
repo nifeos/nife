@@ -23,8 +23,10 @@ milestone 261 needs.
 
 ## What was built, 2026-10-04
 
-Exit criterion 1 is met; criterion 2 is calef's bench step, staged and written down. Procedure,
-evidence and the confinement finding: [notes/e1000e.md](../../notes/e1000e.md).
+Exit criterion 1 is met. Criterion 2 is not: the driver is built and rehearsed under QEMU, and the
+cabled bench run on xenon has not happened. It needs a person and a cable, and its result goes in
+the Results table of [the I219 cabled-run runbook](../../notes/e1000e/the-i219-cabled-run.md).
+Procedure, evidence and the confinement finding: [notes/e1000e.md](../../notes/e1000e.md).
 
 - The datasheet question, answered from the register map. Ring base and ring tail share a
   4 KiB page (`0x2800`/`0x2818`, `0x3800`/`0x3818`, read from Linux's `regs.h`; Intel's I219
@@ -169,7 +171,9 @@ recorded as such.
    x86_64. aarch64 and riscv64 carry the driver too, since QEMU's `e1000e` is a PCIe device on
    every bus the runners attach, or a scope note says why not (DECISIONS §19).
 2. On xenon, a DHCP lease from the house router and a measured transfer from a local area network
-   host, photographed, with the survey line naming the card.
+   host, photographed, with the survey line naming the card. This is the cabled run in
+   [the I219 cabled-run runbook](../../notes/e1000e/the-i219-cabled-run.md); it has not happened,
+   and its result goes in that page's Results table.
 
 ## Reuse
 
