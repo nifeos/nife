@@ -112,6 +112,8 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
     }
     grant_disk_tree(tid, fs_pool);
     grant_base_digest(tid);
+    #[cfg(not(any(test, feature = "system_tests", feature = "bench")))]
+    grant_self_test(tid);
     crate::sched::configure_thread_control_block(tid, elf.entry(), USER_STACK_TOP, aspace_name)
         .expect("configure");
     // x0 = the console UART's register shape, which the progenitor hands its console and input

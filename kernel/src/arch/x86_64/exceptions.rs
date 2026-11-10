@@ -273,6 +273,7 @@ static LAST_USER_FAULT_ADDRESS: AtomicU64 = AtomicU64::new(0);
 /// overwrites it before a test reads it, and a user exception that is not a page fault records
 /// address 0. A test that asserts on it must retry or tie the record to its own thread. Found by
 /// the eighth outsider pass (`notes/confinement-outsider-pass-8.md`), whose row-21 test retries.
+#[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn last_user_fault() -> Option<(UserFault, u64)> {
     // Pairs with the `Release` on `USER_FAULTS` in [`user_fault`]: a caller that has already seen
     // the counter rise must see the record that rise was announcing, and not the previous one.
