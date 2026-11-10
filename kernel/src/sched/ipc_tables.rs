@@ -38,7 +38,7 @@ pub(super) type Rendezvous = inter_process_communication::Rendezvous<Thread>;
 ///   table, or the other generational tables, against that time; notes/generational-names.md has
 ///   the measurements.
 /// - The tables sit in `.data` and not `.bss` (each static is not all zero bytes), and
-///   [`EMPTY_TABLES`] is a second copy in `.rodata`. At these sizes that is about half a megabyte
+///   [`EMPTY_INSTALLED_TABLES`] is a second copy in `.rodata`. At these sizes that is about half a megabyte
 ///   of the loaded image on each architecture. Zero-initialized storage beside the lock would put
 ///   the tables in `.bss` and drop the copy.
 ///
@@ -251,9 +251,14 @@ pub(super) const MAXIMUM_KERNEL_EP_CHUNKS: usize =
 pub(super) static IPC_TABLES: InterruptSafeMutex<Option<IpcTables>> =
     InterruptSafeMutex::new(rank::IPC_TABLES, None);
 
-/// The scheduler before anything is in it, as a const aggregate. [`EMPTY_INSTALLED_TABLES`] holds
-/// it in `.rodata` for [`initialize`] to copy from.
-pub(super) const EMPTY_TABLES: IpcTables = IpcTables {
+/// The scheduler before anything is in it, as an installed scheduler, in `.rodata`. [`initialize`]
+/// copies its bytes into [`IPC_TABLES`] with `ptr::copy_nonoverlapping`, so an unoptimised build
+/// builds no [`IpcTables`] temporary on the boot stack. Nothing else reads it. It is a `static`
+/// and not a `const` because the aggregate is large enough that a `const` copy would be a stack
+/// temporary wherever it was named.
+///
+/// Name: provisional, minted 2026-11-05 (UTC) by sched-boot-stack-and-asid-comments.
+pub(super) static EMPTY_INSTALLED_TABLES: IpcTablesImage = IpcTablesImage(Some(IpcTables {
     threads: Threads::new(),
     rendezvous_table: generational_table::Table::new(),
     kernel_ep_region: None,
@@ -262,14 +267,7 @@ pub(super) const EMPTY_TABLES: IpcTables = IpcTables {
     timer_table: generational_table::Table::new(),
     futexes: inter_process_communication::futex::Futexes::new(),
     processes: generational_table::Table::new(),
-};
-
-/// [`EMPTY_TABLES`] as an installed scheduler, in `.rodata`. [`initialize`] copies its bytes into
-/// [`IPC_TABLES`] with `ptr::copy_nonoverlapping`, so an unoptimised build builds no
-/// [`IpcTables`] temporary on the boot stack. Nothing else reads it.
-///
-/// Name: provisional, minted 2026-11-05 (UTC) by sched-boot-stack-and-asid-comments.
-pub(super) static EMPTY_INSTALLED_TABLES: IpcTablesImage = IpcTablesImage(Some(EMPTY_TABLES));
+}));
 
 /// A `Sync` holder for [`EMPTY_INSTALLED_TABLES`]: the tables are only copied from, as bytes.
 pub(super) struct IpcTablesImage(pub(super) Option<IpcTables>);

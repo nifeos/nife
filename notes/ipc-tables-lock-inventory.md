@@ -87,7 +87,7 @@ line print the demand on every run; when the limit was set the peaks were 130 (a
 more concurrent programs, and because a failure is an unrelated test refusing a spawn far from its
 cause. What scales with it, each checked at 1,024:
 
-- the boot stack, about 20 bytes a slot, which is why `init` installs `EMPTY_TABLES` from `.rodata`
+- the boot stack, about 20 bytes a slot, which is why `init` installs `EMPTY_INSTALLED_TABLES` from `.rodata`
   rather than building the tables on the boot stack, under `stack::report_high_water`'s gate;
 - `kmem::KERNEL_OBJ_PAGES`, 7 pages per live thread (`thread::STACK_PAGES` and the TCB page),
   const-asserted against it;
