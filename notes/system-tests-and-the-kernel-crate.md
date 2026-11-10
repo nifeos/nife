@@ -22,14 +22,14 @@ Reading each use site gives three kinds, and a fourth turned up when the new gat
 | `coremark` | `bench.rs` (feature `bench`) and one suite test | optional behind `bench`, and a dev-dependency |
 | `job_mix` | `job_mix.rs` (feature `job_mix`) | optional behind `job_mix` |
 | `soak_page` | `soak.rs` (`soak_test`), `ipc_stack_depth.rs` (`ipc_stack_depth`, and tests) | optional behind both, and a dev-dependency |
-| `calendar` | `arch/x86_64/rtc.rs`: the RTC's civil date to Unix seconds | still linked |
+| `calendar` | nothing in the kernel: the `clock` program decodes the CMOS date itself | dropped |
 | `jh7110_entropy` | `memory.rs`: find the TRNG in the device tree at boot | still linked |
 | `video_terminal` | the tour's display bring-up reads `status::TERM_UP` and the grid size | still linked |
 | `block_roster_contract` | `disk_service` writes the roster page a program reads | still linked |
 | `non_volatile_memory_express` | the kernel's own NVMe module, dead outside tests | still linked |
 
 So `cargo build -p kernel` now compiles eight fewer crates on all three targets. `cargo tree -p
-kernel -e normal,build` lists five of the twelve, and all five are the production uses in the last
+kernel -e normal,build` lists four of the twelve, and all four are the production uses in the last
 rows.
 
 The premise needed one correction. "No kernel build can happen without building the whole
