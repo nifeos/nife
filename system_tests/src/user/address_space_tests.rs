@@ -302,7 +302,7 @@ fn remap_with_no_invalidation(space: &AddressSpace, va: u64, frame: u64) {
 #[test_case]
 fn a_read_only_segment_is_mapped_read_only() {
     let image = loader_subject_image();
-    let (space, _) = load(image, 0).expect("the initial ramdisk did not load");
+    let (space, _) = load(image, 0, &[]).expect("the initial ramdisk did not load");
 
     let rodata = elf::Elf::parse(image)
         .unwrap()

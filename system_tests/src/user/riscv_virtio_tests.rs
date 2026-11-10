@@ -118,7 +118,7 @@ fn the_page_tables_say_u_mode_cannot_read_the_kernels_memory() {
 
     // Any real compiled user ELF will do here, and every architecture packs this one.
     let image = program("report_child").expect("no report_child program in the initial ramdisk");
-    let (space, _) = load(image, 0).expect("the initial ramdisk did not load");
+    let (space, _) = load(image, 0, &[]).expect("the initial ramdisk did not load");
 
     space.while_installed(|| {
         assert!(

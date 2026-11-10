@@ -83,7 +83,7 @@ fn a_userspace_thread_reads_a_cpu_that_is_really_online() {
 /// frequency, that a wrong number is worse than no number.
 #[test_case]
 fn a_space_that_never_ran_has_no_answer_and_then_has_the_right_one() {
-    let (space, _entry) = load(current_cpu_reader_image(), 0).expect("load failed");
+    let (space, _entry) = load(current_cpu_reader_image(), 0, &[]).expect("load failed");
     let va = space
         .current_cpu_page_kernel_va()
         .expect("a freshly loaded space has no current-cpu page");
@@ -120,7 +120,9 @@ fn a_space_that_never_ran_has_no_answer_and_then_has_the_right_one() {
 #[test_case]
 fn the_page_is_returned_when_the_space_is_dropped() {
     let frame = {
-        let space = load(current_cpu_reader_image(), 0).expect("load failed").0;
+        let space = load(current_cpu_reader_image(), 0, &[])
+            .expect("load failed")
+            .0;
         let va = space
             .current_cpu_page_kernel_va()
             .expect("a loaded space has no current-cpu page to return");
