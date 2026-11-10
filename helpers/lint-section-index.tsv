@@ -100,6 +100,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	1	-	both	§298 (a document states what is in force now), calef 2026-10-13
 -	1	-	-	1	-	code	capability is not abbreviated cap (calef, 2026-10-06)
 -	1	-	-	1	-	code	unit symbols are spelled out (2026-10-27)
+-	1	-	-	1	-	code	a component reads its window addresses from the startup page (ceiling only falls)
 -	1	-	-	0	-	code	the template's report-only name and README gates (baseline only shrinks)
 -	1	-	-	1	-	both	no line-number citations (§277: cite a heading or a symbol)
 -	1	-	-	0	-	record	the outsider-pass floor checker and launcher selftests
