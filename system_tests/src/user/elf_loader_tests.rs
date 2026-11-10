@@ -224,14 +224,17 @@ fn a_real_elf_from_the_initial_ramdisk_runs_at_el0_and_verifies_itself() {
 /// **Every space the loader builds carries the startup page**, read-only at its fixed address, and
 /// the page lists exactly the windows the spawner named; a list a reader could misread is refused
 /// before the program exists.
+///
+/// Falsification: unfalsified. Nobody has yet broken the loader's mapping of the page to watch this
+/// test fail.
 #[test_case]
 fn the_loader_writes_the_startup_page_read_only() {
     use address_space_map::IMAGE_BASE;
-    use startup_page_contract::{PAGE_VIRTUAL_ADDRESS, StartupPage, Window, kind};
+    use startup_page_contract::{PAGE_VIRTUAL_ADDRESS, StartupPage, Window, WindowKind};
 
     let doorbell = Window {
-        kind: kind::NON_VOLATILE_MEMORY_EXPRESS_DOORBELL_PAGE,
-        address: 0x9c_0000,
+        kind: WindowKind(2),
+        virtual_address: 0x9c_0000,
         pages: 1,
     };
     let image = forged_elf(IMAGE_BASE, elf::PF_R | elf::PF_X);
