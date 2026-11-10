@@ -1,6 +1,7 @@
 # radon, 2026-11-10 (UTC): milestone 1049's second board check
 
-The second run of the bench session in [../radon-2026-11-09/README-1049.md](../radon-2026-11-09/README-1049.md),
+Milestone 1049 (`jh7110_entropy` is ready to publish: the release review's findings), item 4, second run:
+the repeat of the bench session in [../radon-2026-11-09/README-1049.md](../radon-2026-11-09/README-1049.md),
 on the same board, with the same crate commit (`nifeos/jh7110_entropy`
 `ee0bde8feb9f78a67da011c928f9a2a697f3bbc1`) and the same payload (SHA-256
 `e421000bc0b66d35ac60315cbe618ba1c8e15fb46d9bf8aac44f3a27b82054e8`). The person says the board sat

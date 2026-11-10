@@ -98,8 +98,8 @@ environment approval wait for the publishing hold to lift. Effort S.
 
 The bench ran on radon (a VisionFive 2) on 2026-11-09 and 2026-11-10 (UTC) against crate commit
 `ee0bde8feb9f78a67da011c928f9a2a697f3bbc1`, with one payload built from
-nife `9a1c55963b`, loaded over the network after a cold power-on (the second after an hour unpowered, the
-person's statement). The checker printed PASS both times. Tables, logs and SHA-256 sums are in
+nife `9a1c55963b`. It loaded over the network after a cold power-on; the person says the second followed
+an hour unpowered. The checker printed PASS both times. Tables, logs and SHA-256 sums are in
 [bench/radon-2026-11-09/](../../bench/radon-2026-11-09/README-1049.md) and
 [bench/radon-2026-11-10/](../../bench/radon-2026-11-10/README-1049.md).
 
