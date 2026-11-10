@@ -147,7 +147,7 @@ fn monotonic_nanoseconds() -> u64 {
 /// board and not about the instruction set: the VisionFive 2 is riscv64 and has neither of these.
 /// Keying the layout off the ISA would compile clean and read garbage on the first real board,
 /// which is precisely the failure rule 5 exists to catch. `rtc::CMOS` is the exception the ISA
-/// does force: port I/O exists only on `x86_64`, so [`cmos`] compiles only there.
+/// does force: port I/O exists only on `x86_64`, so the `cmos` module compiles only there.
 fn read_rtc(kind: u64) -> Option<u64> {
     match kind {
         rtc::PL031 => Some(pl031_unix_ns(RTC_VA)),

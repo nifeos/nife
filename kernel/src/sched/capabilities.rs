@@ -249,7 +249,7 @@ pub fn current_capability(
 ///
 /// The running thread's own table, under its own lock and not `IPC_TABLES`, as [`current_capability`].
 /// On `x86_64` a `PortRange` with `WRITE` also becomes the thread's port grant
-/// ([`install_current_port_grant`]), as one placed in an embryo by `CAPABILITY_INSERT` does.
+/// (`install_current_port_grant`), as one placed in an embryo by `CAPABILITY_INSERT` does.
 pub fn grant(
     capability: crate::capability_object::Capability,
 ) -> Result<u64, crate::capability_object::Error> {
