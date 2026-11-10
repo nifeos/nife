@@ -229,7 +229,7 @@ pub(super) fn rg_search() {
             return;
         }
         let text = core::str::from_utf8(&text[..len]).unwrap_or("");
-        let Some(ns) = rg_seconds(text) else {
+        let Some(nanoseconds) = rg_seconds(text) else {
             println!("bench-probe: rg_search printed no stats ({len} bytes)");
             return;
         };
@@ -243,7 +243,7 @@ pub(super) fn rg_search() {
             }
             continue;
         }
-        searched[run - 1] = ns;
+        searched[run - 1] = nanoseconds;
         whole[run - 1] = (ended - started) * 1_000_000_000 / hz;
     }
     searched.sort_unstable();
@@ -268,13 +268,13 @@ pub(super) fn rg_search() {
 fn rg_seconds(text: &str) -> Option<u64> {
     let line = text.lines().rev().find(|l| l.ends_with(" seconds"))?;
     let (whole, frac) = line.strip_suffix(" seconds")?.split_once('.')?;
-    let mut ns = whole.parse::<u64>().ok()? * 1_000_000_000;
+    let mut nanoseconds = whole.parse::<u64>().ok()? * 1_000_000_000;
     let mut scale = 100_000_000;
     for b in frac.bytes() {
-        ns += u64::from(b.checked_sub(b'0')?) * scale;
+        nanoseconds += u64::from(b.checked_sub(b'0')?) * scale;
         scale /= 10;
     }
-    Some(ns)
+    Some(nanoseconds)
 }
 
 /// A program's whole transcript from its stdout sink, as far as `out` holds it.
@@ -322,13 +322,13 @@ fn walk_rows(report: crate::sched::RendezvousId, row: &str) {
     let hz = crate::arch::timer::frequency();
     for line in text.lines() {
         if let Some(rest) = line.strip_prefix("walk whole ") {
-            let ns: u64 = rest
+            let nanoseconds: u64 = rest
                 .split(' ')
                 .next()
                 .and_then(|n| n.parse().ok())
                 .unwrap_or(0);
             // The program timed in nanoseconds; the row is in counter ticks like every other.
-            println!("bench: {row} {} 1", ns * hz / 1_000_000_000);
+            println!("bench: {row} {} 1", nanoseconds * hz / 1_000_000_000);
         }
         if let Some(rest) = line.strip_prefix("walk ") {
             println!("bench-probe: {row} {rest}");

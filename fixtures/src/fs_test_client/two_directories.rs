@@ -38,10 +38,10 @@ pub(crate) fn two_dir() -> ! {
     // The labels are this witness's own choice, independent of what the grants are named on
     // disk (`sub`, `other`): a namespace label is assigned by whoever composes the namespace,
     // not by the directory it points at, and using different words for the two makes that plain.
-    let ns = TwoRoots::new(b"a", b"b");
+    let namespace = TwoRoots::new(b"a", b"b");
 
     // `/a/inner`: resolves to grant A, one component deep, and opens through slot 0.
-    match ns.resolve(b"/a/inner") {
+    match namespace.resolve(b"/a/inner") {
         Ok((Which::A, cwd)) if cwd.depth() == 1 => {
             if dir_open_on(FILE_A, fs::ROOT, cwd.component(0)) >= 0 {
                 v |= t::OPENED_A;
@@ -53,7 +53,7 @@ pub(crate) fn two_dir() -> ! {
     }
 
     // `/b/secret`: the same claim, through the second grant and slot 1.
-    match ns.resolve(b"/b/secret") {
+    match namespace.resolve(b"/b/secret") {
         Ok((Which::B, cwd)) if cwd.depth() == 1 => {
             if dir_open_on(FILE_B, fs::ROOT, cwd.component(0)) >= 0 {
                 v |= t::OPENED_B;
@@ -66,7 +66,7 @@ pub(crate) fn two_dir() -> ! {
 
     // The negative control: a path that ascends out of grant A and into grant B. Resolution
     // itself must refuse it, so nothing below sends a request over it at all.
-    if ns.resolve(b"/a/../b").is_ok() {
+    if namespace.resolve(b"/a/../b").is_ok() {
         v |= t::DOT_DOT_CROSSED_MOUNTS;
     }
 
