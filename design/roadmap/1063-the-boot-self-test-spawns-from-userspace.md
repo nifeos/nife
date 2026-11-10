@@ -1,6 +1,7 @@
 ---
-status: NOT-STARTED
+status: BUILT
 raised: 2026-11-10
+built: 2026-11-10
 milestone_dependencies: none
 decision_dependencies: 4
 machine_requirements: none
@@ -42,6 +43,44 @@ stub. Its own `BUGS` count up to six spawns per boot. The kernel files those che
 1. `kernel/src/self_test.rs` calls no `user::program` and no service starter.
 2. Every check still runs on every architecture, and the verdict line reads as it does today.
 3. A falsification that breaks one moved check fails the boot's verdict, as it does today.
+
+## As built
+
+`kernel/src/self_test.rs` runs `exceptions`, `mapping`, `frames`, `timer`, `scheduler`,
+`preemption` and `device_interrupt`, and writes its tally into a page the hand-over grants the
+progenitor. The progenitor runs `components/src/boot_self_test.rs` before the shell; it runs the
+other eight and prints the verdict. `boot_ladder::verdict` is the tally and line format both
+halves share, `boot_ladder::kernel_half` the page, and `boot_ladder::self_test_program` the
+program's slots, addresses, image table and messages. notes/self-test-checks.md, "The two
+halves", has the design.
+
+| run | verdict |
+|---|---|
+| aarch64, `boot-check` | 10 of 15 passed, 5 absent: blockdev device_interrupt clock trng entropy |
+| `x86_64`, `boot-check` | 12 of 15 passed, 3 absent: blockdev clock trng |
+| aarch64, a virtio-mmio disk and virtio-rng | 12 of 15 passed, 3 absent: device_interrupt clock trng |
+| `x86_64`, a virtio-pci disk | 13 of 15 passed, 2 absent: clock trng |
+| aarch64, `boot-check --inject` | red: exceptions timer preemption userspace |
+| `x86_64`, `boot-check --inject` | red: exceptions timer userspace |
+
+riscv64 is gated by the merge queue's `boot-check`. Falsification: a progenitor that placed disk 0's
+transport without `GRANT` failed `blockdev` by name and turned the disk boots' verdicts red.
+
+## Exit criteria, as built
+
+| criterion | state |
+|---|---|
+| 1 | Done: the module calls neither. |
+| 2 | Done: every check runs on every architecture; the line's strings and format are `boot_ladder`'s. |
+| 3 | Done: the injected `userspace` and the `blockdev` above. |
+
+## BUGS
+
+- The shape's third point is not met yet. On a JH7110 the hand-over still starts the TRNG's
+  service, and on a machine with a virtio disk it registers disk 0 for the program. Moving those
+  starters is milestone 811 (the boot services leave the kernel)'s work.
+- The verdict reaches the console after the tour line, so a watcher reading the ladder's order
+  needs `serial_console`'s `has_reached` rather than the ratchet alone.
 
 ## Index row
 
