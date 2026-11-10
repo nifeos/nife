@@ -201,11 +201,14 @@ harness's comment, where the template reads it, so those records pass `falsify.p
     - the mutation baseline, the `deny.toml` wrappers and `_typos.toml`;
     - the fuzz targets, which the dry run staged in the crate repository's `fuzz/`
       ([milestone 1043 (a moved crate is fuzzed in its own repository)](../design/roadmap/1043-a-moved-crate-is-fuzzed-in-its-own-repository.md)).
-      The dry run's last list names each removal: the `[[bin]]` sections of `fuzz/Cargo.toml` (and
-      the crate's dependency line there when no target left links it), `fuzz/fuzz_targets/<target>.rs`,
-      the targets' names and fixtures case in `script/fuzz`, `fuzz/seeds/<target>` and the seed
-      scripts with their paragraphs in `fuzz/seeds/README.md`, and the targets' sections of
-      `notes/fuzzing/targets.md`. Afterwards `script/fuzz --list` names none of them;
+      The dry run's last list names each removal:
+      - the `[[bin]]` sections of `fuzz/Cargo.toml`, and the crate's dependency line there when no
+        remaining target links it;
+      - `fuzz/fuzz_targets/<target>.rs`, and the targets' names and fixtures case in `script/fuzz`;
+      - `fuzz/seeds/<target>`, the seed scripts and their paragraphs in `fuzz/seeds/README.md`;
+      - the targets' sections of `notes/fuzzing/targets.md`.
+
+      Afterwards `script/fuzz --list` names none of them;
     - citations into `crates/<crate>/src`, which repoint to the repository at the tag, by symbol.
 
     The crate's milestone block states the soak's state. Expected: `cargo tree --locked -i <crate>`
