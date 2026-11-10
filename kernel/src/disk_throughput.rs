@@ -10,9 +10,10 @@
 //! - The client is in the kernel, so the figure leaves out a client process's cost.
 //! - Sequential only, one pass, no warm-up and no repeats.
 
+use driver_process_contract::non_volatile_memory_express::BringUpError;
 use filesystem_contract::blk;
 
-use crate::non_volatile_memory_express::{Absent, BLOCK_SIZE, Error};
+use crate::non_volatile_memory_express::{Absent, BLOCK_SIZE};
 use crate::user::non_volatile_memory_express_service::{self as service, Wiring};
 use crate::{arch, println};
 
@@ -148,7 +149,7 @@ fn bring_up(image: &'static [u8]) -> Result<Wiring, Verdict> {
         }
         Err(Absent::Refused {
             rid,
-            why: Error::UnsupportedNamespace { lba_shift, blocks },
+            why: BringUpError::UnsupportedNamespace { lba_shift, blocks },
         }) => {
             // No server, so no wiring; the requester id still answers the scope.
             print_scope(rid, crate::iommu::scope_of(rid));

@@ -152,7 +152,7 @@ graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # copy of the wire format.
 entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
 # The JH7110 TRNG's register logic and DTB discovery (milestone 159), the same
-# pure-logic/volatile-shell split `pci` and `non_volatile_memory_express` below already use. The kernel takes it for one
+# pure-logic/volatile-shell split `pci` below already uses. The kernel takes it for one
 # thing only: `discover`, the device-tree query that says whether this machine has a TRNG at all,
 # so `entropy_service` can wire the userspace driver for it (`components/src/jh7110_entropy.rs`) instead of
 # keeping a second copy of the `compatible` string and the `reg` decode.
@@ -169,13 +169,9 @@ jh7110_clock_and_reset = { version = "0.1.0", path = "../crates/jh7110_clock_and
 designware_mobile_storage = { version = "0.1.0", git = "https://github.com/nifeos/designware_mobile_storage", rev = "a800e4b89cf379a85947e473082ebe7f8f933c34" }
 device_tree_blob = { version = "0.1.0", path = "../crates/device_tree_blob" }
 pci = { version = "0.1.0", path = "../crates/pci" }
-# The NVMe queue mechanics (milestone 53's storage half): pure logic, host-tested and proved; the
-# kernel's non_volatile_memory_express module is its volatile half, the same split as `pci` above.
-non_volatile_memory_express = { version = "0.1.0", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "87bbef8c9ac4cd05cc6babf88f31fa8500166e9d" }
 # The `e1000e` NIC family's register map, descriptors and ring logic (milestone 494 (a driver for the
 # network card a PC actually has)): the kernel resets the device and programs the rings' bases from
-# it. The `Handoff` it gives `net_stack` is `driver_process_contract`'s. Same split as the NVMe
-# crate above.
+# it. The `Handoff` it gives `net_stack` is `driver_process_contract`'s. Same split as `pci` above.
 e1000e = { version = "0.1.0", git = "https://github.com/nifeos/e1000e", rev = "40c1ec9c7e73e5099661636c046773dfcaecbb6d" }
 # The JH7110's Ethernet controller (milestone 53 (the board's own peripherals: network and storage
 # on real silicon)): register map, descriptors, ring logic, the bring-up and PHY sequences and the
@@ -184,7 +180,7 @@ e1000e = { version = "0.1.0", git = "https://github.com/nifeos/e1000e", rev = "4
 designware_ethernet = { version = "0.1.0", path = "../crates/designware_ethernet" }
 # The xHCI half of the USB keyboard (milestone 242 (USB host and HID)): the register window the
 # driver is mapped and the handoff it is spawned with. The kernel's extensible_host_controller_interface
-# module is its volatile half, the same split as `non_volatile_memory_express` above. The window, the
+# module is its volatile half, the same split as `pci` above. The window, the
 # handoff and the driver's bring-up report are `driver_process_contract`'s.
 extensible_host_controller_interface = { version = "0.1.0", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "bea025706ab4837cf541bf93c436ff4e1057922a" }
 elf = { version = "0.1.0", path = "../crates/elf" }

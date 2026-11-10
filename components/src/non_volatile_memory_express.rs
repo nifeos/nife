@@ -1,21 +1,24 @@
-//! **The NVMe block server, at EL0**: option 2a of §86 (whether an NVMe driver can leave the
-//! kernel), and notes/non-volatile-memory-express.md. It drives a real DMA device with no authority
-//! to reset the controller, move a queue, or reach memory outside the region an IOMMU already
-//! confined the controller to. All the arithmetic is in `crates/non_volatile_memory_express`,
-//! host-tested and Kani-reachable, including the block-range check
-//! [`non_volatile_memory_express::Namespace::transfer_command`] applies; what is left here is volatile access,
-//! two barriers and a bounded poll.
+//! **The NVMe driver, at EL0, as two processes from one image** (§86 (whether an NVMe driver can
+//! leave the kernel), notes/non-volatile-memory-express.md). `arg0` picks the role. The admin role
+//! is [`admin`]: it owns the controller and grants the data plane its pages. The data plane is the
+//! rest of this file, the block server: it drives a real DMA device with no authority to reset the
+//! controller, move a queue, or reach memory outside the run an IOMMU already confined the
+//! controller to. All the arithmetic is in `crates/non_volatile_memory_express`, host-tested and
+//! Kani-reachable, including the block-range check
+//! [`non_volatile_memory_express::Namespace::transfer_command`] applies; what is left here is
+//! volatile access, two barriers and a bounded poll.
 
 //! # Capability contract
 //!
-//! Held, the complete list: slot 0, the request endpoint (`filesystem_contract::blk`, as the virtio
-//! block server speaks); slot 1, a readiness endpoint; the data plane, [`DATA`] (the two I/O rings
-//! and one window of [`TRANSFER_BLOCKS`] pages per client); and BAR0's doorbell page, [`BELLS`],
-//! both where the startup page says the spawner mapped them. Denied, each by decision: BAR0's register page (`CC`, `CSTS`, the admin ring
-//! registers), which NVMe 1.4 puts on its own page so this split costs no syscall; the admin
-//! plane's pages; every admin command, so where the rings live is the kernel's statement; an
-//! `Interrupt`;
-//! a `Virtio`; any name for the two windows, installed before `_start`; and everything else.
+//! The data plane holds, the complete list: `data_plane_slots::REQUEST`, the request endpoint
+//! (`filesystem_contract::blk`, as the virtio block server speaks); `READY`, a readiness endpoint;
+//! `GRANTS`, where the admin process's handoff and grants arrive; `OWN_SPACE`, its own address
+//! space; and the two grants, mapped at [`DATA_VIRTUAL_ADDRESS`] (the two I/O rings and one window
+//! of [`TRANSFER_BLOCKS`] pages per client) and [`DOORBELL_VIRTUAL_ADDRESS`] (BAR0's doorbell
+//! page), held without `GRANT`. Denied, each by decision: BAR0's register page (`CC`, `CSTS`, the
+//! admin ring registers), which NVMe 1.4 puts on its own page so this split costs no syscall; the
+//! admin pages of the run; every admin command, so where the rings live is the admin process's
+//! statement; an `Interrupt`; a `Virtio`; and everything else.
 
 //! # BUGS
 //!
@@ -25,6 +28,9 @@
 //! - A PRP aimed backwards from [`Handoff::data_plane_physical_address`] could overwrite the admin
 //!   ring; not an escape, and §86 option 4's doorbell validator would close it.
 //! - One command per filesystem block (`physical_region_page_pair` builds no PRP list); bulk trails virtio.
+//!
+//! - The data plane holds its own address space with `WRITE`, so it can map more over its own
+//!   pages; it holds nothing else to map.
 //!
 //! Name: ratified 2026-09-17 (calef, §154 (the acronym test is whether the phrase is spoken)), the
 //! program's half 2026-09-18: it shares the crate's name, as `compositor` does. Refused
@@ -39,7 +45,9 @@
 #![no_main]
 
 use driver_process_contract::non_volatile_memory_express::{
-    CLIENT_WINDOWS, DISK_TREE_WINDOW, Handoff, client_window,
+    ADMIN_ROLE, DATA_PLANE_GRANT, DATA_PLANE_PAGES, DATA_PLANE_ROLE, DISK_TREE_WINDOW,
+    DOORBELL_PAGE_GRANT, FIRST_TRANSFER_PAGE, Handoff, IO_COMPLETION_QUEUE_PAGE,
+    IO_SUBMISSION_QUEUE_PAGE, client_window, data_plane_slots,
 };
 use filesystem_contract::blk;
 use non_volatile_memory_express::{
@@ -47,11 +55,20 @@ use non_volatile_memory_express::{
 };
 use startup_page_contract::StartupWindow;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
-use user_mode_runtime::{exit, receive_request, reply, send};
+use user_mode_runtime::{
+    address_space_map_into, exit, receive, receive_capability, receive_request, reply, send,
+};
 
-/// Capability slots, by convention with `kernel/src/user/non_volatile_memory_express_service.rs`.
-const REQ: u64 = 0;
-const READY: u64 = 1;
+#[path = "non_volatile_memory_express_admin.rs"]
+mod admin;
+
+/// Capability slots, as `driver_process_contract::non_volatile_memory_express::data_plane_slots`
+/// names them.
+const REQ: u64 = data_plane_slots::REQUEST;
+const READY: u64 = data_plane_slots::READY;
+
+/// One filesystem block, the unit IDENTIFY's geometry is checked against.
+const BLOCK_SIZE: u64 = blk::BLOCK_SIZE as u64;
 
 /// **Whether a window's client may write the disk.** The disk tree's may not: it serves a read-only
 /// view at the prompt, and refusing its `WRITE` and `FLUSH` here makes that a property of the
@@ -67,48 +84,37 @@ const fn can_write(window: u64) -> bool {
 /// mapped: the blk contract's own number, so this server and the virtio one clamp identically.
 const TRANSFER_BLOCKS: usize = blk::TRANSFER_BLOCKS;
 
-/// The data plane's layout, in byte offsets from the start of [`DATA`]. It is the spawner's layout,
-/// stated again here because the two halves live in different address spaces and nothing but the
-/// spawn contract joins them; `kernel/src/non_volatile_memory_express.rs`'s page constants are the other end.
-const IO_SQ_OFF: u64 = 0;
-const IO_CQ_OFF: u64 = PAGE;
-const TRANSFER_OFF: u64 = 2 * PAGE;
+/// The data plane's layout, in byte offsets from the start of its run, as the contract crate
+/// lays the pages out.
+const IO_SQ_OFF: u64 = IO_SUBMISSION_QUEUE_PAGE * PAGE;
+const IO_CQ_OFF: u64 = IO_COMPLETION_QUEUE_PAGE * PAGE;
+const TRANSFER_OFF: u64 = FIRST_TRANSFER_PAGE * PAGE;
 
-/// The whole data-plane window: two rings and one transfer window per client, window `w` at
-/// `TRANSFER_OFF + w * TRANSFER_BLOCKS` pages, where the startup page says the spawner put it.
-// SAFETY: the spawner (`kernel/src/user/non_volatile_memory_express_service.rs`) lists this window
-// on the startup page and maps all of it read/write before `_start` runs, for the life of the
-// process.
-static DATA: StartupWindow = unsafe {
-    StartupWindow::new(
-        ::driver_process_contract::non_volatile_memory_express::DATA_PLANE_KIND,
-        TRANSFER_OFF + (CLIENT_WINDOWS * TRANSFER_BLOCKS) as u64 * PAGE,
-    )
-};
+/// Where the data plane maps its run: two rings and one transfer window per client, window `w` at
+/// `TRANSFER_OFF + w * TRANSFER_BLOCKS` pages. The data plane chooses it; its spawn budgets the
+/// room (`run_with_own_space_and_room`).
+const DATA_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0000_0000_0098_0000);
 
-/// The doorbell page. Device-typed, so every access is uncached and unreordered, which is what a
-/// doorbell needs: a cached write is a command the controller never hears about.
-// SAFETY: the spawner lists the doorbell page and maps it device-typed before `_start` runs.
-static BELLS: StartupWindow = unsafe {
-    StartupWindow::new(
-        ::driver_process_contract::non_volatile_memory_express::DOORBELL_PAGE_KIND,
-        PAGE,
-    )
-};
+/// Where the data plane maps the doorbell page, device-typed (a `DeviceFrame` maps no other way),
+/// so every access is uncached and unreordered, which is what a doorbell needs: a cached write is
+/// a command the controller never hears about.
+const DOORBELL_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0000_0000_009c_0000);
+
+const _: () = assert!(DATA_VIRTUAL_ADDRESS + DATA_PLANE_PAGES * PAGE <= DOORBELL_VIRTUAL_ADDRESS);
 
 /// A window from the startup page, as a bounds-checked [`MappedWindow`] of the length its static
-/// declares.
+/// declares. The admin role's two windows come this way.
 fn mapped(window: &StartupWindow) -> MappedWindow {
     // SAFETY: each `StartupWindow` here was declared on the spawner's promise that it maps the
-    // window read/write for the life of the process, which is what `MappedWindow::new` asks.
+    // window for the life of the process, which is what `MappedWindow::new` asks.
     unsafe { MappedWindow::new(window.virtual_address(), window.length_bytes()) }
 }
 
-/// The one I/O queue pair the kernel's admin plane created. Ringing any other queue's doorbell
+/// The one I/O queue pair the admin process creates. Ringing any other queue's doorbell
 /// would be ringing a queue that does not exist.
 const IO_QID: u16 = 1;
 
-/// The one namespace QEMU's `-device nvme,drive=` carries; the admin plane identified it.
+/// The one namespace QEMU's `-device nvme,drive=` carries; the admin process identifies it.
 const NSID: u32 = 1;
 
 /// How many polls of the completion ring before this server declares the command lost. QEMU
@@ -143,6 +149,10 @@ fn barrier() {
 /// The server's whole mutable state: the two ring cursors and a command id.
 struct Plane {
     handoff: Handoff,
+    /// The data-plane run, mapped at [`DATA_VIRTUAL_ADDRESS`].
+    data: MappedWindow,
+    /// The doorbell page, mapped at [`DOORBELL_VIRTUAL_ADDRESS`].
+    bells: MappedWindow,
     sq: SubmissionQueue,
     cq: CompletionQueue,
     cid: u16,
@@ -160,7 +170,7 @@ impl Plane {
 
     /// **Submit one command on the I/O queue and poll its completion.** The copy into the
     /// submission ring, the publish barrier, the tail doorbell, the phase-gated poll, the head
-    /// doorbell. Every one of those is a volatile access through a window the spawner installed;
+    /// doorbell. Every one of those is a volatile access through a window this process mapped;
     /// every index and offset in it came out of `crates/non_volatile_memory_express`.
     ///
     /// `Err(status)` carries the controller's status field, or [`u16::MAX`] for a completion that
@@ -173,10 +183,10 @@ impl Plane {
             .sq
             .push()
             .expect("one command in flight per queue, so the ring cannot be full");
-        mapped(&DATA).write(IO_SQ_OFF + slot as u64 * 64, cmd.0);
+        self.data.write(IO_SQ_OFF + slot as u64 * 64, cmd.0);
         // Publish the command before the doorbell: the controller is another observer.
         barrier();
-        mapped(&BELLS).w32(
+        self.bells.w32(
             non_volatile_memory_express::doorbell(
                 IO_QID,
                 Doorbell::SubmissionTail,
@@ -191,7 +201,7 @@ impl Plane {
         let cqe = IO_CQ_OFF + self.cq.head() as u64 * 16;
         let mut done: Option<Completion> = None;
         for _ in 0..SPIN_BOUND {
-            let c = Completion::from_dwords(mapped(&DATA).read::<[u32; 4]>(cqe));
+            let c = Completion::from_dwords(self.data.read::<[u32; 4]>(cqe));
             if self.cq.is_owned(&c) {
                 done = Some(c);
                 break;
@@ -203,7 +213,7 @@ impl Plane {
         barrier();
 
         let new_head = self.cq.pop();
-        mapped(&BELLS).w32(
+        self.bells.w32(
             non_volatile_memory_express::doorbell(
                 IO_QID,
                 Doorbell::CompletionHead,
@@ -254,15 +264,66 @@ impl Plane {
 
 user_mode_runtime::program_entry!(start);
 
-fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
-    // The three words are the whole of what this process was told; a word that cannot describe a
-    // controller it could serve is a wiring bug, reported rather than acted on.
-    let Some(handoff) = Handoff::unpack([arg0, arg1, arg2]) else {
-        send(READY, STEP_BAD_HANDOFF, arg0, 0);
+fn start(role: u64, dma: u64, _: u64) -> ! {
+    match role {
+        ADMIN_ROLE => admin::run(dma),
+        DATA_PLANE_ROLE => data_plane(),
+        _ => exit(),
+    }
+}
+
+/// **Take the admin process's grants and map them**: three words, then the doorbell page and the
+/// data-plane run, each tagged with what it is. `None` for anything else, which is a wiring bug.
+fn take_grants() -> Option<(Handoff, MappedWindow, MappedWindow)> {
+    let (w0, w1, w2) = receive(data_plane_slots::GRANTS);
+    let handoff = Handoff::unpack([w0, w1, w2])?;
+    let (mut data, mut bells) = (false, false);
+    for _ in 0..2 {
+        let (what, slot, _) = receive_capability(data_plane_slots::GRANTS);
+        let va = match what {
+            DOORBELL_PAGE_GRANT if !bells => {
+                bells = true;
+                DOORBELL_VIRTUAL_ADDRESS
+            }
+            DATA_PLANE_GRANT if !data => {
+                data = true;
+                DATA_VIRTUAL_ADDRESS
+            }
+            _ => return None,
+        };
+        if address_space_map_into(
+            data_plane_slots::OWN_SPACE,
+            va,
+            slot,
+            abi::address_space::MAP_RW,
+        ) != 0
+        {
+            return None;
+        }
+    }
+    // SAFETY: both runs are mapped read/write into this space by the two `MAP_INTO`s above, which
+    // returned 0, for the life of the process: nothing here unmaps them.
+    let windows = unsafe {
+        (
+            MappedWindow::new(DATA_VIRTUAL_ADDRESS, DATA_PLANE_PAGES * PAGE),
+            MappedWindow::new(DOORBELL_VIRTUAL_ADDRESS, PAGE),
+        )
+    };
+    Some((handoff, windows.0, windows.1))
+}
+
+/// **The data plane**: take the grants, prove one read, report, serve. Never returns.
+fn data_plane() -> ! {
+    // The handoff and two grants are the whole of what this process was told; anything else is a
+    // wiring bug, reported rather than acted on.
+    let Some((handoff, data, bells)) = take_grants() else {
+        send(READY, STEP_BAD_HANDOFF, 0, 0);
         exit();
     };
     let mut plane = Plane {
         handoff,
+        data,
+        bells,
         sq: SubmissionQueue::new(handoff.entries),
         cq: CompletionQueue::new(handoff.entries),
         cid: 0,
@@ -272,14 +333,14 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     // **Test-only: the DMA-escape attacker role**, compiled only with `confinement_attackers`,
     // which only `cargo xtask test` turns on. `start_dma_escape` in
     // `kernel/src/user/non_volatile_memory_express_service.rs` writes `[ESCAPE_MAGIC, victim_phys]`
-    // into the transfer buffer's first two `u64`s before this runs; a real boot's is zeroed. Read
-    // before the readiness transfer, which reuses transfer page 0. See
+    // into the transfer buffer's first two `u64`s before either process runs; a real boot's is
+    // zeroed. Read before the readiness transfer, which reuses transfer page 0. See
     // notes/non-volatile-memory-express/the-direct-memory-access-escape-test.md.
     #[cfg(feature = "confinement_attackers")]
-    if mapped(&DATA).r64(TRANSFER_OFF)
+    if plane.data.r64(TRANSFER_OFF)
         == driver_process_contract::non_volatile_memory_express::ESCAPE_MAGIC
     {
-        let victim = mapped(&DATA).r64(TRANSFER_OFF + 8);
+        let victim = plane.data.r64(TRANSFER_OFF + 8);
         run_dma_escape(&mut plane, victim);
     }
 

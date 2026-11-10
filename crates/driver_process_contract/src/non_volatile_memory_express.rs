@@ -1,8 +1,9 @@
-//! **What the kernel and the NVMe server agree on**: the transfer windows the server keeps, one per
-//! client, the largest doorbell stride the server's one page of BAR0 can serve, and the three words
-//! the kernel's admin plane hands the unprivileged data plane at spawn. The NVMe protocol itself is
-//! `non_volatile_memory_express`'s; this module holds only nife's process plan around it. See
-//! notes/non-volatile-memory-express.md.
+//! **What the kernel, the NVMe admin process and the NVMe data plane agree on**: the DMA run's
+//! layout, each process's capability slots and windows, the admin process's report to the kernel,
+//! the three words and two grants the admin process hands the data plane, the transfer windows the
+//! data plane keeps, one per client, and the largest doorbell stride its one page of BAR0 can
+//! serve. The NVMe protocol itself is `non_volatile_memory_express`'s; this module holds only
+//! nife's process plan around it. See notes/non-volatile-memory-express.md.
 //!
 //! Name: provisional, minted 2026-10-26 (UTC) by lane driver-contracts-folded, after the crate it
 //! serves, as this crate's other modules are named.
@@ -11,13 +12,254 @@ use ::non_volatile_memory_express::registers::FIRST_DOORBELL_REGISTER;
 use startup_page_contract::WindowKind;
 
 // ---------------------------------------------------------------------------------------------
-// The split between an admin plane and a data plane.
+// The split between an admin plane and a data plane (§86 (whether an NVMe driver can leave the
+// kernel)).
 //
-// The admin plane (reset, the admin rings, IDENTIFY, Create I/O Queue) stays in the kernel, the
-// authority over where a ring lives; the data plane (build a command, ring a doorbell, watch a
-// phase tag) runs as an unprivileged process. Below, the few facts the kernel tells it are
-// packed, unpacked and bounds-checked where the prover reaches them.
+// The kernel finds the controller, confines its requester id to one DMA run, and knows nothing
+// else about NVMe. The admin process holds BAR0's register and doorbell pages and the run's admin
+// pages: it resets the controller, builds the admin rings, IDENTIFYs the namespace and creates the
+// one I/O queue pair. It then grants the data plane the doorbell page and the run's data-plane
+// pages. The data plane builds commands, rings doorbells and watches phase tags. Below, every fact
+// the three exchange is packed, unpacked and bounds-checked where the prover reaches it.
 // ---------------------------------------------------------------------------------------------
+
+/// **The role word an NVMe process finds in `arg0`**: the one program image serves as the admin
+/// process or as the data plane, and the capabilities each spawn grants are what separate them.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const ADMIN_ROLE: u64 = 0x4E56_4D45_4144_4D31;
+/// The data plane's role word, [`ADMIN_ROLE`]'s twin.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const DATA_PLANE_ROLE: u64 = 0x4E56_4D45_4441_5431;
+
+/// Pages of BAR0 the admin process is mapped, from BAR0's base: the register page (`CAP`, `CC`,
+/// `CSTS`, `AQA`, `ASQ`, `ACQ`) and the doorbell page at [`FIRST_DOORBELL_REGISTER`]. The pages
+/// past them hold no register this driver uses, and on a controller that puts its MSI-X table
+/// there, mapping them would hand a process the power to aim an interrupt.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const REGISTER_PAGES: u64 = 2;
+
+/// The admin submission ring's page in the DMA run.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const ADMIN_SUBMISSION_QUEUE_PAGE: u64 = 0;
+/// The admin completion ring's page in the DMA run.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const ADMIN_COMPLETION_QUEUE_PAGE: u64 = 1;
+/// The page IDENTIFY writes the namespace structure into.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const IDENTIFY_PAGE: u64 = 2;
+/// How many pages at the run's start are the admin process's alone: the two admin rings and the
+/// IDENTIFY page. The data plane is never granted them.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const ADMIN_PAGES: u64 = 3;
+/// Pages in one client's transfer window: one request's worth of filesystem blocks.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const TRANSFER_PAGES: u64 = filesystem_contract::blk::TRANSFER_BLOCKS as u64;
+/// Pages the data plane is granted, from [`ADMIN_PAGES`] on: the I/O submission ring, the I/O
+/// completion ring, then one [`TRANSFER_PAGES`] window per client.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const DATA_PLANE_PAGES: u64 = 2 + TRANSFER_PAGES * CLIENT_WINDOWS as u64;
+/// The whole DMA run the kernel allocates and confines the controller to.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const DIRECT_MEMORY_ACCESS_PAGES: u64 = ADMIN_PAGES + DATA_PLANE_PAGES;
+/// The I/O submission ring's page, counted from the start of the data plane's pages.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const IO_SUBMISSION_QUEUE_PAGE: u64 = 0;
+/// The I/O completion ring's page, counted from the start of the data plane's pages.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const IO_COMPLETION_QUEUE_PAGE: u64 = 1;
+/// The first transfer window's page, counted from the start of the data plane's pages.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const FIRST_TRANSFER_PAGE: u64 = 2;
+
+/// The admin process's register window on its startup page: [`REGISTER_PAGES`] pages of BAR0,
+/// device memory.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const REGISTER_KIND: WindowKind = WindowKind(1);
+/// The admin process's queue window on its startup page: the run's first [`ADMIN_PAGES`] pages.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const ADMIN_QUEUE_KIND: WindowKind = WindowKind(2);
+
+/// **The admin process's capability slots**, in the order its spawn grants them.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub mod admin_slots {
+    /// `WRITE`: the endpoint the admin process sends its one [`super::AdminReport`] on.
+    pub const REPORT: u64 = 0;
+    /// `WRITE`: the endpoint the data plane receives its handoff and its two grants on.
+    pub const GRANTS: u64 = 1;
+    /// `WRITE | GRANT`: the doorbell page, as a `DeviceFrame`, for the data plane.
+    pub const DOORBELL_PAGE: u64 = 2;
+    /// `READ | WRITE | GRANT`: the data plane's pages of the DMA run, as one `PageFrame` run.
+    pub const DATA_PLANE: u64 = 3;
+    /// `READ`: the endpoint the kernel calls with [`super::RETIRE`].
+    pub const CONTROL: u64 = 4;
+}
+
+/// **The data plane's capability slots.** The first three come from its spawn; the doorbell page
+/// and the data-plane run arrive later over [`GRANTS`](data_plane_slots::GRANTS), in slots the
+/// kernel chooses.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub mod data_plane_slots {
+    /// `READ`: the request endpoint the data plane serves `filesystem_contract::blk` on.
+    pub const REQUEST: u64 = 0;
+    /// `WRITE`: the readiness endpoint, written once.
+    pub const READY: u64 = 1;
+    /// `READ`: where the admin process's handoff and grants arrive.
+    pub const GRANTS: u64 = 2;
+    /// `WRITE`: the data plane's own address space, which it maps its two grants into.
+    pub const OWN_SPACE: u64 = 3;
+}
+
+/// The data word riding the doorbell page's `SEND_CAPABILITY`, so the data plane maps each grant
+/// as what it is rather than by arrival order alone.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const DOORBELL_PAGE_GRANT: u64 = 0x4E56_0001;
+/// The data word riding the data-plane run's `SEND_CAPABILITY`.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const DATA_PLANE_GRANT: u64 = 0x4E56_0002;
+
+/// **The one verb on the admin process's control endpoint**: take the controller down (`CC.EN`
+/// cleared, `CSTS.RDY` followed) and exit. A `CALL` with this in word 0; the reply's word 0 is 0
+/// once the controller reports not-ready, and nonzero when it never does. Only a caller about to
+/// free the DMA run needs it: freeing under an enabled controller is use-after-free by hardware.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub const RETIRE: u64 = 0x4E56_5254;
+
+/// **Why the admin process refused the controller**, each naming the phase it died in, because
+/// "the disk did not come up" from a five-step bring-up is the kind of message this project's
+/// debugging notes complain about. It crosses from the admin process to the kernel in
+/// [`AdminReport`].
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BringUpError {
+    /// `CSTS.RDY` never followed `CC.EN` within the spin bound (either direction).
+    ControllerTimeout,
+    /// `CSTS.CFS`: the controller declared a fatal internal error.
+    ControllerFatal,
+    /// A completion never arrived for a submitted admin command.
+    CompletionTimeout,
+    /// The controller completed an admin command with a nonzero status field (the field is
+    /// carried).
+    Command(u16),
+    /// The identify data described a namespace this driver cannot serve (LBA format outside
+    /// 512..=4096 bytes, or a size of zero). `lba_shift` is the format's LBADS as the controller
+    /// reported it, 0 if the structure was too short to carry one, so the refusal names the LBA
+    /// size it refused (fatal risk 6's second night-of condition).
+    UnsupportedNamespace {
+        /// The LBA format's size shift.
+        lba_shift: u8,
+        /// The namespace's size in logical blocks.
+        blocks: u64,
+    },
+    /// `CAP` describes a controller this driver cannot drive: queues too shallow, a minimum page
+    /// size above 4 KiB, or a doorbell stride above [`MAXIMUM_DOORBELL_STRIDE`].
+    UnsupportedController,
+}
+
+/// **What the admin process tells the kernel once**, after bring-up: the geometry the kernel's
+/// wiring reports, or why there is no disk.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AdminReport {
+    /// The controller is enabled with its one I/O pair created, and the data plane's handoff is
+    /// next on [`admin_slots::GRANTS`].
+    Ready {
+        /// The namespace's capacity in bytes.
+        size_bytes: u64,
+        /// Logical blocks per filesystem block, `1..=8`.
+        blocks_per_transfer: u16,
+    },
+    /// Bring-up stopped at the named phase, and the admin process granted nothing.
+    Refused(BringUpError),
+}
+
+/// [`AdminReport::Ready`]'s word 0.
+const REPORT_READY: u64 = 0x4E56_4144_0000_0001;
+/// [`AdminReport::Refused`]'s word 0; the low byte of word 1 names the variant.
+const REPORT_REFUSED: u64 = 0x4E56_4144_0000_0002;
+
+impl AdminReport {
+    /// The three words of one `SEND`.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+    pub const fn pack(&self) -> [u64; 3] {
+        match *self {
+            AdminReport::Ready {
+                size_bytes,
+                blocks_per_transfer,
+            } => [REPORT_READY, size_bytes, blocks_per_transfer as u64],
+            AdminReport::Refused(why) => {
+                let (kind, detail, blocks) = match why {
+                    BringUpError::ControllerTimeout => (1, 0, 0),
+                    BringUpError::ControllerFatal => (2, 0, 0),
+                    BringUpError::CompletionTimeout => (3, 0, 0),
+                    BringUpError::Command(status) => (4, status as u64, 0),
+                    BringUpError::UnsupportedNamespace { lba_shift, blocks } => {
+                        (5, lba_shift as u64, blocks)
+                    }
+                    BringUpError::UnsupportedController => (6, 0, 0),
+                };
+                [REPORT_REFUSED, kind + (detail << 8), blocks]
+            }
+        }
+    }
+
+    /// [`pack`](Self::pack)'s inverse, or `None` for words no admin process sends: a wrong word 0,
+    /// a variant byte that names none, or a ready geometry outside `1..=8`.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+    pub const fn unpack(words: [u64; 3]) -> Option<AdminReport> {
+        match words[0] {
+            REPORT_READY => {
+                if words[2] < 1 || words[2] > 8 {
+                    return None;
+                }
+                Some(AdminReport::Ready {
+                    size_bytes: words[1],
+                    blocks_per_transfer: words[2] as u16,
+                })
+            }
+            REPORT_REFUSED => {
+                let detail = words[1] >> 8;
+                let why = match words[1] & 0xff {
+                    1 => BringUpError::ControllerTimeout,
+                    2 => BringUpError::ControllerFatal,
+                    3 => BringUpError::CompletionTimeout,
+                    4 => BringUpError::Command(detail as u16),
+                    5 => BringUpError::UnsupportedNamespace {
+                        lba_shift: detail as u8,
+                        blocks: words[2],
+                    },
+                    6 => BringUpError::UnsupportedController,
+                    _ => return None,
+                };
+                Some(AdminReport::Refused(why))
+            }
+            _ => None,
+        }
+    }
+}
 
 /// **How many transfer windows the EL0 server keeps, one per client.** Each window is
 /// `filesystem_contract::blk::TRANSFER_BLOCKS` pages of the DMA region, and the server stages a
@@ -30,17 +272,6 @@ use startup_page_contract::WindowKind;
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 pub const CLIENT_WINDOWS: usize = 3;
-
-/// The data plane's entry on the startup page: the submission ring, the completion ring, then the
-/// transfer windows, one run.
-///
-/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-pub const DATA_PLANE_KIND: WindowKind = WindowKind(1);
-/// The doorbell page's entry on the startup page: the one register page that holds the doorbells,
-/// device memory.
-///
-/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
-pub const DOORBELL_PAGE_KIND: WindowKind = WindowKind(2);
 
 /// The unbadged window: the filesystem server, and every kernel-side caller of the request endpoint.
 ///
@@ -81,12 +312,12 @@ pub const fn client_window(badge: u64) -> Option<usize> {
 /// **The largest `CAP.DSTRD` the data plane's one page of BAR0 can serve**, a refusal rather than
 /// an assumption.
 ///
-/// The kernel maps the EL0 data plane one page of BAR0, the doorbell page at `0x1000`
+/// The admin process grants the data plane one page of BAR0, the doorbell page at `0x1000`
 /// ([`FIRST_DOORBELL_REGISTER`]), and the data plane rings the doorbells of queues 0 and 1 only, up to
 /// doorbell index 3. Doorbell N sits at `0x1000 + N * (4 << DSTRD)`, so they fit while
 /// `0x1000 + 3 * (4 << DSTRD) + 4 <= 0x2000`, which is `DSTRD <= 8`. `CAP`'s four-bit field lets a
-/// controller report 9 to 15, which the kernel refuses at bring-up and [`Handoff::unpack`] refuses
-/// again. Kani found the bound: `DSTRD = 15` puts queue 1's submission tail at `0x41000`, a
+/// controller report 9 to 15, which the admin process refuses at bring-up and [`Handoff::unpack`]
+/// refuses again. Kani found the bound: `DSTRD = 15` puts queue 1's submission tail at `0x41000`, a
 /// quarter of a megabyte past the mapped window, and QEMU reports 0.
 ///
 /// Name: ratified 2026-10-26 (UTC), on #2760. Refused `MAX_DSTRD` (it copied the field's
@@ -120,14 +351,14 @@ const _: () = assert!(
 #[cfg(feature = "confinement_attackers")]
 pub const ESCAPE_MAGIC: u64 = 0xE5CA_9E00_4E56_4D45;
 
-/// **What the admin plane tells the data plane at spawn**, and the whole of it: the physical base,
-/// because PRP fields carry physical addresses and a process knows virtual ones; the geometry,
-/// because reading it means IDENTIFY, the admin authority this split withholds; and the doorbell
-/// stride, because it lives in `CAP`, on the register page the process is not mapped.
+/// **What the admin process tells the data plane before its two grants**, and the whole of it: the
+/// physical base, because PRP fields carry physical addresses and a process knows virtual ones; the
+/// geometry, because reading it means IDENTIFY, the admin authority this split withholds; and the
+/// doorbell stride, because it lives in `CAP`, on the register page the data plane is not granted.
 ///
-/// **Three `u64`s because a spawn carries three scalars** (`kernel/src/user/entry.rs`'s `Spawn`).
-/// The kernel packs them and the server unpacks them, so the packing is written once, here, and a
-/// Kani round trip checks its inverse.
+/// **Three `u64`s because one `SEND` carries three words**, the first message on
+/// [`admin_slots::GRANTS`]. The admin process packs them and the data plane unpacks them, so the
+/// packing is written once, here, and a Kani round trip checks its inverse.
 ///
 /// Name: provisional. No ruling covers it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -139,8 +370,8 @@ pub struct Handoff {
     pub blocks_per_transfer: u16,
     /// Entries per I/O ring, as the admin plane created them.
     pub entries: u16,
-    /// The **physical** base of the run of pages the data plane was mapped: the I/O submission
-    /// ring, the I/O completion ring, then the transfer buffer.
+    /// The **physical** base of the run of pages the data plane is granted: the I/O submission
+    /// ring, the I/O completion ring, then the transfer windows.
     pub data_plane_physical_address: u64,
     /// The namespace's capacity in bytes, the `SIZE` answer.
     pub size_bytes: u64,
@@ -205,7 +436,7 @@ mod tests {
 
     use super::*;
 
-    /// The handoff the kernel's admin plane builds is the handoff the EL0 data plane reads, and a
+    /// The handoff the admin process builds is the handoff the data plane reads, and a
     /// word that cannot describe a servable controller is refused rather than decoded.
     #[test]
     fn the_handoff_survives_three_words_and_refuses_nonsense() {
@@ -247,6 +478,77 @@ mod tests {
             Handoff::unpack([8 << 16 | 2, 0, 0]).is_some(),
             "the minimum queue depth must be accepted, not refused"
         );
+    }
+
+    /// Every report the admin process can send comes back as itself, each refusal keeping its
+    /// variant and detail apart from every other's.
+    #[test]
+    fn every_admin_report_round_trips() {
+        let reports = [
+            AdminReport::Ready {
+                size_bytes: 8 * 1024 * 1024,
+                blocks_per_transfer: 8,
+            },
+            AdminReport::Ready {
+                size_bytes: u64::MAX,
+                blocks_per_transfer: 1,
+            },
+            AdminReport::Refused(BringUpError::ControllerTimeout),
+            AdminReport::Refused(BringUpError::ControllerFatal),
+            AdminReport::Refused(BringUpError::CompletionTimeout),
+            AdminReport::Refused(BringUpError::Command(0x4002)),
+            AdminReport::Refused(BringUpError::Command(u16::MAX)),
+            AdminReport::Refused(BringUpError::UnsupportedNamespace {
+                lba_shift: 13,
+                blocks: 0x1_0000_0001,
+            }),
+            AdminReport::Refused(BringUpError::UnsupportedController),
+        ];
+        for (n, r) in reports.iter().enumerate() {
+            assert_eq!(AdminReport::unpack(r.pack()), Some(*r), "{r:?}");
+            for other in &reports[..n] {
+                assert_ne!(r.pack(), other.pack(), "{r:?} packs as {other:?}");
+            }
+        }
+    }
+
+    /// Words no admin process sends are refused: a wrong first word, a variant byte that names
+    /// none, and a ready geometry outside `1..=8`.
+    #[test]
+    fn an_admin_report_no_admin_process_sends_is_refused() {
+        assert_eq!(AdminReport::unpack([0, 0, 0]), None);
+        assert_eq!(AdminReport::unpack([REPORT_READY, 4096, 0]), None);
+        assert_eq!(AdminReport::unpack([REPORT_READY, 4096, 9]), None);
+        assert!(AdminReport::unpack([REPORT_READY, 4096, 1]).is_some());
+        assert_eq!(AdminReport::unpack([REPORT_REFUSED, 0, 0]), None);
+        assert_eq!(AdminReport::unpack([REPORT_REFUSED, 7, 0]), None);
+        // The detail rides above the variant byte, so a status whose low byte is a variant number
+        // still decodes as the status it is.
+        assert_eq!(
+            AdminReport::unpack([REPORT_REFUSED, 4 | 0x0106 << 8, 0]),
+            Some(AdminReport::Refused(BringUpError::Command(0x0106)))
+        );
+    }
+
+    /// The run's layout: the admin pages first, then the data plane's rings and windows, with
+    /// nothing between or past them.
+    #[test]
+    fn the_direct_memory_access_run_is_the_admin_pages_then_the_data_plane() {
+        let admin = [
+            ADMIN_SUBMISSION_QUEUE_PAGE,
+            ADMIN_COMPLETION_QUEUE_PAGE,
+            IDENTIFY_PAGE,
+        ];
+        assert!(admin.iter().all(|&p| p < ADMIN_PAGES));
+        assert_eq!(ADMIN_PAGES, 3);
+        assert_eq!(
+            FIRST_TRANSFER_PAGE + TRANSFER_PAGES * CLIENT_WINDOWS as u64,
+            DATA_PLANE_PAGES
+        );
+        assert!(IO_SUBMISSION_QUEUE_PAGE < FIRST_TRANSFER_PAGE);
+        assert!(IO_COMPLETION_QUEUE_PAGE < FIRST_TRANSFER_PAGE);
+        assert_ne!(IO_SUBMISSION_QUEUE_PAGE, IO_COMPLETION_QUEUE_PAGE);
+        assert_eq!(DIRECT_MEMORY_ACCESS_PAGES, 53);
     }
 
     #[test]

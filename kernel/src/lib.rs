@@ -65,12 +65,10 @@ mod preemption_window_tests;
 // decode logic is crates/pci, and each arch supplies its window/interrupt constants. See
 // kernel/src/pci.rs.
 mod pci;
-// The NVMe block driver (milestone 53's storage half): the volatile half of
-// crates/non_volatile_memory_express, brought up over the PCIe transport above and confined behind
-// the machine's IOMMU. See kernel/src/non_volatile_memory_express.rs. Only the test boot drives it
-// today (nothing production-wired rides NVMe until the block-server question in
-// notes/non-volatile-memory-express.md's BUGS is decided), so the non-test build allows it dead
-// rather than cfg-gating a module whose next caller is already known.
+// The kernel's part of the NVMe disk (§86): find the controller over the PCIe transport above and
+// confine it behind the machine's IOMMU; the admin and data planes run in userspace. See
+// kernel/src/non_volatile_memory_express.rs. Only the test boot drives it today, so the non-test
+// build allows it dead rather than cfg-gating a module whose next caller is already known.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 mod non_volatile_memory_express;
 // The `e1000e` NIC's control plane (milestone 494 (a driver for the network card a PC actually

@@ -10,8 +10,8 @@ use startup_page_contract::WindowKind;
 ///
 /// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
 pub const ALL: [WindowKind; 11] = [
-    crate::non_volatile_memory_express::DATA_PLANE_KIND,
-    crate::non_volatile_memory_express::DOORBELL_PAGE_KIND,
+    crate::non_volatile_memory_express::REGISTER_KIND,
+    crate::non_volatile_memory_express::ADMIN_QUEUE_KIND,
     crate::e1000e::DATA_PLANE_KIND,
     crate::e1000e::RECEIVE_QUEUE_KIND,
     crate::e1000e::TRANSMIT_QUEUE_KIND,

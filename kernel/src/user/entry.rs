@@ -255,12 +255,12 @@ pub(crate) struct DeviceRun {
 /// Load the initial ramdisk program and become it, handed the world described by `spawn`. Never
 /// returns.
 pub fn run(image: &[u8], spawn: Spawn) -> ! {
-    run_with(image, spawn, None, None)
+    run_with(image, spawn, None, None, 0)
 }
 
 /// [`run`], with one [`DeviceRun`] mapped as well. Never returns. **Name provisional.**
 pub(crate) fn run_with_device_run(image: &[u8], spawn: Spawn, device: DeviceRun) -> ! {
-    run_with(image, spawn, Some(device), None)
+    run_with(image, spawn, Some(device), None, 0)
 }
 
 /// [`run`], and the process also holds its own address space, `WRITE`, at `slot` (§255 (each
@@ -268,10 +268,26 @@ pub(crate) fn run_with_device_run(image: &[u8], spawn: Spawn, device: DeviceRun)
 /// page. `supervision_contract::CHILDS_OWN_SPACE` is the progenitor's twin. Never
 /// returns. Name provisional.
 pub fn run_with_own_space(image: &[u8], spawn: Spawn, slot: u64) -> ! {
-    run_with(image, spawn, None, Some(slot))
+    run_with(image, spawn, None, Some(slot), 0)
 }
 
-fn run_with(image: &[u8], spawn: Spawn, device: Option<DeviceRun>, own_space: Option<u64>) -> ! {
+/// [`run_with_own_space`], for a process that will map `room` more pages itself, through that
+/// space, from capabilities that reach it after it starts: the NVMe data plane, whose doorbell
+/// page and DMA pages its admin process grants. The space's own region pays for those mappings'
+/// tables and records, so the spawn budgets them here. Never returns.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/1062-nvme-admin-plane-in-userspace.
+pub fn run_with_own_space_and_room(image: &[u8], spawn: Spawn, slot: u64, room: u64) -> ! {
+    run_with(image, spawn, None, Some(slot), room)
+}
+
+fn run_with(
+    image: &[u8],
+    spawn: Spawn,
+    device: Option<DeviceRun>,
+    own_space: Option<u64>,
+    room: u64,
+) -> ! {
     // Every window this process will have mapped beyond its image: the `Spawn` windows, a device
     // run, and every granted `PageFrame` run, both those still in `spawn.grants` and those the spawn
     // closure already placed with `grant_at`. See [`load`] and notes/user-address-spaces.md.
@@ -281,7 +297,8 @@ fn run_with(image: &[u8], spawn: Spawn, device: Option<DeviceRun>, own_space: Op
         .map(|g| g.object.mappable_pages())
         .sum::<u64>()
         + crate::sched::current_mappable_pages();
-    let windowed = spawn.maps.len() as u64 + device.as_ref().map_or(0, |d| d.pages) + granted_runs;
+    let windowed =
+        spawn.maps.len() as u64 + device.as_ref().map_or(0, |d| d.pages) + granted_runs + room;
     crate::sched::defer_kill();
     for w in spawn.windows {
         assert!(
