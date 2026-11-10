@@ -22,6 +22,9 @@ page size and the band the page sits in.
   kind, a window of zero pages, an unaligned address, or more windows than fit.
   `StartupPage::parse(bytes)` reads one, and `StartupPage::mapped()` reads the one at the fixed
   address.
+- `StartupWindow` is the reader a program keeps as a `static`: it names a kind and the bytes the
+  program uses, and `virtual_address()` reads the page on first use and panics, naming the kind,
+  when the page is missing, lists no such window, or lists one too short.
 
 ## EXAMPLES
 

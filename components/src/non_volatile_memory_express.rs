@@ -45,8 +45,8 @@ use filesystem_contract::blk;
 use non_volatile_memory_express::{
     Command, Completion, CompletionQueue, Doorbell, Namespace, SubmissionQueue,
 };
-use user_mode_runtime::mapped_window::PAGE;
-use user_mode_runtime::startup_window::StartupWindow;
+use startup_page_contract::StartupWindow;
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{exit, receive_request, reply, send};
 
 /// Capability slots, by convention with `kernel/src/user/non_volatile_memory_express_service.rs`.
@@ -95,6 +95,14 @@ static BELLS: StartupWindow = unsafe {
         PAGE,
     )
 };
+
+/// A window from the startup page, as a bounds-checked [`MappedWindow`] of the length its static
+/// declares.
+fn mapped(window: &StartupWindow) -> MappedWindow {
+    // SAFETY: each `StartupWindow` here was declared on the spawner's promise that it maps the
+    // window read/write for the life of the process, which is what `MappedWindow::new` asks.
+    unsafe { MappedWindow::new(window.virtual_address(), window.length_bytes()) }
+}
 
 /// The one I/O queue pair the kernel's admin plane created. Ringing any other queue's doorbell
 /// would be ringing a queue that does not exist.
@@ -165,10 +173,10 @@ impl Plane {
             .sq
             .push()
             .expect("one command in flight per queue, so the ring cannot be full");
-        DATA.get().write(IO_SQ_OFF + slot as u64 * 64, cmd.0);
+        mapped(&DATA).write(IO_SQ_OFF + slot as u64 * 64, cmd.0);
         // Publish the command before the doorbell: the controller is another observer.
         barrier();
-        BELLS.get().w32(
+        mapped(&BELLS).w32(
             non_volatile_memory_express::doorbell(
                 IO_QID,
                 Doorbell::SubmissionTail,
@@ -183,7 +191,7 @@ impl Plane {
         let cqe = IO_CQ_OFF + self.cq.head() as u64 * 16;
         let mut done: Option<Completion> = None;
         for _ in 0..SPIN_BOUND {
-            let c = Completion::from_dwords(DATA.get().read::<[u32; 4]>(cqe));
+            let c = Completion::from_dwords(mapped(&DATA).read::<[u32; 4]>(cqe));
             if self.cq.is_owned(&c) {
                 done = Some(c);
                 break;
@@ -195,7 +203,7 @@ impl Plane {
         barrier();
 
         let new_head = self.cq.pop();
-        BELLS.get().w32(
+        mapped(&BELLS).w32(
             non_volatile_memory_express::doorbell(
                 IO_QID,
                 Doorbell::CompletionHead,
@@ -268,10 +276,10 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     // before the readiness transfer, which reuses transfer page 0. See
     // notes/non-volatile-memory-express/the-direct-memory-access-escape-test.md.
     #[cfg(feature = "confinement_attackers")]
-    if DATA.get().r64(TRANSFER_OFF)
+    if mapped(&DATA).r64(TRANSFER_OFF)
         == driver_process_contract::non_volatile_memory_express::ESCAPE_MAGIC
     {
-        let victim = DATA.get().r64(TRANSFER_OFF + 8);
+        let victim = mapped(&DATA).r64(TRANSFER_OFF + 8);
         run_dma_escape(&mut plane, victim);
     }
 

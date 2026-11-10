@@ -48,9 +48,12 @@ fn an_unknown_kind_is_skipped_and_the_known_one_still_found() {
 #[test]
 fn bytes_that_are_not_a_page_read_as_none() {
     assert!(StartupPage::parse(&[0u8; PAGE_BYTES]).is_none());
-    assert!(StartupPage::parse(&[0u8; 16]).is_none());
     let mut page = [0u8; PAGE_BYTES];
     write(&mut page, &[]).unwrap();
+    assert!(
+        StartupPage::parse(&page[..OFF_ENTRIES]).is_none(),
+        "a header alone, magic and all, is not a page"
+    );
     assert_eq!(StartupPage::parse(&page).unwrap().windows().count(), 0);
     page[OFF_COUNT..OFF_COUNT + 4].copy_from_slice(&(MAXIMUM_WINDOWS as u32 + 1).to_le_bytes());
     assert!(StartupPage::parse(&page).is_none());
@@ -67,6 +70,7 @@ fn the_writer_refuses_each_malformed_list() {
         window(OTHER_DATA_PLANE, 0x90_0000, 0),
         window(OTHER_DATA_PLANE, 0x90_0008, 1),
         window(OTHER_DATA_PLANE, 0xffff_ffff_ffff_f000, 2),
+        window(OTHER_DATA_PLANE, 0xffff_ffff_ffff_0000, 32),
     ] {
         assert_eq!(
             write(&mut page, &[bad]),
@@ -83,6 +87,20 @@ fn the_writer_refuses_each_malformed_list() {
         StartupPage::parse(&page).is_none(),
         "a refusal writes nothing"
     );
+}
+
+/// The bytes sit where the README says: magic, count, four zero bytes, then entries from byte 16
+/// as kind, pages and virtual address, little-endian.
+#[test]
+fn the_layout_is_the_documented_one() {
+    let mut page = [0xaau8; PAGE_BYTES];
+    write(&mut page, &[window(DOORBELL_PAGE, 0x9c_0000, 3)]).unwrap();
+    assert_eq!(&page[..8], b"STARTPG1");
+    assert_eq!(page[8..16], [1, 0, 0, 0, 0, 0, 0, 0]);
+    assert_eq!(page[16..20], 2u32.to_le_bytes());
+    assert_eq!(page[20..24], 3u32.to_le_bytes());
+    assert_eq!(page[24..32], 0x9c_0000u64.to_le_bytes());
+    assert_eq!(page[32], 0xaa, "past the last entry the page is as given");
 }
 
 /// A full page holds exactly `MAXIMUM_WINDOWS` entries, the last ending at the page's last byte.

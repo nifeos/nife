@@ -33,8 +33,8 @@ use designware_mobile_storage::sd::{self, Card};
 use designware_mobile_storage::{command as c, registers};
 use driver_process_contract::designware_mobile_storage::Handoff;
 use filesystem_contract::blk;
-use user_mode_runtime::mapped_window::PAGE;
-use user_mode_runtime::startup_window::StartupWindow;
+use startup_page_contract::StartupWindow;
+use user_mode_runtime::mapped_window::{MappedWindow, PAGE};
 use user_mode_runtime::{exit, receive_request, reply, send};
 
 /// The request endpoint.
@@ -73,18 +73,26 @@ static TRANSFER: StartupWindow = unsafe {
     )
 };
 
+/// A window from the startup page, as a bounds-checked [`MappedWindow`] of the length its static
+/// declares.
+fn mapped(window: &StartupWindow) -> MappedWindow {
+    // SAFETY: each `StartupWindow` here was declared on the spawner's promise that it maps the
+    // window read/write for the life of the process, which is what `MappedWindow::new` asks.
+    unsafe { MappedWindow::new(window.virtual_address(), window.length_bytes()) }
+}
+
 /// The controller's first page, as the kernel mapped it.
 struct Page;
 
 impl RegisterWindowAndClock for Page {
     fn read(&mut self, offset: u32) -> u32 {
         debug_assert!(offset < registers::USED_REGISTER_WINDOW_BYTES);
-        REGISTERS.get().r32(u64::from(offset))
+        mapped(&REGISTERS).r32(u64::from(offset))
     }
 
     fn write(&mut self, offset: u32, value: u32) {
         debug_assert!(offset < registers::USED_REGISTER_WINDOW_BYTES);
-        REGISTERS.get().w32(u64::from(offset), value);
+        mapped(&REGISTERS).w32(u64::from(offset), value);
     }
 
     fn now_microseconds(&mut self) -> u64 {
@@ -95,7 +103,7 @@ impl RegisterWindowAndClock for Page {
 fn transfer() -> &'static mut [u8] {
     // SAFETY: this process is single-threaded, so this is the only reference to the buffer at a
     // time.
-    unsafe { TRANSFER.get().as_mut_slice() }
+    unsafe { mapped(&TRANSFER).as_mut_slice() }
 }
 
 user_mode_runtime::program_entry!(start);

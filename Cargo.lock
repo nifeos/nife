@@ -260,6 +260,7 @@ dependencies = [
  "slabtop",
  "smoltcp",
  "socket_contract",
+ "startup_page_contract",
  "supervision_contract",
  "swish",
  "system_initializer",
@@ -1785,7 +1786,6 @@ dependencies = [
  "current_cpu_contract",
  "entropy_contract",
  "socket_contract",
- "startup_page_contract",
 ]
 
 [[package]]
