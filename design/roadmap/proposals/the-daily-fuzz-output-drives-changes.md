@@ -37,14 +37,14 @@ dead-man's switch). Each day it checks three things: a release exists for today 
 report shows an `ok` window, and the infrastructure share is under 0.5. Nothing compares one week
 with the last. Nothing turns a number into a proposal, a model change or a host spec.
 
-Two facts narrow the question, and both were checked against the tree.
+Two facts narrow the question, and this lane checked both against the tree.
 
 - The host runs no `cargo-fuzz` target. The 18 targets that `script/fuzz --list` names run only in
   the merge group's two `fuzz-shard` jobs, 60 seconds each, from the committed seeds, with no corpus
   kept between runs. The daily release says nothing about them.
 - The in-guest drivers are coverage-blind ([the driver note](../../../notes/fuzzing/the-syscall-driver.md)).
   Every seed is an independent draw, so a seed corpus cannot grow in the libFuzzer sense. The only
-  corpus is the clean ranges. Coverage counters were ruled on 2026-10-31 (UTC) in milestone 1003
+  corpus is the clean ranges. An architect ruled for coverage counters on 2026-10-31 (UTC) in milestone 1003
   (continuous fuzzing for risk 7's criterion (d)), and milestone 1008 (a fuzz window reports what it
   reached) set their format: two integers per window. Neither is built.
 
@@ -158,7 +158,7 @@ record and keeps one issue per condition, and the heartbeat keeps one issue per 
 person still turns each issue into an action, and the issue says which kind.
 
 A also keeps fuzz figures where milestone 1026 put them, in releases a maintainer can delete. B puts
-them into history for good, and history cannot be rewritten here. Moving from A to B later is
+them into history for good, and this project never rewrites history. Moving from A to B later is
 compatible, since B is A plus a record. Taking B back is not. C repeats the failure the heartbeat
 fixed: a check that runs only when someone remembers. D leaves two rows of the table unread although
 they need nothing new.
@@ -213,7 +213,7 @@ window.
 
 ## What waits on this
 
-Nothing is blocked. Without a reader the release still feeds the heartbeat, and risk 7's
+Nothing waits. Without a reader the release still feeds the heartbeat, and risk 7's
 condition 2 still has no one comparing weeks.
 
 ## Index row
