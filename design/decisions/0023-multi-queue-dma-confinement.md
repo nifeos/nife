@@ -57,6 +57,7 @@ on a machine without one is.
 - nife has no virtio-iommu driver.
 
 `crates/direct_memory_access_validator` and its Kani harnesses stay in the tree as the proved form
-of §86's option 4, doorbell mediation. The kernel switches the shadow-ring validation on only for a
-target that runs virtio without an IOMMU, such as a cloud machine, once one is real. The
-validation this section describes is the mechanism for that case.
+of §86's option 4, doorbell mediation. The rule is that the kernel runs the shadow-ring validation
+only for a target that runs virtio without an IOMMU, such as a cloud machine, once one is real.
+Today `kernel/src/virtio.rs` still validates on every `NOTIFY`; milestone 1062 (the device control
+planes leave the kernel) makes the validation a switch that is off by default.
