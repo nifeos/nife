@@ -8,9 +8,10 @@ use super::*;
 /// **How many address spaces the registry can name at once: every one the machine can hold.**
 ///
 /// [`crate::revoke::MAXIMUM_SPACES`], because every [`AddressSpace`] is in the revocation registry
-/// from build to drop and holds one entry here, so this table cannot fill while a space wanting an
-/// entry exists. That lets [`register_bound_address_space`] treat a full table as a broken
-/// invariant; the `const` assert keeps the two together. Its size in `.bss` is
+/// from build to drop and holds one entry here, so live spaces alone never fill this table; the
+/// `const` assert keeps the two together. A full table is still possible, so every insert answers a
+/// refusal: [`user_address_space_create`] returns `None`, and [`register_bound_address_space`]
+/// panics. Its size in `.bss` is
 /// `registry_footprint`; see notes/user-address-spaces.md.
 const MAXIMUM_USER_SPACES: usize = crate::revoke::MAXIMUM_SPACES;
 const _: () = assert!(MAXIMUM_USER_SPACES >= crate::revoke::MAXIMUM_SPACES);
@@ -170,12 +171,9 @@ pub fn user_address_space_create(region: u64) -> Option<u64> {
         .lock()
         .insert_with(|_| Registered { space, bound: None })
         .map(generational_table::EntryName::to_bits);
-    if name.is_none() {
-        // Undo the bookkeeping; the page stays spent on the caller's budget. Unreachable while
-        // `MAXIMUM_USER_SPACES` covers the revocation registry.
-        crate::revoke::forget_root(root);
-        ASIDS.lock().free(asid);
-    }
+    // On a refusal the closure is dropped uncalled, and `space`'s `Drop` forgets the root and frees
+    // the ASID; the page stays spent on the caller's budget. Nothing is left to undo here, and a
+    // second free could take the ASID from a space given it since.
     name
 }
 
@@ -335,10 +333,10 @@ pub(crate) fn give_back_thread_page(name: u64, slot: u8) {
 /// **Put a space the kernel built into the registry, already bound to `tid`** (`sched::adopt_address_space`'s
 /// half, §249; name provisional), and return the copy the thread keeps.
 ///
-/// Infallible because it cannot fail: [`MAXIMUM_USER_SPACES`] covers every space the revocation
-/// registry can hold, and this one is registered there. A full table here is a broken invariant,
-/// not a resource limit, so it panics with that sentence rather than handing every kernel spawn
-/// path an error it could never act on.
+/// Panics if the table refuses the entry. [`MAXIMUM_USER_SPACES`] covers every space the revocation
+/// registry can hold, so live spaces alone never fill it, but a full table is not impossible. The
+/// callers are kernel spawn paths, which could not act on an error, so it panics rather than return
+/// one.
 pub(crate) fn register_bound_address_space(
     space: AddressSpace,
     tid: crate::thread::ThreadId,
@@ -357,7 +355,7 @@ pub(crate) fn register_bound_address_space(
                 bound: Some(Holder::Thread(tid)),
             }
         })
-        .expect("the address-space registry is full, which MAXIMUM_USER_SPACES says cannot happen");
+        .expect("the address-space registry refused a space the kernel built");
     copy.expect("insert_with names the entry before it stores it")
 }
 
@@ -418,4 +416,75 @@ pub fn readopt_user_address_space(space: AddressSpace) -> Option<u64> {
         .lock()
         .insert_with(|_| Registered { space, bound: None })
         .map(generational_table::EntryName::to_bits)
+}
+
+#[cfg(test)]
+mod tests {
+    //! The registry's refusal path, reached by filling the table with entries that stand in for
+    //! live spaces.
+
+    use super::*;
+
+    /// The region a placeholder claims to be lent: a name no region carries.
+    const PLACEHOLDER_REGION: u64 = u64::MAX;
+
+    /// An entry that holds nothing, so the table can be filled without building real spaces. It is
+    /// never dropped: its `Drop` would give back a root, a region count and an ASID it never had.
+    fn placeholder() -> Registered {
+        Registered {
+            space: AddressSpace {
+                root: PageFrame::from_addr(0),
+                asid: 0,
+                backing: Backing::Lent(PLACEHOLDER_REGION),
+                current_cpu_page: None,
+                thread_pages: [0; current_cpu_contract::THREAD_PAGE_SLOTS],
+                thread_pages_made: 0,
+                thread_pages_in_use: 0,
+            },
+            bound: None,
+        }
+    }
+
+    /// A registration the full registry refuses gives its ASID back exactly once: the refused
+    /// space's `Drop` frees it, and nothing frees it again (the allocator's debug check panics on
+    /// a second free).
+    #[test_case]
+    fn a_refused_registration_frees_its_asid_once() {
+        let region = crate::memory_region::create(8).expect("a fresh region");
+        let next = {
+            let mut asids = ASIDS.lock();
+            let asid = asids.alloc().expect("a free ASID");
+            asids.free(asid);
+            asid
+        };
+
+        {
+            let mut spaces = USER_SPACES.lock();
+            while spaces.insert_with(|_| placeholder()).is_some() {}
+        }
+        let refused = user_address_space_create(region);
+        loop {
+            let mut spaces = USER_SPACES.lock();
+            let Some(name) = spaces
+                .iter()
+                .find(|(_, entry)| matches!(entry.space.backing, Backing::Lent(PLACEHOLDER_REGION)))
+                .map(|(name, _)| name)
+            else {
+                break;
+            };
+            core::mem::forget(spaces.remove(name));
+        }
+
+        assert!(refused.is_none(), "a full registry must refuse the space");
+        {
+            let mut asids = ASIDS.lock();
+            assert_eq!(
+                asids.alloc(),
+                Some(next),
+                "the refused space's ASID must be free again"
+            );
+            asids.free(next);
+        }
+        crate::sched::reclaim_region(region).expect("reclaim the region");
+    }
 }
