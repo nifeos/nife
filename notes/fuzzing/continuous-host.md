@@ -81,7 +81,7 @@ supervisor re-executes itself and replays the queue before any slot starts.
 
 A replay checks the commit out in its own worktree and asks that commit's
 `helpers/continuous-fuzz.sh --ci-range SHARD` for the driver and first seed. It then builds and
-sweeps the range once, as a window does. A reproduction is held like any window: its log moves to
+sweeps the range once, as a window does. The host holds a reproduction like any window: its log moves to
 the held directory, and its `windows.tsv` row carries the held class and the slot `replay`. The filer
 reads both unchanged and files a private advisory. The journal gets one line, the finding id and
 the time since the shard went red. A clean replay keeps no log and writes one `replay-clean` row.
@@ -95,8 +95,8 @@ Three choices hold this to the host's rules.
   required check, so an entry whose only red is a shard still lands, and its commit reaches main
   unchanged. The follower moves the clone there within one look. A replay therefore runs only code
   that passed main's gates, and the four limits above still hold. An entry that never lands is not
-  replayed. After 24 hours its run is recorded as `never-on-main` and dropped.
-- **A clean replay is counted.** The daily report's "Windows by status" lists `replay-clean` by
+  replayed. After 24 hours the poll records its run as `never-on-main` and drops it.
+- **The daily report counts a clean replay.** Its "Windows by status" table lists `replay-clean` by
   count with no change to the report. A clean replay of a red shard is a false red, or a finding
   this host does not reproduce. It is the rate that decides whether `fuzz-guests` becomes required.
 
@@ -240,7 +240,7 @@ unit's user. It prints the tag and the assets and publishes nothing.
   ([the milestone](../../design/roadmap/1016-the-clean-range-table-does-not-locate-a-held-seed.md)).
   The held log also stays on the host.
 - A red shard on a merge-queue entry that never lands is never replayed. The entry's next run sweeps
-  other seeds, because the seeds derive from the commit, so a finding seen only there is lost.
+  other seeds, because the seeds derive from the commit, so the host loses a finding only that run saw.
 - A replay sweeps for 60 seconds of guest time, like the job. A host slower than the hosted runner
   may stop before the failing seed, and a failure that needed the runner's timing may not recur.
   Either reads as `replay-clean`, so that count is an upper bound on false reds.

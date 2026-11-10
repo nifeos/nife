@@ -7,6 +7,7 @@ decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: no
+built: 2026-11-10
 ---
 # 1038. The fuzz host replays a red CI shard
 
@@ -15,8 +16,8 @@ what is built. [Milestone 1012 (a short sharded in-guest fuzz pass in CI)](1012-
 follow-on.
 
 Reuse: the window logic of `helpers/continuous-fuzz.sh`, whose `--ci-range SHARD` gives a shard's
-driver and first seed; the follower's fetch-free reads and green rule in `helpers/fuzz-follow-main.py`;
-the held-findings store; and the filer in nifeos/fuzz-host, which files every held log as a private
+driver and first seed. Also the follower's public reads and green rule in
+`helpers/fuzz-follow-main.py`, the held-findings store, and the filer in nifeos/fuzz-host, which files every held log as a private
 advisory. Nothing here writes a new transport, and the filer needs no change.
 
 ## Background
@@ -60,14 +61,14 @@ reversing costs one pull request. Each adds no credential, token, secret or perm
   15 minutes the poll adds about 4 requests an hour to the follower's.
 - **The commit comes from main, through the clone.** GitHub deletes a `gh-readonly-queue/` branch
   when its entry finishes. An anonymous fetch by commit id still worked after the deletion (tested
-  against a deleted entry's commit), but that is undocumented, and the commit of an
+  against a deleted entry's commit), but GitHub documents no such fetch, and the commit of an
   entry that never landed has not passed main's gates. Running it would break the self-updating
   host's third limit. The required checks of main do not include `fuzz-guests`, and the queue merges
-  with `MERGE` under `ALLGREEN`, so an entry whose only red is a shard lands and its commit reaches
+  with `MERGE` under `ALLGREEN`. So an entry whose only red is a shard lands, and its commit reaches
   main unchanged: each of the last eight green merge-queue runs had its commit on main. The replay
   therefore takes only a commit that the clone's HEAD contains, and the follower moves the clone
   only under the four limits. It fetches nothing.
-- **A clean replay is counted.** Its `replay-clean` row appears under "Windows by status" in the
+- **The daily report counts a clean replay.** Its `replay-clean` row appears under "Windows by status" in the
   daily report, a count with no seed, and the report needs no change. A clean replay of a red shard
   is a false red, or a finding this host does not reproduce, so the count bounds the false-red rate
   that 1012 must measure before `fuzz-guests` becomes required.
@@ -76,10 +77,10 @@ reversing costs one pull request. Each adds no credential, token, secret or perm
 
 `helpers/fuzz-replay-selftest.sh` and `python3 -I helpers/fuzz-red-shards.py --selftest`, run by
 `script/lint`. A replay against a stand-in guest that prints a `replay:` line leaves one held log
-and one held row, and prints a finding id and an age alone. A clean guest leaves no log. A commit the
-clone does not contain is refused before anything builds. Stubs of the run and job listings show
-that green, skipped and cancelled shards, a red job of another name, a red shard on another commit
-and a red shard on a commit main never took start no replay. End to end, the supervisor replays the
+and one held row, and prints a finding id and an age alone. A clean guest leaves no log. The replay refuses a
+commit the clone does not contain before anything builds. Against stubs of the run and job listings,
+none of these starts a replay: a green, skipped or cancelled shard, a red job of another name, and a
+red shard on another commit or on a commit main never took. End to end, the supervisor replays the
 queue before its first slot.
 
 ## BUGS
@@ -90,10 +91,17 @@ queue before its first slot.
 - Nobody has run a replay on the host. The first red shard after the host's clone follows main past
   this change is the first.
 
+## Follow-on
+
+- **Recorded.** A red shard on an entry that never lands, the 60-second sweep on a slower host, the
+  CI seed count of an older commit, and a shared seed block, in the `BUGS` of
+  `notes/fuzzing/continuous-host.md`.
+- **Recorded.** The first replay on the host, in this block's `BUGS`.
+
 ## Status
 
 Built. The host runs it once its clone follows main past it. A held reproduction waits for the
-filer, which is built and not yet installed
+filer, which exists and which no one has installed yet
 ([`finishing-the-setup.md`](../../notes/fuzzing/finishing-the-setup.md)).
 
 ## Index row
