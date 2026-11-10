@@ -23,6 +23,7 @@ fn spawn_uuid_holding_no_entropy(endpoints: u64) -> RendezvousId {
                 arg2: 0,
                 grants: &[rendezvous_capability(out, Rights::WRITE)],
                 maps: &[],
+                windows: &[],
             },
         )
     })

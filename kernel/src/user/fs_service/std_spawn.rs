@@ -109,6 +109,7 @@ pub(super) fn spawn_std(
                     rendezvous_capability(report, Rights::WRITE), // slot 1: stdout/stderr
                 ],
                 maps: &maps[..maps_used],
+                windows: &[],
             },
         )
     })

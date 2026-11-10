@@ -116,6 +116,7 @@ pub fn start(image: &'static [u8]) -> Option<Wiring> {
                     rendezvous_capability(doorbell, Rights::WRITE), // slot 3: ring the compositor
                 ],
                 maps: &maps,
+                windows: &[],
             },
         )
     })

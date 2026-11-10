@@ -2,7 +2,7 @@
 //!
 //! `crates/jh7110_watchdog` owns the offsets, sequences and arithmetic; this walks the sequences
 //! against a base it is handed and reads two words back. It reaches into no kernel global (§4
-//! (kernel shape: monolithic, deferred, with two cheap rules)), and its clocks are the caller's to
+//! (kernel shape)), and its clocks are the caller's to
 //! turn on (`drivers::jh7110_clock_and_reset`). In the kernel because the soak's supervisor pets
 //! it: a user program petting it would test starvation.
 //!

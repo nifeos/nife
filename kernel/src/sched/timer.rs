@@ -55,12 +55,13 @@ pub fn create_timer_from(region: u64) -> Option<TimerId> {
             state: inter_process_communication::timer::Timer::new(),
         });
     }
+    // The capacity check counts live entries, so a table with no free slot can still refuse the
+    // insert. Then the count the retype took goes back; the page stays spent.
     let name = sched
         .timer_table
         .insert_with(|_| TimerPageAddress::new(phys))
         .map(EntryName::to_bits);
     if name.is_none() {
-        // Unreachable after the capacity check; the count the retype took goes back.
         crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Timer);
     }
     name

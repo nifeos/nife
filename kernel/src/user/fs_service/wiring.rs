@@ -188,6 +188,7 @@ pub(in crate::user) fn spawn_block_server(
                     rendezvous_capability(blk_ready, Rights::WRITE), // slot 3: signal readiness once
                 ],
                 maps: &maps,
+                windows: &[],
             },
         )
     })
@@ -312,6 +313,7 @@ pub(super) fn spawn_fs_server(fs_server_image: &'static [u8], cfg: FsServer) {
                     rendezvous_capability(cfg.ready, Rights::WRITE), // slot 3: signal readiness once
                 ],
                 maps: &maps[..used],
+                windows: &[],
             },
         )
     })

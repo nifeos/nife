@@ -478,6 +478,7 @@ fn send_receive_el0() -> Option<()> {
                     rendezvous_capability(reply, Rights::WRITE),
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -496,6 +497,7 @@ fn send_receive_el0() -> Option<()> {
                     rendezvous_capability(reply, Rights::READ),
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -551,6 +553,7 @@ fn call_reply_el0() -> Option<()> {
                         phys,
                         flags: paging::Flags::user_data(),
                     }],
+                    windows: &[],
                 },
             )
         })

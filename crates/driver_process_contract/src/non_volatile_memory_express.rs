@@ -8,6 +8,7 @@
 //! serves, as this crate's other modules are named.
 
 use ::non_volatile_memory_express::registers::FIRST_DOORBELL_REGISTER;
+use startup_page_contract::WindowKind;
 
 // ---------------------------------------------------------------------------------------------
 // The split between an admin plane and a data plane.
@@ -29,6 +30,17 @@ use ::non_volatile_memory_express::registers::FIRST_DOORBELL_REGISTER;
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/ioping-direct-io.
 pub const CLIENT_WINDOWS: usize = 3;
+
+/// The data plane's entry on the startup page: the submission ring, the completion ring, then the
+/// transfer windows, one run.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+pub const DATA_PLANE_KIND: WindowKind = WindowKind(1);
+/// The doorbell page's entry on the startup page: the one register page that holds the doorbells,
+/// device memory.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+pub const DOORBELL_PAGE_KIND: WindowKind = WindowKind(2);
 
 /// The unbadged window: the filesystem server, and every kernel-side caller of the request endpoint.
 ///

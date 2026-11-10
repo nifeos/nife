@@ -309,6 +309,7 @@ fn spawn_system_installer(
                 arg2: 0,
                 grants: &[], // every one of them is placed above, at its own slot
                 maps,
+                windows: &[],
             },
         )
     })

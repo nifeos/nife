@@ -1,0 +1,29 @@
+[package]
+name = "startup_page_contract"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "The startup page: one read-only page at a fixed address that lists where a process's memory windows were mapped, so a program reads its window addresses rather than compiling them in"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "shared-page", "startup"]
+categories = ["no-std", "embedded"]
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+
+# The startup page: one definition of the page a spawner writes and a program reads, so the two
+# cannot drift on its layout, its fixed address or the numbers that name each kind of window.
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
+
+[dependencies]
+address_space_map = { version = "0.1.0", path = "../address_space_map" }

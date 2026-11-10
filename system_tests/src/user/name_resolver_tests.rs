@@ -137,6 +137,7 @@ pub(super) fn start_resolver(
                     rendezvous_capability(entropy, Rights::WRITE), // slot 3: transaction ids
                 ],
                 maps: &maps[..RESOLVER_STACK_PAGES as usize],
+                windows: &[],
             },
             endowment::OWN_SPACE_SLOT, // slot 4: its own space, for a forget's UNMAP
         )
@@ -200,6 +201,7 @@ fn start_client(
                     &grants[..3]
                 },
                 maps: &maps[..CLIENT_STACK_PAGES as usize],
+                windows: &[],
             },
         )
     })

@@ -72,7 +72,7 @@ pub(super) fn run_as_process_with(
     out: &mut [u8],
     setup: &Setup,
 ) -> Ran {
-    let (mut space, entry) = load(image, 0).expect("could not load the program");
+    let (mut space, entry) = load(image, 0, &[]).expect("could not load the program");
     let stack_region = map_the_stack_and_setup_pages(&mut space, setup);
     let name = readopt_user_address_space(space).expect("register the program's space");
 

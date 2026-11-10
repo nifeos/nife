@@ -38,6 +38,7 @@ pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
                     rendezvous_capability(oneshot_report, Rights::WRITE), // slot 1: report the verdict
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -55,6 +56,7 @@ pub fn wire(endpoints: u64) -> (RendezvousId, RendezvousId) {
                     rendezvous_capability(call_report, Rights::WRITE), // slot 1: report the reply
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })

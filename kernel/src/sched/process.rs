@@ -98,8 +98,8 @@ pub fn create_process_from(region: u64, space: u64) -> Result<ProcessId, abi::Er
             });
             crate::thread::write_empty_capability_table(table_at(phys).cast_mut());
         }
-        // Cannot fail: capacity was checked above under this same hold. Were it to, the count
-        // the retype took goes back.
+        // The check above counts live entries, so a table with no free slot can still refuse the
+        // insert. Then the count the retype took goes back; the page stays spent.
         let Some(pid) = sched
             .processes
             .insert_with(|_| ProcessPageAddress::new(phys))

@@ -27,6 +27,7 @@ pub fn wire(endpoints: u64) -> RendezvousId {
                     rendezvous_capability(channel, Rights::WRITE), // slot 1: delegate the mint here
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -44,6 +45,7 @@ pub fn wire(endpoints: u64) -> RendezvousId {
                     rendezvous_capability(report, Rights::WRITE), // slot 1: report the word
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })

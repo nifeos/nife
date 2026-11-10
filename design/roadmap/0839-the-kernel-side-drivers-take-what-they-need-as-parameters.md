@@ -1,7 +1,7 @@
 ---
 status: NOT-STARTED
 raised: 2026-10-08
-milestone_dependencies: none
+milestone_dependencies: 1062
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
@@ -10,6 +10,10 @@ needs_person: no
 # 839. The kernel-side drivers take what they need as parameters
 
 *(The title and slug are provisional.)*
+
+Parked until milestone 1062 (the device control planes leave the kernel) lands (ruled 2026-11-10
+UTC). Most of the kernel files below leave the kernel there, so this milestone is then cut to the
+drivers that remain in the kernel, or retired if none needs it.
 
 Codebase rule 2 says a driver never reaches into a kernel global: it gets a base address, "later a
 DMA allocator, later an interrupt registration". The driver crates underneath already obey it.

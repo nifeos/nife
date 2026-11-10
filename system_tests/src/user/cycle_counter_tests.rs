@@ -73,6 +73,7 @@ fn a_granted_thread_reads_the_cycle_counter_and_an_ungranted_one_faults() {
                     crate::capability_object::Rights::WRITE,
                 )],
                 maps: &[],
+                windows: &[],
             },
         )
     })

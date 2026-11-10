@@ -30,7 +30,7 @@ tree could have made about one vendor's silicon; this machine shares almost none
 
 The verdict is a count. Every change the port needs lands in one of three places: under
 `kernel/src/arch/riscv64/`, in portable code that reads a device tree, or elsewhere. The first two
-are what §4 (kernel shape, with two cheap rules) promises. A change of the third kind is evidence
+are what §4 (kernel shape) promises. A change of the third kind is evidence
 that the seam is not where the tree says it is, and the port's report lists each one.
 
 ## How far away it is, measured 2026-09-25

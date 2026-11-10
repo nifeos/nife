@@ -64,8 +64,8 @@ pub fn create_notification_from(region: u64) -> Option<NotificationId> {
             bound: None,
         });
     }
-    // Cannot fail: capacity was checked above under this same lock hold. Were it to, the count
-    // the retype took goes back.
+    // The check above counts live entries, so a table with no free slot can still refuse the
+    // insert. Then the count the retype took goes back; the page stays spent.
     let name = sched
         .notification_table
         .insert_with(|_| NotificationPageAddress::new(phys))
