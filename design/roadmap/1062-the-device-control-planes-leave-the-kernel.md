@@ -13,7 +13,7 @@ needs_person: yes
 
 Reuse: the shape is the tree's own. Milestone 242 (xHCI) already splits a device this way, and
 milestone 811 (the boot services leave the kernel) supplies the grants. No outside code fits a
-capability split of nife's own kernel; none was searched for beyond the tree.
+capability split of nife's own kernel, so this lane searched only the tree.
 
 The kernel holds only what must run at EL1 plus what a confinement argument needs (§4 (kernel
 shape)), and confinement means an IOMMU (§86 (whether an NVMe driver can leave the kernel)). A
