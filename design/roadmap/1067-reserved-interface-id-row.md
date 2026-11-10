@@ -16,7 +16,7 @@ Reuse: `helpers/interface_declarations_check.py` already reads the one table of 
 outside the tree does this job.
 
 An interface id is held before its crate exists when a ruling fixes the wire first. The first such
-case is §320 (the JH7110 clock and reset wire), which gives its contract interface id 24 before
+case is the JH7110 clock and reset wire ruling, which gives its contract interface id 24 before
 `crates/` holds the contract. The table needs a row for it, and the check cannot read that row yet.
 
 ## Today
@@ -26,18 +26,18 @@ case is §320 (the JH7110 clock and reset wire), which gives its contract interf
 assigned path that carries no `INTERFACE_ID`, with "the table assigns N to PATH, which carries no
 INTERFACE_ID".
 
-So a row for a crate that does not exist cannot take that form. §320's row for id 24 is prose
+So a row for a crate that does not exist cannot take that form. The row for id 24 is prose
 without a backticked path, which `ROW` skips. The check never sees the number, and nothing stops
 another interface from declaring `INTERFACE_ID` 24 in the meantime. `id_problems` finds an id with
 no row (`has no row in`), but it cannot object to this one: the table appears not to hold 24 at all.
 
 ## The shape
 
-1. A reserved row form: `| 24 | reserved, for §320 (the JH7110 clock and reset wire) |`. It names
+1. A reserved row form: `| 24 | reserved, for the JH7110 clock and reset wire |`. It names
    no crate and does name the ruling or milestone that holds the number. `table_rows` returns it
    as a third kind beside an assigned row and a retired one.
 2. `id_problems` fails when any interface in the tree declares a reserved number, and the message
-   names the reserved row and its holder: `INTERFACE_ID 24 is reserved for §320; the crate that
+   names the reserved row and its holder: `INTERFACE_ID 24 is reserved for the JH7110 clock and reset wire; the crate that
    takes it replaces the reserved row in the same pull request`.
 3. `id_problems` fails when a reserved number appears twice in the table, or in two kinds of row,
    the way it fails a number assigned twice today.
@@ -65,7 +65,7 @@ it, and striking it is a reviewed edit to the table like any other.
 Effort: S. One regex and one row kind in a script of about 330 lines, one rule in `id_problems`,
 four fixtures and a sentence in 956's block.
 
-Dependencies: none. Pull request #3422 (§320) is the first user: its reserved row for id 24 is the
+Dependencies: none. Pull request #3422 (the clock and reset wire ruling, §320 once it lands) is the first user: its reserved row for id 24 is the
 case this makes checkable. Once this lands, that row is the first one the check reads.
 
 ## Done when
@@ -74,7 +74,7 @@ case this makes checkable. Once this lands, that row is the first one the check 
    the four fixtures of the shape above.
 2. On the tree with id 24 reserved, the check fails if any interface declares `INTERFACE_ID` 24,
    and it passes with no declaration. A trial change that adds the declaration shows the failure.
-3. Milestone 956's table holds §320's row in the reserved form, and the check reads it.
+3. Milestone 956's table holds the clock and reset row in the reserved form, and the check reads it.
 4. The check's docstring and milestone 956's text state the rule, and the crate that takes id 24
    later needs no change to the check.
 
