@@ -151,17 +151,22 @@ impl Dma {
 impl core::fmt::Display for Dma {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Dma::Read(kib, true, None) => write!(f, "IDMAC READ-OK {kib} KiB/s"),
-            Dma::Read(kib, true, Some(ScratchWriteVerdict::Verified(..))) => {
-                write!(f, "IDMAC READ-OK {kib} KiB/s, IDMAC WRITE-VERIFIED")
+            Dma::Read(kibibytes_per_second, true, None) => {
+                write!(f, "IDMAC READ-OK {kibibytes_per_second} KiB/s")
             }
-            Dma::Read(kib, true, Some(ScratchWriteVerdict::Refused)) => {
-                write!(f, "IDMAC READ-OK {kib} KiB/s")
-            }
-            Dma::Read(kib, false, _) => {
+            Dma::Read(kibibytes_per_second, true, Some(ScratchWriteVerdict::Verified(..))) => {
                 write!(
                     f,
-                    "IDMAC FAILED: {kib} KiB/s but the bytes differ from the polled read"
+                    "IDMAC READ-OK {kibibytes_per_second} KiB/s, IDMAC WRITE-VERIFIED"
+                )
+            }
+            Dma::Read(kibibytes_per_second, true, Some(ScratchWriteVerdict::Refused)) => {
+                write!(f, "IDMAC READ-OK {kibibytes_per_second} KiB/s")
+            }
+            Dma::Read(kibibytes_per_second, false, _) => {
+                write!(
+                    f,
+                    "IDMAC FAILED: {kibibytes_per_second} KiB/s but the bytes differ from the polled read"
                 )
             }
             Dma::Read(_, true, Some(v)) => write!(f, "IDMAC FAILED: write test {v:?}"),
@@ -174,8 +179,8 @@ impl core::fmt::Display for Dma {
 
 fn print_verdict(o: &Outcome) {
     match o {
-        Outcome::ReadOk(kib, dma) => println!(
-            "storage-bench: verdict {} {kib} KiB/s, {dma}, EL0 block server served",
+        Outcome::ReadOk(kibibytes_per_second, dma) => println!(
+            "storage-bench: verdict {} {kibibytes_per_second} KiB/s, {dma}, EL0 block server served",
             if dma.passed() {
                 "READ-OK"
             } else {
@@ -183,8 +188,12 @@ fn print_verdict(o: &Outcome) {
             },
         ),
         Outcome::El0(e) => println!("storage-bench: verdict FAILED: EL0 block server {e:?}"),
-        Outcome::Written(kib, ScratchWriteVerdict::Verified(first, count, blank), dma) => println!(
-            "storage-bench: verdict {} {kib} KiB/s, WRITE-VERIFIED sectors {first}..{} (were {}), restored, {dma}, EL0 block server served",
+        Outcome::Written(
+            kibibytes_per_second,
+            ScratchWriteVerdict::Verified(first, count, blank),
+            dma,
+        ) => println!(
+            "storage-bench: verdict {} {kibibytes_per_second} KiB/s, WRITE-VERIFIED sectors {first}..{} (were {}), restored, {dma}, EL0 block server served",
             if dma.passed() {
                 "READ-OK"
             } else {
@@ -193,8 +202,8 @@ fn print_verdict(o: &Outcome) {
             first + count,
             if *blank { "zero" } else { "not zero" },
         ),
-        Outcome::Written(kib, ScratchWriteVerdict::Refused, dma) => println!(
-            "storage-bench: verdict READ-OK {kib} KiB/s, WRITE-REFUSED: no gap before the first partition, {dma}"
+        Outcome::Written(kibibytes_per_second, ScratchWriteVerdict::Refused, dma) => println!(
+            "storage-bench: verdict READ-OK {kibibytes_per_second} KiB/s, WRITE-REFUSED: no gap before the first partition, {dma}"
         ),
         Outcome::Written(_, v, _) => println!("storage-bench: verdict FAILED: write test {v:?}"),
         Outcome::NotDescribed => {
@@ -392,10 +401,10 @@ fn write_and_idmac(
     };
     let dma = through_idmac(slot, host, id, r, write);
     say!(slot, "{dma}");
-    let kib = kib_per_second(r.timed_blocks, r.timed_microseconds);
+    let kibibytes_per_second = kibibytes_per_second(r.timed_blocks, r.timed_microseconds);
     match verdict {
-        Some(v) => Outcome::Written(kib, v, dma),
-        None => Outcome::ReadOk(kib, dma),
+        Some(v) => Outcome::Written(kibibytes_per_second, v, dma),
+        None => Outcome::ReadOk(kibibytes_per_second, dma),
     }
 }
 
@@ -650,12 +659,12 @@ fn print_read(slot: &Slot, r: &ReadOnlyProbeReport) {
         "timed read: {} blocks in {} us, {} KiB/s ({} blocks per command, polled FIFO)",
         r.timed_blocks,
         r.timed_microseconds,
-        kib_per_second(r.timed_blocks, r.timed_microseconds),
+        kibibytes_per_second(r.timed_blocks, r.timed_microseconds),
         READ_PAGES * 4096 / BLOCK_BYTES,
     );
 }
 
-fn kib_per_second(blocks: u64, microseconds: u64) -> u64 {
+fn kibibytes_per_second(blocks: u64, microseconds: u64) -> u64 {
     (blocks * BLOCK_BYTES as u64 * 1_000_000)
         .checked_div(microseconds)
         .unwrap_or(0)
@@ -716,10 +725,10 @@ fn through_idmac(
             return Dma::Failed(e);
         }
     };
-    let kib = kib_per_second(report.timed_blocks, report.timed_microseconds);
+    let kibibytes_per_second = kibibytes_per_second(report.timed_blocks, report.timed_microseconds);
     say!(
         slot,
-        "timed read: {} blocks in {} us, {kib} KiB/s ({} blocks per command, IDMAC); the first {} KiB {} the polled read",
+        "timed read: {} blocks in {} us, {kibibytes_per_second} KiB/s ({} blocks per command, IDMAC); the first {} KiB {} the polled read",
         report.timed_blocks,
         report.timed_microseconds,
         READ_PAGES * 4096 / BLOCK_BYTES,
@@ -741,7 +750,7 @@ fn through_idmac(
     } else {
         None
     };
-    Dma::Read(kib, report.matches, verdict)
+    Dma::Read(kibibytes_per_second, report.matches, verdict)
 }
 
 /// `count` zeroed, contiguous pages as a byte slice, leaked: this boot halts.

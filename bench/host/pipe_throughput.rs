@@ -30,12 +30,12 @@ fn main() {
     for chunk in [16usize, 64 * 1024] {
         let nanoseconds = run_one(chunk);
         let seconds = nanoseconds as f64 / 1e9;
-        let mib = TOTAL as f64 / (1024.0 * 1024.0);
+        let mebibytes = TOTAL as f64 / (1024.0 * 1024.0);
         let name = if chunk == 16 { "pipe_16" } else { "pipe_64k" };
         println!(
             "bench: {name} {TOTAL} bytes in {:.3} ms = {:.1} MiB/s ({:.0} ns per {chunk}-byte write)",
             nanoseconds as f64 / 1e6,
-            mib / seconds,
+            mebibytes / seconds,
             nanoseconds as f64 / (TOTAL / chunk) as f64,
         );
     }
