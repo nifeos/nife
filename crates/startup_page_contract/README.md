@@ -66,7 +66,8 @@ writer refuses each malformed list and writes nothing for it, that a full page h
   `driver_process_contract` mints any, and its own test holds them apart.
 - `StartupWindow::virtual_address` reads the page at its fixed address, which no host process maps,
   so no host test reaches that one line; its logic is `virtual_address_in`, which host tests drive.
-  The booted NVMe and e1000e system tests reach their drivers only through it.
+  The booted system tests of the e1000e and non-volatile memory express drivers reach them only
+  through it.
 
 ## Minimum Rust version
 
