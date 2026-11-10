@@ -37,6 +37,10 @@ pub(super) type Rendezvous = inter_process_communication::Rendezvous<Thread>;
 ///   1,024 in about 66 days, after which spawn fails until the next boot. Nothing sizes this
 ///   table, or the other generational tables, against that time; notes/generational-names.md has
 ///   the measurements.
+/// - The tables sit in `.data` and not `.bss` (each static is not all zero bytes), and
+///   [`EMPTY_TABLES`] is a second copy in `.rodata`. At these sizes that is about half a megabyte
+///   of the loaded image on each architecture. Zero-initialized storage beside the lock would put
+///   the tables in `.bss` and drop the copy.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_THREADS: usize = 1024;
