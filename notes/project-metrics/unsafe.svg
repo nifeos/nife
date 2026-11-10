@@ -59,9 +59,9 @@
 <path class="seg s0" d="M567.5,324.0 V268.1 Q567.5,264.1 571.5,264.1 H593.3 Q597.3,264.1 597.3,268.1 V324.0 Z"><title>2026W45, blocks per 10,000 lines: 45</title></path>
 <text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W45</text>
 <text class="fg val" x="582.4" y="259.1" font-size="10" text-anchor="middle">45</text>
-<path class="seg s0" d="M612.6,324.0 V266.8 Q612.6,262.8 616.6,262.8 H638.3 Q642.3,262.8 642.3,266.8 V324.0 Z"><title>2026W46, blocks per 10,000 lines: 46</title></path>
+<path class="seg s0" d="M612.6,324.0 V265.5 Q612.6,261.5 616.6,261.5 H638.3 Q642.3,261.5 642.3,265.5 V324.0 Z"><title>2026W46, blocks per 10,000 lines: 47</title></path>
 <text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W46</text>
-<text class="fg val" x="627.5" y="257.8" font-size="10" text-anchor="middle">46</text>
+<text class="fg val" x="627.5" y="256.5" font-size="10" text-anchor="middle">47</text>
 <line class="tr" x1="86.5" y1="117.2" x2="131.6" y2="132.1" stroke-width="2" stroke-dasharray="4 3"/>
 <line class="tr" x1="131.6" y1="132.1" x2="176.7" y2="143.3" stroke-width="2" stroke-dasharray="4 3"/>
 <line class="tr" x1="176.7" y1="143.3" x2="221.8" y2="152.0" stroke-width="2" stroke-dasharray="4 3"/>
@@ -73,7 +73,7 @@
 <line class="tr" x1="447.2" y1="193.4" x2="492.2" y2="213.1" stroke-width="2"/>
 <line class="tr" x1="492.2" y1="213.1" x2="537.3" y2="222.6" stroke-width="2"/>
 <line class="tr" x1="537.3" y1="222.6" x2="582.4" y2="230.4" stroke-width="2"/>
-<line class="tr" x1="582.4" y1="230.4" x2="627.5" y2="237.0" stroke-width="2"/>
+<line class="tr" x1="582.4" y1="230.4" x2="627.5" y2="236.9" stroke-width="2"/>
 <circle class="trd" cx="86.5" cy="117.2" r="3"><title>2026W34, trailing mean, fewer than 13 weeks: 155.5</title></circle>
 <circle class="trd" cx="131.6" cy="132.1" r="3"><title>2026W35, trailing mean, fewer than 13 weeks: 144.3</title></circle>
 <circle class="trd" cx="176.7" cy="143.3" r="3"><title>2026W36, trailing mean, fewer than 13 weeks: 135.9</title></circle>
@@ -86,7 +86,7 @@
 <circle class="trd" cx="492.2" cy="213.1" r="3"><title>2026W43, trailing 13-week mean: 83.4</title></circle>
 <circle class="trd" cx="537.3" cy="222.6" r="3"><title>2026W44, trailing 13-week mean: 76.2</title></circle>
 <circle class="trd" cx="582.4" cy="230.4" r="3"><title>2026W45, trailing 13-week mean: 70.4</title></circle>
-<circle class="trd" cx="627.5" cy="237.0" r="3"><title>2026W46, trailing 13-week mean: 65.4</title></circle>
+<circle class="trd" cx="627.5" cy="236.9" r="3"><title>2026W46, trailing 13-week mean: 65.5</title></circle>
 <line class="tr" x1="672" y1="69" x2="683" y2="69" stroke-width="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">trailing 13-week mean</tspan></text>
 <line class="tr" x1="672" y1="88" x2="683" y2="88" stroke-width="2" stroke-dasharray="4 3"/>

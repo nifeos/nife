@@ -326,5 +326,8 @@ week,crate,breaking,additions,commits,commits_crossing
 2026W45,measured_boot,0,35,1,1
 2026W45,socket_contract,0,0,3,3
 2026W45,supervision_contract,0,0,1,1
-2026W46,block_roster_contract,0,0,4,0
+2026W46,block_roster_contract,1,0,5,1
+2026W46,clock_contract,0,0,2,0
 2026W46,entropy_contract,0,0,1,1
+2026W46,globally_unique_identifier_partition_table,0,0,2,1
+2026W46,socket_contract,0,0,3,0
