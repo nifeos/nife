@@ -286,20 +286,20 @@ impl StartupWindow {
     ///
     /// Name: provisional, minted 2026-11-10 (UTC) by lane/drivers-read-the-startup-page.
     pub fn virtual_address(&self) -> u64 {
-        use core::sync::atomic::Ordering;
-        let mut first = self.first.load(Ordering::Relaxed);
-        if first == 0 {
-            first = self.read_page();
-            // Relaxed: the page never changes, so two threads racing here store the same value.
-            self.first.store(first, Ordering::Relaxed);
-        }
-        first
-    }
-
-    fn read_page(&self) -> u64 {
         // SAFETY: `new`'s caller promised the spawner maps a startup page at its fixed address
         // for the process's life.
-        let page = unsafe { StartupPage::mapped() }
+        self.virtual_address_in(|| unsafe { StartupPage::mapped() })
+    }
+
+    /// [`Self::virtual_address`], reading the page from `page` on first use: the whole of its
+    /// logic, which a host test drives with a page in a buffer.
+    fn virtual_address_in<'a>(&self, page: impl FnOnce() -> Option<StartupPage<'a>>) -> u64 {
+        use core::sync::atomic::Ordering;
+        let cached = self.first.load(Ordering::Relaxed);
+        if cached != 0 {
+            return cached;
+        }
+        let page = page()
             .unwrap_or_else(|| panic!("no startup page, so no window of kind {:?}", self.kind));
         let window = page
             .window(self.kind)
@@ -309,6 +309,8 @@ impl StartupWindow {
             "the startup page lists {window:?}, shorter than the {} bytes this program uses",
             self.length_bytes,
         );
+        // Relaxed: the page never changes, so two threads racing here store the same value.
+        self.first.store(window.virtual_address, Ordering::Relaxed);
         window.virtual_address
     }
 }
