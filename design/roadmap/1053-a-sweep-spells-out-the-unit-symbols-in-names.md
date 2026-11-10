@@ -2,6 +2,7 @@
 status: BUILT
 promoted_from: a-sweep-spells-out-the-unit-symbols-in-names
 raised: 2026-11-05
+built: 2026-11-10
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -44,3 +45,14 @@ lists 162 distinct identifiers that carry one, uses included.
 ## Index row
 
 Names that use a unit symbol survive because the unit ratchet counts only some units. This sweeps the symbols out of existing names and has the ratchet count every unit the template refuses.
+
+## Follow-on
+
+- **Recorded.** `NS_PER_SECOND` in `helpers/vendored_name_gates.py` (`UNIT_RATIFIED`) keeps its
+  spelling with its reason, because the unit-symbol ruling ratified it for `clock_contract`; its
+  release review decides whether it becomes `NANOSECONDS_PER_SECOND`.
+- **Recorded.** `ppm` stays in `helpers/vendored_name_gates.py` (`UNIT_UNSETTLED`): it is the
+  Portable PixMap format nearly everywhere, and the one parts-per-million quantity has no row in the
+  template's units table and no ruling.
+- **None.** Every other name that wrote a unit symbol in a nife crate or program now spells the unit
+  out, and no standalone crate repository holds one.
