@@ -41,8 +41,9 @@ epoch in a `u64`, which runs out in 2554.
   is `UNKNOWN` accepts any plausible proposal. The window is a floor on plausibility, not a claim of
   accuracy.
 - `rtc` names the kinds of hardware clock the service can be told about: `NONE`, `PL031`, `GOLDFISH`
-  and `CMOS`. The first three name a register layout the service polls; `CMOS` means the value has
-  already been read and arrives as data.
+  and `CMOS`. `PL031` and `GOLDFISH` name a register layout the service reads through a mapped
+  page; `CMOS` names the two I/O ports, `CMOS_INDEX_PORT` and `CMOS_DATA_PORT`, it reads through a
+  port capability.
 
 ## EXAMPLES
 
