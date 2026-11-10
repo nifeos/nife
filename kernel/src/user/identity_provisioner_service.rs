@@ -84,6 +84,7 @@ pub fn provision(
                     rendezvous_capability(report, Rights::WRITE), // slot 2: say what happened
                 ],
                 maps: &maps,
+                windows: &[],
             },
         )
     })

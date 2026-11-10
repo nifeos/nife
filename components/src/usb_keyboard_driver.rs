@@ -51,6 +51,7 @@ use extensible_host_controller_interface::{
     TransferRequestBlockPlacement, completion, context, direct_memory_access, port, registers,
 };
 use line_editor::proto;
+use startup_page_contract::StartupWindow;
 use usb::boot_keyboard::{BootReport, REPORT_LEN, changes};
 use usb::descriptor::{self, ConfigurationHeader, DeviceDescriptor};
 use usb::request::SetupPacket;
@@ -67,35 +68,39 @@ const INTERRUPT: u64 = 0;
 const ATTACH: u64 = 1;
 const REPORT: u64 = 2;
 
-/// Where the kernel maps register page `n` (at `REGS_VA + n * 4096`) and the DMA work pages.
-/// **Must match `kernel/src/user/usb_keyboard_service.rs`.**
-const REGS_VA: u64 = address_space_map::pair_page(0x0000_0000_0100_0000);
-const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0200_0000);
-
-// SAFETY: the kernel maps the register pages its window chose at REGS_VA before `_start` runs;
-// this program reads only the capability, operational, port, interrupter-0 and doorbell registers,
-// which `register_window` refused to start it without.
-const REGS: MappedWindow = unsafe {
-    MappedWindow::new(
-        REGS_VA,
+// SAFETY: the kernel lists the register window on the startup page and maps the pages its register
+// mask chose before `_start` runs; this program reads only the capability, operational, port,
+// interrupter-0 and doorbell registers, which `register_window` refused to start it without.
+static REGS: StartupWindow = unsafe {
+    StartupWindow::new(
+        ::driver_process_contract::extensible_host_controller_interface::REGISTER_KIND,
         driver_process_contract::extensible_host_controller_interface::MAXIMUM_REGISTER_PAGES
             * PAGE_BYTES,
     )
 };
-// SAFETY: the kernel maps the WORK_PAGES pages read/write at DMA_VA before `_start` runs.
-const DMA: MappedWindow = unsafe {
-    MappedWindow::new(
-        DMA_VA,
+// SAFETY: the kernel lists the DMA window and maps its WORK_PAGES pages read/write before `_start`.
+static DMA: StartupWindow = unsafe {
+    StartupWindow::new(
+        ::driver_process_contract::extensible_host_controller_interface::WORK_KIND,
         driver_process_contract::extensible_host_controller_interface::WORK_PAGES * PAGE_BYTES,
     )
 };
-// SAFETY: the control buffer page, inside the DMA window above.
-const CONTROL_BUFFER: MappedWindow = unsafe {
-    MappedWindow::new(
-        DMA_VA + direct_memory_access::CONTROL_BUFFER * PAGE_BYTES,
+
+/// A window from the startup page, as a bounds-checked [`MappedWindow`] of the length its static
+/// declares.
+fn mapped(window: &StartupWindow) -> MappedWindow {
+    // SAFETY: each `StartupWindow` here was declared on the spawner's promise that it maps the
+    // window read/write for the life of the process, which is what `MappedWindow::new` asks.
+    unsafe { MappedWindow::new(window.virtual_address(), window.length_bytes()) }
+}
+
+/// The control buffer page, inside [`DMA`].
+fn control_buffer() -> MappedWindow {
+    mapped(&DMA).sub(
+        direct_memory_access::CONTROL_BUFFER * PAGE_BYTES,
         PAGE_BYTES,
     )
-};
+}
 
 /// One millisecond, in the units [`monotonic_nanoseconds`] counts.
 const MS: u64 = 1_000_000;
@@ -165,23 +170,23 @@ fn past(deadline: u64) -> bool {
 
 fn zero_page(page: u64) {
     for off in (0..PAGE_BYTES).step_by(8) {
-        DMA.w64(page * PAGE_BYTES + off, 0);
+        mapped(&DMA).w64(page * PAGE_BYTES + off, 0);
     }
 }
 
 impl Host {
     fn reg(&self, off: u64) -> u32 {
-        REGS.r32(off)
+        mapped(&REGS).r32(off)
     }
 
     fn set_reg(&self, off: u64, v: u32) {
-        REGS.w32(off, v);
+        mapped(&REGS).w32(off, v);
     }
 
     /// A 64-bit register as two aligned dwords, low first, which xHCI 1.2 section 5.1 allows.
     fn set_reg64(&self, off: u64, v: u64) {
-        REGS.w32(off, v as u32);
-        REGS.w32(off + 4, (v >> 32) as u32);
+        mapped(&REGS).w32(off, v as u32);
+        mapped(&REGS).w32(off + 4, (v >> 32) as u32);
     }
 
     fn op(&self, off: u64) -> u64 {
@@ -200,18 +205,23 @@ impl Host {
     /// Write one TRB, the cycle dword last.
     fn write_trb(page: u64, index: u16, t: TransferRequestBlock) {
         let at = page * PAGE_BYTES + u64::from(index) * 16;
-        DMA.w32(at, t.0[0]);
-        DMA.w32(at + 4, t.0[1]);
-        DMA.w32(at + 8, t.0[2]);
+        mapped(&DMA).w32(at, t.0[0]);
+        mapped(&DMA).w32(at + 4, t.0[1]);
+        mapped(&DMA).w32(at + 8, t.0[2]);
         barrier();
-        DMA.w32(at + 12, t.0[3]);
+        mapped(&DMA).w32(at + 12, t.0[3]);
     }
 
     fn read_trb(page: u64, index: u16) -> TransferRequestBlock {
         let at = page * PAGE_BYTES + u64::from(index) * 16;
-        let d3 = DMA.r32(at + 12);
+        let d3 = mapped(&DMA).r32(at + 12);
         barrier();
-        TransferRequestBlock([DMA.r32(at), DMA.r32(at + 4), DMA.r32(at + 8), d3])
+        TransferRequestBlock([
+            mapped(&DMA).r32(at),
+            mapped(&DMA).r32(at + 4),
+            mapped(&DMA).r32(at + 8),
+            d3,
+        ])
     }
 
     fn put(page: u64, p: TransferRequestBlockPlacement) {
@@ -348,7 +358,7 @@ impl Host {
         let at = direct_memory_access::INPUT_CONTEXT * PAGE_BYTES
             + context::input_offset(index, self.capabilities.context_bytes);
         for (i, w) in words.iter().enumerate() {
-            DMA.w32(at + 4 * i as u64, *w);
+            mapped(&DMA).w32(at + 4 * i as u64, *w);
         }
     }
 
@@ -408,7 +418,7 @@ impl Host {
             self.phys(direct_memory_access::INTERRUPT_RING),
             direct_memory_access::RING_ENTRIES,
         );
-        DMA.w64(
+        mapped(&DMA).w64(
             direct_memory_access::DEVICE_CONTEXT_ARRAY * PAGE_BYTES + 8 * u64::from(slot),
             self.phys(direct_memory_access::DEVICE_CONTEXT),
         );
@@ -441,7 +451,7 @@ impl Host {
         if n < 8 {
             return Err((BringUpStep::BadDeviceDescriptor, n as u32));
         }
-        let b0 = CONTROL_BUFFER.r8(7);
+        let b0 = control_buffer().r8(7);
         let Some(packet) = usb::descriptor::control_max_packet(b0, context::is_superspeed(speed))
         else {
             return Err((BringUpStep::BadControlPacket, b0.into()));
@@ -465,7 +475,7 @@ impl Host {
         )?;
         // SAFETY: the controller finished writing the buffer before the status stage's completion,
         // which `transfer` waited for and fenced; nothing writes it until the next transfer.
-        let device = DeviceDescriptor::parse(&unsafe { CONTROL_BUFFER.as_slice() }[..n])
+        let device = DeviceDescriptor::parse(&unsafe { control_buffer().as_slice() }[..n])
             .ok_or((BringUpStep::BadDeviceDescriptor, n as u32))?;
 
         let n = self.transfer(
@@ -477,7 +487,7 @@ impl Host {
             ),
         )?;
         // SAFETY: as above.
-        let header = ConfigurationHeader::parse(&unsafe { CONTROL_BUFFER.as_slice() }[..n])
+        let header = ConfigurationHeader::parse(&unsafe { control_buffer().as_slice() }[..n])
             .map_err(|r| (BringUpStep::NotABootKeyboard, refusal_code(r)))?;
         let total = header.total_length.min(PAGE_BYTES as u16);
         let n = self.transfer(
@@ -486,7 +496,7 @@ impl Host {
         )?;
         // SAFETY: as above.
         let keyboard =
-            usb::descriptor::find_boot_keyboard(&unsafe { CONTROL_BUFFER.as_slice() }[..n])
+            usb::descriptor::find_boot_keyboard(&unsafe { control_buffer().as_slice() }[..n])
                 .map_err(|r| (BringUpStep::NotABootKeyboard, refusal_code(r)))?;
 
         self.transfer(slot, SetupPacket::set_configuration(keyboard.configuration))?;
@@ -558,12 +568,12 @@ impl Host {
     /// found it, took it from the firmware and confined it.
     fn bring_up(h: Handoff) -> Result<Host, Fail> {
         let capabilities = Capabilities::decode(
-            REGS.r32(registers::CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER),
-            REGS.r32(registers::STRUCTURAL_PARAMETERS_1_REGISTER),
-            REGS.r32(registers::STRUCTURAL_PARAMETERS_2_REGISTER),
-            REGS.r32(registers::CAPABILITY_PARAMETERS_1_REGISTER),
-            REGS.r32(registers::DOORBELL_OFFSET_REGISTER),
-            REGS.r32(registers::RUNTIME_REGISTER_SPACE_OFFSET_REGISTER),
+            mapped(&REGS).r32(registers::CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER),
+            mapped(&REGS).r32(registers::STRUCTURAL_PARAMETERS_1_REGISTER),
+            mapped(&REGS).r32(registers::STRUCTURAL_PARAMETERS_2_REGISTER),
+            mapped(&REGS).r32(registers::CAPABILITY_PARAMETERS_1_REGISTER),
+            mapped(&REGS).r32(registers::DOORBELL_OFFSET_REGISTER),
+            mapped(&REGS).r32(registers::RUNTIME_REGISTER_SPACE_OFFSET_REGISTER),
         );
         let phys = |page: u64| h.data_plane_physical_address + page * PAGE_BYTES;
         let host = Host {
@@ -653,7 +663,7 @@ impl Host {
         // The slot array, its entry 0 the scratchpad array when the controller wants one.
         if self.capabilities.scratchpads > 0 {
             for i in 0..u64::from(self.capabilities.scratchpads) {
-                DMA.w64(
+                mapped(&DMA).w64(
                     direct_memory_access::SCRATCHPAD_ARRAY * PAGE_BYTES + 8 * i,
                     phys(
                         driver_process_contract::extensible_host_controller_interface::WORK_PAGES
@@ -661,7 +671,7 @@ impl Host {
                     ),
                 );
             }
-            DMA.w64(
+            mapped(&DMA).w64(
                 direct_memory_access::DEVICE_CONTEXT_ARRAY * PAGE_BYTES,
                 phys(direct_memory_access::SCRATCHPAD_ARRAY),
             );
@@ -679,7 +689,7 @@ impl Host {
         // The event ring: its one segment table entry, then interrupter 0, base last.
         let entry = self.events.segment_table_entry();
         for (i, w) in entry.iter().enumerate() {
-            DMA.w32(
+            mapped(&DMA).w32(
                 direct_memory_access::EVENT_SEGMENT_TABLE * PAGE_BYTES + 4 * i as u64,
                 *w,
             );
@@ -875,7 +885,8 @@ impl Host {
         let mut bytes = [0u8; REPORT_LEN];
         let got = REPORT_LEN.saturating_sub(residual as usize);
         for (i, b) in bytes.iter_mut().enumerate().take(got) {
-            *b = DMA.r8(direct_memory_access::REPORT_BUFFERS * PAGE_BYTES + offset + i as u64);
+            *b = mapped(&DMA)
+                .r8(direct_memory_access::REPORT_BUFFERS * PAGE_BYTES + offset + i as u64);
         }
         if let Some(now) = BootReport::parse(&bytes[..got]) {
             let mut typed = Typed::new(out);

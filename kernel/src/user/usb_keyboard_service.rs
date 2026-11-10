@@ -19,11 +19,11 @@ use super::*;
 use crate::capability_object::{Rights, interrupt_capability, rendezvous_capability};
 use crate::sched::RendezvousId;
 
-/// Where the driver's register pages are mapped, page `n` of BAR0 at `REGS_VA + n * 4096`. Must
-/// match `components/src/usb_keyboard_driver.rs`.
+/// Where the driver's register pages are mapped, page `n` of BAR0 at `REGS_VA + n * 4096`. The
+/// driver reads it from the startup page.
 const REGS_VA: u64 = address_space_map::pair_page(0x0000_0000_0100_0000);
 
-/// Where the driver's DMA work pages are mapped. Must match `components/src/usb_keyboard_driver.rs`.
+/// Where the driver's DMA work pages are mapped. The driver reads it from the startup page.
 const DMA_VA: u64 = address_space_map::pair_page(0x0000_0000_0200_0000);
 
 /// Stack pages beyond the one every loaded program gets. Enumeration is a call chain six frames
@@ -123,6 +123,18 @@ pub(crate) fn start(
                     rendezvous_capability(report, Rights::WRITE), // slot 2: the one bring-up report
                 ],
                 maps: &maps[..n],
+                windows: &[
+                    startup_page_contract::Window {
+                        kind: ::driver_process_contract::extensible_host_controller_interface::WORK_KIND,
+                        virtual_address: DMA_VA,
+                        pages: WORK_PAGES as u32,
+                    },
+                    startup_page_contract::Window {
+                        kind: ::driver_process_contract::extensible_host_controller_interface::REGISTER_KIND,
+                        virtual_address: REGS_VA,
+                        pages: MAXIMUM_REGISTER_PAGES as u32,
+                    },
+                ],
             },
         )
     })

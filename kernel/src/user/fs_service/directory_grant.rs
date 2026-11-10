@@ -151,6 +151,7 @@ fn spawn_caretaker(
                     phys: file_shared,
                     flags: Flags::user_data(),
                 }],
+                windows: &[],
             },
         )
     })

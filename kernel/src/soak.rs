@@ -160,6 +160,7 @@ fn spawn_workers(
                             phys: shared,
                             flags: Flags::user_data(),
                         }],
+                        windows: &[],
                     },
                 )
             });

@@ -474,6 +474,7 @@ fn a_program_binds_a_notification_and_receive_tells_a_signal_from_a_forgery() {
                     crate::capability_object::rendezvous_capability(report, Rights::WRITE),
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })

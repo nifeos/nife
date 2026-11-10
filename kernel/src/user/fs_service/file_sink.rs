@@ -57,6 +57,7 @@ pub fn start_file_sink(
                     phys: file_shared,
                     flags: Flags::user_data(),
                 }],
+                windows: &[],
             },
         )
     })
@@ -101,6 +102,7 @@ pub fn start_file_source(
                     phys: file_shared,
                     flags: Flags::user_data(),
                 }],
+                windows: &[],
             },
         )
     })

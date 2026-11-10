@@ -75,6 +75,7 @@ pub fn start_granted(
                     phys: file_shared,
                     flags: Flags::user_data(),
                 }],
+                windows: &[],
             },
         )
     })

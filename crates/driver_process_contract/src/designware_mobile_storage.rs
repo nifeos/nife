@@ -1,5 +1,5 @@
-//! What the kernel and the EL0 SD/MMC block server agree on: where the server's two windows sit,
-//! the part of the card it may serve, and the three spawn words that say so. The server
+//! What the kernel and the EL0 SD/MMC block server agree on: where the spawner maps the server's
+//! two windows (the server reads them from the startup page), the part of the card it may serve, and the three spawn words that say so. The server
 //! (`components/src/designware_mobile_storage.rs`) answers `filesystem_contract::blk`, the four
 //! verbs the virtio and NVMe block servers answer, so the FS server cannot tell which disk it has.
 //! Its blocks are 4096 bytes; the card's are 512. A request names blocks inside a window the kernel
@@ -14,18 +14,29 @@
 //! crate.
 
 use filesystem_contract::blk;
+use startup_page_contract::WindowKind;
 
-/// Where the server finds the controller's first page, mapped device-typed.
+/// Where the spawner maps the controller's first page, device-typed, and lists it on the startup
+/// page, where the server reads it.
 ///
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
 /// driver crate's `REGISTER_VA`, renamed to spell out the address as design/naming.md asks.
 pub const REGISTER_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0060_0000);
-/// Where the server finds the transfer region it shares with its client, [`blk::TRANSFER_BLOCKS`]
-/// pages.
+/// Where the spawner maps the transfer region the server shares with its client,
+/// [`blk::TRANSFER_BLOCKS`] pages, and lists it on the startup page, where the server reads it.
 ///
 /// Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts. It was the
 /// driver crate's `TRANSFER_VA`, renamed to spell out the address as design/naming.md asks.
 pub const TRANSFER_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0070_0000);
+
+/// [`REGISTER_VIRTUAL_ADDRESS`]'s entry on the startup page.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+pub const REGISTER_KIND: WindowKind = WindowKind(8);
+/// [`TRANSFER_VIRTUAL_ADDRESS`]'s entry on the startup page.
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/startup-page-spawners.
+pub const TRANSFER_KIND: WindowKind = WindowKind(9);
 
 /// Card sectors in one `blk` block. An SD card's sector is `blk`'s 512-byte sector.
 ///

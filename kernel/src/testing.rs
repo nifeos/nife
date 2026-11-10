@@ -328,14 +328,15 @@ const PAGE_FRAME_REPORT_MINIMUM: usize = 16;
 /// - Two test sites keep their endpoints for the boot on purpose (notes/kernel-test-harness.md).
 /// - The kernel's `user::*_service` wiring still uses the never-freed pool, once per test.
 ///
-/// 24,560 since milestone 933 (every job is built the way a supervised job is): a scripted shell
-/// now holds its jobs, so the test progenitor supervises each job on the shell's endpoint, and a
-/// supervised job that exits is a corpse its supervisor reaps. The stub is a kernel thread that
-/// cannot reap a thread it built outside a region, so each job's address space and stack stay:
-/// 157 frames on aarch64 (24,528 against 24,371). The production path does not leak them, because
-/// the shell's `DESTROY` of the job's region takes the corpse with it (`script/swish-check`'s
-/// hundred-cycle line). riscv64 is not yet measured with it.
-const SUITE_PAGE_FRAME_BUDGET: usize = 24_560;
+/// A scripted shell holds its jobs, so the test progenitor supervises each job on the shell's
+/// endpoint, and a supervised job that exits is a corpse its supervisor reaps. The stub is a kernel
+/// thread that cannot reap a thread it built outside a region, so each job's address space and stack
+/// stay. The production path does not leak them, because the shell's `DESTROY` of the job's region
+/// takes the corpse with it (`script/swish-check`'s hundred-cycle line). Every space the kernel
+/// loads also holds its startup page and that page's two tables (`user::loader`'s
+/// `STARTUP_PAGE_COST`), so each space the suite keeps keeps three frames more: 24,648 measured on
+/// aarch64 and 24,636 on riscv64, 88 and 76 over the budget before the page.
+const SUITE_PAGE_FRAME_BUDGET: usize = 24_680;
 
 /// **The longest run of free frames the boot must still have at the end**, in frames.
 ///

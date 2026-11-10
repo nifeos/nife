@@ -111,6 +111,7 @@ fn start_with(replaceable: bool) -> (Wiring, Holding) {
                         flags: Flags::user_data(),
                     },
                 ],
+                windows: &[],
             },
         )
     })

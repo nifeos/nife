@@ -16,3 +16,4 @@ pub mod designware_mobile_storage;
 pub mod e1000e;
 pub mod extensible_host_controller_interface;
 pub mod non_volatile_memory_express;
+pub mod window_kinds;

@@ -36,6 +36,11 @@ pub enum LoadError {
     /// (where a program image starts) option A). Refused before a page is mapped. Its `Display` is
     /// the sentence the boot prints.
     Misplaced(address_space_map::ImagePlacement),
+
+    /// **The spawner's window list cannot be written as a startup page**: a duplicate kind, a
+    /// malformed window or too many of them. A spawner bug rather than a bad file, refused before
+    /// the program runs rather than handed a page a reader could misread. Name provisional.
+    StartupPage(startup_page_contract::Refusal),
 }
 
 impl core::fmt::Display for LoadError {
@@ -70,15 +75,20 @@ fn check_image_band(elf: &Elf) -> Result<(), LoadError> {
 
 /// Parse an ELF, build an address space, and put it in memory. Do **not** run it.
 ///
-/// `image` is the ELF, and `windowed` is how many pages the caller will map into the new space
-/// itself (zero for none). Returns the space and the entry point, or the [`LoadError`] that refused
-/// the image. Split from [`run`] because this is the part that can fail, and a test can call it
+/// `image` is the ELF, `windowed` is how many pages the caller will map into the new space itself
+/// (zero for none), and `windows` is the list the startup page carries, which this maps read-only
+/// at `startup_page_contract::PAGE_VIRTUAL_ADDRESS` in every space it builds, empty or not. Returns
+/// the space and the entry point, or the [`LoadError`] that refused the image. Split from [`run`] because this is the part that can fail, and a test can call it
 /// without dying.
 ///
 /// Mapped windows cost table and log pages out of this space's own region, so the budget charges
 /// `windowed` here, less [`WINDOW_IN_OVERHEAD`], rather than asking each caller to widen it. See
 /// notes/user-address-spaces.md.
-pub fn load(image: &[u8], windowed: u64) -> Result<(AddressSpace, u64), LoadError> {
+pub fn load(
+    image: &[u8],
+    windowed: u64,
+    windows: &[startup_page_contract::Window],
+) -> Result<(AddressSpace, u64), LoadError> {
     let elf = Elf::parse(image).map_err(LoadError::NotLoadable)?;
     check_image_band(&elf)?;
 
@@ -92,6 +102,7 @@ pub fn load(image: &[u8], windowed: u64) -> Result<(AddressSpace, u64), LoadErro
         })
         .sum::<u64>()
         + 1
+        + STARTUP_PAGE_COST
         + (windowed / 512 + crate::revoke::log_pages_for(windowed))
             .saturating_sub(WINDOW_IN_OVERHEAD);
 
@@ -103,6 +114,16 @@ pub fn load(image: &[u8], windowed: u64) -> Result<(AddressSpace, u64), LoadErro
     space
         .map_new(USER_STACK_VA, Flags::user_data())
         .map_err(LoadError::Unmappable)?;
+
+    // The startup page, read-only to the program and written here through the direct map before
+    // anything runs in the space, so it has one writer and no reader yet.
+    let page = space
+        .map_new(
+            startup_page_contract::PAGE_VIRTUAL_ADDRESS,
+            Flags::user_rodata(),
+        )
+        .map_err(LoadError::Unmappable)?;
+    startup_page_contract::write(page, windows).map_err(LoadError::StartupPage)?;
 
     // The timebase page: `user_mode_runtime::now()`'s rate where there is no `CNTFRQ_EL0` to read
     // (`x86_64` measures it, `riscv64` reads it from the device tree). Mapped rather than carved,
@@ -121,6 +142,12 @@ pub fn load(image: &[u8], windowed: u64) -> Result<(AddressSpace, u64), LoadErro
 
     Ok((space, elf.entry()))
 }
+
+/// **What the startup page costs a space's region**: the page itself, and the two tables under
+/// it (the table for its gigabyte and the one for its 2 MiB), since nothing else a kernel-loaded
+/// program maps shares them unless it has pair pages. Charged here and not left to
+/// `AS_OVERHEAD`'s margin, which other windows already lean on. Name provisional.
+const STARTUP_PAGE_COST: u64 = 3;
 
 /// **The timebase page's one physical frame**, written once and mapped read-only into every process
 /// on `x86_64` and `riscv64`, since the rate does not change while the machine runs. aarch64 needs

@@ -46,6 +46,7 @@ fn spawn_date(
                     phys,
                     flags: Flags::user_rodata(),
                 }],
+                windows: &[],
             },
         ),
         None => run(
@@ -56,6 +57,7 @@ fn spawn_date(
                 arg2: provenance,
                 grants: &[rendezvous_capability(out, Rights::WRITE)],
                 maps: &[],
+                windows: &[],
             },
         ),
     })
@@ -92,6 +94,7 @@ fn spawn_date_with_diagnostics() -> (RendezvousId, RendezvousId, u64) {
                 arg2: 0,
                 grants: &[rendezvous_capability(out, Rights::WRITE)],
                 maps: &[],
+                windows: &[],
             },
         )
     })

@@ -128,6 +128,7 @@ pub fn start(
                 arg2: 0,
                 grants: &[], // every one of them is placed above, at its own slot
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -265,6 +266,7 @@ fn wire_driver(
                 arg2,        // the escape role's victim frame; unused (0) by the GPU driver
                 grants: &[], // every one of them is placed above, at its own slot
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -411,6 +413,7 @@ fn spawn_terminal(
                 arg2: 0,
                 grants: &[], // every one of them is placed above, at its own slot
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -585,6 +588,7 @@ pub fn start_screen_terminal(
                 arg2: offset, // where pixel (0, 0) is in the first mapped page
                 grants: &[],  // every one of them is placed above, at its own slot
                 maps: &[],
+                windows: &[],
             },
             device,
         )

@@ -109,6 +109,7 @@ pub fn start(image: &'static [u8], entropy: RendezvousId) -> Wiring {
                     rendezvous_capability(ready, Rights::WRITE), // slot 4: one message, after the seal
                 ],
                 maps: &maps,
+                windows: &[],
             },
         )
     })
@@ -174,6 +175,7 @@ fn spawn_cli(
                     rendezvous_capability(report, Rights::WRITE),   // slot 1: say what happened
                 ],
                 maps: &maps,
+                windows: &[],
             },
         )
     })
