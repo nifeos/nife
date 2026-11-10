@@ -86,6 +86,14 @@ path = "src/progenitor.rs"
 test = false
 bench = false
 
+# The boot self-test's userspace half (milestone 1063): the checks that spawn a user program,
+# run by the progenitor before the shell, and the one verdict.
+[[bin]]
+name = "boot_self_test"
+path = "src/boot_self_test.rs"
+test = false
+bench = false
+
 # The virtio-blk driver as its own binary (parity C): the shared `virtio` module (the same file
 # hello's aarch64 roles compile) behind a dedicated-binary skeleton, so riscv runs the identical
 # driver, attacker included, without porting the PL011-wired hello multiplexer.
