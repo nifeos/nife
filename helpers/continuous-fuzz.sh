@@ -6,6 +6,7 @@
 #     helpers/continuous-fuzz.sh --once DRIVER SLOT   one sweep window, then print the verdict
 #     helpers/continuous-fuzz.sh --check-kvm  say whether a window could start, and why not
 #     helpers/continuous-fuzz.sh --ci SHARD   one bounded CI window of shard SHARD (0 to 3), then exit
+#     helpers/continuous-fuzz.sh --replay COMMIT SHARD RED_AT   replay one red CI shard, then exit
 #
 # DRIVER is `kernel-thread` (milestone 752 (a seeded syscall driver with a shadow model)) or
 # `confined` (milestone 779 (fuzz the surface a confined process can reach)). Guests alternate
@@ -63,6 +64,19 @@
 # anyway. Exit codes: 0 clean, 1 a finding, 3 infrastructure (no KVM, a failed build, a guest that
 # ended with no sign of a finding). See notes/fuzzing/continuous-host.md.
 #
+# **A red CI shard is replayed here (`--replay`).** At most every `NIFE_FUZZ_REPLAY_EVERY` seconds
+# (default 900; 0 turns it off) the supervisor runs `helpers/fuzz-red-shards.py look`, which reads
+# the public run listings with no credential and queues each red `fuzz-guests` shard whose commit the
+# clone's HEAD already contains. When it queues one, each slot stops after its current window and
+# the supervisor re-executes itself; on every start it replays the queue before any slot starts, so
+# the replay's guest never runs beside four others. A replay checks the commit out in `work/replay/`,
+# takes the shard's driver and first seed from that commit's own `--ci-range`, and sweeps the
+# shard's range once, as a window does. A reproduction is held like any other window (its log moves
+# to `state/held/`, and its row carries a held class with the slot `replay`), so the filer files it
+# with no change. A clean replay keeps no log and writes a `replay-clean` row, which the daily
+# report counts by status. Its one printed line is a finding id and an age, or that it came back
+# clean. An infrastructure failure goes back to the queue, three attempts in all.
+#
 # State, all under `$NIFE_FUZZ_HOME` (default `$HOME/fuzz`):
 #   work/<slot>/            the slot's worktree
 #   state/next-<slot>       the next first seed for the slot
@@ -72,8 +86,15 @@
 #                           (a wait ran out its tick budget, with or without a replay line).
 #   state/held/             held logs (private)
 #   logs/<slot>/            the last logs of clean windows (the newest 20)
+#   work/replay/, logs/replay/   the replay's worktree, and its log while it runs (mode 700)
+#   state/replay-queue, state/replay-seen.tsv   red shards to replay, and runs decided
+#                           (helpers/fuzz-red-shards.py)
+#   A replay's row has the slot `replay` and the status `replay-clean`, `infrastructure` or a
+#   held class.
 #
 # Name: provisional, minted 2026-11-01 (UTC) by lane/continuous-fuzzing-host. calef has not ruled on it.
+# `--replay`, the slot word `replay` and the status `replay-clean`: provisional, minted 2026-11-10
+# (UTC) by lane milestone/1038-the-fuzz-host-replays-a-red-ci-shard. No architect has ruled on them.
 
 set -eu
 
@@ -99,6 +120,9 @@ stride=1000000000
 # How often, at most, the supervisor looks for a newer green main (seconds; 0 turns it off).
 follow_every="${NIFE_FUZZ_FOLLOW_EVERY:-300}"
 drain="$state/follow-drain"
+# How often, at most, the supervisor looks for a red CI fuzz shard to replay (seconds; 0 turns it
+# off). Every look is one public API request.
+replay_every="${NIFE_FUZZ_REPLAY_EVERY:-900}"
 
 # Put the pinned QEMU and rustup's cargo on PATH, as script/bootstrap's own callers do.
 PATH="$HOME/.cargo/bin:$PATH"
@@ -227,14 +251,40 @@ classify() {
     fi
 }
 
+# Build the image for one seed range in checkout $1 and sweep it in one guest under KVM. $2 is the
+# driver, $3 the first seed, $4 the seed count, $5 the label of the log's first line. Everything goes
+# to standard output, which the caller sends to the window's log. 125 means the build failed or ran
+# out its bound, which is infrastructure whatever the log says; otherwise the guest's exit status.
+sweep() {
+    (
+        cd "$1"
+        # shellcheck disable=SC2046  # two words, split on purpose
+        set -- "$@" $(driver_test "$2")
+        filter="$6"
+        var="$7"
+        # Build once. The archive does not depend on the range; the system test image does, because
+        # the range and the filter are baked in at build time.
+        "$root/helpers/qemu-bounded.sh" "$build_bound" cargo xtask initial-ramdisk-x86 || exit 125
+        NIFE_INITIAL_RAMDISK="$PWD/target/initial-ramdisk-x86_64.img"
+        export NIFE_INITIAL_RAMDISK
+        NIFE_TEST_FILTER="$filter"
+        NIFE_TEST_FILTER_ACROSS_IMAGES=1
+        export NIFE_TEST_FILTER NIFE_TEST_FILTER_ACROSS_IMAGES
+        export "$var=$3:$4"
+        json="$1.build.json"
+        "$root/helpers/qemu-bounded.sh" "$build_bound" cargo test -p system_tests --target x86_64-unknown-none \
+            --no-run --message-format=json-render-diagnostics > "$json" || exit 125
+        elf="$(sed -n '/"reason":"compiler-artifact"/{/"name":"system_tests"/s/.*"executable":"\([^"]*\)".*/\1/p;}' "$json" | tail -1)"
+        [ -n "$elf" ] || { echo "continuous-fuzz: cargo named no system_tests executable" >&2; exit 125; }
+        echo "continuous-fuzz: $5: $2, seeds from $3, accelerator kvm, image $elf"
+        "$root/helpers/qemu-bounded.sh" "$bound" ./helpers/qemu-runner-x86_64.sh "$elf" -accel kvm
+    )
+}
+
 # One window. Prints the status word on stdout; everything else goes to the log.
 window() {
     driver="$1"
     slot="$2"
-    # shellcheck disable=SC2046  # two words, split on purpose
-    set -- $(driver_test "$driver")
-    filter="$1"
-    var="$2"
     refuse_without_kvm || { echo infrastructure; return 0; }
     prepare_slot "$slot"
     first="$(cat "$state/next-$slot")"
@@ -242,26 +292,7 @@ window() {
     commit="$(git -C "$home/work/$slot" rev-parse --short HEAD)"
     start="$(date +%s)"
     set +e
-    (
-        cd "$home/work/$slot"
-        # Build once. The archive does not depend on the range; the system test image does, because
-        # the range and the filter are baked in at build time. 125 means the build failed or ran out
-        # its bound, which is infrastructure whatever the log says.
-        "$root/helpers/qemu-bounded.sh" "$build_bound" cargo xtask initial-ramdisk-x86 || exit 125
-        NIFE_INITIAL_RAMDISK="$PWD/target/initial-ramdisk-x86_64.img"
-        export NIFE_INITIAL_RAMDISK
-        NIFE_TEST_FILTER="$filter"
-        NIFE_TEST_FILTER_ACROSS_IMAGES=1
-        export NIFE_TEST_FILTER NIFE_TEST_FILTER_ACROSS_IMAGES
-        export "$var=$first:$ask"
-        json="$home/work/$slot.build.json"
-        "$root/helpers/qemu-bounded.sh" "$build_bound" cargo test -p system_tests --target x86_64-unknown-none \
-            --no-run --message-format=json-render-diagnostics > "$json" || exit 125
-        elf="$(sed -n '/"reason":"compiler-artifact"/{/"name":"system_tests"/s/.*"executable":"\([^"]*\)".*/\1/p;}' "$json" | tail -1)"
-        [ -n "$elf" ] || { echo "continuous-fuzz: cargo named no system_tests executable" >&2; exit 125; }
-        echo "continuous-fuzz: slot $slot: $driver, seeds from $first, accelerator kvm, image $elf"
-        "$root/helpers/qemu-bounded.sh" "$bound" ./helpers/qemu-runner-x86_64.sh "$elf" -accel kvm
-    ) > "$log" 2>&1
+    sweep "$home/work/$slot" "$driver" "$first" "$ask" "slot $slot" > "$log" 2>&1
     rc=$?
     set -e
     ms=$((($(date +%s) - start) * 1000))
@@ -363,6 +394,102 @@ ci_shard() {
     esac
 }
 
+# The age of a red shard, from its time in seconds since the epoch, in the filer's form (42m, 5h, 3d).
+age_of() {
+    a=$(($(date +%s) - $1))
+    [ "$a" -ge 0 ] || a=0
+    if [ "$a" -lt 3600 ]; then echo "$((a / 60))m"
+    elif [ "$a" -lt 172800 ]; then echo "$((a / 3600))h"
+    else echo "$((a / 86400))d"; fi
+}
+
+# Replay CI shard $2 of commit $1, which went red at $3 (seconds since the epoch). See the header.
+# Prints one line, and sets `status`. Every line printed is safe for the journal: a reproduction
+# prints a finding id and an age, never the commit, the shard, a seed or anything the guest said.
+replay() {
+    commit="$1"
+    shard="$2"
+    red_at="$3"
+    status=infrastructure
+    case "$commit" in
+        *[!0-9a-f]*) echo "continuous-fuzz: replay refused: not a full commit id"; return 0 ;;
+    esac
+    [ "${#commit}" -eq 40 ] || { echo "continuous-fuzz: replay refused: not a full commit id"; return 0; }
+    ci_shard_valid "$shard" 2>/dev/null || { echo "continuous-fuzz: replay refused: no such shard"; return 0; }
+    # Only a commit the clone already holds, and the clone moves only as fuzz-follow-main.py allows.
+    git -C "$root" merge-base --is-ancestor "$commit" HEAD 2>/dev/null \
+        || { status=not-on-main; echo "continuous-fuzz: replay refused: the clone's HEAD does not contain the commit"; return 0; }
+    refuse_without_kvm || { echo "continuous-fuzz: replay: infrastructure failure, no KVM"; return 0; }
+    dir="$home/work/replay"
+    mkdir -p "$state/held" "$home/work"
+    chmod 700 "$state/held"
+    if [ -d "$dir" ]; then
+        git -C "$dir" checkout --quiet --force --detach "$commit" || { echo "continuous-fuzz: replay: infrastructure failure, the checkout failed"; return 0; }
+    else
+        git -C "$root" worktree add --quiet --detach "$dir" "$commit" >/dev/null || { echo "continuous-fuzz: replay: infrastructure failure, the checkout failed"; return 0; }
+    fi
+    # The commit's own script names its shard's driver and first seed, so the range is the one the
+    # job swept even if this script's derivation changes later.
+    # shellcheck disable=SC2046  # two words, split on purpose
+    set -- $(cd "$dir" && sh helpers/continuous-fuzz.sh --ci-range "$shard" 2>/dev/null)
+    driver="${1:-}"
+    first="${2:-}"
+    case "$driver:$first" in
+        kernel-thread:[0-9]*|confined:[0-9]*) ;;
+        *) echo "continuous-fuzz: replay: infrastructure failure, the commit names no range for its shard"; return 0 ;;
+    esac
+    # The guest's output stays in a directory only this account can read until it is classified.
+    private="$home/logs/replay"
+    mkdir -p "$private"
+    chmod 700 "$private"
+    log="$private/$(date -u +%Y%m%dT%H%M%SZ)-$first.log"
+    start="$(date +%s)"
+    set +e
+    sweep "$dir" "$driver" "$first" "$ci_ask" "replay of CI shard $shard" > "$log" 2>&1
+    rc=$?
+    set -e
+    ms=$((($(date +%s) - start) * 1000))
+    classify "$log" "$rc" "$first"
+    [ "$status" != ok ] || status="replay-clean"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$driver" replay "$first" "$ran" "$ms" "$status" \
+        "$(git -C "$dir" rev-parse --short HEAD)" >> "$state/windows.tsv"
+    case "$status" in
+        held-*)
+            # The finding id is the filer's: the first 16 hexadecimal digits of the log's SHA-256.
+            id="$(sha256sum "$log" 2>/dev/null || shasum -a 256 "$log")"
+            id="$(echo "$id" | cut -c1-16)"
+            mv "$log" "$state/held/"
+            echo "continuous-fuzz: replay held finding $id (red $(age_of "$red_at") ago)"
+            ;;
+        replay-clean)
+            rm -f "$log"
+            echo "continuous-fuzz: replay of a red CI shard came back clean"
+            ;;
+        *)
+            rm -f "$log"
+            echo "continuous-fuzz: replay: infrastructure failure, the guest ended without a verdict (its output is withheld)"
+            ;;
+    esac
+}
+
+# Replay every shard in the queue, oldest first, while no slot runs. A line leaves the queue once its
+# replay ends; an infrastructure failure goes back to the end of the queue, three attempts in all.
+run_replays() {
+    queue="$state/replay-queue"
+    while [ -s "$queue" ]; do
+        # shellcheck disable=SC2046  # four words, split on purpose
+        set -- $(head -1 "$queue")
+        sed 1d "$queue" > "$queue.tmp"
+        line_attempts="${4:-0}"
+        replay "${1:-}" "${2:-}" "${3:-0}"
+        if [ "$status" = infrastructure ] && [ "$line_attempts" -lt 2 ]; then
+            echo "$1 $2 $3 $((line_attempts + 1))" >> "$queue.tmp"
+        fi
+        mv "$queue.tmp" "$queue"
+    done
+}
+
 if [ "${1:-}" = --check-kvm ]; then
     require_kvm && echo "continuous-fuzz: KVM is usable"
     exit
@@ -390,6 +517,13 @@ if [ "${1:-}" = --ci ]; then
     exit 0
 fi
 
+if [ "${1:-}" = --replay ]; then
+    [ $# -eq 4 ] || { echo "usage: $0 --replay COMMIT SHARD RED_AT" >&2; exit 2; }
+    mkdir -p "$state"
+    replay "$2" "$3" "$4"
+    exit 0
+fi
+
 if [ "${1:-}" = --once ]; then
     ensure_toolchain || exit 1
     refuse_without_kvm || exit 1
@@ -404,6 +538,9 @@ refuse_without_kvm || exit 1
 mkdir -p "$state"
 sync_slots || exit 1
 rm -f "$drain"
+# A red CI shard waiting from the last look (or from before a restart) is replayed before any slot
+# starts, so the replay's guest never runs beside four others.
+run_replays
 # Make every slot's worktree one at a time, before any worker starts. Two workers each running
 # `git worktree add` in the one clone race on its shared `.git/worktrees` metadata (one can read a
 # `commondir` the other has not finished writing), so the first window of a fresh host must not do it.
@@ -424,15 +561,33 @@ done
 # (`wait -n` is not POSIX; poll instead.)
 tick=10
 [ "$follow_every" -eq 0 ] || [ "$follow_every" -ge "$tick" ] || tick="$follow_every"
+[ "$replay_every" -eq 0 ] || [ "$replay_every" -ge "$tick" ] || tick="$replay_every"
 last_look=0
+last_replay_look=0
 last_said=""
+last_replay_said=""
 alive=1
 while [ "$alive" -eq 1 ]; do
     sleep "$tick"
     for p in $pids; do
         kill -0 "$p" 2>/dev/null || alive=0
     done
-    [ "$alive" -eq 1 ] && [ "$follow_every" -gt 0 ] || continue
+    [ "$alive" -eq 1 ] || continue
+    if [ "$replay_every" -gt 0 ] && [ $(($(date +%s) - last_replay_look)) -ge "$replay_every" ]; then
+        last_replay_look="$(date +%s)"
+        if said="$(python3 -I "$root/helpers/fuzz-red-shards.py" look 2>&1)"; then
+            echo "continuous-fuzz: $said; each slot stops after its current window"
+            : > "$drain"
+            wait $pids || true
+            rm -f "$drain"
+            # The new supervisor replays the queue before it starts any slot.
+            exec "$root/helpers/continuous-fuzz.sh"
+        elif [ "$said" != "$last_replay_said" ]; then
+            echo "continuous-fuzz: no replay: $said"
+            last_replay_said="$said"
+        fi
+    fi
+    [ "$follow_every" -gt 0 ] || continue
     [ $(($(date +%s) - last_look)) -ge "$follow_every" ] || continue
     last_look="$(date +%s)"
     if said="$(python3 -I "$root/helpers/fuzz-follow-main.py" look 2>&1)"; then

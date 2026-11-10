@@ -1,5 +1,6 @@
 ---
-status: PROPOSED
+status: PARTIAL
+promoted_from: a-process-reads-its-window-addresses-from-a-startup-page
 raised: 2026-11-10
 milestone_dependencies: none
 decision_dependencies: none
@@ -7,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# A process reads its window addresses from a startup page
+# 1069. A process reads its window addresses from a startup page
 
 Raised by the lane `lane/window-addresses-from-handoff`, asked by the architect to move the
 addresses of every component's memory windows out of the component's source and into what the
@@ -209,3 +210,20 @@ Three pull requests, each green on main alone:
 
 Nothing drives a shared address space in the tree yet: no spawner places two components in one
 today. The architect's request is the driver.
+
+## Follow-on
+
+- **Outstanding.** `system_initializer` does not write the page yet, so a process a userspace
+  builder spawns has none (`startup_page_contract`'s `BUGS` says so). The kernel's spawners write
+  it, and the five drivers (NVMe, e1000e, DesignWare Ethernet, DesignWare mobile storage, the xHCI
+  keyboard driver) read their windows from it.
+- **Outstanding.** The other components still compile their window addresses in: the ratchet in
+  `script/lint` holds 63 literal window addresses in 37 files of `components/src/`, which
+  `python3 helpers/window_address_literals.py --list` names, and the count falls to zero as they
+  convert.
+
+## Index row
+
+A component finds each memory window at an address its spawner compiled in too, so two components
+can never share one address space and each address is an agreement held in prose. The spawner lists
+every window it maps on one read-only startup page, and a component reads its addresses from it.

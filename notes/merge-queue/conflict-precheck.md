@@ -28,15 +28,17 @@ the queue, and names each conflicting file with the entries ahead that changed i
 - A pull request outside the queue meets the whole queue. A queued one meets the entries ahead of
   it only.
 
-Run it before `gh pr merge --auto`. After a confirmed push of a branch whose pull request is open
+`helpers/arm.sh`, the one arming entry point, runs it and refuses a pull request it reports a
+conflict for, printing the report. When the check could not tell, `helpers/arm.sh` arms and says the
+check did not run. After a confirmed push of a branch whose pull request is open
 and ready, `script/push` runs it in `--advisory` mode: it prints a conflict and nothing else, and
 never changes `script/push`'s exit.
 
 ## The escape hatch
 
-Nothing blocks arming. `gh pr merge --auto` works without the check, and `NIFE_SKIP_QUEUE_CHECK=1`
-skips the advisory run in `script/push`. A lane that arms over a reported conflict says why in the
-pull request.
+`helpers/arm.sh <n> --despite-conflict "<why>"` arms over a reported conflict. It posts the reason
+on the pull request first, with the check's report, and arms nothing when the comment does not post
+or the reason is empty. `NIFE_SKIP_QUEUE_CHECK=1` skips the advisory run in `script/push`.
 
 ## The launch check
 
@@ -53,6 +55,12 @@ repositories with no network. It covers a conflict with an entry ahead, a clean 
 entry behind (not ahead), a conflict with `main` alone, an entry that conflicts with the ones before
 it, the advisory mode, and the scope check. One test replaces `merge_tree` with a no-op that
 reports no conflict and requires the conflict case to fail under it.
+
+`helpers/push-requeue-selftest.sh`, run by `script/lint`, covers the refusal in `helpers/arm.sh`
+(case 10). It runs this check with the real `git` against a local fixture whose queue holds one
+entry ahead. `helpers/arm.sh` refuses the conflicting head and names the file and the entry, and
+arms the clean head. Under `--despite-conflict` it comments and then arms, and `script/push
+--requeue` over the conflict leaves the pull request unarmed.
 
 ## BUGS
 

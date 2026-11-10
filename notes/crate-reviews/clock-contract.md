@@ -37,7 +37,7 @@ provisional ones and the rest none.
 ## Who in nife depends on it
 
 Each by a path dependency with `version = "0.1.0"`: `kernel` (the clock service in
-`kernel/src/user/clock_service.rs`, the `x86_64` CMOS read in `kernel/src/arch/x86_64/rtc.rs`),
+`kernel/src/user/clock_service.rs`, which also grants the `x86_64` CMOS ports),
 `components`, `crates/user_mode_runtime`, `crates/network_time_protocol`, `crates/timetable`,
 `crates/uptime`, `fixtures`, and `system_tests` (development only). Fifteen programs in
 `components` declare the pair of `INTERFACE_ID` and `VERSION` in their `INTERFACES` note: every
@@ -137,7 +137,7 @@ renames none of them. Each proposal is provisional; nothing outside nife has act
 | `propose::req` | function | `req` is an abbreviation | `request`, with no alias, since `req` is only this tree's spelling |
 | `propose::operation`'s `w0` | parameter | a register-style name in a public signature | `word` |
 | `state::SYNCED` | constant | a clipped participle | `SYNCHRONIZED` |
-| `state::RTC`, the module `rtc` | constant, module | the acronym test: "real-time clock" is spoken; the tree's own precedent is `rtc` (`kernel/src/arch/x86_64/rtc.rs`) | `REAL_TIME_CLOCK` and `real_time_clock`, each with `#[doc(alias = "RTC")]` |
+| `state::RTC`, the module `rtc` | constant, module | the acronym test: "real-time clock" is spoken; the tree's own precedent is `rtc` (`memory::rtc_region` in the kernel) | `REAL_TIME_CLOCK` and `real_time_clock`, each with `#[doc(alias = "RTC")]` |
 | `rtc::CMOS` | constant | nobody expands CMOS when naming the PC clock | keep; add `#[doc(alias = "mc146818")]`, the part name OpenBSD's driver carries (recalled, not read) |
 | `rtc::PL031`, `rtc::GOLDFISH` | constants | part and device names from the device tree's `compatible` | keep; each doc comment already opens with the `compatible` string it matches |
 | `WORDS` | constant | a count of the page's words | keep |
