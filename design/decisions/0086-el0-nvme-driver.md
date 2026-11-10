@@ -1,5 +1,5 @@
 ---
-status: DECIDED
+status: AMENDED
 raised: 2026-08-15
 decided: 2026-09-04
 ratified_by: calef
@@ -7,12 +7,11 @@ ratified_by: calef
 
 # 86. Whether an NVMe driver can leave the kernel, and what capability would let it
 
-Answered 2026-09-03 by calef, after the research pass below: option 2a now,
-designed so option 4 can be added without reshaping the EL0 driver, and the choice between them made
-by measurement rather than argument. The reasoning is in "The decision" at the end of this section.
-Raised by milestone 53's storage lane (2026-08-15, pull request #193), which
-built the NVMe driver kernel-resident and stopped exactly here, correctly: the alternative needs
-new syscall surface, and that is a boundary a lane does not cross (§10, §16).
+The rule in force, ruled 2026-11-10 (UTC): the NVMe admin plane runs in userspace, confinement
+means an IOMMU, and on a machine without an IOMMU the driver is trusted. Option 4 stays open. "The
+decision" at the end of this section states it whole. Raised by milestone 53's storage lane
+(pull request #193), which built the NVMe driver kernel-resident and stopped here, because the
+alternative looked like new syscall surface, a boundary a lane does not cross (§10, §16).
 
 ## What is being decided
 
@@ -153,8 +152,8 @@ ring, the kernel walks the newly-published submission queue entries and bounds P
 the driver's DMA region. It copies each validated entry into a kernel-private shadow submission
 queue (the one the controller was actually told about at Create I/O SQ time), and only then writes
 the hardware doorbell. This is `dma_validator::validate_and_shadow`'s design transferred, and the
-whole reason to want it is that **it does not depend on an IOMMU.** On a board with none, which is
-every board this project owns, it is the only option in this list that confines anything.
+whole reason to want it is that **it does not depend on an IOMMU.** On a board with none, such as
+radon, it is the only option in this list that confines anything.
 
 ### What this tree already does, item by item
 
@@ -218,76 +217,68 @@ reversibility, and who has acted on it.
 Moved to [`prior-art.md`](0086-el0-nvme-driver/prior-art.md): the research lane's reading of the
 options, and what it left to calef.
 
-## The decision, 2026-09-03
+## The decision
 
-Option 2a now, designed so option 4 can be added without reshaping the EL0 driver, and the choice
-between them settled by measurement. calef, after the head-to-head below: *"I agree with your
-recommendation."*
+Ruled 2026-11-10 (UTC). The admin plane leaves the kernel. A userspace admin process holds all of
+BAR0 and the admin queue pages: it resets and enables the controller, identifies it, creates the
+I/O queue pair, and grants the doorbell page and the I/O queue pages to the EL0 data-path driver.
+The kernel confines the controller's requester id to its DMA region before the admin process
+receives BAR0, and knows nothing else about NVMe. It is option 3 with the admin and data planes in
+two processes, and it needs no new syscall surface: BAR0 is a `DeviceFrame` and the DMA run a
+`PageFrame` (§102).
 
-### A correction to the research pass, which changes option 4's central claim
+### Confinement means an IOMMU
 
-The pass argues that option 4 is the only entry that confines anything on hardware this project
-owns, because no board here has an IOMMU. That is true of radon and false of xenon, and milestone
-87's own requirements list says so: xenon was selected partly *for* VT-d, "because IOMMU-backed
-driver isolation (milestone 16) is a parity theme (§19), and the x86 side of the DMA-confinement
-story needs real hardware eventually."
+The IOMMU is the whole of the DMA confinement for a device that a userspace driver programs. With
+one, the driver needs no trust: every address the device can reach lies in the domain the kernel
+built. Without one, the driver of a DMA-capable device is trusted, because it can aim the device at
+any physical address and nothing in the kernel stops it. The rule has no named exception. It holds
+for NVMe, e1000e, the DesignWare GMAC and a virtio-mmio device alike (§23 (multi-queue DMA
+confinement)). The kernel does not keep a device's control plane in order to narrow that trust.
 
-So option 2 has a hardware home on a machine already on the desk. Option 4's argument survives for
-radon and for any board without an IOMMU; it is not the categorical advantage the pass states.
-Whether xenon's firmware actually exposes a DMAR is unverified and is already the last item of
-notes/x86-uefi-boot.md's bench procedure.
+Which machines have one:
 
-### Why 2a first, and it is a sequence rather than a preference
+- radon (the JH7110) has no IOMMU, so a DMA driver on radon is trusted.
+- xenon has VT-d, and its firmware publishes a DMAR. Both of its DRHD units come up translating,
+  and its NVMe controller was confined at rate under the EL0 driver
+  (`bench/xenon-2026-10-04/README.md`, verdict `CONFINED-AT-RATE`).
+- QEMU's `virt` on aarch64 (SMMUv3), `virt` on riscv64 (`riscv-iommu-pci`) and `q35`
+  (`intel-iommu`) all give a PCI device an IOMMU, and nife drives each one.
 
-**The irreversible part of this decision is not in 2a.** It costs zero new syscall surface: the
-doorbell page is a `DeviceFrame`, the DMA run a `PageFrame` (§102), the physical base a spawn
-argument the way `components/src/entropy.rs` already passes one. A capability variant belongs only to 2b
-and 4. So building 2a produces what fatal risk 6 (a capability-confined userspace driver cannot
-drive real hardware at real speed) needs while deferring the expensive choice, and the *move fast
-on what can be undone* test, "who else has already acted on this", answers nobody.
+### Option 4 stays open
 
-It moves 157 lines out of the kernel, which is the microkernel thesis cashing out and the same
-win §23 bought for virtio.
+Doorbell mediation is the one option that would confine an NVMe controller without an IOMMU. The
+userspace split does not foreclose it. Which submission queue the controller is told about is an
+admin-plane choice, so adding mediation later moves that choice and the doorbell behind a kernel
+capability (option 2b's variant) and changes almost nothing in the data-path driver. That property
+is this decision's one design constraint. Option 4 is built when a target without an IOMMU needs a
+confined NVMe driver, and is priced then.
 
-And option 4 is a superset of 2b rather than a rival. Which submission queue the controller is
-told about is an admin-plane decision the kernel owns under both, so adding mediation later changes
-`bring_up` and the ring path and almost nothing in the EL0 driver. That is the property the
-implementation must preserve, and it is this decision's one design constraint.
+### The two options answer different risks
 
-### The two options answer different risks, which is why measurement decides
-
-| | option 2a | option 4 |
+| | the userspace admin plane | option 4 |
 |---|---|---|
 | what confines it | the IOMMU | kernel validation at the doorbell |
 | hardware needed | an IOMMU: xenon yes, radon no | none |
 | new syscall surface | **zero** | one capability variant, no new syscall number |
 | kernel on the hot path | no, EL0 writes the doorbell | yes, a trap per ring plus two range checks and a 64-byte copy per command |
-| reachable by Kani | no, it is a hardware claim | yes, `crates/dma_validator` has harnesses |
+| reachable by Kani | no, it is a hardware claim | yes, `crates/direct_memory_access_validator` has harnesses |
 | prior art | mainstream: seL4, Genode, VFIO, SPDK | novel |
 
-Option 2a optimizes risk 6 by removing the kernel from the data path. Option 4 optimizes
-risk 7 (the confinement claim is false) and risk 2 (the proofs prove trivia), and pays for it
-on the hot path.
+The userspace admin plane optimizes risk 6 by removing the kernel from the data path. Option 4
+optimizes risk 7 (the confinement claim is false) and risk 2 (the proofs prove trivia), and pays for
+it on the hot path.
 
-### What would move this to option 4, stated in advance
-
-**Three measurements, and two need no new code.**
+### How option 4 is priced when a target needs it
 
 1. What doorbell mediation costs, priced from the mechanism already shipped. §23's virtio path
-   *is* option 4's design: `crates/dma_validator` walks descriptors on `NOTIFY` and shadows them,
-   and `script/bench` carries icount baselines on all three ISAs. NVMe's validator is strictly
-   cheaper (two range checks and a copy against chain-walking), so virtio's number is an upper
-   bound.
+   *is* option 4's design: `crates/direct_memory_access_validator` walks descriptors on `NOTIFY`
+   and shadows them, and `script/bench` carries icount baselines on all three ISAs. NVMe's
+   validator is strictly cheaper (two range checks and a copy against chain-walking), so virtio's
+   number is an upper bound.
 2. The depth at which it stops mattering. One trap amortized over a 32-command batch is noise;
    one trap per command at depth 1 is the whole cost. Milestone 101 (the L4 calibration, read from
    the IPC number that pays for the trap) is the calibration to read it against.
-3. Whether xenon exposes a DMAR, which decides whether option 2 is viable on owned hardware at
-   all. One boot, already the last item of notes/x86-uefi-boot.md's bench procedure.
-
-If mediation is cheap at realistic queue depths, take option 4. A confinement claim that holds
-without special hardware, and that Kani can reach, is worth more to this project than the last few
-percent of throughput; that is the demonstrator's own argument. The reason not to buy it tonight is
-that nobody knows the price.
 
 ### What this does not decide
 
