@@ -296,9 +296,9 @@ sequence under QEMU `virt`, and its log summarizes and checks to PASS. `results.
 `script/lint`, drives `summarize`, `fill` and `check` over synthetic logs (a damaged line, a model
 run, a zero capture, a short one) and holds `results-template.md` to the code.
 
-Run on a VisionFive 2 once, on 2026-11-09 (UTC), against crate commit `ee0bde8`; every check ran
-([bench/radon-2026-11-09/README-1049.md](../bench/radon-2026-11-09/README-1049.md)). A later commit that changes
-`src/` has not run.
+Run on a VisionFive 2 twice, on 2026-11-09 and 2026-11-10 (UTC), against crate commit `ee0bde8`; every
+check ran ([bench/radon-2026-11-09/](../bench/radon-2026-11-09/README-1049.md),
+[bench/radon-2026-11-10/](../bench/radon-2026-11-10/README-1049.md)). A later `src/` change has not run.
 
 ## BUGS
 
@@ -310,5 +310,5 @@ Run on a VisionFive 2 once, on 2026-11-09 (UTC), against crate commit `ee0bde8`;
   records the cost, and every timing includes it.
 - The payload parks at the end, and nothing but a power cycle frees the board, which is a person.
 - `results.py` reads only the last run in a log, so a log of two boots keeps the second.
-- The card's boot script also asks for `nife-initrd.img`; unless a copy is served under that name,
-  the first boot silently falls back to the card.
+- A card written before 2026-11-10 asks for `nife-initrd.img`, so its first boot silently falls back to
+  the card; rewrite it with `script/board-image --tftp`.

@@ -3760,6 +3760,16 @@ echo "==> unit symbols are spelled out (2026-10-27)"
 # fails a count over its ceiling or a branch that adds any net. Fixtures first.
 python3 helpers/vendored_name_gates.py unit --selftest
 python3 helpers/vendored_name_gates.py unit --check
+echo "==> a component reads its window addresses from the startup page (ceiling only falls)"
+# lint-scope: code
+# lint-quick
+# design/roadmap/proposals/a-process-reads-its-window-addresses-from-a-startup-page.md: a component
+# finds each window on its startup page rather than at an address it compiled in.
+# helpers/window_address_literals.py counts `pair_page(0x`, `runtime_window(0x` and
+# `service_window(0x` calls in components/src/ and fails a count over its ceiling, or under it so
+# the change that converts a component lowers the ceiling. Fixtures first.
+python3 helpers/window_address_literals.py --selftest
+python3 helpers/window_address_literals.py --check
 echo "==> the template's report-only name and README gates (baseline only shrinks)"
 # lint-scope: code
 # The register-name, abbreviation, prose-acronym, README-acronym, inflated-wording and README-section

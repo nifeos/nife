@@ -25,7 +25,7 @@ byte_sink_protocol	shared	retired
 c_library_errno	userspace	c_library
 c_program_fixture	host	-
 c_seam	userspace	fixtures
-calendar	shared	c_library,components,fixtures,kernel
+calendar	userspace	c_library,components,fixtures
 canary_gate	kernel	retired
 capability	kernel	kernel
 capability_manifest_note	userspace	components,fixtures,jig,redoxfs_server,std_exerciser
