@@ -818,6 +818,42 @@ impl<const N: usize> RegionTable<N> {
             ceilings: r.ceilings,
         })
     }
+
+    /// Insert a region in whatever state the subtree-ceiling harnesses in `proofs.rs` choose, so
+    /// one step can start from any state their invariant allows instead of one a short run of
+    /// steps reaches. The region holds no spending record and is pinned as `pinned` says.
+    pub(crate) fn insert_in_any_state(
+        &mut self,
+        parent: u64,
+        (base_page, pages, watermark, retyped_to): (u64, u64, u64, u64),
+        pinned: bool,
+        children: u32,
+        ceilings: Ceilings,
+        live: Ceilings,
+    ) -> Option<u64> {
+        self.table
+            .insert_with(|_| Region {
+                base_page,
+                pages,
+                watermark,
+                retyped_to,
+                pinned,
+                parent,
+                children,
+                spent: Spent::default(),
+                ceilings,
+                live,
+            })
+            .map(EntryName::to_bits)
+    }
+}
+
+/// The per-kind counts behind [`Ceilings`], for the harnesses in `proofs.rs` that build a state.
+#[cfg(kani)]
+impl Ceilings {
+    pub(crate) const fn from_counts(counts: [u32; COUNTED_KINDS]) -> Ceilings {
+        Ceilings(counts)
+    }
 }
 
 // --- The ordinary host tests -------------------------------------------------------------------

@@ -1,10 +1,10 @@
-Falsifies `memory_regions::proofs::a_refused_carve_or_split_moves_nothing`.
+Falsifies `memory_regions::proofs::a_refused_split_moves_nothing`.
 
 The defect: the split carves first and asks the ceiling second. It reads as a reordering with no
 effect, since both checks still run, but a split the ceiling refuses has already advanced the
 parent's watermark and raised its child count.
 
-Expected to fail: the harness's `assert!(run.snapshots() == before, "a refusal moved something")`,
+Expected to fail: the harness's `assert!(run.unmoved_since(before), "a refusal moved something")`,
 on a split refused at the region ceiling.
 
 diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs

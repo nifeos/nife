@@ -1,0 +1,24 @@
+Falsifies `memory_regions::proofs::a_release_keeps_every_count_exact`.
+
+The defect: a release gives the object back to its own region and stops. It reads as the mirror of
+a carve from a leaf, but every ancestor keeps counting an object that has left its kernel table,
+and the root's subtree reaches its ceiling on objects that are gone.
+
+Expected to fail: the harness's `assert!(live == self.ghost_tree_count(r, k), "a count drifted
+from the subtree")`, on a release from the child or the grandchild.
+
+diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
+--- a/crates/memory_regions/src/table.rs
++++ b/crates/memory_regions/src/table.rs
+@@ -511,10 +511,7 @@
+                 break;
+             };
+             r.live.0[k] = r.live.0[k].saturating_sub(1);
+-            at = r.parent;
+-            if at == NO_PARENT {
+-                break;
+-            }
++            break;
+         }
+     }
+ 

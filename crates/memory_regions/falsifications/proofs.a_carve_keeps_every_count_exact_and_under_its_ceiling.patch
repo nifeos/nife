@@ -1,11 +1,11 @@
-Falsifies `memory_regions::proofs::live_counts_are_exact_and_never_pass_a_ceiling`.
+Falsifies `memory_regions::proofs::a_carve_keeps_every_count_exact_and_under_its_ceiling`.
 
 The defect: the deciding walk of `charge` stops at the region itself and never asks its ancestors.
 It reads as a shortcut, since the commit walk still counts every ancestor and a lone region behaves
 exactly as before, but a root can then be pushed past its own ceiling through the regions below it.
 
 Expected to fail: the harness's `assert!(live <= s.ceilings.get(counted), "past a ceiling")`, on
-a run that fills a child to its ceiling and then carves from the grandchild.
+a carve from the grandchild of a child at its ceiling.
 
 diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
 --- a/crates/memory_regions/src/table.rs

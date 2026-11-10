@@ -140,15 +140,17 @@ fn coalescing_never_reclaims_a_held_page() {
 
 use crate::table::RegionSnapshot;
 //
-// A root, a child and a grandchild, driven through a short symbolic run of carves, splits and
-// releases over every kind. A ghost count of what each region retyped for itself is the model the
-// table's live counts are checked against.
+// A root, a child split from it and a grandchild split from the child. The invariant: every live
+// count is the ghost count of what the region's subtree holds and is at or under its ceiling, and
+// every split region lives under a sixteenth of its root's ceilings. A new root holds it, and the
+// three `a_..._keeps_...` harnesses show that one carve, split or release from any state that
+// holds it keeps it and that a split child starts in it, so by induction every run of any length
+// does. The other harnesses start from any such state, so they hold after every run too. One
+// operation from any state is a far smaller model than a run of operations from a fresh tree, and
+// one harness per operation keeps each model under a hosted runner's memory.
 
-/// The regions the subtree-ceiling harnesses drive: a root, a child split from it, and a
-/// grandchild split from the child.
+/// The regions the subtree-ceiling harnesses drive: a root, a child and a grandchild.
 const REGIONS: usize = 3;
-/// How many symbolic steps a run takes.
-const STEPS: usize = 3;
 /// Every counted kind, in [`Ceilings`] order.
 const KINDS: [Counted; 8] = [
     Counted::Object(ObjectKind::Rendezvous),
@@ -160,6 +162,8 @@ const KINDS: [Counted; 8] = [
     Counted::Object(ObjectKind::Process),
     Counted::Region,
 ];
+/// Where [`Counted::Region`] sits in [`KINDS`].
+const REGION_COUNT: usize = 7;
 
 fn any_object_kind() -> ObjectKind {
     match kani::any::<u8>() % 7 {
@@ -173,176 +177,364 @@ fn any_object_kind() -> ObjectKind {
     }
 }
 
-/// A root whose ceiling for each kind is anything up to 48, so a split child's sixteenth is
-/// anything up to 3: small enough that a short run reaches it.
-fn any_root_ceilings() -> Ceilings {
-    let mut ceilings = Ceilings::UNLIMITED;
-    for counted in KINDS {
-        let most: u32 = kani::any();
-        kani::assume(most <= 48);
-        ceilings = ceilings.with(counted, most);
+/// The ceilings region `r` of a tree lives under, when its root's are `root`: the root's own, or a
+/// sixteenth of them, kind by kind, for every region split below it at any depth.
+fn ceilings_of(r: usize, root: Ceilings) -> Ceilings {
+    if r == 0 {
+        return root;
     }
-    ceilings
+    let mut counts = [0; 8];
+    for (k, counted) in KINDS.into_iter().enumerate() {
+        counts[k] = root.get(counted) / 16;
+    }
+    Ceilings::from_counts(counts)
 }
 
-/// The table, the three names (a refused split leaves `None`), and the ghost: how many objects of
-/// each kind each region retyped for itself and has not released, and how many regions each split.
+/// Kind by kind, since a derived comparison of the arrays is a byte loop the model checker cannot
+/// bound.
+fn same_ceilings(a: Ceilings, b: Ceilings) -> bool {
+    KINDS.into_iter().all(|c| a.get(c) == b.get(c))
+}
+
+fn same_snapshot(a: Option<RegionSnapshot>, b: Option<RegionSnapshot>) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(a), Some(b)) => {
+            a.watermark == b.watermark
+                && a.pinned == b.pinned
+                && a.children == b.children
+                && same_ceilings(a.live, b.live)
+                && same_ceilings(a.ceilings, b.ceilings)
+        }
+        _ => false,
+    }
+}
+
+/// The table, the three names (a region the tree does not reach is `None`), the root's ceilings,
+/// and the ghost: how many objects of each kind each region retyped for itself and has not
+/// released, and how many regions it split that are still live.
 struct Run {
     table: RegionTable<4>,
     names: [Option<u64>; REGIONS],
-    parent_of: [usize; REGIONS],
+    root_ceilings: Ceilings,
     own: [[u32; 8]; REGIONS],
 }
 
 impl Run {
-    fn new() -> Self {
-        let mut table = RegionTable::<4>::new();
-        let root = table.insert_root_with_ceilings(0, 64, any_root_ceilings());
-        let mut run = Run {
-            table,
-            names: [root, None, None],
-            parent_of: [0, 0, 1],
-            own: [[0; 8]; REGIONS],
-        };
-        for r in 1..REGIONS {
-            let parent = run.parent_of[r];
-            if let Some(p) = run.names[parent] {
-                run.names[r] = run.table.split(p, 8);
-                if run.names[r].is_some() {
-                    run.own[parent][7] += 1;
-                }
+    /// Any state of a tree `depth` regions deep that the invariant allows: any root ceilings, any
+    /// live counts at or under each region's ceiling and at or over its child's, any pages and
+    /// watermark, each child's run inside the part of its parent's that is spent. What a region
+    /// counts beyond its child is its own. With `others`, its region count is any number of
+    /// children, the one in the tree among them, and the rest are regions nobody drives; without,
+    /// the tree is all there is.
+    ///
+    /// Every region is pinned as `pinned` says. The pin is a constant because no carve, split or
+    /// release reads it, and the table keeps a region's `None` in the pin's spare values, so a
+    /// symbolic pin makes every lookup a branch and the model twenty times larger.
+    fn any(depth: usize, pinned: bool, others: bool) -> Self {
+        let root_ceilings = Ceilings::from_counts(kani::any());
+        let mut live = [[0u32; 8]; REGIONS];
+        let mut own = [[0u32; 8]; REGIONS];
+        for r in (0..depth).rev() {
+            let ceilings = ceilings_of(r, root_ceilings);
+            for (k, counted) in KINDS.into_iter().enumerate() {
+                let below = if r + 1 < depth { live[r + 1][k] } else { 0 };
+                let count: u32 = if k == REGION_COUNT && !others {
+                    // A constant, since a claim branches on the child count it gives.
+                    (depth - 1 - r) as u32
+                } else {
+                    kani::any()
+                };
+                kani::assume(below <= count && count <= ceilings.get(counted));
+                live[r][k] = count;
+                own[r][k] = count - below;
+            }
+            if r + 1 < depth {
+                kani::assume(own[r][REGION_COUNT] >= 1);
             }
         }
-        run
+        let mut table = RegionTable::<4>::new();
+        let mut names = [None; REGIONS];
+        let mut parent = NO_PARENT;
+        let (mut spent_from, mut spent_to) = (0u64, u64::MAX);
+        for r in 0..depth {
+            let base_page: u64 = kani::any();
+            let pages: u64 = kani::any();
+            let watermark: u64 = kani::any();
+            let retyped_to: u64 = kani::any();
+            kani::assume(retyped_to <= watermark && watermark <= pages);
+            kani::assume(spent_from <= base_page && base_page <= spent_to);
+            kani::assume(pages <= spent_to - base_page);
+            names[r] = table.insert_in_any_state(
+                parent,
+                (base_page, pages, watermark, retyped_to),
+                pinned,
+                own[r][REGION_COUNT],
+                ceilings_of(r, root_ceilings),
+                Ceilings::from_counts(live[r]),
+            );
+            parent = names[r].expect("the table has room for the tree");
+            (spent_from, spent_to) = (base_page, base_page + watermark);
+        }
+        Run {
+            table,
+            names,
+            root_ceilings,
+            own,
+        }
+    }
+
+    /// `body` on the deepest region of [`any`](Self::any) unpinned state of a tree one, two or
+    /// three regions deep, so a refusal that pins shows: the root, a child or a grandchild, with
+    /// any number of regions of its own below it. A carve, a split and a release read and write
+    /// only the region and its ancestors (the table keeps parent links and no child links), and a
+    /// split also fills a free slot, so a tree below the region is never touched and adds nothing
+    /// a deeper tree would show. Each depth is its own branch, so every name in it is
+    /// a constant: a symbolic index makes each lookup a choice among every slot.
+    fn for_every_depth(body: impl Fn(Run, usize)) {
+        match kani::any::<u8>() % 3 {
+            0 => {
+                let run = Run::any(1, false, true);
+                kani::cover!(true, "a root alone");
+                body(run, 0);
+            }
+            1 => {
+                let run = Run::any(2, false, true);
+                kani::cover!(true, "a child below a root");
+                body(run, 1);
+            }
+            _ => {
+                let run = Run::any(3, false, true);
+                kani::cover!(true, "a grandchild below a child");
+                body(run, 2);
+            }
+        }
     }
 
     /// `r`'s ghost subtree: its own counts and every live descendant's.
     fn ghost_tree_count(&self, r: usize, k: usize) -> u32 {
-        let mut total = self.own[r][k];
-        for d in (r + 1)..REGIONS {
-            if self.names[d].is_some() && self.parent_of[d] == r {
-                total += self.ghost_tree_count(d, k);
-            }
-        }
-        total
+        (r..REGIONS)
+            .filter(|&d| self.names[d].is_some())
+            .map(|d| self.own[d][k])
+            .sum()
     }
 
     fn snapshots(&self) -> [Option<RegionSnapshot>; REGIONS] {
         self.names.map(|n| n.and_then(|n| self.table.snapshot(n)))
     }
 
-    /// One symbolic step on one region: a carve of any kind, a split of one page, or the release of
-    /// an object it holds. Returns whether the table refused it.
-    fn step(&mut self, only_below_root: bool) -> bool {
-        let r = usize::from(kani::any::<u8>()) % REGIONS;
-        kani::assume(!only_below_root || r > 0);
-        let Some(name) = self.names[r] else {
-            return false;
-        };
-        let kind = any_object_kind();
-        match kani::any::<u8>() % 3 {
-            0 => {
-                let carved = self.table.retype_object_page(name, kind).is_some();
-                if carved {
-                    self.own[r][kind as usize] += 1;
-                }
-                !carved
-            }
-            1 => {
-                // A split refused for a full table is the bump-only rule (`split`'s BUGS), not a
-                // ceiling, so the table keeps a free slot.
-                kani::assume(self.table.len() < 4);
-                // Split, and forget the child: it stays live and counted, a region nobody drives.
-                let split = self.table.split(name, 1).is_some();
-                if split {
-                    self.own[r][7] += 1;
-                }
-                !split
-            }
-            _ => {
-                if self.own[r][kind as usize] > 0 {
-                    self.table.release_object(name, kind);
-                    self.own[r][kind as usize] -= 1;
-                }
-                false
-            }
-        }
+    /// Whether every region's snapshot is the one in `before`.
+    fn unmoved_since(&self, before: [Option<RegionSnapshot>; REGIONS]) -> bool {
+        let now = self.snapshots();
+        (0..REGIONS).all(|r| same_snapshot(now[r], before[r]))
     }
-}
 
-/// **A carve or a split the table refuses moves nothing**: no page, no pin, no child and no count,
-/// in the refused region or any other, whichever limit refused it.
-/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_refused_carve_or_split_moves_nothing.patch`
-#[kani::proof]
-#[kani::unwind(9)]
-fn a_refused_carve_or_split_moves_nothing() {
-    let mut run = Run::new();
-    for _ in 0..STEPS {
-        let before = run.snapshots();
-        if run.step(false) {
-            assert!(run.snapshots() == before, "a refusal moved something");
-        }
-    }
-}
-
-/// **Every region's live count is exactly what its subtree holds, and never above its ceiling**,
-/// kind by kind, after every step of any run.
-/// Falsification: replayable `crates/memory_regions/falsifications/proofs.live_counts_are_exact_and_never_pass_a_ceiling.patch`
-#[kani::proof]
-#[kani::unwind(9)]
-fn live_counts_are_exact_and_never_pass_a_ceiling() {
-    let mut run = Run::new();
-    for _ in 0..STEPS {
-        run.step(false);
+    /// Every live region's counts are its ghost subtree's, under its ceilings, and those are its
+    /// root's share.
+    fn assert_counts_follow_the_tree(&self) {
         for r in 0..REGIONS {
-            let Some(s) = run.names[r].and_then(|n| run.table.snapshot(n)) else {
+            let Some(s) = self.names[r].and_then(|n| self.table.snapshot(n)) else {
                 continue;
             };
+            assert!(
+                same_ceilings(s.ceilings, ceilings_of(r, self.root_ceilings)),
+                "a region's ceilings are not its root's share"
+            );
             for (k, counted) in KINDS.into_iter().enumerate() {
                 let live = s.live.get(counted);
                 assert!(live <= s.ceilings.get(counted), "past a ceiling");
-                // A child split by a step is not driven, so it holds no objects of its own.
                 assert!(
-                    live == run.ghost_tree_count(r, k),
+                    live == self.ghost_tree_count(r, k),
                     "a count drifted from the subtree"
                 );
             }
         }
     }
+
+    fn name(&self, r: usize) -> u64 {
+        self.names[r].expect("a region of the tree")
+    }
+
+    /// Carve one page for a `kind` object out of `r`. Returns whether the table refused.
+    fn carve(&mut self, r: usize, kind: ObjectKind) -> bool {
+        let carved = self.table.retype_object_page(self.name(r), kind).is_some();
+        if carved {
+            self.own[r][kind as usize] += 1;
+        }
+        !carved
+    }
+
+    /// Split one page off `r`. The tree holds at most three of the table's four slots, so a split
+    /// is never refused for a full table (the bump-only rule, `split`'s BUGS). The child is live
+    /// and counted, a region nobody drives. Returns its name, or `None` when the table refused.
+    fn split(&mut self, r: usize) -> Option<u64> {
+        let child = self.table.split(self.name(r), 1);
+        if child.is_some() {
+            self.own[r][REGION_COUNT] += 1;
+        }
+        child
+    }
+
+    /// Release a `kind` object `r` holds, if it holds one. Returns whether it held one.
+    fn release(&mut self, r: usize, kind: ObjectKind) -> bool {
+        let held = self.own[r][kind as usize] > 0;
+        if held {
+            self.table.release_object(self.name(r), kind);
+            self.own[r][kind as usize] -= 1;
+        }
+        held
+    }
 }
 
-/// **Reclaiming a subtree gives every count it held back to the root**: after any run inside the
-/// child's subtree, releasing what was reaped and reclaiming the grandchild and then the child
-/// leaves the root's live counts at zero for every kind.
+/// **A carve the table refuses moves nothing**: no page, no pin, no child and no count, in the
+/// refused region or any other, whichever limit refused it, from any state.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_refused_carve_moves_nothing.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn a_refused_carve_moves_nothing() {
+    Run::for_every_depth(|mut run, r| {
+        let before = run.snapshots();
+        let regions = run.table.len();
+        let (watermark, pages) = run.table.usage(run.name(r)).expect("a region of the tree");
+        let kind = any_object_kind();
+        let refused = run.carve(r, kind);
+        if refused {
+            assert!(run.unmoved_since(before), "a refusal moved something");
+            assert!(run.table.len() == regions, "a refusal left a region");
+        }
+        let own = before[r].expect("a region of the tree");
+        let counted = Counted::Object(kind);
+        kani::cover!(
+            refused && watermark < pages && own.live.get(counted) < own.ceilings.get(counted),
+            "a carve refused at an ancestor's ceiling"
+        );
+        kani::cover!(
+            refused && watermark == pages,
+            "a carve refused for its pages"
+        );
+    });
+}
+
+/// **A split the table refuses moves nothing**: no page, no pin, no child and no count, in the
+/// refused region or any other, whichever limit refused it, from any state.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_refused_split_moves_nothing.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn a_refused_split_moves_nothing() {
+    Run::for_every_depth(|mut run, r| {
+        let before = run.snapshots();
+        let regions = run.table.len();
+        let (watermark, pages) = run.table.usage(run.name(r)).expect("a region of the tree");
+        let refused = run.split(r).is_none();
+        if refused {
+            assert!(run.unmoved_since(before), "a refusal moved something");
+            assert!(run.table.len() == regions, "a refusal left a region");
+        }
+        let own = before[r].expect("a region of the tree");
+        let counted = Counted::Region;
+        kani::cover!(
+            refused && watermark < pages && own.live.get(counted) < own.ceilings.get(counted),
+            "a split refused at an ancestor's ceiling"
+        );
+        kani::cover!(
+            refused && watermark == pages,
+            "a split refused for its pages"
+        );
+    });
+}
+
+/// **A carve keeps every region's live count exactly what its subtree holds, and never above its
+/// ceiling**, kind by kind, from any state that held it.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_carve_keeps_every_count_exact_and_under_its_ceiling.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn a_carve_keeps_every_count_exact_and_under_its_ceiling() {
+    Run::for_every_depth(|mut run, r| {
+        let refused = run.carve(r, any_object_kind());
+        run.assert_counts_follow_the_tree();
+        kani::cover!(
+            !refused
+                && r == 2
+                && run.snapshots()[0].is_some_and(|s| {
+                    KINDS
+                        .into_iter()
+                        .any(|c| c != Counted::Region && s.live.get(c) == s.ceilings.get(c))
+                }),
+            "a carve from the grandchild fills the root to a ceiling"
+        );
+    });
+}
+
+/// **A split keeps every region's live count exactly what its subtree holds, and never above its
+/// ceiling**, kind by kind, from any state that held it, and the child it makes starts in such a
+/// state: nothing counted, and a sixteenth of its root's ceilings. A root starts there too, so
+/// every region of every tree does.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_split_keeps_every_count_exact_and_under_its_ceiling.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn a_split_keeps_every_count_exact_and_under_its_ceiling() {
+    Run::for_every_depth(|mut run, r| {
+        let child = run.split(r);
+        run.assert_counts_follow_the_tree();
+        if let Some(child) = child {
+            let s = run.table.snapshot(child).expect("the child is live");
+            assert!(
+                same_ceilings(s.ceilings, ceilings_of(1, run.root_ceilings)),
+                "a split child's ceilings are not its root's share"
+            );
+            assert!(
+                same_ceilings(s.live, Ceilings::from_counts([0; 8])) && s.children == 0,
+                "a split child starts with something counted"
+            );
+        }
+        kani::cover!(child.is_some() && r == 2, "the grandchild splits");
+    });
+}
+
+/// **A release keeps every region's live count exactly what its subtree holds**, kind by kind,
+/// from any state that held it.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_release_keeps_every_count_exact.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn a_release_keeps_every_count_exact() {
+    Run::for_every_depth(|mut run, r| {
+        let held = run.release(r, any_object_kind());
+        run.assert_counts_follow_the_tree();
+        kani::cover!(held && r == 2, "the grandchild releases an object");
+    });
+}
+
+/// **Reclaiming a subtree gives every count it held back to the root**: from any state of the
+/// tree in which the root has carved nothing itself and nothing else was split below it,
+/// releasing what was reaped and reclaiming the grandchild and then the child leaves the root's
+/// live counts at zero for every kind.
 /// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_reclaimed_region_tree_leaves_no_count_behind.patch`
 #[kani::proof]
 #[kani::unwind(9)]
 fn a_reclaimed_region_tree_leaves_no_count_behind() {
-    let mut run = Run::new();
-    let (Some(root), Some(child), Some(grandchild)) = (run.names[0], run.names[1], run.names[2])
-    else {
-        return;
-    };
-    for _ in 0..STEPS {
-        // Carves and releases only: a split here would leave a child the reclaim must refuse on.
-        kani::assume(run.own[1][7] == 1 && run.own[2][7] == 0);
-        run.step(true);
+    let mut run = Run::any(3, true, false);
+    for k in 0..REGION_COUNT {
+        kani::assume(run.own[0][k] == 0);
     }
-    kani::assume(run.own[1][7] == 1 && run.own[2][7] == 0);
+    kani::cover!(
+        run.own[2][ObjectKind::Rendezvous as usize] > 0
+            && run.own[1][ObjectKind::Process as usize] > 0,
+        "the reclaimed tree holds objects the reaper does not release"
+    );
     // The reaper's half: a thread or a space it holds may already have been released, or not.
-    for (r, region) in [(2, grandchild), (1, child)] {
-        let kind = any_object_kind();
-        if kani::any() && run.own[r][kind as usize] > 0 {
-            run.table.release_object(region, kind);
+    for r in [2, 1] {
+        let name = run.name(r);
+        if kani::any() {
+            run.release(r, any_object_kind());
         }
-        run.table.unpin(region);
-        let claim = run.table.claim_for_destroy(region);
+        run.table.unpin(name);
+        let claim = run.table.claim_for_destroy(name);
         assert!(claim.is_some(), "an unpinned leaf is claimable");
         if let Some(claim) = claim {
             run.table.return_to_parent(&claim);
         }
     }
-    let after = run.table.snapshot(root).expect("the root is live");
+    let after = run.table.snapshot(run.name(0)).expect("the root is live");
     for counted in KINDS {
         assert!(after.live.get(counted) == 0, "a count outlived its subtree");
     }
