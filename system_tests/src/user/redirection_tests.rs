@@ -225,15 +225,15 @@ fn append_keeps_what_truncate_throws_away() {
     };
     let t = &buf[..n];
 
-    let (tl, tw, tb) = counts(&answer(t, b"wc < trunc.txt")[2..]);
+    let (tl, tw, truncate_bytes) = counts(&answer(t, b"wc < trunc.txt")[2..]);
     assert!(
-        tb > 0,
+        truncate_bytes > 0,
         "the truncate arm wrote nothing, so the comparison below proves nothing",
     );
     assert_eq!(
         counts(&answer(t, b"wc < app.txt")[2..]),
-        (tl * 2, tw * 2, tb * 2),
-        "`>>` did not keep the first line: `>` wrote ({tl}, {tw}, {tb}) for the same two \
+        (tl * 2, tw * 2, truncate_bytes * 2),
+        "`>>` did not keep the first line: `>` wrote ({tl}, {tw}, {truncate_bytes}) for the same two \
          commands, so append must be exactly twice that",
     );
 
@@ -250,10 +250,10 @@ fn append_keeps_what_truncate_throws_away() {
     );
     let (fl, fw, fb) = counts(&answer(t, b"wc < fresh.txt")[2..]);
     assert!(
-        fb >= tb && fb % tb == 0 && fl == fb / tb && fw == fl,
+        fb >= truncate_bytes && fb % truncate_bytes == 0 && fl == fb / truncate_bytes && fw == fl,
         "`>> a-name-that-is-not-there` should have created it and written one line into it, \
          and reported some whole number of those lines; got ({fl}, {fw}, {fb}) against a \
-         single line of ({tl}, {tw}, {tb})",
+         single line of ({tl}, {tw}, {truncate_bytes})",
     );
 }
 

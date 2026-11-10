@@ -210,7 +210,7 @@ writer's thread, and each of those is a hang waiting for its first abort.
 `std_tests::drain_sink_from` is for a caller that knows the writer's thread (milestone 514 (the HVF
 std listener hangs in some full runs)). Without it, a writer that aborts leaves the reader parked,
 and the suite's watchdog fires a minute later and calls it a lost wakeup. The calling thread binds a
-notification and arms a timer on it every `WRITER_CHECK_MS`. A bound notification ends a `RECEIVE`
+notification and arms a timer on it every `WRITER_CHECK_MILLISECONDS`. A bound notification ends a `RECEIVE`
 (§101 (notification objects), the `x4 == BOUND` tag), so the receive returns a sink message or a
 tick. On a tick it asks whether the writer's thread still resolves, and a name is generational, so
 "gone" means gone. It is a poll, not an event, because an unsupervised thread's death signals

@@ -753,7 +753,7 @@ impl Text {
 /// narrowed, reordered or added to a set shows up as a disagreement. Three refusals keep the
 /// agreement from being vacuous. See `notes/swish-language/witness.md`, "The globbing script".
 pub(super) fn globbing(spec: u64) -> ! {
-    use filesystem_fixture::{VERDICT, globscape as gb, tree};
+    use filesystem_fixture::{VERDICT, globscape, tree};
     let mut nav = Nav::rooted(filesystem_contract::grant::spec_rights(spec));
     let mut v = 0u64;
 
@@ -761,12 +761,12 @@ pub(super) fn globbing(spec: u64) -> ! {
     let mut shown = Text::new();
     let said = echo(&mut nav, tree::GLOB_PATTERN, &mut |b| shown.push(b));
     if matches!(said, Say::Nothing) && !shown.as_bytes().is_empty() {
-        v |= gb::EXPANDED;
+        v |= globscape::EXPANDED;
     }
     // And it is not simply everything in the directory. Both strangers are one entry away and the
     // caretaker a hop up could name either.
     if !shown.holds(tree::GLOB_MISS.as_bytes()) && !shown.holds(tree::GLOB_DIR.as_bytes()) {
-        v |= gb::EXCLUDED_A_STRANGER;
+        v |= globscape::EXCLUDED_A_STRANGER;
     }
 
     // 2. What the same pattern would transfer, planned as `rm <pattern>` from the same text.
@@ -780,17 +780,17 @@ pub(super) fn globbing(spec: u64) -> ! {
             Ok(e) => match grant_plan::plan(&rspec, holdings(&nav), e) {
                 Ok(endow) => match endow.directory {
                     Some(g) => swish::write_set(&g.names, &mut |b| granted.push(b)),
-                    None => v |= gb::GLOB_FAILED,
+                    None => v |= globscape::GLOB_FAILED,
                 },
-                Err(_) => v |= gb::GLOB_FAILED,
+                Err(_) => v |= globscape::GLOB_FAILED,
             },
-            Err(_) => v |= gb::GLOB_FAILED,
+            Err(_) => v |= globscape::GLOB_FAILED,
         }
     } else {
-        v |= gb::GLOB_FAILED;
+        v |= globscape::GLOB_FAILED;
     }
     if !granted.as_bytes().is_empty() && granted.as_bytes() == shown.as_bytes() {
-        v |= gb::AGREED;
+        v |= globscape::AGREED;
     }
 
     // 3. A pattern that matches nothing. Refused, not printed as itself: the expansion is the grant,
@@ -801,7 +801,7 @@ pub(super) fn globbing(spec: u64) -> ! {
         Say::Cannot(Refusal::NoMatch)
     ) && nothing.as_bytes().is_empty()
     {
-        v |= gb::NO_MATCH_REFUSED;
+        v |= globscape::NO_MATCH_REFUSED;
     }
 
     // 4. A pattern in a leading component, refused where it is read.
@@ -811,7 +811,7 @@ pub(super) fn globbing(spec: u64) -> ! {
             Err(Say::Cannot(Refusal::PatternInPath))
         )
     {
-        v |= gb::PATTERN_IN_PATH_REFUSED;
+        v |= globscape::PATTERN_IN_PATH_REFUSED;
     }
 
     // 5. And a line with no pattern in it is still text: byte for byte, spacing included.
@@ -821,7 +821,7 @@ pub(super) fn globbing(spec: u64) -> ! {
         Say::Nothing
     ) && plain.as_bytes() == tree::GLOB_PLAIN
     {
-        v |= gb::TEXT_UNTOUCHED;
+        v |= globscape::TEXT_UNTOUCHED;
     }
 
     send(REPORT, VERDICT, v, 0);

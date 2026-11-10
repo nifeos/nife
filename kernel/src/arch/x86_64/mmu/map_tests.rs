@@ -63,7 +63,7 @@ fn ceiling(map: &[(u64, u64, bool)]) -> u64 {
 /// reservation fill claimed the local APIC's page a few lines before the device mapping asked
 /// for it, and the mapper refused. The chain rule stops at the floor of the MMIO hole instead.
 #[test_case]
-fn the_fill_stops_below_the_devices_on_a_17_gib_machine() {
+fn the_fill_stops_below_the_devices_on_a_17_gibibyte_machine() {
     let top_of_ram = XENON
         .iter()
         .filter(|(.., usable)| *usable)
@@ -89,13 +89,13 @@ fn the_fill_stops_below_the_devices_on_a_17_gib_machine() {
 
 /// **The hole xenon's BARs have to go in**, both ends of it, from the map alone.
 ///
-/// The floor is the same number [`the_fill_stops_below_the_devices_on_a_17_gib_machine`]
+/// The floor is the same number [`the_fill_stops_below_the_devices_on_a_17_gibibyte_machine`]
 /// asserts and that is the point: one walk of the map answers "how far may the cacheable fill
 /// follow memory" and "where does the MMIO hole start", because they are the same boundary
 /// asked from the two sides. The ceiling is the next thing the firmware describes above it,
 /// which on this machine is the reserved window at `0xf0000000`.
 #[test_case]
-fn the_mmio_hole_on_a_17_gib_machine_is_bounded_at_both_ends() {
+fn the_mmio_hole_on_a_17_gibibyte_machine_is_bounded_at_both_ends() {
     let hole = super::firmware_mmio_hole(|span| {
         for &(start, end, _) in XENON {
             span(start, end);

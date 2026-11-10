@@ -126,7 +126,7 @@ tick period.
 
 ## Uptime comes from the counter, not the tick count
 
-`uptime_ms()` reads `CNTPCT_EL0` and divides.
+`uptime_milliseconds()` reads `CNTPCT_EL0` and divides.
 
 If a tick is ever missed (a long critical section, a slow handler), the tick count undercounts
 and *time appears to slow down*. The hardware counter cannot lie.

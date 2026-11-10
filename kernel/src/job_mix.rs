@@ -46,11 +46,11 @@ pub fn run() -> ! {
     spawn_echo_servers(image, &pool.echo, &mut placed);
     spawn_tasks(image, &pool, &mut placed);
 
-    let hz = arch::timer::frequency();
-    print_preamble(cpus, hz, &placed);
+    let hertz = arch::timer::frequency();
+    print_preamble(cpus, hertz, &placed);
 
     for &tasks in &TASK_SWEEP {
-        measure_point(pool.report, &pool.go, tasks, hz);
+        measure_point(pool.report, &pool.go, tasks, hertz);
     }
 
     println!("{DONE}");
@@ -179,11 +179,11 @@ fn spawn_tasks(image: &'static [u8], pool: &Pool, placed: &mut [u8; ECHO_SERVERS
 }
 
 /// The start marker, what the run measures and does not, and the spawn census.
-fn print_preamble(cpus: usize, hz: u64, placed: &[u8; ECHO_SERVERS + MAXIMUM_TASKS]) {
+fn print_preamble(cpus: usize, hertz: u64, placed: &[u8; ECHO_SERVERS + MAXIMUM_TASKS]) {
     println!();
     println!(
         "{STARTED} {MAXIMUM_TASKS} tasks and {ECHO_SERVERS} servers on {cpus} online core(s), \
-         cntfrq={hz} Hz"
+         cntfrq={hertz} Hz"
     );
     println!(
         "job-mix: one job is one of {} kinds ({} per round, {} rounds per task per subrun); see \
@@ -216,7 +216,7 @@ fn measure_point(
     report: sched::RendezvousId,
     go: &[sched::RendezvousId; MAXIMUM_TASKS],
     tasks: usize,
-    hz: u64,
+    hertz: u64,
 ) {
     let mut samples = [0u64; REPEATS];
     let mut kind_ticks = [0u64; JOB_KINDS];
@@ -239,7 +239,7 @@ fn measure_point(
         spread.minimum,
         spread.median,
         spread.maximum,
-        job_mix::jobs_per_minute(jobs, spread.median, hz)
+        job_mix::jobs_per_minute(jobs, spread.median, hertz)
     );
     // Totals over every task and repeat at this point, so the per-job division can be re-derived.
     for kind in 0..JOB_KINDS {

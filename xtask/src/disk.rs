@@ -141,12 +141,12 @@ pub(crate) fn redoxfs_host(args: &[&str]) -> bool {
 /// exactly the code that opens it. Arch-neutral (the on-disk format does not depend on the CPU), so
 /// one image serves both ISA test legs.
 pub(crate) fn mkredoxfs() -> bool {
-    mkredoxfs_of(REDOXFS_FIXTURE_MIB)
+    mkredoxfs_of(REDOXFS_FIXTURE_MEBIBYTES)
 }
 
 /// **How large the shared RedoxFS fixture is**, in MiB: every suite, benchmark and the kernel tests
 /// read this size, and notes such as notes/xenon-bench-2026-10.md quote windows derived from it.
-const REDOXFS_FIXTURE_MIB: &str = "16";
+const REDOXFS_FIXTURE_MEBIBYTES: &str = "16";
 
 /// **How large `script/swish-check`'s RedoxFS image is**, in MiB: twice the fixture, for
 /// [`RIPGREP_CORPUS`] (milestone 121, 2026-10-07). The copy of `crates/` is 8.2 MB in 661 files
@@ -154,10 +154,10 @@ const REDOXFS_FIXTURE_MIB: &str = "16";
 /// every file up to its block, so it took about 13.5 MiB on disk; beside the 4.8 MiB the image
 /// already held, the import failed with "No space left on device". Only this gate's image grows, so
 /// the benchmarks and the suite keep the disk their notes describe.
-pub(crate) const SWISH_CHECK_DISK_MIB: &str = "32";
+pub(crate) const SWISH_CHECK_DISK_MEBIBYTES: &str = "32";
 
 /// [`mkredoxfs`] at `mib` MiB rather than the fixture's size.
-pub(crate) fn mkredoxfs_of(mib: &str) -> bool {
+pub(crate) fn mkredoxfs_of(mebibytes: &str) -> bool {
     let img = redoxfs_disk_path();
     // **`NIFE_KEEP_REDOXFS=1` keeps an existing image instead of rebuilding it.** This is the
     // deliberate way to run the second-boot case: run the suite once normally, then again with this
@@ -197,7 +197,7 @@ pub(crate) fn mkredoxfs_of(mib: &str) -> bool {
     let Some(tree) = stage_subtree() else {
         return false;
     };
-    redoxfs_host(&["mkfs", &img, mib])
+    redoxfs_host(&["mkfs", &img, mebibytes])
         && redoxfs_host(&["put", &img, filesystem_fixture::MOTD_NAME, &motd])
         && redoxfs_host(&["put", &img, filesystem_fixture::SCRATCH_NAME, &scratch])
         && redoxfs_host(&[

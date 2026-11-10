@@ -19,7 +19,7 @@
 //!
 //! - One board: radon is the only silicon it has run on (notes/designware-ethernet.md, Results);
 //!   everything else runs against the crate's simulation.
-//! - Waiting for a link is a bounded spin at bring-up, up to [`LINK_WAIT_MS`], holding a core.
+//! - Waiting for a link is a bounded spin at bring-up, up to [`LINK_WAIT_MILLISECONDS`], holding a core.
 //! - The DMA region is allocated once per boot and never returned.
 //! - A non-coherent verdict refuses the port, since this tree has no cache maintenance for this
 //!   machine (milestone 655 (DMA on a non-coherent RISC-V machine)). An inconclusive verdict does
@@ -40,7 +40,7 @@ use crate::arch::mmu;
 
 /// The longest bring-up waits for the PHY to resolve a link after autonegotiation restarts. A
 /// gigabit negotiation takes about three seconds; five is slack, not a guess at a slow switch.
-pub(crate) const LINK_WAIT_MS: u64 = 5000;
+pub(crate) const LINK_WAIT_MILLISECONDS: u64 = 5000;
 
 /// Why a port the tree describes was not brought up.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -118,7 +118,7 @@ pub(crate) struct Report {
     /// The negotiated link, if one resolved.
     pub link: Option<Link>,
     /// How long the link took to resolve, or how long was waited for it.
-    pub link_wait_ms: u64,
+    pub link_wait_milliseconds: u64,
 }
 
 impl Report {
@@ -138,7 +138,7 @@ impl Report {
             resets_microseconds: [0; 2],
             coherence: None,
             link: None,
-            link_wait_ms: 0,
+            link_wait_milliseconds: 0,
         }
     }
 }
@@ -327,7 +327,7 @@ fn bring_up_physical_layer_device(
     Ok(())
 }
 
-/// Restart autonegotiation, wait up to `LINK_WAIT_MS` for a link, and start the controller at its
+/// Restart autonegotiation, wait up to `LINK_WAIT_MILLISECONDS` for a link, and start the controller at its
 /// speed. `None` when no link came up.
 fn wait_for_link(
     w: &mut Window,
@@ -339,7 +339,7 @@ fn wait_for_link(
     management_data_input_output::restart_autonegotiation(&mut bus, physical_layer_device_address)
         .map_err(Error::Mdio)?;
     let started = crate::arch::timer::now();
-    let deadline = started + LINK_WAIT_MS * crate::arch::timer::frequency() / 1000;
+    let deadline = started + LINK_WAIT_MILLISECONDS * crate::arch::timer::frequency() / 1000;
     let link = loop {
         if let Some(l) =
             motorcomm_physical_layer_device::read_link(&mut bus, physical_layer_device_address)
@@ -350,9 +350,9 @@ fn wait_for_link(
         if crate::arch::timer::now() >= deadline {
             break None;
         }
-        spin_ms(10);
+        spin_milliseconds(10);
     };
-    r.link_wait_ms =
+    r.link_wait_milliseconds =
         (crate::arch::timer::now() - started) * 1000 / crate::arch::timer::frequency().max(1);
     r.link = link;
     if let Some(l) = link {
@@ -510,6 +510,6 @@ impl DirectMemoryAccessRegion for Plane {
     }
 }
 
-fn spin_ms(ms: u64) {
-    crate::arch::timer::spin_for(ms * crate::arch::timer::frequency() / 1000);
+fn spin_milliseconds(milliseconds: u64) {
+    crate::arch::timer::spin_for(milliseconds * crate::arch::timer::frequency() / 1000);
 }

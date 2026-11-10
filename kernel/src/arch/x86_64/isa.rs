@@ -185,7 +185,7 @@ pub fn draw_random_seed() -> Option<u64> {
 /// model-to-crystal table). Under QEMU TCG with `-cpu max` the maximum leaf is `0xd`, so every boot
 /// today calibrates. The rate is a constant only because [`initialize`] refuses bare metal without
 /// the invariant TSC. See notes/x86-port/cpu-state.md.
-pub(crate) fn tsc_crystal_hz() -> Option<u64> {
+pub(crate) fn tsc_crystal_hertz() -> Option<u64> {
     if get().maximum_leaf < 0x15 {
         return None;
     }

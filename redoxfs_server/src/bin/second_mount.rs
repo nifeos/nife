@@ -263,10 +263,10 @@ fn mount_count() -> u8 {
 }
 
 fn main() {
-    let cap_mib = heap_cap() / 1024 / 1024;
+    let cap_mebibytes = heap_cap() / 1024 / 1024;
     let mounts = mount_count();
     mark(&format!(
-        "second_mount: heap cap {cap_mib} MiB, {mounts} mount cycles \
+        "second_mount: heap cap {cap_mebibytes} MiB, {mounts} mount cycles \
          (NIFE_HEAP_MIB / NIFE_MOUNTS override)"
     ));
 

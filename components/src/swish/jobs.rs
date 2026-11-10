@@ -416,7 +416,7 @@ fn forcible(job_ut: u64) {
 /// timeslices. A force-killed thread is converted to a corpse at its own core's next preemption
 /// (notes/object-revocation.md, "DESTROY force-kills a runaway"), so the wait that matters is one
 /// timeslice, and a bound on time says that where a bound on attempts cannot.
-const RECLAIM_PATIENCE_NS: u64 = 1_000_000_000;
+const RECLAIM_PATIENCE_NANOSECONDS: u64 = 1_000_000_000;
 
 /// Reclaim the job's region, retrying because a cooperatively-exiting child may still be finishing
 /// its last instruction, and a force-killed one is still resident until its core's next tick
@@ -429,7 +429,7 @@ const RECLAIM_PATIENCE_NS: u64 = 1_000_000_000;
 /// pages from this shell's budget, which ran out on the seventh job.
 pub(super) fn reclaim(job_ut: u64) -> bool {
     swish::is_reclaimed_within(
-        RECLAIM_PATIENCE_NS,
+        RECLAIM_PATIENCE_NANOSECONDS,
         || destroy_memory_region(job_ut),
         monotonic_nanoseconds,
         yield_now,
@@ -446,7 +446,7 @@ pub(super) fn reclaim(job_ut: u64) -> bool {
 /// retrying at once; the pages stay spent until reboot.
 pub(super) fn release_budget(slot: u64, program: grant_plan::Program) {
     let verdict = swish::reclaim_budget_within(
-        RECLAIM_PATIENCE_NS,
+        RECLAIM_PATIENCE_NANOSECONDS,
         || destroy_memory_region(slot),
         || user_mode_runtime::memory_region_usage(slot, abi::usage::CHILDREN),
         monotonic_nanoseconds,
