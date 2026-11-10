@@ -114,7 +114,7 @@ const GRANTS: BootEndowment = BootEndowment {
     // from userspace)): the kernel's half on every boot, then the JH7110 TRNG service and disk 0's
     // trio when the machine has them, past the base digest.
     self_test_page: 35,
-    self_test_trng: 36,
+    self_test_random_number_generator: 36,
     self_test_disk: [37, 38, 39],
     // Nothing. Since milestone 166 the boot loader is not shared with milestone 19d's test roles on
     // any architecture, so the kernel grants exactly what the interactive system uses. aarch64 once

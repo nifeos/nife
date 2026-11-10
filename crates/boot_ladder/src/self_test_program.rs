@@ -26,10 +26,11 @@ pub mod slot {
     ///
     /// Name: provisional.
     pub const ENTROPY: u64 = 2;
-    /// `WRITE` on the JH7110 TRNG service the kernel wired, on a JH7110 whose service answered.
+    /// `WRITE` on the service of the JH7110 true random number generator (TRNG) the kernel wired, on
+    /// a JH7110 whose service answered.
     ///
     /// Name: provisional.
-    pub const TRNG: u64 = 3;
+    pub const RANDOM_NUMBER_GENERATOR: u64 = 3;
     /// Disk 0's `Virtio` transport, when this machine has a virtio disk.
     ///
     /// Name: provisional.
@@ -38,10 +39,11 @@ pub mod slot {
     ///
     /// Name: provisional.
     pub const DISK_INTERRUPT: u64 = 5;
-    /// Disk 0's DMA page, which records its own physical base in its last word.
+    /// Disk 0's direct memory access (DMA) page, which records its own physical base in its last
+    /// word.
     ///
     /// Name: provisional.
-    pub const DISK_DMA: u64 = 6;
+    pub const DISK_DIRECT_MEMORY_ACCESS: u64 = 6;
     /// `WRITE` on the program's own thread, which a bound notification needs, so a receive here
     /// can end at a timer's deadline.
     ///
@@ -89,7 +91,7 @@ pub mod image {
     /// `memory_region_depleter`: maps from its budget until the budget is spent.
     ///
     /// Name: provisional.
-    pub const MEMORY_REGION_DEPLETER: usize = 1;
+    pub const BUDGET_SPENDER: usize = 1;
     /// `block_driver`: reads `motd` off a virtio disk.
     ///
     /// Name: provisional.
@@ -120,11 +122,11 @@ pub mod header {
     /// the measurement refused.
     ///
     /// Name: provisional.
-    pub const IMAGE_LENGTHS: usize = 1;
+    pub const IMAGE_BYTE_COUNTS: usize = 1;
     /// The number of words in use.
     ///
     /// Name: provisional.
-    pub const COUNT: usize = IMAGE_LENGTHS + super::image::COUNT;
+    pub const COUNT: usize = IMAGE_BYTE_COUNTS + super::image::COUNT;
 }
 
 /// **What the boot's entropy service draws from**, so the `entropy` check can say.
@@ -142,7 +144,7 @@ pub mod entropy_source {
     /// A virtio-rng device, a service the progenitor built.
     ///
     /// Name: provisional.
-    pub const VIRTIO: u64 = 2;
+    pub const DEVICE: u64 = 2;
 }
 
 /// The page size the table rounds to.
@@ -152,21 +154,21 @@ const PAGE: u64 = 4096;
 /// earlier image, each rounded up to a page.
 ///
 /// Name: provisional.
-pub const fn image_address(lengths: &[u64; image::COUNT], index: usize) -> u64 {
-    let mut va = IMAGES_VIRTUAL_ADDRESS + PAGE;
+pub const fn image_virtual_address(lengths: &[u64; image::COUNT], index: usize) -> u64 {
+    let mut virtual_address = IMAGES_VIRTUAL_ADDRESS + PAGE;
     let mut i = 0;
     while i < index {
-        va += lengths[i].div_ceil(PAGE) * PAGE;
+        virtual_address += lengths[i].div_ceil(PAGE) * PAGE;
         i += 1;
     }
-    va
+    virtual_address
 }
 
 /// Whether the images with these lengths fit [`IMAGES_MAXIMUM_BYTES`], header included.
 ///
 /// Name: provisional.
 pub const fn images_fit(lengths: &[u64; image::COUNT]) -> bool {
-    image_address(lengths, image::COUNT) - IMAGES_VIRTUAL_ADDRESS <= IMAGES_MAXIMUM_BYTES
+    image_virtual_address(lengths, image::COUNT) - IMAGES_VIRTUAL_ADDRESS <= IMAGES_MAXIMUM_BYTES
 }
 
 /// **The program's two messages on [`slot::REPORT`]**: three words, the code first and the
@@ -193,17 +195,20 @@ mod tests {
     #[test]
     fn images_follow_the_header_page_by_page() {
         let lengths = [1, 4096, 4097];
-        assert_eq!(image_address(&lengths, 0), IMAGES_VIRTUAL_ADDRESS + PAGE);
         assert_eq!(
-            image_address(&lengths, 1),
+            image_virtual_address(&lengths, 0),
+            IMAGES_VIRTUAL_ADDRESS + PAGE
+        );
+        assert_eq!(
+            image_virtual_address(&lengths, 1),
             IMAGES_VIRTUAL_ADDRESS + 2 * PAGE
         );
         assert_eq!(
-            image_address(&lengths, 2),
+            image_virtual_address(&lengths, 2),
             IMAGES_VIRTUAL_ADDRESS + 3 * PAGE
         );
         assert_eq!(
-            image_address(&lengths, 3),
+            image_virtual_address(&lengths, 3),
             IMAGES_VIRTUAL_ADDRESS + 5 * PAGE
         );
         assert!(images_fit(&lengths));

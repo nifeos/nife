@@ -16,14 +16,15 @@
 //!   verdict at all.
 
 use boot_ladder::self_test_program::{
-    self as contract, entropy_source, header, image, image_address, images_fit, message, slot,
+    self as contract, entropy_source, header, image, image_virtual_address, images_fit, message,
+    slot,
 };
 
 use super::*;
 use crate::boot_steps::Entropy;
 
 /// Where the progenitor maps the transcript frame, read-only, to print it.
-const TRANSCRIPT_VIEW_VA: u64 = address_space_map::pair_page(0x0f90_0000);
+const TRANSCRIPT_VIEW_VIRTUAL_ADDRESS: u64 = address_space_map::pair_page(0x0f90_0000);
 
 /// The program's own stack, in pages: it parses ELF images and builds children, a deeper chain than
 /// an ordinary child's.
@@ -41,7 +42,7 @@ const SELF_TEST_BUDGET_SLACK_PAGES: u64 = 192;
 #[derive(Clone, Copy)]
 pub(super) struct SelfTestGrants {
     page: bool,
-    trng: bool,
+    random_number_generator: bool,
     disk: bool,
 }
 
@@ -50,7 +51,7 @@ impl SelfTestGrants {
     pub(super) fn probe(g: &BootEndowment) -> Self {
         Self {
             page: is_granted(g.self_test_page),
-            trng: is_granted(g.self_test_trng),
+            random_number_generator: is_granted(g.self_test_random_number_generator),
             disk: g.self_test_disk.iter().all(|&s| is_granted(s)),
         }
     }
@@ -70,7 +71,7 @@ pub(super) struct SelfTestTranscript {
 #[inline(never)]
 pub(super) fn run_self_test(
     g: &BootEndowment,
-    ut: u64,
+    memory_region: u64,
     (fs, table): (&nifefs::Fs<'static>, &str),
     grants: SelfTestGrants,
     entropy: &Entropy,
@@ -84,10 +85,10 @@ pub(super) fn run_self_test(
             missing: false,
         };
     }
-    let transcript = run_measured(g, ut, (fs, table), grants, entropy);
+    let transcript = run_measured(g, memory_region, (fs, table), grants, entropy);
     capability_delete(g.self_test_page);
-    if grants.trng {
-        capability_delete(g.self_test_trng);
+    if grants.random_number_generator {
+        capability_delete(g.self_test_random_number_generator);
     }
     if grants.disk {
         for s in g.self_test_disk {
@@ -100,7 +101,7 @@ pub(super) fn run_self_test(
 /// [`run_self_test`] without the cleanup of the kernel's grants.
 fn run_measured(
     g: &BootEndowment,
-    ut: u64,
+    memory_region: u64,
     (fs, table): (&nifefs::Fs<'static>, &str),
     grants: SelfTestGrants,
     entropy: &Entropy,
@@ -117,7 +118,7 @@ fn run_measured(
     let source = match (entropy.client, entropy.from_instruction) {
         (None, _) => entropy_source::NONE,
         (Some(_), true) => entropy_source::INSTRUCTION,
-        (Some(_), false) => entropy_source::VIRTIO,
+        (Some(_), false) => entropy_source::DEVICE,
     };
     // Each image only when the table vouches for it; an empty one fails its check by name.
     let mut lengths = [0u64; image::COUNT];
@@ -135,9 +136,9 @@ fn run_measured(
     }
     let mut words = [0u64; header::COUNT];
     words[header::ENTROPY_SOURCE] = source;
-    words[header::IMAGE_LENGTHS..].copy_from_slice(&lengths);
+    words[header::IMAGE_BYTE_COUNTS..].copy_from_slice(&lengths);
     let mut head = [0u8; header::COUNT * 8];
-    for (chunk, w) in head.chunks_exact_mut(8).zip(words) {
+    for (chunk, w) in head.as_chunks_mut::<8>().0.iter_mut().zip(words) {
         chunk.copy_from_slice(&w.to_le_bytes());
     }
 
@@ -162,11 +163,16 @@ fn run_measured(
         own_pages + image_pages + 1 + SELF_TEST_STACK_PAGES + SELF_TEST_BUILD_SLACK_PAGES;
     let budget_pages = 2 * largest + SELF_TEST_BUDGET_SLACK_PAGES;
 
-    let built = must(memory_region_split(ut, build_pages));
-    let budget = must(memory_region_split(ut, budget_pages));
-    let report = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
-    let frame = must(retype_page_frame(ut));
-    must_ok(map_page_frame(frame, TRANSCRIPT_VIEW_VA, false, ut));
+    let built = must(memory_region_split(memory_region, build_pages));
+    let budget = must(memory_region_split(memory_region, budget_pages));
+    let report = must(retype_obj(memory_region, abi::objtype::RENDEZVOUS));
+    let frame = must(retype_page_frame(memory_region));
+    must_ok(map_page_frame(
+        frame,
+        TRANSCRIPT_VIEW_VIRTUAL_ADDRESS,
+        false,
+        memory_region,
+    ));
 
     let mut placed = [(0u64, 0u64, 0u64); 6];
     let mut n = 0;
@@ -182,13 +188,17 @@ fn run_measured(
     if let Some(client) = entropy.client {
         place(slot::ENTROPY, client, abi::rights::WRITE);
     }
-    if grants.trng {
-        place(slot::TRNG, g.self_test_trng, abi::rights::WRITE);
+    if grants.random_number_generator {
+        place(
+            slot::RANDOM_NUMBER_GENERATOR,
+            g.self_test_random_number_generator,
+            abi::rights::WRITE,
+        );
     }
     if grants.disk {
         // `GRANT` on the transport and the interrupt, because the program passes both on to
         // `block_driver`; the DMA page it only maps into the driver, which needs none.
-        let [transport, interrupt, dma] = g.self_test_disk;
+        let [transport, interrupt, direct_memory_access] = g.self_test_disk;
         place(
             slot::DISK_TRANSPORT,
             transport,
@@ -199,16 +209,20 @@ fn run_measured(
             interrupt,
             abi::rights::READ | abi::rights::GRANT,
         );
-        place(slot::DISK_DMA, dma, abi::rights::READ | abi::rights::WRITE);
+        place(
+            slot::DISK_DIRECT_MEMORY_ACCESS,
+            direct_memory_access,
+            abi::rights::READ | abi::rights::WRITE,
+        );
     }
     let blobs = [
         (contract::IMAGES_VIRTUAL_ADDRESS, &head[..]),
-        (image_address(&lengths, 0), images[0]),
-        (image_address(&lengths, 1), images[1]),
-        (image_address(&lengths, 2), images[2]),
+        (image_virtual_address(&lengths, 0), images[0]),
+        (image_virtual_address(&lengths, 1), images[1]),
+        (image_virtual_address(&lengths, 2), images[2]),
     ];
     let child = must(build_child(
-        ut,
+        memory_region,
         built,
         &elf,
         &ChildEndowment {
@@ -281,27 +295,28 @@ fn reclaim(region: u64) {
 /// verdict, or a boot with no program, says so: with no `nife self-test:` line, `boot-check` fails
 /// the boot.
 #[inline(never)]
-pub(super) fn print_self_test(term_ep: u64, t: &SelfTestTranscript) {
+pub(super) fn print_self_test(terminal_endpoint: u64, t: &SelfTestTranscript) {
     if t.missing {
         announce(
-            term_ep,
+            terminal_endpoint,
             b"progenitor: boot_self_test could not be measured or built, so the self-test has no verdict\n",
         );
         return;
     }
     let Some(frame) = t.frame else { return };
-    // SAFETY: the transcript frame is mapped read-only here at `TRANSCRIPT_VIEW_VA`, one page, and
+    // SAFETY: the transcript frame is mapped read-only here at `TRANSCRIPT_VIEW_VIRTUAL_ADDRESS`, one page, and
     // the program that wrote it is gone, so nothing changes under the read.
-    let bytes = unsafe { core::slice::from_raw_parts(TRANSCRIPT_VIEW_VA as *const u8, t.end) };
+    let bytes =
+        unsafe { core::slice::from_raw_parts(TRANSCRIPT_VIEW_VIRTUAL_ADDRESS as *const u8, t.end) };
     for line in bytes.split_inclusive(|&b| b == b'\n') {
-        announce(term_ep, line);
+        announce(terminal_endpoint, line);
     }
     if !t.done {
         announce(
-            term_ep,
+            terminal_endpoint,
             b"progenitor: boot_self_test died before its verdict\n",
         );
     }
-    process_builder::give_up_own_page(TRANSCRIPT_VIEW_VA);
+    process_builder::give_up_own_page(TRANSCRIPT_VIEW_VIRTUAL_ADDRESS);
     capability_delete(frame);
 }

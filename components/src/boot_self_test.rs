@@ -35,7 +35,7 @@ use core::sync::atomic::Ordering;
 
 use boot_ladder::kernel_half::{KernelHalf, flag, word};
 use boot_ladder::self_test_program::{
-    self as contract, entropy_source, header, image, image_address, message, slot,
+    self as contract, entropy_source, header, image, image_virtual_address, message, slot,
 };
 use boot_ladder::verdict::{CheckLine, Outcome, Tally, check};
 use supervision_contract::{ChildEndowment, Retention};
@@ -178,10 +178,14 @@ macro_rules! check {
 fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     let grants = Grants {
         entropy: is_granted(slot::ENTROPY),
-        trng: is_granted(slot::TRNG),
-        disk: [slot::DISK_TRANSPORT, slot::DISK_INTERRUPT, slot::DISK_DMA]
-            .iter()
-            .all(|&s| is_granted(s)),
+        trng: is_granted(slot::RANDOM_NUMBER_GENERATOR),
+        disk: [
+            slot::DISK_TRANSPORT,
+            slot::DISK_INTERRUPT,
+            slot::DISK_DIRECT_MEMORY_ACCESS,
+        ]
+        .iter()
+        .all(|&s| is_granted(s)),
     };
     // SAFETY: the progenitor mapped the kernel-half page read-only here, and `word::COUNT` words
     // are far under a page.
@@ -222,15 +226,15 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
 /// The image table the progenitor copied in.
 fn images() -> Images {
     // SAFETY: the progenitor copied the header page to `IMAGES_VA` and each image after it at
-    // `image_address`, all mapped in this space and never written again.
+    // `image_virtual_address`, all mapped in this space and never written again.
     let words = unsafe { core::ptr::read_volatile(IMAGES_VA as *const [u64; header::COUNT]) };
     let mut lengths = [0u64; image::COUNT];
-    lengths.copy_from_slice(&words[header::IMAGE_LENGTHS..]);
+    lengths.copy_from_slice(&words[header::IMAGE_BYTE_COUNTS..]);
     let bytes = core::array::from_fn(|i| {
         // SAFETY: as above; a zero length is an empty slice at a mapped address.
         unsafe {
             core::slice::from_raw_parts(
-                image_address(&lengths, i) as *const u8,
+                image_virtual_address(&lengths, i) as *const u8,
                 lengths[i] as usize,
             )
         }
@@ -452,7 +456,7 @@ fn spawn(
 /// build expects another address, so this check fails too.
 fn userspace(r: &mut Report, half: &KernelHalf, images: &Images) {
     let bytes = images.bytes[image::KERNEL_TEST_SUBJECT];
-    let address = half.word(word::KERNEL_ADDRESS);
+    let address = half.word(word::KERNEL_VIRTUAL_ADDRESS);
     if bytes.is_empty() || address == 0 {
         r.record(
             check!("userspace"),
@@ -513,7 +517,7 @@ fn userspace(r: &mut Report, half: &KernelHalf, images: &Images) {
 /// machine's free-frame count, read at both, must not move. Then its region is destroyed, which
 /// kills it.
 fn budget(r: &mut Report, images: &Images, d: Option<&Deadline>) {
-    let bytes = images.bytes[image::MEMORY_REGION_DEPLETER];
+    let bytes = images.bytes[image::BUDGET_SPENDER];
     if bytes.is_empty() {
         r.record(
             check!("budget"),
@@ -652,7 +656,7 @@ fn blockdev(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants, d: O
         );
         return;
     }
-    let transport = if half.has(flag::DISK_MMIO) {
+    let transport = if half.has(flag::DISK_MEMORY_MAPPED) {
         "virtio-mmio"
     } else {
         "virtio-pci"
@@ -666,7 +670,12 @@ fn blockdev(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants, d: O
         );
         return;
     }
-    if !map_page_frame(slot::DISK_DMA, DISK_DMA_PEEK_VA, false, slot::BUDGET) {
+    if !map_page_frame(
+        slot::DISK_DIRECT_MEMORY_ACCESS,
+        DISK_DMA_PEEK_VA,
+        false,
+        slot::BUDGET,
+    ) {
         r.record(
             check!("blockdev"),
             false,
@@ -685,7 +694,7 @@ fn blockdev(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants, d: O
     ];
     let maps = [(
         BLOCK_DRIVER_DMA_VA,
-        slot::DISK_DMA,
+        slot::DISK_DIRECT_MEMORY_ACCESS,
         abi::address_space::MAP_RW,
     )];
     let child = match spawn(bytes, &grants, &maps, [BLOCK_DRIVER_READ_ROLE, physical, 0]) {
@@ -736,7 +745,7 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
         }
         return;
     }
-    if !half.has(flag::TRNG_FOUND) {
+    if !half.has(flag::RANDOM_NUMBER_GENERATOR_FOUND) {
         let why = "this machine's tree names no JH7110 TRNG (neither starfive,jh7110-trng nor the vendor U-Boot's starfive,trng)";
         r.absent(
             check!("clock"),
@@ -745,10 +754,10 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
         r.absent(check!("trng"), format_args!("{why}"));
         return;
     }
-    let registers = half.word(word::TRNG_REGISTERS);
-    let refusal = if half.has(flag::TRNG_PROGRAM_MISSING) {
+    let registers = half.word(word::RANDOM_NUMBER_GENERATOR_REGISTERS);
+    let refusal = if half.has(flag::RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING) {
         Some("the archive has no jh7110_entropy program")
-    } else if !half.has(flag::TRNG_WIRED) {
+    } else if !half.has(flag::RANDOM_NUMBER_GENERATOR_WIRED) {
         Some("its service would not wire")
     } else {
         None
@@ -764,7 +773,7 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
         return;
     }
     clock(r, half);
-    if !half.has(flag::TRNG_ANSWERED) || !g.trng {
+    if !half.has(flag::RANDOM_NUMBER_GENERATOR_ANSWERED) || !g.trng {
         r.record(
             check!("trng"),
             false,
@@ -772,17 +781,17 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
         );
         return;
     }
-    let report = half.word(word::TRNG_REPORT);
-    let status = (half.word(word::TRNG_REPORT + 1) >> 32) as u32;
-    let d = draw_twice(slot::TRNG);
+    let report = half.word(word::RANDOM_NUMBER_GENERATOR_REPORT);
+    let status = (half.word(word::RANDOM_NUMBER_GENERATOR_REPORT + 1) >> 32) as u32;
+    let d = draw_twice(slot::RANDOM_NUMBER_GENERATOR);
     let bytes = d.first + d.second;
     r.record(
         check!("trng"),
         report == entropy_contract::READY && d.is_good(),
         format_args!(
             "JH7110 TRNG at {registers:#x} (tree says {}): report {report:#x}, STAT {status:#010x} ({}), draws {}/{} bytes, first {:02x}{:02x}{:02x}{:02x}.., differ {}; bring-up {} us, {bytes} bytes in {} us ({} bytes/s)",
-            if half.has(flag::TRNG_STATUS_OKAY) { "okay" } else { "disabled" },
-            mode_note(status, half.has(flag::TRNG_256_BIT)),
+            if half.has(flag::RANDOM_NUMBER_GENERATOR_STATUS_OKAY) { "okay" } else { "disabled" },
+            mode_note(status, half.has(flag::RANDOM_NUMBER_GENERATOR_256_BIT)),
             d.first,
             d.second,
             d.head[0],
@@ -790,7 +799,7 @@ fn jh7110(r: &mut Report, half: &KernelHalf, g: &Grants) {
             d.head[2],
             d.head[3],
             d.differ,
-            microseconds(half.word(word::TRNG_BRING_UP_TICKS)),
+            microseconds(half.word(word::RANDOM_NUMBER_GENERATOR_BRING_UP_TICKS)),
             microseconds(d.ticks),
             (bytes as u64).saturating_mul(frequency()).checked_div(d.ticks).unwrap_or(0),
         ),
@@ -883,7 +892,7 @@ fn draw_twice(service: u64) -> Draw {
 /// progenitor's service draws from: the CPU's seed instruction (`RDSEED`, `RNDRRS`) or a virtio-rng
 /// device. Two 32-byte draws that differ. A machine with no source reports this check absent.
 fn entropy(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants) {
-    let (service, source) = if half.has(flag::TRNG_FOUND) {
+    let (service, source) = if half.has(flag::RANDOM_NUMBER_GENERATOR_FOUND) {
         if !g.trng {
             r.record(
                 check!("entropy"),
@@ -894,11 +903,11 @@ fn entropy(r: &mut Report, half: &KernelHalf, images: &Images, g: &Grants) {
             );
             return;
         }
-        (slot::TRNG, "the JH7110 TRNG")
+        (slot::RANDOM_NUMBER_GENERATOR, "the JH7110 TRNG")
     } else if g.entropy {
         let source = match images.entropy_source {
             entropy_source::INSTRUCTION => "the CPU's seed instruction",
-            entropy_source::VIRTIO => "a virtio-rng device",
+            entropy_source::DEVICE => "a virtio-rng device",
             _ => "the boot's entropy service",
         };
         (slot::ENTROPY, source)

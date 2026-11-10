@@ -38,19 +38,19 @@ pub mod word {
     /// A kernel address a user program may not read: the `userspace` check faults on it.
     ///
     /// Name: provisional.
-    pub const KERNEL_ADDRESS: usize = 5;
-    /// The JH7110 TRNG's register window, physical.
+    pub const KERNEL_VIRTUAL_ADDRESS: usize = 5;
+    /// The register window of the JH7110 true random number generator (TRNG), physical.
     ///
     /// Name: provisional.
-    pub const TRNG_REGISTERS: usize = 6;
+    pub const RANDOM_NUMBER_GENERATOR_REGISTERS: usize = 6;
     /// The TRNG service's three-word readiness report (`entropy_contract`).
     ///
     /// Name: provisional.
-    pub const TRNG_REPORT: usize = 7;
+    pub const RANDOM_NUMBER_GENERATOR_REPORT: usize = 7;
     /// Counter ticks from the start of the TRNG's bring-up to its readiness report.
     ///
     /// Name: provisional.
-    pub const TRNG_BRING_UP_TICKS: usize = 10;
+    pub const RANDOM_NUMBER_GENERATOR_BRING_UP_TICKS: usize = 10;
     /// The JH7110 clock-and-reset window, physical.
     ///
     /// Name: provisional.
@@ -84,23 +84,23 @@ pub mod flag {
     /// The device tree names a JH7110 TRNG.
     ///
     /// Name: provisional.
-    pub const TRNG_FOUND: u64 = 1 << 1;
+    pub const RANDOM_NUMBER_GENERATOR_FOUND: u64 = 1 << 1;
     /// The tree marks that TRNG `okay`.
     ///
     /// Name: provisional.
-    pub const TRNG_STATUS_OKAY: u64 = 1 << 2;
+    pub const RANDOM_NUMBER_GENERATOR_STATUS_OKAY: u64 = 1 << 2;
     /// The archive had no `jh7110_entropy` program, so nothing was wired.
     ///
     /// Name: provisional.
-    pub const TRNG_PROGRAM_MISSING: u64 = 1 << 3;
+    pub const RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING: u64 = 1 << 3;
     /// The TRNG service was wired; the progenitor holds its request endpoint.
     ///
     /// Name: provisional.
-    pub const TRNG_WIRED: u64 = 1 << 4;
+    pub const RANDOM_NUMBER_GENERATOR_WIRED: u64 = 1 << 4;
     /// The service sent its readiness report before the kernel's deadline.
     ///
     /// Name: provisional.
-    pub const TRNG_ANSWERED: u64 = 1 << 5;
+    pub const RANDOM_NUMBER_GENERATOR_ANSWERED: u64 = 1 << 5;
     /// The bring-up had a clock-and-reset window to work on, so [`super::word::CLOCK_BEFORE`] and
     /// the words after it mean something.
     ///
@@ -125,11 +125,11 @@ pub mod flag {
     /// The TRNG's status register says it gives 256-bit answers.
     ///
     /// Name: provisional.
-    pub const TRNG_256_BIT: u64 = 1 << 11;
+    pub const RANDOM_NUMBER_GENERATOR_256_BIT: u64 = 1 << 11;
     /// The progenitor holds disk 0's virtio-mmio trio for the `blockdev` check.
     ///
     /// Name: provisional.
-    pub const DISK_MMIO: u64 = 1 << 12;
+    pub const DISK_MEMORY_MAPPED: u64 = 1 << 12;
     /// The progenitor holds disk 0's virtio-pci trio for the `blockdev` check.
     ///
     /// Name: provisional.
@@ -145,7 +145,7 @@ pub struct KernelHalf {
     pub tally: Tally,
     /// [`flag`] bits.
     pub flags: u64,
-    /// [`word`]'s facts, in order, from [`word::KERNEL_ADDRESS`] on.
+    /// [`word`]'s facts, in order, from [`word::KERNEL_VIRTUAL_ADDRESS`] on.
     pub words: [u64; word::COUNT],
 }
 
@@ -207,12 +207,19 @@ mod tests {
             flags: flag::INJECT | flag::DISK_PCI,
             ..KernelHalf::default()
         };
-        half.words[word::KERNEL_ADDRESS] = 0xffff_0000_1234_0000;
+        half.words[word::KERNEL_VIRTUAL_ADDRESS] = 0xffff_0000_1234_0000;
         let words = half.to_words();
         let back = KernelHalf::from_words(&words).expect("the magic is there");
         assert_eq!(back.tally, tally);
-        assert!(back.has(flag::INJECT) && back.has(flag::DISK_PCI) && !back.has(flag::DISK_MMIO));
-        assert_eq!(back.word(word::KERNEL_ADDRESS), 0xffff_0000_1234_0000);
+        assert!(
+            back.has(flag::INJECT)
+                && back.has(flag::DISK_PCI)
+                && !back.has(flag::DISK_MEMORY_MAPPED)
+        );
+        assert_eq!(
+            back.word(word::KERNEL_VIRTUAL_ADDRESS),
+            0xffff_0000_1234_0000
+        );
         assert_eq!(KernelHalf::from_words(&[0; word::COUNT]), None);
     }
 }

@@ -42,7 +42,8 @@ pub(super) fn grant_self_test(tid: crate::thread::ThreadId) {
         half.flags |= flag::INJECT;
     }
     // Certainly mapped, and certainly not a user program's: the kernel's own fault counter.
-    half.words[word::KERNEL_ADDRESS] = &raw const crate::arch::exceptions::USER_FAULTS as u64;
+    half.words[word::KERNEL_VIRTUAL_ADDRESS] =
+        &raw const crate::arch::exceptions::USER_FAULTS as u64;
 
     if let Some(request) = start_jh7110_trng(&mut half) {
         insert(
@@ -124,7 +125,7 @@ fn wire_disk_zero(half: &mut KernelHalf) -> Option<VirtioBootGrant> {
             },
             d.intid,
             None, // virtio-mmio has no IOMMU in front of it on either board
-            flag::DISK_MMIO,
+            flag::DISK_MEMORY_MAPPED,
         )
     } else {
         let d = crate::pci::find_block_device()?;
@@ -161,18 +162,18 @@ fn start_jh7110_trng(half: &mut KernelHalf) -> Option<crate::sched::RendezvousId
     static DONE: AtomicBool = AtomicBool::new(false);
 
     let device = entropy_service::jh7110_trng_device()?;
-    half.flags |= flag::TRNG_FOUND;
+    half.flags |= flag::RANDOM_NUMBER_GENERATOR_FOUND;
     if device.status_okay {
-        half.flags |= flag::TRNG_STATUS_OKAY;
+        half.flags |= flag::RANDOM_NUMBER_GENERATOR_STATUS_OKAY;
     }
-    half.words[word::TRNG_REGISTERS] = device.registers_physical_address;
+    half.words[word::RANDOM_NUMBER_GENERATOR_REGISTERS] = device.registers_physical_address;
     let Some(image) = program("jh7110_entropy") else {
-        half.flags |= flag::TRNG_PROGRAM_MISSING;
+        half.flags |= flag::RANDOM_NUMBER_GENERATOR_PROGRAM_MISSING;
         return None;
     };
     let start = crate::arch::timer::now();
     let w = entropy_service::ensure(image, entropy_service::Bus::Jh7110)?;
-    half.flags |= flag::TRNG_WIRED;
+    half.flags |= flag::RANDOM_NUMBER_GENERATOR_WIRED;
     if let Some(report) = w.clock {
         half.flags |= flag::CLOCK_REPORTED;
         for (ok, bit) in [
@@ -215,14 +216,17 @@ fn start_jh7110_trng(half: &mut KernelHalf) -> Option<crate::sched::RendezvousId
     if !DONE.load(Ordering::SeqCst) {
         return None;
     }
-    half.flags |= flag::TRNG_ANSWERED;
-    half.words[word::TRNG_BRING_UP_TICKS] = crate::arch::timer::now().wrapping_sub(start);
+    half.flags |= flag::RANDOM_NUMBER_GENERATOR_ANSWERED;
+    half.words[word::RANDOM_NUMBER_GENERATOR_BRING_UP_TICKS] =
+        crate::arch::timer::now().wrapping_sub(start);
     for (i, slot) in REPORT.iter().enumerate() {
-        half.words[word::TRNG_REPORT + i] = slot.load(Ordering::Relaxed);
+        half.words[word::RANDOM_NUMBER_GENERATOR_REPORT + i] = slot.load(Ordering::Relaxed);
     }
-    if (half.words[word::TRNG_REPORT + 1] >> 32) as u32 & jh7110_entropy::STATUS_256_BIT_OUTPUT != 0
+    if (half.words[word::RANDOM_NUMBER_GENERATOR_REPORT + 1] >> 32) as u32
+        & jh7110_entropy::STATUS_256_BIT_OUTPUT
+        != 0
     {
-        half.flags |= flag::TRNG_256_BIT;
+        half.flags |= flag::RANDOM_NUMBER_GENERATOR_256_BIT;
     }
     Some(w.request)
 }

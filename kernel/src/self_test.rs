@@ -59,8 +59,9 @@ pub const fn injects() -> bool {
 }
 
 /// **The kernel's half of the tally**, kept from [`run`] until the hand-over writes it into the
-/// page the progenitor passes on ([`kernel_half`]) or, with no progenitor to hand it to, prints the
-/// verdict itself ([`verdict_without_userspace`]). Three words: `boot_ladder::verdict::Tally`'s.
+/// page the progenitor passes on (`boot_ladder::kernel_half`) or, with no progenitor to hand it
+/// to, prints the verdict itself ([`verdict_without_userspace`]). Three words:
+/// `boot_ladder::verdict::Tally`'s.
 static HALF: [AtomicU64; 3] = [const { AtomicU64::new(0) }; 3];
 
 /// **This half's running tally**, which prints each check's line as it records it.
