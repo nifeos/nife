@@ -208,7 +208,7 @@ harness's comment, where the template reads it, so those records pass `falsify.p
       - `fuzz/seeds/<target>`, the seed scripts and their paragraphs in `fuzz/seeds/README.md`;
       - the targets' sections of `notes/fuzzing/targets.md`.
 
-      Afterwards `script/fuzz --list` names none of them;
+      Afterwards `script/fuzz --list` names none of them.
     - citations into `crates/<crate>/src`, which repoint to the repository at the tag, by symbol.
 
     The crate's milestone block states the soak's state. Expected: `cargo tree --locked -i <crate>`
