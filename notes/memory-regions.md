@@ -238,9 +238,10 @@ The counts follow table occupancy, not creations:
 `memory_region::progenitor_ceilings` builds the progenitor's budget: every table's capacity less
 an eighth the kernel keeps, written in the `MAXIMUM_*` constants so the ceilings follow a resize.
 
-Kani proves the counting in `crates/memory_regions`, one operation from any state that holds it,
-so for runs of any length: a refused carve or split moves nothing, every live count equals what its
-subtree holds and stays within its ceiling, and reclaiming a subtree gives every count back. `subtree_ceiling_tests` fills a region to every ceiling through the real
+Kani proves the counting in `crates/memory_regions`: a refused carve or split moves nothing, every
+live count equals what its subtree holds and stays within its ceiling, and reclaiming a subtree
+gives every count back. Each harness takes one operation from any state that holds those counts,
+so the proof covers runs of any length. `subtree_ceiling_tests` fills a region to every ceiling through the real
 `RETYPE_OBJ` and `SPLIT`, then builds a child in a sibling.
 
 Prior art. Linux bounds threads per cgroup with the `pids` controller and per user with
