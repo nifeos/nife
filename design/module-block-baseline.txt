@@ -552,21 +552,29 @@ crates/bitmap_font/src/tests.rs
 
 
 
-crates/boot_ladder/src/lib.rs::BANNER
 
-crates/boot_ladder/src/lib.rs::MACHINE
 
-crates/boot_ladder/src/lib.rs::PROMPT
 
-crates/boot_ladder/src/lib.rs::SCREEN_HELD
 
-crates/boot_ladder/src/lib.rs::SELF_TEST
 
-crates/boot_ladder/src/lib.rs::SELF_TEST_CHECKS
 
-crates/boot_ladder/src/lib.rs::SELF_TEST_FAILED
 
-crates/boot_ladder/src/lib.rs::TOUR
+
+crates/boot_ladder/src/rungs.rs::BANNER
+
+crates/boot_ladder/src/rungs.rs::MACHINE
+
+crates/boot_ladder/src/rungs.rs::PROMPT
+
+crates/boot_ladder/src/rungs.rs::SCREEN_HELD
+
+crates/boot_ladder/src/rungs.rs::SELF_TEST
+
+crates/boot_ladder/src/rungs.rs::SELF_TEST_CHECKS
+
+crates/boot_ladder/src/rungs.rs::SELF_TEST_FAILED
+
+crates/boot_ladder/src/rungs.rs::TOUR
 
 crates/boot_slot/src/lib.rs::EMPTY
 
