@@ -107,6 +107,7 @@ pub const CHILD_STACK_PAGES: u64 = 4;
 ///
 /// assert_eq!(endow.capabilities.len(), 1);
 /// assert!(endow.maps.is_empty() && endow.blobs.is_empty() && endow.placed.is_empty());
+/// assert!(endow.windows.is_empty()); // the startup page is written, and lists nothing
 /// assert_eq!(endow.stack_pages, CHILD_STACK_PAGES);
 /// assert_eq!(endow.retention, Retention::Nothing);
 ///
@@ -147,6 +148,12 @@ pub struct ChildEndowment<'a> {
     /// Stack pages, mapped down from [`CHILD_STACK_VA`]. See [`CHILD_STACK_PAGES`] for why this is
     /// a field a caller sets rather than one number for the whole tree.
     pub stack_pages: u64,
+    /// **The windows the child's startup page lists**, so the child reads where each one sits
+    /// rather than compiling the address in (`startup_page_contract`). Each window's first page
+    /// must be one the child has: a `maps` entry, a stack page or a blob. The builder writes the
+    /// page for every child, an empty list included, so a program can always walk it. Name
+    /// provisional.
+    pub windows: &'a [startup_page_contract::Window],
     /// **What the spawner keeps**, the reciprocal of every field above (DECISIONS §142). See
     /// [`Retention`]. There is no default: [`ChildEndowment::new`] takes it as an argument, so
     /// `..ChildEndowment::new(Retention::Nothing)` states it rather than inheriting it.
@@ -192,6 +199,7 @@ impl<'a> ChildEndowment<'a> {
             blobs: &[],
             fault: None,
             stack_pages: CHILD_STACK_PAGES,
+            windows: &[],
             retention,
         }
     }
