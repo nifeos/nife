@@ -126,8 +126,7 @@ fn split_until_refused(budget: u64, below: &mut [u64; ATTEMPTS]) -> usize {
 /// **A filled subtree stops at its ceilings with pages to spare, a sibling still builds, and the
 /// reclaim returns every count.**
 ///
-/// Falsification: unfalsified. Removing the decide walk in `RegionTable::charge` should fail the
-/// first `fill` assertion; no patch replays it yet.
+/// Falsification: replayable `system_tests/falsifications/user.subtree_ceiling_tests.a_region_filled_to_its_subtree_ceilings_leaves_its_siblings_able_to_build.patch`
 #[test_case]
 fn a_region_filled_to_its_subtree_ceilings_leaves_its_siblings_able_to_build() {
     let root = crate::memory_region::create_with_ceilings(
