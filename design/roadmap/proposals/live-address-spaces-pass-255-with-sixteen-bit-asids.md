@@ -15,14 +15,15 @@ address-space registry to 1,056 slots.
 Name: provisional.
 
 Reuse: `crates/address_space_identifier`, the ASID plumbing in `kernel/src/arch/*/mmu*`, and the
-probe of the hardware ASID width that milestone 58 added for riscv64.
+probe of the hardware ASID width that milestone 58 (RISC-V TLB shootdown, and the flush that makes ASIDs pointless) added for riscv64.
 
 ## Background
 
 Every user address space holds one ASID for life. The allocator hands out 255 numbers (8-bit ASIDs,
 the width every aarch64 implementation has), so at most 255 spaces can be live at once, however many
-slots the registry has. The registry has 1,056. Past 255 live spaces, creating a space is refused
-as a full registry is, cleanly, and the tables above 255 processes go unused.
+slots the registry has. The registry has 1,056. Past 255 live spaces, the kernel refuses to create a
+space, cleanly, as it does when the registry is full, and the process and thread tables above that
+level stay unused.
 
 ## The work
 

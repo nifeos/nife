@@ -142,6 +142,13 @@ rendezvous. No Kani harness or falsification patch in the tree names a changed c
 `crates/memory_regions` and `crates/inter_process_communication` take their sizes from the harness,
 so a table's production size does not reach a proof.
 
+## Follow-on
+
+- **Proposed.** `design/roadmap/proposals/live-address-spaces-pass-255-with-sixteen-bit-asids.md`:
+  the ASID allocator's 255 numbers bound the live address spaces below the registry's size.
+- **Recorded.** `kernel/src/sched/ipc_tables.rs`: the tables sit in `.data` with a second copy in
+  `.rodata`, about half a megabyte of image, in the `BUGS` of `MAXIMUM_THREADS`.
+
 ## Index row
 
 The kernel's object tables are small enough to bind early. This grows each fourfold on all three architectures, with the memory and stack measurements recorded.
