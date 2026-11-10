@@ -780,7 +780,6 @@ dependencies = [
  "boot_ladder",
  "boot_slot",
  "byte_sink_contract",
- "calendar",
  "capability",
  "clock_contract",
  "compositor",

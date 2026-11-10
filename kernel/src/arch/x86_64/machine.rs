@@ -5,9 +5,9 @@
 //! `crates/device_tree_blob`. `memory::initialize` reaches it through `arch::x86_64::discovery`,
 //! which owns the order: the handoff, ACPI, the device windows, PCI, then [`bring_up_memory`].
 //!
-//! # BUGS
-//! - The CMOS RTC crosses no seam: it is two I/O ports, not a page, so `memory::RTC_REGION` has
-//!   nowhere to put it. See notes/x86-port/acpi-and-pci.md and `port.rs`'s doc comment.
+//! The CMOS RTC crosses no seam: it is two fixed I/O ports, not a page, so `memory::RTC_REGION`
+//! stays empty here and the clock service holds a `PortRange` over `clock_contract::rtc::CMOS`'s
+//! ports instead.
 
 use machine_discovery::framebuffer::Framebuffer;
 use machine_discovery::x86_64::{
