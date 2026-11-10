@@ -648,3 +648,58 @@ riscv64	f47530910	spawn_reap	+1.16	#3225: generational_table saturates a slot's 
 x86_64	f47530910	spawn_reap	+1.20	#3225: generational_table saturates a slot's generation and skips retired slots on insert
 aarch64	f47530910	spawn_el0	+0.96	#3225: generational_table saturates a slot's generation and skips retired slots on insert
 riscv64	f47530910	spawn_el0	+1.04	#3225: generational_table saturates a slot's generation and skips retired slots on insert
+
+# lane/bench/w45-unexplained-drift: `main`'s gap from 7ea93b038 (the 2026W44 reading) to 81a1cbbc7
+# (2026W45), all three architectures, each candidate merge against its first parent on
+# nightly-2026-11-08 held for the window. Held, 81a1cbbc7 reads the merge queue's rows exactly and
+# 7ea93b038 reads them to within 0.15%, apart from `null_syscall` (+0.35% aarch64, +0.30% riscv64):
+# that is the compiler term from the nightly 7ea93b038 pins, and no line here claims it. Together with
+# #3225's lines above, the merges below account for the window's step to within 0.05% on every row;
+# #3339 (generational_table leaves the tree) moves no row. Every row a merge moved by 0.1% or more.
+# Both costs are -O0 calls: the bench kernel does not inline `EntryName::from_bits`, `to_bits` or
+# the kernel's per-table id adapters, and a lookup on the switch and IPC path makes several.
+# Measured on 81a1cbbc7, not merged: `#[inline(always)]` on `from_bits`, `to_bits` and `eq` alone
+# takes `ipc_rtt` down 2.13% (aarch64), 2.37% (riscv64) and 1.71% (x86_64), and with the kernel's
+# `*_entry` adapters and the four `*PageAddress` accessors as well, 4.00%, 4.34% and 3.72%.
+aarch64	0f49abe22	relay_rtt	+4.86	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	relay_rtt	+5.17	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	relay_rtt	+4.48	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	yield_switch	+4.86	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	yield_switch	+5.17	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	yield_switch	+4.39	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	ipc_rtt	+4.84	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	ipc_rtt	+5.16	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	ipc_rtt	+4.47	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	ctx_switch	+4.51	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	ctx_switch	+4.72	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	tss_iomap_lazy_nop	+4.27	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	broker_rtt	+4.03	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	broker_rtt	+4.25	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	broker_rtt	+3.71	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	call_reply	+4.03	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	call_reply	+4.24	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	call_reply	+3.70	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	ipc_rtt_el0	+3.84	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	ipc_rtt_el0	+4.00	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	sink_throughput	+3.38	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	sink_throughput	+3.56	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	tss_iomap_lazy_switch	+3.50	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	tss_iomap_switch	+3.48	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	spawn_reap	+1.02	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	spawn_reap	+1.11	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	spawn_reap	+1.16	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	spawn_el0	+0.86	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	spawn_el0	+0.94	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	map_new	+0.66	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	map_new	+0.75	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+x86_64	0f49abe22	map_new	+0.87	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	0f49abe22	map_el0	+0.25	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+riscv64	0f49abe22	map_el0	+0.28	#3285: generational_table names are EntryName<T>; each table lookup converts a u64 id through non-inlined from_bits and to_bits
+aarch64	fcedb2ee1	spawn_el0	+0.47	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+riscv64	fcedb2ee1	spawn_el0	+0.49	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+aarch64	fcedb2ee1	relay_rtt	+0.12	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+riscv64	fcedb2ee1	relay_rtt	+0.14	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+x86_64	fcedb2ee1	relay_rtt	+0.16	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+aarch64	fcedb2ee1	ipc_rtt	+0.12	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+riscv64	fcedb2ee1	ipc_rtt	+0.14	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
+x86_64	fcedb2ee1	ipc_rtt	+0.16	#3312: the four kernel registries take entry types of their own (RendezvousPageAddress and kin)
