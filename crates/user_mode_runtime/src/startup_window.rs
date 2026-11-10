@@ -5,12 +5,14 @@
 //! See design/roadmap/proposals/a-process-reads-its-window-addresses-from-a-startup-page.md.
 //!
 //! ```no_run
-//! use startup_page_contract::kind;
+//! use startup_page_contract::WindowKind;
 //! use user_mode_runtime::startup_window::StartupWindow;
 //!
+//! // The kind comes from the contract crate the spawner and this program both link.
+//! const DOORBELL_PAGE: WindowKind = WindowKind(2);
+//!
 //! // SAFETY: this program's spawner lists the doorbell page and maps it read/write.
-//! static BELLS: StartupWindow =
-//!     unsafe { StartupWindow::new(kind::NON_VOLATILE_MEMORY_EXPRESS_DOORBELL_PAGE, 4096) };
+//! static BELLS: StartupWindow = unsafe { StartupWindow::new(DOORBELL_PAGE, 4096) };
 //!
 //! BELLS.get().w32(0, 1);
 //! ```
