@@ -67,6 +67,7 @@ pub(crate) fn spawn_fs_client(
                     rendezvous_capability(report, Rights::WRITE),  // slot 1: report to the kernel
                 ],
                 maps: &maps[..n + extra_stack],
+                windows: &[],
             },
         )
     })

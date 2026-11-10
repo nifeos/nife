@@ -85,6 +85,7 @@ fn a_faulting_user_thread_is_killed_and_the_kernel_survives() {
                 arg2: 0,
                 grants: &[],
                 maps: &[],
+                windows: &[],
             },
         )
     })

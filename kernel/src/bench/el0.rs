@@ -39,6 +39,7 @@ fn spawn_os_primitives_benchmarker(role: u64, report: sched::RendezvousId) -> bo
                 arg2: 0,
                 grants: &[rendezvous_capability(report, Rights::WRITE)],
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -92,6 +93,7 @@ fn spawn_shell_runnable_program(
                     None => &only_output,
                 },
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -186,6 +188,7 @@ pub(super) fn ipc_rtt_el0() {
                     rendezvous_capability(reply, Rights::WRITE),  // slot 1: SEND replies
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -212,6 +215,7 @@ pub(super) fn ipc_rtt_el0() {
                     rendezvous_capability(reply, Rights::READ),   // slot 2: RECEIVE replies
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })
@@ -365,6 +369,7 @@ pub(super) fn spawn_el0() {
                     ), // slot 2: children signal done; spawner receives and delegates WRITE
                 ],
                 maps: &[],
+                windows: &[],
             },
         )
     })

@@ -123,6 +123,7 @@ pub fn start_granted_set(
                     rendezvous_capability(caretaker_ready, Rights::WRITE), // slot 2: readiness, once
                 ],
                 maps: &maps,
+                windows: &[],
             },
         )
     })

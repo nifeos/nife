@@ -32,6 +32,7 @@ fn a_userspace_thread_reads_a_cpu_that_is_really_online() {
                     crate::capability_object::Rights::WRITE,
                 )],
                 maps: &[],
+                windows: &[],
             },
         )
     })

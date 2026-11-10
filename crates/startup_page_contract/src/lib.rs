@@ -149,8 +149,7 @@ pub fn write(page: &mut [u8], windows: &[Window]) -> Result<(), Refusal> {
     }
     for (n, w) in windows.iter().enumerate() {
         let fits = w.address.is_multiple_of(address_space_map::PAGE)
-            && w
-                .address
+            && w.address
                 .checked_add(w.pages as u64 * address_space_map::PAGE)
                 .is_some();
         if w.kind.0 == 0 || w.pages == 0 || !fits {
@@ -208,9 +207,8 @@ impl<'a> StartupPage<'a> {
     pub unsafe fn mapped() -> Option<StartupPage<'static>> {
         // SAFETY: the caller promises a readable page of `PAGE_BYTES` at this address, mapped and
         // unchanged for the process's life, which is what a `'static` shared slice needs.
-        let bytes = unsafe {
-            core::slice::from_raw_parts(PAGE_VIRTUAL_ADDRESS as *const u8, PAGE_BYTES)
-        };
+        let bytes =
+            unsafe { core::slice::from_raw_parts(PAGE_VIRTUAL_ADDRESS as *const u8, PAGE_BYTES) };
         StartupPage::parse(bytes)
     }
 

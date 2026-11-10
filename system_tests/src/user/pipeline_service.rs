@@ -198,6 +198,7 @@ fn start_with(
                 arg2: clock_slot,
                 grants: &grants[..g],
                 maps: &maps[..n],
+                windows: &[],
             },
         )
     });
@@ -506,6 +507,7 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
                                     rendezvous_capability(src, Rights::READ),
                                 ],
                                 maps: &[],
+                                windows: &[],
                             },
                         ),
                         None => run(
@@ -516,6 +518,7 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
                                 arg2: 0,
                                 grants: &[rendezvous_capability(out, Rights::WRITE)],
                                 maps: &[],
+                                windows: &[],
                             },
                         ),
                     }

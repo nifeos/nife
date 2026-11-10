@@ -117,6 +117,18 @@ pub(crate) fn start(
                     rendezvous_capability(ready, Rights::WRITE),  // slot 1: signal readiness once
                 ],
                 maps: &maps,
+                windows: &[
+                    startup_page_contract::Window {
+                        kind: startup_page_contract::kind::DESIGNWARE_MOBILE_STORAGE_TRANSFER,
+                        address: TRANSFER_VIRTUAL_ADDRESS,
+                        pages: blk::TRANSFER_BLOCKS as u32,
+                    },
+                    startup_page_contract::Window {
+                        kind: startup_page_contract::kind::DESIGNWARE_MOBILE_STORAGE_REGISTER_PAGE,
+                        address: REGISTER_VIRTUAL_ADDRESS,
+                        pages: 1,
+                    },
+                ],
             },
         )
     })

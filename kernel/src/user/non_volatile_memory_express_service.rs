@@ -168,6 +168,19 @@ fn start(image: &'static [u8]) -> Result<Wiring, crate::non_volatile_memory_expr
                     rendezvous_capability(ready, Rights::WRITE),  // slot 1: signal readiness once
                 ],
                 maps: &maps,
+                windows: &[
+                    startup_page_contract::Window {
+                        kind: startup_page_contract::kind::NON_VOLATILE_MEMORY_EXPRESS_DATA_PLANE,
+                        address: DATA_PLANE_VA,
+                        pages: DATA_PLANE_PAGES as u32,
+                    },
+                    startup_page_contract::Window {
+                        kind:
+                            startup_page_contract::kind::NON_VOLATILE_MEMORY_EXPRESS_DOORBELL_PAGE,
+                        address: DOORBELL_VA,
+                        pages: 1,
+                    },
+                ],
             },
         )
     })
@@ -353,6 +366,19 @@ pub fn start_dma_escape(image: &'static [u8]) -> Option<DmaEscape> {
                     rendezvous_capability(report, Rights::WRITE),
                 ],
                 maps: &maps,
+                windows: &[
+                    startup_page_contract::Window {
+                        kind: startup_page_contract::kind::NON_VOLATILE_MEMORY_EXPRESS_DATA_PLANE,
+                        address: DATA_PLANE_VA,
+                        pages: DATA_PLANE_PAGES as u32,
+                    },
+                    startup_page_contract::Window {
+                        kind:
+                            startup_page_contract::kind::NON_VOLATILE_MEMORY_EXPRESS_DOORBELL_PAGE,
+                        address: DOORBELL_VA,
+                        pages: 1,
+                    },
+                ],
             },
         )
     })

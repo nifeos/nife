@@ -46,6 +46,7 @@ pub fn start(image: &'static [u8], endpoints: u64) -> RendezvousId {
                     rendezvous_capability(report, Rights::WRITE), // slot 1: report the verdict
                 ],
                 maps: &stack,
+                windows: &[],
             },
         )
     })

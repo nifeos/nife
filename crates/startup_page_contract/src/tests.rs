@@ -14,7 +14,11 @@ fn a_written_page_reads_back_every_window() {
     let mut page = [0u8; PAGE_BYTES];
     let windows = [
         window(kind::NON_VOLATILE_MEMORY_EXPRESS_DATA_PLANE, 0x98_0000, 50),
-        window(kind::NON_VOLATILE_MEMORY_EXPRESS_DOORBELL_PAGE, 0x9c_0000, 1),
+        window(
+            kind::NON_VOLATILE_MEMORY_EXPRESS_DOORBELL_PAGE,
+            0x9c_0000,
+            1,
+        ),
     ];
     write(&mut page, &windows).unwrap();
     let read = StartupPage::parse(&page).unwrap();
@@ -54,17 +58,17 @@ fn bytes_that_are_not_a_page_read_as_none() {
 fn the_writer_refuses_each_malformed_list() {
     let mut page = [0u8; PAGE_BYTES];
     let good = window(kind::E1000E_DATA_PLANE, 0x90_0000, 1);
-    assert_eq!(
-        write(&mut [0u8; 64], &[good]),
-        Err(Refusal::PageTooSmall)
-    );
+    assert_eq!(write(&mut [0u8; 64], &[good]), Err(Refusal::PageTooSmall));
     for bad in [
         window(WindowKind(0), 0x90_0000, 1),
         window(kind::E1000E_DATA_PLANE, 0x90_0000, 0),
         window(kind::E1000E_DATA_PLANE, 0x90_0008, 1),
         window(kind::E1000E_DATA_PLANE, u64::MAX & !0xfff, 2),
     ] {
-        assert_eq!(write(&mut page, &[bad]), Err(Refusal::MalformedWindow(bad.kind)));
+        assert_eq!(
+            write(&mut page, &[bad]),
+            Err(Refusal::MalformedWindow(bad.kind))
+        );
     }
     assert_eq!(
         write(&mut page, &[good, good]),
@@ -72,7 +76,10 @@ fn the_writer_refuses_each_malformed_list() {
     );
     let many = [good; MAXIMUM_WINDOWS + 1];
     assert_eq!(write(&mut page, &many), Err(Refusal::TooManyWindows));
-    assert!(StartupPage::parse(&page).is_none(), "a refusal writes nothing");
+    assert!(
+        StartupPage::parse(&page).is_none(),
+        "a refusal writes nothing"
+    );
 }
 
 /// A full page holds exactly `MAXIMUM_WINDOWS` entries, the last ending at the page's last byte.
@@ -92,7 +99,10 @@ fn a_full_page_fits_its_maximum() {
 fn every_kind_has_its_own_nonzero_number() {
     for (n, k) in kind::ALL.iter().enumerate() {
         assert_ne!(k.0, 0);
-        assert!(kind::ALL[..n].iter().all(|earlier| earlier != k), "{k:?} repeats");
+        assert!(
+            kind::ALL[..n].iter().all(|earlier| earlier != k),
+            "{k:?} repeats"
+        );
     }
 }
 

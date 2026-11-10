@@ -69,6 +69,7 @@ pub(super) fn spawn_bare(
                 arg2: 0,
                 grants: &[],
                 maps: &[],
+                windows: &[],
             },
         )
     })

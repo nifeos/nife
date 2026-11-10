@@ -43,6 +43,7 @@ fn a_spawned_least_authority_demo_computes_and_reports() {
                     crate::capability_object::Rights::WRITE,
                 )],
                 maps: &[],
+                windows: &[],
             },
         )
     })

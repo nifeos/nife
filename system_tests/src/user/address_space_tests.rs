@@ -469,6 +469,7 @@ fn a_dead_user_thread_frees_its_whole_address_space() {
                     arg2: 0,
                     grants: &[],
                     maps: &[],
+                    windows: &[],
                 },
             )
         })

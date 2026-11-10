@@ -127,6 +127,7 @@ pub fn start_server(
                     rendezvous_capability(stack, Rights::WRITE.union(Rights::GRANT)),
                 ],
                 maps: &maps,
+                windows: &[],
             },
         )
     })
@@ -178,6 +179,7 @@ fn spawn_with_client_endowment(
                     rendezvous_capability(entropy, Rights::WRITE), // slot 4: the nonce
                 ][..n_grants],
                 maps: &maps,
+                windows: &[],
             },
         )
     })

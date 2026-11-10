@@ -32,6 +32,7 @@ fn spawn_printenv(endpoints: u64, page: Option<u64>) -> RendezvousId {
                     phys,
                     flags: Flags::user_rodata(),
                 }],
+                windows: &[],
             },
         ),
         None => run(
@@ -42,6 +43,7 @@ fn spawn_printenv(endpoints: u64, page: Option<u64>) -> RendezvousId {
                 arg2: 0,
                 grants: &[rendezvous_capability(out, Rights::WRITE)],
                 maps: &[],
+                windows: &[],
             },
         ),
     })

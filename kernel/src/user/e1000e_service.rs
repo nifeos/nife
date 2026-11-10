@@ -228,6 +228,23 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
                 arg2: listen_grant,
                 grants: &[rendezvous_capability(report, Rights::WRITE)], // slot 0
                 maps: &maps,
+                windows: &[
+                    startup_page_contract::Window {
+                        kind: startup_page_contract::kind::E1000E_DATA_PLANE,
+                        address: DATA_PLANE_VIRTUAL_ADDRESS,
+                        pages: PLANE as u32,
+                    },
+                    startup_page_contract::Window {
+                        kind: startup_page_contract::kind::E1000E_RECEIVE_QUEUE_PAGE,
+                        address: RECEIVE_QUEUE_VIRTUAL_ADDRESS,
+                        pages: 1,
+                    },
+                    startup_page_contract::Window {
+                        kind: startup_page_contract::kind::E1000E_TRANSMIT_QUEUE_PAGE,
+                        address: TRANSMIT_QUEUE_VIRTUAL_ADDRESS,
+                        pages: 1,
+                    },
+                ],
             },
             socket_contract::stack_slots::OWN_SPACE,
         )

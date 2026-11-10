@@ -92,6 +92,7 @@ fn a_user_client_moves_data_through_shared_memory() {
                     phys: shared,
                     flags: Flags::user_data(),
                 }],
+                windows: &[],
             },
         )
     })

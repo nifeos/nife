@@ -39,6 +39,12 @@ pub struct Spawn<'a> {
     pub grants: &'a [crate::capability_object::Capability],
     /// Extra pages: a shared buffer, a device's registers. Mapped after the ELF's own segments.
     pub maps: &'a [Mapping],
+    /// **The windows the startup page lists**, so the program reads where they are rather than
+    /// compiling the address in (`startup_page_contract`). Each one's first page must be mapped
+    /// by [`Self::maps`] or the device run, which [`run`] asserts. A required field with no default,
+    /// so every spawner says which of its mappings are windows; empty for a spawner whose program
+    /// does not read the page yet. Name provisional.
+    pub windows: &'a [startup_page_contract::Window],
 }
 
 /// The interrupt the kernel routes for the interrupt-delegation test (19d.2b), which
@@ -277,7 +283,13 @@ fn run_with(image: &[u8], spawn: Spawn, device: Option<DeviceRun>, own_space: Op
         + crate::sched::current_mappable_pages();
     let windowed = spawn.maps.len() as u64 + device.as_ref().map_or(0, |d| d.pages) + granted_runs;
     crate::sched::defer_kill();
-    let (mut space, entry) = match load(image, windowed) {
+    for w in spawn.windows {
+        assert!(
+            window_is_mapped(w, spawn.maps, device.as_ref()),
+            "the startup page lists {w:?}, which this spawn does not map whole",
+        );
+    }
+    let (mut space, entry) = match load(image, windowed, spawn.windows) {
         Ok(v) => v,
         Err(e) => {
             crate::println!();
@@ -334,6 +346,19 @@ fn run_with(image: &[u8], spawn: Spawn, device: Option<DeviceRun>, own_space: Op
     }
 
     enter_at(entry, spawn.arg0, spawn.arg1, spawn.arg2)
+}
+
+/// Does the spawn map `w`'s first page, through `maps` or the device run? A window listed at an address the space lacks would send the program
+/// to a fault; refusing it at spawn names the spawner instead. A window may be sparse inside its
+/// span: the xHCI register window maps only the pages its register mask names.
+fn window_is_mapped(
+    w: &startup_page_contract::Window,
+    maps: &[Mapping],
+    device: Option<&DeviceRun>,
+) -> bool {
+    let va = w.address;
+    maps.iter().any(|m| m.va == va)
+        || device.is_some_and(|d| va >= d.va && va < d.va + d.pages * FRAME_SIZE)
 }
 
 /// Drop the **current** thread to user mode at `entry` on `user_sp`, with `arg0` to `arg2` in the

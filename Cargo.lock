@@ -829,6 +829,7 @@ dependencies = [
  "soak_page",
  "socket_contract",
  "spin_lock",
+ "startup_page_contract",
  "std_runtime_contract",
  "system_log_contract",
  "test_times",
