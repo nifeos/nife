@@ -36,7 +36,6 @@ pub mod entropy;
 pub mod initial_ramdisk;
 pub mod mapped_window;
 pub mod socket_frame;
-pub mod startup_window;
 pub mod virtio;
 
 mod clock;

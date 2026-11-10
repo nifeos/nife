@@ -246,5 +246,88 @@ impl<'a> StartupPage<'a> {
     }
 }
 
+/// **One window a program finds on its startup page**, by kind, its address read on first use.
+///
+/// A program declares the kind and how many bytes of it the program uses, as a `static`, and
+/// calls [`StartupWindow::virtual_address`] where it would have named a compiled-in constant.
+///
+/// ```no_run
+/// use startup_page_contract::{StartupWindow, WindowKind};
+///
+/// // The kind comes from the contract crate the spawner and this program both link.
+/// const DOORBELL_PAGE: WindowKind = WindowKind(2);
+///
+/// // SAFETY: this program's spawner writes the startup page and lists the doorbell page on it.
+/// static BELLS: StartupWindow = unsafe { StartupWindow::new(DOORBELL_PAGE, 4096) };
+///
+/// let doorbells = BELLS.virtual_address();
+/// ```
+///
+/// Name: provisional, minted 2026-11-10 (UTC) by lane/drivers-read-the-startup-page.
+pub struct StartupWindow {
+    kind: WindowKind,
+    length_bytes: u64,
+    first: core::sync::atomic::AtomicU64,
+}
+
+impl StartupWindow {
+    /// A window of `kind`, of which the program uses the first `length_bytes`.
+    ///
+    /// # Safety
+    ///
+    /// The process's spawner maps a startup page at [`PAGE_VIRTUAL_ADDRESS`] for the life of the
+    /// process, as [`StartupPage::mapped`] asks. Whether the window itself is mapped is the
+    /// spawner's promise, which the kernel checks for its first page at spawn.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/drivers-read-the-startup-page.
+    pub const unsafe fn new(kind: WindowKind, length_bytes: u64) -> Self {
+        Self {
+            kind,
+            length_bytes,
+            first: core::sync::atomic::AtomicU64::new(0),
+        }
+    }
+
+    /// How many bytes of the window the program uses, as [`Self::new`] was given.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/drivers-read-the-startup-page.
+    pub const fn length_bytes(&self) -> u64 {
+        self.length_bytes
+    }
+
+    /// The window's first virtual address. Panics, naming the kind, if the startup page is
+    /// missing, lists no window of this kind, or lists one shorter than [`Self::length_bytes`]:
+    /// each is a spawner that does not match this program, and running on would touch memory
+    /// nobody mapped.
+    ///
+    /// Name: provisional, minted 2026-11-10 (UTC) by lane/drivers-read-the-startup-page.
+    pub fn virtual_address(&self) -> u64 {
+        use core::sync::atomic::Ordering;
+        let mut first = self.first.load(Ordering::Relaxed);
+        if first == 0 {
+            first = self.read_page();
+            // Relaxed: the page never changes, so two threads racing here store the same value.
+            self.first.store(first, Ordering::Relaxed);
+        }
+        first
+    }
+
+    fn read_page(&self) -> u64 {
+        // SAFETY: `new`'s caller promised the spawner maps a startup page at its fixed address
+        // for the process's life.
+        let page = unsafe { StartupPage::mapped() }
+            .unwrap_or_else(|| panic!("no startup page, so no window of kind {:?}", self.kind));
+        let window = page
+            .window(self.kind)
+            .unwrap_or_else(|| panic!("the startup page lists no window of kind {:?}", self.kind));
+        assert!(
+            window.pages as u64 * address_space_map::PAGE >= self.length_bytes,
+            "the startup page lists {window:?}, shorter than the {} bytes this program uses",
+            self.length_bytes,
+        );
+        window.virtual_address
+    }
+}
+
 #[cfg(test)]
 mod tests;
