@@ -1472,10 +1472,10 @@ fn seeded_syscalls_agree_with_the_shadow_model() {
             );
         }
     }
-    let ms = (crate::arch::timer::now() - start) * 1000 / hz;
+    let milliseconds = (crate::arch::timer::now() - start) * 1000 / hz;
     crate::println!(
-        "    syscall fuzzer: {ran} seeds, {ms} ms ({} seeds/s), {total:?}",
-        (ran * 1000).checked_div(ms).unwrap_or(0)
+        "    syscall fuzzer: {ran} seeds, {milliseconds} ms ({} seeds/s), {total:?}",
+        (ran * 1000).checked_div(milliseconds).unwrap_or(0)
     );
 
     for a in 0..ACTORS {

@@ -240,8 +240,8 @@ a closed record keep their names, and a path is fixed everywhere. The checklist 
 - `helpers/` helpers are outside the worklist on purpose, per milestone 446 (the naming worklist
   says what it covers).
 - A `ratified` is never checked against an architect, and a `recorded` citation is never followed.
-- `helpers/vendored_name_gates.py` does not count `ns`, `ms`, `hz`, the byte and bit-rate symbols
-  (`kib`, `mib` and `gib` among them) or the other `[units]` rows beyond `UNIT_COUNTED`, and still
-  respells `nanos` as `ns`. The gate passes a new name that breaks those rows.
+- `helpers/vendored_name_gates.py` does not count `hz`, the byte and bit-rate symbols
+  (`kib`, `mib` and `gib` among them) or the other `[units]` rows beyond `UNIT_COUNTED`. The gate
+  passes a new name that breaks those rows.
 - `design/capsicum-and-the-retrofit-question.md` still names `worker`, `heeder` and `spinner` in a
   present-tense claim.

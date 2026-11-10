@@ -191,9 +191,23 @@ def cap_hits(text, path=''):
 
 # The template's table is wider than the count. These are the entries of `[units]` the ratchet
 # counts today; every other entry is listed by `--unclear` until a sweep brings it in.
-UNIT_COUNTED = ('nanos', 'millis', 'micros', 'us', 'usec', 'usecs', 'sec', 'secs', 'mins')
+UNIT_COUNTED = (
+    'nanos', 'millis', 'micros', 'us', 'usec', 'usecs', 'sec', 'secs', 'mins',
+    # The nanosecond symbols.
+    'ns', 'nsec', 'nsecs',
+    # The millisecond symbols.
+    'ms', 'msec', 'msecs',
+)
 # Lookalikes outside the template's table that the ruling does not settle, listed by `--unclear`.
-UNIT_UNSETTLED = {'ppm'}
+UNIT_UNSETTLED = {
+    'ppm': 'the Portable PixMap image format nearly everywhere; the one parts-per-million quantity, '
+           'in tools/host_reordering_litmus, has no row in the template\'s table and no ruling',
+}
+# Ratified names keep their spelling until their own name review, wherever they appear.
+UNIT_RATIFIED = {
+    'NS_PER_SECOND': 'ratified 2026-10-27 as the one definition of clock_contract; its release '
+                     'review decides the spelling',
+}
 
 UNIT_STD = {
     'as_secs', 'as_millis', 'as_micros', 'as_nanos', 'as_secs_f32', 'as_secs_f64',
@@ -214,7 +228,8 @@ UNIT_KEPT = {
     'kernel/src/pci.rs': ({'sec', 'sec_sts'}, _BUS),
     'c_library/src/lib.rs': ({'tv_sec', 'tv_nsec', 'tv_usec'}, _POSIX),
     'notes/filesystem-crates-2026-10-07/probes/btrfs-transaction.rs':
-        ({'sec'}, 'a field of btrfs_disk::items::Timespec, an external crate'),
+        ({'sec', 'nsec'}, 'a field of btrfs_disk::items::Timespec, an external crate'),
+    'kernel/src/drivers/gicv3.rs': ({'GICD_CTLR_ARE_NS'}, 'the Arm GICv3 bit name; NS is Non-secure'),
     'components/src/clock.rs': ({'offset_nanos'}, _OVERLAY),
     'components/src/date.rs': ({'offset_nanos'}, _OVERLAY),
     'components/src/timetable.rs': ({'offset_nanos'}, _OVERLAY),
@@ -230,9 +245,10 @@ UNIT_KEPT = {
 }
 # Names kept wherever they appear, by shape: SEC 1 and a vendor's security-domain clocks and resets.
 UNIT_KEPT_SHAPES = (
-    re.compile(r'[Ss]ec1'),
-    re.compile(r'^(STGCLK|STGRST|VENDOR)_SEC_|^VENDOR_SEC_'),
-    re.compile(r'^tv_(sec|nsec|usec)$'),
+    (re.compile(r'[Ss]ec1'), _SEC1),
+    (re.compile(r'^(STGCLK|STGRST|VENDOR)_SEC_|^VENDOR_SEC_'), _SECURITY),
+    (re.compile(r'^tv_(sec|nsec|usec)$'), _POSIX),
+    (re.compile(r'^[Nn]s16550$'), 'the NS16550 UART, a chip name'),
 )
 
 
@@ -260,12 +276,9 @@ def _after_number(identifier):
 
 
 # What a rename of a unit symbol looks like to helpers/moved_rows.py: a row follows its item to
-# the respelled name. These are the respellings lanes made, not the rule's; see BUGS.
-_RESPELLED = {'nanos': 'nanoseconds', 'millis': 'milliseconds', 'micros': 'microseconds',
-              'us': 'microseconds', 'usec': 'microseconds', 'usecs': 'microseconds',
-              'secs': 'seconds', 'sec': 'second', 'mins': 'minutes', 'ns': 'nanoseconds',
-              'ms': 'milliseconds', 'hz': 'hertz', 'khz': 'kilohertz', 'mhz': 'megahertz',
-              'ghz': 'gigahertz', 'kib': 'kibibytes', 'mib': 'mebibytes', 'gib': 'gibibytes'}
+# the respelled name. The words are the template's `[units]` table, so a respelling cannot drift
+# from the rule (`min` and a bare `s` are read in context by `respell`).
+_RESPELLED = dict(UNITS)
 _COMPONENT = re.compile(r'[A-Z]+(?![a-z])|[A-Z]?[a-z]+|[A-Z]+')
 
 
@@ -276,7 +289,9 @@ def respell(identifier):
     parts = [c[2].lower() for c in comps]
     for i, (a, b, text) in enumerate(comps):
         low, prev, new = text.lower(), (parts[i - 1] if i else ''), None
-        if low in _RESPELLED:
+        if low in ('sec', 'secs') and prev == 'per':
+            new = 'second'
+        elif low in _RESPELLED:
             new = _RESPELLED[low]
         elif low == 'min' and prev == 'per':
             new = 'minute'
@@ -296,12 +311,23 @@ def respell(identifier):
     return ''.join(out)
 
 
-def counts_as_hit(identifier, path=''):
+def kept_reason(identifier, path=''):
+    """Why the ratchet does not count this identifier, or '' when it does."""
     if identifier in UNIT_STD:
-        return False
-    if identifier in UNIT_KEPT.get(path, (set(), ''))[0]:
-        return False
-    return not any(p.search(identifier) for p in UNIT_KEPT_SHAPES)
+        return 'the spelling of a standard-library or smoltcp method'
+    if identifier in UNIT_RATIFIED:
+        return UNIT_RATIFIED[identifier]
+    names, reason = UNIT_KEPT.get(path, (set(), ''))
+    if identifier in names:
+        return reason
+    for pattern, why in UNIT_KEPT_SHAPES:
+        if pattern.search(identifier):
+            return why
+    return ''
+
+
+def counts_as_hit(identifier, path=''):
+    return not kept_reason(identifier, path)
 
 
 def unit_hits(text, path=''):
@@ -313,10 +339,21 @@ def unit_hits(text, path=''):
     return out
 
 
-def unclear_hits(text):
-    unclear = (set(UNITS) - set(UNIT_COUNTED)) | UNIT_UNSETTLED
-    return [(line, word) for line, word in identifiers(text)
-            if any(c in unclear for c in components(word))]
+def unclear_hits(text, path=''):
+    """[(line, identifier, why)]: the names that carry a unit the ratchet does not count yet, or
+    that the ratchet keeps for a stated reason. An empty reason is work the sweep still owes."""
+    unclear = (set(UNITS) - set(UNIT_COUNTED)) | set(UNIT_UNSETTLED)
+    out = []
+    for line, word in identifiers(text):
+        comps = components(word)
+        if not any(c in unclear for c in comps):
+            continue
+        why = kept_reason(word, path)
+        if not why:
+            why = next((UNIT_UNSETTLED[c] for c in comps if c in UNIT_UNSETTLED), '')
+            why = f'unsettled: {why}' if why else ''
+        out.append((line, word, why))
+    return out
 
 
 # --- counting, shared by both ratchets --------------------------------------------------------
@@ -503,8 +540,11 @@ def unit_selftest():
          ['within_30_s', 'TICKS_PER_SEC', 'mins']),
         # The units the template refuses and the ratchet has not counted yet, the spelled-out names
         # and the std methods are never hits.
-        ('let a_ns = 1; let b_ms = 2; let c_kib = 3; let hz = 4; let seconds = 5; let minutes = 6; '
+        ('let c_kib = 3; let hz = 4; let seconds = 5; let minutes = 6; '
          'let microseconds = 7; d.as_nanos(); d.as_secs(); Duration::from_millis(1);', []),
+        ('let a_ns = 1; let nsec = 2; let NS_PER_SECOND = 3; let tv_nsec = 4; let ns16550 = 5;',
+         ['a_ns', 'nsec']),
+        ('let b_ms = 2; let msec = 3; let MS = 4;', ['b_ms', 'msec', 'MS']),
         # A bare `s`, a mode-bit prefix and a possessive are not units.
         ('let s = 1; const S_IFDIR: u32 = 1; let s_context = 2; let saw_s = false; let ds_s = 1;', []),
         # `min` is a minimum unless it follows `per`.
@@ -525,8 +565,8 @@ def unit_selftest():
     if names('const US: u64 = 1;', 'crates/paging/src/x86_64.rs'):
         failed += 1
         print('unit selftest: UNIT_KEPT US counted', file=sys.stderr)
-    if [w for _, w in unclear_hits('let nsec = 1; let kb = 2; let ns = 3; let nanos = 4;')] != [
-            'nsec', 'kb', 'ns']:
+    if [w for _, w, _ in unclear_hits('let hz = 1; let kb = 2; let ns = 3; let nanos = 4;')] != [
+            'hz', 'kb']:
         failed += 1
         print('unit selftest: unclear lookalikes', file=sys.stderr)
     # The ratchet counts a subset of what the template refuses: a name it counts, the template's own
@@ -550,7 +590,9 @@ def unit_selftest():
     for old, new in (('NANOS_PER_SEC', 'NANOSECONDS_PER_SECOND'), ('TICK_HZ', 'TICK_HERTZ'), ('SECS_PER_MIN', 'SECONDS_PER_MINUTE'),
                      ('unix_nanos', 'unix_nanoseconds'), ('delay_us', 'delay_microseconds'),
                      ('within_30_s', 'within_30_seconds'), ('cpu_millis', 'cpu_milliseconds'),
-                     ('hz', 'hertz'), ('fine', 'fine')):
+                     ('hz', 'hertz'), ('fine', 'fine'), ('wall_nanos', 'wall_nanoseconds'),
+                     ('RETRY_GAP_NS', 'RETRY_GAP_NANOSECONDS'), ('claimed_ns', 'claimed_nanoseconds'),
+                     ('secs', 'seconds'), ('wait_ms', 'wait_milliseconds')):
         if respell(old) != new:
             failed += 1
             print(f'unit selftest: respell({old!r}) is {respell(old)!r}, wanted {new!r}', file=sys.stderr)
@@ -604,8 +646,8 @@ def unit_main(argv):
         return 0
     if argv[0] == '--unclear':
         for p in tracked():
-            for line, word in unclear_hits(read(p) or ''):
-                print(f'{p}:{line}: {word}')
+            for line, word, why in unclear_hits(read(p) or '', p):
+                print(f'{p}:{line}: {word}' + (f'  [{why}]' if why else ''))
         return 0
     if argv[0] == '--bank':
         now = bank(unit_hits, 'UNIT_CEILING', UNIT_CEILING)

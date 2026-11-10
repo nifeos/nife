@@ -361,11 +361,11 @@ mod radon {
                 "network-bench: link      : {} Mbit/s {} duplex, {} ms after autonegotiation restarted",
                 l.speed.megabits_per_second(),
                 if l.full_duplex { "full" } else { "half" },
-                r.link_wait_ms
+                r.link_wait_milliseconds
             ),
             None => println!(
                 "network-bench: link      : NONE after {} ms",
-                r.link_wait_ms
+                r.link_wait_milliseconds
             ),
         }
     }

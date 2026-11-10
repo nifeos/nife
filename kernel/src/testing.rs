@@ -1235,8 +1235,9 @@ fn run_selected(tests: &[&dyn Testable], filter: &str) {
                 test.run();
                 // The record holds the sum over every run; `xtask` knows a repeated run by
                 // `test_times::REPEAT_ANNOUNCEMENT` and reads it as one.
-                let ms = LAST_TEST_MILLISECONDS.load(Ordering::Relaxed);
-                let sum = u64::from(TEST_MILLISECONDS[index].load(Ordering::Relaxed)) + ms;
+                let milliseconds = LAST_TEST_MILLISECONDS.load(Ordering::Relaxed);
+                let sum =
+                    u64::from(TEST_MILLISECONDS[index].load(Ordering::Relaxed)) + milliseconds;
                 TEST_MILLISECONDS[index]
                     .store(u32::try_from(sum).unwrap_or(u32::MAX), Ordering::Relaxed);
             }

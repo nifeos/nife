@@ -1657,9 +1657,9 @@ fn a_confined_fuzzer_reaches_nothing_it_was_not_granted() {
             );
         }
     }
-    let ms = (crate::arch::timer::now() - start) * 1000 / hz;
+    let milliseconds = (crate::arch::timer::now() - start) * 1000 / hz;
     crate::println!(
-        "    confined fuzzer: {ran} seeds, {ms} ms ({} seeds/s)",
-        (ran * 1000).checked_div(ms).unwrap_or(0)
+        "    confined fuzzer: {ran} seeds, {milliseconds} ms ({} seeds/s)",
+        (ran * 1000).checked_div(milliseconds).unwrap_or(0)
     );
 }

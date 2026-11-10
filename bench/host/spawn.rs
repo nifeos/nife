@@ -18,7 +18,7 @@ unsafe extern "C" {
 }
 
 /// `fork` a child that exits at once, and reap it. Returns ns per full create-and-reap cycle.
-fn fork_exit_ns(iters: u64) -> f64 {
+fn fork_exit_nanoseconds(iters: u64) -> f64 {
     let t = Instant::now();
     for _ in 0..iters {
         // SAFETY: fork has no arguments; the child branch calls _exit and never returns.
@@ -34,8 +34,8 @@ fn fork_exit_ns(iters: u64) -> f64 {
 }
 
 fn main() {
-    let _ = fork_exit_ns(200); // warm the fork/exec path and the allocator
-    let ns = fork_exit_ns(2_000);
+    let _ = fork_exit_nanoseconds(200); // warm the fork/exec path and the allocator
+    let nanoseconds = fork_exit_nanoseconds(2_000);
     let operating_system = if cfg!(target_os = "macos") { "macos" } else { "linux" };
-    println!("{operating_system} spawn (fork+exit+wait): {ns:.0} ns/iter");
+    println!("{operating_system} spawn (fork+exit+wait): {nanoseconds:.0} ns/iter");
 }

@@ -32,7 +32,7 @@ const PIT_HZ: u64 = 1_193_182;
 /// How long one calibration window is. Ten milliseconds is a compromise: long enough that the
 /// polling loop's own overhead is noise, short enough that the PIT's 16-bit counter holds it (its
 /// maximum is about 54.9 ms) and that boot does not visibly pause.
-const CALIBRATION_MS: u64 = 10;
+const CALIBRATION_MILLISECONDS: u64 = 10;
 
 /// The most windows that will ever be timed; [`CALIBRATION_AGREEMENT_PARTS_PER`] usually stops
 /// sooner. A window can only be late, so each is an upper bound on the rate and the minimum is the
@@ -133,7 +133,7 @@ fn rdtsc() -> u64 {
     ((high as u64) << 32) | low as u64
 }
 
-/// Wait `CALIBRATION_MS` by polling PIT channel 2, and return what the TSC and the APIC timer did
+/// Wait `CALIBRATION_MILLISECONDS` by polling PIT channel 2, and return what the TSC and the APIC timer did
 /// across it.
 ///
 /// Returns `(tsc_delta, apic_delta)`. The APIC timer **counts down**, so its delta is
@@ -141,7 +141,7 @@ fn rdtsc() -> u64 {
 /// frequency and a timer that never fires, which is why it is done here rather than at the call
 /// site.
 fn measure_against_the_pit() -> (u64, u32) {
-    let count = (PIT_HZ * CALIBRATION_MS / 1000) as u16;
+    let count = (PIT_HZ * CALIBRATION_MILLISECONDS / 1000) as u16;
 
     // Start the APIC timer as a free-running masked counter from its maximum, so it cannot wrap
     // during a window this short: at any plausible bus clock, 0xffffffff ticks divided by 16 is
@@ -220,7 +220,7 @@ pub(crate) fn initialize_frequency(boot_info_pointer: usize) {
         "the timer calibrates the local APIC's counter, so the APIC must be up first",
     );
 
-    let per_second = 1000 / CALIBRATION_MS;
+    let per_second = 1000 / CALIBRATION_MILLISECONDS;
 
     // The minimum, not an average: every window's error is non-negative, so an average would carry
     // each descheduling into the answer. The TSC's and the APIC timer's minima are taken

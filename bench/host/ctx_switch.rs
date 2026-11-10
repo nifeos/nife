@@ -22,7 +22,7 @@ unsafe extern "C" {
 
 /// One process, one pipe: `write` a byte then `read` it back. No context switch; measures the pipe
 /// pass overhead (two syscalls plus two buffer copies) to subtract out.
-fn self_pipe_pass_ns(iters: u64) -> f64 {
+fn self_pipe_pass_nanoseconds(iters: u64) -> f64 {
     let mut p = [0i32; 2];
     unsafe { pipe(p.as_mut_ptr()) };
     let mut b = [0u8; 1];
@@ -39,16 +39,16 @@ fn self_pipe_pass_ns(iters: u64) -> f64 {
             read(p[0], b.as_mut_ptr(), 1);
         }
     }
-    let ns = t.elapsed().as_nanos() as f64 / iters as f64;
+    let nanoseconds = t.elapsed().as_nanos() as f64 / iters as f64;
     unsafe {
         close(p[0]);
         close(p[1]);
     }
-    ns
+    nanoseconds
 }
 
 /// Two processes, a pair of pipes: one round trip is two context switches plus two pipe passes.
-fn round_trip_ns(iters: u64) -> f64 {
+fn round_trip_nanoseconds(iters: u64) -> f64 {
     let mut p2c = [0i32; 2];
     let mut c2p = [0i32; 2];
     unsafe {
@@ -84,14 +84,14 @@ fn round_trip_ns(iters: u64) -> f64 {
     for _ in 0..iters {
         rt(&mut b);
     }
-    let ns = t.elapsed().as_nanos() as f64 / iters as f64;
+    let nanoseconds = t.elapsed().as_nanos() as f64 / iters as f64;
     unsafe { close(p2c[1]) };
-    ns
+    nanoseconds
 }
 
 fn main() {
-    let p = self_pipe_pass_ns(1_000_000);
-    let r = round_trip_ns(200_000);
+    let p = self_pipe_pass_nanoseconds(1_000_000);
+    let r = round_trip_nanoseconds(200_000);
     let ctx = r / 2.0 - p;
     let operating_system = if cfg!(target_os = "macos") { "macOS" } else { "linux" };
     println!("{operating_system} self_pipe_pass: {p:.1} ns  round_trip: {r:.1} ns  ctx_switch \
