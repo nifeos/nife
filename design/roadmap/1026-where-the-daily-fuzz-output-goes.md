@@ -1,7 +1,8 @@
 ---
-status: NOT-STARTED
+status: BUILT
 promoted_from: where-the-daily-fuzz-output-goes
 raised: 2026-11-01
+built: 2026-11-10
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
@@ -64,6 +65,36 @@ The `--publish` path in `helpers/fuzz-daily-publish.sh` refused until the ruling
 installation token of the `nife-fuzz` App, which holds Contents write and advisories write on
 nifeos/nife alone (ruled 2026-11-01 UTC,
 [fuzz-findings-without-a-person](1015-fuzz-findings-without-a-person.md)).
+
+## Done when
+
+The code builds every claim of the ruling, and `helpers/fuzz-daily-publish-selftest.sh` checks each
+one. `script/lint` runs it with stand-ins and never calls GitHub.
+
+- The tag is `fuzz-YYYY-MM-DD` (UTC), and the one `gh release create` call names `nifeos/nife`.
+- The assets are `report.md` and `clean-ranges.tsv`, and no others. The script never calls `git push`.
+- `--publish` refuses unless `NIFE_FUZZ_PUBLISH=1`, and then refuses by name a missing, unreadable,
+  expired or nearly expired token, all before any `gh` call.
+- The report holds counters and the count and age of held findings. It and the table name no held
+  seed, and the table leaves out every range of a slot from its first held window onward.
+- The heartbeat (`helpers/fuzz-heartbeat.py`) reads the date of the newest `fuzz-*` release, and is
+  quiet until the first one exists.
+- The credential is an installation token of the `nife-fuzz` App, minted by `fuzz-token` and limited
+  to Contents write and Repository security advisories write on nifeos/nife.
+
+What remains needs a person, which is why `needs_person` stays `yes`. No code remains
+to build.
+
+- Create the `nife-fuzz` App and place its key on the fuzz host root-only
+  ([the runbook](../../notes/fuzzing/the-fuzz-app.md), steps P5 and P6).
+- Set `NIFE_FUZZ_PUBLISH=1` in the publish service's drop-in on the host (step P7). The first release
+  then switches the heartbeat checks on by itself.
+
+## Follow-on
+
+- **Recorded.** The person-only steps above: the App key (P5, P6) and the enable variable (P7). They
+  stay a person's, and [the setup list](../../notes/fuzzing/finishing-the-setup.md) holds their
+  order and checks.
 
 ## Index row
 
