@@ -58,8 +58,8 @@ The reach is now bounded by three things rather than by the crate, and this lane
 | a fixed-address MMIO read | loud: `dereference failure: invalid integer address` | the rest of `arch/` |
 | an architecture the host does not compile | **silent**: `no harnesses matched the harness filter` | two of three subtrees per run; `riscv64`'s is compiled by nothing anywhere |
 
-So the honest sentence is narrower and better: **DECISIONS §4 (kernel shape: monolithic, deferred,
-with two cheap rules) rule 1, architecture-specific code under `kernel/src/arch/`, has held the
+So the honest sentence is narrower and better: **DECISIONS §4 (kernel shape) rule 1,
+architecture-specific code under `kernel/src/arch/`, has held the
 unreachable residue to under a fifth of the kernel.** And it is exactly the fifth you would expect.
 Both defects risk 2 leans on are still on the far side of it, so **the risk's
 color does not obviously change**. They are the timer re-arm drift from milestone 6 (threads, the context switch,

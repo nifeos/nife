@@ -76,7 +76,7 @@ Measured in this worktree on 2026-09-20, by walking `kernel/src` in Python:
 | lines in files containing an `asm!` call | **15,001**, and **every one of them is under `arch/`** |
 | `arch/aarch64` / `arch/riscv64` / `arch/x86_64` | 6,052 / 5,766 / 8,953, of which 4,688 / 4,974 / 5,339 are in `asm!`-bearing files |
 
-So DECISIONS §4 (kernel shape: monolithic, deferred, with two cheap rules) rule 1,
+So DECISIONS §4 (kernel shape) rule 1,
 architecture-specific code under `kernel/src/arch/`, has kept the construct-level residue to at most
 18% of the kernel, and it is exactly the 18% you would expect.
 File granularity overstates it, because Kani refuses on the call graph rather than on the file. It is

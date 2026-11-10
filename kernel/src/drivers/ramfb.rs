@@ -1,7 +1,7 @@
 //! `ramfb` over QEMU's `fw_cfg`: a screen on a board whose firmware never lit one. The guest owns
 //! the pixels and hands the device their physical address, and QEMU scans them out.
 //!
-//! It reaches no kernel global (§4 (kernel shape: monolithic, deferred, with two cheap rules)): the
+//! It reaches no kernel global (§4 (kernel shape)): the
 //! register block, a scratch region and that region's physical address are all arguments, from
 //! `crate::screen`. It runs only before `arch::mmu::initialize`, through the coarse boot map; the
 //! fine map does not cover `fw_cfg`. See notes/serial-less-output/ramfb.md.
