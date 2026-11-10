@@ -242,5 +242,28 @@ state false false "" false
 ARM_QUEUE_CHECK="$tmp/check-unknown" run "check could not tell: armed, and says so" 0 "armed unchecked" -- "$root/helpers/arm.sh" 42
 check "check could not tell: merge called" logged "pr merge 42 --auto --merge"
 
+# 11. No instruction names the bare arming command (milestone 1052). The briefs, the skills, the
+# hook's refusal and the drain's comments say helpers/arm.sh or script/push --requeue, so the holds
+# and the conflict check are not skipped by a person following them. `gh pr merge --disable-auto`
+# is not arming and does not match. The drain's own requeue_stuck_head is cut out first: it is code,
+# not an instruction, and calef's one ruled exception (#1833) that helpers/needs-maintainer-selftest.sh
+# section 5 guards.
+bare_arms() { # files... -> each line naming `gh pr merge ... --auto`
+	for f in "$@"; do
+		awk '/^requeue_stuck_head\(\) \{/ { skip = 1 } !skip { print FILENAME ":" FNR ": " $0 } skip && /^\}/ { skip = 0 }' "$f"
+	done | grep -E 'gh pr merge .*--auto' || true
+}
+scope="$(find "$root/briefs" "$root/notes/skills" -type f -name '*.md' | sort) $root/helpers/push-queued-check.sh $root/helpers/merge-drain.sh"
+# shellcheck disable=SC2086
+bare="$(bare_arms $scope)"
+if [ -n "$bare" ]; then
+	echo "$me: an instruction names the bare arming command; say helpers/arm.sh <N> or script/push --requeue:" >&2
+	printf '  %s\n' "$bare" >&2
+	fail=1
+fi
+# Falsification: one planted in a brief must be found.
+printf 'Arm it with `gh pr merge 1 --auto --merge`.\n' >"$tmp/planted.md"
+check "case 11 finds a planted bare arm" test -n "$(bare_arms "$tmp/planted.md")"
+
 [ "$fail" = 0 ] && echo "$me: ok"
 exit "$fail"
