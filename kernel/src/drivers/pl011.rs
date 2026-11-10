@@ -1,7 +1,7 @@
 //! PL011 UART driver, aarch64's console.
 //!
-//! Constructed with a base address, it reaches into no globals (§4 (kernel shape: monolithic,
-//! deferred, with two cheap rules)); whoever owns it decides where it lives. See notes/uart.md and
+//! Constructed with a base address, it reaches into no globals (§4 (kernel shape)); whoever owns
+//! it decides where it lives. See notes/uart.md and
 //! notes/portability.md.
 
 // Register offsets from the base and the bits this driver uses, from the PrimeCell UART (PL011)

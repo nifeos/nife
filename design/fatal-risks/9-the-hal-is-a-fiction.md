@@ -11,7 +11,7 @@ the three silicons. If we can't get it to run on one, that would also likely kil
 
 Sharpened, because the ISA count is not the fatal part. What would be fatal is what a failure would
 reveal: that adding an architecture requires changing the kernel rather than adding a directory under
-`arch/`. That is what DECISIONS §4 (kernel shape, with two cheap rules)'s rule 1 and 
+`arch/`. That is what DECISIONS §4 (kernel shape)'s rule 1 and 
 §19 (architectural parity is a tenet) claim it does not.
 
 Widened 2026-09-23 from architectures to machines, and the ruling is calef's: *"A nife that runs on

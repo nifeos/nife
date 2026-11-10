@@ -8,10 +8,12 @@ ratified_by: calef
 # 86. Whether an NVMe driver can leave the kernel, and what capability would let it
 
 The rule in force, ruled 2026-11-10 (UTC): the NVMe admin plane runs in userspace, confinement
-means an IOMMU, and on a machine without an IOMMU the driver is trusted. Option 4 stays open. "The
-decision" at the end of this section states it whole. Raised by milestone 53's storage lane
-(pull request #193), which built the NVMe driver kernel-resident and stopped here, because the
-alternative looked like new syscall surface, a boundary a lane does not cross (§10, §16).
+means an IOMMU, and on a machine without an IOMMU nife trusts the driver. Option 4 stays open. "The
+decision" at the end of this section states it whole. The storage lane of milestone 53 (the
+board's own peripherals: network and storage on real silicon) raised it on pull request #193. It
+built the NVMe driver kernel-resident and stopped here, because the alternative looked like new
+syscall surface, a boundary a lane does not cross (§10 (process model: capability-based,
+microkernel), §16 (object revocation)).
 
 ## What is being decided
 
@@ -220,27 +222,28 @@ options, and what it left to calef.
 ## The decision
 
 Ruled 2026-11-10 (UTC). The admin plane leaves the kernel. A userspace admin process holds all of
-BAR0 and the admin queue pages: it resets and enables the controller, identifies it, creates the
-I/O queue pair, and grants the doorbell page and the I/O queue pages to the EL0 data-path driver.
+BAR0 and the admin queue pages. It resets, enables and identifies the controller and creates the
+I/O queue pair. It then grants the doorbell page and the I/O queue pages to the EL0 data-path
+driver.
 The kernel confines the controller's requester id to its DMA region before the admin process
 receives BAR0, and knows nothing else about NVMe. It is option 3 with the admin and data planes in
 two processes, and it needs no new syscall surface: BAR0 is a `DeviceFrame` and the DMA run a
-`PageFrame` (§102).
+`PageFrame` (§102 (a Frame names a run of pages)).
 
 ### Confinement means an IOMMU
 
 The IOMMU is the whole of the DMA confinement for a device that a userspace driver programs. With
 one, the driver needs no trust: every address the device can reach lies in the domain the kernel
-built. Without one, the driver of a DMA-capable device is trusted, because it can aim the device at
+built. Without one, nife trusts the driver of a DMA-capable device, because it can aim the device at
 any physical address and nothing in the kernel stops it. The rule has no named exception. It holds
 for NVMe, e1000e, the DesignWare GMAC and a virtio-mmio device alike (§23 (multi-queue DMA
 confinement)). The kernel does not keep a device's control plane in order to narrow that trust.
 
 Which machines have one:
 
-- radon (the JH7110) has no IOMMU, so a DMA driver on radon is trusted.
+- radon (the JH7110) has no IOMMU, so nife trusts a DMA driver on radon.
 - xenon has VT-d, and its firmware publishes a DMAR. Both of its DRHD units come up translating,
-  and its NVMe controller was confined at rate under the EL0 driver
+  and the EL0 driver confined its NVMe controller at rate
   (`bench/xenon-2026-10-04/README.md`, verdict `CONFINED-AT-RATE`).
 - QEMU's `virt` on aarch64 (SMMUv3), `virt` on riscv64 (`riscv-iommu-pci`) and `q35`
   (`intel-iommu`) all give a PCI device an IOMMU, and nife drives each one.
@@ -251,8 +254,8 @@ Doorbell mediation is the one option that would confine an NVMe controller witho
 userspace split does not foreclose it. Which submission queue the controller is told about is an
 admin-plane choice, so adding mediation later moves that choice and the doorbell behind a kernel
 capability (option 2b's variant) and changes almost nothing in the data-path driver. That property
-is this decision's one design constraint. Option 4 is built when a target without an IOMMU needs a
-confined NVMe driver, and is priced then.
+is this decision's one design constraint. nife builds option 4 when a target without an IOMMU needs
+a confined NVMe driver, and prices it then.
 
 ### The two options answer different risks
 
@@ -269,7 +272,7 @@ The userspace admin plane optimizes risk 6 by removing the kernel from the data 
 optimizes risk 7 (the confinement claim is false) and risk 2 (the proofs prove trivia), and pays for
 it on the hot path.
 
-### How option 4 is priced when a target needs it
+### How to price option 4 when a target needs it
 
 1. What doorbell mediation costs, priced from the mechanism already shipped. §23's virtio path
    *is* option 4's design: `crates/direct_memory_access_validator` walks descriptors on `NOTIFY`

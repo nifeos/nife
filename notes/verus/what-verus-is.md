@@ -106,7 +106,7 @@ And there it is: sequentially consistent. The OOPSLA paper, Section 9, comparing
 `compare_exchange`; the subagent that read that file found no `Relaxed`, `Acquire`, `Release` or
 `AcqRel` in it.
 
-DECISIONS §4 (kernel shape: monolithic, deferred, with two cheap rules) rule 4, assume weak memory
+DECISIONS §4 (kernel shape) rule 4, assume weak memory
 ordering, is this project's fourth codebase rule, and its
 stated reason is that being ARM-first is a gift because "we cannot develop hidden strong-ordering
 assumptions the way an x86-first project would." A verifier whose concurrency model is sequential

@@ -11,6 +11,9 @@ needs_person: no
 
 *(The number, title and slug are provisional.)*
 
+Reuse: the checks and the verdict contract exist (`kernel/src/self_test.rs`, `crates/boot_ladder`);
+this moves them. Nothing outside the tree tests nife's own boot.
+
 Ruled 2026-11-10 (UTC): the boot self-test checks that spawn a user program move to a userspace
 program the progenitor runs. The checks of the kernel's own internals stay in
 `kernel/src/self_test.rs`, because they test what must run at EL1 (§4 (kernel shape)).
@@ -37,7 +40,7 @@ stub. Its own `BUGS` count up to six spawns per boot. The kernel files those che
 ## Done when
 
 1. `kernel/src/self_test.rs` calls no `user::program` and no service starter.
-2. Every check still runs on every architecture and the verdict line is unchanged.
+2. Every check still runs on every architecture, and the verdict line reads as it does today.
 3. A falsification that breaks one moved check fails the boot's verdict, as it does today.
 
 ## Index row

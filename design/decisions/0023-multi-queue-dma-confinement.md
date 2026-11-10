@@ -46,9 +46,9 @@ queue 0. See notes/net/the-driver-and-dhcp.md and notes/dma.md.
 ## Where the validator applies
 
 Ruled 2026-11-10 (UTC). The validator is no named exception to §86's rule that confinement means
-an IOMMU (§86 (whether an NVMe driver can leave the kernel)). A virtio driver behind an IOMMU is
-confined by the IOMMU. A virtio-mmio driver has no IOMMU under it and is trusted, as an NVMe driver
-on a machine without one is.
+an IOMMU (§86 (whether an NVMe driver can leave the kernel)). The IOMMU confines a virtio driver
+that sits behind one. A virtio-mmio driver has no IOMMU under it, so nife trusts it, as it trusts
+an NVMe driver on a machine without one.
 
 - QEMU's `virt` on aarch64 (SMMUv3), `virt` on riscv64 (`riscv-iommu-pci`) and `q35`
   (`intel-iommu`) give a virtio device on PCI an IOMMU, and nife has a driver for each

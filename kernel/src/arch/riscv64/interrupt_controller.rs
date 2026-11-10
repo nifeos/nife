@@ -2,8 +2,8 @@
 //!
 //! The arch side of the portable `arch::interrupt_controller` surface, the twin of aarch64's GIC
 //! adapter, resolving
-//! to `drivers::plic` so the driver name stays inside `arch/` (DECISIONS §4 (kernel shape:
-//! monolithic, deferred)). See notes/riscv-port/traps.md.
+//! to `drivers::plic` so the driver name stays inside `arch/` (DECISIONS §4 (kernel shape)). See
+//! notes/riscv-port/traps.md.
 //!
 //! Name: ratified 2026-10-27 (#2797). `interrupts` already names the masking module, so this one names the controller.
 

@@ -63,8 +63,8 @@ a dialect inside `verus!{}`, with mathematical `int` and `nat`, permission token
 and limited `&mut`.
 
 Its concurrency model is sequentially consistent. `vstd::atomic` hard-codes `SeqCst`, and the OOPSLA
-paper says Verus does not support relaxed atomics. DECISIONS §4 (kernel shape: monolithic, deferred,
-with two cheap rules) rule 4 assumes weak memory ordering. So a green Verus proof over a `Relaxed`
+paper says Verus does not support relaxed atomics. DECISIONS §4 (kernel shape) rule 4 assumes weak
+memory ordering. So a green Verus proof over a `Relaxed`
 atomic in this kernel would not mean what a reader would take it to, which is the sharpest
 nife-specific caveat after the hardware boundary. It does not support hardware intrinsics, `Drop`
 or function pointers, and only partly supports `as` casts and trait objects, all load-bearing here.
