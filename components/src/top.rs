@@ -104,6 +104,18 @@ interfaces_note::carry_interfaces!(&[
     },
 ]);
 
+/// The row buffer lives in `.bss`: 48 bytes a row times [`ps::MAXIMUM_ROWS`] is more than a
+/// quarter of the child's stack, and the kernel's thread table decides the row count.
+static mut ROWS: [ps::Row; ps::MAXIMUM_ROWS] = [ps::Row::EMPTY; ps::MAXIMUM_ROWS];
+
+/// The row buffer, borrowed once.
+fn rows() -> &'static mut [ps::Row] {
+    let p = &raw mut ROWS;
+    // SAFETY: the program has one thread and calls this once, from `start`, so the borrow is the
+    // only one there will be.
+    unsafe { &mut *p }
+}
+
 user_mode_runtime::program_entry!(start);
 
 /// `a1` is the flag word, in `grant_plan::spawnproto`'s integer-argument position (as `pgrep`'s
@@ -114,8 +126,7 @@ fn start(_a0: u64, a1: u64, _a2: u64) -> ! {
 
     // Walk first, complain second, print third (§67): a survey cannot know its complaints up front,
     // and the second stream's reader drains it to end-of-stream before it reads the first.
-    let mut rows = [ps::Row::default(); ps::MAXIMUM_ROWS];
-    let mut found = ps::collect(&mut rows, &mut |cursor| survey(DOMAIN_SLOT, cursor));
+    let mut found = ps::collect(rows(), &mut |cursor| survey(DOMAIN_SLOT, cursor));
     found.join_cpu_time(&mut |cursor| {
         survey_record(DOMAIN_SLOT, cursor, abi::survey::record::CPU_TIME)
     });

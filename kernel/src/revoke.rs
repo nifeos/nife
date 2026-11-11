@@ -237,7 +237,9 @@ mod chain {
 
 /// The most concurrently-live address spaces the registry can track: every user thread has one
 /// (bounded by [`crate::sched::MAXIMUM_THREADS`]), plus 32 for the tests' bare `AddressSpace`s.
-/// `user::MAXIMUM_USER_SPACES` is sized to it.
+/// `user::MAXIMUM_USER_SPACES` is sized to it. The ASID allocator hands out 255 numbers, so a
+/// full table is not reachable by spaces that hold an ASID; `address_space_identifier` has the
+/// limit.
 pub(crate) const MAXIMUM_SPACES: usize = crate::sched::MAXIMUM_THREADS + 32;
 
 /// The registry of live address spaces: the fixed index that finds each space's log, whose records

@@ -14,9 +14,10 @@
 # The marker-guard is `helpers/merge-drain.sh`'s own `notify()`, copied rather than re-invented:
 # check the pull request's comments for an HTML comment marker before posting, so a later push
 # that trips a second rule does not bury the first finding under a duplicate. This marker is a
-# single constant rather than one per rule (unlike `merge-drain.sh`'s per-stall marker), matching
-# `.github/workflows/coe-architect-label.yml`'s own restraint: this job never removes the label, so
-# there is nothing for a second comment to add once the first has named a reason.
+# single constant rather than one per rule (unlike `merge-drain.sh`'s per-stall marker): while the
+# label stays on, there is nothing for a second comment to add once the first has named a reason.
+# The labeler takes its own flag back with helpers/architect-label-unflag.sh, whose comment carries
+# `architect-label-unflagged`; a finding is posted again when every earlier one has been taken back.
 #
 # Usage: helpers/architect-label-comment.sh <pr-number> <owner/repo> <report>
 #   <report>  the rule engine's own output, one "rule: file: detail" line per match
@@ -43,9 +44,10 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 existing="$(gh pr view "$pr_number" --repo "$repo" --json comments 2>/dev/null |
-	jq -r --arg m "$marker" '[.comments[] | select(.body | contains($m))] | length' 2>/dev/null || echo 0)"
+	jq -r --arg m "$marker" '([.comments[] | select(.body | contains($m))] | length)
+		- ([.comments[] | select(.body | contains("architect-label-unflagged:"))] | length)' 2>/dev/null || echo 0)"
 
-if [ "${existing:-0}" != "0" ]; then
+if [ "${existing:-0}" -gt 0 ] 2>/dev/null; then
 	echo "architect-label-comment: marker already on PR #$pr_number; not posting again"
 	exit 0
 fi

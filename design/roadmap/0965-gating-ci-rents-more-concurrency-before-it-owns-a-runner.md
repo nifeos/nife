@@ -272,13 +272,19 @@ Each job on an owned runner writes its runner kind and image digest into its sum
 The irreversible part is not the code. A compromised host is a fact that has left the machine: its
 credentials are spent, and it is reinstalled, not cleaned.
 
-## calef's rulings (2026-10-24, UTC)
+## Rulings
 
-1. Enterprise: not now, and it stays open. It comes back if the 60-job cap still binds under
-   ordinary load after #2668 moves the aarch64 and riscv64 guest jobs to x86_64 runners. Binding
-   means jobs at the cap with runners waiting, and merge-group runs well over their uncontended 14
+The architect ruled item 1 on 2026-11-11 (UTC), and items 2 to 5 on 2026-10-24 (UTC).
+
+1. The organization keeps its plan for now. The hosted pool is 60 concurrent jobs, and
+   in the 7 days before 2026-11-11 merge groups filled it at peak on six of the seven days.
+   Enterprise raises the limit to 500 for 17 US dollars a month more. The fixes for the lint failures inside
+   merge groups and for the owned-runner canary come first; then a new measurement of the queue. If
+   hosted capacity still binds, the first step is a request to GitHub Support for a higher
+   concurrent-job limit, and the architect reads any ticket text before anyone files it. Binding means
+   jobs at the cap with runners waiting, and merge-group runs well over their uncontended 14
    minutes.
-2. The pull-request creation policy is `collaborators_only`, set the same day.
+2. The pull-request creation policy is `collaborators_only`, set the day of the ruling.
 3. (b) proceeds under the five preconditions, with the VM shape held for the day an outside
    contributor appears.
 4. A green from owned hardware in the merge queue is the gate of record. A daily hosted run against

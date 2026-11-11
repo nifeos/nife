@@ -15,6 +15,17 @@
 # (#1651) asks nothing. A heading quoted mid-line in backticks, as the labelers' own comments do, is
 # not an ask.
 #
+# **A task for a person that needs the merge first goes under `## After this merges`** (name
+# provisional, lane/after-this-merges-asks-nothing, 2026-11-11 UTC), and no reader here counts it.
+# #3476's body asked for a bench session that needs its own merge, under `## What I need from
+# you`; the drain read that as an open question and added `needs-architect`, which blocked the merge
+# the session waits for. The drain still counts every ask heading, whatever follows it: a question
+# it missed could merge without a ruling, and a wrong add costs calef a glance (#1792). What stops
+# the wrong add is earlier. `oq_unasked_sections` finds an ask section with no question mark in it
+# that is not a "Nothing." section, and helpers/ask-section-check.sh refuses a pull request body
+# that has one (.github/workflows/pr-text-ask-check.yml), naming `## After this merges` as where a
+# post-merge task goes.
+#
 # A RULING closes every ask older than it. It is any of:
 #   - a comment carrying `<!-- architect-ruling -->`, which script/record-ruling writes;
 #   - a comment with a `## Ruling` or `## Sent back` heading, the hand-written forms of 2026-10-06
@@ -50,6 +61,29 @@ def oq_is_ask:
   (. // "") as $t
   | ($t | test(oq_heading_re))
     and (($t | oq_first_line) | test("^(\\*\\*)?(Nothing|None)\\.?(\\*\\*)?$"; "i") | not);
+
+# Each ask section of a text, as {heading: its line number, first: its first non-empty line, text}:
+# from the heading to the next heading of level 1 to 3, or the end. A `####` inside stays in it.
+def oq_ask_sections:
+  (. // "") | split("\n")
+  | reduce to_entries[] as $e ({ out: [], cur: null };
+      if ($e.value | test("^#{2,3}[ \t]*What I need from you")) then
+        (if .cur != null then .out += [.cur] else . end) | .cur = { heading: ($e.key + 1), lines: [] }
+      elif ($e.value | test("^#{1,3}[ \t]")) then
+        (if .cur != null then .out += [.cur] else . end) | .cur = null
+      elif .cur != null then .cur.lines += [$e.value]
+      else . end)
+  | (if .cur != null then .out + [.cur] else .out end)
+  | map({ heading, text: (.lines | join("\n")),
+          first: ([.lines[] | gsub("^\\s+|\\s+$"; "") | select(. != "")] | first // "") });
+
+# The ask sections that ask nothing: no question mark anywhere in the section, and not the
+# "Nothing." form. A request for something to happen after the merge reads this way, and belongs
+# under `## After this merges`.
+def oq_unasked_sections:
+  [ oq_ask_sections[]
+    | select((.first | test("^(\\*\\*)?(Nothing|None)\\.?(\\*\\*)?$"; "i")) | not)
+    | select(.text | contains("?") | not) ];
 
 def oq_is_ruling:
   test("<!-- architect-ruling -->")

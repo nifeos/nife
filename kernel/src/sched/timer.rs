@@ -8,7 +8,7 @@ use super::*;
 
 /// The most timers that can exist at once, whole machine: the notification registry's bound, since
 /// a timer is per waiter. The expiry walk is O(this) at worst, and runs only on a due tick.
-pub(crate) const MAXIMUM_TIMERS: usize = 256;
+pub(crate) const MAXIMUM_TIMERS: usize = 1024;
 
 /// A timer's name: a generational name over the timer registry, what an `Object::Timer`
 /// capability carries. *(Provisional, as the object type is.)*

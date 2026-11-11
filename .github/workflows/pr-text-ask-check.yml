@@ -1,0 +1,57 @@
+name: pr text ask check
+
+# Observed failing: 2026-11-11, by script: #3476's body as it stood when the drain held it (a bench
+#   session that needs the merge, under `## What I need from you`, with no question in it), piped
+#   through helpers/ask-section-check.sh exactly as the step below does; it exited 1 naming the
+#   section's heading line. A live run was not staged, because a pull request carrying such a body
+#   for thirty minutes is itself held by the drain, which is the defect this exists to stop.
+
+# **Refuses a pull request body whose `## What I need from you` section asks no question.** The
+# merge drain reads every such section as a question for calef and adds `needs-architect`, which
+# blocks the merge (helpers/open-question.jq; calef's ruling on #1792 that the bot adds the label
+# itself). #3476 asked there for a bench session that needs its own merge first, and the hold
+# blocked that merge. The drain keeps counting every ask, so the text is fixed here instead: a task
+# that waits for the merge goes under `## After this merges`, and a note that asks nothing opens
+# with "Nothing.". helpers/ask-section-check.sh says so when it refuses.
+#
+# **Safe on untrusted text.** The body never reaches the script text or `env:` (the runner prints a
+# step's environment, and the log is public); `jq` reads it from the event file and pipes it to the
+# helper. Unlike pr-text-replay-check.yml, the helper is the pull request's own copy: nothing here
+# guards a secret or a leak, so a pull request that changes the rule may be judged by the rule it
+# proposes, and the one that adds this check can run it. Only two text files are checked out, both
+# read by `jq` and `sh`, with no token kept.
+#
+# **Triggers.** `edited` matters most, since a body is often rewritten after the push. No
+# `merge_group`: the queue entry has no body, so this is not a required context. A lane reads it
+# before marking ready.
+#
+# **Falsified:** `helpers/ask-section-check.sh --selftest` (in `script/lint`) passes and refuses one
+# body per shape, #3476's among them.
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-text-ask-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-text-ask-check:
+    name: pr text asks a question under What I need from you
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: |
+            helpers/ask-section-check.sh
+            helpers/open-question.jq
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Read the body through the helper
+        run: jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH" | sh helpers/ask-section-check.sh

@@ -8,10 +8,10 @@ use ::non_volatile_memory_express::{Doorbell, doorbell};
 
 use super::*;
 
-/// **The spawn handoff is lossless in the direction it is used**: whatever the kernel's admin
-/// plane packs into three words, the EL0 data plane unpacks unchanged. The split between a
-/// kernel admin plane and an unprivileged data plane makes this the only channel by which it
-/// learns its own geometry, so a shift expression that was not its own inverse would be a
+/// **The handoff is lossless in the direction it is used**: whatever the admin process packs
+/// into three words, the data plane unpacks unchanged. The split between an admin process and an
+/// unprivileged data plane makes this the only channel by which the data plane learns its own
+/// geometry, so a shift expression that was not its own inverse would be a
 /// driver addressing the wrong LBA with nothing in between to notice.
 /// Falsification: replayable `crates/driver_process_contract/falsifications/non_volatile_memory_express.proofs.the_spawn_handoff_round_trips.patch`
 #[kani::proof]
@@ -34,7 +34,7 @@ fn the_spawn_handoff_round_trips() {
 /// **An unpacked handoff can always drive the doorbell arithmetic**, for every word the kernel
 /// could have packed. [`MAXIMUM_DOORBELL_STRIDE`] is what buys this, and this harness is why that
 /// constant exists: a stride the spec permits and QEMU never reports computes a doorbell offset
-/// outside the one page of BAR0 the EL0 data plane is mapped, which is the one arithmetic error in
+/// outside the one page of BAR0 the EL0 data plane is granted, which is the one arithmetic error in
 /// this driver that reaches hardware.
 /// Falsification: replayable `crates/driver_process_contract/falsifications/non_volatile_memory_express.proofs.an_accepted_handoff_keeps_its_doorbells_inside_the_mapped_page.patch`
 #[kani::proof]

@@ -33,13 +33,14 @@ build faulted below three on its first resolve (2026-10-06 UTC).
 
 ## Job regions
 
-`JOB_REGION_PAGES` is forty-eight. It holds one spawned program's image, its stack, a thread control
+`JOB_REGION_PAGES` is sixty. It holds one spawned program's image, its stack, a thread control
 block, an address-space root, the intermediate tables for the windows a child touches, and the
 mapping records of §13 (capability revocation and untyped reclamation). Under the address-space map
 a child's image and stack sit in the second gigabyte and its pair pages in the first. So a child
 with any window mapped walks two gigabyte-level tables. On `x86_64` every child also pays three
-tables for its timebase page, and `top`'s debug image is nineteen pages. At forty-one the `x86_64`
-leg of `script/swish-check` refused to build it, and at forty-eight that leg passes every line.
+tables for its timebase page. `top`'s debug image is nineteen pages and its row buffer in `.bss` is
+twelve more (`ps::MAXIMUM_ROWS` rows of 48 bytes), as it is for `ps` and `pgrep`. At forty-eight
+neither leg of `script/swish-check` could build `top`, and at sixty both legs pass every line.
 
 `DIR_JOB_REGION_PAGES` is ninety-eight: the program, the caretaker that carries its grant, and the
 two endpoints between them. The caretaker is a second address space with its own tables and stack,
@@ -49,8 +50,8 @@ pool.
 
 The shell holds the regions of the jobs it starts from the program table (see
 `design/roadmap/0933-every-job-is-built-the-way-a-supervised-job-is.md`). So `SHELL_BUDGET_PAGES` carries the same mix as the pool,
-`grant_plan::JOB_POOL_PAGES` at 672 pages, beside its 128 pages and the image's 1,024 staging
-pages: 1,824 in all. The pool keeps its 672 until the stages of a pipeline, the image pool's jobs
+`grant_plan::JOB_POOL_PAGES` at 744 pages, beside its 128 pages and the image's 1,024 staging
+pages: 1,896 in all. The pool keeps its 744 until the stages of a pipeline, the image pool's jobs
 and the graphical session move as well.
 
 `JOBS_BUDGET_PAGES` is six job regions and one `std` region (`grant_plan::STD_REGION_PAGES`). It is
