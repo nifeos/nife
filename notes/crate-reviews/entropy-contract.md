@@ -18,7 +18,7 @@ draw holds a nonzero byte. It is `no_std`, with no dependency and no system call
 `#![forbid(unsafe_code)]` holds it free of `unsafe`; the caller passes the `CALL` as a closure.
 Four Kani harnesses prove the request word, the copy out of a reply, the fill loop and the
 readiness rule, each with a falsification patch. Every name follows
-[design/naming.md](../../design/naming.md), and every name is ratified. Nothing in the crate points back into nife, but nife's
+[design/naming.md](../../design/naming.md), and the architect ratified every name. Nothing in the crate points back into nife, but nife's
 `xtask` copies its `src/lib.rs` into the patched standard library by path, which the move must
 change.
 
@@ -72,7 +72,7 @@ This lane ran each check in its own worktree, on this branch.
 | `cargo test -p entropy_contract` | 15 unit tests and 4 doctests pass |
 | `cargo clippy --all-targets` and `cargo doc`, warnings denied | no warning |
 | `python3 helpers/name_release.py --draft entropy_contract` | 19 names, every one ratified |
-| `helpers/lint_externalized_crates.py` | 0 hits; the crate's waiver is removed |
+| `helpers/lint_externalized_crates.py` | 0 hits; this branch removes the crate's waiver |
 | `script/lint`, `script/test` | in the pull request's checks |
 
 Not run, and so not claimed: the stranger test, mutation, `cargo-semver-checks` (a first release
@@ -120,7 +120,7 @@ readiness. The host tests cover the 8-, 32- and 256-byte draws the backends make
 Every public name meets the rules of [design/naming.md](../../design/naming.md) in force today: std
 spellings where std has the operation, units spelled out, no `doc(alias)` for an old spelling of
 this tree. No name holds an address, a mask or a register offset, and no source outside this tree
-spells any of them, so no alias is owed.
+spells any of them, so the crate owes no alias.
 
 | name | kind | status |
 |---|---|---|
@@ -184,13 +184,13 @@ Each is a two-way door, decided 2026-11-11 (UTC). Reversing any costs one pull r
 
 ## Recommendation
 
-Ready for review. The identity is frozen and every name is ratified; clearing the move remains.
+Ready for review. The architect froze the identity and ratified every name; clearing the move remains.
 The crate is a leaf, builds alone and proves; the move's real cost is the `xtask` copy, which one change for all fourteen copied crates pays.
 
 ## Decisions for the architect
 
-Ruled 2026-11-11 (UTC) on #3480: the identity is frozen at `INTERFACE_ID` 12, `VERSION` 1 and no
-magic, and the names are ratified, with `DEAD` renamed `BRING_UP_FAILED`.
+Ruled 2026-11-11 (UTC) on #3480: the architect froze the identity at `INTERFACE_ID` 12, `VERSION` 1
+and no magic, and ratified the names, with `DEAD` renamed `BRING_UP_FAILED`.
 
 Open: clear the move to `nifeos/entropy_contract`, with no tag and no publication. The clearance
 is the go for creating the repository.
