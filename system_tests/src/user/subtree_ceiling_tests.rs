@@ -27,13 +27,13 @@ const SPIN_STUB: &[u32] = &[0x0000_006F]; // j .  (jal x0, 0)
 const SPIN_STUB: &[u32] = super::x86_programs::SPIN;
 
 /// The root: room for the filled region and the sibling with pages to spare.
-const ROOT_PAGES: u64 = 512;
+const ROOT_PAGES: u64 = 1024;
 /// The filled region: more pages than every kind's ceiling together, so a ceiling refuses first.
-const FILLED_PAGES: u64 = 256;
+const FILLED_PAGES: u64 = 512;
 /// The sibling: one small child.
 const SIBLING_PAGES: u64 = 64;
 /// More attempts than any split child's ceiling, so a ceiling that fails to hold ends the loop.
-const ATTEMPTS: usize = 64;
+const ATTEMPTS: usize = 128;
 
 /// `invoke(slot, method, a0, a1)` through the real dispatcher.
 fn call(slot: u64, method: u64, a0: u64, a1: u64) -> Result<i64, Error> {

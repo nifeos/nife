@@ -1,7 +1,6 @@
 # Two ratchets' debt
 
-*Name: provisional, minted 2026-10-13 (UTC) by lane/ratchet-metrics, with the files and charts it
-defines. Naming is an architect's.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 *(Appendix of [the register](../register-of-measures.md). Stem provisional, minted on 2026-10-13
 (UTC) by lane/ratchet-metrics. `line-citations.csv`, its columns, its chart and

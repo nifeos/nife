@@ -822,13 +822,23 @@ needs_maintainer() {
 	else
 		echo "$ME: could not refresh origin/main, so the architect-surface scan is skipped this pass"
 	fi
+	# The open pull requests whose ruling stands (`architect-ruled`, no `held-by-lane`): a file a
+	# head carries byte for byte from one of them is not asked again (#3450, which carried #3434's
+	# ruled §130 (how the userspace clock service reads the x86 CMOS RTC) edit).
+	# Every merge base is read, not one (`--against`; #3416 and #3167 had two).
+	ruled=$(printf '%s' "$resp" | jq -r '.data.repository.pullRequests.nodes[]
+		| select([.labels.nodes[].name] | (index("architect-ruled") and (index("held-by-lane") | not)))
+		| "\(.number):\(.headRefOid)"')
 	for row in $rows; do
 		num=${row%%:*}
 		head=${row#*:}
 		git cat-file -e "$head^{commit}" 2>/dev/null || continue
-		base=$(git merge-base origin/main "$head" 2>/dev/null) || continue
+		set --
+		for pair in $ruled; do
+			set -- "$@" --ruled "$pair"
+		done
 		rc=0
-		out=$(git diff --unified=1000000 "$base" "$head" | python3 "$RULES_PY" --base-rev "$base" 2>/dev/null) || rc=$?
+		out=$(python3 "$RULES_PY" --against origin/main "$head" "$@" 2>/dev/null) || rc=$?
 		[ "$rc" = 0 ] && [ -n "$out" ] || continue
 		surface=$(printf '%s' "$surface" | jq -c --arg n "$num" --arg o "$out" '. + {($n): ($o | split("\n") | map(select(. != "")))}')
 	done

@@ -29,7 +29,7 @@
 //! - `SYS_EXIT` and `SYS_EXIT_THREAD` are never drawn; either would end the run.
 //! - It never touches the memory it maps; the page oracle reads the page tables instead.
 //!
-//! Name: provisional (milestone 779 (fuzz the surface a confined process can reach)'s lane, 2026-10-06 UTC).
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2).
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68 (code-quality gates)'s ratchet tracks

@@ -1,5 +1,7 @@
 # The x86_64 port: the scheduler and real processes
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
 the trap-path split, `TSS.RSP0`, the self-IPI, and the portable-code bugs a third architecture
 found. It exists to verify or challenge the main page. A reader who only needs to build, boot or

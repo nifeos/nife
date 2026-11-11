@@ -1,5 +1,7 @@
 # `uefi_loader`: a score measured over a file nothing compiled
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 This appendix of [notes/mutation-testing.md](../mutation-testing.md) holds the 2026-09-04 finding
 that `uefi_loader`'s 15% measured a file nothing compiles, and the unviable mutant left unviable on
 purpose.

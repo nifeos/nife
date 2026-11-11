@@ -1,5 +1,7 @@
 # The network stack: what the outbound gates prove, and three fixes they forced
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/net.md`](../net.md), which is the page to read. This file holds what phase
 B's gates prove, the ephemeral-port fix, the RX-poll lost wakeup, and the UDP gate's move off the
 host resolver. It exists to verify or challenge the main page. A reader who only needs to use the

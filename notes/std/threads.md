@@ -1,5 +1,7 @@
 # `std` threads on nife
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *Written 2026-10-10 (UTC) by milestone 812 (`std::thread::spawn` runs real threads in one address
 space)'s lane. The kernel side is in `notes/processes.md`, `notes/futex.md` and
 `notes/thread-pointer.md`; this note is the `std` PAL.*

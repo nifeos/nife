@@ -1,6 +1,6 @@
 # The fifty probes: the recipe, the passes and the four failure classes
 
-*Name: provisional.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 An appendix to [notes/crates-io-on-nife.md](../crates-io-on-nife.md), moved there on 2026-10-11
 (UTC) under §212 (a prose budget). It holds the measurement itself: how the headline split was corrected twice, the

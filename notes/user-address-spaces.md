@@ -164,8 +164,8 @@ registry when it is built and leaves only when it drops, and holds one entry her
 cannot fill while a space that wants an entry exists. That is why `register_bound_address_space`
 panics on a full table rather than handing every kernel spawn path an error it could never act on.
 The revocation registry's own constant is the thread ceiling plus headroom, so the argument follows
-the thread ceiling when it moves. At 288
-slots the table is 21,904 bytes of `.bss` on all three architectures (`registry_footprint`): 72 bytes
+the thread ceiling when it moves. At 1,056
+slots the table is 80,272 bytes of `.bss` on all three architectures (`registry_footprint`): 72 bytes
 an entry and a 4-byte generation each. Nothing walks the empty slots, because
 `generational_table::Table` bounds every sweep by its highest live slot.
 

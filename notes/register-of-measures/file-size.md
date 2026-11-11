@@ -1,5 +1,7 @@
 # Rust file size
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *(Appendix of [the register](../register-of-measures.md). Stem provisional, minted by milestone 841
 (a ratchet on Rust file length, and its dashboard row) on 2026-10-08.)*
 

@@ -1,5 +1,7 @@
 # The core harnesses: capabilities, memory, paging and IPC
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/verification.md](../verification.md), which keeps one line per crate. This
 file holds the harness tables and the reasoning for the capability core, the untyped-region
 accounting, the paging arithmetic, the frame allocator, the device-tree leaves, the IPC rendezvous,
