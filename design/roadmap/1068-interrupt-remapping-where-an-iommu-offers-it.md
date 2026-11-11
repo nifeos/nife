@@ -1,7 +1,7 @@
 ---
 status: NOT-STARTED
 raised: 2026-11-10
-milestone_dependencies: 317, 1065
+milestone_dependencies: 317
 decision_dependencies: 319
 machine_requirements: none
 specific_machine: none
@@ -61,9 +61,8 @@ domain, and the bus server writes only what the table lets through.
 2. riscv64: an MSI page table per device context, `msiptp` in flat mode, with one entry per granted
    interrupt file. Effort: S to M (a guess).
 3. x86_64 AMD-Vi: its interrupt remapping table, under QEMU's `amd-iommu`. Effort: S to M (a guess).
-4. aarch64: a device's MSIs translate through its own ITS table, on the GICv3 ITS driver that
-   milestone 1065 (MSI replaces the interrupt lines on aarch64 and riscv64) builds. This step
-   builds no second ITS driver, and its effort is counted in 1065.
+4. aarch64: the GICv3 ITS (command queue, device table, `MAPD` and `MAPTI`), so a device's MSIs
+   translate through its own table. Effort: L (a guess); it is the bill milestone 317 names as owed.
 5. A test on each architecture in the shape of milestone 202 (every confinement test is a ritual
    until somebody breaks the confinement and watches it fail). A component holding a device's
    MSI-X table page aims an interrupt at a vector it was never granted, and the hardware refuses it.

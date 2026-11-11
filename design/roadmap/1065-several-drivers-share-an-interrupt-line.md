@@ -1,7 +1,7 @@
 ---
 status: NOT-STARTED
 raised: 2026-11-10
-milestone_dependencies: none
+milestone_dependencies: 1068
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
@@ -53,8 +53,9 @@ duplicates milestone 1068 (the kernel turns interrupt remapping on where an IOMM
 
 - Until MSI lands, the kernel refuses with an error a bind on an interrupt line that already has a
   driver, instead of silently taking the line from the first driver.
-- aarch64: MSI goes through the GICv3 ITS. One ITS driver serves this milestone and 1068's step 4
-  remapping, and this milestone builds it. This milestone does not build GICv2m.
+- aarch64: MSI goes through the GICv3 ITS driver that milestone 1068 (the kernel turns interrupt
+  remapping on where an IOMMU offers it) builds in its step 4. One driver serves both milestones,
+  and this milestone builds neither a second ITS driver nor GICv2m.
 - riscv64: MSI goes through the AIA (APLIC and IMSIC, `-machine virt,aia=aplic-imsic`), which
   replaces the PLIC path. It is the same driver milestone 143 (silicon IOMMU) lists, because an
   RVA23 part does not speak PLIC.
@@ -62,7 +63,7 @@ duplicates milestone 1068 (the kernel turns interrupt remapping on where an IOMM
   interrupt. nife builds them only if a supported board proves to have no usable MSI controller.
   Nobody has checked yet whether argon or radon has one.
 
-Effort: the ITS L, the AIA L to XL (guesses). With MSI first, the runner move to virtio-pci totals
+Effort: the AIA L to XL, and allocating vectors through 1068's ITS on aarch64 (guesses). With MSI first, the runner move to virtio-pci totals
 XL (a guess).
 
 ## The work, in order
@@ -72,8 +73,7 @@ XL (a guess).
    change records its semantics in `design/decisions/`, and its name ships provisional.
    The test legs' entropy driver binds a line that already has a driver today (`notes/entropy.md`),
    so this step meets it first.
-2. The GICv3 ITS driver on aarch64 (command queue, device table, `MAPD` and `MAPTI`) behind
-   `alloc_msi_vector`, which then answers `Some`.
+2. On aarch64, `alloc_msi_vector` allocates through 1068's ITS driver and then answers `Some`.
 3. The AIA on riscv64 behind `alloc_msi_vector`.
 4. A system test on aarch64 and riscv64 in which two PCI functions that swizzle onto one INTx line
    each receive their interrupts on their own vectors.
