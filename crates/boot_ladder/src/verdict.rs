@@ -375,7 +375,10 @@ mod tests {
         let both = 1 << check("mapping");
         let forged = Tally::from_packed(both | (both << PACKED_FIELD_BITS));
         assert_eq!(forged.to_words(), [0, both, 0]);
-        assert_eq!(Tally::from_packed(u64::MAX).to_words()[1].count_ones() as usize, CHECKS);
+        assert_eq!(
+            Tally::from_packed(u64::MAX).to_words()[1].count_ones() as usize,
+            CHECKS
+        );
     }
 
     /// A subject line reads back as the thread it names, and nothing else does.
@@ -395,7 +398,10 @@ mod tests {
         assert_eq!(subject_thread(&line), Some(8_589_934_611));
         assert_eq!(subject_thread("  user thread 19 killed: Data abort"), None);
         assert_eq!(subject_thread("nife self-test subject: thread x"), None);
-        assert!(!line.contains(SELF_TEST), "a subject line is not a verdict line");
+        assert!(
+            !line.contains(SELF_TEST),
+            "a subject line is not a verdict line"
+        );
     }
 
     /// A check has an outcome once it is recorded, whatever the outcome, and recording one check

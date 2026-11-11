@@ -257,8 +257,14 @@ nife capability shell. naming a resource in a command IS granting it.
 /// The self-test's named kills leave nothing behind for the kill check or the shuffle test.
 #[test]
 fn the_self_tests_named_kills_are_excluded_and_nothing_else_is() {
-    assert_eq!(killed_thread("  user thread 19 killed: Data abort"), Some(19));
-    assert_eq!(killed_thread("  user thread 16 killed: vector 14 (page fault)"), Some(16));
+    assert_eq!(
+        killed_thread("  user thread 19 killed: Data abort"),
+        Some(19)
+    );
+    assert_eq!(
+        killed_thread("  user thread 16 killed: vector 14 (page fault)"),
+        Some(16)
+    );
     assert_eq!(killed_thread("a user thread is killed: not a report"), None);
     let kept = without_deliberate_kills(NAMED_KILLS);
     assert!(!kept.contains("killed: Data abort"), "{kept}");
