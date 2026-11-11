@@ -500,8 +500,8 @@ source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev
 
 [[package]]
 name = "file_allocation_table"
-version = "0.1.0"
-source = "git+https://github.com/nifeos/file_allocation_table?rev=771e668263f8ee12bd0685233257c9e68422a719#771e668263f8ee12bd0685233257c9e68422a719"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/file_allocation_table?rev=9b3eac1cdbb19cc6668e3346296c8cee87e32214#9b3eac1cdbb19cc6668e3346296c8cee87e32214"
 
 [[package]]
 name = "filesystem_contract"
