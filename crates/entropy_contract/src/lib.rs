@@ -1,8 +1,7 @@
 //! **The entropy contract** (entropy is a capability): the request and
 //! reply that carry random bytes out of the entropy service, defined once for the service, its
-//! clients, the standard library's platform abstraction layer and the kernel-side tests. One
-//! process holds the virtio-rng device; a client holds an endpoint that names no device, `CALL`s with a byte count and gets the bytes in
-//! the reply words, at most [`MAXIMUM_BYTES`] per round trip. No shared page, against the usual
+//! clients and their tests. One process holds the entropy device; a client holds an endpoint that
+//! names no device, `CALL`s with a byte count and gets the bytes in the reply words, at most [`MAXIMUM_BYTES`] per round trip. No shared page, against the usual
 //! bulk rule, because random bytes are worth exactly that nobody else has seen them, and no byte is
 //! transformed, so the claim stays "these are the device's bytes".
 
@@ -38,11 +37,11 @@ pub const MAXIMUM_BYTES: u64 = 8;
 pub const OPERATION_SHIFT: u32 = 56;
 
 /// The protocol's version, one for the operation set and the reply shape together: one constant
-/// per wire format. A break bumps this and owes a dated ledger entry; an addition (a new opcode, an
-/// optional field) owes no bump. A program declares it beside [`INTERFACE_ID`]; no peer checks it
+/// per wire format. A break bumps this; an addition (a new opcode, an optional field) owes no
+/// bump. A program declares it beside [`INTERFACE_ID`]; no peer checks it
 /// at bind yet (see this crate's `BUGS`).
 ///
-/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its version.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 12, naming the entropy service
@@ -50,7 +49,7 @@ pub const VERSION: u32 = 1;
 /// format change is a new version, never a new number. The project that links these crates keeps the table of numbers and holds it to that rule. A
 /// program declares the pair of this id and [`VERSION`].
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+/// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its interface identity.
 pub const INTERFACE_ID: u64 = 12;
 
 /// **Give me this many random bytes.** The only operation. The byte count is clamped to
@@ -82,7 +81,7 @@ pub const fn requested_bytes(request_word: u64) -> u64 {
 
 /// The word the entropy service SENDs on its readiness endpoint once the device is up and its
 /// first bytes are in hand. ASCII `RNGUP`, so a hex dump of a report reads. A bring-up failure
-/// reports [`DEAD`]` | step` instead, the same shape every driver here uses.
+/// reports [`DEAD`]` | step` instead, a shape any driver can share for its own bring-up report.
 ///
 /// **"Its first bytes are in hand" is a claim about the bytes, not about the handshake**: a service
 /// holding nothing, or a bufferful of zeros, must not send it, and [`readiness`] is what makes the
@@ -92,7 +91,7 @@ pub const READY: u64 = 0x_52_4E_47_55_50;
 /// **The word a bring-up failure reports instead of [`READY`]**, with the step that failed in its
 /// low bits: `0xDEAD_0000_0000_0000 | step`. Named here rather than spelled in each driver because
 /// it is the other half of the readiness contract, and because a reader decoding a report word
-/// should not have to find the literal in three programs to know what it means.
+/// should not have to find the literal in each driver to know what it means.
 pub const DEAD: u64 = 0xDEAD_0000_0000_0000;
 
 /// **The service asked and got nothing at all**: the device never answered inside the driver's own
@@ -116,8 +115,7 @@ pub const fn bring_up_failure(step: u64) -> u64 {
 /// when at least one of them is nonzero; otherwise a [`bring_up_failure`] naming which of the two
 /// shared steps failed. Every backend calls this rather than composing the word itself.
 ///
-/// `first_bytes` is an iterator because the three backends hold their first bufferful in three different
-/// places. An empty iterator is [`STEP_NO_FIRST_BYTES`], a different answer from a bufferful of
+/// `first_bytes` is an iterator because backends hold their first draw in different places. An empty iterator is [`STEP_NO_FIRST_BYTES`], a different answer from a bufferful of
 /// zeros. **Refusing an all-zero draw is a deliberate correctness claim about a random variable**;
 /// see this crate's `BUGS`.
 ///
@@ -278,8 +276,7 @@ mod tests {
         assert_eq!(out[8..], [2, 4, 6, 8, 10, 12, 14, 16]);
     }
 
-    /// A short answer on the second trip refuses the whole fill, which is what the four programs'
-    /// copies of `random16` did before this existed.
+    /// A short answer on the second trip refuses the whole fill.
     #[test]
     fn a_short_answer_is_a_refusal() {
         let mut trip = 0;
@@ -290,7 +287,7 @@ mod tests {
         assert_eq!(got, None);
     }
 
-    /// No capability: the kernel's `NoSuchSlot` in the count register, and no second call.
+    /// No capability: an empty slot's error in the count register, and no second call.
     #[test]
     fn a_missing_endpoint_is_a_refusal_after_one_call() {
         let mut calls = 0;
@@ -351,8 +348,8 @@ mod tests {
 
     /// **The property the whole error story rests on**: no count the service can send collides with
     /// any error the kernel can return, so "no entropy capability" is distinguishable from "no
-    /// entropy" without a probe. `abi::Error` is -1..-8; those are the words a `CALL` on an empty
-    /// slot puts in the first register.
+    /// entropy" without a probe. A kernel that answers a failed `CALL` with an error number from -1
+    /// to -8 puts one of these words in the first register.
     #[test]
     fn a_kernel_refusal_is_never_mistaken_for_a_byte_count() {
         for byte_count in 0..=MAXIMUM_BYTES {
@@ -377,7 +374,7 @@ mod tests {
         assert_eq!(out, [0x01, 0x02, 0x03, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA]);
     }
 
-    /// **The defect this function exists to prevent** (2026-09-04, radon): a service holding a
+    /// **The defect this function exists to prevent**: a service holding a
     /// bufferful of zeros must not be able to report [`READY`]. Asserted against every width a
     /// backend actually draws, because the predicate is "no nonzero byte anywhere" rather than
     /// "the first word is zero", and a check written the second way would pass this test at 8
