@@ -3998,6 +3998,9 @@ helpers/scope-merge-base-selftest.sh >/dev/null
 echo "==> a pull request skips the heavy gates unless it carries full-ci"
 # lint-scope: code
 python3 helpers/full_ci.py --selftest >/dev/null
+# A draft's `lint` fails and a ready one's runs the real lint: the draft gate's state step under a
+# stub gh, and the lint job's own conditions evaluated for each event (helpers/draft-lint-selftest.sh).
+helpers/draft-lint-selftest.sh >/dev/null
 
 # A magic or a public ABI number that moves owes its version constant in the same change (milestone
 # 956 step 4, calef's ruling of 2026-10-29 UTC, PR #2852, question 5). The selftest drives the rules

@@ -125,7 +125,8 @@ fi
 # skipped required check as passed, so a pull request armed the moment it is marked ready enters the
 # queue on the draft's skip, before the ready run's `lint` has started (#3320 and #3427, 2026-11).
 # The newest `lint` check run on the head decides: success arms; skipped, failed or cancelled
-# refuses; unfinished refuses only when a skipped one also sits on this head, because then GitHub
+# refuses (a draft's `lint` fails with "draft: lint not run", so right after `ready_for_review`
+# the newest is that failure until the ready run's `lint` exists); unfinished refuses only when a skipped one also sits on this head, because then GitHub
 # may already count the check as passed. A head with no `lint` yet (just pushed, not a draft) arms:
 # GitHub waits for a required check that has not posted, and that is what lets `script/push
 # --requeue` re-arm right after its push.
@@ -147,7 +148,7 @@ unfinished-after-skip)
 	exit 1
 	;;
 *)
-	echo "$me: NOT ARMED. the newest lint check on #$pr's head $head is $lint_verdict. Arm a head whose lint passed." >&2
+	echo "$me: NOT ARMED. the newest lint check on #$pr's head $head is $lint_verdict. Arm a head whose lint passed; a draft's lint fails on purpose (\"draft: lint not run\"), so a pull request marked ready a moment ago waits for its ready run's lint." >&2
 	exit 1
 	;;
 esac

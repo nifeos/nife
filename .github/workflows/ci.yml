@@ -335,6 +335,8 @@ jobs:
       pull-requests: read
     outputs:
       run: ${{ steps.state.outputs.run }}
+      # `true` only for a pull request that is a draft right now; the `lint` job reads it.
+      draft: ${{ steps.state.outputs.draft }}
       prose: ${{ steps.prose.outputs.prose }}
       prose_tests: ${{ steps.prose.outputs.prose_tests }}
       comments: ${{ steps.prose.outputs.comments }}
@@ -375,6 +377,7 @@ jobs:
                      --repo "$GITHUB_REPOSITORY" --json isDraft -q .isDraft 2>/dev/null || true)"
           if [ "$draft" = "true" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "draft=true" >> "$GITHUB_OUTPUT"
             echo "==> pull request is a draft right now; skipping the suite"
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
@@ -1673,7 +1676,17 @@ jobs:
     name: lint
     runs-on: ubuntu-26.04
     needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.run != 'false' }}
+    # **A draft's `lint` fails; it is never skipped** (the architect's ruling of 2026-11-11 (UTC)
+    # on question B of the proposal "lint fails in the queue after passing on the pull request").
+    # GitHub counts a skipped required check as passed, so a draft armed the moment it was marked
+    # ready entered the queue on its draft run's skip before the ready run's `lint` began (#3320,
+    # #3427). In a draft this job runs one step that fails with "draft: lint not run", and every
+    # later step skips itself, so no draft can satisfy the required check whatever arms it. The
+    # ready run, which `ready_for_review` starts, runs the real lint. A draft's red `lint` is
+    # expected: helpers/ci-failing.sh skips drafts, and helpers/ci-failing.jq ignores a run that
+    # finished before the pull request was last marked ready. helpers/draft-lint-selftest.sh
+    # evaluates this job's conditions for a draft and for a ready pull request.
+    if: ${{ !cancelled() && (needs.gate.outputs.run != 'false' || needs.gate.outputs.draft == 'true') }}
     # 25 minutes is the 20-minute budget plus margin (calef, 2026-10-03
     # UTC). Any derivation above that argues for a longer bound predates it and describes a job
     # that no longer fits; `helpers/job-budget.py` is the rule and `script/lint` holds it.
@@ -1681,6 +1694,12 @@ jobs:
     steps:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+      - name: A draft runs no lint
+        if: needs.gate.outputs.draft == 'true'
+        run: |
+          echo "::error title=draft: lint not run::This pull request is a draft. Mark it ready and its ready run lints it."
+          echo "draft: lint not run"
+          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           # `script/lint` runs `script/roadmap --check`, whose merged-branch check reads
@@ -1821,7 +1840,7 @@ jobs:
           name: hang-evidence-${{ github.job }}-${{ strategy.job-index }}
           path: target/hang-evidence/
       - name: Check the job's wall time against its budget
-        if: always()
+        if: always() && needs.gate.outputs.draft != 'true'
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
 
   fastpath-footprint:
