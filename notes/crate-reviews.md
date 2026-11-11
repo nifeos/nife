@@ -238,33 +238,24 @@ attributions is the module documentation of `motorcomm_physical_layer_device`.
 | `CGR_RX_CLK_EN` (bit 12), `ESC1R_SLEEP_SW` (bit 15) | `motorcomm.c` only, `YT8521_CGR_RX_CLK_EN` and `YT8521_ESC1R_SLEEP_SW`, which `yt8531_config_init` clears for `motorcomm,keep-pll-enabled` and `motorcomm,auto-sleep-disabled` |
 | `MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID` (`0x4f51e91b`) | `motorcomm.c`'s `PHY_ID_YT8531`, matched with `PHY_ID_MATCH_EXACT`; `ytphy.c`'s `ytphys` and `mcommphy.c`'s `mcommphys` match the OUI and model |
 
-Names a later rule reaches. Both register identifiers stand: each says what its register is, and
-FreeBSD's spelling supports "clock gating" and "sleep control 1". Their aliases do not meet
-`design/naming.md` (Registers and constants, and the alias rule before a first release):
+Both register constants carry OpenBSD's spelling and FreeBSD's as aliases, and no Linux spelling or
+earlier spelling of this tree, as `design/naming.md` requires before a first release.
 
-| item | alias now | recommended alias set |
-|---|---|---|
-| `MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER` | `clock gating register`, `EXT_CLK_GATE`, `YT8521_CLOCK_GATING_REG` | `clock gating register`, `YT8511_EXT_CLK_GATE`, `PHY_CLOCK_GATING_REG` |
-| `MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER` | `extended register, sleep control 1`, `EXT_SLEEP_CTRL`, `YT8521_EXTREG_SLEEP_CONTROL1_REG` | `extended register, sleep control 1`, `YT8511_EXT_SLEEP_CTRL`, `PHY_SLEEP_CONTROL1_REG` |
+Result of `script/crate-standalone`. Clean, with Kani, on 2026-11-11 (UTC). It runs none of the
+template's naming and prose gates.
 
-`EXT_CLK_GATE` and `EXT_SLEEP_CTRL` are this tree's earlier spellings, which a crate carries none
-of before its first release, and the OpenBSD spelling is the whole one. Linux's spelling is cited
-only where no BSD source names the thing, and both BSD sources name these two. The doc comments'
-openings follow the same choice.
-
-Result of `script/crate-standalone`. Clean.
-
-Names. [crate-reviews/designware-ethernet.md](crate-reviews/designware-ethernet.md) has them. The
-template's checks find nothing, two ratified groups wait for the architect, and the parameters
-carry spelled-out names, provisional.
+Names. [crate-reviews/designware-ethernet.md](crate-reviews/designware-ethernet.md) has them, with
+the template gates' findings at the commit the moved repositories pin: 91 register-rule, 2
+spelled-out and 25 acronym findings. The parameters carry spelled-out names, provisional.
 
 Outstanding before the move.
 
 | item | owner |
 |---|---|
-| The two alias sets above. | architect |
+| The architect's clearance of this review. | architect |
+| The 118 template gate findings, in this tree: a rename of a ratified public name goes to the architect as one table; private names, parameters, tests and doc comments are the maintainer's provisional calls. | a rename lane |
 
-Recommendation. Ready for review once the architect rules on the two alias sets.
+Recommendation. Ready for review and clearance; the move waits for the template gates.
 
 ## `designware_mobile_storage`, step 8
 
@@ -309,24 +300,26 @@ Proofs. Nine harnesses. All nine prove and all nine patches fail.
 
 License. `MIT OR Apache-2.0`; nothing adapted. No quotation of a GPL source remains.
 
-Result of `script/crate-standalone`. Clean.
+Result of `script/crate-standalone`. Clean, with Kani, on 2026-11-11 (UTC). It runs none of the
+template's naming and prose gates.
 
 Provenance. Milestone 1019 items 1, 7 and 11 stand done for this crate: no comment reproduces node text and
 every vendor claim links the revision it holds at, checked against the fetched files.
 
 Names. The six groups of older ratified names that later rules reached have new, ratified names.
-The parameters carry spelled-out names, provisional.
+The parameters carry spelled-out names, provisional. The template gates at the commit the moved
+repositories pin find 8 register-rule, 7 spelled-out and 28 acronym findings, listed in the package.
 
 Outstanding before the move.
 
 | item | owner |
 |---|---|
-| Four decisions, listed in the package. | architect |
+| Two decisions, listed in the package: `CLOCK_PARENT_MASK` and the clearance. | architect |
+| The 43 template gate findings, in this tree. | a rename lane |
 | The PMIC reset path (198 high and 297 low counts at 49.5 MHz) has not run on a board; the README says so. | maintainers (bench) |
-| Mark milestone 1019 items 7 and 11 done for this crate. | maintainer |
 | `repository` in the manifest, the tag, the `Name:` blocks, the stranger test. | move lane |
 
-Recommendation. Ready for review.
+Recommendation. Ready for review and clearance; the move waits for the template gates.
 
 ## `block_roster_contract`, the first contract crate
 
@@ -385,9 +378,9 @@ with no Kani harness.
 | `generational_table` | 4 | cleared to move; repository exists |
 | `non_volatile_memory_express` | 5 | cleared to move; repository exists |
 | `e1000e` | 6 | cleared to move; repository exists |
-| `designware_ethernet` | 7 | two alias sets for the architect |
+| `designware_ethernet` | 7 | ready for clearance; the move waits for the template gates |
 | `designware_mobile_storage` | 8 | cleared to move; repository exists |
-| `jh7110_clock_and_reset` | 10 | blocked by the unrun bench check |
+| `jh7110_clock_and_reset` | 10 | one name and the clearance for the architect; the move waits for the template gates |
 | `block_roster_contract` | contract | ready for review |
 | `counter_frequency_contract` | contract | blocked by its identity value and three text edits |
 | `entropy_contract` | contract | names and identity for the architect; [package](crate-reviews/entropy-contract.md) |

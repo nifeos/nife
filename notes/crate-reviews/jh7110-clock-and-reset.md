@@ -111,12 +111,15 @@ part of a Rust signature's compatibility, so the maintainer rules them, pending 
 
 ## Naming rules
 
-The template's checks, run with `--manifest` over `src/*.rs`
-(`vendor/crate-workflows/helpers/`):
+The template's checks at the commit the moved crate repositories pin (`cd1b484`), run as its check
+job runs them over the tree `script/crate-move --dry-run` stages:
 
 | rule | result |
 |---|---|
-| spelled-out words (`spelled_out.py`) | 0 findings. The eight private `SYSCLK_SDIO*`, `SYSRST_SDIO*` and `AONCLK_GMAC0_TX` constants mirror the dt-binding identifiers and now open their doc comment with `(NAME, source)` and carry a `doc(alias)` of the binding's spelling. |
+| spelled-out words (`spelled_out.py`) | 7 findings. The private `SYSCLK_SDIO*`, `SYSRST_SDIO*` and `AONCLK_GMAC0_TX` constants open their doc comment with `(NAME, source)`, and the gate keeps no source spelling on an integer constant. |
+| register rules (`register_names.py`) | 8 findings: five `len` and `size` fields with no unit, the public field `PowerManagementChipBus::power_management_chip_address` (an I2C bus address, with no `bus` qualifier) and two test names that say `addresses`. |
+| acronyms in prose (`prose_acronyms.py`) | 28 findings, each an acronym in a doc comment or the README not expanded at its first use. |
+| README prose caps and passives | pass. |
 | units spelled out (`unit_symbols.py`) | 0 findings in 456 names. The checker reads suffixes only. |
 | question shape (`question_shape.py`) | 0 findings. |
 | British spelling | 0 findings. |
@@ -141,12 +144,14 @@ and decoder-needing words. Renamed, all private:
 
 Every patch still applies and fails its own harness.
 
-Borderline private names, left as they are for the architect:
+Borderline private names, kept as they are: decided by the maintainer, provisional (2026-11-11 UTC),
+since none is public. The bus standards stay abbreviated only inside a device-tree clock or reset
+id, as ruled on 2026-11-05 (UTC). The template gate's seven findings above are the rename lane's:
 
 | names | why |
 |---|---|
 | `SYSCLK_*`, `SYSRST_*`, `AONCLK_*`, `AONRST_*`, `STGCLK_*` (about 20 constants) | `CLK` and `RST` are clipped, but each is a dt-binding identifier minus its `JH7110_` prefix, and the doc comment cites the binding. Only the eight the gate flagged are in the kept form. |
-| the `PLL`, `TRNG`, `AHB`, `AXI`, `APB`, `PTP`, `GTXC`, `RMII` and `RTX` components of constants, tests and fields | each is a hardware term of art that the word list does not name; the acronym test (nobody says the expansion as a phrase) probably keeps `AHB`, `AXI`, `APB` and `TRNG`. |
+| the `PLL`, `TRNG`, `AHB`, `AXI`, `APB`, `PTP`, `GTXC`, `RMII` and `RTX` components of constants, tests and fields | each is a hardware term of art that the word list does not name, and each sits in a binding's id. |
 | `AONCLK_GMAC0_TRANSMIT_PARENT_RMII_RTX` | `RMII_RTX` is the mainline clock's own name, quoted. |
 | the locals `dacpd` and `dsmpd` | register-field names the vendor PLL code uses; nothing read here expands them. |
 
@@ -192,36 +197,40 @@ What I verified and what I did not, on 2026-11-06 (UTC):
 
 ## Result of `script/crate-standalone`
 
-Clean on `main` before the edits and clean after them (manifest, files, citations, names, the build
-on 1.88 for the host and the three bare-metal targets, all nine harnesses and all nine
-falsifications). `cargo test -p jh7110_clock_and_reset` passes 45 tests and 2 doctests. The tests
-of `machine_discovery` and `jh7110_watchdog` pass, and the kernel checks for `riscv64imac` with and
-without `soak_test`.
+Clean on 2026-11-11 (UTC), with Kani: the manifest, files, citations, names, the build on 1.88 for
+the host and the three bare-metal targets, all nine harnesses and all nine falsifications. It runs
+none of the template's naming and prose gates above. `cargo test -p jh7110_clock_and_reset` passes
+45 tests and 2 doctests.
 
 ## Recommendation
 
-Ready for your review and clearance, with one limit stated in the README: the PMIC reset path has
-not run on a board.
+Ready for the architect's review and clearance, with one limit stated in the README: the PMIC reset
+path has not run on a board. The move waits for the template gates above.
 
 ## Outstanding before the move
 
 | item | owner |
 |---|---|
-| Decisions 1 to 3 below. | architect |
-| Mark milestone 1019 items 7 and 11 done for this crate. | maintainer |
-| The 13 private unit-symbol names, and the exemption for `SEC` meaning security. | unit-suffix sweep lane |
+| Decisions 1 and 2 below. | architect |
+| The 43 template gate findings above, in this tree: a rename of a ratified public name goes to the architect as one table; private names, parameters, tests and doc comments are the maintainer's provisional calls. | a rename lane |
 | Run the PMIC reset path on a board, then lift the README's limitation. | maintainers, at the bench |
 | `repository` in the manifest, the `v0.1.0` tag, and stripping the `Name:` blocks. | move lane |
 | The stranger test in the new repository. | move lane |
 
 ## Decisions for the architect
 
-1. Clear now, or wait for the board run. Recommendation: clear now, with the README's limitation
-   standing; the proofs and host tests do not depend on the board, and the board run follows the
-   move. Background: the crate computes the I2C timing (198 high and 297 low counts at 49.5 MHz)
-   that makes a VisionFive 2 reset itself, and no board has run that timing yet.
-2. Ratify `CLOCK_PARENT_MASK`. Recommendation: ratify. Background: the maintainer chose it over
-   three alternatives on 2026-11-05 and left it provisional for you.
-3. Keep the VisionFive 2 board items (the PMIC reset, the PMIC bus plan, the I2C5 clock chain) in
-   this chip crate. Recommendation: keep them, as the README says they are board facts. Background:
-   moving them to a board crate later would break every caller.
+1. Ratify `CLOCK_PARENT_MASK`. Recommendation: ratify. The maintainer chose it over three
+   alternatives on 2026-11-05 (UTC) and left it provisional for the architect.
+2. Clear the review now, with the board run left as the README's stated limitation. Clearing approves
+   creating `nifeos/jh7110_clock_and_reset`; the move itself waits for the template gates.
+   Recommendation: clear now. The proofs and host tests do not depend on a board, and the board run
+   can follow the move.
+
+Decided by the maintainer, provisional (2026-11-11 UTC), and reversible until the first
+publication:
+
+- The VisionFive 2 board items (the PMIC reset register and bit, the PMIC bus plan, the I2C5 clock
+  chain) stay in this chip crate, where the README names them as one board's facts. A board crate
+  can take them before 0.1.0 publishes; after that, moving them breaks every caller.
+- `Step`, `BringUpReport`, `PowerManagementChipBus`, `DevicePlan` and `WindowLocation` stay
+  `#[non_exhaustive]`, as the API section says.
