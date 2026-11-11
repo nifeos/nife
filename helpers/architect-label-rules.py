@@ -1248,7 +1248,7 @@ def drop_ruled(findings, head, base, ruled, blob):
     its bases: then this diff of the file is that diff of the file, byte for byte, and the ruling
     read it. The test is the whole file, so a branch that changes the ruled file any further still
     fires on it. Measured 2026-11-11 (UTC): #3450 merged #3434's branch and was held for #3434's
-    §130 (how the kernel-resident CMOS RTC reaches the userspace clock service) edit, which #3434's
+    §130 (how the userspace clock service reads the x86 CMOS RTC) edit, which #3434's
     ruling covers; both blobs match. `blob(rev, path)` is `git_blob`, injected so the selftest needs
     no repository.
     """
