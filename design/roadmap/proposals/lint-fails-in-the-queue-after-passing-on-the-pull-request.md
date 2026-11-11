@@ -80,8 +80,8 @@ many lanes append to each:
 Each lane's addition fits. Two additions do not, and only the queue ever sees the pair.
 
 The fix: move the per-crate text of `notes/crate-reviews.md` into the per-crate files beside it in
-`notes/crate-reviews/`, leaving an index with a line per crate, and give milestone 857 (crates released on their own)'s block an
-appendix for its record of rulings. Each change is a document edit, reversible, and leaves the cap
+`notes/crate-reviews/`, leaving an index with a line per crate. Give the block of milestone 857 (crates
+released on their own) an appendix for its record of rulings. Each change is a document edit, reversible, and leaves the cap
 as it is. A file that every lane appends to should not sit within a lane's addition of a cap.
 
 ### 2. One pull request's check meets another's content
