@@ -163,13 +163,17 @@ def git(*args, cwd=None):
 
 def changed_files(base, cwd=None):
     """Each changed path with its base and head text. A file git reads as moved is judged against
-    the text it had at its old path, so moving a crate's directory is not a removal of its magic."""
+    the text it had at its old path, so moving a crate's directory is not a removal of its magic.
+    A crate whose manifest is gone left the tree for a repository of its own: its values did not
+    move here, and its own identity test guards them there, so none of its files is judged."""
     rows = (git('diff', '--name-status', '-M', base, '--', 'crates', cwd=cwd) or '').splitlines()
     files = {}
     for row in rows:
         fields = row.split('\t')
         old_path, path = fields[1], fields[-1]
         if not judged(path) and not judged(old_path):
+            continue
+        if not os.path.exists(os.path.join(cwd or '.', crate_of(path), 'Cargo.toml')):
             continue
         old = git('show', f'{base}:{old_path}', cwd=cwd)
         head = os.path.join(cwd or '.', path)
@@ -274,6 +278,7 @@ def selftest():
                            check=True, capture_output=True)
         sh('init', '-q')
         os.makedirs(os.path.join(scratch, 'crates/x/src'))
+        open(os.path.join(scratch, 'crates/x/Cargo.toml'), 'w').write('[package]\nname = "x"\n')
         lib = os.path.join(scratch, 'crates/x/src/lib.rs')
         open(lib, 'w').write(magic_old)
         sh('add', '.')
@@ -285,6 +290,18 @@ def selftest():
         open(lib, 'w').write('pub const MAGIC: u64 = 2;\npub const VERSION: u32 = 2;\n')
         sh('commit', '-qam', 'and its version')
         assert not problems(changed_files(base, cwd=scratch)), 'with its version it passes'
+        os.makedirs(os.path.join(scratch, 'crates/y/src'))
+        open(os.path.join(scratch, 'crates/y/Cargo.toml'), 'w').write('[package]\nname = "y"\n')
+        open(os.path.join(scratch, 'crates/y/src/lib.rs'), 'w').write(magic_old)
+        sh('add', '.')
+        sh('commit', '-q', '-m', 'a second crate')
+        base = git('rev-parse', 'HEAD', cwd=scratch).strip()
+        open(os.path.join(scratch, 'crates/y/src/lib.rs'), 'w').write('pub const VERSION: u32 = 1;\n')
+        sh('commit', '-qam', 'removes its magic')
+        assert problems(changed_files(base, cwd=scratch)), 'a removed magic in a kept crate fails'
+        sh('rm', '-rq', 'crates/y')
+        sh('commit', '-qm', 'the crate leaves the tree')
+        assert not problems(changed_files(base, cwd=scratch)), 'a crate that left moves no magic'
     print('format_values_check selftest: ok')
 
 
