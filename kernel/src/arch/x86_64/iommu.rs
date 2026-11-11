@@ -1736,7 +1736,8 @@ mod tests {
             dma,
             page_frames::FRAME_SIZE,
             Some(forger.rid),
-        );
+        )
+        .expect("the IOMMU refused the second disk");
         let was = super::super::interrupts::disable();
         while take_fault().is_some() {}
         // Whether `vector` lands within a bounded wait: the message follows the request's
