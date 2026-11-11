@@ -181,6 +181,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.join(root, "helpers"))
 import roadmap_proposals                                                    # noqa: E402
 import roadmap_block                                                        # noqa: E402
+import qualified_paths                                                      # noqa: E402
 
 
 # ---- `--ready-branch BRANCH`: a ready pull request's block already says how it ended -------------
@@ -490,6 +491,9 @@ def ready_branch_selftest():
         if got != want:
             print(f"roadmap --selftest: {name}: {got} problems, expected {want}", file=sys.stderr)
             failed += 1
+    for problem in qualified_paths.selftest():
+        print(f"roadmap --selftest: qualified paths: {problem}", file=sys.stderr)
+        failed += 1
     if failed:
         sys.exit(1)
     print(f"roadmap --selftest: {len(cases)} ready-branch, {len(mcases)} milestone-block, "
@@ -1670,6 +1674,21 @@ for mid, fname in sorted(ids.items()):
             problems.append(f"{fname}:{n}: '**Refused.**' carries the reason it was refused. A "
                             f"refusal with a reason is a success here; a bare one is silence with "
                             f"a heading over it (found {rest!r})")
+
+
+# ---- a path in another repository, at basalt's pin ---------------------------
+# Milestone 1018 (the design record moves to `nifeos/record` and is published as a website), step 2.
+# A record cites a file outside this repository as `nifeos/<repo>:<path>`, and the path means that
+# file at the commit basalt builds. helpers/qualified_paths.py holds which commit that is and why
+# a fetch that fails is a problem. Every block is read, not only its Follow-on: the form is new,
+# so no older prose uses it loosely, and a body bullet names a crate as often as a follow-on does,
+# as milestone 159 (a real hardware entropy source: the JH7110's TRNG) does. Only `--check` reads
+# them, so the report modes (`--index`, `--ready` and the rest) stay off the network.
+if mode == "--check":
+    _qualified = [(f"design/roadmap/{fname}:{n}", repo, path)
+                  for _mid, fname in sorted(ids.items())
+                  for n, repo, path in qualified_paths.citations(open(os.path.join(d, fname)).read())]
+    problems.extend(qualified_paths.problems(_qualified, root))
 
 
 # ---- a correction's action items (§210, and calef's review of #1513) ----------

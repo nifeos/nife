@@ -85,7 +85,6 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	0	-	code	the fuzz heartbeat (selftest, and the workflow keeps to its limits)
 -	1	-	-	0	-	code	every issue form renders
 -	0	main	-	0	-	code	the kernel's dependencies: nothing only its tests use
--	0	main	-	0	-	code	test oracles stay dev-dependencies of the crate they judge
 -	1	-	-	0	-	code	every .rs file under a crate is declared by a module tree
 -	1	-	-	0	-	code	every userspace trap declares the registers the kernel writes
 -	1	-	-	1	-	both	markdown links and the notes index

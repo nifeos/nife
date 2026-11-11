@@ -86,8 +86,8 @@ Each item gives the recommendation first.
    - `jh7110-stgcrg-mainline.dts`, whose comment quotes the stgcrg node at an unpinned revision.
    - `jh7110_watchdog/tests/fixtures/jh7110-watchdog-radon.dts`, whose body carries the vendor
      `rstgen` node whole (40 tokens) and properties no test reads.
-   - `jh7110_clock_and_reset/src/lib.rs`, which quotes the two PMIC nodes in its doc comments (9 and
-     7 tokens).
+   - `jh7110_clock_and_reset/src/lib.rs`, done: its two PMIC doc comments cite the node, the file
+     and the revision, and give the string and the address as facts.
 
    Fixture bodies cut to the properties a test reads (up to 40-token runs in the gmac and pmic-bus
    fixtures) are facts under that precedent, and need a ruling only if it does not cover them.
@@ -103,8 +103,10 @@ Each item gives the recommendation first.
    `mcommphy.c` (`freebsd/freebsd-src@2ad32d3a6868`) both name the clock gating and sleep control
    registers, and Linux's `motorcomm.c` (`torvalds/linux@fc697291ad0a`) alone names the bit cleared
    in each and the whole PHY identifier. The two register constants spell out what each register
-   is, and the crate's `Name:` blocks cite those rulings as "#2762 Decision N". The source table and
-   the two alias sets the naming rules reach are in the crate's package in `notes/crate-reviews.md`.
+   is, and the crate's `Name:` blocks cite those rulings as "#2762 Decision N". Each carries
+   OpenBSD's spelling and FreeBSD's as its aliases, and no Linux spelling, since both BSD sources
+   name the two registers. The source table is in the crate's review package,
+   `notes/crate-reviews/designware-ethernet.md`.
 10. `jh7110_watchdog` calls the block an Arm SP805, and no listed source says so. `WDOGIMS`
     appears in no source; SP805 names that offset `WDOGMIS`. Recommendation: cite the SP805 manual
     (ARM DDI 0270) if the identification stands, or say "SP805-like", as milestone 593 (the JH7110
@@ -113,6 +115,8 @@ Each item gives the recommendation first.
     clock, and `u5_dw_i2c_clk_core` as a fixed factor, hold at the vendor branch head but not both at
     `VF2_v2.10.4`, the release radon's firmware comes from. Recommendation: pin the vendor links in
     `jh7110_clock_and_reset` and `designware_mobile_storage` to the revision each claim holds at.
+    Done for `jh7110_clock_and_reset`: every vendor link names a commit, and each claim links the
+    revision it holds at.
 
 ## What the lane left alone that a lane could fix after a ruling
 
@@ -133,8 +137,9 @@ Each item gives the recommendation first.
 
 ## Follow-on
 
-- **Outstanding.** Items 7, 8, 10 and 11 above, each waiting for an architect's ruling; each
-  item's text above says what it is waiting for.
+- **Outstanding.** Items 7, 8, 10 and 11 above, where not marked done. They apply the earlier
+  precedent (cite, do not quote; the five-word rule) or correct a fact, so the maintainer decides
+  each provisionally, with the recommendation its text gives (ruled 2026-11-04 UTC).
 - **Milestone 1051.** Milestone 1051 (license field matches notices) adds a check that a crate's `license` field names exactly the licenses of the notices it
   carries, in `design/roadmap/1051-a-crates-license-field-matches-the-notices-it-carries.md`.
 
