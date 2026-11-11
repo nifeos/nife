@@ -387,10 +387,10 @@ impl Wiring {
     pub fn get(&self, n: u64, out: &mut [u8]) -> usize {
         let r = crate::sched::ipc_call(
             self.request,
-            [entropy_contract::req(entropy_contract::GET, n), 0],
+            [entropy_contract::request(entropy_contract::GET, n), 0],
         );
-        match entropy_contract::delivered(r[0]) {
-            Some(count) => entropy_contract::take(count, r[1], out),
+        match entropy_contract::delivered_bytes(r[0]) {
+            Some(count) => entropy_contract::copy_delivered_bytes(count, r[1], out),
             None => 0,
         }
     }

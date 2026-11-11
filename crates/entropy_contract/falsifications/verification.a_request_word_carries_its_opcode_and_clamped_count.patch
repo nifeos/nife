@@ -1,0 +1,21 @@
+Falsifies `entropy_contract::verification::a_request_word_carries_its_opcode_and_clamped_count`.
+
+The defect: `requested_bytes` forgets the byte mask and clamps the whole request word, opcode
+included. Every request with a nonzero opcode then reads as a request for `MAXIMUM_BYTES`, so a
+client asking for three bytes is sent eight.
+
+Expected to fail: the harness's `assert_eq!` on `requested_bytes`, with a nonzero opcode and a
+count below eight.
+
+diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
+--- a/crates/entropy_contract/src/lib.rs
++++ b/crates/entropy_contract/src/lib.rs
+@@ -84,7 +84,7 @@ pub const fn operation(request_word: u64) -> u64 {
+ ///
+ /// Name: ratified 2026-11-11 (#3480): renamed from `want`: a quantity takes its unit.
+ pub const fn requested_bytes(request_word: u64) -> u64 {
+-    let byte_count = request_word & 0xff;
++    let byte_count = request_word;
+     if byte_count > MAXIMUM_BYTES {
+         MAXIMUM_BYTES
+     } else {
