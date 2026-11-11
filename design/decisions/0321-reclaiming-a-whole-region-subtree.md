@@ -43,7 +43,7 @@ parent can create that kind of object.
 Three places in the tree already meet the gap.
 
 - The supervision tree's own builder does steps 1 and 2. `components/src/spawner.rs`
-  (`build_labelled`) splits an instance region off its budget, builds the child in it, and deletes
+  splits an instance region off its budget, builds the child in it, and deletes
   its capability to the region. The instance comes back only through `rendezvous::REAP` of its
   corpse, which reaches the region through the dead thread rather than a capability. While any
   instance lives, `DESTROY` of the spawner's budget refuses. [§40 (a supervisor's death is its
