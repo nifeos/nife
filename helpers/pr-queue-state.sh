@@ -10,14 +10,14 @@
 #     pr_state_by_number <n>        pr_state_by_branch <branch>
 #
 # Each prints one JSON object on stdout and returns 0:
-#     { number, id, state, isDraft, labels: [name...], isInMergeQueue, autoMergeRequest }
+#     { number, id, state, isDraft, headRefOid, labels: [name...], isInMergeQueue, autoMergeRequest }
 # A branch with no open pull request prints `null`. A failed or malformed answer returns 1.
 
-PR_STATE_FIELDS='number id state isDraft labels(first:30){nodes{name}} autoMergeRequest{enabledAt} mergeQueueEntry{state}'
+PR_STATE_FIELDS='number id state isDraft headRefOid labels(first:30){nodes{name}} autoMergeRequest{enabledAt} mergeQueueEntry{state}'
 PR_STATE_JQ='if .data.repository == null then error("GitHub gave no repository") else . end
 	| (.data.repository.pullRequest // .data.repository.pullRequests.nodes[0])
 	| if . == null then null else
-	  {number, id, state, isDraft, labels: [.labels.nodes[].name],
+	  {number, id, state, isDraft, headRefOid, labels: [.labels.nodes[].name],
 	   isInMergeQueue: (.mergeQueueEntry != null), autoMergeRequest} end'
 
 pr_state_by_number() {

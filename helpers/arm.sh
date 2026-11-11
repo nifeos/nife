@@ -5,6 +5,7 @@
 #
 #     helpers/arm.sh <pull request number>
 #     helpers/arm.sh <pull request number> --despite-conflict "<why>"
+#     helpers/arm.sh <pull request number> --despite-failed-checks "<why>"
 #
 # Refuses a draft, a pull request that is not open, and one wearing a hold label
 # (helpers/hold-labels.sh: `needs-architect`, `held-by-lane`, `held-for-red-trunk`), naming the label.
@@ -14,6 +15,11 @@
 # ahead that changed it. Otherwise it runs `gh pr merge <n> --auto --merge` and then reads GitHub
 # back: armed means a merge queue entry exists or `autoMergeRequest` is not null. Neither is exit 1
 # and a line saying so.
+#
+# It also refuses a head whose newest `lint` check run is skipped, failed or cancelled, or is still
+# running beside a skipped one, since GitHub counts a draft run's skip as passed. And it refuses a
+# head that the merge queue last removed for failed checks, which `--despite-failed-checks "<why>"`
+# overrides after posting the reason. Both rules and their cases are at the checks, below.
 #
 # `--despite-conflict "<why>"` is the override: it arms over a reported conflict, after posting the
 # reason as a comment on the pull request, since notes/merge-queue/conflict-precheck.md asks a lane
@@ -45,7 +51,7 @@ here="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
 . "$here/pr-queue-state.sh"
 
 me="arm"
-usage='usage: helpers/arm.sh <pull request number> [--despite-conflict "<why>"]'
+usage='usage: helpers/arm.sh <pull request number> [--despite-conflict "<why>"] [--despite-failed-checks "<why>"]'
 case "${1:-}" in
 '' | *[!0-9]* | -*)
 	echo "$usage" >&2
@@ -55,20 +61,23 @@ esac
 pr="$1"
 shift
 despite=
-case "$#:${1:-}" in
-0:) ;;
-2:--despite-conflict)
-	despite="$2"
-	if [ -z "$(printf '%s' "$despite" | tr -d '[:space:]')" ]; then
-		echo "$me: NOT ARMED. --despite-conflict needs the reason, which goes on the pull request." >&2
+despite_failed=
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+	--despite-conflict | --despite-failed-checks)
+		if [ "$#" -lt 2 ] || [ -z "$(printf '%s' "$2" | tr -d '[:space:]')" ]; then
+			echo "$me: NOT ARMED. $1 needs the reason, which goes on the pull request." >&2
+			exit 2
+		fi
+		if [ "$1" = --despite-conflict ]; then despite="$2"; else despite_failed="$2"; fi
+		shift 2
+		;;
+	*)
+		echo "$usage" >&2
 		exit 2
-	fi
-	;;
-*)
-	echo "$usage" >&2
-	exit 2
-	;;
-esac
+		;;
+	esac
+done
 
 if ! view="$(pr_state_by_number "$pr")" || [ -z "$view" ] || [ "$view" = null ]; then
 	echo "$me: NOT ARMED. could not read #$pr from GitHub." >&2
@@ -96,6 +105,68 @@ armed() { # reads helpers/pr-queue-state.sh's JSON on stdin; exit 0 when queued 
 if printf '%s' "$view" | armed; then
 	echo "$me: #$pr already armed."
 	exit 0
+fi
+
+head="$(printf '%s' "$view" | jq -r '.headRefOid // empty')"
+if [ -z "$head" ]; then
+	echo "$me: NOT ARMED. could not read #$pr's head commit from GitHub." >&2
+	exit 1
+fi
+
+# **A skipped lint is not a passed lint.** A draft's CI run skips `lint`, and GitHub counts a
+# skipped required check as passed, so a pull request armed the moment it is marked ready enters the
+# queue on the draft's skip, before the ready run's `lint` has started (#3320 and #3427, 2026-11).
+# The newest `lint` check run on the head decides: success arms; skipped, failed or cancelled
+# refuses; unfinished refuses only when a skipped one also sits on this head, because then GitHub
+# may already count the check as passed. A head with no `lint` yet (just pushed, not a draft) arms:
+# GitHub waits for a required check that has not posted, and that is what lets `script/push
+# --requeue` re-arm right after its push.
+if ! runs="$(gh api "repos/{owner}/{repo}/commits/$head/check-runs?check_name=lint&filter=all&per_page=100" \
+	--jq '[.check_runs[] | {id, status, conclusion}]' 2>/dev/null)"; then
+	echo "$me: NOT ARMED. could not read the lint check on #$pr's head $head." >&2
+	exit 1
+fi
+lint_verdict="$(printf '%s' "$runs" | jq -r '
+	(any(.[]; .conclusion == "skipped")) as $skip
+	| (sort_by(.id) | last) as $new
+	| if $new == null then "none"
+	  elif $new.status != "completed" then (if $skip then "unfinished-after-skip" else "unfinished" end)
+	  else $new.conclusion end')"
+case "$lint_verdict" in
+success | none | unfinished) ;;
+unfinished-after-skip)
+	echo "$me: NOT ARMED. #$pr's lint is still running on $head, and a skipped lint from its draft run sits on the same head, which GitHub would count as passed. Arm it once lint has passed." >&2
+	exit 1
+	;;
+*)
+	echo "$me: NOT ARMED. the newest lint check on #$pr's head $head is $lint_verdict. Arm a head whose lint passed." >&2
+	exit 1
+	;;
+esac
+
+# **A failure does not clear by waiting.** The queue removes an entry for `failed_checks`, and an
+# unchanged head usually fails the same way again: the entry ahead that it broke against has merged,
+# and its pull-request checks, which never saw that entry, still read green. On 2026-11-07 and 08
+# #3314 and #3336 went back three times each at one head and failed each time. The last removal
+# decides; its merge-group commit's last parent is the head it built. `--despite-failed-checks
+# "<why>"` arms anyway (a flake, say), after posting the reason on the pull request.
+if ! removal="$(gh api graphql -F owner='{owner}' -F name='{repo}' -F n="$pr" \
+	-f query="query(\$owner:String!,\$name:String!,\$n:Int!){repository(owner:\$owner,name:\$name){pullRequest(number:\$n){timelineItems(last:1,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT]){nodes{... on RemovedFromMergeQueueEvent{reason beforeCommit{parents(last:1){nodes{oid}}}}}}}}}" \
+	--jq '.data.repository.pullRequest.timelineItems.nodes[0] // {} | "\(.reason // "") \(.beforeCommit.parents.nodes[0].oid // "")"' 2>/dev/null)"; then
+	echo "$me: NOT ARMED. could not read #$pr's last merge queue removal." >&2
+	exit 1
+fi
+reason="$(printf '%s' "${removal% *}" | tr '[:upper:]' '[:lower:]')"
+if [ "$reason" = failed_checks ] && [ "${removal##* }" = "$head" ]; then
+	if [ -z "$despite_failed" ]; then
+		echo "$me: NOT ARMED. the merge queue last removed #$pr for failed checks at this same head, $head, so it would fail again. Read the merge-group log, push a fix and arm again; or, for a flake, arm with --despite-failed-checks \"<why>\"." >&2
+		exit 1
+	fi
+	if ! gh pr comment "$pr" --body "Armed again at \`$head\`, which the merge queue last removed for failed checks, with \`helpers/arm.sh --despite-failed-checks\`. Why: $despite_failed" >/dev/null 2>&1; then
+		echo "$me: NOT ARMED. could not post the reason for arming over the failed checks on #$pr." >&2
+		exit 1
+	fi
+	echo "$me: arming #$pr over its last failed checks; the reason is on the pull request."
 fi
 
 # The conflict check. Exit 0 clean, 1 conflict, 2 could not tell (script/queue-conflicts).
