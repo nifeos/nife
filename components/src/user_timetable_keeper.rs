@@ -43,7 +43,7 @@
 
 use login_contract::user_timetable_keeper as contract;
 use process_builder::{
-    build_child, memory_region_destroy, memory_region_split, retype_obj_from as retype_obj,
+    build_child, memory_region_destroy, memory_region_split, retype_into_kernel_object_from,
     start_child,
 };
 use supervision_contract::{ChildEndowment, Retention};
@@ -103,11 +103,11 @@ fn start(image_len: u64, _a1: u64, _a2: u64) -> ! {
     };
 
     // The one endpoint this process ever waits on, and the timetable's supervision endpoint.
-    let Ok(e) = retype_obj(BUDGET, abi::objtype::RENDEZVOUS) else {
+    let Ok(e) = retype_into_kernel_object_from(BUDGET, abi::object_type::RENDEZVOUS) else {
         fail(4)
     };
     // The endpoint the timetable reaps its own jobs through. Not read here.
-    let Ok(deaths) = retype_obj(BUDGET, abi::objtype::RENDEZVOUS) else {
+    let Ok(deaths) = retype_into_kernel_object_from(BUDGET, abi::object_type::RENDEZVOUS) else {
         fail(5)
     };
     let Ok(jobs) = memory_region_split(BUDGET, JOB_BUDGET_PAGES) else {
@@ -133,8 +133,12 @@ fn start(image_len: u64, _a1: u64, _a2: u64) -> ! {
                 (tt::PACKAGES_SLOT, PACKAGES, abi::rights::WRITE),
             ],
             maps: &[
-                (TIMETABLE_PAGE_VA, PAGE, abi::address_space::MAP_RW),
-                (tt::STORE_PAGE_VA, STORE_PAGE, abi::address_space::MAP_RW),
+                (TIMETABLE_PAGE_VA, PAGE, abi::address_space::MAP_READ_WRITE),
+                (
+                    tt::STORE_PAGE_VA,
+                    STORE_PAGE,
+                    abi::address_space::MAP_READ_WRITE,
+                ),
             ],
             fault: Some(e),
             stack_pages: tt::STACK_PAGES,

@@ -215,7 +215,7 @@ pub(super) fn interrupt_wait(frame: &mut TrapFrame, intid: u32) -> Result<i64, E
     Ok(m[0] as i64)
 }
 
-/// `Interrupt::ACK`: unmask the interrupt at the controller, which masked it when it fired, once
+/// `Interrupt::ACKNOWLEDGE`: unmask the interrupt at the controller, which masked it when it fired, once
 /// the
 /// driver has serviced the device.
 #[inline(never)]

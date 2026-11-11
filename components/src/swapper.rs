@@ -67,10 +67,10 @@ fn start(role: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
     };
 
     let w = Wiring {
-        svc: obj(abi::objtype::RENDEZVOUS, 5),
-        faultep: obj(abi::objtype::RENDEZVOUS, 6),
-        note: obj(abi::objtype::RENDEZVOUS, 7),
-        poke: obj(abi::objtype::RENDEZVOUS, 8),
+        svc: obj(abi::object_type::RENDEZVOUS, 5),
+        faultep: obj(abi::object_type::RENDEZVOUS, 6),
+        note: obj(abi::object_type::RENDEZVOUS, 7),
+        poke: obj(abi::object_type::RENDEZVOUS, 8),
         log_page_frame: page_frame(9),
     };
     if !map_page_frame(w.log_page_frame, hot_swap_contract::LOG_VA, true, ROOT_UT) {
@@ -457,7 +457,7 @@ fn handoff(fs: &nifefs::Fs, w: &Wiring) -> ! {
         s if s >= 0 => s as u64,
         _ => bail(90),
     };
-    let replacement_control = obj(abi::objtype::RENDEZVOUS, 91);
+    let replacement_control = obj(abi::object_type::RENDEZVOUS, 91);
 
     let (incumbent, replacement, client) = plan_handoff(w, declared, state, replacement_control);
 
@@ -762,7 +762,7 @@ fn queued(fs: &nifefs::Fs, w: &Wiring, warn: Warn) -> ! {
 
     // `svc` is the *back* endpoint here: what the broker forwards to and what a backend receives
     // on. `front` is what the producer holds, and it is the stable name on this channel.
-    let front = obj(abi::objtype::RENDEZVOUS, 41);
+    let front = obj(abi::object_type::RENDEZVOUS, 41);
     let base = hot_swap_contract::BROKER_LOG_BASE;
 
     let QueuedPlans {
@@ -891,7 +891,7 @@ fn plan_queued(w: &Wiring, front: u64) -> QueuedPlans {
     if !map_page_frame(warning, hot_swap_contract::BROKER_WARN_VA, true, ROOT_UT) {
         bail(54)
     }
-    let signal = obj(abi::objtype::NOTIFICATION, 55);
+    let signal = obj(abi::object_type::NOTIFICATION, 55);
     let to_broker = Provisions {
         held: &[
             ("requests", front),
@@ -1410,15 +1410,15 @@ fn image<'a>(fs: &nifefs::Fs<'a>, name: &str, stage: u64) -> elf::Elf<'a> {
     }
 }
 
-fn obj(objtype: u64, stage: u64) -> u64 {
-    match process_builder::retype_obj_from(ROOT_UT, objtype) {
+fn obj(object_type: u64, stage: u64) -> u64 {
+    match process_builder::retype_into_kernel_object_from(ROOT_UT, object_type) {
         Ok(s) => s,
         Err(()) => bail(stage),
     }
 }
 
 fn page_frame(stage: u64) -> u64 {
-    match process_builder::retype_page_frame_from(ROOT_UT) {
+    match process_builder::retype_into_page_frame_from(ROOT_UT) {
         Ok(s) => s,
         Err(()) => bail(stage),
     }

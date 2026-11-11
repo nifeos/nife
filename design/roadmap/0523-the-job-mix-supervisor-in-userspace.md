@@ -56,7 +56,7 @@ list is short and it is what makes the blockers concrete:
 1. **Find `job_mix_task`'s ELF in the initrd archive.** `nifefs::Fs::parse(archive).read(..)` plus
    `elf::Elf::parse`, the shape `components/src/root_supervisor.rs::start` already uses.
 2. **Create 67 rendezvous objects** out of its own budget: one report, 32 go, 32 child-done, 2 echo.
-   `retype_into_kernel_object(budget, abi::objtype::RENDEZVOUS)`, which
+   `retype_into_kernel_object(budget, abi::object_type::RENDEZVOUS)`, which
    `fixtures/src/rendezvous_minter.rs` proves works from EL0.
 3. Build and start 34 processes with a per-child grant set, each carrying its own rights.
    `supervision_contract::build_child` and `start_child`.
@@ -75,7 +75,7 @@ may do 2, 4 and the building half of 3, and that is the shape of what follows.
 ### Blocker one: a shell child may build a process, and may lend it nothing it made
 
 Every spending method of a memory region asks for `WRITE` alone (`memory_region_invoke`), and
-`RETYPE_OBJECT` makes spaces, threads, processes and rendezvous (`memory_region_retype_obj`). A `--mem`
+`RETYPE_OBJECT` makes spaces, threads, processes and rendezvous (`memory_region_retype_object`). A `--mem`
 grant arrives as `abi::rights::SPEND_ONLY`, every right but `GRANT` (`native_endowment` in
 `crates/system_initializer`), so its holder can build a process and start it.
 

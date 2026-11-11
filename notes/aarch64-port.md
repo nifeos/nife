@@ -146,7 +146,7 @@ any interrupt is unmasked, so the interrupt path reads it relaxed.
 
 Device lines (SPIs) are spread over the online cores round robin, and each line's target is
 assigned once and reused. The interrupt handler masks a routed line when it fires and the driver's
-ACK
+ACKNOWLEDGE
 re-enables it, so a target chosen on every enable would move the line on every completion. The
 cursor counts online cores, not indices, so a line never targets a parked core.
 

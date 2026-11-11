@@ -9,7 +9,7 @@ use super::*;
 /// native ABI (notes/abi.md §3): three free argument registers, a mapped stack, a populated
 /// capability table, no libc and no argv. rustc's generated C `main` wraps the user's `fn main` in
 /// `lang_start`, which runs std's rt init and catches the exit code; all this shim does is call
-/// it and turn the return into `SYS_EXIT`.
+/// it and turn the return into `SYSCALL_EXIT`.
 ///
 /// The linker finds this symbol in std's rlib because the link script's `ENTRY(_start)` makes it
 /// an undefined reference, the same way a libc's crt0.o gets pulled in.

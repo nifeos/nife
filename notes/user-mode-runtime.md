@@ -46,7 +46,7 @@ the trap. A yield comes back with `x0 = 0`, and a retry loop that kept its argum
 one sent the wrong call (notes/job-mix/spawn-job-miscompiled-yield.md). `helpers/syscall_asm.py`
 gates every userspace trap.
 
-For `SYS_INVOKE`, the capability, the method and three arguments go in the first five registers, and
+For `SYSCALL_INVOKE`, the capability, the method and three arguments go in the first five registers, and
 the reply comes back in the same five. The sixth register is an output and goes in as zero. The
 kernel writes argument register 5 (`x5`, `a5`, `r9`) with a dead child's label when it delivers a
 death message to a plain `RECEIVE`, and leaves it alone otherwise (§148 (resolves by asking the

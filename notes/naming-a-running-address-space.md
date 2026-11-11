@@ -172,7 +172,7 @@ customer asks, then becomes a counted binder on that entry: the space dies with 
 its region. That is seL4's rule written as a count, since nife has no derivation tree to inspect.
 
 **(c) Init's capability.** "The kernel grants init one at boot" is a slot convention, which is a
-wire format. seL4 fixes it at slot 3. nife's precedent is `abi::fault::FAULT_EP_SLOT`
+wire format. seL4 fixes it at slot 3. nife's precedent is `abi::fault::FAULT_RENDEZVOUS_SLOT`
 (`crates/abi/src/fault.rs`), or a grant through `Spawn::grants` in `boot_progenitor`
 at a slot the progenitor is told. That needs naming and an architect's ruling; it
 is B's mechanism, applied to one program.
@@ -204,7 +204,7 @@ milestone 765's lane as a question, below.
    leaves §162's ruling closing no hole the roadmap named. A frame-capability unmap (seL4's real
    self-unmap path) was not reopened: §162 refused it.
 2. The tree's analogous case. Every other authority a child holds is a `CAPABILITY_INSERT` grant chosen
-   by its builder. `FAULT_EP_SLOT` is the one kernel-placed slot, and it is placed by the
+   by its builder. `FAULT_RENDEZVOUS_SLOT` is the one kernel-placed slot, and it is placed by the
    supervisor, not by default.
 3. Prior art. Read above. seL4 for authority, Zircon for lifetime; both explicit.
 4. Premise. True, as checked. The proposal's framing that seL4's VSpace cap is how a task gives

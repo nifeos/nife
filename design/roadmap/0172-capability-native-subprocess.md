@@ -49,7 +49,7 @@ that crate and against `kernel/src/user.rs`'s spawn path: a synchronous, ergonom
 shape. A caller like `cargo` would use it in a loop ("run this, block until it's done, give me
 its output"). The death-notification/supervision-endpoint pattern was built for long-lived
 service supervision. §301 rules they are the same mechanism used differently: the wait is the §26
-receive, the status rides `SYS_EXIT` into the `EVENT_EXIT` message, and there is no new syscall.
+receive, the status rides `SYSCALL_EXIT` into the `EVENT_EXIT` message, and there is no new syscall.
 
 ## How a caller starts the child is decided
 
@@ -76,10 +76,10 @@ way. That is calef's call, not this block's.
 
 - The design fork is decided:
   [§301 (exit status and output)](../decisions/0301-exit-status-and-output.md), 2026-10-15, carries
-  the status word on `SYS_EXIT` into the death message, and keeps output grant-routed. The
+  the status word on `SYSCALL_EXIT` into the death message, and keeps output grant-routed. The
   primitive is a userspace composition of `build_child` plus the receive on the supervision
   endpoint. What remains here is §301's one kernel touch on the exit path: `sched::exit` forwards
-  `SYS_EXIT`'s first word, and `user_mode_runtime` passes the code it is given. Then the loop:
+  `SYSCALL_EXIT`'s first word, and `user_mode_runtime` passes the code it is given. Then the loop:
   spawn, endow, receive, read the code, and return the output the grants carried.
 - Stdin/stdout/stderr as capabilities, not ambient file descriptors: a spawned child's I/O needs
   to be handed explicitly, the same "additive, not ambient" shape §10 already committed to.
@@ -113,4 +113,4 @@ The real architectural piece the self-hosting question surfaced: `cargo`/`rustc`
 process per compilation unit and to invoke a linker, structurally, with no bypass. DECISIONS §10
 already rejected Unix-shaped fork/exec but explicitly endorsed the additive direction (Fuchsia's `fdio` shape); this is that direction applied to one more convenience. The wait is decided:
 [§301 (exit status and output)](../decisions/0301-exit-status-and-output.md) carries the status
-word on `SYS_EXIT` and the death message.
+word on `SYSCALL_EXIT` and the death message.

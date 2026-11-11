@@ -65,7 +65,7 @@ order, `max`, and removal.
   a frame being freed. Nothing read is returned, but whether the thread sleeps depends on it, which
   is a one-bit observation. Not argued either way yet; the fix is to walk under the lock the
   revocation path takes.
-- `SYS_EXIT_THREAD`'s clear-word store has the same unlocked walk (`sched::futex`), and it is a
+- `SYSCALL_EXIT_THREAD`'s clear-word store has the same unlocked walk (`sched::futex`), and it is a
   store, not a load. If a sibling thread destroys the region behind the word between the walk and
   the store, and the frame is reused, four zero bytes land in a frame this space no longer owns.
   Not shown reachable; the 2026-10-20 security audit proposes the walk-and-store under the

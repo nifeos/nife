@@ -28,6 +28,6 @@ index a2b41ef76..676c60bf3 100644
          t.fault_ep = Some(ep);
 -        t.fault_label = label;
 +        t.fault_label = 0;
-         let _ = table.delete(abi::fault::FAULT_EP_SLOT);
+         let _ = table.delete(abi::fault::FAULT_RENDEZVOUS_SLOT);
      }
      drop(table);

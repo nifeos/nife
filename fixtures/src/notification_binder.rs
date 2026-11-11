@@ -30,7 +30,7 @@ const REPORT: u64 = 3;
 user_mode_runtime::program_entry!(start);
 
 fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
-    let n = retype_into_kernel_object(MEMORY_REGION, abi::objtype::NOTIFICATION);
+    let n = retype_into_kernel_object(MEMORY_REGION, abi::object_type::NOTIFICATION);
     require(n >= 0);
     let n = n as u64;
 

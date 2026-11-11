@@ -22,7 +22,7 @@ pub fn interrupt_wait(interrupt_slot: u64) -> i64 {
     unsafe { invoke(interrupt_slot, abi::interrupt::WAIT, 0, 0, 0) }
 }
 
-/// `ACK` the `Interrupt` capability in `interrupt_slot`: re-enable the interrupt at the GIC once
+/// `ACKNOWLEDGE` the `Interrupt` capability in `interrupt_slot`: re-enable the interrupt at the GIC once
 /// the device has
 /// been quieted. Until this is called, the interrupt stays masked and cannot storm.
 ///
@@ -32,7 +32,7 @@ pub fn interrupt_wait(interrupt_slot: u64) -> i64 {
 pub fn interrupt_acknowledge(interrupt_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the Interrupt capability before it re-enables
     // anything.
-    unsafe { invoke(interrupt_slot, abi::interrupt::ACK, 0, 0, 0) }
+    unsafe { invoke(interrupt_slot, abi::interrupt::ACKNOWLEDGE, 0, 0, 0) }
 }
 
 /// **Invoke the reboot object in `slot`** (milestone 805 (`reboot` at the prompt), DECISIONS §251

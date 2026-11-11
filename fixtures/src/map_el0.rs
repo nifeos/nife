@@ -59,7 +59,7 @@ const TIMED_BASE: u64 = address_space_map::pair_page(0x40_0000);
 user_mode_runtime::program_entry!(start);
 
 fn start(startup_word: u64, _a1: u64, _a2: u64) -> ! {
-    let space = retype_into_kernel_object(BUDGET, abi::objtype::ADDRESS_SPACE);
+    let space = retype_into_kernel_object(BUDGET, abi::object_type::ADDRESS_SPACE);
     let frame = retype_into_page_frame(BUDGET);
     if space < 0 || frame < 0 {
         // The budget was too small to build the target; a row of zeros says so without a panic.
@@ -99,7 +99,7 @@ fn sink(w0: u64, w1: u64, w2: u64) -> byte_sink_contract::Sent {
 /// frame. Returns the syscall result: 0 on success, a negative error otherwise.
 #[inline(never)]
 fn map_one(space: u64, frame: u64, va: u64) -> i64 {
-    address_space_map_into(space, va, frame, abi::address_space::MAP_RO)
+    address_space_map_into(space, va, frame, abi::address_space::MAP_READ_ONLY)
 }
 
 user_mode_runtime::panic_handler!();

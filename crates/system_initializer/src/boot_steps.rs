@@ -403,8 +403,14 @@ fn start_virtio_entropy(
             };
             // Read; the page is entropy's from here, so our view of it goes (milestone 95).
             process_builder::give_up_own_page(RNG_DMA_PEEK_VA);
-            let request = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
-            let ready = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
+            let request = must(retype_into_kernel_object_from(
+                ut,
+                abi::object_type::RENDEZVOUS,
+            ));
+            let ready = must(retype_into_kernel_object_from(
+                ut,
+                abi::object_type::RENDEZVOUS,
+            ));
             let entropy = must(build_child(
                 ut,
                 ut,
@@ -416,7 +422,11 @@ fn start_virtio_entropy(
                         (g.virtio_rng, abi::rights::WRITE),
                         (ready, abi::rights::WRITE),
                     ],
-                    maps: &[(RNG_DMA_VA, g.virtio_rng_dma, abi::address_space::MAP_RW)],
+                    maps: &[(
+                        RNG_DMA_VA,
+                        g.virtio_rng_dma,
+                        abi::address_space::MAP_READ_WRITE,
+                    )],
                     stack_pages: CHILD_STACK_PAGES,
                     ..ChildEndowment::new(Retention::Nothing)
                 },
@@ -496,11 +506,20 @@ pub(super) fn start_terminal_stack(
     let term_out = must(retype_page_frame(ut)); // shell -> line_editor text and prompts
     let term_in = must(retype_page_frame(ut)); // line_editor -> shell completed lines
 
-    let term_ep = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
+    let term_ep = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
 
     {
-        let request = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
-        let reply = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
+        let request = must(retype_into_kernel_object_from(
+            ut,
+            abi::object_type::RENDEZVOUS,
+        ));
+        let reply = must(retype_into_kernel_object_from(
+            ut,
+            abi::object_type::RENDEZVOUS,
+        ));
         let con_shared = must(retype_page_frame(ut)); // line_editor -> console text
 
         start_console(
@@ -562,8 +581,11 @@ fn start_console(
 ) {
     let mut con_batch = (0, 0);
     if has_screen {
-        let notified = must(retype_obj(ut, abi::objtype::NOTIFICATION));
-        let timer = must(retype_obj(ut, abi::objtype::TIMER));
+        let notified = must(retype_into_kernel_object_from(
+            ut,
+            abi::object_type::NOTIFICATION,
+        ));
+        let timer = must(retype_into_kernel_object_from(ut, abi::object_type::TIMER));
         con_batch = (notified, timer);
     }
     let mut con_capabilities = [(0, 0); 6];
@@ -573,7 +595,7 @@ fn start_console(
         con_capabilities[capability_count] = capability;
         capability_count += 1;
     }
-    con_maps[nmaps] = (CON_SHARED_VA, con_shared, abi::address_space::MAP_RO);
+    con_maps[nmaps] = (CON_SHARED_VA, con_shared, abi::address_space::MAP_READ_ONLY);
     nmaps += 1;
     if has_screen {
         con_capabilities[capability_count] = (g.disp_term_ep, abi::rights::WRITE);
@@ -587,14 +609,14 @@ fn start_console(
         con_maps[nmaps] = (
             CON_SCREEN_OUT_VA,
             g.disp_term_page,
-            abi::address_space::MAP_RW,
+            abi::address_space::MAP_READ_WRITE,
         );
         nmaps += 1;
     }
     #[cfg(not(target_arch = "x86_64"))]
     {
         // mode ignored for a DeviceFrame
-        con_maps[nmaps] = (CON_UART_VA, g.uart_dev, abi::address_space::MAP_RO);
+        con_maps[nmaps] = (CON_UART_VA, g.uart_dev, abi::address_space::MAP_READ_ONLY);
         nmaps += 1;
     }
     #[cfg(target_arch = "x86_64")]
@@ -647,8 +669,11 @@ fn start_system_log(g: &BootEndowment, ut: u64, log_elf: Option<&elf::Elf<'stati
         && is_granted(g.kernel_ring_cursor)
         && is_granted(g.kernel_ring_notification)
     {
-        let intake = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
-        let timer = must(retype_obj(ut, abi::objtype::TIMER));
+        let intake = must(retype_into_kernel_object_from(
+            ut,
+            abi::object_type::RENDEZVOUS,
+        ));
+        let timer = must(retype_into_kernel_object_from(ut, abi::object_type::TIMER));
         let log = must(build_child(
             ut,
             ut,
@@ -664,11 +689,15 @@ fn start_system_log(g: &BootEndowment, ut: u64, log_elf: Option<&elf::Elf<'stati
                     (request, abi::rights::WRITE),
                 ],
                 maps: &[
-                    (LOG_RING_VA, g.kernel_ring, abi::address_space::MAP_RO),
+                    (
+                        LOG_RING_VA,
+                        g.kernel_ring,
+                        abi::address_space::MAP_READ_ONLY,
+                    ),
                     (
                         LOG_CURSOR_VA,
                         g.kernel_ring_cursor,
-                        abi::address_space::MAP_RW,
+                        abi::address_space::MAP_READ_WRITE,
                     ),
                 ],
                 stack_pages: CHILD_STACK_PAGES,
@@ -745,7 +774,7 @@ pub(super) fn start_keystroke_sources(
             (term_ep, abi::rights::WRITE),
             (g.uart_interrupt, abi::rights::READ),
         ],
-        &[(IN_UART_VA, g.uart_dev, abi::address_space::MAP_RO)],
+        &[(IN_UART_VA, g.uart_dev, abi::address_space::MAP_READ_ONLY)],
     );
     #[cfg(target_arch = "x86_64")]
     let (in_capabilities, in_maps): EndowmentSlices = (
@@ -786,9 +815,18 @@ pub(super) fn start_keystroke_sources(
 /// on it.
 #[inline(never)]
 pub(super) fn retype_spawn_channel(ut: u64) -> SpawnChannel {
-    let spawn_ep = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
-    let result_ep = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
-    let deaths = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
+    let spawn_ep = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
+    let result_ep = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
+    let deaths = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
     SpawnChannel {
         spawn_ep,
         result_ep,
@@ -823,9 +861,9 @@ pub(super) fn build_shell(
     // Every right: what the shell retypes carries its budget's rights, and it lends them on.
     sh_capabilities[capability_count] = (sh_budget, abi::rights::ALL);
     capability_count += 1;
-    sh_maps[n_maps] = (SH_OUT_VA, w.term.out, abi::address_space::MAP_RW); // text and prompts
+    sh_maps[n_maps] = (SH_OUT_VA, w.term.out, abi::address_space::MAP_READ_WRITE); // text and prompts
     n_maps += 1;
-    sh_maps[n_maps] = (LINE_VA, w.term.input, abi::address_space::MAP_RO); // completed lines
+    sh_maps[n_maps] = (LINE_VA, w.term.input, abi::address_space::MAP_READ_ONLY); // completed lines
     n_maps += 1;
     // A slice of window 0, never the pool, which would hand the shell every client's window.
     let sh_window = if with_fs {
@@ -839,19 +877,19 @@ pub(super) fn build_shell(
     if let Some(zero) = sh_window {
         sh_capabilities[capability_count] = (zero.ep, abi::rights::WRITE);
         capability_count += 1;
-        sh_maps[n_maps] = (SH_FS_VA, zero.page, abi::address_space::MAP_RW);
+        sh_maps[n_maps] = (SH_FS_VA, zero.page, abi::address_space::MAP_READ_WRITE);
         n_maps += 1;
     }
     sh_capabilities[capability_count] = (g.clock_page, abi::rights::READ);
     capability_count += 1;
-    sh_maps[n_maps] = (SH_CLOCK_VA, g.clock_page, abi::address_space::MAP_RO);
+    sh_maps[n_maps] = (SH_CLOCK_VA, g.clock_page, abi::address_space::MAP_READ_ONLY);
     n_maps += 1;
     // Mapped for `capabilities` to read; its capability goes at a named slot after the build, because the
     // list's slots move with what the boot granted.
     sh_maps[n_maps] = (
         grant_plan::SHELL_CONFIGURATION_VIRTUAL_ADDRESS,
         g.config_page,
-        abi::address_space::MAP_RO,
+        abi::address_space::MAP_READ_ONLY,
     );
     n_maps += 1;
     // `build_child` fills the table from zero, so the clock's slot is the count before it.
@@ -922,7 +960,10 @@ pub(super) fn finish_shell_endowment(
 #[inline(never)]
 pub(super) fn start_sink_adapter(w: &Wiring, sink_elf: Option<&elf::Elf<'static>>) -> u64 {
     let (ut, term_ep) = (w.ut, w.term.ep);
-    let term_sink = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
+    let term_sink = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
     if let Some(elf) = sink_elf {
         let adapter = must(build_child(
             ut,
@@ -1005,9 +1046,18 @@ fn start_credential_services(
     run_unvouched: &mut Option<u64>,
 ) -> bool {
     let ut = w.ut;
-    let prov = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
-    let verify = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
-    let cred_ready = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
+    let prov = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
+    let verify = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
+    let cred_ready = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
     let prov_page = must(retype_page_frame(ut));
     let verify_page = must(retype_page_frame(ut));
     let cred_budget = must(memory_region_split(ut, CRED_BUDGET_PAGES));
@@ -1025,8 +1075,16 @@ fn start_credential_services(
                 (cred_ready, abi::rights::WRITE),
             ],
             maps: &[
-                (CRED_SVC_PROV_VA, prov_page, abi::address_space::MAP_RW),
-                (CRED_SVC_VERIFY_VA, verify_page, abi::address_space::MAP_RW),
+                (
+                    CRED_SVC_PROV_VA,
+                    prov_page,
+                    abi::address_space::MAP_READ_WRITE,
+                ),
+                (
+                    CRED_SVC_VERIFY_VA,
+                    verify_page,
+                    abi::address_space::MAP_READ_WRITE,
+                ),
             ],
             stack_pages: CRED_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
@@ -1132,7 +1190,10 @@ fn start_identity_provisioner(
     login_password: &[u8; PASSWORD_HEX_LEN],
 ) -> u64 {
     let (g, ut) = (w.g, w.ut);
-    let idp_report = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
+    let idp_report = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
     let idp_program = p.idp_elf.as_ref().expect("have_login_stack checked this");
     let (idp_child, idp_aspace) = must(process_builder::build_child_space(
         ut,
@@ -1145,8 +1206,8 @@ fn start_identity_provisioner(
                 (idp_report, abi::rights::WRITE),
             ],
             maps: &[
-                (IDP_REQ_VA, req_frame, abi::address_space::MAP_RW),
-                (IDP_PROV_VA, prov_page, abi::address_space::MAP_RW),
+                (IDP_REQ_VA, req_frame, abi::address_space::MAP_READ_WRITE),
+                (IDP_PROV_VA, prov_page, abi::address_space::MAP_READ_WRITE),
             ],
             stack_pages: CHILD_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
@@ -1154,8 +1215,12 @@ fn start_identity_provisioner(
     ));
     capability_delete(req_frame);
     let idp_page = must(window_page(g.fs_page, 0).ok_or(()));
-    let mapped =
-        address_space_map_into(idp_aspace, IDP_FS_VA, idp_page, abi::address_space::MAP_RW) == 0;
+    let mapped = address_space_map_into(
+        idp_aspace,
+        IDP_FS_VA,
+        idp_page,
+        abi::address_space::MAP_READ_WRITE,
+    ) == 0;
     capability_delete(idp_page);
     must(mapped.then_some(()).ok_or(()));
     must(process_builder::configure_child(
@@ -1189,8 +1254,14 @@ fn start_login(
     let (g, ut, term_ep) = (w.g, w.ut, w.term.ep);
     let audit = start_login_audit(ut, p);
 
-    let login_request = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
-    let login_result = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
+    let login_request = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
+    let login_result = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
     let login_ut = must(memory_region_split(ut, LOGIN_CONSTRUCTION_PAGES));
     let login_program = p.login_elf.as_ref().expect("have_login_stack checked this");
     // Window 0, never the pool: `login` maps what it is handed into every session's caretaker.
@@ -1212,7 +1283,11 @@ fn start_login(
                 (audit, abi::rights::WRITE),
                 (term_ep, abi::rights::WRITE | abi::rights::GRANT),
             ],
-            maps: &[(LOGIN_CRED_VA, verify_page, abi::address_space::MAP_RW)],
+            maps: &[(
+                LOGIN_CRED_VA,
+                verify_page,
+                abi::address_space::MAP_READ_WRITE,
+            )],
             // No slot cost: `fill_and_map` holds one frame capability at a time.
             blobs: &[
                 (login_contract::CARETAKER_ELF_VA, p.care_blob),
@@ -1243,7 +1318,10 @@ fn start_login(
 /// Build and start `login_audit_receiver`; returns the endpoint `login` sends its audit on.
 #[inline(never)]
 fn start_login_audit(ut: u64, p: &LoginPrograms) -> u64 {
-    let audit = must(retype_obj(ut, abi::objtype::RENDEZVOUS));
+    let audit = must(retype_into_kernel_object_from(
+        ut,
+        abi::object_type::RENDEZVOUS,
+    ));
     let audit_program = p.audit_elf.as_ref().expect("have_login_stack checked this");
     let audit_child = must(build_child(
         ut,
@@ -1265,7 +1343,12 @@ fn start_login_audit(ut: u64, p: &LoginPrograms) -> u64 {
 #[inline(never)]
 fn place_login_capabilities(w: &Wiring, login_tcb: u64, run_unvouched: &mut Option<u64>) {
     let (g, ut) = (w.g, w.ut);
-    let d2 = *run_unvouched.get_or_insert_with(|| must(retype_obj(ut, abi::objtype::RENDEZVOUS)));
+    let d2 = *run_unvouched.get_or_insert_with(|| {
+        must(retype_into_kernel_object_from(
+            ut,
+            abi::object_type::RENDEZVOUS,
+        ))
+    });
     must_ok(place_at(
         login_tcb,
         d2,
@@ -1296,8 +1379,12 @@ fn place_login_capabilities(w: &Wiring, login_tcb: u64, run_unvouched: &mut Opti
 #[inline(never)]
 pub(super) fn give_away_budget(w: &Wiring, shell_tcb: u64, run_unvouched: Option<u64>) -> Kept {
     let (ut, term_ep) = (w.ut, w.term.ep);
-    let run_unvouched =
-        run_unvouched.unwrap_or_else(|| must(retype_obj(ut, abi::objtype::RENDEZVOUS)));
+    let run_unvouched = run_unvouched.unwrap_or_else(|| {
+        must(retype_into_kernel_object_from(
+            ut,
+            abi::object_type::RENDEZVOUS,
+        ))
+    });
     must_ok(place_at(
         shell_tcb,
         run_unvouched,
@@ -1325,7 +1412,7 @@ pub(super) fn give_away_budget(w: &Wiring, shell_tcb: u64, run_unvouched: Option
     // `NoSuchSlot` (-1), not `NotPermitted` (-3): gone, not narrowed. `script/swish-check` reads
     // the sentence.
     let frame = retype_into_page_frame(ut);
-    let object = retype_into_kernel_object(ut, abi::objtype::THREAD_CONTROL_BLOCK);
+    let object = retype_into_kernel_object(ut, abi::object_type::THREAD_CONTROL_BLOCK);
     announce(
         term_ep,
         if frame == -1 && object == -1 {

@@ -5,13 +5,17 @@
 /// is cleared, so the child cannot forge fault messages on it. An empty slot means unsupervised:
 /// the thread dies and is reaped at once. It is the last slot, away from the low slots a child's
 /// grants fill, so an unsupervised child never lands a working endpoint here by accident.
-pub const FAULT_EP_SLOT: u64 = super::CAPABILITY_TABLE_SLOTS - 1;
+///
+/// Name: ratified 2026-11-11 (UTC). The slot is a capability-table position and the rendezvous is
+/// the object it holds; the value stays the last slot. Refused `FAULT_EP_SLOT` (`EP` abbreviates
+/// "endpoint", the object's name before it became a rendezvous).
+pub const FAULT_RENDEZVOUS_SLOT: u64 = super::CAPABILITY_TABLE_SLOTS - 1;
 
 // "The last slot" is the whole claim above; a wrong operator in the line before would still
 // compile, so this makes it one that does not (a mutation-survivor triage).
-const _: () = assert!(FAULT_EP_SLOT + 1 == super::CAPABILITY_TABLE_SLOTS);
+const _: () = assert!(FAULT_RENDEZVOUS_SLOT + 1 == super::CAPABILITY_TABLE_SLOTS);
 
-/// `w0`: the thread faulted. **The message format** of the fault endpoint: a plain `RECEIVE`
+/// `w0`: the thread faulted. **The message format** of the fault rendezvous: a plain `RECEIVE`
 /// of a death gets five words, and `r5` the label (resolved by asking the kernel).
 /// ```text
 ///   w0  event  FAULT or EXIT

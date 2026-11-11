@@ -160,7 +160,7 @@ source is armed.
   `crate::arch::interrupt_controller::enable`, and then supervisor external interrupts. The input
   driver arms the
   NS16550's own receive interrupt when it starts, and re-arms the PLIC source through its Interrupt
-  capability's `ACK`.
+  capability's `ACKNOWLEDGE`.
 
 The virtio starters therefore hand back an interrupt that is routed but not enabled
 (`VirtioBootGrant::intid`), and the caller enables it beside the UART's.
