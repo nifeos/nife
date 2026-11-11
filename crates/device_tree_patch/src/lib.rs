@@ -1281,13 +1281,13 @@ mod tests {
     /// bounds it, the way `device_tree_blob` refuses one. On a 64-bit target no field of a real tree
     /// gets there, so this calls the arithmetic directly.
     #[test]
-    fn an_offset_near_the_end_of_the_address_space_is_refused_not_overflowed() {
+    fn an_offset_that_would_overflow_is_refused_not_wrapped() {
         assert_eq!(be32(&[0; 8], usize::MAX - 1), Err(Error::Truncated));
         assert_eq!(align4(usize::MAX - 1), Err(Error::Truncated));
         assert_eq!(align4(5), Ok(8));
-        let mut buf = [0; 4];
+        let mut buffer = [0; 4];
         let mut o = Out {
-            buf: &mut buf,
+            buf: &mut buffer,
             at: usize::MAX,
         };
         assert_eq!(o.bytes(&[1]), Err(Error::OutputTooSmall));
