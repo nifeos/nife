@@ -783,6 +783,30 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
     );
 }
 
+/// **The PCI disk takes the direct grant the default gives it, and the mediated one too.** On a
+/// runner whose IOMMU confines the disk, the starter grants it direct (milestone 1062 step 7, the
+/// 2026-11-11 default), and the read test beside this one drives it so. This drives the same
+/// read on the mediated grant, so both paths run on this architecture.
+#[test_case]
+fn the_pcie_disk_reads_on_either_grant() {
+    let Some(d) = crate::pci::find_block_device() else {
+        crate::testing::skip!("no virtio-pci disk on the bus");
+    };
+    if crate::iommu::is_active() {
+        assert!(
+            crate::user::virtio_grant::choose(&d).is_ok(),
+            "the runner's IOMMU confines the PCI disk, yet the default grants it mediated",
+        );
+    }
+    let report = virtio_service::start_pci_mediated(blk_image()).expect("the disk is on the bus");
+    let word = sched::ipc_receive(report)[0];
+    assert_eq!(
+        &word.to_le_bytes(),
+        b"nife: re",
+        "the mediated driver reported the wrong file contents over pci",
+    );
+}
+
 /// The write round trip on the second ISA (milestone 32 phase 1); see the aarch64 twin for
 /// what the report certifies.
 #[test_case]

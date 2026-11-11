@@ -16,4 +16,8 @@ address_space_map = { version = "0.1.0", path = "../address_space_map" }
 # stride was the only place in the tree that had to be found by hand.
 nifefs = { version = "0.1.0", path = "../nifefs" }
 filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
+# A direct grant's handoff and window kinds, which the starter and this driver share.
+driver_process_contract = { version = "0.1.0", path = "../driver_process_contract" }
+# A direct grant's windows are on the startup page.
+startup_page_contract = { version = "0.1.0", path = "../startup_page_contract" }
 user_mode_runtime = { version = "0.1.0", path = "../user_mode_runtime" }

@@ -1821,8 +1821,10 @@ name = "virtio"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "driver_process_contract",
  "filesystem_contract",
  "nifefs",
+ "startup_page_contract",
  "user_mode_runtime",
 ]
 

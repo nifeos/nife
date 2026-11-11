@@ -26,9 +26,9 @@
 //! refused `virtio_net` for the transport adapter because this crate also drives net).
 
 use filesystem_contract::blk;
-use user_mode_runtime::virtio::{
-    notify, read_register, setup_queue, virtio_ring_barrier, write_register,
-};
+use user_mode_runtime::virtio::{read_register, virtio_ring_barrier, write_register};
+
+pub mod direct;
 use user_mode_runtime::{
     exit, interrupt_acknowledge, interrupt_wait, receive_request, reply, send,
 };
@@ -105,23 +105,56 @@ const OFF_STATUS: u64 = 0x600; // 1-byte status
 
 const BLOCK: usize = 512;
 
-/// Read a device register, through the kernel. Reads are DMA-safe, so any register is allowed.
+/// Read a device register: through the kernel on a mediated grant, where reads are DMA-safe so
+/// any register is allowed, or from the mapped structures on a direct one ([`direct::read`]).
 fn mr(off: u64) -> u32 {
+    if direct::is_direct() {
+        return direct::read(off);
+    }
     read_register(VIRTIO, off) as u32
 }
-/// Write a DMA-*safe* device register (status, features, interrupt-ack) through the kernel. The
-/// queue-address and notify registers are NOT writable this way: the kernel owns them.
+/// Write a DMA-*safe* device register (status, features, interrupt-ack): through the kernel on a
+/// mediated grant, which owns the queue-address and notify registers, or directly on a direct one.
 fn mw(off: u64, v: u32) {
+    if direct::is_direct() {
+        return direct::write(off, v);
+    }
     write_register(VIRTIO, off, v as u64);
 }
 
+/// Set up `queue` with `entries` entries at the fixed layout's offsets in the DMA region: the kernel
+/// places the rings on a mediated grant, this driver on a direct one ([`direct::setup_queue`]).
+/// 0 on success.
+fn setup_queue(slot: u64, entries: u64, queue: u64) -> i64 {
+    if direct::is_direct() {
+        return direct::setup_queue(entries, queue);
+    }
+    user_mode_runtime::virtio::setup_queue(slot, entries, queue)
+}
+
+/// Ring `queue`: through the kernel on a mediated grant, which validates every new descriptor
+/// first and answers negative for one that escapes the region; one doorbell store on a direct
+/// grant, where the IOMMU (Input-Output Memory Management Unit) is the confinement ([`direct::notify`]).
+fn notify(slot: u64, queue: u64) -> i64 {
+    if direct::is_direct() {
+        return direct::notify(queue);
+    }
+    user_mode_runtime::virtio::notify(slot, queue)
+}
+
+/// The DMA region's virtual base: the fixed page a mediated grant maps, or the window a direct
+/// grant's startup page lists.
+fn region() -> u64 {
+    direct::region().unwrap_or(DMA_VA)
+}
+
 fn direct_memory_access_write<T>(off: u64, val: T) {
-    // SAFETY: off is within the DMA page and T fits; the page is mapped read/write.
-    unsafe { core::ptr::write_volatile((DMA_VA + off) as *mut T, val) };
+    // SAFETY: off is within the DMA region and T fits; the region is mapped read/write.
+    unsafe { core::ptr::write_volatile((region() + off) as *mut T, val) };
 }
 fn direct_memory_access_read<T: Copy>(off: u64) -> T {
     // SAFETY: as above.
-    unsafe { core::ptr::read_volatile((DMA_VA + off) as *const T) }
+    unsafe { core::ptr::read_volatile((region() + off) as *const T) }
 }
 
 /// The virtio handshake and queue setup, shared by the real driver and the attack test. The queue

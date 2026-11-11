@@ -62,6 +62,34 @@ pub fn notify(virtio_slot: u64, queue: u64) -> i64 {
     unsafe { super::invoke(virtio_slot, abi::virtio::NOTIFY, queue, 0, 0) }
 }
 
+/// **Order this driver's ring writes before a doorbell store to device memory**: what a driver
+/// granted direct needs where a mediated one has a system call. `dmb oshst` on aarch64, the
+/// barrier Linux's `writel` takes, since `dmb ish` orders against other CPUs only; `fence w,o` on
+/// riscv64; on `x86_64` the device mapping is uncacheable and TSO keeps the stores in order, so
+/// only a compiler fence is needed.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-transport.
+pub fn doorbell_barrier() {
+    // SAFETY: a barrier has no operands and cannot be unsound; it only constrains ordering.
+    #[cfg(target_arch = "aarch64")]
+    unsafe {
+        core::arch::asm!("dmb oshst", options(nostack, preserves_flags));
+    }
+    // SAFETY: as above.
+    #[cfg(target_arch = "riscv64")]
+    unsafe {
+        core::arch::asm!("fence w, o", options(nostack, preserves_flags));
+    }
+    #[cfg(target_arch = "x86_64")]
+    core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
+    #[cfg(not(any(
+        target_arch = "aarch64",
+        target_arch = "riscv64",
+        target_arch = "x86_64"
+    )))]
+    compile_error!("doorbell_barrier(): this architecture has no ordering named here.");
+}
+
 /// **Order this driver's normal-memory accesses to a virtqueue against the device's**: a descriptor
 /// before its available index, that index before the notify, a used index before its payload.
 ///

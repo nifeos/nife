@@ -567,16 +567,73 @@ fn start_role(image: &'static [u8], role: u64) -> Option<RendezvousId> {
     ))
 }
 
-/// [`wire`] against the enumerated PCIe disk, at `role`.
+/// Start a driver role against the enumerated PCIe disk, with the grant the default gives it
+/// (`virtio_grant::choose`): direct where the IOMMU confines the function, mediated otherwise.
 fn start_role_pci(image: &'static [u8], role: u64) -> Option<RendezvousId> {
     let d = crate::pci::find_block_device()?;
-    Some(wire(
+    match super::virtio_grant::choose(&d) {
+        Ok(window) => Some(wire_direct(image, &d, &window, role)),
+        Err(_) => Some(wire_mediated_pci(image, &d, role)),
+    }
+}
+
+/// The read driver against the PCIe disk on the mediated grant, whatever the default would give
+/// it, so the mediated PCI path runs on every architecture beside the direct one.
+pub fn start_pci_mediated(image: &'static [u8]) -> Option<RendezvousId> {
+    let d = crate::pci::find_block_device()?;
+    Some(wire_mediated_pci(image, &d, ROLE_VIRTIO_BLK))
+}
+
+/// [`wire`] against a PCIe function, mediated.
+fn wire_mediated_pci(
+    image: &'static [u8],
+    d: &crate::pci::PciVirtioDevice,
+    role: u64,
+) -> RendezvousId {
+    wire(
         image,
-        crate::virtio::Transport::pci(&d),
+        crate::virtio::Transport::pci(d),
         d.intid,
         role,
         Some(d.rid), // the PCIe requester id, the IOMMU keys its tables on it
-    ))
+    )
+}
+
+/// **Start a driver role on a direct grant** of `d`: its structure pages and a one-page DMA region
+/// the IOMMU confines, an interrupt and a report endpoint, and no `Virtio` capability. The same
+/// role numbers and slots 0 and 1 as [`wire`], so the driver binary runs either grant.
+fn wire_direct(
+    image: &'static [u8],
+    d: &crate::pci::PciVirtioDevice,
+    window: &driver_process_contract::virtual_input_output::RegisterWindow,
+    role: u64,
+) -> RendezvousId {
+    let direct = super::virtio_grant::carve(d, window, role as u16, 1)
+        .expect("no DMA frame for the direct virtio driver");
+    let interrupt_ep = crate::sched::create_rendezvous();
+    crate::sched::bind_interrupt(d.intid, interrupt_ep);
+    crate::arch::interrupt_controller::enable(d.intid);
+    let report = crate::sched::create_rendezvous();
+    let intid = d.intid;
+    crate::sched::spawn(move || {
+        let words = direct.words;
+        run(
+            image,
+            Spawn {
+                arg0: words[0],
+                arg1: words[1],
+                arg2: words[2],
+                grants: &[
+                    rendezvous_capability(report, Rights::WRITE), // slot 0: SEND the result
+                    interrupt_capability(intid), // slot 1: WAIT / ACK the interrupt
+                ],
+                maps: direct.maps(),
+                windows: &direct.windows,
+            },
+        )
+    })
+    .expect("could not spawn the direct virtio driver");
+    report
 }
 
 const ROLE_VIRTIO_ATTACK: u64 = 8;
