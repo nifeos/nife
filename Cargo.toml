@@ -54,7 +54,6 @@ members = [
     "crates/page_frames",
     "crates/filesystem_contract",
     "crates/filesystem_fixture",
-    "crates/file_allocation_table",
     "crates/firmware_configuration",
     "crates/graphics_contract",
     "crates/glob",

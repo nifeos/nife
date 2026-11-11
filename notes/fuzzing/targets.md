@@ -59,37 +59,6 @@ test's job. A table that survives the CRC and then makes one of those wrap is wh
 The fixtures use 512-byte blocks. 4K-native disks exist, and the parser takes the block size from
 the header block's length, so a second split would be worth adding.
 
-## `file_allocation_table_boot_sector`
-
-A FAT volume arrives on a stick a stranger formatted, and its boot sector says where every table,
-the root directory and each cluster lie. A wrong number there sends every later read to the wrong
-sector, or past the volume. The crate's four Kani harnesses already cover `BootSector::parse` on
-every 512-byte sector, since the parse has no loop. What they cannot reach is the device path: a
-4096-byte sector, a device whose sector size disagrees with the volume, and the accessors a reader
-calls once the parse has said yes. So the target reads each input at all four sector sizes through
-a `SectorDevice` over the bytes, and checks the same geometry the harnesses prove on everything
-accepted. The dosfstools-made fixtures seed it unmodified.
-
-Then it opens the volume and walks its tree: every directory's slots, and every short entry's
-chain, four directories deep. Each chain must yield only data clusters, no more than the volume
-holds, and a walk that fails with `TooLong` must have yielded exactly that many. Kani proves the
-walk's bound on volumes of up to eight clusters; this holds it on whole images. A budget of 16,384
-steps per input keeps a hostile volume that claims millions of clusters from turning one input into
-a timeout. `fuzz/seeds/file_allocation_table_boot_sector/small-tree.img`, a 6 KiB FAT12 volume
-`fuzz/seeds/make-fat12-tree.py` writes, seeds the walk, since the boot sectors hold no tree.
-
-## `file_allocation_table_writer`
-
-The reader target holds the parser to what a stranger's stick can say. This one holds the writer to
-what it promises on any volume. Operations decoded from the input (create a file, write, set a
-length, seek and write, remove, make and remove a directory, rename) run against either a hostile
-128 KiB image or an empty volume the crate formats. Names come from a small alphabet, so they
-collide, nest and need long-name slots. Nothing may panic or write outside the image. On the
-formatted volume, after `mark_clean`, the root still lists, holds no more entries than the writer made,
-and the shutdown bit reads clean. `fuzz/seeds/file_allocation_table_writer`
-holds one seed of each kind: the reader's small tree behind the hostile-image byte, and a short
-script of operations behind the formatted byte.
-
 ## `capability_manifest_note_decode`
 
 Whoever built a program wrote the manifest note inside its ELF, and the progenitor decodes it to

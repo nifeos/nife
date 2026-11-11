@@ -42,7 +42,7 @@ uuid = { version = "1.28.0", default-features = false }
 # The FAT32 `mkfs` the installer lays its EFI system partition down with (milestone 578 (an ACPI
 # discovery path for aarch64), item 7): `acpi-boot` writes the cloud boot disk with the same crate,
 # so the disk a person imports into a cloud is the installer's format, booted by EDK2 in the gate.
-file_allocation_table = { version = "0.1.0", path = "../crates/file_allocation_table" }
+file_allocation_table = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/file_allocation_table", rev = "9b3eac1cdbb19cc6668e3346296c8cee87e32214" }
 # **The boot state `cargo xtask rollback-boot` stages an upgrade with** (rung 2b of milestone 198 (a package manager, and the trivial install that makes a second customer possible)).
 # The gate writes a slot's attribute bits through exactly the code the installer writes them with,
 # so what it exercises is the format rather than a host-side second spelling of it.

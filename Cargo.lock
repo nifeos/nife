@@ -500,11 +500,8 @@ source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev
 
 [[package]]
 name = "file_allocation_table"
-version = "0.1.0"
-dependencies = [
- "lamfat",
- "ruzstd",
-]
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/file_allocation_table?rev=9b3eac1cdbb19cc6668e3346296c8cee87e32214#9b3eac1cdbb19cc6668e3346296c8cee87e32214"
 
 [[package]]
 name = "filesystem_contract"
@@ -842,16 +839,6 @@ dependencies = [
  "thread_wake_handshake",
  "video_terminal",
  "work_steal_slot",
-]
-
-[[package]]
-name = "lamfat"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7d4340238d6ebca31df00ac672df6615e3250247da0b31dfb8e2851e388fbf1"
-dependencies = [
- "bitflags 2.13.2",
- "log",
 ]
 
 [[package]]
@@ -1197,15 +1184,6 @@ name = "rustversion"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
-
-[[package]]
-name = "ruzstd"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69e4ce4a039f42bf25920b95667e4d789e98749ab11bbb8d2c2936f788421bb5"
-dependencies = [
- "twox-hash",
-]
 
 [[package]]
 name = "same-file"
@@ -1727,12 +1705,6 @@ dependencies = [
  "tracing-core",
  "tracing-log",
 ]
-
-[[package]]
-name = "twox-hash"
-version = "2.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86a801b3cea342a06d468c8710662aa29e5e05e4f5c0d62f00bbb7f2ad7941c2"
 
 [[package]]
 name = "typenum"

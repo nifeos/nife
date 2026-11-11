@@ -278,7 +278,7 @@ pub const SLOT_VERSION: u32 = 1;
 /// Only the first [`SLOT_HEADER_BYTES`] carry anything. The rest is padding, and it is padding
 /// rather than a smaller reservation so that **the image starts on a transfer-block boundary**.
 /// `system_installer` writes whole 4096-byte blocks, and milestone 198 rung 2a already lost ten megabytes
-/// to an unaligned start once; that bug is recorded in `crates/file_allocation_table` and this
+/// to an unaligned start once; that bug is recorded in `nifeos/file_allocation_table` and this
 /// number is what stops it happening a second time in a different file.
 pub const SLOT_IMAGE_OFFSET: u64 = 4096;
 
