@@ -108,12 +108,17 @@ pub fn doorbell_barrier() {
 /// recorded it as outside calef's 2026-10-08 (UTC) renames of this module's wrappers. No other
 /// name is recorded.
 pub fn virtio_ring_barrier() {
+    // No `nomem`. The Rust reference (Inline assembly, Options) defines it as a block that "does not
+    // read or write to any memory accessible outside of the `asm!` block", which lets the compiler
+    // cache values in registers and move loads and stores across it, and it adds that the compiler
+    // "also assumes that this `asm!` block does not perform any kind of synchronization with other
+    // threads, e.g. via fences". A barrier exists to order memory, so it must not claim either.
     // SAFETY: a barrier has no operands and cannot be unsound; it only constrains ordering.
     #[cfg(target_arch = "aarch64")]
     unsafe {
-        core::arch::asm!("dmb ish", options(nostack, nomem, preserves_flags));
+        core::arch::asm!("dmb ish", options(nostack, preserves_flags));
     }
-    // SAFETY: as above. `fence` carries no `nomem`, deliberately: ordering memory is its job.
+    // SAFETY: as above.
     #[cfg(target_arch = "riscv64")]
     unsafe {
         core::arch::asm!("fence", options(nostack, preserves_flags));

@@ -109,10 +109,15 @@ const NANOSECONDS_PER_MILLISECOND: u64 = 1_000_000;
 /// The NVMe server's barrier and for its reason (`components/src/non_volatile_memory_express.rs`
 /// says why it is local rather than shared): the doorbell is a direct store to a device page.
 fn barrier() {
+    // No `nomem`. The Rust reference (Inline assembly, Options) defines it as a block that "does not
+    // read or write to any memory accessible outside of the `asm!` block", which lets the compiler
+    // cache values in registers and move loads and stores across it, and it adds that the compiler
+    // "also assumes that this `asm!` block does not perform any kind of synchronization with other
+    // threads, e.g. via fences". A barrier exists to order memory, so it must not claim either.
     // SAFETY: a barrier has no operands and cannot be unsound; it only constrains ordering.
     #[cfg(target_arch = "aarch64")]
     unsafe {
-        core::arch::asm!("dmb sy", options(nostack, nomem, preserves_flags));
+        core::arch::asm!("dmb sy", options(nostack, preserves_flags));
     }
     // SAFETY: as above.
     #[cfg(target_arch = "riscv64")]
@@ -122,7 +127,7 @@ fn barrier() {
     // SAFETY: as above.
     #[cfg(target_arch = "x86_64")]
     unsafe {
-        core::arch::asm!("mfence", options(nostack, nomem, preserves_flags));
+        core::arch::asm!("mfence", options(nostack, preserves_flags));
     }
     #[cfg(not(any(
         target_arch = "aarch64",
