@@ -1,0 +1,32 @@
+[package]
+name = "jh7110_clock_and_reset_devices"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Which StarFive JH7110 clocks and resets each device needs, keyed by its register base, and the walk that brings one device up"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "jh7110", "clock"]
+categories = ["no-std", "embedded", "hardware-support"]
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+
+# The JH7110 clock and reset server's device table: each device's plans, keyed by its register
+# base, and the walk over caller-supplied windows. Pure logic, host-tested, no_std, no unsafe, so
+# the server's register stores stay a thin shell over it.
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
+
+[dependencies]
+jh7110_clock_and_reset = { version = "0.1.0", path = "../jh7110_clock_and_reset" }

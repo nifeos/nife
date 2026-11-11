@@ -359,6 +359,15 @@ path = "src/jh7110_entropy.rs"
 test = false
 bench = false
 
+# The JH7110 clock and reset server (milestone 1062 (the device control planes leave the kernel),
+# step 2): the one process that writes the shared clock and reset windows, bringing up only the
+# device a caller's badge names (§320 (the JH7110 clock and reset wire)). Name provisional.
+[[bin]]
+name = "jh7110_clock_and_reset_server"
+path = "src/jh7110_clock_and_reset_server.rs"
+test = false
+bench = false
+
 # radon's SD/MMC block server (milestone 53 (the board's own peripherals: network and storage on
 # real silicon)): `filesystem_contract::blk` over the JH7110's DesignWare Mobile Storage Host
 # Controller, one register page and a transfer region, no DMA. It shares its crate's name, as
@@ -697,6 +706,10 @@ machine_statistics_contract = { version = "0.1.0", path = "../crates/machine_sta
 uptime = { version = "0.1.0", path = "../crates/uptime" }
 elf = { version = "0.1.0", path = "../crates/elf" }
 entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
+# The JH7110's clock and reset device table and walk, host-tested in its own crate;
+# jh7110_clock_and_reset_server.rs is the volatile shell over it, speaking the contract crate's wire.
+jh7110_clock_and_reset_devices = { version = "0.1.0", path = "../crates/jh7110_clock_and_reset_devices" }
+jh7110_clock_and_reset_contract = { version = "0.1.0", path = "../crates/jh7110_clock_and_reset_contract" }
 # The JH7110 TRNG's register logic, DTB discovery and byte pool (milestone 159), host-tested in
 # the crate itself; jh7110_entropy.rs is the volatile shell of register writes over it.
 jh7110_entropy = { version = "0.2.0", git = "https://github.com/nifeos/jh7110_entropy", rev = "cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06" }

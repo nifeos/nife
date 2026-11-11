@@ -47,6 +47,10 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    `kernel/src/drivers/jh7110_clock_and_reset.rs` shrinks to what the kernel's own
    JH7110 watchdog (milestone 593 (a wedged kernel resets itself)) needs to turn its clock on, and
    the entropy and Ethernet bring-ups ask the server instead.
+   The server is `components/src/jh7110_clock_and_reset_server.rs`, its wire
+   `crates/jh7110_clock_and_reset_contract` and its device table
+   `jh7110_clock_and_reset_devices`. The SD/MMC starters ask it too, and the reboot path's I2C5
+   bring-up keeps the kernel's walk until step 5 replaces that path.
 3. The DesignWare GMAC control plane, which brings its clocks and resets up through step 2's
    server with §320 (the JH7110 clock and reset wire)'s bring-up verb. Its
    userspace control process holds the channel and MAC pages. `kernel/src/designware_ethernet.rs`
