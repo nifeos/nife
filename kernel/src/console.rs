@@ -246,6 +246,11 @@ pub(crate) unsafe fn attach_screen(found: Framebuffer, virt: u64) -> Option<(u32
 /// For a line whose UART copy a userspace program already printed, which would read twice on the
 /// wire if [`crate::println!`] printed it again: the one caller is the self-test verdict
 /// (`user::self_test_hand_over`), which the progenitor's console prints to the UART alone.
+// The one caller is the self-test's hand-over, which the test and benchmark kernels do not build.
+#[cfg_attr(
+    any(test, feature = "system_tests", feature = "bench"),
+    allow(dead_code)
+)]
 pub(crate) fn paint_on_screen(line: core::fmt::Arguments) {
     /// The screen half of [`write_wire`], as a `Write`.
     struct ScreenOnly<'a> {
