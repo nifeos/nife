@@ -280,7 +280,7 @@ pub(super) fn killed_thread(line: &str) -> Option<u64> {
 /// line, and runs after the hand-over, so its kills are in what every check here reads. A report
 /// whose first line names one of those threads goes, through its `the kernel is fine.` line when
 /// that is within [`KILL_REPORT_LINES`], else its first line alone. Every other report stays, so a
-/// kill of any thread the self-test did not name (`login` dying, milestone 233) still fails
+/// kill of any thread the self-test did not name (`login` dying, milestone 233 (`login` dies on every boot, and the boot says it is ready)) still fails
 /// `kernel_fault_failure` and still counts as the kernel writing during the boot.
 pub(super) fn without_deliberate_kills(transcript: &str) -> String {
     let named: std::collections::BTreeSet<u64> = transcript
