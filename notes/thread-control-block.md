@@ -139,8 +139,8 @@ obligations:
 - The name is a moment old, so no other token for the page exists.
 - Every queue holding a `Thread` is behind `IPC_TABLES` or an inbox lock.
 - The token's pointer is the page pointer the table stores, which every later access derives from.
-  A pointer taken from `get_mut`'s `&mut Thread` would be invalidated by the next `get_mut` on the
-  same thread, and `get_mut` runs on queued threads.
+  The next `get_mut` on the same thread would invalidate a pointer taken from `get_mut`'s
+  `&mut Thread`, and `get_mut` runs on queued threads.
 
 ### Removal order
 

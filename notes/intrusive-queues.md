@@ -135,21 +135,20 @@ through the table (a mailbox write, the revocation sweep's `iter_mut`). Rust's a
 which Miri checks (Stacked Borrows, and Tree Borrows with `-Zmiri-tree-borrows`), decide whether
 that is sound by the token's provenance, not by how the link is accessed:
 
-- A token derived from a `&mut` reborrow of the node, such as `NonNull::from(get_mut(..))`, is
-  invalidated by the next `&mut` reborrow of the same node from its owner. The queue's next push
-  or pop through it is undefined behaviour under both models.
-- A token derived from the owning pointer (the one `Box::into_raw` returned, or the page pointer
-  the thread table stores) survives those reborrows, because each reborrow is derived from that
-  pointer too, and using the token afterwards only ends the reborrow.
+- A token taken from a `&mut` reborrow of the node, such as `NonNull::from(get_mut(..))`, dies at
+  the owner's next `&mut` reborrow of the same node. The queue's next push or pop through it is
+  undefined behaviour under both models.
+- A token taken from the owning pointer (the one `Box::into_raw` returned, or the page pointer
+  the thread table stores) survives those reborrows, because each reborrow also comes from that
+  pointer, and using the token afterwards only ends the reborrow.
 
 So `Unqueued::new` requires the second shape, and `Threads::mint_token` mints from the pointer the
-table stores. The crate's test
-`a_token_from_the_owning_pointer_survives_the_owners_reborrows` runs the thread table's sequence
-(store the owning pointer, mint from it, reborrow the node while it moves on and off a queue,
-retire it), and both models pass it; minted from a reborrow instead, both report undefined
-behaviour at the next push. Every access is also serialized by `SCHED` or a queue's own
-synchronization, so no two accesses overlap in time. The kernel itself does not run under Miri, so
-its own adherence is this argument and not a run. The Kani harnesses are unaffected: Kani does not
+table stores. The crate's test `a_token_from_the_owning_pointer_survives_the_owners_reborrows`
+runs the thread table's sequence: store the owning pointer, mint from it, reborrow the node while
+it moves on and off a queue, and retire it. Both models pass it. With the token minted from a
+reborrow instead, both report undefined behaviour at the next push. `SCHED` or a queue's own
+synchronization also serializes every access, so no two accesses overlap in time. Miri never runs
+the kernel itself, so the kernel's adherence rests on this argument and not on a run. The Kani harnesses are unaffected: Kani does not
 model aliasing.
 
 ## Where thread ids still live

@@ -530,27 +530,27 @@ mod tests {
         );
         // SAFETY: two live nodes on no queue, each minted once from the pointer the table
         // stores, and freed only after their tokens are gone.
-        let (ta, tb) = unsafe { (Unqueued::new(table.0[0]), Unqueued::new(table.0[1])) };
+        let (token_a, token_b) = unsafe { (Unqueued::new(table.0[0]), Unqueued::new(table.0[1])) };
         let mut q: Queue<N> = Queue::new();
 
-        q.push_back(ta);
+        q.push_back(token_a);
         // A reborrow while the node is queued, as a mailbox write or the revocation sweep makes.
         table.get_mut(0).tag = 10;
         // This push writes the queued node's link through its token.
-        q.push_back(tb);
+        q.push_back(token_b);
         table.get_mut(1).tag = 20;
-        let ta = q.pop_front().unwrap();
-        assert_eq!(tag(&ta), 10);
+        let token_a = q.pop_front().unwrap();
+        assert_eq!(tag(&token_a), 10);
         table.get_mut(0).tag = 11;
-        q.push_back(ta);
-        let tb = q.pop_front().unwrap();
-        let ta = q.pop_front().unwrap();
-        assert_eq!((tag(&tb), tag(&ta)), (20, 11));
+        q.push_back(token_a);
+        let token_b = q.pop_front().unwrap();
+        let token_a = q.pop_front().unwrap();
+        assert_eq!((tag(&token_b), tag(&token_a)), (20, 11));
         assert!(q.is_empty());
 
         // Retire: both tokens are off every queue, and the nodes go back through the stored
         // pointers.
-        drop((ta, tb));
+        drop((token_a, token_b));
         for p in table.0 {
             // SAFETY: each came from `Box::into_raw` above, and no queue or token reaches it now.
             drop(unsafe { Box::from_raw(p.as_ptr()) });
