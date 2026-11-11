@@ -125,6 +125,7 @@ def selftest():
             ('A `robust` span and\n```\nrobust\n```\n', []),
             ('# A robust heading\n\nPlain.\n', [(1, 'robust')]),
             ('Robustness is another word here.\n', []),
+            ('# c\n\n[![robust](https://x.example/b.svg)](https://x.example)\n\nPlain.\n', []),
             ('It is worth\n\nnoting across paragraphs.\n', []),
         ]
         for src, want in cases:

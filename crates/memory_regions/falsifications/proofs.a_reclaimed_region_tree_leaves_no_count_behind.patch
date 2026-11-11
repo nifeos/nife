@@ -1,0 +1,21 @@
+Falsifies `memory_regions::proofs::a_reclaimed_region_tree_leaves_no_count_behind`.
+
+The defect: the claim gives back the claimed region's own slot and not the objects it still counts.
+It reads as complete, because threads and spaces release themselves before the reclaim; the
+rendezvous, notifications, timers and processes leave their tables only at the reclaim.
+
+Expected to fail: the harness's `assert!(after.live.get(counted) == 0, "a count outlived its
+subtree")`, after any run that carved one of those kinds below the root.
+
+diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
+--- a/crates/memory_regions/src/table.rs
++++ b/crates/memory_regions/src/table.rs
+@@ -719,7 +719,7 @@ impl<const N: usize> RegionTable<N> {
+         };
+         // A claimable region has no children, so its subtree is itself: what it still counts, and
+         // the region itself, leave every ancestor in this borrow.
+-        let mut gone = r.live;
++        let mut gone = Ceilings::ZERO;
+         gone.0[Counted::Region.index()] = 1;
+         let mut at = r.parent;
+         for _ in 0..N {
