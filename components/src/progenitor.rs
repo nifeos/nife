@@ -110,6 +110,10 @@ const GRANTS: BootEndowment = BootEndowment {
     // `READ` alone, granted on every boot past the disk tree's pair (32 and 33), so no slot moves.
     // `system_initializer::boot` checks the measurement table against it before reading the table.
     base_digest_page: 34,
+    // The board's PMIC route (milestone 1062 (the device control planes leave the kernel), step 5),
+    // granted only on a board whose tree names the power controller's bus, past the base digest
+    // page so no slot moves. Kept by the spawn service beside the reboot object.
+    power_management_chip_route: 35,
     // Nothing. Since milestone 166 the boot loader is not shared with milestone 19d's test roles on
     // any architecture, so the kernel grants exactly what the interactive system uses. aarch64 once
     // carried a report endpoint (slot 1) and the 19d.2b test interrupt (slot 3) here.

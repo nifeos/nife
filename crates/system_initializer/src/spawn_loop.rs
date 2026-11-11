@@ -107,6 +107,11 @@ pub(super) struct Channels {
     /// [`grant_plan::REBOOT_SLOT`] and says so. The shell holds none: restarting the machine is not
     /// something a builtin does.
     pub(super) reboot: Option<u64>,
+    /// **The board's PMIC route** (milestone 1062, step 5), endowed `WRITE` at
+    /// [`grant_plan::POWER_MANAGEMENT_CHIP_ROUTE_SLOT`] beside the reboot object, and to nothing
+    /// else. `None` on every machine whose kernel spawned no route, and then the declaring child
+    /// holds an empty slot and asks the reboot object alone.
+    pub(super) power_management_chip_route: Option<u64>,
     /// **The image's package catalog**, measured (milestone 198 rung 3a's installer): one
     /// `<stem> <digest>` line per package the image vouches for (`package_archive::CATALOG`).
     /// Empty when the archive carried none or the table refused it, and then every
@@ -389,7 +394,7 @@ struct DirWiring {
 struct NativeEndowment {
     in_order: [(u64, u64); 6],
     n: usize,
-    placed_buf: [(u64, u64, u64); 8],
+    placed_buf: [(u64, u64, u64); 9],
     placed_n: usize,
     map_buf: [(u64, u64, u64); 4],
     map_n: usize,
@@ -1397,7 +1402,7 @@ impl Service<'_> {
     }
 
     /// Place a native child's named slots: the second stream, the domain, entropy, the network,
-    /// the machine and share views, reboot and sync, each where its manifest says and with the
+    /// the machine and share views, reboot, the board's PMIC route and sync, each where its manifest says and with the
     /// narrowest right that serves it. The slots and why each right is the one given are in
     /// notes/system-initializer/the-child-layouts.md, "The native layout".
     fn named_slots(
@@ -1406,7 +1411,7 @@ impl Service<'_> {
         manifest: Option<grant_plan::Manifest>,
         wants: &Wants,
         sync_ep: Option<u64>,
-    ) -> ([(u64, u64, u64); 8], usize) {
+    ) -> ([(u64, u64, u64); 9], usize) {
         let Channels {
             deaths,
             jobs_ut,
@@ -1414,13 +1419,14 @@ impl Service<'_> {
             entropy,
             network,
             reboot,
+            power_management_chip_route,
             ..
         } = self.c;
         let diag_slot = manifest.and_then(|m| m.output.diagnostics_slot());
         // With no `2>` on the line the second stream goes to the terminal's own sink (§67 (a
         // program's second stream is a declaration, not a number)).
         let default_diag = term_sink.filter(|_| diag_slot.is_some());
-        let mut placed_buf = [(0u64, 0u64, 0u64); 8];
+        let mut placed_buf = [(0u64, 0u64, 0u64); 9];
         let mut placed_n = 0usize;
         if let (Some(ep), Some(slot)) = (req.delegated.diagnostics.or(default_diag), diag_slot) {
             placed_buf[placed_n] = (slot, ep, abi::rights::WRITE);
@@ -1460,6 +1466,16 @@ impl Service<'_> {
         // `WRITE` alone: the child can invoke the reboot object and cannot hand it on.
         if let (true, Some(r)) = (wants.reboot, reboot) {
             placed_buf[placed_n] = (grant_plan::REBOOT_SLOT, r, abi::rights::WRITE);
+            placed_n += 1;
+        }
+        // `WRITE` alone, the right to `CALL` the route, under the same declaration: the route
+        // restarts the board and does nothing else.
+        if let (true, Some(route)) = (wants.reboot, power_management_chip_route) {
+            placed_buf[placed_n] = (
+                grant_plan::POWER_MANAGEMENT_CHIP_ROUTE_SLOT,
+                route,
+                abi::rights::WRITE,
+            );
             placed_n += 1;
         }
         if let Some(f) = sync_ep {

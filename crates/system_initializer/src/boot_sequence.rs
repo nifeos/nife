@@ -42,6 +42,7 @@ use super::*;
 ///         kernel_ring: 24, kernel_ring_cursor: 25, kernel_ring_notification: 26,
 ///         usb_keyboard_attach: 27, own_space: 28,
 ///         net_stack_ep: 29, net_stack_report: 30, reboot: 31, base_digest_page: 34,
+///         power_management_chip_route: 35,
 ///         for_test_roles: &[],
 ///     };
 ///     boot(&endowment, initial_ramdisk_len, fs_rights, uart_shape, None)
@@ -339,6 +340,9 @@ fn spawn_channels(
         resolver: devices.resolver,
         // The reboot object, kept for the one program that declares it.
         reboot: is_granted(w.g.reboot).then_some(w.g.reboot),
+        // The board's PMIC route, kept for the same program, on a board that has one.
+        power_management_chip_route: is_granted(w.g.power_management_chip_route)
+            .then_some(w.g.power_management_chip_route),
         catalogue: catalog,
         index_sources,
         run_unvouched: kept.run_unvouched,

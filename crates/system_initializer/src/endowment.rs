@@ -189,6 +189,15 @@ pub struct BootEndowment {
     ///
     /// Name: provisional, milestone 805's lane, 2026-10-06 (UTC).
     pub reboot: u64,
+    /// **The board's PMIC route** (milestone 1062 (the device control planes leave the kernel),
+    /// step 5; §251, "A board's PMIC route runs in userspace"), `WRITE | GRANT`: an endpoint the
+    /// kernel grants only on a board whose tree names the power controller's bus, and empty on
+    /// every other machine. [`boot`](crate::boot) never calls it. The spawn service keeps it and
+    /// places `WRITE` at [`grant_plan::POWER_MANAGEMENT_CHIP_ROUTE_SLOT`] in the child that holds
+    /// the reboot object, which asks the route before the object.
+    ///
+    /// Name: provisional.
+    pub power_management_chip_route: u64,
     /// **The base digest page** (milestone 695 (the kernel trusts two digests from the loader),
     /// part 1): a `PageFrame` capability with `READ` alone, no `GRANT`, granted on every boot. It
     /// carries the loader's `nife.base` digest in `base_digest_contract`'s layout, and
