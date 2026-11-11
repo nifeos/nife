@@ -15,10 +15,10 @@ crate change, and the two decisions only an architect can take.
 
 There is no review package for this crate: `notes/crate-reviews/` has no `filesystem-fixture.md`
 and `notes/crate-reviews.md` has no row for it. This review therefore has no settled baseline to
-respect beyond the rulings already recorded in the tree: milestone 886 (the filesystem test fixture
+respect beyond the rulings already recorded in the tree. Milestone 886 (the filesystem test fixture
 moves to its own crate) ruled where the line between this crate and `filesystem_contract` sits and
-which protocol words stay behind; milestone 956 (the linked interfaces carry checkable versions)
-assigned interface id 16 at version 1; milestone 1017 (the contract crates leave in this order)
+which protocol words stay behind. Milestone 956 (the linked interfaces carry checkable versions)
+assigned interface id 16 at version 1. Milestone 1017 (the contract crates leave in this order)
 placed the crate in step 2. None of those is reopened here.
 
 The crate is on `crates/externalization-list.txt`. Milestone 1017's table pairs it with

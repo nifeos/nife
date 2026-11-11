@@ -84,7 +84,7 @@ spelling (the rule before a first release). Door: one-way at release. Effort: M.
 #### A README a stranger can follow, and an example that is not a twenty-line forgery
 
 Finding: no README exists (item 3 makes one). The two doctests (`src/error.rs` lines 11 to 30,
-`src/parse.rs` lines 42 to 61) each hand-build a 120-byte image inline, and the two test modules carry two
+`src/parse.rs` lines 42 to 61) each hand-build a 120-byte image inline. The two test modules carry two
 more hand-written ELF writers (`src/tests.rs` lines 8 to 100 `Builder`, `src/note.rs` lines 371 to 431 `image`). A
 stranger learns the crate from a byte-offset table four times over, and there is no `examples/`.
 

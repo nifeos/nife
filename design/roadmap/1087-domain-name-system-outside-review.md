@@ -14,12 +14,12 @@ meeting it on crates.io would read it. The review changed nothing; this block li
 lanes change, in the order the move needs them.
 
 The accepted baseline is thinner than for the other crates on journey 5: `notes/crate-reviews.md`
-lists no package for this crate, and `notes/crate-reviews/` holds none. What is settled is the crate
-name (ratified, with `dns` and `name_resolver` refused), the five constants ratified in pull request
-#2797 (`MAXIMUM_UDP_MESSAGE_BYTES`, `MAXIMUM_NAME_BYTES`, `MAXIMUM_LABEL_LEN`, `MAXIMUM_CHAIN`,
-`MAXIMUM_ADDRESSES`), §248 (the resolver is its own confined program) and §252 (one zone per client
-badge), which shape the callers and not this crate, and milestone 1017 (the contract crates leave in
-this order), which places this crate in step 5 with the `process-tools` leaves. This block reopens
+lists no package for this crate, and `notes/crate-reviews/` holds none. Four things are settled.
+The crate name is ratified, with `dns` and `name_resolver` refused. Pull request #2797 ratified
+five constants (`MAXIMUM_UDP_MESSAGE_BYTES`, `MAXIMUM_NAME_BYTES`, `MAXIMUM_LABEL_LEN`,
+`MAXIMUM_CHAIN`, `MAXIMUM_ADDRESSES`). Section 248 (the resolver is its own confined program) and
+§252 (one zone per client badge) shape the callers and not this crate. Milestone 1017 (the contract
+crates leave in this order) places this crate in step 5 with the `process-tools` leaves. This block reopens
 none of those except where a later rule contradicts a ratified name, and says so where it does
 (items 6 and 7).
 

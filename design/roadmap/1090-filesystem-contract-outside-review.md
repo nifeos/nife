@@ -14,15 +14,15 @@ milestone 1048 (`generational_table`: what an outside maintainer would fix befor
 that crate. It changes nothing; it lists what the move lane and the lanes after it change.
 
 There is no review package for this crate in `notes/crate-reviews/`. The baseline this review
-takes as settled is therefore the rulings recorded at the names themselves and in the roadmap: the
-crate name and the `_contract` suffix; `fs::VERSION`, `blk::VERSION` and the two `INTERFACE_ID`s;
-every opcode number, `ROOT` as 0 and the 8-bit opcode field at bits 63:56; the limits ratified in
-pull request #2797 (`TRANSFER_MAXIMUM`, `MAXIMUM_LENGTH_OR_OFFSET`, `MAXIMUM_HANDLE`,
-`grant::MAXIMUM_NAME`, `xattr::MAXIMUM_NAME`, `MAXIMUM_VALUE`, `MAXIMUM_COUNT`, `MAXIMUM_KIND`,
-`list::MAXIMUM_BYTES`, `store::MAXIMUM_BYTES`, `nameset::MAXIMUM_NAMES`); the errno choices
-(`EROFS` over `EACCES`, `ENOTDIR` for a directory verb through a file grant, `ENOENT` for a naming
-right); the `NARROW` verb and the `PARENT_RIGHTS` sentinel; `BIND_SYNC`. None of those is reopened
-here. Where a rule written after a ratification contradicts a ratified name, the item says so and
+takes as settled is therefore the rulings recorded at the names themselves and in the roadmap.
+They cover the crate name and the `_contract` suffix. They cover `fs::VERSION`, `blk::VERSION` and
+the two `INTERFACE_ID`s. They cover every opcode number, `ROOT` as 0 and the 8-bit opcode field at
+bits 63:56. Pull request #2797 ratified the limits `TRANSFER_MAXIMUM`, `MAXIMUM_LENGTH_OR_OFFSET`,
+`MAXIMUM_HANDLE`, `grant::MAXIMUM_NAME`, `xattr::MAXIMUM_NAME`, `MAXIMUM_VALUE`, `MAXIMUM_COUNT`,
+`MAXIMUM_KIND`, `list::MAXIMUM_BYTES`, `store::MAXIMUM_BYTES` and `nameset::MAXIMUM_NAMES`. The
+rulings also cover the errno choices (`EROFS` over `EACCES`, `ENOTDIR` for a directory verb through
+a file grant, `ENOENT` for a naming right), the `NARROW` verb, the `PARENT_RIGHTS` sentinel and
+`BIND_SYNC`. This review reopens none of those. Where a rule written after a ratification contradicts a ratified name, the item says so and
 leaves the reopening to the architect, under the ruling that a release review rechecks names
 ratified before a later rule.
 
@@ -61,11 +61,12 @@ two-way and the maintainer decides it.
 ### P0: red at the moving commit, or refused by the move rule
 
 1. The crate does not stand alone.
-   Finding: 21 externalization-lint hits, every one in prose. `nife` in `README.md` line 5 and `:84`,
-   `src/lib.rs` line 29, `src/grant.rs` line 11 and `:13`, `src/xattr.rs` line 76 and `:77`; the programs
-   `disk_surveyor`, `disk_partitioner`, `mkfs` (`src/blk.rs` line 47, `:61`), `fs_nameset_caretaker`,
-   `fs_subtree_caretaker`, `fs_file_caretaker`, `redoxfs_server` (`src/verb.rs` line 14, `:64`, `:119`,
-   `:249`, `:333`; `src/xattr.rs` line 61, `:62`; `src/verb/tests.rs` line 133, `:174`) and
+   Finding: 21 externalization-lint hits, every one in prose. `nife` appears in `README.md` line 5 and `:84`,
+   `src/lib.rs` line 29, `src/grant.rs` line 11 and `:13`, and `src/xattr.rs` line 76 and `:77`.
+   Programs appear by name too. They are `disk_surveyor`, `disk_partitioner` and `mkfs`
+   (`src/blk.rs` line 47, `:61`). They are `fs_nameset_caretaker`, `fs_subtree_caretaker`,
+   `fs_file_caretaker` and `redoxfs_server` (`src/verb.rs` line 14, `:64`, `:119`, `:249`, `:333`;
+   `src/xattr.rs` line 61, `:62`; `src/verb/tests.rs` line 133, `:174`). The last is
    `least_authority_demo` (`src/grant/tests.rs` line 40, `:44`, `:51`). Beyond the lint: `rm.rs`
    describes the `rm` program and cites `byte_sink_contract::eof()`; `fs.rs` line 298 cites
    `abi::rendezvous::BADGE`; `fs.rs` line 274 cites `bench/transfer-size-sweep.sh`; `fs.rs` line 232 cites
@@ -116,11 +117,11 @@ two-way and the maintainer decides it.
    Door: two-way. Effort: XS.
 
 5. The name gates refuse 22 names, and renames are the architect's.
-   Finding: `spelled_out` (ceiling 0): module `dir` (`src/dir.rs`), `IS_DIR` twice
-   (`src/dirent.rs` line 4, `src/nameset.rs` line 33), `STORE_DIR` (`src/xattr.rs` line 77), `grant::spec`,
-   `spec_len`, `spec_rights` (`src/grant.rs` line 116, `:121`, `:126`), `xattr::spec`, `spec_kind`,
-   `spec_value_len` (`src/xattr.rs` line 82, `:86`, `:90`), and seven `is_dir` and `spec` bindings in
-   tests. `register_names` (ceiling 0): `blk::SIZE` (`src/blk.rs` line 27, an opcode, so a false
+   Finding: `spelled_out` (ceiling 0) refuses module `dir` (`src/dir.rs`). It refuses `IS_DIR` twice
+   (`src/dirent.rs` line 4, `src/nameset.rs` line 33) and `STORE_DIR` (`src/xattr.rs` line 77). It
+   refuses `grant::spec`, `spec_len` and `spec_rights` (`src/grant.rs` line 116, `:121`, `:126`). It
+   refuses `xattr::spec`, `spec_kind` and `spec_value_len` (`src/xattr.rs` line 82, `:86`, `:90`).
+   It also refuses seven `is_dir` and `spec` bindings in tests. `register_names` (ceiling 0): `blk::SIZE` (`src/blk.rs` line 27, an opcode, so a false
    positive), `BLOCK_SIZE` (`src/blk.rs` line 43), `MAXIMUM_LENGTH_OR_OFFSET` (`src/fs.rs` line 309,
    ratified), `statfs::LEN` (`src/statfs.rs` line 3). `question_shape`: `in_opcode_order`
    (`src/verb.rs` line 319). The naming worklist inside nife lists the same ten wire-or-format names.
@@ -254,8 +255,8 @@ The checks are in [the appendix](1090-filesystem-contract-outside-review/done-wh
 
 - Item 19 came from reading, not from a 32-bit build; the crate names no 32-bit target.
 - Item 9 relies on the classification in `notes/mutation-testing/`, which predates the file split
-  of milestone 845 (the filesystem-protocol crate root is split along its seams) and names some tests by their old module; the groups still hold, the line
-  numbers do not.
+  of milestone 845 (the filesystem-protocol crate root is split along its seams). It names some
+  tests by their old module. The groups still hold, and the line numbers do not.
 - The review did not run the template's workflows end to end. The gate results come from the
   template's helpers, which the reviewer ran by hand on a standalone copy with the same arguments
   the workflows pass. The exception is `coverage`, where the reviewer applied the floor to a locally

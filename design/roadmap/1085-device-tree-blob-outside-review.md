@@ -20,8 +20,8 @@ the names already ratified at the item (`device_tree_blob`, `DeviceTreeBlob`, `M
 `initial_ramdisk`), the provisional names recorded there (`parent_prop_compatible`,
 `boot_arguments`), and the bounds notes/device-tree.md records. One ratified name meets a later
 rule (item D4). A ruling on record has nife working toward Google's `dtoolkit` as its device-tree
-dependency, with the switch itself a separate decision; until that switch, this crate is what boots
-every nife machine, so the correctness items below (P1-1 to P1-4) are worth landing in the kernel's
+dependency. The switch itself is a separate decision. Until that switch, this crate is what boots
+every nife machine. So the correctness items below (P1-1 to P1-4) are worth landing in the kernel's
 path whether or not the crate ever publishes.
 
 Reuse: the template `nifeos/crate-workflows` and its scaffold, its naming and standalone helpers,

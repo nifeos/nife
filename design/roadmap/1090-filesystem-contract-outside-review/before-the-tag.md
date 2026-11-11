@@ -21,10 +21,10 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
    Door: the range is a contract statement, Decision C; the code is two-way. Effort: XS.
 
 7. The packers mask where the contract names truncation as the worst failure.
-   Finding: `fs::req` (`src/fs.rs` line 351) masks `handle` to 16 bits and `len` to 40;
-   `fs::rename_dst` (`:368`) the same; `grant::spec` (`src/grant.rs` line 116) masks `len` to 8 bits,
-   so `spec(256, rights)` carries length 0, which is `WHOLE_NAMESPACE` (`:143`); `xattr::spec`
-   (`src/xattr.rs` line 82) masks `value_len` to 32 bits. The `const` block at `src/fs.rs` line 318 says a
+   Finding: `fs::req` (`src/fs.rs` line 351) masks `handle` to 16 bits and `len` to 40.
+   `fs::rename_dst` (`:368`) does the same. `grant::spec` (`src/grant.rs` line 116) masks `len` to 8
+   bits, so `spec(256, rights)` carries length 0, which is `WHOLE_NAMESPACE` (`:143`).
+   `xattr::spec` (`src/xattr.rs` line 82) masks `value_len` to 32 bits. The `const` block at `src/fs.rs` line 318 says a
    truncated length "would arrive at the server as a smaller successful read rather than as an
    error", and `blk::req` (`src/blk.rs` line 73) is the model: it asserts its count. The callers of
    `grant::spec` pass `name.len()` after their own checks (`components/src/swish/running.rs` line 871
@@ -76,10 +76,10 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
     Door: two-way. Effort: S.
 
 11. Twelve acronyms are bare at first use.
-    Finding: `prose_acronyms` (ceiling 0): POSIX, ONE, FS (`src/lib.rs` line 43, `:44`), SMB
-    (`:123`), DMA (`src/blk.rs` line 59), EL0 (`:85`), EOF (`src/fs.rs` line 34), NUL (`src/xattr.rs` line 51),
-    FUSE (`:73`), BFS (`src/xattr/tests.rs` line 44), and READDIR, STATFS used as words in prose
-    (`src/dirent.rs` line 28, `src/statfs.rs` line 25). ONE is emphasis in capitals, not an acronym.
+    Finding: `prose_acronyms` (ceiling 0) flags POSIX, ONE and FS (`src/lib.rs` line 43, `:44`). It flags SMB
+    (`:123`), DMA (`src/blk.rs` line 59) and EL0 (`:85`). It flags EOF (`src/fs.rs` line 34), NUL
+    (`src/xattr.rs` line 51), FUSE (`:73`) and BFS (`src/xattr/tests.rs` line 44). It also flags
+    READDIR and STATFS used as words in prose (`src/dirent.rs` line 28, `src/statfs.rs` line 25). ONE is emphasis in capitals, not an acronym.
     Change: expand each at first use or add the universally known ones (POSIX, EOF, NUL) to the
     repository's `prose_acronyms.toml`; write the verb names in code spans; lower-case ONE.
     Door: two-way. Effort: XS.
@@ -98,7 +98,7 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
 
 13. Dates and British spellings in the shipped text.
     Finding: `src/verb.rs` line 369 and `:417` and `src/verb/tests.rs` line 245 narrate a change by date
-    ("until", "since"); `src/verb.rs` line 119 and `src/verb/tests.rs` line 218 write the British form of "behavior"
+    ("until", "since"). `src/verb.rs` line 119 and `src/verb/tests.rs` line 218 write the British form of "behavior"
     (`british_spelling` judges names only, so it passed; the rule covers words). `src/fs.rs` line 224
     carries a decision date outside a `Name:` block.
     Change: state the present rule (`EBADF` is about the handle, `ENOTDIR` about the request) and

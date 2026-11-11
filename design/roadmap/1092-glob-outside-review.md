@@ -15,10 +15,10 @@ item below is work for a lane. No review package exists for this crate yet, so t
 took as settled is the crate's own record: [notes/glob.md](../../notes/glob.md),
 [notes/glob-scope.md](../../notes/glob-scope.md), [notes/glob/proofs.md](../../notes/glob/proofs.md)
 and [notes/verification/glob-proofs.md](../../notes/verification/glob-proofs.md). The four scope
-decisions those record (`**` out, qualifiers out, POSIX classes out, a leading dot special by
-default), the one-backtrack algorithm, the three-byte proof domain and the ratified crate name
-`glob` stay closed here, except where a later rule or a fact outside the tree bears on them, and the
-text says so where it does. Milestone 1017 (the contract crates leave in this order) places the crate
+decisions those record are `**` out, qualifiers out, POSIX classes out and a leading dot special by
+default. They stay closed here. So do the one-backtrack algorithm, the three-byte proof domain and
+the ratified crate name `glob`. The exception is where a later rule or a fact outside the tree bears
+on them, and the text says so where it does. Milestone 1017 (the contract crates leave in this order) places the crate
 at step 5 and owns the move; this block owns the findings that land inside that path.
 
 Reuse: the crate's own tests and six harnesses, Kani 0.68.0 and the six falsification patches, the

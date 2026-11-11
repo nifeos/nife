@@ -14,13 +14,14 @@ maintainer outside this tree would, on a fresh clone of `main`. It changes nothi
 the next lanes change before the crate moves to `nifeos/domain_name_resolution_contract`.
 
 There is no review package for this crate in `notes/crate-reviews/`, so this block has no settled
-baseline to defer to. It takes as settled only what the tree itself records: the crate name, which
-the architect ratified (`src/lib.rs` lines 22 to 24); the three constants `NAME_TEXT_MAXIMUM`,
-`MAXIMUM_ADDRESSES` and `GRANTS_MAXIMUM`, ratified in #2797; the interface identity `INTERFACE_ID`
-11 and `VERSION` 1 (provisional, minted for milestone 956 (the linked interfaces carry checkable
-versions), listed at `design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md` line
-113); and the place of the crate in the order of extraction, step 6 of milestone 1017 (the
-contract crates leave in this order), after `domain_name_system` has left in step 5. The rule that
+baseline to defer to. It takes as settled only what the tree itself records.
+The architect ratified the crate name (`src/lib.rs` lines 22 to 24). Pull request #2797 ratified
+the three constants `NAME_TEXT_MAXIMUM`, `MAXIMUM_ADDRESSES` and `GRANTS_MAXIMUM`. The interface
+identity `INTERFACE_ID` 11 and `VERSION` 1 is provisional. Milestone 956 (the linked interfaces
+carry checkable versions) minted it, and
+`design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md` lists it at line 113. The
+crate has its place in the order of extraction, step 6 of milestone 1017 (the contract crates leave
+in this order), after `domain_name_system` has left in step 5. The rule that
 a release review rechecks names ratified before a later naming rule applies here, as it did to
 `DATA_MAXIMUM` in the `socket_contract` package.
 

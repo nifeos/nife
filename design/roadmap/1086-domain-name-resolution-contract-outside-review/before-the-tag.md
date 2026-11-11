@@ -26,9 +26,9 @@ An appendix to [the milestone](../1086-domain-name-resolution-contract-outside-r
 
 5. Ratify the interface identity before the crate leaves.
    Finding: `INTERFACE_ID` 11 and `VERSION` 1 (`src/lib.rs` lines 28 to 42) are provisional.
-   Milestone 1017 (the contract crates leave in this order)'s ruling (its lines 154 to 158 and 228) holds that ratifying the `INTERFACE_ID`
-   values comes before the first contract leaves, and makes the `needs-architect` hold on a
-   contract crate turn on exactly these values.
+   The ruling of milestone 1017 (the contract crates leave in this order), at its lines 154 to 158
+   and 228, holds that ratifying the `INTERFACE_ID` values comes before the first contract leaves.
+   It also makes the `needs-architect` hold on a contract crate turn on exactly these values.
    Change: a ruling, recorded in the pull request that applies it; no code changes if the values
    stand.
    Door: one-way (a peer compares it). Effort: S.

@@ -16,10 +16,10 @@ beside it. The review changes nothing; it lists what the move lane and the lanes
 There is **no review package** for this crate in `notes/crate-reviews/`, so there is no settled
 baseline of ratified names and open questions to start from. This block starts from the code, from
 `design/naming.md`, from the externalization list (`crates/externalization-list.txt`, where the
-crate is listed) and from milestone 1017 (the contract crates leave in this order), whose
-measurements and order already name `grant_plan` as the largest coordination cost of the 22 crates
-(151 commits in 30 days, 120 of them crossing, 227 breaking API items in four weeks) and place it
-in step 6. Where a name below is already ratified, this block does not reopen it unless a later rule
+crate is listed) and from milestone 1017 (the contract crates leave in this order). Its
+measurements already name `grant_plan` as the largest coordination cost of the 22 crates (151
+commits in 30 days, 120 of them crossing, 227 breaking API items in four weeks). Its order places
+the crate in step 6. Where a name below is already ratified, this block does not reopen it unless a later rule
 (units spelled out, standard-library spellings) contradicts it, and says so where it does.
 
 Reuse: the template `nifeos/crate-workflows` and its scaffold and helpers (`standalone.py`,

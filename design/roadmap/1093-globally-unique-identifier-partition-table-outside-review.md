@@ -17,9 +17,9 @@ what the next lanes change.
 The review took its accepted baseline from
 [the review package](../../notes/crate-reviews/globally-unique-identifier-partition-table.md) and
 reopens none of the decisions it settles or holds. Those are the crate name and the six ratified
-names, the sixteen rows of its name table, its two decisions for the architect (where the two nife
-type GUIDs live; whether `lba` and `mbr` spell out), and its two open questions (a totality harness
-for `parse`; whether `VERSION` stays). Where this block touches a name the package lists, it says
+names, and the sixteen rows of its name table. They include its two decisions for the architect:
+where the two nife type GUIDs live, and whether `lba` and `mbr` spell out. They also include its two
+open questions: a totality harness for `parse`, and whether `VERSION` stays. Where this block touches a name the package lists, it says
 so and adds only what the package did not see.
 
 Reuse: the template `nifeos/crate-workflows` and its scaffold, Kani, cargo-mutants, cargo-fuzz, the
