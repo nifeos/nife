@@ -95,7 +95,7 @@ the evidence (milestone 727 (a queue eviction goes to a maintainer session), pro
 and so is the label's name). It also labels orphan work, a branch holding commits that no open pull
 request carries, and opens a draft for one that never had a pull request; notes/queue-ejection.md
 lists every cause. Read the comment, then fix it or hand it to its lane: rebase, re-arm a
-flake (`gh pr merge N --auto --merge`), dequeue a stale entry with the command the comment gives,
+flake (`helpers/arm.sh N`), dequeue a stale entry with the command the comment gives,
 or make an unfinished one a draft again. The label comes off by itself on the drain's next pass
 once the cause is gone, so never remove it by hand. `state=all` because a stale queue entry
 belongs to a pull request that is no longer open.

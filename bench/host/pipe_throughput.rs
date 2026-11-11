@@ -28,15 +28,15 @@ const TOTAL: usize = 4 * 1024 * 1024;
 fn main() {
     // The small size first, because it is the one the nife number is compared against.
     for chunk in [16usize, 64 * 1024] {
-        let ns = run_one(chunk);
-        let seconds = ns as f64 / 1e9;
-        let mib = TOTAL as f64 / (1024.0 * 1024.0);
+        let nanoseconds = run_one(chunk);
+        let seconds = nanoseconds as f64 / 1e9;
+        let mebibytes = TOTAL as f64 / (1024.0 * 1024.0);
         let name = if chunk == 16 { "pipe_16" } else { "pipe_64k" };
         println!(
             "bench: {name} {TOTAL} bytes in {:.3} ms = {:.1} MiB/s ({:.0} ns per {chunk}-byte write)",
-            ns as f64 / 1e6,
-            mib / seconds,
-            ns as f64 / (TOTAL / chunk) as f64,
+            nanoseconds as f64 / 1e6,
+            mebibytes / seconds,
+            nanoseconds as f64 / (TOTAL / chunk) as f64,
         );
     }
 }
@@ -87,12 +87,12 @@ fn run_one(chunk: usize) -> u128 {
         }
         got += n as usize;
     }
-    let ns = t0.elapsed().as_nanos();
+    let nanoseconds = t0.elapsed().as_nanos();
     unsafe {
         close(r);
         let mut status = 0i32;
         wait(&mut status);
     }
     assert_eq!(got, TOTAL, "the pipe lost bytes");
-    ns
+    nanoseconds
 }

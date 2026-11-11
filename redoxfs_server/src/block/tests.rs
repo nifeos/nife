@@ -15,9 +15,9 @@ struct CountingDisk {
 }
 
 impl CountingDisk {
-    fn new(mib: usize) -> Self {
+    fn new(mebibytes: usize) -> Self {
         Self {
-            image: vec![0u8; mib * 1024 * 1024],
+            image: vec![0u8; mebibytes * 1024 * 1024],
             reads: 0,
             writes: 0,
         }

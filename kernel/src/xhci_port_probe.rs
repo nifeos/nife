@@ -18,7 +18,7 @@ static REGS_VA: AtomicU64 = AtomicU64::new(0);
 const EXTENDED_SUPPORTED_PROTOCOL: u8 = 2;
 
 /// Milliseconds after the report at which the ports are read again.
-const SAMPLES_MS: [u64; 9] = [1, 10, 50, 100, 250, 500, 1000, 2000, 5000];
+const SAMPLES_MILLISECONDS: [u64; 9] = [1, 10, 50, 100, 250, 500, 1000, 2000, 5000];
 
 fn read(regs_va: u64, off: u64) -> u32 {
     // SAFETY: the caller's offsets are capability, operational, runtime or extended-capability
@@ -97,8 +97,8 @@ pub(crate) fn after_report() {
     let mut last = [0u32; 256];
     let start = now_milliseconds();
     dump("at report  ", regs_va, &capabilities, Some(&mut last));
-    for ms in SAMPLES_MS {
-        while now_milliseconds() < start + ms {
+    for milliseconds in SAMPLES_MILLISECONDS {
+        while now_milliseconds() < start + milliseconds {
             core::hint::spin_loop();
         }
         let mut label = [b' '; 11];

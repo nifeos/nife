@@ -344,8 +344,8 @@ done
 
 # 5. calef's first ruling on #1564, held by a gate rather than by memory: the drain never arms
 #    and never enqueues. Comments are skipped, so the history can still name what it did, and so
-#    is a command quoted in a pull request comment (\`gh pr merge ...\`), which tells a person
-#    what to type rather than typing it.
+#    is a command quoted in a pull request comment (\`gh pr merge ...\`, \`helpers/arm.sh ...\`),
+#    which tells a person what to type rather than typing it. A call to helpers/arm.sh arms too.
 #
 #    **One marked exception, by name, and a foot gun** (calef, #1833, 2026-10-07 UTC): the function
 #    `requeue_stuck_head` may dequeue and enqueue, because a group whose runs all finished and
@@ -355,7 +355,8 @@ done
 #    copy the exception to a second cause: that is how the 2026-10-03 re-queue fights began.
 armers_in() {
 	awk '/^requeue_stuck_head\(\) \{/ { skip = 1 } !skip { print } skip && /^\}/ { skip = 0 }' "$1" |
-		grep -v '^[[:space:]]*#' | grep -e 'gh pr merge' -e 'enqueuePullRequest' | grep -v '\\`gh pr merge' || true
+		grep -v '^[[:space:]]*#' | grep -e 'gh pr merge' -e 'enqueuePullRequest' -e 'arm\.sh' |
+		grep -v -e '\\`gh pr merge' -e '\\`helpers/arm\.sh' || true
 }
 armers=$(armers_in "$f")
 if [ -n "$armers" ]; then
@@ -377,6 +378,13 @@ sed 's|^dequeue_held() {|dequeue_held() {\
 if [ -z "$(armers_in "$planted")" ]; then
 	rm -f "$planted"
 	echo "$me: section 5 no longer catches a re-arm planted in dequeue_held, so it guards nothing." >&2
+	exit 1
+fi
+sed 's|^dequeue_held() {|dequeue_held() {\
+	"$here/arm.sh" 1|' "$f" >"$planted"
+if [ -z "$(armers_in "$planted")" ]; then
+	rm -f "$planted"
+	echo "$me: section 5 no longer catches a helpers/arm.sh call planted in dequeue_held, so it guards nothing." >&2
 	exit 1
 fi
 rm -f "$planted"

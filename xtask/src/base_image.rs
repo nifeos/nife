@@ -1041,7 +1041,7 @@ const LAUNCH_VOLUME: &str = "launch.img";
 
 /// **How large the launch volume is**, in MiB: the size of the RedoxFS fixture the kernel tests
 /// mount. Provisional: nothing yet installs onto a composed image's volume (milestone 990's `BUGS`).
-const LAUNCH_VOLUME_MIB: &str = "16";
+const LAUNCH_VOLUME_MEBIBYTES: &str = "16";
 
 /// **Write the launch volume** to `<out>/launch.img`: stage `activation/1` and `activation/current`
 /// in `<out>/launch-tree`, make an empty RedoxFS image with the host tool the swish-check seed uses,
@@ -1074,7 +1074,7 @@ fn write_launch_volume(arch: &str, out: &Path, first_generation: &str) -> Option
     let volume = out.join(LAUNCH_VOLUME);
     let volume_text = volume.display().to_string();
     let tree_text = tree.display().to_string();
-    if !(crate::disk::redoxfs_host(&["mkfs", &volume_text, LAUNCH_VOLUME_MIB])
+    if !(crate::disk::redoxfs_host(&["mkfs", &volume_text, LAUNCH_VOLUME_MEBIBYTES])
         && crate::disk::redoxfs_host(&["import", &volume_text, &tree_text]))
     {
         eprintln!("base-image ({arch}): cannot write the launch volume {volume_text}");

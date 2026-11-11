@@ -233,7 +233,7 @@ fn ipc_floor(disk: &Wiring) -> Result<(), Verdict> {
     println!(
         "disk-throughput: ipc floor   {FLOOR_CALLS} SIZE round trips in {} us ({} ns each, no device)",
         microseconds(floor),
-        ns(floor) / FLOOR_CALLS,
+        nanoseconds(floor) / FLOOR_CALLS,
     );
     Ok(())
 }
@@ -324,7 +324,7 @@ fn print_phase(what: &str, count: u64, ticks: u64) {
         "disk-throughput: {what:<11} {count} x 4096 B in {} us = {} B/s ({} ns per block)",
         microseconds(ticks),
         rate(count * BLOCK_SIZE as u64, ticks),
-        ns(ticks) / count.max(1),
+        nanoseconds(ticks) / count.max(1),
     );
 }
 
@@ -356,7 +356,7 @@ fn microseconds(ticks: u64) -> u64 {
     ticks.saturating_mul(1_000_000) / arch::timer::frequency()
 }
 
-fn ns(ticks: u64) -> u64 {
+fn nanoseconds(ticks: u64) -> u64 {
     // u128 because a 2.7 GHz counter over a minute already overflows `ticks * 1e9` in a u64.
     ((ticks as u128 * 1_000_000_000) / arch::timer::frequency() as u128) as u64
 }

@@ -170,14 +170,15 @@ the machine said rather than from `target_arch`. That is not fastidiousness: the
 riscv64 and has neither of these devices, so an ISA-keyed driver would compile clean and read
 garbage on the first real board.
 
-## The x86 CMOS RTC, read by the kernel
+## The x86 CMOS RTC, read by the clock service
 
 x86's real-time clock is the CMOS RTC behind two fixed I/O ports, `0x70` (index) and `0x71`
-(data). There is no page, so no device capability can map it. §121 (x86 port I/O) keeps every x86 legacy port
-kernel-side rather than paying a port-range capability's measured 1.5 to 2.7 us per context switch
-for a device a boot reads once. So, unlike the PL031 and Goldfish drivers above, nothing in
-userspace touches it: `arch::x86_64::rtc` reads it once per clock-service spawn and the service
-receives the converted reading as a `Spawn` argument (`clock_contract::rtc::CMOS`).
+(data), `clock_contract::rtc::INDEX_PORT` and `DATA_PORT`. There is no page to map, so
+the kernel grants the clock service a `PortRange` capability over both ports (§121 (x86 port I/O)),
+with `WRITE` because the TSS I/O permission bitmap cannot permit `in` without `out`. The service's
+`cmos` module reads the device itself, as its PL031 and Goldfish drivers read theirs, and the
+kernel reads no CMOS (§130 (the CMOS RTC and the userspace clock service)).
+The kernel writes the bitmap lazily, so only a switch to or from the clock service pays for it.
 
 | register | what it holds |
 |---|---|
@@ -201,7 +202,7 @@ update finished, not that the next will not start before the first port read. So
 two full snapshots, each after its own UIP wait, and retries until they agree. A real BIOS RTC
 driver does the same (the `OSDev` wiki's CMOS page documents it).
 
-The driver leaves daylight saving and the alarm and periodic-interrupt registers alone. The kernel
+The driver leaves daylight saving and the alarm and periodic-interrupt registers alone. The service
 reads the clock once; after that, `clock_contract`'s wall clock is the counter plus an offset, so
 nothing needs an alarm, a periodic tick or status B's DST bit.
 

@@ -68,12 +68,12 @@ fn main() -> ExitCode {
             Err(NO_WRITE_TO_A_PARTITION.to_string())
         }
         ["partitions", device] => table(device),
-        ["mkfs", image, size_mib] => {
-            let Ok(mib) = size_mib.parse::<u64>() else {
+        ["mkfs", image, size_mebibytes] => {
+            let Ok(mebibytes) = size_mebibytes.parse::<u64>() else {
                 return usage();
             };
-            redoxfs_host::mkfs(Path::new(image), mib * 1024 * 1024)
-                .map(|()| eprintln!("created {image}: {mib} MiB, empty RedoxFS"))
+            redoxfs_host::mkfs(Path::new(image), mebibytes * 1024 * 1024)
+                .map(|()| eprintln!("created {image}: {mebibytes} MiB, empty RedoxFS"))
         }
         ["ls", image] => list(vol(image, selector), "/"),
         ["ls", image, path] => list(vol(image, selector), path),

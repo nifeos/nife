@@ -2,7 +2,7 @@
 #
 # Build the design record as a static website, deploy nothing, and report what the build found.
 #
-# Milestone 1018 (the design record moves to `nifeos.org` and is published as a website), step 3.
+# Milestone 1018 (the design record moves to `nifeos/record` and is published as a website), step 3.
 # The site renders every tracked Markdown file under design/, notes/ and briefs/, with AGENTS.md
 # and ARCHITECTS.md, through Eleventy. It gives each numbered record one stable address
 # (/roadmap/1018/, /decisions/201/), links each `milestone N`, `§N` and bare `#N` in prose, indexes
