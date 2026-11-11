@@ -193,9 +193,9 @@ IOMMU specification instead of Arm's.
 
 ## The VT-d driver on x86_64
 
-`kernel/src/arch/x86_64/iommu.rs` drives Intel's VT-d. Unlike the SMMUv3 and the RISC-V IOMMU, the
-legacy interface every unit supports is driven through registers. Invalidation is a register write
-and a poll, and faults land in Fault Recording Registers, with no command or fault queue. The root
+`kernel/src/arch/x86_64/iommu.rs` drives Intel's VT-d. Faults land in Fault Recording Registers,
+with no fault queue. Invalidation uses the unit's invalidation queue where `ECAP.QI` offers one,
+and the legacy register write and poll elsewhere. The root
 table (one entry per bus) points at per-bus context tables (one entry per device and function).
 Each context entry names a domain and the second-level root that `crate::iommu::confine` built.
 Both tables are allocated lazily and default absent. `init` points `RTADDR_REG` at an all-absent
@@ -215,6 +215,11 @@ would silence the preflight that reports the gap.
 The file is also x86_64's IOMMU front door. Every public entry point first hands the call to
 `amd_vi` if an AMD-Vi unit is up. It stays one file because the tree cites this path as where
 x86_64's IOMMU lives, §163 (where a confined device's IOMMU fault is delivered) among the citations.
+
+### Interrupt remapping
+
+Where the unit and the DMAR both offer it, every MSI and IO APIC message goes through an entry
+naming its sender's requester id: [iommu/interrupt-remapping.md](iommu/interrupt-remapping.md).
 
 ### Cache maintenance on a non-coherent unit
 
@@ -247,8 +252,13 @@ read a stale record. `take_fault` clears `PFO` first, so the next fault lands.
   device's firmware DMA faults.
 - The graphics unit translates with only its RMRR mapped, so scanout survives only if the RMRR
   covers it. This is unread on xenon (notes/risk-6-bench-evening.md).
-- There is no interrupt remapping. `ECAP.IR` is only reported (`interrupt_remapping_available`), and
-  no `IRTE` is ever written (`design/roadmap/0317-interrupt-remapping-flags.md`).
+- Nothing frees a remapping entry, as nothing frees its MSI vector; a unit's table holds 256.
+- Remapping uses xAPIC destinations (`IRTA.EIME` clear), so the driver cannot serve x2APIC mode
+  or a core whose APIC id passes 255.
+- A device behind a PCIe-to-PCI bridge raises messages under the bridge's requester id, and its
+  entry names the device's own, so the unit refuses them; `SVT` = 10 (a bus range) would admit them.
+- The invalidation queue and interrupt remapping have run only under QEMU; xenon has not booted
+  them.
 - Invalidation is always global, which is correct and expensive with many devices.
 - `RWBF` and protected-memory disabling have never run, because QEMU sets neither.
 - One Fault Recording Register per unit is read, shared by every requester. A repeating fault from
