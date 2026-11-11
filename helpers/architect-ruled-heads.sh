@@ -9,9 +9,9 @@
 # helpers/architect-label-rules.py takes each line as `--ruled N:SHA`: a file another branch
 # carries byte for byte from one of these pull requests, at the same base, is a change calef
 # already ruled on, so the labeler does not ask him again (#3450 carried #3434's ruled §130 (how
-# the kernel-resident CMOS RTC reaches the userspace clock service) edit). `held-by-lane` is left
-# out because a send-back means the lane still owes a change to what was ruled. A failed listing
-# prints nothing, which leaves every finding standing: the safe side.
+# the userspace clock service reads the x86 CMOS RTC) edit). `held-by-lane` is left out because a send-back means the lane
+# still owes a change to what was ruled. A failed listing prints nothing, which leaves every
+# finding standing: the safe side.
 #
 # Name: provisional. Hyphenated per design/naming.md's `helpers/` entry-point rule; calef has not
 # ratified it.
