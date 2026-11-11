@@ -56,7 +56,7 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
         maps: &[(
             window.virtual_address,
             window_frame,
-            abi::address_space::MAP_RW,
+            abi::address_space::MAP_READ_WRITE,
         )],
         windows: &[window],
         stack_pages: system_initializer::CHILD_STACK_PAGES,

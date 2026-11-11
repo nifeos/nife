@@ -1280,7 +1280,7 @@ mod ninth_pass_authority_tests;
 
 /// **The mapping boundary's edges, and W^X against two aliases of one page** (a tenth outsider
 /// pass at the confinement claim, claims 10 and 11): the last user page mapped, a straddling run
-/// refused with nothing left mapped, a wrapping run, and the same frame mapped `MAP_RW` at one
+/// refused with nothing left mapped, a wrapping run, and the same frame mapped `MAP_READ_WRITE` at one
 /// address and `MAP_CODE` at another.
 ///
 /// Cross-ISA: `MAP_INTO` and the gate instantiate the running architecture's `Format`

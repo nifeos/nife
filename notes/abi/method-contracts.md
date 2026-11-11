@@ -132,7 +132,7 @@ in §255 (each socket is its own capability).
 
 `LIST` answers one entry per call because the space's mapping log is held only long enough to read
 one row, never for the whole walk. It reuses `survey::DONE`, because "no more entries" means the same
-on both objects, and it reuses `MAP_RO`, `MAP_RW` and `MAP_CODE` for `kind`, because read back they
+on both objects, and it reuses `MAP_READ_ONLY`, `MAP_READ_WRITE` and `MAP_CODE` for `kind`, because read back they
 are the same fact about the same page. The listing does not tell device memory from ordinary data.
 
 A cursor the space's own log never minted answers `BadPointer` rather than `DONE`, under the 2026-10-06 addendum to §114 (`ENUMERATE` extends to the

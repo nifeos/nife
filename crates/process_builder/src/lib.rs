@@ -280,9 +280,9 @@ fn lay_out_child(
         let mode = if seg.is_executable() {
             abi::address_space::MAP_CODE
         } else if seg.is_writable() {
-            abi::address_space::MAP_RW
+            abi::address_space::MAP_READ_WRITE
         } else {
-            abi::address_space::MAP_RO
+            abi::address_space::MAP_READ_ONLY
         };
         let (start, end) = seg.page_range(PAGE);
         let mut va = start;
@@ -307,7 +307,8 @@ fn lay_out_child(
     for k in 0..endow.stack_pages {
         let stack_frame = retype_into_page_frame_from(build_ut)?;
         let va = CHILD_STACK_VA - k * PAGE;
-        if address_space_map_into(aspace, va, stack_frame, abi::address_space::MAP_RW) != 0 {
+        if address_space_map_into(aspace, va, stack_frame, abi::address_space::MAP_READ_WRITE) != 0
+        {
             capability_delete(stack_frame);
             return Err(());
         }
@@ -322,7 +323,7 @@ fn lay_out_child(
         build_ut,
         aspace,
         startup_page_contract::PAGE_VIRTUAL_ADDRESS,
-        abi::address_space::MAP_RO,
+        abi::address_space::MAP_READ_ONLY,
         |page| startup_page_contract::write(page, endow.windows).map_err(|_| ()),
     )?;
 
@@ -338,7 +339,7 @@ fn lay_out_child(
             build_ut,
             aspace,
             counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
-            abi::address_space::MAP_RO,
+            abi::address_space::MAP_READ_ONLY,
             copy_in(page.as_ref().map(|bytes| (0usize, &bytes[..]))),
         )?;
     }
@@ -355,7 +356,7 @@ fn lay_out_child(
                 build_ut,
                 aspace,
                 base + off as u64,
-                abi::address_space::MAP_RO,
+                abi::address_space::MAP_READ_ONLY,
                 copy_in(Some((0, &bytes[off..off + n]))),
             )?;
             off += n;

@@ -870,7 +870,7 @@ fn clock_map(clock: bool) -> &'static [(u64, u64, u64)] {
     const MAP: [(u64, u64, u64); 1] = [(
         contract::CLOCK_VA,
         contract::CLOCK_SLOT,
-        abi::address_space::MAP_RO,
+        abi::address_space::MAP_READ_ONLY,
     )];
     if clock { &MAP } else { &[] }
 }

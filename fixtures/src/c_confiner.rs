@@ -119,8 +119,12 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
                 // right behind it is read-only, which is what turns an off-by-one into a fault
                 // instead of a corruption. Nothing maps WITNESS_FAR here, deliberately.
                 maps: &[
-                    (c_seam::GRANT_VA, grant, abi::address_space::MAP_RW),
-                    (c_seam::WITNESS_RO_VA, wit_ro, abi::address_space::MAP_RO),
+                    (c_seam::GRANT_VA, grant, abi::address_space::MAP_READ_WRITE),
+                    (
+                        c_seam::WITNESS_RO_VA,
+                        wit_ro,
+                        abi::address_space::MAP_READ_ONLY,
+                    ),
                 ],
                 blobs: &[],
                 fault: Some(faultep),

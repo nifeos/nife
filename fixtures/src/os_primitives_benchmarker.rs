@@ -237,7 +237,12 @@ fn spawn_one(code_frame: u64) {
         abi::address_space::MAP_CODE,
     );
     let stack = retype_into_page_frame(child_ut) as u64;
-    address_space_map_into(aspace, CHILD_STACK_VA, stack, abi::address_space::MAP_RW);
+    address_space_map_into(
+        aspace,
+        CHILD_STACK_VA,
+        stack,
+        abi::address_space::MAP_READ_WRITE,
+    );
     capability_delete(stack);
 
     // The thread: give it CHILD_DONE (narrowed to WRITE) in its slot 0, configure (which consumes

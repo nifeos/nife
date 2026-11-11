@@ -97,10 +97,10 @@ fn compose(initial_ramdisk_len: u64) -> u64 {
     let frame = retype_into_page_frame(MEMORY_REGION);
     if frame >= 0 {
         let frame = frame as u64;
-        if address_space_map_into(aspace, VA, frame, abi::address_space::MAP_RW) == 0 {
+        if address_space_map_into(aspace, VA, frame, abi::address_space::MAP_READ_WRITE) == 0 {
             verdict |= FRAME_MAPPED;
         }
-        if address_space_map_into(aspace, VA, frame, abi::address_space::MAP_RW) < 0 {
+        if address_space_map_into(aspace, VA, frame, abi::address_space::MAP_READ_WRITE) < 0 {
             verdict |= DOUBLE_MAP_REFUSED;
         }
     }

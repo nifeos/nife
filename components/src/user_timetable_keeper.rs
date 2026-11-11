@@ -133,8 +133,12 @@ fn start(image_len: u64, _a1: u64, _a2: u64) -> ! {
                 (tt::PACKAGES_SLOT, PACKAGES, abi::rights::WRITE),
             ],
             maps: &[
-                (TIMETABLE_PAGE_VA, PAGE, abi::address_space::MAP_RW),
-                (tt::STORE_PAGE_VA, STORE_PAGE, abi::address_space::MAP_RW),
+                (TIMETABLE_PAGE_VA, PAGE, abi::address_space::MAP_READ_WRITE),
+                (
+                    tt::STORE_PAGE_VA,
+                    STORE_PAGE,
+                    abi::address_space::MAP_READ_WRITE,
+                ),
             ],
             fault: Some(e),
             stack_pages: tt::STACK_PAGES,

@@ -203,9 +203,7 @@ crates/abi/src/address_space.rs::MAP_CODE
 
 crates/abi/src/address_space.rs::MAP_INTO
 
-crates/abi/src/address_space.rs::MAP_RO
 
-crates/abi/src/address_space.rs::MAP_RW
 
 crates/abi/src/address_space.rs::UNMAP
 

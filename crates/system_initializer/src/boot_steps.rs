@@ -422,7 +422,11 @@ fn start_virtio_entropy(
                         (g.virtio_rng, abi::rights::WRITE),
                         (ready, abi::rights::WRITE),
                     ],
-                    maps: &[(RNG_DMA_VA, g.virtio_rng_dma, abi::address_space::MAP_RW)],
+                    maps: &[(
+                        RNG_DMA_VA,
+                        g.virtio_rng_dma,
+                        abi::address_space::MAP_READ_WRITE,
+                    )],
                     stack_pages: CHILD_STACK_PAGES,
                     ..ChildEndowment::new(Retention::Nothing)
                 },
@@ -591,7 +595,7 @@ fn start_console(
         con_capabilities[capability_count] = capability;
         capability_count += 1;
     }
-    con_maps[nmaps] = (CON_SHARED_VA, con_shared, abi::address_space::MAP_RO);
+    con_maps[nmaps] = (CON_SHARED_VA, con_shared, abi::address_space::MAP_READ_ONLY);
     nmaps += 1;
     if has_screen {
         con_capabilities[capability_count] = (g.disp_term_ep, abi::rights::WRITE);
@@ -605,14 +609,14 @@ fn start_console(
         con_maps[nmaps] = (
             CON_SCREEN_OUT_VA,
             g.disp_term_page,
-            abi::address_space::MAP_RW,
+            abi::address_space::MAP_READ_WRITE,
         );
         nmaps += 1;
     }
     #[cfg(not(target_arch = "x86_64"))]
     {
         // mode ignored for a DeviceFrame
-        con_maps[nmaps] = (CON_UART_VA, g.uart_dev, abi::address_space::MAP_RO);
+        con_maps[nmaps] = (CON_UART_VA, g.uart_dev, abi::address_space::MAP_READ_ONLY);
         nmaps += 1;
     }
     #[cfg(target_arch = "x86_64")]
@@ -685,11 +689,15 @@ fn start_system_log(g: &BootEndowment, ut: u64, log_elf: Option<&elf::Elf<'stati
                     (request, abi::rights::WRITE),
                 ],
                 maps: &[
-                    (LOG_RING_VA, g.kernel_ring, abi::address_space::MAP_RO),
+                    (
+                        LOG_RING_VA,
+                        g.kernel_ring,
+                        abi::address_space::MAP_READ_ONLY,
+                    ),
                     (
                         LOG_CURSOR_VA,
                         g.kernel_ring_cursor,
-                        abi::address_space::MAP_RW,
+                        abi::address_space::MAP_READ_WRITE,
                     ),
                 ],
                 stack_pages: CHILD_STACK_PAGES,
@@ -766,7 +774,7 @@ pub(super) fn start_keystroke_sources(
             (term_ep, abi::rights::WRITE),
             (g.uart_interrupt, abi::rights::READ),
         ],
-        &[(IN_UART_VA, g.uart_dev, abi::address_space::MAP_RO)],
+        &[(IN_UART_VA, g.uart_dev, abi::address_space::MAP_READ_ONLY)],
     );
     #[cfg(target_arch = "x86_64")]
     let (in_capabilities, in_maps): EndowmentSlices = (
@@ -853,9 +861,9 @@ pub(super) fn build_shell(
     // Every right: what the shell retypes carries its budget's rights, and it lends them on.
     sh_capabilities[capability_count] = (sh_budget, abi::rights::ALL);
     capability_count += 1;
-    sh_maps[n_maps] = (SH_OUT_VA, w.term.out, abi::address_space::MAP_RW); // text and prompts
+    sh_maps[n_maps] = (SH_OUT_VA, w.term.out, abi::address_space::MAP_READ_WRITE); // text and prompts
     n_maps += 1;
-    sh_maps[n_maps] = (LINE_VA, w.term.input, abi::address_space::MAP_RO); // completed lines
+    sh_maps[n_maps] = (LINE_VA, w.term.input, abi::address_space::MAP_READ_ONLY); // completed lines
     n_maps += 1;
     // A slice of window 0, never the pool, which would hand the shell every client's window.
     let sh_window = if with_fs {
@@ -869,19 +877,19 @@ pub(super) fn build_shell(
     if let Some(zero) = sh_window {
         sh_capabilities[capability_count] = (zero.ep, abi::rights::WRITE);
         capability_count += 1;
-        sh_maps[n_maps] = (SH_FS_VA, zero.page, abi::address_space::MAP_RW);
+        sh_maps[n_maps] = (SH_FS_VA, zero.page, abi::address_space::MAP_READ_WRITE);
         n_maps += 1;
     }
     sh_capabilities[capability_count] = (g.clock_page, abi::rights::READ);
     capability_count += 1;
-    sh_maps[n_maps] = (SH_CLOCK_VA, g.clock_page, abi::address_space::MAP_RO);
+    sh_maps[n_maps] = (SH_CLOCK_VA, g.clock_page, abi::address_space::MAP_READ_ONLY);
     n_maps += 1;
     // Mapped for `capabilities` to read; its capability goes at a named slot after the build, because the
     // list's slots move with what the boot granted.
     sh_maps[n_maps] = (
         grant_plan::SHELL_CONFIGURATION_VIRTUAL_ADDRESS,
         g.config_page,
-        abi::address_space::MAP_RO,
+        abi::address_space::MAP_READ_ONLY,
     );
     n_maps += 1;
     // `build_child` fills the table from zero, so the clock's slot is the count before it.
@@ -1067,8 +1075,16 @@ fn start_credential_services(
                 (cred_ready, abi::rights::WRITE),
             ],
             maps: &[
-                (CRED_SVC_PROV_VA, prov_page, abi::address_space::MAP_RW),
-                (CRED_SVC_VERIFY_VA, verify_page, abi::address_space::MAP_RW),
+                (
+                    CRED_SVC_PROV_VA,
+                    prov_page,
+                    abi::address_space::MAP_READ_WRITE,
+                ),
+                (
+                    CRED_SVC_VERIFY_VA,
+                    verify_page,
+                    abi::address_space::MAP_READ_WRITE,
+                ),
             ],
             stack_pages: CRED_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
@@ -1190,8 +1206,8 @@ fn start_identity_provisioner(
                 (idp_report, abi::rights::WRITE),
             ],
             maps: &[
-                (IDP_REQ_VA, req_frame, abi::address_space::MAP_RW),
-                (IDP_PROV_VA, prov_page, abi::address_space::MAP_RW),
+                (IDP_REQ_VA, req_frame, abi::address_space::MAP_READ_WRITE),
+                (IDP_PROV_VA, prov_page, abi::address_space::MAP_READ_WRITE),
             ],
             stack_pages: CHILD_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
@@ -1199,8 +1215,12 @@ fn start_identity_provisioner(
     ));
     capability_delete(req_frame);
     let idp_page = must(window_page(g.fs_page, 0).ok_or(()));
-    let mapped =
-        address_space_map_into(idp_aspace, IDP_FS_VA, idp_page, abi::address_space::MAP_RW) == 0;
+    let mapped = address_space_map_into(
+        idp_aspace,
+        IDP_FS_VA,
+        idp_page,
+        abi::address_space::MAP_READ_WRITE,
+    ) == 0;
     capability_delete(idp_page);
     must(mapped.then_some(()).ok_or(()));
     must(process_builder::configure_child(
@@ -1263,7 +1283,11 @@ fn start_login(
                 (audit, abi::rights::WRITE),
                 (term_ep, abi::rights::WRITE | abi::rights::GRANT),
             ],
-            maps: &[(LOGIN_CRED_VA, verify_page, abi::address_space::MAP_RW)],
+            maps: &[(
+                LOGIN_CRED_VA,
+                verify_page,
+                abi::address_space::MAP_READ_WRITE,
+            )],
             // No slot cost: `fill_and_map` holds one frame capability at a time.
             blobs: &[
                 (login_contract::CARETAKER_ELF_VA, p.care_blob),

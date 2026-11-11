@@ -146,7 +146,7 @@ fn map_job() -> Result<u64, Refused> {
             aspace,
             MAP_TARGET_VA + i * PAGE,
             frame,
-            abi::address_space::MAP_RO,
+            abi::address_space::MAP_READ_ONLY,
         ))?;
         i += 1;
     }
@@ -193,7 +193,7 @@ fn spawn_job(code_frame: u64) -> Result<u64, Refused> {
             aspace,
             CHILD_STACK_VA,
             stack,
-            abi::address_space::MAP_RW,
+            abi::address_space::MAP_READ_WRITE,
         ))?;
         user_mode_runtime::capability_delete(stack);
         let tcb = slot(user_mode_runtime::retype_into_kernel_object(

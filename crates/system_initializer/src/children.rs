@@ -78,11 +78,15 @@ pub(super) fn build_caretaker(
     let narrow_ep = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()?;
     let ready = retype_into_kernel_object_from(region, abi::object_type::RENDEZVOUS).ok()?;
     let maps = [
-        (FS_CLIENT_PAGE_VA, fs.page, abi::address_space::MAP_RW),
+        (
+            FS_CLIENT_PAGE_VA,
+            fs.page,
+            abi::address_space::MAP_READ_WRITE,
+        ),
         (
             NAMESET_PAGE_VA,
             set.unwrap_or(0),
-            abi::address_space::MAP_RO,
+            abi::address_space::MAP_READ_ONLY,
         ),
     ];
     // Its whole authority: no untyped, no clock, no terminal, nothing that names another process.
@@ -204,7 +208,11 @@ pub(super) fn build_net_stack(ut: u64, program: &elf::Elf, g: &BootEndowment) ->
                     abi::rights::WRITE,
                 ),
             ],
-            maps: &[(NET_DMA_VA, g.virtio_net_dma, abi::address_space::MAP_RW)],
+            maps: &[(
+                NET_DMA_VA,
+                g.virtio_net_dma,
+                abi::address_space::MAP_READ_WRITE,
+            )],
             stack_pages: NET_STACK_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },
@@ -707,7 +715,7 @@ fn start_keyboard_arm(
                 (k[0], abi::rights::WRITE),
                 (session_term, abi::rights::WRITE),
             ],
-            maps: &[(KBD_DMA_VA, k[2], abi::address_space::MAP_RW)],
+            maps: &[(KBD_DMA_VA, k[2], abi::address_space::MAP_READ_WRITE)],
             ..ChildEndowment::new(Retention::Nothing)
         },
     )
@@ -745,12 +753,12 @@ fn start_session_program(
     } = *l;
     // `components/src/graphical_terminal.rs`'s slots 0 to 2; the line page only on arm 0.
     let mut maps = [
-        (SCREEN_OUT_VA, out_page, abi::address_space::MAP_RW),
+        (SCREEN_OUT_VA, out_page, abi::address_space::MAP_READ_WRITE),
         (0, 0, 0),
     ];
     let n_maps = match in_page {
         Some(p) => {
-            maps[1] = (SCREEN_IN_VA, p, abi::address_space::MAP_RO);
+            maps[1] = (SCREEN_IN_VA, p, abi::address_space::MAP_READ_ONLY);
             2
         }
         None => 1,

@@ -69,8 +69,12 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
     // The server receives on slot 0 and acknowledges on slot 1.
     let grants = [(request, abi::rights::READ), (reply, abi::rights::WRITE)];
     let maps = [
-        (SHARED_VA, shared, abi::address_space::MAP_RO),
-        (CHILD_UART_VA, UART_DEVICE, abi::address_space::MAP_RO),
+        (SHARED_VA, shared, abi::address_space::MAP_READ_ONLY),
+        (
+            CHILD_UART_VA,
+            UART_DEVICE,
+            abi::address_space::MAP_READ_ONLY,
+        ),
     ];
     let endowment = ChildEndowment {
         capabilities: &grants,

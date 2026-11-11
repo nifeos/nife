@@ -43,7 +43,7 @@ pub(super) fn address_space_invoke(
 }
 
 /// `AddressSpace::MAP_INTO`: map the frame in slot `a1` at `a0` in the space `name`, shaped by
-/// `a2` for a `PageFrame` (`MAP_RW`, `MAP_CODE`, else read-only), device read/write for a
+/// `a2` for a `PageFrame` (`MAP_READ_WRITE`, `MAP_CODE`, else read-only), device read/write for a
 /// `DeviceFrame`. The other half of [`page_frame_map`].
 ///
 /// Needs `WRITE` on the space and the shape's right on the frame. All or none: `BadPointer` for a
@@ -83,7 +83,7 @@ fn address_space_map_into(
             Object::PageFrame(phys, count) => {
                 // Code is W^X (`user_code` is never writable), so it needs only READ.
                 let flags = match a2 {
-                    abi::address_space::MAP_RW => {
+                    abi::address_space::MAP_READ_WRITE => {
                         if !frame.rights.allows(Rights::WRITE) {
                             return Err(Error::NotPermitted);
                         }
@@ -290,9 +290,9 @@ fn address_space_list(frame: &mut TrapFrame, name: u64, cursor: u64) -> Result<i
                     let kind = if flags.is_user_executable() {
                         abi::address_space::MAP_CODE
                     } else if flags.is_writable() {
-                        abi::address_space::MAP_RW
+                        abi::address_space::MAP_READ_WRITE
                     } else {
-                        abi::address_space::MAP_RO
+                        abi::address_space::MAP_READ_ONLY
                     };
                     frame.set_arg(1, va);
                     frame.set_arg(2, kind);

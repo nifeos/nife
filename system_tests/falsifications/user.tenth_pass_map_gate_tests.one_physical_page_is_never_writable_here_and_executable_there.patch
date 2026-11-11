@@ -4,7 +4,7 @@ Architecture: aarch64, riscv64, x86_64
 
 The defect: the mapping hold's check compares each existing leaf of the frame with itself instead
 of with the new mapping's flags. No single leaf is writable and executable, so the check never
-fires, every path maps, and the tenth outsider pass's escape comes back: `MAP_RW` at one address
+fires, every path maps, and the tenth outsider pass's escape comes back: `MAP_READ_WRITE` at one address
 and `MAP_CODE` of the same frame at the next leave one page writable and executable in one space.
 It is a one-word slip in the one line that names both sides of the pair.
 

@@ -823,7 +823,11 @@ impl Service<'_> {
                 job,
                 e,
                 &ChildEndowment {
-                    maps: &[(CHILD_JOB_PAGE_FRAME_VA, fr, abi::address_space::MAP_RW)],
+                    maps: &[(
+                        CHILD_JOB_PAGE_FRAME_VA,
+                        fr,
+                        abi::address_space::MAP_READ_WRITE,
+                    )],
                     stack_pages: CHILD_STACK_PAGES,
                     ..ChildEndowment::new(Retention::Requester {
                         reason: "the shell suspends its supervised job on ^Z (DECISIONS §309)",
@@ -1483,14 +1487,22 @@ impl Service<'_> {
             config_page,
             ..
         } = self.c;
-        let clock_map = [(CHILD_CLOCK_VA, clock_page, abi::address_space::MAP_RO)];
-        let config_map = [(CHILD_CONFIG_VA, config_page, abi::address_space::MAP_RO)];
+        let clock_map = [(
+            CHILD_CLOCK_VA,
+            clock_page,
+            abi::address_space::MAP_READ_ONLY,
+        )];
+        let config_map = [(
+            CHILD_CONFIG_VA,
+            config_page,
+            abi::address_space::MAP_READ_ONLY,
+        )];
         // One page for program, caretaker and file server, sound because every request on both hops
         // is a blocking `CALL`: the program is parked in its own call while the caretaker uses it.
         let dir_map = [(
             FS_CLIENT_PAGE_VA,
             dir.channel.map_or(0, |f| f.page),
-            abi::address_space::MAP_RW,
+            abi::address_space::MAP_READ_WRITE,
         )];
         let mut map_buf = [(0u64, 0u64, 0u64); 4];
         let mut map_n = 0usize;
@@ -1510,7 +1522,7 @@ impl Service<'_> {
             map_buf[map_n] = (
                 machine_statistics_contract::PAGE_VA,
                 page,
-                abi::address_space::MAP_RO,
+                abi::address_space::MAP_READ_ONLY,
             );
             map_n += 1;
         }

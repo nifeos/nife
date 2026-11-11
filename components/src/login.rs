@@ -1191,7 +1191,11 @@ fn store_caretaker(
                 (narrow_ep, abi::rights::READ),
                 (ready, abi::rights::WRITE),
             ],
-            maps: &[(CARETAKER_FS_VA, DURABLE_WINDOW, abi::address_space::MAP_RW)],
+            maps: &[(
+                CARETAKER_FS_VA,
+                DURABLE_WINDOW,
+                abi::address_space::MAP_READ_WRITE,
+            )],
             stack_pages: CARETAKER_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },
@@ -1322,7 +1326,11 @@ fn mint(own_ut: u64, care: Option<&elf::Elf>, identity: &[u8]) -> Option<(u64, u
                 (narrow_ep, abi::rights::READ),
                 (ready, abi::rights::WRITE),
             ],
-            maps: &[(CARETAKER_FS_VA, FS_PAGE_FRAME, abi::address_space::MAP_RW)],
+            maps: &[(
+                CARETAKER_FS_VA,
+                FS_PAGE_FRAME,
+                abi::address_space::MAP_READ_WRITE,
+            )],
             stack_pages: CARETAKER_STACK_PAGES,
             ..ChildEndowment::new(Retention::Nothing)
         },

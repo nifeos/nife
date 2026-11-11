@@ -61,7 +61,7 @@ live per object type in `crates/abi`:
   or a `THREAD_CONTROL_BLOCK`. This is how a process builds new kernel objects out of a raw memory budget it holds.
 - ThreadControlBlock (`thread_control_block::`): `CONFIGURE` (entry, stack, address space), `CAPABILITY_INSERT` (place a capability into
   the child's capability table), `START` (see §3).
-- AddressSpace (`address_space::MAP_INTO`, with modes `MAP_RO` / `MAP_RW` / `MAP_CODE`): map a
+- AddressSpace (`address_space::MAP_INTO`, with modes `MAP_READ_ONLY` / `MAP_READ_WRITE` / `MAP_CODE`): map a
   frame into an address space at a chosen virtual address with chosen permissions.
 - Interrupt (`interrupt::WAIT` / `ACK`): block until an interrupt the capability names fires, then
   re-enable it. This is how a userspace driver owns its device's interrupt.

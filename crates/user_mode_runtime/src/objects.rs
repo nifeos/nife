@@ -180,7 +180,7 @@ pub fn revoke_page_frame(frame_slot: u64) -> i64 {
 }
 
 /// `MAP_INTO`: map the frame in `frame_slot` into the address space named by `aspace`, at
-/// `va`, per `mode` (`abi::address_space::MAP_RO`/`MAP_RW`/`MAP_CODE`). `0` on success; a negative
+/// `va`, per `mode` (`abi::address_space::MAP_READ_ONLY`/`MAP_READ_WRITE`/`MAP_CODE`). `0` on success; a negative
 /// `abi::Error`.
 ///
 /// Safe for the reason [`map_page_frame`] is: the kernel checks the address-space capability's
