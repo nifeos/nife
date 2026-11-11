@@ -9,10 +9,10 @@
 //! `system_tests/src/user/page_frame_service.rs`.
 //!
 
-//! Name: provisional (milestone 291). This was `hello`'s `PAGE_FRAME_PRODUCER` role, number 11,
-//! and the lowercase of the role constant is the name. Refused `frame_sharer`: `PageFrame` is the
-//! kernel object's own name, and shortening it here would make the program harder to connect to
-//! the capability it holds.
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). This was `hello`'s
+//! `PAGE_FRAME_PRODUCER` role, and the lowercase of the role constant is the name. Refused
+//! `frame_sharer`: `PageFrame` is the kernel object's own name, and shortening it here would make
+//! the program harder to connect to the capability it holds.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

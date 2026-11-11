@@ -192,13 +192,13 @@ fn login_gives_back_everything_when_any_retype_of_a_login_fails() {
 }
 
 /// One of each method that takes pages out of a region, in order, and how many pages each takes:
-/// `RETYPE` one page, `RETYPE_OBJ` one page for a rendezvous, `SPLIT` a two-page child.
+/// `RETYPE` one page, `RETYPE_OBJECT` one page for a rendezvous, `SPLIT` a two-page child.
 /// `(method, argument, pages)`; `RETYPE`'s argument `0` is one page, the way every caller asks.
 const SCRIPT: [(u64, u64, u64); 3] = {
-    use abi::memory_region::{RETYPE, RETYPE_OBJ, SPLIT};
+    use abi::memory_region::{RETYPE, RETYPE_OBJECT, SPLIT};
     [
         (RETYPE, 0, 1),
-        (RETYPE_OBJ, abi::objtype::RENDEZVOUS, 1),
+        (RETYPE_OBJECT, abi::objtype::RENDEZVOUS, 1),
         (SPLIT, 2, 2),
     ]
 };

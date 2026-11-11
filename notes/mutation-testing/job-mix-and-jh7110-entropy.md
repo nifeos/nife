@@ -1,5 +1,7 @@
 # `job_mix` and `jh7110_entropy`
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 This appendix holds the `job_mix` and `jh7110_entropy` rows of the 2026-09-20 new-crate backlog
 triage, whose table and method are in [new-crate-backlog](new-crate-backlog.md). The summary is in
 [notes/mutation-testing.md](../mutation-testing.md).

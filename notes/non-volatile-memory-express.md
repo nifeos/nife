@@ -16,25 +16,27 @@ board-side work will reuse.
 
 ## The shape
 
-Three pieces, in the tree's usual split:
+The tree's usual split, with the driver in two processes from one program:
 
 - **`crates/non_volatile_memory_express`**: the pure logic. Register field decode (CAP), command
   building (the 64-byte submission entries), and the submission/completion ring arithmetic with the
   phase tag. Doorbell addressing, PRP construction, IDENTIFY parsing, and (milestone 261 (the NVMe driver leaves the kernel)) the
   spawn handoff and the block-range check the EL0 data plane runs before it builds a command.
   Host-tested in milliseconds, eight Kani harnesses (`script/verify`), no MMIO anywhere in it.
-- **`kernel/src/non_volatile_memory_express.rs`**: the admin plane's volatile half, at EL1.
-  Reset, the admin rings by register, enable, IDENTIFY, Create I/O Queue.
-  `NonVolatileMemoryExpress` takes the register window and one DMA region passed in (rule 2);
-  `bring_up()` is the policy that finds the controller, allocates the region, and confines the
-  device.
-- **`components/src/non_volatile_memory_express.rs`**: the data plane's volatile half, at EL0
-  since milestone 261. Copies commands into the I/O submission ring, rings the doorbell, polls the
-  completion ring's phase tag, and serves `filesystem_contract::blk`. It shares the crate's name
-  rather than carrying a `_server` suffix, which calef ruled on 2026-09-18: the obvious spelling is
-  34 bytes against `nifefs`'s 32-byte `NAME_LEN`, and the program's own header has the argument.
-- **`kernel/src/user/non_volatile_memory_express_service.rs`**: the wiring, and the whole of the
-  confinement claim: what that process is handed and what it is refused, in one `Spawn` literal.
+- **`kernel/src/non_volatile_memory_express.rs`**: the kernel's whole part.
+  `find_and_confine()` finds the controller, allocates its DMA run, and confines its requester id
+  to that run before any process holds BAR0. It knows nothing else about NVMe (§86's ruling).
+- **`components/src/non_volatile_memory_express.rs`**: one EL0 program in two roles, picked by
+  `arg0`. Its `_admin` module resets the controller, sets up the admin rings, runs IDENTIFY and
+  Create I/O Queue, grants the data plane its pages, and stays alive to retire the controller. Its
+  `_data_plane` module copies commands into the I/O submission ring, rings the doorbell, polls the
+  completion ring's phase tag, and serves `filesystem_contract::blk`. The program shares the
+  crate's name, which calef ruled on 2026-09-18: a `_server` suffix would not fit `nifefs`'s 32-byte
+  `NAME_LEN`, and a separate admin program would not either.
+- **`crates/driver_process_contract/src/non_volatile_memory_express.rs`**: what the three agree
+  on: the run's layout, each process's slots, the admin report, the handoff and the grant tags.
+- **`kernel/src/user/non_volatile_memory_express_service.rs`**: the wiring: what each process is
+  handed and what it is refused, in two `Spawn` literals.
 - **`kernel/src/pci.rs::find_nvme_device`**: enumeration and transport bring-up over the §18 PCIe
   machinery, matching the NVMe class code (`01:08:02`) rather than a vendor id, because the
   class triple is the one identity the spec requires of every controller, QEMU's included.
@@ -73,9 +75,10 @@ queue addresses and checks every descriptor against the driver's DMA region befo
 device. NVMe's equivalent of a descriptor is the PRP inside a command the controller fetches from
 driver-written memory, and nothing kernel-side parses commands on their way past.
 
-What bounds the device instead is the IOMMU alone (milestone 16b): `bring_up` confines the
-controller's requester id to its DMA region *before* the controller is enabled, so there
-is no instant at which an enabled controller could reach other memory. All three test boots have an
+What bounds the device instead is the IOMMU alone (milestone 16b (IOMMU-backed driver isolation)).
+`find_and_confine` confines the controller's requester id to its DMA run *before* any process can
+enable it, so no enabled controller could ever reach other memory. On a machine without an IOMMU
+nothing bounds it, and nife trusts both processes (§86's ruling: confinement means an IOMMU). All three test boots have an
 IOMMU denying unlisted requester ids by default. They are aarch64's SMMUv3, riscv64's ratified
 RISC-V IOMMU, and x86_64's VT-d, confirmed behind this driver 2026-08-25 per the evidence section of §86 (whether an NVMe
 driver can leave the kernel). That cuts two ways. The confinement is real (an address outside the region faults
@@ -88,28 +91,37 @@ silently routes their DMA around the IOMMU. The NVMe device model needs no flag,
 PCI device's DMA always goes through the PCI address space. One less thing to forget, and the
 reason the runner comment says so at the attach line.
 
-### The driver left the kernel, 2026-09-17
+### Two processes, and what each holds
 
-Milestone 261 built §86's option 2a, and the paragraph above is now about a *process* rather
-than about the kernel. The split costs no new syscall surface at all, because NVMe 1.4 section 3.1 already
-put a page boundary where the authority boundary belongs. The controller registers (`CC`,
-`CSTS`, `AQA`, `ASQ`, `ACQ`) are below offset `1000h` and the first doorbell is at `1000h`. So the
-kernel maps one page of BAR0 into the server and not the other, and the server holds no
-`DeviceFrame`, no `PageFrame`, no `Interrupt` and no `Virtio` capability. Both windows arrive as
-mappings installed before `_start` runs, the way milestone 159's TRNG driver's register page does.
+The split costs no new syscall surface, because NVMe 1.4 section 3.1 already put a page boundary
+where the authority boundary belongs. The controller registers (`CC`, `CSTS`, `AQA`, `ASQ`, `ACQ`)
+are below offset `1000h` and the first doorbell is at `1000h`.
 
-What the split actually withholds, stated precisely because it is easy to overclaim. Creating
-a queue is what names the physical address a ring lives at, in a PRP field of an admin command,
-and the admin rings' own bases are the `ASQ` and `ACQ` registers. A process that can issue no
-admin command and cannot name those registers cannot choose where any ring lives.
+- The kernel maps the admin process BAR0's register and doorbell pages and the run's first three
+  pages (the admin rings and the IDENTIFY page), as spawn-time mappings. It
+  also holds the doorbell page as a `DeviceFrame` and the run's data-plane pages as one `PageFrame`
+  run, both with `GRANT`, and never maps them. BAR0's later pages stay unmapped: a controller may
+  put its MSI-X table there, and mapping it would hand a process the power to aim an interrupt.
+- The data plane starts with three endpoints and its own address space. It receives three
+  words of geometry and then the two capabilities from the admin process, narrowed so it cannot
+  pass them on, and maps them into its own space with `AddressSpace::MAP_INTO`. It holds no
+  `Interrupt` and no `Virtio` capability, and nothing names the register page or the admin pages.
+
+What the split withholds from the data plane, stated precisely because it is easy to overclaim.
+Creating a queue is what names the physical address a ring lives at, in a PRP field of an admin
+command, and the admin rings' own bases are the `ASQ` and `ACQ` registers. A process that can issue
+no admin command and cannot name those registers cannot choose where any ring lives.
 
 **What it does not withhold.** The IOMMU keys on the controller's requester id and bounds it to
-the whole allocation, admin rings included, because the controller fetches from both halves. So a
-server that computes a PRP backwards from its own base can make the controller overwrite the admin
-ring. And with `CAP.DSTRD` = 0 the admin doorbells share the mapped page, so it can ring the admin
+the whole run, admin rings included, because the controller fetches from both halves. So a data
+plane that computes a PRP backwards from its own base can make the controller overwrite the admin
+ring. And with `CAP.DSTRD` = 0 the admin doorbells share the granted page, so it can ring the admin
 queue without being able to write what that queue holds. Both are denial of service against the
-controller rather than an escape, §86's option 2a says so in those terms, and option 4's doorbell
-validator is what would close them.
+controller rather than an escape, and option 4's doorbell validator is what would close them.
+
+§86's option 4 stays addable. Which submission queue the controller is told about is the admin
+process's choice. Doorbell mediation would put that choice and the doorbell behind a kernel
+capability, and the data plane would ring through it instead, changing little else.
 
 ### What x86_64 needed that the other two did not
 
@@ -142,7 +154,7 @@ which architecture is running.
 
 Wire the server and move a block through it (this is the boot test, abridged; the full version is
 `system_tests/src/user/non_volatile_memory_express_tests.rs`). Every one of these calls crosses a
-rendezvous to an unprivileged process; the caller holds one endpoint and no device:
+rendezvous to the unprivileged data plane; the caller holds one endpoint and no device:
 
 ```rust
 let disk = non_volatile_memory_express_service::ensure(
@@ -191,9 +203,8 @@ block outside the namespace, a flush count that moves, and a refusal of an opcod
 for. Every one of those is written against the geometry the boot was
 handed rather than against the runner's image size, and none of them assumes what the disk held
 beforehand. So the same test proves the same things on a 256 GB disk (milestone 318 (the NVMe boot test on real geometry)). It asserts the
-IOMMU was active, which matters more than it did when the driver was the kernel. The IOMMU is now
-the *whole* of what stops a compromised server reaching memory it was not
-given.
+IOMMU was active, because the IOMMU is the *whole* of what stops a compromised admin process or
+data plane reaching memory it was not given.
 
 This is not fatal risk 6's experiment, and nothing here should be read as one. Milestone 16b
 already proved IOMMU-backed isolation against emulated silicon; risk 6's open clause is about a
@@ -237,12 +248,12 @@ anything is staged.
 - A transfer is one command per filesystem block, so a sixteen-block blk request is sixteen
   round trips where the virtio block server issues one. `physical_region_page_pair` refuses anything needing a PRP
   list, and a multi-page transfer needs one.
-- The EL0 server cannot read `CSTS`, so a hung controller presents to it as a bounded-out poll
-  answered `EIO` rather than as `CSTS.CFS`. The direct price of not mapping the controller register
-  page, and a worse diagnostic than the kernel-resident driver gave.
+- The data plane cannot read `CSTS`, so a hung controller presents to it as a bounded-out poll
+  answered `EIO` rather than as `CSTS.CFS`. The direct price of not granting it the controller
+  register page; the admin process could answer a status verb, and none exists yet.
 - A doorbell stride above `driver_process_contract::non_volatile_memory_express::MAXIMUM_DOORBELL_STRIDE` (8) is refused rather than
   served. Doorbell N sits at `0x1000 + N * (4 << DSTRD)`, so a wide stride scales the doorbell
-  file past the one page of BAR0 the server is mapped. Kani found this, producing `DSTRD = 15` in
+  file past the one page of BAR0 the data plane is granted. Kani found this, producing `DSTRD = 15` in
   under a second, which puts queue 1's submission tail at `0x41000`. A real controller reporting it
   would have met `MappedWindow`'s bounds check as a panic in the disk driver rather than a
   diagnosis. QEMU reports 0 and §86 quotes the spec calling 0 "the expected doorbell stride value"
@@ -264,8 +275,9 @@ anything is staged.
   not.
 - One namespace, PRP-only, no SGLs, no PRP lists. Transfers are exactly one filesystem block.
   All fine for the blk unit; a future bulk path (or a 8 KiB+ LBA format) needs PRP lists.
-- **`bring_up` is not idempotent.** A second call re-confines the requester id (leaking the first
-  domain's tables, as `iommu::confine` documents) and re-creates queues against a live controller,
-  which the controller will refuse. Call it once; `non_volatile_memory_express_service::ensure`
-  holds a once-per-boot flag
-  for exactly this reason, and the boot test does everything in one case.
+- **Wiring is not idempotent.** A second `find_and_confine` re-confines the requester id (leaking
+  the first domain's tables, as `iommu::confine` documents), and a second admin process resets the
+  controller under the first one's data plane. `non_volatile_memory_express_service::ensure` holds
+  a once-per-boot flag for exactly this reason, and the boot test does everything in one case.
+- The admin process polls `CSTS` with a spin bound and no timer, and a refused bring-up leaves the
+  DMA run allocated for the rest of the boot.

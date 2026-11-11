@@ -38,8 +38,8 @@ own, `nifeos/record`. The website is a separate repository, `nifeos/nifeos.org`,
 record. At build time it pulls the record, a page for each crate from that crate's own repository,
 and the planned tutorial on building a RISC-V operating system, a class. None of them is copied
 into the website's repository. The same day ruled the name, `nifeos/record`, over `nifeos/project`
-and `nifeos/project-management`. The rulings create nothing: creating
-`nifeos/record` and creating `nifeos/nifeos.org` each wait for the architect's separate approval.
+and `nifeos/project-management`. Question 8's ruling of 2026-11-11 (UTC) creates each at its step
+below.
 
 The architect ruled question 4 below on 2026-11-01 (UTC), and its contents on 2026-11-10 (UTC).
 `nifeos/record` holds `design/`, `briefs/`, the lane skills, and `notes/` except the tool data that
@@ -147,7 +147,8 @@ number alone.
 
 Hosting, ruled 2026-11-01 (UTC): GitHub Pages, deployed from Actions in `nifeos/nifeos.org`, with nifeos.org as the custom domain. The domain dates from 2026-10-03, sits with its registrar's name servers, expires 2027-10-03 and has no web address set. The domain is ours, so the host
 stays reversible: a later move changes DNS only. Page addresses derive from the record's kind and
-number alone, and no address names the host. Enabling Pages, setting the custom domain and changing DNS each wait for the architect's approval.
+number alone, and no address names the host. Enabling Pages and setting the custom domain each
+wait for the architect's approval, and changing DNS is a person's step (step 8).
 
 The host's known limits: no server-side redirects, which number-based addresses avoid needing; no
 built-in pull-request preview; and a soft bandwidth limit of 100 GB a month.
@@ -201,26 +202,25 @@ Each step lands alone. Steps 1 to 5 land in this repository.
    the site as an artifact, deployed nowhere. Its step summary reports build time, index size and
    broken citations and links, and it never blocks a merge. The builder's home is
    `nifeos/nifeos.org`, where it pulls the record at build time.
-4. Sort each record into moves or stays in `packages/homes.toml`, which already gives every path a
-   home and counts the notes left undecided. The sort follows the ruling on question 4: whole-project
-   material moves, and crate documentation, `BUGS` sections, lint baselines, workflow data and
-   `AGENTS.md` stay. For each note it decides between cross-cutting and about one crate alone, and
-   it produces the number of the second kind. It also lists every link from a record into a path that
-   stays, since the site's link check fails the build on such a link.
+4. Built: `packages/homes.toml` sorts each record into moves or stays, under the ruling on
+   question 4, and `helpers/record_links.py` counts the sort. 36 notes are about one crate alone
+   and stay with it, and 260 links from a record name a path that stays; each becomes a qualified
+   path or plain text in step 6. [The record sort](1018-the-design-record-moves-and-is-published/the-record-sort.md)
+   says how the lane judged each note.
 5. Measured: the record's checks can run by directory, which sets what `nifeos/record`'s CI runs.
    The hold check of §88 (`needs-architect` as a required check) reads labels and no file, in 4 to
    5 seconds, and applies to every change. Of `script/lint`'s 140 sections a record-only change
    needs the 43 tagged `record` or `both`: 80 of 454 seconds on a measured run. The merge queue
    classifies each entry against the entry ahead, so a record entry queued behind a code entry
    skips the heavy jobs while the code entry runs them.
-6. After the architect approves creating `nifeos/record`: extract by path into it, then remove the
-   paths from this repository in one pull request. That pull request writes `packages/moved.toml`
-   with the anchor, and leaves a pointer in the README.
+6. Once steps 2 and 4 have landed, create `nifeos/record`, public. Then extract by path into it,
+   and remove the paths from this repository in one pull request. That pull request writes
+   `packages/moved.toml` with the anchor, and leaves a pointer in the README.
 7. Turn on `nifeos/record`'s CI: the record checks, limited to the record's directories, with the
    record halves of the `both` sections and the tooling that runs them.
-8. After the architect approves creating `nifeos/nifeos.org`: build there, pulling the record, the
-   crate pages and the tutorial, and deploy from Actions to GitHub Pages. Three tasks belong to a
-   person, since no lane holds the registrar's credentials. They are setting the DNS records that
+8. Once step 7 runs the record's CI in `nifeos/record`, create `nifeos/nifeos.org`. Build there,
+   pulling the record, the crate pages and the tutorial, and deploy from Actions to GitHub Pages.
+   Three tasks belong to a person, since no lane holds the registrar's credentials. They are setting the DNS records that
    point nifeos.org at Pages, setting auto-renew on the registration or a longer term, and
    confirming the organization's settings allow a custom domain on Pages. A lane prepares the
    workflow and the exact record values and stops there.
@@ -276,24 +276,20 @@ One decision each, recommendation first. Ask them one at a time.
    existence, as the section on citations states. A generated index may follow if that proves too
    slow.
 
-Still to be ruled by the architect:
-
-8. The creation of `nifeos/record` and of `nifeos/nifeos.org`. This block creates neither, and
-   steps 6 to 8 wait on that approval.
+8. Ruled 2026-11-11 (UTC): `nifeos/record` and `nifeos/nifeos.org` are created, each at its step.
+   Steps 6 and 8 state when. Setting DNS, auto-renew and the organization's custom-domain setting
+   stay a person's steps.
 
 
 ## Follow-on
 
 - **Done.** Step 2, carried by `helpers/qualified_paths.py` and `script/roadmap`.
-- **Outstanding.** Steps 4 and 6 to 8 above. Checked 2026-11-11 against `packages/homes.toml`,
-  which sorts no note, and the organization, which has no `nifeos/record`.
+- **Done.** Step 4, carried by `packages/homes.toml` and `helpers/record_links.py`.
+- **Outstanding.** Steps 6 to 8 above. Checked 2026-11-11 against the organization, which has no
+  `nifeos/record`.
 - **Outstanding.** Two comments in `ci.yml` and the header of `empty-diff.yml` call
   `merge_group.base_sha` the base branch's tip; the appendix's runs log the entry ahead. The skip
   rule is safe either way, so only the comments change.
-
-- **Outstanding.** §201 (one roadmap until a citation has to cross), journey 5 and milestone 857
-  (crates released on their own) still name `nifeos.org` as the record's repository. Each changes
-  to `nifeos/record` in its own pull request, and §201's needs the architect's approval.
 
 ## Index row
 

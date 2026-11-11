@@ -626,7 +626,7 @@ impl Conductor {
     fn note_spent_delegation(&mut self, x: usize, call: &Call) {
         // A SEND_CAPABILITY that completed spent its delegation: its receiver may be waiting on the
         // record to judge the fill. (Gated on the slot holding an endpoint: `SEND_CAPABILITY` and
-        // `RETYPE_OBJ` share the number 2.)
+        // `RETYPE_OBJECT` share the number 2.)
         if call.number == abi::SYS_INVOKE
             && call.words[1] == proto::SEND_CAPABILITY
             && matches!(self.held(x, call), Some(Object::Rendezvous(..)))
@@ -747,13 +747,14 @@ impl Conductor {
         }
     }
 
-    /// The `PROCESS` arm of `MemoryRegion::RETYPE_OBJ` (`kernel/src/syscall/retype.rs`), as the
+    /// The `PROCESS` arm of `MemoryRegion::RETYPE_OBJECT` (`kernel/src/syscall/retype.rs`), as the
     /// caller's tables must show it: the kind is `PROCESS`, the space slot (word 3) held an
     /// address space with `WRITE`, that space is gone from the slot now (it is consumed), and the
     /// process carries no right the invoked region capability lacks. Where the process's page
     /// lies is the caller's check.
     fn process_retype_is_lawful(&self, x: usize, call: &Call, now: &Snap, rights: u32) -> bool {
-        if call.words[1] != abi::memory_region::RETYPE_OBJ || call.words[2] != abi::objtype::PROCESS
+        if call.words[1] != abi::memory_region::RETYPE_OBJECT
+            || call.words[2] != abi::objtype::PROCESS
         {
             return false;
         }
@@ -1465,14 +1466,14 @@ fn own_snapshot() -> Snap {
     s
 }
 
-/// One `MemoryRegion::RETYPE_OBJ` through the real syscall entry, as the test thread.
+/// One `MemoryRegion::RETYPE_OBJECT` through the real syscall entry, as the test thread.
 fn retype_obj(region_slot: u64, kind: u64, space_slot: u64, floor: u64) -> u64 {
     use crate::arch::exceptions::TrapFrame;
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     let slot = crate::syscall::invoke(
         &mut frame,
         region_slot,
-        abi::memory_region::RETYPE_OBJ,
+        abi::memory_region::RETYPE_OBJECT,
         kind,
         space_slot,
         floor,
@@ -1481,13 +1482,13 @@ fn retype_obj(region_slot: u64, kind: u64, space_slot: u64, floor: u64) -> u64 {
     slot as u64
 }
 
-/// The `RETYPE_OBJ` call the conductor reads back from a fuzzer's report page.
+/// The `RETYPE_OBJECT` call the conductor reads back from a fuzzer's report page.
 fn retype_call(region_slot: u64, kind: u64, space_slot: u64, floor: u64, slot: u64) -> Call {
     Call {
         number: abi::SYS_INVOKE,
         words: [
             region_slot,
-            abi::memory_region::RETYPE_OBJ,
+            abi::memory_region::RETYPE_OBJECT,
             kind,
             space_slot,
             floor,

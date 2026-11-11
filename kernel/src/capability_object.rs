@@ -445,7 +445,7 @@ pub fn port_range_capability(base: u16, count: u16, rights: Rights) -> Capabilit
 }
 
 /// A capability naming a thread under construction (milestone 19c (run a real workload), step 19c.3), for tests that build one by
-/// hand. `RETYPE_OBJ` mints its own through the budget's `mint_child` since milestone 824.
+/// hand. `RETYPE_OBJECT` mints its own through the budget's `mint_child` since milestone 824.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `thread_control_block_capability` under the capability ruling of 2026-10-06 (UTC).
@@ -457,7 +457,7 @@ pub fn thread_control_block_capability(tid: crate::thread::ThreadId, rights: Rig
     }
 }
 
-/// A capability naming a notification (milestone 151). `RETYPE_OBJ` mints one with its budget's
+/// A capability naming a notification (milestone 151). `RETYPE_OBJECT` mints one with its budget's
 /// rights (milestone 824); delegation narrows.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
@@ -480,7 +480,7 @@ pub fn reboot_capability(rights: Rights) -> Capability {
     }
 }
 
-/// A capability naming a timer (milestone 106). `RETYPE_OBJ` mints one with its budget's rights
+/// A capability naming a timer (milestone 106). `RETYPE_OBJECT` mints one with its budget's rights
 /// (milestone 824); delegation narrows.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
@@ -492,7 +492,7 @@ pub fn timer_capability(id: crate::sched::TimerId, rights: Rights) -> Capability
     }
 }
 
-/// A capability naming a process (milestone 812), for tests that build one by hand. `RETYPE_OBJ`
+/// A capability naming a process (milestone 812), for tests that build one by hand. `RETYPE_OBJECT`
 /// mints its own with its budget's rights, `BIND` among them when the budget has it (milestone 824).
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn process_capability(id: crate::sched::ProcessId, rights: Rights) -> Capability {
@@ -502,7 +502,7 @@ pub fn process_capability(id: crate::sched::ProcessId, rights: Rights) -> Capabi
     }
 }
 
-/// A capability naming an address space under construction (milestone 19b). `RETYPE_OBJ` mints one
+/// A capability naming an address space under construction (milestone 19b). `RETYPE_OBJECT` mints one
 /// with its budget's rights (milestone 824); delegation narrows, as everywhere.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from

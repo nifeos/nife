@@ -36,6 +36,7 @@ paths = [
     "packages/base-image.approval.toml",
 ]
 
+# ---- What moves: the design record ------------------------------------------------------------
 [[home]]
 # The design record, milestone 1018 (the design record moves to `nifeos/record` and is published as
 # a website): the roadmap, decisions, journeys, naming, tenets, cross-cutting notes, the briefs and
@@ -112,3 +113,138 @@ paths = ["crates/publish-allowlist.txt"]
 status = "undecided"
 reason = "the externalization list the lint reads; it leaves with the last crate it names, because each crate leaves the list in the pull request that moves it"
 paths = ["crates/externalization-list.txt"]
+
+# ---- What stays: a note about one crate alone -----------------------------------------------
+# Milestone 1018 (the design record moves to `nifeos/record` and is published as a website), step
+# 4, under §315 (a crate's documentation leaves with it): a note about one crate alone leaves with
+# the crate, into its README, rustdoc or `docs/` folder, and every other note moves with the
+# record. One table per crate. Each home is undecided because the crate's own repository is: a
+# crate leaves with its package, or alone when it is publishable or shared. The sort is
+# provisional; the appendix of milestone 1018 states how it was made.
+
+[[home]]
+status = "undecided"
+reason = "about crates/bitmap_font alone; it leaves with that crate (§315)"
+paths = ["notes/glyphs/bitmap-font.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/calendar alone; it leaves with that crate (§315)"
+paths = ["notes/calendar.md", "notes/verification/calendar-proofs.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/capability_plan alone; it leaves with that crate (§315)"
+paths = ["notes/component-manifest/capability-plan.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/compositor alone; it leaves with that crate (§315)"
+paths = ["notes/compositor/arithmetic.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/designware_ethernet alone; it leaves with that crate (§315)"
+paths = ["notes/designware-ethernet/the-hardware.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/elf alone; it leaves with that crate (§315)"
+paths = ["notes/elf/parser.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/file_allocation_table alone; it leaves with that crate (§315)"
+paths = ["notes/file-allocation-table.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/glob alone; it leaves with that crate (§315)"
+paths = ["notes/glob.md", "notes/glob/"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/globally_unique_identifier_partition_table alone; it leaves with that crate (§315)"
+paths = ["notes/globally-unique-identifier-partition-table.md", "notes/globally-unique-identifier-partition-table/"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/glyph_atlas alone; it leaves with that crate (§315)"
+paths = ["notes/glyphs/glyph-atlas.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/grant_plan alone; it leaves with that crate (§315)"
+paths = ["notes/grant-expression/grant-plan-crate.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/installed_programs alone; it leaves with that crate (§315)"
+paths = ["notes/packages/installed-programs.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/inter_process_communication alone; it leaves with that crate (§315)"
+paths = ["notes/inter-process-communication.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/job_mix alone; it leaves with that crate (§315)"
+paths = ["notes/job-mix/instrument.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/machine_discovery alone; it leaves with that crate (§315)"
+paths = ["notes/machine-discovery.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/nifefs alone; it leaves with that crate (§315)"
+paths = ["notes/nifefs.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/package_archive alone; it leaves with that crate (§315)"
+paths = ["notes/packages/package-archive.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/paging alone; it leaves with that crate (§315)"
+paths = ["notes/paging.md", "notes/verification/paging-blocks.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/periodic_deadline alone; it leaves with that crate (§315)"
+paths = ["notes/periodic-deadline-proofs.md"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/user_mode_runtime alone; it leaves with that crate (§315)"
+paths = ["notes/user-mode-runtime.md", "notes/user-mode-runtime/"]
+
+[[home]]
+status = "undecided"
+reason = "about crates/video_terminal alone; it leaves with that crate (§315)"
+paths = ["notes/video-terminal.md", "notes/video-terminal/"]
+
+# Notes about a crate that has already left, which §315 sends to that crate's repository.
+[[home]]
+status = "provisional"
+repo = "designware_mobile_storage"
+paths = ["notes/designware-mobile-storage/driver.md"]
+
+[[home]]
+status = "provisional"
+repo = "generational_table"
+paths = ["notes/generational-names.md", "notes/generational-table-and-existing-crates.md"]
+
+# ---- What stays: tool data under design/ ------------------------------------------------------
+# The lint and prose baselines, and the removed-files index, which lists code paths. Each is read
+# by a tool and leaves with it (milestone 1018, question 4).
+[[home]]
+status = "undecided"
+reason = "lint baselines and tool data; they leave with the lint that reads them, whose repository is not yet named"
+paths = ["design/lint-baseline.tsv", "design/prose-baseline.tsv", "design/passive-baseline.tsv",
+         "design/file-length-baseline.tsv", "design/comment-block-baseline.tsv",
+         "design/parent-index-baseline.tsv", "design/module-block-baseline.txt",
+         "design/naming-rule-baseline.txt", "design/removed.tsv"]

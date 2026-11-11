@@ -118,15 +118,34 @@ KEPT = {
 # itself, which outranks the check. The report lists an entry it still finds, so the exception
 # stays visible instead of the name sitting in the ratified-failures list forever.
 RULED = {
-    "notes/stack-high-water/per-ipc-depth.md::per-ipc-depth":
-        "calef ruled `IPC` a term of art, declining the expansion (2026-10-28 UTC, relayed by the "
-        "maintainer); design/naming/acronyms-and-abbreviations.md holds the record",
     "kernel/src/user/non_volatile_memory_express_service.rs::release_completed":
         "calef ruled the rename of `release` here on 2026-10-28 (UTC, relayed by the maintainer): "
         "the function performs the release, so the ruled `is_released` would misstate it, and "
         "`release_completed` acts and reports whether it worked, which design/naming.md exempts "
         "from the question shape",
 }
+# A name that has a `Name:` block carries its exemption in the block, as a clause this file reads
+# (`block_exemptions`): `Kept <check>: <reason>.` excuses the name from one check, and
+# `Ruled: <reason>.` records the ruling that keeps it although a check refuses it. KEPT and RULED
+# hold only the names that cannot carry a block today, or that carry none yet (adding a block to
+# one changes the names `script/names` counts, so it is its own change).
+_CLAUSE = re.compile(r"\b(Kept ([a-z-]+)|Ruled): (.*?)\.(?=\s|$)", re.S)
+
+
+def block_exemptions(records):
+    """`(kept, ruled)` read from the blocks of `records`, shaped like `KEPT` and `RULED`."""
+    kept, ruled = {}, {}
+    for r in records:
+        key = f"{r['path']}::{r['name']}"
+        for m in _CLAUSE.finditer(r.get("text") or ""):
+            reason = " ".join(m.group(3).split())
+            if m.group(1) == "Ruled":
+                ruled[key] = reason
+            else:
+                kept[key] = (kept.get(key, (set(), ""))[0] | {m.group(2)}, reason)
+    return kept, ruled
+
+
 # design/naming.md's question shapes and service model are the template's checks
 # (vendor/crate-workflows/helpers/question_shape.py and service_model.py), run on the name alone.
 _TEMPLATE_CHECKS = (
@@ -601,6 +620,18 @@ def _selftest():
     stale_kept = ratchet_problems(judged, cases, cases, RULES, kept={"x/src/gone.rs::f": None})
     assert len(stale_kept) == 1 and "KEPT names x/src/gone.rs::f" in stale_kept[0]
     assert "judged no name" in ratchet_problems(set(), cases, cases, RULES)[0]
+    saved_ruled = dict(RULED)
+    kept_blocks, ruled_blocks = block_exemptions([
+        {"path": "a/src/lib.rs", "name": "f", "text": "provisional. Kept question-shape: acts and "
+         "reports whether it worked. Kept spelled-out: RISC-V's own name."},
+        {"path": "notes/stack-high-water/per-ipc-depth.md", "name": "per-ipc-depth",
+         "text": "ratified 2026-10-18. Ruled: calef ruled `IPC` a term of art (2026-10-28 UTC)."},
+        {"path": "b/src/lib.rs", "name": "g", "text": "provisional. Nothing excused."}])
+    assert kept_blocks == {"a/src/lib.rs::f": ({"question-shape", "spelled-out"},
+                                               "RISC-V's own name")}, kept_blocks
+    assert list(ruled_blocks) == ["notes/stack-high-water/per-ipc-depth.md::per-ipc-depth"] \
+        and "term of art (2026-10-28 UTC)" in ruled_blocks[list(ruled_blocks)[0]], ruled_blocks
+    RULED.update(ruled_blocks)
     listed = [{"path": "notes/stack-high-water/per-ipc-depth.md", "line": 1, "kind": "document",
                "name": "per-ipc-depth", "failures": ["spelled-out: `ipc` is ruled to expand"]}]
     rest, ruled = _split_ruled(listed)
@@ -608,6 +639,8 @@ def _selftest():
         "a name a ruling excepts leaves the failing list with its ruling attached"
     rest, ruled = _split_ruled([dict(listed[0], path="notes/other.md", name="other")])
     assert rest and not ruled, "a name no ruling names stays listed"
+    RULED.clear()
+    RULED.update(saved_ruled)
     _selftest_split()
     assert baseline_layout.problems("# rules 1\na x\nb x\n\n", BASELINE), \
         "rows on adjacent lines fail the layout check"
@@ -702,6 +735,9 @@ def main(argv):
     if mode not in ("--list", "--check", "--bank", "--init"):
         sys.exit(__doc__.split("\n\n")[2])
     records, unblocked, manifests, sources = load(root)
+    from_kept, from_ruled = block_exemptions(records)
+    KEPT.update(from_kept)
+    RULED.update(from_ruled)
     reach = name_crossings.Reach(manifests, sources)
     cands = candidates(records, unblocked, sources)
     kept = candidates(records, unblocked, sources, ratified=True)

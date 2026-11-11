@@ -3,7 +3,7 @@ Falsifies `system_tests::user::confined_fuzzer_tests::a_confined_fuzzer_reaches_
 Architecture: aarch64, riscv64, x86_64 (the hunk is portable region code).
 
 The planted escape this driver's own oracle must find (milestone 779 (fuzz the surface a confined
-process can reach), part (b)): `MemoryRegion::RETYPE_OBJ` carves its object page from the machine's
+process can reach), part (b)): `MemoryRegion::RETYPE_OBJECT` carves its object page from the machine's
 free list instead of the caller's region, so a confined process that retypes a rendezvous, a
 notification or an address space holds, and can map, a page outside every grant. The kernel stays
 healthy: no panic, no wrong register, nothing a crash oracle would see. The conductor's capability
@@ -11,7 +11,7 @@ oracle reads the fill's page against the granted extents and says
 "slot N filled with Rendezvous(..) (rights ..) after syscall 2 words [.., 2, ..], which grants
 nothing" (or the object-page twin, "an object outside every grant"), naming the seed and step.
 
-Expected to fail: the first seed whose fuzzers draw a `RETYPE_OBJ` on their region, which the
+Expected to fail: the first seed whose fuzzers draw a `RETYPE_OBJECT` on their region, which the
 committed suite range reaches within seconds of boot. Replayed red on aarch64 on 2026-10-06 (UTC)
 by the lane for milestone 779 at seed 0, step 0: "fuzzer 0 holds Rendezvous(3, 0), an object
 outside every grant".
@@ -19,18 +19,31 @@ outside every grant".
 diff --git a/kernel/src/memory_region.rs b/kernel/src/memory_region.rs
 --- a/kernel/src/memory_region.rs
 +++ b/kernel/src/memory_region.rs
-@@ -259,9 +259,11 @@ pub fn retype_object_page(region: u64, kind: ObjectKind) -> Option<u64> {
+@@ -283,21 +283,12 @@ pub fn retype_object_page(region: u64, kind: ObjectKind) -> Option<u64> {
      if crate::retype_fault::fails_now() {
          return None;
      }
--    // Released at the semicolon, as in `retype_page`: the pin and the carve are under the lock, the
--    // zeroing is not.
--    let page = REGIONS.lock().retype_object_page(region, kind)?;
+-    // Released at the block's end, as in `retype_page`: the pin and the carve are under the lock,
+-    // the zeroing and the refusal line are not.
+-    let (page, reached) = {
+-        let mut table = REGIONS.lock();
+-        let page = table.retype_object_page(region, kind);
+-        let reached = page
+-            .is_none()
+-            .then(|| table.ceiling_reached(region, Counted::Object(kind)))
+-            .flatten();
+-        (page, reached)
+-    };
+-    if let Some(reached) = reached {
+-        log_ceiling_refusal(Counted::Object(kind), region, reached);
+-    }
+-    let phys = page? * FRAME_SIZE;
 +    // FALSIFICATION (milestone 779's confined fuzzer): the page comes from the machine's free
 +    // list, not from the caller's region, so a confined process that retypes an object reaches a
 +    // page it was never granted. The conductor's capability oracle must say so.
 +    let _ = (region, kind);
 +    let page = memory::alloc_contiguous(1)?.addr() / FRAME_SIZE;
-     let phys = page * FRAME_SIZE;
++    let phys = page * FRAME_SIZE;
  
      // SAFETY: as retype_page: exclusively ours, direct-mapped; zero before anyone reads it.
+     unsafe {

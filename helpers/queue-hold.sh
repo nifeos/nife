@@ -200,20 +200,25 @@ held() {
 		jq -r 'sort_by(.number)[] | "\(.number)\t\(.title)"' 2>/dev/null
 }
 
+# Prints "<node id> <count of removed_from_merge_queue events>" for a pull request, by GraphQL.
+removal_state() {
+	gh api graphql -f query='query($o:String!,$n:String!,$num:Int!){repository(owner:$o,name:$n){pullRequest(number:$num){id timelineItems(last:100,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT]){nodes{__typename}}}}}' \
+		-f o="${REPO%%/*}" -f n="${REPO#*/}" -F num="$1" \
+		--jq '.data.repository.pullRequest | "\(.id) \(.timelineItems.nodes | length)"' 2>/dev/null || echo " 0"
+}
+
 # Borrowed whole from `merge-drain.sh`'s `dequeue_held`, including the before/after timeline count:
 # `dequeuePullRequest` is a no-op on a pull request that is not queued and reports success either
-# way, so counting `removed_from_merge_queue` events is the only way to say truthfully whether
+# way, so counting removed-from-merge-queue timeline events (GraphQL) is the only way to say truthfully whether
 # anything moved. The input field is `id`; `pullRequestId` is rejected, which cost an attempt.
 dequeue() {
 	num="$1"
-	id=$(gh api "repos/$REPO/pulls/$num" --jq '.node_id' 2>/dev/null) || return 0
+	st=$(removal_state "$num") || return 0
+	id=${st% *} before=${st#* }
 	[ -n "$id" ] || return 0
-	before=$(gh api "repos/$REPO/issues/$num/timeline" \
-		--jq '[.[] | select(.event=="removed_from_merge_queue")] | length' 2>/dev/null || echo 0)
 	gh api graphql -f query="mutation{dequeuePullRequest(input:{id:\"$id\"}){clientMutationId}}" \
 		>/dev/null 2>&1 || return 0
-	after=$(gh api "repos/$REPO/issues/$num/timeline" \
-		--jq '[.[] | select(.event=="removed_from_merge_queue")] | length' 2>/dev/null || echo 0)
+	st=$(removal_state "$num") && after=${st#* } || after=$before
 	[ "$after" -gt "$before" ] && say "dequeued #$num"
 	return 0
 }

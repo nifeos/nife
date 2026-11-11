@@ -127,8 +127,8 @@ and Redox.
 objtype::NOTIFICATION: u64 = 4
 ```
 
-A notification is a page-resident kernel object, created by `RETYPE_OBJ`, owned by the caller's
-untyped budget. It holds:
+A notification is a page-resident kernel object, created by `RETYPE_OBJECT` (method 2, its name
+spelled out by the ruling of 2026-11-11 (UTC)), owned by the caller's untyped budget. It holds:
 
 - A notification word (`u64`), acting as a bitfield of binary semaphores.
 - A wait queue (intrusive `Fifo<Thread>`, same as an endpoint's receiver queue).

@@ -74,7 +74,7 @@ fn wire_servers(
     // hand the FS server a disk with no filesystem on it.
     let (blk_ep, blk_ready, blk_shared) = match crate::virtio::find_block_device_n(1) {
         Some(dev) => {
-            let (ep, ready, shared) = spawn_block_server(blk_image, dev);
+            let (ep, ready, shared) = spawn_block_server(blk_image, dev)?;
             (ep, Some(ready), shared)
         }
         // Only when the boot came from that disk: RedoxFS writes on mount, so a stick booted on an
@@ -131,7 +131,7 @@ fn nvme_disk() -> Option<(RendezvousId, Option<RendezvousId>, u64)> {
 
 /// Bring one virtio block device `dev`, on any bus, up under a confined userspace block server.
 /// Returns `(blk_ep, blk_ready, blk_shared)`: the request endpoint, the readiness endpoint, and the
-/// physical base of the region transfers land in.
+/// physical base of the region transfers land in. `None` when the IOMMU refuses to attach `dev`.
 ///
 /// The DMA region is `1 + BLK_PAGES` contiguous pages: page 0 for the rings, request header and
 /// status, then the data pages, which are also the region shared with the client, so the device
@@ -140,12 +140,24 @@ fn nvme_disk() -> Option<(RendezvousId, Option<RendezvousId>, u64)> {
 pub(in crate::user) fn spawn_block_server(
     blk_image: &'static [u8],
     dev: crate::virtio::BlockDevice,
-) -> (RendezvousId, RendezvousId, u64) {
+) -> Option<(RendezvousId, RendezvousId, u64)> {
     // Zeroed so neither stale descriptors nor stale file bytes are ever visible to the device
     // or the FS server.
     let dma = crate::memory::alloc_contiguous_zeroed(1 + BLK_PAGES)
         .expect("no DMA region for the block server")
         .addr();
+    // First, so a refused device leaves nothing else behind.
+    let Some(vid) = crate::virtio::register(
+        dev.transport,
+        dma,
+        (1 + BLK_PAGES) as u64 * FRAME_SIZE, // every page: the device may touch the rings AND the data buffer
+        dev.rid, // `Some` behind an IOMMU (every PCI function), `None` on virtio-mmio
+    ) else {
+        for page in 0..(1 + BLK_PAGES) as u64 {
+            crate::memory::free(page_frames::PageFrame::from_addr(dma + page * FRAME_SIZE));
+        }
+        return None;
+    };
     let blk_shared = dma + FRAME_SIZE; // the data pages start right after the rings page
 
     let blk_ep = crate::sched::create_rendezvous(); // FS server WRITE (CALL) -> block server READ
@@ -154,12 +166,6 @@ pub(in crate::user) fn spawn_block_server(
     let interrupt_ep = crate::sched::create_rendezvous();
     crate::sched::bind_interrupt(dev.intid, interrupt_ep);
     crate::arch::interrupt_controller::enable(dev.intid);
-    let vid = crate::virtio::register(
-        dev.transport,
-        dma,
-        (1 + BLK_PAGES) as u64 * FRAME_SIZE, // every page: the device may touch the rings AND the data buffer
-        dev.rid, // `Some` behind an IOMMU (every PCI function), `None` on virtio-mmio
-    );
     crate::sched::spawn(move || {
         // The driver's death gives the slot back (§16 (object revocation), amendment of 2026-10-27).
         crate::virtio::bind_to_current_thread(vid);
@@ -194,7 +200,7 @@ pub(in crate::user) fn spawn_block_server(
     })
     .expect("could not spawn the block server");
 
-    (blk_ep, blk_ready, blk_shared)
+    Some((blk_ep, blk_ready, blk_shared))
 }
 
 /// Everything one FS-server process is, as a value, so a caller cannot swap its bare `u64`

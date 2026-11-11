@@ -75,7 +75,7 @@ may do 2, 4 and the building half of 3, and that is the shape of what follows.
 ### Blocker one: a shell child may build a process, and may lend it nothing it made
 
 Every spending method of a memory region asks for `WRITE` alone (`memory_region_invoke`), and
-`RETYPE_OBJ` makes spaces, threads, processes and rendezvous (`memory_region_retype_obj`). A `--mem`
+`RETYPE_OBJECT` makes spaces, threads, processes and rendezvous (`memory_region_retype_obj`). A `--mem`
 grant arrives as `abi::rights::SPEND_ONLY`, every right but `GRANT` (`native_endowment` in
 `crates/system_initializer`), so its holder can build a process and start it.
 

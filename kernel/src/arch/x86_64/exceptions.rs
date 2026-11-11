@@ -666,6 +666,7 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
         // and the switch happens in `x86_trap_dispatch` on the thread's own stack, after the EOI.
         v if v == super::interrupt_controller::TIMER_VECTOR as u64 => {
             super::timer::tick();
+            crate::sched::sample_tick(frame.rip);
             crate::sched::on_tick();
             super::interrupt_controller::end_of_interrupt();
             true

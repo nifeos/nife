@@ -31,7 +31,7 @@ struct Registered {
 pub enum Holder {
     /// A thread configured with the space directly.
     Thread(crate::thread::ThreadId),
-    /// A process created holding the space (`RETYPE_OBJ` of `objtype::PROCESS`).
+    /// A process created holding the space (`RETYPE_OBJECT` of `objtype::PROCESS`).
     Process(crate::sched::ProcessId),
 }
 
@@ -134,11 +134,11 @@ pub const fn registry_footprint() -> usize {
     size_of::<generational_table::Table<Registered, MAXIMUM_USER_SPACES>>()
 }
 
-/// Create an address space **in and backed by** `region` (the `RETYPE_OBJ(ADDRESS_SPACE)` engine): the
+/// Create an address space **in and backed by** `region` (the `RETYPE_OBJECT(ADDRESS_SPACE)` engine): the
 /// root page is retyped from it (pinning it, atomically with the carve), and the region becomes
 /// the space's table-and-record budget, exactly as for an exec-built space. `None` on an
 /// exhausted region, a full registry, or all 255 ASIDs live (reachable, since `MAXIMUM_SPACES` is
-/// 288).
+/// 1,056).
 pub fn user_address_space_create(region: u64) -> Option<u64> {
     let root = crate::memory_region::retype_object_page(
         region,
@@ -147,9 +147,21 @@ pub fn user_address_space_create(region: u64) -> Option<u64> {
     mmu::share_kernel_half(root); // RISC-V single-satp: the process root carries the kernel high half
 
     // The tag first, because the registry records it (see `AddressSpace::new`).
-    let asid = ASIDS.lock().alloc()?;
+    // Every refusal below gives back the count the retype took: the page stays spent, but no
+    // space holds a tag or a registry slot.
+    let release = || {
+        crate::memory_region::release_object(
+            region,
+            crate::memory_region::ObjectKind::AddressSpace,
+        );
+    };
+    let Some(asid) = ASIDS.lock().alloc() else {
+        release();
+        return None;
+    };
     if !crate::revoke::register_space(root, region, asid) {
         ASIDS.lock().free(asid);
+        release();
         return None; // registry full; the carved page is spent, the caller's own loss (B.4 rule)
     }
 
@@ -172,9 +184,9 @@ pub fn user_address_space_create(region: u64) -> Option<u64> {
         .lock()
         .insert_with(|_| Registered { space, bound: None })
         .map(generational_table::EntryName::to_bits);
-    // On a refusal the closure is dropped uncalled, and `space`'s `Drop` forgets the root and frees
-    // the ASID; the page stays spent on the caller's budget. Nothing is left to undo here, and a
-    // second free could take the ASID from a space given it since.
+    // On a refusal the closure is dropped uncalled, and `space`'s `Drop` forgets the root, frees
+    // the ASID and gives the count back; the page stays spent on the caller's budget. Nothing is
+    // left to undo here, and a second free could take the ASID from a space given it since.
     name
 }
 
@@ -246,7 +258,7 @@ pub fn with_user_address_space<R>(name: u64, f: impl FnOnce(Option<&mut AddressS
 /// §249; name provisional). The space stays in the registry under its name (§249's option A).
 ///
 /// `bind` gets the copy the thread will keep and returns the holder to record: the embryo, or the
-/// process `RETYPE_OBJ` is creating. `NoSuchSlot` if the name does not resolve; `WrongObject` if
+/// process `RETYPE_OBJECT` is creating. `NoSuchSlot` if the name does not resolve; `WrongObject` if
 /// the space already has a holder (§249's amendment (b)); `bind`'s own refusal leaves it unbound.
 ///
 /// Context: holds `ADDRESS_SPACES` (61), and `bind` takes `IPC_TABLES` (60) under it, so the bind

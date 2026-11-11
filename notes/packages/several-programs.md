@@ -1,5 +1,7 @@
 # A package carries several programs
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 The appendix to [notes/packages.md](../packages.md) for milestone 919 (a package carries several
 programs), built 2026-10-14 (UTC).
 
