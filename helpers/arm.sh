@@ -6,6 +6,7 @@
 #     helpers/arm.sh <pull request number>
 #     helpers/arm.sh <pull request number> --despite-conflict "<why>"
 #     helpers/arm.sh <pull request number> --despite-failed-checks "<why>"
+#     helpers/arm.sh <pull request number> --despite-lint "<why>"
 #
 # Refuses a draft, a pull request that is not open, and one wearing a hold label
 # (helpers/hold-labels.sh: `needs-architect`, `held-by-lane`, `held-for-red-trunk`), naming the label.
@@ -19,7 +20,9 @@
 # It also refuses a head whose newest `lint` check run is skipped, failed or cancelled, or is still
 # running beside a skipped one, since GitHub counts a draft run's skip as passed. And it refuses a
 # head that the merge queue last removed for failed checks, which `--despite-failed-checks "<why>"`
-# overrides after posting the reason. Both rules and their cases are at the checks, below.
+# overrides after posting the reason. After the conflict check it lints the pull request over the
+# queue it joins (`script/preflight-queue --arm-check`) and refuses a red it adds, which
+# `--despite-lint "<why>"` overrides the same way. Each rule and its cases are at its check, below.
 #
 # `--despite-conflict "<why>"` is the override: it arms over a reported conflict, after posting the
 # reason as a comment on the pull request, since notes/merge-queue/conflict-precheck.md asks a lane
@@ -51,7 +54,7 @@ here="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
 . "$here/pr-queue-state.sh"
 
 me="arm"
-usage='usage: helpers/arm.sh <pull request number> [--despite-conflict "<why>"] [--despite-failed-checks "<why>"]'
+usage='usage: helpers/arm.sh <pull request number> [--despite-conflict "<why>"] [--despite-failed-checks "<why>"] [--despite-lint "<why>"]'
 case "${1:-}" in
 '' | *[!0-9]* | -*)
 	echo "$usage" >&2
@@ -62,14 +65,19 @@ pr="$1"
 shift
 despite=
 despite_failed=
+despite_lint=
 while [ "$#" -gt 0 ]; do
 	case "$1" in
-	--despite-conflict | --despite-failed-checks)
+	--despite-conflict | --despite-failed-checks | --despite-lint)
 		if [ "$#" -lt 2 ] || [ -z "$(printf '%s' "$2" | tr -d '[:space:]')" ]; then
 			echo "$me: NOT ARMED. $1 needs the reason, which goes on the pull request." >&2
 			exit 2
 		fi
-		if [ "$1" = --despite-conflict ]; then despite="$2"; else despite_failed="$2"; fi
+		case "$1" in
+		--despite-conflict) despite="$2" ;;
+		--despite-failed-checks) despite_failed="$2" ;;
+		*) despite_lint="$2" ;;
+		esac
 		shift 2
 		;;
 	*)
@@ -194,6 +202,38 @@ $report
 *)
 	printf '%s\n' "$report" >&2
 	echo "$me: the queue conflict check could not run (exit $verdict), so #$pr is armed unchecked." >&2
+	;;
+esac
+
+# **Lint over the queue it joins** (the architect's ruling of 2026-11-11 (UTC) on question A of the
+# proposal "lint fails in the queue after passing on the pull request"). `script/preflight-queue
+# --arm-check` lints the pull request on `main` plus every queued entry. Exit 0 green, 1 the pull
+# request adds a failing section, 2 could not tell. `--despite-lint "<why>"` arms over a 1 after
+# posting the reason. ARM_STACK_LINT replaces the command, for helpers/push-requeue-selftest.sh only.
+stack_lint="${ARM_STACK_LINT:-$here/../script/preflight-queue --arm-check}"
+lint_report="$($stack_lint "$pr" 2>&1)"
+lint_status=$?
+case "$lint_status" in
+0) ;;
+1)
+	printf '%s\n' "$lint_report" >&2
+	if [ -z "$despite_lint" ]; then
+		echo "$me: NOT ARMED. #$pr makes lint red on main plus the queue ahead of it (above), and the merge group would fail on it. Fix it and arm again; or arm over it with --despite-lint \"<why>\"." >&2
+		exit 1
+	fi
+	if ! gh pr comment "$pr" --body "Armed over a lint failure that \`script/preflight-queue --arm-check\` found on \`main\` plus the queue, with \`helpers/arm.sh --despite-lint\`. Why: $despite_lint
+
+\`\`\`
+$lint_report
+\`\`\`" >/dev/null 2>&1; then
+		echo "$me: NOT ARMED. could not post the reason for arming over the lint failure on #$pr." >&2
+		exit 1
+	fi
+	echo "$me: arming #$pr over the lint failure; the reason is on the pull request."
+	;;
+*)
+	printf '%s\n' "$lint_report" >&2
+	echo "$me: lint over the queue could not tell (exit $lint_status), so #$pr is armed with that unchecked." >&2
 	;;
 esac
 

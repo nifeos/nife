@@ -81,6 +81,14 @@ printf '#!/bin/sh\necho "queue-conflicts: could not read the queue (offline); no
 chmod +x "$tmp/check-clean" "$tmp/check-unknown"
 ARM_QUEUE_CHECK="$tmp/check-clean"
 export ARM_QUEUE_CHECK
+# The lint over the queue (script/preflight-queue --arm-check) is stubbed the same way: green unless a
+# case says otherwise. helpers/preflight-arm-check-selftest.sh runs the real one against a fixture.
+printf '#!/bin/sh\necho "arm-check $*" >>"$STUB_DIR/log"\nexit 0\n' >"$tmp/lint-green"
+printf '#!/bin/sh\necho "arm-check $*" >>"$STUB_DIR/log"\necho "#$1 makes lint red: the prose ratchet"\nexit 1\n' >"$tmp/lint-red"
+printf '#!/bin/sh\necho "could not tell: the stack is red without it"\nexit 2\n' >"$tmp/lint-unknown"
+chmod +x "$tmp/lint-green" "$tmp/lint-red" "$tmp/lint-unknown"
+ARM_STACK_LINT="$tmp/lint-green"
+export ARM_STACK_LINT
 
 fail=0
 # run <name> <want: 0|nonzero> <fragment of output or ''> -- args...   state comes from the caller
@@ -304,6 +312,28 @@ check "failed-checks override, comment fails: merge never called" sh -c "! grep 
 state false false "" false
 run "failed-checks override needs a reason" nonzero "needs the reason" -- "$root/helpers/arm.sh" 42 --despite-failed-checks ""
 run "failed-checks override needs an argument" nonzero "needs the reason" -- "$root/helpers/arm.sh" 42 --despite-failed-checks
+
+# 13. Lint over the queue it joins (the architect's ruling of 2026-11-11 on question A): a red the
+# pull request adds refuses, --despite-lint posts its reason and arms, and "could not tell" arms and
+# says so.
+state false false "" false
+run "stack lint is asked about this pull request" 0 "armed" -- "$root/helpers/arm.sh" 42
+check "stack lint: called with the number" logged "arm-check 42"
+state false false "" false
+ARM_STACK_LINT="$tmp/lint-red" run "red over the queue refused" nonzero "makes lint red on main plus the queue" -- "$root/helpers/arm.sh" 42
+check "red over the queue: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+state false false "" false
+ARM_STACK_LINT="$tmp/lint-red" run "lint override arms" 0 "armed" -- "$root/helpers/arm.sh" 42 --despite-lint "the entry ahead is being dequeued"
+check "lint override: reason commented, then merge" awk '/pr comment 42/{c=NR} /pr merge 42/{m=NR} END{exit !(c && c<m)}' "$tmp/log"
+state false false "" false
+ARM_STACK_LINT="$tmp/lint-red" STUB_COMMENT_FAIL=1 run "lint override, comment fails" nonzero "could not post" -- "$root/helpers/arm.sh" 42 --despite-lint "why"
+check "lint override, comment fails: merge never called" sh -c "! grep -q 'pr merge' '$tmp/log'"
+state false false "" false
+ARM_STACK_LINT="$tmp/lint-unknown" run "stack lint could not tell: armed, and says so" 0 "armed with that unchecked" -- "$root/helpers/arm.sh" 42
+state true false "" false
+ARM_STACK_LINT="$tmp/lint-red" run "requeue onto a red stack is not re-armed" nonzero "NOT re-armed" -- "$root/script/push" --requeue
+state false false "" false
+run "lint override needs a reason" nonzero "needs the reason" -- "$root/helpers/arm.sh" 42 --despite-lint " "
 
 # 11. No instruction names the bare arming command, milestone 1052 (a push to a queued pull request
 # re-arms it, and arming refuses a held one). The briefs, the skills, CONTRIBUTING.md, the hook's

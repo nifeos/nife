@@ -288,6 +288,9 @@ echo "==> script/push --requeue re-arms, and arming refuses a held pull request"
 # Stub gh and git. The re-arm is made a no-op inside the selftest and must fail loudly, so this is
 # where a --requeue that silently arms nothing is seen to be caught (COE action 7).
 helpers/push-requeue-selftest.sh >/dev/null
+# Arming lints the pull request over the queue it joins: a real git fixture where it is green
+# alone and red on top of the entry ahead (script/preflight-queue --arm-check).
+helpers/preflight-arm-check-selftest.sh >/dev/null
 
 echo "==> the rustup retry (a dropped CDN connection retries; a real error does not)"
 # lint-scope: code
