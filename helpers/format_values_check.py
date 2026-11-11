@@ -21,7 +21,9 @@ A rename is not a move (the maintainer's ruling of 2026-11-08 UTC): the number a
 version ledger cares about did not change, so a bump would tell them something false. A removed
 name and an added one in the same file are read as one rename when they carry the same value, the
 same type and the same doc comment, and when no other removed or added name in that file carries
-the same three. A changed doc comment says the number now means something else, so the value reused
+the same three. The doc comment is compared without its `Name:` paragraph, which records
+provenance, and with the item's own name read as `Self`, so a doc comment that names its own item
+still pairs. A changed doc comment says the number now means something else, so the value reused
 under it still owes the bump; a pairing that is not one to one is not a rename either, and both
 names count as moved.
 
@@ -57,8 +59,12 @@ def squeeze(text):
     return ' '.join(text.split())
 
 
-def doc_above(text, start):
-    """The `///` doc comment directly above offset `start`, attributes skipped, squeezed."""
+def doc_above(text, start, name=None):
+    """The `///` doc comment directly above offset `start`, attributes skipped, squeezed.
+
+    Its `Name:` paragraph is left out, since it records the name's provenance and not what the
+    number means, and the item's own `name` reads as `Self`, so a doc comment that names its item
+    still matches across a rename."""
     lines = text[:start].split('\n')[:-1]
     doc = []
     for line in reversed(lines):
@@ -69,7 +75,19 @@ def doc_above(text, start):
             continue
         else:
             break
-    return squeeze(' '.join(reversed(doc)))
+    kept = []
+    in_name_block = False
+    for line in reversed(doc):
+        if line.strip().startswith('Name:'):
+            in_name_block = True
+        elif not line.strip():
+            in_name_block = False
+        if not in_name_block:
+            kept.append(line)
+    joined = squeeze(' '.join(kept))
+    if name:
+        joined = re.sub(r'\b' + re.escape(name) + r'\b', 'Self', joined)
+    return joined
 
 
 def values(text, path):
@@ -80,11 +98,11 @@ def values(text, path):
     text = text.split('#[cfg(test)]', 1)[0]
     for match in CONST.finditer(text):
         name, kind, value = match.groups()
-        found[('const', name)] = (squeeze(value), (squeeze(kind), doc_above(text, match.start())))
+        found[('const', name)] = (squeeze(value), (squeeze(kind), doc_above(text, match.start(), name)))
     if path.startswith(ABI_CRATE):
         for match in DISCRIMINANT.finditer(text):
             name, value = match.groups()
-            found[('discriminant', name)] = (value, ('', doc_above(text, match.start())))
+            found[('discriminant', name)] = (value, ('', doc_above(text, match.start(), name)))
     return found
 
 
@@ -239,6 +257,16 @@ def selftest():
             '#[doc(alias = "w")]\npub const {}: u64 = 4096 - 8;\n')
     fails('a renamed constant with its value, type and doc passes',
           {'crates/abi/src/virtio.rs': (word.format('OLD'), word.format('NEW'))}, False)
+    named = ('pub const ABI_VERSION: u32 = 1;\n/// `invoke(c, {0}, _)` makes one object.\n{1}'
+             'pub const {0}: u64 = 2;\n')
+    fails('a renamed constant whose doc names it, gaining a Name: block, passes',
+          {'crates/abi/src/memory_region.rs': (named.format('OLD', ''),
+                                               named.format('NEW', '///\n/// Name: provisional. Refused `OLD`.\n'))},
+          False)
+    fails('a renamed constant whose doc names another constant still fails',
+          {'crates/abi/src/memory_region.rs': (named.format('OLD', ''),
+                                               named.format('NEW', '').replace('makes one', 'OTHER makes one'))},
+          True)
     fails('a renamed constant whose value changed fails',
           {'crates/abi/src/virtio.rs': (word.format('OLD'), word.format('NEW').replace('- 8', '- 16'))}, True)
     fails('a renamed constant whose type changed fails',

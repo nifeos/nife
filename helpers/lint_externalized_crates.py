@@ -38,7 +38,6 @@ WAIVERS = {
     "current_cpu_contract": (3, PENDING),
     "domain_name_resolution_contract": (54, PENDING),
     "domain_name_system": (12, PENDING),
-    "entropy_contract": (2, PENDING),
     "filesystem_contract": (21, PENDING),
     "filesystem_fixture": (18, PENDING),
     "globally_unique_identifier_partition_table": (21, PENDING),

@@ -23,7 +23,7 @@
 //! `(CASES.len(), echo verdict, 0)`. The address is packed big-endian, as
 //! `domain_name_resolution_contract::endowment::server` packs one.
 //!
-//! Name: provisional 2026-10-06 (UTC), milestone 384's lane, on the `*_test_client` pattern
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). On the `*_test_client` pattern
 //! (`fs_test_client`, `login_test_client`).
 
 #![no_std]

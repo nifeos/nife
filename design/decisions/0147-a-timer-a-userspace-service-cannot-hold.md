@@ -170,10 +170,10 @@ This section's option 1 named the shape, `Timer::ARM(deadline, notification)`, a
 and one detail to the building lane. Milestone 106's PR (#1378) asked for both, and calef ruled on
 the surface it built rather than the shape alone.
 
-`objtype::TIMER = 5`. A `Timer` is retyped from untyped by `MemoryRegion::RETYPE_OBJ`, the same
-route as every other kernel object §147 already assumed. calef, 2026-09-27T01:59:29Z (UTC), on PR
-#1378: *"Confirmed"*, against the lane's proposal of `objtype::TIMER = 5` and `Timer::ARM = 0` /
-`Timer::CANCEL = 1`.
+`objtype::TIMER = 5`. A `Timer` is retyped from untyped by `MemoryRegion::RETYPE_OBJECT` (method 2,
+its name spelled out by the ruling of 2026-11-11 (UTC)), the same route as every other kernel object
+§147 already assumed. calef, 2026-09-27T01:59:29Z (UTC), on PR #1378: *"Confirmed"*, against the
+lane's proposal of `objtype::TIMER = 5` and `Timer::ARM = 0` / `Timer::CANCEL = 1`.
 
 `Timer::ARM(deadline, notification_slot, bits) = 0`, a third argument beyond this section's
 text. `invoke(cap, ARM, deadline, notification_slot, bits)` arms the timer: when the counter

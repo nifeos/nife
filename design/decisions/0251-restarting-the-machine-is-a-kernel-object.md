@@ -136,15 +136,15 @@ Prior art, recalled, not re-read:
 
 ## The object has no `objtype` number
 
-`objtype` lists what `MemoryRegion::RETYPE_OBJ` can make out of memory. Nothing makes a reboot
-object, and a number there would read as a way to. It has a method module, `abi::reboot`, like
-`Irq`, the other kernel-minted object.
+`objtype` lists what `MemoryRegion::RETYPE_OBJECT` (method 2, its name spelled out by the ruling of
+2026-11-11 (UTC)) can make out of memory. Nothing makes a reboot object, and a number there would
+read as a way to. It has a method module, `abi::reboot`, like `Irq`, the other kernel-minted object.
 
 Alternatives considered:
 
 - A, built: no `objtype` number and its own `abi::reboot` method module, like `Irq` and
   `MemoryRegion`, which have none either.
-- B, a number `RETYPE_OBJ` refuses: `objtype` would then mean both "can be made" and "exists".
+- B, a number `RETYPE_OBJECT` refuses: `objtype` would then mean both "can be made" and "exists".
 - C, a retypable number: anyone holding memory could mint reboot authority.
 - D, split `objtype` into a retype list and a full object-kind list: worth it only once a
   capability type query exists, and nife has none today.

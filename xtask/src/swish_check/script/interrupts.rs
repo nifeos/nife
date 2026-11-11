@@ -170,7 +170,7 @@ pub(super) const LINES: &[Line] = &[
         ],
     ),
     // **The shell's budget holds what the progenitor's pool held** (milestone 933): six native
-    // jobs in the background, each a region of 48 pages and 4 of `--mem`, and a `std` job of 384
+    // jobs in the background, each a region of 60 pages and 4 of `--mem`, and a `std` job of 384
     // pages in the foreground beside them. That is the pool's old mix, six native regions and one
     // `std` region (`grant_plan::JOB_POOL_PAGES`). The six are torn down after, so the budget they
     // took comes back for the hundred cycles below. Six jobs hold eighteen slots of the shell's

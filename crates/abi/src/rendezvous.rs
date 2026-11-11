@@ -84,7 +84,7 @@ pub const REAP: u64 = 5;
 pub const SURVEY: u64 = 6;
 
 /// `invoke(capability, BADGE, badge, _, _)` -> the slot of a badged copy of this endpoint capability, in
-/// x0 as `memory_region::RETYPE_OBJ` answers, or a negative [`crate::Error`]. The copy names the same
+/// x0 as `memory_region::RETYPE_OBJECT` answers, or a negative [`crate::Error`]. The copy names the same
 /// endpoint with the same rights plus `badge`, which the kernel delivers to the server when its
 /// holder sends here, so a server serving many clients on one endpoint tells them apart.
 ///

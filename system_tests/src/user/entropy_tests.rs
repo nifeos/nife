@@ -202,7 +202,7 @@ fn a_reply_never_delivers_more_bytes_than_it_says() {
         "an oversized request should be clamped and answered, not refused",
     );
 
-    let r = crate::sched::ipc_call(w.request, [entropy_contract::req(0xff, 8), 0]);
+    let r = crate::sched::ipc_call(w.request, [entropy_contract::request(0xff, 8), 0]);
     assert_eq!(
         r[0],
         entropy_contract::NO_ENTROPY,

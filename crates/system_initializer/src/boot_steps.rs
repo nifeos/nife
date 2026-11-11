@@ -18,16 +18,16 @@ fn fill_entropy(request: u64, out: &mut [u8]) -> bool {
         let want = (out.len() - done).min(entropy_contract::MAXIMUM_BYTES as usize);
         let (r0, r1) = call(
             request,
-            entropy_contract::req(entropy_contract::GET, want as u64),
+            entropy_contract::request(entropy_contract::GET, want as u64),
             0,
         );
-        let Some(n) = entropy_contract::delivered(r0) else {
+        let Some(n) = entropy_contract::delivered_bytes(r0) else {
             return false;
         };
         if n < want {
             return false;
         }
-        done += entropy_contract::take(n, r1, &mut out[done..]);
+        done += entropy_contract::copy_delivered_bytes(n, r1, &mut out[done..]);
     }
     true
 }

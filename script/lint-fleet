@@ -221,6 +221,11 @@ python3 helpers/architect-label-rules.py --selftest >/dev/null
 echo "==> the live architect-ruled read"
 helpers/architect-ruled-selftest.sh >/dev/null
 
+# The labeler takes back only its own flag: a bot added `needs-architect`, no rule fires, nothing is
+# ruled or asked (#3450, 2026-11-11); stub-gh fixtures, one per condition that keeps the label.
+echo "==> the labeler takes back its own stale needs-architect"
+helpers/architect-label-unflag-selftest.sh >/dev/null
+
 # A ruling is posted and the labels swap in one step (lane/architect-queue, 2026-10-06): the marker
 # helpers/open-question.jq reads, comment before labels, and --partial leaving the hold; stub-gh.
 echo "==> record-ruling posts the ruling and swaps the labels"
@@ -261,4 +266,4 @@ helpers/trunk-health-repeat-selftest.sh >/dev/null
 helpers/trunk-health-due-selftest.sh >/dev/null
 python3 helpers/repeat_issue.py --selftest >/dev/null
 
-echo "lint-fleet: all 27 checks of the fleet tooling passed"
+echo "lint-fleet: all 28 checks of the fleet tooling passed"

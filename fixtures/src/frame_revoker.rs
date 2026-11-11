@@ -8,10 +8,10 @@
 //! pass into a hang. `kernel/src/revoke.rs` proves the multi-address-space unmapping and safe
 //! reclamation; this adds the syscall path from EL0.
 //!
-//! Name: provisional (milestone 291). This was `hello`'s `REVOKE_DEMO` role, number 16. Refused
-//! `revoke_demo`: "demo" says why it was written rather than what it does, and `revoke` alone is a
-//! verb where the tree names things with nouns. `frame_revoker` says which object is revoked,
-//! which matters because object revocation applies to more than frames.
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). This was `hello`'s `REVOKE_DEMO`
+//! role. Refused `revoke_demo`: "demo" says why it was written rather than what it does, and
+//! `revoke` alone is a verb where the tree names things with nouns. `frame_revoker` says which
+//! object is revoked, which matters because object revocation applies to more than frames.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

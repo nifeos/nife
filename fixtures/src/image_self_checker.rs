@@ -8,11 +8,12 @@
 //! `console_test_client`. It exits rather than spinning, because a one-shot fixture that never
 //! exits holds a core for the rest of the boot (`no_leaked_threads`).
 //!
-//! Name: provisional (milestone 291). This was `hello`'s `SELF_CHECK` role, number 0, and 291 made
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). This was `hello`'s `SELF_CHECK`
+//! role, and milestone 291 (`fixtures/src/hello.rs` was thirty-one programs wearing one name) made
 //! each of that binary's roles its own program. Refused `self_checker`: "self" names the caller
 //! rather than what is checked, and this program checks the loaded image specifically. Refused
-//! `elf_verifier`: it verifies nothing about ELF parsing, which is the `elf` crate's host tests;
-//! it verifies that *this* image arrived intact in memory.
+//! `elf_verifier`: it verifies nothing about ELF parsing, which is the `elf` crate's host tests; it
+//! verifies that *this* image arrived intact in memory.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

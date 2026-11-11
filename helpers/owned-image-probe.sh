@@ -9,6 +9,8 @@
 #     helpers/owned-image-probe.sh qemu         the QEMU cache landed where script/ci-qemu looks, and
 #                                               what script/ci-qemu would decide (build or skip)
 #     helpers/owned-image-probe.sh qemu-fetch   the hosts a cold QEMU build fetches from answer
+#     helpers/owned-image-probe.sh packages     every apt package script/ci-qemu and script/bootstrap install
+#                                               (helpers/apt-packages.txt) is already installed
 #     helpers/owned-image-probe.sh kvm          /dev/kvm can create a VM (KVM_GET_API_VERSION is 12, KVM_CREATE_VM returns a descriptor)
 #
 # Run from the repository root. The owned canary (strict checks) and its dry run call this, so the
@@ -137,6 +139,24 @@ check_qemu_fetch() {
     check_pip
 }
 
+check_packages() {
+    if ! list=$(helpers/apt-packages.sh); then
+        finding "helpers/apt-packages.sh cannot list the packages"
+        return
+    fi
+    checked=0
+    missing=0
+    for package in $list; do
+        checked=$((checked + 1))
+        status=$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null || true)
+        if test "$status" != "install ok installed"; then
+            missing=$((missing + 1))
+            finding "apt package $package is not installed (dpkg status: '${status:-unknown}')"
+        fi
+    done
+    echo "packages: $checked checked, $missing missing"
+}
+
 check_kvm() {
     if out=$(python3 -c 'import os,fcntl;f=os.open("/dev/kvm",os.O_RDWR);print(fcntl.ioctl(f,0xAE00));print(fcntl.ioctl(f,0xAE01,0))' 2>&1); then
         version=$(echo "$out" | sed -n 1p)
@@ -156,9 +176,10 @@ apt-proxy) check_apt_proxy ;;
 pip) check_pip ;;
 qemu) check_qemu ;;
 qemu-fetch) check_qemu_fetch ;;
+packages) check_packages ;;
 kvm) check_kvm ;;
 *)
-    echo "usage: helpers/owned-image-probe.sh tools|toolchain|apt-proxy|pip|qemu|qemu-fetch|kvm" >&2
+    echo "usage: helpers/owned-image-probe.sh tools|toolchain|apt-proxy|pip|qemu|qemu-fetch|packages|kvm" >&2
     exit 2
     ;;
 esac

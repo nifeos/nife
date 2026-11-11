@@ -1,5 +1,7 @@
 # Where BMC hit a wall: the ELF parser
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/verification.md](../verification.md). It is why whole-parse totality of
 `Elf::parse` is deferred, and how decomposing the arithmetic out of the loop recovered most of what
 it was for. The harnesses themselves are in [parser-harnesses.md](parser-harnesses.md).

@@ -1,6 +1,8 @@
 # The prose budget
 
-*An appendix to [the register of measures](../register-of-measures.md). The name is provisional.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
+*An appendix to [the register of measures](../register-of-measures.md).*
 
 No document in scope is over 3,000 words, and `script/lint` keeps it that way. The cap is
 [§212 (a prose budget)](../../design/decisions/0212-a-prose-budget-for-every-document.md), and the
