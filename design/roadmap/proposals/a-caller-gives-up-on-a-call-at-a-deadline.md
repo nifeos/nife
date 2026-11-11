@@ -2,14 +2,14 @@
 status: PROPOSED
 raised: 2026-11-11
 milestone_dependencies: 371
-decision_dependencies: unwritten
+decision_dependencies: none
 machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
 # A caller gives up on a call at a deadline
 
-Raised by lane/timed-call-proposal. On 2026-11-11 (UTC) the architect accepted, on #3499, that the board's PMIC route bounds its own wait because `reboot` cannot bound its call. The same ruling named a timed call as its own milestone. This file is that milestone, written as a question, because the syscall surface is the architect's call.
+Raised by lane/timed-call-proposal. On 2026-11-11 (UTC) the architect accepted, on #3499, that the board's PMIC route bounds its own wait because `reboot` cannot bound its call. The same ruling named a timed call as its own milestone. This file is that milestone. The syscall surface is the architect's call, and the architect ruled its shape on 2026-11-11 (UTC); the ruling is below.
 
 Reuse: the `Timer` object and the bound notification, both already built; `remove_sender` in `crates/inter_process_communication`; milestone 371 (a reply capability that names a call). No new object, syscall number or dependency.
 
@@ -33,11 +33,11 @@ So a client cannot bound a call. §101's rule 3 says a signal that arriving whil
 - Tests hang rather than fail when a server never answers. Milestone 402 (a service report nobody is obliged to drain) measured one such hang, an NTP test blocked in a call to the entropy server.
 - Every client of a userspace server. notes/scheduler/rendezvous.md lists the hang in its `BUGS`.
 
-## The recommendation
+## The design
 
-Option A: a new `Rendezvous` method, `CALL_BOUND`, which is `CALL` that the caller's bound notification can end in either phase. The caller arms its `Timer` onto that notification and calls. The call returns the reply, or the notification's word with a tag in `x4`, as a bound receive already does. No syscall number changes, and plain `CALL` keeps §101's rule 3 unchanged.
+Option A, as ruled: a new `Rendezvous` method, `CALL_BOUND`, which is `CALL` that the caller's bound notification can end in either phase. The caller arms its `Timer` onto that notification and calls. The call returns the reply, or the notification's word with a tag in `x4`, as a bound receive already does. No syscall number changes, and plain `CALL` keeps §101's rule 3 unchanged.
 
-It is the composition §147 chose. The timer supplies the deadline and the notification is the wake source, so a call also ends on anything else that signals that word, such as a `^C` or a supervisor's cancel. The question at the end asks which option to build.
+It is the composition §147 chose. The timer supplies the deadline and the notification is the wake source, so a call also ends on anything else that signals that word, such as a `^C` or a supervisor's cancel.
 
 ### What `CALL_BOUND` returns
 
@@ -86,7 +86,7 @@ reboot_object_invoke(REBOOT_SLOT); // the kernel's REBOOT, as today
 
 Each option keeps plain `CALL` and its round trip unchanged. Every new path is out of line, as `take_bound_signal` is, so `script/fastpath-footprint` and `script/icount` must show no change. Nobody has measured the costs below yet, because nothing exists to measure; the building lane measures them.
 
-### A. `CALL_BOUND`: the bound notification ends the call (recommended)
+### A. `CALL_BOUND`: the bound notification ends the call (ruled)
 
 - Cost: a per-thread flag that marks the call as one the notification may end, and two new cases in `bound_receiver`. The sender phase reuses `remove_sender`. The reply phase needs milestone 371. A caller needs a `Timer`, a notification and a binding, which `retype_sleeper` in `user_mode_runtime` already makes from a memory region.
 - ABI: method 8 on `Rendezvous` and two `x3` values, with no new syscall number. No existing encoding changes, so by the precedent of the 2026-11-11 rename that kept method 2, `ABI_VERSION` stays 1. The tree has no ruled rule for an added method, and the version check is by equality, so a bump would refuse every program built before it.
@@ -138,11 +138,9 @@ This keeps the status quo of #3499: each server bounds its own work. It covers a
 6. A new method is permanent once programs call it. Nife has no installs and no outside programs, so before the first release it is a two-way door.
 7. Yes. B is no harder to build than A, and A wins on composition and authority, not effort.
 
-## What I need from you
+## The ruling
 
-A client cannot give up on a call today, because a signal during a call waits for the next receive. Option A adds a call that the caller's bound notification ends, so a `Timer` bounds it. B puts a deadline in the call itself, which §147 refused. C sets a timeout for the next blocking call, and D keeps the stand-in process. Every option except D leaves the syscall numbers unchanged.
-
-Should nife add `Rendezvous::CALL_BOUND`, a call that the caller's bound notification ends in either phase, built after milestone 371? Recommended: yes (A). The alternatives are B, a deadline argument; C, a timeout on the next blocking call; or D, no kernel change and a runtime stand-in. If the answer is no, `reboot` keeps the route's own bound and the two stand-ins stay.
+Ruled 2026-11-11 (UTC), on #3508: option A. nife adds `Rendezvous::CALL_BOUND` (name provisional), a call that the caller's bound notification ends in either phase, returning withdrawn or abandoned. A lane builds it after milestone 371. The ruling refuses options B, C, D and E, each for the reason its section gives. The building lane records the method's semantics in `design/decisions/` as this ruling.
 
 ## What drives it
 
