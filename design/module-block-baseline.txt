@@ -8733,15 +8733,11 @@ kernel/src/non_volatile_memory_express.rs::Absent
 
 kernel/src/non_volatile_memory_express.rs::BLOCK_SIZE
 
-kernel/src/non_volatile_memory_express.rs::Error
 
 kernel/src/non_volatile_memory_express.rs::Found
 
-kernel/src/non_volatile_memory_express.rs::NonVolatileMemoryExpress
 
-kernel/src/non_volatile_memory_express.rs::bring_up
 
-kernel/src/non_volatile_memory_express.rs::new
 
 kernel/src/panic.rs
 

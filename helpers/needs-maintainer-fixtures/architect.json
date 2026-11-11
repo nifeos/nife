@@ -619,6 +619,37 @@
       }
      },
      {
+      "number": 218,
+      "isDraft": true,
+      "baseRefName": "main",
+      "isCrossRepository": false,
+      "headRefName": "lane/case-218",
+      "headRefOid": "0000000000000000000000000000000000000218",
+      "createdAt": "2026-10-03T19:00:00Z",
+      "mergeable": "MERGEABLE",
+      "body": "Summary.\n\n## After this merges\n\nOne bench session on the board, from a checkout of main that includes this pull request.\n",
+      "url": "https://github.com/o/r/pull/218",
+      "labels": {
+       "nodes": []
+      },
+      "autoMergeRequest": null,
+      "comments": {
+       "nodes": []
+      },
+      "labelEvents": {
+       "nodes": []
+      },
+      "commits": {
+       "nodes": [
+        {
+         "commit": {
+          "committedDate": "2026-10-03T21:00:00Z"
+         }
+        }
+       ]
+      }
+     },
+     {
       "number": 215,
       "isDraft": true,
       "baseRefName": "main",

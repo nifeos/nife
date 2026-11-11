@@ -68,6 +68,57 @@ fn main() {
 
     declare_initial_ramdisk_cfg(&arch);
     generate_trust_root(&manifest_dir, &arch);
+    carry_jh7110_entropy_identity(&manifest_dir);
+}
+
+/// Carry the `jh7110_entropy` version and commit that `Cargo.lock` resolved into the kernel, as
+/// `NIFE_JH7110_ENTROPY_VERSION` and `NIFE_JH7110_ENTROPY_COMMIT`.
+///
+/// The boot tour's `trng` line prints both, so a board transcript names the exact crate that ran
+/// and nobody has to vouch for which build was on the board. The kernel and the archive's driver
+/// program resolve the crate through the one workspace lockfile, and measured boot refuses a
+/// kernel and an archive from different builds, so the pair names both. A package the lockfile
+/// does not hold, or one from a source with no commit, reads `unknown`, which
+/// `helpers/crate_hardware_run.py` refuses. See
+/// design/roadmap/1035-a-crate-names-the-version-that-ran-on-hardware/bench-steps.md.
+fn carry_jh7110_entropy_identity(manifest_dir: &str) {
+    let lockfile = std::path::Path::new(manifest_dir)
+        .parent()
+        .expect("the kernel manifest dir has no parent")
+        .join("Cargo.lock");
+    println!("cargo::rerun-if-changed={}", lockfile.display());
+    let text = std::fs::read_to_string(&lockfile).unwrap_or_default();
+    let (version, commit) = locked_git_package(&text, "jh7110_entropy")
+        .unwrap_or(("unknown".to_string(), "unknown".to_string()));
+    println!("cargo::rustc-env=NIFE_JH7110_ENTROPY_VERSION={version}");
+    println!("cargo::rustc-env=NIFE_JH7110_ENTROPY_COMMIT={commit}");
+}
+
+/// The version and the 40-digit commit of the git package `name` in a `Cargo.lock`'s text.
+///
+/// Returns `None` when no `[[package]]` carries the name, or when its source is not a git source
+/// ending in `#<commit>`.
+fn locked_git_package(lock: &str, name: &str) -> Option<(String, String)> {
+    for block in lock.split("[[package]]") {
+        let field = |key: &str| {
+            block.lines().find_map(|line| {
+                line.strip_prefix(key)?
+                    .strip_prefix(" = \"")?
+                    .strip_suffix('"')
+            })
+        };
+        if field("name") != Some(name) {
+            continue;
+        }
+        let version = field("version")?;
+        let source = field("source")?;
+        let commit = source.strip_prefix("git+")?.rsplit_once('#')?.1;
+        if commit.len() != 40 || !commit.bytes().all(|b| b.is_ascii_hexdigit()) {
+            return None;
+        }
+        return Some((version.to_string(), commit.to_string()));
+    }
+    None
 }
 
 /// Declare `cfg(initial_ramdisk)`, set where the target has user programs to pack, and

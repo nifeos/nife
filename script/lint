@@ -223,6 +223,10 @@ echo "==> no reproducer in this branch's commit messages (a replay line, a seed 
 # This run reads the commits the branch adds to origin/main, and says so when there is no origin/main.
 helpers/replay-line-check-selftest.sh >/dev/null
 helpers/read-advisory-selftest.sh >/dev/null
+# Beside it, .github/workflows/pr-text-ask-check.yml refuses a pull request body whose
+# `## What I need from you` section asks no question, through helpers/ask-section-check.sh; its
+# selftest passes and refuses one body per shape (lane/after-this-merges-asks-nothing, provisional).
+helpers/ask-section-check.sh --selftest >/dev/null
 if git rev-parse --verify -q origin/main >/dev/null; then
     helpers/replay-line-check.sh --range origin/main..HEAD
 else
@@ -274,6 +278,9 @@ python3 helpers/crate_move.py --selftest >/dev/null
 # so its selftest is what keeps summarize, fill and check right between bench sessions, and it holds
 # results-template.md to the code.
 python3 -I tools/jh7110_entropy_board_check/results.py --selftest >/dev/null
+# The judge of a crate's hardware run (milestone 1035 (a crate names the version that ran on hardware)) reads logs only a board produces, so its
+# selftest is what keeps the six conditions right between bench sessions.
+python3 -I helpers/crate_hardware_run.py --selftest >/dev/null
 # helpers/verify-parallel-selftest.sh proves the shards, the join and the one slot; the heavy-job
 # slots section above runs it, so it is not run twice.
 

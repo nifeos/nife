@@ -1,39 +1,61 @@
-//! Wiring for the EL0 NVMe block server (§86 (whether an NVMe driver can leave the kernel), option
-//! 2a): the request endpoint, a readiness endpoint sent once the first command round-trips, BAR0's
-//! doorbell page, and the data plane with one window per client ([`Wiring::client_capability`]).
-//! Its only physical address is the data plane's (`DATA_PLANE_PAGE`, not page 0); it holds no
-//! controller registers, admin pages or interrupt. See notes/non-volatile-memory-express.md.
+//! Wiring for the NVMe disk (§86 (whether an NVMe driver can leave the kernel)): two processes
+//! from one image. The admin process gets BAR0's register and doorbell pages, the DMA run's admin
+//! pages, and capabilities to the doorbell page and the run's data-plane pages; it brings the
+//! controller up and grants the data plane those two. The data plane gets the request endpoint, a
+//! readiness endpoint and the endpoint its grants arrive on, and one window per client
+//! ([`Wiring::client_capability`]). The kernel's own part is [`find_and_confine`]. See
+//! notes/non-volatile-memory-express.md.
 //!
+//! [`find_and_confine`]: crate::non_volatile_memory_express::find_and_confine
 
 //! # BUGS
 //!
-//! - The server can aim DMA anywhere in its region, its own admin rings included.
+//! - The data plane can aim DMA anywhere in the run, the admin rings included.
 //! - With `CAP.DSTRD` 0 the doorbell page carries the admin doorbells too.
-//! - It cannot read `CSTS`, so a hung controller presents as a timeout, not `CSTS.CFS`.
+//! - The data plane cannot read `CSTS`, so a hung controller presents as a timeout, not
+//!   `CSTS.CFS`.
 //! - One command in flight, so throughput measured against it is a lower bound.
+//! - A refused bring-up keeps its DMA run and the admin process's stack frames for the rest of
+//!   the boot.
 //!
 //! Name: recorded (crates/non_volatile_memory_express), renamed 2026-09-18 under DECISIONS §154
 //! (the acronym test is whether the phrase is spoken). A `<program>_service` like
 //! `entropy_service`, so the name is the program's plus the suffix; the ruling and refusals live
 //! in `crates/non_volatile_memory_express`.
 
+use core::num::NonZeroU64;
+
+use driver_process_contract::non_volatile_memory_express::{
+    self as contract, ADMINISTRATION_PAGES, AdministrationReport, DATA_PLANE_PAGES, REGISTER_PAGES,
+    administration_slots,
+};
+
 use super::*;
-use crate::capability_object::{Rights, rendezvous_capability};
+use crate::capability_object::{
+    Rights, device_frame_capability, page_frame_run_capability, rendezvous_capability,
+};
+use crate::non_volatile_memory_express::{Absent, Found};
 use crate::sched::RendezvousId;
 
-/// Where the server's data-plane run is mapped; the server reads it from the startup page, so this
-/// file alone chooses it. Distinct from the `0x0090_0000` and
-/// `0x0094_0000` DMA addresses other drivers use, so no two such constants mean two things.
+/// Where the admin process's BAR0 pages are mapped, device-typed and listed on its startup page.
+const REGISTERS_VA: u64 = address_space_map::pair_page(0x0000_0000_0098_0000);
+
+/// Where the admin process's admin pages of the DMA run are mapped, listed on its startup page.
+const ADMIN_QUEUES_VA: u64 = address_space_map::pair_page(0x0000_0000_009c_0000);
+
+/// Where the data plane maps the data-plane run it is granted; its spawn's second argument.
 const DATA_PLANE_VA: u64 = address_space_map::pair_page(0x0000_0000_0098_0000);
 
-/// Where the server's one page of BAR0 is mapped, device-typed, and listed on the startup page. Far
-/// enough above [`DATA_PLANE_VA`] that the data plane's run
-/// can grow without colliding with it.
-const DOORBELL_VA: u64 = address_space_map::pair_page(0x0000_0000_009c_0000);
+/// Where the data plane maps the doorbell page it is granted; its spawn's third argument.
+const DOORBELL_PAGE_VA: u64 = address_space_map::pair_page(0x0000_0000_009c_0000);
 
-/// How many pages the data plane is mapped: the two I/O rings, then every client's transfer window.
-const DATA_PLANE_PAGES: usize = 2 + crate::non_volatile_memory_express::TRANSFER_PAGES as usize
-    * ::driver_process_contract::non_volatile_memory_express::CLIENT_WINDOWS;
+const _: () =
+    assert!(DATA_PLANE_VA + DATA_PLANE_PAGES * page_frames::FRAME_SIZE <= DOORBELL_PAGE_VA);
+
+/// Stack pages the admin process gets beyond the one every loaded program gets. Its bring-up is
+/// a call chain carrying 64-byte commands and the IDENTIFY bytes by value, and in a debug build
+/// one page overflowed.
+const ADMIN_EXTRA_STACK_PAGES: usize = 3;
 
 /// Everything one wiring of the server is, from the outside.
 pub struct Wiring {
@@ -50,7 +72,7 @@ pub struct Wiring {
     pub transfer_phys: u64,
     /// True when the IOMMU unit this kernel programmed is the one that owns the controller's
     /// requester id ([`crate::iommu::Scope::is_confining`]), and the controller was confined to the
-    /// DMA region before it was enabled. False means the driver is as unconfined as its
+    /// DMA region before any process held BAR0. False means the driver is as unconfined as its
     /// arithmetic.
     pub confined_by_iommu: bool,
     /// Which unit owns the controller, and how: the evidence behind `confined_by_iommu`, printed
@@ -58,12 +80,12 @@ pub struct Wiring {
     pub scope: crate::iommu::Scope,
     /// The controller's PCIe requester id.
     pub rid: u32,
-    /// Logical blocks per 4096-byte filesystem block, as the handoff carried it into ring 3:
-    /// always in `1..=8` for a server that started (fatal risk 6's second night-of condition).
+    /// Logical blocks per 4096-byte filesystem block, as the admin process reported it: always in
+    /// `1..=8` for a server that started (fatal risk 6's second night-of condition).
     pub blocks_per: u16,
-    /// The namespace's size in bytes as the admin plane read it from IDENTIFY, the number
-    /// [`driver_process_contract::non_volatile_memory_express::Handoff`] carried into ring 3. Tests compare against this, so
-    /// they hold on QEMU's 8 MiB image and on a 256 GB disk alike.
+    /// The namespace's size in bytes as the admin process read it from IDENTIFY, the number its
+    /// [`driver_process_contract::non_volatile_memory_express::Handoff`] carried to the data plane.
+    /// Tests compare against this, so they hold on QEMU's 8 MiB image and on a 256 GB disk alike.
     pub size_bytes: u64,
 }
 
@@ -87,9 +109,7 @@ pub(crate) fn ensure(image: &'static [u8]) -> Option<Wiring> {
 
 /// [`ensure`], keeping the reason there is no server: no controller on the bus, or a controller
 /// this driver refused and why. The second is never a skip.
-pub fn ensure_or_why(
-    image: &'static [u8],
-) -> Result<Wiring, crate::non_volatile_memory_express::Absent> {
+pub fn ensure_or_why(image: &'static [u8]) -> Result<Wiring, Absent> {
     use core::sync::atomic::Ordering;
 
     if WIRED.load(Ordering::Acquire) {
@@ -116,85 +136,217 @@ pub fn ensure_or_why(
     Ok(w)
 }
 
-/// Bring the controller up in the kernel, then hand its data plane to a process.
-fn start(image: &'static [u8]) -> Result<Wiring, crate::non_volatile_memory_express::Absent> {
-    let found = crate::non_volatile_memory_express::bring_up()?;
-    let rid = found.rid;
-    let scope = crate::iommu::scope_of(rid);
-    let confined_by_iommu = scope.is_confining();
-    let handoff = found.controller.handoff();
-    let words = handoff.pack();
+/// A running admin process, after its report: the controller is up and its one I/O pair exists.
+struct Admin {
+    /// The endpoint the data plane receives its handoff and grants on; the admin process is
+    /// blocked sending there until a data plane takes them.
+    grants: RendezvousId,
+    /// The endpoint the admin process answers [`contract::RETIRE`] on.
+    #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
+    control: RendezvousId,
+    /// The admin process's thread, which exits once it has retired the controller.
+    #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
+    thread: crate::thread::ThreadId,
+    /// What it read from IDENTIFY.
+    size_bytes: u64,
+    blocks_per: u16,
+    /// The extra stack frames its spawn mapped, freed once it is gone.
+    #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
+    stack: [u64; ADMIN_EXTRA_STACK_PAGES],
+}
 
-    // The doorbell page, and only it: BAR0's first page holds `CC`, `CSTS`, `AQA`, `ASQ` and
-    // `ACQ`, and the doorbells start at 0x1000 (NVMe 1.4, section 3.1.25).
-    let doorbell_phys = found.bar0 + page_frames::FRAME_SIZE;
-    let data_plane_physical_address = handoff.data_plane_physical_address;
-    let transfer_phys = data_plane_physical_address + 2 * page_frames::FRAME_SIZE;
+/// How many spawn-time mappings the admin process gets: BAR0's pages, the admin pages, and the
+/// extra stack.
+const ADMIN_MAPS: usize =
+    (REGISTER_PAGES + ADMINISTRATION_PAGES) as usize + ADMIN_EXTRA_STACK_PAGES;
 
-    let ready = crate::sched::create_rendezvous();
-    let request = crate::sched::create_rendezvous();
-
-    // `found.controller` is dropped here, which is correct only while `NonVolatileMemoryExpress`
-    // has no `Drop`: the controller must stay enabled with its queues in place. A `Drop` that
-    // resets it would make this a bug; keep the value alive instead.
-
-    crate::sched::spawn(move || {
-        // Device flags for the doorbell page, because a cached or reordered doorbell write is a
-        // command the controller never hears about.
-        let mut maps = [Mapping {
-            va: 0,
-            phys: 0,
-            flags: Flags::user_data(),
-        }; DATA_PLANE_PAGES + 1];
-        super::fs_service::map_channel(
-            &mut maps[..DATA_PLANE_PAGES],
-            DATA_PLANE_VA,
-            data_plane_physical_address,
-            DATA_PLANE_PAGES,
-        );
-        maps[DATA_PLANE_PAGES] = Mapping {
-            va: DOORBELL_VA,
-            phys: doorbell_phys,
+/// The admin process's spawn-time mappings: BAR0's [`REGISTER_PAGES`] pages as device memory at
+/// [`REGISTERS_VA`], the run's first [`ADMINISTRATION_PAGES`] pages at [`ADMIN_QUEUES_VA`], and
+/// `stack` below [`USER_STACK_VA`].
+fn admin_maps(
+    bar0: u64,
+    dma: u64,
+    stack: &[u64; ADMIN_EXTRA_STACK_PAGES],
+) -> [Mapping; ADMIN_MAPS] {
+    let mut maps = [Mapping {
+        va: 0,
+        phys: 0,
+        flags: Flags::user_data(),
+    }; ADMIN_MAPS];
+    // Device flags for BAR0, because a cached or reordered register write is one the controller
+    // never sees.
+    for (page, m) in maps.iter_mut().take(REGISTER_PAGES as usize).enumerate() {
+        *m = Mapping {
+            va: REGISTERS_VA + page as u64 * page_frames::FRAME_SIZE,
+            phys: bar0 + page as u64 * page_frames::FRAME_SIZE,
             flags: Flags::user_device(),
         };
+    }
+    super::fs_service::map_channel(
+        &mut maps[REGISTER_PAGES as usize..],
+        ADMIN_QUEUES_VA,
+        dma,
+        ADMINISTRATION_PAGES as usize,
+    );
+    for (k, &frame) in stack.iter().enumerate() {
+        maps[(REGISTER_PAGES + ADMINISTRATION_PAGES) as usize + k] = Mapping {
+            va: USER_STACK_VA - (k as u64 + 1) * page_frames::FRAME_SIZE,
+            phys: frame,
+            flags: Flags::user_data(),
+        };
+    }
+    maps
+}
+
+/// **Start the admin process on a found and confined controller, and wait for its report.**
+///
+/// It is handed BAR0's [`REGISTER_PAGES`] pages and the run's first [`ADMINISTRATION_PAGES`] pages as
+/// spawn-time mappings, which it holds no name for and so cannot delegate, and two capabilities it
+/// can: the doorbell page as a `DeviceFrame` and the run's data-plane pages as one `PageFrame` run.
+/// [`Absent::Refused`] carries the phase it reported when it refused the controller.
+fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
+    let report = crate::sched::create_rendezvous();
+    let grants = crate::sched::create_rendezvous();
+    let control = crate::sched::create_rendezvous();
+    let (bar0, dma) = (found.bar0, found.dma);
+    let doorbell_page = device_frame_capability(
+        bar0 + page_frames::FRAME_SIZE,
+        Rights::WRITE.union(Rights::GRANT),
+    );
+    let data_plane = page_frame_run_capability(
+        dma + ADMINISTRATION_PAGES * page_frames::FRAME_SIZE,
+        NonZeroU64::new(DATA_PLANE_PAGES).expect("the data plane has pages"),
+        Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
+    );
+    let mut stack = [0u64; ADMIN_EXTRA_STACK_PAGES];
+    for frame in &mut stack {
+        *frame = crate::memory::alloc_zeroed()
+            .expect("no frame for the NVMe admin process's stack")
+            .addr();
+    }
+    let thread = crate::sched::spawn(move || {
+        let maps = admin_maps(bar0, dma, &stack);
+        // In `administration_slots` order: the grants are the process's whole authority.
+        let grant_list = [
+            rendezvous_capability(report, Rights::WRITE),
+            rendezvous_capability(grants, Rights::WRITE),
+            doorbell_page,
+            data_plane,
+            rendezvous_capability(control, Rights::READ),
+        ];
+        const _: () = assert!(administration_slots::CONTROL == 4);
         run(
             image,
             Spawn {
-                arg0: words[0], // the packed geometry: see `driver_process_contract::non_volatile_memory_express::Handoff`
-                arg1: words[1], // the data plane's PHYSICAL base: PRP fields speak physical
-                arg2: words[2], // the namespace's size in bytes, the `SIZE` answer
-                grants: &[
-                    rendezvous_capability(request, Rights::READ), // slot 0: RECEIVE blk requests
-                    rendezvous_capability(ready, Rights::WRITE),  // slot 1: signal readiness once
-                ],
+                arg0: contract::ADMINISTRATION_ROLE,
+                arg1: dma, // the run's PHYSICAL base: queue creation names physical pages
+                arg2: 0,
+                grants: &grant_list,
                 maps: &maps,
                 windows: &[
                     startup_page_contract::Window {
-                        kind: ::driver_process_contract::non_volatile_memory_express::DATA_PLANE_KIND,
-                        virtual_address: DATA_PLANE_VA,
-                        pages: DATA_PLANE_PAGES as u32,
+                        kind: contract::REGISTER_KIND,
+                        virtual_address: REGISTERS_VA,
+                        pages: REGISTER_PAGES as u32,
                     },
                     startup_page_contract::Window {
-                        kind:
-                            ::driver_process_contract::non_volatile_memory_express::DOORBELL_PAGE_KIND,
-                        virtual_address: DOORBELL_VA,
-                        pages: 1,
+                        kind: contract::ADMINISTRATION_QUEUE_KIND,
+                        virtual_address: ADMIN_QUEUES_VA,
+                        pages: ADMINISTRATION_PAGES as u32,
                     },
                 ],
             },
         )
     })
-    .expect("could not spawn the NVMe server");
+    .expect("could not spawn the NVMe admin process");
+
+    let [w0, w1, w2, ..] = crate::sched::ipc_receive(report);
+    match AdministrationReport::unpack([w0, w1, w2]) {
+        Some(AdministrationReport::Ready {
+            size_bytes,
+            blocks_per_transfer,
+        }) => Ok(Admin {
+            grants,
+            control,
+            thread,
+            size_bytes,
+            blocks_per: blocks_per_transfer,
+            stack,
+        }),
+        Some(AdministrationReport::Refused(why)) => {
+            crate::println!(
+                "  non_volatile_memory_express: controller present but failed bring-up: {why:?}"
+            );
+            Err(Absent::Refused {
+                rid: found.rid,
+                why,
+            })
+        }
+        None => panic!("the NVMe admin process sent a report no admin process sends: {w0:#x}"),
+    }
+}
+
+/// **Spawn a data plane** with `request` and `ready` at its first two slots and the receiving end
+/// of the admin process's grant endpoint at the third. It maps what arrives there into its own
+/// space, so its spawn budgets the room.
+fn spawn_data_plane(
+    image: &'static [u8],
+    request: crate::capability_object::Capability,
+    ready: crate::capability_object::Capability,
+    grants: RendezvousId,
+) -> crate::thread::ThreadId {
+    use contract::data_plane_slots;
+    crate::sched::spawn(move || {
+        let grant_list = [request, ready, rendezvous_capability(grants, Rights::READ)];
+        const _: () = assert!(data_plane_slots::GRANTS == 2 && data_plane_slots::OWN_SPACE == 3);
+        run_with_own_space_and_room(
+            image,
+            Spawn {
+                arg0: contract::DATA_PLANE_ROLE,
+                arg1: DATA_PLANE_VA,
+                arg2: DOORBELL_PAGE_VA,
+                grants: &grant_list,
+                maps: &[],
+                windows: &[],
+            },
+            data_plane_slots::OWN_SPACE,
+            // The doorbell page and the data-plane run, the two grants it maps.
+            1 + DATA_PLANE_PAGES,
+        )
+    })
+    .expect("could not spawn the NVMe data plane")
+}
+
+/// The physical base of window 0's transfer buffer in the run at `dma`.
+fn transfer_phys_of(dma: u64) -> u64 {
+    dma + (ADMINISTRATION_PAGES + contract::FIRST_TRANSFER_PAGE) * page_frames::FRAME_SIZE
+}
+
+/// Find and confine the controller, start its admin process, then the data plane it grants to.
+fn start(image: &'static [u8]) -> Result<Wiring, Absent> {
+    let found = crate::non_volatile_memory_express::find_and_confine()?;
+    let rid = found.rid;
+    let scope = crate::iommu::scope_of(rid);
+    let admin = start_admin(image, &found)?;
+
+    let ready = crate::sched::create_rendezvous();
+    let request = crate::sched::create_rendezvous();
+    spawn_data_plane(
+        image,
+        rendezvous_capability(request, Rights::READ),
+        rendezvous_capability(ready, Rights::WRITE),
+        admin.grants,
+    );
 
     Ok(Wiring {
         ready: Some(ready),
         request,
-        transfer_phys,
-        confined_by_iommu,
+        transfer_phys: transfer_phys_of(found.dma),
+        confined_by_iommu: scope.is_confining(),
         scope,
         rid,
-        blocks_per: handoff.blocks_per_transfer,
-        size_bytes: handoff.size_bytes,
+        blocks_per: admin.blocks_per,
+        size_bytes: admin.size_bytes,
     })
 }
 
@@ -227,9 +379,11 @@ pub struct DmaEscape {
     /// The one-page region `report` lives in, so [`DmaEscape::release_completed`] can destroy it; a kernel
     /// rendezvous (`create_rendezvous`) is never freed.
     ep_region: u64,
-    /// The controller the attacker was given, kept so [`DmaEscape::release_completed`] can take it down
-    /// before handing its region back.
-    controller: crate::non_volatile_memory_express::NonVolatileMemoryExpress,
+    /// The admin process that brought the controller up for the attacker, which
+    /// [`DmaEscape::release_completed`] has take it down before the run goes back.
+    admin: Admin,
+    /// The run's physical base.
+    dma: u64,
 }
 
 #[cfg(feature = "system_tests")]
@@ -260,22 +414,34 @@ impl DmaEscape {
     /// Give back the frames this wiring took: the controller's DMA region, the victim and the
     /// report endpoint's region. Returns whether everything came back.
     ///
-    /// It waits for the attacker's thread to be gone and disables the controller
-    /// ([`crate::non_volatile_memory_express::NonVolatileMemoryExpress::retire`]) first, since
-    /// until both hold something may still read or DMA into these frames. The IOMMU domain's
-    /// tables stay, for the reason `retire` gives.
+    /// It waits for the attacker's thread to be gone, has the admin process disable the controller
+    /// ([`contract::RETIRE`]) and waits for it to be gone too, since until all three hold something
+    /// may still read or DMA into these frames. The IOMMU domain's tables stay, for the reason
+    /// [`crate::non_volatile_memory_express::free_retired_run`] gives.
     ///
     /// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
     /// `release`: the question shape asks a `bool` `is_`, `has_`, `can_` or a finite verb, and
     /// this performs the release, so the ruled `is_released` would misstate it.
     pub fn release_completed(self) -> bool {
         // Ten seconds of TCG, far past an `exit` that follows the report this caller already took.
-        let deadline = crate::arch::timer::now() + 10 * crate::arch::timer::frequency();
-        while crate::sched::is_thread_present(self.thread) && crate::arch::timer::now() < deadline {
-            crate::sched::yield_now();
-        }
-        if crate::sched::is_thread_present(self.thread) || self.controller.retire().is_err() {
+        let gone = |thread| {
+            let deadline = crate::arch::timer::now() + 10 * crate::arch::timer::frequency();
+            while crate::sched::is_thread_present(thread) && crate::arch::timer::now() < deadline {
+                crate::sched::yield_now();
+            }
+            !crate::sched::is_thread_present(thread)
+        };
+        if !gone(self.thread) {
             return false;
+        }
+        if crate::sched::ipc_call(self.admin.control, [contract::RETIRE, 0])[0] != 0
+            || !gone(self.admin.thread)
+        {
+            return false;
+        }
+        crate::non_volatile_memory_express::free_retired_run(self.dma);
+        for &frame in &self.admin.stack {
+            crate::memory::free(page_frames::PageFrame::from_addr(frame));
         }
         crate::memory::free(page_frames::PageFrame::from_addr(self.victim));
         crate::sched::reclaim_region(self.ep_region).is_ok()
@@ -286,14 +452,15 @@ impl DmaEscape {
 /// `None` when no NVMe controller is on the bus.
 ///
 /// The storage twin of `display_service::start_backing_escape`: the attacker gets exactly the
-/// honest server's world and differs only in the physical address it writes into a PRP. The kernel
-/// picks the victim frame and plants its canary, and only [`DmaEscape::release_completed`] frees it, after
-/// the controller is disabled. The kernel picks it because a server guessing "the frame past my
-/// region" may guess a frame inside the domain; see notes/dma.md for the use-after-free.
+/// honest server's world, from the same admin process, and differs only in the physical address it
+/// writes into a PRP. The kernel picks the victim frame and plants its canary, and only
+/// [`DmaEscape::release_completed`] frees it, after the controller is disabled. The kernel picks
+/// it because a server guessing "the frame past my region" may guess a frame inside the domain;
+/// see notes/dma.md for the use-after-free.
 #[cfg(feature = "system_tests")]
 pub fn start_dma_escape(image: &'static [u8]) -> Option<DmaEscape> {
-    // The victim, outside any region bring_up will confine the controller to. Planted with the
-    // canary before the controller is enabled, so a landed escape is the only thing that could
+    // The victim, outside any run find_and_confine will confine the controller to. Planted with
+    // the canary before the controller is enabled, so a landed escape is the only thing that could
     // change it.
     let victim = crate::memory::alloc()?.addr();
     // SAFETY: a freshly allocated frame, reached through the direct map; nothing else names it yet.
@@ -305,94 +472,50 @@ pub fn start_dma_escape(image: &'static [u8]) -> Option<DmaEscape> {
         );
     }
 
-    // Bring the controller up and confine it to its own DMA region. In the shipped tree
-    // `ESCAPE_TARGET` is zero, so `victim` is not in the controller's domain and the escape below
-    // faults. The replayable falsification inserts a store of `victim` into `ESCAPE_TARGET` right
-    // here, which widens the domain to cover it; that one line is the whole patch.
-    let found = crate::non_volatile_memory_express::bring_up().ok()?;
+    // Find and confine the controller to its own DMA run. In the shipped tree `ESCAPE_TARGET` is
+    // zero, so `victim` is not in the controller's domain and the escape below faults. The
+    // replayable falsification inserts a store of `victim` into `ESCAPE_TARGET` right here, which
+    // widens the domain to cover it; that one line is the whole patch.
+    let found = crate::non_volatile_memory_express::find_and_confine().ok()?;
     let rid = found.rid;
     let scope = crate::iommu::scope_of(rid);
-    let confined_by_iommu = scope.is_confining();
-    let controller = found.controller;
-    let handoff = controller.handoff();
-    let words = handoff.pack();
+    let transfer_phys = transfer_phys_of(found.dma);
 
-    let doorbell_phys = found.bar0 + page_frames::FRAME_SIZE;
-    let data_plane_physical_address = handoff.data_plane_physical_address;
-    let transfer_phys = data_plane_physical_address + 2 * page_frames::FRAME_SIZE;
-
-    // `[ESCAPE_MAGIC, victim]` at the start of the transfer buffer. No fence: the
-    // `crate::sched::spawn` below is the happens-before edge to the reader, as in `start`.
-    // SAFETY: `transfer_phys` is the data plane's transfer buffer, a frame this bring-up allocated,
-    // reached through the direct map.
+    // `[ESCAPE_MAGIC, victim]` at the start of the transfer buffer, before either process exists.
+    // No fence: the `crate::sched::spawn`s below are the happens-before edge to the reader.
+    // SAFETY: `transfer_phys` is the data plane's transfer buffer, a frame of the run
+    // `find_and_confine` allocated, reached through the direct map.
     unsafe {
         let p = crate::arch::mmu::phys_to_virt(transfer_phys) as *mut u64;
         p.write_volatile(driver_process_contract::non_volatile_memory_express::ESCAPE_MAGIC);
         p.add(1).write_volatile(victim);
     }
+    let admin = start_admin(image, &found).ok()?;
 
     // In a region of its own rather than on the kernel's chunk, so `release` can hand it back.
     let ep_region = crate::memory_region::create(1).expect("no endpoint region for the attacker");
     let report = crate::sched::create_rendezvous_from(ep_region)
         .expect("no report endpoint for the attacker");
 
-    let thread = crate::sched::spawn(move || {
-        let mut maps = [Mapping {
-            va: 0,
-            phys: 0,
-            flags: Flags::user_data(),
-        }; DATA_PLANE_PAGES + 1];
-        super::fs_service::map_channel(
-            &mut maps[..DATA_PLANE_PAGES],
-            DATA_PLANE_VA,
-            data_plane_physical_address,
-            DATA_PLANE_PAGES,
-        );
-        maps[DATA_PLANE_PAGES] = Mapping {
-            va: DOORBELL_VA,
-            phys: doorbell_phys,
-            flags: Flags::user_device(),
-        };
-        run(
-            image,
-            Spawn {
-                arg0: words[0],
-                arg1: words[1],
-                arg2: words[2],
-                grants: &[
-                    // slot 0 is unused by the attacker (it never serves a client); it keeps the
-                    // slot shape the honest server has. slot 1 is where it reports.
-                    rendezvous_capability(report, Rights::READ),
-                    rendezvous_capability(report, Rights::WRITE),
-                ],
-                maps: &maps,
-                windows: &[
-                    startup_page_contract::Window {
-                        kind: ::driver_process_contract::non_volatile_memory_express::DATA_PLANE_KIND,
-                        virtual_address: DATA_PLANE_VA,
-                        pages: DATA_PLANE_PAGES as u32,
-                    },
-                    startup_page_contract::Window {
-                        kind:
-                            ::driver_process_contract::non_volatile_memory_express::DOORBELL_PAGE_KIND,
-                        virtual_address: DOORBELL_VA,
-                        pages: 1,
-                    },
-                ],
-            },
-        )
-    })
-    .expect("could not spawn the NVMe DMA-escape attacker");
+    // Slot 0 is unused by the attacker (it never serves a client); it keeps the slot shape the
+    // honest server has. Slot 1 is where it reports.
+    let thread = spawn_data_plane(
+        image,
+        rendezvous_capability(report, Rights::READ),
+        rendezvous_capability(report, Rights::WRITE),
+        admin.grants,
+    );
 
     Some(DmaEscape {
         report,
         victim,
-        confined_by_iommu,
+        confined_by_iommu: scope.is_confining(),
         scope,
         rid,
         thread,
         ep_region,
-        controller,
+        admin,
+        dma: found.dma,
     })
 }
 
@@ -406,8 +529,7 @@ impl Wiring {
             ::driver_process_contract::non_volatile_memory_express::client_window(window).is_some(),
             "no NVMe client was given window {window}",
         );
-        self.transfer_phys
-            + window * crate::non_volatile_memory_express::TRANSFER_PAGES * page_frames::FRAME_SIZE
+        self.transfer_phys + window * contract::TRANSFER_PAGES * page_frames::FRAME_SIZE
     }
 
     /// The request endpoint as client window `window` is granted it: `WRITE`, badged with the

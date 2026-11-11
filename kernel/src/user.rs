@@ -171,13 +171,14 @@ pub mod entropy_service;
 #[cfg_attr(not(feature = "storage_bench"), allow(dead_code))]
 pub mod designware_mobile_storage_service;
 
-/// **The EL0 NVMe block server's wiring** (milestone 261; DECISIONS §86's option 2a).
+/// **The NVMe disk's wiring** (milestone 261; DECISIONS §86 (whether an NVMe driver can leave the
+/// kernel)).
 ///
-/// The kernel keeps the admin plane, which is the authority to say where a queue lives, and hands
-/// a process the doorbell page and the data plane's pages of one confined DMA region. What it is
-/// granted and what it is refused is written out in that module's own header, in the shape
-/// milestone 159's TRNG driver established, because the confinement is the claim and the driver is
-/// only what exercises it.
+/// The kernel confines the controller to one DMA run and starts two processes: an admin process,
+/// which holds BAR0 and the admin pages and says where every queue lives, and a data plane it
+/// grants the doorbell page and the rest of the run. What each is granted and refused is written
+/// out in that module's own header, because the confinement is the claim and the driver is only
+/// what exercises it.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the tests are its callers
 pub mod non_volatile_memory_express_service;
 
