@@ -14,10 +14,10 @@ It describes the crate as `main` plus this package's pull request leaves it.
 The words a client and an entropy service exchange to move random bytes: one request word that
 packs an opcode and a byte count, and two reply words, a count of 0 to 8 and the bytes. The crate
 also holds the readiness rule a service follows at bring-up: it reports `READY` only once its first
-draw holds a nonzero byte. It is `no_std`, with no dependency and no system call, and
+draw holds a nonzero byte and is not one value repeated. It is `no_std`, with no dependency and no system call, and
 `#![forbid(unsafe_code)]` holds it free of `unsafe`; the caller passes the `CALL` as a closure.
-Four Kani harnesses prove the request word, the copy out of a reply, the fill loop and the
-readiness rule, each with a falsification patch. Every name follows
+Five Kani harnesses prove the request word, the copy out of a reply, the fill loop and the
+two parts of the readiness rule, each with a falsification patch. Every name follows
 [design/naming.md](../../design/naming.md), and the architect ratified every name. Nothing in the crate points back into nife, but nife's
 `xtask` copies its `src/lib.rs` into the patched standard library by path, which the move must
 change.
@@ -84,7 +84,7 @@ has no baseline) and the template's workflows, which run in the repository.
 |---|---|
 | request | `OPERATION_SHIFT` (56), `GET` (1), `request(operation, byte_count)`, `operation(request_word)`, `requested_bytes(request_word)` |
 | reply | `MAXIMUM_BYTES` (8), `NO_ENTROPY` (0), `delivered_bytes(first_reply_word) -> Option<usize>`, `copy_delivered_bytes(byte_count, reply_word, out) -> usize`, `fill_with(out, call) -> Option<()>` |
-| readiness | `READY` (ASCII `RNGUP`), `BRING_UP_FAILED` (`0xDEAD_0000_0000_0000`), `STEP_NO_FIRST_BYTES` (0x10), `STEP_FIRST_ALL_ZERO` (0x11), `bring_up_failure(step)`, `readiness(first_bytes)` |
+| readiness | `READY` (ASCII `RNGUP`), `BRING_UP_FAILED` (`0xDEAD_0000_0000_0000`), `STEP_NO_FIRST_BYTES` (0x10), `STEP_FIRST_ALL_ZERO` (0x11), `STEP_FIRST_ALL_SAME` (0x12, provisional), `bring_up_failure(step)`, `readiness(first_bytes)` |
 | identity | `VERSION`, `INTERFACE_ID` |
 
 No type of another crate appears in a signature, and the crate defines no type of its own.
@@ -98,12 +98,13 @@ What a stranger may find surprising:
   `copy_delivered_bytes` clamps again to the slice it fills.
 - `fill_with` refuses a short reply, while the standard library's caller accepts partial counts.
   The doc says both.
-- `readiness` treats an all-zero first draw as a dead device, wrong with probability 2^-64 or less;
-  the README's BUGS says so.
+- `readiness` treats an all-zero first draw, and a first draw of eight or more equal bytes, as a
+  dead device, wrong with probability 2^-64 or less for zeros and 255 in 2^64 or less for equal
+  bytes; the README's BUGS says so.
 
 ## Proofs and falsification patches
 
-Four harnesses, each with one patch under `falsifications/` that turns it red.
+Five harnesses, each with one patch under `falsifications/` that turns it red.
 
 | harness | what it proves | the patch's defect |
 |---|---|---|
@@ -111,6 +112,7 @@ Four harnesses, each with one patch under `falsifications/` that turns it red.
 | `copying_writes_exactly_the_delivered_bytes` | for any count, word and slice of up to 12 bytes, the copy returns the least of the count, 8 and the slice length, writes that many low bytes little-endian, and leaves every other byte alone | the word read big-endian |
 | `a_fill_succeeds_exactly_when_every_reply_is_full` | for any slice of up to 17 bytes and any replies, each request asks for the remainder clamped to 8, the fill answers `Some` exactly when every reply was full, and then holds the bytes in order after one request per eight bytes | a short reply accepted |
 | `readiness_is_reported_exactly_when_a_first_byte_is_nonzero` | for any draw of up to four bytes, `READY` exactly when one is nonzero, else the step that says empty or all zero | only the first byte checked |
+| `readiness_refuses_a_repeated_first_draw_of_at_least_eight_bytes` | for any draw of up to nine bytes, `STEP_FIRST_ALL_SAME` exactly when it has at least eight bytes that repeat one nonzero value, and `READY` for every other draw that is neither empty nor zero | the repeat rule off by one, so exactly eight equal bytes pass |
 
 Not proved: a slice longer than 17 bytes for the fill, and a draw longer than four bytes for
 readiness. The host tests cover the 8-, 32- and 256-byte draws the backends make.

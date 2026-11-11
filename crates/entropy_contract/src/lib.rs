@@ -122,7 +122,7 @@ pub const BRING_UP_FAILED: u64 = 0xDEAD_0000_0000_0000;
 /// **The service asked and got nothing at all**: the device never answered inside the driver's own
 /// bound. A dry source, an absent one, or a register window that reads as nothing.
 ///
-/// Steps `0x01..=0x0f` are each backend's own, so the two steps every backend shares start at
+/// Steps `0x01..=0x0f` are each backend's own, so the three steps every backend shares start at
 /// `0x10` and cannot collide with them.
 ///
 /// Name: ratified 2026-11-11 (#3480): kept as written.
@@ -134,6 +134,14 @@ pub const STEP_NO_FIRST_BYTES: u64 = 0x10;
 /// Name: ratified 2026-11-11 (#3480): kept as written.
 pub const STEP_FIRST_ALL_ZERO: u64 = 0x11;
 
+/// **The service asked, was answered, and the answer was one nonzero value repeated**: at least
+/// [`MAXIMUM_BYTES`] bytes, every one equal to the first. A source stuck on a latched value is the
+/// other way a generator fails at start, and it passes a check that only looks for a nonzero byte.
+/// See [`readiness`].
+///
+/// Name: provisional, minted for the readiness ruling of 2026-11-11; awaiting a naming pass.
+pub const STEP_FIRST_ALL_SAME: u64 = 0x12;
+
 /// Build a bring-up failure's report word from the step that failed.
 ///
 /// Name: ratified 2026-11-11 (#3480): renamed from `bringup_failure`; `bringup` is not
@@ -144,18 +152,26 @@ pub const fn bring_up_failure(step: u64) -> u64 {
 }
 
 /// **Decide what a service may say about itself, given the first bytes it drew.** [`READY`] only
-/// when at least one of them is nonzero; otherwise a [`bring_up_failure`] naming which of the two
-/// shared steps failed. Every backend calls this rather than composing the word itself.
+/// when the draw holds a nonzero byte and is not one value repeated; otherwise a
+/// [`bring_up_failure`] naming which of the three shared steps failed. Every backend calls this
+/// rather than composing the word itself.
 ///
 /// `first_bytes` is an iterator because backends hold their first draw in different places. An
-/// empty iterator is [`STEP_NO_FIRST_BYTES`], a different answer from a bufferful of zeros.
-/// **Refusing an all-zero draw is a deliberate correctness claim about a random variable**; see
-/// this crate's `BUGS`.
+/// empty iterator is [`STEP_NO_FIRST_BYTES`], a different answer from a bufferful of zeros, and a
+/// draw of zeros is [`STEP_FIRST_ALL_ZERO`]. A draw of at least [`MAXIMUM_BYTES`] bytes that
+/// repeats one nonzero value is [`STEP_FIRST_ALL_SAME`]. A shorter draw is not judged for repeats,
+/// since two equal bytes out of two are common for a working source. This is a start-up check, not
+/// a continuous health test.
+/// **Refusing these draws is a deliberate correctness claim about a random variable**; see this
+/// crate's `BUGS`.
 ///
 /// # Examples
 ///
 /// ```
-/// use entropy_contract::{READY, STEP_FIRST_ALL_ZERO, STEP_NO_FIRST_BYTES, bring_up_failure, readiness};
+/// use entropy_contract::{
+///     READY, STEP_FIRST_ALL_SAME, STEP_FIRST_ALL_ZERO, STEP_NO_FIRST_BYTES, bring_up_failure,
+///     readiness,
+/// };
 ///
 /// // A device that answered with real bytes.
 /// assert_eq!(readiness([0, 0, 0, 7, 0]), READY);
@@ -165,22 +181,35 @@ pub const fn bring_up_failure(step: u64) -> u64 {
 /// assert_eq!(readiness([]), bring_up_failure(STEP_NO_FIRST_BYTES));
 /// assert_eq!(readiness([0; 32]), bring_up_failure(STEP_FIRST_ALL_ZERO));
 /// assert_ne!(readiness([0; 32]), READY);
+///
+/// // A source stuck on one nonzero value answered, and answered the same thing eight times.
+/// assert_eq!(readiness([0xff; 8]), bring_up_failure(STEP_FIRST_ALL_SAME));
 /// ```
 ///
 /// Name: ratified 2026-11-11 (#3480): kept as written, its parameter renamed from
 /// `first`.
 pub fn readiness(first_bytes: impl IntoIterator<Item = u8>) -> u64 {
-    let mut seen = false;
+    let mut first = 0;
+    let mut count = 0usize;
+    let mut all_same = true;
+    let mut any_nonzero = false;
     for byte in first_bytes {
-        if byte != 0 {
-            return READY;
+        if count == 0 {
+            first = byte;
+        } else if byte != first {
+            all_same = false;
         }
-        seen = true;
+        any_nonzero |= byte != 0;
+        count = count.saturating_add(1);
     }
-    if seen {
-        bring_up_failure(STEP_FIRST_ALL_ZERO)
-    } else {
+    if count == 0 {
         bring_up_failure(STEP_NO_FIRST_BYTES)
+    } else if !any_nonzero {
+        bring_up_failure(STEP_FIRST_ALL_ZERO)
+    } else if all_same && count >= MAXIMUM_BYTES as usize {
+        bring_up_failure(STEP_FIRST_ALL_SAME)
+    } else {
+        READY
     }
 }
 
@@ -483,11 +512,42 @@ mod tests {
         assert_eq!(readiness(first_bytes), READY);
     }
 
+    /// **A source stuck on one nonzero value is refused**, under its own step, from eight bytes up.
+    /// A draw that varies anywhere, a short draw and the doc example's sparse draw stay ready.
+    #[test]
+    fn a_repeated_nonzero_first_draw_is_refused_under_its_own_step() {
+        let refused = bring_up_failure(STEP_FIRST_ALL_SAME);
+        assert_eq!(readiness([0xffu8; 8]), refused);
+        assert_eq!(readiness([0x5au8; 32]), refused);
+        assert_eq!(readiness([1u8; 256]), refused);
+        assert_eq!(refused, 0xDEAD_0000_0000_0012);
+        assert_ne!(refused, bring_up_failure(STEP_FIRST_ALL_ZERO));
+        assert_ne!(refused, bring_up_failure(STEP_NO_FIRST_BYTES));
+        assert_eq!(
+            readiness([0xffu8; 7]),
+            READY,
+            "a short draw is not judged for repeats"
+        );
+        assert_eq!(readiness([0, 0, 0, 7, 0]), READY);
+        let mut varied = [0xffu8; 8];
+        varied[7] = 0xfe;
+        assert_eq!(readiness(varied), READY);
+        varied = [0xffu8; 8];
+        varied[0] = 0;
+        assert_eq!(readiness(varied), READY);
+    }
+
     /// No bring-up failure can be mistaken for the ready word or for a byte count, which is the
     /// same non-overlap property [`delivered_bytes`] rests on, one message earlier in the handshake.
     #[test]
     fn a_bring_up_failure_is_never_ready_and_never_a_count() {
-        for step in [STEP_NO_FIRST_BYTES, STEP_FIRST_ALL_ZERO, 0x01, 0xff] {
+        for step in [
+            STEP_NO_FIRST_BYTES,
+            STEP_FIRST_ALL_ZERO,
+            STEP_FIRST_ALL_SAME,
+            0x01,
+            0xff,
+        ] {
             let word = bring_up_failure(step);
             assert_ne!(word, READY);
             assert_eq!(delivered_bytes(word), None);
@@ -587,10 +647,37 @@ mod verification {
         }
     }
 
+    /// **Readiness refuses a repeated first draw, and only a repeated one**: for any first draw of
+    /// up to nine bytes, [`readiness`] names [`STEP_NO_FIRST_BYTES`] for an empty draw,
+    /// [`STEP_FIRST_ALL_ZERO`] for a draw of zeros and [`STEP_FIRST_ALL_SAME`] for a draw of at
+    /// least [`MAXIMUM_BYTES`] bytes that repeats one nonzero value, and is [`READY`] for every
+    /// other draw.
+    /// Falsification: replayable `crates/entropy_contract/falsifications/verification.readiness_refuses_a_repeated_first_draw_of_at_least_eight_bytes.patch`
+    #[kani::proof]
+    #[kani::unwind(11)]
+    fn readiness_refuses_a_repeated_first_draw_of_at_least_eight_bytes() {
+        let first_bytes: [u8; 9] = kani::any();
+        let length: usize = kani::any();
+        kani::assume(length <= first_bytes.len());
+        let drawn = &first_bytes[..length];
+        let word = readiness(drawn.iter().copied());
+        let all_zero = drawn.iter().all(|&byte| byte == 0);
+        let repeated = drawn.iter().all(|&byte| byte == drawn[0]);
+        if length == 0 {
+            assert_eq!(word, bring_up_failure(STEP_NO_FIRST_BYTES));
+        } else if all_zero {
+            assert_eq!(word, bring_up_failure(STEP_FIRST_ALL_ZERO));
+        } else if repeated && length >= MAXIMUM_BYTES as usize {
+            assert_eq!(word, bring_up_failure(STEP_FIRST_ALL_SAME));
+        } else {
+            assert_eq!(word, READY);
+        }
+    }
+
     /// **Readiness is reported exactly when a first byte is nonzero**: for any first draw of up to
     /// four bytes, [`readiness`] answers [`READY`] exactly when one of them is nonzero, and
     /// otherwise names [`STEP_NO_FIRST_BYTES`] for an empty draw and [`STEP_FIRST_ALL_ZERO`] for
-    /// one of zeros.
+    /// one of zeros. A draw this short is never judged for repeats.
     /// Falsification: replayable `crates/entropy_contract/falsifications/verification.readiness_is_reported_exactly_when_a_first_byte_is_nonzero.patch`
     #[kani::proof]
     #[kani::unwind(6)]
