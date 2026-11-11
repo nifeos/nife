@@ -27,12 +27,12 @@
 //! - [`PAGE_VA`] is hard-coded here and in every other program that maps the FS server's shared
 //!   frame, each with its own copy of the address and its own byte accessors.
 //!
-//! Name: recorded (design/roadmap/0292-the-sink-contract-ends-are-three-programs.md and
-//! notes/sink-protocol.md). **Provisional: calef has not ratified it.** `source` is this tree's own
-//! word for the reading end of the sink contract (`grant_plan::spawnproto::Wiring` carries `sink`
-//! and `source`), so `file_sink` and `file_source` are one pair. Refused `sink_verifier` (names the
-//! test it serves; it verifies nothing). Refused `file_reader` (generic). Refused `cat` (a reader
-//! would expect a name argument and a general program).
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). `source` is this tree's own word
+//! for the reading end of the sink contract (`grant_plan::spawnproto::Wiring` carries `sink` and
+//! `source`), so `file_sink` and `file_source` are one pair; see
+//! design/roadmap/0292-the-sink-contract-ends-are-three-programs.md and notes/sink-protocol.md.
+//! Refused `sink_verifier` (names the test it serves; it verifies nothing). Refused `file_reader`
+//! (generic). Refused `cat` (a reader would expect a name argument and a general program).
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

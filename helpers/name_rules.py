@@ -1,18 +1,18 @@
 """Names ratified by a rule rather than one at a time, for `script/names`.
 
-**Why this file exists.** On 2026-10-17 (UTC) calef ratified two rules that each cover a whole class
-of names: an appendix directory takes its parent's stem and an appendix file takes a slug of the
-heading it was split from, and a test fixture program is named for the role it plays in its test.
-`design/naming/convention-rulings.md` records both with his words. A ruling that lives only in
-prose leaves the 1,400-name worklist unchanged and is rung four of the ladder in AGENTS.md; this
-module is rung two: `script/names` reads the rulings page and counts every name a rule covers as
-ratified, citing the rule, so the worklist shrinks by the rule and not by someone remembering it.
+**Why this file exists.** An appendix directory takes its parent's stem and an appendix file takes
+a slug of the heading it was split from, and `design/naming/convention-rulings.md` records that
+rule. A ruling that lives only in prose leaves the worklist unchanged and is rung four of the
+ladder in AGENTS.md; this module is rung two: `script/names` reads the rulings page and counts
+every name the rule covers as ratified, citing the rule, so the worklist shrinks by the rule and
+not by someone remembering it.
 
 **What the rules cover is decided here, not by a pattern in the prose.** Rule 1 is computed from
 the tree, because 600 stems cannot be listed and a list would rot: a directory beside `X.md` takes
 its parent's stem by construction, and a document inside it is covered when its stem matches a
-heading of the parent (`_matches_heading`). Rule 2 is an explicit list in the rulings page, one
-backticked name per bullet, because "names a role" is a judgment and a pattern would guess.
+heading of the parent (`_matches_heading`). Every other class of names a ruling settled (the test
+fixtures of Rule 2, the kept stems of Rule 3) is ratified in each name's own `Name:` block, which
+`design/naming/provenance.md` describes, and nothing here lists them.
 
 **What stays provisional is the point of the checks.** A stem that matches no heading, or breaks a
 word rule that a script can see (`_word_rule`), is pulled aside and keeps its own status. So are
@@ -32,7 +32,6 @@ import sys
 
 RULES_DOC = "design/naming/convention-rulings.md"
 APPENDIX_RULE = "appendix-stems"
-FIXTURE_RULE = "fixture-roles"
 LISTED_RULE = "listed-stems"
 
 # Spelled in two halves because script/lint's naming check refuses the word itself outside
@@ -51,7 +50,7 @@ def parse_rules(text):
     """`{rule id: {...}}` from the rulings page: `Applies:`, `Ratified:`, covered names, exclusions.
 
     A rule is a `## Rule N` section. `Applies:` names the mechanism (`appendix-stems` or
-    `fixture-roles`), `Ratified:` carries the date, every bullet under `Covered:` holds one
+    `listed-stems`), `Ratified:` carries the date, every bullet under `Covered:` holds one
     backticked name, and `Not covered:` holds backticked directories the rule does not reach.
     """
     rules, cur, section = {}, None, None
@@ -167,7 +166,6 @@ def apply(records, rules, files, read, british=()):
     `script/names <name>` prints; `status` and `date` are the rule's, so every count that reads
     them moves with it. `problems` are rule-list entries naming a program that does not exist.
     """
-    by_name = {(r["kind"], r["name"]): r for r in records}
     marks, pulled, problems = {}, {}, []
     for rid, rule in rules.items():
         cite = f"{RULES_DOC}, {rid}"
@@ -181,13 +179,6 @@ def apply(records, rules, files, read, british=()):
                     problems.append(f"{RULES_DOC}, {rid}: `{path}` is not a tracked document")
                     continue
                 marks[path] = (rule["date"], f"{cite}: a stem kept as it stands, listed by calef")
-        elif rule["applies"] == FIXTURE_RULE:
-            for name in rule["covered"]:
-                rec = by_name.get(("program", name))
-                if rec is None or not rec["path"].startswith("fixtures/"):
-                    problems.append(f"{RULES_DOC}, {rid}: `{name}` is not a fixtures/ program")
-                    continue
-                marks[rec["path"]] = (rule["date"], f"{cite}: a role in its test, as a noun phrase")
     for r in records:
         hit = marks.get(r["name"] if r["kind"] == "directory" else r["path"])
         if hit and r["kind"] in ("directory", "document", "program") and r["status"] != "ratified":
@@ -199,11 +190,8 @@ def _selftest():
     rules = parse_rules("\n".join([
         "## Rule 1: appendix stems", "Applies: appendix-stems", "Ratified: 2026-10-17 (UTC)",
         "Not covered: `notes/coes`", "",
-        "## Rule 2: fixtures", "Applies: fixture-roles", "Ratified: 2026-10-17", "Covered:",
-        "- `role_one`", "- `role_two`", "- `ghost`", "",
         "## Rule 3: kept", "Applies: listed-stems", "Ratified: 2026-10-18", "Covered:",
         "- notes/y: `orphan`, `gone`"]))
-    assert rules["Rule 2"]["covered"] == ["role_one", "role_two", "ghost"], rules
     assert rules["Rule 1"]["not_covered"] == ["notes/coes"], rules
     tree = {"notes/x.md": "# X\n## The loader\n## The zorbspell\n## Limitations and BUGS\n",
             "notes/x/the-loader.md": "", "notes/x/limitations.md": "",
@@ -218,23 +206,17 @@ def _selftest():
     assert not any(k.startswith(("notes/coes", "notes/y")) for k in list(cov) + list(pulled))
     def rec(kind, name, path, status="provisional"):
         return {"kind": kind, "name": name, "path": path, "status": status, "date": None}
-    records = [rec("program", "role_one", "fixtures/src/role_one.rs"),
-               rec("program", "alto", "fixtures/src/alto.rs"),
-               rec("program", "role_two", "fixtures/src/role_two.rs", "ratified"),
-               rec("document", "elsewhere", "notes/x/elsewhere.md"),
+    records = [rec("document", "elsewhere", "notes/x/elsewhere.md"),
                rec("document", "the-loader", "notes/x/the-loader.md"),
                rec("directory", "notes/x/", "notes/x/README.md"),
                rec("document", "orphan", "notes/y/orphan.md")]
     _, problems = apply(records, rules, sorted(tree), tree.get)
     status = {r["name"]: r["status"] for r in records}
-    assert status["role_one"] == "ratified" and "Rule 2" in records[0]["rule"], status
-    assert status["alto"] == "provisional", "a name no rule lists stays provisional"
     assert status["the-loader"] == "ratified" and status["notes/x/"] == "ratified", status
     assert rules["Rule 3"]["covered"] == ["notes/y/orphan.md", "notes/y/gone.md"], rules
     assert status["elsewhere"] == "provisional", "a pulled-aside stem stays provisional"
     assert status["orphan"] == "ratified" and "Rule 3" in records[-1]["rule"], "a listed stem is ratified"
-    assert problems == [f"{RULES_DOC}, Rule 2: `ghost` is not a fixtures/ program",
-                        f"{RULES_DOC}, Rule 3: `notes/y/gone.md` is not a tracked document"], problems
+    assert problems == [f"{RULES_DOC}, Rule 3: `notes/y/gone.md` is not a tracked document"], problems
     print("name_rules: selftest ok")
 
 

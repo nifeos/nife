@@ -40,47 +40,16 @@ and the fatal-risks evidence appendices stay provisional.
 
 ## Rule 2: a test fixture program is named for its role in its test, as a noun phrase
 
-Applies: fixture-roles
-Ratified: 2026-10-17 (UTC)
+A fixture program under `fixtures/src/` names the role it plays in its test, as a noun phrase
+(`file_sink`, `frame_revoker`). "Names a role" is a judgment a pattern would guess at, so no script
+applies this rule: each fixture the rule ratified carries `Name: ratified 2026-10-17 (calef,
+convention-rulings Rule 2)` in its own module doc, and `script/names` reads that block like any
+other. A new fixture is provisional until its own block says otherwise.
 
-What it covers. The programs under `fixtures/src/` listed below. The list is explicit because
-"names a role" is a judgment a pattern would guess at. A new fixture joins by a bullet here in the
-commit that adds it, and until then it is provisional like any other new name.
-
-Covered:
-
-```
-- `carried_capability_client`
-- `carried_capability_server`
-- `confined_syscall_fuzzer`
-- `console_test_client`
-- `current_cpu_reader`
-- `cycle_counter_reader`
-- `delegation_granter`
-- `delegation_receiver`
-- `file_sink`
-- `file_source`
-- `frame_revoker`
-- `image_self_checker`
-- `memory_region_depleter`
-- `name_resolver_test_client`
-- `network_echo_client`
-- `notification_binder`
-- `page_frame_consumer`
-- `page_frame_producer`
-- `rendezvous_minter`
-- `rendezvous_peer`
-- `scratch_release_witness`
-- `scratch_window_exerciser`
-- `sink_transcript_writer`
-- `unreachable_network_witness`
-```
-
-What it pulls aside, leaving it provisional. `alto`, `tenor`, `greeting`, `hello`, `noteless`,
-`outlaw`, `chatty` and `flaky`. None names a role in its test: `alto` and `tenor` are two voices of
-a duet, and `greeting`, `hello` and `noteless` say what they print. `outlaw`, `chatty` and `flaky`
-carry rulings of their own that no rename has applied (`kernel_test_subject`,
-`swap_boundary_witness` and `first_attempt_crasher`).
+`alto`, `tenor`, `greeting`, `hello`, `noteless`, `outlaw`, `chatty` and `flaky` are provisional.
+None names a role in its test: `alto` and `tenor` are two voices of a duet, and `greeting`, `hello`
+and `noteless` say what they print. `outlaw`, `chatty` and `flaky` carry rulings of their own that
+no rename has applied (`kernel_test_subject`, `swap_boundary_witness` and `first_attempt_crasher`).
 
 ## Rule 3: appendix stems kept as they stand
 
