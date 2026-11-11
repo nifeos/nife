@@ -112,7 +112,7 @@ Five harnesses, each with one patch under `falsifications/` that turns it red.
 | `copying_writes_exactly_the_delivered_bytes` | for any count, word and slice of up to 12 bytes, the copy returns the least of the count, 8 and the slice length, writes that many low bytes little-endian, and leaves every other byte alone | the word read big-endian |
 | `a_fill_succeeds_exactly_when_every_reply_is_full` | for any slice of up to 17 bytes and any replies, each request asks for the remainder clamped to 8, the fill answers `Some` exactly when every reply was full, and then holds the bytes in order after one request per eight bytes | a short reply accepted |
 | `readiness_is_reported_exactly_when_a_first_byte_is_nonzero` | for any draw of up to four bytes, `READY` exactly when one is nonzero, else the step that says empty or all zero | only the first byte checked |
-| `readiness_refuses_a_repeated_first_draw_of_at_least_eight_bytes` | for any draw of up to nine bytes, `STEP_FIRST_ALL_SAME` exactly when it has at least eight bytes that repeat one nonzero value, and `READY` for every other draw that is neither empty nor zero | the repeat rule off by one, so exactly eight equal bytes pass |
+| `readiness_refuses_a_repeated_first_draw_of_at_least_eight_bytes` | for any draw of up to nine bytes, the repeat step for eight or more equal nonzero bytes, else `READY` unless the draw is empty or zero | the repeat rule off by one |
 
 Not proved: a slice longer than 17 bytes for the fill, and a draw longer than four bytes for
 readiness. The host tests cover the 8-, 32- and 256-byte draws the backends make.
