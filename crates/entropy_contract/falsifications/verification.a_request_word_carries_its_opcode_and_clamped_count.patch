@@ -1,21 +1,23 @@
 Falsifies `entropy_contract::verification::a_request_word_carries_its_opcode_and_clamped_count`.
 
-The defect: `requested_bytes` forgets the byte mask and clamps the whole request word, opcode
-included. Every request with a nonzero opcode then reads as a request for `MAXIMUM_BYTES`, so a
-client asking for three bytes is sent eight.
+The defect: `request` forgets to clamp the byte count. A count above `MAXIMUM_BYTES` then reaches
+the wire as it came, and a request for 256 bytes reads back as a request for none, so a client
+asking for more than one reply holds is not answered with a full reply.
 
-Expected to fail: the harness's `assert_eq!` on `requested_bytes`, with a nonzero opcode and a
-count below eight.
-
+Expected to fail: the harness's `assert_eq!` on `operation` or on `requested_bytes`, with any byte count above
+`MAXIMUM_BYTES`.
 diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
-@@ -84,7 +84,7 @@ pub const fn operation(request_word: u64) -> u64 {
- ///
- /// Name: ratified 2026-11-11 (#3480): renamed from `want`: a quantity takes its unit.
- pub const fn requested_bytes(request_word: u64) -> u64 {
--    let byte_count = request_word & 0xff;
-+    let byte_count = request_word;
-     if byte_count > MAXIMUM_BYTES {
-         MAXIMUM_BYTES
-     } else {
+@@ -70,10 +70,5 @@ pub const GET: u64 = 1;
+ /// Name: ratified 2026-11-11 (#3480): renamed from `req`, which abbreviates it.
+ pub const fn request(operation: u64, byte_count: u64) -> u64 {
+-    let clamped = if byte_count > MAXIMUM_BYTES {
+-        MAXIMUM_BYTES
+-    } else {
+-        byte_count
+-    };
+-    (operation << OPERATION_SHIFT) | clamped
++    (operation << OPERATION_SHIFT) | byte_count
+ }
+ 
