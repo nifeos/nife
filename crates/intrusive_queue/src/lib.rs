@@ -6,7 +6,9 @@
 //!
 //! 1. A node is on at most one queue until popped; a push consumes its [`Unqueued`] token.
 //! 2. A node outlives its time on the queue; stated once, at [`Unqueued::new`].
-//! 3. The caller serializes all access to a queue and its links (`&mut self`, for the queue).
+//! 3. The caller serializes all access to a queue and its links (`&mut self`, for the queue), and
+//!    mints each token from the node's owning pointer, never from a reference; stated at
+//!    [`Unqueued::new`].
 //!
 //! Name: ratified 2026-10-27 (#2797). The primary type is `Queue<T: Node>`.
 
@@ -79,6 +81,13 @@ impl<T> Unqueued<T> {
     ///   one, or the queue that consumes it, is alive (rule 1: this is what makes the token unique).
     /// - While a queue holds `node`, nothing but the queue writes its link, and no reference to
     ///   `node` is live across a queue operation (rule 3).
+    /// - `node` is derived from the pointer that every later access to the node is derived from:
+    ///   the one `Box::into_raw` returned, the pointer a table stores, or `&raw mut` on a local
+    ///   that is not named again. It is never derived from a reference, such as
+    ///   `NonNull::from(&mut *owner)` (rule 3). Under Rust's aliasing rules, a later `&mut`
+    ///   reborrow of the node from its owner invalidates every pointer derived from an earlier
+    ///   reference, so the queue's next use of a token minted that way is undefined behaviour,
+    ///   while a token derived from the owning pointer stays valid across such reborrows.
     #[inline(always)]
     pub const unsafe fn new(node: NonNull<T>) -> Self {
         Self(node)
@@ -127,13 +136,15 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 /// #     fn next(&self) -> Option<NonNull<Self>> { self.next }
 /// #     fn set_next(&mut self, next: Option<NonNull<Self>>) { self.next = next; }
 /// # }
-/// // Rule 2, as drop order: the nodes are declared before the queue, so they outlive it.
-/// let mut a = Thread { tid: 1, next: None };
-/// let mut b = Thread { tid: 2, next: None };
+/// // Each node is owned through the pointer `Box::into_raw` returns, and its token is minted from
+/// // that pointer, not from a reference (`Unqueued::new`'s provenance clause).
+/// let a = NonNull::new(Box::into_raw(Box::new(Thread { tid: 1, next: None }))).unwrap();
+/// let b = NonNull::new(Box::into_raw(Box::new(Thread { tid: 2, next: None }))).unwrap();
 /// let mut q: Queue<Thread> = Queue::new();
 ///
-/// // SAFETY: both are live locals declared before `q`, on no queue and with no token yet.
-/// let (ta, tb) = unsafe { (Unqueued::new(NonNull::from(&mut a)), Unqueued::new(NonNull::from(&mut b))) };
+/// // SAFETY: both are live boxed nodes, on no queue and with no token yet, freed only after `q`
+/// // is gone.
+/// let (ta, tb) = unsafe { (Unqueued::new(a), Unqueued::new(b)) };
 /// q.push_back(ta);
 /// q.push_back(tb);
 /// assert_eq!(q.len(), 2);
@@ -149,6 +160,11 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 ///     .map(|t| unsafe { (*t.as_ptr()).tid })
 ///     .collect();
 /// assert_eq!(order, vec![2, 1]);
+///
+/// // Rule 2: the nodes outlive every queue that held them.
+/// drop(q);
+/// // SAFETY: each pointer came from `Box::into_raw` above, and no queue or token reaches it now.
+/// unsafe { drop((Box::from_raw(a.as_ptr()), Box::from_raw(b.as_ptr()))) };
 /// ```
 #[doc(alias = "fifo")]
 pub struct Queue<T: Node> {
@@ -199,8 +215,8 @@ impl<T: Node> Queue<T> {
     /// # }
     /// # let mut b = T { next: None };
     /// # let (mut ready, mut inbox) = (Queue::<T>::new(), Queue::<T>::new());
-    /// // SAFETY: `b` is live, on no queue, and has no token yet.
-    /// let token = unsafe { Unqueued::new(NonNull::from(&mut b)) };
+    /// // SAFETY: `b` is live, on no queue, has no token yet, and is not named again.
+    /// let token = unsafe { Unqueued::new(NonNull::new(&raw mut b).unwrap()) };
     /// ready.push_back(token);
     /// inbox.push_back(token); // error[E0382]: use of moved value: `token`
     /// ```
@@ -285,16 +301,17 @@ mod verification {
             N { next: None, tag: 1 },
             N { next: None, tag: 2 },
         ];
-        // One token per node, minted from references: the same API the kernel calls. A token is
-        // in `held` while its node is off the queue.
-        //
-        // SAFETY: three distinct live locals declared before `q`, each on no queue, each minted
-        // once, and the harness is the only accessor.
+        // One token per node, minted from one pointer to the array, the way the kernel mints
+        // from the pointer its table stores. `nodes` is not named again, so every later access
+        // goes through a token. A token is in `held` while its node is off the queue.
+        let base = (&raw mut nodes).cast::<N>();
+        // SAFETY: three distinct live elements of a local declared before `q`, each on no queue,
+        // each minted once from the array's own pointer, and the harness is the only accessor.
         let mut held: [Option<Unqueued<N>>; 3] = unsafe {
             [
-                Some(Unqueued::new(NonNull::from(&mut nodes[0]))),
-                Some(Unqueued::new(NonNull::from(&mut nodes[1]))),
-                Some(Unqueued::new(NonNull::from(&mut nodes[2]))),
+                Some(Unqueued::new(NonNull::new_unchecked(base))),
+                Some(Unqueued::new(NonNull::new_unchecked(base.add(1)))),
+                Some(Unqueued::new(NonNull::new_unchecked(base.add(2)))),
             ]
         };
 
@@ -357,16 +374,45 @@ mod tests {
         }
     }
 
-    fn node(tag: u32) -> Box<N> {
-        Box::new(N { next: None, tag })
+    /// A test's node, owned through the pointer `Box::into_raw` returned, as the kernel owns a
+    /// thread through the pointer its table stores. Every access, the token's and the test's,
+    /// derives from that one pointer, and dropping it frees the node.
+    struct Owned(NonNull<N>);
+
+    impl Drop for Owned {
+        fn drop(&mut self) {
+            // SAFETY: the pointer came from `Box::into_raw` in `node`, and is freed only here.
+            drop(unsafe { Box::from_raw(self.0.as_ptr()) });
+        }
     }
 
-    /// Mint `n`'s token. Every test calls this once per node, on a `Box` declared before its
-    /// queue, so the node outlives the queue (locals drop in reverse) and is on no queue yet.
-    fn token(n: &mut Box<N>) -> Unqueued<N> {
-        // SAFETY: a live boxed node on no queue, minted once per test (see above); the test is the
-        // only accessor.
-        unsafe { Unqueued::new(NonNull::from(&mut **n)) }
+    impl core::ops::Deref for Owned {
+        type Target = N;
+        fn deref(&self) -> &N {
+            // SAFETY: live until `drop`; the reference is the test's, taken between queue
+            // operations (rule 3).
+            unsafe { self.0.as_ref() }
+        }
+    }
+
+    impl core::ops::DerefMut for Owned {
+        fn deref_mut(&mut self) -> &mut N {
+            // SAFETY: as `deref`.
+            unsafe { self.0.as_mut() }
+        }
+    }
+
+    fn node(tag: u32) -> Owned {
+        Owned(NonNull::new(Box::into_raw(Box::new(N { next: None, tag }))).unwrap())
+    }
+
+    /// Mint `n`'s token from its owning pointer. Every test calls this once per node, declared
+    /// before its queue, so the node outlives the queue (locals drop in reverse) and is on no
+    /// queue yet.
+    fn token(n: &mut Owned) -> Unqueued<N> {
+        // SAFETY: a live boxed node on no queue, minted once per test (see above), from the
+        // pointer every other access derives from.
+        unsafe { Unqueued::new(n.0) }
     }
 
     fn tag(t: &Unqueued<N>) -> u32 {
@@ -455,5 +501,59 @@ mod tests {
         let p = q.pop_front().unwrap();
         // SAFETY: `p` was just popped, so it is live and unlinked; that it is unlinked is what this test asserts.
         assert!(unsafe { (*p.as_ptr()).next() }.is_none());
+    }
+
+    /// **A token minted from the owning pointer survives the owner's later reborrows.** The
+    /// sequence is the kernel thread table's over a thread's life: the table stores the pointer
+    /// `Box::into_raw` returned and mints the token from it, then hands out `&mut` reborrows of
+    /// the node (`Threads::get_mut`) while the token moves on and off a queue, until the node is
+    /// retired. Run it under Miri with either borrow model (`cargo miri test -p intrusive_queue`,
+    /// and again with `MIRIFLAGS=-Zmiri-tree-borrows`): both pass it. A token minted instead from
+    /// one of those reborrows, `NonNull::from(table.get_mut(0))`, is invalidated by the next
+    /// `get_mut`, and both models report the queue's next use of it as undefined behaviour.
+    #[test]
+    fn a_token_from_the_owning_pointer_survives_the_owners_reborrows() {
+        /// The thread table's shape: it owns each node through the pointer it stores.
+        struct Table(Vec<NonNull<N>>);
+        impl Table {
+            fn get_mut(&mut self, i: usize) -> &mut N {
+                // SAFETY: a stored pointer from `Box::into_raw`, live until the retire below;
+                // `&mut self` makes this the only reference.
+                unsafe { self.0[i].as_mut() }
+            }
+        }
+
+        let mut table = Table(
+            (1..=2)
+                .map(|tag| NonNull::new(Box::into_raw(Box::new(N { next: None, tag }))).unwrap())
+                .collect(),
+        );
+        // SAFETY: two live nodes on no queue, each minted once from the pointer the table
+        // stores, and freed only after their tokens are gone.
+        let (ta, tb) = unsafe { (Unqueued::new(table.0[0]), Unqueued::new(table.0[1])) };
+        let mut q: Queue<N> = Queue::new();
+
+        q.push_back(ta);
+        // A reborrow while the node is queued, as a mailbox write or the revocation sweep makes.
+        table.get_mut(0).tag = 10;
+        // This push writes the queued node's link through its token.
+        q.push_back(tb);
+        table.get_mut(1).tag = 20;
+        let ta = q.pop_front().unwrap();
+        assert_eq!(tag(&ta), 10);
+        table.get_mut(0).tag = 11;
+        q.push_back(ta);
+        let tb = q.pop_front().unwrap();
+        let ta = q.pop_front().unwrap();
+        assert_eq!((tag(&tb), tag(&ta)), (20, 11));
+        assert!(q.is_empty());
+
+        // Retire: both tokens are off every queue, and the nodes go back through the stored
+        // pointers.
+        drop((ta, tb));
+        for p in table.0 {
+            // SAFETY: each came from `Box::into_raw` above, and no queue or token reaches it now.
+            drop(unsafe { Box::from_raw(p.as_ptr()) });
+        }
     }
 }
