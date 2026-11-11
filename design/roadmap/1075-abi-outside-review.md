@@ -113,7 +113,7 @@ dependency); everything else is two-way and the maintainer decides it.
    legible", a method of an object no kernel serves, with no user in the tree; the tree's rule is
    that git holds history. (c) `README.md` says "BUGS: None known" while the crate carries five
    `# BUGS` sections (`src/rendezvous.rs` line 20, 46, 71; `src/memory_region.rs` line 56;
-   `src/lib.rs` line 247), two of them real wire warts (a message word that reads as an error; a death
+   `src/lib.rs` line 247). Two of them are real wire warts (a message word that reads as an error; a death
    read through `RECEIVE_CAPABILITY` loses its `pc`).
    Fix: (a) delete the sentence; (b) delete the `console` module and its pinned line, under
    decision B; (c) the README's BUGS section lists the five in one line each.
@@ -121,7 +121,7 @@ dependency); everything else is two-way and the maintainer decides it.
 
 8. Dates and rulings stand in doc comments as history.
    Finding: 23 dated phrases remain in `src/` after the move strips the `Name:` blocks, such as
-   `src/lib.rs` line 101 ("the size was set on"), `:171` ("confirmed on"), `:307` ("ruled on") and `:357` ("were ratified on"). Others sit at `src/memory_region.rs` line 11 and `:54`, `src/rendezvous.rs` line 82 and `:109`, `src/survey.rs` line 19, `src/notification.rs` line 33, `src/reboot.rs` line 5, `src/object_type.rs` line 29, `src/cycle_counter.rs` line 31, `src/timer.rs` line 39, `src/reply.rs` line 7 and `src/thread_control_block.rs` line 43, plus four "Index exception (date)" comments in `src/lib.rs`. Section §267 (A comment states the constraint as it is now) and §298 (A document states what is in force now, and its history is in git) put these in commit
+   `src/lib.rs` line 101 ("the size was set on"), `:171` ("confirmed on"), `:307` ("ruled on") and `:357` ("were ratified on"). Others sit at `src/memory_region.rs` line 11 and `:54`, `src/rendezvous.rs` line 82 and `:109`, `src/survey.rs` line 19, `src/notification.rs` line 33, `src/reboot.rs` line 5, `src/object_type.rs` line 29, `src/cycle_counter.rs` line 31, `src/timer.rs` line 39, `src/reply.rs` line 7 and `src/thread_control_block.rs` line 43. There are also four "Index exception (date)" comments in `src/lib.rs`. Section §267 (A comment states the constraint as it is now) and §298 (A document states what is in force now, and its history is in git) put these in commit
    messages. The template's `history phrases` gate reads only markdown today, so nothing refuses
    them. A stranger reads them as noise.
    Fix: state each rule in the present tense; where the sentence is provenance, move it into the
