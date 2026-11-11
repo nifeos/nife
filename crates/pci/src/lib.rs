@@ -392,7 +392,9 @@ const BAR_DECODE_BITS_64: u64 = 0xffff_ffff_ffff_fff0;
 /// **A memory BAR's size from the address bits that stayed set after the all-ones probe.** The
 /// size is the lowest set bit, as OpenBSD's `PCI_MAPREG_MEM_SIZE` (`mr & -mr`) and Linux's
 /// `pci_size` compute it. `decode_bits` is the BAR's width, [`BAR_DECODE_BITS_32`] or
-/// [`BAR_DECODE_BITS_64`], and `mask` must already be masked by it.
+/// [`BAR_DECODE_BITS_64`], and `mask` must already be masked by it. The lowest set bit is taken as
+/// `1 << trailing_zeros`, since `isolate_lowest_one` is not yet stable on the toolchain the Kani
+/// proofs build with.
 ///
 /// The probe can only describe a size if every address bit from that lowest one to the top of
 /// the width is writable, so any other mask is refused rather than sized: `!mask + 1`, which this
@@ -402,7 +404,7 @@ fn size_from_mask(mask: u64, decode_bits: u64) -> Result<u64, BarRefusal> {
     if mask == 0 {
         return Err(BarRefusal::NoWritableBits);
     }
-    let size = mask.isolate_lowest_one();
+    let size = 1 << mask.trailing_zeros();
     if mask != decode_bits & !(size - 1) {
         return Err(BarRefusal::MaskNotContiguous);
     }

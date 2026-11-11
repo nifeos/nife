@@ -14,7 +14,7 @@ diff --git a/crates/pci/src/lib.rs b/crates/pci/src/lib.rs
 @@ -403,9 +403,6 @@ fn size_from_mask(mask: u64, decode_bits: u64) -> Result<u64, BarRefusal> {
          return Err(BarRefusal::NoWritableBits);
      }
-     let size = mask.isolate_lowest_one();
+     let size = 1 << mask.trailing_zeros();
 -    if mask != decode_bits & !(size - 1) {
 -        return Err(BarRefusal::MaskNotContiguous);
 -    }
