@@ -19,9 +19,9 @@ pub struct Dmar {
     /// field plus one is not a smaller type, it is an addition that can overflow on a firmware
     /// byte of `0xff`. Widening makes the wrong state unrepresentable rather than guarded.
     pub host_address_width: u16,
-    /// Bit 0 is `INTR_REMAP`: the platform also supports interrupt remapping. Reported and not
-    /// acted on, the same posture the MADT's `PCAT_COMPAT` bit takes; interrupt remapping is not
-    /// built here (milestone 161 roadmap item 6 names it a follow-on, not this item).
+    /// Bit 0 is `INTR_REMAP`: the platform also supports interrupt remapping. The kernel turns
+    /// remapping on only where this and the unit's own `ECAP.IR` both say so, as Linux's
+    /// `dmar_ir_support` does.
     pub flags: u8,
 }
 
@@ -38,10 +38,10 @@ impl Dmar {
     }
 }
 
-/// **The two interrupt-remapping claims a VT-d machine makes, as the boot line prints them**:
-/// the unit's (`ECAP.IR`) and the platform's (the DMAR's `INTR_REMAP`). One line carries both so
-/// a boot log shows whether firmware and hardware agree. `(unused)` because nothing in this
-/// kernel remaps an interrupt, whatever either says.
+/// **The two interrupt-remapping claims a VT-d machine makes, and what the kernel did, as the boot
+/// line prints them**: the unit's (`ECAP.IR`), the platform's (the DMAR's `INTR_REMAP`) and
+/// whether this unit remaps (`GSTS.IRES`). One line carries all three so a boot log shows whether
+/// firmware and hardware agree and which way the kernel went.
 ///
 /// Here rather than in the kernel's print so a host test holds the wording.
 ///
@@ -52,14 +52,18 @@ pub struct InterruptRemappingClaims {
     pub unit: bool,
     /// The DMAR's `INTR_REMAP`, [`DmarUnits::platform_interrupt_remapping`].
     pub platform: bool,
+    /// The unit remaps interrupts: the kernel set `GCMD.IRE` and read `GSTS.IRES` back.
+    /// Name: provisional (milestone 1068, 2026-11-11 UTC).
+    pub enabled: bool,
 }
 
 impl core::fmt::Display for InterruptRemappingClaims {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "interrupt remapping {} (unused), dmar INTR_REMAP {}",
+            "interrupt remapping {} ({}), dmar INTR_REMAP {}",
             if self.unit { "offered" } else { "absent" },
+            if self.enabled { "on" } else { "off" },
             if self.platform { "set" } else { "clear" },
         )
     }
@@ -191,8 +195,8 @@ pub fn first_drhd(body: &[u8]) -> Option<Drhd> {
 #[doc(alias = "DRHD")]
 pub const MAXIMUM_TRANSLATION_UNITS: usize = 8;
 /// How many PCI device-scope entries [`DmarUnits`] records across every DRHD. Only the two PCI
-/// types are kept (endpoint and sub-hierarchy); IOAPIC, HPET and ACPI-namespace entries name no
-/// requester id this kernel confines and are skipped.
+/// types are kept (endpoint and sub-hierarchy); IOAPIC entries go to [`DmarUnits::io_apics`], and
+/// HPET and ACPI-namespace entries name no requester id this kernel confines and are skipped.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_SCOPES: usize = 32;
@@ -219,6 +223,17 @@ pub const MAXIMUM_RESERVED_REGION_DEVICES: usize = 16;
 pub const SCOPE_PCI_ENDPOINT: u8 = 1;
 /// Device-scope type 2: a PCI-PCI bridge, and with it **every device below it**.
 pub const SCOPE_PCI_SUBHIERARCHY: u8 = 2;
+/// Device-scope type 3: an IO APIC, named by its APIC id in the entry's enumeration id and by the
+/// path its interrupt messages carry as their source id (VT-d 4.1 section 8.3.1.1).
+///
+/// Name: provisional (milestone 1068, 2026-11-11 UTC).
+#[doc(alias = "IOAPIC")]
+pub const SCOPE_IO_APIC: u8 = 3;
+/// How many IO APIC scope entries [`DmarUnits`] records. A client part has one IO APIC and a
+/// server one per socket or so; a fifth sets [`DmarUnits::truncated`].
+///
+/// Name: provisional (milestone 1068, 2026-11-11 UTC).
+pub const MAXIMUM_IO_APIC_SCOPES: usize = 4;
 
 /// The fixed part of a device-scope entry before its path: type, length, flags, reserved,
 /// enumeration id, start bus. VT-d 4.1 section 8.3.1; QEMU's `insert_scope` writes the same six.
@@ -293,6 +308,20 @@ impl DeviceScope {
         }
         None
     }
+}
+
+/// **One IO APIC a DRHD's scope names**: which APIC id it is, and the path whose end is the
+/// requester id its interrupt messages carry (VT-d 4.1 section 8.3.1.1). An interrupt-remapping
+/// entry for one of its lines verifies that requester id, so a device that forges the line's
+/// message is refused.
+///
+/// Name: provisional (milestone 1068, 2026-11-11 UTC).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct IoApicScope {
+    /// The IO APIC's id, as the MADT's IO APIC entry also gives it (the scope's enumeration id).
+    pub io_apic_id: u8,
+    /// The path, with `unit` the index of the DRHD whose scope names it.
+    pub scope: DeviceScope,
 }
 
 /// **How a unit came to own a device**, which is the half of the answer a bench reader needs to
@@ -380,6 +409,10 @@ pub struct DmarUnits {
     /// claim, kept beside the units whose own claim (`ECAP.IR`) the kernel reads from each. False
     /// for a body too short to hold the flags byte. Name: provisional (milestone 378, 2026-10-18).
     pub platform_interrupt_remapping: bool,
+    /// Every IO APIC scope entry, across every DRHD, in table order. Name: provisional
+    /// (milestone 1068, 2026-11-11 UTC).
+    pub io_apics: [IoApicScope; MAXIMUM_IO_APIC_SCOPES],
+    pub io_apic_count: usize,
 }
 
 impl Default for DmarUnits {
@@ -401,17 +434,22 @@ impl Default for DmarUnits {
             rmrrs_refused: 0,
             truncated: false,
             platform_interrupt_remapping: false,
+            io_apics: [IoApicScope::default(); MAXIMUM_IO_APIC_SCOPES],
+            io_apic_count: 0,
         }
     }
 }
 
-/// Decode one scope list into `out`, tagging each entry with `owner`. Total for any input: a
-/// malformed list stops and sets `truncated`, and an entry past `out` sets it too.
+/// Decode one scope list into `out`, tagging each entry with `owner`, and its IO APIC entries into
+/// `io_apics` when the list is a DRHD's (`None` for an RMRR's, whose scopes name only PCI
+/// devices). Total for any input: a malformed list stops and sets `truncated`, and an entry past
+/// its array sets it too.
 fn read_scope_list(
     mut list: &[u8],
     owner: u8,
     out: &mut [DeviceScope],
     count: &mut usize,
+    mut io_apics: Option<(&mut [IoApicScope], &mut usize)>,
     truncated: &mut bool,
 ) {
     while list.len() >= 2 {
@@ -423,11 +461,12 @@ fn read_scope_list(
         }
         let entry = &list[..len];
         list = &list[len..];
-        if kind != SCOPE_PCI_ENDPOINT && kind != SCOPE_PCI_SUBHIERARCHY {
+        let is_io_apic = kind == SCOPE_IO_APIC && io_apics.is_some();
+        if kind != SCOPE_PCI_ENDPOINT && kind != SCOPE_PCI_SUBHIERARCHY && !is_io_apic {
             continue;
         }
         let hops = (len - SCOPE_FIXED_LEN) / 2;
-        if hops == 0 || hops > MAXIMUM_SCOPE_PATH || *count == out.len() {
+        if hops == 0 || hops > MAXIMUM_SCOPE_PATH {
             *truncated = true;
             continue;
         }
@@ -443,6 +482,25 @@ fn read_scope_list(
                 entry[SCOPE_FIXED_LEN + 2 * h],
                 entry[SCOPE_FIXED_LEN + 2 * h + 1],
             );
+        }
+        if is_io_apic {
+            let Some((io_out, io_count)) = io_apics.as_mut() else {
+                continue;
+            };
+            if **io_count == io_out.len() {
+                *truncated = true;
+                continue;
+            }
+            io_out[**io_count] = IoApicScope {
+                io_apic_id: entry[4],
+                scope: s,
+            };
+            **io_count += 1;
+            continue;
+        }
+        if *count == out.len() {
+            *truncated = true;
+            continue;
         }
         out[*count] = s;
         *count += 1;
@@ -487,6 +545,7 @@ impl DmarUnits {
                         unit as u8,
                         &mut u.scopes,
                         &mut u.scope_count,
+                        Some((&mut u.io_apics, &mut u.io_apic_count)),
                         &mut u.truncated,
                     );
                 }
@@ -512,6 +571,7 @@ impl DmarUnits {
                         index as u8,
                         &mut u.rmrr_scopes,
                         &mut u.rmrr_scope_count,
+                        None,
                         &mut u.truncated,
                     );
                 }
@@ -524,6 +584,28 @@ impl DmarUnits {
     /// The recorded DRHDs, in table order.
     pub fn units(&self) -> &[Drhd] {
         &self.drhds[..self.drhd_count]
+    }
+
+    /// **The unit an IO APIC's interrupts reach, and the requester id they carry**, for the IO
+    /// APIC whose id is `io_apic_id`: `(index into` [`DmarUnits::units`]`, source id)`. `None`
+    /// when no DRHD scope names it, or its path names hardware not on this machine; a VT-d unit
+    /// cannot then verify the IO APIC's messages, and Linux refuses interrupt remapping for that
+    /// reason (`ir_parse_ioapic_hpet_scope`). `bridge` is [`DmarUnits::owner`]'s.
+    ///
+    /// Name: provisional (milestone 1068, 2026-11-11 UTC).
+    pub fn io_apic_source(
+        &self,
+        io_apic_id: u8,
+        bridge: &mut dyn FnMut(u8, u8, u8) -> Option<(u8, u8)>,
+    ) -> Option<(usize, u16)> {
+        let found = self.io_apics[..self.io_apic_count]
+            .iter()
+            .find(|a| a.io_apic_id == io_apic_id)?;
+        let (bus, dev, func) = found.scope.resolve(bridge)?;
+        Some((
+            found.scope.unit as usize,
+            (bus as u16) << 8 | (dev as u16 & 0x1f) << 3 | (func as u16 & 7),
+        ))
     }
 
     /// The recorded RMRRs, in table order. Name: provisional (milestone 594).
@@ -703,12 +785,13 @@ mod tests {
                 InterruptRemappingClaims {
                     unit: !platform,
                     platform: u.platform_interrupt_remapping,
+                    enabled: !platform,
                 }
             );
             let want = if platform {
-                "interrupt remapping absent (unused), dmar INTR_REMAP set"
+                "interrupt remapping absent (off), dmar INTR_REMAP set"
             } else {
-                "interrupt remapping offered (unused), dmar INTR_REMAP clear"
+                "interrupt remapping offered (on), dmar INTR_REMAP clear"
             };
             assert_eq!(line, want);
         }
@@ -849,6 +932,50 @@ mod tests {
         b
     }
 
+    /// An IO APIC scope entry: [`scope`]'s shape with the APIC id in the enumeration-id byte.
+    fn io_apic_scope(io_apic_id: u8, start_bus: u8, path: &[(u8, u8)]) -> std::vec::Vec<u8> {
+        let mut s = scope(SCOPE_IO_APIC, start_bus, path);
+        s[4] = io_apic_id;
+        s
+    }
+
+    /// **An IO APIC scope gives the unit its lines reach and the requester id they carry**
+    /// (milestone 1068). q35's table names IO APIC 0 at bus 0xff, 00.0, which QEMU's model sends
+    /// every IO APIC message under; the 7040's names it at bus 0xf0, 1f.0. Asking for an id the
+    /// table does not name answers `None`, which is what keeps remapping off, and a fifth IO APIC
+    /// marks the table truncated rather than dropping one silently.
+    #[test]
+    fn an_io_apic_scope_names_its_unit_and_its_source_id() {
+        let q35 = DmarUnits::parse(&dmar(&[drhd(
+            1,
+            0xfed9_0000,
+            &[&io_apic_scope(0, 0xff, &[(0, 0)])],
+        )]));
+        assert_eq!(
+            q35.io_apic_source(0, &mut |_, _, _| None),
+            Some((0, 0xff00))
+        );
+        assert_eq!(q35.io_apic_source(1, &mut |_, _, _| None), None);
+        assert_eq!(q35.scope_count, 0, "an IO APIC is not a PCI device scope");
+
+        let client = DmarUnits::parse(&dmar(&[
+            drhd(0, 0xfed9_0000, &[&scope(SCOPE_PCI_ENDPOINT, 0, &[(2, 0)])]),
+            drhd(1, 0xfed9_1000, &[&io_apic_scope(2, 0xf0, &[(0x1f, 0)])]),
+        ]));
+        assert_eq!(
+            client.io_apic_source(2, &mut |_, _, _| None),
+            Some((1, 0xf0f8)),
+            "the catch-all's IO APIC, at f0:1f.0"
+        );
+
+        let five: std::vec::Vec<std::vec::Vec<u8>> =
+            (0..5).map(|i| io_apic_scope(i, 0xff, &[(i, 0)])).collect();
+        let refs: std::vec::Vec<&[u8]> = five.iter().map(|v| v.as_slice()).collect();
+        let crowded = DmarUnits::parse(&dmar(&[drhd(1, 0xfed9_0000, &refs)]));
+        assert!(crowded.truncated);
+        assert_eq!(crowded.io_apic_count, MAXIMUM_IO_APIC_SCOPES);
+    }
+
     /// The bus xenon is expected to have: a root port at 00:1d.0 with the NVMe on bus 1 below it.
     fn xenon_bus(bus: u8, dev: u8, func: u8) -> Option<(u8, u8)> {
         ((bus, dev, func) == (0, 0x1d, 0)).then_some((1, 1))
@@ -870,10 +997,7 @@ mod tests {
             ),
         ]);
         let u = DmarUnits::parse(&body);
-        assert!(
-            !u.truncated,
-            "IOAPIC and HPET scopes are skipped, not errors"
-        );
+        assert!(!u.truncated, "IOAPIC and HPET scopes are not errors");
         assert_eq!(u.units().len(), 2);
         assert_eq!(first_drhd(&body).unwrap().register_base, 0xfed9_0000);
         let (unit, how) = u.owner(0, 1, 0, 0, &mut xenon_bus).unwrap().unwrap();

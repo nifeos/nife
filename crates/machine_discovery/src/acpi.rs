@@ -12,8 +12,6 @@
 //! - The MADT's `PCAT_COMPAT` (8259s present) is reported; whoever brings the APIC up masks them.
 //! - A DMAR's scopes and RMRRs fill fixed arrays, and overflow sets [`DmarUnits::truncated`];
 //!   other scope kinds and structures (ANDD among them) are not decoded. See the note's "ACPI".
-//! - `Dmar::flags`' `INTR_REMAP` is reported ([`DmarUnits::platform_interrupt_remapping`]) and
-//!   never acted on; this kernel does not build interrupt remapping.
 //! - An MCFG window with `end_bus` below `start_bus` is reported as written; [`McfgEntry::size`]
 //!   answers zero.
 
@@ -37,9 +35,10 @@ pub mod ivrs;
 use bytes::{u16, u32, u64};
 pub use dmar::{
     DeviceScope, Dmar, DmarEntry, DmarStructures, DmarUnits, Drhd, InterruptRemappingClaims,
-    MAXIMUM_RESERVED_REGION_DEVICES, MAXIMUM_RESERVED_REGIONS, MAXIMUM_SCOPE_PATH, MAXIMUM_SCOPES,
-    MAXIMUM_TRANSLATION_UNITS, Ownership, ReservedRegion, SCOPE_PCI_ENDPOINT,
-    SCOPE_PCI_SUBHIERARCHY, dmar_structures, first_drhd, parse_dmar,
+    IoApicScope, MAXIMUM_IO_APIC_SCOPES, MAXIMUM_RESERVED_REGION_DEVICES, MAXIMUM_RESERVED_REGIONS,
+    MAXIMUM_SCOPE_PATH, MAXIMUM_SCOPES, MAXIMUM_TRANSLATION_UNITS, Ownership, ReservedRegion,
+    SCOPE_IO_APIC, SCOPE_PCI_ENDPOINT, SCOPE_PCI_SUBHIERARCHY, dmar_structures, first_drhd,
+    parse_dmar,
 };
 pub use fadt::{ArmBoot, ResetRegister, ResetSpace, parse_arm_boot, parse_fadt_reset};
 pub use gtdt::{GTDT_ACTIVE_LOW, GTDT_EDGE_TRIGGERED, Gtdt, parse_gtdt};
