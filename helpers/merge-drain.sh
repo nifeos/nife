@@ -824,7 +824,8 @@ needs_maintainer() {
 	fi
 	# The open pull requests whose ruling stands (`architect-ruled`, no `held-by-lane`): a file a
 	# head carries byte for byte from one of them is not asked again (#3450, which carried #3434's
-	# ruled §130 edit). Every merge base is read, not one (`--against`; #3416 and #3167 had two).
+	# ruled §130 (how the kernel-resident CMOS RTC reaches the userspace clock service) edit).
+	# Every merge base is read, not one (`--against`; #3416 and #3167 had two).
 	ruled=$(printf '%s' "$resp" | jq -r '.data.repository.pullRequests.nodes[]
 		| select([.labels.nodes[].name] | (index("architect-ruled") and (index("held-by-lane") | not)))
 		| "\(.number):\(.headRefOid)"')

@@ -2247,7 +2247,7 @@ def selftest():
     print(f"  {'ok  ' if ok else 'FAIL'}  against: a finding one merge base lacks is main's, not the PR's")
     if not ok:
         bad.append(f"keep_common: {got!r}")
-    # drop_ruled: #3450 carries #3434's ruled §130 edit byte for byte, and its own §4 edit.
+    # drop_ruled: #3450 carries #3434's ruled §130 edit byte for byte, and an edit of its own to another decision.
     blobs = {('H', 'd/130.md'): 'new130', ('R', 'd/130.md'): 'new130', ('B', 'd/130.md'): 'old130',
              ('RB', 'd/130.md'): 'old130', ('H', 'd/4.md'): 'new4', ('R', 'd/4.md'): 'old4',
              ('B', 'd/4.md'): 'old4', ('RB', 'd/4.md'): 'old4',
