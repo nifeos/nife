@@ -3,9 +3,9 @@
 The logic of a driver for the Synopsys DesignWare Ethernet QoS controller (dwmac 4.x and 5.x
 descriptor format), with the glue for the StarFive JH7110 and its Motorcomm YT8531 PHY (physical
 layer device). It holds the register map, the descriptor formats, the direct memory access (DMA)
-region's layout, the receive and transmit rings, the controller and PHY bring-up sequences, MDIO
-(management data input/output), and a probe that measures whether device DMA is coherent with the
-CPU's caches. It is `no_std` and needs no allocator.
+region's layout, the receive and transmit rings, and the controller and PHY bring-up sequences. It
+also holds MDIO (management data input/output) and a probe that measures whether device DMA is
+coherent with the CPU's caches. It is `no_std` and needs no allocator.
 
 It dereferences no pointer and touches no hardware. You supply register access through the
 `Hardware` trait, the DMA region through `DirectMemoryAccessRegion`, and the tail-pointer writes and
@@ -60,14 +60,14 @@ Six Kani harnesses, in `src/proofs.rs`:
 
 - `a_delivered_frame_always_fits_the_buffer_and_the_room`: for every value a device can write
   into word 3 of a receive descriptor and every caller buffer size, a frame that `receive_verdict`
-  accepts fits the caller's buffer, is at most `MAXIMUM_FRAME_BYTES` bytes, and with its CRC (cyclic redundancy check) fits the
-  receive buffer.
+  accepts fits the caller's buffer and is at most `MAXIMUM_FRAME_BYTES` bytes. With its CRC (cyclic
+  redundancy check), it fits the receive buffer.
 - `every_ring_offset_is_inside_the_region`: for every index, each descriptor and buffer offset
   lies inside its own part of the DMA region.
 - `a_link_is_decoded_only_from_what_the_registers_say`: for every value of the six clause 22
   registers the decode reads, it returns a link only when the status bit is up and the PHY is not
-  isolated; with autonegotiation on, only when it is complete, at a speed and duplex both ends
-  advertise; with it off, at the forced duplex.
+  isolated. With autonegotiation on, it returns one only when autonegotiation is complete, at a
+  speed and duplex both ends advertise; with it off, at the forced duplex.
 - `a_transmit_descriptor_keeps_its_length_inside_its_fields`: for every buffer address and length,
   the transmit descriptor carries the address untouched, the device owns it, it is the first and
   last segment, and the length fits its two fields without reaching a flag bit.
@@ -96,8 +96,8 @@ MDIO sequencing, the PHY configuration writes and controller bring-up have unit 
 - The crate reads no device tree. The `jh7110` module names the compatible strings and node names
   to look for, and `Discovered::from_node`, `mainline_physical_layer_device` and
   `vendor_physical_layer_device` decode the properties of a node you found.
-- On the JH7110 only `gmac0` (`16030000`) is wired; `gmac1`'s clocks have no plan.
-- The API may still change while the driver built on it is finished.
+- On the JH7110 the crate drives only `gmac0` (`16030000`); `gmac1`'s clocks have no plan.
+- The API may still change until the driver built on it is complete.
 
 ## Minimum Rust version
 
@@ -106,7 +106,7 @@ Rust 1.88.
 ## License
 
 You may use this crate under the MIT license (LICENSE-MIT) or the Apache License, version 2.0
-(LICENSE-APACHE), at your option. Parts are adapted from OpenBSD's `dwqe` and `ytphy` drivers under
-the Internet Systems Consortium (ISC) license, and the PHY's link decoding
-(`motorcomm_physical_layer_device`) from `ukphy_status` (OpenBSD's `sys/dev/mii/ukphy_subr.c`) under
-the NetBSD Foundation's BSD-2-Clause license. Both notices are in `src/lib.rs`.
+(LICENSE-APACHE), at your option. Parts adapt OpenBSD's `dwqe` and `ytphy` drivers under the
+Internet Systems Consortium (ISC) license, and the PHY's link decoding
+(`motorcomm_physical_layer_device`) adapts `ukphy_status` (OpenBSD's `sys/dev/mii/ukphy_subr.c`)
+under the NetBSD Foundation's BSD-2-Clause license. Both notices are in `src/lib.rs`.
