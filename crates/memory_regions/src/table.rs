@@ -14,6 +14,11 @@ use generational_table::EntryName;
 
 use crate::{DestroyOutcome, coalesced_watermark, destroy_outcome, split_new_watermark};
 
+#[cfg(kani)]
+mod verification;
+#[cfg(kani)]
+pub(crate) use verification::RegionSnapshot;
+
 /// A region's parent field naming no parent: this region came from the frame allocator rather than from
 /// a [`split`](RegionTable::split), so it is a **root** and its pages go back to the allocator.
 ///
@@ -793,67 +798,6 @@ impl<const N: usize> RegionTable<N> {
         p.children = p.children.saturating_sub(1);
         p.spent.children = p.spent.children.saturating_sub(claim.pages);
         p.watermark = coalesced_watermark(p.watermark, p.retyped_to, live_to, p.children == live);
-    }
-}
-
-/// What the subtree-ceiling harnesses in `proofs.rs` compare before and after a refusal.
-#[cfg(kani)]
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) struct RegionSnapshot {
-    pub(crate) watermark: u64,
-    pub(crate) pinned: bool,
-    pub(crate) children: u32,
-    pub(crate) live: Ceilings,
-    pub(crate) ceilings: Ceilings,
-}
-
-#[cfg(kani)]
-impl<const N: usize> RegionTable<N> {
-    /// Every field a charge, a split or a carve could move, for a live name.
-    pub(crate) fn snapshot(&self, name: u64) -> Option<RegionSnapshot> {
-        self.table.get(entry(name)).map(|r| RegionSnapshot {
-            watermark: r.watermark,
-            pinned: r.pinned,
-            children: r.children,
-            live: r.live,
-            ceilings: r.ceilings,
-        })
-    }
-
-    /// Insert a region in whatever state the subtree-ceiling harnesses in `proofs.rs` choose, so
-    /// one step can start from any state their invariant allows instead of one a short run of
-    /// steps reaches. The region holds no spending record and is pinned as `pinned` says.
-    pub(crate) fn insert_in_any_state(
-        &mut self,
-        parent: u64,
-        (base_page, pages, watermark, retyped_to): (u64, u64, u64, u64),
-        pinned: bool,
-        children: u32,
-        ceilings: Ceilings,
-        live: Ceilings,
-    ) -> Option<u64> {
-        self.table
-            .insert_with(|_| Region {
-                base_page,
-                pages,
-                watermark,
-                retyped_to,
-                pinned,
-                parent,
-                children,
-                spent: Spent::default(),
-                ceilings,
-                live,
-            })
-            .map(EntryName::to_bits)
-    }
-}
-
-/// The per-kind counts behind [`Ceilings`], for the harnesses in `proofs.rs` that build a state.
-#[cfg(kani)]
-impl Ceilings {
-    pub(crate) const fn from_counts(counts: [u32; COUNTED_KINDS]) -> Ceilings {
-        Ceilings(counts)
     }
 }
 
