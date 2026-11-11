@@ -11,14 +11,20 @@ needs_person: yes
 
 Raised by lane proposal/milestones-as-files-or-issues, at the architect's request. Name: provisional.
 
-Reuse: GitHub's own issues, sub-issues and closing keywords, which shapes B and C would take whole;
-and `script/roadmap --index`, which already computes the number index that shape A publishes.
+Ruled 2026-11-11 (UTC): shape A, milestones stay files, with no published index. The ruling also
+answers question 7 of milestone 1018.
+
+Reuse: GitHub's own issues, sub-issues and closing keywords, which shapes B and C would take whole.
 
 ## Recommendation
 
 Keep each milestone a file in the record (shape A below). Code keeps citing a milestone by its
-number. The record repository publishes an index of record numbers on every merge, and a code
-repository checks its citations against that index at the record commit basalt pins. `TODO(milestone N)` keeps its spelling and checks against the same index.
+number. A code repository checks each `milestone N`, `§N` and `TODO(milestone N)` citation by file
+existence at the record commit basalt pins: `design/roadmap/NNNN-*.md` for a milestone,
+`design/decisions/NNNN-*` for a section. No index file exists anywhere. An index is a place where
+merges conflict, and milestone files are already named by number, so the number resolves without
+one. A generated index can be added if the existence check proves too slow; that is compatible.
+`TODO(milestone N)` keeps its spelling.
 
 The reason is not effort. If the three shapes cost the same, A would still win, for three
 measured reasons. Every gate that reads a milestone today reads it at a commit, so anyone can repeat a run, and an
@@ -157,14 +163,14 @@ outcome record stays reviewed text under every shape, since readers check claims
 
 ### A. All files
 
-What changes. Nothing in the block. The record repository's CI publishes an index of record
-numbers (number, title, status, path) with each merge. Each code repository's lint reads that
-index at the record commit basalt pins, and checks `milestone N`, `§N` and `TODO(milestone N)`
-against it. A lane that builds code opens one draft in each repository at the claim, as milestone
+What changes. Nothing in the block, and nothing new is published. Each code repository's lint
+checks `milestone N`, `§N` and `TODO(milestone N)` by file existence at the record commit basalt
+pins: a file matching `design/roadmap/NNNN-*.md` for a milestone, one matching
+`design/decisions/NNNN-*` for a section. A lane that builds code opens one draft in each repository at the claim, as milestone
 1018 already lays out; the record draft carries the status flip and turns ready once the code
 merges.
 
-Cost: S to M, a guess. One published file, one fetch at a pin in the shared lint, and the
+Cost: S to M, a guess. One file-existence check at a pin in the shared lint, and the
 reworked flip gate, which is already provisional work under 1018.
 
 What we lose. The cross-repository flip stays a second pull request through a second queue.
@@ -215,7 +221,7 @@ What we gain. A code pull request that merges marks its work item done in the sa
 no second queue, and the step list becomes clickable.
 
 The code side. `TODO(nifeos/record#N)` against the issue, or `TODO(milestone N)` against the file
-index as in A. The 11,069 citations stay as written in either case.
+file existence as in A. The 11,069 citations stay as written in either case.
 
 ## Prior art
 
@@ -255,8 +261,8 @@ requests #3427 and #3426, titled "1062 step 4" and "1062 step 6".
 
 - Under A it is as it is. Each step lane opens a draft in the code repository and one in the record
   repository. The code merges; the record draft then moves the block to `PARTIAL` with
-  `nifeos/<repo>@<sha>`. A comment in moved code reads `TODO(milestone 1062): ...`, checked against
-  the index.
+  `nifeos/<repo>@<sha>`. A comment in moved code reads `TODO(milestone 1062): ...`, checked by the
+  existence of `design/roadmap/1062-*.md` at the pin.
 - Under B, `nifeos/record#1062` holds the whole block. Labels say `not-started` and
   `needs-person`; a link says blocked by `#811`; decision dependencies are prose links. Editing step
   2's design is an issue edit, unreviewed.
@@ -271,10 +277,10 @@ The record is leaving for its own repository, and its milestone files are what e
 reads. The question is whether the work-tracking part of a milestone (its status, dependencies and
 steps) should move into GitHub issues while the record moves.
 
-Recommended: A, keep milestones as files, and answer the open code-side question with a published
-number index read at basalt's record pin, keeping `TODO(milestone N)`.
+Ruled: A, keep milestones as files, and answer the open code-side question by file existence at
+basalt's record pin, with no index, keeping `TODO(milestone N)`.
 
-- A. Files, with the published index. It also answers milestone 1018's question on code citations.
+- A. Files, with no index. It also answers milestone 1018's question on code citations.
 - B. All issues.
 - C. Files for design text, an issue per milestone for the work item.
 
