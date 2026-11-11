@@ -44,7 +44,7 @@ static REQUEST: AtomicU64 = AtomicU64::new(0);
 ///
 /// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct BroughtUp {
+pub struct BroughtUp {
     /// The status, [`Status::Done`] when every clock runs and every reset is released.
     pub status: Status,
     /// What the server counted.
@@ -55,7 +55,7 @@ impl BroughtUp {
     /// Whether the device's clocks run and its resets are released.
     ///
     /// Name: provisional.
-    pub(crate) fn is_up(&self) -> bool {
+    pub fn is_up(&self) -> bool {
         self.status == Status::Done
     }
 }
