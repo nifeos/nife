@@ -128,6 +128,13 @@ falsifications for our crates?"* This adds to Forks 3 and 4 and changes neither.
   It also dual licenses each crate as nife is: *"nife is MIT OR Apache-2.0, so we should dual
   license our crates as well."*
 
+A crate's README states a hardware run only by naming a version that has one: nife built at the pin
+that names the version, booted on the board by its public procedure, with the device's own success
+line read. It names the version and the board class, never a date, a person or an earlier name, and
+a later release leaves the sentence alone. A run gates that sentence and never a publication; a
+release with no run makes no hardware claim. Milestone 1035 (a crate names the version that ran on
+hardware) holds the definition and the first case.
+
 What nife does at each extraction is a checklist, built with the first (813):
 [what-nife-does-at-each-extraction.md](0857-crates-released-on-their-own/what-nife-does-at-each-extraction.md).
 
