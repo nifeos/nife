@@ -47,7 +47,7 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    `kernel/src/drivers/jh7110_clock_and_reset.rs` shrinks to what the kernel's own
    JH7110 watchdog (milestone 593 (a wedged kernel resets itself)) needs to turn its clock on, and
    the entropy and Ethernet bring-ups ask the server instead.
-   The SD/MMC starters ask it too; the reboot path's I2C5 keeps the kernel's walk until step 5.
+   The SD/MMC starters ask it too.
 3. The DesignWare GMAC control plane, which brings its clocks and resets up through step 2's
    server with §320 (the JH7110 clock and reset wire)'s bring-up verb. Its
    userspace control process holds the channel and MAC pages. `kernel/src/designware_ethernet.rs`
@@ -281,7 +281,7 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 - **Done.** Step 4 in #3427 (nifeos/nife@7e45d7269).
 - **Done.** Step 6 in #3426 (nifeos/nife@cc48e8b34).
 - **Outstanding.** Step 1: `kernel/src/e1000e.rs` exists, and 811 is NOT-STARTED.
-- **Done.** Step 2 in #3475: `components/src/jh7110_clock_and_reset.rs`.
+- **Done.** Step 2 in #3475.
 - **Outstanding.** Steps 3 and 5: `kernel/src/designware_ethernet.rs` and
   `kernel/src/reboot/designware_i2c.rs` exist.
 - **Outstanding.** Step 7: the measurement; "Cost and effort" still reads not measured.
