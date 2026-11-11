@@ -1,10 +1,10 @@
 /// **The spawn-slot convention**: a supervised child is spawned with its
-/// supervision rendezvous in this reserved slot, by [`crate::thread_control_block::CAPABILITY_INSERT`] with
+/// supervision endpoint in this reserved slot, by [`crate::thread_control_block::CAPABILITY_INSERT`] with
 /// an explicit target or a [`Spawn`](../user/struct.Spawn.html) grant. At `START` the kernel reads
 /// it: a `Rendezvous` capability makes the thread supervised, is recorded as its fault target and
 /// is cleared, so the child cannot forge fault messages on it. An empty slot means unsupervised:
 /// the thread dies and is reaped at once. It is the last slot, away from the low slots a child's
-/// grants fill, so an unsupervised child never lands a working rendezvous here by accident.
+/// grants fill, so an unsupervised child never lands a working endpoint here by accident.
 ///
 /// Name: ratified 2026-11-11 (UTC). The slot is a capability-table position and the rendezvous is
 /// the object it holds; the value stays the last slot. Refused `FAULT_EP_SLOT` (`EP` abbreviates
