@@ -1,6 +1,6 @@
 //! What the kernel and the JH7110 clock and reset server agree on: where the spawner maps the first
 //! page of each window the server holds, and the kind each has on the startup page. The server
-//! (`components/src/jh7110_clock_and_reset_server.rs`) reads the page to learn which windows it
+//! (`components/src/jh7110_clock_and_reset.rs`) reads the page to learn which windows it
 //! holds; a machine whose tree names no always-on window, for one, gets a server that serves no
 //! always-on device. Its clients speak `jh7110_clock_and_reset_contract`, and
 //! `jh7110_clock_and_reset_devices` holds what each badge brings up. See

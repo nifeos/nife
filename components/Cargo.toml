@@ -363,8 +363,8 @@ bench = false
 # step 2): the one process that writes the shared clock and reset windows, bringing up only the
 # device a caller's badge names (§320 (the JH7110 clock and reset wire)). Name provisional.
 [[bin]]
-name = "jh7110_clock_and_reset_server"
-path = "src/jh7110_clock_and_reset_server.rs"
+name = "jh7110_clock_and_reset"
+path = "src/jh7110_clock_and_reset.rs"
 test = false
 bench = false
 
@@ -707,7 +707,7 @@ uptime = { version = "0.1.0", path = "../crates/uptime" }
 elf = { version = "0.1.0", path = "../crates/elf" }
 entropy_contract = { version = "0.1.0", path = "../crates/entropy_contract" }
 # The JH7110's clock and reset device table, walk and request dispatch, host-tested in its own
-# crate; jh7110_clock_and_reset_server.rs is the volatile shell of register stores over it.
+# crate; jh7110_clock_and_reset.rs is the volatile shell of register stores over it.
 jh7110_clock_and_reset_devices = { version = "0.1.0", path = "../crates/jh7110_clock_and_reset_devices" }
 # The JH7110 TRNG's register logic, DTB discovery and byte pool (milestone 159), host-tested in
 # the crate itself; jh7110_entropy.rs is the volatile shell of register writes over it.

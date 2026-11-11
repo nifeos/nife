@@ -90,6 +90,9 @@ programs = [
     "non_volatile_memory_express",
     "designware_mobile_storage",
     "jh7110_entropy",
+    # The JH7110 clock and reset server: the entropy, Ethernet and SD/MMC starters ask it to bring
+    # their device up, so on a JH7110 those drivers start only where the image carries it.
+    "jh7110_clock_and_reset",
     "gpu_driver",
     "framebuffer_driver",
     "keyboard_driver",

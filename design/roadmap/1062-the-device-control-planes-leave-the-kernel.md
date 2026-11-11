@@ -283,7 +283,7 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 - **Done.** Step 4 in #3427 (nifeos/nife@7e45d7269).
 - **Done.** Step 6 in #3426 (nifeos/nife@cc48e8b34).
 - **Outstanding.** Step 1: `kernel/src/e1000e.rs` exists, and 811 is NOT-STARTED.
-- **Done.** Step 2 in #3475: `components/src/jh7110_clock_and_reset_server.rs`.
+- **Done.** Step 2 in #3475: `components/src/jh7110_clock_and_reset.rs`.
 - **Outstanding.** Steps 3 and 5: `kernel/src/designware_ethernet.rs` and
   `kernel/src/reboot/designware_i2c.rs` exist.
 - **Outstanding.** Step 7: no `driver_process_contract::virtio` module exists.
