@@ -72,6 +72,9 @@ megahertz or millihertz. The IEC binary prefixes (`kib`, `mib`, `gib`) are symbo
 
 - A length or a limit carries its unit (`MAXIMUM_NAME_BYTES`, never `MAXIMUM_NAME_LEN`). A count of
   things names the things (`MAXIMUM_COLUMNS`).
+- A parts-per-million quantity ends `_PARTS_PER_MILLION` (`parts_per_million` in lower case), never
+  `_PPM`. The symbol counts only as the last part of a name with more than one part, because `ppm` is
+  also the Portable PixMap image format: a bare `ppm` and one mid-name stay.
 - A Rust standard-library or smoltcp method keeps its owner's spelling (`as_nanos`, `total_millis`).
 - `helpers/vendored_name_gates.py` counts every identifier that carries a symbol of that list, at a
   ceiling of 0, and `unit --unclear` lists the few that keep one on purpose, each with its reason.
