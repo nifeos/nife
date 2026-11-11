@@ -36,42 +36,35 @@ attributions is the module documentation of `motorcomm_physical_layer_device`.
 | `CGR_RX_CLK_EN` (bit 12), `ESC1R_SLEEP_SW` (bit 15) | `motorcomm.c` only, `YT8521_CGR_RX_CLK_EN` and `YT8521_ESC1R_SLEEP_SW`, which `yt8531_config_init` clears for `motorcomm,keep-pll-enabled` and `motorcomm,auto-sleep-disabled` |
 | `MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID` (`0x4f51e91b`) | `motorcomm.c`'s `PHY_ID_YT8531`, matched with `PHY_ID_MATCH_EXACT`; `ytphy.c`'s `ytphys` and `mcommphy.c`'s `mcommphys` match the OUI and model |
 
-Names a later rule reaches. Both register identifiers stand: each says what its register is, and
-FreeBSD's spelling supports "clock gating" and "sleep control 1". Their aliases do not meet
-`design/naming.md` (Registers and constants, and the alias rule before a first release):
+Both register constants carry OpenBSD's spelling and FreeBSD's as aliases, and no Linux spelling or
+earlier spelling of this tree, as `design/naming.md` requires before a first release.
 
-| item | alias now | recommended alias set |
-|---|---|---|
-| `MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER` | `clock gating register`, `EXT_CLK_GATE`, `YT8521_CLOCK_GATING_REG` | `clock gating register`, `YT8511_EXT_CLK_GATE`, `PHY_CLOCK_GATING_REG` |
-| `MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER` | `extended register, sleep control 1`, `EXT_SLEEP_CTRL`, `YT8521_EXTREG_SLEEP_CONTROL1_REG` | `extended register, sleep control 1`, `YT8511_EXT_SLEEP_CTRL`, `PHY_SLEEP_CONTROL1_REG` |
+Result of `script/crate-standalone`. Clean, with Kani, on 2026-11-11 (UTC). It runs none of the
+template's naming and prose gates.
 
-`EXT_CLK_GATE` and `EXT_SLEEP_CTRL` are this tree's earlier spellings, which a crate carries none
-of before its first release, and the OpenBSD spelling is the whole one. Linux's spelling is cited
-only where no BSD source names the thing, and both BSD sources name these two. The doc comments'
-openings follow the same choice.
-
-Result of `script/crate-standalone`. Clean.
-
-Names. Under Naming rules, below. The
-template's checks find nothing, two ratified groups wait for the architect, and the parameters
-carry spelled-out names, provisional.
+Names. Under Naming rules, below, with the template gates' 118 findings. The parameters carry
+spelled-out names, provisional.
 
 Outstanding before the move.
 
 | item | owner |
 |---|---|
-| The two alias sets above. | architect |
+| The 118 template gate findings, in this tree: a rename of a ratified public name goes to the architect as one table; private names, parameters, tests and doc comments are the maintainer's provisional calls. | a rename lane |
 
-Recommendation. Ready for review once the architect rules on the two alias sets.
+Recommendation. The architect cleared the move on 2026-11-11 (UTC), and has not cleared the tag or
+publication. The move waits for the template gates.
 
 ## Naming rules
 
-The template's checks, run with `--manifest` over `src/*.rs`
-(`vendor/crate-workflows/helpers/`):
+The template's checks at the commit the moved crate repositories pin (`cd1b484`), run as its check
+job runs them over the tree `script/crate-move --dry-run` stages:
 
 | rule | result |
 |---|---|
-| spelled-out words (`spelled_out.py`) | 0 findings in 1,202 names. `100BASE-TX` keeps `TX` as the standard's name, in the kept form with a `doc(alias)`. |
+| spelled-out words (`spelled_out.py`) | 2 findings in 1,212 names: the two private `100BASE_TX` constants. `TX` there is the standard's name for the twisted-pair layer, not transmit, and the gate keeps no source spelling on an integer constant. |
+| register rules (`register_names.py`) | 91 findings: 60 uses of `address` with no `bus` or `mac` qualifier (a PHY's management bus address, the station address), 20 lengths and sizes with no unit (burst lengths among them), 4 offsets that do not end `_REGISTER`, 2 constants the gate calls unexpanded, 3 doc comments that state a source spelling with no matching alias. |
+| acronyms in prose (`prose_acronyms.py`) | 25 findings, each an acronym in a doc comment not expanded at its first use. |
+| README prose caps and passives | pass. |
 | units spelled out (`unit_symbols.py`) | 0 findings. Picoseconds, microamps and millivolts are spelled in the names that said `_PS`, `ua` and `mv`. |
 | question shape (`question_shape.py`) | 0 findings. `region_in_reach` and the simulator's `receiving` take `is_`. |
 | British spelling | 0 findings. |
@@ -114,7 +107,8 @@ Ratified names that a later rule reached, and the names they now have.
 | the parameter `region` of `network_interface_controller::configure` | the same address rule: it is the base physical address of the controller's DMA region | `region_physical_address` |
 | the parameter `address` of `Tails::set_receive_tail` and `set_transmit_tail`, and of every implementation | it is the low 32 bits of the tail pointer, not an address | `tail_pointer_low_bits` |
 
-Borderline, left as they are for the architect:
+Borderline, kept as they are: decided by the maintainer, provisional (2026-11-11 UTC), since each
+passes the template's gates and an unreleased crate can still rename them:
 
 | names | why |
 |---|---|

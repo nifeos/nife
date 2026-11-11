@@ -44,13 +44,13 @@ pub(crate) const EXTENDED_REGISTER_ADDRESS_PORT: u8 = 0x1e;
 #[doc(alias = "YT8511_REG_DATA")]
 pub(crate) const EXTENDED_REGISTER_DATA_PORT: u8 = 0x1f;
 
-/// **Clock gate register** (`YT8511_EXT_CLK_GATE`, `ytphy.c`). Linux calls it
-/// `YT8521_CLOCK_GATING_REG` (`motorcomm.c`) and FreeBSD `PHY_CLOCK_GATING_REG` (`mcommphy.c`).
+/// **Clock gate register** (`YT8511_EXT_CLK_GATE`, `ytphy.c`). FreeBSD calls it
+/// `PHY_CLOCK_GATING_REG` (`mcommphy.c`) and Linux `YT8521_CLOCK_GATING_REG` (`motorcomm.c`).
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "clock gating register")]
-#[doc(alias = "EXT_CLK_GATE")]
-#[doc(alias = "YT8521_CLOCK_GATING_REG")]
+#[doc(alias = "YT8511_EXT_CLK_GATE")]
+#[doc(alias = "PHY_CLOCK_GATING_REG")]
 pub const MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER: u16 = 0x000c;
 /// **Clock gating register, receive clock enable** (`YT8521_CGR_RX_CLK_EN`, `motorcomm.c`). Clear
 /// it to keep the receive clock running with no cable; Linux clears it for
@@ -61,14 +61,14 @@ pub const MOTORCOMM_EXTENDED_CLOCK_GATING_REGISTER: u16 = 0x000c;
 #[doc(alias = "receive clock enable")]
 #[doc(alias = "YT8521_CGR_RX_CLK_EN")]
 pub(crate) const CLOCK_GATING_RECEIVE_CLOCK_ENABLE: u16 = 1 << 12;
-/// **Extended register, sleep control** (`YT8511_EXT_SLEEP_CTRL`, `ytphy.c`). Linux calls it
-/// `YT8521_EXTREG_SLEEP_CONTROL1_REG` (`motorcomm.c`) and FreeBSD `PHY_SLEEP_CONTROL1_REG`
-/// (`mcommphy.c`).
+/// **Extended register, sleep control** (`YT8511_EXT_SLEEP_CTRL`, `ytphy.c`). FreeBSD calls it
+/// `PHY_SLEEP_CONTROL1_REG` (`mcommphy.c`) and Linux `YT8521_EXTREG_SLEEP_CONTROL1_REG`
+/// (`motorcomm.c`).
 ///
 /// Name: ratified 2026-11-02 (UTC), #3094.
 #[doc(alias = "extended register, sleep control 1")]
-#[doc(alias = "EXT_SLEEP_CTRL")]
-#[doc(alias = "YT8521_EXTREG_SLEEP_CONTROL1_REG")]
+#[doc(alias = "YT8511_EXT_SLEEP_CTRL")]
+#[doc(alias = "PHY_SLEEP_CONTROL1_REG")]
 pub const MOTORCOMM_EXTENDED_SLEEP_CONTROL_1_REGISTER: u16 = 0x0027;
 /// **Sleep control 1, sleep switch** (`YT8521_ESC1R_SLEEP_SW`, `motorcomm.c`). Clear it to stop the
 /// PHY sleeping when the cable is out, which also stops its clocks. Linux clears it for
