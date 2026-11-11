@@ -573,6 +573,25 @@ mod tests {
         }
     }
 
+    /// A length exactly equal to a field's cap is the longest legal value and reads back whole, in
+    /// every field, so the check against the cap refuses only what lies past it.
+    #[test]
+    fn a_length_equal_to_its_cap_reads_the_whole_field() {
+        let fields = [
+            (OFF_TZ_LEN, OFF_TZ, MAXIMUM_TIME_ZONE_BYTES),
+            (OFF_LANG_LEN, OFF_LANG, MAXIMUM_LOCALE_BYTES),
+            (OFF_TERM_LEN, OFF_TERM, MAXIMUM_TERMINAL_TYPE_BYTES),
+        ];
+        for (len_off, data_off, cap) in fields {
+            let mut bytes = PageBuilder::new().build();
+            bytes[len_off] = cap as u8;
+            bytes[data_off..data_off + cap].fill(b'a');
+            let read = field_bytes(&bytes, len_off, data_off, cap).unwrap();
+            assert_eq!(read.len(), cap);
+            assert!(read.iter().all(|&b| b == b'a'));
+        }
+    }
+
     /// A zero length byte after the magic reads as absent: an assembler that wrote the magic but
     /// never declared the time zone.
     #[test]
