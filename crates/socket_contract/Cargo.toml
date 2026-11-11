@@ -6,9 +6,10 @@ rust-version = "1.88"
 description = "The socket contract: the operations, reply words, port grants and shared-frame layout a network stack and its clients agree on, each socket being its own capability"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
+repository = "https://github.com/nifeos/socket_contract"
 keywords = ["no-std", "sockets", "capabilities"]
 categories = ["no-std", "embedded", "network-programming"]
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+publish = false     # set to true only in the release that publishes
 
 [lints.rust]
 # `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.

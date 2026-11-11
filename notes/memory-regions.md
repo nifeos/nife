@@ -192,7 +192,7 @@ returned has left the table while its pages are still being revoked, so the scan
 sits. Dropping the watermark under it would let the parent carve pages a peer may still map, the
 use-after-free of §13 (capability revocation and untyped reclamation). The parent's child count
 tells, because it drops at the return and not at the claim. A count above the live children the scan
-found means a sibling in flight (or the phantom child below), and then only the LIFO un-bump
+found means a sibling in flight, and then only the LIFO un-bump
 happens. The next return with nothing in flight reclaims the holes, because the scan starts from the
 live set each time. The count dropping at the return is also what keeps the parent from being
 reclaimed while this child's pages are in flight. Decrementing at the claim would reopen the claim's
@@ -264,10 +264,6 @@ Limits that remain:
   declines it and records non-binding guidance for whoever has a customer: cause-specific `Error`
   variants, the shape of `crates/timetable`'s `Unbacked`/`Refusal` split and POSIX's
   `EMFILE`/`ENFILE`.
-- **A split refused for a full table still bumps the parent**, which can then never be reclaimed.
-  The phantom child also stops `return_to_parent` coalescing, so the parent keeps only the LIFO
-  rule. `RegionTable::split`'s `# BUGS` has the reproduction, and
-  [region-split-on-a-full-table.md](region-split-on-a-full-table.md) the proposal.
 - A hole under a live child is not reused while that child lives, because `split` only bumps. A
   parent whose children always overlap (each carved before the one below it returns) never drains,
   so its holes never close. With every reap held back 150 ms, the riscv64 swish-check pool fills. A
