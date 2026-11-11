@@ -114,17 +114,9 @@ fn boot_hart_from_protocol(services: &BootServices) -> Option<u64> {
 }
 
 fn boot_hart_from_device_tree(device_tree: *const u8) -> Option<u64> {
-    // SAFETY: the firmware installed this table; the header states its length.
-    let header = unsafe { core::slice::from_raw_parts(device_tree, 8) };
-    let total = u32::from_be_bytes([header[4], header[5], header[6], header[7]]) as usize;
-    // The same ceiling `DeviceTreeBlob::from_ptr` applies, for the same reason: the header's
-    // length is believed before anything is checked, and a lying one must not become a slice.
-    if total > device_tree_blob::MAXIMUM_TOTALSIZE {
-        return None;
-    }
-    // SAFETY: as above, and `total` is now bounded.
-    let bytes = unsafe { core::slice::from_raw_parts(device_tree, total) };
-    let tree = device_tree_blob::DeviceTreeBlob::from_bytes(bytes).ok()?;
+    // SAFETY: the firmware installed this table under the device-tree GUID and it outlives boot
+    // services; `from_ptr` checks the magic and the ceiling before it builds a slice.
+    let tree = unsafe { device_tree_blob::DeviceTreeBlob::from_ptr(device_tree) }.ok()?;
     let value = tree.node_prop(b"chosen", b"boot-hartid").ok()??;
     match value.len() {
         4 => Some(u64::from(u32::from_be_bytes(value.try_into().ok()?))),
