@@ -65,16 +65,24 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
 
     // The channels. The spawner serves `req` and answers on `rep`; `childfault` is where the
     // sub-server's deaths go (sub_server_supervisor receives them); `rootfault` is where OUR children's deaths go.
-    let Ok(req) = process_builder::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS) else {
+    let Ok(req) =
+        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::objtype::RENDEZVOUS)
+    else {
         bail(5)
     };
-    let Ok(rep) = process_builder::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS) else {
+    let Ok(rep) =
+        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::objtype::RENDEZVOUS)
+    else {
         bail(6)
     };
-    let Ok(childfault) = process_builder::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS) else {
+    let Ok(childfault) =
+        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::objtype::RENDEZVOUS)
+    else {
         bail(7)
     };
-    let Ok(rootfault) = process_builder::retype_obj_from(ROOT_UT, abi::objtype::RENDEZVOUS) else {
+    let Ok(rootfault) =
+        process_builder::retype_into_kernel_object_from(ROOT_UT, abi::objtype::RENDEZVOUS)
+    else {
         bail(8)
     };
     let Ok(sp_ut) = process_builder::memory_region_split(ROOT_UT, SPAWNER_BUDGET_PAGES) else {

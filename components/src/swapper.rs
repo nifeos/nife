@@ -1411,14 +1411,14 @@ fn image<'a>(fs: &nifefs::Fs<'a>, name: &str, stage: u64) -> elf::Elf<'a> {
 }
 
 fn obj(objtype: u64, stage: u64) -> u64 {
-    match process_builder::retype_obj_from(ROOT_UT, objtype) {
+    match process_builder::retype_into_kernel_object_from(ROOT_UT, objtype) {
         Ok(s) => s,
         Err(()) => bail(stage),
     }
 }
 
 fn page_frame(stage: u64) -> u64 {
-    match process_builder::retype_page_frame_from(ROOT_UT) {
+    match process_builder::retype_into_page_frame_from(ROOT_UT) {
         Ok(s) => s,
         Err(()) => bail(stage),
     }

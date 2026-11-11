@@ -767,7 +767,7 @@ fn bay(pages: u64) -> u64 {
 }
 
 fn obj(objtype: u64) -> u64 {
-    match process_builder::retype_obj_from(s::BUDGET, objtype) {
+    match process_builder::retype_into_kernel_object_from(s::BUDGET, objtype) {
         Ok(slot) => slot,
         Err(()) => fail(),
     }

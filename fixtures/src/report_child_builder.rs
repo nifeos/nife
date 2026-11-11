@@ -24,7 +24,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use process_builder::{build_child, retype_page_frame_from, start_child};
+use process_builder::{build_child, retype_into_page_frame_from, start_child};
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{exit, require, send};
 
@@ -47,7 +47,7 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
     };
     let grants = [(REPORT, abi::rights::WRITE)];
     // One page of the building budget, mapped into the child as the window its startup page lists.
-    let Ok(window_frame) = retype_page_frame_from(MEMORY_REGION) else {
+    let Ok(window_frame) = retype_into_page_frame_from(MEMORY_REGION) else {
         refuse()
     };
     let window = capability_witness_contract::REPORT_CHILD_WINDOW;

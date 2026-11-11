@@ -20,8 +20,11 @@ use crate::sched;
 /// Every kind carries the budget's rights and no others, through `budget.mint_child` (milestone
 /// 824 (a retype mints no right its budget lacks)). The root budget is `Rights::ALL`, so the
 /// progenitor still gets every right on what it makes.
+///
+/// Name: ratified 2026-11-11 (UTC), beside its neighbours `memory_region_retype` and
+/// `memory_region_split`. Refused `memory_region_retype_obj` (abbreviates "object").
 #[inline(never)]
-pub(super) fn memory_region_retype_obj(
+pub(super) fn memory_region_retype_object(
     budget: Capability,
     region: u64,
     kind: u64,

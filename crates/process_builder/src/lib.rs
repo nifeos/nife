@@ -250,7 +250,7 @@ pub fn build_child_space(
         return Err(());
     }
 
-    let aspace = retype_obj_from(build_ut, abi::objtype::ADDRESS_SPACE)?;
+    let aspace = retype_into_kernel_object_from(build_ut, abi::objtype::ADDRESS_SPACE)?;
     match lay_out_child(own_ut, build_ut, elf, endow, aspace) {
         Ok(tcb) => Ok((
             Child {
@@ -305,7 +305,7 @@ fn lay_out_child(
     }
 
     for k in 0..endow.stack_pages {
-        let stack_frame = retype_page_frame_from(build_ut)?;
+        let stack_frame = retype_into_page_frame_from(build_ut)?;
         let va = CHILD_STACK_VA - k * PAGE;
         if address_space_map_into(aspace, va, stack_frame, abi::address_space::MAP_RW) != 0 {
             capability_delete(stack_frame);
@@ -368,7 +368,7 @@ fn lay_out_child(
         }
     }
 
-    let tcb = retype_obj_from(build_ut, abi::objtype::THREAD_CONTROL_BLOCK)?;
+    let tcb = retype_into_kernel_object_from(build_ut, abi::objtype::THREAD_CONTROL_BLOCK)?;
     if endow_child(tcb, endow, aspace).is_err() {
         capability_delete(tcb);
         return Err(());
@@ -484,7 +484,7 @@ fn fill_and_map(
     mode: u64,
     fill: impl FnOnce(&mut [u8]) -> Result<(), ()>,
 ) -> Result<(), ()> {
-    let frame = retype_page_frame_from(build_ut)?;
+    let frame = retype_into_page_frame_from(build_ut)?;
     let Ok(scratch) = map_scratch(frame, true, own_ut) else {
         capability_delete(frame);
         return Err(());
@@ -513,21 +513,24 @@ fn copy_in(content: Option<(usize, &[u8])>) -> impl FnOnce(&mut [u8]) -> Result<
     }
 }
 
-/// Name: provisional, minted 2026-10-29 (UTC) by lane `milestone/607-item-3-contracts-drop-the-runtime`; it moved here from
-/// `supervision_contract` with the split, and calef names it.
-/// Retype one page of `ut` into a kernel object of `objtype` (`abi::objtype`), returning the
-/// capability slot it landed in.
-pub fn retype_obj_from(ut: u64, objtype: u64) -> Result<u64, ()> {
-    let r = retype_into_kernel_object(ut, objtype);
+/// Retype one page of `memory_region` into a kernel object of `object_type` (`abi::object_type`),
+/// returning the capability slot it landed in.
+///
+/// Name: ratified 2026-11-11 (UTC). It pairs with `user_mode_runtime::retype_into_kernel_object`,
+/// as [`retype_into_page_frame_from`] pairs with `retype_into_page_frame`. Refused
+/// `retype_obj_from` (abbreviates "object").
+pub fn retype_into_kernel_object_from(memory_region: u64, object_type: u64) -> Result<u64, ()> {
+    let r = retype_into_kernel_object(memory_region, object_type);
     if r < 0 { Err(()) } else { Ok(r as u64) }
 }
 
-/// Name: provisional, minted 2026-10-29 (UTC) by lane `milestone/607-item-3-contracts-drop-the-runtime`; it moved here from
-/// `supervision_contract` with the split, and calef names it.
-/// Retype one page of `ut` into a plain `PageFrame` capability, unmapped, returning the slot it
-/// landed in.
-pub fn retype_page_frame_from(ut: u64) -> Result<u64, ()> {
-    let r = retype_into_page_frame(ut);
+/// Retype one page of `memory_region` into a plain `PageFrame` capability, unmapped, returning the
+/// slot it landed in.
+///
+/// Name: ratified 2026-11-11 (UTC). It pairs with `user_mode_runtime::retype_into_page_frame`.
+/// Refused `retype_page_frame_from` (does not say "into", as its pair does).
+pub fn retype_into_page_frame_from(memory_region: u64) -> Result<u64, ()> {
+    let r = retype_into_page_frame(memory_region);
     if r < 0 { Err(()) } else { Ok(r as u64) }
 }
 

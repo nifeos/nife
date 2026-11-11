@@ -319,7 +319,7 @@ fn bind_is_once_per_side_and_a_destroyed_binding_frees_the_thread() {
 /// creator's capability carries every right its budget holds (milestone 824 (a retype mints no
 /// right its budget lacks)); the budget here is the root's, `Rights::ALL`.
 #[test_case]
-fn the_rights_are_101s_and_retype_obj_mints_a_full_rights_notification() {
+fn the_rights_are_101s_and_retype_object_mints_a_full_rights_notification() {
     let r = region();
     let ut = sched::grant(crate::capability_object::memory_region_root_capability(r))
         .expect("grant the region");

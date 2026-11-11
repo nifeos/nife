@@ -1467,7 +1467,7 @@ fn own_snapshot() -> Snap {
 }
 
 /// One `MemoryRegion::RETYPE_OBJECT` through the real syscall entry, as the test thread.
-fn retype_obj(region_slot: u64, kind: u64, space_slot: u64, floor: u64) -> u64 {
+fn retype_into_kernel_object(region_slot: u64, kind: u64, space_slot: u64, floor: u64) -> u64 {
     use crate::arch::exceptions::TrapFrame;
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     let slot = crate::syscall::invoke(
@@ -1522,10 +1522,10 @@ fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
     };
 
     // The process is filed above the space's slot, which is deleted.
-    let space = retype_obj(r, abi::objtype::ADDRESS_SPACE, 0, 0);
+    let space = retype_into_kernel_object(r, abi::objtype::ADDRESS_SPACE, 0, 0);
     let before = own_snapshot();
     let floor = space + 4;
-    let high = retype_obj(r, abi::objtype::PROCESS, space, floor);
+    let high = retype_into_kernel_object(r, abi::objtype::PROCESS, space, floor);
     let after = own_snapshot();
     let call = retype_call(r, abi::objtype::PROCESS, space, floor, high);
     assert!(
@@ -1579,9 +1579,9 @@ fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
     }
 
     // The process is filed in the very slot the space was deleted from.
-    let space = retype_obj(r, abi::objtype::ADDRESS_SPACE, 0, 0);
+    let space = retype_into_kernel_object(r, abi::objtype::ADDRESS_SPACE, 0, 0);
     let before = own_snapshot();
-    let same = retype_obj(r, abi::objtype::PROCESS, space, space);
+    let same = retype_into_kernel_object(r, abi::objtype::PROCESS, space, space);
     let after = own_snapshot();
     assert_eq!(same, space, "the process was not filed in the freed slot");
     let call = retype_call(r, abi::objtype::PROCESS, space, space, same);
@@ -1592,9 +1592,10 @@ fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
     }
 
     // A process whose page lies in another region than the one the call invoked.
-    let foreign_space = retype_obj(r2, abi::objtype::ADDRESS_SPACE, 0, 0);
+    let foreign_space = retype_into_kernel_object(r2, abi::objtype::ADDRESS_SPACE, 0, 0);
     let before = own_snapshot();
-    let foreign = retype_obj(r2, abi::objtype::PROCESS, foreign_space, foreign_space + 4);
+    let foreign =
+        retype_into_kernel_object(r2, abi::objtype::PROCESS, foreign_space, foreign_space + 4);
     let after = own_snapshot();
     let call = retype_call(
         r,
