@@ -627,7 +627,7 @@ driver_process_contract = { version = "0.1.0", path = "../crates/driver_process_
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 # radon's SD/MMC driver (milestone 53): designware_mobile_storage.rs is its register window and
 # serve loop over it.
-designware_mobile_storage = { version = "0.1.0", git = "https://github.com/nifeos/designware_mobile_storage", rev = "a800e4b89cf379a85947e473082ebe7f8f933c34" }
+designware_mobile_storage = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/designware_mobile_storage", rev = "473b19c91a0e6fc617f8be98c15a5b4f1f65ebeb" }
 # The boot ladder's console markers (milestone 268). `swish` prints the last rung; the kernel
 # prints the ones below it and `crates/serial_console` matches all of them, so AGENTS.md rule 7
 # makes the strings a crate rather than copies. `no_std`, no dependencies of its own.
