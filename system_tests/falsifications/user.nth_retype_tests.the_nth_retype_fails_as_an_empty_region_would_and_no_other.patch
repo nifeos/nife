@@ -11,10 +11,9 @@ made. Replayed red on aarch64 on 2026-10-04 (UTC) by the lane for milestone 757 
 fails a process on its Nth retype).
 
 diff --git a/kernel/src/memory_region.rs b/kernel/src/memory_region.rs
-index 00e515ba0..cea908e74 100644
 --- a/kernel/src/memory_region.rs
 +++ b/kernel/src/memory_region.rs
-@@ -187,13 +187,6 @@ pub fn create(pages: u64) -> Option<u64> {
+@@ -104,13 +104,6 @@ pub fn create_with_ceilings(pages: u64, ceilings: Ceilings) -> Option<u64> {
  /// reclaimed: `RegionTable::split`'s `# BUGS` entry has the consequence and a reproduction, and
  /// `notes/region-split-on-a-full-table.md` the proposal.
  pub fn split(parent: u64, pages: u64) -> Option<u64> {
@@ -25,6 +24,6 @@ index 00e515ba0..cea908e74 100644
 -    if crate::retype_fault::fails_now() {
 -        return None;
 -    }
-     let mut table = REGIONS.lock();
-     let child = table.split(parent, pages);
-     note_peak(&table);
+     let (child, reached) = {
+         let mut table = REGIONS.lock();
+         let child = table.split(parent, pages);

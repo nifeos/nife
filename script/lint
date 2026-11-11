@@ -288,6 +288,9 @@ echo "==> script/push --requeue re-arms, and arming refuses a held pull request"
 # Stub gh and git. The re-arm is made a no-op inside the selftest and must fail loudly, so this is
 # where a --requeue that silently arms nothing is seen to be caught (COE action 7).
 helpers/push-requeue-selftest.sh >/dev/null
+# Arming lints the pull request over the queue it joins: a real git fixture where it is green
+# alone and red on top of the entry ahead (script/preflight-queue --arm-check).
+helpers/preflight-arm-check-selftest.sh >/dev/null
 
 echo "==> the rustup retry (a dropped CDN connection retries; a real error does not)"
 # lint-scope: code
@@ -3995,6 +3998,9 @@ helpers/scope-merge-base-selftest.sh >/dev/null
 echo "==> a pull request skips the heavy gates unless it carries full-ci"
 # lint-scope: code
 python3 helpers/full_ci.py --selftest >/dev/null
+# A draft's `lint` fails and a ready one's runs the real lint: the draft gate's state step under a
+# stub gh, and the lint job's own conditions evaluated for each event (helpers/draft-lint-selftest.sh).
+helpers/draft-lint-selftest.sh >/dev/null
 
 # A magic or a public ABI number that moves owes its version constant in the same change (milestone
 # 956 step 4, calef's ruling of 2026-10-29 UTC, PR #2852, question 5). The selftest drives the rules
@@ -4287,6 +4293,22 @@ PINNED = {
     ("RegionTable", "retype_run", "&mut self"),
     ("RegionTable", "retype_object_page", "&mut self"),
     ("RegionTable", "unpin", "&mut self"),
+    # Subtree ceilings (notes/memory-regions.md, "Subtree ceilings"). `insert_root_with_ceilings`
+    # is `insert_root` with the ceilings a root's subtree lives under; `release_object` lowers a
+    # live count and never touches a pin, a child count or a watermark. The two observers report
+    # counts against ceilings and never whether a region is pinned, childless or claimable, so
+    # neither can be the read half of a reclaim; the kernel reads them only to print a refusal and
+    # in tests. `Counted`, `Ceilings` and `CeilingReached` are their vocabulary.
+    ("-", "Counted", "enum"),
+    ("-", "Ceilings", "struct"),
+    ("-", "UNLIMITED", "const"),
+    ("Ceilings", "with", "self"),
+    ("Ceilings", "get", "self"),
+    ("-", "CeilingReached", "struct"),
+    ("RegionTable", "insert_root_with_ceilings", "&mut self"),
+    ("RegionTable", "release_object", "&mut self"),
+    ("RegionTable", "ceiling_reached", "&self"),
+    ("RegionTable", "live_and_ceiling", "&self"),
     # The protocol itself. `&mut self` is not a detail of the signature, it is the whole argument.
     ("RegionTable", "claim_for_destroy", "&mut self"),
     ("RegionTable", "return_to_parent", "&mut self"),
@@ -4304,10 +4326,10 @@ PINNED = {
 # `crates/memory_regions` at all, which is also why the surface pin above could not have saved it. Both
 # halves were needed and neither is sufficient.
 FREE_SITES = {
-    "create": (
-        "insert_root",
-        "the rollback taken when no region slot was free. `insert_root` returned None, so no name "
-        "was ever minted for this run and nobody else can be holding one.",
+    "create_with_ceilings": (
+        "insert_root_with_ceilings",
+        "the rollback taken when no region slot was free. `insert_root_with_ceilings` returned "
+        "None, so no name was ever minted for this run and nobody else can be holding one.",
     ),
     "destroy": (
         "claim_for_destroy",
