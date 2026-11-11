@@ -8,7 +8,6 @@ Expected to fail: the harness's `assert_eq!` on `requested_bytes`, with a nonzer
 count below eight.
 
 diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
-index feffc5ede..397a93242 100644
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
 @@ -84,7 +84,7 @@ pub const fn operation(request_word: u64) -> u64 {

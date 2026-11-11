@@ -8,7 +8,6 @@ Expected to fail: the harness's `assert_eq!` on `buffer[index]`, for a copy of o
 whose word reads differently from each end.
 
 diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
-index feffc5ede..d3c836065 100644
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
 @@ -264,7 +264,7 @@ pub const fn delivered_bytes(first_reply_word: u64) -> Option<usize> {
