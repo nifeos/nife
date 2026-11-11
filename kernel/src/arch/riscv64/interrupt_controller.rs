@@ -132,7 +132,7 @@ pub fn enable(intid: u32) {
 /// PCI functions here raise INTx onto PLIC inputs from `mmu::PCI_INTERRUPT_NUMBER_BASE`, which
 /// `kernel/src/pci.rs` falls back to. A board with the AIA's IMSIC would implement this. See
 /// notes/riscv-port/traps.md.
-pub(crate) fn alloc_msi_vector() -> Option<(u32, pci::MsiTarget)> {
+pub(crate) fn alloc_msi_vector(_requester_id: u32) -> Option<(u32, pci::MsiTarget)> {
     None
 }
 

@@ -630,7 +630,7 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtioDevice> {
 /// `msix_vector` is `pci::VIRTIO_MSIX_NO_VECTOR` whenever the answer was not MSI-X. `None` when no
 /// route exists. See notes/pcie.md, "Placing BARs, and routing interrupts".
 fn function_interrupt(bdf: Bdf, bars: &[Option<Bar>; 6], msi_fallback: bool) -> Option<(u32, u16)> {
-    match crate::arch::interrupt_controller::alloc_msi_vector() {
+    match crate::arch::interrupt_controller::alloc_msi_vector(bdf.requester_id()) {
         Some((intid, target)) => {
             // No fallback to INTx: on a machine that answered `Some`, `PCI_INTERRUPT_NUMBER_BASE`
             // is 0 and the
@@ -681,6 +681,24 @@ fn program_msi(bdf: Bdf, target: pci::MsiTarget) -> bool {
         (head & 0xffff) | (control as u32) << 16,
     );
     true
+}
+
+/// **Where entry 0 of `bdf`'s MSI-X table lives, as a physical address**: the BAR its BIR names,
+/// read back from configuration space as placed, plus the table's offset. `None` for a function
+/// with no MSI-X. The interrupt confinement tests write it, as a component holding the table's
+/// page could.
+#[cfg(test)]
+pub(crate) fn msix_table_entry(bdf: Bdf) -> Option<u64> {
+    let capability = pci::msix_capability(bdf, &mut |b, o| cfg_read32(b, o))?;
+    let at = pci::BAR0 + u64::from(capability.table_bar) * 4;
+    let low = cfg_read32(bdf, at);
+    // Bits 2:1 = 10 is a 64-bit memory BAR, whose upper half is the next register.
+    let high = if low & 0b110 == 0b100 {
+        u64::from(cfg_read32(bdf, at + 4)) << 32
+    } else {
+        0
+    };
+    Some((high | u64::from(low & !0xf)) + u64::from(capability.table_offset))
 }
 
 /// The INTx path: read the function's interrupt pin and swizzle it onto this board's controller.

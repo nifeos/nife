@@ -1010,5 +1010,77 @@ pub(crate) fn provoke_iommu_escape(id: u64, avail_out_of_domain: u64) {
     dev.transport.write_reg(REG_STATUS, 0);
 }
 
+/// Test hook: make device `id`, a virtio-blk function, complete one request with every ring and
+/// buffer inside its domain, so the device raises queue 0's interrupt (MSI-X table entry 0 on a PCI
+/// function). Returns whether the device marked the request used.
+///
+/// The request is `GET_ID` (virtio 1.1 section 5.2.6): it touches no sector and writes twenty
+/// bytes of serial number, so any disk serves. The interrupt confinement tests aim the message it
+/// raises somewhere it was never granted. See notes/iommu.md.
+#[cfg(test)]
+pub(crate) fn provoke_completion(id: u64) -> bool {
+    /// `VIRTIO_BLK_T_GET_ID`, and `VIRTQ_DESC_F_WRITE` (the device writes this buffer).
+    const GET_ID: u64 = 8;
+    const DEVICE_WRITES: u16 = 2;
+    let mut devs = DEVICES.lock();
+    let dev = devs
+        .get_mut(id)
+        .expect("provoke_completion: no such device");
+    reset_to_features_ok(dev);
+
+    let base = dev.direct_memory_access_base;
+    let num = dev.transport.queue_num_max(0).min(QSIZE);
+    let (desc, avail, used) = (base + DESC_OFF, base + AVAIL_OFF, base + USED_OFF);
+    // The request's three buffers, past every queue's ring block and inside the one frame.
+    let header = base + MAXIMUM_QUEUES as u64 * RING_BLOCK;
+    let (serial, status) = (header + 0x40, header + 0x80);
+    direct_memory_access_write64(header, GET_ID); // type, then reserved
+    direct_memory_access_write64(header + 8, 0); // sector
+    direct_memory_access_write16(status, 0xff);
+    let chain: [(u64, u64, u16, u16); 3] = [
+        (header, 16, VIRTQ_DESC_F_NEXT, 1),
+        (serial, 20, VIRTQ_DESC_F_NEXT | DEVICE_WRITES, 2),
+        (status, 1, DEVICE_WRITES, 0),
+    ];
+    for (i, (addr, len, flags, next)) in chain.into_iter().enumerate() {
+        let d = desc + i as u64 * 16;
+        direct_memory_access_write64(d, addr);
+        direct_memory_access_write64(d + 8, len | u64::from(flags) << 32 | u64::from(next) << 48);
+    }
+    // avail = { flags 0 (interrupt wanted), idx 1, ring[0] = head 0 }; used.idx starts at 0.
+    direct_memory_access_write16(avail, 0);
+    direct_memory_access_write16(avail + 2, 1);
+    direct_memory_access_write16(avail + 4, 0);
+    direct_memory_access_write16(used, 0);
+    direct_memory_access_write16(used + 2, 0);
+    crate::arch::direct_memory_access_write_barrier();
+    dev.transport.setup_queue(0, num, desc, avail, used);
+    dev.transport.write_reg(REG_STATUS, TEST_HOOK_DRIVER_OK);
+    dev.transport.notify_queue(0);
+    // Polled, not read once: QEMU may finish the request on its I/O thread after the kick returns.
+    // The interrupt follows the used ring's update, so a caller that wants it polls for it too.
+    let completed = (0..2_000_000).any(|_| {
+        core::hint::spin_loop();
+        direct_memory_access_read16(used + 2) == 1
+    });
+    dev.transport.write_reg(REG_STATUS, 0);
+    completed
+}
+
+/// Test hook: reset every block device but the one whose requester id is `keep`, so none of them
+/// DMAs, faults or interrupts while a confinement test reads the IOMMU's fault records.
+#[cfg(test)]
+pub(crate) fn quiesce_block_devices_except(keep: u32) {
+    // Bounded at 8 so a discovery bug is a fast loop, not a hang.
+    for n in 0..8 {
+        let Some(mut other) = find_block_device_n(n) else {
+            break;
+        };
+        if other.rid != Some(keep) {
+            other.transport.write_reg(REG_STATUS, 0);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests;

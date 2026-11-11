@@ -175,9 +175,11 @@ IOMMU specification instead of Arm's.
 
 ## The VT-d driver on x86_64
 
-`kernel/src/arch/x86_64/iommu.rs` drives Intel's VT-d. Unlike the SMMUv3 and the RISC-V IOMMU, the
-legacy interface every unit supports is driven through registers. Invalidation is a register write
-and a poll, and faults land in Fault Recording Registers, with no command or fault queue. The root
+`kernel/src/arch/x86_64/iommu.rs` drives Intel's VT-d. Faults land in Fault Recording Registers,
+with no fault queue. Invalidation goes through the unit's invalidation queue wherever `ECAP.QI`
+offers one, and through the legacy register write and poll on a unit that does not. The queue is
+not a preference: the interrupt entry cache has no register-based invalidation, and once the queue
+is on, register-based invalidation is forbidden (section 6.5.2; QEMU's model refuses it). The root
 table (one entry per bus) points at per-bus context tables (one entry per device and function).
 Each context entry names a domain and the second-level root that `crate::iommu::confine` built.
 Both tables are allocated lazily and default absent. `init` points `RTADDR_REG` at an all-absent
@@ -197,6 +199,39 @@ would silence the preflight that reports the gap.
 The file is also x86_64's IOMMU front door. Every public entry point first hands the call to
 `amd_vi` if an AMD-Vi unit is up. It stays one file because the tree cites this path as where
 x86_64's IOMMU lives, §163 (where a confined device's IOMMU fault is delivered) among the citations.
+
+### Interrupt remapping (milestone 1068)
+
+An MSI is a memory write to the interrupt address window, so DMA remapping does not confine it. A
+component that can write a device's MSI-X table could aim it at any vector. Where the unit's
+`ECAP.IR` and the DMAR's `INTR_REMAP` both offer remapping, `initialize` turns it on in that unit:
+an all-absent table of 256 entries, `SIRTP`, a global interrupt entry cache invalidation, `GCMD.CFI`
+clear so compatibility-format messages are blocked, then `GCMD.IRE`. Linux needs the DMAR flag too
+(`dmar_ir_support`).
+
+From then on `alloc_msi_vector(requester_id)` writes one entry per grant. The entry names the vector,
+this core as destination, and the requester id with `SVT` = 01 and `SQ` = 00, so all sixteen bits
+must match. The device gets a remappable-format message that names the entry and no vector
+(`remap_message`). A forger that copies another device's message names an entry whose requester id
+is not its own, and the unit refuses it with fault reason 0x26. A forger that writes a
+compatibility-format message is refused with reason 0x25. The example in the milestone is the
+whole idea: the bus server can choose only which entry to name.
+
+The IO APIC's lines go through the same table, because with `CFI` clear the IO APIC's own messages
+would be blocked. Each line keeps one entry for good, bound to the IO APIC's requester id from the
+DMAR's IO APIC scope, and `route_gsi` writes the line in remappable format (`remap_io_apic_line`).
+A machine whose IO APIC no DMAR scope names keeps remapping off, as Linux does, since its lines
+could not be verified. `enable` routes a line again at every acknowledgement, so a rewrite of an
+unchanged entry writes nothing, and a moved line changes only the entry's low half, one atomic store.
+
+Two Kani harnesses hold the encodings: `a_remapping_entry_grants_exactly_one_vector_to_exactly_one_requester`
+and `a_message_names_exactly_one_remapping_entry`. The confinement test
+`a_message_forged_from_another_devices_grant_is_refused` is milestone 1068's step 5 on this driver.
+
+**QEMU's model passes compatibility-format messages whatever `CFI` says.** `vtd_interrupt_remap_msi`
+in QEMU 10.2 forwards a message without the format bit unchanged, so under QEMU the test can only
+show the remappable forgery refused. It asserts the compatibility half on bare metal, where
+`CPUID.1:ECX[31]` reads 0, and prints a line under a hypervisor whose model lets it through.
 
 ### Cache maintenance on a non-coherent unit
 
@@ -229,8 +264,13 @@ read a stale record. `take_fault` clears `PFO` first, so the next fault lands.
   device's firmware DMA faults.
 - The graphics unit translates with only its RMRR mapped, so scanout survives only if the RMRR
   covers it. This is unread on xenon (notes/risk-6-bench-evening.md).
-- There is no interrupt remapping. `ECAP.IR` is only reported (`interrupt_remapping_available`), and
-  no `IRTE` is ever written (`design/roadmap/0317-interrupt-remapping-flags.md`).
+- A remapping entry is never freed, like the MSI vector it carries, and a unit's table holds 256.
+- Remapping uses xAPIC destinations (`IRTA.EIME` clear), so a machine running in x2APIC mode,
+  or one with a core whose APIC id passes 255, is not handled.
+- A device behind a PCIe-to-PCI bridge raises its messages under the bridge's requester id. Its
+  entry names the device's own, so they are refused; `SVT` = 10 (a bus range) would admit them.
+- The invalidation queue and interrupt remapping have run only under QEMU; xenon has not booted
+  them.
 - Invalidation is always global, which is correct and expensive with many devices.
 - `RWBF` and protected-memory disabling have never run, because QEMU sets neither.
 - One Fault Recording Register per unit is read, shared by every requester. A repeating fault from

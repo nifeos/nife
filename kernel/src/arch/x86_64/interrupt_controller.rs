@@ -8,7 +8,6 @@
 //! - Revoking a driver's `Interrupt` does not [`mask_gsi`], so a dead driver's COM1 line stays
 //!   armed.
 //! - An MSI vector is never handed back ([`alloc_msi_vector`] bumps), out of a band of 63.
-//! - Interrupt remapping is assumed off; a VT-d unit with it on rejects these MSI messages.
 //!
 //! Name: ratified 2026-10-27 (#2797). `interrupts` already names the masking module, so this one names the controller.
 
@@ -344,18 +343,20 @@ static MSI_NEXT: AtomicU32 = AtomicU32::new(0);
 /// How many MSI vectors this band holds: 0xc0..0xff, stopping short of [`SPURIOUS_VECTOR`].
 const MSI_VECTORS: u32 = SPURIOUS_VECTOR as u32 - MSI_VECTOR_BASE as u32;
 
-/// Reserve a vector a PCI function may deliver an MSI-X message on, and say where to send it.
+/// Reserve a vector the PCI function whose requester id is `requester_id` may deliver an MSI or
+/// MSI-X message on, and say where to send it.
 ///
 /// Returns the intid a driver binds, which here is the vector, and the message; `None` when the
-/// band is spent (aarch64 and riscv64 always answer `None`, and `kernel/src/pci.rs` uses INTx). The
-/// address is `0xfee0_0000 | (local APIC id << 12)` with physical destination and no redirection;
-/// the data is the vector, `Fixed` delivery, edge trigger, so `enable` and a driver's
-/// `Interrupt::ACK`
-/// have nothing to do. With VT-d interrupt remapping on, these messages are rejected (this
-/// module's BUGS). See notes/x86-port/traps.md.
+/// band is spent or the IOMMU's remapping table is full (aarch64 and riscv64 always answer
+/// `None`, and `kernel/src/pci.rs` uses INTx). Where the function's IOMMU unit remaps interrupts,
+/// the message names a remapping entry that holds the vector and this core as destination and that
+/// only `requester_id` may raise ([`super::iommu::remap_message`]). Elsewhere it is the
+/// compatibility format: `0xfee0_0000 | (local APIC id << 12)`, physical destination, and the
+/// vector as data. Either way `Fixed` delivery and edge trigger, so `enable` and a driver's
+/// `Interrupt::ACK` have nothing to do. See notes/x86-port/traps.md.
 ///
 /// Name: provisional (milestone 215).
-pub fn alloc_msi_vector() -> Option<(u32, pci::MsiTarget)> {
+pub fn alloc_msi_vector(requester_id: u32) -> Option<(u32, pci::MsiTarget)> {
     let offset = MSI_NEXT.fetch_add(1, Ordering::Relaxed);
     if offset >= MSI_VECTORS {
         // Do not hand back a vector outside the band: it would land on the spurious vector or on
@@ -363,13 +364,30 @@ pub fn alloc_msi_vector() -> Option<(u32, pci::MsiTarget)> {
         return None;
     }
     let vector = MSI_VECTOR_BASE as u32 + offset;
-    Some((
-        vector,
-        pci::MsiTarget {
-            address: LOCAL_APIC_MSI_BASE | ((local_apic_id() as u64) << 12),
+    let destination = local_apic_id();
+    let target = match super::iommu::remap_message(requester_id, vector as u8, destination) {
+        Ok(Some(remapped)) => remapped,
+        Ok(None) => pci::MsiTarget {
+            address: LOCAL_APIC_MSI_BASE | ((destination as u64) << 12),
             data: vector,
         },
-    ))
+        Err(why) => {
+            crate::println!("  msi: requester {requester_id:#06x} gets no vector: {why}");
+            return None;
+        }
+    };
+    Some((vector, target))
+}
+
+/// **Has `vector` reached this core's local APIC and not yet been taken?** Its bit in the
+/// Interrupt Request Register (Intel SDM volume 3, section 11.8.4), which a message sets on arrival
+/// and the core clears only when it takes the interrupt, so with interrupts masked it is the
+/// witness the interrupt confinement tests read: it says whether a forged message landed.
+#[cfg(test)]
+pub(crate) fn is_vector_pending(vector: u32) -> bool {
+    /// The first of the eight 32-bit IRR registers, 16 bytes apart.
+    const INTERRUPT_REQUEST: u64 = 0x200;
+    read(INTERRUPT_REQUEST + u64::from(vector / 32) * 0x10) & (1 << (vector % 32)) != 0
 }
 
 /// The base of the local APIC's message address space, which is where an MSI write goes.
@@ -557,10 +575,13 @@ fn redirection_index(gsi: u32) -> Option<u32> {
 ///
 /// Fixed delivery and physical destination: exactly the named local APIC, correct on any number of
 /// CPUs; distributing interrupts is a policy nothing here has. The high word goes first and the low
-/// word (with the mask bit) last, so the destination is in place when the line goes live.
+/// word (with the mask bit) last, so the destination is in place when the line goes live. Where the
+/// IO APIC's IOMMU unit remaps interrupts, the entry is in remappable format and the vector and
+/// destination live in the line's remapping entry ([`super::iommu::remap_io_apic_line`]).
 ///
 /// # Panics
-/// If this IO APIC does not own `gsi`: an unarmed line looks exactly like a silent device.
+/// If this IO APIC does not own `gsi`: an unarmed line looks exactly like a silent device. Also if
+/// the remapping table has no entry left for the line, for the same reason.
 pub(crate) fn route_gsi(
     gsi: u32,
     vector: u8,
@@ -576,6 +597,15 @@ pub(crate) fn route_gsi(
         )
     });
     let at = io_reg::REDIRECTION_BASE + 2 * index;
+
+    let remapped =
+        super::iommu::remap_io_apic_line(index, vector, dest_apic_id, active_low, level_triggered)
+            .unwrap_or_else(|why| panic!("gsi {gsi} cannot be routed: {why}"));
+    if let Some(entry) = remapped {
+        io_apic_write(at + 1, (entry >> 32) as u32);
+        io_apic_write(at, entry as u32);
+        return;
+    }
 
     let mut low = vector as u32;
     if active_low {

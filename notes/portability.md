@@ -127,7 +127,7 @@ Traps and interrupts:
 - `interrupt_controller::enable(id)`: unmask a source the handler masked, at an `Interrupt`
   capability's ACK.
 - `interrupt_controller::send_reschedule(cpu)`: the reschedule inter-processor interrupt.
-- `interrupt_controller::alloc_msi_vector()`: an MSI-X vector and target, or `None` where the board
+- `interrupt_controller::alloc_msi_vector(requester_id)`: an MSI-X vector and target, or `None` where the board
   uses INTx.
 
 Time:

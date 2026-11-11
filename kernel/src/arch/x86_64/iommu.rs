@@ -5,6 +5,12 @@
 //! unit the DMAR says owns the device. A device no unit owns gets no context entry, and
 //! [`scope_of`] says so.
 //!
+//! Where a unit and the platform both offer it, the unit also remaps interrupts: every MSI the
+//! kernel grants and every IO APIC line it routes is an entry in the unit's interrupt remapping
+//! table, naming the one vector granted and the one requester id allowed to raise it, and
+//! compatibility-format messages are blocked. Invalidation is queued on every unit that offers
+//! it, since the interrupt entry cache has no register-based invalidation.
+//!
 //! This is also `x86_64`'s IOMMU front door: every public entry point hands the call to
 //! [`super::amd_vi`] when an AMD-Vi unit is up. See notes/iommu.md, which holds the design and
 //! the detail of each BUGS entry.
@@ -16,7 +22,11 @@
 //!   `initialize`.
 //! - An RMRR naming a bridge is mapped only once the device below it is confined.
 //! - The graphics unit translates with only its RMRR mapped; scanout needs the RMRR to cover it.
-//! - No interrupt remapping: `ECAP.IR` is only reported, and no `IRTE` is ever written.
+//! - A remapping entry is never freed, like the MSI vector it carries; one table holds 256.
+//! - Destinations are 8-bit xAPIC ids (`IRTA.EIME` clear); an x2APIC machine is not handled.
+//! - A device behind a PCIe-to-PCI bridge raises its MSIs under the bridge's requester id, which
+//!   its remapping entry does not name, so they are refused.
+//! - Remapping stays off on a machine whose IO APIC no DMAR scope names.
 //! - Invalidation is always global, which is correct and expensive with many devices.
 //! - `RWBF` and protected-memory disabling have never run, because QEMU sets neither.
 //! - One Fault Recording Register per unit is read, so one device's faults can hide another's.
@@ -27,6 +37,7 @@ use machine_discovery::acpi::{
 };
 use paging::PageFormat;
 use paging::x86_64::Vtd;
+use pci::MsiTarget;
 
 use crate::arch::mmu::phys_to_virt;
 use crate::sync::{InterruptSafeMutex, rank};
@@ -42,6 +53,12 @@ const RTADDR: u64 = 0x20; // 64-bit
 const CCMD: u64 = 0x28; // 64-bit
 const FSTS: u64 = 0x34;
 const PMEN: u64 = 0x64; // 32-bit, section 11.4.8.1
+// Queued invalidation (section 11.4.9): the queue's head, tail and address, all 64-bit.
+const IQH: u64 = 0x80;
+const IQT: u64 = 0x88;
+const IQA: u64 = 0x90;
+// The interrupt remapping table's address and size (section 11.4.10.1), 64-bit.
+const IRTA: u64 = 0xb8;
 
 // GCMD (write-only) / GSTS (read-only, same bit positions): translation and root-pointer control.
 const GCMD_TE: u32 = 1 << 31; // Translation Enable
@@ -50,14 +67,19 @@ const GCMD_WBF: u32 = 1 << 27; // Write Buffer Flush
 const GSTS_TES: u32 = 1 << 31;
 const GSTS_RTPS: u32 = 1 << 30;
 const GSTS_WBFS: u32 = 1 << 27;
+// Queued invalidation enable, interrupt remapping enable, set interrupt remapping table pointer,
+// compatibility format interrupts (allowed when set; this driver keeps it clear).
+const GCMD_QIE: u32 = 1 << 26;
+const GCMD_IRE: u32 = 1 << 25;
+const GCMD_SIRTP: u32 = 1 << 24;
+const GCMD_CFI: u32 = 1 << 23;
+const GSTS_QIES: u32 = 1 << 26;
+const GSTS_IRES: u32 = 1 << 25;
+const GSTS_IRTPS: u32 = 1 << 24;
+const GSTS_CFIS: u32 = 1 << 23;
 // Section 11.4.4's mask for turning a GSTS read into a GCMD value: it clears the one-shot command
 // bits (SRTP, SFL, WBF, SIRTP) so reissuing the status never repeats one of them.
 const GSTS_ONE_SHOT_MASK: u32 = 0x96FF_FFFF;
-// IRES: interrupt remapping is ENABLED. Read only by the test that asserts it is clear; this
-// driver has no `GCMD_IRE` constant to pair it with, deliberately, because there is nothing here
-// that should be one typo away from turning interrupt remapping on. See notes/iommu.md's BUGS.
-#[cfg(any(test, feature = "system_tests"))]
-const GSTS_IRES: u32 = 1 << 25;
 
 // CAP fields this driver reads. SAGAW is a bitmap (bit N means "AGAW level N is supported"), not
 // an index; bit 2 of the 5-bit field (so bit 10 of the register) is the 48-bit/4-level width
@@ -79,11 +101,13 @@ const CAP_FRO_MASK: u64 = 0x3ff;
 const ECAP_IRO_SHIFT: u64 = 8; // 10-bit field, in 16-byte units
 const ECAP_IRO_MASK: u64 = 0x3ff;
 
-// ECAP.IR (bit 3): the unit supports interrupt remapping. Read to report, never to act on (this
-// driver does not set `GCMD.IRE`; see notes/iommu.md's BUGS). A boot must show the machine's own
-// answer, because `-device intel-iommu,intremap=on` is a host-side string. `print_summary` prints
-// it.
+// ECAP.IR (bit 3): the unit supports interrupt remapping. A boot shows the machine's own answer,
+// because `-device intel-iommu,intremap=on` is a host-side string; `print_summary` prints it.
 const ECAP_IR: u64 = 1 << 3;
+
+// ECAP.QI (bit 1): the unit supports queued invalidation. Section 6.5.2 makes it the only way to
+// invalidate the interrupt entry cache, and a unit that reports `IR` must report it too.
+const ECAP_QI: u64 = 1 << 1;
 
 // ECAP.C (bit 0): the unit's table walks snoop the processor caches. Clear means the hardware reads
 // root, context and second-level entries from DRAM, so a write still in a cache line is invisible
@@ -111,6 +135,23 @@ const IOTLB_IIRG_GLOBAL: u64 = 1 << 60;
 // while it is set the unit records nothing at all (write 1 to clear).
 const FSTS_PFO: u32 = 1 << 0;
 const FSTS_PPF: u32 = 1 << 1;
+// FSTS.IQE: the unit refused a descriptor in the invalidation queue and stopped reading it.
+const FSTS_IQE: u32 = 1 << 4;
+
+// Invalidation descriptors (section 6.5.2), 128 bits each; only the low qword carries fields here
+// except the wait descriptor's status address. The type is bits 3:0.
+const DESCRIPTOR_CONTEXT_CACHE_GLOBAL: u64 = 0x1 | 1 << 4; // granularity 01: global
+const DESCRIPTOR_IOTLB_GLOBAL: u64 = 0x2 | 1 << 4; // granularity 01: global
+const DESCRIPTOR_INTERRUPT_ENTRY_CACHE: u64 = 0x4; // G clear: global
+const DESCRIPTOR_INTERRUPT_ENTRY_CACHE_INDEX: u64 = 0x4 | 1 << 4; // G set: the index in 47:32
+const DESCRIPTOR_WAIT: u64 = 0x5 | 1 << 5 | 1 << 6; // status write, fence
+/// The value a wait descriptor writes to its status word when every earlier descriptor is done.
+const WAIT_DONE: u32 = 1;
+/// The queue is one frame of 128-bit descriptors: `IQA.QS` = 0 is 256 of them.
+const QUEUE_DESCRIPTORS: u64 = page_frames::FRAME_SIZE / 16;
+/// The interrupt remapping table is one frame of 128-bit entries, `IRTA.S` = 7 (2^(S+1) = 256).
+const REMAPPING_ENTRIES: u16 = (page_frames::FRAME_SIZE / 16) as u16;
+const IRTA_SIZE_256: u64 = 7;
 
 // Root entry (one page, 256 x 16 bytes, one per PCI bus): lower qword only, in legacy mode.
 const ROOT_ENTRY_P: u64 = 1 << 0;
@@ -159,9 +200,36 @@ struct Unit {
     last_did: u32,
     /// How many devices an RMRR had pre-attached here before translation turned on.
     reserved_devices: u32,
+    /// The invalidation queue, on a unit that offers one (`ECAP.QI`). While it is on, every
+    /// invalidation goes through it; register-based invalidation is then forbidden (section
+    /// 6.5.2) and QEMU's model refuses it.
+    queue: Option<InvalidationQueue>,
+    /// The interrupt remapping table, once `GSTS.IRES` reads set. `None` is a unit that remaps
+    /// nothing, and its devices' messages are delivered in compatibility format.
+    remapping: Option<RemappingTable>,
     /// `ECAP.C`: this unit's table walks snoop the CPU caches. When clear, every table line the
     /// CPU writes must be written back before the unit is told to look ([`Unit::publish`]).
     coherent: bool,
+}
+
+/// **A unit's invalidation queue** (VT-d 4.1 section 6.5.2): one frame of descriptors the unit reads
+/// from `IQH` up to the `IQT` software writes, and a status word a wait descriptor writes back.
+/// Every batch ends with a wait, so the queue is empty between batches and never wraps onto
+/// itself.
+struct InvalidationQueue {
+    base: u64,
+    /// The next free slot, in descriptors.
+    tail: u64,
+    /// A frame whose first word the wait descriptor writes [`WAIT_DONE`] to.
+    status: u64,
+}
+
+/// **A unit's interrupt remapping table** (VT-d 4.1 section 9.10): one frame of 256 entries, each
+/// naming a vector, a destination and the requester id allowed to raise it.
+struct RemappingTable {
+    base: u64,
+    /// The next entry to hand out. Entries are never freed (this module's BUGS).
+    next: u16,
 }
 
 /// Order every `clflush` before it against every later store, the MMIO write that starts an
@@ -233,6 +301,193 @@ impl Unit {
         self.next_did += 1;
         did
     }
+
+    /// Put one descriptor in the invalidation queue, without telling the unit. [`Unit::queue_wait`]
+    /// moves `IQT` past it.
+    fn queue_submit(&mut self, low: u64, high: u64) {
+        let queue = self
+            .queue
+            .as_mut()
+            .expect("a queued invalidation on a unit with no queue");
+        let at = queue.base + queue.tail * 16;
+        queue.tail = (queue.tail + 1) % QUEUE_DESCRIPTORS;
+        // SAFETY: `at` is one of the 256 16-byte slots of the kernel-owned queue frame.
+        unsafe {
+            core::ptr::write_volatile(phys_to_virt(at) as *mut u64, low);
+            core::ptr::write_volatile(phys_to_virt(at + 8) as *mut u64, high);
+        }
+        self.publish(at, 16);
+    }
+
+    /// **Hand the unit every descriptor submitted since the last wait, and wait until it has done
+    /// them all**: a wait descriptor whose status write lands only after every earlier descriptor
+    /// completes (`FN` set), then the tail, then a bounded poll of the status word. A refused
+    /// descriptor sets `FSTS.IQE` and stops the queue, and that is a bug in this driver, so it
+    /// panics with the head the unit stopped at.
+    fn queue_wait(&mut self) {
+        let status = self
+            .queue
+            .as_ref()
+            .expect("a queued invalidation on a unit with no queue")
+            .status;
+        // SAFETY: `status` is a kernel-owned frame; its first word is this queue's status word.
+        unsafe { core::ptr::write_volatile(phys_to_virt(status) as *mut u32, 0) };
+        self.publish(status, 4);
+        self.queue_submit(DESCRIPTOR_WAIT | u64::from(WAIT_DONE) << 32, status);
+        // The descriptors, and the cleared status word, reach memory before the tail tells the
+        // unit to read them.
+        mfence();
+        crate::arch::direct_memory_access_write_barrier();
+        let tail = self.queue.as_ref().map_or(0, |q| q.tail);
+        w64(self.base, IQT, tail << 4);
+        let mut spins = 0u32;
+        loop {
+            // A unit that cannot see the caches wrote memory, not the line this loop reads.
+            self.publish(status, 4);
+            // SAFETY: as above; the unit writes this word, so it is read volatile.
+            if unsafe { core::ptr::read_volatile(phys_to_virt(status) as *const u32) } == WAIT_DONE
+            {
+                return;
+            }
+            assert!(
+                r32(self.base, FSTS) & FSTS_IQE == 0,
+                "VT-d unit {:#x} refused an invalidation descriptor (FSTS.IQE, IQH {:#x})",
+                self.base,
+                r64(self.base, IQH),
+            );
+            spins += 1;
+            assert!(
+                spins < 1_000_000,
+                "VT-d unit {:#x} never finished its invalidation queue",
+                self.base
+            );
+        }
+    }
+
+    /// Invalidate the interrupt entry cache: every entry when `index` is `None`, else that one
+    /// (section 6.5.2.7). Hardware may cache an entry from the moment the table pointer is set, so
+    /// every write to the table is followed by one of these.
+    fn invalidate_interrupt_entries(&mut self, index: Option<u16>) {
+        let low = match index {
+            None => DESCRIPTOR_INTERRUPT_ENTRY_CACHE,
+            Some(i) => DESCRIPTOR_INTERRUPT_ENTRY_CACHE_INDEX | u64::from(i) << 32,
+        };
+        self.queue_submit(low, 0);
+        self.queue_wait();
+    }
+
+    /// **Write remapping entry `handle` and invalidate it**, the requester id half first and the
+    /// half holding the present bit last, so the unit never reads a present entry naming the
+    /// previous requester. A rewrite of a present entry changes only the low half (an IO APIC line
+    /// moved to another vector or core keeps its requester id), and one 64-bit store is atomic.
+    fn write_remapping_entry(&mut self, handle: u16, entry: [u64; 2]) {
+        let Some(table) = &self.remapping else {
+            return;
+        };
+        let at = table.base + u64::from(handle) * 16;
+        // SAFETY: `handle` is below `REMAPPING_ENTRIES`, so `at` is one of the 256 16-byte entries
+        // of the kernel-owned table frame.
+        unsafe {
+            let p = phys_to_virt(at) as *mut u64;
+            if core::ptr::read_volatile(p) == entry[0]
+                && core::ptr::read_volatile(p.add(1)) == entry[1]
+            {
+                return;
+            }
+            core::ptr::write_volatile(p.add(1), entry[1]);
+            crate::arch::direct_memory_access_write_barrier();
+            core::ptr::write_volatile(p, entry[0]);
+        }
+        self.publish(at, 16);
+        mfence();
+        self.invalidate_interrupt_entries(Some(handle));
+    }
+
+    /// The next free remapping entry, or `None` when all 256 are handed out.
+    fn allocate_remapping_entry(&mut self) -> Option<u16> {
+        let table = self.remapping.as_mut()?;
+        if table.next >= REMAPPING_ENTRIES {
+            return None;
+        }
+        table.next += 1;
+        Some(table.next - 1)
+    }
+}
+
+// --- The interrupt remapping encodings (VT-d 4.1 sections 5.1 and 9.10). Pure functions of their
+// arguments, so the proofs below can hold every input. ---
+
+// Remapping table entry, low qword: present, trigger mode, vector, destination. Delivery mode
+// (bits 7:5) is 000 Fixed, destination mode (bit 2) 0 physical, the format bit (15) 0 remapped
+// rather than posted, and fault processing (bit 1) 0, so a refused message is recorded.
+const ENTRY_PRESENT: u64 = 1 << 0;
+const ENTRY_LEVEL_SHIFT: u64 = 4;
+const ENTRY_VECTOR_SHIFT: u64 = 16;
+// The destination field is bits 63:32; with `IRTA.EIME` clear the xAPIC id sits in its bits 15:8.
+const ENTRY_XAPIC_DESTINATION_SHIFT: u64 = 40;
+// High qword: the source id in 15:0, `SQ` in 17:16 (00: compare all sixteen bits) and `SVT` in
+// 19:18 (01: verify the requester id against the source id).
+const ENTRY_VERIFY_REQUESTER_ID: u64 = 0b01 << 18;
+
+// A remappable-format message address (section 5.1.5.2): 0xfee in 31:20, handle bits 14:0 in
+// 19:5, the format bit 4 set, `SHV` (bit 3) set so the data word is a subhandle, handle bit 15 in
+// bit 2. The data word is the subhandle, which is zero.
+const MESSAGE_ADDRESS_BASE: u64 = 0xfee0_0000;
+const MESSAGE_REMAPPABLE_FORMAT: u64 = 1 << 4;
+const MESSAGE_SUBHANDLE_VALID: u64 = 1 << 3;
+
+// A remappable-format IO APIC redirection entry (section 5.1.5.1): handle bits 14:0 in 63:49, the
+// format bit 48 set, handle bit 15 in bit 11, and the vector, which must equal the remapping
+// entry's so an end of interrupt finds the line.
+const REDIRECTION_REMAPPABLE_FORMAT: u64 = 1 << 48;
+const REDIRECTION_ACTIVE_LOW: u64 = 1 << 13;
+const REDIRECTION_LEVEL: u64 = 1 << 15;
+
+/// **The remapping table entry that grants `vector` on the core whose xAPIC id is `destination`,
+/// to requester `source_id` alone.** Present, remapped format, fixed delivery to one physical
+/// destination, faults recorded, and the requester id verified on all sixteen bits, so a message
+/// any other function raises with this entry's handle is refused. `level` is the trigger mode,
+/// which an IO APIC line's entry must match. See notes/iommu.md.
+const fn remapped_entry(vector: u8, destination: u8, source_id: u16, level: bool) -> [u64; 2] {
+    [
+        ENTRY_PRESENT
+            | (level as u64) << ENTRY_LEVEL_SHIFT
+            | (vector as u64) << ENTRY_VECTOR_SHIFT
+            | (destination as u64) << ENTRY_XAPIC_DESTINATION_SHIFT,
+        source_id as u64 | ENTRY_VERIFY_REQUESTER_ID,
+    ]
+}
+
+/// **The message a device writes to raise remapping entry `handle`**: an address that names the
+/// entry and nothing else, and a zero subhandle. The vector and destination are the entry's, so a
+/// component that can write the device's MSI-X table can choose only which entry to name.
+const fn remappable_message(handle: u16) -> MsiTarget {
+    let handle = handle as u64;
+    MsiTarget {
+        address: MESSAGE_ADDRESS_BASE
+            | (handle & 0x7fff) << 5
+            | MESSAGE_REMAPPABLE_FORMAT
+            | MESSAGE_SUBHANDLE_VALID
+            | (handle >> 15) << 2,
+        data: 0,
+    }
+}
+
+/// **The IO APIC redirection entry that raises remapping entry `handle`**, unmasked, with the
+/// line's own polarity and trigger mode and the entry's vector.
+const fn remappable_redirection_entry(
+    handle: u16,
+    vector: u8,
+    active_low: bool,
+    level: bool,
+) -> u64 {
+    let handle = handle as u64;
+    (handle & 0x7fff) << 49
+        | REDIRECTION_REMAPPABLE_FORMAT
+        | (handle >> 15) << 11
+        | (level as u64) * REDIRECTION_LEVEL
+        | (active_low as u64) * REDIRECTION_ACTIVE_LOW
+        | vector as u64
 }
 
 /// A DMAR unit's slot: brought up, refused with a reason, or not described at all.
@@ -251,7 +506,17 @@ struct Units {
     /// bus is attached. `None` is the default-deny state: a bus with no table here has no
     /// root-table entry pointing at one either, so every device on it faults.
     ctx: [[Option<u64>; 256]; MAXIMUM_TRANSLATION_UNITS],
+    /// The unit the IO APIC's lines reach and the requester id its messages carry, from the
+    /// DMAR's IO APIC scope. `None` on a machine with no IO APIC, or one whose IO APIC no scope
+    /// names, where no unit remaps.
+    io_apic: Option<(usize, u16)>,
+    /// The remapping entry each redirection entry raises, by redirection index, or
+    /// [`NO_HANDLE`] before [`remap_io_apic_line`] first routes it.
+    io_apic_handles: [u16; 256],
 }
+
+/// The value in [`Units::io_apic_handles`] for a line with no remapping entry yet.
+const NO_HANDLE: u16 = u16::MAX;
 
 impl Units {
     fn iter(&self) -> core::slice::Iter<'_, Slot> {
@@ -264,6 +529,8 @@ static IOMMU: InterruptSafeMutex<Units> = InterruptSafeMutex::new(
     Units {
         slots: [const { Slot::Absent }; MAXIMUM_TRANSLATION_UNITS],
         ctx: [[None; 256]; MAXIMUM_TRANSLATION_UNITS],
+        io_apic: None,
+        io_apic_handles: [NO_HANDLE; 256],
     },
 );
 
@@ -348,7 +615,7 @@ fn root_up(d: &Drhd) -> Result<Unit, &'static str> {
     let ecap = r64(base, ECAP);
     // ND: 0 means 4-bit ids and each step adds two bits, up to 16 at 6; 7 is reserved.
     let nd = (cap & CAP_ND_MASK).min(6);
-    let unit = Unit {
+    let mut unit = Unit {
         base,
         root: zeroed_page_frame("root table"),
         rwbf: cap & CAP_RWBF != 0,
@@ -359,6 +626,8 @@ fn root_up(d: &Drhd) -> Result<Unit, &'static str> {
         last_did: (1u32 << (4 + 2 * nd)) - 1,
         reserved_devices: 0,
         coherent: ecap & ECAP_C != 0,
+        queue: None,
+        remapping: None,
     };
     if !unit.coherent {
         let line = u64::from((core::arch::x86_64::__cpuid(1).ebx >> 8) & 0xff) * 8;
@@ -379,12 +648,85 @@ fn root_up(d: &Drhd) -> Result<Unit, &'static str> {
         global_command(base, GCMD_TE, false);
         wait_gsts(base, "translation disable", |v| v & GSTS_TES == 0);
     }
+    // The same for interrupt remapping and the invalidation queue, whose tables the kernel did
+    // not build either. The queue goes off only once the unit has read all of it (section
+    // 6.5.2), and register-based invalidation below needs it off.
+    if r32(base, GSTS) & GSTS_IRES != 0 {
+        global_command(base, GCMD_IRE, false);
+        wait_gsts(base, "interrupt remapping disable", |v| v & GSTS_IRES == 0);
+    }
+    if r32(base, GSTS) & GSTS_QIES != 0 {
+        let mut spins = 0u32;
+        while r64(base, IQH) != r64(base, IQT) && r32(base, FSTS) & FSTS_IQE == 0 {
+            spins += 1;
+            assert!(
+                spins < 1_000_000,
+                "IOMMU firmware's invalidation queue never drained"
+            );
+        }
+        global_command(base, GCMD_QIE, false);
+        wait_gsts(base, "queued invalidation disable", |v| v & GSTS_QIES == 0);
+    }
 
     w64(base, RTADDR, unit.root);
     global_command(base, GCMD_SRTP, true);
     wait_gsts(base, "set root table pointer", |v| v & GSTS_RTPS != 0);
-    invalidate_all(&unit);
+    invalidate_all(&mut unit);
+
+    // Queued invalidation from here on, wherever the unit offers it: the interrupt entry cache
+    // has no other invalidation, and once the queue is on, register-based invalidation is
+    // forbidden. The queue is empty, so the tail starts at zero.
+    if ecap & ECAP_QI != 0 {
+        let queue = InvalidationQueue {
+            base: zeroed_page_frame("invalidation queue"),
+            tail: 0,
+            status: zeroed_page_frame("invalidation status"),
+        };
+        unit.publish(queue.base, page_frames::FRAME_SIZE);
+        mfence();
+        w64(base, IQT, 0);
+        // `IQA.DW` clear (128-bit descriptors) and `IQA.QS` zero (one frame, 256 of them).
+        w64(base, IQA, queue.base);
+        global_command(base, GCMD_QIE, true);
+        wait_gsts(base, "queued invalidation enable", |v| v & GSTS_QIES != 0);
+        unit.queue = Some(queue);
+    }
     Ok(unit)
+}
+
+/// **Turn interrupt remapping on in one unit** (VT-d 4.1 section 9.10 and 11.4.4): an all-absent
+/// table, its pointer set, the entry cache invalidated (the step section 11.4.4 requires after
+/// `SIRTP`), compatibility-format messages blocked, then `GCMD.IRE`. From here a message reaches a
+/// core only through an entry [`remap_message`] or [`remap_io_apic_line`] wrote. `Err` is a unit
+/// that cannot, with the reason the tour prints.
+fn remapping_up(u: &mut Unit) -> Result<(), &'static str> {
+    if !u.interrupt_remapping {
+        return Err("ECAP.IR is clear");
+    }
+    if u.queue.is_none() {
+        return Err("ECAP.QI is clear, so the interrupt entry cache cannot be invalidated");
+    }
+    let table = zeroed_page_frame("interrupt remapping table");
+    u.publish(table, page_frames::FRAME_SIZE);
+    mfence();
+    // `IRTA.EIME` clear: destinations are xAPIC ids (this module's BUGS).
+    w64(u.base, IRTA, table | IRTA_SIZE_256);
+    global_command(u.base, GCMD_SIRTP, true);
+    wait_gsts(u.base, "set interrupt remapping table pointer", |v| {
+        v & GSTS_IRTPS != 0
+    });
+    u.invalidate_interrupt_entries(None);
+    if r32(u.base, GSTS) & GSTS_CFIS != 0 {
+        global_command(u.base, GCMD_CFI, false);
+        wait_gsts(u.base, "compatibility format block", |v| v & GSTS_CFIS == 0);
+    }
+    global_command(u.base, GCMD_IRE, true);
+    wait_gsts(u.base, "interrupt remapping enable", |v| v & GSTS_IRES != 0);
+    u.remapping = Some(RemappingTable {
+        base: table,
+        next: 0,
+    });
+    Ok(())
 }
 
 /// **Bring every VT-d unit up, each translating the devices it owns** (milestone 594 (every VT-d
@@ -396,11 +738,13 @@ fn root_up(d: &Drhd) -> Result<Unit, &'static str> {
 /// 3. Translation turns on unit by unit, and protected memory regions firmware left are disabled.
 ///
 /// Then every device a running unit owns faults until `attach` writes its context entry (or, for
-/// an RMRR device, anywhere outside its reserved regions).
+/// an RMRR device, anywhere outside its reserved regions). Last, every unit the platform and its
+/// own `ECAP.IR` say can remap turns remapping on, provided the DMAR names the scope of
+/// `io_apic_id`, the MADT's IO APIC (milestone 1068).
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
 /// design/naming/acronyms-and-abbreviations.md.
-pub fn initialize(dmar: &DmarUnits) {
+pub fn initialize(dmar: &DmarUnits, io_apic_id: Option<u8>) {
     *DMAR.lock() = Some(*dmar);
     {
         let mut g = IOMMU.lock();
@@ -457,6 +801,28 @@ pub fn initialize(dmar: &DmarUnits) {
             }
         }
     }
+    drop(g);
+
+    // Step 4. Resolving the IO APIC's scope path reads configuration space, so before the lock.
+    let io_apic = io_apic_id.map(|id| {
+        (
+            id,
+            dmar.io_apic_source(id, &mut crate::pci::bridge_bus_range),
+        )
+    });
+    let mut remapping = [Err("not tried"); MAXIMUM_TRANSLATION_UNITS];
+    let mut g = IOMMU.lock();
+    g.io_apic = io_apic.and_then(|(_, found)| found);
+    for (i, s) in g.slots.iter_mut().enumerate() {
+        let Slot::Up(u) = s else { continue };
+        remapping[i] = match io_apic {
+            _ if !dmar.platform_interrupt_remapping => Err("the DMAR's INTR_REMAP is clear"),
+            Some((_, None)) => {
+                Err("no DMAR scope names the IO APIC, so its messages cannot be verified")
+            }
+            _ => remapping_up(u),
+        };
+    }
     let n = dmar.units().len();
     for (i, d) in dmar.units().iter().enumerate() {
         let what = if d.include_pci_all {
@@ -465,13 +831,26 @@ pub fn initialize(dmar: &DmarUnits) {
             "named devices only"
         };
         match &g.slots[i] {
-            Slot::Up(u) => crate::println!(
-                "  vt-d        : drhd {:#x} up ({} of {n}, {what}), translation enabled (gsts.tes \
-                 confirmed), {} rmrr device(s) identity-mapped",
-                d.register_base,
-                i + 1,
-                u.reserved_devices,
-            ),
+            Slot::Up(u) => {
+                crate::println!(
+                    "  vt-d        : drhd {:#x} up ({} of {n}, {what}), translation enabled \
+                     (gsts.tes confirmed), {} rmrr device(s) identity-mapped",
+                    d.register_base,
+                    i + 1,
+                    u.reserved_devices,
+                );
+                match remapping[i] {
+                    Ok(()) => crate::println!(
+                        "  vt-d        : drhd {:#x} remaps interrupts (gsts.ires confirmed), \
+                         compatibility format blocked",
+                        d.register_base,
+                    ),
+                    Err(why) => crate::println!(
+                        "  vt-d        : drhd {:#x} does not remap interrupts: {why}",
+                        d.register_base,
+                    ),
+                }
+            }
             Slot::Refused(why) => crate::println!(
                 "  vt-d        : drhd {:#x} NOT up ({} of {n}, {what}): {why}; the devices it owns \
                  are not translated",
@@ -583,31 +962,114 @@ pub(crate) fn scope_of(rid: u32) -> crate::iommu::Scope {
     }
 }
 
-/// **Does this machine's VT-d offer interrupt remapping (`ECAP.IR`) on every unit that is up?**
-/// `None` when no unit is up, which is a different answer from "a unit that says no". Every unit,
-/// because remapping that one unit lacks leaves that unit's devices' interrupts unremapped.
+/// **Does every VT-d unit that is up remap interrupts?** `None` when no unit is up, which is a
+/// different answer from "a unit that does not". Every unit, because a unit that does not leaves
+/// its own devices' messages unremapped. The confinement tests ask it before they forge a message.
 ///
-/// Nothing in this kernel remaps an interrupt. This exists so the question is *askable* from
-/// inside the guest, which is what milestone 317 is for: without it, turning
-/// `-device intel-iommu,intremap=on` on and watching the suite stay green proves only that the
-/// suite does not care. See design/roadmap/0317-interrupt-remapping-flags.md.
-// One caller: this module's own test. The comment below said "two callers, print_summary and this
-// module's own test", but print_summary inlines `u.interrupt_remapping` and never calls this; the
-// CI-warnings lane read the body on 2026-09-30 after mirroring print_summary's allowance set and
-// finding the warning still fired. A test-only helper gets the not(test) allowance the tree's
-// test-only items carry.
+/// Name: provisional (milestone 1068, 2026-11-11 UTC).
 #[cfg_attr(not(test), allow(dead_code))]
-pub(crate) fn interrupt_remapping_available() -> Option<bool> {
+pub(crate) fn interrupt_remapping_enabled() -> Option<bool> {
+    if super::amd_vi::is_active() {
+        return Some(false);
+    }
     let g = IOMMU.lock();
     let mut any = false;
     let mut all = true;
     for s in g.iter() {
         if let Slot::Up(u) = s {
             any = true;
-            all &= u.interrupt_remapping;
+            all &= u.remapping.is_some();
         }
     }
     any.then_some(all)
+}
+
+/// **The message requester `rid` must write to deliver `vector` to the core whose xAPIC id is
+/// `destination`** (milestone 1068). `Ok(Some)` is a remappable message naming a fresh remapping
+/// entry that only `rid` may raise; `Ok(None)` is a requester no remapping unit owns, whose
+/// messages no unit sees, so the caller writes the compatibility format; `Err` is a remapping
+/// table with no entry left.
+///
+/// Name: provisional (milestone 1068, 2026-11-11 UTC).
+pub(crate) fn remap_message(
+    rid: u32,
+    vector: u8,
+    destination: u8,
+) -> Result<Option<MsiTarget>, &'static str> {
+    if super::amd_vi::is_active() {
+        return Ok(None);
+    }
+    // Before the lock: `owner_index` reads configuration space.
+    let Some(i) = owner_index(rid) else {
+        return Ok(None);
+    };
+    let mut g = IOMMU.lock();
+    let Slot::Up(u) = &mut g.slots[i] else {
+        return Ok(None);
+    };
+    if u.remapping.is_none() {
+        return Ok(None);
+    }
+    let handle = u
+        .allocate_remapping_entry()
+        .ok_or("every interrupt remapping entry on this unit is handed out")?;
+    u.write_remapping_entry(
+        handle,
+        remapped_entry(vector, destination, rid as u16, false),
+    );
+    Ok(Some(remappable_message(handle)))
+}
+
+/// **The IO APIC redirection entry that delivers `vector` to xAPIC id `destination` for
+/// redirection index `index`**, with the line's polarity and trigger mode (milestone 1068).
+/// `Ok(Some)` is a remappable-format entry; `Ok(None)` is a machine where the IO APIC's unit
+/// remaps nothing, so the caller writes the compatibility format. Each line keeps one remapping
+/// entry for good, rewritten when the line moves, since `enable` routes a line again at every
+/// acknowledgement.
+///
+/// Name: provisional (milestone 1068, 2026-11-11 UTC).
+pub(crate) fn remap_io_apic_line(
+    index: u32,
+    vector: u8,
+    destination: u8,
+    active_low: bool,
+    level: bool,
+) -> Result<Option<u64>, &'static str> {
+    if super::amd_vi::is_active() {
+        return Ok(None);
+    }
+    let mut g = IOMMU.lock();
+    let Units {
+        slots,
+        io_apic,
+        io_apic_handles,
+        ..
+    } = &mut *g;
+    let Some((unit, source_id)) = *io_apic else {
+        return Ok(None);
+    };
+    let Slot::Up(u) = &mut slots[unit] else {
+        return Ok(None);
+    };
+    if u.remapping.is_none() {
+        return Ok(None);
+    }
+    let Some(handle) = io_apic_handles.get_mut(index as usize) else {
+        return Err("the redirection index is past the 256 lines this driver tracks");
+    };
+    if *handle == NO_HANDLE {
+        *handle = u
+            .allocate_remapping_entry()
+            .ok_or("every interrupt remapping entry on this unit is handed out")?;
+    }
+    let handle = *handle;
+    u.write_remapping_entry(
+        handle,
+        remapped_entry(vector, destination, source_id, level),
+    );
+    Ok(Some(remappable_redirection_entry(
+        handle, vector, active_low, level,
+    )))
 }
 
 /// **This machine's IOMMU, for the machine description** (milestone 268).
@@ -646,6 +1108,7 @@ pub(crate) fn print_summary() {
                     InterruptRemappingClaims {
                         unit: u.interrupt_remapping,
                         platform,
+                        enabled: u.remapping.is_some(),
                     },
                 );
             }
@@ -682,13 +1145,20 @@ pub(crate) fn build_domain(regions: &[paging::domain::DmaRegion]) -> u64 {
     }
 }
 
-/// Register-based, global invalidation: the context cache first (a stale context entry would
-/// still point translation at the previous domain), then the IOTLB, each a write-and-poll on its
-/// own register. Both use global granularity; see notes/iommu.md's BUGS for the cost.
-fn invalidate_all(s: &Unit) {
+/// Global invalidation: the context cache first (a stale context entry would still point
+/// translation at the previous domain), then the IOTLB. Queued where the unit has a queue, else a
+/// write-and-poll on each one's own register. Both use global granularity; see notes/iommu.md's
+/// BUGS for the cost.
+fn invalidate_all(s: &mut Unit) {
     if s.rwbf {
         global_command(s.base, GCMD_WBF, true);
         wait_gsts(s.base, "write buffer flush", |v| v & GSTS_WBFS == 0);
+    }
+    if s.queue.is_some() {
+        s.queue_submit(DESCRIPTOR_CONTEXT_CACHE_GLOBAL, 0);
+        s.queue_submit(DESCRIPTOR_IOTLB_GLOBAL, 0);
+        s.queue_wait();
+        return;
     }
 
     w64(s.base, CCMD, CCMD_ICC | CCMD_CIRG_GLOBAL);
@@ -720,7 +1190,7 @@ pub fn attach(rid: u32, root: u64, _tag: u16) {
         return;
     };
     let mut g = IOMMU.lock();
-    let Units { slots, ctx } = &mut *g;
+    let Units { slots, ctx, .. } = &mut *g;
     let Slot::Up(s) = &mut slots[i] else {
         return;
     };
@@ -940,39 +1410,385 @@ pub(crate) fn print_context(rid: u32) {
 // promises the hardware: four levels, the same the context entry's AW field selects.
 const _: () = assert!(Vtd::LEVELS == 4);
 
-#[cfg(test)]
-mod tests {
-    //! Milestone 317's half of the interrupt-remapping question, which is the half a boot can
-    //! answer. The other half (does a remapped interrupt land where an `IRTE` says it should)
-    //! needs a driver that programs one, and this tree has none.
-
+/// Proofs that a remapping entry grants exactly what the kernel asked for, and that a message
+/// names exactly one entry (milestone 1068). They run on an `x86_64` host, where `crate::arch` is
+/// this architecture's. See notes/iommu.md.
+#[cfg(kani)]
+mod proofs {
     use super::*;
 
-    /// **The unit's interrupt-remapping capability is reported, and remapping is still off.**
+    /// **A remapping entry delivers exactly the vector granted, to exactly the core named, and
+    /// only for the requester named.** Present, remapped rather than posted, fixed delivery,
+    /// physical destination, faults recorded, and every reserved bit zero (QEMU's model faults an
+    /// entry with any set, and so may silicon). `SVT` = 01 with `SQ` = 00 compares all sixteen
+    /// bits of the requester id, so no other function, not even another function of the same
+    /// device, passes the check.
     ///
-    /// The first assertion is a guard: on a runner that attaches `-device intel-iommu`, a `None`
-    /// means the DRHD was never found. The second states a limit (notes/confinement-claims.md's
-    /// shape): whatever `ECAP.IR` says, `GSTS.IRES` is clear, because this driver never sets
-    /// `GCMD.IRE`. It fails the day remapping is enabled without retiring the claim in
-    /// design/roadmap/0317-interrupt-remapping-flags.md, and it runs with `NIFE_INTREMAP` and
-    /// without, since a test that only ran under the flag would be one nobody runs.
-    #[test_case]
-    fn interrupt_remapping_is_reported_and_never_enabled() {
-        let Some(offered) = interrupt_remapping_available() else {
-            crate::testing::skip!("this machine's ACPI names no DMAR, so there is no unit to ask");
-        };
+    /// Falsification: replayable `kernel/falsifications/arch.x86_64.iommu.proofs.a_remapping_entry_grants_exactly_one_vector_to_exactly_one_requester.patch`
+    #[kani::proof]
+    fn a_remapping_entry_grants_exactly_one_vector_to_exactly_one_requester() {
+        let vector: u8 = kani::any();
+        let destination: u8 = kani::any();
+        let source_id: u16 = kani::any();
+        let level: bool = kani::any();
+        let [low, high] = remapped_entry(vector, destination, source_id, level);
 
-        for slot in IOMMU.lock().iter() {
-            let Slot::Up(u) = slot else { continue };
-            assert_eq!(
-                r32(u.base, GSTS) & GSTS_IRES,
-                0,
-                "GSTS.IRES is set on drhd {:#x}: something enabled interrupt remapping (ECAP.IR \
-                 was {offered}), and the claim that this kernel never remaps an interrupt is now \
-                 false",
-                u.base,
+        assert!(low & 1 == 1, "present");
+        assert!(
+            low >> 1 & 1 == 0,
+            "fault processing enabled: a refusal is recorded"
+        );
+        assert!(low >> 2 & 1 == 0, "physical destination mode");
+        assert!(
+            low >> 3 & 1 == 0,
+            "no redirection hint: the one core named, not a lowest-priority pick"
+        );
+        assert!(low >> 4 & 1 == level as u64, "the trigger mode asked for");
+        assert!(
+            low >> 5 & 0b111 == 0,
+            "fixed delivery: no NMI, SMI, INIT or ExtINT"
+        );
+        assert!(low >> 15 & 1 == 0, "remapped format, not posted");
+        assert!(low >> 16 & 0xff == vector as u64, "the vector granted");
+        assert!(
+            low >> 32 == (destination as u64) << 8,
+            "the xAPIC destination in DST[15:8], nothing else"
+        );
+        assert!(
+            low & 0xff00_7000 == 0,
+            "the low half's reserved bits are zero"
+        );
+        assert!(high & 0xffff == source_id as u64, "the requester id named");
+        assert!(
+            high >> 16 & 0b11 == 0,
+            "SQ: all sixteen requester-id bits compared"
+        );
+        assert!(
+            high >> 18 & 0b11 == 0b01,
+            "SVT: the requester id is verified"
+        );
+        assert!(high >> 20 == 0, "the high half's reserved bits are zero");
+    }
+
+    /// **A message names one remapping entry and no vector, and two entries never share a
+    /// message.** Every message is in remappable format at the interrupt address window, with the
+    /// subhandle valid and zero and the high address half zero, so the handle it decodes to is the
+    /// one granted; two handles give two addresses. An IO APIC line's entry is remappable, decodes
+    /// to its own handle, carries the entry's vector (an end of interrupt matches on it) and
+    /// arrives unmasked with no delivery-mode bits.
+    ///
+    /// Falsification: replayable `kernel/falsifications/arch.x86_64.iommu.proofs.a_message_names_exactly_one_remapping_entry.patch`
+    #[kani::proof]
+    fn a_message_names_exactly_one_remapping_entry() {
+        let a: u16 = kani::any();
+        let b: u16 = kani::any();
+        let message = remappable_message(a);
+        let address = message.address;
+        assert!(
+            address >> 20 == 0xfee,
+            "inside the interrupt address window, high half zero"
+        );
+        assert!(
+            address >> 4 & 1 == 1,
+            "remappable format: never the compatibility format"
+        );
+        assert!(
+            address >> 3 & 1 == 1 && message.data == 0,
+            "subhandle valid and zero"
+        );
+        let decoded = (address >> 5 & 0x7fff | (address >> 2 & 1) << 15) as u16;
+        assert!(decoded == a, "the address names the handle granted");
+        if a != b {
+            assert!(
+                remappable_message(b).address != address,
+                "two entries, two messages"
             );
         }
+
+        let vector: u8 = kani::any();
+        let active_low: bool = kani::any();
+        let level: bool = kani::any();
+        let entry = remappable_redirection_entry(a, vector, active_low, level);
+        assert!(
+            entry >> 48 & 1 == 1,
+            "the IO APIC entry is in remappable format"
+        );
+        assert!(
+            (entry >> 49 | (entry >> 11 & 1) << 15) as u16 == a,
+            "it names its own handle"
+        );
+        assert!(
+            entry & 0xff == vector as u64,
+            "it carries the entry's vector"
+        );
+        assert!(
+            entry >> 8 & 0b111 == 0 && entry >> 16 & 1 == 0,
+            "fixed delivery, unmasked"
+        );
+        assert!(entry >> 15 & 1 == level as u64 && entry >> 13 & 1 == active_low as u64);
+        assert!(
+            entry & 0x0000_ffff_fffe_5000 == 0,
+            "reserved and read-only bits zero"
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// **Interrupt remapping is on in every unit whose hardware and platform offer it, and off in
+    /// every other** (milestone 1068, the opposite of the claim milestone 317 held). Where it is on,
+    /// compatibility-format messages are blocked (`GSTS.CFIS` clear) and the table the unit walks
+    /// is the one this driver built. On the default runner the unit and the DMAR both offer it, so
+    /// a unit that stayed off there fails rather than passing as "not offered"; under
+    /// `NIFE_INTREMAP=off` the same test checks the other half.
+    #[test_case]
+    fn interrupt_remapping_is_on_wherever_it_is_offered() {
+        let Some(platform) = DMAR.lock().map(|d| d.platform_interrupt_remapping) else {
+            crate::testing::skip!("this machine's ACPI names no DMAR, so there is no unit to ask");
+        };
+        let g = IOMMU.lock();
+        let io_apic_named = g.io_apic.is_some();
+        for slot in g.iter() {
+            let Slot::Up(u) = slot else { continue };
+            let status = r32(u.base, GSTS);
+            let offered = u.interrupt_remapping && platform && u.queue.is_some();
+            if !offered {
+                assert_eq!(
+                    status & GSTS_IRES,
+                    0,
+                    "drhd {:#x} remaps interrupts though it or the platform does not offer it",
+                    u.base
+                );
+                continue;
+            }
+            assert!(
+                io_apic_named,
+                "drhd {:#x} offers remapping, and no DMAR scope named the IO APIC",
+                u.base
+            );
+            assert_ne!(
+                status & GSTS_IRES,
+                0,
+                "drhd {:#x} offers remapping and GSTS.IRES is clear",
+                u.base
+            );
+            assert_eq!(
+                status & GSTS_CFIS,
+                0,
+                "drhd {:#x} lets compatibility-format interrupts through",
+                u.base
+            );
+            let table = u.remapping.as_ref().map(|t| t.base);
+            assert_eq!(
+                Some(r64(u.base, IRTA) & !0xfff),
+                table,
+                "drhd {:#x} walks a remapping table this driver did not build",
+                u.base
+            );
+        }
+    }
+
+    /// **A granted MSI names a remapping entry, and the entry names the vector and the requester**
+    /// (milestone 1068). A fresh grant for the first virtio disk reads back from the table it was
+    /// written to, present and bound to that disk's requester id, and its message is in
+    /// remappable format, so the address carries no vector at all.
+    #[test_case]
+    fn a_granted_message_names_an_entry_bound_to_its_requester() {
+        if interrupt_remapping_enabled() != Some(true) {
+            crate::testing::skip!("no VT-d unit remaps interrupts on this machine");
+        }
+        let Some(d) = crate::pci::find_block_device() else {
+            crate::testing::skip!("no PCI disk to grant a message to");
+        };
+        let vector = 0xc3;
+        let target = remap_message(d.rid, vector, 0)
+            .expect("a remapping entry was free")
+            .expect("the disk's unit remaps, so its message is remapped");
+        assert_ne!(target.address & MESSAGE_REMAPPABLE_FORMAT, 0);
+        let handle = ((target.address >> 5) & 0x7fff | ((target.address >> 2) & 1) << 15) as u16;
+        let i = owner_index(d.rid).expect("the disk has an owner");
+        let g = IOMMU.lock();
+        let Slot::Up(u) = &g.slots[i] else {
+            panic!("the disk's unit is not up");
+        };
+        let base = u.remapping.as_ref().expect("the unit remaps").base;
+        // SAFETY: `handle` came from this table's allocator, so the entry is inside its frame.
+        let entry = unsafe {
+            let p = phys_to_virt(base + u64::from(handle) * 16) as *const u64;
+            [
+                core::ptr::read_volatile(p),
+                core::ptr::read_volatile(p.add(1)),
+            ]
+        };
+        assert_eq!(entry, remapped_entry(vector, 0, d.rid as u16, false));
+    }
+
+    /// The fault reason a unit records for a remappable message whose entry names another
+    /// requester (VT-d 4.1 section 7.1.3, "invalid source-id").
+    const FAULT_SOURCE_ID: u32 = 0x26;
+    /// ... and for a compatibility-format message while `CFIS` is clear.
+    const FAULT_COMPATIBILITY_FORMAT: u32 = 0x25;
+
+    /// The fault the unit recorded for requester `rid`, polled a bounded while.
+    fn fault_for(rid: u32) -> Option<Fault> {
+        for _ in 0..200_000 {
+            match take_fault() {
+                Some(f) if f.rid == rid => return Some(f),
+                Some(_) => {}
+                None => core::hint::spin_loop(),
+            }
+        }
+        None
+    }
+
+    /// One MSI-X table entry's address and data, read or written as the device sees them.
+    fn read_message(entry: u64) -> (u64, u32) {
+        // SAFETY: `entry` is an MSI-X table entry inside a placed BAR, which the direct map covers
+        // device-typed; the first three words are its address and data.
+        unsafe {
+            let p = phys_to_virt(entry) as *const u32;
+            (
+                u64::from(core::ptr::read_volatile(p))
+                    | u64::from(core::ptr::read_volatile(p.add(1))) << 32,
+                core::ptr::read_volatile(p.add(2)),
+            )
+        }
+    }
+    fn write_message(entry: u64, address: u64, data: u32) {
+        // SAFETY: as `read_message`.
+        unsafe {
+            let p = phys_to_virt(entry) as *mut u32;
+            core::ptr::write_volatile(p, address as u32);
+            core::ptr::write_volatile(p.add(1), (address >> 32) as u32);
+            core::ptr::write_volatile(p.add(2), data);
+        }
+    }
+
+    /// **A message forged in one device's MSI-X table, naming a vector granted to another, is
+    /// refused** (milestone 1068 step 5, in the shape of milestone 202's confinement tests). The
+    /// forger is the second virtio disk and the grant the first's: the test plays the component
+    /// that holds the forger's MSI-X table page, which is what a userspace bus server holds.
+    ///
+    /// With interrupts masked, so the local APIC's request register is the witness, it shows
+    /// three things in order. The forger's own message lands on the forger's own vector, so the
+    /// request really raises an interrupt. The first disk's message, copied into the forger's
+    /// table, does not land, and the unit records an invalid-source-id fault for the forger. And a
+    /// compatibility-format message aimed straight at the first disk's vector is blocked, with its
+    /// own fault reason. QEMU's model (`vtd_interrupt_remap_msi`, QEMU 10.2) passes the
+    /// compatibility format whatever `GCMD.CFI` says, so that last half is asserted only on bare
+    /// metal (notes/iommu.md's BUGS); a guest says which it is in `CPUID.1:ECX[31]`.
+    #[test_case]
+    fn a_message_forged_from_another_devices_grant_is_refused() {
+        if interrupt_remapping_enabled() != Some(true) {
+            crate::testing::skip!("no VT-d unit remaps interrupts on this machine");
+        }
+        // Quiesce first: finding a disk brings it up again, which grants it a fresh vector and
+        // rewrites its MSI-X entry, so the two disks below are found after the others are found.
+        let Some(forger_rid) = crate::pci::find_block_device_n(1).map(|d| d.rid) else {
+            crate::testing::skip!("two PCI disks are needed, one to grant and one to forge");
+        };
+        crate::virtio::quiesce_block_devices_except(forger_rid);
+        let (Some(granted), Some(forger)) = (
+            crate::pci::find_block_device_n(0),
+            crate::pci::find_block_device_n(1),
+        ) else {
+            crate::testing::skip!("two PCI disks are needed, one to grant and one to forge");
+        };
+        assert_ne!(granted.rid, forger.rid);
+        let granted_entry =
+            crate::pci::msix_table_entry(granted.bdf).expect("the first disk has MSI-X");
+        let forger_entry =
+            crate::pci::msix_table_entry(forger.bdf).expect("the second disk has MSI-X");
+        let (granted_address, granted_data) = read_message(granted_entry);
+        let (own_address, own_data) = read_message(forger_entry);
+
+        let dma = crate::memory::alloc_zeroed().expect("no DMA frame").addr();
+        let id = crate::virtio::register(
+            crate::virtio::Transport::pci(&forger),
+            dma,
+            page_frames::FRAME_SIZE,
+            Some(forger.rid),
+        );
+        let was = super::super::interrupts::disable();
+        while take_fault().is_some() {}
+        // Whether `vector` lands within a bounded wait: the message follows the request's
+        // completion, possibly on another host thread, so one read could miss a message that
+        // lands, and a refusal is only believed after the whole wait.
+        let pending = |vector: u32| {
+            (0..200_000).any(|_| {
+                core::hint::spin_loop();
+                super::super::interrupt_controller::is_vector_pending(vector)
+            })
+        };
+        assert!(
+            !pending(granted.intid),
+            "the first disk's vector was pending before the test"
+        );
+
+        assert!(
+            crate::virtio::provoke_completion(id),
+            "the second disk did not complete"
+        );
+        assert!(
+            pending(forger.intid),
+            "the second disk's own message did not land on its own vector {:#x}: the request \
+             raises no interrupt, and the refusals below would prove nothing",
+            forger.intid,
+        );
+
+        write_message(forger_entry, granted_address, granted_data);
+        assert!(
+            crate::virtio::provoke_completion(id),
+            "the second disk did not complete"
+        );
+        assert!(
+            !pending(granted.intid),
+            "the second disk raised the first disk's vector {:#x} by copying its message: \
+             interrupt remapping does not confine it",
+            granted.intid,
+        );
+        let fault =
+            fault_for(forger.rid).expect("the unit recorded no fault for the forged message");
+        assert_eq!(
+            fault.code, FAULT_SOURCE_ID,
+            "the forged message faulted for another reason"
+        );
+
+        let destination = u64::from(super::super::interrupt_controller::local_apic_id());
+        write_message(
+            forger_entry,
+            MESSAGE_ADDRESS_BASE | destination << 12,
+            granted.intid,
+        );
+        assert!(
+            crate::virtio::provoke_completion(id),
+            "the second disk did not complete"
+        );
+        let landed = pending(granted.intid);
+        let guest = core::arch::x86_64::__cpuid(1).ecx & 1 << 31 != 0;
+        if guest && landed {
+            crate::println!(
+                "    this guest's VT-d model delivered a compatibility-format message with CFIS \
+                 clear; bare metal refuses it (notes/iommu.md)"
+            );
+        } else {
+            assert!(
+                !landed,
+                "a compatibility-format message reached vector {:#x} with remapping on",
+                granted.intid,
+            );
+            let fault =
+                fault_for(forger.rid).expect("no fault for the compatibility-format message");
+            assert_eq!(fault.code, FAULT_COMPATIBILITY_FORMAT);
+        }
+
+        write_message(forger_entry, own_address, own_data);
+        while take_fault().is_some() {}
+        super::super::interrupts::restore(was);
+        crate::virtio::unregister(id);
+        crate::memory::free(page_frames::PageFrame::from_addr(dma));
     }
 
     /// **Every unit the DMAR names is translating** (milestone 594). Before it, one unit came up
