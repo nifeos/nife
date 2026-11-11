@@ -56,11 +56,14 @@ pub trait Port: Hardware {
 pub struct Inputs {
     /// The DMA region's physical base, which descriptors name.
     pub region_physical_address: u64,
-    /// The tree's `local-mac-address`, if it has one.
+    /// (`station_address`, the IEEE 802.3 standard's name for a MAC address) The tree's
+    /// `local-mac-address`, if it has one.
     #[doc(alias = "mac_address")]
     pub station_address: Option<[u8; 6]>,
-    /// The PHY's MDIO address.
+    /// (`physical_layer_device_address`, the IEEE 802.3 standard's PHY address) The PHY's MDIO
+    /// address.
     #[doc(alias = "phy")]
+    #[doc(alias = "phy_address")]
     pub physical_layer_device_address: u8,
     /// The PHY's board settings.
     #[doc(alias = "phy")]
@@ -87,10 +90,13 @@ pub enum Error {
         /// What the version register read.
         version: u32,
     },
-    /// The station address is in neither the tree nor the controller's own registers.
+    /// (`NoStationAddress`, after the IEEE 802.3 standard's station address) The station address
+    /// is in neither the tree nor the controller's own registers.
+    #[doc(alias = "no_mac_address")]
     NoStationAddress,
     /// An MDIO command did not complete.
-    Mdio(management_data_input_output::Error),
+    #[doc(alias = "mdio")]
+    ManagementDataInputOutput(management_data_input_output::Error),
     /// The PHY is not the YT8531 these board settings are for.
     UnknownPhysicalLayerDevice {
         /// What it answered.
@@ -102,10 +108,12 @@ pub enum Error {
     NotCoherent(Verdict),
 }
 
-/// Where the station address came from.
+/// (`AddressSource`, after the IEEE 802.3 standard's station address) Where the station address
+/// came from.
 ///
 /// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[doc(alias = "mac_address_source")]
 pub enum AddressSource {
     /// The tree's `local-mac-address`, which U-Boot writes from the board's EEPROM.
     Tree,
@@ -121,7 +129,9 @@ pub enum AddressSource {
 pub struct Account {
     /// The controller's version register.
     pub version: u32,
-    /// The DMA's address width.
+    /// (`direct_memory_access_address_bits`, the databook's `ADDR64` field) The DMA's address
+    /// width.
+    #[doc(alias = "addr64")]
     pub direct_memory_access_address_bits: u8,
     /// The PHY's identifier.
     #[doc(alias = "phy")]
@@ -129,7 +139,8 @@ pub struct Account {
     /// The PHY's I/O voltage, and which tree spelling its settings came from, once configured.
     #[doc(alias = "phy")]
     pub physical_layer_device: Option<(u32, SettingsSource)>,
-    /// The station address and where it came from.
+    /// (`station_address`, the IEEE 802.3 standard's name for a MAC address) The station address
+    /// and where it came from.
     #[doc(alias = "mac_address")]
     pub station_address: Option<([u8; 6], AddressSource)>,
     /// How long each software reset took, in microseconds: the probe's, then the real one's.
@@ -166,7 +177,7 @@ pub fn bring_up(
     }
 
     // The address before the reset, which returns the registers to all ones.
-    let station_address = match inputs.station_address {
+    let station = match inputs.station_address {
         Some(m) => (m, AddressSource::Tree),
         None => controller::station_address(
             port.read(registers::MAC_ADDRESS_0_HIGH_REGISTER),
@@ -175,21 +186,15 @@ pub fn bring_up(
         .map(|m| (m, AddressSource::Registers))
         .ok_or(Error::NoStationAddress)?,
     };
-    account.station_address = Some(station_address);
-    let station_address = station_address.0;
+    account.station_address = Some(station);
+    let station = station.0;
 
     bring_up_physical_layer_device(port, inputs, account)?;
 
     // The PHY keeps its receive clock running from here on, which the reset needs.
     account.resets_microseconds[0] = controller::soft_reset(port).map_err(Error::Controller)?;
 
-    let verdict = probe(
-        port,
-        &id,
-        inputs.region_physical_address,
-        station_address,
-        account,
-    )?;
+    let verdict = probe(port, &id, inputs.region_physical_address, station, account)?;
     if !matches!(verdict, Verdict::Coherent | Verdict::Inconclusive) {
         return Err(Error::NotCoherent(verdict));
     }
@@ -203,12 +208,12 @@ pub fn bring_up(
         &id,
         &jh7110::BUS_CONFIGURATION,
         inputs.region_physical_address,
-        station_address,
+        station,
     )
     .map_err(Error::Controller)?;
 
     let link = wait_for_link(port, inputs, account)?;
-    Ok((station_address, link))
+    Ok((station, link))
 }
 
 /// Identify the PHY, refuse any other part, and configure it for the board.
@@ -217,12 +222,12 @@ fn bring_up_physical_layer_device(
     inputs: &Inputs,
     account: &mut Account,
 ) -> Result<(), Error> {
-    let address = inputs.physical_layer_device_address;
+    let device = inputs.physical_layer_device_address;
     account.physical_layer_device_id = management_data_input_output::physical_layer_device_id(
         &mut management_data_input_output::Bus(port),
-        address,
+        device,
     )
-    .map_err(Error::Mdio)?;
+    .map_err(Error::ManagementDataInputOutput)?;
     if account.physical_layer_device_id
         != motorcomm_physical_layer_device::MOTORCOMM_YT8531_PHYSICAL_LAYER_DEVICE_ID
     {
@@ -232,10 +237,10 @@ fn bring_up_physical_layer_device(
     }
     let applied = motorcomm_physical_layer_device::configure(
         &mut management_data_input_output::Bus(port),
-        address,
+        device,
         &inputs.physical_layer_device,
     )
-    .map_err(Error::Mdio)?;
+    .map_err(Error::ManagementDataInputOutput)?;
     account.physical_layer_device = Some((
         applied.voltage_millivolts,
         inputs.physical_layer_device.source,
@@ -250,19 +255,19 @@ fn wait_for_link(
     inputs: &Inputs,
     account: &mut Account,
 ) -> Result<Option<Link>, Error> {
-    let address = inputs.physical_layer_device_address;
+    let device = inputs.physical_layer_device_address;
     management_data_input_output::restart_autonegotiation(
         &mut management_data_input_output::Bus(&mut *port),
-        address,
+        device,
     )
-    .map_err(Error::Mdio)?;
+    .map_err(Error::ManagementDataInputOutput)?;
     let started = port.now_microseconds();
     let link = loop {
         if let Some(l) = motorcomm_physical_layer_device::read_link(
             &mut management_data_input_output::Bus(&mut *port),
-            address,
+            device,
         )
-        .map_err(Error::Mdio)?
+        .map_err(Error::ManagementDataInputOutput)?
         {
             break Some(l);
         }
@@ -276,11 +281,11 @@ fn wait_for_link(
     if let Some(l) = link {
         motorcomm_physical_layer_device::apply_speed(
             &mut management_data_input_output::Bus(&mut *port),
-            address,
+            device,
             &inputs.physical_layer_device,
             l.speed,
         )
-        .map_err(Error::Mdio)?;
+        .map_err(Error::ManagementDataInputOutput)?;
         controller::start(port, l, false);
     }
     Ok(link)
@@ -292,18 +297,12 @@ fn probe(
     port: &mut impl Port,
     id: &Identity,
     region: u64,
-    station_address: [u8; 6],
+    station: [u8; 6],
     account: &mut Account,
 ) -> Result<Verdict, Error> {
     zero(port);
-    controller::configure(
-        port,
-        id,
-        &jh7110::BUS_CONFIGURATION,
-        region,
-        station_address,
-    )
-    .map_err(Error::Controller)?;
+    controller::configure(port, id, &jh7110::BUS_CONFIGURATION, region, station)
+        .map_err(Error::Controller)?;
     let loopback = Link {
         speed: Speed::Thousand,
         full_duplex: true,
@@ -313,8 +312,7 @@ fn probe(
     // A probe frame is a fixed 128 bytes, so `transmit` cannot refuse it for its length, and the
     // ring was just emptied, so it cannot be full; an error here would leave nothing to observe,
     // which `classify` reports as inconclusive.
-    let _ =
-        port.with_region(|r, t| cache_coherence::prepare(&mut data_plane, r, t, station_address));
+    let _ = port.with_region(|r, t| cache_coherence::prepare(&mut data_plane, r, t, station));
     let started = port.now_microseconds();
     while !port.with_region(|r, _| cache_coherence::is_delivered(r))
         && port.now_microseconds() - started < cache_coherence::WAIT_MICROSECONDS
@@ -322,7 +320,7 @@ fn probe(
         port.delay_microseconds(1);
     }
     let status = port.read(registers::CHANNEL_STATUS_REGISTER);
-    let o = port.with_region(|r, _| cache_coherence::observe(r, station_address, status));
+    let o = port.with_region(|r, _| cache_coherence::observe(r, station, status));
     let v = cache_coherence::classify(&o);
     account.coherence = Some((v, o));
     Ok(v)
@@ -345,7 +343,7 @@ mod tests {
     use crate::simulator::{Memory, NetworkInterfaceController};
 
     const REGION: u64 = 0x4800_0000;
-    const STATION_ADDRESS: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
+    const STATION: [u8; 6] = [0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c];
     const GIGABIT: Link = Link {
         speed: Speed::Thousand,
         full_duplex: true,
@@ -354,7 +352,7 @@ mod tests {
     fn inputs() -> Inputs {
         Inputs {
             region_physical_address: REGION,
-            station_address: Some(STATION_ADDRESS),
+            station_address: Some(STATION),
             physical_layer_device_address: 0,
             physical_layer_device: Settings::FALLBACK_GMAC0,
         }
@@ -374,12 +372,12 @@ mod tests {
         let mut account = Account::default();
         assert_eq!(
             bring_up(&mut p, &inputs(), &mut account),
-            Ok((STATION_ADDRESS, Some(GIGABIT)))
+            Ok((STATION, Some(GIGABIT)))
         );
         assert!(matches!(account.coherence, Some((Verdict::Coherent, _))));
         assert_eq!(
             account.station_address,
-            Some((STATION_ADDRESS, AddressSource::Tree))
+            Some((STATION, AddressSource::Tree))
         );
         assert_eq!(
             account.physical_layer_device,
@@ -406,7 +404,7 @@ mod tests {
         let mut account = Account::default();
         assert_eq!(
             bring_up(&mut p, &inputs(), &mut account),
-            Ok((STATION_ADDRESS, None))
+            Ok((STATION, None))
         );
         assert!(account.link_wait_milliseconds >= LINK_WAIT_MILLISECONDS);
         assert_eq!(
@@ -432,7 +430,7 @@ mod tests {
 
     /// No tree address and registers reset to all ones: there is no address to take.
     #[test]
-    fn with_no_address_anywhere_the_port_is_refused_before_the_phy() {
+    fn with_no_station_named_anywhere_the_port_is_refused_before_the_physical_layer_device() {
         let mut p = port(Memory::coherent(REGION), Some(GIGABIT));
         let mut account = Account::default();
         let no_tree = Inputs {
@@ -448,7 +446,7 @@ mod tests {
 
     /// Another PHY is refused before its registers are written.
     #[test]
-    fn another_phy_is_refused_and_named() {
+    fn another_physical_layer_device_is_refused_and_named() {
         let mut p = port(Memory::coherent(REGION), Some(GIGABIT));
         p.physical_layer_device
             .write_raw(PHYSICAL_LAYER_DEVICE_ID_1_REGISTER, 0x1234);
@@ -463,7 +461,7 @@ mod tests {
     /// A PHY that drives no receive clock leaves the reset hung, and the refusal comes after the
     /// PHY was configured, which the account shows.
     #[test]
-    fn a_reset_with_no_receive_clock_is_refused_after_the_phy() {
+    fn a_reset_with_no_receive_clock_is_refused_after_the_physical_layer_device() {
         let mut p = port(Memory::coherent(REGION), Some(GIGABIT));
         p.stop_receive_clock();
         let mut account = Account::default();

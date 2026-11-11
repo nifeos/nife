@@ -29,9 +29,8 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use ::driver_process_contract::designware_ethernet::{
     self as contract, ACCOUNT_RECORDS, ALWAYS_ON_SYSTEM_CONTROLLER_VIRTUAL_ADDRESS,
-    CONTROL_REGISTER_PAGES, CONTROL_REGISTER_VIRTUAL_ADDRESS, ControlHandoff, ControlRecord,
-    ControlReport, DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS,
-    Handoff,
+    CONTROL_REGISTER_PAGES, CONTROL_REGISTER_VIRTUAL_ADDRESS, ControlRecord, ControlReport,
+    DATA_PLANE_VIRTUAL_ADDRESS, DIRECT_MEMORY_ACCESS_REGISTER_PAGE_VIRTUAL_ADDRESS, Handoff,
 };
 use contract::device::bring_up::{self as port_bring_up, Inputs};
 use contract::device::motorcomm_physical_layer_device::Link;
@@ -246,9 +245,8 @@ fn start_control(
     e: &crate::memory::Jh7110Ethernet,
     inputs: Inputs,
 ) -> Result<(ControlReport, Result<bool, port_bring_up::Error>), Error> {
-    let [arg0, arg1, arg2] = ControlHandoff { inputs }
-        .pack()
-        .ok_or(Error::SettingsUnrepresentable)?;
+    let [arg0, arg1, arg2] =
+        contract::control_spawn_words(&inputs).ok_or(Error::SettingsUnrepresentable)?;
     let image =
         crate::user::program("designware_ethernet_control").ok_or(Error::NoControlProgram)?;
     let stack = control_stack()?;

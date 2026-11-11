@@ -311,10 +311,10 @@ mod radon {
         let a = control.account;
         println!(
             "network-bench: syscon    : {:#010x} -> {:#010x} (gmac0 interface {} before, {} after; 1 is RGMII)",
-            control.syscon.0,
-            control.syscon.1,
-            jh7110::gmac0_interface_select(control.syscon.0),
-            jh7110::gmac0_interface_select(control.syscon.1),
+            control.system_controller.0,
+            control.system_controller.1,
+            jh7110::gmac0_interface_select(control.system_controller.0),
+            jh7110::gmac0_interface_select(control.system_controller.1),
         );
         println!(
             "network-bench: mac core  : version {:#010x}, {}-bit DMA",

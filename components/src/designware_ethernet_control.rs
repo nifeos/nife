@@ -34,8 +34,8 @@ use designware_ethernet::bring_up::{self, Account, Port};
 use designware_ethernet::{DirectMemoryAccessRegion, Hardware, Tails, jh7110, layout, registers};
 use driver_process_contract::designware_ethernet::{
     ACCOUNT_RECORDS, ALWAYS_ON_SYSTEM_CONTROLLER_KIND, CONTROL_REGISTER_KIND,
-    CONTROL_REGISTER_PAGES, CONTROL_REPORT_SLOT, ControlHandoff, ControlRecord, ControlReport,
-    DATA_PLANE_KIND,
+    CONTROL_REGISTER_PAGES, CONTROL_REPORT_SLOT, ControlRecord, ControlReport, DATA_PLANE_KIND,
+    control_inputs,
 };
 use startup_page_contract::StartupWindow;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE, doorbell_barrier};
@@ -166,14 +166,20 @@ user_mode_runtime::program_entry!(start);
 
 fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     // A spawn this process cannot read is no spawner's: say nothing and touch nothing.
-    let Some(handoff) = ControlHandoff::unpack(arg0, arg1, arg2) else {
+    let Some(inputs) = control_inputs([arg0, arg1, arg2]) else {
         user_mode_runtime::exit()
     };
-    let syscon = select_interface();
+    let system_controller = select_interface();
     let mut account = Account::default();
-    let outcome = bring_up::bring_up(&mut Controller, &handoff.inputs, &mut account)
-        .map(|(_, link)| link.is_some());
-    report(&ControlReport { account, syscon }, outcome);
+    let outcome =
+        bring_up::bring_up(&mut Controller, &inputs, &mut account).map(|(_, link)| link.is_some());
+    report(
+        &ControlReport {
+            account,
+            system_controller,
+        },
+        outcome,
+    );
     user_mode_runtime::exit()
 }
 

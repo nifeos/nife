@@ -1,5 +1,5 @@
 //! The JH7110 Ethernet port's two processes and what the kernel tells each: the control process's
-//! windows, spawn words ([`ControlHandoff`]) and report ([`ControlRecord`]), and the data plane's
+//! windows, spawn words ([`control_spawn_words`]) and report ([`ControlRecord`]), and the data plane's
 //! windows and spawn words ([`Handoff`]). The kernel maps every window and lists it on the
 //! startup page. See notes/designware-ethernet.md.
 //!
@@ -7,11 +7,9 @@
 //! serves.
 
 /// The driver crate itself, so the kernel names the tree's types without depending on it.
-///
-/// Name: provisional.
 pub use ::designware_ethernet as device;
 use address_space_map::{PAGE, pair_page};
-use designware_ethernet::bring_up::{Account, AddressSource, Error};
+use designware_ethernet::bring_up::{Account, AddressSource, Error, Inputs};
 use designware_ethernet::cache_coherence::{Observation, Payload, Verdict};
 use designware_ethernet::motorcomm_physical_layer_device::{Link, Settings, SettingsSource, Speed};
 use designware_ethernet::{
@@ -86,73 +84,50 @@ pub const ALWAYS_ON_SYSTEM_CONTROLLER_KIND: WindowKind = WindowKind(25);
 /// Name: provisional.
 pub const CONTROL_REPORT_SLOT: u64 = 0;
 
-/// **What the kernel hands the control process at spawn**, in its three argument words: what the
-/// tree says about the port, which the controller cannot say for itself.
+/// `arg2`'s bit saying the tree names a station in its low 48 bits.
+const TREE_NAMES_STATION: u64 = 1 << 48;
+
+/// **What the kernel hands the control process at spawn**, in its three argument words: the
+/// settings word, the region base with the PHY's MDIO address in its low bits, and the tree's
+/// station address. `None` when the settings do not fit their word ([`Settings::to_word`]).
 ///
 /// Name: provisional.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ControlHandoff {
-    /// The bring-up's inputs: the region's physical base, the tree's station address, the PHY's
-    /// MDIO address and its board settings.
-    pub inputs: designware_ethernet::bring_up::Inputs,
+pub fn control_spawn_words(inputs: &Inputs) -> Option<[u64; 3]> {
+    let station = match inputs.station_address {
+        Some(a) => station_word(a) | TREE_NAMES_STATION,
+        None => 0,
+    };
+    Some([
+        inputs.physical_layer_device.to_word()?,
+        inputs.region_physical_address | u64::from(inputs.physical_layer_device_address & 0x1f),
+        station,
+    ])
 }
 
-/// `arg2`'s bit saying the tree carries a station address in its low 48 bits.
-const STATION_ADDRESS_PRESENT: u64 = 1 << 48;
-
-impl ControlHandoff {
-    /// `[arg0, arg1, arg2]`: the settings word, the region base with the PHY's address in its low
-    /// bits, and the tree's station address. `None` when the settings do not fit their word
-    /// ([`Settings::to_word`]).
-    ///
-    /// Name: provisional.
-    pub fn pack(&self) -> Option<[u64; 3]> {
-        let i = &self.inputs;
-        let station = match i.station_address {
-            Some(a) => {
-                let mut b = [0u8; 8];
-                b[..6].copy_from_slice(&a);
-                u64::from_le_bytes(b) | STATION_ADDRESS_PRESENT
-            }
-            None => 0,
-        };
-        Some([
-            i.physical_layer_device.to_word()?,
-            i.region_physical_address | u64::from(i.physical_layer_device_address & 0x1f),
-            station,
-        ])
+/// The inverse of [`control_spawn_words`], refusing settings no word carries, a zero base and any
+/// bit no field owns.
+///
+/// Name: provisional.
+pub fn control_inputs(words: [u64; 3]) -> Option<Inputs> {
+    let [settings, base, station] = words;
+    let physical_layer_device = Settings::from_word(settings)?;
+    let region_physical_address = base & !(PAGE - 1);
+    if region_physical_address == 0 || base & (PAGE - 1) > 0x1f {
+        return None;
     }
-
-    /// The inverse of [`ControlHandoff::pack`], refusing settings no word carries, a zero base and
-    /// any bit no field owns.
-    ///
-    /// Name: provisional.
-    pub fn unpack(arg0: u64, arg1: u64, arg2: u64) -> Option<ControlHandoff> {
-        let physical_layer_device = Settings::from_word(arg0)?;
-        let region_physical_address = arg1 & !(PAGE - 1);
-        if region_physical_address == 0 || arg1 & (PAGE - 1) > 0x1f {
-            return None;
+    let tree_station = match station {
+        0 => None,
+        s if s & !(TREE_NAMES_STATION | ((1 << 48) - 1)) == 0 && s & TREE_NAMES_STATION != 0 => {
+            Some(station_from_word(s))
         }
-        if arg2 & !(STATION_ADDRESS_PRESENT | ((1 << 48) - 1)) != 0 {
-            return None;
-        }
-        let station_address = if arg2 & STATION_ADDRESS_PRESENT != 0 {
-            let b = arg2.to_le_bytes();
-            Some([b[0], b[1], b[2], b[3], b[4], b[5]])
-        } else if arg2 == 0 {
-            None
-        } else {
-            return None;
-        };
-        Some(ControlHandoff {
-            inputs: designware_ethernet::bring_up::Inputs {
-                region_physical_address,
-                station_address,
-                physical_layer_device_address: (arg1 & 0x1f) as u8,
-                physical_layer_device,
-            },
-        })
-    }
+        _ => return None,
+    };
+    Some(Inputs {
+        region_physical_address,
+        station_address: tree_station,
+        physical_layer_device_address: (base & 0x1f) as u8,
+        physical_layer_device,
+    })
 }
 
 /// **The control process's report, one message at a time.** It sends [`ACCOUNT_RECORDS`] parts
@@ -219,15 +194,16 @@ impl ControlRecord {
 }
 
 /// **The control process's account of the bring-up**: the driver crate's [`Account`] and the
-/// interface select's syscon word, before and after.
+/// interface select's word, before and after.
 ///
 /// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ControlReport {
     /// What the bring-up saw.
     pub account: Account,
-    /// The syscon word before and after the interface select.
-    pub syscon: (u32, u32),
+    /// The always-on system controller's interface-select word, before and after the select.
+    #[doc(alias = "syscon")]
+    pub system_controller: (u32, u32),
 }
 
 const fn verdict_code(v: Verdict) -> u64 {
@@ -296,7 +272,7 @@ fn outcome_code(outcome: Result<bool, Error>) -> (u64, u64) {
         Ok(linked) => (0, u64::from(linked)),
         Err(Error::Silent { version }) => (1, u64::from(version)),
         Err(Error::NoStationAddress) => (2, 0),
-        Err(Error::Mdio(mdio::Error::Timeout {
+        Err(Error::ManagementDataInputOutput(mdio::Error::Timeout {
             physical_layer_device_address,
             register,
         })) => (
@@ -325,7 +301,7 @@ fn outcome_from_code(code: u64, detail: u64) -> Option<Result<bool, Error>> {
         2 => narrow(0).map(|_| Err(Error::NoStationAddress))?,
         3 => {
             let d = narrow(16)?;
-            Err(Error::Mdio(mdio::Error::Timeout {
+            Err(Error::ManagementDataInputOutput(mdio::Error::Timeout {
                 physical_layer_device_address: d as u8,
                 register: (d >> 8) as u8,
             }))
@@ -345,7 +321,7 @@ fn outcome_from_code(code: u64, detail: u64) -> Option<Result<bool, Error>> {
 
 // Word layout of a packed report. Presence bits sit in word 0 above the version and the width.
 const HAS_PHYSICAL_LAYER_DEVICE: u64 = 1 << 40;
-const HAS_STATION_ADDRESS: u64 = 1 << 41;
+const HAS_STATION: u64 = 1 << 41;
 const HAS_COHERENCE: u64 = 1 << 42;
 const HAS_LINK: u64 = 1 << 43;
 
@@ -364,9 +340,9 @@ impl ControlReport {
             w[0] |= HAS_PHYSICAL_LAYER_DEVICE;
             w[1] |= u64::from(millivolts & 0xff_ffff) << 32 | source_code(source) << 56;
         }
-        if let Some((address, source)) = a.station_address {
-            w[0] |= HAS_STATION_ADDRESS;
-            w[2] = station_word(address) | u64::from(source == AddressSource::Registers) << 48;
+        if let Some((station, source)) = a.station_address {
+            w[0] |= HAS_STATION;
+            w[2] = station_word(station) | u64::from(source == AddressSource::Registers) << 48;
         }
         w[3] = a.resets_microseconds[0];
         w[4] = a.resets_microseconds[1];
@@ -391,7 +367,7 @@ impl ControlReport {
             w[7] = speed | u64::from(l.full_duplex) << 8;
         }
         w[8] = a.link_wait_milliseconds;
-        w[9] = u64::from(self.syscon.0) | u64::from(self.syscon.1) << 32;
+        w[9] = u64::from(self.system_controller.0) | u64::from(self.system_controller.1) << 32;
         w
     }
 
@@ -413,7 +389,7 @@ impl ControlReport {
                 source_from_code(w[1] >> 56)?,
             ));
         }
-        if w[0] & HAS_STATION_ADDRESS != 0 {
+        if w[0] & HAS_STATION != 0 {
             let source = match w[2] >> 48 {
                 0 => AddressSource::Tree,
                 1 => AddressSource::Registers,
@@ -446,7 +422,7 @@ impl ControlReport {
         }
         Some(ControlReport {
             account: a,
-            syscon: (w[9] as u32, (w[9] >> 32) as u32),
+            system_controller: (w[9] as u32, (w[9] >> 32) as u32),
         })
     }
 }
@@ -529,40 +505,38 @@ impl Handoff {
 
 #[cfg(test)]
 mod tests {
-    use designware_ethernet::bring_up::Inputs;
 
     use super::*;
 
-    fn inputs(station_address: Option<[u8; 6]>) -> Inputs {
+    fn inputs(station: Option<[u8; 6]>) -> Inputs {
         Inputs {
             region_physical_address: 0x4012_3000,
-            station_address,
+            station_address: station,
             physical_layer_device_address: 0,
             physical_layer_device: Settings::FALLBACK_GMAC0,
         }
     }
 
-    /// The control process's spawn words survive their packing with and without a tree address,
+    /// The control process's spawn words survive their packing with and without a tree station,
     /// and a word with a bit no field owns is refused.
     #[test]
-    fn the_control_handoff_round_trips_and_refuses_stray_bits() {
+    fn the_control_spawn_words_round_trip_and_refuse_stray_bits() {
         for station in [None, Some([0x6c, 0xcf, 0x39, 0x00, 0x47, 0x2c])] {
-            let h = ControlHandoff {
-                inputs: Inputs {
-                    physical_layer_device_address: 7,
-                    ..inputs(station)
-                },
+            let i = Inputs {
+                physical_layer_device_address: 7,
+                ..inputs(station)
             };
-            let [a0, a1, a2] = h.pack().expect("the fallback settings fit their word");
-            assert_eq!(ControlHandoff::unpack(a0, a1, a2), Some(h));
-            assert_eq!(ControlHandoff::unpack(a0, a1 | 0x20, a2), None);
-            assert_eq!(ControlHandoff::unpack(a0, a1 & 0x1f, a2), None);
-            assert_eq!(ControlHandoff::unpack(a0, a1, a2 | 1 << 50), None);
+            let [a0, a1, a2] =
+                control_spawn_words(&i).expect("the fallback settings fit their word");
+            assert_eq!(control_inputs([a0, a1, a2]), Some(i));
+            assert_eq!(control_inputs([a0, a1 | 0x20, a2]), None);
+            assert_eq!(control_inputs([a0, a1 & 0x1f, a2]), None);
+            assert_eq!(control_inputs([a0, a1, a2 | 1 << 50]), None);
         }
         assert_eq!(
-            ControlHandoff::unpack(0, 0x4000_0000, 1),
+            control_inputs([0, 0x4000_0000, 1]),
             None,
-            "an address with no flag"
+            "a station with no flag"
         );
     }
 
@@ -575,7 +549,7 @@ mod tests {
                 version: 0xffff_ffff,
             },
             Error::NoStationAddress,
-            Error::Mdio(mdio::Error::Timeout {
+            Error::ManagementDataInputOutput(mdio::Error::Timeout {
                 physical_layer_device_address: 3,
                 register: 0x1e,
             }),
@@ -660,7 +634,7 @@ mod tests {
                     }),
                     link_wait_milliseconds: 2900,
                 },
-                syscon: (0x0, 0x1),
+                system_controller: (0x0, 0x1),
             };
             assert_eq!(ControlReport::from_words(&r.to_words()), Some(r));
         }
