@@ -76,12 +76,6 @@ mod non_volatile_memory_express;
 // kernel/src/e1000e.rs. Driven only by the test boot so far, like the NVMe module above.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 mod e1000e;
-// The JH7110 Ethernet port's control plane (milestone 53 (the board's own peripherals: network and
-// storage on real silicon)): clocks, PHY, the DMA-coherence probe, ring bases, then the DMA page
-// goes to `net_stack`. riscv64-only because the JH7110 is; the module header carries the parity
-// note. See kernel/src/designware_ethernet.rs.
-#[cfg(target_arch = "riscv64")]
-mod designware_ethernet;
 // The xHCI bring-up policy (milestone 242 (USB host and HID)): find the controller, take it from
 // the firmware, draw the driver's register window and confine its DMA, then hand the whole
 // controller to `usb_keyboard_driver` at EL0. See

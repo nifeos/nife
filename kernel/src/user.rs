@@ -196,8 +196,8 @@ pub mod disk_tree_service;
 pub mod e1000e_service;
 
 /// **`net_stack` over the JH7110's Ethernet port** (milestone 53 (the board's own peripherals:
-/// network and storage on real silicon)): `e1000e_service`'s shape for radon. riscv64-only because
-/// the JH7110 is; `kernel/src/designware_ethernet.rs` carries the parity note.
+/// network and storage on real silicon)): the control process's spawn, then `e1000e_service`'s
+/// shape for radon. riscv64-only because the JH7110 is; the module header carries the parity note.
 #[cfg(target_arch = "riscv64")]
 pub mod designware_ethernet_service;
 

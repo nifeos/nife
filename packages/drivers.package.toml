@@ -32,4 +32,4 @@ crates = [
 interfaces = [
     "designware_ethernet",
 ]
-programs = ["block_driver", "non_volatile_memory_express", "jh7110_entropy", "designware_mobile_storage", "jh7110_clock_and_reset_server"]
+programs = ["block_driver", "non_volatile_memory_express", "jh7110_entropy", "designware_mobile_storage", "jh7110_clock_and_reset_server", "designware_ethernet_control"]

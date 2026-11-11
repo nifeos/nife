@@ -701,13 +701,13 @@ pub(crate) fn jh7110_watchdog() -> Option<(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Jh7110Ethernet {
     /// The controller, its PHY's settings, its station address if the tree has one.
-    pub port: designware_ethernet::jh7110::Discovered,
+    pub port: driver_process_contract::designware_ethernet::device::jh7110::Discovered,
     /// The AON clock-and-reset window: `gmac0`'s bus clocks, transmit clock and resets.
     pub aon: jh7110_clock_and_reset::WindowLocation,
     /// The SYS clock-and-reset window: `gmac0`'s transmit and PTP clocks.
     pub sys: jh7110_clock_and_reset::WindowLocation,
     /// The AON syscon: `gmac0`'s interface select.
-    pub syscon: designware_ethernet::jh7110::SystemController,
+    pub syscon: driver_process_contract::designware_ethernet::device::jh7110::SystemController,
 }
 
 /// The PCIe host bridge's windows, from the device tree: `(ecam, mem32)`, each `(start, size)`,

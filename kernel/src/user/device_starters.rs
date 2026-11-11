@@ -237,8 +237,9 @@ pub(super) fn boot_designware_network()
     match designware_ethernet_service::start_net_server(image, socket_contract::NO_LISTEN_GRANT) {
         Ok(w) => {
             crate::println!(
-                "  network     : the JH7110's Ethernet port, link up; the kernel started net_stack \
-                 on it, confined by its own arithmetic alone (no IOMMU on this SoC)"
+                "  network     : the JH7110's Ethernet port, link up; its control process brought it \
+                 up and the kernel started net_stack on it, both confined by their own arithmetic \
+                 alone (no IOMMU on this SoC)"
             );
             Some((w.stack, w.report))
         }

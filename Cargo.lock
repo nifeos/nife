@@ -807,7 +807,6 @@ dependencies = [
  "cpu_set",
  "credential_contract",
  "current_cpu_contract",
- "designware_ethernet",
  "designware_mobile_storage",
  "device_tree_blob",
  "direct_memory_access_validator",

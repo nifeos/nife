@@ -89,6 +89,7 @@ programs = [
     "block_driver",
     "non_volatile_memory_express",
     "designware_mobile_storage",
+    "designware_ethernet_control",
     "jh7110_entropy",
     "gpu_driver",
     "framebuffer_driver",
