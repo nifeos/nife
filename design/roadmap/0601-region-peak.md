@@ -54,7 +54,7 @@ answer there was a `threads:` line on every run. Nothing printed the region peak
 
 The rule is option B of `notes/region-split-on-a-full-table.md`, decide before mutating, a
 provisional ruling by the maintainer that calef may overrule. The split runs in one `&mut self`
-borrow (milestone 135, the region claim, under loom), so reserving the child's slot before moving
+borrow (milestone 135 (the region claim, under loom)), so reserving the child's slot before moving
 the parent races nothing. The host test `a_split_refused_for_a_full_table_leaves_the_parent_unchanged`
 and the Kani harness `a_split_refused_for_a_full_table_moves_nothing` hold it.
 
@@ -65,7 +65,7 @@ and the Kani harness `a_split_refused_for_a_full_table_moves_nothing` hold it.
   list.
 - **Milestone 671.** Milestone 671 (tests retype their rendezvous from their own region, so the registry stops filling). `design/roadmap/0671-tests-retype-their-rendezvous-from-their-own-region.md`:
   466 of aarch64's 505 live rendezvous sit on kernel chunks that are never freed.
-- **Settled.** A split refused for a full table moves nothing: `RegionTable::split` in
+- **Done.** A split refused for a full table moves nothing: `RegionTable::split` in
   `crates/memory_regions/src/table.rs`, under the provisional ruling in
   `notes/region-split-on-a-full-table.md`.
 
