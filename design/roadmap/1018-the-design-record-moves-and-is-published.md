@@ -99,16 +99,16 @@ A bare `#N` needs the same treatment for a different reason. On GitHub and on mo
 links to the repository that renders it. The site build rewrites `#N` to `nifeos/nife#N`; the
 source text stays as written.
 
-## Where the record's code paths already go stale
+## How a qualified path resolves
 
-On 2026-10-31 (UTC) the lane for milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic,
-released on its own) moved `jh7110_entropy` out of this tree, in commit `aabf387eb`. Milestone 159 (a real hardware entropy source: the JH7110's TRNG) is BUILT, and its
-block still names `crates/jh7110_entropy` as the crate that holds the register layout. That
-directory no longer exists. `script/roadmap --check` passed on 2026-11-01, because it reads paths
-only in follow-on bullets.
-
-Under this proposal the anchor makes that bullet true as written, since the path existed at the
-anchor commit. A new bullet would read `nifeos/jh7110_entropy:src/lib.rs`, resolved at basalt's pin.
+`script/roadmap --check` reads each `nifeos/<repo>:<path>` in a block, through
+`helpers/qualified_paths.py`, and fails one that names no file. `nifeos/record` resolves in the
+record's own tree. A repository basalt's `pins.toml` names resolves at its pin. Any other, such
+as a crate, resolves at every revision a pinned component's `Cargo.lock` names for it at that
+component's pin, provisionally, since that is what the image builds. Milestone 159 (a real
+hardware entropy source: the JH7110's TRNG) names `nifeos/jh7110_entropy:src/lib.rs` this way,
+for the crate milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic, released on its own)
+moved out.
 
 ## History: blame and the numbering survive
 
@@ -195,8 +195,8 @@ Each step lands alone. Steps 1 to 5 land in this repository.
 1. Built: each `script/lint` section carries `# lint-scope: record`, `code` or `both`, as
    `lint-quick` tags sections. No run selects by it. Of 140 sections, 8 read only the record, 35
    read the record and code, and 97 read no record document.
-2. Teach `script/roadmap --check` to resolve `nifeos/<repo>:<path>` at basalt's pin, and fix
-   milestone 159's `jh7110_entropy` bullet as the first user.
+2. Built: `script/roadmap --check` resolves `nifeos/<repo>:<path>` at basalt's pin, as the
+   section on qualified paths states, and milestone 159's `jh7110_entropy` bullets use it.
 3. Built: `script/site` builds the site from `design/`, `notes/` and `briefs/`, and
    `.github/workflows/record-site.yml` runs it on each pull request that touches them and uploads
    the site as an artifact, deployed nowhere. Its step summary reports build time, index size and
@@ -283,9 +283,10 @@ One decision each, recommendation first. Ask them one at a time.
 
 ## Follow-on
 
+- **Done.** Step 2, carried by `helpers/qualified_paths.py` and `script/roadmap`.
 - **Done.** Step 4, carried by `packages/homes.toml` and `helpers/record_links.py`.
-- **Outstanding.** Steps 2 and 6 to 8 above. Checked 2026-11-11 against `script/roadmap`, which
-  resolves no `nifeos/<repo>:<path>`, and the organization, which has no `nifeos/record`.
+- **Outstanding.** Steps 6 to 8 above. Checked 2026-11-11 against the organization, which has no
+  `nifeos/record`.
 - **Outstanding.** Two comments in `ci.yml` and the header of `empty-diff.yml` call
   `merge_group.base_sha` the base branch's tip; the appendix's runs log the entry ahead. The skip
   rule is safe either way, so only the comments change.
