@@ -82,8 +82,7 @@ build feature and no boot parameter for it, and the choice can differ per device
 - Mediated. The driver holds the `Virtio` capability, as every virtio driver does today.
   `kernel/src/virtio.rs` keeps the device's registers, places the descriptor table and available
   ring in a kernel-private shadow page, validates each new descriptor on `NOTIFY` with
-  `crates/direct_memory_access_validator`, and only then rings the device. Nothing in this path
-  changes.
+  `crates/direct_memory_access_validator`, and only then rings the device. This path does not change.
 - Direct. The driver holds its device's register pages as plain device frames, listed on its
   startup page, and its DMA region. It resets the device, negotiates features, sets up each queue
   in the common configuration and writes its doorbells itself. The xHCI driver does the same with
@@ -216,7 +215,7 @@ validator has a Kani proof.
 The `x86_64` runner attaches `virtio-blk-pci,iommu_platform=on` behind `intel-iommu`. A starter
 that grants it direct confines its requester id to the driver's DMA region and maps the pages of
 the four structures. QEMU places them at 0x0, 0x1000, 0x2000 and 0x3000 of BAR4, and the MSI-X
-table in BAR1. The starter reads the capability list rather than trust that layout. It lists the pages on the startup page and passes `notify_off_multiplier` 4 and MSI-X entry 0.
+table in BAR1. The starter reads the capability list instead. It lists the pages on the startup page and passes `notify_off_multiplier` 4 and MSI-X entry 0.
 The driver writes 0 to `device_status`, accepts `VERSION_1` and `ACCESS_PLATFORM`, selects queue
 0, writes ring addresses inside its region, enables the queue and sets `DRIVER_OK`. To submit a
 read it publishes the descriptor and stores the queue number at `queue_notify_off * 4` in the
@@ -257,8 +256,8 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 1. The contract: `driver_process_contract::virtio`, its window kinds and handoff, with tests.
 2. The starter's carve-out: the confinement, the four structures' pages, the withheld MSI-X pages,
    the `ACCESS_PLATFORM` and requester id checks, and the startup page, with unit tests.
-3. The driver's direct transport in userspace, the direct disk system test on all three
-   architectures and the two escape tests.
+3. The driver's direct transport in userspace and the direct disk system test on all three
+   architectures.
 4. The measurement.
 
 ## Done when
@@ -284,10 +283,10 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 - **Outstanding.** Step 2: the kernel still walks five callers' plans.
 - **Outstanding.** Steps 3 and 5: `kernel/src/designware_ethernet.rs` and
   `kernel/src/reboot/designware_i2c.rs` exist.
-- **Outstanding.** Step 7: the measurement has not run.
-- **Outstanding.** An escape test that drives a direct driver (a ring aimed outside its region, a
-  declined `VIRTIO_F_ACCESS_PLATFORM`); the mediated transport's
-  `the_iommu_faults_a_dma_that_escapes_the_domain` covers the same IOMMU fault today.
+- **Outstanding.** Step 7: the measurement; "Cost and effort" still reads not measured.
+- **Outstanding.** An escape test that drives a direct driver (a ring outside its region, a
+  declined `VIRTIO_F_ACCESS_PLATFORM`); the mediated
+  `the_iommu_faults_a_dma_that_escapes_the_domain` covers that fault today.
 
 ## Index row
 
