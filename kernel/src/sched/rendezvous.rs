@@ -45,12 +45,15 @@ pub(super) fn try_create_rendezvous_from(region: u64) -> Result<RendezvousId, Re
     unsafe { (crate::arch::mmu::phys_to_virt(phys) as *mut Rendezvous).write(Rendezvous::new()) };
 
     // The check above counts live entries, so a table with no free slot can still refuse the
-    // insert; the page stays spent.
-    let name = sched
+    // insert. Then the count the retype took goes back; the page stays spent.
+    let Some(name) = sched
         .rendezvous_table
         .insert_with(|_| RendezvousPageAddress::new(phys))
-        .ok_or(RendezvousFailure::RegistryFull)?
-        .to_bits();
+        .map(EntryName::to_bits)
+    else {
+        crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Rendezvous);
+        return Err(RendezvousFailure::RegistryFull);
+    };
     PEAK_RENDEZVOUS.fetch_max(sched.rendezvous_table.len(), Ordering::Relaxed);
     if sched.kernel_ep_region == Some(region) {
         KERNEL_CHUNK_RENDEZVOUS.fetch_add(1, Ordering::Relaxed);

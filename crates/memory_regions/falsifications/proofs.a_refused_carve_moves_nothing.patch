@@ -1,0 +1,25 @@
+Falsifies `memory_regions::proofs::a_refused_carve_moves_nothing`.
+
+The defect: the carve pins its region as soon as the region has a page to give, before the ceiling
+is asked. It reads as harmless, since the pin is set on every successful carve anyway, but a carve
+the ceiling refuses then leaves a pinned region that owes an unpin nobody will make.
+
+Expected to fail: the harness's `assert!(run.unmoved_since(before), "a refusal moved something")`,
+on a carve refused at a ceiling from an unpinned region.
+
+diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
+--- a/crates/memory_regions/src/table.rs
++++ b/crates/memory_regions/src/table.rs
+@@ -614,10 +614,11 @@
+     /// `kind` is recorded for [`spent`](Self::spent) and counted against every subtree the region
+     /// is in.
+     pub fn retype_object_page(&mut self, name: u64, kind: ObjectKind) -> Option<u64> {
+-        let r = self.table.get(entry(name))?;
++        let r = self.table.get_mut(entry(name))?;
+         if r.watermark >= r.pages {
+             return None;
+         }
++        r.pinned = true;
+         if !self.charge(name, Counted::Object(kind)) {
+             return None;
+         }

@@ -15,7 +15,10 @@ pub fn create_thread_control_block(region: u64) -> Option<ThreadId> {
     let page =
         crate::memory_region::retype_object_page(region, crate::memory_region::ObjectKind::Thread)?;
     let mut guard = IPC_TABLES.lock();
-    let sched = guard.as_mut()?;
+    let Some(sched) = guard.as_mut() else {
+        crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Thread);
+        return None;
+    };
     let name = sched.threads.insert_from_page(page, |tid| {
         let mut t = Thread::embryo();
         t.id = tid;
@@ -25,7 +28,11 @@ pub fn create_thread_control_block(region: u64) -> Option<ThreadId> {
         t
     });
     // On a full table the page stays the region's (spend-only); nothing to recycle. The region
-    // is already pinned by retype_object_page, so its destroy is refused regardless.
+    // is already pinned by retype_object_page, so its destroy is refused regardless. The count
+    // is a slot's, and no slot was taken.
+    if name.is_none() {
+        crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Thread);
+    }
     name
 }
 
