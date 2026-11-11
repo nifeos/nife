@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # Whether a milestone stays a file or becomes a GitHub issue
 
-Raised by lane proposal/milestones-as-files-or-issues, at the architect's request. Name: provisional.
+Raised by lane proposal/milestones-as-files-or-issues. Name: provisional.
 
 Ruled 2026-11-11 (UTC): shape A, milestones stay files, with no published index. The ruling also
 answers question 7 of milestone 1018 (the design record moves to `nifeos/record`).
@@ -26,13 +26,13 @@ merges conflict, and milestone files are already named by number, so the number 
 one. A generated index can be added if the existence check proves too slow; that is compatible.
 `TODO(milestone N)` keeps its spelling.
 
-The reason is not effort. At equal cost A would still win, for three measured reasons. Every gate that reads a milestone today reads it at a commit, so anyone can repeat a run, and an
+The reason is not effort: at equal cost A would still win, for three measured reasons. Every gate that reads a milestone today reads it at a commit, so anyone can repeat a run, and an
 issue has no commit. The status a gate needs is 1.1% of the words in the
-roadmap, and that small part is what most of the readers read. And nife's claim already is the
-lighter object an issue would be (§90 (the claim is a draft pull request; the status flip is a
+roadmap, and most readers read only that. And nife's claim already is the lighter object an issue
+would be (§90 (the claim is a draft pull request; the status flip is a
 gate)).
 
-One thing the hybrid (shape C) would buy that A does not: a code pull request that merges could
+Shape C would buy one thing A does not: a code pull request that merges could
 close its milestone's work item in the record repository directly. Under A the status flip is a
 second pull request in the record repository. A pays that cheaply: the lane opens the record-side
 draft at the claim and marks it ready once the code lands.
@@ -59,7 +59,7 @@ number sequence per repository.
 
 ## What the measurements show
 
-Every count reads this branch's merge base, `295a385d5`, through plain `git grep` and `ls`.
+Every count reads merge base `295a385d5` through `git grep` and `ls`.
 
 ### What reads a milestone block, and which fields
 
@@ -136,12 +136,13 @@ outcome record stays reviewed text under every shape, since readers check claims
   request merges into the default branch.
 - Transfer. An issue moves only within one owner; comments come along, labels and milestones only
   where the target has them, and the old address redirects. The page does not say what happens to
-  the number.
+  the number; it likely takes the target's next number.
 - Numbering. Issues and pull requests share one sequence. In `nifeos/nife` the next number is
   3,432, of which 59 are issues. Milestone numbers run to 1,068 with 41 unused. Only a fresh
   repository whose first 1,068 numbers are all issues, created in order before any pull request,
   could make issue `#N` equal milestone `N`. After that, a new milestone would take the next shared
   number, and nothing could restore the pairing.
+- Sub-issues: up to 100 under one parent, eight levels deep, across repositories.
 
 ### What migration would touch
 
@@ -233,7 +234,7 @@ file existence as in A. The 11,069 citations stay as written in either case.
   date". Both hold the status, by design. This lane did not read whether a check runs over
   `kep.yaml`.
 - Python. PEPs are "maintained as text files in a versioned repository," with the status a header
-  in the file.
+  in the file and no issue for tracking implementation.
 - Fuchsia. An RFC is a file added by a code review, numbered at acceptance; an approved RFC that
   needs work links an issue in its header. Code TODOs cite the tracker as
   `TODO(https://fxbug.dev/42074368)`. When the tracker changed, the bug numbers changed, and
