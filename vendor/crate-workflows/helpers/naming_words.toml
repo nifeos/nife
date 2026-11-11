@@ -117,6 +117,12 @@ min = "minute"
 [units_after_number]
 s = "seconds"
 
+# Symbols that are a unit only as the last part of a name that has others (`DRIFT_PPM`, never the bare
+# `ppm`, and never `ppm` in the middle of a name): `ppm` is also the Portable PixMap image format,
+# whose bare name and whose compounds such as `ppm_channel_order` stay as they are.
+[units_as_suffix]
+ppm = "parts_per_million"
+
 # British spellings, refused in a name: the house spelling is American. Read by
 # helpers/british_spelling.py. A key is one component of a name, in lowercase; the value is the
 # American form. The tables below hold stems and endings so one line covers a family.
@@ -249,8 +255,11 @@ endings = ["re", "res"]
 # network, a bus or a mailbox is not virtual or physical, and neither is a card's relative address
 # or a logical block address on a disk. `virtual` and `physical` stand straight before `address`;
 # any other qualifier may stand one word further back (`RELATIVE_CARD_ADDRESS`).
+# `bus` is there for the address of a device on a management or I/O bus, which a bus assigns and
+# no memory map holds (`SYSTEM_MANAGEMENT_BUS_ADDRESS`); `i2c` cannot stand in for it because the
+# name splitter reads `I2C` as three parts.
 [address_qualifiers]
-words = ["virtual", "physical", "mac", "ip", "ipv4", "ipv6", "i2c", "email", "socket", "network",
+words = ["virtual", "physical", "bus", "mac", "ip", "ipv4", "ipv6", "i2c", "email", "socket", "network",
          "ethernet", "peer", "relative", "block", "logical"]
 
 # The words straight before `address` that make it a verb, not a location: `can_address_blocks`.
