@@ -15,7 +15,7 @@ The words a client and an entropy service exchange to move random bytes: one req
 packs an opcode and a byte count, and two reply words, a count of 0 to 8 and the bytes. The crate
 also holds the readiness rule a service follows at bring-up: it reports `READY` only once its first
 draw holds a nonzero byte and is not one value repeated. It is `no_std`, with no dependency and no system call, and
-`#![forbid(unsafe_code)]` holds it free of `unsafe`; the caller passes the `CALL` as a closure.
+`#![forbid(unsafe_code)]` holds it free of `unsafe`. The caller passes the `CALL` as a closure.
 Five Kani harnesses prove the request word, the copy out of a reply, the fill loop and the
 two parts of the readiness rule, each with a falsification patch. Every name follows
 [design/naming.md](../../design/naming.md), and the architect ratified every name. Nothing in the crate points back into nife, but nife's

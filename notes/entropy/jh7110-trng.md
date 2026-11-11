@@ -126,8 +126,8 @@ It draws the first 32 bytes before it reports, and the bytes decide the readines
 whose clock is gated reads as zeros, and an all-zero first generation reports
 `STEP_FIRST_ALL_ZERO`. That device is then refused for the rest of the boot. A client only ever
 sees a reply, so a service that reported dead and went on serving its zero buffer would hand those
-zeros out as randomness to everyone not watching the handshake. A first generation of 32 equal
-nonzero bytes reports `STEP_FIRST_ALL_SAME` and is refused the same way. A device that answered with nothing
+zeros out as randomness to everyone not watching the handshake. The service treats a first generation of 32
+equal nonzero bytes (`STEP_FIRST_ALL_SAME`) the same way. A device that answered with nothing
 is not refused. It has told the truth at every step, `take` answers `NO_ENTROPY` while it stays
 dry, and it recovers by itself if it starts answering.
 
