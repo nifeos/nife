@@ -6,7 +6,8 @@
 
 `judge` reads one or more console logs of nife booting on a VisionFive 2, splits them into boots at
 the kernel's `nife on ` banner, and reads each boot's `self-test : trng` line. It prints one row per
-condition of milestone 1035's definition and ends `PASS` or `FAIL, N problem(s)`, exiting 0 or 1:
+condition of the definition in milestone 1035 (a crate names the version that ran on
+hardware) and ends `PASS` or `FAIL, N problem(s)`, exiting 0 or 1:
 
 1. Every boot names the same crate version V and commit C, and C is the commit of the tag `vV` on
    nifeos/jh7110_entropy. The version string alone does not settle it: the crate's `Cargo.toml`

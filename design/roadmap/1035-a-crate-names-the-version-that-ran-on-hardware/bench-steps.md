@@ -2,9 +2,10 @@
 
 An appendix to [milestone 1035 (a crate names the version that ran on
 hardware)](../1035-a-crate-names-the-version-that-ran-on-hardware.md). The main page is complete
-without it. These steps follow [milestone 159's bench
-procedure](../0159-jh7110-trng-driver/bench-procedure.md) with the card replaced by the network boot
-of [milestone 257 (boot the board over the network)](../0257-network-boot-radon.md). A person runs
+without it. These steps follow the bench procedure of [milestone 159 (a real hardware entropy source: the
+JH7110's TRNG)](../0159-jh7110-trng-driver/bench-procedure.md), with the card replaced by the network
+boot of [milestone 257 (boot radon over the network, so the microSD card stops being the tax on
+every experiment)](../0257-network-boot-radon.md). A person runs
 them at the board; an agent can drive the host side and read the result.
 
 The maintainers keep the bench's unit-specific details off-tree: which serial device is the
@@ -21,7 +22,7 @@ before touching anything.
 
 ## The steps
 
-1. **Choose the nife commit.** Check out `origin/main`, or the commit on it that bumped the pins,
+1. Choose the nife commit. Check out `origin/main`, or the commit on it that bumped the pins,
    with no local changes:
 
    ```
@@ -34,29 +35,29 @@ before touching anything.
    crate's `version` and `rev`, and the judge in step 6 checks that the `rev` is the commit of the
    tag `v<version>`.
 
-2. **Build.** `script/board-image --tftp`. It builds the archive and then the kernel, in that order,
+2. Build. `script/board-image --tftp`. It builds the archive and then the kernel, in that order,
    so the two are one measured pair, and it writes them under `target/board/`. Record the SHA-256 of
    `target/board/nife-vf2.img` and `target/board/nife-initial-ramdisk.img`
    (`shasum -a 256` on macOS, `sha256sum` on Linux).
 
-3. **Serve and watch.** In two terminals:
+3. Serve and watch. In two terminals:
 
    ```
    script/board-netboot
    script/board-console --port <device> --until selftest --for 5m --log target/1035-boot-1.log
    ```
 
-4. **First boot.** Power the board on from off. The log shows `nife: payload came from net`, then
+4. First boot. Power the board on from off. The log shows `nife: payload came from net`, then
    the boot tour. `board-console` stops once the self-test verdict prints. If the log shows
    `payload came from card` instead, the board booted an older kernel from the card; the judge
    refuses that boot because its `trng` line names another crate commit or none. Fix the network
    and boot again.
 
-5. **Second boot.** Power the board off, wait ten seconds, start `board-console` again with
+5. Second boot. Power the board off, wait ten seconds, start `board-console` again with
    `--log target/1035-boot-2.log`, and power it on. Two cold boots are what make condition 6 (the
    first draws differ across boots) mean that the device reseeds per boot.
 
-6. **Judge.**
+6. Judge.
 
    ```
    python3 -I helpers/crate_hardware_run.py judge target/1035-boot-1.log target/1035-boot-2.log \
@@ -76,7 +77,7 @@ before touching anything.
    A `FAILED` line, or one the judge refuses, goes to milestone 159's [table of what each line
    means](../0159-jh7110-trng-driver/bench-procedure.md) before anyone theorizes.
 
-7. **Record.** Commit the two logs under `bench/<board>-<date>/` with a `README-1035.md` that names
+7. Record. Commit the two logs under `bench/<board>-<date>/` with a `README-1035.md` that names
    the nife commit, the crate version and commit, the two image hashes and the judge's output. Put
    each boot's `trng` line, the nife commit and the crate version in the main page's block. Only then
    does the crate's README name the version.
@@ -84,5 +85,5 @@ before touching anything.
 ## What the log holds
 
 A board log carries the board's serial number, its MAC addresses and private local addresses. The
-log goes in as the board printed it, as milestone 1049's runs did, or the person trims those lines
+log goes in as the board printed it, as the runs of milestone 1049 (`jh7110_entropy` is ready to publish: the release review's findings) did, or the person trims those lines
 first and says so in the bench README; the judge reads only the banner and the `trng` lines.

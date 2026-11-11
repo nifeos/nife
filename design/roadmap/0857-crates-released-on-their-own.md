@@ -20,9 +20,9 @@ other implementations are so that we could work with those owners to add the pro
 than jumping their missions."*
 
 The inventory and the survey are in
-[notes/releasable-crates-2026-10-07.md](../../notes/releasable-crates-2026-10-07.md). This file
-holds the forks and does not restate the numbers beyond what a fork needs. Names in it are
-provisional, this one included.
+[notes/releasable-crates-2026-10-07.md](../../notes/releasable-crates-2026-10-07.md). Names in it
+are provisional, this one included. A README's hardware claim follows milestone 1035 (a crate names
+the version that ran on hardware).
 
 Reuse: the release mechanics borrow from Bytecode Alliance's `wasmtime` (many crates published
 from one repository), RustCrypto (one repository per family), rust-embedded and rust-osdev (one
@@ -127,13 +127,6 @@ falsifications for our crates?"* This adds to Forks 3 and 4 and changes neither.
 - Gates. Milestone 887 (crate repositories share one CI template) adapts nife's gates row by row.
   It also dual licenses each crate as nife is: *"nife is MIT OR Apache-2.0, so we should dual
   license our crates as well."*
-
-A crate's README states a hardware run only by naming a version that has one: nife built at the pin
-that names the version, booted on the board by its public procedure, with the device's own success
-line read. It names the version and the board class, never a date, a person or an earlier name, and
-a later release leaves the sentence alone. A run gates that sentence and never a publication; a
-release with no run makes no hardware claim. Milestone 1035 (a crate names the version that ran on
-hardware) holds the definition and the first case.
 
 What nife does at each extraction is a checklist, built with the first (813):
 [what-nife-does-at-each-extraction.md](0857-crates-released-on-their-own/what-nife-does-at-each-extraction.md).
