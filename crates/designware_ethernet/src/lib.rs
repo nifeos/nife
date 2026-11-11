@@ -82,6 +82,7 @@
 #[cfg(test)]
 extern crate std;
 
+pub mod bring_up;
 pub mod cache_coherence;
 pub mod jh7110;
 #[doc(alias = "mdio")]

@@ -336,6 +336,87 @@ const FIXED_DELAY_PICOSECONDS: u32 = 1900;
 const STEP_PICOSECONDS: u32 = 150;
 
 impl Settings {
+    /// **These settings as one word**, for a process that hands them to another: bits 3:0 the
+    /// receive delay, 4 the fixed delay, 8:5 the transmit delay, 11:9 the three clock inversions
+    /// (10, 100 and 1000 Mbit/s from bit 9), 13:12 the source (0 vendor, 1 mainline, 2 fallback),
+    /// then the receive clock drive at bit 14 and the receive data drive at bit 39, each a tag bit
+    /// (0 a code, 1 microamps) and 24 bits of value above it. `None` when a select is past its
+    /// field or a drive past 24 bits, which no tree this crate parses produces.
+    ///
+    /// Name: provisional.
+    pub const fn to_word(&self) -> Option<u64> {
+        const fn drive(d: PadDriveStrength) -> Option<u64> {
+            match d {
+                PadDriveStrength::Code(c) => Some((c as u64) << 1),
+                PadDriveStrength::Microamps(u) if u < 1 << 24 => Some((u as u64) << 1 | 1),
+                PadDriveStrength::Microamps(_) => None,
+            }
+        }
+        if self.receive_delay > 0xf || self.transmit_delay > 0xf {
+            return None;
+        }
+        let (Some(clock), Some(data)) = (
+            drive(self.receive_clock_drive),
+            drive(self.receive_data_drive),
+        ) else {
+            return None;
+        };
+        let [ten, hundred, thousand] = self.transmit_clock_inverted;
+        let source = match self.source {
+            SettingsSource::VendorTree => 0,
+            SettingsSource::MainlineTree => 1,
+            SettingsSource::Fallback => 2,
+        };
+        Some(
+            self.receive_delay as u64
+                | (self.receive_fixed_delay as u64) << 4
+                | (self.transmit_delay as u64) << 5
+                | (ten as u64) << 9
+                | (hundred as u64) << 10
+                | (thousand as u64) << 11
+                | source << 12
+                | clock << 14
+                | data << 39,
+        )
+    }
+
+    /// [`Settings::to_word`]'s inverse. `None` for a source past the three.
+    ///
+    /// Name: provisional.
+    pub const fn from_word(word: u64) -> Option<Settings> {
+        const fn drive(bits: u64) -> PadDriveStrength {
+            let value = (bits >> 1) & 0xff_ffff;
+            if bits & 1 == 0 {
+                PadDriveStrength::Code(value as u8)
+            } else {
+                PadDriveStrength::Microamps(value as u32)
+            }
+        }
+        let source = match (word >> 12) & 0x3 {
+            0 => SettingsSource::VendorTree,
+            1 => SettingsSource::MainlineTree,
+            2 => SettingsSource::Fallback,
+            _ => return None,
+        };
+        let clock = (word >> 14) & 0x1ff_ffff;
+        if clock & 1 == 0 && clock >> 1 > 0xff {
+            return None;
+        }
+        let data = (word >> 39) & 0x1ff_ffff;
+        if data & 1 == 0 && data >> 1 > 0xff {
+            return None;
+        }
+        Some(Settings {
+            receive_delay: (word & 0xf) as u8,
+            receive_fixed_delay: word >> 4 & 1 != 0,
+            transmit_delay: (word >> 5 & 0xf) as u8,
+            receive_clock_drive: drive(clock),
+            receive_data_drive: drive(data),
+            transmit_clock_inverted: [word >> 9 & 1 != 0, word >> 10 & 1 != 0, word >> 11 & 1 != 0],
+            source,
+        })
+    }
+
     /// **radon's `gmac0` (Gigabit MAC, GMAC).** Both trees give these values, so a tree that names
     /// neither spelling still gets the board it is on, and says so.
     ///
@@ -1044,6 +1125,39 @@ mod tests {
         assert_eq!(
             physical_layer_device.extended(EXTENDED_PAD_DRIVE_STRENGTH_REGISTER),
             0xd030
+        );
+    }
+
+    /// Settings survive the word a spawner hands them in, for each source and each drive form,
+    /// and the word refuses what it cannot carry rather than truncating it.
+    #[test]
+    fn settings_survive_their_word_and_refuse_what_it_cannot_carry() {
+        let mainline = Settings::from_mainline(2200, 1500, 3970, 2910, Some([false, true, true]));
+        for s in [Settings::FALLBACK_GMAC0, mainline] {
+            let word = s.to_word().unwrap();
+            assert_eq!(Settings::from_word(word), Some(s));
+        }
+        let vendor = Settings {
+            source: SettingsSource::VendorTree,
+            receive_clock_drive: PadDriveStrength::Code(7),
+            ..Settings::FALLBACK_GMAC0
+        };
+        assert_eq!(Settings::from_word(vendor.to_word().unwrap()), Some(vendor));
+        let too_far = Settings {
+            receive_data_drive: PadDriveStrength::Microamps(1 << 24),
+            ..mainline
+        };
+        assert_eq!(too_far.to_word(), None);
+        let past_field = Settings {
+            transmit_delay: 0x10,
+            ..mainline
+        };
+        assert_eq!(past_field.to_word(), None);
+        let word = Settings::FALLBACK_GMAC0.to_word().unwrap();
+        assert_eq!(
+            Settings::from_word(word | 0x3 << 12),
+            None,
+            "no fourth source"
         );
     }
 }

@@ -338,6 +338,8 @@ pub(crate) struct NetworkInterfaceController {
     transmit_cursor: u16,
     wire: Vec<Vec<u8>>,
     barriers: usize,
+    /// The microseconds every delay so far has asked for: the simulation's clock.
+    clock_microseconds: u64,
 }
 
 const VERSION: u32 = 0x1052;
@@ -361,6 +363,7 @@ impl NetworkInterfaceController {
             transmit_cursor: 0,
             wire: Vec::new(),
             barriers: 0,
+            clock_microseconds: 0,
         };
         network_interface_controller.reset_registers();
         network_interface_controller
@@ -694,8 +697,20 @@ impl Hardware for NetworkInterfaceController {
         }
     }
 
-    fn delay_microseconds(&mut self, _microseconds: u64) {
+    fn delay_microseconds(&mut self, microseconds: u64) {
+        self.clock_microseconds += microseconds.max(1);
         self.step();
+    }
+}
+
+impl crate::bring_up::Port for NetworkInterfaceController {
+    type Region<'a> = Cpu<'a>;
+    type Tails<'a> = TailRegisters<'a>;
+    fn with_region<R>(&mut self, f: impl FnOnce(&mut Cpu<'_>, &mut TailRegisters<'_>) -> R) -> R {
+        self.with(f)
+    }
+    fn now_microseconds(&mut self) -> u64 {
+        self.clock_microseconds
     }
 }
 
