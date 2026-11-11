@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 promoted_from: a-crate-names-the-version-that-ran-on-hardware
 raised: 2026-11-05
 milestone_dependencies: 159, 818, 857
@@ -171,7 +171,7 @@ Today's claims under it:
 
 Steps 2 to 4 need no board. Step 2 waits for step 1, because the README names a version only once
 that version has run. Steps 3 and 4 state the rule and do not wait. Step 1 is the only step with
-`needs_person: yes`, and the milestone stays NOT-STARTED until a person runs the board.
+`needs_person: yes`, and the milestone stays PARTIAL until a person runs the board.
 
 ## Done when
 
@@ -187,6 +187,20 @@ that version has run. Steps 3 and 4 state the rule and do not wait. Step 1 is th
 One bench session with a person, about two boots over the network, plus two small edits. Nothing
 here is one-way: anyone can reword a README sentence, and the rule only narrows what a README may
 claim, so loosening it later breaks nobody.
+
+## Follow-on
+
+- **Outstanding.** Step 1, the bench run: two boots of nife `main` on a VisionFive 2 by
+  [`bench-steps.md`](1035-a-crate-names-the-version-that-ran-on-hardware/bench-steps.md), with
+  `helpers/crate_hardware_run.py judge` printing `PASS` over both transcripts. Checked against the
+  tree: `main` pins `jh7110_entropy` at `cfdbeb7`, the commit of tag `v0.2.0`, and no transcript under
+  `bench/` carries the `trng` line's crate identity yet.
+- **Outstanding.** Step 2, the README sentence in `nifeos/jh7110_entropy`. Its draft pull request
+  waits for step 1, since the README names a version only once that version has run.
+- **Done.** Step 3: the rule is in milestone 857's extraction checklist,
+  `design/roadmap/0857-crates-released-on-their-own/what-nife-does-at-each-extraction.md`.
+- **Done.** Step 4: the `e1000e` I219 sentence becomes a limitation, in its own repository's pull
+  request, since no version has run on an I219.
 
 ## BUGS
 
