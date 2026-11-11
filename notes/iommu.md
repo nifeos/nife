@@ -63,6 +63,21 @@ IOMMU's reset `ddtp` mode is already `Off`, which blocks, so it fails closed by 
 writes the device's table entry pointing at a domain root, then invalidates the cached STE/CD/context
 and the translation cache so a re-attach cannot use a stale table. `take_fault` pops one fault record.
 
+Both tables are two-level, with the same geometry. A root frame of 512 eight-byte entries points at
+leaf frames of 64 entries of 64 bytes, so a requester id splits as `rid >> 6` (which root entry) and
+`rid & 63` (which entry in the leaf). Each table holds ids 0 to 32767, buses 0 to 127. The driver
+allocates a leaf, under its lock, when the first device in the leaf's range attaches, and keeps it.
+For a device past the table, or a leaf with no frame free, `attach` returns an `iommu::AttachError`
+and writes no entry, so the device stays blocked. `confine` prints the reason and returns the error,
+and every driver that calls it refuses to start the device. The SMMU reads `SIDSIZE` and narrows the
+table to it; the RISC-V IOMMU in the base 32-byte format fits 128 contexts to a leaf and so holds
+every 16-bit id. The three-level RISC-V mode, and a two-frame SMMU level-one table, would reach buses
+128 to 255; neither driver builds one (each file's `BUGS`).
+
+The RISC-V side keeps the extended 64-byte context whenever the unit offers `MSI_FLAT`, because
+that is the format whose `msiptp` field a per-device MSI page table needs, so interrupt remapping
+can extend the context this directory already holds.
+
 ## The requester id is the key
 
 A PCIe function stamps a 16-bit requester id (`bus:8 | dev:5 | fn:3`) on every memory transaction
@@ -147,13 +162,14 @@ The confinement test above proves the hardware stops an escaping device. It cann
 wrote the *right* entry, because a wrong entry that still confines this device on this board is
 invisible to it, and this board is the only one either driver has ever run on.
 
-`arch/aarch64/iommu.rs` now carries two Kani harnesses over the entry-building arithmetic, beside
+`arch/aarch64/iommu.rs` now carries three Kani harnesses over the entry-building arithmetic, beside
 the code, and they were falsified before they were believed. One is
 `the_smmu_is_handed_exactly_the_tables_the_kernel_built` (both physical addresses survive their
-split across two 32-bit words, and neither reaches the control bits sharing the low word). The other
-is
-`no_stream_can_reach_another_streams_tables` (the `StreamID` bound is exactly strong enough for the
-stride it protects). notes/kernel-proofs.md has the properties and the stub boundary.
+split across two 32-bit words, and neither reaches the control bits sharing the low word). The
+second is `no_stream_can_reach_another_streams_tables` (over every `u32`, the two-level table places
+exactly the ids below its width, refuses the rest, and keeps every entry inside its leaf). The third
+is `the_level_one_table_names_exactly_the_leaf` (the level-one descriptor and the configuration
+word). notes/kernel-proofs.md has the properties and the stub boundary.
 
 Two limits worth naming here rather than only there. **The register offsets and bit constants are
 not proved and cannot be**: nothing in this tree can check `CR0_SMMUEN` or the position of `CONFIG`
@@ -162,14 +178,16 @@ and the boot-time confinement test is what stands against that. And **the RISC-V
 not ports of these**: it writes its device context in 64-bit stores with no split, so the property
 above does not apply to it.
 
-The RISC-V side has its own two since milestone 432 (the RISC-V IOMMU driver has no counterpart to
+The RISC-V side has its own three, two since milestone 432 (the RISC-V IOMMU driver has no counterpart to
 the SMMU's proofs). They are proved from an aarch64 host because no host here is riscv64
 (notes/kernel-proofs.md has how, and the caveat that comes with it).
 `the_iommu_is_handed_exactly_the_domain_the_kernel_built`: `iosatp`'s PPN is the table root entire,
 its MODE is Sv39 for every root (MODE 0 would be Bare, translation off), and `ta.PSCID` is the
-domain's tag and nothing else. `no_device_can_reach_another_devices_context`: the directory bound
-agrees with the stride in both context formats, including the 32-byte one that has never run, and
-the `IODIR.INVAL_DDT` that follows an attach names exactly that device. Both were falsified; the
+domain's tag and nothing else. `no_device_can_reach_another_devices_context`: the directory places
+exactly the ids the specification's two-level directory holds and keeps every context inside its
+leaf, in both context formats (the 32-byte one has never run). The `IODIR.INVAL_DDT` that follows an
+attach names exactly that device. `the_root_entry_names_exactly_the_leaf`: the
+non-leaf entry is the leaf's PPN, valid, with no reserved bit set. All three were falsified; the
 patches are in `kernel/falsifications/`. The same limit on constants applies, against the RISC-V
 IOMMU specification instead of Arm's.
 

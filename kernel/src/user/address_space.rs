@@ -73,7 +73,7 @@ pub(super) enum Backing {
 
 impl Backing {
     /// The region to retype from. Spending a lent region is correct and is the whole point of
-    /// `RETYPE_OBJ(ADDRESS_SPACE)`: the space runs on the caller's budget. Only *freeing* is restricted.
+    /// `RETYPE_OBJECT(ADDRESS_SPACE)`: the space runs on the caller's budget. Only *freeing* is restricted.
     fn region(self) -> u64 {
         match self {
             Backing::Owned(region) | Backing::Lent(region) => region,

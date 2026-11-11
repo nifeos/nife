@@ -134,7 +134,7 @@ impl<O> Capability<O> {
     /// **Mint a fresh capability to `object` with exactly this one's rights.** The mint site for
     /// authority created outside [`CapabilityTable::derive`]: `MemoryRegion::SPLIT` (milestone 31
     /// (a capability shell: designation is authorization)), `MemoryRegion::RETYPE` and every
-    /// `RETYPE_OBJ` arm (milestone 824 (a retype mints no right its budget lacks)) in
+    /// `RETYPE_OBJECT` arm (milestone 824 (a retype mints no right its budget lacks)) in
     /// `kernel/src/capability_object.rs`. [`split_never_widens_rights`](../src/lib.rs) proves it, so a spend-only
     /// (GRANT-less) budget cannot split itself a GRANT-bearing child. See §16 (object revocation:
     /// reclaim the objects a process built) and notes/capabilities/table.md ("Minting outside

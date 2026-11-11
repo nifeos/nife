@@ -470,7 +470,9 @@ def evaluate(tracked, texts):
             # {prefix: package name, or None for a packages/homes.toml claim}: the longest prefix
             # naming a path is its owner. helpers/interface_stability.py's per-package co-change
             # reads it to place every path a past commit touched.
-            'claims': {prefix: owner for prefix, (owner, _h, _a) in claims.items()}}
+            'claims': {prefix: owner for prefix, (owner, _h, _a) in claims.items()},
+            # {path: its home}, for helpers/record_links.py, which sorts the record by it.
+            'file_home': {path: home for path, (_o, home, _a) in file_home.items()}}
 
 
 def _prefixes(path):

@@ -5,8 +5,7 @@
 *An appendix to [`notes/net.md`](../net.md), which is the page to read. This file holds milestone
 64's binding of `TcpListener` and why the inbound prober requires three rounds of four. It exists to
 verify or challenge the main page. A reader who only needs to use the socket contract should not
-have to open it. The directory `notes/net/` and this file's stem are provisional names; naming is
-calef's.*
+have to open it.*
 
 *Records cited below: milestone 55 (Time Machine) and milestone 64 (enough `std` to run somebody
 else's crate).*

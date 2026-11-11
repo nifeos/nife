@@ -31,9 +31,9 @@ pub fn initialize() {
 
     // Install the empty tables first, then insert the boot thread into them: built as a local and
     // moved in, an unoptimised build carries the whole of [`IpcTables`] on the boot stack, which
-    // caps [`MAXIMUM_THREADS`]. A `*sched = Some(EMPTY_TABLES)` does that, because the compiler
-    // builds the value in a frame temporary before it stores it. So the bytes are copied from a
-    // `static` straight into the lock's slot, and no temporary exists.
+    // caps [`MAXIMUM_THREADS`]. A `*sched = Some(..)` of tables built in place does that, because
+    // the compiler builds the value in a frame temporary before it stores it. So the bytes are
+    // copied from a `static` straight into the lock's slot, and no temporary exists.
     assert!(sched.is_none(), "the scheduler tables were installed twice");
     // SAFETY: `EMPTY_INSTALLED_TABLES` is a valid `Some(IpcTables)` and `sched` is a valid, aligned
     // `Option<IpcTables>` that does not overlap it. The old value is `None` (asserted above), which

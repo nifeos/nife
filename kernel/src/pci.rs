@@ -814,9 +814,10 @@ pub(crate) fn count_non_volatile_memory_express_controllers() -> usize {
 }
 
 /// An enumerated, brought-up NVMe controller: its register file (BAR0) placed and decoding, bus
-/// mastering enabled, requester id known so the caller can confine its DMA before enabling the
-/// controller. No INTx line, on purpose: the milestone-53 driver completes by polling the phase
-/// tag (`kernel/src/non_volatile_memory_express.rs`), so wiring an interrupt here would record a fact nothing checks.
+/// mastering enabled, requester id known so the caller can confine its DMA before any process can enable the
+/// controller. No INTx line, on purpose: the driver completes by polling the phase tag
+/// (`components/src/non_volatile_memory_express.rs`), so wiring an interrupt here would record a
+/// fact nothing checks.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct PciNvmeDevice {
     /// The register file's physical base (BAR0; the doorbells live in it too).

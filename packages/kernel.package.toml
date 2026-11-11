@@ -12,7 +12,6 @@ crates = [
     "capability",
     "paging",
     "page_frames",
-    "pci",
     "address_space_identifier",
     "cpu_set",
     "inter_process_communication",
@@ -30,7 +29,11 @@ crates = [
 # fills in its types. Two packages link it, so it is an interface.
 # `spin_lock` is the kernel's lock; `host_reordering_litmus` (host-tools) runs it in a bare-metal
 # guest to measure it, so two packages link it and it is an interface.
-interfaces = ["jh7110_clock_and_reset", "spin_lock"]
+# `pci` walks a function's capability list; `driver_process_contract::virtual_input_output`
+# (contracts) reads a virtio function's structures and MSI-X ranges with it, so a direct grant's
+# window and the kernel's mediated transport read the list one way. Two packages link it, so it is
+# an interface.
+interfaces = ["jh7110_clock_and_reset", "pci", "spin_lock"]
 
 [[exception]]
 date = 2026-09-27

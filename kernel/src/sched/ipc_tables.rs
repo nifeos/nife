@@ -23,9 +23,9 @@ use super::*;
 pub(super) type Rendezvous = inter_process_communication::Rendezvous<Thread>;
 
 /// The most threads that can be alive at once, whole machine: a documented limit of the image, so
-/// spawn past it fails cleanly, as out-of-memory does. About twice the peak [`PEAK_THREADS`]
-/// reports. What scales with it, and why 256, are in notes/ipc-tables-lock-inventory.md ("What the
-/// tables hold").
+/// spawn past it fails cleanly, as out-of-memory does. Several times the peak [`PEAK_THREADS`]
+/// reports, which leaves room for many more concurrent programs than the boot runs. What scales
+/// with it, and why 1024, are in notes/ipc-tables-lock-inventory.md ("What the tables hold").
 ///
 /// # BUGS
 ///
@@ -34,12 +34,16 @@ pub(super) type Rendezvous = inter_process_communication::Rendezvous<Thread>;
 /// - The peak is a whole-boot high-water and cannot name the test that pushed it.
 /// - A thread slot retires after 2^32 - 1 occupants (`generational_table` saturates rather than
 ///   wrap), and a spawn loop at the fastest measured rate retires one about every 93 minutes, all
-///   256 in about 16.5 days, after which spawn fails until the next boot. Nothing sizes this
+///   1,024 in about 66 days, after which spawn fails until the next boot. Nothing sizes this
 ///   table, or the other generational tables, against that time; notes/generational-names.md has
 ///   the measurements.
+/// - The tables sit in `.data` and not `.bss` (each static is not all zero bytes), and
+///   [`EMPTY_INSTALLED_TABLES`] is a second copy in `.rodata`. At these sizes that is about half a megabyte
+///   of the loaded image on each architecture. Zero-initialized storage beside the lock would put
+///   the tables in `.bss` and drop the copy.
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_THREADS: usize = 256;
+pub const MAXIMUM_THREADS: usize = 1024;
 
 pub(super) struct IpcTables {
     /// The thread table: generational names over page-resident TCBs. See [`Threads`] and
@@ -76,7 +80,7 @@ pub(super) struct IpcTables {
 pub(super) const FUTEX_BUCKETS: usize = 64;
 
 /// The most endpoints that can exist at once: the registry's bound.
-pub(crate) const MAXIMUM_RENDEZVOUS: usize = 512;
+pub(crate) const MAXIMUM_RENDEZVOUS: usize = 2048;
 
 /// The most rendezvous that were ever live at once on this boot, and how many of those sat on the
 /// kernel's own chunks, which only rises. [`MAXIMUM_RENDEZVOUS`]'s instrument; it reports and does
@@ -259,9 +263,14 @@ pub(super) const MAXIMUM_KERNEL_EP_CHUNKS: usize =
 pub(super) static IPC_TABLES: InterruptSafeMutex<Option<IpcTables>> =
     InterruptSafeMutex::new(rank::IPC_TABLES, None);
 
-/// The scheduler before anything is in it, as a const aggregate. [`EMPTY_INSTALLED_TABLES`] holds
-/// it in `.rodata` for [`initialize`] to copy from.
-pub(super) const EMPTY_TABLES: IpcTables = IpcTables {
+/// The scheduler before anything is in it, as an installed scheduler, in `.rodata`. [`initialize`]
+/// copies its bytes into [`IPC_TABLES`] with `ptr::copy_nonoverlapping`, so an unoptimised build
+/// builds no [`IpcTables`] temporary on the boot stack. Nothing else reads it. It is a `static`
+/// and not a `const` because the aggregate is large enough that a `const` copy would be a stack
+/// temporary wherever it was named.
+///
+/// Name: provisional, minted 2026-11-05 (UTC) by sched-boot-stack-and-asid-comments.
+pub(super) static EMPTY_INSTALLED_TABLES: IpcTablesImage = IpcTablesImage(Some(IpcTables {
     threads: Threads::new(),
     rendezvous_table: generational_table::Table::new(),
     kernel_ep_region: None,
@@ -270,14 +279,7 @@ pub(super) const EMPTY_TABLES: IpcTables = IpcTables {
     timer_table: generational_table::Table::new(),
     futexes: inter_process_communication::futex::Futexes::new(),
     processes: generational_table::Table::new(),
-};
-
-/// [`EMPTY_TABLES`] as an installed scheduler, in `.rodata`. [`initialize`] copies its bytes into
-/// [`IPC_TABLES`] with `ptr::copy_nonoverlapping`, so an unoptimised build builds no
-/// [`IpcTables`] temporary on the boot stack. Nothing else reads it.
-///
-/// Name: provisional, minted 2026-11-05 (UTC) by sched-boot-stack-and-asid-comments.
-pub(super) static EMPTY_INSTALLED_TABLES: IpcTablesImage = IpcTablesImage(Some(EMPTY_TABLES));
+}));
 
 /// A `Sync` holder for [`EMPTY_INSTALLED_TABLES`]: the tables are only copied from, as bytes.
 pub(super) struct IpcTablesImage(pub(super) Option<IpcTables>);

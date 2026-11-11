@@ -219,7 +219,7 @@ wrong**, and the real cause is one step earlier: the region had two owners, and 
 ### The cause, and it takes two ingredients
 
 **One. A user-built address space was freeing a region it did not own.** `user_aspace_create` (the
-`RETYPE_OBJ(ASPACE)` engine, milestone 19b) builds a space *in a region the caller already holds an
+`RETYPE_OBJECT(ASPACE)` engine, milestone 19b) builds a space *in a region the caller already holds an
 `Untyped` capability to*, unlike `AddressSpace::new`, which carves its own. Both stored a bare
 `u64`, and `AddressSpace::drop` called `untyped::destroy` on it unconditionally. So a region reached
 by `Untyped::DESTROY` and one reached by a dying thread's address space were the same memory under

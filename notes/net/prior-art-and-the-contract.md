@@ -5,8 +5,7 @@
 *An appendix to [`notes/net.md`](../net.md), which is the page to read. This file holds the prior
 art read before the contract, where this design differs from seL4, and the design record behind §25.
 It exists to verify or challenge the main page. A reader who only needs to use the socket contract
-should not have to open it. The directory `notes/net/` and this file's stem are provisional names;
-naming is calef's.*
+should not have to open it.*
 
 *Records cited below: milestone 32 (a real filesystem), milestone 47 (navigation and naming),
 milestone 94 (the untracked-work sweep) and milestone 107 (the socket contract learns to accept).

@@ -5,8 +5,7 @@
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
 what the loader hands over, the ACPI tables, the discovery seam, and how a PCI function's interrupt
 reaches a driver. It exists to verify or challenge the main page. A reader who only needs to build,
-boot or test the x86_64 port should not have to open it. The directory `notes/x86-port/` and this
-file's stem are provisional names; naming is calef's.*
+boot or test the x86_64 port should not have to open it.*
 
 *Records cited below: milestone 20 (a portable HAL), milestone 87 (the x86_64 bare-metal machine),
 milestone 165 (x86_64 PCI enumeration), milestone 195 (finish the UEFI boot path) and milestone 215

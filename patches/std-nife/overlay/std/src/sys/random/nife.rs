@@ -29,7 +29,7 @@ const ENTROPY: u64 = rt::ENTROPY_SLOT;
 //
 // The probe is a real request, which is what this contract buys over `fs`'s and `time`'s: a reply's
 // first word is a byte count in `0..=MAXIMUM_BYTES`, and every failure the kernel can return from a
-// `CALL` is one of its small negatives, which read as enormous `u64`s. So `proto::delivered`
+// `CALL` is one of its small negatives, which read as enormous `u64`s. So `proto::delivered_bytes`
 // separates "the service answered" from "there is no service" with no extra syscall and no
 // collision to reason about (contrast the errno/kernel-error overlap notes/std/fs.md records).
 //
@@ -45,8 +45,8 @@ fn ask(n: usize) -> Option<(usize, u64)> {
     if GRANTED.load(Ordering::Relaxed) == 2 {
         return None;
     }
-    let (r0, r1) = rt::call(ENTROPY, proto::req(proto::GET, n as u64), 0);
-    match proto::delivered(r0) {
+    let (r0, r1) = rt::call(ENTROPY, proto::request(proto::GET, n as u64), 0);
+    match proto::delivered_bytes(r0) {
         Some(count) => {
             GRANTED.store(1, Ordering::Relaxed);
             Some((count, r1))
@@ -81,7 +81,7 @@ pub fn fill_bytes(bytes: &mut [u8]) {
                  §44)."
             );
         }
-        filled += proto::take(count, word, &mut bytes[filled..]);
+        filled += proto::copy_delivered_bytes(count, word, &mut bytes[filled..]);
     }
 }
 

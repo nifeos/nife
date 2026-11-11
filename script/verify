@@ -486,6 +486,7 @@ pci	23	config-space decode on hostile-device input
 designware_ethernet	1	no receive descriptor word the JH7110 Ethernet controller writes makes the driver read outside a buffer
 block_roster_contract	11	the roster page reader is total on any bytes, and a written roster reads back as written
 socket_contract	3	the listen and UDP bind grants admit exactly their ranges, and the two halves of a composed grant are independent
+entropy_contract	150	a request word reads back as built, a copy writes only the delivered bytes, a fill succeeds only on full replies, and readiness needs one nonzero byte
 jh7110_clock_and_reset	61	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
 usb	122	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
 direct_memory_access_validator	127	the DMA-confinement validator, no descriptor escapes the grant
@@ -505,6 +506,7 @@ driver_process_contract::designware_mobile_storage	0	no block the SD card server
 driver_process_contract::e1000e	1	the e1000e spawn handoff round-trips, and accepts only a page-aligned base and a unicast MAC
 driver_process_contract::extensible_host_controller_interface	17	the xHCI driver is never mapped its MSI-X page, and its spawn handoff round-trips
 driver_process_contract::non_volatile_memory_express	1	the NVMe spawn handoff round-trips, and keeps its doorbells in the one mapped page
+driver_process_contract::virtual_input_output	525	a direct virtio window maps no MSI-X page and nothing past its BAR, and its spawn hand-off round-trips
 kernel	8	the run arithmetic in the kernel's own syscall dispatch, and the SMMU entries that say which frames a device may reach
 components	8	the EL0 components: a bounded append that a configuration page this system did not write feeds
 machine_discovery	356	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string

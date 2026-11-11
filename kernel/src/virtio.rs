@@ -543,13 +543,15 @@ static OWNED: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize:
 ///
 /// `rid` is the PCIe requester id, `None` on virtio-mmio. With an IOMMU active and a `rid`, the
 /// device is confined in hardware to its DMA region plus the shadow page before it is entered in
-/// the table; the shadow ring stays as defence in depth (notes/dma.md).
+/// the table; the shadow ring stays as defence in depth (notes/dma.md). Returns `None`, with the
+/// device unregistered and still blocked, when the IOMMU refuses to attach it
+/// ([`crate::iommu::confine`] prints why).
 pub(crate) fn register(
     transport: Transport,
     direct_memory_access_base: u64,
     direct_memory_access_size: u64,
     rid: Option<u32>,
-) -> u64 {
+) -> Option<u64> {
     // Zeroed so a stale word can never look like a valid descriptor before the first copy.
     let shadow_base = crate::memory::alloc_zeroed()
         .expect("no frame for the virtio shadow ring")
@@ -566,11 +568,15 @@ pub(crate) fn register(
             direct_memory_access_size,
             shadow_base,
         );
-        crate::iommu::confine(rid, &regions);
+        if crate::iommu::confine(rid, &regions).is_err() {
+            crate::memory::free(page_frames::PageFrame::from_addr(shadow_base));
+            return None;
+        }
     }
 
     let mut devs = DEVICES.lock();
-    devs.table
+    let id = devs
+        .table
         .insert_with(|name| Device {
             name: name.to_bits(),
             owner: None,
@@ -582,7 +588,8 @@ pub(crate) fn register(
             shadow_base,
         })
         .expect("more virtio devices live at once than MAXIMUM_DEVICES")
-        .to_bits()
+        .to_bits();
+    Some(id)
 }
 
 /// Make the calling thread the owner of device `id`: when that thread is removed from the thread

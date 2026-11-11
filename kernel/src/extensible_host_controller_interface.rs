@@ -14,7 +14,7 @@
 //!
 
 //! Name: provisional (milestone 242 (USB host and HID)). The crate's name, as
-//! `kernel/src/non_volatile_memory_express.rs` takes its crate's: the volatile half of one pair.
+//! `kernel/src/pci.rs` takes its crate's: the volatile half of one pair.
 
 use driver_process_contract::extensible_host_controller_interface::{Handoff, WindowRefusal};
 use extensible_host_controller_interface::{
@@ -102,14 +102,23 @@ pub fn bring_up() -> Result<Found, Absent> {
     let dma = crate::memory::alloc_contiguous_zeroed(pages as usize)
         .ok_or(Absent::NoMemory(pages))?
         .addr();
-    crate::iommu::confine(
+    if crate::iommu::confine(
         dev.rid,
         &[paging::domain::DmaRegion {
             base: dma,
             size: pages * page_frames::FRAME_SIZE,
             writable: true,
         }],
-    );
+    )
+    .is_err()
+    {
+        for page in 0..pages {
+            crate::memory::free(page_frames::PageFrame::from_addr(
+                dma + page * page_frames::FRAME_SIZE,
+            ));
+        }
+        return Err(Absent::Unconfined);
+    }
     Ok(Found {
         bar0: dev.bar0,
         handoff: Handoff {

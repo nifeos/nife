@@ -236,7 +236,7 @@ fn a_cancelled_or_rearmed_timer_never_fires_stale() {
     reclaim(r);
 }
 
-/// **The syscall layer**: `RETYPE_OBJ` mints a full-rights timer from a full-rights budget (since
+/// **The syscall layer**: `RETYPE_OBJECT` mints a full-rights timer from a full-rights budget (since
 /// milestone 824 (a retype mints no right its budget lacks) it carries the budget's rights); `ARM` needs `WRITE` on the timer
 /// and on the notification and refuses a slot that is not a notification; a deadline already
 /// passed signals before `ARM` returns; and a notification destroyed under an armed timer turns the
@@ -248,25 +248,25 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
         .expect("grant the region");
     let full = invoke(
         ut,
-        abi::memory_region::RETYPE_OBJ,
+        abi::memory_region::RETYPE_OBJECT,
         abi::objtype::TIMER,
         0,
         0,
     )
-    .expect("RETYPE_OBJ(TIMER)") as u64;
+    .expect("RETYPE_OBJECT(TIMER)") as u64;
     let capability = sched::current_capability(full).expect("the minted slot");
     let Object::Timer(t) = capability.object else {
-        panic!("RETYPE_OBJ(TIMER) minted {:?}", capability.object);
+        panic!("RETYPE_OBJECT(TIMER) minted {:?}", capability.object);
     };
     assert_eq!(capability.rights, Rights::ALL);
     let n_slot = invoke(
         ut,
-        abi::memory_region::RETYPE_OBJ,
+        abi::memory_region::RETYPE_OBJECT,
         abi::objtype::NOTIFICATION,
         0,
         0,
     )
-    .expect("RETYPE_OBJ(NOTIFICATION)") as u64;
+    .expect("RETYPE_OBJECT(NOTIFICATION)") as u64;
     let Object::Notification(n) = sched::current_capability(n_slot).expect("slot").object else {
         panic!("not a notification");
     };

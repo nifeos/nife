@@ -70,6 +70,12 @@ if [ -n "$NIFE_DISK" ]; then
     # and offers VIRTIO_F_ACCESS_PLATFORM so the driver negotiates it. Without it QEMU's virtio
     # device bypasses the IOMMU silently, and the confinement test fails loudly. The mmio disk has no
     # IOMMU in front of it and takes no such flag.
+    #
+    # addr=0x10.0 puts the PCI disk at requester id 128, past the first leaf of the IOMMU's
+    # two-level device directory (ids 0 to 63 in the extended format), so the confinement test
+    # proves a device the kernel reaches through a second leaf: milestone 1066 (the IOMMU device
+    # tables on aarch64 and riscv64 grow past 64 devices). The test asserts the id, so moving the
+    # disk back below 64 fails it rather than quietly proving less.
     PCI_DISK="${NIFE_DISK%.img}-pci.img"
     if [ ! -f "$PCI_DISK" ]; then
         echo "qemu-runner-riscv64: $PCI_DISK does not exist (run mkdisk first; it writes both images)" >&2
@@ -119,7 +125,7 @@ if [ -n "$NIFE_DISK" ]; then
     if [ -f "$BLANK_DISK_IMG" ]; then
         BLANK_MMIO="-drive file=$BLANK_DISK_IMG,if=none,format=raw,id=hd5 -device virtio-blk-device,drive=hd5"
     fi
-    DISK="$BLANK_MMIO $GPT_MMIO $CRASH_MMIO $REDOXFS_MMIO -drive file=$NIFE_DISK,if=none,format=raw,id=hd0 -device virtio-blk-device,drive=hd0 -drive file=$PCI_DISK,if=none,format=raw,id=hd1 -device virtio-blk-pci,drive=hd1,disable-legacy=on,iommu_platform=on"
+    DISK="$BLANK_MMIO $GPT_MMIO $CRASH_MMIO $REDOXFS_MMIO -drive file=$NIFE_DISK,if=none,format=raw,id=hd0 -device virtio-blk-device,drive=hd0 -drive file=$PCI_DISK,if=none,format=raw,id=hd1 -device virtio-blk-pci,drive=hd1,disable-legacy=on,iommu_platform=on,addr=0x10.0"
 fi
 
 # **Modern virtio-mmio is a property of the BUS, not of the disks, so the switch that selects it
@@ -193,7 +199,7 @@ fi
 
 NET=""
 if [ -n "$NIFE_NET" ]; then
-    NET="-netdev user,id=net0,$GUESTFWD,tftp=$TFTPDIR$HOSTFWD -device virtio-net-device,netdev=net0 -netdev user,id=net1,$GUESTFWD,tftp=$TFTPDIR -device virtio-net-pci,netdev=net1,disable-legacy=on,iommu_platform=on,addr=0x3.0,multifunction=on"
+    NET="-netdev user,id=net0,$GUESTFWD,tftp=$TFTPDIR$HOSTFWD -device virtio-net-device,netdev=net0 -netdev user,id=net1,$GUESTFWD,tftp=$TFTPDIR -device virtio-net-pci,netdev=net1,disable-legacy=on,iommu_platform=on"
 fi
 
 # **An `e1000e` NIC beside the two virtio ones** (milestone 494 (a driver for the network card a PC
@@ -204,15 +210,11 @@ fi
 # when a test asks `e1000e_service` for it. `mac=` is the address `e1000e_tests` asserts reached
 # `net_stack` through the kernel; `romfile=` skips an option ROM nothing here boots.
 #
-# **Function 1 of the virtio NIC's slot, not a slot of its own**, and that is a constraint rather
-# than taste. This kernel's RISC-V IOMMU driver has a one-level device directory: one frame of
-# 64-byte contexts, so requester ids 0..63, which is bus 0 slots 0 to 7. This runner already used
-# all seven free slots (IOMMU, disk, virtio NIC, GPU, keyboard, RNG, NVMe), so a slot of its own
-# pushed the NVMe to 00:08.0, requester id 64, and the NVMe test panicked in
-# `arch/riscv64/iommu.rs` (#1632's CI, 2026-10-04). As 00:03.1 its requester id is 25 and nothing
-# else moves. The virtio NIC above carries `multifunction=on` for it.
+# **A slot of its own, 00:11.0, requester id 136**, which the two-level device directory in
+# `arch/riscv64/iommu.rs` reaches (milestone 1066): its leaves hold 64 ids each, so the NIC sits in
+# the third leaf and the e1000e gates confine a second device past the old one-frame ceiling.
 if [ -n "$NIFE_NET" ]; then
-    NET="$NET -netdev user,id=net2,$GUESTFWD,tftp=$TFTPDIR -device e1000e,netdev=net2,mac=52:54:00:e1:00:0e,romfile=,addr=0x3.1"
+    NET="$NET -netdev user,id=net2,$GUESTFWD,tftp=$TFTPDIR -device e1000e,netdev=net2,mac=52:54:00:e1:00:0e,romfile=,addr=0x11.0"
 fi
 
 # A virtio-gpu when NIFE_GPU is set (milestone 29), the twin of the aarch64 runner's block. PCIe

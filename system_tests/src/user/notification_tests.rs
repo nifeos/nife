@@ -315,7 +315,7 @@ fn bind_is_once_per_side_and_a_destroyed_binding_frees_the_thread() {
 
 /// **The rights are §101's, enforced at the syscall layer**: `WRITE` signals and binds, `READ`
 /// waits and polls, and neither does the other's job. Driven through `syscall::invoke` so the
-/// boundary is what is proved, not the helper behind it. `RETYPE_OBJ` mints the object, and the
+/// boundary is what is proved, not the helper behind it. `RETYPE_OBJECT` mints the object, and the
 /// creator's capability carries every right its budget holds (milestone 824 (a retype mints no
 /// right its budget lacks)); the budget here is the root's, `Rights::ALL`.
 #[test_case]
@@ -325,13 +325,13 @@ fn the_rights_are_101s_and_retype_obj_mints_a_full_rights_notification() {
         .expect("grant the region");
     let (minted, _) = invoke(
         ut,
-        abi::memory_region::RETYPE_OBJ,
+        abi::memory_region::RETYPE_OBJECT,
         abi::objtype::NOTIFICATION,
     );
-    let full = minted.expect("RETYPE_OBJ(NOTIFICATION)") as u64;
+    let full = minted.expect("RETYPE_OBJECT(NOTIFICATION)") as u64;
     let capability = sched::current_capability(full).expect("the minted slot");
     let Object::Notification(id) = capability.object else {
-        panic!("RETYPE_OBJ(NOTIFICATION) minted {:?}", capability.object);
+        panic!("RETYPE_OBJECT(NOTIFICATION) minted {:?}", capability.object);
     };
     assert_eq!(capability.rights, Rights::ALL);
 

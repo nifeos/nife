@@ -1,11 +1,12 @@
-//! **A confined EL0 process drives the machine's NVMe disk** (milestone 261 (the NVMe driver leaves
-//! the kernel); DECISIONS §86 (whether an NVMe driver can leave the kernel)'s option 2a,
+//! **Two confined EL0 processes drive the machine's NVMe disk** (milestone 261 (the NVMe driver
+//! leaves the kernel); DECISIONS §86 (whether an NVMe driver can leave the kernel),
 //! notes/non-volatile-memory-express.md).
 //!
 //! The sequence milestone 53 (the board's own peripherals) proved: find the controller over §18
 //! (the PCIe transport), confine it behind the IOMMU, bring it from reset through identify to an
-//! I/O queue pair, and serve the blk verbs. Here the queue half runs at EL0, in a process holding
-//! two endpoints, a page of BAR0 and DMA pages, and no capability naming any of it. It is fatal
+//! I/O queue pair, and serve the blk verbs. Here the kernel only finds and confines it. An admin
+//! process brings it up and grants a data plane the doorbell page and its DMA pages, and the data
+//! plane serves the blk verbs. It is fatal
 //! risk 6's prerequisite, not its experiment, and a number measured under QEMU is about QEMU; see
 //! the note's "What the test proves, and where".
 
@@ -23,6 +24,10 @@ fn start() -> Option<non_volatile_memory_express_service::Wiring> {
     let w = match non_volatile_memory_express_service::ensure_or_why(image) {
         Ok(w) => w,
         Err(crate::non_volatile_memory_express::Absent::NoController) => return None,
+        Err(crate::non_volatile_memory_express::Absent::Unconfined { rid, why }) => panic!(
+            "an NVMe controller at requester id {rid:#06x} is on the bus and the IOMMU refused it: \
+             {why}. Not a skip: see notes/risk-6-bench-evening.md"
+        ),
         Err(crate::non_volatile_memory_express::Absent::Refused { rid, why }) => panic!(
             "an NVMe controller at requester id {rid:#06x} is on the bus and this driver refused              it: {why:?}. Not a skip: see notes/risk-6-bench-evening.md"
         ),
@@ -37,18 +42,18 @@ fn start() -> Option<non_volatile_memory_express_service::Wiring> {
             report[2],
         );
         // **The geometry survived the handoff into ring 3.** Compared against what the kernel's
-        // admin plane read from IDENTIFY, not against a constant: on the runner's image that is
+        // admin process read from IDENTIFY, not against a constant: on the runner's image that is
         // 8 MiB and on xenon's Micron it is 256 GB, and this assertion is about the *handoff*
         // rather than about either number (milestone 318).
         assert_eq!(
             report[1], w.size_bytes,
-            "the namespace size did not survive the spawn handoff into ring 3 (the kernel read \
+            "the namespace size did not survive the handoff to the data plane (the admin process read \
              {} bytes from IDENTIFY)",
             w.size_bytes,
         );
     }
     // A namespace of no blocks would make every assertion below vacuously true, and
-    // `kernel/src/non_volatile_memory_express.rs::bring_up` already refuses one; say so here rather
+    // the admin process already refuses one; say so here rather
     // than let a silent zero pass for a pass.
     assert!(
         w.size_bytes >= 2 * crate::non_volatile_memory_express::BLOCK_SIZE as u64,
@@ -92,7 +97,7 @@ fn a_confined_el0_process_serves_the_block_interface_end_to_end() {
     );
 
     // SIZE: the server was told the geometry rather than allowed to ask, since asking means
-    // IDENTIFY and IDENTIFY is admin. What it answers must be what the kernel read from IDENTIFY,
+    // IDENTIFY and IDENTIFY is admin. What it answers must be what the admin process read from IDENTIFY,
     // whatever disk this leg attached: 8 MiB for xtask's `mknvmedisk`, 256 GB on xenon.
     assert_eq!(
         disk.blk(filesystem_contract::blk::SIZE, 0) as u64,

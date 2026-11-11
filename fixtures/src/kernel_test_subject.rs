@@ -68,7 +68,7 @@ const READ_KERNEL: u64 = 1;
 
 /// **Try to build something with no construction authority at all.** The eighth outsider pass's
 /// role (claim 23's zero-authority corner): a program holding one report endpoint and nothing else
-/// invokes `RETYPE`, a `SEND` and `RETYPE_OBJ` on slots it was never granted, and reports the three
+/// invokes `RETYPE`, a `SEND` and `RETYPE_OBJECT` on slots it was never granted, and reports the three
 /// errnos over the endpoint so the test can assert each refusal's shape from outside. The point is
 /// that authority is a capability and not a property of being a program: with no untyped budget in
 /// the table, every path to minting one must answer "nothing there" rather than "not permitted",
@@ -119,7 +119,7 @@ fn build_with_nothing() -> ! {
     let retype_obj = unsafe {
         user_mode_runtime::invoke(
             7,
-            abi::memory_region::RETYPE_OBJ,
+            abi::memory_region::RETYPE_OBJECT,
             abi::objtype::RENDEZVOUS,
             0,
             0,

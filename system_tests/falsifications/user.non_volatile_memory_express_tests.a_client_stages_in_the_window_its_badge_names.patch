@@ -13,13 +13,13 @@ The test needs an NVMe controller attached, which `cargo xtask test` does on eve
 Expected to fail: "byte 0 of the disk tree's read came back wrong". The installer's write stages
 from window 0, which still holds 0x11, so 0x11 is what reaches block 41; the disk tree's read then
 lands in window 0 too, and window 2 still holds the 0xaa the test filled it with.
-Replayed 2026-10-18 (UTC), aarch64: failed at exactly that assertion.
+Replayed 2026-11-10 (UTC), aarch64: failed at exactly that assertion.
 
-diff --git a/components/src/non_volatile_memory_express.rs b/components/src/non_volatile_memory_express.rs
-index d2fc5b86d..078c6bb29 100644
---- a/components/src/non_volatile_memory_express.rs
-+++ b/components/src/non_volatile_memory_express.rs
-@@ -321,7 +321,7 @@ fn serve(mut plane: Plane) -> ! {
+diff --git a/components/src/non_volatile_memory_express_data_plane.rs b/components/src/non_volatile_memory_express_data_plane.rs
+index 86031f252..a62419d8e 100644
+--- a/components/src/non_volatile_memory_express_data_plane.rs
++++ b/components/src/non_volatile_memory_express_data_plane.rs
+@@ -322,7 +322,7 @@ fn serve(mut plane: Plane) -> ! {
          // request is never trusted to stay inside the region it shares just because the packing
          // allows a larger number to be spelled.
          let count = blk::req_blocks(w0).min(TRANSFER_BLOCKS);
