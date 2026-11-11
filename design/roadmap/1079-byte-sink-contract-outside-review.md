@@ -7,6 +7,25 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
+# 1079. `byte_sink_contract`: what an outside maintainer would fix before it leaves
+
+Raised by a read-only review lane that met `crates/byte_sink_contract` as a stranger would, before
+the crate leaves for a repository of its own under milestone 1017 (the contract crates leave in this
+order), step 5. It changes nothing; it lists what the move lane and the lanes after it change.
+
+There is no review package for this crate in `notes/crate-reviews/`, so this review has no settled
+baseline to defer to. The baseline it takes instead is what the tree already records. That is the crate
+name (`_contract` per `design/naming.md`), the ratified `INLINE_MAXIMUM`, and the two opcodes with
+`OPERATION_BYTES` at zero (notes/sink-protocol.md). It includes the severity bits that §242 (a
+system log) placed in the first word, and the interface id 6 and version 1 of milestone 956 (the
+linked interfaces carry checkable versions). It also includes the standing rulings that a moved
+crate carries no `Name:` block and mentions neither nife nor a nife program. None of those is reopened here, except where a later
+naming rule contradicts a name, and the text says so where it does.
+
+Reuse: the template `nifeos/crate-workflows` and its scaffold and helpers, Kani, cargo-mutants,
+`helpers/lint_externalized_crates.py`, and the existing in-tree consumers as the regression suite
+(the kernel-side `sink_tests`, `system_log`, the shell's pipeline reader, std's PAL). No new tool.
+
 ## Goal
 
 A stranger who finds `byte_sink_contract` on crates.io can write a conforming sink or a conforming writer from the crate's own documentation, with no access to this tree. Every statement the documentation makes about the wire is one the decoder enforces. The repository's gates are green

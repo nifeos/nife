@@ -7,6 +7,32 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
+# 1081. `capability`: what an outside maintainer would fix before it leaves
+
+Raised by a read-only outside review of `crates/capability`, met as a stranger to this tree would
+meet it on the day it becomes `nifeos/<crate>`. The review changed nothing; it lists what the move
+lane and the lanes after it change.
+
+The crate has no review package under `notes/crate-reviews/` and no row in
+[`notes/crate-reviews.md`](../../notes/crate-reviews.md), so this review has no settled baseline to
+inherit. Whether a package is in flight on a branch is unverified. The review treats as settled anyway
+whatever a ruling in the tree already covers. That is the crate name as ratified against `caps`
+and `cap_space` (reopened below for one reason only, item D1), `CapabilityTable` as the exported
+type and `MAXIMUM_SLOTS` as ratified. It also covers the five right bits and their positions (the
+syscall wire format, pinned by `abi::rights` and asserted equal in
+`kernel/src/capability_object.rs`), the set-means-free word, the 64-slot ceiling and the
+publishing hold. Where a later rule contradicts an earlier
+ruling, the item says so.
+
+The kernel is the crate's only consumer (`kernel/Cargo.toml` line 52; no other manifest in the tree
+depends on it). Milestone 1034 (a crate move runbook) owns the move itself; this block owns the
+findings that should land inside that path, and the two findings against the move tool that the
+lane will hit first.
+
+Reuse: `script/crate-move`, the template `nifeos/crate-workflows` at its newest release and at head,
+`helpers/falsify.py`, `helpers/standalone.py`, the template's naming helpers, cargo-mutants' recorded
+rows, Kani, and the crate's own harness builder (`any_small_capability_table`). No new tool.
+
 ## Goal
 
 A stranger who clones the crate's repository can tell in one screen what it is for, and can build, test, prove and falsify it from the README alone. The property the README leads with (a capability passed on never carries more than its source held) holds by proof on the code the kernel runs, not on a neighbor of it. The repository's gates are green for the crate's own reasons on its first

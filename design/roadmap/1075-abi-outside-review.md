@@ -7,6 +7,18 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
+# 1075. `abi`: what an outside maintainer would fix before the move
+
+Raised by a read-only review of `crates/abi` as a stranger would meet it in a repository of its own.
+It changes nothing; it lists what the next lanes change. The crate is the last of step 2 of
+milestone 1017 (the contract crates leave in this order). No review package exists for it under
+`notes/crate-reviews/`, so this block has no settled baseline to defer to: the one ratified crate
+name and the sixteen ratified item names stand, and everything else below is open.
+
+Reuse: `script/crate-move --dry-run`, the template `nifeos/crate-workflows` and its helpers,
+`helpers/lint_externalized_crates.py`, `helpers/format_values_check.py`, `helpers/name_release.py`,
+cargo-mutants' recorded census, the crates.io API. No new tool.
+
 ## Goal
 
 A stranger who finds this crate can tell in one screen what it defines.

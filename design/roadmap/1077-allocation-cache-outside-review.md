@@ -7,6 +7,24 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
+# 1077. `allocation_cache`: what an outside maintainer would fix before the move and the first tag
+
+Raised by a read-only outside review of `crates/allocation_cache`, as a stranger meeting it for the
+first time would. It changes nothing; it lists what the next lanes change. The number is the
+recording lane's to assign.
+
+The crate has no review package under `notes/crate-reviews/`, no row in the review index, and no
+step in the journey that moves the contract crates. Its one `Name:` block says no architect has
+ruled on the crate name, and `helpers/name_release.py --draft allocation_cache` lists 20 names, 17
+with no block at all. So this review has no settled baseline to defer to: nothing below reopens a
+ruling, because none exists for this crate. The review used `script/crate-review-packet` and
+`script/crate-standalone` as the fact base and read every caller in the tree, which is one: the
+`std` overlay (`patches/std-nife/overlay/std/src/sys/alloc/nife/`), reached through the file the
+`std` farm copies (`xtask/src/farm/copied.rs`), not through any `Cargo.toml`.
+
+Reuse: the template `nifeos/crate-workflows` and its scaffold, `helpers/crate_move.py`,
+cargo-mutants, Miri, Kani, and the crate's own talc-backed host test. No new tool.
+
 ## Goal
 
 A stranger who finds `allocation_cache` in its own repository can tell in one screen what it is for. The crate is a bounded per-owner stash of freed small blocks in front of any locked heap, so most allocations

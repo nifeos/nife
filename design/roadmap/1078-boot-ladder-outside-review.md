@@ -7,6 +7,23 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
+# 1078. `boot_ladder`: what an outside maintainer would fix before it leaves
+
+*(The number is the recording lane's. The title and slug are provisional.)*
+
+Raised by a read-only outside review of `crates/boot_ladder` as a stranger to this tree would meet
+it. It changes nothing; it lists what the next lanes change before the crate moves to its own
+repository and before any tag.
+
+The crate has no review package in `notes/crate-reviews/`, so this review has no settled baseline
+to inherit. The one ruling it does inherit is the crate name, `boot_ladder`, ratified in the
+crate's own `Name:` block with four refusals, and it does not reopen it. Every other public name
+in the crate is unratified (`script/names boot_ladder` and `helpers/name_release.py --draft`
+list eight items with no `Name:` block and two marked provisional).
+
+Reuse: the crate template `nifeos/crate-workflows` and its scaffold, `script/crate-standalone`,
+`script/crate-review-packet`, `cargo kani`. No new tool.
+
 ## Goal
 
 A stranger who finds `boot_ladder` in its own repository can tell in one screen what it holds. It holds the fixed heads of the lines a nife kernel and shell print while booting, and the list of self-test check names. A program reading a serial log, a CI transcript or a photograph of a screen then keys on the same bytes the kernel wrote. The same stranger can build and test it from the README
@@ -88,7 +105,7 @@ Only one-way doors. Each states the background first, then the recommendation, p
 concrete example. The repository itself follows the standing rule that clearing this review is the
 go for creating it; that is not a new decision.
 
-### 1. The eight wordings become the released contract
+### The eight wordings become the released contract
 
 Background. Every reader in and outside this tree matches the eight heads: the kernel's two consoles, `serial_console`'s board profiles, `xtask`'s gates, basalt's boot test, a person
 reading a photograph of a monitor, and every captured bench log on disk. The crate marks every
@@ -109,7 +126,7 @@ Example: a transcript holding `nife self-test: 12 of 15 passed, 3 absent: blockd
 is green under the released crate and under every later one, because `SELF_TEST` and the grammar behind it never change. Only the list length and the names may change, and the earlier-lengths list says
 which totals an older kernel printed.
 
-### 2. The ten public names
+### The ten public names
 
 Background. Ten items are public and unratified. Seven say what they hold. `PROMPT` holds the
 shell's banner, which the crate's `BUGS` concedes. `SELF_TEST_CHECKS_EARLIER` holds counts.
@@ -131,7 +148,7 @@ misnomer is in their code too.
 Example: a third-party console reader written against the released crate reads
 `boot_ladder::SHELL_BANNER` and knows without the `BUGS` entry that it is not waiting for a `$ `.
 
-### 3. The printed check names
+### The printed check names
 
 Background. The verdict prints fifteen names, and board profiles name them, so they are a contract the moment the crate ships. `blockdev` is an abbreviation of two English words the
 tree authors. `trng` is the block's name in the StarFive JH7110 manual, and `entropy` already

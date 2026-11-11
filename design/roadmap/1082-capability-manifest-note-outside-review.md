@@ -7,6 +7,26 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
+# 1082. `capability_manifest_note`: what an outside maintainer would fix before it leaves
+
+Raised by a read-only review of `crates/capability_manifest_note`, done as a stranger meeting the
+crate for the first time would, on a fresh shallow clone of `nifeos/nife` at the head of `main`
+(the merge of #3514). It changes nothing; it lists what the next lanes change before the crate
+moves to `nifeos/capability_manifest_note` and what can wait until after.
+
+There is no review package for this crate in `notes/crate-reviews/`, so this block has no settled
+baseline to stand on. It treats as settled, and does not reopen, what the crate's own text records
+as ratified. That is the crate name, the owner string `nife`, the note type numbers `1`, `2` and
+`3`, the version 1 layout and its field order, and the version 2 layout and number. It also covers
+`MAXIMUM_VERBS`, `MAXIMUM_ZONES` and `ZONE_MAXIMUM` as values, `MAXIMUM_DECLARED_SHORT_OPTIONS`
+and `INTERFACE_ID` 7. Everything else in the crate is marked provisional by its own `Name:` blocks.
+The crate is on `crates/externalization-list.txt`, in step 6 of milestone 1017 (the contract
+crates leave in this order): after `machine_statistics_contract`,
+`domain_name_resolution_contract` and `grant_plan`.
+
+Reuse: `script/crate-move --dry-run`, the template `nifeos/crate-workflows` and its scaffold and
+helpers, Kani, cargo-fuzz, the crate's own encoders as seed writers. No new tool.
+
 ## Goal
 
 A stranger who finds the crate in its own repository can tell in one screen what an ELF manifest note is, and can build and prove the crate from the README alone. The stranger can trust the one claim the crate makes: that one manifest has exactly one encoding, in both directions. What the compiler accepts into a
@@ -95,7 +115,7 @@ The P1 items are in [the appendix](1082-capability-manifest-note-outside-review/
 Only one-way doors. Each has the plain background first, then the recommendation, prior art and a
 concrete example.
 
-### 1. The wire literal `nife` in a crate that may not mention nife
+### The wire literal `nife` in a crate that may not mention nife
 
 Background: every manifest note begins with the owner string `nife` and its NUL; every program
 basalt has built carries those bytes, and every reader compares them. The macro places the note in
@@ -119,7 +139,7 @@ Example: a program built today carries `05 00 00 00 | 38 00 00 00 | 01 00 00 00 
 00 | <56 bytes>`. If `OWNER` became anything else, `elf.note(OWNER, MANIFEST)` on that program
 returns no note, and the shell runs it as a native program that hears no words.
 
-### 2. The `_LEN` family of public names
+### The `_LEN` family of public names
 
 Background: the units rule says a length or a limit carries its unit, and gives `MAXIMUM_NAME_BYTES,
 never MAXIMUM_NAME_LEN` as its own example. The crate's public byte lengths are `DESCRIPTOR_LEN`,
@@ -142,7 +162,7 @@ Example: a stranger reading `const D: [u8; capability_manifest_note::zoned_len(Z
 open the function to learn that the number is bytes of descriptor, not zones; `zoned_descriptor_bytes(ZONES)`
 says it at the call.
 
-### 3. `service` as the name of a yes-or-no function
+### `service` as the name of a yes-or-no function
 
 Background: `pub fn service(d: &[u8]) -> Result<bool, Error>` answers whether the manifest asks to
 run as a service. The rule for functions that answer yes or no asks for `is_`, `has_`, `can_` or a
@@ -159,7 +179,7 @@ Prior art: std's `Path::is_absolute`, `Metadata::is_dir`; the crate's own `Zones
 Example: `if capability_manifest_note::service(d)? { ... }` reads as "if the service", and
 `if capability_manifest_note::asks_service(d)? { ... }` reads as the condition it is.
 
-### 4. `VERSION` as the name of version 1
+### `VERSION` as the name of version 1
 
 Background: `pub const VERSION: u32 = 1` is the descriptor version with no zones and no service
 byte; `ZONED_VERSION` is 2 and `SERVICED_VERSION` is 3, and `decode` reads all three. A stranger

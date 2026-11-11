@@ -7,6 +7,23 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
+# 1083. `clock_contract`: what an outside maintainer would fix before it leaves
+
+Raised by a read-only review of `crates/clock_contract` as a stranger to this tree would meet it,
+on a fresh clone of `main` at `cf1328af` with the template `nifeos/crate-workflows` at `2e651d8`.
+It changes nothing; it lists what the next lanes change.
+
+The review took its baseline from
+[the review package](../../notes/crate-reviews/clock-contract.md) and reopens none of what it
+settles. That is the crate name, the three-authority design (read is a mapping, set is a writable
+mapping, propose is an endpoint), the `UNKNOWN` state as a real answer and the asymmetric step
+bounds. It also covers the license, `publish = false` under §305 until the crate's own release
+milestone, and the package's proposed name table. Where a rule now in force contradicts a name the package records as ratified,
+this block says so and otherwise defers to the package. Milestone 1017 (the contract crates leave
+in this order) owns the move; this block owns the findings that should land inside that path.
+
+Reuse: the template and its scaffold, loom, Kani, cargo-mutants, cargo-llvm-cov. No new tool.
+
 ## Goal
 
 A stranger who finds `clock_contract` in its own repository can tell in one screen what it is for

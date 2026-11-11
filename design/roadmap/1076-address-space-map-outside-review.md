@@ -7,6 +7,24 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
+# 1076. `address_space_map`: what an outside maintainer would fix before it leaves
+
+Raised by a read-only review of `crates/address_space_map` at nife commit `137639a3`, as a
+stranger meeting the crate in a repository of its own would. It changes nothing; it lists what the
+move lane and the lanes after it change.
+
+The crate has no review package in `notes/crate-reviews/`, so this block has no settled baseline
+to inherit. It treats as settled only what a ruling elsewhere already fixed. That is the interface identity
+(`INTERFACE_ID` 2 and `VERSION` 1, from milestone 956 (the linked interfaces carry checkable
+versions)), the ratified `MAXIMUM_STACK_PAGES` and the band numbers themselves (§171 (where a
+program image starts), option D). It also includes the placement of this crate at step 3 of
+milestone 1017 (the contract crates leave in this order), after the linker-script test moves. Every other name in the crate is
+provisional by its own `Name:` block or carries none.
+
+Reuse: the template `nifeos/crate-workflows` and its scaffold, Kani, cargo-mutants, the template's
+name helpers, and the move shape `jh7110_entropy` and `file_allocation_table` already took. No new
+tool.
+
 ## Goal
 
 A stranger who finds the crate in its own repository can tell in one screen what it is for. The stranger can build, test and prove it from the README alone. The stranger can place a page with the compiler checking the whole window and not only its first page. The repository's gates are green for the crate's own reasons.
@@ -93,7 +111,7 @@ The comparison with nearby work is in [the appendix](1076-address-space-map-outs
 Three one-way doors. Each is a public name that becomes the repository's, crates.io's or every
 caller's at the first tag.
 
-### 1. The crate's name
+### The crate's name
 
 Background. The crate is a fixed partition of a process's low half into eight bands, with the
 functions that check a page against them. Its name uses `map`, which nife's vocabulary rule sets
@@ -114,7 +132,7 @@ Concrete example: `crates/current_cpu_contract/src/lib.rs:141` would read
 `pub const PAGE_VA: u64 = address_space_layout::CURRENT_CPU_PAGE;` (and, with decision 2,
 `address_space_layout::CURRENT_CPU_PAGE_VIRTUAL_ADDRESS`).
 
-### 2. The address and length constants
+### The address and length constants
 
 Background. `PAGE` holds a length in bytes; six constants and three enum fields hold virtual
 addresses (item 7). nife's naming rules say a length carries its unit and an address says `virtual`
@@ -136,7 +154,7 @@ Concrete example: `kernel/src/user.rs:21`, `pub const USER_STACK_TOP: u64 =
 address_space_map::STACK_TOP;`, becomes `... = address_space_layout::STACK_TOP_VIRTUAL_ADDRESS;`,
 and a reader of the kernel knows it is an address without opening the crate.
 
-### 3. A whole-window check, and its name
+### A whole-window check, and its name
 
 Background. The three band functions check one page (item 9). The block channel is an 8 MiB window
 in `SERVICE_WINDOWS`; the scratch window in `process_builder` is 64 MiB in `RUNTIME_WINDOWS`. Both

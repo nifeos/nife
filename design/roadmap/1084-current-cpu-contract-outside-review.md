@@ -8,6 +8,34 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
+# 1084. `current_cpu_contract`: what an outside maintainer would fix before it leaves
+
+Raised by a read-only review lane that met `crates/current_cpu_contract` as a stranger would: the
+crate, every caller in the tree, the naming rules, the standalone gate and the `nifeos/crate-workflows`
+template. It changes nothing; it lists what the lanes that move the crate change, and the two
+one-way doors that need the architect.
+
+There is no review package for this crate in `notes/crate-reviews/` and no row for it in
+`notes/crate-reviews.md`. The review therefore took its baseline from the crate itself,
+[notes/current-cpu-page.md](../../notes/current-cpu-page.md), the sibling package
+[counter-frequency-contract.md](../../notes/crate-reviews/counter-frequency-contract.md), §204
+(how userspace asks where a thread runs), milestone 1017 (the contract crates leave in this order)
+and `design/naming.md`. Nothing below reopens:
+
+- the mechanism (a per-thread read-only page, §204), the `Relaxed` store and load with the
+  scheduler's handoff as the ordering argument, or the fixed address beside the stack;
+- the identity values a published program already compares: `MAGIC` `CURRCPU1`, `VERSION` 1, and
+  `INTERFACE_ID` 10 in milestone 956's table (ratification is asked below, the values are not);
+- the deliberate `!Send` and `!Sync` of `CurrentCpuPage`, which the sibling package records as a
+  difference from `CounterFrequencyPage`;
+- the two renames the page-contract family rule already settles (`design/naming/crates.md`), which
+  `helpers/name_release.py --draft current_cpu_contract` prints as pre-ruled: `PAGE_BYTES` to
+  `PAGE_CONTENT_BYTES` and `PAGE_VA` to `PAGE_VIRTUAL_ADDRESS`;
+- the dependency on `address_space_map`, which milestone 1017 step 3 orders ahead of this crate.
+
+Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_externalized_crates.py`,
+`helpers/template_report_gates.py`, Miri, the template's `scaffold/` and `sample/`. No new tool.
+
 ## Goal
 
 A stranger who finds `current_cpu_contract` in its own repository can tell in one screen what the
