@@ -281,11 +281,8 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 
 ## Follow-on
 
-- **Done.** Step 2: the clock and reset server, its wire and its device table, and the kernel's
-  entropy, Ethernet and SD/MMC starters calling it with their device's badge. What only radon
-  proves is the bench run in `notes/jh7110-clock-and-reset.md`.
-- **Outstanding.** Steps 1 and 3 to 7, each its own pull request, in the order "The work, in
-  order" gives and waiting on what each step there names.
+- **Done.** Step 2 in #3475.
+- **Outstanding.** The other steps, each its own pull request.
 
 ## Index row
 
