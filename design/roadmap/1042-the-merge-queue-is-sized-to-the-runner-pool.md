@@ -42,7 +42,7 @@ fixed.
 The 7 days before 2026-11-11 (UTC):
 
 - 396 merge-group builds, 25% of them red.
-- 28% of queue entries were removed before they merged: 54 for a merge conflict, 44 for a failed
+- The queue removed 28% of its entries before they merged: 54 for a merge conflict, 44 for a failed
   check and 25 for an invalid merge commit.
 - The `lint` job failed in 53 merge-group builds, although `lint` gates every pull request before
   it enters the queue. The proposal

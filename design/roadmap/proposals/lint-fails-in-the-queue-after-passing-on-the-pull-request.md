@@ -12,7 +12,10 @@ needs_person: yes
 Raised 2026-11-11 (UTC) by lane `milestone/1042-the-merge-queue-is-sized-to-the-runner-pool`,
 while it recorded the queue sizing ruling of milestone 1042 (the merge queue is sized to the runner
 pool). That ruling defers any change to the queue's size until the `lint` failures inside merge
-groups are fixed and the queue is measured again. This proposal says what those failures are.
+groups have fixes and a new measurement of the queue exists. This proposal says what those failures are.
+
+Reuse: `script/preflight-queue` (the group build, run here first), `helpers/arm.sh` and its
+`--despite-conflict` override, and the per-crate files under `notes/crate-reviews/`. No new tool.
 
 What drives it: the re-measurement that milestone 1042 and milestone 965 (gating CI rents more
 concurrency before it owns a runner) wait for. What it saves: group builds that the queue throws
@@ -69,7 +72,7 @@ Two shared documents sit at the §212 (a prose budget) cap of 3,000 words, and
 many lanes append to each:
 
 - `notes/crate-reviews.md`: 18 failures. #3314 accounts for 11, #3373 for 3 and #3270 for 4. The
-  #3270 failures were the §213 passive rate, not the word count. The file holds 2,990 words today by
+  #3270 failures were the §213 (writing standards) passive rate, not the word count. The file holds 2,990 words today by
   `wc`, and 122 commits on `main` touched it in the last 14 days.
 - `design/roadmap/0857-crates-released-on-their-own.md`: 11 failures, all behind #3197, which met
   #3196 ahead of it in the queue. The file holds 2,997 words today.
@@ -77,7 +80,7 @@ many lanes append to each:
 Each lane's addition fits. Two additions do not, and only the queue ever sees the pair.
 
 The fix: move the per-crate text of `notes/crate-reviews.md` into the per-crate files beside it in
-`notes/crate-reviews/`, leaving an index with a line per crate, and give milestone 857's block an
+`notes/crate-reviews/`, leaving an index with a line per crate, and give milestone 857 (crates released on their own)'s block an
 appendix for its record of rulings. Each change is a document edit, reversible, and leaves the cap
 as it is. A file that every lane appends to should not sit within a lane's addition of a cap.
 
@@ -98,7 +101,7 @@ these. Question A below asks whether arming should run lint over that stack.
 
 ### 3. A skipped lint let a red entry in
 
-Both culprits were marked ready and queued two seconds later. The only `lint` result on the head was
+Each culprit went from draft to ready and into the queue within two seconds. The only `lint` result on the head was
 the draft run's `skipped`:
 
 - #3320, 2026-11-07: ready at 19:36:29, queued at 19:36:31. The ready run's `lint` started at
