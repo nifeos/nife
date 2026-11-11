@@ -50,8 +50,8 @@ safety is a discipline, stated once and kept:
 1. **A queued thread is `Ready`, and only `Finished` threads are reaped**, so a queued TCB is never
    freed. This is the load-bearing rule, and it is why `sched::thread_control_block_ptr` (the one
    place a ThreadId becomes a pointer) documents it rather than each push site re-arguing it.
-2. **The `Box` in the thread table pins the address** (phase B replaces it with a TCB page from
-   untyped, pinned the same way).
+2. **The thread table's TCB page pins the address**: each thread lives at the start of one page
+   that never moves (notes/thread-control-block.md).
 3. **Only the queue that holds a thread touches its link**, under that queue's synchronization:
    a run queue is single-core with interrupts masked; an inbox is behind its mutex.
 
@@ -64,12 +64,13 @@ by number:
    node's `Unqueued` token by value, and only a pop gives it back, so the compiler enforces this.
 2. A node outlives its time on the queue. In the kernel a queued thread is `Ready`, and only
    `Finished` threads are freed.
-3. The caller serializes all access to a queue and its nodes' links. `&mut self` enforces it for
-   the queue; for the links it is stated at `Unqueued::new`.
+3. The caller serializes all access to a queue and its nodes' links, and mints each token from the
+   node's owning pointer, never from a reference. `&mut self` enforces it for the queue; for the
+   links and the token's pointer it is stated at `Unqueued::new`.
 
 Rule 2 fits no type available here, because the queue deliberately does not own its nodes. The
 queue is safe because its callers are correct, and nothing in the crate can check that. The API
-takes `NonNull` built from references, so nullness is a fact of construction. That is what CodeQL's
+takes `NonNull`, so nullness is a fact of construction. That is what CodeQL's
 `rust/access-invalid-pointer` was pointing at. The Kani harness proves the ordering logic, never
 that a caller kept a queued node alive.
 
@@ -127,19 +128,29 @@ protocol's
 logic under the kernel's locking discipline; the discipline itself, and the ISA-level orderings,
 remain outside the model (notes/interleaving.md).
 
-## The aliasing fine print, honestly
+## The aliasing fine print: where a token's pointer comes from
 
-Rust's strictest aliasing models (Stacked Borrows, the experimental semantics Miri checks) would
-complain about this design. While a TCB pointer sits in a queue, other code occasionally creates
-`&mut Thread` to the same TCB through the table (a mailbox write, the revocation sweep's
-`iter_mut`). Under those models a new `&mut` invalidates previously-derived raw pointers.
-At the machine level the discipline is sound: every access is serialized by `SCHED` or a queue's
-own synchronization, and no two accesses overlap in time. But the language-level story for
-intrusive, self-referential kernel structures is still being worked out (Rust-for-Linux lives
-with the same tension). Recorded rather than hidden: if rustc ever starts optimizing on the
-stricter model, the fix is `UnsafeCell`-based link access, and this paragraph is the pointer to
-why. The Kani harnesses are unaffected: they drive the queues with standalone nodes and no
-aliasing `&mut`.
+While a TCB pointer sits in a queue, other code occasionally creates `&mut Thread` to the same TCB
+through the table (a mailbox write, the revocation sweep's `iter_mut`). Rust's aliasing models,
+which Miri checks (Stacked Borrows, and Tree Borrows with `-Zmiri-tree-borrows`), decide whether
+that is sound by the token's provenance, not by how the link is accessed:
+
+- A token derived from a `&mut` reborrow of the node, such as `NonNull::from(get_mut(..))`, is
+  invalidated by the next `&mut` reborrow of the same node from its owner. The queue's next push
+  or pop through it is undefined behaviour under both models.
+- A token derived from the owning pointer (the one `Box::into_raw` returned, or the page pointer
+  the thread table stores) survives those reborrows, because each reborrow is derived from that
+  pointer too, and using the token afterwards only ends the reborrow.
+
+So `Unqueued::new` requires the second shape, and `Threads::mint_token` mints from the pointer the
+table stores. The crate's test
+`a_token_from_the_owning_pointer_survives_the_owners_reborrows` runs the thread table's sequence
+(store the owning pointer, mint from it, reborrow the node while it moves on and off a queue,
+retire it), and both models pass it; minted from a reborrow instead, both report undefined
+behaviour at the next push. Every access is also serialized by `SCHED` or a queue's own
+synchronization, so no two accesses overlap in time. The kernel itself does not run under Miri, so
+its own adherence is this argument and not a run. The Kani harnesses are unaffected: Kani does not
+model aliasing.
 
 ## Where thread ids still live
 
