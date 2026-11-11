@@ -47,7 +47,7 @@ The allocator's first act is to allocate itself.
 
 ## Guilty until proven innocent
 
-`FrameAllocator::new` marks every frame used. Nothing is handed out until someone
+`PageFrameAllocator::new` marks every frame used. Nothing is handed out until someone
 explicitly says "this address range is real RAM."
 
 This ordering is not fussiness. If the bitmap defaulted to *free*, the allocator would
@@ -55,15 +55,14 @@ cheerfully hand out the MMIO hole at `0x0900_0000` and give you the UART's contr
 as scratch space. Default-used means an unknown address is never allocated, and the worst
 case is wasted memory rather than a machine that writes garbage to a device.
 
-So `init` goes:
+So `memory::bring_up_page_frames` goes:
 
 ```
 1. everything used
-2. mark_free()  each /memory region from the device tree
-3. mark_used()  the kernel image      (__image_start .. __image_end)
+2. mark_free()  each RAM region the machine description reports
+3. mark_used()  each forbidden region: the kernel image, the device tree blob (it sits in
+                the RAM just freed), the initial ramdisk, every firmware reservation
 4. mark_used()  the bitmap itself
-5. mark_used()  the device tree blob  (it's sitting in the RAM we just freed!)
-6. mark_used()  every /memreserve region the firmware declared
 ```
 
 Free first, reserve second. Reserving has to win.
@@ -71,7 +70,9 @@ Free first, reserve second. Reserving has to win.
 ## The rounding asymmetry, which is the whole ballgame
 
 `mark_used` rounds the start down and the end up. It claims every frame the region so
-much as *touches*.
+much as *touches*. `mark_free` does the opposite: it rounds the start up and the end down, and
+frees only the frames lying wholly inside the region, so a region holding no whole frame frees
+nothing.
 
 Consider: our image ends at `0x4009_7010`. That is not frame-aligned. The frame at
 `0x4009_7000` holds the last `0x10` bytes of the kernel, and 4080 bytes of nothing.
@@ -80,12 +81,20 @@ Round that end down and the frame is declared free. The allocator hands it out. 
 writes to it. The tail of the kernel is silently overwritten, and the crash lands
 somewhere else entirely, much later, in code that did nothing wrong.
 
-Over-reserving wastes at most 4 KiB per region. Under-reserving corrupts the kernel. The
-asymmetry in the cost is why the asymmetry in the rounding.
+Freeing runs the same argument the other way. Nothing obliges the `x86_64` firmware memory map
+to report usable regions on frame boundaries, and a frame at an unaligned end of one also holds
+bytes nobody said were RAM. Free that frame and the allocator hands those bytes out.
+
+Over-reserving or under-freeing wastes at most 4 KiB at each end of a region. Under-reserving or
+over-freeing corrupts whatever owns the other bytes. The asymmetry in the cost is why the
+asymmetry in the rounding.
 
 There is a host test for exactly this shape (`mark_used_claims_partially_covered_frames`) and
 a kernel test that states the invariant directly (`every_frame_of_the_kernel_image_is_reserved`,
-which walks every frame of the image and asserts each is marked used).
+which walks every frame of the image and asserts each is marked used). On the freeing side, a host
+test covers each unaligned shape (`mark_free_of_an_unaligned_start_keeps_the_frame_it_starts_in`
+and its neighbors). A Kani harness (`mark_free_frees_only_whole_frames_inside_the_range`) proves
+that every frame `mark_free` frees lies inside its range.
 
 ## Span, not sum
 
