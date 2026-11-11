@@ -18,6 +18,7 @@
 //! `_contract` (calef's 2026-10-18 ruling).
 
 #![cfg_attr(not(test), no_std)]
+#![forbid(unsafe_code)]
 
 #[cfg(doctest)]
 #[doc = include_str!("../README.md")]
@@ -446,5 +447,114 @@ mod tests {
         let mut out = [0u8; 2];
         assert_eq!(copy_delivered_bytes(8, u64::MAX, &mut out), 2);
         assert_eq!(out, [0xFF, 0xFF]);
+    }
+}
+
+#[cfg(kani)]
+mod verification {
+    use super::*;
+
+    /// **A request word carries its opcode and its clamped byte count**: for any opcode that fits
+    /// the top byte and any byte count, [`operation`] reads back the opcode and
+    /// [`requested_bytes`] reads back the low byte of the count, clamped to [`MAXIMUM_BYTES`].
+    /// Falsification: replayable `crates/entropy_contract/falsifications/verification.a_request_word_carries_its_opcode_and_clamped_count.patch`
+    #[kani::proof]
+    fn a_request_word_carries_its_opcode_and_clamped_count() {
+        let opcode: u64 = kani::any();
+        kani::assume(opcode <= 0xff);
+        let byte_count: u64 = kani::any();
+        let request_word = request(opcode, byte_count);
+        assert_eq!(operation(request_word), opcode);
+        assert_eq!(
+            requested_bytes(request_word),
+            (byte_count & 0xff).min(MAXIMUM_BYTES)
+        );
+    }
+
+    /// **Copying writes exactly the delivered bytes, and nothing past them**: for any byte count,
+    /// any reply word and any slice of up to twelve bytes, [`copy_delivered_bytes`] returns the
+    /// least of the count, [`MAXIMUM_BYTES`] and the slice's length, writes that many low bytes of
+    /// the word in little-endian order, and leaves every other byte of the buffer as it was.
+    /// Falsification: replayable `crates/entropy_contract/falsifications/verification.copying_writes_exactly_the_delivered_bytes.patch`
+    #[kani::proof]
+    #[kani::unwind(13)]
+    fn copying_writes_exactly_the_delivered_bytes() {
+        let byte_count: usize = kani::any();
+        let reply_word: u64 = kani::any();
+        let mut buffer: [u8; 12] = kani::any();
+        let before = buffer;
+        let length: usize = kani::any();
+        kani::assume(length <= buffer.len());
+        let copied = copy_delivered_bytes(byte_count, reply_word, &mut buffer[..length]);
+        assert_eq!(copied, byte_count.min(MAXIMUM_BYTES as usize).min(length));
+        let bytes = reply_word.to_le_bytes();
+        for index in 0..buffer.len() {
+            if index < copied {
+                assert_eq!(buffer[index], bytes[index]);
+            } else {
+                assert_eq!(buffer[index], before[index]);
+            }
+        }
+    }
+
+    /// **A fill succeeds exactly when every reply is full**: for any slice of up to seventeen bytes
+    /// and any replies, [`fill_with`] asks for the remainder clamped to [`MAXIMUM_BYTES`] each
+    /// time, answers `Some` exactly when every reply it received delivered what it asked for, and
+    /// then holds the delivered bytes in order after one request per eight bytes, rounded up.
+    /// Falsification: replayable `crates/entropy_contract/falsifications/verification.a_fill_succeeds_exactly_when_every_reply_is_full.patch`
+    #[kani::proof]
+    #[kani::unwind(19)]
+    fn a_fill_succeeds_exactly_when_every_reply_is_full() {
+        let length: usize = kani::any();
+        kani::assume(length <= 17);
+        let mut out = [0u8; 17];
+        let mut expected = [0u8; 17];
+        let mut every_reply_full = true;
+        let mut position = 0;
+        let mut calls = 0;
+        let result = fill_with(&mut out[..length], |request_word| {
+            assert_eq!(operation(request_word), GET);
+            let asked = requested_bytes(request_word) as usize;
+            assert_eq!(asked, (length - position).min(MAXIMUM_BYTES as usize));
+            let first_reply_word: u64 = kani::any();
+            let reply_word: u64 = kani::any();
+            if first_reply_word == asked as u64 {
+                expected[position..position + asked]
+                    .copy_from_slice(&reply_word.to_le_bytes()[..asked]);
+                position += asked;
+            } else {
+                every_reply_full = false;
+            }
+            calls += 1;
+            (first_reply_word, reply_word)
+        });
+        assert_eq!(result.is_some(), every_reply_full);
+        if result.is_some() {
+            assert_eq!(position, length);
+            assert_eq!(out[..length], expected[..length]);
+            assert_eq!(calls, length.div_ceil(MAXIMUM_BYTES as usize));
+        }
+    }
+
+    /// **Readiness is reported exactly when a first byte is nonzero**: for any first draw of up to
+    /// four bytes, [`readiness`] answers [`READY`] exactly when one of them is nonzero, and
+    /// otherwise names [`STEP_NO_FIRST_BYTES`] for an empty draw and [`STEP_FIRST_ALL_ZERO`] for
+    /// one of zeros.
+    /// Falsification: replayable `crates/entropy_contract/falsifications/verification.readiness_is_reported_exactly_when_a_first_byte_is_nonzero.patch`
+    #[kani::proof]
+    #[kani::unwind(6)]
+    fn readiness_is_reported_exactly_when_a_first_byte_is_nonzero() {
+        let first_bytes: [u8; 4] = kani::any();
+        let length: usize = kani::any();
+        kani::assume(length <= first_bytes.len());
+        let drawn = &first_bytes[..length];
+        let word = readiness(drawn.iter().copied());
+        if drawn.iter().any(|&byte| byte != 0) {
+            assert_eq!(word, READY);
+        } else if length == 0 {
+            assert_eq!(word, bring_up_failure(STEP_NO_FIRST_BYTES));
+        } else {
+            assert_eq!(word, bring_up_failure(STEP_FIRST_ALL_ZERO));
+        }
     }
 }
