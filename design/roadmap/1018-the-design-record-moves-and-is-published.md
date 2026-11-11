@@ -85,10 +85,8 @@ names a record file by path, 1,062 times today, writes `nifeos/record:<path>`, s
 `nifeos/record:design/naming.md`. The 7,774 milestone citations in code convert when each crate
 moves, under §315 (a crate's documentation leaves with it), and not in this move. The same section sends a note about one crate alone with that crate.
 
-A code repository checks its `milestone N`, `§N` and `TODO(milestone N)` citations against the
-record commit basalt's manifest pins, by whether the file exists there: `design/roadmap/NNNN-*.md`
-for a milestone and `design/decisions/NNNN-*` for a section. The record publishes no index of its
-numbers (question 7 below).
+A code repository checks each `milestone N`, `§N` and `TODO(milestone N)` citation by whether
+`design/roadmap/NNNN-*.md` or `design/decisions/NNNN-*` exists at the record commit basalt pins.
 
 The roadmap blocks already written are the hard part. A finished block's bullets name the files and
 checks that did the work, as bare paths such as `crates/x/src/y.rs`. Rewriting 7,845 of them is the
@@ -273,11 +271,10 @@ One decision each, recommendation first. Ask them one at a time.
    `helpers/milestone-branch-block.sh` and `ready-status.yml` to the record's pull request. Counted
    claims that fetch code at basalt's pins.
 
-7. Ruled 2026-11-11 (UTC): milestones stay files in `nifeos/record`, and the record publishes no
-   index of its numbers, because an index is one file that every new number edits, so merges
-   conflict there. A code repository checks each `milestone N`, `§N` and `TODO(milestone N)`
-   citation by file existence at the record commit basalt pins, as the section on citations above
-   states. A generated index may be added later if that check proves too slow.
+7. Ruled 2026-11-11 (UTC): milestones stay files, with no published index, since every new number
+   would edit an index and merges would conflict there. Code checks its citations by file
+   existence, as the section on citations states. A generated index may follow if that proves too
+   slow.
 
 Still to be ruled by the architect:
 
@@ -287,8 +284,6 @@ Still to be ruled by the architect:
 
 ## Follow-on
 
-- **Done.** Step 3, carried by `script/site`, `site/` and `.github/workflows/record-site.yml`.
-- **Done.** Step 1, the `# lint-scope:` lines in `script/lint`, and step 5, in the appendix.
 - **Outstanding.** Steps 2, 4 and 6 to 8 above. Checked 2026-11-09 against `script/roadmap`,
   which resolves no `nifeos/<repo>:<path>`, and `packages/homes.toml`, which sorts no note.
 - **Outstanding.** Two comments in `ci.yml` and the header of `empty-diff.yml` call
