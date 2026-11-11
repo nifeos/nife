@@ -18,8 +18,8 @@ program name (clause 2). *(Section number provisional until the merge queue land
 The object, its method, the `reboot` field and the program `reboot` carry provisional names under
 design/naming.md. The sync names are ratified (2026-10-06 UTC): the file-server request and its
 capability are `fs::BIND_SYNC`, `SyncOnly` and `Manifest::sync`, and "flush" means the block
-device's own cache command only. So are `reboot_capability` (capability is never abbreviated `cap`),
-`prepare_reset_route` and the four errors under "A refusal returns its reason".
+device's own cache command only. So are `reboot_capability` (capability is never abbreviated `cap`)
+and the four errors under "A refusal returns its reason".
 
 ## The ruling
 
@@ -77,14 +77,19 @@ answers one request, reset the board.
 
 - The image's `reboot` calls the route after the `SYNC` and before `REBOOT`. A write the PMIC
   honors never returns.
-- `reboot` waits for the route with a timeout. If the route is absent, refuses, or does not reset
-  the board within the timeout, `reboot` invokes `REBOOT`, the plain firmware route above.
+- The route bounds its own wait (ruled 2026-11-11 UTC). After its write it waits two seconds for
+  the board to reset, then answers `StillRunning`. If the route is absent, refuses, or answers
+  `StillRunning`, `reboot` invokes `REBOOT`, the plain firmware route above.
+- `reboot`'s own call to the route has no timeout, so a route that stops answering hangs `reboot`.
+  Bounding that call is follow-on work that waits on a timed call, which nife does not have; a
+  timed call is proposed as its own milestone.
 - The reboot object itself stays as clause 1 states it: no payload and no device. `REBOOT` calls
   `arch::reboot` and nothing board-specific.
 
-Until milestone 1062 (the device control planes leave the kernel) lands,
-`kernel/src/reboot/designware_i2c.rs` and `kernel/src/reboot/pmic.rs` still run the PMIC write
-inside `REBOOT`. The route's name and its request are provisional, like the object's.
+The route is `components/src/power_management_chip_route.rs`, built by milestone 1062 (the device
+control planes leave the kernel). Its starter brings I2C5 up at boot through the JH7110 clock and
+reset server of §320 (the JH7110 clock and reset wire), and the kernel holds no I2C master. The
+route's name and its request are provisional, like the object's.
 
 ## How `reboot` syncs: a sync-only capability
 
