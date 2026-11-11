@@ -1511,6 +1511,7 @@ fn retype_call(region_slot: u64, kind: u64, space_slot: u64, floor: u64, slot: u
 /// Falsification: replayable `system_tests/falsifications/user.confined_fuzzer_tests.the_oracle_accepts_a_process_retyped_from_the_callers_own_region.patch`
 #[test_case]
 fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
+    use abi::object_type::{ADDRESS_SPACE, PROCESS, RENDEZVOUS};
     let region = crate::memory_region::create(32).expect("no region");
     let other = crate::memory_region::create(32).expect("no second region");
     let r = sched::grant(memory_region_capability_rights(region, Rights::ALL))
@@ -1522,12 +1523,12 @@ fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
     };
 
     // The process is filed above the space's slot, which is deleted.
-    let space = retype_into_kernel_object(r, abi::object_type::ADDRESS_SPACE, 0, 0);
+    let space = retype_into_kernel_object(r, ADDRESS_SPACE, 0, 0);
     let before = own_snapshot();
     let floor = space + 4;
-    let high = retype_into_kernel_object(r, abi::object_type::PROCESS, space, floor);
+    let high = retype_into_kernel_object(r, PROCESS, space, floor);
     let after = own_snapshot();
-    let call = retype_call(r, abi::object_type::PROCESS, space, floor, high);
+    let call = retype_call(r, PROCESS, space, floor, high);
     assert!(
         after[space as usize].is_none(),
         "the space was not consumed"
@@ -1551,7 +1552,7 @@ fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
             "a slot that held no address space was taken as the space"
         );
         let mut wrong_kind = call;
-        wrong_kind.words[2] = abi::object_type::RENDEZVOUS;
+        wrong_kind.words[2] = RENDEZVOUS;
         assert!(
             !c.justify_fill(A, &wrong_kind, &after, process, rights),
             "a process was accepted from a retype of another kind"
@@ -1579,12 +1580,12 @@ fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
     }
 
     // The process is filed in the very slot the space was deleted from.
-    let space = retype_into_kernel_object(r, abi::object_type::ADDRESS_SPACE, 0, 0);
+    let space = retype_into_kernel_object(r, ADDRESS_SPACE, 0, 0);
     let before = own_snapshot();
-    let same = retype_into_kernel_object(r, abi::object_type::PROCESS, space, space);
+    let same = retype_into_kernel_object(r, PROCESS, space, space);
     let after = own_snapshot();
     assert_eq!(same, space, "the process was not filed in the freed slot");
-    let call = retype_call(r, abi::object_type::PROCESS, space, space, same);
+    let call = retype_call(r, PROCESS, space, space, same);
     {
         let mut c = CONDUCTOR.lock();
         reach(&mut c, &before);
@@ -1592,22 +1593,11 @@ fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
     }
 
     // A process whose page lies in another region than the one the call invoked.
-    let foreign_space = retype_into_kernel_object(r2, abi::object_type::ADDRESS_SPACE, 0, 0);
+    let foreign_space = retype_into_kernel_object(r2, ADDRESS_SPACE, 0, 0);
     let before = own_snapshot();
-    let foreign = retype_into_kernel_object(
-        r2,
-        abi::object_type::PROCESS,
-        foreign_space,
-        foreign_space + 4,
-    );
+    let foreign = retype_into_kernel_object(r2, PROCESS, foreign_space, foreign_space + 4);
     let after = own_snapshot();
-    let call = retype_call(
-        r,
-        abi::object_type::PROCESS,
-        foreign_space,
-        foreign_space + 4,
-        foreign,
-    );
+    let call = retype_call(r, PROCESS, foreign_space, foreign_space + 4, foreign);
     {
         let mut c = CONDUCTOR.lock();
         reach(&mut c, &before);
