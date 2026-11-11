@@ -76,7 +76,7 @@ every 16-bit id. The three-level RISC-V mode, and a two-frame SMMU level-one tab
 
 The RISC-V side keeps the extended 64-byte context whenever the unit offers `MSI_FLAT`, because
 that is the format whose `msiptp` field a per-device MSI page table needs, so interrupt remapping
-can be added to the context this directory already holds.
+can extend the context this directory already holds.
 
 ## The requester id is the key
 
@@ -184,9 +184,9 @@ the SMMU's proofs). They are proved from an aarch64 host because no host here is
 `the_iommu_is_handed_exactly_the_domain_the_kernel_built`: `iosatp`'s PPN is the table root entire,
 its MODE is Sv39 for every root (MODE 0 would be Bare, translation off), and `ta.PSCID` is the
 domain's tag and nothing else. `no_device_can_reach_another_devices_context`: the directory places
-exactly the ids the specification's two-level directory holds, in both context formats including
-the 32-byte one that has never run, keeps every context inside its leaf, and the `IODIR.INVAL_DDT`
-that follows an attach names exactly that device. `the_root_entry_names_exactly_the_leaf`: the
+exactly the ids the specification's two-level directory holds and keeps every context inside its
+leaf, in both context formats (the 32-byte one has never run). The `IODIR.INVAL_DDT` that follows an
+attach names exactly that device. `the_root_entry_names_exactly_the_leaf`: the
 non-leaf entry is the leaf's PPN, valid, with no reserved bit set. All three were falsified; the
 patches are in `kernel/falsifications/`. The same limit on constants applies, against the RISC-V
 IOMMU specification instead of Arm's.
