@@ -577,6 +577,13 @@ fn start_role_pci(image: &'static [u8], role: u64) -> Option<RendezvousId> {
     }
 }
 
+/// **Whether the default grants the PCIe disk direct**, or `None` with no PCIe disk on the bus.
+/// The system tests ask it to hold a confining runner to the default.
+pub fn pci_disk_takes_the_direct_grant() -> Option<bool> {
+    let d = crate::pci::find_block_device()?;
+    Some(super::virtio_grant::choose(&d).is_ok())
+}
+
 /// The read driver against the PCIe disk on the mediated grant, whatever the default would give
 /// it, so the mediated PCI path runs on every architecture beside the direct one.
 pub fn start_pci_mediated(image: &'static [u8]) -> Option<RendezvousId> {

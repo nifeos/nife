@@ -789,15 +789,13 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
 /// read on the mediated grant, so both paths run on this architecture.
 #[test_case]
 fn the_pcie_disk_reads_on_either_grant() {
-    let Some(d) = crate::pci::find_block_device() else {
+    let Some(direct) = virtio_service::pci_disk_takes_the_direct_grant() else {
         crate::testing::skip!("no virtio-pci disk on the bus");
     };
-    if crate::iommu::is_active() {
-        assert!(
-            crate::user::virtio_grant::choose(&d).is_ok(),
-            "the runner's IOMMU confines the PCI disk, yet the default grants it mediated",
-        );
-    }
+    assert!(
+        direct || !crate::iommu::is_active(),
+        "the runner's IOMMU confines the PCI disk, yet the default grants it mediated",
+    );
     let report = virtio_service::start_pci_mediated(blk_image()).expect("the disk is on the bus");
     let word = sched::ipc_receive(report)[0];
     assert_eq!(
