@@ -729,6 +729,39 @@ fn remapping_up(u: &mut Unit) -> Result<(), &'static str> {
     Ok(())
 }
 
+/// Turn interrupt remapping on in every running unit the platform lets remap, and answer each
+/// unit's outcome by slot: `Ok` once `GSTS.IRES` reads back set, or the reason it stays off. The
+/// DMAR's `INTR_REMAP` and a DMAR scope naming `io_apic_id` are both required, since without the
+/// scope the IO APIC's own messages could not be verified.
+///
+/// Context: takes the `IOMMU` lock; resolving the IO APIC's scope path reads configuration space,
+/// so that happens before it.
+fn interrupt_remapping_up(
+    dmar: &DmarUnits,
+    io_apic_id: Option<u8>,
+) -> [Result<(), &'static str>; MAXIMUM_TRANSLATION_UNITS] {
+    let io_apic = io_apic_id.map(|id| {
+        (
+            id,
+            dmar.interrupt_controller_source(id, &mut crate::pci::bridge_bus_range),
+        )
+    });
+    let mut remapping = [Err("not tried"); MAXIMUM_TRANSLATION_UNITS];
+    let mut g = IOMMU.lock();
+    g.io_apic = io_apic.and_then(|(_, found)| found);
+    for (i, s) in g.slots.iter_mut().enumerate() {
+        let Slot::Up(u) = s else { continue };
+        remapping[i] = match io_apic {
+            _ if !dmar.platform_interrupt_remapping => Err("the DMAR's INTR_REMAP is clear"),
+            Some((_, None)) => {
+                Err("no DMAR scope names the IO APIC, so its messages cannot be verified")
+            }
+            _ => remapping_up(u),
+        };
+    }
+    remapping
+}
+
 /// **Bring every VT-d unit up, each translating the devices it owns** (milestone 594 (every VT-d
 /// unit translates its own devices), provisional number; VT-d 4.1 sections 3.16, 8.3 and 8.4), in
 /// three steps whose order is the point:
@@ -804,26 +837,9 @@ pub fn initialize(dmar: &DmarUnits, io_apic_id: Option<u8>) {
     }
     drop(g);
 
-    // Step 4. Resolving the IO APIC's scope path reads configuration space, so before the lock.
-    let io_apic = io_apic_id.map(|id| {
-        (
-            id,
-            dmar.interrupt_controller_source(id, &mut crate::pci::bridge_bus_range),
-        )
-    });
-    let mut remapping = [Err("not tried"); MAXIMUM_TRANSLATION_UNITS];
-    let mut g = IOMMU.lock();
-    g.io_apic = io_apic.and_then(|(_, found)| found);
-    for (i, s) in g.slots.iter_mut().enumerate() {
-        let Slot::Up(u) = s else { continue };
-        remapping[i] = match io_apic {
-            _ if !dmar.platform_interrupt_remapping => Err("the DMAR's INTR_REMAP is clear"),
-            Some((_, None)) => {
-                Err("no DMAR scope names the IO APIC, so its messages cannot be verified")
-            }
-            _ => remapping_up(u),
-        };
-    }
+    // Step 4.
+    let remapping = interrupt_remapping_up(dmar, io_apic_id);
+    let g = IOMMU.lock();
     let n = dmar.units().len();
     for (i, d) in dmar.units().iter().enumerate() {
         let what = if d.include_pci_all {
