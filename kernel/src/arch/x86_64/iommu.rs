@@ -1704,7 +1704,7 @@ mod tests {
     /// compatibility-format message aimed straight at the first disk's vector is blocked, with its
     /// own fault reason. QEMU's model (`vtd_interrupt_remap_msi`, QEMU 10.2) passes the
     /// compatibility format whatever `GCMD.CFI` says, so that last half is asserted only on bare
-    /// metal (notes/iommu.md's BUGS); a guest says which it is in `CPUID.1:ECX[31]`.
+    /// metal (notes/iommu/interrupt-remapping.md); a guest says which it is in `CPUID.1:ECX[31]`.
     #[test_case]
     fn a_message_forged_from_another_devices_grant_is_refused() {
         if interrupt_remapping_enabled() != Some(true) {
@@ -1798,7 +1798,7 @@ mod tests {
         if guest && landed {
             crate::println!(
                 "    this guest's VT-d model delivered a compatibility-format message with CFIS \
-                 clear; bare metal refuses it (notes/iommu.md)"
+                 clear; bare metal refuses it (notes/iommu/interrupt-remapping.md)"
             );
         } else {
             assert!(
