@@ -668,7 +668,7 @@ Any of these takes the label off."
 		at=$(printf '%s' "$c" | jq -r '.at')
 		url=$(printf '%s' "$c" | jq -r '.url')
 		line=$(printf '%s' "$c" | jq -r '.line')
-		what="A QUESTION FOR CALEF THAT HIS QUEUE COULD NOT SHOW: asked at $at ($url), with no ruling recorded since, and no \`needs-architect\` on this, so the drain added it (calef's ruling on #1792: the bot adds, and only flags removals). The question begins: \"$line\". If \`architect-ruled\` is on and this asks something the old ruling did not cover, remove \`architect-ruled\` so the hold blocks the merge. If calef has already answered, record it: \`script/record-ruling $1 --text '<his words>'\`."
+		what="A QUESTION FOR CALEF THAT HIS QUEUE COULD NOT SHOW: asked at $at ($url), with no ruling recorded since, and no \`needs-architect\` on this, so the drain added it (calef's ruling on #1792: the bot adds, and only flags removals). The question begins: \"$line\". If \`architect-ruled\` is on and this asks something the old ruling did not cover, remove \`architect-ruled\` so the hold blocks the merge. If calef has already answered, record it: \`script/record-ruling $1 --text '<his words>'\`. A section that asks for something to happen once this has merged is not a question: it belongs under \`## After this merges\`, which the drain does not read."
 		;;
 	surface-no-hold)
 		head=$(printf '%s' "$c" | jq -r '.head')
