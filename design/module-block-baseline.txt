@@ -8559,11 +8559,8 @@ kernel/src/delegation_pause.rs::disarm
 
 kernel/src/delegation_pause.rs::release
 
-kernel/src/designware_ethernet.rs
 
-kernel/src/designware_ethernet.rs::Error
 
-kernel/src/designware_ethernet.rs::bring_up
 
 kernel/src/designware_mobile_storage.rs
 

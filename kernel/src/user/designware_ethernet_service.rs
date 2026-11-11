@@ -48,6 +48,8 @@ use crate::user::jh7110_clock_and_reset_service::BroughtUp;
 use crate::user::virtio_service::{NET_SERVER_BUDGET_PAGES, NET_SERVER_STACK_PAGES};
 
 /// Why a port the tree describes was not brought up.
+///
+/// Name: provisional. The kernel's own module's `Error`, which moved here with the starter.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// `phy-mode` names no RGMII variant, so there is no interface select to make.
