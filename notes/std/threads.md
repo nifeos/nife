@@ -1,5 +1,7 @@
 # `std` threads on nife
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *Written 2026-10-10 (UTC) by milestone 812 (`std::thread::spawn` runs real threads in one address
 space)'s lane. The kernel side is in `notes/processes.md`, `notes/futex.md` and
 `notes/thread-pointer.md`; this note is the `std` PAL.*
@@ -24,7 +26,7 @@ instead of sleeping, which is correct and slower.
 
 ## The pieces
 
-- **`sys/thread/nife.rs`.** A spawn retypes a TCB from slot 0 above the fixed slots (`RETYPE_OBJ`'s
+- **`sys/thread/nife.rs`.** A spawn retypes a TCB from slot 0 above the fixed slots (`RETYPE_OBJECT`'s
   floor), allocates a stack and a thread-local block from the heap, and calls `CONFIGURE` with the
   process capability and the block as the thread pointer. `CONFIGURE` answers the thread's
   current-CPU page, which goes in its block before `START`. A thread ends with `SYS_EXIT_THREAD`

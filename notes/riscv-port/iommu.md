@@ -20,18 +20,24 @@ live in BAR 0, which the kernel places like any other BAR, since the kernel is t
 ([notes/pcie.md](../pcie.md)). The seam does that PCI work and hands the driver its register base.
 
 `init` refuses a unit without Sv39 first-stage support. It polls both queues rather than taking
-their interrupts. The directory is one level and one page: with `MSI_FLAT` the extended 64-byte
-context covers requester ids 0 to 63, all of bus 0. Installing it arms translation, and from that
-write an unattached device is blocked with `DDT_ENTRY_INVALID` rather than reaching memory. Before
+their interrupts. The directory is two-level (`ddtp` mode `2LVL`): a root frame of 512 non-leaf
+entries, each naming one leaf frame of contexts. With `MSI_FLAT` the extended 64-byte context fills
+a leaf with 64, so the directory holds requester ids 0 to 32767, buses 0 to 127; `attach` refuses a
+higher one with an error. Installing the root arms translation, and from that write an unattached
+device is blocked with `DDT_ENTRY_INVALID`, at the root or at its context, rather than reaching
+memory. Before
 `init` the reset `ddtp` mode is `Off`, which blocks every transaction, so the pre-init window fails
 closed by architecture; the SMMU needs an explicit `GBPA.ABORT` for the same posture.
 
 Sv39 single-stage translation requires `U` on every leaf, because a device does not request
 supervisor privilege. That is why the seam builds domains with user-data flags (`paging::domain`).
 
-`attach` writes the address and tag words first and the valid bit last, with a barrier between,
-so the IOMMU never sees a valid entry with a stale root. `iohgatp` stays Bare, since there is no
-guest. Then `IODIR.INVAL_DDT` with DV set drops that one device's cached context, `IOTINVAL.VMA`
+`attach` allocates a device's leaf the first time its range attaches, publishes the zeroed leaf and
+only then writes the root entry naming it. It writes the context's address and tag words first and
+the valid bit last, with a barrier between, so the IOMMU never sees a valid entry with a stale
+root. `iohgatp` stays Bare, since there is no
+guest. Then `IODIR.INVAL_DDT` with DV set drops that one device's cached context and the non-leaf entries
+that locate it, `IOTINVAL.VMA`
 with no address and no PSCID drops every translation, and `IOFENCE.C` orders both before any later
 transaction. A command is published with a barrier before the tail write, and the driver polls the
 head, which is the architectural contract; QEMU happens to process the queue on the tail write.
@@ -47,7 +53,9 @@ QEMU's unit sets `CAPS.MSI_FLAT` (measured `CAPS = 0x78c2cf4f10`, bit 22 set, on
 `virt`), so every context here is the extended format and carries `msiptp`, `msi_addr_mask` and
 `msi_addr_pattern`. `attach` writes all of them zero, `msiptp.MODE = Off`, and no MSI page table is
 allocated. The machine description reports the capability bit, kept apart from the context size it
-implies: one is a capability and the other a layout.
+implies: one is a capability and the other a layout. The extended format stays whenever the unit
+offers it, because its `msiptp` is where a per-device MSI page table goes once the kernel
+remaps interrupts; the two-level directory changes where a context sits, not what it holds.
 
 MSI confinement lives in a different place on each architecture. On x86_64 it is a separate IOMMU
 feature (`ECAP.IR`), because VT-d intercepts writes to the MSI address range, so DMA remapping alone
@@ -59,8 +67,9 @@ machine lacks. Here it is one mode field in a context this driver already writes
 
 The Kani harnesses run on an aarch64 host, never on riscv64, through a proof-only module in
 `arch/mod.rs` that exists under `cfg(all(kani, target_arch = "aarch64"))`. Inside it `crate::arch`
-is aarch64's, so nothing that calls through `crate::arch` is proved. Neither harness does:
-`device_context`, `is_in_directory`, `context_offset` and `iodir_inval_ddt` are word arithmetic.
+is aarch64's, so nothing that calls through `crate::arch` is proved. No harness does:
+`device_context`, `directory_limit`, `directory_position`, `non_leaf_entry` and `iodir_inval_ddt`
+are word arithmetic.
 `script/lint` fails if this file gains an unrecorded `crate::arch` reference, since then a harness
 could prove aarch64's code while reading as riscv64's
 ([notes/kernel-proofs.md](../kernel-proofs.md), stub-list item 8).
@@ -78,7 +87,9 @@ questions in this format's shape instead.
   The PPN, reserved bits, PSCID and remaining words are exact for a page-frame root below 2^56.
 - Can one requester id's entry, or its invalidation, land on another's? The stride depends on a
   capability read at run time, so the bound must agree with it in both formats, and both are taken
-  symbolically. `IODIR.INVAL_DDT` must decode to this device, with DV set; without DV it means
+  symbolically, over every `u32`. A refused id is a `None` and never a panic.
+- Does the root name exactly the leaf the kernel allocated? A lost PPN bit walks another frame, and
+  a set reserved bit makes the IOMMU refuse the leaf as misconfigured. `IODIR.INVAL_DDT` must decode to this device, with DV set; without DV it means
   every device, and the old context could stay cached for the device just re-attached.
 
 A wrong PSCID is invisible to every test. The confinement test attaches one device, and `attach`

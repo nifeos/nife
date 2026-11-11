@@ -334,9 +334,9 @@ const PAGE_FRAME_REPORT_MINIMUM: usize = 16;
 /// stay. The production path does not leak them, because the shell's `DESTROY` of the job's region
 /// takes the corpse with it (`script/swish-check`'s hundred-cycle line). Every space the kernel
 /// loads also holds its startup page and that page's two tables (`user::loader`'s
-/// `STARTUP_PAGE_COST`), so each space the suite keeps keeps three frames more: 24,648 measured on
-/// aarch64 and 24,636 on riscv64, 88 and 76 over the budget before the page.
-const SUITE_PAGE_FRAME_BUDGET: usize = 24_680;
+/// `STARTUP_PAGE_COST`), so each space the suite keeps keeps three frames more. The NVMe admin
+/// process stays for the boot too (notes/frames/page-frame-budget.md).
+const SUITE_PAGE_FRAME_BUDGET: usize = 24_760;
 
 /// **The longest run of free frames the boot must still have at the end**, in frames.
 ///

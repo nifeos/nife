@@ -441,7 +441,7 @@ fn configure_child_as_process(
     let process = unsafe {
         invoke(
             build_ut,
-            abi::memory_region::RETYPE_OBJ,
+            abi::memory_region::RETYPE_OBJECT,
             abi::objtype::PROCESS,
             aspace,
             0,

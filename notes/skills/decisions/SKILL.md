@@ -101,6 +101,14 @@ the moment the decision to hold is made and not later:
   the diff, it must say what happens if the architect says no, and it must separate what is blocking
   from what is eventually the architect's.
 
+The merge drain reads every `## What I need from you` section as a question that holds the merge,
+and adds `needs-architect` to one that has no ruling since. So that section holds questions only,
+each with its question mark. A task for a person that needs the pull request merged first, such as
+a bench session on `main`, goes under `## After this merges`, which the drain does not read. A
+section with nothing to ask opens with "Nothing." on a line of its own. The
+`pr text asks a question under What I need from you` check refuses a body that breaks this
+(helpers/ask-section-check.sh; heading name provisional).
+
 Every question asked of calef is also posted on its pull request or issue as a `## What I need from
 you` comment, with `needs-architect`, including one first raised in a chat (lane/architect-queue,
 2026-10-06 UTC; calef: "I need a reliable work queue just like your agents"). A question that lives

@@ -87,7 +87,7 @@ jobs:
         shell: bash
         run: |
           # The wrapper exits 1 for a non-zero probe or any FINDING line, and keeps the verdict out of a pipe.
-          helpers/owned-canary-image.sh tools toolchain apt-proxy pip
+          helpers/owned-canary-image.sh tools toolchain apt-proxy pip packages
       # The container's walls, from inside: egress must go through the proxy, and no socket may
       # hand the job a container engine (which is the host). Each open wall is a FINDING and fails
       # this job, which cannot fail the queue.

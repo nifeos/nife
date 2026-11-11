@@ -1,6 +1,6 @@
 # The incremental path: what was read, and when
 
-*Name: provisional. After the parent's "What was read, and when". calef names files.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 An appendix of [the incremental path](../incremental-path.md). The parent quotes the paper and
 the sources below; this file is the record of where each came from and the day it was read.

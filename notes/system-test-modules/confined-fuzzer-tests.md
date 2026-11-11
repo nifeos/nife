@@ -13,7 +13,7 @@ made between calls, so a wrong answer cannot steer what the generator does next.
 
 ## The oracles
 
-- The table diff. A slot may empty freely. It may fill only four ways: `RETYPE_OBJ` (the object's
+- The table diff. A slot may empty freely. It may fill only four ways: `RETYPE_OBJECT` (the object's
   page in the fuzzer's own region), `BADGE` (the same object, restamped), `SLICE` (a sub-run of a
   held frame at its rights, from a capability holding `GRANT`), or `RECEIVE_CAPABILITY`. A `RECEIVE_CAPABILITY`
   fill must be a delegation the conductor watched leave a sender, no wider and with the same badge,

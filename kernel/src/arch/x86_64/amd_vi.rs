@@ -560,8 +560,9 @@ pub fn initialize(ivrs: &IvrsUnits) {
             if done == 256 {
                 break; // a bound, not a rule: see the AMD-Vi note's BUGS on IVMDs
             }
-            if let Ok(Some((i, _))) = ivrs.owner_index(id) {
-                crate::iommu::confine(id as u32, &[]);
+            if let Ok(Some((i, _))) = ivrs.owner_index(id)
+                && crate::iommu::confine(id as u32, &[]).is_ok()
+            {
                 done += 1;
                 if let Slot::Up(u) = &mut UNITS.lock()[i] {
                     u.reserved_devices += 1;

@@ -73,6 +73,20 @@ want "confined budget" "$(verdict "confined fuzzer: seed 0x6f step 3: $marker fu
 want "budget panic" "$(verdict "panicked at x: $marker actor 2 neither finished nor parked" 1 100)" "held-budget-expired 0 101"
 want "crash" "$(verdict 'panicked at x: index out of bounds' 1 100)" "held-crash 0 101"
 want "hang" "$(verdict 'booting' 143 100)" "held-hang 0 101"
+# A guest a signal ended before its bound did not hang: sweep says so, and the window is
+# infrastructure. The line is the supervisor's own (`early_stop`), so the two cannot drift.
+early=$(sed -n 's/^early_stop="\(.*\)"$/\1/p' "$sup")
+[ -n "$early" ] || fail "the supervisor defines no early_stop line"
+want "stopped early" "$(verdict "booting
+continuous-fuzz: $early after 41 s, short of its 300 s bound" 143 100)" "infrastructure 0 101"
+want "killed early" "$(verdict "booting
+continuous-fuzz: $early after 3 s, short of its 300 s bound" 137 100)" "infrastructure 0 101"
+# A guest that ran out its bound hung, whatever its exit status: the runner hands the bound's
+# TERM to QEMU, and QEMU then exits 0.
+ran_out=$(sed -n 's/^bound_ran_out="\(.*\)"$/\1/p' "$sup")
+[ -n "$ran_out" ] || fail "the supervisor defines no bound_ran_out line"
+want "bound ran out" "$(verdict "booting
+continuous-fuzz: $ran_out after 300 s" 0 100)" "held-hang 0 101"
 want "infrastructure" "$(verdict 'booting' 125 100)" "infrastructure 0 101"
 
 echo "continuous-fuzz-selftest: ok"

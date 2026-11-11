@@ -248,18 +248,18 @@ fn fill(out: &mut [u8]) -> bool {
         let want = (out.len() - done).min(entropy_contract::MAXIMUM_BYTES as usize);
         let (r0, r1) = call(
             ENTROPY,
-            entropy_contract::req(entropy_contract::GET, want as u64),
+            entropy_contract::request(entropy_contract::GET, want as u64),
             0,
         );
         // `delivered` is what makes "no entropy capability" distinguishable from "no entropy"
         // without a probe: a count is 0..=8 and every kernel error is a huge u64.
-        let Some(n) = entropy_contract::delivered(r0) else {
+        let Some(n) = entropy_contract::delivered_bytes(r0) else {
             return false;
         };
         if n < want {
             return false;
         }
-        done += entropy_contract::take(n, r1, &mut out[done..]);
+        done += entropy_contract::copy_delivered_bytes(n, r1, &mut out[done..]);
     }
     true
 }

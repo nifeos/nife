@@ -126,7 +126,7 @@ pub mod survey;
 /// discipline.
 pub mod reply;
 
-/// Object types for [`memory_region::RETYPE_OBJ`]: what a page of untyped becomes.
+/// Object types for [`memory_region::RETYPE_OBJECT`]: what a page of untyped becomes.
 pub mod objtype;
 
 /// Methods on the **reboot object** (restarting the machine is a kernel object the progenitor
@@ -140,7 +140,7 @@ pub mod objtype;
 /// architect's to name.)*
 pub mod reboot;
 
-/// Methods on a `Notification` capability: **a doorbell, not a meeting.** Created by [`memory_region::RETYPE_OBJ`]
+/// Methods on a `Notification` capability: **a doorbell, not a meeting.** Created by [`memory_region::RETYPE_OBJECT`]
 /// with [`objtype::NOTIFICATION`]. A signaller ORs bits into its word and never blocks; a waiter
 /// takes what has accumulated. [`BIND`](notification::BIND) attaches it to one thread, so a signal
 /// can also end that thread's receive on an endpoint, told apart by [`BOUND`](notification::BOUND).
@@ -151,7 +151,7 @@ pub mod reboot;
 pub mod notification;
 
 /// Methods on a `Timer` capability: **the kernel's comparator, lent one deadline at a time.** Created by
-/// [`memory_region::RETYPE_OBJ`] with [`objtype::TIMER`]. It has no wait of its own: when its
+/// [`memory_region::RETYPE_OBJECT`] with [`objtype::TIMER`]. It has no wait of its own: when its
 /// deadline passes it signals a [`notification`].
 ///
 /// Deadlines are absolute, in the counter ticks a program reads without a syscall, and fire at the
@@ -161,7 +161,7 @@ pub mod notification;
 pub mod timer;
 
 /// Methods on a `ThreadControlBlock` capability: **another thread, under
-/// construction.** Created by [`memory_region::RETYPE_OBJ`] with [`objtype::THREAD_CONTROL_BLOCK`].
+/// construction.** Created by [`memory_region::RETYPE_OBJECT`] with [`objtype::THREAD_CONTROL_BLOCK`].
 ///
 /// **There is deliberately no method here that grants a thread the cycle counter**: the kernel
 /// carries the grant, and the method that would set it waits for a consumer with a requirement in
@@ -169,7 +169,7 @@ pub mod timer;
 pub mod thread_control_block;
 
 /// Methods on an `AddressSpace` capability: **another process's memory, under
-/// construction.** Created by [`memory_region::RETYPE_OBJ`] with [`objtype::ADDRESS_SPACE`];
+/// construction.** Created by [`memory_region::RETYPE_OBJECT`] with [`objtype::ADDRESS_SPACE`];
 /// nothing can run in it until TCBs arrive (19c), so today it is a structure you build, revocation
 /// can reach, and `ENUMERATE` can look at without touching. The
 /// capability keeps naming the space after a thread is
@@ -183,7 +183,7 @@ pub mod address_space;
 /// Name: provisional (2026-10-10 UTC).
 pub mod futex;
 
-/// Methods on a **process** capability. Created by [`memory_region::RETYPE_OBJ`] with [`objtype::PROCESS`], whose second
+/// Methods on a **process** capability. Created by [`memory_region::RETYPE_OBJECT`] with [`objtype::PROCESS`], whose second
 /// word is the address space the process will hold.
 ///
 /// A process is the capability table its threads share, their space, its supervision and its end.

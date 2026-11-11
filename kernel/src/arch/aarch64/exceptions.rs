@@ -473,7 +473,7 @@ fn user_fault(frame: &TrapFrame, esr: u64) -> ! {
 /// (locking):
 /// allocates nothing and takes no lock above rank GIC.
 #[doc(alias = "irq")]
-fn handle_interrupt(_frame: &mut TrapFrame) {
+fn handle_interrupt(frame: &mut TrapFrame) {
     // The acknowledge has a side effect: exactly once.
     let intid = interrupt_controller::acknowledge();
 
@@ -486,6 +486,7 @@ fn handle_interrupt(_frame: &mut TrapFrame) {
     match intid {
         timer::TIMER_INTID => {
             timer::tick();
+            crate::sched::sample_tick(frame.elr);
             // Record only: the GIC has not had its end-of-interrupt yet.
             crate::sched::on_tick();
         }

@@ -1012,7 +1012,7 @@ fn jh7110_on_riscv64(tally: &mut Tally) {
             "trng",
             ok,
             format_args!(
-                "JH7110 TRNG at {:#x} (tree says {}): report {:#x}, STAT {:#010x} ({}), draws {}/{} bytes, first {:02x}{:02x}{:02x}{:02x}.., differ {}; bring-up {} us, {} bytes in {} us ({} bytes/s)",
+                "JH7110 TRNG at {:#x} (tree says {}): report {:#x}, STAT {:#010x} ({}), draws {}/{} bytes, first {:02x}{:02x}{:02x}{:02x}.., differ {}; bring-up {} us, {} bytes in {} us ({} bytes/s); crate jh7110_entropy {} at {}",
                 device.registers_physical_address,
                 if device.status_okay { "okay" } else { "disabled" },
                 d.report[0],
@@ -1029,6 +1029,8 @@ fn jh7110_on_riscv64(tally: &mut Tally) {
                 d.na + d.nb,
                 microseconds(d.draw_ticks),
                 bytes_per_second((d.na + d.nb) as u64, d.draw_ticks),
+                env!("NIFE_JH7110_ENTROPY_VERSION"),
+                env!("NIFE_JH7110_ENTROPY_COMMIT"),
             ),
         ),
     }

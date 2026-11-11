@@ -46,8 +46,10 @@ runner that lost contact with GitHub or a probe that a host outage cut short, no
    the `tools` probe finds `rustup` and `cargo` in `/opt/rust/cargo/bin`, and no workflow, helper
    or script in the tree puts that directory on `PATH`.
 5. The image preinstalls the packages `script/ci-qemu` and `script/bootstrap` install, so a job
-   spends no time on them and fetches nothing the proxy must allow for them. Open: no canary probe
-   lists installed packages, so public run data cannot show it.
+   spends no time on them and fetches nothing the proxy must allow for them. Open: the `packages`
+   probe checks each package in `helpers/apt-packages.txt`, the list both scripts install from, with
+   `dpkg-query`. The next green canary run on the pool shows whether the item is met; a missing
+   package is a `FINDING` line.
 6. Once one merge group or push run meets the condition in notes/owned-runners.md, a maintainer
    sets the variable as that note says. Open: it waits for the proxy evidence and for the
    architect, who keeps the variable false until the canary is green.
@@ -67,10 +69,10 @@ runner that lost contact with GitHub or a probe that a host outage cut short, no
 - **Outstanding.** Three pieces remain, checked 2026-11-11 against run 42934754693 and the
   canary's job history. The proxy's refusal log for a named green run: the maintainers who operate
   the pool keep it off-tree, so one of them reads it and states the result on this block's pull
-  request. The preinstalled packages of item 5: a probe that checks each package with
-  `dpkg-query`, or a statement from those maintainers. Then item 6, the switch, which the architect
+  request. The preinstalled packages of item 5: the `packages` probe exists, and the next green
+  canary run on the pool shows whether the image has them all. Then item 6, the switch, which the architect
   holds.
 
 ## Index row
 
-The owned runner image passes the strict canary and the dry run; the switch stays off. Open: the proxy refusal evidence for a green run, a check of the preinstalled packages, then the switch.
+The owned runner image passes the strict canary and the dry run; the switch stays off. Open: the proxy refusal evidence for a green run, a green canary run that shows the preinstalled packages, then the switch.

@@ -1,5 +1,7 @@
 # A calendar grammar in words: G5, priced against G3 and G4
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 Status: DECIDED 2026-09-26 (UTC). calef ruled: *"G5 full."* That is the v1 word list below as
 proposed, with the refusals as listed. The step rule is S3 plus the `SET` fix under run policy,
 adopted by the maintainer as a reversible default and not ruled by calef. Build from

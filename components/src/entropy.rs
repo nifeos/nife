@@ -159,7 +159,7 @@ fn mw(off: u64, v: u32) {
 }
 
 fn die(code: u64) -> ! {
-    send(READY, proto::bringup_failure(code), 0, 0);
+    send(READY, proto::bring_up_failure(code), 0, 0);
     exit();
 }
 
@@ -366,7 +366,7 @@ fn start(mode: u64, direct_memory_access_phys: u64, _arg2: u64) -> ! {
     // word reaches whoever wired the service, and a client only ever sees a reply.
     serve(
         pool,
-        report == proto::bringup_failure(proto::STEP_FIRST_ALL_ZERO),
+        report == proto::bring_up_failure(proto::STEP_FIRST_ALL_ZERO),
     )
 }
 
@@ -387,7 +387,7 @@ fn serve(mut pool: Pool, refuse: bool) -> ! {
             // `refuse` is a device this service condemned at bring-up for answering with zeros. It
             // is answered the way a dry device is: `NO_ENTROPY` already means the one thing a
             // client has to know, which is that it is not getting randomness here.
-            proto::GET if !refuse => pool.take(proto::want(w0)),
+            proto::GET if !refuse => pool.take(proto::requested_bytes(w0)),
             // There is exactly one operation, and the reply's first word is a byte count with no
             // room in it for an error code. So an unknown opcode is answered "you got nothing",
             // which is true. A second operation would be the moment to widen the reply, and that
@@ -508,7 +508,7 @@ fn serve_instruction() -> ! {
     // two device backends follow. The false-positive probability is 2^-64 here rather than the
     // 2^-256 a 32-byte draw gets, which is the width of the answer rather than a weaker check;
     // `entropy_contract`'s `BUGS` carries the number.
-    let refuse = report == proto::bringup_failure(proto::STEP_FIRST_ALL_ZERO);
+    let refuse = report == proto::bring_up_failure(proto::STEP_FIRST_ALL_ZERO);
     loop {
         let req = receive_request(I_REQ);
         let w0 = req.w0;
@@ -518,7 +518,7 @@ fn serve_instruction() -> ! {
         };
         let (count, word) = match proto::operation(w0) {
             proto::GET if !refuse => match instr::draw() {
-                Some(bytes) => (proto::want(w0), u64::from_le_bytes(bytes)),
+                Some(bytes) => (proto::requested_bytes(w0), u64::from_le_bytes(bytes)),
                 None => (proto::NO_ENTROPY, 0),
             },
             _ => (proto::NO_ENTROPY, 0),
