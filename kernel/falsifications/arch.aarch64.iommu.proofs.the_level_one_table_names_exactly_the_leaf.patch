@@ -13,6 +13,7 @@ says the leaf holds exactly the streams one frame of STEs holds")`. Confirmed re
 The sibling harness `no_stream_can_reach_another_streams_tables` stays green under this patch:
 it places streams and never builds a descriptor.
 
+diff --git a/kernel/src/arch/aarch64/iommu.rs b/kernel/src/arch/aarch64/iommu.rs
 --- a/kernel/src/arch/aarch64/iommu.rs
 +++ b/kernel/src/arch/aarch64/iommu.rs
 @@ -416,7 +416,7 @@

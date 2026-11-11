@@ -15,6 +15,7 @@ The sibling harnesses stay green under this patch: `the_iommu_is_handed_exactly_
 builds a context's words and never places one, and `the_root_entry_names_exactly_the_leaf` never
 places a device.
 
+diff --git a/kernel/src/arch/riscv64/iommu.rs b/kernel/src/arch/riscv64/iommu.rs
 --- a/kernel/src/arch/riscv64/iommu.rs
 +++ b/kernel/src/arch/riscv64/iommu.rs
 @@ -199,7 +199,7 @@

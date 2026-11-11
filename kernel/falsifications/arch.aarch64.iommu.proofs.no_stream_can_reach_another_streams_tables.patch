@@ -14,6 +14,7 @@ x86_64 host, against this file's pure functions and harness compiled on their ow
 The sibling harnesses stay green under this patch: `the_smmu_is_handed_exactly_the_tables_the_kernel_built`
 takes `ctxptr` symbolic, and `the_level_one_table_names_exactly_the_leaf` never places a stream.
 
+diff --git a/kernel/src/arch/aarch64/iommu.rs b/kernel/src/arch/aarch64/iommu.rs
 --- a/kernel/src/arch/aarch64/iommu.rs
 +++ b/kernel/src/arch/aarch64/iommu.rs
 @@ -397,7 +397,7 @@

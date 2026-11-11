@@ -12,6 +12,7 @@ and harness compiled on their own.
 The sibling harness `no_device_can_reach_another_devices_context` stays green under this patch:
 it places devices and never builds a root entry.
 
+diff --git a/kernel/src/arch/riscv64/iommu.rs b/kernel/src/arch/riscv64/iommu.rs
 --- a/kernel/src/arch/riscv64/iommu.rs
 +++ b/kernel/src/arch/riscv64/iommu.rs
 @@ -208,7 +208,7 @@
