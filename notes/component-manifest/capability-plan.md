@@ -97,7 +97,7 @@ its checks is a mistake that would otherwise be silent:
 The handoff run is held to the same rules as a mapping, and a page anywhere inside the run collides.
 An over-long declaration is not checked there, because `MAXIMUM_CAPABILITIES` is this crate's limit rather
 than the declaration's defect, so it is `plan`'s refusal. `MAXIMUM_CAPABILITIES` is eight, about double the
-widest manifest's four, and it leaves room below `abi::fault::FAULT_EP_SLOT` for placed slots.
+widest manifest's four, and it leaves room below `abi::fault::FAULT_RENDEZVOUS_SLOT` for placed slots.
 
 `plan` refuses before the component exists, and the guest test asserts that by reporting the refusal
 ahead of the first build step.

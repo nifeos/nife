@@ -326,8 +326,15 @@ week,crate,breaking,additions,commits,commits_crossing
 2026W45,measured_boot,0,35,1,1
 2026W45,socket_contract,0,0,3,3
 2026W45,supervision_contract,0,0,1,1
+2026W46,abi,1,1,1,1
 2026W46,block_roster_contract,1,0,5,1
-2026W46,clock_contract,0,0,2,0
-2026W46,entropy_contract,0,0,1,1
+2026W46,capability_witness_contract,0,1,1,1
+2026W46,clock_contract,0,2,4,2
+2026W46,credential_contract,0,0,1,1
+2026W46,entropy_contract,6,6,11,4
 2026W46,globally_unique_identifier_partition_table,0,0,2,1
+2026W46,grant_plan,3,0,2,2
+2026W46,hot_swap_contract,0,0,1,1
 2026W46,socket_contract,0,0,3,0
+2026W46,std_runtime_contract,0,0,1,1
+2026W46,supervision_contract,1,1,1,1

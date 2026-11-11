@@ -142,7 +142,7 @@ pub struct ChildEndowment<'a> {
     /// child is handed *data* it has no capability to reach: a program image, in our case.
     pub blobs: &'a [(u64, &'a [u8])],
     /// Our slot holding the child's supervision endpoint (DECISIONS §26). Placed in the reserved
-    /// `FAULT_EP_SLOT`, where `START` reads it and clears it, so the child is born supervised and
+    /// `FAULT_RENDEZVOUS_SLOT`, where `START` reads it and clears it, so the child is born supervised and
     /// cannot forge messages on its own death channel.
     pub fault: Option<u64>,
     /// Stack pages, mapped down from [`CHILD_STACK_VA`]. See [`CHILD_STACK_PAGES`] for why this is

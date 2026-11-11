@@ -51,8 +51,8 @@ requires the counter to have moved only by the cost of the round trip.
 | authority | the capability | cost of a read/write |
 |---|---|---|
 | none | nothing | the machine does not know what time it is, and says so |
-| read | the clock page, `MAP_RO` | two loads and an add; no syscall, no server |
-| set | the clock page, `MAP_RW` | one seqlock publish; nothing polices it |
+| read | the clock page, `MAP_READ_ONLY` | two loads and an add; no syscall, no server |
+| set | the clock page, `MAP_READ_WRITE` | one seqlock publish; nothing polices it |
 | propose | the propose endpoint, `WRITE` | one `CALL`; the service may refuse |
 
 Nothing new was needed in the kernel: the ladder is `PageFrame` with `READ`, `PageFrame` with `WRITE`, and

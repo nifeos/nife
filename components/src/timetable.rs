@@ -80,7 +80,7 @@ use contract::{E_ARCHIVE, E_BUDGET, E_CONFIG, E_IMAGE, E_STORE, E_UNVOUCHED};
 
 // The relation `grant_plan` cannot state without depending on `abi`, held here as every reader of
 // the slot holds it (`components/src/swish.rs` does the same).
-const _: () = assert!(spawnproto::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_EP_SLOT - 1);
+const _: () = assert!(spawnproto::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
 // No slot this program hands a job is the run-unvouched slot. The job's other capability is a
 // region this program split for it, which cannot be the run-unvouched capability (see `_start`).
 const _: () = assert!(CHILD_REPORT != spawnproto::RUN_UNVOUCHED_SLOT);
@@ -870,7 +870,7 @@ fn clock_map(clock: bool) -> &'static [(u64, u64, u64)] {
     const MAP: [(u64, u64, u64); 1] = [(
         contract::CLOCK_VA,
         contract::CLOCK_SLOT,
-        abi::address_space::MAP_RO,
+        abi::address_space::MAP_READ_ONLY,
     )];
     if clock { &MAP } else { &[] }
 }

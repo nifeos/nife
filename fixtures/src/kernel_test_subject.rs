@@ -108,7 +108,7 @@ fn read_kernel(addr: u64) -> ! {
 
 fn build_with_nothing() -> ! {
     // Three minting attempts against an empty table: a page, a message, a kernel object. Each
-    // rides `SYS_INVOKE` with a slot number this program was never granted, which is the wire form
+    // rides `SYSCALL_INVOKE` with a slot number this program was never granted, which is the wire form
     // of "a program with no construction authority tries to build anyway".
     // SAFETY: `svc`/`ecall` traps to the kernel, which validates the named slot before acting;
     // there is nothing at these slots, which is the whole attack.
@@ -120,7 +120,7 @@ fn build_with_nothing() -> ! {
         user_mode_runtime::invoke(
             7,
             abi::memory_region::RETYPE_OBJECT,
-            abi::objtype::RENDEZVOUS,
+            abi::object_type::RENDEZVOUS,
             0,
             0,
         )

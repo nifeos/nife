@@ -414,7 +414,7 @@ pub(crate) fn after_syscall(nr: u64, method: u64) {
         s.top.load(Ordering::Relaxed),
     );
     let ceiling = s.ceiling.load(Ordering::Relaxed);
-    if ceiling != 0 && nr == abi::SYS_INVOKE {
+    if ceiling != 0 && nr == abi::SYSCALL_INVOKE {
         let used = scan(bottom, top);
         // The trap frame is at the top, so the caller's own depth is zero by construction.
         s.series[(method & 7) as usize].record(used, top - ceiling, 0);

@@ -706,7 +706,7 @@ pub(crate) unsafe extern "C" fn x86_trap_body(frame: *mut TrapFrame) -> bool {
         // function's interrupt reaches nothing on x86_64)). An MSI vector is its intid
         // (`interrupt_controller::MSI_VECTOR_BASE`). Nothing is masked: the message is a posted
         // write that already
-        // happened, so the driver's `Interrupt::ACK` is a no-op.
+        // happened, so the driver's `Interrupt::ACKNOWLEDGE` is a no-op.
         v if super::interrupt_controller::is_msi_vector(v) => {
             match crate::sched::interrupt_route(v as u32) {
                 Some(ep) => {

@@ -1,3 +1,7 @@
+//! Name: ratified 2026-11-11 (UTC). Spelled out under design/naming.md's rule that a name this tree
+//! authors carries no abbreviation; every number in it is unchanged. Refused `objtype` (joins two
+//! abbreviations).
+
 /// An IPC rendezvous, page-resident, owned by the caller's budget.
 pub const RENDEZVOUS: u64 = 1;
 

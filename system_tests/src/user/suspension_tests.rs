@@ -3,7 +3,7 @@
 //!
 //! The kernel's own tests (`kernel/src/sched/suspension.rs`) prove the scheduler half on kernel
 //! threads. These prove what only a user thread can show: the methods are reached through
-//! `SYS_INVOKE` on a TCB capability and gated on its `WRITE`, a thread stopped at EL0 or U-mode
+//! `SYSCALL_INVOKE` on a TCB capability and gated on its `WRITE`, a thread stopped at EL0 or U-mode
 //! comes back with its registers, and a stopped thread's region can still be destroyed, which is
 //! the shell's `kill -9` on a stopped job.
 //!

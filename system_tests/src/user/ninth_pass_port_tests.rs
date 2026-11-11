@@ -13,7 +13,7 @@
 //! architectures.
 #![cfg(target_arch = "x86_64")]
 
-use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_EP_SLOT};
+use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
 
 use super::*;
 use crate::capability_object::Rights;
@@ -119,7 +119,7 @@ fn build_port_holder(
     sched::thread_control_block_insert_capability(
         tid,
         crate::capability_object::rendezvous_capability(fault_ep, Rights::READ),
-        Some(FAULT_EP_SLOT),
+        Some(FAULT_RENDEZVOUS_SLOT),
     )
     .expect("insert fault ep");
 
@@ -238,7 +238,7 @@ fn a_parked_holder_revoked_by_the_sparing_take_back_faults_on_wake() {
 /// (call/reply IPC: a one-shot reply capability)).
 ///
 /// The child deletes its port capability's slot (`PORT_SLOT_NO_WAKE`), then executes `out`. The
-/// port grant is a cached field the context switch installs; if `SYS_CAPABILITY_DELETE` cleared the table
+/// port grant is a cached field the context switch installs; if `SYSCALL_CAPABILITY_DELETE` cleared the table
 /// but not the cache, the child would keep the ports for life, claim 29 failing for the one object
 /// enforced outside the table. So the `out` must fault, at the instruction after the delete.
 ///
