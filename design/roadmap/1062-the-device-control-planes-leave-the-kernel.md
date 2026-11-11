@@ -49,8 +49,7 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    the entropy and Ethernet bring-ups ask the server instead.
    The server is `components/src/jh7110_clock_and_reset_server.rs`, its wire
    `crates/jh7110_clock_and_reset_contract` and its device table
-   `jh7110_clock_and_reset_devices`. The SD/MMC starters ask it too, and the reboot path's I2C5
-   bring-up keeps the kernel's walk until step 5 replaces that path.
+   `jh7110_clock_and_reset_devices`. The SD/MMC starters and step 5's PMIC route ask it too.
 3. The DesignWare GMAC control plane, which brings its clocks and resets up through step 2's
    server with §320 (the JH7110 clock and reset wire)'s bring-up verb. Its
    userspace control process holds the channel and MAC pages. `kernel/src/designware_ethernet.rs`
@@ -61,12 +60,11 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
    `kernel/src/non_volatile_memory_express.rs` goes. The split keeps §86's option 4 addable.
    Built: #3427.
 5. The JH7110 PMIC route, as §251 (restarting the machine is a kernel object the progenitor
-   hands out) states it. A userspace route holds the I2C5 controller's page as a `DeviceFrame`,
-   brings I2C5's clocks and reset up through the step 2 server (§320 (the JH7110 clock and
-   reset wire)), and writes the AXP15060. `reboot` calls it
-   before `REBOOT`, with a timeout and a fallback to the plain `REBOOT` route. The route is
-   `components/src/power_management_chip_route.rs` over `crates/designware_inter_integrated_circuit`,
-   and the kernel holds no I2C master. radon proves it.
+   hands out) states it. `components/src/power_management_chip_route.rs` holds the I2C5
+   controller's page as a `DeviceFrame` and writes the AXP15060, after its starter brings I2C5 up
+   through the step 2 server (§320 (the JH7110 clock and reset wire)). `reboot` calls it before
+   `REBOOT`, with a timeout and a fallback to plain `REBOOT`. The kernel holds no I2C master.
+   radon proves it.
 6. The x86 CMOS read, as §130 (how the userspace clock service reads the x86 CMOS RTC) states
    it: the clock service holds a `PortRange` over ports 0x70 and 0x71 and reads the CMOS itself.
    `clock_contract::rtc::CMOS` names the two ports the service reads, and the kernel reads no CMOS.
