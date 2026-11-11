@@ -8,10 +8,10 @@ Expected to fail: the harness's `assert_eq!` on `requested_bytes`, with a nonzer
 count below eight.
 
 diff --git a/crates/entropy_contract/src/lib.rs b/crates/entropy_contract/src/lib.rs
-index 6b8af5504..39da38bdf 100644
+index 84f40a6a4..60362f3e1 100644
 --- a/crates/entropy_contract/src/lib.rs
 +++ b/crates/entropy_contract/src/lib.rs
-@@ -72,7 +72,7 @@ pub const fn operation(request_word: u64) -> u64 {
+@@ -71,7 +71,7 @@ pub const fn operation(request_word: u64) -> u64 {
  /// than refusing keeps the server's loop free of an error path that only a buggy client reaches:
  /// a request for 500 bytes is a request for eight, answered, and the client asks again.
  pub const fn requested_bytes(request_word: u64) -> u64 {
