@@ -1140,14 +1140,14 @@ pub(crate) fn print_summary() {
         return;
     };
 
-    let mib = |frames: usize| (frames as u64 * FRAME_SIZE) / (1024 * 1024);
-    let kib = |frames: usize| (frames as u64 * FRAME_SIZE) / 1024;
+    let mebibytes = |frames: usize| (frames as u64 * FRAME_SIZE) / (1024 * 1024);
+    let kibibytes = |frames: usize| (frames as u64 * FRAME_SIZE) / 1024;
 
     println!(
         "  memory           : {} MiB total, {} MiB free ({} KiB in use)",
-        mib(s.total),
-        mib(s.free()),
-        kib(s.used),
+        mebibytes(s.total),
+        mebibytes(s.free()),
+        kibibytes(s.used),
     );
 }
 

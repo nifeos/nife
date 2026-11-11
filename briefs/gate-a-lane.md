@@ -69,7 +69,7 @@ The contract, binding from dispatch time:
 
 - Every dispatch writes a PENDING file beside its lane log, named for the lane, holding the
   exact commands this brief's gates precede: the push,
-  `gh pr ready`, `gh pr merge --auto`. At dispatch time, not when the lane reports.
+  `gh pr ready`, `helpers/arm.sh <N>`. At dispatch time, not when the lane reports.
 - Executing them flips it to DONE. A PENDING file that exists is work owed. Answer no board
   question while one sits unexecuted, unless you defer it out loud with a reason.
 - Tail the log sixty seconds after dispatch. A connection error or a permission rejection

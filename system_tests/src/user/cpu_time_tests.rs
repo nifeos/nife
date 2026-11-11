@@ -133,11 +133,11 @@ fn the_thread_that_ran_is_the_thread_that_is_charged() {
 
     // Teardown, as `force_kill_tests` does it: the first reclaim arms the kill and refuses, the
     // next tick on the runaway's core makes it a corpse, and a later reclaim succeeds. The deadline
-    // scales with the slowdown this run measured (`window_ms / spun`: 1 on an ideal machine, 10 on a
+    // scales with the slowdown this run measured (`window_milliseconds / spun`: 1 on an ideal machine, 10 on a
     // model that delivers a tenth of the ticks), bounded at 10 seconds by `spun >= 50`, so a real
     // hang still fails.
-    let window_ms = window() * 1000 / crate::arch::timer::frequency();
-    let slowdown = (window_ms / spun.max(1)).max(1);
+    let window_milliseconds = window() * 1000 / crate::arch::timer::frequency();
+    let slowdown = (window_milliseconds / spun.max(1)).max(1);
     let deadline = crate::arch::timer::now() + crate::arch::timer::frequency() * slowdown;
     let mut reclaimed = false;
     while crate::arch::timer::now() < deadline {
@@ -262,11 +262,11 @@ fn the_figure_is_whole_tick_periods_of_milliseconds() {
     );
     let viewer = hold_view(supervision);
 
-    let ms = record_of(viewer, sleeper, record::CPU_TIME);
+    let milliseconds = record_of(viewer, sleeper, record::CPU_TIME);
     assert_eq!(
-        ms % per_tick,
+        milliseconds % per_tick,
         0,
-        "{ms} ms is not a whole number of {per_tick} ms ticks",
+        "{milliseconds} ms is not a whole number of {per_tick} ms ticks",
     );
 
     drain(parking, 1);

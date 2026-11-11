@@ -156,8 +156,8 @@ fn print_frames(when: &str, total: &mut Frames) {
 
 /// The `transfer` line, the same on every NIC so two machines' transcripts compare line for line.
 fn print_transfer(bytes: u64, ticks: u64) {
-    let hz = arch::timer::frequency();
-    let microseconds = ticks.saturating_mul(1_000_000) / hz.max(1);
+    let hertz = arch::timer::frequency();
+    let microseconds = ticks.saturating_mul(1_000_000) / hertz.max(1);
     let rate = bytes.saturating_mul(8).saturating_mul(1_000_000) / microseconds.max(1);
     println!(
         "network-bench: transfer  : {bytes} bytes in {}.{:03} s = {}.{:03} Mbit/s",
@@ -174,8 +174,8 @@ fn print_transfer(bytes: u64, ticks: u64) {
 /// between calls (the client's own loop). See notes/designware-ethernet/the-receive-rate.md.
 fn print_receive(cli: crate::sched::RendezvousId, bytes: u64, ticks: u64) {
     let [calls, inside, full, ..] = crate::sched::ipc_receive(cli);
-    let hz = arch::timer::frequency().max(1);
-    let per = |t: u64| t.saturating_mul(1_000_000) / hz / calls.max(1);
+    let hertz = arch::timer::frequency().max(1);
+    let per = |t: u64| t.saturating_mul(1_000_000) / hertz / calls.max(1);
     println!(
         "network-bench: receive   : {calls} calls, {} bytes each on average, {full} full; {} us inside a call and {} us between calls, on average",
         bytes / calls.max(1),
@@ -361,11 +361,11 @@ mod radon {
                 "network-bench: link      : {} Mbit/s {} duplex, {} ms after autonegotiation restarted",
                 l.speed.megabits_per_second(),
                 if l.full_duplex { "full" } else { "half" },
-                r.link_wait_ms
+                r.link_wait_milliseconds
             ),
             None => println!(
                 "network-bench: link      : NONE after {} ms",
-                r.link_wait_ms
+                r.link_wait_milliseconds
             ),
         }
     }

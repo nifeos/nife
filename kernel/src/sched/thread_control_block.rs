@@ -97,8 +97,8 @@ pub(super) fn thread_control_block_insert_from(
         Some(slot) => capabilities.lock().insert_at(slot, capability),
     }
     .map_err(|_| abi::Error::OutOfMemory)?;
-    // The one place a port capability enters a thread, so the context switch reads one field, not
-    // the table. Only the last of several ranges is kept (no consumer holds two), and one delegated
+    // Cached for the context switch, which reads one field, not the table; `sched::grant` is the
+    // other place a port capability enters a thread. Only the last of several ranges is kept (no consumer holds two), and one delegated
     // later by `SEND_CAPABILITY` is not cached. A `PortRange` without `WRITE` grants nothing: the TSS
     // bitmap cannot permit `in` without `out` (§121 (what a device capability is when the device
     // has no page)); the capability still lands.

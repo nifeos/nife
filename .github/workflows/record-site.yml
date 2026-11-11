@@ -9,7 +9,7 @@ name: record site
 #   `script/lint` refuses. See notes/observed-failing.md.
 
 # **Builds the design record as a website and keeps it as this run's artifact, deploying nothing.**
-# Milestone 1018 (the design record moves to `nifeos.org` and is published as a website), step 3.
+# Milestone 1018 (the design record moves to `nifeos/record` and is published as a website), step 3.
 # script/site holds what the build does; this workflow installs the pinned Node, runs it, writes its
 # report to the step summary and uploads the built site.
 #

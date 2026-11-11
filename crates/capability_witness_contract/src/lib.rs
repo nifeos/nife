@@ -65,6 +65,19 @@ pub const CYCLE_COUNTER_WORD: u64 = 0xC1C1E;
 /// the program that sends it.
 pub const REPORT_CHILD_WORD: u64 = 0xC0FFEE;
 
+/// **The one window `report_child_builder` lists on `report_child`'s startup page**, and the page it
+/// maps there. `report_child` reports the address and length it reads from the page after
+/// [`REPORT_CHILD_WORD`], so the kernel's test sees that a userspace builder's startup page reached
+/// the child it built.
+///
+/// Name: provisional, after the program that finds it. The kind is a number no other contract
+/// mints (0x7e57 reads "test").
+pub const REPORT_CHILD_WINDOW: startup_page_contract::Window = startup_page_contract::Window {
+    kind: startup_page_contract::WindowKind(0x7e57),
+    virtual_address: address_space_map::pair_page(0x00b0_0000),
+    pages: 1,
+};
+
 /// The word `interrupt_child` sends once the interrupt `interrupt_child_builder` delegated to it
 /// has arrived as a message. Any fixed value would do; the child sends nothing before the
 /// interrupt.

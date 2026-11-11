@@ -320,6 +320,7 @@ pub struct RegionTable<const N: usize> {
 /// The table's name for a region's word. A temporary adapter: this crate's public methods still
 /// take and return a region's name as a `u64`, and this is the one place that word becomes the
 /// table's typed name. It goes when those methods take `EntryName<Region>` themselves.
+#[inline(always)]
 const fn entry(name: u64) -> EntryName<Region> {
     EntryName::from_bits(name)
 }

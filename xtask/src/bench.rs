@@ -596,7 +596,7 @@ fn read_bench_lines(
         }
         let parts: Vec<&str> = rest.split_whitespace().collect();
         match parts.as_slice() {
-            ["cntfrq", hz] => cntfrq = hz.parse().unwrap_or(0),
+            ["cntfrq", hertz] => cntfrq = hertz.parse().unwrap_or(0),
             [name, ticks, iters] => {
                 if let (Ok(t), Ok(i)) = (ticks.parse(), iters.parse()) {
                     results.push((name.to_string(), t, i));
@@ -659,11 +659,11 @@ fn report_bench_table(results: &[(String, u64, u64)], cntfrq: u64, real: bool) {
         // `checked_div`, not `/`: a benchmark that reports zero iterations (a skip, or a future
         // diagnostic line) must not panic the whole harness after the run already happened.
         let per = ticks.checked_div(*iters).unwrap_or(0);
-        let ns = (ticks * 1_000_000_000)
+        let nanoseconds = (ticks * 1_000_000_000)
             .checked_div(cntfrq)
             .and_then(|v| v.checked_div(*iters))
             .unwrap_or(0);
-        eprintln!("{name:<14} {ticks:>12} {iters:>8} {per:>12} {ns:>10}");
+        eprintln!("{name:<14} {ticks:>12} {iters:>8} {per:>12} {nanoseconds:>10}");
     }
     if !real {
         eprintln!("(TCG+icount: ticks are deterministic; ns are fiction. --real for magnitudes.)");

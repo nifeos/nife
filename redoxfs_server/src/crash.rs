@@ -218,6 +218,6 @@ pub fn header_at(image: &[u8], slot: u64) -> Header {
 }
 
 /// An all-zero image of `mib` mebibytes, the raw disk a fixture is built on.
-pub fn blank_image(mib: usize) -> Vec<u8> {
-    vec![0u8; mib * 1024 * 1024]
+pub fn blank_image(mebibytes: usize) -> Vec<u8> {
+    vec![0u8; mebibytes * 1024 * 1024]
 }

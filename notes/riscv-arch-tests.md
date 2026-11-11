@@ -169,7 +169,7 @@ same on both ISAs.
 | `ticks_arrive_at_the_configured_rate` | the original relative re-arm restored | `20 ticks in 25 periods` |
 | ~~`the_handler_keeps_up_when_no_lock_is_held`~~ | the handler spins for two intervals | missed 20 (**the test was deleted 2026-08-18**, see below) |
 | `a_long_critical_section_costs_a_tick` | the original relative re-arm restored (no missed accounting) | `did NOT lose a tick` |
-| `uptime_advances_monotonically` | `uptime_ms` divides by `TIMEBASE_HZ` instead of `TIMEBASE_HZ / 1000` | `uptime went backwards or stalled: 0 -> 0` |
+| `uptime_advances_monotonically` | `uptime_milliseconds` divides by `TIMEBASE_HERTZ` instead of `TIMEBASE_HERTZ / 1000` | `uptime went backwards or stalled: 0 -> 0` |
 | `holding_a_lock_masks_the_timer` | `TICKS` back to one global counter | 61 ticks landed inside the critical section |
 | `breakpoint_is_caught_and_execution_resumes` | the dispatcher handles the breakpoint but does not record it | `the handler didn't run, but we resumed anyway?` |
 | `registers_survive_a_trap` | the dispatcher zeroes `frame.x[18]`, as a wrong trap.s offset would | `the trap frame scrambled a register` |

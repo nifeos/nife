@@ -1,7 +1,7 @@
 ---
 status: NOT-STARTED
 raised: 2026-11-10
-milestone_dependencies: 317, 1062
+milestone_dependencies: 317, 1062, 1068
 decision_dependencies: 319
 machine_requirements: none
 specific_machine: none
@@ -19,9 +19,12 @@ milestone 317 (the interrupt-remapping flags, and where MSI confinement actually
 milestone 1062 (the device control planes leave the kernel). Parsing configuration space is parsing
 what a device says, which milestone 242 (xHCI) calls the last thing to do at EL1. But whoever holds
 configuration space sets BARs, bus mastering and MSI targets, which is DMA and interrupt authority.
-So a userspace bus server needs a kernel object that binds each device to its DMA domain first.
-That object is §319 (a device and its DMA domain as kernel objects), PROPOSED, and this milestone
-waits on its ruling.
+So a userspace bus server needs kernel objects that bind each device to its DMA domain first.
+§319 (a device and its DMA domain as kernel objects) is that rule: a device object that names a
+requester id, a separate DMA-domain object it binds to, and no bus mastering until the device has a
+domain. The kernel trusts the bus server to place BARs and write configuration space, and checks no
+placement. MSI confinement is milestone 1068 (the kernel turns interrupt remapping on where an
+IOMMU offers it), which this milestone waits on.
 
 ## Today
 
@@ -31,14 +34,15 @@ virtio-pci all reach their devices through it.
 
 ## What gates it
 
-- §319's ruling, which this milestone builds.
-- Interrupt confinement. Milestone 317 makes it askable on all three architectures and confines no
-  interrupt. A userspace bus server that writes MSI targets needs remapping turned on, and no
-  milestone builds that yet. Whether it is this milestone's first step or a milestone of its own is
-  part of §319.
+- §319, which this milestone builds: the device object, the DMA-domain object, the binding, and the
+  refusal of bus mastering until a device has a domain.
+- Milestone 1068 (the kernel turns interrupt remapping on where an IOMMU offers it). A userspace
+  bus server that writes MSI targets needs remapping on wherever an IOMMU exists. A machine
+  without an IOMMU runs trusted drivers, and there neither milestone confines anything.
 
 ## Index row
 
 The kernel walks the PCI bus, places BARs and programs MSI. A bus server in userspace can do all of
 that once the kernel has an object that ties each device to its IOMMU domain, so the server holds
-configuration space without holding DMA authority. This builds that once the architect rules on §319.
+configuration space without holding DMA authority. This builds §319's device and DMA-domain
+objects and moves the bus to a userspace server, after milestone 1068 turns interrupt remapping on.
