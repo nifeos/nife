@@ -24,6 +24,8 @@ const TICK_SAMPLE_DEPTH: usize = 8;
 
 /// One core's last [`TICK_SAMPLE_DEPTH`] ticks: the thread each one interrupted and the `pc` it
 /// interrupted it at. One writer, the owning core's timer interrupt; read racily by the dump.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane fuzz-budget-waits.
 #[cfg(feature = "system_tests")]
 struct TickSamples {
     seq: AtomicU64,
@@ -42,7 +44,7 @@ const NO_TICK_SAMPLES: TickSamples = TickSamples {
 #[cfg(feature = "system_tests")]
 static TICK_SAMPLES: [TickSamples; cpu::MAXIMUM_CPUS] = [NO_TICK_SAMPLES; cpu::MAXIMUM_CPUS];
 
-/// **Remember where this core's tick found its thread** (name provisional): the thread running here
+/// **Remember where this core's tick found its thread**: the thread running here
 /// and the `pc` the timer interrupt interrupted, kernel or user, for the thread dump's
 /// `ticks interrupted` line.
 ///
@@ -53,6 +55,8 @@ static TICK_SAMPLES: [TickSamples; cpu::MAXIMUM_CPUS] = [NO_TICK_SAMPLES; cpu::M
 /// budgets are the reader, and every other build keeps the tick as it was.
 ///
 /// Context: interrupt context, from the timer interrupt, on the owning core only.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane fuzz-budget-waits.
 #[cfg(feature = "system_tests")]
 #[inline(never)]
 pub fn sample_tick(interrupted_pc: u64) {
@@ -63,12 +67,16 @@ pub fn sample_tick(interrupted_pc: u64) {
 }
 
 /// [`sample_tick`]'s twin for every build that is not a system test: it records nothing.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane fuzz-budget-waits.
 #[cfg(not(feature = "system_tests"))]
 #[inline(always)]
 pub fn sample_tick(_interrupted_pc: u64) {}
 
 /// Print core `cpu`'s last ticks, oldest first, as `tid@pc`. Racy against that core's own writes,
 /// as the event ring is.
+///
+/// Name: provisional, minted 2026-11-11 (UTC) by lane fuzz-budget-waits.
 #[cfg(feature = "system_tests")]
 pub(super) fn dump_tick_samples(c: usize) {
     let ring = &TICK_SAMPLES[c];
