@@ -144,11 +144,6 @@ DFAULT = "DFAULT"
 # Deliberate capitalisation inside prose, where the case is the emphasis: "Address Space
 # IDentifier". Same list as clippy.toml's doc-valid-idents, for the same reason.
 IDentifier = "IDentifier"
-# Microsoft's own field name in the FAT32 `FSInfo` sector: the *structure* signature, abbreviated in
-# the specification and spelled that way by every implementation that reads one.
-# `crates/file_allocation_table` names it as the specification does, because a reader checking this
-# crate against that document should be able to search for the word they have in front of them.
-FSI_StrucSig = "FSI_StrucSig"
 # Valid variant spellings, not errors. British/American and -able/-eable splits are style, and this
 # tree already chose; a checker should not relitigate that.
 Writeable = "Writeable"

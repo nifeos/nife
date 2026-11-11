@@ -38,7 +38,6 @@ elf 178 0 4 40
 entropy_contract 37 3 0 0
 environment_contract 46 0 0 7
 extensible_host_controller_interface 419 55 0 23
-file_allocation_table 137 0 0 0
 filesystem_contract 462 25 10 45
 filesystem_fixture 183 14 0 19
 firmware_configuration 28 4 0 4

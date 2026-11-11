@@ -66,7 +66,7 @@ The whole package, with the signature list, the stranger run and seven questions
 [crate-reviews/file-allocation-table.md](crate-reviews/file-allocation-table.md). It covers the
 crate as #3267 leaves it, with no reference to nife. The maintainer ruled six of the questions
 provisionally, and #3267 applied them. The architect cleared the move. The repository
-`nifeos/file_allocation_table` exists, and `crates/file_allocation_table` is still in this tree.
+`nifeos/file_allocation_table` exists, and this tree depends on it by revision.
 The architect has not cleared the tag or publication, though the publish hold exempts this crate.
 
 Name and version. `file_allocation_table` `0.1.0`, ratified with FAT spelled out. Every `Name:`

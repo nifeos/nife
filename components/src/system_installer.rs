@@ -88,9 +88,9 @@ const ALIGN: u64 = 2048;
 /// **How big the EFI system partition is**, in logical blocks: 512 MiB.
 ///
 /// It is not the 100 MiB a reader expects, and the reason is arithmetic rather than generosity.
-/// `crates/file_allocation_table` refuses to build a volume with fewer than 65525 data clusters,
-/// because below that the volume is FAT16 whatever its boot sector claims; at 4096-byte clusters
-/// that floor is a little over 256 MiB. 512 MiB clears it with room for a second boot file when
+/// `file_allocation_table` (`nifeos/file_allocation_table`) refuses to build a volume with fewer
+/// than 65525 data clusters, because below that the volume is FAT16 whatever its boot sector
+/// claims; at 4096-byte clusters that floor is a little over 256 MiB. 512 MiB clears it with room for a second boot file when
 /// somebody builds the two-slot layout milestone 515 lists as L2.
 const ESP_SECTORS: u64 = 512 * 1024 * 1024 / 512;
 
@@ -412,17 +412,15 @@ fn install(boot_file_len: u64) -> ! {
     }
     let volume_id = u32::from_le_bytes([serial[0], serial[1], serial[2], serial[3]]);
 
-    let Ok(volume) = fat::VolumeLayout::new(
-        ESP_SECTORS,
-        layout.esp_first,
-        boot_file_len,
-        volume_id,
-        // The volume label a firmware menu or another operating system shows for the partition.
-        "NIFE",
-        BOOT_FILE_NAME,
-        // The installer has no wall clock, so the volume carries the zero timestamp.
-        &mut fat::NoClock,
-    ) else {
+    // The volume label is what a firmware menu or another operating system shows for the
+    // partition. The installer has no wall clock, so the volume carries the zero timestamp.
+    let Ok(volume) = fat::VolumeLayoutOptions::new(ESP_SECTORS)
+        .with_hidden_sectors(layout.esp_first)
+        .with_volume_id(volume_id)
+        .with_label("NIFE")
+        .and_then(|options| options.with_file(BOOT_FILE_NAME, boot_file_len))
+        .and_then(|options| fat::VolumeLayout::new(options, &mut fat::NoClock))
+    else {
         send(REPORT, R_DISK_FAILED, 2, boot_file_len);
         user_mode_runtime::exit()
     };
