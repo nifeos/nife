@@ -587,10 +587,10 @@ fn a_repaint_leaves_the_cursor_where_it_was() {
     assert_eq!(o.0, b"abcde\x1b[5D");
 }
 
-/// A CSI parameter too long for `u16` saturates instead of overflowing: the sequence is read as
+/// A control-sequence parameter too long for `u16` saturates instead of overflowing: the sequence is read as
 /// its final byte with the largest parameter, and the line is untouched by the unknown one.
 #[test]
-fn a_long_csi_parameter_saturates() {
+fn a_long_control_sequence_parameter_saturates() {
     let (mut d, mut s) = (LineDisc::new(), Screen::new());
     feed_all(&mut d, &mut s, b"abc");
     // Unknown final with a huge parameter: dropped whole.
