@@ -286,6 +286,9 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 - **Outstanding.** Steps 3 and 5: `kernel/src/designware_ethernet.rs` and
   `kernel/src/reboot/designware_i2c.rs` exist.
 - **Outstanding.** Step 7: no `driver_process_contract::virtio` module exists.
+- **Outstanding.** An escape test that drives a direct driver (a ring aimed outside its region, a
+  declined `VIRTIO_F_ACCESS_PLATFORM`). The mediated transport's
+  `the_iommu_faults_a_dma_that_escapes_the_domain` covers the same IOMMU fault today.
 
 ## Index row
 
