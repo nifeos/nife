@@ -153,13 +153,13 @@ const _: () = assert!(
 const _: () = assert!(core::mem::size_of::<CapabilityTable>() == 2064);
 pub(crate) type CapabilityTable = capability::CapabilityTable<Object, CAPABILITY_TABLE_SLOTS>;
 
-/// The progenitor's peak capability count on `script/swish-check`'s aarch64 leg: 37 of
-/// [`CAPABILITY_TABLE_SLOTS`] (2026-10-19 UTC). A record, not a target: [`report_peak`] says on the
+/// The progenitor's peak capability count on `script/swish-check`'s aarch64 leg: 39 of
+/// [`CAPABILITY_TABLE_SLOTS`] (2026-11-11 UTC). A record, not a target: [`report_peak`] says on the
 /// console when a boot goes past it, and `script/swish-check` fails on that sentence. When it
 /// fires, measure and update this rather than raising the slot count.
 /// `notes/capability-peak-trace.md` itemizes the peak, and notes/capability-objects.md has the
 /// measurement.
-pub(crate) const CAPABILITY_TABLE_PEAK_MEASURED: usize = 37;
+pub(crate) const CAPABILITY_TABLE_PEAK_MEASURED: usize = 39;
 
 // The headroom is what this pair means, so the two cannot silently invert.
 const _: () = assert!(CAPABILITY_TABLE_PEAK_MEASURED < CAPABILITY_TABLE_SLOTS);
