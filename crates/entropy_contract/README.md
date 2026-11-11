@@ -26,7 +26,7 @@ A `CALL` carries one request word and returns two reply words.
   `CALL` as a small negative number (-1 to -8), which is an enormous unsigned value, so `delivered_bytes`
   returns `None` for it and a caller with no entropy capability finds out without a probe.
 - Readiness: a service sends `READY` on its readiness endpoint only after it holds bytes that are not
-  all zero (`readiness` decides). Otherwise it sends `DEAD | step` (`bring_up_failure`), where the
+  all zero (`readiness` decides). Otherwise it sends `BRING_UP_FAILED | step` (`bring_up_failure`), where the
   step is `STEP_NO_FIRST_BYTES` (0x10, the device never answered) or `STEP_FIRST_ALL_ZERO` (0x11,
   every byte was zero). Steps 0x01 to 0x0f belong to each backend. Treating an all-zero first draw
   as a dead device is wrong with probability 2^-64 to 2^-2048 by source, the safe way round.

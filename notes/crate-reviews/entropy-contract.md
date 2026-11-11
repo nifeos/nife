@@ -18,7 +18,7 @@ draw holds a nonzero byte. It is `no_std`, with no dependency and no system call
 `#![forbid(unsafe_code)]` holds it free of `unsafe`; the caller passes the `CALL` as a closure.
 Four Kani harnesses prove the request word, the copy out of a reply, the fill loop and the
 readiness rule, each with a falsification patch. Every name follows
-[design/naming.md](../../design/naming.md); fourteen wait for ratification. Nothing in the crate points back into nife, but nife's
+[design/naming.md](../../design/naming.md), and every name is ratified. Nothing in the crate points back into nife, but nife's
 `xtask` copies its `src/lib.rs` into the patched standard library by path, which the move must
 change.
 
@@ -27,7 +27,7 @@ change.
 | item | value |
 |---|---|
 | crate | `entropy_contract`, ratified ("the service's own word, `entropy`, with the contract suffix") |
-| identity values | `INTERFACE_ID` 12, `VERSION` 1, no magic (a message contract, not a page). Both match row 12 of [milestone 956 (the linked interfaces carry checkable versions)](../../design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md)'s id table and its "version 1 when assigned". The two names are ratified for every contract crate (#3059). No ruling has frozen either value; that is decision 1 below |
+| identity values | `INTERFACE_ID` 12, `VERSION` 1, no magic (a message contract, not a page). Both match row 12 of [milestone 956 (the linked interfaces carry checkable versions)](../../design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md)'s id table and its "version 1 when assigned". The two names are ratified for every contract crate (#3059). Frozen 2026-11-11 (UTC) on #3480 |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024, 1.88 |
 | license | `MIT OR Apache-2.0`, both texts at the crate root, written in the manifest (no workspace inheritance) |
@@ -66,12 +66,12 @@ This lane ran each check in its own worktree, on this branch.
 
 | check | result |
 |---|---|
-| `script/crate-standalone entropy_contract` | one failure, `names`: 14 names carry a provisional block, not a ratified one (decision 2). The build passes on 1.88 for the host and the three bare-metal targets, Kani proves 4 of 4, and each patch turns its harness red |
+| `script/crate-standalone entropy_contract` | clean: names, the build on 1.88 for the host and the three bare-metal targets, Kani proves 4 of 4, and each patch turns its harness red |
 | `cargo kani` (Kani 0.68.0) | 4 of 4 harnesses verify, in about three minutes |
 | `script/falsifications --sweep entropy_contract` | 4 swept, 0 survivors, 0 stale or broken |
 | `cargo test -p entropy_contract` | 15 unit tests and 4 doctests pass |
 | `cargo clippy --all-targets` and `cargo doc`, warnings denied | no warning |
-| `python3 helpers/name_release.py --draft entropy_contract` | 19 names: 5 ratified, 14 provisional, none without a block |
+| `python3 helpers/name_release.py --draft entropy_contract` | 19 names, every one ratified |
 | `helpers/lint_externalized_crates.py` | 0 hits; the crate's waiver is removed |
 | `script/lint`, `script/test` | in the pull request's checks |
 
@@ -84,7 +84,7 @@ has no baseline) and the template's workflows, which run in the repository.
 |---|---|
 | request | `OPERATION_SHIFT` (56), `GET` (1), `request(operation, byte_count)`, `operation(request_word)`, `requested_bytes(request_word)` |
 | reply | `MAXIMUM_BYTES` (8), `NO_ENTROPY` (0), `delivered_bytes(first_reply_word) -> Option<usize>`, `copy_delivered_bytes(byte_count, reply_word, out) -> usize`, `fill_with(out, call) -> Option<()>` |
-| readiness | `READY` (ASCII `RNGUP`), `DEAD` (`0xDEAD_0000_0000_0000`), `STEP_NO_FIRST_BYTES` (0x10), `STEP_FIRST_ALL_ZERO` (0x11), `bring_up_failure(step)`, `readiness(first_bytes)` |
+| readiness | `READY` (ASCII `RNGUP`), `BRING_UP_FAILED` (`0xDEAD_0000_0000_0000`), `STEP_NO_FIRST_BYTES` (0x10), `STEP_FIRST_ALL_ZERO` (0x11), `bring_up_failure(step)`, `readiness(first_bytes)` |
 | identity | `VERSION`, `INTERFACE_ID` |
 
 No type of another crate appears in a signature, and the crate defines no type of its own.
@@ -128,11 +128,12 @@ spells any of them, so no alias is owed.
 | `MAXIMUM_BYTES` | constant | ratified: a limit that opens `MAXIMUM_` and ends with its unit |
 | `fill_with` | function | ratified: std's `_with` for a function that takes a closure |
 | `VERSION`, `INTERFACE_ID` | constants | ratified for every contract crate (#3059) |
-| `OPERATION_SHIFT`, `GET`, `NO_ENTROPY`, `READY`, `DEAD`, `STEP_NO_FIRST_BYTES`, `STEP_FIRST_ALL_ZERO` | constants | kept as written; provisional |
-| `operation`, `readiness` | functions | kept, parameters renamed (below); provisional |
-| `request`, `requested_bytes`, `bring_up_failure`, `delivered_bytes`, `copy_delivered_bytes` | functions | renamed (below); provisional |
+| `OPERATION_SHIFT`, `GET`, `NO_ENTROPY`, `READY`, `STEP_NO_FIRST_BYTES`, `STEP_FIRST_ALL_ZERO` | constants | ratified as written (#3480) |
+| `BRING_UP_FAILED` | constant | ratified (#3480); `DEAD` refused |
+| `operation`, `readiness` | functions | ratified, parameters renamed (below) |
+| `request`, `requested_bytes`, `bring_up_failure`, `delivered_bytes`, `copy_delivered_bytes` | functions | renamed (below), ratified |
 
-The renames this branch makes, each decided by the maintainer on 2026-11-11 (UTC) and provisional.
+The renames this branch makes, ratified 2026-11-11 (UTC) on #3480.
 They are two-way doors: the crate is unpublished, only this tree links it, and reversing one costs a
 pull request. No old spelling keeps a `doc(alias)`, by the rule for a crate before its first
 release. The release review rechecks every name before any publication.
@@ -160,7 +161,7 @@ The crate itself does not. What blocks the move is in nife, and in the decisions
 
 | item | owner |
 |---|---|
-| Freeze the identity values, ratify the fourteen provisional names, then clear the move. | architect |
+| Clear the move. | architect |
 | Point `xtask/src/farm/generate.rs` and `stamp.rs` at the pinned checkout's `src/lib.rs` (from `cargo metadata`), not `crates/entropy_contract`. Thirteen other crates are copied the same way (`abi`, `counter_frequency_contract` and most contract crates among them), so one change serves them all. | move lane |
 | Convert the six path dependencies to `git` and `rev` with `version = "0.1.0"`. | move lane |
 | Repoint `helpers/interface_declarations_check.py`, `helpers/interface_stability.py`, `helpers/trust_boundary_crates.tsv`, `packages/contracts.package.toml`, the `script/verify` row, the mutation baseline row and `helpers/template_report_baseline.txt`. | move lane |
@@ -175,24 +176,21 @@ Each is a two-way door, decided 2026-11-11 (UTC). Reversing any costs one pull r
    `script/crate-standalone` fails its proofs check without one.
 2. `delivered_bytes` states its bound as its own rule (no reply carries a count above 8) and the
    kernel's error range as the caller's condition, not as a fact the crate owns.
-3. The names above, each marked provisional in its `Name:` block until the architect ratifies it.
+3. The renames proposed above, which the architect has since ratified.
 4. `#![forbid(unsafe_code)]`, so the README's "no `unsafe`" holds in the compiler.
-5. The shipped text describes no consumer: the crate header, `READY`, `DEAD`, `readiness`,
+5. The shipped text describes no consumer: the crate header, `READY`, `BRING_UP_FAILED`, `readiness`,
    `VERSION` and the test docs no longer speak of "the kernel-side tests", "three programs", "the
    three backends", `abi::Error`, `NoSuchSlot`, `random16` or a dated bench defect.
 
 ## Recommendation
 
-Ready for review. The architect's three decisions below are what remain. The crate is a leaf, builds alone and proves; the
-move's real cost is the `xtask` copy, which one change for all fourteen copied crates pays.
+Ready for review. The identity is frozen and every name is ratified; clearing the move remains.
+The crate is a leaf, builds alone and proves; the move's real cost is the `xtask` copy, which one change for all fourteen copied crates pays.
 
 ## Decisions for the architect
 
-One at a time, in this order. The pull request's `## What I need from you` comment asks the first.
+Ruled 2026-11-11 (UTC) on #3480: the identity is frozen at `INTERFACE_ID` 12, `VERSION` 1 and no
+magic, and the names are ratified, with `DEAD` renamed `BRING_UP_FAILED`.
 
-1. Freeze the identity: `INTERFACE_ID` 12, `VERSION` 1, no magic.
-2. Ratify the fourteen provisional names as one set, as the table above lists them.
-   `script/crate-standalone` fails its names check until they read ratified, and the move strips
-   the `Name:` blocks.
-3. Then clear the move to `nifeos/entropy_contract`, with no tag and no publication. The clearance
-   is the go for creating the repository.
+Open: clear the move to `nifeos/entropy_contract`, with no tag and no publication. The clearance
+is the go for creating the repository.

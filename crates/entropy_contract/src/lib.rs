@@ -36,7 +36,7 @@ pub const MAXIMUM_BYTES: u64 = 8;
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position its
 /// sibling message contracts use, so the contracts read alike.
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): kept as written; six sibling contract crates
+/// Name: ratified 2026-11-11 (#3480): kept as written; six sibling contract crates
 /// share the name and value.
 pub const OPERATION_SHIFT: u32 = 56;
 
@@ -60,19 +60,19 @@ pub const INTERFACE_ID: u64 = 12;
 /// [`MAXIMUM_BYTES`] by [`requested_bytes`], so a client that asks for more is answered rather than
 /// refused.
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): kept as written.
+/// Name: ratified 2026-11-11 (#3480): kept as written.
 pub const GET: u64 = 1;
 
 /// Build a request word: the opcode and the byte count the client wants.
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): renamed from `req`, which abbreviates it.
+/// Name: ratified 2026-11-11 (#3480): renamed from `req`, which abbreviates it.
 pub const fn request(operation: u64, byte_count: u64) -> u64 {
     (operation << OPERATION_SHIFT) | (byte_count & 0xff)
 }
 
 /// The opcode of a request word.
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): kept as written, its parameter renamed from
+/// Name: ratified 2026-11-11 (#3480): kept as written, its parameter renamed from
 /// `w0`.
 pub const fn operation(request_word: u64) -> u64 {
     request_word >> OPERATION_SHIFT
@@ -82,7 +82,7 @@ pub const fn operation(request_word: u64) -> u64 {
 /// than refusing keeps the server's loop free of an error path that only a buggy client reaches:
 /// a request for 500 bytes is a request for eight, answered, and the client asks again.
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): renamed from `want`: a quantity takes its unit.
+/// Name: ratified 2026-11-11 (#3480): renamed from `want`: a quantity takes its unit.
 pub const fn requested_bytes(request_word: u64) -> u64 {
     let byte_count = request_word & 0xff;
     if byte_count > MAXIMUM_BYTES {
@@ -94,13 +94,14 @@ pub const fn requested_bytes(request_word: u64) -> u64 {
 
 /// The word the entropy service SENDs on its readiness endpoint once the device is up and its
 /// first bytes are in hand. ASCII `RNGUP`, so a hex dump of a report reads. A bring-up failure
-/// reports [`DEAD`]` | step` instead, a shape any driver can share for its own bring-up report.
+/// reports [`BRING_UP_FAILED`]` | step` instead, a shape any driver can share for its own bring-up
+/// report.
 ///
 /// **"Its first bytes are in hand" is a claim about the bytes, not about the handshake**: a service
 /// holding nothing, or a bufferful of zeros, must not send it, and [`readiness`] is what makes the
 /// claim.
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): kept as written.
+/// Name: ratified 2026-11-11 (#3480): kept as written.
 pub const READY: u64 = 0x_52_4E_47_55_50;
 
 /// **The word a bring-up failure reports instead of [`READY`]**, with the step that failed in its
@@ -108,8 +109,8 @@ pub const READY: u64 = 0x_52_4E_47_55_50;
 /// it is the other half of the readiness contract, and because a reader decoding a report word
 /// should not have to find the literal in each driver to know what it means.
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): kept as written.
-pub const DEAD: u64 = 0xDEAD_0000_0000_0000;
+/// Name: ratified 2026-11-11 (#3480), renamed from `DEAD`; `DEAD` refused.
+pub const BRING_UP_FAILED: u64 = 0xDEAD_0000_0000_0000;
 
 /// **The service asked and got nothing at all**: the device never answered inside the driver's own
 /// bound. A dry source, an absent one, or a register window that reads as nothing.
@@ -117,22 +118,22 @@ pub const DEAD: u64 = 0xDEAD_0000_0000_0000;
 /// Steps `0x01..=0x0f` are each backend's own, so the two steps every backend shares start at
 /// `0x10` and cannot collide with them.
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): kept as written.
+/// Name: ratified 2026-11-11 (#3480): kept as written.
 pub const STEP_NO_FIRST_BYTES: u64 = 0x10;
 
 /// **The service asked, was answered, and every byte of the answer was zero.** See [`readiness`]
 /// for why that is treated as a dead device rather than as randomness.
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): kept as written.
+/// Name: ratified 2026-11-11 (#3480): kept as written.
 pub const STEP_FIRST_ALL_ZERO: u64 = 0x11;
 
 /// Build a bring-up failure's report word from the step that failed.
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): renamed from `bringup_failure`; `bringup` is not
+/// Name: ratified 2026-11-11 (#3480): renamed from `bringup_failure`; `bringup` is not
 /// a word.
 #[must_use]
 pub const fn bring_up_failure(step: u64) -> u64 {
-    DEAD | step
+    BRING_UP_FAILED | step
 }
 
 /// **Decide what a service may say about itself, given the first bytes it drew.** [`READY`] only
@@ -159,7 +160,7 @@ pub const fn bring_up_failure(step: u64) -> u64 {
 /// assert_ne!(readiness([0; 32]), READY);
 /// ```
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): kept as written, its parameter renamed from
+/// Name: ratified 2026-11-11 (#3480): kept as written, its parameter renamed from
 /// `first`.
 pub fn readiness(first_bytes: impl IntoIterator<Item = u8>) -> u64 {
     let mut seen = false;
@@ -182,7 +183,7 @@ pub fn readiness(first_bytes: impl IntoIterator<Item = u8>) -> u64 {
 /// randomness must find out, because the alternative is the exact silent-degradation failure
 /// that no caller should have to guess at.
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): kept as written.
+/// Name: ratified 2026-11-11 (#3480): kept as written.
 pub const NO_ENTROPY: u64 = 0;
 
 /// **Read a reply's first word.** `Some(count)` when the entropy service answered, with `count` the
@@ -212,7 +213,7 @@ pub const NO_ENTROPY: u64 = 0;
 /// assert_eq!(delivered_bytes(NO_ENTROPY), Some(0));
 /// ```
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): renamed from `delivered`: it returns a byte
+/// Name: ratified 2026-11-11 (#3480): renamed from `delivered`: it returns a byte
 /// count.
 pub const fn delivered_bytes(first_reply_word: u64) -> Option<usize> {
     if first_reply_word <= MAXIMUM_BYTES {
@@ -260,7 +261,7 @@ pub const fn delivered_bytes(first_reply_word: u64) -> Option<usize> {
 /// assert_eq!(&key[16..], &[0x01, 0x02, 0x03, 0x04]);
 /// ```
 ///
-/// Name: provisional, maintainer 2026-11-11 (UTC): renamed from `take`, since std's `take` moves a
+/// Name: ratified 2026-11-11 (#3480): renamed from `take`, since std's `take` moves a
 /// value out and this copies bytes.
 pub fn copy_delivered_bytes(byte_count: usize, reply_word: u64, out: &mut [u8]) -> usize {
     let copied = byte_count.min(MAXIMUM_BYTES as usize).min(out.len());
@@ -446,7 +447,7 @@ mod tests {
             readiness([0; 32]),
             "a dry device and a zeroing device report the same step",
         );
-        assert_eq!(DEAD & 0xff, 0, "a step has room in the low bits");
+        assert_eq!(BRING_UP_FAILED & 0xff, 0, "a step has room in the low bits");
     }
 
     /// One nonzero byte anywhere is enough, including the last one. A predicate that stopped
