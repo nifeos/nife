@@ -247,7 +247,6 @@ crates/abi/src/futex.rs::SIZE_U8
 
 crates/abi/src/futex.rs::admitted
 
-crates/abi/src/interrupt.rs::ACK
 
 crates/abi/src/interrupt.rs::WAIT
 

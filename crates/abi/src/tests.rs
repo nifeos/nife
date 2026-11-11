@@ -206,7 +206,7 @@ fn the_syscall_numbers_and_the_first_object_modules_are_pinned() {
         crate::futex::SIZE_MASK => 3,
         crate::futex::PRIVATE => 128,
         crate::interrupt::WAIT => 0,
-        crate::interrupt::ACK => 1,
+        crate::interrupt::ACKNOWLEDGE => 1,
         crate::memory_region::MAP => 0,
         crate::memory_region::RETYPE => 1,
         crate::memory_region::RETYPE_OBJECT => 2,

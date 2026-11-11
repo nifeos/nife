@@ -72,7 +72,7 @@ the status byte is 0 (OK) and reads the 512 bytes the device left in the buffer.
 The driver does not poll. It `WAIT`s on its `Interrupt` capability (9a). When the device finishes
 and
 raises INTID 79, the kernel masks the line, turns it into a notification, and wakes the driver. The
-driver quiets the device (reads its `InterruptStatus`, writes `InterruptACK`), then `ACK`s its
+driver quiets the device (reads its `InterruptStatus`, writes `InterruptACK`), then `ACKNOWLEDGE`s its
 `Interrupt`
 capability to re-enable the line. This is the whole reason 9a came first: a userspace driver's
 completion path *is* interrupt-as-message.

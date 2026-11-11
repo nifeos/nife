@@ -232,7 +232,7 @@ pub fn invoke(
                 }
                 interrupt_wait(frame, intid)
             }
-            abi::interrupt::ACK => {
+            abi::interrupt::ACKNOWLEDGE => {
                 if !capability.rights.allows(Rights::READ) {
                     return Err(Error::NotPermitted);
                 }

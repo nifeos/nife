@@ -27,7 +27,7 @@ pub enum Object {
     /// own budget, and the kernel allocates nothing to do it. See `kernel/src/memory_region.rs`.
     MemoryRegion(u64),
 
-    /// A hardware interrupt, by INTID. The holder may `WAIT` for it and `ACK` it; the kernel's
+    /// A hardware interrupt, by INTID. The holder may `WAIT` for it and `ACKNOWLEDGE` it; the kernel's
     /// handler masks the line and turns the interrupt into a message, so a driver owns an interrupt
     /// without owning any privilege.
     ///
@@ -318,7 +318,7 @@ pub fn rendezvous_capability_badged(
     }
 }
 
-/// A capability naming a hardware interrupt. `READ` lets the holder `WAIT` and `ACK` it.
+/// A capability naming a hardware interrupt. `READ` lets the holder `WAIT` and `ACKNOWLEDGE` it.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "irq")]

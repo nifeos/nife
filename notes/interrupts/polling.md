@@ -51,7 +51,7 @@ loud because the next person meeting a polled driver will reasonably read it as 
 ## What is not in question
 
 An interrupt is already a capability here. `Object::Interrupt(u32)` has existed since milestone 9 (an interrupt becomes a message): the
-kernel masks the line, `READ` lets the holder `WAIT` and `ACK`, and everything that knows what the
+kernel masks the line, `READ` lets the holder `WAIT` and `ACKNOWLEDGE`, and everything that knows what the
 *device* is lives in the userspace driver. That is seL4's `IRQHandler` shape, and
 [DECISIONS §101 (notification objects)](../../design/decisions/0101-notification-objects.md) already specifies `bind_interrupt(intid,
 ep)` on the delivery side, with a prior-art survey covering seL4's bound notifications, Fuchsia's
