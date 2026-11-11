@@ -332,7 +332,7 @@ pub(crate) fn current_mappable_pages() -> u64 {
     })
 }
 
-/// [`grant`], into the first free slot at or above `floor` (milestone 812): `RETYPE_OBJ`'s third
+/// [`grant`], into the first free slot at or above `floor` (milestone 812): `RETYPE_OBJECT`'s third
 /// word, so a `std` program can make objects without filling a fixed slot it was not given.
 pub(crate) fn grant_from(
     floor: u64,

@@ -106,7 +106,7 @@ const CRED_VA: u64 = address_space_map::pair_page(0x0000_0000_00e3_0000);
 /// VA is never reused, since `page_frame::MAP` refuses an already-mapped one and the page held a
 /// secret. Numbered in the same family as `credentialer.rs`'s request pages, in another process.
 const CONNECT_VA_BASE: u64 = address_space_map::pair_page(0x0000_0000_00e4_0000);
-/// One channel's whole cost: two `RETYPE_OBJ`s (request, result), one `RETYPE` (the staging page),
+/// One channel's whole cost: two `RETYPE_OBJECT`s (request, result), one `RETYPE` (the staging page),
 /// and the page tables `page_frame::MAP` needs for that page's own mapping. Three pages minimum,
 /// with margin over a tight count for the same reason [`CARETAKER_REGION_PAGES`] is (a region too
 /// small fails as `Err(())`, which [`connect`] can only answer with `login_contract::DENIED`).
