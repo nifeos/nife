@@ -10,8 +10,9 @@
 //!
 //! # BUGS
 //!
-//! - A function granted direct twice in one boot holds two regions; the second confinement drops
-//!   the first from the domain, and the first is never freed.
+//! - A function granted direct again while its first driver still runs shares its region with
+//!   that driver, and the reset stops the device under it. The starters grant a function again
+//!   only after its driver has reported.
 //! - No escape test drives a direct driver (a ring aimed outside its region, a declined
 //!   `VIRTIO_F_ACCESS_PLATFORM`); `the_iommu_faults_a_dma_that_escapes_the_domain` provokes the
 //!   same IOMMU fault through the mediated transport.
@@ -24,6 +25,7 @@ use driver_process_contract::virtual_input_output::{
 
 use super::*;
 use crate::pci::PciVirtioDevice;
+use crate::sync::{InterruptSafeMutex, rank};
 
 /// Where a direct driver's register window starts. The driver reads it from the startup page.
 const REGISTERS_VA: u64 = address_space_map::pair_page(0x0000_0000_0100_0000);
@@ -41,6 +43,18 @@ const ACCESS_PLATFORM_HIGH: u32 = 1 << 1;
 /// The common configuration's feature select and feature words (virtio 1.2 section 4.1.4.3).
 const DEVICE_FEATURE_SELECT: u64 = 0x00;
 const DEVICE_FEATURE: u64 = 0x04;
+/// The common configuration's device status byte (virtio 1.2 section 4.1.4.3).
+const DEVICE_STATUS: u64 = 0x14;
+/// How many times [`reset`] reads the status byte waiting for the reset to land.
+const RESET_POLLS: u32 = 100_000;
+/// How many functions [`carve`] remembers a region for: more than any runner attaches.
+const MAXIMUM_CARVED_FUNCTIONS: usize = 8;
+
+/// **Each function's DMA region**, by requester id, with its page count. `iommu::confine` runs
+/// once per function per boot (a second attach leaks the first domain's tables), so a function
+/// granted direct again gets its first region back, reset and zeroed.
+static CARVED: InterruptSafeMutex<[Option<(u32, u64, usize)>; MAXIMUM_CARVED_FUNCTIONS]> =
+    InterruptSafeMutex::new(rank::VIRTIO, [None; MAXIMUM_CARVED_FUNCTIONS]);
 
 /// **Why a function gets the mediated grant.**
 ///
@@ -124,10 +138,11 @@ impl Direct {
 }
 
 /// **Carve out a direct grant of `d`** for a driver that runs `role`, with `pages` pages of DMA,
-/// in the step 7 order: confine the function to a fresh zeroed region before any queue exists,
-/// map the window's pages and nothing else of its BARs, and pack the handoff. `None` when no
-/// contiguous run of `pages` is free. The region is never returned to the allocator, because the
-/// domain maps it for as long as the function lives.
+/// in the step 7 order: confine the function to a zeroed region before any queue exists, map the
+/// window's pages and nothing else of its BARs, and pack the handoff. `None` when no contiguous run
+/// of `pages` is free. The region is never returned to the allocator, because the domain maps it
+/// for as long as the function lives; a function granted again gets the same region, after
+/// [`reset`] has stopped the device and the region is zeroed.
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter.
 pub(crate) fn carve(
@@ -140,15 +155,47 @@ pub(crate) fn carve(
         (1..=MAXIMUM_DATA_PLANE_PAGES).contains(&pages),
         "a direct grant of {pages} DMA pages"
     );
-    let dma = crate::memory::alloc_contiguous_zeroed(pages)?.addr();
-    crate::iommu::confine(
-        d.rid,
-        &[paging::domain::DmaRegion {
-            base: dma,
-            size: pages as u64 * FRAME_SIZE,
-            writable: true,
-        }],
-    );
+    let carved = CARVED
+        .lock()
+        .iter()
+        .flatten()
+        .find(|(rid, ..)| *rid == d.rid)
+        .copied();
+    let dma = match carved {
+        Some((_, dma, carved_pages)) if pages <= carved_pages => {
+            reset(d);
+            // SAFETY: `dma` is this function's region of `carved_pages` frames, which no other
+            // owner holds, and the reset has stopped the device writing it.
+            unsafe {
+                core::ptr::write_bytes(
+                    mmu::phys_to_virt(dma) as *mut u8,
+                    0,
+                    carved_pages * FRAME_SIZE as usize,
+                );
+            }
+            dma
+        }
+        _ => {
+            let dma = crate::memory::alloc_contiguous_zeroed(pages)?.addr();
+            crate::iommu::confine(
+                d.rid,
+                &[paging::domain::DmaRegion {
+                    base: dma,
+                    size: pages as u64 * FRAME_SIZE,
+                    writable: true,
+                }],
+            );
+            let mut table = CARVED.lock();
+            let slot = table
+                .iter()
+                .position(|c| c.is_some_and(|(rid, ..)| rid == d.rid))
+                .or_else(|| table.iter().position(Option::is_none));
+            if let Some(slot) = slot {
+                table[slot] = Some((d.rid, dma, pages));
+            }
+            dma
+        }
+    };
     let mut maps = [Mapping {
         va: 0,
         phys: 0,
@@ -196,6 +243,24 @@ pub(crate) fn carve(
         ],
         words: handoff.pack(),
     })
+}
+
+/// **Reset `d`** before its region goes to a new driver: write zero to the device status and wait
+/// for it to read back zero, as `virtio::unregister` does for a mediated function, so the device
+/// holds no queue the last driver programmed and stops writing the region.
+fn reset(d: &PciVirtioDevice) {
+    let status = (mmu::phys_to_virt(d.common) + DEVICE_STATUS) as *mut u8;
+    // SAFETY: as in `choose`: the common configuration is mapped device memory, and the status
+    // byte lies in its first 0x38 bytes.
+    unsafe { core::ptr::write_volatile(status, 0) };
+    // Bounded: a device that never reads back zero is as quiet as it will get.
+    for _ in 0..RESET_POLLS {
+        // SAFETY: as above.
+        if unsafe { core::ptr::read_volatile(status) } == 0 {
+            break;
+        }
+        core::hint::spin_loop();
+    }
 }
 
 #[cfg(test)]
