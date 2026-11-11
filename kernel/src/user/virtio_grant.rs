@@ -129,8 +129,9 @@ impl Direct {
 /// **Carve out a direct grant of `d`** for a driver that runs `role`, with `pages` pages of DMA,
 /// in the step 7 order: confine the function to a fresh zeroed region before any queue exists,
 /// map the window's pages and nothing else of its BARs, and pack the handoff. `None` when no
-/// contiguous run of `pages` is free. The region is never returned to the allocator, because the
-/// domain maps it for as long as the function lives.
+/// contiguous run of `pages` is free, or when the IOMMU refuses the function, which then stays
+/// blocked. The region is never returned to the allocator once the function is confined, because
+/// the domain maps it for as long as the function lives.
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter.
 pub(crate) fn carve(
@@ -144,14 +145,22 @@ pub(crate) fn carve(
         "a direct grant of {pages} DMA pages"
     );
     let dma = crate::memory::alloc_contiguous_zeroed(pages)?.addr();
-    crate::iommu::confine(
+    if crate::iommu::confine(
         d.rid,
         &[paging::domain::DmaRegion {
             base: dma,
             size: pages as u64 * FRAME_SIZE,
             writable: true,
         }],
-    );
+    )
+    .is_err()
+    {
+        // The IOMMU refused the function, so it stays blocked and no queue reads the region.
+        for k in 0..pages as u64 {
+            crate::memory::free(page_frames::PageFrame::from_addr(dma + k * FRAME_SIZE));
+        }
+        return None;
+    }
     let mut maps = [Mapping {
         va: 0,
         phys: 0,
