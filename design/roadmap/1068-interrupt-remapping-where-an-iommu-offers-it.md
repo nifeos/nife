@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-10
 milestone_dependencies: 317
 decision_dependencies: 319
@@ -27,11 +27,15 @@ nothing confines a device's interrupts or its DMA, and the kernel trusts its dri
 
 ## Today
 
-Milestone 317 makes the question askable and turns no remapping on. Each IOMMU driver reports what
-the machine offers and leaves it off:
+Milestone 317 made the question askable. Each IOMMU driver reports what the machine offers, and the
+VT-d driver also turns remapping on:
 
-- x86_64: VT-d offers it (`ECAP.IR`) under QEMU's `intel-iommu` and on xenon. The kernel never sets
-  `GCMD.IRE`, and a test asserts `GSTS.IRES` stays clear. AMD-Vi has run only on QEMU.
+- x86_64: VT-d offers it (`ECAP.IR`) under QEMU's `intel-iommu` and on xenon. Where the unit and
+  the DMAR's `INTR_REMAP` both offer it, the kernel sets `GCMD.IRE` with compatibility format
+  blocked, and every MSI it grants and every IO APIC line it routes is a remapping entry bound to one
+  requester id (notes/iommu.md). A test asserts `GSTS.IRES` set wherever it is offered, and
+  `a_message_forged_from_another_devices_grant_is_refused` shows a forged message refused under
+  QEMU. AMD-Vi remaps nothing yet, and has run only on QEMU.
 - riscv64: QEMU's `riscv-iommu-pci` offers the MSI page table (`CAPS.MSI_FLAT`), and `attach`
   writes `msiptp.MODE = Off`. No silicon ships the ratified RISC-V IOMMU (milestone 143 (silicon
   IOMMU)).
@@ -92,3 +96,13 @@ An MSI is a memory write, so DMA remapping does not confine it, and nife turns n
 remapping on. This turns it on in the VT-d, AMD-Vi and RISC-V IOMMU drivers and drives the aarch64
 GICv3 ITS, so a userspace bus server that writes MSI targets cannot aim an interrupt at a vector it
 was not given. Milestone 1064 waits on it, and it applies only where an IOMMU exists.
+
+## Follow-on
+
+- **Outstanding.** riscv64: an MSI page table per device context, `msiptp` in flat mode
+  (`kernel/src/arch/riscv64/iommu.rs` still writes `msiptp.MODE = Off`), and step 5's test there.
+- **Outstanding.** x86_64 AMD-Vi: its interrupt remapping table under QEMU's `amd-iommu`
+  (`kernel/src/arch/x86_64/amd_vi.rs`'s `no_entry_enables_interrupt_remapping` still holds).
+- **Outstanding.** aarch64: the GICv3 ITS driver and step 5's test there (`alloc_msi_vector` in
+  `kernel/src/arch/aarch64/interrupt_controller.rs` still answers `None`).
+- **Outstanding.** Done-when 2: the VT-d test on xenon, which needs a person at the bench.

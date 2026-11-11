@@ -230,7 +230,7 @@ const DISPATCH_ARMS: &[SysEdit] = &[
     // exit (milestone 64 (enough `std` to run somebody else's crate)): `sys/exit.rs` is not a
     // `sys/<module>/mod.rs` dispatcher; its `cfg_select!` sits inside `pub fn exit`, and the `_ =>`
     // arm is `crate::intrinsics::abort()`, which the kernel reports as a fault. This arm does what
-    // `_start` already does on `main`'s return, the same `SYS_EXIT` with the same code (which the
+    // `_start` already does on `main`'s return, the same `SYSCALL_EXIT` with the same code (which the
     // kernel discards). `a_whole_std_program_runs_on_the_native_abi` asserts exit, not fault. See
     // notes/std/caveats.md.
     SysEdit::After(
@@ -267,7 +267,7 @@ const DISPATCH_ARMS: &[SysEdit] = &[
         "        target_os = \"nife\" => {\n            mod racy;\n            pub(crate) mod nife;\n            pub(super) use racy::LazyKey;\n            pub(super) use nife::{Key, get, set};\n            use nife::{create, destroy};\n        }",
     ),
     // ... and reachable from `sys/thread/nife.rs`, whose join waits on the word a thread's
-    // `SYS_EXIT_THREAD` clears (milestone 812).
+    // `SYSCALL_EXIT_THREAD` clears (milestone 812).
     SysEdit::Replace("sync/mod.rs", "\nmod futex;", "\npub(crate) mod futex;", 1),
     // The futex every lock below is built on (milestone 812): `sys/sync/futex/nife.rs`.
     SysEdit::After(

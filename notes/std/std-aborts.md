@@ -96,7 +96,7 @@ $ llvm-objdump -d --demangle std_exerciser/target/aarch64-unknown-nife/release/s
   40c2b0: brk  #0                               ; still a fault, which is what abort MEANS
 ```
 
-`exit` flushes and calls `SYS_EXIT`; only `abort` is the `brk`. The bug this check exists for is
+`exit` flushes and calls `SYSCALL_EXIT`; only `abort` is the `brk`. The bug this check exists for is
 `exit` compiling to that same `brk`, under the name of the call that is supposed to be the clean
 one.
 

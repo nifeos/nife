@@ -72,7 +72,7 @@ maps the four lines onto interrupt controller inputs (32..35 on riscv `virt`). I
 level-triggered: the line stays asserted until the ISR byte is read. That plugs directly into the
 kernel's existing model. The PLIC delivery masks the source, the driver's WAIT wakes, its
 INTERRUPT_STATUS read (the ISR, via the transport) deasserts the line, and its Interrupt-capability
-ACK
+ACKNOWLEDGE
 re-enables the source. MSI-X (the device writes a message to raise an interrupt, many vectors,
 no sharing) is the modern mechanism and a deliberate later step. Nothing we drive needs it.
 

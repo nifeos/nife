@@ -443,7 +443,7 @@ impl Conductor {
         // The witness holds only GO, which the generator never names: every invoke must be
         // refused, and its table must never fill at all.
         if x == WITNESS {
-            if call.number == abi::SYS_INVOKE && (call.rets[0] as i64) >= 0 {
+            if call.number == abi::SYSCALL_INVOKE && (call.rets[0] as i64) >= 0 {
                 escape!(
                     self,
                     "the witness's invoke on slot {} method {} succeeded with {:#x}",
@@ -555,7 +555,7 @@ impl Conductor {
         // A plain `RECEIVE` defines w0..w3 only and leaves x4 as the caller left it, so there is
         // nothing to check there. A deferred fill is checked at the quiet point, with its own x1
         // and x4.
-        if call.number == abi::SYS_INVOKE
+        if call.number == abi::SYSCALL_INVOKE
             && (call.rets[0] as i64) >= 0
             && self.was_receive_capability(x, call)
             && (self.pending.is_none() || self.pending.as_ref().unwrap().fuzzer != x)
@@ -582,7 +582,7 @@ impl Conductor {
     /// Keep the ledger and the badge record current with a step that revoked a frame or minted a badge.
     fn note_revoke_or_badge(&mut self, x: usize, call: &Call) {
         // A revoke kills the in-flight copy; a badge minted is a badge that may be seen.
-        if call.number == abi::SYS_INVOKE {
+        if call.number == abi::SYSCALL_INVOKE {
             match call.words[1] {
                 abi::page_frame::REVOKE => {
                     if let Some(Some((Object::PageFrame(phys, _), _))) =
@@ -627,7 +627,7 @@ impl Conductor {
         // A SEND_CAPABILITY that completed spent its delegation: its receiver may be waiting on the
         // record to judge the fill. (Gated on the slot holding an endpoint: `SEND_CAPABILITY` and
         // `RETYPE_OBJECT` share the number 2.)
-        if call.number == abi::SYS_INVOKE
+        if call.number == abi::SYSCALL_INVOKE
             && call.words[1] == proto::SEND_CAPABILITY
             && matches!(self.held(x, call), Some(Object::Rendezvous(..)))
             && (call.rets[0] as i64) >= 0
@@ -660,7 +660,7 @@ impl Conductor {
 
     /// Was this call a `RECEIVE_CAPABILITY` on an endpoint, the one call whose fills are deliveries?
     fn was_receive_capability(&self, x: usize, call: &Call) -> bool {
-        call.number == abi::SYS_INVOKE
+        call.number == abi::SYSCALL_INVOKE
             && call.words[1] == proto::RECEIVE_CAPABILITY
             && matches!(self.held(x, call), Some(Object::Rendezvous(..)))
     }
@@ -676,7 +676,7 @@ impl Conductor {
         obj: Object,
         rights: u32,
     ) -> bool {
-        if call.number != abi::SYS_INVOKE {
+        if call.number != abi::SYSCALL_INVOKE {
             return false;
         }
         match self.held(x, call) {
@@ -754,7 +754,7 @@ impl Conductor {
     /// lies is the caller's check.
     fn process_retype_is_lawful(&self, x: usize, call: &Call, now: &Snap, rights: u32) -> bool {
         if call.words[1] != abi::memory_region::RETYPE_OBJECT
-            || call.words[2] != abi::objtype::PROCESS
+            || call.words[2] != abi::object_type::PROCESS
         {
             return false;
         }
@@ -1084,7 +1084,7 @@ impl Conductor {
         let (_, Some(Wait::Rendezvous(_, WaitRole::Sender))) = disposition(self, x)? else {
             return None;
         };
-        if report_word(self, x, report::NUMBER) != abi::SYS_INVOKE {
+        if report_word(self, x, report::NUMBER) != abi::SYSCALL_INVOKE {
             return None;
         }
         if report_word(self, x, report::ARGS + 1) != proto::SEND_CAPABILITY {
@@ -1467,7 +1467,7 @@ fn own_snapshot() -> Snap {
 }
 
 /// One `MemoryRegion::RETYPE_OBJECT` through the real syscall entry, as the test thread.
-fn retype_obj(region_slot: u64, kind: u64, space_slot: u64, floor: u64) -> u64 {
+fn retype_into_kernel_object(region_slot: u64, kind: u64, space_slot: u64, floor: u64) -> u64 {
     use crate::arch::exceptions::TrapFrame;
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     let slot = crate::syscall::invoke(
@@ -1485,7 +1485,7 @@ fn retype_obj(region_slot: u64, kind: u64, space_slot: u64, floor: u64) -> u64 {
 /// The `RETYPE_OBJECT` call the conductor reads back from a fuzzer's report page.
 fn retype_call(region_slot: u64, kind: u64, space_slot: u64, floor: u64, slot: u64) -> Call {
     Call {
-        number: abi::SYS_INVOKE,
+        number: abi::SYSCALL_INVOKE,
         words: [
             region_slot,
             abi::memory_region::RETYPE_OBJECT,
@@ -1511,6 +1511,7 @@ fn retype_call(region_slot: u64, kind: u64, space_slot: u64, floor: u64, slot: u
 /// Falsification: replayable `system_tests/falsifications/user.confined_fuzzer_tests.the_oracle_accepts_a_process_retyped_from_the_callers_own_region.patch`
 #[test_case]
 fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
+    use abi::object_type::{ADDRESS_SPACE, PROCESS, RENDEZVOUS};
     let region = crate::memory_region::create(32).expect("no region");
     let other = crate::memory_region::create(32).expect("no second region");
     let r = sched::grant(memory_region_capability_rights(region, Rights::ALL))
@@ -1522,12 +1523,12 @@ fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
     };
 
     // The process is filed above the space's slot, which is deleted.
-    let space = retype_obj(r, abi::objtype::ADDRESS_SPACE, 0, 0);
+    let space = retype_into_kernel_object(r, ADDRESS_SPACE, 0, 0);
     let before = own_snapshot();
     let floor = space + 4;
-    let high = retype_obj(r, abi::objtype::PROCESS, space, floor);
+    let high = retype_into_kernel_object(r, PROCESS, space, floor);
     let after = own_snapshot();
-    let call = retype_call(r, abi::objtype::PROCESS, space, floor, high);
+    let call = retype_call(r, PROCESS, space, floor, high);
     assert!(
         after[space as usize].is_none(),
         "the space was not consumed"
@@ -1551,7 +1552,7 @@ fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
             "a slot that held no address space was taken as the space"
         );
         let mut wrong_kind = call;
-        wrong_kind.words[2] = abi::objtype::RENDEZVOUS;
+        wrong_kind.words[2] = RENDEZVOUS;
         assert!(
             !c.justify_fill(A, &wrong_kind, &after, process, rights),
             "a process was accepted from a retype of another kind"
@@ -1579,12 +1580,12 @@ fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
     }
 
     // The process is filed in the very slot the space was deleted from.
-    let space = retype_obj(r, abi::objtype::ADDRESS_SPACE, 0, 0);
+    let space = retype_into_kernel_object(r, ADDRESS_SPACE, 0, 0);
     let before = own_snapshot();
-    let same = retype_obj(r, abi::objtype::PROCESS, space, space);
+    let same = retype_into_kernel_object(r, PROCESS, space, space);
     let after = own_snapshot();
     assert_eq!(same, space, "the process was not filed in the freed slot");
-    let call = retype_call(r, abi::objtype::PROCESS, space, space, same);
+    let call = retype_call(r, PROCESS, space, space, same);
     {
         let mut c = CONDUCTOR.lock();
         reach(&mut c, &before);
@@ -1592,17 +1593,11 @@ fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
     }
 
     // A process whose page lies in another region than the one the call invoked.
-    let foreign_space = retype_obj(r2, abi::objtype::ADDRESS_SPACE, 0, 0);
+    let foreign_space = retype_into_kernel_object(r2, ADDRESS_SPACE, 0, 0);
     let before = own_snapshot();
-    let foreign = retype_obj(r2, abi::objtype::PROCESS, foreign_space, foreign_space + 4);
+    let foreign = retype_into_kernel_object(r2, PROCESS, foreign_space, foreign_space + 4);
     let after = own_snapshot();
-    let call = retype_call(
-        r,
-        abi::objtype::PROCESS,
-        foreign_space,
-        foreign_space + 4,
-        foreign,
-    );
+    let call = retype_call(r, PROCESS, foreign_space, foreign_space + 4, foreign);
     {
         let mut c = CONDUCTOR.lock();
         reach(&mut c, &before);

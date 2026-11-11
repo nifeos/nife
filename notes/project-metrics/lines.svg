@@ -94,12 +94,12 @@
 <path class="seg s3" d="M567.5,123.8 V62.8 Q567.5,58.8 571.5,58.8 H593.3 Q597.3,58.8 597.3,62.8 V123.8 Z"><title>2026W45, other comments: 97.8</title></path>
 <text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W45</text>
 <text class="fg val" x="582.4" y="53.8" font-size="10" text-anchor="middle">398.8</text>
-<rect class="seg s0" x="612.6" y="293.3" width="29.8" height="30.7"><title>2026W46, kernel/src code: 46.2</title></rect>
-<rect class="seg s1" x="612.6" y="277.3" width="29.8" height="15.9"><title>2026W46, kernel/src comments: 24.0</title></rect>
-<rect class="seg s2" x="612.6" y="128.9" width="29.8" height="148.4"><title>2026W46, other code: 223.2</title></rect>
-<path class="seg s3" d="M612.6,128.9 V69.8 Q612.6,65.8 616.6,65.8 H638.3 Q642.3,65.8 642.3,69.8 V128.9 Z"><title>2026W46, other comments: 94.9</title></path>
+<rect class="seg s0" x="612.6" y="292.9" width="29.8" height="31.1"><title>2026W46, kernel/src code: 46.7</title></rect>
+<rect class="seg s1" x="612.6" y="276.8" width="29.8" height="16.1"><title>2026W46, kernel/src comments: 24.2</title></rect>
+<rect class="seg s2" x="612.6" y="126.4" width="29.8" height="150.4"><title>2026W46, other code: 226.2</title></rect>
+<path class="seg s3" d="M612.6,126.4 V66.6 Q612.6,62.6 616.6,62.6 H638.3 Q642.3,62.6 642.3,66.6 V126.4 Z"><title>2026W46, other comments: 96.0</title></path>
 <text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W46</text>
-<text class="fg val" x="627.5" y="60.8" font-size="10" text-anchor="middle">388.2</text>
+<text class="fg val" x="627.5" y="57.6" font-size="10" text-anchor="middle">393.1</text>
 <rect class="s3" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">other comments</tspan></text>
 <rect class="s2" x="672" y="83" width="11" height="11" rx="2"/>

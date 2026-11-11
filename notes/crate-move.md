@@ -210,10 +210,16 @@ harness's comment, where the template reads it, so those records pass `falsify.p
 
       Afterwards `script/fuzz --list` names none of them.
     - citations into `crates/<crate>/src`, which repoint to the repository at the tag, by symbol.
+    - nothing, for a crate the `std` farm copies into its platform layer (`COPIED_FILES` in
+      `xtask/src/farm/copied.rs`, which the dry run lists because it names the package). The farm
+      finds each package's directory through `cargo metadata`, so it reads the moved crate from
+      Cargo's checkout of the pin, as long as a workspace member still depends on it; with none,
+      `cargo xtask std-src` stops and names the missing package. The stamp then hashes the files as
+      `<crate>/src/...` instead of `crates/<crate>/src/...`, so the farm rebuilds once.
 
     The crate's milestone block states the soak's state. Expected: `cargo tree --locked -i <crate>`
     prints the git source at `rev`, `git grep -n 'crates/<crate>' -- '*.toml'` prints nothing,
-    `script/lint` exits 0, and the merge queue lands it.
+    `cargo xtask std-src` exits 0, `script/lint` exits 0, and the merge queue lands it.
 15. Bump basalt's pin (lane, a separate pull request in `nifeos/basalt`). It cites the landed
     commit as `nifeos/nife@<sha>` and names the nife pull request it waits for.
 
@@ -292,13 +298,6 @@ publishes.
   and no locations, so the lines cannot be written mechanically. The crate repository's first
   `weekly / mutation` run fails on each survivor and names it; the move lane lists them in one pull
   request there. The dry run does not run cargo-mutants.
-- The `std` farm copies contract sources by path. `xtask/src/farm/generate.rs` writes
-  `crates/<crate>/src/lib.rs` verbatim into the `std-nife` platform layer, and
-  `xtask/src/farm/stamp.rs` rebuilds the farm when that file changes, for 13 crates of
-  milestone 1017 (the contract crates leave in this order), `socket_contract`, `clock_contract` and `entropy_contract` among them. Once a
-  crate leaves, that path is gone and the farm build fails. Both must read the pinned checkout's
-  source, which `cargo metadata` names, before the first of these crates moves. The dry run lists
-  both files among those that name the crate, and does not say that the build breaks.
 - The dry run's nife check skips a word joined to another by an underscore, so it passes an
   identifier such as `NIFE_DATA` that `helpers/lint_externalized_crates.py` reports. Read that
   lint's count for the crate as well.

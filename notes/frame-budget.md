@@ -32,6 +32,14 @@ Measured conclusions, undated; each row's number is the reading that established
   bytes, four scratch pages per spawned client role.
 - The `e1000e` DMA region: 18 pages and its domain's four page tables, held for the boot and
   reused by every later wiring.
+- Four block servers, one each from
+  `a_full_directory_capability_does_everything_inside_and_nothing_outside`,
+  `the_disk_surveyor_reads_a_table_gptfdisk_wrote`,
+  `the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else` and
+  `a_kill_mid_transaction_leaves_the_filesystem_consistent`, kept for the rest of the boot. They
+  are why `block_driver`'s image size moves this number: each page it grows keeps four frames.
+  Handing these servers back when their tests end would take that out of the ledger, and is the
+  lead to follow before the next raise for it.
 
 ## The conventions every change to the number follows
 
@@ -48,9 +56,10 @@ Measured conclusions, undated; each row's number is the reading that established
 Part of the residue is program image size, not any test's memory. Each of `c_seam_tests`' three
 confiner spawns keeps a space sized by `c_confiner`'s loadable segments, 15 pages in a debug build.
 Spaces that map the whole initial ramdisk keep revocation-log pages sized by it, so a larger archive
-moves this number too. A change that grows a program can therefore move it by a few frames with no
-leak behind it; the `[that test kept N frames]` lines and the programs' segment pages tell the two
-apart.
+moves this number too. The four block servers above keep a space sized by `block_driver`'s
+segments, 14 pages in a debug build. A change that grows a program can therefore move it by a few
+frames with no leak behind it; the `[that test kept N frames]` lines and the programs' segment
+pages tell the two apart.
 
 ## Every number it has been
 
@@ -89,3 +98,4 @@ apart.
 | 2026-10-28 | 24,528 (aarch64) | 24,560 | milestone 933 (every job is built the way a supervised job is): the test progenitor supervises a scripted shell's held jobs and cannot reap the corpses, 157 frames; riscv64 unmeasured |
 | 2026-10-24 | 24,325 / 24,339 | 24,371 | nightly-2026-10-23, no tree change: rust-lang/rust#162535 has `derive(Debug)` on a fieldless enum call `Formatter::debug_c_like_enum_write_str`, whose `names[start..]`, `split(' ')` and `unwrap()` link `core`'s string-slice panic path, `<char as Debug>` and the unicode tables, about 7.5 KiB per program. 17 programs grow 1 to 3 loadable pages on each path (31 pages aarch64, 30 riscv64); `c_confiner`, `root_supervisor`, `swish` and `login` are the ones kept spaces hold. The same tree on nightly-2026-10-22 measured 24,312 / 24,317. Both paths measured locally |
 | 2026-11-10 | 24,648 / 24,636 | 24,680 | the startup page: every space the kernel loads holds the page and its two tables, three frames, and each kept space keeps them. Both paths measured locally |
+| 2026-11-11 | 24,774 / 24,727 | 24,806 | milestone 1062 (the device control planes leave the kernel) step 7, the direct virtio transport: `block_driver`'s debug image grows from 8 loadable pages to 14 (text 6 to 10, read-only data 2 to 3, and a new `.bss` page for the transport's statics), and each of the four block servers the suite keeps holds 6 frames more. The PCI write test keeps 5 fewer, because the direct grant reuses the function's region and domain. The direct grant costs nothing at run time: the same tree with the PCI disk forced back to the mediated grant kept 24,775. Measured on the merged tree locally, both paths; aarch64 is the tighter |

@@ -58,7 +58,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  notes/mmu.md | aarch64 kill report prints neither the live root nor a walk, and should before the next sighting | Print root and walk in the aarch64 kill report | S  |
 |  notes/overflow-checks.md | `rendezvous_of` and riscv64/x86_64 `phys_to_virt` callers carry an add check where a range check is what matters | Range-check phys_to_virt callers | S  |
 |  notes/page-frame-slice.md | progenitor is not told when a job dies, so a window is reused after seven grants regardless of holders | Tell the progenitor when a job exits | M  |
-|  notes/processes.md | exit codes not carried; `SYS_EXIT` code discarded | Carry exit codes | M  |
+|  notes/processes.md | exit codes not carried; `SYSCALL_EXIT` code discarded | Carry exit codes | M  |
 |  notes/processes.md | TCB page of an ended thread is never reused (one heap page per thread ever spawned) | Reuse the ended thread's TCB page | M  |
 |  notes/riscv-tlb-shootdown.md (share_kernel_half bullet) | `share_kernel_half` copies top-level entries once; a later new top-level kernel mapping would be invisible to older spaces, and nothing asserts it cannot happen | Assert (or propagate) late kernel top-level entries across address spaces | S  |
 |  notes/stack/progenitor-stack.md (cap-slot gauge, incident-table bullets) | Capability-slot gauge lacks the x86_64 yield trigger; the appendix is not a row in `notes/stack.md`'s table | Give the cap-slot gauge x86_64 parity; add the incident row | S  |

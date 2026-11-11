@@ -132,7 +132,7 @@ in §255 (each socket is its own capability).
 
 `LIST` answers one entry per call because the space's mapping log is held only long enough to read
 one row, never for the whole walk. It reuses `survey::DONE`, because "no more entries" means the same
-on both objects, and it reuses `MAP_RO`, `MAP_RW` and `MAP_CODE` for `kind`, because read back they
+on both objects, and it reuses `MAP_READ_ONLY`, `MAP_READ_WRITE` and `MAP_CODE` for `kind`, because read back they
 are the same fact about the same page. The listing does not tell device memory from ordinary data.
 
 A cursor the space's own log never minted answers `BadPointer` rather than `DONE`, under the 2026-10-06 addendum to §114 (`ENUMERATE` extends to the
@@ -170,7 +170,7 @@ A thread blocked in IPC when it is suspended stays in that IPC. Its rendezvous m
 and a `RESUME` lets it return what it was given.
 
 A process's supervision slot is the process's. The first member's `START` takes the reserved
-`FAULT_EP_SLOT` out of the shared table, and the process's death is reported there whichever thread
+`FAULT_RENDEZVOUS_SLOT` out of the shared table, and the process's death is reported there whichever thread
 ends it; a member started later finds the slot empty. A process ends when a member calls `exit` or
 faults, when its last running member calls `exit_thread`, when `Process::DESTROY` is invoked or when
 its region is destroyed. Every other member ends with it, and no thread may join or start in it

@@ -231,7 +231,7 @@ impl Pool {
         }
         // Quiet the device and re-enable the line even on the path that never waited: the device
         // raised its line when it completed and the kernel masked it, and a line left masked is one
-        // the *next* holder of a shared intid never hears from. `interrupt::ACK` is
+        // the *next* holder of a shared intid never hears from. `interrupt::ACKNOWLEDGE` is
         // `arch::interrupt_controller::enable`, which is idempotent, so this is safe when nothing
         // fired.
         self.quiet();

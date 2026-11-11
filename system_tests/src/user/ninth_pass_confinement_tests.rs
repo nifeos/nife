@@ -33,7 +33,7 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 /// lives under).
 ///
 /// A `PageFrame` from a `Rights::ALL` budget carries `GRANT`, so one `SLICE` succeeds (the positive
-/// control). Deleted on the `SYS_CAPABILITY_DELETE` path, the same slot answers `NoSuchSlot`. Unlike
+/// control). Deleted on the `SYSCALL_CAPABILITY_DELETE` path, the same slot answers `NoSuchSlot`. Unlike
 /// `revocation_in_flight_tests`, which attack the hand-off slot, this drives plain `capability_delete`.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it
