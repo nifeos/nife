@@ -23,6 +23,8 @@ a page of zeroes, which reads as `None`; a page never carries a fabricated defau
   crystal and far below the slowest real counter) and `MAXIMUM_PLAUSIBLE_HERTZ` (100 GHz). The band
   exists to catch nonsense, not to police hardware, and `is_plausible(hertz)` is its one definition, so
   each architecture's boot path calls the same check.
+- The identity is frozen: the magic `TIMEBAS1`, `VERSION` 1, `INTERFACE_ID` 9, the 16-byte layout
+  above and both fixed addresses. A layout break ships as a new magic and version together.
 
 ## EXAMPLES
 

@@ -77,7 +77,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`designware_mobile_storage`](crate-reviews/designware-mobile-storage.md) | 8 | cleared to move; repository exists |
 | [`jh7110_clock_and_reset`](crate-reviews/jh7110-clock-and-reset.md) | 10 | blocked by the unrun bench check |
 | [`block_roster_contract`](crate-reviews/block-roster-contract.md) | contract | ready for review |
-| [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | blocked by its identity value and three text edits |
+| [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | blocked by three text edits |
 | [`entropy_contract`](crate-reviews/entropy-contract.md) | contract | cleared to move |
 | [`clock_contract`](crate-reviews/clock-contract.md) | contract | identity and overlay names for the architect |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | identity, scope, names |

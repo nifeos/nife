@@ -3,6 +3,15 @@
 //! once before mapping it read-only into every process, so no seqlock is needed; a child space's
 //! page is written by its parent, and an unknown rate is zeroes, read as `None`. This crate is the
 //! page's one definition for every writer and reader.
+//!
+//! # Identity
+//!
+//! The page's identity is frozen: [`MAGIC`] is the bytes `TIMEBAS1`, [`VERSION`] is 1 and
+//! [`INTERFACE_ID`] is 9. So is its layout: [`PAGE_CONTENT_BYTES`] is 16, the magic at offset 0
+//! and the rate as a little-endian `u64` at offset 8, at [`PAGE_VIRTUAL_ADDRESS`]
+//! `0x0000_7000_0000_0000` on `x86_64` and `0x0000_0038_0000_0000` on `riscv64`. The id stays 9 for
+//! good. A layout break ships as a new magic and a new version together, never a new id, and a
+//! retired value is never reused.
 
 //! # BUGS
 //!
@@ -299,5 +308,23 @@ mod tests {
         assert_eq!(OFF_HERTZ, 8);
         assert_eq!(PAGE_CONTENT_BYTES, 16);
         assert!(PAGE_CONTENT_BYTES < 4096, "the page must fit in one frame");
+    }
+
+    /// The frozen identity, spelled out as literals so that no edit to a constant passes unseen:
+    /// the magic as the bytes a page carries, the version, the id, and the rate's offset and byte
+    /// order in a built page. The `x86_64` address is the arm the host build takes.
+    #[test]
+    fn the_identity_keeps_its_frozen_values() {
+        assert_eq!(MAGIC, *b"TIMEBAS1");
+        assert_eq!(VERSION, 1);
+        assert_eq!(INTERFACE_ID, 9);
+        assert_eq!(PAGE_CONTENT_BYTES, 16);
+        let page = build_page(0x0102_0304_0506_0708);
+        assert_eq!(&page[..8], b"TIMEBAS1");
+        assert_eq!(page[8..], [8, 7, 6, 5, 4, 3, 2, 1]);
+        #[cfg(not(target_arch = "riscv64"))]
+        assert_eq!(PAGE_VIRTUAL_ADDRESS, 0x0000_7000_0000_0000);
+        #[cfg(target_arch = "riscv64")]
+        assert_eq!(PAGE_VIRTUAL_ADDRESS, 0x0000_0038_0000_0000);
     }
 }
