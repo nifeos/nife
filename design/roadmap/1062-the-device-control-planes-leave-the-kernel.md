@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-10
 milestone_dependencies: 811
 decision_dependencies: 4, 23, 86, 130, 251, 320
@@ -278,6 +278,14 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
    is a finding.
 5. A virtio-pci driver runs on either grant, each starter grants as the default above states, and
    CI runs the direct and the mediated path on all three architectures.
+
+## Follow-on
+
+- **Done.** Step 2: the clock and reset server, its wire and its device table, and the kernel's
+  entropy, Ethernet and SD/MMC starters calling it with their device's badge. What only radon
+  proves is the bench run in `notes/jh7110-clock-and-reset.md`.
+- **Outstanding.** Steps 1 and 3 to 7, each its own pull request, in the order "The work, in
+  order" gives and waiting on what each step there names.
 
 ## Index row
 
