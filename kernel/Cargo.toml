@@ -172,7 +172,7 @@ pci = { version = "0.1.0", path = "../crates/pci" }
 # The `e1000e` NIC family's register map, descriptors and ring logic (milestone 494 (a driver for the
 # network card a PC actually has)): the kernel resets the device and programs the rings' bases from
 # it. The `Handoff` it gives `net_stack` is `driver_process_contract`'s. Same split as `pci` above.
-e1000e = { version = "0.1.0", git = "https://github.com/nifeos/e1000e", rev = "40c1ec9c7e73e5099661636c046773dfcaecbb6d" }
+e1000e = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/e1000e", rev = "ef01cefa9a186db7f1c9802e78d8c6c1215db7ec" }
 # The JH7110's Ethernet controller (milestone 53 (the board's own peripherals: network and storage
 # on real silicon)): register map, descriptors, ring logic, the bring-up and PHY sequences and the
 # coherence probe, all host-tested. `kernel/src/designware_ethernet.rs` is its volatile half, the
@@ -182,7 +182,7 @@ designware_ethernet = { version = "0.1.0", path = "../crates/designware_ethernet
 # driver is mapped and the handoff it is spawned with. The kernel's extensible_host_controller_interface
 # module is its volatile half, the same split as `pci` above. The window, the
 # handoff and the driver's bring-up report are `driver_process_contract`'s.
-extensible_host_controller_interface = { version = "0.1.0", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "bea025706ab4837cf541bf93c436ff4e1057922a" }
+extensible_host_controller_interface = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "2394d80d83ca59d1aadf925274b34a30bfbd92b2" }
 elf = { version = "0.1.0", path = "../crates/elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
 intrusive_queue = { version = "0.1.0", path = "../crates/intrusive_queue" }
@@ -216,7 +216,7 @@ memory_regions = { version = "0.1.0", path = "../crates/memory_regions" }
 # *grants* a net server its listen ports, so it packs the grant with the same `listen_grant` the
 # server checks against rather than open-coding the layout of a word two programs must agree on.
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
-generational_table = { version = "0.1.0", git = "https://github.com/nifeos/generational_table", rev = "b68ae45602813ad5487521fc03515fea4f8d2631" }
+generational_table = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/generational_table", rev = "4fb6bb7cb0f465e43f90935c611d8c1626d23d67" }
 # The lock under `InterruptSafeMutex`: an Acquire compare-exchange and a Release store, written in
 # the
 # tree so loom can check them, the fourth retrofit of work_steal_slot's move. Its `unsafe` and what
