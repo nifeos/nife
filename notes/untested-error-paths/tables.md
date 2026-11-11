@@ -1,5 +1,7 @@
 # The error paths no test reaches: the tables
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 Appendix to [untested-error-paths.md](../untested-error-paths.md), generated 2026-10-04 (UTC) by
 `helpers/error_paths.py` from the coverage report of merge-queue run 37167533332 at base
 `1a145fcaa`. Regenerate rather than edit: the EXAMPLES section of the note has the commands.

@@ -1,5 +1,7 @@
 # Function length
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *(Appendix of [the register](../register-of-measures.md). Stem provisional, minted by milestone 888
 (a ratchet on function length) on 2026-10-11 (UTC).)*
 

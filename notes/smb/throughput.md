@@ -1,5 +1,7 @@
 # Throughput: the 64 KiB transfer, and where the rest of it went (2026-08-19)
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/smb.md](../smb.md), which keeps the one number that survives. The code it
 describes was removed on 2026-08-30; read every present tense as "as of `685900ec`".
 

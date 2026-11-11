@@ -1,5 +1,7 @@
 # Packages over the internet: the index, a host name and HTTPS
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 The appendix to [notes/packages.md](../packages.md) for milestone 801 (packages over the internet),
 rung 3c of milestone 198 (a package manager). Built 2026-10-09 (UTC) by lane
 `milestone/801-packages-over-the-internet`, under QEMU only. The exit criterion is xenon's installed

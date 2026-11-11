@@ -1,5 +1,7 @@
 # The terminal's input path, and how text on a screen is proved
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/glyphs.md](../glyphs.md), which keeps the design in summary. This file holds
 why the terminal has one endpoint, the deadlock that shaped its input path, and the three-witness
 proof of text on the screen with its ordering and keystroke details.

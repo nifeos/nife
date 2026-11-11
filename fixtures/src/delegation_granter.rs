@@ -8,11 +8,11 @@
 //! The other half is `delegation_receiver`; the wiring and the assertions are
 //! `system_tests/src/user/delegation_service.rs` and `kernel::user::tests`.
 //!
-//! Name: provisional (milestone 291). This was `hello`'s `GRANTER` role, number 9. Qualified with
-//! `delegation_` because `granter` alone is one of AGENTS.md's generic words: half this system
-//! grants something to something. Refused `capability_granter`: every capability in this tree is a
-//! capability, so the word distinguishes nothing, where `delegation` names the specific act
-//! (`SEND_CAPABILITY` over a channel) this program exists to perform.
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). This was `hello`'s `GRANTER` role.
+//! Qualified with `delegation_` because `granter` alone is one of AGENTS.md's generic words: half
+//! this system grants something to something. Refused `capability_granter`: every capability in this
+//! tree is a capability, so the word distinguishes nothing, where `delegation` names the specific
+//! act (`SEND_CAPABILITY` over a channel) this program exists to perform.
 
 #![no_std]
 // Program entry points, not the crates/ library surface milestone 68's ratchet tracks

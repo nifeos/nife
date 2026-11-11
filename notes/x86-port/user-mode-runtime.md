@@ -1,5 +1,7 @@
 # The x86_64 port: `user_mode_runtime` and the cycle counter
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
 the ring-3 syscall stubs, why `rdtsc` is ambient here, the `CR4.PCE` door, and `cntfrq()`. It exists
 to verify or challenge the main page. A reader who only needs to build, boot or test the x86_64 port

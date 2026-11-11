@@ -30,7 +30,7 @@
 //! pages they used between them, and the window's own size, so the kernel's test can check the run
 //! went round the window more than once without knowing this crate's numbers.
 //!
-//! Name: provisional (milestone 604).
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2).
 
 #![no_std]
 // Program entry points, not the crates/ library surface the ratchet of milestone 68 (code-quality

@@ -54,7 +54,8 @@
 //! - **The name says less than the program does**: it witnesses three unreachable authorities, not
 //!   one. Renaming is an architect's call.
 //!
-//! Name: provisional. Introduced 2026-09-24 for milestone 590, after `unwritable_clock_witness`.
+//! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). Formed after
+//! `unwritable_clock_witness`.
 
 #![no_std]
 #![allow(missing_docs)]
