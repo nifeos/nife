@@ -334,13 +334,8 @@ const PAGE_FRAME_REPORT_MINIMUM: usize = 16;
 /// stay. The production path does not leak them, because the shell's `DESTROY` of the job's region
 /// takes the corpse with it (`script/swish-check`'s hundred-cycle line). Every space the kernel
 /// loads also holds its startup page and that page's two tables (`user::loader`'s
-/// `STARTUP_PAGE_COST`), so each space the suite keeps keeps three frames more.
-///
-/// The NVMe disk is wired once per boot (`non_volatile_memory_express_service`'s `WIRED`) as two
-/// processes: the admin process stays to answer `RETIRE`, and the data plane maps its grants into
-/// a space of its own. So the suite keeps the admin process's space, image, stacks and startup page,
-/// and the data plane's page-table room, for the boot: 24,752 frames measured on aarch64 and 24,715
-/// on riscv64.
+/// `STARTUP_PAGE_COST`), so each space the suite keeps keeps three frames more. The NVMe admin
+/// process stays for the boot too (notes/frames/page-frame-budget.md).
 const SUITE_PAGE_FRAME_BUDGET: usize = 24_760;
 
 /// **The longest run of free frames the boot must still have at the end**, in frames.
