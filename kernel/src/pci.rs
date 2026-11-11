@@ -465,7 +465,7 @@ pub(crate) fn find_rng_device() -> Option<PciVirtioDevice> {
 /// How many modern virtio-blk functions are on the bus (milestone 57's roster).
 ///
 /// Reads config space and nothing else: bring-up sizes BARs and enables decoding, which would
-/// disturb whichever driver owns the function (`crates/block_roster_contract`).
+/// disturb whichever driver owns the function (`block_roster_contract`).
 pub fn count_block_devices() -> usize {
     if !is_host_bridge_present() {
         return 0;

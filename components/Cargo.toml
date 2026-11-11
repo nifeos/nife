@@ -658,7 +658,7 @@ http_response = { version = "0.1.0", path = "../crates/http_response" }
 domain_name_system = { version = "0.1.0", path = "../crates/domain_name_system" }
 # The name resolver's contract with its clients and its spawner (milestone 384, provisional name).
 domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_name_resolution_contract" }
-block_roster_contract = { version = "0.1.0", path = "../crates/block_roster_contract" }
+block_roster_contract = { version = "0.1.0", git = "https://github.com/nifeos/block_roster_contract", rev = "47ac5a9a843f8d23e6fe4f59c3225c50ebddcd2d" }
 globally_unique_identifier_partition_table = { version = "0.1.0", path = "../crates/globally_unique_identifier_partition_table" }
 # RFC 9562's UUID: what `uuid` prints and what `disk_partitioner` and `system_installer` stamp
 # before the partition table stores it mixed-endian. Taken, not written: calef's "A" on #2548

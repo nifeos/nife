@@ -13,8 +13,6 @@ approval_file prose_acronyms 3
 base_digest_contract register_names 1
 bitmap_font abbreviations 15
 bitmap_font prose_acronyms 1
-block_roster_contract abbreviations 3
-block_roster_contract prose_acronyms 3
 boot_slot abbreviations 8
 boot_slot prose_acronyms 5
 boot_slot readme_acronyms 1

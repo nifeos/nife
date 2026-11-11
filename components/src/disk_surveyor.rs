@@ -257,7 +257,7 @@ fn survey() -> ! {
 
     // How big is the disk? This is the question only a *holder* can ask: the roster deliberately
     // carries no capacity, because a size is a fact about the device rather than about the machine
-    // having one (crates/block_roster_contract).
+    // having one (`block_roster_contract`).
     let size = call(BLK, req(blk::SIZE), 0).0 as i64;
     if size > 0 && (size as u64).is_multiple_of(LBA) {
         flags |= F_SIZE;
