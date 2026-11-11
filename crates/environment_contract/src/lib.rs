@@ -540,7 +540,7 @@ mod tests {
     /// A page with a recognized magic but a length byte past its field reads that field as
     /// absent, for every field and every oversized length, without a panic. `TERM` is the last
     /// field, so a length of 255 there runs off the end of the page, and a length one past a
-    /// field's cap in `TZ` or `LANG` would otherwise read into the next field.
+    /// field's cap in the time zone or locale field would otherwise read into the next field.
     #[test]
     fn a_length_past_its_field_reads_that_field_as_absent() {
         let fields = [
@@ -574,12 +574,12 @@ mod tests {
     }
 
     /// A zero length byte after the magic reads as absent: an assembler that wrote the magic but
-    /// never declared TZ.
+    /// never declared the time zone.
     #[test]
     fn a_page_with_a_zero_length_after_the_magic_reads_that_field_as_absent() {
         let mut bytes = PageBuilder::new().tz("UTC").unwrap().build();
         // Corrupt the length byte to zero after building, simulating an assembler that wrote
-        // the magic but never declared TZ.
+        // the magic but never declared the time zone.
         bytes[OFF_TZ_LEN] = 0;
         with_page(&bytes, |page| {
             assert_eq!(page.tz(), None);
