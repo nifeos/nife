@@ -552,10 +552,27 @@ fn uefi_screen_showed_the_tour(screen: &ScreenReadings, shot: &Path) -> bool {
     ok
 }
 
-/// **The screen's last two readings, the shell's prompt and its answer to a serial command**,
-/// reported; false when either never reached the screen.
+/// **The screen's last three readings, the self-test verdict, the shell's prompt and its answer to
+/// a serial command**, reported; false when any never reached the screen.
 fn uefi_screen_showed_the_shell(screen: &ScreenReadings, shot: &Path) -> bool {
     let mut ok = true;
+    match &screen.verdict {
+        Some(text) => {
+            if let Some(line) = text.lines().find(|l| l.contains(boot_ladder::SELF_TEST)) {
+                eprintln!("uefi-boot: the self-test verdict is on the shell's screen:");
+                eprintln!("uefi-boot:   | {line}");
+            }
+        }
+        None => {
+            eprintln!(
+                "uefi-boot: the self-test verdict (`{}`) never reached the shell's screen. Last \
+                 dump: {}",
+                boot_ladder::SELF_TEST,
+                shot.display()
+            );
+            ok = false;
+        }
+    }
     match (&screen.prompt, &screen.answer) {
         (Some(_), Some(text)) => {
             eprintln!(
@@ -590,15 +607,17 @@ fn uefi_screen_showed_the_shell(screen: &ScreenReadings, shot: &Path) -> bool {
     ok
 }
 
-/// The line the screen has to be showing for milestone 243 (a machine with no serial port) to have
-/// worked: the self-test verdict, about twenty lines above the handover, at the tour's tail.
+/// The line the held screen has to be showing for milestone 243 (a machine with no serial port) to
+/// have worked: the kernel's last tour line, just above the handover, at the tour's tail.
 ///
 /// The tour is taller than OVMF's 1280x800 screen and scrolls, so the banner is gone by the
 /// handover; held by `console::hold_screen_for_host`, the tour's last page is deterministic. The
 /// screen proves the pixels (`LocateProtocol`, byte order, stride, the mapping surviving
-/// `mmu::initialize`, the glyphs), and any decoded row proves all five; the self-test itself is
-/// asserted on the serial transcript. See notes/x86-uefi-boot/running-under-firmware.md.
-const UEFI_SCREEN_MARKER: &str = boot_ladder::SELF_TEST;
+/// `mmu::initialize`, the glyphs), and any decoded row proves all five. Not the self-test verdict:
+/// `boot_self_test` prints it after the hand-over, once the screen is the shell's terminal, so it
+/// is read off the terminal ([`ScreenReadings::verdict`]). See
+/// notes/x86-uefi-boot/running-under-firmware.md.
+const UEFI_SCREEN_MARKER: &str = boot_ladder::TOUR;
 
 /// **The tour's first line, reported when the screen was tall enough to still be holding it.**
 ///
@@ -629,6 +648,10 @@ struct ScreenReadings {
     /// true, because that is the one case where the reader needs to see what WAS there: the boot
     /// was stopped, so this picture is the answer rather than a near miss.
     last_held: Option<String>,
+    /// The shell's terminal with the self-test verdict (`boot_ladder::SELF_TEST`) on it: the
+    /// progenitor prints the verdict to its console, which this screen shows once it is handed
+    /// over.
+    verdict: Option<String>,
     /// The shell's prompt, a row that starts `$ `.
     prompt: Option<String>,
     /// [`UEFI_SCREEN_ANSWER`] as a whole row, after [`UEFI_SCREEN_COMMAND`] was typed.
@@ -717,6 +740,9 @@ fn screen_watch(
         // The shell's half is drawn by `display_terminal`, in its own font, not the tour's.
         let shell = bytes.as_ref().and_then(|bytes| terminal_text(bytes));
         if let Some(shell) = &shell {
+            if seen.verdict.is_none() && shell.contains(boot_ladder::SELF_TEST) {
+                seen.verdict = Some(shell.clone());
+            }
             if seen.prompt.is_none() && shell.lines().any(|l| l.starts_with("$ ")) {
                 seen.prompt = Some(shell.clone());
             }
@@ -726,7 +752,9 @@ fn screen_watch(
             }
         }
         if let Some(text) = text {
-            if seen.held {
+            // Only until the release: a dump taken after it shows the shell's terminal in another
+            // font, which this decoder reads as noise.
+            if seen.held && !released {
                 if seen.tour.is_none() && text.contains(UEFI_SCREEN_MARKER) {
                     seen.tour = Some(text.clone());
                 }

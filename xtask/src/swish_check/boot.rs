@@ -880,17 +880,16 @@ impl Console {
     }
 }
 
-/// **What the checks read, which starts at the hand-over.** Every architecture runs its self-test
-/// before handing over, and its `userspace` check kills a program on purpose
-/// (`kernel_test_subject`, reading a kernel address); `x86_64`'s tour also kills two hand-built
-/// threads under supervision. Those are the kernel's fault path working, printed before any process
-/// this gate is about exists, so the fault check and the "was the kernel writing during the boot"
-/// test both start where the progenitor does. The cut is the same on all three, at the line
-/// `kernel/src/boot.rs`'s `hand_over` prints.
+/// **What the checks read, which starts at the hand-over**, less the self-test's deliberate
+/// kills. The kernel's half of the self-test runs before the hand-over, and `x86_64`'s tour kills
+/// two hand-built threads under supervision there; those are the kernel's fault path working,
+/// printed before any process this gate is about exists, so the fault check and the "was the kernel
+/// writing during the boot" test both start where the progenitor does. The cut is the same on all
+/// three, at the line `kernel/src/boot.rs`'s `hand_over` prints. `boot_self_test` runs after it and
+/// kills its subjects on purpose, so their reports come out by thread id
+/// ([`without_deliberate_kills`]); every other kill stays.
 fn after_hand_over(t: &str) -> String {
-    t.find(X86_HAND_OVER_START)
-        .map_or(t, |at| &t[at..])
-        .to_string()
+    without_deliberate_kills(t.find(X86_HAND_OVER_START).map_or(t, |at| &t[at..]))
 }
 
 /// **The progenitor's claims about its own boot**, each read from `now()`, the transcript after
@@ -1360,8 +1359,9 @@ fn resolver_refusal_failure(transcript: &str) -> Option<String> {
 /// of `KERNEL_FAULT_TOKENS`, the pair `kernel_wrote_during_boot` reads, since a fault during the
 /// boot is also what can shuffle a console line. A deliberate trap was measured against this
 /// check (milestone 230 (`script/shell-check` is red on `main`) named it); notes/swish-check-boot.md
-/// has the result, including the hang a trapped command leaves in the shell.
-fn kernel_fault_failure(transcript: &str) -> Option<String> {
+/// has the result, including the hang a trapped command leaves in the shell. The self-test's named
+/// subjects are already out of `transcript` ([`after_hand_over`]).
+pub(super) fn kernel_fault_failure(transcript: &str) -> Option<String> {
     let at = transcript.find(KERNEL_FAULT_TOKENS[0])?;
     if !transcript[at..].contains(KERNEL_FAULT_TOKENS[1]) {
         return None;

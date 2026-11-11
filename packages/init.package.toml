@@ -18,5 +18,6 @@ programs = [
     "swapper",
     "system_log",
     "reboot",
+    "boot_self_test",
 ]
 depends = ["timetable"]
