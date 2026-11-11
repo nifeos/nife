@@ -17,7 +17,7 @@ Reuse: `startup_page_contract::WindowKind` and the uniqueness test that `driver_
 
 ## The problem
 
-A window kind is a number that both the spawner and the component link, so the agreement is code (§311, a contract is code, not prose). Today `driver_process_contract` mints eleven kinds, 1 to 11, in one numbering space, and a test holds its eleven distinct from each other.
+A window kind is a number that both the spawner and the component link, so the agreement is code §311 (a contract is code, not prose). Today `driver_process_contract` mints eleven kinds, 1 to 11, in one numbering space, and a test holds its eleven distinct from each other.
 
 Milestone 1069 converts the remaining components, about 37 files in `components/src/`, from a literal address to `startup_page::window(KIND)`. Each needs kinds. The startup page contract's `BUGS` says each contract crate mints the kinds of the windows it describes and nothing checks numbers across crates. Two crates that each mint a kind 12 would compile, and would clash the first time one page lists both programs' windows, which is the case the page exists for.
 
