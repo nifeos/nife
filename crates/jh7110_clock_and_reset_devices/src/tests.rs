@@ -388,3 +388,136 @@ fn a_rate_is_refused_where_no_divider_reaches_it_or_no_rated_clock_exists() {
         Err(RateRefusal::NoRatedClock)
     );
 }
+
+#[test]
+fn each_domain_ends_where_its_last_word_does() {
+    // The reset status words end each domain: SYS has 190 clocks and 4 reset words, STG 29 and 1,
+    // the always-on domain 14 and 1.
+    assert_eq!(domain_end(&SYSTEM_TOP_GROUP), 0x7c);
+    assert_eq!(domain_end(&SYSTEM), 0x318);
+    assert_eq!(domain_end(&ALWAYS_ON), 0x40);
+    // Domains the chip does not have, where the clocks or the assert words end last instead.
+    let clocks_last = Domain {
+        reset_assert: 0x10,
+        reset_status: 0x14,
+        resets: 32,
+        clocks: 100,
+    };
+    assert_eq!(domain_end(&clocks_last), 0x190);
+    let asserts_last = Domain {
+        reset_assert: 0x100,
+        reset_status: 0x10,
+        resets: 32,
+        clocks: 1,
+    };
+    assert_eq!(domain_end(&asserts_last), 0x104);
+}
+
+/// The TRNG's one reset line, released before anything runs.
+fn released_entropy_reset(f: &mut Fake) {
+    let bit = SYSTEM_TOP_GROUP
+        .reset_bit(entropy_source().reset(0).unwrap().1)
+        .unwrap();
+    f.words[slot(WindowName::SystemTopGroup)][(bit.assert_offset / 4) as usize] &= !bit.mask;
+}
+
+#[test]
+fn a_device_is_already_up_only_when_its_clocks_and_its_resets_both_were() {
+    // Clocks gated, reset released.
+    let mut f = Fake::new();
+    released_entropy_reset(&mut f);
+    assert!(!entropy_source().bring_up(&mut f, 1).already_up);
+    // Clocks running, reset held.
+    let mut f = Fake::new();
+    entropy_source().bring_up(&mut f, 1);
+    let bit = SYSTEM_TOP_GROUP
+        .reset_bit(entropy_source().reset(0).unwrap().1)
+        .unwrap();
+    f.words[slot(WindowName::SystemTopGroup)][(bit.assert_offset / 4) as usize] |= bit.mask;
+    assert!(!entropy_source().bring_up(&mut f, 1).already_up);
+}
+
+/// The TRNG's first clock and its reset, as `jh7110_clock_and_reset` numbers them in the STG domain.
+const ENTROPY_CLOCK: u32 = 15;
+const ENTROPY_RESET: u32 = 3;
+
+#[test]
+fn a_plan_of_clocks_alone_or_resets_alone_can_be_already_up_and_an_empty_one_cannot() {
+    let (clock_window, clock) = entropy_source().clock(0).unwrap();
+    let (reset_window, reset) = entropy_source().reset(0).unwrap();
+    let clocks_alone = Device {
+        base_physical_address: 0,
+        parts: &[Part {
+            window: WindowName::SystemTopGroup,
+            plan: &[Step::EnableClock(ENTROPY_CLOCK)],
+        }],
+        rated_clock: None,
+    };
+    let resets_alone = Device {
+        base_physical_address: 0,
+        parts: &[Part {
+            window: WindowName::SystemTopGroup,
+            plan: &[Step::DeassertReset(ENTROPY_RESET)],
+        }],
+        rated_clock: None,
+    };
+    let nothing = Device {
+        base_physical_address: 0,
+        parts: &[],
+        rated_clock: None,
+    };
+    assert_eq!(
+        (clock_window, clock),
+        (WindowName::SystemTopGroup, ENTROPY_CLOCK)
+    );
+    assert_eq!(
+        (reset_window, reset),
+        (WindowName::SystemTopGroup, ENTROPY_RESET)
+    );
+    let mut f = Fake::new();
+    clocks_alone.bring_up(&mut f, 1);
+    assert!(clocks_alone.bring_up(&mut f, 1).already_up);
+    released_entropy_reset(&mut f);
+    assert!(resets_alone.bring_up(&mut f, 1).already_up);
+    assert!(!nothing.bring_up(&mut f, 1).already_up);
+}
+
+#[test]
+fn a_step_its_domain_rejects_is_counted_refused_and_never_stored() {
+    let bad = Device {
+        base_physical_address: 0,
+        parts: &[
+            Part {
+                window: WindowName::SystemTopGroup,
+                plan: &[
+                    Step::EnableClock(9_999),
+                    Step::SelectParent {
+                        clock: 9_999,
+                        parent: 1,
+                    },
+                    Step::DeassertReset(9_999),
+                ],
+            },
+            Part {
+                window: WindowName::SystemController,
+                plan: &[Step::EnableClock(0)],
+            },
+        ],
+        rated_clock: None,
+    };
+    let mut f = Fake::new();
+    let counts = bad.bring_up(&mut f, 1);
+    assert_eq!(counts.refused, 4);
+    assert_eq!(counts.clocks_in_plan + counts.resets_in_plan, 0);
+    assert!(f.writes().is_empty());
+}
+
+#[test]
+fn a_rate_exactly_the_slowest_divider_reaches_is_served() {
+    let mut f = radon_like();
+    let card = Device::at(0x1602_0000).unwrap();
+    // 594 megahertz over 15.
+    let rate = card.set_rate(&mut f, 39_600_000).unwrap();
+    assert_eq!(rate.hertz, 39_600_000);
+    assert_eq!(clock_divider(rate.after), 15);
+}
