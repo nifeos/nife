@@ -1186,6 +1186,14 @@ mod tests {
     //! right memory, and whether the frames it hands out are actually reachable. That is all these
     //! check.
 
+    /// The JH7110 Ethernet port's find half reports absence: every machine `script/test` boots is
+    /// QEMU's, whose tree names no such port (x86_64 reads no tree at all), so its starter has
+    /// nothing to confine and its control process is never spawned.
+    #[test_case]
+    fn no_machine_the_suite_boots_describes_a_jh7110_ethernet_port() {
+        assert!(crate::memory::jh7110_ethernet().is_none());
+    }
+
     /// Proves we read a plausible memory map out of the device tree.
     ///
     /// Not an exact size: QEMU's runner passes 256 MiB and the VisionFive 2's tree describes 4 GiB.

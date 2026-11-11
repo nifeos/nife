@@ -515,3 +515,24 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: Found) -> Wiring
         lease: 0,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    //! The starter's absence path, the one an emulator can reach: no controller in the tree.
+
+    use super::*;
+
+    /// With no port in the tree the starter answers `NoController`, keeps no report, and spawns
+    /// neither process. The image is never read on this path, so an empty one stands in.
+    #[test_case]
+    fn with_no_port_the_starter_refuses_before_spawning_anything() {
+        assert!(crate::memory::jh7110_ethernet().is_none());
+        assert!(matches!(
+            start_net_server(&[], socket_contract::NO_LISTEN_GRANT),
+            Err(NotStarted::Absent(Absent::NoController))
+        ));
+        assert!(last_report().is_none());
+        assert_eq!(CONTROL.load(Ordering::Acquire), u64::MAX);
+        assert_eq!(SERVER.load(Ordering::Acquire), u64::MAX);
+    }
+}
