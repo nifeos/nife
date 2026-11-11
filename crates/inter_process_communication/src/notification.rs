@@ -39,8 +39,7 @@ use intrusive_queue::{Node, Queue, Unqueued};
 /// assert_eq!(n.signal(0b01, false), Signal::Counted);
 /// assert_eq!(n.signal(0b10, false), Signal::Counted);
 ///
-/// // SAFETY: from the place of a live local declared before `n` and not named again; on no
-/// // queue, minted once.
+/// // SAFETY: from a live local's place, declared before `n`, not named again, on no queue.
 /// let token = unsafe { Unqueued::new(waiter) };
 ///
 /// // A wait takes the whole word and clears it, without blocking, and hands the token back.
