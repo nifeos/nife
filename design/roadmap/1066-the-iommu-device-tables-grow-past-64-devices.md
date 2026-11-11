@@ -16,8 +16,8 @@ IOMMU, and Kani proves these drivers, so no third-party crate applies.
 
 Ruled 2026-11-10 (UTC): the QEMU runners keep virtio-mmio, and §18 (the PCIe transport: one driver,
 two buses, the seam in the kernel)'s item 3 stands. A later move of the aarch64 and riscv64 runners
-to virtio-pci needs this milestone and milestone 1065 (several drivers share an interrupt line, or
-MSI replaces the lines) first.
+to virtio-pci needs this milestone and milestone 1065 (MSI replaces the interrupt lines on
+aarch64 and riscv64) first.
 
 ## Why it stands on its own
 

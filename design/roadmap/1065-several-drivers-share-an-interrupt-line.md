@@ -7,12 +7,12 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# 1065. Several drivers share an interrupt line, or MSI replaces the lines
+# 1065. MSI replaces the interrupt lines on aarch64 and riscv64
 
 *(The number, title and slug are provisional.)*
 
-Reuse: the kernel's own route table and the virtio drivers' wait loop for shared lines; the GICv2m,
-ITS and AIA register layouts from their specifications for MSI. No third-party crate fits a kernel
+Reuse: the kernel's own route table, and the GICv3 ITS and AIA register layouts from their
+specifications. No third-party crate fits a kernel
 interrupt route.
 
 Ruled 2026-11-10 (UTC): the QEMU runners keep virtio-mmio, and §18 (the PCIe transport: one driver,
@@ -46,53 +46,51 @@ aarch64 has no ITS driver, and riscv64 writes `msiptp` mode Off. No milestone ow
 interrupt remapping on. The runner move does not need it, since the kernel, not a driver, programs
 every MSI target today. 1064 does need it, and its block records that.
 
-## The two ways, and the fork
+## The rule
 
-1. **Shared lines.** An intid routes to a small set of rendezvous, and an interrupt wakes each.
-   The line stays masked until every bound driver has acknowledged it, since INTx is level
-   triggered. The virtio drivers' wait loop (wait, quiet the device, re-enable, let `used.idx`
-   decide, `notes/virtio.md`) already tolerates a spurious wake; NVMe, e1000e and xHCI need the
-   same check of their own completion state. This works on every board with INTx, argon's GIC-400
-   among them. Effort: M (a guess).
-2. **MSI.** aarch64: a GICv2m driver, which TCG with `gic-version=2` and HVF both offer
-   (`v2m@8020000`, `notes/machine-discovery.md`). Under TCG with `gic-version=3` an ITS driver
-   serves instead. A GICv2m frame does not identify the device that wrote it, so it confines
-   nothing; the ITS does. riscv64: the AIA (APLIC and IMSIC, `-machine virt,aia=aplic-imsic`),
-   which replaces the PLIC path. Milestone 143 (silicon IOMMU) already lists that driver, because
-   an RVA23 part does not speak PLIC. Effort: M for GICv2m, L to XL for the AIA (guesses).
+Ruled 2026-11-11 (UTC): MSI replaces the interrupt lines, and the work is built so it does not
+duplicate milestone 1068 (the kernel turns interrupt remapping on where an IOMMU offers it).
 
-The sizing recommends shared lines first. It is the smaller change, it serves every board with
-INTx, and MSI without remapping on aarch64 confines no interrupt anyway. Part of that
-recommendation is about effort. If both cost the same, MSI is the end state for PCI hardware: one
-vector per queue, no sharing, and the only interrupt an RVA23 part has. This is a real fork, so
-the architect chooses; the milestone builds the one the architect rules, and the other stays open.
+- Until MSI lands, binding an interrupt line that already has a driver bound is refused with an
+  error, instead of silently taking the line from the first driver.
+- aarch64: MSI goes through the GICv3 ITS. One ITS driver serves this milestone and 1068's step 4
+  remapping, and this milestone builds it. This milestone does not build GICv2m.
+- riscv64: MSI goes through the AIA (APLIC and IMSIC, `-machine virt,aia=aplic-imsic`), which
+  replaces the PLIC path. It is the same driver milestone 143 (silicon IOMMU) lists, because an
+  RVA23 part does not speak PLIC.
+- Shared lines stay open: an intid routing to a small set of rendezvous, each woken by an
+  interrupt. They are built only if a supported board proves to have no usable MSI controller.
+  Whether argon or radon has one is unchecked.
 
-With shared lines, the runner move totals L (a guess). With MSI on both architectures first, it
-totals XL (a guess).
+Effort: the ITS L, the AIA L to XL (guesses). With MSI first, the runner move to virtio-pci totals
+XL (a guess).
 
 ## The work, in order
 
-1. The ruling between the two ways.
-2. Shared lines: a fixed-size set of rendezvous per intid in `sched/interrupt_route.rs`, the
-   acknowledgement count, and the completion check in each PCI driver that blocks. If binding a
-   second driver changes what the `Irq` capability means, that change goes to the architect as a
-   §10 (the capability-based microkernel process model) amendment first.
-   Or MSI: GICv2m (or the ITS) and the AIA behind `alloc_msi_vector`, which then answers `Some`.
-3. A system test on aarch64 and riscv64 that binds two drivers to one line (or two vectors) and
-   shows both receive their interrupts.
+1. The refusal: `sched::bind_interrupt` answers an error when the intid already has a rendezvous,
+   and the first driver keeps its line. The error is new behavior of an existing method, so its
+   semantics are recorded in `design/decisions/` with the change, and its name ships provisional.
+   The test legs' entropy driver binds a line that already has a driver today (`notes/entropy.md`),
+   so this step meets it first.
+2. The GICv3 ITS driver on aarch64 (command queue, device table, `MAPD` and `MAPTI`) behind
+   `alloc_msi_vector`, which then answers `Some`.
+3. The AIA on riscv64 behind `alloc_msi_vector`.
+4. A system test on aarch64 and riscv64 in which two PCI functions that swizzle onto one INTx line
+   each receive their interrupts on their own vectors.
 
 ## Done when
 
-1. On aarch64 and riscv64, two PCI drivers whose functions swizzle onto one line each receive
-   every interrupt their device raises, and a system test shows it on both architectures. Under
-   MSI, each function has its own vector and the same test passes.
-2. Binding a second driver to a line no longer removes the first, and a test asserts it.
+1. On aarch64 and riscv64, two PCI drivers whose functions swizzle onto one INTx line each receive
+   every interrupt their device raises on their own MSI vector, and a system test shows it on both
+   architectures.
+2. Binding a second driver to a line that already has one is refused, the first keeps receiving
+   its interrupts, and a test asserts both.
 3. The existing PCI and virtio gates pass on every architecture, with no test weakened.
 4. `script/fastpath-footprint` reports no change.
 
 ## Index row
 
 On aarch64 and riscv64 every PCI function takes one of four INTx lines, and a line routes to one
-driver, so a second driver on a line silently takes it from the first. This lets several drivers
-share a line, or replaces the lines with MSI, whichever the architect rules. Any PCI driver on
+driver, so a second driver on a line silently takes it from the first. This refuses a second binding
+first, then replaces the lines with MSI: the GICv3 ITS on aarch64 and the AIA on riscv64. Any PCI driver on
 those architectures needs it, and the runners' move to virtio-pci waits on it.

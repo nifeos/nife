@@ -158,8 +158,8 @@ A direct driver takes the same line or vector a mediated one does.
   the line, as `Transport::read_reg` does for a mediated device.
 
 A line routes to one driver (`kernel/src/sched/interrupt_route.rs`), so a direct driver meets the
-limit a mediated one meets, and the work that lets several drivers share an interrupt line lifts
-it for both. Until that lands, a direct driver's test reads its used ring before it blocks, as the
+limit a mediated one meets, and milestone 1065 (MSI replaces the interrupt lines on aarch64 and
+riscv64) lifts it for both. Until that lands, a direct driver's test reads its used ring before it blocks, as the
 entropy driver does.
 
 ### What stays in `kernel/src/virtio.rs`
