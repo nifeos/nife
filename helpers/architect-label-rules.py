@@ -344,7 +344,7 @@ KEYWORDS = frozenset((
 def strip_comments(text):
     """Rust source text with `//` and `/* */` comments removed, strings and chars kept.
 
-    Walks token by token (`TOKEN_RE`), so a quote inside an identifier's neighbourhood or a
+    Walks token by token (`TOKEN_RE`), so a quote beside an identifier or a
     comment marker inside a string never starts what it does not start."""
     out, i, n = [], 0, len(text)
     while i < n:
@@ -1191,7 +1191,7 @@ RELEASED_BY = {
     'spawnproto': "\"nothing moved\", or approval of the new or changed value",
     'decisions': "approval of the edit, or a send-back naming what to change",
     'syscall-error': "\"same errors\" (a refactor or rename), or approval of the new error "
-                     "behaviour",
+                     "behavior",
 }
 
 UNEXAMINED_QUESTION = (
