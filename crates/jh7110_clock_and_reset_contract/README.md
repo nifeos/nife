@@ -15,12 +15,15 @@ A `CALL` carries two request words and returns two reply words.
 - Request word 0: the operation in bits 63:56 (`OPERATION_SHIFT` is 56), and for the reads the
   device's own clock or reset index in bits 7:0. Build it with `request`, read it with `operation`
   and `index`. Request word 1: `SET_RATE`'s most hertz.
+- A request sets no other bit: bits 55:8 are zero, the index is zero off the reads, and word 1 is
+  zero off `SET_RATE`. `is_well_formed` says whether a request does, and a server answers
+  `MalformedRequest` (8) for one that does not.
 - The operations: `VERSION_QUERY` (0, reserved), `BRING_UP` (1), `READ_CLOCK` (2), `READ_RESET`
   (3) and `SET_RATE` (4).
-- Reply word 0: a `Status`, 0 to 7. A kernel failure of the `CALL` is a small negative number,
+- Reply word 0: a `Status`, 0 to 8. A kernel failure of the `CALL` is a small negative number,
   enormous as a `u64`, so `Status::from_word` answers `None` for it.
-- Reply word 1: the bring-up `Summary`, the raw clock or reset word, or the hertz the rated clock
-  now runs at.
+- Reply word 1: the bring-up `Summary`, the raw clock word, the reset's own bit (1 when released),
+  or the hertz the rated clock now runs at.
 
 ## EXAMPLES
 

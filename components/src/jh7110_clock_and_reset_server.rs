@@ -4,8 +4,8 @@
 //! It holds the first page of each window its spawner mapped (STG, SYS and AON device-typed, the
 //! SYS syscon read-only) and one endpoint, slot [`REQUEST_SLOT`]. A client's capability on that
 //! endpoint carries a badge, its device's register base physical address, and the server answers
-//! for that device alone: `jh7110_clock_and_reset_devices` holds what each badge brings up, and
-//! `jh7110_clock_and_reset_contract` the wire. No request word names a device, so a client can
+//! for that device alone: `jh7110_clock_and_reset_devices::answer` decides each reply, on the wire
+//! `jh7110_clock_and_reset_contract` defines. No request word names a device, so a client can
 //! neither name nor reach another device's clocks or resets (§256 (a server that keeps windows for
 //! many clients scopes each by the caller's badge)). No operation turns a device off (§304 (who
 //! may turn a device off)). See notes/jh7110-clock-and-reset.md.
@@ -28,8 +28,7 @@
 use driver_process_contract::jh7110_clock_and_reset::{
     ALWAYS_ON_KIND, REQUEST_SLOT, SYSTEM_CONTROLLER_KIND, SYSTEM_KIND, SYSTEM_TOP_GROUP_KIND,
 };
-use jh7110_clock_and_reset_contract::{self as wire, Status, Summary};
-use jh7110_clock_and_reset_devices::{Device, RateRefusal, USED_WINDOW_BYTES, WindowName, Windows};
+use jh7110_clock_and_reset_devices::{USED_WINDOW_BYTES, WindowName, Windows, answer};
 use startup_page_contract::{StartupPage, WindowKind};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{receive_request, reply};
@@ -103,44 +102,6 @@ impl Windows for Held {
     }
 }
 
-/// **Answer one request** from the device `badge` names: the status and reply word 1.
-fn answer(held: &mut Held, badge: u64, w0: u64, w1: u64) -> (Status, u64) {
-    let Some(device) = Device::at(badge).filter(|d| d.is_served_by(held)) else {
-        return (Status::UnknownDevice, 0);
-    };
-    match wire::operation(w0) {
-        wire::BRING_UP => {
-            let c = device.bring_up(held, POLL_LIMIT);
-            let summary = Summary {
-                clocks_in_plan: c.clocks_in_plan,
-                clocks_running: c.clocks_running,
-                resets_in_plan: c.resets_in_plan,
-                resets_released: c.resets_released,
-                already_up: c.already_up,
-                refused: c.refused,
-            };
-            (summary.status(), summary.pack())
-        }
-        wire::READ_CLOCK => device
-            .read_clock(held, wire::index(w0))
-            .map_or((Status::IndexOutOfRange, 0), |w| {
-                (Status::Done, u64::from(w))
-            }),
-        wire::READ_RESET => device
-            .read_reset(held, wire::index(w0))
-            .map_or((Status::IndexOutOfRange, 0), |w| {
-                (Status::Done, u64::from(w))
-            }),
-        wire::SET_RATE => match device.set_rate(held, w1) {
-            Ok(rate) => (Status::Done, rate.hertz),
-            Err(RateRefusal::NoRatedClock) => (Status::NoRatedClock, 0),
-            Err(RateRefusal::NoRateAtOrBelow) => (Status::NoRateAtOrBelow, 0),
-        },
-        // `VERSION_QUERY` among them, until its reply exists (the contract crate's BUGS).
-        _ => (Status::UnknownOperation, 0),
-    }
-}
-
 user_mode_runtime::program_entry!(start);
 
 fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
@@ -151,7 +112,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
             // A plain SEND on a CALL-only wire: nobody waits for an answer.
             continue;
         };
-        let (status, word) = answer(&mut held, request.badge, request.w0, request.w1);
+        let (status, word) = answer(&mut held, request.badge, request.w0, request.w1, POLL_LIMIT);
         reply(capability, status.to_word(), word);
     }
 }

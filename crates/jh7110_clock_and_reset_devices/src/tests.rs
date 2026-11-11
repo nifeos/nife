@@ -332,9 +332,13 @@ fn a_read_reaches_the_devices_own_words_and_nothing_past_them() {
     assert!(is_clock_enabled(d.read_clock(&mut f, 5).unwrap()));
     assert_eq!(d.read_clock(&mut f, 9), None);
     assert_eq!(d.reset(1), Some((WindowName::AlwaysOn, 1)));
-    let status = d.read_reset(&mut f, 1).unwrap();
-    assert!(is_deasserted(status, ALWAYS_ON.reset_bit(1).unwrap().mask));
+    assert_eq!(d.read_reset(&mut f, 1), Some(true));
     assert_eq!(d.read_reset(&mut f, 2), None);
+    // Hold line 0 again: line 1's answer, from the same status word, does not move.
+    let zero = ALWAYS_ON.reset_bit(0).unwrap();
+    f.words[slot(WindowName::AlwaysOn)][(zero.assert_offset / 4) as usize] |= zero.mask;
+    assert_eq!(d.read_reset(&mut f, 0), Some(false));
+    assert_eq!(d.read_reset(&mut f, 1), Some(true));
 }
 
 /// The SYS words radon's firmware leaves, as the storage bench read them: `bus_root` on PLL2,
@@ -520,4 +524,94 @@ fn a_rate_exactly_the_slowest_divider_reaches_is_served() {
     let rate = card.set_rate(&mut f, 39_600_000).unwrap();
     assert_eq!(rate.hertz, 39_600_000);
     assert_eq!(clock_divider(rate.after), 15);
+}
+
+#[test]
+fn a_reply_refuses_in_the_wires_order_before_anything_is_touched() {
+    use jh7110_clock_and_reset_contract::{BRING_UP, READ_CLOCK, SET_RATE, VERSION_QUERY, request};
+    let trng = entropy_source().base_physical_address;
+    let mut f = Fake::new();
+    // Badge first: badge 0 and an unknown badge name no device, whatever the request.
+    assert_eq!(
+        answer(&mut f, 0, request(BRING_UP, 0), 0, 1).0,
+        Status::UnknownDevice
+    );
+    assert_eq!(
+        answer(&mut f, 0x1000_0000, request(0x7f, 9), 9, 1).0,
+        Status::UnknownDevice
+    );
+    // Then the operation: the reserved version query and an unknown number.
+    assert_eq!(
+        answer(&mut f, trng, request(VERSION_QUERY, 0), 0, 1).0,
+        Status::UnknownOperation
+    );
+    assert_eq!(
+        answer(&mut f, trng, request(5, 1), 1, 1).0,
+        Status::UnknownOperation
+    );
+    // Then the shape: bits 55:8, an index where none is taken, and word 1 off set rate.
+    for (w0, w1) in [
+        (request(READ_CLOCK, 0) | 1 << 20, 0),
+        (request(BRING_UP, 1), 0),
+        (request(READ_CLOCK, 0), 1),
+        (request(SET_RATE, 2), 50_000_000),
+    ] {
+        assert_eq!(
+            answer(&mut f, trng, w0, w1, 1),
+            (Status::MalformedRequest, 0)
+        );
+    }
+    assert!(f.log.is_empty(), "a refused request read or stored nothing");
+}
+
+#[test]
+fn a_reply_carries_the_bring_up_summary_one_clock_word_and_one_reset_bit() {
+    use jh7110_clock_and_reset_contract::{BRING_UP, READ_CLOCK, READ_RESET, request};
+    let trng = entropy_source().base_physical_address;
+    let mut f = Fake::new();
+    let (status, word) = answer(&mut f, trng, request(READ_RESET, 0), 0, 1);
+    assert_eq!(
+        (status, word),
+        (Status::Done, 0),
+        "held before the bring-up"
+    );
+    let (status, word) = answer(&mut f, trng, request(BRING_UP, 0), 0, 1);
+    assert_eq!(status, Status::Done);
+    let summary = Summary::unpack(word).unwrap();
+    assert_eq!((summary.clocks_running, summary.resets_released), (2, 1));
+    assert_eq!(
+        answer(&mut f, trng, request(READ_RESET, 0), 0, 1),
+        (Status::Done, 1)
+    );
+    let (status, word) = answer(&mut f, trng, request(READ_CLOCK, 1), 0, 1);
+    assert_eq!(status, Status::Done);
+    assert!(is_clock_enabled(word as u32));
+    assert_eq!(
+        answer(&mut f, trng, request(READ_CLOCK, 2), 0, 1),
+        (Status::IndexOutOfRange, 0)
+    );
+    assert_eq!(
+        answer(&mut f, trng, request(READ_RESET, 1), 0, 1),
+        (Status::IndexOutOfRange, 0)
+    );
+}
+
+#[test]
+fn a_reply_to_set_rate_is_the_hertz_or_the_refusal() {
+    use jh7110_clock_and_reset_contract::{SET_RATE, request};
+    let mut f = radon_like();
+    let card = Device::at(0x1602_0000).unwrap().base_physical_address;
+    assert_eq!(
+        answer(&mut f, card, request(SET_RATE, 0), 50_000_000, 1),
+        (Status::Done, 49_500_000)
+    );
+    assert_eq!(
+        answer(&mut f, card, request(SET_RATE, 0), 1_000_000, 1),
+        (Status::NoRateAtOrBelow, 0)
+    );
+    let ethernet = ethernet().base_physical_address;
+    assert_eq!(
+        answer(&mut f, ethernet, request(SET_RATE, 0), 50_000_000, 1),
+        (Status::NoRatedClock, 0)
+    );
 }

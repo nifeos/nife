@@ -30,9 +30,36 @@ fn the_operation_sits_in_bits_63_to_56_and_the_index_in_bits_7_to_0() {
             assert_eq!(index(w0), index_value);
         }
     }
-    // Bits 55:8 carry nothing, so a word with them set reads the same operation and index.
+    // Bits 55:8 carry nothing: the accessors still read the operation and index, and a server
+    // refuses the word as malformed.
     assert_eq!(index(0x0200_ffff_ffff_ff05), 5);
     assert_eq!(operation(0x0200_ffff_ffff_ff05), READ_CLOCK);
+    assert!(!is_well_formed(0x0200_ffff_ffff_ff05, 0));
+}
+
+#[test]
+fn a_request_may_set_only_the_bits_its_operation_defines() {
+    // Each of bits 55:8 alone makes a word malformed, whatever the operation.
+    for bit in 8..56 {
+        for op in [BRING_UP, READ_CLOCK, READ_RESET, SET_RATE] {
+            assert!(!is_well_formed(request(op, 0) | 1 << bit, 0), "bit {bit}");
+        }
+    }
+    // The index belongs to the two reads alone.
+    for op in [VERSION_QUERY, BRING_UP, SET_RATE] {
+        assert!(is_well_formed(request(op, 0), 0));
+        assert!(!is_well_formed(request(op, 1), 0));
+    }
+    for op in [READ_CLOCK, READ_RESET] {
+        assert!(is_well_formed(request(op, 0xff), 0));
+        assert!(!is_well_formed(request(op, 3), 1));
+    }
+    // Word 1 belongs to set rate alone.
+    assert!(is_well_formed(request(SET_RATE, 0), u64::MAX));
+    assert!(is_well_formed(request(SET_RATE, 0), 0));
+    assert!(!is_well_formed(request(BRING_UP, 0), 1));
+    assert!(!is_well_formed(request(VERSION_QUERY, 0), 1 << 63));
+    assert!(is_well_formed(request(BRING_UP, 0), 0));
 }
 
 #[test]
@@ -46,6 +73,7 @@ fn every_status_has_its_ruled_number_and_reads_back() {
         (Status::IndexOutOfRange, 5),
         (Status::NoRatedClock, 6),
         (Status::NoRateAtOrBelow, 7),
+        (Status::MalformedRequest, 8),
     ];
     for (status, word) in numbered {
         assert_eq!(status.to_word(), word);
@@ -56,7 +84,7 @@ fn every_status_has_its_ruled_number_and_reads_back() {
 
 #[test]
 fn a_kernel_error_or_an_unknown_word_is_no_status() {
-    assert_eq!(Status::from_word(8), None);
+    assert_eq!(Status::from_word(9), None);
     for error in 1..=16i64 {
         assert_eq!(Status::from_word((-error) as u64), None);
     }
@@ -152,4 +180,6 @@ fn a_gated_clock_outranks_a_held_reset() {
         .status(),
         Status::ClockNotRunning
     );
+    // A refused step is counted, and changes no status.
+    assert_eq!(Summary { refused: 3, ..up }.status(), Status::Done);
 }

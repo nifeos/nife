@@ -246,7 +246,6 @@ dependencies = [
  "http_response",
  "installed_programs",
  "interfaces_note",
- "jh7110_clock_and_reset_contract",
  "jh7110_clock_and_reset_devices",
  "jh7110_entropy",
  "line_editor",
@@ -767,6 +766,7 @@ name = "jh7110_clock_and_reset_devices"
 version = "0.1.0"
 dependencies = [
  "jh7110_clock_and_reset",
+ "jh7110_clock_and_reset_contract",
 ]
 
 [[package]]
