@@ -86,7 +86,7 @@ startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_cont
 # The block-device roster (milestone 57). The kernel writes the page and the surveyor reads it, and
 # the kernel's own tests read it back through this crate rather than by trusting the count the
 # program sent home, so no party has its own copy of the layout.
-block_roster_contract = { version = "0.1.0", git = "https://github.com/nifeos/block_roster_contract", rev = "47ac5a9a843f8d23e6fe4f59c3225c50ebddcd2d" }
+block_roster_contract = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/block_roster_contract", rev = "62630199281cbd294d6621cc35f31f81933e6be2" }
 # The boot ladder's console markers (milestone 268): the exact bytes each rung of the boot prints.
 # The kernel prints them and `serial_console` matches them, so AGENTS.md rule 7 makes them a crate
 # rather than two copies of a literal. That is not hypothetical here: the one marker that existed
