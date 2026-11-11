@@ -54,7 +54,7 @@ const DEVICE_DIRECTORY_MODE_TWO_LEVEL: u64 = 3;
 /// Name: provisional.
 const ROOT_ENTRIES: u32 = 512;
 
-/// A non-leaf device directory entry's valid bit, bit 0; its leaf's PPN is in [53:10].
+/// A non-leaf device directory entry's valid bit, bit 0; its leaf's PPN is in `[53:10]`.
 ///
 /// Name: provisional.
 #[doc(alias = "V")]
@@ -158,7 +158,7 @@ fn zeroed_page_frame(what: &str) -> u64 {
     pa
 }
 
-/// A queue base register value: PPN in [53:10], log2(entries)-1 in [4:0].
+/// A queue base register value: PPN in `[53:10]`, log2(entries)-1 in `[4:0]`.
 fn queue_base(pa: u64, log2: u32) -> u64 {
     ((pa >> 12) << 10) | (log2 as u64 - 1)
 }
@@ -203,7 +203,7 @@ fn directory_position(rid: u32, dc_bytes: u64) -> Option<DirectoryPosition> {
     })
 }
 
-/// **The non-leaf directory entry that names a leaf at `leaf`**: valid, the leaf's PPN in [53:10],
+/// **The non-leaf directory entry that names a leaf at `leaf`**: valid, the leaf's PPN in `[53:10]`,
 /// every other bit zero (QEMU reports a set reserved bit as `DDT_MISCONFIGURED`).
 ///
 /// Name: provisional.

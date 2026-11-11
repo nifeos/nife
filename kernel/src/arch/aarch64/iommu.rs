@@ -22,7 +22,7 @@ use crate::iommu::AttachError;
 use crate::sync::{InterruptSafeMutex, rank};
 
 // --- Register file (offsets from the SMMU page; Arm IHI 0070, and QEMU's smmuv3-common.h) ---
-/// `SMMU_IDR0`, the first identification register (Arm IHI 0070, 6.3.1). `ST_LEVEL`, bits [28:27],
+/// `SMMU_IDR0`, the first identification register (Arm IHI 0070, 6.3.1). `ST_LEVEL`, bits `[28:27]`,
 /// says which stream table formats the SMMU walks.
 ///
 /// Name: provisional.
@@ -100,7 +100,7 @@ const LEVEL_ONE_DESCRIPTORS: usize = 1 << (STREAM_ID_BITS_MAXIMUM - STREAM_TABLE
 #[doc(alias = "L1STD")]
 const LEVEL_ONE_DESCRIPTOR_BYTES: u64 = 8;
 
-/// `STRTAB_BASE_CFG.FMT` = 0b01, a two-level stream table, in bits [17:16].
+/// `STRTAB_BASE_CFG.FMT` = 0b01, a two-level stream table, in bits `[17:16]`.
 ///
 /// Name: provisional.
 #[doc(alias = "STRTAB_BASE_CFG.FMT")]
@@ -402,15 +402,15 @@ fn stream_position(rid: u32, stream_id_bits: u32) -> Option<StreamPosition> {
 }
 
 /// **`STRTAB_BASE_CFG` for a two-level table over `stream_id_bits` bits of stream id**: `LOG2SIZE`
-/// in [5:0], `SPLIT` in [10:6], `FMT` in [17:16].
+/// in `[5:0]`, `SPLIT` in `[10:6]`, `FMT` in `[17:16]`.
 ///
 /// Name: provisional.
 const fn stream_table_configuration(stream_id_bits: u32) -> u32 {
     STREAM_TABLE_FORMAT_TWO_LEVEL | (STREAM_TABLE_SPLIT << 6) | stream_id_bits
 }
 
-/// **The level-one descriptor that names a leaf at `leaf`**: `L2Ptr` in [51:6] and `SPAN` in
-/// [4:0]. `SPAN` is `SPLIT + 1`, so the leaf holds `2^SPLIT` STEs (Arm IHI 0070, 5.1, "Level 1
+/// **The level-one descriptor that names a leaf at `leaf`**: `L2Ptr` in `[51:6]` and `SPAN` in
+/// `[4:0]`. `SPAN` is `SPLIT + 1`, so the leaf holds `2^SPLIT` STEs (Arm IHI 0070, 5.1, "Level 1
 /// Stream Table Descriptor"); QEMU's walk reads the same field.
 ///
 /// Name: provisional.

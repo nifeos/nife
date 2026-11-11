@@ -1021,7 +1021,11 @@ mod tests {
             _ => crate::testing::skip!("bus 0xfe has an owner on this DMAR (a catch-all takes it)"),
         }
         let root = zeroed_page_frame("test domain root");
-        attach(rid, root, 0);
+        assert_eq!(
+            attach(rid, root, 0),
+            Ok(()),
+            "VT-d's attach never refuses with an error"
+        );
         let g = IOMMU.lock();
         for (i, slot) in g.iter().enumerate() {
             let Slot::Up(u) = slot else { continue };
