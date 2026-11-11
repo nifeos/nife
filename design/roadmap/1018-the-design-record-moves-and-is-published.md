@@ -201,12 +201,11 @@ Each step lands alone. Steps 1 to 5 land in this repository.
    the site as an artifact, deployed nowhere. Its step summary reports build time, index size and
    broken citations and links, and it never blocks a merge. The builder's home is
    `nifeos/nifeos.org`, where it pulls the record at build time.
-4. Sort each record into moves or stays in `packages/homes.toml`, which already gives every path a
-   home and counts the notes left undecided. The sort follows the ruling on question 4: whole-project
-   material moves, and crate documentation, `BUGS` sections, lint baselines, workflow data and
-   `AGENTS.md` stay. For each note it decides between cross-cutting and about one crate alone, and
-   it produces the number of the second kind. It also lists every link from a record into a path that
-   stays, since the site's link check fails the build on such a link.
+4. Built: `packages/homes.toml` sorts each record into moves or stays, under the ruling on
+   question 4, and `helpers/record_links.py` counts the sort. 36 notes are about one crate alone
+   and stay with it, and 260 links from a record name a path that stays; each becomes a qualified
+   path or plain text in step 6. [The record sort](1018-the-design-record-moves-and-is-published/the-record-sort.md)
+   says how the lane judged each note.
 5. Measured: the record's checks can run by directory, which sets what `nifeos/record`'s CI runs.
    The hold check of §88 (`needs-architect` as a required check) reads labels and no file, in 4 to
    5 seconds, and applies to every change. Of `script/lint`'s 140 sections a record-only change
@@ -284,8 +283,9 @@ Still to be ruled by the architect:
 
 ## Follow-on
 
-- **Outstanding.** Steps 2, 4 and 6 to 8 above. Checked 2026-11-09 against `script/roadmap`,
-  which resolves no `nifeos/<repo>:<path>`, and `packages/homes.toml`, which sorts no note.
+- **Done.** Step 4, carried by `packages/homes.toml` and `helpers/record_links.py`.
+- **Outstanding.** Steps 2 and 6 to 8 above. Checked 2026-11-11 against `script/roadmap`, which
+  resolves no `nifeos/<repo>:<path>`, and the organization, which has no `nifeos/record`.
 - **Outstanding.** Two comments in `ci.yml` and the header of `empty-diff.yml` call
   `merge_group.base_sha` the base branch's tip; the appendix's runs log the entry ahead. The skip
   rule is safe either way, so only the comments change.
