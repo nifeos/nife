@@ -38,6 +38,7 @@ usage() {
 	cat >&2 <<'EOF'
 usage: script/record-ruling <number> (--text <ruling> | --file <path> | --link <url>)
                             [--held-by-lane] [--partial] [--lane <name>] [--repo <owner/repo>] [--dry-run]
+                            [--decider <who> --provisional]
 
   <number>          the pull request or issue the ruling answers
   --text <ruling>   the ruling, in calef's words where there are any (markdown)
@@ -47,6 +48,11 @@ usage: script/record-ruling <number> (--text <ruling> | --file <path> | --link <
   --partial         rules on some of the asks only: post it, change no label, leave the question open
   --lane <name>     who is relaying, for the comment's first line (default: $NIFE_LANE, else
                     "maintainer session")
+  --decider <who>   who ruled, for the comment's heading (default: calef, the architect). Any other
+                    name needs --provisional
+  --provisional     a ruling by someone other than the architect on a two-way door: post it under a
+                    provisional heading that does not credit the architect, with a marker that closes
+                    no question, and change no label (the architect has not ruled)
   --repo <o/r>      default: nifeos/nife
   --dry-run         print the comment and the label change, post nothing
 EOF
@@ -58,7 +64,7 @@ num="$1"
 shift
 case "$num" in '' | *[!0-9]*) usage ;; esac
 
-text="" link="" held="" partial="" dry=""
+text="" link="" held="" partial="" dry="" provisional="" decider="calef"
 lane="${NIFE_LANE:-maintainer session}"
 repo="nifeos/nife"
 while [ $# -gt 0 ]; do
@@ -69,6 +75,8 @@ while [ $# -gt 0 ]; do
 	--held-by-lane) held=1; shift ;;
 	--partial) partial=1; shift ;;
 	--lane) [ $# -ge 2 ] || usage; lane="$2"; shift 2 ;;
+	--decider) [ $# -ge 2 ] || usage; decider="$2"; shift 2 ;;
+	--provisional) provisional=1; shift ;;
 	--repo) [ $# -ge 2 ] || usage; repo="$2"; shift 2 ;;
 	--dry-run) dry=1; shift ;;
 	*) usage ;;
@@ -83,13 +91,31 @@ if [ -n "$partial" ] && [ -n "$held" ]; then
 	exit 2
 fi
 
+if [ -n "$provisional" ] && [ "$decider" = calef ]; then
+	echo "record-ruling: --provisional names a decider other than calef; give --decider." >&2
+	exit 2
+fi
+if [ -z "$provisional" ] && [ "$decider" != calef ]; then
+	echo "record-ruling: only a provisional ruling can name a decider other than calef; add --provisional." >&2
+	exit 2
+fi
+if [ -n "$provisional" ] && { [ -n "$partial" ] || [ -n "$held" ]; }; then
+	echo "record-ruling: --provisional changes no label, so it takes neither --partial nor --held-by-lane." >&2
+	exit 2
+fi
+
 kind="$(gh api "repos/$repo/issues/$num" --jq 'if .pull_request then "pr" else "issue" end')" || {
 	echo "record-ruling: could not read #$num in $repo." >&2
 	exit 1
 }
 
 when="$(date -u '+%Y-%m-%d %H:%M')"
-if [ -n "$partial" ]; then
+if [ -n "$provisional" ]; then
+	partial=1
+	heading="## Ruling ($decider, provisional, two-way door, $when UTC)"
+	marker="<!-- provisional-ruling -->"
+	tail="A provisional ruling on a two-way door. The architect has not ruled, so no label changes."
+elif [ -n "$partial" ]; then
 	heading="## Partial ruling (calef, $when UTC)"
 	marker="<!-- architect-ruling partial -->"
 	tail="Some asks remain open; \`needs-architect\` stays on."
@@ -102,7 +128,9 @@ else
 		tail="Every open ask above is answered, so this carries \`architect-ruled\`."
 	fi
 fi
-body="**Lane:** $lane, relaying an architect ruling, written by an agent; the author GitHub shows is the person running it.
+relayed="an architect ruling"
+[ -n "$provisional" ] && relayed="a provisional ruling by $decider"
+body="**Lane:** $lane, relaying $relayed, written by an agent; the author GitHub shows is the person running it.
 
 $heading
 "

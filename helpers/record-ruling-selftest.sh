@@ -2,7 +2,7 @@
 # helpers/record-ruling-selftest.sh: prove script/record-ruling posts the ruling with the marker
 # helpers/open-question.jq reads, then swaps needs-architect for architect-ruled through the REST
 # labels endpoints, with a stub `gh` and no network. script/lint-fleet runs it. Cases: a plain
-# ruling; a send-back adds held-by-lane; --partial posts a marker that closes nothing and edits no label; an item without needs-architect
+# ruling; a send-back adds held-by-lane; --partial posts a marker that closes nothing and edits no label; --decider with --provisional posts a heading that credits the named decider, a marker that closes nothing and no label change, and either flag alone is refused; an item without needs-architect
 # is not asked to remove it; a swap that does not take exits 1; an issue goes through `gh issue`.
 set -u
 here="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
@@ -86,6 +86,18 @@ run issue 0 issue "needs-architect" --text 'Yes.'
 has log 'issue comment 7'
 has labels architect-ruled
 lacks labels needs-architect
+
+run provisional 0 pr "needs-architect" --text 'Raised.' --decider maintainer --provisional
+has log '## Ruling (maintainer, provisional, two-way door,'
+has log '<!-- provisional-ruling -->'
+lacks log '<!-- architect-ruling'
+lacks log '(calef'
+lacks log '/labels'
+has labels needs-architect
+
+run decider-alone 2 pr "needs-architect" --text 'x' --decider maintainer
+run provisional-alone 2 pr "needs-architect" --text 'x' --provisional
+run provisional-held 2 pr "needs-architect" --text 'x' --decider maintainer --provisional --held-by-lane
 
 run no-ruling 2 pr "needs-architect"
 
