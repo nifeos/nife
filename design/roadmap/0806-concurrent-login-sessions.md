@@ -127,7 +127,7 @@ of the time there will be a single session."
 
 What the kernel allows, read in `crates/abi` and `kernel/src/memory_region.rs`:
 
-- A region cannot grow. `memory_region` has `MAP`, `RETYPE`, `RETYPE_OBJ`, `SPLIT`, `DESTROY` and
+- A region cannot grow. `memory_region` has `MAP`, `RETYPE`, `RETYPE_OBJECT`, `SPLIT`, `DESTROY` and
   `USAGE`, and nothing that enlarges a region or shrinks one after `SPLIT`.
 - A process can hold more than one region. Growth is therefore a second capability, split from the
   pool and delegated, with no kernel change.

@@ -1,7 +1,7 @@
 //! **Minting a rendezvous out of our own memory**, milestone 19a.
 //!
 //! Holds a memory region (slot 0), a channel (slot 1), and nothing else. It retypes a page of its
-//! own region into a brand-new rendezvous object (`RETYPE_OBJ`), one no kernel wiring created, then
+//! own region into a brand-new rendezvous object (`RETYPE_OBJECT`), one no kernel wiring created, then
 //! delegates a READ view of it over the channel and SENDs a word into it. If the object works, a
 //! peer this program has never met receives that word over a rendezvous that did not exist a moment
 //! ago; the `SEND` blocks until the peer receives, so reaching `exit` is itself half the proof.

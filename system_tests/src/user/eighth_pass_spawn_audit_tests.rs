@@ -151,7 +151,7 @@ fn a_child_holds_exactly_what_its_caller_granted_and_no_device() {
 /// A program with no construction authority cannot build, from inside, through the real syscall.
 ///
 /// The `kernel_test_subject`'s `BUILD_WITH_NOTHING` role reports the errnos of a `RETYPE`, a
-/// `SEND` and a `RETYPE_OBJ` on ungranted slots. Each must be `NoSuchSlot` ("nothing there"), not
+/// `SEND` and a `RETYPE_OBJECT` on ungranted slots. Each must be `NoSuchSlot` ("nothing there"), not
 /// "you may not use it": authority is a capability in a slot, and no slot was filled. That is claim
 /// 23's zero-authority corner beside the cited drop-and-retry.
 ///
@@ -191,7 +191,7 @@ fn a_child_with_no_construction_authority_cannot_build() {
     assert_eq!(
         answer[2],
         abi::Error::NoSuchSlot as u64,
-        "a RETYPE_OBJ on an ungranted slot answered something other than NoSuchSlot",
+        "a RETYPE_OBJECT on an ungranted slot answered something other than NoSuchSlot",
     );
 
     assert!(

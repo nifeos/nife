@@ -202,7 +202,7 @@ one, and a tickless kernel would be the reason to add it.
 
 ## Memory regions and frames
 
-`RETYPE_OBJ` makes one object per page, so the whole object family follows one memory rule; packing
+`RETYPE_OBJECT` makes one object per page, so the whole object family follows one memory rule; packing
 is a later placement optimization. A `std` program passes `std_runtime_contract::SLOTS` as the floor,
 so nothing it makes lands in a fixed slot it was not given.
 

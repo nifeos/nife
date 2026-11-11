@@ -1,4 +1,4 @@
-//! **Whether a region subtree's ceilings hold through the real `RETYPE_OBJ` and `SPLIT`.**
+//! **Whether a region subtree's ceilings hold through the real `RETYPE_OBJECT` and `SPLIT`.**
 //!
 //! A root made as the progenitor's construction budget is made, with
 //! `memory_region::progenitor_ceilings`, and one region split from it. The test thread holds that
@@ -46,12 +46,12 @@ fn share(counted: Counted) -> u32 {
     crate::memory_region::progenitor_ceilings().get(counted) / 16
 }
 
-/// `RETYPE_OBJ` of `objtype` from the region in `budget` until it refuses, deleting each new
+/// `RETYPE_OBJECT` of `objtype` from the region in `budget` until it refuses, deleting each new
 /// capability (the object stays in its table, as a program's would), and how many it made.
 fn fill(budget: u64, objtype: u64) -> u32 {
     let mut made = 0;
     for _ in 0..ATTEMPTS {
-        match call(budget, abi::memory_region::RETYPE_OBJ, objtype, 0) {
+        match call(budget, abi::memory_region::RETYPE_OBJECT, objtype, 0) {
             Ok(slot) => {
                 let _ = sched::delete_current_capability(slot as u64);
                 made += 1;
@@ -73,7 +73,7 @@ fn fill_processes_and_spaces(budget: u64) -> (u32, u32) {
     for _ in 0..ATTEMPTS {
         let Ok(space) = call(
             budget,
-            abi::memory_region::RETYPE_OBJ,
+            abi::memory_region::RETYPE_OBJECT,
             abi::objtype::ADDRESS_SPACE,
             0,
         ) else {
@@ -81,7 +81,7 @@ fn fill_processes_and_spaces(budget: u64) -> (u32, u32) {
         };
         match call(
             budget,
-            abi::memory_region::RETYPE_OBJ,
+            abi::memory_region::RETYPE_OBJECT,
             abi::objtype::PROCESS,
             space as u64,
         ) {
