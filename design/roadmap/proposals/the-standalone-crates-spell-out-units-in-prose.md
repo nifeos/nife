@@ -11,7 +11,7 @@ needs_person: yes
 
 Raised by lane/maintainer-follow-ups, at the maintainer's request: milestone 1053 (a sweep spells out the unit symbols in names) covered the crates in this tree, and nobody scanned `nifeos/e1000e` or `nifeos/designware_mobile_storage`.
 
-Name: provisional. No name is minted.
+Name: provisional. The lane mints no name.
 
 Reuse: `helpers/vendored_name_gates.py unit --list` and `unit --unclear`, run with a clone of each repository as the working directory.
 
@@ -22,18 +22,18 @@ The lane cloned both repositories read-only at their default branch and scanned 
 - `nifeos/e1000e`: 29 Rust files, 0 identifiers that carry a unit symbol, 0 listed by `--unclear`.
 - `nifeos/designware_mobile_storage`: 16 Rust files, 0 identifiers, 0 listed by `--unclear`.
 
-So no name in either repository needs a rename. What both hold is unit symbols in comments and documentation, spelled the way the sources they cite spell them (`ms`, `us`, `MHz`, `kHz`, `KiB`, `GiB`, `GB`):
+So no name in either repository needs a rename. What both hold is unit symbols in comments and documentation, the way the sources they cite spell them (`ms`, `us`, `MHz`, `kHz`, `KiB`, `GiB`, `GB`):
 
 - `e1000e`, 28 lines: `src/platform_controller_hub/sequence.rs` 13, `simulator.rs` 7, `non_volatile_memory.rs` 2, `registers.rs` 2, and one each in `mod.rs`, `physical_layer_device.rs`, `ultra_low_power.rs` and `tests/qemu-smoke/src/machine.rs`.
 - `designware_mobile_storage`, 14 lines: `internal_direct_memory_access.rs` 5, `sd.rs` 3, `card.rs` 2, `host_controller.rs` 2 and `proofs.rs` 2.
 
-One more is a quoted source name, not a symbol this project chose: `phy->reset_delay_us`, a FreeBSD field that `sequence.rs` cites.
+One more is a source name the project quotes, not a symbol it chose: `phy->reset_delay_us`, a FreeBSD field that `sequence.rs` cites.
 
 ## The decision this needs
 
-`design/naming.md` says a name that holds a quantity ends with its unit, spelled out. It says nothing about prose. Spelling out `ms` in a comment would be a new rule, and an architect makes it. If prose is not covered, this proposal is moot and the record is the scan result above. If it is, the work is:
+`design/naming.md` says a name that holds a quantity ends with its unit, spelled out. It says nothing about prose. Spelling out `ms` in a comment would be a new rule, and an architect makes it. If the rule leaves prose alone, this proposal is moot and the scan result above is the record. If the rule reaches prose, the work is:
 
-1. Spell the units out in those 42 lines of comments, in a pull request to each repository, and keep a source's own spelling inside a quotation.
+1. Spell the units out in those 42 lines of comments, with one pull request to each repository, and keep a source's own spelling inside a quotation.
 2. Have the template's check count the same symbols in comments, so the two repositories and every later crate stay at zero.
 
 ## Index row
