@@ -219,11 +219,9 @@ unit's user. It prints the tag and the assets and publishes nothing.
 - The windows have been timed one guest at a time, at about 457 seeds per second for the
   kernel-thread driver and 205 for the confined driver. Nobody has measured four windows at once
   through this path, so the rates note's four-guest figures stand in for them.
-- The host's rate at one, four and eight guests is owed by nife and has not been measured. The
-  default is four, and `NIFE_FUZZ_GUESTS` rises only after a measurement at the new size comes back
-  clean (see "What runs"). The work is one run at each of 1, 4 and 8 guests through this path, with
-  seeds per second per driver and the false-red count at each, written beside
-  [the rates note](rates-on-x86-64-under-kvm.md).
+- nife owes a measurement at 1, 4 and 8 guests through this path: seeds per second per driver and
+  the false-red count at each, beside [the rates note](rates-on-x86-64-under-kvm.md). Until then
+  `NIFE_FUZZ_GUESTS` stays at four.
 - The build fixes the seed range, so each 60-second window pays a rebuild. A runtime seed (for
   example a kernel command line word) would let one image sweep forever. That change belongs to the
   drivers' milestones.

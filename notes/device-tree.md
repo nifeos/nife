@@ -208,20 +208,18 @@ failure, so every limitation here is a limitation on the boot path specifically.
   that declares nothing decodes `reg` with whatever its parent said. Where the tree is silent, a
   spec-following reader such as `dtoolkit` returns a different region and neither reports an error.
   The walkers ignore a declaration that is not exactly one cell.
-- **nife reads device trees with its own parser, and the upstream crate lacks what nife needs.**
-  Google's `dtoolkit` is the candidate to replace `device_tree_blob`, and the comparison waits on
-  five gaps. Two are bugs found by nife's fuzzing and each has an issue and a fix open upstream:
+- nife reads device trees with its own parser, and Google's `dtoolkit` lacks five things nife needs.
+  Two are bugs that nife's fuzzing found, each with an issue and a fix open upstream:
   `FdtNodeMut::add_property` panics on an unreferenced invalid string in the strings block
   (google/dtoolkit#109, fix #111), and `Fdt::new` does not check that the structure block ends
-  within `size_dt_struct` (#110, fix #112). The other three are the quadratic `children()` walk,
-  which calef's pull request google/dtoolkit#108 answers with `Fdt::events` (issue #102 is open),
-  a reader that accepts what `dtc` and Linux accept (`Fdt::with_options` from #104 covers long
-  property names only), and `add_child` on the mutable tree, for which no upstream issue exists. Switching nife to
-  `dtoolkit` once a release ships these is an architect's call under §46 and needs its own yes;
-  nothing is retired until then. The comparison is
+  within `size_dt_struct` (#110, fix #112). The quadratic `children()` walk is the third. Issue #102
+  is open, and calef's pull request google/dtoolkit#108 answers it with `Fdt::events`. The fourth
+  is a reader that accepts what `dtc` and Linux accept: `Fdt::with_options` (#104) covers long
+  property names only. The fifth is `add_child` on the mutable tree, which has no upstream issue.
+  Switching nife to `dtoolkit` after a release ships these needs its own architect yes under §46
+  (thin primitives or whole subsystems). Until then nothing is retired. The reasoning is in
   [`dtoolkit` against `device_tree_blob`](../design/roadmap/0784-reuse-what-the-tree-wrote/dtoolkit-against-device-tree-blob.md)
-  and the reports are in
-  [its appendix](../design/roadmap/0784-reuse-what-the-tree-wrote/dtoolkit-upstream-reports.md).
+  and [its reports](../design/roadmap/0784-reuse-what-the-tree-wrote/dtoolkit-upstream-reports.md).
 - **A `reg` shorter than one address and size pair yields no region rather than an error.** The
   caller sees `None`, the same as a node with no `reg` at all.
 - **Property placement is not checked.** A property after a child node, or before the root node,

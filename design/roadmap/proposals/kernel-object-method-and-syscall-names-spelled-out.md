@@ -9,19 +9,21 @@ needs_person: yes
 ---
 # The remaining kernel-object method and syscall names are spelled out
 
-Raised by lane/record-open-follow-ups, from the "What I need from you" section of pull request #3483 (`RETYPE_OBJ` becomes `RETYPE_OBJECT`), which listed these thirteen names and held them for the architect.
+Raised by lane/record-open-follow-ups. Pull request #3483 (`RETYPE_OBJ` becomes `RETYPE_OBJECT`) listed these thirteen names in its "What I need from you" section and held them for the architect.
+
+Reuse: the rename discipline of design/naming/rename-what-moves.md and the `Name:` blocks, and the ratified `retype_into_kernel_object`. No new tool or dependency.
 
 Name: provisional. The recommended spellings below are the lane's, not rulings.
 
 ## The problem
 
-design/naming.md says a name this tree authors spells its words out. The ruling of 2026-11-11 (UTC) found `MemoryRegion::RETYPE_OBJ` in breach and renamed it to `RETYPE_OBJECT`, keeping method number 2, so no encoding and no `ABI_VERSION` changed. The audit that followed read every method of the kernel objects and found thirteen more names with the same fault. None has been renamed. Each is a two-way door before the first release, but each touches the syscall surface, so each is the architect's, one at a time, recommendation first.
+design/naming.md says a name this tree authors spells its words out. The ruling of 2026-11-11 (UTC) found `MemoryRegion::RETYPE_OBJ` in breach. It became `RETYPE_OBJECT` and kept method number 2, so no encoding and no `ABI_VERSION` changed. The audit that followed read every method of the kernel objects and found thirteen more names with the same fault. None has changed. Each is a two-way door before the first release. Each also touches the syscall surface, so each is the architect's call, one at a time, recommendation first.
 
-On 2026-10-08 `retype_object` was refused for the runtime function and `retype_into_kernel_object` was ratified. Items 1 and 2 derive from that.
+On 2026-10-08 the architect refused `retype_object` for the runtime function and ratified `retype_into_kernel_object`. Items 1 and 2 derive from that.
 
 ## The work
 
-For each item that is ruled, one lane renames it in the same commit as every live use (the kernel, `user_mode_runtime`, `process_builder`, components, fixtures, system tests, the std overlay, the notes that describe the surface as it is, the NOT-STARTED roadmap blocks) and keeps the number, so no caller's encoding changes. Each rename carries a `Name:` block, no `doc(alias)` of the old spelling, and the decisions' present-tense passages move with it. A name that is refused stays out.
+For each item the architect rules, one lane renames it and every live use in the same commit. Live uses are the kernel, `user_mode_runtime`, `process_builder`, components, fixtures, system tests, the std overlay, the notes that describe the surface as it is and the NOT-STARTED roadmap blocks. The number stays, so no caller's encoding changes. Each rename carries a `Name:` block and no `doc(alias)` of the old spelling, and the present-tense passages of the decisions move with it. A refused name stays out.
 
 | # | Name | Where | Recommended |
 |---|---|---|---|
@@ -41,7 +43,7 @@ For each item that is ruled, one lane renames it in the same commit as every liv
 
 Items 8 to 12 share one prefix, so the architect may rule them together.
 
-Read and passed in the same audit: the methods of `MemoryRegion` (`MAP`, `RETYPE`, `SPLIT`, `DESTROY`, `USAGE`), `Rendezvous`, `Reply`, `Notification`, `Timer`, `ThreadControlBlock`, `AddressSpace` (`MAP_INTO`, `LIST`, `UNMAP`, `WAIT`, `WAKE`), `PageFrame`, `PortRange`, `Process`, `Reboot`, `Console`, `Virtio` and `Usage`, the survey words and the `Error` variants. `futex` is a term of art said as a word, as `syscall` is. `virtio` keeps its specification's spelling.
+The audit read and passed the methods of `MemoryRegion` (`MAP`, `RETYPE`, `SPLIT`, `DESTROY`, `USAGE`), `Rendezvous`, `Reply`, `Notification`, `Timer`, `ThreadControlBlock`, `AddressSpace` (`MAP_INTO`, `LIST`, `UNMAP`, `WAIT`, `WAKE`), `PageFrame`, `PortRange`, `Process`, `Reboot`, `Console`, `Virtio` and `Usage`, the survey words and the `Error` variants. `futex` is a term of art said as a word, as `syscall` is, and `virtio` keeps its specification's spelling.
 
 ## What drives it
 
