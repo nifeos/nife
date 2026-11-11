@@ -153,7 +153,8 @@ fn insert(
 /// kernel's virtio confinement, its interrupt routed and enabled, and a zeroed DMA page that
 /// records its own physical base (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`).
 /// The hand-over's file service, installer and surveyor use disks of their own. `None` with no
-/// virtio disk, which is every boot `boot-check` makes and every board.
+/// virtio disk, which is every boot `boot-check` makes and every board, and `None` when the IOMMU
+/// refuses to attach it.
 fn wire_disk_zero(half: &mut KernelHalf) -> Option<VirtioBootGrant> {
     let (transport, intid, rid, bit) = if let Some(d) = crate::virtio::find_block_device() {
         (
@@ -177,10 +178,14 @@ fn wire_disk_zero(half: &mut KernelHalf) -> Option<VirtioBootGrant> {
     let dma = crate::memory::alloc_zeroed()
         .expect("no DMA frame for disk 0")
         .addr();
+    // Registered first, so a device the IOMMU refuses leaves nothing else behind.
+    let Some(vid) = crate::virtio::register(transport, dma, FRAME_SIZE, rid) else {
+        crate::memory::free(page_frames::PageFrame::from_addr(dma));
+        return None;
+    };
     write_dma_phys(dma);
     crate::sched::bind_interrupt(intid, crate::sched::create_rendezvous());
     crate::arch::interrupt_controller::enable(intid);
-    let vid = crate::virtio::register(transport, dma, FRAME_SIZE, rid);
     half.flags |= bit;
     Some(VirtioBootGrant { vid, intid, dma })
 }
