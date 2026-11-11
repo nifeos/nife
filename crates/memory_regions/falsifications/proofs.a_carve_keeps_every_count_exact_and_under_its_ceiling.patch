@@ -1,0 +1,24 @@
+Falsifies `memory_regions::proofs::a_carve_keeps_every_count_exact_and_under_its_ceiling`.
+
+The defect: the deciding walk of `charge` stops at the region itself and never asks its ancestors.
+It reads as a shortcut, since the commit walk still counts every ancestor and a lone region behaves
+exactly as before, but a root can then be pushed past its own ceiling through the regions below it.
+
+Expected to fail: the harness's `assert!(counts.within_ceilings, "past a ceiling")`, on a carve
+from the grandchild of a child at its ceiling.
+
+diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
+--- a/crates/memory_regions/src/table.rs
++++ b/crates/memory_regions/src/table.rs
+@@ -468,10 +468,7 @@ impl<const N: usize> RegionTable<N> {
+             if r.live.0[k] >= r.ceilings.0[k] {
+                 return false;
+             }
+-            at = r.parent;
+-            if at == NO_PARENT {
+-                break;
+-            }
++            break;
+         }
+         let mut at = name;
+         for _ in 0..N {

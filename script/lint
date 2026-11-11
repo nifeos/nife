@@ -4287,6 +4287,22 @@ PINNED = {
     ("RegionTable", "retype_run", "&mut self"),
     ("RegionTable", "retype_object_page", "&mut self"),
     ("RegionTable", "unpin", "&mut self"),
+    # Subtree ceilings (notes/memory-regions.md, "Subtree ceilings"). `insert_root_with_ceilings`
+    # is `insert_root` with the ceilings a root's subtree lives under; `release_object` lowers a
+    # live count and never touches a pin, a child count or a watermark. The two observers report
+    # counts against ceilings and never whether a region is pinned, childless or claimable, so
+    # neither can be the read half of a reclaim; the kernel reads them only to print a refusal and
+    # in tests. `Counted`, `Ceilings` and `CeilingReached` are their vocabulary.
+    ("-", "Counted", "enum"),
+    ("-", "Ceilings", "struct"),
+    ("-", "UNLIMITED", "const"),
+    ("Ceilings", "with", "self"),
+    ("Ceilings", "get", "self"),
+    ("-", "CeilingReached", "struct"),
+    ("RegionTable", "insert_root_with_ceilings", "&mut self"),
+    ("RegionTable", "release_object", "&mut self"),
+    ("RegionTable", "ceiling_reached", "&self"),
+    ("RegionTable", "live_and_ceiling", "&self"),
     # The protocol itself. `&mut self` is not a detail of the signature, it is the whole argument.
     ("RegionTable", "claim_for_destroy", "&mut self"),
     ("RegionTable", "return_to_parent", "&mut self"),
@@ -4304,10 +4320,10 @@ PINNED = {
 # `crates/memory_regions` at all, which is also why the surface pin above could not have saved it. Both
 # halves were needed and neither is sufficient.
 FREE_SITES = {
-    "create": (
-        "insert_root",
-        "the rollback taken when no region slot was free. `insert_root` returned None, so no name "
-        "was ever minted for this run and nobody else can be holding one.",
+    "create_with_ceilings": (
+        "insert_root_with_ceilings",
+        "the rollback taken when no region slot was free. `insert_root_with_ceilings` returned "
+        "None, so no name was ever minted for this run and nobody else can be holding one.",
     ),
     "destroy": (
         "claim_for_destroy",

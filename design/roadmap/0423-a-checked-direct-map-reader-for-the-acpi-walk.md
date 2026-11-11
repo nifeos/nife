@@ -1,5 +1,6 @@
 ---
-status: NOT-STARTED
+status: BUILT
+built: 2026-10-28
 raised: 2026-09-17
 promoted_from: a-checked-direct-map-reader-for-the-acpi-walk
 milestone_dependencies: none
@@ -72,6 +73,10 @@ nothing here should re-litigate what a table means.
 
 Nothing is blocked. This is the last unproved reach of the x86 discovery path, and it is the one
 place left where a firmware number reaches a dereference with no proved step between.
+
+## Follow-on
+
+- **None.**
 
 ## Index row
 

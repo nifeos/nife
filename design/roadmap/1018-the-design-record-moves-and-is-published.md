@@ -85,6 +85,9 @@ names a record file by path, 1,062 times today, writes `nifeos/record:<path>`, s
 `nifeos/record:design/naming.md`. The 7,774 milestone citations in code convert when each crate
 moves, under §315 (a crate's documentation leaves with it), and not in this move. The same section sends a note about one crate alone with that crate.
 
+A code repository checks each `milestone N`, `§N` and `TODO(milestone N)` citation by whether
+`design/roadmap/NNNN-*.md` or `design/decisions/NNNN-*` exists at the record commit basalt pins.
+
 The roadmap blocks already written are the hard part. A finished block's bullets name the files and
 checks that did the work, as bare paths such as `crates/x/src/y.rs`. Rewriting 7,845 of them is the
 sweep that `notes/citations.md` priced and refused for citations. So the recommendation is an
@@ -268,21 +271,19 @@ One decision each, recommendation first. Ask them one at a time.
    `helpers/milestone-branch-block.sh` and `ready-status.yml` to the record's pull request. Counted
    claims that fetch code at basalt's pins.
 
+7. Ruled 2026-11-11 (UTC): milestones stay files, with no published index, since every new number
+   would edit an index and merges would conflict there. Code checks its citations by file
+   existence, as the section on citations states. A generated index may follow if that proves too
+   slow.
+
 Still to be ruled by the architect:
 
-7. What a `milestone N` or `§N` citation in code, and the rule that a `TODO(milestone N)` names a
-   milestone, check against once the record has left. Code holds 7,774 milestone and 3,525 section
-   citations. Recommended: `nifeos/record` publishes an index of its numbers and titles, and each
-   code repository fetches it, so the check keeps its strength. The other option changes the
-   `TODO` rule and stops checking code citations.
 8. The creation of `nifeos/record` and of `nifeos/nifeos.org`. This block creates neither, and
    steps 6 to 8 wait on that approval.
 
 
 ## Follow-on
 
-- **Done.** Step 3, carried by `script/site`, `site/` and `.github/workflows/record-site.yml`.
-- **Done.** Step 1, the `# lint-scope:` lines in `script/lint`, and step 5, in the appendix.
 - **Outstanding.** Steps 2, 4 and 6 to 8 above. Checked 2026-11-09 against `script/roadmap`,
   which resolves no `nifeos/<repo>:<path>`, and `packages/homes.toml`, which sorts no note.
 - **Outstanding.** Two comments in `ci.yml` and the header of `empty-diff.yml` call

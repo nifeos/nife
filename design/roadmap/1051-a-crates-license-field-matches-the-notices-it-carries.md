@@ -1,5 +1,6 @@
 ---
-status: NOT-STARTED
+status: BUILT
+built: 2026-11-10
 promoted_from: a-crates-license-field-matches-the-notices-it-carries
 raised: 2026-11-05
 milestone_dependencies: none
@@ -44,6 +45,10 @@ notice").
 - `script/crate-standalone` fails a crate whose `license` field and carried notices disagree, and a
   test shows both directions failing.
 - `e1000e`, `designware_ethernet` and `designware_mobile_storage` pass it.
+
+## Follow-on
+
+- **None.**
 
 ## Index row
 
