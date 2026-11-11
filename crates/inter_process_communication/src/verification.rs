@@ -96,9 +96,9 @@ fn signal_preserves_the_invariant() {
 #[kani::unwind(3)]
 fn a_bound_rendezvous_never_yields_a_sender() {
     let (mut s, mut r, mut other, mut me) = (N::new(), N::new(), N::new(), N::new());
-    let sender_ptr = NonNull::from(&mut s);
+    let sender_pointer = NonNull::from(&mut s);
     let mut e: Rendezvous<N> = Rendezvous::new();
-    // SAFETY: four distinct fresh locals declared before `e`, each minted once. `sender_ptr` is
+    // SAFETY: four distinct fresh locals declared before `e`, each minted once. `sender_pointer` is
     // only ever compared.
     let (s, r, other, me) =
         unsafe { (mint(&mut s), mint(&mut r), mint(&mut other), mint(&mut me)) };
@@ -108,7 +108,7 @@ fn a_bound_rendezvous_never_yields_a_sender() {
     let mut refused = 0usize;
     e.bind_to_interrupt(|t| {
         assert!(
-            t == sender_ptr,
+            t == sender_pointer,
             "refused a thread nobody queued as a sender"
         );
         refused += 1;

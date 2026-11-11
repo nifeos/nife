@@ -127,8 +127,8 @@ is the ELF lesson reused: prove (and here, harden) the loopless leaves; the walk
 
 ## `crates/inter_process_communication`
 
-Fifteen in `crates/inter_process_communication` <!--count:inter-process-communication-harnesses-->,
-the synchronous-rendezvous state machine: the rendezvous six the table names, in
+Sixteen in `crates/inter_process_communication` <!--count:inter-process-communication-harnesses-->,
+the synchronous-rendezvous state machine: the rendezvous harnesses the table names, in
 `src/verification.rs` (`src/lib.rs` at the writing), plus the notification and timer harnesses
 those later subsystems added to the same crate (four and three).
 It is the decision core of `sched`'s `Rendezvous`, extracted as pure logic. It was restated over
@@ -142,6 +142,7 @@ composing with the `Queue`'s own FIFO proof below.
 | `send_rendezvous_iff_a_receiver_waited` | a send rendezvouses exactly when a receiver was waiting, else blocks (no dropped message, no spurious block) |
 | `receive_drains_a_pending_signal_first` | a receive takes a pending async signal before a blocked sender, so a signal is never lost |
 | `a_collected_sender_is_forgotten` | once a receive collects a blocked sender, the endpoint holds no name for it in either queue and no later receive can produce it again (the endpoint half of the one-shot Reply) |
+| `a_bound_rendezvous_never_yields_a_sender` | binding to an interrupt refuses exactly the parked senders, and no later receive on the bound rendezvous is handed a sender's words |
 
 These are inductive-step proofs: assume a valid state, apply one operation, check the invariant
 holds. A non-empty queue is modeled with a single waiter. The decision and the invariant depend only
