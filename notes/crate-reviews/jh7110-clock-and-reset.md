@@ -12,9 +12,8 @@ clocks before releasing resets. It computes the I2C input clock, the SD card clo
 standard-mode I2C timing. It also holds the strings by which the chip's two device trees (mainline
 Linux and the vendor U-Boot) name each controller. It never touches a register; the caller maps the
 window and stores. It is `no_std` with no `unsafe` and no dependency, and nine Kani harnesses prove
-its decoders and the order of every plan. Every name has a ratified block, one of them by the
-maintainer pending the architect. The crate's text, README, manifest and falsification patches name
-no other project of this tree.
+its decoders and the order of every plan. Every name has a ratified block. The crate's text,
+README, manifest and falsification patches name no other project of this tree.
 
 ## Identity
 
