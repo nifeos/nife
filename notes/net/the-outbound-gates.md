@@ -5,8 +5,7 @@
 *An appendix to [`notes/net.md`](../net.md), which is the page to read. This file holds what phase
 B's gates prove, the ephemeral-port fix, the RX-poll lost wakeup, and the UDP gate's move off the
 host resolver. It exists to verify or challenge the main page. A reader who only needs to use the
-socket contract should not have to open it. The directory `notes/net/` and this file's stem are
-provisional names; naming is calef's.*
+socket contract should not have to open it.*
 
 *Records cited below: milestone 27 (Rust `std` on the native ABI) and milestone 107 (the socket
 contract learns to accept).*

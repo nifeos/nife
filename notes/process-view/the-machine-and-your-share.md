@@ -5,7 +5,7 @@
 An appendix to [the process view](../process-view.md), written 2026-09-26 by the lane
 `milestone/126-free` for milestone 126 (the `procps` package). It records how DECISIONS §225 (`free`
 sees the machine and your share) was built, and the wire facts the ruling left for the building lane
-to propose. The stem `the-machine-and-your-share` is a provisional name, minted with this file.
+to propose.
 
 ## What was built
 
