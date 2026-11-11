@@ -55,7 +55,7 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
 4. The NVMe admin plane, as §86 states it: a userspace admin process holds BAR0 and the admin
    queues and grants the data-path driver its doorbell page and I/O queues. The admin half of
    `kernel/src/non_volatile_memory_express.rs` goes. The split keeps §86's option 4 addable.
-   Built by #3427, merged as nifeos/nife@7e45d7269.
+   Built: #3427.
 5. The JH7110 PMIC route, as §251 (restarting the machine is a kernel object the progenitor
    hands out) states it. A userspace route holds the I2C5 controller's page as a `DeviceFrame`,
    brings I2C5's clocks and reset up through the step 2 server (§320 (the JH7110 clock and
@@ -66,7 +66,7 @@ Ruled 2026-11-10 (UTC). The order follows the dependencies, and each step is one
 6. The x86 CMOS read, as §130 (how the userspace clock service reads the x86 CMOS RTC) states
    it: the clock service holds a `PortRange` over ports 0x70 and 0x71 and reads the CMOS itself.
    `clock_contract::rtc::CMOS` names the two ports the service reads, and the kernel reads no CMOS.
-   Built by #3426, merged as nifeos/nife@cc48e8b34.
+   Built: #3426.
 7. A virtio driver starts with a mediated or a direct grant (§23 (multi-queue DMA confinement)),
    as the next section designs it. Ruled 2026-11-10 (UTC). That section lists its four pull
    requests.
@@ -279,15 +279,12 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 
 ## Follow-on
 
-- **Done.** Step 4, the NVMe admin plane, in #3427 (nifeos/nife@7e45d7269).
-- **Done.** Step 6, the x86 CMOS read, in #3426 (nifeos/nife@cc48e8b34).
-- **Outstanding.** Step 1, e1000e to the xHCI shape. It waits for milestone 811's step 6, which
-  has not landed: the kernel still builds `net_stack` over e1000e.
-- **Outstanding.** Step 2, the JH7110 clock and reset server, on branch
-  `milestone/1062-the-jh7110-clock-and-reset-server`.
-- **Outstanding.** Steps 3 and 5, the GMAC control plane and the PMIC route. Both wait for step 2,
-  and radon proves each.
-- **Outstanding.** Step 7, the virtio grants, on the `lane/1062-virtio-direct-*` branches.
+- **Done.** Step 4 in #3427 (nifeos/nife@7e45d7269).
+- **Done.** Step 6 in #3426 (nifeos/nife@cc48e8b34).
+- **Outstanding.** Step 1 waits for milestone 811's step 6.
+- **Outstanding.** Step 2 is on `milestone/1062-the-jh7110-clock-and-reset-server`.
+- **Outstanding.** Steps 3 and 5 wait for step 2.
+- **Outstanding.** Step 7 is on the `lane/1062-virtio-direct-*` branches.
 
 ## Index row
 
