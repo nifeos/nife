@@ -14,8 +14,9 @@
 //!   milestone 811 (the boot services leave the kernel) moves every such starter to userspace.
 //! - A TRNG service that never sends its readiness report leaves a kernel thread parked on the
 //!   receive; the boot carries on after five seconds and `trng` says why.
-//! - A progenitor that never sends on the screen endpoint and never deletes it leaves
-//!   [`paint_the_verdict`]'s kernel thread parked on its receive for the life of the boot.
+//! - A progenitor that never sends on the screen endpoint, because the program died before its
+//!   verdict or was never built, leaves [`paint_the_verdict`]'s kernel thread parked on its
+//!   receive for the life of the boot.
 
 use boot_ladder::kernel_half::{KernelHalf, flag, word};
 

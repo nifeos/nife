@@ -98,8 +98,8 @@ name and turned the disk boots' verdicts red.
   starters is milestone 811 (the boot services leave the kernel)'s work.
 - The verdict reaches the console after the tour line, so a watcher reading the ladder's order
   needs `serial_console`'s `has_reached` rather than the ratchet alone.
-- A progenitor that never sends on the screen endpoint and never deletes it leaves the kernel
-  thread that paints the verdict parked on its receive.
+- A boot whose program never sends its verdict leaves the kernel thread that paints it parked on
+  its receive.
 - A kill report another writer shredded keeps all but its first line, so the transcript still
   reads as the kernel writing during the boot.
 

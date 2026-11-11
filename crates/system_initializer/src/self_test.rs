@@ -60,14 +60,12 @@ impl SelfTestGrants {
 }
 
 /// What [`run_self_test`] leaves for [`print_self_test`]: the transcript frame and how far the
-/// program wrote, the packed tally its `DONE` carried (`None` when it never said `DONE`), and the
-/// kernel's screen endpoint when the kernel granted one.
+/// program wrote, and the packed tally its `DONE` carried (`None` when it never said `DONE`).
 pub(super) struct SelfTestTranscript {
     frame: Option<u64>,
     end: usize,
     tally: Option<u64>,
     missing: bool,
-    screen: Option<u64>,
 }
 
 /// **Build and run `boot_self_test`, and wait for it to finish.** Every capability the kernel
@@ -83,16 +81,16 @@ pub(super) fn run_self_test(
     // A kernel without a self-test grants no page, and there is nothing to run.
     let screen = grants.screen.then_some(g.self_test_screen);
     if !grants.page {
+        verdict_to_screen(screen, None);
         return SelfTestTranscript {
             frame: None,
             end: 0,
             tally: None,
             missing: false,
-            screen,
         };
     }
-    let mut transcript = run_measured(g, memory_region, (fs, table), grants, entropy);
-    transcript.screen = screen;
+    let transcript = run_measured(g, memory_region, (fs, table), grants, entropy);
+    verdict_to_screen(screen, transcript.tally);
     capability_delete(g.self_test_page);
     if grants.random_number_generator {
         capability_delete(g.self_test_random_number_generator);
@@ -118,7 +116,6 @@ fn run_measured(
         end: 0,
         tally: None,
         missing: true,
-        screen: None,
     };
     let Some(elf) = measured(fs, table, "boot_self_test").elf else {
         return none;
@@ -213,7 +210,6 @@ fn run_measured(
         end,
         tally,
         missing: false,
-        screen: None,
     }
 }
 
@@ -346,10 +342,9 @@ fn reclaim(region: u64) {
 
 /// **Print the transcript, line by line, then let the frame go.** A program that died before its
 /// verdict, or a boot with no program, says so: with no `nife self-test:` line, `boot-check` fails
-/// the boot. A verdict also goes to the kernel's screen endpoint, through [`verdict_to_screen`].
+/// the boot. The kernel's screen already has the verdict, from [`verdict_to_screen`].
 #[inline(never)]
 pub(super) fn print_self_test(terminal_endpoint: u64, t: &SelfTestTranscript) {
-    verdict_to_screen(t);
     if t.missing {
         announce(
             terminal_endpoint,
@@ -375,15 +370,17 @@ pub(super) fn print_self_test(terminal_endpoint: u64, t: &SelfTestTranscript) {
     capability_delete(frame);
 }
 
-/// **Send the verdict's tally to the kernel's screen endpoint, then let the endpoint go.**
+/// **Send the verdict's tally to the kernel's screen endpoint, then let the endpoint go**, as
+/// soon as the program is done and with the kernel's other self-test grants, so the slot is held
+/// no longer than they are.
 ///
 /// On a machine whose screen the kernel still paints, the progenitor's console reaches only the
 /// UART, so the kernel paints the verdict there itself: it renders the line from the tally with
 /// `boot_ladder::verdict`, the code the program printed it with, and accepts nothing else on this
 /// endpoint. The endpoint is deleted whether or not a verdict came, so it is one message at most.
-fn verdict_to_screen(t: &SelfTestTranscript) {
-    let Some(screen) = t.screen else { return };
-    if let Some(packed) = t.tally {
+fn verdict_to_screen(screen: Option<u64>, tally: Option<u64>) {
+    let Some(screen) = screen else { return };
+    if let Some(packed) = tally {
         let _ = user_mode_runtime::send(screen, packed, 0, 0);
     }
     capability_delete(screen);
