@@ -36,7 +36,9 @@ unsafe fn mint(n: *mut N) -> Unqueued<N> {
 
 /// Put `e` into an arbitrary valid state: at most one queue non-empty (modeled as one waiter), a
 /// symbolic pending count and a symbolic interrupt binding. A token that is not queued is dropped,
-/// which strands its node and nothing else.
+/// which strands its node and nothing else. A binding paired with a queued sender cannot arise,
+/// because `bind_to_interrupt` empties the sender queue; seeding it anyway only widens what each
+/// harness covers.
 fn seed(e: &mut Rendezvous<N>, sender: Unqueued<N>, receiver: Unqueued<N>) {
     e.pending = kani::any();
     e.bound_to_interrupt = kani::any();
@@ -71,16 +73,11 @@ fn receive_preserves_the_invariant() {
     assert!(e.one_queue_invariant());
 }
 
-/// Falsification: unfalsifiable. No minimal defect in `signal` can turn this harness red, and
-/// that is a fact about the operation rather than a gap in the effort. The invariant is "at
-/// most one queue is non-empty", and `signal` takes no node: its two branches pop a receiver
-/// (which can only empty a queue) and increment a counter. Nothing it can be mistakenly
-/// written to do enqueues anything, so every mutation of it either leaves the invariant true
-/// or is caught by a neighbouring harness instead. The harness earns its place as a guard
-/// against `signal` growing an enqueue path later, not as evidence about the code today.
-/// Recording a patch here would mean patching a sibling operation and filing the red under
-/// this name, which is the manufactured evidence DECISIONS §134 (a harness carries a
-/// machine-replayable falsification record, or it is not evidence) exists to refuse.
+/// **A signal preserves the one-queue invariant**, and it does not panic on any count. `signal`
+/// takes no node, so no slip in it can enqueue anything; what it can get wrong is the count. With
+/// `seed`'s symbolic `pending`, a plain `pending + 1` overflows at `u32::MAX` and Kani's overflow
+/// check turns this harness red, which is why the count saturates.
+/// Falsification: replayable `crates/inter_process_communication/falsifications/verification.signal_preserves_the_invariant.patch`
 #[kani::proof]
 fn signal_preserves_the_invariant() {
     let (mut s, mut r) = (N::new(), N::new());
@@ -90,6 +87,50 @@ fn signal_preserves_the_invariant() {
     seed(&mut e, s, r);
     let _ = e.signal();
     assert!(e.one_queue_invariant());
+}
+
+/// **A rendezvous bound to an interrupt never hands a receiver a sender's words.** From every
+/// seeded state, binding refuses the parked sender (exactly that one, if `seed` queued it), and
+/// after any one further send, signal or receive, a receive is never [`Receive::FromSender`].
+/// `unwind(3)` is sound for `removing_a_waiter_preserves_the_invariant`'s reason: `seed` queues at
+/// most one waiter, and Kani checks the unwinding assertion.
+/// Falsification: replayable `crates/inter_process_communication/falsifications/verification.a_bound_rendezvous_never_yields_a_sender.patch`
+#[kani::proof]
+#[kani::unwind(3)]
+fn a_bound_rendezvous_never_yields_a_sender() {
+    let (mut s, mut r, mut other, mut me) = (N::new(), N::new(), N::new(), N::new());
+    let sender_pointer = NonNull::from(&mut s);
+    let mut e: Rendezvous<N> = Rendezvous::new();
+    // SAFETY: four distinct fresh locals declared before `e`, each minted once. `sender_pointer` is
+    // only ever compared.
+    let (s, r, other, me) =
+        unsafe { (mint(&mut s), mint(&mut r), mint(&mut other), mint(&mut me)) };
+    seed(&mut e, s, r);
+
+    let sender_was_queued = !e.senders.is_empty();
+    let mut refused = 0usize;
+    e.bind_to_interrupt(|t| {
+        assert!(
+            t == sender_pointer,
+            "refused a thread nobody queued as a sender"
+        );
+        refused += 1;
+    });
+    assert_eq!(refused, usize::from(sender_was_queued));
+    assert!(e.one_queue_invariant());
+
+    // One symbolic step between the bind and the receive: a send (refused), a signal, a receive.
+    match kani::any::<u8>() {
+        0 => assert!(matches!(e.send(other), Send::Refused(_))),
+        1 => {
+            let _ = e.signal();
+        }
+        2 => {
+            let _ = e.receive(other);
+        }
+        _ => {}
+    }
+    assert!(!matches!(e.receive(me), Receive::FromSender(..)));
 }
 
 /// **A send rendezvouses exactly when a receiver was waiting**, and with exactly *that*

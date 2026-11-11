@@ -827,6 +827,63 @@ fn an_interrupt_becomes_a_message() {
     crate::sched::reclaim_region(region).expect("test region would not reclaim");
 }
 
+/// **Binding a rendezvous to an interrupt refuses the sender already parked on it.** A thread
+/// blocks in `SEND` on an ordinary rendezvous; the bind wakes it with its send refused (the flag
+/// `SEND` turns into `NotPermitted`), and the sender queue is empty, so the driver's first
+/// `RECEIVE` there can only be handed an interrupt. No interrupt is raised: the route is published
+/// and left stale when the region is reclaimed, as the other interrupt tests leave theirs.
+///
+/// Name: provisional (2026-11-11 UTC).
+///
+/// Falsification: replayable `kernel/falsifications/sched.tests.binding_to_an_interrupt_refuses_a_parked_sender.patch`
+#[test_case]
+fn binding_to_an_interrupt_refuses_a_parked_sender() {
+    static WOKE: AtomicBool = AtomicBool::new(false);
+    static REFUSED: AtomicBool = AtomicBool::new(false);
+    WOKE.store(false, Ordering::SeqCst);
+    REFUSED.store(false, Ordering::SeqCst);
+
+    let region = crate::memory_region::create(1).expect("no region for a test rendezvous");
+    let ep = super::create_rendezvous_from(region).expect("no rendezvous from region");
+
+    let tid = super::spawn(move || {
+        super::ipc_send(ep, [1, 0, 0]); // blocks: nobody receives here
+        REFUSED.store(
+            super::take_ipc_aborted() && super::take_ipc_refused(),
+            Ordering::SeqCst,
+        );
+        WOKE.store(true, Ordering::SeqCst);
+    })
+    .expect("spawn failed");
+
+    // Waited on, not yielded for: the sender may be on another core.
+    assert!(
+        wait_for(|| crate::sched::rendezvous_waiting_senders(ep) == 1),
+        "the sender never parked, so the bind had nobody to refuse",
+    );
+
+    super::bind_interrupt(delivery_interrupt_number(), ep);
+
+    assert!(
+        wait_for(|| WOKE.load(Ordering::SeqCst)),
+        "the bind left the parked sender asleep",
+    );
+    assert!(
+        REFUSED.load(Ordering::SeqCst),
+        "the parked sender woke without its send refused",
+    );
+    assert_eq!(
+        crate::sched::rendezvous_waiting_senders(ep),
+        0,
+        "a sender is still queued where the driver's receive would collect it",
+    );
+    assert!(
+        wait_for(|| !crate::sched::is_thread_present(tid)),
+        "the refused sender never exited",
+    );
+    crate::sched::reclaim_region(region).expect("test region would not reclaim");
+}
+
 /// **A spawn quota caps how many children a spawner can have alive, and replenishes on death.**
 ///
 /// This is the resource-exhaustion bound from the security audit: a process cannot make the
