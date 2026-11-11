@@ -124,60 +124,35 @@ with the pinned nightly for `aarch64-unknown-none-softfloat`, `riscv64imac-unkno
 `x86_64-unknown-none` and the host, all exit 0. The release workflow builds the same four. The
 silicon is riscv64 only; the crate is not.
 
-## Standalone, measured 2026-10-11 (UTC)
+## Standalone
 
-`script/crate-standalone designware_ethernet` fails today, at base `ae6b91e79`. The manifest
-inherits `license` and `lints` from nife's workspace and states no `rust-version`, and there is no
-README, `LICENSE-MIT` or `LICENSE-APACHE`. Those hold for all nine crates. It does not build alone:
-`address_space_map` and `device_tree_blob` are path dependencies outside the copy, so neither the
-build nor Kani ran. A test reads `../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb`,
-which `cargo package` cannot ship. Beyond manifest and files, 18 lines cite this tree: 8 `milestone
-N`, 5 tree paths, 2 `§N`, 2 provenance blocks and 1 naming calef.
+`script/crate-standalone designware_ethernet` is clean: the manifest and files pass, the crate has
+no dependency, it builds on 1.88 for the host and the three bare-metal targets, stock Kani proves
+all six harnesses, and each falsification patch makes its harness fail. `script/names` reports the
+crate's name and all 173 of its `Name:` blocks ratified.
 
-`script/names` reports the name `designware_ethernet` ratified (checked 2026-10-25).
+## Before the move
 
-Measured again on 2026-10-25 (UTC) with `--no-kani`: the manifest and files pass, and the only
-citations left sit in `Name:` blocks, which stay until the ratification pass. `address_space_map`
-and `device_tree_blob` are still path dependencies, so the copy does not build; the second half of
-the cut removes them.
+The shared template's check job holds a crate repository's names and prose at a ceiling of 0, and
+`script/crate-standalone` runs none of those gates. Run over the tree `script/crate-move --dry-run`
+stages, at the template commit the moved crate repositories pin, they find:
 
-Measured again after the cut on 2026-10-25 (UTC), with Kani: the manifest has no dependencies, the
-crate builds for the host and the three targets on 1.88. Stock Kani proves the harnesses, and each
-falsification patch makes its harness fail. The only failures left are citations in `Name:` blocks,
-which the ratification pass settles.
+| gate | findings | what they are |
+|---|---|---|
+| `register_names` | 91 | 60 uses of `address` with no `bus` or `mac` qualifier, where it means a PHY's management bus address or the station (MAC) address; 20 lengths and sizes with no unit, burst lengths among them; 4 offsets that do not end `_REGISTER`; 2 constants the gate calls unexpanded; 3 doc comments that state a source spelling with no matching alias |
+| `spelled_out` | 2 | the two private 100BASE-TX constants: the gate reads `TX` as transmit, where it is the standard's name for the twisted-pair layer |
+| `prose_acronyms` | 25 | acronyms in doc comments not expanded at their first use |
+
+Each is a rename or a doc-comment edit in this tree before the move, with its consumers. A rename
+of a public name the architect ratified goes to the architect as one table before the move; the
+maintainer decides the private names, parameters and tests provisionally. The README meets the
+template's prose caps.
 
 ## Review before release
 
 - The public API speaks the device's vocabulary, not nife's: no nife capability type, spawn handoff
   or nife error enum in a public signature. A reviewer judges this; no script can. Known today:
   `Handoff` is nife's spawn ABI. The cut removed `jh7110::discover`, which took a `DeviceTreeBlob`.
-
-## Names a stranger may misread, open before release
-
-design/naming.md's tests and Fork 5 of milestone 857 (names that stand on their own) judge
-each name. The lines below list the names that read as something other than clear or a term, as of
-2026-10-26 (UTC), copied as they stand. Each stays open until a ruling keeps or changes it. The tree
-keeps no record of a release-track crate's names (ruled 2026-10-26 UTC), so this list is the open
-work, and the lane that renames a name drops its line.
-
-### Nife's own plan
-
-- `layout` (`src/layout.rs`): nife: nife's own process plan
-
-### Belongs to something else
-
-- `jh7110` (`src/jh7110.rs`): scope: one SoC's glue in a MAC crate
-- `motorcomm_physical_layer_device` (`src/motorcomm_physical_layer_device.rs`): scope: one vendor's PHY in a MAC crate
-- `first_cell` (`src/jh7110.rs`): scope: a device-tree cell reader in a MAC crate
-- `FALLBACK_GMAC0` (`src/motorcomm_physical_layer_device.rs`): scope: one board's PHY values in a MAC crate
-
-### Generic
-
-- `interface` (`src/jh7110.rs`): generic
-- `Applied` (`src/motorcomm_physical_layer_device.rs`): generic
-- `PadDriveStrength` (`src/motorcomm_physical_layer_device.rs`): generic
-- `Settings` (`src/motorcomm_physical_layer_device.rs`): generic
-- `SettingsSource` (`src/motorcomm_physical_layer_device.rs`): generic
 
 ## Exit
 
@@ -225,8 +200,8 @@ names until the ratification pass, so this section keeps the links it carried.
   network lane is active, so the API is still moving.
 - The device-tree fixtures (`tests/fixtures/*.dts`) are excerpts of the mainline and vendor JH7110
   trees. Their licenses were not checked here; record each before `cargo package` ships them.
-- Three harnesses is still thin for a published driver crate; whether MDIO sequencing wants one
-  too is open.
+- MDIO sequencing, the PHY configuration writes and controller bring-up have unit tests against
+  the simulator and no harness.
 - `needs_person` is `yes` because the exit includes a publication only calef can approve. Everything
   before step 7 can start now.
 

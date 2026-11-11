@@ -146,15 +146,28 @@ is not.
 
 ## Standalone
 
-`script/crate-standalone jh7110_clock_and_reset` builds the crate in a copy on 1.88 for the host and
-the three bare-metal targets, proves all nine harnesses with stock Kani, and replays all nine
-falsification patches red. It fails on one check: names. Nine names in the crate carry the state `recorded`
-and not `ratified`, the first being `CLOCK_PARENT_MASK`; `python3 helpers/name_release.py --draft
-jh7110_clock_and_reset` prints the table for the pull request that ratifies them. An
-architect decides that, and the crate stays unmoved until then. The only citations of this tree
-that remain sit in `Name:` blocks, which stay until the ratification pass.
+`script/crate-standalone jh7110_clock_and_reset` is clean: it builds the crate in a copy on 1.88 for
+the host and the three bare-metal targets, proves all nine harnesses with stock Kani, and replays
+all nine falsification patches red. `script/names` reports the crate's name and every `Name:` block
+ratified. The maintainer ratified one of them, `CLOCK_PARENT_MASK`, provisionally, and the
+architect has not yet ruled on it.
 
-`script/names` reports the crate's own name `jh7110_clock_and_reset` ratified.
+## Before the move
+
+The shared template's check job holds a crate repository's names and prose at a ceiling of 0, and
+`script/crate-standalone` runs none of those gates. Run over the tree `script/crate-move --dry-run`
+stages, at the template commit the moved crate repositories pin, they find:
+
+| gate | findings | what they are |
+|---|---|---|
+| `spelled_out` | 7 | the private clock and reset ids named for the binding's `SDIO0`, `SDIO1` and `GMAC0_TX` |
+| `register_names` | 8 | five `len` and `size` fields with no unit; the field `power_management_chip_address`, the PMIC's I2C bus address, with no `bus` qualifier; and two test names that say `addresses` |
+| `prose_acronyms` | 28 | acronyms in doc comments not expanded at their first use |
+
+Each is a rename or a doc-comment edit in this tree before the move, with its consumers. A rename
+of a public name the architect ratified goes to the architect as one table before the move; the
+maintainer decides the private names, parameters and tests provisionally. The README meets the
+template's prose caps.
 
 ## Review before release
 
@@ -212,7 +225,7 @@ names until the ratification pass, so this section keeps the links it carried.
 - The device-tree fixtures are excerpts of the mainline and vendor JH7110 trees. They moved to
   `crates/machine_discovery/tests/fixtures/` with the walk, so the crate ships none; their licenses
   were not checked.
-- `standard_mode_100k` has not run on the board since its rewrite. At the board's input clock of
+- `standard_mode_100_kilohertz` has not run on the board since its rewrite. At the board's input clock of
   49.5 MHz it programs a high count of 198 and a low count of 297, where the earlier version
   programmed 208 and 229. Both meet the I2C standard-mode minimums by arithmetic, but a PMIC
   reset on the board must confirm the new counts before anyone calls them proven. The check is a
