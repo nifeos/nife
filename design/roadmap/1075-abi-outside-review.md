@@ -61,8 +61,8 @@ dependency); everything else is two-way and the maintainer decides it.
 ### P1: before the tag
 
 3. The crate names nife and nife programs.
-   Finding: `helpers/lint_externalized_crates.py` counts six hits, and the dry run's own
-   nife-word check fails: `README.md` ("written for the nife kernel"), `src/lib.rs` line 270 (a comment
+   Finding: `helpers/lint_externalized_crates.py` counts six hits. The dry run's own
+   nife-word check fails on `README.md` ("written for the nife kernel"), `src/lib.rs` line 270 (a comment
    about "nife's standard library" generator), `src/rendezvous.rs` line 30 ("makes nife a capability
    system"), and `src/virtio.rs` line 33 to 35. These lines name `entropy`, `net_stack`, `gpu_driver`,
    `keyboard_driver` and `system_initializer` with their ring offsets.
@@ -98,8 +98,8 @@ dependency); everything else is two-way and the maintainer decides it.
 6. The crate root understates the register convention.
    Finding: `src/lib.rs` line 6 to 7 say `x0` carries the slot, `x1` the method, `x2` to `x4` the
    arguments and `x0` the result. The runtime's trap moves six words in both directions
-   (`x0` to `x5`, `a0` to `a5`); `RECEIVE` writes `x3` and `x4`; a death delivers a sixth word
-   (`src/fault.rs` line 26); `CONFIGURE` reads "argument register 6" (`src/thread_control_block.rs` line 9),
+   (`x0` to `x5`, `a0` to `a5`). `RECEIVE` writes `x3` and `x4`. A death delivers a sixth word
+   (`src/fault.rs` line 26). `CONFIGURE` reads "argument register 6" (`src/thread_control_block.rs` line 9),
    a register the root never admits. The names are aarch64's throughout; the README says "or the
    architecture's equivalent" and the crate never says what that is beyond `START` (`src/thread_control_block.rs` line 29)
    and `LIST` (`src/address_space.rs` line 31). The x86_64 names of words 3 to 5 are not verified here.

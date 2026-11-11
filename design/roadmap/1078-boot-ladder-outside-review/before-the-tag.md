@@ -55,7 +55,7 @@ An appendix to [the milestone](../1078-boot-ladder-outside-review.md).
    Finding: `"nife capability shell"` appears as a literal at `xtask/src/install.rs` line 130 and 185,
    `xtask/src/confirm.rs` line 54, `xtask/src/rollback.rs` line 145, `xtask/src/swish_check/launch.rs` line 206,
    `xtask/src/swish_check/transcript.rs` line 131, `xtask/src/swish_check/boot.rs` line 480 and
-   `xtask/src/uefi_screen_modes.rs` line 52, although `xtask` already depends on the crate and uses
+   `xtask/src/uefi_screen_modes.rs` line 52. Yet `xtask` already depends on the crate and uses
    `boot_ladder::PROMPT` at `xtask/src/install.rs` line 82. The crate's own `BUGS` (`src/lib.rs` line 12)
    says nothing gates this.
    Why it matters: a wording change to `PROMPT` passes every unit test and fails those gates as a

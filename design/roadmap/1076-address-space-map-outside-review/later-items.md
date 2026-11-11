@@ -45,7 +45,7 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
 
 17. nife's checks that walk `crates/` lose this crate.
     Finding: `helpers/interface_declarations_check.py` finds `pub const INTERFACE_ID` by reading
-    `crates/*/src/lib.rs` against the table in milestone 956 (the linked interfaces carry checkable versions)'s block; after the move the crate's `lib.rs` is not in the tree and the row for id 2 has no source to check. `LOW_HALF_SPLIT_SHIFTS`
+    `crates/*/src/lib.rs` against the table in the block of milestone 956 (the linked interfaces carry checkable versions). After the move the crate's `lib.rs` is not in the tree and the row for id 2 has no source to check. `LOW_HALF_SPLIT_SHIFTS`
     restates `crates/paging`'s `SPLIT_SHIFT` with no test tying the two. After the move the restatement lives in another repository. Milestone 1017 (the contract crates leave in this order) names the class ("nife's tools that walk
     `crates/` also lose each crate").
     Evidence: `helpers/interface_declarations_check.py` lines 58 and 74; `src/lib.rs` lines 289 to 292.
