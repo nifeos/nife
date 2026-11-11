@@ -170,9 +170,6 @@ needed to use the contract.
 - A listen grant belongs to the `Stack` endpoint, not the client, because an endpoint carries no
   sender identity. Two clients sharing one endpoint share its grant. See
   [the-inbound-half.md](net/the-inbound-half.md).
-- An accepted stream reports its peer as `0.0.0.0:0`, because `OPERATION_ACCEPT`'s reply carries no peer.
-  Both fixes change what two programs agree on, so both are calef's. See
-  [std-tcp-listener.md](net/std-tcp-listener.md).
 - `virtio::MAXIMUM_DEVICES` never reuses a slot, and a dead net service's DMA page and shadow ring
   are not returned. See [memory-and-reclamation.md](net/memory-and-reclamation.md).
 - No artifact says which components may serve inbound ports, where a static seL4 system description

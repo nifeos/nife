@@ -128,6 +128,7 @@ impl Table {
         to: Reply,
         entry: usize,
         word: u64,
+        peer: u64,
     ) {
         let badge = self.socks[entry].map_or(0, |s| s.badge);
         let minted = user_mode_runtime::badge(MINT, badge);
@@ -137,7 +138,7 @@ impl Table {
             return;
         }
         let minted = minted as u64;
-        match reply_capability(to, word, 0, minted) {
+        match reply_capability(to, word, peer, minted) {
             Ok(true) => {}
             // Answered, but the copy did not land: the client's table was full. Nobody holds the
             // socket, so it goes now rather than fill an entry for good.

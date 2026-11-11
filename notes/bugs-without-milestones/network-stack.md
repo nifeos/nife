@@ -13,11 +13,10 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  design/roadmap/0257-network-boot-radon.md | 428 KiB/s TFTP; nobody checked whether blksize or the TFTP window is the limit | Find what limits radon's TFTP rate | S  |
 |  design/roadmap/0384-a-name-resolver-and-who-holds-it.md | resolver UDP path (source check, keep-listening on forged reply) has run on no boot; the gate asks over TCP | Exercise the resolver's UDP path against a test peer | M  |
 |  notes/name-resolution.md | resolver's UDP path (source check, keep-listening on forged reply) has run on no boot | Gate the resolver's UDP path on a boot | M  |
-|  notes/net.md | accepted stream reports peer `0.0.0.0:0` because `OPERATION_ACCEPT` reply has no peer (contract change, calef's call) | Carry the peer address in the accept reply | S  |
 |  notes/net.md | `net_stack` serves one synchronous exchange at a time; listener backlog one deep | Concurrent connections in net_stack | L  |
 |  notes/net.md | no artifact says which components may serve inbound ports; nothing in `crates/socket_contract` is machine-checked | Machine-check inbound-port authority | M  |
 |  notes/net.md | DMA region is one 4 KiB page so MTU is 576 and full frames do not fit | Multi-page net DMA region for a full MTU | M  |
-|  notes/std.md (net bullet) | `accept` gives no peer address; no non-blocking mode or timeouts; one-connection backlog; no IPv6; port reuse after fast churn | `std::net` gaps: peer address, timeouts, non-blocking, backlog | M  |
+|  notes/std.md (net bullet) | no non-blocking mode or timeouts; one-connection backlog; no IPv6; port reuse after fast churn | `std::net` gaps: timeouts, non-blocking, backlog | M  |
 |  pinned_tls_client/src/lib.rs | no rotation story when the pinned root retires | A rotation path for the pinned TLS root | M  |
 |  roadmap 0783 | how much of the net-stack seed an attacker must guess is not measured | Measure the net-stack seed's guessable share | S  |
 |  roadmap 0892 | network grant is one flag, no per-destination filter; "unowned" | Per-destination network filter | L  |

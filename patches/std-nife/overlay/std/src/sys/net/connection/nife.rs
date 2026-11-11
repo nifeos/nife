@@ -21,8 +21,6 @@
 
 //! ## What is Unsupported, and why
 //!
-//! - **An accepted connection's peer address.** The `OPERATION_ACCEPT` reply carries none, so
-//!   `accept` and `peer_addr()` report `0.0.0.0:0` (notes/net/std-tcp-listener.md).
 //! - **Non-blocking mode and timeouts.** The contract is blocking-only with no poll verb:
 //!   `set_nonblocking(true)` and `set_*_timeout(Some(..))` refuse; `false` and `None` succeed.
 //! - **DNS without a resolver grant** (numeric addresses only; the end of this file), **IPv6**
@@ -696,13 +694,13 @@ impl TcpListener {
     /// A listener and a connection are two objects: net_stack answers `ACCEPT` with the
     /// connection's own capability, and `accept` files it under a *new* id with that id's page,
     /// which the listener never had. The listener re-arms inside the same call, so accepting in a
-    /// loop works. **The peer address is `0.0.0.0:0`**: the contract's reply carries no peer
-    /// (module docs).
+    /// loop works. **The peer address** is the reply's second word, unpacked by `word_peer`, and
+    /// is also what `peer_addr()` on the returned stream reports.
     pub fn accept(&self) -> io::Result<(TcpStream, SocketAddr)> {
         let conn = alloc_id().ok_or_else(|| {
             io::const_error!(io::ErrorKind::Other, "too many open sockets (contract limit)")
         })?;
-        let (r0, _, socket) = rt::call_receiving(socket_of(self.id), OPERATION_ACCEPT, 0);
+        let (r0, peer_word_reply, socket) = rt::call_receiving(socket_of(self.id), OPERATION_ACCEPT, 0);
         if is_syscall_err(r0) {
             free_id(conn);
             return Err(io::Error::UNSUPPORTED_PLATFORM);
@@ -718,7 +716,10 @@ impl TcpListener {
         };
         // The connection carries bytes, so it is handed the page the listener never had.
         take_socket(conn, socket, true)?;
-        let peer = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0));
+        // The reply's second word names the peer; a word that names none (a stack that fills no
+        // peer) leaves the unspecified address.
+        let (ip, port) = word_peer(peer_word_reply).unwrap_or(([0; 4], 0));
+        let peer = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::from(ip), port));
         Ok((TcpStream { id: conn, peer }, peer))
     }
 

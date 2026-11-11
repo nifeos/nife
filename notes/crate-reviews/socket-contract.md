@@ -109,7 +109,11 @@ No nife type appears in a signature. What a stranger may find surprising:
   `OFF_LEN` is an output of `RECEIVE` only (the architect, 2026-11-11 UTC). The crate's layout
   note, every `OPERATION_` constant's documentation, the README and the client runtime's frame
   accessor state it, and a documentation test on `OPERATION_SEND` sends with the length in the
-  argument. The peer address on `ACCEPT` is not ruled.
+  argument. 
+- `ACCEPT`'s second reply word carries the peer: the IPv4 address in bits 47 to 16 and the port in
+  bits 15 to 0, packed by `peer_word` and read by `word_peer` (names provisional), the architect's
+  ruling of 2026-11-11 UTC. The frame's `dst` fields are not used for it, and the word stays the
+  IPv4 answer; another family would need a second route.
 
 ## Names
 
