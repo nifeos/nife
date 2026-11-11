@@ -158,3 +158,9 @@ the capability payloads (`Reply(ThreadId)`), the per-CPU `current`/`idle`/`to_re
 kernel's own bookkeeping around table lookups, all safely (see notes/generational-names.md).
 That is the design doc's D2 path proceeding one structure at a time; the payloads fall last,
 behind the safety mechanism the generational table already provides.
+
+## BUGS
+
+- The two doc examples in `crates/inter_process_communication/src/rendezvous.rs` still mint their
+  tokens from `NonNull::from(&mut x)`, a reference, which the provenance clause on
+  `Unqueued::new` forbids. They change to `&raw mut` once #3522, which is editing that file, lands.
