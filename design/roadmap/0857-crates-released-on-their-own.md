@@ -20,9 +20,9 @@ other implementations are so that we could work with those owners to add the pro
 than jumping their missions."*
 
 The inventory and the survey are in
-[notes/releasable-crates-2026-10-07.md](../../notes/releasable-crates-2026-10-07.md). This file
-holds the forks and does not restate the numbers beyond what a fork needs. Names in it are
-provisional, this one included.
+[notes/releasable-crates-2026-10-07.md](../../notes/releasable-crates-2026-10-07.md). Names in it
+are provisional, this one included. A README's hardware claim follows milestone 1035 (a crate names
+the version that ran on hardware).
 
 Reuse: the release mechanics borrow from Bytecode Alliance's `wasmtime` (many crates published
 from one repository), RustCrypto (one repository per family), rust-embedded and rust-osdev (one

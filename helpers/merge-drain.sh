@@ -91,6 +91,13 @@ w() {
 	fi
 }
 
+# Prints "<node id> <count of removed_from_merge_queue events>" for a pull request, by GraphQL.
+removal_state() {
+	gh api graphql -f query='query($o:String!,$n:String!,$num:Int!){repository(owner:$o,name:$n){pullRequest(number:$num){id timelineItems(last:100,itemTypes:[REMOVED_FROM_MERGE_QUEUE_EVENT]){nodes{__typename}}}}}' \
+		-f o="${REPO%%/*}" -f n="${REPO#*/}" -F num="$1" \
+		--jq '.data.repository.pullRequest | "\(.id) \(.timelineItems.nodes | length)"' 2>/dev/null || echo " 0"
+}
+
 # **Dequeue anything now held that is already in the merge queue.** Admission is checked once, at
 # enqueue time, and until 2026-09-18 nothing ever re-checked it, so a label arriving *after* the
 # enqueue was ignored by everything: the `architect hold` check on the pull request went red, and the
@@ -120,15 +127,14 @@ dequeue_held() {
 			[ -n "$num" ] || continue
 			# `dequeuePullRequest` is a no-op on a pull request that is not queued, so this needs no
 			# membership test: asking is cheaper than checking, and the check would race anyway.
-			# REST rather than GraphQL for the lookup: it takes `owner/repo` as one string, so it
-			# needs no second source of truth for the repository's name beyond $REPO.
-			id=$(gh api "repos/$REPO/pulls/$num" --jq '.node_id' 2>/dev/null) || continue
+			# GraphQL for the lookup and the before/after count: the REST budget is shared by every agent
+			# on the account (notes/skills/maintainer/SKILL.md). One call returns the node id and the count of
+			# removed-from-merge-queue events (the last hundred; a count that cannot grow reads as no move).
+			st=$(removal_state "$num") || continue
+			id=${st% *} before=${st#* }
 			[ -n "$id" ] || continue
-			before=$(gh api "repos/$REPO/issues/$num/timeline" \
-				--jq '[.[] | select(.event=="removed_from_merge_queue")] | length' 2>/dev/null || echo 0)
 			w gh api graphql -f query="mutation{dequeuePullRequest(input:{id:\"$id\"}){clientMutationId}}" || continue
-			after=$(gh api "repos/$REPO/issues/$num/timeline" \
-				--jq '[.[] | select(.event=="removed_from_merge_queue")] | length' 2>/dev/null || echo 0)
+			st=$(removal_state "$num") && after=${st#* } || after=$before
 			# Only speak when something actually moved. A held pull request that was never queued is
 			# the common case and saying so every five minutes is how a watcher gets muted.
 			if [ "$after" -gt "$before" ]; then
@@ -283,9 +289,10 @@ release_unblocked_labels() {
 				continue
 			fi
 			[ -n "$lastcommit" ] || continue
-			labeled_at=$(gh api "repos/$REPO/issues/$num/timeline" --paginate 2>/dev/null |
+			labeled_at=$(gh api graphql -f query='query($o:String!,$n:String!,$num:Int!){repository(owner:$o,name:$n){pullRequest(number:$num){timelineItems(last:100,itemTypes:[LABELED_EVENT]){nodes{... on LabeledEvent{createdAt label{name}}}}}}}' \
+				-f o="${REPO%%/*}" -f n="${REPO#*/}" -F num="$num" 2>/dev/null |
 				jq -r --arg L "$UNBLOCKED_LABEL" '
-					[.[] | select(.event == "labeled" and .label.name == $L)] | last | .created_at // empty
+					[.data.repository.pullRequest.timelineItems.nodes[] | select(.label.name == $L)] | last | .createdAt // empty
 				' 2>/dev/null)
 			[ -n "$labeled_at" ] || continue
 			newer=$(jq -n --arg a "$lastcommit" --arg b "$labeled_at" \
@@ -668,7 +675,7 @@ Any of these takes the label off."
 		at=$(printf '%s' "$c" | jq -r '.at')
 		url=$(printf '%s' "$c" | jq -r '.url')
 		line=$(printf '%s' "$c" | jq -r '.line')
-		what="A QUESTION FOR CALEF THAT HIS QUEUE COULD NOT SHOW: asked at $at ($url), with no ruling recorded since, and no \`needs-architect\` on this, so the drain added it (calef's ruling on #1792: the bot adds, and only flags removals). The question begins: \"$line\". If \`architect-ruled\` is on and this asks something the old ruling did not cover, remove \`architect-ruled\` so the hold blocks the merge. If calef has already answered, record it: \`script/record-ruling $1 --text '<his words>'\`."
+		what="A QUESTION FOR CALEF THAT HIS QUEUE COULD NOT SHOW: asked at $at ($url), with no ruling recorded since, and no \`needs-architect\` on this, so the drain added it (calef's ruling on #1792: the bot adds, and only flags removals). The question begins: \"$line\". If \`architect-ruled\` is on and this asks something the old ruling did not cover, remove \`architect-ruled\` so the hold blocks the merge. If calef has already answered, record it: \`script/record-ruling $1 --text '<his words>'\`. A section that asks for something to happen once this has merged is not a question: it belongs under \`## After this merges\`, which the drain does not read."
 		;;
 	surface-no-hold)
 		head=$(printf '%s' "$c" | jq -r '.head')

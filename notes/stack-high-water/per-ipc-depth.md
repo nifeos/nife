@@ -1,6 +1,6 @@
 # Per-IPC depth: how much of its kernel stack one IPC touches (milestone 134, 2026-09-19)
 
-*Name: provisional.*
+*Name: provisional. Ruled: calef declined to expand `IPC`, a term of art (2026-10-28 UTC); design/naming/acronyms-and-abbreviations.md holds the record.*
 
 An appendix to [notes/stack-high-water.md](../stack-high-water.md), which summarizes it. It was
 measured for milestone 134 (the register of measures).
