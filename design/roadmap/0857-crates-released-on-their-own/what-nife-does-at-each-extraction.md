@@ -41,6 +41,12 @@ released on its own), and every later extraction runs the same list.
   dependency, and is left to fire; that pull request is the ruling that nife depends on the crate
   repository.
 - `cargo-deny` applies to the crate as to any dependency.
+- The crate's README states a hardware run only by naming a version that has one: nife built at the
+  pin that names the version, booted on the board by its public procedure, with the device's own
+  success line read. It names the version and the board class, never a date, a person or an
+  earlier name, and a later release leaves the sentence alone. A run gates that sentence and never
+  a publication, so a release with no run makes no hardware claim. Milestone 1035 (a crate names
+  the version that ran on hardware) holds the definition.
 - A person holding an `admin:org` token runs `script/grant-org-secrets <crate>`, which adds the new
   repository to the selected-repositories list of the two organization secrets with that
   visibility, `NIFE_SMELTER_PRIVATE_KEY` and `SETTINGS_TOKEN`, and checks that both lists name it.
