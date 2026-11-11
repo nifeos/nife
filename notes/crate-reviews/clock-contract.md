@@ -46,9 +46,9 @@ program of `disk-tools`, `process-tools` and `core-tools`.
 Two more readers reach the crate outside its dependency lines:
 
 - The standard library. `cargo xtask std-src` copies the crate's `src/lib.rs` verbatim to
-  `sys/pal/nife/clockproto.rs` in the generated `std` source, from the directory `cargo metadata`
-  gives for the package (`xtask/src/farm/copied.rs`), so a pinned crate is read from Cargo's
-  checkout; the time support in
+  `sys/pal/nife/clockproto.rs` in the generated `std` source. It finds the file in the directory
+  `cargo metadata` gives for the package (`xtask/src/farm/copied.rs`), so a pinned crate is read
+  from Cargo's checkout. The time support in
   `patches/std-nife/overlay/std/src/sys/time/nife.rs` reads `NANOS_PER_SEC`, `wall_nanos`,
   `Reading::offset_nanos` and `state::is_known` from that copy.
 - The tooling. `script/interleaving-check` and `.github/workflows/ci.yml` run the loom models.

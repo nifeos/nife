@@ -54,14 +54,15 @@ pub(super) const COPIED_FILES: [CopiedFile; 14] = [
         file: "src/lib.rs",
         destination: "sys/pal/nife/netproto.rs",
     },
-    // The FS-service wire protocol (DECISIONS §27), so `std::fs`'s PAL (milestone 27 phase two)
-    // cannot drift from the server it opens files through.
+    // The FS-service wire protocol (DECISIONS §27 (the filesystem service)), so `std::fs`'s PAL
+    // (milestone 27 (Rust `std` on the native ABI), phase two) cannot drift from the server it
+    // opens files through.
     CopiedFile {
         package: "filesystem_contract",
         file: "src/lib.rs",
         destination: "sys/pal/nife/fsproto.rs",
     },
-    // The wall-clock contract (DECISIONS §43), so the time PAL reads the clock page with the same
+    // The wall-clock contract (DECISIONS §43 (reading the clock is a page)), so the time PAL reads the clock page with the same
     // seqlock and the same layout the clock service publishes it with. A drift here would be a
     // torn read of a timestamp rather than a compile error.
     CopiedFile {
@@ -92,7 +93,7 @@ pub(super) const COPIED_FILES: [CopiedFile; 14] = [
         file: "src/lib.rs",
         destination: "sys/pal/nife/argproto.rs",
     },
-    // The byte-sink contract (milestone 50), so `println!`'s framing and the classification of a
+    // The byte-sink contract (milestone 50 (pipes and redirection: one sink protocol)), so `println!`'s framing and the classification of a
     // failed SEND are one definition shared with every sink and with the kernel-side tests. A
     // drift in `GONE` would be a program that keeps printing into a pipe whose reader has exited.
     CopiedFile {
