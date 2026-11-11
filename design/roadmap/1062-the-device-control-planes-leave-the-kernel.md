@@ -281,10 +281,11 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 
 - **Done.** Step 4 in #3427 (nifeos/nife@7e45d7269).
 - **Done.** Step 6 in #3426 (nifeos/nife@cc48e8b34).
-- **Outstanding.** Step 1 waits for milestone 811's step 6.
-- **Outstanding.** Step 2 is on `milestone/1062-the-jh7110-clock-and-reset-server`.
-- **Outstanding.** Steps 3 and 5 wait for step 2.
-- **Outstanding.** Step 7 is on the `lane/1062-virtio-direct-*` branches.
+- **Outstanding.** Step 1: `kernel/src/e1000e.rs` exists, and 811 is NOT-STARTED.
+- **Outstanding.** Step 2: the kernel still walks five callers' plans.
+- **Outstanding.** Steps 3 and 5: `kernel/src/designware_ethernet.rs` and
+  `kernel/src/reboot/designware_i2c.rs` exist.
+- **Outstanding.** Step 7: no `driver_process_contract::virtio` module exists.
 
 ## Index row
 
