@@ -203,9 +203,7 @@ crates/abi/src/address_space.rs::MAP_CODE
 
 crates/abi/src/address_space.rs::MAP_INTO
 
-crates/abi/src/address_space.rs::MAP_RO
 
-crates/abi/src/address_space.rs::MAP_RW
 
 crates/abi/src/address_space.rs::UNMAP
 
@@ -231,7 +229,6 @@ crates/abi/src/fault.rs::EVENT_EXIT
 
 crates/abi/src/fault.rs::EVENT_FAULT
 
-crates/abi/src/fault.rs::FAULT_EP_SLOT
 
 crates/abi/src/futex.rs
 
@@ -249,7 +246,6 @@ crates/abi/src/futex.rs::SIZE_U8
 
 crates/abi/src/futex.rs::admitted
 
-crates/abi/src/interrupt.rs::ACK
 
 crates/abi/src/interrupt.rs::WAIT
 
@@ -257,13 +253,9 @@ crates/abi/src/lib.rs::CAPABILITY_TABLE_SLOTS
 
 crates/abi/src/lib.rs::Error
 
-crates/abi/src/lib.rs::SYS_EXIT
 
-crates/abi/src/lib.rs::SYS_EXIT_THREAD
 
-crates/abi/src/lib.rs::SYS_INVOKE
 
-crates/abi/src/lib.rs::SYS_YIELD
 
 crates/abi/src/lib.rs::from_ret
 
@@ -292,19 +284,18 @@ crates/abi/src/notification.rs::SIGNAL
 
 crates/abi/src/notification.rs::WAIT
 
-crates/abi/src/objtype.rs
 
-crates/abi/src/objtype.rs::ADDRESS_SPACE
+crates/abi/src/object_type.rs::ADDRESS_SPACE
 
-crates/abi/src/objtype.rs::NOTIFICATION
+crates/abi/src/object_type.rs::NOTIFICATION
 
-crates/abi/src/objtype.rs::PROCESS
+crates/abi/src/object_type.rs::PROCESS
 
-crates/abi/src/objtype.rs::RENDEZVOUS
+crates/abi/src/object_type.rs::RENDEZVOUS
 
-crates/abi/src/objtype.rs::THREAD_CONTROL_BLOCK
+crates/abi/src/object_type.rs::THREAD_CONTROL_BLOCK
 
-crates/abi/src/objtype.rs::TIMER
+crates/abi/src/object_type.rs::TIMER
 
 crates/abi/src/page_frame.rs
 

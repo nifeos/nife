@@ -1,0 +1,24 @@
+Falsifies `kernel::arch::x86_64::iommu::proofs::a_message_names_exactly_one_remapping_entry`.
+
+The defect drops the handle's bit 15, which the remappable address carries alone in bit 2, apart
+from bits 14:0 in 19:5. A 256-entry table never reaches handle 0x8000, so every test passes, and
+the address of handle 0x8000 becomes the address of handle 0: two entries share one message. The
+day a table grows past 32768 entries, a device granted the high entry raises the low one.
+
+Expected to fail: `decoded == a` and `two entries, two messages`, for a handle at or above 0x8000.
+Confirmed red on 2026-11-11 (UTC) on an x86_64 host.
+
+diff --git a/kernel/src/arch/x86_64/iommu.rs b/kernel/src/arch/x86_64/iommu.rs
+index b2a5d41fc..ff8e60d1b 100644
+--- a/kernel/src/arch/x86_64/iommu.rs
++++ b/kernel/src/arch/x86_64/iommu.rs
+@@ -467,8 +467,7 @@ const fn remappable_message(handle: u16) -> MsiTarget {
+         address: MESSAGE_ADDRESS_BASE
+             | (handle & 0x7fff) << 5
+             | MESSAGE_REMAPPABLE_FORMAT
+-            | MESSAGE_SUBHANDLE_VALID
+-            | (handle >> 15) << 2,
++            | MESSAGE_SUBHANDLE_VALID,
+         data: 0,
+     }
+ }

@@ -69,7 +69,7 @@ fn process_of(sched: &IpcTables, pid: ProcessId) -> Option<&'static mut ProcessP
     Some(unsafe { &mut *page_at(phys) })
 }
 
-/// **`RETYPE_OBJECT` of `objtype::PROCESS`**: a process in `region`'s memory, holding the space
+/// **`RETYPE_OBJECT` of `object_type::PROCESS`**: a process in `region`'s memory, holding the space
 /// `space` names. `WrongObject` if the space already has a holder, `NoSuchSlot` if it does not
 /// resolve, `OutOfMemory` if the region or the registry is full.
 pub fn create_process_from(region: u64, space: u64) -> Result<ProcessId, abi::Error> {

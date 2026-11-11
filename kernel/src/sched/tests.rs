@@ -934,8 +934,8 @@ fn an_interrupt_that_arrives_before_the_wait_is_not_lost() {
 }
 
 /// **An interrupt raised while its line is masked is delivered when the driver ACKs.** The
-/// handler masks a routed line when it fires and `Interrupt::ACK` unmasks it, so the ACK alone must
-/// deliver anything raised meanwhile. On the PLIC the claim is the mask and the ACK the completion
+/// handler masks a routed line when it fires and `Interrupt::ACKNOWLEDGE` unmasks it, so the ACKNOWLEDGE alone must
+/// deliver anything raised meanwhile. On the PLIC the claim is the mask and the ACKNOWLEDGE the completion
 /// (`drivers::plic`), the leg this test exists for. The line is lowered and raised again while
 /// masked because QEMU's PLIC latches pending only on a rising edge. On x86_64 the self-IPI has no
 /// mask, so that leg proves only two raises, two messages.
@@ -952,7 +952,7 @@ fn an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack() {
     super::bind_interrupt(pending_interrupt_number(), ep);
     arm_test_interrupt(pending_interrupt_number());
 
-    // The first raise: the handler claims and routes it, and the claim holds the line until an ACK.
+    // The first raise: the handler claims and routes it, and the claim holds the line until an ACKNOWLEDGE.
     let routed = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
     raise_test_interrupt(pending_interrupt_number());
     let first = spin_until(|| ROUTED_INTERRUPTS.load(Ordering::Relaxed) > routed);
@@ -964,8 +964,8 @@ fn an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack() {
     // **Let the first handler finish.** `ROUTED_INTERRUPTS` moves before the handler is done with
     // the
     // interrupt (the GIC's end-of-interrupt, for one). If that hart's last write landed after the
-    // ACK below, it could deliver the second interrupt itself and the test would pass for a reason
-    // that is not the ACK. The handler is a few instructions behind the count; 20 ms is margin,
+    // ACKNOWLEDGE below, it could deliver the second interrupt itself and the test would pass for a reason
+    // that is not the ACKNOWLEDGE. The handler is a few instructions behind the count; 20 ms is margin,
     // not a guess at it.
     let settle = crate::arch::timer::now() + crate::arch::timer::frequency() / 50;
     while crate::arch::timer::now() < settle {
@@ -973,8 +973,8 @@ fn an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack() {
     }
 
     // The second raise lands while the line is masked: the device spoke while its driver was
-    // busy. Then the driver's ACK, which is `arch::interrupt_controller::enable`, the same call
-    // `Interrupt::ACK` makes.
+    // busy. Then the driver's ACKNOWLEDGE, which is `arch::interrupt_controller::enable`, the same call
+    // `Interrupt::ACKNOWLEDGE` makes.
     let routed = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
     raise_test_interrupt(pending_interrupt_number());
     arm_test_interrupt(pending_interrupt_number());
@@ -982,7 +982,7 @@ fn an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack() {
     quiet_test_interrupt();
     assert!(
         second,
-        "an interrupt raised while its line was masked was never delivered after the ACK \
+        "an interrupt raised while its line was masked was never delivered after the ACKNOWLEDGE \
          unmasked it: the driver would sleep in WAIT with its device's interrupt pending",
     );
 

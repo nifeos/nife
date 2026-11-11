@@ -42,7 +42,7 @@ pub(super) const WAITER: &[u32] = &[
     0xAA14_03E2, // mov  x2, x20
     0xAA15_03E3, // mov  x3, x21
     0xD280_0004, // mov  x4, #0            (expected)
-    0xD280_0048, // mov  x8, #2            (SYS_INVOKE)
+    0xD280_0048, // mov  x8, #2            (SYSCALL_INVOKE)
     0xD400_0001, // svc  #0
     0x9100_0400, // add  x0, x0, #1
     0xF940_0A86, // ldr  x6, [x20, #16]
@@ -63,7 +63,7 @@ pub(super) const WAITER: &[u32] = &[
     0x0009_8613, // mv   a2, s3
     0x000A_0693, // mv   a3, s4
     0x0000_0713, // li   a4, 0             (expected)
-    0x0020_0893, // li   a7, 2             (SYS_INVOKE)
+    0x0020_0893, // li   a7, 2             (SYSCALL_INVOKE)
     0x0000_0073, // ecall
     0x0015_0513, // addi a0, a0, 1
     0x0109_B303, // ld   t1, 16(s3)

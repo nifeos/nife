@@ -194,7 +194,7 @@ So the interrupt reaches the driver as something it *can* receive: a message.
                                                 │
                        reads the device, quiets its interrupt
                                                 │
-                       invoke(interrupt_capability, ACK)  ──►  kernel: re-enable INTID at the GIC
+                       invoke(interrupt_capability, ACKNOWLEDGE)  ──►  kernel: re-enable INTID at the GIC
 ```
 
 The kernel's half does nothing device-specific, and everything that knows what a *virtio block
@@ -209,7 +209,7 @@ the machine never climbs out of, because only the driver can quiet the device an
 
 So `handle_interrupt` masks the INTID at the distributor (`gic::disable`) the moment it fires. The
 driver
-services the device, then calls `ACK` on its `Interrupt` capability, and only then does the kernel
+services the device, then calls `ACKNOWLEDGE` on its `Interrupt` capability, and only then does the kernel
 re-enable the line (`gic::enable`). Until then the interrupt is held off. This is exactly seL4's
 IRQHandler protocol, and it is what lets a process that holds no privilege safely own an
 interrupt.
@@ -231,7 +231,7 @@ drains it instead of blocking. An interrupt that fires one instruction before th
 
 - `WAIT`: block until the interrupt fires (internally, `RECEIVE` on the endpoint the kernel routed
   the interrupt to).
-- `ACK`: re-enable the interrupt at the GIC, after quieting the device.
+- `ACKNOWLEDGE`: re-enable the interrupt at the GIC, after quieting the device.
 
 A driver holding this capability receives one specific interrupt and nothing else: it cannot mask
 other interrupts, touch the GIC or see another device's line.
@@ -264,7 +264,7 @@ Device lines no longer all target core 0. `arch::interrupt_controller::enable` g
 target core the
 first time it is enabled, round-robin over the online cores, and keeps it (`INTERRUPT_TARGET`),
 because
-the `Interrupt` capability's ACK re-enables the line on every completion. The GIC driver is told
+the `Interrupt` capability's ACKNOWLEDGE re-enables the line on every completion. The GIC driver is told
 which
 core and does not decide (rule #2). The PLIC does the same per hart (`SOURCE_CTX`), with each hart
 claiming and completing against its own context.
@@ -274,7 +274,7 @@ harts can interleave, losing an enable. One `InterruptSafeMutex` at `rank::INTER
 serializes it
 ([arch-audit.md](arch-audit.md), finding 3).
 
-The PLIC's claim is the mask and the ACK is the completion (`drivers/plic.rs`, milestone 890
+The PLIC's claim is the mask and the ACKNOWLEDGE is the completion (`drivers/plic.rs`, milestone 890
 (riscv64 and x86_64 join the shared boot path)).
 
 Spreading interrupts moves a wake; it does not parallelize a chain of IPC rendezvous. The `std_net`

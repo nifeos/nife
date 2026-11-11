@@ -93,7 +93,7 @@ is a jump; a cold method pays one table read for that.
 | `ThreadControlBlock` | every method | `WRITE` |
 | `Timer` | `ARM`, `CANCEL` | `WRITE` (`ARM` also `WRITE` on its notification) |
 | `Process` | `DESTROY` | `WRITE` |
-| `Interrupt` | `WAIT`, `ACK` | `READ` |
+| `Interrupt` | `WAIT`, `ACKNOWLEDGE` | `READ` |
 | `Virtio` | every method | `WRITE` |
 | `Reboot` | `REBOOT` | none: holding it is the authority |
 
@@ -127,7 +127,7 @@ refusal is asked for only on the abort branch, so a send that went through pays 
 `PageFrame::MAP` and `AddressSpace::MAP_INTO` map a whole run in one call. Both apply one guard and
 one rollback.
 
-- Both ends are checked before anything is mapped. `run_end_va` computes the last page with the
+- Both ends are checked before anything is mapped. `run_end_virtual_address` computes the last page with the
   multiply checked as well as the add. An unchecked multiply wraps for a `count` near a multiple of
   2^52, gives a `last_va` a few pages above `va`, and admits a run spanning the address space.
 - The pages between need no check, because the user half is a contiguous prefix of the address

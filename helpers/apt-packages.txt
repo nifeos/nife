@@ -12,6 +12,5 @@ bootstrap-qemu qemu-system-arm qemu-system-riscv qemu-system-x86 ipxe-qemu ovmf
 bootstrap-python python3
 bootstrap-gh gh
 bootstrap-shellcheck shellcheck
-bootstrap-dosfstools dosfstools
 bootstrap-ruby ruby
 bootstrap-clang clang

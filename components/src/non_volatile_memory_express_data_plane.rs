@@ -237,7 +237,7 @@ fn take_grants(placement: Placement) -> Option<(Handoff, MappedWindow, MappedWin
             data_plane_slots::OWN_SPACE,
             va,
             slot,
-            abi::address_space::MAP_RW,
+            abi::address_space::MAP_READ_WRITE,
         ) != 0
         {
             return None;

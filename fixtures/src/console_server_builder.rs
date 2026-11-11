@@ -21,7 +21,9 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use process_builder::{build_child, retype_obj_from, retype_page_frame_from, start_child};
+use process_builder::{
+    build_child, retype_into_kernel_object_from, retype_into_page_frame_from, start_child,
+};
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{exit, map_page_frame, receive, require, send};
 
@@ -48,13 +50,15 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
         refuse()
     };
 
-    let Ok(request) = retype_obj_from(MEMORY_REGION, abi::objtype::RENDEZVOUS) else {
+    let Ok(request) = retype_into_kernel_object_from(MEMORY_REGION, abi::object_type::RENDEZVOUS)
+    else {
         refuse()
     };
-    let Ok(reply) = retype_obj_from(MEMORY_REGION, abi::objtype::RENDEZVOUS) else {
+    let Ok(reply) = retype_into_kernel_object_from(MEMORY_REGION, abi::object_type::RENDEZVOUS)
+    else {
         refuse()
     };
-    let Ok(shared) = retype_page_frame_from(MEMORY_REGION) else {
+    let Ok(shared) = retype_into_page_frame_from(MEMORY_REGION) else {
         refuse()
     };
     // Read/write here, where this program writes the line; read-only in the server.
@@ -65,8 +69,12 @@ fn start(_arg0: u64, initial_ramdisk_len: u64, _arg2: u64) -> ! {
     // The server receives on slot 0 and acknowledges on slot 1.
     let grants = [(request, abi::rights::READ), (reply, abi::rights::WRITE)];
     let maps = [
-        (SHARED_VA, shared, abi::address_space::MAP_RO),
-        (CHILD_UART_VA, UART_DEVICE, abi::address_space::MAP_RO),
+        (SHARED_VA, shared, abi::address_space::MAP_READ_ONLY),
+        (
+            CHILD_UART_VA,
+            UART_DEVICE,
+            abi::address_space::MAP_READ_ONLY,
+        ),
     ];
     let endowment = ChildEndowment {
         capabilities: &grants,

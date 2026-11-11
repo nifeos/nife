@@ -75,7 +75,7 @@ numbers.
 | `map_new` | kernel | retype a fresh page from a region, walk, write the leaf (interrupts masked) |
 | `coremark` | EL0 | pure compute; the control that must never move |
 | `null_syscall` | EL0 | one `svc` the kernel rejects at once |
-| `ctx_switch` | EL0 | `SYS_YIELD` to a peer process and back |
+| `ctx_switch` | EL0 | `SYSCALL_YIELD` to a peer process and back |
 | `ipc_rtt_el0` | EL0 | `SEND` and `RECEIVE` between two processes: four traps |
 | `map_el0` | EL0 | `MAP_INTO` of an aliased frame: the mapping mechanism with no zeroing |
 | `spawn_el0` | EL0 | build a child from nothing, run it to exit, reap, reclaim its region |

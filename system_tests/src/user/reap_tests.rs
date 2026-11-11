@@ -120,16 +120,16 @@ fn assert_can_only_supervise(expected: &[u64]) {
     for slot in 0..abi::CAPABILITY_TABLE_SLOTS {
         match sched::current_capability(slot) {
             Err(_) => {
-                for objtype in [
-                    abi::objtype::THREAD_CONTROL_BLOCK,
-                    abi::objtype::ADDRESS_SPACE,
+                for object_type in [
+                    abi::object_type::THREAD_CONTROL_BLOCK,
+                    abi::object_type::ADDRESS_SPACE,
                 ] {
                     assert_eq!(
                         invoke(
                             &mut frame,
                             slot,
                             abi::memory_region::RETYPE_OBJECT,
-                            objtype,
+                            object_type,
                             0,
                             0
                         ),

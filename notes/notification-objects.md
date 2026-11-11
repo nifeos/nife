@@ -5,7 +5,7 @@ provisional, like everything a lane mints. It records what was built, the semant
 and the one place §101's specification could not be built as written.)*
 
 §101 decided the design on 2026-08-20: a page-resident object holding a data word and a wait queue,
-with four methods under the existing `SYS_INVOKE` (`SIGNAL`, `WAIT`, `POLL`, `BIND`). A TCB binding
+with four methods under the existing `SYSCALL_INVOKE` (`SIGNAL`, `WAIT`, `POLL`, `BIND`). A TCB binding
 lets a thread blocked receiving on an endpoint wake on either a message or a signal. This note
 is the implementation record and the one proposal the build produced.
 

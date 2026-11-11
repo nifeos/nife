@@ -1,0 +1,29 @@
+Falsifies `kernel::arch::x86_64::iommu::proofs::a_remapping_entry_grants_exactly_one_vector_to_exactly_one_requester`.
+
+The defect puts `SVT` two bits low, in `SQ`'s place. The two fields sit side by side in the entry's
+high half (`SQ` in 17:16, `SVT` in 19:18), both two bits wide, and `01` is a legal value of each,
+so the wrong shift reads as a tidy constant. The result is an entry that verifies nothing: `SVT`
+reads 00, so any requester naming the handle passes, and the confinement the whole table exists
+for is gone without a fault or a warning.
+
+The boot-time test `a_message_forged_from_another_devices_grant_is_refused` would also go red
+under QEMU, which checks `SVT` as the specification does. This harness is the one that says which
+field moved.
+
+Expected to fail: the `SQ` assertion, the first check that reads the moved bits (a failed
+assertion ends the path, so the `SVT` check after it is never reached). Confirmed red on
+2026-11-11 (UTC) on an x86_64 host.
+
+diff --git a/kernel/src/arch/x86_64/iommu.rs b/kernel/src/arch/x86_64/iommu.rs
+index b2a5d41fc..1fb9cbeee 100644
+--- a/kernel/src/arch/x86_64/iommu.rs
++++ b/kernel/src/arch/x86_64/iommu.rs
+@@ -427,7 +427,7 @@ const ENTRY_VECTOR_SHIFT: u64 = 16;
+ const ENTRY_XAPIC_DESTINATION_SHIFT: u64 = 40;
+ // High qword: the source id in 15:0, `SQ` in 17:16 (00: compare all sixteen bits) and `SVT` in
+ // 19:18 (01: verify the requester id against the source id).
+-const ENTRY_VERIFY_REQUESTER_ID: u64 = 0b01 << 18;
++const ENTRY_VERIFY_REQUESTER_ID: u64 = 0b01 << 16;
+ 
+ // A remappable-format message address (section 5.1.5.2): 0xfee in 31:20, handle bits 14:0 in
+ // 19:5, the format bit 4 set, `SHV` (bit 3) set so the data word is a subhandle, handle bit 15 in
