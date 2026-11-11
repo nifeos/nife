@@ -103,6 +103,10 @@ pub enum Error {
     /// one page of BAR0 an EL0 data plane is mapped
     /// (`driver_process_contract::non_volatile_memory_express::MAXIMUM_DOORBELL_STRIDE`).
     UnsupportedController,
+    /// The IOMMU refused to attach the controller, so its DMA stays blocked and it is not enabled.
+    ///
+    /// Name: provisional.
+    Unconfined(crate::iommu::AttachError),
 }
 
 /// An initialized NVMe controller with one I/O queue pair, ready to be handed to an EL0 data plane.
@@ -512,10 +516,14 @@ pub fn bring_up() -> Result<Found, Absent> {
         };
         #[cfg(not(feature = "system_tests"))]
         let extra: Option<paging::domain::DmaRegion> = None;
-        match extra {
+        let confined = match extra {
             Some(x) => crate::iommu::confine(dev.rid, &[own, x]),
             None => crate::iommu::confine(dev.rid, &[own]),
-        }
+        };
+        confined.map_err(|e| Absent::Refused {
+            rid: dev.rid,
+            why: Error::Unconfined(e),
+        })?;
     }
     match NonVolatileMemoryExpress::new(mmu::phys_to_virt(dev.bar0), dma, mmu::phys_to_virt(dma)) {
         Ok(controller) => Ok(Found {

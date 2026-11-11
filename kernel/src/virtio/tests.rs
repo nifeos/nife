@@ -433,7 +433,8 @@ fn the_iommu_faults_a_dma_that_escapes_the_domain() {
         dma,
         page_frames::FRAME_SIZE,
         Some(d.rid),
-    );
+    )
+    .expect("the IOMMU refused to attach the PCIe disk");
 
     // A frame the domain does not map: the device's escape target.
     let victim = crate::memory::alloc().expect("no victim frame").addr();
@@ -508,7 +509,8 @@ fn a_device_write_to_the_read_only_shadow_is_refused() {
         dma,
         page_frames::FRAME_SIZE,
         Some(d.rid),
-    );
+    )
+    .expect("the IOMMU refused to attach the PCIe disk");
     let flags = provoke_write_to_shadow(id);
     assert_eq!(
         flags, 0xffff,
@@ -543,7 +545,10 @@ fn borrow_block_transport() -> Option<Transport> {
 fn register_borrowed() -> Option<(u64, u64)> {
     let transport = borrow_block_transport()?;
     let dma = crate::memory::alloc_zeroed().expect("no DMA frame").addr();
-    Some((register(transport, dma, page_frames::FRAME_SIZE, None), dma))
+    Some((
+        register(transport, dma, page_frames::FRAME_SIZE, None)?,
+        dma,
+    ))
 }
 
 /// [`unregister`] a borrowed device and return its DMA frame.

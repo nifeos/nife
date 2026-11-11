@@ -1,36 +1,28 @@
 Falsifies `kernel::arch::riscv64::iommu::proofs::no_device_can_reach_another_devices_context`.
 
-The defect is a bound written for one device-context format and run under the other. The
-base format is 32 bytes and 128 of them fill a frame; the extended format that QEMU's
-`riscv-iommu-pci` actually selects (it reports `CAPS.MSI_FLAT`) is 64 bytes, and only 64
-fit. Writing the bound as `FRAME_SIZE / 32`, from the spec's base-format table or from a
-reading of the directory as "one frame of 128 entries", admits requester ids 64 through
-127 at a 64-byte stride, and their contexts are written past the end of the directory's
-single frame into whatever the allocator handed out next.
+The defect is the one-level directory's stride, left in place under the two-level one:
+`directory_position` picks the right leaf but offsets into it by `rid * dc_bytes` rather than by
+`(rid % per_leaf) * dc_bytes`. For requester ids 0 to 63 in the extended format the two agree,
+which is every device the one-frame directory held, so the edit reads as correct to anyone porting
+from the old shape. For id 64 and above the context is written past the end of its leaf's single
+frame into whatever the allocator handed out next.
 
-**Every test in this tree stays green under it**, reasoned rather than run: the one PCIe
-disk on `virt` has a requester id far below 64, so nothing ever addresses a context past
-the frame. It is the same shape as the SMMU's `STRTAB_LOG2` falsification one
-architecture over, with the stride chosen at run time from a capability bit rather than
-fixed at compile time.
+Expected to fail: `assert!(pa.offset + dc_bytes <= page_frames::FRAME_SIZE, "every context the
+bound admits lies inside its leaf's single frame")`. Confirmed red on 2026-11-11 (UTC), on an
+x86_64 host, against this file's pure functions and harness compiled on their own.
 
-Expected to fail: `assert!(oa + dc_bytes <= page_frames::FRAME_SIZE, "every context the
-bound admits lies inside the directory's single frame")`. Confirmed red on 2026-09-25
-(UTC), on an aarch64 host.
+The sibling harnesses stay green under this patch: `the_iommu_is_handed_exactly_the_domain_the_kernel_built`
+builds a context's words and never places one, and `the_root_entry_names_exactly_the_leaf` never
+places a device.
 
-The sibling harness `the_iommu_is_handed_exactly_the_domain_the_kernel_built` stays green
-under this patch: it builds a context's words and never places one.
-
-diff --git a/kernel/src/arch/riscv64/iommu.rs b/kernel/src/arch/riscv64/iommu.rs
-index 1fa25c3f7..5e5c95cbc 100644
 --- a/kernel/src/arch/riscv64/iommu.rs
 +++ b/kernel/src/arch/riscv64/iommu.rs
-@@ -180,7 +180,7 @@ fn queue_base(pa: u64, log2: u32) -> u64 {
- /// function of its own: `no_device_can_reach_another_devices_context` assumes exactly what it
- /// admits and proves the stride in `context_offset` agrees with it.
- fn is_in_directory(rid: u32, dc_bytes: u64) -> bool {
--    (rid as u64) < page_frames::FRAME_SIZE / dc_bytes
-+    (rid as u64) < page_frames::FRAME_SIZE / 32
+@@ -199,7 +199,7 @@
+     let per_leaf = page_frames::FRAME_SIZE / dc_bytes;
+     Some(DirectoryPosition {
+         leaf: (rid as u64 / per_leaf) as usize,
+-        offset: (rid as u64 % per_leaf) * dc_bytes,
++        offset: rid as u64 * dc_bytes,
+     })
  }
  
- /// Where device `rid`'s context sits in the device directory, as a byte offset into its frame.

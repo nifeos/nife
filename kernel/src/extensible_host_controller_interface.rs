@@ -102,14 +102,23 @@ pub fn bring_up() -> Result<Found, Absent> {
     let dma = crate::memory::alloc_contiguous_zeroed(pages as usize)
         .ok_or(Absent::NoMemory(pages))?
         .addr();
-    crate::iommu::confine(
+    if crate::iommu::confine(
         dev.rid,
         &[paging::domain::DmaRegion {
             base: dma,
             size: pages * page_frames::FRAME_SIZE,
             writable: true,
         }],
-    );
+    )
+    .is_err()
+    {
+        for page in 0..pages {
+            crate::memory::free(page_frames::PageFrame::from_addr(
+                dma + page * page_frames::FRAME_SIZE,
+            ));
+        }
+        return Err(Absent::Unconfined);
+    }
     Ok(Found {
         bar0: dev.bar0,
         handoff: Handoff {
