@@ -22,8 +22,7 @@ the four harnesses, the dual license, `publish = false` through the soak, and th
 No later rule in [design/naming.md](../naming.md) contradicts any ratified name. Every quantity ends
 in its unit, the rules spell out every abbreviation they list, and `fill_with` takes std's shape.
 
-Reuse: the template `nifeos/crate-workflows` and its scaffold, Kani, cargo-mutants, the crate's own
-harnesses. No new tool.
+Reuse: the template `nifeos/crate-workflows`, Kani, cargo-mutants and the crate's own harnesses.
 
 ## Goal
 
@@ -43,7 +42,7 @@ The comparison with nearby work is in [the prior art appendix](1071-entropy-cont
 
 ## The items
 
-Effort: XS is under an hour for a lane, S half a day, M a day or two, L longer. A door is one-way
+Effort: XS is under an hour, S half a day, M a day or two, L longer. A door is one-way
 when somebody outside the repository acts on it after a release (a public name, a published
 behavior, a wire value, a layout, a dependency); everything else is two-way and the maintainer
 decides it. Line numbers are in `crates/entropy_contract/` at `cf1328af`.
@@ -54,7 +53,7 @@ decides it. Line numbers are in `crates/entropy_contract/` at `cf1328af`.
    Finding: `## What is proven` reads "Nothing is machine-checked: there are no Kani harnesses."
    `src/lib.rs` carries four harnesses with four falsification patches, and the review package
    describes all four. #3480 added the harnesses and left this section as it was.
-   Evidence: `README.md` `## What is proven`; `src/lib.rs:487-593`; `falsifications/`. <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   Evidence: `README.md` `## What is proven`; `src/lib.rs:487-593`; `falsifications/`. <!-- line-citation: exception. Reason: pinned -->
    Change: one line per property in a user's words. A request word reads back as built. A copy
    writes only the delivered bytes and nothing past them. A fill succeeds exactly when every reply
    is full. Readiness is `READY` exactly when a first byte is nonzero. Each line carries the bound
@@ -77,8 +76,8 @@ decides it. Line numbers are in `crates/entropy_contract/` at `cf1328af`.
    no program breaks today; a stranger following the README does. The Kani harness proves the
    truncating behavior, `(byte_count & 0xff).min(MAXIMUM_BYTES)`, which is why it did not catch the
    gap between the code and its documentation.
-   Evidence: `src/lib.rs:69-71` (the builder), `59-61` and `81-83` (the claims), `248-258` and <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
-   `README.md` `## EXAMPLES` (the examples), `src/lib.rs:502-505` (the harness); verified by a throwaway <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   Evidence: `src/lib.rs:69-71` (the builder), `59-61` and `81-83` (the claims), `248-258` and <!-- line-citation: exception. Reason: pinned -->
+   `README.md` `## EXAMPLES` (the examples), `src/lib.rs:502-505` (the harness); verified by a throwaway <!-- line-citation: exception. Reason: pinned -->
    test.
    Change: `request` clamps, `(operation << OPERATION_SHIFT) | byte_count.min(MAXIMUM_BYTES)`, so
    the wire carries at most eight in bits 7:0 and `requested_bytes` keeps its clamp for a request
@@ -86,7 +85,7 @@ decides it. Line numbers are in `crates/entropy_contract/` at `cf1328af`.
    forgets the clamp replaces the one that forgot the mask. The two examples keep
    their unclamped remainder, since the builder now makes that correct, and a unit test asks for
    256 and reads eight back.
-   Door: two-way. The wire format does not change; a builder's output for counts above 255 does.
+   Door: two-way. The wire format stays; a builder's output for counts above 255 changes.
    Effort: XS.
 
 ### P1: before the first release
@@ -96,7 +95,7 @@ decides it. Line numbers are in `crates/entropy_contract/` at `cf1328af`.
    passive voice and history phrases` runs it over `README*` and fails the job. The six read "is
    transformed", "be given", "be read", "is answered", "are covered" and "is read". The dry run `script/crate-move --dry-run` runs the same check on the staged tree
    and refuses to finish (inferred from the runbook; the dry run was not run).
-   Evidence: `README.md` (the six phrases above); `crate-workflows/.github/workflows/check.yml:254-266`. <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   Evidence: `README.md` (the six phrases above); `crate-workflows/.github/workflows/check.yml:254-266`. <!-- line-citation: exception. Reason: pinned -->
    Change: rewrite five of the six in the active voice, in nife before the move. Item 1 rewrites
    the sixth ("are covered") anyway.
    Door: two-way. Effort: XS.
@@ -113,7 +112,7 @@ decides it. Line numbers are in `crates/entropy_contract/` at `cf1328af`.
    run prints that looks alarming, and how to check the minimum Rust version. The stranger test
    reads the README alone; the release gate refuses while no stranger run is on record.
    Evidence: `README.md` `## Building and testing`; `crate-workflows/scaffold/README-crate.md`;
-   `crate-workflows/.github/workflows/check.yml:336-347`. <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   `crate-workflows/.github/workflows/check.yml:336-347`. <!-- line-citation: exception. Reason: pinned -->
    Change: in nife before the move, add the badge row under the title with the repository's name.
    Add the two subsections `### Running the proofs` and `### Running one falsification patch` with
    the crate's own commands and one real patch as the example (the readiness patch is the
@@ -129,9 +128,9 @@ decides it. Line numbers are in `crates/entropy_contract/` at `cf1328af`.
    different panic messages because they call for different fixes (a missing grant against a dry
    device); `user_mode_runtime::fill` passes the `None` on and its callers cannot. A stranger from
    `getrandom` or `rand_core` expects a `Result` with an error that says which.
-   Evidence: `src/lib.rs:272-293`; `src/lib.rs:189-196`; <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
-   `patches/std-nife/overlay/std/src/sys/random/nife.rs:67-82`; <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
-   `crates/user_mode_runtime/src/entropy.rs:17-30`. <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   Evidence: `src/lib.rs:272-293`; `src/lib.rs:189-196`; <!-- line-citation: exception. Reason: pinned -->
+   `patches/std-nife/overlay/std/src/sys/random/nife.rs:67-82`; <!-- line-citation: exception. Reason: pinned -->
+   `crates/user_mode_runtime/src/entropy.rs:17-30`. <!-- line-citation: exception. Reason: pinned -->
    Change: `fill_with(out, call) -> Result<(), Refusal>` with a small `enum Refusal { NoService,
    ShortReply { asked: usize, delivered: usize } }` (both names provisional; the type is the crate's
    first), `#[non_exhaustive]` so a third refusal is not a break. `user_mode_runtime::fill` maps it
@@ -151,26 +150,26 @@ decides it. Line numbers are in `crates/entropy_contract/` at `cf1328af`.
    reply word's bytes past the count hold "whatever the service had left in the register". The
    virtio pool in fact zeros them and hands out no byte twice, and the instruction backend returns
    a fresh draw, but the contract leaves a service free to leak the next client's bytes.
-   Evidence: `components/src/entropy.rs:386-397`, `components/src/jh7110_entropy.rs:268-273`, <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
-   `system_tests/src/user/entropy_tests.rs:205-208`; `src/lib.rs:43-49` (`VERSION`); <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
-   `src/lib.rs:229-231`; `components/src/entropy.rs:269-289`. <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   Evidence: `components/src/entropy.rs:386-397`, `components/src/jh7110_entropy.rs:268-273`, <!-- line-citation: exception. Reason: pinned -->
+   `system_tests/src/user/entropy_tests.rs:205-208`; `src/lib.rs:43-49` (`VERSION`); <!-- line-citation: exception. Reason: pinned -->
+   `src/lib.rs:229-231`; `components/src/entropy.rs:269-289`. <!-- line-citation: exception. Reason: pinned -->
    Change: three sentences in the crate documentation and the README's contract list, recording what
    is. A service answers an unknown opcode with `NO_ENTROPY`, and a BUGS line says a client cannot
    tell the two apart. Bits 55:8 stay reserved: a client sends zero and a service ignores them. A
    service puts nothing but zeros past the delivered bytes. The third also softens the
    `copy_delivered_bytes` sentence from "whatever the service had left" to "zero".
-   Door: one-way once published, since a service outside this tree acts on them; today they record
-   behavior every service already has. See the decisions section. Effort: XS.
+   Door: one-way once published, since a service outside this tree acts on them. Today they record
+   behavior every service has. See the decisions section. Effort: XS.
 
 7. The manifest's `publish` comment, categories and metadata.
-   Finding: the `publish = false` line's comment sends a reader to `crates/publish-allowlist.txt`, a
-   file the new repository does not have (the review package already lists this for the move lane).
+   Finding: the `publish = false` comment sends a reader to `crates/publish-allowlist.txt`, a
+   file the new repository does not have (the review package lists this for the move lane).
    The template's `standalone` refuses `publish = false` unless the caller passes
    `allow-unpublished: true`, which the precedent repository `nifeos/jh7110_entropy` does. The
    `categories` list carries `cryptography`, which the crate is not (it holds no primitive and
    makes no claim about the bytes), and lacks `no-std::no-alloc`, which it is. `cargo package` warns
    that `documentation`, `homepage` and `repository` are absent; the move sets `repository`.
-   Evidence: `Cargo.toml:9-11`; `crate-workflows/helpers/standalone.py:197-203`; <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   Evidence: `Cargo.toml:9-11`; `crate-workflows/helpers/standalone.py:197-203`; <!-- line-citation: exception. Reason: pinned -->
    `nifeos/jh7110_entropy` `Cargo.toml` and `.github/workflows/ci.yml` (read through the GitHub API).
    Change: now, a self-contained comment ("set to `true` only in the release that publishes");
    `categories = ["no-std", "no-std::no-alloc", "os"]`; `documentation =
@@ -187,7 +186,7 @@ decides it. Line numbers are in `crates/entropy_contract/` at `cf1328af`.
    Decision 137 puts continuous health tests in the driver, which would catch it later; the tree's
    entropy note records that no such test exists yet. The bring-up word is the one place a bench
    reader looks.
-   Evidence: `src/lib.rs:165-178`; `readiness([0xff; 8]) == READY`, verified by a throwaway test; <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   Evidence: `src/lib.rs:165-178`; `readiness([0xff; 8]) == READY`, verified by a throwaway test; <!-- line-citation: exception. Reason: pinned -->
    `notes/entropy.md` BUGS ("No health test"); `design/decisions/0137-trng-health-tests.md`.
    Change: `readiness` names a third shared step when the draw holds at least `MAXIMUM_BYTES` bytes
    and every byte equals the first (all zero keeps `STEP_FIRST_ALL_ZERO`): `STEP_FIRST_ALL_SAME`
@@ -205,7 +204,7 @@ The P2 items are in [the appendix](1071-entropy-contract-outside-review/later-it
 ## Decisions for the architect
 
 Two one-way doors, each with a recommendation first. Everything else above is two-way and the
-maintainer decides it; the three new names (`Refusal`, `STEP_FIRST_ALL_SAME`, `reply`) ship
+maintainer decides it. The three new names (`Refusal`, `STEP_FIRST_ALL_SAME`, `reply`) ship
 provisional and wait for a naming pass.
 
 ### Decision 1: Whether readiness refuses a first draw of one repeated nonzero byte
@@ -268,7 +267,7 @@ The checks are in [the done-when appendix](1071-entropy-contract-outside-review/
   hand at the template's head, not from the dry run or a workflow run. A lane checks each against
   the staged tree before acting.
 - The prior-art rows for Linux, virtio and `x86_init_rdrand` are from memory and marked unverified
-  where the wording matters; a lane confirms the sources before the decision text cites them.
+  where the wording matters; a lane confirms the sources before a decision cites them.
 - Item 8's false-refusal probability assumes a uniform source. A source with its output biased
   toward one byte value is exactly the source the rule means to refuse, so the figure bounds from below how often
   the rule wrongly refuses a good source. It says nothing about a poor one.
@@ -279,6 +278,5 @@ The checks are in [the done-when appendix](1071-entropy-contract-outside-review/
 
 An outside review of `entropy_contract` before its move. Two items block any publish: a README that
 denies its own proofs and a request builder that truncates where it says it clamps. Six land before
-the first release. They are two template gates the README fails, the README's path to a proof, an error type
-for `fill_with`, three service-side rules the contract leaves unsaid, the manifest's comment and
-categories, and a bring-up rule that passes a stuck source. Nine follow later.
+the first release, among them an error type for `fill_with`, three unwritten service rules and a
+bring-up rule that passes a stuck source. Nine follow later.

@@ -55,8 +55,8 @@ line 413.
 
 1. `check / clippy` is red on the first pull request. `cargo clippy --all-targets -- -D
    warnings` reports 17 `doc_markdown` errors, 26 words: `VisionFive` (14), `OpenSBI` (9),
-   `AXP15060` (2) and `PLL2` (1), at `src/lib.rs:25`, `:234`, `:352`, `:356`, `:402`, `:410`, `:489`, <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
-   `:525`, `:981`, `:1024`, `:1109`, `:1111`, `:1391` and `src/tests.rs:643`. Inside nife the root <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   `AXP15060` (2) and `PLL2` (1), at `src/lib.rs:25`, `:234`, `:352`, `:356`, `:402`, `:410`, `:489`, <!-- line-citation: exception. Reason: pinned -->
+   `:525`, `:981`, `:1024`, `:1109`, `:1111`, `:1391` and `src/tests.rs:643`. Inside nife the root <!-- line-citation: exception. Reason: pinned -->
    `clippy.toml` lists these proper nouns under `doc-valid-idents`; the copied crate has no such file
    and the template's scaffold ships none, so the template's required check fails on stable and on
    1.88 alike. Fix: ship a `clippy.toml` with `doc-valid-idents = ["..", "VisionFive", "OpenSBI",
@@ -64,7 +64,7 @@ line 413.
    be an identifier), or put the 26 words in backticks. S. Two-way.
 
 2. `check / standalone` is red at three ceiling-0 steps.
-   - `spelled_out.py` refuses seven private constants: `AONCLK_GMAC0_TX` (`src/lib.rs:233`, `tx`) and <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   - `spelled_out.py` refuses seven private constants: `AONCLK_GMAC0_TX` (`src/lib.rs:233`, `tx`) and <!-- line-citation: exception. Reason: pinned -->
      `SYSCLK_SDIO0_AHB`, `SYSCLK_SDIO1_AHB`, `SYSCLK_SDIO0_SDCARD`, `SYSCLK_SDIO1_SDCARD`,
      `SYSRST_SDIO0_AHB`, `SYSRST_SDIO1_AHB` (`:422`, `:427`, `:438`, `:443`, `:448`, `:452`, `sdio`).
      The review package recorded 0 findings for these after they gained a `(NAME, source)` opening
@@ -79,7 +79,7 @@ line 413.
      `:739`; a length carries its unit, and the standard-library exemption is for the method). Two
      are public `size` fields (`:1371`, `:1466`; decision 2). One is the public
      `power_management_chip_address` (`:556`; decision 3). Two are test names ending in
-     `_addresses` (`src/tests.rs:763`, `:840`). The private fields gain their unit; the tests take <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+     `_addresses` (`src/tests.rs:763`, `:840`). The private fields gain their unit; the tests take <!-- line-citation: exception. Reason: pinned -->
      names that say what a test forgets or keeps without the word.
    - `prose_acronyms.py` refuses 28 first uses with no expansion. Four are in `README.md` (AON,
      SD, MHz and AXP15060). The rest are in `src/lib.rs`. They are PL080 (`:173`), AON (`:180`), CRG (`:206`),
@@ -95,18 +95,18 @@ line 413.
 
 ### P1: wrong on a reachable input, or a record the move cannot carry
 
-3. `parse_register_property` misreads a 12-byte `reg`. `src/lib.rs:589-608` reads 16 or more <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+3. `parse_register_property` misreads a 12-byte `reg`. `src/lib.rs:589-608` reads 16 or more <!-- line-citation: exception. Reason: pinned -->
    bytes as `<address-hi address-lo size-hi size-lo>` and 8 to 15 bytes as `<address size>`. A
    property under `#address-cells = <2>` and `#size-cells = <1>` is 12 bytes and decodes as
    `(address-hi, address-lo)`: a base of 0 and a size equal to the real address. The caller,
-   `kernel/src/reboot/pmic.rs:30`, maps that base and drives the DesignWare I2C master through it. <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   `kernel/src/reboot/pmic.rs:30`, maps that base and drives the DesignWare I2C master through it. <!-- line-citation: exception. Reason: pinned -->
    Both JH7110 trees use `<2>`/`<2>` (verified in `jh7110.dtsi` at the pinned commit), so no known
    board reaches it, but the function's doc claims "the cells either tree spelling uses" and the Kani
    harness gives it exactly 16 bytes. Fix: accept exactly 8 or exactly 16 bytes and answer `None`
    otherwise, or take the parent's cell counts; add a 12-byte host test; let the harness choose the
    length. S. Two-way.
 
-4. `GMAC0_ALWAYS_ON_BRING_UP` carries one board's choice as a chip constant. `src/lib.rs:277-280` <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+4. `GMAC0_ALWAYS_ON_BRING_UP` carries one board's choice as a chip constant. `src/lib.rs:277-280` <!-- line-citation: exception. Reason: pinned -->
    selects parent 1 (`gmac0_rmii_rtx`) for the transmit clock. Mainline's
    `jh7110-starfive-visionfive-2-v1.3b.dts` assigns that parent; its `v1.2a.dts` has no `&gmac0`
    block, so a v1.2A leaves the mux where reset put it (verified at the pinned commit; whether

@@ -2,7 +2,7 @@
 
 An appendix to [the milestone](../1072-jh7110-clock-and-reset-outside-review.md).
 
-6. A fractional PLL2 reads as the vendor's default. `src/lib.rs:953-957` returns <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+6. A fractional PLL2 reads as the vendor's default. `src/lib.rs:953-957` returns <!-- line-citation: exception. Reason: pinned -->
    1,188,000,000 Hz unless `DACPD` and `DSMPD` are both 1. Linux computes
    `(parent * frac / 2^24 + parent * fbdiv) / (prediv << postdiv1)` from `FRAC` in bits 23:0 of the
    word at `0x30` (verified), a word the crate already reads as
@@ -11,7 +11,7 @@ An appendix to [the milestone](../1072-jh7110-clock-and-reset-outside-review.md)
    clock and an I2C timing from a wrong parent rate. Fix: compute fractional mode as Linux does,
    keep the default for the mixed mode, and add the host case. M. Two-way.
 
-7. `was_already_up` reads the last reset only. `BringUpReport` (`src/lib.rs:1272-1297`) keeps <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+7. `was_already_up` reads the last reset only. `BringUpReport` (`src/lib.rs:1272-1297`) keeps <!-- line-citation: exception. Reason: pinned -->
    one reset's words; for `GMAC0_ALWAYS_ON_BRING_UP`'s two resets, `was_already_up` (`:1343-1349`)
    consults the second alone while `all_resets_are_released` counts both. No kernel caller asks
    `was_already_up` of a two-reset plan today, and pull request #3475's `Counts::already_up` folds
@@ -20,7 +20,7 @@ An appendix to [the milestone](../1072-jh7110-clock-and-reset-outside-review.md)
    S. Two-way.
 
 8. The I2C counts are safe by an undocumented margin, and their floor is below the controller's.
-   `counts` (`src/lib.rs:1069-1075`) programs `ceil(t * ic_clk)`. Linux's `i2c_dw_scl_hcnt` and <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   `counts` (`src/lib.rs:1069-1075`) programs `ceil(t * ic_clk)`. Linux's `i2c_dw_scl_hcnt` and <!-- line-citation: exception. Reason: pinned -->
    `i2c_dw_scl_lcnt` (verified) hold that the controller spends `HCNT + 3` (or `+ 8`) and `LCNT + 1`
    cycles per phase, so the crate's 198 and 297 at 49.5 MHz run the bus about 2% under 100 kHz.
    That is the safe direction, and the doc should state it. The floor of 1 is below the minimum
@@ -29,12 +29,12 @@ An appendix to [the milestone](../1072-jh7110-clock-and-reset-outside-review.md)
    and there the test `a_slow_input_clock_still_produces_legal_counts` calls the counts legal. Fix: document the margin;
    once verified, raise the floors to the databook's and rename the test. S. Two-way.
 
-9. `name_index` drops every empty entry, not the trailing one. `src/lib.rs:1593-1597` splits on <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+9. `name_index` drops every empty entry, not the trailing one. `src/lib.rs:1593-1597` splits on <!-- line-citation: exception. Reason: pinned -->
    NUL and filters empties, so `"sys\0\0stg\0"` answers 1 for `stg` where a device tree's string-list
    index is 2. No published tree has an empty `reg-names` entry. Fix: strip one trailing NUL, then
    split. S. Two-way.
 
-10. The two fallback paths disagree about the addresses. `from_nodes` (`src/lib.rs:660-673`) <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+10. The two fallback paths disagree about the addresses. `from_nodes` (`src/lib.rs:660-673`) <!-- line-citation: exception. Reason: pinned -->
     keeps `controller_physical_window` and `power_management_chip_address` when the bus names no
     `clocks` and no `resets`, and forgets both when it names only foreign ones (the tests
     `a_bus_naming_no_clocks_or_resets_keeps_the_constant_plan_and_the_addresses` and
@@ -42,7 +42,7 @@ An appendix to [the milestone](../1072-jh7110-clock-and-reset-outside-review.md)
     docs give no reason for the difference, and the direct reset write depends on it. Fix: state the
     reason at `controller_physical_window`, or keep the addresses on both paths. S. Two-way.
 
-11. Doc comments carry fetch dates. `src/lib.rs:26-27`, `:184`, `:355`. The commit pins in the <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+11. Doc comments carry fetch dates. `src/lib.rs:26-27`, `:184`, `:355`. The commit pins in the <!-- line-citation: exception. Reason: pinned -->
     header make them redundant, and the rule is that documents state the present and git keeps the
     history. Fix: delete the dates. S. Two-way.
 
@@ -59,7 +59,7 @@ An appendix to [the milestone](../1072-jh7110-clock-and-reset-outside-review.md)
     add `jh7110` and `starfive` and `categories` `no-std::no-alloc`, as `jh7110_entropy`'s manifest
     does. The repository needs `CHANGELOG.md`, `_typos.toml`, `deny.toml`, `rustfmt.toml`,
     `.kani-version`, `.github/accepted-words` with `jh` and its reason, the caller workflows, and
-    the falsification patches rewritten from `-p3` to `-p1`. `src/lib.rs:1317` names the architect <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+    the falsification patches rewritten from `-p3` to `-p1`. `src/lib.rs:1317` names the architect <!-- line-citation: exception. Reason: pinned -->
     inside a two-line `Name:` block; the move's strip must take the whole block, which
     `standalone.py` will confirm. `publish = false` stays until the release ruling. S. Two-way.
 

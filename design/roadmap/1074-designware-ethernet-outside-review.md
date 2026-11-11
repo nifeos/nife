@@ -61,12 +61,12 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
    address) as memory addresses. The rule in `design/naming.md` is about memory. The helper offers
    its escape hatch only for fields and constants, not for the parameters and bindings that make up
    most of these. Sixteen are a length without a unit: `PROBE_LENGTH`
-   (`src/cache_coherence.rs:24`), the three `_LENGTH_MASK` descriptor fields <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
-   (`src/descriptor.rs:101,115,143`), the two `_RING_LENGTH_REGISTER` offsets <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
-   (`src/registers.rs:396,401`), the three burst-length fields of `BusConfiguration` <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
-   (`src/network_interface_controller.rs:169-180`) and test names. Four are an offset that does not <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
-   end `_REGISTER`: `DIRECT_MEMORY_ACCESS_REGISTER_PAGE` (`src/registers.rs:467`, used by the kernel <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
-   and `components`) and `GMAC0_SYSTEM_CONTROLLER_OFFSET` (`src/jh7110.rs:107`, used by <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   (`src/cache_coherence.rs:24`), the three `_LENGTH_MASK` descriptor fields <!-- line-citation: exception. Reason: pinned -->
+   (`src/descriptor.rs:101,115,143`), the two `_RING_LENGTH_REGISTER` offsets <!-- line-citation: exception. Reason: pinned -->
+   (`src/registers.rs:396,401`), the three burst-length fields of `BusConfiguration` <!-- line-citation: exception. Reason: pinned -->
+   (`src/network_interface_controller.rs:169-180`) and test names. Four are an offset that does not <!-- line-citation: exception. Reason: pinned -->
+   end `_REGISTER`: `DIRECT_MEMORY_ACCESS_REGISTER_PAGE` (`src/registers.rs:467`, used by the kernel <!-- line-citation: exception. Reason: pinned -->
+   and `components`) and `GMAC0_SYSTEM_CONTROLLER_OFFSET` (`src/jh7110.rs:107`, used by <!-- line-citation: exception. Reason: pinned -->
    `machine_discovery`) among them. One is a missing alias (item 10). The 26 acronym findings are
    `RFD`, `RFA`, `IOMMU`, `MII`, `AXI`, `MTL` and their kin unexpanded at first use in doc comments,
    and `YT8531` and `PHY` in the README's first paragraph. The two `spelled_out` findings are item 11.
@@ -83,8 +83,8 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
 
 2. The manifest points outside the repository and names no repository.
    Finding: `publish = false` carries a comment that sends the reader to
-   `crates/publish-allowlist.txt`, a file of this tree (`Cargo.toml:11`). The comment block below it <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
-   names `net_stack`'s transport file by path (`Cargo.toml:14-22`). The manifest has no `repository` <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   `crates/publish-allowlist.txt`, a file of this tree (`Cargo.toml:11`). The comment block below it <!-- line-citation: exception. Reason: pinned -->
+   names `net_stack`'s transport file by path (`Cargo.toml:14-22`). The manifest has no `repository` <!-- line-citation: exception. Reason: pinned -->
    or `documentation` field, which `cargo package` warns about and which the scaffold's badge row
    and docs.rs link need.
    Change: the comment says what a stranger can act on ("set to `true` only in the release that
@@ -95,9 +95,9 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
 ### P1: before the first tag
 
 3. The receive loop and the reclaim loop have no bound, and the recorded mutation runs show it.
-   Finding: `DataPlane::receive` (`src/data_plane.rs:137-172`) loops until a descriptor reads <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   Finding: `DataPlane::receive` (`src/data_plane.rs:137-172`) loops until a descriptor reads <!-- line-citation: exception. Reason: pinned -->
    `NotYet` or a frame arrives. It consumes a run of `Drop` descriptors one per iteration with no
-   cap. `reclaim` (`src/data_plane.rs:216-226`) loops until the cursors meet. Twelve `gap` rows in <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   cap. `reclaim` (`src/data_plane.rs:216-226`) loops until the cursors meet. Twelve `gap` rows in <!-- line-citation: exception. Reason: pinned -->
    the triage, and the 14 timeouts of the latest census, come from mutants of these two loops and of
    `receive_descriptor_words` that never end. Cargo-mutants reads a hang where a test would have
    failed, and the triage defers the fix as a change to production logic. On hardware, a storm of error
@@ -112,8 +112,8 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
 
 4. `Link` and `Speed` live in the PHY's module but belong to the MAC.
    Finding: `network_interface_controller::mac_configuration` and `start` take
-   `motorcomm_physical_layer_device::Link` and `Speed` (`src/motorcomm_physical_layer_device.rs:152-187`; <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
-   `src/network_interface_controller.rs:12`). They describe the <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   `motorcomm_physical_layer_device::Link` and `Speed` (`src/motorcomm_physical_layer_device.rs:152-187`; <!-- line-citation: exception. Reason: pinned -->
+   `src/network_interface_controller.rs:12`). They describe the <!-- line-citation: exception. Reason: pinned -->
    link the MAC runs at; nothing in them is Motorcomm's. A second PHY module would import its link
    type from Motorcomm's, and a user who reads the controller module finds the type under a vendor's
    name.
@@ -134,9 +134,9 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
    change). Effort: XS. The architect confirms (below).
 
 6. The visibility of register and clause 22 constants follows no rule.
-   Finding: `MAC_CONFIGURATION_REGISTER` is `pub(crate)` (`src/registers.rs:22`) while seven of its <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   Finding: `MAC_CONFIGURATION_REGISTER` is `pub(crate)` (`src/registers.rs:22`) while seven of its <!-- line-citation: exception. Reason: pinned -->
    bits are `pub` (lines 36 to 79). `BASIC_MODE_CONTROL_RESET` and
-   `BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE` are `pub` (`src/management_data_input_output.rs:88,180`) <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   `BASIC_MODE_STATUS_AUTONEGOTIATION_COMPLETE` are `pub` (`src/management_data_input_output.rs:88,180`) <!-- line-citation: exception. Reason: pinned -->
    while the registers they live in and `BASIC_MODE_STATUS_LINK_STATUS` are `pub(crate)`. The
    `ManagementDataInputOutput` trait takes `register: u8`, yet a caller or an implementer must
    restate `0x00` and `0x01`. No caller outside the crate uses any of the stray public bits; the
@@ -166,7 +166,7 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
    Door: two-way. Effort: S.
 
 8. The crate's documentation names a bench machine sixteen times and the board never.
-   Finding: `radon` appears in the first line of the crate documentation (`src/lib.rs:2`), in <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   Finding: `radon` appears in the first line of the crate documentation (`src/lib.rs:2`), in <!-- line-citation: exception. Reason: pinned -->
    `jh7110.rs` five times, in `network_interface_controller.rs` six times and in
    `motorcomm_physical_layer_device.rs` four times. It appears as the owner of the bus configuration,
    the fallback PHY settings, the device tree and the ports. A reader of the standalone crate has no
@@ -190,10 +190,10 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
 10. Two rename artifacts in documentation.
    Finding: `CLOCK_RANGE_SHIFT` carries
    `#[doc(alias = "GMAC_MAC_MANAGEMENT_DATA_INPUT_OUTPUT_ADDRESS_REGISTER_CR_SHIFT")]`
-   (`src/management_data_input_output.rs:21`), a spelling no source has; its doc comment names the <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   (`src/management_data_input_output.rs:21`), a spelling no source has; its doc comment names the <!-- line-citation: exception. Reason: pinned -->
    real one, `GMAC_MAC_MDIO_ADDR_CR_SHIFT`, and `register_names` flags the mismatch. The two
    `100BASE-TX` constants open their doc comments with their own names in the place the source
-   spelling goes (`src/management_data_input_output.rs:129,134`) where every neighbor opens with <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   spelling goes (`src/management_data_input_output.rs:129,134`) where every neighbor opens with <!-- line-citation: exception. Reason: pinned -->
    `ANLPAR_…`; the aliases `ANLPAR_TX_FD` and `ANLPAR_TX` are right.
    Change: the alias reads `GMAC_MAC_MDIO_ADDR_CR_SHIFT`; the two openings read `(ANLPAR_TX_FD,
    OpenBSD mii.h)` and `(ANLPAR_TX, OpenBSD mii.h)`.
@@ -201,7 +201,7 @@ crate has no release yet, so a public rename is one-way only from the tag on; th
 
 11. `100BASE-TX` meets the spelled-out gate.
    Finding: `spelled_out.py` refuses `AUTONEGOTIATION_LINK_PARTNER_100BASE_TX` and
-   `…_100BASE_TX_FULL_DUPLEX` (`src/management_data_input_output.rs:133,139`): `tx` is on the <!-- line-citation: exception. Reason: the lines are in the tree at the commit the review read, which does not change -->
+   `…_100BASE_TX_FULL_DUPLEX` (`src/management_data_input_output.rs:133,139`): `tx` is on the <!-- line-citation: exception. Reason: pinned -->
    spelled-out list and the helper never keeps a source spelling for an integer constant. The
    review package accepted the names as the standard's term, and `design/naming.md` says a
    specification's term of art keeps its spelling inside a name this tree authors. `100BASE-TX` is
