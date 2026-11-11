@@ -76,7 +76,7 @@ pub const OPERATION_CONNECT: u64 = 6;
 /// // A client's side of a send: the payload goes in the frame, and the length goes in the
 /// // argument word of the `CALL`. It never writes `OFF_LEN`.
 /// let mut frame = [0u8; 4096];
-/// let payload = b"nife-out!";
+/// let payload = b"hello out!";
 /// let at = OFF_PAYLOAD as usize;
 /// frame[at..at + payload.len()].copy_from_slice(payload);
 /// let (operation, argument) = (OPERATION_SEND, payload.len() as u64);
