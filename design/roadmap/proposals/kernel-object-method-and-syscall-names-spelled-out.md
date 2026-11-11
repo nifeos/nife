@@ -13,37 +13,32 @@ Raised by lane/record-open-follow-ups. Pull request #3483 (`RETYPE_OBJ` becomes 
 
 Reuse: the rename discipline of design/naming/rename-what-moves.md and the `Name:` blocks, and the ratified `retype_into_kernel_object`. No new tool or dependency.
 
-Name: provisional. The recommended spellings below are the lane's, not rulings.
+Name: ratified 2026-11-11 (UTC). The architect ruled each of the thirteen spellings below as the audit recommended.
 
 ## The problem
 
-design/naming.md says a name this tree authors spells its words out. The ruling of 2026-11-11 (UTC) found `MemoryRegion::RETYPE_OBJ` in breach. It became `RETYPE_OBJECT` and kept method number 2, so no encoding and no `ABI_VERSION` changed. The audit that followed read every method of the kernel objects and found thirteen more names with the same fault. None has changed. Each is a two-way door before the first release. Each also touches the syscall surface, so each is the architect's call, one at a time, recommendation first.
-
-On 2026-10-08 the architect refused `retype_object` for the runtime function and ratified `retype_into_kernel_object`. Items 1 and 2 derive from that.
+design/naming.md says a name this tree authors spells its words out. The ruling of 2026-11-11 (UTC) found `MemoryRegion::RETYPE_OBJ` in breach. It became `RETYPE_OBJECT` and kept method number 2, so no encoding and no `ABI_VERSION` changed. The audit that followed read every method of the kernel objects and found thirteen more names with the same fault. Each was a two-way door before the first release, and each touches the syscall surface, so each was the architect's call.
 
 ## The work
 
-Items 1 to 3 are ruled and wait for their lane. The other ten await rulings. For each item the architect rules, one lane renames it and every live use in the same commit. Live uses are the kernel, `user_mode_runtime`, `process_builder`, components, fixtures, system tests, the std overlay, the notes that describe the surface as it is and the NOT-STARTED roadmap blocks. The number stays, so no caller's encoding changes. Each rename carries a `Name:` block and no `doc(alias)` of the old spelling, and the present-tense passages of the decisions move with it. A refused name stays out.
+All thirteen are ruled (2026-11-11 (UTC)) and renamed, each with every live use: the kernel, `user_mode_runtime`, `process_builder`, components, fixtures, system tests, the std overlay, the falsification patches, the notes that describe the surface as it is, the NOT-STARTED roadmap blocks and the present-tense passages of the decisions. Every number stays, so no caller's encoding and no `ABI_VERSION` changes. Each renamed item carries a ratified `Name:` block that refuses the old spelling, and none carries a `doc(alias)` of it.
 
-| # | Name | Where | Recommended |
-|---|---|---|---|
-| 1 | `retype_obj_from` | `process_builder`, the helper every builder calls; local aliases in `login`, `user_timetable_keeper`, `system_initializer`; the `retype_obj` helper in `confined_fuzzer_tests.rs` | Ruled 2026-11-11 (UTC), not yet applied: `retype_into_kernel_object_from`, with parameters spelled out as `memory_region` and `object_type`. Its pair `retype_page_frame_from` becomes `retype_into_page_frame_from`, with parameter `memory_region`. The aliases and the `retype_obj` test helper move with them |
-| 2 | `memory_region_retype_obj` | kernel handler in `kernel/src/syscall/retype.rs`; one test name | Ruled 2026-11-11 (UTC), not yet applied: `memory_region_retype_object`, matching `memory_region_retype` and `memory_region_split`. The test `the_rights_are_101s_and_retype_obj_mints_a_full_rights_notification` becomes `the_rights_are_101s_and_retype_object_mints_a_full_rights_notification` |
-| 3 | `abi::objtype` | the module of kernel object kinds, and the argument word in every `RETYPE_OBJECT` doc | Ruled 2026-11-11 (UTC), not yet applied: `abi::object_type`. The numbers do not change. The module doc's "a page of untyped" becomes "memory region" |
-| 4 | `address_space::MAP_RO` | `MAP_INTO`'s read-only mapping word | `MAP_READ_ONLY` |
-| 5 | `address_space::MAP_RW` | the read-write word | `MAP_READ_WRITE` |
-| 6 | `interrupt::ACK` | method 1 on an interrupt capability | `ACKNOWLEDGE`; the runtime wrapper is already `interrupt_acknowledge` |
-| 7 | `fault::FAULT_EP_SLOT` | the last capability slot, naming a thread's fault rendezvous | `FAULT_RENDEZVOUS_SLOT`; `EP` abbreviates "endpoint" and the object is now a rendezvous |
-| 8 | `SYS_EXIT` | syscall 0 | `SYSCALL_EXIT`; `SYS` abbreviates "syscall", which design/naming.md keeps |
-| 9 | `SYS_YIELD` | syscall 1 | `SYSCALL_YIELD` |
-| 10 | `SYS_INVOKE` | syscall 2 | `SYSCALL_INVOKE` |
-| 11 | `SYS_CAPABILITY_DELETE` | syscall 3 | `SYSCALL_CAPABILITY_DELETE` |
-| 12 | `SYS_EXIT_THREAD` | syscall 4 | `SYSCALL_EXIT_THREAD` |
-| 13 | `run_end_va` | a helper of the address-space handlers in `kernel/src/syscall/address_space.rs`, not a method; a falsification patch names it too | `run_end_virtual_address`; `va` is on the spelled-out list |
+| # | Was | Now |
+|---|---|---|
+| 1 | `process_builder::retype_obj_from` (parameters `ut`, `objtype`) and `retype_page_frame_from` | `retype_into_kernel_object_from` (parameters `memory_region`, `object_type`) and `retype_into_page_frame_from`; the local `as retype_obj` aliases are gone, and the kernel test helper is `retype_into_kernel_object` |
+| 2 | `memory_region_retype_obj` and its notification test | `memory_region_retype_object`; `the_rights_are_101s_and_retype_object_mints_a_full_rights_notification` |
+| 3 | `abi::objtype` | `abi::object_type` |
+| 4 | `address_space::MAP_RO` | `MAP_READ_ONLY` |
+| 5 | `address_space::MAP_RW` | `MAP_READ_WRITE` |
+| 6 | `interrupt::ACK` | `ACKNOWLEDGE` |
+| 7 | `fault::FAULT_EP_SLOT` | `FAULT_RENDEZVOUS_SLOT`; the ABI docs that called the supervision object an endpoint say rendezvous |
+| 8 to 12 | `SYS_EXIT`, `SYS_YIELD`, `SYS_INVOKE`, `SYS_CAPABILITY_DELETE`, `SYS_EXIT_THREAD` | `SYSCALL_EXIT`, `SYSCALL_YIELD`, `SYSCALL_INVOKE`, `SYSCALL_CAPABILITY_DELETE`, `SYSCALL_EXIT_THREAD` |
+| 13 | `run_end_va` | `run_end_virtual_address` |
 
-Items 8 to 12 share one prefix, so the architect may rule them together.
+What remains:
 
-The audit read and passed the methods of `MemoryRegion` (`MAP`, `RETYPE`, `SPLIT`, `DESTROY`, `USAGE`), `Rendezvous`, `Reply`, `Notification`, `Timer`, `ThreadControlBlock`, `AddressSpace` (`MAP_INTO`, `LIST`, `UNMAP`, `WAIT`, `WAKE`), `PageFrame`, `PortRange`, `Process`, `Reboot`, `Console`, `Virtio` and `Usage`, the survey words and the `Error` variants. `futex` is a term of art said as a word, as `syscall` is, and `virtio` keeps its specification's spelling.
+- `FAULT_RENDEZVOUS_SLOT`'s own doc comment in `crates/abi/src/fault.rs` still says "supervision endpoint" and "a working endpoint". `helpers/format_values_check.py` reads a doc comment that changes under a rename as a changed meaning, so those two words change in a doc-only pull request with no rename beside it.
+- Two spellings the audit did not list, for the architect if wanted: the kernel test `an_interrupt_raised_while_its_line_is_masked_is_delivered_at_the_ack` (and its falsification patch), and the generic IPC sentences in `crates/abi/src/rendezvous.rs` that still call the object an endpoint.
 
 ## What drives it
 
