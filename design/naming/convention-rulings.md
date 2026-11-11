@@ -42,9 +42,8 @@ and the fatal-risks evidence appendices stay provisional.
 
 A fixture program under `fixtures/src/` names the role it plays in its test, as a noun phrase
 (`file_sink`, `frame_revoker`). "Names a role" is a judgment a pattern would guess at, so no script
-applies this rule: each fixture the rule ratified carries `Name: ratified 2026-10-17 (calef,
-convention-rulings Rule 2)` in its own module doc, and `script/names` reads that block like any
-other. A new fixture is provisional until its own block says otherwise.
+applies this rule. Each fixture the rule ratified carries `Name: ratified 2026-10-17 (calef,
+convention-rulings Rule 2)` in its own module doc. `script/names` reads that block like any other. A new fixture is provisional until its own block says otherwise.
 
 `alto`, `tenor`, `greeting`, `hello`, `noteless`, `outlaw`, `chatty` and `flaky` are provisional.
 None names a role in its test: `alto` and `tenor` are two voices of a duet, and `greeting`, `hello`
