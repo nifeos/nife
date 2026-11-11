@@ -177,7 +177,7 @@ x86's real-time clock is the CMOS RTC behind two fixed I/O ports, `0x70` (index)
 the kernel grants the clock service a `PortRange` capability over both ports (§121 (x86 port I/O)),
 with `WRITE` because the TSS I/O permission bitmap cannot permit `in` without `out`. The service's
 `cmos` module reads the device itself, as its PL031 and Goldfish drivers read theirs, and the
-kernel reads no CMOS (§130 (the CMOS RTC and the userspace clock service)).
+kernel reads no CMOS (§130 (how the userspace clock service reads the x86 CMOS RTC)).
 The kernel writes the bitmap lazily, so only a switch to or from the clock service pays for it.
 
 | register | what it holds |

@@ -1,5 +1,6 @@
 ---
-status: NOT-STARTED
+status: BUILT
+built: 2026-10-28
 raised: 2026-09-24
 promoted_from: a-virtio-slot-comes-back-when-its-driver-dies
 milestone_dependencies: none
@@ -52,6 +53,10 @@ name. A starter binds the driver thread with `virtio::bind_to_current_thread`, a
 runs `virtio::release_owned_by`, which resets the device, bumps the generation and frees the slot
 and the shadow frame. `MAXIMUM_DEVICES` falls from 34 to 12. The tests live in
 `kernel/src/virtio/tests.rs`.
+
+## Follow-on
+
+- **None.**
 
 ## Index row
 

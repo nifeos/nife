@@ -31,9 +31,9 @@ Milestone 176 builds the other two windows. Piece 1 routes COM1's ISA IRQ into `
 (`Acpi::isa_irqs[4]`, via `memory::record_uart_irq`). Piece 2 is a CMOS RTC seam. The PC-compatible
 CMOS RTC is two fixed I/O ports, not a page, so the "map the device, let userspace drive it" pattern
 the other two architectures' RTCs use has no CMOS equivalent.
-[DECISIONS §130 (how the kernel-resident CMOS RTC reaches the userspace clock service)](../../decisions/0130-cmos-rtc-delegation.md)
-rules it (2026-08-26, "Ratify option 3"). The kernel reads CMOS once at boot and hands the seed to
-the clock service as a `Spawn` argument, the same way `kind` already crosses that boundary.
+[DECISIONS §130 (how the userspace clock service reads the x86 CMOS RTC)](../../decisions/0130-cmos-rtc-delegation.md)
+rules it: the clock service holds a `PortRange` over the two ports and reads the CMOS itself, and the
+kernel reads no CMOS.
 
 notes/x86-port/acpi-and-pci.md has the table of which fact has which source, and milestone 176 has
 both pieces.
