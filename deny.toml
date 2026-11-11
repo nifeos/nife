@@ -215,11 +215,12 @@ allow-wildcard-paths = true
 deny = [
     { crate = "rayon", wrappers = ["std_exerciser"], reason = "ruled for std_exerciser only (#1892)" },
     { crate = "rayon-core", wrappers = ["rayon"], reason = "reached only through rayon (#1892)" },
-    # `lamfat` (rust-fatfs's main line, republished) is the FAT crate's test oracle, ruled
-    # 2026-10-25 (UTC) for milestone 813 (a proven FAT crate, released on its own) as a
-    # `[dev-dependencies]` line of `file_allocation_table` alone. A second consumer, or a normal
-    # dependency, would put it in the base graph; `script/lint` refuses the second.
-    { crate = "lamfat", wrappers = ["file_allocation_table"], reason = "the FAT crate's test oracle only (813, ruled 2026-10-25)" },
+    # `lamfat` (rust-fatfs's main line, republished) is the test oracle of
+    # `nifeos/file_allocation_table`, a dev-dependency there, ruled 2026-10-25 (UTC) for milestone
+    # 813 (a proven FAT crate, released on its own). Nothing in this tree takes it, and a git
+    # dependency's dev-dependencies never reach this graph, so lamfat here would mean a release
+    # of that crate made it a normal dependency.
+    { crate = "lamfat", reason = "the FAT crate's test oracle, a dev-dependency of its own repository only (813, ruled 2026-10-25)" },
 ]
 
 skip = [

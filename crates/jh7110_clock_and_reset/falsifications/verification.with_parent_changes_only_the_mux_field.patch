@@ -4,7 +4,7 @@ The defect: the parent is shifted into place but no longer cut to the four-bit f
 wider than four bits spills into the divider and the enable bit. A clock that was gated comes up
 running mid-switch, which the function exists to prevent.
 
-Expected to fail: the harness's assertion that every bit outside `CLOCK_PARENT_MASK` is unchanged.
+Expected to fail: the harness's assertion that every bit outside `CLOCK_MULTIPLEXER_MASK` is unchanged.
 
 diff --git a/crates/jh7110_clock_and_reset/src/lib.rs b/crates/jh7110_clock_and_reset/src/lib.rs
 index e840194c9..85e112937 100644
@@ -14,8 +14,8 @@ index e840194c9..85e112937 100644
  /// Name: ratified 2026-10-26 (UTC).
  #[must_use]
  pub const fn with_parent(word: u32, parent: u32) -> u32 {
--    (word & !CLOCK_PARENT_MASK) | ((parent << CLOCK_MUX_SHIFT) & CLOCK_PARENT_MASK)
-+    (word & !CLOCK_PARENT_MASK) | (parent << CLOCK_MUX_SHIFT)
+-    (word & !CLOCK_MULTIPLEXER_MASK) | ((parent << CLOCK_MUX_SHIFT) & CLOCK_MULTIPLEXER_MASK)
++    (word & !CLOCK_MULTIPLEXER_MASK) | (parent << CLOCK_MUX_SHIFT)
  }
  
  /// **What the JH7110's TRNG needs before its registers answer**, transcribed from
