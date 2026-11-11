@@ -119,7 +119,7 @@ const NSID: u32 = 1;
 const SPIN_BOUND: u32 = 50_000_000;
 
 /// The bring-up step words this server reports on its readiness endpoint, in the `0xDEAD_..`
-/// shape `entropy_contract::bringup_failure` established, so a boot transcript reads the same way
+/// shape `entropy_contract::bring_up_failure` established, so a boot transcript reads the same way
 /// across services. A report of [`filesystem_contract::READY`] means a command went to
 /// the controller and came back.
 const STEP_BAD_HANDOFF: u64 = 0xDEAD_0001;

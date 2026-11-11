@@ -405,7 +405,7 @@ pub fn blank_disk(blk_image: &'static [u8]) -> Option<BlankDisk> {
 ///
 /// `entropy` is the experiment: `Some(ep)` lets the program draw a GPT's unique ids, and `None`
 /// leaves slot 2 empty, so its first `CALL` there is a kernel error that
-/// `entropy_contract::delivered` reports as "no entropy". Nothing else differs.
+/// `entropy_contract::delivered_bytes` reports as "no entropy". Nothing else differs.
 pub fn start_partitioner(
     image: &'static [u8],
     disk: &BlankDisk,

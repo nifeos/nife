@@ -27,7 +27,7 @@ struct ReadmeExample;
 ///
 /// A `CALL` replies with two words. The first is the count, so the bytes get exactly one word.
 /// Asking for more than this is not an error, it is answered with this many, and the caller loops;
-/// see [`want`].
+/// see [`requested_bytes`].
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_BYTES: u64 = 8;
@@ -52,26 +52,31 @@ pub const VERSION: u32 = 1;
 /// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
 pub const INTERFACE_ID: u64 = 12;
 
-/// **Give me `n` random bytes.** The only operation. `n` is clamped to [`MAXIMUM_BYTES`] by
-/// [`want`], so a client that asks for more is answered rather than refused.
+/// **Give me this many random bytes.** The only operation. The byte count is clamped to
+/// [`MAXIMUM_BYTES`] by [`requested_bytes`], so a client that asks for more is answered rather than
+/// refused.
 pub const GET: u64 = 1;
 
 /// Build a request word: the opcode and the byte count the client wants.
-pub const fn req(operation: u64, n: u64) -> u64 {
-    (operation << OPERATION_SHIFT) | (n & 0xff)
+pub const fn request(operation: u64, byte_count: u64) -> u64 {
+    (operation << OPERATION_SHIFT) | (byte_count & 0xff)
 }
 
 /// The opcode of a request word.
-pub const fn operation(w0: u64) -> u64 {
-    w0 >> OPERATION_SHIFT
+pub const fn operation(request_word: u64) -> u64 {
+    request_word >> OPERATION_SHIFT
 }
 
 /// How many bytes a request asks for, clamped to what one reply can carry. Clamping here rather
 /// than refusing keeps the server's loop free of an error path that only a buggy client reaches:
 /// a request for 500 bytes is a request for eight, answered, and the client asks again.
-pub const fn want(w0: u64) -> u64 {
-    let n = w0 & 0xff;
-    if n > MAXIMUM_BYTES { MAXIMUM_BYTES } else { n }
+pub const fn requested_bytes(request_word: u64) -> u64 {
+    let byte_count = request_word & 0xff;
+    if byte_count > MAXIMUM_BYTES {
+        MAXIMUM_BYTES
+    } else {
+        byte_count
+    }
 }
 
 /// The word the entropy service SENDs on its readiness endpoint once the device is up and its
@@ -102,15 +107,15 @@ pub const STEP_FIRST_ALL_ZERO: u64 = 0x11;
 
 /// Build a bring-up failure's report word from the step that failed.
 #[must_use]
-pub const fn bringup_failure(step: u64) -> u64 {
+pub const fn bring_up_failure(step: u64) -> u64 {
     DEAD | step
 }
 
 /// **Decide what a service may say about itself, given the first bytes it drew.** [`READY`] only
-/// when at least one of them is nonzero; otherwise a [`bringup_failure`] naming which of the two
+/// when at least one of them is nonzero; otherwise a [`bring_up_failure`] naming which of the two
 /// shared steps failed. Every backend calls this rather than composing the word itself.
 ///
-/// `first` is an iterator because the three backends hold their first bufferful in three different
+/// `first_bytes` is an iterator because the three backends hold their first bufferful in three different
 /// places. An empty iterator is [`STEP_NO_FIRST_BYTES`], a different answer from a bufferful of
 /// zeros. **Refusing an all-zero draw is a deliberate correctness claim about a random variable**;
 /// see this crate's `BUGS`.
@@ -118,29 +123,29 @@ pub const fn bringup_failure(step: u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// use entropy_contract::{READY, STEP_FIRST_ALL_ZERO, STEP_NO_FIRST_BYTES, bringup_failure, readiness};
+/// use entropy_contract::{READY, STEP_FIRST_ALL_ZERO, STEP_NO_FIRST_BYTES, bring_up_failure, readiness};
 ///
 /// // A device that answered with real bytes.
 /// assert_eq!(readiness([0, 0, 0, 7, 0]), READY);
 ///
 /// // A device that answered with nothing, and one that answered with zeros. Two different
 /// // failures, and the report word says which.
-/// assert_eq!(readiness([]), bringup_failure(STEP_NO_FIRST_BYTES));
-/// assert_eq!(readiness([0; 32]), bringup_failure(STEP_FIRST_ALL_ZERO));
+/// assert_eq!(readiness([]), bring_up_failure(STEP_NO_FIRST_BYTES));
+/// assert_eq!(readiness([0; 32]), bring_up_failure(STEP_FIRST_ALL_ZERO));
 /// assert_ne!(readiness([0; 32]), READY);
 /// ```
-pub fn readiness(first: impl IntoIterator<Item = u8>) -> u64 {
+pub fn readiness(first_bytes: impl IntoIterator<Item = u8>) -> u64 {
     let mut seen = false;
-    for byte in first {
+    for byte in first_bytes {
         if byte != 0 {
             return READY;
         }
         seen = true;
     }
     if seen {
-        bringup_failure(STEP_FIRST_ALL_ZERO)
+        bring_up_failure(STEP_FIRST_ALL_ZERO)
     } else {
-        bringup_failure(STEP_NO_FIRST_BYTES)
+        bring_up_failure(STEP_NO_FIRST_BYTES)
     }
 }
 
@@ -151,40 +156,44 @@ pub fn readiness(first: impl IntoIterator<Item = u8>) -> u64 {
 /// that no caller should have to guess at.
 pub const NO_ENTROPY: u64 = 0;
 
-/// **Read a reply's first word.** `Some(n)` when the entropy service answered, with `n` the number
-/// of valid low bytes in the second word (0 means [`NO_ENTROPY`]). `None` when the word did not
-/// come from the service at all: every kernel failure from a `CALL` is a small negative
-/// (the kernel's error numbers, -1 to -8), an enormous `u64`, so a caller holding no entropy capability finds out
-/// without a probe.
+/// **Read a reply's first word.** `Some(count)` when the entropy service answered, with `count` the
+/// number of valid low bytes in the second word (0 means [`NO_ENTROPY`]). `None` for every word
+/// above [`MAXIMUM_BYTES`]: no reply carries such a count, so the word did not come from the service.
+///
+/// The rule this rests on is the caller's: the kernel it runs on must report every failure of a
+/// `CALL` as a word above [`MAXIMUM_BYTES`]. A kernel that returns a small negative error number
+/// meets it, since each reads as an enormous `u64`, and then a caller holding no entropy capability
+/// finds out without a probe.
 ///
 /// # Examples
 ///
 /// A count and a kernel error cannot be confused, and "none to give" is a third answer:
 ///
 /// ```
-/// use entropy_contract::{MAXIMUM_BYTES, NO_ENTROPY, delivered};
+/// use entropy_contract::{MAXIMUM_BYTES, NO_ENTROPY, delivered_bytes};
 ///
 /// // Every count the service can send.
-/// for n in 0..=MAXIMUM_BYTES {
-///     assert_eq!(delivered(n), Some(n as usize));
+/// for byte_count in 0..=MAXIMUM_BYTES {
+///     assert_eq!(delivered_bytes(byte_count), Some(byte_count as usize));
 /// }
-/// // The kernel's errors are -1 to -8; as a u64 each is enormous, so none can be read as a count.
-/// assert_eq!(delivered(-4i64 as u64), None); // an empty slot: no entropy capability
+/// // A small negative error number reads as an enormous u64, so none can be read as a count.
+/// assert_eq!(delivered_bytes(-4i64 as u64), None); // an empty slot: no entropy capability
 ///
 /// // And "the service has none to give" is a third answer, distinct from both.
-/// assert_eq!(delivered(NO_ENTROPY), Some(0));
+/// assert_eq!(delivered_bytes(NO_ENTROPY), Some(0));
 /// ```
-pub const fn delivered(r0: u64) -> Option<usize> {
-    if r0 <= MAXIMUM_BYTES {
-        Some(r0 as usize)
+pub const fn delivered_bytes(first_reply_word: u64) -> Option<usize> {
+    if first_reply_word <= MAXIMUM_BYTES {
+        Some(first_reply_word as usize)
     } else {
         None
     }
 }
 
-/// Copy the `n` delivered bytes out of a reply's second word into `out`, returning how many landed.
+/// Copy `byte_count` delivered bytes out of a reply's second word into `out`, returning how many
+/// landed: the least of `byte_count`, [`MAXIMUM_BYTES`] and the length of `out`.
 ///
-/// Little-endian, and only the low `n` bytes are meaningful: the rest of the word is whatever the
+/// Little-endian, and only the low `byte_count` bytes are meaningful: the rest of the word is whatever the
 /// service had left in the register and carries no entropy, so a caller that read them would be
 /// mixing zeros into a key and believing otherwise.
 ///
@@ -194,40 +203,40 @@ pub const fn delivered(r0: u64) -> Option<usize> {
 /// trips, the last one short.
 ///
 /// ```
-/// use entropy_contract::{GET, MAXIMUM_BYTES, delivered, operation, req, take, want};
+/// use entropy_contract::{GET, MAXIMUM_BYTES, delivered_bytes, operation, request, copy_delivered_bytes, requested_bytes};
 ///
 /// // Stands in for the `CALL`: the real service reads the same two accessors off the request word
 /// // and answers with a count and a word of bytes.
-/// fn service(w0: u64) -> (u64, u64) {
-///     assert_eq!(operation(w0), GET);
-///     (want(w0), 0x0807_0605_0403_0201)
+/// fn service(request_word: u64) -> (u64, u64) {
+///     assert_eq!(operation(request_word), GET);
+///     (requested_bytes(request_word), 0x0807_0605_0403_0201)
 /// }
 ///
 /// let mut key = [0u8; 20];
 /// let mut filled = 0;
 /// let mut round_trips = 0;
 /// while filled < key.len() {
-///     let (r0, r1) = service(req(GET, (key.len() - filled) as u64));
+///     let (first_reply_word, reply_word) = service(request(GET, (key.len() - filled) as u64));
 ///     round_trips += 1;
 ///     // `None` would mean the word is a kernel error rather than a count. See below.
-///     let n = delivered(r0).expect("the service answered");
-///     assert_ne!(n, 0, "a zero count is NO_ENTROPY: fail, do not retry");
-///     filled += take(n, r1, &mut key[filled..]);
+///     let byte_count = delivered_bytes(first_reply_word).expect("the service answered");
+///     assert_ne!(byte_count, 0, "a zero count is NO_ENTROPY: fail, do not retry");
+///     filled += copy_delivered_bytes(byte_count, reply_word, &mut key[filled..]);
 /// }
 /// assert_eq!(round_trips, 3); // 8 + 8 + 4, because MAXIMUM_BYTES is 8
 /// assert_eq!(MAXIMUM_BYTES, 8);
 /// assert_eq!(&key[16..], &[0x01, 0x02, 0x03, 0x04]);
 /// ```
-pub fn take(n: usize, word: u64, out: &mut [u8]) -> usize {
-    let n = n.min(MAXIMUM_BYTES as usize).min(out.len());
-    out[..n].copy_from_slice(&word.to_le_bytes()[..n]);
-    n
+pub fn copy_delivered_bytes(byte_count: usize, reply_word: u64, out: &mut [u8]) -> usize {
+    let copied = byte_count.min(MAXIMUM_BYTES as usize).min(out.len());
+    out[..copied].copy_from_slice(&reply_word.to_le_bytes()[..copied]);
+    copied
 }
 
 /// **Fill `out` with random bytes, one request at a time, refusing a short answer.** `call` is the
 /// `CALL` on the entropy endpoint: it takes a request word and returns the two reply words.
 ///
-/// `None` if any reply is not a count (no entropy capability; see [`delivered`]) or delivers fewer
+/// `None` if any reply is not a count (no entropy capability; see [`delivered_bytes`]) or delivers fewer
 /// bytes than asked (the service is dry); then `out` is unspecified and must not be used. Asks for
 /// [`MAXIMUM_BYTES`] at a time and the remainder last. The `CALL` is a parameter so this crate
 /// makes no syscall; the caller passes a real one. The standard library's platform abstraction
@@ -237,12 +246,12 @@ pub fn take(n: usize, word: u64, out: &mut [u8]) -> usize {
 pub fn fill_with(out: &mut [u8], mut call: impl FnMut(u64) -> (u64, u64)) -> Option<()> {
     let mut filled = 0;
     while filled < out.len() {
-        let want = (out.len() - filled).min(MAXIMUM_BYTES as usize);
-        let (r0, r1) = call(req(GET, want as u64));
-        if delivered(r0)? != want {
+        let byte_count = (out.len() - filled).min(MAXIMUM_BYTES as usize);
+        let (first_reply_word, reply_word) = call(request(GET, byte_count as u64));
+        if delivered_bytes(first_reply_word)? != byte_count {
             return None;
         }
-        filled += take(want, r1, &mut out[filled..]);
+        filled += copy_delivered_bytes(byte_count, reply_word, &mut out[filled..]);
     }
     Some(())
 }
@@ -257,10 +266,10 @@ mod tests {
     fn sixteen_bytes_take_two_calls() {
         let mut calls = 0;
         let mut out = [0u8; 16];
-        let got = fill_with(&mut out, |w0| {
+        let got = fill_with(&mut out, |request_word| {
             calls += 1;
-            assert_eq!(operation(w0), GET);
-            (want(w0), 0x0807_0605_0403_0201 * calls)
+            assert_eq!(operation(request_word), GET);
+            (requested_bytes(request_word), 0x0807_0605_0403_0201 * calls)
         });
         assert_eq!(got, Some(()));
         assert_eq!(calls, 2);
@@ -302,11 +311,11 @@ mod tests {
     #[test]
     fn the_last_request_asks_for_the_remainder() {
         let mut asked = [0u64; 3];
-        let mut i = 0;
-        let got = fill_with(&mut [0u8; 20], |w0| {
-            asked[i] = want(w0);
-            i += 1;
-            (want(w0), u64::MAX)
+        let mut index = 0;
+        let got = fill_with(&mut [0u8; 20], |request_word| {
+            asked[index] = requested_bytes(request_word);
+            index += 1;
+            (requested_bytes(request_word), u64::MAX)
         });
         assert_eq!(got, Some(()));
         assert_eq!(asked, [8, 8, 4]);
@@ -314,9 +323,9 @@ mod tests {
 
     #[test]
     fn a_request_round_trips_its_opcode_and_count() {
-        let w = req(GET, 5);
-        assert_eq!(operation(w), GET);
-        assert_eq!(want(w), 5);
+        let request_word = request(GET, 5);
+        assert_eq!(operation(request_word), GET);
+        assert_eq!(requested_bytes(request_word), 5);
     }
 
     /// Pins the wire layout as an exact word, with an opcode that is not `GET`. `GET` is 1, so an
@@ -324,10 +333,10 @@ mod tests {
     /// is the one place the shift is checked against a number the protocol does not define.
     #[test]
     fn the_request_word_layout_is_exact() {
-        let w = req(0x7f, 5);
-        assert_eq!(w, 0x7f00_0000_0000_0005);
-        assert_eq!(operation(w), 0x7f);
-        assert_eq!(want(w), 5);
+        let request_word = request(0x7f, 5);
+        assert_eq!(request_word, 0x7f00_0000_0000_0005);
+        assert_eq!(operation(request_word), 0x7f);
+        assert_eq!(requested_bytes(request_word), 5);
     }
 
     /// A client asking for more than one reply can carry is answered with a full reply, not an
@@ -335,8 +344,8 @@ mod tests {
     /// either one enforcing it.
     #[test]
     fn an_oversized_request_is_clamped_rather_than_refused() {
-        assert_eq!(want(req(GET, 200)), MAXIMUM_BYTES);
-        assert_eq!(want(req(GET, MAXIMUM_BYTES)), MAXIMUM_BYTES);
+        assert_eq!(requested_bytes(request(GET, 200)), MAXIMUM_BYTES);
+        assert_eq!(requested_bytes(request(GET, MAXIMUM_BYTES)), MAXIMUM_BYTES);
     }
 
     /// **The property the whole error story rests on**: no count the service can send collides with
@@ -345,21 +354,25 @@ mod tests {
     /// slot puts in the first register.
     #[test]
     fn a_kernel_refusal_is_never_mistaken_for_a_byte_count() {
-        for n in 0..=MAXIMUM_BYTES {
-            assert_eq!(delivered(n), Some(n as usize));
+        for byte_count in 0..=MAXIMUM_BYTES {
+            assert_eq!(delivered_bytes(byte_count), Some(byte_count as usize));
         }
-        for err in 1i64..=8 {
-            assert_eq!(delivered((-err) as u64), None, "kernel error -{err}");
+        for error in 1i64..=8 {
+            assert_eq!(
+                delivered_bytes((-error) as u64),
+                None,
+                "kernel error -{error}"
+            );
         }
-        assert_eq!(delivered(MAXIMUM_BYTES + 1), None);
+        assert_eq!(delivered_bytes(MAXIMUM_BYTES + 1), None);
     }
 
     /// The high bytes of the reply word are not entropy and must not reach the caller's buffer.
     #[test]
     fn only_the_delivered_bytes_are_copied_out() {
         let mut out = [0xAAu8; 8];
-        let n = take(3, 0xFFFF_FFFF_FF03_0201, &mut out);
-        assert_eq!(n, 3);
+        let copied = copy_delivered_bytes(3, 0xFFFF_FFFF_FF03_0201, &mut out);
+        assert_eq!(copied, 3);
         assert_eq!(out, [0x01, 0x02, 0x03, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA]);
     }
 
@@ -369,7 +382,7 @@ mod tests {
     /// "the first word is zero", and a check written the second way would pass this test at 8
     /// bytes and let a 256-byte direct memory access (DMA) page through.
     #[test]
-    fn an_all_zero_first_bufferful_is_never_ready() {
+    fn an_all_zero_first_draw_is_never_ready() {
         // The three widths a backend actually draws: the instruction's eight bytes, the JH7110's
         // thirty-two, the virtio pool's bufferful. Spelled out rather than looped because the
         // predicate is "no nonzero byte anywhere", and a check written as "the first word is zero"
@@ -383,7 +396,7 @@ mod tests {
         );
         assert_eq!(
             readiness([0u8; 32]),
-            bringup_failure(STEP_FIRST_ALL_ZERO),
+            bring_up_failure(STEP_FIRST_ALL_ZERO),
             "a zero bufferful must name its own step, not just refuse to be ready",
         );
     }
@@ -392,8 +405,8 @@ mod tests {
     /// refuse [`READY`]; a bench session reading the report word has to be able to tell a gated
     /// clock from a source that answered wrongly, which is what the two steps are for.
     #[test]
-    fn nothing_at_all_and_a_zero_bufferful_are_distinguishable() {
-        assert_eq!(readiness([]), bringup_failure(STEP_NO_FIRST_BYTES));
+    fn nothing_at_all_and_all_zero_bytes_are_distinguishable() {
+        assert_eq!(readiness([]), bring_up_failure(STEP_NO_FIRST_BYTES));
         assert_ne!(
             readiness([]),
             readiness([0; 32]),
@@ -407,31 +420,31 @@ mod tests {
     /// is the false positive this trade is trying to keep rare rather than common.
     #[test]
     fn a_single_nonzero_byte_anywhere_is_ready() {
-        let mut buf = [0u8; 32];
-        buf[31] = 1;
-        assert_eq!(readiness(buf), READY);
-        buf = [0u8; 32];
-        buf[0] = 0x80;
-        assert_eq!(readiness(buf), READY);
+        let mut first_bytes = [0u8; 32];
+        first_bytes[31] = 1;
+        assert_eq!(readiness(first_bytes), READY);
+        first_bytes = [0u8; 32];
+        first_bytes[0] = 0x80;
+        assert_eq!(readiness(first_bytes), READY);
     }
 
     /// No bring-up failure can be mistaken for the ready word or for a byte count, which is the
-    /// same non-overlap property [`delivered`] rests on, one message earlier in the handshake.
+    /// same non-overlap property [`delivered_bytes`] rests on, one message earlier in the handshake.
     #[test]
-    fn a_bringup_failure_is_never_ready_and_never_a_count() {
+    fn a_bring_up_failure_is_never_ready_and_never_a_count() {
         for step in [STEP_NO_FIRST_BYTES, STEP_FIRST_ALL_ZERO, 0x01, 0xff] {
-            let word = bringup_failure(step);
+            let word = bring_up_failure(step);
             assert_ne!(word, READY);
-            assert_eq!(delivered(word), None);
+            assert_eq!(delivered_bytes(word), None);
             assert_eq!(word & 0xff, step);
         }
     }
 
-    /// A short buffer is the caller's business, not a panic: `take` fills what fits.
+    /// A short buffer is the caller's business, not a panic: `copy_delivered_bytes` fills what fits.
     #[test]
     fn a_short_buffer_takes_what_fits() {
         let mut out = [0u8; 2];
-        assert_eq!(take(8, u64::MAX, &mut out), 2);
+        assert_eq!(copy_delivered_bytes(8, u64::MAX, &mut out), 2);
         assert_eq!(out, [0xFF, 0xFF]);
     }
 }

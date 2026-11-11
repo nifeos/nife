@@ -14,19 +14,19 @@ transformed on the way, so the claim stays "these are the device's bytes".
 A `CALL` carries one request word and returns two reply words.
 
 - Request: the opcode in bits 63:56 (`OPERATION_SHIFT` is 56), the byte count in bits 7:0. There is
-  one operation, `GET` (1). Build a request with `req`, read it with `operation` and `want`.
+  one operation, `GET` (1). Build a request with `request`, read it with `operation` and `requested_bytes`.
 - Reply word 1: the count of valid bytes in word 2, from 0 to `MAXIMUM_BYTES` (8). A count of 0 is
   `NO_ENTROPY`: the service has none to give, and it never pads, repeats an earlier answer or
   substitutes a pseudo-random stand-in. A caller that cannot be given randomness must find out.
 - Reply word 2: those bytes, little-endian, in the low bytes. The rest of the word carries no
   entropy and must not be read.
-- Asking for more than `MAXIMUM_BYTES` is answered with `MAXIMUM_BYTES`, not refused (`want` clamps),
+- Asking for more than `MAXIMUM_BYTES` is answered with `MAXIMUM_BYTES`, not refused (`requested_bytes` clamps),
   so the caller loops.
 - A reply word 1 above `MAXIMUM_BYTES` did not come from the service. The kernel reports a failed
-  `CALL` as a small negative number (-1 to -8), which is an enormous unsigned value, so `delivered`
+  `CALL` as a small negative number (-1 to -8), which is an enormous unsigned value, so `delivered_bytes`
   returns `None` for it and a caller with no entropy capability finds out without a probe.
 - Readiness: a service sends `READY` on its readiness endpoint only after it holds bytes that are not
-  all zero (`readiness` decides). Otherwise it sends `DEAD | step` (`bringup_failure`), where the
+  all zero (`readiness` decides). Otherwise it sends `DEAD | step` (`bring_up_failure`), where the
   step is `STEP_NO_FIRST_BYTES` (0x10, the device never answered) or `STEP_FIRST_ALL_ZERO` (0x11,
   every byte was zero). Steps 0x01 to 0x0f belong to each backend. Treating an all-zero first draw
   as a dead device is wrong with probability 2^-64 to 2^-2048 by source, the safe way round.
@@ -36,20 +36,20 @@ A `CALL` carries one request word and returns two reply words.
 ## EXAMPLES
 
 ```rust
-use entropy_contract::{GET, MAXIMUM_BYTES, delivered, req, take, want};
+use entropy_contract::{GET, MAXIMUM_BYTES, delivered_bytes, request, copy_delivered_bytes, requested_bytes};
 
 // Stands in for the service: it answers with a count and a word of bytes.
-fn service(w0: u64) -> (u64, u64) {
-    (want(w0), 0x0807_0605_0403_0201)
+fn service(request_word: u64) -> (u64, u64) {
+    (requested_bytes(request_word), 0x0807_0605_0403_0201)
 }
 
 let mut key = [0u8; 20];
 let mut filled = 0;
 while filled < key.len() {
-    let (r0, r1) = service(req(GET, (key.len() - filled) as u64));
-    let n = delivered(r0).expect("the service answered");
-    assert_ne!(n, 0, "a zero count is NO_ENTROPY: fail, do not retry");
-    filled += take(n, r1, &mut key[filled..]);
+    let (first_reply_word, reply_word) = service(request(GET, (key.len() - filled) as u64));
+    let byte_count = delivered_bytes(first_reply_word).expect("the service answered");
+    assert_ne!(byte_count, 0, "a zero count is NO_ENTROPY: fail, do not retry");
+    filled += copy_delivered_bytes(byte_count, reply_word, &mut key[filled..]);
 }
 assert_eq!(MAXIMUM_BYTES, 8);
 ```
