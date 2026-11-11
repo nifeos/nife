@@ -1,5 +1,7 @@
 # The x86_64 port: ring 3
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
 the address spaces, `swapgs`, the `syscall` pair, and the first ring-3 proof. It exists to verify or
 challenge the main page. A reader who only needs to build, boot or test the x86_64 port should not

@@ -1,5 +1,7 @@
 # The `std` heap under threads: a cache per thread in front of one lock
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 Milestone 561 (a per-CPU allocator is what the current-CPU page was for) asked for a free list per
 CPU id. This appendix records why it builds a cache per thread instead, what was surveyed before
 writing anything, and what was measured against the per-CPU design. Written 2026-10-10 (UTC) by the

@@ -1,5 +1,7 @@
 # Proof harnesses, Rust, BUGS sections and coverage
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [the register of measures](../register-of-measures.md). The name is provisional.*
 
 ## Kani proof harnesses, and what can falsify them

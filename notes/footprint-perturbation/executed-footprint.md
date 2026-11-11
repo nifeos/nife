@@ -1,5 +1,7 @@
 # E5: does an executed fastpath cost time on radon
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/footprint-perturbation.md`](../footprint-perturbation.md), whose "The next
 radon evening" section is the evening's plan. Written 2026-10-03 (UTC) by the
 `maintainer/radon-footprint-experiment` lane. Name provisional, the directory and the stem both;

@@ -1,5 +1,7 @@
 # Performing a rename: where names hide
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`design/naming.md`](../naming.md), which is the rule. This file holds the sites a
 compiler cannot see when a program or crate is renamed, and why the census is taken twice. It exists
 to verify or challenge the main page. A reader who only needs to name, ratify or rename something

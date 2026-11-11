@@ -1,5 +1,7 @@
 # The network stack: prior art, and how the socket contract was decided
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [`notes/net.md`](../net.md), which is the page to read. This file holds the prior
 art read before the contract, where this design differs from seL4, and the design record behind §25.
 It exists to verify or challenge the main page. A reader who only needs to use the socket contract

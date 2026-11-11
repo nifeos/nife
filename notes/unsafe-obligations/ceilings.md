@@ -1,6 +1,6 @@
 # The unsafe census: what each number is held to, and why the answers differ
 
-*Name: provisional, minted 2026-10-11 (UTC) by lane/next-ten-longest-notes.*
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 An appendix to [notes/unsafe-obligations.md](../unsafe-obligations.md), which summarizes it. The
 measurement behind these numbers is in [census.md](census.md). Both are the work of milestone 134

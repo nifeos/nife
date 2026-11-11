@@ -1,5 +1,7 @@
 # A memory bound per mutant
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 This appendix of [notes/mutation-testing.md](../mutation-testing.md) records how a mutation run
 bounds what one mutant may allocate, the measured ceiling, and a demonstration that it fires.
 

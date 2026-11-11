@@ -1,5 +1,7 @@
 # E1 to E4: the cache experiments and what each reading says
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [the register of measures](../register-of-measures.md). The name is provisional.*
 
 ## Radon, 2026-09-04

@@ -1,5 +1,7 @@
 # The null syscall under the full mix, on four Apple cores
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix of [the null-syscall note](null-syscall-under-load.md), measured 2026-10-05 (UTC) on
 patagonia by `lane/null-syscall-hvf`. Patagonia is an Apple M3: four performance cores, four
 efficiency cores. The file name is provisional (see the README).*

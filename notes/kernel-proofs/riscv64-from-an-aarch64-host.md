@@ -1,5 +1,7 @@
 # Proving riscv64's IOMMU driver from an aarch64 host
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 An appendix to [notes/kernel-proofs.md](../kernel-proofs.md), which links here from its stub-list
 item 8. It is milestone 432 (the RISC-V IOMMU driver has no counterpart to the SMMU's proofs), built
 as option 1 of

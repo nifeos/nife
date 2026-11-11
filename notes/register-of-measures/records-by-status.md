@@ -1,5 +1,7 @@
 # Fatal risks, decisions, names, proposals and milestones by status
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [the register of measures](../register-of-measures.md). The name is provisional.*
 
 ## The nine things that would kill nife

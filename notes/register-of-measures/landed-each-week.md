@@ -1,5 +1,7 @@
 # Milestones built and pull requests merged each week
 
+*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+
 *An appendix to [the register of measures](../register-of-measures.md). The name is provisional.*
 
 ## Milestones built each week
