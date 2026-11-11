@@ -12,7 +12,7 @@ needs_person: yes
 Raised by lane proposal/milestones-as-files-or-issues, at the architect's request. Name: provisional.
 
 Ruled 2026-11-11 (UTC): shape A, milestones stay files, with no published index. The ruling also
-answers question 7 of milestone 1018.
+answers question 7 of milestone 1018 (the design record moves to `nifeos/record`).
 
 Reuse: GitHub's own issues, sub-issues and closing keywords, which shapes B and C would take whole.
 
@@ -26,8 +26,7 @@ merges conflict, and milestone files are already named by number, so the number 
 one. A generated index can be added if the existence check proves too slow; that is compatible.
 `TODO(milestone N)` keeps its spelling.
 
-The reason is not effort. If the three shapes cost the same, A would still win, for three
-measured reasons. Every gate that reads a milestone today reads it at a commit, so anyone can repeat a run, and an
+The reason is not effort. At equal cost A would still win, for three measured reasons. Every gate that reads a milestone today reads it at a commit, so anyone can repeat a run, and an
 issue has no commit. The status a gate needs is 1.1% of the words in the
 roadmap, and that small part is what most of the readers read. And nife's claim already is the
 lighter object an issue would be (§90 (the claim is a draft pull request; the status flip is a
@@ -46,8 +45,8 @@ says so in fields a script can walk). Then it has prose: why the work exists, wh
 weighed, the steps, what done means, the follow-on work and the recorded limitations.
 `script/roadmap --check` reads all of it on every push and in the merge queue.
 
-The record is leaving this repository for its own, `nifeos/record`, under milestone 1018 (the
-design record moves to `nifeos.org`). Once it has left, code no
+The record is leaving this repository for its own, `nifeos/record`, under milestone 1018 (the design
+record moves to `nifeos/record` and is published as a website). Once it has left, code no
 longer sits beside the files that its comments cite. That reopens a question the tree answered
 once, in §90's "Why not GitHub Issues": should the work-tracking part of a milestone live in an
 issue tracker instead? It matters now because the citation rules for the new layout are open, and only a fresh
