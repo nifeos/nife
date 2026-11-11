@@ -167,11 +167,11 @@ puts out of reach: `rearm` reads `CNTVCT_EL0` and writes `CNTV_CVAL_EL0`, both `
 accessors in `arch/aarch64/instructions.rs`, which a harness can stub. Proving it means first lifting the arithmetic out of the register accesses, and where
 that seam goes is a design question.
 
-`run_end_virtual_address` was chosen instead because it has a real defect on record, the criterion
-milestone 191 (did the proofs catch the bugs?) made the one that matters. MAJOR 4 of the review of
-milestone 142 (a text display good enough that people use it) found the old code checking only the
-addition in `va.checked_add((count - 1) * PAGE_SIZE)`, so the multiply wrapped and a large `count`
-gave a `last_va` a few pages above `va`, admitting a run that spanned the address space.
+`run_end_virtual_address` was chosen because it has a real defect on record, the criterion milestone
+191 (did the proofs catch the bugs?) put first. In the review of milestone 142 (a text display good
+enough that people use it), MAJOR 4 found it checking only the addition in `va.checked_add((count -
+1) * PAGE_SIZE)`: the multiply wrapped, so a large `count` admitted a run spanning the address
+space.
 
 ## EXAMPLES
 
