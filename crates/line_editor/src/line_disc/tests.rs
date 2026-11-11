@@ -586,3 +586,23 @@ fn a_repaint_leaves_the_cursor_where_it_was() {
     d.repaint(&mut o);
     assert_eq!(o.0, b"abcde\x1b[5D");
 }
+
+/// A CSI parameter too long for `u16` saturates instead of overflowing: the sequence is read as
+/// its final byte with the largest parameter, and the line is untouched by the unknown one.
+#[test]
+fn a_long_csi_parameter_saturates() {
+    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    feed_all(&mut d, &mut s, b"abc");
+    // Unknown final with a huge parameter: dropped whole.
+    feed_all(&mut d, &mut s, b"\x1b[9999999~");
+    feed_all(
+        &mut d,
+        &mut s,
+        b"\x1b[99999999999999999999;99999999999999999999~",
+    );
+    // A known final with a huge parameter still dispatches (cursor left).
+    feed_all(&mut d, &mut s, b"\x1b[9999999D");
+    assert_eq!(feed_all(&mut d, &mut s, b"X"), []);
+    assert_eq!(feed_all(&mut d, &mut s, b"\r"), [Event::Line]);
+    assert_eq!(d.line(), b"abXc");
+}

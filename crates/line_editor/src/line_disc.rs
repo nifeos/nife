@@ -374,7 +374,9 @@ impl LineDisc {
                 match b {
                     b'0'..=b'9' => {
                         let i = n.min(1);
-                        params[i] = params[i].saturating_mul(10) + (b - b'0') as u16;
+                        params[i] = params[i]
+                            .saturating_mul(10)
+                            .saturating_add((b - b'0') as u16);
                         self.esc = EscState::Csi { params, n };
                     }
                     b';' => {
