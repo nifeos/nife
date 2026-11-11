@@ -1682,12 +1682,13 @@ for mid, fname in sorted(ids.items()):
 # file at the commit basalt builds. helpers/qualified_paths.py holds which commit that is and why
 # a fetch that fails is a problem. Every block is read, not only its Follow-on: the form is new,
 # so no older prose uses it loosely, and a body bullet names a crate as often as a follow-on does,
-# as milestone 159 (a real hardware entropy source: the JH7110's TRNG) does. The network is touched
-# only when some block uses the form.
-_qualified = [(f"design/roadmap/{fname}:{n}", repo, path)
-              for _mid, fname in sorted(ids.items())
-              for n, repo, path in qualified_paths.citations(open(os.path.join(d, fname)).read())]
-problems.extend(qualified_paths.problems(_qualified, root))
+# as milestone 159 (a real hardware entropy source: the JH7110's TRNG) does. Only `--check` reads
+# them, so the report modes (`--index`, `--ready` and the rest) stay off the network.
+if mode == "--check":
+    _qualified = [(f"design/roadmap/{fname}:{n}", repo, path)
+                  for _mid, fname in sorted(ids.items())
+                  for n, repo, path in qualified_paths.citations(open(os.path.join(d, fname)).read())]
+    problems.extend(qualified_paths.problems(_qualified, root))
 
 
 # ---- a correction's action items (§210, and calef's review of #1513) ----------
