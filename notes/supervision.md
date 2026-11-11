@@ -15,7 +15,7 @@ back off, give up, escalate) is a userspace supervisor's business, layered with 
 Three pieces, and the surface cost is zero new syscalls and zero new methods.
 
 1. Designation, at spawn only. A supervised thread is spawned with its supervision endpoint in a
-   reserved capability table slot (`abi::fault::FAULT_EP_SLOT`, the last one). At `START` the kernel reads that
+   reserved capability table slot (`abi::fault::FAULT_RENDEZVOUS_SLOT`, the last one). At `START` the kernel reads that
    slot; a `Rendezvous` capability there means "supervised," and the kernel records the rendezvous as
    the thread's fault target (`Thread::fault_ep`) and clears the slot, so the child holds no
    authority to send on it. A thread spawned with an empty fault slot is unsupervised and gets the
@@ -225,7 +225,7 @@ other side.
   (design/audit-reports/), recorded-accepted.
 
   Two facts that only look alarming together. `sched::start_tcb` reads the reserved slot with
-  `capability_table.get(FAULT_EP_SLOT)` rather than `get_with`, so **any** `Rendezvous` capability
+  `capability_table.get(FAULT_RENDEZVOUS_SLOT)` rather than `get_with`, so **any** `Rendezvous` capability
   there makes the thread supervised, `Rights::NONE` included. It is the one place in the kernel where a
   capability's *presence* authorizes something and its rights are never consulted. And
   `process_builder` is the only site that places one, with `abi::rights::READ`, chosen by every
@@ -241,7 +241,7 @@ other side.
 
   **What is actually wrong is the record.** `crates/system_initializer` ("to place a `READ` view of
   it in each job's reserved fault slot") and `process_builder` both present the choice of `READ`
-  as a deliberate narrowing, and `abi::fault::FAULT_EP_SLOT`'s own doc says the clearing is what
+  as a deliberate narrowing, and `abi::fault::FAULT_RENDEZVOUS_SLOT`'s own doc says the clearing is what
   keeps the kernel the only sender. All three are true sentences that a reader assembles into a
   false one: that placing it with `WRITE` would open a hole. It would not, and neither would
   `Rights::NONE`. A maintainer who believes the rights are the mechanism will either refuse a change

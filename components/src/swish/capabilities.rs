@@ -62,7 +62,7 @@ pub(super) fn capabilities(nav: &mut Nav, tail: &[u8]) {
     // reads to prove this shell holds no display device.
     if grant_plan::trim(tail).is_empty() {
         swish::write_census(
-            abi::fault::FAULT_EP_SLOT,
+            abi::fault::FAULT_RENDEZVOUS_SLOT,
             &user_mode_runtime::is_granted,
             &mut print,
         );

@@ -1,4 +1,4 @@
-use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_EP_SLOT};
+use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
 
 /// The child's addresses, its two stubs and the faulting pc are the kernel's
 /// (`user::supervised_child`), so the boot self-test's `supervised` and `teardown` checks and these
@@ -447,7 +447,7 @@ fn a_child_can_neither_learn_nor_forge_its_label() {
                 matches!(c.object, crate::capability_object::Object::Rendezvous(_, badge) if badge == LABEL_ONE)
             })
         });
-        (table.get(FAULT_EP_SLOT).is_err(), carries)
+        (table.get(FAULT_RENDEZVOUS_SLOT).is_err(), carries)
     })
     .expect("the child is gone already");
     assert!(

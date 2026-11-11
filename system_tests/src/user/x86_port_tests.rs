@@ -18,7 +18,7 @@
 //! 4. A holder that takes the range back from everyone else keeps its own bitmap:
 //!    [`a_take_back_leaves_the_invokers_own_bitmap_installed`].
 
-use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_EP_SLOT};
+use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
 
 use super::*;
 use crate::sched;
@@ -141,7 +141,7 @@ fn build_child(
             fault_ep,
             crate::capability_object::Rights::READ,
         ),
-        Some(FAULT_EP_SLOT),
+        Some(FAULT_RENDEZVOUS_SLOT),
     )
     .expect("insert fault ep");
 

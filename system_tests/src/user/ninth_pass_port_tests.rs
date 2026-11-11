@@ -13,7 +13,7 @@
 //! architectures.
 #![cfg(target_arch = "x86_64")]
 
-use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_EP_SLOT};
+use abi::fault::{EVENT_EXIT, EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
 
 use super::*;
 use crate::capability_object::Rights;
@@ -119,7 +119,7 @@ fn build_port_holder(
     sched::thread_control_block_insert_capability(
         tid,
         crate::capability_object::rendezvous_capability(fault_ep, Rights::READ),
-        Some(FAULT_EP_SLOT),
+        Some(FAULT_RENDEZVOUS_SLOT),
     )
     .expect("insert fault ep");
 

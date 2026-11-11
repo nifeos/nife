@@ -170,7 +170,7 @@ A thread blocked in IPC when it is suspended stays in that IPC. Its rendezvous m
 and a `RESUME` lets it return what it was given.
 
 A process's supervision slot is the process's. The first member's `START` takes the reserved
-`FAULT_EP_SLOT` out of the shared table, and the process's death is reported there whichever thread
+`FAULT_RENDEZVOUS_SLOT` out of the shared table, and the process's death is reported there whichever thread
 ends it; a member started later finds the slot empty. A process ends when a member calls `exit` or
 faults, when its last running member calls `exit_thread`, when `Process::DESTROY` is invoked or when
 its region is destroyed. Every other member ends with it, and no thread may join or start in it

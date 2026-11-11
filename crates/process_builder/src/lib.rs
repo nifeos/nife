@@ -413,7 +413,7 @@ fn endow_child(tcb: u64, endow: &ChildEndowment, aspace: u64) -> Result<(), ()> 
     if let Some(fault) = endow.fault {
         // The spawn-slot convention: target slot `n + 1` means "slot n", so the supervision endpoint
         // lands in the reserved last slot rather than wherever first-free fell.
-        let target = abi::fault::FAULT_EP_SLOT + 1;
+        let target = abi::fault::FAULT_RENDEZVOUS_SLOT + 1;
         if thread_control_block_capability_insert(tcb, fault, abi::rights::READ, target) < 0 {
             return Err(());
         }

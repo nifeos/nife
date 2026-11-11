@@ -114,8 +114,9 @@ taken for a refused join is given back.
 On a join, whatever the embryo's own table holds moves into the process's table at the same slot
 numbers, under `IPC_TABLES`, so a loader endows a thread before it joins exactly as it always has.
 `START` then refuses a member whose process has ended (`Gone`). The first member's `START` takes the
-reserved `abi::fault::FAULT_EP_SLOT` out of the shared table, so supervision belongs to that thread
-and a member started later is unsupervised (§26 (the fault endpoint)).
+reserved `abi::fault::FAULT_RENDEZVOUS_SLOT` (its name spelled out by the ruling of 2026-11-11
+(UTC)) out of the shared table, so supervision belongs to that thread and a member started later is
+unsupervised (§26 (the fault endpoint)).
 
 The thread pointer and the page address are set in the same critical section as the space and the
 entry, so a racing `START` sees all of them or none.

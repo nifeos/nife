@@ -15,7 +15,7 @@
 //!   instant a process ends. `notes/processes.md` records it.
 
 use abi::Error;
-use abi::fault::{EVENT_EXIT, FAULT_EP_SLOT};
+use abi::fault::{EVENT_EXIT, FAULT_RENDEZVOUS_SLOT};
 use abi::futex::{PRIVATE, SIZE_U32};
 
 use super::*;
@@ -363,7 +363,7 @@ fn a_members_exit_ends_its_process_and_the_supervisor_hears() {
     sched::thread_control_block_insert_capability(
         spinner,
         crate::capability_object::rendezvous_capability(supervisor, Rights::READ),
-        Some(FAULT_EP_SLOT),
+        Some(FAULT_RENDEZVOUS_SLOT),
     )
     .expect("insert the supervision endpoint");
     sched::start_thread_control_block(spinner, [0; 3]).expect("start the spinner");

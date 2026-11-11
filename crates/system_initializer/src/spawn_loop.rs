@@ -29,7 +29,7 @@ pub(super) fn place_at(tcb: u64, capability: u64, rights: u64, slot: u64) -> boo
 
 // The slot the run-unvouched capability is placed in sits just under the kernel's reserved fault
 // slot; `grant_plan` states the number without depending on `abi`, so the relation is held here.
-const _: () = assert!(spawnproto::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_EP_SLOT - 1);
+const _: () = assert!(spawnproto::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
 
 /// Turn a `receive_capability` slot into `Some(slot)`, or `None` if the message carried no capability.
 pub(super) fn opt_capability(slot: u64) -> Option<u64> {

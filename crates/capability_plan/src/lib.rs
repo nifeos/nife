@@ -28,7 +28,7 @@
 /// [`Refusal::TooManyCapabilities`].
 ///
 /// Eight, which is roughly double the four that the widest manifest in this tree asks for, and which
-/// leaves room below `abi::fault::FAULT_EP_SLOT` for the placed slots a component might also want.
+/// leaves room below `abi::fault::FAULT_RENDEZVOUS_SLOT` for the placed slots a component might also want.
 ///
 /// Name: ratified 2026-10-27 (#2797), after the minimum, maximum and operating-system ruling of
 /// 2026-10-26 (UTC) and the capability ruling of 2026-10-06 (UTC).

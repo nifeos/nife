@@ -229,7 +229,6 @@ crates/abi/src/fault.rs::EVENT_EXIT
 
 crates/abi/src/fault.rs::EVENT_FAULT
 
-crates/abi/src/fault.rs::FAULT_EP_SLOT
 
 crates/abi/src/futex.rs
 

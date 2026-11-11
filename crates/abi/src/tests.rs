@@ -108,7 +108,7 @@ fn all_is_every_right_and_spend_only_lacks_grant_alone() {
     assert_eq!(SPEND_ONLY, 0b1_1011);
 }
 
-/// The fault-endpoint slot is a valid slot index. Its value is `CAPABILITY_TABLE_SLOTS - 1` by
+/// The fault-rendezvous slot is a valid slot index. Its value is `CAPABILITY_TABLE_SLOTS - 1` by
 /// definition; what can actually be wrong (and what a mutant made wrong invisibly) is the
 /// arithmetic putting it outside the capability table, where `CAPABILITY_INSERT` would refuse it and every
 /// supervised spawn would fail.
@@ -117,9 +117,9 @@ fn all_is_every_right_and_spend_only_lacks_grant_alone() {
 // rewrites, and the assertion is what notices.
 #[allow(clippy::assertions_on_constants)]
 fn the_fault_slot_is_inside_the_capability_table() {
-    assert!(super::fault::FAULT_EP_SLOT < super::CAPABILITY_TABLE_SLOTS);
+    assert!(super::fault::FAULT_RENDEZVOUS_SLOT < super::CAPABILITY_TABLE_SLOTS);
     assert_eq!(
-        super::fault::FAULT_EP_SLOT,
+        super::fault::FAULT_RENDEZVOUS_SLOT,
         super::CAPABILITY_TABLE_SLOTS - 1
     );
 }
@@ -196,7 +196,7 @@ fn the_syscall_numbers_and_the_first_object_modules_are_pinned() {
         crate::address_space::WAIT => 3,
         crate::address_space::WAKE => 4,
         crate::console::WRITE => 0,
-        crate::fault::FAULT_EP_SLOT => 63,
+        crate::fault::FAULT_RENDEZVOUS_SLOT => 63,
         crate::fault::EVENT_FAULT => 1,
         crate::fault::EVENT_EXIT => 2,
         crate::futex::SIZE_U8 => 0,

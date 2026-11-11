@@ -26,7 +26,7 @@ boundary.
   from "not yours".
 - **Rights**: five bits (`READ`, `WRITE`, `GRANT`, `ENUMERATE`, `BIND`), only ever narrowed on
   delegation; `ALL` and `SPEND_ONLY` are the two useful masks.
-- **Capability tables** have `CAPABILITY_TABLE_SLOTS` (64) slots, and `fault::FAULT_EP_SLOT` is
+- **Capability tables** have `CAPABILITY_TABLE_SLOTS` (64) slots, and `fault::FAULT_RENDEZVOUS_SLOT` is
   derived from that number, so changing it is an ABI change.
 - **Versions**: `ABI_VERSION` (1) is one number for the whole surface, and `INTERFACE_ID` (1) names
   this interface in a program's declaration of what it links. A program built against one version

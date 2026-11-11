@@ -81,12 +81,12 @@ pub const SYS_EXIT_THREAD: u64 = 4;
 pub type CapabilitySlot = u64;
 
 /// The number of slots in a thread's capability table, mirroring the kernel's
-/// `cap::CAPABILITY_TABLE_SLOTS` so userspace can name [`fault::FAULT_EP_SLOT`] without reaching
+/// `cap::CAPABILITY_TABLE_SLOTS` so userspace can name [`fault::FAULT_RENDEZVOUS_SLOT`] without reaching
 /// into the kernel. The two must agree, or the fault slot sits in different places on the two
 /// sides of the boundary.
 ///
-/// **Changing it is an ABI change**: [`fault::FAULT_EP_SLOT`] is derived from it, so a supervisor
-/// built against another size writes the fault endpoint to a slot the kernel does not read. Every
+/// **Changing it is an ABI change**: [`fault::FAULT_RENDEZVOUS_SLOT`] is derived from it, so a supervisor
+/// built against another size writes the fault rendezvous to a slot the kernel does not read. Every
 /// program that names it is built against one copy of this crate. The size was set on 2026-10-04 (UTC).
 pub const CAPABILITY_TABLE_SLOTS: u64 = 64;
 
@@ -110,7 +110,7 @@ pub mod rendezvous;
 /// run states a supervised thread can be found in.
 ///
 /// **Only four states can appear, and the two absentees say something.** `Embryo` cannot, because a
-/// thread's supervision endpoint is recorded at `START` and an embryo has not
+/// thread's supervision rendezvous is recorded at `START` and an embryo has not
 /// started: a child that is built but not yet running is not in its domain yet. `Finished` cannot
 /// either, because that is the state of a thread the reaper collects immediately, which is what
 /// *un*supervised death looks like; a supervised thread dies into [`DEAD`](self::survey::DEAD) and
@@ -201,8 +201,8 @@ pub mod process;
 /// dropped at every delegation; the comment on that constant carries the warning.
 pub mod rights;
 
-/// **The fault endpoint: thread death becomes a message a supervisor holds**. When a thread faults or exits, the kernel delivers one message to the
-/// supervision endpoint its spawner designated, and the thread's corpse persists (dead until the
+/// **The fault rendezvous: thread death becomes a message a supervisor holds**. When a thread faults or exits, the kernel delivers one message to the
+/// supervision rendezvous its spawner designated, and the thread's corpse persists (dead until the
 /// supervisor reaps it with revocation). Restart policy lives in userspace; the kernel never
 /// relaunches anything. This module holds two conventions: a message-format convention and a
 /// spawn-slot convention. No new syscall and no new method.
@@ -325,7 +325,7 @@ pub enum Error {
     /// escalate to the owner's `MemoryRegion::DESTROY`, versus give up on that tid).
     StillAlive = -9,
 
-    /// **This endpoint does not supervise a thread by that tid.** Another supervisor's child, one
+    /// **This rendezvous does not supervise a thread by that tid.** Another supervisor's child, one
     /// already collected, or a tid whose generational name is stale. One error for all three
     /// deliberately: distinguishing "gone" from "not yours" would let a supervisor probe the tid
     /// space of children it has no relationship with.

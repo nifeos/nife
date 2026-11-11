@@ -149,7 +149,7 @@ pub fn code_page(region: u64, code: &[u32]) -> Option<u64> {
 /// The address space, the code and stack pages and the TCB all come out of `region`, so one reap
 /// of it (`sched::reap_supervised`, or `sched::reclaim_region`) gives every frame back. `capabilities` land
 /// in slots 0, 1, ... in order, because a stub names its slots by number. `fault`, if given, goes in
-/// the reserved fault slot (`abi::fault::FAULT_EP_SLOT`), so `START` records it as the child's
+/// the reserved fault slot (`abi::fault::FAULT_RENDEZVOUS_SLOT`), so `START` records it as the child's
 /// supervision endpoint and keeps its badge as the child's label (milestone 105 (the two forks)).
 /// Its rights do not matter: the kernel reads only the endpoint and the badge, and consumes the
 /// slot. Returns the child's thread id, or which step refused.
@@ -193,7 +193,7 @@ pub fn spawn(
         }
     }
     if let Some(capability) = fault {
-        insert_capability(tid, capability, Some(abi::fault::FAULT_EP_SLOT))
+        insert_capability(tid, capability, Some(abi::fault::FAULT_RENDEZVOUS_SLOT))
             .map_err(|_| "no room for the child's supervision endpoint")?;
     }
     crate::sched::configure_thread_control_block(

@@ -82,7 +82,7 @@ const RUN_UNVOUCHED: u64 = grant_plan::spawnproto::RUN_UNVOUCHED_SLOT;
 /// session's two caretakers and its timetable and nothing else.
 const DURABLE_WINDOW: u64 = login_contract::DURABLE_WINDOW_SLOT;
 // `grant_plan` states the slot without depending on `abi`; the relation is held by each reader.
-const _: () = assert!(RUN_UNVOUCHED == abi::fault::FAULT_EP_SLOT - 1);
+const _: () = assert!(RUN_UNVOUCHED == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
 
 /// Whether [`RUN_UNVOUCHED`] holds a capability. Probed at [`_start`], before this process has
 /// allocated anything, which is what makes the probe sound: later, a slot this process retyped
