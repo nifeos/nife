@@ -11,7 +11,7 @@ use super::*;
 /// [`MAXIMUM_RENDEZVOUS`], and half of it, since §101 (notification objects)'s consumers want about
 /// one per thread or service. It bounds only the name table, 16 bytes a slot; the pages come from
 /// the creators' regions.
-pub(super) const MAXIMUM_NOTIFICATIONS: usize = 256;
+pub(crate) const MAXIMUM_NOTIFICATIONS: usize = 256;
 
 /// A notification's name: a generational name over the notification registry, what an
 /// `Object::Notification` capability carries. Stale-safe like every other name.
@@ -65,11 +65,18 @@ pub fn create_notification_from(region: u64) -> Option<NotificationId> {
         });
     }
     // The check above counts live entries, so a table with no free slot can still refuse the
-    // insert; the page stays spent.
-    sched
+    // insert. Then the count the retype took goes back; the page stays spent.
+    let name = sched
         .notification_table
         .insert_with(|_| NotificationPageAddress::new(phys))
-        .map(EntryName::to_bits)
+        .map(EntryName::to_bits);
+    if name.is_none() {
+        crate::memory_region::release_object(
+            region,
+            crate::memory_region::ObjectKind::Notification,
+        );
+    }
+    name
 }
 
 /// The mailbox of a receive the bound notification ended, `(BOUND, word, 0, 0, BOUND)`: §101's

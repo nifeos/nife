@@ -40,10 +40,11 @@ all of them. The two words are the `cap` and `caps` rows of `[spelled_out]`.
 
 **The unit ratchet** counts Rust identifiers that carry a unit symbol the rule refuses, the units in
 `UNIT_COUNTED`, which holds every unit of the template's `[units]` table, and a bare `s` or `min`
-where the template's `[units_after_per]` and `[units_after_number]` say a unit. `--unclear` lists
+where the template's `[units_after_per]` and `[units_after_number]` say a unit, and `ppm` as the
+last part of a longer name (`[units_as_suffix]`; the Portable PixMap format's bare `ppm` stays). `--unclear` lists
 what the count does not reach: the names that keep a unit symbol for a stated reason (a ratified
 name, a specification's term, a standard-library method), each with its reason, and the lookalikes
-no ruling settles (`ppm`). A name listed there with no reason is work the sweep still owes. A unit
+no ruling settles. A name listed there with no reason is work the sweep still owes. A unit
 the template adds to its table joins `UNIT_COUNTED` in the change that sweeps its names, so the
 count stays at 0.
 
@@ -104,6 +105,7 @@ SPELLED_OUT = WORDS['spelled_out']
 UNITS = WORDS['units']
 UNITS_AFTER_PER = WORDS['units_after_per']
 UNITS_AFTER_NUMBER = WORDS['units_after_number']
+UNITS_AS_SUFFIX = WORDS['units_as_suffix']
 
 # The template's `cap` and `caps` rows: the one word nife's `cap` ratchet counts.
 CAP_WORDS = ('cap', 'caps')
@@ -205,10 +207,7 @@ UNIT_COUNTED = (
     'bps', 'kbps', 'mbps', 'gbps',
 )
 # Lookalikes outside the template's table that the ruling does not settle, listed by `--unclear`.
-UNIT_UNSETTLED = {
-    'ppm': 'the Portable PixMap image format nearly everywhere; the one parts-per-million quantity, '
-           'in tools/host_reordering_litmus, has no row in the template\'s table and no ruling',
-}
+UNIT_UNSETTLED = {}
 # Ratified names keep their spelling until their own name review, wherever they appear.
 UNIT_RATIFIED = {
     'NS_PER_SECOND': 'ratified 2026-10-27 as the one definition of clock_contract; its release '
@@ -272,6 +271,8 @@ def family_of(identifier):
         elif (c == 's' and i and (prev == 'per' or _after_number(identifier))
               and ('s' in UNITS_AFTER_PER or 's' in UNITS_AFTER_NUMBER)):
             found.append(UNITS_AFTER_PER.get('s') or UNITS_AFTER_NUMBER['s'])
+        elif c in UNITS_AS_SUFFIX and i and i == len(comps) - 1:
+            found.append(UNITS_AS_SUFFIX[c])
     return found
 
 
@@ -560,6 +561,10 @@ def unit_selftest():
         ('let min = 1; const MIN_ALIGN: u64 = 1;', []),
         ('let (sec, sub) = f();', ['sec']),
         ('// secs in a comment\nlet x = "now_us";', []),
+        # `ppm` is a unit only as the last part of a longer name: the Portable PixMap format's bare
+        # `ppm` and one mid-name stay.
+        ('let ppm = 1; let ink_in_ppm_order = 2; let write_ppm = 3; const DRIFT_PPM: u32 = 4;',
+         ['write_ppm', 'DRIFT_PPM']),
         ('let sec1 = 1; const STGCLK_SEC_AHB: u32 = 1; let tv_sec = 1; let Sec1Point = 2;', []),
     ]
     failed = 0
@@ -575,13 +580,13 @@ def unit_selftest():
         failed += 1
         print('unit selftest: UNIT_KEPT US counted', file=sys.stderr)
     if [w for _, w, _ in unclear_hits('let ppm = 1; let kb = 2; let NS_PER_SECOND = 3; let nanos = 4;')] != [
-            'ppm', 'NS_PER_SECOND']:
+            'NS_PER_SECOND']:
         failed += 1
         print('unit selftest: unclear lookalikes', file=sys.stderr)
     # The ratchet counts a subset of what the template refuses: a name it counts, the template's own
     # check refuses too.
     refuses = template_units.hits_of_words(WORDS)
-    for name in ('now_us', 'SECS_PER_MIN', 'kib_per_s', 'within_30_s', 'NANOS_PER_SEC', 'mins'):
+    for name in ('now_us', 'SECS_PER_MIN', 'kib_per_s', 'within_30_s', 'NANOS_PER_SEC', 'mins', 'DRIFT_PPM'):
         if family_of(name) and not refuses(rust_names.Definition(name, 'name', 1)):
             failed += 1
             print(f'unit selftest: the ratchet counts {name} and the template check does not',

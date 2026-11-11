@@ -121,10 +121,10 @@ extern "C" fn litmus_main(id: usize) -> ! {
         let samples: u64 = SAMPLES.iter().map(|s| s.load(Ordering::Relaxed)).sum();
         let reorders: u64 = REORDERS.iter().map(|s| s.load(Ordering::Relaxed)).sum();
         let iterations = t.messages.unwrap_or(samples);
-        let ppm = reorders * 1_000_000 / iterations.max(1);
+        let parts_per_million = reorders * 1_000_000 / iterations.max(1);
         console::line(format_args!(
             "RESULT arch={ARCH} test={} ordering={} forbidden={} iterations={iterations} \
-             samples={samples} observed={reorders} per_million={ppm} ms={milliseconds}",
+             samples={samples} observed={reorders} per_million={parts_per_million} ms={milliseconds}",
             t.name, t.ordering, t.forbidden
         ));
         if t.forbidden && reorders != 0 {
