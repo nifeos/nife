@@ -193,3 +193,86 @@ fn an_out_of_line_module_is_inlined_as_it_was_written_inline() {
     );
     assert!(inline_modules("pub mod gone;", |_| None).is_err());
 }
+
+/// A copied crate that has left the tree resolves to Cargo's checkout of its pin, read from the
+/// package's `manifest_path`, and is stamped under a name that does not say where that checkout
+/// is. A crate still in the tree resolves to `crates/<name>` and keeps its tree-relative name, so
+/// today's stamp is the one the hard-coded paths gave.
+#[test]
+fn a_copied_crate_resolves_through_its_manifest_path() {
+    let metadata = r#"{"packages": [
+        {"name": "abi", "version": "0.1.0", "manifest_path": "/w/nife/crates/abi/Cargo.toml",
+         "targets": [{"kind": ["lib"], "edition": "2024"}], "rust_version": null},
+        {"name": "counter_frequency_contract", "version": "0.1.0",
+         "manifest_path": "/home/u/.cargo/git/checkouts/counter_frequency_contract-1a2b/3c4d5e6/Cargo.toml",
+         "description": "a \"quoted\" word, a é and a 😀"},
+        {"name": "uuid", "version": "1.28.0", "manifest_path": "/r/uuid-1.28.0/Cargo.toml"}
+    ], "workspace_root": "/w/nife", "version": 1}"#;
+    let directories = package_directories(metadata, &["abi", "counter_frequency_contract"])
+        .expect("both packages are listed");
+    assert_eq!(directories["abi"], Path::new("/w/nife/crates/abi"));
+    let checkout =
+        Path::new("/home/u/.cargo/git/checkouts/counter_frequency_contract-1a2b/3c4d5e6");
+    assert_eq!(directories["counter_frequency_contract"], checkout);
+    let root = Path::new("/w/nife");
+    assert_eq!(
+        stamp_name(&directories["abi"].join("src/lib.rs"), root, &directories),
+        "crates/abi/src/lib.rs"
+    );
+    assert_eq!(
+        stamp_name(&checkout.join("src/lib.rs"), root, &directories),
+        "counter_frequency_contract/src/lib.rs"
+    );
+}
+
+/// The farm refuses to guess: a package that is not in the graph, or a name two packages share,
+/// fails with the name in the message.
+#[test]
+fn a_missing_or_doubled_package_is_refused() {
+    let one = r#"{"packages": [{"name": "abi", "manifest_path": "/a/abi/Cargo.toml"}]}"#;
+    let missing = package_directories(one, &["abi", "clock_contract"]).unwrap_err();
+    assert!(missing.contains("clock_contract"), "{missing}");
+    let two = r#"{"packages": [{"name": "abi", "manifest_path": "/a/abi/Cargo.toml"},
+                              {"name": "abi", "manifest_path": "/b/abi/Cargo.toml"}]}"#;
+    let doubled = package_directories(two, &["abi"]).unwrap_err();
+    assert!(doubled.contains("two packages are named abi"), "{doubled}");
+    assert!(package_directories("{\"packages\": [", &["abi"]).is_err());
+}
+
+/// The JSON reader reads what `cargo metadata` prints: nesting, every escape, a surrogate pair,
+/// numbers and the three words, and refuses trailing text.
+#[test]
+fn the_json_reader_reads_cargo_metadata_shapes() {
+    let value = Json::parse(r#" {"a": [1, -2.5e3, true, false, null, {}], "b": "x\n\t\\\/A😀"} "#)
+        .expect("valid JSON");
+    assert_eq!(
+        value.field("a"),
+        Some(&Json::Array(vec![
+            Json::Number("1".into()),
+            Json::Number("-2.5e3".into()),
+            Json::Bool(true),
+            Json::Bool(false),
+            Json::Null,
+            Json::Object(vec![]),
+        ]))
+    );
+    assert_eq!(
+        value.field("b"),
+        Some(&Json::String("x\n\t\\/A\u{1F600}".into()))
+    );
+    assert!(Json::parse("{} x").is_err());
+    assert!(Json::parse(r#""\ud83d""#).is_err());
+}
+
+/// In this tree every copied file resolves, through the workspace's own `cargo metadata`, to a
+/// file that exists, so `std-src` can copy each one.
+#[test]
+fn every_copied_file_resolves_in_this_workspace() {
+    let directories = copied_package_directories()
+        .as_ref()
+        .expect("cargo metadata lists every copied package");
+    for copied in &COPIED_FILES {
+        let file = directories[copied.package].join(copied.file);
+        assert!(file.is_file(), "{}", file.display());
+    }
+}
