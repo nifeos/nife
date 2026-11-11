@@ -3,9 +3,9 @@
 An appendix to [milestone 1035 (a crate names the version that ran on
 hardware)](../1035-a-crate-names-the-version-that-ran-on-hardware.md). The main page is complete
 without it. These steps follow the bench procedure of [milestone 159 (a real hardware entropy source: the
-JH7110's TRNG)](../0159-jh7110-trng-driver/bench-procedure.md), with the card replaced by the network
-boot of [milestone 257 (boot radon over the network, so the microSD card stops being the tax on
-every experiment)](../0257-network-boot-radon.md). A person runs
+JH7110's TRNG)](../0159-jh7110-trng-driver/bench-procedure.md). The network boot of [milestone 257
+(boot radon over the network, so the microSD card stops being the tax on every
+experiment)](../0257-network-boot-radon.md) replaces its card. A person runs
 them at the board; an agent can drive the host side and read the result.
 
 The maintainers keep the bench's unit-specific details off-tree: which serial device is the
@@ -85,5 +85,6 @@ before touching anything.
 ## What the log holds
 
 A board log carries the board's serial number, its MAC addresses and private local addresses. The
-log goes in as the board printed it, as the runs of milestone 1049 (`jh7110_entropy` is ready to publish: the release review's findings) did, or the person trims those lines
-first and says so in the bench README; the judge reads only the banner and the `trng` lines.
+runs of milestone 1049 (`jh7110_entropy` is ready to publish: the release review's findings)
+committed theirs as the board printed them. The person may instead trim those lines first, and the
+bench README then says so. The judge reads only the banner and the `trng` lines.
