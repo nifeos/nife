@@ -70,16 +70,11 @@ fn receive_preserves_the_invariant() {
     assert!(e.one_queue_invariant());
 }
 
-/// Falsification: unfalsifiable. No minimal defect in `signal` can turn this harness red, and
-/// that is a fact about the operation rather than a gap in the effort. The invariant is "at
-/// most one queue is non-empty", and `signal` takes no node: its two branches pop a receiver
-/// (which can only empty a queue) and increment a counter. Nothing it can be mistakenly
-/// written to do enqueues anything, so every mutation of it either leaves the invariant true
-/// or is caught by a neighbouring harness instead. The harness earns its place as a guard
-/// against `signal` growing an enqueue path later, not as evidence about the code today.
-/// Recording a patch here would mean patching a sibling operation and filing the red under
-/// this name, which is the manufactured evidence DECISIONS §134 (a harness carries a
-/// machine-replayable falsification record, or it is not evidence) exists to refuse.
+/// **A signal preserves the one-queue invariant**, and it does not panic on any count. `signal`
+/// takes no node, so no slip in it can enqueue anything; what it can get wrong is the count. With
+/// `seed`'s symbolic `pending`, a plain `pending + 1` overflows at `u32::MAX` and Kani's overflow
+/// check turns this harness red, which is why the count saturates.
+/// Falsification: replayable `crates/inter_process_communication/falsifications/verification.signal_preserves_the_invariant.patch`
 #[kani::proof]
 fn signal_preserves_the_invariant() {
     let (mut s, mut r) = (N::new(), N::new());
