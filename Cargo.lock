@@ -468,6 +468,7 @@ name = "driver_process_contract"
 version = "0.1.0"
 dependencies = [
  "address_space_map",
+ "designware_inter_integrated_circuit",
  "driver_process_contract",
  "extensible_host_controller_interface",
  "filesystem_contract",

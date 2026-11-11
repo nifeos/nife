@@ -23,6 +23,8 @@ confinement_attackers = []
 address_space_map = { version = "0.1.0", path = "../address_space_map" }
 # The xHCI register window is drawn from the controller's decoded capability registers.
 extensible_host_controller_interface = { version = "0.1.0", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "bea025706ab4837cf541bf93c436ff4e1057922a" }
+# The PMIC route's spawn words carry the I2C master's standard-mode timing.
+designware_inter_integrated_circuit = { version = "0.1.0", path = "../designware_inter_integrated_circuit" }
 # The block server answers `blk`, and its block size sets how many card sectors a block is.
 filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
 # The NVMe handoff's doorbell stride bound is checked against the crate's doorbell arithmetic.
