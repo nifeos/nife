@@ -119,10 +119,10 @@ fn mw(off: u64, v: u32) {
 /// region. Every role is handed at least that page, and every ring, header, status byte and packet
 /// buffer this crate touches through them lies inside it. The block server's data pages above it
 /// are the device's and the FS server's, and this program never reads or writes them.
-const DMA_WINDOW_BYTES: u64 = 0x1000;
+const DIRECT_MEMORY_ACCESS_WINDOW_BYTES: u64 = 0x1000;
 
 // The window starts on a page boundary, so an offset aligned for `T` is an address aligned for `T`.
-const _: () = assert!(DMA_VA.is_multiple_of(DMA_WINDOW_BYTES));
+const _: () = assert!(DMA_VA.is_multiple_of(DIRECT_MEMORY_ACCESS_WINDOW_BYTES));
 
 /// Whether an access of `size` bytes at `off`, for a type aligned to `align`, lies wholly inside a
 /// window of `window` bytes and is aligned. The check the two accessors below make before every
@@ -138,10 +138,15 @@ const fn window_access_fits(off: u64, size: usize, align: usize, window: u64) ->
 /// leave the page or is misaligned for `T`.
 fn direct_memory_access_write<T: Copy>(off: u64, val: T) {
     assert!(
-        window_access_fits(off, size_of::<T>(), align_of::<T>(), DMA_WINDOW_BYTES),
+        window_access_fits(
+            off,
+            size_of::<T>(),
+            align_of::<T>(),
+            DIRECT_MEMORY_ACCESS_WINDOW_BYTES
+        ),
         "a DMA page write outside the page or misaligned"
     );
-    // SAFETY: the assertion above holds the access inside the first DMA_WINDOW_BYTES of the DMA
+    // SAFETY: the assertion above holds the access inside the first DIRECT_MEMORY_ACCESS_WINDOW_BYTES of the DMA
     // region, which the kernel maps read/write at DMA_VA for every role, and aligned for T, since
     // DMA_VA is page aligned.
     unsafe { core::ptr::write_volatile((DMA_VA + off) as *mut T, val) };
@@ -151,7 +156,12 @@ fn direct_memory_access_write<T: Copy>(off: u64, val: T) {
 /// the page or is misaligned for `T`.
 fn direct_memory_access_read<T: Copy>(off: u64) -> T {
     assert!(
-        window_access_fits(off, size_of::<T>(), align_of::<T>(), DMA_WINDOW_BYTES),
+        window_access_fits(
+            off,
+            size_of::<T>(),
+            align_of::<T>(),
+            DIRECT_MEMORY_ACCESS_WINDOW_BYTES
+        ),
         "a DMA page read outside the page or misaligned"
     );
     // SAFETY: as in direct_memory_access_write: in bounds and aligned, checked above.
@@ -857,8 +867,8 @@ fn parse_dhcp_offer(used_slot: u16) -> Option<u32> {
     let written = direct_memory_access_read::<u32>(element + 4) as u64;
     let frame_len = written.min(NET_RECEIVE_BUF_LEN).saturating_sub(NET_HDR_LEN);
     let frame = NET_RECEIVE_BUF + NET_HDR_LEN;
-    parse_dhcp_offer_frame(Frame {
-        len: frame_len,
+    parse_offer_in_frame(Frame {
+        length_bytes: frame_len,
         byte: |at| direct_memory_access_read::<u8>(frame + at),
     })
 }
@@ -867,13 +877,13 @@ fn parse_dhcp_offer(used_slot: u16) -> Option<u32> {
 /// past `len` is `None`, so a parse cannot see stale bytes from an earlier frame. On the device the
 /// bytes come from the DMA page; in the tests, from a slice.
 struct Frame<F: Fn(u64) -> u8> {
-    len: u64,
+    length_bytes: u64,
     byte: F,
 }
 
 impl<F: Fn(u64) -> u8> Frame<F> {
     fn u8(&self, at: u64) -> Option<u8> {
-        (at < self.len).then(|| (self.byte)(at))
+        (at < self.length_bytes).then(|| (self.byte)(at))
     }
     fn be16(&self, at: u64) -> Option<u16> {
         Some(u16::from_be_bytes([self.u8(at)?, self.u8(at + 1)?]))
@@ -890,7 +900,7 @@ impl<F: Fn(u64) -> u8> Frame<F> {
     /// only shrink what is read, never grow it.
     fn truncated(self, len: u64) -> Self {
         Frame {
-            len: self.len.min(len),
+            length_bytes: self.length_bytes.min(len),
             byte: self.byte,
         }
     }
@@ -898,7 +908,7 @@ impl<F: Fn(u64) -> u8> Frame<F> {
 
 /// [`parse_dhcp_offer`]'s parse, on a frame that starts at its Ethernet header. Every read is
 /// bounded by the frame's length, then by the IPv4 total length, then by the UDP length.
-fn parse_dhcp_offer_frame<F: Fn(u64) -> u8>(frame: Frame<F>) -> Option<u32> {
+fn parse_offer_in_frame<F: Fn(u64) -> u8>(frame: Frame<F>) -> Option<u32> {
     if frame.be16(12)? != 0x0800 {
         return None; // not IPv4
     }
@@ -907,14 +917,14 @@ fn parse_dhcp_offer_frame<F: Fn(u64) -> u8>(frame: Frame<F>) -> Option<u32> {
     if ihl < 20 || frame.u8(ip + 9)? != 17 {
         return None; // not a sane IPv4/UDP header
     }
-    let ip_total = frame.be16(ip + 2)? as u64;
-    let frame = frame.truncated(ip + ip_total);
+    let packet_bytes = frame.be16(ip + 2)? as u64;
+    let frame = frame.truncated(ip + packet_bytes);
     let udp = ip + ihl;
     if frame.be16(udp + 2)? != 68 {
         return None; // not addressed to the DHCP client port
     }
-    let udp_len = frame.be16(udp + 4)? as u64;
-    let frame = frame.truncated(udp + udp_len);
+    let transport_bytes = frame.be16(udp + 4)? as u64;
+    let frame = frame.truncated(udp + transport_bytes);
     let dhcp = udp + 8;
     if frame.u8(dhcp)? != 2 || frame.be32(dhcp + 4)? != NET_XID {
         return None; // not a BOOTREPLY for our transaction
@@ -938,7 +948,7 @@ fn parse_dhcp_offer_frame<F: Fn(u64) -> u8>(frame: Frame<F>) -> Option<u32> {
         }
         let Some(len) = frame.u8(o + 1) else { break };
         let len = len as u64;
-        if o + 2 + len > frame.len {
+        if o + 2 + len > frame.length_bytes {
             break;
         }
         if tag == 53 && len >= 1 && frame.u8(o + 2) == Some(2) {
