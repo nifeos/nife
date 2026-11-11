@@ -224,6 +224,7 @@ dependencies = [
  "credentialer",
  "current_cpu_contract",
  "designware_ethernet",
+ "designware_inter_integrated_circuit",
  "designware_mobile_storage",
  "disk_tree",
  "documentation",
