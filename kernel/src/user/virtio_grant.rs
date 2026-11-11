@@ -15,6 +15,12 @@
 //! - A direct grant's DMA region and domain live as long as the function, so a function granted
 //!   direct twice in one boot holds two regions; the second confinement drops the first from the
 //!   domain, and the first is never freed.
+//! - The direct grant has no escape test yet. Step 7 lists two: a direct driver that aims a ring
+//!   outside its region, and one that declines `VIRTIO_F_ACCESS_PLATFORM`, each answered by an
+//!   IOMMU fault or a refused `FEATURES_OK`. Until they land, the suite shows the direct disk
+//!   working and the default choosing it, and the IOMMU's confinement of a direct driver rests on
+//!   `the_iommu_faults_a_dma_that_escapes_the_domain`, which provokes the same fault through the
+//!   mediated transport.
 //!
 //! Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter, after what it
 //! decides.
