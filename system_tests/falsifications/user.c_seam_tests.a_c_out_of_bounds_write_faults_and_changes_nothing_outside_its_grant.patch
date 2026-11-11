@@ -54,15 +54,14 @@ about. `wait_for_report` was added in the same lane so the stall is reported whe
 it means something, and the second run is the one this record names.
 
 diff --git a/fixtures/src/c_confiner.rs b/fixtures/src/c_confiner.rs
-index 4649cb2b..5d851fe2 100644
 --- a/fixtures/src/c_confiner.rs
 +++ b/fixtures/src/c_confiner.rs
-@@ -138,7 +138,7 @@ pub extern "C" fn _start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
-                 // instead of a corruption. Nothing maps WITNESS_FAR here, deliberately.
-                 maps: &[
-                     (c_seam::GRANT_VA, grant, abi::address_space::MAP_READ_WRITE),
--                    (c_seam::WITNESS_RO_VA, wit_ro, abi::address_space::MAP_READ_ONLY),
-+                    (c_seam::WITNESS_RO_VA, wit_ro, abi::address_space::MAP_READ_WRITE),
+@@ -123,7 +123,7 @@
+                     (
+                         c_seam::WITNESS_RO_VA,
+                         wit_ro,
+-                        abi::address_space::MAP_READ_ONLY,
++                        abi::address_space::MAP_READ_WRITE,
+                     ),
                  ],
                  blobs: &[],
-                 fault: Some(faultep),
