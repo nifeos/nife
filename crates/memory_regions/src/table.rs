@@ -1362,7 +1362,10 @@ mod tests {
         t.return_to_parent(&claim);
         assert!(!t.has_children(root), "no child count without a child");
         assert_eq!(t.usage(root), Some((0, 8)), "the budget whole again");
-        assert!(t.claim_for_destroy(root).is_some(), "and the parent reclaimable");
+        assert!(
+            t.claim_for_destroy(root).is_some(),
+            "and the parent reclaimable"
+        );
     }
 
     #[test]
