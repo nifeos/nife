@@ -10,7 +10,8 @@ reversing costs one pull request (delete the section in script/lint and this fil
 Rules, each named in a failure:
   nife-word       the word `nife` (case-insensitive, not inside a longer word) in a README,
                   a Cargo.toml or a source file under src/.
-  nifeos-word     `nifeos`, except on a Cargo.toml `repository`, `homepage` or `documentation` line.
+  nifeos-word     `nifeos`, except on a Cargo.toml `repository`, `homepage` or `documentation` line
+                  and on a README badge line (`[![`), which names the crate's own repository.
   consumer-name   the name of a nife program (a `[[bin]]` of components/Cargo.toml or the directory
                   of a top-level program crate with a hyphen or underscore, so one plain word such as
                   `console` is never taken for a program) or of a package (packages/*.package.toml).
@@ -100,7 +101,9 @@ def scan_text(relpath, text, rules):
     for n, line in enumerate(text.splitlines(), 1):
         if nifeos.search(line):
             key = line.split("=", 1)[0].strip()
-            if not (is_manifest and key in URL_KEYS):
+            # A README badge row names the crate's own repository, which the template requires.
+            is_badge = relpath.endswith("README.md") and line.startswith("[![")
+            if not (is_manifest and key in URL_KEYS) and not is_badge:
                 hits.append((relpath, n, "nifeos-word", line.strip()))
         if nife.search(line):
             hits.append((relpath, n, "nife-word", line.strip()))
@@ -152,6 +155,7 @@ def selftest():
     assert t("a/Cargo.toml", 'homepage = "https://github.com/nifeos/x"') == []
     assert t("a/Cargo.toml", 'description = "for nifeos"') == ["nifeos-word"]
     assert t("a/README.md", "see github.com/nifeos/x") == ["nifeos-word"]
+    assert t("a/README.md", "[![check](https://github.com/nifeos/x/actions/workflows/ci.yml/badge.svg)](https://github.com/nifeos/x)") == []
     import tempfile
 
     with tempfile.TemporaryDirectory() as root:
