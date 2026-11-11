@@ -740,8 +740,8 @@ fn remapping_up(u: &mut Unit) -> Result<(), &'static str> {
 /// Then every device a running unit owns faults until `attach` writes its context entry (or, for
 /// an RMRR device, anywhere outside its reserved regions). Last, every unit the platform and its
 /// own `ECAP.IR` say can remap turns remapping on, provided the DMAR names the scope of
-/// `io_apic_id`, the MADT's IO APIC (milestone 1068, the kernel turns interrupt remapping on
-/// where an IOMMU offers it).
+/// `io_apic_id`, the MADT's IO APIC. That is milestone 1068 (the kernel turns interrupt
+/// remapping on where an IOMMU offers it).
 ///
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
 /// design/naming/acronyms-and-abbreviations.md.

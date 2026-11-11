@@ -939,8 +939,9 @@ mod tests {
         s
     }
 
-    /// **An IO APIC scope gives the unit its lines reach and the requester id they carry**
-    /// (milestone 1068). q35's table names IO APIC 0 at bus 0xff, 00.0, which QEMU's model sends
+    /// **An IO APIC scope gives the unit its lines reach and the requester id they carry**, which
+    /// milestone 1068 (the kernel turns interrupt remapping on where an IOMMU offers it) binds
+    /// each line's remapping entry to. q35's table names IO APIC 0 at bus 0xff, 00.0, which QEMU's model sends
     /// every IO APIC message under; the 7040's names it at bus 0xf0, 1f.0. Asking for an id the
     /// table does not name answers `None`, which is what keeps remapping off, and a fifth IO APIC
     /// marks the table truncated rather than dropping one silently.

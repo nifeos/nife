@@ -219,8 +219,9 @@ the requester id from the DMAR's IO APIC scope, and `route_gsi` writes the line 
 format (`remap_io_apic_line`). Where no DMAR scope names the IO APIC, remapping stays off, as in
 Linux. Rewriting an unchanged entry writes nothing, and a moved line changes only the low half.
 
-Two Kani harnesses hold the encodings, and `a_message_forged_from_another_devices_grant_is_refused`
-is milestone 1068's step 5 (the kernel turns interrupt remapping on where an IOMMU offers it).
+Two Kani harnesses hold the encodings. The test
+`a_message_forged_from_another_devices_grant_is_refused` is step 5 of milestone 1068 (the kernel
+turns interrupt remapping on where an IOMMU offers it).
 
 QEMU 10.2's `vtd_interrupt_remap_msi` forwards a message without the format bit whatever `CFI`
 says, so the test asserts the compatibility half only on bare metal (`CPUID.1:ECX[31]` clear) and
