@@ -40,7 +40,7 @@ a child's image and stack sit in the second gigabyte and its pair pages in the f
 with any window mapped walks two gigabyte-level tables. On `x86_64` every child also pays three
 tables for its timebase page. `top`'s debug image is nineteen pages and its row buffer in `.bss` is
 twelve more (`ps::MAXIMUM_ROWS` rows of 48 bytes), as it is for `ps` and `pgrep`. At forty-eight
-`top` was refused on both legs of `script/swish-check`, and at sixty those legs pass every line.
+neither leg of `script/swish-check` could build `top`, and at sixty both legs pass every line.
 
 `DIR_JOB_REGION_PAGES` is ninety-eight: the program, the caretaker that carries its grant, and the
 two endpoints between them. The caretaker is a second address space with its own tables and stack,
