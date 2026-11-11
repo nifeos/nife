@@ -79,20 +79,21 @@ no-allocation-in-interrupt rule holds by construction.
 
 ### `MAXIMUM_THREADS`
 
-`MAXIMUM_THREADS` is 256, a documented limit of the image, so a spawn past it fails cleanly. The
+`MAXIMUM_THREADS` is 1,024, a documented limit of the image, so a spawn past it fails cleanly. The
 boot keeps many services alive for its whole life (notes/frames.md's "held" list), so every
 milestone that adds one spends some of it. `PEAK_THREADS` and `kernel::testing`'s closing `threads:`
 line print the demand on every run; when the limit was set the peaks were 130 (aarch64), 129
-(riscv64) and 57 (`x86_64`). 256 is about twice the tightest, because the failure is an unrelated
-test refusing a spawn far from its cause. What scales with it, each checked at 256:
+(riscv64) and 57 (`x86_64`). The limit is several times the tightest, which leaves headroom for
+more concurrent programs, and because a failure is an unrelated test refusing a spawn far from its
+cause. What scales with it, each checked at 1,024:
 
-- the boot stack, about 20 bytes a slot, which is why `init` installs `EMPTY_TABLES` from `.rodata`
+- the boot stack, about 20 bytes a slot, which is why `init` installs `EMPTY_INSTALLED_TABLES` from `.rodata`
   rather than building the tables on the boot stack, under `stack::report_high_water`'s gate;
-- `kmem::KERNEL_OBJ_PAGES`, 7 pages per live thread (`thread::STACK_PAGES` and the TCB page);
+- `kmem::KERNEL_OBJ_PAGES`, 7 pages per live thread (`thread::STACK_PAGES` and the TCB page),
+  const-asserted against it;
 - `ps::MAXIMUM_ROWS`, const-asserted `>= MAXIMUM_THREADS` in `kernel::user::survey_tests`, which
-  sizes stack-resident row arrays in `ps` and `pgrep` inside
-  `system_initializer::CHILD_STACK_PAGES`;
-- `revoke::MAXIMUM_SPACES` and `thread::FreeAddressSpace`, derived from it.
+  sizes the `.bss` row arrays in `ps`, `pgrep` and `top`;
+- `thread::FreeAddressSpace` and `CPU_TICKS`, derived from it.
 
 Nothing on the `spawn_el0` benchmark scales with it, because the revocation scans are bounded by
 live occupancy ([notes/benchmarks.md](benchmarks.md)). No `[u64; MAXIMUM_THREADS]` scratch array
@@ -100,16 +101,16 @@ sits on a stack ([notes/region-reaping.md](region-reaping.md)).
 
 ### `MAXIMUM_RENDEZVOUS`, and the kernel's chunks
 
-`MAXIMUM_RENDEZVOUS` is 512 live at once. Tearing down a region removes its rendezvous and frees
+`MAXIMUM_RENDEZVOUS` is 2,048 live at once. Tearing down a region removes its rendezvous and frees
 their slots, so it bounds concurrency, not creations. `PEAK_RENDEZVOUS` and
 `KERNEL_CHUNK_RENDEZVOUS` report the peak and how many of those sat on the kernel's own chunks,
 updated at the one insert under the lock. Measured 2026-10-19 (UTC) on the `system_tests` image:
 
 | architecture | peak | spare | on kernel chunks |
 |---|---|---|---|
-| aarch64 | **269** | 243 | 188 |
-| riscv64 | **260** | 252 | 179 |
-| `x86_64` | **189** | 323 | 133 |
+| aarch64 | **269** | 1,779 | 188 |
+| riscv64 | **260** | 1,788 | 179 |
+| `x86_64` | **189** | 1,859 | 133 |
 
 A rendezvous on a kernel chunk lives for the whole boot, so every test that wires a service with
 `create_rendezvous` spends the registry until shutdown. On aarch64 the largest spenders are the

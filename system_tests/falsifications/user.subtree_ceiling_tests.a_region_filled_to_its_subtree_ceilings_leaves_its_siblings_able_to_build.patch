@@ -7,7 +7,7 @@ counted but never refused at a ceiling, which is the kernel as it was before sub
 
 Expected to fail: `Rendezvous did not stop at the split child's ceiling`, the region making
 rendezvous until the attempt bound instead of stopping at the split child's share.
-Replayed red on aarch64 on 2026-11-10 (UTC): `left: 64`, `right: 28`.
+Replayed red on aarch64 on 2026-11-11 (UTC): `left: 128`, `right: 112`.
 
 diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
 index 2534ad6b6..7c12555c6 100644

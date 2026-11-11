@@ -48,11 +48,11 @@ unreachable rather than handled. A `ps` holding the widest grant this system can
 thread on the machine, so there is no "and N more" the shipped program can print. A compile-time
 assertion in `kernel::user::survey_tests` keeps `MAXIMUM_ROWS` and `sched::MAXIMUM_THREADS` in step.
 
-The buffer is a stack allocation in both shipped programs, so its size was measured.
-`-Z emit-stack-sizes` puts `_start` at 4,240 bytes in `ps` and 4,320 in `pgrep`. That is against
-the 12 pages (49,152 bytes) `system_initializer::CHILD_STACK_PAGES` maps under every child: under 9%
-of the stack each. Nothing else in these programs is deep; `collect` is 368 bytes and the next frame
-down is smaller still.
+The buffer is a `static` in `.bss` in `ps`, `pgrep` and `top`, each one `Row::EMPTY` repeated
+`MAXIMUM_ROWS` times. A row is 48 bytes, so the buffer is 48 KiB at 1,024 rows, which is the whole
+12-page (49,152 bytes) stack `system_initializer::CHILD_STACK_PAGES` maps under every child. `.bss`
+costs the program's region pages and no bytes of its ELF. `collect` is 368 bytes and the next
+frame down is smaller still.
 
 ## Two walks joined on the tid
 

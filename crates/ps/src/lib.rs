@@ -35,7 +35,7 @@
 /// cost against the child stack.
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_ROWS: usize = 256;
+pub const MAXIMUM_ROWS: usize = 1024;
 
 /// One line of the listing: a thread and what it is doing.
 ///
@@ -63,6 +63,21 @@ pub struct Row {
     /// its label ([`Survey::threads_with_label`]): threads of the viewer's domain, never the
     /// process's true total.
     pub process: Option<u64>,
+}
+
+impl Row {
+    /// A row with nothing in it, as a constant so a program can place its whole row buffer in
+    /// `.bss` (`static mut ROWS: [Row; MAXIMUM_ROWS] = [Row::EMPTY; MAXIMUM_ROWS]`) instead of
+    /// on its stack. It equals [`Row::default`], and every field is zero or `None`, so the linker
+    /// keeps the buffer out of the image.
+    ///
+    /// Name: provisional.
+    pub const EMPTY: Row = Row {
+        tid: 0,
+        state: 0,
+        cpu_milliseconds: None,
+        process: None,
+    };
 }
 
 /// A finished walk of one domain: the rows, and whatever went wrong.
@@ -541,6 +556,12 @@ fn write_thread_id(tid: u64, out: &mut dyn FnMut(&[u8])) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The constant a program places in `.bss` is the row `Default` builds.
+    #[test]
+    fn the_empty_row_is_the_default_row() {
+        assert_eq!(Row::EMPTY, Row::default());
+    }
 
     /// A reader over a canned domain: `entries` in slot order, then done.
     fn domain(entries: &'static [(u64, u64)]) -> impl FnMut(u64) -> (i64, u64, u64) {
